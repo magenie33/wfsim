@@ -210,6 +210,10 @@ mod tests {
         // Base crit is 5%, but Enervate stacks flat crit as the fight goes on, so
         // the observed crit rate should exceed 5%.
         let s = monte_carlo(&DummyParams::default(), 2000, 3);
-        assert!(s.mean_crit_rate > 0.05, "crit rate was {}", s.mean_crit_rate);
+        assert!(
+            s.mean_crit_rate > 0.05,
+            "crit rate was {}",
+            s.mean_crit_rate
+        );
     }
 }
