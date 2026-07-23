@@ -1,9 +1,9 @@
 //! Timeline primitives: a fixed-rate clock and the event stream that drives
-//! stateful [`crate::effects`].
+//! stateful [`crate::buffs`].
 //!
 //! The whole simulation is deterministic given a seed and a fixed tick rate, so
 //! Monte Carlo runs and golden tests are reproducible (see `docs/CORE.md` §2,
-//! and the determinism rule in `docs/EFFECTS.md`).
+//! and the determinism rule in `docs/BUFFS.md`).
 
 /// Simulation configuration.
 ///
@@ -55,15 +55,15 @@ impl SimClock {
     }
 }
 
-/// Events emitted by the timeline that stateful effects react to.
+/// Events emitted by the timeline that buff sources react to.
 ///
 /// This set will grow as the pipeline lands (Kill, Headshot, StatusProc,
-/// Reload, ...). Kept minimal for now to what the first effect needs.
+/// Reload, ...). Kept minimal for now to what the first buff source needs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event {
     /// A hit landed on a target. `big_crit` is true when the hit was a "big"
     /// critical hit (crit tier >= 2 — exact threshold to confirm by golden
-    /// test), which some effects treat specially.
+    /// test), which some buff sources treat specially.
     Hit { big_crit: bool },
 }
 

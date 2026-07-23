@@ -79,13 +79,24 @@ exact term in code. Prefer these terms over the in-game/wiki phrasing.
   Sources stack **additively** with each other, **except Energized Munitions**
   which stacks multiplicatively. `e = 1.0` (e.g. Frenzy's +100%) → infinite ammo.
 
-## Effects and stacking
+## Perks and buffs
 
-- **Effect** — a stateful modifier (arcane, conditional mod, combo) that lives
-  on the timeline and reacts to events. See `docs/EFFECTS.md`.
-- **Stack** — one unit of an accumulating Effect. "7 stacks of Secondary
-  Enervate" = the Effect has accumulated 7 units.
-- **Trigger** — the event condition that advances an Effect (OnHit, OnKill,
+The grantor and the granted are different things — keep them distinct:
+
+- **Perk** — a **held/equipped capability** (arcane, weapon passive, Incarnon
+  evolution) whose possession lets you *trigger* a buff. Holding the perk is what
+  enables the buff. E.g. Secondary Enervate and Dual Toxocyst's Frenzy are perks.
+- **Buff** — the **runtime overlay you gain** when a perk's trigger fires. It has
+  stacks, an optional duration, a scope, and the contributions it grants. It is
+  what the **buff bar** shows.
+- **Buff bar** — the single container of all active buffs, mirroring the player's
+  HUD. Every buff appears here regardless of scope.
+- **Buff scope** — what a buff applies to: **Weapon** (the granting weapon),
+  **Warframe** (the player), or **Squad**. The HUD shows a buff regardless of
+  scope, so "shown in the UI" ≠ "applies to this weapon".
+- **Stack** — one unit of an accumulating buff. "7 stacks of Secondary Enervate"
+  = the buff has accumulated 7 units.
+- **Trigger** — the event condition that fires a perk (OnHit, OnHeadshot, OnKill,
   OnBigCrit, ...).
 - **Rate cap** — a maximum trigger frequency, in triggers/second (e.g. Secondary
   Enervate caps stack gain at 30/s). Expressed in seconds internally so it is

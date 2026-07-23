@@ -10,12 +10,14 @@
 //!   [4] critical tiers   [5] status / proc           [6] hit resolution
 //!   [7] target mitigation                            [8] temporal integration
 //!
-//! Stateful modifiers (arcanes, conditional mods, combo) do not live inside the
-//! pure pipeline. They live in the timeline (layer [8]) as event-driven
-//! [`effects`], each an isolated state machine that reacts to [`sim`] events and
-//! reports its current contribution. See `docs/EFFECTS.md`.
+//! Stateful modifiers do not live inside the pure pipeline. You hold [`perks`]
+//! (arcanes, weapon passives, Incarnon evolutions); on a trigger a perk grants a
+//! [`buffs`]-bar buff — a runtime overlay on a target (weapon, Warframe, squad)
+//! shown in the HUD. The pipeline reads a summed contribution snapshot from the
+//! buff bar. See `docs/BUFFS.md`.
 
-pub mod effects;
+pub mod buffs;
+pub mod perks;
 pub mod sim;
 
 // Damage-pipeline layers will be split into their own modules, e.g.:

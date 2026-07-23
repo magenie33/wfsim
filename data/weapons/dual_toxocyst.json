@@ -63,10 +63,10 @@
           "position": "end_of_mod_order"
         }
       },
-      "description": "On headshot for 3s (refreshable): fire rate x2.5 (an INDEPENDENT multiplier, NOT the additive fire-rate-mod bucket; wiki '+150%' == x2.5); +100% ammo efficiency => infinite ammo via shots_per_ammo = 1/(1-e); -75% recoil; +100% Toxin injected as a Toxin mod appended at the END of the mod order (participates in elemental combination as the last mod). Terminology per docs/GLOSSARY.md.",
+      "description": "Landing a successful headshot grants Frenzy for 3s (refreshable on subsequent headshots): fire rate x2.5 (wiki '+150%', explicitly MULTIPLICATIVE to other fire-rate sources -- its own bucket, not the additive fire-rate-mod bucket); +100% ammo efficiency => infinite ammo via shots_per_ammo = 1/(1-e); -75% recoil; +100% Toxin injected as a Toxin mod appended at the END of the mod order (participates in elemental combination as the last mod). Terminology per docs/GLOSSARY.md.",
       "verification": {
         "status": "unverified",
-        "notes": "Confirm trigger: wiki says 'achieving a headshot'; older versions triggered on headshot KILLS. Fire-rate multiplier is x2.5 as its own bucket (confirmed distinct from fire-rate mods). Toxin behaves like a +100% Toxin mod appended last (per user). All values still need Simulacrum measurement."
+        "notes": "Trigger, duration, refresh, and all four bonuses confirmed from wiki (complete). Fire-rate +150% confirmed multiplicative to other fire-rate sources (x2.5 own bucket). Toxin modeled as a +100% Toxin mod appended last (per user). Exact numbers still to be reproduced in Simulacrum for the golden test."
       }
     }
   ],
