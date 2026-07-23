@@ -17,6 +17,7 @@
 //! buff bar. See `docs/BUFFS.md`.
 
 pub mod buffs;
+pub mod damage;
 pub mod perks;
 pub mod sim;
 

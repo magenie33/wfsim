@@ -34,31 +34,67 @@ pub enum BuffScope {
     Squad,
 }
 
-/// What a buff adds to the modifier buckets.
-///
-/// One field per **additive** bucket the buff layer can touch. Values are summed
-/// across buffs. Multiplicative buckets (e.g. an independent fire-rate
-/// multiplier) are intentionally *not* here yet — they must be combined by the
-/// mod-resolution layer, not naively summed. Terminology: `docs/GLOSSARY.md`.
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
-pub struct Contributions {
-    /// Flat crit chance: an absolute percentage-point bonus (0.10 == +10 pts),
-    /// not scaled by base. See `docs/GLOSSARY.md`.
-    pub flat_crit_chance: f64,
+/// Where a buff injects an element into the mod order (see `docs/GLOSSARY.md`,
+/// "Injected mod", and `docs/MECHANICS.md` §3).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InjectionPosition {
+    /// Appended as the last mod, so it combines elementally after everything
+    /// else (e.g. Frenzy's +100% Toxin).
+    EndOfModOrder,
 }
 
-impl std::ops::Add for Contributions {
-    type Output = Contributions;
-    fn add(self, other: Contributions) -> Contributions {
-        Contributions {
-            flat_crit_chance: self.flat_crit_chance + other.flat_crit_chance,
+/// An element a buff adds as if it were an elemental mod at a defined position.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct InjectedElement {
+    pub damage_type: crate::damage::DamageType,
+    /// Amount as a fraction of the weapon's base damage (1.0 == +100%).
+    pub amount_percent_of_base: f64,
+    pub position: InjectionPosition,
+}
+
+/// What a buff adds to the modifier buckets.
+///
+/// Each field is a distinct bucket with its **own** combination rule when buffs
+/// are combined (see [`Contributions::combine`]): additive buckets sum,
+/// multiplicative buckets multiply, injected elements concatenate. Terminology:
+/// `docs/GLOSSARY.md`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Contributions {
+    /// Additive: flat crit chance, an absolute percentage-point bonus
+    /// (0.10 == +10 pts), not scaled by base.
+    pub flat_crit_chance: f64,
+    /// Multiplicative: an independent fire-rate multiplier (Frenzy's x2.5),
+    /// applied on its own bucket after additive fire-rate mods. Identity 1.0.
+    pub fire_rate_multiplier: f64,
+    /// Additive: ammo-efficiency bonus `e`; shots_per_ammo = 1/(1-e), 1.0 =>
+    /// infinite ammo. (Energized Munitions is the multiplicative exception, not
+    /// modeled here.)
+    pub ammo_efficiency: f64,
+    /// Elements injected into the mod order (order preserved).
+    pub injected_elements: Vec<InjectedElement>,
+}
+
+impl Default for Contributions {
+    fn default() -> Self {
+        // Identities: 0 for additive buckets, 1.0 for the multiplicative bucket,
+        // empty for injected elements.
+        Self {
+            flat_crit_chance: 0.0,
+            fire_rate_multiplier: 1.0,
+            ammo_efficiency: 0.0,
+            injected_elements: Vec::new(),
         }
     }
 }
 
-impl std::iter::Sum for Contributions {
-    fn sum<I: Iterator<Item = Contributions>>(iter: I) -> Contributions {
-        iter.fold(Contributions::default(), |acc, c| acc + c)
+impl Contributions {
+    /// Combine two contribution sets bucket-by-bucket, each by its own rule.
+    pub fn combine(mut self, other: Contributions) -> Contributions {
+        self.flat_crit_chance += other.flat_crit_chance;
+        self.fire_rate_multiplier *= other.fire_rate_multiplier;
+        self.ammo_efficiency += other.ammo_efficiency;
+        self.injected_elements.extend(other.injected_elements);
+        self
     }
 }
 
@@ -116,12 +152,14 @@ impl BuffBar {
         &self.buffs
     }
 
-    /// Summed contributions of every active buff.
+    /// Combined contributions of every active buff.
     ///
     /// Scope-aware application (weapon vs Warframe vs squad) will refine this
     /// once non-weapon buffs exist; today every buff is `Weapon`-scoped.
     pub fn total_contributions(&self) -> Contributions {
-        self.buffs.iter().map(|b| b.contributions).sum()
+        self.buffs.iter().fold(Contributions::default(), |acc, b| {
+            acc.combine(b.contributions.clone())
+        })
     }
 }
 

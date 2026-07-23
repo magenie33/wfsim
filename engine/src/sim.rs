@@ -55,16 +55,38 @@ impl SimClock {
     }
 }
 
-/// Events emitted by the timeline that buff sources react to.
+/// A hit landed on a target — the context perks react to.
 ///
-/// This set will grow as the pipeline lands (Kill, Headshot, StatusProc,
-/// Reload, ...). Kept minimal for now to what the first buff source needs.
+/// Fields grow as the pipeline lands; construct in tests via `Hit::default()`
+/// with `..` overrides. `target_alive` defaults to `true` (the common case).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Hit {
+    /// The hit was a "big" critical hit (crit tier >= 2 — exact threshold to
+    /// confirm by golden test), which some perks treat specially.
+    pub big_crit: bool,
+    /// The hit landed on the **head** hitbox specifically (not any weakspot).
+    pub headshot: bool,
+    /// The target was alive at the moment of the hit (some perks ignore hits on
+    /// corpses, e.g. Frenzy).
+    pub target_alive: bool,
+}
+
+impl Default for Hit {
+    fn default() -> Self {
+        Self {
+            big_crit: false,
+            headshot: false,
+            target_alive: true,
+        }
+    }
+}
+
+/// Events emitted by the timeline that perks react to.
+///
+/// This set will grow as the pipeline lands (Kill, StatusProc, Reload, ...).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event {
-    /// A hit landed on a target. `big_crit` is true when the hit was a "big"
-    /// critical hit (crit tier >= 2 — exact threshold to confirm by golden
-    /// test), which some buff sources treat specially.
-    Hit { big_crit: bool },
+    Hit(Hit),
 }
 
 #[cfg(test)]

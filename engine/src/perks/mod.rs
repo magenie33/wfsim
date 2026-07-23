@@ -10,6 +10,7 @@
 //! This is the grantor side of the buff system; the runtime overlay lives in
 //! [`crate::buffs`]. See `docs/BUFFS.md`.
 
+pub mod frenzy;
 pub mod secondary_enervate;
 
 use crate::buffs::BuffBar;

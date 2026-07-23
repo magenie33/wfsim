@@ -93,7 +93,8 @@ impl Perk for SecondaryEnervate {
     }
 
     fn on_event(&mut self, event: &Event, t_secs: f64, bar: &mut BuffBar) {
-        let Event::Hit { big_crit } = *event;
+        let Event::Hit(hit) = event;
+        let big_crit = hit.big_crit;
 
         if !self.trigger_allowed(t_secs) {
             return;
@@ -121,6 +122,7 @@ impl Perk for SecondaryEnervate {
                 expiry_secs: None,
                 contributions: Contributions {
                     flat_crit_chance: stacks as f64 * self.flat_crit_per_stack,
+                    ..Default::default()
                 },
             });
         }
@@ -130,6 +132,7 @@ impl Perk for SecondaryEnervate {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sim::Hit;
 
     // A time step comfortably larger than the 1/30 s rate cap, so successive
     // hits each count as a distinct trigger.
@@ -153,7 +156,7 @@ mod tests {
         let mut bar = BuffBar::new();
         let mut e = SecondaryEnervate::default();
         for i in 0..3 {
-            e.on_event(&Event::Hit { big_crit: false }, i as f64 * STEP, &mut bar);
+            e.on_event(&Event::Hit(Hit::default()), i as f64 * STEP, &mut bar);
         }
         assert_eq!(stacks(&bar), 3);
         assert!(approx(bar.total_contributions().flat_crit_chance, 0.30));
@@ -165,11 +168,11 @@ mod tests {
         let mut e = SecondaryEnervate::default();
         // 10 hits in the very same instant: only the first is a valid trigger.
         for _ in 0..10 {
-            e.on_event(&Event::Hit { big_crit: false }, 0.0, &mut bar);
+            e.on_event(&Event::Hit(Hit::default()), 0.0, &mut bar);
         }
         assert_eq!(stacks(&bar), 1);
         // Exactly 1/30 s later, another trigger is allowed.
-        e.on_event(&Event::Hit { big_crit: false }, 1.0 / 30.0, &mut bar);
+        e.on_event(&Event::Hit(Hit::default()), 1.0 / 30.0, &mut bar);
         assert_eq!(stacks(&bar), 2);
     }
 
@@ -179,10 +182,10 @@ mod tests {
         let mut bar = BuffBar::new();
         let mut e = SecondaryEnervate::default();
         let dt = 1.0 / 240.0;
-        e.on_event(&Event::Hit { big_crit: false }, 0.0, &mut bar); // stack 1
-        e.on_event(&Event::Hit { big_crit: false }, 7.0 * dt, &mut bar); // too soon
+        e.on_event(&Event::Hit(Hit::default()), 0.0, &mut bar); // stack 1
+        e.on_event(&Event::Hit(Hit::default()), 7.0 * dt, &mut bar); // too soon
         assert_eq!(stacks(&bar), 1);
-        e.on_event(&Event::Hit { big_crit: false }, 8.0 * dt, &mut bar); // on cap
+        e.on_event(&Event::Hit(Hit::default()), 8.0 * dt, &mut bar); // on cap
         assert_eq!(stacks(&bar), 2);
     }
 
@@ -191,12 +194,26 @@ mod tests {
         let mut bar = BuffBar::new();
         let mut e = SecondaryEnervate::default(); // resets after 6 big crits
         for i in 0..5 {
-            e.on_event(&Event::Hit { big_crit: true }, i as f64 * STEP, &mut bar);
+            e.on_event(
+                &Event::Hit(Hit {
+                    big_crit: true,
+                    ..Hit::default()
+                }),
+                i as f64 * STEP,
+                &mut bar,
+            );
         }
         assert_eq!(stacks(&bar), 5); // 5 big crits: not yet reset
 
         // 6th big crit fills the counter: buff resets and leaves the bar.
-        e.on_event(&Event::Hit { big_crit: true }, 5.0 * STEP, &mut bar);
+        e.on_event(
+            &Event::Hit(Hit {
+                big_crit: true,
+                ..Hit::default()
+            }),
+            5.0 * STEP,
+            &mut bar,
+        );
         assert!(bar.get(BUFF_ID).is_none());
         assert!(approx(bar.total_contributions().flat_crit_chance, 0.0));
     }
@@ -205,7 +222,14 @@ mod tests {
     fn rank_zero_resets_on_the_first_big_crit() {
         let mut bar = BuffBar::new();
         let mut e = SecondaryEnervate::from_rank(0); // resets after 1 big crit
-        e.on_event(&Event::Hit { big_crit: true }, 0.0, &mut bar);
+        e.on_event(
+            &Event::Hit(Hit {
+                big_crit: true,
+                ..Hit::default()
+            }),
+            0.0,
+            &mut bar,
+        );
         assert!(bar.get(BUFF_ID).is_none());
     }
 
