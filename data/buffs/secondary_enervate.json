@@ -1,0 +1,29 @@
+{
+  "schema_version": 0,
+  "id": "secondary_enervate",
+  "name": "Secondary Enervate",
+  "kind": "buff",
+  "default_scope": "weapon",
+  "duration_seconds": null,
+  "refreshable": false,
+  "stacking": true,
+  "max_stacks": null,
+  "rate_limit_hz": 30,
+  "per_stack_modifiers": {
+    "flat_critical_chance": 0.10
+  },
+  "reset": {
+    "counter": "big_crit",
+    "threshold_param": "reset_after_big_crits",
+    "note": "Stacks reset to 0 when the big-crit count reaches reset_after_big_crits. That threshold is rank-scaled and supplied by the granting perk (see data/perks/secondary_enervate.json)."
+  },
+  "source": {
+    "url": "https://wiki.warframe.com/w/Secondary_Enervate",
+    "retrieved": "2026-07-24"
+  },
+  "verification": {
+    "status": "unverified",
+    "needs_measurement": true,
+    "notes": "Flat crit chance is additive/absolute: Lato (10% base) with 7 stacks = 10% + 7x10% = 80% (source: wiki). Still to confirm in-game: whether a hit's own stack survives when that same hit triggers the reset, and whether the 30/s cap is a min-interval or rolling window."
+  }
+}

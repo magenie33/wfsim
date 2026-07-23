@@ -8,37 +8,14 @@
   "max_rank": 5,
   "arcanes_to_max": 21,
   "drop_chance": 0.125,
+  "perk": "secondary_enervate",
   "source": {
     "url": "https://wiki.warframe.com/w/Secondary_Enervate",
     "retrieved": "2026-07-24"
   },
-  "effects": [
-    {
-      "trigger": "on_hit",
-      "description": "On Hit: gain a stack of flat crit chance (absolute percentage points, not scaled by base). Stacks reset after landing a rank-dependent number of big crits (crit tier >= 2). Both the stack gain and the big-crit counter are rate-limited to 30/s.",
-      "rate_limit_hz": 30,
-      "stacking": true,
-      "ranks": [
-        { "rank": 0, "flat_critical_chance_per_stack": 0.10, "reset_after_big_crits": 1 },
-        { "rank": 1, "flat_critical_chance_per_stack": 0.10, "reset_after_big_crits": 2 },
-        { "rank": 2, "flat_critical_chance_per_stack": 0.10, "reset_after_big_crits": 3 },
-        { "rank": 3, "flat_critical_chance_per_stack": 0.10, "reset_after_big_crits": 4 },
-        { "rank": 4, "flat_critical_chance_per_stack": 0.10, "reset_after_big_crits": 5 },
-        { "rank": 5, "flat_critical_chance_per_stack": 0.10, "reset_after_big_crits": 6 }
-      ]
-    }
-  ],
-  "hit_counting_notes": [
-    "Hitscan hitting multiple enemies at once (Multishot or Punch Through) counts as 1 hit.",
-    "Projectile and non-chained beam attacks hitting multiple enemies at once count as multiple hits.",
-    "AoE attacks always count as 1 hit.",
-    "Shotgun sidearm pellets are tied to Multishot and do not count as separate hits.",
-    "Expiring Blast procs count as a hit; Blast explosions from max stacks or a kill do not.",
-    "Hits on an Arctic Eximus Snow Globe build the bonus without triggering the reset (object health cannot take crits)."
-  ],
   "verification": {
     "status": "unverified",
     "needs_measurement": true,
-    "notes": "Flat crit chance is additive/absolute: Lato (10% base) with 7 stacks = 10% + 7x10% = 80% (source: wiki). 'Big crit' = crit tier >= 2 (source: wiki, confirmed). Still needs in-game measurement to confirm: whether a hit's own stack survives when that same hit triggers the reset, and whether the 30/s cap is a min-interval or rolling window."
+    "notes": "Arcane item metadata only. The mechanic lives in the referenced perk (data/perks/secondary_enervate.json) and the buff it grants (data/buffs/secondary_enervate.json)."
   }
 }

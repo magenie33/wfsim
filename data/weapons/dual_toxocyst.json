@@ -46,33 +46,7 @@
       "activation": "Weakpoint hits charge the Incarnon gauge; 9 weakpoint hits fill it. Alt Fire transmutes into the Incarnon form."
     }
   ],
-  "perks": [
-    {
-      "id": "frenzy",
-      "name": "Frenzy",
-      "kind": "weapon_passive",
-      "grants_buff": "frenzy",
-      "buff_scope": "weapon",
-      "trigger": "on_headshot",
-      "duration_seconds": 3,
-      "refreshable": true,
-      "modifiers": {
-        "fire_rate_multiplier": 2.5,
-        "ammo_efficiency_bonus": 1.0,
-        "recoil_multiplier": -0.75,
-        "injected_element": {
-          "type": "toxin",
-          "amount_percent_of_base": 1.0,
-          "position": "end_of_mod_order"
-        }
-      },
-      "description": "Landing a successful headshot grants Frenzy for 3s (refreshable on subsequent headshots): fire rate x2.5 (wiki '+150%', explicitly MULTIPLICATIVE to other fire-rate sources -- its own bucket, not the additive fire-rate-mod bucket); +100% ammo efficiency => infinite ammo via shots_per_ammo = 1/(1-e); -75% recoil; +100% Toxin injected as a Toxin mod appended at the END of the mod order (participates in elemental combination as the last mod). Terminology per docs/GLOSSARY.md.",
-      "verification": {
-        "status": "unverified",
-        "notes": "Trigger, duration, refresh, and all four bonuses confirmed from wiki (complete). Fire-rate +150% confirmed multiplicative to other fire-rate sources (x2.5 own bucket). Toxin modeled as a +100% Toxin mod appended last (per user). Exact numbers still to be reproduced in Simulacrum for the golden test."
-      }
-    }
-  ],
+  "perks": ["frenzy"],
   "incarnon_evolutions": [
     {
       "tier": 1,
