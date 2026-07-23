@@ -1,0 +1,16 @@
+[package]
+name = "wfsim-cli"
+description = "wfsim command-line interface"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "wfsim"
+path = "src/main.rs"
+
+[dependencies]
+wfsim-engine = { path = "../engine" }
+wfsim-optimizer = { path = "../optimizer" }

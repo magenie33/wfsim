@@ -1,0 +1,11 @@
+[package]
+name = "wfsim-engine"
+description = "wfsim damage-pipeline engine: pure functions, each layer independently testable (see docs/CORE.md section 3)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true

@@ -1,0 +1,12 @@
+[package]
+name = "wfsim-optimizer"
+description = "Searches for the best mod combination on top of the simulation engine (only calls the engine, never a simplified formula)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+wfsim-engine = { path = "../engine" }
+serde.workspace = true

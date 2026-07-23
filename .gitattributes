@@ -1,0 +1,7 @@
+# Normalize line endings to LF in the repo across Windows and macOS.
+* text=auto eol=lf
+
+# Binary files git should not touch.
+*.png binary
+*.jpg binary
+*.ico binary
