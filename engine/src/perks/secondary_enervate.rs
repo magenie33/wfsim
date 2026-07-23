@@ -5,7 +5,9 @@
 //! private bookkeeping the UI does not show (the big-crit counter and the
 //! rate-limit timer); the visible stacks live on the [`Buff`].
 //!
-//! Data / source of truth: `data/arcanes/secondary_enervate.json`
+//! Data / source of truth: `data/perks/secondary_enervate.yaml` (trigger + rank
+//! table) and `data/buffs/secondary_enervate.yaml` (the granted buff); the
+//! arcane item is `data/arcanes/secondary_enervate.yaml`
 //! (<https://wiki.warframe.com/w/Secondary_Enervate>). Terminology per
 //! `docs/GLOSSARY.md` (flat crit chance, big crit, Hit).
 //!
@@ -20,7 +22,7 @@
 //! - Rank only changes `reset_after_big_crits` (1 at rank 0 .. 6 at rank 5);
 //!   the per-stack flat crit chance is 10% at every rank.
 //!
-//! Open questions when calibrating (see the JSON `verification.notes`):
+//! Open questions when calibrating (see the data files' `verification` notes):
 //! - Whether a hit's own stack survives when that same hit triggers the reset
 //!   (this impl gains the stack first, then resets — to confirm).
 //! - Whether the 30/s cap is a min-interval or a rolling window (min-interval).

@@ -86,8 +86,8 @@ contribution(which bucket: flat crit chance / crit chance multiplier /
 scope      (Weapon / Warframe / Squad)
 ```
 
-The plan: describe common perks as **data** (`data/arcanes/*.json`, weapon
-`innate_effects`) run by a single interpreter. Genuinely weird ones (e.g. a perk
+The plan: describe common perks as **data** (`data/perks/*.yaml` +
+`data/buffs/*.yaml`) run by a single interpreter. Genuinely weird ones (e.g. a perk
 that builds on an Arctic Eximus Snow Globe without resetting) get a hand-written
 `impl Perk` behind the same trait. `secondary_enervate.rs` is currently a
 hand-written reference perk; it will inform the declarative schema.

@@ -1,0 +1,19 @@
+schema_version: 0
+id: secondary_enervate
+name: Secondary Enervate
+kind: arcane
+weapon_slot: secondary
+rarity: rare
+max_rank: 5
+arcanes_to_max: 21
+drop_chance: 0.125
+perk: secondary_enervate   # the mechanic lives in the perk + the buff it grants
+
+source:
+  url: https://wiki.warframe.com/w/Secondary_Enervate
+  retrieved: "2026-07-24"
+
+# Arcane item metadata only. Mechanic: data/perks/ + data/buffs/ secondary_enervate.
+verification:
+  status: unverified
+  needs_measurement: true

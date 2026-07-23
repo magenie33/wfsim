@@ -1,0 +1,34 @@
+schema_version: 0
+id: frenzy
+name: Frenzy
+kind: buff
+default_scope: weapon
+
+duration_seconds: 3
+refreshable: true
+stacking: false
+max_stacks: 1
+
+modifiers:
+  # x2.5 is an INDEPENDENT multiplier (wiki "+150%", explicitly multiplicative to
+  # other fire-rate sources) -- NOT the additive fire-rate-mod bucket.
+  fire_rate_multiplier: 2.5
+  # +100% ammo efficiency => infinite ammo: shots_per_ammo = 1/(1-e).
+  ammo_efficiency_bonus: 1.0
+  recoil_multiplier: -0.75
+  # +100% Toxin behaves like a Toxin mod appended at the END of the mod order,
+  # so it participates in elemental combination as the last mod.
+  injected_element:
+    type: toxin
+    amount_percent_of_base: 1.0
+    position: end_of_mod_order
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Toxocyst
+  retrieved: "2026-07-24"
+
+# Duration, refresh, and all four bonuses confirmed from wiki (complete).
+# Exact numbers still to be reproduced in Simulacrum for the golden test.
+verification:
+  status: unverified
+  needs_measurement: true

@@ -1,0 +1,34 @@
+schema_version: 0
+id: secondary_enervate
+name: Secondary Enervate
+kind: arcane
+trigger: on_hit
+grants_buff: secondary_enervate
+buff_scope: weapon
+
+# Rank only changes reset_after_big_crits (1..6); per-stack flat crit is constant
+# and lives on the buff.
+ranks:
+  - { rank: 0, reset_after_big_crits: 1 }
+  - { rank: 1, reset_after_big_crits: 2 }
+  - { rank: 2, reset_after_big_crits: 3 }
+  - { rank: 3, reset_after_big_crits: 4 }
+  - { rank: 4, reset_after_big_crits: 5 }
+  - { rank: 5, reset_after_big_crits: 6 }
+
+# What counts as a "Hit" for the on_hit trigger (source: wiki):
+hit_counting_notes:
+  - Hitscan hitting multiple enemies at once (Multishot or Punch Through) counts as 1 hit.
+  - Projectile and non-chained beam attacks hitting multiple enemies at once count as multiple hits.
+  - AoE attacks always count as 1 hit.
+  - Shotgun sidearm pellets are tied to Multishot and do not count as separate hits.
+  - Expiring Blast procs count as a hit; Blast explosions from max stacks or a kill do not.
+  - Hits on an Arctic Eximus Snow Globe build the bonus without triggering the reset (object health cannot take crits).
+
+source:
+  url: https://wiki.warframe.com/w/Secondary_Enervate
+  retrieved: "2026-07-24"
+
+# Big crit = crit tier >= 2 (source: wiki, confirmed).
+verification:
+  status: unverified
