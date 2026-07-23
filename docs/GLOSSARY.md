@@ -58,6 +58,27 @@ exact term in code. Prefer these terms over the in-game/wiki phrasing.
   > word "+crit chance" does) produces wrong numbers. Always say **flat crit
   > chance** vs **crit chance multiplier**.
 
+## Fire rate and ammo
+
+- **Fire rate mod bonus** — an **additive** fire-rate bonus from ordinary mods
+  (e.g. Gunslinger, Anemic Agility). All such bonuses share one bucket:
+  `base × (1 + Σ fire_rate_mod_bonuses)`.
+- **Fire rate multiplier** — an **independent multiplicative** factor applied on
+  its own bucket, *not* added into the fire-rate-mod bucket. Example: Dual
+  Toxocyst's **Frenzy** "+150%" is actually **×2.5** applied independently.
+  Multiple such multipliers multiply together.
+  ```
+  effective_fire_rate = base × (1 + Σ fire_rate_mod_bonuses) × Π fire_rate_multipliers
+  ```
+  > ⚠️ "+150% fire rate" from Frenzy ≠ "+150%" from a fire-rate mod. The mod goes
+  > in the additive bucket; Frenzy is its own ×2.5 multiplier. Always name which.
+- **Ammo efficiency** — reduces how often a shot consumes ammo. Bonus `e`:
+  ```
+  shots_per_ammo = 1 / (1 - e)
+  ```
+  Sources stack **additively** with each other, **except Energized Munitions**
+  which stacks multiplicatively. `e = 1.0` (e.g. Frenzy's +100%) → infinite ammo.
+
 ## Effects and stacking
 
 - **Effect** — a stateful modifier (arcane, conditional mod, combo) that lives
@@ -70,8 +91,17 @@ exact term in code. Prefer these terms over the in-game/wiki phrasing.
   Enervate caps stack gain at 30/s). Expressed in seconds internally so it is
   independent of the simulation tick rate (`fps`).
 
-## Modifier buckets
+## Modifier buckets and mod order
 
 - **Bucket** — a group of bonuses that add together before multiplying against
   other buckets (see `docs/MECHANICS.md` §2). "Flat crit chance" and "crit
-  chance multiplier" are separate buckets.
+  chance multiplier" are separate buckets; likewise "fire rate mod bonus" vs
+  "fire rate multiplier".
+- **Mod order** — the sequence of mods in the configuration is **significant**,
+  not just a set. Elemental combination depends on it (see `MECHANICS.md` §3):
+  the same two element mods in a different order can produce different combined
+  elements. The model must therefore carry an explicit, ordered mod list.
+- **Injected mod** — an Effect can inject a modifier into the mod list as if it
+  were a mod, **at a defined position**. Example: Dual Toxocyst's Frenzy adds
+  "+100% Toxin" that behaves like a Toxin mod **appended at the end of the mod
+  order**, so it combines elementally as the last mod.

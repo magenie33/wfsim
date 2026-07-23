@@ -59,7 +59,20 @@ faction damage, plus conditional buckets (combo, arcanes, weapon-specific).
 final_stat = base * (1 + Σ bonuses_in_bucket_A) * (1 + Σ bonuses_in_bucket_B) * …
 ```
 The hard part is **which bonuses share a bucket** vs form an independent
-multiplier. Getting this wrong changes results substantially.
+multiplier. Getting this wrong changes results substantially. Examples where the
+distinction matters (see [`GLOSSARY.md`](GLOSSARY.md)):
+- **Crit chance:** flat crit chance (additive absolute) vs crit chance multiplier.
+- **Fire rate:** fire-rate mod bonus (one additive bucket) vs an independent
+  fire-rate multiplier (e.g. Dual Toxocyst Frenzy "+150%" is really ×2.5 applied
+  on its own):
+  `effective_fire_rate = base × (1 + Σ mod_bonuses) × Π multipliers`.
+
+**Mod order matters.** Mods are an **ordered list**, not a set — elemental
+combination (§3) depends on the order. An Effect can inject a modifier at a
+defined position (Frenzy appends "+100% Toxin" at the **end** of the order).
+
+**Ammo efficiency.** `shots_per_ammo = 1 / (1 - e)`; sources add (except
+Energized Munitions, multiplicative); `e = 1.0` → infinite ammo.
 
 **Source:** wiki + measured. **Status:** unverified. **High-risk** (CORE.md §3).
 
@@ -76,6 +89,10 @@ multiplier. Getting this wrong changes results substantially.
 2. Mod-added primaries combine **pairwise in mod-slot order**: the first two
    compatible primaries merge into their secondary, then the next, etc.
 3. A secondary element does not further combine.
+4. Elements **injected by Effects** enter the order at their defined position —
+   e.g. Frenzy's "+100% Toxin" is appended **last**, so it combines as the final
+   mod (a Toxin here merges with a preceding lone Electricity into Corrosive,
+   etc.).
 
 **Source:** wiki + measured. **Status:** unverified. **High-risk** — order
 dependence and innate-vs-mod timing are top calibration targets (CORE.md §3).

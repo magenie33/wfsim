@@ -54,15 +54,19 @@
       "duration_seconds": 3,
       "refreshable": true,
       "modifiers": {
-        "fire_rate_multiplier": 1.5,
-        "ammo_efficiency": 1.0,
+        "fire_rate_multiplier": 2.5,
+        "ammo_efficiency_bonus": 1.0,
         "recoil_multiplier": -0.75,
-        "added_toxin_percent": 1.0
+        "injected_element": {
+          "type": "toxin",
+          "amount_percent_of_base": 1.0,
+          "position": "end_of_mod_order"
+        }
       },
-      "description": "On headshot: +150% fire rate (multiplicative), infinite ammo (+100% ammo efficiency), -75% recoil, +100% Toxin damage, for 3s (refreshable).",
+      "description": "On headshot for 3s (refreshable): fire rate x2.5 (an INDEPENDENT multiplier, NOT the additive fire-rate-mod bucket; wiki '+150%' == x2.5); +100% ammo efficiency => infinite ammo via shots_per_ammo = 1/(1-e); -75% recoil; +100% Toxin injected as a Toxin mod appended at the END of the mod order (participates in elemental combination as the last mod). Terminology per docs/GLOSSARY.md.",
       "verification": {
         "status": "unverified",
-        "notes": "Wiki says the buff triggers on 'achieving a headshot'; older versions triggered on headshot KILLS -- confirm the exact trigger. '+100% Toxin damage' base is ambiguous (percent of base damage added as Toxin, vs doubling existing Toxin) -- confirm. Fire rate +150% is multiplicative on base fire rate."
+        "notes": "Confirm trigger: wiki says 'achieving a headshot'; older versions triggered on headshot KILLS. Fire-rate multiplier is x2.5 as its own bucket (confirmed distinct from fire-rate mods). Toxin behaves like a +100% Toxin mod appended last (per user). All values still need Simulacrum measurement."
       }
     }
   ],
