@@ -89,10 +89,12 @@ Energized Munitions, multiplicative); `e = 1.0` → infinite ammo.
 2. Mod-added primaries combine **pairwise in mod-slot order**: the first two
    compatible primaries merge into their secondary, then the next, etc.
 3. A secondary element does not further combine.
-4. Elements **injected by Effects** enter the order at their defined position —
+4. Elements **injected by a buff** enter the order at their defined position —
    e.g. Frenzy's "+100% Toxin" is appended **last**, so it combines as the final
-   mod (a Toxin here merges with a preceding lone Electricity into Corrosive,
-   etc.).
+   mod. It is **additive with elemental mods** and combines with them: with a
+   lone Heat mod equipped it yields Gas; if the build already produces a combined
+   element containing Toxin (e.g. Corrosive), the injected Toxin is added to that
+   element's damage instead. (Source: wiki, Dual Toxocyst Frenzy.)
 
 **Source:** wiki + measured. **Status:** unverified. **High-risk** — order
 dependence and innate-vs-mod timing are top calibration targets (CORE.md §3).

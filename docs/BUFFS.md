@@ -67,7 +67,7 @@ struct Buff { id, scope, stacks, expiry_secs: Option<f64>, contributions }
 ```
 
 `Contributions` has one field per **additive** bucket (currently
-`flat_critical_chance`; grows as buffs land). Multiplicative buckets (e.g. an
+`flat_crit_chance`; grows as buffs land). Multiplicative buckets (e.g. an
 independent fire-rate multiplier) are *not* summed here — the mod-resolution
 layer (layer [1]) combines buckets by their real rules. `expiry_secs = None`
 means "until reset/removed" (Secondary Enervate); `Some(t)` means a timed buff

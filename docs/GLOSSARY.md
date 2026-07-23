@@ -1,13 +1,18 @@
 # wfsim — Glossary (Internal Terminology)
 
-Official/wiki wording is inconsistent and often imprecise (e.g. "+crit chance"
-can mean two mathematically different things). This file defines **one precise
-vocabulary** that the whole project uses — in code identifiers, comments, data
-field names, and docs. When a source term is ambiguous, we map it to a precise
-term here and use ours everywhere.
+**Default to wiki terminology.** We stay as close to the wiki's words as
+possible — same concept names (Crit Chance, Status Chance, Fire Rate, Punch
+Through, Multishot, Shot Type, Big Crit, Ammo Efficiency, headshot) — so the
+project reads the way the community talks. We keep snake_case and unit suffixes
+in code/data (`crit_chance`, `range_m`, `reload_seconds`).
 
-Rule: if you introduce a new game concept, define it here first, then use that
-exact term in code. Prefer these terms over the in-game/wiki phrasing.
+**Diverge only to disambiguate.** The wiki is sometimes imprecise (e.g. "+crit
+chance" can mean two mathematically different things). Only there do we introduce
+a sharper term (like *flat crit chance* vs *crit chance multiplier*), define it
+here, and use it everywhere.
+
+Rule: if you introduce a game concept, define it here first, then use that exact
+term in code. Prefer the wiki's word unless it is ambiguous.
 
 ---
 
@@ -32,6 +37,13 @@ exact term in code. Prefer these terms over the in-game/wiki phrasing.
 
   These rules govern how many `Hit` events the timeline emits per Shot; they are
   a hit-resolution ([`engine`] layer [6]) concern.
+- **Shot type** — how a Shot reaches the target: **Hitscan** (instant),
+  **Projectile** (travels), or **Beam**. Drives Hit counting (above) and
+  ballistics (layer [6]).
+- **Headshot** — a hit on the **head** hitbox specifically. Distinct from a
+  general **weakspot** (any highlighted weak point, e.g. a MOA backpack, or a
+  spot created by Sonar / Detect Vulnerability). Some perks require a true
+  headshot, not any weakspot (e.g. Frenzy), and ignore hits on corpses.
 
 ## Critical hits
 

@@ -11,7 +11,7 @@ max_stacks: null
 rate_limit_hz: 30
 
 per_stack_modifiers:
-  flat_critical_chance: 0.10   # absolute +10 points per stack, not scaled by base
+  flat_crit_chance: 0.10   # absolute +10 points per stack, not scaled by base
 
 reset:
   counter: big_crit

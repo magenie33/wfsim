@@ -2,7 +2,9 @@
 
 Versioned game data — the "database". Data is **normalized** so anything reusable
 is defined once and referenced by `id`, never inlined/duplicated. Terminology
-follows [`../docs/GLOSSARY.md`](../docs/GLOSSARY.md).
+follows [`../docs/GLOSSARY.md`](../docs/GLOSSARY.md); how to fetch data in bulk
+from the wiki's structured modules is in
+[`../docs/DATA_SOURCES.md`](../docs/DATA_SOURCES.md).
 
 ## Reference graph
 

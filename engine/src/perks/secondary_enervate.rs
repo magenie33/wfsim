@@ -120,7 +120,7 @@ impl Perk for SecondaryEnervate {
                 stacks,
                 expiry_secs: None,
                 contributions: Contributions {
-                    flat_critical_chance: stacks as f64 * self.flat_crit_per_stack,
+                    flat_crit_chance: stacks as f64 * self.flat_crit_per_stack,
                 },
             });
         }
@@ -156,7 +156,7 @@ mod tests {
             e.on_event(&Event::Hit { big_crit: false }, i as f64 * STEP, &mut bar);
         }
         assert_eq!(stacks(&bar), 3);
-        assert!(approx(bar.total_contributions().flat_critical_chance, 0.30));
+        assert!(approx(bar.total_contributions().flat_crit_chance, 0.30));
     }
 
     #[test]
@@ -198,7 +198,7 @@ mod tests {
         // 6th big crit fills the counter: buff resets and leaves the bar.
         e.on_event(&Event::Hit { big_crit: true }, 5.0 * STEP, &mut bar);
         assert!(bar.get(BUFF_ID).is_none());
-        assert!(approx(bar.total_contributions().flat_critical_chance, 0.0));
+        assert!(approx(bar.total_contributions().flat_crit_chance, 0.0));
     }
 
     #[test]

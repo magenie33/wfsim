@@ -3,46 +3,70 @@ id: dual_toxocyst
 name: Dual Toxocyst
 slot: secondary
 class: dual_pistols
+grip_type: DUAL_GUN_GUN
 mastery_rank: 11
+max_rank: 30
 has_incarnon: true
 
-source:
-  url: https://wiki.warframe.com/w/Dual_Toxocyst
-  retrieved: "2026-07-24"
+# Weapon-level metadata (from the wiki data module).
+accuracy: 16
+disposition: 1.35            # riven disposition
+polarities: [madurai, naramon]
+exilus_polarity: naramon
+riven_family: Dual Toxocyst
+traits: [infested]
+conclave: true
+introduced: "18.5"           # Update 18.5 (2016-03-04)
+internal_name: /Lotus/Weapons/Infested/Pistols/InfVomitGun/InfVomitGunWep
+ammo_type: secondary
+ammo_max: 72
+ammo_pickup: 40
+magazine: 12
+reload_seconds: 2.35
+incarnon_charge_gain: 30     # gauge gain per qualifying hit
 
+# Frenzy is delivered as an innate "default upgrade" mod (headshot -> fire rate);
+# modeled as the `frenzy` perk. See the `perks` field below.
+default_upgrades:
+  - /Lotus/Weapons/Infested/Pistols/InfVomitGun/FireRateOnHeadshotPistolMod
+
+# Forms map to the source's Attacks array: base = Normal Attack, incarnon =
+# Incarnon Form. Each form carries its own combat stats.
 forms:
   - id: base
-    name: Dual Toxocyst
+    name: Normal Attack
     trigger: semi_auto
+    shot_type: hitscan
     fire_rate: 1.0
     multishot: 1.0
-    magazine: 12
-    reload_seconds: 2.35
-    ammo_max: 72
-    critical_chance: 0.05
-    critical_multiplier: 2.0
+    ammo_cost: 1
+    crit_chance: 0.05
+    crit_multiplier: 2.0
     status_chance: 0.37
+    punch_through_m: 0.0
     range_m: 300
-    spread_deg: { base: 6.25, min: 0.50, max: 12.00 }
+    spread_deg: { min: 0.50, max: 12.00 }
     damage: { impact: 7.5, puncture: 60.0, slash: 7.5 }   # total 75
 
   - id: incarnon
-    name: Dual Toxocyst (Incarnon)
+    name: Incarnon Form
     trigger: auto
+    shot_type: hitscan
     fire_rate: 4.5
-    multishot: 1.0          # not stated by wiki; assumed 1.0 -- confirm
-    magazine: 270           # 270 charges, ~30 rounds per shot-charge -- confirm
-    reload_seconds: null    # not captured -- fill
-    ammo_max: null
-    critical_chance: 0.11
-    critical_multiplier: 3.0
+    multishot: 1.0
+    ammo_cost: 1
+    incarnon_charges: 270        # this form's "magazine" (charges, not ammo)
+    reload_seconds: null         # uses Incarnon charges, no reload
+    crit_chance: 0.11
+    crit_multiplier: 3.0
     status_chance: 0.43
+    punch_through_m: 0.0
     range_m: 1000
-    spread_deg: { base: 6.25, min: 0.50, max: 12.00 }
+    spread_deg: { min: 0.50, max: 12.00 }
     damage: { impact: 15.0, puncture: 37.5, slash: 22.5 }   # total 75
     activation: >-
-      Weakpoint hits charge the Incarnon gauge; 9 weakpoint hits fill it.
-      Alt Fire transmutes into the Incarnon form.
+      Weakpoint hits charge the Incarnon gauge; Alt Fire transmutes into the
+      Incarnon form.
 
 # Weapon passive(s), referenced by perk id (see data/perks/). The Frenzy perk
 # grants the Frenzy buff on headshot.
@@ -80,9 +104,14 @@ incarnon_evolutions:
       - name: Ripper Rounds
         effect: "+3 punch through for 7s on kill."
 
-# Base/Incarnon stats transcribed from wiki. To fill/confirm: Incarnon reload,
-# ammo/multishot, charge consumption. All per-hit damage, crit, status need
-# Simulacrum confirmation.
+source:
+  url: https://wiki.warframe.com/w/Module:Weapons/data/secondary
+  note: Base and Incarnon stats and all metadata are from the wiki's structured Lua data module (authoritative datamined values), not a page summary.
+  retrieved: "2026-07-24"
+
+# Base stats now come from the authoritative data module. Still needs a golden
+# test for the full pipeline; the Incarnon-evolution effects are raw text pending
+# classification.
 verification:
   status: unverified
   needs_measurement: true

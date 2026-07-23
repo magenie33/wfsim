@@ -44,14 +44,14 @@ pub enum BuffScope {
 pub struct Contributions {
     /// Flat crit chance: an absolute percentage-point bonus (0.10 == +10 pts),
     /// not scaled by base. See `docs/GLOSSARY.md`.
-    pub flat_critical_chance: f64,
+    pub flat_crit_chance: f64,
 }
 
 impl std::ops::Add for Contributions {
     type Output = Contributions;
     fn add(self, other: Contributions) -> Contributions {
         Contributions {
-            flat_critical_chance: self.flat_critical_chance + other.flat_critical_chance,
+            flat_crit_chance: self.flat_crit_chance + other.flat_crit_chance,
         }
     }
 }
