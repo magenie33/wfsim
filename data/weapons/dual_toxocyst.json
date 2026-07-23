@@ -46,10 +46,13 @@
       "activation": "Weakpoint hits charge the Incarnon gauge; 9 weakpoint hits fill it. Alt Fire transmutes into the Incarnon form."
     }
   ],
-  "innate_effects": [
+  "perks": [
     {
       "id": "frenzy",
       "name": "Frenzy",
+      "kind": "weapon_passive",
+      "grants_buff": "frenzy",
+      "buff_scope": "weapon",
       "trigger": "on_headshot",
       "duration_seconds": 3,
       "refreshable": true,

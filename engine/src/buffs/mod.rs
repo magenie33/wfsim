@@ -15,6 +15,10 @@
 
 /// What a buff applies to. The HUD shows all buffs regardless of scope; scope
 /// decides where the buff's contributions are actually applied.
+///
+/// We can model this **more finely than the in-game display** — the game often
+/// collapses these into one buff icon, but we track exactly which entity a buff
+/// affects. Extend this enum as finer targets are needed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BuffScope {
     /// Applies to the specific weapon that granted it (e.g. Frenzy, Secondary
@@ -22,6 +26,10 @@ pub enum BuffScope {
     Weapon,
     /// Applies to the Warframe / player.
     Warframe,
+    /// Applies to the companion (pet / sentinel).
+    Companion,
+    /// Applies to the companion's weapon.
+    CompanionWeapon,
     /// Applies squad-wide.
     Squad,
 }

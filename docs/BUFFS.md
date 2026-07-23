@@ -26,10 +26,15 @@ Three concepts, kept distinct:
   private bookkeeping (rate-limit timers, counters) the UI does not show; the
   buff holds the visible stacks/duration.
 
-**Scope.** A buff's `BuffScope` (Weapon / Warframe / Squad) decides where its
-contributions actually apply — the HUD shows every buff regardless of scope, so
-"shown in the UI" ≠ "applies to this weapon". Frenzy and Secondary Enervate are
-`Weapon`-scoped.
+**Scope.** A buff's `BuffScope` (Weapon / Warframe / Companion / Companion
+weapon / Squad — extensible) decides where its contributions actually apply. The
+HUD shows every buff regardless of scope, so "shown in the UI" ≠ "applies to this
+weapon". We track the precise target and can display **more finely than the game
+HUD**. Frenzy and Secondary Enervate are `Weapon`-scoped.
+
+**Same name, two things.** A perk and the buff it grants often share a name — the
+*Frenzy perk* (Dual Toxocyst's passive) grants the *Frenzy buff*. Keep them
+distinct in speech and code.
 
 ## The core split
 

@@ -83,17 +83,25 @@ exact term in code. Prefer these terms over the in-game/wiki phrasing.
 
 The grantor and the granted are different things — keep them distinct:
 
-- **Perk** — a **held/equipped capability** (arcane, weapon passive, Incarnon
-  evolution) whose possession lets you *trigger* a buff. Holding the perk is what
-  enables the buff. E.g. Secondary Enervate and Dual Toxocyst's Frenzy are perks.
+- **Perk** — a **held/equipped capability** (arcane, weapon/Warframe **passive**,
+  Incarnon evolution) whose possession lets you *trigger* a buff. Holding the
+  perk is what enables the buff. **All passives are called perks internally** —
+  we do not use the word "passive" as a separate concept. E.g. Secondary Enervate
+  and Dual Toxocyst's Frenzy are perks.
 - **Buff** — the **runtime overlay you gain** when a perk's trigger fires. It has
   stacks, an optional duration, a scope, and the contributions it grants. It is
   what the **buff bar** shows.
+  > A perk and the buff it grants **often share a name** (the *Frenzy perk*
+  > grants the *Frenzy buff*). Warframe reuses names heavily; always say which —
+  > "perk" for the grantor, "buff" for the granted state.
 - **Buff bar** — the single container of all active buffs, mirroring the player's
-  HUD. Every buff appears here regardless of scope.
+  HUD. Every buff appears here regardless of scope. We can display **more, and
+  more finely, than the in-game HUD** (exact scope, contributions, verification
+  status).
 - **Buff scope** — what a buff applies to: **Weapon** (the granting weapon),
-  **Warframe** (the player), or **Squad**. The HUD shows a buff regardless of
-  scope, so "shown in the UI" ≠ "applies to this weapon".
+  **Warframe** (the player), **Companion**, **Companion weapon**, or **Squad** —
+  extensible. The HUD shows a buff regardless of scope, so "shown in the UI" ≠
+  "applies to this weapon"; we track the precise target.
 - **Stack** — one unit of an accumulating buff. "7 stacks of Secondary Enervate"
   = the buff has accumulated 7 units.
 - **Trigger** — the event condition that fires a perk (OnHit, OnHeadshot, OnKill,
