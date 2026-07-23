@@ -97,17 +97,32 @@ elements produced by §3. Multishot pellets each carry this vector (see §7).
 ## 5. Critical hits (pipeline layer [4])
 
 **Definition.** Critical chance can exceed 100%, producing **tiered** crits.
+Terminology per [`GLOSSARY.md`](GLOSSARY.md): **crit tier** (0 white / 1 yellow /
+2 orange / 3+ red), **big crit** = tier ≥ 2.
 
-**Formula (draft).** For critical chance `cc`:
-- Guaranteed tier `t = floor(cc)`.
-- Chance of tier `t+1` = `cc - floor(cc)`.
+**Two crit-chance buckets — do not conflate.** The word "+crit chance" hides two
+different operations:
+- **Crit chance multiplier** (e.g. Point Strike +150%) scales the base.
+- **Flat crit chance** (e.g. Secondary Enervate +10/stack) adds absolute
+  percentage points, not scaled by base.
+
+**Effective crit chance (draft).**
+```
+effective_cc = base_cc × (1 + Σ crit_chance_multipliers) + Σ flat_crit_chance
+```
+
+**Tiers (draft).** For `effective_cc`:
+- Guaranteed tier `t = floor(effective_cc)`.
+- Chance of tier `t+1` = `effective_cc - floor(effective_cc)`.
 - A tier-`k` hit multiplies damage by `1 + k*(cd - 1)`, where `cd` is the
   critical damage multiplier.
 
 Melee **combo** raises effective crit chance/damage; interaction with tiers is a
 high-risk area.
 
-**Source:** wiki + measured. **Status:** unverified. **High-risk** (CORE.md §3).
+**Source:** wiki + measured. **Status:** unverified (flat-vs-multiplier
+distinction and big-crit definition sourced from wiki; formula order and tier
+math need measurement). **High-risk** (CORE.md §3).
 
 ---
 
@@ -137,7 +152,20 @@ range/damage falloff; ballistics/projectile travel; hit chance; AoE radius and
 falloff; headshot multiplier; punch-through. AoE self-damage/falloff and whether
 headshots can crit are known edge cases.
 
-**Source:** wiki + measured. **Status:** unverified. **High-risk** (CORE.md §3).
+**How many Hits a Shot produces (source: wiki).** A **Hit** (the on-hit-effect
+trigger, per [`GLOSSARY.md`](GLOSSARY.md)) is not the same as a Multishot
+instance or an enemy touched, and the count is weapon-archetype dependent:
+- Hitscan hitting multiple enemies at once (Multishot / Punch Through) → 1 Hit.
+- Projectile / non-chained beam hitting multiple enemies at once → multiple Hits.
+- AoE explosion → 1 Hit.
+- Shotgun-sidearm pellets (tied to Multishot) → not separate Hits.
+
+This governs how many `Hit` events the timeline emits per Shot, which drives
+on-hit effects (e.g. Secondary Enervate).
+
+**Source:** wiki + measured. **Status:** unverified (hit-counting rules sourced
+from wiki; falloff/ballistics/AoE math need measurement). **High-risk**
+(CORE.md §3).
 
 ---
 
