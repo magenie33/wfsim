@@ -56,7 +56,11 @@ factions:
     electricity: 1.5
     radiation: 1.5
     viral: 0.5
-  zariman:                      # Thrax units, Void Angels
+  # Exactly three units use this column (wiki Damage/Zariman): Thrax
+  # Centurion, Thrax Legatus, Void Angel — plus their variants (Eclipse/
+  # Hollow/Lua Thrax, Deep Archimedea/Ethereal/Ravenous Void Angel), 12
+  # module entries total, all via FactionDamageOverride.
+  zariman:
     void: 1.5
   scaldra:
     impact: 1.5
