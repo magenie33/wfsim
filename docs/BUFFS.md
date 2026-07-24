@@ -44,15 +44,21 @@ philosophy (2026-07-24): *a proc is only a trigger event; the entity is a
 
 ```
 player side:  Perk   --trigger-->  Buff    in the player's BuffBar
-enemy  side:  proc   --trigger-->  Debuff  in the target's bar
+enemy  side:  proc   --trigger-->  Debuff  in the target's DebuffBar
 ```
+
+The container on the target is named **`DebuffBar`** (decision 2026-07-24)
+— same machinery as `BuffBar` (stack tracking, per-stack expiry,
+contribution snapshots), one per enemy, rendered in the arena UI as the
+enemy's status icon row.
 
 - A **debuff** has the same shape as a buff: stacks, per-stack duration,
   overflow policy (e.g. Stagger: 5 stacks, 6 s each, 6th proc replaces the
   oldest), per-stack modifiers, caps, conditions. Stored in
   `data/status_effects/`, mirroring `data/buffs/`.
 - The target-side pipeline layers read a **contribution snapshot from the
-  target's bar** exactly like the weapon pipeline reads the player's:
+  target's `DebuffBar`** exactly like the weapon pipeline reads the player's
+  `BuffBar`:
   armor reduction (Corrosive), damage-taken multipliers per pool (Viral →
   health, Magnetic → shields/overguard), slow / crit-received (Cold),
   Parazon threshold (Impact/Stagger), etc.

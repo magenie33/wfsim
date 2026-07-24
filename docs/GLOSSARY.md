@@ -27,6 +27,9 @@ itself carries a wiki banner asking "Stagger or Knockback?"). Convention:
   datamined `internal_name` (e.g. `PT_KNOCKBACK`) is always recorded.
 - One entry per proc in `data/status_effects/`; code refers to procs by the
   canonical `id` only.
+- **Debuff / DebuffBar** — a proc's effect is a *debuff* on the target,
+  held in the target's **`DebuffBar`** — the exact counterpart of the
+  player's `BuffBar` (see BUFFS.md §Debuffs).
 
 ## Firing and hits
 
