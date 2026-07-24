@@ -27,6 +27,7 @@ item  ──references──▶  perk  ──grants_buff──▶  buff
 | `arcanes/` | arcane **items** | `rarity`, `max_rank`, `arcanes_to_max`, `drop_chance`, `perk` |
 | `weapons/` | weapons | `forms` (multi-form), `perks` (perk id list), `incarnon_evolutions` |
 | `mods/` | mods | (tbd) |
+| `status_effects/` | one entry per status effect (proc), keyed by canonical name from the damage type's dedicated wiki page; official aliases recorded (`aliases`, `internal_name`) | `damage_type`, `duration_seconds`, `max_stacks`, `stack_overflow`, `effects`, `railjack_variant` |
 | `enemies/` | enemies (loaded by `engine::enemy_data`; `custom/` holds synthetic test targets) | `stats` (base values at `base_level`), `body_parts` (multiplier / `is_head` / `crit_bonus`; aim weights are scenario-side), `scaling_faction`, `can_be_eximus`, `faction_damage_override`, `synthetic`, raw `mechanics` |
 | `factions/` | faction damage modifiers (post-U36: x1.5 vulnerable / x0.5 resistant, faction-wide) | `factions.<id>.vulnerable/resistant`, `special` (Object, Overguard) |
 

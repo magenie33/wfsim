@@ -16,6 +16,18 @@ term in code. Prefer the wiki's word unless it is ambiguous.
 
 ---
 
+## Status effect naming
+
+Official proc names are inconsistent across sources (the in-game UI, the
+Damage overview table, and the per-type pages disagree; the Impact page
+itself carries a wiki banner asking "Stagger or Knockback?"). Convention:
+
+- **Canonical name = the damage type's dedicated wiki page** (e.g. Impact →
+  **Stagger**). Every other official name goes into `aliases`, and the
+  datamined `internal_name` (e.g. `PT_KNOCKBACK`) is always recorded.
+- One entry per proc in `data/status_effects/`; code refers to procs by the
+  canonical `id` only.
+
 ## Firing and hits
 
 - **Shot** — one activation of the weapon's trigger: the rounds produced by a
