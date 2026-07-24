@@ -205,6 +205,20 @@ pub fn pool() -> Vec<ModDef> {
             None,
             vec![CombinedElement(Magnetic, 0.60), CritDamage(0.40)],
         ),
+        m(
+            "anemic_agility",
+            9,
+            Naramon,
+            None,
+            vec![FireRate(0.90), BaseDamage(-0.15)],
+        ),
+        m(
+            "accelerated_isotope",
+            7,
+            Madurai,
+            None,
+            vec![CombinedElement(Radiation, 0.60), FireRate(0.40)],
+        ),
     ]
 }
 
@@ -444,7 +458,7 @@ pub struct Scenario {
     pub duration_secs: f64,
     /// Secondary Enervate equipped (the user's chosen arcane). Fixed
     /// equipment, NOT a search dimension.
-    pub arcane_enervate: bool,
+    pub arcane: wfsim_engine::dummy::Arcane,
     /// Run the REAL Incarnon two-form cycle (full gauge start → dump →
     /// revert → rebuild 9 weakpoint charges → transmute → …) instead of
     /// the locked-gauge pseudo-reload model. Needs candidates enumerated
@@ -473,7 +487,7 @@ pub fn evaluate(c: &Candidate, s: &Scenario, runs: u32, seed: u64) -> Summary {
             s.duration_secs,
         )
     };
-    params.arcane_enervate = s.arcane_enervate;
+    params.arcane = s.arcane;
     monte_carlo(&params, runs, seed)
 }
 
@@ -544,9 +558,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn pool_has_23_mods_with_family_exclusivity() {
+    fn pool_has_25_mods_with_family_exclusivity() {
         let p = pool();
-        assert_eq!(p.len(), 23);
+        assert_eq!(p.len(), 25);
         let diffusions = p
             .iter()
             .filter(|m| m.family == Some("barrel_diffusion"))
@@ -556,8 +570,8 @@ mod tests {
 
     #[test]
     fn canonical_enumeration_counts_match_the_generating_function() {
-        // Families (3,3,2,2,2 members) + 11 singles, choose 8:
-        // coefficient of x^8 in (1+3x)^2 (1+2x)^3 (1+x)^11 = 155,727.
+        // Families (3,3,2,2,2 members) + 13 singles, choose 8:
+        // coefficient of x^8 in (1+3x)^2 (1+2x)^3 (1+x)^13 = 424,281.
         let p = pool();
         let base = WeaponBase::dual_toxocyst_incarnon(true);
         let (cands, stats) = enumerate_candidates(
@@ -569,7 +583,7 @@ mod tests {
             &dual_toxocyst_innate_slots(),
             &Constraints::default(),
         );
-        assert_eq!(stats.subsets, 155_727, "subset count");
+        assert_eq!(stats.subsets, 424_281, "subset count");
         assert_eq!(
             cands.len() as u64 + stats.deduped,
             stats.order_variants,

@@ -1,0 +1,27 @@
+id: secondary_deadhead
+name: Secondary Deadhead
+kind: arcane
+slot: secondary_arcane
+max_rank: 5
+
+# On PRECISION HEADSHOT KILL: +120% damage per stack (max 3 = +360%),
+# 24 s per stack. Decay: lose ONE stack and reset the timer (Galvanized-
+# style graceful decay). The damage bonus is ADDITIVE with base-damage
+# mods (Hornet Strike bucket) - it therefore also scales ModifiedBase
+# (DoT payloads, elemental amounts).
+trigger: on_headshot_kill
+buff:
+  per_stack_base_damage: 1.20
+  max_stacks: 3
+  duration_seconds: 24
+  decay: lose_one_stack_and_reset_duration
+  bucket: base_damage
+
+# Rank-5 passives (unconditional while equipped):
+passives:
+  headshot_multiplier_bonus: 0.30   # additive with Prowl-type bonuses
+  recoil: -0.50                     # not a damage bucket
+
+source:
+  url: https://wiki.warframe.com/w/Secondary_Deadhead
+  retrieved: "2026-07-24"

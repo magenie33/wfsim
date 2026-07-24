@@ -52,8 +52,8 @@ fn main() {
             .expect("valid target"),
         body_parts: spec.aim_parts(&[("head", 1.0)]).expect("head aim"),
         duration_secs: 60.0,
-        // The chosen loadout's arcane is EQUIPPED (fixed, not searched).
-        arcane_enervate: true,
+        // Overwritten per arcane in the comparison loop below.
+        arcane: wfsim_engine::dummy::Arcane::Enervate,
         // The REAL Incarnon cycle (user flow): full gauge start -> dump ->
         // revert 1.0 s -> rebuild 9 weakpoint charges in base form ->
         // transmute 2.35 s -> repeat. Frenzy locked Permanent (chosen
@@ -111,99 +111,126 @@ fn main() {
             (1000, 24, true),
         ]
     };
-    let mut alive: Vec<usize> = (0..cands.len()).collect();
-    let mut last: Vec<(usize, wfsim_engine::dummy::Summary)> = Vec::new();
-    for (round, &(runs, keep, by_kills)) in rounds.iter().enumerate() {
-        let t = Instant::now();
-        let summaries = evaluate_batch(&cands, &alive, &scenario, runs, 0xDEAD_BEEF + round as u64);
-        let mut scored: Vec<(usize, wfsim_engine::dummy::Summary)> =
-            alive.iter().copied().zip(summaries).collect();
-        // Kill rounds rank by kill PROGRESS: kills + the depleted fraction
-        // of the final target's pool (partial credit, no step function).
-        scored.sort_by(|a, b| {
-            let ka = if by_kills {
-                a.1.mean_kill_progress
-            } else {
-                a.1.mean_effective_damage
+    use wfsim_engine::dummy::Arcane;
+    let mut champions: Vec<(Arcane, String, f64)> = Vec::new();
+    for arcane in [Arcane::Enervate, Arcane::Deadhead, Arcane::CascadiaFlare] {
+        let mut scenario = scenario.clone();
+        scenario.arcane = arcane;
+        println!();
+        println!("################ ARCANE: {arcane:?} ################");
+        let mut alive: Vec<usize> = (0..cands.len()).collect();
+        let mut last: Vec<(usize, wfsim_engine::dummy::Summary)> = Vec::new();
+        for (round, &(runs, keep, by_kills)) in rounds.iter().enumerate() {
+            let t = Instant::now();
+            let summaries =
+                evaluate_batch(&cands, &alive, &scenario, runs, 0xDEAD_BEEF + round as u64);
+            let mut scored: Vec<(usize, wfsim_engine::dummy::Summary)> =
+                alive.iter().copied().zip(summaries).collect();
+            // Kill rounds rank by kill PROGRESS: kills + the depleted fraction
+            // of the final target's pool (partial credit, no step function).
+            scored.sort_by(|a, b| {
+                let ka = if by_kills {
+                    a.1.mean_kill_progress
+                } else {
+                    a.1.mean_effective_damage
+                };
+                let kb = if by_kills {
+                    b.1.mean_kill_progress
+                } else {
+                    b.1.mean_effective_damage
+                };
+                kb.total_cmp(&ka)
+            });
+            scored.truncate(keep);
+            println!(
+                "[round {}] {} candidates x {} runs ({}) -> keep {} in {:.1?}; best {}",
+                round + 1,
+                alive.len(),
+                runs,
+                if by_kills { "kills" } else { "eff dmg" },
+                scored.len(),
+                t.elapsed(),
+                if by_kills {
+                    format!("{:.2} kill score", scored[0].1.mean_kill_progress)
+                } else {
+                    format!("{:.3e} eff", scored[0].1.mean_effective_damage)
+                }
+            );
+            alive = scored.iter().map(|(i, _)| *i).collect();
+            last = scored;
+        }
+
+        println!();
+        println!("=== FINAL LEADERBOARD (1000 x 60 s, mean kill score = kills + partial) ===");
+        for (rank, (ci, s)) in last.iter().take(10).enumerate() {
+            let c = &cands[*ci];
+            let names: Vec<&str> = c.ordered.iter().map(|&i| p[i].id).collect();
+            let vec_desc: Vec<String> = c
+                .panel
+                .damage
+                .iter_nonzero()
+                .map(|(t, v)| format!("{t:?} {v:.0}"))
+                .collect();
+            println!(
+                "#{:<2} score {:.3} (kills {:.3} ± {:.3}, min {} max {}) | eff DPS {:.3e} | {:.1} transforms",
+                rank + 1,
+                s.mean_kill_progress,
+                s.mean_kills,
+                s.std_kills,
+                s.min_kills,
+                s.max_kills,
+                s.effective_dps,
+                s.mean_transforms
+            );
+            println!("    mods: {}", names.join(", "));
+            let co_desc = match (&c.panel.co_stack, c.panel.co_per_type) {
+                (Some(s), _) => format!(
+                    "CO {:.0}%/type x{} earned (eff {:.0}%)",
+                    s.per_stack * 100.0,
+                    s.max_stacks,
+                    c.panel.co_base_fraction * 100.0
+                ),
+                (None, co) if co > 0.0 => format!("CO/type +{:.0}%", co * 100.0),
+                _ => "no CO".into(),
             };
-            let kb = if by_kills {
-                b.1.mean_kill_progress
-            } else {
-                b.1.mean_effective_damage
+            let ms_desc = match &c.panel.ms_stack {
+                Some(s) => format!(
+                    "{:.2}+{:.1}x{} earned",
+                    c.panel.multishot, s.per_stack, s.max_stacks
+                ),
+                None => format!("{:.2}", c.panel.multishot),
             };
-            kb.total_cmp(&ka)
-        });
-        scored.truncate(keep);
-        println!(
-            "[round {}] {} candidates x {} runs ({}) -> keep {} in {:.1?}; best {}",
-            round + 1,
-            alive.len(),
-            runs,
-            if by_kills { "kills" } else { "eff dmg" },
-            scored.len(),
-            t.elapsed(),
-            if by_kills {
-                format!("{:.2} kill score", scored[0].1.mean_kill_progress)
-            } else {
-                format!("{:.3e} eff", scored[0].1.mean_effective_damage)
-            }
-        );
-        alive = scored.iter().map(|(i, _)| *i).collect();
-        last = scored;
+            println!(
+                "    panel: {} | cc {:.1}% cd {:.2}x sc {:.1}% fr {:.2} ms {} | {} | {} forma, {}/60",
+                vec_desc.join(" / "),
+                c.panel.crit_chance * 100.0,
+                c.panel.crit_damage,
+                c.panel.status_chance * 100.0,
+                c.panel.fire_rate,
+                ms_desc,
+                co_desc,
+                c.plan.forma_used,
+                c.plan.total_drain
+            );
+        }
+
+        let (ci, sbest) = &last[0];
+        champions.push((
+            arcane,
+            cands[*ci]
+                .ordered
+                .iter()
+                .map(|&i| p[i].id)
+                .collect::<Vec<_>>()
+                .join(", "),
+            sbest.mean_kill_progress,
+        ));
     }
 
     println!();
-    println!("=== FINAL LEADERBOARD (1000 x 60 s, mean kill score = kills + partial) ===");
-    for (rank, (ci, s)) in last.iter().take(10).enumerate() {
-        let c = &cands[*ci];
-        let names: Vec<&str> = c.ordered.iter().map(|&i| p[i].id).collect();
-        let vec_desc: Vec<String> = c
-            .panel
-            .damage
-            .iter_nonzero()
-            .map(|(t, v)| format!("{t:?} {v:.0}"))
-            .collect();
-        println!(
-            "#{:<2} score {:.3} (kills {:.3} ± {:.3}, min {} max {}) | eff DPS {:.3e} | {:.1} transforms",
-            rank + 1,
-            s.mean_kill_progress,
-            s.mean_kills,
-            s.std_kills,
-            s.min_kills,
-            s.max_kills,
-            s.effective_dps,
-            s.mean_transforms
-        );
-        println!("    mods: {}", names.join(", "));
-        let co_desc = match (&c.panel.co_stack, c.panel.co_per_type) {
-            (Some(s), _) => format!(
-                "CO {:.0}%/type x{} earned (eff {:.0}%)",
-                s.per_stack * 100.0,
-                s.max_stacks,
-                c.panel.co_base_fraction * 100.0
-            ),
-            (None, co) if co > 0.0 => format!("CO/type +{:.0}%", co * 100.0),
-            _ => "no CO".into(),
-        };
-        let ms_desc = match &c.panel.ms_stack {
-            Some(s) => format!(
-                "{:.2}+{:.1}x{} earned",
-                c.panel.multishot, s.per_stack, s.max_stacks
-            ),
-            None => format!("{:.2}", c.panel.multishot),
-        };
-        println!(
-            "    panel: {} | cc {:.1}% cd {:.2}x sc {:.1}% fr {:.2} ms {} | {} | {} forma, {}/60",
-            vec_desc.join(" / "),
-            c.panel.crit_chance * 100.0,
-            c.panel.crit_damage,
-            c.panel.status_chance * 100.0,
-            c.panel.fire_rate,
-            ms_desc,
-            co_desc,
-            c.plan.forma_used,
-            c.plan.total_drain
-        );
+    println!("=== ARCANE COMPARISON (each arcane's best build, kill score) ===");
+    for (a, mods, score) in &champions {
+        println!("{a:?}: {score:.3} | {mods}");
     }
     println!("[total] {:.1?}", t0.elapsed());
 }

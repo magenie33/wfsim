@@ -77,6 +77,34 @@ impl BuffLock {
     }
 }
 
+/// The equipped secondary arcane. All stacking arcane buffs start FULL
+/// (user setting) and then run on their own mechanics.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Arcane {
+    None,
+    /// +10% flat crit chance per hit stack; resets after 6 big crits.
+    Enervate,
+    /// On precision headshot kill: +120% BASE damage per stack (max 3,
+    /// 24 s, Galvanized-style one-stack decay); passive +30% headshot
+    /// multiplier (data/arcanes/secondary_deadhead.yaml).
+    Deadhead,
+    /// On applying a Heat status: +12% BASE damage per stack (max 40,
+    /// one shared 10 s timer, ALL stacks drop on timeout)
+    /// (data/arcanes/cascadia_flare.yaml).
+    CascadiaFlare,
+}
+
+const DEADHEAD_SPEC: crate::loadout::StackSpec = crate::loadout::StackSpec {
+    per_stack: 1.20,
+    max_stacks: 3,
+    duration: 24.0,
+    initial_stacks: 3,
+};
+const DEADHEAD_HEADSHOT_BONUS: f64 = 0.30;
+const FLARE_BD_PER_STACK: f64 = 0.12;
+const FLARE_MAX_STACKS: u32 = 40;
+const FLARE_DURATION: f64 = 10.0;
+
 /// The real Incarnon combat cycle (user flow, 2026-07-24): the run STARTS
 /// with a full gauge in Incarnon Form; when the charge magazine empties,
 /// revert (`revert_seconds`), fight in the base form until weakpoint hits
@@ -645,9 +673,10 @@ pub struct DummyParams {
     /// elemental portions excluded). `None` = the vector total (correct
     /// for purely physical vectors).
     pub dot_modified_base: Option<f64>,
-    /// Secondary Enervate equipped (the arcane). On by default for the
-    /// historical calibration profiles; the optimizer scenario runs bare.
-    pub arcane_enervate: bool,
+    /// The equipped secondary arcane (fixed equipment per scenario; the
+    /// optimizer compares scenarios per arcane). Enervate by default for
+    /// the historical calibration profiles.
+    pub arcane: Arcane,
     pub body_parts: Vec<BodyPart>,
     pub target: TargetParams,
     pub duration_secs: f64,
@@ -762,7 +791,7 @@ impl DummyParams {
             status_damage_mult: panel.status_damage_mult,
             elem_dot_bonus: panel.elem_dot_bonus.clone(),
             dot_modified_base: Some(panel.modified_base),
-            arcane_enervate: false,
+            arcane: Arcane::None,
             body_parts,
             target,
             duration_secs,
@@ -846,7 +875,7 @@ impl Default for DummyParams {
             status_damage_mult: 1.0,
             elem_dot_bonus: Vec::new(),
             dot_modified_base: None,
-            arcane_enervate: true,
+            arcane: Arcane::Enervate,
             body_parts: Self::humanoid_parts(),
             target: TargetParams::training_dummy(),
             duration_secs: 10.0,
@@ -1065,6 +1094,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             expiry: s.duration,
         };
     }
+    // Stacking arcanes start FULL (user setting) with a fresh timer.
+    let mut deadhead = LiveStacks {
+        stacks: DEADHEAD_SPEC.initial_stacks,
+        expiry: DEADHEAD_SPEC.duration,
+    };
+    let mut flare_stacks: u32 = FLARE_MAX_STACKS;
+    let mut flare_expiry: f64 = FLARE_DURATION;
+
     let mut r = RunResult::default();
 
     // Per-phase precomputation: the quantized vector is static per phase
@@ -1237,6 +1274,23 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // damage received, and Condition Overload's type count.
             let mit = debuffs.mitigation(t, sd);
             let cd_total = ap.crit_multiplier + debuffs.cold_cd_bonus(t);
+            // Live arcane BASE-DAMAGE stacks (Deadhead/Cascadia Flare join
+            // the Hornet Strike bucket, so they also scale ModifiedBase).
+            let arc_bd = match params.arcane {
+                Arcane::Deadhead => {
+                    DEADHEAD_SPEC.per_stack * deadhead.current(t, DEADHEAD_SPEC.duration) as f64
+                }
+                Arcane::CascadiaFlare => {
+                    if t >= flare_expiry {
+                        flare_stacks = 0; // hard reset: ALL stacks drop
+                    }
+                    FLARE_BD_PER_STACK * flare_stacks as f64
+                }
+                _ => 0.0,
+            };
+            let bd = ap.base_damage_bonus;
+            let arc_ratio = (1.0 + bd + arc_bd) / (1.0 + bd);
+            let mb_live = modded_base * arc_ratio;
             // CO per this weapon's behavior class (direct hits only):
             // (static + earned stacks) × base-effectiveness × types.
             let co_rate = ap.co_per_type
@@ -1246,17 +1300,26 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     .map_or(0.0, |s| s.per_stack * gal.co.current(t, s.duration) as f64);
             let co_total = co_rate * ap.co_base_fraction * debuffs.distinct_statuses() as f64;
             let co_mult = match ap.co_behavior {
-                // Joins the base-damage bucket: diluted by Hornet Strike.
+                // Joins the base-damage bucket: diluted by Hornet Strike,
+                // sharing the bracket with the arcane's bonus.
                 crate::loadout::CoBehavior::AdditiveWithBaseDamage => {
-                    let bd = ap.base_damage_bonus;
-                    (1.0 + bd + co_total) / (1.0 + bd)
+                    (1.0 + bd + arc_bd + co_total) / (1.0 + bd)
                 }
-                crate::loadout::CoBehavior::Independent => 1.0 + co_total,
-                crate::loadout::CoBehavior::Inert => 1.0,
+                crate::loadout::CoBehavior::Independent => arc_ratio * (1.0 + co_total),
+                crate::loadout::CoBehavior::Inert => arc_ratio,
             };
 
             let tier = roll_crit_tier(effective_cc, rng);
             let part = pick_part(&params.body_parts, rng);
+            // Deadhead's rank-5 passive: +30% headshot multiplier on true
+            // heads (additive with Prowl-type bonuses; rides the part
+            // context into DoT snapshots).
+            let head_bonus = if part.is_head && params.arcane == Arcane::Deadhead {
+                1.0 + DEADHEAD_HEADSHOT_BONUS
+            } else {
+                1.0
+            };
+            let part_factor = part.multiplier * head_bonus;
             // Wiki Critical_Hit §Critical Headshots: a crit on an eligible
             // >1x location doubles cd inside the tier formula (a cd_total
             // that INCLUDES Cold's flat bonus — freeze.yaml notes).
@@ -1267,7 +1330,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             };
             let crit_mult = 1.0 + tier as f64 * (cd - 1.0);
 
-            let raw = qtotal * part.multiplier * crit_mult * co_mult;
+            let raw = qtotal * part_factor * crit_mult * co_mult;
             let (effective, killed, broke) = target.apply(raw, &params.target, false, &mit);
             r.total_damage += raw;
             r.effective_damage += effective;
@@ -1284,6 +1347,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             }
             if killed {
                 gal.bump_on_kill(params, t);
+                // Deadhead: only HEADSHOT kills grant/refresh its stacks.
+                if part.is_head && params.arcane == Arcane::Deadhead {
+                    deadhead.on_kill(t, &DEADHEAD_SPEC);
+                }
                 // The killing pellet's procs die with the old individual;
                 // remaining pellets hit the fresh spawn.
                 debuffs = DebuffState::default();
@@ -1315,7 +1382,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 debuffs.dots.push(Dot {
                     next_tick: t + delay,
                     ticks_left: ticks,
-                    value: coeff * modded_base * bracket * sdm * crit_mult * part.multiplier,
+                    value: coeff * mb_live * bracket * sdm * crit_mult * part_factor,
                     dtype,
                     ignores_armor,
                 });
@@ -1375,12 +1442,21 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         // Singleton accumulator: add the contribution and
                         // refresh the shared clock; ticks stay anchored to
                         // the first proc (ignite.yaml).
+                        // Cascadia Flare: each applied Heat status grants
+                        // one stack and refreshes the shared timer.
+                        if params.arcane == Arcane::CascadiaFlare {
+                            if t >= flare_expiry {
+                                flare_stacks = 0;
+                            }
+                            flare_stacks = (flare_stacks + 1).min(FLARE_MAX_STACKS);
+                            flare_expiry = t + FLARE_DURATION;
+                        }
                         let contrib = DOT_COEFFICIENT
-                            * modded_base
+                            * mb_live
                             * ap.elem_bracket(DamageType::Heat)
                             * sdm
                             * crit_mult
-                            * part.multiplier;
+                            * part_factor;
                         let expiry = t + STATUS_DURATION * sd;
                         match &mut debuffs.heat {
                             Some(h) => {
@@ -1427,11 +1503,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     DamageType::Blast => {
                         debuffs.blast.push(BlastStack {
                             fuse: t + BLAST_FUSE * sd,
-                            value: BLAST_COEFFICIENT
-                                * modded_base
-                                * sdm
-                                * crit_mult
-                                * part.multiplier,
+                            value: BLAST_COEFFICIENT * mb_live * sdm * crit_mult * part_factor,
                         });
                         if debuffs.blast.len() >= TEN_STACK_CAP {
                             // Early detonation: every stack's single-target
@@ -1466,7 +1538,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             headshot: any_head,
             target_alive: true,
         });
-        if params.arcane_enervate {
+        if params.arcane == Arcane::Enervate {
             enervate.on_event(&hit, t, &mut bar);
         }
         if ap.frenzy {
@@ -2187,7 +2259,7 @@ mod tests {
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
             forced_procs: vec![forced],
-            arcane_enervate: false,
+            arcane: Arcane::None,
             body_parts: mono_body(1.0),
             ..no_status()
         }
@@ -2324,7 +2396,7 @@ mod tests {
             base_crit_chance: 1.0,
             crit_multiplier: 2.0,
             forced_procs: vec![DamageType::Cold],
-            arcane_enervate: false,
+            arcane: Arcane::None,
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -2396,7 +2468,7 @@ mod tests {
             crit_multiplier: 1.0,
             magazine_size: 2.0,
             ammo_efficiency_applies: false,
-            arcane_enervate: false,
+            arcane: Arcane::None,
             body_parts: head,
             cycle: Some(IncarnonCycle {
                 base_form: Box::new(base_form),
@@ -2460,7 +2532,7 @@ mod tests {
         let p = DummyParams {
             ms_stack: Some(spec),
             target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
-            arcane_enervate: false,
+            arcane: Arcane::None,
             crit_multiplier: 1.0,
             body_parts: mono_body(1.0),
             ..no_status()
@@ -2503,6 +2575,76 @@ mod tests {
             (s.mean_damage - 1155.0).abs() < 1e-9,
             "dmg {}",
             s.mean_damage
+        );
+    }
+
+    #[test]
+    fn deadhead_adds_base_damage_stacks_and_headshot_bonus() {
+        // Deadhead full stacks (initial): arc bd = 3 × 1.2 = 3.6 -> ratio
+        // 4.6 (bd 0); +30% headshot multiplier on the 1x head part.
+        // 10 shots × 75 × 1.3 × 4.6 = 4485. No kills, 24 s > run: no decay.
+        let p = DummyParams {
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: Arcane::Deadhead,
+            body_parts: vec![BodyPart {
+                name: "head".into(),
+                aim_weight: 1.0,
+                multiplier: 1.0,
+                is_head: true,
+                crit_bonus: false,
+            }],
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!(
+            (s.mean_damage - 4485.0).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
+    }
+
+    #[test]
+    fn cascadia_flare_hard_resets_without_fresh_heat() {
+        // Initial 40 stacks (+480% -> ×5.8), 10 s shared timer. 15 s at
+        // 1/s with the 12-round magazine: shots at 0..11, reload 2.35 s,
+        // one more at 14.35 (13 shots). Without Heat procs (forced
+        // Impact): only t < 10 boosted: 10×435 + 3×75 = 4575.
+        let starved = DummyParams {
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: Arcane::CascadiaFlare,
+            forced_procs: vec![DamageType::Impact],
+            body_parts: mono_body(1.0),
+            duration_secs: 15.0,
+            ..no_status()
+        };
+        let s = monte_carlo(&starved, 20, 5);
+        assert!(
+            (s.mean_damage - 4575.0).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
+        // Forced Heat procs refresh the shared timer every shot (the
+        // 2.35 s reload gap is well under 10 s): all 13 direct shots
+        // boosted = 13 × 435 = 5655. The Heat singleton itself also
+        // benefits (mb_live): each proc adds 0.5 × 435 = 217.5 to the
+        // tick; ticks at 1..14 carry Σ min(k,12) = 102 contributions →
+        // DoT = 22,185; total 27,840.
+        let sustained = DummyParams {
+            forced_procs: vec![DamageType::Heat],
+            ..starved
+        };
+        let s2 = monte_carlo(&sustained, 20, 5);
+        assert!(
+            (s2.mean_dot_damage - 22_185.0).abs() < 1e-9,
+            "dot {}",
+            s2.mean_dot_damage
+        );
+        assert!(
+            (s2.mean_damage - 27_840.0).abs() < 1e-9,
+            "dmg {}",
+            s2.mean_damage
         );
     }
 
