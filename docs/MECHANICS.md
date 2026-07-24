@@ -188,12 +188,37 @@ from wiki; all need measurement). **High-risk** (CORE.md §3).
 **Definition.** Each hit may inflict status effects; probability and which
 element procs are weighted, not uniform.
 
-**Rules (draft).**
-- **Status chance** per pellet is affected by multishot distribution (see §7).
-- When multiple elements coexist, each element's **proc weight** is proportional
-  to its share of the hit's elemental damage — **not** an even split.
-- **DoT** effects (Heat, Toxin, Slash, Gas, …) deal damage over time with their
-  own stack caps and durations; model each as a time series (feeds §9).
+**Rules** (wiki `Status_Effect` §Status Chance / §Damage Distribution /
+§Forced Procs / §Multishot).
+- **Per-projectile roll**: the listed status chance `SC` is the probability
+  that **each pellet individually** procs (multishot multiplies
+  opportunities, not the per-hit chance). Each enemy touched by one attack
+  rolls separately.
+- **Type is drawn only after a roll succeeds**, weighted by damage share of
+  the hit's (modded) vector: `P(type) = damage_type / total_damage`.
+- **SC > 100%**: `floor(SC)` guaranteed rolls + `frac(SC)` chance of one
+  more; **each roll's type is drawn independently** (the same type can
+  repeat within one hit).
+- **Forced procs** are guaranteed effects independent of both `SC` and the
+  damage distribution, and occur **alongside** rolled procs ("not the same
+  as 100% status chance"; DE-internal term, never shown in-game). They are
+  **weapon-data attributes declared per attack part** (e.g. Astilla:
+  direct hit forces Impact; the radial part does not).
+- Per-hit proc set = `forced_list + N typed draws`,
+  `N = floor(SC) + Bernoulli(frac(SC))`. Average procs per trigger pull
+  = `Multishot × (forced_count + SC)` (official formula).
+  Example (Astilla-like, forced Impact on direct, impact share `w`,
+  `SC ≤ 1`): P(1 Stagger stack) = `1 − SC·w`, P(2 stacks) = `SC·w`,
+  P(1 stack + another proc type) = `SC·(1−w)`; the explosion instance
+  rolls independently with its own vector.
+- **Status Vulnerability** (the proc of Void damage): +10% received status
+  chance per stack (max +100% at 10) — a DebuffBar entry that feeds back
+  into attackers' `SC`.
+- **Negative status duration** (Riven, past −100%): all duration/DoT procs
+  are nullified; instant procs still occur.
+- **DoT** effects (Heat, Toxin, Slash, Gas, …) deal damage over time with
+  their own stack caps and durations; each is a DebuffBar entry whose
+  stacks tick on the timeline (feeds §9).
 
 **Source:** wiki + measured. **Status:** unverified. **High-risk** — status
 weighting and multishot interaction are top calibration targets (CORE.md §3).
