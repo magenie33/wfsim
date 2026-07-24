@@ -155,6 +155,10 @@ numbers.
 > tests that compare per-shot numbers — without it those will never match
 > exactly.
 
+Related: per-shot **damage** quantization also exists and was changed from
+1/16 to 1/32 steps in Update 40 (undocumented, per the wiki `Damage` patch
+history). Exact mechanics not yet transcribed — same recorded-only status.
+
 **Critical headshots** (wiki `Critical_Hit` §Critical Headshots). A critical hit
 on a head/weak-point location gets an **additional 2.0x** bonus on top of the
 location multiplier and the crit damage multiplier, folded into the tier
@@ -251,19 +255,61 @@ from wiki; falloff/ballistics/AoE math need measurement). **High-risk**
 
 **Definition.** How the target reduces incoming damage.
 
-**Armor → damage reduction (draft).**
+**Faction damage modifiers (post-U36 system).** As of **Update 36** ("Jade
+Shadows", 2024-06, "Simplified Faction Resistances") the Damage-2.0
+health/armor/shield **classes no longer exist**: every enemy has plain
+Health / Armor / Shield, and damage-type vulnerabilities/resistances are
+**faction-wide**, always active regardless of armor/shield presence:
+```
+vulnerable -> x1.5 incoming    resistant -> x0.5 incoming
+```
+Full table in `data/factions/damage_modifiers.yaml` (e.g. Grineer: +Impact
++Corrosive; Corpus: +Puncture +Magnetic; Zariman: +Void only). Special
+layers: **Object** health takes no crits/status/modifiers; **Overguard** is
+neutral except x1.5 Void, blocks status spillover, and grants CC immunity.
+An enemy can carry a `FactionDamageOverride` (Thrax units count as Zariman).
+
+**Armor → damage reduction.**
 ```
 DR = armor / (armor + 300)
 damage_to_health = incoming * (1 - DR)
 ```
-The constant and curve **must be confirmed by measurement**; armor strip
-(e.g. Corrosive) modifies `armor` dynamically before this is applied.
+Corroborated by wiki `Enemy_Level_Scaling` §Armor: armor is **hard-capped at
+2,700 = 90% DR** (2700/3000 ✓); enemies that would *spawn* with < 200 armor
+get 200 (initial value only — strips can still go below). Armor strip
+(Corrosive −26%/stack to −80%, Heat −50%) modifies `armor` before this.
 
-**Shields vs health.** Shields and health may take damage-type modifiers
-differently; shield gating and bypass (Toxin) are special cases.
+**Shields vs health.** Toxin (and its DoT) bypasses shields; Magnetic amps
+damage to shields/Overguard; shield gating exists on some units. Details TBD.
 
-**Faction / type resistances.** Each enemy type and faction has weaknesses and
-resistances per damage type; enemy **level scaling** raises health/shield/armor.
+**Level scaling** (wiki `Enemy_Level_Scaling`; community-derived, DE has not
+confirmed — treat as unverified). Common structure, with `Δ = current level −
+base level` and per-stat/per-faction coefficient & exponent:
+```
+current = base × [f1(Δ)·(1−S(Δ)) + f2(Δ)·S(Δ)]
+f1/f2 = 1 + c·Δ^e   (low-level / high-level curves)
+S = smoothstep between the transition bounds:
+    S(Δ) = 3T² − 2T³,  T = (Δ − lo) / (hi − lo), clamped to [0,1]
+```
+- **Health** (transition 70–80): Grineer/Scaldra `f1: 0.015·Δ^2.12`,
+  `f2: 10.7332·Δ^0.72`; Corpus `0.015·Δ^2.12` / `13.4165·Δ^0.55`; Infested
+  `0.0225·Δ^2.12` / `16.0998·Δ^0.72`; Anarchs+Corrupted `0.015·Δ^2.1` /
+  `10.7332·Δ^0.685`; Murmur/Sentient/**Unaffiliated** `0.015·Δ^2` /
+  `10.7332·Δ^0.5`; Techrot `0.02·Δ^2.12` / `15.0998·Δ^0.7`.
+- **Shields** (70–80): Corpus `0.02·Δ^1.76` / `2·Δ^0.76`; Corrupted+Anarchs
+  `0.02·Δ^1.75` / `2·Δ^0.75`; Grineer/Sentient `0.02·Δ^1.75` / `1.6·Δ^0.75`;
+  Techrot `0.02·Δ^1.76` / `3.5·Δ^0.76`.
+- **Armor** (70–80, all factions): `0.005·Δ^1.75` / `0.4·Δ^0.75` (then the
+  2,700 cap).
+- **Overguard** (transition **45–50**, uses `x−1` not Δ): `0.0015·(x−1)^4` /
+  `260·(x−1)^0.9`. All Eximus have base Overguard 12.
+- **Damage** (dealt by enemies): default `1 + 0.015·Δ^1.55`; Grineer / Corpus
+  / Techrot use a smoothstepped pair (`0.015·Δ^1.75` below Δ=1, `0.0075·Δ^1.55`
+  above Δ=25) **and** a flat 2x on attacks (Infested: 3x).
+- **Affinity**: `1 + 0.1425·level^0.5` (×3 base for Eximus) — uses **current
+  level**, not Δ, and the result is floored.
+- Eximus units additionally replace base health/shields with level-dependent
+  boosted values (piecewise formulas in the wiki page §Health/§Shields tabs).
 
 **Source:** wiki + measured. **Status:** unverified. **High-risk** (CORE.md §3).
 

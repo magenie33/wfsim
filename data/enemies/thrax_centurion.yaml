@@ -1,0 +1,63 @@
+schema_version: 0
+id: thrax_centurion
+name: Thrax Centurion
+kind: enemy
+
+# The data module files Thrax units under `unaffiliated` with Faction "Unknown",
+# but faction-damage bonuses treat them as Zariman (FactionDamageOverride).
+faction: unknown
+faction_damage_override: zariman   # see data/factions/damage_modifiers.yaml
+type: melee
+weapons: [hespar]
+planets: [zariman_ten_zero]
+tilesets: [zariman]
+introduced: "31.5"
+
+# Base stats at base_level (scale per docs/MECHANICS.md §8 level-scaling;
+# unaffiliated faction curves).
+stats:
+  base_level: 1
+  spawn_level: 55        # level at which it first spawns
+  health: 3600
+  shield: 0
+  armor: 200
+  overguard: 15
+  affinity: 50
+
+# Module Multis: "Head: 3.0x". Standard humanoid layout; crit_bonus on the head
+# is assumed (no wiki exception listed for Thrax) — unverified.
+body_parts:
+  - name: body
+    multiplier: 1.0
+    is_head: false
+    crit_bonus: false
+  - name: head
+    multiplier: 3.0
+    is_head: true
+    crit_bonus: true
+
+# Raw wiki text, not yet modeled in the engine.
+mechanics:
+  overguard_cc_immunity: true
+  spectral_form: >-
+    Destroying the physical form reverts it into a spectral form with 40% of
+    the physical form's health. Void damage deals 10x damage to the spectral
+    form (100x while it is consuming an enemy).
+  focus_on_kill: 2500
+  attacks: >-
+    Levitates and dashes three times in quick succession spinning its Hespar
+    (inflicts Magnetic damage); can jump at its target from afar causing a
+    shockwave.
+
+source:
+  url: https://wiki.warframe.com/w/Module:Enemies/data/unaffiliated
+  note: >-
+    Stats and Multis from the wiki's structured Lua enemy data module
+    (Module:Enemies/data/unaffiliated); mechanics from the Thrax Centurion
+    page. Health/Armor/Shield classes do not exist post-U36 — resistances are
+    faction-wide (see data/factions/damage_modifiers.yaml).
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified
+  needs_measurement: true

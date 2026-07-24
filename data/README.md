@@ -27,8 +27,8 @@ item  ──references──▶  perk  ──grants_buff──▶  buff
 | `arcanes/` | arcane **items** | `rarity`, `max_rank`, `arcanes_to_max`, `drop_chance`, `perk` |
 | `weapons/` | weapons | `forms` (multi-form), `perks` (perk id list), `incarnon_evolutions` |
 | `mods/` | mods | (tbd) |
-| `enemies/` | enemies | (tbd) |
-| `factions/` | faction resistance tables | (tbd) |
+| `enemies/` | enemies | `stats` (base values at `base_level`), `body_parts` (multiplier / `is_head` / `crit_bonus`), `faction_damage_override`, raw `mechanics` |
+| `factions/` | faction damage modifiers (post-U36: x1.5 vulnerable / x0.5 resistant, faction-wide) | `factions.<id>.vulnerable/resistant`, `special` (Object, Overguard) |
 
 ## Where a parameter lives
 

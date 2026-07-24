@@ -1,0 +1,83 @@
+schema_version: 0
+id: damage_modifiers
+kind: faction_damage_modifiers
+
+# Post-U36 ("Jade Shadows", 2024-06) faction damage system. The 13 Damage-2.0
+# health/armor/shield classes (Cloned Flesh, Ferrite Armor, Proto Shield, ...)
+# were removed: every enemy now has plain Health / Armor / Shield, and damage
+# type vulnerabilities/resistances are FACTION-wide:
+#   vulnerable -> x1.5 incoming damage, resistant -> x0.5.
+# These multipliers apply at all times, regardless of armor/shield presence.
+vulnerable_multiplier: 1.5
+resistant_multiplier: 0.5
+
+factions:
+  grineer:
+    vulnerable: [impact, corrosive]
+    resistant: []
+  kuva_grineer:
+    vulnerable: [impact, corrosive]
+    resistant: [heat]
+  corpus:
+    vulnerable: [puncture, magnetic]
+    resistant: []
+  corpus_amalgam:
+    vulnerable: [electricity, magnetic]
+    resistant: [blast]
+  infested:
+    vulnerable: [slash, heat]
+    resistant: []
+  infested_deimos:
+    vulnerable: [blast, gas]
+    resistant: [viral]
+  orokin:                       # the Corrupted + Warframe Specters
+    vulnerable: [puncture, viral]
+    resistant: [radiation]
+  sentient:
+    vulnerable: [cold, radiation]
+    resistant: [corrosive]
+  narmer:
+    vulnerable: [slash, toxin]
+    resistant: [magnetic]
+  the_murmur:
+    vulnerable: [electricity, radiation]
+    resistant: [viral]
+  zariman:                      # Thrax units, Void Angels
+    vulnerable: [void]
+    resistant: []
+  scaldra:
+    vulnerable: [impact, corrosive]
+    resistant: [gas]
+  techrot:
+    vulnerable: [magnetic, gas]
+    resistant: [cold]
+  anarchs:
+    vulnerable: [impact, electricity]
+    resistant: [radiation]
+  tenno:
+    vulnerable: []
+    resistant: []
+
+# Special health layers (not factions):
+special:
+  object:
+    note: No critical hits, no status effects, no vulnerabilities/resistances.
+  overguard:
+    vulnerable: [void]          # the only other Void-vulnerable health type
+    note: >-
+      Neutral to all other damage types. No status/damage spillover to
+      shields/health beneath it; grants crowd-control immunity while active
+      (max 4 Cold procs). Magnetic status amplifies damage against it
+      (+100% first stack, +25% per further stack, max +325% at 10).
+
+source:
+  url: https://wiki.warframe.com/w/Damage/Overview_Table
+  note: >-
+    Overview table plus the per-faction pages (Damage/Grineer,
+    Damage/Zariman, ...) and Overguard page; all state the U36 "Simplified
+    Faction Resistances" values.
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified
+  needs_measurement: true
