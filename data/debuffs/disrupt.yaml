@@ -39,9 +39,16 @@ on_shield_or_overguard_break:
   # Total damage over the 6 s proc: 3% of MAX shields/overguard per
   # Magnetic stack, capped at 30% at 10 stacks.
   total_damage: 0.03 x max_pool x magnetic_stacks (cap 0.30 x max_pool)
-  # Attribution: "the weapon or ability that applied the magnetic status"
-  # (which stack's applier when sources are mixed is not specified -
-  # open question; expected: the trigger-attribution pattern).
+  # Attribution with mixed appliers (M8, open): EXPECTED = per-stack
+  # (hypothesis D) - each surviving stack contributes its 3% chunk scaled
+  # by ITS OWN applier's context, summed; the breaking weapon is
+  # irrelevant. Reasoning: "per stack" wording; Blast's radial already
+  # sums per-stack snapshots; proc instances demonstrably carry their
+  # source context (multi-weapon Bleeds tick at different values); the
+  # counter-precedents have special causes (Heat = singleton with one
+  # context slot; Frozen's reset stacks = newly created entities with no
+  # parents). The wiki's singular phrasing likely describes the
+  # single-source common case.
   scaling:
     base_damage_mods: none            # Serration does NOTHING
     status_damage_mods: applied_twice # Elementalist x1.9^2 = 3.61

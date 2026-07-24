@@ -205,6 +205,10 @@ pattern), B last stack's applier (Frozen/M7 pattern), C the
 shield-breaking hit's source, D per-stack attribution (each stack's 3%
 chunk uses its own applier — suggested by the "per stack" wording).
 Stakes: up to ~×8.7 between a modded and a bare applier.
+**Prediction: D** (per-stack) — "per stack" wording, the Blast-radial
+per-stack-snapshot precedent, and proc instances demonstrably carrying
+source context; the counter-precedents (Heat first-proc, Frozen trigger)
+both stem from special causes absent here.
 
 **Method.** Magnetic weapons M+ (heavy status-damage + faction mods) and
 M0 (bare); high-shield Corpus target. Read the post-break Electricity
