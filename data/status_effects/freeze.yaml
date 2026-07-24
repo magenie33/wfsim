@@ -64,9 +64,16 @@ railjack_variant: >-
   forge).
 
 notes: >-
-  Open question: whether the crit-headshot fold-in (2*cd - 1) doubles a
-  cd_total that already includes the Cold bonus, or only the modded cd -
-  affects headshot builds vs chilled targets; needs measurement.
+  The wiki's worked examples pin the insertion point: cd_total =
+  base_cd x (1 + cd_mods) + cold_bonus, i.e. Cold is a receiver-side
+  ABSOLUTE crit-damage increase entering before the tier formula
+  (Paris Prime: 1 + k x (2 + 0.5 - 1)). Consequently the crit-headshot
+  fold-in (2 x Total CD - 1) doubles a cd_total that INCLUDES the Cold
+  bonus - model per formula consistency; in-game spot check optional
+  (headshot increment vs unchilled should be 3 x panel x 1.0, not x 0.5).
+  Likewise DoT tick snapshots of the "modded critical multiplier" should
+  carry the Cold-inclusive tier multiplier (likely; direction B - live
+  per-tick Cold sensitivity - still unmeasured).
 
 source:
   url: https://wiki.warframe.com/w/Damage/Cold_Damage
