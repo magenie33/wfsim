@@ -304,6 +304,19 @@ pub struct DummyParams {
     pub frenzy: bool,
     /// Buffs forced permanently active regardless of triggers/expiry.
     pub locked_buffs: Vec<LockedBuff>,
+    /// Magazine size; when it runs dry a reload (below) blocks firing.
+    pub magazine_size: f64,
+    pub reload_seconds: f64,
+    /// Default: infinite reserve ammo (decision 2026-07-24). Toggle off to
+    /// simulate finite reserves - firing stops when magazine + reserve are
+    /// both dry (DoTs keep ticking).
+    pub infinite_reserve: bool,
+    /// Reserve pool, consumed by reloads when `infinite_reserve` is off.
+    pub reserve_ammo: f64,
+    /// Whether BuffBar ammo efficiency (Frenzy's +100%) reduces consumption.
+    /// False for charge-backed magazines (Incarnon) - they are outside the
+    /// ammo economy entirely.
+    pub ammo_efficiency_applies: bool,
     pub body_parts: Vec<BodyPart>,
     pub target: TargetParams,
     pub duration_secs: f64,
@@ -364,6 +377,11 @@ impl DummyParams {
             status_chance: 0.43,
             fire_rate: 4.5,
             frenzy: false,
+            // Pseudo-reload model (gauge locked full): 270 charge-backed
+            // rounds, downtime = revert + re-transmute = 2 x base reload.
+            magazine_size: 270.0,
+            reload_seconds: 4.70,
+            ammo_efficiency_applies: false,
             ..Self::default()
         }
     }
@@ -382,6 +400,11 @@ impl Default for DummyParams {
             fire_rate: 1.0,
             frenzy: false,
             locked_buffs: Vec::new(),
+            magazine_size: 12.0,
+            reload_seconds: 2.35,
+            infinite_reserve: true,
+            reserve_ammo: 72.0,
+            ammo_efficiency_applies: true,
             body_parts: Self::humanoid_parts(),
             target: TargetParams::training_dummy(),
             duration_secs: 10.0,
@@ -404,6 +427,7 @@ pub struct RunResult {
     pub headshots: u32, // hits on an `is_head` part
     pub procs: u32,     // status procs applied (all types)
     pub dot_ticks: u32, // bleed ticks that landed
+    pub reloads: u32,   // magazine reloads performed
     pub kills: u32,     // InstantRespawn deaths (0 with InfiniteHealth)
 }
 
@@ -487,9 +511,32 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     // live BuffBar fire-rate multiplier), evaluated after each shot (a buff
     // expiring mid-interval is approximated to the shot boundary).
     let mut t = 0.0f64;
+    let mut magazine = params.magazine_size;
+    let mut reserve = params.reserve_ammo;
     loop {
         if t >= params.duration_secs {
             break;
+        }
+
+        // Out of magazine: reload (blocking) or, with dry finite reserves,
+        // stop firing altogether (DoTs still drain below).
+        if magazine < 1e-9 {
+            if !params.infinite_reserve && reserve < 1e-9 {
+                break;
+            }
+            t += params.reload_seconds;
+            r.reloads += 1;
+            let refill = if params.infinite_reserve {
+                params.magazine_size
+            } else {
+                let take = params.magazine_size.min(reserve);
+                reserve -= take;
+                take
+            };
+            magazine = refill;
+            if t >= params.duration_secs {
+                break;
+            }
         }
 
         // DoT ticks scheduled before this shot land first.
@@ -507,7 +554,17 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // Crit chance: base + Enervate stacks (attacker BuffBar) + Weakened
         // stacks (target DebuffBar: flat crit chance received, weapon direct
         // damage only — which our shots are).
-        let flat_crit = bar.total_contributions().flat_crit_chance;
+        let contribs = bar.total_contributions();
+        // Ammo: consume (1 - efficiency) per shot; Frenzy's +100% efficiency
+        // zeroes consumption (unless this magazine is charge-backed).
+        let efficiency = if params.ammo_efficiency_applies {
+            contribs.ammo_efficiency.clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+        magazine -= 1.0 - efficiency;
+
+        let flat_crit = contribs.flat_crit_chance;
         let weakened_cc = WEAKENED_FLAT_CC_PER_STACK * debuffs.weakened_active(t) as f64;
         let effective_cc = params.base_crit_chance + flat_crit + weakened_cc;
         let tier = roll_crit_tier(effective_cc, rng);
@@ -623,6 +680,7 @@ pub struct Summary {
     pub effective_dps: f64,
     pub mean_dot_damage: f64,
     pub mean_procs: f64,
+    pub mean_reloads: f64,
     pub mean_kills: f64,
     pub std_kills: f64,
     pub min_kills: u32,
@@ -642,7 +700,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     let mut max = f64::NEG_INFINITY;
     let (mut shots, mut crits, mut big_crits, mut headshots) = (0u64, 0u64, 0u64, 0u64);
     let (mut effective, mut kills, mut kills_sq) = (0.0f64, 0u64, 0u64);
-    let (mut dot, mut procs) = (0.0f64, 0u64);
+    let (mut dot, mut procs, mut reloads) = (0.0f64, 0u64, 0u64);
     let (mut min_kills, mut max_kills) = (u32::MAX, 0u32);
 
     for _ in 0..runs {
@@ -654,6 +712,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         effective += r.effective_damage;
         dot += r.dot_damage;
         procs += r.procs as u64;
+        reloads += r.reloads as u64;
         kills += r.kills as u64;
         kills_sq += (r.kills as u64) * (r.kills as u64);
         min_kills = min_kills.min(r.kills);
@@ -681,6 +740,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         effective_dps: effective / n / params.duration_secs,
         mean_dot_damage: dot / n,
         mean_procs: procs as f64 / n,
+        mean_reloads: reloads as f64 / n,
         mean_kills: kills as f64 / n,
         std_kills: {
             let mean_k = kills as f64 / n;
@@ -766,6 +826,54 @@ mod tests {
         );
         assert_eq!(s.mean_dot_damage, 0.0);
         assert_eq!(s.mean_procs, 0.0);
+    }
+
+    #[test]
+    fn magazine_and_reload_cadence_is_exact() {
+        // No Frenzy: 12-round magazine at 1 shot/s, 2.35 s reloads, 30 s:
+        // shots 0..11 (12), reload -> resume 14.35..25.35 (12), reload ->
+        // resume 28.70, 29.70 (2) = 26 shots, 2 reloads.
+        let p = DummyParams {
+            duration_secs: 30.0,
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 20, 4);
+        assert!((s.mean_shots - 26.0).abs() < 1e-9, "shots {}", s.mean_shots);
+        assert!((s.mean_reloads - 2.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn finite_reserve_stops_the_gun() {
+        // Reserve off: 12 in the mag + 12 in reserve = 24 shots, then dry.
+        let p = DummyParams {
+            duration_secs: 60.0,
+            infinite_reserve: false,
+            reserve_ammo: 12.0,
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 20, 4);
+        assert!((s.mean_shots - 24.0).abs() < 1e-9, "shots {}", s.mean_shots);
+    }
+
+    #[test]
+    fn frenzy_ammo_efficiency_prevents_reloads() {
+        // All-head with Frenzy: only the first shot consumes ammo (Frenzy's
+        // +100% efficiency zeroes the rest), so the 25-shot cadence holds
+        // with zero reloads despite the 12-round magazine.
+        let p = DummyParams {
+            frenzy: true,
+            body_parts: vec![BodyPart {
+                name: "head".into(),
+                aim_weight: 1.0,
+                multiplier: 3.0,
+                is_head: true,
+                crit_bonus: true,
+            }],
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 20, 4);
+        assert!((s.mean_shots - 25.0).abs() < 1e-9, "shots {}", s.mean_shots);
+        assert_eq!(s.mean_reloads, 0.0);
     }
 
     #[test]
