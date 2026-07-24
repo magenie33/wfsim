@@ -3,7 +3,7 @@
 //!
 //! - Matching slot polarity: drain **−50%, rounded UP** (11 → 6).
 //! - Mismatched polarity: drain **+25%, rounded half-UP** (11 → 13.75 → 14;
-//!   MEASURED 2026-07-26, user: 10 → 12.5 → **13**).
+//!   MEASURED 2026-07-24, user: 10 → 12.5 → **13**).
 //! - Unpolarized slot: full drain.
 //! - Capacity = weapon rank (max 30), doubled by an Orokin Catalyst → 60.
 //!   (Aura/Stance capacity-bonus polarities are a separate rule, not yet
@@ -178,7 +178,7 @@ mod tests {
         );
         assert_eq!(slot_drain(9, Polarity::Umbra, Some(Polarity::Madurai)), 11);
         // 11.25
-        // MEASURED (2026-07-26, user): the half case rounds UP.
+        // MEASURED (2026-07-24, user): the half case rounds UP.
         assert_eq!(
             slot_drain(10, Polarity::Madurai, Some(Polarity::Naramon)),
             13

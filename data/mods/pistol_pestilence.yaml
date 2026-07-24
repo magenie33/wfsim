@@ -16,7 +16,7 @@ effects:
 source:
   url: https://wiki.warframe.com/w/Pistol_Pestilence
   note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).
-  retrieved: "2026-07-26"
+  retrieved: "2026-07-24"
 
 verification:
   status: unverified

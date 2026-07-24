@@ -25,7 +25,7 @@ incompatible_with: [flawed_barrel_diffusion, amalgam_barrel_diffusion,
 
 source:
   url: https://wiki.warframe.com/w/Barrel_Diffusion
-  retrieved: "2026-07-26"
+  retrieved: "2026-07-24"
 
 verification:
   status: disputed             # drain only; effect values agree

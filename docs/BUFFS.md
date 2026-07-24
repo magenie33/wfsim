@@ -149,6 +149,21 @@ that builds on an Arctic Eximus Snow Globe without resetting) get a hand-written
 `impl Perk` behind the same trait. `secondary_enervate.rs` is currently a
 hand-written reference perk; it will inform the declarative schema.
 
+## Activation policy: assumed, configured, or emergent
+
+A conditional/stacking buff can be evaluated under three policies
+(recorded 2026-07-24; see [`OPTIMIZER.md`](OPTIMIZER.md) §3):
+
+1. **`assumed_max` (default)** — full stacks, 100% uptime. Today's
+   `LockedBuff` in `engine::dummy` (Frenzy locked, Fevered Frenzy at 20
+   stacks) is the seed of this; it generalizes to a per-buff map.
+2. **`configured`** — explicit per-buff stack counts/uptimes.
+3. **`emergent` (future)** — no assumption; the timeline itself grants
+   and decays stacks (on-kill grants, Galvanized one-stack decay,
+   death-clears).
+
+The policy changes results, so it is part of any evaluation cache key.
+
 ## What actually guarantees correctness
 
 The architecture does not "prove" a buff right — it makes each perk
