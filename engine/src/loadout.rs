@@ -72,6 +72,21 @@ pub enum StackPolicy {
     AssumedMax,
 }
 
+/// How the Condition Overload bonus behaves — PER WEAPON (user,
+/// 2026-07-24: "有的武器是独立的加成，有的武器是当基础伤害的，有的还
+/// 加成不到"; the wiki CO-mechanic catalog classifies weapons):
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CoBehavior {
+    /// Joins the base-damage bucket (additive with Hornet Strike):
+    /// direct hit × (1 + bd + co × types) / (1 + bd).
+    AdditiveWithBaseDamage,
+    /// A free-standing final multiplier on direct hits:
+    /// direct hit × (1 + co × types).
+    Independent,
+    /// The bonus simply does not apply on this weapon.
+    Inert,
+}
+
 /// A weapon's unmodded panel (fixed evolutions folded in — they alter the
 /// weapon's BASE stats before mods).
 #[derive(Debug, Clone)]
@@ -88,6 +103,8 @@ pub struct WeaponBase {
     pub buff_multishot_bonus: f64,
     pub magazine_size: f64,
     pub base_reload: f64,
+    /// This weapon's Condition Overload behavior class.
+    pub co_behavior: CoBehavior,
     /// Buff-injected elements as RELATIVE bonuses (element, bonus): each
     /// contributes ModifiedBase × bonus at the END of the hierarchy
     /// (rule 8) — Frenzy's +100% Toxin on the base Dual Toxocyst.
@@ -117,6 +134,9 @@ impl WeaponBase {
             buff_multishot_bonus: 1.0, // Fevered Frenzy at 20 stacks
             magazine_size: 270.0,
             base_reload: 3.35,
+            // Per Carnage Reign's recorded "adding behavior" (the CO
+            // catalog entry for this weapon) — to re-verify per form.
+            co_behavior: CoBehavior::AdditiveWithBaseDamage,
             injected_elements: if frenzy_active {
                 vec![(DamageType::Toxin, 1.0)]
             } else {
@@ -144,6 +164,7 @@ impl WeaponBase {
             buff_multishot_bonus: 1.0, // Fevered Frenzy at 20 stacks
             magazine_size: 12.0,
             base_reload: 2.35,
+            co_behavior: CoBehavior::AdditiveWithBaseDamage,
             injected_elements: if frenzy_active {
                 vec![(DamageType::Toxin, 1.0)]
             } else {
@@ -171,9 +192,12 @@ pub struct ResolvedPanel {
     /// Σ reload-speed bonuses — transitions (Incarnon transmute/revert)
     /// scale by the same formula: time = base / (1 + this).
     pub reload_bonus: f64,
-    /// Σ (CO per_stack × stacks) under the policy: direct hits gain
-    /// × (1 + this × distinct status types on the target).
+    /// Σ base-damage bonuses (needed live when CO joins this bucket).
+    pub base_damage_bonus: f64,
+    /// Σ (CO per_stack × stacks) under the policy — applied per this
+    /// weapon's [`CoBehavior`], DIRECT HITS ONLY.
     pub co_per_type: f64,
+    pub co_behavior: CoBehavior,
     /// (1 + Σ status damage) — multiplies status payload values.
     pub status_damage_mult: f64,
     /// (element, 1 + Σ that element's bonuses) — the elemental bracket of
@@ -252,6 +276,8 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         magazine_size: base.magazine_size,
         reload_seconds: base.base_reload / (1.0 + rl),
         reload_bonus: rl,
+        base_damage_bonus: bd,
+        co_behavior: base.co_behavior,
         co_per_type: co,
         status_damage_mult: 1.0 + sd,
         elem_dot_bonus: elem_bonus.into_iter().map(|(t, v)| (t, 1.0 + v)).collect(),

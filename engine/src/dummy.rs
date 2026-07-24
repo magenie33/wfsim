@@ -620,9 +620,16 @@ pub struct DummyParams {
     /// (own crit roll, own part, own status roll); ammo cost and Hit
     /// events stay per pull (hitscan pellets are not separate Hits).
     pub multishot: f64,
-    /// Condition Overload payload (assumed-max Σ per_stack × stacks):
-    /// direct hits × (1 + this × distinct status types on the target).
+    /// Σ base-damage bonuses on the panel — needed live when CO joins
+    /// this bucket (the vector already includes it; only the CO ratio
+    /// reads it).
+    pub base_damage_bonus: f64,
+    /// Condition Overload payload (assumed-max Σ per_stack × stacks),
+    /// applied per `co_behavior`, direct hits only.
     pub co_per_type: f64,
+    /// PER-WEAPON CO class (user, 2026-07-24): additive with base damage,
+    /// an independent multiplier, or inert on this weapon.
+    pub co_behavior: crate::loadout::CoBehavior,
     /// (1 + status-damage bonuses): scales every status payload value.
     pub status_damage_mult: f64,
     /// (element, 1 + Σ its bonuses) brackets for elemental DoT ticks.
@@ -739,7 +746,9 @@ impl DummyParams {
             reload_seconds: panel.reload_seconds,
             ammo_efficiency_applies: false,
             multishot: panel.multishot,
+            base_damage_bonus: panel.base_damage_bonus,
             co_per_type: panel.co_per_type,
+            co_behavior: panel.co_behavior,
             status_damage_mult: panel.status_damage_mult,
             elem_dot_bonus: panel.elem_dot_bonus.clone(),
             dot_modified_base: Some(panel.modified_base),
@@ -818,7 +827,9 @@ impl Default for DummyParams {
             reserve_ammo: 72.0,
             ammo_efficiency_applies: true,
             multishot: 1.0,
+            base_damage_bonus: 0.0,
             co_per_type: 0.0,
+            co_behavior: crate::loadout::CoBehavior::AdditiveWithBaseDamage,
             status_damage_mult: 1.0,
             elem_dot_bonus: Vec::new(),
             dot_modified_base: None,
@@ -1138,7 +1149,17 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // damage received, and Condition Overload's type count.
             let mit = debuffs.mitigation(t, sd);
             let cd_total = ap.crit_multiplier + debuffs.cold_cd_bonus(t);
-            let co_mult = 1.0 + ap.co_per_type * debuffs.distinct_statuses() as f64;
+            // CO per this weapon's behavior class (direct hits only).
+            let co_total = ap.co_per_type * debuffs.distinct_statuses() as f64;
+            let co_mult = match ap.co_behavior {
+                // Joins the base-damage bucket: diluted by Hornet Strike.
+                crate::loadout::CoBehavior::AdditiveWithBaseDamage => {
+                    let bd = ap.base_damage_bonus;
+                    (1.0 + bd + co_total) / (1.0 + bd)
+                }
+                crate::loadout::CoBehavior::Independent => 1.0 + co_total,
+                crate::loadout::CoBehavior::Inert => 1.0,
+            };
 
             let tier = roll_crit_tier(effective_cc, rng);
             let part = pick_part(&params.body_parts, rng);
@@ -2147,8 +2168,9 @@ mod tests {
 
     #[test]
     fn condition_overload_multiplies_by_distinct_status_types() {
-        // Forced Impact (Stagger) with co_per_type = 1.0: shot 1 sees 0
-        // types, shots 2..10 see 1 -> 75 × (1 + 9 × 2) = 1425.
+        // Forced Impact (Stagger) with co_per_type = 1.0, no base-damage
+        // mods: shot 1 sees 0 types, shots 2..10 see 1 ->
+        // 75 × (1 + 9 × 2) = 1425.
         let p = DummyParams {
             co_per_type: 1.0,
             ..bare(DamageType::Impact)
@@ -2159,6 +2181,41 @@ mod tests {
             "dmg {}",
             s.mean_damage
         );
+    }
+
+    #[test]
+    fn condition_overload_is_diluted_by_base_damage_mods() {
+        // Additive class: with +100% base damage, one status type gives
+        // (1 + 1 + 1)/(1 + 1) = 1.5× instead of 2× ->
+        // 75 × (1 + 9 × 1.5) = 1087.5.
+        let p = DummyParams {
+            base_damage_bonus: 1.0,
+            co_per_type: 1.0,
+            ..bare(DamageType::Impact)
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!(
+            (s.mean_damage - 1087.5).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
+    }
+
+    #[test]
+    fn condition_overload_behavior_classes_differ_per_weapon() {
+        use crate::loadout::CoBehavior;
+        // Same +100% base damage, one active type. Independent ignores
+        // the dilution: 75 × (1 + 9 × 2) = 1425. Inert: 75 × 10 = 750.
+        let p = |b| DummyParams {
+            base_damage_bonus: 1.0,
+            co_per_type: 1.0,
+            co_behavior: b,
+            ..bare(DamageType::Impact)
+        };
+        let ind = monte_carlo(&p(CoBehavior::Independent), 20, 5);
+        assert!((ind.mean_damage - 1425.0).abs() < 1e-9);
+        let inert = monte_carlo(&p(CoBehavior::Inert), 20, 5);
+        assert!((inert.mean_damage - 750.0).abs() < 1e-9);
     }
 
     #[test]

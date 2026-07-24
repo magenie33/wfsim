@@ -12,8 +12,15 @@ effects:
   - { kind: status_chance_bonus, per_rank: 0.08, max: 0.80 }
   - kind: stacking_buff
     trigger: on_kill
-    # CO-family payload (official CO source list): +40% direct damage per
-    # status TYPE on the target, per stack.
+    # CO-family payload (official CO source list): +40% per status TYPE
+    # on the target, per stack, DIRECT HITS only. The bonus's arithmetic
+    # is PER WEAPON (user, 2026-07-24) - three classes exist:
+    #   additive_with_base_damage: joins the Hornet Strike bucket ->
+    #     direct hit x (1 + bd + co x types) / (1 + bd)
+    #   independent: free-standing x (1 + co x types)
+    #   inert: does not apply on that weapon at all
+    # The class is recorded on each weapon (co_behavior field); Dual
+    # Toxocyst = additive (per Carnage Reign's adding behavior).
     per_stack: { condition_overload: 0.40 }
     max_stacks: 3
     duration_seconds: 14

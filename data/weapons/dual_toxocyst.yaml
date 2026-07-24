@@ -35,6 +35,12 @@ default_upgrades:
   - /Lotus/Weapons/Infested/Pistols/InfVomitGun/FireRateOnHeadshotPistolMod
 
 # Single attack profile (attack_parts taxonomy: one direct instance, no AoE).
+# Condition Overload behavior class on this weapon (three classes exist:
+# additive_with_base_damage / independent / inert - see
+# data/mods/galvanized_shot.yaml). Additive per Carnage Reign''s recorded
+# adding behavior; re-verify per form.
+co_behavior: additive_with_base_damage
+
 attack:
   trigger: semi_auto
   shot_type: hitscan

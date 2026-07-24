@@ -62,6 +62,12 @@ pseudo_reload:
     scale with reload-speed bonuses
 
 # Single attack profile: full-auto hitscan with innate ricochet.
+# Condition Overload behavior class on this weapon (three classes exist:
+# additive_with_base_damage / independent / inert - see
+# data/mods/galvanized_shot.yaml). Additive per Carnage Reign''s recorded
+# adding behavior; re-verify per form.
+co_behavior: additive_with_base_damage
+
 attack:
   trigger: auto
   # DISPUTED (2026-07-24): the wiki data module and the Ricochet page
