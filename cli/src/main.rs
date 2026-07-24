@@ -8,6 +8,7 @@ use std::path::Path;
 use wfsim_engine::dummy::{monte_carlo, DummyParams, TargetMode};
 use wfsim_engine::enemy_data::EnemySpec;
 use wfsim_engine::scaling;
+use wfsim_engine::world::{Circle, Engagement, Vec2};
 
 fn main() {
     let params = DummyParams::default();
@@ -114,4 +115,36 @@ fn main() {
     println!("  raw DPS:        {:.1}", ts.dps);
     println!("  effective DPS:  {:.1}", ts.effective_dps);
     println!("  kills/run:      {:.3}", ts.mean_kills);
+
+    // 2D arena: one Warframe vs one target circle (r = 0.25 m), top-down
+    // plane, hitscan with a hard 300 m range; the target respawns in place
+    // the instant it dies so no DPS is wasted.
+    let arena = Engagement {
+        shooter: Vec2::new(0.0, 0.0),
+        target: Circle::actor(Vec2::new(20.0, 0.0)),
+        weapon_range_m: 300.0, // Dual Toxocyst base form
+        combat: DummyParams {
+            target: thrax
+                .target_params(1, false, false, TargetMode::InstantRespawn)
+                .expect("valid thrax target"),
+            duration_secs: 60.0,
+            ..DummyParams::default()
+        },
+    };
+    let a = arena.monte_carlo(300, seed);
+    println!();
+    println!(
+        "2D arena: shooter (0,0) -> {} circle r{:.2} at (20,0), edge {:.2} m, in range: {}",
+        arena.combat.target.name,
+        arena.target.radius,
+        arena.target_edge_distance(),
+        arena.target_in_range(),
+    );
+    println!("vs Thrax @L1 (instant respawn in place, 300 runs x 60 s):");
+    println!("  raw DPS:        {:.1}", a.dps);
+    println!("  effective DPS:  {:.1}", a.effective_dps);
+    println!("  kills/run:      {:.2}", a.mean_kills);
+    if a.mean_kills > 0.0 {
+        println!("  avg time/kill:  {:.1} s", a.duration_secs / a.mean_kills);
+    }
 }
