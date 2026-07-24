@@ -7,8 +7,7 @@ rarity: rare
 polarity: madurai
 base_drain: 4
 max_rank: 10                   # drain 4..14
-internal_name: /Lotus/Upgrades/Mods/Pistol/DualExpansionAmmoMod
-upgrade_types: [WEAPON_DAMAGE_AMOUNT]
+internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponDamageAmountMod
 
 # One bucket, linear ranks: +20% base damage per rank, +220% at rank 10.
 effects:
