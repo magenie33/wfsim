@@ -130,18 +130,33 @@ different operations:
 effective_cc = base_cc × (1 + Σ crit_chance_multipliers) + Σ flat_crit_chance
 ```
 
-**Tiers (draft).** For `effective_cc`:
+**Tiers.** For `effective_cc` (wiki `Critical_Hit` §Critical Tiers):
 - Guaranteed tier `t = floor(effective_cc)`.
 - Chance of tier `t+1` = `effective_cc - floor(effective_cc)`.
 - A tier-`k` hit multiplies damage by `1 + k*(cd - 1)`, where `cd` is the
-  critical damage multiplier.
+  critical damage multiplier ("Critical Tier Multiplier").
+
+**Critical headshots** (wiki `Critical_Hit` §Critical Headshots). A critical hit
+on a head/weak-point location gets an **additional 2.0x** bonus on top of the
+location multiplier and the crit damage multiplier, folded into the tier
+formula by doubling `cd`:
+```
+headshot_crit_tier_mult = hs_mult × (1 + k*(2*cd - 1))
+```
+Exceptions:
+- Locations with a **1x** multiplier get **no** critical-headshot bonus (even if
+  the multiplier is later raised by buffs).
+- **Corpus humanoids** (helmeted) take only the plain 3.0x headshot damage — no
+  critical-headshot bonus.
+- Some parts take location damage but no crit bonus at all (e.g. MOA "fanny
+  pack": 3.0x, no crit interaction).
 
 Melee **combo** raises effective crit chance/damage; interaction with tiers is a
 high-risk area.
 
 **Source:** wiki + measured. **Status:** unverified (flat-vs-multiplier
-distinction and big-crit definition sourced from wiki; formula order and tier
-math need measurement). **High-risk** (CORE.md §3).
+distinction, big-crit definition, tier and critical-headshot formulas sourced
+from wiki; all need measurement). **High-risk** (CORE.md §3).
 
 ---
 
@@ -170,6 +185,11 @@ weighting and multishot interaction are top calibration targets (CORE.md §3).
 range/damage falloff; ballistics/projectile travel; hit chance; AoE radius and
 falloff; headshot multiplier; punch-through. AoE self-damage/falloff and whether
 headshots can crit are known edge cases.
+
+**Headshot / location multiplier** (wiki `Enemy_Body_Parts`, `Headshot`).
+Almost all humanoid enemies (Grineer, Corpus, Infested) have a **3.0x** head
+multiplier; known outlier: Nox helmet 3x / exposed head 4x; some parts are 1x
+(no bonus). The critical-headshot interaction is specified in §5.
 
 **How many Hits a Shot produces (source: wiki).** A **Hit** (the on-hit-effect
 trigger, per [`GLOSSARY.md`](GLOSSARY.md)) is not the same as a Multishot

@@ -8,13 +8,18 @@
 //! - **No** status/elements/damage-type effects, **no** armor, **no** Frenzy.
 //!   Infinite ammo (we fire every shot regardless of magazine).
 //!
-//! ASSUMPTIONS (status: **unverified** — refine with a golden test):
-//! - Headshot multiplier = 2.0x, applied multiplicatively, with **no** special
-//!   critical-headshot interaction. The wiki's exact critical-headshot formula
-//!   was not captured; this is a placeholder.
+//! Crit / headshot math (source: wiki `Critical_Hit` §Critical Tiers,
+//! §Critical Headshots; see docs/MECHANICS.md §5 — **unverified** until a
+//! golden test confirms it):
 //! - Crit tiering: effective crit chance can exceed 100%; guaranteed tier
 //!   `floor(cc)`, one more with probability `cc - floor(cc)`; a tier-`k` hit
 //!   multiplies by `1 + k*(cd - 1)`.
+//! - Headshot: the head location multiplier (3.0x for almost all humanoids)
+//!   multiplies the hit. A **critical** headshot additionally doubles the crit
+//!   damage multiplier inside the tier formula:
+//!   `headshot_crit_tier_mult = hs_mult * (1 + k*(2*cd - 1))`.
+//!   Locations with a 1x multiplier get no such bonus (so the dummy's headshot
+//!   behavior depends on `headshot_multiplier > 1`).
 //! - Enervate's stack for a shot applies to *subsequent* shots (we read the buff
 //!   bar before the shot, then register the hit).
 
@@ -45,7 +50,7 @@ impl Default for DummyParams {
             crit_multiplier: 2.0,
             fire_rate: 1.0,
             headshot_rate: 0.5,
-            headshot_multiplier: 2.0, // ASSUMPTION (unverified)
+            headshot_multiplier: 3.0, // humanoid head (wiki: Enemy_Body_Parts)
             duration_secs: 10.0,
         }
     }
@@ -87,16 +92,18 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         let flat_crit = bar.total_contributions().flat_crit_chance;
         let effective_cc = params.base_crit_chance + flat_crit;
         let tier = roll_crit_tier(effective_cc, rng);
-        let crit_mult = 1.0 + tier as f64 * (params.crit_multiplier - 1.0);
 
         let headshot = rng.chance(params.headshot_rate);
-        let hs_mult = if headshot {
-            params.headshot_multiplier
+        // Wiki Critical_Hit §Critical Headshots: a crit on a >1x location doubles
+        // the crit damage multiplier inside the tier formula.
+        let (hs_mult, cd) = if headshot && params.headshot_multiplier > 1.0 {
+            (params.headshot_multiplier, 2.0 * params.crit_multiplier)
         } else {
-            1.0
+            (1.0, params.crit_multiplier)
         };
+        let crit_mult = 1.0 + tier as f64 * (cd - 1.0);
 
-        r.total_damage += params.base_damage * crit_mult * hs_mult;
+        r.total_damage += params.base_damage * hs_mult * crit_mult;
         r.shots += 1;
         r.crits += (tier >= 1) as u32;
         r.big_crits += (tier >= 2) as u32;
@@ -203,6 +210,19 @@ mod tests {
         let s = monte_carlo(&DummyParams::default(), 1000, 7);
         assert!(s.mean_damage > 0.0);
         assert!(s.dps > 0.0);
+    }
+
+    #[test]
+    fn mean_damage_matches_hand_computed_expectation() {
+        // Default params, 10 shots: Enervate ramps cc = 5%,15%,...,95% (sum 5.0).
+        // Per shot: E = 0.5*75*(1+cc) + 0.5*(75*3)*(1+3cc) = 150 + 375*cc,
+        // so E[total] = 10*150 + 375*5.0 = 3375.
+        let s = monte_carlo(&DummyParams::default(), 2000, 42);
+        assert!(
+            (s.mean_damage - 3375.0).abs() / 3375.0 < 0.02,
+            "mean damage was {}",
+            s.mean_damage
+        );
     }
 
     #[test]
