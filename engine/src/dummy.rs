@@ -750,6 +750,11 @@ pub struct RunResult {
     pub dot_ticks: u32, // bleed ticks that landed
     pub reloads: u32,   // magazine reloads performed
     pub kills: u32,     // InstantRespawn deaths (0 with InfiniteHealth)
+    /// Kills + the depleted fraction of the CURRENT target's total pool
+    /// (overguard + health) at engagement end — partial credit so the
+    /// objective is not a step function (user, 2026-07-24: "打空了80%
+    /// 总血条算0.8分").
+    pub kill_progress: f64,
 }
 
 /// Roll a critical tier for an effective crit chance that may exceed 1.0.
@@ -1196,6 +1201,16 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         &mut r,
     );
 
+    // Partial credit: the fraction of the current individual's total
+    // pool already depleted (InfiniteHealth pools never deplete -> 0).
+    let pool = params.target.overguard() + params.target.max_health();
+    let partial = if pool > 0.0 {
+        (1.0 - (target.overguard + target.health) / pool).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+    r.kill_progress = r.kills as f64 + partial;
+
     r
 }
 
@@ -1218,6 +1233,9 @@ pub struct Summary {
     pub std_kills: f64,
     pub min_kills: u32,
     pub max_kills: u32,
+    /// Mean kill score with partial credit (kills + depleted fraction of
+    /// the final target's pool).
+    pub mean_kill_progress: f64,
     pub mean_shots: f64,
     pub mean_pellets: f64,
     pub mean_crit_rate: f64,
@@ -1237,6 +1255,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     let (mut effective, mut kills, mut kills_sq) = (0.0f64, 0u64, 0u64);
     let (mut dot, mut procs, mut reloads) = (0.0f64, 0u64, 0u64);
     let (mut min_kills, mut max_kills) = (u32::MAX, 0u32);
+    let mut kill_progress = 0.0f64;
 
     for _ in 0..runs {
         let r = run_once(params, &mut rng);
@@ -1250,6 +1269,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         reloads += r.reloads as u64;
         kills += r.kills as u64;
         kills_sq += (r.kills as u64) * (r.kills as u64);
+        kill_progress += r.kill_progress;
         min_kills = min_kills.min(r.kills);
         max_kills = max_kills.max(r.kills);
         shots += r.shots as u64;
@@ -1284,6 +1304,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         },
         min_kills: if min_kills == u32::MAX { 0 } else { min_kills },
         max_kills,
+        mean_kill_progress: kill_progress / n,
         mean_shots: shots as f64 / n,
         mean_pellets: pellets as f64 / n,
         mean_crit_rate: crits as f64 / total_pellets,
@@ -1705,6 +1726,8 @@ mod tests {
         assert!((s.mean_kills - 10.0).abs() < 1e-9, "kills {}", s.mean_kills);
         assert_eq!(s.std_kills, 0.0);
         assert_eq!((s.min_kills, s.max_kills), (10, 10));
+        // The final target respawned untouched: no partial credit.
+        assert!((s.mean_kill_progress - 10.0).abs() < 1e-9);
         assert_eq!(s.mean_dot_damage, 0.0);
         assert_eq!(s.mean_procs, 0.0);
     }
@@ -1997,6 +2020,28 @@ mod tests {
             (s.mean_dot_damage - 3.0).abs() < 1e-9,
             "break proc {}",
             s.mean_dot_damage
+        );
+    }
+
+    #[test]
+    fn kill_progress_gives_partial_credit_for_depleted_pools() {
+        // 1000 HP target, one 75-damage shot in the window: 0 kills but
+        // 7.5% of the pool depleted -> score 0.075.
+        let mut t = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
+        t.base_health = 1000.0;
+        let p = DummyParams {
+            crit_multiplier: 1.0,
+            body_parts: mono_body(1.0),
+            target: t,
+            duration_secs: 1.0,
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 10, 3);
+        assert_eq!(s.mean_kills, 0.0);
+        assert!(
+            (s.mean_kill_progress - 0.075).abs() < 1e-9,
+            "score {}",
+            s.mean_kill_progress
         );
     }
 

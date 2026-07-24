@@ -107,14 +107,16 @@ fn main() {
         let summaries = evaluate_batch(&cands, &alive, &scenario, runs, 0xDEAD_BEEF + round as u64);
         let mut scored: Vec<(usize, wfsim_engine::dummy::Summary)> =
             alive.iter().copied().zip(summaries).collect();
+        // Kill rounds rank by kill PROGRESS: kills + the depleted fraction
+        // of the final target's pool (partial credit, no step function).
         scored.sort_by(|a, b| {
             let ka = if by_kills {
-                a.1.mean_kills
+                a.1.mean_kill_progress
             } else {
                 a.1.mean_effective_damage
             };
             let kb = if by_kills {
-                b.1.mean_kills
+                b.1.mean_kill_progress
             } else {
                 b.1.mean_effective_damage
             };
@@ -130,7 +132,7 @@ fn main() {
             scored.len(),
             t.elapsed(),
             if by_kills {
-                format!("{:.2} kills", scored[0].1.mean_kills)
+                format!("{:.2} kill score", scored[0].1.mean_kill_progress)
             } else {
                 format!("{:.3e} eff", scored[0].1.mean_effective_damage)
             }
@@ -140,7 +142,7 @@ fn main() {
     }
 
     println!();
-    println!("=== FINAL LEADERBOARD (1000 x 60 s, mean kills) ===");
+    println!("=== FINAL LEADERBOARD (1000 x 60 s, mean kill score = kills + partial) ===");
     for (rank, (ci, s)) in last.iter().take(10).enumerate() {
         let c = &cands[*ci];
         let names: Vec<&str> = c.ordered.iter().map(|&i| p[i].id).collect();
@@ -151,8 +153,9 @@ fn main() {
             .map(|(t, v)| format!("{t:?} {v:.0}"))
             .collect();
         println!(
-            "#{:<2} kills {:.3} ± {:.3} (min {} max {}) | eff DPS {:.3e}",
+            "#{:<2} score {:.3} (kills {:.3} ± {:.3}, min {} max {}) | eff DPS {:.3e}",
             rank + 1,
+            s.mean_kill_progress,
             s.mean_kills,
             s.std_kills,
             s.min_kills,
