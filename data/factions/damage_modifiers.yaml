@@ -29,6 +29,9 @@ factions:
     resistant: []
   infested_deimos:
     vulnerable: [blast, gas]
+    # DISPUTED (2026-07-24): the Damage/Infested_Deimos page and the U36
+    # patch notes both say "Resistant to Viral", but the user's compiled
+    # table lists Viral +50%. Needs an in-game check (codex / test shot).
     resistant: [viral]
   orokin:                       # the Corrupted + Warframe Specters
     vulnerable: [puncture, viral]
@@ -69,6 +72,33 @@ special:
       shields/health beneath it; grants crowd-control immunity while active
       (max 4 Cold procs). Magnetic status amplifies damage against it
       (+100% first stack, +25% per further stack, max +325% at 10).
+
+# ---------------------------------------------------------------------------
+# SYSTEM A - faction damage MODS (Bane/Cleanse/Expel/Smite) - a SEPARATE
+# system from the vulnerability table above, keyed by the enemy's Faction
+# (never by FactionDamageOverride, which only redirects the table above).
+# Total-damage multiplier; applied a SECOND time to DoT ticks from status
+# effects ("double dipping").
+faction_mods:
+  multiplier_normal: 1.30      # +5%/rank, rank 5
+  multiplier_primed: 1.55
+  available_for: [grineer, corpus, infested, orokin, the_murmur]
+  sentient_special: >-
+    Melee only (Sacrificial Pressure/Steel, Umbra polarity, lower bonus,
+    set effect when both equipped).
+  no_mods_exist_for: [anarchs, narmer, scaldra, techrot, stalker, wild,
+                      zariman, unknown]
+  strict_matching: >-
+    No inheritance across counterparts: Bane of Grineer works on Lancer but
+    NOT on Corrupted Lancer or Narmer Lancer; Infested mods do NOT affect
+    Techrot. Thrax units (Faction "Unknown") match no faction mod at all -
+    their Zariman override only selects the vulnerability column above.
+  note: >-
+    Both systems stack multiplicatively when both apply (a regular Lancer
+    takes Bane of Grineer x1.55 AND Impact x1.5). The wiki enemy module even
+    contains a Corrupted unit with FactionDamageOverride "Corpus": it takes
+    Bane of Orokin (Faction) while using the Corpus vulnerability column
+    (Override) - proof the two keys are independent.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Overview_Table

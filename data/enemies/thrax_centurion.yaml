@@ -3,8 +3,11 @@ id: thrax_centurion
 name: Thrax Centurion
 kind: enemy
 
-# The data module files Thrax units under `unaffiliated` with Faction "Unknown",
-# but faction-damage bonuses treat them as Zariman (FactionDamageOverride).
+# The data module files Thrax units under `unaffiliated` with Faction
+# "Unknown". Two independent faction systems (MECHANICS.md §8):
+# - Faction "unknown" -> NO faction damage mod (Bane etc.) ever applies.
+# - FactionDamageOverride "zariman" -> the x1.5/x0.5 vulnerability column
+#   is Zariman's (Void x1.5 only). The override affects ONLY that column.
 faction: unknown
 faction_damage_override: zariman   # see data/factions/damage_modifiers.yaml
 scaling_faction: unaffiliated      # level-scaling curves (MECHANICS.md §8)

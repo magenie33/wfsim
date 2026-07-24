@@ -292,7 +292,27 @@ Full table in `data/factions/damage_modifiers.yaml` (e.g. Grineer: +Impact
 +Corrosive; Corpus: +Puncture +Magnetic; Zariman: +Void only). Special
 layers: **Object** health takes no crits/status/modifiers; **Overguard** is
 neutral except x1.5 Void, blocks status spillover, and grants CC immunity.
-An enemy can carry a `FactionDamageOverride` (Thrax units count as Zariman).
+
+**Two independent faction systems — different keys** (wiki `Faction Damage
+Bonus` + enemy-module schema):
+- **System A — faction damage mods** (Bane/Cleanse/Expel/Smite, x1.30 /
+  x1.55 Primed): keyed by the enemy's **`Faction`**. Total-damage
+  multiplier, applied a **second time to DoT ticks** ("double dipping").
+  Mods exist only for Grineer/Corpus/Infested/Orokin/Murmur (+ Sentient
+  melee); strict matching — Grineer mods do NOT hit Corrupted or Narmer
+  counterparts, Infested mods do NOT hit Techrot.
+- **System B — the vulnerability column above** (x1.5/x0.5 per damage
+  type): keyed by **`FactionDamageOverride ?? Faction`**. The override
+  only redirects this column (schema: "faction resistance value").
+- They **stack multiplicatively** when both apply (Lancer: Bane of
+  Grineer x1.55 × Impact x1.5). They can also point at *different*
+  factions on one enemy (a Corrupted unit with override "Corpus" takes
+  Bane of Orokin but the Corpus column). **Thrax**: Faction "Unknown" →
+  no faction mod ever applies; override "Zariman" → Void x1.5 column.
+```
+per-component = damage × bane_mult(faction match; ×2 dip on DoT ticks)
+                        × column(override ?? faction, type) × pool math
+```
 
 **Armor → damage reduction.**
 ```
