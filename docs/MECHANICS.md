@@ -76,6 +76,14 @@ distinction matters (see [`GLOSSARY.md`](GLOSSARY.md)):
   on its own):
   `effective_fire_rate = base × (1 + Σ mod_bonuses) × Π multipliers`.
 
+**The Incarnon base-stat layer.** Evolution effects phrased "Increase Base
+X" modify the weapon's BASE stat before all mods: `flat_base_damage` adds
+to the base total **distributed pro-rata across the damage vector**
+(Dual Toxocyst 75 → 135 keeps the 10/80/10 split — equivalent to scaling
+the vector ×1.8), and therefore flows into DoT ModdedBase;
+`flat_base_crit_chance` adds percentage points to base CC before
+crit-chance mods (same layer as Critical Parallel's flat CD).
+
 **Mod order matters.** Mods are an **ordered list**, not a set — elemental
 combination (§3) depends on the order. An Effect can inject a modifier at a
 defined position (Frenzy appends "+100% Toxin" at the **end** of the order).

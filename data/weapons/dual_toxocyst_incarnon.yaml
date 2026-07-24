@@ -37,11 +37,20 @@ incarnon:
     cleared_on: [death]
   side_effect: swapping either way fully reloads the normal form's magazine
 
-# Single attack profile: full-auto hitscan with ricochet (granted by the
-# dt_evo1_incarnon_form perk: 1 bounce within 5 m, can headshot/Frenzy).
+# Single attack profile: full-auto hitscan with innate ricochet.
 attack:
   trigger: auto
   shot_type: hitscan
+  ricochet:
+    targets: 1                  # per hit, within 5 m of the struck enemy
+    range_m: 5.0
+    notes:
+      - Ricochets can headshot and trigger Frenzy.
+      - Per-hit trigger (wiki Ricochet): each multishot pellet and each
+        punch-through victim ricochets separately; terrain never, corpses
+        do; ragdolled enemies cannot be ricochet targets.
+      - Ricochet rounds scale with Galvanized Shot and the EVO2 perks'
+        flat base damage.
   fire_rate: 4.5
   multishot: 1.0
   ammo_cost: 1                  # of the separate incarnon magazine (270)

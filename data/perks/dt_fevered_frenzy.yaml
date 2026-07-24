@@ -8,6 +8,9 @@ selection: choose_one
 
 effects:
   - kind: flat_base_damage
+    # Adds to the BASE TOTAL, distributed PRO-RATA across the existing
+    # damage vector (75 -> 125 keeps the 10/80/10 split = vector x1.67),
+    # BEFORE mods - and therefore inside ModdedBase (DoT ticks scale too).
     value: 50
   - kind: stacking_buff
     trigger: on_ability_cast
