@@ -236,6 +236,15 @@ element procs are weighted, not uniform.
 - **SC > 100%**: `floor(SC)` guaranteed rolls + `frac(SC)` chance of one
   more; **each roll's type is drawn independently** (the same type can
   repeat within one hit).
+- **Stack pools are SHARED per target** (high-confidence model,
+  2026-07-24): the pool and its cap live on the target — 10 players'
+  Magnetic procs compete for the same 10 slots, FIFO across all sources;
+  effect magnitudes (armor strip %, shields amp) read the target's total
+  count while payloads read each slot's own provenance. Evidence: the
+  strip formulas use a single stack count; Hydroid's passive applies to
+  Corrosive "from any source"; the UI shows one counter. Corollary: fast
+  low-quality procs from teammates flush high-quality stacks out (FIFO
+  is owner-blind). No explicit wiki sentence — verifiable in co-op.
 - **Stack overflow is universally replace-oldest, FIFO by application
   time** (user rule, 2026-07-24): every capped stacking debuff (Stagger 5,
   Weakened 5, Corrosion 10, Confusion 10, Gas Cloud 10) replaces the
