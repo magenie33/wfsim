@@ -21,6 +21,7 @@ fn main() {
     let mut evo2_both = false;
     let mut duration_secs = 60.0f64;
     let mut final_runs: Option<u32> = None;
+    let mut final_round_runs: Option<u32> = None;
     let mut arcane_only: Option<wfsim_engine::dummy::Arcane> = None;
     for arg in std::env::args().skip(1) {
         if let Some(id) = arg.strip_prefix("require=") {
@@ -42,6 +43,9 @@ fn main() {
         } else if let Some(v) = arg.strip_prefix("runs=") {
             // Playoff mode: skip the funnel, run every job at this count.
             final_runs = Some(v.parse().expect("runs=<n>"));
+        } else if let Some(v) = arg.strip_prefix("final=") {
+            // Keep the funnel; override only the LAST round's run count.
+            final_round_runs = Some(v.parse().expect("final=<n>"));
         } else if let Some(v) = arg.strip_prefix("arcane=") {
             use wfsim_engine::dummy::Arcane;
             arcane_only = Some(match v {
@@ -172,13 +176,18 @@ fn main() {
     );
     // Self-scaling successive halving derived from the job count (user,
     // 2026-07-25); `flat` bypasses the funnel for validation runs.
-    let rounds: Vec<(u32, usize, bool)> = if let Some(r) = final_runs {
+    let mut rounds: Vec<(u32, usize, bool)> = if let Some(r) = final_runs {
         vec![(r, 24, true)]
     } else if flat {
         vec![(1024, 24, true)]
     } else {
         schedule(alive.len())
     };
+    if let Some(r) = final_round_runs {
+        if let Some(last) = rounds.last_mut() {
+            last.0 = r;
+        }
+    }
     let mut last: Vec<(Job, wfsim_engine::dummy::Summary)> = Vec::new();
     for (round, &(runs, keep, by_kills)) in rounds.iter().enumerate() {
         let t = Instant::now();
