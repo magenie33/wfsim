@@ -16,6 +16,8 @@ effects:
     trigger: on_ability_cast
     per_stack: { multishot_bonus: 0.05 }   # additive with multishot mods
     max_stacks: 20
+    duration: permanent          # MEASURED (2026-07-24, user): stacks have
+    cleared_on: [death]          # no timer; only player death clears them
 
 source:
   url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis
