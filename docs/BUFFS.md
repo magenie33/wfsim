@@ -67,7 +67,7 @@ the attacker's `BuffBar` and the defender's `DebuffBar` (+ the defender's
 - A **debuff** has the same shape as a buff: stacks, per-stack duration,
   overflow policy (e.g. Stagger: 5 stacks, 6 s each, 6th proc replaces the
   oldest), per-stack modifiers, caps, conditions. Stored in
-  `data/status_effects/`, mirroring `data/buffs/`.
+  `data/debuffs/`, mirroring `data/buffs/`.
 - The target-side pipeline layers read a **contribution snapshot from the
   target's `DebuffBar`** exactly like the weapon pipeline reads the player's
   `BuffBar`:

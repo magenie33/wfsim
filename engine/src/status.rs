@@ -14,7 +14,7 @@
 //! Official average: `procs per trigger pull = multishot × (forced + SC)`.
 //!
 //! What a proc *does* (the debuff applied to the target's DebuffBar) is
-//! defined in `data/status_effects/` — this module only decides *which*
+//! defined in `data/debuffs/` — this module only decides *which*
 //! procs a hit produces.
 
 use crate::damage::{DamageType, DamageVector};

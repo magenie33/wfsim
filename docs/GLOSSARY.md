@@ -25,7 +25,7 @@ itself carries a wiki banner asking "Stagger or Knockback?"). Convention:
 - **Canonical name = the damage type's dedicated wiki page** (e.g. Impact →
   **Stagger**). Every other official name goes into `aliases`, and the
   datamined `internal_name` (e.g. `PT_KNOCKBACK`) is always recorded.
-- One entry per proc in `data/status_effects/`; code refers to procs by the
+- One entry per proc in `data/debuffs/`; code refers to procs by the
   canonical `id` only.
 - **Debuff / DebuffBar** — a proc's effect is a *debuff* on the target,
   held in the target's **`DebuffBar`** — the exact counterpart of the
