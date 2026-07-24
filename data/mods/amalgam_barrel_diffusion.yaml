@@ -1,0 +1,39 @@
+schema_version: 0
+id: amalgam_barrel_diffusion
+kind: mod
+name: Amalgam Barrel Diffusion
+mod_type: pistol
+rarity: rare
+polarity: madurai
+base_drain: 10
+max_rank: 5                    # drain 10..15
+internal_name: null
+
+effects:
+  - kind: multishot_bonus
+    per_rank: 0.1825
+    max: 1.095                 # TRUE value 109.50% - the UI tooltip rounds
+                               # to 110%; we store the real number
+  - kind: dodge_speed_bonus    # utility, not a damage bucket
+    per_rank: 0.10
+    max: 0.60
+  - kind: acrobatic_speed_bonus  # hidden stat: faster roll animation
+    per_rank: 0.10
+    max: 0.60
+
+# Utility bonuses are UNIVERSAL while the mod is on the carried secondary -
+# no need to wield or aim it (holstered works).
+utility_scope: universal_while_carried
+restrictions: [not_on_sentinel_weapons]
+
+family: barrel_diffusion
+incompatible_with: [barrel_diffusion, flawed_barrel_diffusion,
+                    galvanized_diffusion]
+
+source:
+  url: https://wiki.warframe.com/w/Amalgam_Barrel_Diffusion
+  note: Real multishot 109.5% per the page's own note (UI rounds up).
+  retrieved: "2026-07-26"
+
+verification:
+  status: unverified
