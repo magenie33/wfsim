@@ -250,6 +250,19 @@ element procs are weighted, not uniform.
   buffed by component mods** — only by literal matching-element damage;
   conversely Toxin mods DO buff a forced Toxin DoT even when combined
   into Corrosive on the panel.
+- **Snapshot vs live — the boundary rule**: a DoT stack is a *replay of
+  its proccing hit*. **Attacker-side state is snapshotted** at proc time
+  (mods, buffs, crit tier, body part, combo, faction, status damage —
+  frozen even if the buff later expires). **Defender-side state is
+  evaluated live at each tick** (current armor — hence strips grow Heat
+  ticks while Bleed ignores armor entirely; current pool the tick lands
+  in; current damage-taken debuffs like Viral stacks; DR auras active at
+  tick time). Implementation: the proc stores a frozen attacker
+  contribution template in the DebuffBar; each tick runs that template
+  through the defender's *current* mitigation pipeline. Open question:
+  the wiki lists enemy debuffs (Molecular Prime) among snapshot-inherited
+  factors — whether they are also (or instead) applied live per tick
+  needs measurement.
 - **Duration mods** (Continuous Misery, Lasting Sting, ... and negative:
   Rapid Resilience) affect **status-effect DoTs only**. Sickening Pulse
   duplicates active stacks with fresh timers.
