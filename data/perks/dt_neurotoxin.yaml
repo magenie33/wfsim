@@ -1,0 +1,21 @@
+schema_version: 0
+id: dt_neurotoxin
+name: Neurotoxin
+kind: incarnon_evolution
+weapon: dual_toxocyst
+tier: 4
+selection: choose_one
+currently_broken: true          # wiki: "Currently does not work"
+
+effects:
+  - kind: timed_buff
+    trigger: on_headshot
+    duration_seconds: 3
+    modifiers: { toxin_damage_bonus: 0.70 }
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified

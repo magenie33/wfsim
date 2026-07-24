@@ -1,0 +1,22 @@
+schema_version: 0
+id: dt_carnage_reign
+name: Carnage Reign
+kind: incarnon_evolution
+weapon: dual_toxocyst
+tier: 2
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage      # adds to BASE damage before mods (the
+    value: 60                   # Incarnon "Increase Base Damage" layer)
+  - kind: condition_overload    # +33% DIRECT damage per status type on the
+    value: 0.33                 # target (Condition Overload mechanic bucket)
+    applies_to: direct_damage_only
+    condition: energy_max >= 200   # unlisted in-game requirement (wiki note)
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified

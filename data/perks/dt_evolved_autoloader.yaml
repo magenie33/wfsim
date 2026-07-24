@@ -1,0 +1,18 @@
+schema_version: 0
+id: dt_evolved_autoloader
+name: Evolved Autoloader
+kind: incarnon_evolution
+weapon: dual_toxocyst
+tier: 3
+selection: choose_one
+
+effects:
+  - kind: holstered_magazine_regen
+    value: 0.50                 # +50% of magazine reloaded per second
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified

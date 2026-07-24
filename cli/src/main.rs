@@ -11,7 +11,8 @@ use wfsim_engine::scaling;
 use wfsim_engine::world::{Circle, Engagement, Vec2};
 
 fn main() {
-    let params = DummyParams::default();
+    // transform_modes: the two Dual Toxocyst forms are separate weapons.
+    let params = DummyParams::dual_toxocyst_base(); // Frenzy passive live
     let runs = 1000;
     let seed = 0xC0FFEE;
 
@@ -44,7 +45,7 @@ fn main() {
         parts, runs, params.duration_secs,
     );
     println!(
-        "status sim v1: Stagger/Weakened/Bleed | no elements/Frenzy | infinite ammo | unverified"
+        "status sim v1: Stagger/Weakened/Bleed | Frenzy live (fire rate) | no elements yet | unverified"
     );
     println!();
 
@@ -68,6 +69,27 @@ fn main() {
     );
     println!();
     println!("sustained DPS:    {:.1}", s.dps);
+
+    // The Incarnon Form, tested as its own weapon (transform_modes).
+    let inc = DummyParams::dual_toxocyst_incarnon();
+    let si = monte_carlo(&inc, runs, seed);
+    println!();
+    println!(
+        "Incarnon Form (separate weapon) | {:.0} dmg (15I/37.5P/22.5S), 11% crit, 3.0x, 43% status, 4.5 fire/s, auto",
+        inc.damage.total()
+    );
+    println!(
+        "  shots/run: {:.0} | crit {:.1}% | procs {:.1}/run | DoT {:.1} | sustained DPS: {:.1}",
+        si.mean_shots,
+        si.mean_crit_rate * 100.0,
+        si.mean_procs,
+        si.mean_dot_damage,
+        si.dps,
+    );
+    println!(
+        "  vs base form (Frenzy live): {:.1} DPS — ricochet/gauge economy not yet cycled",
+        s.dps
+    );
 
     // Enemy library, loaded from data/enemies/ (single source of truth).
     let enemies_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../data/enemies");

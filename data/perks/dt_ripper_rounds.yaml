@@ -1,0 +1,20 @@
+schema_version: 0
+id: dt_ripper_rounds
+name: Ripper Rounds
+kind: incarnon_evolution
+weapon: dual_toxocyst
+tier: 4
+selection: choose_one
+
+effects:
+  - kind: timed_buff
+    trigger: on_kill
+    duration_seconds: 7
+    modifiers: { punch_through_m: 3.0 }
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified

@@ -1,0 +1,18 @@
+schema_version: 0
+id: dt_marksmans_hand
+name: Marksman's Hand
+kind: incarnon_evolution
+weapon: dual_toxocyst
+tier: 3
+selection: choose_one
+
+effects:
+  - kind: recoil_reduction      # not a damage bucket; recorded for parity
+    value: 0.50
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified

@@ -30,6 +30,18 @@ incarnon_charge_gain: 30     # gauge gain per qualifying hit
 default_upgrades:
   - /Lotus/Weapons/Infested/Pistols/InfVomitGun/FireRateOnHeadshotPistolMod
 
+# MODE TAXONOMY (decision 2026-07-24). Wiki stat tables show "two rows" for
+# three different reasons; each must be modeled differently:
+#   attack_parts    - one attack producing multiple damage instances
+#                     (direct + aoe_radial): ONE weapon profile.
+#   fire_modes      - primary + alt-fire on the same equipped form:
+#                     separate attack profiles, TESTED SEPARATELY.
+#   transform_modes - a mode switch with an animation (Incarnon):
+#                     separate WEAPONS for testing purposes.
+# Dual Toxocyst is transform_modes: base and Incarnon Form are two weapons
+# sharing an inventory slot and a transformation economy.
+mode_model: transform_modes
+
 # Forms map to the source's Attacks array: base = Normal Attack, incarnon =
 # Incarnon Form. Each form carries its own combat stats.
 forms:
@@ -73,36 +85,54 @@ forms:
 perks:
   - frenzy
 
-# Incarnon evolutions: choose one option per tier in a Build. Weapon-specific
-# (not normalized into shared perks yet). Effects are raw wiki text; they will be
-# classified into precise buckets / perks when implemented.
+# The Incarnon transformation economy (wiki Dual_Toxocyst_Incarnon_Genesis;
+# this block is what identifies an Incarnon weapon to the engine).
+incarnon:
+  install_cost: { pathos_clamps: 20, yao_shrubs: 70, eevani: 80 }
+  gauge:
+    charge_on: weakpoint_hits
+    charges_to_fill: 9
+    rounds_per_charge: 30
+    max_rounds: 270
+    charge_rules:
+      - Individual multishot bullets each build charge.
+      - MOA-backpack-style weakspots do NOT build charge, nor do
+        Sonar / Detect Vulnerability spots outside real weakpoints
+        (a per-body-part `charges_incarnon` distinction, like the
+        headshot-trigger vs weak-spot split).
+      - Weakpoints on corpses or invulnerable targets build nothing.
+  transmute:
+    activation: alt_fire            # full gauge NOT required
+    animation_seconds: reload_speed # mode switch takes the reload time
+    revert: on_incarnon_ammo_empty
+    switch_back_penalty: expends all remaining charge
+  incarnon_magazine:
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true   # Energized Munitions does nothing
+  persistence:
+    survives: [holster, bleedout, disarm]
+    cleared_on: [death]
+  side_effect: swapping either way fully reloads the normal form's magazine
+
+# Incarnon evolutions ARE perks (architecture decision 2026-07-24) - one
+# perk id per option, choose one per tier in a Build. Definitions live in
+# data/perks/dt_*.yaml with bucket annotations and challenge notes.
 incarnon_evolutions:
   - tier: 1
-    options:
-      - name: Incarnon Form
-        effect: Gain auto-fire mode; each shot ricochets to 1 nearby enemy within 5m.
+    unlock: install the Incarnon Genesis
+    options: [dt_evo1_incarnon_form]
   - tier: 2
-    options:
-      - name: Carnage Reign
-        effect: "+60 base damage; +33% damage per status type currently on the target."
-      - name: Fevered Frenzy
-        effect: "+50 base damage; +5% multishot per ability cast, stacking up to 20x."
+    unlock: complete a solo mission with this weapon equipped
+    options: [dt_carnage_reign, dt_fevered_frenzy]
   - tier: 3
-    options:
-      - name: Ready Retaliation
-        effect: "+100% reload speed when reloading from empty."
-      - name: Evolved Autoloader
-        effect: "+50% magazine reload per second while holstered."
-      - name: Marksman's Hand
-        effect: "-50% weapon recoil."
+    unlock: kill 100 enemies with this weapon's Incarnon Form
+    options: [dt_ready_retaliation, dt_evolved_autoloader, dt_marksmans_hand]
   - tier: 4
-    options:
-      - name: Commodore's Fortune
-        effect: "+20% critical chance."
-      - name: Neurotoxin
-        effect: "+70% Toxin damage for 3s on headshot."
-      - name: Ripper Rounds
-        effect: "+3 punch through for 7s on kill."
+    unlock: >-
+      Get 17 consecutive headshots (body shots and Companion damage reset
+      it; status-effect damage does not; multishot hits count).
+    options: [dt_commodores_fortune, dt_neurotoxin, dt_ripper_rounds]
+  # Each challenge also grants 5,000 weapon affinity (Affinity Boosters apply).
 
 source:
   url: https://wiki.warframe.com/w/Module:Weapons/data/secondary

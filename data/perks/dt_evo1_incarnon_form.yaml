@@ -1,0 +1,30 @@
+schema_version: 0
+id: dt_evo1_incarnon_form
+name: Incarnon Form
+kind: incarnon_evolution        # evolutions ARE perks (decision 2026-07-24)
+weapon: dual_toxocyst
+tier: 1
+selection: fixed                # tier 1 has no choice - installing grants it
+
+# Unlocks the transform mode itself (the weapon's `incarnon` block holds the
+# gauge/ammo economy). Combat payload of the Incarnon Form:
+effects:
+  - kind: fire_mode
+    value: auto                 # base form is semi-auto
+  - kind: ricochet
+    targets: 1                  # per shot, within 5 m of the main target
+    range_m: 5.0
+    notes:
+      - Ricochets CAN headshot and trigger Frenzy.
+      - Each multishot pellet can ricochet to a different target.
+      - Ricochet rounds are affected by Galvanized Shot and by the flat
+        base damage of both Evolution II perks.
+      - With Punch Through, every enemy on the punch line spawns ricochets.
+      - Ragdolled enemies cannot be hit by ricochet rounds.
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified

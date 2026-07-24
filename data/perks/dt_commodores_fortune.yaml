@@ -1,0 +1,20 @@
+schema_version: 0
+id: dt_commodores_fortune
+name: Commodore's Fortune
+kind: incarnon_evolution
+weapon: dual_toxocyst
+tier: 4
+selection: choose_one
+
+effects:
+  - kind: flat_base_crit_chance # "Increase BASE Critical Chance by +20%":
+    value: 0.20                 # added to base CC before crit-chance mods
+                                # (the Incarnon base-stat layer, same slot
+                                # as Critical Parallel for CD)
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified

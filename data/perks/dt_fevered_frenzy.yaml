@@ -1,0 +1,22 @@
+schema_version: 0
+id: dt_fevered_frenzy
+name: Fevered Frenzy
+kind: incarnon_evolution
+weapon: dual_toxocyst
+tier: 2
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 50
+  - kind: stacking_buff
+    trigger: on_ability_cast
+    per_stack: { multishot_bonus: 0.05 }   # additive with multishot mods
+    max_stacks: 20
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified

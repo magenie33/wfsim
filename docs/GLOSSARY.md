@@ -43,6 +43,21 @@ itself carries a wiki banner asking "Stagger or Knockback?"). Convention:
   ("double-dipping": effective `(1 + Σ)²` on ticks). Never keyed by
   `FactionDamageOverride` (that only redirects the type-modifier column).
 
+## Weapon modes ("two stat rows")
+
+Wiki stat tables show multiple rows for three DIFFERENT reasons — never
+conflate them (decision 2026-07-24):
+
+- **attack_parts** — one attack producing multiple damage instances
+  (direct + aoe_radial explosion). One weapon profile; the parts carry
+  different instance classes (MECHANICS.md §7).
+- **fire_modes** — primary and alt-fire on the same equipped form (e.g.
+  a launcher's tap/hold). Separate attack profiles, tested separately.
+- **transform_modes** — a stateful mode switch with a transformation
+  animation (Incarnon forms). Modeled and tested as **separate weapons**
+  sharing a slot plus a transformation economy (`incarnon` block in the
+  weapon data identifies these).
+
 ## Firing and hits
 
 - **Shot** — one activation of the weapon's trigger: the rounds produced by a

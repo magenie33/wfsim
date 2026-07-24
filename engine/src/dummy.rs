@@ -26,6 +26,7 @@
 
 use crate::buffs::BuffBar;
 use crate::damage::{DamageType, DamageVector};
+use crate::perks::frenzy::Frenzy;
 use crate::perks::secondary_enervate::SecondaryEnervate;
 use crate::perks::Perk;
 use crate::rng::Rng;
@@ -284,7 +285,14 @@ pub struct DummyParams {
     pub forced_procs: Vec<DamageType>,
     /// Status duration multiplier (1.0 = unmodded).
     pub status_duration_mult: f64,
+    /// Base fire rate; multiplied live by BuffBar fire-rate multipliers
+    /// (Frenzy x2.5) to schedule the next shot.
     pub fire_rate: f64,
+    /// Whether the weapon's Frenzy passive is equipped (Dual Toxocyst base
+    /// form). Wired: fire-rate x2.5 on true headshots (3 s, refreshable).
+    /// NOT yet wired: +100% Toxin injection (needs the element layer) and
+    /// ammo efficiency (ammo is infinite here anyway).
+    pub frenzy: bool,
     pub body_parts: Vec<BodyPart>,
     pub target: TargetParams,
     pub duration_secs: f64,
@@ -319,6 +327,35 @@ impl DummyParams {
             .with(DamageType::Puncture, 60.0)
             .with(DamageType::Slash, 7.5)
     }
+
+    /// Dual Toxocyst **base form** as played: the Frenzy passive equipped.
+    /// (transform_modes taxonomy: each form is its own weapon for testing.)
+    pub fn dual_toxocyst_base() -> Self {
+        Self {
+            frenzy: true,
+            ..Self::default()
+        }
+    }
+
+    /// Dual Toxocyst **Incarnon Form** (data module: 15 I / 37.5 P / 22.5 S,
+    /// 11% crit, 3.0x, 43% status, 4.5 fire rate, full-auto). Whether Frenzy
+    /// can trigger while transformed is an open question — off for now.
+    /// The gauge/ammo economy (9 weakpoint charges, 30 rounds each, max 270)
+    /// is not cycled here: this profile measures the form in isolation.
+    pub fn dual_toxocyst_incarnon() -> Self {
+        Self {
+            damage: DamageVector::new()
+                .with(DamageType::Impact, 15.0)
+                .with(DamageType::Puncture, 37.5)
+                .with(DamageType::Slash, 22.5),
+            base_crit_chance: 0.11,
+            crit_multiplier: 3.0,
+            status_chance: 0.43,
+            fire_rate: 4.5,
+            frenzy: false,
+            ..Self::default()
+        }
+    }
 }
 
 impl Default for DummyParams {
@@ -332,6 +369,7 @@ impl Default for DummyParams {
             forced_procs: Vec::new(),
             status_duration_mult: 1.0,
             fire_rate: 1.0,
+            frenzy: false,
             body_parts: Self::humanoid_parts(),
             target: TargetParams::training_dummy(),
             duration_secs: 10.0,
@@ -421,6 +459,7 @@ fn process_ticks(
 pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     let mut bar = BuffBar::new();
     let mut enervate = SecondaryEnervate::default();
+    let mut frenzy = Frenzy::new();
     let mut target = TargetState::spawn(&params.target);
     let mut debuffs = DebuffState::default();
     let mut r = RunResult::default();
@@ -432,17 +471,20 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     let modded_base = params.damage.total();
     let sd = params.status_duration_mult;
 
-    // Fire at t = k / fire_rate while t < duration. Integer k avoids float drift.
-    let mut k: u64 = 0;
+    // Fire while t < duration; the inter-shot interval is 1/(base rate x
+    // live BuffBar fire-rate multiplier), evaluated after each shot (a buff
+    // expiring mid-interval is approximated to the shot boundary).
+    let mut t = 0.0f64;
     loop {
-        let t = k as f64 / params.fire_rate;
         if t >= params.duration_secs {
             break;
         }
-        k += 1;
 
         // DoT ticks scheduled before this shot land first.
         process_ticks(&mut debuffs, t + 1e-9, &mut target, &params.target, &mut r);
+
+        // Timed buffs (Frenzy) lapse before this shot reads the bar.
+        bar.expire(t);
 
         // Crit chance: base + Enervate stacks (attacker BuffBar) + Weakened
         // stacks (target DebuffBar: flat crit chance received, weapon direct
@@ -518,17 +560,23 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             }
         }
 
-        // Register the hit so Enervate stacks/resets for the next shot. The
-        // target is always alive when hit (instant respawn / infinite health).
-        enervate.on_event(
-            &Event::Hit(Hit {
-                big_crit: tier >= 2,
-                headshot: part.is_head,
-                target_alive: true,
-            }),
-            t,
-            &mut bar,
-        );
+        // Register the hit so perks react before the next shot. The target
+        // is always alive when hit (instant respawn / infinite health).
+        let hit = Event::Hit(Hit {
+            big_crit: tier >= 2,
+            headshot: part.is_head,
+            target_alive: true,
+        });
+        enervate.on_event(&hit, t, &mut bar);
+        if params.frenzy {
+            frenzy.on_event(&hit, t, &mut bar);
+        }
+
+        // Next shot: cadence reflects the bar as of now (Frenzy just
+        // granted/refreshed counts immediately).
+        bar.expire(t);
+        let rate = params.fire_rate * bar.total_contributions().fire_rate_multiplier;
+        t += 1.0 / rate;
     }
 
     // Drain remaining ticks up to the end of the engagement.
@@ -700,6 +748,39 @@ mod tests {
         );
         assert_eq!(s.mean_dot_damage, 0.0);
         assert_eq!(s.mean_procs, 0.0);
+    }
+
+    #[test]
+    fn frenzy_accelerates_fire_rate_on_headshots() {
+        // All-head aim: the first headshot grants Frenzy (fire rate x2.5 ->
+        // interval 0.4 s), refreshed by every subsequent headshot. Shots at
+        // t = 0, 0.4, 0.8, ... -> 1 + floor(9.99../0.4) = 25 shots in 10 s
+        // (vs 10 without Frenzy).
+        let p = DummyParams {
+            frenzy: true,
+            body_parts: vec![BodyPart {
+                name: "head".into(),
+                aim_weight: 1.0,
+                multiplier: 3.0,
+                is_head: true,
+                crit_bonus: true,
+            }],
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 20, 4);
+        assert!((s.mean_shots - 25.0).abs() < 1e-9, "shots {}", s.mean_shots);
+        // Body-only aim: Frenzy never triggers -> plain 10 shots.
+        let q = DummyParams {
+            frenzy: true,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let s2 = monte_carlo(&q, 20, 4);
+        assert!(
+            (s2.mean_shots - 10.0).abs() < 1e-9,
+            "shots {}",
+            s2.mean_shots
+        );
     }
 
     #[test]

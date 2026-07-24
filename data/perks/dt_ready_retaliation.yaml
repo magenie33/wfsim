@@ -1,0 +1,20 @@
+schema_version: 0
+id: dt_ready_retaliation
+name: Ready Retaliation
+kind: incarnon_evolution
+weapon: dual_toxocyst
+tier: 3
+selection: choose_one
+currently_broken: true          # wiki: "Currently does not work"
+
+effects:
+  - kind: reload_speed_bonus
+    value: 1.00
+    condition: reload_from_empty
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified
