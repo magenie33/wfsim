@@ -82,8 +82,9 @@ impl BuffLock {
 /// revert (`revert_seconds`), fight in the base form until weakpoint hits
 /// (each multishot pellet counts) rebuild the gauge, transmute
 /// (`transmute_seconds`), repeat. Swapping either way fully reloads the
-/// base form's magazine (wiki side effect). Frenzy does not carry into the
-/// Incarnon Form (open question — excluded, per the weapon data).
+/// base form's magazine (wiki side effect). Frenzy EXISTS in the Incarnon
+/// Form too (user-confirmed 2026-07-24): the buff persists across
+/// transforms and headshots keep triggering it in both forms.
 #[derive(Debug, Clone)]
 pub struct IncarnonCycle {
     /// The base form's full engagement params (its own panel; target/aim/
@@ -687,8 +688,10 @@ impl DummyParams {
     }
 
     /// Dual Toxocyst **Incarnon Form** (data module: 15 I / 37.5 P / 22.5 S,
-    /// 11% crit, 3.0x, 43% status, 4.5 fire rate, full-auto). Whether Frenzy
-    /// can trigger while transformed is an open question — off for now.
+    /// 11% crit, 3.0x, 43% status, 4.5 fire rate, full-auto). Frenzy WORKS
+    /// while transformed (user-confirmed 2026-07-24) — natural headshot
+    /// trigger wired here; its Toxin injection needs the loadout layer, so
+    /// this bare profile omits it.
     /// The gauge/ammo economy (9 weakpoint charges, 30 rounds each, max 270)
     /// is not cycled here: this profile measures the form in isolation.
     pub fn dual_toxocyst_incarnon() -> Self {
@@ -702,7 +705,7 @@ impl DummyParams {
             crit_multiplier: 3.0,
             status_chance: 0.43,
             fire_rate: 4.5,
-            frenzy: false,
+            frenzy: true,
             // Pseudo-reload model (gauge locked full): 270 charge-backed
             // rounds, downtime = revert (1.0 s, M9-measured) + re-transmute
             // (2.35 s = base reload).
@@ -768,6 +771,8 @@ impl DummyParams {
             ..Self::from_panel(base, target.clone(), body_parts.clone(), duration_secs)
         };
         Self {
+            // Frenzy exists in BOTH forms (user-confirmed 2026-07-24).
+            frenzy: true,
             locked_buffs: vec![BuffLock {
                 buff: LockedBuff::Frenzy,
                 mode: frenzy_lock,
@@ -1362,9 +1367,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     in_base_form = false;
                     magazine = params.magazine_size; // full gauge = full charge mag
                     base_mag = cy.base_form.magazine_size; // swap reloads it
-                                                           // Frenzy does not carry into the Incarnon Form (open
-                                                           // question — excluded per the weapon data).
-                    bar.remove(crate::perks::frenzy::BUFF_ID);
+                                                           // Frenzy persists across the transform (user-confirmed
+                                                           // 2026-07-24: it exists in both forms).
                     continue;
                 }
             }

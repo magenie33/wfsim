@@ -557,7 +557,7 @@ mod tests {
         // Families (3,3,2,2,2 members) + 11 singles, choose 8:
         // coefficient of x^8 in (1+3x)^2 (1+2x)^3 (1+x)^11 = 155,727.
         let p = pool();
-        let base = WeaponBase::dual_toxocyst_incarnon();
+        let base = WeaponBase::dual_toxocyst_incarnon(true);
         let (cands, stats) = enumerate_candidates(
             &p,
             &base,
@@ -581,7 +581,7 @@ mod tests {
     #[test]
     fn constraints_filter_the_space() {
         let p = pool();
-        let base = WeaponBase::dual_toxocyst_incarnon();
+        let base = WeaponBase::dual_toxocyst_incarnon(true);
         let cons = Constraints {
             require: vec!["hornet_strike".into()],
             forbid: vec!["magnetic_might".into()],

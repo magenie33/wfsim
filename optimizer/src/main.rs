@@ -74,7 +74,7 @@ fn main() {
     );
 
     let p = pool();
-    let base = WeaponBase::dual_toxocyst_incarnon();
+    let base = WeaponBase::dual_toxocyst_incarnon(true);
     // The base form resolved with Frenzy active (its +100% Toxin joins the
     // hierarchy at the end).
     let base_form = WeaponBase::dual_toxocyst_base(true);

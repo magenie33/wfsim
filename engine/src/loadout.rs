@@ -101,7 +101,9 @@ impl WeaponBase {
     /// (+100% multishot); Commodore's Fortune +0.20 into BASE crit chance;
     /// Evolved Autoloader regenerates only while holstered — no effect on
     /// the wielded pseudo-reload (1.0 s revert + 2.35 s transmute).
-    pub fn dual_toxocyst_incarnon() -> Self {
+    /// `frenzy_active`: the Frenzy passive WORKS while transformed
+    /// (user-confirmed 2026-07-24) — folds its +100% Toxin injection in.
+    pub fn dual_toxocyst_incarnon(frenzy_active: bool) -> Self {
         Self {
             base_vector: DamageVector::new()
                 .with(DamageType::Impact, 25.0)
@@ -115,7 +117,11 @@ impl WeaponBase {
             buff_multishot_bonus: 1.0, // Fevered Frenzy at 20 stacks
             magazine_size: 270.0,
             base_reload: 3.35,
-            injected_elements: Vec::new(),
+            injected_elements: if frenzy_active {
+                vec![(DamageType::Toxin, 1.0)]
+            } else {
+                Vec::new()
+            },
         }
     }
 
@@ -318,7 +324,7 @@ mod tests {
         ];
         let refs: Vec<&ModDef> = mods.iter().collect();
         let p = resolve(
-            &WeaponBase::dual_toxocyst_incarnon(),
+            &WeaponBase::dual_toxocyst_incarnon(false),
             &refs,
             StackPolicy::AssumedMax,
         );
@@ -350,7 +356,7 @@ mod tests {
         let heat = m("scorch", vec![ModEffect::Element(Heat, 0.60)]);
         let cold = m("frostbite", vec![ModEffect::Element(Cold, 0.60)]);
         let tox = m("pestilence", vec![ModEffect::Element(Toxin, 0.60)]);
-        let base = WeaponBase::dual_toxocyst_incarnon();
+        let base = WeaponBase::dual_toxocyst_incarnon(false);
 
         // Heat,Cold,Toxin -> Blast + trailing Toxin.
         let p1 = resolve(&base, &[&heat, &cold, &tox], StackPolicy::AssumedMax);

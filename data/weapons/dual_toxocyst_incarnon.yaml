@@ -91,9 +91,12 @@ attack:
   spread_deg: { min: 0.50, max: 12.00 }
   damage: { impact: 15.0, puncture: 37.5, slash: 22.5 }   # total 75
 
-# Whether the Frenzy passive can trigger while transformed is an open
-# question - excluded here until measured.
-perks: []
+# CONFIRMED (user, 2026-07-24): the Frenzy passive EXISTS in the Incarnon
+# Form too - the buff persists across transforms and headshots keep
+# triggering it while transformed (fire rate x2.5, ammo efficiency - inert
+# on the charge-backed magazine - and the +100% Toxin injection).
+perks:
+  - frenzy
 
 incarnon_evolutions: see data/weapons/dual_toxocyst.yaml (shared group)
 

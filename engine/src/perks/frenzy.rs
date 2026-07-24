@@ -23,8 +23,7 @@ use crate::damage::DamageType;
 use crate::perks::Perk;
 use crate::sim::Event;
 
-/// The Frenzy buff's bar id (public so the cycle sim can strip it on
-/// transform — Frenzy does not carry into the Incarnon Form).
+/// The Frenzy buff's bar id.
 pub const BUFF_ID: &str = "frenzy";
 
 /// Buff duration in seconds (refreshed on each qualifying headshot).
