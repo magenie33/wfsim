@@ -30,6 +30,13 @@ incarnon:
     revert: on_incarnon_ammo_empty
     switch_back_penalty: expends all remaining charge
   incarnon_magazine:
+    # CAUSAL MODEL (user, 2026-07-24): the Incarnon form's rounds are
+    # CHARGE-BACKED - a separate resource converted from weakpoint charges,
+    # entirely outside the ammo economy. That is WHY ammo efficiency,
+    # magazine mods, and ammo pickups are all inert here: they operate on
+    # the ammo system, and this magazine never touches it. Not an
+    # exception - a different currency.
+    resource: incarnon_charges
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true   # Energized Munitions does nothing
   persistence:
