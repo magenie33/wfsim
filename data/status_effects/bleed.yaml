@@ -54,13 +54,31 @@ dot:
 cc_effects: []
 on_kill_cosmetic: blood bursts at the hit location (oil on Machinery/Robotic)
 
-railjack_variant: null
+railjack_variant: >-
+  Tear: target ship takes +7.5% damage for 20 s; subsequent procs stack
+  multiplicatively with itself. Separate system.
+
+# Melee weapon types with guaranteed Bleed on Heavy Attack (weapon-type
+# level forced procs): Claws, Dual Daggers, Nikanas, Two-Handed Nikanas,
+# Rapiers, Scythes, Tonfas, Warfans, Whips (entire heavy attack, any
+# stance); Daggers and Machetes only on parts of their heavy attacks.
+heavy_attack_forced_bleed_types:
+  full: [claws, dual_daggers, nikanas, two_handed_nikanas, rapiers,
+         scythes, tonfas, warfans, whips]
+  partial: [daggers, machetes]
 
 notes: >-
-  Certain melee weapon types force Bleed procs on Heavy Attacks (per-weapon
-  data, like other forced procs). DoT Detonation effects (Expedite
-  Suffering, Tragedy, Divine Retribution, Harmony heavy attack) end stacks
-  early and deal all remaining ticks in one instance.
+  DoT Detonation effects (Expedite Suffering, Tragedy, Divine Retribution,
+  Harmony heavy attack) end stacks early and deal all remaining ticks in
+  one instance. Dismemberment (loot-relevant via Nekros Desecrate): only
+  DIRECT Slash damage kills to the torso dismember - Bleed-tick kills
+  never do (Hunter Munitions alone cannot); requires Slash > 50% of the
+  weapon's IPS distribution (exactly 50% fails; elemental mods do not
+  count toward the ratio); a corpse can be mutilated at most twice.
+  Per-unit resistance example: Hyekka Master has an innate 80% Slash
+  resistance (unit-level type-modifier override - enemy schema will need
+  a field for these). Hunter set bonus: companions deal extra damage to
+  Slash-afflicted targets.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Slash_Damage
