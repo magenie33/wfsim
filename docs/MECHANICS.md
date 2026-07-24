@@ -294,9 +294,14 @@ component** of the hit vector:
     instance is **fully blocked** in-window;
   - **separate damage instances riding on an attack** (status-effect DoTs,
     Xata's Whisper) are not stopped by the gate.
-  **Assumption (2026-07-24):** Toxin's shield-bypassing direct damage is
-  **not** reduced inside the gate window (it never enters the shield
-  pipeline). Unverified — measurement protocol: `MEASUREMENTS.md` **M1**.
+  **Model decision (2026-07-24, revised same day):** the gate is understood
+  as the enemy analogue of the player's shield-gate invulnerability — a
+  0.1 s protection window on the *unit*. Inside it, **all direct hit damage
+  is reduced to 5%, including Toxin's shield-bypassing damage** (the window
+  protects the unit, not the shield pipeline). The only pass-throughs are
+  the wiki-documented exceptions above (weakspot 100%, some AoE 0%, rider
+  instances unaffected). Unverified — `MEASUREMENTS.md` **M1** decides it;
+  an instant kill there would falsify this and revert to Toxin-ungated.
 - Magnetic status: +100% damage to shields/Overguard on the first stack,
   +25%/stack after (max +325%), and blocks natural shield regen; on
   break, Electricity burst = 3%/stack of max shields (max 30%).

@@ -23,9 +23,12 @@ General setup:
 damage reach health. Toxin never touches shields — is its direct damage
 gated inside that window, or does it pass in full?
 
-**Model assumption (2026-07-24, user):** Toxin passes in **full** — it never
-enters the shield pipeline, so the gate should not see it. Status:
-**assumption / unverified** until this protocol is run.
+**Model assumption (2026-07-24, user; revised same day):** the gate is the
+enemy analogue of the player shield-gate — a 0.1 s protection window on the
+unit — so Toxin is **gated to 5% too**. Status: **assumption / unverified**
+until this protocol is run. Outcome mapping: target **survives** the
+verdict shot → assumption confirmed; **instant death** → Toxin is ungated,
+revert MECHANICS.md §8 and the engine model.
 
 **Primary method — kill-threshold discrimination (no recording, no number
 reading).** Turn the transient into a persistent binary: pick a level where
