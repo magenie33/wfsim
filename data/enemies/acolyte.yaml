@@ -29,12 +29,14 @@ stats:
 
 # DAMAGE ATTENUATION (the defining mechanic): the wiki documents the
 # STRUCTURE only - caps on damage per INSTANCE and per SECOND, both
-# proportional to Max Health, measured per player (U40) - the constants
-# are unpublished. These fractions are ESTIMATES pending in-game
-# calibration; correct them freely.
-attenuation:
-  max_instance_fraction_of_health: 0.05    # ESTIMATE
-  max_dps_fraction_of_health: 0.50         # ESTIMATE
+# proportional to Max Health, per player (U40) - the CONSTANTS are
+# unpublished. DEFAULT OFF (user, 2026-07-25): with unknown constants
+# the caps only distort the ranking arbitrarily, and "more damage is
+# better" holds either way. Enable by uncommenting once calibrated
+# in-game (engine support + tests are in place):
+# attenuation:
+#   max_instance_fraction_of_health: <measure me>
+#   max_dps_fraction_of_health: <measure me>
 
 # Special debuff rule (wiki): "up to 4 stacks of any Status Effect with
 # the exception of Impact which can stack up to 3"; Radiation only
