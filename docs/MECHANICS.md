@@ -138,6 +138,23 @@ different operations:
 ```
 effective_cc = base_cc × (1 + Σ crit_chance_multipliers) + Σ flat_crit_chance
 ```
+Crit chance is **location-independent** — headshots do not raise the roll
+(ability exceptions like Covenant's ×4-on-headshot aside); the head only
+multiplies the outcome (location ×3, and cd doubled in the tier formula
+on a crit), so crits on the head carry a larger premium at unchanged rate.
+
+**The CD bucket has three layers** (insertion points differ — official
+wording never distinguishes them):
+```
+cd_total = quantize(base_cd + Σ weapon_flat_cd)   ← Critical Parallel-type,
+                                                     added BEFORE quantization
+           × (1 + Σ relative_cd_mods)             ← Vital Sense-type, after
+           + Σ receiver_flat_cd                   ← Cold stacks / Frozen, from
+                                                     the target's DebuffBar, last
+```
+(Evidence: §Quantization ordering for the first two; the Cold page's Kunai
+example `1.6 × 2.1 + 0.5` for the receiver layer.) The tier and headshot
+formulas below consume `cd_total`.
 
 **Tiers.** For `effective_cc` (wiki `Critical_Hit` §Critical Tiers):
 - Guaranteed tier `t = floor(effective_cc)`.
