@@ -150,6 +150,11 @@ Order matters: **flat/absolute** CD bonuses (e.g. Incarnon "Critical Parallel"
 Vital Sense) multiply **after**. Required for shot-by-shot parity with in-game
 numbers.
 
+> **Decision (2026-07-24): recorded only, deliberately NOT implemented yet.**
+> Implement when pipeline layer [1] (mod resolution) lands, before golden
+> tests that compare per-shot numbers — without it those will never match
+> exactly.
+
 **Critical headshots** (wiki `Critical_Hit` §Critical Headshots). A critical hit
 on a head/weak-point location gets an **additional 2.0x** bonus on top of the
 location multiplier and the crit damage multiplier, folded into the tier
