@@ -16,11 +16,16 @@ use wfsim_optimizer::*;
 
 fn main() {
     let mut constraints = Constraints::default();
+    let mut flat = false;
     for arg in std::env::args().skip(1) {
         if let Some(id) = arg.strip_prefix("require=") {
             constraints.require.push(id.to_string());
         } else if let Some(id) = arg.strip_prefix("forbid=") {
             constraints.forbid.push(id.to_string());
+        } else if arg == "flat" {
+            // Validation mode: no funnel — EVERY candidate gets the full
+            // 1000 x 60 s treatment (much slower; verifies the funnel).
+            flat = true;
         } else {
             eprintln!("unknown arg: {arg} (use require=<id> / forbid=<id>)");
             std::process::exit(2);
@@ -84,13 +89,17 @@ fn main() {
 
     // Successive halving: (runs, keep). Early rounds rank by mean effective
     // damage; the last two rank by mean kills (the objective).
-    let rounds: &[(u32, usize, bool)] = &[
-        (3, 16384, false),
-        (12, 3072, false),
-        (48, 512, true),
-        (200, 64, true),
-        (1000, 24, true),
-    ];
+    let rounds: Vec<(u32, usize, bool)> = if flat {
+        vec![(1000, 24, true)]
+    } else {
+        vec![
+            (3, 16384, false),
+            (12, 3072, false),
+            (48, 512, true),
+            (200, 64, true),
+            (1000, 24, true),
+        ]
+    };
     let mut alive: Vec<usize> = (0..cands.len()).collect();
     let mut last: Vec<(usize, wfsim_engine::dummy::Summary)> = Vec::new();
     for (round, &(runs, keep, by_kills)) in rounds.iter().enumerate() {

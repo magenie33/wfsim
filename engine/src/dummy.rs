@@ -271,9 +271,14 @@ struct DebuffState {
     /// Weakened stacks (10 s): +5% flat crit chance received per stack.
     weakened: Vec<f64>,
     /// Freeze (Cold) stacks: +0.10/+0.05 flat crit DAMAGE received; cap 4
-    /// while overguard holds (never Frozen — the Frozen state itself is
-    /// not modeled, stacks simply cap at 10).
+    /// while overguard holds (never Frozen). The 10th proc consumes all
+    /// stacks and enters the Frozen state (`frozen_until`).
     freeze: Vec<f64>,
+    /// The Frozen state (data/debuffs/frozen.yaml): mutually exclusive
+    /// with Freeze — the 10th Cold proc consumes the 9 stacks; while
+    /// active, Cold procs are inert and crit damage received is +1.00
+    /// flat; on expiry Freeze is SET to exactly 3 fresh 6 s stacks.
+    frozen_until: Option<f64>,
     /// Disrupt (Magnetic) stacks: shield/overguard damage taken
     /// × (2 + 0.25·(stacks−1)), live.
     disrupt: Vec<f64>,
@@ -288,6 +293,9 @@ struct DebuffState {
     blast: Vec<BlastStack>,
     dots: Vec<Dot>,
     heat: Option<HeatEntity>,
+    /// Heat armor-strip ramp-DOWN (ignite.yaml): after the entity dies at
+    /// `.0` with strip `.1`, armor returns 50→40→30→15→0% in 1.5 s steps.
+    heat_decay: Option<(f64, f64)>,
 }
 
 const STAGGER_DURATION: f64 = 6.0;
@@ -305,6 +313,12 @@ const TEN_STACK_CAP: usize = 10;
 const BLAST_COEFFICIENT: f64 = 0.3;
 const BLAST_FUSE: f64 = 1.5;
 const FREEZE_CAP_UNDER_OVERGUARD: usize = 4;
+const FREEZE_STACKS_BEFORE_FROZEN: usize = 9; // the 10th proc converts
+const FROZEN_DURATION: f64 = 3.0;
+const FROZEN_CRIT_DAMAGE_RECEIVED: f64 = 1.00;
+const FROZEN_RESET_STACKS: usize = 3;
+const HEAT_STRIP_DECAY: [f64; 5] = [0.50, 0.40, 0.30, 0.15, 0.0];
+const HEAT_STRIP_DECAY_INTERVAL: f64 = 1.5;
 
 /// Live target-side damage-taken modifiers at one instant (the tick-time
 /// mitigation pipeline — defender-side, evaluated per hit/tick).
@@ -340,7 +354,7 @@ impl DebuffState {
         self.weakened.len()
     }
 
-    fn prune(&mut self, now: f64) {
+    fn prune(&mut self, now: f64, sd: f64) {
         self.stagger.retain(|&e| e > now);
         self.weakened.retain(|&e| e > now);
         self.freeze.retain(|&e| e > now);
@@ -348,29 +362,78 @@ impl DebuffState {
         self.virus.retain(|&e| e > now);
         self.corrosion.retain(|&e| e > now);
         self.confusion.retain(|&e| e > now);
+        if let Some(f) = self.frozen_until {
+            if f <= now {
+                // Thaw: Freeze is SET to exactly 3 stacks with FRESH 6 s
+                // timers issued from the trigger's context (M6/M7).
+                self.frozen_until = None;
+                self.freeze = vec![f + STATUS_DURATION * sd; FROZEN_RESET_STACKS];
+                self.freeze.retain(|&e| e > now); // long-idle prune
+            }
+        }
         if let Some(h) = &self.heat {
             // Strict: a tick scheduled at EXACTLY the expiry still lands
             // (the +6 s tick of an unrefreshed proc).
             if h.expiry < now {
-                // Simplification: the armor-strip ramp-DOWN (50→40→30→15→0
-                // over 6 s) is skipped — strip ends with the entity.
+                // Begin the armor-strip ramp-down from the strip level the
+                // entity had reached when it died.
+                self.heat_decay = Some((h.expiry, self.heat_ramp_up(h.expiry, sd)));
                 self.heat = None;
+            }
+        }
+        if let Some((t0, s0)) = self.heat_decay {
+            let steps = ((now - t0) / (HEAT_STRIP_DECAY_INTERVAL * sd)).floor() as usize;
+            let start = HEAT_STRIP_DECAY
+                .iter()
+                .position(|&s| s <= s0 + 1e-9)
+                .unwrap_or(HEAT_STRIP_DECAY.len() - 1);
+            if start + steps >= HEAT_STRIP_DECAY.len() - 1 {
+                self.heat_decay = None; // fully returned
             }
         }
     }
 
-    /// Cold's flat crit-damage-received bonus (+0.10 first stack, +0.05
-    /// each further), added into cd_total BEFORE the tier formula.
-    fn cold_cd_bonus(&self) -> f64 {
+    /// Cold's flat crit-damage-received bonus, added into cd_total BEFORE
+    /// the tier formula: +0.10 first stack, +0.05 each further; +1.00
+    /// while Frozen (supersedes the table).
+    fn cold_cd_bonus(&self, now: f64) -> f64 {
+        if self.frozen_until.is_some_and(|f| f > now) {
+            return FROZEN_CRIT_DAMAGE_RECEIVED;
+        }
         match self.freeze.len() {
             0 => 0.0,
             n => 0.10 + 0.05 * (n as f64 - 1.0),
         }
     }
 
-    /// Heat armor strip: 15/30/40/50% at 0.5 s steps after the FIRST proc
-    /// (steps scaled by status duration).
-    fn heat_strip(&self, now: f64, sd: f64) -> f64 {
+    /// Apply one Cold proc (data/debuffs/freeze.yaml + frozen.yaml):
+    /// inert while Frozen; the 10th stack CONSUMES all Freeze stacks and
+    /// enters Frozen; overguard holders cap at 4 (never Frozen).
+    fn apply_cold_proc(&mut self, t: f64, sd: f64, under_overguard: bool) {
+        if self.frozen_until.is_some_and(|f| f > t) {
+            return; // inert
+        }
+        self.freeze.retain(|&e| e > t);
+        if under_overguard {
+            DebuffState::push_capped(
+                &mut self.freeze,
+                t + STATUS_DURATION * sd,
+                FREEZE_CAP_UNDER_OVERGUARD,
+                t,
+            );
+            return;
+        }
+        if self.freeze.len() >= FREEZE_STACKS_BEFORE_FROZEN {
+            self.freeze.clear();
+            self.frozen_until = Some(t + FROZEN_DURATION * sd);
+        } else {
+            self.freeze.push(t + STATUS_DURATION * sd);
+        }
+    }
+
+    /// Heat armor-strip ramp-UP: 15/30/40/50% at 0.5 s steps after the
+    /// FIRST proc (steps scaled by status duration).
+    fn heat_ramp_up(&self, now: f64, sd: f64) -> f64 {
         let Some(h) = &self.heat else { return 0.0 };
         let steps = ((now - h.born) / (0.5 * sd)).floor();
         match steps as i64 {
@@ -382,6 +445,24 @@ impl DebuffState {
         }
     }
 
+    /// Total Heat armor strip: the live entity's ramp-up, or the dead
+    /// entity's ramp-down tail (whichever strips more if both exist).
+    fn heat_strip(&self, now: f64, sd: f64) -> f64 {
+        let up = self.heat_ramp_up(now, sd);
+        let down = match self.heat_decay {
+            Some((t0, s0)) if now >= t0 => {
+                let steps = ((now - t0) / (HEAT_STRIP_DECAY_INTERVAL * sd)).floor() as usize;
+                let start = HEAT_STRIP_DECAY
+                    .iter()
+                    .position(|&s| s <= s0 + 1e-9)
+                    .unwrap_or(HEAT_STRIP_DECAY.len() - 1);
+                HEAT_STRIP_DECAY[(start + steps).min(HEAT_STRIP_DECAY.len() - 1)]
+            }
+            _ => 0.0,
+        };
+        up.max(down)
+    }
+
     fn corrosive_strip(&self) -> f64 {
         match self.corrosion.len() {
             0 => 0.0,
@@ -391,7 +472,7 @@ impl DebuffState {
 
     /// Prune and compute the live mitigation snapshot for `now`.
     fn mitigation(&mut self, now: f64, sd: f64) -> Mitigation {
-        self.prune(now);
+        self.prune(now, sd);
         Mitigation {
             disrupt_amp: ten_stack_amp(self.disrupt.len()),
             virus_amp: ten_stack_amp(self.virus.len()),
@@ -412,6 +493,7 @@ impl DebuffState {
         n += usize::from(!self.confusion.is_empty());
         n += usize::from(!self.blast.is_empty());
         n += usize::from(self.heat.is_some());
+        n += usize::from(self.frozen_until.is_some());
         let mut seen: Vec<DamageType> = Vec::new();
         for d in &self.dots {
             if d.ticks_left > 0 && !seen.contains(&d.dtype) {
@@ -879,7 +961,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // procs already count): mitigation amps, Cold's flat crit
             // damage received, and Condition Overload's type count.
             let mit = debuffs.mitigation(t, sd);
-            let cd_total = params.crit_multiplier + debuffs.cold_cd_bonus();
+            let cd_total = params.crit_multiplier + debuffs.cold_cd_bonus(t);
             let co_mult = 1.0 + params.co_per_type * debuffs.distinct_statuses() as f64;
 
             let tier = roll_crit_tier(effective_cc, rng);
@@ -1024,19 +1106,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         }
                     }
                     DamageType::Cold => {
-                        // Overguard holders cap at 4 stacks (never Frozen);
-                        // the Frozen state itself is not modeled.
-                        let cap = if target.overguard > 0.0 {
-                            FREEZE_CAP_UNDER_OVERGUARD
-                        } else {
-                            TEN_STACK_CAP
-                        };
-                        DebuffState::push_capped(
-                            &mut debuffs.freeze,
-                            t + STATUS_DURATION * sd,
-                            cap,
-                            t,
-                        );
+                        debuffs.apply_cold_proc(t, sd, target.overguard > 0.0);
                     }
                     DamageType::Magnetic => DebuffState::push_capped(
                         &mut debuffs.disrupt,
@@ -1928,6 +1998,71 @@ mod tests {
             "break proc {}",
             s.mean_dot_damage
         );
+    }
+
+    #[test]
+    fn frozen_state_machine_follows_the_recorded_rules() {
+        let mut d = DebuffState::default();
+        // Nine Freeze stacks build normally (no overguard).
+        for k in 0..9 {
+            d.apply_cold_proc(k as f64 * 0.1, 1.0, false);
+        }
+        assert_eq!(d.freeze.len(), 9);
+        assert!((d.cold_cd_bonus(0.9) - 0.50).abs() < 1e-9); // 0.10+0.05×8
+        // The 10th proc CONSUMES the stacks and enters Frozen (3 s).
+        d.apply_cold_proc(1.0, 1.0, false);
+        assert!(d.freeze.is_empty());
+        assert_eq!(d.frozen_until, Some(4.0));
+        assert!((d.cold_cd_bonus(1.5) - 1.00).abs() < 1e-9); // supersedes
+        // Cold procs are inert while Frozen.
+        d.apply_cold_proc(2.0, 1.0, false);
+        assert!(d.freeze.is_empty());
+        // Thaw: hard reset to exactly 3 stacks with FRESH 6 s timers
+        // anchored at the thaw instant (expire at 4 + 6 = 10 s).
+        d.prune(4.5, 1.0);
+        assert_eq!(d.frozen_until, None);
+        assert_eq!(d.freeze.len(), 3);
+        d.prune(9.9, 1.0);
+        assert_eq!(d.freeze.len(), 3);
+        d.prune(10.1, 1.0);
+        assert!(d.freeze.is_empty());
+    }
+
+    #[test]
+    fn overguard_caps_freeze_at_four_and_never_freezes() {
+        let mut d = DebuffState::default();
+        for k in 0..20 {
+            d.apply_cold_proc(k as f64 * 0.1, 1.0, true);
+        }
+        assert_eq!(d.freeze.len(), 4);
+        assert_eq!(d.frozen_until, None);
+        assert!((d.cold_cd_bonus(2.0) - 0.25).abs() < 1e-9); // 0.10+0.05×3
+    }
+
+    #[test]
+    fn heat_strip_ramps_up_and_decays_after_the_entity_dies() {
+        let mut d = DebuffState {
+            heat: Some(HeatEntity {
+                born: 0.0,
+                expiry: 6.0,
+                next_tick: 1.0,
+                value: 1.0,
+            }),
+            ..Default::default()
+        };
+        // Ramp-up: 0.5 s steps 15/30/40/50%.
+        assert_eq!(d.heat_strip(0.4, 1.0), 0.0);
+        assert_eq!(d.heat_strip(0.6, 1.0), 0.15);
+        assert_eq!(d.heat_strip(1.6, 1.0), 0.40);
+        assert_eq!(d.heat_strip(2.5, 1.0), 0.50);
+        // Entity dies at 6.0 -> ramp-down every 1.5 s: 50/40/30/15/0.
+        d.prune(6.5, 1.0);
+        assert!(d.heat.is_none());
+        assert_eq!(d.heat_strip(6.5, 1.0), 0.50);
+        assert_eq!(d.heat_strip(7.6, 1.0), 0.40);
+        assert_eq!(d.heat_strip(9.1, 1.0), 0.30);
+        assert_eq!(d.heat_strip(10.6, 1.0), 0.15);
+        assert_eq!(d.heat_strip(12.1, 1.0), 0.0);
     }
 
     #[test]
