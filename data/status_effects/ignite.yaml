@@ -44,14 +44,20 @@ dot:
   # Faction double-dips as usual. UNLIKE Slash, Heat elemental mods
   # (Hellfire) DO scale the ticks.
   coefficient: 0.5
-  # First-proc modifier snapshot (Heat Inherit quirk): the Heat% and
-  # faction modifiers of the FIRST proc on the target govern the
-  # consolidated stack - if the first proc came from an unmodded source
-  # (Warframe ability, Manifold Bond), those bonuses are LOST for all
-  # subsequent weapon procs. Exception: status-damage mods (Rifle
-  # Elementalist) always count per contributing weapon. Wiki marks the
-  # exact semantics as needing clarification - measurement target.
-  first_proc_snapshot: true
+  # Two parameter layers on the singleton entity:
+  #  ENTITY CONTEXT - locked by the FIRST proc, applied to EVERY
+  #    contribution: the (1 + Heat%) and (1 + faction_damage) brackets.
+  #    Unmodded first proc (ability, Manifold Bond) => these brackets are
+  #    1.0 for the whole accumulator; later modded weapons' Hellfire/Bane
+  #    are forfeited (not retroactive, not per-contribution).
+  #  PER CONTRIBUTION - each proc brings its own: ModdedBase_i, the
+  #    (1 + status_damage_i) bracket (Rifle Elementalist WORKS regardless
+  #    of the first proc), crit_mult_i, part_mult_i.
+  # Open question (wiki UpdateMe): whether a MODDED first proc's context
+  # also boosts later unmodded (ability) contributions - measurement.
+  first_proc_snapshot:
+    entity_context: [heat_damage_bucket, faction_damage_bucket]
+    per_contribution: [modded_base, status_damage_bucket, crit_mult, part_mult]
 
 # Armor strip: a timed sub-effect with ramp-up and ramp-down.
 armor_strip:
