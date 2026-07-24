@@ -1,0 +1,65 @@
+schema_version: 0
+id: frozen
+name: Frozen
+kind: debuff
+default_scope: enemy
+
+aliases: []
+internal_name: null            # not captured yet (distinct from PT_CHILLED?)
+damage_type: null              # NOT applied by a damage-type proc:
+
+# Trigger is a state transition, not a proc - the 10th Freeze stack.
+applied_by:
+  debuff_threshold: { debuff: freeze, stacks: 10 }
+
+duration_seconds: 3
+refreshable: false             # cannot be extended: Cold procs are inert
+stacking: false
+max_stacks: 1
+
+effects:
+  - kind: full_cc
+    note: Prevents all action for the duration.
+  - kind: shield_recharge_block
+  - kind: crit_damage_received
+    value: 1.00                # +1.0x flat, supersedes Freeze's table value
+    condition: weapon_direct_damage_only
+
+# Interaction with Freeze while active (user-observed 2026-07-24: the
+# Freeze display stays pinned at 10 stacks throughout Frozen):
+freeze_interaction:
+  during: >-
+    All incoming Cold procs are INERT - no new stacks, no refresh, no
+    replacement (wiki: "Frozen enemies cannot receive additional Cold
+    stacks"). Observed: the stack display holds at 10 for the whole 3 s,
+    which suggests Freeze stack timers are suspended (or their expiry is
+    masked) during Frozen - if timers kept running, sub-10 counts would
+    be visible and the fixed 3-stack remainder could not hold.
+  on_expiry: >-
+    Exactly 3 Freeze stacks remain. Whether this is "remove 7" (keeping
+    the 3 newest with carried timers) or "set to 3" (fresh timers) is
+    unresolved - see open_questions.
+
+open_questions:
+  - Do the 3 post-thaw stacks carry fresh 6 s timers or the remnants of
+    old ones? (Measure: after thaw with no further Cold applied, time how
+    long the 3 stacks persist - fresh timers last ~6 s, carried ones
+    vanish almost immediately since they'd be >4 s old.)
+  - Can the Freeze count drop below 10 DURING Frozen from stack expiry?
+    (Observed no - display pinned at 10 - but confirm with a slow-proc
+    setup where the first stacks are near expiry at the freeze moment.)
+  - Frozen's own internal name / whether it is refreshed by anything.
+  - Does Frozen re-trigger immediately if 7 more stacks arrive right
+    after thaw (expected yes - no known lockout beyond the 3-stack reset).
+
+source:
+  url: https://wiki.warframe.com/w/Damage/Cold_Damage
+  note: >-
+    Split from the Freeze entry per architecture (a state with its own
+    duration/effects/trigger = its own debuff). Display-pinned-at-10
+    observation from the user, 2026-07-24.
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified
+  needs_measurement: true

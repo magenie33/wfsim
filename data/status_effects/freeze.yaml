@@ -33,19 +33,13 @@ stack_value_tables:
 modifier_conditions:
   crit_damage_received: weapon_direct_damage_only   # not AoE
 
-# The 10th stack replaces stacking with a special state:
-frozen_state:
-  trigger: 10th stack applied
-  duration_seconds: 3
-  effects:
-    - complete CC (prevents all action)
-    - negates shield recharge
-    - crit_damage_received bonus becomes +1.0x (doubled)
-  on_expiry: 3 Cold stacks remain
-  note: >-
-    Frozen enemies CANNOT receive additional Cold stacks - no further
-    stacking or duration refresh while Frozen (e.g. Primary Frostbite
-    does nothing against a Frozen target).
+# The 10th stack triggers a SEPARATE debuff: see frozen.yaml (its own
+# duration, effects, and trigger - rigorously not part of Freeze).
+# While Frozen is active, incoming Cold procs are inert and the Freeze
+# display stays pinned at 10 (user-observed); on Frozen expiry exactly
+# 3 Freeze stacks remain (remove-7 vs set-to-3 semantics unresolved -
+# open questions live in frozen.yaml).
+on_max_stacks: applies [[frozen]]
 
 stack_caps:
   # Bosses and Overguard holders cap at 4 stacks (can never be Frozen).
