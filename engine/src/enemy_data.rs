@@ -84,6 +84,10 @@ pub struct EnemySpec {
     /// silently allow impossible combinations.
     #[serde(default)]
     pub can_be_eximus: bool,
+    /// Whether this unit is in the Parazon Mercy heavy-unit list (wiki
+    /// `Parazon` §Mercy). Defaults to false.
+    #[serde(default)]
+    pub mercy_eligible: bool,
     pub stats: StatsSpec,
     pub body_parts: Vec<BodyPartSpec>,
 }
@@ -202,6 +206,8 @@ mod tests {
         assert_eq!(spec.stats.armor, 200.0);
         assert_eq!(spec.stats.overguard, 15.0);
         assert!(!spec.synthetic);
+        assert!(!spec.can_be_eximus);
+        assert!(!spec.mercy_eligible);
         assert_eq!(spec.scaling_faction, ScalingFaction::Unaffiliated);
         let head = spec.body_parts.iter().find(|p| p.is_head).unwrap();
         assert_eq!(head.multiplier, 3.0);
