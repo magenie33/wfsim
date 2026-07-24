@@ -29,7 +29,7 @@ item  ──references──▶  perk  ──grants_buff──▶  buff
 | `mods/` | mods | (tbd) |
 | `status_effects/` | **debuffs** applied by procs — same shape as `buffs/`, scoped to the target (a proc is only the trigger; see BUFFS.md "Debuffs") | `applied_by.damage_type`, `duration_seconds`, `max_stacks`, `stack_overflow`, `per_stack_modifiers`, `modifier_caps/conditions`, `cc_effects`, `aliases`, `internal_name` |
 | `enemies/` | enemies (loaded by `engine::enemy_data`; `custom/` holds synthetic test targets) | `stats` (base values at `base_level`), `body_parts` (multiplier / `is_head` / `crit_bonus`; aim weights are scenario-side), `scaling_faction`, `can_be_eximus`, `faction_damage_override`, `synthetic`, raw `mechanics` |
-| `factions/` | faction damage modifiers (post-U36: x1.5 vulnerable / x0.5 resistant, faction-wide) | `factions.<id>.vulnerable/resistant`, `special` (Object, Overguard) |
+| `factions/` | faction damage modifiers (post-U36, faction-wide) as **numeric multipliers** per damage type (unlisted = 1.0; today's values happen to be 1.5/0.5 — never assume it) | `factions.<id>.<damage_type>: <mult>`, `special` (Object, Overguard pools), `faction_mods` (Bane system) |
 
 ## Where a parameter lives
 
