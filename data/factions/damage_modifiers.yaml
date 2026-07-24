@@ -82,8 +82,10 @@ special:
     note: >-
       Neutral to all other damage types. No status/damage spillover to
       shields/health beneath it; grants crowd-control immunity while active
-      (max 4 Cold procs). Magnetic status amplifies damage against it
-      (+100% first stack, +25% per further stack, max +325% at 10).
+      (max 4 Cold procs) and blocks Parazon Mercy entirely. Magnetic status
+      amplifies damage against it (+100% first stack, +25% per further
+      stack, max +325% at 10). Damage Vulnerability effects apply normally
+      to Overguard.
 
 # ---------------------------------------------------------------------------
 # SYSTEM A - faction damage MODS (Bane/Cleanse/Expel/Smite) - a SEPARATE

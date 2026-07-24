@@ -99,12 +99,13 @@ the white (health-pool) damage number of the breaking shot: ≈`T` ungated,
 **Question.** Does the Corpus Mercy cap reach 100% (Parazon page) or only
 with shields removed (Impact page wording)?
 
-**Result (user in-game test, 2026-07-24):** Corpus units **do reach the
-100% cap**. Interpretation: pools drain Overguard → Shield → Health, so
-shields are always gone once health is inside the window — the two
-wordings are practically indistinguishable. Model keeps the
-shields-stripped condition. Remaining edge (untested, low priority): a
-Toxin-bypass state with low health while shields are still up.
+**Result (user in-game tests, 2026-07-24):**
+1. Corpus units **do reach the 100% cap**.
+2. **Shields are a hard gate**: at 1 HP behind 10,000 shields there is no
+   Mercy prompt — "shields removed" is a prerequisite, not a bonus
+   condition. Overguard likewise blocks Mercy entirely (also confirmed by
+   the wiki Overguard patch history). Model updated: `can_mercy` requires
+   shields = 0 and overguard = 0 before any window math.
 
 ---
 

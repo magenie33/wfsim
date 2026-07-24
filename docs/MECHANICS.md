@@ -424,15 +424,17 @@ complete rule set; the Impact page's list is a subset).
   Carnis, and the 1999 heavies: Hollow Vein, Severed Warden, Anatomizer,
   Unseeing Herald, Fragments, Scaldra Dedicant/Eradicator, Techrot
   Obsolyte, Anarch Libritor).
-- **Base window**: 40% of total health; **60%** on Corpus with all shields
-  removed; **80%** on Eximus.
+- **Hard gates (before any window math)** — measured/wiki-confirmed
+  2026-07-24: **shields must be fully depleted** (user test: 1 HP behind
+  10k shields shows no prompt — the Corpus "shields removed" wording is a
+  gate, not a bonus condition) and **Overguard must be gone** (wiki
+  Overguard patch history: "you cannot Mercy Kill enemies with Overguard
+  active").
+- **Base window**: 40% of total health; **60%** on Corpus (shields are
+  necessarily at zero past the gate); **80%** on Eximus.
 - **Impact (Stagger) stacks**: +8% per proc, cap **80%** (**100%** on
-  Corpus and Eximus). **Measured 2026-07-24 (user)**: Corpus units do
-  reach the 100% cap. Pool order Overguard → Shield → Health makes the
-  two pages' wordings (shields-removed conditional vs not) practically
-  indistinguishable — shields are always gone by the time health is in
-  the window; only a Toxin-bypass state (low health, shields up) could
-  separate them, untested.
+  Corpus and Eximus; measured 2026-07-24 — the cap is reached, and the
+  shields question is settled by the gate above).
 - **Level decay**: above level **150** the window shrinks **1% per 5
   levels**, floor **10%**.
 - The Mercy kill itself deals armor- and shield-bypassing damage equal to

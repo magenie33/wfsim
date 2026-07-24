@@ -10,13 +10,14 @@
 //!   Corpus and Eximus).
 //! - Above level **150**: window shrinks **1% per 5 levels**, floor **10%**.
 //!
-//! Corpus wording note — MEASURED (2026-07-24, user in-game test): Corpus
-//! units do reach the 100% cap. Because pools drain in order Overguard →
-//! Shield → Health, shields are always gone by the time health enters the
-//! window in normal play, so the two wiki wordings (cap conditional on
-//! shields removed vs not) are practically indistinguishable. We keep the
-//! shields-stripped condition in the model; the only untested edge is a
-//! Toxin-bypass state (health low while shields still up).
+//! Hard gates (both required before any window math):
+//! - **Shields must be fully depleted** — MEASURED (2026-07-24, user):
+//!   1 HP with 10k shields shows no prompt. The "60% on Corpus with all
+//!   their shields removed" wording is a gate, not a bonus condition.
+//! - **Overguard must be gone** — wiki Overguard patch history states you
+//!   "cannot Mercy Kill enemies with Overguard active".
+//! With the gates in place, a Corpus unit inside the window always has
+//! shields at zero, so its base is simply 60% / cap 100%.
 
 /// Static + dynamic facts about the target relevant to Mercy.
 #[derive(Debug, Clone, Copy)]
@@ -24,11 +25,15 @@ pub struct MercyContext {
     /// Per-unit data flag (wiki Parazon heavy-unit list).
     pub mercy_eligible: bool,
     pub eximus: bool,
-    /// Corpus-faction unit whose shields are currently fully removed.
-    pub corpus_shields_stripped: bool,
+    /// Corpus-faction unit (60% base / 100% cap once inside the window).
+    pub corpus: bool,
     pub level: u32,
     /// Current Impact (Stagger) stacks on the target's DebuffBar.
     pub impact_stacks: u32,
+    /// Current shield points — must be 0 for the prompt to exist.
+    pub shields: f64,
+    /// Current overguard points — must be 0 for the prompt to exist.
+    pub overguard: f64,
 }
 
 /// The Mercy window as a fraction of total health (0 if not eligible).
@@ -38,16 +43,12 @@ pub fn mercy_threshold(ctx: &MercyContext) -> f64 {
     }
     let base = if ctx.eximus {
         0.80
-    } else if ctx.corpus_shields_stripped {
+    } else if ctx.corpus {
         0.60
     } else {
         0.40
     };
-    let cap = if ctx.eximus || ctx.corpus_shields_stripped {
-        1.00
-    } else {
-        0.80
-    };
+    let cap = if ctx.eximus || ctx.corpus { 1.00 } else { 0.80 };
     let with_impact = (base + 0.08 * ctx.impact_stacks as f64).min(cap);
     // Level decay: -1% per 5 levels above 150, floor 10%.
     let decay = (ctx.level.saturating_sub(150) / 5) as f64 * 0.01;
@@ -57,7 +58,11 @@ pub fn mercy_threshold(ctx: &MercyContext) -> f64 {
 /// Is the Mercy prompt up right now, at `health_fraction` (0..=1) of total
 /// health?
 pub fn can_mercy(ctx: &MercyContext, health_fraction: f64) -> bool {
-    ctx.mercy_eligible && health_fraction > 0.0 && health_fraction <= mercy_threshold(ctx)
+    ctx.mercy_eligible
+        && ctx.shields <= 0.0
+        && ctx.overguard <= 0.0
+        && health_fraction > 0.0
+        && health_fraction <= mercy_threshold(ctx)
 }
 
 #[cfg(test)]
@@ -68,9 +73,11 @@ mod tests {
         MercyContext {
             mercy_eligible: true,
             eximus: false,
-            corpus_shields_stripped: false,
+            corpus: false,
             level: 1,
             impact_stacks: 0,
+            shields: 0.0,
+            overguard: 0.0,
         }
     }
 
@@ -88,7 +95,7 @@ mod tests {
     fn base_windows_by_unit_kind() {
         assert_eq!(mercy_threshold(&ctx()), 0.40);
         let corpus = MercyContext {
-            corpus_shields_stripped: true,
+            corpus: true,
             ..ctx()
         };
         assert_eq!(mercy_threshold(&corpus), 0.60);
@@ -106,6 +113,26 @@ mod tests {
         assert!(can_mercy(&c, 0.39));
         assert!(!can_mercy(&c, 0.41));
         assert!(!can_mercy(&c, 0.0)); // dead is not mercyable
+    }
+
+    #[test]
+    fn shields_and_overguard_are_hard_gates() {
+        // MEASURED (2026-07-24, user): 1 HP behind any shields -> no Mercy.
+        let shielded = MercyContext {
+            corpus: true,
+            shields: 10_000.0,
+            ..ctx()
+        };
+        assert!(!can_mercy(&shielded, 0.01));
+        // Wiki: cannot Mercy while Overguard is active.
+        let overguarded = MercyContext {
+            eximus: true,
+            overguard: 5.0,
+            ..ctx()
+        };
+        assert!(!can_mercy(&overguarded, 0.01));
+        // Both at zero -> gate opens.
+        assert!(can_mercy(&ctx(), 0.01));
     }
 
     #[test]
