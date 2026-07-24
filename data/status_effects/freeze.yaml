@@ -71,9 +71,11 @@ notes: >-
   fold-in (2 x Total CD - 1) doubles a cd_total that INCLUDES the Cold
   bonus - model per formula consistency; in-game spot check optional
   (headshot increment vs unchilled should be 3 x panel x 1.0, not x 0.5).
-  Likewise DoT tick snapshots of the "modded critical multiplier" should
-  carry the Cold-inclusive tier multiplier (likely; direction B - live
-  per-tick Cold sensitivity - still unmeasured).
+  DoT tick snapshots carry the Cold-inclusive tier multiplier (settled
+  by model, 2026-07-24: a tick is the hit's deferred damage - the
+  snapshot stores the realized multiplier). By the same principle Cold
+  applied AFTER the proc does not alter existing ticks (Cold feeds the
+  hit's formula, not the tick-time mitigation pipeline).
 
 source:
   url: https://wiki.warframe.com/w/Damage/Cold_Damage

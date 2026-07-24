@@ -277,14 +277,17 @@ element procs are weighted, not uniform.
   buffed by component mods** — only by literal matching-element damage;
   conversely Toxin mods DO buff a forced Toxin DoT even when combined
   into Corrosive on the panel.
-- **Snapshot vs live — the boundary rule**: a DoT stack is a *replay of
-  its proccing hit*. **Attacker-side state is snapshotted** at proc time
-  (mods, buffs, crit tier, body part, combo, faction, status damage —
-  frozen even if the buff later expires). **Defender-side state is
-  evaluated live at each tick** (current armor — hence strips grow Heat
-  ticks while Bleed ignores armor entirely; current pool the tick lands
-  in; current damage-taken debuffs like Viral stacks; DR auras active at
-  tick time). Implementation: the proc stores a frozen attacker
+- **Snapshot vs live — the boundary rule** (refined 2026-07-24): a DoT
+  stack is a *replay of its proccing hit* — a tick is that hit's deferred
+  damage. The dividing line is **not** attacker-vs-defender state but:
+  **whatever fed the HIT's damage formula is snapshotted** (mods, buffs,
+  crit tier — including receiver-side inputs the formula read, like the
+  Cold cd bonus at hit time), while **whatever belongs to the tick-time
+  MITIGATION pipeline is evaluated live** (current armor — hence strips
+  grow Heat ticks while Bleed ignores armor entirely; current pool the
+  tick lands in; damage-taken multipliers like Viral stacks; DR auras
+  active at tick time). Corollary: Cold rides into tick snapshots, and
+  Cold applied after the proc does not change existing ticks. Implementation: the proc stores a frozen attacker
   contribution template in the DebuffBar; each tick runs that template
   through the defender's *current* mitigation pipeline. Open question:
   the wiki lists enemy debuffs (Molecular Prime) among snapshot-inherited
