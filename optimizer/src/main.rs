@@ -19,6 +19,9 @@ fn main() {
     let mut flat = false;
     let mut target_file = "thrax_centurion";
     let mut evo2_both = false;
+    let mut duration_secs = 60.0f64;
+    let mut final_runs: Option<u32> = None;
+    let mut arcane_only: Option<wfsim_engine::dummy::Arcane> = None;
     for arg in std::env::args().skip(1) {
         if let Some(id) = arg.strip_prefix("require=") {
             constraints.require.push(id.to_string());
@@ -34,6 +37,20 @@ fn main() {
             target_file = "thrax_centurion";
         } else if arg == "evo2=both" {
             evo2_both = true;
+        } else if let Some(v) = arg.strip_prefix("duration=") {
+            duration_secs = v.parse().expect("duration=<secs>");
+        } else if let Some(v) = arg.strip_prefix("runs=") {
+            // Playoff mode: skip the funnel, run every job at this count.
+            final_runs = Some(v.parse().expect("runs=<n>"));
+        } else if let Some(v) = arg.strip_prefix("arcane=") {
+            use wfsim_engine::dummy::Arcane;
+            arcane_only = Some(match v {
+                "deadhead" => Arcane::Deadhead,
+                "enervate" => Arcane::Enervate,
+                "flare" => Arcane::CascadiaFlare,
+                "none" => Arcane::None,
+                _ => panic!("arcane=deadhead|enervate|flare|none"),
+            });
         } else {
             eprintln!(
                 "unknown arg: {arg} (use require=<id> / forbid=<id> / flat / target=thrax|acolyte / evo2=both)"
@@ -61,7 +78,7 @@ fn main() {
             .target_params(9999, true, false, TargetMode::InstantRespawn)
             .expect("valid target"),
         body_parts: spec.aim_parts(&[("head", 1.0)]).expect("head aim"),
-        duration_secs: 60.0,
+        duration_secs,
         // The REAL Incarnon cycle (user flow): full gauge start -> dump ->
         // revert 1.0 s -> rebuild 9 weakpoint charges in base form ->
         // transmute 2.35 s -> repeat. Frenzy locked Permanent (chosen
@@ -71,8 +88,8 @@ fn main() {
         frenzy_lock: LockMode::Permanent,
     };
     println!(
-        "[scenario] {} @9999 STEEL PATH, instant respawn, 100% headshots, 60 s, REAL incarnon cycle",
-        scenario.target.name
+        "[scenario] {} @9999 STEEL PATH, instant respawn, 100% headshots, {} s, REAL incarnon cycle",
+        scenario.target.name, scenario.duration_secs
     );
     println!(
         "  pools: overguard {:.3e}, shield {:.3e}, health {:.3e}, armor {:.0}{}",
@@ -140,9 +157,12 @@ fn main() {
     use wfsim_engine::dummy::Arcane;
     // The arcane is a SEARCH DIMENSION like the mod choice (user,
     // 2026-07-25): every candidate is evaluated under each arcane.
-    let arcanes = [Arcane::Enervate, Arcane::Deadhead, Arcane::CascadiaFlare];
+    let arcanes: Vec<Arcane> = match arcane_only {
+        Some(a) => vec![a],
+        None => vec![Arcane::Enervate, Arcane::Deadhead, Arcane::CascadiaFlare],
+    };
     let mut alive: Vec<Job> = (0..cands.len())
-        .flat_map(|i| arcanes.into_iter().map(move |a| (i, a)))
+        .flat_map(|i| arcanes.iter().map(move |&a| (i, a)))
         .collect();
     println!(
         "[search] {} jobs = {} candidates x {} arcanes",
@@ -152,7 +172,9 @@ fn main() {
     );
     // Self-scaling successive halving derived from the job count (user,
     // 2026-07-25); `flat` bypasses the funnel for validation runs.
-    let rounds: Vec<(u32, usize, bool)> = if flat {
+    let rounds: Vec<(u32, usize, bool)> = if let Some(r) = final_runs {
+        vec![(r, 24, true)]
+    } else if flat {
         vec![(1024, 24, true)]
     } else {
         schedule(alive.len())
