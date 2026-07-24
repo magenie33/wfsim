@@ -88,6 +88,10 @@ pub struct WeaponBase {
     pub buff_multishot_bonus: f64,
     pub magazine_size: f64,
     pub base_reload: f64,
+    /// Buff-injected elements as RELATIVE bonuses (element, bonus): each
+    /// contributes ModifiedBase × bonus at the END of the hierarchy
+    /// (rule 8) — Frenzy's +100% Toxin on the base Dual Toxocyst.
+    pub injected_elements: Vec<(DamageType, f64)>,
 }
 
 impl WeaponBase {
@@ -111,6 +115,34 @@ impl WeaponBase {
             buff_multishot_bonus: 1.0, // Fevered Frenzy at 20 stacks
             magazine_size: 270.0,
             base_reload: 3.35,
+            injected_elements: Vec::new(),
+        }
+    }
+
+    /// Dual Toxocyst **base form** with the same fixed evolution build:
+    /// vector ×5/3 (Fevered +50 pro-rata), Commodore 5% → 25% base cc.
+    /// `frenzy_active` folds the passive's +100% Toxin injection into the
+    /// panel (approximation: 100% Frenzy uptime — exact under a Permanent
+    /// lock; near-exact at 100% headshot aim).
+    pub fn dual_toxocyst_base(frenzy_active: bool) -> Self {
+        Self {
+            base_vector: DamageVector::new()
+                .with(DamageType::Impact, 12.5)
+                .with(DamageType::Puncture, 100.0)
+                .with(DamageType::Slash, 12.5),
+            base_crit_chance: 0.25, // 5% + Commodore's Fortune 20%
+            base_crit_damage: 2.0,
+            base_status_chance: 0.37,
+            base_fire_rate: 1.0, // semi-auto; Frenzy ×2.5 applies live
+            base_multishot: 1.0,
+            buff_multishot_bonus: 1.0, // Fevered Frenzy at 20 stacks
+            magazine_size: 12.0,
+            base_reload: 2.35,
+            injected_elements: if frenzy_active {
+                vec![(DamageType::Toxin, 1.0)]
+            } else {
+                Vec::new()
+            },
         }
     }
 }
@@ -130,6 +162,9 @@ pub struct ResolvedPanel {
     pub multishot: f64,
     pub magazine_size: f64,
     pub reload_seconds: f64,
+    /// Σ reload-speed bonuses — transitions (Incarnon transmute/revert)
+    /// scale by the same formula: time = base / (1 + this).
+    pub reload_bonus: f64,
     /// Σ (CO per_stack × stacks) under the policy: direct hits gain
     /// × (1 + this × distinct status types on the target).
     pub co_per_type: f64,
@@ -195,6 +230,9 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
             }
         }
     }
+    for &(t, bonus) in &base.injected_elements {
+        input.injected.push((t, modified_base * bonus));
+    }
     let damage = elements::combine(&physical, &input);
 
     ResolvedPanel {
@@ -207,6 +245,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         multishot: base.base_multishot * (1.0 + base.buff_multishot_bonus + ms),
         magazine_size: base.magazine_size,
         reload_seconds: base.base_reload / (1.0 + rl),
+        reload_bonus: rl,
         co_per_type: co,
         status_damage_mult: 1.0 + sd,
         elem_dot_bonus: elem_bonus.into_iter().map(|(t, v)| (t, 1.0 + v)).collect(),

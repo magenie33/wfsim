@@ -34,13 +34,67 @@ use crate::scaling;
 use crate::sim::{Event, Hit};
 use crate::status;
 
-/// A buff forced permanently active for the whole run — the "buff lock"
-/// simulation setting (e.g. assume 100% Frenzy uptime). Locks are asserted
-/// each shot, overriding natural expiry; the perk's own trigger still fires
-/// harmlessly alongside.
+/// A buff forced active by a "buff lock" simulation setting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LockedBuff {
     Frenzy,
+}
+
+/// Per-buff lock setting (user, 2026-07-24): each buff is configured
+/// INDEPENDENTLY —
+/// - `Permanent`: re-asserted every shot, overriding natural expiry
+///   (100% uptime, full stacks).
+/// - `Initial(stacks)`: granted once at t = 0 at the given stack count
+///   with its NATURAL duration; afterwards only the buff's own mechanics
+///   (triggers, decay, expiry) govern it. For non-stacking buffs
+///   (Frenzy) the count is ignored.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LockMode {
+    Permanent,
+    Initial(u32),
+}
+
+/// One buff-lock setting.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BuffLock {
+    pub buff: LockedBuff,
+    pub mode: LockMode,
+}
+
+impl BuffLock {
+    pub fn permanent(buff: LockedBuff) -> Self {
+        Self {
+            buff,
+            mode: LockMode::Permanent,
+        }
+    }
+
+    pub fn initial(buff: LockedBuff, stacks: u32) -> Self {
+        Self {
+            buff,
+            mode: LockMode::Initial(stacks),
+        }
+    }
+}
+
+/// The real Incarnon combat cycle (user flow, 2026-07-24): the run STARTS
+/// with a full gauge in Incarnon Form; when the charge magazine empties,
+/// revert (`revert_seconds`), fight in the base form until weakpoint hits
+/// (each multishot pellet counts) rebuild the gauge, transmute
+/// (`transmute_seconds`), repeat. Swapping either way fully reloads the
+/// base form's magazine (wiki side effect). Frenzy does not carry into the
+/// Incarnon Form (open question — excluded, per the weapon data).
+#[derive(Debug, Clone)]
+pub struct IncarnonCycle {
+    /// The base form's full engagement params (its own panel; target/aim/
+    /// duration fields are ignored — the outer params' are shared).
+    pub base_form: Box<DummyParams>,
+    /// Weakpoint hits to fill the gauge (Dual Toxocyst: 9).
+    pub charges_to_fill: u32,
+    /// Incarnon → base transition (already reload-speed scaled).
+    pub revert_seconds: f64,
+    /// Base → Incarnon transition (already reload-speed scaled).
+    pub transmute_seconds: f64,
 }
 
 /// What happens when the target's health reaches zero.
@@ -543,8 +597,10 @@ pub struct DummyParams {
     /// NOT yet wired: +100% Toxin injection (needs the element layer) and
     /// ammo efficiency (ammo is infinite here anyway).
     pub frenzy: bool,
-    /// Buffs forced permanently active regardless of triggers/expiry.
-    pub locked_buffs: Vec<LockedBuff>,
+    /// Buff-lock settings (see [`LockMode`]).
+    pub locked_buffs: Vec<BuffLock>,
+    /// The real Incarnon two-form cycle; `None` = single-phase run.
+    pub cycle: Option<IncarnonCycle>,
     /// Magazine size; when it runs dry a reload (below) blocks firing.
     pub magazine_size: f64,
     pub reload_seconds: f64,
@@ -622,9 +678,9 @@ impl DummyParams {
             damage: Self::dual_toxocyst_base_vector().scale(125.0 / 75.0),
             base_crit_chance: 0.25,
             frenzy: true,
-            // Sim settings (user, 2026-07-26): Frenzy locked at 100% uptime
+            // Sim settings (user, 2026-07-24): Frenzy locked at 100% uptime
             // and Fevered Frenzy pre-stacked to 20 (+100% multishot).
-            locked_buffs: vec![LockedBuff::Frenzy],
+            locked_buffs: vec![BuffLock::permanent(LockedBuff::Frenzy)],
             multishot: 2.0,
             ..Self::default()
         }
@@ -692,6 +748,42 @@ impl DummyParams {
         }
     }
 
+    /// The REAL Incarnon cycle engagement from both forms' resolved panels
+    /// (user flow, 2026-07-24): start transformed with a full gauge; dump
+    /// the charge magazine; revert; rebuild 9 weakpoint charges in the
+    /// base form (Frenzy per `frenzy_lock`); transmute; repeat. Both
+    /// transitions scale by the reload formula (M9).
+    pub fn incarnon_cycle_from_panels(
+        incarnon: &crate::loadout::ResolvedPanel,
+        base: &crate::loadout::ResolvedPanel,
+        frenzy_lock: LockMode,
+        target: TargetParams,
+        body_parts: Vec<BodyPart>,
+        duration_secs: f64,
+    ) -> Self {
+        let rl = 1.0 + incarnon.reload_bonus;
+        let base_form = DummyParams {
+            frenzy: true,
+            ammo_efficiency_applies: true,
+            ..Self::from_panel(base, target.clone(), body_parts.clone(), duration_secs)
+        };
+        Self {
+            locked_buffs: vec![BuffLock {
+                buff: LockedBuff::Frenzy,
+                mode: frenzy_lock,
+            }],
+            cycle: Some(IncarnonCycle {
+                base_form: Box::new(base_form),
+                // Dual Toxocyst gauge: 9 weakpoint charges
+                // (data/weapons/dual_toxocyst_incarnon.yaml).
+                charges_to_fill: 9,
+                revert_seconds: 1.0 / rl,
+                transmute_seconds: 2.35 / rl,
+            }),
+            ..Self::from_panel(incarnon, target, body_parts, duration_secs)
+        }
+    }
+
     /// The (1 + element bonuses) bracket for an elemental DoT's ticks.
     fn elem_bracket(&self, t: DamageType) -> f64 {
         self.elem_dot_bonus
@@ -714,6 +806,7 @@ impl Default for DummyParams {
             fire_rate: 1.0,
             frenzy: false,
             locked_buffs: Vec::new(),
+            cycle: None,
             magazine_size: 12.0,
             reload_seconds: 2.35,
             infinite_reserve: true,
@@ -741,15 +834,16 @@ pub struct RunResult {
     pub effective_damage: f64,
     /// Effective damage contributed by DoT ticks (subset of the above).
     pub dot_damage: f64,
-    pub shots: u32,     // trigger pulls
-    pub pellets: u32,   // multishot instances (>= shots)
-    pub crits: u32,     // tier >= 1, counted per pellet
-    pub big_crits: u32, // tier >= 2
-    pub headshots: u32, // hits on an `is_head` part
-    pub procs: u32,     // status procs applied (all types)
-    pub dot_ticks: u32, // bleed ticks that landed
-    pub reloads: u32,   // magazine reloads performed
-    pub kills: u32,     // InstantRespawn deaths (0 with InfiniteHealth)
+    pub shots: u32,      // trigger pulls
+    pub pellets: u32,    // multishot instances (>= shots)
+    pub crits: u32,      // tier >= 1, counted per pellet
+    pub big_crits: u32,  // tier >= 2
+    pub headshots: u32,  // hits on an `is_head` part
+    pub procs: u32,      // status procs applied (all types)
+    pub dot_ticks: u32,  // bleed ticks that landed
+    pub reloads: u32,    // magazine reloads performed
+    pub transforms: u32, // Incarnon cycle transitions (each direction counts)
+    pub kills: u32,      // InstantRespawn deaths (0 with InfiniteHealth)
     /// Kills + the depleted fraction of the CURRENT target's total pool
     /// (overguard + health) at engagement end — partial credit so the
     /// objective is not a step function (user, 2026-07-24: "打空了80%
@@ -882,16 +976,37 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     let mut debuffs = DebuffState::default();
     let mut r = RunResult::default();
 
-    // The dealt vector is quantized once (static per run: no dynamic mods
-    // yet); ModdedBase for proc payload formulas stays pre-quantization
-    // and EXCLUDES elemental portions (base × (1 + damage mods)).
-    let qvec = params.damage.quantized();
-    let qtotal = qvec.total();
-    let modded_base = params
-        .dot_modified_base
-        .unwrap_or_else(|| params.damage.total());
+    // Per-phase precomputation: the quantized vector is static per phase
+    // (no dynamic mods); ModdedBase for proc payload formulas stays
+    // pre-quantization and EXCLUDES elemental portions (base × (1 + dmg)).
+    let precompute = |p: &DummyParams| {
+        let qvec = p.damage.quantized();
+        let qtotal = qvec.total();
+        let mb = p.dot_modified_base.unwrap_or_else(|| p.damage.total());
+        (qvec, qtotal, mb)
+    };
+    let main_pre = precompute(params);
+    let base_pre = params.cycle.as_ref().map(|c| precompute(&c.base_form));
     let sd = params.status_duration_mult;
     let sdm = params.status_damage_mult;
+
+    // Initial locks: one natural-duration grant at t = 0 (at the set
+    // stack count); afterwards only the buff's own mechanics govern it.
+    for lock in &params.locked_buffs {
+        if matches!(lock.mode, LockMode::Initial(_)) {
+            match lock.buff {
+                LockedBuff::Frenzy => frenzy.on_event(
+                    &Event::Hit(Hit {
+                        big_crit: false,
+                        headshot: true,
+                        target_alive: true,
+                    }),
+                    0.0,
+                    &mut bar,
+                ),
+            }
+        }
+    }
 
     // Fire while t < duration; the inter-shot interval is 1/(base rate x
     // live BuffBar fire-rate multiplier), evaluated after each shot (a buff
@@ -899,14 +1014,40 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     let mut t = 0.0f64;
     let mut magazine = params.magazine_size;
     let mut reserve = params.reserve_ammo;
+    // Incarnon cycle state: the run STARTS transformed with a full gauge.
+    let mut in_base_form = false;
+    let mut charges = 0u32;
+    let mut base_mag = params
+        .cycle
+        .as_ref()
+        .map_or(0.0, |c| c.base_form.magazine_size);
     loop {
         if t >= params.duration_secs {
             break;
         }
 
-        // Out of magazine: reload (blocking) or, with dry finite reserves,
-        // stop firing altogether (DoTs still drain below).
-        if magazine < 1e-9 {
+        // Phase transitions and reloads.
+        if let Some(cy) = &params.cycle {
+            if !in_base_form && magazine < 1e-9 {
+                // Charge magazine spent: revert to the base form. The swap
+                // fully reloads the base magazine (wiki side effect).
+                t += cy.revert_seconds;
+                r.transforms += 1;
+                in_base_form = true;
+                charges = 0;
+                base_mag = cy.base_form.magazine_size;
+                continue;
+            }
+            if in_base_form && base_mag < 1e-9 {
+                // Base-form reload (infinite reserve assumed in the cycle).
+                t += cy.base_form.reload_seconds;
+                r.reloads += 1;
+                base_mag = cy.base_form.magazine_size;
+                continue;
+            }
+        } else if magazine < 1e-9 {
+            // Out of magazine: reload (blocking) or, with dry finite
+            // reserves, stop firing altogether (DoTs still drain below).
             if !params.infinite_reserve && reserve < 1e-9 {
                 break;
             }
@@ -925,15 +1066,36 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             }
         }
 
+        // Active-phase view: the base form's panel during the rebuild
+        // phase, the outer params otherwise. Target/aim/locks are shared
+        // from the outer params.
+        let ap: &DummyParams = match &params.cycle {
+            Some(cy) if in_base_form => &cy.base_form,
+            _ => params,
+        };
+        let (qvec, qtotal, modded_base) = if in_base_form {
+            let p = base_pre.as_ref().expect("cycle state needs base pre");
+            (&p.0, p.1, p.2)
+        } else {
+            (&main_pre.0, main_pre.1, main_pre.2)
+        };
+
         // Status events scheduled before this shot land first.
         process_ticks(&mut debuffs, t + 1e-9, &mut target, params, &mut r);
 
-        // Timed buffs (Frenzy) lapse before this shot reads the bar; locked
-        // buffs are then re-asserted (locks beat expiry and trigger churn).
+        // Timed buffs (Frenzy) lapse before this shot reads the bar;
+        // Permanent locks re-assert — only in phases where the perk exists
+        // (Frenzy belongs to the base form).
         bar.expire(t);
         for lock in &params.locked_buffs {
-            match lock {
-                LockedBuff::Frenzy => bar.upsert(Frenzy::permanent_buff()),
+            if lock.mode == LockMode::Permanent {
+                match lock.buff {
+                    LockedBuff::Frenzy => {
+                        if ap.frenzy {
+                            bar.upsert(Frenzy::permanent_buff());
+                        }
+                    }
+                }
             }
         }
 
@@ -943,22 +1105,26 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         let contribs = bar.total_contributions();
         // Ammo: consume (1 - efficiency) per shot; Frenzy's +100% efficiency
         // zeroes consumption (unless this magazine is charge-backed).
-        let efficiency = if params.ammo_efficiency_applies {
+        let efficiency = if ap.ammo_efficiency_applies {
             contribs.ammo_efficiency.clamp(0.0, 1.0)
         } else {
             0.0
         };
-        magazine -= 1.0 - efficiency;
+        if in_base_form {
+            base_mag -= 1.0 - efficiency;
+        } else {
+            magazine -= 1.0 - efficiency;
+        }
 
         let flat_crit = contribs.flat_crit_chance;
         let weakened_cc = WEAKENED_FLAT_CC_PER_STACK * debuffs.weakened_active(t) as f64;
-        let effective_cc = params.base_crit_chance + flat_crit + weakened_cc;
+        let effective_cc = ap.base_crit_chance + flat_crit + weakened_cc;
 
         // Multishot: pellets this pull = floor + fractional chance; every
         // pellet is an independent damage instance.
-        let n_pellets =
-            params.multishot.floor() as u32 + rng.chance(params.multishot.fract()) as u32;
+        let n_pellets = ap.multishot.floor() as u32 + rng.chance(ap.multishot.fract()) as u32;
         let (mut any_head, mut any_big) = (false, false);
+        let headshots_before = r.headshots;
         r.shots += 1;
 
         for _ in 0..n_pellets {
@@ -966,8 +1132,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // procs already count): mitigation amps, Cold's flat crit
             // damage received, and Condition Overload's type count.
             let mit = debuffs.mitigation(t, sd);
-            let cd_total = params.crit_multiplier + debuffs.cold_cd_bonus(t);
-            let co_mult = 1.0 + params.co_per_type * debuffs.distinct_statuses() as f64;
+            let cd_total = ap.crit_multiplier + debuffs.cold_cd_bonus(t);
+            let co_mult = 1.0 + ap.co_per_type * debuffs.distinct_statuses() as f64;
 
             let tier = roll_crit_tier(effective_cc, rng);
             let part = pick_part(&params.body_parts, rng);
@@ -1006,9 +1172,9 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // SC draws weighted by the QUANTIZED vector, unit immunities
             // renormalized.
             let procs = status::procs_for_hit(
-                &params.forced_procs,
-                params.status_chance,
-                &qvec,
+                &ap.forced_procs,
+                ap.status_chance,
+                qvec,
                 &params.target.status_immunities,
                 rng,
             );
@@ -1019,12 +1185,12 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             let delayed_ticks = ((BLEED_TICKS as f64 * sd - BLEED_DELAY).floor() as u32) + 1;
             let immediate_ticks = ((BLEED_TICKS as f64 * sd).floor() as u32).max(1);
             let push_dot = |debuffs: &mut DebuffState,
-                                dtype: DamageType,
-                                coeff: f64,
-                                bracket: f64,
-                                delay: f64,
-                                ticks: u32,
-                                ignores_armor: bool| {
+                            dtype: DamageType,
+                            coeff: f64,
+                            bracket: f64,
+                            delay: f64,
+                            ticks: u32,
+                            ignores_armor: bool| {
                 debuffs.dots.push(Dot {
                     next_tick: t + delay,
                     ticks_left: ticks,
@@ -1061,7 +1227,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         &mut debuffs,
                         DamageType::Toxin,
                         DOT_COEFFICIENT,
-                        params.elem_bracket(DamageType::Toxin),
+                        ap.elem_bracket(DamageType::Toxin),
                         1.0,
                         delayed_ticks,
                         false,
@@ -1070,7 +1236,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         &mut debuffs,
                         DamageType::Electricity,
                         DOT_COEFFICIENT,
-                        params.elem_bracket(DamageType::Electricity),
+                        ap.elem_bracket(DamageType::Electricity),
                         0.0,
                         immediate_ticks,
                         false,
@@ -1090,7 +1256,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         // the first proc (ignite.yaml).
                         let contrib = DOT_COEFFICIENT
                             * modded_base
-                            * params.elem_bracket(DamageType::Heat)
+                            * ap.elem_bracket(DamageType::Heat)
                             * sdm
                             * crit_mult
                             * part.multiplier;
@@ -1181,14 +1347,33 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         if params.arcane_enervate {
             enervate.on_event(&hit, t, &mut bar);
         }
-        if params.frenzy {
+        if ap.frenzy {
             frenzy.on_event(&hit, t, &mut bar);
+        }
+
+        // Gauge charging (base phase): every weakpoint PELLET builds one
+        // charge (charge_rules); a full gauge transmutes back immediately.
+        if let Some(cy) = &params.cycle {
+            if in_base_form {
+                charges += r.headshots - headshots_before;
+                if charges >= cy.charges_to_fill {
+                    t += cy.transmute_seconds;
+                    r.transforms += 1;
+                    in_base_form = false;
+                    magazine = params.magazine_size; // full gauge = full charge mag
+                    base_mag = cy.base_form.magazine_size; // swap reloads it
+                                                           // Frenzy does not carry into the Incarnon Form (open
+                                                           // question — excluded per the weapon data).
+                    bar.remove(crate::perks::frenzy::BUFF_ID);
+                    continue;
+                }
+            }
         }
 
         // Next shot: cadence reflects the bar as of now (Frenzy just
         // granted/refreshed counts immediately).
         bar.expire(t);
-        let rate = params.fire_rate * bar.total_contributions().fire_rate_multiplier;
+        let rate = ap.fire_rate * bar.total_contributions().fire_rate_multiplier;
         t += 1.0 / rate;
     }
 
@@ -1229,6 +1414,7 @@ pub struct Summary {
     pub mean_dot_damage: f64,
     pub mean_procs: f64,
     pub mean_reloads: f64,
+    pub mean_transforms: f64,
     pub mean_kills: f64,
     pub std_kills: f64,
     pub min_kills: u32,
@@ -1254,6 +1440,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         (0u64, 0u64, 0u64, 0u64, 0u64);
     let (mut effective, mut kills, mut kills_sq) = (0.0f64, 0u64, 0u64);
     let (mut dot, mut procs, mut reloads) = (0.0f64, 0u64, 0u64);
+    let mut transforms = 0u64;
     let (mut min_kills, mut max_kills) = (u32::MAX, 0u32);
     let mut kill_progress = 0.0f64;
 
@@ -1267,6 +1454,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         dot += r.dot_damage;
         procs += r.procs as u64;
         reloads += r.reloads as u64;
+        transforms += r.transforms as u64;
         kills += r.kills as u64;
         kills_sq += (r.kills as u64) * (r.kills as u64);
         kill_progress += r.kill_progress;
@@ -1297,6 +1485,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         mean_dot_damage: dot / n,
         mean_procs: procs as f64 / n,
         mean_reloads: reloads as f64 / n,
+        mean_transforms: transforms as f64 / n,
         mean_kills: kills as f64 / n,
         std_kills: {
             let mean_k = kills as f64 / n;
@@ -1508,7 +1697,7 @@ mod tests {
         // it up from t=0: cadence 0.4 s -> 25 shots in 10 s.
         let p = DummyParams {
             frenzy: true,
-            locked_buffs: vec![LockedBuff::Frenzy],
+            locked_buffs: vec![BuffLock::permanent(LockedBuff::Frenzy)],
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -2024,6 +2213,68 @@ mod tests {
     }
 
     #[test]
+    fn incarnon_cycle_alternates_forms_deterministically() {
+        // Incarnon: 100 dmg, mag 2, 1/s. Base: 50 dmg, aim 100% head
+        // (each pellet charges), 2 charges to fill, revert 0.5 s,
+        // transmute 1.0 s. Timeline over 10 s:
+        //   inc @0,1 | revert 2->2.5 | base @2.5,3.5 -> transmute ->4.5
+        //   inc @4.5,5.5 | revert 6.5->7 | base @7,8 -> transmute ->9
+        //   inc @9. Totals: 5x100 + 4x50 = 700; 9 shots; 4 transforms.
+        let head = vec![BodyPart {
+            name: "head".into(),
+            aim_weight: 1.0,
+            multiplier: 1.0, // 1x so no crit-location bonus, pure counts
+            is_head: true,
+            crit_bonus: false,
+        }];
+        let base_form = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 50.0),
+            crit_multiplier: 1.0,
+            body_parts: head.clone(),
+            ..no_status()
+        };
+        let p = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 100.0),
+            crit_multiplier: 1.0,
+            magazine_size: 2.0,
+            ammo_efficiency_applies: false,
+            arcane_enervate: false,
+            body_parts: head,
+            cycle: Some(IncarnonCycle {
+                base_form: Box::new(base_form),
+                charges_to_fill: 2,
+                revert_seconds: 0.5,
+                transmute_seconds: 1.0,
+            }),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 5, 9);
+        assert!(
+            (s.mean_damage - 700.0).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
+        assert!((s.mean_shots - 9.0).abs() < 1e-9, "shots {}", s.mean_shots);
+        assert!((s.mean_transforms - 4.0).abs() < 1e-9);
+        assert_eq!(s.mean_reloads, 0.0);
+    }
+
+    #[test]
+    fn initial_lock_grants_frenzy_once_then_mechanics_rule() {
+        // Body-only aim (no natural headshots), Frenzy at Initial: the
+        // t=0 grant runs out at 3 s. Shots at 0,0.4,...,2.8 (8) then
+        // 3.2,4.2,...,9.2 (7) = 15 — vs 25 Permanent, 10 unlocked.
+        let p = DummyParams {
+            frenzy: true,
+            locked_buffs: vec![BuffLock::initial(LockedBuff::Frenzy, 1)],
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 20, 4);
+        assert!((s.mean_shots - 15.0).abs() < 1e-9, "shots {}", s.mean_shots);
+    }
+
+    #[test]
     fn kill_progress_gives_partial_credit_for_depleted_pools() {
         // 1000 HP target, one 75-damage shot in the window: 0 kills but
         // 7.5% of the pool depleted -> score 0.075.
@@ -2054,12 +2305,12 @@ mod tests {
         }
         assert_eq!(d.freeze.len(), 9);
         assert!((d.cold_cd_bonus(0.9) - 0.50).abs() < 1e-9); // 0.10+0.05×8
-        // The 10th proc CONSUMES the stacks and enters Frozen (3 s).
+                                                             // The 10th proc CONSUMES the stacks and enters Frozen (3 s).
         d.apply_cold_proc(1.0, 1.0, false);
         assert!(d.freeze.is_empty());
         assert_eq!(d.frozen_until, Some(4.0));
         assert!((d.cold_cd_bonus(1.5) - 1.00).abs() < 1e-9); // supersedes
-        // Cold procs are inert while Frozen.
+                                                             // Cold procs are inert while Frozen.
         d.apply_cold_proc(2.0, 1.0, false);
         assert!(d.freeze.is_empty());
         // Thaw: hard reset to exactly 3 stacks with FRESH 6 s timers

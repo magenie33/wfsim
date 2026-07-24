@@ -9,7 +9,7 @@
 //! Usage: wfsim-optimizer [require=mod_id]... [forbid=mod_id]...
 
 use std::time::Instant;
-use wfsim_engine::dummy::TargetMode;
+use wfsim_engine::dummy::{LockMode, TargetMode};
 use wfsim_engine::enemy_data::EnemySpec;
 use wfsim_engine::loadout::WeaponBase;
 use wfsim_optimizer::*;
@@ -54,9 +54,16 @@ fn main() {
         duration_secs: 60.0,
         // The chosen loadout's arcane is EQUIPPED (fixed, not searched).
         arcane_enervate: true,
+        // The REAL Incarnon cycle (user flow): full gauge start -> dump ->
+        // revert 1.0 s -> rebuild 9 weakpoint charges in base form ->
+        // transmute 2.35 s -> repeat. Frenzy locked Permanent (chosen
+        // sim setting) - its +100% Toxin injection is folded into the
+        // base-form panel.
+        incarnon_cycle: true,
+        frenzy_lock: LockMode::Permanent,
     };
     println!(
-        "[scenario] {} @9999 STEEL PATH, instant respawn, 100% headshots, 60 s",
+        "[scenario] {} @9999 STEEL PATH, instant respawn, 100% headshots, 60 s, REAL incarnon cycle",
         scenario.target.name
     );
     println!(
@@ -68,10 +75,14 @@ fn main() {
 
     let p = pool();
     let base = WeaponBase::dual_toxocyst_incarnon();
+    // The base form resolved with Frenzy active (its +100% Toxin joins the
+    // hierarchy at the end).
+    let base_form = WeaponBase::dual_toxocyst_base(true);
     let t0 = Instant::now();
     let (cands, stats) = enumerate_candidates(
         &p,
         &base,
+        Some(&base_form),
         8,
         60,
         &dual_toxocyst_innate_slots(),
@@ -153,14 +164,15 @@ fn main() {
             .map(|(t, v)| format!("{t:?} {v:.0}"))
             .collect();
         println!(
-            "#{:<2} score {:.3} (kills {:.3} ± {:.3}, min {} max {}) | eff DPS {:.3e}",
+            "#{:<2} score {:.3} (kills {:.3} ± {:.3}, min {} max {}) | eff DPS {:.3e} | {:.1} transforms",
             rank + 1,
             s.mean_kill_progress,
             s.mean_kills,
             s.std_kills,
             s.min_kills,
             s.max_kills,
-            s.effective_dps
+            s.effective_dps,
+            s.mean_transforms
         );
         println!("    mods: {}", names.join(", "));
         println!(

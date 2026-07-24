@@ -17,7 +17,7 @@
 //!    rounds rank by mean effective damage, finals rank by mean kills.
 
 use wfsim_engine::damage::DamageType;
-use wfsim_engine::dummy::{monte_carlo, BodyPart, DummyParams, Summary, TargetParams};
+use wfsim_engine::dummy::{monte_carlo, BodyPart, DummyParams, LockMode, Summary, TargetParams};
 use wfsim_engine::loadout::{resolve, ModDef, ModEffect, ResolvedPanel, StackPolicy, WeaponBase};
 use wfsim_engine::mods::{plan_forma, FormaPlan, PlannedMod, Polarity};
 
@@ -228,6 +228,9 @@ pub struct Candidate {
     /// Pool indices of the 8 mods, element mods first in hierarchy order.
     pub ordered: Vec<usize>,
     pub panel: ResolvedPanel,
+    /// The transform group's OTHER form resolved against the same mods
+    /// (Dual Toxocyst base form) — present when a second form was given.
+    pub base_panel: Option<ResolvedPanel>,
     pub plan: FormaPlan,
 }
 
@@ -245,6 +248,7 @@ pub struct EnumStats {
 pub fn enumerate_candidates(
     pool: &[ModDef],
     base: &WeaponBase,
+    second_form: Option<&WeaponBase>,
     slots: u32,
     cap: u32,
     innate: &[Option<Polarity>],
@@ -265,6 +269,7 @@ pub fn enumerate_candidates(
     enumerate_rec(
         pool,
         base,
+        second_form,
         cap,
         innate,
         &usable,
@@ -282,6 +287,7 @@ pub fn enumerate_candidates(
 fn enumerate_rec(
     pool: &[ModDef],
     base: &WeaponBase,
+    second_form: Option<&WeaponBase>,
     cap: u32,
     innate: &[Option<Polarity>],
     usable: &[usize],
@@ -295,7 +301,7 @@ fn enumerate_rec(
     if subset.len() == want {
         if required.iter().all(|r| subset.contains(r)) {
             stats.subsets += 1;
-            expand_subset(pool, base, cap, innate, subset, stats, out);
+            expand_subset(pool, base, second_form, cap, innate, subset, stats, out);
         }
         return;
     }
@@ -314,6 +320,7 @@ fn enumerate_rec(
         enumerate_rec(
             pool,
             base,
+            second_form,
             cap,
             innate,
             usable,
@@ -328,9 +335,11 @@ fn enumerate_rec(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn expand_subset(
     pool: &[ModDef],
     base: &WeaponBase,
+    second_form: Option<&WeaponBase>,
     cap: u32,
     innate: &[Option<Polarity>],
     subset: &[usize],
@@ -387,7 +396,10 @@ fn expand_subset(
         let panel = resolve(base, &refs, StackPolicy::AssumedMax);
 
         // Second-level dedup: orders resolving to the same combined vector
-        // are the same build (docs/OPTIMIZER.md §1).
+        // are the same build (docs/OPTIMIZER.md §1). Deduping on the
+        // PRIMARY form's vector is safe for the second form too: both are
+        // functions of the element partition, which the vector determines
+        // (an injected element pairs with the partition's leftover).
         let key: Vec<(DamageType, i64)> = panel
             .damage
             .iter_nonzero()
@@ -401,6 +413,7 @@ fn expand_subset(
         out.push(Candidate {
             ordered: ordered.clone(),
             panel,
+            base_panel: second_form.map(|b| resolve(b, &refs, StackPolicy::AssumedMax)),
             plan: plan.clone(),
         });
     }
@@ -429,16 +442,34 @@ pub struct Scenario {
     /// Secondary Enervate equipped (the user's chosen arcane). Fixed
     /// equipment, NOT a search dimension.
     pub arcane_enervate: bool,
+    /// Run the REAL Incarnon two-form cycle (full gauge start → dump →
+    /// revert → rebuild 9 weakpoint charges → transmute → …) instead of
+    /// the locked-gauge pseudo-reload model. Needs candidates enumerated
+    /// with a second form.
+    pub incarnon_cycle: bool,
+    /// Frenzy's per-buff lock setting for the base-form phase.
+    pub frenzy_lock: LockMode,
 }
 
 /// Evaluate one candidate: engine Monte Carlo, nothing else.
 pub fn evaluate(c: &Candidate, s: &Scenario, runs: u32, seed: u64) -> Summary {
-    let mut params = DummyParams::from_panel(
-        &c.panel,
-        s.target.clone(),
-        s.body_parts.clone(),
-        s.duration_secs,
-    );
+    let mut params = if s.incarnon_cycle {
+        DummyParams::incarnon_cycle_from_panels(
+            &c.panel,
+            c.base_panel.as_ref().expect("cycle needs the base panel"),
+            s.frenzy_lock,
+            s.target.clone(),
+            s.body_parts.clone(),
+            s.duration_secs,
+        )
+    } else {
+        DummyParams::from_panel(
+            &c.panel,
+            s.target.clone(),
+            s.body_parts.clone(),
+            s.duration_secs,
+        )
+    };
     params.arcane_enervate = s.arcane_enervate;
     monte_carlo(&params, runs, seed)
 }
@@ -449,10 +480,22 @@ pub fn evaluate(c: &Candidate, s: &Scenario, runs: u32, seed: u64) -> Summary {
 /// differences only change Forma count, never damage ranking).
 pub fn dominated_mods() -> Vec<(&'static str, &'static str)> {
     vec![
-        ("pistol_gambit", "primed_pistol_gambit has strictly more crit chance"),
-        ("target_cracker", "primed_target_cracker has strictly more crit damage"),
-        ("heated_charge", "primed_heated_charge has strictly more heat"),
-        ("convulsion", "primed_convulsion has strictly more electricity"),
+        (
+            "pistol_gambit",
+            "primed_pistol_gambit has strictly more crit chance",
+        ),
+        (
+            "target_cracker",
+            "primed_target_cracker has strictly more crit damage",
+        ),
+        (
+            "heated_charge",
+            "primed_heated_charge has strictly more heat",
+        ),
+        (
+            "convulsion",
+            "primed_convulsion has strictly more electricity",
+        ),
         (
             "barrel_diffusion",
             "galvanized_diffusion gives strictly more multishot at assumed max stacks",
@@ -518,6 +561,7 @@ mod tests {
         let (cands, stats) = enumerate_candidates(
             &p,
             &base,
+            Some(&WeaponBase::dual_toxocyst_base(true)),
             8,
             60,
             &dual_toxocyst_innate_slots(),
@@ -543,7 +587,7 @@ mod tests {
             forbid: vec!["magnetic_might".into()],
         };
         let (cands, _) =
-            enumerate_candidates(&p, &base, 8, 60, &dual_toxocyst_innate_slots(), &cons);
+            enumerate_candidates(&p, &base, None, 8, 60, &dual_toxocyst_innate_slots(), &cons);
         assert!(!cands.is_empty());
         let hornet = p.iter().position(|m| m.id == "hornet_strike").unwrap();
         let mm = p.iter().position(|m| m.id == "magnetic_might").unwrap();

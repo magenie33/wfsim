@@ -113,6 +113,7 @@ impl Engagement {
                 mean_dot_damage: 0.0,
                 mean_procs: 0.0,
                 mean_reloads: 0.0,
+                mean_transforms: 0.0,
                 mean_kills: 0.0,
                 std_kills: 0.0,
                 min_kills: 0,
