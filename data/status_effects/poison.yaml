@@ -1,0 +1,67 @@
+schema_version: 0
+id: poison
+name: Poison
+kind: debuff
+default_scope: enemy
+
+aliases: []
+internal_name: PT_POISONED
+damage_type: toxin             # DT_POISON
+
+applied_by:
+  damage_type: toxin
+
+duration_seconds: 6
+refreshable: false
+stacking: true
+max_stacks: null               # unlimited; max 10 tick numbers displayed
+per_stack_duration: true
+stack_overflow: none
+
+dot:
+  dot_model: independent_stacks
+  tick_rate_hz: 1
+  delay_seconds: 1             # ticks at 1..6 s
+  ticks: 6
+  tick_damage_type: toxin      # bypasses enemy AND player shields (tick and
+                               # direct hit alike), but NOT Overguard; armor
+                               # applies (live) unless stripped
+  # Tick formula (wiki Damage/Toxin_Damage - the most explicit of the four):
+  #   tick = 0.5 x ModifiedBase x (1 + ToxinDamageBonuses)
+  #               x (1 + StatusDamageBonuses) x (1 + FactionBonuses)
+  #   ModifiedBase = unmodded x (1 + BaseDamageBonuses) x (1 + FactionBonuses)
+  #                x AdditionalMultipliers
+  # AdditionalMultipliers (snapshot from the proccing hit): crit multiplier,
+  # body-part multiplier, **Damage Type Modifiers (the faction column)**,
+  # and **Damage Vulnerability** - all multiplicative. This page is the
+  # explicit source that the type-modifier column and Damage Vulnerability
+  # ride into tick snapshots.
+  # Faction double-dips as usual ((1+f)^2). The tick derives from TOTAL
+  # base damage - a weapon with zero innate Toxin still ticks off its full
+  # ModifiedBase (worked example: 100 innate Puncture + Infected Clip ->
+  # 0.5 x 344.5 x (1.9 toxin)(1.9 status)(1.3 faction) ≈ 808/tick).
+  # Combined-element mods (Magnetic Capacity) contribute NOTHING.
+  coefficient: 0.5
+  # Enemy-inflicted Poison on players: bypasses player shields too.
+
+bucket_membership_confirmations:
+  base_damage: [Serration, "Vex Armor (Fury)"]
+  faction_damage: [Bane mods, Roar]
+  status_damage: [Rifle Elementalist, "Emerald Archon Shard (Toxin option)"]
+
+cc_effects: []
+on_kill_cosmetic: green sickly substance leaking from the body
+
+railjack_variant: >-
+  Intoxicate: swaps the afflicted ship's faction for 12 s (friendly fire
+  with its former allies), refreshed by further procs.
+
+source:
+  url: https://wiki.warframe.com/w/Damage/Toxin_Damage
+  note: Dedicated damage-type page; the tick-snapshot contents (type
+    modifiers, Damage Vulnerability) are stated here explicitly.
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified
+  needs_measurement: true
