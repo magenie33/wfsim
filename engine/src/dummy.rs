@@ -185,7 +185,14 @@ impl TargetState {
         }
 
         let dr = scaling::armor_damage_reduction(p.armor());
-        let effective = raw * (1.0 - dr);
+        // Armor-reduced damage floors at 1 per damage type (wiki Armor;
+        // the dummy's scalar hit counts as one type). Non-armor DR has no
+        // such floor.
+        let effective = if dr > 0.0 {
+            (raw * (1.0 - dr)).max(1.0)
+        } else {
+            raw
+        };
         if p.mode == TargetMode::InfiniteHealth {
             return (effective, false);
         }
@@ -621,6 +628,33 @@ mod tests {
             "effective {} vs raw {}",
             s.mean_effective_damage,
             s.mean_damage
+        );
+    }
+
+    #[test]
+    fn armor_reduced_damage_floors_at_one_per_type() {
+        // Tiny hits vs capped armor: 5 raw x (1 - 0.9) = 0.5 -> floored to
+        // 1 (scalar hit = one damage type). crit_multiplier 1.0 keeps every
+        // shot's raw at exactly base x part multiplier.
+        let p = DummyParams {
+            base_damage: 5.0,
+            crit_multiplier: 1.0,
+            body_parts: vec![BodyPart {
+                name: "body".into(),
+                aim_weight: 1.0,
+                multiplier: 1.0,
+                is_head: false,
+                crit_bonus: false,
+            }],
+            target: frail_target(TargetMode::InfiniteHealth, 2700.0, 0.0),
+            ..DummyParams::default()
+        };
+        let s = monte_carlo(&p, 100, 3);
+        // 10 shots per run, each floored to exactly 1 effective damage.
+        assert!(
+            (s.mean_effective_damage - 10.0).abs() < 1e-9,
+            "effective {}",
+            s.mean_effective_damage
         );
     }
 

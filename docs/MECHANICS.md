@@ -458,12 +458,30 @@ damage_to_health = incoming × (1 + type_modifier) × (1 − DR)
 on the armor **value** by the stat system (data-side discipline: nothing in
 the formula forbids a 10k-armor enemy — DE just never writes one, and the
 scaling curve tops out at 2,700, where the formula evaluates to 90% DR).
-Spawn minimum 200 (initial value only). **Armor reduction sources stack
-multiplicatively** (wiki `Damage/Heat_Damage` §Armor Stripping):
+Spawn minimum 200 (initial value only).
+
+**Per-type damage floor (armor only)** (wiki `Armor`): damage reduced by
+armor has a **minimum of 1 per damage type** in the hit's vector (a
+3-type Braton always deals ≥3 vs any armor). Non-armor DR sources have
+no such floor.
+
+**Armor stripping — three semantic classes** (wiki `Armor` §Removing):
+1. **Percentage of TOTAL armor** (Warframe abilities, Corrosive
+   Projection 18%/aura additive to 72%, Sharpened Claws, Vicious Bond):
+   accumulates additively against the total — a 50% ability fully strips
+   in two casts.
+2. **Percentage of CURRENT armor** (Heat 50% ramped, Corrosive 20%+6%/
+   stack): multiplicative factors, diminishing returns.
+3. **Flat off BASE armor** (Shattering Impact −6, Amalgam Argonak −6):
+   permanently subtracts from the *base* value **before level scaling**
+   (so each point removes `level_multiplier` points of total armor); can
+   reach full strip.
 ```
-net_armor = armor × (1 − heat_strip)                       [ramped 0→50%]
-                  × [1 − (0.20 + 0.06 × corrosive_stacks)] [26% @1, 80% @10]
-                  × (1 − 0.18 × corrosive_projections)
+net_armor = (base − Σ flat_base_strips, ≥0) × level_multiplier
+            × (1 − Σ total_pct_strips)         [class 1, additive within]
+            × Π (1 − current_pct_stripᵢ)       [class 2: heat, corrosive]
+e.g.      = armor × (1 − 0.5_heat) × [1 − (0.20 + 0.06·corr_stacks)]
+                  × (1 − 0.18 · corrosive_projections)
 ```
 Heat's strip ramps 15/30/40/50% in 0.5 s steps (2 s to max; re-procs don't
 hasten it) and ramps back down 1.5 s-stepwise over 6 s after expiry;
