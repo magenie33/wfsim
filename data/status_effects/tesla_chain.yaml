@@ -1,0 +1,75 @@
+schema_version: 0
+id: tesla_chain
+name: Tesla Chain
+kind: debuff
+default_scope: enemy
+
+aliases: []
+internal_name: PT_ELECTROCUTION
+damage_type: electricity       # DT_ELECTRICITY
+
+applied_by:
+  damage_type: electricity
+
+duration_seconds: 6
+refreshable: false
+stacking: true
+max_stacks: null               # unlimited, each instance its own timer
+per_stack_duration: true
+stack_overflow: none
+
+dot:
+  dot_model: independent_stacks
+  tick_rate_hz: 1
+  delay_seconds: 0             # NO delay: tick events at 0..6 s, but the
+  ticks: 6                     # last (6 s) event deals no damage -> 6 real
+                               # damaging ticks at 0..5 s
+  tick_damage_type: electricity
+  # Same template as Heat's (but independent stacks, no inherit):
+  #   tick = 0.5 x ModdedBaseDamage x (1 + ElectricityDamageBonuses)
+  #               x (1 + FactionBonuses) x (1 + StatusDamageBonuses)
+  #               x crit_mult x part_mult x stealth_mult   [snapshot]
+  #   ModdedBaseDamage = Base x (1 + BaseDamageBonuses) x (1 + FactionBonuses)
+  # Faction double-dips as usual; Stormbringer-type mods scale the ticks.
+  coefficient: 0.5
+
+  # THE SPATIAL PART - our first areal DoT: each tick damages ALL enemies
+  # within a 3 m radius of the afflicted target (world::Circle of r=3.0 at
+  # the victim's position vs other actors' footprints). The DoT entity
+  # lives on the victim; the chain hits are radiated damage instances.
+  chain_radius_m: 3.0
+  chain_hits:
+    # Chain hits register body parts by themselves, but with a 1x headshot
+    # multiplier (the always-1x weapon class). Headshot-DAMAGE bonuses
+    # (Target Acquired, sniper zoom, Primary/Secondary Deadhead) can raise
+    # it above 1x. Per MECHANICS.md §7, a 1x location implies no
+    # critical-headshot fold-in; whether chain hits can trigger
+    # on-headshot conditions is unstated (expected no) - to verify.
+    location_detection: true
+    headshot_multiplier: 1.0
+    headshot_multiplier_boostable: true
+
+cc_effects:
+  - kind: stun
+    duration_seconds: 3
+    note: >-
+      ONLY the original target is stunned (standing upright, ~3 s);
+      chained enemies take damage without the stun. Status Duration mods
+      do NOT extend the stun. Immune: Ospreys, Bosses, Tenno.
+
+on_kill_cosmetic: bodies covered in blue electricity, lines to each afflicted
+
+railjack_variant: >-
+  Scramble: enemy ship spirals forward unable to fire for 6 s, refreshed
+  by further procs. On the player Railjack: Electricity Hazard (scrambled
+  minimap, Tactical Menu disabled).
+
+source:
+  url: https://wiki.warframe.com/w/Damage/Electricity_Damage
+  note: Dedicated damage-type page; tick window cross-checked with
+    Damage_over_Time (no delay, dud last tick event).
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified
+  needs_measurement: true
