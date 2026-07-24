@@ -1,10 +1,10 @@
 id: dual_toxocyst_default
 kind: build
-name: Dual Toxocyst default build (evolution selections)
+name: Dual Toxocyst official build
 
 weapon_group: dual_toxocyst
 
-# GAME FIDELITY RULE (user, 2026-07-26): once the Incarnon Genesis is
+# GAME FIDELITY RULE (user, 2026-07-24): once the Incarnon Genesis is
 # installed, every unlocked tier MUST have a selection - empty tiers do
 # not exist in-game. Tier 1 is fixed.
 evolution_selections:
@@ -14,23 +14,42 @@ evolution_selections:
   3: dt_evolved_autoloader     # +50% magazine/s while holstered
   4: dt_commodores_fortune     # +0.20 BASE crit chance, both guns
 
-# Capacity state - ALL UNLOCKED (user, 2026-07-26): rank 30, Orokin
+# Official arcane (user, 2026-07-25): won the three-way comparison
+# (Deadhead 72.53 vs Enervate 51.70 vs Cascadia Flare 46.83 kill score
+# on the ULTIMATE STRESS TEST).
+arcane: secondary_deadhead
+
+# Capacity state - ALL UNLOCKED (user, 2026-07-24): rank 30, Orokin
 # Catalyst installed (capacity 30 x 2 = 60), Exilus Weapon Adapter
-# installed. Polarities are the weapon's innate layout (no Forma yet):
-# 8 normal slots (one Madurai, one Naramon, six unpolarized) + the
-# Naramon exilus slot. Drain math: matched -50% round-up, mismatched
-# +25% round-nearest, unpolarized full (engine::mods).
+# installed. Innate polarity layout: one Madurai, one Naramon, six
+# unpolarized normal slots + the Naramon exilus. Drain math: matched
+# -50% round-up, mismatched +25% round-half-up, unpolarized full
+# (engine::mods); auto-forma via engine::mods::plan_forma.
 capacity:
   rank: 30
   orokin_catalyst: true        # -> 60 capacity
   exilus_adapter: true
-  forma: 0
+  forma: 4
 slots:
   normal: [madurai, naramon, null, null, null, null, null, null]
   exilus: naramon
 
-# Mods: none chosen yet (mod resolution layer pending).
-mods: []
+# Official optimized loadout (search result 2026-07-25, wfsim-optimizer:
+# 204,648 candidates, kill score 72.529 = 71.951 +/- 0.645 kills / 60 s
+# vs Thrax @9999 Steel Path, instant respawn, 100% headshots, real
+# incarnon cycle, Frenzy Permanent, Galvanized + arcane buffs initial-
+# full). Element order: Electricity first (pairs with Frenzy's injected
+# Toxin -> Corrosive); Magnetic Might is position-free.
+mods:
+  - primed_convulsion          # electricity +165% -> Corrosive w/ injected Toxin
+  - galvanized_diffusion       # multishot +110% + on-kill stacks
+  - primed_target_cracker      # crit damage +110%
+  - lethal_torrent             # +60% fire rate / +60% multishot
+  - primed_pistol_gambit       # crit chance +187%
+  - galvanized_shot            # +80% status + CO (additive class, eff 60%)
+  - magnetic_might             # +60% Magnetic / +40% crit damage
+  - anemic_agility             # +90% fire rate / -15% damage (cheap in the
+                               # arcane/CO-inflated base-damage bucket)
 
 source:
-  note: User's chosen loadout, 2026-07-26.
+  note: User's chosen loadout + the optimizer's champion, 2026-07-25.

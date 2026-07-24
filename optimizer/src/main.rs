@@ -17,6 +17,7 @@ use wfsim_optimizer::*;
 fn main() {
     let mut constraints = Constraints::default();
     let mut flat = false;
+    let mut compare_arcanes = false;
     for arg in std::env::args().skip(1) {
         if let Some(id) = arg.strip_prefix("require=") {
             constraints.require.push(id.to_string());
@@ -26,8 +27,12 @@ fn main() {
             // Validation mode: no funnel — EVERY candidate gets the full
             // 1000 x 60 s treatment (much slower; verifies the funnel).
             flat = true;
+        } else if arg == "compare-arcanes" {
+            compare_arcanes = true;
         } else {
-            eprintln!("unknown arg: {arg} (use require=<id> / forbid=<id>)");
+            eprintln!(
+                "unknown arg: {arg} (use require=<id> / forbid=<id> / flat / compare-arcanes)"
+            );
             std::process::exit(2);
         }
     }
@@ -112,8 +117,15 @@ fn main() {
         ]
     };
     use wfsim_engine::dummy::Arcane;
+    // Official configuration (user, 2026-07-25): Secondary Deadhead is
+    // the equipped arcane; `compare-arcanes` re-runs the full comparison.
+    let arcanes: &[Arcane] = if compare_arcanes {
+        &[Arcane::Enervate, Arcane::Deadhead, Arcane::CascadiaFlare]
+    } else {
+        &[Arcane::Deadhead]
+    };
     let mut champions: Vec<(Arcane, String, f64)> = Vec::new();
-    for arcane in [Arcane::Enervate, Arcane::Deadhead, Arcane::CascadiaFlare] {
+    for &arcane in arcanes {
         let mut scenario = scenario.clone();
         scenario.arcane = arcane;
         println!();
