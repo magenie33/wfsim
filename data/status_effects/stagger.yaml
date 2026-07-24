@@ -1,47 +1,57 @@
 schema_version: 0
 id: stagger
 name: Stagger
-kind: status_effect
+kind: debuff
+# Same machinery as data/buffs/: a status PROC is only the trigger event;
+# the real entity is this debuff living on the TARGET's bar. Everything
+# below is a property of the debuff itself, not of whoever applied it.
+default_scope: enemy
 
 # Naming is officially inconsistent (the wiki page itself carries an
-# UpdateMe banner asking "Stagger or Knockback?"). Convention: the damage
-# type's dedicated page wins -> canonical name Stagger; aliases recorded.
+# UpdateMe banner asking "Stagger or Knockback?"). Convention (GLOSSARY.md):
+# the damage type's dedicated page wins; other official names are aliases.
 aliases: [Knockback]
 internal_name: PT_KNOCKBACK
-damage_type: impact           # DT_IMPACT
+
+# Trigger: a status proc of this damage type (proc selection is weighted by
+# damage-share, see MECHANICS.md §6).
+applied_by:
+  damage_type: impact          # DT_IMPACT
 
 duration_seconds: 6
+refreshable: false             # new procs add stacks; they do not refresh old ones
+stacking: true
 max_stacks: 5
-# The 6th proc does not bounce off: it replaces the OLDEST stack.
-stack_overflow: replace_oldest
-# Each stack tracks its own remaining duration.
-per_stack_duration: true
+per_stack_duration: true       # each stack expires on its own clock
+stack_overflow: replace_oldest # the 6th proc replaces the OLDEST stack
 
-effects:
-  - kind: stagger_cc
+per_stack_modifiers:
+  # +8 percentage points of max health to the Parazon Mercy window per stack.
+  parazon_mercy_threshold: 0.08
+
+modifier_caps:
+  parazon_mercy_threshold: 0.80
+  # Corpus and Eximus with ALL shields removed cap at 100% instead.
+  parazon_mercy_threshold_shieldless: 1.00
+
+modifier_conditions:
+  # The Parazon modifier only exists on "heavy units": all humanoid Eximus,
+  # Heavy Gunner, Bombard, Scrambus, Comba, Nullifier Crewman, Ancient
+  # Disruptor, Ancient Healer, Toxic Ancient.
+  parazon_mercy_threshold: heavy_units_only
+
+cc_effects:
+  - kind: stagger
     note: >-
-      Target flinches and recoils backwards; subsequent procs increase
-      stagger size and duration. Ospreys, Bosses, and Tenno are immune to
-      the stagger (stacks still apply).
-  - kind: parazon_mercy_threshold
-    per_stack: 0.08
-    cap: 0.80
-    cap_when_shields_stripped: 1.00   # Corpus and Eximus with all shields removed
-    applies_to: >-
-      Heavy units only: all humanoid Eximus, Heavy Gunner, Bombard,
-      Scrambus, Comba, Nullifier Crewman, Ancient Disruptor, Ancient
-      Healer, Toxic Ancient.
+      Target flinches and recoils backwards; more stacks -> bigger/longer
+      stagger. Ospreys, Bosses, and Tenno are immune to the CC part
+      (stacks and the Parazon modifier still apply).
 
 on_kill_cosmetic: corpse is ragdolled and flung (no gameplay effect)
 
 # Railjack space combat replaces this with "Concuss" (reduced enemy aim and
 # damage, 6 s, refreshed). Separate system - not modeled here.
 railjack_variant: concuss
-
-notes: >-
-  Physical proc selection is weighted by the weapon's physical damage
-  distribution (impact-heavy weapons proc Stagger more often than Bleed or
-  Weakened) - see MECHANICS.md §6.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Impact_Damage

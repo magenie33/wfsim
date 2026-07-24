@@ -36,6 +36,33 @@ HUD**. Frenzy and Secondary Enervate are `Weapon`-scoped.
 *Frenzy perk* (Dual Toxocyst's passive) grants the *Frenzy buff*. Keep them
 distinct in speech and code.
 
+## Debuffs: the same machinery, pointed at the target
+
+Status effects (procs) are **not** a separate system. Per the core
+philosophy (2026-07-24): *a proc is only a trigger event; the entity is a
+**debuff** applied onto the target*, symmetric to perks granting buffs:
+
+```
+player side:  Perk   --trigger-->  Buff    in the player's BuffBar
+enemy  side:  proc   --trigger-->  Debuff  in the target's bar
+```
+
+- A **debuff** has the same shape as a buff: stacks, per-stack duration,
+  overflow policy (e.g. Stagger: 5 stacks, 6 s each, 6th proc replaces the
+  oldest), per-stack modifiers, caps, conditions. Stored in
+  `data/status_effects/`, mirroring `data/buffs/`.
+- The target-side pipeline layers read a **contribution snapshot from the
+  target's bar** exactly like the weapon pipeline reads the player's:
+  armor reduction (Corrosive), damage-taken multipliers per pool (Viral →
+  health, Magnetic → shields/overguard), slow / crit-received (Cold),
+  Parazon threshold (Impact/Stagger), etc.
+- **DoT debuffs** (Heat, Toxin, Slash, Gas, ...) are debuffs whose stacks
+  emit damage events on the timeline (layer [8]) — each stack ticking on
+  its own clock.
+- CC components (stagger, knockdown) are debuff properties with per-unit
+  immunities (Ospreys/Bosses/Tenno ignore Stagger's CC while still
+  carrying its stacks); Overguard grants blanket CC immunity.
+
 ## The core split
 
 The 8-layer damage pipeline ([`CORE.md`](CORE.md) §3) is a **pure function**:
