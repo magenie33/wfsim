@@ -21,6 +21,9 @@ effects:
         base damage of both Evolution II perks.
       - With Punch Through, every enemy on the punch line spawns ricochets.
       - Ragdolled enemies cannot be hit by ricochet rounds.
+      - General Ricochet rules (wiki Ricochet, MECHANICS.md §7): hitscan
+        only, triggers per hit (not per shot), terrain never ricochets,
+        corpse hits DO ricochet.
 
 source:
   url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis

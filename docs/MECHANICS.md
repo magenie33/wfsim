@@ -432,6 +432,16 @@ shows the summed damage (spread can waste pellets); accuracy interacts.
   range (Beam Length bonuses do not); punch-through redistributes chains
   without adding damage; chain beams consume no ammo.
 
+**Ricochet** (wiki `Ricochet` — hitscan only; projectiles use the separate
+Bounce mechanic). A hit on an ENEMY instantly redirects to other enemies
+within the weapon's ricochet range. Triggers **per hit, not per shot**:
+each multishot pellet ricochets once, and each punch-through victim
+spawns its own ricochets. Terrain hits never ricochet; **corpse hits DO**
+(exception: Neutralizer). Per-weapon ranges (DT Incarnon 5 m, Lato
+Incarnon 10-12 m, ...); Neutralizer's range scales with Ability Range and
+prioritizes weak points. DT-specific: ricochets can headshot and trigger
+Frenzy; ragdolled enemies cannot be ricochet targets.
+
 **Damage instance classes.** Every damage instance carries a source class —
 **direct** (projectile/hitscan contact), **aoe_radial** (the explosion), or
 **ability** — because several rules key off it:
