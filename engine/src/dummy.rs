@@ -317,6 +317,11 @@ pub struct DummyParams {
     /// False for charge-backed magazines (Incarnon) - they are outside the
     /// ammo economy entirely.
     pub ammo_efficiency_applies: bool,
+    /// Multishot: pellets per trigger pull = floor + fractional chance
+    /// (wiki Multishot). Each pellet is an independent damage instance
+    /// (own crit roll, own part, own status roll); ammo cost and Hit
+    /// events stay per pull (hitscan pellets are not separate Hits).
+    pub multishot: f64,
     pub body_parts: Vec<BodyPart>,
     pub target: TargetParams,
     pub duration_secs: f64,
@@ -362,6 +367,10 @@ impl DummyParams {
             damage: Self::dual_toxocyst_base_vector().scale(125.0 / 75.0),
             base_crit_chance: 0.25,
             frenzy: true,
+            // Sim settings (user, 2026-07-26): Frenzy locked at 100% uptime
+            // and Fevered Frenzy pre-stacked to 20 (+100% multishot).
+            locked_buffs: vec![LockedBuff::Frenzy],
+            multishot: 2.0,
             ..Self::default()
         }
     }
@@ -389,6 +398,9 @@ impl DummyParams {
             magazine_size: 270.0,
             reload_seconds: 3.35,
             ammo_efficiency_applies: false,
+            // Fevered Frenzy pre-stacked to 20 (+100% multishot) - the
+            // evolution buff applies to both guns of the group.
+            multishot: 2.0,
             ..Self::default()
         }
     }
@@ -412,6 +424,7 @@ impl Default for DummyParams {
             infinite_reserve: true,
             reserve_ammo: 72.0,
             ammo_efficiency_applies: true,
+            multishot: 1.0,
             body_parts: Self::humanoid_parts(),
             target: TargetParams::training_dummy(),
             duration_secs: 10.0,
@@ -428,8 +441,9 @@ pub struct RunResult {
     pub effective_damage: f64,
     /// Effective damage contributed by DoT ticks (subset of the above).
     pub dot_damage: f64,
-    pub shots: u32,
-    pub crits: u32,     // tier >= 1
+    pub shots: u32,     // trigger pulls
+    pub pellets: u32,   // multishot instances (>= shots)
+    pub crits: u32,     // tier >= 1, counted per pellet
     pub big_crits: u32, // tier >= 2
     pub headshots: u32, // hits on an `is_head` part
     pub procs: u32,     // status procs applied (all types)
@@ -574,34 +588,47 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         let flat_crit = contribs.flat_crit_chance;
         let weakened_cc = WEAKENED_FLAT_CC_PER_STACK * debuffs.weakened_active(t) as f64;
         let effective_cc = params.base_crit_chance + flat_crit + weakened_cc;
-        let tier = roll_crit_tier(effective_cc, rng);
 
-        let part = pick_part(&params.body_parts, rng);
-        // Wiki Critical_Hit §Critical Headshots: a crit on an eligible >1x
-        // location doubles the crit damage multiplier inside the tier formula.
-        let cd = if part.crit_bonus && part.multiplier > 1.0 {
-            2.0 * params.crit_multiplier
-        } else {
-            params.crit_multiplier
-        };
-        let crit_mult = 1.0 + tier as f64 * (cd - 1.0);
-
-        let raw = qtotal * part.multiplier * crit_mult;
-        let (effective, killed) = target.apply(raw, &params.target, false);
-        r.total_damage += raw;
-        r.effective_damage += effective;
-        r.kills += killed as u32;
+        // Multishot: pellets this pull = floor + fractional chance; every
+        // pellet is an independent damage instance.
+        let n_pellets =
+            params.multishot.floor() as u32 + rng.chance(params.multishot.fract()) as u32;
+        let (mut any_head, mut any_big) = (false, false);
         r.shots += 1;
-        r.crits += (tier >= 1) as u32;
-        r.big_crits += (tier >= 2) as u32;
-        r.headshots += part.is_head as u32;
 
-        if killed {
-            // The killing hit's procs die with the old individual.
-            debuffs = DebuffState::default();
-        } else {
-            // Roll procs: forced ++ SC draws weighted by the QUANTIZED vector,
-            // with unit status immunities excluded (renormalized).
+        for _ in 0..n_pellets {
+            let tier = roll_crit_tier(effective_cc, rng);
+            let part = pick_part(&params.body_parts, rng);
+            // Wiki Critical_Hit §Critical Headshots: a crit on an eligible
+            // >1x location doubles cd inside the tier formula.
+            let cd = if part.crit_bonus && part.multiplier > 1.0 {
+                2.0 * params.crit_multiplier
+            } else {
+                params.crit_multiplier
+            };
+            let crit_mult = 1.0 + tier as f64 * (cd - 1.0);
+
+            let raw = qtotal * part.multiplier * crit_mult;
+            let (effective, killed) = target.apply(raw, &params.target, false);
+            r.total_damage += raw;
+            r.effective_damage += effective;
+            r.kills += killed as u32;
+            r.pellets += 1;
+            r.crits += (tier >= 1) as u32;
+            r.big_crits += (tier >= 2) as u32;
+            r.headshots += part.is_head as u32;
+            any_head |= part.is_head;
+            any_big |= tier >= 2;
+
+            if killed {
+                // The killing pellet's procs die with the old individual;
+                // remaining pellets hit the fresh spawn.
+                debuffs = DebuffState::default();
+                continue;
+            }
+            // Per-pellet proc roll (wiki Multishot/Status_Effect): forced ++
+            // SC draws weighted by the QUANTIZED vector, unit immunities
+            // renormalized.
             let procs = status::procs_for_hit(
                 &params.forced_procs,
                 params.status_chance,
@@ -625,7 +652,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         t,
                     ),
                     DamageType::Slash => {
-                        // Provenance snapshot: this hit's crit and part
+                        // Provenance snapshot: this pellet's crit and part
                         // multipliers, baked into every tick.
                         let ticks =
                             ((1.0 * (BLEED_TICKS as f64 * sd - BLEED_DELAY)).floor() as u32) + 1;
@@ -642,11 +669,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             }
         }
 
-        // Register the hit so perks react before the next shot. The target
-        // is always alive when hit (instant respawn / infinite health).
+        // ONE Hit event per trigger pull (hitscan pellets are not separate
+        // Hits - GLOSSARY): headshot/big-crit flags aggregate any pellet.
         let hit = Event::Hit(Hit {
-            big_crit: tier >= 2,
-            headshot: part.is_head,
+            big_crit: any_big,
+            headshot: any_head,
             target_alive: true,
         });
         enervate.on_event(&hit, t, &mut bar);
@@ -693,6 +720,7 @@ pub struct Summary {
     pub min_kills: u32,
     pub max_kills: u32,
     pub mean_shots: f64,
+    pub mean_pellets: f64,
     pub mean_crit_rate: f64,
     pub mean_big_crit_rate: f64,
     pub mean_headshot_rate: f64,
@@ -705,7 +733,8 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     let mut sum_sq = 0.0f64;
     let mut min = f64::INFINITY;
     let mut max = f64::NEG_INFINITY;
-    let (mut shots, mut crits, mut big_crits, mut headshots) = (0u64, 0u64, 0u64, 0u64);
+    let (mut shots, mut pellets, mut crits, mut big_crits, mut headshots) =
+        (0u64, 0u64, 0u64, 0u64, 0u64);
     let (mut effective, mut kills, mut kills_sq) = (0.0f64, 0u64, 0u64);
     let (mut dot, mut procs, mut reloads) = (0.0f64, 0u64, 0u64);
     let (mut min_kills, mut max_kills) = (u32::MAX, 0u32);
@@ -725,6 +754,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         min_kills = min_kills.min(r.kills);
         max_kills = max_kills.max(r.kills);
         shots += r.shots as u64;
+        pellets += r.pellets as u64;
         crits += r.crits as u64;
         big_crits += r.big_crits as u64;
         headshots += r.headshots as u64;
@@ -733,7 +763,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     let n = runs.max(1) as f64;
     let mean = sum / n;
     let variance = (sum_sq / n - mean * mean).max(0.0);
-    let total_shots = shots.max(1) as f64;
+    let total_pellets = pellets.max(1) as f64;
 
     Summary {
         runs,
@@ -756,9 +786,10 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         min_kills: if min_kills == u32::MAX { 0 } else { min_kills },
         max_kills,
         mean_shots: shots as f64 / n,
-        mean_crit_rate: crits as f64 / total_shots,
-        mean_big_crit_rate: big_crits as f64 / total_shots,
-        mean_headshot_rate: headshots as f64 / total_shots,
+        mean_pellets: pellets as f64 / n,
+        mean_crit_rate: crits as f64 / total_pellets,
+        mean_big_crit_rate: big_crits as f64 / total_pellets,
+        mean_headshot_rate: headshots as f64 / total_pellets,
     }
 }
 
@@ -833,6 +864,41 @@ mod tests {
         );
         assert_eq!(s.mean_dot_damage, 0.0);
         assert_eq!(s.mean_procs, 0.0);
+    }
+
+    #[test]
+    fn multishot_doubles_pellets_and_damage_deterministically() {
+        // Multishot 2.0: every pull fires exactly 2 pellets, each its own
+        // instance. crit 1.0, mono body, no status: 10 pulls x 2 x 75 = 1500,
+        // 20 pellets, ammo still 10 (one per pull -> no reload at mag 12).
+        let p = DummyParams {
+            crit_multiplier: 1.0,
+            multishot: 2.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 50, 6);
+        assert!(
+            (s.mean_damage - 1500.0).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
+        assert!((s.mean_pellets - 20.0).abs() < 1e-9);
+        assert!((s.mean_shots - 10.0).abs() < 1e-9);
+        assert_eq!(s.mean_reloads, 0.0);
+    }
+
+    #[test]
+    fn fractional_multishot_is_a_chance_for_one_more() {
+        // Multishot 1.5 -> mean pellets/pull about 1.5.
+        let p = DummyParams {
+            multishot: 1.5,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 2000, 6);
+        let per_pull = s.mean_pellets / s.mean_shots;
+        assert!((per_pull - 1.5).abs() < 0.02, "pellets/pull {per_pull}");
     }
 
     #[test]

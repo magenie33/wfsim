@@ -118,6 +118,7 @@ impl Engagement {
                 min_kills: 0,
                 max_kills: 0,
                 mean_shots: shots_per_run,
+                mean_pellets: 0.0,
                 mean_crit_rate: 0.0,
                 mean_big_crit_rate: 0.0,
                 mean_headshot_rate: 0.0,
