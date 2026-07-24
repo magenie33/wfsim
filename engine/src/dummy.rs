@@ -2594,6 +2594,29 @@ mod tests {
     }
 
     #[test]
+    fn longer_status_duration_slows_the_heat_strip_ramp() {
+        // ignite.yaml: the ramp steps scale WITH status duration —
+        // +100% duration means 1.0 s steps, full strip only at 4 s
+        // (counter-intuitive: longer duration = SLOWER strip).
+        let d = DebuffState {
+            heat: Some(HeatEntity {
+                born: 0.0,
+                expiry: 12.0,
+                next_tick: 1.0,
+                value: 1.0,
+            }),
+            ..Default::default()
+        };
+        // sd = 2.0: steps at 1.0 s intervals.
+        assert_eq!(d.heat_strip(0.9, 2.0), 0.0);
+        assert_eq!(d.heat_strip(1.1, 2.0), 0.15);
+        assert_eq!(d.heat_strip(3.9, 2.0), 0.40);
+        assert_eq!(d.heat_strip(4.1, 2.0), 0.50);
+        // sd = 0.5: full strip already at 1.0 s.
+        assert_eq!(d.heat_strip(1.1, 0.5), 0.50);
+    }
+
+    #[test]
     fn corrosion_strips_armor_multiplicatively() {
         // Capped armor (90% DR): forced Corrosive procs stack 20%+6%/stack
         // strip, so later shots take less DR than the first. Exact: shot k
