@@ -378,9 +378,10 @@ impl DummyParams {
             fire_rate: 4.5,
             frenzy: false,
             // Pseudo-reload model (gauge locked full): 270 charge-backed
-            // rounds, downtime = revert + re-transmute = 2 x base reload.
+            // rounds, downtime = revert (1.0 s, M9-measured) + re-transmute
+            // (2.35 s = base reload).
             magazine_size: 270.0,
-            reload_seconds: 4.70,
+            reload_seconds: 3.35,
             ammo_efficiency_applies: false,
             ..Self::default()
         }

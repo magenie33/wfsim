@@ -223,7 +223,7 @@ tick numbers (6 s window):
 
 ---
 
-## M9 — Incarnon transition timings (frame-count protocol)
+## M9 — Incarnon transition timings ✅ (2026-07-26)
 
 **Question.** (a) Duration of the on-empty revert (fire the 270th round →
 first base-form shot possible); (b) whether transition animations scale
@@ -249,7 +249,13 @@ reload time (user-confirmed).
 stands; ≈ 0 → pseudo-reload becomes 2.35 s; other → independent constant.
 Scaling result updates `transition_animation_seconds` semantics.
 
-**Result:** _not yet run._
+**Result (user, 2026-07-26):** transmute-in = the weapon's reload time
+(2.35 s unmodded); **revert-out has its own base of 1.0 s** (measured
+exactly 1.3 s under −30% reload speed). Both directions scale with
+reload-speed bonuses. Full cycle downtime = 2.35 + 1.0 = **3.35 s**
+unmodded; the pseudo-reload model updated accordingly. Minor residue:
+the exact scaling formula direction (time × (1+penalty) vs
+base/(1+bonus)) — one more mod value would pin it.
 
 ---
 

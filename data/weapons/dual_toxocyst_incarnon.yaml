@@ -43,14 +43,17 @@ incarnon:
     survives: [holster, bleedout, disarm]
     cleared_on: [death]
   side_effect: swapping either way fully reloads the normal form's magazine
-  # Transition animations: "mode switching has an animation equal to the
-  # weapon's reload speed" - the dual-direction wording implies BOTH the
-  # transmute and the on-empty revert cost one base-form reload time
-  # (2.35 s unmodded; presumably scaled by reload mods since it keys off
-  # the reload-speed stat). UNVERIFIED: whether the empty-revert animation
-  # matches the manual switch, and whether reload mods shorten it -
-  # both trivially measurable with a stopwatch.
-  transition_animation_seconds: base_weapon_reload_time  # each direction
+  # Transition animations - MEASURED (M9, 2026-07-26, user):
+  #   transmute IN  (base -> incarnon) = the weapon's reload time
+  #                                      (2.35 s unmodded)
+  #   revert OUT    (on empty)         = 1.0 s base
+  # BOTH scale with reload-speed bonuses (revert measured exactly 1.3 s
+  # under a -30% reload speed mod; note the implied scaling read
+  # time x (1 + penalty) - the exact formula direction vs the official
+  # base/(1+bonus) can be pinned with one more mod value if it ever
+  # matters).
+  transmute_in_seconds: 2.35     # = base reload time, unmodded
+  revert_out_seconds: 1.0        # own constant, unmodded
 
 # SIM CONVENIENCE (user, 2026-07-24): with the gauge LOCKED full (analogous
 # to buff locks), the Incarnon combat cycle reduces to a standard
@@ -58,9 +61,9 @@ incarnon:
 # full charge economy is cycled:
 pseudo_reload:
   magazine: 270
-  reload_seconds: 4.70   # revert + re-transmute = 2 x 2.35 (unmodded base)
-  note: excludes charge-rebuilding time (assumed locked); refine when the
-    transition-animation questions above are measured
+  reload_seconds: 3.35   # revert (1.0) + re-transmute (2.35), unmodded
+  note: excludes charge-rebuilding time (assumed locked); both components
+    scale with reload-speed bonuses
 
 # Single attack profile: full-auto hitscan with innate ricochet.
 attack:
