@@ -8,7 +8,6 @@ use std::path::Path;
 use wfsim_engine::dummy::{monte_carlo, DummyParams, TargetMode};
 use wfsim_engine::enemy_data::EnemySpec;
 use wfsim_engine::scaling;
-use wfsim_engine::world::{Circle, Engagement, Vec2};
 
 fn main() {
     // transform_modes: the two Dual Toxocyst forms are separate weapons.

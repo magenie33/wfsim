@@ -15,10 +15,10 @@
 //!   - **Bleed** (Slash): Cinematic DoT, 0.35 × ModdedBase × the proccing
 //!     hit's crit/part multipliers (provenance snapshot), ticks at +1..+6 s,
 //!     unlimited instances, ignores armor entirely.
-//!   Proc selection uses the **quantized** vector's shares
-//!   (`status::procs_for_hit`); status damage never procs status; a killing
-//!   hit's procs are discarded (the respawned target is a fresh individual
-//!   with a clean DebuffBar — decision 2026-07-24).
+//!     Proc selection uses the **quantized** vector's shares
+//!     (`status::procs_for_hit`); status damage never procs status; a killing
+//!     hit's procs are discarded (the respawned target is a fresh individual
+//!     with a clean DebuffBar — decision 2026-07-24).
 //! - **No** elements/mods yet, no Frenzy. Infinite ammo.
 //!
 //! Body parts, crit tiers, and headcrit fold-in as documented in
@@ -178,63 +178,116 @@ impl TargetState {
         }
     }
 
-    /// Apply one damage instance. Returns `(effective_damage, killed)`.
+    /// Apply one damage instance under a live [`Mitigation`] snapshot.
+    /// Returns `(effective_damage, killed, overguard_broke)`.
     ///
     /// Mitigation model (docs/MECHANICS.md §8, unverified):
-    /// - Overguard takes raw damage (neutral, ignores armor) and does **not**
-    ///   spill excess into health when it breaks.
-    /// - Health takes `raw × (1 − 0.9·√(armor/2700))`, floored at 1 per
-    ///   damage type — unless the instance ignores armor (Cinematic ticks).
+    /// - Overguard takes raw × Disrupt amp (otherwise neutral, ignores
+    ///   armor) and does **not** spill excess into health when it breaks.
+    /// - Health takes `raw × Virus amp × (1 − 0.9·√(armor_eff/2700))`
+    ///   with `armor_eff = armor × strip factors`, floored at 1 per damage
+    ///   type — unless the instance ignores armor (Cinematic ticks).
     /// - Overkill damage is lost on death.
-    fn apply(&mut self, raw: f64, p: &TargetParams, ignores_armor: bool) -> (f64, bool) {
+    fn apply(
+        &mut self,
+        raw: f64,
+        p: &TargetParams,
+        ignores_armor: bool,
+        mit: &Mitigation,
+    ) -> (f64, bool, bool) {
         if self.overguard > 0.0 {
-            if p.mode != TargetMode::InfiniteHealth {
-                self.overguard = (self.overguard - raw).max(0.0);
+            let dmg = raw * mit.disrupt_amp;
+            if p.mode == TargetMode::InfiniteHealth {
+                return (dmg, false, false);
             }
-            return (raw, false);
+            self.overguard -= dmg;
+            if self.overguard <= 0.0 {
+                self.overguard = 0.0; // no spill into health
+                return (dmg, false, true);
+            }
+            return (dmg, false, false);
         }
 
         let dr = if ignores_armor {
             0.0
         } else {
-            scaling::armor_damage_reduction(p.armor())
+            scaling::armor_damage_reduction(p.armor() * mit.armor_multiplier)
         };
+        let boosted = raw * mit.virus_amp;
         let effective = if dr > 0.0 {
-            (raw * (1.0 - dr)).max(1.0)
+            (boosted * (1.0 - dr)).max(1.0)
         } else {
-            raw
+            boosted
         };
         if p.mode == TargetMode::InfiniteHealth {
-            return (effective, false);
+            return (effective, false, false);
         }
         self.health -= effective;
         if self.health <= 0.0 {
             *self = TargetState::spawn(p); // instant respawn, no transformation
-            (effective, true)
+            (effective, true, false)
         } else {
-            (effective, false)
+            (effective, false, false)
         }
     }
 }
 
-/// A live Bleed instance: the proccing hit's deferred damage (provenance
-/// snapshot baked into `value`).
-struct BleedInstance {
+/// A live DoT instance: the proccing hit's deferred damage (provenance
+/// snapshot baked into `value`). Bleed (Cinematic ticks) ignores armor;
+/// elemental DoTs (Toxin/Electricity/Gas, Disrupt's break-proc Tesla) take
+/// live armor mitigation. `dtype` is the STATUS type (for CO counting).
+struct Dot {
     next_tick: f64,
     ticks_left: u32,
     value: f64,
+    dtype: DamageType,
+    ignores_armor: bool,
 }
 
-/// Target-side debuff state, v1 (the procs an IPS vector can produce).
+/// The Heat singleton accumulator (data/debuffs/ignite.yaml): ONE entity
+/// per target; each proc adds its contribution to the tick value and
+/// refreshes the shared expiry; ticks stay anchored to the FIRST proc.
+struct HeatEntity {
+    born: f64,
+    expiry: f64,
+    next_tick: f64,
+    value: f64,
+}
+
+/// A Blast (Detonate) stack: the fuse fires a single-target hit; the 10th
+/// stack detonates everything early. The radial is ignored — single-target
+/// sim, and the host is excluded from the radial anyway.
+struct BlastStack {
+    fuse: f64,
+    value: f64,
+}
+
+/// Target-side debuff state — the payloads of all proc types a combined
+/// vector can produce (data/debuffs/*.yaml; simplifications noted inline).
 #[derive(Default)]
 struct DebuffState {
-    /// Stagger stack expiries (uniform 6 s duration → FIFO order == expiry
-    /// order). No combat payload on a dummy; tracked for stats.
+    /// Stagger stack expiries (6 s, FIFO). No combat payload on a dummy.
     stagger: Vec<f64>,
-    /// Weakened stack expiries (10 s); each active stack grants +5% flat
-    /// crit chance to weapon damage the target receives.
+    /// Weakened stacks (10 s): +5% flat crit chance received per stack.
     weakened: Vec<f64>,
-    bleeds: Vec<BleedInstance>,
+    /// Freeze (Cold) stacks: +0.10/+0.05 flat crit DAMAGE received; cap 4
+    /// while overguard holds (never Frozen — the Frozen state itself is
+    /// not modeled, stacks simply cap at 10).
+    freeze: Vec<f64>,
+    /// Disrupt (Magnetic) stacks: shield/overguard damage taken
+    /// × (2 + 0.25·(stacks−1)), live.
+    disrupt: Vec<f64>,
+    /// Virus (Viral) stacks: HEALTH damage taken × (2 + 0.25·(stacks−1)),
+    /// live per tick (the official live-evaluation example).
+    virus: Vec<f64>,
+    /// Corrosion stacks (8 s): armor × (1 − (0.20 + 0.06·stacks)).
+    corrosion: Vec<f64>,
+    /// Confusion (Radiation): no single-target combat payload; tracked for
+    /// CO type counting.
+    confusion: Vec<f64>,
+    blast: Vec<BlastStack>,
+    dots: Vec<Dot>,
+    heat: Option<HeatEntity>,
 }
 
 const STAGGER_DURATION: f64 = 6.0;
@@ -245,6 +298,31 @@ const WEAKENED_FLAT_CC_PER_STACK: f64 = 0.05;
 const BLEED_COEFFICIENT: f64 = 0.35;
 const BLEED_DELAY: f64 = 1.0;
 const BLEED_TICKS: u32 = 6;
+const DOT_COEFFICIENT: f64 = 0.5; // Toxin/Electricity/Heat/Gas ticks
+const STATUS_DURATION: f64 = 6.0; // the standard proc duration
+const CORROSION_DURATION: f64 = 8.0;
+const TEN_STACK_CAP: usize = 10;
+const BLAST_COEFFICIENT: f64 = 0.3;
+const BLAST_FUSE: f64 = 1.5;
+const FREEZE_CAP_UNDER_OVERGUARD: usize = 4;
+
+/// Live target-side damage-taken modifiers at one instant (the tick-time
+/// mitigation pipeline — defender-side, evaluated per hit/tick).
+struct Mitigation {
+    disrupt_amp: f64,
+    virus_amp: f64,
+    /// (1 − heat strip) × (1 − corrosive strip), applied to armor VALUE.
+    armor_multiplier: f64,
+}
+
+/// The +100%/+25% ten-stack amp curve shared by Disrupt and Virus.
+fn ten_stack_amp(stacks: usize) -> f64 {
+    if stacks == 0 {
+        1.0
+    } else {
+        2.0 + 0.25 * (stacks as f64 - 1.0)
+    }
+}
 
 impl DebuffState {
     /// FIFO push with the universal replace-oldest rule (application-time
@@ -260,6 +338,87 @@ impl DebuffState {
     fn weakened_active(&mut self, now: f64) -> usize {
         self.weakened.retain(|&e| e > now);
         self.weakened.len()
+    }
+
+    fn prune(&mut self, now: f64) {
+        self.stagger.retain(|&e| e > now);
+        self.weakened.retain(|&e| e > now);
+        self.freeze.retain(|&e| e > now);
+        self.disrupt.retain(|&e| e > now);
+        self.virus.retain(|&e| e > now);
+        self.corrosion.retain(|&e| e > now);
+        self.confusion.retain(|&e| e > now);
+        if let Some(h) = &self.heat {
+            // Strict: a tick scheduled at EXACTLY the expiry still lands
+            // (the +6 s tick of an unrefreshed proc).
+            if h.expiry < now {
+                // Simplification: the armor-strip ramp-DOWN (50→40→30→15→0
+                // over 6 s) is skipped — strip ends with the entity.
+                self.heat = None;
+            }
+        }
+    }
+
+    /// Cold's flat crit-damage-received bonus (+0.10 first stack, +0.05
+    /// each further), added into cd_total BEFORE the tier formula.
+    fn cold_cd_bonus(&self) -> f64 {
+        match self.freeze.len() {
+            0 => 0.0,
+            n => 0.10 + 0.05 * (n as f64 - 1.0),
+        }
+    }
+
+    /// Heat armor strip: 15/30/40/50% at 0.5 s steps after the FIRST proc
+    /// (steps scaled by status duration).
+    fn heat_strip(&self, now: f64, sd: f64) -> f64 {
+        let Some(h) = &self.heat else { return 0.0 };
+        let steps = ((now - h.born) / (0.5 * sd)).floor();
+        match steps as i64 {
+            i64::MIN..=0 => 0.0,
+            1 => 0.15,
+            2 => 0.30,
+            3 => 0.40,
+            _ => 0.50,
+        }
+    }
+
+    fn corrosive_strip(&self) -> f64 {
+        match self.corrosion.len() {
+            0 => 0.0,
+            n => (0.20 + 0.06 * n as f64).min(1.0),
+        }
+    }
+
+    /// Prune and compute the live mitigation snapshot for `now`.
+    fn mitigation(&mut self, now: f64, sd: f64) -> Mitigation {
+        self.prune(now);
+        Mitigation {
+            disrupt_amp: ten_stack_amp(self.disrupt.len()),
+            virus_amp: ten_stack_amp(self.virus.len()),
+            armor_multiplier: (1.0 - self.heat_strip(now, sd)) * (1.0 - self.corrosive_strip()),
+        }
+    }
+
+    /// Distinct status TYPES currently on the target (Condition Overload's
+    /// multiplier input). Assumes `prune` ran at this instant.
+    fn distinct_statuses(&self) -> usize {
+        let mut n = 0;
+        n += usize::from(!self.stagger.is_empty());
+        n += usize::from(!self.weakened.is_empty());
+        n += usize::from(!self.freeze.is_empty());
+        n += usize::from(!self.disrupt.is_empty());
+        n += usize::from(!self.virus.is_empty());
+        n += usize::from(!self.corrosion.is_empty());
+        n += usize::from(!self.confusion.is_empty());
+        n += usize::from(!self.blast.is_empty());
+        n += usize::from(self.heat.is_some());
+        let mut seen: Vec<DamageType> = Vec::new();
+        for d in &self.dots {
+            if d.ticks_left > 0 && !seen.contains(&d.dtype) {
+                seen.push(d.dtype);
+            }
+        }
+        n + seen.len()
     }
 }
 
@@ -322,6 +481,20 @@ pub struct DummyParams {
     /// (own crit roll, own part, own status roll); ammo cost and Hit
     /// events stay per pull (hitscan pellets are not separate Hits).
     pub multishot: f64,
+    /// Condition Overload payload (assumed-max Σ per_stack × stacks):
+    /// direct hits × (1 + this × distinct status types on the target).
+    pub co_per_type: f64,
+    /// (1 + status-damage bonuses): scales every status payload value.
+    pub status_damage_mult: f64,
+    /// (element, 1 + Σ its bonuses) brackets for elemental DoT ticks.
+    pub elem_dot_bonus: Vec<(DamageType, f64)>,
+    /// ModifiedBase for status-payload formulas (base × (1 + damage mods),
+    /// elemental portions excluded). `None` = the vector total (correct
+    /// for purely physical vectors).
+    pub dot_modified_base: Option<f64>,
+    /// Secondary Enervate equipped (the arcane). On by default for the
+    /// historical calibration profiles; the optimizer scenario runs bare.
+    pub arcane_enervate: bool,
     pub body_parts: Vec<BodyPart>,
     pub target: TargetParams,
     pub duration_secs: f64,
@@ -404,6 +577,46 @@ impl DummyParams {
             ..Self::default()
         }
     }
+
+    /// Build engagement params from a resolved mod loadout (pipeline
+    /// [1]+[2] output). Bare-frame scenario: no arcanes, no Frenzy passive
+    /// (Incarnon Form), infinite reserve.
+    pub fn from_panel(
+        panel: &crate::loadout::ResolvedPanel,
+        target: TargetParams,
+        body_parts: Vec<BodyPart>,
+        duration_secs: f64,
+    ) -> Self {
+        Self {
+            damage: panel.damage,
+            base_crit_chance: panel.crit_chance,
+            crit_multiplier: panel.crit_damage,
+            status_chance: panel.status_chance,
+            fire_rate: panel.fire_rate,
+            frenzy: false,
+            magazine_size: panel.magazine_size,
+            reload_seconds: panel.reload_seconds,
+            ammo_efficiency_applies: false,
+            multishot: panel.multishot,
+            co_per_type: panel.co_per_type,
+            status_damage_mult: panel.status_damage_mult,
+            elem_dot_bonus: panel.elem_dot_bonus.clone(),
+            dot_modified_base: Some(panel.modified_base),
+            arcane_enervate: false,
+            body_parts,
+            target,
+            duration_secs,
+            ..Self::default()
+        }
+    }
+
+    /// The (1 + element bonuses) bracket for an elemental DoT's ticks.
+    fn elem_bracket(&self, t: DamageType) -> f64 {
+        self.elem_dot_bonus
+            .iter()
+            .find(|(x, _)| *x == t)
+            .map_or(1.0, |(_, v)| *v)
+    }
 }
 
 impl Default for DummyParams {
@@ -425,6 +638,11 @@ impl Default for DummyParams {
             reserve_ammo: 72.0,
             ammo_efficiency_applies: true,
             multishot: 1.0,
+            co_per_type: 0.0,
+            status_damage_mult: 1.0,
+            elem_dot_bonus: Vec::new(),
+            dot_modified_base: None,
+            arcane_enervate: true,
             body_parts: Self::humanoid_parts(),
             target: TargetParams::training_dummy(),
             duration_secs: 10.0,
@@ -472,44 +690,100 @@ fn pick_part<'a>(parts: &'a [BodyPart], rng: &mut Rng) -> &'a BodyPart {
     parts.last().expect("dummy needs at least one body part")
 }
 
-/// Process all bleed ticks due strictly before `until` (chronological order).
-/// Ticks are Cinematic: they ignore armor, land on whatever pool is active,
-/// and — being status damage — never proc anything.
+/// Disrupt's on-break payload (data/debuffs/disrupt.yaml): breaking
+/// shields/overguard with Disrupt active fires a forced Tesla Chain
+/// instance totalling 3% of the max pool per Magnetic stack (cap 30%),
+/// over 6 ticks; status-damage mods apply TWICE; base-damage mods never.
+fn push_overguard_break_proc(debuffs: &mut DebuffState, params: &DummyParams, now: f64) {
+    let stacks = debuffs.disrupt.len();
+    if stacks == 0 {
+        return;
+    }
+    let frac = (0.03 * stacks as f64).min(0.30);
+    let total = frac * params.target.overguard() * params.status_damage_mult.powi(2);
+    debuffs.dots.push(Dot {
+        next_tick: now,
+        ticks_left: 6,
+        value: total / 6.0,
+        dtype: DamageType::Electricity,
+        ignores_armor: false,
+    });
+}
+
+/// Timed status events due strictly before `until`, in chronological
+/// order: DoT ticks (Bleed/Toxin/Electricity/Gas + break-proc Tesla), the
+/// Heat singleton's anchored ticks, and Blast fuse expiries. Mitigation is
+/// evaluated LIVE at each event (the snapshot boundary rule); status
+/// damage never procs status.
 fn process_ticks(
     debuffs: &mut DebuffState,
     until: f64,
     target: &mut TargetState,
-    p: &TargetParams,
+    params: &DummyParams,
     r: &mut RunResult,
 ) {
+    enum Ev {
+        Dot(usize),
+        Heat,
+        Blast(usize),
+    }
+    let p = &params.target;
+    let sd = params.status_duration_mult;
     loop {
-        let Some(idx) = debuffs
-            .bleeds
-            .iter()
-            .enumerate()
-            .filter(|(_, b)| b.ticks_left > 0 && b.next_tick < until)
-            .min_by(|a, b1| a.1.next_tick.total_cmp(&b1.1.next_tick))
-            .map(|(i, _)| i)
-        else {
-            break;
+        let mut best: Option<(f64, Ev)> = None;
+        let consider = |t: f64, ev: Ev, best: &mut Option<(f64, Ev)>| {
+            if t < until && best.as_ref().is_none_or(|(bt, _)| t < *bt) {
+                *best = Some((t, ev));
+            }
         };
-        let value = debuffs.bleeds[idx].value;
-        debuffs.bleeds[idx].next_tick += 1.0;
-        debuffs.bleeds[idx].ticks_left -= 1;
+        for (i, d) in debuffs.dots.iter().enumerate() {
+            if d.ticks_left > 0 {
+                consider(d.next_tick, Ev::Dot(i), &mut best);
+            }
+        }
+        if let Some(h) = &debuffs.heat {
+            if h.next_tick <= h.expiry {
+                consider(h.next_tick, Ev::Heat, &mut best);
+            }
+        }
+        for (i, b) in debuffs.blast.iter().enumerate() {
+            consider(b.fuse, Ev::Blast(i), &mut best);
+        }
+        let Some((now, ev)) = best else { break };
 
-        let (effective, killed) = target.apply(value, p, true);
+        let mit = debuffs.mitigation(now, sd);
+        let (value, ignores_armor, is_dot_tick) = match &ev {
+            Ev::Dot(i) => {
+                let d = &mut debuffs.dots[*i];
+                d.next_tick += 1.0;
+                d.ticks_left -= 1;
+                let d = &debuffs.dots[*i];
+                (d.value, d.ignores_armor, true)
+            }
+            Ev::Heat => {
+                let h = debuffs.heat.as_mut().expect("heat event needs entity");
+                h.next_tick += 1.0;
+                (h.value, false, true)
+            }
+            Ev::Blast(i) => (debuffs.blast.remove(*i).value, false, false),
+        };
+
+        let (effective, killed, broke) = target.apply(value, p, ignores_armor, &mit);
         r.total_damage += value;
         r.effective_damage += effective;
         r.dot_damage += effective;
-        r.dot_ticks += 1;
+        r.dot_ticks += is_dot_tick as u32;
         r.kills += killed as u32;
+        if broke {
+            push_overguard_break_proc(debuffs, params, now);
+        }
         if killed {
             // Fresh individual: clean DebuffBar (decision 2026-07-24).
             *debuffs = DebuffState::default();
             break;
         }
     }
-    debuffs.bleeds.retain(|b| b.ticks_left > 0);
+    debuffs.dots.retain(|d| d.ticks_left > 0);
 }
 
 /// Run one engagement with a fresh buff bar and a fresh Secondary Enervate.
@@ -522,11 +796,15 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     let mut r = RunResult::default();
 
     // The dealt vector is quantized once (static per run: no dynamic mods
-    // yet); ModdedBase for proc payload formulas stays pre-quantization.
+    // yet); ModdedBase for proc payload formulas stays pre-quantization
+    // and EXCLUDES elemental portions (base × (1 + damage mods)).
     let qvec = params.damage.quantized();
     let qtotal = qvec.total();
-    let modded_base = params.damage.total();
+    let modded_base = params
+        .dot_modified_base
+        .unwrap_or_else(|| params.damage.total());
     let sd = params.status_duration_mult;
+    let sdm = params.status_damage_mult;
 
     // Fire while t < duration; the inter-shot interval is 1/(base rate x
     // live BuffBar fire-rate multiplier), evaluated after each shot (a buff
@@ -560,8 +838,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             }
         }
 
-        // DoT ticks scheduled before this shot land first.
-        process_ticks(&mut debuffs, t + 1e-9, &mut target, &params.target, &mut r);
+        // Status events scheduled before this shot land first.
+        process_ticks(&mut debuffs, t + 1e-9, &mut target, params, &mut r);
 
         // Timed buffs (Frenzy) lapse before this shot reads the bar; locked
         // buffs are then re-asserted (locks beat expiry and trigger churn).
@@ -597,19 +875,27 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         r.shots += 1;
 
         for _ in 0..n_pellets {
+            // Live target-side state for THIS pellet (earlier pellets'
+            // procs already count): mitigation amps, Cold's flat crit
+            // damage received, and Condition Overload's type count.
+            let mit = debuffs.mitigation(t, sd);
+            let cd_total = params.crit_multiplier + debuffs.cold_cd_bonus();
+            let co_mult = 1.0 + params.co_per_type * debuffs.distinct_statuses() as f64;
+
             let tier = roll_crit_tier(effective_cc, rng);
             let part = pick_part(&params.body_parts, rng);
             // Wiki Critical_Hit §Critical Headshots: a crit on an eligible
-            // >1x location doubles cd inside the tier formula.
+            // >1x location doubles cd inside the tier formula (a cd_total
+            // that INCLUDES Cold's flat bonus — freeze.yaml notes).
             let cd = if part.crit_bonus && part.multiplier > 1.0 {
-                2.0 * params.crit_multiplier
+                2.0 * cd_total
             } else {
-                params.crit_multiplier
+                cd_total
             };
             let crit_mult = 1.0 + tier as f64 * (cd - 1.0);
 
-            let raw = qtotal * part.multiplier * crit_mult;
-            let (effective, killed) = target.apply(raw, &params.target, false);
+            let raw = qtotal * part.multiplier * crit_mult * co_mult;
+            let (effective, killed, broke) = target.apply(raw, &params.target, false, &mit);
             r.total_damage += raw;
             r.effective_damage += effective;
             r.kills += killed as u32;
@@ -620,6 +906,9 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             any_head |= part.is_head;
             any_big |= tier >= 2;
 
+            if broke {
+                push_overguard_break_proc(&mut debuffs, params, t);
+            }
             if killed {
                 // The killing pellet's procs die with the old individual;
                 // remaining pellets hit the fresh spawn.
@@ -636,6 +925,27 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 &params.target.status_immunities,
                 rng,
             );
+            // Elemental DoT tick (data/debuffs): 0.5 × ModifiedBase ×
+            // (1 + element bonuses) × (1 + status damage) × crit/part
+            // snapshot. Delay-1 DoTs tick at +1..+6 s; delay-0 (Electricity/
+            // Gas) at 0..+5 s (the +6 s event is a dud).
+            let delayed_ticks = ((BLEED_TICKS as f64 * sd - BLEED_DELAY).floor() as u32) + 1;
+            let immediate_ticks = ((BLEED_TICKS as f64 * sd).floor() as u32).max(1);
+            let push_dot = |debuffs: &mut DebuffState,
+                                dtype: DamageType,
+                                coeff: f64,
+                                bracket: f64,
+                                delay: f64,
+                                ticks: u32,
+                                ignores_armor: bool| {
+                debuffs.dots.push(Dot {
+                    next_tick: t + delay,
+                    ticks_left: ticks,
+                    value: coeff * modded_base * bracket * sdm * crit_mult * part.multiplier,
+                    dtype,
+                    ignores_armor,
+                });
+            };
             for proc in procs {
                 r.procs += 1;
                 match proc {
@@ -651,19 +961,136 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         WEAKENED_CAP,
                         t,
                     ),
-                    DamageType::Slash => {
-                        // Provenance snapshot: this pellet's crit and part
-                        // multipliers, baked into every tick.
-                        let ticks =
-                            ((1.0 * (BLEED_TICKS as f64 * sd - BLEED_DELAY)).floor() as u32) + 1;
-                        debuffs.bleeds.push(BleedInstance {
-                            next_tick: t + BLEED_DELAY,
-                            ticks_left: ticks,
-                            value: BLEED_COEFFICIENT * modded_base * crit_mult * part.multiplier,
-                        });
+                    DamageType::Slash => push_dot(
+                        &mut debuffs,
+                        DamageType::Slash,
+                        BLEED_COEFFICIENT,
+                        1.0, // Bleed: elemental mods never scale the ticks
+                        BLEED_DELAY,
+                        delayed_ticks,
+                        true, // Cinematic: ignores armor
+                    ),
+                    DamageType::Toxin => push_dot(
+                        &mut debuffs,
+                        DamageType::Toxin,
+                        DOT_COEFFICIENT,
+                        params.elem_bracket(DamageType::Toxin),
+                        1.0,
+                        delayed_ticks,
+                        false,
+                    ),
+                    DamageType::Electricity => push_dot(
+                        &mut debuffs,
+                        DamageType::Electricity,
+                        DOT_COEFFICIENT,
+                        params.elem_bracket(DamageType::Electricity),
+                        0.0,
+                        immediate_ticks,
+                        false,
+                    ),
+                    DamageType::Gas => push_dot(
+                        &mut debuffs,
+                        DamageType::Gas,
+                        DOT_COEFFICIENT,
+                        1.0, // literal Gas sources only; Heat/Toxin mods: nothing
+                        0.0,
+                        immediate_ticks,
+                        false,
+                    ),
+                    DamageType::Heat => {
+                        // Singleton accumulator: add the contribution and
+                        // refresh the shared clock; ticks stay anchored to
+                        // the first proc (ignite.yaml).
+                        let contrib = DOT_COEFFICIENT
+                            * modded_base
+                            * params.elem_bracket(DamageType::Heat)
+                            * sdm
+                            * crit_mult
+                            * part.multiplier;
+                        let expiry = t + STATUS_DURATION * sd;
+                        match &mut debuffs.heat {
+                            Some(h) => {
+                                h.value += contrib;
+                                h.expiry = expiry;
+                            }
+                            None => {
+                                debuffs.heat = Some(HeatEntity {
+                                    born: t,
+                                    expiry,
+                                    next_tick: t + 1.0,
+                                    value: contrib,
+                                })
+                            }
+                        }
                     }
-                    // Other types cannot occur with an IPS vector; their
-                    // payloads land in later slices of the status sim.
+                    DamageType::Cold => {
+                        // Overguard holders cap at 4 stacks (never Frozen);
+                        // the Frozen state itself is not modeled.
+                        let cap = if target.overguard > 0.0 {
+                            FREEZE_CAP_UNDER_OVERGUARD
+                        } else {
+                            TEN_STACK_CAP
+                        };
+                        DebuffState::push_capped(
+                            &mut debuffs.freeze,
+                            t + STATUS_DURATION * sd,
+                            cap,
+                            t,
+                        );
+                    }
+                    DamageType::Magnetic => DebuffState::push_capped(
+                        &mut debuffs.disrupt,
+                        t + STATUS_DURATION * sd,
+                        TEN_STACK_CAP,
+                        t,
+                    ),
+                    DamageType::Viral => DebuffState::push_capped(
+                        &mut debuffs.virus,
+                        t + STATUS_DURATION * sd,
+                        TEN_STACK_CAP,
+                        t,
+                    ),
+                    DamageType::Corrosive => DebuffState::push_capped(
+                        &mut debuffs.corrosion,
+                        t + CORROSION_DURATION * sd,
+                        TEN_STACK_CAP,
+                        t,
+                    ),
+                    DamageType::Radiation => DebuffState::push_capped(
+                        &mut debuffs.confusion,
+                        t + STATUS_DURATION * sd,
+                        TEN_STACK_CAP,
+                        t,
+                    ),
+                    DamageType::Blast => {
+                        debuffs.blast.push(BlastStack {
+                            fuse: t + BLAST_FUSE * sd,
+                            value: BLAST_COEFFICIENT
+                                * modded_base
+                                * sdm
+                                * crit_mult
+                                * part.multiplier,
+                        });
+                        if debuffs.blast.len() >= TEN_STACK_CAP {
+                            // Early detonation: every stack's single-target
+                            // hit at once, all stacks consumed (radial
+                            // excluded — it never hits the host).
+                            let total: f64 = debuffs.blast.drain(..).map(|b| b.value).sum();
+                            let mit = debuffs.mitigation(t, sd);
+                            let (eff, killed, broke) =
+                                target.apply(total, &params.target, false, &mit);
+                            r.total_damage += total;
+                            r.effective_damage += eff;
+                            r.dot_damage += eff;
+                            r.kills += killed as u32;
+                            if broke {
+                                push_overguard_break_proc(&mut debuffs, params, t);
+                            }
+                            if killed {
+                                debuffs = DebuffState::default();
+                            }
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -676,7 +1103,9 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             headshot: any_head,
             target_alive: true,
         });
-        enervate.on_event(&hit, t, &mut bar);
+        if params.arcane_enervate {
+            enervate.on_event(&hit, t, &mut bar);
+        }
         if params.frenzy {
             frenzy.on_event(&hit, t, &mut bar);
         }
@@ -688,12 +1117,12 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         t += 1.0 / rate;
     }
 
-    // Drain remaining ticks up to the end of the engagement.
+    // Drain remaining status events up to the end of the engagement.
     process_ticks(
         &mut debuffs,
         params.duration_secs,
         &mut target,
-        &params.target,
+        params,
         &mut r,
     );
 
@@ -1345,6 +1774,186 @@ mod tests {
         assert!(
             s.mean_procs > 0.0,
             "procs must still apply behind overguard"
+        );
+    }
+
+    /// No-arcane, crit-off, mono-1x profile for exact payload expectations.
+    fn bare(forced: DamageType) -> DummyParams {
+        DummyParams {
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            forced_procs: vec![forced],
+            arcane_enervate: false,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        }
+    }
+
+    #[test]
+    fn viral_amps_health_damage_live() {
+        // Forced Viral on the infinite dummy at 1 shot/s: stacks expire
+        // after 6 s, so the count before shot k is 0,1,2,3,4,5 then a
+        // steady 5. Amps 1,2,2.25,2.5,2.75,3,3,3,3,3 -> Σ = 25.5.
+        let s = monte_carlo(&bare(DamageType::Viral), 20, 3);
+        assert!(
+            (s.mean_effective_damage - 75.0 * 25.5).abs() < 1e-9,
+            "eff {}",
+            s.mean_effective_damage
+        );
+        // Raw is pre-mitigation: the amp is defender-side.
+        assert!((s.mean_damage - 750.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn magnetic_amps_overguard_damage_live() {
+        // Same amp curve, but on the overguard pool.
+        let p = DummyParams {
+            target: frail_target(TargetMode::InfiniteHealth, 0.0, 1e12),
+            ..bare(DamageType::Magnetic)
+        };
+        let s = monte_carlo(&p, 20, 3);
+        assert!(
+            (s.mean_effective_damage - 75.0 * 25.5).abs() < 1e-9,
+            "eff {}",
+            s.mean_effective_damage
+        );
+    }
+
+    #[test]
+    fn toxin_dot_matches_the_bleed_shape_at_half_base() {
+        // Toxin mirrors the forced-bleed test at coefficient 0.5 vs 0.35:
+        // 39 ticks × 37.5 = 1462.5 (no armor: full value).
+        let s = monte_carlo(&bare(DamageType::Toxin), 20, 5);
+        assert!(
+            (s.mean_dot_damage - 1462.5).abs() < 1e-9,
+            "dot {}",
+            s.mean_dot_damage
+        );
+    }
+
+    #[test]
+    fn electricity_dot_ticks_immediately() {
+        // Delay-0: shot at k ticks at k..k+5; before 10 s that is
+        // 6+6+6+6+6+5+4+3+2+1 = 45 ticks × 37.5 = 1687.5.
+        let s = monte_carlo(&bare(DamageType::Electricity), 20, 5);
+        assert!(
+            (s.mean_dot_damage - 45.0 * 37.5).abs() < 1e-9,
+            "dot {}",
+            s.mean_dot_damage
+        );
+    }
+
+    #[test]
+    fn heat_is_a_single_refreshing_accumulator() {
+        // Ten forced Heat procs, one per second: ONE entity born at t=0,
+        // each proc adds 37.5 to the tick and refreshes the expiry, ticks
+        // anchored at 1,2,...,9 (< 10 s): tick k has k contributions ->
+        // Σ k=1..9 of 37.5k = 37.5 × 45 = 1687.5. Same total as the
+        // independent-stack Electricity case ONLY by coincidence of this
+        // cadence — the entity count differs (1 vs 10).
+        let s = monte_carlo(&bare(DamageType::Heat), 20, 5);
+        assert!(
+            (s.mean_dot_damage - 1687.5).abs() < 1e-9,
+            "dot {}",
+            s.mean_dot_damage
+        );
+    }
+
+    #[test]
+    fn condition_overload_multiplies_by_distinct_status_types() {
+        // Forced Impact (Stagger) with co_per_type = 1.0: shot 1 sees 0
+        // types, shots 2..10 see 1 -> 75 × (1 + 9 × 2) = 1425.
+        let p = DummyParams {
+            co_per_type: 1.0,
+            ..bare(DamageType::Impact)
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!(
+            (s.mean_damage - 1425.0).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
+    }
+
+    #[test]
+    fn cold_raises_crit_damage_received() {
+        // Forced Cold, cc 100%, cd 2.0: stack counts 0,1,...,5 then a
+        // steady 5 (6 s expiry) -> b = 0,.10,.15,.20,.25,.30 then .30
+        // (Σ = 2.20); total = 75 × Σ(2 + b) = 75 × 22.2.
+        let p = DummyParams {
+            base_crit_chance: 1.0,
+            crit_multiplier: 2.0,
+            forced_procs: vec![DamageType::Cold],
+            arcane_enervate: false,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!(
+            (s.mean_damage - 75.0 * 22.2).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
+    }
+
+    #[test]
+    fn blast_stacks_fire_singly_on_fuse_expiry() {
+        // Forced Blast at 1 shot/s: each stack's 1.5 s fuse fires a
+        // 0.3 × 75 = 22.5 hit; fuses at 1.5..9.5 land before 10 s = 9 of
+        // 10; never 10 simultaneous stacks -> no early detonation.
+        let s = monte_carlo(&bare(DamageType::Blast), 20, 5);
+        assert!(
+            (s.mean_dot_damage - 9.0 * 22.5).abs() < 1e-9,
+            "burst {}",
+            s.mean_dot_damage
+        );
+    }
+
+    #[test]
+    fn overguard_break_with_disrupt_fires_the_tesla_payload() {
+        // 100 overguard, forced Magnetic (InstantRespawn so pools deplete;
+        // health big enough that nothing dies): shot 1 (amp 1, no stacks
+        // yet) leaves 25 and lands a stack; shot 2 (amp 2.0) breaks ->
+        // break proc = 3% × 1 stack × 100 = 3 total over 6 ticks. Health
+        // then takes shots 3..10 at amp 1: dot damage == 3 exactly.
+        let mut t = frail_target(TargetMode::InstantRespawn, 0.0, 100.0);
+        t.base_health = 10_000.0;
+        let p = DummyParams {
+            target: t,
+            ..bare(DamageType::Magnetic)
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!(
+            (s.mean_dot_damage - 3.0).abs() < 1e-9,
+            "break proc {}",
+            s.mean_dot_damage
+        );
+    }
+
+    #[test]
+    fn corrosion_strips_armor_multiplicatively() {
+        // Capped armor (90% DR): forced Corrosive procs stack 20%+6%/stack
+        // strip, so later shots take less DR than the first. Exact: shot k
+        // has n = k−1 stacks; strip(0)=0, strip(n)=0.20+0.06n.
+        let p = DummyParams {
+            target: frail_target(TargetMode::InfiniteHealth, 2700.0, 0.0),
+            ..bare(DamageType::Corrosive)
+        };
+        let s = monte_carlo(&p, 20, 5);
+        // Stack counts before each shot (8 s expiry, 1 shot/s):
+        // 0,1,2,...,7 then a steady 7.
+        let expected: f64 = [0, 1, 2, 3, 4, 5, 6, 7, 7, 7]
+            .iter()
+            .map(|&n| {
+                let strip = if n == 0 { 0.0 } else { 0.20 + 0.06 * n as f64 };
+                let dr = 0.9 * ((2700.0 * (1.0 - strip)) / 2700.0_f64).sqrt();
+                (75.0 * (1.0 - dr)).max(1.0)
+            })
+            .sum();
+        assert!(
+            (s.mean_effective_damage - expected).abs() < 1e-9,
+            "eff {} vs {expected}",
+            s.mean_effective_damage
         );
     }
 

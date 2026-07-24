@@ -96,3 +96,25 @@ analytic expectation for coarse ranking, Monte Carlo for finals; the
 optimizer never reimplements damage math). Results are cached by
 (canonical form, scenario, policy); equivalent combinations are never
 re-simulated.
+
+## 5. Implementation status (2026-07-24)
+
+Implemented in `optimizer/` (`wfsim-optimizer` binary):
+
+- §1 canonical enumeration: 8-of-23 subsets with family exclusivity
+  (155,727 subsets by the generating function — pinned by test), ×
+  distinct-element-order permutations, second-level dedup on the
+  resolved post-[2] vector (1,452,146 order variants → 391,789
+  candidates, ~1 s).
+- §2 legalization via `engine::mods::plan_forma` per subset.
+- §3 `StackPolicy::AssumedMax` in `engine::loadout::resolve`.
+- Constraint hooks (命题作文): `require=<mod_id>` / `forbid=<mod_id>`
+  CLI args filter the space before enumeration.
+- Evaluation: **successive halving** across all cores — rounds of
+  (runs, keep): 3→16384, 12→3072, 48→512, 200→64, 1000→24; early
+  rounds rank by mean effective damage (continuous, low variance),
+  the final rounds by mean kills (the objective). Deterministic
+  per-candidate seeds.
+- Benchmark scenario: Dual Toxocyst Incarnon (fixed evolutions, no
+  arcanes) vs Thrax Centurion @9999 Steel Path, instant respawn, 100%
+  headshots, 60 s, finals at 1000 runs.
