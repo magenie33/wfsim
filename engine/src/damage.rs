@@ -134,6 +134,37 @@ impl DamageVector {
             .map(|&t| (t, self.get(t)))
             .filter(|&(_, a)| a > 0.0)
     }
+
+    /// Damage quantization (wiki `Damage/Calculation` §Quantization): each
+    /// component snaps to the nearest multiple of `total/32` — a network
+    /// serialization scheme (one total integer + per-type 1/32 multiples).
+    /// Applied to the modded base vector BEFORE crits / type modifiers /
+    /// faction multipliers (those multiply the quantized values). Mixed
+    /// vectors gain or lose a few percent; mono-type vectors are lossless.
+    /// Granularity was 1/16 before U40.
+    pub fn quantized(&self) -> Self {
+        let total = self.total();
+        if total <= 0.0 {
+            return *self;
+        }
+        let scale = total / QUANTIZATION_DENOMINATOR;
+        let mut out = *self;
+        for a in &mut out.amounts {
+            *a = (*a / scale).round() * scale;
+        }
+        out
+    }
+}
+
+/// Damage quantization denominator (1/32 steps since U40; 1/16 before).
+pub const QUANTIZATION_DENOMINATOR: f64 = 32.0;
+
+/// Base critical-damage-multiplier quantization (wiki `Critical_Hit`
+/// §Quantization): `round(cd × 4095/32) × 32/4095`, applied to
+/// `base_cd + weapon-flat CD` before relative mods (docs/MECHANICS.md §5).
+/// Note even a clean 2.0x is off-grid: it quantizes to ≈2.000488x.
+pub fn quantize_base_crit_damage(cd: f64) -> f64 {
+    (cd * 4095.0 / 32.0).round() * 32.0 / 4095.0
 }
 
 #[cfg(test)]
@@ -162,6 +193,58 @@ mod tests {
         assert_eq!(crit.get(DamageType::Impact), 20.0);
         assert_eq!(crit.get(DamageType::Toxin), 80.0);
         assert_eq!(crit.total(), 100.0);
+    }
+
+    #[test]
+    fn quantization_matches_the_wiki_worked_example() {
+        // 30 Impact / 30 Puncture / 40 Slash: scale = 100/32 = 3.125.
+        // 30/3.125 = 9.6 -> 10 -> 31.25; 40/3.125 = 12.8 -> 13 -> 40.625.
+        let q = DamageVector::new()
+            .with(DamageType::Impact, 30.0)
+            .with(DamageType::Puncture, 30.0)
+            .with(DamageType::Slash, 40.0)
+            .quantized();
+        assert_eq!(q.get(DamageType::Impact), 31.25);
+        assert_eq!(q.get(DamageType::Puncture), 31.25);
+        assert_eq!(q.get(DamageType::Slash), 40.625);
+        assert_eq!(q.total(), 103.125); // panel 100 deals 103.125 (+3.1%)
+                                        // Multipliers apply AFTER quantization: crit x1.5 and the Charger's
+                                        // Infested slash x1.5 reproduce the page's table numbers.
+        assert_eq!(q.total() * 1.5, 154.6875);
+        let vs_charger = q.get(DamageType::Impact)
+            + q.get(DamageType::Puncture)
+            + q.get(DamageType::Slash) * 1.5;
+        assert_eq!(vs_charger, 123.4375);
+    }
+
+    #[test]
+    fn quantization_edge_cases() {
+        // Mono-type vectors are lossless (component/scale = exactly 32).
+        let mono = DamageVector::new().with(DamageType::Heat, 57.3).quantized();
+        assert!((mono.get(DamageType::Heat) - 57.3).abs() < 1e-12);
+        // Dual Toxocyst base 7.5/60/7.5: quantizes to 7.03125/60.9375/7.03125
+        // - components shift but the total stays exactly 75.
+        let dt = DamageVector::new()
+            .with(DamageType::Impact, 7.5)
+            .with(DamageType::Puncture, 60.0)
+            .with(DamageType::Slash, 7.5)
+            .quantized();
+        assert_eq!(dt.get(DamageType::Impact), 7.03125);
+        assert_eq!(dt.get(DamageType::Puncture), 60.9375);
+        assert_eq!(dt.total(), 75.0);
+        // Empty vector: no-op.
+        assert_eq!(DamageVector::new().quantized().total(), 0.0);
+    }
+
+    #[test]
+    fn base_crit_damage_quantization() {
+        // Even a clean 2.0x sits off-grid: 2.0 * 4095/32 = 255.9375 -> 256
+        // -> 256 * 32/4095 ≈ 2.000488.
+        let q = quantize_base_crit_damage(2.0);
+        assert!((q - 2.0004884004884).abs() < 1e-10, "q = {q}");
+        // Grid points round-trip exactly.
+        let grid = 256.0 * 32.0 / 4095.0;
+        assert_eq!(quantize_base_crit_damage(grid), grid);
     }
 
     #[test]

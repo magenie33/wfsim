@@ -153,8 +153,9 @@ cd_total = (base_cd + Σ weapon_flat_cd)           ← Critical Parallel-type
 ```
 (Evidence: §Quantization ordering for the first two layers' relative
 positions; the Cold page's Kunai example `1.6 × 2.1 + 0.5` for the
-receiver layer.) The tier and headshot formulas below consume `cd_total`.
-**Quantization is deliberately omitted from the model** — see below.
+receiver layer.) The first layer is quantized —
+`quantize(base_cd + Σ weapon_flat_cd)`, see §Quantization below. The tier
+and headshot formulas below consume `cd_total`.
 
 **Tiers.** For `effective_cc` (wiki `Critical_Hit` §Critical Tiers):
 - Guaranteed tier `t = floor(effective_cc)`.
@@ -176,14 +177,20 @@ Order matters: **flat/absolute** CD bonuses (e.g. Incarnon "Critical Parallel"
 Vital Sense) multiply **after**. Required for shot-by-shot parity with in-game
 numbers.
 
-> **Decision (2026-07-24, revised): EXCLUDED from the model entirely for
-> now** — the user suspects DE may have dropped quantization as tech
-> improved. Counter-evidence on record: the U40 patch history notes
-> damage quantization was *changed* (1/16 → 1/32), suggesting it was
-> still live then. **Golden tests decide**: per-shot numbers will either
-> match the clean formulas exactly, or show the characteristic 1/32-step
-> deviations — reinstate the quantize layer only if measurements demand
-> it.
+> **Decision (2026-07-24, final): quantization is ALIVE and implemented.**
+> Reasoning: (a) `Damage/Calculation` §Quantization gives the engineering
+> rationale — it is a **network serialization scheme** (one total integer
+> + per-type 1/32 multiples), which does not obsolete with better tech;
+> (b) the U40 change (1/16 → 1/32) is a *refinement* of the mechanism,
+> not a removal; (c) the effect is material (the 30/30/40 example deals
+> 103.125 off a 100 panel — +3.1%, far beyond our matching tolerance).
+> Implemented: `DamageVector::quantized()` (per-hit vector, BEFORE
+> crits/type-modifiers/faction multipliers — those multiply quantized
+> values) and `damage::quantize_base_crit_damage` (wired into the CD
+> bucket when mod resolution lands). The page's flagged "conflicting
+> info" is a mathematical pseudo-conflict: for pure multipliers,
+> `Round(v/s)·s·k ≡ Round(kv/ks)·ks` — the two descriptions differ only
+> when elemental mods change the vector's composition.
 
 Related: per-shot **damage** quantization also exists and was changed from
 1/16 to 1/32 steps in Update 40 (undocumented, per the wiki `Damage` patch
