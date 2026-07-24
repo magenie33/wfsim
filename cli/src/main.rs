@@ -19,12 +19,24 @@ fn main() {
         params.crit_multiplier,
         params.fire_rate,
     );
+    let total_weight: f64 = params.body_parts.iter().map(|p| p.aim_weight).sum();
+    let parts = params
+        .body_parts
+        .iter()
+        .map(|p| {
+            format!(
+                "{} {:.0}% (x{:.1}{})",
+                p.name,
+                p.aim_weight / total_weight * 100.0,
+                p.multiplier,
+                if p.is_head { ", head" } else { "" },
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
     println!(
-        "perk: Secondary Enervate (max) | headshots: {:.0}% (x{:.1}) | {} runs x {:.0} s",
-        params.headshot_rate * 100.0,
-        params.headshot_multiplier,
-        runs,
-        params.duration_secs,
+        "perk: Secondary Enervate (max) | aim: {} | {} runs x {:.0} s",
+        parts, runs, params.duration_secs,
     );
     println!("excluded: status/elements, armor, Frenzy | infinite ammo | assumptions unverified");
     println!();

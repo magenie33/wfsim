@@ -205,10 +205,30 @@ range/damage falloff; ballistics/projectile travel; hit chance; AoE radius and
 falloff; headshot multiplier; punch-through. AoE self-damage/falloff and whether
 headshots can crit are known edge cases.
 
-**Headshot / location multiplier** (wiki `Enemy_Body_Parts`, `Headshot`).
-Almost all humanoid enemies (Grineer, Corpus, Infested) have a **3.0x** head
-multiplier; known outlier: Nox helmet 3x / exposed head 4x; some parts are 1x
-(no bonus). The critical-headshot interaction is specified in §5.
+**Body parts / location multipliers** (wiki `Enemy_Body_Parts`, `Headshot`).
+Targets are made of **body parts**, each with its own damage multiplier. A
+part carries three independent properties:
+1. **Location multiplier** — humanoid head 3.0x (almost all Grineer / Corpus /
+   Infested), body 1x. Outliers: Nox helmet 3x / exposed head 4x, Amalgam
+   Machinist head 0.5x, MOA "fanny pack" 3x, Bursa riot shield 0x / front
+   0.4x, boss weak points on a 0x body (Sargas Ruk vents 1x, Lephantis
+   mouths 1x, Jordas engines 1x).
+2. **Headshot trigger** (`is_head`) — **headshot is a trigger condition, not a
+   damage stat**. "Effects that specify headshots only take effect when
+   striking the target's head and do **not** apply against any other weak
+   spot" (§Weak Spot Bonuses). So Frenzy/Covenant-style effects never fire on
+   a MOA fanny pack or a boss weak point; Charger "mouth" is explicitly
+   "1x, not a headshot".
+3. **Critical-location eligibility** — whether a crit on this part gets the
+   `2*cd` fold-in of §5. Ineligible even at >1x: MOA fanny pack, helmeted
+   Corpus heads. 1x locations are never eligible.
+
+Weapon-side exceptions: some weapons always hit at 1x (beams like Ignis,
+launchers like Kuva Bramma); the **radial** part of AoE damage is always 1x
+and **cannot trigger headshot conditions** (the direct projectile can).
+Headshot-damage bonuses (e.g. sniper zoom) stack additively with each other.
+
+The critical-headshot damage interaction is specified in §5.
 
 **How many Hits a Shot produces (source: wiki).** A **Hit** (the on-hit-effect
 trigger, per [`GLOSSARY.md`](GLOSSARY.md)) is not the same as a Multishot
