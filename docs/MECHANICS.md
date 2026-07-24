@@ -405,6 +405,33 @@ launchers like Kuva Bramma); the **radial** part of AoE damage is always 1x
 and **cannot trigger headshot conditions** (the direct projectile can).
 Headshot-damage bonuses (e.g. sniper zoom) stack additively with each other.
 
+**Multishot** (wiki `Multishot`). `total_projectiles = base_count ×
+(1 + Σ multishot bonuses)`; the integer part is guaranteed, the fraction
+is a chance of one more, rolled per trigger pull. Each projectile is an
+independent damage instance (own crit roll, own status roll). No effect
+on speargun throws or on continuous weapons' blast radii; the Arsenal
+shows the summed damage (spread can waste pellets); accuracy interacts.
+
+**Continuous (beam) weapons** (wiki `Continuous_Weapon` + `Multishot`
+§Continuous Weapons) — three big deviations:
+- **Damage ramp**: ticks start at ~20% damage and ramp to 100% over
+  0.6 s of hitting a target; after 0.8 s off-target it decays back over
+  2 s. Held trigger, hitscan ticks, typically 0.5 ammo/tick, no recoil,
+  limited base range (Sinister Reach / Ruinous Extension).
+- **Multishot MERGES on-target beams into ONE damage instance per tick**:
+  merged damage AND status chance = the SUM of beams (SC 40% × roll 3 =
+  120% → multiple procs per tick), but **crit chance stays single-beam**
+  (one roll, unscaled). Consequences: damaging status DoTs benefit from
+  multishot **twice** (proc chance × merged ModdedBase); **forced procs
+  apply once per tick AFTER the merge** (Hunter Munitions on beams ≈ one
+  proc per interval, not per pellet). Innate multi-beam weapons (Quanta)
+  keep one instance per base beam, each rolling its multishot bonus
+  independently.
+- **Beam chaining** (Amprex/Kuva Nukor family): chains hit secondary
+  targets at decreasing damage; Firestorm-type mods extend the LINK
+  range (Beam Length bonuses do not); punch-through redistributes chains
+  without adding damage; chain beams consume no ammo.
+
 **Damage instance classes.** Every damage instance carries a source class —
 **direct** (projectile/hitscan contact), **aoe_radial** (the explosion), or
 **ability** — because several rules key off it:
