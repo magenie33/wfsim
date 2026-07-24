@@ -240,6 +240,13 @@ element procs are weighted, not uniform.
 | Gas | Gas Cloud | 6 s | none | 0..5 s (last tick no damage) | no |
 - `total_ticks = floor(tick_rate × (duration − delay)) + 1`; status DoTs
   tick at 1/s (ability DoTs often 2/s).
+- **Two DoT models**: every DoT except Heat is `independent_stacks` (each
+  proc = its own instance with its own clock). **Heat is a
+  `singleton_accumulator`**: ONE DoT entity per target — each proc adds
+  its contribution into the single tick value and refreshes the one
+  shared clock ("Heat Inherit"); the entity's Heat%/faction modifier
+  context is fixed by the **first** proc (status-damage mods excepted),
+  enabling indefinite linear ramp while refreshed.
 - **Snapshot scaling** — a tick inherits from its proccing hit: total
   damage buffs and base-damage mods, **faction bonuses applied a second
   time** (effective `(1+f)²`), status-damage bonuses, the hit's crit

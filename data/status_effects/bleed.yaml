@@ -20,6 +20,7 @@ stack_overflow: none           # (only 10 tick numbers are DISPLAYED - cosmetic)
 
 # --- the DoT sub-behavior ---------------------------------------------------
 dot:
+  dot_model: independent_stacks   # each proc is its own instance/clock
   tick_rate_hz: 1              # status-effect DoTs tick 1/s
   delay_seconds: 1             # first tick at t+1s; ticks at 1..6s (6 ticks)
   ticks: 6

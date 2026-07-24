@@ -24,6 +24,13 @@ per_stack_duration: false      # one shared clock for the consolidated stack
 stack_overflow: none
 
 dot:
+  # SINGLETON ACCUMULATOR (unlike every other status DoT): there is only
+  # ONE Heat DoT entity per target. Each proc does not create a new
+  # instance - it (a) ADDS its damage contribution into the single
+  # entity's tick value and (b) REFRESHES the entity's one shared clock.
+  # The entity's modifier context (Heat%/faction) is fixed by the FIRST
+  # proc. Other DoTs (Bleed/Poison/Tesla/Gas) are independent_stacks.
+  dot_model: singleton_accumulator
   tick_rate_hz: 1
   delay_seconds: 1             # ticks at 1..6 s
   ticks: 6
