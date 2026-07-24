@@ -1,4 +1,3 @@
-schema_version: 0
 id: secondary_enervate
 name: Secondary Enervate
 kind: buff
@@ -26,6 +25,3 @@ source:
 # Flat crit is additive/absolute: Lato (10% base) + 7 stacks = 10% + 7x10% = 80% (wiki).
 # Still to confirm in-game: whether a hit's own stack survives when that hit
 # triggers the reset, and whether the 30/s cap is a min-interval or a rolling window.
-verification:
-  status: unverified
-  needs_measurement: true

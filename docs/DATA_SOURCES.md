@@ -61,6 +61,9 @@ Our field names follow the wiki concept words (snake_case + unit suffixes):
 - Later: a small **importer** fetches these modules and emits our YAML directly,
   so bulk entry is automated. WFCD's `warframe-items` (JSON, same datamined
   source) is an alternative bulk feed to consider for the importer.
-- Always keep the `verification` block: even authoritative base stats stay
-  `unverified` for the full pipeline until a golden test confirms the computed
-  result against Simulacrum.
+- **No `verification` blocks, no `schema_version`** (decision 2026-07-24):
+  whatever is written in the data IS the current belief, corrected in place
+  as measurements land (the user revises continuously). Confidence lives in
+  git history and the devlog, not per-file status fields. Golden tests vs
+  Simulacrum remain the arbiter of the ENGINE; the data is simply kept
+  current.

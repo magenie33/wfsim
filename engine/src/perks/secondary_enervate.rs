@@ -22,7 +22,7 @@
 //! - Rank only changes `reset_after_big_crits` (1 at rank 0 .. 6 at rank 5);
 //!   the per-stack flat crit chance is 10% at every rank.
 //!
-//! Open questions when calibrating (see the data files' `verification` notes):
+//! Open questions when calibrating:
 //! - Whether a hit's own stack survives when that same hit triggers the reset
 //!   (this impl gains the stack first, then resets — to confirm).
 //! - Whether the 30/s cap is a min-interval or a rolling window (min-interval).

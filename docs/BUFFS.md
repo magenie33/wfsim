@@ -173,8 +173,8 @@ one perk. Correctness comes from tests at two levels:
 1. **Perk state-machine tests** — pure logic, no game needed: e.g. "buff resets
    after N big crits", "stack gain capped at 30/s", "duration buff expires".
 2. **Golden tests vs Simulacrum** — the north star. Full sim with the buff active
-   vs a recorded in-game damage-vs-time trace, matched within rounding. Only
-   these move a perk's `verification.status` from `unverified` to `verified`.
+   vs a recorded in-game damage-vs-time trace, matched within rounding. A
+   mismatch means the data or engine gets corrected in place.
 
 Supporting rules:
 
@@ -182,8 +182,6 @@ Supporting rules:
   rate; no ambient randomness. Makes Monte Carlo reproducible and golden tests
   stable. (Critical here because random big crits can *feed back* into a buff's
   own reset.)
-- **`verification.status` is tracked data**, mirrored from the data files, so a
-  build using unverified buffs can be flagged rather than silently trusted.
 - **Trace output** — the sim can emit a per-event log (buff bar over time, crit
   tiers, per-bucket contributions) to diff against an in-game trace and localize
   any mismatch. You cannot align what you cannot inspect.

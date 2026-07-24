@@ -1,4 +1,3 @@
-schema_version: 0
 id: bleed
 name: Bleed
 kind: debuff                   # DoT is a sub-behavior of a debuff (the
@@ -86,7 +85,3 @@ source:
   note: Formula and exclusions from the dedicated page; tick/scaling rules
     cross-checked with wiki Damage_over_Time.
   retrieved: "2026-07-24"
-
-verification:
-  status: unverified
-  needs_measurement: true

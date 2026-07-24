@@ -1,4 +1,3 @@
-schema_version: 0
 id: frenzy
 name: Frenzy
 kind: weapon_passive
@@ -20,5 +19,3 @@ source:
 # Trigger confirmed: landing a SUCCESSFUL HEADSHOT grants the Frenzy buff (not a
 # headshot kill; older versions triggered on kills). The Frenzy perk and Frenzy
 # buff share a name -- this is the perk (grantor); the buff is data/buffs/frenzy.yaml.
-verification:
-  status: unverified

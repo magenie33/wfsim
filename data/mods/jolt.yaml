@@ -1,4 +1,3 @@
-schema_version: 0
 id: jolt
 kind: mod
 name: Jolt
@@ -17,6 +16,3 @@ source:
   url: https://wiki.warframe.com/w/Jolt
   note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).
   retrieved: "2026-07-24"
-
-verification:
-  status: unverified

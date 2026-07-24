@@ -1,4 +1,3 @@
-schema_version: 0
 id: secondary_enervate
 name: Secondary Enervate
 kind: arcane
@@ -30,5 +29,3 @@ source:
   retrieved: "2026-07-24"
 
 # Big crit = crit tier >= 2 (source: wiki, confirmed).
-verification:
-  status: unverified

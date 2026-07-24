@@ -1,4 +1,3 @@
-schema_version: 0
 id: tesla_chain
 name: Tesla Chain
 kind: debuff
@@ -69,7 +68,3 @@ source:
   note: Dedicated damage-type page; tick window cross-checked with
     Damage_over_Time (no delay, dud last tick event).
   retrieved: "2026-07-24"
-
-verification:
-  status: unverified
-  needs_measurement: true

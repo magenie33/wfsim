@@ -1,4 +1,3 @@
-schema_version: 0
 id: galvanized_diffusion
 kind: mod
 name: Galvanized Diffusion
@@ -37,6 +36,3 @@ incompatible_with: [barrel_diffusion, flawed_barrel_diffusion,
 source:
   url: https://wiki.warframe.com/w/Galvanized_Diffusion
   retrieved: "2026-07-24"
-
-verification:
-  status: unverified

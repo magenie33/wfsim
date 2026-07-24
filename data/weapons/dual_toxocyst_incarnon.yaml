@@ -1,4 +1,3 @@
-schema_version: 0
 id: dual_toxocyst_incarnon
 name: Dual Toxocyst (Incarnon Form)
 slot: secondary
@@ -105,7 +104,3 @@ source:
   note: Stats from the wiki's structured Lua data module; economy from the
     Incarnon Genesis page.
   retrieved: "2026-07-24"
-
-verification:
-  status: unverified
-  needs_measurement: true

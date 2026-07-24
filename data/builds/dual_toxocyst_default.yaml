@@ -1,4 +1,3 @@
-schema_version: 0
 id: dual_toxocyst_default
 kind: build
 name: Dual Toxocyst default build (evolution selections)
@@ -35,6 +34,3 @@ mods: []
 
 source:
   note: User's chosen loadout, 2026-07-26.
-
-verification:
-  status: n/a

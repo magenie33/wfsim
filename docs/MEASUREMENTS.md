@@ -2,8 +2,9 @@
 
 Golden tests need real measurements. Each protocol here is written so a
 single session produces an unambiguous answer. Add results inline (date +
-numbers), then flip the corresponding `verification.status` / MECHANICS.md
-entry.
+numbers), then CORRECT the data/docs in place (decision 2026-07-24: no
+per-file verification status - the recorded value is always the current
+belief).
 
 General setup:
 - HUD: enable damage numbers (Enhanced Damage Numbers). Color code:

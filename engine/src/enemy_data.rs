@@ -70,7 +70,7 @@ pub struct BodyPartSpec {
 }
 
 /// An enemy entry from `data/enemies/`. Unknown YAML fields (source,
-/// verification, mechanics, ...) are ignored by the loader.
+/// mechanics, notes, ...) are ignored by the loader.
 #[derive(Debug, Clone, Deserialize)]
 pub struct EnemySpec {
     pub id: String,

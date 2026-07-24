@@ -1,4 +1,3 @@
-schema_version: 0
 id: detonate
 name: Detonate
 kind: debuff
@@ -96,7 +95,3 @@ source:
   note: Dedicated damage-type page including the Notes list (no-falloff,
     negative-duration exception, killing-blow edge cases, headcrit AoE).
   retrieved: "2026-07-24"
-
-verification:
-  status: unverified
-  needs_measurement: true

@@ -1,4 +1,3 @@
-schema_version: 0
 id: ignite
 name: Ignite
 kind: debuff
@@ -113,7 +112,3 @@ source:
   note: Dedicated damage-type page; DoT rules cross-checked with
     Damage_over_Time (Ignite is the only refreshable status DoT).
   retrieved: "2026-07-24"
-
-verification:
-  status: unverified
-  needs_measurement: true      # esp. the Heat Inherit first-proc snapshot

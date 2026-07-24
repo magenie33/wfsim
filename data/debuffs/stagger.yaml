@@ -1,4 +1,3 @@
-schema_version: 0
 id: stagger
 name: Stagger
 kind: debuff
@@ -65,7 +64,3 @@ source:
     Dedicated damage-type page (authoritative for the proc); overview-table
     name "Knockback" and internal names from the Damage page tables.
   retrieved: "2026-07-24"
-
-verification:
-  status: unverified
-  needs_measurement: true

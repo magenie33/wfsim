@@ -1,4 +1,3 @@
-schema_version: 0
 id: frenzy
 name: Frenzy
 kind: buff
@@ -39,6 +38,3 @@ source:
 
 # Duration, refresh, and all four bonuses confirmed from wiki (complete).
 # Exact numbers still to be reproduced in Simulacrum for the golden test.
-verification:
-  status: unverified
-  needs_measurement: true

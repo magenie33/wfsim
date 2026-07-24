@@ -1,4 +1,3 @@
-schema_version: 0
 id: fortress
 name: Fortress (synthetic)
 kind: enemy
@@ -31,7 +30,3 @@ source:
   url: null
   note: Synthetic target authored for wfsim edge-case testing; not game data.
   retrieved: "2026-07-24"
-
-verification:
-  status: synthetic
-  needs_measurement: false

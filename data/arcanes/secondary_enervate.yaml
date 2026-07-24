@@ -1,4 +1,3 @@
-schema_version: 0
 id: secondary_enervate
 name: Secondary Enervate
 kind: arcane
@@ -14,6 +13,3 @@ source:
   retrieved: "2026-07-24"
 
 # Arcane item metadata only. Mechanic: data/perks/ + data/buffs/ secondary_enervate.
-verification:
-  status: unverified
-  needs_measurement: true
