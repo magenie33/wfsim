@@ -18,7 +18,11 @@
 /// Enemy levels are normally capped at 9999 (exceeded only in Void Fissures).
 pub const LEVEL_CAP: u32 = 9999;
 
-/// Armor is hard-capped at 2,700 (= 90% DR with the +300 curve).
+/// The cap the STAT SYSTEM imposes on enemy armor *values* (applied in
+/// [`armor_at`]). This is data-side discipline, not a property of the DR
+/// formula: DE simply never lets a value above 2,700 exist (a 10k-armor
+/// enemy is theoretically expressible), and the scaling curve tops out
+/// here. At this value the DR formula evaluates to 90%.
 pub const ARMOR_CAP: f64 = 2700.0;
 
 /// Enemies that would spawn with less armor get this instead (initial value
@@ -169,16 +173,19 @@ pub fn eximus_base_health(base_health: f64, level: u32, has_shields_or_armor: bo
 
 /// Armor → damage reduction, post-U36 formula (wiki `Damage/Calculation`
 /// §Armored Enemies): `DR = 0.9·√(armor/2700)`. The pre-U36 curve was
-/// `armor/(armor+300)`; both give exactly 90% at the 2,700 cap, but the new
+/// `armor/(armor+300)`; both give exactly 90% at armor 2,700, but the new
 /// square-root curve makes partial armor strip far more valuable (300 armor:
 /// 30% DR now vs 50% before). `armor` is the value after all strips/debuffs.
-/// Unverified until golden-tested.
+///
+/// The formula itself is uncapped; its in-game domain is `[0, 2700]` only
+/// because the stat system never produces larger *values* (see
+/// [`ARMOR_CAP`]). We still clamp defensively: an out-of-domain input would
+/// yield DR > 90% (and > 100% past 3,333), which no in-game armor value can
+/// cause. Unverified until golden-tested.
 pub fn armor_damage_reduction(armor: f64) -> f64 {
     if armor <= 0.0 {
         0.0
     } else {
-        // Armor is hard-capped at 2,700 in-game; clamp so out-of-domain
-        // inputs can never push DR past 90%.
         0.9 * (armor.min(ARMOR_CAP) / ARMOR_CAP).sqrt()
     }
 }

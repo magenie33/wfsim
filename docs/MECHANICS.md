@@ -333,8 +333,11 @@ DR = 0.9 × √(armor / 2700)
 damage_to_health = incoming × (1 + type_modifier) × (1 − DR)
 ```
 `armor` is the value **after** all strips/debuffs (Corrosive −26%/stack to
-−80%, Heat −50%, Corrosive Projection, Terrify). Hard cap 2,700 = 90% DR;
-spawn minimum 200 (initial value only). ⚠️ The often-quoted
+−80%, Heat −50%, Corrosive Projection, Terrify). The 2,700 cap is enforced
+on the armor **value** by the stat system (data-side discipline: nothing in
+the formula forbids a 10k-armor enemy — DE just never writes one, and the
+scaling curve tops out at 2,700, where the formula evaluates to 90% DR).
+Spawn minimum 200 (initial value only). ⚠️ The often-quoted
 `armor/(armor+300)` is the **pre-U36** curve — both agree exactly at the
 2,700 cap (90%), which hides the difference; at 300 armor the old curve
 gives 50% DR, the new one **30%** (the U36 goal: make partial strip
