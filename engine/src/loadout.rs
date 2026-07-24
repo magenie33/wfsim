@@ -335,6 +335,14 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
     }
     for &(t, bonus) in &base.injected_elements {
         input.injected.push((t, modified_base * bonus));
+        // The injection "behaves like a Toxin mod, additive with
+        // elemental mods" (frenzy.yaml) — so it ALSO raises that
+        // element's DoT tick bracket (1 + element bonuses).
+        if let Some(x) = elem_bonus.iter_mut().find(|(a, _)| *a == t) {
+            x.1 += bonus;
+        } else {
+            elem_bonus.push((t, bonus));
+        }
     }
     let damage = elements::combine(&physical, &input);
 
@@ -453,6 +461,28 @@ mod tests {
         // Elemental DoT brackets: cold 1.6, electricity 1.6.
         assert!(p.elem_dot_bonus.contains(&(Cold, 1.6)));
         assert!(p.elem_dot_bonus.contains(&(Electricity, 1.6)));
+    }
+
+    #[test]
+    fn injected_toxin_raises_the_toxin_dot_bracket_too() {
+        // Frenzy's +100% Toxin behaves like a Toxin mod: with Pistol
+        // Pestilence (+60%) the Poison tick bracket is 1 + 0.6 + 1.0.
+        let pest = m(
+            "pestilence",
+            vec![
+                ModEffect::Element(Toxin, 0.60),
+                ModEffect::StatusChance(0.60),
+            ],
+        );
+        let base = WeaponBase::dual_toxocyst_incarnon(true);
+        let p = resolve(&base, &[&pest], StackPolicy::AssumedMax);
+        assert!(p
+            .elem_dot_bonus
+            .iter()
+            .any(|&(t, v)| t == Toxin && (v - 2.6).abs() < 1e-9));
+        // And the injection joined the vector: toxin mod + injection all
+        // land as pure Toxin (no partner element): 125 × (0.6 + 1.0).
+        assert!((p.damage.get(Toxin) - 200.0).abs() < 1e-9);
     }
 
     #[test]
