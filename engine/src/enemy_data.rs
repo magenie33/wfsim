@@ -13,7 +13,7 @@ use serde::Deserialize;
 use std::fs;
 use std::path::Path;
 
-use crate::dummy::{BodyPart, TargetMode, TargetParams};
+use crate::dummy::{Attenuation, BodyPart, StackCaps, TargetMode, TargetParams};
 use crate::scaling;
 
 /// Which faction's scaling curves an enemy uses (wiki `Enemy_Level_Scaling`).
@@ -42,6 +42,35 @@ impl ScalingFaction {
             Self::Techrot => scaling::health::TECHROT,
         }
     }
+
+    /// Shield curves (wiki table: Grineer + Sentient share one row;
+    /// shielded Infested/Unaffiliated units use the Grineer/Sentient
+    /// curve as the closest documented family).
+    pub fn shield_curve(self) -> scaling::Curve {
+        match self {
+            Self::Corpus => scaling::shield::CORPUS,
+            Self::Corrupted => scaling::shield::CORRUPTED,
+            Self::Techrot => scaling::shield::TECHROT,
+            Self::Grineer | Self::Infested | Self::Unaffiliated => scaling::shield::GRINEER,
+        }
+    }
+}
+
+/// Boss-type damage attenuation parameters from the data file. The wiki
+/// documents the STRUCTURE (per-instance and per-second caps proportional
+/// to Max Health, per player) but not the constants - data files record
+/// current-belief estimates.
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct AttenuationSpec {
+    pub max_instance_fraction_of_health: f64,
+    pub max_dps_fraction_of_health: f64,
+}
+
+/// Per-unit status stack caps (Acolytes: any status 4, Impact 3).
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct StackCapsSpec {
+    pub general: usize,
+    pub impact: usize,
 }
 
 /// Base stats at `base_level` (mirrors the wiki enemy data module fields).
@@ -89,6 +118,12 @@ pub struct EnemySpec {
     #[serde(default)]
     pub mercy_eligible: bool,
     pub stats: StatsSpec,
+    /// Damage attenuation (boss types); absent = none.
+    #[serde(default)]
+    pub attenuation: Option<AttenuationSpec>,
+    /// Per-unit status stack caps; absent = normal caps.
+    #[serde(default)]
+    pub status_stack_caps: Option<StackCapsSpec>,
     pub body_parts: Vec<BodyPartSpec>,
 }
 
@@ -96,13 +131,6 @@ impl EnemySpec {
     /// Parse from YAML and reject unsupported/impossible data.
     pub fn from_yaml_str(yaml: &str) -> Result<Self, String> {
         let spec: EnemySpec = serde_norway::from_str(yaml).map_err(|e| e.to_string())?;
-        if spec.stats.shield > 0.0 {
-            return Err(format!(
-                "{}: shield pools are not implemented yet — refusing to \
-                 silently drop {} shields",
-                spec.id, spec.stats.shield
-            ));
-        }
         if spec.body_parts.is_empty() {
             return Err(format!(
                 "{}: an enemy needs at least one body part",
@@ -141,7 +169,17 @@ impl EnemySpec {
             base_health: self.stats.health,
             base_armor: self.stats.armor,
             base_overguard: self.stats.overguard,
+            base_shield: self.stats.shield,
             health_curve: self.scaling_faction.health_curve(),
+            shield_curve: self.scaling_faction.shield_curve(),
+            attenuation: self.attenuation.map(|a| Attenuation {
+                instance_frac: a.max_instance_fraction_of_health,
+                dps_frac: a.max_dps_fraction_of_health,
+            }),
+            stack_caps: self.status_stack_caps.map(|c| StackCaps {
+                general: c.general,
+                impact: c.impact,
+            }),
             steel_path,
             eximus,
             can_be_eximus: self.can_be_eximus,
@@ -239,15 +277,27 @@ mod tests {
     }
 
     #[test]
-    fn shielded_enemies_are_rejected_until_shields_exist() {
+    fn shielded_enemies_load_with_attenuation_and_stack_caps() {
         let yaml = r#"
 id: shielded
 name: Shielded
 scaling_faction: corpus
 stats: { base_level: 1, health: 100, shield: 50 }
+attenuation:
+  max_instance_fraction_of_health: 0.05
+  max_dps_fraction_of_health: 0.5
+status_stack_caps: { general: 4, impact: 3 }
 body_parts: [ { name: body, multiplier: 1.0 } ]
 "#;
-        let err = EnemySpec::from_yaml_str(yaml).unwrap_err();
-        assert!(err.contains("shield"), "err: {err}");
+        let spec = EnemySpec::from_yaml_str(yaml).unwrap();
+        let t = spec
+            .target_params(1, false, false, TargetMode::InstantRespawn)
+            .unwrap();
+        assert_eq!(t.base_shield, 50.0);
+        assert!((t.max_shield() - 50.0).abs() < 1e-9);
+        let a = t.attenuation.unwrap();
+        assert!((a.instance_frac - 0.05).abs() < 1e-12);
+        let c = t.stack_caps.unwrap();
+        assert_eq!((c.general, c.impact), (4, 3));
     }
 }

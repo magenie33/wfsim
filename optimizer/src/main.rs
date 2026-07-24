@@ -17,6 +17,7 @@ use wfsim_optimizer::*;
 fn main() {
     let mut constraints = Constraints::default();
     let mut flat = false;
+    let mut target_file = "thrax_centurion";
     for arg in std::env::args().skip(1) {
         if let Some(id) = arg.strip_prefix("require=") {
             constraints.require.push(id.to_string());
@@ -24,19 +25,25 @@ fn main() {
             constraints.forbid.push(id.to_string());
         } else if arg == "flat" {
             // Validation mode: no funnel — EVERY candidate gets the full
-            // 1000 x 60 s treatment (much slower; verifies the funnel).
+            // 1024 x 60 s treatment (much slower; verifies the funnel).
             flat = true;
+        } else if arg == "target=acolyte" {
+            target_file = "acolyte";
+        } else if arg == "target=thrax" {
+            target_file = "thrax_centurion";
         } else {
-            eprintln!("unknown arg: {arg} (use require=<id> / forbid=<id> / flat)");
+            eprintln!(
+                "unknown arg: {arg} (use require=<id> / forbid=<id> / flat / target=thrax|acolyte)"
+            );
             std::process::exit(2);
         }
     }
 
-    let spec = EnemySpec::load(std::path::Path::new(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../data/enemies/thrax_centurion.yaml"
-    )))
-    .expect("thrax spec");
+    let spec = EnemySpec::load(
+        &std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../data/enemies"))
+            .join(format!("{target_file}.yaml")),
+    )
+    .expect("enemy spec");
     // Dominance pruning: same-effect lower tiers can never win (user
     // directive 2026-07-24). Printed, never silent.
     for (id, why) in dominated_mods() {
@@ -65,10 +72,19 @@ fn main() {
         scenario.target.name
     );
     println!(
-        "  pools: overguard {:.3e}, health {:.3e}, armor {:.0}",
+        "  pools: overguard {:.3e}, shield {:.3e}, health {:.3e}, armor {:.0}{}",
         scenario.target.overguard(),
+        scenario.target.max_shield(),
         scenario.target.max_health(),
-        scenario.target.armor()
+        scenario.target.armor(),
+        match scenario.target.attenuation {
+            Some(a) => format!(
+                " | attenuation: instance {:.0}% / dps {:.0}% of max HP (ESTIMATES)",
+                a.instance_frac * 100.0,
+                a.dps_frac * 100.0
+            ),
+            None => String::new(),
+        }
     );
 
     let p = pool();

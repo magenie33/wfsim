@@ -142,6 +142,33 @@ pub enum TargetMode {
     InstantRespawn,
 }
 
+/// Damage attenuation (wiki U40 STRUCTURE: the enemy caps the damage it
+/// can take per INSTANCE and per SECOND, both proportional to Max
+/// Health, measured per player). The exact constants are UNPUBLISHED —
+/// these fractions are recorded estimates pending in-game calibration
+/// (the data file marks them as such).
+#[derive(Debug, Clone, Copy)]
+pub struct Attenuation {
+    /// Max effective damage per damage instance / max health.
+    pub instance_frac: f64,
+    /// Max effective damage per second / max health.
+    pub dps_frac: f64,
+}
+
+/// Per-unit status stack caps (Acolytes: any status 4, Impact 3).
+#[derive(Debug, Clone, Copy)]
+pub struct StackCaps {
+    pub general: usize,
+    pub impact: usize,
+}
+
+/// Which pool a damage instance just emptied.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BrokenPool {
+    Overguard,
+    Shield,
+}
+
 /// The simulated target: base stats + level, scaled via [`scaling`].
 ///
 /// Prefer building this through `enemy_data::EnemySpec::target_params`, which
@@ -155,7 +182,15 @@ pub struct TargetParams {
     pub base_health: f64,
     pub base_armor: f64,
     pub base_overguard: f64,
+    /// Base shields (mitigation order: Overguard → Shield → Health;
+    /// Toxin bypasses shields but NOT overguard).
+    pub base_shield: f64,
     pub health_curve: scaling::Curve,
+    pub shield_curve: scaling::Curve,
+    /// Boss-type damage attenuation (Acolytes etc.); `None` = none.
+    pub attenuation: Option<Attenuation>,
+    /// Per-unit status stack caps; `None` = the normal per-status caps.
+    pub stack_caps: Option<StackCaps>,
     /// Steel Path: health ×2.5 (armor and overguard untouched). The +100 level
     /// shift is a mission-spawn effect — pick `level` accordingly.
     pub steel_path: bool,
@@ -184,7 +219,11 @@ impl TargetParams {
             base_health: 1.0,
             base_armor: 0.0,
             base_overguard: 0.0,
+            base_shield: 0.0,
             health_curve: scaling::health::UNAFFILIATED,
+            shield_curve: scaling::shield::GRINEER, // unused at 0 shields
+            attenuation: None,
+            stack_caps: None,
             steel_path: false,
             eximus: false,
             can_be_eximus: false,
@@ -231,6 +270,17 @@ impl TargetParams {
         scaling::armor_at(self.base_armor, self.level, self.base_level)
     }
 
+    /// Scaled max shields (Steel Path ×2.5, like health).
+    pub fn max_shield(&self) -> f64 {
+        let delta = self.level.saturating_sub(self.base_level) as f64;
+        let sp = if self.steel_path {
+            scaling::STEEL_PATH_SHIELD_MULT
+        } else {
+            1.0
+        };
+        self.base_shield * self.shield_curve.multiplier(delta) * sp
+    }
+
     /// Scaled overguard (uses `level − 1`; no Steel Path bonus documented).
     /// Eximus base overguard is 12; no in-game unit combines innate overguard
     /// with Eximus status, so the max() is only a defensive guess.
@@ -247,70 +297,152 @@ impl TargetParams {
 /// Live pools of the target during a run.
 struct TargetState {
     overguard: f64,
+    shield: f64,
     health: f64,
+    /// Shield-gate window end (0.1 s after a shield break: all damage
+    /// ×5% except direct weakpoint hits — user model, M1).
+    gate_until: f64,
+    /// Attenuation bookkeeping: 1 s buckets anchored at spawn.
+    atten_window_start: f64,
+    atten_window_damage: f64,
 }
 
 impl TargetState {
     fn spawn(p: &TargetParams) -> Self {
+        Self::spawn_at(p, 0.0)
+    }
+
+    fn spawn_at(p: &TargetParams, now: f64) -> Self {
         if let Err(e) = p.validate() {
             panic!("invalid target: {e}");
         }
         Self {
             overguard: p.overguard(),
+            shield: p.max_shield(),
             health: p.max_health(),
+            gate_until: 0.0,
+            atten_window_start: now,
+            atten_window_damage: 0.0,
         }
     }
 
     /// Apply one damage instance under a live [`Mitigation`] snapshot.
-    /// Returns `(effective_damage, killed, overguard_broke)`.
+    /// Returns `(effective_damage, killed, broken_pool)`.
     ///
     /// Mitigation model (docs/MECHANICS.md §8, unverified):
-    /// - Overguard takes raw × Disrupt amp (otherwise neutral, ignores
-    ///   armor) and does **not** spill excess into health when it breaks.
-    /// - Health takes `raw × Virus amp × (1 − 0.9·√(armor_eff/2700))`
-    ///   with `armor_eff = armor × strip factors`, floored at 1 per damage
-    ///   type — unless the instance ignores armor (Cinematic ticks).
-    /// - Overkill damage is lost on death.
+    /// - Order: Overguard → Shields → Health, no spill between pools.
+    /// - Overguard takes raw × Disrupt amp (neutral, ignores armor);
+    ///   Toxin does NOT bypass it.
+    /// - Shields take the non-Toxin portion × Disrupt amp (no armor);
+    ///   the Toxin portion (`toxin_frac`) bypasses straight to health.
+    /// - Health takes × Virus amp × (1 − 0.9·√(armor_eff/2700)) with
+    ///   `armor_eff = armor × strip factors`, floored at 1 — unless the
+    ///   instance ignores armor (Cinematic ticks).
+    /// - Shield gate (user model, M1): for 0.1 s after a shield break,
+    ///   ALL damage ×5% except direct weakpoint hits (`head_direct`).
+    /// - Attenuation (boss types): the resulting effective damage is
+    ///   clamped per instance and per 1 s bucket (fractions of max
+    ///   health) — applied after every other layer.
+    #[allow(clippy::too_many_arguments)]
     fn apply(
         &mut self,
         raw: f64,
+        toxin_frac: f64,
+        head_direct: bool,
+        now: f64,
         p: &TargetParams,
         ignores_armor: bool,
         mit: &Mitigation,
-    ) -> (f64, bool, bool) {
+    ) -> (f64, bool, Option<BrokenPool>) {
+        // Shield gate: a unit-state window multiplying incoming damage.
+        let gated = if now < self.gate_until && !head_direct {
+            raw * 0.05
+        } else {
+            raw
+        };
+
+        // Route into pools (no spill).
+        let mut shield_part = 0.0f64;
+        let mut health_part = 0.0f64;
+        let mut og_part = 0.0f64;
         if self.overguard > 0.0 {
-            let dmg = raw * mit.disrupt_amp;
-            if p.mode == TargetMode::InfiniteHealth {
-                return (dmg, false, false);
+            og_part = gated * mit.disrupt_amp;
+        } else {
+            let toxin = gated * toxin_frac.clamp(0.0, 1.0);
+            let rest = gated - toxin;
+            if self.shield > 0.0 {
+                shield_part = rest * mit.disrupt_amp;
+            } else {
+                health_part += rest;
             }
-            self.overguard -= dmg;
-            if self.overguard <= 0.0 {
-                self.overguard = 0.0; // no spill into health
-                return (dmg, false, true);
+            health_part += toxin;
+            // Health mitigation: virus amp + (live) armor.
+            if health_part > 0.0 {
+                let dr = if ignores_armor {
+                    0.0
+                } else {
+                    scaling::armor_damage_reduction(p.armor() * mit.armor_multiplier)
+                };
+                let boosted = health_part * mit.virus_amp;
+                health_part = if dr > 0.0 {
+                    (boosted * (1.0 - dr)).max(1.0)
+                } else {
+                    boosted
+                };
             }
-            return (dmg, false, false);
         }
 
-        let dr = if ignores_armor {
-            0.0
-        } else {
-            scaling::armor_damage_reduction(p.armor() * mit.armor_multiplier)
-        };
-        let boosted = raw * mit.virus_amp;
-        let effective = if dr > 0.0 {
-            (boosted * (1.0 - dr)).max(1.0)
-        } else {
-            boosted
-        };
-        if p.mode == TargetMode::InfiniteHealth {
-            return (effective, false, false);
+        // Attenuation: clamp the instance total, then the 1 s bucket.
+        let mut effective = og_part + shield_part + health_part;
+        if let Some(a) = p.attenuation {
+            while now >= self.atten_window_start + 1.0 {
+                self.atten_window_start += 1.0;
+                self.atten_window_damage = 0.0;
+            }
+            let hp = p.max_health();
+            let allowed = (a.instance_frac * hp)
+                .min(a.dps_frac * hp - self.atten_window_damage)
+                .max(0.0);
+            if effective > allowed {
+                let k = if effective > 0.0 {
+                    allowed / effective
+                } else {
+                    0.0
+                };
+                og_part *= k;
+                shield_part *= k;
+                health_part *= k;
+                effective = allowed;
+            }
+            self.atten_window_damage += effective;
         }
-        self.health -= effective;
+
+        if p.mode == TargetMode::InfiniteHealth {
+            return (effective, false, None);
+        }
+
+        let mut broke = None;
+        if og_part > 0.0 {
+            self.overguard -= og_part;
+            if self.overguard <= 0.0 {
+                self.overguard = 0.0; // no spill
+                broke = Some(BrokenPool::Overguard);
+            }
+        }
+        if shield_part > 0.0 {
+            self.shield -= shield_part;
+            if self.shield <= 0.0 {
+                self.shield = 0.0; // no spill
+                self.gate_until = now + 0.1;
+                broke = Some(BrokenPool::Shield);
+            }
+        }
+        self.health -= health_part;
         if self.health <= 0.0 {
-            *self = TargetState::spawn(p); // instant respawn, no transformation
-            (effective, true, false)
+            *self = TargetState::spawn_at(p, now); // instant respawn
+            (effective, true, broke)
         } else {
-            (effective, false, false)
+            (effective, false, broke)
         }
     }
 }
@@ -335,6 +467,9 @@ struct HeatEntity {
     expiry: f64,
     next_tick: f64,
     value: f64,
+    /// Contributions absorbed (counts as the displayed stack count for
+    /// per-unit stack caps).
+    contribs: u32,
 }
 
 /// A Blast (Detonate) stack: the fuse fires a single-target hit; the 10th
@@ -492,18 +627,21 @@ impl DebuffState {
     /// Apply one Cold proc (data/debuffs/freeze.yaml + frozen.yaml):
     /// inert while Frozen; the 10th stack CONSUMES all Freeze stacks and
     /// enters Frozen; overguard holders cap at 4 (never Frozen).
-    fn apply_cold_proc(&mut self, t: f64, sd: f64, under_overguard: bool) {
+    fn apply_cold_proc(&mut self, t: f64, sd: f64, under_overguard: bool, caps: Option<StackCaps>) {
         if self.frozen_until.is_some_and(|f| f > t) {
             return; // inert
         }
         self.freeze.retain(|&e| e > t);
         if under_overguard {
-            DebuffState::push_capped(
-                &mut self.freeze,
-                t + STATUS_DURATION * sd,
-                FREEZE_CAP_UNDER_OVERGUARD,
-                t,
-            );
+            let cap = caps.map_or(FREEZE_CAP_UNDER_OVERGUARD, |c| {
+                FREEZE_CAP_UNDER_OVERGUARD.min(c.general)
+            });
+            DebuffState::push_capped(&mut self.freeze, t + STATUS_DURATION * sd, cap, t);
+            return;
+        }
+        if let Some(c) = caps {
+            // A per-unit cap below 10 also means Frozen is unreachable.
+            DebuffState::push_capped(&mut self.freeze, t + STATUS_DURATION * sd, c.general, t);
             return;
         }
         if self.freeze.len() >= FREEZE_STACKS_BEFORE_FROZEN {
@@ -983,16 +1121,21 @@ impl GalStacks {
 }
 
 /// Disrupt's on-break payload (data/debuffs/disrupt.yaml): breaking
-/// shields/overguard with Disrupt active fires a forced Tesla Chain
-/// instance totalling 3% of the max pool per Magnetic stack (cap 30%),
-/// over 6 ticks; status-damage mods apply TWICE; base-damage mods never.
-fn push_overguard_break_proc(debuffs: &mut DebuffState, params: &DummyParams, now: f64) {
+/// shields OR overguard with Disrupt active fires a forced Tesla Chain
+/// instance totalling 3% of the broken pool's MAX per Magnetic stack
+/// (cap 30%), over 6 ticks; status-damage mods apply TWICE; base-damage
+/// mods never.
+fn push_break_proc(debuffs: &mut DebuffState, params: &DummyParams, now: f64, pool: BrokenPool) {
     let stacks = debuffs.disrupt.len();
     if stacks == 0 {
         return;
     }
+    let pool_max = match pool {
+        BrokenPool::Overguard => params.target.overguard(),
+        BrokenPool::Shield => params.target.max_shield(),
+    };
     let frac = (0.03 * stacks as f64).min(0.30);
-    let total = frac * params.target.overguard() * params.status_damage_mult.powi(2);
+    let total = frac * pool_max * params.status_damage_mult.powi(2);
     debuffs.dots.push(Dot {
         next_tick: now,
         ticks_left: 6,
@@ -1045,30 +1188,36 @@ fn process_ticks(
         let Some((now, ev)) = best else { break };
 
         let mit = debuffs.mitigation(now, sd);
-        let (value, ignores_armor, is_dot_tick) = match &ev {
+        let (value, ignores_armor, is_dot_tick, toxin_frac) = match &ev {
             Ev::Dot(i) => {
                 let d = &mut debuffs.dots[*i];
                 d.next_tick += 1.0;
                 d.ticks_left -= 1;
                 let d = &debuffs.dots[*i];
-                (d.value, d.ignores_armor, true)
+                let tox = if d.dtype == DamageType::Toxin {
+                    1.0
+                } else {
+                    0.0
+                };
+                (d.value, d.ignores_armor, true, tox)
             }
             Ev::Heat => {
                 let h = debuffs.heat.as_mut().expect("heat event needs entity");
                 h.next_tick += 1.0;
-                (h.value, false, true)
+                (h.value, false, true, 0.0)
             }
-            Ev::Blast(i) => (debuffs.blast.remove(*i).value, false, false),
+            Ev::Blast(i) => (debuffs.blast.remove(*i).value, false, false, 0.0),
         };
 
-        let (effective, killed, broke) = target.apply(value, p, ignores_armor, &mit);
+        let (effective, killed, broke) =
+            target.apply(value, toxin_frac, false, now, p, ignores_armor, &mit);
         r.total_damage += value;
         r.effective_damage += effective;
         r.dot_damage += effective;
         r.dot_ticks += is_dot_tick as u32;
         r.kills += killed as u32;
-        if broke {
-            push_overguard_break_proc(debuffs, params, now);
+        if let Some(pool) = broke {
+            push_break_proc(debuffs, params, now, pool);
         }
         if killed {
             // Status-proc kills grant Galvanized stacks too (GS rules).
@@ -1127,12 +1276,24 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         let qvec = p.damage.quantized();
         let qtotal = qvec.total();
         let mb = p.dot_modified_base.unwrap_or_else(|| p.damage.total());
-        (qvec, qtotal, mb)
+        // Toxin's share of each hit bypasses shields (user model: "50 点
+        // 伤害中 10 毒 40 其他 → 盾吃 40，血直接吃 10").
+        let toxin_share = if qtotal > 0.0 {
+            qvec.get(DamageType::Toxin) / qtotal
+        } else {
+            0.0
+        };
+        (qvec, qtotal, mb, toxin_share)
     };
     let main_pre = precompute(params);
     let base_pre = params.cycle.as_ref().map(|c| precompute(&c.base_form));
     let sd = params.status_duration_mult;
     let sdm = params.status_damage_mult;
+    // Per-unit status stack caps (Acolytes: any 4, Impact 3).
+    let caps = params.target.stack_caps;
+    let gcap = |base: usize| caps.map_or(base, |c| base.min(c.general));
+    let stagger_cap = caps.map_or(STAGGER_CAP, |c| STAGGER_CAP.min(c.impact));
+    let heat_cap = caps.map_or(u32::MAX, |c| c.general as u32);
 
     // Initial locks: one natural-duration grant at t = 0 (at the set
     // stack count); afterwards only the buff's own mechanics govern it.
@@ -1217,11 +1378,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             Some(cy) if in_base_form => &cy.base_form,
             _ => params,
         };
-        let (qvec, qtotal, modded_base) = if in_base_form {
+        let (qvec, qtotal, modded_base, toxin_share) = if in_base_form {
             let p = base_pre.as_ref().expect("cycle state needs base pre");
-            (&p.0, p.1, p.2)
+            (&p.0, p.1, p.2, p.3)
         } else {
-            (&main_pre.0, main_pre.1, main_pre.2)
+            (&main_pre.0, main_pre.1, main_pre.2, main_pre.3)
         };
 
         // Status events scheduled before this shot land first.
@@ -1356,7 +1517,15 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             let crit_mult = 1.0 + tier as f64 * (cd - 1.0);
 
             let raw = qtotal * part_factor * crit_mult * co_mult;
-            let (effective, killed, broke) = target.apply(raw, &params.target, false, &mit);
+            let (effective, killed, broke) = target.apply(
+                raw,
+                toxin_share,
+                part.is_head,
+                t,
+                &params.target,
+                false,
+                &mit,
+            );
             r.total_damage += raw;
             r.effective_damage += effective;
             r.kills += killed as u32;
@@ -1367,8 +1536,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             any_head |= part.is_head;
             any_big |= tier >= 2;
 
-            if broke {
-                push_overguard_break_proc(&mut debuffs, params, t);
+            if let Some(pool) = broke {
+                push_break_proc(&mut debuffs, params, t, pool);
             }
             if killed {
                 gal.bump_on_kill(params, t);
@@ -1429,13 +1598,13 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     DamageType::Impact => DebuffState::push_capped(
                         &mut debuffs.stagger,
                         t + STAGGER_DURATION * sd,
-                        STAGGER_CAP,
+                        stagger_cap,
                         t,
                     ),
                     DamageType::Puncture => DebuffState::push_capped(
                         &mut debuffs.weakened,
                         t + WEAKENED_DURATION * sd,
-                        WEAKENED_CAP,
+                        gcap(WEAKENED_CAP),
                         t,
                     ),
                     DamageType::Slash => push_dot(
@@ -1496,8 +1665,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         let expiry = t + STATUS_DURATION * sd;
                         match &mut debuffs.heat {
                             Some(h) => {
-                                h.value += contrib;
-                                h.expiry = expiry;
+                                if h.contribs < heat_cap {
+                                    h.value += contrib;
+                                    h.contribs += 1;
+                                }
+                                h.expiry = expiry; // refresh regardless
                             }
                             None => {
                                 debuffs.heat = Some(HeatEntity {
@@ -1505,38 +1677,44 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                                     expiry,
                                     next_tick: t + 1.0,
                                     value: contrib,
+                                    contribs: 1,
                                 })
                             }
                         }
                     }
                     DamageType::Cold => {
-                        debuffs.apply_cold_proc(t, sd, target.overguard > 0.0);
+                        debuffs.apply_cold_proc(t, sd, target.overguard > 0.0, caps);
                     }
                     DamageType::Magnetic => DebuffState::push_capped(
                         &mut debuffs.disrupt,
                         t + STATUS_DURATION * sd,
-                        TEN_STACK_CAP,
+                        gcap(TEN_STACK_CAP),
                         t,
                     ),
                     DamageType::Viral => DebuffState::push_capped(
                         &mut debuffs.virus,
                         t + STATUS_DURATION * sd,
-                        TEN_STACK_CAP,
+                        gcap(TEN_STACK_CAP),
                         t,
                     ),
                     DamageType::Corrosive => DebuffState::push_capped(
                         &mut debuffs.corrosion,
                         t + CORROSION_DURATION * sd,
-                        TEN_STACK_CAP,
+                        gcap(TEN_STACK_CAP),
                         t,
                     ),
                     DamageType::Radiation => DebuffState::push_capped(
                         &mut debuffs.confusion,
                         t + STATUS_DURATION * sd,
-                        TEN_STACK_CAP,
+                        gcap(TEN_STACK_CAP),
                         t,
                     ),
                     DamageType::Blast => {
+                        if let Some(c) = caps {
+                            if debuffs.blast.len() >= c.general {
+                                debuffs.blast.remove(0); // FIFO replace-oldest
+                            }
+                        }
                         debuffs.blast.push(BlastStack {
                             fuse: t + BLAST_FUSE * sd,
                             value: BLAST_COEFFICIENT * mb_live * sdm * crit_mult * part_factor,
@@ -1548,13 +1726,13 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                             let total: f64 = debuffs.blast.drain(..).map(|b| b.value).sum();
                             let mit = debuffs.mitigation(t, sd);
                             let (eff, killed, broke) =
-                                target.apply(total, &params.target, false, &mit);
+                                target.apply(total, 0.0, false, t, &params.target, false, &mit);
                             r.total_damage += total;
                             r.effective_damage += eff;
                             r.dot_damage += eff;
                             r.kills += killed as u32;
-                            if broke {
-                                push_overguard_break_proc(&mut debuffs, params, t);
+                            if let Some(pool) = broke {
+                                push_break_proc(&mut debuffs, params, t, pool);
                             }
                             if killed {
                                 gal.bump_on_kill(params, t);
@@ -2097,7 +2275,11 @@ mod tests {
             base_health: 50.0, // below the weakest possible shot (75)
             base_armor: armor,
             base_overguard: overguard,
+            base_shield: 0.0,
             health_curve: crate::scaling::health::UNAFFILIATED,
+            shield_curve: crate::scaling::shield::GRINEER,
+            attenuation: None,
+            stack_caps: None,
             steel_path: false,
             eximus: false,
             can_be_eximus: false,
@@ -2685,6 +2867,123 @@ mod tests {
         );
     }
 
+    fn shielded_target(shield: f64, health: f64) -> TargetParams {
+        TargetParams {
+            base_shield: shield,
+            base_health: health,
+            ..frail_target(TargetMode::InstantRespawn, 0.0, 0.0)
+        }
+    }
+
+    #[test]
+    fn toxin_share_bypasses_shields_into_health() {
+        // Vector 16 Toxin / 16 Impact (quantization-exact): each 32-damage
+        // shot sends 16 to the shield and 16 straight to health. Health
+        // 160 dies exactly on the 10th shot while 840 shield remains.
+        let p = DummyParams {
+            damage: DamageVector::new()
+                .with(DamageType::Toxin, 16.0)
+                .with(DamageType::Impact, 16.0),
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: Arcane::None,
+            body_parts: mono_body(1.0),
+            target: shielded_target(1000.0, 160.0),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!((s.mean_kills - 1.0).abs() < 1e-9, "kills {}", s.mean_kills);
+        // Control: an all-Impact vector never touches health.
+        let q = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 32.0),
+            ..p
+        };
+        let s2 = monte_carlo(&q, 20, 5);
+        assert_eq!(s2.mean_kills, 0.0);
+    }
+
+    #[test]
+    fn shield_gate_multiplies_damage_for_a_tenth_second() {
+        // Shield 100, 75-damage shots at 20/s (0.05 s cadence): shots at
+        // 0 and 0.05 break the shield (gate until 0.15); the 0.10 shot is
+        // gated ×0.05 (3.75); the 0.15 shot is full again.
+        // Effective = 75 + 75 + 3.75 + 75 = 228.75.
+        let p = DummyParams {
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: Arcane::None,
+            fire_rate: 20.0,
+            duration_secs: 0.2,
+            magazine_size: 100.0,
+            body_parts: mono_body(1.0),
+            target: shielded_target(100.0, 1e9),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!(
+            (s.mean_effective_damage - 228.75).abs() < 1e-9,
+            "eff {}",
+            s.mean_effective_damage
+        );
+        // Weakpoint hits bypass the gate: all-head aim -> 4 × 75 = 300.
+        let head = DummyParams {
+            body_parts: vec![BodyPart {
+                name: "head".into(),
+                aim_weight: 1.0,
+                multiplier: 1.0,
+                is_head: true,
+                crit_bonus: false,
+            }],
+            ..p
+        };
+        let s2 = monte_carlo(&head, 20, 5);
+        assert!(
+            (s2.mean_effective_damage - 300.0).abs() < 1e-9,
+            "eff {}",
+            s2.mean_effective_damage
+        );
+    }
+
+    #[test]
+    fn attenuation_caps_damage_per_instance_and_per_second() {
+        // Instance cap 5% × 1000 HP = 50: each 75 shot clamps to 50.
+        let mut t = shielded_target(0.0, 1000.0);
+        t.base_health = 1000.0;
+        t.mode = TargetMode::InfiniteHealth;
+        t.attenuation = Some(Attenuation {
+            instance_frac: 0.05,
+            dps_frac: 0.50,
+        });
+        let p = DummyParams {
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: Arcane::None,
+            body_parts: mono_body(1.0),
+            target: t,
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!(
+            (s.mean_effective_damage - 500.0).abs() < 1e-9,
+            "eff {}",
+            s.mean_effective_damage
+        );
+        // DPS cap 50%/s = 500: at 20 shots/s only the first 10 clamped
+        // shots fit the 1 s bucket -> 500 total in the 1 s run.
+        let q = DummyParams {
+            fire_rate: 20.0,
+            duration_secs: 1.0,
+            magazine_size: 100.0,
+            ..p
+        };
+        let s2 = monte_carlo(&q, 20, 5);
+        assert!(
+            (s2.mean_effective_damage - 500.0).abs() < 1e-9,
+            "eff {}",
+            s2.mean_effective_damage
+        );
+    }
+
     #[test]
     fn crosshairs_cc_buffs_start_full_and_expire_without_headshots() {
         // Body-only aim: nothing refreshes the initial-full buffs, so both
@@ -2741,17 +3040,17 @@ mod tests {
         let mut d = DebuffState::default();
         // Nine Freeze stacks build normally (no overguard).
         for k in 0..9 {
-            d.apply_cold_proc(k as f64 * 0.1, 1.0, false);
+            d.apply_cold_proc(k as f64 * 0.1, 1.0, false, None);
         }
         assert_eq!(d.freeze.len(), 9);
         assert!((d.cold_cd_bonus(0.9) - 0.50).abs() < 1e-9); // 0.10+0.05×8
                                                              // The 10th proc CONSUMES the stacks and enters Frozen (3 s).
-        d.apply_cold_proc(1.0, 1.0, false);
+        d.apply_cold_proc(1.0, 1.0, false, None);
         assert!(d.freeze.is_empty());
         assert_eq!(d.frozen_until, Some(4.0));
         assert!((d.cold_cd_bonus(1.5) - 1.00).abs() < 1e-9); // supersedes
                                                              // Cold procs are inert while Frozen.
-        d.apply_cold_proc(2.0, 1.0, false);
+        d.apply_cold_proc(2.0, 1.0, false, None);
         assert!(d.freeze.is_empty());
         // Thaw: hard reset to exactly 3 stacks with FRESH 6 s timers
         // anchored at the thaw instant (expire at 4 + 6 = 10 s).
@@ -2768,7 +3067,7 @@ mod tests {
     fn overguard_caps_freeze_at_four_and_never_freezes() {
         let mut d = DebuffState::default();
         for k in 0..20 {
-            d.apply_cold_proc(k as f64 * 0.1, 1.0, true);
+            d.apply_cold_proc(k as f64 * 0.1, 1.0, true, None);
         }
         assert_eq!(d.freeze.len(), 4);
         assert_eq!(d.frozen_until, None);
@@ -2783,6 +3082,7 @@ mod tests {
                 expiry: 6.0,
                 next_tick: 1.0,
                 value: 1.0,
+                contribs: 1,
             }),
             ..Default::default()
         };
@@ -2812,6 +3112,7 @@ mod tests {
                 expiry: 12.0,
                 next_tick: 1.0,
                 value: 1.0,
+                contribs: 1,
             }),
             ..Default::default()
         };

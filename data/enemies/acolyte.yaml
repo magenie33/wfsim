@@ -1,0 +1,59 @@
+id: acolyte
+name: Acolyte
+kind: enemy
+
+# The Steel Path Acolytes (wiki Acolytes page). SIX named units share
+# identical base stats and mechanics post-U40 (Angst, Malice, Mania,
+# Misery, Torment, Violence) - one generic entry covers them all.
+# Faction "Stalker" for lore; for LEVEL SCALING no Stalker row exists in
+# the wiki table - the Sentient/Unaffiliated family is the assumed match
+# (curve choice to re-verify).
+faction: stalker
+scaling_faction: unaffiliated
+# U36: "Acolytes are neutral to every element" - no type-modifier column.
+faction_damage_override: null
+# CONFIRMED (wiki infobox Eximus row "--" + absent from
+# Eximus/Compatibilities): Acolytes have no Eximus variant.
+can_be_eximus: false
+mercy_eligible: false
+
+# Base stats: health/shields rebased in U40 (5,500 / 2,500, from
+# 550/1,000). Armor 50 from the Malice infobox (predates U40 - may be
+# stale; correct after measurement). Base level 1.
+stats:
+  base_level: 1
+  health: 5500
+  shield: 2500
+  armor: 50
+  overguard: 0
+
+# DAMAGE ATTENUATION (the defining mechanic): the wiki documents the
+# STRUCTURE only - caps on damage per INSTANCE and per SECOND, both
+# proportional to Max Health, measured per player (U40) - the constants
+# are unpublished. These fractions are ESTIMATES pending in-game
+# calibration; correct them freely.
+attenuation:
+  max_instance_fraction_of_health: 0.05    # ESTIMATE
+  max_dps_fraction_of_health: 0.50         # ESTIMATE
+
+# Special debuff rule (wiki): "up to 4 stacks of any Status Effect with
+# the exception of Impact which can stack up to 3"; Radiation only
+# amplifies allied damage (no single-target payload anyway).
+status_stack_caps: { general: 4, impact: 3 }
+
+# Humanoid (warframe-like) layout; standard 3x head assumed.
+body_parts:
+  - name: body
+    multiplier: 1.0
+    is_head: false
+    crit_bonus: false
+  - name: head
+    multiplier: 3.0
+    is_head: true
+    crit_bonus: true
+
+source:
+  url: https://wiki.warframe.com/w/Acolytes
+  note: U40 base stats + attenuation structure; Malice infobox for armor;
+    attenuation constants are estimates, not wiki data.
+  retrieved: "2026-07-25"
