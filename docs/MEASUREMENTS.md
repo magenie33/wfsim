@@ -223,6 +223,36 @@ tick numbers (6 s window):
 
 ---
 
+## M9 — Incarnon transition timings (frame-count protocol)
+
+**Question.** (a) Duration of the on-empty revert (fire the 270th round →
+first base-form shot possible); (b) whether transition animations scale
+with modded reload speed. Known: manual transmute-in = the weapon's
+reload time (user-confirmed).
+
+**Method** (deterministic animation — 1 trial suffices, do 3): record at
+60 fps, frame-step in PotPlayer (F/D).
+1. **Calibrate the marker method** on a plain base-form reload: R-press →
+   magazine UI refill frame; expect ≈141 frames (2.35 s unmodded).
+2. **Manual switch-back** (alt-fire with charge left): transform-start
+   frame → first base-form muzzle flash while SPAMMING fire (±50 ms click
+   error acceptable). Secondary marker: the ammo UI swapping from the
+   charge display back to 12/72 (record both; a mismatch is itself a
+   finding).
+3. **Empty revert**: 270th round's muzzle flash → same T1 markers.
+4. Repeat all three with a large reload mod (Quickdraw +48% → predict
+   1.59 s if animations scale with modded reload speed).
+5. Cross-check timings against the audio track in Audacity (transform /
+   reload sound onsets are ms-sharp edges).
+
+**Outcome mapping**: revert ≈ 2.35 s → the 4.7 s pseudo-reload model
+stands; ≈ 0 → pseudo-reload becomes 2.35 s; other → independent constant.
+Scaling result updates `transition_animation_seconds` semantics.
+
+**Result:** _not yet run._
+
+---
+
 ## M2 — Simulacrum "Steel Path" toggle: does it still boost armor?
 
 **Question.** The toggle was introduced (U33.5) as "+250% Health, Armor,
