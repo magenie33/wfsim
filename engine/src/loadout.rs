@@ -142,6 +142,9 @@ pub struct WeaponBase {
     pub buff_multishot_bonus: f64,
     pub magazine_size: f64,
     pub base_reload: f64,
+    /// Unconditional CO rate baked into the weapon config (Carnage
+    /// Reign's +33% per status type) — additive with mod CO sources.
+    pub innate_co_per_type: f64,
     /// This weapon's Condition Overload behavior class.
     pub co_behavior: CoBehavior,
     /// CO base effectiveness: the CO bonus is computed on the ORIGINAL
@@ -159,37 +162,71 @@ pub struct WeaponBase {
 /// evolution flat damage — the base the CO bonus is computed on.
 pub const DT_ORIGINAL_BASE_TOTAL: f64 = 75.0;
 
+/// The Evolution II choice — a SEARCH DIMENSION (user, 2026-07-25).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DtEvo2 {
+    /// +50 base pro-rata (75→125) + 20 permanent multishot stacks
+    /// (+100%, pre-stacked per the user's initial-full setting).
+    FeveredFrenzy,
+    /// +60 base pro-rata (75→135) + unconditional +33% CO per status
+    /// type (adding class; its CO base excludes its own +60; the
+    /// energy ≥ 200 requirement is assumed met).
+    CarnageReign,
+}
+
+impl DtEvo2 {
+    fn vector_scale(self) -> f64 {
+        match self {
+            DtEvo2::FeveredFrenzy => 125.0 / 75.0,
+            DtEvo2::CarnageReign => 135.0 / 75.0,
+        }
+    }
+
+    fn buff_multishot(self) -> f64 {
+        match self {
+            DtEvo2::FeveredFrenzy => 1.0,
+            DtEvo2::CarnageReign => 0.0,
+        }
+    }
+
+    fn innate_co(self) -> f64 {
+        match self {
+            DtEvo2::FeveredFrenzy => 0.0,
+            DtEvo2::CarnageReign => 0.33,
+        }
+    }
+
+    fn co_fraction(self) -> f64 {
+        DT_ORIGINAL_BASE_TOTAL / (DT_ORIGINAL_BASE_TOTAL * self.vector_scale())
+    }
+}
+
 impl WeaponBase {
-    /// Dual Toxocyst Incarnon Form with the fixed evolution build
-    /// (data/builds/dual_toxocyst_default.yaml): Fevered Frenzy +50 base
-    /// pro-rata (75→125 scale on the form's 15/37.5/22.5) and 20 stacks
-    /// (+100% multishot); Commodore's Fortune +0.20 into BASE crit chance;
-    /// Evolved Autoloader regenerates only while holstered — no effect on
-    /// the wielded pseudo-reload (1.0 s revert + 2.35 s transmute).
-    /// `frenzy_active`: the Frenzy passive WORKS while transformed
-    /// (user-confirmed 2026-07-24) — folds its +100% Toxin injection in.
-    pub fn dual_toxocyst_incarnon(frenzy_active: bool) -> Self {
+    /// Dual Toxocyst Incarnon Form with the fixed evolutions (Commodore's
+    /// Fortune +0.20 into BASE crit chance; Evolved Autoloader is
+    /// holstered-only) and the CHOSEN Evolution II (`evo2` — a search
+    /// dimension). `frenzy_active`: the passive works while transformed
+    /// (user-confirmed) — folds its +100% Toxin injection in.
+    pub fn dual_toxocyst_incarnon(frenzy_active: bool, evo2: DtEvo2) -> Self {
         Self {
             base_vector: DamageVector::new()
-                .with(DamageType::Impact, 25.0)
-                .with(DamageType::Puncture, 62.5)
-                .with(DamageType::Slash, 37.5),
+                .with(DamageType::Impact, 15.0)
+                .with(DamageType::Puncture, 37.5)
+                .with(DamageType::Slash, 22.5)
+                .scale(evo2.vector_scale()),
             base_crit_chance: 0.31, // 11% + Commodore's Fortune 20%
             base_crit_damage: 3.0,
             base_status_chance: 0.43,
             base_fire_rate: 4.5,
             base_multishot: 1.0,
-            buff_multishot_bonus: 1.0, // Fevered Frenzy at 20 stacks
+            buff_multishot_bonus: evo2.buff_multishot(),
             magazine_size: 270.0,
             base_reload: 3.35,
-            // Wiki CO catalog row (Dual Toxocyst / Incarnon Mode):
-            // "Adding" class; the CO base EXCLUDES evolution flat damage
-            // ("100% or 56%": no evo perk = 100%, Carnage's +60 = 75/135).
-            // DERIVED from the actual selection: original 75 over the
-            // evolved vector total — Fevered's +50 gives 75/125 = 0.6;
-            // with no flat-damage evolution this is exactly 1.0.
+            // Wiki CO catalog row: "Adding" class; the CO base EXCLUDES
+            // evolution flat damage ("100% or 56%") — derived per evo2.
+            innate_co_per_type: evo2.innate_co(),
             co_behavior: CoBehavior::AdditiveWithBaseDamage,
-            co_base_fraction: DT_ORIGINAL_BASE_TOTAL / 125.0,
+            co_base_fraction: evo2.co_fraction(),
             injected_elements: if frenzy_active {
                 vec![(DamageType::Toxin, 1.0)]
             } else {
@@ -198,28 +235,27 @@ impl WeaponBase {
         }
     }
 
-    /// Dual Toxocyst **base form** with the same fixed evolution build:
-    /// vector ×5/3 (Fevered +50 pro-rata), Commodore 5% → 25% base cc.
-    /// `frenzy_active` folds the passive's +100% Toxin injection into the
-    /// panel (approximation: 100% Frenzy uptime — exact under a Permanent
-    /// lock; near-exact at 100% headshot aim).
-    pub fn dual_toxocyst_base(frenzy_active: bool) -> Self {
+    /// Dual Toxocyst **base form** with the same fixed evolutions and the
+    /// chosen Evolution II. `frenzy_active` folds the +100% Toxin
+    /// injection in (exact under a Permanent lock).
+    pub fn dual_toxocyst_base(frenzy_active: bool, evo2: DtEvo2) -> Self {
         Self {
             base_vector: DamageVector::new()
-                .with(DamageType::Impact, 12.5)
-                .with(DamageType::Puncture, 100.0)
-                .with(DamageType::Slash, 12.5),
+                .with(DamageType::Impact, 7.5)
+                .with(DamageType::Puncture, 60.0)
+                .with(DamageType::Slash, 7.5)
+                .scale(evo2.vector_scale()),
             base_crit_chance: 0.25, // 5% + Commodore's Fortune 20%
             base_crit_damage: 2.0,
             base_status_chance: 0.37,
             base_fire_rate: 1.0, // semi-auto; Frenzy ×2.5 applies live
             base_multishot: 1.0,
-            buff_multishot_bonus: 1.0, // Fevered Frenzy at 20 stacks
+            buff_multishot_bonus: evo2.buff_multishot(),
             magazine_size: 12.0,
             base_reload: 2.35,
+            innate_co_per_type: evo2.innate_co(),
             co_behavior: CoBehavior::AdditiveWithBaseDamage,
-            // Same derivation: original 75 / Fevered-evolved 125.
-            co_base_fraction: DT_ORIGINAL_BASE_TOTAL / 125.0,
+            co_base_fraction: evo2.co_fraction(),
             injected_elements: if frenzy_active {
                 vec![(DamageType::Toxin, 1.0)]
             } else {
@@ -277,7 +313,8 @@ pub struct ResolvedPanel {
 pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> ResolvedPanel {
     let (mut bd, mut ms, mut cc, mut cd, mut sc, mut fr, mut rl, mut sd) =
         (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-    let mut co = 0.0;
+    // Unconditional weapon-level CO (Carnage Reign) seeds the static rate.
+    let mut co = base.innate_co_per_type;
     let (mut co_stack, mut ms_stack): (Option<StackSpec>, Option<StackSpec>) = (None, None);
     let mut cc_on_headshot: Option<(f64, f64)> = None;
     let mut cc_stack: Option<StackSpec> = None;
@@ -478,7 +515,7 @@ mod tests {
         ];
         let refs: Vec<&ModDef> = mods.iter().collect();
         let p = resolve(
-            &WeaponBase::dual_toxocyst_incarnon(false),
+            &WeaponBase::dual_toxocyst_incarnon(false, DtEvo2::FeveredFrenzy),
             &refs,
             StackPolicy::AssumedMax,
         );
@@ -516,7 +553,7 @@ mod tests {
                 ModEffect::StatusChance(0.60),
             ],
         );
-        let base = WeaponBase::dual_toxocyst_incarnon(true);
+        let base = WeaponBase::dual_toxocyst_incarnon(true, DtEvo2::FeveredFrenzy);
         let p = resolve(&base, &[&pest], StackPolicy::AssumedMax);
         assert!(p
             .elem_dot_bonus
@@ -532,7 +569,7 @@ mod tests {
         let heat = m("scorch", vec![ModEffect::Element(Heat, 0.60)]);
         let cold = m("frostbite", vec![ModEffect::Element(Cold, 0.60)]);
         let tox = m("pestilence", vec![ModEffect::Element(Toxin, 0.60)]);
-        let base = WeaponBase::dual_toxocyst_incarnon(false);
+        let base = WeaponBase::dual_toxocyst_incarnon(false, DtEvo2::FeveredFrenzy);
 
         // Heat,Cold,Toxin -> Blast + trailing Toxin.
         let p1 = resolve(&base, &[&heat, &cold, &tox], StackPolicy::AssumedMax);

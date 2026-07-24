@@ -72,43 +72,44 @@ fn main() {
     );
 
     let p = pool();
-    let base = WeaponBase::dual_toxocyst_incarnon(true);
-    // The base form resolved with Frenzy active (its +100% Toxin joins the
-    // hierarchy at the end).
-    let base_form = WeaponBase::dual_toxocyst_base(true);
     let t0 = Instant::now();
-    let (cands, stats) = enumerate_candidates(
-        &p,
-        &base,
-        Some(&base_form),
-        8,
-        60,
-        &dual_toxocyst_innate_slots(),
-        &constraints,
-    );
+    // The Evolution II choice is a SEARCH DIMENSION (user, 2026-07-25):
+    // the whole canonical space is enumerated against BOTH weapon
+    // configs (both forms resolved with Frenzy's Toxin injection).
+    use wfsim_engine::loadout::DtEvo2;
+    let mut cands = Vec::new();
+    for (evo2, label) in [
+        (DtEvo2::FeveredFrenzy, "fevered"),
+        (DtEvo2::CarnageReign, "carnage"),
+    ] {
+        let base = WeaponBase::dual_toxocyst_incarnon(true, evo2);
+        let base_form = WeaponBase::dual_toxocyst_base(true, evo2);
+        let (mut c, stats) = enumerate_candidates(
+            &p,
+            &base,
+            Some(&base_form),
+            label,
+            8,
+            60,
+            &dual_toxocyst_innate_slots(),
+            &constraints,
+        );
+        println!(
+            "[enumerate {label}] {} subsets ({} illegal) -> {} order variants, {} deduped -> {} candidates",
+            stats.subsets,
+            stats.illegal,
+            stats.order_variants,
+            stats.deduped,
+            c.len(),
+        );
+        cands.append(&mut c);
+    }
     println!(
-        "[enumerate] {} subsets ({} illegal) -> {} order variants, {} deduped -> {} candidates in {:.1?}",
-        stats.subsets,
-        stats.illegal,
-        stats.order_variants,
-        stats.deduped,
+        "[enumerate] {} total candidates in {:.1?}",
         cands.len(),
         t0.elapsed()
     );
 
-    // Successive halving: (runs, keep). Early rounds rank by mean effective
-    // damage; the last two rank by mean kills (the objective).
-    let rounds: Vec<(u32, usize, bool)> = if flat {
-        vec![(1000, 24, true)]
-    } else {
-        vec![
-            (3, 16384, false),
-            (12, 3072, false),
-            (48, 512, true),
-            (200, 64, true),
-            (1000, 24, true),
-        ]
-    };
     use wfsim_engine::dummy::Arcane;
     // The arcane is a SEARCH DIMENSION like the mod choice (user,
     // 2026-07-25): every candidate is evaluated under each arcane.
@@ -122,6 +123,13 @@ fn main() {
         cands.len(),
         arcanes.len()
     );
+    // Self-scaling successive halving derived from the job count (user,
+    // 2026-07-25); `flat` bypasses the funnel for validation runs.
+    let rounds: Vec<(u32, usize, bool)> = if flat {
+        vec![(1024, 24, true)]
+    } else {
+        schedule(alive.len())
+    };
     let mut last: Vec<(Job, wfsim_engine::dummy::Summary)> = Vec::new();
     for (round, &(runs, keep, by_kills)) in rounds.iter().enumerate() {
         let t = Instant::now();
@@ -163,7 +171,7 @@ fn main() {
     }
 
     println!();
-    println!("=== FINAL LEADERBOARD (1000 x 60 s, kill score; arcane searched) ===");
+    println!("=== FINAL LEADERBOARD (1024 x 60 s, kill score; searched: mods x element order x arcane x evo2) ===");
     for (rank, ((ci, arcane), s)) in last.iter().take(10).enumerate() {
         let c = &cands[*ci];
         let names: Vec<&str> = c.ordered.iter().map(|&i| p[i].id).collect();
@@ -174,7 +182,7 @@ fn main() {
             .map(|(t, v)| format!("{t:?} {v:.0}"))
             .collect();
         println!(
-            "#{:<2} score {:.3} (kills {:.3} ± {:.3}, min {} max {}) | {:?} | eff DPS {:.3e} | {:.1} transforms",
+            "#{:<2} score {:.3} (kills {:.3} ± {:.3}, min {} max {}) | {:?} + {} | eff DPS {:.3e} | {:.1} transforms",
             rank + 1,
             s.mean_kill_progress,
             s.mean_kills,
@@ -182,6 +190,7 @@ fn main() {
             s.min_kills,
             s.max_kills,
             arcane,
+            c.variant,
             s.effective_dps,
             s.mean_transforms
         );

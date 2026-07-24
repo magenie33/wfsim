@@ -18,7 +18,9 @@
 
 use wfsim_engine::damage::DamageType;
 use wfsim_engine::dummy::{monte_carlo, BodyPart, DummyParams, LockMode, Summary, TargetParams};
-use wfsim_engine::loadout::{resolve, ModDef, ModEffect, ResolvedPanel, StackPolicy, WeaponBase};
+use wfsim_engine::loadout::{
+    resolve, DtEvo2, ModDef, ModEffect, ResolvedPanel, StackPolicy, WeaponBase,
+};
 use wfsim_engine::mods::{plan_forma, FormaPlan, PlannedMod, Polarity};
 
 /// The pistol mod pool, mirrored from `data/mods/*.yaml` at MAX RANK
@@ -265,6 +267,9 @@ pub struct Candidate {
     /// (Dual Toxocyst base form) — present when a second form was given.
     pub base_panel: Option<ResolvedPanel>,
     pub plan: FormaPlan,
+    /// Weapon-config variant label (the Evolution II choice — a search
+    /// dimension enumerated by resolving against each variant's base).
+    pub variant: &'static str,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -282,6 +287,7 @@ pub fn enumerate_candidates(
     pool: &[ModDef],
     base: &WeaponBase,
     second_form: Option<&WeaponBase>,
+    variant: &'static str,
     slots: u32,
     cap: u32,
     innate: &[Option<Polarity>],
@@ -303,6 +309,7 @@ pub fn enumerate_candidates(
         pool,
         base,
         second_form,
+        variant,
         cap,
         innate,
         &usable,
@@ -321,6 +328,7 @@ fn enumerate_rec(
     pool: &[ModDef],
     base: &WeaponBase,
     second_form: Option<&WeaponBase>,
+    variant: &'static str,
     cap: u32,
     innate: &[Option<Polarity>],
     usable: &[usize],
@@ -334,7 +342,17 @@ fn enumerate_rec(
     if subset.len() == want {
         if required.iter().all(|r| subset.contains(r)) {
             stats.subsets += 1;
-            expand_subset(pool, base, second_form, cap, innate, subset, stats, out);
+            expand_subset(
+                pool,
+                base,
+                second_form,
+                variant,
+                cap,
+                innate,
+                subset,
+                stats,
+                out,
+            );
         }
         return;
     }
@@ -354,6 +372,7 @@ fn enumerate_rec(
             pool,
             base,
             second_form,
+            variant,
             cap,
             innate,
             usable,
@@ -373,6 +392,7 @@ fn expand_subset(
     pool: &[ModDef],
     base: &WeaponBase,
     second_form: Option<&WeaponBase>,
+    variant: &'static str,
     cap: u32,
     innate: &[Option<Polarity>],
     subset: &[usize],
@@ -449,6 +469,7 @@ fn expand_subset(
             panel,
             base_panel: second_form.map(|b| resolve(b, &refs, StackPolicy::Emergent)),
             plan: plan.clone(),
+            variant,
         });
     }
 }
@@ -549,6 +570,27 @@ pub fn dominated_mods() -> Vec<(&'static str, &'static str)> {
 /// a search dimension like the mod choice).
 pub type Job = (usize, wfsim_engine::dummy::Arcane);
 
+/// Self-scaling successive-halving schedule (user, 2026-07-25: derive
+/// the funnel from the job count instead of hand-written constants).
+/// Geometric: each round multiplies runs ×4 and keeps 1/8 of the field
+/// (gentler per-cut than the old fixed table while costing LESS overall:
+/// total sims ≈ 2 × N vs 3 × N for the old first round alone). Rounds
+/// rank by mean effective damage until runs reach 48, then by kill
+/// score; a 1024-run final on the last ≤64 always closes the funnel
+/// (the full power-of-four ladder: 1, 4, 16, 64, 256, 1024).
+pub fn schedule(n_jobs: usize) -> Vec<(u32, usize, bool)> {
+    let mut rounds = Vec::new();
+    let mut runs: u32 = 1;
+    let mut keep = n_jobs;
+    while keep > 64 && runs < 1024 {
+        keep = (keep / 8).max(64);
+        rounds.push((runs, keep, runs >= 48));
+        runs = (runs * 4).min(1024);
+    }
+    rounds.push((1024, 24, true));
+    rounds
+}
+
 /// Evaluate jobs concurrently across all cores. Returns summaries
 /// index-aligned with `jobs`.
 pub fn evaluate_batch(
@@ -601,11 +643,12 @@ mod tests {
         // Families (3,3,2,2,2 members) + 14 singles, choose 8:
         // coefficient of x^8 in (1+3x)^2 (1+2x)^3 (1+x)^14 = 665,990.
         let p = pool();
-        let base = WeaponBase::dual_toxocyst_incarnon(true);
+        let base = WeaponBase::dual_toxocyst_incarnon(true, DtEvo2::FeveredFrenzy);
         let (cands, stats) = enumerate_candidates(
             &p,
             &base,
-            Some(&WeaponBase::dual_toxocyst_base(true)),
+            Some(&WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy)),
+            "fevered",
             8,
             60,
             &dual_toxocyst_innate_slots(),
@@ -623,15 +666,46 @@ mod tests {
     }
 
     #[test]
+    fn schedule_scales_with_the_job_count() {
+        // ~2M jobs: 1-run screen keeps 1/8, runs ×4 per round, kill-score
+        // ranking from 48 runs on, always closed by a 1024-run final.
+        let s = schedule(1_950_192);
+        assert_eq!(s.first(), Some(&(1, 243_774, false)));
+        assert!(s.windows(2).all(|w| w[1].0 > w[0].0 && w[1].1 <= w[0].1));
+        assert_eq!(s.last(), Some(&(1024, 24, true)));
+        // Total sims ≈ Σ runs × field ≈ 2 × N — cheaper than the old
+        // fixed table's 3 × N first round alone.
+        let mut field = 1_950_192usize;
+        let mut sims = 0usize;
+        for &(runs, keep, _) in &s {
+            sims += field * runs as usize;
+            field = keep;
+        }
+        assert!(sims < 3 * 1_950_192, "sims {sims}");
+        // Small pools still get a sane funnel ending in the final.
+        let small = schedule(500);
+        assert_eq!(small.first(), Some(&(1, 64, false)));
+        assert_eq!(small.last(), Some(&(1024, 24, true)));
+    }
+
+    #[test]
     fn constraints_filter_the_space() {
         let p = pool();
-        let base = WeaponBase::dual_toxocyst_incarnon(true);
+        let base = WeaponBase::dual_toxocyst_incarnon(true, DtEvo2::FeveredFrenzy);
         let cons = Constraints {
             require: vec!["hornet_strike".into()],
             forbid: vec!["magnetic_might".into()],
         };
-        let (cands, _) =
-            enumerate_candidates(&p, &base, None, 8, 60, &dual_toxocyst_innate_slots(), &cons);
+        let (cands, _) = enumerate_candidates(
+            &p,
+            &base,
+            None,
+            "fevered",
+            8,
+            60,
+            &dual_toxocyst_innate_slots(),
+            &cons,
+        );
         assert!(!cands.is_empty());
         let hornet = p.iter().position(|m| m.id == "hornet_strike").unwrap();
         let mm = p.iter().position(|m| m.id == "magnetic_might").unwrap();

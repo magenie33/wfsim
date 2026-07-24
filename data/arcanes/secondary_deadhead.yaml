@@ -9,7 +9,15 @@ max_rank: 5
 # style graceful decay). The damage bonus is ADDITIVE with base-damage
 # mods (Hornet Strike bucket) - it therefore also scales ModifiedBase
 # (DoT payloads, elemental amounts).
-trigger: on_headshot_kill
+# PRECISION headshot kill - NOT the same boundary as a plain "headshot
+# kill" (user, 2026-07-25). Wiki verbatim: "'Precision' refers to direct
+# hit headshots (not AoE)". Excluded: AoE/explosion damage and most
+# status-proc kills on the head. Included: direct hits; Electricity/Gas
+# proc kills aimed at the head (those procs land their own headshots).
+# Sim: direct pellet headshot kills only - satisfies the boundary
+# exactly for a hitscan single-target weapon (chain-hit headshots wait
+# on the multi-actor arena).
+trigger: on_precision_headshot_kill
 buff:
   per_stack_base_damage: 1.20
   max_stacks: 3
