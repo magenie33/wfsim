@@ -1303,6 +1303,51 @@ mod tests {
     }
 
     #[test]
+    fn incarnon_procs_at_the_listed_rate_per_pellet() {
+        // Incarnon profile vs the plain dummy: 43% SC per PELLET (multishot
+        // 2.0 doubles opportunities, not the per-pellet chance).
+        let s = monte_carlo(&DummyParams::dual_toxocyst_incarnon(), 500, 11);
+        let per_pellet = s.mean_procs / s.mean_pellets;
+        assert!(
+            (per_pellet - 0.43).abs() < 0.02,
+            "procs/pellet {per_pellet}"
+        );
+        // Bleeds are flowing and feeding damage.
+        assert!(s.mean_dot_damage > 0.0);
+    }
+
+    #[test]
+    fn thrax_9999_takes_everything_on_overguard_neutrally() {
+        // Thrax @9999 (no SP): 15.5M overguard - every instance (direct
+        // pellets AND Cinematic bleed ticks) lands on the neutral Overguard
+        // pool, so effective == raw exactly, and nothing ever dies.
+        let spec = crate::enemy_data::EnemySpec::load(std::path::Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../data/enemies/thrax_centurion.yaml"
+        )))
+        .unwrap();
+        let p = DummyParams {
+            target: spec
+                .target_params(9999, false, false, TargetMode::InstantRespawn)
+                .unwrap(),
+            duration_secs: 60.0,
+            ..DummyParams::dual_toxocyst_incarnon()
+        };
+        let s = monte_carlo(&p, 50, 12);
+        assert_eq!(s.mean_kills, 0.0);
+        assert!(
+            (s.mean_effective_damage - s.mean_damage).abs() < 1e-6,
+            "overguard must be neutral: eff {} raw {}",
+            s.mean_effective_damage,
+            s.mean_damage
+        );
+        assert!(
+            s.mean_procs > 0.0,
+            "procs must still apply behind overguard"
+        );
+    }
+
+    #[test]
     fn enervate_raises_crit_rate_above_base() {
         // Base crit is 5%, but Enervate stacks flat crit as the fight goes on, so
         // the observed crit rate should exceed 5%.

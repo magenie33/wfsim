@@ -70,27 +70,6 @@ fn main() {
     println!();
     println!("sustained DPS:    {:.1}", s.dps);
 
-    // The Incarnon Form, tested as its own weapon (transform_modes).
-    let inc = DummyParams::dual_toxocyst_incarnon();
-    let si = monte_carlo(&inc, runs, seed);
-    println!();
-    println!(
-        "Incarnon Form (separate weapon, built) | {:.0} dmg (25I/62.5P/37.5S), 31% crit, 3.0x, 43% status, 4.5 fire/s, auto",
-        inc.damage.total()
-    );
-    println!(
-        "  shots/run: {:.0} | crit {:.1}% | procs {:.1}/run | DoT {:.1} | sustained DPS: {:.1}",
-        si.mean_shots,
-        si.mean_crit_rate * 100.0,
-        si.mean_procs,
-        si.mean_dot_damage,
-        si.dps,
-    );
-    println!(
-        "  vs base form (Frenzy live): {:.1} DPS — ricochet/gauge economy not yet cycled",
-        s.dps
-    );
-
     // Enemy library, loaded from data/enemies/ (single source of truth).
     let enemies_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../data/enemies");
     let thrax = EnemySpec::load(&enemies_dir.join("thrax_centurion.yaml"))
@@ -131,54 +110,54 @@ fn main() {
         println!("  eximus toggle: REJECTED ({e})");
     }
 
-    // Same loadout vs a level-cap Steel Path Thrax, instant respawn, no
-    // on-death transformation (spectral form skipped by decision).
-    let thrax_params = DummyParams {
+    // ------------------------------------------------------------------
+    // FOCUS: Incarnon Form damage. Two INDEPENDENT tests - separate runs,
+    // separate targets, zero interaction (single-target sim; no shared AoE).
+    let inc = DummyParams::dual_toxocyst_incarnon();
+
+    // Test 1: custom dummy - infinite health, zero armor/overguard, no
+    // resistances. Pure throughput measurement.
+    let s1 = monte_carlo(&inc, runs, seed);
+    println!();
+    println!("[Incarnon test 1] vs plain dummy (infinite HP, no resistances, 10 s):");
+    println!(
+        "  pulls {:.0} | pellets {:.0} | crit {:.1}% | big-crit {:.1}% | head {:.1}%",
+        s1.mean_shots,
+        s1.mean_pellets,
+        s1.mean_crit_rate * 100.0,
+        s1.mean_big_crit_rate * 100.0,
+        s1.mean_headshot_rate * 100.0,
+    );
+    println!(
+        "  procs {:.1}/run ({:.2}/pellet) | DoT {:.0} ({:.0}% of effective)",
+        s1.mean_procs,
+        s1.mean_procs / s1.mean_pellets,
+        s1.mean_dot_damage,
+        s1.mean_dot_damage / s1.mean_effective_damage * 100.0,
+    );
+    println!(
+        "  raw = effective DPS: {:.0} (no mitigation on this target)",
+        s1.dps
+    );
+
+    // Test 2: Thrax Centurion @9999 (no Steel Path), instant respawn.
+    let inc2 = DummyParams {
         target: thrax
-            .target_params(9999, true, false, TargetMode::InstantRespawn)
+            .target_params(9999, false, false, TargetMode::InstantRespawn)
             .expect("valid thrax target"),
         duration_secs: 60.0,
-        ..DummyParams::default()
+        ..DummyParams::dual_toxocyst_incarnon()
     };
-    let ts = monte_carlo(&thrax_params, 200, seed);
+    let s2 = monte_carlo(&inc2, 300, seed);
     println!();
-    println!("vs Thrax @9999 SP (instant respawn, 200 runs x 60 s):");
-    println!("  raw DPS:        {:.1}", ts.dps);
-    println!("  effective DPS:  {:.1}", ts.effective_dps);
-    println!("  kills/run:      {:.3}", ts.mean_kills);
-
-    // 2D arena: one Warframe vs one target circle (r = 0.25 m), top-down
-    // plane, hitscan with a hard 300 m range; the target respawns in place
-    // the instant it dies so no DPS is wasted.
-    let arena = Engagement {
-        shooter: Vec2::new(0.0, 0.0),
-        target: Circle::actor(Vec2::new(20.0, 0.0)),
-        weapon_range_m: 300.0, // Dual Toxocyst base form
-        combat: DummyParams {
-            target: thrax
-                .target_params(1, false, false, TargetMode::InstantRespawn)
-                .expect("valid thrax target"),
-            duration_secs: 60.0,
-            ..DummyParams::default()
-        },
-    };
-    let a = arena.monte_carlo(300, seed);
-    println!();
+    println!("[Incarnon test 2] vs Thrax @9999 (instant respawn, 300 x 60 s):");
     println!(
-        "2D arena: shooter (0,0) -> {} circle r{:.2} at (20,0), edge {:.2} m, in range: {}",
-        arena.combat.target.name,
-        arena.target.radius,
-        arena.target_edge_distance(),
-        arena.target_in_range(),
+        "  raw DPS {:.0} | effective DPS {:.0} | kills/run {:.3}",
+        s2.dps, s2.effective_dps, s2.mean_kills
     );
-    println!("vs Thrax @L1 (instant respawn in place, 300 runs x 60 s):");
-    println!("  raw DPS:        {:.1}", a.dps);
-    println!("  effective DPS:  {:.1}", a.effective_dps);
     println!(
-        "  kills/run:      {:.2} ± {:.2} (min {}, max {})",
-        a.mean_kills, a.std_kills, a.min_kills, a.max_kills
+        "  procs {:.0}/run | DoT {:.0} - every instance lands on the 15.5M
+   neutral Overguard pool (armor never engages), hence raw == effective",
+        s2.mean_procs, s2.mean_dot_damage
     );
-    if a.mean_kills > 0.0 {
-        println!("  avg time/kill:  {:.1} s", a.duration_secs / a.mean_kills);
-    }
 }
