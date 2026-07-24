@@ -14,6 +14,9 @@ scaling_faction: unaffiliated      # level-scaling curves (MECHANICS.md §8)
 # Thrax units have NO Eximus variant: absent from the wiki
 # Eximus/Compatibilities table (their overguard is innate, not Eximus-granted).
 can_be_eximus: false
+# Not in the Parazon §Mercy heavy-unit list -> no Mercy window, and Impact
+# (Stagger) stacks' parazon_mercy_threshold modifier does nothing on it.
+mercy_eligible: false
 type: melee
 weapons: [hespar]
 planets: [zariman_ten_zero]

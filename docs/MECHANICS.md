@@ -414,6 +414,28 @@ S = smoothstep between the transition bounds:
 - Eximus units additionally replace base health/shields with level-dependent
   boosted values (piecewise formulas in the wiki page §Health/§Shields tabs).
 
+**Parazon Mercy windows** (wiki `Parazon` §Mercy — the authoritative,
+complete rule set; the Impact page's list is a subset).
+- Mercy prompts appear only on **mercy-eligible units** (a per-unit flag in
+  enemy data; full list on the Parazon page: humanoid Eximus + Rogue
+  Arcocanid/Culverin Eximus, Heavy Gunners, Bombards, Bailiffs, Nox,
+  Scrambus/Comba, Nullifiers, Derivator, Amalgam Heqet/Machinist/MOA,
+  Crawlers, all four Ancients incl. Protector, Mutalist MOAs, Deimos
+  Carnis, and the 1999 heavies: Hollow Vein, Severed Warden, Anatomizer,
+  Unseeing Herald, Fragments, Scaldra Dedicant/Eradicator, Techrot
+  Obsolyte, Anarch Libritor).
+- **Base window**: 40% of total health; **60%** on Corpus with all shields
+  removed; **80%** on Eximus.
+- **Impact (Stagger) stacks**: +8% per proc, cap **80%** (**100%** on
+  Corpus and Eximus; the Impact page words the Corpus 100% as
+  shields-removed — wording differs between pages, needs a measurement).
+- **Level decay**: above level **150** the window shrinks **1% per 5
+  levels**, floor **10%**.
+- The Mercy kill itself deals armor- and shield-bypassing damage equal to
+  total hitpoints; the player (+companion) is invulnerable during the
+  animation; the prompt expires after 10 s. Secret/Requiem Mercy
+  (Larvlings, Thralls, Hounds, Liches, Sisters) is a separate flow.
+
 **Level cap.** Enemy levels cap at **9999**; only Void Fissure missions exceed
 it. Implemented in `engine::scaling` with regression tests at the cap.
 

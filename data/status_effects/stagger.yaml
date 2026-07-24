@@ -26,19 +26,25 @@ per_stack_duration: true       # each stack expires on its own clock
 stack_overflow: replace_oldest # the 6th proc replaces the OLDEST stack
 
 per_stack_modifiers:
-  # +8 percentage points of max health to the Parazon Mercy window per stack.
+  # +8 percentage points of max health to the Parazon Mercy window per
+  # stack. The Mercy system itself (base windows 40/60/80%, level decay
+  # above 150, the eligible-unit list) is spec'd in MECHANICS.md §8
+  # "Parazon Mercy windows" — this debuff only contributes the +8%/stack.
   parazon_mercy_threshold: 0.08
 
 modifier_caps:
   parazon_mercy_threshold: 0.80
-  # Corpus and Eximus with ALL shields removed cap at 100% instead.
-  parazon_mercy_threshold_shieldless: 1.00
+  # 1.00 on Corpus and Eximus (Parazon page). The Impact page words the
+  # Corpus case as "with all their shields removed" — discrepancy between
+  # pages, needs measurement.
+  parazon_mercy_threshold_corpus_eximus: 1.00
 
 modifier_conditions:
-  # The Parazon modifier only exists on "heavy units": all humanoid Eximus,
-  # Heavy Gunner, Bombard, Scrambus, Comba, Nullifier Crewman, Ancient
-  # Disruptor, Ancient Healer, Toxic Ancient.
-  parazon_mercy_threshold: heavy_units_only
+  # Only units with the mercy_eligible flag (per-enemy data; authoritative
+  # list: wiki Parazon §Mercy — much longer than the Impact page's subset,
+  # e.g. it adds Bailiffs, Nox, Amalgams, Crawlers, Ancient Protector, and
+  # the 1999 heavies).
+  parazon_mercy_threshold: mercy_eligible_units_only
 
 cc_effects:
   - kind: stagger
