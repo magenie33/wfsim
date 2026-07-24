@@ -218,9 +218,40 @@ element procs are weighted, not uniform.
   into attackers' `SC`.
 - **Negative status duration** (Riven, past −100%): all duration/DoT procs
   are nullified; instant procs still occur.
-- **DoT** effects (Heat, Toxin, Slash, Gas, …) deal damage over time with
-  their own stack caps and durations; each is a DebuffBar entry whose
-  stacks tick on the timeline (feeds §9).
+- **DoT** effects are DebuffBar entries with a `dot` sub-block whose stacks
+  tick on the timeline (feeds §9). See the dedicated subsection below.
+
+**Damage over Time** (wiki `Damage_over_Time`). The five status DoTs:
+| type | proc | duration | delay | ticks at | refreshable |
+|---|---|---|---|---|---|
+| Slash | Bleed | 6 s | 1 s | 1..6 s (6 ticks) | no |
+| Heat | Ignite | 6 s | 1 s | 1..6 s | **yes** (only one) |
+| Toxin | Poison | 6 s | 1 s | 1..6 s | no |
+| Electricity | Tesla Chain | 6 s | none | 0..5 s (last tick no damage) | no |
+| Gas | Gas Cloud | 6 s | none | 0..5 s (last tick no damage) | no |
+- `total_ticks = floor(tick_rate × (duration − delay)) + 1`; status DoTs
+  tick at 1/s (ability DoTs often 2/s).
+- **Snapshot scaling** — a tick inherits from its proccing hit: total
+  damage buffs and base-damage mods, **faction bonuses applied a second
+  time** (effective `(1+f)²`), status-damage bonuses, the hit's crit
+  multiplier, body-part multiplier, stealth bonus, combo counter.
+  NOT inherited: Sonar-style weakspot multipliers, physical-type mods.
+- **Elemental DoT buffing**: elemental mods buff their own element's DoT
+  (Hellfire → Ignite ticks); **combined-element DoTs (Gas, Blast) are NOT
+  buffed by component mods** — only by literal matching-element damage;
+  conversely Toxin mods DO buff a forced Toxin DoT even when combined
+  into Corrosive on the panel.
+- **Duration mods** (Continuous Misery, Lasting Sting, ... and negative:
+  Rapid Resilience) affect **status-effect DoTs only**. Sickening Pulse
+  duplicates active stacks with fresh timers.
+- **DoT Detonation** (Expedite Suffering, Tragedy, Divine Retribution,
+  Harmony heavy attack): ends stacks early, dealing all remaining ticks
+  in one instance.
+- Bleed specifics (wiki `Damage/Slash_Damage`): tick =
+  `0.35 × [base × (1+base_dmg)(1+faction)] × (1+faction) × (1+status_dmg)
+  × crit_mult × part_mult`, as **Cinematic** damage → ignores armor
+  entirely (armor strips don't change ticks). Enemy-inflicted Bleeds use
+  **10%**, not 35%. Some melee types force Bleed on Heavy Attacks.
 
 **Source:** wiki + measured. **Status:** unverified. **High-risk** — status
 weighting and multishot interaction are top calibration targets (CORE.md §3).

@@ -1,0 +1,73 @@
+schema_version: 0
+id: bleed
+name: Bleed
+kind: debuff                   # DoT is a sub-behavior of a debuff (the
+default_scope: enemy           # `dot` block below), not a separate kind.
+
+aliases: []
+internal_name: PT_BLEEDING
+damage_type: slash             # DT_SLASH
+
+applied_by:
+  damage_type: slash
+
+duration_seconds: 6
+refreshable: false
+stacking: true
+max_stacks: null               # unlimited; each stack has its own timer
+per_stack_duration: true
+stack_overflow: none           # (only 10 tick numbers are DISPLAYED - cosmetic)
+
+# --- the DoT sub-behavior ---------------------------------------------------
+dot:
+  tick_rate_hz: 1              # status-effect DoTs tick 1/s
+  delay_seconds: 1             # first tick at t+1s; ticks at 1..6s (6 ticks)
+  ticks: 6
+  tick_damage_type: cinematic  # bypasses armor ENTIRELY (unique to Bleed:
+                               # armor buffs/debuffs never change tick damage,
+                               # even though armor reduces the initial hit)
+  # Tick damage (wiki Damage/Slash_Damage, exact formula):
+  #   tick = 0.35 x ModdedBaseDamage x (1 + FactionBonuses)
+  #               x (1 + StatusDamageBonuses) x AdditionalMultipliers
+  #   ModdedBaseDamage = Base x (1 + BaseDamageBonuses) x (1 + FactionBonuses)
+  # -> Faction damage applies TWICE: effective (1+f)^2 (+69% for x1.30 mods,
+  #    +140.25% for x1.55 Primed).
+  coefficient: 0.35
+  enemy_coefficient: 0.10      # Slash procs FROM enemies use 10%, not 35%
+  # Snapshot of the proccing hit (locked in at proc time):
+  snapshot:
+    includes:
+      - base damage bonuses (Serration etc.) and total damage buffs
+      - faction damage bonuses (applied twice)
+      - status damage bonuses (Rifle Elementalist etc.)
+      - critical multiplier of the proccing hit
+      - body-part multiplier of the proccing hit
+      - stealth damage bonus, melee/sniper combo counter
+    excludes:
+      - physical-type mods (Buzz Kill, Sawtooth Clip - no effect)
+      - elemental mods (irrelevant to Slash; see MECHANICS.md §6 for the
+        elemental-DoT rules)
+      - Sonar / Detect Vulnerability weakspot multipliers (initial hit only)
+      - finisher mods (Finishing Touch etc. - Cinematic is not a finisher)
+      - target armor (ignored by the tick even though it reduced the hit)
+
+cc_effects: []
+on_kill_cosmetic: blood bursts at the hit location (oil on Machinery/Robotic)
+
+railjack_variant: null
+
+notes: >-
+  Certain melee weapon types force Bleed procs on Heavy Attacks (per-weapon
+  data, like other forced procs). DoT Detonation effects (Expedite
+  Suffering, Tragedy, Divine Retribution, Harmony heavy attack) end stacks
+  early and deal all remaining ticks in one instance.
+
+source:
+  url: https://wiki.warframe.com/w/Damage/Slash_Damage
+  note: Formula and exclusions from the dedicated page; tick/scaling rules
+    cross-checked with wiki Damage_over_Time.
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified
+  needs_measurement: true

@@ -28,11 +28,17 @@ pub enum DamageType {
     True,
     Void,
     Tau,
+    /// Hidden type (`DT_CINEMATIC_DAMAGE`, once nicknamed "Finishing
+    /// Damage"): no faction modifiers anywhere, damages health/shields/
+    /// overguard, bypasses **armor** DR only (not other DR sources), not
+    /// boosted by physical/elemental bonuses, Sentients don't adapt to it.
+    /// Used by Bleed (Slash proc) ticks.
+    Cinematic,
 }
 
 impl DamageType {
     /// Every damage type, in declaration order (indexes match `as usize`).
-    pub const ALL: [DamageType; 16] = [
+    pub const ALL: [DamageType; 17] = [
         DamageType::Impact,
         DamageType::Puncture,
         DamageType::Slash,
@@ -49,6 +55,7 @@ impl DamageType {
         DamageType::True,
         DamageType::Void,
         DamageType::Tau,
+        DamageType::Cinematic,
     ];
 
     /// A primary element (Cold / Electricity / Heat / Toxin) — the ones that
