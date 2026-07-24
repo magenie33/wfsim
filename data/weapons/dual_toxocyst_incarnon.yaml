@@ -43,6 +43,24 @@ incarnon:
     survives: [holster, bleedout, disarm]
     cleared_on: [death]
   side_effect: swapping either way fully reloads the normal form's magazine
+  # Transition animations: "mode switching has an animation equal to the
+  # weapon's reload speed" - the dual-direction wording implies BOTH the
+  # transmute and the on-empty revert cost one base-form reload time
+  # (2.35 s unmodded; presumably scaled by reload mods since it keys off
+  # the reload-speed stat). UNVERIFIED: whether the empty-revert animation
+  # matches the manual switch, and whether reload mods shorten it -
+  # both trivially measurable with a stopwatch.
+  transition_animation_seconds: base_weapon_reload_time  # each direction
+
+# SIM CONVENIENCE (user, 2026-07-24): with the gauge LOCKED full (analogous
+# to buff locks), the Incarnon combat cycle reduces to a standard
+# magazine/reload model - usable by the plain sim machinery long before the
+# full charge economy is cycled:
+pseudo_reload:
+  magazine: 270
+  reload_seconds: 4.70   # revert + re-transmute = 2 x 2.35 (unmodded base)
+  note: excludes charge-rebuilding time (assumed locked); refine when the
+    transition-animation questions above are measured
 
 # Single attack profile: full-auto hitscan with innate ricochet.
 attack:
