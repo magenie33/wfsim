@@ -1318,7 +1318,8 @@ mod tests {
 
     #[test]
     fn thrax_9999_takes_everything_on_overguard_neutrally() {
-        // Thrax @9999 (no SP): 15.5M overguard - every instance (direct
+        // THE ULTIMATE STRESS TEST benchmark: Thrax @9999 STEEL PATH
+        // (9.67M health behind 15.5M overguard) - every instance (direct
         // pellets AND Cinematic bleed ticks) lands on the neutral Overguard
         // pool, so effective == raw exactly, and nothing ever dies.
         let spec = crate::enemy_data::EnemySpec::load(std::path::Path::new(concat!(
@@ -1328,7 +1329,7 @@ mod tests {
         .unwrap();
         let p = DummyParams {
             target: spec
-                .target_params(9999, false, false, TargetMode::InstantRespawn)
+                .target_params(9999, true, false, TargetMode::InstantRespawn)
                 .unwrap(),
             duration_secs: 60.0,
             ..DummyParams::dual_toxocyst_incarnon()

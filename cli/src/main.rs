@@ -140,17 +140,20 @@ fn main() {
         s1.dps
     );
 
-    // Test 2: Thrax Centurion @9999 (no Steel Path), instant respawn.
+    // Test 2 - THE ULTIMATE STRESS TEST (standard benchmark for every
+    // weapon, user 2026-07-26): Thrax Centurion @9999 STEEL PATH, instant
+    // respawn, Secondary Enervate equipped (always on in this sim).
+    // 9.67M health behind 15.5M neutral Overguard.
     let inc2 = DummyParams {
         target: thrax
-            .target_params(9999, false, false, TargetMode::InstantRespawn)
+            .target_params(9999, true, false, TargetMode::InstantRespawn)
             .expect("valid thrax target"),
         duration_secs: 60.0,
         ..DummyParams::dual_toxocyst_incarnon()
     };
     let s2 = monte_carlo(&inc2, 300, seed);
     println!();
-    println!("[Incarnon test 2] vs Thrax @9999 (instant respawn, 300 x 60 s):");
+    println!("[ULTIMATE STRESS TEST] vs Thrax @9999 STEEL PATH (instant respawn, 300 x 60 s):");
     println!(
         "  raw DPS {:.0} | effective DPS {:.0} | kills/run {:.3}",
         s2.dps, s2.effective_dps, s2.mean_kills
