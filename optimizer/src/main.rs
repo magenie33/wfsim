@@ -32,12 +32,23 @@ fn main() {
         "/../data/enemies/thrax_centurion.yaml"
     )))
     .expect("thrax spec");
+    // Dominance pruning: same-effect lower tiers can never win (user
+    // directive 2026-07-24). Printed, never silent.
+    for (id, why) in dominated_mods() {
+        if !constraints.forbid.iter().any(|f| f == id) {
+            println!("[prune] {id}: {why}");
+            constraints.forbid.push(id.to_string());
+        }
+    }
+
     let scenario = Scenario {
         target: spec
             .target_params(9999, true, false, TargetMode::InstantRespawn)
             .expect("valid target"),
         body_parts: spec.aim_parts(&[("head", 1.0)]).expect("head aim"),
         duration_secs: 60.0,
+        // The chosen loadout's arcane is EQUIPPED (fixed, not searched).
+        arcane_enervate: true,
     };
     println!(
         "[scenario] {} @9999 STEEL PATH, instant respawn, 100% headshots, 60 s",

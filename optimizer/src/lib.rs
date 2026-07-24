@@ -420,23 +420,48 @@ fn permutations(rest: &[DamageType], acc: &mut Vec<DamageType>, out: &mut Vec<Ve
     }
 }
 
-/// The benchmark engagement (target, aim, duration).
+/// The benchmark engagement (target, aim, duration, equipped extras).
 #[derive(Clone)]
 pub struct Scenario {
     pub target: TargetParams,
     pub body_parts: Vec<BodyPart>,
     pub duration_secs: f64,
+    /// Secondary Enervate equipped (the user's chosen arcane). Fixed
+    /// equipment, NOT a search dimension.
+    pub arcane_enervate: bool,
 }
 
 /// Evaluate one candidate: engine Monte Carlo, nothing else.
 pub fn evaluate(c: &Candidate, s: &Scenario, runs: u32, seed: u64) -> Summary {
-    let params = DummyParams::from_panel(
+    let mut params = DummyParams::from_panel(
         &c.panel,
         s.target.clone(),
         s.body_parts.clone(),
         s.duration_secs,
     );
+    params.arcane_enervate = s.arcane_enervate;
     monte_carlo(&params, runs, seed)
+}
+
+/// Dominance pruning (命题作文 preset): mods whose every effect is the
+/// same KIND as another pool mod's but strictly smaller are excluded up
+/// front — they can never appear in an optimum under `AssumedMax` (drain
+/// differences only change Forma count, never damage ranking).
+pub fn dominated_mods() -> Vec<(&'static str, &'static str)> {
+    vec![
+        ("pistol_gambit", "primed_pistol_gambit has strictly more crit chance"),
+        ("target_cracker", "primed_target_cracker has strictly more crit damage"),
+        ("heated_charge", "primed_heated_charge has strictly more heat"),
+        ("convulsion", "primed_convulsion has strictly more electricity"),
+        (
+            "barrel_diffusion",
+            "galvanized_diffusion gives strictly more multishot at assumed max stacks",
+        ),
+        (
+            "amalgam_barrel_diffusion",
+            "barrel_diffusion (itself dominated) already exceeds its 109.5%",
+        ),
+    ]
 }
 
 /// Evaluate `idx` candidates concurrently across all cores. Returns
