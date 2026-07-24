@@ -10,11 +10,13 @@
 //!   Corpus and Eximus).
 //! - Above level **150**: window shrinks **1% per 5 levels**, floor **10%**.
 //!
-//! ASSUMPTION (flagged in MECHANICS.md): the Parazon page words the 100%
-//! cap as "on Corpus and Eximus" unconditionally, while the Impact page
-//! conditions the Corpus case on shields removed. We implement the
-//! conservative reading — Corpus qualifies for both the 60% base and the
-//! 100% cap only with shields stripped — until measured.
+//! Corpus wording note — MEASURED (2026-07-24, user in-game test): Corpus
+//! units do reach the 100% cap. Because pools drain in order Overguard →
+//! Shield → Health, shields are always gone by the time health enters the
+//! window in normal play, so the two wiki wordings (cap conditional on
+//! shields removed vs not) are practically indistinguishable. We keep the
+//! shields-stripped condition in the model; the only untested edge is a
+//! Toxin-bypass state (health low while shields still up).
 
 /// Static + dynamic facts about the target relevant to Mercy.
 #[derive(Debug, Clone, Copy)]

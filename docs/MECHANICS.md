@@ -427,8 +427,12 @@ complete rule set; the Impact page's list is a subset).
 - **Base window**: 40% of total health; **60%** on Corpus with all shields
   removed; **80%** on Eximus.
 - **Impact (Stagger) stacks**: +8% per proc, cap **80%** (**100%** on
-  Corpus and Eximus; the Impact page words the Corpus 100% as
-  shields-removed — wording differs between pages, needs a measurement).
+  Corpus and Eximus). **Measured 2026-07-24 (user)**: Corpus units do
+  reach the 100% cap. Pool order Overguard → Shield → Health makes the
+  two pages' wordings (shields-removed conditional vs not) practically
+  indistinguishable — shields are always gone by the time health is in
+  the window; only a Toxin-bypass state (low health, shields up) could
+  separate them, untested.
 - **Level decay**: above level **150** the window shrinks **1% per 5
   levels**, floor **10%**.
 - The Mercy kill itself deals armor- and shield-bypassing damage equal to

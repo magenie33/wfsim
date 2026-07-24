@@ -94,6 +94,20 @@ the white (health-pool) damage number of the breaking shot: ≈`T` ungated,
 
 ---
 
+## M3 — Corpus Parazon Mercy cap ✅ (informal, 2026-07-24)
+
+**Question.** Does the Corpus Mercy cap reach 100% (Parazon page) or only
+with shields removed (Impact page wording)?
+
+**Result (user in-game test, 2026-07-24):** Corpus units **do reach the
+100% cap**. Interpretation: pools drain Overguard → Shield → Health, so
+shields are always gone once health is inside the window — the two
+wordings are practically indistinguishable. Model keeps the
+shields-stripped condition. Remaining edge (untested, low priority): a
+Toxin-bypass state with low health while shields are still up.
+
+---
+
 ## M2 — Simulacrum "Steel Path" toggle: does it still boost armor?
 
 **Question.** The toggle was introduced (U33.5) as "+250% Health, Armor,
