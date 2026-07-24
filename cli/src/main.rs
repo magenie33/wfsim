@@ -143,7 +143,10 @@ fn main() {
     println!("vs Thrax @L1 (instant respawn in place, 300 runs x 60 s):");
     println!("  raw DPS:        {:.1}", a.dps);
     println!("  effective DPS:  {:.1}", a.effective_dps);
-    println!("  kills/run:      {:.2}", a.mean_kills);
+    println!(
+        "  kills/run:      {:.2} ± {:.2} (min {}, max {})",
+        a.mean_kills, a.std_kills, a.min_kills, a.max_kills
+    );
     if a.mean_kills > 0.0 {
         println!("  avg time/kill:  {:.1} s", a.duration_secs / a.mean_kills);
     }

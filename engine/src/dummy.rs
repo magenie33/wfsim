@@ -370,6 +370,9 @@ pub struct Summary {
     pub mean_effective_damage: f64,
     pub effective_dps: f64,
     pub mean_kills: f64,
+    pub std_kills: f64,
+    pub min_kills: u32,
+    pub max_kills: u32,
     pub mean_shots: f64,
     pub mean_crit_rate: f64,
     pub mean_big_crit_rate: f64,
@@ -384,7 +387,8 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     let mut min = f64::INFINITY;
     let mut max = f64::NEG_INFINITY;
     let (mut shots, mut crits, mut big_crits, mut headshots) = (0u64, 0u64, 0u64, 0u64);
-    let (mut effective, mut kills) = (0.0f64, 0u64);
+    let (mut effective, mut kills, mut kills_sq) = (0.0f64, 0u64, 0u64);
+    let (mut min_kills, mut max_kills) = (u32::MAX, 0u32);
 
     for _ in 0..runs {
         let r = run_once(params, &mut rng);
@@ -394,6 +398,9 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         max = max.max(r.total_damage);
         effective += r.effective_damage;
         kills += r.kills as u64;
+        kills_sq += (r.kills as u64) * (r.kills as u64);
+        min_kills = min_kills.min(r.kills);
+        max_kills = max_kills.max(r.kills);
         shots += r.shots as u64;
         crits += r.crits as u64;
         big_crits += r.big_crits as u64;
@@ -416,6 +423,12 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         mean_effective_damage: effective / n,
         effective_dps: effective / n / params.duration_secs,
         mean_kills: kills as f64 / n,
+        std_kills: {
+            let mean_k = kills as f64 / n;
+            (kills_sq as f64 / n - mean_k * mean_k).max(0.0).sqrt()
+        },
+        min_kills: if min_kills == u32::MAX { 0 } else { min_kills },
+        max_kills,
         mean_shots: shots as f64 / n,
         mean_crit_rate: crits as f64 / total_shots,
         mean_big_crit_rate: big_crits as f64 / total_shots,
@@ -586,8 +599,10 @@ mod tests {
         };
         let s = monte_carlo(&p, 200, 5);
         // 50 HP, no armor, no overguard: every shot (>= 75 raw) kills, and the
-        // target respawns in place — 10 kills per 10-shot run.
+        // target respawns in place — 10 kills per 10-shot run, no variance.
         assert!((s.mean_kills - 10.0).abs() < 1e-9, "kills {}", s.mean_kills);
+        assert_eq!(s.std_kills, 0.0);
+        assert_eq!((s.min_kills, s.max_kills), (10, 10));
     }
 
     #[test]
