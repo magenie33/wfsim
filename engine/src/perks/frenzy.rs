@@ -37,6 +37,20 @@ const AMMO_EFFICIENCY_BONUS: f64 = 1.0;
 /// +100% Toxin, injected as an elemental mod at the end of the mod order.
 const TOXIN_PERCENT_OF_BASE: f64 = 1.0;
 
+impl Frenzy {
+    /// The Frenzy buff with NO expiry — for buff-lock simulation settings
+    /// (force a buff permanently active, e.g. "assume Frenzy uptime 100%").
+    pub fn permanent_buff() -> Buff {
+        Buff {
+            id: BUFF_ID.into(),
+            scope: BuffScope::Weapon,
+            stacks: 1,
+            expiry_secs: None,
+            contributions: Self::buff_contributions(),
+        }
+    }
+}
+
 /// Frenzy — a stateless perk (the buff carries all the timed state).
 #[derive(Debug, Clone, Default)]
 pub struct Frenzy;

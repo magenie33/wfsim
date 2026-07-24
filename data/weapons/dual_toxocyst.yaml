@@ -6,7 +6,13 @@ class: dual_pistols
 grip_type: DUAL_GUN_GUN
 mastery_rank: 11
 max_rank: 30
-has_incarnon: true
+
+# TWO WEAPONS MODEL (decision 2026-07-24): the base and Incarnon forms are
+# separate weapon entries in the database, linked by a transform group.
+# Testing the live transformation cycle (weapon 1 -> weapon 2 mid-fight)
+# is future work; each entry stands alone for simulation.
+transform_group: dual_toxocyst
+transforms_to: dual_toxocyst_incarnon   # via the Incarnon gauge (see there)
 
 # Weapon-level metadata (from the wiki data module).
 accuracy: 16
@@ -23,125 +29,50 @@ ammo_max: 72
 ammo_pickup: 40
 magazine: 12
 reload_seconds: 2.35
-incarnon_charge_gain: 30     # gauge gain per qualifying hit
 
-# Frenzy is delivered as an innate "default upgrade" mod (headshot -> fire rate);
-# modeled as the `frenzy` perk. See the `perks` field below.
+# Frenzy is delivered as an innate "default upgrade" mod (headshot -> fire
+# rate); modeled as the `frenzy` perk.
 default_upgrades:
   - /Lotus/Weapons/Infested/Pistols/InfVomitGun/FireRateOnHeadshotPistolMod
 
-# MODE TAXONOMY (decision 2026-07-24). Wiki stat tables show "two rows" for
-# three different reasons; each must be modeled differently:
-#   attack_parts    - one attack producing multiple damage instances
-#                     (direct + aoe_radial): ONE weapon profile.
-#   fire_modes      - primary + alt-fire on the same equipped form:
-#                     separate attack profiles, TESTED SEPARATELY.
-#   transform_modes - a mode switch with an animation (Incarnon):
-#                     separate WEAPONS for testing purposes.
-# Dual Toxocyst is transform_modes: base and Incarnon Form are two weapons
-# sharing an inventory slot and a transformation economy.
-mode_model: transform_modes
+# Single attack profile (attack_parts taxonomy: one direct instance, no AoE).
+attack:
+  trigger: semi_auto
+  shot_type: hitscan
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.05
+  crit_multiplier: 2.0
+  status_chance: 0.37
+  punch_through_m: 0.0
+  range_m: 300
+  spread_deg: { min: 0.50, max: 12.00 }
+  damage: { impact: 7.5, puncture: 60.0, slash: 7.5 }   # total 75
 
-# Forms map to the source's Attacks array: base = Normal Attack, incarnon =
-# Incarnon Form. Each form carries its own combat stats.
-forms:
-  - id: base
-    name: Normal Attack
-    trigger: semi_auto
-    shot_type: hitscan
-    fire_rate: 1.0
-    multishot: 1.0
-    ammo_cost: 1
-    crit_chance: 0.05
-    crit_multiplier: 2.0
-    status_chance: 0.37
-    punch_through_m: 0.0
-    range_m: 300
-    spread_deg: { min: 0.50, max: 12.00 }
-    damage: { impact: 7.5, puncture: 60.0, slash: 7.5 }   # total 75
-
-  - id: incarnon
-    name: Incarnon Form
-    trigger: auto
-    shot_type: hitscan
-    fire_rate: 4.5
-    multishot: 1.0
-    ammo_cost: 1
-    incarnon_charges: 270        # this form's "magazine" (charges, not ammo)
-    reload_seconds: null         # uses Incarnon charges, no reload
-    crit_chance: 0.11
-    crit_multiplier: 3.0
-    status_chance: 0.43
-    punch_through_m: 0.0
-    range_m: 1000
-    spread_deg: { min: 0.50, max: 12.00 }
-    damage: { impact: 15.0, puncture: 37.5, slash: 22.5 }   # total 75
-    activation: >-
-      Weakpoint hits charge the Incarnon gauge; Alt Fire transmutes into the
-      Incarnon form.
-
-# Weapon passive(s), referenced by perk id (see data/perks/). The Frenzy perk
-# grants the Frenzy buff on headshot.
 perks:
   - frenzy
 
-# The Incarnon transformation economy (wiki Dual_Toxocyst_Incarnon_Genesis;
-# this block is what identifies an Incarnon weapon to the engine).
-incarnon:
-  install_cost: { pathos_clamps: 20, yao_shrubs: 70, eevani: 80 }
-  gauge:
-    charge_on: weakpoint_hits
-    charges_to_fill: 9
-    rounds_per_charge: 30
-    max_rounds: 270
-    charge_rules:
-      - Individual multishot bullets each build charge.
-      - MOA-backpack-style weakspots do NOT build charge, nor do
-        Sonar / Detect Vulnerability spots outside real weakpoints
-        (a per-body-part `charges_incarnon` distinction, like the
-        headshot-trigger vs weak-spot split).
-      - Weakpoints on corpses or invulnerable targets build nothing.
-  transmute:
-    activation: alt_fire            # full gauge NOT required
-    animation_seconds: reload_speed # mode switch takes the reload time
-    revert: on_incarnon_ammo_empty
-    switch_back_penalty: expends all remaining charge
-  incarnon_magazine:
-    unaffected_by_mods: true
-    unaffected_by_ammo_efficiency: true   # Energized Munitions does nothing
-  persistence:
-    survives: [holster, bleedout, disarm]
-    cleared_on: [death]
-  side_effect: swapping either way fully reloads the normal form's magazine
-
-# Incarnon evolutions ARE perks (architecture decision 2026-07-24) - one
-# perk id per option, choose one per tier in a Build. Definitions live in
-# data/perks/dt_*.yaml with bucket annotations and challenge notes.
+# Incarnon evolutions are perks shared by the transform group; whether their
+# stat layers apply to BOTH forms or only the Incarnon form is unverified
+# (assumed both). Definitions: data/perks/dt_*.yaml.
 incarnon_evolutions:
-  - tier: 1
-    unlock: install the Incarnon Genesis
-    options: [dt_evo1_incarnon_form]
-  - tier: 2
-    unlock: complete a solo mission with this weapon equipped
-    options: [dt_carnage_reign, dt_fevered_frenzy]
-  - tier: 3
-    unlock: kill 100 enemies with this weapon's Incarnon Form
-    options: [dt_ready_retaliation, dt_evolved_autoloader, dt_marksmans_hand]
-  - tier: 4
-    unlock: >-
-      Get 17 consecutive headshots (body shots and Companion damage reset
-      it; status-effect damage does not; multishot hits count).
-    options: [dt_commodores_fortune, dt_neurotoxin, dt_ripper_rounds]
-  # Each challenge also grants 5,000 weapon affinity (Affinity Boosters apply).
+  - { tier: 1, unlock: install the Incarnon Genesis,
+      options: [dt_evo1_incarnon_form] }
+  - { tier: 2, unlock: complete a solo mission with this weapon equipped,
+      options: [dt_carnage_reign, dt_fevered_frenzy] }
+  - { tier: 3, unlock: kill 100 enemies with the Incarnon Form,
+      options: [dt_ready_retaliation, dt_evolved_autoloader, dt_marksmans_hand] }
+  - { tier: 4,
+      unlock: 17 consecutive headshots (body shots and Companion damage
+        reset; status damage does not; multishot hits count),
+      options: [dt_commodores_fortune, dt_neurotoxin, dt_ripper_rounds] }
 
 source:
   url: https://wiki.warframe.com/w/Module:Weapons/data/secondary
-  note: Base and Incarnon stats and all metadata are from the wiki's structured Lua data module (authoritative datamined values), not a page summary.
+  note: Stats from the wiki's structured Lua data module.
   retrieved: "2026-07-24"
 
-# Base stats now come from the authoritative data module. Still needs a golden
-# test for the full pipeline; the Incarnon-evolution effects are raw text pending
-# classification.
 verification:
   status: unverified
   needs_measurement: true

@@ -34,6 +34,15 @@ use crate::scaling;
 use crate::sim::{Event, Hit};
 use crate::status;
 
+/// A buff forced permanently active for the whole run — the "buff lock"
+/// simulation setting (e.g. assume 100% Frenzy uptime). Locks are asserted
+/// each shot, overriding natural expiry; the perk's own trigger still fires
+/// harmlessly alongside.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LockedBuff {
+    Frenzy,
+}
+
 /// What happens when the target's health reaches zero.
 ///
 /// These are simulator conveniences for calibration (the real Simulacrum has
@@ -293,6 +302,8 @@ pub struct DummyParams {
     /// NOT yet wired: +100% Toxin injection (needs the element layer) and
     /// ammo efficiency (ammo is infinite here anyway).
     pub frenzy: bool,
+    /// Buffs forced permanently active regardless of triggers/expiry.
+    pub locked_buffs: Vec<LockedBuff>,
     pub body_parts: Vec<BodyPart>,
     pub target: TargetParams,
     pub duration_secs: f64,
@@ -370,6 +381,7 @@ impl Default for DummyParams {
             status_duration_mult: 1.0,
             fire_rate: 1.0,
             frenzy: false,
+            locked_buffs: Vec::new(),
             body_parts: Self::humanoid_parts(),
             target: TargetParams::training_dummy(),
             duration_secs: 10.0,
@@ -483,8 +495,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // DoT ticks scheduled before this shot land first.
         process_ticks(&mut debuffs, t + 1e-9, &mut target, &params.target, &mut r);
 
-        // Timed buffs (Frenzy) lapse before this shot reads the bar.
+        // Timed buffs (Frenzy) lapse before this shot reads the bar; locked
+        // buffs are then re-asserted (locks beat expiry and trigger churn).
         bar.expire(t);
+        for lock in &params.locked_buffs {
+            match lock {
+                LockedBuff::Frenzy => bar.upsert(Frenzy::permanent_buff()),
+            }
+        }
 
         // Crit chance: base + Enervate stacks (attacker BuffBar) + Weakened
         // stacks (target DebuffBar: flat crit chance received, weapon direct
@@ -781,6 +799,20 @@ mod tests {
             "shots {}",
             s2.mean_shots
         );
+    }
+
+    #[test]
+    fn locked_frenzy_is_always_active_without_headshots() {
+        // Body-only aim never triggers Frenzy naturally, but the lock keeps
+        // it up from t=0: cadence 0.4 s -> 25 shots in 10 s.
+        let p = DummyParams {
+            frenzy: true,
+            locked_buffs: vec![LockedBuff::Frenzy],
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 20, 4);
+        assert!((s.mean_shots - 25.0).abs() < 1e-9, "shots {}", s.mean_shots);
     }
 
     #[test]

@@ -1,0 +1,70 @@
+schema_version: 0
+id: dual_toxocyst_incarnon
+name: Dual Toxocyst (Incarnon Form)
+slot: secondary
+class: dual_pistols
+
+# TWO WEAPONS MODEL: this is the second weapon of the transform group -
+# see data/weapons/dual_toxocyst.yaml for the base form and the decision.
+transform_group: dual_toxocyst
+transforms_from: dual_toxocyst
+
+# The Incarnon transformation economy (wiki Dual_Toxocyst_Incarnon_Genesis).
+# The presence of this block is what identifies an Incarnon weapon.
+incarnon:
+  install_cost: { pathos_clamps: 20, yao_shrubs: 70, eevani: 80 }
+  gauge:
+    charge_on: weakpoint_hits
+    charges_to_fill: 9
+    rounds_per_charge: 30
+    max_rounds: 270
+    charge_rules:
+      - Individual multishot bullets each build charge.
+      - MOA-backpack-style weakspots do NOT build charge, nor do Sonar /
+        Detect Vulnerability spots outside real weakpoints (a per-body-part
+        charges_incarnon distinction).
+      - Weakpoints on corpses or invulnerable targets build nothing.
+  transmute:
+    activation: alt_fire            # full gauge NOT required
+    animation_seconds: reload_speed # mode switch takes the reload time
+    revert: on_incarnon_ammo_empty
+    switch_back_penalty: expends all remaining charge
+  incarnon_magazine:
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true   # Energized Munitions does nothing
+  persistence:
+    survives: [holster, bleedout, disarm]
+    cleared_on: [death]
+  side_effect: swapping either way fully reloads the normal form's magazine
+
+# Single attack profile: full-auto hitscan with ricochet (granted by the
+# dt_evo1_incarnon_form perk: 1 bounce within 5 m, can headshot/Frenzy).
+attack:
+  trigger: auto
+  shot_type: hitscan
+  fire_rate: 4.5
+  multishot: 1.0
+  ammo_cost: 1                  # of the separate incarnon magazine (270)
+  crit_chance: 0.11
+  crit_multiplier: 3.0
+  status_chance: 0.43
+  punch_through_m: 0.0
+  range_m: 1000
+  spread_deg: { min: 0.50, max: 12.00 }
+  damage: { impact: 15.0, puncture: 37.5, slash: 22.5 }   # total 75
+
+# Whether the Frenzy passive can trigger while transformed is an open
+# question - excluded here until measured.
+perks: []
+
+incarnon_evolutions: see data/weapons/dual_toxocyst.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Module:Weapons/data/secondary
+  note: Stats from the wiki's structured Lua data module; economy from the
+    Incarnon Genesis page.
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified
+  needs_measurement: true

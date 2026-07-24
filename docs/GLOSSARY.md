@@ -54,9 +54,11 @@ conflate them (decision 2026-07-24):
 - **fire_modes** — primary and alt-fire on the same equipped form (e.g.
   a launcher's tap/hold). Separate attack profiles, tested separately.
 - **transform_modes** — a stateful mode switch with a transformation
-  animation (Incarnon forms). Modeled and tested as **separate weapons**
-  sharing a slot plus a transformation economy (`incarnon` block in the
-  weapon data identifies these).
+  animation (Incarnon forms). Stored as **two separate weapon entries in
+  the database**, linked by `transform_group` (base: `transforms_to`,
+  incarnon: `transforms_from` + the `incarnon` economy block that
+  identifies such weapons). Each entry simulates standalone; the live
+  weapon-1→weapon-2 transformation cycle is future work.
 
 ## Firing and hits
 
