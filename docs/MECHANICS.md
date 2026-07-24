@@ -284,11 +284,18 @@ component** of the hit vector:
 - Every component except Toxin damages shields first. **Toxin (and its DoT)
   completely ignores shields** and hits health directly — but still passes
   armor DR (Toxin bypasses shields, not armor).
-- **Enemy shield gate**: on the shield-breaking hit, enemies get a **0.1 s**
-  gate and only **5%** of the excess damage leaks into health. Exceptions:
-  hits on **weakspots bypass the gate entirely** (full spill); some AoE
-  instances (e.g. slam attacks) are **fully blocked** instead; status-effect
-  DoTs ignore the gate.
+- **Enemy shield gate** — a **time window**, not a per-hit rule: when shields
+  fully deplete, a **0.1 s** gate opens during which damage dealt to the
+  enemy only applies **5%** to health (the breaking hit's spill *and* any
+  further hits landing inside the window — fast fire rates and multishot
+  pellets get eaten by it; a 1 shot/s weapon never notices). Exceptions:
+  - hits on **weakspots bypass the gate entirely** (full damage in-window);
+  - some AoE instances (e.g. slam attacks) get **no** 5% leak — the damage
+    instance is **fully blocked** in-window;
+  - **separate damage instances riding on an attack** (status-effect DoTs,
+    Xata's Whisper) are not stopped by the gate.
+  Open question: whether Toxin's shield-bypassing direct damage is also
+  reduced inside the gate window (needs measurement).
 - Magnetic status: +100% damage to shields/Overguard on the first stack,
   +25%/stack after (max +325%), and blocks natural shield regen; on
   break, Electricity burst = 3%/stack of max shields (max 30%).
