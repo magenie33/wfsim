@@ -219,6 +219,23 @@ pub fn pool() -> Vec<ModDef> {
             None,
             vec![CombinedElement(Radiation, 0.60), FireRate(0.40)],
         ),
+        m(
+            "galvanized_crosshairs",
+            12,
+            Madurai,
+            Some("hydraulic_crosshairs"),
+            vec![
+                OnHeadshotCritChance {
+                    bonus: 1.20,
+                    duration: 12.0,
+                },
+                OnHeadshotKillCritChance {
+                    per_stack: 0.40,
+                    max_stacks: 5,
+                    duration: 12.0,
+                },
+            ],
+        ),
     ]
 }
 
@@ -451,14 +468,13 @@ fn permutations(rest: &[DamageType], acc: &mut Vec<DamageType>, out: &mut Vec<Ve
 }
 
 /// The benchmark engagement (target, aim, duration, equipped extras).
+/// The arcane is a SEARCH DIMENSION (user, 2026-07-25) — passed per
+/// evaluation job, not fixed here.
 #[derive(Clone)]
 pub struct Scenario {
     pub target: TargetParams,
     pub body_parts: Vec<BodyPart>,
     pub duration_secs: f64,
-    /// Secondary Enervate equipped (the user's chosen arcane). Fixed
-    /// equipment, NOT a search dimension.
-    pub arcane: wfsim_engine::dummy::Arcane,
     /// Run the REAL Incarnon two-form cycle (full gauge start → dump →
     /// revert → rebuild 9 weakpoint charges → transmute → …) instead of
     /// the locked-gauge pseudo-reload model. Needs candidates enumerated
@@ -468,8 +484,14 @@ pub struct Scenario {
     pub frenzy_lock: LockMode,
 }
 
-/// Evaluate one candidate: engine Monte Carlo, nothing else.
-pub fn evaluate(c: &Candidate, s: &Scenario, runs: u32, seed: u64) -> Summary {
+/// Evaluate one candidate with a given arcane: engine Monte Carlo only.
+pub fn evaluate(
+    c: &Candidate,
+    arcane: wfsim_engine::dummy::Arcane,
+    s: &Scenario,
+    runs: u32,
+    seed: u64,
+) -> Summary {
     let mut params = if s.incarnon_cycle {
         DummyParams::incarnon_cycle_from_panels(
             &c.panel,
@@ -487,7 +509,7 @@ pub fn evaluate(c: &Candidate, s: &Scenario, runs: u32, seed: u64) -> Summary {
             s.duration_secs,
         )
     };
-    params.arcane = s.arcane;
+    params.arcane = arcane;
     monte_carlo(&params, runs, seed)
 }
 
@@ -523,11 +545,15 @@ pub fn dominated_mods() -> Vec<(&'static str, &'static str)> {
     ]
 }
 
-/// Evaluate `idx` candidates concurrently across all cores. Returns
-/// summaries index-aligned with `idx`.
+/// One evaluation job: a candidate paired with an arcane (the arcane is
+/// a search dimension like the mod choice).
+pub type Job = (usize, wfsim_engine::dummy::Arcane);
+
+/// Evaluate jobs concurrently across all cores. Returns summaries
+/// index-aligned with `jobs`.
 pub fn evaluate_batch(
     cands: &[Candidate],
-    idx: &[usize],
+    jobs: &[Job],
     scenario: &Scenario,
     runs: u32,
     seed: u64,
@@ -536,16 +562,18 @@ pub fn evaluate_batch(
         .map(|n| n.get())
         .unwrap_or(8)
         .max(1);
-    let chunk = idx.len().div_ceil(threads).max(1);
-    let mut results: Vec<Option<Summary>> = vec![None; idx.len()];
+    let chunk = jobs.len().div_ceil(threads).max(1);
+    let mut results: Vec<Option<Summary>> = vec![None; jobs.len()];
     std::thread::scope(|scope| {
-        for (ids, res) in idx.chunks(chunk).zip(results.chunks_mut(chunk)) {
+        for (ids, res) in jobs.chunks(chunk).zip(results.chunks_mut(chunk)) {
             let scenario = scenario.clone();
             scope.spawn(move || {
-                for (k, &ci) in ids.iter().enumerate() {
-                    // Deterministic per-candidate seed, mixed per round.
-                    let s = seed ^ (ci as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15);
-                    res[k] = Some(evaluate(&cands[ci], &scenario, runs, s));
+                for (k, &(ci, arcane)) in ids.iter().enumerate() {
+                    // Deterministic per-job seed, mixed per round.
+                    let s = seed
+                        ^ (ci as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15)
+                        ^ ((arcane as u64) << 56);
+                    res[k] = Some(evaluate(&cands[ci], arcane, &scenario, runs, s));
                 }
             });
         }
@@ -558,9 +586,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn pool_has_25_mods_with_family_exclusivity() {
+    fn pool_has_26_mods_with_family_exclusivity() {
         let p = pool();
-        assert_eq!(p.len(), 25);
+        assert_eq!(p.len(), 26);
         let diffusions = p
             .iter()
             .filter(|m| m.family == Some("barrel_diffusion"))
@@ -570,8 +598,8 @@ mod tests {
 
     #[test]
     fn canonical_enumeration_counts_match_the_generating_function() {
-        // Families (3,3,2,2,2 members) + 13 singles, choose 8:
-        // coefficient of x^8 in (1+3x)^2 (1+2x)^3 (1+x)^13 = 424,281.
+        // Families (3,3,2,2,2 members) + 14 singles, choose 8:
+        // coefficient of x^8 in (1+3x)^2 (1+2x)^3 (1+x)^14 = 665,990.
         let p = pool();
         let base = WeaponBase::dual_toxocyst_incarnon(true);
         let (cands, stats) = enumerate_candidates(
@@ -583,7 +611,7 @@ mod tests {
             &dual_toxocyst_innate_slots(),
             &Constraints::default(),
         );
-        assert_eq!(stats.subsets, 424_281, "subset count");
+        assert_eq!(stats.subsets, 665_990, "subset count");
         assert_eq!(
             cands.len() as u64 + stats.deduped,
             stats.order_variants,

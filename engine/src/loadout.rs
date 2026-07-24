@@ -50,6 +50,17 @@ pub enum ModEffect {
         max_stacks: u32,
         duration: f64,
     },
+    /// Galvanized Crosshairs' single refreshable buff: on HEADSHOT,
+    /// +bonus relative crit chance (while aiming) for `duration`.
+    OnHeadshotCritChance { bonus: f64, duration: f64 },
+    /// Galvanized Crosshairs' stacks: on HEADSHOT KILL, +per_stack
+    /// relative crit chance; each stack has its OWN duration (per-stack
+    /// expiry FIFO — unlike the other Galvanized mods' decay).
+    OnHeadshotKillCritChance {
+        per_stack: f64,
+        max_stacks: u32,
+        duration: f64,
+    },
 }
 
 /// A mod as the resolver sees it (stats at the equipped rank).
@@ -249,6 +260,12 @@ pub struct ResolvedPanel {
     /// Live on-kill multishot stacks (Emergent policy); per_stack is
     /// already × base pellets.
     pub ms_stack: Option<StackSpec>,
+    /// Crosshairs' on-headshot buff (Emergent): ABSOLUTE crit chance
+    /// (base_cc × bonus) and its duration.
+    pub cc_on_headshot: Option<(f64, f64)>,
+    /// Crosshairs' on-headshot-kill stacks (Emergent): per_stack is
+    /// ABSOLUTE crit chance; per-stack expiry semantics.
+    pub cc_stack: Option<StackSpec>,
     /// (1 + Σ status damage) — multiplies status payload values.
     pub status_damage_mult: f64,
     /// (element, 1 + Σ that element's bonuses) — the elemental bracket of
@@ -262,6 +279,8 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     let mut co = 0.0;
     let (mut co_stack, mut ms_stack): (Option<StackSpec>, Option<StackSpec>) = (None, None);
+    let mut cc_on_headshot: Option<(f64, f64)> = None;
+    let mut cc_stack: Option<StackSpec> = None;
     let mut elem_bonus: Vec<(DamageType, f64)> = Vec::new();
 
     for m in mods {
@@ -306,6 +325,27 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                     StackPolicy::Emergent => {
                         co_stack = Some(StackSpec {
                             per_stack,
+                            max_stacks,
+                            duration,
+                            initial_stacks: max_stacks, // 初始满 (user)
+                        })
+                    }
+                },
+                ModEffect::OnHeadshotCritChance { bonus, duration } => match policy {
+                    StackPolicy::AssumedMax => cc += bonus,
+                    StackPolicy::Emergent => {
+                        cc_on_headshot = Some((base.base_crit_chance * bonus, duration))
+                    }
+                },
+                ModEffect::OnHeadshotKillCritChance {
+                    per_stack,
+                    max_stacks,
+                    duration,
+                } => match policy {
+                    StackPolicy::AssumedMax => cc += per_stack * max_stacks as f64,
+                    StackPolicy::Emergent => {
+                        cc_stack = Some(StackSpec {
+                            per_stack: base.base_crit_chance * per_stack,
                             max_stacks,
                             duration,
                             initial_stacks: max_stacks, // 初始满 (user)
@@ -363,6 +403,8 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         co_per_type: co,
         co_stack,
         ms_stack,
+        cc_on_headshot,
+        cc_stack,
         status_damage_mult: 1.0 + sd,
         elem_dot_bonus: elem_bonus.into_iter().map(|(t, v)| (t, 1.0 + v)).collect(),
     }

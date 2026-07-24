@@ -665,6 +665,11 @@ pub struct DummyParams {
     pub co_stack: Option<crate::loadout::StackSpec>,
     /// Live on-kill multishot stacks, earned from zero.
     pub ms_stack: Option<crate::loadout::StackSpec>,
+    /// Crosshairs on-headshot buff: (absolute crit chance, duration).
+    pub cc_on_headshot: Option<(f64, f64)>,
+    /// Crosshairs on-headshot-kill stacks: absolute cc per stack,
+    /// per-stack expiry (FIFO), NOT the lose-one-reset decay.
+    pub cc_stack: Option<crate::loadout::StackSpec>,
     /// (1 + status-damage bonuses): scales every status payload value.
     pub status_damage_mult: f64,
     /// (element, 1 + Σ its bonuses) brackets for elemental DoT ticks.
@@ -788,6 +793,8 @@ impl DummyParams {
             co_base_fraction: panel.co_base_fraction,
             co_stack: panel.co_stack,
             ms_stack: panel.ms_stack,
+            cc_on_headshot: panel.cc_on_headshot,
+            cc_stack: panel.cc_stack,
             status_damage_mult: panel.status_damage_mult,
             elem_dot_bonus: panel.elem_dot_bonus.clone(),
             dot_modified_base: Some(panel.modified_base),
@@ -872,6 +879,8 @@ impl Default for DummyParams {
             co_base_fraction: 1.0,
             co_stack: None,
             ms_stack: None,
+            cc_on_headshot: None,
+            cc_stack: None,
             status_damage_mult: 1.0,
             elem_dot_bonus: Vec::new(),
             dot_modified_base: None,
@@ -1101,6 +1110,13 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     };
     let mut flare_stacks: u32 = FLARE_MAX_STACKS;
     let mut flare_expiry: f64 = FLARE_DURATION;
+    // Crosshairs (per-stack expiry FIFO + one refreshable buff), initial
+    // FULL per the user's setting.
+    let mut ch_buff_expiry: f64 = params.cc_on_headshot.map_or(0.0, |(_, d)| d);
+    let mut ch_stacks: Vec<f64> = params
+        .cc_stack
+        .as_ref()
+        .map_or(Vec::new(), |s| vec![s.duration; s.initial_stacks as usize]);
 
     let mut r = RunResult::default();
 
@@ -1253,7 +1269,16 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
 
         let flat_crit = contribs.flat_crit_chance;
         let weakened_cc = WEAKENED_FLAT_CC_PER_STACK * debuffs.weakened_active(t) as f64;
-        let effective_cc = ap.base_crit_chance + flat_crit + weakened_cc;
+        // Crosshairs (assumes constant aiming): the on-headshot buff and
+        // the live per-stack-expiry kill stacks add absolute crit chance.
+        let ch_cc = params
+            .cc_on_headshot
+            .map_or(0.0, |(cc, _)| if t < ch_buff_expiry { cc } else { 0.0 })
+            + params.cc_stack.as_ref().map_or(0.0, |s| {
+                ch_stacks.retain(|&e| e > t);
+                s.per_stack * ch_stacks.len() as f64
+            });
+        let effective_cc = ap.base_crit_chance + flat_crit + weakened_cc + ch_cc;
 
         // Multishot: pellets this pull = floor + fractional chance; every
         // pellet is an independent damage instance. Earned Galvanized
@@ -1350,6 +1375,17 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 // Deadhead: only HEADSHOT kills grant/refresh its stacks.
                 if part.is_head && params.arcane == Arcane::Deadhead {
                     deadhead.on_kill(t, &DEADHEAD_SPEC);
+                }
+                // Crosshairs stacks: headshot kills, per-stack expiry FIFO.
+                if part.is_head {
+                    if let Some(s) = &params.cc_stack {
+                        DebuffState::push_capped(
+                            &mut ch_stacks,
+                            t + s.duration,
+                            s.max_stacks as usize,
+                            t,
+                        );
+                    }
                 }
                 // The killing pellet's procs die with the old individual;
                 // remaining pellets hit the fresh spawn.
@@ -2646,6 +2682,35 @@ mod tests {
             (s2.mean_damage - 27_840.0).abs() < 1e-9,
             "dmg {}",
             s2.mean_damage
+        );
+    }
+
+    #[test]
+    fn crosshairs_cc_buffs_start_full_and_expire_without_headshots() {
+        // Body-only aim: nothing refreshes the initial-full buffs, so both
+        // lapse at 12 s. cc: 0.1 + 0.12 + 5×0.04 = 0.42 before, 0.1 after.
+        // 20 s at 1/s with the 12-mag: shots 0..11 (all < 12 s), reload
+        // 2.35, shots 14.35..19.35 (6 bare). cd 2 -> E = 75 × (1 + cc):
+        // E[total] = 75 × (12×1.42 + 6×1.1) = 1773.
+        let p = DummyParams {
+            base_crit_chance: 0.1,
+            cc_on_headshot: Some((0.12, 12.0)),
+            cc_stack: Some(crate::loadout::StackSpec {
+                per_stack: 0.04,
+                max_stacks: 5,
+                duration: 12.0,
+                initial_stacks: 5,
+            }),
+            arcane: Arcane::None,
+            body_parts: mono_body(1.0),
+            duration_secs: 20.0,
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 4000, 21);
+        assert!(
+            (s.mean_damage - 1773.0).abs() / 1773.0 < 0.02,
+            "dmg {}",
+            s.mean_damage
         );
     }
 

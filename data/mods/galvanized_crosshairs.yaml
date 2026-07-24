@@ -1,0 +1,32 @@
+id: galvanized_crosshairs
+kind: mod
+name: Galvanized Crosshairs
+mod_type: pistol
+rarity: rare
+polarity: madurai
+base_drain: 2
+max_rank: 10                   # drain 2..12
+
+# BOTH effects are conditional and require AIMING (sim assumption: the
+# 100% headshot scenario implies constant aiming):
+effects:
+  - kind: on_headshot_crit_chance     # single refreshable buff
+    bonus: 1.20                        # +120% cc (relative bucket)
+    duration_seconds: 12
+  - kind: on_headshot_kill_crit_chance_stacks
+    per_stack: 0.40                    # +40% cc per stack
+    max_stacks: 5
+    duration_seconds: 12
+    # UNLIKE the other Galvanized mods: each stack has its OWN duration
+    # (per-stack expiry, FIFO), not the lose-one-and-reset decay.
+    decay: per_stack_duration
+  - kind: weapon_scoped
+    note: only this weapon''s kills grant, only this weapon benefits
+
+family: hydraulic_crosshairs
+incompatible_with: [hydraulic_crosshairs]
+# Explicitly COMPATIBLE with the Pistol Gambit family.
+
+source:
+  url: https://wiki.warframe.com/w/Galvanized_Crosshairs
+  retrieved: "2026-07-25"

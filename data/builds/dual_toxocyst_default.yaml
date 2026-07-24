@@ -14,9 +14,8 @@ evolution_selections:
   3: dt_evolved_autoloader     # +50% magazine/s while holstered
   4: dt_commodores_fortune     # +0.20 BASE crit chance, both guns
 
-# Official arcane (user, 2026-07-25): won the three-way comparison
-# (Deadhead 63.54 vs Enervate 51.70 vs Cascadia Flare 46.83 kill score
-# on the ULTIMATE STRESS TEST).
+# Official arcane: the arcane is a SEARCH DIMENSION (user, 2026-07-25);
+# Deadhead won the joint search (every top-10 entry is Deadhead).
 arcane: secondary_deadhead
 
 # Capacity state - ALL UNLOCKED (user, 2026-07-24): rank 30, Orokin
@@ -34,8 +33,9 @@ slots:
   normal: [madurai, naramon, null, null, null, null, null, null]
   exilus: naramon
 
-# Official optimized loadout (search result 2026-07-25, wfsim-optimizer:
-# 204,648 candidates, kill score 63.535 = 62.940 +/- 0.561 kills / 60 s
+# Official optimized loadout (joint mods+arcane search 2026-07-25,
+# wfsim-optimizer: 975,096 jobs = 325,032 candidates x 3 arcanes,
+# kill score 68.617 = 68.005 +/- 0.620 kills / 60 s
 # vs Thrax @9999 Steel Path, instant respawn, 100% headshots, real
 # incarnon cycle, Frenzy Permanent, Galvanized + arcane buffs initial-
 # full). Element order: Electricity first (pairs with Frenzy's injected
@@ -45,11 +45,13 @@ mods:
   - galvanized_diffusion       # multishot +110% + on-kill stacks
   - primed_target_cracker      # crit damage +110%
   - lethal_torrent             # +60% fire rate / +60% multishot
-  - primed_pistol_gambit       # crit chance +187%
   - galvanized_shot            # +80% status + CO (additive class, eff 60%)
   - magnetic_might             # +60% Magnetic / +40% crit damage
   - anemic_agility             # +90% fire rate / -15% damage (cheap in the
                                # arcane/CO-inflated base-damage bucket)
+  - galvanized_crosshairs      # on-headshot +120% cc / on-headshot-kill
+                               # +40%x5 cc (aiming) - replaced Primed
+                               # Pistol Gambit (+320% vs +187% relative)
 
 source:
   note: User's chosen loadout + the optimizer's champion, 2026-07-25.
