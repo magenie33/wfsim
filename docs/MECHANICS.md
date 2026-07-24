@@ -294,8 +294,9 @@ component** of the hit vector:
     instance is **fully blocked** in-window;
   - **separate damage instances riding on an attack** (status-effect DoTs,
     Xata's Whisper) are not stopped by the gate.
-  Open question: whether Toxin's shield-bypassing direct damage is also
-  reduced inside the gate window (needs measurement).
+  **Assumption (2026-07-24):** Toxin's shield-bypassing direct damage is
+  **not** reduced inside the gate window (it never enters the shield
+  pipeline). Unverified — measurement protocol: `MEASUREMENTS.md` **M1**.
 - Magnetic status: +100% damage to shields/Overguard on the first stack,
   +25%/stack after (max +325%), and blocks natural shield regen; on
   break, Electricity burst = 3%/stack of max shields (max 30%).
