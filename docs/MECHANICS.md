@@ -236,6 +236,16 @@ element procs are weighted, not uniform.
 - **SC > 100%**: `floor(SC)` guaranteed rolls + `frac(SC)` chance of one
   more; **each roll's type is drawn independently** (the same type can
   repeat within one hit).
+- **Stack overflow is universally replace-oldest, FIFO by application
+  time** (user rule, 2026-07-24): every capped stacking debuff (Stagger 5,
+  Weakened 5, Corrosion 10, Confusion 10, Gas Cloud 10) replaces the
+  stack with the EARLIEST application timestamp — remaining duration is
+  irrelevant (a stack applied at t=1 with 10,000 s left is replaced
+  before a t=2 stack with 1 s left). The Weakened page states this
+  explicitly ("even if the oldest stack has a longer remaining
+  duration"); generalized to all. Uncapped debuffs (Bleed, Poison, Tesla
+  Chain) never overflow; Freeze's and Detonate's caps trigger state
+  transitions instead (Frozen / detonation).
 - **Status damage never procs status** (universal rule, user-confirmed
   2026-07-24 by contradiction: Heat ticks proccing Heat would self-stack
   forever). No damage instance originating from a status effect — DoT
