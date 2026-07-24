@@ -28,13 +28,15 @@ effects:
 # Interaction with Freeze while active (user-observed 2026-07-24: the
 # Freeze display stays pinned at 10 stacks throughout Frozen):
 freeze_interaction:
+  model: >-
+    MUTUALLY EXCLUSIVE STATES (user model, 2026-07-24): the 10th proc
+    does not add a stack - it CONSUMES the 9 Freeze stacks and converts
+    the target into Frozen. During Frozen there IS no Freeze entity (the
+    "10 stacks" display is Frozen's own cosmetic), so timer-suspension
+    questions do not arise. All incoming Cold procs are inert.
   during: >-
-    All incoming Cold procs are INERT - no new stacks, no refresh, no
-    replacement (wiki: "Frozen enemies cannot receive additional Cold
-    stacks"). Observed: the stack display holds at 10 for the whole 3 s,
-    which suggests Freeze stack timers are suspended (or their expiry is
-    masked) during Frozen - if timers kept running, sub-10 counts would
-    be visible and the fixed 3-stack remainder could not hold.
+    Cold procs: no effect whatsoever (wiki: "Frozen enemies cannot
+    receive additional Cold stacks").
   on_expiry: >-
     MEASURED (2026-07-24, user): hard reset - Freeze is SET to exactly
     3 stacks with FRESH 6 s timers; the pre-Frozen stacks and their
