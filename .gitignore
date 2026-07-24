@@ -12,3 +12,4 @@ Cargo.lock.orig
 *.swp
 .DS_Store
 Thumbs.db
+target-fix/
