@@ -421,10 +421,10 @@ f1/f2 = 1 + c·Δ^e   (low-level / high-level curves)
 S = smoothstep between the transition bounds:
     S(Δ) = 3T² − 2T³,  T = (Δ − lo) / (hi − lo), clamped to [0,1]
 ```
-- ⚠️ Wiki self-contradiction: the "Murmur, Sentient, and Unaffiliated"
-  tab's *text* also lists Anarchs, but Anarchs has its own tab paired with
-  Corrupted (`0.015·Δ^2.1 / 10.7332·Δ^0.685`). We follow the tab structure
-  (Anarchs = Corrupted curves); flag for measurement.
+- Resolved wiki self-contradiction (M4, 2026-07-24): the Murmur tab's
+  text also listed Anarchs, but the Commandeered Ash Prime @L1000 stat
+  block matches the **Corrupted curves to the cent** — Anarchs = Corrupted
+  (health `2.1/0.685`, shields `2.0/0.75`); the tab text is a typo.
 - **Health** (transition 70–80): Grineer/Scaldra `f1: 0.015·Δ^2.12`,
   `f2: 10.7332·Δ^0.72`; Corpus `0.015·Δ^2.12` / `13.4165·Δ^0.55`; Infested
   `0.0225·Δ^2.12` / `16.0998·Δ^0.72`; Anarchs+Corrupted `0.015·Δ^2.1` /

@@ -326,6 +326,26 @@ mod tests {
     }
 
     #[test]
+    fn commandeered_ash_prime_at_1000_matches_wiki_calculator() {
+        // Golden cross-check (wiki Commandeered_Prime page's calculated stat
+        // block; user-supplied 2026-07-24). Base @L1: 15,000 HP / 1,750
+        // shield / 200 armor / 5,000 affinity; Anarchs faction. This also
+        // settles the wiki's Anarchs contradiction: only the Corrupted
+        // curves reproduce the numbers (the Unaffiliated pair is 3.6x off).
+        let d = 999.0;
+        let hp = 15_000.0 * health::CORRUPTED.multiplier(d);
+        assert!(approx(hp, 18_275_927.85, 1e-9), "hp = {hp}");
+        let sh = 1_750.0 * shield::CORRUPTED.multiplier(d);
+        assert!(approx(sh, 623_680.94, 1e-7), "shield = {sh}");
+        assert_eq!(armor_at(200.0, 1000, 1), ARMOR_CAP);
+        assert_eq!((5_000.0 * affinity_multiplier(1, false)).floor(), 5_712.0);
+        assert_eq!(
+            (5_000.0 * affinity_multiplier(1000, false)).floor(),
+            27_531.0
+        );
+    }
+
+    #[test]
     fn enemy_damage_scaling_curves() {
         // Default single curve: Δ=100 -> 1 + 0.015·100^1.55 ≈ 19.90.
         let d = ENEMY_DAMAGE_DEFAULT.multiplier(100.0);

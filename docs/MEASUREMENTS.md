@@ -109,7 +109,7 @@ with shields removed (Impact page wording)?
 
 ---
 
-## M4 — Which health curve do Anarchs use? (wiki self-contradiction)
+## M4 — Which health curve do Anarchs use? ✅ (2026-07-24)
 
 **Question.** `Enemy_Level_Scaling` lists Anarchs in two health tabs with
 different exponents: "Anarchs, Corrupted" (`0.015·Δ^2.1 / 10.7332·Δ^0.685`)
@@ -131,7 +131,15 @@ at a known level and compare (bases @L1: Anarch Arcus 100, Gladius 175):
 A 2.3x gap at level 100 — a health-bar read or a shots-to-kill count
 decides it.
 
-**Result:** _not yet run._
+**Result (2026-07-24):** **Anarchs = Corrupted curves.** The wiki's own
+calculated stat block for Commandeered Ash Prime @L1000 (user-supplied:
+18,275,927.85 HP / 623,680.94 shields / 2,700 armor / 27,531 affinity)
+matches our Corrupted health (2.1/0.685) and Corrupted shield (2.0/0.75)
+curves **to the cent**; the Unaffiliated pair is 3.6x off. Bonus
+confirmations: affinity = base 5,000 × (1 + 0.1425·√level) floored, with
+the module's Affinity field being the base value. Pinned as a regression
+test (`commandeered_ash_prime_at_1000_matches_wiki_calculator`). The
+Murmur-tab text naming Anarchs is a wiki typo.
 
 ---
 
