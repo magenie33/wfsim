@@ -145,6 +145,41 @@ pub fn overguard_at(base_overguard: f64, current_level: u32) -> f64 {
     base_overguard * OVERGUARD.multiplier((current_level.saturating_sub(1)) as f64)
 }
 
+/// Enemy damage-output scaling, default: `1 + 0.015·Δ^1.55` (single curve —
+/// expressed as a [`Curve`] with both halves identical).
+pub const ENEMY_DAMAGE_DEFAULT: Curve = Curve {
+    c1: 0.015,
+    e1: 1.55,
+    c2: 0.015,
+    e2: 1.55,
+    lo: 0.0,
+    hi: 1.0,
+};
+
+/// Grineer / Corpus / Techrot damage-output scaling: smoothstep between
+/// `1 + 0.015·Δ^1.75` (Δ < 1) and `1 + 0.0075·Δ^1.55` (Δ > 25).
+pub const ENEMY_DAMAGE_GRINEER_CORPUS_TECHROT: Curve = Curve {
+    c1: 0.015,
+    e1: 1.75,
+    c2: 0.0075,
+    e2: 1.55,
+    lo: 1.0,
+    hi: 25.0,
+};
+
+/// Flat multiplier on attacks, applied on top of damage scaling:
+/// Grineer / Corpus / Techrot 2x, Infested 3x, everyone else 1x.
+pub const ENEMY_ATTACK_MULT_GRINEER_CORPUS_TECHROT: f64 = 2.0;
+pub const ENEMY_ATTACK_MULT_INFESTED: f64 = 3.0;
+
+/// Affinity multiplier. Special case: uses the **current level** (base level
+/// is NOT subtracted) and the final affinity value is floored when applied.
+/// Eximus replace the leading 1 with 3.
+pub fn affinity_multiplier(current_level: u32, eximus: bool) -> f64 {
+    let lead = if eximus { 3.0 } else { 1.0 };
+    lead + 0.1425 * (current_level as f64).sqrt()
+}
+
 /// All Eximus units have this base overguard (scaled by [`OVERGUARD`]).
 pub const EXIMUS_BASE_OVERGUARD: f64 = 12.0;
 
@@ -288,6 +323,32 @@ mod tests {
         assert!((a - 0.25 * 1000.0 * 1.25).abs() < 1e-9, "a = {a}");
         let b = eximus_base_health(100.0, 35, true);
         assert!((b - 0.25 * 1000.0 * 2.5).abs() < 1e-9, "b = {b}");
+    }
+
+    #[test]
+    fn enemy_damage_scaling_curves() {
+        // Default single curve: Δ=100 -> 1 + 0.015·100^1.55 ≈ 19.90.
+        let d = ENEMY_DAMAGE_DEFAULT.multiplier(100.0);
+        assert!(approx(d, 1.0 + 0.015 * 100.0f64.powf(1.55), 1e-12));
+        // GCT: pure f1 below Δ=1, pure f2 above Δ=25.
+        let g = ENEMY_DAMAGE_GRINEER_CORPUS_TECHROT;
+        assert!(approx(
+            g.multiplier(0.5),
+            1.0 + 0.015 * 0.5f64.powf(1.75),
+            1e-12
+        ));
+        assert!(approx(
+            g.multiplier(30.0),
+            1.0 + 0.0075 * 30.0f64.powf(1.55),
+            1e-12
+        ));
+    }
+
+    #[test]
+    fn affinity_uses_current_level_not_delta() {
+        // Level 100: 1 + 0.1425·10 = 2.425; Eximus lead 3 -> 4.425.
+        assert!(approx(affinity_multiplier(100, false), 2.425, 1e-12));
+        assert!(approx(affinity_multiplier(100, true), 4.425, 1e-12));
     }
 
     #[test]

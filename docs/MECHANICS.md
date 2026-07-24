@@ -394,6 +394,10 @@ f1/f2 = 1 + c·Δ^e   (low-level / high-level curves)
 S = smoothstep between the transition bounds:
     S(Δ) = 3T² − 2T³,  T = (Δ − lo) / (hi − lo), clamped to [0,1]
 ```
+- ⚠️ Wiki self-contradiction: the "Murmur, Sentient, and Unaffiliated"
+  tab's *text* also lists Anarchs, but Anarchs has its own tab paired with
+  Corrupted (`0.015·Δ^2.1 / 10.7332·Δ^0.685`). We follow the tab structure
+  (Anarchs = Corrupted curves); flag for measurement.
 - **Health** (transition 70–80): Grineer/Scaldra `f1: 0.015·Δ^2.12`,
   `f2: 10.7332·Δ^0.72`; Corpus `0.015·Δ^2.12` / `13.4165·Δ^0.55`; Infested
   `0.0225·Δ^2.12` / `16.0998·Δ^0.72`; Anarchs+Corrupted `0.015·Δ^2.1` /
@@ -413,6 +417,9 @@ S = smoothstep between the transition bounds:
   level**, not Δ, and the result is floored.
 - Eximus units additionally replace base health/shields with level-dependent
   boosted values (piecewise formulas in the wiki page §Health/§Shields tabs).
+- **Endless-mission spawn-level progression** (Survival/Defense ramp,
+  Disruption `L(x) = 2.59·e^{0.139·round}`) is scenario-side spawn logic,
+  recorded-only for now (wiki §Level Scaling During Endless Gameplay).
 
 **Parazon Mercy windows** (wiki `Parazon` §Mercy — the authoritative,
 complete rule set; the Impact page's list is a subset).
