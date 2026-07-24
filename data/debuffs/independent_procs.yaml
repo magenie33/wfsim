@@ -1,0 +1,51 @@
+schema_version: 0
+id: independent_procs
+kind: debuff_catalog
+
+# Status effects INDEPENDENT of any damage type (wiki Status_Effect
+# §Independent from Damage - community-researched, page flags them as
+# needing more research). Each is its own proc with an internal name;
+# they come from specific weapons/abilities, not from the type draw.
+#
+# NAMING LANDMINE: the generic "Stagger" here is PT_STAGGERED - a
+# DIFFERENT entity from Impact's proc (our canonical Stagger,
+# PT_KNOCKBACK). Internal names are the only unambiguous identifiers.
+
+entries:
+  - { name: Big Stagger, internal_name: PT_BIG_STAGGER,
+      note: "Longer stagger; Opticor/Vandal, Vulkar/Wraith." }
+  - { name: Disarmed, internal_name: PT_DISARMED,
+      note: "Target drops its weapon; Halikar/Wraith." }
+  - { name: Impair, internal_name: PT_ROOTS,
+      note: "PvP only: 2 s movement restriction, then 2 s immunity." }
+  - { name: Knockdown, internal_name: PT_KNOCKED_DOWN,
+      counts_for_condition_overload: true }
+  - { name: Lifted, internal_name: PT_LIFT_HIT,
+      counts_for_condition_overload: true }
+  - { name: Microwave, internal_name: PT_MICROWAVE_BURN,
+      counts_for_condition_overload: true,
+      note: "Nukor/Kuva Nukor exclusive; enlarges a body part; INFINITE
+        duration." }
+  - { name: Parried, internal_name: PT_PARRIED,
+      note: "Opens target to finishers (Parry mod?)." }
+  - { name: Ragdoll, internal_name: PT_RAGDOLL }
+  - { name: Silence, internal_name: PT_SILENCED,
+      note: "Disables/prevents abilities." }
+  - { name: Sleep, internal_name: PT_SLEEP }
+  - { name: Slow, internal_name: PT_GLUE }
+  - { name: Stagger (generic), internal_name: PT_STAGGERED,
+      note: "NOT Impact's Stagger (PT_KNOCKBACK)." }
+  - { name: Stun, internal_name: PT_STUNNED,
+      note: "On enemies: opens melee finishers for 3 s. Also the CC
+        component of Tesla Chain." }
+  - { name: (unknown), internal_name: PT_VOID }
+
+source:
+  url: https://wiki.warframe.com/w/Status_Effect
+  note: §Independent from Damage table; community-sourced, marked as
+    under-researched by the wiki itself.
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified
+  needs_measurement: true

@@ -274,6 +274,29 @@ element procs are weighted, not uniform.
   `SC ≤ 1`): P(1 Stagger stack) = `1 − SC·w`, P(2 stacks) = `SC·w`,
   P(1 stack + another proc type) = `SC·(1−w)`; the explosion instance
   rolls independently with its own vector.
+- **Status immunity renormalizes the type draw** (wiki `Status_Effect`
+  §Status Immunity Interactions): types the target is status-immune to
+  are EXCLUDED from the draw and the remaining weights renormalize (the
+  roll is never wasted). Independent of damage-type immunity.
+  Implemented in `status::draw_proc_type`.
+- **Independent procs** exist outside the damage-type system (Knockdown,
+  Lifted, Ragdoll, Stun, Sleep, Silence, Slow, Disarmed, Big Stagger,
+  Microwave — see `data/debuffs/independent_procs.yaml`); Knockdown /
+  Lifted / Microwave count toward Condition Overload's status-type count.
+  ⚠️ Generic Stagger (PT_STAGGERED) ≠ Impact's Stagger (PT_KNOCKBACK).
+- **Negative-duration per-type detail** (outdated-flagged wiki table):
+  no-delay DoTs still land their t=0 tick (Tesla Chain "occurs"), Heat's
+  panic animation plays flameless, Blast expiry damage occurs with the
+  explosion only on a killing trigger — consistent with duration→0
+  semantics rather than blanket nullification.
+- **Status-damage bucket, official semantics**: additive within the
+  bucket (Emerald shard + Elementalist add), multiplicative against
+  other buckets; **type-scoped members exist** (Ash passive = Slash
+  status only, Emerald shard = Toxin only, Conductive Sphere =
+  Electricity only) — the bucket carries an optional damage-type scope.
+- **Continuous weapons** proc as if their multishot pellets were real
+  (merged beam visuals notwithstanding) — multishot boosts status
+  opportunities normally.
 - **Status Vulnerability** (the proc of Void damage): +10% received status
   chance per stack (max +100% at 10) — a DebuffBar entry that feeds back
   into attackers' `SC`.

@@ -27,16 +27,28 @@ pub fn roll_proc_count(status_chance: f64, rng: &mut Rng) -> u32 {
     sc.floor() as u32 + rng.chance(sc.fract()) as u32
 }
 
-/// Draw one proc type, weighted by damage share. `None` if the vector has no
-/// positive damage (nothing to type a proc with).
-pub fn draw_proc_type(vector: &DamageVector, rng: &mut Rng) -> Option<DamageType> {
-    let total = vector.total();
+/// Draw one proc type, weighted by damage share. Types the target is
+/// status-immune to are EXCLUDED and the remaining weights renormalize
+/// (wiki `Status_Effect` §Status Immunity Interactions) - immunity shifts
+/// probability onto the other types instead of wasting the roll.
+/// `None` if no eligible type has positive damage.
+pub fn draw_proc_type(
+    vector: &DamageVector,
+    immune: &[DamageType],
+    rng: &mut Rng,
+) -> Option<DamageType> {
+    let eligible = |t: DamageType| !immune.contains(&t);
+    let total: f64 = vector
+        .iter_nonzero()
+        .filter(|&(t, _)| eligible(t))
+        .map(|(_, a)| a)
+        .sum();
     if total <= 0.0 {
         return None;
     }
     let mut x = rng.next_f64() * total;
     let mut last = None;
-    for (t, amount) in vector.iter_nonzero() {
+    for (t, amount) in vector.iter_nonzero().filter(|&(t, _)| eligible(t)) {
         x -= amount;
         last = Some(t);
         if x < 0.0 {
@@ -52,11 +64,12 @@ pub fn procs_for_hit(
     forced: &[DamageType],
     status_chance: f64,
     vector: &DamageVector,
+    immune: &[DamageType],
     rng: &mut Rng,
 ) -> Vec<DamageType> {
     let mut procs = forced.to_vec();
     for _ in 0..roll_proc_count(status_chance, rng) {
-        if let Some(t) = draw_proc_type(vector, rng) {
+        if let Some(t) = draw_proc_type(vector, immune, rng) {
             procs.push(t);
         }
     }
@@ -90,7 +103,7 @@ mod tests {
         let mut total_procs = 0u64;
 
         for _ in 0..n {
-            let procs = procs_for_hit(&forced, 0.40, &v, &mut rng);
+            let procs = procs_for_hit(&forced, 0.40, &v, &[], &mut rng);
             total_procs += procs.len() as u64;
             // The forced Impact is always present.
             assert_eq!(procs[0], DamageType::Impact);
@@ -141,7 +154,13 @@ mod tests {
         // SC 0 and an empty damage vector: the forced proc still happens,
         // nothing else does.
         let mut rng = Rng::new(1);
-        let procs = procs_for_hit(&[DamageType::Impact], 0.0, &DamageVector::new(), &mut rng);
+        let procs = procs_for_hit(
+            &[DamageType::Impact],
+            0.0,
+            &DamageVector::new(),
+            &[],
+            &mut rng,
+        );
         assert_eq!(procs, vec![DamageType::Impact]);
     }
 
@@ -150,8 +169,49 @@ mod tests {
         // 100% SC but an all-zero vector: the roll succeeds but there is no
         // type to draw -> no rolled proc.
         let mut rng = Rng::new(2);
-        let procs = procs_for_hit(&[], 1.0, &DamageVector::new(), &mut rng);
+        let procs = procs_for_hit(&[], 1.0, &DamageVector::new(), &[], &mut rng);
         assert!(procs.is_empty());
+    }
+
+    #[test]
+    fn immunity_renormalizes_the_type_draw() {
+        // Wiki example: I20/P5/S10/H25/C50 vs a Corrosion-status-immune
+        // enemy -> Corrosive excluded, weights renormalize over 60:
+        // Impact 33.33%, Puncture 8.33%, Slash 16.67%, Heat 41.67%.
+        let v = DamageVector::new()
+            .with(DamageType::Impact, 20.0)
+            .with(DamageType::Puncture, 5.0)
+            .with(DamageType::Slash, 10.0)
+            .with(DamageType::Heat, 25.0)
+            .with(DamageType::Corrosive, 50.0);
+        let immune = [DamageType::Corrosive];
+        let mut rng = Rng::new(0xC0DE);
+        let n = 120_000;
+        let (mut i, mut p, mut sl, mut h) = (0u32, 0u32, 0u32, 0u32);
+        for _ in 0..n {
+            match draw_proc_type(&v, &immune, &mut rng).unwrap() {
+                DamageType::Impact => i += 1,
+                DamageType::Puncture => p += 1,
+                DamageType::Slash => sl += 1,
+                DamageType::Heat => h += 1,
+                DamageType::Corrosive => panic!("immune type drawn"),
+                other => panic!("impossible type {other:?}"),
+            }
+        }
+        let f = |c: u32| c as f64 / n as f64;
+        assert!((f(i) - 1.0 / 3.0).abs() < 0.01);
+        assert!((f(p) - 1.0 / 12.0).abs() < 0.01);
+        assert!((f(sl) - 1.0 / 6.0).abs() < 0.01);
+        assert!((f(h) - 5.0 / 12.0).abs() < 0.01);
+        // All-immune vector: no proc possible.
+        assert_eq!(
+            draw_proc_type(
+                &DamageVector::new().with(DamageType::Viral, 9.0),
+                &[DamageType::Viral],
+                &mut rng
+            ),
+            None
+        );
     }
 
     #[test]
@@ -159,7 +219,10 @@ mod tests {
         let v = DamageVector::new().with(DamageType::Radiation, 5.0);
         let mut rng = Rng::new(3);
         for _ in 0..1000 {
-            assert_eq!(draw_proc_type(&v, &mut rng), Some(DamageType::Radiation));
+            assert_eq!(
+                draw_proc_type(&v, &[], &mut rng),
+                Some(DamageType::Radiation)
+            );
         }
     }
 }
