@@ -45,10 +45,11 @@ open_questions:
   - Frozen's own internal name / whether anything can refresh it.
   - Does Frozen re-trigger immediately if 7 more stacks arrive right
     after thaw (expected yes - no known lockout beyond the 3-stack reset).
-  - ATTRIBUTION of the 3 fresh post-thaw stacks: whose status-duration
-    modifier do their 6 s timers use? Candidates: nobody (flat 6 s), the
-    10th-stack trigger weapon, or some historical stack's source. See
-    MEASUREMENTS.md M7.
+  - RESOLVED (M7, 2026-07-24, user): the 3 fresh post-thaw stacks belong
+    to the FROZEN TRIGGER - the source of the 10th stack (the 9->10
+    proc); their timers are 6 s x (1 + that source's status duration).
+    Implementation: the Frozen entity stores its trigger's context and
+    issues the reset stacks from it on expiry.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Cold_Damage

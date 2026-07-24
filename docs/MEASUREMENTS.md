@@ -170,7 +170,7 @@ are fully inert during it.
 
 ---
 
-## M7 — Who owns the 3 fresh post-thaw Freeze stacks?
+## M7 — Who owns the 3 fresh post-thaw Freeze stacks? ✅ (2026-07-24)
 
 **Question.** After Frozen's hard reset (M6), the 3 fresh stacks get 6 s
 timers — scaled by whose status-duration modifier? Normally each Freeze
@@ -188,7 +188,10 @@ be Frozen (non-boss, no Overguard).
    attribution = nobody / flat base (A).
 3. Cross-check: all 10 from D+ → A predicts ~6 s, B and C predict ~12 s.
 
-**Result:** _not yet run._
+**Result (user, 2026-07-24):** **Hypothesis B — the trigger.** The 3
+fresh stacks use the status-duration modifier of the weapon that applied
+the **10th** stack (the 9→10 proc). Model: the Frozen entity snapshots
+its trigger's context and issues the reset stacks from it.
 
 ---
 
