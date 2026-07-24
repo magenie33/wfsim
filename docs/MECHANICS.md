@@ -135,6 +135,20 @@ effective_cc = base_cc × (1 + Σ crit_chance_multipliers) + Σ flat_crit_chance
 - Chance of tier `t+1` = `effective_cc - floor(effective_cc)`.
 - A tier-`k` hit multiplies damage by `1 + k*(cd - 1)`, where `cd` is the
   critical damage multiplier ("Critical Tier Multiplier").
+- Colors: tier 1 yellow, tier 2 orange (= "big crit"), tier 3+ red; each tier
+  above 3 adds an exclamation mark (up to three), the color stays red.
+- Scaling is **purely linear** in `k` and there is **no tier cap** — red crits
+  carry **no** hidden bonus beyond the formula; the color is cosmetic.
+
+**Quantization** (wiki `Critical_Hit` §Quantization). The **base** crit damage
+multiplier is quantized to steps of `32/4095`:
+```
+quantized_base_cd = round(base_cd × 4095/32) × 32/4095
+```
+Order matters: **flat/absolute** CD bonuses (e.g. Incarnon "Critical Parallel"
++0.4) add into `base_cd` **before** quantization; **relative** (%) mods (e.g.
+Vital Sense) multiply **after**. Required for shot-by-shot parity with in-game
+numbers.
 
 **Critical headshots** (wiki `Critical_Hit` §Critical Headshots). A critical hit
 on a head/weak-point location gets an **additional 2.0x** bonus on top of the
