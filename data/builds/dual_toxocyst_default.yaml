@@ -35,11 +35,15 @@ slots:
 
 # Official optimized loadout (joint mods+arcane search 2026-07-25,
 # wfsim-optimizer: 975,096 jobs = 325,032 candidates x 3 arcanes,
-# kill score 68.617 = 68.005 +/- 0.620 kills / 60 s
+# corrected 3.9x headshot-bracket model, Fevered locked:
+# kill score 78.308 = 77.729 +/- 0.706 kills / 60 s
 # vs Thrax @9999 Steel Path, instant respawn, 100% headshots, real
 # incarnon cycle, Frenzy Permanent, Galvanized + arcane buffs initial-
 # full). Element order: Electricity first (pairs with Frenzy's injected
 # Toxin -> Corrosive); Magnetic Might is position-free.
+# On the Acolyte (1x head) benchmark the meta shifts to Viral+Heat
+# (champion 9.90: Deep Freeze / Pathogen Rounds / Primed Heated Charge
+# core) - see devlog 2026-07-25; this file records the Thrax loadout.
 mods:
   - primed_convulsion          # electricity +165% -> Corrosive w/ injected Toxin
   - galvanized_diffusion       # multishot +110% + on-kill stacks
