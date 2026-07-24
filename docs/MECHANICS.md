@@ -322,7 +322,12 @@ element procs are weighted, not uniform.
   grow Heat ticks while Bleed ignores armor entirely; current pool the
   tick lands in; damage-taken multipliers like Viral stacks; DR auras
   active at tick time). Corollary: Cold rides into tick snapshots, and
-  Cold applied after the proc does not change existing ticks. Implementation: the proc stores a frozen attacker
+  Cold applied after the proc does not change existing ticks.
+  **Officially confirmed for Viral** (the Viral page's worked example):
+  DoT damage is computed by whether Viral is active *when the tick
+  deals damage* — 35/s bleed doubles to 70/s while Viral is up and
+  drops back when it expires; explicitly NOT double-dipped ("unlike
+  faction damage multipliers"). Implementation: the proc stores a frozen attacker
   contribution template in the DebuffBar; each tick runs that template
   through the defender's *current* mitigation pipeline. Open question:
   the wiki lists enemy debuffs (Molecular Prime) among snapshot-inherited
