@@ -55,8 +55,28 @@ or leaves the target standing (gated).
 
 **Alternative (needs reading numbers).** Same setup at a high level; read
 the white (health-pool) damage number of the breaking shot: ≈`T` ungated,
-≈`0.05·T` gated. Practical only with recording/frame-stepping — kept for
-cross-checking.
+≈`0.05·T` gated. Requires the recording setup below.
+
+---
+
+## Recording setup (for any number-reading protocol)
+
+- **Recorder:** OBS Studio with **Replay Buffer** (hotkey saves the last
+  1–2 min; one save per trial). GPU-vendor instant replay (NVIDIA App /
+  AMD ReLive) as a lighter alternative; Xbox Game Bar (Win+Alt+G, last
+  30 s, 60 fps) as the zero-install fallback.
+- **Frame rate:** 60 fps = 6 frames inside a 0.1 s window (sufficient);
+  120 fps preferred if the game holds 120+ (uncap the in-game FPS limit).
+- **Quality:** hardware encoder (NVENC/AMF) at **CQP 15–18** or ≥50 Mbps,
+  native resolution — the payload is small damage-number glyphs; artifacts
+  make them unreadable.
+- **In-game:** damage numbers = Enhanced; motion blur / screen shake off,
+  particles low.
+- **Playback:** frame-step in MPC-HC (Ctrl+→) or mpv (`.` / `,`).
+- **Window-width probe (M1b):** high fire rate = shots per window:
+  Twin Grakatas 20/s (~2 in-window), Soma 15/s (~1–2). Frame-step to count
+  how many post-break body hits show 5%-sized white numbers before full
+  numbers resume. Keep the M1 verdict shot itself on a slow weapon (Lex).
 
 **Bonus readings from the same session:**
 - The physical spill of the breaking shot (white part next to the blue
