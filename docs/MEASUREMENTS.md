@@ -143,6 +143,19 @@ Murmur-tab text naming Anarchs is a wiki typo.
 
 ---
 
+## M5 — Heat Inherit context sync is bidirectional ✅ (informal, 2026-07-24)
+
+**Question.** The Heat singleton's first-proc modifier context (Heat% /
+faction brackets): does a strong first proc also elevate later unmodded
+contributions (the wiki left this direction unconfirmed)?
+
+**Result (user, 2026-07-24):** **Yes — bidirectional.** The first proc's
+brackets apply to every later contribution in both directions. Build
+consequence: light the first Heat proc with the best-modded weapon; any
+source can then feed the ramp at full value.
+
+---
+
 ## M2 — Simulacrum "Steel Path" toggle: does it still boost armor?
 
 **Question.** The toggle was introduced (U33.5) as "+250% Health, Armor,

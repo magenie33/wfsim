@@ -53,8 +53,10 @@ dot:
   #  PER CONTRIBUTION - each proc brings its own: ModdedBase_i, the
   #    (1 + status_damage_i) bracket (Rifle Elementalist WORKS regardless
   #    of the first proc), crit_mult_i, part_mult_i.
-  # Open question (wiki UpdateMe): whether a MODDED first proc's context
-  # also boosts later unmodded (ability) contributions - measurement.
+  # MEASURED (2026-07-24, user): the context sync is BIDIRECTIONAL - a
+  # modded first proc's Heat%/faction brackets also ELEVATE later unmodded
+  # (ability) contributions. Strategy consequence: light the first proc
+  # with the best-modded weapon, then any source can feed the ramp.
   first_proc_snapshot:
     entity_context: [heat_damage_bucket, faction_damage_bucket]
     per_contribution: [modded_base, status_damage_bucket, crit_mult, part_mult]

@@ -246,7 +246,10 @@ element procs are weighted, not uniform.
   its contribution into the single tick value and refreshes the one
   shared clock ("Heat Inherit"); the entity's Heat%/faction modifier
   context is fixed by the **first** proc (status-damage mods excepted),
-  enabling indefinite linear ramp while refreshed.
+  enabling indefinite linear ramp while refreshed. **Measured 2026-07-24
+  (user): the context sync is bidirectional** — a strong first proc
+  elevates later unmodded contributions just as a weak one drags modded
+  ones down.
 - **Snapshot scaling** — a tick inherits from its proccing hit: total
   damage buffs and base-damage mods, **faction bonuses applied a second
   time** (effective `(1+f)²`), status-damage bonuses, the hit's crit
