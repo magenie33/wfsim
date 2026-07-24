@@ -47,6 +47,10 @@ incarnon:
 # Single attack profile: full-auto hitscan with innate ricochet.
 attack:
   trigger: auto
+  # DISPUTED (2026-07-24): the wiki data module and the Ricochet page
+  # (ricochet = hitscan-only, DT listed) imply hitscan, but the CO
+  # mechanic catalog classifies DT Incarnon Mode as Projectile. Needs
+  # an in-game check (travel time / falloff observation).
   shot_type: hitscan
   ricochet:
     targets: 1                  # per hit, within 5 m of the struck enemy

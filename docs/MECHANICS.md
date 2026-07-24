@@ -76,6 +76,30 @@ distinction matters (see [`GLOSSARY.md`](GLOSSARY.md)):
   on its own):
   `effective_fire_rate = base × (1 + Σ mod_bonuses) × Π multipliers`.
 
+**The condition_overload (CO) bucket** (wiki
+`Condition_Overload_(Mechanic)` — community-documented, bug-riddled but
+stable for years). Bonuses of the form "+X% per Status Type on the
+target": the melee CO mod, Galvanized Aptitude/Shot/Savvy, Secondary
+Shiver, Cedo, and the Incarnon "Carnage Reign / Fatal Affliction"
+family (DT: +33%).
+- **Counting**: distinct status TYPES present (not stacks) — every
+  damage-type proc counts (incl. Void/Tau) plus the hidden Lifted /
+  Knockdown (mutually exclusive) / Microwave.
+- **All CO sources stack additively with each other** in one bracket.
+- **Direct damage only**: hitscan, projectiles, beams, direct hits of
+  explosions, and **hitscan ricochets** benefit; radial/AoE components
+  and non-directly-hit targets do not (instance classes again).
+- **Two stacking behaviors vs other damage bonuses** (per attack,
+  catalogued): "Multiplying" (rare, mostly projectiles — a true separate
+  multiplier) vs "Adding" (common): `final = base × [(dmg bonuses ×
+  other mults) + CO]` — the CO chunk additively joins the base-damage
+  bracket and **ignores** final multipliers (falloff, Eclipse-type) and
+  **Incarnon Evolution base-damage increases**.
+- Worked entry for Dual Toxocyst Incarnon (official catalog): behavior
+  Adding, CO base = 75 even with Carnage Reign's 135 panel — the perk's
+  own +60 is excluded from its own CO term (effective 56% per type
+  relative to the boosted panel).
+
 **The Incarnon base-stat layer.** Evolution effects phrased "Increase Base
 X" modify the weapon's BASE stat before all mods: `flat_base_damage` adds
 to the base total **distributed pro-rata across the damage vector**

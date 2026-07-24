@@ -12,10 +12,18 @@ effects:
     # damage vector (75 -> 135 keeps the 10/80/10 split = vector x1.8),
     # BEFORE mods - and therefore inside ModdedBase (DoT ticks scale too).      # adds to BASE damage before mods (the
     value: 60                   # Incarnon "Increase Base Damage" layer)
-  - kind: condition_overload    # +33% DIRECT damage per status type on the
-    value: 0.33                 # target (Condition Overload mechanic bucket)
-    applies_to: direct_damage_only
+  - kind: condition_overload    # +33% DIRECT damage per status TYPE on the
+    value: 0.33                 # target (official CO-source list)
+    applies_to: direct_damage_only   # ricochets included; AoE excluded
     condition: energy_max >= 200   # unlisted in-game requirement (wiki note)
+    # Official CO catalog entry for DT Incarnon Mode: behavior "Adding" -
+    #   final = [135 x damage-bonus chain] + [75 x 0.33 x status_types]
+    # The CO term uses the UNBOOSTED base 75 (this perk's own +60 is
+    # excluded from its own CO chunk: "CO-bonus does not use base damage
+    # increase Evolution"), and ignores final multipliers (falloff etc.).
+    # Additive with all other CO sources (Galvanized Shot etc.).
+    co_behavior: adding
+    co_base_excludes_evolution_damage: true
 
 source:
   url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis
