@@ -1,0 +1,27 @@
+schema_version: 0
+id: primed_target_cracker
+kind: mod
+name: Primed Target Cracker
+mod_type: pistol
+rarity: legendary
+polarity: madurai
+base_drain: 4
+max_rank: 10                   # drain 4..14
+internal_name: /Lotus/Upgrades/Mods/Pistol/Expert/PrimedWeaponCritDamageMod
+
+effects:
+  - kind: crit_damage_bonus
+    per_rank: 0.10
+    max: 1.10                  # +110% at rank 10 (cross-checked by the
+                               # Cold page's Kunai example: 1.6 x (1+110%))
+
+family: target_cracker
+incompatible_with: [target_cracker, flawed_target_cracker]
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Target_Cracker
+  note: Page table and Module:Mods/data agree.
+  retrieved: "2026-07-26"
+
+verification:
+  status: unverified

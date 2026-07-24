@@ -1,0 +1,28 @@
+schema_version: 0
+id: target_cracker
+kind: mod
+name: Target Cracker
+mod_type: pistol
+rarity: uncommon
+polarity: madurai
+base_drain: 4
+max_rank: 5                    # drain 4..9
+internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponCritDamageMod
+
+# Relative crit-damage bucket: the (1 + sum of % CD mods) layer of
+# cd_total (MECHANICS.md #5) - multiplies the quantized base+flat CD.
+effects:
+  - kind: crit_damage_bonus
+    per_rank: 0.10
+    max: 0.60
+
+family: target_cracker
+incompatible_with: [primed_target_cracker, flawed_target_cracker]
+
+source:
+  url: https://wiki.warframe.com/w/Target_Cracker
+  note: Page table and Module:Mods/data agree.
+  retrieved: "2026-07-26"
+
+verification:
+  status: unverified
