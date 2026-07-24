@@ -417,7 +417,17 @@ damage_to_health = incoming × (1 + type_modifier) × (1 − DR)
 on the armor **value** by the stat system (data-side discipline: nothing in
 the formula forbids a 10k-armor enemy — DE just never writes one, and the
 scaling curve tops out at 2,700, where the formula evaluates to 90% DR).
-Spawn minimum 200 (initial value only). ⚠️ The often-quoted
+Spawn minimum 200 (initial value only). **Armor reduction sources stack
+multiplicatively** (wiki `Damage/Heat_Damage` §Armor Stripping):
+```
+net_armor = armor × (1 − heat_strip)                       [ramped 0→50%]
+                  × [1 − (0.20 + 0.06 × corrosive_stacks)] [26% @1, 80% @10]
+                  × (1 − 0.18 × corrosive_projections)
+```
+Heat's strip ramps 15/30/40/50% in 0.5 s steps (2 s to max; re-procs don't
+hasten it) and ramps back down 1.5 s-stepwise over 6 s after expiry;
+**status-duration mods slow the ramp** (+100% duration → 1 s steps).
+⚠️ The often-quoted
 `armor/(armor+300)` is the **pre-U36** curve — both agree exactly at the
 2,700 cap (90%), which hides the difference; at 300 armor the old curve
 gives 50% DR, the new one **30%** (the U36 goal: make partial strip

@@ -1,0 +1,97 @@
+schema_version: 0
+id: ignite
+name: Ignite
+kind: debuff
+default_scope: enemy
+
+aliases: []
+internal_name: PT_IMMOLATION
+damage_type: heat              # DT_FIRE
+
+applied_by:
+  damage_type: heat
+
+duration_seconds: 6
+# HEAT INHERIT (community term; wiki flags details as needing clarification):
+# Heat does NOT stack like other DoTs. A new proc adds a stack AND refreshes
+# the duration of ALL active heat stacks; all stacks are consolidated into
+# ONE damage tick per second whose value grows linearly with stacks -
+# indefinite ramp while kept refreshed.
+refreshable: true              # the only refreshable status DoT
+stacking: true
+max_stacks: null
+per_stack_duration: false      # one shared clock for the consolidated stack
+stack_overflow: none
+
+dot:
+  tick_rate_hz: 1
+  delay_seconds: 1             # ticks at 1..6 s
+  ticks: 6
+  tick_damage_type: heat       # real Heat damage: subject to armor (live)
+                               # and the faction column - unlike Bleed
+  # Per-stack contribution (wiki Damage/Heat_Damage):
+  #   tick += 0.5 x ModdedBaseDamage x (1 + HeatDamageBonuses)
+  #               x (1 + FactionBonuses) x (1 + StatusDamageBonuses)
+  #               x crit_mult x part_mult
+  #   ModdedBaseDamage = Base x (1 + BaseDamageBonuses) x (1 + FactionBonuses)
+  # Faction double-dips as usual. UNLIKE Slash, Heat elemental mods
+  # (Hellfire) DO scale the ticks.
+  coefficient: 0.5
+  # First-proc modifier snapshot (Heat Inherit quirk): the Heat% and
+  # faction modifiers of the FIRST proc on the target govern the
+  # consolidated stack - if the first proc came from an unmodded source
+  # (Warframe ability, Manifold Bond), those bonuses are LOST for all
+  # subsequent weapon procs. Exception: status-damage mods (Rifle
+  # Elementalist) always count per contributing weapon. Wiki marks the
+  # exact semantics as needing clarification - measurement target.
+  first_proc_snapshot: true
+
+# Armor strip: a timed sub-effect with ramp-up and ramp-down.
+armor_strip:
+  # Every 0.5 s AFTER the initial proc: 15% -> 30% -> 40% -> 50%.
+  ramp_up: { interval_seconds: 0.5, steps: [0.15, 0.30, 0.40, 0.50] }
+  # More procs do NOT speed up the ramp.
+  # After the proc ends: armor returns every 1.5 s over 6 s:
+  # 50% -> 40% -> 30% -> 15% -> 0%.
+  ramp_down: { interval_seconds: 1.5, steps: [0.50, 0.40, 0.30, 0.15, 0.0] }
+  # Status Duration mods SLOW the ramp (+100% duration -> steps every 1 s,
+  # full strip in 4 s; -50% -> every 0.25 s, full strip in 1 s).
+  scaled_by_status_duration: true
+  # Multiplicative with other armor reduction sources:
+  #   armor_after = (1 - 0.50_heat)
+  #               x [1 - (0.20 + 0.06 x corrosive_stacks)]
+  #               x (1 - 0.18 x corrosive_projections)
+  stacking_with_other_strips: multiplicative
+
+cc_effects:
+  - kind: panic
+    note: >-
+      Ignited enemies panic and flail, unable to act: ~4 s humanoids,
+      ~3 s most Infested, ~2 s MOAs and Chargers. Immune: Ospreys, Bosses,
+      Tenno, and Overguard holders. Re-procs re-trigger the panic; panic
+      also fires the moment Overguard breaks even without a fresh proc.
+
+on_kill_cosmetic: >-
+  Corpse immolates and vanishes in seconds (notably stops Magnetize from
+  pulling it).
+
+railjack_variant: >-
+  Sear: 6 ticks over 5 s (0..5 s), 100% x Modded Damage x (1 + Heat
+  bonuses); each proc has an INDEPENDENT duration (no inherit/refresh).
+  On the player Railjack: Fire Hazard (armaments overheat faster).
+
+notes: >-
+  Magus Accelerant is a rare resistance-reduction that multiplies Heat
+  damage. Heat's 50% strip makes it a partial Corrosive substitute. The
+  corrosive strip decomposition used in the armor formula (20% innate +
+  6%/stack) matches the Corrosive page's 26%-at-1-stack / 80%-at-10.
+
+source:
+  url: https://wiki.warframe.com/w/Damage/Heat_Damage
+  note: Dedicated damage-type page; DoT rules cross-checked with
+    Damage_over_Time (Ignite is the only refreshable status DoT).
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified
+  needs_measurement: true      # esp. the Heat Inherit first-proc snapshot
