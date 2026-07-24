@@ -98,6 +98,10 @@ special:
 # Total-damage multiplier; applied a SECOND time to DoT ticks from status
 # effects ("double dipping").
 faction_mods:
+  # Our canonical bucket name: faction_damage (GLOSSARY.md). Additive
+  # WITHIN the bucket, multiplies total damage, double-dips DoT ticks.
+  # Ability members: Roar (matches ALL factions), Paracesis anti-Sentient
+  # passive - they share the bucket with the mods below.
   multiplier_normal: 1.30      # +5%/rank, rank 5
   multiplier_primed: 1.55
   available_for: [grineer, corpus, infested, orokin, the_murmur]

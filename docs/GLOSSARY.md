@@ -31,6 +31,18 @@ itself carries a wiki banner asking "Stagger or Knockback?"). Convention:
   held in the target's **`DebuffBar`** — the exact counterpart of the
   player's `BuffBar` (see BUFFS.md §Debuffs).
 
+## Damage buckets
+
+- **faction_damage bucket** — our canonical name for what the wiki
+  variously calls "Faction Damage Bonus", "Bane mods", or shows on Roar as
+  a generic damage buff. Members: Bane/Cleanse/Expel/Smite mods (matched
+  against the target's `Faction`), **Roar** (matches every faction), the
+  Paracesis anti-Sentient passive, and alike. Semantics: **additive within
+  the bucket** (`1 + Σ bonuses`), multiplies **total** damage (every
+  component), and is applied a **second time to DoT ticks**
+  ("double-dipping": effective `(1 + Σ)²` on ticks). Never keyed by
+  `FactionDamageOverride` (that only redirects the type-modifier column).
+
 ## Firing and hits
 
 - **Shot** — one activation of the weapon's trigger: the rounds produced by a
