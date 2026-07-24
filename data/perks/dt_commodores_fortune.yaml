@@ -7,10 +7,12 @@ tier: 4
 selection: choose_one
 
 effects:
-  - kind: flat_base_crit_chance # "Increase BASE Critical Chance by +20%":
-    value: 0.20                 # added to base CC before crit-chance mods
-                                # (the Incarnon base-stat layer, same slot
-                                # as Critical Parallel for CD)
+  - kind: flat_base_crit_chance # CONFIRMED (2026-07-24, user): adds into
+    value: 0.20                 # the BASE crit chance; crit-chance mods
+                                # multiply the new base (5% -> 25% base,
+                                # Point Strike gives 25% x 2.5 = 62.5%).
+                                # The Incarnon base-stat layer, same slot
+                                # as Critical Parallel for CD.
 
 source:
   url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis
