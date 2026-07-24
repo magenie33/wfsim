@@ -1,0 +1,78 @@
+schema_version: 0
+id: disrupt
+name: Disrupt
+kind: debuff
+default_scope: enemy
+
+aliases: [Magnetic]
+internal_name: PT_MAGNETIZED
+damage_type: magnetic          # DT_MAGNETIC (Cold + Electricity)
+
+applied_by:
+  damage_type: magnetic
+
+duration_seconds: 6
+refreshable: false
+stacking: true
+max_stacks: 10
+per_stack_duration: true
+stack_overflow: replace_oldest # universal FIFO-by-application-time rule
+
+effects:
+  - kind: damage_taken_shields_overguard
+    # +100% first stack, +25% per subsequent -> +325% at 10.
+    # resultant = modded_damage x [2 + 0.25 x (stacks - 1)]
+    # DEFENDER-SIDE damage-taken multiplier -> evaluated LIVE per hit/tick
+    # (mitigation pipeline, per the snapshot boundary rule); multiplicative
+    # with other damage bonuses.
+    stack_values: [1.00, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25]
+  - kind: shield_regen_block
+    note: >-
+      Blocks NATURAL shield regeneration; external restore links (Shield
+      Osprey, Orokin Drone) bypass the penalty.
+
+# System-issued effect #2 (same trigger-attribution pattern as Frozen's
+# reset stacks): breaking the target's Shields/Overguard while Disrupt is
+# active fires a FORCED Electricity proc (a Tesla Chain instance).
+on_shield_or_overguard_break:
+  forced_proc: tesla_chain
+  # Total damage over the 6 s proc: 3% of MAX shields/overguard per
+  # Magnetic stack, capped at 30% at 10 stacks.
+  total_damage: 0.03 x max_pool x magnetic_stacks (cap 0.30 x max_pool)
+  # Attribution: "the weapon or ability that applied the magnetic status"
+  # (which stack's applier when sources are mixed is not specified -
+  # open question; expected: the trigger-attribution pattern).
+  scaling:
+    base_damage_mods: none            # Serration does NOTHING
+    status_damage_mods: applied_twice # Elementalist x1.9^2 = 3.61
+    faction_damage: applied_twice     # the usual double dip
+    electricity_mods: normal          # Convulsion applies even when
+                                      # Electricity is combined into
+                                      # another element on the panel
+    status_duration: >-
+      applies normally and acts as a FINAL multiplier on the total
+      (longer duration = more ticks = proportionally more total).
+  note: >-
+    Archon Stretch triggers off this break-proc, but only when the
+    Magnetic came from an ability.
+
+on_player:
+  effects:
+    - HUD distortion (static) for 3 s
+    - 30 Energy Drain per tick, first tick instant, 4 ticks = 120 energy
+      total over 3 s; a status cleanse stops both drain and static
+  note: Player Overguard grants status immunity, so no extra break damage.
+
+cc_effects: []
+on_kill_cosmetic: blue rings sweeping the target top to bottom
+
+railjack_variant: >-
+  None - no Railjack counterpart; excluded from Railjack proc weighting.
+
+source:
+  url: https://wiki.warframe.com/w/Damage/Magnetic_Damage
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified
+  needs_measurement: true      # break-proc attribution with mixed sources
