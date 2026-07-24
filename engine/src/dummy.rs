@@ -352,10 +352,15 @@ impl DummyParams {
             .with(DamageType::Slash, 7.5)
     }
 
-    /// Dual Toxocyst **base form** as played: the Frenzy passive equipped.
-    /// (transform_modes taxonomy: each form is its own weapon for testing.)
+    /// Dual Toxocyst **base form** as played: Frenzy passive + the chosen
+    /// build (data/builds/dual_toxocyst_default.yaml): Fevered Frenzy's
+    /// +50 base damage scales the vector pro-rata (75 -> 125, x5/3) and
+    /// Commodore's Fortune sets base crit to 25%. Evolution layers apply
+    /// to BOTH guns of the transform group.
     pub fn dual_toxocyst_base() -> Self {
         Self {
+            damage: Self::dual_toxocyst_base_vector().scale(125.0 / 75.0),
+            base_crit_chance: 0.25,
             frenzy: true,
             ..Self::default()
         }
@@ -368,11 +373,12 @@ impl DummyParams {
     /// is not cycled here: this profile measures the form in isolation.
     pub fn dual_toxocyst_incarnon() -> Self {
         Self {
+            // 15/37.5/22.5 x 5/3 (Fevered Frenzy +50 base, pro-rata).
             damage: DamageVector::new()
-                .with(DamageType::Impact, 15.0)
-                .with(DamageType::Puncture, 37.5)
-                .with(DamageType::Slash, 22.5),
-            base_crit_chance: 0.11,
+                .with(DamageType::Impact, 25.0)
+                .with(DamageType::Puncture, 62.5)
+                .with(DamageType::Slash, 37.5),
+            base_crit_chance: 0.31, // 11% + Commodore's Fortune +20 (build)
             crit_multiplier: 3.0,
             status_chance: 0.43,
             fire_rate: 4.5,

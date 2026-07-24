@@ -43,17 +43,14 @@ incarnon:
     survives: [holster, bleedout, disarm]
     cleared_on: [death]
   side_effect: swapping either way fully reloads the normal form's magazine
-  # Transition animations - MEASURED (M9, 2026-07-26, user):
-  #   transmute IN  (base -> incarnon) = the weapon's reload time
-  #                                      (2.35 s unmodded)
-  #   revert OUT    (on empty)         = 1.0 s base
-  # BOTH scale with reload-speed bonuses (revert measured exactly 1.3 s
-  # under a -30% reload speed mod; note the implied scaling read
-  # time x (1 + penalty) - the exact formula direction vs the official
-  # base/(1+bonus) can be pinned with one more mod value if it ever
-  # matters).
+  # Transition animations (M9): both directions scale by the OFFICIAL
+  # reload formula (wiki Reload: time = base / (1 + reload speed bonus)).
+  #   transmute IN  = the weapon's reload time (2.35 s unmodded)
+  #   revert OUT    = ~1.0 s base (user ESTIMATE - measured 1.3 s under
+  #                   -30% reload speed; the formula strictly implies
+  #                   0.91 s; precise re-measurement deferred)
   transmute_in_seconds: 2.35     # = base reload time, unmodded
-  revert_out_seconds: 1.0        # own constant, unmodded
+  revert_out_seconds: 1.0        # estimate, unmodded
 
 # SIM CONVENIENCE (user, 2026-07-24): with the gauge LOCKED full (analogous
 # to buff locks), the Incarnon combat cycle reduces to a standard

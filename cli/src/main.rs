@@ -18,7 +18,7 @@ fn main() {
 
     println!("wfsim {} — dummy engagement", env!("CARGO_PKG_VERSION"));
     println!(
-        "weapon: Dual Toxocyst (base) | {:.0} dmg (7.5I/60P/7.5S), {:.0}% crit, {:.1}x crit, {:.0}% status, {:.1} fire/s",
+        "weapon: Dual Toxocyst (base, built) | {:.0} dmg (12.5I/100P/12.5S), {:.0}% crit, {:.1}x crit, {:.0}% status, {:.1} fire/s",
         params.damage.total(),
         params.base_crit_chance * 100.0,
         params.crit_multiplier,
@@ -75,7 +75,7 @@ fn main() {
     let si = monte_carlo(&inc, runs, seed);
     println!();
     println!(
-        "Incarnon Form (separate weapon) | {:.0} dmg (15I/37.5P/22.5S), 11% crit, 3.0x, 43% status, 4.5 fire/s, auto",
+        "Incarnon Form (separate weapon, built) | {:.0} dmg (25I/62.5P/37.5S), 31% crit, 3.0x, 43% status, 4.5 fire/s, auto",
         inc.damage.total()
     );
     println!(

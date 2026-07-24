@@ -1,0 +1,25 @@
+schema_version: 0
+id: dual_toxocyst_default
+kind: build
+name: Dual Toxocyst default build (evolution selections)
+
+weapon_group: dual_toxocyst
+
+# GAME FIDELITY RULE (user, 2026-07-26): once the Incarnon Genesis is
+# installed, every unlocked tier MUST have a selection - empty tiers do
+# not exist in-game. Tier 1 is fixed.
+evolution_selections:
+  1: dt_evo1_incarnon_form     # forced
+  2: dt_fevered_frenzy         # +50 base damage (pro-rata), ability-cast
+                               # multishot stacks (permanent, death-cleared)
+  3: dt_evolved_autoloader     # +50% magazine/s while holstered
+  4: dt_commodores_fortune     # +0.20 BASE crit chance, both guns
+
+# Mods: none yet (mod resolution layer pending).
+mods: []
+
+source:
+  note: User's chosen loadout, 2026-07-26.
+
+verification:
+  status: n/a
