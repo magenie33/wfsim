@@ -17,9 +17,9 @@ faction_damage_override: null
 can_be_eximus: false
 mercy_eligible: false
 
-# Base stats: health/shields rebased in U40 (5,500 / 2,500, from
-# 550/1,000). Armor 50 from the Malice infobox (predates U40 - may be
-# stale; correct after measurement). Base level 1.
+# Base stats: health/shields rebased in U40 (5,500 / 2,500 per the
+# patch note). NOTE the enemy data module still lists 2500/1500/50 for
+# all six (stale vs U40); armor 50 is the only armor figure anywhere.
 stats:
   base_level: 1
   health: 5500
@@ -43,16 +43,20 @@ stats:
 # amplifies allied damage (no single-target payload anyway).
 status_stack_caps: { general: 4, impact: 3 }
 
-# Humanoid (warframe-like) layout; standard 3x head assumed.
+# Module Multis (wiki-checked 2026-07-25): "Head: 1.0x" for ALL six -
+# a TRUE head (triggers headshot conditions, builds incarnon charge,
+# refreshes Deadhead/Crosshairs) but with NO damage bonus, and per the
+# 1x-location rule it never receives the critical-headshot fold-in.
+# Deadhead''s +30% still applies (its wiki example: Catchmoon 1.0->1.3).
 body_parts:
   - name: body
     multiplier: 1.0
     is_head: false
     crit_bonus: false
   - name: head
-    multiplier: 3.0
+    multiplier: 1.0
     is_head: true
-    crit_bonus: true
+    crit_bonus: false
 
 source:
   url: https://wiki.warframe.com/w/Acolytes

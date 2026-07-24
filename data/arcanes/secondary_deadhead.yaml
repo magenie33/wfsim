@@ -27,11 +27,13 @@ buff:
 
 # Rank-5 passives (unconditional while equipped):
 passives:
-  # ADDED TO THE MULTIPLIER VALUE itself (wiki notes: a 2.0x headshot
-  # multiplier becomes 2.3x, a 1.0x becomes 1.3x) - i.e. 3.0x -> 3.3x,
-  # a x1.1 damage factor on standard heads, NOT x1.3. Stacks additively
-  # with Prowl-type bonuses. Electricity/Gas procs can register their
-  # own 1.0x headshots -> 1.3x (wiki notes a 1.69x compounded case).
+  # Headshot bonuses form an ADDITIVE BRACKET that MULTIPLIES the base
+  # multiplier (Enemy_Body_Parts verbatim template: Daikyu 3x head with
+  # Deadhead 30% + Amalgam Target Acquired 75% = 3 x (1 + 0.30 + 0.75)
+  # = 6.15x). So a 3x head with Deadhead alone = 3.9x; a 1x head (the
+  # Catchmoon example, and Electricity/Gas proc headshots) = 1.3x.
+  # An earlier "added to the value" reading (2.0x -> 2.3x) was a
+  # misextraction - corrected 2026-07-25 against the verbatim formula.
   headshot_multiplier_bonus: 0.30
   recoil: -0.50                     # not a damage bucket
 
