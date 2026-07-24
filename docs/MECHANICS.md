@@ -279,8 +279,24 @@ Corroborated by wiki `Enemy_Level_Scaling` §Armor: armor is **hard-capped at
 get 200 (initial value only — strips can still go below). Armor strip
 (Corrosive −26%/stack to −80%, Heat −50%) modifies `armor` before this.
 
-**Shields vs health.** Toxin (and its DoT) bypasses shields; Magnetic amps
-damage to shields/Overguard; shield gating exists on some units. Details TBD.
+**Shields vs health** (wiki `Shield`). Resolution is **per damage-type
+component** of the hit vector:
+- Every component except Toxin damages shields first. **Toxin (and its DoT)
+  completely ignores shields** and hits health directly — but still passes
+  armor DR (Toxin bypasses shields, not armor).
+- **Enemy shield gate**: on the shield-breaking hit, enemies get a **0.1 s**
+  gate and only **5%** of the excess damage leaks into health. Exceptions:
+  hits on **weakspots bypass the gate entirely** (full spill); some AoE
+  instances (e.g. slam attacks) are **fully blocked** instead; status-effect
+  DoTs ignore the gate.
+- Magnetic status: +100% damage to shields/Overguard on the first stack,
+  +25%/stack after (max +325%), and blocks natural shield regen; on
+  break, Electricity burst = 3%/stack of max shields (max 30%).
+- Shields recharge after a delay when not hit; status DoTs do not reset the
+  delay timer.
+- Faction vulnerability/resistance (×1.5/×0.5) applies **per component at
+  all times** — the same multiplier whether the component lands on shields
+  or health (post-U36).
 
 **Level scaling** (wiki `Enemy_Level_Scaling`; community-derived, DE has not
 confirmed — treat as unverified). Common structure, with `Δ = current level −
