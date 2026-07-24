@@ -1,0 +1,22 @@
+schema_version: 0
+id: frostbite
+kind: mod
+name: Frostbite
+mod_type: pistol
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 3                   # drain 4..7
+internal_name: /Lotus/Upgrades/Mods/Pistol/DualStat/IceEventPistolMod
+
+effects:
+  - { kind: elemental_damage_bonus, element: cold, per_rank: 0.15, max: 0.60 }
+  - { kind: status_chance_bonus, per_rank: 0.15, max: 0.60 }
+
+source:
+  url: https://wiki.warframe.com/w/Frostbite
+  note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).
+  retrieved: "2026-07-26"
+
+verification:
+  status: unverified

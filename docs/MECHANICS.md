@@ -135,21 +135,42 @@ Energized Munitions, multiplicative); `e = 1.0` → infinite ammo.
 **Definition.** Primary elements combine into secondary elements based on the
 **order mods appear in the configuration**, not a fixed priority.
 
-**Rules (draft).**
-1. The weapon's **innate** elements combine first, before mod elements, under
-   their own rules.
-2. Mod-added primaries combine **pairwise in mod-slot order**: the first two
-   compatible primaries merge into their secondary, then the next, etc.
-3. A secondary element does not further combine.
-4. Elements **injected by a buff** enter the order at their defined position —
-   e.g. Frenzy's "+100% Toxin" is appended **last**, so it combines as the final
-   mod. It is **additive with elemental mods** and combines with them: with a
-   lone Heat mod equipped it yields Gas; if the build already produces a combined
-   element containing Toxin (e.g. Corrosive), the injected Toxin is added to that
-   element's damage instead. (Source: wiki, Dual Toxocyst Frenzy.)
+**The hierarchy algorithm** (wiki `Damage` §Modding / §Load Order — the
+authoritative rules; supersedes the earlier draft):
+1. **Hierarchy = mod layout order**, top-left slot first → bottom-right
+   last. Adjacent-in-hierarchy uncombined primaries merge pairwise into
+   secondaries.
+2. **Innate weapon elements come LAST** in the hierarchy — NOT first (the
+   old draft had this backwards). Exception: Kuva/Tenet weapons with two
+   innate elements (weapon + progenitor): whichever comes first in
+   **HCET order (Heat > Cold > Electricity > Toxin)** sits second-to-last,
+   the other last.
+3. **An innate element is pulled FORWARD** if any equipped mod shares its
+   element: it adopts that mod's position (e.g. Stormbringer in slot 1
+   moves Amprex's innate Electricity to first).
+4. **Multiple mods of one element**: the FIRST placement establishes the
+   element's position; later same-element mods just add damage there.
+5. The innate element joins a combination established earlier in the
+   hierarchy, or combines with the last uncombined mod element.
+6. **Rivens with two elements**: the LAST-listed stat gets hierarchy
+   priority (combines with mods higher up); the first-listed combines
+   lower; with no other elemental mods the two combine with each other.
+7. **Innate secondary elements** (Ogris Blast, Nukor Radiation, ...) are
+   permanent and never combine; mod primaries combine independently
+   alongside; a Kuva/Tenet progenitor element does NOT fold into an
+   innate secondary. Likewise combined-element MODS (Magnetic Might
+   family) add their secondary directly, outside the primary hierarchy.
+8. Elements **injected by a buff** enter at their defined position —
+   Frenzy's "+100% Toxin" appends at the END of the mod order, additive
+   with Toxin mods, joining an existing Toxin-bearing combination if one
+   formed (wiki, Dual Toxocyst).
 
-**Source:** wiki + measured. **Status:** unverified. **High-risk** — order
-dependence and innate-vs-mod timing are top calibration targets (CORE.md §3).
+Worked example (Load Order): Prova/Lecta (innate Electricity) + Cold(1)
+Toxin(2) Heat(3) → Cold+Toxin = **Viral**, then Heat pairs with the
+innate-last Electricity = **Radiation**.
+
+**Source:** wiki (Damage §Modding). **Status:** unverified. **High-risk** —
+order dependence remains a top calibration target (CORE.md §3).
 
 ---
 

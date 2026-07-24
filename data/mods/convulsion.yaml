@@ -1,0 +1,23 @@
+schema_version: 0
+id: convulsion
+kind: mod
+name: Convulsion
+mod_type: pistol
+rarity: uncommon
+polarity: naramon
+base_drain: 4
+max_rank: 5                   # drain 4..9
+internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponElectricityDamageMod
+
+effects:
+  - { kind: elemental_damage_bonus, element: electricity, per_rank: 0.15, max: 0.90 }
+family: convulsion
+incompatible_with: [primed_convulsion, flawed_convulsion]
+
+source:
+  url: https://wiki.warframe.com/w/Convulsion
+  note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).
+  retrieved: "2026-07-26"
+
+verification:
+  status: unverified

@@ -1,0 +1,23 @@
+schema_version: 0
+id: pistol_gambit
+kind: mod
+name: Pistol Gambit
+mod_type: pistol
+rarity: common
+polarity: madurai
+base_drain: 4
+max_rank: 5                   # drain 4..9
+internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponCritChanceMod
+
+effects:
+  - { kind: crit_chance_bonus, per_rank: 0.20, max: 1.20 }   # relative: base_cc x (1 + this)
+family: pistol_gambit
+incompatible_with: [primed_pistol_gambit, flawed_pistol_gambit, creeping_bullseye]
+
+source:
+  url: https://wiki.warframe.com/w/Pistol_Gambit
+  note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).
+  retrieved: "2026-07-26"
+
+verification:
+  status: unverified

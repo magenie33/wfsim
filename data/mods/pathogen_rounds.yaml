@@ -1,0 +1,23 @@
+schema_version: 0
+id: pathogen_rounds
+kind: mod
+name: Pathogen Rounds
+mod_type: pistol
+rarity: uncommon
+polarity: naramon
+base_drain: 6
+max_rank: 5                   # drain 6..11
+internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponToxinDamageMod
+
+effects:
+  - { kind: elemental_damage_bonus, element: toxin, per_rank: 0.15, max: 0.90 }
+family: pathogen_rounds
+incompatible_with: [flawed_pathogen_rounds]
+
+source:
+  url: https://wiki.warframe.com/w/Pathogen_Rounds
+  note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).
+  retrieved: "2026-07-26"
+
+verification:
+  status: unverified

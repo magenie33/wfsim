@@ -1,0 +1,24 @@
+schema_version: 0
+id: creeping_bullseye
+kind: mod
+name: Creeping Bullseye
+mod_type: pistol
+rarity: rare
+polarity: naramon
+base_drain: 4
+max_rank: 5                   # drain 4..9
+internal_name: /Lotus/Upgrades/Mods/Pistol/DualStat/CorruptedCritChanceFireRatePistol
+
+effects:
+  - { kind: crit_chance_bonus, per_rank: 0.3333, max: 2.00 }
+  - { kind: fire_rate_bonus, per_rank: -0.0333, max: -0.20 }   # corrupted downside
+family: pistol_gambit
+incompatible_with: [pistol_gambit, primed_pistol_gambit, flawed_pistol_gambit]
+
+source:
+  url: https://wiki.warframe.com/w/Creeping_Bullseye
+  note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).
+  retrieved: "2026-07-26"
+
+verification:
+  status: unverified

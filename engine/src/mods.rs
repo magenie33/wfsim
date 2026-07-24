@@ -68,6 +68,87 @@ pub fn validate_loadout(cap: u32, placements: &[Placement]) -> Result<u32, Strin
     }
 }
 
+/// A mod to be fitted by the forma planner.
+#[derive(Debug, Clone, Copy)]
+pub struct PlannedMod {
+    pub base_drain: u32,
+    pub polarity: Polarity,
+}
+
+/// Result of forma planning.
+#[derive(Debug, Clone)]
+pub struct FormaPlan {
+    /// Polarity on each slot after planning (index-aligned with mods; the
+    /// mod at index i sits in slot i). `None` = blank slot.
+    pub slots: Vec<Option<Polarity>>,
+    pub forma_used: u32,
+    pub total_drain: u32,
+}
+
+/// Auto-forma: fit one mod per slot into `cap`, starting from the weapon's
+/// innate polarity pool, using as few Forma as possible. Mismatches are
+/// never beneficial (blanks are strictly better), so the planner only ever
+/// matches or leaves blank; innate polarities can be freely rearranged
+/// among slots (Forma allows repositioning), so they form a POOL.
+pub fn plan_forma(
+    cap: u32,
+    innate_slots: &[Option<Polarity>],
+    mods: &[PlannedMod],
+) -> Result<FormaPlan, String> {
+    assert!(mods.len() <= innate_slots.len(), "more mods than slots");
+    let mut matched = vec![false; mods.len()];
+
+    // Biggest-drain mods first for every greedy choice.
+    let mut order: Vec<usize> = (0..mods.len()).collect();
+    order.sort_by(|&a, &b| mods[b].base_drain.cmp(&mods[a].base_drain));
+
+    // 1. Spend the innate polarity pool on the biggest matching mods.
+    let mut pool: Vec<Polarity> = innate_slots.iter().flatten().copied().collect();
+    for &i in &order {
+        if let Some(pos) = pool.iter().position(|&p| p == mods[i].polarity) {
+            pool.remove(pos);
+            matched[i] = true;
+        }
+    }
+
+    let drain = |matched: &[bool]| -> u32 {
+        mods.iter()
+            .zip(matched)
+            .map(|(m, &ok)| {
+                if ok {
+                    m.base_drain.div_ceil(2)
+                } else {
+                    m.base_drain
+                }
+            })
+            .sum()
+    };
+
+    // 2. Forma the biggest unmatched mod until the build fits.
+    let mut forma_used = 0u32;
+    while drain(&matched) > cap {
+        let Some(&next) = order.iter().find(|&&i| !matched[i]) else {
+            return Err(format!(
+                "build needs {} capacity even fully forma'd (cap {cap})",
+                drain(&matched)
+            ));
+        };
+        matched[next] = true;
+        forma_used += 1;
+    }
+
+    let slots = mods
+        .iter()
+        .zip(&matched)
+        .map(|(m, &ok)| if ok { Some(m.polarity) } else { None })
+        .collect();
+    Ok(FormaPlan {
+        slots,
+        forma_used,
+        total_drain: drain(&matched),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -156,5 +237,54 @@ mod tests {
         };
         assert_eq!(validate_loadout(60, &[mismatch; 3]), Ok(60)); // exactly full
         assert!(validate_loadout(60, &[mismatch; 4]).is_err()); // 80 > 60
+    }
+
+    #[test]
+    fn auto_forma_fits_the_proposed_dt_build_with_four_forma() {
+        // Dual Toxocyst: innate pool [Madurai, Naramon], 8 slots, cap 60.
+        // Proposed 8: Hornet 14M, PTC 14M, GalvDiffusion 14M, PPG 12M,
+        // GalvShot 12V, Lethal Torrent 11M, Frostbite 7M, Jolt 7M.
+        let m = |d, p| PlannedMod {
+            base_drain: d,
+            polarity: p,
+        };
+        use Polarity::*;
+        let mods = [
+            m(14, Madurai),
+            m(14, Madurai),
+            m(14, Madurai),
+            m(12, Madurai),
+            m(12, Vazarin),
+            m(11, Madurai),
+            m(7, Madurai),
+            m(7, Madurai),
+        ];
+        let innate = [
+            Some(Madurai),
+            Some(Naramon),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        ];
+        let plan = plan_forma(60, &innate, &mods).unwrap();
+        // Innate Madurai halves one 14 (7); the Naramon polarity finds no
+        // taker. Forma greedily: 14->7, 14->7, 12->6, 12->6 = 4 Forma.
+        // Total: 7+7+7+6+6+11+7+7 = 58 <= 60.
+        assert_eq!(plan.forma_used, 4, "plan: {plan:?}");
+        assert_eq!(plan.total_drain, 58);
+    }
+
+    #[test]
+    fn auto_forma_rejects_impossible_builds() {
+        let m = PlannedMod {
+            base_drain: 16,
+            polarity: Polarity::Madurai,
+        };
+        // Eight 16-drain mods fully forma'd still need 8 x 8 = 64 > 60.
+        let innate = [None; 8];
+        assert!(plan_forma(60, &innate, &[m; 8]).is_err());
     }
 }

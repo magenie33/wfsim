@@ -1,0 +1,22 @@
+schema_version: 0
+id: pistol_elementalist
+kind: mod
+name: Pistol Elementalist
+mod_type: pistol
+rarity: uncommon
+polarity: vazarin
+base_drain: 4
+max_rank: 5                   # drain 4..9
+internal_name: /Lotus/Upgrades/Mods/Pistol/PistolStatusDamageDuoMod
+
+effects:
+  - { kind: status_damage_bonus, per_rank: 0.15, max: 0.90 }   # double-dips on some payloads (Magnetic break-proc x3.61)
+  - { kind: reload_speed_bonus, per_rank: 0.10, max: 0.60 }
+
+source:
+  url: https://wiki.warframe.com/w/Pistol_Elementalist
+  note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).
+  retrieved: "2026-07-26"
+
+verification:
+  status: unverified

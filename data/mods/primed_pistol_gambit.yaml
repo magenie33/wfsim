@@ -1,0 +1,23 @@
+schema_version: 0
+id: primed_pistol_gambit
+kind: mod
+name: Primed Pistol Gambit
+mod_type: pistol
+rarity: legendary
+polarity: madurai
+base_drain: 2
+max_rank: 10                   # drain 2..12
+internal_name: /Lotus/Upgrades/Mods/Pistol/Expert/WeaponCritChanceModBeginnerExpert
+
+effects:
+  - { kind: crit_chance_bonus, per_rank: 0.17, max: 1.87 }
+family: pistol_gambit
+incompatible_with: [pistol_gambit, flawed_pistol_gambit, creeping_bullseye]
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Pistol_Gambit
+  note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).
+  retrieved: "2026-07-26"
+
+verification:
+  status: unverified

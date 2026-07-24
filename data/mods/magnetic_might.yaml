@@ -1,0 +1,26 @@
+schema_version: 0
+id: magnetic_might
+kind: mod
+name: Magnetic Might
+mod_type: pistol
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 3                    # drain 4..7
+internal_name: /Lotus/Upgrades/Mods/Pistol/DualStat/MagneticCritDamagePistolMod
+
+# A COMBINED-element mod (U36 family): grants Magnetic directly. Per the
+# elemental hierarchy rules, a secondary element never combines further -
+# this magnetic component stands alone regardless of mod order, and does
+# not consume the primaries (Cold/Electricity) in the hierarchy.
+effects:
+  - { kind: elemental_damage_bonus, element: magnetic, per_rank: 0.15, max: 0.60 }
+  - { kind: crit_damage_bonus, per_rank: 0.10, max: 0.40 }
+
+source:
+  url: https://wiki.warframe.com/w/Magnetic_Might
+  note: Module:Mods/data entry.
+  retrieved: "2026-07-26"
+
+verification:
+  status: unverified

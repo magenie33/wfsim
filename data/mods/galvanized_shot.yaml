@@ -1,0 +1,34 @@
+schema_version: 0
+id: galvanized_shot
+kind: mod
+name: Galvanized Shot
+mod_type: pistol
+rarity: rare
+polarity: vazarin
+base_drain: 2
+max_rank: 10                   # drain 2..12
+internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponStatusChanceSPMod
+
+effects:
+  - { kind: status_chance_bonus, per_rank: 0.08, max: 0.80 }
+  - kind: stacking_buff
+    trigger: on_kill
+    # CO-family payload (official CO source list): +40% direct damage per
+    # status TYPE on the target, per stack.
+    per_stack: { condition_overload: 0.40 }
+    max_stacks: 3
+    duration_seconds: 14
+    decay: lose_one_stack_and_reset_duration   # Galvanized family decay
+    stack_rules:
+      - Weapon-scoped kills grant and benefit, as with Galvanized
+        Diffusion.
+family: sure_shot
+incompatible_with: [sure_shot, flawed_sure_shot]
+
+source:
+  url: https://wiki.warframe.com/w/Galvanized_Shot
+  note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).
+  retrieved: "2026-07-26"
+
+verification:
+  status: unverified

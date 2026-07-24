@@ -1,0 +1,23 @@
+schema_version: 0
+id: heated_charge
+kind: mod
+name: Heated Charge
+mod_type: pistol
+rarity: uncommon
+polarity: naramon
+base_drain: 6
+max_rank: 5                   # drain 6..11
+internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponFireDamageMod
+
+effects:
+  - { kind: elemental_damage_bonus, element: heat, per_rank: 0.15, max: 0.90 }
+family: heated_charge
+incompatible_with: [primed_heated_charge, flawed_heated_charge]
+
+source:
+  url: https://wiki.warframe.com/w/Heated_Charge
+  note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).
+  retrieved: "2026-07-26"
+
+verification:
+  status: unverified
