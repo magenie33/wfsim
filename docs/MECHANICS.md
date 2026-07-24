@@ -203,7 +203,9 @@ element procs are weighted, not uniform.
   damage distribution, and occur **alongside** rolled procs ("not the same
   as 100% status chance"; DE-internal term, never shown in-game). They are
   **weapon-data attributes declared per attack part** (e.g. Astilla:
-  direct hit forces Impact; the radial part does not).
+  direct hit forces Impact; the radial part does not). Special cases can
+  even **bypass stack caps**: Evensong applies 7 Weakened procs on hit
+  past the normal 5-stack limit.
 - Per-hit proc set = `forced_list + N typed draws`,
   `N = floor(SC) + Bernoulli(frac(SC))`. Average procs per trigger pull
   = `Multishot × (forced_count + SC)` (official formula).
@@ -256,6 +258,31 @@ Weapon-side exceptions: some weapons always hit at 1x (beams like Ignis,
 launchers like Kuva Bramma); the **radial** part of AoE damage is always 1x
 and **cannot trigger headshot conditions** (the direct projectile can).
 Headshot-damage bonuses (e.g. sniper zoom) stack additively with each other.
+
+**Damage instance classes.** Every damage instance carries a source class —
+**direct** (projectile/hitscan contact), **aoe_radial** (the explosion), or
+**ability** — because several rules key off it:
+| rule | direct | aoe_radial | ability |
+|---|---|---|---|
+| body-part multiplier | yes | always 1x | n/a |
+| triggers headshot conditions | yes | never | never |
+| Weakened's crit-received bonus | yes | **no** | **no** |
+| enemy shield gate | 5% (weakspot bypass) | some instances fully blocked | rider instances pass |
+
+**Area of Effect** (wiki `Area_of_Effect`). One trigger pull on an AoE
+weapon = a **direct** instance (the projectile, full body-part rules) plus
+an **aoe_radial** instance (the explosion):
+- The explosion **bypasses Line of Sight** — hits through cover and walls.
+- **Linear damage falloff** from epicenter to sphere edge (per-weapon
+  floor; exact falloff numbers live on `Damage_Falloff` — not yet
+  transcribed).
+- Zone shapes: sphere / cylinder / cone (engine: circle intersection on
+  the 2D plane, `world::Circle::intersects`).
+- **Each enemy caught rolls its own status** (and its own proc type).
+- Explosions **self-stagger** the user (closer = harder knockback).
+- Radius mods: Firestorm / Fulmination (+ primed variants) increase;
+  Static Alacrity / Primary Compression decrease. Blast's Detonate
+  mini-explosion radius is unaffected by them.
 
 The critical-headshot damage interaction is specified in §5.
 

@@ -1,0 +1,60 @@
+schema_version: 0
+id: weakened
+name: Weakened
+kind: debuff
+default_scope: enemy
+
+aliases: []
+internal_name: PT_FRAILTY
+damage_type: puncture          # DT_PUNCTURE
+
+applied_by:
+  damage_type: puncture
+
+duration_seconds: 10           # note: longer than Stagger's 6 s
+refreshable: false
+stacking: true
+max_stacks: 5
+per_stack_duration: true
+# Explicit wiki wording: the 6th proc replaces the OLDEST stack "even if
+# the oldest stack has a longer remaining duration".
+stack_overflow: replace_oldest
+
+# Stack values are NOT uniform for the damage debuff (first proc is worth
+# 40%, each further proc +10%), so both modifiers are stored as explicit
+# per-stack-count tables (index = stacks - 1) instead of a per-stack rate.
+stack_value_tables:
+  # Victim's own attacks deal this much LESS damage.
+  victim_damage_reduction: [0.40, 0.50, 0.60, 0.70, 0.80]
+  # Flat critical chance added to weapon damage the victim RECEIVES
+  # (like Arcane Avenger - absolute points, not scaled by base).
+  crit_chance_received: [0.05, 0.10, 0.15, 0.20, 0.25]
+
+modifier_conditions:
+  # The crit-received bonus applies to WEAPON damage only - explicitly NOT
+  # to Area of Effect damage nor Warframe abilities. This forces damage
+  # instances to carry a source class (direct / aoe_radial / ability), see
+  # MECHANICS.md §7.
+  crit_chance_received: weapon_direct_damage_only
+
+cc_effects: []                 # no CC component; victims get a yellow aura
+
+on_kill_cosmetic: large bloody hole at the killing-blow location
+
+railjack_variant: >-
+  Decompress: reduces the target ship's shields by 8.5% and armor by 9%
+  for 20 s; subsequent procs stack multiplicatively. Separate system.
+
+notes: >-
+  Special case - Evensong applies 7 Weakened procs on hit, BYPASSING the
+  normal 5-stack limit: forced procs can exceed stack caps on specific
+  weapons. Physical proc selection weighted by damage share as usual.
+
+source:
+  url: https://wiki.warframe.com/w/Damage/Puncture_Damage
+  note: Dedicated damage-type page; internal name from the Damage page tables.
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified
+  needs_measurement: true
