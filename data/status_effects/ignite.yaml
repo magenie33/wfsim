@@ -31,6 +31,13 @@ dot:
   # The entity's modifier context (Heat%/faction) is fixed by the FIRST
   # proc. Other DoTs (Bleed/Poison/Tesla/Gas) are independent_stacks.
   dot_model: singleton_accumulator
+  # Tick metronome is anchored at ENTITY CREATION (the first proc): ticks
+  # at +1s, +2s, ... from then on. Refreshes extend the expiry and add
+  # value but never reset the beat - proven by contradiction (2026-07-24,
+  # user): if re-procs reset the 1 s delay, sub-second re-application
+  # would postpone the next tick forever, yet rapid Heat spam visibly
+  # ticks every second in-game.
+  tick_phase: anchored_to_first_proc
   tick_rate_hz: 1
   delay_seconds: 1             # ticks at 1..6 s
   ticks: 6
