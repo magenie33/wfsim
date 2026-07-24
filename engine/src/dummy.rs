@@ -607,8 +607,9 @@ mod tests {
 
     #[test]
     fn infinite_health_never_dies_and_applies_armor_dr() {
-        // 300 armor (spawn-min lifts it to... no: 300 >= 200 stays 300) -> DR
-        // = 300/600 = 50%: effective is exactly half of raw, and no kills.
+        // 300 armor (>= the 200 spawn minimum, stays 300) -> post-U36 DR
+        // = 0.9 * sqrt(300/2700) = 30%: effective is exactly 70% of raw,
+        // and no kills.
         let p = DummyParams {
             target: frail_target(TargetMode::InfiniteHealth, 300.0, 0.0),
             ..DummyParams::default()
@@ -616,7 +617,7 @@ mod tests {
         let s = monte_carlo(&p, 200, 5);
         assert_eq!(s.mean_kills, 0.0);
         assert!(
-            (s.mean_effective_damage - s.mean_damage * 0.5).abs() < 1e-9,
+            (s.mean_effective_damage - s.mean_damage * 0.7).abs() < 1e-9,
             "effective {} vs raw {}",
             s.mean_effective_damage,
             s.mean_damage

@@ -314,15 +314,31 @@ per-component = damage × bane_mult(faction match; ×2 dip on DoT ticks)
                         × column(override ?? faction, type) × pool math
 ```
 
-**Armor → damage reduction.**
+**Independence of the type-modifier zone** (wiki `Damage_Type_Modifier`):
+it is a clean per-component multiplier — no shared additive bucket, no
+dilution in the bucket sense. Multiple sources of type modifiers stack
+**multiplicatively** with each other; the zone is **independent** of
+Damage Reduction and Damage Vulnerability systems; external buffs/debuffs
+can push a modifier down to the floor of **−100% (0x)**. The only
+"dilution" is compositional: ×1.5 applies to that type's *share* of the
+vector (Impact at 20% of panel → ×1.5 on it = ×1.1 total).
+
+**Toxin shield-bypass exceptions**: some enemies (e.g. **Treasurer**,
+**Hounds**) cannot have their shields bypassed by Toxin at all.
+
+**Armor → damage reduction (post-U36 formula — wiki `Damage/Calculation`
+§Armored Enemies).**
 ```
-DR = armor / (armor + 300)
-damage_to_health = incoming * (1 - DR)
+DR = 0.9 × √(armor / 2700)
+damage_to_health = incoming × (1 + type_modifier) × (1 − DR)
 ```
-Corroborated by wiki `Enemy_Level_Scaling` §Armor: armor is **hard-capped at
-2,700 = 90% DR** (2700/3000 ✓); enemies that would *spawn* with < 200 armor
-get 200 (initial value only — strips can still go below). Armor strip
-(Corrosive −26%/stack to −80%, Heat −50%) modifies `armor` before this.
+`armor` is the value **after** all strips/debuffs (Corrosive −26%/stack to
+−80%, Heat −50%, Corrosive Projection, Terrify). Hard cap 2,700 = 90% DR;
+spawn minimum 200 (initial value only). ⚠️ The often-quoted
+`armor/(armor+300)` is the **pre-U36** curve — both agree exactly at the
+2,700 cap (90%), which hides the difference; at 300 armor the old curve
+gives 50% DR, the new one **30%** (the U36 goal: make partial strip
+worthwhile). Shields are never mitigated by armor.
 
 **Shields vs health** (wiki `Shield`). Resolution is **per damage-type
 component** of the hit vector:

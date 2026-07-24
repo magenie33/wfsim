@@ -167,13 +167,19 @@ pub fn eximus_base_health(base_health: f64, level: u32, has_shields_or_armor: bo
     (base_health * 1.1).max(factor * (base_health + 900.0) * g)
 }
 
-/// Armor → damage reduction. Corroborated by the 2,700-cap = 90% statement.
-/// Source: wiki (docs/MECHANICS.md §8) — unverified.
+/// Armor → damage reduction, post-U36 formula (wiki `Damage/Calculation`
+/// §Armored Enemies): `DR = 0.9·√(armor/2700)`. The pre-U36 curve was
+/// `armor/(armor+300)`; both give exactly 90% at the 2,700 cap, but the new
+/// square-root curve makes partial armor strip far more valuable (300 armor:
+/// 30% DR now vs 50% before). `armor` is the value after all strips/debuffs.
+/// Unverified until golden-tested.
 pub fn armor_damage_reduction(armor: f64) -> f64 {
     if armor <= 0.0 {
         0.0
     } else {
-        armor / (armor + 300.0)
+        // Armor is hard-capped at 2,700 in-game; clamp so out-of-domain
+        // inputs can never push DR past 90%.
+        0.9 * (armor.min(ARMOR_CAP) / ARMOR_CAP).sqrt()
     }
 }
 
@@ -238,6 +244,16 @@ mod tests {
         // Overguard at 9999: 15 × (1 + 260·9998^0.9) ≈ 15.53M.
         let og = overguard_at(15.0, LEVEL_CAP);
         assert!(approx(og, 15_530_000.0, 2e-3), "overguard = {og}");
+    }
+
+    #[test]
+    fn post_u36_armor_curve_anchor_points() {
+        // DR = 0.9 * sqrt(armor/2700): 300 -> 30%, 675 -> 45%, 2700 -> 90%.
+        assert!(approx(armor_damage_reduction(300.0), 0.30, 1e-12));
+        assert!(approx(armor_damage_reduction(675.0), 0.45, 1e-12));
+        assert!(approx(armor_damage_reduction(2700.0), 0.90, 1e-12));
+        // Out-of-domain inputs never exceed the 90% cap.
+        assert!(approx(armor_damage_reduction(10_000.0), 0.90, 1e-12));
     }
 
     #[test]

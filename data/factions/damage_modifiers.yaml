@@ -37,9 +37,8 @@ factions:
   infested_deimos:
     blast: 1.5
     gas: 1.5
-    # DISPUTED (2026-07-24): the Damage/Infested_Deimos page and the U36
-    # patch notes both say resistant (0.5), but the user's compiled table
-    # lists +50% (1.5). Needs an in-game check (codex / test shot).
+    # RESOLVED (2026-07-24): 0.5 confirmed by the user against
+    # wiki Damage_Type_Modifier (their earlier +50% was a typo).
     viral: 0.5
   orokin:                       # the Corrupted + Warframe Specters
     puncture: 1.5
