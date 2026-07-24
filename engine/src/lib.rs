@@ -21,6 +21,7 @@ pub mod damage;
 pub mod dummy;
 pub mod perks;
 pub mod rng;
+pub mod scaling;
 pub mod sim;
 
 // Damage-pipeline layers will be split into their own modules, e.g.:

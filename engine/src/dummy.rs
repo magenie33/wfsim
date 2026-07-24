@@ -37,7 +37,140 @@ use crate::buffs::BuffBar;
 use crate::perks::secondary_enervate::SecondaryEnervate;
 use crate::perks::Perk;
 use crate::rng::Rng;
+use crate::scaling;
 use crate::sim::{Event, Hit};
+
+/// What happens when the target's health reaches zero.
+///
+/// These are simulator conveniences for calibration (the real Simulacrum has
+/// neither an enemy-invincibility nor an instant-respawn toggle):
+/// - `InfiniteHealth`: pools never deplete — measure steady per-shot damage
+///   against a fixed defensive state.
+/// - `InstantRespawn`: the target dies and instantly respawns in place at full
+///   pools; overkill damage is lost. **Decision (2026-07-24): no on-death
+///   transformation is modeled** (e.g. Thrax spectral forms are skipped — the
+///   respawned target is always the physical form).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TargetMode {
+    InfiniteHealth,
+    InstantRespawn,
+}
+
+/// The simulated target: base stats + level, scaled via [`scaling`].
+#[derive(Debug, Clone)]
+pub struct TargetParams {
+    pub name: &'static str,
+    pub base_level: u32,
+    pub level: u32,
+    pub base_health: f64,
+    pub base_armor: f64,
+    pub base_overguard: f64,
+    pub health_curve: scaling::Curve,
+    /// Steel Path: health ×2.5 (armor and overguard untouched). The +100 level
+    /// shift is a mission-spawn effect — pick `level` accordingly.
+    pub steel_path: bool,
+    pub mode: TargetMode,
+}
+
+impl TargetParams {
+    /// A plain training dummy: no defenses, never dies. Damage passes through
+    /// unmitigated, which keeps raw-damage calibration runs simple.
+    pub fn training_dummy() -> Self {
+        Self {
+            name: "training dummy",
+            base_level: 1,
+            level: 1,
+            base_health: 1.0,
+            base_armor: 0.0,
+            base_overguard: 0.0,
+            health_curve: scaling::health::UNAFFILIATED,
+            steel_path: false,
+            mode: TargetMode::InfiniteHealth,
+        }
+    }
+
+    /// Thrax Centurion (data/enemies/thrax_centurion.yaml): 3600 HP / 200
+    /// armor / 15 overguard at base level 1, unaffiliated scaling curves.
+    pub fn thrax_centurion(level: u32, steel_path: bool, mode: TargetMode) -> Self {
+        Self {
+            name: "Thrax Centurion",
+            base_level: 1,
+            level,
+            base_health: 3600.0,
+            base_armor: 200.0,
+            base_overguard: 15.0,
+            health_curve: scaling::health::UNAFFILIATED,
+            steel_path,
+            mode,
+        }
+    }
+
+    /// Scaled max health at `level` (Steel Path ×2.5 applied).
+    pub fn max_health(&self) -> f64 {
+        let delta = self.level.saturating_sub(self.base_level) as f64;
+        let sp = if self.steel_path {
+            scaling::STEEL_PATH_HEALTH_MULT
+        } else {
+            1.0
+        };
+        self.base_health * self.health_curve.multiplier(delta) * sp
+    }
+
+    /// Scaled armor (spawn minimum 200, cap 2,700; Steel Path does not touch
+    /// armor since U36).
+    pub fn armor(&self) -> f64 {
+        scaling::armor_at(self.base_armor, self.level, self.base_level)
+    }
+
+    /// Scaled overguard (uses `level − 1`; no Steel Path bonus documented).
+    pub fn overguard(&self) -> f64 {
+        scaling::overguard_at(self.base_overguard, self.level)
+    }
+}
+
+/// Live pools of the target during a run.
+struct TargetState {
+    overguard: f64,
+    health: f64,
+}
+
+impl TargetState {
+    fn spawn(p: &TargetParams) -> Self {
+        Self {
+            overguard: p.overguard(),
+            health: p.max_health(),
+        }
+    }
+
+    /// Apply one hit of `raw` damage. Returns `(effective_damage, killed)`.
+    ///
+    /// Mitigation model (docs/MECHANICS.md §8, unverified):
+    /// - Overguard takes raw damage (neutral, ignores armor) and does **not**
+    ///   spill excess into health when it breaks.
+    /// - Health takes `raw × (1 − armor/(armor+300))`.
+    /// - Overkill damage is lost on death.
+    fn apply(&mut self, raw: f64, p: &TargetParams) -> (f64, bool) {
+        if self.overguard > 0.0 {
+            if p.mode != TargetMode::InfiniteHealth {
+                self.overguard = (self.overguard - raw).max(0.0);
+            }
+            return (raw, false);
+        }
+
+        let dr = scaling::armor_damage_reduction(p.armor());
+        let effective = raw * (1.0 - dr);
+        if p.mode == TargetMode::InfiniteHealth {
+            return (effective, false);
+        }
+        self.health -= effective;
+        if self.health <= 0.0 {
+            *self = TargetState::spawn(p); // instant respawn, no transformation
+            (effective, true)
+        } else {
+            (effective, false)
+        }
+    }
+}
 
 /// One aimable location on the target (wiki `Enemy_Body_Parts`).
 #[derive(Debug, Clone)]
@@ -64,6 +197,7 @@ pub struct DummyParams {
     pub crit_multiplier: f64,
     pub fire_rate: f64,
     pub body_parts: Vec<BodyPart>,
+    pub target: TargetParams,
     pub duration_secs: f64,
 }
 
@@ -99,6 +233,7 @@ impl Default for DummyParams {
             crit_multiplier: 2.0,
             fire_rate: 1.0,
             body_parts: Self::humanoid_parts(),
+            target: TargetParams::training_dummy(),
             duration_secs: 10.0,
         }
     }
@@ -107,11 +242,15 @@ impl Default for DummyParams {
 /// Result of a single engagement.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct RunResult {
+    /// Raw damage dealt (pre-mitigation).
     pub total_damage: f64,
+    /// Damage after target mitigation (overguard neutrality / armor DR).
+    pub effective_damage: f64,
     pub shots: u32,
     pub crits: u32,     // tier >= 1
     pub big_crits: u32, // tier >= 2
     pub headshots: u32, // hits on an `is_head` part
+    pub kills: u32,     // InstantRespawn deaths (0 with InfiniteHealth)
 }
 
 /// Roll a critical tier for an effective crit chance that may exceed 1.0.
@@ -138,6 +277,7 @@ fn pick_part<'a>(parts: &'a [BodyPart], rng: &mut Rng) -> &'a BodyPart {
 pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     let mut bar = BuffBar::new();
     let mut enervate = SecondaryEnervate::default();
+    let mut target = TargetState::spawn(&params.target);
     let mut r = RunResult::default();
 
     // Fire at t = k / fire_rate while t < duration. Integer k avoids float drift.
@@ -164,13 +304,18 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         };
         let crit_mult = 1.0 + tier as f64 * (cd - 1.0);
 
-        r.total_damage += params.base_damage * part.multiplier * crit_mult;
+        let raw = params.base_damage * part.multiplier * crit_mult;
+        let (effective, killed) = target.apply(raw, &params.target);
+        r.total_damage += raw;
+        r.effective_damage += effective;
+        r.kills += killed as u32;
         r.shots += 1;
         r.crits += (tier >= 1) as u32;
         r.big_crits += (tier >= 2) as u32;
         r.headshots += part.is_head as u32;
 
-        // Register the hit so Enervate stacks/resets for the next shot.
+        // Register the hit so Enervate stacks/resets for the next shot. The
+        // target is always alive when hit (instant respawn / infinite health).
         enervate.on_event(
             &Event::Hit(Hit {
                 big_crit: tier >= 2,
@@ -195,6 +340,9 @@ pub struct Summary {
     pub std_damage: f64,
     pub min_damage: f64,
     pub max_damage: f64,
+    pub mean_effective_damage: f64,
+    pub effective_dps: f64,
+    pub mean_kills: f64,
     pub mean_shots: f64,
     pub mean_crit_rate: f64,
     pub mean_big_crit_rate: f64,
@@ -209,6 +357,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     let mut min = f64::INFINITY;
     let mut max = f64::NEG_INFINITY;
     let (mut shots, mut crits, mut big_crits, mut headshots) = (0u64, 0u64, 0u64, 0u64);
+    let (mut effective, mut kills) = (0.0f64, 0u64);
 
     for _ in 0..runs {
         let r = run_once(params, &mut rng);
@@ -216,6 +365,8 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         sum_sq += r.total_damage * r.total_damage;
         min = min.min(r.total_damage);
         max = max.max(r.total_damage);
+        effective += r.effective_damage;
+        kills += r.kills as u64;
         shots += r.shots as u64;
         crits += r.crits as u64;
         big_crits += r.big_crits as u64;
@@ -235,6 +386,9 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         std_damage: variance.sqrt(),
         min_damage: if min.is_finite() { min } else { 0.0 },
         max_damage: if max.is_finite() { max } else { 0.0 },
+        mean_effective_damage: effective / n,
+        effective_dps: effective / n / params.duration_secs,
+        mean_kills: kills as f64 / n,
         mean_shots: shots as f64 / n,
         mean_crit_rate: crits as f64 / total_shots,
         mean_big_crit_rate: big_crits as f64 / total_shots,
@@ -353,6 +507,75 @@ mod tests {
             "mean damage was {}",
             s.mean_damage
         );
+    }
+
+    fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> TargetParams {
+        TargetParams {
+            name: "test target",
+            base_level: 1,
+            level: 1,
+            base_health: 50.0, // below the weakest possible shot (75)
+            base_armor: armor,
+            base_overguard: overguard,
+            health_curve: crate::scaling::health::UNAFFILIATED,
+            steel_path: false,
+            mode,
+        }
+    }
+
+    #[test]
+    fn instant_respawn_kills_every_shot_on_a_frail_target() {
+        let p = DummyParams {
+            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            ..DummyParams::default()
+        };
+        let s = monte_carlo(&p, 200, 5);
+        // 50 HP, no armor, no overguard: every shot (>= 75 raw) kills, and the
+        // target respawns in place — 10 kills per 10-shot run.
+        assert!((s.mean_kills - 10.0).abs() < 1e-9, "kills {}", s.mean_kills);
+    }
+
+    #[test]
+    fn infinite_health_never_dies_and_applies_armor_dr() {
+        // 300 armor (spawn-min lifts it to... no: 300 >= 200 stays 300) -> DR
+        // = 300/600 = 50%: effective is exactly half of raw, and no kills.
+        let p = DummyParams {
+            target: frail_target(TargetMode::InfiniteHealth, 300.0, 0.0),
+            ..DummyParams::default()
+        };
+        let s = monte_carlo(&p, 200, 5);
+        assert_eq!(s.mean_kills, 0.0);
+        assert!(
+            (s.mean_effective_damage - s.mean_damage * 0.5).abs() < 1e-9,
+            "effective {} vs raw {}",
+            s.mean_effective_damage,
+            s.mean_damage
+        );
+    }
+
+    #[test]
+    fn overguard_ignores_armor_and_does_not_spill() {
+        // Huge armor but active overguard: hits are neutral (effective == raw)
+        // until overguard breaks; the pool is large enough to absorb all runs.
+        let mut t = frail_target(TargetMode::InfiniteHealth, 2700.0, 1e12);
+        t.base_health = 1.0;
+        let p = DummyParams {
+            target: t,
+            ..DummyParams::default()
+        };
+        let s = monte_carlo(&p, 100, 9);
+        assert_eq!(s.mean_kills, 0.0);
+        assert!(
+            (s.mean_effective_damage - s.mean_damage).abs() < 1e-9,
+            "overguard hits must be unmitigated"
+        );
+    }
+
+    #[test]
+    fn default_training_dummy_passes_damage_through() {
+        let s = monte_carlo(&DummyParams::default(), 200, 21);
+        assert_eq!(s.mean_kills, 0.0);
+        assert!((s.mean_effective_damage - s.mean_damage).abs() < 1e-9);
     }
 
     #[test]

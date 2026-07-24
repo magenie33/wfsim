@@ -311,6 +311,26 @@ S = smoothstep between the transition bounds:
 - Eximus units additionally replace base health/shields with level-dependent
   boosted values (piecewise formulas in the wiki page §Health/§Shields tabs).
 
+**Level cap.** Enemy levels cap at **9999**; only Void Fissure missions exceed
+it. Implemented in `engine::scaling` with regression tests at the cap.
+
+**Steel Path** (wiki `The_Steel_Path`). Enemy level **+100** (+50 in
+Archwing/Railjack, +20 in Duviri with no stat bonus), health **×2.5**, shields
+**×2.5**. **Armor is NOT increased** (removed in U36, which also fixed shields
+accidentally double-applying to ×6.25). Caveat for golden tests: the
+Simulacrum's "The Steel Path" toggle was described at introduction (U33.5) as
+"+250% Health, Armor, and Shields" — whether its armor bonus also went away
+with U36 must be **measured**.
+
+**Simulacrum limits** (for golden-test planning): enemy level can only be set
+up to `5 × Mastery Rank + 30` (+25 in some Simulacrum variants) — nowhere
+near 9999, so level-cap behavior is only verifiable in endless missions.
+The Simulacrum has **no** enemy-invincibility or instant-respawn toggle; the
+engine's `TargetMode::{InfiniteHealth, InstantRespawn}` are simulator
+conveniences (user decision 2026-07-24), and **on-death transformations are
+not modeled** (a respawned Thrax is always the physical form — the spectral
+form is skipped).
+
 **Source:** wiki + measured. **Status:** unverified. **High-risk** (CORE.md §3).
 
 ---

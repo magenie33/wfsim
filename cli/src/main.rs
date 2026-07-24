@@ -4,7 +4,8 @@
 //! Toxocyst base form + Secondary Enervate, 50% headshots, 1000 runs x 10 s.
 //! See `engine::dummy` for the (deliberately basic) model and its assumptions.
 
-use wfsim_engine::dummy::{monte_carlo, DummyParams};
+use wfsim_engine::dummy::{monte_carlo, DummyParams, TargetMode, TargetParams};
+use wfsim_engine::scaling;
 
 fn main() {
     let params = DummyParams::default();
@@ -55,4 +56,39 @@ fn main() {
     println!("  max:   {:>10.1}", s.max_damage);
     println!();
     println!("sustained DPS:    {:.1}", s.dps);
+
+    // Thrax Centurion stat table at a few interesting levels.
+    println!();
+    println!("Thrax Centurion (base @L1: 3600 HP / 200 armor / 15 overguard):");
+    println!(
+        "  {:>7} {:>3}  {:>13} {:>8} {:>5} {:>13}",
+        "level", "SP", "health", "armor", "DR", "overguard"
+    );
+    for (level, sp) in [(55u32, false), (155, true), (9999, false), (9999, true)] {
+        let t = TargetParams::thrax_centurion(level, sp, TargetMode::InstantRespawn);
+        let armor = t.armor();
+        println!(
+            "  {:>7} {:>3}  {:>13.0} {:>8.0} {:>4.0}% {:>13.0}",
+            level,
+            if sp { "yes" } else { "no" },
+            t.max_health(),
+            armor,
+            scaling::armor_damage_reduction(armor) * 100.0,
+            t.overguard(),
+        );
+    }
+
+    // Same loadout vs a level-cap Steel Path Thrax, instant respawn, no
+    // on-death transformation (spectral form skipped by decision).
+    let thrax = DummyParams {
+        target: TargetParams::thrax_centurion(9999, true, TargetMode::InstantRespawn),
+        duration_secs: 60.0,
+        ..DummyParams::default()
+    };
+    let ts = monte_carlo(&thrax, 200, seed);
+    println!();
+    println!("vs Thrax @9999 SP (instant respawn, 200 runs x 60 s):");
+    println!("  raw DPS:        {:.1}", ts.dps);
+    println!("  effective DPS:  {:.1}", ts.effective_dps);
+    println!("  kills/run:      {:.3}", ts.mean_kills);
 }
