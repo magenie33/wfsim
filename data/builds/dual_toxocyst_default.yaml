@@ -15,7 +15,22 @@ evolution_selections:
   3: dt_evolved_autoloader     # +50% magazine/s while holstered
   4: dt_commodores_fortune     # +0.20 BASE crit chance, both guns
 
-# Mods: none yet (mod resolution layer pending).
+# Capacity state - ALL UNLOCKED (user, 2026-07-26): rank 30, Orokin
+# Catalyst installed (capacity 30 x 2 = 60), Exilus Weapon Adapter
+# installed. Polarities are the weapon's innate layout (no Forma yet):
+# 8 normal slots (one Madurai, one Naramon, six unpolarized) + the
+# Naramon exilus slot. Drain math: matched -50% round-up, mismatched
+# +25% round-nearest, unpolarized full (engine::mods).
+capacity:
+  rank: 30
+  orokin_catalyst: true        # -> 60 capacity
+  exilus_adapter: true
+  forma: 0
+slots:
+  normal: [madurai, naramon, null, null, null, null, null, null]
+  exilus: naramon
+
+# Mods: none chosen yet (mod resolution layer pending).
 mods: []
 
 source:

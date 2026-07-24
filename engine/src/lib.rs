@@ -21,6 +21,7 @@ pub mod damage;
 pub mod dummy;
 pub mod enemy_data;
 pub mod mercy;
+pub mod mods;
 pub mod perks;
 pub mod rng;
 pub mod scaling;
