@@ -24,6 +24,7 @@ pub mod perks;
 pub mod rng;
 pub mod scaling;
 pub mod sim;
+pub mod status;
 pub mod world;
 
 // Damage-pipeline layers will be split into their own modules, e.g.:
