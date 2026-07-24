@@ -1,0 +1,62 @@
+schema_version: 0
+id: corrosion
+name: Corrosion
+kind: debuff
+default_scope: enemy
+
+aliases: [Corrosive]
+internal_name: PT_CAUSTIC_BURN
+damage_type: corrosive         # DT_CORROSIVE (Electricity + Toxin)
+
+applied_by:
+  damage_type: corrosive
+
+duration_seconds: 8            # longer than most (vs 6 s standard)
+refreshable: false
+stacking: true
+max_stacks: 10
+per_stack_duration: true
+stack_overflow: replace_oldest
+
+# Armor strip - taxonomy class 2, "percentage of CURRENT armor"
+# (MECHANICS.md §8): multiplicative with Heat's strip and with
+# total-percentage sources like Corrosive Projection.
+armor_strip:
+  # Decomposition: 20% innate + 6% per stack -> 26% @1, 80% @10.
+  innate: 0.20
+  per_stack: 0.06
+  # net factor = 1 - (0.20 + 0.06 x stacks)
+  stacking_with_other_strips: multiplicative
+
+stack_cap_modifiers:
+  # Emerald Archon Shard: +2 max stacks (+3 Tauforged); at 14 stacks the
+  # strip reaches 20% + 6%x14 = 104% -> full armor removal for the
+  # duration.
+  emerald_archon_shard: +2
+  tauforged_emerald_archon_shard: +3
+
+special_interactions:
+  hydroid_passive: >-
+    Enemies damaged by Hydroid become permanently more vulnerable to
+    Corrosive status: the FIRST proc strips 50% (instead of 26%), reaching
+    100% armor removal at 10 stacks. Applies to Corrosive procs from ANY
+    source once Hydroid has damaged the enemy.
+
+cc_effects: []
+on_kill_cosmetic: corpse partially corroded and dissolved; faint green
+  electricity-like coating while afflicted
+
+railjack_variant: >-
+  None - no Railjack counterpart; excluded from Railjack proc weighting.
+
+notes: >-
+  Effective-damage reference vs capped armor (90% DR): 1 stack ≈ x2.3,
+  10 stacks ≈ x6; 14 (sharded) vs 10 stacks ≈ x1.67 further.
+
+source:
+  url: https://wiki.warframe.com/w/Damage/Corrosive_Damage
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified
+  needs_measurement: true

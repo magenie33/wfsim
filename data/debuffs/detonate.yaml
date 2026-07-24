@@ -45,7 +45,17 @@ delayed_burst:
         excluded from the radial
     radial:
       radius_m: 5.0
+      # THE 10x ASYMMETRY: bystanders take 3.0 x MB per stack while the
+      # host only ever takes 0.3 x MB per stack - a full 10-stack
+      # detonation deals 300% to the host but 3000% to EACH surrounding
+      # enemy. The host is the safest place to stand. Normal fuse expiry
+      # produces NO radial at all - Blast's value function is a cliff:
+      # either the weapon reaches 10 stacks / a kill within the 1.5 s
+      # fuse window, or Blast is a weak 30% single-target trickle.
       per_stack_coefficient: 3.0
+      damage_type: blast         # CONFIRMED (user): radial is Blast-typed,
+                                 # each bystander applies their own faction
+                                 # column to it
       falloff: none              # explicitly no falloff
       radius_moddable: false     # Firestorm/Fulmination do nothing
       excludes_host: true
@@ -56,6 +66,9 @@ delayed_burst:
   # EXCEPTION to the negative-status-duration rule: Detonate always deals
   # its damage even when total Status Duration is below 0%.
   fires_at_negative_status_duration: true
+  # CONFIRMED (user, 2026-07-24): a detonation CONSUMES all stacks - the
+  # count resets to 0 and the cycle restarts.
+  detonation_consumes_all_stacks: true
 
 cc_effects:
   - kind: stagger
