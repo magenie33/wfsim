@@ -302,6 +302,16 @@ component** of the hit vector:
   the wiki-documented exceptions above (weakspot 100%, some AoE 0%, rider
   instances unaffected). Unverified — `MEASUREMENTS.md` **M1** decides it;
   an instant kill there would falsify this and revert to Toxin-ungated.
+
+  **Evaluation semantics** (implementation contract): the gate is **unit
+  state** — it opens the instant shields hit zero, no matter what (or
+  where) the breaking hit was, and closes 0.1 s later. The **bypass is a
+  per-hit property** of where each hit lands. Consequences:
+  - any-break → weakspot hit in-window = **100%** (plus location mult);
+  - weakspot-break (its own spill is full) → body hit in-window = **5%**;
+  - within one window hits can alternate `body 5% / head 100% / body 5%`.
+  Headshot play never feels the gate; body-aimed rapid fire eats it on
+  every shield break.
 - Magnetic status: +100% damage to shields/Overguard on the first stack,
   +25%/stack after (max +325%), and blocks natural shield regen; on
   break, Electricity burst = 3%/stack of max shields (max 30%).
