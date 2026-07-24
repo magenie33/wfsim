@@ -1,44 +1,37 @@
 //! Minimal "shoot the training dummy" Monte Carlo — the first end-to-end sim.
 //!
-//! Scope (deliberately basic, see devlog 2026-07-24):
-//! - Dual Toxocyst **base form** raw damage only (75 dmg, 5% crit, 2.0x crit).
+//! Scope (see devlog 2026-07-24):
+//! - Dual Toxocyst **base form** (7.5 Impact / 60 Puncture / 7.5 Slash = 75,
+//!   5% crit, 2.0x crit, 37% status), quantized damage vector.
 //! - **Secondary Enervate** equipped (max rank): flat crit stacks on hit, resets
 //!   after 6 big crits — driven through the real [`Perk`]/[`BuffBar`] machinery.
 //! - The dummy is a **humanoid target made of body parts**; each shot lands on
 //!   one part chosen by aim weight (default: 50% body 1x / 50% head 3x).
-//! - **No** status/elements/damage-type effects, **no** armor, **no** Frenzy.
-//!   Infinite ammo (we fire every shot regardless of magazine).
+//! - **Status simulation v1** — the three procs an IPS vector can produce:
+//!   - **Stagger** (Impact): counted; no combat effect on a dummy (its Parazon
+//!     payload needs mercy flow).
+//!   - **Weakened** (Puncture): +5% flat crit chance received per stack
+//!     (cap 5, 10 s, FIFO replace-oldest) — feeds our shots' crit rolls.
+//!   - **Bleed** (Slash): Cinematic DoT, 0.35 × ModdedBase × the proccing
+//!     hit's crit/part multipliers (provenance snapshot), ticks at +1..+6 s,
+//!     unlimited instances, ignores armor entirely.
+//!   Proc selection uses the **quantized** vector's shares
+//!   (`status::procs_for_hit`); status damage never procs status; a killing
+//!   hit's procs are discarded (the respawned target is a fresh individual
+//!   with a clean DebuffBar — decision 2026-07-24).
+//! - **No** elements/mods yet, no Frenzy. Infinite ammo.
 //!
-//! Body-part model (source: wiki `Enemy_Body_Parts`; see docs/MECHANICS.md §7):
-//! - Each part has its own **location multiplier** (humanoid head = 3.0x,
-//!   body = 1x; other enemies have arbitrary parts: MOA "fanny pack" 3x,
-//!   Nox exposed head 4x, boss weak points on a 0x body, ...).
-//! - **Headshot is a trigger, not a damage stat.** Effects that specify
-//!   headshots (e.g. Frenzy) fire **only** when the struck part is the head
-//!   (`is_head`), never on other weak spots (wiki `Enemy_Body_Parts`
-//!   §Weak Spot Bonuses). `Hit::headshot` is sourced from the part.
-//! - The **critical-location bonus** is a separate per-part eligibility
-//!   (`crit_bonus`): a crit on an eligible part with multiplier > 1x doubles
-//!   the crit damage multiplier inside the tier formula:
-//!   `part_mult * (1 + k*(2*cd - 1))` (wiki `Critical_Hit`
-//!   §Critical Headshots). Ineligible examples: MOA fanny pack, helmeted
-//!   Corpus heads, any 1x location.
-//!
-//! Crit tiering (wiki `Critical_Hit` §Critical Tiers; see docs/MECHANICS.md §5):
-//! effective crit chance can exceed 100%; guaranteed tier `floor(cc)`, one more
-//! with probability `cc - floor(cc)`; a tier-`k` hit multiplies by
-//! `1 + k*(cd - 1)`.
-//!
-//! All of the above is **unverified** until golden-tested. Enervate's stack for
-//! a shot applies to *subsequent* shots (we read the buff bar before the shot,
-//! then register the hit).
+//! Body parts, crit tiers, and headcrit fold-in as documented in
+//! docs/MECHANICS.md §5/§7. All unverified until golden-tested.
 
 use crate::buffs::BuffBar;
+use crate::damage::{DamageType, DamageVector};
 use crate::perks::secondary_enervate::SecondaryEnervate;
 use crate::perks::Perk;
 use crate::rng::Rng;
 use crate::scaling;
 use crate::sim::{Event, Hit};
+use crate::status;
 
 /// What happens when the target's health reaches zero.
 ///
@@ -79,6 +72,11 @@ pub struct TargetParams {
     /// Whether this unit has an Eximus variant in-game (wiki
     /// `Eximus/Compatibilities`; Thrax units do not).
     pub can_be_eximus: bool,
+    /// Unit-level status immunities: these types are EXCLUDED from the proc
+    /// draw (weights renormalize — wiki `Status_Effect` §Immunity
+    /// Interactions). Mechanic states (Frozen, Overguard suppression) are NOT
+    /// immunities: those procs are drawn normally and nulled on landing.
+    pub status_immunities: Vec<DamageType>,
     pub mode: TargetMode,
 }
 
@@ -97,6 +95,7 @@ impl TargetParams {
             steel_path: false,
             eximus: false,
             can_be_eximus: false,
+            status_immunities: Vec::new(),
             mode: TargetMode::InfiniteHealth,
         }
     }
@@ -169,14 +168,15 @@ impl TargetState {
         }
     }
 
-    /// Apply one hit of `raw` damage. Returns `(effective_damage, killed)`.
+    /// Apply one damage instance. Returns `(effective_damage, killed)`.
     ///
     /// Mitigation model (docs/MECHANICS.md §8, unverified):
     /// - Overguard takes raw damage (neutral, ignores armor) and does **not**
     ///   spill excess into health when it breaks.
-    /// - Health takes `raw × (1 − armor/(armor+300))`.
+    /// - Health takes `raw × (1 − 0.9·√(armor/2700))`, floored at 1 per
+    ///   damage type — unless the instance ignores armor (Cinematic ticks).
     /// - Overkill damage is lost on death.
-    fn apply(&mut self, raw: f64, p: &TargetParams) -> (f64, bool) {
+    fn apply(&mut self, raw: f64, p: &TargetParams, ignores_armor: bool) -> (f64, bool) {
         if self.overguard > 0.0 {
             if p.mode != TargetMode::InfiniteHealth {
                 self.overguard = (self.overguard - raw).max(0.0);
@@ -184,10 +184,11 @@ impl TargetState {
             return (raw, false);
         }
 
-        let dr = scaling::armor_damage_reduction(p.armor());
-        // Armor-reduced damage floors at 1 per damage type (wiki Armor;
-        // the dummy's scalar hit counts as one type). Non-armor DR has no
-        // such floor.
+        let dr = if ignores_armor {
+            0.0
+        } else {
+            scaling::armor_damage_reduction(p.armor())
+        };
         let effective = if dr > 0.0 {
             (raw * (1.0 - dr)).max(1.0)
         } else {
@@ -203,6 +204,52 @@ impl TargetState {
         } else {
             (effective, false)
         }
+    }
+}
+
+/// A live Bleed instance: the proccing hit's deferred damage (provenance
+/// snapshot baked into `value`).
+struct BleedInstance {
+    next_tick: f64,
+    ticks_left: u32,
+    value: f64,
+}
+
+/// Target-side debuff state, v1 (the procs an IPS vector can produce).
+#[derive(Default)]
+struct DebuffState {
+    /// Stagger stack expiries (uniform 6 s duration → FIFO order == expiry
+    /// order). No combat payload on a dummy; tracked for stats.
+    stagger: Vec<f64>,
+    /// Weakened stack expiries (10 s); each active stack grants +5% flat
+    /// crit chance to weapon damage the target receives.
+    weakened: Vec<f64>,
+    bleeds: Vec<BleedInstance>,
+}
+
+const STAGGER_DURATION: f64 = 6.0;
+const STAGGER_CAP: usize = 5;
+const WEAKENED_DURATION: f64 = 10.0;
+const WEAKENED_CAP: usize = 5;
+const WEAKENED_FLAT_CC_PER_STACK: f64 = 0.05;
+const BLEED_COEFFICIENT: f64 = 0.35;
+const BLEED_DELAY: f64 = 1.0;
+const BLEED_TICKS: u32 = 6;
+
+impl DebuffState {
+    /// FIFO push with the universal replace-oldest rule (application-time
+    /// order; uniform durations make the front the oldest).
+    fn push_capped(list: &mut Vec<f64>, expiry: f64, cap: usize, now: f64) {
+        list.retain(|&e| e > now); // lazy prune of expired stacks
+        if list.len() >= cap {
+            list.remove(0); // replace the oldest APPLIED stack
+        }
+        list.push(expiry);
+    }
+
+    fn weakened_active(&mut self, now: f64) -> usize {
+        self.weakened.retain(|&e| e > now);
+        self.weakened.len()
     }
 }
 
@@ -226,9 +273,17 @@ pub struct BodyPart {
 /// Parameters of the dummy engagement.
 #[derive(Debug, Clone)]
 pub struct DummyParams {
-    pub base_damage: f64,
+    /// The weapon's (modded) base damage vector. Quantized once per run for
+    /// dealing damage and proc-type weighting.
+    pub damage: DamageVector,
     pub base_crit_chance: f64,
     pub crit_multiplier: f64,
+    /// Listed status chance per hit (may exceed 1.0).
+    pub status_chance: f64,
+    /// Forced procs on every hit (weapon data, per attack part).
+    pub forced_procs: Vec<DamageType>,
+    /// Status duration multiplier (1.0 = unmodded).
+    pub status_duration_mult: f64,
     pub fire_rate: f64,
     pub body_parts: Vec<BodyPart>,
     pub target: TargetParams,
@@ -256,15 +311,26 @@ impl DummyParams {
             },
         ]
     }
+
+    /// Dual Toxocyst base form damage vector (data/weapons/dual_toxocyst.yaml).
+    pub fn dual_toxocyst_base_vector() -> DamageVector {
+        DamageVector::new()
+            .with(DamageType::Impact, 7.5)
+            .with(DamageType::Puncture, 60.0)
+            .with(DamageType::Slash, 7.5)
+    }
 }
 
 impl Default for DummyParams {
     /// Dual Toxocyst base form + Secondary Enervate, humanoid dummy, 10 s.
     fn default() -> Self {
         Self {
-            base_damage: 75.0,
+            damage: Self::dual_toxocyst_base_vector(),
             base_crit_chance: 0.05,
             crit_multiplier: 2.0,
+            status_chance: 0.37,
+            forced_procs: Vec::new(),
+            status_duration_mult: 1.0,
             fire_rate: 1.0,
             body_parts: Self::humanoid_parts(),
             target: TargetParams::training_dummy(),
@@ -276,14 +342,18 @@ impl Default for DummyParams {
 /// Result of a single engagement.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct RunResult {
-    /// Raw damage dealt (pre-mitigation).
+    /// Raw damage dealt (pre-mitigation), direct hits + DoT ticks.
     pub total_damage: f64,
     /// Damage after target mitigation (overguard neutrality / armor DR).
     pub effective_damage: f64,
+    /// Effective damage contributed by DoT ticks (subset of the above).
+    pub dot_damage: f64,
     pub shots: u32,
     pub crits: u32,     // tier >= 1
     pub big_crits: u32, // tier >= 2
     pub headshots: u32, // hits on an `is_head` part
+    pub procs: u32,     // status procs applied (all types)
+    pub dot_ticks: u32, // bleed ticks that landed
     pub kills: u32,     // InstantRespawn deaths (0 with InfiniteHealth)
 }
 
@@ -307,12 +377,60 @@ fn pick_part<'a>(parts: &'a [BodyPart], rng: &mut Rng) -> &'a BodyPart {
     parts.last().expect("dummy needs at least one body part")
 }
 
+/// Process all bleed ticks due strictly before `until` (chronological order).
+/// Ticks are Cinematic: they ignore armor, land on whatever pool is active,
+/// and — being status damage — never proc anything.
+fn process_ticks(
+    debuffs: &mut DebuffState,
+    until: f64,
+    target: &mut TargetState,
+    p: &TargetParams,
+    r: &mut RunResult,
+) {
+    loop {
+        let Some(idx) = debuffs
+            .bleeds
+            .iter()
+            .enumerate()
+            .filter(|(_, b)| b.ticks_left > 0 && b.next_tick < until)
+            .min_by(|a, b1| a.1.next_tick.total_cmp(&b1.1.next_tick))
+            .map(|(i, _)| i)
+        else {
+            break;
+        };
+        let value = debuffs.bleeds[idx].value;
+        debuffs.bleeds[idx].next_tick += 1.0;
+        debuffs.bleeds[idx].ticks_left -= 1;
+
+        let (effective, killed) = target.apply(value, p, true);
+        r.total_damage += value;
+        r.effective_damage += effective;
+        r.dot_damage += effective;
+        r.dot_ticks += 1;
+        r.kills += killed as u32;
+        if killed {
+            // Fresh individual: clean DebuffBar (decision 2026-07-24).
+            *debuffs = DebuffState::default();
+            break;
+        }
+    }
+    debuffs.bleeds.retain(|b| b.ticks_left > 0);
+}
+
 /// Run one engagement with a fresh buff bar and a fresh Secondary Enervate.
 pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     let mut bar = BuffBar::new();
     let mut enervate = SecondaryEnervate::default();
     let mut target = TargetState::spawn(&params.target);
+    let mut debuffs = DebuffState::default();
     let mut r = RunResult::default();
+
+    // The dealt vector is quantized once (static per run: no dynamic mods
+    // yet); ModdedBase for proc payload formulas stays pre-quantization.
+    let qvec = params.damage.quantized();
+    let qtotal = qvec.total();
+    let modded_base = params.damage.total();
+    let sd = params.status_duration_mult;
 
     // Fire at t = k / fire_rate while t < duration. Integer k avoids float drift.
     let mut k: u64 = 0;
@@ -323,9 +441,15 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         }
         k += 1;
 
-        // Crit chance for this shot reflects stacks from previous hits.
+        // DoT ticks scheduled before this shot land first.
+        process_ticks(&mut debuffs, t + 1e-9, &mut target, &params.target, &mut r);
+
+        // Crit chance: base + Enervate stacks (attacker BuffBar) + Weakened
+        // stacks (target DebuffBar: flat crit chance received, weapon direct
+        // damage only — which our shots are).
         let flat_crit = bar.total_contributions().flat_crit_chance;
-        let effective_cc = params.base_crit_chance + flat_crit;
+        let weakened_cc = WEAKENED_FLAT_CC_PER_STACK * debuffs.weakened_active(t) as f64;
+        let effective_cc = params.base_crit_chance + flat_crit + weakened_cc;
         let tier = roll_crit_tier(effective_cc, rng);
 
         let part = pick_part(&params.body_parts, rng);
@@ -338,8 +462,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         };
         let crit_mult = 1.0 + tier as f64 * (cd - 1.0);
 
-        let raw = params.base_damage * part.multiplier * crit_mult;
-        let (effective, killed) = target.apply(raw, &params.target);
+        let raw = qtotal * part.multiplier * crit_mult;
+        let (effective, killed) = target.apply(raw, &params.target, false);
         r.total_damage += raw;
         r.effective_damage += effective;
         r.kills += killed as u32;
@@ -347,6 +471,52 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         r.crits += (tier >= 1) as u32;
         r.big_crits += (tier >= 2) as u32;
         r.headshots += part.is_head as u32;
+
+        if killed {
+            // The killing hit's procs die with the old individual.
+            debuffs = DebuffState::default();
+        } else {
+            // Roll procs: forced ++ SC draws weighted by the QUANTIZED vector,
+            // with unit status immunities excluded (renormalized).
+            let procs = status::procs_for_hit(
+                &params.forced_procs,
+                params.status_chance,
+                &qvec,
+                &params.target.status_immunities,
+                rng,
+            );
+            for proc in procs {
+                r.procs += 1;
+                match proc {
+                    DamageType::Impact => DebuffState::push_capped(
+                        &mut debuffs.stagger,
+                        t + STAGGER_DURATION * sd,
+                        STAGGER_CAP,
+                        t,
+                    ),
+                    DamageType::Puncture => DebuffState::push_capped(
+                        &mut debuffs.weakened,
+                        t + WEAKENED_DURATION * sd,
+                        WEAKENED_CAP,
+                        t,
+                    ),
+                    DamageType::Slash => {
+                        // Provenance snapshot: this hit's crit and part
+                        // multipliers, baked into every tick.
+                        let ticks =
+                            ((1.0 * (BLEED_TICKS as f64 * sd - BLEED_DELAY)).floor() as u32) + 1;
+                        debuffs.bleeds.push(BleedInstance {
+                            next_tick: t + BLEED_DELAY,
+                            ticks_left: ticks,
+                            value: BLEED_COEFFICIENT * modded_base * crit_mult * part.multiplier,
+                        });
+                    }
+                    // Other types cannot occur with an IPS vector; their
+                    // payloads land in later slices of the status sim.
+                    _ => {}
+                }
+            }
+        }
 
         // Register the hit so Enervate stacks/resets for the next shot. The
         // target is always alive when hit (instant respawn / infinite health).
@@ -360,6 +530,15 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             &mut bar,
         );
     }
+
+    // Drain remaining ticks up to the end of the engagement.
+    process_ticks(
+        &mut debuffs,
+        params.duration_secs,
+        &mut target,
+        &params.target,
+        &mut r,
+    );
 
     r
 }
@@ -376,6 +555,8 @@ pub struct Summary {
     pub max_damage: f64,
     pub mean_effective_damage: f64,
     pub effective_dps: f64,
+    pub mean_dot_damage: f64,
+    pub mean_procs: f64,
     pub mean_kills: f64,
     pub std_kills: f64,
     pub min_kills: u32,
@@ -395,6 +576,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     let mut max = f64::NEG_INFINITY;
     let (mut shots, mut crits, mut big_crits, mut headshots) = (0u64, 0u64, 0u64, 0u64);
     let (mut effective, mut kills, mut kills_sq) = (0.0f64, 0u64, 0u64);
+    let (mut dot, mut procs) = (0.0f64, 0u64);
     let (mut min_kills, mut max_kills) = (u32::MAX, 0u32);
 
     for _ in 0..runs {
@@ -404,6 +586,8 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         min = min.min(r.total_damage);
         max = max.max(r.total_damage);
         effective += r.effective_damage;
+        dot += r.dot_damage;
+        procs += r.procs as u64;
         kills += r.kills as u64;
         kills_sq += (r.kills as u64) * (r.kills as u64);
         min_kills = min_kills.min(r.kills);
@@ -429,6 +613,8 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         max_damage: if max.is_finite() { max } else { 0.0 },
         mean_effective_damage: effective / n,
         effective_dps: effective / n / params.duration_secs,
+        mean_dot_damage: dot / n,
+        mean_procs: procs as f64 / n,
         mean_kills: kills as f64 / n,
         std_kills: {
             let mean_k = kills as f64 / n;
@@ -447,11 +633,30 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
 mod tests {
     use super::*;
 
+    /// Default params with status disabled — for hand-computed expectations
+    /// that predate the status sim.
+    fn no_status() -> DummyParams {
+        DummyParams {
+            status_chance: 0.0,
+            ..DummyParams::default()
+        }
+    }
+
     fn single_part(part: BodyPart) -> DummyParams {
         DummyParams {
             body_parts: vec![part],
-            ..DummyParams::default()
+            ..no_status()
         }
+    }
+
+    fn mono_body(multiplier: f64) -> Vec<BodyPart> {
+        vec![BodyPart {
+            name: "body".into(),
+            aim_weight: 1.0,
+            multiplier,
+            is_head: false,
+            crit_bonus: false,
+        }]
     }
 
     #[test]
@@ -482,16 +687,111 @@ mod tests {
     }
 
     #[test]
-    fn mean_damage_matches_hand_computed_expectation() {
-        // Default params, 10 shots: Enervate ramps cc = 5%,15%,...,95% (sum 5.0).
+    fn mean_damage_matches_hand_computed_expectation_without_status() {
+        // Status off, 10 shots: Enervate ramps cc = 5%,15%,...,95% (sum 5.0).
         // Per shot: E = 0.5*75*(1+cc) + 0.5*(75*3)*(1+3cc) = 150 + 375*cc,
-        // so E[total] = 10*150 + 375*5.0 = 3375.
-        let s = monte_carlo(&DummyParams::default(), 2000, 42);
+        // so E[total] = 10*150 + 375*5.0 = 3375. (The Dual Toxocyst vector
+        // quantizes to a total of exactly 75.)
+        let s = monte_carlo(&no_status(), 2000, 42);
         assert!(
             (s.mean_damage - 3375.0).abs() / 3375.0 < 0.02,
             "mean damage was {}",
             s.mean_damage
         );
+        assert_eq!(s.mean_dot_damage, 0.0);
+        assert_eq!(s.mean_procs, 0.0);
+    }
+
+    #[test]
+    fn status_procs_occur_at_the_listed_rate() {
+        // 37% SC, no forced procs: mean procs per shot ≈ 0.37 on the
+        // never-dying training dummy.
+        let s = monte_carlo(&DummyParams::default(), 2000, 8);
+        let per_shot = s.mean_procs / s.mean_shots;
+        assert!((per_shot - 0.37).abs() < 0.02, "procs/shot {per_shot}");
+        // Bleeds contribute extra damage on top of the 3375 baseline.
+        assert!(s.mean_dot_damage > 0.0);
+        assert!(s.mean_damage > 3375.0);
+    }
+
+    #[test]
+    fn forced_bleed_dot_is_exactly_deterministic() {
+        // Forced Slash on every shot, SC 0, mono body 1x, crit_multiplier 1
+        // (tier changes nothing): every shot procs one bleed with tick value
+        // 0.35 × 75 = 26.25, ticking at +1..+6 s. Ticks beyond the 10 s
+        // engagement are lost: shots at 0..9 yield 6,6,6,6,5,4,3,2,1,0 ticks
+        // = 39 ticks → dot = 39 × 26.25 = 1023.75; direct = 10 × 75 = 750.
+        let p = DummyParams {
+            crit_multiplier: 1.0,
+            forced_procs: vec![DamageType::Slash],
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 50, 5);
+        assert!(
+            (s.mean_dot_damage - 1023.75).abs() < 1e-9,
+            "dot {}",
+            s.mean_dot_damage
+        );
+        assert!(
+            (s.mean_damage - 1773.75).abs() < 1e-9,
+            "total {}",
+            s.mean_damage
+        );
+        assert!((s.mean_procs - 10.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn bleed_snapshots_the_proccing_hits_multipliers() {
+        // 3x part, forced Slash, crit disabled: tick = 0.35 × 75 × 3 = 78.75.
+        let p = DummyParams {
+            crit_multiplier: 1.0,
+            forced_procs: vec![DamageType::Slash],
+            body_parts: mono_body(3.0),
+            duration_secs: 2.0, // one shot at t=0 (+ t=1): first bleed ticks once at t=1...
+            fire_rate: 0.5,     // single shot at t=0 in a 2 s window
+            ..no_status()
+        };
+        // Shot at t=0 procs a bleed ticking at t=1 (once before 2 s).
+        let s = monte_carlo(&p, 10, 6);
+        assert!(
+            (s.mean_dot_damage - 78.75).abs() < 1e-9,
+            "dot {}",
+            s.mean_dot_damage
+        );
+    }
+
+    #[test]
+    fn weakened_raises_our_crit_chance() {
+        // Forced Puncture, SC 0, mono 1x, cd 2.0, base cc 0:
+        // shot k has Enervate 0.10k + Weakened 0.05·min(k,5) flat cc,
+        // E[crit_mult] = 1 + cc → E[total] = 75 × (10 + Σcc) = 75 × 16.25.
+        // Σcc = 0+.15+.30+.45+.60+.75+.85+.95+1.05+1.15 = 6.25.
+        let p = DummyParams {
+            base_crit_chance: 0.0,
+            forced_procs: vec![DamageType::Puncture],
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 4000, 77);
+        let expect = 75.0 * 16.25;
+        assert!(
+            (s.mean_damage - expect).abs() / expect < 0.02,
+            "mean {} expect {expect}",
+            s.mean_damage
+        );
+    }
+
+    #[test]
+    fn status_immunities_renormalize_toward_other_procs() {
+        // Slash-immune target: no bleeds ever, but procs still occur at the
+        // full 37% rate (renormalized onto Impact/Puncture).
+        let mut p = DummyParams::default();
+        p.target.status_immunities = vec![DamageType::Slash];
+        let s = monte_carlo(&p, 1000, 15);
+        assert_eq!(s.mean_dot_damage, 0.0);
+        let per_shot = s.mean_procs / s.mean_shots;
+        assert!((per_shot - 0.37).abs() < 0.03, "procs/shot {per_shot}");
     }
 
     #[test]
@@ -568,6 +868,7 @@ mod tests {
             steel_path: false,
             eximus: false,
             can_be_eximus: false,
+            status_immunities: Vec::new(),
             mode,
         }
     }
@@ -607,19 +908,22 @@ mod tests {
         let s = monte_carlo(&p, 200, 5);
         // 50 HP, no armor, no overguard: every shot (>= 75 raw) kills, and the
         // target respawns in place — 10 kills per 10-shot run, no variance.
+        // Killing hits' procs are discarded, so no bleeds ever tick.
         assert!((s.mean_kills - 10.0).abs() < 1e-9, "kills {}", s.mean_kills);
         assert_eq!(s.std_kills, 0.0);
         assert_eq!((s.min_kills, s.max_kills), (10, 10));
+        assert_eq!(s.mean_dot_damage, 0.0);
+        assert_eq!(s.mean_procs, 0.0);
     }
 
     #[test]
     fn infinite_health_never_dies_and_applies_armor_dr() {
         // 300 armor (>= the 200 spawn minimum, stays 300) -> post-U36 DR
         // = 0.9 * sqrt(300/2700) = 30%: effective is exactly 70% of raw,
-        // and no kills.
+        // and no kills. Status off so no armor-ignoring Cinematic ticks mix in.
         let p = DummyParams {
             target: frail_target(TargetMode::InfiniteHealth, 300.0, 0.0),
-            ..DummyParams::default()
+            ..no_status()
         };
         let s = monte_carlo(&p, 200, 5);
         assert_eq!(s.mean_kills, 0.0);
@@ -632,20 +936,40 @@ mod tests {
     }
 
     #[test]
+    fn bleed_ticks_ignore_armor_entirely() {
+        // Forced Slash, capped armor (90% DR): direct hits take 0.1x but
+        // ticks land at full value. crit off, mono 1x, 10 s:
+        // direct effective = 750 × 0.1 = 75; dot effective = 1023.75 (full).
+        let p = DummyParams {
+            crit_multiplier: 1.0,
+            forced_procs: vec![DamageType::Slash],
+            body_parts: mono_body(1.0),
+            target: frail_target(TargetMode::InfiniteHealth, 2700.0, 0.0),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 50, 5);
+        assert!(
+            (s.mean_dot_damage - 1023.75).abs() < 1e-9,
+            "dot {}",
+            s.mean_dot_damage
+        );
+        assert!(
+            (s.mean_effective_damage - (75.0 + 1023.75)).abs() < 1e-9,
+            "effective {}",
+            s.mean_effective_damage
+        );
+    }
+
+    #[test]
     fn armor_reduced_damage_floors_at_one_per_type() {
         // Tiny hits vs capped armor: 5 raw x (1 - 0.9) = 0.5 -> floored to
         // 1 (scalar hit = one damage type). crit_multiplier 1.0 keeps every
-        // shot's raw at exactly base x part multiplier.
+        // shot's raw at exactly base x part multiplier; pure-Impact vector so
+        // the only possible proc is a harmless Stagger.
         let p = DummyParams {
-            base_damage: 5.0,
+            damage: DamageVector::new().with(DamageType::Impact, 5.0),
             crit_multiplier: 1.0,
-            body_parts: vec![BodyPart {
-                name: "body".into(),
-                aim_weight: 1.0,
-                multiplier: 1.0,
-                is_head: false,
-                crit_bonus: false,
-            }],
+            body_parts: mono_body(1.0),
             target: frail_target(TargetMode::InfiniteHealth, 2700.0, 0.0),
             ..DummyParams::default()
         };
@@ -662,6 +986,7 @@ mod tests {
     fn overguard_ignores_armor_and_does_not_spill() {
         // Huge armor but active overguard: hits are neutral (effective == raw)
         // until overguard breaks; the pool is large enough to absorb all runs.
+        // (Bleed ticks land on overguard at full value too.)
         let mut t = frail_target(TargetMode::InfiniteHealth, 2700.0, 1e12);
         t.base_health = 1.0;
         let p = DummyParams {

@@ -17,10 +17,11 @@ fn main() {
 
     println!("wfsim {} — dummy engagement", env!("CARGO_PKG_VERSION"));
     println!(
-        "weapon: Dual Toxocyst (base) | {:.0} dmg, {:.0}% crit, {:.1}x crit, {:.1} fire/s",
-        params.base_damage,
+        "weapon: Dual Toxocyst (base) | {:.0} dmg (7.5I/60P/7.5S), {:.0}% crit, {:.1}x crit, {:.0}% status, {:.1} fire/s",
+        params.damage.total(),
         params.base_crit_chance * 100.0,
         params.crit_multiplier,
+        params.status_chance * 100.0,
         params.fire_rate,
     );
     let total_weight: f64 = params.body_parts.iter().map(|p| p.aim_weight).sum();
@@ -42,7 +43,9 @@ fn main() {
         "perk: Secondary Enervate (max) | aim: {} | {} runs x {:.0} s",
         parts, runs, params.duration_secs,
     );
-    println!("excluded: status/elements, armor, Frenzy | infinite ammo | assumptions unverified");
+    println!(
+        "status sim v1: Stagger/Weakened/Bleed | no elements/Frenzy | infinite ammo | unverified"
+    );
     println!();
 
     let s = monte_carlo(&params, runs, seed);
@@ -57,6 +60,12 @@ fn main() {
     println!("  std:   {:>10.1}", s.std_damage);
     println!("  min:   {:>10.1}", s.min_damage);
     println!("  max:   {:>10.1}", s.max_damage);
+    println!(
+        "  procs: {:>5.1}/run | DoT: {:>7.1} ({:.0}% of effective)",
+        s.mean_procs,
+        s.mean_dot_damage,
+        s.mean_dot_damage / s.mean_effective_damage * 100.0,
+    );
     println!();
     println!("sustained DPS:    {:.1}", s.dps);
 

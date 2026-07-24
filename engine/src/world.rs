@@ -110,6 +110,8 @@ impl Engagement {
                 max_damage: 0.0,
                 mean_effective_damage: 0.0,
                 effective_dps: 0.0,
+                mean_dot_damage: 0.0,
+                mean_procs: 0.0,
                 mean_kills: 0.0,
                 std_kills: 0.0,
                 min_kills: 0,

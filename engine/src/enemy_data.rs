@@ -145,6 +145,7 @@ impl EnemySpec {
             steel_path,
             eximus,
             can_be_eximus: self.can_be_eximus,
+            status_immunities: Vec::new(),
             mode,
         })
     }
