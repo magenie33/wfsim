@@ -78,13 +78,14 @@ impl ModDef {
 pub enum StackPolicy {
     /// Full stacks / 100% uptime on every conditional buff.
     AssumedMax,
-    /// On-kill stacking buffs start at ZERO and are earned/decayed live
-    /// by the sim (user, 2026-07-24: "假设完全靠自己，初始是0").
-    EmergentFromZero,
+    /// On-kill stacking buffs start at their configured INITIAL stacks
+    /// (full, per user 2026-07-24 correction) and then evolve purely by
+    /// mechanics: kills refresh/grant, timeouts decay one stack.
+    Emergent,
 }
 
 /// A live on-kill stacking buff spec handed to the sim under
-/// [`StackPolicy::EmergentFromZero`].
+/// [`StackPolicy::Emergent`].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct StackSpec {
     /// Contribution per stack (multishot: already × base pellets; CO:
@@ -94,6 +95,9 @@ pub struct StackSpec {
     /// Per-refresh duration; decay = lose ONE stack and reset (the
     /// Galvanized family's graceful decay).
     pub duration: f64,
+    /// Stacks at t = 0 (user setting: full by default, 0 for a cold
+    /// start; afterwards mechanics rule either way).
+    pub initial_stacks: u32,
 }
 
 /// How the Condition Overload bonus behaves — PER WEAPON (user,
@@ -140,6 +144,10 @@ pub struct WeaponBase {
     pub injected_elements: Vec<(DamageType, f64)>,
 }
 
+/// Dual Toxocyst's ORIGINAL base damage total (both forms), before any
+/// evolution flat damage — the base the CO bonus is computed on.
+pub const DT_ORIGINAL_BASE_TOTAL: f64 = 75.0;
+
 impl WeaponBase {
     /// Dual Toxocyst Incarnon Form with the fixed evolution build
     /// (data/builds/dual_toxocyst_default.yaml): Fevered Frenzy +50 base
@@ -165,9 +173,12 @@ impl WeaponBase {
             base_reload: 3.35,
             // Wiki CO catalog row (Dual Toxocyst / Incarnon Mode):
             // "Adding" class; the CO base EXCLUDES evolution flat damage
-            // ("100% or 56%") — Fevered Frenzy's +50 gives 75/125 = 0.6.
+            // ("100% or 56%": no evo perk = 100%, Carnage's +60 = 75/135).
+            // DERIVED from the actual selection: original 75 over the
+            // evolved vector total — Fevered's +50 gives 75/125 = 0.6;
+            // with no flat-damage evolution this is exactly 1.0.
             co_behavior: CoBehavior::AdditiveWithBaseDamage,
-            co_base_fraction: 75.0 / 125.0,
+            co_base_fraction: DT_ORIGINAL_BASE_TOTAL / 125.0,
             injected_elements: if frenzy_active {
                 vec![(DamageType::Toxin, 1.0)]
             } else {
@@ -196,7 +207,8 @@ impl WeaponBase {
             magazine_size: 12.0,
             base_reload: 2.35,
             co_behavior: CoBehavior::AdditiveWithBaseDamage,
-            co_base_fraction: 75.0 / 125.0, // Fevered's +50 excluded
+            // Same derivation: original 75 / Fevered-evolved 125.
+            co_base_fraction: DT_ORIGINAL_BASE_TOTAL / 125.0,
             injected_elements: if frenzy_active {
                 vec![(DamageType::Toxin, 1.0)]
             } else {
@@ -227,14 +239,14 @@ pub struct ResolvedPanel {
     /// Σ base-damage bonuses (needed live when CO joins this bucket).
     pub base_damage_bonus: f64,
     /// Σ (CO per_stack × stacks) under `AssumedMax` (0 under
-    /// `EmergentFromZero` — see `co_stack`) — applied per this weapon's
+    /// `Emergent` — see `co_stack`) — applied per this weapon's
     /// [`CoBehavior`] × `co_base_fraction`, DIRECT HITS ONLY.
     pub co_per_type: f64,
     pub co_behavior: CoBehavior,
     pub co_base_fraction: f64,
-    /// Live on-kill CO stacks (EmergentFromZero).
+    /// Live on-kill CO stacks (Emergent policy).
     pub co_stack: Option<StackSpec>,
-    /// Live on-kill multishot stacks (EmergentFromZero); per_stack is
+    /// Live on-kill multishot stacks (Emergent policy); per_stack is
     /// already × base pellets.
     pub ms_stack: Option<StackSpec>,
     /// (1 + Σ status damage) — multiplies status payload values.
@@ -276,11 +288,12 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                     duration,
                 } => match policy {
                     StackPolicy::AssumedMax => ms += per_stack * max_stacks as f64,
-                    StackPolicy::EmergentFromZero => {
+                    StackPolicy::Emergent => {
                         ms_stack = Some(StackSpec {
                             per_stack: base.base_multishot * per_stack,
                             max_stacks,
                             duration,
+                            initial_stacks: max_stacks, // 初始满 (user)
                         })
                     }
                 },
@@ -290,11 +303,12 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                     duration,
                 } => match policy {
                     StackPolicy::AssumedMax => co += per_stack * max_stacks as f64,
-                    StackPolicy::EmergentFromZero => {
+                    StackPolicy::Emergent => {
                         co_stack = Some(StackSpec {
                             per_stack,
                             max_stacks,
                             duration,
+                            initial_stacks: max_stacks, // 初始满 (user)
                         })
                     }
                 },

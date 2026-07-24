@@ -633,7 +633,7 @@ pub struct DummyParams {
     /// CO base effectiveness (wiki: the CO bonus excludes evolution flat
     /// damage — DT with Fevered = 75/125 = 0.6).
     pub co_base_fraction: f64,
-    /// Live on-kill CO stacks, earned from zero (EmergentFromZero).
+    /// Live on-kill CO stacks, live per StackSpec (Emergent policy).
     pub co_stack: Option<crate::loadout::StackSpec>,
     /// Live on-kill multishot stacks, earned from zero.
     pub ms_stack: Option<crate::loadout::StackSpec>,
@@ -1050,7 +1050,21 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     let mut frenzy = Frenzy::new();
     let mut target = TargetState::spawn(&params.target);
     let mut debuffs = DebuffState::default();
+    // On-kill stack buffs start at their configured initial stacks (full
+    // per the user's setting) with a fresh duration from t = 0.
     let mut gal = GalStacks::default();
+    if let Some(s) = &params.co_stack {
+        gal.co = LiveStacks {
+            stacks: s.initial_stacks.min(s.max_stacks),
+            expiry: s.duration,
+        };
+    }
+    if let Some(s) = &params.ms_stack {
+        gal.ms = LiveStacks {
+            stacks: s.initial_stacks.min(s.max_stacks),
+            expiry: s.duration,
+        };
+    }
     let mut r = RunResult::default();
 
     // Per-phase precomputation: the quantized vector is static per phase
@@ -2433,16 +2447,18 @@ mod tests {
 
     #[test]
     fn emergent_multishot_stacks_are_earned_by_kills_from_zero() {
-        // Frail 50 HP target dies to every pellet; +1.0 pellet per stack,
-        // cap 2, long duration. Shot k fires (1 + stacks) pellets and the
-        // FIRST pellet's kill bumps the stack before the next shot:
-        // pellets per shot: 1, 2, 3, 3, ... = 1 + 2 + 8×3 = 27.
+        // Cold-start config (initial 0): frail 50 HP target dies to every
+        // pellet; +1.0 pellet per stack, cap 2, long duration. Shot k
+        // fires (1 + stacks) pellets and the FIRST pellet's kill bumps
+        // the stack: pellets per shot 1, 2, 3, 3, ... = 1 + 2 + 8×3 = 27.
+        let spec = crate::loadout::StackSpec {
+            per_stack: 1.0,
+            max_stacks: 2,
+            duration: 100.0,
+            initial_stacks: 0,
+        };
         let p = DummyParams {
-            ms_stack: Some(crate::loadout::StackSpec {
-                per_stack: 1.0,
-                max_stacks: 2,
-                duration: 100.0,
-            }),
+            ms_stack: Some(spec),
             target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
             arcane_enervate: false,
             crit_multiplier: 1.0,
@@ -2454,6 +2470,22 @@ mod tests {
             (s.mean_pellets - 27.0).abs() < 1e-9,
             "pellets {}",
             s.mean_pellets
+        );
+
+        // Initial-full (the user's default): every shot fires 3 pellets
+        // from t = 0 (kills keep the stacks refreshed) -> 30 pellets.
+        let full = DummyParams {
+            ms_stack: Some(crate::loadout::StackSpec {
+                initial_stacks: 2,
+                ..spec
+            }),
+            ..p
+        };
+        let s2 = monte_carlo(&full, 20, 5);
+        assert!(
+            (s2.mean_pellets - 30.0).abs() < 1e-9,
+            "pellets {}",
+            s2.mean_pellets
         );
     }
 

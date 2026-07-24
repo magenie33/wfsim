@@ -396,7 +396,7 @@ fn expand_subset(
 
         let refs: Vec<&ModDef> = ordered.iter().map(|&i| &pool[i]).collect();
         // On-kill stacks start at ZERO and are earned live (user policy).
-        let panel = resolve(base, &refs, StackPolicy::EmergentFromZero);
+        let panel = resolve(base, &refs, StackPolicy::Emergent);
 
         // Second-level dedup: orders resolving to the same combined vector
         // are the same build (docs/OPTIMIZER.md §1). Deduping on the
@@ -416,7 +416,7 @@ fn expand_subset(
         out.push(Candidate {
             ordered: ordered.clone(),
             panel,
-            base_panel: second_form.map(|b| resolve(b, &refs, StackPolicy::EmergentFromZero)),
+            base_panel: second_form.map(|b| resolve(b, &refs, StackPolicy::Emergent)),
             plan: plan.clone(),
         });
     }
