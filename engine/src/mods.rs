@@ -2,8 +2,8 @@
 //! (pipeline layer [1]). Source: wiki `Polarity` (docs/MECHANICS.md §2).
 //!
 //! - Matching slot polarity: drain **−50%, rounded UP** (11 → 6).
-//! - Mismatched polarity: drain **+25%, rounded to the nearest integer**
-//!   (11 → 13.75 → 14). Exact half-rounding direction unverified — flagged.
+//! - Mismatched polarity: drain **+25%, rounded half-UP** (11 → 13.75 → 14;
+//!   MEASURED 2026-07-26, user: 10 → 12.5 → **13**).
 //! - Unpolarized slot: full drain.
 //! - Capacity = weapon rank (max 30), doubled by an Orokin Catalyst → 60.
 //!   (Aura/Stance capacity-bonus polarities are a separate rule, not yet
@@ -26,7 +26,8 @@ pub fn slot_drain(base_drain: u32, mod_polarity: Polarity, slot_polarity: Option
     match slot_polarity {
         Some(p) if p == mod_polarity => base_drain.div_ceil(2), // −50%, round up
         Some(_) => {
-            // +25%, rounded to nearest (half-up assumed — unverified edge).
+            // +25%, rounded half-up (user-measured: 10 -> 13). f64::round
+            // rounds half away from zero, which matches.
             ((base_drain as f64) * 1.25).round() as u32
         }
         None => base_drain,
@@ -96,6 +97,11 @@ mod tests {
         );
         assert_eq!(slot_drain(9, Polarity::Umbra, Some(Polarity::Madurai)), 11);
         // 11.25
+        // MEASURED (2026-07-26, user): the half case rounds UP.
+        assert_eq!(
+            slot_drain(10, Polarity::Madurai, Some(Polarity::Naramon)),
+            13
+        ); // 12.5 -> 13
     }
 
     #[test]

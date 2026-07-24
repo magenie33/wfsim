@@ -79,8 +79,7 @@ distinction matters (see [`GLOSSARY.md`](GLOSSARY.md)):
 **Mod capacity & polarity** (wiki `Polarity`; `engine::mods`). Capacity =
 weapon rank (max 30), doubled by an Orokin Catalyst (60). Slot drain:
 **matching polarity −50% rounded UP** (11 → 6); **mismatched +25% rounded
-to the nearest integer** (11 → 13.75 → 14; the exact half-rounding
-direction is unverified); unpolarized = full drain. Aura/Stance slots
+half-UP** (11 → 14; measured 2026-07-26: 10 → 12.5 → 13); unpolarized = full drain. Aura/Stance slots
 instead scale the capacity BONUS they grant (×2 matched, −20%
 mismatched) — melee-relevant later. Forma adds/changes one slot polarity
 at rank 30 (resets rank). An over-capacity loadout is an impossible
