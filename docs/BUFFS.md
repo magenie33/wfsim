@@ -49,8 +49,20 @@ enemy  side:  proc   --trigger-->  Debuff  in the target's DebuffBar
 
 The container on the target is named **`DebuffBar`** (decision 2026-07-24)
 — same machinery as `BuffBar` (stack tracking, per-stack expiry,
-contribution snapshots), one per enemy, rendered in the arena UI as the
-enemy's status icon row.
+contribution snapshots), rendered in the arena UI as the enemy's status
+icon row.
+
+**Every actor carries both bars** (decision 2026-07-24) — the structure is
+symmetric across sides; only the contents differ:
+
+|            | BuffBar (gained boons)                          | DebuffBar (suffered afflictions) |
+|------------|--------------------------------------------------|----------------------------------|
+| player     | arcane stacks, Frenzy, ability buffs             | enemy procs on the player (Magnetic drain, Toxin DoT, Heat armor strip) |
+| enemy      | Ancient Healer 90% DR aura, Guardian Eximus overguard regrant, Shield Osprey shields, Eximus auras | our procs: Stagger, Corrosive strip, Viral, DoTs |
+
+Mitigation and damage layers on *either* side read the same two snapshots:
+the attacker's `BuffBar` and the defender's `DebuffBar` (+ the defender's
+`BuffBar` for protective auras like the Healer's DR).
 
 - A **debuff** has the same shape as a buff: stacks, per-stack duration,
   overflow policy (e.g. Stagger: 5 stacks, 6 s each, 6th proc replaces the
