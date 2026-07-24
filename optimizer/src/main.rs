@@ -18,6 +18,7 @@ fn main() {
     let mut constraints = Constraints::default();
     let mut flat = false;
     let mut target_file = "thrax_centurion";
+    let mut evo2_both = false;
     for arg in std::env::args().skip(1) {
         if let Some(id) = arg.strip_prefix("require=") {
             constraints.require.push(id.to_string());
@@ -31,9 +32,11 @@ fn main() {
             target_file = "acolyte";
         } else if arg == "target=thrax" {
             target_file = "thrax_centurion";
+        } else if arg == "evo2=both" {
+            evo2_both = true;
         } else {
             eprintln!(
-                "unknown arg: {arg} (use require=<id> / forbid=<id> / flat / target=thrax|acolyte)"
+                "unknown arg: {arg} (use require=<id> / forbid=<id> / flat / target=thrax|acolyte / evo2=both)"
             );
             std::process::exit(2);
         }
@@ -94,10 +97,18 @@ fn main() {
     // configs (both forms resolved with Frenzy's Toxin injection).
     use wfsim_engine::loadout::DtEvo2;
     let mut cands = Vec::new();
-    for (evo2, label) in [
-        (DtEvo2::FeveredFrenzy, "fevered"),
-        (DtEvo2::CarnageReign, "carnage"),
-    ] {
+    // Fevered Frenzy is the LOCKED official Evolution II (user,
+    // 2026-07-25: it swept all three benchmark scenarios); `evo2=both`
+    // re-opens the comparison.
+    let evo2s: &[(DtEvo2, &'static str)] = if evo2_both {
+        &[
+            (DtEvo2::FeveredFrenzy, "fevered"),
+            (DtEvo2::CarnageReign, "carnage"),
+        ]
+    } else {
+        &[(DtEvo2::FeveredFrenzy, "fevered")]
+    };
+    for &(evo2, label) in evo2s {
         let base = WeaponBase::dual_toxocyst_incarnon(true, evo2);
         let base_form = WeaponBase::dual_toxocyst_base(true, evo2);
         let (mut c, stats) = enumerate_candidates(
