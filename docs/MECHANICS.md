@@ -38,7 +38,16 @@ elemental combination. All percentages are expressed as fractions unless noted.
 - **Secondary (combined) elemental:** Blast (Heat⊕Cold), Corrosive (Electricity⊕Toxin),
   Gas (Heat⊕Toxin), Magnetic (Cold⊕Electricity), Radiation (Heat⊕Electricity),
   Viral (Cold⊕Toxin).
-- **Special:** True, Void, Tau (context-specific; enumerate as encountered).
+- **Special:** Void, Tau (context-specific; enumerate as encountered);
+  **True** (wiki `Damage/True_Damage`) and **Cinematic**
+  (`DT_CINEMATIC_DAMAGE`, wiki `Damage/Cinematic_Damage`) — functional
+  twins: hidden, no faction modifiers, bypass **armor** DR only (never
+  other DR sources), unaffected by physical/elemental bonuses, no procs,
+  Sentients don't adapt. Distinct internal types with **disjoint
+  sources**: True = Finisher attacks, many Warframe abilities, Basmu's
+  pulse (never moddable onto weapons); Cinematic = Bleed ticks only.
+  Keep them separate — finisher-damage effects touch neither Bleed nor
+  Cinematic. (Community formerly called Cinematic "Finishing Damage".)
 
 **Source:** wiki. **Status:** unverified.
 
@@ -442,6 +451,30 @@ component** of the hit vector:
 - Faction vulnerability/resistance (×1.5/×0.5) applies **per component at
   all times** — the same multiplier whether the component lands on shields
   or health (post-U36).
+
+**Damage Reduction framework** (wiki `Damage_Reduction`). All DR sources
+stack **multiplicatively**; the full per-component chain on either side:
+```
+received = dealt × Π(1 − DRᵢ) × armor_factor × Π(1 + type_modifierᵢ)
+```
+- **Two armor formulas coexist**: players/Warframes use
+  `net_armor/(net_armor+300)` (300 armor = 50% DR, still current);
+  enemies post-U36 use `0.9·√(armor/2700)` (§ above). ⚠️ The DR page's
+  enemy example still shows the old 300-curve with 100 armor (below the
+  200 spawn floor) — stale pre-U36 content; `Damage/Calculation` wins
+  for enemies.
+- **Armor reduces health damage only** (never shields). Pure DR
+  (ability-granted) reduces both. **DR of any kind does NOT apply to
+  Overguard, Object health, or absorb effects** (Iron Skin, Snow Globe —
+  though some absorbs scale their pool with armor).
+- Type-modifier pool scoping: modifiers from mods/effects apply to both
+  health and shields; modifiers innate to a pool apply to that pool only;
+  modifiers on armor apply to health but not shields.
+- Quick Thinking "energy as health": `DR = 1 − 100/net_efficiency`,
+  efficiency sources additive; multiplicative with everything else.
+- **Damage Attenuation** (bosses): DPS-adaptive reduction on enemy
+  health, multiplicative with other types — recorded-only for now, a
+  major future transcription target (per-boss formulas).
 
 **Level scaling** (wiki `Enemy_Level_Scaling`; community-derived, DE has not
 confirmed — treat as unverified). Common structure, with `Δ = current level −
