@@ -146,15 +146,15 @@ on a crit), so crits on the head carry a larger premium at unchanged rate.
 **The CD bucket has three layers** (insertion points differ — official
 wording never distinguishes them):
 ```
-cd_total = quantize(base_cd + Σ weapon_flat_cd)   ← Critical Parallel-type,
-                                                     added BEFORE quantization
-           × (1 + Σ relative_cd_mods)             ← Vital Sense-type, after
+cd_total = (base_cd + Σ weapon_flat_cd)           ← Critical Parallel-type
+           × (1 + Σ relative_cd_mods)             ← Vital Sense-type
            + Σ receiver_flat_cd                   ← Cold stacks / Frozen, from
                                                      the target's DebuffBar, last
 ```
-(Evidence: §Quantization ordering for the first two; the Cold page's Kunai
-example `1.6 × 2.1 + 0.5` for the receiver layer.) The tier and headshot
-formulas below consume `cd_total`.
+(Evidence: §Quantization ordering for the first two layers' relative
+positions; the Cold page's Kunai example `1.6 × 2.1 + 0.5` for the
+receiver layer.) The tier and headshot formulas below consume `cd_total`.
+**Quantization is deliberately omitted from the model** — see below.
 
 **Tiers.** For `effective_cc` (wiki `Critical_Hit` §Critical Tiers):
 - Guaranteed tier `t = floor(effective_cc)`.
@@ -176,10 +176,14 @@ Order matters: **flat/absolute** CD bonuses (e.g. Incarnon "Critical Parallel"
 Vital Sense) multiply **after**. Required for shot-by-shot parity with in-game
 numbers.
 
-> **Decision (2026-07-24): recorded only, deliberately NOT implemented yet.**
-> Implement when pipeline layer [1] (mod resolution) lands, before golden
-> tests that compare per-shot numbers — without it those will never match
-> exactly.
+> **Decision (2026-07-24, revised): EXCLUDED from the model entirely for
+> now** — the user suspects DE may have dropped quantization as tech
+> improved. Counter-evidence on record: the U40 patch history notes
+> damage quantization was *changed* (1/16 → 1/32), suggesting it was
+> still live then. **Golden tests decide**: per-shot numbers will either
+> match the clean formulas exactly, or show the characteristic 1/32-step
+> deviations — reinstate the quantize layer only if measurements demand
+> it.
 
 Related: per-shot **damage** quantization also exists and was changed from
 1/16 to 1/32 steps in Update 40 (undocumented, per the wiki `Damage` patch
