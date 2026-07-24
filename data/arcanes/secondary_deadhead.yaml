@@ -19,8 +19,17 @@ buff:
 
 # Rank-5 passives (unconditional while equipped):
 passives:
-  headshot_multiplier_bonus: 0.30   # additive with Prowl-type bonuses
+  # ADDED TO THE MULTIPLIER VALUE itself (wiki notes: a 2.0x headshot
+  # multiplier becomes 2.3x, a 1.0x becomes 1.3x) - i.e. 3.0x -> 3.3x,
+  # a x1.1 damage factor on standard heads, NOT x1.3. Stacks additively
+  # with Prowl-type bonuses. Electricity/Gas procs can register their
+  # own 1.0x headshots -> 1.3x (wiki notes a 1.69x compounded case).
+  headshot_multiplier_bonus: 0.30
   recoil: -0.50                     # not a damage bucket
+
+# Trigger detail: kills by most status procs on the head do NOT count as
+# headshot kills; Electricity/Gas procs can land headshots themselves.
+# (Sim: only direct pellet headshot kills refresh - conservative match.)
 
 source:
   url: https://wiki.warframe.com/w/Secondary_Deadhead

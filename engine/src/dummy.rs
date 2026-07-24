@@ -1311,15 +1311,15 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
 
             let tier = roll_crit_tier(effective_cc, rng);
             let part = pick_part(&params.body_parts, rng);
-            // Deadhead's rank-5 passive: +30% headshot multiplier on true
-            // heads (additive with Prowl-type bonuses; rides the part
-            // context into DoT snapshots).
-            let head_bonus = if part.is_head && params.arcane == Arcane::Deadhead {
-                1.0 + DEADHEAD_HEADSHOT_BONUS
+            // Deadhead's rank-5 passive: +30% headshot multiplier — added
+            // to the MULTIPLIER VALUE itself (wiki: 2.0x → 2.3x, 1.0x →
+            // 1.3x; additive with Prowl-type bonuses), NOT a ×1.3 factor.
+            // Rides the part context into DoT snapshots.
+            let part_factor = if part.is_head && params.arcane == Arcane::Deadhead {
+                part.multiplier + DEADHEAD_HEADSHOT_BONUS
             } else {
-                1.0
+                part.multiplier
             };
-            let part_factor = part.multiplier * head_bonus;
             // Wiki Critical_Hit §Critical Headshots: a crit on an eligible
             // >1x location doubles cd inside the tier formula (a cd_total
             // that INCLUDES Cold's flat bonus — freeze.yaml notes).
@@ -2581,8 +2581,9 @@ mod tests {
     #[test]
     fn deadhead_adds_base_damage_stacks_and_headshot_bonus() {
         // Deadhead full stacks (initial): arc bd = 3 × 1.2 = 3.6 -> ratio
-        // 4.6 (bd 0); +30% headshot multiplier on the 1x head part.
-        // 10 shots × 75 × 1.3 × 4.6 = 4485. No kills, 24 s > run: no decay.
+        // 4.6 (bd 0). The +30% headshot bonus is ADDED to the multiplier
+        // VALUE (wiki: 2.0x → 2.3x): this 3x head becomes 3.3x, NOT 3.9x.
+        // 10 shots × 75 × 3.3 × 4.6 = 11,385. No kills: no decay in 10 s.
         let p = DummyParams {
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
@@ -2590,7 +2591,7 @@ mod tests {
             body_parts: vec![BodyPart {
                 name: "head".into(),
                 aim_weight: 1.0,
-                multiplier: 1.0,
+                multiplier: 3.0,
                 is_head: true,
                 crit_bonus: false,
             }],
@@ -2598,7 +2599,7 @@ mod tests {
         };
         let s = monte_carlo(&p, 20, 5);
         assert!(
-            (s.mean_damage - 4485.0).abs() < 1e-9,
+            (s.mean_damage - 11_385.0).abs() < 1e-9,
             "dmg {}",
             s.mean_damage
         );

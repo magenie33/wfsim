@@ -15,7 +15,7 @@ evolution_selections:
   4: dt_commodores_fortune     # +0.20 BASE crit chance, both guns
 
 # Official arcane (user, 2026-07-25): won the three-way comparison
-# (Deadhead 72.53 vs Enervate 51.70 vs Cascadia Flare 46.83 kill score
+# (Deadhead 63.54 vs Enervate 51.70 vs Cascadia Flare 46.83 kill score
 # on the ULTIMATE STRESS TEST).
 arcane: secondary_deadhead
 
@@ -35,7 +35,7 @@ slots:
   exilus: naramon
 
 # Official optimized loadout (search result 2026-07-25, wfsim-optimizer:
-# 204,648 candidates, kill score 72.529 = 71.951 +/- 0.645 kills / 60 s
+# 204,648 candidates, kill score 63.535 = 62.940 +/- 0.561 kills / 60 s
 # vs Thrax @9999 Steel Path, instant respawn, 100% headshots, real
 # incarnon cycle, Frenzy Permanent, Galvanized + arcane buffs initial-
 # full). Element order: Electricity first (pairs with Frenzy's injected
