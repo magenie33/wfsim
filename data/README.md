@@ -27,7 +27,7 @@ item  ──references──▶  perk  ──grants_buff──▶  buff
 | `arcanes/` | arcane **items** | `rarity`, `max_rank`, `arcanes_to_max`, `drop_chance`, `perk` |
 | `weapons/` | weapons | `forms` (multi-form), `perks` (perk id list), `incarnon_evolutions` |
 | `mods/` | mods | (tbd) |
-| `enemies/` | enemies | `stats` (base values at `base_level`), `body_parts` (multiplier / `is_head` / `crit_bonus`), `faction_damage_override`, raw `mechanics` |
+| `enemies/` | enemies (loaded by `engine::enemy_data`; `custom/` holds synthetic test targets) | `stats` (base values at `base_level`), `body_parts` (multiplier / `is_head` / `crit_bonus`; aim weights are scenario-side), `scaling_faction`, `can_be_eximus`, `faction_damage_override`, `synthetic`, raw `mechanics` |
 | `factions/` | faction damage modifiers (post-U36: x1.5 vulnerable / x0.5 resistant, faction-wide) | `factions.<id>.vulnerable/resistant`, `special` (Object, Overguard) |
 
 ## Where a parameter lives
@@ -51,3 +51,10 @@ A parameter goes on whichever entity *owns* it, so it is not duplicated:
 - Names can collide across kinds by design (a *Frenzy* perk grants a *Frenzy*
   buff); the directory + `kind` disambiguate.
 - Schemas are drafts (`schema_version: 0`) and will be pinned as the loader lands.
+- **Custom enemies**: any YAML dropped under `enemies/` (conventionally
+  `enemies/custom/`) becomes a saved target type. Mark hand-made targets that
+  do not exist in-game with `synthetic: true` and `verification.status:
+  synthetic`. The loader rejects impossible data instead of guessing:
+  unsupported fields with consequences (e.g. `shield > 0` before shields are
+  implemented) and impossible combinations (e.g. Eximus of a unit with
+  `can_be_eximus: false`) are hard errors.

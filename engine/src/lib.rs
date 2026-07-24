@@ -19,6 +19,7 @@
 pub mod buffs;
 pub mod damage;
 pub mod dummy;
+pub mod enemy_data;
 pub mod perks;
 pub mod rng;
 pub mod scaling;

@@ -314,6 +314,18 @@ S = smoothstep between the transition bounds:
 **Level cap.** Enemy levels cap at **9999**; only Void Fissure missions exceed
 it. Implemented in `engine::scaling` with regression tests at the cap.
 
+**Eximus** (wiki `Eximus`, `Eximus/Compatibilities`). Eximus are empowered
+variants of normal units: Overguard (base **12**, scaled by the overguard
+curve), a **replaced base health** (the piecewise formulas above: factor 0.25
+with shields/armor, 0.375 without, ×g(level), floored at 1.1× base), +1,000
+base affinity (affinity multiplier ×3), and a type-specific aura/ability
+(Arson, Arctic, Shock, ... — not yet modeled). **Eligibility is per-unit**:
+the compatibility table covers Grineer / Corpus / Infested / Corrupted /
+Sentient / Murmur units only, and even there not every unit × type combination
+exists. **Zariman Thrax units have no Eximus variant** (their overguard is
+innate). Engine rule: enemy data carries `can_be_eximus`; building an Eximus
+target from a unit without one is an **error**, never a silent acceptance.
+
 **Steel Path** (wiki `The_Steel_Path`). Enemy level **+100** (+50 in
 Archwing/Railjack, +20 in Duviri with no stat bonus), health **×2.5**, shields
 **×2.5**. **Armor is NOT increased** (removed in U36, which also fixed shields

@@ -7,6 +7,10 @@ kind: enemy
 # but faction-damage bonuses treat them as Zariman (FactionDamageOverride).
 faction: unknown
 faction_damage_override: zariman   # see data/factions/damage_modifiers.yaml
+scaling_faction: unaffiliated      # level-scaling curves (MECHANICS.md §8)
+# Thrax units have NO Eximus variant: absent from the wiki
+# Eximus/Compatibilities table (their overguard is innate, not Eximus-granted).
+can_be_eximus: false
 type: melee
 weapons: [hespar]
 planets: [zariman_ten_zero]

@@ -57,9 +57,13 @@ pub enum TargetMode {
 }
 
 /// The simulated target: base stats + level, scaled via [`scaling`].
+///
+/// Prefer building this through `enemy_data::EnemySpec::target_params`, which
+/// rejects combinations that do not exist in-game (e.g. an Eximus of a unit
+/// with no Eximus variant). Hand-built values are re-checked at spawn.
 #[derive(Debug, Clone)]
 pub struct TargetParams {
-    pub name: &'static str,
+    pub name: String,
     pub base_level: u32,
     pub level: u32,
     pub base_health: f64,
@@ -69,6 +73,12 @@ pub struct TargetParams {
     /// Steel Path: health ×2.5 (armor and overguard untouched). The +100 level
     /// shift is a mission-spawn effect — pick `level` accordingly.
     pub steel_path: bool,
+    /// Eximus variant: boosted base health + overguard (wiki `Eximus`). Only
+    /// legal when `can_be_eximus` — the combination is validated at spawn.
+    pub eximus: bool,
+    /// Whether this unit has an Eximus variant in-game (wiki
+    /// `Eximus/Compatibilities`; Thrax units do not).
+    pub can_be_eximus: bool,
     pub mode: TargetMode,
 }
 
@@ -77,7 +87,7 @@ impl TargetParams {
     /// unmitigated, which keeps raw-damage calibration runs simple.
     pub fn training_dummy() -> Self {
         Self {
-            name: "training dummy",
+            name: "training dummy".into(),
             base_level: 1,
             level: 1,
             base_health: 1.0,
@@ -85,23 +95,30 @@ impl TargetParams {
             base_overguard: 0.0,
             health_curve: scaling::health::UNAFFILIATED,
             steel_path: false,
+            eximus: false,
+            can_be_eximus: false,
             mode: TargetMode::InfiniteHealth,
         }
     }
 
-    /// Thrax Centurion (data/enemies/thrax_centurion.yaml): 3600 HP / 200
-    /// armor / 15 overguard at base level 1, unaffiliated scaling curves.
-    pub fn thrax_centurion(level: u32, steel_path: bool, mode: TargetMode) -> Self {
-        Self {
-            name: "Thrax Centurion",
-            base_level: 1,
-            level,
-            base_health: 3600.0,
-            base_armor: 200.0,
-            base_overguard: 15.0,
-            health_curve: scaling::health::UNAFFILIATED,
-            steel_path,
-            mode,
+    /// Impossible-combination check (see `enemy_data` for the rigor rule).
+    pub fn validate(&self) -> Result<(), String> {
+        if self.eximus && !self.can_be_eximus {
+            return Err(format!(
+                "{} cannot be an Eximus: no such unit exists in-game",
+                self.name
+            ));
+        }
+        Ok(())
+    }
+
+    /// Effective base health: Eximus units replace theirs with the boosted
+    /// level-dependent value before the faction curve applies.
+    fn effective_base_health(&self) -> f64 {
+        if self.eximus {
+            scaling::eximus_base_health(self.base_health, self.level, self.base_armor > 0.0)
+        } else {
+            self.base_health
         }
     }
 
@@ -113,7 +130,7 @@ impl TargetParams {
         } else {
             1.0
         };
-        self.base_health * self.health_curve.multiplier(delta) * sp
+        self.effective_base_health() * self.health_curve.multiplier(delta) * sp
     }
 
     /// Scaled armor (spawn minimum 200, cap 2,700; Steel Path does not touch
@@ -123,8 +140,15 @@ impl TargetParams {
     }
 
     /// Scaled overguard (uses `level − 1`; no Steel Path bonus documented).
+    /// Eximus base overguard is 12; no in-game unit combines innate overguard
+    /// with Eximus status, so the max() is only a defensive guess.
     pub fn overguard(&self) -> f64 {
-        scaling::overguard_at(self.base_overguard, self.level)
+        let base = if self.eximus {
+            scaling::EXIMUS_BASE_OVERGUARD.max(self.base_overguard)
+        } else {
+            self.base_overguard
+        };
+        scaling::overguard_at(base, self.level)
     }
 }
 
@@ -136,6 +160,9 @@ struct TargetState {
 
 impl TargetState {
     fn spawn(p: &TargetParams) -> Self {
+        if let Err(e) = p.validate() {
+            panic!("invalid target: {e}");
+        }
         Self {
             overguard: p.overguard(),
             health: p.max_health(),
@@ -175,7 +202,7 @@ impl TargetState {
 /// One aimable location on the target (wiki `Enemy_Body_Parts`).
 #[derive(Debug, Clone)]
 pub struct BodyPart {
-    pub name: &'static str,
+    pub name: String,
     /// Relative probability of a shot landing here (weights are normalized).
     pub aim_weight: f64,
     /// Location damage multiplier.
@@ -207,14 +234,14 @@ impl DummyParams {
     pub fn humanoid_parts() -> Vec<BodyPart> {
         vec![
             BodyPart {
-                name: "body",
+                name: "body".into(),
                 aim_weight: 0.5,
                 multiplier: 1.0,
                 is_head: false,
                 crit_bonus: false,
             },
             BodyPart {
-                name: "head",
+                name: "head".into(),
                 aim_weight: 0.5,
                 multiplier: 3.0, // humanoid head (wiki: Enemy_Body_Parts)
                 is_head: true,
@@ -453,7 +480,7 @@ mod tests {
         // Headshot effects must never fire; damage uses plain cd.
         // Per shot: E = 225*(1+cc) -> total = 2250 + 225*5.0 = 3375.
         let p = single_part(BodyPart {
-            name: "fanny pack",
+            name: "fanny pack".into(),
             aim_weight: 1.0,
             multiplier: 3.0,
             is_head: false,
@@ -474,7 +501,7 @@ mod tests {
         // eligible for the critical-location bonus -> same expectation as the
         // fanny pack: 3375, yet headshot rate is 100%.
         let p = single_part(BodyPart {
-            name: "helmeted head",
+            name: "helmeted head".into(),
             aim_weight: 1.0,
             multiplier: 3.0,
             is_head: true,
@@ -495,7 +522,7 @@ mod tests {
         // location never receives the critical-location bonus.
         // Per shot: E = 75*(1+cc) -> total = 750 + 75*5.0 = 1125.
         let p = single_part(BodyPart {
-            name: "mouth",
+            name: "mouth".into(),
             aim_weight: 1.0,
             multiplier: 1.0,
             is_head: false,
@@ -511,7 +538,7 @@ mod tests {
 
     fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> TargetParams {
         TargetParams {
-            name: "test target",
+            name: "test target".into(),
             base_level: 1,
             level: 1,
             base_health: 50.0, // below the weakest possible shot (75)
@@ -519,8 +546,36 @@ mod tests {
             base_overguard: overguard,
             health_curve: crate::scaling::health::UNAFFILIATED,
             steel_path: false,
+            eximus: false,
+            can_be_eximus: false,
             mode,
         }
+    }
+
+    #[test]
+    #[should_panic(expected = "cannot be an Eximus")]
+    fn impossible_eximus_combination_panics_at_spawn() {
+        let mut t = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
+        t.eximus = true; // can_be_eximus is false -> impossible in-game
+        let p = DummyParams {
+            target: t,
+            ..DummyParams::default()
+        };
+        let _ = run_once(&p, &mut Rng::new(1));
+    }
+
+    #[test]
+    fn eximus_boosts_health_and_grants_overguard() {
+        let mut t = frail_target(TargetMode::InfiniteHealth, 0.0, 0.0);
+        t.can_be_eximus = true;
+        t.eximus = true;
+        t.level = 200;
+        // Unarmored/unshielded: base health max(50*1.1, 0.375*(50+900)*6).
+        let base = (50.0f64 * 1.1).max(0.375 * 950.0 * 6.0);
+        let expect = base * t.health_curve.multiplier(199.0);
+        assert!((t.max_health() - expect).abs() < 1e-6);
+        // Eximus overguard: base 12, scaled.
+        assert!(t.overguard() > 0.0);
     }
 
     #[test]

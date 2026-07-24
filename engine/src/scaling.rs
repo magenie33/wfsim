@@ -141,6 +141,32 @@ pub fn overguard_at(base_overguard: f64, current_level: u32) -> f64 {
     base_overguard * OVERGUARD.multiplier((current_level.saturating_sub(1)) as f64)
 }
 
+/// All Eximus units have this base overguard (scaled by [`OVERGUARD`]).
+pub const EXIMUS_BASE_OVERGUARD: f64 = 12.0;
+
+/// Eximus replacement base health (wiki `Enemy_Level_Scaling` §Health,
+/// Eximus tab): applied to the unit's base health *before* the faction curve.
+/// `factor` is 0.25 for units with shields or armor, 0.375 for units with
+/// neither.
+pub fn eximus_base_health(base_health: f64, level: u32, has_shields_or_armor: bool) -> f64 {
+    let factor = if has_shields_or_armor { 0.25 } else { 0.375 };
+    let x = level as f64;
+    let g = if x <= 15.0 {
+        1.0
+    } else if x <= 25.0 {
+        1.0 + 0.025 * (x - 15.0)
+    } else if x <= 35.0 {
+        1.25 + 0.125 * (x - 25.0)
+    } else if x <= 50.0 {
+        2.5 + (2.0 / 15.0) * (x - 35.0)
+    } else if x <= 100.0 {
+        4.5 + 0.03 * (x - 50.0)
+    } else {
+        6.0
+    };
+    (base_health * 1.1).max(factor * (base_health + 900.0) * g)
+}
+
 /// Armor → damage reduction. Corroborated by the 2,700-cap = 90% statement.
 /// Source: wiki (docs/MECHANICS.md §8) — unverified.
 pub fn armor_damage_reduction(armor: f64) -> f64 {
@@ -221,6 +247,24 @@ mod tests {
         // Zero base armor stays zero (the minimum is not conjured from nothing).
         assert_eq!(armor_at(0.0, 9999, 1), 0.0);
         assert_eq!(armor_damage_reduction(0.0), 0.0);
+    }
+
+    #[test]
+    fn eximus_base_health_piecewise() {
+        // x <= 15: max(1.1·bh, 0.25·(bh+900)). For bh = 300: max(330, 300) = 330.
+        assert_eq!(eximus_base_health(300.0, 10, true), 330.0);
+        // Large bh, armored, x > 100: 0.25·(bh+900)·6.
+        let h = eximus_base_health(3600.0, 200, true);
+        assert!((h - 0.25 * 4500.0 * 6.0).abs() < 1e-9, "h = {h}");
+        // Unarmored/unshielded factor is 0.375.
+        let h = eximus_base_health(3600.0, 200, false);
+        assert!((h - 0.375 * 4500.0 * 6.0).abs() < 1e-9, "h = {h}");
+        // Continuity at the segment joins (x = 25 -> 1.25, x = 35 -> 2.5);
+        // small base so the boosted term beats the 1.1x floor.
+        let a = eximus_base_health(100.0, 25, true);
+        assert!((a - 0.25 * 1000.0 * 1.25).abs() < 1e-9, "a = {a}");
+        let b = eximus_base_health(100.0, 35, true);
+        assert!((b - 0.25 * 1000.0 * 2.5).abs() < 1e-9, "b = {b}");
     }
 
     #[test]
