@@ -27,24 +27,36 @@ gated inside that window, or does it pass in full?
 enters the shield pipeline, so the gate should not see it. Status:
 **assumption / unverified** until this protocol is run.
 
-**Target.** Corpus **Crewman** (no armor, Head 3.0x). Base @L1: 90 HP /
-120 shields. Spawn at a level with comfortably large shields (e.g. 30+) so
-multiple shots are needed per shield bar — exact values don't matter, only
-the displayed damage numbers do.
+**Primary method — kill-threshold discrimination (no recording, no number
+reading).** Turn the transient into a persistent binary: pick a level where
+target health `H` sits between the gated and ungated toxin damage,
+`0.05·T < H ≤ T`. Then the breaking shot either kills on the spot (ungated)
+or leaves the target standing (gated).
 
-**Weapon.** Hitscan, low crit, one Toxin mod, no other elements. E.g.
-Lex (or Dual Toxocyst base) + Pathogen Rounds (+90% Toxin), optionally
-Hornet Strike. Note the resulting panel: `P` physical + `T` toxin.
-Avoid status-heavy setups or ignore the late (+1 s) DoT tick numbers.
+- **Target.** Corpus **Crewman** (no armor, Head 3.0x; base @L1: 90 HP /
+  120 shields). Level ≈ **5** (≈115 HP / ≈148 shields — robust to ±20%
+  formula error).
+- **Weapons.** *Shield whittler*: any unmodded pure-IPS weapon (bare
+  Braton) — IPS never touches health while shields are up. *Verdict shot*:
+  **Lex + Pathogen Rounds** (+90% Toxin): panel 180 physical + `T` = 162
+  Toxin.
+- **Steps.**
+  1. Whittle the shield bar visibly low (<20%, eyeball is fine) with body
+     shots from the whittler.
+  2. One **body** shot with the Lex (never the head — weakspots bypass the
+     gate). The 180 physical certainly finishes the shield; the 162 Toxin
+     lands the same instant.
+  3. Outcome: **instant death** → Toxin ungated (assumption confirmed).
+     **Survives the instant** → Toxin is gated (fix MECHANICS.md + engine).
+  4. Repeat ≥5×. A crit on the verdict shot cannot flip the result
+     (gated 0.05 × 324 ≈ 16 ≪ H). If a Toxin *proc* ticks afterwards
+     (green DoT numbers), void that trial — the DoT could kill a
+     should-survive target over 6 s.
 
-**Steps.**
-1. Shoot the **body** with shields still up. Expect per shot: blue `P`
-   (shields) + white `T` (health, bypass). Record the white baseline `T`.
-2. Whittle shields low, then fire the **breaking shot** at the body.
-3. Read the white number of that same instant:
-   - `≈ T` → Toxin is **ungated** (assumption confirmed).
-   - `≈ 0.05 × T` → Toxin **is gated** (fix MECHANICS.md §8 + engine).
-4. Repeat ≥5 times (discard crit-colored readings).
+**Alternative (needs reading numbers).** Same setup at a high level; read
+the white (health-pool) damage number of the breaking shot: ≈`T` ungated,
+≈`0.05·T` gated. Practical only with recording/frame-stepping — kept for
+cross-checking.
 
 **Bonus readings from the same session:**
 - The physical spill of the breaking shot (white part next to the blue
