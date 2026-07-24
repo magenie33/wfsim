@@ -1,0 +1,85 @@
+schema_version: 0
+id: freeze
+name: Freeze
+kind: debuff
+default_scope: enemy
+
+aliases: []
+internal_name: PT_CHILLED
+damage_type: cold              # DT_FREEZE
+
+applied_by:
+  damage_type: cold
+
+duration_seconds: 6
+refreshable: false
+stacking: true
+max_stacks: 10                 # stack 10 = the Frozen state (below)
+per_stack_duration: true
+stack_overflow: none
+
+# Non-uniform stack tables (index = stacks - 1, stacks 1..9; the 10th
+# stack transitions into the Frozen state instead).
+stack_value_tables:
+  # Movement speed, fire rate, and attack speed reduction.
+  action_speed_reduction: [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90]
+  # FLAT critical-damage-multiplier increase on damage the victim RECEIVES:
+  # +0.1x first stack, +0.05x per further stack. Semantics: additive with
+  # the attacker's CD mods, applied BEFORE the crit tier formula
+  # (cd_total = base_cd x (1 + cd_mods) + cold_bonus), and does NOT apply
+  # to Area of Effect damage (same class rule as Weakened's crit bonus).
+  crit_damage_received: [0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
+
+modifier_conditions:
+  crit_damage_received: weapon_direct_damage_only   # not AoE
+
+# The 10th stack replaces stacking with a special state:
+frozen_state:
+  trigger: 10th stack applied
+  duration_seconds: 3
+  effects:
+    - complete CC (prevents all action)
+    - negates shield recharge
+    - crit_damage_received bonus becomes +1.0x (doubled)
+  on_expiry: 3 Cold stacks remain
+  note: >-
+    Frozen enemies CANNOT receive additional Cold stacks - no further
+    stacking or duration refresh while Frozen (e.g. Primary Frostbite
+    does nothing against a Frozen target).
+
+stack_caps:
+  # Bosses and Overguard holders cap at 4 stacks (can never be Frozen).
+  bosses_and_overguard: 4
+
+on_player:
+  # Enemy-inflicted Cold on players: -10% slow per stack, max 4 (-40%).
+  action_speed_reduction_per_stack: 0.10
+  max_stacks: 4
+  exception: >-
+    The Optimism Peely Pix (Temporal Archimedea) can accumulate 10 stacks
+    on players with progressively stronger slow and the Frozen state.
+
+cc_effects:
+  - kind: slow
+    note: See action_speed_reduction table; Frozen at 10 stacks.
+
+railjack_variant: >-
+  Immobilize: disables the target ship's weapons and slows it to a stop
+  for 6 s, refreshed by further procs. On the player Railjack: Ice Hazard
+  (disables interactive elements - pilot seat, turrets, slingshot, doors,
+  forge).
+
+notes: >-
+  Open question: whether the crit-headshot fold-in (2*cd - 1) doubles a
+  cd_total that already includes the Cold bonus, or only the modded cd -
+  affects headshot builds vs chilled targets; needs measurement.
+
+source:
+  url: https://wiki.warframe.com/w/Damage/Cold_Damage
+  note: Dedicated damage-type page (worked crit examples included there
+    pin the additive-before-tier semantics).
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified
+  needs_measurement: true
