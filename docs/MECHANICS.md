@@ -236,6 +236,11 @@ element procs are weighted, not uniform.
 - **SC > 100%**: `floor(SC)` guaranteed rolls + `frac(SC)` chance of one
   more; **each roll's type is drawn independently** (the same type can
   repeat within one hit).
+- **Status damage never procs status** (universal rule, user-confirmed
+  2026-07-24 by contradiction: Heat ticks proccing Heat would self-stack
+  forever). No damage instance originating from a status effect — DoT
+  ticks, Detonate bursts, Tesla Chain hits, Gas Clouds — ever rolls a
+  status proc. Proc rolls happen only on weapon/ability source instances.
 - **Forced procs** are guaranteed effects independent of both `SC` and the
   damage distribution, and occur **alongside** rolled procs ("not the same
   as 100% status chance"; DE-internal term, never shown in-game). They are

@@ -84,6 +84,8 @@ railjack_variant: >-
   proc weighting entirely.
 
 notes: >-
+  The radial (like all status damage) never procs statuses - universal
+  rule, see MECHANICS.md §6; no self-chaining in crowds.
   Single-target-wise the weakest damaging status (30%/stack); its value is
   the on-kill/10-stack AoE. Xata's Whisper triggers off detonations with
   faction applied AGAIN (triple dip) and elemental bonuses applying to the
