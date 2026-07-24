@@ -38,10 +38,18 @@ pub enum ModEffect {
     /// Combined-element mod (Magnetic Might): added outside the hierarchy.
     CombinedElement(DamageType, f64),
     /// Galvanized Diffusion's on-kill multishot stacks.
-    OnKillMultishot { per_stack: f64, max_stacks: u32 },
-    /// Condition Overload payload (Galvanized Shot): +per_stack direct
-    /// damage per status TYPE on the target, per stack.
-    ConditionOverload { per_stack: f64, max_stacks: u32 },
+    OnKillMultishot {
+        per_stack: f64,
+        max_stacks: u32,
+        duration: f64,
+    },
+    /// Condition Overload payload (Galvanized Shot): +per_stack per
+    /// status TYPE on the target, per on-kill stack, direct hits only.
+    ConditionOverload {
+        per_stack: f64,
+        max_stacks: u32,
+        duration: f64,
+    },
 }
 
 /// A mod as the resolver sees it (stats at the equipped rank).
@@ -70,6 +78,22 @@ impl ModDef {
 pub enum StackPolicy {
     /// Full stacks / 100% uptime on every conditional buff.
     AssumedMax,
+    /// On-kill stacking buffs start at ZERO and are earned/decayed live
+    /// by the sim (user, 2026-07-24: "假设完全靠自己，初始是0").
+    EmergentFromZero,
+}
+
+/// A live on-kill stacking buff spec handed to the sim under
+/// [`StackPolicy::EmergentFromZero`].
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct StackSpec {
+    /// Contribution per stack (multishot: already × base pellets; CO:
+    /// per-type rate).
+    pub per_stack: f64,
+    pub max_stacks: u32,
+    /// Per-refresh duration; decay = lose ONE stack and reset (the
+    /// Galvanized family's graceful decay).
+    pub duration: f64,
 }
 
 /// How the Condition Overload bonus behaves — PER WEAPON (user,
@@ -105,6 +129,11 @@ pub struct WeaponBase {
     pub base_reload: f64,
     /// This weapon's Condition Overload behavior class.
     pub co_behavior: CoBehavior,
+    /// CO base effectiveness: the CO bonus is computed on the ORIGINAL
+    /// base damage, EXCLUDING evolution flat damage (wiki CO catalog:
+    /// "CO-bonus does not use base damage increase Evolution"; DT row
+    /// "100% or 56%"). = original_base / evolved_base.
+    pub co_base_fraction: f64,
     /// Buff-injected elements as RELATIVE bonuses (element, bonus): each
     /// contributes ModifiedBase × bonus at the END of the hierarchy
     /// (rule 8) — Frenzy's +100% Toxin on the base Dual Toxocyst.
@@ -134,9 +163,11 @@ impl WeaponBase {
             buff_multishot_bonus: 1.0, // Fevered Frenzy at 20 stacks
             magazine_size: 270.0,
             base_reload: 3.35,
-            // Per Carnage Reign's recorded "adding behavior" (the CO
-            // catalog entry for this weapon) — to re-verify per form.
+            // Wiki CO catalog row (Dual Toxocyst / Incarnon Mode):
+            // "Adding" class; the CO base EXCLUDES evolution flat damage
+            // ("100% or 56%") — Fevered Frenzy's +50 gives 75/125 = 0.6.
             co_behavior: CoBehavior::AdditiveWithBaseDamage,
+            co_base_fraction: 75.0 / 125.0,
             injected_elements: if frenzy_active {
                 vec![(DamageType::Toxin, 1.0)]
             } else {
@@ -165,6 +196,7 @@ impl WeaponBase {
             magazine_size: 12.0,
             base_reload: 2.35,
             co_behavior: CoBehavior::AdditiveWithBaseDamage,
+            co_base_fraction: 75.0 / 125.0, // Fevered's +50 excluded
             injected_elements: if frenzy_active {
                 vec![(DamageType::Toxin, 1.0)]
             } else {
@@ -194,10 +226,17 @@ pub struct ResolvedPanel {
     pub reload_bonus: f64,
     /// Σ base-damage bonuses (needed live when CO joins this bucket).
     pub base_damage_bonus: f64,
-    /// Σ (CO per_stack × stacks) under the policy — applied per this
-    /// weapon's [`CoBehavior`], DIRECT HITS ONLY.
+    /// Σ (CO per_stack × stacks) under `AssumedMax` (0 under
+    /// `EmergentFromZero` — see `co_stack`) — applied per this weapon's
+    /// [`CoBehavior`] × `co_base_fraction`, DIRECT HITS ONLY.
     pub co_per_type: f64,
     pub co_behavior: CoBehavior,
+    pub co_base_fraction: f64,
+    /// Live on-kill CO stacks (EmergentFromZero).
+    pub co_stack: Option<StackSpec>,
+    /// Live on-kill multishot stacks (EmergentFromZero); per_stack is
+    /// already × base pellets.
+    pub ms_stack: Option<StackSpec>,
     /// (1 + Σ status damage) — multiplies status payload values.
     pub status_damage_mult: f64,
     /// (element, 1 + Σ that element's bonuses) — the elemental bracket of
@@ -207,10 +246,10 @@ pub struct ResolvedPanel {
 
 /// Resolve a mod set in slot order against a weapon base.
 pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> ResolvedPanel {
-    let StackPolicy::AssumedMax = policy;
     let (mut bd, mut ms, mut cc, mut cd, mut sc, mut fr, mut rl, mut sd) =
         (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     let mut co = 0.0;
+    let (mut co_stack, mut ms_stack): (Option<StackSpec>, Option<StackSpec>) = (None, None);
     let mut elem_bonus: Vec<(DamageType, f64)> = Vec::new();
 
     for m in mods {
@@ -234,11 +273,31 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                 ModEffect::OnKillMultishot {
                     per_stack,
                     max_stacks,
-                } => ms += per_stack * max_stacks as f64,
+                    duration,
+                } => match policy {
+                    StackPolicy::AssumedMax => ms += per_stack * max_stacks as f64,
+                    StackPolicy::EmergentFromZero => {
+                        ms_stack = Some(StackSpec {
+                            per_stack: base.base_multishot * per_stack,
+                            max_stacks,
+                            duration,
+                        })
+                    }
+                },
                 ModEffect::ConditionOverload {
                     per_stack,
                     max_stacks,
-                } => co += per_stack * max_stacks as f64,
+                    duration,
+                } => match policy {
+                    StackPolicy::AssumedMax => co += per_stack * max_stacks as f64,
+                    StackPolicy::EmergentFromZero => {
+                        co_stack = Some(StackSpec {
+                            per_stack,
+                            max_stacks,
+                            duration,
+                        })
+                    }
+                },
             }
         }
     }
@@ -278,7 +337,10 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         reload_bonus: rl,
         base_damage_bonus: bd,
         co_behavior: base.co_behavior,
+        co_base_fraction: base.co_base_fraction,
         co_per_type: co,
+        co_stack,
+        ms_stack,
         status_damage_mult: 1.0 + sd,
         elem_dot_bonus: elem_bonus.into_iter().map(|(t, v)| (t, 1.0 + v)).collect(),
     }
@@ -334,6 +396,7 @@ mod tests {
                     ModEffect::ConditionOverload {
                         per_stack: 0.40,
                         max_stacks: 3,
+                        duration: 14.0,
                     },
                 ],
             ),
@@ -344,6 +407,7 @@ mod tests {
                     ModEffect::OnKillMultishot {
                         per_stack: 0.30,
                         max_stacks: 4,
+                        duration: 20.0,
                     },
                 ],
             ),

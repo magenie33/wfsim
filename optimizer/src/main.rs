@@ -175,15 +175,32 @@ fn main() {
             s.mean_transforms
         );
         println!("    mods: {}", names.join(", "));
+        let co_desc = match (&c.panel.co_stack, c.panel.co_per_type) {
+            (Some(s), _) => format!(
+                "CO {:.0}%/type x{} earned (eff {:.0}%)",
+                s.per_stack * 100.0,
+                s.max_stacks,
+                c.panel.co_base_fraction * 100.0
+            ),
+            (None, co) if co > 0.0 => format!("CO/type +{:.0}%", co * 100.0),
+            _ => "no CO".into(),
+        };
+        let ms_desc = match &c.panel.ms_stack {
+            Some(s) => format!(
+                "{:.2}+{:.1}x{} earned",
+                c.panel.multishot, s.per_stack, s.max_stacks
+            ),
+            None => format!("{:.2}", c.panel.multishot),
+        };
         println!(
-            "    panel: {} | cc {:.1}% cd {:.2}x sc {:.1}% fr {:.2} ms {:.2} | CO/type +{:.0}% | {} forma, {}/60",
+            "    panel: {} | cc {:.1}% cd {:.2}x sc {:.1}% fr {:.2} ms {} | {} | {} forma, {}/60",
             vec_desc.join(" / "),
             c.panel.crit_chance * 100.0,
             c.panel.crit_damage,
             c.panel.status_chance * 100.0,
             c.panel.fire_rate,
-            c.panel.multishot,
-            c.panel.co_per_type * 100.0,
+            ms_desc,
+            co_desc,
             c.plan.forma_used,
             c.plan.total_drain
         );

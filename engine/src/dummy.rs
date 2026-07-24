@@ -630,6 +630,13 @@ pub struct DummyParams {
     /// PER-WEAPON CO class (user, 2026-07-24): additive with base damage,
     /// an independent multiplier, or inert on this weapon.
     pub co_behavior: crate::loadout::CoBehavior,
+    /// CO base effectiveness (wiki: the CO bonus excludes evolution flat
+    /// damage — DT with Fevered = 75/125 = 0.6).
+    pub co_base_fraction: f64,
+    /// Live on-kill CO stacks, earned from zero (EmergentFromZero).
+    pub co_stack: Option<crate::loadout::StackSpec>,
+    /// Live on-kill multishot stacks, earned from zero.
+    pub ms_stack: Option<crate::loadout::StackSpec>,
     /// (1 + status-damage bonuses): scales every status payload value.
     pub status_damage_mult: f64,
     /// (element, 1 + Σ its bonuses) brackets for elemental DoT ticks.
@@ -749,6 +756,9 @@ impl DummyParams {
             base_damage_bonus: panel.base_damage_bonus,
             co_per_type: panel.co_per_type,
             co_behavior: panel.co_behavior,
+            co_base_fraction: panel.co_base_fraction,
+            co_stack: panel.co_stack,
+            ms_stack: panel.ms_stack,
             status_damage_mult: panel.status_damage_mult,
             elem_dot_bonus: panel.elem_dot_bonus.clone(),
             dot_modified_base: Some(panel.modified_base),
@@ -830,6 +840,9 @@ impl Default for DummyParams {
             base_damage_bonus: 0.0,
             co_per_type: 0.0,
             co_behavior: crate::loadout::CoBehavior::AdditiveWithBaseDamage,
+            co_base_fraction: 1.0,
+            co_stack: None,
+            ms_stack: None,
             status_damage_mult: 1.0,
             elem_dot_bonus: Vec::new(),
             dot_modified_base: None,
@@ -887,6 +900,50 @@ fn pick_part<'a>(parts: &'a [BodyPart], rng: &mut Rng) -> &'a BodyPart {
     parts.last().expect("dummy needs at least one body part")
 }
 
+/// Live on-kill stack state (Galvanized graceful decay: on timeout lose
+/// ONE stack and reset the duration for the remainder).
+#[derive(Default)]
+struct LiveStacks {
+    stacks: u32,
+    expiry: f64,
+}
+
+impl LiveStacks {
+    /// Apply pending decay and return the current stack count.
+    fn current(&mut self, now: f64, duration: f64) -> u32 {
+        while self.stacks > 0 && self.expiry <= now {
+            self.stacks -= 1;
+            self.expiry += duration;
+        }
+        self.stacks
+    }
+
+    fn on_kill(&mut self, now: f64, spec: &crate::loadout::StackSpec) {
+        self.current(now, spec.duration);
+        self.stacks = (self.stacks + 1).min(spec.max_stacks);
+        self.expiry = now + spec.duration;
+    }
+}
+
+/// The run's earned on-kill buffs (weapon-scoped: shared by both forms
+/// of a transform group).
+#[derive(Default)]
+struct GalStacks {
+    co: LiveStacks,
+    ms: LiveStacks,
+}
+
+impl GalStacks {
+    fn bump_on_kill(&mut self, params: &DummyParams, now: f64) {
+        if let Some(spec) = &params.co_stack {
+            self.co.on_kill(now, spec);
+        }
+        if let Some(spec) = &params.ms_stack {
+            self.ms.on_kill(now, spec);
+        }
+    }
+}
+
 /// Disrupt's on-break payload (data/debuffs/disrupt.yaml): breaking
 /// shields/overguard with Disrupt active fires a forced Tesla Chain
 /// instance totalling 3% of the max pool per Magnetic stack (cap 30%),
@@ -914,6 +971,7 @@ fn push_overguard_break_proc(debuffs: &mut DebuffState, params: &DummyParams, no
 /// damage never procs status.
 fn process_ticks(
     debuffs: &mut DebuffState,
+    gal: &mut GalStacks,
     until: f64,
     target: &mut TargetState,
     params: &DummyParams,
@@ -975,6 +1033,8 @@ fn process_ticks(
             push_overguard_break_proc(debuffs, params, now);
         }
         if killed {
+            // Status-proc kills grant Galvanized stacks too (GS rules).
+            gal.bump_on_kill(params, now);
             // Fresh individual: clean DebuffBar (decision 2026-07-24).
             *debuffs = DebuffState::default();
             break;
@@ -990,6 +1050,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     let mut frenzy = Frenzy::new();
     let mut target = TargetState::spawn(&params.target);
     let mut debuffs = DebuffState::default();
+    let mut gal = GalStacks::default();
     let mut r = RunResult::default();
 
     // Per-phase precomputation: the quantized vector is static per phase
@@ -1097,7 +1158,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         };
 
         // Status events scheduled before this shot land first.
-        process_ticks(&mut debuffs, t + 1e-9, &mut target, params, &mut r);
+        process_ticks(
+            &mut debuffs,
+            &mut gal,
+            t + 1e-9,
+            &mut target,
+            params,
+            &mut r,
+        );
 
         // Timed buffs (Frenzy) lapse before this shot reads the bar;
         // Permanent locks re-assert — only in phases where the perk exists
@@ -1137,8 +1205,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         let effective_cc = ap.base_crit_chance + flat_crit + weakened_cc;
 
         // Multishot: pellets this pull = floor + fractional chance; every
-        // pellet is an independent damage instance.
-        let n_pellets = ap.multishot.floor() as u32 + rng.chance(ap.multishot.fract()) as u32;
+        // pellet is an independent damage instance. Earned Galvanized
+        // stacks add live.
+        let ms_eff = ap.multishot
+            + params
+                .ms_stack
+                .as_ref()
+                .map_or(0.0, |s| s.per_stack * gal.ms.current(t, s.duration) as f64);
+        let n_pellets = ms_eff.floor() as u32 + rng.chance(ms_eff.fract()) as u32;
         let (mut any_head, mut any_big) = (false, false);
         let headshots_before = r.headshots;
         r.shots += 1;
@@ -1149,8 +1223,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // damage received, and Condition Overload's type count.
             let mit = debuffs.mitigation(t, sd);
             let cd_total = ap.crit_multiplier + debuffs.cold_cd_bonus(t);
-            // CO per this weapon's behavior class (direct hits only).
-            let co_total = ap.co_per_type * debuffs.distinct_statuses() as f64;
+            // CO per this weapon's behavior class (direct hits only):
+            // (static + earned stacks) × base-effectiveness × types.
+            let co_rate = ap.co_per_type
+                + params
+                    .co_stack
+                    .as_ref()
+                    .map_or(0.0, |s| s.per_stack * gal.co.current(t, s.duration) as f64);
+            let co_total = co_rate * ap.co_base_fraction * debuffs.distinct_statuses() as f64;
             let co_mult = match ap.co_behavior {
                 // Joins the base-damage bucket: diluted by Hornet Strike.
                 crate::loadout::CoBehavior::AdditiveWithBaseDamage => {
@@ -1189,6 +1269,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 push_overguard_break_proc(&mut debuffs, params, t);
             }
             if killed {
+                gal.bump_on_kill(params, t);
                 // The killing pellet's procs die with the old individual;
                 // remaining pellets hit the fresh spawn.
                 debuffs = DebuffState::default();
@@ -1354,6 +1435,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                                 push_overguard_break_proc(&mut debuffs, params, t);
                             }
                             if killed {
+                                gal.bump_on_kill(params, t);
                                 debuffs = DebuffState::default();
                             }
                         }
@@ -1405,6 +1487,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     // Drain remaining status events up to the end of the engagement.
     process_ticks(
         &mut debuffs,
+        &mut gal,
         params.duration_secs,
         &mut target,
         params,
@@ -2333,6 +2416,62 @@ mod tests {
         };
         let s = monte_carlo(&p, 20, 4);
         assert!((s.mean_shots - 15.0).abs() < 1e-9, "shots {}", s.mean_shots);
+    }
+
+    #[test]
+    fn galvanized_decay_loses_one_stack_and_resets_duration() {
+        let mut s = LiveStacks {
+            stacks: 3,
+            expiry: 5.0,
+        };
+        assert_eq!(s.current(4.9, 10.0), 3);
+        assert_eq!(s.current(5.1, 10.0), 2); // lost one, next decay at 15
+        assert_eq!(s.current(14.9, 10.0), 2);
+        assert_eq!(s.current(15.1, 10.0), 1);
+        assert_eq!(s.current(26.0, 10.0), 0);
+    }
+
+    #[test]
+    fn emergent_multishot_stacks_are_earned_by_kills_from_zero() {
+        // Frail 50 HP target dies to every pellet; +1.0 pellet per stack,
+        // cap 2, long duration. Shot k fires (1 + stacks) pellets and the
+        // FIRST pellet's kill bumps the stack before the next shot:
+        // pellets per shot: 1, 2, 3, 3, ... = 1 + 2 + 8×3 = 27.
+        let p = DummyParams {
+            ms_stack: Some(crate::loadout::StackSpec {
+                per_stack: 1.0,
+                max_stacks: 2,
+                duration: 100.0,
+            }),
+            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            arcane_enervate: false,
+            crit_multiplier: 1.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!(
+            (s.mean_pellets - 27.0).abs() < 1e-9,
+            "pellets {}",
+            s.mean_pellets
+        );
+    }
+
+    #[test]
+    fn co_base_fraction_scales_the_co_bonus() {
+        // Additive class, bd 0, fraction 0.6, one active type:
+        // 75 × (1 + 9 × (1 + 0.6)) = 75 × 15.4 = 1155.
+        let p = DummyParams {
+            co_per_type: 1.0,
+            co_base_fraction: 0.6,
+            ..bare(DamageType::Impact)
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!(
+            (s.mean_damage - 1155.0).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
     }
 
     #[test]

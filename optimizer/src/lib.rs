@@ -61,6 +61,7 @@ pub fn pool() -> Vec<ModDef> {
                 OnKillMultishot {
                     per_stack: 0.30,
                     max_stacks: 4,
+                    duration: 20.0,
                 },
             ],
         ),
@@ -116,6 +117,7 @@ pub fn pool() -> Vec<ModDef> {
                 ConditionOverload {
                     per_stack: 0.40,
                     max_stacks: 3,
+                    duration: 14.0,
                 },
             ],
         ),
@@ -393,7 +395,8 @@ fn expand_subset(
         );
 
         let refs: Vec<&ModDef> = ordered.iter().map(|&i| &pool[i]).collect();
-        let panel = resolve(base, &refs, StackPolicy::AssumedMax);
+        // On-kill stacks start at ZERO and are earned live (user policy).
+        let panel = resolve(base, &refs, StackPolicy::EmergentFromZero);
 
         // Second-level dedup: orders resolving to the same combined vector
         // are the same build (docs/OPTIMIZER.md §1). Deduping on the
@@ -413,7 +416,7 @@ fn expand_subset(
         out.push(Candidate {
             ordered: ordered.clone(),
             panel,
-            base_panel: second_form.map(|b| resolve(b, &refs, StackPolicy::AssumedMax)),
+            base_panel: second_form.map(|b| resolve(b, &refs, StackPolicy::EmergentFromZero)),
             plan: plan.clone(),
         });
     }
@@ -476,8 +479,11 @@ pub fn evaluate(c: &Candidate, s: &Scenario, runs: u32, seed: u64) -> Summary {
 
 /// Dominance pruning (命题作文 preset): mods whose every effect is the
 /// same KIND as another pool mod's but strictly smaller are excluded up
-/// front — they can never appear in an optimum under `AssumedMax` (drain
-/// differences only change Forma count, never damage ranking).
+/// front — they can never appear in an optimum (drain differences only
+/// change Forma count, never damage ranking). NOTE: plain Barrel
+/// Diffusion is BACK in the pool under `EmergentFromZero` — Galvanized
+/// Diffusion's unconditional +110% sits below its +120% until a stack is
+/// earned, so that dominance no longer holds a priori.
 pub fn dominated_mods() -> Vec<(&'static str, &'static str)> {
     vec![
         (
@@ -497,12 +503,8 @@ pub fn dominated_mods() -> Vec<(&'static str, &'static str)> {
             "primed_convulsion has strictly more electricity",
         ),
         (
-            "barrel_diffusion",
-            "galvanized_diffusion gives strictly more multishot at assumed max stacks",
-        ),
-        (
             "amalgam_barrel_diffusion",
-            "barrel_diffusion (itself dominated) already exceeds its 109.5%",
+            "barrel_diffusion has strictly more multishot (109.5% < 120%)",
         ),
     ]
 }
