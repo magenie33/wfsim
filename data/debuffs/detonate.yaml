@@ -1,0 +1,87 @@
+schema_version: 0
+id: detonate
+name: Detonate
+kind: debuff
+default_scope: enemy
+
+aliases: [Blast]
+internal_name: PT_FLASHBANG
+damage_type: blast             # DT_EXPLOSION (Heat + Cold)
+
+applied_by:
+  damage_type: blast
+
+duration_seconds: 1.5          # the per-stack "fuse", scaled by Status
+refreshable: false             # Duration mods
+stacking: true
+max_stacks: 10                 # reaching 10 detonates everything early
+per_stack_duration: true
+stack_overflow: none
+
+# --- delayed-burst payload (a third payload type besides `dot`) -------------
+delayed_burst:
+  fuse_seconds: 1.5
+  # Normal expiry (fuse elapses): single-target hit on the host only.
+  #   proc damage = 0.3 x ModdedBase x (1 + FactionBonuses)
+  #                     x (1 + StatusDamageBonuses) x AdditionalMultipliers
+  #   ModdedBase = Base x (1 + BaseDamageBonuses) x (1 + FactionBonuses)
+  # AdditionalMultipliers = the proccing hit's crit multiplier and body-part
+  # multiplier (headcrits included!) - snapshot per stack. Faction
+  # double-dips as usual. Heat/Cold elemental mods do NOT scale it (they
+  # only raise Blast's share -> proc likelihood); Valence Formation /
+  # Thermal Transfer do NOT either.
+  single_target_coefficient: 0.3
+  early_detonation:
+    triggers:
+      - 10th stack applied
+      - host dies (a killing blow that INFLICTS >=1 Blast proc counts even
+        with zero prior stacks; conversely the killing blow needn't proc
+        Blast if stacks already exist)
+    effects:
+      - all stacks deal their single-target hits to the host at once
+        (10 stacks = 300% ModdedBase total)
+      - PLUS one merged radial instance: 5 m radius, 3.0 x ModdedBase PER
+        STACK (max 3000%), hitting surrounding enemies ONLY - the host is
+        excluded from the radial
+    radial:
+      radius_m: 5.0
+      per_stack_coefficient: 3.0
+      falloff: none              # explicitly no falloff
+      radius_moddable: false     # Firestorm/Fulmination do nothing
+      excludes_host: true
+      merged_single_instance: true
+      # Each stack's snapshot multipliers (crit/headcrit/part) are summed
+      # into the radial - critical-headshot kills radiate their full
+      # multiplier in AoE.
+  # EXCEPTION to the negative-status-duration rule: Detonate always deals
+  # its damage even when total Status Duration is below 0%.
+  fires_at_negative_status_duration: true
+
+cc_effects:
+  - kind: stagger
+    note: The early-detonation explosion staggers enemies caught in it
+      (in-game description).
+
+on_kill_cosmetic: >-
+  Corpse vaporizes - unusable by Desecrate, and stops Magnetize pulls.
+  Sparks jet from afflicted enemies while stacks are live.
+
+railjack_variant: >-
+  None - Blast has no Railjack counterpart and is excluded from Railjack
+  proc weighting entirely.
+
+notes: >-
+  Single-target-wise the weakest damaging status (30%/stack); its value is
+  the on-kill/10-stack AoE. Xata's Whisper triggers off detonations with
+  faction applied AGAIN (triple dip) and elemental bonuses applying to the
+  Whisper portion - recorded as a curiosity, not yet modeled.
+
+source:
+  url: https://wiki.warframe.com/w/Damage/Blast_Damage
+  note: Dedicated damage-type page including the Notes list (no-falloff,
+    negative-duration exception, killing-blow edge cases, headcrit AoE).
+  retrieved: "2026-07-24"
+
+verification:
+  status: unverified
+  needs_measurement: true
