@@ -12,6 +12,9 @@ modifiers:
   # x2.5 is an INDEPENDENT multiplier (wiki "+150%") applied AFTER any equipped
   # fire-rate mods/bonuses, i.e. base x (1 + sum fire_rate_mods) x 2.5 -- its own
   # multiplicative bucket, not the additive fire-rate-mod bucket.
+  # VERBATIM (wiki, re-checked 2026-07-25): "Bonus is multiplicative to
+  # other sources of fire rate" / "stacks multiplicatively after any
+  # equipped fire rate mods or fire rate bonuses".
   fire_rate_multiplier: 2.5
   # +100% ammo efficiency => infinite ammo: shots_per_ammo = 1/(1-e).
   ammo_efficiency_bonus: 1.0
