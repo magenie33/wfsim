@@ -96,17 +96,28 @@ function capacityUsed() {
   return slots.reduce((sum, s) => { const m = modById(s.mod); return m ? sum + slotDrain(m.drain, m.polarity, s.pol) : sum; }, 0);
 }
 
-// Forma = multiset difference of the final slot polarities vs the innate POOL.
-// Innate polarities can be freely repositioned (Forma repositions), so only
-// polarities BEYOND what the pool provides cost a Forma. (Polarity is fully
-// decoupled from mods: empty slots and innate slots can be re-polarized.)
+// Forma cost, broken down by TYPE (regular / Omni / Umbra cost different items).
+// Innate polarities form a free-repositionable pool of REGULAR polarities, so
+// regular Forma = max(added-beyond-pool, removed-from-pool): same-polarity
+// repositioning nets 0, but BLANKING an innate polarity (removal) costs a Forma,
+// and a colour swap costs one (add+remove of one slot). Omni/Umbra are never
+// innate here — each such slot is one Omni/Umbra Forma.
 function formaCount() {
   const need = {}, pool = {};
-  slots.forEach((s) => { if (s.pol) need[s.pol] = (need[s.pol] || 0) + 1; });
-  innate.forEach((p) => { if (p) pool[p] = (pool[p] || 0) + 1; });
-  let forma = 0;
-  for (const p in need) forma += Math.max(0, need[p] - (pool[p] || 0));
-  return forma;
+  let umbra = 0, omni = 0;
+  slots.forEach((s) => {
+    if (!s.pol) return;
+    if (s.pol === "Omni") omni++;
+    else if (s.pol === "Umbra") umbra++;
+    else need[s.pol] = (need[s.pol] || 0) + 1;
+  });
+  innate.forEach((p) => { if (p && p !== "Omni" && p !== "Umbra") pool[p] = (pool[p] || 0) + 1; });
+  let added = 0, removed = 0;
+  for (const p of new Set([...Object.keys(need), ...Object.keys(pool)])) {
+    const d = (need[p] || 0) - (pool[p] || 0);
+    if (d > 0) added += d; else removed += -d;
+  }
+  return { regular: Math.max(added, removed), umbra, omni };
 }
 
 // Auto-assign polarities for MINIMUM Forma-to-fit (mirrors engine plan_forma):
@@ -134,7 +145,9 @@ function renderMods() {
   const capEl = $("capacity");
   capEl.textContent = `${used} / ${CAP}`;
   capEl.classList.toggle("over", used > CAP);
-  $("forma").textContent = `${formaCount()} Forma`;
+  const f = formaCount();
+  $("forma").textContent = [`${f.regular} Forma`, f.umbra ? `${f.umbra} Umbra` : null, f.omni ? `${f.omni} Omni` : null]
+    .filter(Boolean).join(" · ");
 
   const box = $("mod-slots");
   box.innerHTML = "";
