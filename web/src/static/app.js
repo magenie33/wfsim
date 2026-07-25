@@ -4,8 +4,12 @@
 
 const $ = (id) => document.getElementById(id);
 const CDN = "https://cdn.warframestat.us/img/";
-const POL = (p) => `https://wiki.warframe.com/w/Special:FilePath/${p}_Pol.svg`;
-const POLS = ["Madurai", "Naramon", "Vazarin", "Zenurik", "Unairu", "Penjaga", "Umbra"];
+// Omni (universal) polarity uses the wiki's "Any" symbol.
+const POL = (p) => `https://wiki.warframe.com/w/Special:FilePath/${p === "Omni" ? "Any" : p}_Pol.svg`;
+// Polarities available on GUN slots. Zenurik/Unairu/Penjaga are Warframe-augment
+// / melee-stance / companion-ability polarities — not gun slots. "Omni" is the
+// Omni Forma universal polarity (matches any mod EXCEPT Umbra mods).
+const GUN_POLS = ["Madurai", "Naramon", "Vazarin", "Umbra", "Omni"];
 const CAP = 60;
 const imgTag = (src, cls) => src ? `<img class="${cls||''}" src="${src}" onerror="this.style.visibility='hidden'"/>` : `<span class="${cls||''}"></span>`;
 
@@ -81,9 +85,10 @@ function applyWeapon(id, presetMods) {
 
 // ---- forma / capacity plan (mirrors engine::mods::plan_forma) ----
 function slotDrain(base, modPol, slotPol) {
-  if (slotPol && slotPol === modPol) return Math.ceil(base / 2);   // matched: −50% round up
-  if (slotPol) return Math.round(base * 1.25);                     // mismatched: +25%
-  return base;                                                     // no polarity
+  if (!slotPol) return base;                                        // no polarity
+  if (slotPol === "Omni") return modPol === "Umbra" ? base : Math.ceil(base / 2); // universal, not Umbra
+  if (slotPol === modPol) return Math.ceil(base / 2);              // matched: −50% round up
+  return Math.round(base * 1.25);                                  // mismatched: +25%
 }
 
 // Capacity = Σ effective drain over slots holding a mod.
@@ -217,7 +222,7 @@ function openPolMenu(slotIdx) {
   closePopovers();
   const menu = $("slot-menu");
   const cur = slots[slotIdx].pol;
-  menu.innerHTML = POLS.map((p) => `<div class="mi ${p === cur ? "sel" : ""}" data-p="${p}">${imgTag(POL(p), "pol")} ${p}</div>`).join("") +
+  menu.innerHTML = GUN_POLS.map((p) => `<div class="mi ${p === cur ? "sel" : ""}" data-p="${p}">${imgTag(POL(p), "pol")} ${p === "Omni" ? "Omni (any)" : p}</div>`).join("") +
     `<div class="mi ${!cur ? "sel" : ""}" data-p="">◇ none</div>`;
   const el = $("mod-slots").children[slotIdx];
   place(menu, el);
