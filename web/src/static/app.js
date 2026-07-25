@@ -18,6 +18,11 @@ let slots = [];      // 8 × { mod:id|null, pol:string|null, manual:bool } — P
 let innate = [];     // 8 × innate polarity name|null
 let arcane = "none";
 let evo2 = "fevered";
+let pickerSlot = 0;
+// Mod-picker sort/filter prefs — persisted across slots, presets and weapons.
+let pickerPrefs = { sort: "name", dir: "asc", pol: null };
+try { const s = JSON.parse(localStorage.getItem("wfsim-picker")); if (s) pickerPrefs = { ...pickerPrefs, ...s }; } catch (_) {}
+const savePickerPrefs = () => localStorage.setItem("wfsim-picker", JSON.stringify(pickerPrefs));
 
 // theme
 (function () {
@@ -76,8 +81,8 @@ function applyWeapon(id, presetMods) {
   $("arcane-sub").textContent = w.sentinel ? "sentinels cannot equip arcanes" : `${w.arcane_slots} slot`;
   if (w.arcane_slots < 1) arcane = "none";
 
-  slots = Array.from({ length: 8 }, (_, i) => ({ mod: null, pol: innate[i] }));
-  (presetMods || []).filter((m) => modById(m)).slice(0, 8).forEach((m, i) => { slots[i].mod = m; });
+  slots = Array.from({ length: 8 }, (_, i) => ({ mod: null, pol: innate[i], rank: null }));
+  (presetMods || []).filter((m) => modById(m)).slice(0, 8).forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });
   autoForma(); // sensible default: minimum-Forma polarities for the preset
 
   renderMods(); renderArcanes(); renderEvo();
@@ -91,9 +96,15 @@ function slotDrain(base, modPol, slotPol) {
   return Math.round(base * 1.25);                                  // mismatched: +25%
 }
 
-// Capacity = Σ effective drain over slots holding a mod.
+// Drain at a given rank: rises 1 per rank from rank 0 (= max-rank drain − max_rank).
+function modDrain(m, rank) {
+  const r = rank == null ? m.max_rank : Math.max(0, Math.min(m.max_rank, rank));
+  return m.drain - m.max_rank + r;
+}
+
+// Capacity = Σ effective drain over slots holding a mod (at its rank).
 function capacityUsed() {
-  return slots.reduce((sum, s) => { const m = modById(s.mod); return m ? sum + slotDrain(m.drain, m.polarity, s.pol) : sum; }, 0);
+  return slots.reduce((sum, s) => { const m = modById(s.mod); return m ? sum + slotDrain(modDrain(m, s.rank), m.polarity, s.pol) : sum; }, 0);
 }
 
 // Forma cost, broken down by TYPE (regular / Omni / Umbra cost different items).
@@ -128,10 +139,11 @@ function autoForma() {
   slots.forEach((s, i) => { const m = modById(s.mod); if (m) filled.push({ i, m }); });
   slots.forEach((s) => { s.pol = null; });
   const pool = innate.filter(Boolean).slice();
-  const order = filled.slice().sort((a, b) => b.m.drain - a.m.drain);
+  const bd = ({ i, m }) => modDrain(m, slots[i].rank);
+  const order = filled.slice().sort((a, b) => bd(b) - bd(a));
   const matched = new Set();
   for (const { i, m } of order) { const k = pool.indexOf(m.polarity); if (k >= 0) { pool.splice(k, 1); matched.add(i); } }
-  const drainOf = () => filled.reduce((s, { i, m }) => s + (matched.has(i) ? Math.ceil(m.drain / 2) : m.drain), 0);
+  const drainOf = () => filled.reduce((s, x) => s + (matched.has(x.i) ? Math.ceil(bd(x) / 2) : bd(x)), 0);
   while (drainOf() > CAP) { const next = order.find(({ i }) => !matched.has(i)); if (!next) break; matched.add(next.i); }
   for (const { i, m } of filled) slots[i].pol = matched.has(i) ? m.polarity : null;
 }
@@ -156,11 +168,22 @@ function renderMods() {
     const m = s.mod ? modById(s.mod) : null;
     if (m) {
       el.className = "slot filled";
-      const eff = slotDrain(m.drain, m.polarity, s.pol);
+      const r = s.rank == null ? m.max_rank : s.rank;
+      const base = modDrain(m, r);
+      const eff = slotDrain(base, m.polarity, s.pol);
+      const lowered = r < m.max_rank;
+      const rank = m.max_rank > 0
+        ? `<span class="rank ${lowered ? "lowered" : ""}"><button class="rk" data-d="-1">−</button><b>R${r}${lowered ? "/" + m.max_rank : ""}</b><button class="rk" data-d="1">+</button></span>`
+        : "";
       el.innerHTML = polBtn(s.pol, i) + imgTag(m.image ? CDN + m.image : null, "mod") +
-        `<div class="info"><div class="mn">${m.name}</div><div class="dr">${eff} drain${eff !== m.drain ? ` (base ${m.drain})` : ""}</div></div>` +
+        `<div class="info"><div class="mn">${m.name}</div><div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div>` +
         `<button class="dots" title="options">⋯</button>`;
       el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openSlotMenu(i, e.currentTarget); });
+      el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const nr = Math.max(0, Math.min(m.max_rank, r + Number(b.dataset.d)));
+        slots[i].rank = nr; renderMods();
+      }));
     } else {
       el.className = "slot empty";
       el.innerHTML = polBtn(s.pol, i) + `<span class="plus">+ add mod</span>`;
@@ -184,14 +207,31 @@ function place(pop, anchor) {
 
 function openPicker(slotIdx, anchor) {
   closePopovers();
+  pickerSlot = slotIdx;
   const pop = $("mod-popover");
   place(pop, anchor);
   const search = $("mod-search");
   search.value = "";
-  const draw = () => renderMenu(slotIdx, search.value);
-  search.oninput = draw;
-  draw();
+  search.oninput = () => renderMenu(slotIdx, search.value);
+  renderTools();
+  renderMenu(slotIdx, "");
   search.focus();
+}
+
+function renderTools() {
+  const t = $("picker-tools");
+  const pols = ["Madurai", "Naramon", "Vazarin", "Umbra"].filter((p) => currentPool.some((m) => m.polarity === p));
+  t.innerHTML =
+    `<label>Sort <select id="pk-sort"><option value="name">Name</option><option value="drain">Drain</option></select></label>` +
+    `<button id="pk-dir" class="ghost-btn small" title="direction">${pickerPrefs.dir === "asc" ? "▲" : "▼"}</button>` +
+    `<span class="pk-pols"><span class="pk-pol ${!pickerPrefs.pol ? "sel" : ""}" data-p="">all</span>` +
+    pols.map((p) => `<span class="pk-pol ${pickerPrefs.pol === p ? "sel" : ""}" data-p="${p}" title="${p}">${imgTag(POL(p), "pol")}</span>`).join("") +
+    `</span>`;
+  const redraw = () => { savePickerPrefs(); renderTools(); renderMenu(pickerSlot, $("mod-search").value); };
+  $("pk-sort").value = pickerPrefs.sort;
+  $("pk-sort").onchange = () => { pickerPrefs.sort = $("pk-sort").value; redraw(); };
+  $("pk-dir").onclick = () => { pickerPrefs.dir = pickerPrefs.dir === "asc" ? "desc" : "asc"; redraw(); };
+  t.querySelectorAll(".pk-pol").forEach((o) => o.onclick = () => { pickerPrefs.pol = o.dataset.p || null; redraw(); });
 }
 
 function familyConflict(mod, exceptIdx) {
@@ -204,9 +244,13 @@ function renderMenu(slotIdx, query) {
   const q = query.trim().toLowerCase();
   const hits = currentPool
     .filter((m) => !placedElsewhere(m.id, slotIdx))
+    .filter((m) => !pickerPrefs.pol || m.polarity === pickerPrefs.pol)
     .filter((m) => !q || m.name.toLowerCase().includes(q) || m.effects.join(" ").toLowerCase().includes(q))
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .slice(0, 12);
+    .sort((a, b) => {
+      const c = pickerPrefs.sort === "drain" ? a.drain - b.drain : a.name.localeCompare(b.name);
+      return pickerPrefs.dir === "desc" ? -c : c;
+    })
+    .slice(0, 14);
   menu.innerHTML = hits.length ? hits.map((m) => {
     const conflict = familyConflict(m, slotIdx);
     return `<div class="opt ${conflict ? "dis" : ""}" data-id="${m.id}" title="${conflict ? "incompatible (" + m.family + ")" : m.effects.join(" · ")}">
@@ -215,6 +259,7 @@ function renderMenu(slotIdx, query) {
   }).join("") : `<div class="opt dis">no matches</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => {
     slots[slotIdx].mod = o.dataset.id; // polarity is decoupled — keep the slot's polarity
+    slots[slotIdx].rank = modById(o.dataset.id).max_rank; // added mods default to max rank
     closePopovers(); renderMods();
   }));
 }

@@ -67,7 +67,10 @@ pub enum ModEffect {
 #[derive(Debug, Clone)]
 pub struct ModDef {
     pub id: &'static str,
+    /// Drain at the EQUIPPED (max) rank.
     pub base_drain: u32,
+    /// Max rank (drain rises 1/rank from rank 0, so rank-0 drain = base_drain − max_rank).
+    pub max_rank: u32,
     pub polarity: Polarity,
     /// Mods sharing a family are mutually exclusive (wiki Incompatible).
     pub family: Option<&'static str>,
@@ -508,6 +511,7 @@ mod tests {
         ModDef {
             id,
             base_drain: 10,
+            max_rank: 10,
             polarity: Polarity::Madurai,
             family: None,
             effects,

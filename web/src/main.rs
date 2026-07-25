@@ -139,54 +139,56 @@ fn innate_slots_for(id: &str) -> Vec<Option<Polarity>> {
 fn rifle_pool() -> Vec<ModDef> {
     use wfsim_engine::damage::DamageType as D;
     use ModEffect::*;
-    let md = |id, base_drain, polarity, family, effects| ModDef {
+    // (id, max-rank drain, max_rank, polarity, family, effects)
+    let md = |id, base_drain, max_rank, polarity, family, effects| ModDef {
         id,
         base_drain,
+        max_rank,
         polarity,
         family,
         effects,
     };
     vec![
         // Damage
-        md("serration", 14, Polarity::Madurai, None, vec![BaseDamage(1.65)]),
-        md("heavy_caliber", 16, Polarity::Madurai, None, vec![BaseDamage(1.65)]), // accuracy downside = no-op in a damage sim
+        md("serration", 14, 10, Polarity::Madurai, None, vec![BaseDamage(1.65)]),
+        md("heavy_caliber", 16, 10, Polarity::Madurai, None, vec![BaseDamage(1.65)]), // accuracy downside = no-op
         // Multishot (Split Chamber ↔ Galvanized Chamber share the "chamber" family)
-        md("split_chamber", 15, Polarity::Madurai, Some("chamber"), vec![Multishot(0.90)]),
-        md("galvanized_chamber", 16, Polarity::Madurai, Some("chamber"), vec![
+        md("split_chamber", 15, 5, Polarity::Madurai, Some("chamber"), vec![Multishot(0.90)]),
+        md("galvanized_chamber", 16, 10, Polarity::Madurai, Some("chamber"), vec![
             Multishot(0.80),
             OnKillMultishot { per_stack: 0.30, max_stacks: 5, duration: 20.0 },
         ]),
-        md("vigilante_armaments", 9, Polarity::Naramon, None, vec![Multishot(0.60)]),
+        md("vigilante_armaments", 9, 5, Polarity::Naramon, None, vec![Multishot(0.60)]),
         // Crit
-        md("point_strike", 9, Polarity::Madurai, None, vec![CritChance(1.50)]),
-        md("vital_sense", 9, Polarity::Madurai, None, vec![CritDamage(1.20)]),
-        md("critical_delay", 9, Polarity::Naramon, None, vec![CritChance(2.00), FireRate(-0.20)]), // corrupted
+        md("point_strike", 9, 5, Polarity::Madurai, None, vec![CritChance(1.50)]),
+        md("vital_sense", 9, 5, Polarity::Madurai, None, vec![CritDamage(1.20)]),
+        md("critical_delay", 9, 5, Polarity::Naramon, None, vec![CritChance(2.00), FireRate(-0.20)]), // corrupted
         // Status
-        md("galvanized_aptitude", 12, Polarity::Vazarin, None, vec![
+        md("galvanized_aptitude", 12, 10, Polarity::Vazarin, None, vec![
             StatusChance(0.80),
             ConditionOverload { per_stack: 0.40, max_stacks: 2, duration: 20.0 },
         ]),
         // Single elements (+90%)
-        md("cryo_rounds", 11, Polarity::Vazarin, None, vec![Element(D::Cold, 0.90)]),
-        md("hellfire", 11, Polarity::Naramon, None, vec![Element(D::Heat, 0.90)]),
-        md("stormbringer", 11, Polarity::Naramon, None, vec![Element(D::Electricity, 0.90)]),
-        md("infected_clip", 11, Polarity::Naramon, None, vec![Element(D::Toxin, 0.90)]),
+        md("cryo_rounds", 11, 5, Polarity::Vazarin, None, vec![Element(D::Cold, 0.90)]),
+        md("hellfire", 11, 5, Polarity::Naramon, None, vec![Element(D::Heat, 0.90)]),
+        md("stormbringer", 11, 5, Polarity::Naramon, None, vec![Element(D::Electricity, 0.90)]),
+        md("infected_clip", 11, 5, Polarity::Naramon, None, vec![Element(D::Toxin, 0.90)]),
         // Dual-stat elements (60/60)
-        md("rime_rounds", 7, Polarity::Madurai, None, vec![Element(D::Cold, 0.60), StatusChance(0.60)]),
-        md("malignant_force", 7, Polarity::Madurai, None, vec![Element(D::Toxin, 0.60), StatusChance(0.60)]),
-        md("high_voltage", 7, Polarity::Madurai, None, vec![Element(D::Electricity, 0.60), StatusChance(0.60)]),
-        md("thermite_rounds", 7, Polarity::Madurai, None, vec![Element(D::Heat, 0.60), StatusChance(0.60)]),
+        md("rime_rounds", 7, 3, Polarity::Madurai, None, vec![Element(D::Cold, 0.60), StatusChance(0.60)]),
+        md("malignant_force", 7, 3, Polarity::Madurai, None, vec![Element(D::Toxin, 0.60), StatusChance(0.60)]),
+        md("high_voltage", 7, 3, Polarity::Madurai, None, vec![Element(D::Electricity, 0.60), StatusChance(0.60)]),
+        md("thermite_rounds", 7, 3, Polarity::Madurai, None, vec![Element(D::Heat, 0.60), StatusChance(0.60)]),
         // Fire rate
-        md("vile_acceleration", 9, Polarity::Naramon, None, vec![FireRate(0.90), BaseDamage(-0.15)]), // corrupted
-        md("speed_trigger", 9, Polarity::Madurai, None, vec![FireRate(0.60)]),
-        md("shred", 11, Polarity::Madurai, None, vec![FireRate(0.30)]), // punch-through = no-op single-target
+        md("vile_acceleration", 9, 5, Polarity::Naramon, None, vec![FireRate(0.90), BaseDamage(-0.15)]), // corrupted
+        md("speed_trigger", 9, 5, Polarity::Madurai, None, vec![FireRate(0.60)]),
+        md("shred", 11, 5, Polarity::Madurai, None, vec![FireRate(0.30)]), // punch-through = no-op single-target
         // Headshot-gated crit (Galvanized ↔ Argon share the "scope" family; both
         // do nothing on a sentinel — recorded so the picker shows them honestly)
-        md("galvanized_scope", 12, Polarity::Madurai, Some("scope"), vec![
+        md("galvanized_scope", 12, 10, Polarity::Madurai, Some("scope"), vec![
             OnHeadshotCritChance { bonus: 1.20, duration: 12.0 },
             OnHeadshotKillCritChance { per_stack: 0.40, max_stacks: 5, duration: 12.0 },
         ]),
-        md("argon_scope", 7, Polarity::Madurai, Some("scope"), vec![
+        md("argon_scope", 7, 5, Polarity::Madurai, Some("scope"), vec![
             OnHeadshotCritChance { bonus: 1.35, duration: 9.0 },
         ]),
     ]
@@ -377,6 +379,7 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 "id": m.id,
                 "name": prettify(m.id),
                 "drain": m.base_drain,
+                "max_rank": m.max_rank,
                 "polarity": format!("{:?}", m.polarity),
                 "family": m.family,
                 "category": mod_category(m),

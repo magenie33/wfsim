@@ -137,6 +137,7 @@ fn to_moddef(mf: ModFile) -> ModDef {
         // ModDef.base_drain is the drain at the EQUIPPED (max) rank: drain
         // rises by 1 per rank from the rank-0 `base_drain`, so max = base + rank.
         base_drain: mf.base_drain + mf.max_rank,
+        max_rank: mf.max_rank,
         polarity: polarity(&mf.polarity),
         family: mf.family.map(|s| &*Box::leak(s.into_boxed_str())),
         effects,

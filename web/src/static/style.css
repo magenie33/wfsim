@@ -83,6 +83,23 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .addbar{display:flex;align-items:center;gap:8px;padding:9px 11px;border-bottom:1px solid var(--line)}
 .addbar input{background:transparent;border:0;color:var(--text);font:inherit;flex:1;outline:none}
 .combo-menu{max-height:320px;overflow-y:auto}
+
+/* picker sort/filter toolbar */
+.picker-tools{display:flex;align-items:center;gap:8px;padding:7px 11px;border-bottom:1px solid var(--line);background:var(--panel3);font-size:12px;color:var(--text-2);flex-wrap:wrap}
+.picker-tools select{width:auto;padding:3px 6px;font-size:12px}
+.picker-tools .pk-pols{display:flex;align-items:center;gap:4px;margin-left:auto}
+.pk-pol{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 5px;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-size:11px}
+.pk-pol .pol{width:14px;height:14px}
+.pk-pol:hover{border-color:var(--accent)}
+.pk-pol.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+
+/* rank stepper (prominent when below max) */
+.rank{display:inline-flex;align-items:center;gap:4px;margin-top:3px;font-size:11px;color:var(--muted)}
+.rank .rk{width:18px;height:18px;line-height:1;padding:0;border:1px solid var(--line);border-radius:5px;background:var(--plane);color:var(--text);cursor:pointer;font-size:13px}
+.rank .rk:hover{border-color:var(--accent)}
+.rank b{font-variant-numeric:tabular-nums;min-width:26px;text-align:center}
+.rank.lowered{color:#04111f;background:var(--gold);border-radius:6px;padding:1px 4px;font-weight:700}
+.rank.lowered .rk{background:rgba(0,0,0,.15);border-color:rgba(0,0,0,.25);color:#04111f}
 .combo-menu .opt{display:flex;align-items:center;gap:9px;padding:6px 10px;cursor:pointer}
 .combo-menu .opt:hover{background:var(--panel2)}
 .combo-menu .opt.dis{opacity:.4;cursor:not-allowed}
