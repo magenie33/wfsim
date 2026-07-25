@@ -58,4 +58,3 @@ source:
     Split from the Freeze entry per architecture (a state with its own
     duration/effects/trigger = its own debuff). Display-pinned-at-10
     observation from the user, 2026-07-24.
-  retrieved: "2026-07-24"

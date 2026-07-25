@@ -10,6 +10,5 @@ perk: secondary_enervate   # the mechanic lives in the perk + the buff it grants
 
 source:
   url: https://wiki.warframe.com/w/Secondary_Enervate
-  retrieved: "2026-07-24"
 
 # Arcane item metadata only. Mechanic: data/perks/ + data/buffs/ secondary_enervate.

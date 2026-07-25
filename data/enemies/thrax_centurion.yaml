@@ -65,4 +65,3 @@ source:
     (Module:Enemies/data/unaffiliated); mechanics from the Thrax Centurion
     page. Health/Armor/Shield classes do not exist post-U36 — resistances are
     faction-wide (see data/factions/damage_modifiers.yaml).
-  retrieved: "2026-07-24"

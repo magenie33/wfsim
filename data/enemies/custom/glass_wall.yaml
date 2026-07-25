@@ -29,4 +29,3 @@ body_parts:
 source:
   url: null
   note: Synthetic target authored for wfsim edge-case testing; not game data.
-  retrieved: "2026-07-24"

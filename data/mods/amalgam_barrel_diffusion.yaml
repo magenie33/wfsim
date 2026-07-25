@@ -32,4 +32,3 @@ incompatible_with: [barrel_diffusion, flawed_barrel_diffusion,
 source:
   url: https://wiki.warframe.com/w/Amalgam_Barrel_Diffusion
   note: Real multishot 109.5% per the page's own note (UI rounds up).
-  retrieved: "2026-07-24"

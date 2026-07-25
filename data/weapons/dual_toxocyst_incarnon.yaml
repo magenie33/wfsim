@@ -109,4 +109,3 @@ source:
   url: https://wiki.warframe.com/w/Module:Weapons/data/secondary
   note: Stats from the wiki's structured Lua data module; economy from the
     Incarnon Genesis page.
-  retrieved: "2026-07-24"

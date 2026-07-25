@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WFSim — build configurator</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">WF<span>Sim</span></div>
+    <label class="weapon-pick">Weapon <select id="weapon"></select></label>
+    <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
+  </header>
+
+  <main class="config-page">
+    <div class="wstrip">
+      <img id="w-img" alt="" />
+      <div>
+        <h1 id="w-name">—</h1>
+        <div id="w-tags" class="tags"></div>
+      </div>
+    </div>
+
+    <!-- Block: Mods -->
+    <section class="block" id="mod-block">
+      <div class="bh"><span class="n">1</span><h2>Mods</h2>
+        <span class="sub">
+          <span class="cap" id="capacity">0 / 60</span>
+          <span class="forma" id="forma">0 Forma</span>
+          <button id="clear-mods" class="ghost-btn small">clear</button>
+        </span>
+      </div>
+      <div class="bb">
+        <div id="mod-slots" class="slots"></div>
+        <div class="exlabel">Exilus</div>
+        <div id="exilus" class="slots"></div>
+      </div>
+    </section>
+
+    <!-- Block: Arcane -->
+    <section class="block" id="arcane-block">
+      <div class="bh"><span class="n">2</span><h2>Arcane</h2><span class="sub" id="arcane-sub"></span></div>
+      <div class="bb"><div id="arcane-slots" class="arow"></div></div>
+    </section>
+
+    <!-- Block: Evolution (Incarnon weapons) -->
+    <section class="block" id="evo-block">
+      <div class="bh"><span class="n">3</span><h2>Evolution</h2><span class="sub">灵化 · Incarnon</span></div>
+      <div class="bb"><div id="evo-rows"></div></div>
+    </section>
+
+    <!-- Block: Element (Kuva / Tenet / element-configurable weapons) -->
+    <section class="block" id="element-block" hidden>
+      <div class="bh"><span class="n">4</span><h2>Element</h2><span class="sub">玄骸 · configurable</span></div>
+      <div class="bb"><div id="element-cfg"></div></div>
+    </section>
+  </main>
+
+  <!-- floating popovers (positioned at the active slot) -->
+  <div id="mod-popover" class="popover" hidden>
+    <div class="addbar"><span>🔍</span><input id="mod-search" type="text" placeholder="Search a mod…" autocomplete="off" /></div>
+    <div id="mod-menu" class="combo-menu"></div>
+  </div>
+  <div id="slot-menu" class="popover menu" hidden></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

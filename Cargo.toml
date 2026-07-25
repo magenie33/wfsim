@@ -4,6 +4,7 @@ members = [
     "engine",
     "optimizer",
     "cli",
+    "web",
 ]
 
 [workspace.package]

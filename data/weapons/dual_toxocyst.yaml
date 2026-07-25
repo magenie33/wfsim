@@ -78,4 +78,3 @@ incarnon_evolutions:
 source:
   url: https://wiki.warframe.com/w/Module:Weapons/data/secondary
   note: Stats from the wiki's structured Lua data module.
-  retrieved: "2026-07-24"

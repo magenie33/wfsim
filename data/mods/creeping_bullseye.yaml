@@ -17,4 +17,3 @@ incompatible_with: [pistol_gambit, primed_pistol_gambit, flawed_pistol_gambit]
 source:
   url: https://wiki.warframe.com/w/Creeping_Bullseye
   note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).
-  retrieved: "2026-07-24"

@@ -14,7 +14,6 @@ trigger_notes:
 
 source:
   url: https://wiki.warframe.com/w/Dual_Toxocyst
-  retrieved: "2026-07-24"
 
 # Trigger confirmed: landing a SUCCESSFUL HEADSHOT grants the Frenzy buff (not a
 # headshot kill; older versions triggered on kills). The Frenzy perk and Frenzy

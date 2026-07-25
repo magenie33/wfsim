@@ -27,218 +27,9 @@ use wfsim_engine::mods::{plan_forma, FormaPlan, PlannedMod, Polarity};
 /// (drain = base + max_rank). The YAML files are the source of record; this
 /// table is the engine-facing view until the declarative mod loader lands.
 pub fn pool() -> Vec<ModDef> {
-    use DamageType::*;
-    use ModEffect::*;
-    use Polarity::*;
-    let m = |id, drain, polarity, family, effects| ModDef {
-        id,
-        base_drain: drain,
-        polarity,
-        family,
-        effects,
-    };
-    vec![
-        m("hornet_strike", 14, Madurai, None, vec![BaseDamage(2.20)]),
-        m(
-            "barrel_diffusion",
-            11,
-            Madurai,
-            Some("barrel_diffusion"),
-            vec![Multishot(1.20)],
-        ),
-        m(
-            "amalgam_barrel_diffusion",
-            15,
-            Madurai,
-            Some("barrel_diffusion"),
-            vec![Multishot(1.095)],
-        ),
-        m(
-            "galvanized_diffusion",
-            14,
-            Madurai,
-            Some("barrel_diffusion"),
-            vec![
-                Multishot(1.10),
-                OnKillMultishot {
-                    per_stack: 0.30,
-                    max_stacks: 4,
-                    duration: 20.0,
-                },
-            ],
-        ),
-        m(
-            "target_cracker",
-            9,
-            Madurai,
-            Some("target_cracker"),
-            vec![CritDamage(0.60)],
-        ),
-        m(
-            "primed_target_cracker",
-            14,
-            Madurai,
-            Some("target_cracker"),
-            vec![CritDamage(1.10)],
-        ),
-        m(
-            "lethal_torrent",
-            11,
-            Madurai,
-            None,
-            vec![FireRate(0.60), Multishot(0.60)],
-        ),
-        m(
-            "pistol_gambit",
-            9,
-            Madurai,
-            Some("pistol_gambit"),
-            vec![CritChance(1.20)],
-        ),
-        m(
-            "primed_pistol_gambit",
-            12,
-            Madurai,
-            Some("pistol_gambit"),
-            vec![CritChance(1.87)],
-        ),
-        m(
-            "creeping_bullseye",
-            9,
-            Naramon,
-            Some("pistol_gambit"),
-            vec![CritChance(2.00), FireRate(-0.20)],
-        ),
-        m(
-            "galvanized_shot",
-            12,
-            Vazarin,
-            Some("sure_shot"),
-            vec![
-                StatusChance(0.80),
-                ConditionOverload {
-                    per_stack: 0.40,
-                    max_stacks: 3,
-                    duration: 14.0,
-                },
-            ],
-        ),
-        m(
-            "frostbite",
-            7,
-            Madurai,
-            None,
-            vec![Element(Cold, 0.60), StatusChance(0.60)],
-        ),
-        m(
-            "pistol_pestilence",
-            7,
-            Madurai,
-            None,
-            vec![Element(Toxin, 0.60), StatusChance(0.60)],
-        ),
-        m(
-            "scorch",
-            7,
-            Madurai,
-            None,
-            vec![Element(Heat, 0.60), StatusChance(0.60)],
-        ),
-        m(
-            "jolt",
-            7,
-            Madurai,
-            None,
-            vec![Element(Electricity, 0.60), StatusChance(0.60)],
-        ),
-        m(
-            "deep_freeze",
-            7,
-            Vazarin,
-            Some("deep_freeze"),
-            vec![Element(Cold, 0.90)],
-        ),
-        m(
-            "heated_charge",
-            11,
-            Naramon,
-            Some("heated_charge"),
-            vec![Element(Heat, 0.90)],
-        ),
-        m(
-            "primed_heated_charge",
-            16,
-            Naramon,
-            Some("heated_charge"),
-            vec![Element(Heat, 1.65)],
-        ),
-        m(
-            "convulsion",
-            9,
-            Naramon,
-            Some("convulsion"),
-            vec![Element(Electricity, 0.90)],
-        ),
-        m(
-            "primed_convulsion",
-            16,
-            Naramon,
-            Some("convulsion"),
-            vec![Element(Electricity, 1.65)],
-        ),
-        m(
-            "pathogen_rounds",
-            11,
-            Naramon,
-            Some("pathogen_rounds"),
-            vec![Element(Toxin, 0.90)],
-        ),
-        m(
-            "pistol_elementalist",
-            9,
-            Vazarin,
-            None,
-            vec![StatusDamage(0.90), ReloadSpeed(0.60)],
-        ),
-        m(
-            "magnetic_might",
-            7,
-            Madurai,
-            None,
-            vec![CombinedElement(Magnetic, 0.60), CritDamage(0.40)],
-        ),
-        m(
-            "anemic_agility",
-            9,
-            Naramon,
-            None,
-            vec![FireRate(0.90), BaseDamage(-0.15)],
-        ),
-        m(
-            "accelerated_isotope",
-            7,
-            Madurai,
-            None,
-            vec![CombinedElement(Radiation, 0.60), FireRate(0.40)],
-        ),
-        m(
-            "galvanized_crosshairs",
-            12,
-            Madurai,
-            Some("hydraulic_crosshairs"),
-            vec![
-                OnHeadshotCritChance {
-                    bonus: 1.20,
-                    duration: 12.0,
-                },
-                OnHeadshotKillCritChance {
-                    per_stack: 0.40,
-                    max_stacks: 5,
-                    duration: 12.0,
-                },
-            ],
-        ),
-    ]
+    // Source of truth: data/mods/*.yaml (mod_type: pistol), loaded by
+    // engine::mods_data. Mods are DATA now — add/edit a YAML file, no code.
+    wfsim_engine::mods_data::pistol_pool()
 }
 
 /// Dual Toxocyst's innate slot polarities (fully unlocked: Madurai +
@@ -627,22 +418,61 @@ pub fn evaluate_batch(
 mod tests {
     use super::*;
 
+
     #[test]
-    fn pool_has_26_mods_with_family_exclusivity() {
+    fn pool_loads_from_yaml_with_family_exclusivity() {
+        // The pool is data-driven (data/mods/*.yaml); it grows as mods are
+        // added, so assert structure, not a fixed count.
         let p = pool();
-        assert_eq!(p.len(), 26);
+        assert!(p.len() >= 26, "pool has {} mods", p.len());
         let diffusions = p
             .iter()
             .filter(|m| m.family == Some("barrel_diffusion"))
             .count();
-        assert_eq!(diffusions, 3);
+        assert_eq!(diffusions, 3, "barrel_diffusion family exclusivity");
     }
 
     #[test]
     fn canonical_enumeration_counts_match_the_generating_function() {
-        // Families (3,3,2,2,2 members) + 14 singles, choose 8:
-        // coefficient of x^8 in (1+3x)^2 (1+2x)^3 (1+x)^14 = 665,990.
-        let p = pool();
+        // Family-exclusive 8-mod subsets = coefficient of x^8 in
+        //   Π_families (1 + size·x) · (1+x)^singles.
+        // Validated on a FIXED 12-mod sub-pool: keeps the algorithm test fast
+        // and stable as the full data-driven pool grows (the optimizer never
+        // enumerates the whole pool in practice — it searches a scoped subset).
+        let ids = [
+            "hornet_strike", "barrel_diffusion", "amalgam_barrel_diffusion",
+            "galvanized_diffusion", "pistol_gambit", "primed_pistol_gambit",
+            "creeping_bullseye", "target_cracker", "primed_target_cracker",
+            "lethal_torrent", "frostbite", "jolt",
+        ];
+        let p: Vec<ModDef> = pool().into_iter().filter(|m| ids.contains(&m.id)).collect();
+        assert_eq!(p.len(), ids.len(), "test sub-pool ids all present");
+        let mut fam: std::collections::HashMap<&str, u64> = std::collections::HashMap::new();
+        let mut singles = 0u32;
+        for m in &p {
+            match m.family {
+                Some(f) => *fam.entry(f).or_default() += 1,
+                None => singles += 1,
+            }
+        }
+        let mul = |a: &[u64], b: &[u64]| {
+            let mut out = vec![0u64; a.len() + b.len() - 1];
+            for (i, &x) in a.iter().enumerate() {
+                for (j, &y) in b.iter().enumerate() {
+                    out[i + j] += x * y;
+                }
+            }
+            out
+        };
+        let mut poly = vec![1u64];
+        for &size in fam.values() {
+            poly = mul(&poly, &[1, size]);
+        }
+        for _ in 0..singles {
+            poly = mul(&poly, &[1, 1]);
+        }
+        let expected = poly.get(8).copied().unwrap_or(0);
+
         let base = WeaponBase::dual_toxocyst_incarnon(true, DtEvo2::FeveredFrenzy);
         let (cands, stats) = enumerate_candidates(
             &p,
@@ -654,7 +484,7 @@ mod tests {
             &dual_toxocyst_innate_slots(),
             &Constraints::default(),
         );
-        assert_eq!(stats.subsets, 665_990, "subset count");
+        assert_eq!(stats.subsets, expected, "subset count vs generating function");
         assert_eq!(
             cands.len() as u64 + stats.deduped,
             stats.order_variants,

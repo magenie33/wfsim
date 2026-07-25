@@ -466,10 +466,13 @@ struct HeatEntity {
     born: f64,
     expiry: f64,
     next_tick: f64,
+    /// Current consolidated tick value (sum of the live contributions).
     value: f64,
-    /// Contributions absorbed (counts as the displayed stack count for
-    /// per-unit stack caps).
-    contribs: u32,
+    /// Individual contributions, oldest first — only tracked when a per-unit
+    /// stack cap applies, so a capped Heat can drop its OLDEST contribution
+    /// (FIFO) when a new proc lands, exactly like every other capped status.
+    /// Empty when uncapped (contributions just fold into `value`).
+    recent: Vec<f64>,
 }
 
 /// A Blast (Detonate) stack: the fuse fires a single-target hit; the 10th
@@ -565,6 +568,59 @@ impl DebuffState {
             list.remove(0); // replace the oldest APPLIED stack
         }
         list.push(expiry);
+    }
+
+    /// Push an independent DoT (Slash/Toxin/Electricity/Gas). These have no
+    /// natural cap; under a per-unit cap the count of THIS TYPE is limited,
+    /// FIFO replace-oldest (the oldest same-type instance drops).
+    fn push_dot_capped(&mut self, dot: Dot, cap: Option<usize>) {
+        if let Some(cap) = cap {
+            while self.dots.iter().filter(|d| d.dtype == dot.dtype).count() >= cap {
+                match self.dots.iter().position(|d| d.dtype == dot.dtype) {
+                    Some(i) => {
+                        self.dots.remove(i);
+                    }
+                    None => break,
+                }
+            }
+        }
+        self.dots.push(dot);
+    }
+
+    /// Apply a Heat proc to the singleton accumulator: add its contribution to
+    /// the consolidated tick value and refresh the shared expiry (ticks stay
+    /// anchored to the first proc). Under a per-unit cap, hold at most `cap`
+    /// contributions FIFO — a new proc drops the OLDEST contribution instead
+    /// of being ignored (the universal replace-oldest rule; user 2026-07-25).
+    fn apply_heat(&mut self, t: f64, contrib: f64, expiry: f64, cap: Option<usize>) {
+        match &mut self.heat {
+            Some(h) => {
+                match cap {
+                    Some(c) => {
+                        if h.recent.len() >= c {
+                            h.value -= h.recent.remove(0);
+                        }
+                        h.recent.push(contrib);
+                        h.value += contrib;
+                    }
+                    None => h.value += contrib,
+                }
+                h.expiry = expiry; // refresh regardless
+            }
+            None => {
+                let mut recent = Vec::new();
+                if cap.is_some() {
+                    recent.push(contrib);
+                }
+                self.heat = Some(HeatEntity {
+                    born: t,
+                    expiry,
+                    next_tick: t + 1.0,
+                    value: contrib,
+                    recent,
+                });
+            }
+        }
     }
 
     fn weakened_active(&mut self, now: f64) -> usize {
@@ -1293,7 +1349,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     let caps = params.target.stack_caps;
     let gcap = |base: usize| caps.map_or(base, |c| base.min(c.general));
     let stagger_cap = caps.map_or(STAGGER_CAP, |c| STAGGER_CAP.min(c.impact));
-    let heat_cap = caps.map_or(u32::MAX, |c| c.general as u32);
+    // Heat and the independent DoTs (Slash/Toxin/Electricity/Gas) have no
+    // NATURAL stack cap; a per-unit cap (Acolytes: any status 4) limits them,
+    // FIFO replace-oldest like every other capped status. `None` = uncapped.
+    let heat_cap: Option<usize> = caps.map(|c| c.general);
+    let dot_cap: Option<usize> = caps.map(|c| c.general);
 
     // Initial locks: one natural-duration grant at t = 0 (at the set
     // stack count); afterwards only the buff's own mechanics govern it.
@@ -1594,13 +1654,16 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                             delay: f64,
                             ticks: u32,
                             ignores_armor: bool| {
-                debuffs.dots.push(Dot {
-                    next_tick: t + delay,
-                    ticks_left: ticks,
-                    value: coeff * mb_live * bracket * sdm * crit_mult * part_factor,
-                    dtype,
-                    ignores_armor,
-                });
+                debuffs.push_dot_capped(
+                    Dot {
+                        next_tick: t + delay,
+                        ticks_left: ticks,
+                        value: coeff * mb_live * bracket * sdm * crit_mult * part_factor,
+                        dtype,
+                        ignores_armor,
+                    },
+                    dot_cap,
+                );
             };
             for proc in procs {
                 r.procs += 1;
@@ -1673,24 +1736,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                             * crit_mult
                             * part_factor;
                         let expiry = t + STATUS_DURATION * sd;
-                        match &mut debuffs.heat {
-                            Some(h) => {
-                                if h.contribs < heat_cap {
-                                    h.value += contrib;
-                                    h.contribs += 1;
-                                }
-                                h.expiry = expiry; // refresh regardless
-                            }
-                            None => {
-                                debuffs.heat = Some(HeatEntity {
-                                    born: t,
-                                    expiry,
-                                    next_tick: t + 1.0,
-                                    value: contrib,
-                                    contribs: 1,
-                                })
-                            }
-                        }
+                        debuffs.apply_heat(t, contrib, expiry, heat_cap);
                     }
                     DamageType::Cold => {
                         debuffs.apply_cold_proc(t, sd, target.overguard > 0.0, caps);
@@ -1804,11 +1850,21 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         &mut r,
     );
 
-    // Partial credit: the fraction of the current individual's total
-    // pool already depleted (InfiniteHealth pools never deplete -> 0).
-    let pool = params.target.overguard() + params.target.max_health();
+    // Partial credit: the fraction of the current individual's TOTAL bar
+    // already depleted — overguard + shield + health (user 2026-07-25: the
+    // whole bar counts, so shield damage earns progress and shield REGEN
+    // gives it back). If health has hit 0 the unit is DEAD, so the whole bar
+    // is gone regardless of any overguard/shield left (e.g. a Toxin-bypass
+    // kill that never broke the shield) — full credit (user 2026-07-25).
+    // InfiniteHealth pools never deplete -> 0.
+    let pool = params.target.overguard() + params.target.max_shield() + params.target.max_health();
+    let remaining = if target.health <= 0.0 {
+        0.0
+    } else {
+        target.overguard + target.shield + target.health
+    };
     let partial = if pool > 0.0 {
-        (1.0 - (target.overguard + target.health) / pool).clamp(0.0, 1.0)
+        (1.0 - remaining / pool).clamp(0.0, 1.0)
     } else {
         0.0
     };
@@ -2887,6 +2943,32 @@ mod tests {
     }
 
     #[test]
+    fn shield_depletion_counts_toward_kill_progress() {
+        // Pure Impact never reaches health, but denting the SHIELD now earns
+        // partial credit (user 2026-07-25: the whole overguard+shield+health
+        // bar counts, so shield damage — and regen — moves the score). One
+        // 75-Impact shot into a 1000+1000 = 2000 bar -> 75/2000 = 0.0375,
+        // with health still full (0 kills).
+        let p = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 75.0),
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: Arcane::None,
+            body_parts: mono_body(1.0),
+            target: shielded_target(1000.0, 1000.0),
+            duration_secs: 1.0,
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 10, 7);
+        assert_eq!(s.mean_kills, 0.0);
+        assert!(
+            (s.mean_kill_progress - 0.0375).abs() < 1e-9,
+            "score {}",
+            s.mean_kill_progress
+        );
+    }
+
+    #[test]
     fn toxin_share_bypasses_shields_into_health() {
         // Vector 16 Toxin / 16 Impact (quantization-exact): each 32-damage
         // shot sends 16 to the shield and 16 straight to health. Health
@@ -3120,7 +3202,7 @@ mod tests {
                 expiry: 6.0,
                 next_tick: 1.0,
                 value: 1.0,
-                contribs: 1,
+                recent: Vec::new(),
             }),
             ..Default::default()
         };
@@ -3150,7 +3232,7 @@ mod tests {
                 expiry: 12.0,
                 next_tick: 1.0,
                 value: 1.0,
-                contribs: 1,
+                recent: Vec::new(),
             }),
             ..Default::default()
         };
@@ -3161,6 +3243,59 @@ mod tests {
         assert_eq!(d.heat_strip(4.1, 2.0), 0.50);
         // sd = 0.5: full strip already at 1.0 s.
         assert_eq!(d.heat_strip(1.1, 0.5), 0.50);
+    }
+
+    #[test]
+    fn heat_cap_keeps_the_most_recent_contributions_fifo() {
+        // Uncapped: every contribution folds into the consolidated tick.
+        let mut d = DebuffState::default();
+        for c in [1.0, 2.0, 3.0, 4.0, 5.0] {
+            d.apply_heat(0.0, c, 6.0, None);
+        }
+        assert_eq!(d.heat.as_ref().unwrap().value, 15.0);
+
+        // Capped at 3 (a per-unit cap): hold the 3 MOST RECENT contributions,
+        // FIFO dropping the oldest — {3,4,5}=12, NOT the first three (the old
+        // ignore-new model would have frozen it at 1+2+3=6).
+        let mut d = DebuffState::default();
+        for c in [1.0, 2.0, 3.0, 4.0, 5.0] {
+            d.apply_heat(0.0, c, 6.0, Some(3));
+        }
+        let h = d.heat.as_ref().unwrap();
+        assert_eq!(h.recent, vec![3.0, 4.0, 5.0]);
+        assert_eq!(h.value, 12.0);
+    }
+
+    #[test]
+    fn independent_dots_cap_per_type_fifo() {
+        let dot = |v: f64, ty| Dot {
+            next_tick: 0.0,
+            ticks_left: 6,
+            value: v,
+            dtype: ty,
+            ignores_armor: false,
+        };
+        let mut d = DebuffState::default();
+        // Cap 2 per type: four Toxin procs keep only the two newest (3,4).
+        for v in [1.0, 2.0, 3.0, 4.0] {
+            d.push_dot_capped(dot(v, DamageType::Toxin), Some(2));
+        }
+        // A different DoT type is capped independently.
+        d.push_dot_capped(dot(9.0, DamageType::Slash), Some(2));
+        let tox: Vec<f64> = d
+            .dots
+            .iter()
+            .filter(|x| x.dtype == DamageType::Toxin)
+            .map(|x| x.value)
+            .collect();
+        let sla: Vec<f64> = d
+            .dots
+            .iter()
+            .filter(|x| x.dtype == DamageType::Slash)
+            .map(|x| x.value)
+            .collect();
+        assert_eq!(tox, vec![3.0, 4.0]);
+        assert_eq!(sla, vec![9.0]);
     }
 
     #[test]

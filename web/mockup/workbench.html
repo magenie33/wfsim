@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WFSim — weapon workbench mockup</title>
+<!--
+  DESIGN MOCKUP v3 — per-weapon WORKBENCH. Four sections: (1) saved configs,
+  (2) COMPACT build editor (dense mod list + searchable add; right = base +
+  resolved + merged), (3) optimizer test designer (opens as a MODAL with
+  searchable dropdowns), (4) optimizer results. Static; images via WFCD CDN +
+  wiki damage icons. Add ?modal to the URL to see the test-designer dialog.
+-->
+<style>
+  :root{
+    --bg:#0e1014;--panel:#171a21;--panel2:#1e222b;--panel3:#12151b;--line:rgba(255,255,255,.08);
+    --ink:#f2f4f8;--ink2:#a6adbb;--muted:#6b7280;--gold:#e8c37a;--accent:#4a9eff;--good:#3ddc84;--red:#e05656;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,"Segoe UI",sans-serif;font-size:14px}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:12px 22px;border-bottom:1px solid var(--line);background:#0b0d11;position:sticky;top:0;z-index:5}
+  .brand{font-weight:800;font-size:19px;letter-spacing:-.01em}.brand span{color:var(--gold)}
+  .crumbs{color:var(--ink2);font-size:13px}.crumbs b{color:var(--ink)}
+  .wrap{max-width:1180px;margin:0 auto;padding:18px}
+
+  .wstrip{display:flex;align-items:center;gap:16px;background:linear-gradient(120deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:12px 18px;margin-bottom:16px}
+  .wstrip img{width:92px;height:60px;object-fit:contain}
+  .wstrip h1{margin:0;font-size:22px}.wstrip .tags{display:flex;gap:7px;margin-top:5px}
+  .tag{font-size:11px;color:var(--ink2);border:1px solid var(--line);border-radius:999px;padding:2px 9px;background:#0c0e12}
+  .wstrip .stats{margin-left:auto;display:flex;gap:16px;color:var(--ink2);font-size:13px}.wstrip .stats b{color:var(--ink)}
+
+  .sec{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:16px;overflow:hidden}
+  .sec>h2{margin:0;padding:12px 18px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);border-bottom:1px solid var(--line);background:var(--panel3);display:flex;align-items:center;gap:10px}
+  .sec>h2 .n{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#04111f;font-weight:800;display:inline-flex;align-items:center;justify-content:center;font-size:12px}
+  .sec>h2 .sub{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:auto;font-size:12px}
+  .body{padding:16px 18px}
+
+  /* 1 configs */
+  .configs{display:flex;gap:12px;overflow-x:auto}
+  .cfg{min-width:190px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel2);cursor:pointer}
+  .cfg.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .cfg .t{font-weight:700;display:flex;align-items:center;gap:6px}.cfg .t .star{color:var(--gold)}
+  .cfg .meta{color:var(--ink2);font-size:12px;margin-top:6px;line-height:1.5}
+  .cfg .src{font-size:10px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.04em}
+  .cfg.new{display:flex;align-items:center;justify-content:center;color:var(--muted);border-style:dashed;min-width:120px;font-weight:600}
+
+  /* 2 compact editor */
+  .edit{display:grid;grid-template-columns:1.25fr .9fr;gap:18px}
+  @media(max-width:900px){.edit{grid-template-columns:1fr}}
+  .modlist{display:flex;flex-direction:column;gap:5px}
+  .mrow{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:5px 9px}
+  .mrow img{width:30px;height:30px;border-radius:5px;object-fit:cover;border:1px solid var(--line);flex:none}
+  .mrow .mn{font-weight:600;min-width:150px}
+  .mrow .me{color:var(--ink2);font-size:12px;flex:1}
+  .mrow .dr{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+  .mrow .x{color:var(--muted);cursor:pointer;padding:0 4px}
+  .mrow.gal .badge{font-size:9px;color:#04111f;background:var(--gold);border-radius:4px;padding:1px 5px;font-weight:700}
+  .addbar{display:flex;align-items:center;gap:8px;margin-top:8px;background:#0c0e12;border:1px dashed var(--line);border-radius:9px;padding:8px 10px;color:var(--muted)}
+  .addbar input{background:transparent;border:0;color:var(--ink);font:inherit;flex:1;outline:none}
+  .vars{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  .var{display:flex;flex-direction:column;gap:3px}
+  .var span{font-size:11px;color:var(--muted)}
+  .var .pill{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+  .diff{font-size:9px;color:#04111f;background:var(--gold);border-radius:5px;padding:1px 5px;font-weight:700}
+  .eorder{grid-column:1/-1}
+  .chips{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .echip{display:inline-flex;align-items:center;gap:5px;background:#0c0e12;border:1px solid var(--line);border-radius:8px;padding:3px 8px;font-size:12px}
+  .echip img{width:15px;height:15px}
+  .runrow{display:flex;align-items:center;gap:12px;margin-top:12px}
+  .btn{background:var(--accent);color:#04111f;border:none;border-radius:9px;padding:9px 14px;font-weight:700;cursor:pointer}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:600}
+  .lastrun{color:var(--ink2);font-size:13px}.lastrun b{color:var(--good)}
+
+  /* right: base + resolved + merged */
+  .info{background:var(--panel3);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .segtog{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:12px;margin-bottom:10px}
+  .segtog span{padding:5px 11px;color:var(--ink2);cursor:pointer}.segtog .on{background:var(--accent);color:#04111f;font-weight:700}
+  .kv{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px dashed var(--line);font-size:13px}
+  .kv:last-child{border:0}
+  .kv .base{color:var(--muted);font-variant-numeric:tabular-nums}
+  .kv .to{color:var(--muted);margin:0 6px}
+  .kv b{font-variant-numeric:tabular-nums}
+  .kv .up{color:var(--good)}
+  .grp{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 4px}
+
+  /* 3 optimizer summary */
+  .optsum{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .optsum .locked{color:var(--gold);font-size:12px;border:1px solid rgba(232,195,122,.35);border-radius:8px;padding:6px 10px}
+  .optsum .glance{color:var(--ink2);font-size:13px}
+
+  /* 4 results */
+  .lead{width:100%;border-collapse:collapse;font-size:13px}
+  .lead th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:6px 10px;border-bottom:1px solid var(--line)}
+  .lead td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  .lead tr.win td{background:rgba(61,220,132,.06)}
+  .lead .sc{font-weight:800;font-size:15px}
+  .lead .save{background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:7px;padding:5px 9px;cursor:pointer;font-size:12px}
+  .lead .save:hover{border-color:var(--good);color:var(--good)}
+  .mini{display:flex;gap:3px}.mini img{width:22px;height:22px;border-radius:4px;object-fit:cover;border:1px solid var(--line)}
+
+  /* modal (test designer) */
+  .overlay{position:fixed;inset:0;background:rgba(4,6,10,.66);display:none;align-items:flex-start;justify-content:center;z-index:20;padding:36px 16px;overflow:auto}
+  body.modal .overlay{display:flex}
+  .dialog{width:760px;max-width:100%;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .dialog .dh{padding:14px 18px;border-bottom:1px solid var(--line);background:var(--panel3);display:flex;justify-content:space-between;align-items:center}
+  .dialog .dh b{font-size:15px}.dialog .dh .x{color:var(--muted);cursor:pointer}
+  .dcols{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:18px}
+  @media(max-width:720px){.dcols{grid-template-columns:1fr}}
+  .field{margin-bottom:14px}.field .l{font-size:12px;color:var(--ink2);margin-bottom:5px}
+  .combo{position:relative}
+  .combo .inp{display:flex;align-items:center;gap:8px;background:#0c0e12;border:1px solid var(--accent);border-radius:8px;padding:7px 10px;color:var(--ink)}
+  .combo .inp .q{flex:1;color:var(--ink)}
+  .combo .menu{margin-top:5px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .combo .opt{display:flex;align-items:center;gap:9px;padding:7px 10px;font-size:13px;cursor:pointer}
+  .combo .opt:hover,.combo .opt.sel{background:rgba(74,158,255,.12)}
+  .combo .opt img{width:24px;height:24px;border-radius:4px;object-fit:cover}
+  .combo .opt .ck{margin-left:auto;color:var(--good)}
+  .picked{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .picked .p{display:inline-flex;align-items:center;gap:6px;background:#0c0e12;border:1px solid rgba(61,220,132,.5);border-radius:7px;padding:3px 8px;font-size:12px}
+  .picked .p.no{border-color:rgba(224,86,86,.5)}
+  .box{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+  .slider{display:flex;align-items:center;gap:8px}.track{flex:1;height:6px;border-radius:4px;background:#0c0e12}.track .f{height:100%;background:var(--accent);border-radius:4px}
+  .toggle{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:12px}
+  .toggle span{padding:5px 10px;color:var(--ink2)}.toggle .on{background:var(--accent);color:#04111f;font-weight:700}
+  .simrow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13px}.simrow:last-child{border:0}
+  .dfoot{display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid var(--line);background:var(--panel3)}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand">WF<span>Sim</span></div>
+  <div class="crumbs">Weapons › <b>Dual Toxocyst</b></div>
+  <div style="color:var(--ink2)">◐</div>
+</div>
+
+<div class="wrap">
+  <div class="wstrip">
+    <img src="https://cdn.warframestat.us/img/DualToxocyst.png" onerror="this.style.display='none'"/>
+    <div><h1>Dual Toxocyst</h1>
+      <div class="tags"><span class="tag">Secondary</span><span class="tag">Incarnon</span><span class="tag">Frenzy passive</span></div></div>
+    <div class="stats"><span>CC <b>5→31%</b></span><span>CD <b>3.0×</b></span><span>SC <b>37%</b></span></div>
+  </div>
+
+  <!-- 1 -->
+  <div class="sec"><h2><span class="n">1</span> Saved configs <span class="sub">multiple per weapon · optimizer results land here</span></h2>
+    <div class="body"><div class="configs">
+      <div class="cfg active"><div class="t"><span class="star">★</span> Thrax champion</div><div class="meta">Corrosive 282 + Magnetic 64<br/>Deadhead · Fevered · 4 Forma</div><div class="src">manual</div></div>
+      <div class="cfg"><div class="t">Acolyte champion</div><div class="meta">Viral 350 + Heat 206<br/>Deadhead · Fevered · 3 Forma</div><div class="src">from optimizer</div></div>
+      <div class="cfg"><div class="t">Opt #7 — Corrosive</div><div class="meta">Corrosive 300 + Magnetic<br/>Enervate · 4 Forma</div><div class="src">from optimizer</div></div>
+      <div class="cfg new">+ New config</div>
+    </div></div>
+  </div>
+
+  <!-- 2 -->
+  <div class="sec"><h2><span class="n">2</span> Configure <span class="sub">compact · everything variable · run a single build</span></h2>
+    <div class="body"><div class="edit">
+      <div>
+        <div class="modlist" id="modlist"></div>
+        <div class="addbar">🔍 <input placeholder="Add or swap a mod… (type to search the pistol pool)"/></div>
+        <div class="vars">
+          <div class="var"><span>Arcane</span><div class="pill">Secondary Deadhead <span style="color:var(--muted)">▾</span></div></div>
+          <div class="var"><span>Evolution II</span><div class="pill">Fevered Frenzy <span class="diff">only WFSim</span></div></div>
+          <div class="var"><span>Weapon form</span><div class="pill">Incarnon cycle <span style="color:var(--muted)">▾</span></div></div>
+          <div class="var"><span>Frenzy uptime</span><div class="pill">Permanent <span style="color:var(--muted)">▾</span></div></div>
+          <div class="var eorder"><span>Element order (玄骸)</span>
+            <div class="chips">
+              <span class="echip"><img src="https://wiki.warframe.com/w/Special:FilePath/Electricity_b.png"/>Electricity</span>
+              <span style="color:var(--muted)">+</span>
+              <span class="echip"><img src="https://wiki.warframe.com/w/Special:FilePath/Toxin_b.png"/>Toxin <small style="color:var(--muted)">(Frenzy)</small></span>
+              <span style="color:var(--muted)">→</span>
+              <span class="echip" style="border-color:rgba(192,132,252,.6)">Corrosive</span>
+            </div>
+          </div>
+        </div>
+        <div class="runrow"><button class="btn">▶ Run this build</button>
+          <span class="lastrun">vs Thrax @9999 SP · 120s → <b>178.1</b> · 38.3M eff DPS</span></div>
+      </div>
+
+      <div class="info">
+        <div class="segtog"><span>Base</span><span>Resolved</span><span class="on">Merged</span></div>
+        <div class="grp">Damage</div>
+        <div class="kv"><span>Puncture</span><span><span class="base">60.0</span><span class="to">→</span><b>—</b></span></div>
+        <div class="kv"><span>Corrosive</span><span><span class="base">0</span><span class="to">→</span><b class="up">281.6</b></span></div>
+        <div class="kv"><span>Magnetic</span><span><span class="base">0</span><span class="to">→</span><b class="up">63.8</b></span></div>
+        <div class="grp">Crit / status</div>
+        <div class="kv"><span>Crit chance</span><span><span class="base">5%</span><span class="to">→</span><b class="up">31%</b></span></div>
+        <div class="kv"><span>Crit damage</span><span><span class="base">3.0×</span><span class="to">→</span><b class="up">7.5×</b></span></div>
+        <div class="kv"><span>Status chance</span><span><span class="base">37%</span><span class="to">→</span><b class="up">77%</b></span></div>
+        <div class="grp">Handling</div>
+        <div class="kv"><span>Fire rate</span><span><span class="base">4.5</span><span class="to">→</span><b class="up">11.25</b></span></div>
+        <div class="kv"><span>Multishot</span><span><span class="base">1.0</span><span class="to">→</span><b class="up">3.70</b></span></div>
+        <div class="grp">Derived (this combo)</div>
+        <div class="kv"><span>Burst DPS</span><b>41.2M</b></div>
+        <div class="kv"><span>CO / status type</span><b>+60%</b></div>
+        <div class="kv"><span>Forma / drain</span><b>4 · 56/60</b></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 3 -->
+  <div class="sec"><h2><span class="n">3</span> Optimizer — design a test <span class="sub">detailed setup opens in a dialog</span></h2>
+    <div class="body"><div class="optsum">
+      <span class="locked">🔒 Acolyte @9999 Steel Path · 120 s</span>
+      <span class="glance">require: GD, MM · exclude: Hornet · element: Corrosive · cc ≥ 60% · real cycle · Galvanized permanent</span>
+      <button class="btn" onclick="document.body.classList.add('modal')">⚙ Design test</button>
+      <button class="btn ghost">▶ Run optimizer</button>
+    </div></div>
+  </div>
+
+  <!-- 4 -->
+  <div class="sec"><h2><span class="n">4</span> Optimizer results <span class="sub">quick-save any row into your configs</span></h2>
+    <div class="body"><table class="lead">
+      <thead><tr><th>#</th><th>Score</th><th>Kills ± / 120s</th><th>Build</th><th>Element</th><th>Forma</th><th></th></tr></thead>
+      <tbody>
+        <tr class="win"><td>1</td><td class="sc">20.29</td><td>19.92 ± 0.34</td><td><div class="mini" id="win-mods"></div></td><td>Viral 350 + Heat 206</td><td>3</td><td><button class="save">💾 Save as config</button></td></tr>
+        <tr><td>2</td><td class="sc">19.62</td><td>19.06 ± 0.24</td><td style="color:var(--ink2)">PTC + PPG (double crit)</td><td>Viral + Heat</td><td>3</td><td><button class="save">💾 Save</button></td></tr>
+        <tr><td>3</td><td class="sc">19.49</td><td>19.00 ± 0.00</td><td style="color:var(--ink2)">LT + PPG</td><td>Viral + Heat</td><td>4</td><td><button class="save">💾 Save</button></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- MODAL: test designer with searchable dropdowns -->
+<div class="overlay">
+  <div class="dialog">
+    <div class="dh"><b>Design optimizer test</b><span class="x" onclick="document.body.classList.remove('modal')">✕</span></div>
+    <div class="dcols">
+      <div>
+        <div class="field"><div class="l">Target</div><span class="locked">🔒 Acolyte @9999 Steel Path · 120 s · 100% headshots</span></div>
+        <div class="field"><div class="l">Required mods — search & pick</div>
+          <div class="combo">
+            <div class="inp">🔍 <span class="q">gal</span><span style="color:var(--muted)">▾</span></div>
+            <div class="menu">
+              <div class="opt sel"><img src="https://cdn.warframestat.us/img/WeaponFireIterationsSPModMods.jpg"/>Galvanized Diffusion<span class="ck">✓</span></div>
+              <div class="opt"><img src="https://cdn.warframestat.us/img/WeaponStatusChanceSPModMods.jpg"/>Galvanized Shot</div>
+              <div class="opt"><img src="https://cdn.warframestat.us/img/CritChanceWhileAimingPistolSPMod.jpg"/>Galvanized Crosshairs</div>
+            </div>
+          </div>
+          <div class="picked"><span class="p">Galvanized Diffusion ✕</span><span class="p">Magnetic Might ✕</span></div>
+        </div>
+        <div class="field"><div class="l">Excluded mods — search & pick</div>
+          <div class="combo"><div class="inp" style="border-color:var(--line)">🔍 <span class="q" style="color:var(--muted)">search to exclude…</span><span style="color:var(--muted)">▾</span></div></div>
+          <div class="picked"><span class="p no">Hornet Strike ✕</span></div>
+        </div>
+        <div class="field"><div class="l">Required element</div><div class="box">Corrosive ▾ &nbsp;<span style="color:var(--muted)">any / Viral / Magnetic …</span></div></div>
+        <div class="field"><div class="l">Min crit chance</div><div class="slider"><div class="track"><div class="f" style="width:60%"></div></div><b>≥ 60%</b></div></div>
+        <div class="field"><div class="l">Mod pool scope</div><div class="box">All pistol mods (26) · <span style="color:var(--muted)">or pick a subset</span></div></div>
+      </div>
+      <div>
+        <div class="field"><div class="l">Buff — Galvanized stacks</div>
+          <div class="simrow"><span>Initial stacks</span><b>full (max)</b></div>
+          <div class="simrow"><span>After start</span><span class="toggle"><span class="on">permanent</span><span>natural decay</span></span></div></div>
+        <div class="field"><div class="l">Buff — Arcane stacks</div>
+          <div class="simrow"><span>Initial</span><b>full</b></div>
+          <div class="simrow"><span>After start</span><span class="toggle"><span>permanent</span><span class="on">natural</span></span></div></div>
+        <div class="field"><div class="l">Incarnon test method</div>
+          <div class="toggle"><span class="on">real cycle</span><span>incarnon only</span><span>base only</span></div></div>
+        <div class="field"><div class="l">Runs / funnel</div><div class="box">self-scaling 1/4/16/…/1024 · final 2048</div></div>
+        <div class="field"><div class="l">Estimate</div><div class="box" style="color:var(--ink2)">≈ 1.95M jobs · ~5 min on all cores</div></div>
+      </div>
+    </div>
+    <div class="dfoot"><button class="btn ghost" onclick="document.body.classList.remove('modal')">Cancel</button><button class="btn">▶ Run optimizer</button></div>
+  </div>
+</div>
+
+<script>
+  const base="https://cdn.warframestat.us/img/";
+  const mods=[
+    {n:"Primed Convulsion",c:"PistolElectricityDamageMod.jpg",e:"+165% Electricity",d:16},
+    {n:"Galvanized Diffusion",c:"WeaponFireIterationsSPModMods.jpg",e:"+110% multishot",d:16},
+    {n:"Primed Target Cracker",c:"PistolCritDamageMod.jpg",e:"+110% crit damage",d:16},
+    {n:"Lethal Torrent",c:"Grinder.jpg",e:"+60% fire rate, +60% multishot",d:9},
+    {n:"Galvanized Shot",c:"WeaponStatusChanceSPModMods.jpg",e:"+80% status · CO on kill",d:12,gal:1},
+    {n:"Magnetic Might",c:"MagneticCritDamagePistolMod.jpg",e:"+60% Magnetic, +40% crit dmg",d:7},
+    {n:"Anemic Agility",c:"CorruptedFireRateDamagePistolMod.jpg",e:"+90% fire rate, −15% dmg",d:9},
+    {n:"Galvanized Crosshairs",c:"CritChanceWhileAimingPistolSPMod.jpg",e:"+120% cc on headshot",d:12,gal:1},
+  ];
+  document.getElementById("modlist").innerHTML=mods.map(m=>`
+    <div class="mrow ${m.gal?'gal':''}">
+      <img src="${base}${m.c}" onerror="this.style.visibility='hidden'"/>
+      <span class="mn">${m.n}</span>
+      <span class="me">${m.e} ${m.gal?'<span class=badge>base+kill</span>':''}</span>
+      <span class="dr">${m.d}</span><span class="x">✕</span></div>`).join("");
+  document.getElementById("win-mods").innerHTML=
+    ["WeaponFireIterationsSPModMods.jpg","PistolCritDamageMod.jpg","WeaponStatusChanceSPModMods.jpg","CritChanceWhileAimingPistolSPMod.jpg"]
+    .map(c=>`<img src="${base}${c}" onerror="this.style.display='none'"/>`).join("");
+  if(new URLSearchParams(location.search).has("modal")) document.body.classList.add("modal");
+</script>
+</body>
+</html>

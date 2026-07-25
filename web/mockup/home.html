@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WFSim — home mockup</title>
+<!--
+  DESIGN MOCKUP — HOME. Two jobs: (A) browse weapons by category (Primary /
+  Secondary / Sentinel now; structure extends to every weapon class later),
+  (B) a Shared builds gallery where each shared build carries its TEST and
+  RESULT, not just the mods. Static; images via WFCD CDN. Live app: web/src/static/.
+-->
+<style>
+  :root{
+    --bg:#0e1014;--panel:#171a21;--panel2:#1e222b;--panel3:#12151b;--line:rgba(255,255,255,.08);
+    --ink:#f2f4f8;--ink2:#a6adbb;--muted:#6b7280;--gold:#e8c37a;--accent:#4a9eff;--good:#3ddc84;--viral:#c084fc;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,"Segoe UI",sans-serif;font-size:14px}
+  a{color:inherit;text-decoration:none}
+  .top{display:flex;align-items:center;gap:22px;padding:12px 22px;border-bottom:1px solid var(--line);background:#0b0d11;position:sticky;top:0;z-index:5}
+  .brand{font-weight:800;font-size:20px}.brand span{color:var(--gold)}
+  .nav{display:flex;gap:16px;color:var(--ink2);font-size:14px}
+  .nav .on{color:var(--ink);font-weight:600;border-bottom:2px solid var(--accent);padding-bottom:2px}
+  .search{margin-left:auto;background:#0c0e12;border:1px solid var(--line);border-radius:9px;padding:7px 12px;color:var(--muted);min-width:260px;display:flex;gap:8px}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px}
+
+  .hero{text-align:center;padding:26px 0 30px}
+  .hero h1{margin:0 0 8px;font-size:30px;letter-spacing:-.02em}
+  .hero p{margin:0 auto;color:var(--ink2);max-width:640px}
+  .hero .big{margin:18px auto 0;max-width:560px;background:#0c0e12;border:1px solid var(--line);border-radius:12px;
+    padding:12px 16px;color:var(--muted);display:flex;gap:10px;align-items:center;font-size:15px}
+
+  .sech{display:flex;align-items:center;gap:10px;margin:26px 0 12px}
+  .sech h2{margin:0;font-size:16px}
+  .sech .count{color:var(--muted);font-size:13px}
+  .sech .more{margin-left:auto;color:var(--accent);font-size:13px}
+
+  .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+  @media(max-width:900px){.grid{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:520px){.grid{grid-template-columns:repeat(2,1fr)}}
+  .wc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;cursor:pointer;transition:border-color .15s}
+  .wc:hover{border-color:var(--accent)}
+  .wc .imgw{height:74px;display:flex;align-items:center;justify-content:center}
+  .wc img{max-width:100%;max-height:74px;object-fit:contain}
+  .wc .n{font-weight:600;font-size:13px;margin-top:8px}
+  .wc .c{color:var(--muted);font-size:11px;margin-top:2px}
+  .wc .b{display:inline-block;margin-top:6px;font-size:10px;color:var(--ink2);background:#0c0e12;border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+
+  .future{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+  .future span{color:var(--muted);font-size:12px;border:1px dashed var(--line);border-radius:8px;padding:6px 12px}
+
+  /* shared builds */
+  .shared{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:900px){.shared{grid-template-columns:1fr}}
+  .sb{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .sb .head{display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--panel3)}
+  .sb .head img{width:56px;height:38px;object-fit:contain}
+  .sb .head .t{font-weight:700}
+  .sb .head .a{color:var(--muted);font-size:12px}
+  .sb .body{padding:12px 14px}
+  .sb .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .sb .score{font-size:26px;font-weight:800}
+  .sb .score small{font-size:12px;color:var(--ink2);font-weight:400}
+  .sb .test{font-size:12px;color:var(--gold);border:1px solid rgba(232,195,122,.35);border-radius:8px;padding:4px 8px}
+  .sb .el{color:var(--ink2);font-size:13px;margin-bottom:10px}
+  .sb .mini{display:flex;gap:3px;margin-bottom:12px}
+  .sb .mini img{width:26px;height:26px;border-radius:5px;object-fit:cover;border:1px solid var(--line)}
+  .sb .tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .sb .tag{font-size:11px;color:var(--ink2);background:#0c0e12;border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+  .sb .acts{display:flex;gap:8px}
+  .btn{background:var(--accent);color:#04111f;border:none;border-radius:8px;padding:8px 12px;font-weight:700;cursor:pointer;font-size:13px;flex:1}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:600}
+  .callout{background:linear-gradient(120deg,rgba(74,158,255,.12),rgba(192,132,252,.10));border:1px solid var(--line);
+    border-radius:12px;padding:12px 16px;color:var(--ink2);font-size:13px;margin-top:6px}
+  .callout b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand">WF<span>Sim</span></div>
+  <div class="nav"><span class="on">Weapons</span><span>Shared builds</span><span>My configs</span></div>
+  <div class="search">🔍 <span>Search weapons, builds, mods…</span></div>
+</div>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Simulate, optimize & share Warframe builds</h1>
+    <p>Pick a weapon, build it with every variable exposed (mods, arcane, evolutions, elements), then run the real damage engine and the optimizer against Steel Path targets.</p>
+  </div>
+
+  <!-- PRIMARY -->
+  <div class="sech"><h2>Primary</h2><span class="count">4 shown</span><span class="more">browse all →</span></div>
+  <div class="grid" id="primary"></div>
+
+  <!-- SECONDARY -->
+  <div class="sech"><h2>Secondary</h2><span class="count">4 shown</span><span class="more">browse all →</span></div>
+  <div class="grid" id="secondary"></div>
+
+  <!-- SENTINEL -->
+  <div class="sech"><h2>Sentinel weapons</h2><span class="count">4 shown</span><span class="more">browse all →</span></div>
+  <div class="grid" id="sentinel"></div>
+
+  <!-- FUTURE -->
+  <div class="sech"><h2>More weapon classes</h2><span class="count">planned</span></div>
+  <div class="future"><span>Melee</span><span>Arch-Gun</span><span>Arch-Melee</span><span>Amp</span><span>Companion (Kubrow/Kavat)</span><span>Railjack</span></div>
+
+  <!-- SHARED BUILDS -->
+  <div class="sech"><h2>Shared builds</h2><span class="count">community</span><span class="more">see all →</span></div>
+  <div class="callout">Every shared build carries its <b>test</b> and <b>result</b> — you see exactly what target &amp; settings produced the score, and can clone the whole thing (build + test) into your configs in one click.</div>
+  <div style="height:12px"></div>
+  <div class="shared" id="shared"></div>
+</div>
+
+<script>
+  const base="https://cdn.warframestat.us/img/";
+  const img=(f,cls)=>`<img src="${base}${f}" class="${cls||''}" onerror="this.style.visibility='hidden'"/>`;
+  const wc=(name,cls,file,cfgs)=>`<a class="wc"><div class="imgw">${img(file)}</div>
+     <div class="n">${name}</div><div class="c">${cls}</div>${cfgs?`<span class="b">${cfgs} configs</span>`:''}</a>`;
+
+  document.getElementById("primary").innerHTML=[
+    ["Soma Prime","Rifle","SomaPrime.png",3],["Boltor Prime","Rifle","BoltorPrime.png"],
+    ["Ignis Wraith","Flamethrower","IgnisWraith.png",1],["Braton Prime","Rifle","BratonPrime.png"],
+  ].map(w=>wc(...w)).join("");
+  document.getElementById("secondary").innerHTML=[
+    ["Dual Toxocyst","Incarnon","DualToxocyst.png",3],["Lex Prime","Pistol","LexPrime.png",2],
+    ["Kuva Nukor","Beam","KuvaNukor.png"],["Epitaph","Pistol","TnWraithSidearmWeapon.png"],
+  ].map(w=>wc(...w)).join("");
+  document.getElementById("sentinel").innerHTML=[
+    ["Verglas Prime","Sentinel","VerglasPrime.png",1],["Deconstructor Prime","Sentinel","DeconstructorPrime.png"],
+    ["Artax","Sentinel","Artax.png"],["Cryotra","Sentinel","Cryotra.png"],
+  ].map(w=>wc(...w)).join("");
+
+  // shared build cards — each carries its test + result
+  const mini=fs=>`<div class="mini">${fs.map(f=>img(f)).join("")}</div>`;
+  const sb=(o)=>`<div class="sb">
+    <div class="head">${img(o.wimg)}<div><div class="t">${o.title}</div><div class="a">by ${o.author}</div></div></div>
+    <div class="body">
+      <div class="row"><div class="score">${o.score}<small> score</small></div><span class="test">🔒 ${o.test}</span></div>
+      <div class="el">${o.el}</div>
+      ${mini(o.mods)}
+      <div class="tags">${o.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>
+      <div class="acts"><button class="btn">Clone build + test</button><button class="btn ghost">Open</button></div>
+    </div></div>`;
+  document.getElementById("shared").innerHTML=[
+    {title:"Thrax deleter",author:"@nova_main",wimg:"DualToxocyst.png",score:"178.1",
+     test:"Thrax @9999 SP · 120s",el:"Corrosive 282 + Magnetic 64",
+     mods:["PistolElectricityDamageMod.jpg","WeaponFireIterationsSPModMods.jpg","PistolCritDamageMod.jpg","CritChanceWhileAimingPistolSPMod.jpg"],
+     tags:["Deadhead","Fevered","4 Forma","real cycle"]},
+    {title:"Acolyte melter",author:"@stat_stick",wimg:"DualToxocyst.png",score:"20.29",
+     test:"Acolyte @9999 SP · 120s",el:"Viral 350 + Heat 206",
+     mods:["WeaponFireIterationsSPModMods.jpg","PistolCritDamageMod.jpg","WeaponStatusChanceSPModMods.jpg","CritChanceWhileAimingPistolSPMod.jpg"],
+     tags:["Deadhead","Fevered","3 Forma"]},
+    {title:"Verglas status prime",author:"@companion_dev",wimg:"VerglasPrime.png",score:"0.51",
+     test:"Acolyte @9999 SP · 120s",el:"Viral 187 (status applicator)",
+     mods:["RifleDamageAmountMod.jpg","RifleFireIterationsMod.jpg","RifleCritChanceMod.jpg","WeaponStatusChanceSPModMods.jpg"],
+     tags:["Sentinel","no arcane","3 Forma","base-only Galvanized"]},
+  ].map(sb).join("");
+</script>
+</body>
+</html>

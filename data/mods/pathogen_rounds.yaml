@@ -16,4 +16,3 @@ incompatible_with: [flawed_pathogen_rounds]
 source:
   url: https://wiki.warframe.com/w/Pathogen_Rounds
   note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).
-  retrieved: "2026-07-24"

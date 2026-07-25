@@ -93,6 +93,11 @@ pub enum StackPolicy {
     /// (full, per user 2026-07-24 correction) and then evolve purely by
     /// mechanics: kills refresh/grant, timeouts decay one stack.
     Emergent,
+    /// Sentinel / robotic weapons: Galvanized (and other conditional
+    /// on-kill/on-headshot) effects can be EQUIPPED but never trigger — the
+    /// companion cannot generate the stacks itself (wiki `Galvanized_Mods`;
+    /// user 2026-07-25). Only each mod's unconditional BASE part applies.
+    BaseOnly,
 }
 
 /// A live on-kill stacking buff spec handed to the sim under
@@ -263,6 +268,32 @@ impl WeaponBase {
             },
         }
     }
+
+    /// Verglas Prime — Nautilus Prime's robotic (sentinel) weapon. The purest
+    /// test case: no arcane, no Incarnon, no evolutions. Its innate damage is
+    /// **100% Cold (32)** — the first innate-elemental weapon in the database
+    /// (see the innate-element branch in [`resolve`]). Accepts Rifle Mods.
+    /// Wiki `Verglas_Prime` (2026-07-25): cc 14% / cd 2.2× / sc 36% / fire
+    /// rate 12 / magazine 80 / reload 1.6 s / multishot 1. Sentinel weapons
+    /// resolve their mods under [`StackPolicy::BaseOnly`] — Galvanized and
+    /// other on-kill effects are equippable but never trigger.
+    pub fn verglas_prime() -> Self {
+        Self {
+            base_vector: DamageVector::new().with(DamageType::Cold, 32.0),
+            base_crit_chance: 0.14,
+            base_crit_damage: 2.2,
+            base_status_chance: 0.36,
+            base_fire_rate: 12.0,
+            base_multishot: 1.0,
+            buff_multishot_bonus: 0.0,
+            magazine_size: 80.0,
+            base_reload: 1.6,
+            innate_co_per_type: 0.0,
+            co_behavior: CoBehavior::Independent,
+            co_base_fraction: 1.0,
+            injected_elements: Vec::new(),
+        }
+    }
 }
 
 /// The resolved panel: everything the dummy sim needs from layers [1]+[2].
@@ -352,6 +383,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                             initial_stacks: max_stacks, // 初始满 (user)
                         })
                     }
+                    StackPolicy::BaseOnly => {} // sentinel: conditional never fires
                 },
                 ModEffect::ConditionOverload {
                     per_stack,
@@ -367,12 +399,14 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                             initial_stacks: max_stacks, // 初始满 (user)
                         })
                     }
+                    StackPolicy::BaseOnly => {} // sentinel: conditional never fires
                 },
                 ModEffect::OnHeadshotCritChance { bonus, duration } => match policy {
                     StackPolicy::AssumedMax => cc += bonus,
                     StackPolicy::Emergent => {
                         cc_on_headshot = Some((base.base_crit_chance * bonus, duration))
                     }
+                    StackPolicy::BaseOnly => {} // sentinel: conditional never fires
                 },
                 ModEffect::OnHeadshotKillCritChance {
                     per_stack,
@@ -388,17 +422,35 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                             initial_stacks: max_stacks, // 初始满 (user)
                         })
                     }
+                    StackPolicy::BaseOnly => {} // sentinel: conditional never fires
                 },
             }
         }
     }
 
     let modified_base = base.base_vector.total() * (1.0 + bd);
-    let physical = base.base_vector.scale(1.0 + bd);
 
-    // Elemental hierarchy input, in mod order (first placement establishes
-    // an element's position; later same-element mods merge there).
+    // Split the (base-damage-scaled) innate vector. Physical IPS stays a fixed
+    // component; innate PRIMARY elements (Verglas Prime's Cold, etc.) enter the
+    // hierarchy at position 0 — BEFORE any mod element — so mod elements combine
+    // with them (innate Cold + a Heat mod -> Blast). Wiki Load Order: innate
+    // elementals are placed first and scale with base-damage mods like the rest
+    // of the base. (A physical-innate weapon leaves `input` empty here, so this
+    // is a no-op for Dual Toxocyst.)
+    let scale = 1.0 + bd;
+    let mut physical = DamageVector::new();
     let mut input = ElementalInput::default();
+    for (t, v) in base.base_vector.iter_nonzero() {
+        if t.is_primary_element() {
+            input.push(t, v * scale);
+        } else {
+            physical.add(t, v * scale);
+        }
+    }
+
+    // Mod-added elements append AFTER the innate ones, in mod order (first
+    // placement establishes an element's position; later same-element mods
+    // merge there).
     for m in mods {
         for e in &m.effects {
             match *e {
@@ -581,5 +633,38 @@ mod tests {
         assert!(p2.damage.get(Heat) > 0.0);
         // Totals identical either way.
         assert!((p1.damage.total() - p2.damage.total()).abs() < 1e-9);
+    }
+
+    #[test]
+    fn verglas_innate_cold_combines_with_mod_elements() {
+        // Innate Cold(32) enters the hierarchy at position 0, so a Heat mod
+        // pairs with it into Blast (not pure Cold + pure Heat). No base-damage
+        // mod -> modified_base 32; Heat mod = 32 × 0.9 = 28.8; Blast = 60.8.
+        let heat = m("hellfire", vec![ModEffect::Element(Heat, 0.90)]);
+        let p = resolve(&WeaponBase::verglas_prime(), &[&heat], StackPolicy::BaseOnly);
+        assert!((p.damage.get(Blast) - 60.8).abs() < 1e-9);
+        assert_eq!(p.damage.get(Cold), 0.0);
+        assert_eq!(p.damage.get(Heat), 0.0);
+
+        // Innate Cold + a Toxin mod -> Viral.
+        let tox = m("infected_clip", vec![ModEffect::Element(Toxin, 0.90)]);
+        let pv = resolve(&WeaponBase::verglas_prime(), &[&tox], StackPolicy::BaseOnly);
+        assert!((pv.damage.get(Viral) - 60.8).abs() < 1e-9);
+    }
+
+    #[test]
+    fn sentinel_base_only_ignores_galvanized_conditional() {
+        // Galvanized Chamber: base +55% multishot + on-kill +25%×5. On a
+        // sentinel only the BASE applies — no live stacks are generated.
+        let gchamber = m(
+            "galvanized_chamber",
+            vec![
+                ModEffect::Multishot(0.55),
+                ModEffect::OnKillMultishot { per_stack: 0.25, max_stacks: 5, duration: 20.0 },
+            ],
+        );
+        let p = resolve(&WeaponBase::verglas_prime(), &[&gchamber], StackPolicy::BaseOnly);
+        assert!((p.multishot - 1.55).abs() < 1e-9);
+        assert!(p.ms_stack.is_none());
     }
 }
