@@ -37,7 +37,8 @@ async function init() {
   applyWeapon(d.weapon, d.mods);
 
   $("weapon").addEventListener("change", () => applyWeapon($("weapon").value, null));
-  $("clear-mods").addEventListener("click", () => { slots.forEach((s, i) => { s.mod = null; s.manual = false; s.pol = innate[i]; }); renderMods(); });
+  $("auto-forma").addEventListener("click", () => { autoForma(); renderMods(); });
+  $("clear-mods").addEventListener("click", () => { slots.forEach((s, i) => { s.mod = null; s.pol = innate[i]; }); renderMods(); });
   document.addEventListener("click", (e) => {
     if (!e.target.closest(".popover") && !e.target.closest(".slot")) closePopovers();
   });
@@ -71,8 +72,9 @@ function applyWeapon(id, presetMods) {
   $("arcane-sub").textContent = w.sentinel ? "sentinels cannot equip arcanes" : `${w.arcane_slots} slot`;
   if (w.arcane_slots < 1) arcane = "none";
 
-  slots = Array.from({ length: 8 }, (_, i) => ({ mod: null, pol: innate[i], manual: false }));
+  slots = Array.from({ length: 8 }, (_, i) => ({ mod: null, pol: innate[i] }));
   (presetMods || []).filter((m) => modById(m)).slice(0, 8).forEach((m, i) => { slots[i].mod = m; });
+  autoForma(); // sensible default: minimum-Forma polarities for the preset
 
   renderMods(); renderArcanes(); renderEvo();
 }
@@ -84,43 +86,50 @@ function slotDrain(base, modPol, slotPol) {
   return base;                                                     // no polarity
 }
 
-// Auto-assign polarities to non-manual slots to minimize Forma-to-fit; returns
-// {drain, forma, over}. Manual slots keep their chosen polarity.
-function computePlan() {
+// Capacity = Σ effective drain over slots holding a mod.
+function capacityUsed() {
+  return slots.reduce((sum, s) => { const m = modById(s.mod); return m ? sum + slotDrain(m.drain, m.polarity, s.pol) : sum; }, 0);
+}
+
+// Forma = multiset difference of the final slot polarities vs the innate POOL.
+// Innate polarities can be freely repositioned (Forma repositions), so only
+// polarities BEYOND what the pool provides cost a Forma. (Polarity is fully
+// decoupled from mods: empty slots and innate slots can be re-polarized.)
+function formaCount() {
+  const need = {}, pool = {};
+  slots.forEach((s) => { if (s.pol) need[s.pol] = (need[s.pol] || 0) + 1; });
+  innate.forEach((p) => { if (p) pool[p] = (pool[p] || 0) + 1; });
+  let forma = 0;
+  for (const p in need) forma += Math.max(0, need[p] - (pool[p] || 0));
+  return forma;
+}
+
+// Auto-assign polarities for MINIMUM Forma-to-fit (mirrors engine plan_forma):
+// spend the innate pool on the biggest matching mods, then Forma the biggest
+// unmatched until it fits; unmatched slots left blank. Overwrites polarities.
+function autoForma() {
   const filled = [];
   slots.forEach((s, i) => { const m = modById(s.mod); if (m) filled.push({ i, m }); });
-
-  let drain = 0, forma = 0;
-  const manual = filled.filter((x) => slots[x.i].manual);
-  const auto = filled.filter((x) => !slots[x.i].manual);
-  for (const { i, m } of manual) {
-    drain += slotDrain(m.drain, m.polarity, slots[i].pol);
-    if (slots[i].pol && slots[i].pol !== innate[i]) forma++;
-  }
-  // plan_forma over the auto slots
+  slots.forEach((s) => { s.pol = null; });
   const pool = innate.filter(Boolean).slice();
-  const order = auto.slice().sort((a, b) => b.m.drain - a.m.drain);
+  const order = filled.slice().sort((a, b) => b.m.drain - a.m.drain);
   const matched = new Set();
   for (const { i, m } of order) { const k = pool.indexOf(m.polarity); if (k >= 0) { pool.splice(k, 1); matched.add(i); } }
-  const autoDrain = () => auto.reduce((s, { i, m }) => s + (matched.has(i) ? Math.ceil(m.drain / 2) : m.drain), 0);
-  const budget = CAP - drain;
-  while (autoDrain() > budget) {
-    const next = order.find(({ i }) => !matched.has(i));
-    if (!next) break;
-    matched.add(next.i); forma++;
-  }
-  drain += autoDrain();
-  for (const { i, m } of auto) slots[i].pol = matched.has(i) ? m.polarity : (innate[i] || null);
-  return { drain, forma, over: drain > CAP };
+  const drainOf = () => filled.reduce((s, { i, m }) => s + (matched.has(i) ? Math.ceil(m.drain / 2) : m.drain), 0);
+  while (drainOf() > CAP) { const next = order.find(({ i }) => !matched.has(i)); if (!next) break; matched.add(next.i); }
+  for (const { i, m } of filled) slots[i].pol = matched.has(i) ? m.polarity : null;
 }
 
 // ---- render mods ----
+function polBtn(pol, i) {
+  return `<button class="pol-btn" data-i="${i}" title="change polarity">${pol ? imgTag(POL(pol), "pol") : '<span class="nopol">◇</span>'}</button>`;
+}
 function renderMods() {
-  const plan = computePlan();
+  const used = capacityUsed();
   const capEl = $("capacity");
-  capEl.textContent = `${plan.drain} / ${CAP}`;
-  capEl.classList.toggle("over", plan.over);
-  $("forma").textContent = `${plan.forma} Forma`;
+  capEl.textContent = `${used} / ${CAP}`;
+  capEl.classList.toggle("over", used > CAP);
+  $("forma").textContent = `${formaCount()} Forma`;
 
   const box = $("mod-slots");
   box.innerHTML = "";
@@ -130,18 +139,17 @@ function renderMods() {
     if (m) {
       el.className = "slot filled";
       const eff = slotDrain(m.drain, m.polarity, s.pol);
-      el.innerHTML =
-        `<button class="pol-btn" title="change polarity">${imgTag(s.pol ? POL(s.pol) : null, "pol")}${s.pol ? "" : '<span class="nopol">◇</span>'}</button>` +
-        imgTag(m.image ? CDN + m.image : null, "mod") +
+      el.innerHTML = polBtn(s.pol, i) + imgTag(m.image ? CDN + m.image : null, "mod") +
         `<div class="info"><div class="mn">${m.name}</div><div class="dr">${eff} drain${eff !== m.drain ? ` (base ${m.drain})` : ""}</div></div>` +
         `<button class="dots" title="options">⋯</button>`;
-      el.querySelector(".pol-btn").addEventListener("click", (e) => { e.stopPropagation(); openPolMenu(i); });
       el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openSlotMenu(i, e.currentTarget); });
     } else {
       el.className = "slot empty";
-      el.innerHTML = `<span class="pol ghost">${s.pol ? imgTag(POL(s.pol), "pol") : "◇"}</span><span class="plus">+ add mod</span>`;
-      el.addEventListener("click", () => openPicker(i, el));
+      el.innerHTML = polBtn(s.pol, i) + `<span class="plus">+ add mod</span>`;
+      el.querySelector(".plus").addEventListener("click", (e) => { e.stopPropagation(); openPicker(i, el); });
     }
+    // polarity is decoupled: clickable on every slot (mod or empty, incl. innate)
+    el.querySelector(".pol-btn").addEventListener("click", (e) => { e.stopPropagation(); openPolMenu(i); });
     box.appendChild(el);
   });
   $("exilus").innerHTML = `<div class="slot empty exl"><span class="plus">utility only</span></div>`;
@@ -188,22 +196,21 @@ function renderMenu(slotIdx, query) {
       <div class="info"><div class="mn">${m.name}</div><div class="me">${m.effects.join(", ")}</div></div><span class="dr">${m.drain}</span></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => {
-    slots[slotIdx].mod = o.dataset.id; slots[slotIdx].manual = false; slots[slotIdx].pol = innate[slotIdx];
+    slots[slotIdx].mod = o.dataset.id; // polarity is decoupled — keep the slot's polarity
     closePopovers(); renderMods();
   }));
 }
 
 function openSlotMenu(slotIdx, anchor) {
   closePopovers();
+  // MOD ops only (polarity lives on the left icon — no duplication).
   const menu = $("slot-menu");
   menu.innerHTML = `
-    <div class="mi" data-a="pol">Change polarity ▸</div>
     <div class="mi" data-a="swap">Swap mod</div>
-    <div class="mi danger" data-a="remove">Remove</div>`;
+    <div class="mi danger" data-a="remove">Remove mod</div>`;
   place(menu, anchor);
   menu.querySelector('[data-a="swap"]').addEventListener("click", () => { const el = $("mod-slots").children[slotIdx]; openPicker(slotIdx, el); });
-  menu.querySelector('[data-a="remove"]').addEventListener("click", () => { slots[slotIdx].mod = null; slots[slotIdx].manual = false; slots[slotIdx].pol = innate[slotIdx]; closePopovers(); renderMods(); });
-  menu.querySelector('[data-a="pol"]').addEventListener("click", () => openPolMenu(slotIdx));
+  menu.querySelector('[data-a="remove"]').addEventListener("click", () => { slots[slotIdx].mod = null; closePopovers(); renderMods(); }); // in-place; keep polarity
 }
 
 function openPolMenu(slotIdx) {
@@ -215,8 +222,7 @@ function openPolMenu(slotIdx) {
   const el = $("mod-slots").children[slotIdx];
   place(menu, el);
   menu.querySelectorAll(".mi").forEach((o) => o.addEventListener("click", () => {
-    const p = o.dataset.p || null;
-    slots[slotIdx].pol = p; slots[slotIdx].manual = true;
+    slots[slotIdx].pol = o.dataset.p || null;
     closePopovers(); renderMods();
   }));
 }
