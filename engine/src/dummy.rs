@@ -1538,6 +1538,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             any_head |= part.is_head;
             any_big |= tier >= 2;
 
+            // Crosshairs' on-HEADSHOT buff refreshes on every head hit
+            // (kills only matter for its stacks).
+            if part.is_head {
+                if let Some((_, dur)) = params.cc_on_headshot {
+                    ch_buff_expiry = t + dur;
+                }
+            }
+
             if let Some(pool) = broke {
                 push_break_proc(&mut debuffs, params, t, pool);
             }
@@ -2984,6 +2992,33 @@ mod tests {
             (s2.mean_effective_damage - 500.0).abs() < 1e-9,
             "eff {}",
             s2.mean_effective_damage
+        );
+    }
+
+    #[test]
+    fn crosshairs_buff_is_refreshed_by_headshot_hits() {
+        // Head aim: every hit refreshes the +0.12 buff, so all 18 shots
+        // in 20 s (12-mag + reload) fire at cc 0.22 with cd 2:
+        // E = 18 × 75 × 1.22 = 1647.
+        let p = DummyParams {
+            base_crit_chance: 0.1,
+            cc_on_headshot: Some((0.12, 12.0)),
+            arcane: Arcane::None,
+            body_parts: vec![BodyPart {
+                name: "head".into(),
+                aim_weight: 1.0,
+                multiplier: 1.0,
+                is_head: true,
+                crit_bonus: false,
+            }],
+            duration_secs: 20.0,
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 4000, 23);
+        assert!(
+            (s.mean_damage - 1647.0).abs() / 1647.0 < 0.02,
+            "dmg {}",
+            s.mean_damage
         );
     }
 

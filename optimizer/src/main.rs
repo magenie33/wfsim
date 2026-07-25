@@ -19,7 +19,9 @@ fn main() {
     let mut flat = false;
     let mut target_file = "thrax_centurion";
     let mut evo2_both = false;
-    let mut duration_secs = 60.0f64;
+    // Official default: 120 s (user, 2026-07-25) — long windows measure
+    // steady-state sustain instead of window-phase burst artifacts.
+    let mut duration_secs = 120.0f64;
     let mut final_runs: Option<u32> = None;
     let mut final_round_runs: Option<u32> = None;
     let mut arcane_only: Option<wfsim_engine::dummy::Arcane> = None;
