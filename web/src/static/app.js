@@ -335,8 +335,9 @@ function renderMenu(slotIdx, query) {
       if (g) return g;
       const c = pickerPrefs.sort === "drain" ? a.drain - b.drain : a.name.localeCompare(b.name);
       return pickerPrefs.dir === "desc" ? -c : c;
-    })
-    .slice(0, 14);
+    });
+  // No cap: every pool mod must be reachable. The popover menu scrolls
+  // (`.combo-menu` overflow-y), so the whole sorted/filtered list is browsable.
   menu.innerHTML = hits.length ? hits.map((m) => {
     const isCur = slots[slotIdx].mod === m.id;
     const at = placedAt(m.id, slotIdx);
