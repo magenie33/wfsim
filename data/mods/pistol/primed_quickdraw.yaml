@@ -1,0 +1,25 @@
+id: primed_quickdraw
+kind: mod
+name: Primed Quickdraw
+mod_type: pistol
+rarity: legendary
+polarity: naramon
+base_drain: 2                 # max drain 12 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Pistol/Expert/WeaponReloadSpeedModExpert
+
+# Effects parsed from warframestat levelStats into the unified schema.
+# UNVERIFIED — cross-check on the wiki. Kinds flagged TODO(engine) are
+# recorded but not modeled yet; the engine implements them over time
+# (loader ignores unknown kinds, so the mod still loads).
+effects:
+  - kind: reload_speed_bonus
+    per_rank: 0.08
+    max: 0.88
+    # from: +88% Reload Speed
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Quickdraw
+  note: Skeleton from scripts/gen_pistol_mods.py (warframestat API).
+    Effects auto-parsed + UNVERIFIED — cross-check drain/polarity/rarity
+    and effect kinds on the wiki (warframestat has stale copies).

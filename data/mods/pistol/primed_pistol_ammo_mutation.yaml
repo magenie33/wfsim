@@ -1,0 +1,26 @@
+id: primed_pistol_ammo_mutation
+kind: mod
+name: Primed Pistol Ammo Mutation
+mod_type: pistol
+rarity: legendary
+polarity: naramon
+base_drain: 0                 # max drain 10 at rank 10
+max_rank: 10
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Pistol/Expert/WeaponPistolConvertAmmoModExpert
+
+# Effects parsed from warframestat levelStats into the unified schema.
+# UNVERIFIED — cross-check on the wiki. Kinds flagged TODO(engine) are
+# recorded but not modeled yet; the engine implements them over time
+# (loader ignores unknown kinds, so the mod still loads).
+effects:
+  - kind: unmodeled   # TODO(engine): mechanic not modeled yet
+    per_rank: 0.08
+    max: 0.92
+    # from: Converts Primary ammo pickups to 92% of Ammo Pick Up.
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Pistol_Ammo_Mutation
+  note: Skeleton from scripts/gen_pistol_mods.py (warframestat API).
+    Effects auto-parsed + UNVERIFIED — cross-check drain/polarity/rarity
+    and effect kinds on the wiki (warframestat has stale copies).

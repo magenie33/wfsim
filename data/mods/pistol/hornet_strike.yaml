@@ -1,0 +1,23 @@
+id: hornet_strike
+kind: mod
+name: Hornet Strike
+mod_type: pistol
+rarity: uncommon
+polarity: madurai
+base_drain: 4                 # max drain 14 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponDamageAmountMod
+
+# One bucket, linear ranks: +20% base damage per rank, +220% at rank 10.
+effects:
+  - kind: base_damage_bonus    # the additive base-damage bucket
+    per_rank: 0.20
+    max: 2.20
+
+family: hornet_strike
+incompatible_with: [flawed_hornet_strike]
+
+source:
+  url: https://wiki.warframe.com/w/Hornet_Strike
+  note: Ranks from the page table; polarity/drain cross-checked against
+    Module:Mods/data (consistent).

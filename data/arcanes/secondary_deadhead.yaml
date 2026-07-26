@@ -25,6 +25,17 @@ buff:
   decay: lose_one_stack_and_reset_duration
   bucket: base_damage
 
+# Per-rank strength (wiki verbatim, https://wiki.warframe.com/w/Secondary_Deadhead):
+# damage/stack = 0.20 * (rank+1); the +30% headshot multiplier and -50% recoil
+# passives unlock at rank 5 ONLY. max_stacks (3) and duration (24 s) are constant.
+ranks:
+  - {per_stack_base_damage: 0.20}
+  - {per_stack_base_damage: 0.40}
+  - {per_stack_base_damage: 0.60}
+  - {per_stack_base_damage: 0.80}
+  - {per_stack_base_damage: 1.00}
+  - {per_stack_base_damage: 1.20, headshot_multiplier_bonus: 0.30, recoil: -0.50}
+
 # Rank-5 passives (unconditional while equipped):
 passives:
   # Headshot bonuses form an ADDITIVE BRACKET that MULTIPLIES the base

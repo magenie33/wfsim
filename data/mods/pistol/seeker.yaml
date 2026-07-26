@@ -1,0 +1,25 @@
+id: seeker
+kind: mod
+name: Seeker
+mod_type: pistol
+rarity: rare
+polarity: naramon
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponPunctureDepthMod
+
+# Effects parsed from warframestat levelStats into the unified schema.
+# UNVERIFIED — cross-check on the wiki. Kinds flagged TODO(engine) are
+# recorded but not modeled yet; the engine implements them over time
+# (loader ignores unknown kinds, so the mod still loads).
+effects:
+  - kind: punch_through_bonus   # TODO(engine): mechanic not modeled yet
+    per_rank: 0.4
+    max: 3.9
+    # from: +3.9 Punch Through
+
+source:
+  url: https://wiki.warframe.com/w/Seeker
+  note: Skeleton from scripts/gen_pistol_mods.py (warframestat API).
+    Effects auto-parsed + UNVERIFIED — cross-check drain/polarity/rarity
+    and effect kinds on the wiki (warframestat has stale copies).

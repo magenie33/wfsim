@@ -205,6 +205,10 @@ pub struct TargetParams {
     /// Interactions). Mechanic states (Frozen, Overguard suppression) are NOT
     /// immunities: those procs are drawn normally and nulled on landing.
     pub status_immunities: Vec<DamageType>,
+    /// Combat faction — the match key for faction-damage mods (Bane/Expel).
+    /// `Unknown` (the default for hand-made targets) means no faction mod
+    /// applies. Set from the enemy YAML `combat_faction:` field.
+    pub faction: crate::loadout::Faction,
     pub mode: TargetMode,
 }
 
@@ -228,6 +232,7 @@ impl TargetParams {
             eximus: false,
             can_be_eximus: false,
             status_immunities: Vec::new(),
+            faction: crate::loadout::Faction::Unknown,
             mode: TargetMode::InfiniteHealth,
         }
     }
@@ -868,6 +873,12 @@ pub struct DummyParams {
     pub status_damage_mult: f64,
     /// (element, 1 + Σ its bonuses) brackets for elemental DoT ticks.
     pub elem_dot_bonus: Vec<(DamageType, f64)>,
+    /// (1 + Σ faction bonuses matching THIS target's faction) — the resolved
+    /// faction-damage multiplier (System A). 1.0 vs a non-matching / Unknown
+    /// faction. Applied ×1 on direct hits, ×2 (squared) on DoT/status ticks
+    /// (the wiki "double dip"). Computed in `from_panel` from the panel bucket
+    /// + the target's faction.
+    pub faction_mult: f64,
     /// ModifiedBase for status-payload formulas (base × (1 + damage mods),
     /// elemental portions excluded). `None` = the vector total (correct
     /// for purely physical vectors).
@@ -970,7 +981,17 @@ impl DummyParams {
         body_parts: Vec<BodyPart>,
         duration_secs: f64,
     ) -> Self {
+        // Resolve the faction bucket against THIS target's faction (additive
+        // within the matching faction; 1.0 vs a non-match / Unknown).
+        let faction_mult = 1.0
+            + panel
+                .faction_damage
+                .iter()
+                .filter(|(f, _)| *f == target.faction)
+                .map(|(_, v)| v)
+                .sum::<f64>();
         Self {
+            faction_mult,
             damage: panel.damage,
             base_crit_chance: panel.crit_chance,
             crit_multiplier: panel.crit_damage,
@@ -1077,6 +1098,7 @@ impl Default for DummyParams {
             cc_stack: None,
             status_damage_mult: 1.0,
             elem_dot_bonus: Vec::new(),
+            faction_mult: 1.0,
             dot_modified_base: None,
             arcane: Arcane::Enervate,
             body_parts: Self::humanoid_parts(),
@@ -1578,7 +1600,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             };
             let crit_mult = 1.0 + tier as f64 * (cd - 1.0);
 
-            let raw = qtotal * part_factor * crit_mult * co_mult;
+            // Faction bonus (System A) is a total-damage multiplier applied
+            // once here on the direct hit; DoT/status ticks apply it a SECOND
+            // time (fm² below) — the wiki "double dip".
+            let raw = qtotal * part_factor * crit_mult * co_mult * params.faction_mult;
             let (effective, killed, broke) = target.apply(
                 raw,
                 toxin_share,
@@ -1647,6 +1672,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // Gas) at 0..+5 s (the +6 s event is a dud).
             let delayed_ticks = ((BLEED_TICKS as f64 * sd - BLEED_DELAY).floor() as u32) + 1;
             let immediate_ticks = ((BLEED_TICKS as f64 * sd).floor() as u32).max(1);
+            // Faction DOUBLE-DIP: status/DoT payloads carry the faction bonus a
+            // SECOND time (the direct hit already applied it once), so ticks
+            // scale by faction_mult² (wiki Faction_Damage_Bonus; MECHANICS §8).
+            let fm2 = params.faction_mult * params.faction_mult;
             let push_dot = |debuffs: &mut DebuffState,
                             dtype: DamageType,
                             coeff: f64,
@@ -1658,7 +1687,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     Dot {
                         next_tick: t + delay,
                         ticks_left: ticks,
-                        value: coeff * mb_live * bracket * sdm * crit_mult * part_factor,
+                        value: coeff * mb_live * bracket * sdm * crit_mult * part_factor * fm2,
                         dtype,
                         ignores_armor,
                     },
@@ -1734,7 +1763,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                             * ap.elem_bracket(DamageType::Heat)
                             * sdm
                             * crit_mult
-                            * part_factor;
+                            * part_factor
+                            * fm2; // faction double-dip
                         let expiry = t + STATUS_DURATION * sd;
                         debuffs.apply_heat(t, contrib, expiry, heat_cap);
                     }
@@ -1773,7 +1803,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         }
                         debuffs.blast.push(BlastStack {
                             fuse: t + BLAST_FUSE * sd,
-                            value: BLAST_COEFFICIENT * mb_live * sdm * crit_mult * part_factor,
+                            value: BLAST_COEFFICIENT * mb_live * sdm * crit_mult * part_factor * fm2,
                         });
                         if debuffs.blast.len() >= TEN_STACK_CAP {
                             // Early detonation: every stack's single-target
@@ -2004,6 +2034,44 @@ mod tests {
             is_head: false,
             crit_bonus: false,
         }]
+    }
+
+    #[test]
+    fn faction_mult_scales_direct_damage_linearly() {
+        // Status off: only the direct-hit multiply applies (no DoT double-dip),
+        // and faction_mult is applied AFTER the RNG rolls, so the same seed
+        // yields damage scaled exactly by faction_mult.
+        let plain = single_part(BodyPart {
+            name: "body".into(), aim_weight: 1.0, multiplier: 1.0, is_head: false, crit_bonus: false,
+        });
+        let boosted = DummyParams { faction_mult: 1.30, ..plain.clone() };
+        let a = monte_carlo(&plain, 3000, 7);
+        let b = monte_carlo(&boosted, 3000, 7);
+        assert!((b.mean_damage / a.mean_damage - 1.30).abs() < 1e-9,
+            "ratio was {}", b.mean_damage / a.mean_damage);
+    }
+
+    #[test]
+    fn faction_bonus_applies_only_vs_matching_target_faction() {
+        use crate::loadout::{resolve, DtEvo2, Faction, ModDef, ModEffect, Rarity, StackPolicy, WeaponBase};
+        use crate::mods::Polarity;
+        let expel = ModDef {
+            id: "expel_grineer", base_drain: 9, max_rank: 5,
+            polarity: Polarity::Madurai, rarity: Rarity::Uncommon, exilus: false, family: None,
+            effects: vec![ModEffect::FactionDamage(Faction::Grineer, 0.30)],
+        };
+        let base = WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy);
+        let panel = resolve(&base, &[&expel], StackPolicy::AssumedMax);
+        let parts = mono_body(1.0);
+        let grineer_target = {
+            let mut t = TargetParams::training_dummy();
+            t.faction = Faction::Grineer;
+            t
+        };
+        let vs_grineer = DummyParams::from_panel(&panel, grineer_target, parts.clone(), 10.0);
+        let vs_other = DummyParams::from_panel(&panel, TargetParams::training_dummy(), parts, 10.0);
+        assert!((vs_grineer.faction_mult - 1.30).abs() < 1e-9, "grineer {}", vs_grineer.faction_mult);
+        assert!((vs_other.faction_mult - 1.0).abs() < 1e-9, "unknown {}", vs_other.faction_mult);
     }
 
     #[test]
@@ -2350,6 +2418,7 @@ mod tests {
             eximus: false,
             can_be_eximus: false,
             status_immunities: Vec::new(),
+            faction: crate::loadout::Faction::Unknown,
             mode,
         }
     }

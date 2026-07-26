@@ -1,0 +1,23 @@
+id: reflex_draw
+kind: mod
+name: Reflex Draw
+mod_type: pistol
+rarity: uncommon
+polarity: naramon
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/PvPMods/Pistol/HolsterSpeedBonusMod
+
+# On Equip: −40% Weapon Recoil and +40% Accuracy for 8 s. Handling-only
+# (perfect-aim sim) — intentionally unmodeled.
+effects:
+  - kind: on_equip_buff
+    per_rank: 0.10
+    max: 0.40
+    duration_seconds: 8
+    note: "in-game text: On Equip -40% Weapon Recoil and +40% Accuracy for 8s"
+
+source:
+  url: https://wiki.warframe.com/w/Reflex_Draw
+  note: Exilus pistol mod. Handling buff intentionally unmodeled.

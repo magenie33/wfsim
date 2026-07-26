@@ -1,7 +1,12 @@
 id: dual_toxocyst
 name: Dual Toxocyst
 slot: secondary
+# Precise weapon type — this is the ACTUAL mod-eligibility path. Pistol Mods
+# equip on secondary Pistols, Dual Pistols, Shotgun Sidearms, Crossbows, and
+# Tomes (wiki Pistol_Mods). Dual Toxocyst is Dual Pistols, so it takes the
+# Pistol Mods pool. (See wiki Weapons#Weapon_Type for the full taxonomy.)
 class: dual_pistols
+mod_eligibility: pistol_mods   # the pool key: Pistol Mods
 grip_type: DUAL_GUN_GUN
 mastery_rank: 11
 max_rank: 30

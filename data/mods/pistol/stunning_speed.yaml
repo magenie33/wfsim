@@ -1,0 +1,29 @@
+id: stunning_speed
+kind: mod
+name: Stunning Speed
+mod_type: pistol
+rarity: rare
+polarity: naramon
+base_drain: 6                 # max drain 9 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Pistol/DualStat/StunningSpeedMod
+
+# Effects parsed from warframestat levelStats into the unified schema.
+# UNVERIFIED — cross-check on the wiki. Kinds flagged TODO(engine) are
+# recorded but not modeled yet; the engine implements them over time
+# (loader ignores unknown kinds, so the mod still loads).
+effects:
+  - kind: reload_speed_bonus
+    per_rank: 0.1
+    max: 0.4
+    # from: +40% Reload Speed
+  - kind: status_chance_bonus
+    per_rank: 0.075
+    max: 0.3
+    # from: +30% Status Chance
+
+source:
+  url: https://wiki.warframe.com/w/Stunning_Speed
+  note: Skeleton from scripts/gen_pistol_mods.py (warframestat API).
+    Effects auto-parsed + UNVERIFIED — cross-check drain/polarity/rarity
+    and effect kinds on the wiki (warframestat has stale copies).

@@ -20,5 +20,15 @@ buff:
   bucket: base_damage
   one_stack_per_damage_instance: true
 
+# Per-rank strength (wiki, https://wiki.warframe.com/w/Cascadia_Flare):
+# damage/stack = 0.02 * (rank+1). max_stacks (40) and duration (10 s) constant.
+ranks:
+  - {per_stack_base_damage: 0.02}
+  - {per_stack_base_damage: 0.04}
+  - {per_stack_base_damage: 0.06}
+  - {per_stack_base_damage: 0.08}
+  - {per_stack_base_damage: 0.10}
+  - {per_stack_base_damage: 0.12}
+
 source:
   url: https://wiki.warframe.com/w/Cascadia_Flare

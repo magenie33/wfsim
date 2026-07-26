@@ -1,0 +1,19 @@
+id: lethal_momentum
+kind: mod
+name: Lethal Momentum
+mod_type: pistol
+rarity: uncommon
+polarity: madurai
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponProjectileSpeedMod
+
+# +40% Projectile Speed (non-hitscan weapons only). The sim treats all shots
+# as instant-hit at a fixed range, so flight time is unmodeled.
+effects:
+  - { kind: projectile_speed_bonus, per_rank: 0.10, max: 0.40 }
+
+source:
+  url: https://wiki.warframe.com/w/Lethal_Momentum
+  note: Exilus pistol mod. Projectile flight time unmodeled (instant-hit sim).

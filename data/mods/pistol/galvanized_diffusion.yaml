@@ -1,0 +1,37 @@
+id: galvanized_diffusion
+kind: mod
+name: Galvanized Diffusion
+mod_type: pistol
+rarity: rare
+polarity: madurai
+base_drain: 4                 # max drain 14 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponFireIterationsSPMod
+
+effects:
+  - kind: multishot_bonus
+    per_rank: 0.10
+    max: 1.10                  # +110% unconditional at rank 10
+  - kind: stacking_buff
+    trigger: on_kill
+    # At rank 10: +30% multishot per stack, up to 4 stacks (+120%);
+    # total ceiling with the base bonus = +230%.
+    per_stack: { multishot_bonus: 0.30 }
+    max_stacks: 4
+    duration_seconds: 20
+    # GRACEFUL DECAY - a third stack-decay model (vs per-stack expiry and
+    # hard resets): on timeout the buff loses ONE stack and the 20 s
+    # duration RESETS for the remainder. Stacks drain one by one.
+    decay: lose_one_stack_and_reset_duration
+    stack_rules:
+      - Only kills made by the weapon carrying this mod grant stacks, and
+        only that weapon benefits (exception - equipping it on a normal
+        weapon and an Exalted weapon affects both).
+      - Status-proc kills and Pax Seeker kills from this weapon count.
+
+family: barrel_diffusion
+incompatible_with: [barrel_diffusion, flawed_barrel_diffusion,
+                    amalgam_barrel_diffusion]
+
+source:
+  url: https://wiki.warframe.com/w/Galvanized_Diffusion

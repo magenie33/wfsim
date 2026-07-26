@@ -1,0 +1,26 @@
+id: primed_fulmination
+kind: mod
+name: Primed Fulmination
+mod_type: pistol
+rarity: legendary
+polarity: madurai
+base_drain: 6                 # max drain 16 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Pistol/Event/AmbulasEvent/Expert/SecondaryExplosionRadiusModExpert
+
+# Effects parsed from warframestat levelStats into the unified schema.
+# UNVERIFIED — cross-check on the wiki. Kinds flagged TODO(engine) are
+# recorded but not modeled yet; the engine implements them over time
+# (loader ignores unknown kinds, so the mod still loads).
+effects:
+  - kind: elemental_damage_bonus
+    element: blast
+    per_rank: 0.04
+    max: 0.44
+    # from: +44% Blast Range
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Fulmination
+  note: Skeleton from scripts/gen_pistol_mods.py (warframestat API).
+    Effects auto-parsed + UNVERIFIED — cross-check drain/polarity/rarity
+    and effect kinds on the wiki (warframestat has stale copies).

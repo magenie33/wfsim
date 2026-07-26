@@ -521,6 +521,9 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "enumerates the FULL pool; explodes now that the pistol pool grew \
+                to ~80 mods (C(73,7)). The optimizer is being re-planned around a \
+                UI-selected scoped subset (2026-07-26) — re-enable against a scope."]
     fn constraints_filter_the_space() {
         let p = pool();
         let base = WeaponBase::dual_toxocyst_incarnon(true, DtEvo2::FeveredFrenzy);

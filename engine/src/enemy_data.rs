@@ -108,6 +108,13 @@ pub struct EnemySpec {
     #[serde(default)]
     pub synthetic: bool,
     pub scaling_faction: ScalingFaction,
+    /// Combat faction for faction-damage mods (Bane/Expel). Optional and
+    /// SEPARATE from `scaling_faction`: e.g. Zariman Thrax scale as
+    /// Unaffiliated but are combat-faction "Unknown" (no faction mod applies).
+    /// Absent → `Faction::Unknown`. Values: grineer/corpus/infested/corrupted
+    /// (aka orokin)/murmur/sentient (wiki `Faction_Damage_Bonus`).
+    #[serde(default)]
+    pub combat_faction: Option<String>,
     /// Whether an Eximus variant of this unit exists in-game (wiki
     /// `Eximus/Compatibilities`). Defaults to false: unknown units must not
     /// silently allow impossible combinations.
@@ -184,6 +191,11 @@ impl EnemySpec {
             eximus,
             can_be_eximus: self.can_be_eximus,
             status_immunities: Vec::new(),
+            faction: self
+                .combat_faction
+                .as_deref()
+                .map(crate::loadout::Faction::from_name)
+                .unwrap_or(crate::loadout::Faction::Unknown),
             mode,
         })
     }

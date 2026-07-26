@@ -1,0 +1,26 @@
+id: ruinous_extension
+kind: mod
+name: Ruinous Extension
+mod_type: pistol
+rarity: uncommon
+polarity: naramon
+base_drain: 2                 # max drain 5 at rank 3
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponBeamDistanceMod
+
+# Effects parsed from warframestat levelStats into the unified schema.
+# UNVERIFIED — cross-check on the wiki. Kinds flagged TODO(engine) are
+# recorded but not modeled yet; the engine implements them over time
+# (loader ignores unknown kinds, so the mod still loads).
+effects:
+  - kind: unmodeled   # TODO(engine): mechanic not modeled yet
+    per_rank: 0.02
+    max: 0.08
+    # from: +8m Beam Range
+
+source:
+  url: https://wiki.warframe.com/w/Ruinous_Extension
+  note: Skeleton from scripts/gen_pistol_mods.py (warframestat API).
+    Effects auto-parsed + UNVERIFIED — cross-check drain/polarity/rarity
+    and effect kinds on the wiki (warframestat has stale copies).

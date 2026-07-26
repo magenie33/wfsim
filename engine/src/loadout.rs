@@ -13,6 +13,40 @@ use crate::damage::{DamageType, DamageVector};
 use crate::elements::{self, ElementalInput};
 use crate::mods::Polarity;
 
+/// Combat faction — the key for faction-damage mods (Bane/Expel/Cleanse/Smite,
+/// "System A"). Distinct from [`crate::enemy_data::ScalingFaction`] (stat
+/// scaling) and from the per-type vulnerability column ("System B"). `Unknown`
+/// = no faction mod ever applies (e.g. Zariman Thrax, faction "Unknown").
+/// Strict matching: Grineer mods do NOT hit Corrupted/Narmer units. The
+/// `Corrupted` variant covers the Void/Orokin enemies the "Expel Orokin"
+/// family targets. Wiki `Faction_Damage_Bonus`, docs/MECHANICS.md §2/§8.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Faction {
+    Grineer,
+    Corpus,
+    Infested,
+    Corrupted,
+    Murmur,
+    Sentient,
+    Unknown,
+}
+
+impl Faction {
+    /// Map a data string (mod `faction:` field, enemy `combat_faction:`) to a
+    /// faction. `orokin` aliases `Corrupted`; unrecognized → `Unknown`.
+    pub fn from_name(s: &str) -> Faction {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "grineer" => Faction::Grineer,
+            "corpus" => Faction::Corpus,
+            "infested" => Faction::Infested,
+            "corrupted" | "orokin" => Faction::Corrupted,
+            "murmur" | "the_murmur" | "the murmur" => Faction::Murmur,
+            "sentient" => Faction::Sentient,
+            _ => Faction::Unknown,
+        }
+    }
+}
+
 /// One resolved effect of a mod at its equipped rank.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ModEffect {
@@ -73,6 +107,11 @@ pub enum ModEffect {
     /// Reflex Draw: temporary handling buff on weapon swap-in. Conditional
     /// and handling-only — never a static panel stat.
     OnEquipHandling { recoil: f64, accuracy: f64, duration: f64 },
+    /// Faction damage bonus (Bane/Expel/Cleanse/Smite): +v total damage vs a
+    /// MATCHING enemy faction. Its own multiplicative bucket, ADDITIVE with
+    /// other faction sources; **double-dips on DoT ticks** (applied twice).
+    /// Conditional on the target's faction — no effect vs a non-match.
+    FactionDamage(Faction, f64),
 }
 
 /// Indirect stat targets (each its own additive bucket) — outside the
@@ -151,6 +190,7 @@ impl ModEffect {
             OnEquipHandling { recoil, accuracy, duration } => {
                 format!("On Equip: {} Recoil, {} Accuracy, {duration}s", pct(recoil), pct(accuracy))
             }
+            FactionDamage(fac, v) => format!("{} Damage to {fac:?}", pct(v)),
         }
     }
 }
@@ -453,6 +493,10 @@ pub struct ResolvedPanel {
     /// (element, 1 + Σ that element's bonuses) — the elemental bracket of
     /// DoT tick formulas (only literal same-element mods count).
     pub elem_dot_bonus: Vec<(DamageType, f64)>,
+    /// (faction, Σ bonus) — faction-damage bucket (Bane/Expel), ADDITIVE
+    /// within a faction. Applied at sim time only vs a matching-faction
+    /// target (×2 on DoT ticks); shown on the panel as a conditional row.
+    pub faction_damage: Vec<(Faction, f64)>,
 }
 
 /// Resolve a mod set in slot order against a weapon base.
@@ -466,6 +510,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
     let mut cc_stack: Option<StackSpec> = None;
     let mut elem_bonus: Vec<(DamageType, f64)> = Vec::new();
     let mut indirect: Vec<(IndirectStat, f64)> = Vec::new();
+    let mut faction_bonus: Vec<(Faction, f64)> = Vec::new();
 
     for m in mods {
         for e in &m.effects {
@@ -550,6 +595,16 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                 // Conditional handling buff (Reflex Draw): handling-only and
                 // temporary — listed from the card, never a static panel stat.
                 ModEffect::OnEquipHandling { .. } => {}
+                // Faction bonus: additive within a faction (Bane + Roar share
+                // one bracket); the matching-faction multiply happens at sim
+                // time. Merge by faction here.
+                ModEffect::FactionDamage(fac, v) => {
+                    if let Some(x) = faction_bonus.iter_mut().find(|(f, _)| *f == fac) {
+                        x.1 += v;
+                    } else {
+                        faction_bonus.push((fac, v));
+                    }
+                }
             }
         }
     }
@@ -623,6 +678,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         status_damage_mult: 1.0 + sd,
         elem_dot_bonus: elem_bonus.into_iter().map(|(t, v)| (t, 1.0 + v)).collect(),
         indirect,
+        faction_damage: faction_bonus,
     }
 }
 
@@ -722,6 +778,27 @@ mod tests {
         // Elemental DoT brackets: cold 1.6, electricity 1.6.
         assert!(p.elem_dot_bonus.contains(&(Cold, 1.6)));
         assert!(p.elem_dot_bonus.contains(&(Electricity, 1.6)));
+    }
+
+    #[test]
+    fn faction_bonuses_merge_additively_by_faction() {
+        // Two Grineer faction sources (Expel + a hypothetical Bane) add within
+        // the Grineer bucket; a Corpus source is its own entry. Wiki: faction
+        // bonuses are additive with each other (Bane + Roar share a bracket).
+        let mods = [
+            m("expel_grineer", vec![ModEffect::FactionDamage(Faction::Grineer, 0.30)]),
+            m("bane_grineer", vec![ModEffect::FactionDamage(Faction::Grineer, 0.55)]),
+            m("expel_corpus", vec![ModEffect::FactionDamage(Faction::Corpus, 0.30)]),
+        ];
+        let refs: Vec<&ModDef> = mods.iter().collect();
+        let p = resolve(
+            &WeaponBase::dual_toxocyst_incarnon(false, DtEvo2::FeveredFrenzy),
+            &refs,
+            StackPolicy::AssumedMax,
+        );
+        let bonus = |f: Faction| p.faction_damage.iter().find(|(x, _)| *x == f).map(|(_, v)| *v);
+        assert!((bonus(Faction::Grineer).unwrap() - 0.85).abs() < 1e-9);
+        assert!((bonus(Faction::Corpus).unwrap() - 0.30).abs() < 1e-9);
     }
 
     #[test]

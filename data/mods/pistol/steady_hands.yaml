@@ -1,0 +1,20 @@
+id: steady_hands
+kind: mod
+name: Steady Hands
+mod_type: pistol
+rarity: rare
+polarity: naramon
+base_drain: 6                 # max drain 11 at rank 5
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponRecoilReductionMod
+
+# −60% Weapon Recoil. Recoil is an aim/handling effect with no damage model
+# here (the sim assumes perfect aim), so this is intentionally unmodeled —
+# the mod exists for the builder's exilus slot.
+effects:
+  - { kind: recoil_reduction, per_rank: -0.10, max: -0.60 }
+
+source:
+  url: https://wiki.warframe.com/w/Steady_Hands
+  note: Exilus pistol mod. Recoil intentionally unmodeled (no aim model).

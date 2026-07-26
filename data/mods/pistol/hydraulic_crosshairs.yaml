@@ -1,0 +1,25 @@
+id: hydraulic_crosshairs
+kind: mod
+name: Hydraulic Crosshairs
+mod_type: pistol
+rarity: common
+polarity: madurai
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Pistol/Event/CritChanceWhileAimingPistolMod
+
+# Effects parsed from warframestat levelStats into the unified schema.
+# UNVERIFIED — cross-check on the wiki. Kinds flagged TODO(engine) are
+# recorded but not modeled yet; the engine implements them over time
+# (loader ignores unknown kinds, so the mod still loads).
+effects:
+  - kind: crit_chance_bonus
+    per_rank: 0.225
+    max: 1.35
+    # from: On Headshot:\n+135% Critical Chance when Aiming for 9s
+
+source:
+  url: https://wiki.warframe.com/w/Hydraulic_Crosshairs
+  note: Skeleton from scripts/gen_pistol_mods.py (warframestat API).
+    Effects auto-parsed + UNVERIFIED — cross-check drain/polarity/rarity
+    and effect kinds on the wiki (warframestat has stale copies).

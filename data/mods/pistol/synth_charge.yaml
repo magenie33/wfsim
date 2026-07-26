@@ -1,0 +1,25 @@
+id: synth_charge
+kind: mod
+name: Synth Charge
+mod_type: pistol
+rarity: rare
+polarity: madurai
+base_drain: 6                 # max drain 9 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Sets/Synth/PistolSynthChargeMod
+
+# Effects parsed from warframestat levelStats into the unified schema.
+# UNVERIFIED — cross-check on the wiki. Kinds flagged TODO(engine) are
+# recorded but not modeled yet; the engine implements them over time
+# (loader ignores unknown kinds, so the mod still loads).
+effects:
+  - kind: base_damage_bonus
+    per_rank: 0.5
+    max: 2.0
+    # from: +200% Bonus Damage on final shot. Requires Magazine 6 or higher.
+
+source:
+  url: https://wiki.warframe.com/w/Synth_Charge
+  note: Skeleton from scripts/gen_pistol_mods.py (warframestat API).
+    Effects auto-parsed + UNVERIFIED — cross-check drain/polarity/rarity
+    and effect kinds on the wiki (warframestat has stale copies).

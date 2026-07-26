@@ -1,0 +1,29 @@
+id: merciless_gunfight
+kind: mod
+name: Merciless Gunfight
+mod_type: pistol
+rarity: rare
+polarity: naramon
+base_drain: 10                 # max drain 15 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Pistol/DualStat/CriticalDamagePunchThroughMod
+
+# Effects parsed from warframestat levelStats into the unified schema.
+# UNVERIFIED — cross-check on the wiki. Kinds flagged TODO(engine) are
+# recorded but not modeled yet; the engine implements them over time
+# (loader ignores unknown kinds, so the mod still loads).
+effects:
+  - kind: crit_damage_bonus
+    per_rank: 0.075
+    max: 0.45
+    # from: +45% Critical Damage
+  - kind: punch_through_bonus   # TODO(engine): mechanic not modeled yet
+    per_rank: 0.2
+    max: 1.2
+    # from: +1.2 Punch Through
+
+source:
+  url: https://wiki.warframe.com/w/Merciless_Gunfight
+  note: Skeleton from scripts/gen_pistol_mods.py (warframestat API).
+    Effects auto-parsed + UNVERIFIED — cross-check drain/polarity/rarity
+    and effect kinds on the wiki (warframestat has stale copies).

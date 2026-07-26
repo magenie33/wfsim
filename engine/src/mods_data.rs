@@ -1,6 +1,7 @@
-//! Declarative mod loader: `data/mods/*.yaml` -> the mod pool.
+//! Declarative mod loader: `data/mods/<class>/*.yaml` -> the mod pool.
 //!
-//! Mods are DATA, not code. Each `data/mods/<id>.yaml` describes a mod (drain,
+//! Mods are DATA, not code. Each `data/mods/<class>/<id>.yaml` describes a mod
+//! (drain,
 //! polarity, per-rank effects); this module parses them into [`ModDef`] so the
 //! pool is a single auditable source of truth that non-programmers can extend
 //! via PR (same pattern as [`crate::enemy_data`] for enemies).
@@ -20,7 +21,7 @@ use serde::Deserialize;
 use serde_norway::Value;
 
 use crate::damage::DamageType;
-use crate::loadout::{IndirectStat, ModDef, ModEffect, Rarity};
+use crate::loadout::{Faction, IndirectStat, ModDef, ModEffect, Rarity};
 use crate::mods::Polarity;
 
 #[derive(Debug, Deserialize)]
@@ -107,6 +108,15 @@ fn effect(v: &Value) -> Option<ModEffect> {
         "status_damage_bonus" => ModEffect::StatusDamage(max("max")),
         "fire_rate_bonus" => ModEffect::FireRate(max("max")),
         "reload_speed_bonus" => ModEffect::ReloadSpeed(max("max")),
+        // Faction damage (Bane/Expel): +max total damage vs the named faction.
+        // An unrecognized faction (Unknown) drops the effect (mod still loads).
+        "faction_damage_bonus" => {
+            let fac = Faction::from_name(v.get("faction").and_then(Value::as_str)?);
+            if fac == Faction::Unknown {
+                return None;
+            }
+            ModEffect::FactionDamage(fac, max("max"))
+        }
         "elemental_damage_bonus" | "combined_element_bonus" => {
             let e = element(v.get("element").and_then(Value::as_str)?)?;
             if e.is_primary_element() {
@@ -191,23 +201,18 @@ pub fn load_from_dir(dir: &Path) -> Vec<ModDef> {
     out
 }
 
-fn data_dir() -> std::path::PathBuf {
+/// Root of the per-class mod tree: `data/mods/<class>/*.yaml`. Each weapon
+/// class (pistol, rifle, …) gets its own subfolder so the flat pool doesn't
+/// get muddled as the mod count grows.
+fn mods_root() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../data/mods")
 }
 
-/// All loaded mods, cached (leaks id/family strings once). Filter by
-/// `mod_type` for a weapon-class pool.
-pub fn all_mods() -> &'static [ModDef] {
-    static POOL: OnceLock<Vec<ModDef>> = OnceLock::new();
-    POOL.get_or_init(|| load_from_dir(&data_dir()))
-}
-
-/// The secondary/pistol mod pool (mod_type: pistol) — Dual Toxocyst's pool.
+/// The secondary/pistol mod pool — `data/mods/pistol/*.yaml` (Dual Toxocyst's
+/// pool). Cached (leaks id/family strings once); cloned so callers own it.
 pub fn pistol_pool() -> Vec<ModDef> {
-    // Re-filtered from the cache; mod_type lives in the YAML but we don't keep
-    // it on ModDef, so re-read is cheap enough for a load-once pool. Kept as a
-    // clone so callers can own/reorder freely.
-    all_mods().to_vec()
+    static POOL: OnceLock<Vec<ModDef>> = OnceLock::new();
+    POOL.get_or_init(|| load_from_dir(&mods_root().join("pistol"))).to_vec()
 }
 
 #[cfg(test)]
@@ -216,7 +221,7 @@ mod tests {
 
     #[test]
     fn loads_the_pistol_pool_from_yaml() {
-        let mods = load_from_dir(&data_dir());
+        let mods = load_from_dir(&mods_root().join("pistol"));
         assert!(mods.len() >= 26, "expected >=26 mods, got {}", mods.len());
 
         let by = |id: &str| mods.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("missing {id}"));
@@ -230,5 +235,9 @@ mod tests {
         assert!(by("galvanized_shot").effects.iter().any(|e| matches!(e, ModEffect::ConditionOverload { per_stack, max_stacks: 3, .. } if (*per_stack - 0.40).abs() < 1e-9)));
         assert!(by("galvanized_diffusion").effects.iter().any(|e| matches!(e, ModEffect::OnKillMultishot { per_stack, max_stacks: 4, .. } if (*per_stack - 0.30).abs() < 1e-9)));
         assert!(by("galvanized_crosshairs").effects.iter().any(|e| matches!(e, ModEffect::OnHeadshotKillCritChance { max_stacks: 5, .. })));
+        // Faction-damage mod loads with the right faction + bonus (Expel Orokin
+        // → Corrupted; +30% at max rank).
+        assert!(by("expel_grineer").effects.iter().any(|e| matches!(e, ModEffect::FactionDamage(Faction::Grineer, v) if (*v - 0.30).abs() < 1e-9)));
+        assert!(by("expel_orokin").effects.iter().any(|e| matches!(e, ModEffect::FactionDamage(Faction::Corrupted, _))));
     }
 }

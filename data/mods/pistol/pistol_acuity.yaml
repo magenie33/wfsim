@@ -1,0 +1,29 @@
+id: pistol_acuity
+kind: mod
+name: Pistol Acuity
+mod_type: pistol
+rarity: rare
+polarity: naramon
+base_drain: 6                 # max drain 16 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponWeakpointCriticalChanceMod
+
+# Effects parsed from warframestat levelStats into the unified schema.
+# UNVERIFIED — cross-check on the wiki. Kinds flagged TODO(engine) are
+# recorded but not modeled yet; the engine implements them over time
+# (loader ignores unknown kinds, so the mod still loads).
+effects:
+  - kind: base_damage_bonus
+    per_rank: 0.32
+    max: 3.5
+    # from: +350% Weak Point Damage
+  - kind: crit_chance_bonus
+    per_rank: 0.32
+    max: 3.5
+    # from: +350% Weak Point Critical Chance. Multishot cannot be modified.
+
+source:
+  url: https://wiki.warframe.com/w/Pistol_Acuity
+  note: Skeleton from scripts/gen_pistol_mods.py (warframestat API).
+    Effects auto-parsed + UNVERIFIED — cross-check drain/polarity/rarity
+    and effect kinds on the wiki (warframestat has stale copies).
