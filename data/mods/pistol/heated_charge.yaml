@@ -15,4 +15,3 @@ incompatible_with: [primed_heated_charge, flawed_heated_charge]
 
 source:
   url: https://wiki.warframe.com/w/Heated_Charge
-  note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).

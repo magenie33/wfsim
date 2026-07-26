@@ -15,4 +15,3 @@ incompatible_with: [flawed_deep_freeze]
 
 source:
   url: https://wiki.warframe.com/w/Deep_Freeze
-  note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).

@@ -19,5 +19,3 @@ incompatible_with: [flawed_hornet_strike]
 
 source:
   url: https://wiki.warframe.com/w/Hornet_Strike
-  note: Ranks from the page table; polarity/drain cross-checked against
-    Module:Mods/data (consistent).

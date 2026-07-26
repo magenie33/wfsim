@@ -21,4 +21,3 @@ set: augur                    # informational: member of the Augur mod set
 
 source:
   url: https://wiki.warframe.com/w/Augur_Pact
-  note: Module:Mods/data. Set bonus (shield->ability damage) intentionally unmodeled.

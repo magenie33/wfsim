@@ -15,4 +15,3 @@ incompatible_with: [pistol_gambit, flawed_pistol_gambit, creeping_bullseye]
 
 source:
   url: https://wiki.warframe.com/w/Primed_Pistol_Gambit
-  note: Module:Mods/data entry (drain/polarity/rarity/incompatibilities).

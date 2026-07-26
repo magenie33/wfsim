@@ -28,7 +28,6 @@ effects:
     # (per-stack expiry, FIFO), not the lose-one-and-reset decay.
     decay: per_stack_duration
   - kind: weapon_scoped
-    note: only this weapon''s kills grant, only this weapon benefits
 
 family: hydraulic_crosshairs
 incompatible_with: [hydraulic_crosshairs]

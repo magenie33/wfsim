@@ -16,8 +16,6 @@ effects:
     per_rank: 0.10
     max: 0.40
     duration_seconds: 8
-    note: "in-game text: On Equip -40% Weapon Recoil and +40% Accuracy for 8s"
 
 source:
   url: https://wiki.warframe.com/w/Reflex_Draw
-  note: Exilus pistol mod. Handling buff intentionally unmodeled.
