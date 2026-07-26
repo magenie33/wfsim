@@ -18,9 +18,7 @@
 
 use wfsim_engine::damage::DamageType;
 use wfsim_engine::dummy::{monte_carlo, BodyPart, DummyParams, LockMode, Summary, TargetParams};
-use wfsim_engine::loadout::{
-    resolve, DtEvo2, ModDef, ModEffect, ResolvedPanel, StackPolicy, WeaponBase,
-};
+use wfsim_engine::loadout::{resolve, ModDef, ResolvedPanel, StackPolicy, WeaponBase};
 use wfsim_engine::mods::{plan_forma, FormaPlan, PlannedMod, Polarity};
 
 /// The pistol mod pool, mirrored from `data/mods/*.yaml` at MAX RANK
@@ -29,7 +27,9 @@ use wfsim_engine::mods::{plan_forma, FormaPlan, PlannedMod, Polarity};
 pub fn pool() -> Vec<ModDef> {
     // Source of truth: data/mods/*.yaml (mod_type: pistol), loaded by
     // engine::mods_data. Mods are DATA now — add/edit a YAML file, no code.
-    wfsim_engine::mods_data::pistol_pool()
+    // Exilus (utility) mods have no damage model — enumerating them only
+    // multiplies the search space, so the optimizer's pool excludes them.
+    wfsim_engine::mods_data::pistol_pool().into_iter().filter(|m| !m.exilus).collect()
 }
 
 /// Dual Toxocyst's innate slot polarities (fully unlocked: Madurai +
@@ -74,6 +74,7 @@ pub struct EnumStats {
 /// Enumerate all canonical candidates: 8-mod subsets (family-exclusive,
 /// constraint-filtered) × distinct-element orders, legalized and deduped by
 /// resolved damage vector.
+#[allow(clippy::too_many_arguments)] // search-config surface; a params struct isn't warranted yet
 pub fn enumerate_candidates(
     pool: &[ModDef],
     base: &WeaponBase,
@@ -417,6 +418,7 @@ pub fn evaluate_batch(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wfsim_engine::loadout::DtEvo2;
 
 
     #[test]

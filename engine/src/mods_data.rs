@@ -20,7 +20,7 @@ use serde::Deserialize;
 use serde_norway::Value;
 
 use crate::damage::DamageType;
-use crate::loadout::{ModDef, ModEffect};
+use crate::loadout::{IndirectStat, ModDef, ModEffect, Rarity};
 use crate::mods::Polarity;
 
 #[derive(Debug, Deserialize)]
@@ -28,11 +28,16 @@ struct ModFile {
     id: String,
     #[allow(dead_code)]
     name: String,
+    // Kept for future per-class pool filtering (rifle vs pistol).
+    #[allow(dead_code)]
     mod_type: String,
     polarity: String,
+    rarity: String,
     base_drain: u32,
     #[allow(dead_code)]
     max_rank: u32,
+    #[serde(default)]
+    exilus: bool,
     #[serde(default)]
     family: Option<String>,
     effects: Vec<Value>,
@@ -48,6 +53,16 @@ fn polarity(name: &str) -> Polarity {
         "penjaga" => Polarity::Penjaga,
         "umbra" => Polarity::Umbra,
         other => panic!("unknown polarity: {other}"),
+    }
+}
+
+fn rarity(name: &str) -> Rarity {
+    match name {
+        "common" => Rarity::Common,
+        "uncommon" => Rarity::Uncommon,
+        "rare" => Rarity::Rare,
+        "legendary" => Rarity::Legendary,
+        other => panic!("unknown rarity: {other}"),
     }
 }
 
@@ -111,21 +126,33 @@ fn effect(v: &Value) -> Option<ModEffect> {
         },
         "stacking_buff" => {
             // on-kill families: the per_stack map names the bucket.
-            let ps = v.get("per_stack");
+            let ps = |k: &str| v.get("per_stack").and_then(|p| p.get(k)).and_then(Value::as_f64);
             let dur = f(v, "duration_seconds").unwrap_or(0.0);
             let stacks = u(v, "max_stacks");
-            if let Some(m) = ps.and_then(|p| p.get("multishot_bonus")).and_then(Value::as_f64) {
-                ModEffect::OnKillMultishot { per_stack: m, max_stacks: stacks, duration: dur }
-            } else if let Some(c) =
-                ps.and_then(|p| p.get("condition_overload")).and_then(Value::as_f64)
-            {
-                ModEffect::ConditionOverload { per_stack: c, max_stacks: stacks, duration: dur }
-            } else {
-                return None; // unrecognized stacking payload -> not modeled
+            match (ps("multishot_bonus"), ps("condition_overload")) {
+                (Some(m), _) => ModEffect::OnKillMultishot { per_stack: m, max_stacks: stacks, duration: dur },
+                (None, Some(c)) => ModEffect::ConditionOverload { per_stack: c, max_stacks: stacks, duration: dur },
+                (None, None) => return None, // unrecognized stacking payload -> not modeled
             }
         }
-        // No damage effect (Amalgam side benefits, scoping markers), or a
-        // special effect not yet modeled: load the mod without this effect.
+        // INDIRECT stats: outside the theoretical-DPS formula, but real
+        // panel buckets a future shooter model consumes (aim, travel,
+        // ammo sustain) — the panel states every bonus.
+        "recoil_reduction" => ModEffect::Indirect(IndirectStat::Recoil, max("max")),
+        "noise_reduction" => ModEffect::Indirect(IndirectStat::Noise, max("max")),
+        "ammo_max_bonus" => ModEffect::Indirect(IndirectStat::AmmoMax, max("max")),
+        "projectile_speed_bonus" => ModEffect::Indirect(IndirectStat::ProjectileSpeed, max("max")),
+        "holstered_reload" => ModEffect::Indirect(IndirectStat::HolsteredReload, max("max")),
+        "dodge_speed_bonus" => ModEffect::Indirect(IndirectStat::DodgeSpeed, max("max")),
+        "acrobatic_speed_bonus" => ModEffect::Indirect(IndirectStat::AcrobaticSpeed, max("max")),
+        // Reflex Draw: on swap-in, −recoil/+accuracy for a few seconds.
+        "on_equip_buff" => ModEffect::OnEquipHandling {
+            recoil: -max("max").abs(),
+            accuracy: max("max").abs(),
+            duration: f(v, "duration_seconds").unwrap_or(0.0),
+        },
+        // Scoping markers (weapon_scoped) or an effect not yet modeled:
+        // load the mod without this effect.
         _ => return None,
     })
 }
@@ -139,6 +166,8 @@ fn to_moddef(mf: ModFile) -> ModDef {
         base_drain: mf.base_drain + mf.max_rank,
         max_rank: mf.max_rank,
         polarity: polarity(&mf.polarity),
+        rarity: rarity(&mf.rarity),
+        exilus: mf.exilus,
         family: mf.family.map(|s| &*Box::leak(s.into_boxed_str())),
         effects,
     }

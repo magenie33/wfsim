@@ -16,6 +16,7 @@ mods:
   convulsion: PistolElectricityDamageMod.jpg
   creeping_bullseye: CorruptedCritChanceFireRatePistolMod.jpg
   deep_freeze: PistolFreezeDamageMod.jpg
+  eject_magazine: PassiveReloadPistolMod.jpg
   frostbite: IceEventPistolMod.jpg
   galvanized_crosshairs: CritChanceWhileAimingPistolSPMod.jpg
   galvanized_diffusion: WeaponFireIterationsSPModMods.jpg
@@ -25,6 +26,7 @@ mods:
   hollow_point: CorruptedCritDmgForDmgMod.jpg
   hornet_strike: PistolDamageAmountMod.jpg
   jolt: ElectEventPistolMod.jpg
+  lethal_momentum: WeaponProjectileSpeedPistolMod.jpg
   lethal_torrent: Grinder.jpg
   magnetic_might: MagneticCritDamagePistolMod.jpg
   pathogen_rounds: PoisonDamagePistolMod.jpg
@@ -35,8 +37,12 @@ mods:
   primed_heated_charge: PistolFireDamageMod.jpg
   primed_pistol_gambit: PistolCritChanceMod.jpg
   primed_target_cracker: PistolCritDamageMod.jpg
+  reflex_draw: PvPWeaponSwapSpeedPistol.jpg
   scorch: DualStatFireProcPistol.jpg
+  steady_hands: PistolRecoilReductionMod.jpg
+  suppress: PistolSilencerMod.jpg
   target_cracker: PistolCritDamageMod.jpg
+  trick_mag: PistolAmmoMaxMod.jpg
 
 arcanes:
   cascadia_flare: ArcaneProjectionBY.png

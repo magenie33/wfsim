@@ -61,6 +61,98 @@ pub enum ModEffect {
         max_stacks: u32,
         duration: f64,
     },
+    /// INDIRECT stat bonus (recoil, accuracy, ammo, projectile speed…):
+    /// an additive bucket per stat, resolved into
+    /// [`ResolvedPanel::indirect`]. Indirect = excluded from the
+    /// theoretical-DPS formula, but a real input to practical combat —
+    /// a future shooter model can consume them (recoil/accuracy → hit &
+    /// headshot probability; projectile speed → travel time vs moving
+    /// targets; ammo/holstered reload → long-fight sustain). Noise and
+    /// dodge/roll speed are stealth/survivability, never DPS.
+    Indirect(IndirectStat, f64),
+    /// Reflex Draw: temporary handling buff on weapon swap-in. Conditional
+    /// and handling-only — never a static panel stat.
+    OnEquipHandling { recoil: f64, accuracy: f64, duration: f64 },
+}
+
+/// Indirect stat targets (each its own additive bucket) — outside the
+/// theoretical-DPS formula, inside practical combat.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IndirectStat {
+    Recoil,
+    Noise,
+    AmmoMax,
+    ProjectileSpeed,
+    HolsteredReload,
+    DodgeSpeed,
+    AcrobaticSpeed,
+    Accuracy,
+}
+
+impl IndirectStat {
+    pub fn label(&self) -> &'static str {
+        match self {
+            IndirectStat::Recoil => "Recoil",
+            IndirectStat::Noise => "Noise",
+            IndirectStat::AmmoMax => "Ammo Reserve",
+            IndirectStat::ProjectileSpeed => "Projectile Speed",
+            IndirectStat::HolsteredReload => "Holstered Reload/s",
+            IndirectStat::DodgeSpeed => "Dodge Speed",
+            IndirectStat::AcrobaticSpeed => "Acrobatic Speed",
+            IndirectStat::Accuracy => "Accuracy",
+        }
+    }
+}
+
+/// "+60%" / "−15%" / "+109.5%" from a fraction (true minus sign).
+pub fn pct(x: f64) -> String {
+    let p = x.abs() * 100.0;
+    let s = if (p - p.round()).abs() < 1e-6 {
+        format!("{}", p.round() as i64)
+    } else {
+        format!("{p:.2}").trim_end_matches('0').trim_end_matches('.').to_string()
+    };
+    if x >= 0.0 { format!("+{s}%") } else { format!("−{s}%") }
+}
+
+impl ModEffect {
+    /// One display line for this effect — OUR statement of what the model
+    /// actually computes (true values; tooltip lies already corrected in
+    /// the data). The single source for every effect list in the UI.
+    pub fn describe(&self) -> String {
+        use ModEffect::*;
+        match *self {
+            BaseDamage(v) => format!("{} Base Damage", pct(v)),
+            Multishot(v) => format!("{} Multishot", pct(v)),
+            CritChance(v) => format!("{} Crit Chance", pct(v)),
+            CritDamage(v) => format!("{} Crit Damage", pct(v)),
+            StatusChance(v) => format!("{} Status Chance", pct(v)),
+            FireRate(v) => format!("{} Fire Rate", pct(v)),
+            ReloadSpeed(v) => format!("{} Reload Speed", pct(v)),
+            StatusDamage(v) => format!("{} Status Damage", pct(v)),
+            Element(t, v) => format!("{} {t:?}", pct(v)),
+            CombinedElement(t, v) => format!("{} {t:?}", pct(v)),
+            OnKillMultishot { per_stack, max_stacks, duration } => {
+                format!("On Kill: {} Multishot per stack ×{max_stacks}, {duration}s", pct(per_stack))
+            }
+            ConditionOverload { per_stack, max_stacks, duration } => {
+                format!(
+                    "On Kill: {} Damage per status type ×{max_stacks}, {duration}s (direct hits)",
+                    pct(per_stack)
+                )
+            }
+            OnHeadshotCritChance { bonus, duration } => {
+                format!("On Headshot: {} Crit Chance, {duration}s", pct(bonus))
+            }
+            OnHeadshotKillCritChance { per_stack, max_stacks, duration } => {
+                format!("On Headshot Kill: {} Crit Chance per stack ×{max_stacks}, {duration}s", pct(per_stack))
+            }
+            Indirect(stat, v) => format!("{} {}", pct(v), stat.label()),
+            OnEquipHandling { recoil, accuracy, duration } => {
+                format!("On Equip: {} Recoil, {} Accuracy, {duration}s", pct(recoil), pct(accuracy))
+            }
+        }
+    }
 }
 
 /// A mod as the resolver sees it (stats at the equipped rank).
@@ -72,9 +164,25 @@ pub struct ModDef {
     /// Max rank (drain rises 1/rank from rank 0, so rank-0 drain = base_drain − max_rank).
     pub max_rank: u32,
     pub polarity: Polarity,
+    /// Card rarity (frame colour). Display-only — no mechanical effect.
+    pub rarity: Rarity,
+    /// Exilus (utility) mod: may occupy the exilus slot in addition to
+    /// regular slots. Exilus mods are handling/QoL effects with no damage
+    /// model, so the optimizer skips them.
+    pub exilus: bool,
     /// Mods sharing a family are mutually exclusive (wiki Incompatible).
     pub family: Option<&'static str>,
     pub effects: Vec<ModEffect>,
+}
+
+/// Mod card rarity — determines the in-game frame colour (bronze / silver /
+/// gold / white). Purely cosmetic; carried for UI display.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Rarity {
+    Common,
+    Uncommon,
+    Rare,
+    Legendary,
 }
 
 impl ModDef {
@@ -338,6 +446,10 @@ pub struct ResolvedPanel {
     pub cc_stack: Option<StackSpec>,
     /// (1 + Σ status damage) — multiplies status payload values.
     pub status_damage_mult: f64,
+    /// Summed INDIRECT buckets (recoil, accuracy, ammo…): outside the
+    /// theoretical-DPS math, stated on the panel; a future shooter model
+    /// (2D recoil/aim, travel time, ammo sustain) consumes them.
+    pub indirect: Vec<(IndirectStat, f64)>,
     /// (element, 1 + Σ that element's bonuses) — the elemental bracket of
     /// DoT tick formulas (only literal same-element mods count).
     pub elem_dot_bonus: Vec<(DamageType, f64)>,
@@ -353,6 +465,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
     let mut cc_on_headshot: Option<(f64, f64)> = None;
     let mut cc_stack: Option<StackSpec> = None;
     let mut elem_bonus: Vec<(DamageType, f64)> = Vec::new();
+    let mut indirect: Vec<(IndirectStat, f64)> = Vec::new();
 
     for m in mods {
         for e in &m.effects {
@@ -427,6 +540,16 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
                 },
+                ModEffect::Indirect(stat, v) => {
+                    if let Some(x) = indirect.iter_mut().find(|(s, _)| *s == stat) {
+                        x.1 += v;
+                    } else {
+                        indirect.push((stat, v));
+                    }
+                }
+                // Conditional handling buff (Reflex Draw): handling-only and
+                // temporary — listed from the card, never a static panel stat.
+                ModEffect::OnEquipHandling { .. } => {}
             }
         }
     }
@@ -499,6 +622,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         cc_stack,
         status_damage_mult: 1.0 + sd,
         elem_dot_bonus: elem_bonus.into_iter().map(|(t, v)| (t, 1.0 + v)).collect(),
+        indirect,
     }
 }
 
@@ -513,6 +637,8 @@ mod tests {
             base_drain: 10,
             max_rank: 10,
             polarity: Polarity::Madurai,
+            rarity: Rarity::Common,
+            exilus: false,
             family: None,
             effects,
         }

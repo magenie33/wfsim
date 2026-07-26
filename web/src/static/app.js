@@ -14,8 +14,12 @@ const CAP = 60;
 const imgTag = (src, cls) => src ? `<img class="${cls||''}" src="${src}" onerror="this.style.visibility='hidden'"/>` : `<span class="${cls||''}"></span>`;
 
 let META = null;
-let slots = [];      // 8 × { mod:id|null, pol:string|null, manual:bool } — POSITIONAL
-let innate = [];     // 8 × innate polarity name|null
+// 9 × { mod:id|null, pol:string|null, rank:int|null } — POSITIONAL.
+// Indices 0–7 are the regular slots; index 8 is the EXILUS slot (utility mods
+// only; drain counts toward capacity like any slot; absent on sentinels).
+const EXILUS = 8;
+let slots = [];
+let innate = [];     // 9 × innate polarity name|null (exilus never innate)
 let arcane = "none";
 let evo2 = "fevered";
 let pickerSlot = 0;
@@ -62,13 +66,14 @@ let currentPool = [];
 const weaponInfo = (id) => META.weapons.find((w) => w.id === id) || META.weapons[0];
 const modById = (id) => currentPool.find((m) => m.id === id);
 const show = (id, on) => { const el = $(id); if (on) el.removeAttribute("hidden"); else el.setAttribute("hidden", ""); };
-const placedElsewhere = (id, exceptIdx) => slots.some((s, i) => i !== exceptIdx && s.mod === id);
+// Where (other than exceptIdx) this mod is currently slotted, or -1.
+const placedAt = (id, exceptIdx) => slots.findIndex((s, i) => i !== exceptIdx && s.mod === id);
 
 function applyWeapon(id, presetMods) {
   const w = weaponInfo(id);
   currentPool = META.mod_pools[w.mod_class] || [];
   innate = (w.innate_polarities || []).slice(0, 8);
-  while (innate.length < 8) innate.push(null);
+  while (innate.length < 9) innate.push(null);
 
   $("w-img").src = w.image ? CDN + w.image : "";
   $("w-name").textContent = w.name;
@@ -81,7 +86,7 @@ function applyWeapon(id, presetMods) {
   $("arcane-sub").textContent = w.sentinel ? "sentinels cannot equip arcanes" : `${w.arcane_slots} slot`;
   if (w.arcane_slots < 1) arcane = "none";
 
-  slots = Array.from({ length: 8 }, (_, i) => ({ mod: null, pol: innate[i], rank: null }));
+  slots = Array.from({ length: 9 }, (_, i) => ({ mod: null, pol: innate[i], rank: null }));
   (presetMods || []).filter((m) => modById(m)).slice(0, 8).forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });
   autoForma(); // sensible default: minimum-Forma polarities for the preset
 
@@ -163,38 +168,106 @@ function renderMods() {
 
   const box = $("mod-slots");
   box.innerHTML = "";
-  slots.forEach((s, i) => {
-    const el = document.createElement("div");
-    const m = s.mod ? modById(s.mod) : null;
-    if (m) {
-      el.className = "slot filled";
-      const r = s.rank == null ? m.max_rank : s.rank;
-      const base = modDrain(m, r);
-      const eff = slotDrain(base, m.polarity, s.pol);
-      const lowered = r < m.max_rank;
-      const rank = m.max_rank > 0
-        ? `<span class="rank ${lowered ? "lowered" : ""}"><button class="rk" data-d="-1">−</button><b>R${r}${lowered ? "/" + m.max_rank : ""}</b><button class="rk" data-d="1">+</button></span>`
-        : "";
-      el.innerHTML = polBtn(s.pol, i) + imgTag(m.image ? CDN + m.image : null, "mod") +
-        `<div class="info"><div class="mn">${m.name}</div><div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div>` +
-        `<button class="dots" title="options">⋯</button>`;
-      el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openSlotMenu(i, e.currentTarget); });
-      el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const nr = Math.max(0, Math.min(m.max_rank, r + Number(b.dataset.d)));
-        slots[i].rank = nr; renderMods();
-      }));
-    } else {
-      el.className = "slot empty";
-      el.innerHTML = polBtn(s.pol, i) + `<span class="plus">+ add mod</span>`;
-      el.querySelector(".plus").addEventListener("click", (e) => { e.stopPropagation(); openPicker(i, el); });
-    }
-    // polarity is decoupled: clickable on every slot (mod or empty, incl. innate)
-    el.querySelector(".pol-btn").addEventListener("click", (e) => { e.stopPropagation(); openPolMenu(i); });
-    box.appendChild(el);
-  });
-  $("exilus").innerHTML = `<div class="slot empty exl"><span class="plus">utility only</span></div>`;
+  for (let i = 0; i < 8; i++) box.appendChild(buildSlot(i));
+
+  // Exilus: a REAL slot (utility mods only, drain counts) — absent on sentinels.
+  const ex = $("exilus");
+  ex.innerHTML = "";
+  if (weaponInfo($("weapon").value).sentinel) {
+    ex.innerHTML = `<div class="slot empty exl"><span class="plus">sentinel weapons have no exilus slot</span></div>`;
+  } else {
+    ex.appendChild(buildSlot(EXILUS));
+  }
+  refreshPanel();
 }
+
+// ---- Stats panel: merged buckets, each explained by source ----
+let panelTimer = null;
+function refreshPanel() {
+  clearTimeout(panelTimer);
+  panelTimer = setTimeout(async () => {
+    const body = {
+      weapon: $("weapon").value,
+      evo2,
+      mods: slots.filter((s) => s.mod).map((s) => s.mod), // slot order (elements are position-sensitive)
+    };
+    try {
+      const r = await (await fetch("/api/panel", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      })).json();
+      renderPanel(r);
+    } catch (e) {
+      $("stats-rows").innerHTML = `<div class="error">panel failed: ${e}</div>`;
+    }
+  }, 120);
+}
+
+function renderPanel(r) {
+  if (!r || r.ok === false) {
+    $("stats-rows").innerHTML = `<div class="error">${r ? r.error : "no data"}</div>`;
+    return;
+  }
+  $("stats-sub").textContent = `${r.form} · max-rank values · ${r.policy}`;
+  const srcLine = (s) =>
+    `<div class="ssrc">${s.value} — ${s.mod}${s.note ? ` <span class="snote">(${s.note})</span>` : ""}</div>`;
+  const rowHtml = (row) => `
+    <div class="srow">
+      <div class="shead"><span class="sk">${row.label}</span>
+        <span class="sv">${row.base !== "—" ? `<span class="sbase">${row.base}</span> → ` : ""}<b>${row.final}</b></span></div>
+      ${(row.sources || []).map(srcLine).join("")}
+    </div>`;
+  // Indirect stats (recoil, accuracy, ammo…) render like any bucket — they
+  // are outside theoretical DPS but real in practice, so the panel states them.
+  const rows = [...(r.stats || []), ...(r.elements || []), ...(r.indirect || [])];
+  $("stats-rows").innerHTML = rows.length ? rows.map(rowHtml).join("") : `<div class="placeholder">no mods — base stats only</div>`;
+
+  $("stats-damage").innerHTML = (r.damage && r.damage.length)
+    ? `<div class="sdmg-title">Damage (combined) — ${r.damage_total} total</div>` +
+      r.damage.map((d) => `<div class="sdmg"><span class="sk">${d.type}</span><span class="sv"><b>${d.amount}</b> <span class="snote">${d.share}</span></span></div>`).join("")
+    : "";
+
+  $("stats-conditionals").innerHTML = (r.conditionals && r.conditionals.length)
+    ? `<div class="sdmg-title">Conditional / not merged</div>` +
+      r.conditionals.map((c) => `<div class="scond ${c.active ? "" : "off"}"><b>${c.mod}</b>: ${c.desc} <span class="snote">${c.why}</span></div>`).join("")
+    : "";
+}
+
+// One slot card (regular or exilus) with its polarity / rank / menu wiring.
+function buildSlot(i) {
+  const s = slots[i];
+  const el = document.createElement("div");
+  const m = s.mod ? modById(s.mod) : null;
+  if (m) {
+    el.className = "slot filled" + (m.rarity ? " rar-" + m.rarity : "");
+    const r = s.rank == null ? m.max_rank : s.rank;
+    const base = modDrain(m, r);
+    const eff = slotDrain(base, m.polarity, s.pol);
+    const lowered = r < m.max_rank;
+    const rank = m.max_rank > 0
+      ? `<span class="rank ${lowered ? "lowered" : ""}"><button class="rk" data-d="-1">−</button><b>R${r}${lowered ? "/" + m.max_rank : ""}</b><button class="rk" data-d="1">+</button></span>`
+      : "";
+    el.innerHTML = polBtn(s.pol, i) + imgTag(m.image ? CDN + m.image : null, "mod") +
+      `<div class="info"><div class="mn">${m.name}</div><div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div>` +
+      `<button class="dots" title="options">⋯</button>`;
+    el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openSlotMenu(i, e.currentTarget); });
+    el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const nr = Math.max(0, Math.min(m.max_rank, r + Number(b.dataset.d)));
+      slots[i].rank = nr; renderMods();
+    }));
+  } else {
+    el.className = "slot empty";
+    el.innerHTML = polBtn(s.pol, i) + `<span class="plus">${i === EXILUS ? "+ add exilus mod" : "+ add mod"}</span>`;
+    // the WHOLE empty slot opens the picker (the pol-btn stops propagation)
+    el.addEventListener("click", (e) => { e.stopPropagation(); openPicker(i, el); });
+  }
+  // polarity is decoupled: clickable on every slot (mod or empty, incl. innate)
+  el.querySelector(".pol-btn").addEventListener("click", (e) => { e.stopPropagation(); openPolMenu(i); });
+  return el;
+}
+
+// The DOM node for slot i (popover anchoring).
+const slotEl = (i) => i === EXILUS ? $("exilus").firstElementChild : $("mod-slots").children[i];
 
 // ---- popovers ----
 function closePopovers() { $("mod-popover").hidden = true; $("slot-menu").hidden = true; }
@@ -242,24 +315,51 @@ function familyConflict(mod, exceptIdx) {
 function renderMenu(slotIdx, query) {
   const menu = $("mod-menu");
   const q = query.trim().toLowerCase();
+  // Equipped mods stay LISTED: the current slot's mod is marked, mods in other
+  // slots show their slot number — picking one of those EXCHANGES the two slots.
+  const group = (m) => slots[slotIdx].mod === m.id ? 0 : placedAt(m.id, slotIdx) >= 0 ? 1 : 2;
   const hits = currentPool
-    .filter((m) => !placedElsewhere(m.id, slotIdx))
+    .filter((m) => slotIdx !== EXILUS || m.exilus) // exilus slot: utility mods only
     .filter((m) => !pickerPrefs.pol || m.polarity === pickerPrefs.pol)
     .filter((m) => !q || m.name.toLowerCase().includes(q) || m.effects.join(" ").toLowerCase().includes(q))
     .sort((a, b) => {
+      const g = group(a) - group(b); // current first, then equipped, then the rest
+      if (g) return g;
       const c = pickerPrefs.sort === "drain" ? a.drain - b.drain : a.name.localeCompare(b.name);
       return pickerPrefs.dir === "desc" ? -c : c;
     })
     .slice(0, 14);
   menu.innerHTML = hits.length ? hits.map((m) => {
-    const conflict = familyConflict(m, slotIdx);
-    return `<div class="opt ${conflict ? "dis" : ""}" data-id="${m.id}" title="${conflict ? "incompatible (" + m.family + ")" : m.effects.join(" · ")}">
+    const isCur = slots[slotIdx].mod === m.id;
+    const at = placedAt(m.id, slotIdx);
+    // Exchanging with the exilus slot would move OUR mod there — only legal
+    // if it is exilus-eligible (or the slot is empty).
+    const ownMod = slots[slotIdx].mod ? modById(slots[slotIdx].mod) : null;
+    const exIllegal = at === EXILUS && ownMod && !ownMod.exilus;
+    const conflict = at < 0 && !isCur && familyConflict(m, slotIdx);
+    const badge = isCur ? '<span class="slotchip cur">current</span>'
+      : at >= 0 ? `<span class="slotchip">${at === EXILUS ? "exilus" : "slot " + (at + 1)}</span>` : "";
+    const title = conflict ? `incompatible (${m.family})`
+      : exIllegal ? `cannot swap: ${ownMod.name} is not an exilus mod`
+      : at >= 0 ? `swap with ${at === EXILUS ? "the exilus slot" : "slot " + (at + 1)}`
+      : m.effects.join(" · ");
+    return `<div class="opt ${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" data-id="${m.id}" title="${title}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(m.image ? CDN + m.image : null, "mod")}
-      <div class="info"><div class="mn">${m.name}</div><div class="me">${m.effects.join(", ")}</div></div><span class="dr">${m.drain}</span></div>`;
+      <div class="info"><div class="mn">${m.name}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${m.effects.map((x) => `<div>${x}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => {
-    slots[slotIdx].mod = o.dataset.id; // polarity is decoupled — keep the slot's polarity
-    slots[slotIdx].rank = modById(o.dataset.id).max_rank; // added mods default to max rank
+    const id = o.dataset.id;
+    if (slots[slotIdx].mod === id) { closePopovers(); return; } // already here
+    const at = placedAt(id, slotIdx);
+    if (at >= 0) {
+      // EXCHANGE the two slots' mods (+ranks); polarities stay with their slots
+      const a = slots[slotIdx], b = slots[at];
+      [a.mod, b.mod] = [b.mod, a.mod];
+      [a.rank, b.rank] = [b.rank, a.rank];
+    } else {
+      slots[slotIdx].mod = id; // polarity is decoupled — keep the slot's polarity
+      slots[slotIdx].rank = modById(id).max_rank; // added mods default to max rank
+    }
     closePopovers(); renderMods();
   }));
 }
@@ -272,7 +372,7 @@ function openSlotMenu(slotIdx, anchor) {
     <div class="mi" data-a="swap">Swap mod</div>
     <div class="mi danger" data-a="remove">Remove mod</div>`;
   place(menu, anchor);
-  menu.querySelector('[data-a="swap"]').addEventListener("click", () => { const el = $("mod-slots").children[slotIdx]; openPicker(slotIdx, el); });
+  menu.querySelector('[data-a="swap"]').addEventListener("click", () => { openPicker(slotIdx, slotEl(slotIdx)); });
   menu.querySelector('[data-a="remove"]').addEventListener("click", () => { slots[slotIdx].mod = null; closePopovers(); renderMods(); }); // in-place; keep polarity
 }
 
@@ -282,8 +382,7 @@ function openPolMenu(slotIdx) {
   const cur = slots[slotIdx].pol;
   menu.innerHTML = GUN_POLS.map((p) => `<div class="mi ${p === cur ? "sel" : ""}" data-p="${p}">${imgTag(POL(p), "pol")} ${p === "Omni" ? "Omni (any)" : p}</div>`).join("") +
     `<div class="mi ${!cur ? "sel" : ""}" data-p="">◇ none</div>`;
-  const el = $("mod-slots").children[slotIdx];
-  place(menu, el);
+  place(menu, slotEl(slotIdx));
   menu.querySelectorAll(".mi").forEach((o) => o.addEventListener("click", () => {
     slots[slotIdx].pol = o.dataset.p || null;
     closePopovers(); renderMods();
@@ -311,7 +410,7 @@ function renderEvo() {
     const chips = r.options.map((o) => `<span class="echip2 ${o.id === r.sel ? "sel" : ""}" data-id="${o.id}">${o.name}</span>`).join("");
     return `<div class="evo"><span class="rank">${r.rank}</span><div class="picks">${chips}</div></div>`;
   }).join("");
-  $("evo-rows").querySelectorAll(".echip2").forEach((c) => c.addEventListener("click", () => { evo2 = c.dataset.id; renderEvo(); }));
+  $("evo-rows").querySelectorAll(".echip2").forEach((c) => c.addEventListener("click", () => { evo2 = c.dataset.id; renderEvo(); refreshPanel(); }));
 }
 
 init().catch((e) => { document.querySelector(".config-page").insertAdjacentHTML("afterbegin", `<div class="error">failed to load: ${e}</div>`); });

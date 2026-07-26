@@ -18,10 +18,11 @@ use serde_json::{json, Value};
 use wfsim_engine::dummy::{monte_carlo, Arcane, BodyPart, DummyParams, LockMode, TargetMode};
 use wfsim_engine::enemy_data::EnemySpec;
 use wfsim_engine::loadout::{
-    resolve, DtEvo2, ModDef, ModEffect, ResolvedPanel, StackPolicy, WeaponBase,
+    pct as fpct, resolve, DtEvo2, ModDef, ModEffect, ResolvedPanel, StackPolicy, WeaponBase,
 };
 use wfsim_engine::mods::{plan_forma, PlannedMod, Polarity};
-use wfsim_optimizer::{dual_toxocyst_innate_slots, pool};
+use wfsim_engine::mods_data::pistol_pool as pool; // FULL pool incl. exilus (the optimizer's pool() excludes exilus)
+use wfsim_optimizer::dual_toxocyst_innate_slots;
 
 // ---- Embedded static assets (self-contained binary) --------------------
 
@@ -138,57 +139,60 @@ fn innate_slots_for(id: &str) -> Vec<Option<Polarity>> {
 /// Scope are entirely headshot-gated, so on a sentinel they contribute nothing.
 fn rifle_pool() -> Vec<ModDef> {
     use wfsim_engine::damage::DamageType as D;
+    use wfsim_engine::loadout::Rarity as R;
     use ModEffect::*;
-    // (id, max-rank drain, max_rank, polarity, family, effects)
-    let md = |id, base_drain, max_rank, polarity, family, effects| ModDef {
+    // (id, max-rank drain, max_rank, polarity, rarity, family, effects)
+    let md = |id, base_drain, max_rank, polarity, rarity, family, effects| ModDef {
         id,
         base_drain,
         max_rank,
         polarity,
+        rarity,
+        exilus: false, // no rifle exilus mods authored yet
         family,
         effects,
     };
     vec![
         // Damage
-        md("serration", 14, 10, Polarity::Madurai, None, vec![BaseDamage(1.65)]),
-        md("heavy_caliber", 16, 10, Polarity::Madurai, None, vec![BaseDamage(1.65)]), // accuracy downside = no-op
+        md("serration", 14, 10, Polarity::Madurai, R::Uncommon, None, vec![BaseDamage(1.65)]),
+        md("heavy_caliber", 16, 10, Polarity::Madurai, R::Rare, None, vec![BaseDamage(1.65)]), // accuracy downside = no-op
         // Multishot (Split Chamber ↔ Galvanized Chamber share the "chamber" family)
-        md("split_chamber", 15, 5, Polarity::Madurai, Some("chamber"), vec![Multishot(0.90)]),
-        md("galvanized_chamber", 16, 10, Polarity::Madurai, Some("chamber"), vec![
+        md("split_chamber", 15, 5, Polarity::Madurai, R::Rare, Some("chamber"), vec![Multishot(0.90)]),
+        md("galvanized_chamber", 16, 10, Polarity::Madurai, R::Rare, Some("chamber"), vec![
             Multishot(0.80),
             OnKillMultishot { per_stack: 0.30, max_stacks: 5, duration: 20.0 },
         ]),
-        md("vigilante_armaments", 9, 5, Polarity::Naramon, None, vec![Multishot(0.60)]),
+        md("vigilante_armaments", 9, 5, Polarity::Naramon, R::Common, None, vec![Multishot(0.60)]),
         // Crit
-        md("point_strike", 9, 5, Polarity::Madurai, None, vec![CritChance(1.50)]),
-        md("vital_sense", 9, 5, Polarity::Madurai, None, vec![CritDamage(1.20)]),
-        md("critical_delay", 9, 5, Polarity::Naramon, None, vec![CritChance(2.00), FireRate(-0.20)]), // corrupted
+        md("point_strike", 9, 5, Polarity::Madurai, R::Uncommon, None, vec![CritChance(1.50)]),
+        md("vital_sense", 9, 5, Polarity::Madurai, R::Rare, None, vec![CritDamage(1.20)]),
+        md("critical_delay", 9, 5, Polarity::Naramon, R::Rare, None, vec![CritChance(2.00), FireRate(-0.20)]), // corrupted
         // Status
-        md("galvanized_aptitude", 12, 10, Polarity::Vazarin, None, vec![
+        md("galvanized_aptitude", 12, 10, Polarity::Vazarin, R::Rare, None, vec![
             StatusChance(0.80),
             ConditionOverload { per_stack: 0.40, max_stacks: 2, duration: 20.0 },
         ]),
         // Single elements (+90%)
-        md("cryo_rounds", 11, 5, Polarity::Vazarin, None, vec![Element(D::Cold, 0.90)]),
-        md("hellfire", 11, 5, Polarity::Naramon, None, vec![Element(D::Heat, 0.90)]),
-        md("stormbringer", 11, 5, Polarity::Naramon, None, vec![Element(D::Electricity, 0.90)]),
-        md("infected_clip", 11, 5, Polarity::Naramon, None, vec![Element(D::Toxin, 0.90)]),
+        md("cryo_rounds", 11, 5, Polarity::Vazarin, R::Uncommon, None, vec![Element(D::Cold, 0.90)]),
+        md("hellfire", 11, 5, Polarity::Naramon, R::Uncommon, None, vec![Element(D::Heat, 0.90)]),
+        md("stormbringer", 11, 5, Polarity::Naramon, R::Uncommon, None, vec![Element(D::Electricity, 0.90)]),
+        md("infected_clip", 11, 5, Polarity::Naramon, R::Uncommon, None, vec![Element(D::Toxin, 0.90)]),
         // Dual-stat elements (60/60)
-        md("rime_rounds", 7, 3, Polarity::Madurai, None, vec![Element(D::Cold, 0.60), StatusChance(0.60)]),
-        md("malignant_force", 7, 3, Polarity::Madurai, None, vec![Element(D::Toxin, 0.60), StatusChance(0.60)]),
-        md("high_voltage", 7, 3, Polarity::Madurai, None, vec![Element(D::Electricity, 0.60), StatusChance(0.60)]),
-        md("thermite_rounds", 7, 3, Polarity::Madurai, None, vec![Element(D::Heat, 0.60), StatusChance(0.60)]),
+        md("rime_rounds", 7, 3, Polarity::Madurai, R::Rare, None, vec![Element(D::Cold, 0.60), StatusChance(0.60)]),
+        md("malignant_force", 7, 3, Polarity::Madurai, R::Rare, None, vec![Element(D::Toxin, 0.60), StatusChance(0.60)]),
+        md("high_voltage", 7, 3, Polarity::Madurai, R::Rare, None, vec![Element(D::Electricity, 0.60), StatusChance(0.60)]),
+        md("thermite_rounds", 7, 3, Polarity::Madurai, R::Rare, None, vec![Element(D::Heat, 0.60), StatusChance(0.60)]),
         // Fire rate
-        md("vile_acceleration", 9, 5, Polarity::Naramon, None, vec![FireRate(0.90), BaseDamage(-0.15)]), // corrupted
-        md("speed_trigger", 9, 5, Polarity::Madurai, None, vec![FireRate(0.60)]),
-        md("shred", 11, 5, Polarity::Madurai, None, vec![FireRate(0.30)]), // punch-through = no-op single-target
+        md("vile_acceleration", 9, 5, Polarity::Naramon, R::Rare, None, vec![FireRate(0.90), BaseDamage(-0.15)]), // corrupted
+        md("speed_trigger", 9, 5, Polarity::Madurai, R::Common, None, vec![FireRate(0.60)]),
+        md("shred", 11, 5, Polarity::Madurai, R::Rare, None, vec![FireRate(0.30)]), // punch-through = no-op single-target
         // Headshot-gated crit (Galvanized ↔ Argon share the "scope" family; both
         // do nothing on a sentinel — recorded so the picker shows them honestly)
-        md("galvanized_scope", 12, 10, Polarity::Madurai, Some("scope"), vec![
+        md("galvanized_scope", 12, 10, Polarity::Madurai, R::Rare, Some("scope"), vec![
             OnHeadshotCritChance { bonus: 1.20, duration: 12.0 },
             OnHeadshotKillCritChance { per_stack: 0.40, max_stacks: 5, duration: 12.0 },
         ]),
-        md("argon_scope", 7, 5, Polarity::Madurai, Some("scope"), vec![
+        md("argon_scope", 7, 5, Polarity::Madurai, R::Rare, Some("scope"), vec![
             OnHeadshotCritChance { bonus: 1.35, duration: 9.0 },
         ]),
     ]
@@ -306,47 +310,16 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
             let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
             respond_json(&mut stream, &simulate_json(&value))
         }
+        ("POST", "/api/panel") => {
+            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
+            respond_json(&mut stream, &panel_json(&value))
+        }
         _ => respond(&mut stream, "404 Not Found", "text/plain; charset=utf-8", b"not found"),
     }
 }
 
 // ---- /api/meta ---------------------------------------------------------
 
-fn pct(v: f64) -> String {
-    // Trim trailing zeros for readability (+90% not +90.0%).
-    let x = (v * 100.0 * 10.0).round() / 10.0;
-    if x.fract() == 0.0 {
-        format!("{:+}", x as i64)
-    } else {
-        format!("{x:+}")
-    }
-}
-
-fn effect_str(e: &ModEffect) -> String {
-    use ModEffect::*;
-    match e {
-        BaseDamage(v) => format!("{}% base damage", pct(*v)),
-        Multishot(v) => format!("{}% multishot", pct(*v)),
-        CritChance(v) => format!("{}% crit chance", pct(*v)),
-        CritDamage(v) => format!("{}% crit damage", pct(*v)),
-        StatusChance(v) => format!("{}% status chance", pct(*v)),
-        FireRate(v) => format!("{}% fire rate", pct(*v)),
-        ReloadSpeed(v) => format!("{}% reload speed", pct(*v)),
-        StatusDamage(v) => format!("{}% status damage", pct(*v)),
-        Element(t, v) => format!("{}% {t:?}", pct(*v)),
-        CombinedElement(t, v) => format!("{}% {t:?}", pct(*v)),
-        OnKillMultishot { per_stack, max_stacks, .. } => {
-            format!("on kill: {}% multishot ×{max_stacks}", pct(*per_stack))
-        }
-        ConditionOverload { per_stack, max_stacks, .. } => {
-            format!("CO {}%/type ×{max_stacks}", pct(*per_stack))
-        }
-        OnHeadshotCritChance { bonus, .. } => format!("on headshot: {}% crit chance", pct(*bonus)),
-        OnHeadshotKillCritChance { per_stack, max_stacks, .. } => {
-            format!("on headshot kill: {}% crit chance ×{max_stacks}", pct(*per_stack))
-        }
-    }
-}
 
 /// A coarse category for grouping mods in the picker UI.
 fn mod_category(m: &ModDef) -> &'static str {
@@ -381,10 +354,14 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 "drain": m.base_drain,
                 "max_rank": m.max_rank,
                 "polarity": format!("{:?}", m.polarity),
+                "rarity": format!("{:?}", m.rarity).to_lowercase(),
+                "exilus": m.exilus,
                 "family": m.family,
                 "category": mod_category(m),
                 "image": assets().mods.get(m.id),
-                "effects": m.effects.iter().map(effect_str).collect::<Vec<_>>(),
+                // One line per modeled effect — engine describe() is the
+                // single display source (our statement of the model).
+                "effects": m.effects.iter().map(|e| e.describe()).collect::<Vec<_>>(),
             })
         })
         .collect()
@@ -503,6 +480,213 @@ fn get_bool(v: &Value, key: &str, default: bool) -> bool {
 
 fn err_json(msg: impl Into<String>) -> Value {
     json!({ "ok": false, "error": msg.into() })
+}
+
+// ---- /api/panel --------------------------------------------------------
+//
+// The FINAL stats panel: every bucket merged across the build, each stated
+// with its per-source breakdown ("who contributed what") — the panel is where
+// the model explains itself. Static view: max-rank mods; conditionals at max
+// stacks (AssumedMax), except sentinels where conditionals never fire.
+
+fn panel_json(v: &Value) -> Value {
+    let info = weapon(get_str(v, "weapon", "dual_toxocyst"));
+    let policy = if info.sentinel { StackPolicy::BaseOnly } else { StackPolicy::AssumedMax };
+    let form = get_str(v, "form", "incarnon");
+    let evo2 = match get_str(v, "evo2", "fevered") {
+        "carnage" => DtEvo2::CarnageReign,
+        _ => DtEvo2::FeveredFrenzy,
+    };
+
+    let mod_ids: Vec<String> = v
+        .get("mods")
+        .and_then(|x| x.as_array())
+        .map(|a| a.iter().filter_map(|m| m.as_str().map(String::from)).collect())
+        .unwrap_or_default();
+    if mod_ids.len() > 9 {
+        return err_json("at most 8 slots + 1 exilus");
+    }
+    let p = mod_pool_for(info.mod_class);
+    let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
+    for id in &mod_ids {
+        match p.iter().find(|m| m.id == id) {
+            Some(m) => refs.push(m),
+            None => return err_json(format!("unknown mod id: {id}")),
+        }
+    }
+
+    let base = if info.id == "verglas_prime" {
+        WeaponBase::verglas_prime()
+    } else if form == "base" {
+        WeaponBase::dual_toxocyst_base(true, evo2)
+    } else {
+        WeaponBase::dual_toxocyst_incarnon(true, evo2)
+    };
+    let panel = resolve(&base, &refs, policy);
+
+    // ---- per-bucket source attribution (mirrors resolve()'s buckets) ----
+    // key -> [(mod name, contribution fraction, note)]
+    let mut src: Vec<(&'static str, String, f64, Option<String>)> = Vec::new();
+    let mut conditionals: Vec<Value> = Vec::new(); // lines that never merge into a bucket
+    for m in &refs {
+        let name = prettify(m.id);
+        for e in &m.effects {
+            use ModEffect::*;
+            let mut push = |key: &'static str, v: f64, note: Option<String>| {
+                src.push((key, name.clone(), v, note));
+            };
+            match *e {
+                BaseDamage(x) => push("base_damage", x, None),
+                Multishot(x) => push("multishot", x, None),
+                CritChance(x) => push("crit_chance", x, None),
+                CritDamage(x) => push("crit_damage", x, None),
+                StatusChance(x) => push("status_chance", x, None),
+                StatusDamage(x) => push("status_damage", x, None),
+                FireRate(x) => push("fire_rate", x, None),
+                ReloadSpeed(x) => push("reload", x, None),
+                Element(t, x) | CombinedElement(t, x) => {
+                    src.push(("elements", name.clone(), x, Some(format!("{t:?}"))));
+                }
+                OnKillMultishot { per_stack, max_stacks, .. } => match policy {
+                    StackPolicy::BaseOnly => conditionals.push(json!({
+                        "mod": name, "desc": e.describe(), "active": false,
+                        "why": "sentinel weapons cannot proc on-kill stacks"})),
+                    _ => push("multishot", per_stack * max_stacks as f64,
+                        Some(format!("on kill, {max_stacks} stacks assumed"))),
+                },
+                ConditionOverload { per_stack, max_stacks, .. } => match policy {
+                    StackPolicy::BaseOnly => conditionals.push(json!({
+                        "mod": name, "desc": e.describe(), "active": false,
+                        "why": "sentinel weapons cannot proc on-kill stacks"})),
+                    _ => push("co", per_stack * max_stacks as f64,
+                        Some(format!("on kill, {max_stacks} stacks assumed, per status type on target"))),
+                },
+                OnHeadshotCritChance { bonus, .. } => match policy {
+                    StackPolicy::BaseOnly => conditionals.push(json!({
+                        "mod": name, "desc": e.describe(), "active": false,
+                        "why": "sentinel weapons cannot headshot"})),
+                    _ => push("crit_chance", bonus, Some("on headshot, buff assumed up".into())),
+                },
+                OnHeadshotKillCritChance { per_stack, max_stacks, .. } => match policy {
+                    StackPolicy::BaseOnly => conditionals.push(json!({
+                        "mod": name, "desc": e.describe(), "active": false,
+                        "why": "sentinel weapons cannot headshot"})),
+                    _ => push("crit_chance", per_stack * max_stacks as f64,
+                        Some(format!("on headshot kill, {max_stacks} stacks assumed"))),
+                },
+                Indirect(stat, x) => {
+                    src.push(("indirect", name.clone(), x, Some(stat.label().to_string())));
+                }
+                OnEquipHandling { .. } => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "temporary on weapon swap-in; never a static stat"})),
+            }
+        }
+    }
+    // Non-mod sources baked into the weapon config (EVO II at assumed max).
+    if base.buff_multishot_bonus.abs() > 1e-12 {
+        src.push(("multishot", "Fevered Frenzy (EVO II)".into(), base.buff_multishot_bonus,
+            Some("on-hit stacks, 20 assumed".into())));
+    }
+    if base.innate_co_per_type > 1e-12 {
+        src.push(("co", "Carnage Reign (EVO II)".into(), base.innate_co_per_type,
+            Some("innate, per status type on target".into())));
+    }
+
+    let sources = |key: &str, tag: Option<&str>| -> Vec<Value> {
+        src.iter()
+            .filter(|(k, _, _, note)| {
+                *k == key && tag.is_none_or(|t| note.as_deref() == Some(t))
+            })
+            .map(|(_, name, v, note)| {
+                json!({ "mod": name, "value": fpct(*v),
+                        "note": if tag.is_some() { Value::Null } else { json!(note) } })
+            })
+            .collect()
+    };
+    // ---- stat rows: base -> final, with the merged bonus and its sources ----
+    let num = |x: f64| -> String {
+        if x >= 100.0 { format!("{x:.0}") } else { format!("{x:.1}") }
+    };
+    let pc = |x: f64| format!("{:.1}%", x * 100.0);
+    let mut stats = Vec::new();
+    let mut row = |key: &'static str, label: &str, base_s: String, final_s: String, changed: bool| {
+        let s = sources(key, None);
+        if !s.is_empty() || changed {
+            stats.push(json!({ "key": key, "label": label, "base": base_s, "final": final_s, "sources": s }));
+        }
+    };
+    row("base_damage", "Base Damage", num(base.base_vector.total()), num(panel.modified_base),
+        (panel.modified_base - base.base_vector.total()).abs() > 1e-9);
+    row("multishot", "Multishot", format!("×{}", num(base.base_multishot)), format!("×{}", num(panel.multishot)),
+        (panel.multishot - base.base_multishot).abs() > 1e-9);
+    row("crit_chance", "Crit Chance", pc(base.base_crit_chance), pc(panel.crit_chance),
+        (panel.crit_chance - base.base_crit_chance).abs() > 1e-9);
+    row("crit_damage", "Crit Damage", format!("×{}", num(base.base_crit_damage)), format!("×{}", num(panel.crit_damage)),
+        (panel.crit_damage - base.base_crit_damage).abs() > 1e-9);
+    row("status_chance", "Status Chance", pc(base.base_status_chance), pc(panel.status_chance),
+        (panel.status_chance - base.base_status_chance).abs() > 1e-9);
+    row("status_damage", "Status Damage", "×1".into(), format!("×{}", num(panel.status_damage_mult)),
+        (panel.status_damage_mult - 1.0).abs() > 1e-9);
+    row("fire_rate", "Fire Rate", format!("{}/s", num(base.base_fire_rate)), format!("{}/s", num(panel.fire_rate)),
+        (panel.fire_rate - base.base_fire_rate).abs() > 1e-9);
+    row("reload", "Reload", format!("{}s", num(base.base_reload)), format!("{}s", num(panel.reload_seconds)),
+        (panel.reload_seconds - base.base_reload).abs() > 1e-9);
+    if panel.co_per_type > 0.0 {
+        stats.push(json!({ "key": "co", "label": "Condition Overload",
+            "base": "—", "final": format!("{} per status type on target", fpct(panel.co_per_type)),
+            "sources": sources("co", None) }));
+    }
+
+    // Elements: one row per contributed element (position/order matters for
+    // combining — the damage section shows the combined result).
+    let mut elem_rows = Vec::new();
+    let mut seen_elems: Vec<String> = Vec::new();
+    for (k, _, _, note) in &src {
+        if *k == "elements" {
+            if let Some(t) = note {
+                if !seen_elems.contains(t) {
+                    seen_elems.push(t.clone());
+                }
+            }
+        }
+    }
+    for t in &seen_elems {
+        let total: f64 = src.iter()
+            .filter(|(k, _, _, n)| *k == "elements" && n.as_deref() == Some(t))
+            .map(|(_, _, v, _)| v).sum();
+        elem_rows.push(json!({ "key": "elements", "label": t, "base": "—",
+            "final": format!("{} of modified base", fpct(total)),
+            "sources": sources("elements", Some(t)) }));
+    }
+
+    // Indirect stats (recoil, accuracy, ammo…): not in theoretical DPS,
+    // real in practice; base is unmodified (0%), final = Σ.
+    let mut indirect_rows = Vec::new();
+    for (stat, total) in &panel.indirect {
+        indirect_rows.push(json!({ "key": "indirect", "label": stat.label(), "base": "—",
+            "final": fpct(*total), "sources": sources("indirect", Some(stat.label())) }));
+    }
+
+    // The combined damage vector (post element-hierarchy).
+    let dmg_total = panel.damage.total();
+    let damage: Vec<Value> = panel.damage.iter_nonzero()
+        .map(|(t, amt)| json!({ "type": format!("{t:?}"), "amount": num(amt),
+            "share": format!("{:.0}%", amt / dmg_total * 100.0) }))
+        .collect();
+
+    json!({
+        "ok": true,
+        "weapon": info.name,
+        "form": if info.id == "verglas_prime" { "standard" } else { form },
+        "policy": if info.sentinel { "base only (sentinel)" } else { "conditionals at max stacks" },
+        "stats": stats,
+        "elements": elem_rows,
+        "indirect": indirect_rows,
+        "damage": damage,
+        "damage_total": num(dmg_total),
+        "conditionals": conditionals,
+    })
 }
 
 fn build_body_parts(spec: &EnemySpec, headshot_pct: f64) -> Vec<BodyPart> {

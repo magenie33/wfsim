@@ -16,6 +16,7 @@
 //!   their shields removed" wording is a gate, not a bonus condition.
 //! - **Overguard must be gone** — wiki Overguard patch history states you
 //!   "cannot Mercy Kill enemies with Overguard active".
+//!
 //! With the gates in place, a Corpus unit inside the window always has
 //! shields at zero, so its base is simply 60% / cap 100%.
 

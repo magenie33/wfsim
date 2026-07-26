@@ -52,6 +52,20 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .bh .cap.over{color:#fff;background:var(--critical);border-color:var(--critical)}
 .bh .forma{color:var(--gold);font-weight:600}
 
+/* mod rarity — the in-game card frame colours: bronze / silver / gold / white */
+.rar-common{--rar:#a9713d}
+.rar-uncommon{--rar:#97a2ad}
+.rar-rare{--rar:#c9931c}
+.rar-legendary{--rar:#8f95ab}
+@media (prefers-color-scheme: dark){:root:where(:not([data-theme="light"])) .rar-common{--rar:#c98a4b}
+  :root:where(:not([data-theme="light"])) .rar-uncommon{--rar:#b9c2cc}
+  :root:where(:not([data-theme="light"])) .rar-rare{--rar:#e8c34c}
+  :root:where(:not([data-theme="light"])) .rar-legendary{--rar:#eef0f7}}
+:root[data-theme="dark"] .rar-common{--rar:#c98a4b}
+:root[data-theme="dark"] .rar-uncommon{--rar:#b9c2cc}
+:root[data-theme="dark"] .rar-rare{--rar:#e8c34c}
+:root[data-theme="dark"] .rar-legendary{--rar:#eef0f7}
+
 /* mod slots */
 .slots{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .slot{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 8px;min-height:48px}
@@ -59,7 +73,8 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .pol-btn{flex:none;width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--plane);border:1px solid var(--line);border-radius:6px;cursor:pointer;padding:0}
 .pol-btn:hover{border-color:var(--accent)}
 .pol-btn .nopol{color:var(--muted);font-size:13px}
-.slot .mod{width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid var(--line);flex:none}
+.slot .mod{width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid var(--rar,var(--line));flex:none}
+.slot.filled{border-left:3px solid var(--rar,var(--line))}
 .slot .info{min-width:0;flex:1}
 .slot .mn{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slot .dr{font-size:11px;color:var(--muted)}
@@ -100,14 +115,19 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .rank b{font-variant-numeric:tabular-nums;min-width:26px;text-align:center}
 .rank.lowered{color:#04111f;background:var(--gold);border-radius:6px;padding:1px 4px;font-weight:700}
 .rank.lowered .rk{background:rgba(0,0,0,.15);border-color:rgba(0,0,0,.25);color:#04111f}
-.combo-menu .opt{display:flex;align-items:center;gap:9px;padding:6px 10px;cursor:pointer}
+.combo-menu .opt{display:flex;align-items:center;gap:9px;padding:6px 10px;cursor:pointer;border-left:3px solid var(--rar,transparent)}
 .combo-menu .opt:hover{background:var(--panel2)}
 .combo-menu .opt.dis{opacity:.4;cursor:not-allowed}
 .combo-menu .opt .pol{width:14px;height:14px;flex:none}
-.combo-menu .opt .mod{width:28px;height:28px;border-radius:5px;object-fit:cover;border:1px solid var(--line);flex:none}
+.combo-menu .opt .mod{width:28px;height:28px;border-radius:5px;object-fit:cover;border:1px solid var(--rar,var(--line));flex:none}
 .combo-menu .opt .info{flex:1;min-width:0}
 .combo-menu .opt .mn{font-size:12.5px;font-weight:600}
-.combo-menu .opt .me{font-size:11px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.combo-menu .opt .me{font-size:11px;color:var(--text-2)}
+.combo-menu .opt .me div{line-height:1.35}
+.exchip{font-size:9px;letter-spacing:.05em;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 4px;vertical-align:1px}
+.slotchip{font-size:9px;letter-spacing:.05em;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px;vertical-align:1px}
+.slotchip.cur{color:var(--good-text);border-color:var(--good)}
+.combo-menu .opt.cur{background:var(--panel3)}
 .combo-menu .opt .dr{color:var(--muted);font-size:12px}
 
 /* arcane */
@@ -127,6 +147,20 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .echip2{border:1px solid var(--line);border-radius:8px;padding:5px 11px;font-size:13px;cursor:pointer;background:var(--panel2)}
 .echip2:hover{border-color:var(--accent)}
 .echip2.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;font-weight:600}
+
+/* stats panel — merged buckets explained by source */
+.srow{padding:7px 0;border-bottom:1px dashed var(--line)}
+.srow:last-child{border-bottom:0}
+.shead{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.shead .sk{font-size:13px;font-weight:600}
+.shead .sv{font-variant-numeric:tabular-nums;font-size:13px}
+.shead .sbase{color:var(--muted)}
+.ssrc{font-size:12px;color:var(--text-2);padding:1px 0 0 14px;font-variant-numeric:tabular-nums}
+.snote{color:var(--muted);font-size:11px}
+.sdmg-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 4px}
+.sdmg{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:13px}
+.scond{font-size:12px;color:var(--text-2);padding:3px 0}
+.scond.off{opacity:.6}
 
 /* fields */
 .field-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}

@@ -1,0 +1,17 @@
+id: suppress
+kind: mod
+name: Suppress
+mod_type: pistol
+rarity: common
+polarity: naramon
+base_drain: 2                 # drain 2..7
+max_rank: 5
+exilus: true
+
+# −100% chance enemies hear gunfire. Pure stealth utility — no damage model.
+effects:
+  - { kind: noise_reduction, per_rank: -0.167, max: -1.00 }
+
+source:
+  url: https://wiki.warframe.com/w/Suppress
+  note: Exilus pistol mod. Noise intentionally unmodeled (no stealth model).

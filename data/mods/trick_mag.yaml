@@ -1,0 +1,18 @@
+id: trick_mag
+kind: mod
+name: Trick Mag
+mod_type: pistol
+rarity: common
+polarity: naramon
+base_drain: 2                 # drain 2..7
+max_rank: 5
+exilus: true
+
+# +90% Ammo Maximum (reserve ammo). The sim assumes infinite reserves —
+# reloads consume no pool — so this is intentionally unmodeled.
+effects:
+  - { kind: ammo_max_bonus, per_rank: 0.15, max: 0.90 }
+
+source:
+  url: https://wiki.warframe.com/w/Trick_Mag
+  note: Exilus pistol mod. Reserve ammo unmodeled (infinite reserves).
