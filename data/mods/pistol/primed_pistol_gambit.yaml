@@ -10,7 +10,7 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/Expert/WeaponCritChanceModBeginnerExp
 description: "+X% Critical Chance"
 
 effects:
-  - { kind: crit_chance_bonus, rank0: 0.17, max: 1.87 }
+  - { kind: crit_chance_bonus, rank0: 0.17, rankMax: 1.87 }
 family: pistol_gambit
 incompatible_with: [pistol_gambit, flawed_pistol_gambit, creeping_bullseye]
 

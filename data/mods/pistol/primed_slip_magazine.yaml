@@ -12,7 +12,7 @@ description: "+X% Magazine Capacity"
 effects:
   - kind: magazine_capacity_bonus
     rank0: 0.05
-    max: 0.55
+    rankMax: 0.55
 
 source:
   url: https://wiki.warframe.com/w/Primed_Slip_Magazine

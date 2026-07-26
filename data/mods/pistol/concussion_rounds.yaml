@@ -13,7 +13,7 @@ effects:
   - kind: elemental_damage_bonus
     element: impact
     rank0: 0.15
-    max: 0.9
+    rankMax: 0.9
 
 source:
   url: https://wiki.warframe.com/w/Concussion_Rounds

@@ -12,7 +12,7 @@ description: "Improves the Blast Radius of weapons with Radial Attacks.\n+X% Bla
 effects:
   - kind: blast_radius_bonus
     rank0: 0.06
-    max: 0.24
+    rankMax: 0.24
 
 source:
   url: https://wiki.warframe.com/w/Fulmination

@@ -12,10 +12,10 @@ description: "+X% Reload Speed\n+X% Status Chance"
 effects:
   - kind: reload_speed_bonus
     rank0: 0.1
-    max: 0.4
+    rankMax: 0.4
   - kind: status_chance_bonus
     rank0: 0.075
-    max: 0.3
+    rankMax: 0.3
 
 source:
   url: https://wiki.warframe.com/w/Stunning_Speed

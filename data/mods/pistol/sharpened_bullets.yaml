@@ -12,7 +12,7 @@ description: "On Kill:\n+X% Critical Damage when Aiming for 9s"
 effects:
   - kind: on_kill_crit_damage
     rank0: 0.125
-    max: 0.75
+    rankMax: 0.75
 
 source:
   url: https://wiki.warframe.com/w/Sharpened_Bullets

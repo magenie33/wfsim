@@ -13,7 +13,7 @@ description: "+X% Fire Rate"
 # stale duplicate entries at +30% and +132%; the correct current mod is the
 # fusionLimit-5 / +72% one — picked deliberately, not auto-imported.)
 effects:
-  - { kind: fire_rate_bonus, rank0: 0.12, max: 0.72 }
+  - { kind: fire_rate_bonus, rank0: 0.12, rankMax: 0.72 }
 
 source:
   url: https://wiki.warframe.com/w/Gunslinger

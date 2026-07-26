@@ -13,7 +13,7 @@ description: "-X% Weapon Recoil"
 effects:
   - kind: recoil_reduction
     rank0: -0.077
-    max: -0.85
+    rankMax: -0.85
 
 source:
   url: https://wiki.warframe.com/w/Primed_Steady_Hands

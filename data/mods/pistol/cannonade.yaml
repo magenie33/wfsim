@@ -12,7 +12,7 @@ description: "+X% Chance to Explode (Use with Caution)"
 effects:
   - kind: chance_to_explode
     rank0: 0.075
-    max: 0.3
+    rankMax: 0.3
 
 source:
   url: https://wiki.warframe.com/w/Cannonade

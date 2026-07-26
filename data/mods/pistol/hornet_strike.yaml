@@ -13,7 +13,7 @@ description: "+X% Damage"
 effects:
   - kind: base_damage_bonus    # the additive base-damage bucket
     rank0: 0.2
-    max: 2.2
+    rankMax: 2.2
 
 family: hornet_strike
 incompatible_with: [flawed_hornet_strike]

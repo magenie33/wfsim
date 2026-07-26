@@ -100,16 +100,16 @@ fn effect(v: &Value) -> Option<ModEffect> {
     let kind = v.get("kind").and_then(Value::as_str)?;
     let max = |k: &str| f(v, k).unwrap_or(0.0);
     Some(match kind {
-        "base_damage_bonus" => ModEffect::BaseDamage(max("max")),
-        "multishot_bonus" => ModEffect::Multishot(max("max")),
-        "crit_chance_bonus" => ModEffect::CritChance(max("max")),
-        "crit_damage_bonus" => ModEffect::CritDamage(max("max")),
-        "status_chance_bonus" => ModEffect::StatusChance(max("max")),
-        "status_damage_bonus" => ModEffect::StatusDamage(max("max")),
-        "fire_rate_bonus" => ModEffect::FireRate(max("max")),
-        "reload_speed_bonus" => ModEffect::ReloadSpeed(max("max")),
-        "magazine_capacity_bonus" => ModEffect::MagazineCapacity(max("max")),
-        "status_duration_bonus" => ModEffect::StatusDuration(max("max")),
+        "base_damage_bonus" => ModEffect::BaseDamage(max("rankMax")),
+        "multishot_bonus" => ModEffect::Multishot(max("rankMax")),
+        "crit_chance_bonus" => ModEffect::CritChance(max("rankMax")),
+        "crit_damage_bonus" => ModEffect::CritDamage(max("rankMax")),
+        "status_chance_bonus" => ModEffect::StatusChance(max("rankMax")),
+        "status_damage_bonus" => ModEffect::StatusDamage(max("rankMax")),
+        "fire_rate_bonus" => ModEffect::FireRate(max("rankMax")),
+        "reload_speed_bonus" => ModEffect::ReloadSpeed(max("rankMax")),
+        "magazine_capacity_bonus" => ModEffect::MagazineCapacity(max("rankMax")),
+        "status_duration_bonus" => ModEffect::StatusDuration(max("rankMax")),
         // Faction damage (Bane/Expel): +max total damage vs the named faction.
         // An unrecognized faction (Unknown) drops the effect (mod still loads).
         "faction_damage_bonus" => {
@@ -117,18 +117,18 @@ fn effect(v: &Value) -> Option<ModEffect> {
             if fac == Faction::Unknown {
                 return None;
             }
-            ModEffect::FactionDamage(fac, max("max"))
+            ModEffect::FactionDamage(fac, max("rankMax"))
         }
         "elemental_damage_bonus" | "combined_element_bonus" => {
             let e = element(v.get("element").and_then(Value::as_str)?)?;
             if e.is_primary_element() {
-                ModEffect::Element(e, max("max"))
+                ModEffect::Element(e, max("rankMax"))
             } else {
-                ModEffect::CombinedElement(e, max("max"))
+                ModEffect::CombinedElement(e, max("rankMax"))
             }
         }
         "on_headshot_crit_chance" => ModEffect::OnHeadshotCritChance {
-            bonus: f(v, "bonus").unwrap_or_else(|| max("max")),
+            bonus: f(v, "bonus").unwrap_or_else(|| max("rankMax")),
             duration: f(v, "duration_seconds").unwrap_or(0.0),
         },
         "on_headshot_kill_crit_chance_stacks" => ModEffect::OnHeadshotKillCritChance {
@@ -150,20 +150,20 @@ fn effect(v: &Value) -> Option<ModEffect> {
         // INDIRECT stats: outside the theoretical-DPS formula, but real
         // panel buckets a future shooter model consumes (aim, travel,
         // ammo sustain) — the panel states every bonus.
-        "recoil_reduction" => ModEffect::Indirect(IndirectStat::Recoil, max("max")),
-        "noise_reduction" => ModEffect::Indirect(IndirectStat::Noise, max("max")),
-        "ammo_max_bonus" => ModEffect::Indirect(IndirectStat::AmmoMax, max("max")),
-        "projectile_speed_bonus" => ModEffect::Indirect(IndirectStat::ProjectileSpeed, max("max")),
-        "holstered_reload" => ModEffect::Indirect(IndirectStat::HolsteredReload, max("max")),
-        "dodge_speed_bonus" => ModEffect::Indirect(IndirectStat::DodgeSpeed, max("max")),
-        "acrobatic_speed_bonus" => ModEffect::Indirect(IndirectStat::AcrobaticSpeed, max("max")),
-        "punch_through_bonus" => ModEffect::Indirect(IndirectStat::PunchThrough, max("max")),
-        "zoom_bonus" => ModEffect::Indirect(IndirectStat::Zoom, max("max")),
-        "accuracy_bonus" => ModEffect::Indirect(IndirectStat::Accuracy, max("max")),
+        "recoil_reduction" => ModEffect::Indirect(IndirectStat::Recoil, max("rankMax")),
+        "noise_reduction" => ModEffect::Indirect(IndirectStat::Noise, max("rankMax")),
+        "ammo_max_bonus" => ModEffect::Indirect(IndirectStat::AmmoMax, max("rankMax")),
+        "projectile_speed_bonus" => ModEffect::Indirect(IndirectStat::ProjectileSpeed, max("rankMax")),
+        "holstered_reload" => ModEffect::Indirect(IndirectStat::HolsteredReload, max("rankMax")),
+        "dodge_speed_bonus" => ModEffect::Indirect(IndirectStat::DodgeSpeed, max("rankMax")),
+        "acrobatic_speed_bonus" => ModEffect::Indirect(IndirectStat::AcrobaticSpeed, max("rankMax")),
+        "punch_through_bonus" => ModEffect::Indirect(IndirectStat::PunchThrough, max("rankMax")),
+        "zoom_bonus" => ModEffect::Indirect(IndirectStat::Zoom, max("rankMax")),
+        "accuracy_bonus" => ModEffect::Indirect(IndirectStat::Accuracy, max("rankMax")),
         // Reflex Draw: on swap-in, −recoil/+accuracy for a few seconds.
         "on_equip_buff" => ModEffect::OnEquipHandling {
-            recoil: -max("max").abs(),
-            accuracy: max("max").abs(),
+            recoil: -max("rankMax").abs(),
+            accuracy: max("rankMax").abs(),
             duration: f(v, "duration_seconds").unwrap_or(0.0),
         },
         // Scoping markers (weapon_scoped) or an effect not yet modeled:

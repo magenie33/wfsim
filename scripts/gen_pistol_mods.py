@@ -124,7 +124,7 @@ def yaml_effect(eff) -> list:
     if eff.get("faction"):
         fields.append(f"faction: {eff['faction']}")
     if eff.get("max") is not None:
-        fields.append(f"max: {round(eff['max'], 4)}")
+        fields.append(f"rankMax: {round(eff['max'], 4)}")
     if eff.get("desc"):
         fields.append(f'desc: "{eff["desc"]}"')
     lines = [f"  - {fields[0]}"]

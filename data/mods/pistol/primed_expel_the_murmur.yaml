@@ -13,7 +13,7 @@ effects:
   - kind: faction_damage_bonus
     faction: murmur
     rank0: 0.05
-    max: 0.55
+    rankMax: 0.55
 
 source:
   url: https://wiki.warframe.com/w/Primed_Expel_The_Murmur

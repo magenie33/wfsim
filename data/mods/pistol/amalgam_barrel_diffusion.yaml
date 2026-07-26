@@ -12,14 +12,14 @@ description: "+X% Multishot\n+X% Dodge Speed"
 effects:
   - kind: multishot_bonus
     rank0: 0.1825
-    max: 1.095                 # TRUE value 109.50% - the UI tooltip rounds
+    rankMax: 1.095                 # TRUE value 109.50% - the UI tooltip rounds
                                # to 110%; we store the real number
   - kind: dodge_speed_bonus    # utility, not a damage bucket
     rank0: 0.10
-    max: 0.60
+    rankMax: 0.60
   - kind: acrobatic_speed_bonus  # hidden stat: faster roll animation
     rank0: 0.10
-    max: 0.60
+    rankMax: 0.60
 
 # Utility bonuses are UNIVERSAL while the mod is on the carried secondary -
 # no need to wield or aim it (holstered works).

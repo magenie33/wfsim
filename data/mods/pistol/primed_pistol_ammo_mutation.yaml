@@ -13,7 +13,7 @@ description: "Converts Primary ammo pickups to X% of Ammo Pick Up."
 effects:
   - kind: unmodeled
     rank0: 0.08
-    max: 0.92
+    rankMax: 0.92
     desc: "Converts Primary ammo pickups to 92% of Ammo Pick Up."
 
 source:

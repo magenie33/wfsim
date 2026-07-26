@@ -13,7 +13,7 @@ description: "+Xm Beam Range"
 effects:
   - kind: unmodeled
     rank0: 2.0
-    max: 8.0
+    rankMax: 8.0
     desc: "+8m Beam Range"
 
 source:

@@ -12,7 +12,7 @@ description: "+X% Multishot\nOn Kill:\n+X% Multishot for 20s. Stacks up to 4x."
 effects:
   - kind: multishot_bonus
     rank0: 0.10
-    max: 1.10                  # +110% unconditional at rank 10
+    rankMax: 1.10                  # +110% unconditional at rank 10
   - kind: stacking_buff
     trigger: on_kill
     # At rank 10: +30% multishot per stack, up to 4 stacks (+120%);

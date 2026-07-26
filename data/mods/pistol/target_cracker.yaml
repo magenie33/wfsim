@@ -14,7 +14,7 @@ description: "+X% Critical Damage"
 effects:
   - kind: crit_damage_bonus
     rank0: 0.1
-    max: 0.6
+    rankMax: 0.6
 
 family: target_cracker
 incompatible_with: [primed_target_cracker, flawed_target_cracker]

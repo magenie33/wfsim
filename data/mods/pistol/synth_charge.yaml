@@ -12,7 +12,7 @@ description: "+X% Bonus Damage on final shot. Requires Magazine 6 or higher."
 effects:
   - kind: base_damage_bonus
     rank0: 0.5
-    max: 2.0
+    rankMax: 2.0
 
 source:
   url: https://wiki.warframe.com/w/Synth_Charge

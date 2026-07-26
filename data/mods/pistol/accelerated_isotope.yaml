@@ -12,8 +12,8 @@ description: "+X% Radiation\n+X% Fire Rate"
 # COMBINED-element mod like Magnetic Might: its Radiation adds directly,
 # outside the primary hierarchy (MECHANICS #3 rule 7).
 effects:
-  - { kind: combined_element_bonus, element: radiation, rank0: 0.15, max: 0.60 }
-  - { kind: fire_rate_bonus, rank0: 0.10, max: 0.40 }
+  - { kind: combined_element_bonus, element: radiation, rank0: 0.15, rankMax: 0.60 }
+  - { kind: fire_rate_bonus, rank0: 0.10, rankMax: 0.40 }
 
 source:
   url: https://wiki.warframe.com/w/Accelerated_Isotope

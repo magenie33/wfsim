@@ -12,7 +12,7 @@ description: "+X Punch Through"
 effects:
   - kind: punch_through_bonus
     rank0: 0.4
-    max: 2.1
+    rankMax: 2.1
 
 source:
   url: https://wiki.warframe.com/w/Seeker

@@ -15,7 +15,7 @@ description: "On Equip: \n-X% Weapon Recoil and +X% Accuracy for 8s"
 effects:
   - kind: on_equip_buff
     rank0: -0.1
-    max: -0.4
+    rankMax: -0.4
     duration_seconds: 8
 
 source:

@@ -14,7 +14,7 @@ description: "+X% Magazine Reloaded/s when Holstered"
 # continuously (never holsters), so this is unmodeled; would matter for a
 # future weapon-swap rotation model.
 effects:
-  - { kind: holstered_reload, rank0: 0.05, max: 0.20 }
+  - { kind: holstered_reload, rank0: 0.05, rankMax: 0.20 }
 
 source:
   url: https://wiki.warframe.com/w/Eject_Magazine

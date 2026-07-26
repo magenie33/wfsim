@@ -10,7 +10,7 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponCritChanceMod
 description: "+X% Critical Chance"
 
 effects:
-  - { kind: crit_chance_bonus, rank0: 0.20, max: 1.20 }   # relative: base_cc x (1 + this)
+  - { kind: crit_chance_bonus, rank0: 0.20, rankMax: 1.20 }   # relative: base_cc x (1 + this)
 family: pistol_gambit
 incompatible_with: [primed_pistol_gambit, flawed_pistol_gambit, creeping_bullseye]
 

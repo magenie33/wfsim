@@ -10,7 +10,7 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponStatusChanceSPMod
 description: "+X% Status Chance\nOn Kill:\n+X% Direct Damage per Status Type affecting the target for 14s. Stacks up to 3x."
 
 effects:
-  - { kind: status_chance_bonus, rank0: 0.08, max: 0.80 }
+  - { kind: status_chance_bonus, rank0: 0.08, rankMax: 0.80 }
   - kind: stacking_buff
     trigger: on_kill
     # CO-family payload (official CO source list): +40% per status TYPE

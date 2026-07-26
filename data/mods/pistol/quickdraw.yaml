@@ -12,7 +12,7 @@ description: "+X% Reload Speed"
 effects:
   - kind: reload_speed_bonus
     rank0: 0.08
-    max: 0.48
+    rankMax: 0.48
 
 source:
   url: https://wiki.warframe.com/w/Quickdraw

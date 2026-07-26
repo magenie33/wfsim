@@ -14,8 +14,8 @@ description: "+X% Magnetic\n+X% Critical Damage"
 # this magnetic component stands alone regardless of mod order, and does
 # not consume the primaries (Cold/Electricity) in the hierarchy.
 effects:
-  - { kind: elemental_damage_bonus, element: magnetic, rank0: 0.15, max: 0.60 }
-  - { kind: crit_damage_bonus, rank0: 0.10, max: 0.40 }
+  - { kind: elemental_damage_bonus, element: magnetic, rank0: 0.15, rankMax: 0.60 }
+  - { kind: crit_damage_bonus, rank0: 0.10, rankMax: 0.40 }
 
 source:
   url: https://wiki.warframe.com/w/Magnetic_Might

@@ -13,7 +13,7 @@ description: "+X% Projectile Speed"
 # +40% Projectile Speed (non-hitscan weapons only). The sim treats all shots
 # as instant-hit at a fixed range, so flight time is unmodeled.
 effects:
-  - { kind: projectile_speed_bonus, rank0: 0.10, max: 0.40 }
+  - { kind: projectile_speed_bonus, rank0: 0.10, rankMax: 0.40 }
 
 source:
   url: https://wiki.warframe.com/w/Lethal_Momentum

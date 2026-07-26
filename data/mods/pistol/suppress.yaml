@@ -12,7 +12,7 @@ description: "Reduces the chance an enemy will hear gunfire by X%."
 
 # −100% chance enemies hear gunfire. Pure stealth utility — no damage model.
 effects:
-  - { kind: noise_reduction, rank0: -0.167, max: -1.00 }
+  - { kind: noise_reduction, rank0: -0.167, rankMax: -1.00 }
 
 source:
   url: https://wiki.warframe.com/w/Suppress

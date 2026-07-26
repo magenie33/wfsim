@@ -14,7 +14,7 @@ description: "-60% Weapon Recoil"
 # here (the sim assumes perfect aim), so this is intentionally unmodeled —
 # the mod exists for the builder's exilus slot.
 effects:
-  - { kind: recoil_reduction, rank0: -0.10, max: -0.60 }
+  - { kind: recoil_reduction, rank0: -0.10, rankMax: -0.60 }
 
 source:
   url: https://wiki.warframe.com/w/Steady_Hands

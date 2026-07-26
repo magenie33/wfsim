@@ -12,11 +12,11 @@ description: "+X% Magazine Capacity\n+X% Cold"
 effects:
   - kind: magazine_capacity_bonus
     rank0: 0.1
-    max: 0.4
+    rankMax: 0.4
   - kind: elemental_damage_bonus
     element: cold
     rank0: 0.1
-    max: 0.4
+    rankMax: 0.4
 
 source:
   url: https://wiki.warframe.com/w/Ice_Storm

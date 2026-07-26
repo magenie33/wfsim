@@ -12,10 +12,10 @@ description: "+X% Weak Point Damage\n+X% Weak Point Critical Chance. Multishot c
 effects:
   - kind: weakpoint_damage_bonus
     rank0: 0.32
-    max: 3.5
+    rankMax: 3.5
   - kind: weakpoint_crit_chance_bonus
     rank0: 0.32
-    max: 3.5
+    rankMax: 3.5
 # "Multishot cannot be modified" while equipped (restriction, not yet modeled).
 
 source:

@@ -12,10 +12,10 @@ description: "+X% Critical Damage\n+X Punch Through"
 effects:
   - kind: crit_damage_bonus
     rank0: 0.075
-    max: 0.45
+    rankMax: 0.45
   - kind: punch_through_bonus
     rank0: 0.2
-    max: 1.2
+    rankMax: 1.2
 
 source:
   url: https://wiki.warframe.com/w/Merciless_Gunfight

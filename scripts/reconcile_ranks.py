@@ -131,28 +131,33 @@ def main():
         stat_idx = [i for i in range(len(sN)) if not is_prefix(sN[i])]
         vals = [(value_of(s0[i]), value_of(sN[i])) for i in stat_idx]
 
-        # locate effect blocks that carry a `max:`
+        # Block-style effects carrying a `rankMax:`. Matched to the stat lines
+        # IN ORDER, and ONLY when the counts line up exactly; otherwise the file
+        # is FLAGGED and its (hand-authored) values are left untouched — this is
+        # how multi-effect mods with hidden stats (e.g. Amalgam Barrel Diffusion:
+        # 3 effects vs 2 tooltip lines) stay correct. Kind-based matching is the
+        # robust upgrade; until then, mismatches are hand-verified.
         eff_maxlines = [i for i, l in enumerate(lines)
-                        if re.match(r"\s+max:\s*-?\d", l)]
+                        if re.match(r"\s+rankMax:\s*-?\d", l)]
         out = None
-        if len(eff_maxlines) == len(vals):
+        if eff_maxlines and len(eff_maxlines) == len(vals):
             out = []
             k = 0
             for l in lines:
                 if re.match(r"\s+(per_rank|rank0):", l):
                     continue  # drop old values (idempotent re-run)
-                mm = re.match(r"(\s+)max:\s*-?\d", l)
+                mm = re.match(r"(\s+)rankMax:\s*-?\d", l)
                 if mm and k < len(vals):
                     r0, mx = vals[k]
                     ind = mm.group(1)
                     if r0 is not None:
                         out.append(f"{ind}rank0: {r0}\n")
-                    out.append(f"{ind}max: {mx}\n")
+                    out.append(f"{ind}rankMax: {mx}\n")
                     k += 1
                     continue
                 out.append(l)
         else:
-            flagged.append(f"{fn}: {len(eff_maxlines)} max-effects vs {len(vals)} stat lines — values left as-is")
+            flagged.append(f"{fn}: {len(eff_maxlines)} rankMax-effects vs {len(vals)} stat lines — values left as-is")
             out = [l for l in lines]
         # replace / insert description
         did_desc = False

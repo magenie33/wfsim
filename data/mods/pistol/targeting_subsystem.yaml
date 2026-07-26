@@ -13,7 +13,7 @@ description: "On Hit:\n+X% Accuracy when Aiming for 9s"
 effects:
   - kind: on_hit_accuracy
     rank0: 0.05
-    max: 0.3
+    rankMax: 0.3
 
 source:
   url: https://wiki.warframe.com/w/Targeting_Subsystem
