@@ -10,8 +10,12 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/PistolStatusDamageDuoMod
 description: "+X% Status Damage\n+X% Reload Speed"
 
 effects:
-  - { kind: status_damage_bonus, rank0: 0.15, rankMax: 0.90 }   # double-dips on some payloads (Magnetic break-proc x3.61)
-  - { kind: reload_speed_bonus, rank0: 0.10, rankMax: 0.60 }
+  - kind: status_damage_bonus   # double-dips on some payloads (Magnetic break-proc x3.61)
+    rank0: 0.15
+    rankMax: 0.90
+  - kind: reload_speed_bonus
+    rank0: 0.10
+    rankMax: 0.60
 
 source:
   url: https://wiki.warframe.com/w/Pistol_Elementalist

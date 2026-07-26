@@ -13,8 +13,12 @@ description: "+X% Critical Damage\n-X% Damage"
 # downside is the SAME additive base-damage bucket as Hornet Strike, so it is
 # modeled as a negative base_damage_bonus (not a separate penalty layer).
 effects:
-  - { kind: crit_damage_bonus,  rank0: 0.10,   rankMax: 0.60 }
-  - { kind: base_damage_bonus,  rank0: -0.025, rankMax: -0.15 }
+  - kind: crit_damage_bonus
+    rank0: 0.10
+    rankMax: 0.60
+  - kind: base_damage_bonus
+    rank0: -0.025
+    rankMax: -0.15
 
 source:
   url: https://wiki.warframe.com/w/Hollow_Point

@@ -10,7 +10,10 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponFreezeDamageMod
 description: "+X% Cold"
 
 effects:
-  - { kind: elemental_damage_bonus, element: cold, rank0: 0.15, rankMax: 0.90 }
+  - kind: elemental_damage_bonus
+    element: cold
+    rank0: 0.15
+    rankMax: 0.90
 
 source:
   url: https://wiki.warframe.com/w/Deep_Freeze
