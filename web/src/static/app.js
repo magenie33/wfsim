@@ -21,6 +21,7 @@ const EXILUS = 8;
 let slots = [];
 let innate = [];     // 9 × innate polarity name|null (exilus never innate)
 let arcane = "none";
+let arcaneRank = null;   // null → max rank (mirrors mod slot ranks)
 let evo2 = "fevered";
 let pickerSlot = 0;
 // Mod-picker sort/filter prefs — persisted across slots, presets and weapons.
@@ -77,7 +78,9 @@ function applyWeapon(id, presetMods) {
 
   $("w-img").src = w.image ? CDN + w.image : "";
   $("w-name").textContent = w.name;
-  $("w-tags").innerHTML = [w.mod_class + " mods", w.sentinel ? "sentinel" : null, w.uses_evo2 ? "Incarnon" : null]
+  // Subtype first (e.g. "Dual Pistols") — the precise weapon type that drives
+  // which mod pool actually applies; then the eligibility group + form tags.
+  $("w-tags").innerHTML = [w.subtype, w.mod_class + " mods", w.sentinel ? "sentinel" : null, w.uses_evo2 ? "Incarnon" : null]
     .filter(Boolean).map((t) => `<span class="tag">${t}</span>`).join("");
 
   show("arcane-block", w.arcane_slots >= 1);
@@ -270,7 +273,7 @@ function buildSlot(i) {
 const slotEl = (i) => i === EXILUS ? $("exilus").firstElementChild : $("mod-slots").children[i];
 
 // ---- popovers ----
-function closePopovers() { $("mod-popover").hidden = true; $("slot-menu").hidden = true; }
+function closePopovers() { $("mod-popover").hidden = true; $("slot-menu").hidden = true; $("arcane-popover").hidden = true; }
 function place(pop, anchor) {
   const r = anchor.getBoundingClientRect();
   pop.hidden = false;
@@ -300,11 +303,16 @@ function renderTools() {
     `<span class="pk-pols"><span class="pk-pol ${!pickerPrefs.pol ? "sel" : ""}" data-p="">all</span>` +
     pols.map((p) => `<span class="pk-pol ${pickerPrefs.pol === p ? "sel" : ""}" data-p="${p}" title="${p}">${imgTag(POL(p), "pol")}</span>`).join("") +
     `</span>`;
+  // redraw() re-renders these tools via innerHTML, which DETACHES the clicked
+  // node; without stopPropagation the click would bubble to the document
+  // outside-click handler, whose closest(".popover") now fails on the detached
+  // target → the picker would wrongly close. Keep every tool click inside.
   const redraw = () => { savePickerPrefs(); renderTools(); renderMenu(pickerSlot, $("mod-search").value); };
   $("pk-sort").value = pickerPrefs.sort;
-  $("pk-sort").onchange = () => { pickerPrefs.sort = $("pk-sort").value; redraw(); };
-  $("pk-dir").onclick = () => { pickerPrefs.dir = pickerPrefs.dir === "asc" ? "desc" : "asc"; redraw(); };
-  t.querySelectorAll(".pk-pol").forEach((o) => o.onclick = () => { pickerPrefs.pol = o.dataset.p || null; redraw(); });
+  $("pk-sort").onclick = (e) => e.stopPropagation();
+  $("pk-sort").onchange = (e) => { e.stopPropagation(); pickerPrefs.sort = $("pk-sort").value; redraw(); };
+  $("pk-dir").onclick = (e) => { e.stopPropagation(); pickerPrefs.dir = pickerPrefs.dir === "asc" ? "desc" : "asc"; redraw(); };
+  t.querySelectorAll(".pk-pol").forEach((o) => o.onclick = (e) => { e.stopPropagation(); pickerPrefs.pol = o.dataset.p || null; redraw(); });
 }
 
 function familyConflict(mod, exceptIdx) {
@@ -337,13 +345,17 @@ function renderMenu(slotIdx, query) {
     const ownMod = slots[slotIdx].mod ? modById(slots[slotIdx].mod) : null;
     const exIllegal = at === EXILUS && ownMod && !ownMod.exilus;
     const conflict = at < 0 && !isCur && familyConflict(m, slotIdx);
-    const badge = isCur ? '<span class="slotchip cur">current</span>'
-      : at >= 0 ? `<span class="slotchip">${at === EXILUS ? "exilus" : "slot " + (at + 1)}</span>` : "";
+    // Every placed mod shows a "slot N" chip (the current one shows ITS OWN
+    // slot). No "current" word — same color family; background does the
+    // distinguishing, the current slot rendered a touch stronger.
+    const slotName = (idx) => idx === EXILUS ? "exilus" : "slot " + (idx + 1);
+    const badge = isCur ? `<span class="slotchip cur">${slotName(slotIdx)}</span>`
+      : at >= 0 ? `<span class="slotchip">${slotName(at)}</span>` : "";
     const title = conflict ? `incompatible (${m.family})`
       : exIllegal ? `cannot swap: ${ownMod.name} is not an exilus mod`
       : at >= 0 ? `swap with ${at === EXILUS ? "the exilus slot" : "slot " + (at + 1)}`
       : m.effects.join(" · ");
-    return `<div class="opt ${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" data-id="${m.id}" title="${title}">
+    return `<div class="opt ${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : at >= 0 ? "placed" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" data-id="${m.id}" title="${title}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(m.image ? CDN + m.image : null, "mod")}
       <div class="info"><div class="mn">${m.name}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${m.effects.map((x) => `<div>${x}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`;
@@ -390,12 +402,89 @@ function openPolMenu(slotIdx) {
 }
 
 // ---- Arcane ----
+// Full parity with mods: ONE slot card (rank stepper, ⋯ menu) → click opens a
+// searchable picker that matches name OR effect, with effect lines, rarity
+// frames, and the equipped arcane highlighted in the accent background family.
+const arcaneById = (id) => META.arcanes.find((x) => x.id === id);
+function setArcane(id) { arcane = id; arcaneRank = null; } // new arcane → max rank
+// Effect lines for a specific rank (clamped). Arcane strengths scale per rank
+// (wiki), so the slot shows the SELECTED rank; the picker shows max rank.
+const effectsAt = (a, r) => {
+  const rk = a && a.ranks || [];
+  if (!rk.length) return [];
+  return rk[Math.max(0, Math.min(rk.length - 1, r))] || [];
+};
+const effLines = (arr) => arr.length ? `<div class="me">${arr.map((x) => `<div>${x}</div>`).join("")}</div>` : "";
+
 function renderArcanes() {
   const box = $("arcane-slots");
-  box.innerHTML = META.arcanes.map((a) => `
-    <div class="arcane-opt ${a.id === arcane ? "sel" : ""}" data-id="${a.id}">
-      ${a.image ? imgTag(CDN + a.image, "aimg") : `<span class="aimg none">∅</span>`}<span>${a.name}</span></div>`).join("");
-  box.querySelectorAll(".arcane-opt").forEach((o) => o.addEventListener("click", () => { arcane = o.dataset.id; renderArcanes(); }));
+  box.innerHTML = "";
+  const a = arcaneById(arcane);
+  const none = !a || a.id === "none";
+  const el = document.createElement("div");
+  if (none) {
+    el.className = "slot empty arc";
+    el.innerHTML = `<span class="plus">+ add arcane</span>`;
+  } else {
+    const maxr = a.max_rank || 0;
+    const r = arcaneRank == null ? maxr : Math.max(0, Math.min(maxr, arcaneRank));
+    const lowered = r < maxr;
+    const rank = maxr > 0
+      ? `<span class="rank ${lowered ? "lowered" : ""}"><button class="rk" data-d="-1">−</button><b>R${r}${lowered ? "/" + maxr : ""}</b><button class="rk" data-d="1">+</button></span>`
+      : "";
+    el.className = "slot filled arc" + (a.rarity ? " rar-" + a.rarity : "");
+    el.innerHTML = imgTag(a.image ? CDN + a.image : null, "mod") +
+      `<div class="info"><div class="mn">${a.name}</div>${effLines(effectsAt(a, r))}${rank}</div>` +
+      `<button class="dots" title="options">⋯</button>`;
+    el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openArcaneMenu(el); });
+    el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      arcaneRank = Math.max(0, Math.min(maxr, r + Number(b.dataset.d)));
+      renderArcanes();
+    }));
+  }
+  el.addEventListener("click", (e) => { e.stopPropagation(); openArcanePicker(el); });
+  box.appendChild(el);
+}
+
+function openArcanePicker(anchor) {
+  closePopovers();
+  const pop = $("arcane-popover");
+  place(pop, anchor);
+  const search = $("arcane-search");
+  search.value = "";
+  search.oninput = () => renderArcaneMenu(search.value);
+  renderArcaneMenu("");
+  search.focus();
+}
+
+// Search matches NAME or any EFFECT line (like the mod picker). "None" always
+// stays listed as the clear-out option.
+function renderArcaneMenu(query) {
+  const menu = $("arcane-menu");
+  const q = query.trim().toLowerCase();
+  // Search matches NAME or ANY rank's effect text.
+  const allEff = (a) => (a.ranks || []).reduce((acc, r) => acc.concat(r), []).join(" ").toLowerCase();
+  const hits = META.arcanes.filter((a) => a.id === "none" || !q ||
+    a.name.toLowerCase().includes(q) || allEff(a).includes(q));
+  menu.innerHTML = hits.length ? hits.map((a) => {
+    const isCur = a.id === arcane;
+    const none = a.id === "none";
+    return `<div class="opt ${isCur ? "cur" : ""} ${a.rarity ? "rar-" + a.rarity : ""}" data-id="${a.id}">
+      ${none ? '<span class="mod none">∅</span>' : imgTag(a.image ? CDN + a.image : null, "mod")}
+      <div class="info"><div class="mn">${a.name}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}</div>${effLines(effectsAt(a, a.max_rank))}</div></div>`;
+  }).join("") : `<div class="opt dis">no matches</div>`;
+  menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => { setArcane(o.dataset.id); closePopovers(); renderArcanes(); }));
+}
+
+// ⋯ on a filled arcane slot: mirror the mod slot menu (remove).
+function openArcaneMenu(anchor) {
+  closePopovers();
+  const menu = $("slot-menu");
+  menu.innerHTML = `<div class="mi" data-a="swap">Swap arcane</div><div class="mi danger" data-a="remove">Remove arcane</div>`;
+  place(menu, anchor);
+  menu.querySelector('[data-a="swap"]').addEventListener("click", () => openArcanePicker(anchor));
+  menu.querySelector('[data-a="remove"]').addEventListener("click", () => { setArcane("none"); closePopovers(); renderArcanes(); });
 }
 
 // ---- Evolution ----

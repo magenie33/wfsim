@@ -76,7 +76,14 @@ fn assets() -> &'static Assets {
 struct WeaponInfo {
     id: &'static str,
     name: &'static str,
+    // The MOD-ELIGIBILITY group, not a cosmetic label. "pistol" = the Pistol
+    // Mods pool, which (wiki Pistol_Mods) equips on secondary Pistols, Dual
+    // Pistols, Shotgun Sidearms, Crossbows, and Tomes. This is the ACTUAL way
+    // mods take effect, so the eligibility group is what drives the pool.
     mod_class: &'static str, // "pistol" | "rifle"
+    // Precise weapon type within that group (Dual Toxocyst = Dual Pistols).
+    // Kept explicit because the subtype IS the real mod-eligibility path.
+    subtype: &'static str,
     sentinel: bool,
     forms: &'static [(&'static str, &'static str)],
     uses_arcane: bool,
@@ -88,6 +95,7 @@ const WEAPONS: &[WeaponInfo] = &[
         id: "dual_toxocyst",
         name: "Dual Toxocyst",
         mod_class: "pistol",
+        subtype: "Dual Pistols",
         sentinel: false,
         forms: &[
             ("incarnon_cycle", "Incarnon cycle (real two-form loop)"),
@@ -101,6 +109,7 @@ const WEAPONS: &[WeaponInfo] = &[
         id: "verglas_prime",
         name: "Verglas Prime (sentinel)",
         mod_class: "rifle",
+        subtype: "Sentinel Weapon",
         sentinel: true,
         forms: &[("primary", "Standard")],
         uses_arcane: false,
@@ -375,6 +384,7 @@ fn meta_json() -> Value {
                 "id": w.id,
                 "name": w.name,
                 "mod_class": w.mod_class,
+                "subtype": w.subtype,
                 "sentinel": w.sentinel,
                 "uses_arcane": w.uses_arcane,
                 "uses_evo2": w.uses_evo2,
@@ -404,6 +414,23 @@ fn meta_json() -> Value {
         })
         .collect();
 
+    // Per-rank arcane effect lines (wiki-verified, data/arcanes/*.yaml). Index
+    // = rank 0..=max; the picker shows max-rank as the catalog, the equipped
+    // slot shows its selected rank. Values scale per rank as on the wiki.
+    let enervate_ranks: Vec<Vec<String>> = (0..=5u32).map(|r| vec![
+        "On hit: +10% flat crit chance per stack".to_string(),
+        format!("Resets after {} big crit{}", r + 1, if r == 0 { "" } else { "s" }),
+    ]).collect();
+    let deadhead_ranks: Vec<Vec<String>> = (0..=5u32).map(|r| {
+        let mut v = vec![format!(
+            "On precision headshot kill: +{}% base damage / stack (max 3, 24s)", (r + 1) * 20)];
+        if r == 5 { v.push("+30% headshot multiplier".to_string()); v.push("−50% recoil".to_string()); }
+        v
+    }).collect();
+    let flare_ranks: Vec<Vec<String>> = (0..=5u32).map(|r| vec![format!(
+        "On Heat status applied: +{}% base damage / stack (max 40, 10s)", (r + 1) * 2),
+    ]).collect();
+
     // A pleasant default: the standing Thrax official champion (devlog 2026-07-25).
     let default_mods = [
         "primed_convulsion",
@@ -423,11 +450,18 @@ fn meta_json() -> Value {
             "rifle": mods_json(&rifle_pool()),
         },
         "enemies": enemies,
+        // Arcanes mirror the mod pool: per-rank effect lines (`ranks[r]`),
+        // max_rank, rarity — so the web picker searches effects and the slot
+        // steps ranks with the strength updating per rank. The sim models
+        // these at max rank today; wiring rank into /api/panel is a follow-up.
         "arcanes": [
-            {"id": "none", "name": "None", "image": null},
-            {"id": "enervate", "name": "Secondary Enervate", "image": assets().arcanes.get("secondary_enervate")},
-            {"id": "deadhead", "name": "Secondary Deadhead", "image": assets().arcanes.get("secondary_deadhead")},
-            {"id": "flare", "name": "Cascadia Flare", "image": assets().arcanes.get("cascadia_flare")},
+            {"id": "none", "name": "None", "image": null, "ranks": [], "max_rank": 0, "rarity": null},
+            {"id": "enervate", "name": "Secondary Enervate", "image": assets().arcanes.get("secondary_enervate"),
+             "ranks": enervate_ranks, "max_rank": 5, "rarity": "rare"},
+            {"id": "deadhead", "name": "Secondary Deadhead", "image": assets().arcanes.get("secondary_deadhead"),
+             "ranks": deadhead_ranks, "max_rank": 5, "rarity": "legendary"},
+            {"id": "flare", "name": "Cascadia Flare", "image": assets().arcanes.get("cascadia_flare"),
+             "ranks": flare_ranks, "max_rank": 5, "rarity": "legendary"},
         ],
         "evo2": [
             {"id": "fevered", "name": "Fevered Frenzy"},
@@ -580,6 +614,12 @@ fn panel_json(v: &Value) -> Value {
                 OnEquipHandling { .. } => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "temporary on weapon swap-in; never a static stat"})),
+                // Faction bonus is conditional on the target's faction, so the
+                // static panel lists it rather than folding it into a bucket.
+                FactionDamage(fac, x) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": false,
+                    "why": format!("+{}% total damage only vs {fac:?} (applied ×2 on DoT ticks)",
+                        (x * 100.0).round())})),
             }
         }
     }

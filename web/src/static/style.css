@@ -68,6 +68,7 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 
 /* mod slots */
 .slots{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.slots.one{grid-template-columns:1fr}
 .slot{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 8px;min-height:48px}
 .slot .pol{width:16px;height:16px}
 .pol-btn{flex:none;width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--plane);border:1px solid var(--line);border-radius:6px;cursor:pointer;padding:0}
@@ -120,14 +121,19 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .combo-menu .opt.dis{opacity:.4;cursor:not-allowed}
 .combo-menu .opt .pol{width:14px;height:14px;flex:none}
 .combo-menu .opt .mod{width:28px;height:28px;border-radius:5px;object-fit:cover;border:1px solid var(--rar,var(--line));flex:none}
+.combo-menu .opt .mod.none{display:flex;align-items:center;justify-content:center;color:var(--muted);background:var(--panel2)}
 .combo-menu .opt .info{flex:1;min-width:0}
 .combo-menu .opt .mn{font-size:12.5px;font-weight:600}
 .combo-menu .opt .me{font-size:11px;color:var(--text-2)}
 .combo-menu .opt .me div{line-height:1.35}
 .exchip{font-size:9px;letter-spacing:.05em;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 4px;vertical-align:1px}
-.slotchip{font-size:9px;letter-spacing:.05em;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px;vertical-align:1px}
-.slotchip.cur{color:var(--good-text);border-color:var(--good)}
-.combo-menu .opt.cur{background:var(--panel3)}
+.slotchip{font-size:9px;letter-spacing:.05em;color:color-mix(in srgb,var(--accent) 80%,var(--text));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:4px;padding:0 4px;vertical-align:1px}
+.slotchip.cur{color:#fff;background:var(--accent);border-color:var(--accent)}
+/* placed mods share ONE colour family (accent); the current slot is stronger */
+.combo-menu .opt.placed{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.combo-menu .opt.placed:hover{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.combo-menu .opt.cur{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.combo-menu .opt.cur:hover{background:color-mix(in srgb,var(--accent) 24%,transparent)}
 .combo-menu .opt .dr{color:var(--muted);font-size:12px}
 
 /* arcane */
