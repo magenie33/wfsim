@@ -159,6 +159,8 @@ fn rifle_pool() -> Vec<ModDef> {
         rarity,
         exilus: false, // no rifle exilus mods authored yet
         family,
+        requires: None,
+        disables: Vec::new(),
         effects,
     };
     vec![
@@ -691,6 +693,20 @@ fn panel_json(v: &Value) -> Value {
                         (x * 100.0).round())})),
                 MagazineCapacity(x) => push("magazine", x, None),
                 StatusDuration(x) => push("status_duration", x, None),
+                // Conditional buff, assumed active at max in this static panel.
+                CondBuff(b, x) => {
+                    use wfsim_engine::loadout::CondBucket as B;
+                    let key = match b {
+                        B::BaseDamage => "base_damage",
+                        B::Multishot => "multishot",
+                        B::CritChance => "crit_chance",
+                        B::CritDamage => "crit_damage",
+                        B::StatusChance => "status_chance",
+                        B::StatusDamage => "status_damage",
+                        B::FireRate => "fire_rate",
+                    };
+                    push(key, x, Some("conditional buff, assumed active".into()));
+                }
             }
         }
     }

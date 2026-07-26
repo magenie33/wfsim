@@ -47,6 +47,18 @@ impl Faction {
     }
 }
 
+/// The stat bucket a conditional buff feeds ([`ModEffect::CondBuff`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CondBucket {
+    BaseDamage,
+    Multishot,
+    CritChance,
+    CritDamage,
+    StatusChance,
+    StatusDamage,
+    FireRate,
+}
+
 /// One resolved effect of a mod at its equipped rank.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ModEffect {
@@ -77,6 +89,12 @@ pub enum ModEffect {
     /// enter the elemental hierarchy. No effect on a type the weapon lacks
     /// (wiki Damage/Calculation; MECHANICS.md §2).
     Physical(DamageType, f64),
+    /// A CONDITIONAL/triggered buff's contribution to a stat bucket, valued at
+    /// its assumed-max total (per_stack × max_stacks). Applied ONLY under
+    /// `StackPolicy::AssumedMax` (the panel/optimizer's optimistic view); the
+    /// emergent sim leaves it to the timeline. For triggered-buff mods whose
+    /// trigger isn't event-modeled (on_ability_cast / on_reload / on_hit / …).
+    CondBuff(CondBucket, f64),
     /// Galvanized Diffusion's on-kill multishot stacks.
     OnKillMultishot {
         per_stack: f64,
@@ -191,6 +209,7 @@ impl ModEffect {
             Element(t, v) => format!("{} {t:?}", pct(v)),
             CombinedElement(t, v) => format!("{} {t:?}", pct(v)),
             Physical(t, v) => format!("{} {t:?}", pct(v)),
+            CondBuff(b, v) => format!("{} {b:?} (conditional, assumed active)", pct(v)),
             OnKillMultishot { per_stack, max_stacks, duration } => {
                 format!("On Kill: {} Multishot per stack ×{max_stacks}, {duration}s", pct(per_stack))
             }
@@ -234,6 +253,15 @@ pub struct ModDef {
     pub exilus: bool,
     /// Mods sharing a family are mutually exclusive (wiki Incompatible).
     pub family: Option<&'static str>,
+    /// Weapon TRAIT this mod's effects require to apply (else the whole mod is
+    /// inert — a calc-layer gate, NOT an equip block). Declared only for
+    /// general effects that would otherwise be misapplied (Semi-Pistol
+    /// Cannonade → `semi_auto`); self-gating effects (beam range) declare none.
+    pub requires: Option<&'static str>,
+    /// Stats this mod LOCKS from being modified while equipped (Pistol Acuity →
+    /// `multishot`, Semi-Pistol Cannonade → `fire_rate`): every mod's bonus to
+    /// that bucket is zeroed in `resolve`.
+    pub disables: Vec<&'static str>,
     pub effects: Vec<ModEffect>,
 }
 
@@ -334,6 +362,9 @@ pub struct WeaponBase {
     /// contributes ModifiedBase × bonus at the END of the hierarchy
     /// (rule 8) — Frenzy's +100% Toxin on the base Dual Toxocyst.
     pub injected_elements: Vec<(DamageType, f64)>,
+    /// Weapon traits a mod's `requires` is checked against (e.g. `semi_auto`,
+    /// `beam`). A mod requiring a trait the weapon lacks is inert.
+    pub traits: &'static [&'static str],
 }
 
 /// Dual Toxocyst's ORIGINAL base damage total (both forms), before any
@@ -410,6 +441,7 @@ impl WeaponBase {
             } else {
                 Vec::new()
             },
+            traits: &["semi_auto"], // Dual Toxocyst: semi-auto trigger
         }
     }
 
@@ -439,6 +471,7 @@ impl WeaponBase {
             } else {
                 Vec::new()
             },
+            traits: &["semi_auto"], // Dual Toxocyst: semi-auto trigger
         }
     }
 
@@ -465,6 +498,7 @@ impl WeaponBase {
             co_behavior: CoBehavior::Independent,
             co_base_fraction: 1.0,
             injected_elements: Vec::new(),
+            traits: &[], // sentinel weapon; no semi_auto/beam trait
         }
     }
 }
@@ -539,8 +573,23 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
     let mut faction_bonus: Vec<(Faction, f64)> = Vec::new();
     // Physical (IPS) bonuses, per type — scale the base of that physical type.
     let mut phys_bonus: Vec<(DamageType, f64)> = Vec::new();
+    // Stats LOCKED from modding by an equipped mod (Pistol Acuity → multishot,
+    // Semi-Pistol Cannonade → fire_rate). Their bucket is zeroed after the loop.
+    let mut disabled: Vec<&str> = Vec::new();
 
     for m in mods {
+        // `requires`: a mod whose required weapon trait is absent is INERT here
+        // (calc-layer, not an equip block) — skip all of its effects/locks.
+        if let Some(req) = m.requires {
+            if !base.traits.contains(&req) {
+                continue;
+            }
+        }
+        for &d in &m.disables {
+            if !disabled.contains(&d) {
+                disabled.push(d);
+            }
+        }
         for e in &m.effects {
             match *e {
                 ModEffect::BaseDamage(v) => bd += v,
@@ -644,7 +693,43 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                 }
                 ModEffect::MagazineCapacity(v) => mag += v,
                 ModEffect::StatusDuration(v) => sdur += v,
+                // Conditional buff at its assumed-max total — applied only under
+                // AssumedMax (panel/optimizer); emergent leaves it to the sim.
+                ModEffect::CondBuff(bucket, v) => {
+                    if policy == StackPolicy::AssumedMax {
+                        match bucket {
+                            CondBucket::BaseDamage => bd += v,
+                            CondBucket::Multishot => ms += v,
+                            CondBucket::CritChance => cc += v,
+                            CondBucket::CritDamage => cd += v,
+                            CondBucket::StatusChance => sc += v,
+                            CondBucket::StatusDamage => sd += v,
+                            CondBucket::FireRate => fr += v,
+                        }
+                    }
+                }
             }
+        }
+    }
+
+    // Apply `disables`: a locked stat cannot be modified — zero its mod bucket
+    // (and any conditional stacks feeding it); the weapon's base value stays.
+    for &d in &disabled {
+        match d {
+            "multishot" => {
+                ms = 0.0;
+                ms_stack = None;
+            }
+            "fire_rate" => fr = 0.0,
+            "crit_chance" => {
+                cc = 0.0;
+                cc_on_headshot = None;
+                cc_stack = None;
+            }
+            "crit_damage" => cd = 0.0,
+            "status_chance" => sc = 0.0,
+            "base_damage" => bd = 0.0,
+            _ => {}
         }
     }
 
@@ -741,8 +826,37 @@ mod tests {
             rarity: Rarity::Common,
             exilus: false,
             family: None,
+            requires: None,
+            disables: Vec::new(),
             effects,
         }
+    }
+
+    fn m_req(id: &'static str, requires: Option<&'static str>, disables: Vec<&'static str>, effects: Vec<ModEffect>) -> ModDef {
+        ModDef { requires, disables, ..m(id, effects) }
+    }
+
+    #[test]
+    fn requires_gate_disables_and_cond_buff() {
+        let base = WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy); // traits: semi_auto
+        let p0 = resolve(&base, &[], StackPolicy::AssumedMax);
+        // requires: a mod needing `beam` is INERT on Dual Toxocyst (no beam);
+        // a mod needing `semi_auto` applies.
+        let beam_mod = m_req("beam", Some("beam"), vec![], vec![ModEffect::BaseDamage(3.0)]);
+        assert!((resolve(&base, &[&beam_mod], StackPolicy::AssumedMax).modified_base - p0.modified_base).abs() < 1e-9);
+        let semi = m_req("semi", Some("semi_auto"), vec![], vec![ModEffect::BaseDamage(3.0)]);
+        assert!(resolve(&base, &[&semi], StackPolicy::AssumedMax).modified_base > p0.modified_base);
+        // disables: a mod locking `multishot` voids other multishot mods.
+        let lock = m_req("acuity", None, vec!["multishot"], vec![]);
+        let ms_mod = m("ms", vec![ModEffect::Multishot(1.0)]);
+        let locked = resolve(&base, &[&ms_mod, &lock], StackPolicy::AssumedMax);
+        assert!((locked.multishot - p0.multishot).abs() < 1e-9); // multishot mod voided
+        // CondBuff: contributes under AssumedMax, nothing under Emergent.
+        let cb = m("cond", vec![ModEffect::CondBuff(CondBucket::StatusChance, 0.90)]);
+        let amax = resolve(&base, &[&cb], StackPolicy::AssumedMax);
+        let emerg = resolve(&base, &[&cb], StackPolicy::Emergent);
+        assert!((amax.status_chance - base.base_status_chance * 1.90).abs() < 1e-9);
+        assert!((emerg.status_chance - base.base_status_chance).abs() < 1e-9);
     }
 
     #[test]

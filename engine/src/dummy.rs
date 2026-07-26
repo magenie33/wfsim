@@ -2059,6 +2059,7 @@ mod tests {
         let expel = ModDef {
             id: "expel_grineer", base_drain: 9, max_rank: 5,
             polarity: Polarity::Madurai, rarity: Rarity::Uncommon, exilus: false, family: None,
+            requires: None, disables: Vec::new(),
             effects: vec![ModEffect::FactionDamage(Faction::Grineer, 0.30)],
         };
         let base = WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy);

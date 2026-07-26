@@ -21,7 +21,7 @@ use serde::Deserialize;
 use serde_norway::Value;
 
 use crate::damage::DamageType;
-use crate::loadout::{Faction, IndirectStat, ModDef, ModEffect, Rarity};
+use crate::loadout::{CondBucket, Faction, IndirectStat, ModDef, ModEffect, Rarity};
 use crate::mods::Polarity;
 
 #[derive(Debug, Deserialize)]
@@ -41,6 +41,12 @@ struct ModFile {
     exilus: bool,
     #[serde(default)]
     family: Option<String>,
+    /// Weapon trait required for the mod to apply (calc-layer gate).
+    #[serde(default)]
+    requires: Option<String>,
+    /// Stats this mod locks from being modified.
+    #[serde(default)]
+    disables: Vec<String>,
     effects: Vec<Value>,
 }
 
@@ -156,9 +162,22 @@ fn effect(v: &Value) -> Option<ModEffect> {
                 ("on_headshot_kill", "crit_chance") => {
                     ModEffect::OnHeadshotKillCritChance { per_stack: per, max_stacks: stacks, duration: dur }
                 }
-                // on_ability_cast / on_reload / on_hit / on_kill+crit_damage:
-                // not modeled yet (data stays uniform; resolves to no-op).
-                _ => return None,
+                // Any other trigger (on_ability_cast / on_reload / on_hit / …):
+                // contribute at the assumed-max total via CondBuff when the grant
+                // maps to a DPS bucket. Indirect grants (accuracy/recoil) → None.
+                _ => {
+                    let bucket = match grants {
+                        "base_damage" | "damage" => CondBucket::BaseDamage,
+                        "multishot" => CondBucket::Multishot,
+                        "crit_chance" => CondBucket::CritChance,
+                        "crit_damage" => CondBucket::CritDamage,
+                        "status_chance" => CondBucket::StatusChance,
+                        "status_damage" => CondBucket::StatusDamage,
+                        "fire_rate" => CondBucket::FireRate,
+                        _ => return None,
+                    };
+                    ModEffect::CondBuff(bucket, per * stacks.max(1) as f64)
+                }
             }
         }
         // INDIRECT stats: outside the theoretical-DPS formula, but real
@@ -198,6 +217,12 @@ fn to_moddef(mf: ModFile) -> ModDef {
         rarity: rarity(&mf.rarity),
         exilus: mf.exilus,
         family: mf.family.map(|s| &*Box::leak(s.into_boxed_str())),
+        requires: mf.requires.map(|s| &*Box::leak(s.into_boxed_str())),
+        disables: mf
+            .disables
+            .into_iter()
+            .map(|s| &*Box::leak(s.into_boxed_str()))
+            .collect(),
         effects,
     }
 }

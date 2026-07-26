@@ -126,6 +126,22 @@ defined position (Frenzy appends "+100% Toxin" at the **end** of the order).
 **Ammo efficiency.** `shots_per_ammo = 1 / (1 - e)`; sources add (except
 Energized Munitions, multiplicative); `e = 1.0` → infinite ammo.
 
+**Mod restrictions & conditional-buff activation** (`loadout::resolve`, 2026-07-27).
+- **`requires: <trait>`** (ModDef): a mod whose required weapon trait
+  (`WeaponBase.traits`, e.g. `semi_auto`/`beam`) is absent is INERT — all its
+  effects/locks are skipped. Calc-layer, NOT an equip gate. Declared only when a
+  general effect would otherwise be misapplied (Semi-Pistol Cannonade needs
+  `semi_auto`); self-gating effects (beam range) declare nothing.
+- **`disables: [stat]`**: a mod that LOCKS a stat from modding (Pistol Acuity →
+  multishot, Semi-Pistol Cannonade → fire_rate) zeroes that stat's mod bucket
+  (and any conditional stacks feeding it); the weapon's base value stays.
+- **Conditional buffs** (`ModEffect::CondBuff`): triggered-buff mods whose
+  trigger isn't event-modeled (on_ability_cast / on_reload / on_hit / …)
+  contribute their assumed-max total (per_stack × max_stacks) ONLY under
+  `StackPolicy::AssumedMax` (the panel/optimizer's optimistic 100%-uptime view);
+  the emergent sim leaves them to the timeline. The `configured` policy (per-buff
+  stacks/uptime — a future "test build") will sit between the two (BUFFS.md).
+
 **Physical (IPS) damage mods vs elemental mods — DIFFERENT math** (wiki
 `Damage/Calculation`; engine `loadout::resolve`). A physical mod (+X%
 Impact/Puncture/Slash, e.g. Rupture) scales the BASE of THAT physical type and
