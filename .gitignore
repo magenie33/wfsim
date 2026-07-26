@@ -10,6 +10,10 @@ Cargo.lock.orig
 __pycache__/
 *.pyc
 
+# Cached weapon/mod/arcane art (runtime cache, pre-warmed by fetch_images.py;
+# DE art is never committed — served via the /img proxy with WFCD fallback).
+web/cache/
+
 # Editor / OS
 .idea/
 .vscode/

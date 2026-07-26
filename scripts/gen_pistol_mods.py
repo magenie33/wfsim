@@ -48,6 +48,10 @@ PVP_ONLY = {
     "secondary wind", "spry sights", "strafing slide", "tainted clip", "air recon",
 }
 
+# Mods the wiki still lists but that no longer exist in the live game (removed /
+# legacy) — never import (user 2026-07-26).
+REMOVED_FROM_GAME = {"cannonade"}
+
 # ---- Description -> unified structured effects ------------------------------
 ELEMENTS = {
     "heat": "heat", "cold": "cold", "electricity": "electricity", "toxin": "toxin",
