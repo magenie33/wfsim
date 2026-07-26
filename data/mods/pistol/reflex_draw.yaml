@@ -10,13 +10,21 @@ exilus: true
 internal_name: /Lotus/Upgrades/Mods/PvPMods/Pistol/HolsterSpeedBonusMod
 description: "On Equip: \n-X% Weapon Recoil and +X% Accuracy for 8s"
 
-# On Equip: −40% Weapon Recoil and +40% Accuracy for 8 s. Handling-only
-# (perfect-aim sim) — intentionally unmodeled.
 effects:
-  - kind: on_equip_buff
+  - kind: buff
+    trigger: on_equip
+    grants: recoil
     rank0: -0.1
     rankMax: -0.4
-    duration_seconds: 8
+    max_stacks: 1
+    duration: 8
+  - kind: buff
+    trigger: on_equip
+    grants: accuracy
+    rank0: 0.1
+    rankMax: 0.4
+    max_stacks: 1
+    duration: 8
 
 source:
   url: https://wiki.warframe.com/w/Reflex_Draw

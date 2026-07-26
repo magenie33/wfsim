@@ -9,6 +9,9 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Pistol/PistolSemiAutoFantasyMod
 description: "Only compatible with Semi-Auto Trigger. Fire Rate cannot be modified.\n+X% Damage\n+X Punch Through"
 
+requires: semi_auto      # weapon trigger must be Semi-Auto, else the mod is inert
+disables: [fire_rate]    # locks Fire Rate from being modified while equipped
+
 effects:
   - kind: base_damage_bonus
     rank0: 0.5
@@ -16,7 +19,6 @@ effects:
   - kind: punch_through_bonus
     rank0: 0.25
     rankMax: 1.5
-# Only compatible with Semi-Auto Trigger; Fire Rate cannot be modified.
 
 source:
   url: https://wiki.warframe.com/w/Semi-Pistol_Cannonade

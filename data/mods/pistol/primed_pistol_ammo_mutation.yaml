@@ -11,10 +11,10 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/Expert/WeaponPistolConvertAmmoModExpe
 description: "Converts Primary ammo pickups to X% of Ammo Pick Up."
 
 effects:
-  - kind: unmodeled
+  - kind: ammo_conversion    # primary ammo pickups -> pistol ammo (economy; long-fight sustain, no per-hit DPS)
+    from: primary
     rank0: 0.08
     rankMax: 0.92
-    desc: "Converts Primary ammo pickups to 92% of Ammo Pick Up."
 
 family: pistol_ammo_mutation
 incompatible_with: [pistol_ammo_mutation]

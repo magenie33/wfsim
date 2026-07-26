@@ -11,10 +11,11 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponBeamDistanceMod
 description: "+Xm Beam Range"
 
 effects:
-  - kind: unmodeled
+  # Beam range: inherently inert on non-continuous weapons (no beam to extend) —
+  # no gate needed; the calculation layer simply does nothing here.
+  - kind: beam_range_bonus
     rank0: 2.0
     rankMax: 8.0
-    desc: "+8m Beam Range"
 
 source:
   url: https://wiki.warframe.com/w/Ruinous_Extension

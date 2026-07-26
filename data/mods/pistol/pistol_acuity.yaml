@@ -9,6 +9,8 @@ max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponWeakpointCriticalChanceMod
 description: "+X% Weak Point Damage\n+X% Weak Point Critical Chance. Multishot cannot be modified."
 
+disables: [multishot]    # locks Multishot from being modified while equipped
+
 effects:
   - kind: weakpoint_damage_bonus
     rank0: 0.32
@@ -16,7 +18,6 @@ effects:
   - kind: weakpoint_crit_chance_bonus
     rank0: 0.32
     rankMax: 3.5
-# "Multishot cannot be modified" while equipped (restriction, not yet modeled).
 
 source:
   url: https://wiki.warframe.com/w/Pistol_Acuity

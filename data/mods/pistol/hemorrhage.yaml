@@ -10,10 +10,14 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponBleedOnImpactPistolMod
 description: "Impact Status Effects have X% chance to apply a Slash Status Effect (x2 when Fire Rate is below 2.5)"
 
 effects:
-  - kind: impact_to_slash_status
+  # On an applied Impact status, roll `chance` to also apply a Slash status.
+  - kind: proc_conversion
+    trigger: impact
+    applies: slash
     rank0: 0.1
     rankMax: 0.35
-# x2 chance when the weapon's Fire Rate is below 2.5.
+    condition: fire_rate_below_2.5   # the chance is DOUBLED while this holds
+    condition_multiplier: 2
 
 source:
   url: https://wiki.warframe.com/w/Hemorrhage

@@ -12,7 +12,7 @@ description: "+X% Radiation\n+X% Fire Rate"
 # COMBINED-element mod like Magnetic Might: its Radiation adds directly,
 # outside the primary hierarchy (MECHANICS #3 rule 7).
 effects:
-  - kind: combined_element_bonus
+  - kind: elemental_damage_bonus
     element: radiation
     rank0: 0.15
     rankMax: 0.6
