@@ -1011,6 +1011,7 @@ impl DummyParams {
             cc_on_headshot: panel.cc_on_headshot,
             cc_stack: panel.cc_stack,
             status_damage_mult: panel.status_damage_mult,
+            status_duration_mult: panel.status_duration_mult,
             elem_dot_bonus: panel.elem_dot_bonus.clone(),
             dot_modified_base: Some(panel.modified_base),
             arcane: Arcane::None,

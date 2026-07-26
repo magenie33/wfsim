@@ -108,6 +108,8 @@ fn effect(v: &Value) -> Option<ModEffect> {
         "status_damage_bonus" => ModEffect::StatusDamage(max("max")),
         "fire_rate_bonus" => ModEffect::FireRate(max("max")),
         "reload_speed_bonus" => ModEffect::ReloadSpeed(max("max")),
+        "magazine_capacity_bonus" => ModEffect::MagazineCapacity(max("max")),
+        "status_duration_bonus" => ModEffect::StatusDuration(max("max")),
         // Faction damage (Bane/Expel): +max total damage vs the named faction.
         // An unrecognized faction (Unknown) drops the effect (mod still loads).
         "faction_damage_bonus" => {
@@ -155,6 +157,9 @@ fn effect(v: &Value) -> Option<ModEffect> {
         "holstered_reload" => ModEffect::Indirect(IndirectStat::HolsteredReload, max("max")),
         "dodge_speed_bonus" => ModEffect::Indirect(IndirectStat::DodgeSpeed, max("max")),
         "acrobatic_speed_bonus" => ModEffect::Indirect(IndirectStat::AcrobaticSpeed, max("max")),
+        "punch_through_bonus" => ModEffect::Indirect(IndirectStat::PunchThrough, max("max")),
+        "zoom_bonus" => ModEffect::Indirect(IndirectStat::Zoom, max("max")),
+        "accuracy_bonus" => ModEffect::Indirect(IndirectStat::Accuracy, max("max")),
         // Reflex Draw: on swap-in, −recoil/+accuracy for a few seconds.
         "on_equip_buff" => ModEffect::OnEquipHandling {
             recoil: -max("max").abs(),

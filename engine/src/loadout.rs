@@ -112,6 +112,12 @@ pub enum ModEffect {
     /// other faction sources; **double-dips on DoT ticks** (applied twice).
     /// Conditional on the target's faction — no effect vs a non-match.
     FactionDamage(Faction, f64),
+    /// Magazine capacity bonus (+v of base magazine, additive; floored to a
+    /// whole round). Feeds reload cadence / long-fight sustain.
+    MagazineCapacity(f64),
+    /// Status-duration bonus (+v): scales status-effect DoT DURATION (→ more
+    /// ticks) and slows Heat's armour-strip ramp. No effect on instant procs.
+    StatusDuration(f64),
 }
 
 /// Indirect stat targets (each its own additive bucket) — outside the
@@ -126,6 +132,11 @@ pub enum IndirectStat {
     DodgeSpeed,
     AcrobaticSpeed,
     Accuracy,
+    /// Punch-through depth in METERS (multi-target only; no single-target DPS
+    /// effect until the 2D multi-target model lands).
+    PunchThrough,
+    /// Aim zoom (FOV) — pistol zoom carries no damage bonus (unlike snipers).
+    Zoom,
 }
 
 impl IndirectStat {
@@ -139,6 +150,8 @@ impl IndirectStat {
             IndirectStat::DodgeSpeed => "Dodge Speed",
             IndirectStat::AcrobaticSpeed => "Acrobatic Speed",
             IndirectStat::Accuracy => "Accuracy",
+            IndirectStat::PunchThrough => "Punch Through (m)",
+            IndirectStat::Zoom => "Zoom",
         }
     }
 }
@@ -191,6 +204,8 @@ impl ModEffect {
                 format!("On Equip: {} Recoil, {} Accuracy, {duration}s", pct(recoil), pct(accuracy))
             }
             FactionDamage(fac, v) => format!("{} Damage to {fac:?}", pct(v)),
+            MagazineCapacity(v) => format!("{} Magazine Capacity", pct(v)),
+            StatusDuration(v) => format!("{} Status Duration", pct(v)),
         }
     }
 }
@@ -486,6 +501,8 @@ pub struct ResolvedPanel {
     pub cc_stack: Option<StackSpec>,
     /// (1 + Σ status damage) — multiplies status payload values.
     pub status_damage_mult: f64,
+    /// (1 + Σ status duration) — scales status-effect DoT durations.
+    pub status_duration_mult: f64,
     /// Summed INDIRECT buckets (recoil, accuracy, ammo…): outside the
     /// theoretical-DPS math, stated on the panel; a future shooter model
     /// (2D recoil/aim, travel time, ammo sustain) consumes them.
@@ -503,6 +520,8 @@ pub struct ResolvedPanel {
 pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> ResolvedPanel {
     let (mut bd, mut ms, mut cc, mut cd, mut sc, mut fr, mut rl, mut sd) =
         (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    // Magazine-capacity and status-duration additive buckets.
+    let (mut mag, mut sdur) = (0.0, 0.0);
     // Unconditional weapon-level CO (Carnage Reign) seeds the static rate.
     let mut co = base.innate_co_per_type;
     let (mut co_stack, mut ms_stack): (Option<StackSpec>, Option<StackSpec>) = (None, None);
@@ -605,6 +624,8 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                         faction_bonus.push((fac, v));
                     }
                 }
+                ModEffect::MagazineCapacity(v) => mag += v,
+                ModEffect::StatusDuration(v) => sdur += v,
             }
         }
     }
@@ -664,7 +685,8 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         status_chance: base.base_status_chance * (1.0 + sc),
         fire_rate: base.base_fire_rate * (1.0 + fr),
         multishot: base.base_multishot * (1.0 + base.buff_multishot_bonus + ms),
-        magazine_size: base.magazine_size,
+        // Magazine capacity: +% of base, floored to whole rounds (in-game).
+        magazine_size: (base.magazine_size * (1.0 + mag)).floor(),
         reload_seconds: base.base_reload / (1.0 + rl),
         reload_bonus: rl,
         base_damage_bonus: bd,
@@ -676,6 +698,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         cc_on_headshot,
         cc_stack,
         status_damage_mult: 1.0 + sd,
+        status_duration_mult: 1.0 + sdur,
         elem_dot_bonus: elem_bonus.into_iter().map(|(t, v)| (t, 1.0 + v)).collect(),
         indirect,
         faction_damage: faction_bonus,
@@ -799,6 +822,21 @@ mod tests {
         let bonus = |f: Faction| p.faction_damage.iter().find(|(x, _)| *x == f).map(|(_, v)| *v);
         assert!((bonus(Faction::Grineer).unwrap() - 0.85).abs() < 1e-9);
         assert!((bonus(Faction::Corpus).unwrap() - 0.30).abs() < 1e-9);
+    }
+
+    #[test]
+    fn magazine_and_status_duration_buckets_resolve() {
+        let base = WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy);
+        let baseline = resolve(&base, &[], StackPolicy::AssumedMax).magazine_size;
+        let mods = [
+            m("mag", vec![ModEffect::MagazineCapacity(0.60)]),   // +60% of base
+            m("lasting", vec![ModEffect::StatusDuration(0.40)]),
+        ];
+        let refs: Vec<&ModDef> = mods.iter().collect();
+        let p = resolve(&base, &refs, StackPolicy::AssumedMax);
+        // Magazine capacity is +% of base, floored to whole rounds.
+        assert!((p.magazine_size - (baseline * 1.60).floor()).abs() < 1e-9);
+        assert!((p.status_duration_mult - 1.40).abs() < 1e-9);
     }
 
     #[test]

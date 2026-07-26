@@ -620,6 +620,8 @@ fn panel_json(v: &Value) -> Value {
                     "mod": name, "desc": e.describe(), "active": false,
                     "why": format!("+{}% total damage only vs {fac:?} (applied ×2 on DoT ticks)",
                         (x * 100.0).round())})),
+                MagazineCapacity(x) => push("magazine", x, None),
+                StatusDuration(x) => push("status_duration", x, None),
             }
         }
     }
