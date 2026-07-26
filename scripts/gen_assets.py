@@ -42,8 +42,12 @@ NAME_OVERRIDES = {
 
 
 def ids_from_dir(rel):
+    # Recurse: mods now live in per-class subfolders (data/mods/<class>/*.yaml).
     d = os.path.join(ROOT, rel)
-    return sorted(f[:-5] for f in os.listdir(d) if f.endswith(".yaml"))
+    ids = []
+    for _root, _dirs, files in os.walk(d):
+        ids += [f[:-5] for f in files if f.endswith(".yaml")]
+    return sorted(ids)
 
 
 def fetch_image_name(item_id: str):

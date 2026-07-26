@@ -126,6 +126,42 @@ defined position (Frenzy appends "+100% Toxin" at the **end** of the order).
 **Ammo efficiency.** `shots_per_ammo = 1 / (1 - e)`; sources add (except
 Energized Munitions, multiplicative); `e = 1.0` → infinite ammo.
 
+**Utility / indirect mod buckets** (pistol-pool import 2026-07-26,
+`data/mods/pistol/`). The declarative pool records these kinds; each carries
+the REAL mechanic even where the engine does not consume it yet (the loader
+ignores unknown `kind`s, so the mod still loads). Wiki-sourced calc:
+- **Faction damage** (`faction_damage_bonus`; Expel/Bane/Cleanse/Smite —
+  wiki `Faction_Damage_Bonus`): regular **+30% at max** (×1.05/rank →
+  ×1.30), **Primed +55%** (×1.55), same across weapon classes. It is its
+  own MULTIPLICATIVE bucket, but **additive with every other faction-bonus
+  source** (Bane and Roar share one bracket): `… × (1 + Σ faction_bonuses)`.
+  Worked (wiki): `100 × (1 + 1.65 Serration) × (1 + 0.30 Bane + 0.50 Roar)
+  = 477`. Keyed by the enemy's **Faction**, strict match (Grineer mods do
+  NOT hit Corrupted/Narmer Lancer), and **double-dips on DoT ticks** (the
+  bonus is applied twice) — full treatment in §8 System A. Factions with
+  mods: Grineer/Corpus/Infested/Orokin/Murmur (+ Sentient melee). *Engine:
+  not modeled yet* — the 10 imported Expel mods carry it as data.
+- **Status duration** (`status_duration_bonus`): scales status-effect DoT
+  **duration only** (→ more ticks, ~linear DoT total) and **slows Heat's
+  armor-strip ramp** (+100% dur → 1 s steps); no effect on instant procs
+  (§6). *Engine: not modeled yet.*
+- **Punch through** (`punch_through_bonus`, **meters** — wiki `Punch_Through`):
+  pierces enemies/geometry up to the meter budget; each pierced target
+  subtracts remaining potential; **every pierced target takes FULL damage**
+  (no per-hit loss). Hitscan pierces instantly; single-target sim = no-op
+  (§7). *Engine: not modeled yet.*
+- **Magazine capacity** (`magazine_capacity_bonus`): +% of the BASE magazine
+  (additive bucket, floored to a whole round); feeds reload cadence / sustain
+  (§9), not per-hit damage. *Engine: not modeled yet.*
+- **Zoom** (`zoom_bonus`): pistol zoom is pure FOV — **no damage** (unlike
+  sniper zoom's additive headshot-damage bonus). Correctly a no-op.
+- **Ammo mutation / conversion** (recorded `kind: unmodeled`): ammo-economy
+  only, no damage.
+- **Accuracy / recoil / on-equip handling**: aim inputs for the future
+  shooter model (recoil is already an `Indirect` bucket, §mods_data); no
+  theoretical-DPS effect (Magnum Force −55% accuracy downside, Reflex Draw
+  on-equip, …).
+
 **Source:** wiki + measured. **Status:** unverified. **High-risk** (CORE.md §3).
 
 ---

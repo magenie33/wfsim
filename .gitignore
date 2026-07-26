@@ -6,6 +6,10 @@ Cargo.lock.orig
 # mise
 .mise.local.toml
 
+# Python (scripts/)
+__pycache__/
+*.pyc
+
 # Editor / OS
 .idea/
 .vscode/
