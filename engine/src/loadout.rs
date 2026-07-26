@@ -71,6 +71,12 @@ pub enum ModEffect {
     Element(DamageType, f64),
     /// Combined-element mod (Magnetic Might): added outside the hierarchy.
     CombinedElement(DamageType, f64),
+    /// PHYSICAL damage mod (Impact / Puncture / Slash). Scales the BASE of that
+    /// physical type — `base_t × (1 + Σ)` — a SEPARATE multiplier that is
+    /// MULTIPLICATIVE with base damage (Serration applies after), and does NOT
+    /// enter the elemental hierarchy. No effect on a type the weapon lacks
+    /// (wiki Damage/Calculation; MECHANICS.md §2).
+    Physical(DamageType, f64),
     /// Galvanized Diffusion's on-kill multishot stacks.
     OnKillMultishot {
         per_stack: f64,
@@ -184,6 +190,7 @@ impl ModEffect {
             StatusDamage(v) => format!("{} Status Damage", pct(v)),
             Element(t, v) => format!("{} {t:?}", pct(v)),
             CombinedElement(t, v) => format!("{} {t:?}", pct(v)),
+            Physical(t, v) => format!("{} {t:?}", pct(v)),
             OnKillMultishot { per_stack, max_stacks, duration } => {
                 format!("On Kill: {} Multishot per stack ×{max_stacks}, {duration}s", pct(per_stack))
             }
@@ -530,6 +537,8 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
     let mut elem_bonus: Vec<(DamageType, f64)> = Vec::new();
     let mut indirect: Vec<(IndirectStat, f64)> = Vec::new();
     let mut faction_bonus: Vec<(Faction, f64)> = Vec::new();
+    // Physical (IPS) bonuses, per type — scale the base of that physical type.
+    let mut phys_bonus: Vec<(DamageType, f64)> = Vec::new();
 
     for m in mods {
         for e in &m.effects {
@@ -542,6 +551,15 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                 ModEffect::FireRate(v) => fr += v,
                 ModEffect::ReloadSpeed(v) => rl += v,
                 ModEffect::StatusDamage(v) => sd += v,
+                // Physical (IPS) bonus: accumulate per type; applied to the
+                // BASE physical component below (NOT the elemental hierarchy).
+                ModEffect::Physical(t, v) => {
+                    if let Some(x) = phys_bonus.iter_mut().find(|(a, _)| *a == t) {
+                        x.1 += v;
+                    } else {
+                        phys_bonus.push((t, v));
+                    }
+                }
                 ModEffect::Element(t, v) | ModEffect::CombinedElement(t, v) => {
                     if let Some(x) = elem_bonus.iter_mut().find(|(a, _)| *a == t) {
                         x.1 += v;
@@ -646,7 +664,11 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         if t.is_primary_element() {
             input.push(t, v * scale);
         } else {
-            physical.add(t, v * scale);
+            // Physical (IPS): base_t × (1 + Σ physical mods) × (1 + base dmg).
+            // `scale` carries the base-damage multiplier; the physical bucket is
+            // multiplicative with it (wiki Damage/Calculation).
+            let pb = phys_bonus.iter().find(|(a, _)| *a == t).map_or(0.0, |(_, x)| *x);
+            physical.add(t, v * scale * (1.0 + pb));
         }
     }
 
@@ -837,6 +859,22 @@ mod tests {
         // Magazine capacity is +% of base, floored to whole rounds.
         assert!((p.magazine_size - (baseline * 1.60).floor()).abs() < 1e-9);
         assert!((p.status_duration_mult - 1.40).abs() < 1e-9);
+    }
+
+    #[test]
+    fn physical_mod_scales_base_of_its_type_not_the_element_hierarchy() {
+        // A +90% Impact physical mod scales the BASE Impact by ×1.9 and does
+        // NOT add modified_base as a combined element (the old, wrong behavior).
+        // Puncture/Slash are untouched; the total rises only by the impact gain.
+        let base = WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy);
+        let p0 = resolve(&base, &[], StackPolicy::AssumedMax);
+        let m_imp = m("phys", vec![ModEffect::Physical(Impact, 0.90)]);
+        let p1 = resolve(&base, &[&m_imp], StackPolicy::AssumedMax);
+        assert!((p1.damage.get(Impact) / p0.damage.get(Impact) - 1.90).abs() < 1e-9);
+        assert!((p1.damage.get(Puncture) - p0.damage.get(Puncture)).abs() < 1e-9);
+        assert!((p1.damage.get(Slash) - p0.damage.get(Slash)).abs() < 1e-9);
+        // Total delta == exactly the impact increase (no element injected).
+        assert!((p1.damage.total() - p0.damage.total() - 0.90 * p0.damage.get(Impact)).abs() < 1e-6);
     }
 
     #[test]

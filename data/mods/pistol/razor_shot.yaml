@@ -10,7 +10,7 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponSlashDamageMod
 description: "+X% Slash"
 
 effects:
-  - kind: elemental_damage_bonus
+  - kind: physical_damage_bonus
     element: slash
     rank0: 0.15
     rankMax: 0.9

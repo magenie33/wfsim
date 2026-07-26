@@ -10,7 +10,10 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/Expert/WeaponFireDamageModExpert
 description: "+X% Heat"
 
 effects:
-  - { kind: elemental_damage_bonus, element: heat, rank0: 0.15, rankMax: 1.65 }
+  - kind: elemental_damage_bonus
+    element: heat
+    rank0: 0.15
+    rankMax: 1.65
 
 family: heated_charge
 incompatible_with: [heated_charge]

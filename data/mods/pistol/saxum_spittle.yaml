@@ -10,7 +10,7 @@ internal_name: /Lotus/Upgrades/Mods/Sets/Femur/FemurSpittleMod
 description: "+X% Impact\n+X% Status Chance"
 
 effects:
-  - kind: elemental_damage_bonus
+  - kind: physical_damage_bonus
     element: impact
     rank0: 0.15
     rankMax: 0.9

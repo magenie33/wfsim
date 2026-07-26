@@ -10,7 +10,7 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponEventPunctureDamageMod
 description: "+X% Puncture"
 
 effects:
-  - kind: elemental_damage_bonus
+  - kind: physical_damage_bonus
     element: puncture
     rank0: 0.2
     rankMax: 1.2

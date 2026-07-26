@@ -10,8 +10,13 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/DualStat/FireEventPistolMod
 description: "+X% Heat\n+X% Status Chance"
 
 effects:
-  - { kind: elemental_damage_bonus, element: heat, rank0: 0.15, rankMax: 0.60 }
-  - { kind: status_chance_bonus, rank0: 0.15, rankMax: 0.60 }
+  - kind: elemental_damage_bonus
+    element: heat
+    rank0: 0.15
+    rankMax: 0.60
+  - kind: status_chance_bonus
+    rank0: 0.15
+    rankMax: 0.60
 
 source:
   url: https://wiki.warframe.com/w/Scorch_(Mod)

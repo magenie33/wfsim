@@ -14,7 +14,9 @@ description: "-60% Weapon Recoil"
 # here (the sim assumes perfect aim), so this is intentionally unmodeled —
 # the mod exists for the builder's exilus slot.
 effects:
-  - { kind: recoil_reduction, rank0: -0.10, rankMax: -0.60 }
+  - kind: recoil_reduction
+    rank0: -0.10
+    rankMax: -0.60
 
 family: steady_hands
 incompatible_with: [primed_steady_hands]

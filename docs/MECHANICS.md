@@ -126,6 +126,22 @@ defined position (Frenzy appends "+100% Toxin" at the **end** of the order).
 **Ammo efficiency.** `shots_per_ammo = 1 / (1 - e)`; sources add (except
 Energized Munitions, multiplicative); `e = 1.0` → infinite ammo.
 
+**Physical (IPS) damage mods vs elemental mods — DIFFERENT math** (wiki
+`Damage/Calculation`; engine `loadout::resolve`). A physical mod (+X%
+Impact/Puncture/Slash, e.g. Rupture) scales the BASE of THAT physical type and
+is a SEPARATE multiplier, multiplicative with base damage, and NEVER enters the
+elemental hierarchy:
+```
+type_final = base_of_type × (1 + Σ physical_mods_for_type) × (1 + Σ base_damage)
+```
+An elemental mod instead adds `modified_base × Σ` of that element and combines
+via the hierarchy (§3). Two consequences: a physical mod does NOTHING to a type
+the weapon lacks (base 0 → 0), and it never forms a combined element. Worked
+(30 base Impact, +120% Impact, +90% Serration): `30 × 2.2 × 1.9 = 125.4`
+(before per-type quantization, which rounds the `30 × 2.2` step). Modeled as
+`ModEffect::Physical(type, v)` — data kind `physical_damage_bonus` (the loader
+also routes an `elemental_damage_bonus` with an IPS element here).
+
 **Utility / indirect mod buckets** (pistol-pool import 2026-07-26,
 `data/mods/pistol/`). The declarative pool records these kinds; each carries
 the REAL mechanic even where the engine does not consume it yet (the loader

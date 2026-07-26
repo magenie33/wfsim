@@ -3,9 +3,12 @@
 // official polarity icons from the wiki, art from WFCD.
 
 const $ = (id) => document.getElementById(id);
-const CDN = "https://cdn.warframestat.us/img/";
-// Omni (universal) polarity uses the wiki's "Any" symbol.
-const POL = (p) => `https://wiki.warframe.com/w/Special:FilePath/${p === "Omni" ? "Any" : p}_Pol.svg`;
+// Art is served through our OWN origin (/img proxy: local disk cache, WFCD
+// fallback) instead of hotlinking the CDN — fast, offline-capable, one source.
+const CDN = "/img/";
+// Polarity icons are vendored locally (/pol) — no more slow wiki 302 redirects.
+// Omni (universal) uses the "Any" symbol (a PNG); the rest are SVGs.
+const POL = (p) => `/pol/${p === "Omni" ? "Any" : p}_Pol.${p === "Omni" ? "png" : "svg"}`;
 // Polarities available on GUN slots. Zenurik/Unairu/Penjaga are Warframe-augment
 // / melee-stance / companion-ability polarities — not gun slots. "Omni" is the
 // Omni Forma universal polarity (matches any mod EXCEPT Umbra mods).

@@ -298,6 +298,66 @@ fn respond_json(stream: &mut TcpStream, value: &Value) -> std::io::Result<()> {
     )
 }
 
+/// Serve a static asset (icon/image) with a long cache lifetime.
+fn respond_asset(stream: &mut TcpStream, content_type: &str, body: &[u8]) -> std::io::Result<()> {
+    let header = format!(
+        "HTTP/1.1 200 OK\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nConnection: close\r\nCache-Control: public, max-age=604800\r\n\r\n",
+        body.len()
+    );
+    stream.write_all(header.as_bytes())?;
+    stream.write_all(body)?;
+    stream.flush()
+}
+
+/// 302 redirect (used as the /img CDN fallback when the local cache misses).
+fn respond_redirect(stream: &mut TcpStream, location: &str) -> std::io::Result<()> {
+    let header = format!(
+        "HTTP/1.1 302 Found\r\nLocation: {location}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    );
+    stream.write_all(header.as_bytes())?;
+    stream.flush()
+}
+
+// Polarity/damage icons are vendored (tiny, stable) so they load instantly —
+// no more slow wiki `Special:FilePath` 302 redirects.
+const POL_MADURAI: &[u8] = include_bytes!("static/pol/Madurai_Pol.svg");
+const POL_NARAMON: &[u8] = include_bytes!("static/pol/Naramon_Pol.svg");
+const POL_VAZARIN: &[u8] = include_bytes!("static/pol/Vazarin_Pol.svg");
+const POL_UMBRA: &[u8] = include_bytes!("static/pol/Umbra_Pol.svg");
+const POL_ANY: &[u8] = include_bytes!("static/pol/Any_Pol.png");
+
+/// Serve a vendored polarity icon by filename.
+fn pol_icon(file: &str) -> Option<(&'static [u8], &'static str)> {
+    Some(match file {
+        "Madurai_Pol.svg" => (POL_MADURAI, "image/svg+xml"),
+        "Naramon_Pol.svg" => (POL_NARAMON, "image/svg+xml"),
+        "Vazarin_Pol.svg" => (POL_VAZARIN, "image/svg+xml"),
+        "Umbra_Pol.svg" => (POL_UMBRA, "image/svg+xml"),
+        "Any_Pol.png" => (POL_ANY, "image/png"),
+        _ => return None,
+    })
+}
+
+/// Weapon/mod/arcane art: served from a local on-disk cache (web/cache/img/,
+/// gitignored, pre-warmed by scripts/fetch_images.py) so it loads locally and
+/// works offline. On a cache miss, 302-redirect to the WFCD CDN — so it always
+/// works, and DE art never has to be committed to the repo. `name` is a bare
+/// filename (traversal-guarded).
+fn img_response(stream: &mut TcpStream, name: &str) -> std::io::Result<()> {
+    let safe = !name.is_empty()
+        && name.len() < 128
+        && name.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'));
+    if safe {
+        let path = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/cache/img"))
+            .join(name);
+        if let Ok(bytes) = std::fs::read(&path) {
+            let ct = if name.ends_with(".png") { "image/png" } else { "image/jpeg" };
+            return respond_asset(stream, ct, &bytes);
+        }
+    }
+    respond_redirect(stream, &format!("https://cdn.warframestat.us/img/{name}"))
+}
+
 fn handle(mut stream: TcpStream) -> std::io::Result<()> {
     let Some(req) = read_request(&stream)? else {
         return Ok(());
@@ -323,6 +383,11 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
             let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
             respond_json(&mut stream, &panel_json(&value))
         }
+        ("GET", p) if p.starts_with("/pol/") => match pol_icon(&p[5..]) {
+            Some((bytes, ct)) => respond_asset(&mut stream, ct, bytes),
+            None => respond(&mut stream, "404 Not Found", "text/plain; charset=utf-8", b"not found"),
+        },
+        ("GET", p) if p.starts_with("/img/") => img_response(&mut stream, &p[5..]),
         _ => respond(&mut stream, "404 Not Found", "text/plain; charset=utf-8", b"not found"),
     }
 }
@@ -580,6 +645,10 @@ fn panel_json(v: &Value) -> Value {
                 ReloadSpeed(x) => push("reload", x, None),
                 Element(t, x) | CombinedElement(t, x) => {
                     src.push(("elements", name.clone(), x, Some(format!("{t:?}"))));
+                }
+                // Physical (IPS) mod: scales the base of that physical type.
+                Physical(t, x) => {
+                    src.push(("physical", name.clone(), x, Some(format!("{t:?}"))));
                 }
                 OnKillMultishot { per_stack, max_stacks, .. } => match policy {
                     StackPolicy::BaseOnly => conditionals.push(json!({

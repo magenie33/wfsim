@@ -119,12 +119,17 @@ fn effect(v: &Value) -> Option<ModEffect> {
             }
             ModEffect::FactionDamage(fac, max("rankMax"))
         }
-        "elemental_damage_bonus" | "combined_element_bonus" => {
+        "elemental_damage_bonus" | "combined_element_bonus" | "physical_damage_bonus" => {
             let e = element(v.get("element").and_then(Value::as_str)?)?;
-            if e.is_primary_element() {
-                ModEffect::Element(e, max("rankMax"))
-            } else {
-                ModEffect::CombinedElement(e, max("rankMax"))
+            // Physical (IPS) types are a DIFFERENT mechanic from elements: they
+            // scale the base of that type and never combine — route to Physical
+            // regardless of the kind name.
+            match e {
+                DamageType::Impact | DamageType::Puncture | DamageType::Slash => {
+                    ModEffect::Physical(e, max("rankMax"))
+                }
+                _ if e.is_primary_element() => ModEffect::Element(e, max("rankMax")),
+                _ => ModEffect::CombinedElement(e, max("rankMax")),
             }
         }
         "on_headshot_crit_chance" => ModEffect::OnHeadshotCritChance {

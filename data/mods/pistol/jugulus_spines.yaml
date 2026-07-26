@@ -10,7 +10,7 @@ internal_name: /Lotus/Upgrades/Mods/Sets/Boneblade/BonebladeSpinesMod
 description: "+X% Puncture\n+X% Status Chance"
 
 effects:
-  - kind: elemental_damage_bonus
+  - kind: physical_damage_bonus
     element: puncture
     rank0: 0.15
     rankMax: 0.9
