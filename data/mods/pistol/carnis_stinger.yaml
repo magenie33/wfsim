@@ -8,23 +8,12 @@ base_drain: 4                 # max drain 9 at rank 5
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Sets/Ashen/AshenStingerMod
 
-# Effects parsed from warframestat levelStats into the unified schema.
-# UNVERIFIED — cross-check on the wiki. Kinds flagged TODO(engine) are
-# recorded but not modeled yet; the engine implements them over time
-# (loader ignores unknown kinds, so the mod still loads).
 effects:
   - kind: elemental_damage_bonus
     element: slash
-    per_rank: 0.15
     max: 0.9
-    # from: +90% Slash
   - kind: status_chance_bonus
-    per_rank: 0.1
     max: 0.6
-    # from: +60% Status Chance
 
 source:
   url: https://wiki.warframe.com/w/Carnis_Stinger
-  note: Skeleton from scripts/gen_pistol_mods.py (warframestat API).
-    Effects auto-parsed + UNVERIFIED — cross-check drain/polarity/rarity
-    and effect kinds on the wiki (warframestat has stale copies).

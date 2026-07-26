@@ -8,18 +8,10 @@ base_drain: 6                 # max drain 9 at rank 3
 max_rank: 3
 internal_name: /Lotus/Upgrades/Mods/Pistol/ProjectileExplosionChanceMod
 
-# Effects parsed from warframestat levelStats into the unified schema.
-# UNVERIFIED — cross-check on the wiki. Kinds flagged TODO(engine) are
-# recorded but not modeled yet; the engine implements them over time
-# (loader ignores unknown kinds, so the mod still loads).
 effects:
-  - kind: unmodeled   # TODO(engine): mechanic not modeled yet
-    per_rank: 0.075
+  - kind: unmodeled
     max: 0.3
-    # from: +30% Chance to Explode (Use with Caution)
+    desc: "+30% Chance to Explode (Use with Caution)"
 
 source:
   url: https://wiki.warframe.com/w/Cannonade
-  note: Skeleton from scripts/gen_pistol_mods.py (warframestat API).
-    Effects auto-parsed + UNVERIFIED — cross-check drain/polarity/rarity
-    and effect kinds on the wiki (warframestat has stale copies).

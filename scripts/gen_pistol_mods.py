@@ -57,22 +57,23 @@ ELEMENTS = {
 }
 FACTIONS = ["grineer", "corpus", "infested", "corrupted", "orokin", "murmur"]
 
-# (matcher substring, kind, is_percent, engine_modeled)
+# (matcher substring, kind, is_percent) — all these kinds are engine-modeled.
 DESCRIPTORS = [
-    ("critical chance", "crit_chance_bonus", True, True),
-    ("critical damage", "crit_damage_bonus", True, True),
-    ("status chance", "status_chance_bonus", True, True),
-    ("status duration", "status_duration_bonus", True, False),
-    ("multishot", "multishot_bonus", True, True),
-    ("fire rate", "fire_rate_bonus", True, True),
-    ("reload speed", "reload_speed_bonus", True, True),
-    ("magazine capacity", "magazine_capacity_bonus", True, False),
-    ("ammo maximum", "ammo_max_bonus", True, True),
-    ("punch through", "punch_through_bonus", False, False),  # meters
-    ("recoil", "recoil_reduction", True, True),
-    ("zoom", "zoom_bonus", True, False),
-    ("projectile", "projectile_speed_bonus", True, True),
-    ("holster", "holstered_reload", True, True),
+    ("critical chance", "crit_chance_bonus", True),
+    ("critical damage", "crit_damage_bonus", True),
+    ("status chance", "status_chance_bonus", True),
+    ("status duration", "status_duration_bonus", True),
+    ("multishot", "multishot_bonus", True),
+    ("fire rate", "fire_rate_bonus", True),
+    ("reload speed", "reload_speed_bonus", True),
+    ("magazine capacity", "magazine_capacity_bonus", True),
+    ("ammo maximum", "ammo_max_bonus", True),
+    ("punch through", "punch_through_bonus", False),  # meters
+    ("recoil", "recoil_reduction", True),
+    ("zoom", "zoom_bonus", True),
+    ("accuracy", "accuracy_bonus", True),
+    ("projectile", "projectile_speed_bonus", True),
+    ("holster", "holstered_reload", True),
 ]
 
 
@@ -90,30 +91,33 @@ def parse_stat(text: str):
         val = (num / 100.0) if num is not None else None
     for fac in FACTIONS:
         if fac in low and "damage" in low:
-            return {"kind": "faction_damage_bonus", "faction": fac, "max": val,
-                    "_modeled": False, "_raw": text}
+            return {"kind": "faction_damage_bonus", "faction": fac, "max": val}
     for word, el in ELEMENTS.items():
         if word in low:
-            return {"kind": "elemental_damage_bonus", "element": el, "max": val,
-                    "_modeled": True, "_raw": text}
-    for sub, kind, pct, modeled in DESCRIPTORS:
+            return {"kind": "elemental_damage_bonus", "element": el, "max": val}
+    for sub, kind, pct in DESCRIPTORS:
         if sub in low:
-            return {"kind": kind, "max": (val if pct else num), "_modeled": modeled, "_raw": text}
+            return {"kind": kind, "max": (val if pct else num)}
     if "damage" in low and val is not None:
-        return {"kind": "base_damage_bonus", "max": val, "_modeled": True, "_raw": text}
-    return {"kind": "unmodeled", "max": val, "_modeled": False, "_raw": text}
+        return {"kind": "base_damage_bonus", "max": val}
+    # Unrecognized: keep the wiki text in a `desc` FIELD (not a comment) so
+    # nothing is lost and the data stays clean.
+    return {"kind": "unmodeled", "max": val, "desc": text}
 
 
 def parse_effects(desc: str) -> list:
-    """Structured effects from the wiki max-rank Description (one per line)."""
+    """Structured effects from the wiki max-rank Description (one per line).
+
+    The Lua module stores multi-effect descriptions with LITERAL escape
+    sequences (`"+165% Damage\\r\\n-55% Accuracy"`), not real newlines — split on
+    both so each stat becomes its own effect."""
     if not desc:
         return []
-    lines = [ln.strip() for ln in re.split(r"\r?\n", desc) if ln.strip()]
+    lines = [ln.strip() for ln in re.split(r"\\r\\n|\\n|\r?\n", desc) if ln.strip()]
     return [parse_stat(ln) for ln in lines]
 
 
 def yaml_effect(eff) -> list:
-    todo = "" if eff.get("_modeled") else "   # TODO(engine): mechanic not modeled yet"
     fields = [f"kind: {eff['kind']}"]
     if eff.get("element"):
         fields.append(f"element: {eff['element']}")
@@ -121,10 +125,11 @@ def yaml_effect(eff) -> list:
         fields.append(f"faction: {eff['faction']}")
     if eff.get("max") is not None:
         fields.append(f"max: {round(eff['max'], 4)}")
-    lines = [f"  - {fields[0]}{todo}"]
+    if eff.get("desc"):
+        fields.append(f'desc: "{eff["desc"]}"')
+    lines = [f"  - {fields[0]}"]
     for fpart in fields[1:]:
         lines.append(f"    {fpart}")
-    lines.append(f"    # from wiki: {eff['_raw']}")
     return lines
 
 
@@ -164,34 +169,35 @@ def skeleton(name: str, w: dict) -> str:
     if exilus:
         lines.append("exilus: true")
     lines.append(f"internal_name: {iname}")
-    lines += [
-        "",
-        "# Effects parsed from the wiki max-rank Description into the unified",
-        "# schema. Kinds flagged TODO(engine) are recorded but not modeled yet;",
-        "# the engine implements them over time (loader ignores unknown kinds).",
-    ]
+    lines.append("")
     effects = parse_effects(w.get("Description"))
     if effects:
         lines.append("effects:")
         for eff in effects:
             lines += yaml_effect(eff)
     else:
-        lines += ["# No parseable Description — fill by hand from the wiki.", "effects: []"]
-    lines += [
-        "",
-        "source:",
-        f"  url: {wiki}",
-        "  note: Skeleton from scripts/gen_pistol_mods.py (wiki Module:Mods/data).",
-        "    Mechanical fields are wiki-authoritative; effect VALUES are auto-parsed",
-        "    from the Description and should be spot-checked when modeled.",
-        "",
-    ]
+        lines.append("effects: []")
+    lines += ["", "source:", f"  url: {wiki}", ""]
     return "\n".join(lines)
+
+
+def is_auto_generated(path: str) -> bool:
+    """True if this file was produced by an earlier gen run (safe to overwrite).
+
+    Detects the historical dev note; hand-authored mods (with modeled
+    stacking_buff / condition_overload effects and deliberate corrections) never
+    carry it, so `--force` never clobbers them."""
+    if not os.path.exists(path):
+        return False
+    with open(path, encoding="utf-8") as fh:
+        return "gen_pistol_mods.py" in fh.read()
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--write", action="store_true", help="write skeletons (default: dry run)")
+    ap.add_argument("--force", action="store_true",
+                    help="also regenerate EXISTING auto-generated files (never hand-authored ones)")
     ap.add_argument("--cache", help="path to a saved Module:Mods/data dump")
     ap.add_argument("--out", default=PISTOL_DIR, help="output dir")
     args = ap.parse_args()
@@ -210,33 +216,39 @@ def main():
     # Existing pool files whose wiki Type is NOT Pistol → wrong-type, prune.
     wrong_type = [n for n, w in mods.items()
                   if n.lower() in have and (w.get("Type") or "") != "Pistol"]
-    new = {n: w for n, w in pistol.items() if n.lower() not in have}
-
-    bad = [n for n, w in new.items()
-           if (w.get("Polarity") or "").lower() not in POLARITIES
-           or (w.get("Rarity") or "").lower() not in RARITIES]
+    # Candidates: brand-new mods, plus (with --force) existing AUTO-generated
+    # files to refresh from the wiki. Hand-authored files are never touched.
+    writing = {}
+    regen = 0
+    for n, w in pistol.items():
+        if (w.get("Polarity") or "").lower() not in POLARITIES \
+           or (w.get("Rarity") or "").lower() not in RARITIES:
+            continue
+        path = os.path.join(args.out, wiki_mods.slug(n) + ".yaml")
+        if n.lower() not in have:
+            writing[n] = (w, path, "new")
+        elif args.force and is_auto_generated(path):
+            writing[n] = (w, path, "regen")
+            regen += 1
 
     print(f"=== wiki Module:Mods/data (Type == Pistol) ===")
     print(f"total pistol mods in wiki : {len(pistol)}")
-    print(f"already curated           : {len(pistol) - len(new)}")
-    print(f"NEW skeletons             : {len(new) - len(bad)}")
+    print(f"NEW skeletons             : {sum(1 for v in writing.values() if v[2] == 'new')}")
+    print(f"regenerate (auto, --force): {regen}")
     if wrong_type:
         print(f"\n!! {len(wrong_type)} EXISTING pool files are NOT Type=Pistol in the wiki "
               f"(prune candidates): {sorted(wrong_type)}")
-    if bad:
-        print(f"\n!! {len(bad)} skipped (polarity/rarity outside loader vocab): {sorted(bad)}")
 
-    writing = {n: w for n, w in new.items() if n not in bad}
-    print(f"\n{'writing' if args.write else 'would create'} {len(writing)} files:")
+    print(f"\n{'writing' if args.write else 'would write'} {len(writing)} files:")
     for n in sorted(writing):
-        path = os.path.join(args.out, wiki_mods.slug(n) + ".yaml")
+        w, path, why = writing[n]
         rel = os.path.relpath(path, ROOT) if path.startswith(ROOT) else path
-        print(f"   {'WRITE' if args.write else 'dry '} {rel}")
+        print(f"   {'WRITE' if args.write else 'dry '} [{why}] {rel}")
         if args.write:
             with open(path, "w", encoding="utf-8", newline="\n") as fh:
-                fh.write(skeleton(n, writing[n]))
+                fh.write(skeleton(n, w))
     if not args.write:
-        print("\n(dry run — pass --write to create these skeleton files)")
+        print("\n(dry run — pass --write to apply)")
 
 
 if __name__ == "__main__":

@@ -9,18 +9,9 @@ max_rank: 5
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponPistolZoomFovMod
 
-# Effects parsed from warframestat levelStats into the unified schema.
-# UNVERIFIED — cross-check on the wiki. Kinds flagged TODO(engine) are
-# recorded but not modeled yet; the engine implements them over time
-# (loader ignores unknown kinds, so the mod still loads).
 effects:
-  - kind: zoom_bonus   # TODO(engine): mechanic not modeled yet
-    per_rank: 0.2
-    max: 2.2
-    # from: +220% Zoom
+  - kind: zoom_bonus
+    max: 0.8
 
 source:
   url: https://wiki.warframe.com/w/Hawk_Eye
-  note: Skeleton from scripts/gen_pistol_mods.py (warframestat API).
-    Effects auto-parsed + UNVERIFIED — cross-check drain/polarity/rarity
-    and effect kinds on the wiki (warframestat has stale copies).
