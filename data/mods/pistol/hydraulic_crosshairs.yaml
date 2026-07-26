@@ -7,12 +7,12 @@ polarity: madurai
 base_drain: 2                 # max drain 7 at rank 5
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Pistol/Event/CritChanceWhileAimingPistolMod
+description: "On Headshot:\n+X% Critical Chance when Aiming for 9s"
 
 effects:
-  - kind: unmodeled
-    desc: "On Headshot:"
-  - kind: crit_chance_bonus
-    max: 1.35
+  - kind: on_headshot_crit_chance
+    bonus: 1.35
+    duration_seconds: 9
 
 source:
   url: https://wiki.warframe.com/w/Hydraulic_Crosshairs

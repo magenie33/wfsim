@@ -8,9 +8,11 @@ base_drain: 0                 # max drain 10 at rank 10
 max_rank: 10
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/Expert/WeaponPistolConvertAmmoModExpert
+description: "Converts Primary ammo pickups to X% of Ammo Pick Up."
 
 effects:
   - kind: unmodeled
+    rank0: 0.08
     max: 0.92
     desc: "Converts Primary ammo pickups to 92% of Ammo Pick Up."
 

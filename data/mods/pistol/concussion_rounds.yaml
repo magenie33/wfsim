@@ -7,10 +7,12 @@ polarity: naramon
 base_drain: 2                 # max drain 7 at rank 5
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponImpactDamageMod
+description: "+X% Impact"
 
 effects:
   - kind: elemental_damage_bonus
     element: impact
+    rank0: 0.15
     max: 0.9
 
 source:

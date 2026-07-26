@@ -8,11 +8,11 @@ base_drain: 2                 # max drain 7 at rank 5
 max_rank: 5
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/Event/AccuracyWhileAimingPistolMod
+description: "On Hit:\n+X% Accuracy when Aiming for 9s"
 
 effects:
-  - kind: unmodeled
-    desc: "On Hit:"
-  - kind: accuracy_bonus
+  - kind: on_hit_accuracy
+    rank0: 0.05
     max: 0.3
 
 source:

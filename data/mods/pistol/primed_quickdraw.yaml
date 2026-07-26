@@ -7,9 +7,11 @@ polarity: naramon
 base_drain: 2                 # max drain 12 at rank 10
 max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Pistol/Expert/WeaponReloadSpeedModExpert
+description: "+X% Reload Speed"
 
 effects:
   - kind: reload_speed_bonus
+    rank0: 0.08
     max: 0.88
 
 source:

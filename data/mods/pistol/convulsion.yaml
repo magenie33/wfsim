@@ -4,12 +4,13 @@ name: Convulsion
 mod_type: pistol
 rarity: uncommon
 polarity: naramon
-base_drain: 4
-max_rank: 5                   # drain 4..9
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponElectricityDamageMod
+description: "+X% Electricity"
 
 effects:
-  - { kind: elemental_damage_bonus, element: electricity, per_rank: 0.15, max: 0.90 }
+  - { kind: elemental_damage_bonus, element: electricity, rank0: 0.15, max: 0.90 }
 family: convulsion
 incompatible_with: [primed_convulsion, flawed_convulsion]
 

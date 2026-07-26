@@ -7,10 +7,11 @@ polarity: madurai
 base_drain: 4                 # max drain 14 at rank 10
 max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponFireIterationsSPMod
+description: "+X% Multishot\nOn Kill:\n+X% Multishot for 20s. Stacks up to 4x."
 
 effects:
   - kind: multishot_bonus
-    per_rank: 0.10
+    rank0: 0.10
     max: 1.10                  # +110% unconditional at rank 10
   - kind: stacking_buff
     trigger: on_kill

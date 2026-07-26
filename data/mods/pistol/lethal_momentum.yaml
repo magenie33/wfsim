@@ -8,11 +8,12 @@ base_drain: 4                 # max drain 7 at rank 3
 max_rank: 3
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponProjectileSpeedMod
+description: "+X% Projectile Speed"
 
 # +40% Projectile Speed (non-hitscan weapons only). The sim treats all shots
 # as instant-hit at a fixed range, so flight time is unmodeled.
 effects:
-  - { kind: projectile_speed_bonus, per_rank: 0.10, max: 0.40 }
+  - { kind: projectile_speed_bonus, rank0: 0.10, max: 0.40 }
 
 source:
   url: https://wiki.warframe.com/w/Lethal_Momentum

@@ -8,10 +8,12 @@ base_drain: 4                 # max drain 9 at rank 5
 max_rank: 5
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponPistolZoomFovMod
+description: "+80% Zoom"
 
 effects:
   - kind: zoom_bonus
-    max: 0.8
+    rank0: 0.2
+    max: 1.2
 
 source:
   url: https://wiki.warframe.com/w/Hawk_Eye

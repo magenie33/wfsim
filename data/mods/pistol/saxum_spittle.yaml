@@ -7,12 +7,15 @@ polarity: naramon
 base_drain: 4                 # max drain 9 at rank 5
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Sets/Femur/FemurSpittleMod
+description: "+X% Impact\n+X% Status Chance"
 
 effects:
   - kind: elemental_damage_bonus
     element: impact
+    rank0: 0.15
     max: 0.9
   - kind: status_chance_bonus
+    rank0: 0.1
     max: 0.6
 
 source:

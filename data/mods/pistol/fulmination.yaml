@@ -7,12 +7,11 @@ polarity: madurai
 base_drain: 6                 # max drain 9 at rank 3
 max_rank: 3
 internal_name: /Lotus/Upgrades/Mods/Pistol/Event/AmbulasEvent/SecondaryExplosionRadiusMod
+description: "Improves the Blast Radius of weapons with Radial Attacks.\n+X% Blast Range"
 
 effects:
-  - kind: elemental_damage_bonus
-    element: blast
-  - kind: elemental_damage_bonus
-    element: blast
+  - kind: blast_radius_bonus
+    rank0: 0.06
     max: 0.24
 
 source:

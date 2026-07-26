@@ -7,13 +7,14 @@ polarity: naramon
 base_drain: 4                 # max drain 9 at rank 5
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Pistol/DualStat/CorruptedCritDamagePistol
+description: "+X% Critical Damage\n-X% Damage"
 
 # A trade-off mod (corrupted): +crit damage at the cost of base damage. The
 # downside is the SAME additive base-damage bucket as Hornet Strike, so it is
 # modeled as a negative base_damage_bonus (not a separate penalty layer).
 effects:
-  - { kind: crit_damage_bonus,  per_rank: 0.10,   max: 0.60 }
-  - { kind: base_damage_bonus,  per_rank: -0.025, max: -0.15 }
+  - { kind: crit_damage_bonus,  rank0: 0.10,   max: 0.60 }
+  - { kind: base_damage_bonus,  rank0: -0.025, max: -0.15 }
 
 source:
   url: https://wiki.warframe.com/w/Hollow_Point

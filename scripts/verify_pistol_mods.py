@@ -37,10 +37,21 @@ def read_yaml(path: str) -> dict:
     return out
 
 
+def clean_desc(raw):
+    """The verbatim in-game mod text: strip DE `<...>` colour markup, normalize
+    the Lua literal `\\r\\n` escapes to `\\n` (so the YAML double-quoted string
+    renders real line breaks), escape quotes. Faithful to what the game shows."""
+    if not raw:
+        return None
+    s = re.sub(r"<[^>]*>", "", raw)
+    s = s.replace("\\r\\n", "\\n").replace("\r\n", "\\n").replace("\r", "").replace("\n", "\\n")
+    return s.replace('"', '\\"').strip()
+
+
 def reconcile_file(path: str, w: dict) -> list:
     """Rewrite the MECHANICAL field lines of one yaml from the wiki entry
-    (drain/max_rank/polarity/rarity/internal_name/exilus), preserving effects
-    and comments. Returns a list of change strings. Wiki is authoritative."""
+    (drain/max_rank/polarity/rarity/internal_name/exilus) and ensure a verbatim
+    `description:`, preserving effects and comments. Wiki is authoritative."""
     with open(path, encoding="utf-8") as fh:
         lines = fh.readlines()
     pol = (w.get("Polarity") or "").lower()
@@ -48,6 +59,7 @@ def reconcile_file(path: str, w: dict) -> list:
     drain = w.get("BaseDrain")
     maxr = w.get("MaxRank")
     iname = w.get("InternalName")
+    desc = clean_desc(w.get("Description"))
     is_ex = bool(w.get("IsExilus"))
     changes = []
     out, seen = [], set()
@@ -83,6 +95,8 @@ def reconcile_file(path: str, w: dict) -> list:
             if cur != (iname or "null"):
                 changes.append(f"internal_name {cur} -> {iname}")
             out.append(f"{indent}internal_name: {iname}\n")
+        elif key == "description":
+            out.append(f'{indent}description: "{desc}"\n')  # refresh from wiki
         elif key == "exilus":
             # Keep/normalize when the wiki says exilus; drop otherwise.
             if is_ex:
@@ -102,6 +116,12 @@ def reconcile_file(path: str, w: dict) -> list:
         if idx is not None:
             out.insert(idx + 1, "exilus: true\n")
             changes.append("added exilus: true (wiki IsExilus)")
+    # Ensure the verbatim in-game description exists (after internal_name).
+    if "description" not in seen and desc:
+        idx = next((i for i, l in enumerate(out) if l.lstrip().startswith("internal_name:")), None)
+        if idx is not None:
+            out.insert(idx + 1, f'description: "{desc}"\n')
+            changes.append("added description")
     if changes:
         with open(path, "w", encoding="utf-8", newline="\n") as fh:
             fh.writelines(out)

@@ -4,13 +4,14 @@ name: Pistol Elementalist
 mod_type: pistol
 rarity: uncommon
 polarity: vazarin
-base_drain: 4
-max_rank: 5                   # drain 4..9
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Pistol/PistolStatusDamageDuoMod
+description: "+X% Status Damage\n+X% Reload Speed"
 
 effects:
-  - { kind: status_damage_bonus, per_rank: 0.15, max: 0.90 }   # double-dips on some payloads (Magnetic break-proc x3.61)
-  - { kind: reload_speed_bonus, per_rank: 0.10, max: 0.60 }
+  - { kind: status_damage_bonus, rank0: 0.15, max: 0.90 }   # double-dips on some payloads (Magnetic break-proc x3.61)
+  - { kind: reload_speed_bonus, rank0: 0.10, max: 0.60 }
 
 source:
   url: https://wiki.warframe.com/w/Pistol_Elementalist

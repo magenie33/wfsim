@@ -4,12 +4,13 @@ name: Primed Pistol Gambit
 mod_type: pistol
 rarity: legendary
 polarity: madurai
-base_drain: 2
-max_rank: 10                   # drain 2..12
+base_drain: 2                 # max drain 12 at rank 10
+max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Pistol/Expert/WeaponCritChanceModBeginnerExpert
+description: "+X% Critical Chance"
 
 effects:
-  - { kind: crit_chance_bonus, per_rank: 0.17, max: 1.87 }
+  - { kind: crit_chance_bonus, rank0: 0.17, max: 1.87 }
 family: pistol_gambit
 incompatible_with: [pistol_gambit, flawed_pistol_gambit, creeping_bullseye]
 

@@ -7,10 +7,12 @@ polarity: madurai
 base_drain: 4                 # max drain 14 at rank 10
 max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Pistol/Expert/WeaponPistolFactionDamageInfestedExpert
+description: "xX Damage to Infested"
 
 effects:
   - kind: faction_damage_bonus
     faction: infested
+    rank0: 0.05
     max: 0.55
 
 source:

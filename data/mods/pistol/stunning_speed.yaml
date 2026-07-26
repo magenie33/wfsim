@@ -7,11 +7,14 @@ polarity: naramon
 base_drain: 6                 # max drain 9 at rank 3
 max_rank: 3
 internal_name: /Lotus/Upgrades/Mods/Pistol/DualStat/StunningSpeedMod
+description: "+X% Reload Speed\n+X% Status Chance"
 
 effects:
   - kind: reload_speed_bonus
+    rank0: 0.1
     max: 0.4
   - kind: status_chance_bonus
+    rank0: 0.075
     max: 0.3
 
 source:

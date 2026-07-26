@@ -4,12 +4,13 @@ name: Pathogen Rounds
 mod_type: pistol
 rarity: uncommon
 polarity: naramon
-base_drain: 6
-max_rank: 5                   # drain 6..11
+base_drain: 6                 # max drain 11 at rank 5
+max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponToxinDamageMod
+description: "+X% Toxin"
 
 effects:
-  - { kind: elemental_damage_bonus, element: toxin, per_rank: 0.15, max: 0.90 }
+  - { kind: elemental_damage_bonus, element: toxin, rank0: 0.15, max: 0.90 }
 family: pathogen_rounds
 incompatible_with: [flawed_pathogen_rounds]
 

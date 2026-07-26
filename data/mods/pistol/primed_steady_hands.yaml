@@ -8,9 +8,11 @@ base_drain: 2                 # max drain 12 at rank 10
 max_rank: 10
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponRecoilReductionModExpert
+description: "-X% Weapon Recoil"
 
 effects:
   - kind: recoil_reduction
+    rank0: -0.077
     max: -0.85
 
 source:

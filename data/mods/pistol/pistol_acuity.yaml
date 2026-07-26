@@ -7,12 +7,16 @@ polarity: naramon
 base_drain: 6                 # max drain 16 at rank 10
 max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponWeakpointCriticalChanceMod
+description: "+X% Weak Point Damage\n+X% Weak Point Critical Chance. Multishot cannot be modified."
 
 effects:
-  - kind: base_damage_bonus
+  - kind: weakpoint_damage_bonus
+    rank0: 0.32
     max: 3.5
-  - kind: crit_chance_bonus
+  - kind: weakpoint_crit_chance_bonus
+    rank0: 0.32
     max: 3.5
+# "Multishot cannot be modified" while equipped (restriction, not yet modeled).
 
 source:
   url: https://wiki.warframe.com/w/Pistol_Acuity

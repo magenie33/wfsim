@@ -8,12 +8,13 @@ base_drain: 6                 # max drain 9 at rank 3
 max_rank: 3
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/PvPMods/Pistol/PassiveReloadMod
+description: "+X% Magazine Reloaded/s when Holstered"
 
 # +20% Magazine Reloaded/s while HOLSTERED. The sim fires one weapon
 # continuously (never holsters), so this is unmodeled; would matter for a
 # future weapon-swap rotation model.
 effects:
-  - { kind: holstered_reload, per_rank: 0.05, max: 0.20 }
+  - { kind: holstered_reload, rank0: 0.05, max: 0.20 }
 
 source:
   url: https://wiki.warframe.com/w/Eject_Magazine

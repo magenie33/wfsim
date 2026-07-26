@@ -4,12 +4,13 @@ name: Heated Charge
 mod_type: pistol
 rarity: uncommon
 polarity: naramon
-base_drain: 6
-max_rank: 5                   # drain 6..11
+base_drain: 6                 # max drain 11 at rank 5
+max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponFireDamageMod
+description: "+X% Heat"
 
 effects:
-  - { kind: elemental_damage_bonus, element: heat, per_rank: 0.15, max: 0.90 }
+  - { kind: elemental_damage_bonus, element: heat, rank0: 0.15, max: 0.90 }
 family: heated_charge
 incompatible_with: [primed_heated_charge, flawed_heated_charge]
 

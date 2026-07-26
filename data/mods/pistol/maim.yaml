@@ -7,10 +7,12 @@ polarity: naramon
 base_drain: 6                 # max drain 11 at rank 5
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponEventSlashDamageMod
+description: "+X% Slash"
 
 effects:
   - kind: elemental_damage_bonus
     element: slash
+    rank0: 0.2
     max: 1.2
 
 source:

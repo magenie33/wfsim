@@ -8,10 +8,12 @@ base_drain: 2                 # max drain 5 at rank 3
 max_rank: 3
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponBeamDistanceMod
+description: "+Xm Beam Range"
 
 effects:
   - kind: unmodeled
-    max: 0.08
+    rank0: 2.0
+    max: 8.0
     desc: "+8m Beam Range"
 
 source:

@@ -7,10 +7,12 @@ polarity: madurai
 base_drain: 4                 # max drain 14 at rank 10
 max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Pistol/Expert/WeaponPistolFactionDamageCorpusExpert
+description: "xX Damage to Corpus"
 
 effects:
   - kind: faction_damage_bonus
     faction: corpus
+    rank0: 0.05
     max: 0.55
 
 source:

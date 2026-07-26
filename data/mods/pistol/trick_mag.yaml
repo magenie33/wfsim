@@ -8,11 +8,12 @@ base_drain: 2                 # max drain 7 at rank 5
 max_rank: 5
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponAmmoMaxMod
+description: "+X% Ammo Maximum"
 
 # +90% Ammo Maximum (reserve ammo). The sim assumes infinite reserves —
 # reloads consume no pool — so this is intentionally unmodeled.
 effects:
-  - { kind: ammo_max_bonus, per_rank: 0.15, max: 0.90 }
+  - { kind: ammo_max_bonus, rank0: 0.15, max: 0.90 }
 
 source:
   url: https://wiki.warframe.com/w/Trick_Mag

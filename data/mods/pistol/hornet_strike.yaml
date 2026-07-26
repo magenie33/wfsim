@@ -7,12 +7,13 @@ polarity: madurai
 base_drain: 4                 # max drain 14 at rank 10
 max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponDamageAmountMod
+description: "+X% Damage"
 
 # One bucket, linear ranks: +20% base damage per rank, +220% at rank 10.
 effects:
   - kind: base_damage_bonus    # the additive base-damage bucket
-    per_rank: 0.20
-    max: 2.20
+    rank0: 0.2
+    max: 2.2
 
 family: hornet_strike
 incompatible_with: [flawed_hornet_strike]

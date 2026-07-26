@@ -7,6 +7,7 @@ polarity: madurai
 base_drain: 2                 # max drain 12 at rank 10
 max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Pistol/Event/CritChanceWhileAimingPistolSPMod
+description: "On Headshot:\n+X% Critical Chance when Aiming for 12s\nOn Headshot Kill:\n+40% Critical Chance when Aiming for 12s. Stacks up to 5x."
 
 # BOTH effects are conditional and require AIMING (sim assumption: the
 # 100% headshot scenario implies constant aiming):

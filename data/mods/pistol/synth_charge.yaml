@@ -7,9 +7,11 @@ polarity: madurai
 base_drain: 6                 # max drain 9 at rank 3
 max_rank: 3
 internal_name: /Lotus/Upgrades/Mods/Sets/Synth/PistolSynthChargeMod
+description: "+X% Bonus Damage on final shot. Requires Magazine 6 or higher."
 
 effects:
   - kind: base_damage_bonus
+    rank0: 0.5
     max: 2.0
 
 source:

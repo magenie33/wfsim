@@ -7,10 +7,12 @@ polarity: madurai
 base_drain: 4                 # max drain 9 at rank 5
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponPistolFactionDamageCorrupted
+description: "xX Damage to Orokin"
 
 effects:
   - kind: faction_damage_bonus
     faction: orokin
+    rank0: 0.05
     max: 0.3
 
 source:

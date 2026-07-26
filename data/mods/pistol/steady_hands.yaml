@@ -8,12 +8,13 @@ base_drain: 6                 # max drain 11 at rank 5
 max_rank: 5
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponRecoilReductionMod
+description: "-60% Weapon Recoil"
 
 # −60% Weapon Recoil. Recoil is an aim/handling effect with no damage model
 # here (the sim assumes perfect aim), so this is intentionally unmodeled —
 # the mod exists for the builder's exilus slot.
 effects:
-  - { kind: recoil_reduction, per_rank: -0.10, max: -0.60 }
+  - { kind: recoil_reduction, rank0: -0.10, max: -0.60 }
 
 source:
   url: https://wiki.warframe.com/w/Steady_Hands
