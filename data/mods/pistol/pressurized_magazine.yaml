@@ -10,9 +10,14 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/Event/FireRateWhileAimingPistolMod
 description: "On Reload:\n+X% Fire Rate when Aiming for 9s"
 
 effects:
-  - kind: on_reload_fire_rate
+  - kind: buff
+    trigger: on_reload
+    condition: while_aiming
+    grants: fire_rate
     rank0: 0.15
     rankMax: 0.9
+    max_stacks: 1
+    duration: 9
 
 source:
   url: https://wiki.warframe.com/w/Pressurized_Magazine

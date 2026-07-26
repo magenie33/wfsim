@@ -11,11 +11,11 @@ description: "+X% Critical Chance\n-X% Fire Rate"
 
 effects:
   - kind: crit_chance_bonus
-    rank0: 0.3333
-    rankMax: 2.00
+    rank0: 0.333
+    rankMax: 2.0
   - kind: fire_rate_bonus   # corrupted downside
-    rank0: -0.0333
-    rankMax: -0.20
+    rank0: -0.033
+    rankMax: -0.2
 
 family: pistol_gambit
 incompatible_with: [pistol_gambit, primed_pistol_gambit]

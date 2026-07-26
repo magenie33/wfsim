@@ -13,7 +13,7 @@ effects:
   - kind: elemental_damage_bonus
     element: heat
     rank0: 0.15
-    rankMax: 0.90
+    rankMax: 0.9
 
 family: heated_charge
 incompatible_with: [primed_heated_charge]

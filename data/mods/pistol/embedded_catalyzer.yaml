@@ -10,9 +10,14 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/Event/StatusProcWhileAimingPistolMod
 description: "On Ability Cast:\n+X% Status Chance when Aiming for 9s"
 
 effects:
-  - kind: on_ability_cast_status_chance
+  - kind: buff
+    trigger: on_ability_cast
+    condition: while_aiming
+    grants: status_chance
     rank0: 0.15
     rankMax: 0.9
+    max_stacks: 1
+    duration: 9
 
 source:
   url: https://wiki.warframe.com/w/Embedded_Catalyzer

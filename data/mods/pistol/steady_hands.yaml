@@ -15,8 +15,8 @@ description: "-60% Weapon Recoil"
 # the mod exists for the builder's exilus slot.
 effects:
   - kind: recoil_reduction
-    rank0: -0.10
-    rankMax: -0.60
+    rank0: -0.15
+    rankMax: -0.9
 
 family: steady_hands
 incompatible_with: [primed_steady_hands]

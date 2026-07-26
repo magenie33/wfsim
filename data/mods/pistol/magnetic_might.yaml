@@ -17,10 +17,10 @@ effects:
   - kind: elemental_damage_bonus
     element: magnetic
     rank0: 0.15
-    rankMax: 0.60
+    rankMax: 0.6
   - kind: crit_damage_bonus
-    rank0: 0.10
-    rankMax: 0.40
+    rank0: 0.1
+    rankMax: 0.4
 
 source:
   url: https://wiki.warframe.com/w/Magnetic_Might

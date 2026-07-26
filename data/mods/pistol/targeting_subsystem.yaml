@@ -11,9 +11,14 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/Event/AccuracyWhileAimingPistolMod
 description: "On Hit:\n+X% Accuracy when Aiming for 9s"
 
 effects:
-  - kind: on_hit_accuracy
+  - kind: buff
+    trigger: on_hit
+    condition: while_aiming
+    grants: accuracy
     rank0: 0.05
     rankMax: 0.3
+    max_stacks: 1
+    duration: 9
 
 source:
   url: https://wiki.warframe.com/w/Targeting_Subsystem

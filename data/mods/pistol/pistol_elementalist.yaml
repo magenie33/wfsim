@@ -12,10 +12,10 @@ description: "+X% Status Damage\n+X% Reload Speed"
 effects:
   - kind: status_damage_bonus   # double-dips on some payloads (Magnetic break-proc x3.61)
     rank0: 0.15
-    rankMax: 0.90
+    rankMax: 0.9
   - kind: reload_speed_bonus
-    rank0: 0.10
-    rankMax: 0.60
+    rank0: 0.1
+    rankMax: 0.6
 
 source:
   url: https://wiki.warframe.com/w/Pistol_Elementalist

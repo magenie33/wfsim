@@ -11,11 +11,11 @@ description: "+X% Fire Rate\n+X% Multishot"
 
 effects:
   - kind: fire_rate_bonus
-    rank0: 0.10
-    rankMax: 0.60
+    rank0: 0.1
+    rankMax: 0.6
   - kind: multishot_bonus
-    rank0: 0.10
-    rankMax: 0.60
+    rank0: 0.1
+    rankMax: 0.6
 
 source:
   url: https://wiki.warframe.com/w/Lethal_Torrent

@@ -15,10 +15,10 @@ effects:
   - kind: combined_element_bonus
     element: radiation
     rank0: 0.15
-    rankMax: 0.60
+    rankMax: 0.6
   - kind: fire_rate_bonus
-    rank0: 0.10
-    rankMax: 0.40
+    rank0: 0.1
+    rankMax: 0.4
 
 source:
   url: https://wiki.warframe.com/w/Accelerated_Isotope

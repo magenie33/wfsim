@@ -149,6 +149,32 @@ that builds on an Arctic Eximus Snow Globe without resetting) get a hand-written
 `impl Perk` behind the same trait. `secondary_enervate.rs` is currently a
 hand-written reference perk; it will inform the declarative schema.
 
+## Mod data: triggered effects are `kind: buff`
+
+A mod's conditional/triggered effect is written as one declarative buff (the mod
+is the perk that grants it). UNCONDITIONAL modifiers stay as their plain bucket
+(`base_damage_bonus`, `multishot_bonus`, …); only triggered ones use `buff`.
+A "permanent + triggered" mod (the Galvanized family) is simply BOTH — a plain
+bucket effect **and** a `kind: buff` effect.
+
+```yaml
+- kind: buff
+  trigger: on_kill        # on_kill | on_headshot | on_headshot_kill | on_ability_cast | on_reload | on_hit | passive
+  condition: while_aiming # optional
+  grants: multishot       # the bucket it feeds (multishot | condition_overload | crit_chance | crit_damage | status_chance | fire_rate | accuracy | …)
+  rank0: 0.027            # per-stack value at rank 0
+  rankMax: 0.30           # per-stack value at max rank
+  max_stacks: 4           # 1 for a non-stacking triggered buff
+  duration: 20            # seconds; omit = until reset
+  decay: lose_one_and_reset   # lose_one_and_reset | per_stack_expiry | all_drop
+```
+
+`engine::mods_data` maps the modeled `(trigger, grants)` combos to the buff
+`ModEffect` variants at max rank (`OnKillMultishot`, `ConditionOverload`,
+`OnHeadshotCritChance`, `OnHeadshotKillCritChance`); triggers not yet modeled
+keep their uniform data and resolve to a no-op until the generic interpreter
+below lands. Replaces the old ad-hoc `stacking_buff` / `on_headshot_*` kinds.
+
 ## Activation policy: assumed, configured, or emergent
 
 A conditional/stacking buff can be evaluated under three policies

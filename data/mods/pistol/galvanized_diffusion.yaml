@@ -11,25 +11,16 @@ description: "+X% Multishot\nOn Kill:\n+X% Multishot for 20s. Stacks up to 4x."
 
 effects:
   - kind: multishot_bonus
-    rank0: 0.10
-    rankMax: 1.10                  # +110% unconditional at rank 10
-  - kind: stacking_buff
+    rank0: 0.1
+    rankMax: 1.1
+  - kind: buff
     trigger: on_kill
-    # At rank 10: +30% multishot per stack, up to 4 stacks (+120%);
-    # total ceiling with the base bonus = +230%.
-    per_stack: { multishot_bonus: 0.30 }
+    grants: multishot
+    rank0: 0.027
+    rankMax: 0.3
     max_stacks: 4
-    duration_seconds: 20
-    # GRACEFUL DECAY - a third stack-decay model (vs per-stack expiry and
-    # hard resets): on timeout the buff loses ONE stack and the 20 s
-    # duration RESETS for the remainder. Stacks drain one by one.
-    decay: lose_one_stack_and_reset_duration
-    stack_rules:
-      - Only kills made by the weapon carrying this mod grant stacks, and
-        only that weapon benefits (exception - equipping it on a normal
-        weapon and an Exalted weapon affects both).
-      - Status-proc kills and Pax Seeker kills from this weapon count.
-
+    duration: 20
+    decay: lose_one_and_reset
 
 family: barrel_diffusion
 incompatible_with: [amalgam_barrel_diffusion, barrel_diffusion]

@@ -132,24 +132,33 @@ fn effect(v: &Value) -> Option<ModEffect> {
                 _ => ModEffect::CombinedElement(e, max("rankMax")),
             }
         }
-        "on_headshot_crit_chance" => ModEffect::OnHeadshotCritChance {
-            bonus: f(v, "bonus").unwrap_or_else(|| max("rankMax")),
-            duration: f(v, "duration_seconds").unwrap_or(0.0),
-        },
-        "on_headshot_kill_crit_chance_stacks" => ModEffect::OnHeadshotKillCritChance {
-            per_stack: f(v, "per_stack").unwrap_or(0.0),
-            max_stacks: u(v, "max_stacks"),
-            duration: f(v, "duration_seconds").unwrap_or(0.0),
-        },
-        "stacking_buff" => {
-            // on-kill families: the per_stack map names the bucket.
-            let ps = |k: &str| v.get("per_stack").and_then(|p| p.get(k)).and_then(Value::as_f64);
-            let dur = f(v, "duration_seconds").unwrap_or(0.0);
+        // Unified declarative TRIGGERED BUFF (BUFFS.md model): a held perk
+        // grants a buff on `trigger` (+ optional `condition`), contributing
+        // `grants` (a bucket) per stack; `rank0`/`rankMax` are the per-stack
+        // value. Maps to the modeled buff variants at max rank; triggers not yet
+        // modeled keep their (uniform) data but resolve to a no-op.
+        "buff" => {
+            let trigger = v.get("trigger").and_then(Value::as_str)?;
+            let grants = v.get("grants").and_then(Value::as_str)?;
+            let per = max("rankMax"); // per-stack value at max rank
             let stacks = u(v, "max_stacks");
-            match (ps("multishot_bonus"), ps("condition_overload")) {
-                (Some(m), _) => ModEffect::OnKillMultishot { per_stack: m, max_stacks: stacks, duration: dur },
-                (None, Some(c)) => ModEffect::ConditionOverload { per_stack: c, max_stacks: stacks, duration: dur },
-                (None, None) => return None, // unrecognized stacking payload -> not modeled
+            let dur = f(v, "duration").unwrap_or(0.0);
+            match (trigger, grants) {
+                ("on_kill", "multishot") => {
+                    ModEffect::OnKillMultishot { per_stack: per, max_stacks: stacks, duration: dur }
+                }
+                ("on_kill", "condition_overload") => {
+                    ModEffect::ConditionOverload { per_stack: per, max_stacks: stacks, duration: dur }
+                }
+                ("on_headshot", "crit_chance") => {
+                    ModEffect::OnHeadshotCritChance { bonus: per, duration: dur }
+                }
+                ("on_headshot_kill", "crit_chance") => {
+                    ModEffect::OnHeadshotKillCritChance { per_stack: per, max_stacks: stacks, duration: dur }
+                }
+                // on_ability_cast / on_reload / on_hit / on_kill+crit_damage:
+                // not modeled yet (data stays uniform; resolves to no-op).
+                _ => return None,
             }
         }
         // INDIRECT stats: outside the theoretical-DPS formula, but real

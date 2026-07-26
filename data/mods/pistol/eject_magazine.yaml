@@ -16,7 +16,7 @@ description: "+X% Magazine Reloaded/s when Holstered"
 effects:
   - kind: holstered_reload
     rank0: 0.05
-    rankMax: 0.20
+    rankMax: 0.2
 
 source:
   url: https://wiki.warframe.com/w/Eject_Magazine

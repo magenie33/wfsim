@@ -14,7 +14,7 @@ description: "+X% Fire Rate\n-X% Damage"
 effects:
   - kind: fire_rate_bonus
     rank0: 0.15
-    rankMax: 0.90
+    rankMax: 0.9
   - kind: base_damage_bonus
     rank0: -0.025
     rankMax: -0.15

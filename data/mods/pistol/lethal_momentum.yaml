@@ -14,8 +14,8 @@ description: "+X% Projectile Speed"
 # as instant-hit at a fixed range, so flight time is unmodeled.
 effects:
   - kind: projectile_speed_bonus
-    rank0: 0.10
-    rankMax: 0.40
+    rank0: 0.1
+    rankMax: 0.4
 
 source:
   url: https://wiki.warframe.com/w/Lethal_Momentum

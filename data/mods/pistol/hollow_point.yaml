@@ -14,8 +14,8 @@ description: "+X% Critical Damage\n-X% Damage"
 # modeled as a negative base_damage_bonus (not a separate penalty layer).
 effects:
   - kind: crit_damage_bonus
-    rank0: 0.10
-    rankMax: 0.60
+    rank0: 0.1
+    rankMax: 0.6
   - kind: base_damage_bonus
     rank0: -0.025
     rankMax: -0.15

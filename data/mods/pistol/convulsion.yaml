@@ -13,7 +13,7 @@ effects:
   - kind: elemental_damage_bonus
     element: electricity
     rank0: 0.15
-    rankMax: 0.90
+    rankMax: 0.9
 
 family: convulsion
 incompatible_with: [primed_convulsion]

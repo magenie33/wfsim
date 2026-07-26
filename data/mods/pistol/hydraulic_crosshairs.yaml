@@ -10,9 +10,14 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/Event/CritChanceWhileAimingPistolMod
 description: "On Headshot:\n+X% Critical Chance when Aiming for 9s"
 
 effects:
-  - kind: on_headshot_crit_chance
-    bonus: 1.35
-    duration_seconds: 9
+  - kind: buff
+    trigger: on_headshot
+    condition: while_aiming
+    grants: crit_chance
+    rank0: 0.225
+    rankMax: 1.35
+    max_stacks: 1
+    duration: 9
 
 family: hydraulic_crosshairs
 incompatible_with: [galvanized_crosshairs]

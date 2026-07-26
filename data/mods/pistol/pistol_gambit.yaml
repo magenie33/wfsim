@@ -11,8 +11,8 @@ description: "+X% Critical Chance"
 
 effects:
   - kind: crit_chance_bonus   # relative: base_cc x (1 + this)
-    rank0: 0.20
-    rankMax: 1.20
+    rank0: 0.2
+    rankMax: 1.2
 
 family: pistol_gambit
 incompatible_with: [creeping_bullseye, primed_pistol_gambit]
