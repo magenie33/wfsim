@@ -30,9 +30,9 @@ effects:
         weapon and an Exalted weapon affects both).
       - Status-proc kills and Pax Seeker kills from this weapon count.
 
+
 family: barrel_diffusion
-incompatible_with: [barrel_diffusion, flawed_barrel_diffusion,
-                    amalgam_barrel_diffusion]
+incompatible_with: [amalgam_barrel_diffusion, barrel_diffusion]
 
 source:
   url: https://wiki.warframe.com/w/Galvanized_Diffusion

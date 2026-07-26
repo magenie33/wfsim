@@ -26,9 +26,9 @@ effects:
 utility_scope: universal_while_carried
 restrictions: [not_on_sentinel_weapons]
 
+
 family: barrel_diffusion
-incompatible_with: [barrel_diffusion, flawed_barrel_diffusion,
-                    galvanized_diffusion]
+incompatible_with: [barrel_diffusion, galvanized_diffusion]
 
 source:
   url: https://wiki.warframe.com/w/Amalgam_Barrel_Diffusion

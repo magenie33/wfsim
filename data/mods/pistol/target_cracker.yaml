@@ -16,8 +16,9 @@ effects:
     rank0: 0.1
     rankMax: 0.6
 
+
 family: target_cracker
-incompatible_with: [primed_target_cracker, flawed_target_cracker]
+incompatible_with: [primed_target_cracker]
 
 source:
   url: https://wiki.warframe.com/w/Target_Cracker

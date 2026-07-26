@@ -15,5 +15,8 @@ effects:
     rank0: 0.05
     rankMax: 0.55
 
+family: expel_grineer
+incompatible_with: [expel_grineer]
+
 source:
   url: https://wiki.warframe.com/w/Primed_Expel_Grineer

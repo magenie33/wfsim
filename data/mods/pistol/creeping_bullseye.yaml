@@ -12,8 +12,9 @@ description: "+X% Critical Chance\n-X% Fire Rate"
 effects:
   - { kind: crit_chance_bonus, rank0: 0.3333, rankMax: 2.00 }
   - { kind: fire_rate_bonus, rank0: -0.0333, rankMax: -0.20 }   # corrupted downside
+
 family: pistol_gambit
-incompatible_with: [pistol_gambit, primed_pistol_gambit, flawed_pistol_gambit]
+incompatible_with: [pistol_gambit, primed_pistol_gambit]
 
 source:
   url: https://wiki.warframe.com/w/Creeping_Bullseye

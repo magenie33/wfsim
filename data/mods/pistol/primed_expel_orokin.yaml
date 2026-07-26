@@ -15,5 +15,8 @@ effects:
     rank0: 0.05
     rankMax: 0.55
 
+family: expel_orokin
+incompatible_with: [expel_orokin]
+
 source:
   url: https://wiki.warframe.com/w/Primed_Expel_Orokin

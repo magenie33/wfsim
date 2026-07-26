@@ -16,5 +16,8 @@ effects:
     rankMax: 0.5
     desc: "Converts Primary ammo pickups to 50% of Ammo Pick Up."
 
+family: pistol_ammo_mutation
+incompatible_with: [primed_pistol_ammo_mutation]
+
 source:
   url: https://wiki.warframe.com/w/Pistol_Ammo_Mutation

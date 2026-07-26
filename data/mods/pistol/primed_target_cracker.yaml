@@ -15,8 +15,9 @@ effects:
     rankMax: 1.1
                                # Cold page's Kunai example: 1.6 x (1+110%))
 
+
 family: target_cracker
-incompatible_with: [target_cracker, flawed_target_cracker]
+incompatible_with: [target_cracker]
 
 source:
   url: https://wiki.warframe.com/w/Primed_Target_Cracker

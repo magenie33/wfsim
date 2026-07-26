@@ -29,8 +29,9 @@ effects:
     stack_rules:
       - Weapon-scoped kills grant and benefit, as with Galvanized
         Diffusion.
+
 family: sure_shot
-incompatible_with: [sure_shot, flawed_sure_shot]
+incompatible_with: [sure_shot]
 
 source:
   url: https://wiki.warframe.com/w/Galvanized_Shot

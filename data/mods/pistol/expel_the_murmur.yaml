@@ -15,5 +15,8 @@ effects:
     rank0: 0.05
     rankMax: 0.3
 
+family: expel_the_murmur
+incompatible_with: [primed_expel_the_murmur]
+
 source:
   url: https://wiki.warframe.com/w/Expel_The_Murmur

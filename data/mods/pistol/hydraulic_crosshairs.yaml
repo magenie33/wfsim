@@ -14,5 +14,8 @@ effects:
     bonus: 1.35
     duration_seconds: 9
 
+family: hydraulic_crosshairs
+incompatible_with: [galvanized_crosshairs]
+
 source:
   url: https://wiki.warframe.com/w/Hydraulic_Crosshairs

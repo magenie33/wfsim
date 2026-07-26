@@ -14,5 +14,8 @@ effects:
     rank0: 0.15
     rankMax: 0.9
 
+family: sure_shot
+incompatible_with: [galvanized_shot]
+
 source:
   url: https://wiki.warframe.com/w/Sure_Shot

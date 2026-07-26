@@ -11,8 +11,9 @@ description: "+X% Electricity"
 
 effects:
   - { kind: elemental_damage_bonus, element: electricity, rank0: 0.15, rankMax: 1.65 }
+
 family: convulsion
-incompatible_with: [convulsion, flawed_convulsion]
+incompatible_with: [convulsion]
 
 source:
   url: https://wiki.warframe.com/w/Primed_Convulsion

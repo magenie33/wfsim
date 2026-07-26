@@ -14,5 +14,8 @@ effects:
     rank0: 0.05
     rankMax: 0.3
 
+family: slip_magazine
+incompatible_with: [primed_slip_magazine]
+
 source:
   url: https://wiki.warframe.com/w/Slip_Magazine

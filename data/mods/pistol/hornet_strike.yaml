@@ -15,8 +15,6 @@ effects:
     rank0: 0.2
     rankMax: 2.2
 
-family: hornet_strike
-incompatible_with: [flawed_hornet_strike]
 
 source:
   url: https://wiki.warframe.com/w/Hornet_Strike

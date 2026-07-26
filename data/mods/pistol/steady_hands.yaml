@@ -16,5 +16,8 @@ description: "-60% Weapon Recoil"
 effects:
   - { kind: recoil_reduction, rank0: -0.10, rankMax: -0.60 }
 
+family: steady_hands
+incompatible_with: [primed_steady_hands]
+
 source:
   url: https://wiki.warframe.com/w/Steady_Hands

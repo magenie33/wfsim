@@ -19,9 +19,9 @@ effects:
     rankMax: 1.2
 
 # The module's Incompatible field, verbatim - variants are the SAME mod:
+
 family: barrel_diffusion
-incompatible_with: [flawed_barrel_diffusion, amalgam_barrel_diffusion,
-                    galvanized_diffusion]
+incompatible_with: [amalgam_barrel_diffusion, galvanized_diffusion]
 
 source:
   url: https://wiki.warframe.com/w/Barrel_Diffusion

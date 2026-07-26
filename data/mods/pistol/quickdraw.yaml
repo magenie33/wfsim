@@ -14,5 +14,8 @@ effects:
     rank0: 0.08
     rankMax: 0.48
 
+family: quickdraw
+incompatible_with: [primed_quickdraw]
+
 source:
   url: https://wiki.warframe.com/w/Quickdraw

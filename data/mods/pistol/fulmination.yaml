@@ -14,5 +14,8 @@ effects:
     rank0: 0.06
     rankMax: 0.24
 
+family: fulmination
+incompatible_with: [primed_fulmination]
+
 source:
   url: https://wiki.warframe.com/w/Fulmination

@@ -30,9 +30,10 @@ effects:
     decay: per_stack_duration
   - kind: weapon_scoped
 
+# Explicitly COMPATIBLE with the Pistol Gambit family.
+
 family: hydraulic_crosshairs
 incompatible_with: [hydraulic_crosshairs]
-# Explicitly COMPATIBLE with the Pistol Gambit family.
 
 source:
   url: https://wiki.warframe.com/w/Galvanized_Crosshairs
