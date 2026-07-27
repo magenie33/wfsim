@@ -1,0 +1,26 @@
+id: cascadia_flare
+kind: arcane
+name: Cascadia Flare
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SecondaryDamageOnHeatProc
+description: "On Heat Status Effect:\n+X% Damage for 10s. Stacks up to X%."
+
+effects:
+  # Any source counts, even while holstered. One stack per damage INSTANCE
+  # (multiple procs in one hit still grant one). Shared 10 s timer refreshed by
+  # each new Heat proc; on timeout ALL stacks drop at once (on-status family,
+  # unlike the kill-family one-by-one decay). Additive with base-damage mods
+  # (Hornet Strike bucket) - scales ModifiedBase too.
+  - kind: buff
+    trigger: on_heat_status
+    grants: base_damage
+    rank0: 0.02
+    rankMax: 0.12
+    max_stacks: 40
+    duration: 10
+    decay: all_drop_on_timeout
+
+source:
+  url: https://wiki.warframe.com/w/Cascadia_Flare

@@ -1,0 +1,25 @@
+id: secondary_surge
+kind: arcane
+name: Secondary Surge
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/BonusDamageNextShotForCurEnergy
+description: "On Ability Cast: Next shot gains a Damage Multiplier for every 200 current Energy, up to xX."
+
+effects:
+  # +0.5% damage per point of energy REMAINING after the cast, capped at the
+  # per-rank multiplier (x3 = +200% at rank 0 ... x8 = +700% at rank 5).
+  # MULTIPLICATIVE with Hornet Strike and similar bonuses (final multiplier,
+  # NOT the base-damage bucket). Consumed by the next shot fired (hit or miss);
+  # all multishot pellets of that shot benefit. Repeated casts re-arm it.
+  - kind: buff
+    trigger: on_ability_cast
+    grants: final_damage
+    rank0: 2.0                 # cap as a bonus: x3 at rank 0
+    rankMax: 7.0               # x8 at rank 5
+    per_energy_bonus: 0.005
+    consumed_on_shot: true
+
+source:
+  url: https://wiki.warframe.com/w/Secondary_Surge

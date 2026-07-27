@@ -1,0 +1,21 @@
+id: akimbo_slip_shot
+kind: arcane
+name: Akimbo Slip Shot
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/AmmoEfficiencyOnSliding
+description: "While sliding or aim gliding: Gain X% ammo efficiency with Dual Pistols."
+
+requires: dual_pistols   # effect inert on non-dual secondaries (calc layer)
+
+effects:
+  # Ammo economy only (chance not to consume ammo) - no DPS bucket; waits on
+  # the ammo-economy subsystem. Cannot go on exalted weapons.
+  - kind: ammo_efficiency
+    condition: while_sliding_or_aim_gliding
+    rank0: 0.15
+    rankMax: 0.65
+
+source:
+  url: https://wiki.warframe.com/w/Akimbo_Slip_Shot

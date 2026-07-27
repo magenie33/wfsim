@@ -38,6 +38,7 @@ def pretty(mod_id: str) -> str:
 NAME_OVERRIDES = {
     "dual_toxocyst_incarnon": "Dual Toxocyst",  # same art as the base form
     "ppg": "Primed Pistol Gambit",
+    "semi_pistol_cannonade": "Semi-Pistol Cannonade",  # hyphen the prettifier drops
 }
 
 

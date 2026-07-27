@@ -1,0 +1,20 @@
+id: cascadia_overcharge
+kind: arcane
+name: Cascadia Overcharge
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Zariman/SecondaryOnOvershieldCritChance
+description: "While Overshields Active: +X% Critical Chance"
+
+effects:
+  # Flat crit chance ADDITIVE with the crit-chance bucket (wiki: Lex Prime with
+  # maxed Pistol Gambit + Overcharge = 25% x (1 + 120% + 300%)). Applies only
+  # to the weapon it is equipped on.
+  - kind: crit_chance_bonus
+    condition: while_overshields_active
+    rank0: 0.5
+    rankMax: 3.0
+
+source:
+  url: https://wiki.warframe.com/w/Cascadia_Overcharge

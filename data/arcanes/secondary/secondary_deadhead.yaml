@@ -1,0 +1,38 @@
+id: secondary_deadhead
+kind: arcane
+name: Secondary Deadhead
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SecondaryDamageOnNoMelee
+description: "On Precision Headshot Kill:\n+X% Damage for 24s. Stacks up to 3x.\n+30% to Headshot Multiplier\n-50% Weapon Recoil"
+
+effects:
+  # PRECISION headshot kill - NOT the same boundary as a plain "headshot kill"
+  # (user, 2026-07-25). Wiki verbatim: "'Precision' refers to direct hit
+  # headshots (not AoE)". Excluded: AoE/explosion damage and most status-proc
+  # kills on the head. Included: direct hits; Electricity/Gas proc kills aimed
+  # at the head (those procs land their own headshots).
+  # Additive with base-damage mods (Hornet Strike bucket) - so it also scales
+  # ModifiedBase (DoT payloads, elemental amounts).
+  - kind: buff
+    trigger: on_precision_headshot_kill
+    grants: base_damage
+    rank0: 0.2
+    rankMax: 1.2
+    max_stacks: 3
+    duration: 24
+    decay: lose_one_and_reset
+  # Headshot bonuses form an ADDITIVE BRACKET that MULTIPLIES the base
+  # multiplier (Enemy_Body_Parts verbatim template: Daikyu 3x head with
+  # Deadhead 30% + Amalgam Target Acquired 75% = 3 x (1 + 0.30 + 0.75)
+  # = 6.15x). So a 3x head with Deadhead alone = 3.9x.
+  - kind: headshot_multiplier_bonus
+    rankMax: 0.3
+    unlocks_at_rank: 5
+  - kind: recoil_reduction
+    rankMax: 0.5
+    unlocks_at_rank: 5
+
+source:
+  url: https://wiki.warframe.com/w/Secondary_Deadhead

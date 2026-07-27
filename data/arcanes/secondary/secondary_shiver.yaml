@@ -1,0 +1,24 @@
+id: secondary_shiver
+kind: arcane
+name: Secondary Shiver
+arcane_type: secondary
+rarity: legendary
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SecondaryExtraDamagePerFreezeStack
+description: "Enemies take +X% damage per Cold Status"
+
+effects:
+  # GunCO-family source (like Galvanized Shot's payload): +rankMax per ACTIVE
+  # Cold status on the target, up to the 10-stack Cold cap (+450% at max rank).
+  # Additive with Hornet Strike on most secondaries; reduced or multiplicative
+  # on the GunCO exceptions (Cyanex/Catchmoon/Epitaph/...) - per-weapon
+  # co_behavior. Additive with Galvanized Shot's per-status-type bonus.
+  # Does NOT apply to radial (AoE) damage. Only the equipped weapon benefits.
+  - kind: per_status_damage_bonus
+    status: cold
+    rank0: 0.075
+    rankMax: 0.45
+    max_stacks: 10
+
+source:
+  url: https://wiki.warframe.com/w/Secondary_Shiver

@@ -7,7 +7,7 @@
 //!
 //! Data / source of truth: `data/perks/secondary_enervate.yaml` (trigger + rank
 //! table) and `data/buffs/secondary_enervate.yaml` (the granted buff); the
-//! arcane item is `data/arcanes/secondary_enervate.yaml`
+//! arcane item is `data/arcanes/secondary/secondary_enervate.yaml`
 //! (<https://wiki.warframe.com/w/Secondary_Enervate>). Terminology per
 //! `docs/GLOSSARY.md` (flat crit chance, big crit, Hit).
 //!

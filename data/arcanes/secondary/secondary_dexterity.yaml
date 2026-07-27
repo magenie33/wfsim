@@ -1,0 +1,28 @@
+id: secondary_dexterity
+kind: arcane
+name: Secondary Dexterity
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SecondaryDamageOnMeleeKill
+description: "On Melee Kill:\n+X% Damage for 20s. Stacks up to 6x.\n+7.5s Combo Duration"
+
+effects:
+  # Additive with base-damage mods (Hornet Strike bucket). On timeout: lose ONE
+  # stack and reset the timer. Companion melee kills also trigger it.
+  - kind: buff
+    trigger: on_melee_kill
+    grants: base_damage
+    rank0: 0.1
+    rankMax: 0.6
+    max_stacks: 6
+    duration: 20
+    decay: lose_one_and_reset
+  # Melee Combo Counter duration (seconds) - a melee stat, inert for the
+  # secondary-weapon calc.
+  - kind: combo_duration_bonus
+    rankMax: 7.5
+    unlocks_at_rank: 5
+
+source:
+  url: https://wiki.warframe.com/w/Secondary_Dexterity

@@ -1,0 +1,23 @@
+id: secondary_fortifier
+kind: arcane
+name: Secondary Fortifier
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/OverguardSteal
+description: "Gain 1 Overguard for every 100 Damage dealt to an enemy's Overguard.\nDeals xX Extra Damage to Overguard."
+
+effects:
+  # Damage multiplier vs enemy OVERGUARD health only (x3 at rank 0 ... x8 at
+  # rank 5, stored as the bonus). Dynamically applied - lost the moment the
+  # target's Overguard breaks (not heat-inheritable, unlike the steal effect).
+  - kind: overguard_damage_bonus
+    rank0: 2.0                 # x3 shown in-game
+    rankMax: 7.0               # x8
+  # Defensive: +1 Overguard per 100 damage dealt to Overguard (constant at
+  # every rank; self-Overguard cap 15,000). DoTs also steal. Not a DPS stat.
+  - kind: overguard_on_damage
+    rankMax: 0.01
+
+source:
+  url: https://wiki.warframe.com/w/Secondary_Fortifier

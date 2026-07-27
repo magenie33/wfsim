@@ -1,0 +1,26 @@
+id: secondary_encumber
+kind: arcane
+name: Secondary Encumber
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Utility/ExtraProcOnProc
+description: "On Status Effect: +X% chance to trigger a second random Status Effect."
+
+effects:
+  # On any applied status: roll `chance` to add ONE extra random status.
+  # The random type is UNIFORM over the 13 physical+elemental types (wiki:
+  # Impact/Puncture/Slash/Heat/Cold/Electricity/Toxin/Blast/Corrosive/
+  # Magnetic/Viral/Gas/Radiation), independent of the weapon's damage vector.
+  # HARD LIMIT of 1 extra proc per instant (a very short cooldown): multishot
+  # pellets / punch-through / beam chains landing simultaneously can produce at
+  # most one, and only on one target. Delayed hits (rebounds, embed delays) and
+  # forced procs can each trigger it.
+  - kind: proc_conversion
+    trigger: any_status
+    applies: random_status
+    rank0: 0.04
+    rankMax: 0.24
+
+source:
+  url: https://wiki.warframe.com/w/Secondary_Encumber

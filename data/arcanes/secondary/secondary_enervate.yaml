@@ -1,0 +1,25 @@
+id: secondary_enervate
+kind: arcane
+name: Secondary Enervate
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SecondaryCritOnHit
+description: "On Hit: Increase Critical Chance by 10%. Resets after X Big Critical Hit."
+perk: secondary_enervate   # the ramp/reset mechanic lives in engine::perks
+
+effects:
+  # Ramping FLAT crit chance: +10% per hit at EVERY rank (the per-stack value
+  # does not scale); only the reset threshold grows with rank. The stack pile
+  # resets after `reset_after_big_crits` big crits (rank+1, so rank 5 = 6).
+  # Mirrors engine::perks::secondary_enervate (from_rank).
+  - kind: buff
+    trigger: on_hit
+    grants: crit_chance
+    rank0: 0.1
+    rankMax: 0.1
+    reset_after_big_crits_rank0: 1
+    reset_after_big_crits_rankMax: 6
+
+source:
+  url: https://wiki.warframe.com/w/Secondary_Enervate

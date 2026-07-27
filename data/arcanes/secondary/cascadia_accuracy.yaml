@@ -1,0 +1,23 @@
+id: cascadia_accuracy
+kind: arcane
+name: Cascadia Accuracy
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Zariman/SecondaryOnRollCritChanceOnHeadshot
+description: "On Roll:\n+X% Critical Chance on Weakpoint Hits for 4s"
+
+effects:
+  # While the buff is up, weakpoint hits get flat crit chance ADDITIVE with the
+  # crit-chance bucket (wiki: additive to Pistol Gambit AND Pistol Acuity).
+  # Waits on the weakpoint subsystem; the engine has headshot/is_head today.
+  - kind: buff
+    trigger: on_roll
+    grants: weakpoint_crit_chance
+    rank0: 0.5
+    rankMax: 3.0
+    max_stacks: 1
+    duration: 4
+
+source:
+  url: https://wiki.warframe.com/w/Cascadia_Accuracy

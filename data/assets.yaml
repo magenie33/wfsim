@@ -12,39 +12,100 @@ mods:
   amalgam_barrel_diffusion: TacticalDiffusion.jpg
   anemic_agility: CorruptedFireRateDamagePistolMod.jpg
   augur_pact: AugurPact.jpg
+  augur_seeker: AugurSeeker.jpg
   barrel_diffusion: PistolFireIterationsMod.jpg
+  bore: EventPunctureDamageModPistol.jpg
+  carnis_stinger: AshenStinger.jpg
+  concussion_rounds: ImpactDamagePistolMod.jpg
   convulsion: PistolElectricityDamageMod.jpg
   creeping_bullseye: CorruptedCritChanceFireRatePistolMod.jpg
   deep_freeze: PistolFreezeDamageMod.jpg
   eject_magazine: PassiveReloadPistolMod.jpg
+  embedded_catalyzer: StatusChanceWhileAimingMods.jpg
+  expel_corpus: PistolDamageCorpus.jpg
+  expel_grineer: PistolDamageGrineer.jpg
+  expel_infested: PistolDamageInfested.jpg
+  expel_orokin: PistolDamageCorrupted.jpg
+  expel_the_murmur: WeaponPistolFactionDamageMurmurs.jpg
   frostbite: IceEventPistolMod.jpg
+  fulmination: SecondaryFirestormMod.jpg
   galvanized_crosshairs: CritChanceWhileAimingPistolSPMod.jpg
   galvanized_diffusion: WeaponFireIterationsSPModMods.jpg
   galvanized_shot: WeaponStatusChanceSPModMods.jpg
   gunslinger: PistolFireRateMod.jpg
+  hawk_eye: PistolZoomMod.jpg
   heated_charge: PistolFireDamageMod.jpg
+  hemorrhage: WeaponBleedOnImpactPistolMod.jpg
   hollow_point: CorruptedCritDmgForDmgMod.jpg
   hornet_strike: PistolDamageAmountMod.jpg
+  hydraulic_crosshairs: CritChanceWhileAimingMods.jpg
+  ice_storm: PistolIceStormMod.jpg
   jolt: ElectEventPistolMod.jpg
+  jugulus_spines: BonebladeSpines.jpg
   lethal_momentum: WeaponProjectileSpeedPistolMod.jpg
   lethal_torrent: Grinder.jpg
   magnetic_might: MagneticCritDamagePistolMod.jpg
+  magnum_force: CorruptedDmgForRecoilMod.jpg
+  maim: EventSlashDamagePistolMod.jpg
+  merciless_gunfight: CriticalDamagePunchThroughMod.jpg
   pathogen_rounds: PoisonDamagePistolMod.jpg
+  perpetual_agony: WeaponProcTimePistolMod.jpg
+  pistol_acuity: WeaponWeakpointCriticalChanceModMods.jpg
+  pistol_ammo_mutation: PistolAmmoMutatorMod.jpg
   pistol_elementalist: PistolStatusDamageDuoMod.jpg
   pistol_gambit: PistolCritChanceMod.jpg
   pistol_pestilence: PoisonEventPistolMod.jpg
+  pressurized_magazine: FireRateWhileAimingMods.jpg
   primed_convulsion: PistolElectricityDamageMod.jpg
+  primed_expel_corpus: PistolDamageCorpus.jpg
+  primed_expel_grineer: PistolDamageGrineer.jpg
+  primed_expel_infested: PistolDamageInfested.jpg
+  primed_expel_orokin: PistolDamageCorrupted.jpg
+  primed_expel_the_murmur: WeaponPistolFactionDamageMurmurs.jpg
+  primed_fulmination: SecondaryFirestormMod.jpg
   primed_heated_charge: PistolFireDamageMod.jpg
+  primed_pistol_ammo_mutation: PistolAmmoMutatorMod.jpg
   primed_pistol_gambit: PistolCritChanceMod.jpg
+  primed_quickdraw: PistolReloadSpeedMod.jpg
+  primed_slip_magazine: PistolClipMax.jpg
+  primed_steady_hands: PistolRecoilReductionMod.jpg
   primed_target_cracker: PistolCritDamageMod.jpg
+  pummel: EventImpactDamagePistolMod.jpg
+  quickdraw: PistolReloadSpeedMod.jpg
+  razor_shot: BleedDamagePistolMod.jpg
   reflex_draw: PvPWeaponSwapSpeedPistol.jpg
+  ruinous_extension: WeaponBeamDistancePistolMod.jpg
+  saxum_spittle: FemurSpittle.jpg
   scorch: DualStatFireProcPistol.jpg
+  seeker: PistolPunctureDepthMod.jpg
+  sharpened_bullets: CritDamageWhileAimingMods.jpg
+  slip_magazine: PistolClipMax.jpg
   steady_hands: PistolRecoilReductionMod.jpg
+  stunning_speed: PistolStunningSpeed.jpg
   suppress: PistolSilencerMod.jpg
+  sure_shot: StatusChancePistolMod.jpg
+  synth_charge: PystolSynthChargeMod.jpg
   target_cracker: PistolCritDamageMod.jpg
+  targeting_subsystem: AccuracyWhileAimingMods.jpg
   trick_mag: PistolAmmoMaxMod.jpg
+  semi_pistol_cannonade: PistolSemiAutoFantasyMod.jpg
 
 arcanes:
+  akimbo_slip_shot: ArcaneProjectionCT.png
+  cascadia_accuracy: ArcaneProjectionBU.png
+  cascadia_empowered: ArcaneProjectionBT.png
   cascadia_flare: ArcaneProjectionBY.png
+  cascadia_overcharge: ArcaneProjectionBL.png
+  conjunction_voltage: ArcaneProjectionCD.png
+  secondary_cryogenic: SecondaryCritStrikeColdPunct.png
   secondary_deadhead: ArcaneProjectionSteelPathPrecisionHeadshotA.png
+  secondary_dexterity: ArcaneProjectionSteelPathMeleeToolsA.png
+  secondary_encumber: ArcaneProjectionCG.png
   secondary_enervate: ArcaneProjectionDL.png
+  secondary_fortifier: ArcaneProjectionDG.png
+  secondary_irradiate: ArcaneProjectionDV.png
+  secondary_kinship: ArcaneProjectionCI.png
+  secondary_merciless: ArcaneProjectionSteelPathWarcrimesA.png
+  secondary_outburst: ArcaneProjectionCU.png
+  secondary_shiver: ArcaneProjectionCP.png
+  secondary_surge: ArcaneProjectionDE.png

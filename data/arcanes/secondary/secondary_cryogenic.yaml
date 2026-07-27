@@ -1,0 +1,25 @@
+id: secondary_cryogenic
+kind: arcane
+name: Secondary Cryogenic
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SecondaryColdOnPuncture
+description: "On Puncture: Apply X Cold stacks on targets within Xm."
+
+effects:
+  # On applying a Puncture status: apply `rankMax` Cold statuses to the main
+  # target AND all enemies within the radius AROUND THE TARGET (no line of
+  # sight needed). The Cold procs do not combine with modded elements, and ARE
+  # scaled by the weapon's Status Duration.
+  - kind: proc_burst
+    trigger: puncture
+    applies: cold
+    rank0: 1
+    rankMax: 3
+    ranks: [1, 1, 2, 2, 3, 3]   # NON-LINEAR stack count (warframestat)
+    radius_rank0: 10
+    radius_rankMax: 15
+
+source:
+  url: https://wiki.warframe.com/w/Secondary_Cryogenic

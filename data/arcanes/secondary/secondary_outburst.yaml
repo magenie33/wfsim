@@ -1,0 +1,33 @@
+id: secondary_outburst
+kind: arcane
+name: Secondary Outburst
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/MultishotForCombo
+description: "On swapping to Secondary Weapon, consume all Combo Multipliers to increase Secondary Weapon Critical Chance and Critical Damage by X% per Combo consumed for 30s."
+
+effects:
+  # "Per Combo consumed" = per melee combo MULTIPLIER tier: the regular 12x
+  # combo cap (240 hits) gives 12 stacks = +240% at max rank. Both bonuses are
+  # ADDITIVE with their buckets (Pistol Gambit / Target Cracker). Swapping with
+  # a LOWER combo does not override a stronger active buff.
+  - kind: buff
+    trigger: on_swap_consume_combo
+    grants: crit_chance
+    rank0: 0.05
+    rankMax: 0.2
+    ranks: [0.05, 0.07, 0.09, 0.12, 0.16, 0.2]   # NON-LINEAR (warframestat)
+    max_stacks: 12
+    duration: 30
+  - kind: buff
+    trigger: on_swap_consume_combo
+    grants: crit_damage
+    rank0: 0.05
+    rankMax: 0.2
+    ranks: [0.05, 0.07, 0.09, 0.12, 0.16, 0.2]   # NON-LINEAR (warframestat)
+    max_stacks: 12
+    duration: 30
+
+source:
+  url: https://wiki.warframe.com/w/Secondary_Outburst

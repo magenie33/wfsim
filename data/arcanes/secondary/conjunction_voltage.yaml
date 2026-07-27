@@ -1,0 +1,34 @@
+id: conjunction_voltage
+kind: arcane
+name: Conjunction Voltage
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SecondaryReloadSpeedAndMultishotOnElectricProc
+description: "On Electricity Status Effect:\n+X% Reload Speed and +X% Multishot for 12s. Stacks up to 40x."
+
+effects:
+  # Any player source of the Electricity proc counts (any weapon, abilities,
+  # companions), even while the secondary is holstered - but NOT Electricity
+  # procs created by Magnetic status. Shared 12 s timer refreshed by each new
+  # proc; on timeout ALL stacks drop at once (on-status family, wiki-confirmed
+  # same behavior as Cascadia Flare).
+  - kind: buff
+    trigger: on_electricity_status
+    grants: reload_speed
+    rank0: 0.0025
+    rankMax: 0.015
+    max_stacks: 40
+    duration: 12
+    decay: all_drop_on_timeout
+  - kind: buff
+    trigger: on_electricity_status
+    grants: multishot
+    rank0: 0.005
+    rankMax: 0.03
+    max_stacks: 40
+    duration: 12
+    decay: all_drop_on_timeout
+
+source:
+  url: https://wiki.warframe.com/w/Conjunction_Voltage

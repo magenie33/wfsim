@@ -1,0 +1,23 @@
+id: secondary_irradiate
+kind: arcane
+name: Secondary Irradiate
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/RadialDamageOnMaxRadiationStackHit
+description: "On hitting enemies afflicted by 10 stacks of Radiation: Deal X% of the hit damage to enemies within Xm."
+
+effects:
+  # DIRECT hits only (multishot pellets each trigger; beams/AoE don't spread).
+  # Spread hits need line of sight, count as BODY hits (no headshot/weakpoint
+  # multiplier), roll their own crits, and apply the same status effects as the
+  # triggering hit.
+  - kind: aoe_echo
+    condition: target_has_10_radiation_stacks
+    rank0: 0.8                 # fraction of the hit damage dealt in the radius
+    rankMax: 1.8
+    radius_rank0: 4.5
+    radius_rankMax: 7
+
+source:
+  url: https://wiki.warframe.com/w/Secondary_Irradiate

@@ -1,0 +1,20 @@
+id: cascadia_empowered
+kind: arcane
+name: Cascadia Empowered
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Zariman/SecondaryOnStatusProcBonusDamage
+description: "On Status Effect:\nDeals +X Damage matching the Damage Type of the Status Effect"
+
+effects:
+  # Each status proc creates an EXTRA FLAT damage instance of the proc's type.
+  # NOT affected by damage/element/physical/crit mods, Galvanized Shot stacks,
+  # weakpoint multipliers, or falloff; faction bonuses apply ONCE; enemy damage
+  # reduction still applies. Multiple procs in one hit each add their instance.
+  - kind: flat_damage_on_status
+    rank0: 250
+    rankMax: 750
+
+source:
+  url: https://wiki.warframe.com/w/Cascadia_Empowered

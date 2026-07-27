@@ -1,0 +1,23 @@
+id: secondary_kinship
+kind: arcane
+name: Secondary Kinship
+arcane_type: secondary
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SecondaryCritChancePerBuff
+description: "While Buffing Ally Warframes: +X% Critical Chance per buff"
+
+effects:
+  # Flat crit chance ADDITIVE with the crit-chance bucket (wiki: Bolto with
+  # maxed Pistol Gambit + 3 stacks = 16% x (1 + 120% + 3 x 20%)). One stack per
+  # ally-affecting buff, counted PER TARGET each buff reaches - a team-context
+  # mechanic with no fixed cap; inert in the single-actor sim.
+  - kind: crit_chance_bonus
+    condition: while_buffing_ally_warframes
+    per: ally_buff
+    rank0: 0.03
+    rankMax: 0.2
+    ranks: [0.03, 0.06, 0.1, 0.13, 0.17, 0.2]   # NON-LINEAR (warframestat)
+
+source:
+  url: https://wiki.warframe.com/w/Secondary_Kinship
