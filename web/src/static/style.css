@@ -27,9 +27,11 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .topbar{display:flex;align-items:center;gap:18px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:20}
 .brand{font-weight:800;font-size:20px;letter-spacing:-.01em}.brand span{color:var(--gold)}
 .weapon-pick{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2)}
+.presets{display:flex;align-items:center;gap:6px;margin-left:auto}
+.presets select{max-width:170px}
 .ghost-btn{background:transparent;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:5px 9px;cursor:pointer;font:inherit}
 .ghost-btn:hover{background:var(--plane)}.ghost-btn.small{font-size:11px;padding:2px 7px}
-#theme-toggle{margin-left:auto}
+#theme-toggle{margin-left:0}
 
 .config-page{max-width:760px;margin:0 auto;padding:18px}
 

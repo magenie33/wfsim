@@ -59,12 +59,91 @@ async function init() {
   applyWeapon(d.weapon, d.mods);
 
   $("weapon").addEventListener("change", () => applyWeapon($("weapon").value, null));
+  initPresets();
   $("auto-forma").addEventListener("click", () => { autoForma(); renderMods(); });
   $("clear-mods").addEventListener("click", () => { slots.forEach((s, i) => { s.mod = null; s.pol = innate[i]; }); renderMods(); });
   document.addEventListener("click", (e) => {
     if (!e.target.closest(".popover") && !e.target.closest(".slot")) closePopovers();
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePopovers(); });
+}
+
+// ---- Presets: up to 10 saved builds (localStorage) --------------------
+// A preset captures the WHOLE configuration: weapon, mod slots (mod id +
+// polarity + rank), arcane + rank, and the per-tier evolution selection.
+const PRESET_KEY = "wfsim-presets";
+const PRESET_MAX = 10;
+const loadPresets = () => {
+  try { const p = JSON.parse(localStorage.getItem(PRESET_KEY)); return Array.isArray(p) ? p : []; }
+  catch (_) { return []; }
+};
+const storePresets = (ps) => localStorage.setItem(PRESET_KEY, JSON.stringify(ps));
+
+function snapshotState() {
+  return {
+    weapon: $("weapon").value,
+    evoSel: { ...evoSel },
+    arcane,
+    arcaneRank,
+    slots: slots.map((s) => ({ mod: s.mod, pol: s.pol, rank: s.rank })),
+  };
+}
+
+function restoreState(st) {
+  if (!st || !weaponInfo(st.weapon)) return;
+  $("weapon").value = st.weapon;
+  applyWeapon(st.weapon, null); // resets pool/innate/visibility
+  (st.slots || []).forEach((s, i) => {
+    if (i >= slots.length) return;
+    slots[i].mod = s.mod && modById(s.mod) ? s.mod : null; // drop ids gone from the pool
+    slots[i].pol = s.pol ?? null;
+    slots[i].rank = s.rank ?? null;
+  });
+  evoSel = { 1: null, 2: null, 3: null, 4: null, ...(st.evoSel || {}) };
+  arcane = st.arcane && arcaneById(st.arcane) ? st.arcane : "none";
+  arcaneRank = st.arcaneRank ?? null;
+  renderMods(); renderArcanes(); renderEvo(); refreshPanel();
+}
+
+const escHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function renderPresetSelect(selected) {
+  const sel = $("preset-sel");
+  const ps = loadPresets();
+  sel.innerHTML = `<option value="">presets… (${ps.length}/${PRESET_MAX})</option>` +
+    ps.map((p) => `<option value="${escHtml(p.name)}" ${p.name === selected ? "selected" : ""}>${escHtml(p.name)}</option>`).join("");
+}
+
+function initPresets() {
+  renderPresetSelect(null);
+  $("preset-sel").addEventListener("change", () => {
+    const p = loadPresets().find((x) => x.name === $("preset-sel").value);
+    if (p) restoreState(p.state);
+  });
+  $("preset-save").addEventListener("click", () => {
+    const ps = loadPresets();
+    const cur = $("preset-sel").value;
+    const name = (prompt("Preset name:", cur || `preset ${ps.length + 1}`) || "").trim();
+    if (!name) return;
+    const at = ps.findIndex((p) => p.name === name);
+    if (at >= 0) {
+      ps[at] = { name, savedAt: Date.now(), state: snapshotState() }; // overwrite by name
+    } else if (ps.length >= PRESET_MAX) {
+      alert(`Preset limit reached (${PRESET_MAX}) — delete one first.`);
+      return;
+    } else {
+      ps.push({ name, savedAt: Date.now(), state: snapshotState() });
+    }
+    storePresets(ps);
+    renderPresetSelect(name);
+  });
+  $("preset-del").addEventListener("click", () => {
+    const name = $("preset-sel").value;
+    if (!name) return;
+    if (!confirm(`Delete preset "${name}"?`)) return;
+    storePresets(loadPresets().filter((p) => p.name !== name));
+    renderPresetSelect(null);
+  });
 }
 
 function fillSelect(id, items) {

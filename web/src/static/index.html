@@ -10,6 +10,11 @@
   <header class="topbar">
     <div class="brand">WF<span>Sim</span></div>
     <label class="weapon-pick">Weapon <select id="weapon"></select></label>
+    <div class="presets">
+      <select id="preset-sel" title="load a saved preset"><option value="">presets…</option></select>
+      <button id="preset-save" class="ghost-btn small" title="save the current build as a preset (max 10)">save</button>
+      <button id="preset-del" class="ghost-btn small" title="delete the selected preset">delete</button>
+    </div>
     <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
   </header>
 
