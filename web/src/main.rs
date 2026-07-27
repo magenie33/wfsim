@@ -865,32 +865,56 @@ fn panel_json(v: &Value) -> Value {
         (panel.fire_rate - base.base_fire_rate).abs() > 1e-9);
     row("reload", "Reload", format!("{}s", num(base.base_reload)), format!("{}s", num(panel.reload_seconds)),
         (panel.reload_seconds - base.base_reload).abs() > 1e-9);
+    // PER-WEAPON behavior: GunCO sources (Galvanized Shot, Carnage Reign,
+    // Secondary Shiver) combine differently per weapon class, and their base
+    // EXCLUDES evolution flat damage — this note states what the model
+    // actually computes on THIS weapon, and is shared by every GunCO row.
+    let behavior = match panel.co_behavior {
+        wfsim_engine::loadout::CoBehavior::AdditiveWithBaseDamage =>
+            "joins the base-damage bracket on this weapon (additive with Hornet Strike), direct hits only",
+        wfsim_engine::loadout::CoBehavior::Independent =>
+            "an independent multiplier on this weapon, direct hits only",
+        wfsim_engine::loadout::CoBehavior::Inert =>
+            "INERT on this weapon — the bonus does not apply",
+    };
+    let gunco_note = if (panel.co_base_fraction - 1.0).abs() > 1e-9 {
+        format!(
+            "computed on the ORIGINAL {:.0} base only — evolution flat damage is excluded ({:.0}% effectiveness); {behavior}",
+            raw_bd,
+            panel.co_base_fraction * 100.0
+        )
+    } else {
+        behavior.to_string()
+    };
     if panel.co_per_type > 0.0 {
-        // PER-WEAPON behavior: GunCO sources (Galvanized Shot, Carnage
-        // Reign, Secondary Shiver) combine differently per weapon class,
-        // and their base EXCLUDES evolution flat damage — the note states
-        // what the model actually computes on THIS weapon.
-        let behavior = match panel.co_behavior {
-            wfsim_engine::loadout::CoBehavior::AdditiveWithBaseDamage =>
-                "joins the base-damage bracket on this weapon (additive with Hornet Strike), direct hits only",
-            wfsim_engine::loadout::CoBehavior::Independent =>
-                "an independent multiplier on this weapon, direct hits only",
-            wfsim_engine::loadout::CoBehavior::Inert =>
-                "INERT on this weapon — the bonus does not apply",
-        };
-        let note = if (panel.co_base_fraction - 1.0).abs() > 1e-9 {
-            format!(
-                "computed on the ORIGINAL {:.0} base only — evolution flat damage is excluded ({:.0}% effectiveness); {behavior}",
-                raw_bd,
-                panel.co_base_fraction * 100.0
-            )
-        } else {
-            behavior.to_string()
-        };
         stats.push(json!({ "key": "co", "label": "Condition Overload",
             "base": "—", "final": format!("{} per status type on target", fpct(panel.co_per_type)),
-            "note": note,
+            "note": gunco_note,
             "sources": sources("co", None) }));
+    }
+
+    // The equipped arcane on the panel: Secondary Shiver is a GunCO-family
+    // source, so its row carries the SAME per-weapon caveat as the CO row.
+    if info.uses_arcane {
+        let aid = match get_str(v, "arcane", "none") {
+            "enervate" => "secondary_enervate",
+            "deadhead" => "secondary_deadhead",
+            "flare" => "cascadia_flare",
+            other => other,
+        };
+        if let Some(def) = wfsim_engine::arcanes_data::secondary(aid) {
+            let rank = get_u32(v, "arcane_rank", def.max_rank).min(def.max_rank);
+            let fx = def.fx(rank, policy, base.base_crit_chance, base.base_crit_damage, base.traits);
+            if fx.per_cold_bd > 0.0 {
+                stats.push(json!({ "key": "shiver", "label": "Per Cold Status (Shiver)",
+                    "base": "—",
+                    "final": format!("{} damage per Cold status on target (cap {})",
+                        fpct(fx.per_cold_bd), fx.cold_cap),
+                    "note": format!("GunCO family — {gunco_note}"),
+                    "sources": [json!({ "mod": format!("{} (arcane, rank {rank})", def.name),
+                        "value": fpct(fx.per_cold_bd), "note": "per Cold stack; Frozen counts as the full 10" })] }));
+            }
+        }
     }
 
     // Elements: one row per contributed element (position/order matters for

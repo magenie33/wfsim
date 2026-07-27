@@ -3381,6 +3381,23 @@ mod tests {
     }
 
     #[test]
+    fn shiver_is_scaled_by_the_gunco_base_fraction() {
+        // GunCO sources compute on the ORIGINAL base, excluding evolution
+        // flat damage (wiki CO catalog) — Shiver is one of them, so its
+        // per-stack bonus scales by co_base_fraction like Galvanized Shot's.
+        // Same setup as above with fraction 0.5: 75 × Σ(1 + 0.45×0.5×min(k,5))
+        // = 75 × (10 + 0.225 × 35) = 1340.625.
+        let p = DummyParams {
+            arcane: arc("secondary_shiver"),
+            forced_procs: vec![DamageType::Cold],
+            co_base_fraction: 0.5,
+            ..flat_base()
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!((s.mean_damage - 1340.625).abs() < 1e-9, "dmg {}", s.mean_damage);
+    }
+
+    #[test]
     fn fortifier_multiplies_damage_while_overguard_holds() {
         // ×8 on every direct hit while the (infinite) overguard is up:
         // 10 × 75 × 8 = 6000.

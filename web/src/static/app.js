@@ -282,6 +282,8 @@ function refreshPanel() {
       // No Incarnon Form unlock (tier 1 empty) = the weapon cannot
       // transform: the stats panel shows the BASE form.
       form: evoSel[1] ? "incarnon" : "base",
+      arcane,
+      arcane_rank: arcaneRank,
       mods: slots.filter((s) => s.mod).map((s) => s.mod), // slot order (elements are position-sensitive)
     };
     try {
@@ -326,6 +328,13 @@ function renderPanel(r) {
     : "";
 }
 
+// Wiki page for an item, from its display name (the data files' source
+// urls follow the same Name_With_Underscores convention).
+const wikiUrl = (name) => "https://wiki.warframe.com/w/" + encodeURIComponent(name.replace(/ /g, "_"));
+// EVERY item name (mod / arcane / evolution) opens its wiki page in a new
+// tab; the click never triggers the card's own handlers.
+const wl = (text, url) => `<a class="wl" href="${url || wikiUrl(text)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${text}</a>`;
+
 // Description lines at a rank: the verbatim in-game text with the
 // rank-varying numbers filled server-side (mods and arcanes alike). Null
 // when the pool has no yaml description (hardcoded rifle pool) — callers
@@ -352,7 +361,7 @@ function buildSlot(i) {
     // slot's rank), exactly like the in-game card.
     const desc = descAt(m, r);
     el.innerHTML = polBtn(s.pol, i) + imgTag(m.image ? CDN + m.image : null, "mod") +
-      `<div class="info"><div class="mn">${m.name}</div>${desc ? `<div class="me">${desc.map((x) => `<div>${x}</div>`).join("")}</div>` : ""}<div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div>` +
+      `<div class="info"><div class="mn">${wl(m.name)}</div>${desc ? `<div class="me">${desc.map((x) => `<div>${x}</div>`).join("")}</div>` : ""}<div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div>` +
       `<button class="dots" title="options">⋯</button>`;
     el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openSlotMenu(i, e.currentTarget); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
@@ -461,7 +470,7 @@ function renderMenu(slotIdx, query) {
       : m.effects.join(" · ");
     return `<div class="opt ${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : at >= 0 ? "placed" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" data-id="${m.id}" title="${title}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(m.image ? CDN + m.image : null, "mod")}
-      <div class="info"><div class="mn">${m.name}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${(descAt(m, m.max_rank) || m.effects).map((x) => `<div>${x}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
+      <div class="info"><div class="mn">${wl(m.name)}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${(descAt(m, m.max_rank) || m.effects).map((x) => `<div>${x}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => {
     const id = o.dataset.id;
@@ -540,7 +549,7 @@ function renderArcanes() {
     // The slot shows the verbatim DESCRIPTION at the selected rank (like
     // the mod cards); model effect lines remain the search text.
     el.innerHTML = imgTag(a.image ? CDN + a.image : null, "mod") +
-      `<div class="info"><div class="mn">${a.name}</div>${effLines(descAt(a, r) || effectsAt(a, r))}${rank}</div>` +
+      `<div class="info"><div class="mn">${wl(a.name)}</div>${effLines(descAt(a, r) || effectsAt(a, r))}${rank}</div>` +
       `<button class="dots" title="options">⋯</button>`;
     el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openArcaneMenu(el); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
@@ -549,7 +558,11 @@ function renderArcanes() {
       renderArcanes();
     }));
   }
-  el.addEventListener("click", (e) => { e.stopPropagation(); openArcanePicker(el); });
+  // Mod-slot parity: only the EMPTY slot opens the picker on click; a
+  // filled card swaps via its ⋯ menu — so its text stays selectable.
+  if (none) {
+    el.addEventListener("click", (e) => { e.stopPropagation(); openArcanePicker(el); });
+  }
   box.appendChild(el);
 }
 
@@ -579,7 +592,7 @@ function renderArcaneMenu(query) {
     const none = a.id === "none";
     return `<div class="opt ${isCur ? "cur" : ""} ${a.rarity ? "rar-" + a.rarity : ""}" data-id="${a.id}">
       ${none ? '<span class="mod none">∅</span>' : imgTag(a.image ? CDN + a.image : null, "mod")}
-      <div class="info"><div class="mn">${a.name}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}</div>${effLines(descAt(a, a.max_rank) || effectsAt(a, a.max_rank))}</div></div>`;
+      <div class="info"><div class="mn">${none ? a.name : wl(a.name)}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}</div>${effLines(descAt(a, a.max_rank) || effectsAt(a, a.max_rank))}</div></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => { setArcane(o.dataset.id); closePopovers(); renderArcanes(); }));
 }
@@ -617,8 +630,11 @@ function renderEvo() {
       const warn = o.broken && o.id === sel
         ? `<span class="ed warn">⚠ does not work in-game (wiki) — the simulation computes it as NO EFFECT</span>`
         : "";
+      // Evolutions have no standalone wiki pages — link to the weapon's
+      // Incarnon Genesis page.
+      const genesis = wikiUrl(weaponInfo($("weapon").value).name.replace(" (sentinel)", "") + " Incarnon Genesis");
       return `<span class="${cls}" data-tier="${t.tier}" data-id="${o.id}" title="${title}">
-        ${icon}<span class="einfo"><b class="en">${o.name}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}</b><span class="ed">${lines}</span>${warn}</span></span>`;
+        ${icon}<span class="einfo"><b class="en">${wl(o.name, genesis)}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}</b><span class="ed">${lines}</span>${warn}</span></span>`;
     };
     const empty = `<span class="evopick empty ${sel === null ? "sel" : ""}" data-tier="${t.tier}" data-id="">
       <span class="einfo"><b class="en">None</b><span class="ed"><div>${t.tier === 1 ? "no Incarnon Form — the weapon stays in its base form" : "nothing installed at this tier"}</div></span></span></span>`;
