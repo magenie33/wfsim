@@ -208,6 +208,64 @@ impl IndirectStat {
     }
 }
 
+/// Is the char at `i` a rank-varying `X` placeholder in a description
+/// template? Matches the data convention (docs: description-X): a bare `X`
+/// (`+X%`, `+X Punch Through`), the multiplier form `xX`, and the metric
+/// form `Xm` — but never a letter inside a word.
+fn is_x_at(b: &[char], i: usize) -> bool {
+    if b[i] != 'X' {
+        return false;
+    }
+    let prev_ok = i == 0 || !b[i - 1].is_ascii_alphabetic() || b[i - 1] == 'x';
+    let next_ok = match b.get(i + 1) {
+        None => true,
+        Some('%') => true,
+        Some('m') => b.get(i + 2).is_none_or(|c| !c.is_ascii_alphabetic()),
+        Some(c) => !c.is_ascii_alphabetic(),
+    };
+    prev_ok && next_ok
+}
+
+/// Number of rank-varying `X` placeholders in a description template.
+pub fn count_x(template: &str) -> usize {
+    let b: Vec<char> = template.chars().collect();
+    (0..b.len()).filter(|&i| is_x_at(&b, i)).count()
+}
+
+/// Fill a description template's `X` placeholders with concrete values, in
+/// order. Values are stored as BONUSES (schema): before `%` they render
+/// ×100; in the multiplier form `xX` they render +1 (a stored 0.3 shows as
+/// `x1.3`); any other position renders the raw number. Extra `X`s beyond
+/// `vals` stay as-is (the caller's honest fallback).
+pub fn fill_x(template: &str, vals: &[f64]) -> String {
+    let b: Vec<char> = template.chars().collect();
+    let mut out = String::new();
+    let mut vi = 0;
+    for i in 0..b.len() {
+        if is_x_at(&b, i) && vi < vals.len() {
+            let mut v = if b.get(i + 1) == Some(&'%') {
+                vals[vi] * 100.0
+            } else if i > 0 && b[i - 1] == 'x' {
+                vals[vi] + 1.0
+            } else {
+                vals[vi]
+            };
+            // The template carries the sign ("+X%" / "-X%"); the stored
+            // value may carry it too (corrupted downsides are negative
+            // bonuses) — render the magnitude to avoid "--15%".
+            if i > 0 && matches!(b[i - 1], '+' | '-' | '−') {
+                v = v.abs();
+            }
+            let s = format!("{v:.2}");
+            out.push_str(s.trim_end_matches('0').trim_end_matches('.'));
+            vi += 1;
+        } else {
+            out.push(b[i]);
+        }
+    }
+    out
+}
+
 /// "+60%" / "−15%" / "+109.5%" from a fraction (true minus sign).
 pub fn pct(x: f64) -> String {
     let p = x.abs() * 100.0;

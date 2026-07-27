@@ -238,6 +238,14 @@ function renderPanel(r) {
     : "";
 }
 
+// Description lines at a rank: the verbatim in-game text with the
+// rank-varying numbers filled server-side (mods and arcanes alike). Null
+// when the pool has no yaml description (hardcoded rifle pool) — callers
+// fall back to the model's effect lines.
+const descAt = (o, r) => o.desc_ranks
+  ? o.desc_ranks[Math.max(0, Math.min(o.desc_ranks.length - 1, r))].split("\n")
+  : null;
+
 // One slot card (regular or exilus) with its polarity / rank / menu wiring.
 function buildSlot(i) {
   const s = slots[i];
@@ -252,8 +260,11 @@ function buildSlot(i) {
     const rank = m.max_rank > 0
       ? `<span class="rank ${lowered ? "lowered" : ""}"><button class="rk" data-d="-1">−</button><b>R${r}${lowered ? "/" + m.max_rank : ""}</b><button class="rk" data-d="1">+</button></span>`
       : "";
+    // The configured mod shows its CURRENT description (values at the
+    // slot's rank), exactly like the in-game card.
+    const desc = descAt(m, r);
     el.innerHTML = polBtn(s.pol, i) + imgTag(m.image ? CDN + m.image : null, "mod") +
-      `<div class="info"><div class="mn">${m.name}</div><div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div>` +
+      `<div class="info"><div class="mn">${m.name}</div>${desc ? `<div class="me">${desc.map((x) => `<div>${x}</div>`).join("")}</div>` : ""}<div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div>` +
       `<button class="dots" title="options">⋯</button>`;
     el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openSlotMenu(i, e.currentTarget); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
@@ -332,7 +343,8 @@ function renderMenu(slotIdx, query) {
   const hits = currentPool
     .filter((m) => slotIdx !== EXILUS || m.exilus) // exilus slot: utility mods only
     .filter((m) => !pickerPrefs.pol || m.polarity === pickerPrefs.pol)
-    .filter((m) => !q || m.name.toLowerCase().includes(q) || m.effects.join(" ").toLowerCase().includes(q))
+    .filter((m) => !q || m.name.toLowerCase().includes(q) || m.effects.join(" ").toLowerCase().includes(q)
+      || (m.desc_ranks || []).join(" ").toLowerCase().includes(q))
     .sort((a, b) => {
       const g = group(a) - group(b); // current first, then equipped, then the rest
       if (g) return g;
@@ -361,7 +373,7 @@ function renderMenu(slotIdx, query) {
       : m.effects.join(" · ");
     return `<div class="opt ${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : at >= 0 ? "placed" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" data-id="${m.id}" title="${title}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(m.image ? CDN + m.image : null, "mod")}
-      <div class="info"><div class="mn">${m.name}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${m.effects.map((x) => `<div>${x}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
+      <div class="info"><div class="mn">${m.name}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${(descAt(m, m.max_rank) || m.effects).map((x) => `<div>${x}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => {
     const id = o.dataset.id;
@@ -437,8 +449,10 @@ function renderArcanes() {
       ? `<span class="rank ${lowered ? "lowered" : ""}"><button class="rk" data-d="-1">−</button><b>R${r}${lowered ? "/" + maxr : ""}</b><button class="rk" data-d="1">+</button></span>`
       : "";
     el.className = "slot filled arc" + (a.rarity ? " rar-" + a.rarity : "");
+    // The slot shows the verbatim DESCRIPTION at the selected rank (like
+    // the mod cards); model effect lines remain the search text.
     el.innerHTML = imgTag(a.image ? CDN + a.image : null, "mod") +
-      `<div class="info"><div class="mn">${a.name}</div>${effLines(effectsAt(a, r))}${rank}</div>` +
+      `<div class="info"><div class="mn">${a.name}</div>${effLines(descAt(a, r) || effectsAt(a, r))}${rank}</div>` +
       `<button class="dots" title="options">⋯</button>`;
     el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openArcaneMenu(el); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
@@ -467,8 +481,9 @@ function openArcanePicker(anchor) {
 function renderArcaneMenu(query) {
   const menu = $("arcane-menu");
   const q = query.trim().toLowerCase();
-  // Search matches NAME or ANY rank's effect text.
-  const allEff = (a) => (a.ranks || []).reduce((acc, r) => acc.concat(r), []).join(" ").toLowerCase();
+  // Search matches NAME, ANY rank's effect text, or the description.
+  const allEff = (a) => (a.ranks || []).reduce((acc, r) => acc.concat(r), [])
+    .concat(a.desc_ranks || []).join(" ").toLowerCase();
   const hits = META.arcanes.filter((a) => a.id === "none" || !q ||
     a.name.toLowerCase().includes(q) || allEff(a).includes(q));
   menu.innerHTML = hits.length ? hits.map((a) => {
@@ -476,7 +491,7 @@ function renderArcaneMenu(query) {
     const none = a.id === "none";
     return `<div class="opt ${isCur ? "cur" : ""} ${a.rarity ? "rar-" + a.rarity : ""}" data-id="${a.id}">
       ${none ? '<span class="mod none">∅</span>' : imgTag(a.image ? CDN + a.image : null, "mod")}
-      <div class="info"><div class="mn">${a.name}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}</div>${effLines(effectsAt(a, a.max_rank))}</div></div>`;
+      <div class="info"><div class="mn">${a.name}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}</div>${effLines(descAt(a, a.max_rank) || effectsAt(a, a.max_rank))}</div></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => { setArcane(o.dataset.id); closePopovers(); renderArcanes(); }));
 }

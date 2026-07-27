@@ -76,6 +76,11 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .pol-btn .nopol{color:var(--muted);font-size:13px}
 .slot .mod{width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid var(--rar,var(--line));flex:none}
 .slot.filled{border-left:3px solid var(--rar,var(--line))}
+/* Cards grew a description block: icon/polarity/dots align with the TOP
+   row (the name), not the vertical center. Empty slots stay centered. */
+.slot.filled{align-items:flex-start}
+.slot.filled .pol-btn,.slot.filled .mod{margin-top:2px}
+.slot.filled .dots{margin-top:4px}
 .slot .info{min-width:0;flex:1}
 .slot .mn{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slot .dr{font-size:11px;color:var(--muted)}
@@ -116,7 +121,9 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .rank b{font-variant-numeric:tabular-nums;min-width:26px;text-align:center}
 .rank.lowered{color:#04111f;background:var(--gold);border-radius:6px;padding:1px 4px;font-weight:700}
 .rank.lowered .rk{background:rgba(0,0,0,.15);border-color:rgba(0,0,0,.25);color:#04111f}
-.combo-menu .opt{display:flex;align-items:center;gap:9px;padding:6px 10px;cursor:pointer;border-left:3px solid var(--rar,transparent)}
+.combo-menu .opt{display:flex;align-items:flex-start;gap:9px;padding:6px 10px;cursor:pointer;border-left:3px solid var(--rar,transparent)}
+.combo-menu .opt .pol,.combo-menu .opt .mod{margin-top:2px}
+.combo-menu .opt .dr{margin-top:2px}
 .combo-menu .opt:hover{background:var(--panel2)}
 .combo-menu .opt.dis{opacity:.4;cursor:not-allowed}
 .combo-menu .opt .pol{width:14px;height:14px;flex:none}
@@ -126,6 +133,10 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .combo-menu .opt .mn{font-size:12.5px;font-weight:600}
 .combo-menu .opt .me{font-size:11px;color:var(--text-2)}
 .combo-menu .opt .me div{line-height:1.35}
+/* Configured slot cards show the current-rank description in the same
+   small-text style as the picker cards. */
+.slot .me{font-size:11px;color:var(--text-2)}
+.slot .me div{line-height:1.35}
 .exchip{font-size:9px;letter-spacing:.05em;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 4px;vertical-align:1px}
 .slotchip{font-size:9px;letter-spacing:.05em;color:color-mix(in srgb,var(--accent) 80%,var(--text));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:4px;padding:0 4px;vertical-align:1px}
 .slotchip.cur{color:#fff;background:var(--accent);border-color:var(--accent)}

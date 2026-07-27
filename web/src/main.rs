@@ -424,7 +424,7 @@ fn mod_category(m: &ModDef) -> &'static str {
 fn mods_json(p: &[ModDef]) -> Vec<Value> {
     p.iter()
         .map(|m| {
-            json!({
+            let mut j = json!({
                 "id": m.id,
                 "name": prettify(m.id),
                 "drain": m.base_drain,
@@ -435,10 +435,19 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 "family": m.family,
                 "category": mod_category(m),
                 "image": assets().mods.get(m.id),
-                // One line per modeled effect — engine describe() is the
-                // single display source (our statement of the model).
+                // One line per modeled effect — engine describe() stays the
+                // model's own statement (search + panel attribution).
                 "effects": m.effects.iter().map(|e| e.describe()).collect::<Vec<_>>(),
-            })
+            });
+            // The verbatim in-game DESCRIPTION per rank (X filled) — what
+            // the picker and the configured slot display. Absent for pools
+            // without yaml descriptions (the hardcoded rifle pool): the UI
+            // falls back to the effect lines.
+            if let Some(info) = wfsim_engine::mods_data::desc_info(m.id) {
+                let dr: Vec<String> = (0..=info.max_rank).map(|r| info.at(r)).collect();
+                j["desc_ranks"] = json!(dr);
+            }
+            j
         })
         .collect()
 }
@@ -489,11 +498,15 @@ fn meta_json() -> Value {
     )];
     for a in wfsim_engine::arcanes_data::secondary_pool() {
         let ranks: Vec<Vec<String>> = (0..=a.max_rank).map(|r| a.describe_at(r)).collect();
+        // The verbatim in-game description per rank (X filled) — the display
+        // text; `ranks` (model describe lines) stays for search.
+        let desc_ranks: Vec<String> = (0..=a.max_rank).map(|r| a.desc_at(r)).collect();
         arcanes_json.push(json!({
             "id": a.id,
             "name": a.name,
             "image": assets().arcanes.get(&a.id),
             "ranks": ranks,
+            "desc_ranks": desc_ranks,
             "max_rank": a.max_rank,
             "rarity": format!("{:?}", a.rarity).to_lowercase(),
         }));

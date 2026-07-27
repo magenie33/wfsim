@@ -21,7 +21,7 @@ use std::sync::OnceLock;
 use serde::Deserialize;
 use serde_norway::Value;
 
-use crate::loadout::{pct, Rarity, StackPolicy};
+use crate::loadout::{count_x, fill_x, pct, Rarity, StackPolicy};
 
 #[derive(Debug, Deserialize)]
 struct ArcaneFile {
@@ -39,6 +39,9 @@ struct ArcaneFile {
     /// in `engine::perks`, not in the declarative effect vocabulary).
     #[serde(default)]
     perk: Option<String>,
+    /// Verbatim in-game text, rank-varying numbers as `X` (schema).
+    #[serde(default)]
+    description: Option<String>,
     effects: Vec<Value>,
 }
 
@@ -201,6 +204,8 @@ pub struct ArcaneDef {
     pub rarity: Rarity,
     pub max_rank: u32,
     pub requires: Option<String>,
+    /// Verbatim in-game text with rank-varying numbers as `X`.
+    pub description: String,
     perk: Option<String>,
     effects: Vec<ArcEffect>,
 }
@@ -234,9 +239,15 @@ enum ArcEffect {
     PerColdDamage { scale: Scale, max_stacks: u32 },
     FlatDamageOnStatus(Scale),
     EncumberChance(Scale),
-    ColdBurstOnPuncture(Scale),
+    ColdBurst { scale: Scale, radius0: f64, radius1: f64 },
     OverguardDamage(Scale),
     AmmoEfficiency(Scale),
+    /// Kinship: per ally-affecting buff — team context, uncapped: inert in
+    /// the sim, but its per-rank value still renders in the description.
+    PerAllyCritChance(Scale),
+    /// Irradiate: % of the hit damage echoed in a radius — AoE, inert in
+    /// the single-target sim; values render in the description.
+    AoeEcho { scale: Scale, radius0: f64, radius1: f64 },
     /// No single-target sim payload (aoe_echo, overguard_on_damage, combo
     /// duration, recoil, Kinship's uncapped team-context CC, …). Kept so the
     /// arcane loads; the description line still shows it.
@@ -317,10 +328,9 @@ fn effect(v: &Value) -> Option<ArcEffect> {
                 all_drop,
             }
         }
-        // Kinship carries `per: ally_buff` — team-context, uncapped: inert.
-        "crit_chance_bonus" if s(v, "per").is_some() => {
-            return inert("per-ally-buff (team context)")
-        }
+        // Kinship carries `per: ally_buff` — team-context, uncapped: inert
+        // in the sim; the value still renders in the description.
+        "crit_chance_bonus" if s(v, "per").is_some() => ArcEffect::PerAllyCritChance(scale(v)),
         "crit_chance_bonus" => ArcEffect::CondCritChance(scale(v)),
         "headshot_multiplier_bonus" => ArcEffect::HeadshotMultiplier {
             value: f(v, "rankMax").unwrap_or(0.0),
@@ -336,7 +346,16 @@ fn effect(v: &Value) -> Option<ArcEffect> {
         },
         "flat_damage_on_status" => ArcEffect::FlatDamageOnStatus(scale(v)),
         "proc_conversion" => ArcEffect::EncumberChance(scale(v)),
-        "proc_burst" => ArcEffect::ColdBurstOnPuncture(scale(v)),
+        "proc_burst" => ArcEffect::ColdBurst {
+            scale: scale(v),
+            radius0: f(v, "radius_rank0").unwrap_or(0.0),
+            radius1: f(v, "radius_rankMax").unwrap_or(0.0),
+        },
+        "aoe_echo" => ArcEffect::AoeEcho {
+            scale: scale(v),
+            radius0: f(v, "radius_rank0").unwrap_or(0.0),
+            radius1: f(v, "radius_rankMax").unwrap_or(0.0),
+        },
         "overguard_damage_bonus" => ArcEffect::OverguardDamage(scale(v)),
         "ammo_efficiency" => ArcEffect::AmmoEfficiency(scale(v)),
         other => return inert(other),
@@ -434,9 +453,11 @@ impl ArcaneDef {
                 ArcEffect::EncumberChance(sc) => {
                     fx.encumber_chance = sc.at(rank, self.max_rank);
                 }
-                ArcEffect::ColdBurstOnPuncture(sc) => {
-                    fx.cold_burst_on_puncture = sc.at(rank, self.max_rank).round() as u32;
+                ArcEffect::ColdBurst { scale, .. } => {
+                    fx.cold_burst_on_puncture = scale.at(rank, self.max_rank).round() as u32;
                 }
+                // Team-context / AoE — no single-target sim payload.
+                ArcEffect::PerAllyCritChance(_) | ArcEffect::AoeEcho { .. } => {}
                 ArcEffect::OverguardDamage(sc) => {
                     fx.overguard_mult = 1.0 + sc.at(rank, self.max_rank);
                 }
@@ -449,6 +470,69 @@ impl ArcaneDef {
             }
         }
         fx
+    }
+
+    /// The verbatim in-game DESCRIPTION with its `X` placeholders filled at
+    /// `rank` — what the config page shows (docs: description-X schema).
+    ///
+    /// `X`s map to the effects' display values in yaml order. Two derived
+    /// cases close the gaps: adjacent effects sharing one number collapse
+    /// (Outburst's cc+cd "by X% per Combo"), and a trailing "Stacks up to
+    /// X%" cap is per_stack × max_stacks (Cascadia Flare).
+    pub fn desc_at(&self, rank: u32) -> String {
+        let rank = rank.min(self.max_rank);
+        let at = |sc: &Scale| sc.at(rank, self.max_rank);
+        let lerp = |a: f64, b: f64| a + (b - a) * rank as f64 / self.max_rank.max(1) as f64;
+        let mut vals: Vec<f64> = Vec::new();
+        if self.perk.as_deref() == Some("secondary_enervate") {
+            vals.push((rank + 1) as f64); // "Resets after X Big Critical Hit"
+        }
+        for e in &self.effects {
+            match e {
+                ArcEffect::Buff { scale, .. }
+                | ArcEffect::CondCritChance(scale)
+                | ArcEffect::CondCritChanceStacked { scale, .. }
+                | ArcEffect::CondCritDamageStacked { scale, .. }
+                | ArcEffect::WeakpointCritChance(scale)
+                | ArcEffect::PerColdDamage { scale, .. }
+                | ArcEffect::FlatDamageOnStatus(scale)
+                | ArcEffect::EncumberChance(scale)
+                | ArcEffect::AmmoEfficiency(scale)
+                | ArcEffect::PerAllyCritChance(scale)
+                // Multiplier kinds ("xX"): stored as the bonus — fill_x's
+                // xX rule renders the +1.
+                | ArcEffect::FinalDamageCap(scale)
+                | ArcEffect::OverguardDamage(scale) => vals.push(at(scale)),
+                ArcEffect::ColdBurst { scale, radius0, radius1 }
+                | ArcEffect::AoeEcho { scale, radius0, radius1 } => {
+                    vals.push(at(scale));
+                    vals.push(lerp(*radius0, *radius1));
+                }
+                ArcEffect::HeadshotMultiplier { .. }
+                | ArcEffect::ReloadSpeed { .. }
+                | ArcEffect::Inert(_) => {}
+            }
+        }
+        let xs = count_x(&self.description);
+        // Outburst: cc + cd share the single "by X% per Combo" number.
+        while vals.len() > xs {
+            let before = vals.len();
+            vals.dedup_by(|a, b| (*a - *b).abs() < 1e-12);
+            if vals.len() == before {
+                break;
+            }
+        }
+        // Cascadia Flare: the trailing stack cap is per_stack × max_stacks.
+        if vals.len() + 1 == xs && self.description.contains("Stacks up to X%") {
+            if let Some(ArcEffect::Buff { scale, max_stacks, .. }) = self
+                .effects
+                .iter()
+                .find(|e| matches!(e, ArcEffect::Buff { .. }))
+            {
+                vals.push(at(scale) * *max_stacks as f64);
+            }
+        }
+        fill_x(&self.description, &vals)
     }
 
     /// Display lines at a rank — OUR statement of what the model computes
@@ -527,9 +611,17 @@ impl ArcaneDef {
                     "On Status: {} chance of one extra random status",
                     pct(at(sc))
                 )),
-                ArcEffect::ColdBurstOnPuncture(sc) => out.push(format!(
+                ArcEffect::ColdBurst { scale, .. } => out.push(format!(
                     "On Puncture: apply {:.0} Cold stacks",
-                    at(sc)
+                    at(scale)
+                )),
+                ArcEffect::PerAllyCritChance(sc) => out.push(format!(
+                    "{} Crit Chance per ally-affecting buff (team context)",
+                    pct(at(sc))
+                )),
+                ArcEffect::AoeEcho { scale, .. } => out.push(format!(
+                    "{} of the hit damage echoed to nearby enemies (AoE)",
+                    pct(at(scale))
                 )),
                 ArcEffect::OverguardDamage(sc) => out.push(format!(
                     "×{:.0} damage to Overguard",
@@ -581,6 +673,7 @@ pub fn load_from_dir(dir: &Path) -> Vec<ArcaneDef> {
             rarity: rarity(&af.rarity),
             max_rank: af.max_rank,
             requires: af.requires,
+            description: af.description.unwrap_or_default(),
             perk: af.perk,
             effects,
         });
@@ -712,6 +805,45 @@ mod tests {
             .fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
         assert_eq!(cv.buffs.len(), 2);
         assert!(cv.buffs.iter().all(|b| b.all_drop && b.max_stacks == 40));
+    }
+
+    #[test]
+    fn desc_at_fills_every_x_for_the_whole_pool() {
+        for a in secondary_pool() {
+            for r in 0..=a.max_rank {
+                let d = a.desc_at(r);
+                assert_eq!(
+                    crate::loadout::count_x(&d),
+                    0,
+                    "{} rank {r}: unfilled X in {d:?}",
+                    a.id
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn desc_at_spot_checks() {
+        let d = |id: &str, r: u32| secondary(id).unwrap().desc_at(r);
+        // Linear percent fill.
+        assert_eq!(d("secondary_merciless", 5), "On Kill:\n+30% Damage for 4s. Stacks up to 12x.\n+30% Reload Speed");
+        assert_eq!(d("secondary_merciless", 0), "On Kill:\n+5% Damage for 4s. Stacks up to 12x.\n+30% Reload Speed");
+        // Flare: per-stack AND the derived stack cap (per × 40).
+        assert_eq!(d("cascadia_flare", 0), "On Heat Status Effect:\n+2% Damage for 10s. Stacks up to 80%.");
+        assert_eq!(d("cascadia_flare", 5), "On Heat Status Effect:\n+12% Damage for 10s. Stacks up to 480%.");
+        // Voltage: two Xs from the two buffs, in order.
+        assert_eq!(d("conjunction_voltage", 5), "On Electricity Status Effect:\n+1.5% Reload Speed and +3% Multishot for 12s. Stacks up to 40x.");
+        // Outburst: cc + cd collapse onto the single X (non-linear table).
+        assert_eq!(d("secondary_outburst", 3), "On swapping to Secondary Weapon, consume all Combo Multipliers to increase Secondary Weapon Critical Chance and Critical Damage by 12% per Combo consumed for 30s.");
+        // Cryogenic: non-linear stack table + radius lerp ("X ... Xm").
+        assert_eq!(d("secondary_cryogenic", 2), "On Puncture: Apply 2 Cold stacks on targets within 12m.");
+        // Multiplier form xX: stored bonus renders as the multiplier.
+        assert_eq!(d("secondary_surge", 5), "On Ability Cast: Next shot gains a Damage Multiplier for every 200 current Energy, up to x8.");
+        assert_eq!(d("secondary_fortifier", 0), "Gain 1 Overguard for every 100 Damage dealt to an enemy's Overguard.\nDeals x3 Extra Damage to Overguard.");
+        // Enervate: the perk's reset threshold is the only varying number.
+        assert_eq!(d("secondary_enervate", 3), "On Hit: Increase Critical Chance by 10%. Resets after 4 Big Critical Hit.");
+        // Flat (non-%) fill.
+        assert_eq!(d("cascadia_empowered", 5), "On Status Effect:\nDeals +750 Damage matching the Damage Type of the Status Effect");
     }
 
     #[test]

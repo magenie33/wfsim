@@ -35,8 +35,10 @@ struct ModFile {
     polarity: String,
     rarity: String,
     base_drain: u32,
-    #[allow(dead_code)]
     max_rank: u32,
+    /// Verbatim in-game text, rank-varying numbers as `X` (schema).
+    #[serde(default)]
+    description: Option<String>,
     #[serde(default)]
     exilus: bool,
     #[serde(default)]
@@ -291,6 +293,62 @@ pub fn pistol_pool() -> Vec<ModDef> {
     POOL.get_or_init(|| load_from_dir(&mods_root().join("pistol"))).to_vec()
 }
 
+/// Display info for a mod's DESCRIPTION at any rank: the X-templated game
+/// text plus the (rank0, rankMax) pair of every rank-VARYING effect, in
+/// yaml order. The description's `X`s map to these in order (extra varying
+/// effects beyond the X count are hidden stats — Amalgam Barrel Diffusion's
+/// acrobatic speed — and are correctly left unconsumed at the tail).
+#[derive(Debug, Clone)]
+pub struct ModDescInfo {
+    pub description: String,
+    pub xvals: Vec<(f64, f64)>,
+    pub max_rank: u32,
+}
+
+impl ModDescInfo {
+    /// The description with each `X` filled at `rank` (linear rank0→rankMax
+    /// — the schema stores real endpoints; regular mods scale linearly).
+    pub fn at(&self, rank: u32) -> String {
+        let r = rank.min(self.max_rank) as f64;
+        let m = self.max_rank.max(1) as f64;
+        let vals: Vec<f64> = self.xvals.iter().map(|(a, b)| a + (b - a) * r / m).collect();
+        crate::loadout::fill_x(&self.description, &vals)
+    }
+}
+
+/// Description info for the pistol pool, by mod id (None: no yaml
+/// description — e.g. the hardcoded rifle pool).
+pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
+    static INFO: OnceLock<std::collections::HashMap<String, ModDescInfo>> = OnceLock::new();
+    INFO.get_or_init(|| {
+        let dir = mods_root().join("pistol");
+        let mut map = std::collections::HashMap::new();
+        let Ok(entries) = fs::read_dir(&dir) else { return map };
+        for path in entries.filter_map(|e| e.ok().map(|e| e.path())) {
+            if path.extension().is_none_or(|x| x != "yaml") {
+                continue;
+            }
+            let Ok(text) = fs::read_to_string(&path) else { continue };
+            let Ok(mf) = serde_norway::from_str::<ModFile>(&text) else { continue };
+            let Some(desc) = mf.description else { continue };
+            let xvals = mf
+                .effects
+                .iter()
+                .filter_map(|e| {
+                    let (a, b) = (f(e, "rank0")?, f(e, "rankMax")?);
+                    ((a - b).abs() > 1e-12).then_some((a, b))
+                })
+                .collect();
+            map.insert(
+                mf.id,
+                ModDescInfo { description: desc, xvals, max_rank: mf.max_rank },
+            );
+        }
+        map
+    })
+    .get(id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -323,5 +381,26 @@ mod tests {
                 if (*chance - 0.35).abs() < 1e-9 && (*low_rate_threshold - 2.5).abs() < 1e-9 && (*low_rate_mult - 2.0).abs() < 1e-9)));
         assert!(by("sharpened_bullets").effects.iter().any(|e| matches!(e, ModEffect::OnKillCritDamage { bonus, duration } if (*bonus - 0.75).abs() < 1e-9 && (*duration - 9.0).abs() < 1e-9)));
         assert!(by("pressurized_magazine").effects.iter().any(|e| matches!(e, ModEffect::OnReloadFireRate { bonus, .. } if (*bonus - 0.90).abs() < 1e-9)));
+    }
+
+    #[test]
+    fn desc_info_fills_every_x_across_the_pool() {
+        // Every pistol mod's description must fill cleanly at every rank
+        // (X count <= varying-effect count; hidden tail stats — Amalgam's
+        // acrobatic speed — are legitimately unconsumed).
+        for m in pistol_pool() {
+            let info = desc_info(m.id).unwrap_or_else(|| panic!("{} has no description", m.id));
+            for r in 0..=info.max_rank {
+                let d = info.at(r);
+                assert_eq!(crate::loadout::count_x(&d), 0, "{} rank {r}: unfilled X in {d:?}", m.id);
+            }
+        }
+        // Spot checks: linear fill, the xX faction form, and a flat value.
+        assert_eq!(desc_info("hornet_strike").unwrap().at(10), "+220% Damage");
+        assert_eq!(desc_info("hornet_strike").unwrap().at(0), "+20% Damage");
+        assert_eq!(desc_info("expel_grineer").unwrap().at(5), "x1.3 Damage to Grineer");
+        assert_eq!(desc_info("seeker").unwrap().at(5), "+2.1 Punch Through");
+        // Signed template + negative stored downside: magnitude only.
+        assert_eq!(desc_info("anemic_agility").unwrap().at(5), "+90% Fire Rate\n-15% Damage");
     }
 }
