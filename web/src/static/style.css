@@ -202,11 +202,12 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 /* stats panel — merged buckets explained by source */
 .srow{padding:7px 0;border-bottom:1px dashed var(--line)}
 .srow:last-child{border-bottom:0}
-/* One stats section per weapon form (base + Incarnon side by side). */
-.fsec{margin-bottom:16px}
-.fsec:last-child{margin-bottom:0}
-.fhead{font-size:13px;font-weight:700;color:var(--gold);border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:3px}
-.fhead .fmeta{color:var(--text-2);font-weight:400;font-size:11.5px;margin-left:9px}
+/* One stats CARD per weapon form — visually separate boxes, side by side
+   when the panel is wide enough. */
+#stats-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;align-items:start}
+.fsec{border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:10px 13px}
+.fhead{font-size:13px;font-weight:700;color:var(--gold);border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:4px}
+.fhead .fmeta{color:var(--text-2);font-weight:400;font-size:11.5px;margin-left:9px;display:block}
 /* Per-weapon mechanic caveat on a stat row (e.g. GunCO computes on the
    original base only, excluding evolution flat damage). */
 .srownote{font-size:11px;color:var(--gold);line-height:1.4;margin:2px 0 1px}
