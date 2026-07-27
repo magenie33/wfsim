@@ -620,7 +620,7 @@ fn err_json(msg: impl Into<String>) -> Value {
 fn panel_json(v: &Value) -> Value {
     let info = weapon(get_str(v, "weapon", "dual_toxocyst"));
     let policy = if info.sentinel { StackPolicy::BaseOnly } else { StackPolicy::AssumedMax };
-    let form = get_str(v, "form", "incarnon");
+    // (`form` in the request is ignored: every available form renders.)
     let evos = match chosen_evolutions(v) {
         Ok(e) => e,
         Err(e) => return err_json(e),
@@ -644,14 +644,31 @@ fn panel_json(v: &Value) -> Value {
         }
     }
 
-    let base = if info.id == "verglas_prime" {
-        WeaponBase::verglas_prime()
-    } else if form == "base" {
-        WeaponBase::dual_toxocyst_base_evos(true, &evo_refs)
+    // ---- forms: EVERY available form renders side by side (no switching;
+    // user decision). The Incarnon Form section exists only while its
+    // tier-1 unlock is selected. `meta` states the trigger/shot mechanics
+    // from the weapon data (data/weapons yamls).
+    let mut forms_list: Vec<(&'static str, &'static str, WeaponBase)> = Vec::new();
+    if info.id == "verglas_prime" {
+        forms_list.push((
+            "Standard",
+            "Held trigger · hitscan · sentinel weapon",
+            WeaponBase::verglas_prime(),
+        ));
     } else {
-        WeaponBase::dual_toxocyst_incarnon_evos(true, &evo_refs)
-    };
-    let panel = resolve(&base, &refs, policy);
+        forms_list.push((
+            "Base Form",
+            "Semi-Auto · hitscan",
+            WeaponBase::dual_toxocyst_base_evos(true, &evo_refs),
+        ));
+        if evo_refs.contains(&"dt_evo1_incarnon_form") {
+            forms_list.push((
+                "Incarnon Form",
+                "Auto · hitscan · ricochet to 1 enemy within 5 m",
+                WeaponBase::dual_toxocyst_incarnon_evos(true, &evo_refs),
+            ));
+        }
+    }
 
     // ---- per-bucket source attribution (mirrors resolve()'s buckets) ----
     // key -> [(mod name, contribution fraction, note)]
@@ -801,6 +818,9 @@ fn panel_json(v: &Value) -> Value {
         }
     }
 
+    // One stats section per form; the closure names its params `base` /
+    // `panel` so every row reads the ACTIVE form's numbers.
+    let section = |label: &'static str, meta: &'static str, base: &WeaponBase, panel: &ResolvedPanel| -> Value {
     let sources = |key: &str, tag: Option<&str>| -> Vec<Value> {
         let evo = evo_src
             .iter()
@@ -824,32 +844,29 @@ fn panel_json(v: &Value) -> Value {
     };
     let pc = |x: f64| format!("{:.1}%", x * 100.0);
     let mut stats = Vec::new();
-    let mut row = |key: &'static str, label: &str, base_s: String, final_s: String, changed: bool| {
-        let s = sources(key, None);
-        if !s.is_empty() || changed {
-            stats.push(json!({ "key": key, "label": label, "base": base_s, "final": final_s, "sources": s }));
-        }
+    // Every base stat is ALWAYS listed (user: the panel must state the whole
+    // base panel, not just what changed) — the UI drops the arrow when
+    // base == final.
+    let mut row = |key: &'static str, label: &str, base_s: String, final_s: String| {
+        stats.push(json!({ "key": key, "label": label, "base": base_s, "final": final_s,
+            "sources": sources(key, None) }));
     };
     // Base columns show the RAW weapon base (pre-evolution): the evolution
     // flat deltas are attributed as named source rows, not hidden in "base".
     let raw_bd = base.base_vector.total() - evo_flat_bd;
     let raw_cc = base.base_crit_chance - evo_flat_cc;
-    row("base_damage", "Base Damage", num(raw_bd), num(panel.modified_base),
-        (panel.modified_base - raw_bd).abs() > 1e-9);
-    row("multishot", "Multishot", format!("×{}", num(base.base_multishot)), format!("×{}", num(panel.multishot)),
-        (panel.multishot - base.base_multishot).abs() > 1e-9);
-    row("crit_chance", "Crit Chance", pc(raw_cc), pc(panel.crit_chance),
-        (panel.crit_chance - raw_cc).abs() > 1e-9);
-    row("crit_damage", "Crit Damage", format!("×{}", num(base.base_crit_damage)), format!("×{}", num(panel.crit_damage)),
-        (panel.crit_damage - base.base_crit_damage).abs() > 1e-9);
-    row("status_chance", "Status Chance", pc(base.base_status_chance), pc(panel.status_chance),
-        (panel.status_chance - base.base_status_chance).abs() > 1e-9);
-    row("status_damage", "Status Damage", "×1".into(), format!("×{}", num(panel.status_damage_mult)),
-        (panel.status_damage_mult - 1.0).abs() > 1e-9);
-    row("fire_rate", "Fire Rate", format!("{}/s", num(base.base_fire_rate)), format!("{}/s", num(panel.fire_rate)),
-        (panel.fire_rate - base.base_fire_rate).abs() > 1e-9);
-    row("reload", "Reload", format!("{}s", num(base.base_reload)), format!("{}s", num(panel.reload_seconds)),
-        (panel.reload_seconds - base.base_reload).abs() > 1e-9);
+    row("base_damage", "Base Damage", num(raw_bd), num(panel.modified_base));
+    row("multishot", "Multishot", format!("×{}", num(base.base_multishot)), format!("×{}", num(panel.multishot)));
+    row("crit_chance", "Crit Chance", pc(raw_cc), pc(panel.crit_chance));
+    row("crit_damage", "Crit Damage", format!("×{}", num(base.base_crit_damage)), format!("×{}", num(panel.crit_damage)));
+    row("status_chance", "Status Chance", pc(base.base_status_chance), pc(panel.status_chance));
+    // Identical formatting on both sides — the UI drops the arrow only
+    // when the strings match ("×1" vs "×1.0" must not differ).
+    row("status_damage", "Status Damage", format!("×{}", num(1.0)), format!("×{}", num(panel.status_damage_mult)));
+    row("status_duration", "Status Duration", format!("×{}", num(1.0)), format!("×{}", num(panel.status_duration_mult)));
+    row("fire_rate", "Fire Rate", format!("{}/s", num(base.base_fire_rate)), format!("{}/s", num(panel.fire_rate)));
+    row("magazine", "Magazine", num(base.magazine_size), num(panel.magazine_size));
+    row("reload", "Reload", format!("{}s", num(base.base_reload)), format!("{}s", num(panel.reload_seconds)));
     // PER-WEAPON behavior: GunCO sources (Galvanized Shot, Carnage Reign,
     // Secondary Shiver) combine differently per weapon class, and their base
     // EXCLUDES evolution flat damage — this note states what the model
@@ -940,15 +957,26 @@ fn panel_json(v: &Value) -> Value {
         .collect();
 
     json!({
-        "ok": true,
-        "weapon": info.name,
-        "form": if info.id == "verglas_prime" { "standard" } else { form },
-        "policy": if info.sentinel { "base only (sentinel)" } else { "conditionals at max stacks" },
+        "label": label,
+        "meta": meta,
         "stats": stats,
         "elements": elem_rows,
         "indirect": indirect_rows,
         "damage": damage,
         "damage_total": num(dmg_total),
+    })
+    };
+
+    let forms: Vec<Value> = forms_list
+        .iter()
+        .map(|(label, meta, b)| section(label, meta, b, &resolve(b, &refs, policy)))
+        .collect();
+
+    json!({
+        "ok": true,
+        "weapon": info.name,
+        "policy": if info.sentinel { "base only (sentinel)" } else { "conditionals at max stacks" },
+        "forms": forms,
         "conditionals": conditionals,
     })
 }

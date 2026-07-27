@@ -274,6 +274,18 @@ function autoForma() {
   const drainOf = () => filled.reduce((s, x) => s + (matched.has(x.i) ? Math.ceil(bd(x) / 2) : bd(x)), 0);
   while (drainOf() > CAP) { const next = order.find(({ i }) => !matched.has(i)); if (!next) break; matched.add(next.i); }
   for (const { i, m } of filled) slots[i].pol = matched.has(i) ? m.polarity : null;
+  // Innate polarities are never destroyed by the auto plan (blanking one
+  // costs a Forma): leftovers go back onto mod-less slots — preferring
+  // their original position — else sit on an unmatched modded slot
+  // (+25% mismatch drain beats paying a Forma to remove them). An empty
+  // build therefore reports 0 Forma.
+  for (const p of pool) {
+    let k = slots.findIndex((s, i) => !s.mod && !s.pol && innate[i] === p);
+    if (k < 0) k = slots.findIndex((s) => !s.mod && !s.pol);
+    if (k < 0) k = slots.findIndex((s) => !s.pol);
+    if (k < 0) break;
+    slots[k].pol = p;
+  }
 }
 
 // ---- render mods ----
@@ -312,9 +324,6 @@ function refreshPanel() {
     const body = {
       weapon: $("weapon").value,
       evolutions: Object.values(evoSel).filter(Boolean),
-      // No Incarnon Form unlock (tier 1 empty) = the weapon cannot
-      // transform: the stats panel shows the BASE form.
-      form: evoSel[1] ? "incarnon" : "base",
       arcane,
       arcane_rank: arcaneRank,
       mods: slots.filter((s) => s.mod).map((s) => s.mod), // slot order (elements are position-sensitive)
@@ -335,25 +344,32 @@ function renderPanel(r) {
     $("stats-rows").innerHTML = `<div class="error">${r ? r.error : "no data"}</div>`;
     return;
   }
-  $("stats-sub").textContent = `${r.form} · max-rank values · ${r.policy}`;
+  $("stats-sub").textContent = `max-rank values · ${r.policy}`;
   const srcLine = (s) =>
     `<div class="ssrc">${s.value} — ${s.mod}${s.note ? ` <span class="snote">(${s.note})</span>` : ""}</div>`;
   const rowHtml = (row) => `
     <div class="srow">
       <div class="shead"><span class="sk">${row.label}</span>
-        <span class="sv">${row.base !== "—" ? `<span class="sbase">${row.base}</span> → ` : ""}<b>${row.final}</b></span></div>
+        <span class="sv">${row.base !== "—" && row.base !== row.final ? `<span class="sbase">${row.base}</span> → ` : ""}<b>${row.final}</b></span></div>
       ${row.note ? `<div class="srownote">⚙ ${row.note}</div>` : ""}
       ${(row.sources || []).map(srcLine).join("")}
     </div>`;
+  const dmgHtml = (f) => (f.damage && f.damage.length)
+    ? `<div class="sdmg-title">Damage (combined) — ${f.damage_total} total</div>` +
+      f.damage.map((d) => `<div class="sdmg"><span class="sk">${d.type}</span><span class="sv"><b>${d.amount}</b> <span class="snote">${d.share}</span></span></div>`).join("")
+    : "";
+  // EVERY available form renders as its own section (base + Incarnon side
+  // by side — no switching), headed by the form name + trigger mechanics.
   // Indirect stats (recoil, accuracy, ammo…) render like any bucket — they
   // are outside theoretical DPS but real in practice, so the panel states them.
-  const rows = [...(r.stats || []), ...(r.elements || []), ...(r.indirect || [])];
-  $("stats-rows").innerHTML = rows.length ? rows.map(rowHtml).join("") : `<div class="placeholder">no mods — base stats only</div>`;
-
-  $("stats-damage").innerHTML = (r.damage && r.damage.length)
-    ? `<div class="sdmg-title">Damage (combined) — ${r.damage_total} total</div>` +
-      r.damage.map((d) => `<div class="sdmg"><span class="sk">${d.type}</span><span class="sv"><b>${d.amount}</b> <span class="snote">${d.share}</span></span></div>`).join("")
-    : "";
+  const section = (f) => `
+    <div class="fsec">
+      <div class="fhead">${f.label}<span class="fmeta">${f.meta}</span></div>
+      ${[...(f.stats || []), ...(f.elements || []), ...(f.indirect || [])].map(rowHtml).join("")}
+      ${dmgHtml(f)}
+    </div>`;
+  $("stats-rows").innerHTML = (r.forms || []).map(section).join("");
+  $("stats-damage").innerHTML = "";
 
   $("stats-conditionals").innerHTML = (r.conditionals && r.conditionals.length)
     ? `<div class="sdmg-title">Conditional / not merged</div>` +
