@@ -532,16 +532,17 @@ function renderEvo() {
       const cls = ["evopick", o.id === sel ? "sel" : "", o.broken ? "broken" : ""].join(" ");
       const lines = (o.desc && o.desc.length ? o.desc : o.effects || []).map((x) => `<div>${x}</div>`).join("");
       const title = (o.effects || []).join("\n"); // model statement as tooltip
+      // The broken warning lives INSIDE the selected card, so it never
+      // straddles the row divider into the next tier.
+      const warn = o.broken && o.id === sel
+        ? `<span class="ed warn">⚠ does not work in-game (wiki) — the simulation computes it as NO EFFECT</span>`
+        : "";
       return `<span class="${cls}" data-tier="${t.tier}" data-id="${o.id}" title="${title}">
-        ${icon}<span class="einfo"><b class="en">${o.name}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}</b><span class="ed">${lines}</span></span></span>`;
+        ${icon}<span class="einfo"><b class="en">${o.name}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}</b><span class="ed">${lines}</span>${warn}</span></span>`;
     };
     const empty = `<span class="evopick empty ${sel === null ? "sel" : ""}" data-tier="${t.tier}" data-id="">
       <span class="einfo"><b class="en">None</b><span class="ed"><div>${t.tier === 1 ? "no Incarnon Form — the weapon stays in its base form" : "nothing installed at this tier"}</div></span></span></span>`;
-    const selOpt = t.options.find((o) => o.id === sel);
-    const warn = selOpt && selOpt.broken
-      ? `<div class="evo-warn">⚠ ${selOpt.name} currently does not work in-game (wiki) — the simulation computes it as NO EFFECT</div>`
-      : "";
-    rows.push(`<div class="evo"><span class="rank">${roman[t.tier] || "EVO " + t.tier}</span><div class="picks">${t.options.map(card).join("")}${empty}</div></div>${warn}`);
+    rows.push(`<div class="evo"><span class="rank">${roman[t.tier] || "EVO " + t.tier}</span><div class="picks">${t.options.map(card).join("")}${empty}</div></div>`);
   }
   $("evo-rows").innerHTML = rows.join("");
   $("evo-rows").querySelectorAll(".evopick").forEach((c) => c.addEventListener("click", () => {

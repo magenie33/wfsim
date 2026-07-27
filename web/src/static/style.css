@@ -178,10 +178,11 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .evopick .ed div{line-height:1.35}
 .evopick.empty{border-style:dashed}
 .evopick.empty .en{color:var(--muted)}
-/* Wiki-flagged broken evolutions: the engine computes ZERO for them. */
+/* Wiki-flagged broken evolutions: the engine computes ZERO for them. The
+   warning renders INSIDE the selected card (never across the row divider). */
 .evopick.broken{border-color:#8b3a3a}
 .evopick .bx{color:#e05252;font-size:10px;font-weight:800;font-style:normal}
-.evo-warn{color:#e05252;font-size:12px;padding:2px 0 7px 86px}
+.evopick .ed.warn{color:#e05252;margin-top:3px}
 .evo .picks{align-items:stretch}
 
 /* stats panel — merged buckets explained by source */
