@@ -15,7 +15,7 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 
 use serde_json::{json, Value};
-use wfsim_engine::dummy::{monte_carlo, Arcane, BodyPart, DummyParams, LockMode, TargetMode};
+use wfsim_engine::dummy::{monte_carlo, BodyPart, DummyParams, LockMode, TargetMode};
 use wfsim_engine::enemy_data::EnemySpec;
 use wfsim_engine::loadout::{
     pct as fpct, resolve, DtEvo2, ModDef, ModEffect, ResolvedPanel, StackPolicy, WeaponBase,
@@ -481,22 +481,23 @@ fn meta_json() -> Value {
         })
         .collect();
 
-    // Per-rank arcane effect lines (wiki-verified, data/arcanes/*.yaml). Index
-    // = rank 0..=max; the picker shows max-rank as the catalog, the equipped
-    // slot shows its selected rank. Values scale per rank as on the wiki.
-    let enervate_ranks: Vec<Vec<String>> = (0..=5u32).map(|r| vec![
-        "On hit: +10% flat crit chance per stack".to_string(),
-        format!("Resets after {} big crit{}", r + 1, if r == 0 { "" } else { "s" }),
-    ]).collect();
-    let deadhead_ranks: Vec<Vec<String>> = (0..=5u32).map(|r| {
-        let mut v = vec![format!(
-            "On precision headshot kill: +{}% base damage / stack (max 3, 24s)", (r + 1) * 20)];
-        if r == 5 { v.push("+30% headshot multiplier".to_string()); v.push("−50% recoil".to_string()); }
-        v
-    }).collect();
-    let flare_ranks: Vec<Vec<String>> = (0..=5u32).map(|r| vec![format!(
-        "On Heat status applied: +{}% base damage / stack (max 40, 10s)", (r + 1) * 2),
-    ]).collect();
+    // Arcanes: the FULL data-driven pool (data/arcanes/secondary/*.yaml via
+    // engine::arcanes_data). Per-rank effect lines come from the same
+    // describe used by the model, so the picker states what the sim computes.
+    let mut arcanes_json: Vec<Value> = vec![json!(
+        {"id": "none", "name": "None", "image": null, "ranks": [], "max_rank": 0, "rarity": null}
+    )];
+    for a in wfsim_engine::arcanes_data::secondary_pool() {
+        let ranks: Vec<Vec<String>> = (0..=a.max_rank).map(|r| a.describe_at(r)).collect();
+        arcanes_json.push(json!({
+            "id": a.id,
+            "name": a.name,
+            "image": assets().arcanes.get(&a.id),
+            "ranks": ranks,
+            "max_rank": a.max_rank,
+            "rarity": format!("{:?}", a.rarity).to_lowercase(),
+        }));
+    }
 
     // A pleasant default: the standing Thrax official champion (devlog 2026-07-25).
     let default_mods = [
@@ -519,17 +520,9 @@ fn meta_json() -> Value {
         "enemies": enemies,
         // Arcanes mirror the mod pool: per-rank effect lines (`ranks[r]`),
         // max_rank, rarity — so the web picker searches effects and the slot
-        // steps ranks with the strength updating per rank. The sim models
-        // these at max rank today; wiring rank into /api/panel is a follow-up.
-        "arcanes": [
-            {"id": "none", "name": "None", "image": null, "ranks": [], "max_rank": 0, "rarity": null},
-            {"id": "enervate", "name": "Secondary Enervate", "image": assets().arcanes.get("secondary_enervate"),
-             "ranks": enervate_ranks, "max_rank": 5, "rarity": "rare"},
-            {"id": "deadhead", "name": "Secondary Deadhead", "image": assets().arcanes.get("secondary_deadhead"),
-             "ranks": deadhead_ranks, "max_rank": 5, "rarity": "legendary"},
-            {"id": "flare", "name": "Cascadia Flare", "image": assets().arcanes.get("cascadia_flare"),
-             "ranks": flare_ranks, "max_rank": 5, "rarity": "legendary"},
-        ],
+        // steps ranks with the strength updating per rank. `arcane_rank` in
+        // the sim request selects the modeled rank (default: max).
+        "arcanes": arcanes_json,
         "evo2": [
             {"id": "fevered", "name": "Fevered Frenzy"},
             {"id": "carnage", "name": "Carnage Reign"},
@@ -538,7 +531,7 @@ fn meta_json() -> Value {
             "weapon": "dual_toxocyst",
             "form": "incarnon_cycle",
             "evo2": "fevered",
-            "arcane": "deadhead",
+            "arcane": "secondary_deadhead",
             "enemy": "thrax_centurion",
             "level": 9999,
             "steel_path": true,
@@ -707,6 +700,32 @@ fn panel_json(v: &Value) -> Value {
                     };
                     push(key, x, Some("conditional buff, assumed active".into()));
                 }
+                // Weak-point effects: conditional on the part hit — listed,
+                // never folded into a static bucket.
+                WeakpointDamage(x) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": format!("+{}% added to the weak-point multiplier ON weak-point hits \
+                        (1.5× listed on true weak points)", (x * 100.0).round())})),
+                WeakpointCritChance(x) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": format!("+{}% relative crit chance ON weak-point hits only",
+                        (x * 100.0).round())})),
+                OnKillCritDamage { bonus, .. } => match policy {
+                    StackPolicy::BaseOnly => conditionals.push(json!({
+                        "mod": name, "desc": e.describe(), "active": false,
+                        "why": "sentinel weapons cannot proc on-kill buffs"})),
+                    _ => push("crit_damage", bonus, Some("on kill, buff assumed up".into())),
+                },
+                OnReloadFireRate { bonus, .. } => match policy {
+                    StackPolicy::BaseOnly => conditionals.push(json!({
+                        "mod": name, "desc": e.describe(), "active": false,
+                        "why": "sentinel weapons cannot proc on-reload buffs"})),
+                    _ => push("fire_rate", bonus, Some("on reload, buff assumed up".into())),
+                },
+                // Event mechanic — no static stat; the sim rolls it per hit.
+                ProcConversion { .. } => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "rolled per damage instance in the sim"})),
             }
         }
     }
@@ -872,15 +891,18 @@ fn simulate_json(v: &Value) -> Value {
         "carnage" => DtEvo2::CarnageReign,
         _ => DtEvo2::FeveredFrenzy,
     };
-    let arcane = if info.uses_arcane {
-        match get_str(v, "arcane", "deadhead") {
-            "enervate" => Arcane::Enervate,
-            "deadhead" => Arcane::Deadhead,
-            "flare" => Arcane::CascadiaFlare,
-            _ => Arcane::None,
+    // Arcane: a data-driven pool id (legacy short names accepted for old
+    // saved builds) + optional `arcane_rank` (default: max).
+    let arcane_id = if info.uses_arcane {
+        match get_str(v, "arcane", "secondary_deadhead") {
+            "enervate" => "secondary_enervate",
+            "deadhead" => "secondary_deadhead",
+            "flare" => "cascadia_flare",
+            other => other,
         }
+        .to_string()
     } else {
-        Arcane::None // sentinels / robotic weapons cannot equip arcanes
+        "none".to_string() // sentinels / robotic weapons cannot equip arcanes
     };
     let enemy_id = get_str(v, "enemy", "thrax_centurion");
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
@@ -986,7 +1008,24 @@ fn simulate_json(v: &Value) -> Value {
         };
         (report, params)
     };
-    params.arcane = arcane;
+    params.arcane = if arcane_id == "none" {
+        wfsim_engine::arcanes_data::ArcaneFx::none()
+    } else {
+        let Some(def) = wfsim_engine::arcanes_data::secondary(&arcane_id) else {
+            return err_json(format!("unknown arcane id: {arcane_id}"));
+        };
+        let rank = get_u32(v, "arcane_rank", def.max_rank).min(def.max_rank);
+        // Relative crit conditionals resolve against the weapon's BASE crit
+        // stats; `requires` gates on the weapon traits (Akimbo Slip Shot).
+        // Under the sim's Emergent policy the non-simmable conditionals are
+        // honest no-ops (same rule as mods' CondBuff).
+        let ab = if info.id == "verglas_prime" {
+            WeaponBase::verglas_prime()
+        } else {
+            WeaponBase::dual_toxocyst_incarnon(true, evo2)
+        };
+        def.fx(rank, policy, ab.base_crit_chance, ab.base_crit_damage, ab.traits)
+    };
     let report_panel = &report_panel;
 
     // ---- run ----

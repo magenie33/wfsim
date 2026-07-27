@@ -24,7 +24,7 @@ fn main() {
     let mut duration_secs = 120.0f64;
     let mut final_runs: Option<u32> = None;
     let mut final_round_runs: Option<u32> = None;
-    let mut arcane_only: Option<wfsim_engine::dummy::Arcane> = None;
+    let mut arcane_only: Option<String> = None;
     for arg in std::env::args().skip(1) {
         if let Some(id) = arg.strip_prefix("require=") {
             constraints.require.push(id.to_string());
@@ -49,14 +49,17 @@ fn main() {
             // Keep the funnel; override only the LAST round's run count.
             final_round_runs = Some(v.parse().expect("final=<n>"));
         } else if let Some(v) = arg.strip_prefix("arcane=") {
-            use wfsim_engine::dummy::Arcane;
-            arcane_only = Some(match v {
-                "deadhead" => Arcane::Deadhead,
-                "enervate" => Arcane::Enervate,
-                "flare" => Arcane::CascadiaFlare,
-                "none" => Arcane::None,
-                _ => panic!("arcane=deadhead|enervate|flare|none"),
-            });
+            // Legacy short names map to the data-driven pool ids; any
+            // data/arcanes/secondary id is accepted directly.
+            arcane_only = Some(
+                match v {
+                    "deadhead" => "secondary_deadhead",
+                    "enervate" => "secondary_enervate",
+                    "flare" => "cascadia_flare",
+                    other => other,
+                }
+                .to_string(),
+            );
         } else {
             eprintln!(
                 "unknown arg: {arg} (use require=<id> / forbid=<id> / flat / target=thrax|acolyte / evo2=both)"
@@ -160,15 +163,35 @@ fn main() {
         t0.elapsed()
     );
 
-    use wfsim_engine::dummy::Arcane;
     // The arcane is a SEARCH DIMENSION like the mod choice (user,
-    // 2026-07-25): every candidate is evaluated under each arcane.
-    let arcanes: Vec<Arcane> = match arcane_only {
-        Some(a) => vec![a],
-        None => vec![Arcane::Enervate, Arcane::Deadhead, Arcane::CascadiaFlare],
+    // 2026-07-25): every candidate is evaluated under each arcane,
+    // resolved at MAX RANK from data/arcanes/secondary under the Emergent
+    // policy (non-simmable triggers are honest no-ops there).
+    use wfsim_engine::arcanes_data::{self, ArcaneFx};
+    use wfsim_engine::loadout::StackPolicy;
+    let arc_base = wfsim_engine::loadout::WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy);
+    let fx_of = |id: &str| -> ArcaneFx {
+        if id == "none" {
+            return ArcaneFx::none();
+        }
+        let d = arcanes_data::secondary(id).unwrap_or_else(|| panic!("unknown arcane id: {id}"));
+        d.fx(
+            d.max_rank,
+            StackPolicy::Emergent,
+            arc_base.base_crit_chance,
+            arc_base.base_crit_damage,
+            arc_base.traits,
+        )
+    };
+    let arcanes: Vec<ArcaneFx> = match &arcane_only {
+        Some(a) => vec![fx_of(a)],
+        None => ["secondary_enervate", "secondary_deadhead", "cascadia_flare"]
+            .iter()
+            .map(|id| fx_of(id))
+            .collect(),
     };
     let mut alive: Vec<Job> = (0..cands.len())
-        .flat_map(|i| arcanes.iter().map(move |&a| (i, a)))
+        .flat_map(|i| (0..arcanes.len()).map(move |a| (i, a)))
         .collect();
     println!(
         "[search] {} jobs = {} candidates x {} arcanes",
@@ -193,7 +216,7 @@ fn main() {
     let mut last: Vec<(Job, wfsim_engine::dummy::Summary)> = Vec::new();
     for (round, &(runs, keep, by_kills)) in rounds.iter().enumerate() {
         let t = Instant::now();
-        let summaries = evaluate_batch(&cands, &alive, &scenario, runs, 0xDEAD_BEEF + round as u64);
+        let summaries = evaluate_batch(&cands, &alive, &arcanes, &scenario, runs, 0xDEAD_BEEF + round as u64);
         let mut scored: Vec<(Job, wfsim_engine::dummy::Summary)> =
             alive.iter().copied().zip(summaries).collect();
         // Kill rounds rank by kill PROGRESS: kills + the depleted fraction
@@ -232,8 +255,9 @@ fn main() {
 
     println!();
     println!("=== FINAL LEADERBOARD (1024 x 60 s, kill score; searched: mods x element order x arcane x evo2) ===");
-    for (rank, ((ci, arcane), s)) in last.iter().take(10).enumerate() {
+    for (rank, ((ci, ai), s)) in last.iter().take(10).enumerate() {
         let c = &cands[*ci];
+        let arcane = if arcanes[*ai].id.is_empty() { "none" } else { &arcanes[*ai].id };
         let names: Vec<&str> = c.ordered.iter().map(|&i| p[i].id).collect();
         let vec_desc: Vec<String> = c
             .panel
@@ -242,7 +266,7 @@ fn main() {
             .map(|(t, v)| format!("{t:?} {v:.0}"))
             .collect();
         println!(
-            "#{:<2} score {:.3} (kills {:.3} ± {:.3}, min {} max {}) | {:?} + {} | eff DPS {:.3e} | {:.1} transforms",
+            "#{:<2} score {:.3} (kills {:.3} ± {:.3}, min {} max {}) | {} + {} | eff DPS {:.3e} | {:.1} transforms",
             rank + 1,
             s.mean_kill_progress,
             s.mean_kills,

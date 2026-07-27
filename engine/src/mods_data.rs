@@ -162,6 +162,15 @@ fn effect(v: &Value) -> Option<ModEffect> {
                 ("on_headshot_kill", "crit_chance") => {
                     ModEffect::OnHeadshotKillCritChance { per_stack: per, max_stacks: stacks, duration: dur }
                 }
+                // Sharpened Bullets / Pressurized Magazine: the sim has kill
+                // and reload events, so these run emergently (the while_aiming
+                // condition is satisfied — the sim assumes constant aiming).
+                ("on_kill", "crit_damage") => {
+                    ModEffect::OnKillCritDamage { bonus: per, duration: dur }
+                }
+                ("on_reload", "fire_rate") => {
+                    ModEffect::OnReloadFireRate { bonus: per, duration: dur }
+                }
                 // Any other trigger (on_ability_cast / on_reload / on_hit / …):
                 // contribute at the assumed-max total via CondBuff when the grant
                 // maps to a DPS bucket. Indirect grants (accuracy/recoil) → None.
@@ -178,6 +187,29 @@ fn effect(v: &Value) -> Option<ModEffect> {
                     };
                     ModEffect::CondBuff(bucket, per * stacks.max(1) as f64)
                 }
+            }
+        }
+        // Weak-point effects (Pistol Acuity): conditional on the part hit.
+        "weakpoint_damage_bonus" => ModEffect::WeakpointDamage(max("rankMax")),
+        "weakpoint_crit_chance_bonus" => ModEffect::WeakpointCritChance(max("rankMax")),
+        // Hemorrhage: `trigger` status rolls `rankMax` to also apply the
+        // `applies` status; `condition: fire_rate_below_<x>` doubles it.
+        "proc_conversion" => {
+            let from = element(v.get("trigger").and_then(Value::as_str)?)?;
+            let to = element(v.get("applies").and_then(Value::as_str)?)?;
+            let (threshold, mult) = match v.get("condition").and_then(Value::as_str) {
+                Some(c) if c.starts_with("fire_rate_below_") => (
+                    c["fire_rate_below_".len()..].parse().ok()?,
+                    f(v, "condition_multiplier").unwrap_or(1.0),
+                ),
+                _ => (0.0, 1.0),
+            };
+            ModEffect::ProcConversion {
+                from,
+                to,
+                chance: max("rankMax"),
+                low_rate_threshold: threshold,
+                low_rate_mult: mult,
             }
         }
         // INDIRECT stats: outside the theoretical-DPS formula, but real
@@ -283,5 +315,13 @@ mod tests {
         // → Corrupted; +30% at max rank).
         assert!(by("expel_grineer").effects.iter().any(|e| matches!(e, ModEffect::FactionDamage(Faction::Grineer, v) if (*v - 0.30).abs() < 1e-9)));
         assert!(by("expel_orokin").effects.iter().any(|e| matches!(e, ModEffect::FactionDamage(Faction::Corrupted, _))));
+        // The formerly-unmodeled kinds now map to real effects.
+        assert!(by("pistol_acuity").effects.iter().any(|e| matches!(e, ModEffect::WeakpointDamage(v) if (*v - 3.50).abs() < 1e-9)));
+        assert!(by("pistol_acuity").effects.iter().any(|e| matches!(e, ModEffect::WeakpointCritChance(v) if (*v - 3.50).abs() < 1e-9)));
+        assert!(by("hemorrhage").effects.iter().any(|e| matches!(e,
+            ModEffect::ProcConversion { from: DamageType::Impact, to: DamageType::Slash, chance, low_rate_threshold, low_rate_mult }
+                if (*chance - 0.35).abs() < 1e-9 && (*low_rate_threshold - 2.5).abs() < 1e-9 && (*low_rate_mult - 2.0).abs() < 1e-9)));
+        assert!(by("sharpened_bullets").effects.iter().any(|e| matches!(e, ModEffect::OnKillCritDamage { bonus, duration } if (*bonus - 0.75).abs() < 1e-9 && (*duration - 9.0).abs() < 1e-9)));
+        assert!(by("pressurized_magazine").effects.iter().any(|e| matches!(e, ModEffect::OnReloadFireRate { bonus, .. } if (*bonus - 0.90).abs() < 1e-9)));
     }
 }

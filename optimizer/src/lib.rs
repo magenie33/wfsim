@@ -300,7 +300,7 @@ pub struct Scenario {
 /// Evaluate one candidate with a given arcane: engine Monte Carlo only.
 pub fn evaluate(
     c: &Candidate,
-    arcane: wfsim_engine::dummy::Arcane,
+    arcane: &wfsim_engine::arcanes_data::ArcaneFx,
     s: &Scenario,
     runs: u32,
     seed: u64,
@@ -322,7 +322,7 @@ pub fn evaluate(
             s.duration_secs,
         )
     };
-    params.arcane = arcane;
+    params.arcane = arcane.clone();
     monte_carlo(&params, runs, seed)
 }
 
@@ -358,9 +358,11 @@ pub fn dominated_mods() -> Vec<(&'static str, &'static str)> {
     ]
 }
 
-/// One evaluation job: a candidate paired with an arcane (the arcane is
-/// a search dimension like the mod choice).
-pub type Job = (usize, wfsim_engine::dummy::Arcane);
+/// One evaluation job: a candidate paired with an arcane INDEX into the
+/// search's resolved arcane list (the arcane is a search dimension like
+/// the mod choice; data-driven `ArcaneFx` is not `Copy`, so jobs carry
+/// the index).
+pub type Job = (usize, usize);
 
 /// Self-scaling successive-halving schedule (user, 2026-07-25: derive
 /// the funnel from the job count instead of hand-written constants).
@@ -388,6 +390,7 @@ pub fn schedule(n_jobs: usize) -> Vec<(u32, usize, bool)> {
 pub fn evaluate_batch(
     cands: &[Candidate],
     jobs: &[Job],
+    arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
     scenario: &Scenario,
     runs: u32,
     seed: u64,
@@ -402,12 +405,12 @@ pub fn evaluate_batch(
         for (ids, res) in jobs.chunks(chunk).zip(results.chunks_mut(chunk)) {
             let scenario = scenario.clone();
             scope.spawn(move || {
-                for (k, &(ci, arcane)) in ids.iter().enumerate() {
+                for (k, &(ci, ai)) in ids.iter().enumerate() {
                     // Deterministic per-job seed, mixed per round.
                     let s = seed
                         ^ (ci as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15)
-                        ^ ((arcane as u64) << 56);
-                    res[k] = Some(evaluate(&cands[ci], arcane, &scenario, runs, s));
+                        ^ ((ai as u64) << 56);
+                    res[k] = Some(evaluate(&cands[ci], &arcanes[ai], &scenario, runs, s));
                 }
             });
         }

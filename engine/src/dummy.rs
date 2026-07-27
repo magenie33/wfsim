@@ -27,6 +27,7 @@
 use crate::buffs::BuffBar;
 use crate::damage::{DamageType, DamageVector};
 use crate::perks::frenzy::Frenzy;
+use crate::arcanes_data::{ArcBuffSpec, ArcGrant, ArcTrigger, ArcaneFx};
 use crate::perks::secondary_enervate::SecondaryEnervate;
 use crate::perks::Perk;
 use crate::rng::Rng;
@@ -77,33 +78,107 @@ impl BuffLock {
     }
 }
 
-/// The equipped secondary arcane. All stacking arcane buffs start FULL
-/// (user setting) and then run on their own mechanics.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Arcane {
-    None,
-    /// +10% flat crit chance per hit stack; resets after 6 big crits.
-    Enervate,
-    /// On precision headshot kill: +120% BASE damage per stack (max 3,
-    /// 24 s, Galvanized-style one-stack decay); passive +30% headshot
-    /// multiplier (data/arcanes/secondary_deadhead.yaml).
-    Deadhead,
-    /// On applying a Heat status: +12% BASE damage per stack (max 40,
-    /// one shared 10 s timer, ALL stacks drop on timeout)
-    /// (data/arcanes/cascadia_flare.yaml).
-    CascadiaFlare,
+/// One live arcane stacking-buff state, driven by its [`ArcBuffSpec`]
+/// (data/arcanes/secondary; all stacking arcane buffs start FULL — user
+/// setting — and then run on their own mechanics).
+#[derive(Debug, Clone, Copy, Default)]
+struct ArcState {
+    stacks: u32,
+    expiry: f64,
 }
 
-const DEADHEAD_SPEC: crate::loadout::StackSpec = crate::loadout::StackSpec {
-    per_stack: 1.20,
-    max_stacks: 3,
-    duration: 24.0,
-    initial_stacks: 3,
-};
-const DEADHEAD_HEADSHOT_BONUS: f64 = 0.30;
-const FLARE_BD_PER_STACK: f64 = 0.12;
-const FLARE_MAX_STACKS: u32 = 40;
-const FLARE_DURATION: f64 = 10.0;
+impl ArcState {
+    /// Apply pending decay per the spec's family and return live stacks.
+    fn current(&mut self, spec: &ArcBuffSpec, now: f64) -> u32 {
+        if spec.pinned {
+            return spec.max_stacks; // AssumedMax: full stacks, always
+        }
+        if spec.all_drop {
+            // On-status family (Cascadia Flare, Conjunction Voltage): one
+            // shared timer; on timeout ALL stacks drop at once.
+            if now >= self.expiry {
+                self.stacks = 0;
+            }
+        } else {
+            // Kill family (Merciless/Deadhead/Dexterity): lose ONE stack
+            // and reset the timer — the Galvanized-style graceful decay.
+            while self.stacks > 0 && self.expiry <= now {
+                self.stacks -= 1;
+                self.expiry += spec.duration;
+            }
+        }
+        self.stacks
+    }
+
+    /// A trigger fired: grant one stack and refresh the timer.
+    fn bump(&mut self, spec: &ArcBuffSpec, now: f64) {
+        self.current(spec, now);
+        self.stacks = (self.stacks + 1).min(spec.max_stacks);
+        self.expiry = now + spec.duration;
+    }
+}
+
+/// The run's live arcane runtime: one state per spec in
+/// `params.arcane.buffs` (weapon-scoped: shared by both transform forms,
+/// like [`GalStacks`]), plus the Sharpened Bullets on-kill CD buff clock.
+#[derive(Default)]
+struct ArcRuntime {
+    states: Vec<ArcState>,
+    /// Sharpened Bullets' single refreshable on-kill buff expiry.
+    cd_kill_expiry: f64,
+}
+
+impl ArcRuntime {
+    fn init(params: &DummyParams) -> Self {
+        Self {
+            states: params
+                .arcane
+                .buffs
+                .iter()
+                .map(|s| ArcState {
+                    stacks: s.initial_stacks.min(s.max_stacks),
+                    expiry: s.duration,
+                })
+                .collect(),
+            cd_kill_expiry: 0.0,
+        }
+    }
+
+    /// Σ per_stack × live stacks over every buff granting `grant`.
+    fn total(&mut self, specs: &[ArcBuffSpec], grant: ArcGrant, now: f64) -> f64 {
+        specs
+            .iter()
+            .zip(self.states.iter_mut())
+            .filter(|(s, _)| s.grant == grant)
+            .map(|(s, st)| s.per_stack * st.current(s, now) as f64)
+            .sum()
+    }
+
+    /// Fire `trigger`: every matching buff gains a stack.
+    fn bump_trigger(&mut self, specs: &[ArcBuffSpec], trigger: ArcTrigger, now: f64) {
+        for (s, st) in specs.iter().zip(self.states.iter_mut()) {
+            if s.trigger == trigger {
+                st.bump(s, now);
+            }
+        }
+    }
+
+    /// ANY kill: arcane on-kill buffs stack; Sharpened Bullets refreshes.
+    fn on_kill(&mut self, params: &DummyParams, now: f64) {
+        self.bump_trigger(&params.arcane.buffs, ArcTrigger::Kill, now);
+        if let Some((_, dur)) = params.cd_on_kill {
+            self.cd_kill_expiry = now + dur;
+        }
+    }
+
+    /// Sharpened Bullets' live ABSOLUTE crit-damage addition.
+    fn cd_bonus(&self, params: &DummyParams, now: f64) -> f64 {
+        match params.cd_on_kill {
+            Some((v, _)) if now < self.cd_kill_expiry => v,
+            _ => 0.0,
+        }
+    }
+}
 
 /// The real Incarnon combat cycle (user flow, 2026-07-24): the run STARTS
 /// with a full gauge in Incarnon Form; when the charge magazine empties,
@@ -672,6 +747,17 @@ impl DebuffState {
         }
     }
 
+    /// ACTIVE Cold statuses on the target for per-Cold-stack bonuses
+    /// (Secondary Shiver): the live Freeze stack count; the Frozen state
+    /// counts as the full 10 (it consumed 9 stacks + the trigger proc).
+    fn cold_status_count(&mut self, now: f64) -> u32 {
+        if self.frozen_until.is_some_and(|f| f > now) {
+            return 10;
+        }
+        self.freeze.retain(|&e| e > now);
+        self.freeze.len() as u32
+    }
+
     /// Cold's flat crit-damage-received bonus, added into cd_total BEFORE
     /// the tier formula: +0.10 first stack, +0.05 each further; +1.00
     /// while Frozen (supersedes the table).
@@ -847,6 +933,9 @@ pub struct DummyParams {
     /// (own crit roll, own part, own status roll); ammo cost and Hit
     /// events stay per pull (hitscan pellets are not separate Hits).
     pub multishot: f64,
+    /// UNMODDED pellet count — the base a relative arcane multishot buff
+    /// (Conjunction Voltage) multiplies live.
+    pub base_multishot: f64,
     /// Σ base-damage bonuses on the panel — needed live when CO joins
     /// this bucket (the vector already includes it; only the CO ratio
     /// reads it).
@@ -883,10 +972,27 @@ pub struct DummyParams {
     /// elemental portions excluded). `None` = the vector total (correct
     /// for purely physical vectors).
     pub dot_modified_base: Option<f64>,
-    /// The equipped secondary arcane (fixed equipment per scenario; the
-    /// optimizer compares scenarios per arcane). Enervate by default for
-    /// the historical calibration profiles.
-    pub arcane: Arcane,
+    /// Σ reload-speed bonuses on the panel — needed live when arcane
+    /// reload buffs (Merciless r5, Conjunction Voltage stacks) join the
+    /// bucket: time = base_reload / (1 + this + arcane additions).
+    pub reload_bonus: f64,
+    /// Σ LISTED Weak Point damage (Pistol Acuity): +1.5× this on the part
+    /// multiplier of true weak points, before the headshot bracket.
+    pub weakpoint_damage: f64,
+    /// ABSOLUTE crit chance added on weak-point pellets only (Acuity).
+    pub weakpoint_cc_abs: f64,
+    /// Sharpened Bullets (Emergent): (ABSOLUTE crit-damage add, duration)
+    /// granted/refreshed on every kill.
+    pub cd_on_kill: Option<(f64, f64)>,
+    /// Pressurized Magazine (Emergent): (ABSOLUTE fire-rate add, duration)
+    /// granted on every reload.
+    pub fr_on_reload: Option<(f64, f64)>,
+    /// Hemorrhage's status-conversion roll (per damage instance, max one).
+    pub proc_conversion: Option<crate::loadout::ProcConv>,
+    /// The equipped secondary arcane, resolved at its rank from
+    /// data/arcanes/secondary (fixed equipment per scenario; the optimizer
+    /// compares scenarios per arcane). `ArcaneFx::none()` = empty slot.
+    pub arcane: ArcaneFx,
     pub body_parts: Vec<BodyPart>,
     pub target: TargetParams,
     pub duration_secs: f64,
@@ -1002,6 +1108,7 @@ impl DummyParams {
             reload_seconds: panel.reload_seconds,
             ammo_efficiency_applies: false,
             multishot: panel.multishot,
+            base_multishot: panel.base_multishot,
             base_damage_bonus: panel.base_damage_bonus,
             co_per_type: panel.co_per_type,
             co_behavior: panel.co_behavior,
@@ -1014,7 +1121,13 @@ impl DummyParams {
             status_duration_mult: panel.status_duration_mult,
             elem_dot_bonus: panel.elem_dot_bonus.clone(),
             dot_modified_base: Some(panel.modified_base),
-            arcane: Arcane::None,
+            reload_bonus: panel.reload_bonus,
+            weakpoint_damage: panel.weakpoint_damage,
+            weakpoint_cc_abs: panel.weakpoint_cc_abs,
+            cd_on_kill: panel.cd_on_kill,
+            fr_on_reload: panel.fr_on_reload,
+            proc_conversion: panel.proc_conversion,
+            arcane: ArcaneFx::none(),
             body_parts,
             target,
             duration_secs,
@@ -1089,6 +1202,7 @@ impl Default for DummyParams {
             reserve_ammo: 72.0,
             ammo_efficiency_applies: true,
             multishot: 1.0,
+            base_multishot: 1.0,
             base_damage_bonus: 0.0,
             co_per_type: 0.0,
             co_behavior: crate::loadout::CoBehavior::AdditiveWithBaseDamage,
@@ -1101,7 +1215,19 @@ impl Default for DummyParams {
             elem_dot_bonus: Vec::new(),
             faction_mult: 1.0,
             dot_modified_base: None,
-            arcane: Arcane::Enervate,
+            reload_bonus: 0.0,
+            weakpoint_damage: 0.0,
+            weakpoint_cc_abs: 0.0,
+            cd_on_kill: None,
+            fr_on_reload: None,
+            proc_conversion: None,
+            // Secondary Enervate at max rank — the historical calibration
+            // profile's arcane (the ramp/reset mechanic is the perk).
+            arcane: ArcaneFx {
+                id: "secondary_enervate".to_string(),
+                enervate_rank: Some(5),
+                ..ArcaneFx::none()
+            },
             body_parts: Self::humanoid_parts(),
             target: TargetParams::training_dummy(),
             duration_secs: 10.0,
@@ -1232,6 +1358,7 @@ fn push_break_proc(debuffs: &mut DebuffState, params: &DummyParams, now: f64, po
 fn process_ticks(
     debuffs: &mut DebuffState,
     gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
     until: f64,
     target: &mut TargetState,
     params: &DummyParams,
@@ -1299,8 +1426,11 @@ fn process_ticks(
             push_break_proc(debuffs, params, now, pool);
         }
         if killed {
-            // Status-proc kills grant Galvanized stacks too (GS rules).
+            // Status-proc kills grant Galvanized stacks too (GS rules),
+            // and count for on-kill arcanes (Merciless — NOT Deadhead,
+            // whose precision boundary excludes status-proc kills).
             gal.bump_on_kill(params, now);
+            arc.on_kill(params, now);
             // Fresh individual: clean DebuffBar (decision 2026-07-24).
             *debuffs = DebuffState::default();
             break;
@@ -1309,10 +1439,20 @@ fn process_ticks(
     debuffs.dots.retain(|d| d.ticks_left > 0);
 }
 
-/// Run one engagement with a fresh buff bar and a fresh Secondary Enervate.
+/// Live reload time for the active form: the arcane's reload-speed sources
+/// (Merciless r5 static, Conjunction Voltage stacks) join the form's
+/// reload-speed BUCKET — time = base / (1 + bucket + arcane additions).
+fn live_reload_time(form: &DummyParams, outer: &DummyParams, arc: &mut ArcRuntime, t: f64) -> f64 {
+    let add = outer.arcane.reload_bonus + arc.total(&outer.arcane.buffs, ArcGrant::ReloadSpeed, t);
+    if add <= 0.0 {
+        return form.reload_seconds;
+    }
+    form.reload_seconds * (1.0 + form.reload_bonus) / (1.0 + form.reload_bonus + add)
+}
+
 pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     let mut bar = BuffBar::new();
-    let mut enervate = SecondaryEnervate::default();
+    let mut enervate = params.arcane.enervate_rank.map(SecondaryEnervate::from_rank);
     let mut frenzy = Frenzy::new();
     let mut target = TargetState::spawn(&params.target);
     let mut debuffs = DebuffState::default();
@@ -1331,13 +1471,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             expiry: s.duration,
         };
     }
-    // Stacking arcanes start FULL (user setting) with a fresh timer.
-    let mut deadhead = LiveStacks {
-        stacks: DEADHEAD_SPEC.initial_stacks,
-        expiry: DEADHEAD_SPEC.duration,
-    };
-    let mut flare_stacks: u32 = FLARE_MAX_STACKS;
-    let mut flare_expiry: f64 = FLARE_DURATION;
+    // Stacking arcanes start FULL (user setting) with a fresh timer; the
+    // states run each spec's own decay family from there.
+    let mut arc = ArcRuntime::init(params);
+    // Pressurized Magazine's on-reload fire-rate buff clock.
+    let mut fr_reload_expiry: f64 = 0.0;
     // Crosshairs (per-stack expiry FIFO + one refreshable buff), initial
     // FULL per the user's setting.
     let mut ch_buff_expiry: f64 = params.cc_on_headshot.map_or(0.0, |(_, d)| d);
@@ -1428,8 +1566,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             }
             if in_base_form && base_mag < 1e-9 {
                 // Base-form reload (infinite reserve assumed in the cycle).
-                t += cy.base_form.reload_seconds;
+                t += live_reload_time(&cy.base_form, params, &mut arc, t);
                 r.reloads += 1;
+                if let Some((_, dur)) = cy.base_form.fr_on_reload {
+                    fr_reload_expiry = t + dur;
+                }
                 base_mag = cy.base_form.magazine_size;
                 continue;
             }
@@ -1439,8 +1580,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             if !params.infinite_reserve && reserve < 1e-9 {
                 break;
             }
-            t += params.reload_seconds;
+            t += live_reload_time(params, params, &mut arc, t);
             r.reloads += 1;
+            if let Some((_, dur)) = params.fr_on_reload {
+                fr_reload_expiry = t + dur;
+            }
             let refill = if params.infinite_reserve {
                 params.magazine_size
             } else {
@@ -1472,6 +1616,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         process_ticks(
             &mut debuffs,
             &mut gal,
+            &mut arc,
             t + 1e-9,
             &mut target,
             params,
@@ -1501,7 +1646,9 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // Ammo: consume (1 - efficiency) per shot; Frenzy's +100% efficiency
         // zeroes consumption (unless this magazine is charge-backed).
         let efficiency = if ap.ammo_efficiency_applies {
-            contribs.ammo_efficiency.clamp(0.0, 1.0)
+            // BuffBar (Frenzy) + arcane (Akimbo Slip Shot, assumed-max)
+            // ammo-efficiency additively, clamped at free.
+            (contribs.ammo_efficiency + params.arcane.ammo_efficiency).clamp(0.0, 1.0)
         } else {
             0.0
         };
@@ -1519,22 +1666,40 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             .cc_on_headshot
             .map_or(0.0, |(cc, _)| if t < ch_buff_expiry { cc } else { 0.0 })
             + params.cc_stack.as_ref().map_or(0.0, |s| {
-                ch_stacks.retain(|&e| e > t);
-                s.per_stack * ch_stacks.len() as f64
+                s.per_stack * {
+                    ch_stacks.retain(|&e| e > t);
+                    ch_stacks.len() as f64
+                }
             });
-        let effective_cc = ap.base_crit_chance + flat_crit + weakened_cc + ch_cc;
+        // Arcane cc_abs: assumed-max conditionals (Overcharge/Outburst).
+        let effective_cc =
+            ap.base_crit_chance + flat_crit + weakened_cc + ch_cc + params.arcane.cc_abs;
+
+        // Live fire rate (base + Pressurized Magazine's on-reload buff, ×
+        // the BuffBar multiplier) — schedules shots below and gates
+        // Hemorrhage's below-2.5 doubled chance.
+        let fr_reload_add = match ap.fr_on_reload {
+            Some((v, _)) if t < fr_reload_expiry => v,
+            _ => 0.0,
+        };
+        let live_rate = (ap.fire_rate + fr_reload_add) * contribs.fire_rate_multiplier;
 
         // Multishot: pellets this pull = floor + fractional chance; every
         // pellet is an independent damage instance. Earned Galvanized
-        // stacks add live.
+        // stacks and arcane multishot stacks (Conjunction Voltage: a
+        // RELATIVE bonus × base pellets) add live.
         let ms_eff = ap.multishot
             + params
                 .ms_stack
                 .as_ref()
-                .map_or(0.0, |s| s.per_stack * gal.ms.current(t, s.duration) as f64);
+                .map_or(0.0, |s| s.per_stack * gal.ms.current(t, s.duration) as f64)
+            + ap.base_multishot * arc.total(&params.arcane.buffs, ArcGrant::Multishot, t);
         let n_pellets = ms_eff.floor() as u32 + rng.chance(ms_eff.fract()) as u32;
         let (mut any_head, mut any_big) = (false, false);
         let headshots_before = r.headshots;
+        // Secondary Encumber: at most ONE extra proc per instant — pellets
+        // of one pull land simultaneously, so one roll per pull.
+        let mut encumber_done = false;
         r.shots += 1;
 
         for _ in 0..n_pellets {
@@ -1542,21 +1707,17 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // procs already count): mitigation amps, Cold's flat crit
             // damage received, and Condition Overload's type count.
             let mit = debuffs.mitigation(t, sd);
-            let cd_total = ap.crit_multiplier + debuffs.cold_cd_bonus(t);
-            // Live arcane BASE-DAMAGE stacks (Deadhead/Cascadia Flare join
-            // the Hornet Strike bucket, so they also scale ModifiedBase).
-            let arc_bd = match params.arcane {
-                Arcane::Deadhead => {
-                    DEADHEAD_SPEC.per_stack * deadhead.current(t, DEADHEAD_SPEC.duration) as f64
-                }
-                Arcane::CascadiaFlare => {
-                    if t >= flare_expiry {
-                        flare_stacks = 0; // hard reset: ALL stacks drop
-                    }
-                    FLARE_BD_PER_STACK * flare_stacks as f64
-                }
-                _ => 0.0,
-            };
+            // Crit damage: resolved multiplier + Cold's flat bonus received
+            // + Sharpened Bullets' live on-kill buff + the arcane's
+            // assumed-max conditional (Outburst).
+            let cd_total = ap.crit_multiplier
+                + debuffs.cold_cd_bonus(t)
+                + arc.cd_bonus(ap, t)
+                + params.arcane.cd_abs;
+            // Live arcane BASE-DAMAGE stacks (Merciless/Deadhead/Dexterity/
+            // Cascadia Flare join the Hornet Strike bucket, so they also
+            // scale ModifiedBase).
+            let arc_bd = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t);
             let bd = ap.base_damage_bonus;
             let arc_ratio = (1.0 + bd + arc_bd) / (1.0 + bd);
             let mb_live = modded_base * arc_ratio;
@@ -1568,29 +1729,58 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     .as_ref()
                     .map_or(0.0, |s| s.per_stack * gal.co.current(t, s.duration) as f64);
             let co_total = co_rate * ap.co_base_fraction * debuffs.distinct_statuses() as f64;
+            // Secondary Shiver: +per_stack per ACTIVE Cold status on the
+            // target (Frozen counts as the full 10) — a GunCO-family source
+            // (wiki: "consistent with other GunCO sources such as Galvanized
+            // Shot"), so it shares CO's bracket and behavior class.
+            let shiver_total = if params.arcane.per_cold_bd > 0.0 {
+                params.arcane.per_cold_bd
+                    * debuffs.cold_status_count(t).min(params.arcane.cold_cap) as f64
+                    * ap.co_base_fraction
+            } else {
+                0.0
+            };
+            let gunco_total = co_total + shiver_total;
             let co_mult = match ap.co_behavior {
                 // Joins the base-damage bucket: diluted by Hornet Strike,
                 // sharing the bracket with the arcane's bonus.
                 crate::loadout::CoBehavior::AdditiveWithBaseDamage => {
-                    (1.0 + bd + arc_bd + co_total) / (1.0 + bd)
+                    (1.0 + bd + arc_bd + gunco_total) / (1.0 + bd)
                 }
-                crate::loadout::CoBehavior::Independent => arc_ratio * (1.0 + co_total),
+                crate::loadout::CoBehavior::Independent => arc_ratio * (1.0 + gunco_total),
                 crate::loadout::CoBehavior::Inert => arc_ratio,
             };
 
-            let tier = roll_crit_tier(effective_cc, rng);
+            // Part FIRST, crit roll second: weak-point crit chance (Pistol
+            // Acuity; Cascadia Accuracy under assumed-max) exists only on
+            // the pellet that actually lands on a weak point.
             let part = pick_part(&params.body_parts, rng);
+            let cc_pellet = effective_cc
+                + if part.is_head {
+                    ap.weakpoint_cc_abs + params.arcane.weakpoint_cc_abs
+                } else {
+                    0.0
+                };
+            let tier = roll_crit_tier(cc_pellet, rng);
             // Headshot bonuses form an additive bracket that MULTIPLIES
             // the base multiplier (Enemy_Body_Parts, verbatim template:
             // 3 × (1 + Deadhead 30% + Target Acquired 75%) = 6.15x). A 1x
-            // head still benefits (1 × 1.3). Rides the part context into
-            // DoT snapshots.
-            let head_bonus = if part.is_head && params.arcane == Arcane::Deadhead {
-                DEADHEAD_HEADSHOT_BONUS
+            // head still benefits (1 × 1.3). Acuity's Weak Point Damage is
+            // ADDED to the part multiplier first (at 1.5× the listed value
+            // on true weak points — wiki Pistol_Acuity: 3 + 3.5×1.5 =
+            // 8.25x) and the bracket multiplies the sum. Rides the part
+            // context into DoT snapshots.
+            let head_bonus = if part.is_head {
+                params.arcane.headshot_mult_bonus
             } else {
                 0.0
             };
-            let part_factor = part.multiplier * (1.0 + head_bonus);
+            let wp_mult = if part.is_head {
+                part.multiplier + 1.5 * ap.weakpoint_damage
+            } else {
+                part.multiplier
+            };
+            let part_factor = wp_mult * (1.0 + head_bonus);
             // Wiki Critical_Hit §Critical Headshots: a crit on an eligible
             // >1x location doubles cd inside the tier formula (a cd_total
             // that INCLUDES Cold's flat bonus — freeze.yaml notes).
@@ -1604,7 +1794,16 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // Faction bonus (System A) is a total-damage multiplier applied
             // once here on the direct hit; DoT/status ticks apply it a SECOND
             // time (fm² below) — the wiki "double dip".
-            let raw = qtotal * part_factor * crit_mult * co_mult * params.faction_mult;
+            // Secondary Surge (assumed-max): a FINAL multiplier on the shot,
+            // multiplicative with Hornet Strike (wiki notes). Secondary
+            // Fortifier: ×overguard_mult while the target's Overguard holds.
+            let arc_final = params.arcane.final_mult
+                * if target.overguard > 0.0 {
+                    params.arcane.overguard_mult
+                } else {
+                    1.0
+                };
+            let raw = qtotal * part_factor * crit_mult * co_mult * params.faction_mult * arc_final;
             let (effective, killed, broke) = target.apply(
                 raw,
                 toxin_share,
@@ -1637,9 +1836,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             }
             if killed {
                 gal.bump_on_kill(params, t);
-                // Deadhead: only HEADSHOT kills grant/refresh its stacks.
-                if part.is_head && params.arcane == Arcane::Deadhead {
-                    deadhead.on_kill(t, &DEADHEAD_SPEC);
+                arc.on_kill(params, t);
+                // Deadhead's precision boundary: only direct-pellet
+                // HEADSHOT kills grant/refresh its stacks.
+                if part.is_head {
+                    arc.bump_trigger(&params.arcane.buffs, ArcTrigger::HeadshotKill, t);
                 }
                 // Crosshairs stacks: headshot kills, per-stack expiry FIFO.
                 if part.is_head {
@@ -1660,13 +1861,58 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // Per-pellet proc roll (wiki Multishot/Status_Effect): forced ++
             // SC draws weighted by the QUANTIZED vector, unit immunities
             // renormalized.
-            let procs = status::procs_for_hit(
+            let mut procs = status::procs_for_hit(
                 &ap.forced_procs,
                 ap.status_chance,
                 qvec,
                 &params.target.status_immunities,
                 rng,
             );
+            // Secondary Encumber: on a status this pellet applied, roll
+            // ONE extra status of a uniformly random type (13-type pool,
+            // independent of the weapon's vector — wiki), at most once per
+            // instant (= per trigger pull).
+            if params.arcane.encumber_chance > 0.0
+                && !encumber_done
+                && !procs.is_empty()
+                && rng.chance(params.arcane.encumber_chance)
+            {
+                const POOL: [DamageType; 13] = [
+                    DamageType::Impact,
+                    DamageType::Puncture,
+                    DamageType::Slash,
+                    DamageType::Heat,
+                    DamageType::Cold,
+                    DamageType::Electricity,
+                    DamageType::Toxin,
+                    DamageType::Blast,
+                    DamageType::Corrosive,
+                    DamageType::Magnetic,
+                    DamageType::Viral,
+                    DamageType::Gas,
+                    DamageType::Radiation,
+                ];
+                let idx = (rng.next_f64() * POOL.len() as f64) as usize % POOL.len();
+                procs.push(POOL[idx]);
+                encumber_done = true;
+            }
+            // Hemorrhage: one roll per damage INSTANCE when a `from` status
+            // landed and no `to` status did (never stacks with another
+            // same-instance `to` source — wiki notes); chance ×2 while the
+            // LIVE fire rate is strictly below 2.5.
+            if let Some(pc) = ap.proc_conversion {
+                if procs.contains(&pc.from) && !procs.contains(&pc.to) {
+                    let chance = pc.chance
+                        * if live_rate < pc.low_rate_threshold {
+                            pc.low_rate_mult
+                        } else {
+                            1.0
+                        };
+                    if rng.chance(chance) {
+                        procs.push(pc.to);
+                    }
+                }
+            }
             // Elemental DoT tick (data/debuffs): 0.5 × ModifiedBase ×
             // (1 + element bonuses) × (1 + status damage) × crit/part
             // snapshot. Delay-1 DoTs tick at +1..+6 s; delay-0 (Electricity/
@@ -1704,12 +1950,22 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         stagger_cap,
                         t,
                     ),
-                    DamageType::Puncture => DebuffState::push_capped(
-                        &mut debuffs.weakened,
-                        t + WEAKENED_DURATION * sd,
-                        gcap(WEAKENED_CAP),
-                        t,
-                    ),
+                    DamageType::Puncture => {
+                        DebuffState::push_capped(
+                            &mut debuffs.weakened,
+                            t + WEAKENED_DURATION * sd,
+                            gcap(WEAKENED_CAP),
+                            t,
+                        );
+                        // Secondary Cryogenic: each Puncture status applies
+                        // N Cold stacks to targets around the hit — the
+                        // single-target arena collapses that onto the main
+                        // target (the wiki confirms it is included). The
+                        // Cold procs scale with Status Duration.
+                        for _ in 0..params.arcane.cold_burst_on_puncture {
+                            debuffs.apply_cold_proc(t, sd, target.overguard > 0.0, caps);
+                        }
+                    }
                     DamageType::Slash => push_dot(
                         &mut debuffs,
                         DamageType::Slash,
@@ -1728,15 +1984,25 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         delayed_ticks,
                         false,
                     ),
-                    DamageType::Electricity => push_dot(
-                        &mut debuffs,
-                        DamageType::Electricity,
-                        DOT_COEFFICIENT,
-                        ap.elem_bracket(DamageType::Electricity),
-                        0.0,
-                        immediate_ticks,
-                        false,
-                    ),
+                    DamageType::Electricity => {
+                        // Conjunction Voltage: each Electricity status this
+                        // weapon applies grants one stack to both of its
+                        // buffs (reload speed + multishot).
+                        arc.bump_trigger(
+                            &params.arcane.buffs,
+                            ArcTrigger::ElectricityStatus,
+                            t,
+                        );
+                        push_dot(
+                            &mut debuffs,
+                            DamageType::Electricity,
+                            DOT_COEFFICIENT,
+                            ap.elem_bracket(DamageType::Electricity),
+                            0.0,
+                            immediate_ticks,
+                            false,
+                        )
+                    }
                     DamageType::Gas => push_dot(
                         &mut debuffs,
                         DamageType::Gas,
@@ -1751,14 +2017,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         // refresh the shared clock; ticks stay anchored to
                         // the first proc (ignite.yaml).
                         // Cascadia Flare: each applied Heat status grants
-                        // one stack and refreshes the shared timer.
-                        if params.arcane == Arcane::CascadiaFlare {
-                            if t >= flare_expiry {
-                                flare_stacks = 0;
-                            }
-                            flare_stacks = (flare_stacks + 1).min(FLARE_MAX_STACKS);
-                            flare_expiry = t + FLARE_DURATION;
-                        }
+                        // one stack and refreshes the shared timer (own
+                        // procs only — the "any source" clause waits on a
+                        // multi-actor world).
+                        arc.bump_trigger(&params.arcane.buffs, ArcTrigger::HeatStatus, t);
                         let contrib = DOT_COEFFICIENT
                             * mb_live
                             * ap.elem_bracket(DamageType::Heat)
@@ -1823,11 +2085,35 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                             }
                             if killed {
                                 gal.bump_on_kill(params, t);
+                                arc.on_kill(params, t);
                                 debuffs = DebuffState::default();
                             }
                         }
                     }
                     _ => {}
+                }
+                // Cascadia Empowered: each applied status adds an EXTRA
+                // FLAT damage instance of the proc's type — unaffected by
+                // damage/element/crit mods, Galvanized stacks, parts, or
+                // falloff; faction bonuses apply ONCE; enemy mitigation
+                // still applies (wiki notes). Toxin instances keep Toxin's
+                // shield bypass.
+                if params.arcane.flat_damage_on_status > 0.0 {
+                    let amt = params.arcane.flat_damage_on_status * params.faction_mult;
+                    let tox = if proc == DamageType::Toxin { 1.0 } else { 0.0 };
+                    let (eff, killed, broke) =
+                        target.apply(amt, tox, false, t, &params.target, false, &mit);
+                    r.total_damage += amt;
+                    r.effective_damage += eff;
+                    r.kills += killed as u32;
+                    if let Some(pool) = broke {
+                        push_break_proc(&mut debuffs, params, t, pool);
+                    }
+                    if killed {
+                        gal.bump_on_kill(params, t);
+                        arc.on_kill(params, t);
+                        debuffs = DebuffState::default();
+                    }
                 }
             }
         }
@@ -1839,8 +2125,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             headshot: any_head,
             target_alive: true,
         });
-        if params.arcane == Arcane::Enervate {
-            enervate.on_event(&hit, t, &mut bar);
+        if let Some(en) = enervate.as_mut() {
+            en.on_event(&hit, t, &mut bar);
         }
         if ap.frenzy {
             frenzy.on_event(&hit, t, &mut bar);
@@ -1865,9 +2151,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         }
 
         // Next shot: cadence reflects the bar as of now (Frenzy just
-        // granted/refreshed counts immediately).
+        // granted/refreshed counts immediately), plus Pressurized
+        // Magazine's live on-reload fire-rate buff.
         bar.expire(t);
-        let rate = ap.fire_rate * bar.total_contributions().fire_rate_multiplier;
+        let fr_add = match ap.fr_on_reload {
+            Some((v, _)) if t < fr_reload_expiry => v,
+            _ => 0.0,
+        };
+        let rate = (ap.fire_rate + fr_add) * bar.total_contributions().fire_rate_multiplier;
         t += 1.0 / rate;
     }
 
@@ -1875,6 +2166,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     process_ticks(
         &mut debuffs,
         &mut gal,
+        &mut arc,
         params.duration_secs,
         &mut target,
         params,
@@ -2017,6 +2309,25 @@ mod tests {
         DummyParams {
             status_chance: 0.0,
             ..DummyParams::default()
+        }
+    }
+
+    /// A secondary arcane at max rank under the Emergent policy (crit-base
+    /// 0 — none of these tests use the assumed-max relative crit paths).
+    fn arc(id: &str) -> ArcaneFx {
+        crate::arcanes_data::secondary(id)
+            .unwrap()
+            .fx(5, crate::loadout::StackPolicy::Emergent, 0.0, 0.0, &[])
+    }
+
+    /// Deterministic base: no crits, no procs, 1x body, no arcane.
+    fn flat_base() -> DummyParams {
+        DummyParams {
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            body_parts: mono_body(1.0),
+            ..no_status()
         }
     }
 
@@ -2614,7 +2925,7 @@ mod tests {
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
             forced_procs: vec![forced],
-            arcane: Arcane::None,
+            arcane: ArcaneFx::none(),
             body_parts: mono_body(1.0),
             ..no_status()
         }
@@ -2751,7 +3062,7 @@ mod tests {
             base_crit_chance: 1.0,
             crit_multiplier: 2.0,
             forced_procs: vec![DamageType::Cold],
-            arcane: Arcane::None,
+            arcane: ArcaneFx::none(),
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -2823,7 +3134,7 @@ mod tests {
             crit_multiplier: 1.0,
             magazine_size: 2.0,
             ammo_efficiency_applies: false,
-            arcane: Arcane::None,
+            arcane: ArcaneFx::none(),
             body_parts: head,
             cycle: Some(IncarnonCycle {
                 base_form: Box::new(base_form),
@@ -2887,7 +3198,7 @@ mod tests {
         let p = DummyParams {
             ms_stack: Some(spec),
             target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
-            arcane: Arcane::None,
+            arcane: ArcaneFx::none(),
             crit_multiplier: 1.0,
             body_parts: mono_body(1.0),
             ..no_status()
@@ -2943,7 +3254,9 @@ mod tests {
         let p = DummyParams {
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
-            arcane: Arcane::Deadhead,
+            arcane: crate::arcanes_data::secondary("secondary_deadhead")
+                .unwrap()
+                .fx(5, crate::loadout::StackPolicy::Emergent, 0.0, 0.0, &[]),
             body_parts: vec![BodyPart {
                 name: "head".into(),
                 aim_weight: 1.0,
@@ -2970,7 +3283,9 @@ mod tests {
         let starved = DummyParams {
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
-            arcane: Arcane::CascadiaFlare,
+            arcane: crate::arcanes_data::secondary("cascadia_flare")
+                .unwrap()
+                .fx(5, crate::loadout::StackPolicy::Emergent, 0.0, 0.0, &[]),
             forced_procs: vec![DamageType::Impact],
             body_parts: mono_body(1.0),
             duration_secs: 15.0,
@@ -3005,6 +3320,258 @@ mod tests {
         );
     }
 
+    #[test]
+    fn merciless_stacks_join_the_base_damage_bucket_and_decay_one_by_one() {
+        // Full 12 stacks × 30% = +360% -> ratio 4.6 (bd 0). Within the
+        // first 4 s no decay: 4 shots × 75 × 4.6 = 1380.
+        let p = DummyParams {
+            arcane: arc("secondary_merciless"),
+            duration_secs: 3.9,
+            ..flat_base()
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!((s.mean_damage - 1380.0).abs() < 1e-9, "dmg {}", s.mean_damage);
+        // Kill family without kills: lose ONE stack per 4 s timeout.
+        // Shots t0-3 @12, t4-7 @11, t8-9 @10 stacks:
+        // 75 × (4×4.6 + 4×4.3 + 2×4.0) = 3270.
+        let p10 = DummyParams { duration_secs: 10.0, ..p };
+        let s10 = monte_carlo(&p10, 20, 5);
+        assert!((s10.mean_damage - 3270.0).abs() < 1e-9, "dmg {}", s10.mean_damage);
+    }
+
+    #[test]
+    fn conjunction_voltage_adds_multishot_and_reload_speed() {
+        // 40 stacks × 3% multishot = +120% -> 2.2 expected pellets/shot;
+        // forced Electricity keeps the shared 12 s timer refreshed.
+        let p = DummyParams {
+            arcane: arc("conjunction_voltage"),
+            forced_procs: vec![DamageType::Electricity],
+            ..flat_base()
+        };
+        let s = monte_carlo(&p, 2000, 7);
+        let per_shot = s.mean_pellets / s.mean_shots;
+        assert!((per_shot - 2.2).abs() < 0.05, "pellets/shot {per_shot}");
+        // Reload speed: 40 × 1.5% = +60% -> 2.35 s / 1.6. A 2-round
+        // magazine over 20 s fits in more shots than without the arcane.
+        let slow = DummyParams {
+            magazine_size: 2.0,
+            duration_secs: 20.0,
+            forced_procs: vec![DamageType::Electricity],
+            ..flat_base()
+        };
+        let fast = DummyParams { arcane: arc("conjunction_voltage"), ..slow.clone() };
+        let a = monte_carlo(&slow, 20, 5);
+        let b = monte_carlo(&fast, 20, 5);
+        assert!(b.mean_shots > a.mean_shots, "shots {} vs {}", b.mean_shots, a.mean_shots);
+    }
+
+    #[test]
+    fn shiver_adds_damage_per_cold_status_on_the_target() {
+        // Forced Cold procs land AFTER each shot and last 6 s each: shot k
+        // sees min(k, 5) live stacks (older procs lapse), Σ = 35. GunCO
+        // bracket on the additive-with-bd weapon:
+        // 75 × Σ(1 + 0.45 × stacks) = 75 × 25.75 = 1931.25.
+        let p = DummyParams {
+            arcane: arc("secondary_shiver"),
+            forced_procs: vec![DamageType::Cold],
+            ..flat_base()
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!((s.mean_damage - 1931.25).abs() < 1e-9, "dmg {}", s.mean_damage);
+    }
+
+    #[test]
+    fn fortifier_multiplies_damage_while_overguard_holds() {
+        // ×8 on every direct hit while the (infinite) overguard is up:
+        // 10 × 75 × 8 = 6000.
+        let mut t = TargetParams::training_dummy();
+        t.base_overguard = 1e9;
+        let p = DummyParams {
+            arcane: arc("secondary_fortifier"),
+            target: t,
+            ..flat_base()
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!((s.mean_damage - 6000.0).abs() < 1e-9, "dmg {}", s.mean_damage);
+    }
+
+    #[test]
+    fn empowered_adds_a_flat_instance_per_applied_status() {
+        // Each forced Impact proc adds +750 flat (unscaled by mods/crit):
+        // 10 × (75 + 750) = 8250.
+        let p = DummyParams {
+            arcane: arc("cascadia_empowered"),
+            forced_procs: vec![DamageType::Impact],
+            ..flat_base()
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!((s.mean_damage - 8250.0).abs() < 1e-9, "dmg {}", s.mean_damage);
+    }
+
+    #[test]
+    fn encumber_rolls_one_extra_random_status_per_pull() {
+        // 24% chance per proc-carrying pull, at most one: procs/run ≈
+        // 10 × 1.24.
+        let p = DummyParams {
+            arcane: arc("secondary_encumber"),
+            forced_procs: vec![DamageType::Impact],
+            ..flat_base()
+        };
+        let s = monte_carlo(&p, 4000, 11);
+        assert!((s.mean_procs - 12.4).abs() < 0.3, "procs {}", s.mean_procs);
+    }
+
+    #[test]
+    fn cryogenic_cold_bursts_raise_crit_damage_received() {
+        // Rank 5: every Puncture status also applies 3 Cold stacks; Cold
+        // raises crit damage RECEIVED, so a guaranteed-crit run does more
+        // damage with the arcane than without.
+        let base = DummyParams {
+            base_crit_chance: 1.0,
+            crit_multiplier: 2.0,
+            forced_procs: vec![DamageType::Puncture],
+            arcane: ArcaneFx::none(),
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let with = DummyParams { arcane: arc("secondary_cryogenic"), ..base.clone() };
+        let a = monte_carlo(&base, 300, 5);
+        let b = monte_carlo(&with, 300, 5);
+        assert!(
+            b.mean_damage > a.mean_damage * 1.05,
+            "with {} vs without {}",
+            b.mean_damage,
+            a.mean_damage
+        );
+    }
+
+    #[test]
+    fn surge_assumed_max_is_a_final_multiplier() {
+        // AssumedMax: the ×8 cap on every shot — 10 × 75 × 8 = 6000.
+        let fx = crate::arcanes_data::secondary("secondary_surge")
+            .unwrap()
+            .fx(5, crate::loadout::StackPolicy::AssumedMax, 0.0, 0.0, &[]);
+        let p = DummyParams { arcane: fx, ..flat_base() };
+        let s = monte_carlo(&p, 20, 5);
+        assert!((s.mean_damage - 6000.0).abs() < 1e-9, "dmg {}", s.mean_damage);
+    }
+
+    #[test]
+    fn hemorrhage_converts_impact_procs_to_bleeds() {
+        // Fire rate 1 < 2.5: chance 0.35 × 2 = 0.7 per damage instance —
+        // forced Impact procs seed Slash bleeds (35% ticks of ModifiedBase).
+        let with = DummyParams {
+            proc_conversion: Some(crate::loadout::ProcConv {
+                from: DamageType::Impact,
+                to: DamageType::Slash,
+                chance: 0.35,
+                low_rate_threshold: 2.5,
+                low_rate_mult: 2.0,
+            }),
+            forced_procs: vec![DamageType::Impact],
+            ..flat_base()
+        };
+        let without = DummyParams { proc_conversion: None, ..with.clone() };
+        let a = monte_carlo(&without, 200, 5);
+        let b = monte_carlo(&with, 200, 5);
+        assert!(a.mean_dot_damage == 0.0, "impact alone must not bleed");
+        assert!(b.mean_dot_damage > 0.0, "hemorrhage must bleed");
+        // ~0.7 of 10 shots convert; ticks land at t+1..t+6 but only while
+        // t < 10, so shot k contributes min(6, 9−k) ticks — 39 total.
+        let expect = 0.7 * 39.0 * 0.35 * 75.0;
+        assert!(
+            (b.mean_dot_damage / expect - 1.0).abs() < 0.10,
+            "dot {} vs expect {expect}",
+            b.mean_dot_damage
+        );
+    }
+
+    #[test]
+    fn weakpoint_damage_adds_into_the_part_multiplier_at_1_5x() {
+        // Acuity r10 on a 3x head, 100% weak-point aim: 3 + 3.5 × 1.5 =
+        // 8.25x -> 10 × 75 × 8.25 = 6187.5 (wiki Pistol_Acuity example).
+        let p = DummyParams {
+            weakpoint_damage: 3.5,
+            body_parts: vec![BodyPart {
+                name: "head".into(),
+                aim_weight: 1.0,
+                multiplier: 3.0,
+                is_head: true,
+                crit_bonus: false,
+            }],
+            ..flat_base()
+        };
+        let s = monte_carlo(&p, 20, 5);
+        assert!((s.mean_damage - 6187.5).abs() < 1e-9, "dmg {}", s.mean_damage);
+    }
+
+    #[test]
+    fn weakpoint_crit_chance_applies_on_weakpoint_pellets_only() {
+        // +100% absolute cc on head hits with cd 2.0: every head pellet
+        // tier-1 crits (×2); body pellets never crit. 100% head aim:
+        // 10 × 75 × 2 = 1500.
+        let head = DummyParams {
+            weakpoint_cc_abs: 1.0,
+            crit_multiplier: 2.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            body_parts: vec![BodyPart {
+                name: "head".into(),
+                aim_weight: 1.0,
+                multiplier: 1.0,
+                is_head: true,
+                crit_bonus: false,
+            }],
+            ..no_status()
+        };
+        let s = monte_carlo(&head, 20, 5);
+        assert!((s.mean_damage - 1500.0).abs() < 1e-9, "dmg {}", s.mean_damage);
+        let body = DummyParams { body_parts: mono_body(1.0), ..head };
+        let s2 = monte_carlo(&body, 20, 5);
+        assert!((s2.mean_damage - 750.0).abs() < 1e-9, "dmg {}", s2.mean_damage);
+    }
+
+    #[test]
+    fn sharpened_bullets_cd_buff_refreshes_on_kills() {
+        // Frail 50 HP respawning targets: kills keep the +100%-absolute cd
+        // buff up; guaranteed crits make the buff visible in raw damage.
+        let mut frail = TargetParams::training_dummy();
+        frail.base_health = 50.0;
+        frail.mode = TargetMode::InstantRespawn;
+        let base = DummyParams {
+            base_crit_chance: 1.0,
+            crit_multiplier: 2.0,
+            arcane: ArcaneFx::none(),
+            body_parts: mono_body(1.0),
+            target: frail,
+            ..no_status()
+        };
+        let with = DummyParams { cd_on_kill: Some((1.0, 9.0)), ..base.clone() };
+        let a = monte_carlo(&base, 50, 5);
+        let b = monte_carlo(&with, 50, 5);
+        assert!(
+            b.mean_damage > a.mean_damage * 1.3,
+            "with {} vs without {}",
+            b.mean_damage,
+            a.mean_damage
+        );
+    }
+
+    #[test]
+    fn pressurized_magazine_fire_rate_buff_follows_reloads() {
+        // A 2-round magazine reloads constantly; +100%-absolute fire rate
+        // for 9 s after each reload fits in more shots over 20 s.
+        let base = DummyParams {
+            magazine_size: 2.0,
+            duration_secs: 20.0,
+            ..flat_base()
+        };
+        let with = DummyParams { fr_on_reload: Some((1.0, 9.0)), ..base.clone() };
+        let a = monte_carlo(&base, 20, 5);
+        let b = monte_carlo(&with, 20, 5);
+        assert!(b.mean_shots > a.mean_shots, "shots {} vs {}", b.mean_shots, a.mean_shots);
+    }
+
     fn shielded_target(shield: f64, health: f64) -> TargetParams {
         TargetParams {
             base_shield: shield,
@@ -3024,7 +3591,7 @@ mod tests {
             damage: DamageVector::new().with(DamageType::Impact, 75.0),
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
-            arcane: Arcane::None,
+            arcane: ArcaneFx::none(),
             body_parts: mono_body(1.0),
             target: shielded_target(1000.0, 1000.0),
             duration_secs: 1.0,
@@ -3050,7 +3617,7 @@ mod tests {
                 .with(DamageType::Impact, 16.0),
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
-            arcane: Arcane::None,
+            arcane: ArcaneFx::none(),
             body_parts: mono_body(1.0),
             target: shielded_target(1000.0, 160.0),
             ..no_status()
@@ -3075,7 +3642,7 @@ mod tests {
         let p = DummyParams {
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
-            arcane: Arcane::None,
+            arcane: ArcaneFx::none(),
             fire_rate: 20.0,
             duration_secs: 0.2,
             magazine_size: 100.0,
@@ -3121,7 +3688,7 @@ mod tests {
         let p = DummyParams {
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
-            arcane: Arcane::None,
+            arcane: ArcaneFx::none(),
             body_parts: mono_body(1.0),
             target: t,
             ..no_status()
@@ -3156,7 +3723,7 @@ mod tests {
         let p = DummyParams {
             base_crit_chance: 0.1,
             cc_on_headshot: Some((0.12, 12.0)),
-            arcane: Arcane::None,
+            arcane: ArcaneFx::none(),
             body_parts: vec![BodyPart {
                 name: "head".into(),
                 aim_weight: 1.0,
@@ -3191,7 +3758,7 @@ mod tests {
                 duration: 12.0,
                 initial_stacks: 5,
             }),
-            arcane: Arcane::None,
+            arcane: ArcaneFx::none(),
             body_parts: mono_body(1.0),
             duration_secs: 20.0,
             ..no_status()

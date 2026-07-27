@@ -12,9 +12,16 @@ description: "+X% Weak Point Damage\n+X% Weak Point Critical Chance. Multishot c
 disables: [multishot]    # locks Multishot from being modified while equipped
 
 effects:
+  # Weak Point Damage is ADDED to the enemy's weak-point multiplier at 1.5×
+  # the listed value on true weak points (wiki: Butcher 3x head + rank 10 =
+  # 3 + 3.5 × 1.5 = 8.25x; MOA backpack is the listed-value exception), and
+  # the sum is MULTIPLICATIVE with headshot-multiplier bonuses (Deadhead).
   - kind: weakpoint_damage_bonus
     rank0: 0.32
     rankMax: 3.5
+  # Weak Point Crit Chance is a NORMAL relative crit-chance bonus (additive
+  # with Pistol Gambit) active on weak-point hits only — the multiplicative-
+  # crit behavior on some weapons was a bug fixed in 38.5.
   - kind: weakpoint_crit_chance_bonus
     rank0: 0.32
     rankMax: 3.5

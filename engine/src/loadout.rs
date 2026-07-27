@@ -142,6 +142,34 @@ pub enum ModEffect {
     /// Status-duration bonus (+v): scales status-effect DoT DURATION (→ more
     /// ticks) and slows Heat's armour-strip ramp. No effect on instant procs.
     StatusDuration(f64),
+    /// Weak Point damage (Pistol Acuity). The LISTED value; on a true weak
+    /// point (humanoid head) the actual bonus is 1.5× the listed value ADDED
+    /// to the part's Weak Point Multiplier, and the sum is MULTIPLICATIVE
+    /// with the headshot-multiplier bracket (wiki Pistol_Acuity notes:
+    /// Butcher 3x head + rank-10 Acuity = 3 + 3.5 × 1.5 = 8.25x).
+    WeakpointDamage(f64),
+    /// Weak Point crit chance (Pistol Acuity): a NORMAL relative crit-chance
+    /// bonus (additive with Pistol Gambit — the multiplicative-crit behavior
+    /// was a bug fixed in 38.5) that is only active on weak-point hits.
+    WeakpointCritChance(f64),
+    /// Sharpened Bullets: on ANY kill, +bonus relative crit damage (while
+    /// aiming — the sim assumes constant aiming) for `duration` seconds.
+    OnKillCritDamage { bonus: f64, duration: f64 },
+    /// Pressurized Magazine: on reload, +bonus relative fire rate (while
+    /// aiming) for `duration` seconds.
+    OnReloadFireRate { bonus: f64, duration: f64 },
+    /// Hemorrhage: each `from` status APPLIED rolls `chance` to also apply
+    /// one `to` status (at most one roll per damage instance, and never
+    /// alongside another `to` proc in the same instance). The chance is
+    /// ×`low_rate_mult` while the weapon's LIVE fire rate is strictly below
+    /// `low_rate_threshold` (exactly at the threshold gets no bonus).
+    ProcConversion {
+        from: DamageType,
+        to: DamageType,
+        chance: f64,
+        low_rate_threshold: f64,
+        low_rate_mult: f64,
+    },
 }
 
 /// Indirect stat targets (each its own additive bucket) — outside the
@@ -232,6 +260,20 @@ impl ModEffect {
             FactionDamage(fac, v) => format!("{} Damage to {fac:?}", pct(v)),
             MagazineCapacity(v) => format!("{} Magazine Capacity", pct(v)),
             StatusDuration(v) => format!("{} Status Duration", pct(v)),
+            WeakpointDamage(v) => format!("{} Weak Point Damage", pct(v)),
+            WeakpointCritChance(v) => format!("{} Weak Point Crit Chance", pct(v)),
+            OnKillCritDamage { bonus, duration } => {
+                format!("On Kill: {} Crit Damage, {duration}s", pct(bonus))
+            }
+            OnReloadFireRate { bonus, duration } => {
+                format!("On Reload: {} Fire Rate, {duration}s", pct(bonus))
+            }
+            ProcConversion { from, to, chance, low_rate_threshold, low_rate_mult } => {
+                format!(
+                    "{from:?} status: {} chance to also apply {to:?} (×{low_rate_mult} below {low_rate_threshold} fire rate)",
+                    pct(chance)
+                )
+            }
         }
     }
 }
@@ -516,6 +558,9 @@ pub struct ResolvedPanel {
     pub status_chance: f64,
     pub fire_rate: f64,
     pub multishot: f64,
+    /// The weapon's UNMODDED pellet count — the base a relative multishot
+    /// buff (Conjunction Voltage) multiplies when it joins the bucket live.
+    pub base_multishot: f64,
     pub magazine_size: f64,
     pub reload_seconds: f64,
     /// Σ reload-speed bonuses — transitions (Incarnon transmute/revert)
@@ -555,6 +600,32 @@ pub struct ResolvedPanel {
     /// within a faction. Applied at sim time only vs a matching-faction
     /// target (×2 on DoT ticks); shown on the panel as a conditional row.
     pub faction_damage: Vec<(Faction, f64)>,
+    /// Σ LISTED Weak Point damage (Acuity). Sim: +1.5× this on the part
+    /// multiplier of true weak points, before the headshot bracket.
+    pub weakpoint_damage: f64,
+    /// ABSOLUTE crit chance added on weak-point hits only (base_cc × Σ
+    /// relative weak-point CC bonuses); part-conditional, all policies.
+    pub weakpoint_cc_abs: f64,
+    /// Sharpened Bullets under Emergent: (ABSOLUTE crit-damage add, duration)
+    /// granted/refreshed on every kill.
+    pub cd_on_kill: Option<(f64, f64)>,
+    /// Pressurized Magazine under Emergent: (ABSOLUTE fire-rate add,
+    /// duration) granted on every reload.
+    pub fr_on_reload: Option<(f64, f64)>,
+    /// Hemorrhage's status-conversion roll (an event mechanic — active under
+    /// every policy; contributes no static panel stat).
+    pub proc_conversion: Option<ProcConv>,
+}
+
+/// A resolved status-conversion roll (Hemorrhage).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ProcConv {
+    pub from: DamageType,
+    pub to: DamageType,
+    pub chance: f64,
+    /// Chance ×`low_rate_mult` while LIVE fire rate < this (strictly).
+    pub low_rate_threshold: f64,
+    pub low_rate_mult: f64,
 }
 
 /// Resolve a mod set in slot order against a weapon base.
@@ -568,6 +639,10 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
     let (mut co_stack, mut ms_stack): (Option<StackSpec>, Option<StackSpec>) = (None, None);
     let mut cc_on_headshot: Option<(f64, f64)> = None;
     let mut cc_stack: Option<StackSpec> = None;
+    let (mut wp_dmg, mut wp_cc) = (0.0, 0.0);
+    let mut cd_on_kill: Option<(f64, f64)> = None;
+    let mut fr_on_reload: Option<(f64, f64)> = None;
+    let mut proc_conv: Option<ProcConv> = None;
     let mut elem_bonus: Vec<(DamageType, f64)> = Vec::new();
     let mut indirect: Vec<(IndirectStat, f64)> = Vec::new();
     let mut faction_bonus: Vec<(Faction, f64)> = Vec::new();
@@ -693,6 +768,34 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                 }
                 ModEffect::MagazineCapacity(v) => mag += v,
                 ModEffect::StatusDuration(v) => sdur += v,
+                // Weak-point effects: conditional on the PART HIT, not on an
+                // uptime — active under every policy (the sim gates on
+                // `is_head`); AssumedMax folds the CC into the plain bucket
+                // (its optimistic view assumes weak-point aim).
+                ModEffect::WeakpointDamage(v) => wp_dmg += v,
+                ModEffect::WeakpointCritChance(v) => match policy {
+                    StackPolicy::AssumedMax => cc += v,
+                    _ => wp_cc += v,
+                },
+                ModEffect::OnKillCritDamage { bonus, duration } => match policy {
+                    StackPolicy::AssumedMax => cd += bonus,
+                    StackPolicy::Emergent => {
+                        cd_on_kill = Some((base.base_crit_damage * bonus, duration))
+                    }
+                    StackPolicy::BaseOnly => {} // sentinel: conditional never fires
+                },
+                ModEffect::OnReloadFireRate { bonus, duration } => match policy {
+                    StackPolicy::AssumedMax => fr += bonus,
+                    StackPolicy::Emergent => {
+                        fr_on_reload = Some((base.base_fire_rate * bonus, duration))
+                    }
+                    StackPolicy::BaseOnly => {} // sentinel: conditional never fires
+                },
+                // Event mechanic — carried to the sim under every policy;
+                // contributes no static panel stat.
+                ModEffect::ProcConversion { from, to, chance, low_rate_threshold, low_rate_mult } => {
+                    proc_conv = Some(ProcConv { from, to, chance, low_rate_threshold, low_rate_mult });
+                }
                 // Conditional buff at its assumed-max total — applied only under
                 // AssumedMax (panel/optimizer); emergent leaves it to the sim.
                 ModEffect::CondBuff(bucket, v) => {
@@ -720,13 +823,20 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                 ms = 0.0;
                 ms_stack = None;
             }
-            "fire_rate" => fr = 0.0,
+            "fire_rate" => {
+                fr = 0.0;
+                fr_on_reload = None;
+            }
             "crit_chance" => {
                 cc = 0.0;
                 cc_on_headshot = None;
                 cc_stack = None;
+                wp_cc = 0.0;
             }
-            "crit_damage" => cd = 0.0,
+            "crit_damage" => {
+                cd = 0.0;
+                cd_on_kill = None;
+            }
             "status_chance" => sc = 0.0,
             "base_damage" => bd = 0.0,
             _ => {}
@@ -792,6 +902,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         status_chance: base.base_status_chance * (1.0 + sc),
         fire_rate: base.base_fire_rate * (1.0 + fr),
         multishot: base.base_multishot * (1.0 + base.buff_multishot_bonus + ms),
+        base_multishot: base.base_multishot,
         // Magazine capacity: +% of base, floored to whole rounds (in-game).
         magazine_size: (base.magazine_size * (1.0 + mag)).floor(),
         reload_seconds: base.base_reload / (1.0 + rl),
@@ -809,6 +920,11 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         elem_dot_bonus: elem_bonus.into_iter().map(|(t, v)| (t, 1.0 + v)).collect(),
         indirect,
         faction_damage: faction_bonus,
+        weakpoint_damage: wp_dmg,
+        weakpoint_cc_abs: base.base_crit_chance * wp_cc,
+        cd_on_kill,
+        fr_on_reload,
+        proc_conversion: proc_conv,
     }
 }
 

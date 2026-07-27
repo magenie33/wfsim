@@ -16,6 +16,7 @@
 //! shown in the HUD. The pipeline reads a summed contribution snapshot from the
 //! buff bar. See `docs/BUFFS.md`.
 
+pub mod arcanes_data;
 pub mod buffs;
 pub mod damage;
 pub mod dummy;

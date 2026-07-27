@@ -11,6 +11,10 @@ description: "Impact Status Effects have X% chance to apply a Slash Status Effec
 
 effects:
   # On an applied Impact status, roll `chance` to also apply a Slash status.
+  # ONE roll per damage instance (multiple Impact procs in one hit don't add
+  # rolls), and never alongside another same-instance Slash source (wiki
+  # notes). The threshold reads the LIVE modded fire rate; exactly 2.5 gets
+  # NO bonus (strictly below).
   - kind: proc_conversion
     trigger: impact
     applies: slash

@@ -1,0 +1,725 @@
+//! Declarative arcane loader: `data/arcanes/<slot>/*.yaml` -> the arcane pool.
+//!
+//! Arcanes are DATA, not code (same pattern as [`crate::mods_data`]). Each
+//! YAML records the wiki-verified schema (X-templated description, effects
+//! with `rank0`/`rankMax`, triggered buffs as `kind: buff`, an explicit
+//! `ranks:` list only where per-rank values are non-linear). This module
+//! parses them into [`ArcaneDef`] and resolves a def AT A RANK into the flat
+//! [`ArcaneFx`] the simulator consumes.
+//!
+//! Policy handling mirrors mods (docs/OPTIMIZER.md §3): triggers the timeline
+//! actually fires (kills, headshot kills, own Heat/Electricity procs, target
+//! state) run EMERGENTLY; triggers outside the sim's world (rolls, ability
+//! casts, weapon swaps, overshields) contribute their assumed-max value ONLY
+//! under [`StackPolicy::AssumedMax`] — under `Emergent` they are honest
+//! no-ops until the configured-buff policy lands (devlog 2026-07-27).
+
+use std::fs;
+use std::path::Path;
+use std::sync::OnceLock;
+
+use serde::Deserialize;
+use serde_norway::Value;
+
+use crate::loadout::{pct, Rarity, StackPolicy};
+
+#[derive(Debug, Deserialize)]
+struct ArcaneFile {
+    id: String,
+    name: String,
+    #[allow(dead_code)]
+    arcane_type: String,
+    rarity: String,
+    max_rank: u32,
+    /// Weapon trait required for the effects to apply (Akimbo Slip Shot →
+    /// `dual_pistols`); calc-layer gate like a mod's `requires`.
+    #[serde(default)]
+    requires: Option<String>,
+    /// Custom perk implementation id (Secondary Enervate's ramp/reset lives
+    /// in `engine::perks`, not in the declarative effect vocabulary).
+    #[serde(default)]
+    perk: Option<String>,
+    effects: Vec<Value>,
+}
+
+/// A per-rank value: `rank0`→`rankMax` linear unless an explicit non-linear
+/// `ranks:` table overrides it (Kinship, Outburst, Cryogenic).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Scale {
+    rank0: Option<f64>,
+    rank_max: f64,
+    ranks: Option<Vec<f64>>,
+}
+
+impl Scale {
+    fn at(&self, rank: u32, max_rank: u32) -> f64 {
+        if let Some(t) = &self.ranks {
+            return t[(rank as usize).min(t.len().saturating_sub(1))];
+        }
+        let r0 = match self.rank0 {
+            Some(v) => v,
+            None => return self.rank_max,
+        };
+        if max_rank == 0 {
+            return self.rank_max;
+        }
+        r0 + (self.rank_max - r0) * rank.min(max_rank) as f64 / max_rank as f64
+    }
+}
+
+/// What an emergent arcane stacking buff adds per stack.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ArcGrant {
+    /// Joins the Hornet Strike bracket live (scales ModifiedBase too).
+    BaseDamage,
+    /// Additive multishot (already an absolute pellet-count bonus × base? —
+    /// no: a RELATIVE bonus; the sim multiplies by base pellets itself).
+    Multishot,
+    /// Joins the reload-speed bucket (time = base / (1 + Σ)).
+    ReloadSpeed,
+}
+
+/// What event grants/refreshes a stack.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ArcTrigger {
+    /// Any kill (Secondary Merciless).
+    Kill,
+    /// Direct-pellet headshot kill (Secondary Deadhead's precision boundary).
+    HeadshotKill,
+    /// Melee kill — the sim has no melee: the buff starts full (user
+    /// setting) and only decays (Secondary Dexterity).
+    MeleeKill,
+    /// A Heat status this weapon applies (Cascadia Flare).
+    HeatStatus,
+    /// An Electricity status this weapon applies (Conjunction Voltage).
+    ElectricityStatus,
+}
+
+/// One emergent stacking buff, resolved at a rank.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ArcBuffSpec {
+    pub grant: ArcGrant,
+    pub trigger: ArcTrigger,
+    pub per_stack: f64,
+    pub max_stacks: u32,
+    pub duration: f64,
+    /// true = ALL stacks drop on timeout (the on-status family: Cascadia
+    /// Flare, Conjunction Voltage); false = lose ONE stack and reset the
+    /// timer (the kill family: Merciless/Deadhead/Dexterity).
+    pub all_drop: bool,
+    /// Stacks at t = 0 (arcane stacking buffs start FULL — user setting).
+    pub initial_stacks: u32,
+    /// AssumedMax: the stack count is pinned at max regardless of events.
+    pub pinned: bool,
+}
+
+/// The flat arcane parameter block the simulator consumes — one arcane,
+/// resolved at a rank under a stack policy. `Default` = no arcane (the
+/// multiplier fields default to their 1.0 identity, NOT zero).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ArcaneFx {
+    pub id: String,
+    /// Emergent stacking buffs (kill/status families).
+    pub buffs: Vec<ArcBuffSpec>,
+    /// Secondary Enervate: run the ramp/reset perk at this rank.
+    pub enervate_rank: Option<u8>,
+    /// Deadhead rank 5: joins the additive headshot bracket that multiplies
+    /// the part multiplier.
+    pub headshot_mult_bonus: f64,
+    /// Static reload-speed bucket addition (Merciless rank 5).
+    pub reload_bonus: f64,
+    /// ABSOLUTE crit-chance add (assumed-max conditionals: Overcharge,
+    /// Outburst) — base_cc × Σ relative bonuses.
+    pub cc_abs: f64,
+    /// ABSOLUTE crit-damage add (Outburst) — base_cd × Σ relative bonuses.
+    pub cd_abs: f64,
+    /// ABSOLUTE crit chance on weak-point hits only (Cascadia Accuracy,
+    /// assumed-max).
+    pub weakpoint_cc_abs: f64,
+    /// Final damage multiplier on direct hits (Secondary Surge assumed-max:
+    /// the cap, multiplicative with Hornet Strike). 1.0 = none.
+    pub final_mult: f64,
+    /// Secondary Shiver: +per per ACTIVE Cold status on the target (cap
+    /// `cold_cap`), a GunCO-family source — applied per the weapon's
+    /// CoBehavior bracket alongside Condition Overload.
+    pub per_cold_bd: f64,
+    pub cold_cap: u32,
+    /// Cascadia Empowered: each status proc adds a flat damage instance of
+    /// the proc's type (unaffected by mods/crit/parts; faction once; enemy
+    /// mitigation applies).
+    pub flat_damage_on_status: f64,
+    /// Secondary Encumber: chance that a proc-carrying trigger pull adds ONE
+    /// extra status of a uniformly random type (13-type pool, wiki), at most
+    /// once per instant (= per trigger pull here).
+    pub encumber_chance: f64,
+    /// Secondary Cryogenic: Cold statuses applied to the target on each
+    /// Puncture status (single-target: the radius burst collapses onto the
+    /// main target, which the wiki confirms is also hit).
+    pub cold_burst_on_puncture: u32,
+    /// Secondary Fortifier: total damage multiplier while the target still
+    /// has Overguard (x3..x8 in-game → stored as the multiplier). 1.0 = none.
+    pub overguard_mult: f64,
+    /// Akimbo Slip Shot under assumed-max (sliding/aim-gliding not simmed):
+    /// added to BuffBar ammo efficiency. Gated on the `dual_pistols` trait.
+    pub ammo_efficiency: f64,
+}
+
+impl Default for ArcaneFx {
+    fn default() -> Self {
+        Self {
+            id: String::new(),
+            buffs: Vec::new(),
+            enervate_rank: None,
+            headshot_mult_bonus: 0.0,
+            reload_bonus: 0.0,
+            cc_abs: 0.0,
+            cd_abs: 0.0,
+            weakpoint_cc_abs: 0.0,
+            final_mult: 1.0,
+            per_cold_bd: 0.0,
+            cold_cap: 0,
+            flat_damage_on_status: 0.0,
+            encumber_chance: 0.0,
+            cold_burst_on_puncture: 0,
+            overguard_mult: 1.0,
+            ammo_efficiency: 0.0,
+        }
+    }
+}
+
+impl ArcaneFx {
+    pub fn none() -> Self {
+        Self::default()
+    }
+}
+
+/// A parsed arcane definition (rank-parameterized).
+#[derive(Debug, Clone)]
+pub struct ArcaneDef {
+    pub id: String,
+    pub name: String,
+    pub rarity: Rarity,
+    pub max_rank: u32,
+    pub requires: Option<String>,
+    perk: Option<String>,
+    effects: Vec<ArcEffect>,
+}
+
+/// One rank-parameterized arcane effect (the loader's vocabulary — every
+/// structured kind in data/arcanes; kinds with no single-target sim payload
+/// load as `Inert` so the arcane still resolves).
+#[derive(Debug, Clone, PartialEq)]
+enum ArcEffect {
+    Buff {
+        trigger: ArcTrigger,
+        grant: ArcGrant,
+        scale: Scale,
+        max_stacks: u32,
+        duration: f64,
+        all_drop: bool,
+    },
+    /// Relative crit chance under a non-simmed condition (Overcharge).
+    CondCritChance(Scale),
+    /// Outburst: relative CC and CD per combo tier consumed (assumed-max =
+    /// full 12x combo), duration-limited buff on a non-simmed trigger.
+    CondCritChanceStacked { scale: Scale, max_stacks: u32 },
+    CondCritDamageStacked { scale: Scale, max_stacks: u32 },
+    /// Cascadia Accuracy: relative crit chance on weak-point hits (on-roll
+    /// buff — assumed-max only).
+    WeakpointCritChance(Scale),
+    /// Surge: final damage-multiplier cap (stored as bonus; assumed-max).
+    FinalDamageCap(Scale),
+    HeadshotMultiplier { value: f64, unlocks_at: u32 },
+    ReloadSpeed { value: f64, unlocks_at: u32 },
+    PerColdDamage { scale: Scale, max_stacks: u32 },
+    FlatDamageOnStatus(Scale),
+    EncumberChance(Scale),
+    ColdBurstOnPuncture(Scale),
+    OverguardDamage(Scale),
+    AmmoEfficiency(Scale),
+    /// No single-target sim payload (aoe_echo, overguard_on_damage, combo
+    /// duration, recoil, Kinship's uncapped team-context CC, …). Kept so the
+    /// arcane loads; the description line still shows it.
+    Inert(String),
+}
+
+fn f(v: &Value, k: &str) -> Option<f64> {
+    v.get(k).and_then(Value::as_f64)
+}
+fn u(v: &Value, k: &str) -> u32 {
+    v.get(k).and_then(Value::as_u64).unwrap_or(0) as u32
+}
+fn s<'a>(v: &'a Value, k: &str) -> Option<&'a str> {
+    v.get(k).and_then(Value::as_str)
+}
+
+fn scale(v: &Value) -> Scale {
+    let ranks = v.get("ranks").and_then(Value::as_sequence).map(|seq| {
+        seq.iter().filter_map(Value::as_f64).collect::<Vec<f64>>()
+    });
+    Scale {
+        rank0: f(v, "rank0"),
+        rank_max: f(v, "rankMax").unwrap_or(0.0),
+        ranks,
+    }
+}
+
+fn effect(v: &Value) -> Option<ArcEffect> {
+    let kind = s(v, "kind")?;
+    let inert = |why: &str| Some(ArcEffect::Inert(why.to_string()));
+    Some(match kind {
+        "buff" => {
+            let trigger = s(v, "trigger")?;
+            let grants = s(v, "grants")?;
+            let all_drop = s(v, "decay") == Some("all_drop_on_timeout");
+            let trig = match trigger {
+                "on_kill" => ArcTrigger::Kill,
+                "on_precision_headshot_kill" => ArcTrigger::HeadshotKill,
+                "on_melee_kill" => ArcTrigger::MeleeKill,
+                "on_heat_status" => ArcTrigger::HeatStatus,
+                "on_electricity_status" => ArcTrigger::ElectricityStatus,
+                // Non-simmed triggers with modeled grants:
+                "on_swap_consume_combo" => {
+                    return Some(match grants {
+                        "crit_chance" => ArcEffect::CondCritChanceStacked {
+                            scale: scale(v),
+                            max_stacks: u(v, "max_stacks"),
+                        },
+                        "crit_damage" => ArcEffect::CondCritDamageStacked {
+                            scale: scale(v),
+                            max_stacks: u(v, "max_stacks"),
+                        },
+                        other => ArcEffect::Inert(format!("on_swap grant {other}")),
+                    })
+                }
+                "on_roll" if grants == "weakpoint_crit_chance" => {
+                    return Some(ArcEffect::WeakpointCritChance(scale(v)))
+                }
+                "on_ability_cast" if grants == "final_damage" => {
+                    return Some(ArcEffect::FinalDamageCap(scale(v)))
+                }
+                // Enervate's on_hit buff is implemented by its perk.
+                "on_hit" => return inert("perk-implemented (on_hit)"),
+                other => return inert(&format!("trigger {other}")),
+            };
+            let grant = match grants {
+                "base_damage" => ArcGrant::BaseDamage,
+                "multishot" => ArcGrant::Multishot,
+                "reload_speed" => ArcGrant::ReloadSpeed,
+                other => return inert(&format!("grant {other}")),
+            };
+            ArcEffect::Buff {
+                trigger: trig,
+                grant,
+                scale: scale(v),
+                max_stacks: u(v, "max_stacks"),
+                duration: f(v, "duration").unwrap_or(0.0),
+                all_drop,
+            }
+        }
+        // Kinship carries `per: ally_buff` — team-context, uncapped: inert.
+        "crit_chance_bonus" if s(v, "per").is_some() => {
+            return inert("per-ally-buff (team context)")
+        }
+        "crit_chance_bonus" => ArcEffect::CondCritChance(scale(v)),
+        "headshot_multiplier_bonus" => ArcEffect::HeadshotMultiplier {
+            value: f(v, "rankMax").unwrap_or(0.0),
+            unlocks_at: u(v, "unlocks_at_rank"),
+        },
+        "reload_speed_bonus" => ArcEffect::ReloadSpeed {
+            value: f(v, "rankMax").unwrap_or(0.0),
+            unlocks_at: u(v, "unlocks_at_rank"),
+        },
+        "per_status_damage_bonus" => ArcEffect::PerColdDamage {
+            scale: scale(v),
+            max_stacks: u(v, "max_stacks"),
+        },
+        "flat_damage_on_status" => ArcEffect::FlatDamageOnStatus(scale(v)),
+        "proc_conversion" => ArcEffect::EncumberChance(scale(v)),
+        "proc_burst" => ArcEffect::ColdBurstOnPuncture(scale(v)),
+        "overguard_damage_bonus" => ArcEffect::OverguardDamage(scale(v)),
+        "ammo_efficiency" => ArcEffect::AmmoEfficiency(scale(v)),
+        other => return inert(other),
+    })
+}
+
+impl ArcaneDef {
+    /// Resolve this arcane at `rank` into the sim parameter block.
+    ///
+    /// `base_cc`/`base_cd` are the WEAPON's unmodded crit stats — the
+    /// arcane's relative crit bonuses join the mod buckets, so their
+    /// absolute value is base × bonus (same rule as Galvanized Crosshairs).
+    /// `traits` gates `requires` (calc-layer inert, like mods).
+    pub fn fx(
+        &self,
+        rank: u32,
+        policy: StackPolicy,
+        base_cc: f64,
+        base_cd: f64,
+        traits: &[&str],
+    ) -> ArcaneFx {
+        let rank = rank.min(self.max_rank);
+        let mut fx = ArcaneFx {
+            id: self.id.clone(),
+            ..ArcaneFx::none()
+        };
+        if let Some(req) = &self.requires {
+            if !traits.contains(&req.as_str()) {
+                return fx; // required trait absent: effects inert, id kept
+            }
+        }
+        if self.perk.as_deref() == Some("secondary_enervate") {
+            fx.enervate_rank = Some(rank as u8);
+        }
+        let assumed = policy == StackPolicy::AssumedMax;
+        for e in &self.effects {
+            match e {
+                ArcEffect::Buff { trigger, grant, scale, max_stacks, duration, all_drop } => {
+                    if policy == StackPolicy::BaseOnly {
+                        continue; // sentinel: conditional never fires
+                    }
+                    fx.buffs.push(ArcBuffSpec {
+                        grant: *grant,
+                        trigger: *trigger,
+                        per_stack: scale.at(rank, self.max_rank),
+                        max_stacks: *max_stacks,
+                        duration: *duration,
+                        all_drop: *all_drop,
+                        initial_stacks: *max_stacks, // 初始满 (user)
+                        pinned: assumed,
+                    });
+                }
+                ArcEffect::CondCritChance(sc) => {
+                    if assumed {
+                        fx.cc_abs += base_cc * sc.at(rank, self.max_rank);
+                    }
+                }
+                ArcEffect::CondCritChanceStacked { scale, max_stacks } => {
+                    if assumed {
+                        fx.cc_abs += base_cc * scale.at(rank, self.max_rank) * *max_stacks as f64;
+                    }
+                }
+                ArcEffect::CondCritDamageStacked { scale, max_stacks } => {
+                    if assumed {
+                        fx.cd_abs += base_cd * scale.at(rank, self.max_rank) * *max_stacks as f64;
+                    }
+                }
+                ArcEffect::WeakpointCritChance(sc) => {
+                    if assumed {
+                        fx.weakpoint_cc_abs += base_cc * sc.at(rank, self.max_rank);
+                    }
+                }
+                ArcEffect::FinalDamageCap(sc) => {
+                    if assumed {
+                        fx.final_mult = 1.0 + sc.at(rank, self.max_rank);
+                    }
+                }
+                ArcEffect::HeadshotMultiplier { value, unlocks_at } => {
+                    if rank >= *unlocks_at {
+                        fx.headshot_mult_bonus += value;
+                    }
+                }
+                ArcEffect::ReloadSpeed { value, unlocks_at } => {
+                    if rank >= *unlocks_at {
+                        fx.reload_bonus += value;
+                    }
+                }
+                ArcEffect::PerColdDamage { scale, max_stacks } => {
+                    fx.per_cold_bd = scale.at(rank, self.max_rank);
+                    fx.cold_cap = *max_stacks;
+                }
+                ArcEffect::FlatDamageOnStatus(sc) => {
+                    fx.flat_damage_on_status = sc.at(rank, self.max_rank);
+                }
+                ArcEffect::EncumberChance(sc) => {
+                    fx.encumber_chance = sc.at(rank, self.max_rank);
+                }
+                ArcEffect::ColdBurstOnPuncture(sc) => {
+                    fx.cold_burst_on_puncture = sc.at(rank, self.max_rank).round() as u32;
+                }
+                ArcEffect::OverguardDamage(sc) => {
+                    fx.overguard_mult = 1.0 + sc.at(rank, self.max_rank);
+                }
+                ArcEffect::AmmoEfficiency(sc) => {
+                    if assumed {
+                        fx.ammo_efficiency += sc.at(rank, self.max_rank);
+                    }
+                }
+                ArcEffect::Inert(_) => {}
+            }
+        }
+        fx
+    }
+
+    /// Display lines at a rank — OUR statement of what the model computes
+    /// (mirrors [`crate::loadout::ModEffect::describe`]).
+    pub fn describe_at(&self, rank: u32) -> Vec<String> {
+        let rank = rank.min(self.max_rank);
+        let mut out = Vec::new();
+        if self.perk.as_deref() == Some("secondary_enervate") {
+            out.push("On Hit: +10% flat Crit Chance per stack".to_string());
+            out.push(format!(
+                "Resets after {} big crit{}",
+                rank + 1,
+                if rank == 0 { "" } else { "s" }
+            ));
+        }
+        for e in &self.effects {
+            let at = |sc: &Scale| sc.at(rank, self.max_rank);
+            match e {
+                ArcEffect::Buff { trigger, grant, scale, max_stacks, duration, all_drop } => {
+                    let what = match grant {
+                        ArcGrant::BaseDamage => "Base Damage",
+                        ArcGrant::Multishot => "Multishot",
+                        ArcGrant::ReloadSpeed => "Reload Speed",
+                    };
+                    let when = match trigger {
+                        ArcTrigger::Kill => "On Kill",
+                        ArcTrigger::HeadshotKill => "On Precision Headshot Kill",
+                        ArcTrigger::MeleeKill => "On Melee Kill",
+                        ArcTrigger::HeatStatus => "On Heat Status",
+                        ArcTrigger::ElectricityStatus => "On Electricity Status",
+                    };
+                    let decay = if *all_drop { "all drop on timeout" } else { "lose one on timeout" };
+                    out.push(format!(
+                        "{when}: {} {what} per stack ×{max_stacks}, {duration}s ({decay})",
+                        pct(at(scale))
+                    ));
+                }
+                ArcEffect::CondCritChance(sc) => {
+                    out.push(format!("{} Crit Chance (conditional)", pct(at(sc))));
+                }
+                ArcEffect::CondCritChanceStacked { scale, max_stacks } => out.push(format!(
+                    "{} Crit Chance per combo consumed ×{max_stacks} (on swap)",
+                    pct(at(scale))
+                )),
+                ArcEffect::CondCritDamageStacked { scale, max_stacks } => out.push(format!(
+                    "{} Crit Damage per combo consumed ×{max_stacks} (on swap)",
+                    pct(at(scale))
+                )),
+                ArcEffect::WeakpointCritChance(sc) => out.push(format!(
+                    "On Roll: {} Crit Chance on weak-point hits",
+                    pct(at(sc))
+                )),
+                ArcEffect::FinalDamageCap(sc) => out.push(format!(
+                    "On Ability Cast: next shot ×{:.0} damage cap (0.5%/energy)",
+                    1.0 + at(sc)
+                )),
+                ArcEffect::HeadshotMultiplier { value, unlocks_at } => {
+                    if rank >= *unlocks_at {
+                        out.push(format!("{} to Headshot Multiplier", pct(*value)));
+                    }
+                }
+                ArcEffect::ReloadSpeed { value, unlocks_at } => {
+                    if rank >= *unlocks_at {
+                        out.push(format!("{} Reload Speed", pct(*value)));
+                    }
+                }
+                ArcEffect::PerColdDamage { scale, max_stacks } => out.push(format!(
+                    "{} Damage per Cold status on the target (×{max_stacks})",
+                    pct(at(scale))
+                )),
+                ArcEffect::FlatDamageOnStatus(sc) => out.push(format!(
+                    "On Status: +{:.0} flat damage of the proc's type",
+                    at(sc)
+                )),
+                ArcEffect::EncumberChance(sc) => out.push(format!(
+                    "On Status: {} chance of one extra random status",
+                    pct(at(sc))
+                )),
+                ArcEffect::ColdBurstOnPuncture(sc) => out.push(format!(
+                    "On Puncture: apply {:.0} Cold stacks",
+                    at(sc)
+                )),
+                ArcEffect::OverguardDamage(sc) => out.push(format!(
+                    "×{:.0} damage to Overguard",
+                    1.0 + at(sc)
+                )),
+                ArcEffect::AmmoEfficiency(sc) => out.push(format!(
+                    "{} ammo efficiency while sliding/aim gliding (Dual Pistols)",
+                    pct(at(sc))
+                )),
+                ArcEffect::Inert(_) => {}
+            }
+        }
+        out
+    }
+}
+
+fn rarity(name: &str) -> Rarity {
+    match name {
+        "common" => Rarity::Common,
+        "uncommon" => Rarity::Uncommon,
+        "rare" => Rarity::Rare,
+        "legendary" => Rarity::Legendary,
+        other => panic!("unknown arcane rarity: {other}"),
+    }
+}
+
+/// Load every `<id>.yaml` under `dir` into arcane definitions (sorted by id).
+pub fn load_from_dir(dir: &Path) -> Vec<ArcaneDef> {
+    let mut out = Vec::new();
+    let entries = fs::read_dir(dir).unwrap_or_else(|e| panic!("read {}: {e}", dir.display()));
+    let mut paths: Vec<_> = entries
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .filter(|p| p.extension().is_some_and(|x| x == "yaml"))
+        .collect();
+    paths.sort();
+    for path in paths {
+        let text =
+            fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        let af: ArcaneFile = serde_norway::from_str(&text)
+            .unwrap_or_else(|e| panic!("parse {}: {e}", path.display()));
+        let effects = af
+            .effects
+            .iter()
+            .filter_map(effect)
+            .collect();
+        out.push(ArcaneDef {
+            id: af.id,
+            name: af.name,
+            rarity: rarity(&af.rarity),
+            max_rank: af.max_rank,
+            requires: af.requires,
+            perk: af.perk,
+            effects,
+        });
+    }
+    out
+}
+
+fn arcanes_root() -> std::path::PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../data/arcanes")
+}
+
+/// The secondary-arcane pool — `data/arcanes/secondary/*.yaml`. Cached.
+pub fn secondary_pool() -> &'static Vec<ArcaneDef> {
+    static POOL: OnceLock<Vec<ArcaneDef>> = OnceLock::new();
+    POOL.get_or_init(|| load_from_dir(&arcanes_root().join("secondary")))
+}
+
+/// Look up a secondary arcane by id.
+pub fn secondary(id: &str) -> Option<&'static ArcaneDef> {
+    secondary_pool().iter().find(|a| a.id == id)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const NO_TRAITS: &[&str] = &[];
+
+    #[test]
+    fn loads_all_18_secondary_arcanes() {
+        let pool = secondary_pool();
+        assert_eq!(pool.len(), 18, "expected the full 18-arcane pool");
+    }
+
+    #[test]
+    fn merciless_resolves_kill_family_buff_plus_rank5_reload() {
+        let a = secondary("secondary_merciless").unwrap();
+        let fx = a.fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+        let b = &fx.buffs[0];
+        assert_eq!(b.trigger, ArcTrigger::Kill);
+        assert_eq!(b.grant, ArcGrant::BaseDamage);
+        assert!((b.per_stack - 0.30).abs() < 1e-9);
+        assert_eq!(b.max_stacks, 12);
+        assert!(!b.all_drop); // kill family: lose one + reset
+        assert!((fx.reload_bonus - 0.30).abs() < 1e-9);
+        // Rank 4: no reload passive; per-stack 25% (linear).
+        let fx4 = a.fx(4, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+        assert_eq!(fx4.reload_bonus, 0.0);
+        assert!((fx4.buffs[0].per_stack - 0.25).abs() < 1e-9);
+    }
+
+    #[test]
+    fn deadhead_and_flare_match_the_historical_hardcoded_specs() {
+        let d = secondary("secondary_deadhead")
+            .unwrap()
+            .fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+        let b = &d.buffs[0];
+        assert_eq!(b.trigger, ArcTrigger::HeadshotKill);
+        assert!((b.per_stack - 1.20).abs() < 1e-9);
+        assert_eq!((b.max_stacks, b.all_drop), (3, false));
+        assert!((b.duration - 24.0).abs() < 1e-9);
+        assert!((d.headshot_mult_bonus - 0.30).abs() < 1e-9);
+
+        let fl = secondary("cascadia_flare")
+            .unwrap()
+            .fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+        let b = &fl.buffs[0];
+        assert_eq!(b.trigger, ArcTrigger::HeatStatus);
+        assert!((b.per_stack - 0.12).abs() < 1e-9);
+        assert_eq!((b.max_stacks, b.all_drop), (40, true));
+    }
+
+    #[test]
+    fn nonlinear_ranks_use_the_explicit_table() {
+        // Kinship is inert (team context), but Cryogenic's stack table is
+        // 1,1,2,2,3,3 — rank 3 must be 2, not a lerp of 1..3.
+        let c = secondary("secondary_cryogenic").unwrap();
+        assert_eq!(
+            c.fx(3, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS).cold_burst_on_puncture,
+            2
+        );
+    }
+
+    #[test]
+    fn assumed_max_only_conditionals_are_emergent_noops() {
+        let o = secondary("cascadia_overcharge").unwrap();
+        let em = o.fx(5, StackPolicy::Emergent, 0.10, 2.0, NO_TRAITS);
+        assert_eq!(em.cc_abs, 0.0);
+        let am = o.fx(5, StackPolicy::AssumedMax, 0.10, 2.0, NO_TRAITS);
+        assert!((am.cc_abs - 0.10 * 3.0).abs() < 1e-9);
+
+        // Surge: ×8 cap under AssumedMax, no-op under Emergent.
+        let s = secondary("secondary_surge").unwrap();
+        assert_eq!(s.fx(5, StackPolicy::Emergent, 0.1, 2.0, NO_TRAITS).final_mult, 1.0);
+        assert!((s.fx(5, StackPolicy::AssumedMax, 0.1, 2.0, NO_TRAITS).final_mult - 8.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn requires_gates_akimbo_on_the_dual_pistols_trait() {
+        let a = secondary("akimbo_slip_shot").unwrap();
+        let off = a.fx(5, StackPolicy::AssumedMax, 0.1, 2.0, NO_TRAITS);
+        assert_eq!(off.ammo_efficiency, 0.0);
+        let on = a.fx(5, StackPolicy::AssumedMax, 0.1, 2.0, &["dual_pistols"]);
+        assert!((on.ammo_efficiency - 0.65).abs() < 1e-9);
+    }
+
+    #[test]
+    fn shiver_fortifier_encumber_empowered_cryogenic_resolve() {
+        let sh = secondary("secondary_shiver")
+            .unwrap()
+            .fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+        assert!((sh.per_cold_bd - 0.45).abs() < 1e-9);
+        assert_eq!(sh.cold_cap, 10);
+        let ft = secondary("secondary_fortifier")
+            .unwrap()
+            .fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+        assert!((ft.overguard_mult - 8.0).abs() < 1e-9);
+        let en = secondary("secondary_encumber")
+            .unwrap()
+            .fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+        assert!((en.encumber_chance - 0.24).abs() < 1e-9);
+        let em = secondary("cascadia_empowered")
+            .unwrap()
+            .fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+        assert!((em.flat_damage_on_status - 750.0).abs() < 1e-9);
+        // Voltage: two status-family buffs sharing the 40-stack pool.
+        let cv = secondary("conjunction_voltage")
+            .unwrap()
+            .fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+        assert_eq!(cv.buffs.len(), 2);
+        assert!(cv.buffs.iter().all(|b| b.all_drop && b.max_stacks == 40));
+    }
+
+    #[test]
+    fn enervate_runs_as_the_perk() {
+        let e = secondary("secondary_enervate")
+            .unwrap()
+            .fx(3, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+        assert_eq!(e.enervate_rank, Some(3));
+        assert!(e.buffs.is_empty()); // the on_hit buff is perk-implemented
+    }
+}
