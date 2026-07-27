@@ -9,10 +9,12 @@ description: "On Hit: Increase Critical Chance by 10%. Resets after X Big Critic
 perk: secondary_enervate   # the ramp/reset mechanic lives in engine::perks
 
 effects:
-  # Ramping FLAT crit chance: +10% per hit at EVERY rank (the per-stack value
-  # does not scale); only the reset threshold grows with rank. The stack pile
-  # resets after `reset_after_big_crits` big crits (rank+1, so rank 5 = 6).
-  # Mirrors engine::perks::secondary_enervate (from_rank).
+  # Ramping FLAT crit chance: +10 absolute points per hit at EVERY rank (not
+  # scaled by base: Lato 10% + 7 stacks = 80%, wiki); only the reset
+  # threshold grows with rank. The stack pile resets after
+  # `reset_after_big_crits` big crits (crit tier >= 2; rank+1, so rank 5 =
+  # 6). Untimed (persists until reset), no stack cap, trigger rate-limited
+  # to 30/s in game. Mirrors engine::perks::secondary_enervate (from_rank).
   - kind: buff
     trigger: on_hit
     grants: crit_chance
@@ -20,6 +22,20 @@ effects:
     rankMax: 0.1
     reset_after_big_crits_rank0: 1
     reset_after_big_crits_rankMax: 6
+    rate_limit_hz: 30
+
+# What counts as a "Hit" for the on_hit trigger (wiki):
+# - Hitscan hitting multiple enemies at once (Multishot or Punch Through)
+#   counts as ONE hit; projectile and non-chained beam attacks count as
+#   multiple; AoE always counts as one.
+# - Shotgun-sidearm pellets are tied to Multishot and are not separate hits.
+# - Expiring Blast procs count as a hit; Blast explosions from max stacks or
+#   a kill do not.
+# - Hits on an Arctic Eximus Snow Globe build the bonus without triggering
+#   the reset (object health cannot take crits).
+# Still to confirm in-game: whether a hit's own stack survives when that hit
+# triggers the reset (the impl gains the stack first, then resets), and
+# whether the 30/s cap is a min-interval or a rolling window.
 
 source:
   url: https://wiki.warframe.com/w/Secondary_Enervate

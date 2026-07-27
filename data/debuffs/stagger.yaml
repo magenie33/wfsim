@@ -1,7 +1,7 @@
 id: stagger
 name: Stagger
 kind: debuff
-# Same machinery as data/buffs/: a status PROC is only the trigger event;
+# Same machinery as player-side buffs: a status PROC is only the trigger event;
 # the real entity is this debuff living on the TARGET's bar. Everything
 # below is a property of the debuff itself, not of whoever applied it.
 default_scope: enemy

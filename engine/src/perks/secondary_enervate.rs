@@ -5,9 +5,9 @@
 //! private bookkeeping the UI does not show (the big-crit counter and the
 //! rate-limit timer); the visible stacks live on the [`Buff`].
 //!
-//! Data / source of truth: `data/perks/secondary_enervate.yaml` (trigger + rank
-//! table) and `data/buffs/secondary_enervate.yaml` (the granted buff); the
-//! arcane item is `data/arcanes/secondary/secondary_enervate.yaml`
+//! Data / source of truth: the inline `kind: buff` block in
+//! `data/arcanes/secondary/secondary_enervate.yaml` (trigger + rank fields +
+//! hit-counting notes in one place)
 //! (<https://wiki.warframe.com/w/Secondary_Enervate>). Terminology per
 //! `docs/GLOSSARY.md` (flat crit chance, big crit, Hit).
 //!
@@ -137,6 +137,34 @@ mod tests {
     // A time step comfortably larger than the 1/30 s rate cap, so successive
     // hits each count as a distinct trigger.
     const STEP: f64 = 1.0 / 20.0;
+
+    /// ANTI-DRIFT: the hand-written perk must match the arcane yaml's inline
+    /// buff block (the data source of truth) — per-stack value, rate limit,
+    /// and the rank-scaled reset threshold, at every rank.
+    #[test]
+    fn from_rank_matches_the_arcane_yaml() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../data/arcanes/secondary/secondary_enervate.yaml");
+        let text = std::fs::read_to_string(&path).expect("enervate arcane yaml");
+        let v: serde_norway::Value = serde_norway::from_str(&text).expect("parses");
+        assert_eq!(
+            v.get("perk").and_then(|p| p.as_str()),
+            Some("secondary_enervate"),
+            "the arcane must reference this perk"
+        );
+        let eff = &v.get("effects").and_then(|e| e.as_sequence()).expect("effects")[0];
+        let f = |k: &str| eff.get(k).and_then(serde_norway::Value::as_f64).unwrap();
+        let (r0, rmax) = (f("reset_after_big_crits_rank0"), f("reset_after_big_crits_rankMax"));
+        for rank in 0..=MAX_RANK {
+            let p = SecondaryEnervate::from_rank(rank);
+            // Linear rank0→rankMax over MAX_RANK, like every schema value.
+            let expect = r0 + (rmax - r0) * rank as f64 / MAX_RANK as f64;
+            assert_eq!(p.reset_after_big_crits, expect.round() as u32, "rank {rank}");
+            assert!(approx(p.flat_crit_per_stack, f("rank0")));
+            assert!(approx(p.flat_crit_per_stack, f("rankMax")));
+            assert!(approx(p.min_trigger_interval_secs, 1.0 / f("rate_limit_hz")));
+        }
+    }
 
     fn approx(a: f64, b: f64) -> bool {
         (a - b).abs() < 1e-9

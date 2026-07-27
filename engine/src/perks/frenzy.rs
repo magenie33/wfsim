@@ -1,7 +1,7 @@
 //! Frenzy — Dual Toxocyst's weapon passive, modeled as a [`Perk`].
 //!
-//! Data / source of truth: `data/perks/frenzy.yaml` (trigger) and
-//! `data/buffs/frenzy.yaml` (the granted buff)
+//! Data / source of truth: the inline `passives:` block in
+//! `data/weapons/dual_toxocyst.yaml` (trigger + granted buff in one block)
 //! (<https://wiki.warframe.com/w/Dual_Toxocyst>). Terminology per
 //! `docs/GLOSSARY.md`.
 //!

@@ -67,7 +67,9 @@ the attacker's `BuffBar` and the defender's `DebuffBar` (+ the defender's
 - A **debuff** has the same shape as a buff: stacks, per-stack duration,
   overflow policy (e.g. Stagger: 5 stacks, 6 s each, 6th proc replaces the
   oldest), per-stack modifiers, caps, conditions. Stored in
-  `data/debuffs/`, mirroring `data/buffs/`.
+  `data/debuffs/` as standalone files — unlike player-side buffs (inlined at
+  their granting item), a debuff is shared by EVERY source of its status
+  type, so it keeps its own file.
 - The target-side pipeline layers read a **contribution snapshot from the
   target's `DebuffBar`** exactly like the weapon pipeline reads the player's
   `BuffBar`:
@@ -143,11 +145,20 @@ contribution(which bucket: flat crit chance / crit chance multiplier /
 scope      (Weapon / Warframe / Squad)
 ```
 
-The plan: describe common perks as **data** (`data/perks/*.yaml` +
-`data/buffs/*.yaml`) run by a single interpreter. Genuinely weird ones (e.g. a perk
-that builds on an Arctic Eximus Snow Globe without resetting) get a hand-written
-`impl Perk` behind the same trait. `secondary_enervate.rs` is currently a
-hand-written reference perk; it will inform the declarative schema.
+**Where the data lives (decision 2026-07-27): INLINE at the source.** A
+perk+buff pair is written as ONE `kind: buff` block inside the yaml of the
+thing that grants it — the mod, the arcane, the weapon (its `passives:`).
+There are no standalone `data/perks/` / `data/buffs/` files: a triggered
+buff is 1:1 with its granter, so the pair is declared together (the block's
+trigger/condition IS the perk; the rest IS the buff). The block may carry a
+`perk: <id>` field when the mechanic needs a hand-written stateful
+implementation (`engine::perks::<id>` behind the `impl Perk` trait) — the
+data still records the trigger, values, and wiki-verified boundary notes;
+the code implements the state machine (Enervate's ramp/reset, Frenzy's
+multiplicative fire rate + injection). A buff would GRADUATE back to a
+standalone file only when it stops being 1:1 — shared by several granters,
+or granted by a non-item source (abilities, team buffs) — neither exists in
+the pool today.
 
 ## Mod data: triggered effects are `kind: buff`
 

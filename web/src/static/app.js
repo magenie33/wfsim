@@ -25,7 +25,7 @@ let slots = [];
 let innate = [];     // 9 × innate polarity name|null (exilus never innate)
 let arcane = "none";
 let arcaneRank = null;   // null → max rank (mirrors mod slot ranks)
-let evo2 = "fevered";
+let evo2 = "dt_fevered_frenzy"; // overwritten by META.defaults on init
 let pickerSlot = 0;
 // Mod-picker sort/filter prefs — persisted across slots, presets and weapons.
 let pickerPrefs = { sort: "name", dir: "asc", pol: null };

@@ -536,14 +536,16 @@ fn meta_json() -> Value {
         // steps ranks with the strength updating per rank. `arcane_rank` in
         // the sim request selects the modeled rank (default: max).
         "arcanes": arcanes_json,
-        "evo2": [
-            {"id": "fevered", "name": "Fevered Frenzy"},
-            {"id": "carnage", "name": "Carnage Reign"},
-        ],
+        // The EVO II choice list comes from the evolution yamls
+        // (data/perks/dt_*.yaml, tier 2) — names and ids are data.
+        "evo2": wfsim_engine::evolutions_data::options("dual_toxocyst", 2)
+            .iter()
+            .map(|e| json!({"id": e.id, "name": e.name}))
+            .collect::<Vec<_>>(),
         "defaults": {
             "weapon": "dual_toxocyst",
             "form": "incarnon_cycle",
-            "evo2": "fevered",
+            "evo2": "dt_fevered_frenzy",
             "arcane": "secondary_deadhead",
             "enemy": "thrax_centurion",
             "level": 9999,
@@ -600,8 +602,9 @@ fn panel_json(v: &Value) -> Value {
     let info = weapon(get_str(v, "weapon", "dual_toxocyst"));
     let policy = if info.sentinel { StackPolicy::BaseOnly } else { StackPolicy::AssumedMax };
     let form = get_str(v, "form", "incarnon");
-    let evo2 = match get_str(v, "evo2", "fevered") {
-        "carnage" => DtEvo2::CarnageReign,
+    // Evolution II selector: data ids (legacy short names accepted).
+    let evo2 = match get_str(v, "evo2", "dt_fevered_frenzy") {
+        "carnage" | "dt_carnage_reign" => DtEvo2::CarnageReign,
         _ => DtEvo2::FeveredFrenzy,
     };
 
@@ -900,8 +903,9 @@ fn simulate_json(v: &Value) -> Value {
         StackPolicy::Emergent
     };
     let form = get_str(v, "form", "incarnon_cycle");
-    let evo2 = match get_str(v, "evo2", "fevered") {
-        "carnage" => DtEvo2::CarnageReign,
+    // Evolution II selector: data ids (legacy short names accepted).
+    let evo2 = match get_str(v, "evo2", "dt_fevered_frenzy") {
+        "carnage" | "dt_carnage_reign" => DtEvo2::CarnageReign,
         _ => DtEvo2::FeveredFrenzy,
     };
     // Arcane: a data-driven pool id (legacy short names accepted for old

@@ -34,10 +34,46 @@ ammo_pickup: 40
 magazine: 12
 reload_seconds: 2.35
 
-# Frenzy is delivered as an innate "default upgrade" mod (headshot -> fire
-# rate); modeled as the `frenzy` perk.
+# Frenzy is delivered as an innate "default upgrade" mod.
 default_upgrades:
   - /Lotus/Weapons/Infested/Pistols/InfVomitGun/FireRateOnHeadshotPistolMod
+
+# The weapon passive, INLINE perk+buff (the canonical shorthand: trigger +
+# granted buff in one block). The stateful implementation is
+# engine::perks::frenzy, referenced by `perk:`.
+passives:
+  - id: frenzy
+    name: Frenzy
+    kind: buff
+    trigger: on_headshot
+    perk: frenzy
+    scope: weapon
+    duration: 3
+    refreshable: true
+    max_stacks: 1
+    # Trigger fires ONLY on true headshots (wiki): not other weakspots (MOA
+    # backpacks; Sonar / Detect Vulnerability spots outside the head), and
+    # headshots on corpses do NOT grant the buff.
+    grants:
+      # x2.5 is an INDEPENDENT multiplier (wiki "+150%") applied AFTER any
+      # equipped fire-rate mods/bonuses - its own multiplicative bucket, not
+      # the additive fire-rate-mod bucket. VERBATIM (wiki, re-checked
+      # 2026-07-25): "stacks multiplicatively after any equipped fire rate
+      # mods or fire rate bonuses".
+      fire_rate_multiplier: 2.5
+      # +100% ammo efficiency => infinite ammo: shots_per_ammo = 1/(1-e).
+      ammo_efficiency: 1.0
+      recoil: -0.75
+      # +100% Toxin behaves like a Toxin mod, ADDITIVE with elemental mods
+      # and appended at the END of the mod order, so it participates in
+      # elemental combination as the last mod (a Heat mod makes it Gas; an
+      # existing combined element like Corrosive absorbs it).
+      injected_element: { type: toxin, amount: 1.0, position: end_of_mod_order }
+    # Behavior details (wiki): triggering or expiring makes a noise that
+    # Suppress / Hushed Invisibility cannot reduce; triggering with the last
+    # magazine round does not force a reload - ammo stops being consumed
+    # (Synth Charge synergy). Exact numbers still to be reproduced in the
+    # Simulacrum for the golden test.
 
 # Single attack profile (attack_parts taxonomy: one direct instance, no AoE).
 # Condition Overload behavior class on this weapon (three classes exist:
@@ -67,7 +103,7 @@ perks:
 # (2026-07-24, user): their stat layers apply to BOTH weapons of the group
 # (e.g. Commodore's Fortune: base CC 5% -> 25% here, 11% -> 31% on the
 # Incarnon entry; Carnage Reign scales both vectors pro-rata).
-# Definitions: data/perks/dt_*.yaml.
+# Definitions: data/evolutions/dt_*.yaml.
 incarnon_evolutions:
   - { tier: 1, unlock: install the Incarnon Genesis,
       options: [dt_evo1_incarnon_form] }

@@ -467,75 +467,68 @@ pub struct WeaponBase {
     pub traits: &'static [&'static str],
 }
 
-/// Dual Toxocyst's ORIGINAL base damage total (both forms), before any
-/// evolution flat damage — the base the CO bonus is computed on.
-pub const DT_ORIGINAL_BASE_TOTAL: f64 = 75.0;
-
-/// The Evolution II choice — a SEARCH DIMENSION (user, 2026-07-25).
+/// The Evolution II choice — a SEARCH DIMENSION (user, 2026-07-25). A
+/// SELECTOR only: every number lives in data/perks/dt_*.yaml, applied by
+/// [`crate::evolutions_data::apply`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DtEvo2 {
-    /// +50 base pro-rata (75→125) + 20 permanent multishot stacks
-    /// (+100%, pre-stacked per the user's initial-full setting).
+    /// data/perks/dt_fevered_frenzy.yaml.
     FeveredFrenzy,
-    /// +60 base pro-rata (75→135) + unconditional +33% CO per status
-    /// type (adding class; its CO base excludes its own +60; the
-    /// energy ≥ 200 requirement is assumed met).
+    /// data/perks/dt_carnage_reign.yaml (the energy ≥ 200 requirement is
+    /// assumed met).
     CarnageReign,
 }
 
 impl DtEvo2 {
-    fn vector_scale(self) -> f64 {
+    /// The chosen evolution's data id.
+    pub fn evolution_id(self) -> &'static str {
         match self {
-            DtEvo2::FeveredFrenzy => 125.0 / 75.0,
-            DtEvo2::CarnageReign => 135.0 / 75.0,
+            DtEvo2::FeveredFrenzy => "dt_fevered_frenzy",
+            DtEvo2::CarnageReign => "dt_carnage_reign",
         }
-    }
-
-    fn buff_multishot(self) -> f64 {
-        match self {
-            DtEvo2::FeveredFrenzy => 1.0,
-            DtEvo2::CarnageReign => 0.0,
-        }
-    }
-
-    fn innate_co(self) -> f64 {
-        match self {
-            DtEvo2::FeveredFrenzy => 0.0,
-            DtEvo2::CarnageReign => 0.33,
-        }
-    }
-
-    fn co_fraction(self) -> f64 {
-        DT_ORIGINAL_BASE_TOTAL / (DT_ORIGINAL_BASE_TOTAL * self.vector_scale())
     }
 }
 
 impl WeaponBase {
-    /// Dual Toxocyst Incarnon Form with the fixed evolutions (Commodore's
-    /// Fortune +0.20 into BASE crit chance; Evolved Autoloader is
-    /// holstered-only) and the CHOSEN Evolution II (`evo2` — a search
-    /// dimension). `frenzy_active`: the passive works while transformed
-    /// (user-confirmed) — folds its +100% Toxin injection in.
+    /// Dual Toxocyst's equipped evolutions: the fixed tier 3/4 picks
+    /// (Evolved Autoloader holstered-only; Commodore's Fortune +20% into
+    /// the BASE crit chance) + the CHOSEN Evolution II — all applied from
+    /// data/perks/dt_*.yaml onto the raw base.
+    fn dt_apply_evolutions(mut self, evo2: DtEvo2) -> Self {
+        let evos: Vec<_> = ["dt_commodores_fortune", "dt_evolved_autoloader", evo2.evolution_id()]
+            .iter()
+            .map(|id| {
+                crate::evolutions_data::get(id)
+                    .unwrap_or_else(|| panic!("missing evolution yaml: {id}"))
+            })
+            .collect();
+        crate::evolutions_data::apply(&mut self, &evos);
+        self
+    }
+
+    /// Dual Toxocyst Incarnon Form: RAW panel (wiki 11% cc, 75 base) +
+    /// the equipped evolutions from yaml. `frenzy_active`: the passive
+    /// works while transformed (user-confirmed) — folds its +100% Toxin
+    /// injection in.
     pub fn dual_toxocyst_incarnon(frenzy_active: bool, evo2: DtEvo2) -> Self {
         Self {
             base_vector: DamageVector::new()
                 .with(DamageType::Impact, 15.0)
                 .with(DamageType::Puncture, 37.5)
-                .with(DamageType::Slash, 22.5)
-                .scale(evo2.vector_scale()),
-            base_crit_chance: 0.31, // 11% + Commodore's Fortune 20%
+                .with(DamageType::Slash, 22.5),
+            base_crit_chance: 0.11,
             base_crit_damage: 3.0,
             base_status_chance: 0.43,
             base_fire_rate: 4.5,
             base_multishot: 1.0,
-            buff_multishot_bonus: evo2.buff_multishot(),
+            buff_multishot_bonus: 0.0,
             magazine_size: 270.0,
             base_reload: 3.35,
-            // Wiki CO catalog row: "Adding" class; the CO base EXCLUDES
-            // evolution flat damage ("100% or 56%") — derived per evo2.
-            innate_co_per_type: evo2.innate_co(),
+            // Wiki CO catalog row: "Adding" class; the CO base fraction is
+            // derived by `apply` from the evolution flat damage.
+            innate_co_per_type: 0.0,
             co_behavior: CoBehavior::AdditiveWithBaseDamage,
-            co_base_fraction: evo2.co_fraction(),
+            co_base_fraction: 1.0,
             injected_elements: if frenzy_active {
                 vec![(DamageType::Toxin, 1.0)]
             } else {
@@ -543,29 +536,29 @@ impl WeaponBase {
             },
             traits: &["semi_auto"], // Dual Toxocyst: semi-auto trigger
         }
+        .dt_apply_evolutions(evo2)
     }
 
-    /// Dual Toxocyst **base form** with the same fixed evolutions and the
-    /// chosen Evolution II. `frenzy_active` folds the +100% Toxin
+    /// Dual Toxocyst **base form**: RAW panel (wiki 5% cc, 75 base) + the
+    /// same equipped evolutions. `frenzy_active` folds the +100% Toxin
     /// injection in (exact under a Permanent lock).
     pub fn dual_toxocyst_base(frenzy_active: bool, evo2: DtEvo2) -> Self {
         Self {
             base_vector: DamageVector::new()
                 .with(DamageType::Impact, 7.5)
                 .with(DamageType::Puncture, 60.0)
-                .with(DamageType::Slash, 7.5)
-                .scale(evo2.vector_scale()),
-            base_crit_chance: 0.25, // 5% + Commodore's Fortune 20%
+                .with(DamageType::Slash, 7.5),
+            base_crit_chance: 0.05,
             base_crit_damage: 2.0,
             base_status_chance: 0.37,
             base_fire_rate: 1.0, // semi-auto; Frenzy ×2.5 applies live
             base_multishot: 1.0,
-            buff_multishot_bonus: evo2.buff_multishot(),
+            buff_multishot_bonus: 0.0,
             magazine_size: 12.0,
             base_reload: 2.35,
-            innate_co_per_type: evo2.innate_co(),
+            innate_co_per_type: 0.0,
             co_behavior: CoBehavior::AdditiveWithBaseDamage,
-            co_base_fraction: evo2.co_fraction(),
+            co_base_fraction: 1.0,
             injected_elements: if frenzy_active {
                 vec![(DamageType::Toxin, 1.0)]
             } else {
@@ -573,6 +566,7 @@ impl WeaponBase {
             },
             traits: &["semi_auto"], // Dual Toxocyst: semi-auto trigger
         }
+        .dt_apply_evolutions(evo2)
     }
 
     /// Verglas Prime — Nautilus Prime's robotic (sentinel) weapon. The purest
