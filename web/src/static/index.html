@@ -70,6 +70,59 @@
         <div id="stats-conditionals"></div>
       </div>
     </section>
+
+    <!-- Block: Sim — the 2D arena + scenario/buff settings; Run simulates the
+         current build against the enemy and shows a summary + scene replay. -->
+    <section class="block" id="sim-block">
+      <div class="bh"><span class="n">▶</span><h2>Sim</h2><span class="sub" id="sim-sub"></span></div>
+      <div class="bb">
+        <div id="sim-arena" class="arena">
+          <div class="arena-actor tenno" id="arena-tenno"><span class="dot"></span><span class="lbl">Tenno</span></div>
+          <div class="arena-lane"><div class="tracer" id="arena-tracer"></div></div>
+          <div class="arena-actor enemy" id="arena-enemy">
+            <span class="dot"></span>
+            <span class="lbl" id="arena-ename">Enemy</span>
+            <div class="arena-bars" id="arena-bars"></div>
+            <div class="arena-status" id="arena-status"></div>
+          </div>
+        </div>
+        <h3 class="sim-h">1 · Enemy</h3>
+        <div id="sim-enemy" class="field-grid"></div>
+        <h3 class="sim-h">2 · Buffs <span class="sim-hint">initial stacks + lock (locked = 100% uptime)</span></h3>
+        <div id="sim-buffs"></div>
+        <h3 class="sim-h">3 · Simulation</h3>
+        <div id="sim-run" class="field-grid"></div>
+        <button id="run-sim" class="run-btn">Run Simulation</button>
+        <div id="sim-results"></div>
+      </div>
+    </section>
+
+    <!-- Block: Optimizer — scope (mods/arcanes/evolutions) + the Sim panel's
+         enemy & buff settings → top-10 ranked builds, each loadable. -->
+    <section class="block" id="opt-block">
+      <div class="bh"><span class="n">⚙</span><h2>Optimize</h2><span class="sub" id="opt-sub">uses the Sim panel's enemy + buff settings</span></div>
+      <div class="bb">
+        <div class="preset-bar" id="opt-preset-bar"></div>
+        <h3 class="sim-h">Mods <span class="sim-hint">search by name or effect; mark each as pool (search) or required</span></h3>
+        <div class="opt-mods-head">
+          <input id="opt-mod-filter" type="text" placeholder="search mods by name or effect…" autocomplete="off">
+          <label class="opt-size">Mods / build <input id="opt-size" type="number" min="1" max="8" value="8"></label>
+        </div>
+        <div id="opt-picker-tools" class="picker-tools"></div>
+        <div id="opt-mods-sel"></div>
+        <div id="opt-mods" class="combo-menu opt-modlist"></div>
+        <h3 class="sim-h">Arcanes <span class="sim-hint">search by name or effect; click include</span></h3>
+        <input id="opt-arc-filter" type="text" placeholder="search arcanes by name or effect…" autocomplete="off">
+        <div id="opt-arcanes" class="combo-menu opt-modlist"></div>
+        <h3 class="sim-h">Evolutions <span class="sim-hint">click options to search per tier</span></h3>
+        <div id="opt-evos"></div>
+        <h3 class="sim-h">Buffs <span class="sim-hint">across the whole scope — initial stacks + lock, applied per candidate</span></h3>
+        <div id="opt-buffs"></div>
+        <div id="opt-estimate" class="opt-est"></div>
+        <button id="run-opt" class="run-btn">Run Optimizer</button>
+        <div id="opt-results"></div>
+      </div>
+    </section>
   </main>
 
   <!-- floating popovers (positioned at the active slot) -->

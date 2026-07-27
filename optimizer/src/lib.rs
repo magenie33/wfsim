@@ -17,7 +17,9 @@
 //!    rounds rank by mean effective damage, finals rank by mean kills.
 
 use wfsim_engine::damage::DamageType;
-use wfsim_engine::dummy::{monte_carlo, BodyPart, DummyParams, LockMode, Summary, TargetParams};
+use wfsim_engine::dummy::{
+    monte_carlo, BodyPart, BuffConfig, DummyParams, LockMode, Summary, TargetParams,
+};
 use wfsim_engine::loadout::{resolve, ModDef, ResolvedPanel, StackPolicy, WeaponBase};
 use wfsim_engine::mods::{plan_forma, FormaPlan, PlannedMod, Polarity};
 
@@ -58,9 +60,11 @@ pub struct Candidate {
     /// (Dual Toxocyst base form) — present when a second form was given.
     pub base_panel: Option<ResolvedPanel>,
     pub plan: FormaPlan,
-    /// Weapon-config variant label (the Evolution II choice — a search
-    /// dimension enumerated by resolving against each variant's base).
-    pub variant: &'static str,
+    /// Weapon-config variant: an index into a caller-owned evolution-set
+    /// table (each entry = a chosen evolution-id set + a display label). The
+    /// evolution selection is a search dimension; the caller resolves each
+    /// set's base/base_form and enumerates candidates tagged with its index.
+    pub variant: u32,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -79,7 +83,7 @@ pub fn enumerate_candidates(
     pool: &[ModDef],
     base: &WeaponBase,
     second_form: Option<&WeaponBase>,
-    variant: &'static str,
+    variant: u32,
     slots: u32,
     cap: u32,
     innate: &[Option<Polarity>],
@@ -120,7 +124,7 @@ fn enumerate_rec(
     pool: &[ModDef],
     base: &WeaponBase,
     second_form: Option<&WeaponBase>,
-    variant: &'static str,
+    variant: u32,
     cap: u32,
     innate: &[Option<Polarity>],
     usable: &[usize],
@@ -184,7 +188,7 @@ fn expand_subset(
     pool: &[ModDef],
     base: &WeaponBase,
     second_form: Option<&WeaponBase>,
-    variant: &'static str,
+    variant: u32,
     cap: u32,
     innate: &[Option<Polarity>],
     subset: &[usize],
@@ -295,6 +299,9 @@ pub struct Scenario {
     pub incarnon_cycle: bool,
     /// Frenzy's per-buff lock setting for the base-form phase.
     pub frenzy_lock: LockMode,
+    /// Per-buff configured policy applied to every evaluated build (same id
+    /// scheme as the web Sim panel). Empty = the emergent default.
+    pub buff_cfg: BuffConfig,
 }
 
 /// Evaluate one candidate with a given arcane: engine Monte Carlo only.
@@ -323,6 +330,11 @@ pub fn evaluate(
         )
     };
     params.arcane = arcane.clone();
+    // Per-buff configured policy (weapon-scoped; recurses into the cycle base
+    // form). Empty cfg = no-op → the emergent default.
+    if !s.buff_cfg.is_empty() {
+        params.apply_buff_config(&s.buff_cfg);
+    }
     monte_carlo(&params, runs, seed)
 }
 
@@ -418,6 +430,53 @@ pub fn evaluate_batch(
     results.into_iter().map(|r| r.expect("evaluated")).collect()
 }
 
+/// Drive the multi-round funnel: for each `(runs, keep, by_kills)` round,
+/// evaluate the surviving jobs, sort (kill-progress on kill rounds, effective
+/// damage on screen rounds), and cull to `keep`. Returns the final sorted,
+/// truncated leaderboard — `[0]` is the winner, `[..10]` the top-10. `verbose`
+/// prints per-round progress (the CLI wants it; the web endpoint stays quiet).
+pub fn run_funnel(
+    cands: &[Candidate],
+    arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
+    scenario: &Scenario,
+    mut alive: Vec<Job>,
+    rounds: &[(u32, usize, bool)],
+    seed_base: u64,
+    verbose: bool,
+) -> Vec<(Job, Summary)> {
+    let mut last: Vec<(Job, Summary)> = Vec::new();
+    for (round, &(runs, keep, by_kills)) in rounds.iter().enumerate() {
+        let t = std::time::Instant::now();
+        let started = alive.len();
+        let summaries = evaluate_batch(cands, &alive, arcanes, scenario, runs, seed_base + round as u64);
+        let mut scored: Vec<(Job, Summary)> = alive.iter().copied().zip(summaries).collect();
+        // Kill rounds rank by kill PROGRESS (kills + depleted fraction of the
+        // final target's pool); screen rounds by mean effective damage.
+        scored.sort_by(|a, b| {
+            let ka = if by_kills { a.1.mean_kill_progress } else { a.1.mean_effective_damage };
+            let kb = if by_kills { b.1.mean_kill_progress } else { b.1.mean_effective_damage };
+            kb.total_cmp(&ka)
+        });
+        scored.truncate(keep);
+        if verbose {
+            println!(
+                "[round {}] {} jobs x {} runs ({}) -> keep {} in {:.1?}; best {}",
+                round + 1, started, runs,
+                if by_kills { "kills" } else { "eff dmg" },
+                scored.len(), t.elapsed(),
+                if by_kills {
+                    format!("{:.2} kill score", scored[0].1.mean_kill_progress)
+                } else {
+                    format!("{:.3e} eff", scored[0].1.mean_effective_damage)
+                }
+            );
+        }
+        alive = scored.iter().map(|(j, _)| *j).collect();
+        last = scored;
+    }
+    last
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -483,7 +542,7 @@ mod tests {
             &p,
             &base,
             Some(&WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy)),
-            "fevered",
+            0,
             8,
             60,
             &dual_toxocyst_innate_slots(),
@@ -538,7 +597,7 @@ mod tests {
             &p,
             &base,
             None,
-            "fevered",
+            0,
             8,
             60,
             &dual_toxocyst_innate_slots(),

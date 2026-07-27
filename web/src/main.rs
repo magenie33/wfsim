@@ -15,14 +15,17 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 
 use serde_json::{json, Value};
-use wfsim_engine::dummy::{monte_carlo, BodyPart, DummyParams, LockMode, TargetMode};
+use wfsim_engine::dummy::{monte_carlo, BodyPart, BuffLock, DummyParams, LockMode, LockedBuff, TargetMode};
 use wfsim_engine::enemy_data::EnemySpec;
 use wfsim_engine::loadout::{
     pct as fpct, resolve, DtEvo2, ModDef, ModEffect, ResolvedPanel, StackPolicy, WeaponBase,
 };
 use wfsim_engine::mods::{plan_forma, PlannedMod, Polarity};
 use wfsim_engine::mods_data::pistol_pool as pool; // FULL pool incl. exilus (the optimizer's pool() excludes exilus)
-use wfsim_optimizer::dual_toxocyst_innate_slots;
+use wfsim_optimizer::{
+    dual_toxocyst_innate_slots, enumerate_candidates, run_funnel, schedule, Candidate,
+    Constraints, Job, Scenario,
+};
 
 // ---- Embedded static assets (self-contained binary) --------------------
 
@@ -392,6 +395,14 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
             let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
             respond_json(&mut stream, &simulate_json(&value))
         }
+        ("POST", "/api/optimize") => {
+            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
+            respond_json(&mut stream, &optimize_json(&value))
+        }
+        ("POST", "/api/opt-buffs") => {
+            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
+            respond_json(&mut stream, &opt_buffs_json(&value))
+        }
         ("POST", "/api/panel") => {
             let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
             respond_json(&mut stream, &panel_json(&value))
@@ -609,6 +620,164 @@ fn get_bool(v: &Value, key: &str, default: bool) -> bool {
 fn err_json(msg: impl Into<String>) -> Value {
     json!({ "ok": false, "error": msg.into() })
 }
+
+// ---- buff enumeration --------------------------------------------------
+//
+// The configurable buffs of a build (weapon-scoped; shared across forms), for
+// the Sim panel's per-buff cards and for `simulate_json` to map config → spec.
+// Enumerated from the SOURCE vocabulary (mod effects + arcane buffs + the
+// weapon passive), NOT from resolved Option fields — `panel_json` runs
+// AssumedMax where those are empty. `default_*` encode today's behavior so the
+// UI pre-fills sensibly. Each buff-type appears at most once in a legal build.
+struct BuffMeta {
+    id: String,
+    name: String,
+    max_stacks: u32,
+    kind: &'static str, // "stacking" | "toggle"
+    default_stacks: u32,
+    default_locked: bool,
+}
+
+fn grant_label(g: wfsim_engine::arcanes_data::ArcGrant) -> &'static str {
+    use wfsim_engine::arcanes_data::ArcGrant::*;
+    match g {
+        BaseDamage => "Base Damage",
+        Multishot => "Multishot",
+        ReloadSpeed => "Reload Speed",
+    }
+}
+
+fn enumerate_buffs(
+    refs: &[&ModDef],
+    arcane: &wfsim_engine::arcanes_data::ArcaneFx,
+    info: &WeaponInfo,
+) -> Vec<BuffMeta> {
+    // Sentinels resolve under BaseOnly — conditional buffs never fire, so
+    // there is nothing to configure.
+    if info.sentinel {
+        return Vec::new();
+    }
+    let mut out: Vec<BuffMeta> = Vec::new();
+    let mut push = |b: BuffMeta| {
+        if !out.iter().any(|x| x.id == b.id) {
+            out.push(b);
+        }
+    };
+    // Weapon passive: Frenzy (Dual Toxocyst). Default LOCKED — the sim's cycle
+    // assumes it permanently; a single on/off "stack".
+    if info.id == "dual_toxocyst" {
+        push(BuffMeta { id: "frenzy".into(), name: "Frenzy".into(), max_stacks: 1,
+            kind: "toggle", default_stacks: 1, default_locked: true });
+    }
+    // Mod-granted buffs.
+    for m in refs {
+        let nm = prettify(m.id);
+        for e in &m.effects {
+            use ModEffect::*;
+            match *e {
+                OnKillMultishot { max_stacks, .. } => push(BuffMeta { id: "on_kill_multishot".into(),
+                    name: nm.clone(), max_stacks, kind: "stacking", default_stacks: max_stacks, default_locked: false }),
+                ConditionOverload { max_stacks, .. } => push(BuffMeta { id: "condition_overload".into(),
+                    name: nm.clone(), max_stacks, kind: "stacking", default_stacks: max_stacks, default_locked: false }),
+                OnHeadshotCritChance { .. } => push(BuffMeta { id: "on_headshot_cc".into(),
+                    name: nm.clone(), max_stacks: 1, kind: "toggle", default_stacks: 1, default_locked: false }),
+                OnHeadshotKillCritChance { max_stacks, .. } => push(BuffMeta { id: "on_headshot_kill_cc".into(),
+                    name: nm.clone(), max_stacks, kind: "stacking", default_stacks: max_stacks, default_locked: false }),
+                OnKillCritDamage { .. } => push(BuffMeta { id: "on_kill_cd".into(),
+                    name: nm.clone(), max_stacks: 1, kind: "toggle", default_stacks: 0, default_locked: false }),
+                OnReloadFireRate { .. } => push(BuffMeta { id: "on_reload_fr".into(),
+                    name: nm.clone(), max_stacks: 1, kind: "toggle", default_stacks: 0, default_locked: false }),
+                _ => {}
+            }
+        }
+    }
+    // Arcane buffs (one card per spec; stacking arcanes start full).
+    if !arcane.buffs.is_empty() {
+        let aname = wfsim_engine::arcanes_data::secondary(&arcane.id)
+            .map(|d| d.name.clone())
+            .unwrap_or_else(|| prettify(&arcane.id));
+        let multi = arcane.buffs.len() > 1;
+        for (i, b) in arcane.buffs.iter().enumerate() {
+            let id = if multi { format!("arcane:{}:{}", arcane.id, i) } else { format!("arcane:{}", arcane.id) };
+            let name = if multi { format!("{} ({})", aname, grant_label(b.grant)) } else { aname.clone() };
+            let kind = if b.max_stacks > 1 { "stacking" } else { "toggle" };
+            push(BuffMeta { id, name, max_stacks: b.max_stacks, kind,
+                default_stacks: b.max_stacks, default_locked: false });
+        }
+    }
+    out
+}
+
+fn buffs_json(list: &[BuffMeta]) -> Vec<Value> {
+    list.iter().map(|b| json!({
+        "id": b.id, "name": b.name, "max_stacks": b.max_stacks, "kind": b.kind,
+        "default_stacks": b.default_stacks, "default_locked": b.default_locked,
+    })).collect()
+}
+
+// The build's resolved arcane fx (buff specs are policy-independent in shape);
+// used for buff enumeration. `none` when the weapon can't equip arcanes.
+fn arcane_fx_for(v: &Value, info: &WeaponInfo, base: &WeaponBase, policy: StackPolicy) -> wfsim_engine::arcanes_data::ArcaneFx {
+    if !info.uses_arcane {
+        return wfsim_engine::arcanes_data::ArcaneFx::none();
+    }
+    let aid = match get_str(v, "arcane", "none") {
+        "enervate" => "secondary_enervate",
+        "deadhead" => "secondary_deadhead",
+        "flare" => "cascadia_flare",
+        other => other,
+    };
+    match wfsim_engine::arcanes_data::secondary(aid) {
+        Some(def) => {
+            let rank = get_u32(v, "arcane_rank", def.max_rank).min(def.max_rank);
+            def.fx(rank, policy, base.base_crit_chance, base.base_crit_damage, base.traits)
+        }
+        None => wfsim_engine::arcanes_data::ArcaneFx::none(),
+    }
+}
+
+// ---- per-buff configured policy ----------------------------------------
+//
+// The Sim panel's section 2: `buffs: { "<id>": { stacks, locked } }`. Present
+// ⇒ the sim runs Emergent and each buff carries its own initial stacks + lock;
+// absent ⇒ the legacy `assume_max`/`frenzy` knobs apply (byte-for-byte).
+type BuffCfg = std::collections::HashMap<String, (u32, bool)>;
+
+fn parse_buff_config(v: &Value) -> Option<BuffCfg> {
+    let obj = v.get("buffs")?.as_object()?;
+    let mut m = BuffCfg::new();
+    for (id, cfg) in obj {
+        let stacks = cfg.get("stacks").and_then(|x| x.as_u64()).unwrap_or(0) as u32;
+        let locked = cfg.get("locked").and_then(|x| x.as_bool()).unwrap_or(false);
+        m.insert(id.clone(), (stacks, locked));
+    }
+    Some(m)
+}
+
+/// Frenzy config → (passive active?, the buff-lock vector for a single form).
+/// Locked = Permanent (100% uptime); unlocked+stacks = seed once then natural;
+/// unlocked+0 = pure natural (no t=0 seed). The passive is always "present".
+fn frenzy_apply(cfg: Option<&(u32, bool)>) -> (bool, Vec<BuffLock>) {
+    match cfg {
+        Some(&(_, true)) => (true, vec![BuffLock::permanent(LockedBuff::Frenzy)]),
+        Some(&(stacks, false)) if stacks > 0 => {
+            (true, vec![BuffLock::initial(LockedBuff::Frenzy, stacks)])
+        }
+        Some(&(_, false)) => (true, Vec::new()),
+        None => (true, Vec::new()),
+    }
+}
+
+/// The Frenzy lock mode for the incarnon cycle (baked at construction).
+fn frenzy_lock_mode(cfg: Option<&(u32, bool)>) -> LockMode {
+    match cfg {
+        Some(&(_, true)) | None => LockMode::Permanent, // legacy cycle default
+        Some(&(stacks, false)) => LockMode::Initial(stacks),
+    }
+}
+
+// The per-buff config application lives in the engine (shared with the
+// optimizer); `BuffCfg` is its `BuffConfig`.
 
 // ---- /api/panel --------------------------------------------------------
 //
@@ -865,8 +1034,26 @@ fn panel_json(v: &Value) -> Value {
     row("status_damage", "Status Damage", format!("×{}", num(1.0)), format!("×{}", num(panel.status_damage_mult)));
     row("status_duration", "Status Duration", format!("×{}", num(1.0)), format!("×{}", num(panel.status_duration_mult)));
     row("fire_rate", "Fire Rate", format!("{}/s", num(base.base_fire_rate)), format!("{}/s", num(panel.fire_rate)));
-    row("magazine", "Magazine", num(base.magazine_size), num(panel.magazine_size));
-    row("reload", "Reload", format!("{}s", num(base.base_reload)), format!("{}s", num(panel.reload_seconds)));
+    // Incarnon form: the magazine is a charge-backed resource (Max Charges,
+    // inert to magazine mods) and there is no reload — instead two transition
+    // times, each scaled by the reload formula base/(1 + reload bonus).
+    if let Some(inc) = base.incarnon {
+        let rl = panel.reload_bonus;
+        stats.push(json!({ "key": "magazine", "label": "Max Charges",
+            "base": num(inc.max_charges), "final": num(inc.max_charges),
+            "sources": json!([]) }));
+        stats.push(json!({ "key": "transmute_in", "label": "Transmute In",
+            "base": format!("{}s", num(inc.transmute_in)),
+            "final": format!("{}s", num(inc.transmute_in / (1.0 + rl))),
+            "sources": sources("reload", None) }));
+        stats.push(json!({ "key": "transmute_out", "label": "Transmute Out",
+            "base": format!("{}s", num(inc.transmute_out)),
+            "final": format!("{}s", num(inc.transmute_out / (1.0 + rl))),
+            "sources": sources("reload", None) }));
+    } else {
+        row("magazine", "Magazine", num(base.magazine_size), num(panel.magazine_size));
+        row("reload", "Reload", format!("{}s", num(base.base_reload)), format!("{}s", num(panel.reload_seconds)));
+    }
     // PER-WEAPON behavior: GunCO sources (Galvanized Shot, Carnage Reign,
     // Secondary Shiver) combine differently per weapon class, and their base
     // EXCLUDES evolution flat damage — this note states what the model
@@ -972,12 +1159,17 @@ fn panel_json(v: &Value) -> Value {
         .map(|(label, meta, b)| section(label, meta, b, &resolve(b, &refs, policy)))
         .collect();
 
+    // Configurable buffs of this build (weapon-scoped) for the Sim panel.
+    let arcane_fx = arcane_fx_for(v, info, &forms_list[0].2, policy);
+    let buffs = enumerate_buffs(&refs, &arcane_fx, info);
+
     json!({
         "ok": true,
         "weapon": info.name,
         "policy": if info.sentinel { "base only (sentinel)" } else { "conditionals at max stacks" },
         "forms": forms,
         "conditionals": conditionals,
+        "buffs": buffs_json(&buffs),
     })
 }
 
@@ -1056,10 +1248,36 @@ fn chosen_evolutions(v: &Value) -> Result<Vec<String>, String> {
 fn simulate_json(v: &Value) -> Value {
     // ---- parse inputs ----
     let info = weapon(get_str(v, "weapon", "dual_toxocyst"));
+    // Per-buff configured policy (Sim panel section 2). Present ⇒ Emergent sim
+    // with each buff carrying its own initial stacks + lock. Absent ⇒ the
+    // legacy `assume_max`/`frenzy` knobs (byte-for-byte with the old path).
+    let buff_cfg = parse_buff_config(v);
+    let assume_max = get_bool(v, "assume_max", false);
     let policy = if info.sentinel {
         StackPolicy::BaseOnly
+    } else if buff_cfg.is_some() {
+        // Configured: run Emergent; per-buff `pinned`/`initial_stacks` are
+        // honored at the sim's read sites.
+        StackPolicy::Emergent
+    } else if assume_max {
+        StackPolicy::AssumedMax
     } else {
         StackPolicy::Emergent
+    };
+    // Frenzy weapon passive. Configured ⇒ from the buff config; legacy ⇒ the
+    // `frenzy` on/off knob. Cycle bakes the LockMode at construction; single
+    // forms take (active?, lock vector).
+    let frenzy_on = get_bool(v, "frenzy", true);
+    let frenzy_cfg = buff_cfg.as_ref().and_then(|m| m.get("frenzy"));
+    let cycle_frenzy_lock = if buff_cfg.is_some() {
+        frenzy_lock_mode(frenzy_cfg)
+    } else {
+        LockMode::Permanent // legacy cycle default
+    };
+    let (frenzy_single, frenzy_locks) = if buff_cfg.is_some() {
+        frenzy_apply(frenzy_cfg)
+    } else {
+        (frenzy_on, Vec::new()) // legacy single-form: on/off, natural triggering
     };
     let form = get_str(v, "form", "incarnon_cycle");
     let evos = match chosen_evolutions(v) {
@@ -1175,18 +1393,20 @@ fn simulate_json(v: &Value) -> Value {
         let params = match form {
             "base" => {
                 let mut d = DummyParams::from_panel(&base_panel, target, body_parts, duration);
-                d.frenzy = true; // base-form Frenzy passive (×2.5 on true headshots)
+                d.frenzy = frenzy_single; // base-form Frenzy passive (×2.5 on true headshots)
+                d.locked_buffs = frenzy_locks.clone();
                 d
             }
             "incarnon" => {
                 let mut d = DummyParams::from_panel(&incarnon_panel, target, body_parts, duration);
-                d.frenzy = true; // Frenzy persists in the Incarnon form (user-confirmed)
+                d.frenzy = frenzy_single; // Frenzy persists in the Incarnon form (user-confirmed)
+                d.locked_buffs = frenzy_locks.clone();
                 d
             }
             _ => DummyParams::incarnon_cycle_from_panels(
                 &incarnon_panel,
                 &base_panel,
-                LockMode::Permanent,
+                cycle_frenzy_lock,
                 target,
                 body_parts,
                 duration,
@@ -1212,6 +1432,12 @@ fn simulate_json(v: &Value) -> Value {
         };
         def.fx(rank, policy, ab.base_crit_chance, ab.base_crit_damage, ab.traits)
     };
+    // ---- apply the per-buff configured policy onto the live specs ----
+    // (weapon-scoped: recurses into the incarnon cycle's base form). Frenzy is
+    // already applied above (cycle lock at construction / single-form vector).
+    if let Some(cfg) = &buff_cfg {
+        params.apply_buff_config(cfg);
+    }
     let report_panel = &report_panel;
 
     // ---- run ----
@@ -1273,4 +1499,252 @@ fn s_name(specs: &[EnemySpec], id: &str) -> String {
         .find(|e| e.id == id)
         .map(|e| e.name.clone())
         .unwrap_or_else(|| id.to_string())
+}
+
+// ---- /api/optimize -----------------------------------------------------
+//
+// Scoped-subset search (devlog thread #4): the user fixes some mods/arcanes/
+// evolutions, opens others to SEARCH, and gets the top-10 builds ranked by
+// kills-in-duration. Reuses the optimizer lib's `enumerate_candidates` +
+// `run_funnel`, with the same per-buff configured policy as the Sim panel.
+// No cap (user directive): the funnel's cheap early rounds cull the space.
+// The endpoint blocks its connection thread for the run.
+
+// All buffs the scope could produce (union over every fixed/search mod + every
+// searched arcane + the weapon passive) — the optimizer's buff panel enumerates
+// over the WHOLE scope, not one build. `apply_buff_config` applies each per
+// candidate where present.
+fn opt_buffs_json(v: &Value) -> Value {
+    let info = weapon(get_str(v, "weapon", "dual_toxocyst"));
+    fn merge(out: &mut Vec<BuffMeta>, list: Vec<BuffMeta>) {
+        for b in list {
+            if !out.iter().any(|x| x.id == b.id) {
+                out.push(b);
+            }
+        }
+    }
+    let mut ids: Vec<String> = Vec::new();
+    if let Some(obj) = v.get("mods").and_then(|x| x.as_object()) {
+        for (id, st) in obj {
+            if matches!(st.as_str(), Some("fixed") | Some("search")) {
+                ids.push(id.clone());
+            }
+        }
+    }
+    ids.sort();
+    ids.dedup();
+    let full = mod_pool_for(info.mod_class);
+    let refs: Vec<&ModDef> = full.iter().filter(|m| ids.iter().any(|id| id.as_str() == m.id)).collect();
+    let mut out: Vec<BuffMeta> = Vec::new();
+    let none = wfsim_engine::arcanes_data::ArcaneFx::none();
+    merge(&mut out, enumerate_buffs(&refs, &none, info));
+    let arc_base = WeaponBase::dual_toxocyst_base_evos(true, &[]);
+    if let Some(arr) = v.get("arcanes").and_then(|x| x.as_array()) {
+        for a in arr.iter().filter_map(|x| x.as_str()) {
+            if a == "none" {
+                continue;
+            }
+            if let Some(def) = wfsim_engine::arcanes_data::secondary(a) {
+                let fx = def.fx(def.max_rank, StackPolicy::Emergent, arc_base.base_crit_chance, arc_base.base_crit_damage, arc_base.traits);
+                merge(&mut out, enumerate_buffs(&[], &fx, info));
+            }
+        }
+    }
+    json!({ "ok": true, "buffs": buffs_json(&out) })
+}
+
+fn optimize_json(v: &Value) -> Value {
+    let info = weapon(get_str(v, "weapon", "dual_toxocyst"));
+    if info.id != "dual_toxocyst" {
+        return err_json("the optimizer supports Dual Toxocyst only (v1)");
+    }
+    // ---- mod scope: fixed ∪ search = candidate pool; fixed = required ----
+    let mut fixed_ids: Vec<String> = Vec::new();
+    let mut search_ids: Vec<String> = Vec::new();
+    if let Some(obj) = v.get("mods").and_then(|x| x.as_object()) {
+        for (id, st) in obj {
+            match st.as_str() {
+                Some("fixed") => fixed_ids.push(id.clone()),
+                Some("search") => search_ids.push(id.clone()),
+                _ => {}
+            }
+        }
+    }
+    fixed_ids.sort();
+    fixed_ids.dedup();
+    search_ids.retain(|s| !fixed_ids.contains(s)); // fixed wins over search
+    // How many mod slots each searched build fills (1..=8).
+    let build_size = get_u32(v, "build_size", 8).clamp(1, 8) as usize;
+    let full = mod_pool_for(info.mod_class);
+    let mut pool_ids: Vec<String> = fixed_ids.iter().chain(search_ids.iter()).cloned().collect();
+    pool_ids.sort();
+    pool_ids.dedup();
+    for id in &pool_ids {
+        if !full.iter().any(|m| m.id == id.as_str()) {
+            return err_json(format!("unknown mod id: {id}"));
+        }
+    }
+    if fixed_ids.len() > build_size {
+        return err_json(format!("more required mods ({}) than build slots ({build_size})", fixed_ids.len()));
+    }
+    let pool: Vec<ModDef> = full
+        .iter()
+        .filter(|m| pool_ids.iter().any(|id| id.as_str() == m.id))
+        .cloned()
+        .collect();
+    if pool.len() < build_size {
+        return err_json(format!(
+            "need at least {build_size} participating mods (pool + required); got {}",
+            pool.len()
+        ));
+    }
+    let constraints = Constraints { require: fixed_ids.clone(), forbid: Vec::new() };
+
+    // ---- evolution scope: per-tier options → the Cartesian product ----
+    let evo_req = v.get("evolutions").and_then(|x| x.as_object());
+    let mut evo_sets: Vec<Vec<String>> = vec![Vec::new()];
+    for tier in 1u32..=4 {
+        let opts: Vec<Option<String>> = evo_req
+            .and_then(|o| o.get(&tier.to_string()))
+            .and_then(|a| a.as_array())
+            .map(|a| a.iter().filter_map(|x| x.as_str().map(|s| Some(s.to_string()))).collect())
+            .unwrap_or_default();
+        let picks = if opts.is_empty() { vec![None] } else { opts }; // empty = nothing at this tier
+        let mut next = Vec::new();
+        for base in &evo_sets {
+            for pick in &picks {
+                let mut e = base.clone();
+                if let Some(id) = pick { e.push(id.clone()); }
+                next.push(e);
+            }
+        }
+        evo_sets = next;
+    }
+    for set in &evo_sets {
+        for id in set {
+            if wfsim_engine::evolutions_data::get(id).is_none() {
+                return err_json(format!("unknown evolution id: {id}"));
+            }
+        }
+    }
+
+    // ---- arcane scope ----
+    let arc_ids: Vec<String> = v
+        .get("arcanes")
+        .and_then(|x| x.as_array())
+        .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
+        .unwrap_or_else(|| vec!["none".into()]);
+    let arc_base = WeaponBase::dual_toxocyst_base_evos(true, &[]);
+    let arcanes: Vec<wfsim_engine::arcanes_data::ArcaneFx> = arc_ids
+        .iter()
+        .map(|id| {
+            if id == "none" {
+                wfsim_engine::arcanes_data::ArcaneFx::none()
+            } else {
+                match wfsim_engine::arcanes_data::secondary(id) {
+                    Some(def) => def.fx(
+                        def.max_rank,
+                        StackPolicy::Emergent,
+                        arc_base.base_crit_chance,
+                        arc_base.base_crit_damage,
+                        arc_base.traits,
+                    ),
+                    None => wfsim_engine::arcanes_data::ArcaneFx::none(),
+                }
+            }
+        })
+        .collect();
+    if arcanes.is_empty() {
+        return err_json("no arcanes selected");
+    }
+
+    // No cap (user: allow spending local resources). The funnel handles large
+    // spaces by culling obviously-bad combos in cheap early rounds.
+
+    // ---- scenario (reuse the Sim inputs) ----
+    let enemy_id = get_str(v, "enemy", "thrax_centurion");
+    let level = get_u32(v, "level", 9999).clamp(1, 9999);
+    let steel_path = get_bool(v, "steel_path", true);
+    let headshot_pct = get_f64(v, "headshot_pct", 100.0);
+    let duration = get_f64(v, "duration", 120.0).clamp(1.0, 3600.0);
+    let specs = enemies();
+    let Some(spec) = specs.iter().find(|e| e.id == enemy_id) else {
+        return err_json(format!("unknown enemy: {enemy_id}"));
+    };
+    let target = match spec.target_params(level, steel_path, false, TargetMode::InstantRespawn) {
+        Ok(t) => t,
+        Err(e) => return err_json(e),
+    };
+    let body_parts = build_body_parts(spec, headshot_pct);
+    let buff_cfg = parse_buff_config(v).unwrap_or_default();
+    let frenzy_lock = frenzy_lock_mode(buff_cfg.get("frenzy"));
+    let scenario = Scenario {
+        target,
+        body_parts,
+        duration_secs: duration,
+        incarnon_cycle: true,
+        frenzy_lock,
+        buff_cfg,
+    };
+
+    // ---- enumerate candidates per evo-set ----
+    let innate = dual_toxocyst_innate_slots();
+    let mut cands: Vec<Candidate> = Vec::new();
+    for (vi, set) in evo_sets.iter().enumerate() {
+        let refs: Vec<&str> = set.iter().map(String::as_str).collect();
+        let base = WeaponBase::dual_toxocyst_incarnon_evos(true, &refs);
+        let base_form = WeaponBase::dual_toxocyst_base_evos(true, &refs);
+        let (mut c, _stats) =
+            enumerate_candidates(&pool, &base, Some(&base_form), vi as u32, build_size as u32, 60, &innate, &constraints);
+        cands.append(&mut c);
+    }
+    if cands.is_empty() {
+        return err_json("no legal builds in this scope (Forma / family constraints eliminated all)");
+    }
+    let jobs: Vec<Job> = (0..cands.len())
+        .flat_map(|i| (0..arcanes.len()).map(move |a| (i, a)))
+        .collect();
+
+    // ---- run the funnel (quiet) ----
+    let rounds = schedule(jobs.len());
+    let last = run_funnel(&cands, &arcanes, &scenario, jobs.clone(), &rounds, 0xDEAD_BEEF, false);
+
+    // ---- top-10 ----
+    let results: Vec<Value> = last
+        .iter()
+        .take(10)
+        .enumerate()
+        .map(|(rank, ((ci, ai), s))| {
+            let c = &cands[*ci];
+            let mods: Vec<&str> = c.ordered.iter().map(|&i| pool[i].id).collect();
+            let arc = &arcanes[*ai];
+            let arcane_id = if arc.id.is_empty() { "none".to_string() } else { arc.id.clone() };
+            let arcane_rank = if arc.id.is_empty() {
+                0
+            } else {
+                wfsim_engine::arcanes_data::secondary(&arc.id).map(|d| d.max_rank).unwrap_or(0)
+            };
+            json!({
+                "rank": rank + 1,
+                "kills": s.mean_kills,
+                "kill_progress": s.mean_kill_progress,
+                "effective_dps": s.effective_dps,
+                "kills_min": s.min_kills,
+                "kills_max": s.max_kills,
+                "mods": mods,
+                "arcane": arcane_id,
+                "arcane_rank": arcane_rank,
+                "evolutions": evo_sets[c.variant as usize],
+                "forma": { "used": c.plan.forma_used, "total_drain": c.plan.total_drain },
+            })
+        })
+        .collect();
+
+    json!({
+        "ok": true,
+        "candidates": cands.len(),
+        "jobs": jobs.len(),
+        "results": results,
+        "target": { "name": s_name(&specs, enemy_id), "level": level, "steel_path": steel_path },
+    })
 }

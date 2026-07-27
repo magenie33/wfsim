@@ -95,6 +95,8 @@ fn main() {
         // base-form panel.
         incarnon_cycle: true,
         frenzy_lock: LockMode::Permanent,
+        // CLI: no per-buff configured policy (the emergent default).
+        buff_cfg: wfsim_engine::dummy::BuffConfig::new(),
     };
     println!(
         "[scenario] {} @9999 STEEL PATH, instant respawn, 100% headshots, {} s, REAL incarnon cycle",
@@ -134,14 +136,17 @@ fn main() {
     } else {
         &[(DtEvo2::FeveredFrenzy, "fevered")]
     };
-    for &(evo2, label) in evo2s {
+    // `variant` is now an index into this evo-set label table (widened from a
+    // &str so the web can search arbitrary per-tier evolution sets).
+    let variant_labels: Vec<&'static str> = evo2s.iter().map(|(_, l)| *l).collect();
+    for (vi, &(evo2, label)) in evo2s.iter().enumerate() {
         let base = WeaponBase::dual_toxocyst_incarnon(true, evo2);
         let base_form = WeaponBase::dual_toxocyst_base(true, evo2);
         let (mut c, stats) = enumerate_candidates(
             &p,
             &base,
             Some(&base_form),
-            label,
+            vi as u32,
             8,
             60,
             &dual_toxocyst_innate_slots(),
@@ -190,7 +195,7 @@ fn main() {
             .map(|id| fx_of(id))
             .collect(),
     };
-    let mut alive: Vec<Job> = (0..cands.len())
+    let alive: Vec<Job> = (0..cands.len())
         .flat_map(|i| (0..arcanes.len()).map(move |a| (i, a)))
         .collect();
     println!(
@@ -213,45 +218,9 @@ fn main() {
             last.0 = r;
         }
     }
-    let mut last: Vec<(Job, wfsim_engine::dummy::Summary)> = Vec::new();
-    for (round, &(runs, keep, by_kills)) in rounds.iter().enumerate() {
-        let t = Instant::now();
-        let summaries = evaluate_batch(&cands, &alive, &arcanes, &scenario, runs, 0xDEAD_BEEF + round as u64);
-        let mut scored: Vec<(Job, wfsim_engine::dummy::Summary)> =
-            alive.iter().copied().zip(summaries).collect();
-        // Kill rounds rank by kill PROGRESS: kills + the depleted fraction
-        // of the final target's pool (partial credit, no step function).
-        scored.sort_by(|a, b| {
-            let ka = if by_kills {
-                a.1.mean_kill_progress
-            } else {
-                a.1.mean_effective_damage
-            };
-            let kb = if by_kills {
-                b.1.mean_kill_progress
-            } else {
-                b.1.mean_effective_damage
-            };
-            kb.total_cmp(&ka)
-        });
-        scored.truncate(keep);
-        println!(
-            "[round {}] {} jobs x {} runs ({}) -> keep {} in {:.1?}; best {}",
-            round + 1,
-            alive.len(),
-            runs,
-            if by_kills { "kills" } else { "eff dmg" },
-            scored.len(),
-            t.elapsed(),
-            if by_kills {
-                format!("{:.2} kill score", scored[0].1.mean_kill_progress)
-            } else {
-                format!("{:.3e} eff", scored[0].1.mean_effective_damage)
-            }
-        );
-        alive = scored.iter().map(|(j, _)| *j).collect();
-        last = scored;
-    }
+    // The multi-round funnel now lives in the lib (shared with the web
+    // endpoint); the CLI runs it verbosely for per-round progress.
+    let last = run_funnel(&cands, &arcanes, &scenario, alive, &rounds, 0xDEAD_BEEF, true);
 
     println!();
     println!("=== FINAL LEADERBOARD (1024 x 60 s, kill score; searched: mods x element order x arcane x evo2) ===");
@@ -274,7 +243,7 @@ fn main() {
             s.min_kills,
             s.max_kills,
             arcane,
-            c.variant,
+            variant_labels[c.variant as usize],
             s.effective_dps,
             s.mean_transforms
         );

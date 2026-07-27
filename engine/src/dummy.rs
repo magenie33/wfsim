@@ -91,7 +91,10 @@ impl ArcState {
     /// Apply pending decay per the spec's family and return live stacks.
     fn current(&mut self, spec: &ArcBuffSpec, now: f64) -> u32 {
         if spec.pinned {
-            return spec.max_stacks; // AssumedMax: full stacks, always
+            // Locked: frozen at the configured initial count (= max_stacks
+            // under AssumedMax, so bit-identical there; a partial count when
+            // the user locks a lower stack count).
+            return spec.initial_stacks.min(spec.max_stacks);
         }
         if spec.all_drop {
             // On-status family (Cascadia Flare, Conjunction Voltage): one
@@ -140,7 +143,9 @@ impl ArcRuntime {
                     expiry: s.duration,
                 })
                 .collect(),
-            cd_kill_expiry: 0.0,
+            // Seed active only if configured so (Sharpened Bullets defaults
+            // inactive; a locked/initial-active config starts it running).
+            cd_kill_expiry: params.cd_on_kill.map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 }),
         }
     }
 
@@ -166,15 +171,15 @@ impl ArcRuntime {
     /// ANY kill: arcane on-kill buffs stack; Sharpened Bullets refreshes.
     fn on_kill(&mut self, params: &DummyParams, now: f64) {
         self.bump_trigger(&params.arcane.buffs, ArcTrigger::Kill, now);
-        if let Some((_, dur)) = params.cd_on_kill {
-            self.cd_kill_expiry = now + dur;
+        if let Some(b) = params.cd_on_kill {
+            self.cd_kill_expiry = now + b.duration;
         }
     }
 
     /// Sharpened Bullets' live ABSOLUTE crit-damage addition.
     fn cd_bonus(&self, params: &DummyParams, now: f64) -> f64 {
         match params.cd_on_kill {
-            Some((v, _)) if now < self.cd_kill_expiry => v,
+            Some(b) if b.locked || now < self.cd_kill_expiry => b.value,
             _ => 0.0,
         }
     }
@@ -953,8 +958,8 @@ pub struct DummyParams {
     pub co_stack: Option<crate::loadout::StackSpec>,
     /// Live on-kill multishot stacks, earned from zero.
     pub ms_stack: Option<crate::loadout::StackSpec>,
-    /// Crosshairs on-headshot buff: (absolute crit chance, duration).
-    pub cc_on_headshot: Option<(f64, f64)>,
+    /// Crosshairs on-headshot buff: absolute crit chance as a timed buff.
+    pub cc_on_headshot: Option<crate::loadout::TimedBuff>,
     /// Crosshairs on-headshot-kill stacks: absolute cc per stack,
     /// per-stack expiry (FIFO), NOT the lose-one-reset decay.
     pub cc_stack: Option<crate::loadout::StackSpec>,
@@ -981,12 +986,12 @@ pub struct DummyParams {
     pub weakpoint_damage: f64,
     /// ABSOLUTE crit chance added on weak-point pellets only (Acuity).
     pub weakpoint_cc_abs: f64,
-    /// Sharpened Bullets (Emergent): (ABSOLUTE crit-damage add, duration)
-    /// granted/refreshed on every kill.
-    pub cd_on_kill: Option<(f64, f64)>,
-    /// Pressurized Magazine (Emergent): (ABSOLUTE fire-rate add, duration)
-    /// granted on every reload.
-    pub fr_on_reload: Option<(f64, f64)>,
+    /// Sharpened Bullets (Emergent): ABSOLUTE crit-damage add as a timed buff
+    /// (starts inactive), granted/refreshed on every kill.
+    pub cd_on_kill: Option<crate::loadout::TimedBuff>,
+    /// Pressurized Magazine (Emergent): ABSOLUTE fire-rate add as a timed buff
+    /// (starts inactive), granted on every reload.
+    pub fr_on_reload: Option<crate::loadout::TimedBuff>,
     /// Hemorrhage's status-conversion roll (per damage instance, max one).
     pub proc_conversion: Option<crate::loadout::ProcConv>,
     /// The equipped secondary arcane, resolved at its rank from
@@ -998,7 +1003,49 @@ pub struct DummyParams {
     pub duration_secs: f64,
 }
 
+/// Per-buff configured policy: buff id → (initial stacks, locked). Ids match
+/// the web's `enumerate_buffs` (`condition_overload`, `on_kill_multishot`,
+/// `on_headshot_cc`, `on_headshot_kill_cc`, `on_kill_cd`, `on_reload_fr`,
+/// `arcane:{id}[:{i}]`). Frenzy is configured via [`LockMode`], not here.
+pub type BuffConfig = std::collections::HashMap<String, (u32, bool)>;
+
 impl DummyParams {
+    /// Apply a per-buff configured policy onto the live specs — locked ⇒
+    /// `pinned` (frozen at `initial_stacks`), unlocked ⇒ seed then decay.
+    /// Weapon-scoped: recurses into the incarnon cycle's base form.
+    pub fn apply_buff_config(&mut self, cfg: &BuffConfig) {
+        fn set_stack(s: &mut crate::loadout::StackSpec, cfg: &BuffConfig, id: &str) {
+            if let Some(&(stacks, locked)) = cfg.get(id) {
+                s.initial_stacks = stacks.min(s.max_stacks);
+                s.pinned = locked;
+            }
+        }
+        fn set_timed(b: &mut crate::loadout::TimedBuff, cfg: &BuffConfig, id: &str) {
+            if let Some(&(stacks, locked)) = cfg.get(id) {
+                b.initial_active = stacks > 0;
+                b.locked = locked;
+            }
+        }
+        if let Some(s) = self.co_stack.as_mut() { set_stack(s, cfg, "condition_overload"); }
+        if let Some(s) = self.ms_stack.as_mut() { set_stack(s, cfg, "on_kill_multishot"); }
+        if let Some(s) = self.cc_stack.as_mut() { set_stack(s, cfg, "on_headshot_kill_cc"); }
+        if let Some(b) = self.cc_on_headshot.as_mut() { set_timed(b, cfg, "on_headshot_cc"); }
+        if let Some(b) = self.cd_on_kill.as_mut() { set_timed(b, cfg, "on_kill_cd"); }
+        if let Some(b) = self.fr_on_reload.as_mut() { set_timed(b, cfg, "on_reload_fr"); }
+        let aid = self.arcane.id.clone();
+        let multi = self.arcane.buffs.len() > 1;
+        for (i, spec) in self.arcane.buffs.iter_mut().enumerate() {
+            let id = if multi { format!("arcane:{aid}:{i}") } else { format!("arcane:{aid}") };
+            if let Some(&(stacks, locked)) = cfg.get(&id) {
+                spec.initial_stacks = stacks.min(spec.max_stacks);
+                spec.pinned = locked;
+            }
+        }
+        if let Some(cy) = self.cycle.as_mut() {
+            cy.base_form.apply_buff_config(cfg);
+        }
+    }
+
     /// A generic humanoid: body 1x, head 3x (headshot-triggering, crit-bonus
     /// eligible), aimed at 50/50.
     pub fn humanoid_parts() -> Vec<BodyPart> {
@@ -1474,11 +1521,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     // Stacking arcanes start FULL (user setting) with a fresh timer; the
     // states run each spec's own decay family from there.
     let mut arc = ArcRuntime::init(params);
-    // Pressurized Magazine's on-reload fire-rate buff clock.
-    let mut fr_reload_expiry: f64 = 0.0;
-    // Crosshairs (per-stack expiry FIFO + one refreshable buff), initial
-    // FULL per the user's setting.
-    let mut ch_buff_expiry: f64 = params.cc_on_headshot.map_or(0.0, |(_, d)| d);
+    // Pressurized Magazine's on-reload fire-rate buff clock (seeded active
+    // only if configured so; defaults inactive).
+    let mut fr_reload_expiry: f64 =
+        params.fr_on_reload.map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
+    // Crosshairs (per-stack expiry FIFO + one refreshable buff); the on-head
+    // buff seeds active per its `initial_active` (default on).
+    let mut ch_buff_expiry: f64 =
+        params.cc_on_headshot.map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
     let mut ch_stacks: Vec<f64> = params
         .cc_stack
         .as_ref()
@@ -1568,8 +1618,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 // Base-form reload (infinite reserve assumed in the cycle).
                 t += live_reload_time(&cy.base_form, params, &mut arc, t);
                 r.reloads += 1;
-                if let Some((_, dur)) = cy.base_form.fr_on_reload {
-                    fr_reload_expiry = t + dur;
+                if let Some(b) = cy.base_form.fr_on_reload {
+                    fr_reload_expiry = t + b.duration;
                 }
                 base_mag = cy.base_form.magazine_size;
                 continue;
@@ -1582,8 +1632,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             }
             t += live_reload_time(params, params, &mut arc, t);
             r.reloads += 1;
-            if let Some((_, dur)) = params.fr_on_reload {
-                fr_reload_expiry = t + dur;
+            if let Some(b) = params.fr_on_reload {
+                fr_reload_expiry = t + b.duration;
             }
             let refill = if params.infinite_reserve {
                 params.magazine_size
@@ -1664,12 +1714,15 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // the live per-stack-expiry kill stacks add absolute crit chance.
         let ch_cc = params
             .cc_on_headshot
-            .map_or(0.0, |(cc, _)| if t < ch_buff_expiry { cc } else { 0.0 })
+            .map_or(0.0, |b| if b.locked || t < ch_buff_expiry { b.value } else { 0.0 })
             + params.cc_stack.as_ref().map_or(0.0, |s| {
-                s.per_stack * {
-                    ch_stacks.retain(|&e| e > t);
-                    ch_stacks.len() as f64
-                }
+                s.per_stack
+                    * if s.pinned {
+                        s.initial_stacks.min(s.max_stacks) as f64
+                    } else {
+                        ch_stacks.retain(|&e| e > t);
+                        ch_stacks.len() as f64
+                    }
             });
         // Arcane cc_abs: assumed-max conditionals (Overcharge/Outburst).
         let effective_cc =
@@ -1679,7 +1732,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // the BuffBar multiplier) — schedules shots below and gates
         // Hemorrhage's below-2.5 doubled chance.
         let fr_reload_add = match ap.fr_on_reload {
-            Some((v, _)) if t < fr_reload_expiry => v,
+            Some(b) if b.locked || t < fr_reload_expiry => b.value,
             _ => 0.0,
         };
         let live_rate = (ap.fire_rate + fr_reload_add) * contribs.fire_rate_multiplier;
@@ -1689,10 +1742,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // stacks and arcane multishot stacks (Conjunction Voltage: a
         // RELATIVE bonus × base pellets) add live.
         let ms_eff = ap.multishot
-            + params
-                .ms_stack
-                .as_ref()
-                .map_or(0.0, |s| s.per_stack * gal.ms.current(t, s.duration) as f64)
+            + params.ms_stack.as_ref().map_or(0.0, |s| {
+                // Locked → frozen at the configured initial count; else live.
+                let stacks = if s.pinned { s.initial_stacks.min(s.max_stacks) } else { gal.ms.current(t, s.duration) };
+                s.per_stack * stacks as f64
+            })
             + ap.base_multishot * arc.total(&params.arcane.buffs, ArcGrant::Multishot, t);
         let n_pellets = ms_eff.floor() as u32 + rng.chance(ms_eff.fract()) as u32;
         let (mut any_head, mut any_big) = (false, false);
@@ -1731,10 +1785,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             //     rate since they share it) → distinct status TYPES;
             //   Secondary Shiver → live Cold STACKS (Frozen counts as 10).
             let co_rate = ap.co_per_type
-                + params
-                    .co_stack
-                    .as_ref()
-                    .map_or(0.0, |s| s.per_stack * gal.co.current(t, s.duration) as f64);
+                + params.co_stack.as_ref().map_or(0.0, |s| {
+                    let stacks = if s.pinned { s.initial_stacks.min(s.max_stacks) } else { gal.co.current(t, s.duration) };
+                    s.per_stack * stacks as f64
+                });
             let gunco_sources = [
                 (co_rate, debuffs.distinct_statuses() as u32),
                 (
@@ -1832,8 +1886,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // Crosshairs' on-HEADSHOT buff refreshes on every head hit
             // (kills only matter for its stacks).
             if part.is_head {
-                if let Some((_, dur)) = params.cc_on_headshot {
-                    ch_buff_expiry = t + dur;
+                if let Some(b) = params.cc_on_headshot {
+                    ch_buff_expiry = t + b.duration;
                 }
             }
 
@@ -2161,7 +2215,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // Magazine's live on-reload fire-rate buff.
         bar.expire(t);
         let fr_add = match ap.fr_on_reload {
-            Some((v, _)) if t < fr_reload_expiry => v,
+            Some(b) if b.locked || t < fr_reload_expiry => b.value,
             _ => 0.0,
         };
         let rate = (ap.fire_rate + fr_add) * bar.total_contributions().fire_rate_multiplier;
@@ -3200,6 +3254,7 @@ mod tests {
             max_stacks: 2,
             duration: 100.0,
             initial_stacks: 0,
+            pinned: false,
         };
         let p = DummyParams {
             ms_stack: Some(spec),
@@ -3569,7 +3624,10 @@ mod tests {
             target: frail,
             ..no_status()
         };
-        let with = DummyParams { cd_on_kill: Some((1.0, 9.0)), ..base.clone() };
+        let with = DummyParams {
+            cd_on_kill: Some(crate::loadout::TimedBuff { value: 1.0, duration: 9.0, initial_active: false, locked: false }),
+            ..base.clone()
+        };
         let a = monte_carlo(&base, 50, 5);
         let b = monte_carlo(&with, 50, 5);
         assert!(
@@ -3589,7 +3647,10 @@ mod tests {
             duration_secs: 20.0,
             ..flat_base()
         };
-        let with = DummyParams { fr_on_reload: Some((1.0, 9.0)), ..base.clone() };
+        let with = DummyParams {
+            fr_on_reload: Some(crate::loadout::TimedBuff { value: 1.0, duration: 9.0, initial_active: false, locked: false }),
+            ..base.clone()
+        };
         let a = monte_carlo(&base, 20, 5);
         let b = monte_carlo(&with, 20, 5);
         assert!(b.mean_shots > a.mean_shots, "shots {} vs {}", b.mean_shots, a.mean_shots);
@@ -3745,7 +3806,7 @@ mod tests {
         // E = 18 × 75 × 1.22 = 1647.
         let p = DummyParams {
             base_crit_chance: 0.1,
-            cc_on_headshot: Some((0.12, 12.0)),
+            cc_on_headshot: Some(crate::loadout::TimedBuff { value: 0.12, duration: 12.0, initial_active: true, locked: false }),
             arcane: ArcaneFx::none(),
             body_parts: vec![BodyPart {
                 name: "head".into(),
@@ -3774,12 +3835,13 @@ mod tests {
         // E[total] = 75 × (12×1.42 + 6×1.1) = 1773.
         let p = DummyParams {
             base_crit_chance: 0.1,
-            cc_on_headshot: Some((0.12, 12.0)),
+            cc_on_headshot: Some(crate::loadout::TimedBuff { value: 0.12, duration: 12.0, initial_active: true, locked: false }),
             cc_stack: Some(crate::loadout::StackSpec {
                 per_stack: 0.04,
                 max_stacks: 5,
                 duration: 12.0,
                 initial_stacks: 5,
+                pinned: false,
             }),
             arcane: ArcaneFx::none(),
             body_parts: mono_body(1.0),

@@ -415,6 +415,27 @@ pub struct StackSpec {
     /// Stacks at t = 0 (user setting: full by default, 0 for a cold
     /// start; afterwards mechanics rule either way).
     pub initial_stacks: u32,
+    /// Configured "locked" buff: freeze at `initial_stacks` forever (100%
+    /// uptime), ignoring natural triggers/decay. Mirrors
+    /// [`crate::arcanes_data::ArcBuffSpec::pinned`]. Default false.
+    pub pinned: bool,
+}
+
+/// A non-stacking timed buff (a single refreshable window) handed to the sim:
+/// Galvanized Crosshairs' on-headshot crit, Sharpened Bullets' on-kill crit
+/// damage, Pressurized Magazine's on-reload fire rate. Unifies what used to be
+/// three parallel `Option<(f64, f64)>` fields.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TimedBuff {
+    /// The ABSOLUTE bonus this buff contributes while active.
+    pub value: f64,
+    /// Window length; each trigger refreshes it to `now + duration`.
+    pub duration: f64,
+    /// Active at t = 0? (per-buff seed — cc_on_headshot starts active, the
+    /// on-kill/on-reload buffs start inactive under today's defaults).
+    pub initial_active: bool,
+    /// Configured "locked": always active (100% uptime), ignoring the timer.
+    pub locked: bool,
 }
 
 /// How the Condition Overload bonus behaves — PER WEAPON (user,
@@ -465,6 +486,28 @@ pub struct WeaponBase {
     /// Weapon traits a mod's `requires` is checked against (e.g. `semi_auto`,
     /// `beam`). A mod requiring a trait the weapon lacks is inert.
     pub traits: &'static [&'static str],
+    /// Incarnon-form transformation economy. `Some` marks this form's
+    /// magazine as CHARGE-BACKED (a fixed "Max Charges" resource fed by the
+    /// weakpoint gauge, entirely outside the ammo system): magazine mods and
+    /// ammo efficiency are INERT on it. There is no reload; instead two
+    /// transition times (transmute in = the base form's reload; transmute
+    /// out = the officially-unnamed revert), each scaled by the reload
+    /// formula `base / (1 + reload bonus)`. `magazine_size` / `base_reload`
+    /// still carry the pseudo-reload (270 / 3.35) the plain sim consumes.
+    pub incarnon: Option<IncarnonForm>,
+}
+
+/// The Incarnon form's charge economy, for the panel's stat display (see
+/// [`WeaponBase::incarnon`]). All times are UNMODDED bases.
+#[derive(Debug, Clone, Copy)]
+pub struct IncarnonForm {
+    /// Fixed charge capacity ("Max Charges") — magazine mods are inert.
+    pub max_charges: f64,
+    /// Transmute IN (enter the form) = the base form's reload time.
+    pub transmute_in: f64,
+    /// Transmute OUT (revert to the base form; officially unnamed) — an
+    /// estimate, also shortened by reload-speed bonuses.
+    pub transmute_out: f64,
 }
 
 /// The Evolution II choice — a SEARCH DIMENSION (user, 2026-07-25). A
@@ -557,6 +600,10 @@ impl WeaponBase {
                 Vec::new()
             },
             traits: &["semi_auto"], // Dual Toxocyst: semi-auto trigger
+            // Charge-backed: 270 Max Charges (inert to magazine mods);
+            // transmute in = base reload 2.35 s, transmute out ≈ 1.0 s
+            // (estimate) — both scale with reload speed.
+            incarnon: Some(IncarnonForm { max_charges: 270.0, transmute_in: 2.35, transmute_out: 1.0 }),
         }
     }
 
@@ -591,6 +638,7 @@ impl WeaponBase {
                 Vec::new()
             },
             traits: &["semi_auto"], // Dual Toxocyst: semi-auto trigger
+            incarnon: None,
         }
     }
 
@@ -618,6 +666,7 @@ impl WeaponBase {
             co_base_fraction: 1.0,
             injected_elements: Vec::new(),
             traits: &[], // sentinel weapon; no semi_auto/beam trait
+            incarnon: None,
         }
     }
 }
@@ -657,8 +706,8 @@ pub struct ResolvedPanel {
     /// already × base pellets.
     pub ms_stack: Option<StackSpec>,
     /// Crosshairs' on-headshot buff (Emergent): ABSOLUTE crit chance
-    /// (base_cc × bonus) and its duration.
-    pub cc_on_headshot: Option<(f64, f64)>,
+    /// (base_cc × bonus) as a timed buff (starts active).
+    pub cc_on_headshot: Option<TimedBuff>,
     /// Crosshairs' on-headshot-kill stacks (Emergent): per_stack is
     /// ABSOLUTE crit chance; per-stack expiry semantics.
     pub cc_stack: Option<StackSpec>,
@@ -683,12 +732,12 @@ pub struct ResolvedPanel {
     /// ABSOLUTE crit chance added on weak-point hits only (base_cc × Σ
     /// relative weak-point CC bonuses); part-conditional, all policies.
     pub weakpoint_cc_abs: f64,
-    /// Sharpened Bullets under Emergent: (ABSOLUTE crit-damage add, duration)
-    /// granted/refreshed on every kill.
-    pub cd_on_kill: Option<(f64, f64)>,
-    /// Pressurized Magazine under Emergent: (ABSOLUTE fire-rate add,
-    /// duration) granted on every reload.
-    pub fr_on_reload: Option<(f64, f64)>,
+    /// Sharpened Bullets under Emergent: ABSOLUTE crit-damage add as a timed
+    /// buff (starts inactive), granted/refreshed on every kill.
+    pub cd_on_kill: Option<TimedBuff>,
+    /// Pressurized Magazine under Emergent: ABSOLUTE fire-rate add as a timed
+    /// buff (starts inactive), granted on every reload.
+    pub fr_on_reload: Option<TimedBuff>,
     /// Hemorrhage's status-conversion roll (an event mechanic — active under
     /// every policy; contributes no static panel stat).
     pub proc_conversion: Option<ProcConv>,
@@ -714,11 +763,11 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
     // Unconditional weapon-level CO (Carnage Reign) seeds the static rate.
     let mut co = base.innate_co_per_type;
     let (mut co_stack, mut ms_stack): (Option<StackSpec>, Option<StackSpec>) = (None, None);
-    let mut cc_on_headshot: Option<(f64, f64)> = None;
+    let mut cc_on_headshot: Option<TimedBuff> = None;
     let mut cc_stack: Option<StackSpec> = None;
     let (mut wp_dmg, mut wp_cc) = (0.0, 0.0);
-    let mut cd_on_kill: Option<(f64, f64)> = None;
-    let mut fr_on_reload: Option<(f64, f64)> = None;
+    let mut cd_on_kill: Option<TimedBuff> = None;
+    let mut fr_on_reload: Option<TimedBuff> = None;
     let mut proc_conv: Option<ProcConv> = None;
     let mut elem_bonus: Vec<(DamageType, f64)> = Vec::new();
     let mut indirect: Vec<(IndirectStat, f64)> = Vec::new();
@@ -780,6 +829,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                             max_stacks,
                             duration,
                             initial_stacks: max_stacks, // 初始满 (user)
+                            pinned: false,
                         })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
@@ -796,6 +846,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                             max_stacks,
                             duration,
                             initial_stacks: max_stacks, // 初始满 (user)
+                            pinned: false,
                         })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
@@ -803,7 +854,12 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                 ModEffect::OnHeadshotCritChance { bonus, duration } => match policy {
                     StackPolicy::AssumedMax => cc += bonus,
                     StackPolicy::Emergent => {
-                        cc_on_headshot = Some((base.base_crit_chance * bonus, duration))
+                        cc_on_headshot = Some(TimedBuff {
+                            value: base.base_crit_chance * bonus,
+                            duration,
+                            initial_active: true, // Crosshairs' HS buff seeds active
+                            locked: false,
+                        })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
                 },
@@ -819,6 +875,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                             max_stacks,
                             duration,
                             initial_stacks: max_stacks, // 初始满 (user)
+                            pinned: false,
                         })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
@@ -857,14 +914,24 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                 ModEffect::OnKillCritDamage { bonus, duration } => match policy {
                     StackPolicy::AssumedMax => cd += bonus,
                     StackPolicy::Emergent => {
-                        cd_on_kill = Some((base.base_crit_damage * bonus, duration))
+                        cd_on_kill = Some(TimedBuff {
+                            value: base.base_crit_damage * bonus,
+                            duration,
+                            initial_active: false, // Sharpened Bullets seeds inactive
+                            locked: false,
+                        })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
                 },
                 ModEffect::OnReloadFireRate { bonus, duration } => match policy {
                     StackPolicy::AssumedMax => fr += bonus,
                     StackPolicy::Emergent => {
-                        fr_on_reload = Some((base.base_fire_rate * bonus, duration))
+                        fr_on_reload = Some(TimedBuff {
+                            value: base.base_fire_rate * bonus,
+                            duration,
+                            initial_active: false, // Pressurized Magazine seeds inactive
+                            locked: false,
+                        })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
                 },
@@ -981,7 +1048,13 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         multishot: base.base_multishot * (1.0 + base.buff_multishot_bonus + ms),
         base_multishot: base.base_multishot,
         // Magazine capacity: +% of base, floored to whole rounds (in-game).
-        magazine_size: (base.magazine_size * (1.0 + mag)).floor(),
+        // A charge-backed Incarnon magazine is a fixed resource OUTSIDE the
+        // ammo system — magazine mods are inert, so it never scales.
+        magazine_size: if base.incarnon.is_some() {
+            base.magazine_size
+        } else {
+            (base.magazine_size * (1.0 + mag)).floor()
+        },
         reload_seconds: base.base_reload / (1.0 + rl),
         reload_bonus: rl,
         base_damage_bonus: bd,

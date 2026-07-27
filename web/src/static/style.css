@@ -259,3 +259,94 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .stat-table .row .k{color:var(--text-2);font-size:12px}
 .stat-table .row .v{font-weight:700;font-variant-numeric:tabular-nums}
 .error{color:var(--critical);border:1px solid var(--critical);border-radius:10px;padding:12px;margin-top:12px;font-size:13px}
+
+/* ---- Sim arena: illustrative 2D scene (Tenno vs enemy) ---- */
+.arena{display:flex;align-items:center;gap:14px;background:var(--panel3);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:14px;min-height:96px}
+.arena-actor{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;min-width:104px}
+.arena-actor .dot{width:26px;height:26px;border-radius:50%}
+.arena-actor .lbl{font-size:12px;color:var(--text-2);font-weight:600}
+.arena-actor.tenno .dot{background:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 22%,transparent)}
+.arena-actor.enemy .dot{background:var(--critical);box-shadow:0 0 0 4px color-mix(in srgb,var(--critical) 22%,transparent);transition:opacity .4s,filter .4s}
+.arena-actor.enemy.defeated .dot{opacity:.3;filter:grayscale(1)}
+.arena-actor.enemy.defeated .lbl::after{content:" ☠"}
+.arena-lane{flex:1 1 auto;height:2px;background:var(--line);position:relative;align-self:center}
+.tracer{position:absolute;top:-1px;left:0;height:4px;width:22px;border-radius:2px;background:var(--gold);opacity:0}
+.tracer.firing{animation:tracer-fire 1.5s linear}
+@keyframes tracer-fire{0%{left:0;opacity:0}8%{opacity:1}100%{left:calc(100% - 22px);opacity:.15}}
+.arena-bars{display:flex;flex-direction:column;gap:3px;width:120px;margin-top:2px}
+.arena-bars .bar{height:7px;border-radius:4px;background:var(--panel2);overflow:hidden;border:1px solid var(--line)}
+.arena-bars .bar .fill{height:100%;transition:width 1.4s cubic-bezier(.4,0,.2,1)}
+.arena-bars .bar.og .fill{background:var(--gold)}
+.arena-bars .bar.sh .fill{background:var(--accent)}
+.arena-bars .bar.hp .fill{background:var(--critical)}
+.arena-status{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px;max-width:150px}
+.arena-status .chip{font-size:10px;padding:1px 7px;border-radius:999px;color:#fff;background:var(--c,var(--muted));white-space:nowrap}
+.arena-status .chip.proc{background:var(--gold)}
+label.check input{width:auto}
+
+/* ---- Sim: section headers + per-buff cards ---- */
+.sim-h{font-size:12px;margin:16px 0 8px;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.sim-h .sim-hint{font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);margin-left:6px}
+.sim-empty{color:var(--muted);font-size:12px;padding:8px 2px}
+#sim-buffs,#opt-buffs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(max-width:520px){#sim-buffs,#opt-buffs{grid-template-columns:1fr}}
+.buff-card{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 11px}
+.buff-card .bn{flex:1 1 auto;font-size:13px;font-weight:600;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.buff-card .bctl{flex:0 0 auto;display:flex;align-items:center}
+.buff-card .bstep{display:flex;align-items:center;gap:5px}
+.buff-card .bstep input{width:54px;padding:4px 6px}
+.buff-card .bstep .bmax{font-size:11px;color:var(--muted)}
+.buff-card .bchk{flex-direction:row;align-items:center;gap:5px;font-size:12px;color:var(--text-2)}
+.buff-card .bchk input{width:auto}
+.buff-card .block-lock{flex:0 0 auto;flex-direction:row;align-items:center;gap:5px;font-size:12px;color:var(--text-2);border-left:1px solid var(--line);padding-left:10px}
+.buff-card .block-lock input{width:auto;accent-color:var(--gold)}
+.buff-card.info{opacity:.75}
+.buff-card.info .binfo{font-size:11px;color:var(--good);font-weight:600}
+
+/* ---- Optimizer: mod scope (rich searchable list) + results ---- */
+.opt-mods-head{display:flex;gap:10px;align-items:flex-end;margin-bottom:8px}
+.opt-mods-head #opt-mod-filter{flex:1 1 auto}
+.opt-size{flex:0 0 auto;flex-direction:column;font-size:12px;color:var(--text-2)}
+.opt-size input{width:64px}
+/* Every optimizer list reuses the picker's `.combo-menu .opt` rows verbatim
+   (mod/arcane image, polarity icon, effect lines); only the trailing control
+   differs (pool/req for mods, include/search for arcanes & evolutions). */
+.opt-modlist{border:1px solid var(--line);border-radius:10px;background:var(--panel3)}
+#opt-mods,#opt-arcanes{margin-bottom:6px}
+.opt-modlist .opt,.opt-evolist .opt{cursor:default;border-bottom:1px solid var(--line);border-left:3px solid var(--rar,transparent)}
+.opt-modlist .opt:last-child,.opt-evolist .opt:last-child{border-bottom:none}
+.opt-modlist .opt:hover,.opt-evolist .opt:hover{background:transparent}
+.opt-modlist .opt.search,.opt-evolist .opt.search{background:color-mix(in srgb,var(--accent) 9%,transparent)}
+.opt-modlist .opt.fixed{background:color-mix(in srgb,var(--gold) 12%,transparent)}
+.opt-evolist .opt.dis-soft{opacity:.6}
+.opt-tier-block{margin-bottom:8px}
+.opt-tier-h{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.03em;margin:6px 0 3px}
+.opt-evolist{border:1px solid var(--line);border-radius:10px;background:var(--panel3);max-height:none}
+.exchip.brk{background:var(--critical);color:#fff}
+.oseg{display:flex;gap:3px;flex:0 0 auto;margin-top:2px}
+.oseg .seg{font-size:11px;padding:3px 9px;border-radius:7px;border:1px solid var(--line);cursor:pointer;user-select:none;color:var(--muted);background:var(--panel2)}
+.oseg .seg.on{border-color:var(--accent);color:#fff;background:var(--accent)}
+.oseg .seg[data-s="fixed"].on{border-color:var(--gold);color:#fff;background:var(--gold)}
+.oselrow{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-bottom:5px}
+.osellbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-right:3px}
+.oselchip{font-size:11px;padding:2px 8px;border-radius:999px;cursor:pointer;user-select:none;color:#fff}
+.oselchip.search{background:var(--accent)}
+.oselchip.fixed{background:var(--gold)}
+.opt-chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip3{font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);cursor:pointer;user-select:none;background:var(--panel2);color:var(--muted)}
+.chip3.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);font-weight:600}
+.chip3.brk{opacity:.7}
+.opt-tier{display:flex;align-items:center;gap:8px;margin:4px 0}
+.opt-tier .rk{font-size:11px;color:var(--muted);min-width:22px;font-weight:700}
+.opt-est{font-size:12px;color:var(--text-2);margin:12px 0 4px}
+.opt-est .warn{color:var(--critical)}
+.opt-meta{font-size:12px;color:var(--muted);margin:12px 0 8px}
+.opt-row{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:7px}
+.opt-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.opt-head .opt-rank{font-weight:800;color:var(--text-2)}
+.opt-head .opt-kills{font-size:18px;font-weight:800}
+.opt-head .opt-kills small{font-size:11px;font-weight:400;color:var(--muted)}
+.opt-head .opt-dps{font-size:12px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.opt-head .opt-load{margin-left:auto}
+.opt-detail{font-size:12px;color:var(--text-2);margin-top:5px}
+.opt-mods{font-size:12px;color:var(--muted);margin-top:3px}
