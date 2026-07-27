@@ -26,8 +26,10 @@ let innate = [];     // 9 × innate polarity name|null (exilus never innate)
 let arcane = "none";
 let arcaneRank = null;   // null → max rank (mirrors mod slot ranks)
 // Per-tier evolution selection {tier: id|null}; null = EMPTY (nothing
-// installed at that tier). Overwritten by META.defaults on init.
-let evoSel = { 2: null, 3: null, 4: null };
+// installed at that tier). Tier 1 is the Incarnon Form unlock: empty there
+// means no transformation, so the panel falls back to the base form.
+// Overwritten by META.defaults on init.
+let evoSel = { 1: null, 2: null, 3: null, 4: null };
 let pickerSlot = 0;
 // Mod-picker sort/filter prefs — persisted across slots, presets and weapons.
 let pickerPrefs = { sort: "name", dir: "asc", pol: null };
@@ -53,7 +55,7 @@ async function init() {
   const d = META.defaults;
   $("weapon").value = d.weapon;
   arcane = d.arcane;
-  evoSel = { 2: null, 3: null, 4: null, ...(d.evolutions || {}) };
+  evoSel = { 1: null, 2: null, 3: null, 4: null, ...(d.evolutions || {}) };
   applyWeapon(d.weapon, d.mods);
 
   $("weapon").addEventListener("change", () => applyWeapon($("weapon").value, null));
@@ -198,6 +200,9 @@ function refreshPanel() {
     const body = {
       weapon: $("weapon").value,
       evolutions: Object.values(evoSel).filter(Boolean),
+      // No Incarnon Form unlock (tier 1 empty) = the weapon cannot
+      // transform: the stats panel shows the BASE form.
+      form: evoSel[1] ? "incarnon" : "base",
       mods: slots.filter((s) => s.mod).map((s) => s.mod), // slot order (elements are position-sensitive)
     };
     try {
@@ -510,31 +515,36 @@ function openArcaneMenu(anchor) {
 }
 
 // ---- Evolution ----
-// Every choosable tier renders its options (icon + name) PLUS an EMPTY
-// chip (nothing installed). Wiki-flagged broken evolutions carry a red
-// badge, and selecting one shows a red note: the engine really computes
-// them as NO EFFECT.
+// Every tier (EVO I–IV) renders its options as CARDS — icon, name, and the
+// verbatim effect text, like the mod/arcane cards — PLUS an explicit None
+// card (nothing installed). Wiki-flagged broken evolutions carry a red
+// BROKEN badge, and selecting one shows a red note: the engine really
+// computes them as NO EFFECT. Deselecting tier 1 (the Incarnon Form
+// unlock) drops the weapon to its base form.
 function renderEvo() {
-  const roman = { 2: "EVO II", 3: "EVO III", 4: "EVO IV" };
+  const roman = { 1: "EVO I", 2: "EVO II", 3: "EVO III", 4: "EVO IV" };
   const tiers = META.evolutions || [];
-  const rows = [`<div class="evo"><span class="rank">EVO I</span><div class="locked">Incarnon Form (the form selector above)</div></div>`];
+  const rows = [];
   for (const t of tiers) {
     const sel = evoSel[t.tier] || null;
-    const chip = (o) => {
+    const card = (o) => {
       const icon = o.icon ? `<img class="eicon" src="/img/${encodeURIComponent(o.icon)}" alt="">` : "";
-      const cls = ["echip2", o.id === sel ? "sel" : "", o.broken ? "broken" : ""].join(" ");
-      const title = (o.effects || []).join("\n");
-      return `<span class="${cls}" data-tier="${t.tier}" data-id="${o.id}" title="${title}">${icon}${o.name}${o.broken ? '<b class="bx">失效</b>' : ""}</span>`;
+      const cls = ["evopick", o.id === sel ? "sel" : "", o.broken ? "broken" : ""].join(" ");
+      const lines = (o.desc && o.desc.length ? o.desc : o.effects || []).map((x) => `<div>${x}</div>`).join("");
+      const title = (o.effects || []).join("\n"); // model statement as tooltip
+      return `<span class="${cls}" data-tier="${t.tier}" data-id="${o.id}" title="${title}">
+        ${icon}<span class="einfo"><b class="en">${o.name}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}</b><span class="ed">${lines}</span></span></span>`;
     };
-    const empty = `<span class="echip2 empty ${sel === null ? "sel" : ""}" data-tier="${t.tier}" data-id="">∅ 空</span>`;
+    const empty = `<span class="evopick empty ${sel === null ? "sel" : ""}" data-tier="${t.tier}" data-id="">
+      <span class="einfo"><b class="en">None</b><span class="ed"><div>${t.tier === 1 ? "no Incarnon Form — the weapon stays in its base form" : "nothing installed at this tier"}</div></span></span></span>`;
     const selOpt = t.options.find((o) => o.id === sel);
     const warn = selOpt && selOpt.broken
-      ? `<div class="evo-warn">⚠ ${selOpt.name} 当前在游戏中失效(wiki: currently does not work)——模拟按<b>无效果</b>计算</div>`
+      ? `<div class="evo-warn">⚠ ${selOpt.name} currently does not work in-game (wiki) — the simulation computes it as NO EFFECT</div>`
       : "";
-    rows.push(`<div class="evo"><span class="rank">${roman[t.tier] || "EVO " + t.tier}</span><div class="picks">${t.options.map(chip).join("")}${empty}</div></div>${warn}`);
+    rows.push(`<div class="evo"><span class="rank">${roman[t.tier] || "EVO " + t.tier}</span><div class="picks">${t.options.map(card).join("")}${empty}</div></div>${warn}`);
   }
   $("evo-rows").innerHTML = rows.join("");
-  $("evo-rows").querySelectorAll(".echip2").forEach((c) => c.addEventListener("click", () => {
+  $("evo-rows").querySelectorAll(".evopick").forEach((c) => c.addEventListener("click", () => {
     evoSel[Number(c.dataset.tier)] = c.dataset.id || null;
     renderEvo(); refreshPanel();
   }));

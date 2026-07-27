@@ -4,6 +4,7 @@ kind: incarnon_evolution
 weapon: dual_toxocyst
 tier: 3
 icon: IncarnonReloadSpeed(xWhite).png   # wiki File: name (Dual_Toxocyst_Incarnon_Genesis)
+description: "+50% Magazine Reloaded/s when holstered."
 selection: choose_one
 
 effects:

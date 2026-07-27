@@ -30,6 +30,10 @@ struct EvoFile {
     /// Wiki `File:` name for the evolution's icon.
     #[serde(default)]
     icon: Option<String>,
+    /// Verbatim in-game/wiki effect text (evolutions have no ranks, so no
+    /// X templating).
+    #[serde(default)]
+    description: Option<String>,
     /// Wiki-flagged non-functional evolutions apply NOTHING.
     #[serde(default)]
     currently_broken: bool,
@@ -68,6 +72,8 @@ pub struct EvolutionDef {
     pub tier: u32,
     /// Wiki `File:` name for the evolution's icon.
     pub icon: Option<String>,
+    /// Verbatim effect text — what the cards display (like mods/arcanes).
+    pub description: String,
     pub currently_broken: bool,
     effects: Vec<EvoEffect>,
 }
@@ -191,6 +197,7 @@ pub fn pool() -> &'static Vec<EvolutionDef> {
                 weapon: ef.weapon,
                 tier: ef.tier,
                 icon: ef.icon,
+                description: ef.description.unwrap_or_default(),
                 currently_broken: ef.currently_broken,
                 effects,
             });

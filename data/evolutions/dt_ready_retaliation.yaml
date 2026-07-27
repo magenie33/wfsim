@@ -4,6 +4,7 @@ kind: incarnon_evolution
 weapon: dual_toxocyst
 tier: 3
 icon: IncarnonReloadSpeed(xWhite).png   # wiki File: name (Dual_Toxocyst_Incarnon_Genesis)
+description: "On Reload from Empty: +100% Reload Speed."
 selection: choose_one
 currently_broken: true          # wiki: "Currently does not work"
 

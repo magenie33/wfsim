@@ -4,6 +4,7 @@ kind: incarnon_evolution
 weapon: dual_toxocyst
 tier: 4
 icon: OnKillPunchThrough(xWhite).png   # wiki File: name (Dual_Toxocyst_Incarnon_Genesis)
+description: "On Kill: +3 Punch Through for 7s."
 selection: choose_one
 
 effects:

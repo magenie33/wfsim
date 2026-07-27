@@ -4,6 +4,7 @@ kind: incarnon_evolution
 weapon: dual_toxocyst
 tier: 4
 icon: HighCrit(xWhite).png   # wiki File: name (Dual_Toxocyst_Incarnon_Genesis)
+description: "Increase Base Critical Chance by +20%."
 selection: choose_one
 
 effects:

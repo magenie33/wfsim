@@ -547,11 +547,14 @@ fn meta_json() -> Value {
         // steps ranks with the strength updating per rank. `arcane_rank` in
         // the sim request selects the modeled rank (default: max).
         "arcanes": arcanes_json,
-        // Choosable evolution tiers from data/evolutions/*.yaml. Every tier
-        // also gets an implicit EMPTY choice in the UI (nothing installed);
-        // `broken` = wiki-flagged non-functional — the engine applies ZERO
-        // for those, and the UI must say so in red.
-        "evolutions": (2u32..=4)
+        // Choosable evolution tiers from data/evolutions/*.yaml (tier 1 =
+        // the Incarnon Form unlock — deselecting it means no transformation,
+        // so the panel/sim fall back to the base form). Every tier also gets
+        // an implicit EMPTY choice in the UI (nothing installed); `broken` =
+        // wiki-flagged non-functional — the engine applies ZERO for those,
+        // and the UI must say so in red. `desc` lines are the verbatim
+        // effect text (like the mod/arcane cards).
+        "evolutions": (1u32..=4)
             .map(|tier| json!({
                 "tier": tier,
                 "options": wfsim_engine::evolutions_data::options("dual_toxocyst", tier)
@@ -561,6 +564,7 @@ fn meta_json() -> Value {
                         "name": e.name,
                         "icon": e.icon,
                         "broken": e.currently_broken,
+                        "desc": e.description.split('\n').collect::<Vec<_>>(),
                         "effects": e.describe(),
                     }))
                     .collect::<Vec<_>>(),
@@ -571,6 +575,7 @@ fn meta_json() -> Value {
             "form": "incarnon_cycle",
             // Per-tier evolution selection (the historical default build).
             "evolutions": {
+                "1": "dt_evo1_incarnon_form",
                 "2": "dt_fevered_frenzy",
                 "3": "dt_evolved_autoloader",
                 "4": "dt_commodores_fortune",
@@ -966,6 +971,16 @@ fn simulate_json(v: &Value) -> Value {
         Err(e) => return err_json(e),
     };
     let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
+    // No Incarnon Form unlock (tier 1) in an explicit selection = the weapon
+    // cannot transform: honest fallback to the base form.
+    let form = if v.get("evolutions").is_some()
+        && info.id == "dual_toxocyst"
+        && !evos.iter().any(|e| e == "dt_evo1_incarnon_form")
+    {
+        "base"
+    } else {
+        form
+    };
     // Arcane: a data-driven pool id (legacy short names accepted for old
     // saved builds) + optional `arcane_rank` (default: max).
     let arcane_id = if info.uses_arcane {

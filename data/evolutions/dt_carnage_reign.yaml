@@ -4,6 +4,7 @@ kind: incarnon_evolution
 weapon: dual_toxocyst
 tier: 2
 icon: DamagePerStatusOnEnemyWithEnergyPool(xWhite).png   # wiki File: name (Dual_Toxocyst_Incarnon_Genesis)
+description: "Increase Base Damage by +60.\n+33% Direct Damage per Status Type affecting the target."
 selection: choose_one
 
 effects:
