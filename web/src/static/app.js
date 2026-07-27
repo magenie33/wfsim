@@ -107,42 +107,73 @@ function restoreState(st) {
 
 const escHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-function renderPresetSelect(selected) {
-  const sel = $("preset-sel");
-  const ps = loadPresets();
-  sel.innerHTML = `<option value="">presets… (${ps.length}/${PRESET_MAX})</option>` +
-    ps.map((p) => `<option value="${escHtml(p.name)}" ${p.name === selected ? "selected" : ""}>${escHtml(p.name)}</option>`).join("");
-}
+// The active (last loaded / saved) preset name, or null.
+let activePreset = null;
 
 function initPresets() {
-  renderPresetSelect(null);
-  $("preset-sel").addEventListener("change", () => {
-    const p = loadPresets().find((x) => x.name === $("preset-sel").value);
-    if (p) restoreState(p.state);
-  });
-  $("preset-save").addEventListener("click", () => {
-    const ps = loadPresets();
-    const cur = $("preset-sel").value;
-    const name = (prompt("Preset name:", cur || `preset ${ps.length + 1}`) || "").trim();
+  renderPresetBar();
+}
+
+function renderPresetBar() {
+  const bar = $("preset-bar");
+  const ps = loadPresets();
+  const chip = (p) => {
+    const active = p.name === activePreset;
+    // The active chip carries its own update / rename / delete controls.
+    const ops = active
+      ? `<button class="pop upd" title="overwrite this preset with the current build">↻</button>` +
+        `<button class="pop ren" title="rename">✎</button>` +
+        `<button class="pop del" title="delete">✕</button>`
+      : "";
+    return `<span class="pchip ${active ? "sel" : ""}" data-name="${escHtml(p.name)}" title="load ${escHtml(p.name)}">${escHtml(p.name)}${ops}</span>`;
+  };
+  bar.innerHTML =
+    `<span class="plabel">Presets <b>${ps.length}/${PRESET_MAX}</b></span>` +
+    ps.map(chip).join("") +
+    (ps.length < PRESET_MAX ? `<span class="pchip add" title="save the current build as a new preset">+ save</span>` : "");
+
+  bar.querySelectorAll(".pchip:not(.add)").forEach((c) => c.addEventListener("click", () => {
+    const p = loadPresets().find((x) => x.name === c.dataset.name);
+    if (p) { activePreset = p.name; restoreState(p.state); renderPresetBar(); }
+  }));
+  const addBtn = bar.querySelector(".pchip.add");
+  if (addBtn) addBtn.addEventListener("click", () => {
+    const ps2 = loadPresets();
+    const name = (prompt("Preset name:", `preset ${ps2.length + 1}`) || "").trim();
     if (!name) return;
-    const at = ps.findIndex((p) => p.name === name);
-    if (at >= 0) {
-      ps[at] = { name, savedAt: Date.now(), state: snapshotState() }; // overwrite by name
-    } else if (ps.length >= PRESET_MAX) {
-      alert(`Preset limit reached (${PRESET_MAX}) — delete one first.`);
-      return;
-    } else {
-      ps.push({ name, savedAt: Date.now(), state: snapshotState() });
-    }
-    storePresets(ps);
-    renderPresetSelect(name);
+    const at = ps2.findIndex((p) => p.name === name);
+    const entry = { name, savedAt: Date.now(), state: snapshotState() };
+    if (at >= 0) ps2[at] = entry; else ps2.push(entry); // same name overwrites
+    storePresets(ps2);
+    activePreset = name;
+    renderPresetBar();
   });
-  $("preset-del").addEventListener("click", () => {
-    const name = $("preset-sel").value;
-    if (!name) return;
-    if (!confirm(`Delete preset "${name}"?`)) return;
-    storePresets(loadPresets().filter((p) => p.name !== name));
-    renderPresetSelect(null);
+  const on = (sel, fn) => { const b = bar.querySelector(sel); if (b) b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); };
+  on(".pop.upd", () => {
+    const ps2 = loadPresets();
+    const at = ps2.findIndex((p) => p.name === activePreset);
+    if (at < 0) return;
+    ps2[at] = { name: activePreset, savedAt: Date.now(), state: snapshotState() };
+    storePresets(ps2);
+    renderPresetBar();
+  });
+  on(".pop.ren", () => {
+    const name = (prompt("New name:", activePreset) || "").trim();
+    if (!name || name === activePreset) return;
+    const ps2 = loadPresets();
+    if (ps2.some((p) => p.name === name)) { alert(`A preset named "${name}" already exists.`); return; }
+    const at = ps2.findIndex((p) => p.name === activePreset);
+    if (at < 0) return;
+    ps2[at].name = name;
+    storePresets(ps2);
+    activePreset = name;
+    renderPresetBar();
+  });
+  on(".pop.del", () => {
+    if (!confirm(`Delete preset "${activePreset}"?`)) return;
+    storePresets(loadPresets().filter((p) => p.name !== activePreset));
+    activePreset = null;
+    renderPresetBar();
   });
 }
 
@@ -164,7 +195,9 @@ function applyWeapon(id, presetMods) {
   while (innate.length < 9) innate.push(null);
 
   $("w-img").src = w.image ? CDN + w.image : "";
-  $("w-name").textContent = w.name;
+  // The weapon name links to its wiki page too (display suffixes like
+  // " (sentinel)" are ours, not part of the page name).
+  $("w-name").innerHTML = wl(w.name, wikiUrl(w.name.replace(" (sentinel)", "")));
   // Subtype first (e.g. "Dual Pistols") — the precise weapon type that drives
   // which mod pool actually applies; then the eligibility group + form tags.
   $("w-tags").innerHTML = [w.subtype, w.mod_class + " mods", w.sentinel ? "sentinel" : null, w.uses_evo2 ? "Incarnon" : null]
