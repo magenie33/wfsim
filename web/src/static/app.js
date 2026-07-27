@@ -228,6 +228,7 @@ function renderPanel(r) {
     <div class="srow">
       <div class="shead"><span class="sk">${row.label}</span>
         <span class="sv">${row.base !== "—" ? `<span class="sbase">${row.base}</span> → ` : ""}<b>${row.final}</b></span></div>
+      ${row.note ? `<div class="srownote">⚙ ${row.note}</div>` : ""}
       ${(row.sources || []).map(srcLine).join("")}
     </div>`;
   // Indirect stats (recoil, accuracy, ammo…) render like any bucket — they

@@ -866,8 +866,30 @@ fn panel_json(v: &Value) -> Value {
     row("reload", "Reload", format!("{}s", num(base.base_reload)), format!("{}s", num(panel.reload_seconds)),
         (panel.reload_seconds - base.base_reload).abs() > 1e-9);
     if panel.co_per_type > 0.0 {
+        // PER-WEAPON behavior: GunCO sources (Galvanized Shot, Carnage
+        // Reign, Secondary Shiver) combine differently per weapon class,
+        // and their base EXCLUDES evolution flat damage — the note states
+        // what the model actually computes on THIS weapon.
+        let behavior = match panel.co_behavior {
+            wfsim_engine::loadout::CoBehavior::AdditiveWithBaseDamage =>
+                "joins the base-damage bracket on this weapon (additive with Hornet Strike), direct hits only",
+            wfsim_engine::loadout::CoBehavior::Independent =>
+                "an independent multiplier on this weapon, direct hits only",
+            wfsim_engine::loadout::CoBehavior::Inert =>
+                "INERT on this weapon — the bonus does not apply",
+        };
+        let note = if (panel.co_base_fraction - 1.0).abs() > 1e-9 {
+            format!(
+                "computed on the ORIGINAL {:.0} base only — evolution flat damage is excluded ({:.0}% effectiveness); {behavior}",
+                raw_bd,
+                panel.co_base_fraction * 100.0
+            )
+        } else {
+            behavior.to_string()
+        };
         stats.push(json!({ "key": "co", "label": "Condition Overload",
             "base": "—", "final": format!("{} per status type on target", fpct(panel.co_per_type)),
+            "note": note,
             "sources": sources("co", None) }));
     }
 

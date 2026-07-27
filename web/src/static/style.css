@@ -188,6 +188,9 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 /* stats panel — merged buckets explained by source */
 .srow{padding:7px 0;border-bottom:1px dashed var(--line)}
 .srow:last-child{border-bottom:0}
+/* Per-weapon mechanic caveat on a stat row (e.g. GunCO computes on the
+   original base only, excluding evolution flat damage). */
+.srownote{font-size:11px;color:var(--gold);line-height:1.4;margin:2px 0 1px}
 .shead{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .shead .sk{font-size:13px;font-weight:600}
 .shead .sv{font-variant-numeric:tabular-nums;font-size:13px}
