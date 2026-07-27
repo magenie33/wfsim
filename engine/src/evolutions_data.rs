@@ -79,6 +79,54 @@ pub struct EvolutionDef {
 }
 
 impl EvolutionDef {
+    /// Σ flat base damage this evolution adds (0 when broken) — the panel
+    /// attributes it as a non-mod source on the Base Damage row.
+    pub fn flat_base_damage(&self) -> f64 {
+        self.active_effects()
+            .filter_map(|e| match e {
+                EvoEffect::FlatBaseDamage(v) => Some(*v),
+                _ => None,
+            })
+            .sum()
+    }
+
+    /// Σ flat BASE crit chance (Commodore's Fortune; 0 when broken).
+    pub fn flat_base_crit_chance(&self) -> f64 {
+        self.active_effects()
+            .filter_map(|e| match e {
+                EvoEffect::FlatBaseCritChance(v) => Some(*v),
+                _ => None,
+            })
+            .sum()
+    }
+
+    /// Σ assumed-max multishot from permanent stacks (Fevered Frenzy).
+    pub fn assumed_multishot(&self) -> f64 {
+        self.active_effects()
+            .filter_map(|e| match e {
+                EvoEffect::AssumedMaxMultishot(v) => Some(*v),
+                _ => None,
+            })
+            .sum()
+    }
+
+    /// Σ unconditional CO rate per status type (Carnage Reign).
+    pub fn co_per_type(&self) -> f64 {
+        self.active_effects()
+            .filter_map(|e| match e {
+                EvoEffect::ConditionOverload { per_type } => Some(*per_type),
+                _ => None,
+            })
+            .sum()
+    }
+
+    fn active_effects(&self) -> impl Iterator<Item = &EvoEffect> {
+        // Broken evolutions contribute nothing (same rule as `apply`).
+        self.effects
+            .iter()
+            .filter(move |_| !self.currently_broken)
+    }
+
     /// One display line per effect — what the model computes (broken
     /// evolutions state the zero honestly at the call site, not here).
     pub fn describe(&self) -> Vec<String> {

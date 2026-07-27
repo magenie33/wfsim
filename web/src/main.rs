@@ -779,26 +779,59 @@ fn panel_json(v: &Value) -> Value {
             }
         }
     }
-    // Non-mod sources baked into the weapon config (EVO II at assumed max).
-    if base.buff_multishot_bonus.abs() > 1e-12 {
-        src.push(("multishot", "Fevered Frenzy (EVO II)".into(), base.buff_multishot_bonus,
-            Some("on-hit stacks, 20 assumed".into())));
-    }
-    if base.innate_co_per_type > 1e-12 {
-        src.push(("co", "Carnage Reign (EVO II)".into(), base.innate_co_per_type,
-            Some("innate, per status type on target".into())));
+    // Non-mod sources: the CHOSEN evolutions (data-driven). Flat base
+    // damage and flat base crit chance alter the WEAPON BASE before mods —
+    // the stat rows show the raw base and attribute the delta here; the
+    // multishot stacks and CO rate join their buckets. Broken evolutions
+    // report zero via the accessors, so nothing is listed for them.
+    // (key, source name, PRE-FORMATTED value, note)
+    let mut evo_src: Vec<(&'static str, String, String, Option<String>)> = Vec::new();
+    let (mut evo_flat_bd, mut evo_flat_cc) = (0.0f64, 0.0f64);
+    if info.id == "dual_toxocyst" {
+        let tiername = |t: u32| ["", "EVO I", "EVO II", "EVO III", "EVO IV"][t.min(4) as usize];
+        for def in evo_refs.iter().filter_map(|id| wfsim_engine::evolutions_data::get(id)) {
+            let name = format!("{} ({})", def.name, tiername(def.tier));
+            let v = def.flat_base_damage();
+            if v > 0.0 {
+                evo_flat_bd += v;
+                evo_src.push(("base_damage", name.clone(), format!("+{v:.0} flat"),
+                    Some("added to the weapon base pro-rata, before mods".into())));
+            }
+            let v = def.flat_base_crit_chance();
+            if v > 0.0 {
+                evo_flat_cc += v;
+                evo_src.push(("crit_chance", name.clone(), format!("+{:.0}% base", v * 100.0),
+                    Some("into the BASE crit chance — crit mods multiply it".into())));
+            }
+            let v = def.assumed_multishot();
+            if v > 0.0 {
+                evo_src.push(("multishot", name.clone(), fpct(v),
+                    Some("on-ability-cast stacks, assumed full".into())));
+            }
+            let v = def.co_per_type();
+            if v > 0.0 {
+                evo_src.push(("co", name.clone(), fpct(v),
+                    Some("innate, per status type on target".into())));
+            }
+        }
     }
 
     let sources = |key: &str, tag: Option<&str>| -> Vec<Value> {
-        src.iter()
-            .filter(|(k, _, _, note)| {
-                *k == key && tag.is_none_or(|t| note.as_deref() == Some(t))
-            })
-            .map(|(_, name, v, note)| {
-                json!({ "mod": name, "value": fpct(*v),
-                        "note": if tag.is_some() { Value::Null } else { json!(note) } })
-            })
-            .collect()
+        let evo = evo_src
+            .iter()
+            .filter(move |(k, _, _, _)| *k == key && tag.is_none())
+            .map(|(_, name, v, note)| json!({ "mod": name, "value": v, "note": note }));
+        evo.chain(
+            src.iter()
+                .filter(|(k, _, _, note)| {
+                    *k == key && tag.is_none_or(|t| note.as_deref() == Some(t))
+                })
+                .map(|(_, name, v, note)| {
+                    json!({ "mod": name, "value": fpct(*v),
+                            "note": if tag.is_some() { Value::Null } else { json!(note) } })
+                }),
+        )
+        .collect()
     };
     // ---- stat rows: base -> final, with the merged bonus and its sources ----
     let num = |x: f64| -> String {
@@ -812,12 +845,16 @@ fn panel_json(v: &Value) -> Value {
             stats.push(json!({ "key": key, "label": label, "base": base_s, "final": final_s, "sources": s }));
         }
     };
-    row("base_damage", "Base Damage", num(base.base_vector.total()), num(panel.modified_base),
-        (panel.modified_base - base.base_vector.total()).abs() > 1e-9);
+    // Base columns show the RAW weapon base (pre-evolution): the evolution
+    // flat deltas are attributed as named source rows, not hidden in "base".
+    let raw_bd = base.base_vector.total() - evo_flat_bd;
+    let raw_cc = base.base_crit_chance - evo_flat_cc;
+    row("base_damage", "Base Damage", num(raw_bd), num(panel.modified_base),
+        (panel.modified_base - raw_bd).abs() > 1e-9);
     row("multishot", "Multishot", format!("×{}", num(base.base_multishot)), format!("×{}", num(panel.multishot)),
         (panel.multishot - base.base_multishot).abs() > 1e-9);
-    row("crit_chance", "Crit Chance", pc(base.base_crit_chance), pc(panel.crit_chance),
-        (panel.crit_chance - base.base_crit_chance).abs() > 1e-9);
+    row("crit_chance", "Crit Chance", pc(raw_cc), pc(panel.crit_chance),
+        (panel.crit_chance - raw_cc).abs() > 1e-9);
     row("crit_damage", "Crit Damage", format!("×{}", num(base.base_crit_damage)), format!("×{}", num(panel.crit_damage)),
         (panel.crit_damage - base.base_crit_damage).abs() > 1e-9);
     row("status_chance", "Status Chance", pc(base.base_status_chance), pc(panel.status_chance),
