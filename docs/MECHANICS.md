@@ -416,6 +416,16 @@ element procs are weighted, not uniform.
   Microwave — see `data/debuffs/independent_procs.yaml`); Knockdown /
   Lifted / Microwave count toward Condition Overload's status-type count.
   ⚠️ Generic Stagger (PT_STAGGERED) ≠ Impact's Stagger (PT_KNOCKBACK).
+- **GunCO family = ONE machinery** (wiki `Condition_Overload_(Mechanic)`;
+  user 2026-07-27): every source contributes `rate × target-counter` into
+  ONE shared bracket — computed on the ORIGINAL base (evolution flat
+  damage excluded, the `co_base_fraction`), combined per the weapon's
+  CoBehavior class (additive-with-base-damage / independent / inert),
+  direct hits only, and all sources ADDITIVE with each other. Sources
+  differ only in their counter: Condition Overload (Galvanized Shot,
+  Carnage Reign innate) counts distinct status TYPES on the target;
+  Secondary Shiver counts Cold STACKS (Frozen counts as the full 10).
+  `engine::dummy` folds them through one `gunco_sources` list.
 - **Negative-duration per-type detail** (outdated-flagged wiki table):
   no-delay DoTs still land their t=0 tick (Tesla Chain "occurs"), Heat's
   panic animation plays flameless, Blast expiry damage occurs with the

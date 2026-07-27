@@ -1721,26 +1721,32 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             let bd = ap.base_damage_bonus;
             let arc_ratio = (1.0 + bd + arc_bd) / (1.0 + bd);
             let mb_live = modded_base * arc_ratio;
-            // CO per this weapon's behavior class (direct hits only):
-            // (static + earned stacks) × base-effectiveness × types.
+            // GunCO family — ONE machinery (wiki CO catalog; user
+            // 2026-07-27): every source contributes rate × TARGET-COUNTER
+            // into the same bracket, is scaled by the original-base
+            // fraction (evolution flat damage excluded), and combines per
+            // the weapon's CoBehavior, direct hits only. Sources differ
+            // ONLY in their counter:
+            //   Condition Overload (Galvanized Shot + innate, one merged
+            //     rate since they share it) → distinct status TYPES;
+            //   Secondary Shiver → live Cold STACKS (Frozen counts as 10).
             let co_rate = ap.co_per_type
                 + params
                     .co_stack
                     .as_ref()
                     .map_or(0.0, |s| s.per_stack * gal.co.current(t, s.duration) as f64);
-            let co_total = co_rate * ap.co_base_fraction * debuffs.distinct_statuses() as f64;
-            // Secondary Shiver: +per_stack per ACTIVE Cold status on the
-            // target (Frozen counts as the full 10) — a GunCO-family source
-            // (wiki: "consistent with other GunCO sources such as Galvanized
-            // Shot"), so it shares CO's bracket and behavior class.
-            let shiver_total = if params.arcane.per_cold_bd > 0.0 {
-                params.arcane.per_cold_bd
-                    * debuffs.cold_status_count(t).min(params.arcane.cold_cap) as f64
-                    * ap.co_base_fraction
-            } else {
-                0.0
-            };
-            let gunco_total = co_total + shiver_total;
+            let gunco_sources = [
+                (co_rate, debuffs.distinct_statuses() as u32),
+                (
+                    params.arcane.per_cold_bd,
+                    debuffs.cold_status_count(t).min(params.arcane.cold_cap),
+                ),
+            ];
+            let gunco_total = gunco_sources
+                .iter()
+                .map(|(rate, count)| rate * *count as f64)
+                .sum::<f64>()
+                * ap.co_base_fraction;
             let co_mult = match ap.co_behavior {
                 // Joins the base-damage bucket: diluted by Hornet Strike,
                 // sharing the bracket with the arcane's bonus.
