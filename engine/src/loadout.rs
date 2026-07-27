@@ -489,13 +489,19 @@ impl DtEvo2 {
     }
 }
 
+/// The historical default evolution loadout: fixed tier 3/4 picks
+/// (Evolved Autoloader holstered-only; Commodore's Fortune +20% into the
+/// BASE crit chance) + the chosen Evolution II.
+fn dt_default_evos(evo2: DtEvo2) -> [&'static str; 3] {
+    ["dt_commodores_fortune", "dt_evolved_autoloader", evo2.evolution_id()]
+}
+
 impl WeaponBase {
-    /// Dual Toxocyst's equipped evolutions: the fixed tier 3/4 picks
-    /// (Evolved Autoloader holstered-only; Commodore's Fortune +20% into
-    /// the BASE crit chance) + the CHOSEN Evolution II — all applied from
-    /// data/perks/dt_*.yaml onto the raw base.
-    fn dt_apply_evolutions(mut self, evo2: DtEvo2) -> Self {
-        let evos: Vec<_> = ["dt_commodores_fortune", "dt_evolved_autoloader", evo2.evolution_id()]
+    /// Apply an arbitrary equipped-evolution set (data ids) from
+    /// data/evolutions/*.yaml onto the raw base. An EMPTY list = nothing
+    /// installed at any choosable tier.
+    fn dt_apply_evolution_ids(mut self, evo_ids: &[&str]) -> Self {
+        let evos: Vec<_> = evo_ids
             .iter()
             .map(|id| {
                 crate::evolutions_data::get(id)
@@ -506,11 +512,27 @@ impl WeaponBase {
         self
     }
 
-    /// Dual Toxocyst Incarnon Form: RAW panel (wiki 11% cc, 75 base) +
-    /// the equipped evolutions from yaml. `frenzy_active`: the passive
-    /// works while transformed (user-confirmed) — folds its +100% Toxin
-    /// injection in.
+    /// Incarnon Form with an ARBITRARY evolution selection (data ids;
+    /// empty = bare weapon). The web's per-tier picker feeds this.
+    pub fn dual_toxocyst_incarnon_evos(frenzy_active: bool, evo_ids: &[&str]) -> Self {
+        Self::dual_toxocyst_incarnon_raw(frenzy_active).dt_apply_evolution_ids(evo_ids)
+    }
+
+    /// Base form with an ARBITRARY evolution selection (data ids).
+    pub fn dual_toxocyst_base_evos(frenzy_active: bool, evo_ids: &[&str]) -> Self {
+        Self::dual_toxocyst_base_raw(frenzy_active).dt_apply_evolution_ids(evo_ids)
+    }
+
+    /// Dual Toxocyst Incarnon Form with the historical DEFAULT evolutions
+    /// (fixed tier 3/4 + the chosen EVO II selector).
     pub fn dual_toxocyst_incarnon(frenzy_active: bool, evo2: DtEvo2) -> Self {
+        Self::dual_toxocyst_incarnon_evos(frenzy_active, &dt_default_evos(evo2))
+    }
+
+    /// Dual Toxocyst Incarnon Form: RAW panel (wiki 11% cc, 75 base),
+    /// NO evolutions applied. `frenzy_active`: the passive works while
+    /// transformed (user-confirmed) — folds its +100% Toxin injection in.
+    fn dual_toxocyst_incarnon_raw(frenzy_active: bool) -> Self {
         Self {
             base_vector: DamageVector::new()
                 .with(DamageType::Impact, 15.0)
@@ -536,13 +558,17 @@ impl WeaponBase {
             },
             traits: &["semi_auto"], // Dual Toxocyst: semi-auto trigger
         }
-        .dt_apply_evolutions(evo2)
     }
 
-    /// Dual Toxocyst **base form**: RAW panel (wiki 5% cc, 75 base) + the
-    /// same equipped evolutions. `frenzy_active` folds the +100% Toxin
-    /// injection in (exact under a Permanent lock).
+    /// Dual Toxocyst **base form** with the historical DEFAULT evolutions.
     pub fn dual_toxocyst_base(frenzy_active: bool, evo2: DtEvo2) -> Self {
+        Self::dual_toxocyst_base_evos(frenzy_active, &dt_default_evos(evo2))
+    }
+
+    /// Dual Toxocyst **base form**: RAW panel (wiki 5% cc, 75 base), NO
+    /// evolutions applied. `frenzy_active` folds the +100% Toxin
+    /// injection in (exact under a Permanent lock).
+    fn dual_toxocyst_base_raw(frenzy_active: bool) -> Self {
         Self {
             base_vector: DamageVector::new()
                 .with(DamageType::Impact, 7.5)
@@ -566,7 +592,6 @@ impl WeaponBase {
             },
             traits: &["semi_auto"], // Dual Toxocyst: semi-auto trigger
         }
-        .dt_apply_evolutions(evo2)
     }
 
     /// Verglas Prime — Nautilus Prime's robotic (sentinel) weapon. The purest

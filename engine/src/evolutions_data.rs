@@ -27,6 +27,9 @@ struct EvoFile {
     kind: String,
     weapon: String,
     tier: u32,
+    /// Wiki `File:` name for the evolution's icon.
+    #[serde(default)]
+    icon: Option<String>,
     /// Wiki-flagged non-functional evolutions apply NOTHING.
     #[serde(default)]
     currently_broken: bool,
@@ -63,8 +66,39 @@ pub struct EvolutionDef {
     pub name: String,
     pub weapon: String,
     pub tier: u32,
+    /// Wiki `File:` name for the evolution's icon.
+    pub icon: Option<String>,
     pub currently_broken: bool,
     effects: Vec<EvoEffect>,
+}
+
+impl EvolutionDef {
+    /// One display line per effect — what the model computes (broken
+    /// evolutions state the zero honestly at the call site, not here).
+    pub fn describe(&self) -> Vec<String> {
+        self.effects
+            .iter()
+            .map(|e| match e {
+                EvoEffect::FlatBaseDamage(v) => {
+                    format!("+{v:.0} base damage (pro-rata, before mods)")
+                }
+                EvoEffect::FlatBaseCritChance(v) => {
+                    format!("+{:.0}% BASE crit chance (crit mods multiply it)", v * 100.0)
+                }
+                EvoEffect::AssumedMaxMultishot(v) => format!(
+                    "+{:.0}% multishot (on-ability-cast stacks, assumed full)",
+                    v * 100.0
+                ),
+                EvoEffect::ConditionOverload { per_type } => format!(
+                    "+{:.0}% direct damage per status type on the target",
+                    per_type * 100.0
+                ),
+                EvoEffect::Inert(what) => {
+                    format!("{} (no single-target DPS effect)", what.replace('_', " "))
+                }
+            })
+            .collect()
+    }
 }
 
 fn f(v: &Value, k: &str) -> Option<f64> {
@@ -156,6 +190,7 @@ pub fn pool() -> &'static Vec<EvolutionDef> {
                 name: ef.name,
                 weapon: ef.weapon,
                 tier: ef.tier,
+                icon: ef.icon,
                 currently_broken: ef.currently_broken,
                 effects,
             });

@@ -25,7 +25,9 @@ let slots = [];
 let innate = [];     // 9 × innate polarity name|null (exilus never innate)
 let arcane = "none";
 let arcaneRank = null;   // null → max rank (mirrors mod slot ranks)
-let evo2 = "dt_fevered_frenzy"; // overwritten by META.defaults on init
+// Per-tier evolution selection {tier: id|null}; null = EMPTY (nothing
+// installed at that tier). Overwritten by META.defaults on init.
+let evoSel = { 2: null, 3: null, 4: null };
 let pickerSlot = 0;
 // Mod-picker sort/filter prefs — persisted across slots, presets and weapons.
 let pickerPrefs = { sort: "name", dir: "asc", pol: null };
@@ -50,7 +52,8 @@ async function init() {
   fillSelect("weapon", META.weapons);
   const d = META.defaults;
   $("weapon").value = d.weapon;
-  arcane = d.arcane; evo2 = d.evo2;
+  arcane = d.arcane;
+  evoSel = { 2: null, 3: null, 4: null, ...(d.evolutions || {}) };
   applyWeapon(d.weapon, d.mods);
 
   $("weapon").addEventListener("change", () => applyWeapon($("weapon").value, null));
@@ -194,7 +197,7 @@ function refreshPanel() {
   panelTimer = setTimeout(async () => {
     const body = {
       weapon: $("weapon").value,
-      evo2,
+      evolutions: Object.values(evoSel).filter(Boolean),
       mods: slots.filter((s) => s.mod).map((s) => s.mod), // slot order (elements are position-sensitive)
     };
     try {
@@ -507,18 +510,34 @@ function openArcaneMenu(anchor) {
 }
 
 // ---- Evolution ----
+// Every choosable tier renders its options (icon + name) PLUS an EMPTY
+// chip (nothing installed). Wiki-flagged broken evolutions carry a red
+// badge, and selecting one shows a red note: the engine really computes
+// them as NO EFFECT.
 function renderEvo() {
-  const rows = [
-    { rank: "EVO I", pick: "Incarnon Form", locked: true },
-    { rank: "EVO II", options: META.evo2, sel: evo2 },
-    { rank: "EVO III–V", pick: "fixed (folded into the weapon)", locked: true },
-  ];
-  $("evo-rows").innerHTML = rows.map((r) => {
-    if (r.locked) return `<div class="evo"><span class="rank">${r.rank}</span><div class="locked">${r.pick}</div></div>`;
-    const chips = r.options.map((o) => `<span class="echip2 ${o.id === r.sel ? "sel" : ""}" data-id="${o.id}">${o.name}</span>`).join("");
-    return `<div class="evo"><span class="rank">${r.rank}</span><div class="picks">${chips}</div></div>`;
-  }).join("");
-  $("evo-rows").querySelectorAll(".echip2").forEach((c) => c.addEventListener("click", () => { evo2 = c.dataset.id; renderEvo(); refreshPanel(); }));
+  const roman = { 2: "EVO II", 3: "EVO III", 4: "EVO IV" };
+  const tiers = META.evolutions || [];
+  const rows = [`<div class="evo"><span class="rank">EVO I</span><div class="locked">Incarnon Form (the form selector above)</div></div>`];
+  for (const t of tiers) {
+    const sel = evoSel[t.tier] || null;
+    const chip = (o) => {
+      const icon = o.icon ? `<img class="eicon" src="/img/${encodeURIComponent(o.icon)}" alt="">` : "";
+      const cls = ["echip2", o.id === sel ? "sel" : "", o.broken ? "broken" : ""].join(" ");
+      const title = (o.effects || []).join("\n");
+      return `<span class="${cls}" data-tier="${t.tier}" data-id="${o.id}" title="${title}">${icon}${o.name}${o.broken ? '<b class="bx">失效</b>' : ""}</span>`;
+    };
+    const empty = `<span class="echip2 empty ${sel === null ? "sel" : ""}" data-tier="${t.tier}" data-id="">∅ 空</span>`;
+    const selOpt = t.options.find((o) => o.id === sel);
+    const warn = selOpt && selOpt.broken
+      ? `<div class="evo-warn">⚠ ${selOpt.name} 当前在游戏中失效(wiki: currently does not work)——模拟按<b>无效果</b>计算</div>`
+      : "";
+    rows.push(`<div class="evo"><span class="rank">${roman[t.tier] || "EVO " + t.tier}</span><div class="picks">${t.options.map(chip).join("")}${empty}</div></div>${warn}`);
+  }
+  $("evo-rows").innerHTML = rows.join("");
+  $("evo-rows").querySelectorAll(".echip2").forEach((c) => c.addEventListener("click", () => {
+    evoSel[Number(c.dataset.tier)] = c.dataset.id || null;
+    renderEvo(); refreshPanel();
+  }));
 }
 
 init().catch((e) => { document.querySelector(".config-page").insertAdjacentHTML("afterbegin", `<div class="error">failed to load: ${e}</div>`); });

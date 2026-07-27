@@ -3,6 +3,7 @@ name: Marksman's Hand
 kind: incarnon_evolution
 weapon: dual_toxocyst
 tier: 3
+icon: LessRecoil(xWhite).png   # wiki File: name (Dual_Toxocyst_Incarnon_Genesis)
 selection: choose_one
 
 effects:

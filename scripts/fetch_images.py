@@ -28,22 +28,41 @@ def image_names():
     return sorted(names)
 
 
+def wiki_icon_names():
+    """Evolution icons: `icon:` fields in data/evolutions/*.yaml — hosted on
+    the wiki (Special:FilePath), not the WFCD CDN."""
+    names = set()
+    evdir = os.path.join(ROOT, "data", "evolutions")
+    for fn in os.listdir(evdir):
+        if not fn.endswith(".yaml"):
+            continue
+        with open(os.path.join(evdir, fn), encoding="utf-8") as fh:
+            for line in fh:
+                m = re.match(r"icon:\s*(\S+\.(?:png|jpg))", line)
+                if m:
+                    names.add(m.group(1))
+    return sorted(names)
+
+
 def main():
     os.makedirs(CACHE, exist_ok=True)
-    names = image_names()
+    # (name, base url) pairs: CDN art + wiki-hosted evolution icons.
+    jobs = [(n, CDN + n) for n in image_names()] + [
+        (n, "https://wiki.warframe.com/w/Special:FilePath/" + n) for n in wiki_icon_names()
+    ]
     have = fetched = 0
-    for n in names:
+    for n, url in jobs:
         dst = os.path.join(CACHE, n)
         if os.path.exists(dst) and os.path.getsize(dst) > 0:
             have += 1
             continue
-        r = subprocess.run(["curl", "-sL", "--max-time", "25", "-A", UA, CDN + n, "-o", dst],
-                           capture_output=True)
+        subprocess.run(["curl", "-sL", "--max-time", "25", "-A", UA, url, "-o", dst],
+                       capture_output=True)
         if os.path.exists(dst) and os.path.getsize(dst) > 0:
             fetched += 1
         else:
             print(f"  MISS {n}")
-    print(f"cache: {have} already present, {fetched} downloaded, {len(names)} total -> {CACHE}")
+    print(f"cache: {have} already present, {fetched} downloaded, {len(jobs)} total -> {CACHE}")
 
 
 if __name__ == "__main__":

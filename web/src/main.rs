@@ -346,9 +346,12 @@ fn pol_icon(file: &str) -> Option<(&'static [u8], &'static str)> {
 /// works, and DE art never has to be committed to the repo. `name` is a bare
 /// filename (traversal-guarded).
 fn img_response(stream: &mut TcpStream, name: &str) -> std::io::Result<()> {
+    // Parentheses admit the wiki's evolution-icon names ("…(xWhite).png").
     let safe = !name.is_empty()
         && name.len() < 128
-        && name.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'));
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-' | '(' | ')'));
     if safe {
         let path = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/cache/img"))
             .join(name);
@@ -356,6 +359,14 @@ fn img_response(stream: &mut TcpStream, name: &str) -> std::io::Result<()> {
             let ct = if name.ends_with(".png") { "image/png" } else { "image/jpeg" };
             return respond_asset(stream, ct, &bytes);
         }
+    }
+    // Cache miss: wiki-hosted art (evolution icons) redirects to the wiki
+    // file path; everything else to the WFCD CDN.
+    if name.contains('(') {
+        return respond_redirect(
+            stream,
+            &format!("https://wiki.warframe.com/w/Special:FilePath/{name}"),
+        );
     }
     respond_redirect(stream, &format!("https://cdn.warframestat.us/img/{name}"))
 }
@@ -536,16 +547,34 @@ fn meta_json() -> Value {
         // steps ranks with the strength updating per rank. `arcane_rank` in
         // the sim request selects the modeled rank (default: max).
         "arcanes": arcanes_json,
-        // The EVO II choice list comes from the evolution yamls
-        // (data/perks/dt_*.yaml, tier 2) — names and ids are data.
-        "evo2": wfsim_engine::evolutions_data::options("dual_toxocyst", 2)
-            .iter()
-            .map(|e| json!({"id": e.id, "name": e.name}))
+        // Choosable evolution tiers from data/evolutions/*.yaml. Every tier
+        // also gets an implicit EMPTY choice in the UI (nothing installed);
+        // `broken` = wiki-flagged non-functional — the engine applies ZERO
+        // for those, and the UI must say so in red.
+        "evolutions": (2u32..=4)
+            .map(|tier| json!({
+                "tier": tier,
+                "options": wfsim_engine::evolutions_data::options("dual_toxocyst", tier)
+                    .iter()
+                    .map(|e| json!({
+                        "id": e.id,
+                        "name": e.name,
+                        "icon": e.icon,
+                        "broken": e.currently_broken,
+                        "effects": e.describe(),
+                    }))
+                    .collect::<Vec<_>>(),
+            }))
             .collect::<Vec<_>>(),
         "defaults": {
             "weapon": "dual_toxocyst",
             "form": "incarnon_cycle",
-            "evo2": "dt_fevered_frenzy",
+            // Per-tier evolution selection (the historical default build).
+            "evolutions": {
+                "2": "dt_fevered_frenzy",
+                "3": "dt_evolved_autoloader",
+                "4": "dt_commodores_fortune",
+            },
             "arcane": "secondary_deadhead",
             "enemy": "thrax_centurion",
             "level": 9999,
@@ -602,11 +631,11 @@ fn panel_json(v: &Value) -> Value {
     let info = weapon(get_str(v, "weapon", "dual_toxocyst"));
     let policy = if info.sentinel { StackPolicy::BaseOnly } else { StackPolicy::AssumedMax };
     let form = get_str(v, "form", "incarnon");
-    // Evolution II selector: data ids (legacy short names accepted).
-    let evo2 = match get_str(v, "evo2", "dt_fevered_frenzy") {
-        "carnage" | "dt_carnage_reign" => DtEvo2::CarnageReign,
-        _ => DtEvo2::FeveredFrenzy,
+    let evos = match chosen_evolutions(v) {
+        Ok(e) => e,
+        Err(e) => return err_json(e),
     };
+    let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
 
     let mod_ids: Vec<String> = v
         .get("mods")
@@ -628,9 +657,9 @@ fn panel_json(v: &Value) -> Value {
     let base = if info.id == "verglas_prime" {
         WeaponBase::verglas_prime()
     } else if form == "base" {
-        WeaponBase::dual_toxocyst_base(true, evo2)
+        WeaponBase::dual_toxocyst_base_evos(true, &evo_refs)
     } else {
-        WeaponBase::dual_toxocyst_incarnon(true, evo2)
+        WeaponBase::dual_toxocyst_incarnon_evos(true, &evo_refs)
     };
     let panel = resolve(&base, &refs, policy);
 
@@ -894,6 +923,35 @@ fn build_body_parts(spec: &EnemySpec, headshot_pct: f64) -> Vec<BodyPart> {
     out
 }
 
+/// The chosen evolution set: `evolutions` (an array of data ids; ABSENT
+/// entries = empty tier — nothing installed) wins; a legacy `evo2` string
+/// (short names accepted) maps to the historical default trio.
+fn chosen_evolutions(v: &Value) -> Result<Vec<String>, String> {
+    if let Some(arr) = v.get("evolutions").and_then(|x| x.as_array()) {
+        let ids: Vec<String> = arr
+            .iter()
+            .filter_map(|s| s.as_str())
+            .filter(|s| !s.is_empty() && *s != "none")
+            .map(String::from)
+            .collect();
+        for id in &ids {
+            if wfsim_engine::evolutions_data::get(id).is_none() {
+                return Err(format!("unknown evolution id: {id}"));
+            }
+        }
+        return Ok(ids);
+    }
+    let evo2 = match get_str(v, "evo2", "dt_fevered_frenzy") {
+        "carnage" | "dt_carnage_reign" => DtEvo2::CarnageReign,
+        _ => DtEvo2::FeveredFrenzy,
+    };
+    Ok(vec![
+        "dt_commodores_fortune".to_string(),
+        "dt_evolved_autoloader".to_string(),
+        evo2.evolution_id().to_string(),
+    ])
+}
+
 fn simulate_json(v: &Value) -> Value {
     // ---- parse inputs ----
     let info = weapon(get_str(v, "weapon", "dual_toxocyst"));
@@ -903,11 +961,11 @@ fn simulate_json(v: &Value) -> Value {
         StackPolicy::Emergent
     };
     let form = get_str(v, "form", "incarnon_cycle");
-    // Evolution II selector: data ids (legacy short names accepted).
-    let evo2 = match get_str(v, "evo2", "dt_fevered_frenzy") {
-        "carnage" | "dt_carnage_reign" => DtEvo2::CarnageReign,
-        _ => DtEvo2::FeveredFrenzy,
+    let evos = match chosen_evolutions(v) {
+        Ok(e) => e,
+        Err(e) => return err_json(e),
     };
+    let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
     // Arcane: a data-driven pool id (legacy short names accepted for old
     // saved builds) + optional `arcane_rank` (default: max).
     let arcane_id = if info.uses_arcane {
@@ -998,8 +1056,8 @@ fn simulate_json(v: &Value) -> Value {
         (panel, params)
     } else {
         // Dual Toxocyst: two forms + the real Incarnon cycle.
-        let incarnon_base = WeaponBase::dual_toxocyst_incarnon(true, evo2);
-        let base_base = WeaponBase::dual_toxocyst_base(true, evo2);
+        let incarnon_base = WeaponBase::dual_toxocyst_incarnon_evos(true, &evo_refs);
+        let base_base = WeaponBase::dual_toxocyst_base_evos(true, &evo_refs);
         let incarnon_panel = resolve(&incarnon_base, &refs, policy);
         let base_panel = resolve(&base_base, &refs, policy);
         let report = if form == "base" { base_panel.clone() } else { incarnon_panel.clone() };
@@ -1039,7 +1097,7 @@ fn simulate_json(v: &Value) -> Value {
         let ab = if info.id == "verglas_prime" {
             WeaponBase::verglas_prime()
         } else {
-            WeaponBase::dual_toxocyst_incarnon(true, evo2)
+            WeaponBase::dual_toxocyst_incarnon_evos(true, &evo_refs)
         };
         def.fx(rank, policy, ab.base_crit_chance, ab.base_crit_damage, ab.traits)
     };

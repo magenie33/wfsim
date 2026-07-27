@@ -3,6 +3,7 @@ name: Ripper Rounds
 kind: incarnon_evolution
 weapon: dual_toxocyst
 tier: 4
+icon: OnKillPunchThrough(xWhite).png   # wiki File: name (Dual_Toxocyst_Incarnon_Genesis)
 selection: choose_one
 
 effects:
