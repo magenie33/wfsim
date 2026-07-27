@@ -671,7 +671,8 @@ function renderEvo() {
     };
     const empty = `<span class="evopick empty ${sel === null ? "sel" : ""}" data-tier="${t.tier}" data-id="">
       <span class="einfo"><b class="en">None</b><span class="ed"><div>${t.tier === 1 ? "no Incarnon Form — the weapon stays in its base form" : "nothing installed at this tier"}</div></span></span></span>`;
-    rows.push(`<div class="evo"><span class="rank">${roman[t.tier] || "EVO " + t.tier}</span><div class="picks">${t.options.map(card).join("")}${empty}</div></div>`);
+    // None comes FIRST (the default state is a bare weapon).
+    rows.push(`<div class="evo"><span class="rank">${roman[t.tier] || "EVO " + t.tier}</span><div class="picks">${empty}${t.options.map(card).join("")}</div></div>`);
   }
   $("evo-rows").innerHTML = rows.join("");
   $("evo-rows").querySelectorAll(".evopick").forEach((c) => c.addEventListener("click", () => {

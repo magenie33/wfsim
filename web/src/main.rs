@@ -523,18 +523,6 @@ fn meta_json() -> Value {
         }));
     }
 
-    // A pleasant default: the standing Thrax official champion (devlog 2026-07-25).
-    let default_mods = [
-        "primed_convulsion",
-        "galvanized_diffusion",
-        "primed_target_cracker",
-        "lethal_torrent",
-        "galvanized_shot",
-        "magnetic_might",
-        "anemic_agility",
-        "galvanized_crosshairs",
-    ];
-
     json!({
         "weapons": weapons,
         "mod_pools": {
@@ -573,21 +561,18 @@ fn meta_json() -> Value {
         "defaults": {
             "weapon": "dual_toxocyst",
             "form": "incarnon_cycle",
-            // Per-tier evolution selection (the historical default build).
-            "evolutions": {
-                "1": "dt_evo1_incarnon_form",
-                "2": "dt_fevered_frenzy",
-                "3": "dt_evolved_autoloader",
-                "4": "dt_commodores_fortune",
-            },
-            "arcane": "secondary_deadhead",
+            // The page starts EMPTY (user decision): no mods, no arcane, no
+            // evolutions — a bare weapon. Reference builds live as presets /
+            // data/builds, not as the initial state.
+            "evolutions": {},
+            "arcane": "none",
             "enemy": "thrax_centurion",
             "level": 9999,
             "steel_path": true,
             "headshot_pct": 100.0,
             "duration": 120.0,
             "runs": 300,
-            "mods": default_mods,
+            "mods": [],
         },
     })
 }
