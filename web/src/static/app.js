@@ -1650,7 +1650,7 @@ function renderOptResults(r) {
       <div class="opt-mods">${mods}</div>
     </div>`;
   }).join("");
-  $("opt-results").innerHTML = `<div class="opt-meta">${r.cancelled ? `<span class="warn">cancelled — ranking from the last completed round</span> · ` : ""}${r.candidates} candidates · ${r.jobs} jobs · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${sim.headshot_pct}% headshots · ${sim.duration} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
+  $("opt-results").innerHTML = `<div class="opt-meta">${r.cancelled ? `<span class="warn">cancelled — best-so-far ranking (lower precision than a full run)</span> · ` : ""}${r.candidates} candidates · ${r.jobs} jobs · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${sim.headshot_pct}% headshots · ${sim.duration} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
   $("opt-results").querySelectorAll(".opt-load").forEach((el) =>
     el.addEventListener("click", () => loadResult(JSON.parse(el.dataset.r))));
 }

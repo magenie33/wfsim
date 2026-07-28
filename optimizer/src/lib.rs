@@ -637,7 +637,22 @@ pub fn run_funnel(
         let summaries =
             evaluate_batch(cands, &alive, arcanes, scenario, runs, seed_base + round as u64, state);
         if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
-            break; // partial round: keep the previous round's leaderboard
+            // Cancelled mid-round. The previous COMPLETED round's leaderboard
+            // is preferred (uniform estimates) — but when no round ever
+            // finished (a huge round 1), rank whatever DID evaluate: a rough
+            // best-so-far beats returning nothing (user, 2026-07-28).
+            if last.is_empty() {
+                let mut partial: Vec<(Job, Summary)> = alive
+                    .iter()
+                    .copied()
+                    .zip(summaries)
+                    .filter_map(|(j, s)| s.map(|s| (j, s)))
+                    .collect();
+                partial.sort_by(|a, b| b.1.mean_kill_progress.total_cmp(&a.1.mean_kill_progress));
+                partial.truncate(keep);
+                last = partial;
+            }
+            break;
         }
         let mut scored: Vec<(Job, Summary)> = alive
             .iter()
