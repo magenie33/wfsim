@@ -51,6 +51,10 @@ let optBuffList = [];
 let optBuffTimer = null;
 // Sort/polarity prefs for the optimizer mod list (independent of the picker's).
 let optPrefs = { sort: "name", dir: "asc", pol: null };
+// The optimizer's OWN enemy scenario (user: fully decoupled from the Sim
+// panel — two independent configs that merely look alike; identical
+// parameters give identical numbers, verified 2026-07-28).
+let optSim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, duration: 120 };
 // The FINAL-ROUND CONTRACT (user): the funnel's last round is guaranteed
 // `finalists` candidates × `final_runs` runs. Persisted; survives weapon
 // switches (it is a run setting, not weapon scope).
@@ -86,6 +90,8 @@ async function init() {
   sim = { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
     headshot_pct: d.headshot_pct, duration: d.duration, runs: d.runs,
     form: d.form, buffs: {} };
+  optSim = { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
+    headshot_pct: d.headshot_pct, duration: d.duration };
   applyWeapon(d.weapon, d.mods);
 
   $("weapon").addEventListener("change", () => applyWeapon($("weapon").value, null));
@@ -799,7 +805,6 @@ function renderSim() {
         else if (el.type === "number") sim[k] = Number(el.value);
         else sim[k] = el.value;
         if (k === "enemy") $("arena-ename").textContent = (enemies.find((e) => e.id === sim.enemy) || {}).name || "Enemy";
-        updateOptEstimate(); // the optimizer's scenario line mirrors these settings
       });
     }));
   $("arena-ename").textContent = en ? en.name : "Enemy";
@@ -1016,6 +1021,7 @@ function renderOpt() {
   renderOptExilus();
   renderOptArcanes();
   renderOptEvos();
+  renderOptEnemy();
   updateOptEstimate();
   fetchOptBuffs();
 }
@@ -1053,6 +1059,32 @@ function renderOptMods() {
   renderOptTools();
   renderOptModSel();
   renderOptModList();
+}
+
+// The optimizer's OWN enemy/scenario block — the same fields as the Sim
+// panel's section 1 but writing `optSim` (fully decoupled; user).
+function renderOptEnemy() {
+  const box = $("opt-enemy");
+  if (!box) return;
+  const enemies = META.enemies || [];
+  const en = enemies.find((e) => e.id === optSim.enemy) || enemies[0];
+  if (en) optSim.enemy = en.id;
+  const eopts = enemies.map((e) =>
+    `<option value="${e.id}" ${e.id === optSim.enemy ? "selected" : ""}>${e.name} · Lv ${e.base_level}</option>`).join("");
+  box.innerHTML = `
+    <label>Enemy <select data-k="enemy">${eopts}</select></label>
+    <label>Level <input type="number" data-k="level" min="1" max="9999" value="${optSim.level}"></label>
+    <label class="check"><input type="checkbox" data-k="steel_path" ${optSim.steel_path ? "checked" : ""}> Steel Path</label>
+    <label>Headshot % <input type="number" data-k="headshot_pct" min="0" max="100" value="${optSim.headshot_pct}"></label>
+    <label>Duration (s) <input type="number" data-k="duration" min="1" max="3600" value="${optSim.duration}"></label>`;
+  box.querySelectorAll("[data-k]").forEach((el) =>
+    el.addEventListener("change", () => {
+      const k = el.dataset.k;
+      if (el.type === "checkbox") optSim[k] = el.checked;
+      else if (el.type === "number") optSim[k] = Number(el.value);
+      else optSim[k] = el.value;
+      updateOptEstimate();
+    }));
 }
 
 // Exilus-slot scope (the +1 slot) — exilus-eligible mods with the same
@@ -1461,7 +1493,7 @@ function updateOptEstimate() {
   // schedule (survivors × runs per round; a JS mirror of schedule()).
   let scenario = "";
   if (valid) {
-    const en = (META.enemies || []).find((e) => e.id === sim.enemy) || {};
+    const en = (META.enemies || []).find((e) => e.id === optSim.enemy) || {};
     // Mirror of schedule_to()'s auto-planned cadence: k = ceil(log8(N/F))
     // rounds, even log-space culls landing exactly on the finalists, runs
     // from a halving cost budget ((ρ/2)^i, capped at final/4), then the
@@ -1485,7 +1517,7 @@ function updateOptEstimate() {
     const parts = [];
     let field = Math.round(jobs);
     rounds.forEach(([r, k]) => { parts.push(`${field.toLocaleString()}×${r}`); field = Math.min(field, k); });
-    scenario = `<div class="opt-scn">each candidate vs <b>${en.name || sim.enemy}</b> Lv ${sim.level}${sim.steel_path ? " (SP)" : ""} · ${sim.headshot_pct}% headshots · ${sim.duration} s engagements · planned funnel (jobs×runs): ${parts.join(" → ")} → ${F} finalists at ${FR.toLocaleString()} runs (racing cuts deeper, tie-amnesty keeps up to 2×)</div>`;
+    scenario = `<div class="opt-scn">each candidate vs <b>${en.name || optSim.enemy}</b> Lv ${optSim.level}${optSim.steel_path ? " (SP)" : ""} · ${optSim.headshot_pct}% headshots · ${optSim.duration} s engagements · planned funnel (jobs×runs): ${parts.join(" → ")} → ${F} finalists at ${FR.toLocaleString()} runs (racing cuts deeper, tie-amnesty keeps up to 2×)</div>`;
   }
   $("opt-estimate").innerHTML = (valid
     ? `~<b>${est}</b> candidates${exNote} × ${arcCount} arcanes ≈ ${Math.round(jobs).toLocaleString()} jobs${big ? ` <span class="warn">— large; this may take a while</span>` : ""}`
@@ -1531,8 +1563,8 @@ async function runOptimize() {
       arcanes: arcs.length ? arcs : ["none"],
       evolutions,
       exilus: opt.exilus,
-      enemy: sim.enemy, level: sim.level, steel_path: sim.steel_path,
-      headshot_pct: sim.headshot_pct, duration: sim.duration,
+      enemy: optSim.enemy, level: optSim.level, steel_path: optSim.steel_path,
+      headshot_pct: optSim.headshot_pct, duration: optSim.duration,
       final_runs: optRun.final_runs, finalists: optRun.finalists,
       buffs,
     };
@@ -1649,7 +1681,7 @@ function renderOptResults(r) {
       <div class="opt-mods">${mods}</div>
     </div>`;
   }).join("");
-  $("opt-results").innerHTML = `<div class="opt-meta">${r.cancelled ? `<span class="warn">cancelled — best-so-far ranking (lower precision than a full run)</span> · ` : ""}${r.candidates} candidates · ${r.jobs} jobs · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${sim.headshot_pct}% headshots · ${sim.duration} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
+  $("opt-results").innerHTML = `<div class="opt-meta">${r.cancelled ? `<span class="warn">cancelled — best-so-far ranking (lower precision than a full run)</span> · ` : ""}${r.candidates} candidates · ${r.jobs} jobs · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${r.headshot_pct ?? "?"}% headshots · ${r.duration ?? "?"} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
   $("opt-results").querySelectorAll(".opt-load").forEach((el) =>
     el.addEventListener("click", () => loadResult(JSON.parse(el.dataset.r))));
 }

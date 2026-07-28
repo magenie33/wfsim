@@ -2029,6 +2029,8 @@ fn optimize_start(v: &Value) -> Value {
             "cancelled": cancelled,
             "final_runs": final_runs,
             "finalists": finalists,
+            "headshot_pct": headshot_pct,
+            "duration": duration,
             "results": results,
             "target": { "name": target_name, "level": level, "steel_path": steel_path },
         }));

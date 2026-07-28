@@ -100,7 +100,7 @@
     <!-- Block: Optimizer — scope (mods/arcanes/evolutions) + the Sim panel's
          enemy & buff settings → top-10 ranked builds, each loadable. -->
     <section class="block" id="opt-block">
-      <div class="bh"><span class="n">⚙</span><h2>Optimize</h2><span class="sub" id="opt-sub">uses the Sim panel's enemy + buff settings</span></div>
+      <div class="bh"><span class="n">⚙</span><h2>Optimize</h2><span class="sub" id="opt-sub">self-contained — its own enemy, buffs and run budget</span></div>
       <div class="bb">
         <h3 class="sim-h">Mods <span class="sim-hint">search by name or effect; mark each as pool (search) or required</span></h3>
         <div class="preset-bar" id="opt-preset-mods"></div>
@@ -120,6 +120,8 @@
         <h3 class="sim-h">Evolutions <span class="sim-hint">per tier: pool = searched options, req = pin</span></h3>
         <div class="preset-bar" id="opt-preset-evos"></div>
         <div id="opt-evos"></div>
+        <h3 class="sim-h">Enemy <span class="sim-hint">the optimizer's own scenario — independent of the Sim panel</span></h3>
+        <div id="opt-enemy" class="field-grid"></div>
         <h3 class="sim-h">Buffs <span class="sim-hint">across the whole scope — initial stacks + lock, applied per candidate</span></h3>
         <div id="opt-buffs"></div>
         <div class="opt-final">
