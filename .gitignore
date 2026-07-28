@@ -14,9 +14,14 @@ __pycache__/
 # DE art is never committed — served via the /img proxy with WFCD fallback).
 web/cache/
 
+# Private, never committed
+/devlog/
+/drafts/
+
 # Editor / OS
 .idea/
 .vscode/
+.claude/
 *.swp
 .DS_Store
 Thumbs.db

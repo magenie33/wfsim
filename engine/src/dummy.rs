@@ -1321,8 +1321,8 @@ pub struct RunResult {
     pub kills: u32,      // InstantRespawn deaths (0 with InfiniteHealth)
     /// Kills + the depleted fraction of the CURRENT target's total pool
     /// (overguard + health) at engagement end — partial credit so the
-    /// objective is not a step function (user, 2026-07-24: "打空了80%
-    /// 总血条算0.8分").
+    /// objective is not a step function (user, 2026-07-24: "draining 80%
+    /// of the total pool scores 0.8").
     pub kill_progress: f64,
 }
 
@@ -1561,8 +1561,9 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         let qvec = p.damage.quantized();
         let qtotal = qvec.total();
         let mb = p.dot_modified_base.unwrap_or_else(|| p.damage.total());
-        // Toxin's share of each hit bypasses shields (user model: "50 点
-        // 伤害中 10 毒 40 其他 → 盾吃 40，血直接吃 10").
+        // Toxin's share of each hit bypasses shields (user model: "of a
+        // 50-damage hit that is 10 toxin + 40 other, shields absorb the
+        // 40 and health takes the 10 directly").
         let toxin_share = if qtotal > 0.0 {
             qvec.get(DamageType::Toxin) / qtotal
         } else {

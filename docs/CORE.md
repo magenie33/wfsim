@@ -1,180 +1,245 @@
-# wfsim — 项目内核 (Core Design)
+# wfsim — Core Design
 
-> Warframe 硬核伤害仿真器。目标不是「算个 DPS 数字」,而是**物理级还原一次真实战斗**,
-> 让本工具算出的伤害与游戏内实测一致,并据此求解最优 mod 搭配。
+> A hardcore Warframe damage simulator. The goal is not "compute a DPS number"
+> but to **physically reproduce a real fight**, so that the damage this tool
+> computes matches in-game measurements — and, on top of that, to solve for
+> the optimal mod build.
 
 ---
 
-## 1. 项目愿景 (What & Why)
+## 1. Vision (What & Why)
 
-**一句话:** 给定「武器 + mod + 目标 + 战斗场景」,输出与游戏实测**逐项一致**的伤害与击杀表现,并能反向搜索最优 mod 组合。
+**One sentence:** given "weapon + mods + target + combat scenario", output
+damage and kill performance that matches in-game measurements **item by
+item**, and search backwards for the optimal mod combination.
 
-它与市面上常见的 Warframe DPS 计算器(Overframe、以及各类表格)最大的区别:
+How it differs from the usual Warframe DPS calculators (Overframe, various
+spreadsheets):
 
-| 普通 DPS 计算器 | wfsim |
+| Typical DPS calculator | wfsim |
 |---|---|
-| 算稳态 DPS 数字 | 仿真一段时间内**逐发/逐击**的伤害序列 |
-| 忽略射程、弹道、命中 | 把 range / 弹道 / 命中 / 溅射当作一等公民 |
-| 元素合并常简化 | 严格遵守游戏的元素合并顺序与规则 |
-| 目标抽象成一个血条 | 目标含护甲/护盾/血量/种类/削减曲线 |
-| 输出「理论值」 | 输出**能对齐实测**的值(可验证) |
+| Computes a steady-state DPS number | Simulates the **per-shot / per-hit** damage sequence over time |
+| Ignores range, ballistics, accuracy | Treats range / ballistics / hit resolution / AoE as first-class |
+| Simplifies elemental combination | Follows the game's elemental combination order and rules exactly |
+| Abstracts the target into one health bar | Models armor / shields / health / unit type / mitigation curves |
+| Outputs "theoretical" values | Outputs values that **align with measurements** (verifiable) |
 
-**成功判据 (Definition of Done for correctness):**
-对若干已知武器 + mod 组合,wfsim 的每发伤害、暴击伤害、状态触发伤害、对特定敌人(含护甲)的实际伤害,
-应与游戏内 Simulacrum 实测数值**在舍入误差内一致**。这是整个项目的北极星指标。
-
----
-
-## 2. 核心理念 (Guiding Principles)
-
-1. **正确性 > 性能 > 便利。** 先做到和游戏一致,再谈快,再谈好用。任何简化都必须显式标注并可回溯。
-2. **仿真而非公式。** 战斗是一个随时间推进的过程(开火节奏、combo 累积、状态叠层、弹匣/换弹、目标移动)。
-   稳态 DPS 只是仿真结果的一个衍生统计量,不是计算的核心。
-3. **数据与引擎分离。** 武器/mod/敌人的数值是**数据**(可从游戏数据源导入、可版本化);
-   伤害规则是**引擎**(纯函数、可测试)。游戏改版时只换数据,不改引擎。
-4. **每条规则可溯源。** 元素合并顺序、护甲削减公式、暴击分层、status weighting……
-   每个公式在代码里都要有注释指向来源(wiki / 数据挖掘 / 实测),便于验证和纠错。
-5. **可验证。** 引擎的每一层都要有对照游戏实测的测试用例(golden tests)。没有对照,就不算「对」。
+**Definition of Done for correctness:** for a set of known weapon + mod
+combinations, wfsim's per-shot damage, critical damage, status-proc damage,
+and actual damage against specific (armored) enemies must match in-game
+Simulacrum measurements **within rounding error**. This is the project's
+north-star metric.
 
 ---
 
-## 3. 伤害管线 (The Damage Pipeline)
+## 2. Guiding Principles
 
-这是项目的心脏。伤害不是一个乘法式,而是一条**有严格顺序**的管线。顺序错了,结果就错。
-下面是分层草案(实现时每层是独立、可测试的纯函数):
+1. **Correctness > performance > convenience.** First match the game, then be
+   fast, then be nice to use. Every simplification must be explicitly marked
+   and traceable.
+2. **Simulation, not formulas.** A fight is a process that advances through
+   time (fire cadence, combo buildup, status stacking, magazine/reload,
+   target movement). Steady-state DPS is just one derived statistic of the
+   simulation — never the core of the computation.
+3. **Data and engine are separate.** Weapon/mod/enemy numbers are **data**
+   (importable from game data sources, versioned); damage rules are the
+   **engine** (pure functions, testable). When the game patches, swap the
+   data — don't touch the engine.
+4. **Every rule is sourced.** Elemental combination order, armor mitigation
+   formula, crit tiers, status weighting… every formula in the code carries a
+   comment pointing at its source (wiki / datamining / in-game measurement)
+   so it can be verified and corrected.
+5. **Verifiable.** Every layer of the engine gets test cases calibrated
+   against in-game measurements (golden tests). Without a measurement to
+   compare against, it doesn't count as "correct".
+
+---
+
+## 3. The Damage Pipeline
+
+This is the heart of the project. Damage is not one multiplication — it is a
+pipeline with a **strict order**. Get the order wrong and the result is wrong.
+Layered draft below (each layer is an independent, testable pure function):
 
 ```
-武器基础数据 (base stats)
-    │  基础伤害按 IPS/元素分布、基础暴击率/暴击倍率、基础状态率、射速、弹匣、换弹、multishot...
+Weapon base stats
+    │  base damage split across IPS/elements, base crit chance/multiplier,
+    │  base status chance, fire rate, magazine, reload, multishot...
     ▼
-[1] Mod 结算 (mod resolution)
-    │  收集所有生效的加成,按「加法组 vs 乘法组」正确归类
-    │  (同类 +Damage 相加后再与其他乘区相乘;基伤、元素、暴击、状态、多重各自的乘区)
+[1] Mod resolution
+    │  collect every active bonus, classified correctly into
+    │  "additive group vs multiplicative group"
+    │  (+Damage of the same kind sums, then multiplies with the other
+    │  buckets; base damage, elements, crit, status, multishot are each
+    │  their own bucket)
     ▼
-[2] 元素合并 (elemental combination)
-    │  按 mod 在配置中的**顺序**合并基础元素 → 复合元素(如 冰+电=磁, 火+毒=瘟疫...)
-    │  武器自带元素与 mod 元素的合并规则要分开处理(自带元素通常先合并)
+[2] Elemental combination
+    │  merge base elements in the mods' **configured order** into combined
+    │  elements (Cold+Electricity=Magnetic, Heat+Toxin=Gas, ...);
+    │  innate weapon elements and mod elements follow separate merge rules
+    │  (innate elements usually combine first)
     ▼
-[3] 每发伤害构成 (per-hit damage vector)
-    │  得到一发子弹在各伤害类型上的分量向量 {穿刺, 冲击, 切割, 火, 冰, 电, 毒, 复合...}
+[3] Per-hit damage vector
+    │  one shot's damage components across all damage types
+    │  {Puncture, Impact, Slash, Heat, Cold, Electricity, Toxin, combined...}
     ▼
-[4] 暴击结算 (critical tiers)
-    │  暴击率可 >100% → 分层暴击 (tier 1/2/3...),按概率加权;combo 对暴击的影响(近战)
+[4] Critical tiers
+    │  crit chance can exceed 100% → tiered crits (tier 1/2/3...),
+    │  probability-weighted; combo's effect on crit (melee)
     ▼
-[5] 状态结算 (status / proc)
-    │  每发的状态触发概率(受 multishot 影响的分配)、各元素 proc 的权重、
-    │  DoT(火/毒/切割/瘟疫等)随时间的伤害、层数上限、持续时间
+[5] Status / procs
+    │  per-shot proc chance (distribution under multishot), per-element
+    │  proc weighting, DoT (Heat/Toxin/Slash/Gas...) over time, stack
+    │  caps, durations
     ▼
-[6] 命中层 (hit resolution)  ← 这是「硬核」的关键差异点
-    │  multishot 弹丸数、range/射程衰减、弹道/抛物、命中率、
-    │  溅射/AoE 半径与衰减、爆头倍率、贯穿(punch-through)
+[6] Hit resolution   ← the "hardcore" differentiator
+    │  multishot projectile count, range/falloff, ballistics/arc, accuracy,
+    │  AoE radius and falloff, headshot multipliers, punch-through
     ▼
-[7] 目标削减 (target mitigation)
-    │  护甲削减(armor → damage reduction 曲线)、护盾 vs 血量、
-    │  敌人种类/派系对各伤害类型的抗性与弱点、护甲/护盾剥离机制
+[7] Target mitigation
+    │  armor mitigation (armor → damage-reduction curve), shields vs
+    │  health, per-faction/unit-type resistances and weaknesses,
+    │  armor/shield stripping
     ▼
-[8] 时间积分 (temporal integration)
-    │  沿时间轴推进:开火节奏、弹匣耗尽/换弹、combo 累积/衰减、
-    │  DoT 叠加、buff 持续与刷新 → 得到伤害-时间序列
+[8] Temporal integration
+    │  advance along the time axis: fire cadence, magazine
+    │  depletion/reload, combo buildup/decay, DoT stacking, buff duration
+    │  and refresh → the damage-over-time series
     ▼
-输出 (outputs)
-    单发/爆发/持续 DPS、TTK(对指定敌人击杀时间)、有效射程内的伤害曲线、
-    暴击/状态占比分解、瓶颈分析
+Outputs
+    per-shot / burst / sustained DPS, TTK against a given enemy, damage
+    curve across effective range, crit/status breakdown, bottleneck
+    analysis
 ```
 
-> ⚠️ **已知高风险坑点**(实现时最容易和游戏对不上的地方,优先写测试):
-> - 元素合并的**顺序**依赖 mod 在配置里的排列;自带元素 vs mod 元素的合并时机。
-> - 乘区归类:哪些加成加法叠加、哪些独立乘区。归错组结果差很多。
-> - 护甲削减公式(以及 Corrosive/护甲剥离对它的动态影响)。
-> - 分层暴击(暴击率 >100%)与 combo 的交互。
-> - status weighting:多种元素并存时各自 proc 的相对权重不是均分。
-> - multishot 对「每发状态率」和「暴击」的概率分配方式。
-> - AoE 武器的自伤/衰减、爆头是否吃暴击等边界情况。
+> ⚠️ **Known high-risk traps** (the places most likely to disagree with the
+> game — write tests for these first):
+> - Elemental combination **order** depends on mod arrangement in the config;
+>   when innate elements merge vs mod elements.
+> - Bucket classification: which bonuses stack additively vs multiply
+>   independently. Misclassify and results diverge badly.
+> - The armor mitigation formula (and how Corrosive / armor strip affect it
+>   dynamically).
+> - Tiered crits (crit chance > 100%) interacting with combo.
+> - Status weighting: with multiple elements present, per-element proc
+>   weights are not an even split.
+> - How multishot distributes "per-shot status chance" and crit rolls.
+> - AoE edge cases: self-damage/falloff, whether headshots crit, etc.
 
-*(以上顺序为设计草案,实现时须逐层用游戏实测校准并修正。)*
+*(The order above is a design draft; each layer must be calibrated and
+corrected against in-game measurements during implementation.)*
 
 ---
 
-## 4. 架构与模块 (Architecture)
+## 4. Architecture & Modules
 
 ```
 wfsim/
-├── docs/                 # 设计文档(本文件在此)
-├── data/                 # 数据层:武器、mod、敌人、派系抗性表(版本化)
-│   ├── weapons/
+├── docs/                 # design docs (this file lives here)
+├── data/                 # data layer: weapons, mods, enemies, faction
+│   ├── weapons/          #   resistance tables (versioned)
 │   ├── mods/
 │   ├── enemies/
 │   └── factions/
-├── engine/               # 引擎层:纯函数,伤害管线的每一层
-│   ├── modResolution
+├── engine/               # engine layer: pure functions, one per pipeline
+│   ├── modResolution     #   layer
 │   ├── elements
 │   ├── crit
 │   ├── status
-│   ├── hit               # range / 弹道 / multishot / AoE
-│   ├── mitigation        # 护甲 / 护盾 / 抗性
-│   └── simulate          # 时间积分主循环
-├── optimizer/            # 反向搜索最优 mod 组合(受管线约束)
+│   ├── hit               # range / ballistics / multishot / AoE
+│   ├── mitigation        # armor / shields / resistances
+│   └── simulate          # temporal-integration main loop
+├── optimizer/            # inverse search for the best mod combination
 ├── tests/
-│   └── golden/           # 对照游戏实测的 golden tests(北极星)
-└── cli/                  # wfsim 命令行入口
+│   └── golden/           # golden tests vs in-game measurements (north star)
+└── cli/                  # the wfsim command-line entry point
 ```
 
-**数据模型(核心实体,待细化):**
-- `Weapon` — 基础伤害向量、暴击/状态基值、射速、弹匣、换弹、multishot、弹道属性、AoE 属性、mod 槽/极性。
-- `Mod` — 作用的乘区/字段、数值、极性、条件(如 combo/连击/派系限定)。
-- `Enemy` — 血量/护盾/护甲、种类、派系、等级(用于等级缩放)、弱点/抗性。
-- `Scenario` — 距离、是否爆头、combo 状态、buff、开火时长等战斗上下文。
-- `Build` — 武器 + 选定 mod 集合(optimizer 的搜索单元)。
+**Data model (core entities, to be refined):**
+- `Weapon` — base damage vector, base crit/status, fire rate, magazine,
+  reload, multishot, ballistic properties, AoE properties, mod slots /
+  polarities.
+- `Mod` — affected bucket/field, value, polarity, conditions (combo /
+  on-kill / faction-limited, etc.).
+- `Enemy` — health/shields/armor, unit type, faction, level (for level
+  scaling), weaknesses/resistances.
+- `Scenario` — distance, headshots or not, combo state, buffs, engagement
+  duration — the combat context.
+- `Build` — weapon + chosen mod set (the optimizer's search unit).
 
 ---
 
-## 5. Optimizer(最优搭配求解)
+## 5. Optimizer (best-build search)
 
-- **目标函数可切换:** 稳态 DPS / 对指定敌人 TTK / 有效射程内总伤害 / 爆发伤害等。
-- **约束:** mod 槽位数、极性/容量、mod 互斥、arcane/宗师卡等。
-- **方法(先粗后精):** 先跑穷举/剪枝拿到基线正确性,再上启发式(贪心/遗传/beam search)提速。
-- **原则:** optimizer 只调用 engine,绝不自己另写一套简化伤害公式——否则「最优」是假的。
-- **搜索策略:** 按「规范形」去重搜索(位置敏感 mod = 元素序在前,其余无序;
-  极性布局不属于 build 身份),候选先过「最大努力合法化」(天生极性池重排 →
-  贪心 Forma → 装不下即拒绝),条件类 buff 默认满层生效(可配置/未来全仿真)。
-  详见 [`OPTIMIZER.md`](OPTIMIZER.md)。
-
----
-
-## 6. 技术选型 (Decided)
-
-- **语言/运行时:** **Rust**(2021 edition),用 **mise** 钉版本(当前 `1.97.1`)。
-  选它是因为 optimizer = 「巨大 mod 组合空间 × 每个候选跑多遍蒙特卡洛仿真」,
-  这是 CPU 密集的搜索×仿真双重循环,Rust 的性能是三个候选里唯一扛得住的;
-  同时强类型/数值可靠,契合「正确性第一」。未来 Web UI 可把引擎编成 WASM 复用。
-- **工程形态:** Cargo workspace,三个 crate:`engine/`(纯函数管线)、
-  `optimizer/`(只调 engine)、`cli/`(`wfsim` 入口)。
-- **optimizer 评估方式:** **混合** —— 解析期望(快,给搜索粗筛)+ 蒙特卡洛
-  (慢,给最终校准/看分布,SimCraft 式拟真)。
-- **代码/文档语言:** 英语(仓库公开)。本设计文档待后续统一译为英文。
-- **数据来源(仍待定):** 是否接入公开数据挖掘源(WFCD/warframe-items 等)自动导入,还是手工录入起步。
-- **精度验证方式(仍待定):** 如何系统性采集 Simulacrum 实测值作为 golden test 基准。
+- **Switchable objective:** steady-state DPS / TTK against a given enemy /
+  total damage within effective range / burst damage, etc.
+- **Constraints:** mod slot count, polarity/capacity, mod exclusivity,
+  arcanes, etc.
+- **Method (coarse first, then fast):** exhaustive search + pruning first to
+  establish a correct baseline, heuristics later (greedy / genetic / beam
+  search) for speed.
+- **Principle:** the optimizer only ever calls the engine — it never gets its
+  own simplified damage formula, or the "optimum" it finds is fake.
+- **Search strategy:** deduplicate by "canonical form" (position-sensitive
+  mods = element order first, everything else unordered; polarity layout is
+  not part of a build's identity); candidates pass "best-effort legalization"
+  (innate polarity reassignment → greedy Forma → reject if it can't fit);
+  conditional buffs default to full stacks (configurable / fully simulated in
+  the future). Details in [`OPTIMIZER.md`](OPTIMIZER.md).
 
 ---
 
-## 7. 路线图 (Roadmap)
+## 6. Technology Choices (Decided)
 
-- **M0 — 骨架:** 定语言/技术栈,建仓库结构,定义核心数据模型 schema。
-- **M1 — 单发正确:** 实现管线 [1]-[5](mod/元素/暴击/状态),对**单发伤害**在无护甲目标上对齐实测。
-- **M2 — 目标削减:** 加入 [7] 护甲/护盾/抗性,对**有护甲敌人**的实际伤害对齐实测。
-- **M3 — 命中层:** 加入 [6] range/multishot/弹道/AoE/爆头,支持「随距离变化的伤害曲线」。
-- **M4 — 时间仿真:** 加入 [8] 时间积分(换弹/combo/DoT/buff),输出 TTK 与伤害-时间序列。
-- **M5 — Optimizer:** 在完全正确的引擎之上做最优 mod 搜索。
-- **贯穿全程:** 每个里程碑都必须有对照游戏实测的 golden tests,否则不算完成。
+- **Language/runtime:** **Rust** (2021 edition), version pinned via **mise**
+  (currently `1.97.1`). Chosen because the optimizer = "a huge mod
+  combination space × several Monte-Carlo simulation runs per candidate" — a
+  CPU-bound search×simulation double loop that Rust is uniquely suited to
+  among the candidates considered; strong typing and numeric reliability also
+  fit "correctness first". A future web UI can reuse the engine compiled to
+  WASM.
+- **Project shape:** a Cargo workspace with three crates: `engine/` (pure
+  pipeline functions), `optimizer/` (only calls the engine), `cli/` (the
+  `wfsim` entry point).
+- **Optimizer evaluation:** **hybrid** — analytic expectation (fast, for
+  coarse filtering during search) + Monte Carlo (slow, for final calibration
+  and distributions, SimCraft-style).
+- **Code/docs language:** English (public repository).
+- **Data sourcing:** bulk entry from the wiki's structured Lua modules,
+  normalized into versioned YAML — see [`DATA_SOURCES.md`](DATA_SOURCES.md).
+- **Accuracy verification:** systematic Simulacrum measurement protocol and
+  the golden-test baseline — see [`MEASUREMENTS.md`](MEASUREMENTS.md).
 
 ---
 
-## 8. 给新会话的交接说明 (Handoff)
+## 7. Roadmap
 
-如果你是接手本项目的新会话,请注意:
+- **M0 — skeleton:** pick language/stack, set up repo structure, define the
+  core data-model schema.
+- **M1 — single shot correct:** implement pipeline [1]–[5]
+  (mods/elements/crit/status); **per-shot damage** matches measurements on an
+  unarmored target.
+- **M2 — target mitigation:** add [7] armor/shields/resistances; actual
+  damage against **armored enemies** matches measurements.
+- **M3 — hit resolution:** add [6] range/multishot/ballistics/AoE/headshots;
+  support "damage as a function of distance".
+- **M4 — temporal simulation:** add [8] temporal integration
+  (reload/combo/DoT/buffs); output TTK and the damage-time series.
+- **M5 — optimizer:** best-build search on top of a fully correct engine.
+- **Throughout:** every milestone must ship golden tests against in-game
+  measurements, or it doesn't count as done.
 
-1. **先读本文件**,再动手。项目的灵魂是「和游戏实测一致」,任何简化都要显式标注。
-2. **技术选型(第 6 节)尚未定**,这是开工第一件要和用户确认的事。别擅自开写代码。
-3. **正确性靠 golden tests 保证。** 没有对照实测的测试,任何「实现完成」都是不可信的。
-4. 伤害管线的**顺序**(第 3 节)是正确性的关键,第 3 节末尾的「高风险坑点」清单要优先覆盖。
-5. 用户是硬核 Warframe 玩家,追求真实还原,不满足于近似的 DPS 表——沟通时按这个预期对齐。
+---
+
+## 8. Handoff Notes (for a fresh session)
+
+If you are a new session taking over this project:
+
+1. **Read this file first**, then act. The soul of the project is "matches
+   in-game measurements"; every simplification must be explicitly marked.
+2. **Correctness is guaranteed by golden tests.** Without a measurement to
+   compare against, no "implementation complete" claim is trustworthy.
+3. The damage pipeline's **order** (§3) is the key to correctness; the
+   "high-risk traps" list at the end of §3 gets test coverage first.
+4. The user is a hardcore Warframe player aiming for faithful reproduction —
+   not satisfied by approximate DPS tables. Communicate accordingly.

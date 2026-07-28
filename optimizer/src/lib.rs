@@ -46,7 +46,7 @@ pub fn dual_toxocyst_innate_slots() -> [Option<Polarity>; 8] {
     s
 }
 
-/// "命题作文" constraints: forced inclusions/exclusions by mod id.
+/// Prescribed-mods constraints: forced inclusions/exclusions by mod id.
 #[derive(Debug, Clone, Default)]
 pub struct Constraints {
     pub require: Vec<String>,
@@ -412,7 +412,7 @@ pub fn evaluate(
     monte_carlo(&params, runs, seed)
 }
 
-/// Dominance pruning (命题作文 preset): mods whose every effect is the
+/// Dominance pruning (prescribed-mods preset): mods whose every effect is the
 /// same KIND as another pool mod's but strictly smaller are excluded up
 /// front — they can never appear in an optimum (drain differences only
 /// change Forma count, never damage ranking). NOTE: plain Barrel

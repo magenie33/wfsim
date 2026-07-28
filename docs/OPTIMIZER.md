@@ -75,7 +75,7 @@ stacks, Galvanized Shot's CO stacks, Fevered Frenzy's 20, Frenzy's
 headshot buff, …) evaluate under one of three policies:
 
 1. **`assumed_max` (default):** every conditional buff at full
-   stacks/100% uptime — the community "理论满层" convention. This is
+   stacks/100% uptime — the community "assume max stacks" convention. This is
    what today's `LockedBuff` mechanism in `engine::dummy` implements
    (Frenzy locked, Fevered Frenzy at 20); it generalizes to a
    per-buff map.
@@ -108,7 +108,7 @@ Implemented in `optimizer/` (`wfsim-optimizer` binary):
   candidates, ~1 s).
 - §2 legalization via `engine::mods::plan_forma` per subset.
 - §3 `StackPolicy::AssumedMax` in `engine::loadout::resolve`.
-- Constraint hooks (命题作文): `require=<mod_id>` / `forbid=<mod_id>`
+- Constraint hooks (prescribed-mods presets): `require=<mod_id>` / `forbid=<mod_id>`
   CLI args filter the space before enumeration.
 - Evaluation: **successive halving** across all cores — rounds of
   (runs, keep): 3→16384, 12→3072, 48→512, 200→64, 1000→24; early

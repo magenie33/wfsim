@@ -439,8 +439,9 @@ pub struct TimedBuff {
 }
 
 /// How the Condition Overload bonus behaves — PER WEAPON (user,
-/// 2026-07-24: "有的武器是独立的加成，有的武器是当基础伤害的，有的还
-/// 加成不到"; the wiki CO-mechanic catalog classifies weapons):
+/// 2026-07-24: "some weapons take it as an independent multiplier, some
+/// fold it into base damage, and some don't benefit at all"; the wiki
+/// CO-mechanic catalog classifies weapons):
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CoBehavior {
     /// Joins the base-damage bucket (additive with Hornet Strike):
@@ -849,7 +850,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                             per_stack: base.base_multishot * per_stack,
                             max_stacks,
                             duration,
-                            initial_stacks: max_stacks, // 初始满 (user)
+                            initial_stacks: max_stacks, // start full (user decision)
                             pinned: false,
                         })
                     }
@@ -866,7 +867,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                             per_stack,
                             max_stacks,
                             duration,
-                            initial_stacks: max_stacks, // 初始满 (user)
+                            initial_stacks: max_stacks, // start full (user decision)
                             pinned: false,
                         })
                     }
@@ -895,7 +896,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
                             per_stack: base.base_crit_chance * per_stack,
                             max_stacks,
                             duration,
-                            initial_stacks: max_stacks, // 初始满 (user)
+                            initial_stacks: max_stacks, // start full (user decision)
                             pinned: false,
                         })
                     }

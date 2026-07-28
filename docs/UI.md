@@ -1,6 +1,6 @@
 # wfsim — UI Vision
 
-Decisions from 2026-07-24 (see devlog). This is what sets wfsim apart from
+Decisions from 2026-07-24. This is what sets wfsim apart from
 predecessor calculators (Overframe-style form pages): besides a build/config
 UI, there is a **live 2D top-down view of the fight**.
 

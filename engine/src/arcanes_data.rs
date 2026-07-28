@@ -404,7 +404,7 @@ impl ArcaneDef {
                         max_stacks: *max_stacks,
                         duration: *duration,
                         all_drop: *all_drop,
-                        initial_stacks: *max_stacks, // 初始满 (user)
+                        initial_stacks: *max_stacks, // start full (user decision)
                         pinned: assumed,
                     });
                 }
