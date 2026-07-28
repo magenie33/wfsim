@@ -143,6 +143,8 @@ evolutions: {}
 ui:
   "Weapons": 武器
   "Presets": 预设
+  "Builder": 配装
+  "Optimizer": 优化器
   "Mod presets": MOD 预设
   "Arcane presets": 赋能预设
   "Evolution presets": 进化预设

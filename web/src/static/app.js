@@ -366,9 +366,12 @@ async function init() {
 }
 
 // ---- views: '/' = the weapon list (home); '/weapons/<Wiki_Name>' = the
-// config page. URLs mirror wiki page names (display name, spaces → '_');
-// internal weapon ids never appear in URLs. The weapon <select> stays the
-// internal source of truth; the home grid and the path just drive it.
+// BUILDER (with its simulator below — the sim tests this build);
+// '/weapons/<Wiki_Name>/optimizer' = the OPTIMIZER, its own view (the
+// page's three modules — user, 2026-07-29). URLs mirror wiki page names
+// (display name, spaces → '_'); internal weapon ids never appear in URLs.
+// The weapon <select> stays the internal source of truth; the home grid
+// and the path just drive it.
 const wikiSlug = (w) => (w.name_en || w.name).split(" (")[0].replace(/ /g, "_");
 const weaponPath = (id) => {
   const w = (META.weapons || []).find((x) => x.id === id);
@@ -379,20 +382,25 @@ function nav(path) {
   route();
 }
 function route() {
-  const m = location.pathname.match(/^\/weapons\/([^/]+)\/?$/);
+  const m = location.pathname.match(/^\/weapons\/([^/]+?)(\/optimizer)?\/?$/);
   const slug = m && decodeURIComponent(m[1]).toLowerCase();
   const w = slug && (META.weapons || []).find(
     (x) => wikiSlug(x).toLowerCase() === slug || x.id === slug
   );
+  const onOpt = !!(w && m[2]);
   document.body.classList.toggle("on-home", !w);
+  document.body.classList.toggle("on-optimizer", onOpt);
   $("home-page").hidden = !!w;
   document.querySelector(".config-page").hidden = !w;
-  document.title = w ? `${w.name} — WFSim` : "WFSim — The Simulacrum. The Primed One.";
+  document.title = w ? `${w.name}${onOpt ? " · Optimizer" : ""} — WFSim` : "WFSim — The Simulacrum. The Primed One.";
   if (w) {
     if ($("weapon").value !== w.id) {
       $("weapon").value = w.id;
       applyWeapon(w.id, null);
     }
+    $("module-tabs").innerHTML =
+      `<a class="mtab ${onOpt ? "" : "sel"}" href="${weaponPath(w.id)}">${tr("Builder")}</a>` +
+      `<a class="mtab ${onOpt ? "sel" : ""}" href="${weaponPath(w.id)}/optimizer">${tr("Optimizer")}</a>`;
   } else {
     renderHome();
   }
@@ -2109,20 +2117,23 @@ function renderOptResults(r) {
         <span class="opt-kills">${res.kills.toFixed(2)}<small> kills</small></span>
         <span class="opt-dps">${(res.effective_dps || 0).toExponential(2)} eff DPS</span>
         <span class="forma-badge legal">${res.forma.used} Forma</span>
-        <button class="ghost-btn small opt-load" data-r='${JSON.stringify(res).replace(/'/g, "&#39;")}'>load</button>
+        <button class="ghost-btn small opt-add" title="add as a new build preset" data-r='${JSON.stringify(res).replace(/'/g, "&#39;")}'>+ add</button>
       </div>
       <div class="opt-detail"><b>${arc}</b> · ${evos}</div>
       <div class="opt-mods">${mods}</div>
     </div>`;
   }).join("");
   $("opt-results").innerHTML = `<div class="opt-meta">${r.cancelled ? `<span class="warn">cancelled — best-so-far ranking (lower precision than a full run)</span> · ` : ""}${r.candidates} candidates · ${r.jobs} jobs · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${r.headshot_pct ?? "?"}% headshots · ${r.duration ?? "?"} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
-  $("opt-results").querySelectorAll(".opt-load").forEach((el) =>
-    el.addEventListener("click", () => loadResult(JSON.parse(el.dataset.r))));
+  $("opt-results").querySelectorAll(".opt-add").forEach((el) =>
+    el.addEventListener("click", () => addResult(JSON.parse(el.dataset.r), el)));
 }
 
-// Load an optimizer result into the current build for hand-tuning.
-function loadResult(res) {
-  slots.forEach((s, i) => { s.mod = null; s.pol = innate[i]; s.rank = null; });
+// An optimizer result as a builder-builds preset STATE (snapshotState
+// shape) — built without touching the build being edited. autoForma()
+// works on the global `slots`, so swap in a scratch array for the plan.
+function resultToState(res) {
+  const live = slots;
+  slots = Array.from({ length: 9 }, (_, i) => ({ mod: null, pol: innate[i], rank: null }));
   res.mods.slice(0, 8).forEach((mid, i) => {
     if (modById(mid)) { slots[i].mod = mid; slots[i].rank = modById(mid).max_rank; }
   });
@@ -2130,21 +2141,40 @@ function loadResult(res) {
   if (res.exilus && res.exilus !== "none" && modById(res.exilus)) {
     slots[EXILUS].mod = res.exilus; slots[EXILUS].rank = modById(res.exilus).max_rank;
   }
-  // The optimizer's per-buff config rides along too — otherwise "load then
-  // Run Sim" silently reverts to the Sim panel's own defaults and the two
-  // scores stop matching (user, 2026-07-28). Ids the loaded build lacks are
-  // pruned at send time; missing ones sync to defaults.
-  sim.buffs = JSON.parse(JSON.stringify(opt.buffs));
-  arcane = res.arcane === "none" ? "none" : res.arcane;
-  arcaneRank = res.arcane === "none" ? null : (res.arcane_rank ?? null);
-  evoSel = { 1: null, 2: null, 3: null, 4: null };
+  autoForma(); // minimum-Forma polarities, same as a hand-loaded build
+  const sl = slots.map((s) => ({ mod: s.mod, pol: s.pol, rank: s.rank }));
+  slots = live;
+  const evo = { 1: null, 2: null, 3: null, 4: null };
   (res.evolutions || []).forEach((id) => {
     const t = (weaponEvos()).find((tt) => tt.options.some((o) => o.id === id));
-    if (t) evoSel[t.tier] = id;
+    if (t) evo[t.tier] = id;
   });
-  autoForma();
-  renderMods(); renderArcanes(); renderEvo(); renderSim(); renderOpt();
-  $("mod-block").scrollIntoView({ behavior: "smooth" });
+  return {
+    weapon: $("weapon").value,
+    evoSel: evo,
+    arcane: res.arcane === "none" ? "none" : res.arcane,
+    arcaneRank: res.arcane === "none" ? null : (res.arcane_rank ?? null),
+    slots: sl,
+    // The optimizer's per-buff config rides along — otherwise "add then
+    // Run Sim" silently reverts to the Sim panel's own defaults and the
+    // two scores stop matching (user, 2026-07-28).
+    sim: { ...sim, buffs: JSON.parse(JSON.stringify(opt.buffs)) },
+  };
+}
+
+// "+ add" (not load — user, 2026-07-29): the result becomes a NEW preset
+// appended after the existing builds; the build being edited is never
+// clobbered. Auto-named "opt N" (rename in the preset bar if it earns a
+// real name).
+function addResult(res, btn) {
+  const ps = loadPresetList(BUILDS);
+  let n = 1;
+  while (ps.some((p) => p.name === "opt " + n)) n++;
+  const name = "opt " + n;
+  ps.push({ name, savedAt: Date.now(), state: resultToState(res) });
+  storePresetList(BUILDS, ps);
+  renderPresetBar(); // the builder's bar shows the new chip when you switch back
+  if (btn) { btn.textContent = "✓ " + name; btn.disabled = true; }
 }
 
 init().catch((e) => { document.querySelector(".config-page").insertAdjacentHTML("afterbegin", `<div class="error">failed to load: ${e}</div>`); });

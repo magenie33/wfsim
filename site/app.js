@@ -366,9 +366,12 @@ async function init() {
 }
 
 // ---- views: '/' = the weapon list (home); '/weapons/<Wiki_Name>' = the
-// config page. URLs mirror wiki page names (display name, spaces → '_');
-// internal weapon ids never appear in URLs. The weapon <select> stays the
-// internal source of truth; the home grid and the path just drive it.
+// BUILDER (with its simulator below — the sim tests this build);
+// '/weapons/<Wiki_Name>/optimizer' = the OPTIMIZER, its own view (the
+// page's three modules — user, 2026-07-29). URLs mirror wiki page names
+// (display name, spaces → '_'); internal weapon ids never appear in URLs.
+// The weapon <select> stays the internal source of truth; the home grid
+// and the path just drive it.
 const wikiSlug = (w) => (w.name_en || w.name).split(" (")[0].replace(/ /g, "_");
 const weaponPath = (id) => {
   const w = (META.weapons || []).find((x) => x.id === id);
@@ -379,20 +382,25 @@ function nav(path) {
   route();
 }
 function route() {
-  const m = location.pathname.match(/^\/weapons\/([^/]+)\/?$/);
+  const m = location.pathname.match(/^\/weapons\/([^/]+?)(\/optimizer)?\/?$/);
   const slug = m && decodeURIComponent(m[1]).toLowerCase();
   const w = slug && (META.weapons || []).find(
     (x) => wikiSlug(x).toLowerCase() === slug || x.id === slug
   );
+  const onOpt = !!(w && m[2]);
   document.body.classList.toggle("on-home", !w);
+  document.body.classList.toggle("on-optimizer", onOpt);
   $("home-page").hidden = !!w;
   document.querySelector(".config-page").hidden = !w;
-  document.title = w ? `${w.name} — WFSim` : "WFSim — The Simulacrum. The Primed One.";
+  document.title = w ? `${w.name}${onOpt ? " · Optimizer" : ""} — WFSim` : "WFSim — The Simulacrum. The Primed One.";
   if (w) {
     if ($("weapon").value !== w.id) {
       $("weapon").value = w.id;
       applyWeapon(w.id, null);
     }
+    $("module-tabs").innerHTML =
+      `<a class="mtab ${onOpt ? "" : "sel"}" href="${weaponPath(w.id)}">${tr("Builder")}</a>` +
+      `<a class="mtab ${onOpt ? "sel" : ""}" href="${weaponPath(w.id)}/optimizer">${tr("Optimizer")}</a>`;
   } else {
     renderHome();
   }
@@ -417,16 +425,57 @@ function renderHome() {
   }).join("");
 }
 
-// ---- Presets: up to 10 saved builds (localStorage) --------------------
-// A preset captures the WHOLE configuration: weapon, mod slots (mod id +
-// polarity + rank), arcane + rank, and the per-tier evolution selection.
-const PRESET_KEY = "wfsim-presets";
-const PRESET_MAX = 10;
-const loadPresets = () => {
-  try { const p = JSON.parse(localStorage.getItem(PRESET_KEY)); return Array.isArray(p) ? p : []; }
+// ---- Presets ----------------------------------------------------------
+// The page is THREE MODULES — builder, simulator, optimizer (user,
+// 2026-07-29) — and every preset collection is owned by one of them:
+//   builder-builds        the whole build (later: builder-rivens, …)
+//   optimizer-mods / optimizer-arcanes / optimizer-evolutions
+//   (simulator-enemies, simulator-scenarios … planned)
+// A collection's DOMAIN id is "<module>-<collection>", and every durable
+// name derives from it mechanically:
+//   localStorage  wfsim-presets-<domain>        the list
+//                 wfsim-preset-active-<domain>  the active pointer
+//   DOM id        preset-bar-<domain>
+// Full words only in durable names; abbreviations stay inside function
+// locals. No count cap — presets live in the user's localStorage, not
+// with us.
+const presetListKey = (d) => "wfsim-presets-" + d;
+const presetActiveKey = (d) => "wfsim-preset-active-" + d;
+const loadPresetList = (d) => {
+  try { const p = JSON.parse(localStorage.getItem(presetListKey(d))); return Array.isArray(p) ? p : []; }
   catch (_) { return []; }
 };
-const storePresets = (ps) => localStorage.setItem(PRESET_KEY, JSON.stringify(ps));
+const storePresetList = (d, ps) => localStorage.setItem(presetListKey(d), JSON.stringify(ps));
+
+// One-time move of the pre-module storage keys (2026-07-29 rename).
+(function migratePresetKeys() {
+  try {
+    const moves = {
+      "wfsim-presets": presetListKey("builder-builds"),
+      "wfsim-active-preset": presetActiveKey("builder-builds"),
+      "wfsim-opt-mods-presets": presetListKey("optimizer-mods"),
+      "wfsim-opt-arc-presets": presetListKey("optimizer-arcanes"),
+      "wfsim-opt-evo-presets": presetListKey("optimizer-evolutions"),
+    };
+    Object.entries(moves).forEach(([from, to]) => {
+      const v = localStorage.getItem(from);
+      if (v !== null && localStorage.getItem(to) === null) localStorage.setItem(to, v);
+      localStorage.removeItem(from);
+    });
+    const oldActives = JSON.parse(localStorage.getItem("wfsim-opt-active") || "null");
+    if (oldActives) {
+      Object.entries({ mods: "optimizer-mods", arcs: "optimizer-arcanes", evos: "optimizer-evolutions" }).forEach(([k, d]) => {
+        if (oldActives[k] && localStorage.getItem(presetActiveKey(d)) === null) localStorage.setItem(presetActiveKey(d), oldActives[k]);
+      });
+      localStorage.removeItem("wfsim-opt-active");
+    }
+  } catch (_) {}
+})();
+
+// The builder module's build presets — domain "builder-builds". A build
+// preset captures the WHOLE configuration: weapon, mod slots (mod id +
+// polarity + rank), arcane + rank, and the per-tier evolution selection.
+const BUILDS = "builder-builds";
 
 function snapshotState() {
   return {
@@ -467,17 +516,16 @@ const escHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;",
 // mental model, 2026-07-28: "if no presets exist, the current state IS
 // preset 1"). Restored across reloads.
 let activePreset = null;
-const ACTIVE_PRESET_KEY = "wfsim-active-preset";
 
 function initPresets() {
-  let ps = loadPresets();
+  let ps = loadPresetList(BUILDS);
   if (!ps.length) {
     ps = [{ name: "preset 1", savedAt: Date.now(), state: snapshotState() }];
-    storePresets(ps);
+    storePresetList(BUILDS, ps);
   }
-  const last = localStorage.getItem(ACTIVE_PRESET_KEY);
+  const last = localStorage.getItem(presetActiveKey(BUILDS));
   activePreset = ps.some((p) => p.name === last) ? last : ps[0].name;
-  localStorage.setItem(ACTIVE_PRESET_KEY, activePreset);
+  localStorage.setItem(presetActiveKey(BUILDS), activePreset);
   restoreState(ps.find((p) => p.name === activePreset).state);
   renderPresetBar();
 }
@@ -490,48 +538,55 @@ function markPresetDirty() {
   presetDirtyTimer = setTimeout(() => { if (activePreset) renderPresetBar(); }, 300);
 }
 
-function renderPresetBar() {
-  const bar = $("preset-bar");
-  const ps = loadPresets();
-  const stored = ps.find((p) => p.name === activePreset);
-  // Canonicalize before comparing: buff entries still at their defaults are
-  // dropped — they fill in ASYNC after the panel fetch, and a default value
-  // is not a user change (else the dot shows on every fresh load).
-  const canon = (st) => {
-    const c = JSON.parse(JSON.stringify(st));
-    if (c.sim && c.sim.buffs) {
-      buffList.forEach((b) => {
-        const e = c.sim.buffs[b.id];
-        if (e && e.stacks === b.default_stacks && e.locked === b.default_locked) delete c.sim.buffs[b.id];
-      });
-    }
-    return JSON.stringify(c);
-  };
-  const dirty = !stored || canon(stored.state) !== canon(snapshotState());
+// ---- The ONE preset-bar component -------------------------------------
+// Every preset bar on the page (the build bar and the optimizer's three
+// scope bars) is the same template on the same document model: label +
+// count, the chips (the active one carries save / rename / delete; the
+// last remaining preset cannot be deleted — there is always one), "+ new".
+// Counts are UNLIMITED, so past PRESET_FILTER_AT chips the bar grows a
+// name filter; the active chip always shows (it is the document being
+// edited).
+const PRESET_FILTER_AT = 10;
+const presetFilters = {}; // per-bar filter text — survives re-renders, not persisted
+
+function renderPresetBarIn(bar, cfg) {
+  const ps = cfg.load();
+  const active = cfg.active();
+  const dirty = cfg.isDirty(ps.find((p) => p.name === active));
+  const ftext = presetFilters[bar.id] || "";
+  const f = ftext.trim().toLowerCase();
+  const shown = f ? ps.filter((p) => p.name === active || p.name.toLowerCase().includes(f)) : ps;
+  const hint = cfg.hint ? ` (${cfg.hint})` : "";
   const chip = (p) => {
-    const active = p.name === activePreset;
-    // The active chip carries its own save / rename / delete controls; the
-    // last remaining preset cannot be deleted (there is always one).
-    const ops = active
+    const sel = p.name === active;
+    const ops = sel
       ? `<button class="pop upd" title="save the current changes into this preset">save</button>` +
         `<button class="pop ren" title="rename">✎</button>` +
         (ps.length > 1 ? `<button class="pop del" title="delete">✕</button>` : "")
       : "";
-    const dot = active && dirty ? `<span class="dirty" title="unsaved changes">●</span>` : "";
-    return `<span class="pchip ${active ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}">${escHtml(p.name)}${dot}${ops}</span>`;
+    const dot = sel && dirty ? `<span class="dirty" title="unsaved changes">●</span>` : "";
+    return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${escHtml(p.name)}${dot}${ops}</span>`;
   };
   bar.innerHTML =
-    `<span class="plabel">Presets <b>${ps.length}/${PRESET_MAX}</b></span>` +
-    ps.map(chip).join("") +
-    (ps.length < PRESET_MAX ? `<span class="pchip add" title="new preset from the current build">+ new</span>` : "");
+    `<span class="plabel">${cfg.label} <b>${ps.length}</b></span>` +
+    (ps.length > PRESET_FILTER_AT ? `<input class="pfilter" type="text" placeholder="${escHtml(tr("filter…"))}" value="${escHtml(ftext)}">` : "") +
+    shown.map(chip).join("") +
+    `<span class="pchip add" title="new preset from the current ${cfg.what}${escHtml(hint)}">+ new</span>`;
 
+  // Typing re-renders the bar (chips re-filter), so hand focus back.
+  const filt = bar.querySelector(".pfilter");
+  if (filt) filt.addEventListener("input", () => {
+    presetFilters[bar.id] = filt.value;
+    cfg.rerender();
+    const nf = bar.querySelector(".pfilter");
+    if (nf) { nf.focus(); nf.setSelectionRange(nf.value.length, nf.value.length); }
+  });
   bar.querySelectorAll(".pchip:not(.add)").forEach((c) => c.addEventListener("click", () => {
-    const p = loadPresets().find((x) => x.name === c.dataset.name);
-    if (p && p.name !== activePreset) {
-      activePreset = p.name;
-      localStorage.setItem(ACTIVE_PRESET_KEY, activePreset);
-      restoreState(p.state);
-      renderPresetBar();
+    const p = cfg.load().find((x) => x.name === c.dataset.name);
+    if (p && p.name !== cfg.active()) {
+      cfg.setActive(p.name);
+      cfg.apply(p.state);
+      cfg.rerender();
     }
   }));
   // No prompt()/alert()/confirm() anywhere — the browser can block those
@@ -550,61 +605,87 @@ function renderPresetBar() {
     };
     inp.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") commit();
-      if (ev.key === "Escape") { done = true; renderPresetBar(); }
+      if (ev.key === "Escape") { done = true; cfg.rerender(); }
     });
     inp.addEventListener("blur", commit);
   };
   const addBtn = bar.querySelector(".pchip.add");
-  if (addBtn) addBtn.addEventListener("click", (e) => {
+  addBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     nameInput(addBtn, "", (name) => {
-      if (!name) { renderPresetBar(); return; }
-      const ps2 = loadPresets();
-      const entry = { name, savedAt: Date.now(), state: snapshotState() };
+      if (!name) { cfg.rerender(); return; }
+      const ps2 = cfg.load();
+      const entry = { name, savedAt: Date.now(), state: cfg.snapshot() };
       const at = ps2.findIndex((p) => p.name === name);
       if (at >= 0) ps2[at] = entry; else ps2.push(entry); // same name overwrites
-      storePresets(ps2);
-      activePreset = name;
-      localStorage.setItem(ACTIVE_PRESET_KEY, activePreset);
-      renderPresetBar();
+      cfg.store(ps2);
+      cfg.setActive(name);
+      cfg.rerender();
     });
   });
   const on = (sel, fn) => { const b = bar.querySelector(sel); if (b) b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); };
   on(".pop.upd", () => {
-    const ps2 = loadPresets();
-    const at = ps2.findIndex((p) => p.name === activePreset);
+    const ps2 = cfg.load();
+    const at = ps2.findIndex((p) => p.name === cfg.active());
     if (at < 0) return;
-    ps2[at] = { name: activePreset, savedAt: Date.now(), state: snapshotState() };
-    storePresets(ps2);
-    renderPresetBar(); // the dirty dot clears
+    ps2[at] = { name: cfg.active(), savedAt: Date.now(), state: cfg.snapshot() };
+    cfg.store(ps2);
+    cfg.rerender(); // the dirty dot clears
   });
   on(".pop.ren", () => {
-    const chip = bar.querySelector(".pchip.sel");
-    if (!chip) return;
-    nameInput(chip, activePreset, (name) => {
-      const ps2 = loadPresets();
+    const chipEl = bar.querySelector(".pchip.sel");
+    if (!chipEl) return;
+    nameInput(chipEl, cfg.active(), (name) => {
+      const ps2 = cfg.load();
       // Empty, unchanged, or colliding names just cancel the rename.
-      if (name && name !== activePreset && !ps2.some((p) => p.name === name)) {
-        const at = ps2.findIndex((p) => p.name === activePreset);
+      if (name && name !== cfg.active() && !ps2.some((p) => p.name === name)) {
+        const at = ps2.findIndex((p) => p.name === cfg.active());
         if (at >= 0) {
           ps2[at].name = name;
-          storePresets(ps2);
-          activePreset = name;
-          localStorage.setItem(ACTIVE_PRESET_KEY, activePreset);
+          cfg.store(ps2);
+          cfg.setActive(name);
         }
       }
-      renderPresetBar();
+      cfg.rerender();
     });
   });
   on(".pop.del", () => {
     // Only offered while >1 preset exists — there is always at least one.
-    const ps2 = loadPresets().filter((p) => p.name !== activePreset);
+    const ps2 = cfg.load().filter((p) => p.name !== cfg.active());
     if (!ps2.length) return;
-    storePresets(ps2);
-    activePreset = ps2[0].name;
-    localStorage.setItem(ACTIVE_PRESET_KEY, activePreset);
-    restoreState(ps2[0].state);
-    renderPresetBar();
+    cfg.store(ps2);
+    cfg.setActive(ps2[0].name);
+    cfg.apply(ps2[0].state);
+    cfg.rerender();
+  });
+}
+
+// Canonicalize before comparing: buff entries still at their defaults are
+// dropped — they fill in ASYNC after the panel fetch, and a default value
+// is not a user change (else the dot shows on every fresh load).
+const canonBuildState = (st) => {
+  const c = JSON.parse(JSON.stringify(st));
+  if (c.sim && c.sim.buffs) {
+    buffList.forEach((b) => {
+      const e = c.sim.buffs[b.id];
+      if (e && e.stacks === b.default_stacks && e.locked === b.default_locked) delete c.sim.buffs[b.id];
+    });
+  }
+  return JSON.stringify(c);
+};
+
+function renderPresetBar() {
+  renderPresetBarIn($("preset-bar-" + BUILDS), {
+    label: tr("Presets"),
+    what: "build",
+    load: () => loadPresetList(BUILDS),
+    store: (ps) => storePresetList(BUILDS, ps),
+    active: () => activePreset,
+    setActive: (n) => { activePreset = n; localStorage.setItem(presetActiveKey(BUILDS), n); },
+    snapshot: snapshotState,
+    apply: restoreState,
+    isDirty: (stored) => !stored || canonBuildState(stored.state) !== canonBuildState(snapshotState()),
+    rerender: renderPresetBar,
   });
 }
 
@@ -1602,40 +1683,38 @@ function renderOptEvos() {
 //     out harmlessly (ids are globally unique).
 // Saving uses an INLINE name input — the native prompt() dialog can be
 // blocked by the browser, which made saving silently fail.
-const OPT_PRESET_MAX = 10;
+// Group ids are the optimizer module's collection names; the storage /
+// DOM names derive from the domain "optimizer-<group>".
 const OPT_PRESET_GROUPS = {
-  mods: { key: "wfsim-opt-mods-presets", label: "Mod-scope presets", hint: "cross-weapon; unknown ids drop" },
-  arcs: { key: "wfsim-opt-arc-presets", label: "Arcane presets", hint: "cross-weapon; unknown ids drop" },
-  evos: { key: "wfsim-opt-evo-presets", label: "Evolution presets", hint: "cross-weapon; unknown ids drop" },
+  mods: { label: "Mod presets", hint: "cross-weapon; unknown ids drop" },
+  arcanes: { label: "Arcane presets", hint: "cross-weapon; unknown ids drop" },
+  evolutions: { label: "Evolution presets", hint: "cross-weapon; unknown ids drop" },
 };
+const optDomain = (g) => "optimizer-" + g;
 // Same DOCUMENT MODEL as the build presets (user, 2026-07-28: "all presets
 // use this model"): each group always has ≥1 preset, is always editing one
 // (the active), saves in place, and restores the active across reloads.
-let activeOptPreset = { mods: null, arcs: null, evos: null };
-const OPT_ACTIVE_KEY = "wfsim-opt-active";
-const saveOptActives = () => localStorage.setItem(OPT_ACTIVE_KEY, JSON.stringify(activeOptPreset));
+let activeOptPreset = { mods: null, arcanes: null, evolutions: null };
 
-const loadOptGroup = (g) => { try { const p = JSON.parse(localStorage.getItem(OPT_PRESET_GROUPS[g].key)); return Array.isArray(p) ? p : []; } catch (_) { return []; } };
-const storeOptGroup = (g, ps) => localStorage.setItem(OPT_PRESET_GROUPS[g].key, JSON.stringify(ps));
+const loadOptGroup = (g) => loadPresetList(optDomain(g));
+const storeOptGroup = (g, ps) => storePresetList(optDomain(g), ps);
 
 // Ensure every group has ≥1 preset and the actives are applied — called
 // from renderOpt's seed block (page load AND weapon switch). First-ever run
 // creates "preset 1" from the build-seeded scope; afterwards the active
 // preset IS the scope (cross-weapon: unknown ids drop on apply).
 function bootstrapOptPresets() {
-  let stored = {};
-  try { stored = JSON.parse(localStorage.getItem(OPT_ACTIVE_KEY)) || {}; } catch (_) {}
   Object.keys(OPT_PRESET_GROUPS).forEach((g) => {
     let ps = loadOptGroup(g);
     if (!ps.length) {
       ps = [{ name: "preset 1", savedAt: Date.now(), state: snapshotOptGroup(g) }];
       storeOptGroup(g, ps);
     }
-    const want = activeOptPreset[g] || stored[g];
+    const want = activeOptPreset[g] || localStorage.getItem(presetActiveKey(optDomain(g)));
     activeOptPreset[g] = ps.some((p) => p.name === want) ? want : ps[0].name;
+    localStorage.setItem(presetActiveKey(optDomain(g)), activeOptPreset[g]);
     applyOptGroupState(g, ps.find((p) => p.name === activeOptPreset[g]).state);
   });
-  saveOptActives();
 }
 
 // One-time split of the legacy single-bar presets into the three groups.
@@ -1647,14 +1726,14 @@ function bootstrapOptPresets() {
         const st = p.state || {};
         const add = (g, state) => {
           const ps = loadOptGroup(g);
-          if (!ps.some((x) => x.name === p.name) && ps.length < OPT_PRESET_MAX) {
+          if (!ps.some((x) => x.name === p.name)) {
             ps.push({ name: p.name, savedAt: p.savedAt || Date.now(), state });
             storeOptGroup(g, ps);
           }
         };
         add("mods", { mods: st.mods || {}, exilus: typeof st.exilus === "object" && st.exilus ? st.exilus : {}, size: st.size || 8 });
-        add("arcs", { arcanes: st.arcanes || {} });
-        add("evos", { evos: st.evos || {} });
+        add("arcanes", { arcanes: st.arcanes || {} });
+        add("evolutions", { evos: st.evos || {} });
       });
     }
     localStorage.removeItem("wfsim-opt-presets");
@@ -1663,7 +1742,7 @@ function bootstrapOptPresets() {
 
 function snapshotOptGroup(g) {
   if (g === "mods") return { mods: { ...opt.mods }, exilus: { ...opt.exilus }, size: opt.size };
-  if (g === "arcs") return { arcanes: { ...opt.arcanes } };
+  if (g === "arcanes") return { arcanes: { ...opt.arcanes } };
   return { evos: JSON.parse(JSON.stringify(opt.evos)) };
 }
 
@@ -1677,7 +1756,7 @@ function applyOptGroupState(g, st) {
     Object.entries(st.exilus || {}).forEach(([id, s]) => { const m = modById(id); if (m && m.exilus) opt.exilus[id] = norm(s); });
     delete opt.exilus["none"]; // brief None-row era
     if (st.size) opt.size = st.size;
-  } else if (g === "arcs") {
+  } else if (g === "arcanes") {
     opt.arcanes = {};
     Object.entries(st.arcanes || {}).forEach(([id, s]) => { if (id === "none" || arcaneById(id)) opt.arcanes[id] = norm(s); });
   } else {
@@ -1707,101 +1786,21 @@ function applyOptGroup(g, st) {
 function renderOptPresetBars() { Object.keys(OPT_PRESET_GROUPS).forEach(renderOptPresetBar); }
 
 function renderOptPresetBar(g) {
-  const bar = $("opt-preset-" + g);
+  const bar = $("preset-bar-" + optDomain(g));
   if (!bar) return;
   const meta = OPT_PRESET_GROUPS[g];
-  const ps = loadOptGroup(g);
-  const active = activeOptPreset[g];
-  const storedP = ps.find((p) => p.name === active);
-  const dirty = !storedP || JSON.stringify(storedP.state) !== JSON.stringify(snapshotOptGroup(g));
-  const chip = (p) => {
-    const sel = p.name === active;
-    const ops = sel
-      ? `<button class="pop upd" title="save the current selection into this preset">save</button>` +
-        `<button class="pop ren" title="rename">✎</button>` +
-        (ps.length > 1 ? `<button class="pop del" title="delete">✕</button>` : "")
-      : "";
-    const dot = sel && dirty ? `<span class="dirty" title="unsaved changes">●</span>` : "";
-    return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)} (${meta.hint})">${escHtml(p.name)}${dot}${ops}</span>`;
-  };
-  bar.innerHTML =
-    `<span class="plabel">${meta.label} <b>${ps.length}/${OPT_PRESET_MAX}</b></span>` +
-    ps.map(chip).join("") +
-    (ps.length < OPT_PRESET_MAX ? `<span class="pchip add" title="new preset from the current selection (${meta.hint})">+ new</span>` : "");
-  const nameInput = (placeholderEl, initial, onCommit) => {
-    placeholderEl.outerHTML = `<input class="pname" type="text" value="${escHtml(initial)}" placeholder="name, then Enter…" maxlength="24">`;
-    const inp = bar.querySelector(".pname");
-    inp.focus();
-    if (initial) inp.select();
-    let done = false;
-    const commit = () => {
-      if (done) return;
-      done = true;
-      onCommit((inp.value || "").trim());
-    };
-    inp.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") commit();
-      if (ev.key === "Escape") { done = true; renderOptPresetBar(g); }
-    });
-    inp.addEventListener("blur", commit);
-  };
-  bar.querySelectorAll(".pchip:not(.add)").forEach((c) => c.addEventListener("click", () => {
-    const p = loadOptGroup(g).find((x) => x.name === c.dataset.name);
-    if (p && p.name !== activeOptPreset[g]) {
-      activeOptPreset[g] = p.name;
-      saveOptActives();
-      applyOptGroup(g, p.state || {});
-    }
-  }));
-  const addBtn = bar.querySelector(".pchip.add");
-  if (addBtn) addBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    nameInput(addBtn, "", (name) => {
-      if (!name) { renderOptPresetBar(g); return; }
-      const ps2 = loadOptGroup(g);
-      const entry = { name, savedAt: Date.now(), state: snapshotOptGroup(g) };
-      const at = ps2.findIndex((p) => p.name === name);
-      if (at >= 0) ps2[at] = entry; else ps2.push(entry);
-      storeOptGroup(g, ps2);
-      activeOptPreset[g] = name;
-      saveOptActives();
-      renderOptPresetBar(g);
-    });
-  });
-  const on = (sel, fn) => { const b = bar.querySelector(sel); if (b) b.addEventListener("click", (ev) => { ev.stopPropagation(); fn(); }); };
-  on(".pop.upd", () => {
-    const ps2 = loadOptGroup(g);
-    const at = ps2.findIndex((p) => p.name === activeOptPreset[g]);
-    if (at < 0) return;
-    ps2[at] = { name: activeOptPreset[g], savedAt: Date.now(), state: snapshotOptGroup(g) };
-    storeOptGroup(g, ps2);
-    renderOptPresetBar(g); // the dirty dot clears
-  });
-  on(".pop.ren", () => {
-    const chipEl = bar.querySelector(".pchip.sel");
-    if (!chipEl) return;
-    nameInput(chipEl, activeOptPreset[g], (name) => {
-      const ps2 = loadOptGroup(g);
-      if (name && name !== activeOptPreset[g] && !ps2.some((p) => p.name === name)) {
-        const at = ps2.findIndex((p) => p.name === activeOptPreset[g]);
-        if (at >= 0) {
-          ps2[at].name = name;
-          storeOptGroup(g, ps2);
-          activeOptPreset[g] = name;
-          saveOptActives();
-        }
-      }
-      renderOptPresetBar(g);
-    });
-  });
-  on(".pop.del", () => {
-    // Only offered while >1 preset exists — there is always at least one.
-    const ps2 = loadOptGroup(g).filter((p) => p.name !== activeOptPreset[g]);
-    if (!ps2.length) return;
-    storeOptGroup(g, ps2);
-    activeOptPreset[g] = ps2[0].name;
-    saveOptActives();
-    applyOptGroup(g, ps2[0].state || {});
+  renderPresetBarIn(bar, {
+    label: tr(meta.label),
+    hint: meta.hint,
+    what: "selection",
+    load: () => loadOptGroup(g),
+    store: (ps) => storeOptGroup(g, ps),
+    active: () => activeOptPreset[g],
+    setActive: (n) => { activeOptPreset[g] = n; localStorage.setItem(presetActiveKey(optDomain(g)), n); },
+    snapshot: () => snapshotOptGroup(g),
+    apply: (st) => applyOptGroup(g, st || {}),
+    isDirty: (stored) => !stored || JSON.stringify(stored.state) !== JSON.stringify(snapshotOptGroup(g)),
+    rerender: () => renderOptPresetBar(g),
   });
 }
 
@@ -2118,20 +2117,23 @@ function renderOptResults(r) {
         <span class="opt-kills">${res.kills.toFixed(2)}<small> kills</small></span>
         <span class="opt-dps">${(res.effective_dps || 0).toExponential(2)} eff DPS</span>
         <span class="forma-badge legal">${res.forma.used} Forma</span>
-        <button class="ghost-btn small opt-load" data-r='${JSON.stringify(res).replace(/'/g, "&#39;")}'>load</button>
+        <button class="ghost-btn small opt-add" title="add as a new build preset" data-r='${JSON.stringify(res).replace(/'/g, "&#39;")}'>+ add</button>
       </div>
       <div class="opt-detail"><b>${arc}</b> · ${evos}</div>
       <div class="opt-mods">${mods}</div>
     </div>`;
   }).join("");
   $("opt-results").innerHTML = `<div class="opt-meta">${r.cancelled ? `<span class="warn">cancelled — best-so-far ranking (lower precision than a full run)</span> · ` : ""}${r.candidates} candidates · ${r.jobs} jobs · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${r.headshot_pct ?? "?"}% headshots · ${r.duration ?? "?"} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
-  $("opt-results").querySelectorAll(".opt-load").forEach((el) =>
-    el.addEventListener("click", () => loadResult(JSON.parse(el.dataset.r))));
+  $("opt-results").querySelectorAll(".opt-add").forEach((el) =>
+    el.addEventListener("click", () => addResult(JSON.parse(el.dataset.r), el)));
 }
 
-// Load an optimizer result into the current build for hand-tuning.
-function loadResult(res) {
-  slots.forEach((s, i) => { s.mod = null; s.pol = innate[i]; s.rank = null; });
+// An optimizer result as a builder-builds preset STATE (snapshotState
+// shape) — built without touching the build being edited. autoForma()
+// works on the global `slots`, so swap in a scratch array for the plan.
+function resultToState(res) {
+  const live = slots;
+  slots = Array.from({ length: 9 }, (_, i) => ({ mod: null, pol: innate[i], rank: null }));
   res.mods.slice(0, 8).forEach((mid, i) => {
     if (modById(mid)) { slots[i].mod = mid; slots[i].rank = modById(mid).max_rank; }
   });
@@ -2139,21 +2141,40 @@ function loadResult(res) {
   if (res.exilus && res.exilus !== "none" && modById(res.exilus)) {
     slots[EXILUS].mod = res.exilus; slots[EXILUS].rank = modById(res.exilus).max_rank;
   }
-  // The optimizer's per-buff config rides along too — otherwise "load then
-  // Run Sim" silently reverts to the Sim panel's own defaults and the two
-  // scores stop matching (user, 2026-07-28). Ids the loaded build lacks are
-  // pruned at send time; missing ones sync to defaults.
-  sim.buffs = JSON.parse(JSON.stringify(opt.buffs));
-  arcane = res.arcane === "none" ? "none" : res.arcane;
-  arcaneRank = res.arcane === "none" ? null : (res.arcane_rank ?? null);
-  evoSel = { 1: null, 2: null, 3: null, 4: null };
+  autoForma(); // minimum-Forma polarities, same as a hand-loaded build
+  const sl = slots.map((s) => ({ mod: s.mod, pol: s.pol, rank: s.rank }));
+  slots = live;
+  const evo = { 1: null, 2: null, 3: null, 4: null };
   (res.evolutions || []).forEach((id) => {
     const t = (weaponEvos()).find((tt) => tt.options.some((o) => o.id === id));
-    if (t) evoSel[t.tier] = id;
+    if (t) evo[t.tier] = id;
   });
-  autoForma();
-  renderMods(); renderArcanes(); renderEvo(); renderSim(); renderOpt();
-  $("mod-block").scrollIntoView({ behavior: "smooth" });
+  return {
+    weapon: $("weapon").value,
+    evoSel: evo,
+    arcane: res.arcane === "none" ? "none" : res.arcane,
+    arcaneRank: res.arcane === "none" ? null : (res.arcane_rank ?? null),
+    slots: sl,
+    // The optimizer's per-buff config rides along — otherwise "add then
+    // Run Sim" silently reverts to the Sim panel's own defaults and the
+    // two scores stop matching (user, 2026-07-28).
+    sim: { ...sim, buffs: JSON.parse(JSON.stringify(opt.buffs)) },
+  };
+}
+
+// "+ add" (not load — user, 2026-07-29): the result becomes a NEW preset
+// appended after the existing builds; the build being edited is never
+// clobbered. Auto-named "opt N" (rename in the preset bar if it earns a
+// real name).
+function addResult(res, btn) {
+  const ps = loadPresetList(BUILDS);
+  let n = 1;
+  while (ps.some((p) => p.name === "opt " + n)) n++;
+  const name = "opt " + n;
+  ps.push({ name, savedAt: Date.now(), state: resultToState(res) });
+  storePresetList(BUILDS, ps);
+  renderPresetBar(); // the builder's bar shows the new chip when you switch back
+  if (btn) { btn.textContent = "✓ " + name; btn.disabled = true; }
 }
 
 init().catch((e) => { document.querySelector(".config-page").insertAdjacentHTML("afterbegin", `<div class="error">failed to load: ${e}</div>`); });
