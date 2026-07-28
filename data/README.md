@@ -9,21 +9,23 @@ from the wiki's structured modules is in
 ## Reference graph
 
 ```
-item  ──references──▶  perk  ──grants_buff──▶  buff
-(weapon / arcane / mod)   (trigger + rank scaling)   (the granted effect)
+item  ──references──▶  perk (trigger + grants)
+(weapon / arcane / mod)   (data/perks/, carries its granted effects inline)
 ```
 
-- An **item** never inlines a perk or buff — it lists perk `id`s.
-- A **perk** never inlines a buff — it names the buff via `grants_buff`.
-- Because references are by `id`, a buff can be granted by many perks, and a perk
-  can be carried by many items, with a single source of truth for each.
+- An **item** never inlines a shared perk — it lists perk `id`s (both Dual
+  Toxocyst forms reference `frenzy`; the definition lives once in
+  `perks/frenzy.yaml`).
+- A perk carries its `grants` block inline; a separate buff table returns
+  only if two perks ever grant the same effect.
+- Because references are by `id`, a perk can be carried by many items with a
+  single source of truth.
 
 ## Directories
 
 | dir | holds | key fields |
 |---|---|---|
-| `buffs/` | granted-effect definitions | `default_scope`, `duration_seconds` (null = untimed), `stacking`, `per_stack_modifiers` / `modifiers`, `rate_limit_hz`, `reset` |
-| `perks/` | grantors (arcane / weapon or Warframe passive / Incarnon evolution) | `trigger`, `grants_buff`, `buff_scope`, optional `ranks` (rank-scaled params) |
+| `perks/` | grantors (weapon passives; loaded by `engine::weapons_data::perks`) | `trigger`, `scope`, `duration_seconds`, `max_stacks`, `grants` (inline effect block) |
 | `arcanes/` | arcane **items** | `rarity`, `max_rank`, `arcanes_to_max`, `drop_chance`, `perk` |
 | `weapons/` | weapons | `forms` (multi-form), `perks` (perk id list), `incarnon_evolutions` |
 | `mods/` | mods | `polarity`, `base_drain`/`max_rank` (drain = base+rank), bucketed `effects` with `per_rank`, **`family` + `incompatible_with`** (variants of one mod are mutually exclusive - the wiki module's `Incompatible` field, machine-readable) |

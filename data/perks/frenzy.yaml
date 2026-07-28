@@ -1,0 +1,38 @@
+id: frenzy
+name: Frenzy
+
+# Dual Toxocyst's weapon passive, shared by BOTH entries of the transform
+# group (the buff persists across transforms and headshots keep triggering
+# it while transformed — user-confirmed 2026-07-24). The stateful
+# implementation is engine::perks::frenzy, looked up by this id.
+trigger: on_headshot
+scope: weapon
+duration_seconds: 3
+refreshable: true
+max_stacks: 1
+# Trigger fires ONLY on true headshots (wiki): not other weakspots (MOA
+# backpacks; Sonar / Detect Vulnerability spots outside the head), and
+# headshots on corpses do NOT grant the buff.
+grants:
+  # x2.5 is an INDEPENDENT multiplier (wiki "+150%") applied AFTER any
+  # equipped fire-rate mods/bonuses - its own multiplicative bucket, not
+  # the additive fire-rate-mod bucket. VERBATIM (wiki, re-checked
+  # 2026-07-25): "stacks multiplicatively after any equipped fire rate
+  # mods or fire rate bonuses".
+  fire_rate_multiplier: 2.5
+  # +100% ammo efficiency => infinite ammo: shots_per_ammo = 1/(1-e).
+  ammo_efficiency: 1.0
+  recoil: -0.75
+  # +100% Toxin behaves like a Toxin mod, ADDITIVE with elemental mods
+  # and appended at the END of the mod order, so it participates in
+  # elemental combination as the last mod (a Heat mod makes it Gas; an
+  # existing combined element like Corrosive absorbs it).
+  injected_element: { type: toxin, amount: 1.0, position: end_of_mod_order }
+# Behavior (wiki): triggering or expiring makes a noise that Suppress /
+# Hushed Invisibility cannot reduce; triggering with the last magazine
+# round does not force a reload - ammo stops being consumed (Synth Charge
+# synergy). Exact numbers still to be reproduced in the Simulacrum for the
+# golden test.
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Toxocyst

@@ -173,11 +173,9 @@ fn form_unlock_evo(info: &WeaponInfo) -> Option<&'static str> {
         .map(|e| e.id.as_str())
 }
 
-/// Whether the weapon's data declares the Frenzy passive (perk-driven).
+/// Whether the weapon's data declares the Frenzy perk (data/perks/).
 fn has_frenzy(info: &WeaponInfo) -> bool {
-    let s = wspec(&info.id);
-    let base = s.transforms_from.as_deref().map(wspec).unwrap_or(s);
-    base.passives.iter().any(|p| p.id == "frenzy")
+    wspec(&info.id).perks.iter().any(|p| p == "frenzy")
 }
 
 fn default_weapon_id() -> &'static str {

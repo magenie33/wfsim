@@ -55,8 +55,10 @@ pub struct PseudoReloadSpec {
     pub reload_seconds: f64,
 }
 
+/// A perk entry from `data/perks/*.yaml` — the grantor a weapon's `perks:`
+/// list references by id (data/README.md reference graph).
 #[derive(Debug, Clone, Deserialize)]
-pub struct PassiveSpec {
+pub struct PerkSpec {
     pub id: String,
     #[serde(default)]
     pub grants: Option<GrantsSpec>,
@@ -104,8 +106,10 @@ pub struct WeaponSpec {
     pub incarnon: Option<IncarnonSpec>,
     #[serde(default)]
     pub pseudo_reload: Option<PseudoReloadSpec>,
+    /// Perk ids from `data/perks/` (each entry of a transform group lists
+    /// its own — Frenzy is active in both Dual Toxocyst forms).
     #[serde(default)]
-    pub passives: Vec<PassiveSpec>,
+    pub perks: Vec<String>,
 }
 
 fn one() -> f64 {
@@ -128,6 +132,24 @@ pub fn all() -> &'static [WeaponSpec] {
 
 pub fn spec(id: &str) -> Option<&'static WeaponSpec> {
     all().iter().find(|s| s.id == id)
+}
+
+/// Every perk entry in `data/perks/` (embedded), parsed once.
+pub fn perks() -> &'static [PerkSpec] {
+    static PERKS: OnceLock<Vec<PerkSpec>> = OnceLock::new();
+    PERKS.get_or_init(|| {
+        crate::data::files_under("perks/")
+            .filter(|(p, _)| p.ends_with(".yaml"))
+            .map(|(p, text)| {
+                serde_norway::from_str::<PerkSpec>(text)
+                    .unwrap_or_else(|e| panic!("parse {p}: {e}"))
+            })
+            .collect()
+    })
+}
+
+pub fn perk(id: &str) -> Option<&'static PerkSpec> {
+    perks().iter().find(|p| p.id == id)
 }
 
 /// Registry view: the SELECTABLE weapons (transform-group base entries; an
@@ -198,7 +220,6 @@ fn traits_for(s: &WeaponSpec) -> &'static [&'static str] {
 /// (resolved from the transform group's base entry, where passives live).
 pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
     let s = spec(id).unwrap_or_else(|| panic!("unknown weapon id: {id}"));
-    let group_base = s.transforms_from.as_deref().and_then(spec).unwrap_or(s);
 
     let mut vector = DamageVector::new();
     for (name, amount) in &s.attack.damage {
@@ -206,10 +227,10 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
     }
 
     let injected_elements = if frenzy_active {
-        group_base
-            .passives
+        s.perks
             .iter()
-            .filter_map(|p| p.grants.as_ref()?.injected_element.as_ref())
+            .filter_map(|id| perk(id).unwrap_or_else(|| panic!("missing perk yaml: {id}")).grants.as_ref())
+            .filter_map(|g| g.injected_element.as_ref())
             .map(|inj| (damage_type(&inj.element), inj.amount))
             .collect()
     } else {
