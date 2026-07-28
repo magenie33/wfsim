@@ -2,6 +2,7 @@
    =====================================================================
    COMPONENT CONTRACT — build UI out of these; don't invent one-offs:
      .topbar + .brand      sticky header, WF<span>Sim</span> wordmark (gold Sim)
+     .footer               shell bottom bar, same content width as .topbar
      .block  > .bh > .bb   section box: header (uppercase h2, .n number) + body
      .wcard                weapon card (image + name), home grid
      .slot                 mod/arcane slot card (rarity via --rar)
@@ -390,6 +391,7 @@ label.check input{width:auto}
 .opt-detail{font-size:12px;color:var(--text-2);margin-top:5px}
 .opt-mods{font-size:12px;color:var(--muted);margin-top:3px}
 
-/* ---- site-wide legal footer ---- */
-.legal-footer{max-width:760px;margin:0 auto;padding:26px 18px 34px;color:var(--muted);font-size:11px;line-height:1.5;text-align:center}
-.legal-footer a{color:var(--muted)}
+/* ---- footer: the shell's bottom bar — same content width as .topbar ---- */
+.footer{border-top:1px solid var(--line);margin-top:26px}
+.footer-inner{max-width:1060px;margin:0 auto;padding:18px 18px 30px;color:var(--muted);font-size:11px;line-height:1.6}
+.footer a{color:var(--muted)}
