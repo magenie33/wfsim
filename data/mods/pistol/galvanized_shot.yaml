@@ -1,7 +1,5 @@
 id: galvanized_shot
-kind: mod
 name: Galvanized Shot
-mod_type: pistol
 rarity: rare
 polarity: vazarin
 base_drain: 2                 # max drain 12 at rank 10

@@ -1,7 +1,5 @@
 id: quickdraw
-kind: mod
 name: Quickdraw
-mod_type: pistol
 rarity: common
 polarity: naramon
 base_drain: 2                 # max drain 7 at rank 5

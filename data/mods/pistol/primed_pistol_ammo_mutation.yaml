@@ -1,7 +1,5 @@
 id: primed_pistol_ammo_mutation
-kind: mod
 name: Primed Pistol Ammo Mutation
-mod_type: pistol
 rarity: legendary
 polarity: naramon
 base_drain: 0                 # max drain 10 at rank 10

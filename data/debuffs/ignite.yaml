@@ -1,6 +1,5 @@
 id: ignite
 name: Ignite
-kind: debuff
 default_scope: enemy
 
 aliases: []
@@ -86,28 +85,28 @@ armor_strip:
 
 cc_effects:
   - kind: panic
-    note: >-
-      Ignited enemies panic and flail, unable to act: ~4 s humanoids,
-      ~3 s most Infested, ~2 s MOAs and Chargers. Immune: Ospreys, Bosses,
-      Tenno, and Overguard holders. Re-procs re-trigger the panic; panic
-      also fires the moment Overguard breaks even without a fresh proc.
+    # note: >-
+    # Ignited enemies panic and flail, unable to act: ~4 s humanoids,
+    # ~3 s most Infested, ~2 s MOAs and Chargers. Immune: Ospreys, Bosses,
+    # Tenno, and Overguard holders. Re-procs re-trigger the panic; panic
+    # also fires the moment Overguard breaks even without a fresh proc.
 
-on_kill_cosmetic: >-
-  Corpse immolates and vanishes in seconds (notably stops Magnetize from
-  pulling it).
+# on_kill_cosmetic: >-
+# Corpse immolates and vanishes in seconds (notably stops Magnetize from
+# pulling it).
 
-railjack_variant: >-
-  Sear: 6 ticks over 5 s (0..5 s), 100% x Modded Damage x (1 + Heat
-  bonuses); each proc has an INDEPENDENT duration (no inherit/refresh).
-  On the player Railjack: Fire Hazard (armaments overheat faster).
+# railjack_variant: >-
+# Sear: 6 ticks over 5 s (0..5 s), 100% x Modded Damage x (1 + Heat
+# bonuses); each proc has an INDEPENDENT duration (no inherit/refresh).
+# On the player Railjack: Fire Hazard (armaments overheat faster).
 
-notes: >-
-  Magus Accelerant is a rare resistance-reduction that multiplies Heat
-  damage. Heat's 50% strip makes it a partial Corrosive substitute. The
-  corrosive strip decomposition used in the armor formula (20% innate +
-  6%/stack) matches the Corrosive page's 26%-at-1-stack / 80%-at-10.
+# notes: >-
+# Magus Accelerant is a rare resistance-reduction that multiplies Heat
+# damage. Heat's 50% strip makes it a partial Corrosive substitute. The
+# corrosive strip decomposition used in the armor formula (20% innate +
+# 6%/stack) matches the Corrosive page's 26%-at-1-stack / 80%-at-10.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Heat_Damage
-  note: Dedicated damage-type page; DoT rules cross-checked with
-    Damage_over_Time (Ignite is the only refreshable status DoT).
+  # note: Dedicated damage-type page; DoT rules cross-checked with
+  # Damage_over_Time (Ignite is the only refreshable status DoT).

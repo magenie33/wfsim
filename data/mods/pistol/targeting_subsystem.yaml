@@ -1,7 +1,5 @@
 id: targeting_subsystem
-kind: mod
 name: Targeting Subsystem
-mod_type: pistol
 rarity: uncommon
 polarity: madurai
 base_drain: 2                 # max drain 7 at rank 5

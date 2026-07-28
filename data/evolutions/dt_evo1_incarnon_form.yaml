@@ -1,6 +1,6 @@
 id: dt_evo1_incarnon_form
 name: Incarnon Form
-kind: incarnon_evolution        # evolutions ARE perks (decision 2026-07-24)
+# Evolutions ARE perks (decision 2026-07-24).
 weapon: dual_toxocyst
 tier: 1
 icon: IncarnonFormRicochetOnHittingEnemies(xWhite).png   # wiki File: name (Dual_Toxocyst_Incarnon_Genesis)

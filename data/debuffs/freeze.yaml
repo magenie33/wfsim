@@ -1,6 +1,5 @@
 id: freeze
 name: Freeze
-kind: debuff
 default_scope: enemy
 
 aliases: []
@@ -54,29 +53,29 @@ on_player:
 
 cc_effects:
   - kind: slow
-    note: See action_speed_reduction table; Frozen at 10 stacks.
+    # note: See action_speed_reduction table; Frozen at 10 stacks.
 
-railjack_variant: >-
-  Immobilize: disables the target ship's weapons and slows it to a stop
-  for 6 s, refreshed by further procs. On the player Railjack: Ice Hazard
-  (disables interactive elements - pilot seat, turrets, slingshot, doors,
-  forge).
+# railjack_variant: >-
+# Immobilize: disables the target ship's weapons and slows it to a stop
+# for 6 s, refreshed by further procs. On the player Railjack: Ice Hazard
+# (disables interactive elements - pilot seat, turrets, slingshot, doors,
+# forge).
 
-notes: >-
-  The wiki's worked examples pin the insertion point: cd_total =
-  base_cd x (1 + cd_mods) + cold_bonus, i.e. Cold is a receiver-side
-  ABSOLUTE crit-damage increase entering before the tier formula
-  (Paris Prime: 1 + k x (2 + 0.5 - 1)). Consequently the crit-headshot
-  fold-in (2 x Total CD - 1) doubles a cd_total that INCLUDES the Cold
-  bonus - model per formula consistency; in-game spot check optional
-  (headshot increment vs unchilled should be 3 x panel x 1.0, not x 0.5).
-  DoT tick snapshots carry the Cold-inclusive tier multiplier (settled
-  by model, 2026-07-24: a tick is the hit's deferred damage - the
-  snapshot stores the realized multiplier). By the same principle Cold
-  applied AFTER the proc does not alter existing ticks (Cold feeds the
-  hit's formula, not the tick-time mitigation pipeline).
+# notes: >-
+# The wiki's worked examples pin the insertion point: cd_total =
+# base_cd x (1 + cd_mods) + cold_bonus, i.e. Cold is a receiver-side
+# ABSOLUTE crit-damage increase entering before the tier formula
+# (Paris Prime: 1 + k x (2 + 0.5 - 1)). Consequently the crit-headshot
+# fold-in (2 x Total CD - 1) doubles a cd_total that INCLUDES the Cold
+# bonus - model per formula consistency; in-game spot check optional
+# (headshot increment vs unchilled should be 3 x panel x 1.0, not x 0.5).
+# DoT tick snapshots carry the Cold-inclusive tier multiplier (settled
+# by model, 2026-07-24: a tick is the hit's deferred damage - the
+# snapshot stores the realized multiplier). By the same principle Cold
+# applied AFTER the proc does not alter existing ticks (Cold feeds the
+# hit's formula, not the tick-time mitigation pipeline).
 
 source:
   url: https://wiki.warframe.com/w/Damage/Cold_Damage
-  note: Dedicated damage-type page (worked crit examples included there
-    pin the additive-before-tier semantics).
+  # note: Dedicated damage-type page (worked crit examples included there
+  # pin the additive-before-tier semantics).

@@ -1,7 +1,5 @@
 id: hawk_eye
-kind: mod
 name: Hawk Eye
-mod_type: pistol
 rarity: uncommon
 polarity: naramon
 base_drain: 4                 # max drain 9 at rank 5

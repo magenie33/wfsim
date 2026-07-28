@@ -1,6 +1,5 @@
 id: frozen
 name: Frozen
-kind: debuff
 default_scope: enemy
 
 aliases: []
@@ -18,7 +17,7 @@ max_stacks: 1
 
 effects:
   - kind: full_cc
-    note: Prevents all action for the duration.
+    # note: Prevents all action for the duration.
   - kind: shield_recharge_block
   - kind: crit_damage_received
     value: 1.00                # +1.0x flat, supersedes Freeze's table value
@@ -26,35 +25,35 @@ effects:
 
 # Interaction with Freeze while active (user-observed 2026-07-24: the
 # Freeze display stays pinned at 10 stacks throughout Frozen):
-freeze_interaction:
-  model: >-
-    MUTUALLY EXCLUSIVE STATES (user model, 2026-07-24): the 10th proc
-    does not add a stack - it CONSUMES the 9 Freeze stacks and converts
-    the target into Frozen. During Frozen there IS no Freeze entity (the
-    "10 stacks" display is Frozen's own cosmetic), so timer-suspension
-    questions do not arise. All incoming Cold procs are inert.
-  during: >-
-    Cold procs: no effect whatsoever (wiki: "Frozen enemies cannot
-    receive additional Cold stacks").
-  on_expiry: >-
-    MEASURED (2026-07-24, user): hard reset - Freeze is SET to exactly
-    3 stacks with FRESH 6 s timers; the pre-Frozen stacks and their
-    timers are irrelevant. (This also makes the question of stack decay
-    during Frozen moot: whatever happens to old timers, exit is a reset.)
+# freeze_interaction:
+# model: >-
+# MUTUALLY EXCLUSIVE STATES (user model, 2026-07-24): the 10th proc
+# does not add a stack - it CONSUMES the 9 Freeze stacks and converts
+# the target into Frozen. During Frozen there IS no Freeze entity (the
+# "10 stacks" display is Frozen's own cosmetic), so timer-suspension
+# questions do not arise. All incoming Cold procs are inert.
+# during: >-
+# Cold procs: no effect whatsoever (wiki: "Frozen enemies cannot
+# receive additional Cold stacks").
+# on_expiry: >-
+# MEASURED (2026-07-24, user): hard reset - Freeze is SET to exactly
+# 3 stacks with FRESH 6 s timers; the pre-Frozen stacks and their
+# timers are irrelevant. (This also makes the question of stack decay
+# during Frozen moot: whatever happens to old timers, exit is a reset.)
 
-open_questions:
-  - Frozen's own internal name / whether anything can refresh it.
-  - Does Frozen re-trigger immediately if 7 more stacks arrive right
-    after thaw (expected yes - no known lockout beyond the 3-stack reset).
-  - RESOLVED (M7, 2026-07-24, user): the 3 fresh post-thaw stacks belong
-    to the FROZEN TRIGGER - the source of the 10th stack (the 9->10
-    proc); their timers are 6 s x (1 + that source's status duration).
-    Implementation: the Frozen entity stores its trigger's context and
-    issues the reset stacks from it on expiry.
+# open_questions:
+# - Frozen's own internal name / whether anything can refresh it.
+# - Does Frozen re-trigger immediately if 7 more stacks arrive right
+# after thaw (expected yes - no known lockout beyond the 3-stack reset).
+# - RESOLVED (M7, 2026-07-24, user): the 3 fresh post-thaw stacks belong
+# to the FROZEN TRIGGER - the source of the 10th stack (the 9->10
+# proc); their timers are 6 s x (1 + that source's status duration).
+# Implementation: the Frozen entity stores its trigger's context and
+# issues the reset stacks from it on expiry.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Cold_Damage
-  note: >-
-    Split from the Freeze entry per architecture (a state with its own
-    duration/effects/trigger = its own debuff). Display-pinned-at-10
-    observation from the user, 2026-07-24.
+  # note: >-
+  # Split from the Freeze entry per architecture (a state with its own
+  # duration/effects/trigger = its own debuff). Display-pinned-at-10
+  # observation from the user, 2026-07-24.

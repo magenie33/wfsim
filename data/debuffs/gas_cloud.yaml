@@ -1,6 +1,5 @@
 id: gas_cloud
 name: Gas Cloud
-kind: debuff
 default_scope: enemy
 
 aliases: [Gas]
@@ -57,10 +56,10 @@ dot:
     headshot_multiplier_boostable: true
 
 cc_effects: []
-on_kill_cosmetic: brief dark green cloud on the afflicted
+# on_kill_cosmetic: brief dark green cloud on the afflicted
 
-railjack_variant: >-
-  None - no Railjack counterpart; excluded from Railjack proc weighting.
+# railjack_variant: >-
+# None - no Railjack counterpart; excluded from Railjack proc weighting.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Gas_Damage

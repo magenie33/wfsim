@@ -162,9 +162,7 @@ def skeleton(name: str, w: dict) -> str:
 
     lines = [
         f"id: {wiki_mods.slug(name)}",
-        "kind: mod",
         f"name: {name}",
-        "mod_type: pistol",
         f"rarity: {rar}",
         f"polarity: {pol}",
         f"base_drain: {base}                 # max drain {base + maxr} at rank {maxr}",

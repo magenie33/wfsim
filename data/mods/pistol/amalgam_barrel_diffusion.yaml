@@ -1,7 +1,5 @@
 id: amalgam_barrel_diffusion
-kind: mod
 name: Amalgam Barrel Diffusion
-mod_type: pistol
 rarity: rare
 polarity: madurai
 base_drain: 10                 # max drain 15 at rank 5

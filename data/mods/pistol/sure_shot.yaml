@@ -1,7 +1,5 @@
 id: sure_shot
-kind: mod
 name: Sure Shot
-mod_type: pistol
 rarity: uncommon
 polarity: vazarin
 base_drain: 2                 # max drain 7 at rank 5

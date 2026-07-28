@@ -1,6 +1,5 @@
 id: detonate
 name: Detonate
-kind: debuff
 default_scope: enemy
 
 aliases: [Blast]
@@ -31,17 +30,14 @@ delayed_burst:
   # Thermal Transfer do NOT either.
   single_target_coefficient: 0.3
   early_detonation:
-    triggers:
-      - 10th stack applied
-      - host dies (a killing blow that INFLICTS >=1 Blast proc counts even
-        with zero prior stacks; conversely the killing blow needn't proc
-        Blast if stacks already exist)
-    effects:
-      - all stacks deal their single-target hits to the host at once
-        (10 stacks = 300% ModdedBase total)
-      - PLUS one merged radial instance: 5 m radius, 3.0 x ModdedBase PER
-        STACK (max 3000%), hitting surrounding enemies ONLY - the host is
-        excluded from the radial
+    # Triggers: the 10th stack applied, OR the host dies (a killing blow
+    # that INFLICTS >=1 Blast proc counts even with zero prior stacks;
+    # conversely the killing blow needn't proc Blast if stacks already
+    # exist).
+    # Effect: all stacks deal their single-target hits to the host at once
+    # (10 stacks = 300% ModdedBase total), PLUS one merged radial instance
+    # (the `radial` block) hitting surrounding enemies only.
+    triggers: [tenth_stack_applied, host_death]
     radial:
       radius_m: 5.0
       # THE 10x ASYMMETRY: bystanders take 3.0 x MB per stack while the
@@ -71,26 +67,26 @@ delayed_burst:
 
 cc_effects:
   - kind: stagger
-    note: The early-detonation explosion staggers enemies caught in it
-      (in-game description).
+    # note: The early-detonation explosion staggers enemies caught in it
+    # (in-game description).
 
-on_kill_cosmetic: >-
-  Corpse vaporizes - unusable by Desecrate, and stops Magnetize pulls.
-  Sparks jet from afflicted enemies while stacks are live.
+# on_kill_cosmetic: >-
+# Corpse vaporizes - unusable by Desecrate, and stops Magnetize pulls.
+# Sparks jet from afflicted enemies while stacks are live.
 
-railjack_variant: >-
-  None - Blast has no Railjack counterpart and is excluded from Railjack
-  proc weighting entirely.
+# railjack_variant: >-
+# None - Blast has no Railjack counterpart and is excluded from Railjack
+# proc weighting entirely.
 
-notes: >-
-  The radial (like all status damage) never procs statuses - universal
-  rule, see MECHANICS.md §6; no self-chaining in crowds.
-  Single-target-wise the weakest damaging status (30%/stack); its value is
-  the on-kill/10-stack AoE. Xata's Whisper triggers off detonations with
-  faction applied AGAIN (triple dip) and elemental bonuses applying to the
-  Whisper portion - recorded as a curiosity, not yet modeled.
+# notes: >-
+# The radial (like all status damage) never procs statuses - universal
+# rule, see MECHANICS.md §6; no self-chaining in crowds.
+# Single-target-wise the weakest damaging status (30%/stack); its value is
+# the on-kill/10-stack AoE. Xata's Whisper triggers off detonations with
+# faction applied AGAIN (triple dip) and elemental bonuses applying to the
+# Whisper portion - recorded as a curiosity, not yet modeled.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Blast_Damage
-  note: Dedicated damage-type page including the Notes list (no-falloff,
-    negative-duration exception, killing-blow edge cases, headcrit AoE).
+  # note: Dedicated damage-type page including the Notes list (no-falloff,
+  # negative-duration exception, killing-blow edge cases, headcrit AoE).

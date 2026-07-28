@@ -1,5 +1,4 @@
 id: damage_modifiers
-kind: faction_damage_modifiers
 
 # Post-U36 ("Jade Shadows", 2024-06) faction damage system. The 13 Damage-2.0
 # health/armor/shield classes (Cloned Flesh, Ferrite Armor, Proto Shield, ...)

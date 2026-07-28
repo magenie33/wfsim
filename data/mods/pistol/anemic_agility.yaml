@@ -1,7 +1,5 @@
 id: anemic_agility
-kind: mod
 name: Anemic Agility
-mod_type: pistol
 rarity: rare
 polarity: naramon
 base_drain: 4                 # max drain 9 at rank 5

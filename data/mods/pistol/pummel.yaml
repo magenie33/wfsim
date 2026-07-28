@@ -1,7 +1,5 @@
 id: pummel
-kind: mod
 name: Pummel
-mod_type: pistol
 rarity: rare
 polarity: naramon
 base_drain: 6                 # max drain 11 at rank 5

@@ -1,7 +1,5 @@
 id: primed_steady_hands
-kind: mod
 name: Primed Steady Hands
-mod_type: pistol
 rarity: legendary
 polarity: naramon
 base_drain: 2                 # max drain 12 at rank 10

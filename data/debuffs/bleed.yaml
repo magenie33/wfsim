@@ -1,7 +1,7 @@
 id: bleed
 name: Bleed
-kind: debuff                   # DoT is a sub-behavior of a debuff (the
-default_scope: enemy           # `dot` block below), not a separate kind.
+# DoT is a sub-behavior of a debuff (the `dot` block), not a separate kind.
+default_scope: enemy
 
 aliases: []
 internal_name: PT_BLEEDING
@@ -35,28 +35,28 @@ dot:
   coefficient: 0.35
   enemy_coefficient: 0.10      # Slash procs FROM enemies use 10%, not 35%
   # Snapshot of the proccing hit (locked in at proc time):
-  snapshot:
-    includes:
-      - base damage bonuses (Serration etc.) and total damage buffs
-      - faction damage bonuses (applied twice)
-      - status damage bonuses (Rifle Elementalist etc.)
-      - critical multiplier of the proccing hit
-      - body-part multiplier of the proccing hit
-      - stealth damage bonus, melee/sniper combo counter
-    excludes:
-      - physical-type mods (Buzz Kill, Sawtooth Clip - no effect)
-      - elemental mods (irrelevant to Slash; see MECHANICS.md §6 for the
-        elemental-DoT rules)
-      - Sonar / Detect Vulnerability weakspot multipliers (initial hit only)
-      - finisher mods (Finishing Touch etc. - Cinematic is not a finisher)
-      - target armor (ignored by the tick even though it reduced the hit)
+  # snapshot:
+  # includes:
+  # - base damage bonuses (Serration etc.) and total damage buffs
+  # - faction damage bonuses (applied twice)
+  # - status damage bonuses (Rifle Elementalist etc.)
+  # - critical multiplier of the proccing hit
+  # - body-part multiplier of the proccing hit
+  # - stealth damage bonus, melee/sniper combo counter
+  # excludes:
+  # - physical-type mods (Buzz Kill, Sawtooth Clip - no effect)
+  # - elemental mods (irrelevant to Slash; see MECHANICS.md §6 for the
+  # elemental-DoT rules)
+  # - Sonar / Detect Vulnerability weakspot multipliers (initial hit only)
+  # - finisher mods (Finishing Touch etc. - Cinematic is not a finisher)
+  # - target armor (ignored by the tick even though it reduced the hit)
 
 cc_effects: []
-on_kill_cosmetic: blood bursts at the hit location (oil on Machinery/Robotic)
+# on_kill_cosmetic: blood bursts at the hit location (oil on Machinery/Robotic)
 
-railjack_variant: >-
-  Tear: target ship takes +7.5% damage for 20 s; subsequent procs stack
-  multiplicatively with itself. Separate system.
+# railjack_variant: >-
+# Tear: target ship takes +7.5% damage for 20 s; subsequent procs stack
+# multiplicatively with itself. Separate system.
 
 # Melee weapon types with guaranteed Bleed on Heavy Attack (weapon-type
 # level forced procs): Claws, Dual Daggers, Nikanas, Two-Handed Nikanas,
@@ -67,20 +67,20 @@ heavy_attack_forced_bleed_types:
          scythes, tonfas, warfans, whips]
   partial: [daggers, machetes]
 
-notes: >-
-  DoT Detonation effects (Expedite Suffering, Tragedy, Divine Retribution,
-  Harmony heavy attack) end stacks early and deal all remaining ticks in
-  one instance. Dismemberment (loot-relevant via Nekros Desecrate): only
-  DIRECT Slash damage kills to the torso dismember - Bleed-tick kills
-  never do (Hunter Munitions alone cannot); requires Slash > 50% of the
-  weapon's IPS distribution (exactly 50% fails; elemental mods do not
-  count toward the ratio); a corpse can be mutilated at most twice.
-  Per-unit resistance example: Hyekka Master has an innate 80% Slash
-  resistance (unit-level type-modifier override - enemy schema will need
-  a field for these). Hunter set bonus: companions deal extra damage to
-  Slash-afflicted targets.
+# notes: >-
+# DoT Detonation effects (Expedite Suffering, Tragedy, Divine Retribution,
+# Harmony heavy attack) end stacks early and deal all remaining ticks in
+# one instance. Dismemberment (loot-relevant via Nekros Desecrate): only
+# DIRECT Slash damage kills to the torso dismember - Bleed-tick kills
+# never do (Hunter Munitions alone cannot); requires Slash > 50% of the
+# weapon's IPS distribution (exactly 50% fails; elemental mods do not
+# count toward the ratio); a corpse can be mutilated at most twice.
+# Per-unit resistance example: Hyekka Master has an innate 80% Slash
+# resistance (unit-level type-modifier override - enemy schema will need
+# a field for these). Hunter set bonus: companions deal extra damage to
+# Slash-afflicted targets.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Slash_Damage
-  note: Formula and exclusions from the dedicated page; tick/scaling rules
-    cross-checked with wiki Damage_over_Time.
+  # note: Formula and exclusions from the dedicated page; tick/scaling rules
+  # cross-checked with wiki Damage_over_Time.

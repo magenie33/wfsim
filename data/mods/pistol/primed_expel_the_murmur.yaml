@@ -1,7 +1,5 @@
 id: primed_expel_the_murmur
-kind: mod
 name: Primed Expel The Murmur
-mod_type: pistol
 rarity: legendary
 polarity: madurai
 base_drain: 4                 # max drain 14 at rank 10

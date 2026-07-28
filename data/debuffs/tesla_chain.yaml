@@ -1,6 +1,5 @@
 id: tesla_chain
 name: Tesla Chain
-kind: debuff
 default_scope: enemy
 
 aliases: []
@@ -51,19 +50,19 @@ dot:
 cc_effects:
   - kind: stun
     duration_seconds: 3
-    note: >-
-      ONLY the original target is stunned (standing upright, ~3 s);
-      chained enemies take damage without the stun. Status Duration mods
-      do NOT extend the stun. Immune: Ospreys, Bosses, Tenno.
+    # note: >-
+    # ONLY the original target is stunned (standing upright, ~3 s);
+    # chained enemies take damage without the stun. Status Duration mods
+    # do NOT extend the stun. Immune: Ospreys, Bosses, Tenno.
 
-on_kill_cosmetic: bodies covered in blue electricity, lines to each afflicted
+# on_kill_cosmetic: bodies covered in blue electricity, lines to each afflicted
 
-railjack_variant: >-
-  Scramble: enemy ship spirals forward unable to fire for 6 s, refreshed
-  by further procs. On the player Railjack: Electricity Hazard (scrambled
-  minimap, Tactical Menu disabled).
+# railjack_variant: >-
+# Scramble: enemy ship spirals forward unable to fire for 6 s, refreshed
+# by further procs. On the player Railjack: Electricity Hazard (scrambled
+# minimap, Tactical Menu disabled).
 
 source:
   url: https://wiki.warframe.com/w/Damage/Electricity_Damage
-  note: Dedicated damage-type page; tick window cross-checked with
-    Damage_over_Time (no delay, dud last tick event).
+  # note: Dedicated damage-type page; tick window cross-checked with
+  # Damage_over_Time (no delay, dud last tick event).

@@ -1095,7 +1095,7 @@ impl DummyParams {
     }
 
     /// Dual Toxocyst **base form** as played: Frenzy passive + the chosen
-    /// build (data/builds/dual_toxocyst_default.yaml): Fevered Frenzy's
+    /// build (Commodore's Fortune + Evolved Autoloader + Fevered Frenzy):
     /// +50 base damage scales the vector pro-rata (75 -> 125, x5/3) and
     /// Commodore's Fortune sets base crit to 25%. Evolution layers apply
     /// to BOTH guns of the transform group.

@@ -1,7 +1,5 @@
 id: pistol_ammo_mutation
-kind: mod
 name: Pistol Ammo Mutation
-mod_type: pistol
 rarity: rare
 polarity: naramon
 base_drain: 2                 # max drain 7 at rank 5

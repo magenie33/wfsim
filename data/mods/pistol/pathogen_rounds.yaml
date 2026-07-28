@@ -1,7 +1,5 @@
 id: pathogen_rounds
-kind: mod
 name: Pathogen Rounds
-mod_type: pistol
 rarity: uncommon
 polarity: naramon
 base_drain: 6                 # max drain 11 at rank 5

@@ -1,7 +1,5 @@
 id: primed_expel_corpus
-kind: mod
 name: Primed Expel Corpus
-mod_type: pistol
 rarity: legendary
 polarity: madurai
 base_drain: 4                 # max drain 14 at rank 10

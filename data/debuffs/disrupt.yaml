@@ -1,6 +1,5 @@
 id: disrupt
 name: Disrupt
-kind: debuff
 default_scope: enemy
 
 aliases: [Magnetic]
@@ -26,9 +25,9 @@ effects:
     # with other damage bonuses.
     stack_values: [1.00, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25]
   - kind: shield_regen_block
-    note: >-
-      Blocks NATURAL shield regeneration; external restore links (Shield
-      Osprey, Orokin Drone) bypass the penalty.
+    # note: >-
+    # Blocks NATURAL shield regeneration; external restore links (Shield
+    # Osprey, Orokin Drone) bypass the penalty.
 
 # System-issued effect #2 (same trigger-attribution pattern as Frozen's
 # reset stacks): breaking the target's Shields/Overguard while Disrupt is
@@ -58,22 +57,22 @@ on_shield_or_overguard_break:
     status_duration: >-
       applies normally and acts as a FINAL multiplier on the total
       (longer duration = more ticks = proportionally more total).
-  note: >-
-    Archon Stretch triggers off this break-proc, but only when the
-    Magnetic came from an ability.
+  # note: >-
+  # Archon Stretch triggers off this break-proc, but only when the
+  # Magnetic came from an ability.
 
 on_player:
-  effects:
-    - HUD distortion (static) for 3 s
-    - 30 Energy Drain per tick, first tick instant, 4 ticks = 120 energy
-      total over 3 s; a status cleanse stops both drain and static
-  note: Player Overguard grants status immunity, so no extra break damage.
+  # effects:
+  # - HUD distortion (static) for 3 s
+  # - 30 Energy Drain per tick, first tick instant, 4 ticks = 120 energy
+  # total over 3 s; a status cleanse stops both drain and static
+  # note: Player Overguard grants status immunity, so no extra break damage.
 
 cc_effects: []
-on_kill_cosmetic: blue rings sweeping the target top to bottom
+# on_kill_cosmetic: blue rings sweeping the target top to bottom
 
-railjack_variant: >-
-  None - no Railjack counterpart; excluded from Railjack proc weighting.
+# railjack_variant: >-
+# None - no Railjack counterpart; excluded from Railjack proc weighting.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Magnetic_Damage

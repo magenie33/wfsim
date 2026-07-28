@@ -1,7 +1,5 @@
 id: sharpened_bullets
-kind: mod
 name: Sharpened Bullets
-mod_type: pistol
 rarity: uncommon
 polarity: madurai
 base_drain: 2                 # max drain 7 at rank 5

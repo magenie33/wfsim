@@ -1,8 +1,5 @@
 id: thrax_centurion
 name: Thrax Centurion
-kind: enemy
-
-# The data module files Thrax units under `unaffiliated` with Faction
 # "Unknown". Two independent faction systems (MECHANICS.md §8):
 # - Faction "unknown" -> NO faction damage mod (Bane etc.) ever applies.
 # - FactionDamageOverride "zariman" -> the x1.5/x0.5 vulnerability column
@@ -48,10 +45,10 @@ body_parts:
 # Raw wiki text, not yet modeled in the engine.
 mechanics:
   overguard_cc_immunity: true
-  spectral_form: >-
-    Destroying the physical form reverts it into a spectral form with 40% of
-    the physical form's health. Void damage deals 10x damage to the spectral
-    form (100x while it is consuming an enemy).
+  # spectral_form: >-
+  # Destroying the physical form reverts it into a spectral form with 40% of
+  # the physical form's health. Void damage deals 10x damage to the spectral
+  # form (100x while it is consuming an enemy).
   focus_on_kill: 2500
   attacks: >-
     Levitates and dashes three times in quick succession spinning its Hespar
@@ -60,8 +57,8 @@ mechanics:
 
 source:
   url: https://wiki.warframe.com/w/Module:Enemies/data/unaffiliated
-  note: >-
-    Stats and Multis from the wiki's structured Lua enemy data module
-    (Module:Enemies/data/unaffiliated); mechanics from the Thrax Centurion
-    page. Health/Armor/Shield classes do not exist post-U36 — resistances are
-    faction-wide (see data/factions/damage_modifiers.yaml).
+  # note: >-
+  # Stats and Multis from the wiki's structured Lua enemy data module
+  # (Module:Enemies/data/unaffiliated); mechanics from the Thrax Centurion
+  # page. Health/Armor/Shield classes do not exist post-U36 — resistances are
+  # faction-wide (see data/factions/damage_modifiers.yaml).

@@ -1,6 +1,5 @@
 id: dt_neurotoxin
 name: Neurotoxin
-kind: incarnon_evolution
 weapon: dual_toxocyst
 tier: 4
 icon: AdditionalViralDamageInFrenziedState(xWhite).png   # wiki File: name (Dual_Toxocyst_Incarnon_Genesis)

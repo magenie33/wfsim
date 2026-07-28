@@ -1,7 +1,5 @@
 id: hydraulic_crosshairs
-kind: mod
 name: Hydraulic Crosshairs
-mod_type: pistol
 rarity: common
 polarity: madurai
 base_drain: 2                 # max drain 7 at rank 5

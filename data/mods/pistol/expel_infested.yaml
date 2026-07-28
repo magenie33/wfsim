@@ -1,7 +1,5 @@
 id: expel_infested
-kind: mod
 name: Expel Infested
-mod_type: pistol
 rarity: uncommon
 polarity: madurai
 base_drain: 4                 # max drain 9 at rank 5

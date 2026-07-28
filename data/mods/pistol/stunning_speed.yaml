@@ -1,7 +1,5 @@
 id: stunning_speed
-kind: mod
 name: Stunning Speed
-mod_type: pistol
 rarity: rare
 polarity: naramon
 base_drain: 6                 # max drain 9 at rank 3

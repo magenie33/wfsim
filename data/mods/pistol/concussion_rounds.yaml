@@ -1,7 +1,5 @@
 id: concussion_rounds
-kind: mod
 name: Concussion Rounds
-mod_type: pistol
 rarity: uncommon
 polarity: naramon
 base_drain: 2                 # max drain 7 at rank 5

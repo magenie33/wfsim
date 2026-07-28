@@ -1,6 +1,5 @@
 id: confusion
 name: Confusion
-kind: debuff
 default_scope: enemy
 
 aliases: [Radiation]
@@ -20,20 +19,20 @@ stack_overflow: replace_oldest
 # Behavioral payload - no damage component.
 effects:
   - kind: faction_defection
-    note: >-
-      The unit fights ALL units and is targeted by ALL units for the
-      duration; rejoins its faction when confusion ends.
+    # note: >-
+    # The unit fights ALL units and is targeted by ALL units for the
+    # duration; rejoins its faction when confusion ends.
   - kind: damage_dealt_bonus_vs_tenno_enemies
     # +100% at 1 stack, +50% per further stack -> +550% at 10.
     stack_values: [1.00, 1.50, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 5.50]
   - kind: slam_upgrade
-    note: Slam attacks vs former allies upgrade Knockdown -> Ragdoll.
+    # note: Slam attacks vs former allies upgrade Knockdown -> Ragdoll.
   - kind: aura_decoupling
-    note: >-
-      A confused unit's auras (Eximus, Ancient Healer) stop affecting its
-      former allies, AND it stops benefiting from allied auras - the
-      DebuffBar entry gates the enemy BuffBar aura graph in both
-      directions.
+    # note: >-
+    # A confused unit's auras (Eximus, Ancient Healer) stop affecting its
+    # former allies, AND it stops benefiting from allied auras - the
+    # DebuffBar entry gates the enemy BuffBar aura graph in both
+    # directions.
 
 # Boss-class variant (Kuva Liches, Acolytes, enemy Necramechs, Sisters,
 # Hounds) - a per-unit-class behavioral switch (enemy schema will need a
@@ -42,27 +41,27 @@ boss_mode:
   max_stacks: 4
   # +100% damage TAKEN from allied units at 1 stack, +50%/stack -> +250%.
   damage_taken_from_allies: [1.00, 1.50, 2.00, 2.50]
-  no_ally_aggro: >-
-    Allies do not attack the boss unless they are themselves confused.
+  # no_ally_aggro: >-
+  # Allies do not attack the boss unless they are themselves confused.
 
 on_player:
   duration_seconds: 4
-  effects:
-    - friendly fire enabled between the Tenno and other players
-    - reduced weapon accuracy
-    - cannot revive fallen allies (a proc mid-revive interrupts it)
-    - the confused Tenno CAN proc statuses onto allies (including
-      Radiation itself - contagion)
+  # effects:
+  # - friendly fire enabled between the Tenno and other players
+  # - reduced weapon accuracy
+  # - cannot revive fallen allies (a proc mid-revive interrupts it)
+  # - the confused Tenno CAN proc statuses onto allies (including
+  # Radiation itself - contagion)
 
-overguard_interaction: >-
-  Overguard holders can RECEIVE stacks but are immune to the effects
-  until the buffer is removed (stacks pre-loaded behind Overguard).
+# overguard_interaction: >-
+# Overguard holders can RECEIVE stacks but are immune to the effects
+# until the buffer is removed (stacks pre-loaded behind Overguard).
 
 cc_effects: []                 # not CC in the stagger sense; AI retargeting
-on_kill_cosmetic: purple substance coating
+# on_kill_cosmetic: purple substance coating
 
-railjack_variant: >-
-  None - no Railjack counterpart; excluded from Railjack proc weighting.
+# railjack_variant: >-
+# None - no Railjack counterpart; excluded from Railjack proc weighting.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Radiation_Damage

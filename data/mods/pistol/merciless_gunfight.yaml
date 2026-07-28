@@ -1,7 +1,5 @@
 id: merciless_gunfight
-kind: mod
 name: Merciless Gunfight
-mod_type: pistol
 rarity: rare
 polarity: naramon
 base_drain: 10                 # max drain 15 at rank 5

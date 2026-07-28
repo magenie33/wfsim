@@ -1,6 +1,5 @@
 id: weakened
 name: Weakened
-kind: debuff
 default_scope: enemy
 
 aliases: []
@@ -38,17 +37,17 @@ modifier_conditions:
 
 cc_effects: []                 # no CC component; victims get a yellow aura
 
-on_kill_cosmetic: large bloody hole at the killing-blow location
+# on_kill_cosmetic: large bloody hole at the killing-blow location
 
-railjack_variant: >-
-  Decompress: reduces the target ship's shields by 8.5% and armor by 9%
-  for 20 s; subsequent procs stack multiplicatively. Separate system.
+# railjack_variant: >-
+# Decompress: reduces the target ship's shields by 8.5% and armor by 9%
+# for 20 s; subsequent procs stack multiplicatively. Separate system.
 
-notes: >-
-  Special case - Evensong applies 7 Weakened procs on hit, BYPASSING the
-  normal 5-stack limit: forced procs can exceed stack caps on specific
-  weapons. Physical proc selection weighted by damage share as usual.
+# notes: >-
+# Special case - Evensong applies 7 Weakened procs on hit, BYPASSING the
+# normal 5-stack limit: forced procs can exceed stack caps on specific
+# weapons. Physical proc selection weighted by damage share as usual.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Puncture_Damage
-  note: Dedicated damage-type page; internal name from the Damage page tables.
+  # note: Dedicated damage-type page; internal name from the Damage page tables.

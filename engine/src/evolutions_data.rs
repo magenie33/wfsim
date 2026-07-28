@@ -21,8 +21,6 @@ use crate::loadout::WeaponBase;
 struct EvoFile {
     id: String,
     name: String,
-    #[allow(dead_code)]
-    kind: String,
     weapon: String,
     tier: u32,
     /// Wiki `File:` name for the evolution's icon.
@@ -234,12 +232,11 @@ pub fn pool() -> &'static Vec<EvolutionDef> {
     static POOL: OnceLock<Vec<EvolutionDef>> = OnceLock::new();
     POOL.get_or_init(|| {
         let mut out = Vec::new();
-        for (_, text) in crate::data::files_under("evolutions/") {
-            // The kind tag guards against a stray non-evolution yaml.
-            let Ok(ef) = serde_norway::from_str::<EvoFile>(text) else { continue };
-            if ef.kind != "incarnon_evolution" {
-                continue;
-            }
+        for (path, text) in crate::data::files_under("evolutions/") {
+            // The directory IS the table (data/README.md conventions):
+            // everything under evolutions/ must parse as an evolution.
+            let ef = serde_norway::from_str::<EvoFile>(text)
+                .unwrap_or_else(|e| panic!("parse {path}: {e}"));
             let effects = ef.effects.iter().filter_map(effect).collect();
             out.push(EvolutionDef {
                 id: ef.id,

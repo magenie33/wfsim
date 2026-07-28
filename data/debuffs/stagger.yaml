@@ -1,7 +1,5 @@
 id: stagger
 name: Stagger
-kind: debuff
-# Same machinery as player-side buffs: a status PROC is only the trigger event;
 # the real entity is this debuff living on the TARGET's bar. Everything
 # below is a property of the debuff itself, not of whoever applied it.
 default_scope: enemy
@@ -47,19 +45,19 @@ modifier_conditions:
 
 cc_effects:
   - kind: stagger
-    note: >-
-      Target flinches and recoils backwards; more stacks -> bigger/longer
-      stagger. Ospreys, Bosses, and Tenno are immune to the CC part
-      (stacks and the Parazon modifier still apply).
+    # note: >-
+    # Target flinches and recoils backwards; more stacks -> bigger/longer
+    # stagger. Ospreys, Bosses, and Tenno are immune to the CC part
+    # (stacks and the Parazon modifier still apply).
 
-on_kill_cosmetic: corpse is ragdolled and flung (no gameplay effect)
+# on_kill_cosmetic: corpse is ragdolled and flung (no gameplay effect)
 
 # Railjack space combat replaces this with "Concuss" (reduced enemy aim and
 # damage, 6 s, refreshed). Separate system - not modeled here.
-railjack_variant: concuss
+# railjack_variant: concuss
 
 source:
   url: https://wiki.warframe.com/w/Damage/Impact_Damage
-  note: >-
-    Dedicated damage-type page (authoritative for the proc); overview-table
-    name "Knockback" and internal names from the Damage page tables.
+  # note: >-
+  # Dedicated damage-type page (authoritative for the proc); overview-table
+  # name "Knockback" and internal names from the Damage page tables.

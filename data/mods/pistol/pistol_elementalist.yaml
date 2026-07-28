@@ -1,7 +1,5 @@
 id: pistol_elementalist
-kind: mod
 name: Pistol Elementalist
-mod_type: pistol
 rarity: uncommon
 polarity: vazarin
 base_drain: 4                 # max drain 9 at rank 5

@@ -1,7 +1,5 @@
 id: ice_storm
-kind: mod
 name: Ice Storm
-mod_type: pistol
 rarity: rare
 polarity: madurai
 base_drain: 6                 # max drain 9 at rank 3

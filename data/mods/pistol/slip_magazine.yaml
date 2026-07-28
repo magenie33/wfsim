@@ -1,7 +1,5 @@
 id: slip_magazine
-kind: mod
 name: Slip Magazine
-mod_type: pistol
 rarity: common
 polarity: naramon
 base_drain: 4                 # max drain 9 at rank 5

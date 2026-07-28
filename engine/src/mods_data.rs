@@ -27,9 +27,6 @@ struct ModFile {
     id: String,
     #[allow(dead_code)]
     name: String,
-    // Kept for future per-class pool filtering (rifle vs pistol).
-    #[allow(dead_code)]
-    mod_type: String,
     polarity: String,
     rarity: String,
     base_drain: u32,

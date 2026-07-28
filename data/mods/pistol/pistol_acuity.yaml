@@ -1,7 +1,5 @@
 id: pistol_acuity
-kind: mod
 name: Pistol Acuity
-mod_type: pistol
 rarity: rare
 polarity: naramon
 base_drain: 6                 # max drain 16 at rank 10

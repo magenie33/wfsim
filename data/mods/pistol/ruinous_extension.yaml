@@ -1,7 +1,5 @@
 id: ruinous_extension
-kind: mod
 name: Ruinous Extension
-mod_type: pistol
 rarity: uncommon
 polarity: naramon
 base_drain: 2                 # max drain 5 at rank 3

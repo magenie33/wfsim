@@ -1,7 +1,5 @@
 id: primed_pistol_gambit
-kind: mod
 name: Primed Pistol Gambit
-mod_type: pistol
 rarity: legendary
 polarity: madurai
 base_drain: 2                 # max drain 12 at rank 10

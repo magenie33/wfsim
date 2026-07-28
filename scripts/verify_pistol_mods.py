@@ -31,7 +31,7 @@ def read_yaml(path: str) -> dict:
     with open(path, encoding="utf-8") as fh:
         for line in fh:
             m = re.match(r"(\w+):\s*(.+?)\s*(?:#.*)?$", line)
-            if m and m.group(1) in ("name", "polarity", "rarity", "base_drain", "max_rank", "exilus", "mod_type"):
+            if m and m.group(1) in ("name", "polarity", "rarity", "base_drain", "max_rank", "exilus"):
                 v = m.group(2).strip().strip('"')
                 out[m.group(1)] = v
     return out

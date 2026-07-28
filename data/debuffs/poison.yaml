@@ -1,6 +1,5 @@
 id: poison
 name: Poison
-kind: debuff
 default_scope: enemy
 
 aliases: []
@@ -43,19 +42,19 @@ dot:
   coefficient: 0.5
   # Enemy-inflicted Poison on players: bypasses player shields too.
 
-bucket_membership_confirmations:
-  base_damage: [Serration, "Vex Armor (Fury)"]
-  faction_damage: [Bane mods, Roar]
-  status_damage: [Rifle Elementalist, "Emerald Archon Shard (Toxin option)"]
+# bucket_membership_confirmations:
+# base_damage: [Serration, "Vex Armor (Fury)"]
+# faction_damage: [Bane mods, Roar]
+# status_damage: [Rifle Elementalist, "Emerald Archon Shard (Toxin option)"]
 
 cc_effects: []
-on_kill_cosmetic: green sickly substance leaking from the body
+# on_kill_cosmetic: green sickly substance leaking from the body
 
-railjack_variant: >-
-  Intoxicate: swaps the afflicted ship's faction for 12 s (friendly fire
-  with its former allies), refreshed by further procs.
+# railjack_variant: >-
+# Intoxicate: swaps the afflicted ship's faction for 12 s (friendly fire
+# with its former allies), refreshed by further procs.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Toxin_Damage
-  note: Dedicated damage-type page; the tick-snapshot contents (type
-    modifiers, Damage Vulnerability) are stated here explicitly.
+  # note: Dedicated damage-type page; the tick-snapshot contents (type
+  # modifiers, Damage Vulnerability) are stated here explicitly.

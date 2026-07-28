@@ -1,6 +1,5 @@
 id: virus
 name: Virus
-kind: debuff
 default_scope: enemy
 
 aliases: [Viral]
@@ -46,10 +45,10 @@ immunities:
     [Demolisher Charger, Demolisher Juggernaut]
 
 cc_effects: []
-on_kill_cosmetic: flowing miasma in the inflicting weapon's energy color
+# on_kill_cosmetic: flowing miasma in the inflicting weapon's energy color
 
-railjack_variant: >-
-  None - no Railjack counterpart; excluded from Railjack proc weighting.
+# railjack_variant: >-
+# None - no Railjack counterpart; excluded from Railjack proc weighting.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Viral_Damage

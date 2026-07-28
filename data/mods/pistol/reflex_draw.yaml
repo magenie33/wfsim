@@ -1,7 +1,5 @@
 id: reflex_draw
-kind: mod
 name: Reflex Draw
-mod_type: pistol
 rarity: uncommon
 polarity: naramon
 base_drain: 4                 # max drain 7 at rank 3

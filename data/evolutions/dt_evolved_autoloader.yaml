@@ -1,6 +1,5 @@
 id: dt_evolved_autoloader
 name: Evolved Autoloader
-kind: incarnon_evolution
 weapon: dual_toxocyst
 tier: 3
 icon: IncarnonReloadSpeed(xWhite).png   # wiki File: name (Dual_Toxocyst_Incarnon_Genesis)

@@ -1,7 +1,5 @@
 id: hemorrhage
-kind: mod
 name: Hemorrhage
-mod_type: pistol
 rarity: rare
 polarity: madurai
 base_drain: 10                 # max drain 15 at rank 5

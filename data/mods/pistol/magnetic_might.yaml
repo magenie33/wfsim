@@ -1,7 +1,5 @@
 id: magnetic_might
-kind: mod
 name: Magnetic Might
-mod_type: pistol
 rarity: rare
 polarity: madurai
 base_drain: 4                 # max drain 7 at rank 3

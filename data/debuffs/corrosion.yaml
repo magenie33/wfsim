@@ -1,6 +1,5 @@
 id: corrosion
 name: Corrosion
-kind: debuff
 default_scope: enemy
 
 aliases: [Corrosive]
@@ -34,23 +33,23 @@ stack_cap_modifiers:
   emerald_archon_shard: +2
   tauforged_emerald_archon_shard: +3
 
-special_interactions:
-  hydroid_passive: >-
-    Enemies damaged by Hydroid become permanently more vulnerable to
-    Corrosive status: the FIRST proc strips 50% (instead of 26%), reaching
-    100% armor removal at 10 stacks. Applies to Corrosive procs from ANY
-    source once Hydroid has damaged the enemy.
+# special_interactions:
+# hydroid_passive: >-
+# Enemies damaged by Hydroid become permanently more vulnerable to
+# Corrosive status: the FIRST proc strips 50% (instead of 26%), reaching
+# 100% armor removal at 10 stacks. Applies to Corrosive procs from ANY
+# source once Hydroid has damaged the enemy.
 
 cc_effects: []
-on_kill_cosmetic: corpse partially corroded and dissolved; faint green
-  electricity-like coating while afflicted
+# on_kill_cosmetic: corpse partially corroded and dissolved; faint green
+# electricity-like coating while afflicted
 
-railjack_variant: >-
-  None - no Railjack counterpart; excluded from Railjack proc weighting.
+# railjack_variant: >-
+# None - no Railjack counterpart; excluded from Railjack proc weighting.
 
-notes: >-
-  Effective-damage reference vs capped armor (90% DR): 1 stack ≈ x2.3,
-  10 stacks ≈ x6; 14 (sharded) vs 10 stacks ≈ x1.67 further.
+# notes: >-
+# Effective-damage reference vs capped armor (90% DR): 1 stack ≈ x2.3,
+# 10 stacks ≈ x6; 14 (sharded) vs 10 stacks ≈ x1.67 further.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Corrosive_Damage
