@@ -37,12 +37,6 @@ pub fn pool() -> Vec<ModDef> {
     wfsim_engine::mods_data::pistol_pool().into_iter().filter(|m| !m.exilus).collect()
 }
 
-/// Dual Toxocyst's innate MAIN-slot polarities, from the weapon yaml (the
-/// exilus slot is utility-only and outside this search).
-pub fn dual_toxocyst_innate_slots() -> [Option<Polarity>; 8] {
-    wfsim_engine::weapons_data::innate_slots("dual_toxocyst")
-}
-
 /// Prescribed-mods constraints: forced inclusions/exclusions by mod id.
 #[derive(Debug, Clone, Default)]
 pub struct Constraints {
@@ -840,7 +834,7 @@ pub fn run_funnel(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wfsim_engine::loadout::DtEvo2;
+    
 
 
     #[test]
@@ -897,16 +891,16 @@ mod tests {
         }
         let expected = poly.get(8).copied().unwrap_or(0);
 
-        let base = WeaponBase::dual_toxocyst_incarnon(true, DtEvo2::FeveredFrenzy);
+        let base = WeaponBase::from_data("dual_toxocyst_incarnon", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
         let (cands, stats) = enumerate_candidates(
             &p,
             &base,
-            Some(&WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy)),
+            Some(&WeaponBase::from_data("dual_toxocyst", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"])),
             0,
             8,
             8,
             60,
-            &dual_toxocyst_innate_slots(),
+            &wfsim_engine::weapons_data::innate_slots("dual_toxocyst"),
             &Constraints::default(),
             &[None],
         );
@@ -927,12 +921,12 @@ mod tests {
         let (cands_le, stats_le) = enumerate_candidates(
             &p,
             &base,
-            Some(&WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy)),
+            Some(&WeaponBase::from_data("dual_toxocyst", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"])),
             0,
             0,
             8,
             60,
-            &dual_toxocyst_innate_slots(),
+            &wfsim_engine::weapons_data::innate_slots("dual_toxocyst"),
             &Constraints::default(),
             &[None],
         );
@@ -957,11 +951,11 @@ mod tests {
         let full = wfsim_engine::mods_data::pistol_pool();
         let ex = full.iter().find(|m| m.exilus).expect("an exilus mod exists").clone();
 
-        let base = WeaponBase::dual_toxocyst_incarnon(true, DtEvo2::FeveredFrenzy);
+        let base = WeaponBase::from_data("dual_toxocyst_incarnon", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
         let run = |opts: &[Option<&ModDef>]| {
             enumerate_candidates(
                 &p, &base, None, 0, 8, 8, 60,
-                &dual_toxocyst_innate_slots(), &Constraints::default(), opts,
+                &wfsim_engine::weapons_data::innate_slots("dual_toxocyst"), &Constraints::default(), opts,
             )
         };
         let (empty_only, _) = run(&[None]);
@@ -1034,7 +1028,7 @@ mod tests {
                 UI-selected scoped subset (2026-07-26) — re-enable against a scope."]
     fn constraints_filter_the_space() {
         let p = pool();
-        let base = WeaponBase::dual_toxocyst_incarnon(true, DtEvo2::FeveredFrenzy);
+        let base = WeaponBase::from_data("dual_toxocyst_incarnon", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
         let cons = Constraints {
             require: vec!["hornet_strike".into()],
             forbid: vec!["magnetic_might".into()],
@@ -1047,7 +1041,7 @@ mod tests {
             8,
             8,
             60,
-            &dual_toxocyst_innate_slots(),
+            &wfsim_engine::weapons_data::innate_slots("dual_toxocyst"),
             &cons,
             &[None],
         );

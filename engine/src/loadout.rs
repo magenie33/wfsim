@@ -517,39 +517,11 @@ pub struct IncarnonForm {
 }
 
 /// The Evolution II choice — a SEARCH DIMENSION (user, 2026-07-25). A
-/// SELECTOR only: every number lives in data/perks/dt_*.yaml, applied by
-/// [`crate::evolutions_data::apply`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DtEvo2 {
-    /// data/perks/dt_fevered_frenzy.yaml.
-    FeveredFrenzy,
-    /// data/perks/dt_carnage_reign.yaml (the energy ≥ 200 requirement is
-    /// assumed met).
-    CarnageReign,
-}
-
-impl DtEvo2 {
-    /// The chosen evolution's data id.
-    pub fn evolution_id(self) -> &'static str {
-        match self {
-            DtEvo2::FeveredFrenzy => "dt_fevered_frenzy",
-            DtEvo2::CarnageReign => "dt_carnage_reign",
-        }
-    }
-}
-
-/// The historical default evolution loadout: fixed tier 3/4 picks
-/// (Evolved Autoloader holstered-only; Commodore's Fortune +20% into the
-/// BASE crit chance) + the chosen Evolution II.
-fn dt_default_evos(evo2: DtEvo2) -> [&'static str; 3] {
-    ["dt_commodores_fortune", "dt_evolved_autoloader", evo2.evolution_id()]
-}
-
 impl WeaponBase {
     /// Apply an arbitrary equipped-evolution set (data ids) from
     /// data/evolutions/*.yaml onto the raw base. An EMPTY list = nothing
     /// installed at any choosable tier.
-    fn dt_apply_evolution_ids(mut self, evo_ids: &[&str]) -> Self {
+    fn apply_evolution_ids(mut self, evo_ids: &[&str]) -> Self {
         let evos: Vec<_> = evo_ids
             .iter()
             .map(|id| {
@@ -561,42 +533,12 @@ impl WeaponBase {
         self
     }
 
-    /// Incarnon Form with an ARBITRARY evolution selection (data ids;
-    /// empty = bare weapon). The web's per-tier picker feeds this.
-    pub fn dual_toxocyst_incarnon_evos(frenzy_active: bool, evo_ids: &[&str]) -> Self {
-        Self::dual_toxocyst_incarnon_raw(frenzy_active).dt_apply_evolution_ids(evo_ids)
-    }
-
-    /// Base form with an ARBITRARY evolution selection (data ids).
-    pub fn dual_toxocyst_base_evos(frenzy_active: bool, evo_ids: &[&str]) -> Self {
-        Self::dual_toxocyst_base_raw(frenzy_active).dt_apply_evolution_ids(evo_ids)
-    }
-
-    /// Dual Toxocyst Incarnon Form with the historical DEFAULT evolutions
-    /// (fixed tier 3/4 + the chosen EVO II selector).
-    pub fn dual_toxocyst_incarnon(frenzy_active: bool, evo2: DtEvo2) -> Self {
-        Self::dual_toxocyst_incarnon_evos(frenzy_active, &dt_default_evos(evo2))
-    }
-
-    /// Dual Toxocyst Incarnon Form: RAW panel (wiki 11% cc, 75 base),
-    /// NO evolutions applied. `frenzy_active`: the passive works while
-    /// transformed (user-confirmed) — folds its +100% Toxin injection in.
-    /// Numbers live in `data/weapons/dual_toxocyst_incarnon.yaml`.
-    fn dual_toxocyst_incarnon_raw(frenzy_active: bool) -> Self {
-        crate::weapons_data::base_panel("dual_toxocyst_incarnon", frenzy_active)
-    }
-
-    /// Dual Toxocyst **base form** with the historical DEFAULT evolutions.
-    pub fn dual_toxocyst_base(frenzy_active: bool, evo2: DtEvo2) -> Self {
-        Self::dual_toxocyst_base_evos(frenzy_active, &dt_default_evos(evo2))
-    }
-
-    /// Dual Toxocyst **base form**: RAW panel (wiki 5% cc, 75 base), NO
-    /// evolutions applied. `frenzy_active` folds the +100% Toxin
-    /// injection in (exact under a Permanent lock).
-    /// Numbers live in `data/weapons/dual_toxocyst.yaml`.
-    fn dual_toxocyst_base_raw(frenzy_active: bool) -> Self {
-        crate::weapons_data::base_panel("dual_toxocyst", frenzy_active)
+    /// Build a weapon FORM from its data entry: the raw yaml panel
+    /// (`weapons_data::base_panel`) with an arbitrary equipped-evolution
+    /// selection applied (data ids; empty = bare weapon). The engine knows
+    /// no specific weapon — `id` is purely a data key.
+    pub fn from_data(id: &str, frenzy_active: bool, evo_ids: &[&str]) -> Self {
+        crate::weapons_data::base_panel(id, frenzy_active).apply_evolution_ids(evo_ids)
     }
 
 }
@@ -1078,7 +1020,7 @@ mod tests {
 
     #[test]
     fn requires_gate_disables_and_cond_buff() {
-        let base = WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy); // traits: semi_auto
+        let base = WeaponBase::from_data("dual_toxocyst", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]); // traits: semi_auto
         let p0 = resolve(&base, &[], StackPolicy::AssumedMax);
         // requires: a mod needing `beam` is INERT on Dual Toxocyst (no beam);
         // a mod needing `semi_auto` applies.
@@ -1152,7 +1094,7 @@ mod tests {
         ];
         let refs: Vec<&ModDef> = mods.iter().collect();
         let p = resolve(
-            &WeaponBase::dual_toxocyst_incarnon(false, DtEvo2::FeveredFrenzy),
+            &WeaponBase::from_data("dual_toxocyst_incarnon", false, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]),
             &refs,
             StackPolicy::AssumedMax,
         );
@@ -1191,7 +1133,7 @@ mod tests {
         ];
         let refs: Vec<&ModDef> = mods.iter().collect();
         let p = resolve(
-            &WeaponBase::dual_toxocyst_incarnon(false, DtEvo2::FeveredFrenzy),
+            &WeaponBase::from_data("dual_toxocyst_incarnon", false, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]),
             &refs,
             StackPolicy::AssumedMax,
         );
@@ -1202,7 +1144,7 @@ mod tests {
 
     #[test]
     fn magazine_and_status_duration_buckets_resolve() {
-        let base = WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy);
+        let base = WeaponBase::from_data("dual_toxocyst", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
         let baseline = resolve(&base, &[], StackPolicy::AssumedMax).magazine_size;
         let mods = [
             m("mag", vec![ModEffect::MagazineCapacity(0.60)]),   // +60% of base
@@ -1220,7 +1162,7 @@ mod tests {
         // A +90% Impact physical mod scales the BASE Impact by ×1.9 and does
         // NOT add modified_base as a combined element (the old, wrong behavior).
         // Puncture/Slash are untouched; the total rises only by the impact gain.
-        let base = WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy);
+        let base = WeaponBase::from_data("dual_toxocyst", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
         let p0 = resolve(&base, &[], StackPolicy::AssumedMax);
         let m_imp = m("phys", vec![ModEffect::Physical(Impact, 0.90)]);
         let p1 = resolve(&base, &[&m_imp], StackPolicy::AssumedMax);
@@ -1242,7 +1184,7 @@ mod tests {
                 ModEffect::StatusChance(0.60),
             ],
         );
-        let base = WeaponBase::dual_toxocyst_incarnon(true, DtEvo2::FeveredFrenzy);
+        let base = WeaponBase::from_data("dual_toxocyst_incarnon", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
         let p = resolve(&base, &[&pest], StackPolicy::AssumedMax);
         assert!(p
             .elem_dot_bonus
@@ -1258,7 +1200,7 @@ mod tests {
         let heat = m("scorch", vec![ModEffect::Element(Heat, 0.60)]);
         let cold = m("frostbite", vec![ModEffect::Element(Cold, 0.60)]);
         let tox = m("pestilence", vec![ModEffect::Element(Toxin, 0.60)]);
-        let base = WeaponBase::dual_toxocyst_incarnon(false, DtEvo2::FeveredFrenzy);
+        let base = WeaponBase::from_data("dual_toxocyst_incarnon", false, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
 
         // Heat,Cold,Toxin -> Blast + trailing Toxin.
         let p1 = resolve(&base, &[&heat, &cold, &tox], StackPolicy::AssumedMax);

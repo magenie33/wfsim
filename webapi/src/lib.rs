@@ -12,12 +12,12 @@ use serde_json::{json, Value};
 use wfsim_engine::dummy::{monte_carlo, BodyPart, BuffLock, DummyParams, LockMode, LockedBuff, TargetMode};
 use wfsim_engine::enemy_data::EnemySpec;
 use wfsim_engine::loadout::{
-    pct as fpct, resolve, DtEvo2, ModDef, ModEffect, ResolvedPanel, StackPolicy, WeaponBase,
+    pct as fpct, resolve, ModDef, ModEffect, ResolvedPanel, StackPolicy, WeaponBase,
 };
 use wfsim_engine::mods::{plan_forma, PlannedMod, Polarity};
 use wfsim_engine::mods_data::pistol_pool as pool; // FULL pool incl. exilus (the optimizer's pool() excludes exilus)
 use wfsim_optimizer::{
-    dual_toxocyst_innate_slots, enumerate_candidates, run_funnel, schedule_to, Candidate,
+    enumerate_candidates, run_funnel, schedule_to, Candidate,
     Constraints, FunnelState, Job, Scenario,
 };
 
@@ -149,6 +149,41 @@ fn weapon(id: &str) -> &'static WeaponInfo {
     weapons().iter().find(|w| w.id == id).unwrap_or(&weapons()[0])
 }
 
+// ---- spec-derived lookups: no weapon ids are hardcoded anywhere below ----
+fn wspec(id: &str) -> &'static wfsim_engine::weapons_data::WeaponSpec {
+    wfsim_engine::weapons_data::spec(id).expect("weapon data")
+}
+
+/// The transform group's second-form entry (the Incarnon form), if any.
+fn incarnon_id(info: &WeaponInfo) -> Option<&'static str> {
+    wspec(&info.id).transforms_to.as_deref()
+}
+
+/// Evolutions-data key for this weapon: the transform group name.
+fn evo_group(info: &WeaponInfo) -> &'static str {
+    let s = wspec(&info.id);
+    s.transform_group.as_deref().unwrap_or(&s.id)
+}
+
+/// The tier-1 evolution that unlocks the second form (deselecting it means
+/// no transformation).
+fn form_unlock_evo(info: &WeaponInfo) -> Option<&'static str> {
+    wfsim_engine::evolutions_data::options(evo_group(info), 1)
+        .first()
+        .map(|e| e.id.as_str())
+}
+
+/// Whether the weapon's data declares the Frenzy passive (perk-driven).
+fn has_frenzy(info: &WeaponInfo) -> bool {
+    let s = wspec(&info.id);
+    let base = s.transforms_from.as_deref().map(wspec).unwrap_or(s);
+    base.passives.iter().any(|p| p.id == "frenzy")
+}
+
+fn default_weapon_id() -> &'static str {
+    &weapons()[0].id
+}
+
 // Every current weapon uses the pistol pool; `mod_class` stays on
 // WeaponInfo so the next non-pistol weapon reintroduces pools per class.
 fn mod_pool_for(_class: &str) -> Vec<ModDef> {
@@ -241,6 +276,23 @@ pub fn meta_json() -> Value {
                     .map(|p| p.map(|x| format!("{x:?}")))
                     .collect::<Vec<_>>(),
                 "forms": w.forms.iter().map(|(id, name)| json!({"id": id, "name": name})).collect::<Vec<_>>(),
+                "evolutions": (1u32..=4)
+                    .map(|tier| json!({
+                        "tier": tier,
+                        "options": wfsim_engine::evolutions_data::options(evo_group(w), tier)
+                            .iter()
+                            .map(|e| json!({
+                                "id": e.id,
+                                "name": e.name,
+                                "icon": e.icon,
+                                "broken": e.currently_broken,
+                                "desc": e.description.split('\n').collect::<Vec<_>>(),
+                                "effects": e.describe(),
+                            }))
+                            .collect::<Vec<_>>(),
+                    }))
+                    .filter(|t| !t["options"].as_array().unwrap().is_empty())
+                    .collect::<Vec<_>>(),
             })
         })
         .collect();
@@ -301,24 +353,8 @@ pub fn meta_json() -> Value {
         // wiki-flagged non-functional — the engine applies ZERO for those,
         // and the UI must say so in red. `desc` lines are the verbatim
         // effect text (like the mod/arcane cards).
-        "evolutions": (1u32..=4)
-            .map(|tier| json!({
-                "tier": tier,
-                "options": wfsim_engine::evolutions_data::options("dual_toxocyst", tier)
-                    .iter()
-                    .map(|e| json!({
-                        "id": e.id,
-                        "name": e.name,
-                        "icon": e.icon,
-                        "broken": e.currently_broken,
-                        "desc": e.description.split('\n').collect::<Vec<_>>(),
-                        "effects": e.describe(),
-                    }))
-                    .collect::<Vec<_>>(),
-            }))
-            .collect::<Vec<_>>(),
         "defaults": {
-            "weapon": "dual_toxocyst",
+            "weapon": default_weapon_id(),
             "form": "incarnon_cycle",
             // The page starts EMPTY (user decision): no mods, no arcane, no
             // evolutions — a bare weapon. Reference builds live as presets /
@@ -418,7 +454,7 @@ fn enumerate_buffs(
     // Weapon passive: Frenzy (Dual Toxocyst); a single on/off "stack".
     // Default UNLOCKED (user, 2026-07-28): starts active, then lives by its
     // real triggers (headshot refresh) instead of an assumed 100% uptime.
-    if info.id == "dual_toxocyst" {
+    if has_frenzy(info) {
         push(BuffMeta { id: "frenzy".into(), name: "Frenzy".into(), max_stacks: 1,
             kind: "toggle", default_stacks: 1, default_locked: false, permanent: false });
     }
@@ -562,7 +598,7 @@ fn frenzy_lock_mode(cfg: Option<&(u32, bool)>) -> LockMode {
 // stacks (AssumedMax), except sentinels where conditionals never fire.
 
 pub fn panel_json(v: &Value) -> Value {
-    let info = weapon(get_str(v, "weapon", "dual_toxocyst"));
+    let info = weapon(get_str(v, "weapon", default_weapon_id()));
     let policy = if info.sentinel { StackPolicy::BaseOnly } else { StackPolicy::AssumedMax };
     // (`form` in the request is ignored: every available form renders.)
     let evos = match chosen_evolutions(v) {
@@ -592,20 +628,20 @@ pub fn panel_json(v: &Value) -> Value {
     // user decision). The Incarnon Form section exists only while its
     // tier-1 unlock is selected. `meta` states the trigger/shot mechanics
     // from the weapon data (data/weapons yamls).
-    let base_spec = wfsim_engine::weapons_data::spec("dual_toxocyst").expect("weapon data");
-    let inc_spec = wfsim_engine::weapons_data::spec("dual_toxocyst_incarnon").expect("weapon data");
     let mut forms_list: Vec<(&'static str, String, WeaponBase)> = Vec::new();
     forms_list.push((
         "Base Form",
-        attack_desc(base_spec),
-        WeaponBase::dual_toxocyst_base_evos(true, &evo_refs),
+        attack_desc(wspec(&info.id)),
+        WeaponBase::from_data(&info.id, true, &evo_refs),
     ));
-    if evo_refs.contains(&"dt_evo1_incarnon_form") {
-        forms_list.push((
-            "Incarnon Form",
-            attack_desc(inc_spec),
-            WeaponBase::dual_toxocyst_incarnon_evos(true, &evo_refs),
-        ));
+    if let Some(inc) = incarnon_id(info) {
+        if form_unlock_evo(info).is_some_and(|u| evo_refs.contains(&u)) {
+            forms_list.push((
+                "Incarnon Form",
+                attack_desc(wspec(inc)),
+                WeaponBase::from_data(inc, true, &evo_refs),
+            ));
+        }
     }
 
     // ---- per-bucket source attribution (mirrors resolve()'s buckets) ----
@@ -727,7 +763,7 @@ pub fn panel_json(v: &Value) -> Value {
     // (key, source name, PRE-FORMATTED value, note)
     let mut evo_src: Vec<(&'static str, String, String, Option<String>)> = Vec::new();
     let (mut evo_flat_bd, mut evo_flat_cc) = (0.0f64, 0.0f64);
-    if info.id == "dual_toxocyst" {
+    if form_unlock_evo(info).is_some() {
         let tiername = |t: u32| ["", "EVO I", "EVO II", "EVO III", "EVO IV"][t.min(4) as usize];
         for def in evo_refs.iter().filter_map(|id| wfsim_engine::evolutions_data::get(id)) {
             let name = format!("{} ({})", def.name, tiername(def.tier));
@@ -1011,19 +1047,19 @@ fn chosen_evolutions(v: &Value) -> Result<Vec<String>, String> {
         return Ok(ids);
     }
     let evo2 = match get_str(v, "evo2", "dt_fevered_frenzy") {
-        "carnage" | "dt_carnage_reign" => DtEvo2::CarnageReign,
-        _ => DtEvo2::FeveredFrenzy,
+        "carnage" | "dt_carnage_reign" => "dt_carnage_reign",
+        _ => "dt_fevered_frenzy",
     };
     Ok(vec![
         "dt_commodores_fortune".to_string(),
         "dt_evolved_autoloader".to_string(),
-        evo2.evolution_id().to_string(),
+        evo2.to_string(),
     ])
 }
 
 pub fn simulate_json(v: &Value) -> Value {
     // ---- parse inputs ----
-    let info = weapon(get_str(v, "weapon", "dual_toxocyst"));
+    let info = weapon(get_str(v, "weapon", default_weapon_id()));
     // Per-buff configured policy (Sim panel section 2). Present ⇒ Emergent sim
     // with each buff carrying its own initial stacks + lock. Absent ⇒ the
     // legacy `assume_max`/`frenzy` knobs (byte-for-byte with the old path).
@@ -1063,9 +1099,9 @@ pub fn simulate_json(v: &Value) -> Value {
     let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
     // No Incarnon Form unlock (tier 1) in an explicit selection = the weapon
     // cannot transform: honest fallback to the base form.
+    let unlock = form_unlock_evo(info);
     let form = if v.get("evolutions").is_some()
-        && info.id == "dual_toxocyst"
-        && !evos.iter().any(|e| e == "dt_evo1_incarnon_form")
+        && unlock.is_some_and(|u| !evos.iter().any(|e| e == u))
     {
         "base"
     } else {
@@ -1155,8 +1191,9 @@ pub fn simulate_json(v: &Value) -> Value {
     // ---- resolve panel(s) and build sim params, per weapon ----
     // Dual Toxocyst: two forms + the real Incarnon cycle.
     let (report_panel, mut params): (ResolvedPanel, DummyParams) = {
-        let incarnon_base = WeaponBase::dual_toxocyst_incarnon_evos(true, &evo_refs);
-        let base_base = WeaponBase::dual_toxocyst_base_evos(true, &evo_refs);
+        let incarnon_base =
+            WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &evo_refs);
+        let base_base = WeaponBase::from_data(&info.id, true, &evo_refs);
         let incarnon_panel = resolve(&incarnon_base, &refs, policy);
         let base_panel = resolve(&base_base, &refs, policy);
         let report = if form == "base" { base_panel.clone() } else { incarnon_panel.clone() };
@@ -1195,7 +1232,7 @@ pub fn simulate_json(v: &Value) -> Value {
         // stats; `requires` gates on the weapon traits (Akimbo Slip Shot).
         // Under the sim's Emergent policy the non-simmable conditionals are
         // honest no-ops (same rule as mods' CondBuff).
-        let ab = WeaponBase::dual_toxocyst_incarnon_evos(true, &evo_refs);
+        let ab = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &evo_refs);
         def.fx(rank, policy, ab.base_crit_chance, ab.base_crit_damage, ab.traits)
     };
     // ---- apply the per-buff configured policy onto the live specs ----
@@ -1271,7 +1308,7 @@ fn s_name(specs: &[EnemySpec], id: &str) -> String {
 // over the WHOLE scope, not one build. `apply_buff_config` applies each per
 // candidate where present.
 pub fn opt_buffs_json(v: &Value) -> Value {
-    let info = weapon(get_str(v, "weapon", "dual_toxocyst"));
+    let info = weapon(get_str(v, "weapon", default_weapon_id()));
     fn merge(out: &mut Vec<BuffMeta>, list: Vec<BuffMeta>) {
         for b in list {
             if !out.iter().any(|x| x.id == b.id) {
@@ -1294,7 +1331,7 @@ pub fn opt_buffs_json(v: &Value) -> Value {
     let mut out: Vec<BuffMeta> = Vec::new();
     let none = wfsim_engine::arcanes_data::ArcaneFx::none();
     merge(&mut out, enumerate_buffs(&refs, &none, info));
-    let arc_base = WeaponBase::dual_toxocyst_base_evos(true, &[]);
+    let arc_base = WeaponBase::from_data(&info.id, true, &[]);
     if let Some(arr) = v.get("arcanes").and_then(|x| x.as_array()) {
         for a in arr.iter().filter_map(|x| x.as_str()) {
             if a == "none" {
@@ -1337,6 +1374,7 @@ pub fn opt_buffs_json(v: &Value) -> Value {
 
 /// Everything the heavy phase needs, validated up front.
 pub struct OptimizePlan {
+    weapon_id: String,
     pool: Vec<ModDef>,
     constraints: Constraints,
     min_slots: usize,
@@ -1356,9 +1394,9 @@ pub struct OptimizePlan {
 
 /// Validate an optimize request. `Err` is the ready-to-send error response.
 pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
-    let info = weapon(get_str(v, "weapon", "dual_toxocyst"));
-    if info.id != "dual_toxocyst" {
-        return Err(err_json("the optimizer supports Dual Toxocyst only (v1)"));
+    let info = weapon(get_str(v, "weapon", default_weapon_id()));
+    if incarnon_id(info).is_none() {
+        return Err(err_json("the optimizer needs a transform-group weapon (v1)"));
     }
     // ---- mod scope (MAIN 8 slots): fixed ∪ search = pool; fixed = required.
     // Exilus-flagged mods MAY appear here too — all 9 slots accept them
@@ -1510,7 +1548,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         .and_then(|x| x.as_array())
         .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
         .unwrap_or_else(|| vec!["none".into()]);
-    let arc_base = WeaponBase::dual_toxocyst_base_evos(true, &[]);
+    let arc_base = WeaponBase::from_data(&info.id, true, &[]);
     let arcanes: Vec<wfsim_engine::arcanes_data::ArcaneFx> = arc_ids
         .iter()
         .map(|id| {
@@ -1570,6 +1608,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     };
 
     Ok(OptimizePlan {
+        weapon_id: info.id.clone(),
         pool,
         constraints,
         min_slots,
@@ -1619,16 +1658,18 @@ pub fn run_optimize(
         target_name,
         level,
         steel_path,
+        weapon_id,
     } = plan;
+    let info = weapon(&weapon_id);
 
     // ---- enumerate candidates per evo-set × exilus option ----
-    let innate = dual_toxocyst_innate_slots();
+    let innate = wfsim_engine::weapons_data::innate_slots(&info.id);
     let exilus_refs: Vec<Option<&ModDef>> = exilus_defs.iter().map(|o| o.as_ref()).collect();
     let mut cands: Vec<Candidate> = Vec::new();
     for (vi, set) in evo_sets.iter().enumerate() {
         let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-        let base = WeaponBase::dual_toxocyst_incarnon_evos(true, &refs);
-        let base_form = WeaponBase::dual_toxocyst_base_evos(true, &refs);
+        let base = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &refs);
+        let base_form = WeaponBase::from_data(&info.id, true, &refs);
         let (mut c, _stats) = enumerate_candidates(
             &pool, &base, Some(&base_form), vi as u32, min_slots as u32, build_size as u32,
             60, &innate, &constraints, &exilus_refs,

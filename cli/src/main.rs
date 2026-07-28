@@ -5,13 +5,112 @@
 //! See `engine::dummy` for the (deliberately basic) model and its assumptions.
 
 use std::path::Path;
-use wfsim_engine::dummy::{monte_carlo, DummyParams, TargetMode};
+use wfsim_engine::arcanes_data::ArcaneFx;
+use wfsim_engine::damage::{DamageType, DamageVector};
+use wfsim_engine::dummy::{monte_carlo, BuffLock, DummyParams, LockedBuff, TargetMode, TargetParams};
 use wfsim_engine::enemy_data::EnemySpec;
+use wfsim_engine::loadout::CoBehavior;
 use wfsim_engine::scaling;
+
+// ---- Demo-build fixtures (harness-local) --------------------------------
+// The ENGINE knows no specific weapon; this demo harness does. Values are
+// the historical calibration profile: Dual Toxocyst default build
+// (Commodore's Fortune + Evolved Autoloader + Fevered Frenzy) + Secondary
+// Enervate, humanoid dummy, 10 s.
+
+fn dt_baseline() -> DummyParams {
+    DummyParams {
+        damage: DamageVector::new()
+            .with(DamageType::Impact, 7.5)
+            .with(DamageType::Puncture, 60.0)
+            .with(DamageType::Slash, 7.5),
+        base_crit_chance: 0.05,
+        crit_multiplier: 2.0,
+        status_chance: 0.37,
+        forced_procs: Vec::new(),
+        status_duration_mult: 1.0,
+        fire_rate: 1.0,
+        frenzy: false,
+        locked_buffs: Vec::new(),
+        cycle: None,
+        magazine_size: 12.0,
+        reload_seconds: 2.35,
+        infinite_reserve: true,
+        reserve_ammo: 72.0,
+        ammo_efficiency_applies: true,
+        multishot: 1.0,
+        base_multishot: 1.0,
+        evo_ms: None,
+        base_damage_bonus: 0.0,
+        co_per_type: 0.0,
+        co_behavior: CoBehavior::AdditiveWithBaseDamage,
+        co_base_fraction: 1.0,
+        co_stack: None,
+        ms_stack: None,
+        cc_on_headshot: None,
+        cc_stack: None,
+        status_damage_mult: 1.0,
+        elem_dot_bonus: Vec::new(),
+        faction_mult: 1.0,
+        dot_modified_base: None,
+        reload_bonus: 0.0,
+        weakpoint_damage: 0.0,
+        weakpoint_cc_abs: 0.0,
+        cd_on_kill: None,
+        fr_on_reload: None,
+        proc_conversion: None,
+        arcane: ArcaneFx {
+            id: "secondary_enervate".to_string(),
+            enervate_rank: Some(5),
+            ..ArcaneFx::none()
+        },
+        body_parts: DummyParams::humanoid_parts(),
+        target: TargetParams::training_dummy(),
+        duration_secs: 10.0,
+    }
+}
+
+/// Base form as played: Fevered Frenzy's +50 base scales the vector
+/// pro-rata (75 → 125), Commodore's Fortune sets base crit to 25%; Frenzy
+/// locked, Fevered pre-stacked to 20 (+100% multishot).
+fn dt_base_params() -> DummyParams {
+    DummyParams {
+        damage: DamageVector::new()
+            .with(DamageType::Impact, 7.5)
+            .with(DamageType::Puncture, 60.0)
+            .with(DamageType::Slash, 7.5)
+            .scale(125.0 / 75.0),
+        base_crit_chance: 0.25,
+        frenzy: true,
+        locked_buffs: vec![BuffLock::permanent(LockedBuff::Frenzy)],
+        multishot: 2.0,
+        ..dt_baseline()
+    }
+}
+
+/// Incarnon Form (pseudo-reload model, gauge locked full).
+fn dt_incarnon_params() -> DummyParams {
+    DummyParams {
+        damage: DamageVector::new()
+            .with(DamageType::Impact, 25.0)
+            .with(DamageType::Puncture, 62.5)
+            .with(DamageType::Slash, 37.5),
+        base_crit_chance: 0.31,
+        crit_multiplier: 3.0,
+        status_chance: 0.43,
+        fire_rate: 4.5,
+        frenzy: true,
+        magazine_size: 270.0,
+        reload_seconds: 3.35,
+        ammo_efficiency_applies: false,
+        multishot: 2.0,
+        ..dt_baseline()
+    }
+}
 
 fn main() {
     // transform_modes: the two Dual Toxocyst forms are separate weapons.
-    let params = DummyParams::dual_toxocyst_base(); // Frenzy passive live
+    let params = dt_base_params(); // Frenzy passive live
     let runs = 1000;
     let seed = 0xC0FFEE;
 
@@ -112,7 +211,7 @@ fn main() {
     // ------------------------------------------------------------------
     // FOCUS: Incarnon Form damage. Two INDEPENDENT tests - separate runs,
     // separate targets, zero interaction (single-target sim; no shared AoE).
-    let inc = DummyParams::dual_toxocyst_incarnon();
+    let inc = dt_incarnon_params();
 
     // Test 1: custom dummy - infinite health, zero armor/overguard, no
     // resistances. Pure throughput measurement.
@@ -148,7 +247,7 @@ fn main() {
             .target_params(9999, true, false, TargetMode::InstantRespawn)
             .expect("valid thrax target"),
         duration_secs: 60.0,
-        ..DummyParams::dual_toxocyst_incarnon()
+        ..dt_incarnon_params()
     };
     let s2 = monte_carlo(&inc2, 300, seed);
     println!();

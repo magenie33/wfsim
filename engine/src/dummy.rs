@@ -1083,7 +1083,10 @@ impl DummyParams {
         ]
     }
 
-    /// Dual Toxocyst base form damage vector (data/weapons/dual_toxocyst.yaml).
+    /// Dual Toxocyst base form damage vector — TEST FIXTURE (the engine
+    /// proper knows no specific weapon; production callers build params via
+    /// `from_panel` on a data-resolved panel).
+    #[cfg(test)]
     pub fn dual_toxocyst_base_vector() -> DamageVector {
         DamageVector::new()
             .with(DamageType::Impact, 7.5)
@@ -1096,6 +1099,7 @@ impl DummyParams {
     /// +50 base damage scales the vector pro-rata (75 -> 125, x5/3) and
     /// Commodore's Fortune sets base crit to 25%. Evolution layers apply
     /// to BOTH guns of the transform group.
+    #[cfg(test)]
     pub fn dual_toxocyst_base() -> Self {
         Self {
             damage: Self::dual_toxocyst_base_vector().scale(125.0 / 75.0),
@@ -1116,6 +1120,7 @@ impl DummyParams {
     /// this bare profile omits it.
     /// The gauge/ammo economy (9 weakpoint charges, 30 rounds each, max 270)
     /// is not cycled here: this profile measures the form in isolation.
+    #[cfg(test)]
     pub fn dual_toxocyst_incarnon() -> Self {
         Self {
             // 15/37.5/22.5 x 5/3 (Fevered Frenzy +50 base, pro-rata).
@@ -1195,7 +1200,11 @@ impl DummyParams {
             body_parts,
             target,
             duration_secs,
-            ..Self::default()
+            forced_procs: Vec::new(),
+            locked_buffs: Vec::new(),
+            cycle: None,
+            infinite_reserve: true,
+            reserve_ammo: 0.0, // unused while infinite_reserve is on
         }
     }
 
@@ -1246,8 +1255,12 @@ impl DummyParams {
     }
 }
 
+#[cfg(test)]
 impl Default for DummyParams {
-    /// Dual Toxocyst base form + Secondary Enervate, humanoid dummy, 10 s.
+    /// TEST FIXTURE baseline: Dual Toxocyst base form + Secondary Enervate,
+    /// humanoid dummy, 10 s. Production code never default-constructs
+    /// DummyParams — a default weapon would smuggle weapon knowledge into
+    /// the engine.
     fn default() -> Self {
         Self {
             damage: Self::dual_toxocyst_base_vector(),
@@ -2397,7 +2410,7 @@ mod tests {
         // the resolved multishot; the per-buff config rescales it statically
         // (no in-sim trigger, no decay). Lock is meaningless and ignored.
         use crate::loadout::{resolve, StackPolicy, WeaponBase};
-        let base = WeaponBase::dual_toxocyst_incarnon_evos(
+        let base = WeaponBase::from_data("dual_toxocyst_incarnon", 
             true,
             &["dt_evo1_incarnon_form", "dt_fevered_frenzy"],
         );
@@ -2478,7 +2491,7 @@ mod tests {
 
     #[test]
     fn faction_bonus_applies_only_vs_matching_target_faction() {
-        use crate::loadout::{resolve, DtEvo2, Faction, ModDef, ModEffect, Rarity, StackPolicy, WeaponBase};
+        use crate::loadout::{resolve, Faction, ModDef, ModEffect, Rarity, StackPolicy, WeaponBase};
         use crate::mods::Polarity;
         let expel = ModDef {
             id: "expel_grineer", base_drain: 9, max_rank: 5,
@@ -2486,7 +2499,7 @@ mod tests {
             requires: None, disables: Vec::new(),
             effects: vec![ModEffect::FactionDamage(Faction::Grineer, 0.30)],
         };
-        let base = WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy);
+        let base = WeaponBase::from_data("dual_toxocyst", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
         let panel = resolve(&base, &[&expel], StackPolicy::AssumedMax);
         let parts = mono_body(1.0);
         let grineer_target = {

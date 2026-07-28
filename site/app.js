@@ -477,6 +477,9 @@ function fillSelect(id, items) {
 }
 let currentPool = [];
 const weaponInfo = (id) => META.weapons.find((w) => w.id === id) || META.weapons[0];
+// Evolutions moved into each weapon's meta entry (they are per transform
+// group); this reads the CURRENT weapon's tiers.
+const weaponEvos = () => weaponInfo($("weapon").value).evolutions || [];
 const modById = (id) => currentPool.find((m) => m.id === id);
 const show = (id, on) => { const el = $(id); if (on) el.removeAttribute("hidden"); else el.setAttribute("hidden", ""); };
 // Where (other than exceptIdx) this mod is currently slotted, or -1.
@@ -970,7 +973,7 @@ function openArcaneMenu(anchor) {
 // unlock) drops the weapon to its base form.
 function renderEvo() {
   const roman = { 1: "EVO I", 2: "EVO II", 3: "EVO III", 4: "EVO IV" };
-  const tiers = META.evolutions || [];
+  const tiers = weaponEvos();
   const rows = [];
   for (const t of tiers) {
     const sel = evoSel[t.tier] || null;
@@ -1414,7 +1417,7 @@ function renderOptArcanes() {
 // and a search toggle (broken evolutions flagged).
 function renderOptEvos() {
   const roman = ["", "I", "II", "III", "IV"];
-  $("opt-evos").innerHTML = (META.evolutions || []).map((t) => {
+  $("opt-evos").innerHTML = (weaponEvos()).map((t) => {
     const sel = opt.evos[t.tier] || {};
     const pinned = evoPinned(t.tier);
     const hasPool = Object.values(sel).some((s) => s === "search");
@@ -1544,7 +1547,7 @@ function applyOptGroupState(g, st) {
     // Cross-weapon: keep only ids the CURRENT weapon's tiers actually offer
     // (ids are globally unique, so a family sharing evolutions imports
     // cleanly and a different weapon's ids just drop).
-    const tiers = META.evolutions || [];
+    const tiers = weaponEvos();
     opt.evos = {};
     Object.entries(st.evos || {}).forEach(([t, m]) => {
       const tier = tiers.find((x) => String(x.tier) === String(t));
@@ -1767,7 +1770,7 @@ function updateOptEstimate() {
   const arcCount = arcanePinned() ? 1
     : Math.max(1, Object.values(opt.arcanes).filter((s) => s === "search").length);
   let evoProduct = 1;
-  (META.evolutions || []).forEach((t) => {
+  (weaponEvos()).forEach((t) => {
     const m = opt.evos[t.tier] || {};
     evoProduct *= evoPinned(t.tier) ? 1
       : Math.max(1, Object.values(m).filter((s) => s === "search").length);
@@ -1961,7 +1964,7 @@ async function reattachOptimize() {
 const prettify = (id) => id.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 const arcName = (id) => (id === "none" ? "no arcane" : ((META.arcanes || []).find((a) => a.id === id) || {}).name || prettify(id));
 const evoName = (id) => {
-  for (const t of META.evolutions || []) { const o = t.options.find((o) => o.id === id); if (o) return o.name; }
+  for (const t of weaponEvos()) { const o = t.options.find((o) => o.id === id); if (o) return o.name; }
   return prettify(id);
 };
 
@@ -2008,7 +2011,7 @@ function loadResult(res) {
   arcaneRank = res.arcane === "none" ? null : (res.arcane_rank ?? null);
   evoSel = { 1: null, 2: null, 3: null, 4: null };
   (res.evolutions || []).forEach((id) => {
-    const t = (META.evolutions || []).find((tt) => tt.options.some((o) => o.id === id));
+    const t = (weaponEvos()).find((tt) => tt.options.some((o) => o.id === id));
     if (t) evoSel[t.tier] = id;
   });
   autoForma();

@@ -121,25 +121,26 @@ fn main() {
     // The Evolution II choice is a SEARCH DIMENSION (user, 2026-07-25):
     // the whole canonical space is enumerated against BOTH weapon
     // configs (both forms resolved with Frenzy's Toxin injection).
-    use wfsim_engine::loadout::DtEvo2;
     let mut cands = Vec::new();
     // Fevered Frenzy is the LOCKED official Evolution II (user,
     // 2026-07-25: it swept all three benchmark scenarios); `evo2=both`
-    // re-opens the comparison.
-    let evo2s: &[(DtEvo2, &'static str)] = if evo2_both {
+    // re-opens the comparison. Evolution ids are DATA — the engine's
+    // from_data builds either form from them.
+    let evo2s: &[(&'static str, &'static str)] = if evo2_both {
         &[
-            (DtEvo2::FeveredFrenzy, "fevered"),
-            (DtEvo2::CarnageReign, "carnage"),
+            ("dt_fevered_frenzy", "fevered"),
+            ("dt_carnage_reign", "carnage"),
         ]
     } else {
-        &[(DtEvo2::FeveredFrenzy, "fevered")]
+        &[("dt_fevered_frenzy", "fevered")]
     };
     // `variant` is now an index into this evo-set label table (widened from a
     // &str so the web can search arbitrary per-tier evolution sets).
     let variant_labels: Vec<&'static str> = evo2s.iter().map(|(_, l)| *l).collect();
     for (vi, &(evo2, label)) in evo2s.iter().enumerate() {
-        let base = WeaponBase::dual_toxocyst_incarnon(true, evo2);
-        let base_form = WeaponBase::dual_toxocyst_base(true, evo2);
+        let evos = ["dt_commodores_fortune", "dt_evolved_autoloader", evo2];
+        let base = WeaponBase::from_data("dual_toxocyst_incarnon", true, &evos);
+        let base_form = WeaponBase::from_data("dual_toxocyst", true, &evos);
         let (mut c, stats) = enumerate_candidates(
             &p,
             &base,
@@ -148,7 +149,7 @@ fn main() {
             8, // exact 8-mod builds: the CLI stress test's classic space
             8,
             60,
-            &dual_toxocyst_innate_slots(),
+            &wfsim_engine::weapons_data::innate_slots("dual_toxocyst"),
             &constraints,
             &[None], // CLI stress test: exilus slot left empty
         );
@@ -174,7 +175,7 @@ fn main() {
     // policy (non-simmable triggers are honest no-ops there).
     use wfsim_engine::arcanes_data::{self, ArcaneFx};
     use wfsim_engine::loadout::StackPolicy;
-    let arc_base = wfsim_engine::loadout::WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy);
+    let arc_base = wfsim_engine::loadout::WeaponBase::from_data("dual_toxocyst", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
     let fx_of = |id: &str| -> ArcaneFx {
         if id == "none" {
             return ArcaneFx::none();

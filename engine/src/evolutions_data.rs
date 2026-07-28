@@ -299,8 +299,8 @@ mod tests {
 
     #[test]
     fn broken_evolutions_apply_nothing() {
-        use crate::loadout::{DtEvo2, WeaponBase};
-        let with = WeaponBase::dual_toxocyst_base(false, DtEvo2::FeveredFrenzy);
+        use crate::loadout::WeaponBase;
+        let with = WeaponBase::from_data("dual_toxocyst", false, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
         let mut probe = with.clone();
         apply(&mut probe, &[get("dt_ready_retaliation").unwrap()]);
         assert!((probe.base_vector.total() - with.base_vector.total()).abs() < 1e-9);
