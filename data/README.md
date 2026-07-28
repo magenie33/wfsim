@@ -13,16 +13,43 @@ item  ──references──▶  perk (trigger + grants)
 (weapon / arcane / mod)   (data/perks/, carries its granted effects inline)
 ```
 
-- A `perks:` entry is **either a bare id (a reference) or a full inline
-  definition** — both are valid, and both register the perk in the GLOBAL
-  perk namespace. A second carrier just writes the bare id, wherever the
-  definition lives (table file or another item's inline block). Ids are
-  globally unique, machine-enforced (`weapons_data` tests): one definition,
-  everywhere else references. Moving a much-shared inline perk into
-  `perks/<id>.yaml` is tidiness, not a requirement — both Dual Toxocyst
-  forms reference the table perk `frenzy`.
 - A perk carries its `grants` block inline; a separate buff table returns
   only if two perks ever grant the same effect.
+
+## Perks: define once, reference anywhere
+
+A `perks:` entry is **either a bare id (a reference) or a full inline
+definition** — both forms are valid, and **both register the perk in the
+GLOBAL perk namespace**:
+
+```yaml
+# weapon_a.yaml — defines a one-off perk INLINE (no ceremony needed)
+perks:
+  - id: venom_burst
+    trigger: on_kill
+    grants: { ... }
+
+# weapon_b.yaml — a later carrier just references the bare id,
+# regardless of where the definition lives
+perks:
+  - venom_burst
+```
+
+The three rules:
+
+1. **Define once, anywhere.** A perk's single definition may live in
+   `perks/<id>.yaml` (the table) or inline in one item's `perks:` list.
+   Resolution (`engine::weapons_data::perk`) searches the table first, then
+   every item's inline definitions.
+2. **Every other carrier writes the bare id.** Never a second copy — both
+   Dual Toxocyst forms reference `frenzy` (a table perk).
+3. **Ids are globally unique, machine-enforced** —
+   `weapons_data::tests::perk_ids_are_globally_unique_across_table_and_inlines`
+   fails the build on a duplicate (inline shadowing a table id, or the same
+   id inlined twice), so a bare id is never ambiguous.
+
+Moving a much-shared inline perk into `perks/<id>.yaml` is tidiness, not a
+sharing requirement: it is a pure move — no referencing entry changes.
 
 ## Directories
 
