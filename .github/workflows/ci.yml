@@ -10,7 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: jdx/mise-action@v2 # installs the Rust toolchain pinned in mise.toml
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          # keep in sync with mise.toml
+          toolchain: "1.97.1"
+          components: clippy
       - uses: Swatinem/rust-cache@v2
       - name: Clippy (deny warnings)
         run: cargo clippy --workspace --all-targets -- -D warnings
