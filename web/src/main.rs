@@ -142,7 +142,14 @@ fn innate_slots_for(id: &str) -> Vec<Option<Polarity>> {
             v[0] = Some(Polarity::Naramon);
             v
         }
-        _ => dual_toxocyst_innate_slots().to_vec(),
+        // 8 main slots + the unpolarized exilus slot (the UI's 9th slot;
+        // same model as autoForma and the optimizer) — without it a 9-mod
+        // build trips plan_forma's mods≤slots assert.
+        _ => {
+            let mut v = dual_toxocyst_innate_slots().to_vec();
+            v.push(None);
+            v
+        }
     }
 }
 
@@ -1366,9 +1373,9 @@ fn simulate_json(v: &Value) -> Value {
         .map(|a| a.iter().filter_map(|m| m.as_str().map(String::from)).collect())
         .unwrap_or_default();
 
-    if mod_ids.len() > 8 {
-        return err_json("a Dual Toxocyst build has at most 8 mod slots");
-    }
+    // No count validation here (user, 2026-07-28): the sim runs whatever it
+    // is given — slot legality (8 main + 1 exilus) is the UI's job, and the
+    // engine resolves any mod list honestly.
 
     // ---- resolve mods against the weapon's pool (honoring the given order) ----
     let p = mod_pool_for(info.mod_class);
