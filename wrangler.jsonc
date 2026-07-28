@@ -4,6 +4,9 @@
   "name": "wfsim",
   "compatibility_date": "2026-07-28",
   "assets": {
-    "directory": "./site"
+    "directory": "./site",
+    // Real-path routing: /weapons/<Wiki_Name> is a client-side route — any
+    // unmatched path serves index.html and app.js's router resolves it.
+    "not_found_handling": "single-page-application"
   }
 }

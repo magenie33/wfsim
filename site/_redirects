@@ -1,0 +1,5 @@
+# Legacy URLs from the /app/-era layout → the app now lives at the root.
+/app / 301
+/app/ / 301
+/app/* /:splat 301
+/weapons/Dual_Toxocyst.html /weapons/Dual_Toxocyst 301

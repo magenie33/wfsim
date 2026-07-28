@@ -1,72 +1,177 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WFSim — The Simulacrum. The Primed One.</title>
-<meta name="description" content="The Simulacrum. The Primed One. WFSim replays the whole fight and matches in-game numbers — then shows you everything the game won't.">
-<style>
-  /* Design tokens copied from the app (web/src/static/style.css) — that file
-     is the source of truth; keep these in sync with it. */
-  :root{
-    color-scheme: light;
-    --plane:#f5f5f2; --surface:#ffffff; --panel2:#f0efea; --panel3:#f7f7f4;
-    --text:#0b0b0b; --text-2:#52514e; --muted:#898781; --line:rgba(11,11,11,0.12);
-    --accent:#2a78d6; --gold:#a9781f;
-  }
-  @media (prefers-color-scheme: dark){:root{
-    color-scheme: dark;
-    --plane:#0e1014; --surface:#171a21; --panel2:#1e222b; --panel3:#12151b;
-    --text:#f2f4f8; --text-2:#a6adbb; --muted:#6b7280; --line:rgba(255,255,255,0.09);
-    --accent:#4a9eff; --gold:#e8c37a;
-  }}
-  *{box-sizing:border-box}
-  html,body{margin:0}
-  body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",sans-serif;font-size:14px;line-height:1.45}
-  .topbar{display:flex;align-items:center;gap:18px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0}
-  .brand{font-weight:800;font-size:20px;letter-spacing:-.01em;color:var(--text);text-decoration:none}
-  .brand span{color:var(--gold)}
-  .ghost-btn{margin-left:auto;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:5px 9px;text-decoration:none;font-size:12px}
-  .ghost-btn:hover{background:var(--plane)}
-  .home-page{max-width:1060px;margin:0 auto;padding:28px 18px}
-  .hero-h{font-size:32px;letter-spacing:-.01em;margin:22px 0 10px}
-  .hero-h span{color:var(--gold)}
-  .hero-sub{color:var(--text-2);font-size:15px;max-width:620px;margin:0 0 34px}
-  .home-h{font-size:26px;margin:6px 0 18px}
-  #weapon-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
-  .wcard{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel2);text-decoration:none;color:var(--text);transition:border-color .15s}
-  .wcard:hover{border-color:var(--accent)}
-  .wcard img{width:84px;height:84px;object-fit:contain;flex:0 0 auto}
-  .wcard b{font-size:16px}
-  footer{max-width:1060px;margin:0 auto;padding:28px 18px 40px;color:var(--muted);font-size:12px}
-  footer a{color:var(--muted)}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WFSim — The Simulacrum. The Primed One.</title>
+  <meta name="description" content="The Simulacrum. The Primed One. A Warframe builder, fight simulator, and build optimizer: WFSim replays the whole fight and matches in-game numbers — then shows you everything the game won't." />
+  <!-- Absolute asset paths: with real-path routing the document can sit at
+       /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-<header class="topbar">
-  <a class="brand" href="./">WF<span>Sim</span></a>
-  <a class="ghost-btn" href="https://github.com/magenie33/wfsim">GitHub</a>
-</header>
+  <header class="topbar">
+    <a class="brand" href="/">WF<span>Sim</span></a>
+    <a id="back-home" class="ghost-btn small back-home" href="/">← Weapons</a>
+    <label class="weapon-pick">Weapon <select id="weapon"></select></label>
+    <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
+  </header>
 
-<main class="home-page">
-  <h1 class="hero-h">The Simulacrum. <span>The Primed One.</span></h1>
-  <p class="hero-sub">WFSim replays the whole fight and matches in-game
-  numbers — then shows you everything the game won't.</p>
-  <h2 class="home-h">Weapons</h2>
-  <div id="weapon-grid">
-    <a class="wcard" href="weapons/Dual_Toxocyst.html">
-      <img src="https://cdn.warframestat.us/img/DualToxocyst.png" alt="Dual Toxocyst" loading="lazy">
-      <b>Dual Toxocyst</b>
-    </a>
+  <!-- Home: the weapon list. Click a card → that weapon's config page. -->
+  <main id="home-page" class="home-page" hidden>
+    <h1 class="hero-h">The Simulacrum. <span>The Primed One.</span></h1>
+    <p class="hero-sub">Build it. Fight it. Optimize it. WFSim replays the
+    whole fight and matches in-game numbers — then shows you everything the
+    game won't.</p>
+    <h2 class="home-h">Weapons</h2>
+    <div id="weapon-grid"></div>
+  </main>
+
+  <main class="config-page" hidden>
+    <div class="wstrip">
+      <img id="w-img" alt="" />
+      <div>
+        <h1 id="w-name">—</h1>
+        <div id="w-tags" class="tags"></div>
+      </div>
+    </div>
+
+    <!-- Preset bar: click a chip to load; the active chip carries update /
+         delete; "+ save" stores the current build (max 10). -->
+    <div class="preset-bar" id="preset-bar"></div>
+
+    <!-- Block: Mods -->
+    <section class="block" id="mod-block">
+      <div class="bh"><span class="n">1</span><h2>Mods</h2>
+        <span class="sub">
+          <span class="cap" id="capacity">0 / 60</span>
+          <span class="forma" id="forma">0 Forma</span>
+          <button id="auto-forma" class="ghost-btn small" title="auto-assign polarities for minimum Forma">auto</button>
+          <button id="clear-mods" class="ghost-btn small">clear</button>
+        </span>
+      </div>
+      <div class="bb">
+        <div id="mod-slots" class="slots"></div>
+        <div class="exlabel">Exilus</div>
+        <div id="exilus" class="slots"></div>
+      </div>
+    </section>
+
+    <!-- Block: Arcane -->
+    <section class="block" id="arcane-block">
+      <div class="bh"><span class="n">2</span><h2>Arcane</h2><span class="sub" id="arcane-sub"></span></div>
+      <div class="bb"><div id="arcane-slots" class="slots one"></div></div>
+    </section>
+
+    <!-- Block: Evolution (Incarnon weapons) -->
+    <section class="block" id="evo-block">
+      <div class="bh"><span class="n">3</span><h2>Evolution</h2><span class="sub">Incarnon Genesis</span></div>
+      <div class="bb"><div id="evo-rows"></div></div>
+    </section>
+
+    <!-- Block: Element (Kuva / Tenet / element-configurable weapons) -->
+    <section class="block" id="element-block" hidden>
+      <div class="bh"><span class="n">4</span><h2>Element</h2><span class="sub">configurable element</span></div>
+      <div class="bb"><div id="element-cfg"></div></div>
+    </section>
+
+    <!-- Block: Stats — the FINAL panel: merged buckets, explained by source -->
+    <section class="block" id="stats-block">
+      <div class="bh"><span class="n">Σ</span><h2>Stats</h2><span class="sub" id="stats-sub"></span></div>
+      <div class="bb">
+        <div id="stats-rows"></div>
+        <div id="stats-damage"></div>
+        <div id="stats-conditionals"></div>
+      </div>
+    </section>
+
+    <!-- Block: Sim — the 2D arena + scenario/buff settings; Run simulates the
+         current build against the enemy and shows a summary + scene replay. -->
+    <section class="block" id="sim-block">
+      <div class="bh"><span class="n">▶</span><h2>Sim</h2><span class="sub" id="sim-sub"></span></div>
+      <div class="bb">
+        <div id="sim-arena" class="arena">
+          <div class="arena-actor tenno" id="arena-tenno"><span class="dot"></span><span class="lbl">Tenno</span></div>
+          <div class="arena-lane"><div class="tracer" id="arena-tracer"></div></div>
+          <div class="arena-actor enemy" id="arena-enemy">
+            <span class="dot"></span>
+            <span class="lbl" id="arena-ename">Enemy</span>
+            <div class="arena-bars" id="arena-bars"></div>
+            <div class="arena-status" id="arena-status"></div>
+          </div>
+        </div>
+        <h3 class="sim-h">1 · Enemy</h3>
+        <div id="sim-enemy" class="field-grid"></div>
+        <h3 class="sim-h">2 · Buffs <span class="sim-hint">initial stacks + lock (locked = 100% uptime)</span></h3>
+        <div id="sim-buffs"></div>
+        <h3 class="sim-h">3 · Simulation</h3>
+        <div id="sim-run" class="field-grid"></div>
+        <button id="run-sim" class="run-btn">Run Simulation</button>
+        <div id="sim-results"></div>
+      </div>
+    </section>
+
+    <!-- Block: Optimizer — scope (mods/arcanes/evolutions) + the Sim panel's
+         enemy & buff settings → top-10 ranked builds, each loadable. -->
+    <section class="block" id="opt-block">
+      <div class="bh"><span class="n">⚙</span><h2>Optimize</h2><span class="sub" id="opt-sub">self-contained — its own enemy, buffs and run budget</span></div>
+      <div class="bb">
+        <h3 class="sim-h">Mods <span class="sim-hint">search by name or effect; mark each as pool (search) or required</span></h3>
+        <div class="preset-bar" id="opt-preset-mods"></div>
+        <div class="opt-mods-head">
+          <input id="opt-mod-filter" type="text" placeholder="search mods by name or effect…" autocomplete="off">
+          <label class="opt-size">Max mods / build <input id="opt-size" type="number" min="1" max="8" value="8"></label>
+        </div>
+        <div id="opt-picker-tools" class="picker-tools"></div>
+        <div id="opt-mods-sel"></div>
+        <div id="opt-mods" class="combo-menu opt-modlist"></div>
+        <h3 class="sim-h">Exilus slot <span class="sim-hint">the +1 slot — pool = slot options, req = pin one; nothing marked = the slot stays empty</span></h3>
+        <div id="opt-exilus" class="combo-menu opt-modlist"></div>
+        <h3 class="sim-h">Arcanes <span class="sim-hint">pool = searched options, req = pin the slot</span></h3>
+        <div class="preset-bar" id="opt-preset-arcs"></div>
+        <input id="opt-arc-filter" type="text" placeholder="search arcanes by name or effect…" autocomplete="off">
+        <div id="opt-arcanes" class="combo-menu opt-modlist"></div>
+        <h3 class="sim-h">Evolutions <span class="sim-hint">per tier: pool = searched options, req = pin</span></h3>
+        <div class="preset-bar" id="opt-preset-evos"></div>
+        <div id="opt-evos"></div>
+        <h3 class="sim-h">Enemy <span class="sim-hint">the optimizer's own scenario — independent of the Sim panel</span></h3>
+        <div id="opt-enemy" class="field-grid"></div>
+        <h3 class="sim-h">Buffs <span class="sim-hint">across the whole scope — initial stacks + lock, applied per candidate</span></h3>
+        <div id="opt-buffs"></div>
+        <div class="opt-final">
+          <label>Final runs <input id="opt-final-runs" type="number" min="1" max="100000" value="1024"></label>
+          <label>Finalists <input id="opt-finalists" type="number" min="1" max="100" value="20"></label>
+          <span class="sim-hint">the last round is guaranteed: finalists × final runs; earlier rounds only cut the field</span>
+        </div>
+        <div id="opt-estimate" class="opt-est"></div>
+        <button id="run-opt" class="run-btn">Run Optimizer</button>
+        <div id="opt-results"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- floating popovers (positioned at the active slot) -->
+  <div id="mod-popover" class="popover" hidden>
+    <div class="addbar"><span>🔍</span><input id="mod-search" type="text" placeholder="Search a mod…" autocomplete="off" /></div>
+    <div id="picker-tools" class="picker-tools"></div>
+    <div id="mod-menu" class="combo-menu"></div>
   </div>
-</main>
+  <div id="slot-menu" class="popover menu" hidden></div>
+  <div id="arcane-popover" class="popover" hidden>
+    <div class="addbar"><span>🔍</span><input id="arcane-search" type="text" placeholder="Search arcane / effect…" autocomplete="off" /></div>
+    <div id="arcane-menu" class="combo-menu"></div>
+  </div>
 
-<footer>
-  WFSim is an unofficial fan project, not affiliated with or endorsed by
-  Digital Extremes. Warframe is a trademark of Digital Extremes Ltd.
-  Game data derived from the community
-  <a href="https://wiki.warframe.com/">Warframe Wiki</a> (CC BY-SA) ·
-  <a href="https://github.com/magenie33/wfsim">github.com/magenie33/wfsim</a> · MIT
-</footer>
+  <footer class="legal-footer">
+    WFSim is an unofficial fan project, not affiliated with or endorsed by
+    Digital Extremes. Warframe is a trademark of Digital Extremes Ltd.
+    Game data derived from the community
+    <a href="https://wiki.warframe.com/">Warframe Wiki</a> (CC BY-SA) ·
+    <a href="https://github.com/magenie33/wfsim">github.com/magenie33/wfsim</a> · MIT
+  </footer>
+
+  <script>window.WFSIM_WASM = true;</script>
+
+  <script src="/app.js"></script>
 </body>
 </html>

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Package the in-browser builder into site/app/ (docs/WASM.md phase 4).
+"""Package the in-browser builder into site/ (docs/WASM.md phase 4).
 
 Steps:
   1. cargo build --release -p wfsim-wasm --target wasm32-unknown-unknown
   2. wasm-bindgen --target no-modules  ->  site/app/pkg/
   3. wasm-opt -Oz (if available; optional)
-  4. copy web/src/static/{index.html,app.js,style.css,worker.js,pol/} -> site/app/
+  4. copy web/src/static/{index.html,app.js,style.css,worker.js,pol/} -> site/
   5. inject <script>window.WFSIM_WASM = true;</script> into the copied
      index.html — that flag flips app.js's api() from fetch to worker RPC.
 
 wrangler already serves site/ at wfsim.app, so after this script the builder
-lives at wfsim.app/app/ and every simulation runs on the visitor's own CPU.
+lives at wfsim.app/ and every simulation runs on the visitor's own CPU.
 
 Prereqs: rustup target add wasm32-unknown-unknown;
          cargo install wasm-bindgen-cli --version <matching Cargo.lock>.
@@ -24,7 +24,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = ROOT / "web" / "src" / "static"
-APP = ROOT / "site" / "app"
+APP = ROOT / "site"
 WASM = ROOT / "target" / "wasm32-unknown-unknown" / "release" / "wfsim_wasm.wasm"
 
 
@@ -52,7 +52,7 @@ def main() -> None:
 
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     flagged = re.sub(
-        r"(\s*)(<script src=\"app\.js\"></script>)",
+        r"(\s*)(<script src=\"/app\.js\"></script>)",
         r"\1<script>window.WFSIM_WASM = true;</script>\1\2",
         html,
         count=1,
@@ -62,7 +62,7 @@ def main() -> None:
     (APP / "index.html").write_text(flagged, encoding="utf-8", newline="\n")
 
     size = (APP / "pkg" / "wfsim_wasm_bg.wasm").stat().st_size
-    print(f"site/app/ ready — wasm {size / 1e6:.1f} MB")
+    print(f"site/ ready — wasm {size / 1e6:.1f} MB")
 
 
 if __name__ == "__main__":

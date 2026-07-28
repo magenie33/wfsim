@@ -24,7 +24,7 @@ const IMG = (name) => {
 // — no more slow wiki 302 redirects. Omni (universal) uses the "Any" symbol
 // (a PNG); the rest are SVGs. Relative path: the app page sits at "/"
 // natively and at "/app/" on the static deployment.
-const POL = (p) => `pol/${p === "Omni" ? "Any" : p}_Pol.${p === "Omni" ? "png" : "svg"}`;
+const POL = (p) => `/pol/${p === "Omni" ? "Any" : p}_Pol.${p === "Omni" ? "png" : "svg"}`;
 // Polarities available on GUN slots. Zenurik/Unairu/Penjaga are Warframe-augment
 // / melee-stance / companion-ability polarities — not gun slots. "Omni" is the
 // Omni Forma universal polarity (matches any mod EXCEPT Umbra mods).
@@ -44,7 +44,7 @@ let rpcWorker = null, rpcId = 0;
 const rpcPending = new Map();
 function ensureRpcWorker() {
   if (rpcWorker) return rpcWorker;
-  rpcWorker = new Worker("worker.js");
+  rpcWorker = new Worker("/worker.js");
   rpcWorker.onmessage = (e) => {
     const p = rpcPending.get(e.data.id);
     if (p) { rpcPending.delete(e.data.id); p(e.data.payload); }
@@ -63,7 +63,7 @@ function woptStart(body) {
   if (wopt && wopt.worker) {
     return { ok: false, error: "an optimization is already running — cancel it or wait", job_id: wopt.id };
   }
-  const job = { id: woptNextId++, worker: new Worker("worker.js"), status: null, result: null, cancelled: false, t0: Date.now() };
+  const job = { id: woptNextId++, worker: new Worker("/worker.js"), status: null, result: null, cancelled: false, t0: Date.now() };
   job.worker.onmessage = (e) => {
     if (e.data.kind === "progress") job.status = e.data.payload;
     if (e.data.kind === "result") { job.result = e.data.payload; job.worker.terminate(); job.worker = null; }
@@ -187,7 +187,7 @@ async function init() {
 
   $("weapon").addEventListener("change", () => {
     applyWeapon($("weapon").value, null);
-    if (location.hash.startsWith("#/w/")) location.hash = "#/w/" + $("weapon").value;
+    if (!document.querySelector(".config-page").hidden) nav(weaponPath($("weapon").value));
   });
   $("run-sim").addEventListener("click", runSim);
   $("run-opt").addEventListener("click", runOptimize);
@@ -215,19 +215,42 @@ async function init() {
     if (!e.target.closest(".popover") && !e.target.closest(".slot")) closePopovers();
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePopovers(); });
-  window.addEventListener("hashchange", route);
+  window.addEventListener("popstate", route);
+  // In-app navigation: any same-origin root-relative link routes client-side
+  // (modified clicks — new tab etc. — keep native behavior; a full page load
+  // also works thanks to the server's SPA fallback).
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest('a[href^="/"]');
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    e.preventDefault();
+    nav(a.getAttribute("href"));
+  });
   route();
 }
 
-// ---- views: '#/' = the weapon list (home), '#/w/<id>' = the config page --
-// The weapon <select> stays the internal source of truth; the home grid and
-// the hash just drive it.
+// ---- views: '/' = the weapon list (home); '/weapons/<Wiki_Name>' = the
+// config page. URLs mirror wiki page names (display name, spaces → '_');
+// internal weapon ids never appear in URLs. The weapon <select> stays the
+// internal source of truth; the home grid and the path just drive it.
+const wikiSlug = (w) => w.name.split(" (")[0].replace(/ /g, "_");
+const weaponPath = (id) => {
+  const w = (META.weapons || []).find((x) => x.id === id);
+  return "/weapons/" + (w ? wikiSlug(w) : id);
+};
+function nav(path) {
+  if (location.pathname !== path) history.pushState(null, "", path);
+  route();
+}
 function route() {
-  const m = location.hash.match(/^#\/w\/([\w-]+)$/);
-  const w = m && (META.weapons || []).find((x) => x.id === m[1]);
+  const m = location.pathname.match(/^\/weapons\/([^/]+)\/?$/);
+  const slug = m && decodeURIComponent(m[1]).toLowerCase();
+  const w = slug && (META.weapons || []).find(
+    (x) => wikiSlug(x).toLowerCase() === slug || x.id === slug
+  );
   document.body.classList.toggle("on-home", !w);
   $("home-page").hidden = !!w;
   document.querySelector(".config-page").hidden = !w;
+  document.title = w ? `${w.name} — WFSim` : "WFSim — The Simulacrum. The Primed One.";
   if (w) {
     if ($("weapon").value !== w.id) {
       $("weapon").value = w.id;
@@ -248,7 +271,7 @@ function renderHome() {
       `<span class="tag">${w.subtype || w.mod_class}</span>`,
       `<span class="tag">${w.mod_class} mods</span>`,
     ].join("");
-    return `<a class="wcard" href="#/w/${w.id}">
+    return `<a class="wcard" href="/weapons/${wikiSlug(w)}">
       ${imgTag(IMG(w.image), "wc-img")}
       <div class="wc-info">
         <div class="wc-name">${w.name}</div>
@@ -284,7 +307,9 @@ function restoreState(st) {
   if (!st || !weaponInfo(st.weapon)) return;
   $("weapon").value = st.weapon;
   // Keep the route honest when a preset switches weapons on the config page.
-  if (location.hash.startsWith("#/w/")) location.hash = "#/w/" + st.weapon;
+  if (!document.querySelector(".config-page").hidden) {
+    history.replaceState(null, "", weaponPath(st.weapon));
+  }
   applyWeapon(st.weapon, null); // resets pool/innate/visibility
   (st.slots || []).forEach((s, i) => {
     if (i >= slots.length) return;

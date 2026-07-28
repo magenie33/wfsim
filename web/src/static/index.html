@@ -3,23 +3,27 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>WFSim — build configurator</title>
-  <!-- Relative asset paths: the page sits at "/" on the native server and
-       at "/app/" on the static wasm deployment — both resolve. -->
-  <link rel="stylesheet" href="style.css" />
+  <title>WFSim — The Simulacrum. The Primed One.</title>
+  <meta name="description" content="The Simulacrum. The Primed One. A Warframe builder, fight simulator, and build optimizer: WFSim replays the whole fight and matches in-game numbers — then shows you everything the game won't." />
+  <!-- Absolute asset paths: with real-path routing the document can sit at
+       /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#/">WF<span>Sim</span></a>
-    <a id="back-home" class="ghost-btn small back-home" href="#/">← Weapons</a>
+    <a class="brand" href="/">WF<span>Sim</span></a>
+    <a id="back-home" class="ghost-btn small back-home" href="/">← Weapons</a>
     <label class="weapon-pick">Weapon <select id="weapon"></select></label>
     <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
   </header>
 
   <!-- Home: the weapon list. Click a card → that weapon's config page. -->
   <main id="home-page" class="home-page" hidden>
-    <h1 class="home-h">Pick a weapon</h1>
-    <p class="home-sub">Every weapon here is fully modeled and calibrated against in-game numbers — build it, simulate it, optimize it.</p>
+    <h1 class="hero-h">The Simulacrum. <span>The Primed One.</span></h1>
+    <p class="hero-sub">Build it. Fight it. Optimize it. WFSim replays the
+    whole fight and matches in-game numbers — then shows you everything the
+    game won't.</p>
+    <h2 class="home-h">Weapons</h2>
     <div id="weapon-grid"></div>
   </main>
 
@@ -166,6 +170,6 @@
     <a href="https://github.com/magenie33/wfsim">github.com/magenie33/wfsim</a> · MIT
   </footer>
 
-  <script src="app.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>
