@@ -187,7 +187,7 @@ impl ArcRuntime {
 
 /// The real Incarnon combat cycle (user flow, 2026-07-24): the run STARTS
 /// with a full gauge in Incarnon Form; when the charge magazine empties,
-/// revert (`revert_seconds`), fight in the base form until weakpoint hits
+/// revert (`transmute_out_seconds`), fight in the base form until weakpoint hits
 /// (each multishot pellet counts) rebuild the gauge, transmute
 /// (`transmute_seconds`), repeat. Swapping either way fully reloads the
 /// base form's magazine (wiki side effect). Frenzy EXISTS in the Incarnon
@@ -201,7 +201,7 @@ pub struct IncarnonCycle {
     /// Weakpoint hits to fill the gauge (Dual Toxocyst: 9).
     pub charges_to_fill: u32,
     /// Incarnon → base transition (already reload-speed scaled).
-    pub revert_seconds: f64,
+    pub transmute_out_seconds: f64,
     /// Base → Incarnon transition (already reload-speed scaled).
     pub transmute_seconds: f64,
 }
@@ -1239,7 +1239,7 @@ impl DummyParams {
                 // Dual Toxocyst gauge: 9 weakpoint charges
                 // (data/weapons/dual_toxocyst_incarnon.yaml).
                 charges_to_fill: 9,
-                revert_seconds: 1.0 / rl,
+                transmute_out_seconds: 1.0 / rl,
                 transmute_seconds: 2.35 / rl,
             }),
             ..Self::from_panel(incarnon, target, body_parts, duration_secs)
@@ -1639,7 +1639,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             if !in_base_form && magazine < 1e-9 {
                 // Charge magazine spent: revert to the base form. The swap
                 // fully reloads the base magazine (wiki side effect).
-                t += cy.revert_seconds;
+                t += cy.transmute_out_seconds;
                 r.transforms += 1;
                 in_base_form = true;
                 charges = 0;
@@ -3265,7 +3265,7 @@ mod tests {
             cycle: Some(IncarnonCycle {
                 base_form: Box::new(base_form),
                 charges_to_fill: 2,
-                revert_seconds: 0.5,
+                transmute_out_seconds: 0.5,
                 transmute_seconds: 1.0,
             }),
             ..no_status()

@@ -40,7 +40,7 @@ pub struct IncarnonSpec {
     pub gauge: GaugeSpec,
     /// Transition animations, unmodded; both scale by the reload formula.
     pub transmute_in_seconds: f64,
-    pub revert_out_seconds: f64,
+    pub transmute_out_seconds: f64,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -312,7 +312,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
     let incarnon = s.incarnon.as_ref().map(|inc| IncarnonForm {
         max_charges: inc.gauge.max_rounds,
         transmute_in: inc.transmute_in_seconds,
-        transmute_out: inc.revert_out_seconds,
+        transmute_out: inc.transmute_out_seconds,
     });
 
     WeaponBase {

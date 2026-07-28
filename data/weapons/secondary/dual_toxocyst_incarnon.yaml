@@ -26,7 +26,7 @@ incarnon:
   transmute:
     activation: alt_fire            # full gauge NOT required
     animation_seconds: reload_speed # mode switch takes the reload time
-    revert: on_incarnon_ammo_empty
+    auto_transmute_out: on_incarnon_ammo_empty
     # switch_back_penalty: expends all remaining charge
   incarnon_magazine:
     # CAUSAL MODEL (user, 2026-07-24): the Incarnon form's rounds are
@@ -45,11 +45,11 @@ incarnon:
   # Transition animations (M9): both directions scale by the OFFICIAL
   # reload formula (wiki Reload: time = base / (1 + reload speed bonus)).
   #   transmute IN  = the weapon's reload time (2.35 s unmodded)
-  #   revert OUT    = ~1.0 s base (user ESTIMATE - measured 1.3 s under
+  #   transmute OUT = ~1.0 s base (user ESTIMATE - measured 1.3 s under
   #                   -30% reload speed; the formula strictly implies
   #                   0.91 s; precise re-measurement deferred)
   transmute_in_seconds: 2.35     # = base reload time, unmodded
-  revert_out_seconds: 1.0        # estimate, unmodded
+  transmute_out_seconds: 1.0     # estimate, unmodded
 
 # SIM CONVENIENCE (user, 2026-07-24): with the gauge LOCKED full (analogous
 # to buff locks), the Incarnon combat cycle reduces to a standard
@@ -57,7 +57,7 @@ incarnon:
 # full charge economy is cycled:
 pseudo_reload:
   magazine: 270
-  reload_seconds: 3.35   # revert (1.0) + re-transmute (2.35), unmodded
+  reload_seconds: 3.35   # transmute out (1.0) + in (2.35), unmodded
   # note: excludes charge-rebuilding time (assumed locked); both components
   # scale with reload-speed bonuses
 
