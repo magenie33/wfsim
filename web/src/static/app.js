@@ -37,10 +37,14 @@ let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pc
   duration: 120, runs: 300, form: "incarnon_cycle", buffs: {} };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
-// Optimizer scope: mod states (id -> "search"|"fixed"; absent = off), the
-// arcane set, and per-tier evolution option sets. Enemy + buffs are shared
-// with the Sim panel (`sim`). Seeded from the current build on weapon change.
-let opt = { mods: {}, arcanes: {}, evos: {}, size: 8, buffs: {} };
+// Optimizer scope, 8 + 1 slots in TWO blocks: `mods` (id -> "search"|"fixed")
+// scopes the MAIN 8 slots — exilus-flagged mods may sit here too, all 9
+// slots accept them (game rule); `exilus` (same states, exilus-eligible mods
+// only) scopes the +1 exilus slot — "search" = a slot option next to "leave
+// empty", "fixed" = pin it (max one). Plus the arcane set and per-tier
+// evolution option sets. Enemy + buffs are shared with the Sim panel
+// (`sim`). Seeded from the current build on weapon change.
+let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8, buffs: {} };
 let optSeeded = false;
 // Buffs across the WHOLE optimizer scope (from /api/opt-buffs), + a debounce.
 let optBuffList = [];
@@ -88,6 +92,7 @@ async function init() {
     updateOptEstimate();
   });
   initPresets();
+  reattachOptimize(); // resume progress display if a server-side job survives a reload
   $("auto-forma").addEventListener("click", () => { autoForma(); renderMods(); });
   $("clear-mods").addEventListener("click", () => { slots.forEach((s, i) => { s.mod = null; s.pol = innate[i]; }); renderMods(); });
   document.addEventListener("click", (e) => {
@@ -221,7 +226,7 @@ const placedAt = (id, exceptIdx) => slots.findIndex((s, i) => i !== exceptIdx &&
 function applyWeapon(id, presetMods) {
   const w = weaponInfo(id);
   buffList = []; // rebuilt from the next /api/panel response for this build
-  opt = { mods: {}, arcanes: {}, evos: {}, size: 8, buffs: {} }; optSeeded = false; optBuffList = []; // reset scope
+  opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8, buffs: {} }; optSeeded = false; optBuffList = []; // reset scope
   currentPool = META.mod_pools[w.mod_class] || [];
   innate = (w.innate_polarities || []).slice(0, 8);
   while (innate.length < 9) innate.push(null);
@@ -949,6 +954,28 @@ function nChooseK(n, k) {
   return r;
 }
 
+// ---- scope mutex helpers -----------------------------------------------
+// Family exclusivity is a GAME rule across all 9 slots: req'ing a mod kills
+// its family siblings everywhere (e.g. req Primed Pistol Gambit → plain
+// Pistol Gambit can be neither pool nor req). The UI greys them out; setting
+// a req actively clears conflicting marks so the scope never lies.
+function famReqBy(m) {
+  if (!m || !m.family) return null;
+  const hit = (map) => Object.keys(map).find((id) => map[id] === "fixed" && id !== m.id && (modById(id) || {}).family === m.family);
+  return hit(opt.mods) || hit(opt.exilus) || null;
+}
+function clearFamMarks(id) {
+  const m = modById(id);
+  if (!m || !m.family) return;
+  [opt.mods, opt.exilus].forEach((map) => Object.keys(map).forEach((o) => {
+    if (o !== id && (modById(o) || {}).family === m.family) delete map[o];
+  }));
+}
+const reqCountMain = () => Object.values(opt.mods).filter((s) => s === "fixed").length;
+const exilusPinned = () => Object.keys(opt.exilus).find((id) => opt.exilus[id] === "fixed") || null;
+const arcanePinned = () => Object.keys(opt.arcanes).find((id) => opt.arcanes[id] === "fixed") || null;
+const evoPinned = (tier) => { const m = opt.evos[tier] || {}; return Object.keys(m).find((id) => m[id] === "fixed") || null; };
+
 function renderOpt() {
   if (!META || weaponInfo($("weapon").value).id !== "dual_toxocyst") {
     show("opt-block", weaponInfo($("weapon").value).id === "dual_toxocyst");
@@ -956,15 +983,19 @@ function renderOpt() {
   }
   // Seed scope from the current build once: equipped mods = fixed.
   if (!optSeeded) {
-    opt.mods = {};
+    opt.mods = {}; opt.exilus = {};
+    // Everything equipped seeds as REQ (pinned) — the scope mirrors the
+    // build until the user opens dimensions up.
     slots.slice(0, 8).forEach((s) => { if (s.mod) opt.mods[s.mod] = "fixed"; });
-    opt.arcanes = arcane && arcane !== "none" ? { [arcane]: true, none: true } : { none: true };
+    if (slots[EXILUS].mod) opt.exilus[slots[EXILUS].mod] = "fixed";
+    opt.arcanes = arcane && arcane !== "none" ? { [arcane]: "fixed" } : {};
     opt.evos = {};
-    Object.entries(evoSel).forEach(([t, id]) => { if (id) opt.evos[t] = { [id]: true }; });
+    Object.entries(evoSel).forEach(([t, id]) => { if (id) opt.evos[t] = { [id]: "fixed" }; });
     optSeeded = true;
   }
   renderOptMods();
   renderOptPresetBar();
+  renderOptExilus();
   renderOptArcanes();
   renderOptEvos();
   updateOptEstimate();
@@ -1004,25 +1035,105 @@ function renderOptMods() {
   renderOptModList();
 }
 
+// Exilus-slot scope (the +1 slot) — exilus-eligible mods with the same
+// pool/req segs as the main list: pool = a slot option (empty always
+// allowed), req = pin the slot (max one). The same mods may ALSO be marked
+// in the main scope above — all 9 slots accept exilus mods; the search
+// never equips one twice.
+function renderOptExilus() {
+  const pinned = exilusPinned();
+  const hasPool = Object.values(opt.exilus).some((s) => s === "search");
+  // "None" is a first-class option: pool it to keep "leave empty" among the
+  // searched options, req it to pin the slot empty. Marked pools OCCUPY the
+  // slot — empty is never an implicit extra next to pooled mods.
+  const noneRow = (() => {
+    const st = opt.exilus["none"] || "off";
+    const poolDead = pinned && pinned !== "none" && st !== "search";
+    const reqDead = hasPool && st !== "fixed";
+    return `<div class="opt ${st === "off" ? "" : st}">
+      <span class="mod none">∅</span>
+      <div class="info"><div class="mn">None</div><div class="me"><div>leave the exilus slot empty (no drain)</div></div></div>
+      <div class="oseg">
+        <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-m="none" data-s="search">pool</span>
+        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-m="none" data-s="fixed" ${reqDead ? 'title="clear the pool marks first — req pins the slot"' : ""}>req</span>
+      </div>
+    </div>`;
+  })();
+  const row = (m) => {
+    const st = opt.exilus[m.id] || "off";
+    const fam = famReqBy(m);
+    // Family conflict kills the row. One slot: a pin kills other pools; any
+    // pool mark kills req (pooling = the slot is open for search — pinning
+    // would silently discard that). ON segs stay clickable to toggle off.
+    const poolDead = !!fam || (pinned && pinned !== m.id && st !== "search");
+    const reqDead = !!fam || (hasPool && st !== "fixed");
+    const why = fam ? `excluded: ${(modById(fam) || { name: fam }).name} is required (same family)` : "";
+    const eff = (descAt(m, m.max_rank) || m.effects || []).map((x) => `<div>${x}</div>`).join("");
+    return `<div class="opt ${st === "off" ? "" : st} ${fam ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why}">
+      ${imgTag(POL(m.polarity), "pol")}${imgTag(m.image ? CDN + m.image : null, "mod")}
+      <div class="info"><div class="mn">${wl(m.name)}</div><div class="me">${eff}</div></div>
+      <div class="oseg">
+        <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-m="${m.id}" data-s="search">pool</span>
+        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${reqDead && !fam ? 'title="clear the pool marks first — req pins the slot"' : ""}>req</span>
+      </div>
+    </div>`;
+  };
+  $("opt-exilus").innerHTML = noneRow + (currentPool.filter((m) => m.exilus).map(row).join("")
+    || `<div class="opt dis">no exilus mods in this pool</div>`);
+  $("opt-exilus").querySelectorAll(".seg:not(.dis)").forEach((el) =>
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const id = el.dataset.m, want = el.dataset.s, cur = opt.exilus[id] || "off";
+      if (cur === want) { delete opt.exilus[id]; }
+      else {
+        if (want === "fixed") { // one slot — req is a radio
+          Object.keys(opt.exilus).forEach((o) => { if (opt.exilus[o] === "fixed") delete opt.exilus[o]; });
+        }
+        opt.exilus[id] = want;
+        if (want === "fixed") clearFamMarks(id);
+      }
+      renderOptMods(); renderOptExilus(); updateOptEstimate();
+    }));
+}
+
 // Arcane scope — the SAME rich rows as the arcane picker (image, name, effect
 // lines), searchable, with an include toggle on the right. "None" included.
 function renderOptArcanes() {
   const q = ($("opt-arc-filter") && $("opt-arc-filter").value || "").trim().toLowerCase();
   const allEff = (a) => (a.ranks || []).reduce((acc, r) => acc.concat(r), []).concat(a.desc_ranks || []).join(" ").toLowerCase();
   const hits = (META.arcanes || []).filter((a) => a.id === "none" || !q || a.name.toLowerCase().includes(q) || allEff(a).includes(q));
+  const pinned = arcanePinned();
+  const hasPool = Object.values(opt.arcanes).some((s) => s === "search");
   $("opt-arcanes").innerHTML = hits.map((a) => {
-    const on = !!opt.arcanes[a.id], none = a.id === "none";
+    const st = opt.arcanes[a.id] || "off", none = a.id === "none";
+    // One arcane slot: pool and req are exclusive GROUP states — a pin
+    // kills every other pool; any pool mark kills req (pooling means the
+    // slot is open for search; pinning would silently discard that, so it
+    // is blocked until the pools are cleared). An ON seg always stays
+    // clickable — it must be able to toggle itself off.
+    const poolDead = pinned && pinned !== a.id && st !== "search";
+    const reqDead = hasPool && st !== "fixed";
     const eff = none ? "" : effLines(descAt(a, a.max_rank) || effectsAt(a, a.max_rank));
-    return `<div class="opt ${a.rarity ? "rar-" + a.rarity : ""} ${on ? "search" : ""}">
+    return `<div class="opt ${a.rarity ? "rar-" + a.rarity : ""} ${st === "off" ? "" : st}">
       ${none ? '<span class="mod none">∅</span>' : imgTag(a.image ? CDN + a.image : null, "mod")}
       <div class="info"><div class="mn">${none ? a.name : wl(a.name)}</div>${eff}</div>
-      <div class="oseg"><span class="seg ${on ? "on" : ""}" data-a="${a.id}">include</span></div>
+      <div class="oseg">
+        <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-a="${a.id}" data-s="search">pool</span>
+        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-a="${a.id}" data-s="fixed" ${reqDead ? 'title="clear the pool marks first — req pins the slot"' : ""}>req</span>
+      </div>
     </div>`;
   }).join("");
-  $("opt-arcanes").querySelectorAll("[data-a]").forEach((el) =>
-    el.addEventListener("click", () => {
-      const id = el.dataset.a;
-      if (opt.arcanes[id]) delete opt.arcanes[id]; else opt.arcanes[id] = true;
+  $("opt-arcanes").querySelectorAll(".seg:not(.dis)").forEach((el) =>
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const id = el.dataset.a, want = el.dataset.s, cur = opt.arcanes[id] || "off";
+      if (cur === want) { delete opt.arcanes[id]; }
+      else {
+        if (want === "fixed") { // one slot — req is a radio
+          Object.keys(opt.arcanes).forEach((o) => { if (opt.arcanes[o] === "fixed") delete opt.arcanes[o]; });
+        }
+        opt.arcanes[id] = want;
+      }
       renderOptArcanes(); updateOptEstimate(); fetchOptBuffs();
     }));
 }
@@ -1033,21 +1144,38 @@ function renderOptEvos() {
   const roman = ["", "I", "II", "III", "IV"];
   $("opt-evos").innerHTML = (META.evolutions || []).map((t) => {
     const sel = opt.evos[t.tier] || {};
+    const pinned = evoPinned(t.tier);
+    const hasPool = Object.values(sel).some((s) => s === "search");
     const rows = t.options.map((o) => {
-      const on = !!sel[o.id];
+      const st = sel[o.id] || "off";
+      // One choice per tier: a pin kills other pools; any pool mark kills
+      // req (pooling = the tier is open for search). ON segs stay clickable.
+      const poolDead = pinned && pinned !== o.id && st !== "search";
+      const reqDead = hasPool && st !== "fixed";
       const desc = (o.desc || o.effects || []).map((x) => `<div>${x}</div>`).join("");
-      return `<div class="opt ${on ? "search" : ""} ${o.broken ? "dis-soft" : ""}">
+      return `<div class="opt ${st === "off" ? "" : st} ${o.broken ? "dis-soft" : ""}">
         <div class="info"><div class="mn">${o.name}${o.broken ? ' <span class="exchip brk">BROKEN</span>' : ""}</div><div class="me">${desc}</div></div>
-        <div class="oseg"><span class="seg ${on ? "on" : ""}" data-t="${t.tier}" data-e="${o.id}">search</span></div>
+        <div class="oseg">
+          <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="search">pool</span>
+          <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="fixed" ${reqDead ? 'title="clear the pool marks first — req pins the tier"' : ""}>req</span>
+        </div>
       </div>`;
     }).join("");
     return `<div class="opt-tier-block"><div class="opt-tier-h">EVO ${roman[t.tier]}</div><div class="combo-menu opt-evolist">${rows}</div></div>`;
   }).join("");
-  $("opt-evos").querySelectorAll("[data-e]").forEach((el) =>
-    el.addEventListener("click", () => {
-      const t = el.dataset.t, id = el.dataset.e;
+  $("opt-evos").querySelectorAll(".seg:not(.dis)").forEach((el) =>
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const t = el.dataset.t, id = el.dataset.e, want = el.dataset.s;
       opt.evos[t] = opt.evos[t] || {};
-      if (opt.evos[t][id]) delete opt.evos[t][id]; else opt.evos[t][id] = true;
+      const cur = opt.evos[t][id] || "off";
+      if (cur === want) { delete opt.evos[t][id]; }
+      else {
+        if (want === "fixed") { // one choice per tier — req is a radio
+          Object.keys(opt.evos[t]).forEach((o) => { if (opt.evos[t][o] === "fixed") delete opt.evos[t][o]; });
+        }
+        opt.evos[t][id] = want;
+      }
       renderOptEvos(); updateOptEstimate(); fetchOptBuffs();
     }));
 }
@@ -1058,9 +1186,22 @@ const OPT_PRESET_MAX = 10;
 let activeOptPreset = null;
 const loadOptPresets = () => { try { const p = JSON.parse(localStorage.getItem(OPT_PRESET_KEY)); return Array.isArray(p) ? p : []; } catch (_) { return []; } };
 const storeOptPresets = (ps) => localStorage.setItem(OPT_PRESET_KEY, JSON.stringify(ps));
-const snapshotOpt = () => ({ mods: { ...opt.mods }, arcanes: { ...opt.arcanes }, evos: JSON.parse(JSON.stringify(opt.evos)), size: opt.size, buffs: JSON.parse(JSON.stringify(opt.buffs)) });
+const snapshotOpt = () => ({ mods: { ...opt.mods }, exilus: { ...opt.exilus }, arcanes: { ...opt.arcanes }, evos: JSON.parse(JSON.stringify(opt.evos)), size: opt.size, buffs: JSON.parse(JSON.stringify(opt.buffs)) });
 function restoreOpt(st) {
-  opt = { mods: { ...(st.mods || {}) }, arcanes: { ...(st.arcanes || {}) }, evos: JSON.parse(JSON.stringify(st.evos || {})), size: st.size || 8, buffs: JSON.parse(JSON.stringify(st.buffs || {})) };
+  opt = { mods: { ...(st.mods || {}) }, exilus: typeof st.exilus === "object" && st.exilus ? { ...st.exilus } : {}, arcanes: { ...(st.arcanes || {}) }, evos: JSON.parse(JSON.stringify(st.evos || {})), size: st.size || 8, buffs: JSON.parse(JSON.stringify(st.buffs || {})) };
+  // Migrations from the short-lived earlier scope formats — ONLY when the
+  // preset predates the exilus map (a new-format preset may legitimately
+  // keep exilus mods in the main scope: all 9 slots accept them).
+  if (typeof st.exilus !== "object" || !st.exilus) {
+    if (typeof st.exilus === "string" && st.exilus) opt.exilus[st.exilus] = "fixed"; // single-select era
+    Object.keys(opt.mods).forEach((id) => { // merged-list era
+      const m = modById(id);
+      if (m && m.exilus && !(id in opt.exilus)) { opt.exilus[id] = opt.mods[id]; delete opt.mods[id]; }
+    });
+  }
+  // Boolean-era arcane/evo selections ({id: true}) become pool marks.
+  Object.keys(opt.arcanes).forEach((id) => { if (opt.arcanes[id] === true) opt.arcanes[id] = "search"; });
+  Object.values(opt.evos).forEach((m) => Object.keys(m).forEach((id) => { if (m[id] === true) m[id] = "search"; }));
   optSeeded = true;
   renderOpt(); fetchOptBuffs(); updateOptEstimate();
 }
@@ -1141,8 +1282,10 @@ function renderOptModSel() {
 
 function renderOptModList() {
   const q = ($("opt-mod-filter").value || "").trim().toLowerCase();
+  // Exilus mods are IN this list too — all 9 slots accept them (game rule),
+  // so marking one here makes it compete for a MAIN slot; the exilus SLOT
+  // has its own block below.
   const hits = currentPool
-    .filter((m) => !m.exilus)
     .filter((m) => !optPrefs.pol || m.polarity === optPrefs.pol)
     .filter((m) => !q || m.name.toLowerCase().includes(q)
       || (m.effects || []).join(" ").toLowerCase().includes(q)
@@ -1152,60 +1295,118 @@ function renderOptModList() {
       return optPrefs.dir === "desc" ? -c : c;
     });
   // The picker's `.opt` row markup verbatim; only the trailing `.dr` is
-  // replaced by the pool/req control (`.oseg`).
+  // replaced by the pool/req control (`.oseg`). Mutex-aware: a family
+  // sibling of a req'd mod is dead (game exclusivity); once required fills
+  // every slot, unmarked mods can no longer join; and pooled mods RESERVE
+  // one open slot — req may only grow to size−1 while any pool mark exists
+  // (pinning the last slot would silently kill the search).
+  const fixedN = reqCountMain();
+  const poolN = Object.values(opt.mods).filter((s) => s === "search").length;
+  const full = fixedN >= opt.size;
   const row = (m) => {
     const st = opt.mods[m.id] || "off";
+    const fam = famReqBy(m);
+    const dead = !!fam || (full && st === "off");
+    // Would req'ing this row leave pooled mods with zero open slots?
+    const poolAfter = poolN - (st === "search" ? 1 : 0);
+    const reqBlocked = st !== "fixed" && (fixedN + 1 > opt.size - (poolAfter > 0 ? 1 : 0));
+    const why = fam ? `excluded: ${(modById(fam) || { name: fam }).name} is required (same family)`
+      : dead ? `all ${opt.size} slots are required already` : "";
     const eff = (descAt(m, m.max_rank) || m.effects || []).map((x) => `<div>${x}</div>`).join("");
-    return `<div class="opt ${st === "off" ? "" : st} ${m.rarity ? "rar-" + m.rarity : ""}" title="${(m.effects || []).join(" · ")}">
+    return `<div class="opt ${st === "off" ? "" : st} ${dead ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why || (m.effects || []).join(" · ")}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(m.image ? CDN + m.image : null, "mod")}
       <div class="info"><div class="mn">${wl(m.name)}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}</div><div class="me">${eff}</div></div>
       <div class="oseg">
-        <span class="seg ${st === "search" ? "on" : ""}" data-m="${m.id}" data-s="search">pool</span>
-        <span class="seg ${st === "fixed" ? "on" : ""}" data-m="${m.id}" data-s="fixed">req</span>
+        <span class="seg ${st === "search" ? "on" : ""} ${dead ? "dis" : ""}" data-m="${m.id}" data-s="search">pool</span>
+        <span class="seg ${st === "fixed" ? "on" : ""} ${dead || reqBlocked ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${!dead && reqBlocked ? 'title="pooled mods reserve ≥1 open slot — raise max mods or clear pools"' : ""}>req</span>
       </div>
     </div>`;
   };
   $("opt-mods").innerHTML = hits.length ? hits.map(row).join("") : `<div class="opt dis">no matches</div>`;
-  $("opt-mods").querySelectorAll(".seg").forEach((el) =>
+  $("opt-mods").querySelectorAll(".seg:not(.dis)").forEach((el) =>
     el.addEventListener("click", (e) => {
       e.stopPropagation();
       const id = el.dataset.m, want = el.dataset.s, cur = opt.mods[id] || "off";
       if (cur === want) delete opt.mods[id]; else opt.mods[id] = want; // toggle off if same
-      renderOptMods(); updateOptEstimate();
+      if (opt.mods[id] === "fixed") clearFamMarks(id);
+      renderOptMods(); renderOptExilus(); updateOptEstimate(); fetchOptBuffs();
     }));
 }
 
 function updateOptEstimate() {
+  // 8 + 1 slots, slots may stay EMPTY: builds are every subset of the main
+  // scope from `required` up to `size` mods (an empty scope = the bare
+  // weapon, still a legal search). `opt.exilus` scopes the +1 slot (req
+  // pins it, pool adds options next to "empty"); arcanes and evolution
+  // tiers are pool/req the same way.
   const fixed = Object.values(opt.mods).filter((s) => s === "fixed").length;
   const search = Object.values(opt.mods).filter((s) => s === "search").length;
-  const pool = fixed + search;
-  const arcCount = Math.max(1, Object.keys(opt.arcanes).length);
+  const exFixed = exilusPinned();
+  const exSearch = Object.values(opt.exilus).filter((s) => s === "search").length;
+  // Pooled exilus marks ARE the option set ("None" is itself a markable
+  // option); nothing marked = the slot stays empty (one option).
+  const exOptions = exFixed ? 1 : Math.max(1, exSearch);
+  // Required in BOTH blocks = impossible (a mod equips once).
+  const dupReq = exFixed && opt.mods[exFixed] === "fixed" ? exFixed : null;
+  const arcCount = arcanePinned() ? 1
+    : Math.max(1, Object.values(opt.arcanes).filter((s) => s === "search").length);
   let evoProduct = 1;
   (META.evolutions || []).forEach((t) => {
-    const n = Object.keys(opt.evos[t.tier] || {}).length;
-    evoProduct *= Math.max(1, n);
+    const m = opt.evos[t.tier] || {};
+    evoProduct *= evoPinned(t.tier) ? 1
+      : Math.max(1, Object.values(m).filter((s) => s === "search").length);
   });
   const size = opt.size;
-  const subsets = fixed > size ? 0 : nChooseK(pool - fixed, size - fixed) * evoProduct;
+  // The pool group occupies ≥1 slot: with pools marked, every build carries
+  // at least one pooled mod (k starts above the required count).
+  const minK = fixed + (search > 0 ? 1 : 0);
+  let subsets = 0;
+  for (let k = minK; k <= size; k++) subsets += nChooseK(search, k - fixed);
+  subsets *= evoProduct * exOptions;
   const jobs = subsets * arcCount;
-  const valid = pool >= size && fixed <= size && subsets > 0;
+  // Pooled mods reserve ≥1 open slot (reachable only via shrinking max
+  // mods after marking — req clicks are blocked before this point).
+  const poolStarved = search > 0 && fixed >= size;
+  const valid = fixed <= size && subsets > 0 && !dupReq && !poolStarved;
   const est = Math.round(subsets).toLocaleString();
   // No cap (user: use local resources). Show the estimate + a heads-up when big;
   // only block genuinely invalid scopes.
   const big = jobs > 500000;
+  const exNote = exFixed ? " (exilus pinned)" : exOptions > 1 ? ` (× ${exOptions} exilus options)` : "";
   $("opt-estimate").innerHTML = valid
-    ? `~<b>${est}</b> candidates × ${arcCount} arcanes ≈ ${Math.round(jobs).toLocaleString()} jobs${big ? ` <span class="warn">— large; this may take a while</span>` : ""}`
-    : `<span class="warn">${pool < size ? `need ≥${size} participating mods (have ${pool})` : fixed > size ? `more required (${fixed}) than slots (${size})` : "select some mods"}</span>`;
-  $("run-opt").disabled = !valid;
+    ? `~<b>${est}</b> candidates${exNote} × ${arcCount} arcanes ≈ ${Math.round(jobs).toLocaleString()} jobs${big ? ` <span class="warn">— large; this may take a while</span>` : ""}`
+    : `<span class="warn">${dupReq ? `${(modById(dupReq) || { name: dupReq }).name} is required in both blocks — a mod equips once` : poolStarved ? `pooled mods reserve ≥1 open slot — raise max mods or clear pools` : `more required (${fixed}) than slots (${size})`}</span>`;
+  // Never re-enable while a background job is still running.
+  $("run-opt").disabled = !valid || optJobId != null;
 }
 
+// The optimize run is a BACKGROUND JOB on the server: POST /api/optimize
+// returns a job_id immediately; we poll /api/optimize/status for live funnel
+// progress (overall % is exact — the schedule fixes every round's sim count
+// up front) and can /api/optimize/cancel. On page reload, init() reattaches
+// to a still-running job via a no-id status call.
+let optJobId = null;
+let optPollTimer = null;
+
+const postJson = async (url, body) =>
+  (await fetch(url, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  })).json();
+
 async function runOptimize() {
-  const btn = $("run-opt");
-  btn.disabled = true; btn.textContent = "Optimizing…";
-  $("opt-results").innerHTML = `<div class="placeholder">searching…</div>`;
+  $("run-opt").disabled = true; $("run-opt").textContent = "Optimizing…";
+  $("opt-results").innerHTML = `<div class="placeholder">starting…</div>`;
   try {
+    // pool/req collapse to effective option lists: a req pins its slot/tier
+    // (single option), pools are the searched set.
     const evolutions = {};
-    Object.entries(opt.evos).forEach(([t, m]) => { const ids = Object.keys(m); if (ids.length) evolutions[t] = ids; });
+    Object.entries(opt.evos).forEach(([t, m]) => {
+      const f = Object.keys(m).find((id) => m[id] === "fixed");
+      const ids = f ? [f] : Object.keys(m).filter((id) => m[id] === "search");
+      if (ids.length) evolutions[t] = ids;
+    });
+    const arcFixed = arcanePinned();
+    const arcs = arcFixed ? [arcFixed] : Object.keys(opt.arcanes).filter((id) => opt.arcanes[id] === "search");
     // Buffs configured over the whole scope (opt.buffs), pruned to the current scope's ids.
     const buffs = {};
     optBuffList.forEach((b) => { const c = opt.buffs[b.id]; if (c) buffs[b.id] = { stacks: c.stacks, locked: c.locked }; });
@@ -1213,26 +1414,98 @@ async function runOptimize() {
       weapon: $("weapon").value,
       mods: opt.mods,
       build_size: opt.size,
-      arcanes: Object.keys(opt.arcanes),
+      arcanes: arcs.length ? arcs : ["none"],
       evolutions,
+      exilus: opt.exilus,
       enemy: sim.enemy, level: sim.level, steel_path: sim.steel_path,
       headshot_pct: sim.headshot_pct, duration: sim.duration,
       buffs,
     };
-    const r = await (await fetch("/api/optimize", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
-    })).json();
+    const r = await postJson("/api/optimize", body);
     if (!r || r.ok === false) {
-      $("opt-results").innerHTML = `<div class="error">optimize failed: ${r ? r.error : "no data"}</div>`;
+      optFinish(`<div class="error">optimize failed: ${r ? r.error : "no data"}</div>`);
       return;
     }
-    renderOptResults(r);
+    optJobId = r.job_id;
+    pollOptimize();
   } catch (e) {
-    $("opt-results").innerHTML = `<div class="error">optimize failed: ${e}</div>`;
-  } finally {
-    btn.disabled = false; btn.textContent = "Run Optimizer";
-    updateOptEstimate();
+    optFinish(`<div class="error">optimize failed: ${e}</div>`);
   }
+}
+
+function optFinish(html) {
+  if (optPollTimer) { clearTimeout(optPollTimer); optPollTimer = null; }
+  optJobId = null;
+  if (html !== undefined) $("opt-results").innerHTML = html;
+  $("run-opt").textContent = "Run Optimizer";
+  updateOptEstimate(); // re-enables the button when the scope is valid
+}
+
+async function pollOptimize() {
+  let st;
+  try {
+    st = await postJson("/api/optimize/status", optJobId != null ? { id: optJobId } : {});
+  } catch (e) {
+    optFinish(`<div class="error">optimize status failed: ${e}</div>`);
+    return;
+  }
+  if (!st || st.ok === false) {
+    optFinish(`<div class="error">optimize failed: ${st ? st.error : "no data"}</div>`);
+    return;
+  }
+  optJobId = st.job_id;
+  if (st.phase === "error") {
+    optFinish(`<div class="error">optimize failed: ${(st.result && st.result.error) || "unknown error"}</div>`);
+    return;
+  }
+  if (st.phase === "done" || st.phase === "cancelled") {
+    optFinish();
+    if (st.result && st.result.results && st.result.results.length) {
+      renderOptResults(st.result);
+    } else {
+      $("opt-results").innerHTML = `<div class="placeholder">cancelled before the first round finished — no results</div>`;
+    }
+    return;
+  }
+  renderOptProgress(st);
+  optPollTimer = setTimeout(pollOptimize, 500);
+}
+
+function renderOptProgress(st) {
+  const pct = st.sims_planned ? Math.min(100, (100 * st.sims_done) / st.sims_planned) : 0;
+  const head = st.phase === "enumerating"
+    ? "enumerating candidates…"
+    : `round ${st.round}/${st.rounds} — ${(st.round_jobs || 0).toLocaleString()} jobs × ${st.round_runs} runs`;
+  const notes = (st.notes || []).map((n) =>
+    `<div class="opt-note">round ${n.round}: ${n.jobs.toLocaleString()} × ${n.runs} (${n.by_kills ? "kills" : "eff dmg"}) → keep ${n.kept.toLocaleString()} · best ${n.by_kills ? n.best.toFixed(2) + " kill score" : n.best.toExponential(2) + " eff"} · ${(n.ms / 1000).toFixed(1)}s</div>`
+  ).join("");
+  const sub = st.phase === "enumerating"
+    ? ""
+    : `<div class="opt-prog-sub">${pct.toFixed(1)}% · ${st.sims_done.toLocaleString()} / ${st.sims_planned.toLocaleString()} sims${st.candidates ? ` · ${st.candidates.toLocaleString()} candidates × arcanes = ${st.jobs.toLocaleString()} jobs` : ""}</div>`;
+  $("opt-results").innerHTML = `<div class="opt-progress">
+    <div class="opt-prog-head"><span>${head}</span><span class="opt-elapsed">${st.elapsed_s.toFixed(0)}s</span></div>
+    <div class="opt-bar"><i style="width:${pct}%"></i></div>
+    ${sub}${notes}
+    <button class="ghost-btn small" id="opt-cancel">Cancel</button>
+  </div>`;
+  $("opt-cancel").addEventListener("click", async () => {
+    $("opt-cancel").disabled = true; $("opt-cancel").textContent = "Cancelling…";
+    try { await postJson("/api/optimize/cancel", { id: optJobId }); } catch (e) { /* poll reports */ }
+  });
+}
+
+// Reattach to a job that is still running server-side (e.g. after a page
+// reload): a no-id status call returns the latest job.
+async function reattachOptimize() {
+  try {
+    const st = await postJson("/api/optimize/status", {});
+    if (st && st.ok !== false && (st.phase === "enumerating" || st.phase === "running")) {
+      optJobId = st.job_id;
+      $("run-opt").disabled = true; $("run-opt").textContent = "Optimizing…";
+      renderOptProgress(st);
+      optPollTimer = setTimeout(pollOptimize, 500);
+    }
+  } catch (e) { /* no server-side job — nothing to reattach */ }
 }
 
 const prettify = (id) => id.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -1245,7 +1518,8 @@ const evoName = (id) => {
 function renderOptResults(r) {
   const modName = (id) => (modById(id) || { name: null }).name || prettify(id);
   const rows = (r.results || []).map((res) => {
-    const mods = res.mods.map(modName).join(", ");
+    const ex = res.exilus && res.exilus !== "none" ? `, ${modName(res.exilus)} (exilus)` : "";
+    const mods = res.mods.map(modName).join(", ") + ex;
     const arc = res.arcane === "none" ? "no arcane" : `${arcName(res.arcane)} r${res.arcane_rank}`;
     const evos = (res.evolutions || []).map(evoName).join(" · ") || "—";
     return `<div class="opt-row">
@@ -1260,7 +1534,7 @@ function renderOptResults(r) {
       <div class="opt-mods">${mods}</div>
     </div>`;
   }).join("");
-  $("opt-results").innerHTML = `<div class="opt-meta">${r.candidates} candidates · ${r.jobs} jobs · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""}</div>${rows}`;
+  $("opt-results").innerHTML = `<div class="opt-meta">${r.cancelled ? `<span class="warn">cancelled — ranking from the last completed round</span> · ` : ""}${r.candidates} candidates · ${r.jobs} jobs · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""}</div>${rows}`;
   $("opt-results").querySelectorAll(".opt-load").forEach((el) =>
     el.addEventListener("click", () => loadResult(JSON.parse(el.dataset.r))));
 }
@@ -1271,6 +1545,10 @@ function loadResult(res) {
   res.mods.slice(0, 8).forEach((mid, i) => {
     if (modById(mid)) { slots[i].mod = mid; slots[i].rank = modById(mid).max_rank; }
   });
+  // The scope's exilus choice rides along on every result row.
+  if (res.exilus && res.exilus !== "none" && modById(res.exilus)) {
+    slots[EXILUS].mod = res.exilus; slots[EXILUS].rank = modById(res.exilus).max_rank;
+  }
   arcane = res.arcane === "none" ? "none" : res.arcane;
   arcaneRank = res.arcane === "none" ? null : (res.arcane_rank ?? null);
   evoSel = { 1: null, 2: null, 3: null, 4: null };

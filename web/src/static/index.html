@@ -106,15 +106,17 @@
         <h3 class="sim-h">Mods <span class="sim-hint">search by name or effect; mark each as pool (search) or required</span></h3>
         <div class="opt-mods-head">
           <input id="opt-mod-filter" type="text" placeholder="search mods by name or effect…" autocomplete="off">
-          <label class="opt-size">Mods / build <input id="opt-size" type="number" min="1" max="8" value="8"></label>
+          <label class="opt-size">Max mods / build <input id="opt-size" type="number" min="1" max="8" value="8"></label>
         </div>
         <div id="opt-picker-tools" class="picker-tools"></div>
         <div id="opt-mods-sel"></div>
         <div id="opt-mods" class="combo-menu opt-modlist"></div>
-        <h3 class="sim-h">Arcanes <span class="sim-hint">search by name or effect; click include</span></h3>
+        <h3 class="sim-h">Exilus slot <span class="sim-hint">the +1 slot — pool = slot options (pool None to keep "empty" among them), req = pin one</span></h3>
+        <div id="opt-exilus" class="combo-menu opt-modlist"></div>
+        <h3 class="sim-h">Arcanes <span class="sim-hint">pool = searched options, req = pin the slot</span></h3>
         <input id="opt-arc-filter" type="text" placeholder="search arcanes by name or effect…" autocomplete="off">
         <div id="opt-arcanes" class="combo-menu opt-modlist"></div>
-        <h3 class="sim-h">Evolutions <span class="sim-hint">click options to search per tier</span></h3>
+        <h3 class="sim-h">Evolutions <span class="sim-hint">per tier: pool = searched options, req = pin</span></h3>
         <div id="opt-evos"></div>
         <h3 class="sim-h">Buffs <span class="sim-hint">across the whole scope — initial stacks + lock, applied per candidate</span></h3>
         <div id="opt-buffs"></div>

@@ -16,6 +16,9 @@
 //! 4. Evaluation is staged Monte Carlo (successive halving): cheap short
 //!    rounds rank by mean effective damage, finals rank by mean kills.
 
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering};
+use std::sync::Mutex;
+
 use wfsim_engine::damage::DamageType;
 use wfsim_engine::dummy::{
     monte_carlo, BodyPart, BuffConfig, DummyParams, LockMode, Summary, TargetParams,
@@ -65,6 +68,11 @@ pub struct Candidate {
     /// evolution selection is a search dimension; the caller resolves each
     /// set's base/base_form and enumerates candidates tagged with its index.
     pub variant: u32,
+    /// Index into the caller's `exilus_opts` slice: which exilus-slot choice
+    /// this candidate uses (the option may be `None` = slot left empty). The
+    /// exilus slot is a search dimension like the mod subset — the build is
+    /// 8 + 1 slots.
+    pub exilus: u32,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -75,19 +83,33 @@ pub struct EnumStats {
     pub deduped: u64,
 }
 
-/// Enumerate all canonical candidates: 8-mod subsets (family-exclusive,
-/// constraint-filtered) × distinct-element orders, legalized and deduped by
-/// resolved damage vector.
+/// Enumerate all canonical candidates: mod subsets of every size in
+/// `min_slots..=max_slots` (family-exclusive, constraint-filtered — slots
+/// may be left EMPTY, so a smaller build is a legal candidate; with a
+/// harmful mod in the pool it can even win) × distinct-element orders ×
+/// exilus-slot options, legalized and deduped by resolved damage vector.
+/// Pass `min == max` for the classic exact-size search.
+///
+/// The build is 8 + 1 slots: `exilus_opts` lists the choices for the exilus
+/// slot, each `Some(mod)` or `None` (slot left empty). Every subset × order
+/// is expanded per option — the option joins Forma/capacity legalization as
+/// a 9th planned mod (extra unpolarized slot, matching the web UI's exilus
+/// model) and the resolve() so any modeled effect applies. Today's exilus
+/// mods are damage no-ops, so same-mods candidates differing only in exilus
+/// tie on score and differ in Forma/drain — still distinct builds. Pass
+/// `&[None]` (or `&[]`, treated the same) for a plain 8-slot search.
 #[allow(clippy::too_many_arguments)] // search-config surface; a params struct isn't warranted yet
 pub fn enumerate_candidates(
     pool: &[ModDef],
     base: &WeaponBase,
     second_form: Option<&WeaponBase>,
     variant: u32,
-    slots: u32,
+    min_slots: u32,
+    max_slots: u32,
     cap: u32,
     innate: &[Option<Polarity>],
     constraints: &Constraints,
+    exilus_opts: &[Option<&ModDef>],
 ) -> (Vec<Candidate>, EnumStats) {
     let usable: Vec<usize> = (0..pool.len())
         .filter(|&i| !constraints.forbid.iter().any(|f| f == pool[i].id))
@@ -100,7 +122,9 @@ pub fn enumerate_candidates(
 
     let mut stats = EnumStats::default();
     let mut out = Vec::new();
-    let mut subset = Vec::with_capacity(slots as usize);
+    let mut subset = Vec::with_capacity(max_slots as usize);
+    let default_opts = [None];
+    let exilus_opts = if exilus_opts.is_empty() { &default_opts[..] } else { exilus_opts };
     enumerate_rec(
         pool,
         base,
@@ -108,9 +132,11 @@ pub fn enumerate_candidates(
         variant,
         cap,
         innate,
+        exilus_opts,
         &usable,
         &required,
-        slots as usize,
+        min_slots as usize,
+        max_slots as usize,
         0,
         &mut subset,
         &mut stats,
@@ -127,32 +153,39 @@ fn enumerate_rec(
     variant: u32,
     cap: u32,
     innate: &[Option<Polarity>],
+    exilus_opts: &[Option<&ModDef>],
     usable: &[usize],
     required: &[usize],
-    want: usize,
+    min: usize,
+    max: usize,
     from: usize,
     subset: &mut Vec<usize>,
     stats: &mut EnumStats,
     out: &mut Vec<Candidate>,
 ) {
-    if subset.len() == want {
-        if required.iter().all(|r| subset.contains(r)) {
-            stats.subsets += 1;
-            expand_subset(
-                pool,
-                base,
-                second_form,
-                variant,
-                cap,
-                innate,
-                subset,
-                stats,
-                out,
-            );
-        }
+    // Every node in the enumeration tree IS a subset — emit it once, here,
+    // when it is big enough and carries every required mod (a subset missing
+    // a required mod still recurses: descendants may pick it up).
+    if subset.len() >= min && required.iter().all(|r| subset.contains(r)) {
+        stats.subsets += 1;
+        expand_subset(
+            pool,
+            base,
+            second_form,
+            variant,
+            cap,
+            innate,
+            exilus_opts,
+            subset,
+            stats,
+            out,
+        );
+    }
+    if subset.len() == max {
         return;
     }
-    if usable.len() - from < want - subset.len() {
+    // Prune only branches that cannot even reach `min` any more.
+    if subset.len() + (usable.len() - from) < min {
         return;
     }
     for k in from..usable.len() {
@@ -171,9 +204,11 @@ fn enumerate_rec(
             variant,
             cap,
             innate,
+            exilus_opts,
             usable,
             required,
-            want,
+            min,
+            max,
             k + 1,
             subset,
             stats,
@@ -191,22 +226,20 @@ fn expand_subset(
     variant: u32,
     cap: u32,
     innate: &[Option<Polarity>],
+    exilus_opts: &[Option<&ModDef>],
     subset: &[usize],
     stats: &mut EnumStats,
     out: &mut Vec<Candidate>,
 ) {
-    // Legalization is order-independent (drain/polarity multiset only).
-    let planned: Vec<PlannedMod> = subset
+    // Legalization is order-independent (drain/polarity multiset only), so
+    // it happens once per exilus option, outside the order loop.
+    let base_planned: Vec<PlannedMod> = subset
         .iter()
         .map(|&i| PlannedMod {
             base_drain: pool[i].base_drain,
             polarity: pool[i].polarity,
         })
         .collect();
-    let Ok(plan) = plan_forma(cap, innate, &planned) else {
-        stats.illegal += 1;
-        return;
-    };
 
     // Distinct primary elements in this subset (position-sensitive).
     let mut elems: Vec<DamageType> = Vec::new();
@@ -217,56 +250,97 @@ fn expand_subset(
             }
         }
     }
-
-    let mut seen_vectors: Vec<Vec<(DamageType, i64)>> = Vec::new();
     let mut orders = Vec::new();
     permutations(&elems, &mut Vec::new(), &mut orders);
-    for order in &orders {
-        stats.order_variants += 1;
-        // Canonical form: element mods first, grouped by the chosen element
-        // order; the (order-free) rest after.
-        let mut ordered: Vec<usize> = Vec::with_capacity(subset.len());
-        for &t in order {
+
+    for (xi, xopt) in exilus_opts.iter().enumerate() {
+        // Equip-once + family exclusivity across the 8+1 slots (future-proof;
+        // today's exilus mods share no family with damage mods).
+        if let Some(x) = xopt {
+            if subset.iter().any(|&i| {
+                pool[i].id == x.id || (x.family.is_some() && pool[i].family == x.family)
+            }) {
+                continue;
+            }
+        }
+        // The exilus option is a 9th planned mod in an extra unpolarized
+        // slot (matching the web UI's exilus model); its drain counts
+        // against the cap like any other (game rule).
+        let mut planned = base_planned.clone();
+        let mut slots_vec;
+        let slots: &[Option<Polarity>] = match xopt {
+            Some(x) => {
+                planned.push(PlannedMod { base_drain: x.base_drain, polarity: x.polarity });
+                slots_vec = innate.to_vec();
+                slots_vec.push(None);
+                &slots_vec
+            }
+            None => innate,
+        };
+        let Ok(plan) = plan_forma(cap, slots, &planned) else {
+            stats.illegal += 1;
+            continue;
+        };
+
+        // Order dedup is scoped PER exilus option: same-vector orders are the
+        // same build, but the same vector under a different exilus option is
+        // a different build (drain/Forma differ).
+        let mut seen_vectors: Vec<Vec<(DamageType, i64)>> = Vec::new();
+        for order in &orders {
+            stats.order_variants += 1;
+            // Canonical form: element mods first, grouped by the chosen
+            // element order; the (order-free) rest after.
+            let mut ordered: Vec<usize> = Vec::with_capacity(subset.len());
+            for &t in order {
+                ordered.extend(
+                    subset
+                        .iter()
+                        .copied()
+                        .filter(|&i| pool[i].primary_element() == Some(t)),
+                );
+            }
             ordered.extend(
                 subset
                     .iter()
                     .copied()
-                    .filter(|&i| pool[i].primary_element() == Some(t)),
+                    .filter(|&i| pool[i].primary_element().is_none()),
             );
-        }
-        ordered.extend(
-            subset
-                .iter()
-                .copied()
-                .filter(|&i| pool[i].primary_element().is_none()),
-        );
 
-        let refs: Vec<&ModDef> = ordered.iter().map(|&i| &pool[i]).collect();
-        // On-kill stacks start at ZERO and are earned live (user policy).
-        let panel = resolve(base, &refs, StackPolicy::Emergent);
+            let mut refs: Vec<&ModDef> = ordered.iter().map(|&i| &pool[i]).collect();
+            // The exilus mod resolves too (honesty: any modeled effect
+            // applies; today's exilus mods are damage no-ops). Last =
+            // canonical position; exilus mods carry no primary element.
+            if let Some(x) = xopt {
+                refs.push(x);
+            }
+            // On-kill stacks start at ZERO and are earned live (user policy).
+            let panel = resolve(base, &refs, StackPolicy::Emergent);
 
-        // Second-level dedup: orders resolving to the same combined vector
-        // are the same build (docs/OPTIMIZER.md §1). Deduping on the
-        // PRIMARY form's vector is safe for the second form too: both are
-        // functions of the element partition, which the vector determines
-        // (an injected element pairs with the partition's leftover).
-        let key: Vec<(DamageType, i64)> = panel
-            .damage
-            .iter_nonzero()
-            .map(|(t, v)| (t, (v * 1e6).round() as i64))
-            .collect();
-        if seen_vectors.contains(&key) {
-            stats.deduped += 1;
-            continue;
+            // Second-level dedup: orders resolving to the same combined
+            // vector are the same build (docs/OPTIMIZER.md §1). Deduping on
+            // the PRIMARY form's vector is safe for the second form too:
+            // both are functions of the element partition, which the vector
+            // determines (an injected element pairs with the partition's
+            // leftover).
+            let key: Vec<(DamageType, i64)> = panel
+                .damage
+                .iter_nonzero()
+                .map(|(t, v)| (t, (v * 1e6).round() as i64))
+                .collect();
+            if seen_vectors.contains(&key) {
+                stats.deduped += 1;
+                continue;
+            }
+            seen_vectors.push(key);
+            out.push(Candidate {
+                ordered: ordered.clone(),
+                panel,
+                base_panel: second_form.map(|b| resolve(b, &refs, StackPolicy::Emergent)),
+                plan: plan.clone(),
+                variant,
+                exilus: xi as u32,
+            });
         }
-        seen_vectors.push(key);
-        out.push(Candidate {
-            ordered: ordered.clone(),
-            panel,
-            base_panel: second_form.map(|b| resolve(b, &refs, StackPolicy::Emergent)),
-            plan: plan.clone(),
-            variant,
-        });
     }
 }
 
@@ -376,6 +450,45 @@ pub fn dominated_mods() -> Vec<(&'static str, &'static str)> {
 /// the index).
 pub type Job = (usize, usize);
 
+/// Live progress of a running funnel, shared between the worker threads and
+/// an observer (the web UI's status endpoint). Counters are plain atomics so
+/// per-job updates stay lock-free; finished-round summaries land in `notes`
+/// under a mutex. Setting `cancel` stops the funnel between jobs: the
+/// in-flight round is discarded and `run_funnel` returns the last COMPLETED
+/// round's leaderboard.
+#[derive(Default)]
+pub struct FunnelState {
+    /// Monte-Carlo runs completed / planned across ALL rounds. The plan is
+    /// exact (the schedule fixes every round's field × runs up front), so
+    /// `done / planned` is a true overall percentage.
+    pub sims_done: AtomicU64,
+    pub sims_planned: AtomicU64,
+    /// 1-based round in progress, and the total round count.
+    pub round: AtomicUsize,
+    pub rounds: AtomicUsize,
+    /// The in-progress round's field size and per-job run count.
+    pub round_jobs: AtomicUsize,
+    pub round_runs: AtomicU32,
+    /// Observer → funnel: request a stop (checked before each job).
+    pub cancel: AtomicBool,
+    /// One entry per FINISHED round.
+    pub notes: Mutex<Vec<RoundNote>>,
+}
+
+/// A finished funnel round, for progress display.
+#[derive(Debug, Clone, Copy)]
+pub struct RoundNote {
+    pub round: usize,
+    pub jobs: usize,
+    pub runs: u32,
+    pub by_kills: bool,
+    pub kept: usize,
+    /// Best score under the round's own metric (kill progress on kill
+    /// rounds, mean effective damage on screen rounds).
+    pub best: f64,
+    pub ms: u64,
+}
+
 /// Self-scaling successive-halving schedule (user, 2026-07-25: derive
 /// the funnel from the job count instead of hand-written constants).
 /// Geometric: each round multiplies runs ×4 and keeps 1/8 of the field
@@ -398,7 +511,8 @@ pub fn schedule(n_jobs: usize) -> Vec<(u32, usize, bool)> {
 }
 
 /// Evaluate jobs concurrently across all cores. Returns summaries
-/// index-aligned with `jobs`.
+/// index-aligned with `jobs`; entries are `None` only when a cancel
+/// request stopped the batch before that job ran.
 pub fn evaluate_batch(
     cands: &[Candidate],
     jobs: &[Job],
@@ -406,7 +520,8 @@ pub fn evaluate_batch(
     scenario: &Scenario,
     runs: u32,
     seed: u64,
-) -> Vec<Summary> {
+    state: Option<&FunnelState>,
+) -> Vec<Option<Summary>> {
     let threads = std::thread::available_parallelism()
         .map(|n| n.get())
         .unwrap_or(8)
@@ -418,23 +533,33 @@ pub fn evaluate_batch(
             let scenario = scenario.clone();
             scope.spawn(move || {
                 for (k, &(ci, ai)) in ids.iter().enumerate() {
+                    if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
+                        return;
+                    }
                     // Deterministic per-job seed, mixed per round.
                     let s = seed
                         ^ (ci as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15)
                         ^ ((ai as u64) << 56);
                     res[k] = Some(evaluate(&cands[ci], &arcanes[ai], &scenario, runs, s));
+                    if let Some(st) = state {
+                        st.sims_done.fetch_add(runs as u64, Ordering::Relaxed);
+                    }
                 }
             });
         }
     });
-    results.into_iter().map(|r| r.expect("evaluated")).collect()
+    results
 }
 
 /// Drive the multi-round funnel: for each `(runs, keep, by_kills)` round,
 /// evaluate the surviving jobs, sort (kill-progress on kill rounds, effective
 /// damage on screen rounds), and cull to `keep`. Returns the final sorted,
 /// truncated leaderboard — `[0]` is the winner, `[..10]` the top-10. `verbose`
-/// prints per-round progress (the CLI wants it; the web endpoint stays quiet).
+/// prints per-round progress (the CLI wants it; the web endpoint reads the
+/// same numbers off `state` instead). `state` (optional) receives live
+/// progress and carries the cancel flag: on cancel the in-flight round is
+/// discarded and the last COMPLETED round's leaderboard is returned.
+#[allow(clippy::too_many_arguments)] // search-config surface, like enumerate_candidates
 pub fn run_funnel(
     cands: &[Candidate],
     arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
@@ -443,13 +568,44 @@ pub fn run_funnel(
     rounds: &[(u32, usize, bool)],
     seed_base: u64,
     verbose: bool,
+    state: Option<&FunnelState>,
 ) -> Vec<(Job, Summary)> {
+    if let Some(st) = state {
+        st.rounds.store(rounds.len(), Ordering::Relaxed);
+        // The schedule fixes every round's field size up front (truncate is a
+        // no-op when the field is already below `keep`), so the total sim
+        // count is exact — done/planned is a true percentage.
+        let mut field = alive.len() as u64;
+        let mut sims = 0u64;
+        for &(runs, keep, _) in rounds {
+            sims += field * runs as u64;
+            field = field.min(keep as u64);
+        }
+        st.sims_planned.store(sims, Ordering::Relaxed);
+    }
     let mut last: Vec<(Job, Summary)> = Vec::new();
     for (round, &(runs, keep, by_kills)) in rounds.iter().enumerate() {
+        if let Some(st) = state {
+            if st.cancel.load(Ordering::Relaxed) {
+                break;
+            }
+            st.round.store(round + 1, Ordering::Relaxed);
+            st.round_jobs.store(alive.len(), Ordering::Relaxed);
+            st.round_runs.store(runs, Ordering::Relaxed);
+        }
         let t = std::time::Instant::now();
         let started = alive.len();
-        let summaries = evaluate_batch(cands, &alive, arcanes, scenario, runs, seed_base + round as u64);
-        let mut scored: Vec<(Job, Summary)> = alive.iter().copied().zip(summaries).collect();
+        let summaries =
+            evaluate_batch(cands, &alive, arcanes, scenario, runs, seed_base + round as u64, state);
+        if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
+            break; // partial round: keep the previous round's leaderboard
+        }
+        let mut scored: Vec<(Job, Summary)> = alive
+            .iter()
+            .copied()
+            .zip(summaries)
+            .map(|(j, s)| (j, s.expect("uncancelled batch evaluates every job")))
+            .collect();
         // Kill rounds rank by kill PROGRESS (kills + depleted fraction of the
         // final target's pool); screen rounds by mean effective damage.
         scored.sort_by(|a, b| {
@@ -470,6 +626,22 @@ pub fn run_funnel(
                     format!("{:.3e} eff", scored[0].1.mean_effective_damage)
                 }
             );
+        }
+        if let Some(st) = state {
+            let best = if by_kills {
+                scored[0].1.mean_kill_progress
+            } else {
+                scored[0].1.mean_effective_damage
+            };
+            st.notes.lock().unwrap().push(RoundNote {
+                round: round + 1,
+                jobs: started,
+                runs,
+                by_kills,
+                kept: scored.len(),
+                best,
+                ms: t.elapsed().as_millis() as u64,
+            });
         }
         alive = scored.iter().map(|(j, _)| *j).collect();
         last = scored;
@@ -544,9 +716,11 @@ mod tests {
             Some(&WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy)),
             0,
             8,
+            8,
             60,
             &dual_toxocyst_innate_slots(),
             &Constraints::default(),
+            &[None],
         );
         assert_eq!(stats.subsets, expected, "subset count vs generating function");
         assert_eq!(
@@ -557,6 +731,64 @@ mod tests {
         // Sanity: every candidate is exactly 8 mods and within capacity.
         assert!(cands.iter().all(|c| c.ordered.len() == 8));
         assert!(cands.iter().all(|c| c.plan.total_drain <= 60));
+
+        // Slots may be left EMPTY: min 0 enumerates every size ≤ 8, whose
+        // subset count is the SUM of the generating function's coefficients
+        // 0..=8 (the empty build included).
+        let expected_le: u64 = (0..=8).map(|k| poly.get(k).copied().unwrap_or(0)).sum();
+        let (cands_le, stats_le) = enumerate_candidates(
+            &p,
+            &base,
+            Some(&WeaponBase::dual_toxocyst_base(true, DtEvo2::FeveredFrenzy)),
+            0,
+            0,
+            8,
+            60,
+            &dual_toxocyst_innate_slots(),
+            &Constraints::default(),
+            &[None],
+        );
+        assert_eq!(stats_le.subsets, expected_le, "≤8 subset count vs Σ coefficients");
+        assert!(cands_le.iter().any(|c| c.ordered.is_empty()), "the empty build is a candidate");
+        assert!(cands_le.iter().all(|c| c.ordered.len() <= 8));
+    }
+
+    #[test]
+    fn exilus_is_a_search_dimension_with_real_drain() {
+        // A fixed 8-mod scope has exactly one subset. With exilus options
+        // [empty, mod] the space doubles: same mods, different exilus-slot
+        // choice — and the occupied option must cost something (more drain,
+        // or more Forma to squeeze back under the cap).
+        let ids = [
+            "hornet_strike", "barrel_diffusion", "primed_pistol_gambit",
+            "primed_target_cracker", "lethal_torrent", "frostbite", "jolt",
+            "magnum_force",
+        ];
+        let p: Vec<ModDef> = pool().into_iter().filter(|m| ids.contains(&m.id)).collect();
+        assert_eq!(p.len(), ids.len());
+        let full = wfsim_engine::mods_data::pistol_pool();
+        let ex = full.iter().find(|m| m.exilus).expect("an exilus mod exists").clone();
+
+        let base = WeaponBase::dual_toxocyst_incarnon(true, DtEvo2::FeveredFrenzy);
+        let run = |opts: &[Option<&ModDef>]| {
+            enumerate_candidates(
+                &p, &base, None, 0, 8, 8, 60,
+                &dual_toxocyst_innate_slots(), &Constraints::default(), opts,
+            )
+        };
+        let (empty_only, _) = run(&[None]);
+        let (both, _) = run(&[None, Some(&ex)]);
+        assert_eq!(both.len(), empty_only.len() * 2, "each exilus option expands every build");
+        let w0 = &both.iter().find(|c| c.exilus == 0).unwrap().plan;
+        let x0 = &both.iter().find(|c| c.exilus == 1).unwrap().plan;
+        assert!(
+            x0.total_drain > w0.total_drain || x0.forma_used > w0.forma_used,
+            "exilus drain must count (drain {} -> {}, forma {} -> {})",
+            w0.total_drain, x0.total_drain, w0.forma_used, x0.forma_used
+        );
+        // The occupied option plans a real 9th slot; the empty one stays 8.
+        assert_eq!(x0.slots.len(), 9);
+        assert_eq!(w0.slots.len(), 8);
     }
 
     #[test]
@@ -599,9 +831,11 @@ mod tests {
             None,
             0,
             8,
+            8,
             60,
             &dual_toxocyst_innate_slots(),
             &cons,
+            &[None],
         );
         assert!(!cands.is_empty());
         let hornet = p.iter().position(|m| m.id == "hornet_strike").unwrap();

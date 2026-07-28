@@ -147,10 +147,12 @@ fn main() {
             &base,
             Some(&base_form),
             vi as u32,
+            8, // exact 8-mod builds: the CLI stress test's classic space
             8,
             60,
             &dual_toxocyst_innate_slots(),
             &constraints,
+            &[None], // CLI stress test: exilus slot left empty
         );
         println!(
             "[enumerate {label}] {} subsets ({} illegal) -> {} order variants, {} deduped -> {} candidates",
@@ -220,7 +222,7 @@ fn main() {
     }
     // The multi-round funnel now lives in the lib (shared with the web
     // endpoint); the CLI runs it verbosely for per-round progress.
-    let last = run_funnel(&cands, &arcanes, &scenario, alive, &rounds, 0xDEAD_BEEF, true);
+    let last = run_funnel(&cands, &arcanes, &scenario, alive, &rounds, 0xDEAD_BEEF, true, None);
 
     println!();
     println!("=== FINAL LEADERBOARD (1024 x 60 s, kill score; searched: mods x element order x arcane x evo2) ===");

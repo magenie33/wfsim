@@ -13,6 +13,8 @@
 
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::sync::atomic::Ordering;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use serde_json::{json, Value};
 use wfsim_engine::dummy::{monte_carlo, BodyPart, BuffLock, DummyParams, LockMode, LockedBuff, TargetMode};
@@ -24,7 +26,7 @@ use wfsim_engine::mods::{plan_forma, PlannedMod, Polarity};
 use wfsim_engine::mods_data::pistol_pool as pool; // FULL pool incl. exilus (the optimizer's pool() excludes exilus)
 use wfsim_optimizer::{
     dual_toxocyst_innate_slots, enumerate_candidates, run_funnel, schedule, Candidate,
-    Constraints, Job, Scenario,
+    Constraints, FunnelState, Job, Scenario,
 };
 
 // ---- Embedded static assets (self-contained binary) --------------------
@@ -397,7 +399,15 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
         }
         ("POST", "/api/optimize") => {
             let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
-            respond_json(&mut stream, &optimize_json(&value))
+            respond_json(&mut stream, &optimize_start(&value))
+        }
+        ("POST", "/api/optimize/status") => {
+            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
+            respond_json(&mut stream, &optimize_status(&value))
+        }
+        ("POST", "/api/optimize/cancel") => {
+            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
+            respond_json(&mut stream, &optimize_cancel(&value))
         }
         ("POST", "/api/opt-buffs") => {
             let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
@@ -1508,7 +1518,99 @@ fn s_name(specs: &[EnemySpec], id: &str) -> String {
 // kills-in-duration. Reuses the optimizer lib's `enumerate_candidates` +
 // `run_funnel`, with the same per-buff configured policy as the Sim panel.
 // No cap (user directive): the funnel's cheap early rounds cull the space.
-// The endpoint blocks its connection thread for the run.
+//
+// The search runs as a BACKGROUND JOB: POST /api/optimize validates the scope
+// synchronously (bad input still fails fast) and returns a `job_id`; a worker
+// thread enumerates + runs the funnel, publishing live progress through the
+// optimizer lib's `FunnelState`; the frontend polls POST /api/optimize/status
+// and can POST /api/optimize/cancel. One job runs at a time — a single run
+// already saturates every core via `evaluate_batch`, so a second concurrent
+// run would only slow both down.
+
+struct OptJob {
+    id: u64,
+    started: std::time::Instant,
+    state: Arc<FunnelState>,
+    /// "enumerating" → "running" → "done" | "cancelled" | "error".
+    phase: Mutex<&'static str>,
+    /// (candidates, jobs) — known once enumeration finishes.
+    counts: Mutex<Option<(usize, usize)>>,
+    /// The finished payload (exactly the old synchronous endpoint's JSON).
+    /// A cancelled job still carries the last COMPLETED round's top-10 when
+    /// at least one funnel round finished before the cancel.
+    result: Mutex<Option<Value>>,
+}
+
+impl OptJob {
+    fn active(&self) -> bool {
+        matches!(*self.phase.lock().unwrap(), "enumerating" | "running")
+    }
+}
+
+fn opt_jobs() -> &'static Mutex<Vec<Arc<OptJob>>> {
+    static J: OnceLock<Mutex<Vec<Arc<OptJob>>>> = OnceLock::new();
+    J.get_or_init(|| Mutex::new(Vec::new()))
+}
+
+/// Find a job by `id`, defaulting to the most recent one (lets the frontend
+/// reattach after a page reload without persisting the id).
+fn opt_job(v: &Value) -> Option<Arc<OptJob>> {
+    let jobs = opt_jobs().lock().unwrap();
+    match v.get("id").and_then(|x| x.as_u64()) {
+        Some(id) => jobs.iter().find(|j| j.id == id).cloned(),
+        None => jobs.last().cloned(),
+    }
+}
+
+fn optimize_status(v: &Value) -> Value {
+    let Some(j) = opt_job(v) else {
+        return err_json("no such optimize job");
+    };
+    let st = &j.state;
+    let notes: Vec<Value> = st
+        .notes
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|n| {
+            json!({
+                "round": n.round, "jobs": n.jobs, "runs": n.runs,
+                "by_kills": n.by_kills, "kept": n.kept, "best": n.best, "ms": n.ms,
+            })
+        })
+        .collect();
+    let mut out = json!({
+        "ok": true,
+        "job_id": j.id,
+        "phase": *j.phase.lock().unwrap(),
+        "elapsed_s": j.started.elapsed().as_secs_f64(),
+        "round": st.round.load(Ordering::Relaxed),
+        "rounds": st.rounds.load(Ordering::Relaxed),
+        "round_jobs": st.round_jobs.load(Ordering::Relaxed),
+        "round_runs": st.round_runs.load(Ordering::Relaxed),
+        "sims_done": st.sims_done.load(Ordering::Relaxed),
+        "sims_planned": st.sims_planned.load(Ordering::Relaxed),
+        "notes": notes,
+    });
+    if let Some((cands, jobs)) = *j.counts.lock().unwrap() {
+        out["candidates"] = json!(cands);
+        out["jobs"] = json!(jobs);
+    }
+    if let Some(r) = j.result.lock().unwrap().clone() {
+        out["result"] = r;
+    }
+    out
+}
+
+fn optimize_cancel(v: &Value) -> Value {
+    let Some(j) = opt_job(v) else {
+        return err_json("no such optimize job");
+    };
+    // The flag is checked between jobs (not during enumeration, which is
+    // bounded and quick relative to the funnel); the worker flips the phase.
+    j.state.cancel.store(true, Ordering::Relaxed);
+    json!({ "ok": true, "job_id": j.id })
+}
 
 // All buffs the scope could produce (union over every fixed/search mod + every
 // searched arcane + the weapon passive) — the optimizer's buff panel enumerates
@@ -1553,12 +1655,25 @@ fn opt_buffs_json(v: &Value) -> Value {
     json!({ "ok": true, "buffs": buffs_json(&out) })
 }
 
-fn optimize_json(v: &Value) -> Value {
+fn optimize_start(v: &Value) -> Value {
     let info = weapon(get_str(v, "weapon", "dual_toxocyst"));
     if info.id != "dual_toxocyst" {
         return err_json("the optimizer supports Dual Toxocyst only (v1)");
     }
-    // ---- mod scope: fixed ∪ search = candidate pool; fixed = required ----
+    {
+        let jobs = opt_jobs().lock().unwrap();
+        if let Some(j) = jobs.iter().find(|j| j.active()) {
+            return json!({
+                "ok": false,
+                "error": "an optimization is already running — cancel it or wait",
+                "job_id": j.id,
+            });
+        }
+    }
+    // ---- mod scope (MAIN 8 slots): fixed ∪ search = pool; fixed = required.
+    // Exilus-flagged mods MAY appear here too — all 9 slots accept them
+    // (game rule), so putting one in the main scope makes it compete for a
+    // main slot like any other mod.
     let mut fixed_ids: Vec<String> = Vec::new();
     let mut search_ids: Vec<String> = Vec::new();
     if let Some(obj) = v.get("mods").and_then(|x| x.as_object()) {
@@ -1573,31 +1688,99 @@ fn optimize_json(v: &Value) -> Value {
     fixed_ids.sort();
     fixed_ids.dedup();
     search_ids.retain(|s| !fixed_ids.contains(s)); // fixed wins over search
-    // How many mod slots each searched build fills (1..=8).
-    let build_size = get_u32(v, "build_size", 8).clamp(1, 8) as usize;
     let full = mod_pool_for(info.mod_class);
-    let mut pool_ids: Vec<String> = fixed_ids.iter().chain(search_ids.iter()).cloned().collect();
-    pool_ids.sort();
-    pool_ids.dedup();
-    for id in &pool_ids {
+    for id in fixed_ids.iter().chain(search_ids.iter()) {
         if !full.iter().any(|m| m.id == id.as_str()) {
             return err_json(format!("unknown mod id: {id}"));
         }
     }
+
+    // ---- exilus scope (the +1 slot, exilus-eligible mods only): its own
+    // block. "search" entries are slot OPTIONS alongside "leave empty"; a
+    // "fixed" one pins the slot (max one — there is only one exilus slot).
+    // Absent/empty = the slot stays empty. A mod listed in BOTH scopes is
+    // fine unless double-required: enumeration never equips it twice (the
+    // exilus option is skipped for subsets that already contain it).
+    let mut ex_fixed: Vec<String> = Vec::new();
+    let mut ex_search: Vec<String> = Vec::new();
+    if let Some(obj) = v.get("exilus").and_then(|x| x.as_object()) {
+        for (id, st) in obj {
+            match st.as_str() {
+                Some("fixed") => ex_fixed.push(id.clone()),
+                Some("search") => ex_search.push(id.clone()),
+                _ => {}
+            }
+        }
+    }
+    ex_fixed.sort();
+    ex_fixed.dedup();
+    ex_search.retain(|s| !ex_fixed.contains(s));
+    // "none" is a first-class option id: pool it to keep "leave empty" among
+    // the searched options, req it to pin the slot empty.
+    for id in ex_fixed.iter().chain(ex_search.iter()).filter(|id| id.as_str() != "none") {
+        let Some(m) = full.iter().find(|m| m.id == id.as_str()) else {
+            return err_json(format!("unknown exilus mod id: {id}"));
+        };
+        if !m.exilus {
+            return err_json(format!("{id} is not exilus-eligible"));
+        }
+    }
+    if ex_fixed.len() > 1 {
+        return err_json(format!(
+            "only one exilus slot — {} cannot all be required",
+            ex_fixed.join(", ")
+        ));
+    }
+    if let Some(f) = ex_fixed.first() {
+        if fixed_ids.contains(f) {
+            return err_json(format!(
+                "{f} is required in both a main slot and the exilus slot — a mod equips once"
+            ));
+        }
+    }
+    // Marked pools OCCUPY the slot (same rule as the main block's pool
+    // group): the empty option exists only when NOTHING is marked or when
+    // "none" itself is pooled/req'd — never implicitly next to pooled mods.
+    let exilus_ids: Vec<Option<String>> = match ex_fixed.first() {
+        Some(f) if f == "none" => vec![None],
+        Some(f) => vec![Some(f.clone())],
+        None if ex_search.is_empty() => vec![None],
+        None => ex_search
+            .iter()
+            .map(|id| if id == "none" { None } else { Some(id.clone()) })
+            .collect(),
+    };
+    let exilus_defs: Vec<Option<ModDef>> = exilus_ids
+        .iter()
+        .map(|o| o.as_ref().and_then(|id| full.iter().find(|m| m.id == id.as_str()).cloned()))
+        .collect();
+
+    // The MAXIMUM main slots a build may fill (1..=8; the exilus slot is the
+    // +1 on top). Slots may stay empty — sizes 0..=build_size all enumerate,
+    // so a scope smaller than the cap (even zero mods) is legal.
+    let build_size = get_u32(v, "build_size", 8).clamp(1, 8) as usize;
+    let mut pool_ids: Vec<String> = fixed_ids.iter().chain(search_ids.iter()).cloned().collect();
+    pool_ids.sort();
+    pool_ids.dedup();
     if fixed_ids.len() > build_size {
         return err_json(format!("more required mods ({}) than build slots ({build_size})", fixed_ids.len()));
     }
+    // The pool GROUP occupies ≥1 slot whenever anything is pooled — every
+    // searched build then uses at least one pooled mod (mark no pools for an
+    // exactly-required build). Hence required can fill at most size−1 slots
+    // while pools exist, and enumeration starts above the required count.
+    if !search_ids.is_empty() && fixed_ids.len() >= build_size {
+        return err_json(format!(
+            "pooled mods occupy at least one of the {build_size} slots — required ({}) leaves none",
+            fixed_ids.len()
+        ));
+    }
+    let min_slots = fixed_ids.len() + usize::from(!search_ids.is_empty());
     let pool: Vec<ModDef> = full
         .iter()
         .filter(|m| pool_ids.iter().any(|id| id.as_str() == m.id))
         .cloned()
         .collect();
-    if pool.len() < build_size {
-        return err_json(format!(
-            "need at least {build_size} participating mods (pool + required); got {}",
-            pool.len()
-        ));
-    }
     let constraints = Constraints { require: fixed_ids.clone(), forbid: Vec::new() };
 
     // ---- evolution scope: per-tier options → the Cartesian product ----
@@ -1687,64 +1870,109 @@ fn optimize_json(v: &Value) -> Value {
         buff_cfg,
     };
 
-    // ---- enumerate candidates per evo-set ----
-    let innate = dual_toxocyst_innate_slots();
-    let mut cands: Vec<Candidate> = Vec::new();
-    for (vi, set) in evo_sets.iter().enumerate() {
-        let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-        let base = WeaponBase::dual_toxocyst_incarnon_evos(true, &refs);
-        let base_form = WeaponBase::dual_toxocyst_base_evos(true, &refs);
-        let (mut c, _stats) =
-            enumerate_candidates(&pool, &base, Some(&base_form), vi as u32, build_size as u32, 60, &innate, &constraints);
-        cands.append(&mut c);
+    // ---- register the job and hand the heavy work to a worker thread ----
+    static NEXT_JOB_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+    let id = NEXT_JOB_ID.fetch_add(1, Ordering::Relaxed);
+    let job = Arc::new(OptJob {
+        id,
+        started: std::time::Instant::now(),
+        state: Arc::new(FunnelState::default()),
+        phase: Mutex::new("enumerating"),
+        counts: Mutex::new(None),
+        result: Mutex::new(None),
+    });
+    {
+        let mut jobs = opt_jobs().lock().unwrap();
+        jobs.push(job.clone());
+        // Prune old finished jobs; the running one is never removed.
+        while jobs.len() > 6 {
+            match jobs.iter().position(|j| !j.active()) {
+                Some(pos) => drop(jobs.remove(pos)),
+                None => break,
+            }
+        }
     }
-    if cands.is_empty() {
-        return err_json("no legal builds in this scope (Forma / family constraints eliminated all)");
-    }
-    let jobs: Vec<Job> = (0..cands.len())
-        .flat_map(|i| (0..arcanes.len()).map(move |a| (i, a)))
-        .collect();
 
-    // ---- run the funnel (quiet) ----
-    let rounds = schedule(jobs.len());
-    let last = run_funnel(&cands, &arcanes, &scenario, jobs.clone(), &rounds, 0xDEAD_BEEF, false);
+    let target_name = s_name(&specs, enemy_id);
+    let worker = job.clone();
+    std::thread::spawn(move || {
+        // ---- enumerate candidates per evo-set × exilus option ----
+        let innate = dual_toxocyst_innate_slots();
+        let exilus_refs: Vec<Option<&ModDef>> = exilus_defs.iter().map(|o| o.as_ref()).collect();
+        let mut cands: Vec<Candidate> = Vec::new();
+        for (vi, set) in evo_sets.iter().enumerate() {
+            let refs: Vec<&str> = set.iter().map(String::as_str).collect();
+            let base = WeaponBase::dual_toxocyst_incarnon_evos(true, &refs);
+            let base_form = WeaponBase::dual_toxocyst_base_evos(true, &refs);
+            let (mut c, _stats) = enumerate_candidates(
+                &pool, &base, Some(&base_form), vi as u32, min_slots as u32, build_size as u32,
+                60, &innate, &constraints, &exilus_refs,
+            );
+            cands.append(&mut c);
+        }
+        if cands.is_empty() {
+            *worker.result.lock().unwrap() =
+                Some(err_json("no legal builds in this scope (Forma / family constraints eliminated all)"));
+            *worker.phase.lock().unwrap() = "error";
+            return;
+        }
+        let jobs: Vec<Job> = (0..cands.len())
+            .flat_map(|i| (0..arcanes.len()).map(move |a| (i, a)))
+            .collect();
+        let n_jobs = jobs.len();
+        *worker.counts.lock().unwrap() = Some((cands.len(), n_jobs));
+        *worker.phase.lock().unwrap() = "running";
 
-    // ---- top-10 ----
-    let results: Vec<Value> = last
-        .iter()
-        .take(10)
-        .enumerate()
-        .map(|(rank, ((ci, ai), s))| {
-            let c = &cands[*ci];
-            let mods: Vec<&str> = c.ordered.iter().map(|&i| pool[i].id).collect();
-            let arc = &arcanes[*ai];
-            let arcane_id = if arc.id.is_empty() { "none".to_string() } else { arc.id.clone() };
-            let arcane_rank = if arc.id.is_empty() {
-                0
-            } else {
-                wfsim_engine::arcanes_data::secondary(&arc.id).map(|d| d.max_rank).unwrap_or(0)
-            };
-            json!({
-                "rank": rank + 1,
-                "kills": s.mean_kills,
-                "kill_progress": s.mean_kill_progress,
-                "effective_dps": s.effective_dps,
-                "kills_min": s.min_kills,
-                "kills_max": s.max_kills,
-                "mods": mods,
-                "arcane": arcane_id,
-                "arcane_rank": arcane_rank,
-                "evolutions": evo_sets[c.variant as usize],
-                "forma": { "used": c.plan.forma_used, "total_drain": c.plan.total_drain },
+        // ---- run the funnel (progress via FunnelState) ----
+        let rounds = schedule(n_jobs);
+        let last = run_funnel(
+            &cands, &arcanes, &scenario, jobs, &rounds, 0xDEAD_BEEF, false,
+            Some(&worker.state),
+        );
+        let cancelled = worker.state.cancel.load(Ordering::Relaxed);
+
+        // ---- top-10 (on cancel: of the last completed round, if any) ----
+        let results: Vec<Value> = last
+            .iter()
+            .take(10)
+            .enumerate()
+            .map(|(rank, ((ci, ai), s))| {
+                let c = &cands[*ci];
+                let mods: Vec<&str> = c.ordered.iter().map(|&i| pool[i].id).collect();
+                let arc = &arcanes[*ai];
+                let arcane_id = if arc.id.is_empty() { "none".to_string() } else { arc.id.clone() };
+                let arcane_rank = if arc.id.is_empty() {
+                    0
+                } else {
+                    wfsim_engine::arcanes_data::secondary(&arc.id).map(|d| d.max_rank).unwrap_or(0)
+                };
+                json!({
+                    "rank": rank + 1,
+                    "kills": s.mean_kills,
+                    "kill_progress": s.mean_kill_progress,
+                    "effective_dps": s.effective_dps,
+                    "kills_min": s.min_kills,
+                    "kills_max": s.max_kills,
+                    "mods": mods,
+                    "arcane": arcane_id,
+                    "arcane_rank": arcane_rank,
+                    "evolutions": evo_sets[c.variant as usize],
+                    "exilus": exilus_defs[c.exilus as usize].as_ref().map(|m| m.id).unwrap_or("none"),
+                    "forma": { "used": c.plan.forma_used, "total_drain": c.plan.total_drain },
+                })
             })
-        })
-        .collect();
+            .collect();
 
-    json!({
-        "ok": true,
-        "candidates": cands.len(),
-        "jobs": jobs.len(),
-        "results": results,
-        "target": { "name": s_name(&specs, enemy_id), "level": level, "steel_path": steel_path },
-    })
+        *worker.result.lock().unwrap() = Some(json!({
+            "ok": true,
+            "candidates": cands.len(),
+            "jobs": n_jobs,
+            "cancelled": cancelled,
+            "results": results,
+            "target": { "name": target_name, "level": level, "steel_path": steel_path },
+        }));
+        *worker.phase.lock().unwrap() = if cancelled { "cancelled" } else { "done" };
+    });
+
+    json!({ "ok": true, "job_id": id })
 }
