@@ -4,7 +4,9 @@ members = [
     "engine",
     "optimizer",
     "cli",
+    "webapi",
     "web",
+    "wasm",
 ]
 
 [workspace.package]

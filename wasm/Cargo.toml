@@ -1,17 +1,18 @@
 [package]
-name = "wfsim-web"
-description = "wfsim web UI: a tiny std-only HTTP server + static frontend that drives the engine (build config + Monte Carlo results). See docs/UI.md."
+name = "wfsim-wasm"
+description = "wfsim in the browser: wasm-bindgen bindings over wfsim-webapi — every simulation runs on the visitor's own CPU (docs/WASM.md)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
-[[bin]]
-name = "wfsim-web"
-path = "src/main.rs"
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wfsim-optimizer = { path = "../optimizer" }
 wfsim-webapi = { path = "../webapi" }
 serde_json.workspace = true
+wasm-bindgen = "0.2"
+js-sys = "0.3"

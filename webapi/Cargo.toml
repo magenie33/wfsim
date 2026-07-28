@@ -1,0 +1,15 @@
+[package]
+name = "wfsim-webapi"
+description = "wfsim JSON API layer: the endpoint functions shared by the native web server and the wasm build (docs/WASM.md phase 2)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+serde_norway.workspace = true
+wfsim-engine = { path = "../engine" }
+wfsim-optimizer = { path = "../optimizer" }
