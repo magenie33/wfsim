@@ -684,11 +684,12 @@ fn enumerate_buffs(
             out.push(b);
         }
     };
-    // Weapon passive: Frenzy (Dual Toxocyst). Default LOCKED — the sim's cycle
-    // assumes it permanently; a single on/off "stack".
+    // Weapon passive: Frenzy (Dual Toxocyst); a single on/off "stack".
+    // Default UNLOCKED (user, 2026-07-28): starts active, then lives by its
+    // real triggers (headshot refresh) instead of an assumed 100% uptime.
     if info.id == "dual_toxocyst" {
         push(BuffMeta { id: "frenzy".into(), name: "Frenzy".into(), max_stacks: 1,
-            kind: "toggle", default_stacks: 1, default_locked: true, permanent: false });
+            kind: "toggle", default_stacks: 1, default_locked: false, permanent: false });
     }
     // Mod-granted buffs.
     for m in refs {
