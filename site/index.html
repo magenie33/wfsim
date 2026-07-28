@@ -3,70 +3,61 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>wfsim — a hardcore Warframe damage simulator</title>
-<meta name="description" content="wfsim replays the actual fight — fire cadence, reload, status stacking, buff uptime — and matches in-game Simulacrum measurements.">
+<title>WFSim</title>
+<meta name="description" content="WFSim — Warframe damage simulator.">
 <style>
+  /* Design tokens copied from the app (web/src/static/style.css) — that file
+     is the source of truth; keep these in sync with it. */
   :root{
-    --bg:#0b0e13; --panel:#121722; --line:#232c3d;
-    --text:#d7dee9; --dim:#8b97a8; --accent:#5cc8ff; --accent2:#9df0c2;
+    color-scheme: light;
+    --plane:#f5f5f2; --surface:#ffffff; --panel2:#f0efea; --panel3:#f7f7f4;
+    --text:#0b0b0b; --text-2:#52514e; --muted:#898781; --line:rgba(11,11,11,0.12);
+    --accent:#2a78d6; --gold:#a9781f;
   }
-  *{box-sizing:border-box;margin:0}
-  body{background:var(--bg);color:var(--text);
-    font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    -webkit-font-smoothing:antialiased}
-  .wrap{max-width:880px;margin:0 auto;padding:0 24px}
-  header{padding:88px 0 56px;text-align:center}
-  h1{font-size:44px;letter-spacing:-1px;line-height:1.1}
-  h1 span{color:var(--accent)}
-  .tag{margin:18px auto 0;max-width:640px;color:var(--dim);font-size:19px}
-  .cta{margin-top:32px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-  .btn{display:inline-block;padding:10px 22px;border-radius:8px;
-    text-decoration:none;font-weight:600;border:1px solid var(--line);color:var(--text)}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:#06131c}
-  .btn:hover{filter:brightness(1.12)}
-  section{padding:40px 0;border-top:1px solid var(--line)}
-  h2{font-size:22px;margin-bottom:20px}
-  .wcat{color:var(--dim);font-size:13px;letter-spacing:.12em;text-transform:uppercase;margin:26px 0 10px}
-  .wcat:first-of-type{margin-top:0}
-  .wgrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
-  .wtile{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;
-    background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 14px;
-    text-decoration:none;color:var(--text);transition:border-color .15s}
-  a.wtile:hover{border-color:var(--accent)}
-  .wtile img{width:96px;height:96px;object-fit:contain}
-  .wtile b{font-size:15px}
-  footer{padding:36px 0 48px;color:var(--dim);font-size:13px;text-align:center}
-  footer a{color:var(--dim)}
-  @media(max-width:560px){h1{font-size:34px}}
+  @media (prefers-color-scheme: dark){:root{
+    color-scheme: dark;
+    --plane:#0e1014; --surface:#171a21; --panel2:#1e222b; --panel3:#12151b;
+    --text:#f2f4f8; --text-2:#a6adbb; --muted:#6b7280; --line:rgba(255,255,255,0.09);
+    --accent:#4a9eff; --gold:#e8c37a;
+  }}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",sans-serif;font-size:14px;line-height:1.45}
+  .topbar{display:flex;align-items:center;gap:18px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0}
+  .brand{font-weight:800;font-size:20px;letter-spacing:-.01em;color:var(--text);text-decoration:none}
+  .brand span{color:var(--gold)}
+  .ghost-btn{margin-left:auto;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:5px 9px;text-decoration:none;font-size:12px}
+  .ghost-btn:hover{background:var(--plane)}
+  .home-page{max-width:1060px;margin:0 auto;padding:28px 18px}
+  .home-h{font-size:26px;margin:6px 0 18px}
+  #weapon-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+  .wcard{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel2);text-decoration:none;color:var(--text);transition:border-color .15s}
+  .wcard:hover{border-color:var(--accent)}
+  .wcard img{width:84px;height:84px;object-fit:contain;flex:0 0 auto}
+  .wcard b{font-size:16px}
+  footer{max-width:1060px;margin:0 auto;padding:28px 18px 40px;color:var(--muted);font-size:12px}
+  footer a{color:var(--muted)}
 </style>
 </head>
 <body>
-<header class="wrap">
-  <h1>wf<span>sim</span></h1>
-  <p class="tag">A hardcore Warframe damage simulator. It doesn't estimate a DPS
-  number — it <b>replays the fight</b>, and its output matches in-game
-  Simulacrum measurements.</p>
-  <div class="cta">
-    <a class="btn primary" href="#weapons">Browse weapons</a>
-    <a class="btn" href="https://github.com/magenie33/wfsim">GitHub</a>
-  </div>
+<header class="topbar">
+  <a class="brand" href="./">WF<span>Sim</span></a>
+  <a class="ghost-btn" href="https://github.com/magenie33/wfsim">GitHub</a>
 </header>
 
-<section class="wrap" id="weapons">
-  <h2>Weapons</h2>
-
-  <h3 class="wcat">Secondary</h3>
-  <div class="wgrid">
-    <a class="wtile" href="weapons/dual-toxocyst.html">
+<main class="home-page">
+  <h1 class="home-h">Weapons</h1>
+  <div id="weapon-grid">
+    <a class="wcard" href="weapons/dual-toxocyst.html">
       <img src="https://cdn.warframestat.us/img/DualToxocyst.png" alt="Dual Toxocyst" loading="lazy">
       <b>Dual Toxocyst</b>
     </a>
   </div>
-</section>
+</main>
 
-<footer class="wrap">
-  wfsim is an unofficial fan project, not affiliated with or endorsed by
-  Digital Extremes. Warframe is a trademark of Digital Extremes Ltd.<br>
+<footer>
+  WFSim is an unofficial fan project, not affiliated with or endorsed by
+  Digital Extremes. Warframe is a trademark of Digital Extremes Ltd.
   Game data derived from the community
   <a href="https://wiki.warframe.com/">Warframe Wiki</a> (CC BY-SA) ·
   <a href="https://github.com/magenie33/wfsim">github.com/magenie33/wfsim</a> · MIT
