@@ -3,6 +3,9 @@
    COMPONENT CONTRACT — build UI out of these; don't invent one-offs:
      .topbar + .brand      sticky header, WF<span>Sim</span> wordmark (gold Sim)
      .footer               shell bottom bar, same content width as .topbar
+   CENTERING RULE: pills/chips/tags center via inline-flex + line-height:1
+   and an explicit height — never via line-box leading. Fixed-height
+   controls match line-height to their inner height.
      .block  > .bh > .bb   section box: header (uppercase h2, .n number) + body
      .wcard                weapon card (image + name), home grid
      .slot                 mod/arcane slot card (rarity via --rar)
@@ -55,7 +58,7 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .preset-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 12px;padding:8px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
 .preset-bar .plabel{font-size:12px;color:var(--text-2)}
 .preset-bar .plabel b{color:var(--gold)}
-.pchip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:12.5px;cursor:pointer;background:var(--panel3)}
+.pchip{display:inline-flex;align-items:center;line-height:1;gap:5px;border:1px solid var(--line);border-radius:8px;padding:0 10px;height:26px;font-size:12.5px;cursor:pointer;background:var(--panel3)}
 .pchip:hover{border-color:var(--accent)}
 .pchip.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;font-weight:600}
 .pchip.add{border-style:dashed;color:var(--muted)}
@@ -66,9 +69,9 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .ghost-btn:hover{background:var(--plane)}.ghost-btn.small{font-size:11px;padding:2px 7px}
 /* Topbar controls share ONE height so the row reads as a single system. */
 .topbar-inner .ghost-btn{height:28px;padding:0 8px;display:inline-flex;align-items:center;justify-content:center}
-.gh-link{margin-left:auto;color:var(--text);width:28px}
+.gh-link{color:var(--text);width:28px;padding:0}
 .gh-link svg{display:block}
-.lang-select{width:auto;height:28px;padding:0 6px;font-size:12px;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:8px}
+.lang-select{margin-left:auto;width:auto;height:28px;padding:0 24px 0 8px;font-size:12px;background-color:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:8px}
 
 .config-page{max-width:760px;margin:0 auto;padding:18px}
 
@@ -76,7 +79,7 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .wstrip img{width:84px;height:52px;object-fit:contain}
 .wstrip h1{margin:0;font-size:20px}
 .tags{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap}
-.tag{font-size:11px;color:var(--text-2);border:1px solid var(--line);border-radius:999px;padding:2px 8px;background:var(--plane)}
+.tag{display:inline-flex;align-items:center;line-height:1;font-size:11px;color:var(--text-2);border:1px solid var(--line);border-radius:999px;padding:0 8px;height:20px;background:var(--plane)}
 
 /* blocks */
 .block{border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden;background:var(--surface)}
@@ -87,7 +90,7 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .bb{padding:12px 13px}
 
 /* capacity / forma header */
-.bh .cap{font-variant-numeric:tabular-nums;color:var(--text-2);border:1px solid var(--line);border-radius:7px;padding:2px 8px}
+.bh .cap{display:inline-flex;align-items:center;line-height:1;height:20px;font-variant-numeric:tabular-nums;color:var(--text-2);border:1px solid var(--line);border-radius:7px;padding:0 8px}
 .bh .cap.over{color:#fff;background:var(--critical);border-color:var(--critical)}
 .bh .forma{color:var(--gold);font-weight:600}
 
@@ -245,6 +248,10 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-2)}
 label.check{flex-direction:row;align-items:center;gap:8px;padding-top:18px;color:var(--text)}
 select,input[type=number]{background:var(--plane);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font:inherit;width:100%}
+/* All selects share one custom chevron (appearance:none) so the indicator
+   is ALWAYS dead-center vertically — the native arrow is UA-drawn and
+   uncontrollable (Chrome even ignores line-height on selects). */
+select{appearance:none;padding-right:24px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888e98' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
 input[type=range]{width:100%;accent-color:var(--accent)}
 .hint{font-size:12px;color:var(--muted);margin-top:8px}
 .run-btn{margin-top:12px;width:100%;padding:11px;font:inherit;font-weight:700;font-size:15px;background:var(--accent);color:#fff;border:none;border-radius:10px;cursor:pointer}
