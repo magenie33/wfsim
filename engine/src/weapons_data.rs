@@ -173,8 +173,12 @@ pub fn perks() -> &'static [PerkSpec] {
         crate::data::files_under("perks/")
             .filter(|(p, _)| p.ends_with(".yaml"))
             .map(|(p, text)| {
-                serde_norway::from_str::<PerkSpec>(text)
-                    .unwrap_or_else(|e| panic!("parse {p}: {e}"))
+                let spec = serde_norway::from_str::<PerkSpec>(text)
+                    .unwrap_or_else(|e| panic!("parse {p}: {e}"));
+                // Convention (data/README.md): the id matches the filename.
+                let stem = p.rsplit('/').next().unwrap_or(p).trim_end_matches(".yaml");
+                assert!(spec.id == stem, "{p}: id '{}' != filename", spec.id);
+                spec
             })
             .collect()
     })
@@ -389,6 +393,19 @@ mod tests {
                         );
                     }
                     home.insert(&p.id, format!("inline in weapon '{}'", w.id));
+                }
+            }
+        }
+        // Every bare-id reference must resolve (no dangling perk refs —
+        // caught here at test time instead of a runtime panic mid-sim).
+        for w in all() {
+            for pr in &w.perks {
+                if let PerkRef::Id(id) = pr {
+                    assert!(
+                        perk(id).is_some(),
+                        "weapon '{}' references unknown perk '{}'",
+                        w.id, id
+                    );
                 }
             }
         }
