@@ -26,7 +26,7 @@ use wfsim_optimizer::{
 // embedded by the engine's build script. The UI lists the classics first;
 // anything new in data/enemies/ appends after them in path order.
 fn enemies() -> Vec<EnemySpec> {
-    let preferred = ["thrax_centurion", "acolyte", "fortress", "glass_wall"];
+    let preferred = ["thrax_centurion"];
     let mut specs = wfsim_engine::enemy_data::all();
     specs.sort_by_key(|s| preferred.iter().position(|p| *p == s.id).unwrap_or(preferred.len()));
     specs
@@ -91,115 +91,25 @@ const WEAPONS: &[WeaponInfo] = &[
         uses_arcane: true,
         uses_evo2: true,
     },
-    WeaponInfo {
-        id: "verglas_prime",
-        name: "Verglas Prime (sentinel)",
-        mod_class: "rifle",
-        subtype: "Sentinel Weapon",
-        sentinel: true,
-        forms: &[("primary", "Standard")],
-        uses_arcane: false,
-        uses_evo2: false,
-    },
 ];
 
 fn weapon(id: &str) -> &'static WeaponInfo {
     WEAPONS.iter().find(|w| w.id == id).unwrap_or(&WEAPONS[0])
 }
 
-fn mod_pool_for(class: &str) -> Vec<ModDef> {
-    if class == "rifle" {
-        rifle_pool()
-    } else {
-        pool()
-    }
+// Every current weapon uses the pistol pool; `mod_class` stays on
+// WeaponInfo so the next non-pistol weapon reintroduces pools per class.
+fn mod_pool_for(_class: &str) -> Vec<ModDef> {
+    pool()
 }
 
-fn innate_slots_for(id: &str) -> Vec<Option<Polarity>> {
-    match id {
-        // Robotic weapon: 8 mod slots, one innate Naramon, no exilus.
-        "verglas_prime" => {
-            let mut v = vec![None; 8];
-            v[0] = Some(Polarity::Naramon);
-            v
-        }
-        // 8 main slots + the unpolarized exilus slot (the UI's 9th slot;
-        // same model as autoForma and the optimizer) — without it a 9-mod
-        // build trips plan_forma's mods≤slots assert.
-        _ => {
-            let mut v = dual_toxocyst_innate_slots().to_vec();
-            v.push(None);
-            v
-        }
-    }
-}
-
-/// Rifle mod pool (standard primary rifle mods; Verglas Prime accepts these).
-/// Values transcribed at max rank from the wiki (2026-07-25). Galvanized mods
-/// carry BOTH their unconditional base part and their conditional part; under
-/// `StackPolicy::BaseOnly` (sentinels) only the base applies. Galvanized/Argon
-/// Scope are entirely headshot-gated, so on a sentinel they contribute nothing.
-fn rifle_pool() -> Vec<ModDef> {
-    use wfsim_engine::damage::DamageType as D;
-    use wfsim_engine::loadout::Rarity as R;
-    use ModEffect::*;
-    // (id, max-rank drain, max_rank, polarity, rarity, family, effects)
-    let md = |id, base_drain, max_rank, polarity, rarity, family, effects| ModDef {
-        id,
-        base_drain,
-        max_rank,
-        polarity,
-        rarity,
-        exilus: false, // no rifle exilus mods authored yet
-        family,
-        requires: None,
-        disables: Vec::new(),
-        effects,
-    };
-    vec![
-        // Damage
-        md("serration", 14, 10, Polarity::Madurai, R::Uncommon, None, vec![BaseDamage(1.65)]),
-        md("heavy_caliber", 16, 10, Polarity::Madurai, R::Rare, None, vec![BaseDamage(1.65)]), // accuracy downside = no-op
-        // Multishot (Split Chamber ↔ Galvanized Chamber share the "chamber" family)
-        md("split_chamber", 15, 5, Polarity::Madurai, R::Rare, Some("chamber"), vec![Multishot(0.90)]),
-        md("galvanized_chamber", 16, 10, Polarity::Madurai, R::Rare, Some("chamber"), vec![
-            Multishot(0.80),
-            OnKillMultishot { per_stack: 0.30, max_stacks: 5, duration: 20.0 },
-        ]),
-        md("vigilante_armaments", 9, 5, Polarity::Naramon, R::Common, None, vec![Multishot(0.60)]),
-        // Crit
-        md("point_strike", 9, 5, Polarity::Madurai, R::Uncommon, None, vec![CritChance(1.50)]),
-        md("vital_sense", 9, 5, Polarity::Madurai, R::Rare, None, vec![CritDamage(1.20)]),
-        md("critical_delay", 9, 5, Polarity::Naramon, R::Rare, None, vec![CritChance(2.00), FireRate(-0.20)]), // corrupted
-        // Status
-        md("galvanized_aptitude", 12, 10, Polarity::Vazarin, R::Rare, None, vec![
-            StatusChance(0.80),
-            ConditionOverload { per_stack: 0.40, max_stacks: 2, duration: 20.0 },
-        ]),
-        // Single elements (+90%)
-        md("cryo_rounds", 11, 5, Polarity::Vazarin, R::Uncommon, None, vec![Element(D::Cold, 0.90)]),
-        md("hellfire", 11, 5, Polarity::Naramon, R::Uncommon, None, vec![Element(D::Heat, 0.90)]),
-        md("stormbringer", 11, 5, Polarity::Naramon, R::Uncommon, None, vec![Element(D::Electricity, 0.90)]),
-        md("infected_clip", 11, 5, Polarity::Naramon, R::Uncommon, None, vec![Element(D::Toxin, 0.90)]),
-        // Dual-stat elements (60/60)
-        md("rime_rounds", 7, 3, Polarity::Madurai, R::Rare, None, vec![Element(D::Cold, 0.60), StatusChance(0.60)]),
-        md("malignant_force", 7, 3, Polarity::Madurai, R::Rare, None, vec![Element(D::Toxin, 0.60), StatusChance(0.60)]),
-        md("high_voltage", 7, 3, Polarity::Madurai, R::Rare, None, vec![Element(D::Electricity, 0.60), StatusChance(0.60)]),
-        md("thermite_rounds", 7, 3, Polarity::Madurai, R::Rare, None, vec![Element(D::Heat, 0.60), StatusChance(0.60)]),
-        // Fire rate
-        md("vile_acceleration", 9, 5, Polarity::Naramon, R::Rare, None, vec![FireRate(0.90), BaseDamage(-0.15)]), // corrupted
-        md("speed_trigger", 9, 5, Polarity::Madurai, R::Common, None, vec![FireRate(0.60)]),
-        md("shred", 11, 5, Polarity::Madurai, R::Rare, None, vec![FireRate(0.30)]), // punch-through = no-op single-target
-        // Headshot-gated crit (Galvanized ↔ Argon share the "scope" family; both
-        // do nothing on a sentinel — recorded so the picker shows them honestly)
-        md("galvanized_scope", 12, 10, Polarity::Madurai, R::Rare, Some("scope"), vec![
-            OnHeadshotCritChance { bonus: 1.20, duration: 12.0 },
-            OnHeadshotKillCritChance { per_stack: 0.40, max_stacks: 5, duration: 12.0 },
-        ]),
-        md("argon_scope", 7, 5, Polarity::Madurai, R::Rare, Some("scope"), vec![
-            OnHeadshotCritChance { bonus: 1.35, duration: 9.0 },
-        ]),
-    ]
+// 8 main slots + the unpolarized exilus slot (the UI's 9th slot; same model
+// as autoForma and the optimizer) — without it a 9-mod build trips
+// plan_forma's mods≤slots assert.
+fn innate_slots_for(_id: &str) -> Vec<Option<Polarity>> {
+    let mut v = dual_toxocyst_innate_slots().to_vec();
+    v.push(None);
+    v
 }
 
 // ---- /api/meta ---------------------------------------------------------
@@ -271,7 +181,7 @@ pub fn meta_json() -> Value {
                 "sentinel": w.sentinel,
                 "uses_arcane": w.uses_arcane,
                 "uses_evo2": w.uses_evo2,
-                "arcane_slots": if w.id == "verglas_prime" { 0 } else { 1 },
+                "arcane_slots": 1,
                 "image": assets().weapons.get(w.id),
                 "innate_polarities": innate_slots_for(w.id).iter()
                     .map(|p| p.map(|x| format!("{x:?}")))
@@ -323,7 +233,6 @@ pub fn meta_json() -> Value {
         "weapons": weapons,
         "mod_pools": {
             "pistol": mods_json(&pool()),
-            "rifle": mods_json(&rifle_pool()),
         },
         "enemies": enemies,
         // Arcanes mirror the mod pool: per-rank effect lines (`ranks[r]`),
@@ -630,25 +539,17 @@ pub fn panel_json(v: &Value) -> Value {
     // tier-1 unlock is selected. `meta` states the trigger/shot mechanics
     // from the weapon data (data/weapons yamls).
     let mut forms_list: Vec<(&'static str, &'static str, WeaponBase)> = Vec::new();
-    if info.id == "verglas_prime" {
+    forms_list.push((
+        "Base Form",
+        "Semi-Auto · hitscan",
+        WeaponBase::dual_toxocyst_base_evos(true, &evo_refs),
+    ));
+    if evo_refs.contains(&"dt_evo1_incarnon_form") {
         forms_list.push((
-            "Standard",
-            "Held trigger · hitscan · sentinel weapon",
-            WeaponBase::verglas_prime(),
+            "Incarnon Form",
+            "Auto · hitscan · ricochet to 1 enemy within 5 m",
+            WeaponBase::dual_toxocyst_incarnon_evos(true, &evo_refs),
         ));
-    } else {
-        forms_list.push((
-            "Base Form",
-            "Semi-Auto · hitscan",
-            WeaponBase::dual_toxocyst_base_evos(true, &evo_refs),
-        ));
-        if evo_refs.contains(&"dt_evo1_incarnon_form") {
-            forms_list.push((
-                "Incarnon Form",
-                "Auto · hitscan · ricochet to 1 enemy within 5 m",
-                WeaponBase::dual_toxocyst_incarnon_evos(true, &evo_refs),
-            ));
-        }
     }
 
     // ---- per-bucket source attribution (mirrors resolve()'s buckets) ----
@@ -1196,14 +1097,8 @@ pub fn simulate_json(v: &Value) -> Value {
     };
 
     // ---- resolve panel(s) and build sim params, per weapon ----
-    let (report_panel, mut params): (ResolvedPanel, DummyParams) = if info.id == "verglas_prime" {
-        // Sentinel weapon: single form, BaseOnly resolution, no arcane, no Frenzy.
-        let base = WeaponBase::verglas_prime();
-        let panel = resolve(&base, &refs, policy);
-        let params = DummyParams::from_panel(&panel, target, body_parts, duration);
-        (panel, params)
-    } else {
-        // Dual Toxocyst: two forms + the real Incarnon cycle.
+    // Dual Toxocyst: two forms + the real Incarnon cycle.
+    let (report_panel, mut params): (ResolvedPanel, DummyParams) = {
         let incarnon_base = WeaponBase::dual_toxocyst_incarnon_evos(true, &evo_refs);
         let base_base = WeaponBase::dual_toxocyst_base_evos(true, &evo_refs);
         let incarnon_panel = resolve(&incarnon_base, &refs, policy);
@@ -1244,11 +1139,7 @@ pub fn simulate_json(v: &Value) -> Value {
         // stats; `requires` gates on the weapon traits (Akimbo Slip Shot).
         // Under the sim's Emergent policy the non-simmable conditionals are
         // honest no-ops (same rule as mods' CondBuff).
-        let ab = if info.id == "verglas_prime" {
-            WeaponBase::verglas_prime()
-        } else {
-            WeaponBase::dual_toxocyst_incarnon_evos(true, &evo_refs)
-        };
+        let ab = WeaponBase::dual_toxocyst_incarnon_evos(true, &evo_refs);
         def.fx(rank, policy, ab.base_crit_chance, ab.base_crit_damage, ab.traits)
     };
     // ---- apply the per-buff configured policy onto the live specs ----

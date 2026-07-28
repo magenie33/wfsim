@@ -31,7 +31,7 @@ mod tests {
             assert!(files_under(prefix).count() > 0, "no embedded files under {prefix}");
         }
         assert!(file("assets.yaml").is_some());
-        assert!(file("enemies/custom/fortress.yaml").is_some());
+        assert!(file("enemies/thrax_centurion.yaml").is_some());
         assert!(file("no/such/file.yaml").is_none());
     }
 }

@@ -270,10 +270,21 @@ mod tests {
     }
 
     #[test]
-    fn loads_the_whole_enemy_library_including_customs() {
+    fn loads_the_enemy_library() {
+        // The shipped library is Thrax-only for now; `synthetic: true`
+        // (custom enemies) stays a supported flag, covered inline below.
         let specs = all();
         assert!(specs.iter().any(|s| s.id == "thrax_centurion"));
-        assert!(specs.iter().any(|s| s.synthetic));
+        let yaml = r#"
+id: test_dummy
+name: Test Dummy
+synthetic: true
+scaling_faction: unaffiliated
+stats: { base_level: 1, health: 1000 }
+body_parts: [ { name: body, multiplier: 1.0 } ]
+"#;
+        let spec = EnemySpec::from_yaml_str(yaml).unwrap();
+        assert!(spec.synthetic);
     }
 
     #[test]

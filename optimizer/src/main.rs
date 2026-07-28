@@ -34,8 +34,6 @@ fn main() {
             // Validation mode: no funnel — EVERY candidate gets the full
             // 1024 x 60 s treatment (much slower; verifies the funnel).
             flat = true;
-        } else if arg == "target=acolyte" {
-            target_file = "acolyte";
         } else if arg == "target=thrax" {
             target_file = "thrax_centurion";
         } else if arg == "evo2=both" {
@@ -62,7 +60,7 @@ fn main() {
             );
         } else {
             eprintln!(
-                "unknown arg: {arg} (use require=<id> / forbid=<id> / flat / target=thrax|acolyte / evo2=both)"
+                "unknown arg: {arg} (use require=<id> / forbid=<id> / flat / target=thrax / evo2=both)"
             );
             std::process::exit(2);
         }

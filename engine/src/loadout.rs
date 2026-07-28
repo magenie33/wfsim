@@ -650,34 +650,6 @@ impl WeaponBase {
         }
     }
 
-    /// Verglas Prime — Nautilus Prime's robotic (sentinel) weapon. The purest
-    /// test case: no arcane, no Incarnon, no evolutions. Its innate damage is
-    /// **100% Cold (32)** — the first innate-elemental weapon in the database
-    /// (see the innate-element branch in [`resolve`]). Accepts Rifle Mods.
-    /// Wiki `Verglas_Prime` (2026-07-25): cc 14% / cd 2.2× / sc 36% / fire
-    /// rate 12 / magazine 80 / reload 1.6 s / multishot 1. Sentinel weapons
-    /// resolve their mods under [`StackPolicy::BaseOnly`] — Galvanized and
-    /// other on-kill effects are equippable but never trigger.
-    pub fn verglas_prime() -> Self {
-        Self {
-            base_vector: DamageVector::new().with(DamageType::Cold, 32.0),
-            base_crit_chance: 0.14,
-            base_crit_damage: 2.2,
-            base_status_chance: 0.36,
-            base_fire_rate: 12.0,
-            base_multishot: 1.0,
-            buff_multishot_bonus: 0.0,
-            buff_ms_max_stacks: 0,
-            magazine_size: 80.0,
-            base_reload: 1.6,
-            innate_co_per_type: 0.0,
-            co_behavior: CoBehavior::Independent,
-            co_base_fraction: 1.0,
-            injected_elements: Vec::new(),
-            traits: &[], // sentinel weapon; no semi_auto/beam trait
-            incarnon: None,
-        }
-    }
 }
 
 /// The resolved panel: everything the dummy sim needs from layers [1]+[2].
@@ -1111,6 +1083,31 @@ mod tests {
     use super::*;
     use DamageType::*;
 
+    /// Innate-element sentinel fixture (values = Verglas Prime, wiki
+    /// 2026-07-25): 100% Cold(32) base vector, no traits, no Incarnon. Kept
+    /// as a test fixture after the weapon left the product roster — it
+    /// exercises the innate-element combination branch and BaseOnly policy.
+    fn verglas_prime() -> WeaponBase {
+        WeaponBase {
+            base_vector: DamageVector::new().with(DamageType::Cold, 32.0),
+            base_crit_chance: 0.14,
+            base_crit_damage: 2.2,
+            base_status_chance: 0.36,
+            base_fire_rate: 12.0,
+            base_multishot: 1.0,
+            buff_multishot_bonus: 0.0,
+            buff_ms_max_stacks: 0,
+            magazine_size: 80.0,
+            base_reload: 1.6,
+            innate_co_per_type: 0.0,
+            co_behavior: CoBehavior::Independent,
+            co_base_fraction: 1.0,
+            injected_elements: Vec::new(),
+            traits: &[],
+            incarnon: None,
+        }
+    }
+
     fn m(id: &'static str, effects: Vec<ModEffect>) -> ModDef {
         ModDef {
             id,
@@ -1332,14 +1329,14 @@ mod tests {
         // pairs with it into Blast (not pure Cold + pure Heat). No base-damage
         // mod -> modified_base 32; Heat mod = 32 × 0.9 = 28.8; Blast = 60.8.
         let heat = m("hellfire", vec![ModEffect::Element(Heat, 0.90)]);
-        let p = resolve(&WeaponBase::verglas_prime(), &[&heat], StackPolicy::BaseOnly);
+        let p = resolve(&verglas_prime(), &[&heat], StackPolicy::BaseOnly);
         assert!((p.damage.get(Blast) - 60.8).abs() < 1e-9);
         assert_eq!(p.damage.get(Cold), 0.0);
         assert_eq!(p.damage.get(Heat), 0.0);
 
         // Innate Cold + a Toxin mod -> Viral.
         let tox = m("infected_clip", vec![ModEffect::Element(Toxin, 0.90)]);
-        let pv = resolve(&WeaponBase::verglas_prime(), &[&tox], StackPolicy::BaseOnly);
+        let pv = resolve(&verglas_prime(), &[&tox], StackPolicy::BaseOnly);
         assert!((pv.damage.get(Viral) - 60.8).abs() < 1e-9);
     }
 
@@ -1354,7 +1351,7 @@ mod tests {
                 ModEffect::OnKillMultishot { per_stack: 0.25, max_stacks: 5, duration: 20.0 },
             ],
         );
-        let p = resolve(&WeaponBase::verglas_prime(), &[&gchamber], StackPolicy::BaseOnly);
+        let p = resolve(&verglas_prime(), &[&gchamber], StackPolicy::BaseOnly);
         assert!((p.multishot - 1.55).abs() < 1e-9);
         assert!(p.ms_stack.is_none());
     }
