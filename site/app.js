@@ -211,6 +211,64 @@ let pickerPrefs = { sort: "name", dir: "asc", pol: null };
 try { const s = JSON.parse(localStorage.getItem("wfsim-picker")); if (s) pickerPrefs = { ...pickerPrefs, ...s }; } catch (_) {}
 const savePickerPrefs = () => localStorage.setItem("wfsim-picker", JSON.stringify(pickerPrefs));
 
+// ---- topbar weapon search: filter chips + sort, rows navigate ----------
+function initWeaponSearch() {
+  const input = $("wsearch-input"), panel = $("wsearch-panel"),
+        tools = $("wsearch-tools"), listEl = $("wsearch-list");
+  if (!input) return;
+  input.placeholder = tr("Search weapons…");
+  let flt = "all", srt = "az";
+  const cats = [...new Set((META.weapons || []).map((w) => w.subtype || w.mod_class))];
+  tools.innerHTML =
+    `<span class="pchip sel" data-f="all">${tr("All")}</span>` +
+    cats.map((c) => `<span class="pchip" data-f="${c}">${c}</span>`).join("") +
+    `<select id="wsearch-sort">
+       <option value="az">${tr("Name A→Z")}</option>
+       <option value="za">${tr("Name Z→A")}</option>
+     </select>`;
+  const renderList = () => {
+    const q = input.value.trim().toLowerCase();
+    const list = (META.weapons || [])
+      .filter((w) => flt === "all" || (w.subtype || w.mod_class) === flt)
+      .filter((w) => !q
+        || w.name.toLowerCase().includes(q)
+        || (w.name_en || "").toLowerCase().includes(q)
+        || (w.subtype || "").toLowerCase().includes(q))
+      .sort((a, b) => (srt === "za" ? -1 : 1) * a.name.localeCompare(b.name));
+    listEl.innerHTML = list.map((w) => `
+      <div class="opt" data-id="${w.id}">
+        ${imgTag(IMG(w.image), "mod")}
+        <div class="info"><div class="mn">${w.name}</div><div class="me"><div>${w.subtype || ""}</div></div></div>
+      </div>`).join("") || `<div class="sim-empty">${tr("No matches")}</div>`;
+  };
+  const open = () => { panel.hidden = false; renderList(); };
+  input.addEventListener("focus", open);
+  input.addEventListener("input", open);
+  tools.addEventListener("click", (e) => {
+    const chip = e.target.closest(".pchip");
+    if (!chip) return;
+    flt = chip.dataset.f;
+    tools.querySelectorAll(".pchip").forEach((c) => c.classList.toggle("sel", c === chip));
+    renderList();
+  });
+  tools.addEventListener("change", (e) => {
+    if (e.target.id === "wsearch-sort") { srt = e.target.value; renderList(); }
+  });
+  listEl.addEventListener("click", (e) => {
+    const row = e.target.closest(".opt");
+    if (!row) return;
+    panel.hidden = true;
+    input.value = "";
+    $("weapon").value = row.dataset.id;
+    applyWeapon(row.dataset.id, null);
+    nav(weaponPath(row.dataset.id));
+  });
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".wsearch")) panel.hidden = true;
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") panel.hidden = true; });
+}
+
 // language dropdown (top right, beside the theme toggle): switching
 // reloads with the current build stashed and restored.
 (function () {
@@ -245,6 +303,7 @@ async function init() {
   }
   applyI18n();
   fillSelect("weapon", META.weapons);
+  initWeaponSearch();
   const d = META.defaults;
   $("weapon").value = d.weapon;
   arcane = d.arcane;

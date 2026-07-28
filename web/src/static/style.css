@@ -37,9 +37,19 @@
 html,body{margin:0}
 body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",sans-serif;font-size:14px;line-height:1.45}
 
-.topbar{display:flex;align-items:center;gap:18px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:20}
+.topbar{border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:20}
+/* The shell shares ONE content width (the widest page, home's 1060px) so
+   header content aligns with the page below it. */
+.topbar-inner{max-width:1060px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 18px}
+.wsearch{position:relative;flex:1 1 auto;max-width:430px}
+.wsearch input{width:100%;padding:6px 11px;font:inherit;font-size:13px;background:var(--plane);border:1px solid var(--line);border-radius:8px;color:var(--text)}
+.wsearch input:focus{outline:none;border-color:var(--accent)}
+.wsearch-panel{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:50;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.35);overflow:hidden}
+.wsearch-panel .picker-tools select{width:auto;margin-left:auto;padding:3px 6px;font-size:12px}
+.wsearch-panel .combo-menu{max-height:320px;overflow-y:auto}
+.wsearch-panel .opt{cursor:pointer}
+.wsearch-panel .opt:hover{background:var(--panel2)}
 .brand{font-weight:800;font-size:20px;letter-spacing:-.01em}.brand span{color:var(--gold)}
-.weapon-pick{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2)}
 /* Preset bar above the Mods block: chips CRUD in place. */
 .preset-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 12px;padding:8px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
 .preset-bar .plabel{font-size:12px;color:var(--text-2)}
@@ -360,7 +370,7 @@ label.check input{width:auto}
 .wc-tags .tag{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
 .topbar .brand{text-decoration:none;color:var(--text)}
 .back-home{text-decoration:none}
-body.on-home .back-home,body.on-home .weapon-pick{display:none}
+body.on-home .back-home{display:none}
 .pchip .pop.upd{width:auto;padding:0 7px;border-radius:999px;font-size:10px}
 .block-lock.dis{opacity:.45}
 .opt-meta .warn{color:var(--critical)}

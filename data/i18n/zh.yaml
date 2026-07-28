@@ -185,6 +185,11 @@ ui:
   "Procs / run": 触发数/轮
   "DoT dmg": DoT 伤害
   "Reloads": 装填次数
+  "Search weapons…": 搜索武器…
+  "All": 全部
+  "Name A→Z": 名称 A→Z
+  "Name Z→A": 名称 Z→A
+  "No matches": 无匹配
 
 # Effect-line phrase substitutions for mod/arcane/evolution descriptions
 # ("+X% Critical Chance" → "+X% 暴击几率"). ORDERED — longest phrases first
