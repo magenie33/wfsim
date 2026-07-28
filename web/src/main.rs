@@ -18,7 +18,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 use serde_json::{json, Value};
 use wfsim_optimizer::FunnelState;
 use wfsim_webapi::{
-    err_json, meta_json, opt_buffs_json, panel_json, parse_optimize, run_optimize, simulate_json,
+    err_json, i18n_json, meta_json, opt_buffs_json, panel_json, parse_optimize, run_optimize, simulate_json,
 };
 
 // ---- Embedded static assets (self-contained binary) --------------------
@@ -212,6 +212,7 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
         ),
         ("GET", "/style.css") => respond(&mut stream, "200 OK", "text/css; charset=utf-8", STYLE_CSS.as_bytes()),
         ("GET", "/api/meta") => respond_json(&mut stream, &meta_json()),
+        ("GET", "/api/i18n") => respond_json(&mut stream, &i18n_json()),
         ("POST", "/api/simulate") => {
             let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
             respond_json(&mut stream, &simulate_json(&value))

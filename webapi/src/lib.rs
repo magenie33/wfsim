@@ -199,6 +199,27 @@ fn innate_slots_for(id: &str) -> Vec<Option<Polarity>> {
     v
 }
 
+// ---- /api/i18n ---------------------------------------------------------
+
+/// Display-name overlays for every locale: `{ "<code>": { weapons: {id:
+/// name}, enemies: {...}, damage_types: {...}, mods/arcanes/evolutions } }`.
+/// English is the fallback built into every entity's own `name` — it has no
+/// overlay.
+pub fn i18n_json() -> Value {
+    let mut out = serde_json::Map::new();
+    for (code, l) in wfsim_engine::i18n_data::locales() {
+        out.insert(code.clone(), json!({
+            "weapons": l.weapons,
+            "enemies": l.enemies,
+            "damage_types": l.damage_types,
+            "mods": l.mods,
+            "arcanes": l.arcanes,
+            "evolutions": l.evolutions,
+        }));
+    }
+    Value::Object(out)
+}
+
 // ---- /api/meta ---------------------------------------------------------
 
 /// A coarse category for grouping mods in the picker UI.

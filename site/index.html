@@ -12,8 +12,9 @@
 <body>
   <header class="topbar">
     <a class="brand" href="/">WF<span>Sim</span></a>
-    <a id="back-home" class="ghost-btn small back-home" href="/">← Weapons</a>
-    <label class="weapon-pick">Weapon <select id="weapon"></select></label>
+    <a id="back-home" class="ghost-btn small back-home" href="/" data-i18n>← Weapons</a>
+    <label class="weapon-pick" data-i18n>Weapon <select id="weapon"></select></label>
+    <button id="lang-toggle" class="ghost-btn" title="Language / 语言" aria-label="Language">中</button>
     <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
   </header>
 
@@ -22,7 +23,7 @@
     <h1 class="hero-h">The Simulacrum. <span>The Primed One.</span></h1>
     <p class="hero-sub">A Warframe builder, fight simulator, and Monte-Carlo
     build optimizer — true to in-game numbers and mechanics.</p>
-    <h2 class="home-h">Weapons</h2>
+    <h2 class="home-h" data-i18n>Weapons</h2>
     <div id="weapon-grid"></div>
   </main>
 
@@ -41,7 +42,7 @@
 
     <!-- Block: Mods -->
     <section class="block" id="mod-block">
-      <div class="bh"><span class="n">1</span><h2>Mods</h2>
+      <div class="bh"><span class="n">1</span><h2 data-i18n>Mods</h2>
         <span class="sub">
           <span class="cap" id="capacity">0 / 60</span>
           <span class="forma" id="forma">0 Forma</span>
@@ -51,32 +52,32 @@
       </div>
       <div class="bb">
         <div id="mod-slots" class="slots"></div>
-        <div class="exlabel">Exilus</div>
+        <div class="exlabel" data-i18n>Exilus</div>
         <div id="exilus" class="slots"></div>
       </div>
     </section>
 
     <!-- Block: Arcane -->
     <section class="block" id="arcane-block">
-      <div class="bh"><span class="n">2</span><h2>Arcane</h2><span class="sub" id="arcane-sub"></span></div>
+      <div class="bh"><span class="n">2</span><h2 data-i18n>Arcane</h2><span class="sub" id="arcane-sub"></span></div>
       <div class="bb"><div id="arcane-slots" class="slots one"></div></div>
     </section>
 
     <!-- Block: Evolution (Incarnon weapons) -->
     <section class="block" id="evo-block">
-      <div class="bh"><span class="n">3</span><h2>Evolution</h2><span class="sub">Incarnon Genesis</span></div>
+      <div class="bh"><span class="n">3</span><h2 data-i18n>Evolution</h2><span class="sub" data-i18n>Incarnon Genesis</span></div>
       <div class="bb"><div id="evo-rows"></div></div>
     </section>
 
     <!-- Block: Element (Kuva / Tenet / element-configurable weapons) -->
     <section class="block" id="element-block" hidden>
-      <div class="bh"><span class="n">4</span><h2>Element</h2><span class="sub">configurable element</span></div>
+      <div class="bh"><span class="n">4</span><h2 data-i18n>Element</h2><span class="sub">configurable element</span></div>
       <div class="bb"><div id="element-cfg"></div></div>
     </section>
 
     <!-- Block: Stats — the FINAL panel: merged buckets, explained by source -->
     <section class="block" id="stats-block">
-      <div class="bh"><span class="n">Σ</span><h2>Stats</h2><span class="sub" id="stats-sub"></span></div>
+      <div class="bh"><span class="n">Σ</span><h2 data-i18n>Stats</h2><span class="sub" id="stats-sub"></span></div>
       <div class="bb">
         <div id="stats-rows"></div>
         <div id="stats-damage"></div>
@@ -87,7 +88,7 @@
     <!-- Block: Sim — the 2D arena + scenario/buff settings; Run simulates the
          current build against the enemy and shows a summary + scene replay. -->
     <section class="block" id="sim-block">
-      <div class="bh"><span class="n">▶</span><h2>Sim</h2><span class="sub" id="sim-sub"></span></div>
+      <div class="bh"><span class="n">▶</span><h2 data-i18n>Sim</h2><span class="sub" id="sim-sub"></span></div>
       <div class="bb">
         <div id="sim-arena" class="arena">
           <div class="arena-actor tenno" id="arena-tenno"><span class="dot"></span><span class="lbl">Tenno</span></div>
@@ -99,13 +100,13 @@
             <div class="arena-status" id="arena-status"></div>
           </div>
         </div>
-        <h3 class="sim-h">1 · Enemy</h3>
+        <h3 class="sim-h" data-i18n>1 · Enemy</h3>
         <div id="sim-enemy" class="field-grid"></div>
-        <h3 class="sim-h">2 · Buffs <span class="sim-hint">initial stacks + lock (locked = 100% uptime)</span></h3>
+        <h3 class="sim-h" data-i18n>2 · Buffs <span class="sim-hint">initial stacks + lock (locked = 100% uptime)</span></h3>
         <div id="sim-buffs"></div>
-        <h3 class="sim-h">3 · Simulation</h3>
+        <h3 class="sim-h" data-i18n>3 · Simulation</h3>
         <div id="sim-run" class="field-grid"></div>
-        <button id="run-sim" class="run-btn">Run Simulation</button>
+        <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
         <div id="sim-results"></div>
       </div>
     </section>
@@ -113,9 +114,9 @@
     <!-- Block: Optimizer — scope (mods/arcanes/evolutions) + the Sim panel's
          enemy & buff settings → top-10 ranked builds, each loadable. -->
     <section class="block" id="opt-block">
-      <div class="bh"><span class="n">⚙</span><h2>Optimize</h2><span class="sub" id="opt-sub">self-contained — its own enemy, buffs and run budget</span></div>
+      <div class="bh"><span class="n">⚙</span><h2 data-i18n>Optimize</h2><span class="sub" id="opt-sub">self-contained — its own enemy, buffs and run budget</span></div>
       <div class="bb">
-        <h3 class="sim-h">Mods <span class="sim-hint">search by name or effect; mark each as pool (search) or required</span></h3>
+        <h3 class="sim-h" data-i18n>Mods <span class="sim-hint">search by name or effect; mark each as pool (search) or required</span></h3>
         <div class="preset-bar" id="opt-preset-mods"></div>
         <div class="opt-mods-head">
           <input id="opt-mod-filter" type="text" placeholder="search mods by name or effect…" autocomplete="off">
@@ -124,18 +125,18 @@
         <div id="opt-picker-tools" class="picker-tools"></div>
         <div id="opt-mods-sel"></div>
         <div id="opt-mods" class="combo-menu opt-modlist"></div>
-        <h3 class="sim-h">Exilus slot <span class="sim-hint">the +1 slot — pool = slot options, req = pin one; nothing marked = the slot stays empty</span></h3>
+        <h3 class="sim-h" data-i18n>Exilus slot <span class="sim-hint">the +1 slot — pool = slot options, req = pin one; nothing marked = the slot stays empty</span></h3>
         <div id="opt-exilus" class="combo-menu opt-modlist"></div>
-        <h3 class="sim-h">Arcanes <span class="sim-hint">pool = searched options, req = pin the slot</span></h3>
+        <h3 class="sim-h" data-i18n>Arcanes <span class="sim-hint">pool = searched options, req = pin the slot</span></h3>
         <div class="preset-bar" id="opt-preset-arcs"></div>
         <input id="opt-arc-filter" type="text" placeholder="search arcanes by name or effect…" autocomplete="off">
         <div id="opt-arcanes" class="combo-menu opt-modlist"></div>
-        <h3 class="sim-h">Evolutions <span class="sim-hint">per tier: pool = searched options, req = pin</span></h3>
+        <h3 class="sim-h" data-i18n>Evolutions <span class="sim-hint">per tier: pool = searched options, req = pin</span></h3>
         <div class="preset-bar" id="opt-preset-evos"></div>
         <div id="opt-evos"></div>
-        <h3 class="sim-h">Enemy <span class="sim-hint">the optimizer's own scenario — independent of the Sim panel</span></h3>
+        <h3 class="sim-h" data-i18n>Enemy <span class="sim-hint">the optimizer's own scenario — independent of the Sim panel</span></h3>
         <div id="opt-enemy" class="field-grid"></div>
-        <h3 class="sim-h">Buffs <span class="sim-hint">across the whole scope — initial stacks + lock, applied per candidate</span></h3>
+        <h3 class="sim-h" data-i18n>Buffs <span class="sim-hint">across the whole scope — initial stacks + lock, applied per candidate</span></h3>
         <div id="opt-buffs"></div>
         <div class="opt-final">
           <label>Final runs <input id="opt-final-runs" type="number" min="1" max="100000" value="1024"></label>
@@ -143,7 +144,7 @@
           <span class="sim-hint">the last round is guaranteed: finalists × final runs; earlier rounds only cut the field</span>
         </div>
         <div id="opt-estimate" class="opt-est"></div>
-        <button id="run-opt" class="run-btn">Run Optimizer</button>
+        <button id="run-opt" class="run-btn" data-i18n>Run Optimizer</button>
         <div id="opt-results"></div>
       </div>
     </section>

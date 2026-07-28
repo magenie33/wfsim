@@ -16,6 +16,22 @@ item  ──references──▶  perk (trigger + grants)
 - A perk carries its `grants` block inline; a separate buff table returns
   only if two perks ever grant the same effect.
 
+## i18n: English is the source, translations are overlays
+
+- ids are NEVER translated; every entity's own `name` field is the English
+  source of truth. `data/i18n/<locale>.yaml` maps `id → localized display
+  name` — there is NO English overlay file.
+- Overlays may be arbitrarily incomplete: a missing entry falls back to
+  English in the UI. Partial translation is always a valid state.
+- Referential integrity is machine-enforced (`engine::i18n_data` tests):
+  every overlay key must be a real id — a translator's typo fails CI, so a
+  translation PR can never break the app.
+- Name reference: the official CN client, cross-checked against
+  https://warframe.huijiwiki.com/wiki/Project:中英名称对照
+- UI strings (buttons, panel titles, stat labels) are NOT data — they live
+  in the frontend catalog (`UI_ZH` in `web/src/static/app.js`), keyed by the
+  English source string.
+
 ## Perks: define once, reference anywhere
 
 A `perks:` entry is **either a bare id (a reference) or a full inline
@@ -61,6 +77,7 @@ sharing requirement: it is a pure move — no referencing entry changes.
 | `mods/` | mods | `polarity`, `base_drain`/`max_rank` (drain = base+rank), bucketed `effects` with `per_rank`, **`family` + `incompatible_with`** (variants of one mod are mutually exclusive - the wiki module's `Incompatible` field, machine-readable) |
 | `debuffs/` | **debuffs** applied by procs — same shape as `buffs/`, scoped to the target (a proc is only the trigger; see BUFFS.md "Debuffs") | `applied_by.damage_type`, `duration_seconds`, `max_stacks`, `stack_overflow`, `per_stack_modifiers`, `modifier_caps/conditions`, `cc_effects`, `aliases`, `internal_name` |
 | `enemies/` | enemies (loaded by `engine::enemy_data`; `custom/` holds synthetic test targets) | `stats` (base values at `base_level`), `body_parts` (multiplier / `is_head` / `crit_bonus`; aim weights are scenario-side), `scaling_faction`, `can_be_eximus`, `faction_damage_override`, `synthetic`, raw `mechanics` |
+| `i18n/` | display-name overlays per locale (`zh.yaml`; loaded by `engine::i18n_data`, served at `/api/i18n`) | per-table `id → name` maps: `weapons`, `enemies`, `damage_types`, `mods`, `arcanes`, `evolutions` |
 | `factions/` | faction damage modifiers (post-U36, faction-wide) as **numeric multipliers** per damage type (unlisted = 1.0; today's values happen to be 1.5/0.5 — never assume it) | `factions.<id>.<damage_type>: <mult>`, `special` (Object, Overguard pools), `faction_mods` (Bane system) |
 
 ## Where a parameter lives

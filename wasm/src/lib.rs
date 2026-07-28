@@ -24,6 +24,7 @@ pub fn api(endpoint: &str, body: &str) -> String {
     let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
     let out = match endpoint {
         "/api/meta" => wfsim_webapi::meta_json(),
+        "/api/i18n" => wfsim_webapi::i18n_json(),
         "/api/panel" => wfsim_webapi::panel_json(&v),
         "/api/simulate" => wfsim_webapi::simulate_json(&v),
         "/api/opt-buffs" => wfsim_webapi::opt_buffs_json(&v),

@@ -25,6 +25,89 @@ const IMG = (name) => {
 // (a PNG); the rest are SVGs. Relative path: the app page sits at "/"
 // natively and at "/app/" on the static deployment.
 const POL = (p) => `/pol/${p === "Omni" ? "Any" : p}_Pol.${p === "Omni" ? "png" : "svg"}`;
+
+// ---- i18n --------------------------------------------------------------
+// English is the SOURCE (each entity's own name / the literal UI strings);
+// other languages are overlays. UI strings: tr() over the catalog below.
+// Game-entity names: LN() over /api/i18n (data/i18n/<locale>.yaml — ids are
+// never translated; missing entries fall back to English).
+let LANG = localStorage.getItem("wfsim-lang") || "en";
+let I18N = null; // active locale's name overlay, fetched in init()
+const UI_ZH = {
+  "Weapons": "武器",
+  "Weapon": "武器",
+  "← Weapons": "← 武器",
+  "Mods": "MOD",
+  "Arcane": "赋能",
+  "Arcanes": "赋能",
+  "Evolution": "进化",
+  "Evolutions": "进化",
+  "Element": "元素",
+  "Stats": "属性",
+  "Sim": "模拟",
+  "Optimize": "优化",
+  "Run Simulation": "运行模拟",
+  "Run Optimizer": "运行优化",
+  "Incarnon Genesis": "灵化之源",
+  "Exilus slot": "Exilus 槽",
+  "1 · Enemy": "1 · 敌人",
+  "2 · Buffs": "2 · 增益",
+  "3 · Simulation": "3 · 模拟",
+  "Enemy": "敌人",
+  "Buffs": "增益",
+  // Stats panel row labels (webapi row labels are stable English strings).
+  "Base Damage": "基础伤害",
+  "Multishot": "多重射击",
+  "Crit Chance": "暴击几率",
+  "Crit Damage": "暴击伤害",
+  "Status Chance": "触发几率",
+  "Status Damage": "触发伤害",
+  "Status Duration": "触发持续时间",
+  "Fire Rate": "射速",
+  "Magazine": "弹匣容量",
+  "Reload": "装填时间",
+  "Max Charges": "最大充能",
+  "Transmute In": "灵化切入",
+  "Transmute Out": "灵化切出",
+  "Base Form": "基础形态",
+  "Incarnon Form": "灵化形态",
+  // Sim result labels.
+  "Result": "结果",
+  "Effective DPS": "有效 DPS",
+  "Crit rate": "暴击率",
+  "Orange+ crit": "橙暴以上",
+  "Headshot rate": "爆头率",
+  "Procs / run": "触发数/轮",
+  "DoT dmg": "DoT 伤害",
+  "Reloads": "装填次数",
+};
+const tr = (s) => (LANG === "zh" && UI_ZH[s]) || s;
+const LN = (table, id, en) => (I18N && I18N[table] && I18N[table][id]) || en;
+const DT = (ty) => LN("damage_types", String(ty).toLowerCase(), ty);
+// Static labels: translate the first text node of every [data-i18n] element
+// (children like the .sim-hint spans stay untouched).
+function applyI18n() {
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const node = [...el.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
+    if (!node) return;
+    if (!el.dataset.i18nSrc) el.dataset.i18nSrc = node.textContent.trim();
+    node.textContent = node.textContent.replace(el.dataset.i18nSrc, tr(el.dataset.i18nSrc)) || tr(el.dataset.i18nSrc);
+  });
+}
+// Mutate META once: every downstream renderer (home grid, selects, pickers,
+// optimizer lists) shows overlay names with zero per-site changes. The
+// English name is kept as name_en — URLs/wiki links always use it.
+function applyNameOverlay() {
+  if (!I18N) return;
+  for (const w of META.weapons || []) {
+    w.name_en = w.name;
+    w.name = LN("weapons", w.id, w.name);
+    for (const t of w.evolutions || []) for (const o of t.options || []) o.name = LN("evolutions", o.id, o.name);
+  }
+  for (const e of META.enemies || []) e.name = LN("enemies", e.id, e.name);
+  for (const pool of Object.values(META.mod_pools || {})) for (const m of pool) m.name = LN("mods", m.id, m.name);
+  for (const a of META.arcanes || []) a.name = LN("arcanes", a.id, a.name);
+}
 // Polarities available on GUN slots. Zenurik/Unairu/Penjaga are Warframe-augment
 // / melee-stance / companion-ability polarities — not gun slots. "Omni" is the
 // Omni Forma universal polarity (matches any mod EXCEPT Umbra mods).
@@ -158,6 +241,18 @@ let pickerPrefs = { sort: "name", dir: "asc", pol: null };
 try { const s = JSON.parse(localStorage.getItem("wfsim-picker")); if (s) pickerPrefs = { ...pickerPrefs, ...s }; } catch (_) {}
 const savePickerPrefs = () => localStorage.setItem("wfsim-picker", JSON.stringify(pickerPrefs));
 
+// language toggle (top right): switch reloads with the build stashed.
+(function () {
+  const btn = $("lang-toggle");
+  if (!btn) return;
+  btn.textContent = LANG === "zh" ? "EN" : "中";
+  btn.addEventListener("click", () => {
+    localStorage.setItem("wfsim-lang", LANG === "zh" ? "en" : "zh");
+    try { sessionStorage.setItem("wfsim-lang-stash", JSON.stringify(snapshotState())); } catch (_) {}
+    location.reload();
+  });
+})();
+
 // theme
 (function () {
   const saved = localStorage.getItem("wfsim-theme");
@@ -173,6 +268,11 @@ const savePickerPrefs = () => localStorage.setItem("wfsim-picker", JSON.stringif
 
 async function init() {
   META = await api("/api/meta");
+  if (LANG !== "en") {
+    try { I18N = (await api("/api/i18n"))[LANG] || null; } catch (_) { I18N = null; }
+    applyNameOverlay();
+  }
+  applyI18n();
   fillSelect("weapon", META.weapons);
   const d = META.defaults;
   $("weapon").value = d.weapon;
@@ -226,13 +326,20 @@ async function init() {
     nav(a.getAttribute("href"));
   });
   route();
+  // A language switch reloads the page; the pre-switch build is stashed in
+  // sessionStorage and restored here so nothing is lost.
+  const stash = sessionStorage.getItem("wfsim-lang-stash");
+  if (stash) {
+    sessionStorage.removeItem("wfsim-lang-stash");
+    try { restoreState(JSON.parse(stash)); } catch (_) {}
+  }
 }
 
 // ---- views: '/' = the weapon list (home); '/weapons/<Wiki_Name>' = the
 // config page. URLs mirror wiki page names (display name, spaces → '_');
 // internal weapon ids never appear in URLs. The weapon <select> stays the
 // internal source of truth; the home grid and the path just drive it.
-const wikiSlug = (w) => w.name.split(" (")[0].replace(/ /g, "_");
+const wikiSlug = (w) => (w.name_en || w.name).split(" (")[0].replace(/ /g, "_");
 const weaponPath = (id) => {
   const w = (META.weapons || []).find((x) => x.id === id);
   return "/weapons/" + (w ? wikiSlug(w) : id);
@@ -496,7 +603,7 @@ function applyWeapon(id, presetMods) {
   $("w-img").src = IMG(w.image) || "";
   // The weapon name links to its wiki page too (display suffixes like
   // " (sentinel)" are ours, not part of the page name).
-  $("w-name").innerHTML = wl(w.name, wikiUrl(w.name.replace(" (sentinel)", "")));
+  $("w-name").innerHTML = wl(w.name, wikiUrl((w.name_en || w.name).replace(" (sentinel)", "")));
   // Subtype (e.g. "Dual Pistols") + form tags; the mod-eligibility group
   // (mod_class) drives the picker's pool but isn't shown as a tag.
   $("w-tags").innerHTML = [w.subtype, w.uses_evo2 ? "Incarnon" : null, w.sentinel ? "Sentinel" : null]
@@ -654,14 +761,14 @@ function renderPanel(r) {
     `<div class="ssrc">${s.value} — ${s.mod}${s.note ? ` <span class="snote">(${s.note})</span>` : ""}</div>`;
   const rowHtml = (row) => `
     <div class="srow">
-      <div class="shead"><span class="sk">${row.label}</span>
+      <div class="shead"><span class="sk">${tr(row.label)}</span>
         <span class="sv">${row.base !== "—" && row.base !== row.final ? `<span class="sbase">${row.base}</span> → ` : ""}<b>${row.final}</b></span></div>
       ${row.note ? `<div class="srownote">⚙ ${row.note}</div>` : ""}
       ${(row.sources || []).map(srcLine).join("")}
     </div>`;
   const dmgHtml = (f) => (f.damage && f.damage.length)
     ? `<div class="sdmg-title">Damage (combined) — ${f.damage_total} total</div>` +
-      f.damage.map((d) => `<div class="sdmg"><span class="sk">${d.type}</span><span class="sv"><b>${d.amount}</b> <span class="snote">${d.share}</span></span></div>`).join("")
+      f.damage.map((d) => `<div class="sdmg"><span class="sk">${DT(d.type)}</span><span class="sv"><b>${d.amount}</b> <span class="snote">${d.share}</span></span></div>`).join("")
     : "";
   // EVERY available form renders as its own section (base + Incarnon side
   // by side — no switching), headed by the form name + trigger mechanics.
@@ -669,7 +776,7 @@ function renderPanel(r) {
   // are outside theoretical DPS but real in practice, so the panel states them.
   const section = (f) => `
     <div class="fsec">
-      <div class="fhead">${f.label}<span class="fmeta">${f.meta}</span></div>
+      <div class="fhead">${tr(f.label)}<span class="fmeta">${f.meta}</span></div>
       ${[...(f.stats || []), ...(f.elements || []), ...(f.indirect || [])].map(rowHtml).join("")}
       ${dmgHtml(f)}
     </div>`;
@@ -1138,12 +1245,12 @@ function renderResults(r) {
   const heroNum = killed ? n1(r.kills) : pc(r.score);
   const heroSub = killed
     ? `kills in ${n0(r.duration)}s · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s to first kill`
-    : `of one ${t.name || "enemy"}'s EHP in ${n0(r.duration)}s (not killed)`;
+    : `of one ${LN("enemies", sim.enemy, t.name || "enemy")}'s EHP in ${n0(r.duration)}s (not killed)`;
   const f = r.forma || {};
   const fbadge = f.legal
     ? `<span class="forma-badge legal"><b>${f.used} Forma</b>${f.total_drain}/${f.cap} drain</span>`
     : `<span class="forma-badge illegal"><b>illegal</b>${f.error || "over capacity"}</span>`;
-  const kpi = (l, v) => `<div class="kpi"><div class="kv">${v}</div><div class="kl">${l}</div></div>`;
+  const kpi = (l, v) => `<div class="kpi"><div class="kv">${v}</div><div class="kl">${tr(l)}</div></div>`;
   const kpis = [
     kpi("DPS", n0(r.dps)), kpi("Effective DPS", n0(r.effective_dps)),
     kpi("Crit rate", pc(r.crit_rate)), kpi("Orange+ crit", pc(r.big_crit_rate)),
@@ -1152,8 +1259,8 @@ function renderResults(r) {
   ].join("");
   const dmg = (r.panel && r.panel.damage) || [];
   const total = dmg.reduce((a, d) => a + d.value, 0) || 1;
-  const seg = dmg.map((d, i) => `<div class="dmg-seg" style="width:${(d.value / total * 100).toFixed(1)}%;background:var(--s${(i % 8) + 1})" title="${d.type}: ${n0(d.value)}"></div>`).join("");
-  const legend = dmg.map((d, i) => `<span class="li"><span class="dmgic" style="background:var(--s${(i % 8) + 1})"></span>${d.type} <span class="lv">${n0(d.value)}</span></span>`).join("");
+  const seg = dmg.map((d, i) => `<div class="dmg-seg" style="width:${(d.value / total * 100).toFixed(1)}%;background:var(--s${(i % 8) + 1})" title="${DT(d.type)}: ${n0(d.value)}"></div>`).join("");
+  const legend = dmg.map((d, i) => `<span class="li"><span class="dmgic" style="background:var(--s${(i % 8) + 1})"></span>${DT(d.type)} <span class="lv">${n0(d.value)}</span></span>`).join("");
   const row = (k, v) => `<div class="row"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   const detail = [
     row("Target", `${t.name || "?"} · Lv ${t.level}${t.steel_path ? " (SP)" : ""}`),
@@ -1166,7 +1273,7 @@ function renderResults(r) {
   ].join("");
   $("sim-results").innerHTML = `
     <div class="results">
-      <div class="hero"><div><div class="hero-label">Result</div><div class="hero-num">${heroNum}</div><div class="hero-sub">${heroSub}</div></div>${fbadge}</div>
+      <div class="hero"><div><div class="hero-label">${tr("Result")}</div><div class="hero-num">${heroNum}</div><div class="hero-sub">${heroSub}</div></div>${fbadge}</div>
       <div class="kpi-row">${kpis}</div>
       <h3>Damage per shot (combined)</h3>
       <div class="dmg-bar">${seg}</div>
@@ -1191,7 +1298,7 @@ function animateArena(r) {
   const frac = killed ? 1 : Math.max(0, Math.min(1, r.score || 0));
   const remain = ((1 - frac) * 100).toFixed(1) + "%";
   const dmg = (r.panel && r.panel.damage) || [];
-  const chips = dmg.map((d, i) => `<span class="chip" style="--c:var(--s${(i % 8) + 1})">${d.type}</span>`);
+  const chips = dmg.map((d, i) => `<span class="chip" style="--c:var(--s${(i % 8) + 1})">${DT(d.type)}</span>`);
   if ((r.procs || 0) > 0) chips.push(`<span class="chip proc">⚡ ${Math.round(r.procs)} procs</span>`);
   $("arena-status").innerHTML = chips.join("");
   const enemy = $("arena-enemy"), tracer = $("arena-tracer");

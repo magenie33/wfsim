@@ -24,7 +24,17 @@ and [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) for sourcing rules: values
 come from the wiki's structured Lua modules, and each entry cites its source
 module URL. Bulk import helpers live in `scripts/`.
 
-### 3. Engine mechanics (`engine/`, Rust)
+### 3. Translations (`data/i18n/`, YAML — no code, lowest barrier)
+
+Edit `data/i18n/zh.yaml` (or add a new locale file): fill `id → name` lines
+per table (weapons/enemies/mods/arcanes/evolutions/damage_types). Ten lines
+is a fine PR — anything untranslated just keeps showing English. Names
+follow the official CN client (cross-check
+https://warframe.huijiwiki.com/wiki/Project:中英名称对照). CI validates every
+key against the real ids, so a typo cannot break anything. UI strings live
+in `UI_ZH` in `web/src/static/app.js`.
+
+### 4. Engine mechanics (`engine/`, Rust)
 
 Every formula must carry a comment pointing at its source (wiki page /
 datamining / measurement). New mechanics need golden tests calibrated against
@@ -32,7 +42,7 @@ in-game measurements — an implementation without a measurement to compare
 against doesn't count as correct, no matter how faithful it looks. The
 mechanics catalog is documented in [`docs/MECHANICS.md`](docs/MECHANICS.md).
 
-### 4. Optimizer / web UI (`optimizer/`, `web/`)
+### 5. Optimizer / web UI (`optimizer/`, `web/`)
 
 The optimizer only ever calls the engine — never add a simplified damage
 formula to it. The web UI's static files are `include_str!`'d into the

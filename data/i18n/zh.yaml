@@ -1,0 +1,38 @@
+# Chinese display-name overlay (简体中文).
+#
+# RULES (data/README.md "i18n"): ids are NEVER translated — this file maps
+# id → display name only. Missing entries fall back to English, so partial
+# translation is always safe. Every key must be a real id (machine-enforced
+# by engine::i18n_data tests — a typo fails the build).
+#
+# Canonical reference for names: the official CN client, cross-checked via
+# https://warframe.huijiwiki.com/wiki/Project:中英名称对照
+
+weapons:
+  dual_toxocyst: 毒囊双枪
+  dual_toxocyst_incarnon: 毒囊双枪 (灵化形态)   # Incarnon Genesis = 灵化之源
+
+enemies:
+  thrax_centurion: 凶魂百夫长
+
+# Official CN client damage-type names.
+damage_types:
+  impact: 冲击
+  puncture: 穿刺
+  slash: 切割
+  cold: 冰冻
+  electricity: 电击
+  heat: 火焰
+  toxin: 毒素
+  blast: 爆炸
+  corrosive: 腐蚀
+  gas: 毒气
+  magnetic: 磁力
+  radiation: 辐射
+  viral: 病毒
+
+# Contributor entry points — fill from the 对照 page; untranslated names
+# simply keep showing English:
+mods: {}
+arcanes: {}
+evolutions: {}
