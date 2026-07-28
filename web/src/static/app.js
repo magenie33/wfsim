@@ -1479,7 +1479,7 @@ function updateOptEstimate() {
     const parts = [];
     let field = Math.round(jobs);
     rounds.forEach(([r, k]) => { parts.push(`${field.toLocaleString()}×${r}`); field = Math.min(field, k); });
-    scenario = `<div class="opt-scn">each candidate vs <b>${en.name || sim.enemy}</b> Lv ${sim.level}${sim.steel_path ? " (SP)" : ""} · ${sim.headshot_pct}% headshots · ${sim.duration} s engagements · funnel, up to (jobs×runs): ${parts.join(" → ")} → ${F} finalists at ${FR.toLocaleString()} runs</div>`;
+    scenario = `<div class="opt-scn">each candidate vs <b>${en.name || sim.enemy}</b> Lv ${sim.level}${sim.steel_path ? " (SP)" : ""} · ${sim.headshot_pct}% headshots · ${sim.duration} s engagements · planned funnel (jobs×runs): ${parts.join(" → ")} → ${F} finalists at ${FR.toLocaleString()} runs (racing cuts deeper, tie-amnesty keeps up to 2×)</div>`;
   }
   $("opt-estimate").innerHTML = (valid
     ? `~<b>${est}</b> candidates${exNote} × ${arcCount} arcanes ≈ ${Math.round(jobs).toLocaleString()} jobs${big ? ` <span class="warn">— large; this may take a while</span>` : ""}`

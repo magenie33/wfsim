@@ -598,7 +598,13 @@ pub fn run_funnel(
         st.sims_planned.store(sims, Ordering::Relaxed);
     }
     let mut last: Vec<(Job, Summary)> = Vec::new();
+    let floor = rounds.last().map_or(1, |&(_, f, _)| f);
     for (round, &(runs, keep, by_kills)) in rounds.iter().enumerate() {
+        // Racing/amnesty may reach the finalists count early — remaining
+        // intermediate rounds have nothing left to cut; jump to the final.
+        if round + 1 < rounds.len() && alive.len() <= floor {
+            continue;
+        }
         if let Some(st) = state {
             if st.cancel.load(Ordering::Relaxed) {
                 break;
@@ -627,14 +633,46 @@ pub fn run_funnel(
             let kb = if by_kills { b.1.mean_kill_progress } else { b.1.mean_effective_damage };
             kb.total_cmp(&ka)
         });
-        scored.truncate(keep);
+        // SOFT cut line (user, 2026-07-28: "can the fixed 1/8 be dynamic?"):
+        // the planned 1/8 keep stays as the BUDGET SKELETON — predictable
+        // cost, guaranteed progress — but the line itself is statistical,
+        // not a hard rank. Candidates below the line whose score still TIES
+        // the cut-line score (within a ±3·SE band, SE from the field's
+        // POOLED per-run σ — thousands of jobs give the pooled estimate
+        // huge effective dof even at 2 runs; at 1 run, no σ exists anywhere,
+        // so a small relative gap stands in) get amnesty, capped at 2× the
+        // plan. Rank order AT the line is noise — a hard cut would gamble
+        // true contenders away; the cap keeps the budget bounded. The final
+        // round never extends (its field is the contract), but the round
+        // FEEDING it may — ties with the last finalist deserve the full-runs
+        // final to settle them.
+        let planned = keep.min(scored.len());
+        let keep_n = if scored.len() > planned && round + 1 < rounds.len() {
+            let cap = (planned * 2).min(scored.len());
+            let cut_score = scored[planned - 1].1.mean_kill_progress;
+            let tol = if runs >= 2 {
+                let pooled = (scored.iter().map(|(_, s)| s.std_kills * s.std_kills).sum::<f64>()
+                    / scored.len() as f64)
+                    .sqrt();
+                3.0 * pooled / f64::from(runs).sqrt()
+            } else {
+                cut_score.abs() * 0.05
+            };
+            let mut k = planned;
+            while k < cap && scored[k].1.mean_kill_progress >= cut_score - tol {
+                k += 1;
+            }
+            k
+        } else {
+            planned
+        };
+        scored.truncate(keep_n);
         // Adaptive racing cull (user, 2026-07-28: "reduce cleverly before
         // the final"): beyond the planned 1/8, drop every survivor whose 3σ
         // upper confidence bound still misses the finalists boundary's 3σ
         // lower bound — statistically hopeless candidates never see another
         // (4× more expensive) round. Needs runs ≥ 4 for a usable per-job σ;
         // the final round's field is untouchable.
-        let floor = rounds.last().map_or(1, |&(_, f, _)| f);
         if round + 1 < rounds.len() && runs >= 4 && scored.len() > floor {
             let se3 = |s: &Summary| 3.0 * s.std_kills / f64::from(runs).sqrt();
             let cut = {
@@ -681,11 +719,14 @@ pub fn run_funnel(
         last = scored;
         if let Some(st) = state {
             // Replan the remaining work: adaptive culls shrink every later
-            // round, so done/planned stays a true percentage.
+            // round (and rounds the early-exit will skip cost nothing), so
+            // done/planned stays a true percentage.
             let mut field = alive.len() as u64;
             let mut sims = st.sims_done.load(Ordering::Relaxed);
-            for &(r2, k2, _) in &rounds[round + 1..] {
-                sims += field * u64::from(r2);
+            for (idx2, &(r2, k2, _)) in rounds.iter().enumerate().skip(round + 1) {
+                if idx2 + 1 == rounds.len() || field > floor as u64 {
+                    sims += field * u64::from(r2);
+                }
                 field = field.min(k2 as u64);
             }
             st.sims_planned.store(sims, Ordering::Relaxed);
