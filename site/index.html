@@ -24,20 +24,27 @@
     text-decoration:none;font-weight:600;border:1px solid var(--line);color:var(--text)}
   .btn.primary{background:var(--accent);border-color:var(--accent);color:#06131c}
   .btn:hover{filter:brightness(1.12)}
-  .status{display:inline-block;margin-top:26px;padding:5px 14px;border:1px solid var(--line);
-    border-radius:999px;color:var(--accent2);font-size:13px;letter-spacing:.4px}
   section{padding:40px 0;border-top:1px solid var(--line)}
   h2{font-size:22px;margin-bottom:20px}
-  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
-  .card b{display:block;margin-bottom:6px;color:var(--text)}
-  .card p{color:var(--dim);font-size:14.5px}
   .vs{width:100%;border-collapse:collapse;font-size:14.5px}
   .vs th,.vs td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line)}
   .vs th{color:var(--dim);font-weight:600}
   .vs td:last-child{color:var(--accent2)}
   .vs td:first-child{color:var(--dim)}
   .note{color:var(--dim);font-size:14.5px;margin-top:16px}
+  .wcat{color:var(--dim);font-size:13px;letter-spacing:.12em;text-transform:uppercase;margin:26px 0 10px}
+  .wcat:first-of-type{margin-top:0}
+  .wgrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+  .wtile{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 14px;
+    text-decoration:none;color:var(--text);transition:border-color .15s}
+  a.wtile:hover{border-color:var(--accent)}
+  .wtile img{width:96px;height:96px;object-fit:contain}
+  .wtile b{font-size:15px}
+  .badge{font-size:11px;letter-spacing:.04em;color:var(--dim);border:1px solid var(--line);
+    border-radius:999px;padding:2px 10px}
+  .badge.ok{color:var(--accent2);border-color:var(--accent2)}
+  .wtile.wip{opacity:.65}
   footer{padding:36px 0 48px;color:var(--dim);font-size:13px;text-align:center}
   footer a{color:var(--dim)}
   @media(max-width:560px){h1{font-size:34px}}
@@ -50,11 +57,36 @@
   number — it <b>replays the fight</b>, and its output is calibrated against
   in-game Simulacrum measurements.</p>
   <div class="cta">
-    <a class="btn primary" href="https://github.com/magenie33/wfsim">View on GitHub</a>
-    <a class="btn" href="https://github.com/magenie33/wfsim#getting-started">Run it locally</a>
+    <a class="btn primary" href="#weapons">Browse weapons</a>
+    <a class="btn" href="https://github.com/magenie33/wfsim">GitHub</a>
   </div>
-  <div class="status">In development · first weapon fully calibrated: Dual Toxocyst (Incarnon)</div>
 </header>
+
+<section class="wrap" id="weapons">
+  <h2>Weapons</h2>
+
+  <h3 class="wcat">Secondary</h3>
+  <div class="wgrid">
+    <a class="wtile" href="weapons/dual-toxocyst.html">
+      <img src="https://cdn.warframestat.us/img/DualToxocyst.png" alt="Dual Toxocyst" loading="lazy">
+      <b>Dual Toxocyst</b>
+      <span class="badge ok">calibrated · Incarnon</span>
+    </a>
+  </div>
+
+  <h3 class="wcat">Robotic</h3>
+  <div class="wgrid">
+    <div class="wtile wip">
+      <img src="https://cdn.warframestat.us/img/VerglasPrime.png" alt="Verglas Prime" loading="lazy">
+      <b>Verglas Prime</b>
+      <span class="badge">in progress</span>
+    </div>
+  </div>
+
+  <h3 class="wcat">Primary · Melee · Archgun</h3>
+  <p class="note" style="margin-top:0">Coming.
+  <a href="https://github.com/magenie33/wfsim/issues" style="color:var(--accent)">Request a weapon.</a></p>
+</section>
 
 <section class="wrap">
   <h2>Simulation, not spreadsheets</h2>
@@ -65,30 +97,6 @@
     <tr><td>One abstract health bar</td><td>Shields vs health, armor curves, faction resistances</td></tr>
     <tr><td>Theoretical output</td><td>Matches Simulacrum measurements within rounding error</td></tr>
   </table>
-</section>
-
-<section class="wrap">
-  <h2>What works today</h2>
-  <div class="grid">
-    <div class="card"><b>The full damage pipeline</b>
-      <p>Mod bucket math, elemental combination order, tiered crits, status
-      procs &amp; DoTs, Toxin shield-bypass, armor mitigation — every formula
-      sourced and golden-tested.</p></div>
-    <div class="card"><b>Incarnon, done right</b>
-      <p>Charge-backed alternate forms (charges aren't a magazine) and
-      per-tier evolution search — which already exposes evolutions that are
-      mathematically dead.</p></div>
-    <div class="card"><b>A real build optimizer</b>
-      <p>Mod pool + constraints in; Monte-Carlo successive elimination across
-      all cores; a ranked top-10 out, each loadable back into the sim. It only
-      ever calls the engine — no side-formulas.</p></div>
-    <div class="card"><b>Local web UI</b>
-      <p>Build configurator, per-buff stack/lock controls, sim panel and
-      optimizer with savable scope presets. Rust, open source, MIT.</p></div>
-  </div>
-  <p class="note">On the roadmap: more weapons, multiple enemies in a 2D arena
-  (so range, AoE and punch-through payoffs are modeled properly), Rivens, and
-  an in-browser (WASM) version of the engine on this very page.</p>
 </section>
 
 <footer class="wrap">
