@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wfsim — a hardcore Warframe damage simulator</title>
+<meta name="description" content="wfsim replays the actual fight — fire cadence, reload, status stacking, buff uptime — calibrated against in-game Simulacrum measurements.">
+<style>
+  :root{
+    --bg:#0b0e13; --panel:#121722; --line:#232c3d;
+    --text:#d7dee9; --dim:#8b97a8; --accent:#5cc8ff; --accent2:#9df0c2;
+  }
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--bg);color:var(--text);
+    font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:0 24px}
+  header{padding:88px 0 56px;text-align:center}
+  h1{font-size:44px;letter-spacing:-1px;line-height:1.1}
+  h1 span{color:var(--accent)}
+  .tag{margin:18px auto 0;max-width:640px;color:var(--dim);font-size:19px}
+  .cta{margin-top:32px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .btn{display:inline-block;padding:10px 22px;border-radius:8px;
+    text-decoration:none;font-weight:600;border:1px solid var(--line);color:var(--text)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#06131c}
+  .btn:hover{filter:brightness(1.12)}
+  .status{display:inline-block;margin-top:26px;padding:5px 14px;border:1px solid var(--line);
+    border-radius:999px;color:var(--accent2);font-size:13px;letter-spacing:.4px}
+  section{padding:40px 0;border-top:1px solid var(--line)}
+  h2{font-size:22px;margin-bottom:20px}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+  .card b{display:block;margin-bottom:6px;color:var(--text)}
+  .card p{color:var(--dim);font-size:14.5px}
+  .vs{width:100%;border-collapse:collapse;font-size:14.5px}
+  .vs th,.vs td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line)}
+  .vs th{color:var(--dim);font-weight:600}
+  .vs td:last-child{color:var(--accent2)}
+  .vs td:first-child{color:var(--dim)}
+  .note{color:var(--dim);font-size:14.5px;margin-top:16px}
+  footer{padding:36px 0 48px;color:var(--dim);font-size:13px;text-align:center}
+  footer a{color:var(--dim)}
+  @media(max-width:560px){h1{font-size:34px}}
+</style>
+</head>
+<body>
+<header class="wrap">
+  <h1>wf<span>sim</span></h1>
+  <p class="tag">A hardcore Warframe damage simulator. It doesn't estimate a DPS
+  number — it <b>replays the fight</b>, and its output is calibrated against
+  in-game Simulacrum measurements.</p>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/magenie33/wfsim">View on GitHub</a>
+    <a class="btn" href="https://github.com/magenie33/wfsim#getting-started">Run it locally</a>
+  </div>
+  <div class="status">In development · first weapon fully calibrated: Dual Toxocyst (Incarnon)</div>
+</header>
+
+<section class="wrap">
+  <h2>Simulation, not spreadsheets</h2>
+  <table class="vs">
+    <tr><th>Typical calculator</th><th>wfsim</th></tr>
+    <tr><td>Steady-state DPS number</td><td>Per-shot damage sequence over time</td></tr>
+    <tr><td>Buffs assumed at 100% uptime</td><td>Real stacks, durations and uptime — or lock them, your call</td></tr>
+    <tr><td>One abstract health bar</td><td>Shields vs health, armor curves, faction resistances</td></tr>
+    <tr><td>Theoretical output</td><td>Matches Simulacrum measurements within rounding error</td></tr>
+  </table>
+</section>
+
+<section class="wrap">
+  <h2>What works today</h2>
+  <div class="grid">
+    <div class="card"><b>The full damage pipeline</b>
+      <p>Mod bucket math, elemental combination order, tiered crits, status
+      procs &amp; DoTs, Toxin shield-bypass, armor mitigation — every formula
+      sourced and golden-tested.</p></div>
+    <div class="card"><b>Incarnon, done right</b>
+      <p>Charge-backed alternate forms (charges aren't a magazine) and
+      per-tier evolution search — which already exposes evolutions that are
+      mathematically dead.</p></div>
+    <div class="card"><b>A real build optimizer</b>
+      <p>Mod pool + constraints in; Monte-Carlo successive elimination across
+      all cores; a ranked top-10 out, each loadable back into the sim. It only
+      ever calls the engine — no side-formulas.</p></div>
+    <div class="card"><b>Local web UI</b>
+      <p>Build configurator, per-buff stack/lock controls, sim panel and
+      optimizer with savable scope presets. Rust, open source, MIT.</p></div>
+  </div>
+  <p class="note">On the roadmap: more weapons, multiple enemies in a 2D arena
+  (so range, AoE and punch-through payoffs are modeled properly), Rivens, and
+  an in-browser (WASM) version of the engine on this very page.</p>
+</section>
+
+<footer class="wrap">
+  wfsim is an unofficial fan project, not affiliated with or endorsed by
+  Digital Extremes. Warframe is a trademark of Digital Extremes Ltd.<br>
+  Game data derived from the community
+  <a href="https://wiki.warframe.com/">Warframe Wiki</a> (CC BY-SA) ·
+  <a href="https://github.com/magenie33/wfsim">github.com/magenie33/wfsim</a> · MIT
+</footer>
+</body>
+</html>
