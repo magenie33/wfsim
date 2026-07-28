@@ -783,6 +783,7 @@ function renderSim() {
         else if (el.type === "number") sim[k] = Number(el.value);
         else sim[k] = el.value;
         if (k === "enemy") $("arena-ename").textContent = (enemies.find((e) => e.id === sim.enemy) || {}).name || "Enemy";
+        updateOptEstimate(); // the optimizer's scenario line mirrors these settings
       });
     }));
   $("arena-ename").textContent = en ? en.name : "Enemy";
@@ -804,7 +805,7 @@ function syncBuffConfig(list, cfg) {
 // Shared buff-card renderer (Sim panel + Optimizer scope). `list` = the buff
 // metadata; `cfg` = the mutated config map; `feveredShown` gates the static
 // Fevered Frenzy info row.
-function renderBuffCards(box, list, cfg, feveredShown) {
+function renderBuffCards(box, list, cfg) {
   if (!box) return;
   syncBuffConfig(list, cfg);
   if (!list.length) {
@@ -816,16 +817,18 @@ function renderBuffCards(box, list, cfg, feveredShown) {
     const ctl = b.kind === "toggle"
       ? `<label class="bchk"><input type="checkbox" data-b="${b.id}" data-f="stacks" ${c.stacks > 0 ? "checked" : ""}> active</label>`
       : `<span class="bstep"><input type="number" data-b="${b.id}" data-f="stacks" min="0" max="${b.max_stacks}" value="${c.stacks}"><span class="bmax">/ ${b.max_stacks}</span></span>`;
+    // Permanent stacks (Fevered Frenzy): no in-sim trigger, no decay — the
+    // count above holds for the whole run, so the lock is implied and greyed.
+    const lock = b.permanent
+      ? `<label class="block-lock dis" title="permanent stacks — they never decay (and cannot build in-sim), so the count holds for the whole run; lock is implied"><input type="checkbox" checked disabled> lock</label>`
+      : `<label class="block-lock" title="lock = permanent 100% uptime"><input type="checkbox" data-b="${b.id}" data-f="locked" ${c.locked ? "checked" : ""}> lock</label>`;
     return `<div class="buff-card">
       <span class="bn">${b.name}</span>
       <span class="bctl">${ctl}</span>
-      <label class="block-lock" title="lock = permanent 100% uptime"><input type="checkbox" data-b="${b.id}" data-f="locked" ${c.locked ? "checked" : ""}> lock</label>
+      ${lock}
     </div>`;
   };
-  const fevered = feveredShown
-    ? `<div class="buff-card info"><span class="bn">Fevered Frenzy</span><span class="bctl">multishot</span><span class="binfo">always on</span></div>`
-    : "";
-  box.innerHTML = list.map(card).join("") + fevered;
+  box.innerHTML = list.map(card).join("");
   box.querySelectorAll("[data-b]").forEach((el) => {
     el.addEventListener("change", () => {
       const id = el.dataset.b, f = el.dataset.f, c = cfg[id];
@@ -837,7 +840,7 @@ function renderBuffCards(box, list, cfg, feveredShown) {
 }
 
 function renderSimBuffs() {
-  renderBuffCards($("sim-buffs"), buffList, sim.buffs, Object.values(evoSel).includes("dt_fevered_frenzy"));
+  renderBuffCards($("sim-buffs"), buffList, sim.buffs);
 }
 
 async function runSim() {
@@ -1003,15 +1006,18 @@ function renderOpt() {
 }
 
 // The buffs across the WHOLE scope (union of every fixed/search mod + every
-// searched arcane) — enumerated server-side; the optimizer configures these,
-// NOT the current build's buffs. Debounced as the scope changes.
+// searched arcane + every marked evolution option) — enumerated server-side;
+// the optimizer configures these, NOT the current build's buffs. Debounced
+// as the scope changes.
 function fetchOptBuffs() {
   clearTimeout(optBuffTimer);
   optBuffTimer = setTimeout(async () => {
     try {
+      const evolutions = {};
+      Object.entries(opt.evos).forEach(([t, m]) => { const ids = Object.keys(m); if (ids.length) evolutions[t] = ids; });
       const r = await (await fetch("/api/opt-buffs", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ weapon: $("weapon").value, mods: opt.mods, arcanes: Object.keys(opt.arcanes) }),
+        body: JSON.stringify({ weapon: $("weapon").value, mods: opt.mods, arcanes: Object.keys(opt.arcanes), evolutions }),
       })).json();
       optBuffList = (r && r.buffs) || [];
     } catch (_) { optBuffList = []; }
@@ -1020,8 +1026,7 @@ function fetchOptBuffs() {
 }
 
 function renderOptBuffs() {
-  const fev = Object.values(opt.evos).some((m) => m && m.dt_fevered_frenzy);
-  renderBuffCards($("opt-buffs"), optBuffList, opt.buffs, fev);
+  renderBuffCards($("opt-buffs"), optBuffList, opt.buffs);
 }
 
 // The mod scope: the SAME rich list as the mod picker (image, polarity icon,
@@ -1358,9 +1363,28 @@ function updateOptEstimate() {
   // only block genuinely invalid scopes.
   const big = jobs > 500000;
   const exNote = exFixed ? " (exilus pinned)" : exOptions > 1 ? ` (× ${exOptions} exilus options)` : "";
-  $("opt-estimate").innerHTML = valid
+  // Scenario + funnel preview: what every candidate is actually tested
+  // against — the Sim panel's enemy settings, and the successive-halving
+  // schedule (survivors × runs per round; a JS mirror of schedule()).
+  let scenario = "";
+  if (valid) {
+    const en = (META.enemies || []).find((e) => e.id === sim.enemy) || {};
+    const rounds = [];
+    let runs = 1, keep = Math.round(jobs);
+    while (keep > 64 && runs < 1024) {
+      keep = Math.max(Math.floor(keep / 8), 64);
+      rounds.push([runs, keep]);
+      runs = Math.min(runs * 4, 1024);
+    }
+    rounds.push([1024, 24]);
+    const parts = [];
+    let field = Math.round(jobs);
+    rounds.forEach(([r, k]) => { parts.push(`${field.toLocaleString()}×${r}`); field = Math.min(field, k); });
+    scenario = `<div class="opt-scn">each candidate vs <b>${en.name || sim.enemy}</b> Lv ${sim.level}${sim.steel_path ? " (SP)" : ""} · ${sim.headshot_pct}% headshots · ${sim.duration} s engagements · funnel (jobs×runs): ${parts.join(" → ")} → top 10</div>`;
+  }
+  $("opt-estimate").innerHTML = (valid
     ? `~<b>${est}</b> candidates${exNote} × ${arcCount} arcanes ≈ ${Math.round(jobs).toLocaleString()} jobs${big ? ` <span class="warn">— large; this may take a while</span>` : ""}`
-    : `<span class="warn">${dupReq ? `${(modById(dupReq) || { name: dupReq }).name} is required in both blocks — a mod equips once` : poolStarved ? `pooled mods reserve ≥1 open slot — raise max mods or clear pools` : `more required (${fixed}) than slots (${size})`}</span>`;
+    : `<span class="warn">${dupReq ? `${(modById(dupReq) || { name: dupReq }).name} is required in both blocks — a mod equips once` : poolStarved ? `pooled mods reserve ≥1 open slot — raise max mods or clear pools` : `more required (${fixed}) than slots (${size})`}</span>`) + scenario;
   // Never re-enable while a background job is still running.
   $("run-opt").disabled = !valid || optJobId != null;
 }
@@ -1519,7 +1543,7 @@ function renderOptResults(r) {
       <div class="opt-mods">${mods}</div>
     </div>`;
   }).join("");
-  $("opt-results").innerHTML = `<div class="opt-meta">${r.cancelled ? `<span class="warn">cancelled — ranking from the last completed round</span> · ` : ""}${r.candidates} candidates · ${r.jobs} jobs · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""}</div>${rows}`;
+  $("opt-results").innerHTML = `<div class="opt-meta">${r.cancelled ? `<span class="warn">cancelled — ranking from the last completed round</span> · ` : ""}${r.candidates} candidates · ${r.jobs} jobs · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${sim.headshot_pct}% headshots · ${sim.duration} s engagements · finalists 1024 runs</div>${rows}`;
   $("opt-results").querySelectorAll(".opt-load").forEach((el) =>
     el.addEventListener("click", () => loadResult(JSON.parse(el.dataset.r))));
 }

@@ -467,6 +467,11 @@ pub struct WeaponBase {
     /// Extra additive multishot from non-mod sources at assumed-max
     /// (Fevered Frenzy's 20 stacks = +1.0).
     pub buff_multishot_bonus: f64,
+    /// Stack count behind `buff_multishot_bonus` (Fevered Frenzy: 20). The
+    /// stacks are PERMANENT (no timer, cleared only by death) and their
+    /// trigger (ability cast) cannot fire in the sim — so the count is a
+    /// static per-buff CHOICE, full by default. 0 = no such buff.
+    pub buff_ms_max_stacks: u32,
     pub magazine_size: f64,
     pub base_reload: f64,
     /// Unconditional CO rate baked into the weapon config (Carnage
@@ -587,6 +592,7 @@ impl WeaponBase {
             base_fire_rate: 4.5,
             base_multishot: 1.0,
             buff_multishot_bonus: 0.0,
+            buff_ms_max_stacks: 0,
             magazine_size: 270.0,
             base_reload: 3.35,
             // Wiki CO catalog row: "Adding" class; the CO base fraction is
@@ -627,6 +633,7 @@ impl WeaponBase {
             base_fire_rate: 1.0, // semi-auto; Frenzy ×2.5 applies live
             base_multishot: 1.0,
             buff_multishot_bonus: 0.0,
+            buff_ms_max_stacks: 0,
             magazine_size: 12.0,
             base_reload: 2.35,
             innate_co_per_type: 0.0,
@@ -659,6 +666,7 @@ impl WeaponBase {
             base_fire_rate: 12.0,
             base_multishot: 1.0,
             buff_multishot_bonus: 0.0,
+            buff_ms_max_stacks: 0,
             magazine_size: 80.0,
             base_reload: 1.6,
             innate_co_per_type: 0.0,
@@ -741,6 +749,19 @@ pub struct ResolvedPanel {
     /// Hemorrhage's status-conversion roll (an event mechanic — active under
     /// every policy; contributes no static panel stat).
     pub proc_conversion: Option<ProcConv>,
+    /// The evolution's PERMANENT stacked multishot (Fevered Frenzy), if any:
+    /// its FULL contribution is already inside `multishot`; the per-buff
+    /// config rescales via this spec (no in-sim trigger, no decay — the
+    /// stack count is a static choice, full by default).
+    pub evo_ms: Option<EvoMsBuff>,
+}
+
+/// A permanent stacked multishot buff on the resolved panel.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct EvoMsBuff {
+    /// FINAL multishot contributed at full stacks (base pellets × Σ bonus).
+    pub full: f64,
+    pub max_stacks: u32,
 }
 
 /// A resolved status-conversion roll (Hemorrhage).
@@ -1075,6 +1096,12 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         cd_on_kill,
         fr_on_reload,
         proc_conversion: proc_conv,
+        evo_ms: (base.buff_multishot_bonus > 0.0 && base.buff_ms_max_stacks > 0).then_some(
+            EvoMsBuff {
+                full: base.base_multishot * base.buff_multishot_bonus,
+                max_stacks: base.buff_ms_max_stacks,
+            },
+        ),
     }
 }
 

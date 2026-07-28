@@ -50,10 +50,12 @@ enum EvoEffect {
     FlatBaseDamage(f64),
     /// Adds into the BASE crit chance (crit mods multiply the new base).
     FlatBaseCritChance(f64),
-    /// A permanent stacking multishot buff at the user's initial-full
-    /// setting: the assumed-max total (per_stack × max_stacks) joins the
-    /// weapon's buff multishot (Fevered Frenzy's 20 × 5% = +100%).
-    AssumedMaxMultishot(f64),
+    /// A PERMANENT stacking multishot buff (Fevered Frenzy: on-ability-cast
+    /// stacks with no timer, cleared only by death — so inside a sim run the
+    /// stack count is a static CHOICE, full by default). `total` = the
+    /// full-stack bonus (per_stack × max_stacks) that joins the weapon's
+    /// buff multishot; `max_stacks` lets the per-buff config rescale it.
+    AssumedMaxMultishot { total: f64, max_stacks: u32 },
     /// Unconditional CO rate (Carnage Reign): +v per status TYPE, additive
     /// with mod CO sources. `excludes_evolution_damage`: the GunCO base
     /// excludes evolution flat damage (wiki CO catalog, DT row).
@@ -104,10 +106,19 @@ impl EvolutionDef {
     pub fn assumed_multishot(&self) -> f64 {
         self.active_effects()
             .filter_map(|e| match e {
-                EvoEffect::AssumedMaxMultishot(v) => Some(*v),
+                EvoEffect::AssumedMaxMultishot { total, .. } => Some(*total),
                 _ => None,
             })
             .sum()
+    }
+
+    /// The permanent stacked-multishot buff, if this evolution grants one:
+    /// (full-stack bonus, max stacks). Drives the configurable buff card.
+    pub fn ms_buff(&self) -> Option<(f64, u32)> {
+        self.active_effects().find_map(|e| match e {
+            EvoEffect::AssumedMaxMultishot { total, max_stacks } => Some((*total, *max_stacks)),
+            _ => None,
+        })
     }
 
     /// Σ unconditional CO rate per status type (Carnage Reign).
@@ -139,9 +150,9 @@ impl EvolutionDef {
                 EvoEffect::FlatBaseCritChance(v) => {
                     format!("+{:.0}% BASE crit chance (crit mods multiply it)", v * 100.0)
                 }
-                EvoEffect::AssumedMaxMultishot(v) => format!(
-                    "+{:.0}% multishot (on-ability-cast stacks, assumed full)",
-                    v * 100.0
+                EvoEffect::AssumedMaxMultishot { total, max_stacks } => format!(
+                    "+{:.0}% multishot ({max_stacks} on-ability-cast stacks, full by default)",
+                    total * 100.0
                 ),
                 EvoEffect::ConditionOverload { per_type } => format!(
                     "+{:.0}% direct damage per status type on the target",
@@ -171,9 +182,12 @@ fn effect(v: &Value) -> Option<EvoEffect> {
                 .get("per_stack")
                 .and_then(|p| p.get("multishot_bonus"))
                 .and_then(Value::as_f64);
-            let max = v.get("max_stacks").and_then(Value::as_u64).unwrap_or(0) as f64;
+            let max = v.get("max_stacks").and_then(Value::as_u64).unwrap_or(0);
             match per {
-                Some(p) => EvoEffect::AssumedMaxMultishot(p * max),
+                Some(p) => EvoEffect::AssumedMaxMultishot {
+                    total: p * max as f64,
+                    max_stacks: max as u32,
+                },
                 None => EvoEffect::Inert("stacking_buff (unmodeled payload)".into()),
             }
         }
@@ -199,7 +213,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
             match eff {
                 EvoEffect::FlatBaseDamage(v) => flat += v,
                 EvoEffect::FlatBaseCritChance(v) => base.base_crit_chance += v,
-                EvoEffect::AssumedMaxMultishot(v) => base.buff_multishot_bonus += v,
+                EvoEffect::AssumedMaxMultishot { total, max_stacks } => {
+                    base.buff_multishot_bonus += total;
+                    base.buff_ms_max_stacks = base.buff_ms_max_stacks.max(*max_stacks);
+                }
                 EvoEffect::ConditionOverload { per_type } => {
                     base.innate_co_per_type += per_type;
                 }
@@ -285,7 +302,9 @@ mod tests {
     fn fevered_and_carnage_parse_their_wiki_values() {
         let fe = get("dt_fevered_frenzy").unwrap();
         assert!(fe.effects.contains(&EvoEffect::FlatBaseDamage(50.0)));
-        assert!(fe.effects.contains(&EvoEffect::AssumedMaxMultishot(1.0)));
+        assert!(fe
+            .effects
+            .contains(&EvoEffect::AssumedMaxMultishot { total: 1.0, max_stacks: 20 }));
         let ca = get("dt_carnage_reign").unwrap();
         assert!(ca.effects.contains(&EvoEffect::FlatBaseDamage(60.0)));
         assert!(ca.effects.contains(&EvoEffect::ConditionOverload { per_type: 0.33 }));

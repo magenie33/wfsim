@@ -646,6 +646,10 @@ struct BuffMeta {
     kind: &'static str, // "stacking" | "toggle"
     default_stacks: u32,
     default_locked: bool,
+    /// PERMANENT stacks (no in-sim trigger, no decay — Fevered Frenzy): the
+    /// count is a static choice, so the lock control is meaningless and the
+    /// UI greys it out with a hint.
+    permanent: bool,
 }
 
 fn grant_label(g: wfsim_engine::arcanes_data::ArcGrant) -> &'static str {
@@ -677,7 +681,7 @@ fn enumerate_buffs(
     // assumes it permanently; a single on/off "stack".
     if info.id == "dual_toxocyst" {
         push(BuffMeta { id: "frenzy".into(), name: "Frenzy".into(), max_stacks: 1,
-            kind: "toggle", default_stacks: 1, default_locked: true });
+            kind: "toggle", default_stacks: 1, default_locked: true, permanent: false });
     }
     // Mod-granted buffs.
     for m in refs {
@@ -686,17 +690,17 @@ fn enumerate_buffs(
             use ModEffect::*;
             match *e {
                 OnKillMultishot { max_stacks, .. } => push(BuffMeta { id: "on_kill_multishot".into(),
-                    name: nm.clone(), max_stacks, kind: "stacking", default_stacks: max_stacks, default_locked: false }),
+                    name: nm.clone(), max_stacks, kind: "stacking", default_stacks: max_stacks, default_locked: false, permanent: false }),
                 ConditionOverload { max_stacks, .. } => push(BuffMeta { id: "condition_overload".into(),
-                    name: nm.clone(), max_stacks, kind: "stacking", default_stacks: max_stacks, default_locked: false }),
+                    name: nm.clone(), max_stacks, kind: "stacking", default_stacks: max_stacks, default_locked: false, permanent: false }),
                 OnHeadshotCritChance { .. } => push(BuffMeta { id: "on_headshot_cc".into(),
-                    name: nm.clone(), max_stacks: 1, kind: "toggle", default_stacks: 1, default_locked: false }),
+                    name: nm.clone(), max_stacks: 1, kind: "toggle", default_stacks: 1, default_locked: false, permanent: false }),
                 OnHeadshotKillCritChance { max_stacks, .. } => push(BuffMeta { id: "on_headshot_kill_cc".into(),
-                    name: nm.clone(), max_stacks, kind: "stacking", default_stacks: max_stacks, default_locked: false }),
+                    name: nm.clone(), max_stacks, kind: "stacking", default_stacks: max_stacks, default_locked: false, permanent: false }),
                 OnKillCritDamage { .. } => push(BuffMeta { id: "on_kill_cd".into(),
-                    name: nm.clone(), max_stacks: 1, kind: "toggle", default_stacks: 0, default_locked: false }),
+                    name: nm.clone(), max_stacks: 1, kind: "toggle", default_stacks: 0, default_locked: false, permanent: false }),
                 OnReloadFireRate { .. } => push(BuffMeta { id: "on_reload_fr".into(),
-                    name: nm.clone(), max_stacks: 1, kind: "toggle", default_stacks: 0, default_locked: false }),
+                    name: nm.clone(), max_stacks: 1, kind: "toggle", default_stacks: 0, default_locked: false, permanent: false }),
                 _ => {}
             }
         }
@@ -712,16 +716,39 @@ fn enumerate_buffs(
             let name = if multi { format!("{} ({})", aname, grant_label(b.grant)) } else { aname.clone() };
             let kind = if b.max_stacks > 1 { "stacking" } else { "toggle" };
             push(BuffMeta { id, name, max_stacks: b.max_stacks, kind,
-                default_stacks: b.max_stacks, default_locked: false });
+                default_stacks: b.max_stacks, default_locked: false, permanent: false });
         }
     }
     out
+}
+
+/// Evolution-granted configurable buffs (Fevered Frenzy's permanent stacked
+/// multishot): one card per evolution with an `ms_buff`. PERMANENT — no
+/// in-sim trigger and no decay, so the stack count is a static choice (full
+/// by default) and the lock is display-only.
+fn evo_buffs(evo_ids: &[String]) -> Vec<BuffMeta> {
+    evo_ids
+        .iter()
+        .filter_map(|id| wfsim_engine::evolutions_data::get(id))
+        .filter_map(|def| {
+            def.ms_buff().map(|(_, max_stacks)| BuffMeta {
+                id: "evo_multishot".into(),
+                name: def.name.clone(),
+                max_stacks,
+                kind: "stacking",
+                default_stacks: max_stacks,
+                default_locked: true,
+                permanent: true,
+            })
+        })
+        .collect()
 }
 
 fn buffs_json(list: &[BuffMeta]) -> Vec<Value> {
     list.iter().map(|b| json!({
         "id": b.id, "name": b.name, "max_stacks": b.max_stacks, "kind": b.kind,
         "default_stacks": b.default_stacks, "default_locked": b.default_locked,
+        "permanent": b.permanent,
     })).collect()
 }
 
@@ -1169,9 +1196,16 @@ fn panel_json(v: &Value) -> Value {
         .map(|(label, meta, b)| section(label, meta, b, &resolve(b, &refs, policy)))
         .collect();
 
-    // Configurable buffs of this build (weapon-scoped) for the Sim panel.
+    // Configurable buffs of this build (weapon-scoped) for the Sim panel —
+    // mods + arcane + the weapon passive, plus evolution-granted buffs
+    // (Fevered Frenzy's permanent stacks).
     let arcane_fx = arcane_fx_for(v, info, &forms_list[0].2, policy);
-    let buffs = enumerate_buffs(&refs, &arcane_fx, info);
+    let mut buffs = enumerate_buffs(&refs, &arcane_fx, info);
+    for b in evo_buffs(&evos) {
+        if !buffs.iter().any(|x| x.id == b.id) {
+            buffs.push(b);
+        }
+    }
 
     json!({
         "ok": true,
@@ -1651,6 +1685,17 @@ fn opt_buffs_json(v: &Value) -> Value {
                 merge(&mut out, enumerate_buffs(&[], &fx, info));
             }
         }
+    }
+    // Evolution-granted buffs across the scope (every tier option listed —
+    // Fevered Frenzy's permanent stacks show whenever it could be searched).
+    if let Some(obj) = v.get("evolutions").and_then(|x| x.as_object()) {
+        let evo_ids: Vec<String> = obj
+            .values()
+            .filter_map(|a| a.as_array())
+            .flatten()
+            .filter_map(|x| x.as_str().map(String::from))
+            .collect();
+        merge(&mut out, evo_buffs(&evo_ids));
     }
     json!({ "ok": true, "buffs": buffs_json(&out) })
 }

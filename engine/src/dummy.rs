@@ -954,6 +954,12 @@ pub struct DummyParams {
     /// CO base effectiveness (wiki: the CO bonus excludes evolution flat
     /// damage — DT with Fevered = 75/125 = 0.6).
     pub co_base_fraction: f64,
+    /// The evolution's PERMANENT stacked multishot (Fevered Frenzy): its
+    /// full contribution is already inside `multishot`; `apply_buff_config`
+    /// rescales it by the configured stacks ("evo_multishot"). No live
+    /// machinery — the trigger (ability cast) cannot fire in the sim and the
+    /// stacks never decay, so the count is static for the whole run.
+    pub evo_ms: Option<crate::loadout::EvoMsBuff>,
     /// Live on-kill CO stacks, live per StackSpec (Emergent policy).
     pub co_stack: Option<crate::loadout::StackSpec>,
     /// Live on-kill multishot stacks, earned from zero.
@@ -1024,6 +1030,16 @@ impl DummyParams {
             if let Some(&(stacks, locked)) = cfg.get(id) {
                 b.initial_active = stacks > 0;
                 b.locked = locked;
+            }
+        }
+        // Fevered Frenzy-style permanent stacks: no in-sim trigger, no
+        // decay — the configured count is a STATIC multishot choice for the
+        // whole run. `locked` is meaningless here (the stacks cannot move
+        // either way) and is deliberately ignored.
+        if let Some(ms) = self.evo_ms {
+            if let Some(&(stacks, _)) = cfg.get("evo_multishot") {
+                let frac = f64::from(stacks.min(ms.max_stacks)) / f64::from(ms.max_stacks);
+                self.multishot -= ms.full * (1.0 - frac);
             }
         }
         if let Some(s) = self.co_stack.as_mut() { set_stack(s, cfg, "condition_overload"); }
@@ -1156,6 +1172,7 @@ impl DummyParams {
             ammo_efficiency_applies: false,
             multishot: panel.multishot,
             base_multishot: panel.base_multishot,
+            evo_ms: panel.evo_ms,
             base_damage_bonus: panel.base_damage_bonus,
             co_per_type: panel.co_per_type,
             co_behavior: panel.co_behavior,
@@ -1250,6 +1267,7 @@ impl Default for DummyParams {
             ammo_efficiency_applies: true,
             multishot: 1.0,
             base_multishot: 1.0,
+            evo_ms: None,
             base_damage_bonus: 0.0,
             co_per_type: 0.0,
             co_behavior: crate::loadout::CoBehavior::AdditiveWithBaseDamage,
@@ -2370,6 +2388,40 @@ mod tests {
             status_chance: 0.0,
             ..DummyParams::default()
         }
+    }
+
+    #[test]
+    fn evo_multishot_config_rescales_the_permanent_stacks() {
+        // Fevered Frenzy: base 1 pellet × (+100% at 20 stacks) is baked into
+        // the resolved multishot; the per-buff config rescales it statically
+        // (no in-sim trigger, no decay). Lock is meaningless and ignored.
+        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        let base = WeaponBase::dual_toxocyst_incarnon_evos(
+            true,
+            &["dt_evo1_incarnon_form", "dt_fevered_frenzy"],
+        );
+        let panel = resolve(&base, &[], StackPolicy::Emergent);
+        let ms = panel.evo_ms.expect("fevered frenzy grants the evo ms buff");
+        assert_eq!(ms.max_stacks, 20);
+        assert!((ms.full - 1.0).abs() < 1e-12, "1 pellet × +100% = 1.0");
+
+        let mk = |stacks: u32, locked: bool| {
+            let mut p = DummyParams::from_panel(
+                &panel,
+                TargetParams::training_dummy(),
+                DummyParams::humanoid_parts(),
+                10.0,
+            );
+            let mut cfg = BuffConfig::new();
+            cfg.insert("evo_multishot".into(), (stacks, locked));
+            p.apply_buff_config(&cfg);
+            p.multishot
+        };
+        let full = panel.multishot;
+        assert!((mk(20, true) - full).abs() < 1e-12, "full stacks = untouched");
+        assert!((mk(0, false) - (full - 1.0)).abs() < 1e-12, "0 stacks removes the whole bonus");
+        assert!((mk(10, false) - (full - 0.5)).abs() < 1e-12, "half stacks remove half");
+        assert!((mk(10, true) - mk(10, false)).abs() < 1e-12, "lock is ignored (permanent)");
     }
 
     /// A secondary arcane at max rank under the Emergent policy (crit-base
