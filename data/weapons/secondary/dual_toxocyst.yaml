@@ -104,18 +104,18 @@ perks:
 # (e.g. Commodore's Fortune: base CC 5% -> 25% here, 11% -> 31% on the
 # Incarnon entry; Carnage Reign scales both vectors pro-rata).
 # Definitions: data/evolutions/dt_*.yaml.
-incarnon_evolutions:
-  - { tier: 1, unlock: install the Incarnon Genesis,
-      options: [dt_evo1_incarnon_form] }
-  - { tier: 2, unlock: complete a solo mission with this weapon equipped,
-      options: [dt_carnage_reign, dt_fevered_frenzy] }
-  - { tier: 3, unlock: kill 100 enemies with the Incarnon Form,
-      options: [dt_ready_retaliation, dt_evolved_autoloader, dt_marksmans_hand] }
-  - { tier: 4,
-      unlock: 17 consecutive headshots (body shots and Companion damage
-        reset; status damage does not; multishot hits count),
-      options: [dt_commodores_fortune, dt_neurotoxin, dt_ripper_rounds] }
+# incarnon_evolutions:
+# - { tier: 1, unlock: install the Incarnon Genesis,
+# options: [dt_evo1_incarnon_form] }
+# - { tier: 2, unlock: complete a solo mission with this weapon equipped,
+# options: [dt_carnage_reign, dt_fevered_frenzy] }
+# - { tier: 3, unlock: kill 100 enemies with the Incarnon Form,
+# options: [dt_ready_retaliation, dt_evolved_autoloader, dt_marksmans_hand] }
+# - { tier: 4,
+# unlock: 17 consecutive headshots (body shots and Companion damage
+# reset; status damage does not; multishot hits count),
+# options: [dt_commodores_fortune, dt_neurotoxin, dt_ripper_rounds] }
 
 source:
   url: https://wiki.warframe.com/w/Module:Weapons/data/secondary
-  note: Stats from the wiki's structured Lua data module.
+  # note: Stats from the wiki's structured Lua data module.

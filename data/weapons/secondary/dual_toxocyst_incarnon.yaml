@@ -17,17 +17,17 @@ incarnon:
     charges_to_fill: 9
     rounds_per_charge: 30
     max_rounds: 270
-    charge_rules:
-      - Individual multishot bullets each build charge.
-      - MOA-backpack-style weakspots do NOT build charge, nor do Sonar /
-        Detect Vulnerability spots outside real weakpoints (a per-body-part
-        charges_incarnon distinction).
-      - Weakpoints on corpses or invulnerable targets build nothing.
+    # charge_rules:
+    # - Individual multishot bullets each build charge.
+    # - MOA-backpack-style weakspots do NOT build charge, nor do Sonar /
+    # Detect Vulnerability spots outside real weakpoints (a per-body-part
+    # charges_incarnon distinction).
+    # - Weakpoints on corpses or invulnerable targets build nothing.
   transmute:
     activation: alt_fire            # full gauge NOT required
     animation_seconds: reload_speed # mode switch takes the reload time
     revert: on_incarnon_ammo_empty
-    switch_back_penalty: expends all remaining charge
+    # switch_back_penalty: expends all remaining charge
   incarnon_magazine:
     # CAUSAL MODEL (user, 2026-07-24): the Incarnon form's rounds are
     # CHARGE-BACKED - a separate resource converted from weakpoint charges,
@@ -41,7 +41,7 @@ incarnon:
   persistence:
     survives: [holster, bleedout, disarm]
     cleared_on: [death]
-  side_effect: swapping either way fully reloads the normal form's magazine
+  # side_effect: swapping either way fully reloads the normal form's magazine
   # Transition animations (M9): both directions scale by the OFFICIAL
   # reload formula (wiki Reload: time = base / (1 + reload speed bonus)).
   #   transmute IN  = the weapon's reload time (2.35 s unmodded)
@@ -58,8 +58,8 @@ incarnon:
 pseudo_reload:
   magazine: 270
   reload_seconds: 3.35   # revert (1.0) + re-transmute (2.35), unmodded
-  note: excludes charge-rebuilding time (assumed locked); both components
-    scale with reload-speed bonuses
+  # note: excludes charge-rebuilding time (assumed locked); both components
+  # scale with reload-speed bonuses
 
 # Single attack profile: full-auto hitscan with innate ricochet.
 # Condition Overload behavior class on this weapon (three classes exist:
@@ -78,13 +78,13 @@ attack:
   ricochet:
     targets: 1                  # per hit, within 5 m of the struck enemy
     range_m: 5.0
-    notes:
-      - Ricochets can headshot and trigger Frenzy.
-      - "Per-hit trigger (wiki Ricochet): each multishot pellet and each
-        punch-through victim ricochets separately; terrain never, corpses
-        do; ragdolled enemies cannot be ricochet targets."
-      - Ricochet rounds scale with Galvanized Shot and the EVO2 perks'
-        flat base damage.
+    # notes:
+    # - Ricochets can headshot and trigger Frenzy.
+    # - "Per-hit trigger (wiki Ricochet): each multishot pellet and each
+    # punch-through victim ricochets separately; terrain never, corpses
+    # do; ragdolled enemies cannot be ricochet targets."
+    # - Ricochet rounds scale with Galvanized Shot and the EVO2 perks'
+    # flat base damage.
   fire_rate: 4.5
   multishot: 1.0
   ammo_cost: 1                  # of the separate incarnon magazine (270)
@@ -103,9 +103,9 @@ attack:
 perks:
   - frenzy
 
-incarnon_evolutions: see data/weapons/dual_toxocyst.yaml (shared group)
+# incarnon_evolutions: see data/weapons/dual_toxocyst.yaml (shared group)
 
 source:
   url: https://wiki.warframe.com/w/Module:Weapons/data/secondary
-  note: Stats from the wiki's structured Lua data module; economy from the
-    Incarnon Genesis page.
+  # note: Stats from the wiki's structured Lua data module; economy from the
+  # Incarnon Genesis page.
