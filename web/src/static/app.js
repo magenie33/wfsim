@@ -193,17 +193,39 @@ function renderPresetBar() {
     const p = loadPresets().find((x) => x.name === c.dataset.name);
     if (p) { activePreset = p.name; restoreState(p.state); renderPresetBar(); }
   }));
+  // No prompt()/alert()/confirm() anywhere — the browser can block those
+  // dialogs, which made saving silently fail (user, 2026-07-28). Naming
+  // happens in an INLINE input: Enter commits, Esc cancels.
+  const nameInput = (placeholderEl, initial, onCommit) => {
+    placeholderEl.outerHTML = `<input class="pname" type="text" value="${escHtml(initial)}" placeholder="name, then Enter…" maxlength="24">`;
+    const inp = bar.querySelector(".pname");
+    inp.focus();
+    if (initial) inp.select();
+    let done = false;
+    const commit = () => {
+      if (done) return;
+      done = true;
+      onCommit((inp.value || "").trim());
+    };
+    inp.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") commit();
+      if (ev.key === "Escape") { done = true; renderPresetBar(); }
+    });
+    inp.addEventListener("blur", commit);
+  };
   const addBtn = bar.querySelector(".pchip.add");
-  if (addBtn) addBtn.addEventListener("click", () => {
-    const ps2 = loadPresets();
-    const name = (prompt("Preset name:", `preset ${ps2.length + 1}`) || "").trim();
-    if (!name) return;
-    const at = ps2.findIndex((p) => p.name === name);
-    const entry = { name, savedAt: Date.now(), state: snapshotState() };
-    if (at >= 0) ps2[at] = entry; else ps2.push(entry); // same name overwrites
-    storePresets(ps2);
-    activePreset = name;
-    renderPresetBar();
+  if (addBtn) addBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    nameInput(addBtn, "", (name) => {
+      if (!name) { renderPresetBar(); return; }
+      const ps2 = loadPresets();
+      const entry = { name, savedAt: Date.now(), state: snapshotState() };
+      const at = ps2.findIndex((p) => p.name === name);
+      if (at >= 0) ps2[at] = entry; else ps2.push(entry); // same name overwrites
+      storePresets(ps2);
+      activePreset = name;
+      renderPresetBar();
+    });
   });
   const on = (sel, fn) => { const b = bar.querySelector(sel); if (b) b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); };
   on(".pop.upd", () => {
@@ -215,19 +237,19 @@ function renderPresetBar() {
     renderPresetBar();
   });
   on(".pop.ren", () => {
-    const name = (prompt("New name:", activePreset) || "").trim();
-    if (!name || name === activePreset) return;
-    const ps2 = loadPresets();
-    if (ps2.some((p) => p.name === name)) { alert(`A preset named "${name}" already exists.`); return; }
-    const at = ps2.findIndex((p) => p.name === activePreset);
-    if (at < 0) return;
-    ps2[at].name = name;
-    storePresets(ps2);
-    activePreset = name;
-    renderPresetBar();
+    const chip = bar.querySelector(".pchip.sel");
+    if (!chip) return;
+    nameInput(chip, activePreset, (name) => {
+      const ps2 = loadPresets();
+      // Empty, unchanged, or colliding names just cancel the rename.
+      if (name && name !== activePreset && !ps2.some((p) => p.name === name)) {
+        const at = ps2.findIndex((p) => p.name === activePreset);
+        if (at >= 0) { ps2[at].name = name; storePresets(ps2); activePreset = name; }
+      }
+      renderPresetBar();
+    });
   });
   on(".pop.del", () => {
-    if (!confirm(`Delete preset "${activePreset}"?`)) return;
     storePresets(loadPresets().filter((p) => p.name !== activePreset));
     activePreset = null;
     renderPresetBar();
