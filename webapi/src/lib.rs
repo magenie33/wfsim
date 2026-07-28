@@ -175,7 +175,7 @@ fn form_unlock_evo(info: &WeaponInfo) -> Option<&'static str> {
 
 /// Whether the weapon's data declares the Frenzy perk (data/perks/).
 fn has_frenzy(info: &WeaponInfo) -> bool {
-    wspec(&info.id).perks.iter().any(|p| p == "frenzy")
+    wspec(&info.id).perks.iter().any(|p| p.id() == "frenzy")
 }
 
 fn default_weapon_id() -> &'static str {

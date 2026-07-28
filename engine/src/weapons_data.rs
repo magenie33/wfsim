@@ -55,13 +55,42 @@ pub struct PseudoReloadSpec {
     pub reload_seconds: f64,
 }
 
-/// A perk entry from `data/perks/*.yaml` — the grantor a weapon's `perks:`
-/// list references by id (data/README.md reference graph).
+/// A perk definition — either a `data/perks/*.yaml` entry or an inline
+/// block in a weapon's `perks:` list (data/README.md: both modes are
+/// valid; a perk carried by two or more items must live in the table).
 #[derive(Debug, Clone, Deserialize)]
 pub struct PerkSpec {
     pub id: String,
     #[serde(default)]
     pub grants: Option<GrantsSpec>,
+}
+
+/// One entry of a weapon's `perks:` list: a bare id string (reference into
+/// `data/perks/`) or a full inline definition (one-off perks).
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+pub enum PerkRef {
+    Id(String),
+    Inline(PerkSpec),
+}
+
+impl PerkRef {
+    /// Resolve to the perk definition (table lookup for id refs).
+    pub fn resolve(&self) -> &PerkSpec {
+        match self {
+            PerkRef::Inline(p) => p,
+            PerkRef::Id(id) => {
+                perk(id).unwrap_or_else(|| panic!("missing perk yaml: {id}"))
+            }
+        }
+    }
+
+    pub fn id(&self) -> &str {
+        match self {
+            PerkRef::Id(id) => id,
+            PerkRef::Inline(p) => &p.id,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -106,10 +135,11 @@ pub struct WeaponSpec {
     pub incarnon: Option<IncarnonSpec>,
     #[serde(default)]
     pub pseudo_reload: Option<PseudoReloadSpec>,
-    /// Perk ids from `data/perks/` (each entry of a transform group lists
-    /// its own — Frenzy is active in both Dual Toxocyst forms).
+    /// The weapon's perks: id references into `data/perks/` or inline
+    /// one-off definitions (each entry of a transform group lists its own —
+    /// Frenzy is active in both Dual Toxocyst forms).
     #[serde(default)]
-    pub perks: Vec<String>,
+    pub perks: Vec<PerkRef>,
 }
 
 fn one() -> f64 {
@@ -229,7 +259,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
     let injected_elements = if frenzy_active {
         s.perks
             .iter()
-            .filter_map(|id| perk(id).unwrap_or_else(|| panic!("missing perk yaml: {id}")).grants.as_ref())
+            .filter_map(|p| p.resolve().grants.as_ref())
             .filter_map(|g| g.injected_element.as_ref())
             .map(|inj| (damage_type(&inj.element), inj.amount))
             .collect()
@@ -312,6 +342,58 @@ mod tests {
         assert!(i.injected_elements.is_empty());
         // Traits come from the transform group's BASE entry.
         assert_eq!(i.traits, &["semi_auto"]);
+    }
+
+    /// data/README.md's promotion rule, enforced: perk ids are GLOBALLY
+    /// unique. A table perk may be referenced by many items; an inline perk
+    /// may exist in exactly ONE item and must not shadow a table id — two
+    /// carriers means it should have been promoted to data/perks/.
+    #[test]
+    fn perk_ids_are_globally_unique_across_table_and_inlines() {
+        use std::collections::HashMap;
+        let mut home: HashMap<&str, String> = HashMap::new();
+        for p in perks() {
+            let prev = home.insert(&p.id, format!("data/perks/{}.yaml", p.id));
+            assert!(prev.is_none(), "duplicate table perk id: {}", p.id);
+        }
+        for w in all() {
+            for pr in &w.perks {
+                if let PerkRef::Inline(p) = pr {
+                    if let Some(other) = home.get(p.id.as_str()) {
+                        panic!(
+                            "inline perk '{}' in weapon '{}' collides with {} — \
+                             promote it to data/perks/ and reference the id",
+                            p.id, w.id, other
+                        );
+                    }
+                    home.insert(&p.id, format!("inline in weapon '{}'", w.id));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn perks_accept_both_reference_and_inline_forms() {
+        let yaml = r#"
+id: test_gun
+name: Test Gun
+slot: secondary
+class: pistols
+magazine: 10
+reload_seconds: 1.0
+attack: { trigger: auto, fire_rate: 5.0, crit_chance: 0.1, crit_multiplier: 2.0, status_chance: 0.1, damage: { toxin: 10.0 } }
+perks:
+  - frenzy
+  - id: one_off
+    grants: { injected_element: { type: heat, amount: 0.5 } }
+"#;
+        let s: WeaponSpec = serde_norway::from_str(yaml).unwrap();
+        assert_eq!(s.perks[0].id(), "frenzy");
+        assert!(s.perks[0].resolve().grants.is_some()); // table lookup works
+        assert_eq!(s.perks[1].id(), "one_off");
+        let g = s.perks[1].resolve().grants.as_ref().unwrap();
+        let inj = g.injected_element.as_ref().unwrap();
+        assert_eq!(inj.element, "heat");
     }
 
     #[test]
