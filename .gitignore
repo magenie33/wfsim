@@ -15,8 +15,7 @@ __pycache__/
 web/cache/
 
 # Private, never committed
-/devlog/
-/drafts/
+/private/
 
 # Editor / OS
 .idea/
