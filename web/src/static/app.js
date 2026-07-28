@@ -51,6 +51,12 @@ let optBuffList = [];
 let optBuffTimer = null;
 // Sort/polarity prefs for the optimizer mod list (independent of the picker's).
 let optPrefs = { sort: "name", dir: "asc", pol: null };
+// The FINAL-ROUND CONTRACT (user): the funnel's last round is guaranteed
+// `finalists` candidates × `final_runs` runs. Persisted; survives weapon
+// switches (it is a run setting, not weapon scope).
+let optRun = { final_runs: 1024, finalists: 20 };
+try { const s = JSON.parse(localStorage.getItem("wfsim-opt-run")); if (s) optRun = { ...optRun, ...s }; } catch (_) {}
+const saveOptRun = () => localStorage.setItem("wfsim-opt-run", JSON.stringify(optRun));
 let pickerSlot = 0;
 // Mod-picker sort/filter prefs — persisted across slots, presets and weapons.
 let pickerPrefs = { sort: "name", dir: "asc", pol: null };
@@ -90,6 +96,16 @@ async function init() {
   $("opt-size").addEventListener("input", () => {
     opt.size = Math.max(1, Math.min(8, Number($("opt-size").value) || 8));
     updateOptEstimate();
+  });
+  $("opt-final-runs").value = optRun.final_runs;
+  $("opt-finalists").value = optRun.finalists;
+  $("opt-final-runs").addEventListener("input", () => {
+    optRun.final_runs = Math.max(1, Math.min(100000, Number($("opt-final-runs").value) || 1024));
+    saveOptRun(); updateOptEstimate();
+  });
+  $("opt-finalists").addEventListener("input", () => {
+    optRun.finalists = Math.max(1, Math.min(100, Number($("opt-finalists").value) || 20));
+    saveOptRun(); updateOptEstimate();
   });
   initPresets();
   reattachOptimize(); // resume progress display if a server-side job survives a reload
@@ -1447,18 +1463,23 @@ function updateOptEstimate() {
   let scenario = "";
   if (valid) {
     const en = (META.enemies || []).find((e) => e.id === sim.enemy) || {};
+    // Mirror of schedule_to(): ×4 runs capped at final/4, cull to 1/8
+    // floored at finalists, then the guaranteed final. Adaptive racing can
+    // only cut MORE, so this is an upper bound ("up to").
+    const F = optRun.finalists, FR = optRun.final_runs;
+    const cap = Math.max(Math.floor(FR / 4), 1);
     const rounds = [];
     let runs = 1, keep = Math.round(jobs);
-    while (keep > 64 && runs < 1024) {
-      keep = Math.max(Math.floor(keep / 8), 64);
+    while (keep > F) {
+      keep = Math.max(Math.floor(keep / 8), F);
       rounds.push([runs, keep]);
-      runs = Math.min(runs * 4, 1024);
+      runs = Math.min(runs * 4, cap);
     }
-    rounds.push([1024, 24]);
+    rounds.push([FR, F]);
     const parts = [];
     let field = Math.round(jobs);
     rounds.forEach(([r, k]) => { parts.push(`${field.toLocaleString()}×${r}`); field = Math.min(field, k); });
-    scenario = `<div class="opt-scn">each candidate vs <b>${en.name || sim.enemy}</b> Lv ${sim.level}${sim.steel_path ? " (SP)" : ""} · ${sim.headshot_pct}% headshots · ${sim.duration} s engagements · funnel (jobs×runs): ${parts.join(" → ")} → top 10</div>`;
+    scenario = `<div class="opt-scn">each candidate vs <b>${en.name || sim.enemy}</b> Lv ${sim.level}${sim.steel_path ? " (SP)" : ""} · ${sim.headshot_pct}% headshots · ${sim.duration} s engagements · funnel, up to (jobs×runs): ${parts.join(" → ")} → ${F} finalists at ${FR.toLocaleString()} runs</div>`;
   }
   $("opt-estimate").innerHTML = (valid
     ? `~<b>${est}</b> candidates${exNote} × ${arcCount} arcanes ≈ ${Math.round(jobs).toLocaleString()} jobs${big ? ` <span class="warn">— large; this may take a while</span>` : ""}`
@@ -1506,6 +1527,7 @@ async function runOptimize() {
       exilus: opt.exilus,
       enemy: sim.enemy, level: sim.level, steel_path: sim.steel_path,
       headshot_pct: sim.headshot_pct, duration: sim.duration,
+      final_runs: optRun.final_runs, finalists: optRun.finalists,
       buffs,
     };
     const r = await postJson("/api/optimize", body);
@@ -1621,7 +1643,7 @@ function renderOptResults(r) {
       <div class="opt-mods">${mods}</div>
     </div>`;
   }).join("");
-  $("opt-results").innerHTML = `<div class="opt-meta">${r.cancelled ? `<span class="warn">cancelled — ranking from the last completed round</span> · ` : ""}${r.candidates} candidates · ${r.jobs} jobs · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${sim.headshot_pct}% headshots · ${sim.duration} s engagements · finalists 1024 runs</div>${rows}`;
+  $("opt-results").innerHTML = `<div class="opt-meta">${r.cancelled ? `<span class="warn">cancelled — ranking from the last completed round</span> · ` : ""}${r.candidates} candidates · ${r.jobs} jobs · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${sim.headshot_pct}% headshots · ${sim.duration} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
   $("opt-results").querySelectorAll(".opt-load").forEach((el) =>
     el.addEventListener("click", () => loadResult(JSON.parse(el.dataset.r))));
 }

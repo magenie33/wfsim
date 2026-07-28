@@ -25,7 +25,7 @@ use wfsim_engine::loadout::{
 use wfsim_engine::mods::{plan_forma, PlannedMod, Polarity};
 use wfsim_engine::mods_data::pistol_pool as pool; // FULL pool incl. exilus (the optimizer's pool() excludes exilus)
 use wfsim_optimizer::{
-    dual_toxocyst_innate_slots, enumerate_candidates, run_funnel, schedule, Candidate,
+    dual_toxocyst_innate_slots, enumerate_candidates, run_funnel, schedule_to, Candidate,
     Constraints, FunnelState, Job, Scenario,
 };
 
@@ -1889,6 +1889,12 @@ fn optimize_start(v: &Value) -> Value {
     // No cap (user: allow spending local resources). The funnel handles large
     // spaces by culling obviously-bad combos in cheap early rounds.
 
+    // ---- final-round contract (user, 2026-07-28): the last round is
+    // guaranteed `finalists` candidates × `final_runs` runs; everything
+    // before only whittles the field down (schedule + adaptive racing).
+    let final_runs = get_u32(v, "final_runs", 1024).clamp(1, 100_000);
+    let finalists = get_u32(v, "finalists", 20).clamp(1, 100) as usize;
+
     // ---- scenario (reuse the Sim inputs) ----
     let enemy_id = get_str(v, "enemy", "thrax_centurion");
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
@@ -1969,17 +1975,18 @@ fn optimize_start(v: &Value) -> Value {
         *worker.phase.lock().unwrap() = "running";
 
         // ---- run the funnel (progress via FunnelState) ----
-        let rounds = schedule(n_jobs);
+        let rounds = schedule_to(n_jobs, final_runs, finalists);
         let last = run_funnel(
             &cands, &arcanes, &scenario, jobs, &rounds, 0xDEAD_BEEF, false,
             Some(&worker.state),
         );
         let cancelled = worker.state.cancel.load(Ordering::Relaxed);
 
-        // ---- top-10 (on cancel: of the last completed round, if any) ----
+        // ---- the finalists leaderboard (on cancel: the last completed
+        // round's top slice — intermediate rounds can be huge) ----
         let results: Vec<Value> = last
             .iter()
-            .take(10)
+            .take(finalists)
             .enumerate()
             .map(|(rank, ((ci, ai), s))| {
                 let c = &cands[*ci];
@@ -2013,6 +2020,8 @@ fn optimize_start(v: &Value) -> Value {
             "candidates": cands.len(),
             "jobs": n_jobs,
             "cancelled": cancelled,
+            "final_runs": final_runs,
+            "finalists": finalists,
             "results": results,
             "target": { "name": target_name, "level": level, "steel_path": steel_path },
         }));

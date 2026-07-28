@@ -489,24 +489,38 @@ pub struct RoundNote {
     pub ms: u64,
 }
 
-/// Self-scaling successive-halving schedule (user, 2026-07-25: derive
-/// the funnel from the job count instead of hand-written constants).
-/// Geometric: each round multiplies runs ×4 and keeps 1/8 of the field
-/// (gentler per-cut than the old fixed table while costing LESS overall:
-/// total sims ≈ 2 × N vs 3 × N for the old first round alone). Rounds
-/// rank by mean effective damage until runs reach 48, then by kill
-/// score; a 1024-run final on the last ≤64 always closes the funnel
-/// (the full power-of-four ladder: 1, 4, 16, 64, 256, 1024).
+/// Self-scaling successive-halving schedule with the historical defaults
+/// (final = 1024 runs × 24 finalists). See [`schedule_to`].
 pub fn schedule(n_jobs: usize) -> Vec<(u32, usize, bool)> {
+    schedule_to(n_jobs, 1024, 24)
+}
+
+/// Successive-halving schedule honoring the user's FINAL-ROUND CONTRACT
+/// (2026-07-28): the last round is guaranteed to evaluate EXACTLY
+/// `finalists` candidates at `final_runs` runs each — everything before it
+/// only whittles the field down to that size.
+///
+/// Intermediate rounds: runs start at 1 and multiply ×4, CAPPED at
+/// `final_runs / 4` (the final stays a real step up); each keeps 1/8 of
+/// the field, floored at `finalists`. EVERY round ranks by kill score
+/// (mean kill progress = kills + depleted fraction of the final target's
+/// pool): it is just as continuous as the old mean-effective-damage
+/// screen and it IS the objective, so there is no metric switch to
+/// misrank across (user, 2026-07-28). On top of this fixed plan,
+/// [`run_funnel`] culls adaptively (3σ racing) — the schedule is an
+/// upper bound, not a promise of work.
+pub fn schedule_to(n_jobs: usize, final_runs: u32, finalists: usize) -> Vec<(u32, usize, bool)> {
+    let finalists = finalists.max(1);
+    let cap = (final_runs / 4).max(1);
     let mut rounds = Vec::new();
     let mut runs: u32 = 1;
     let mut keep = n_jobs;
-    while keep > 64 && runs < 1024 {
-        keep = (keep / 8).max(64);
-        rounds.push((runs, keep, runs >= 48));
-        runs = (runs * 4).min(1024);
+    while keep > finalists {
+        keep = (keep / 8).max(finalists);
+        rounds.push((runs, keep, true));
+        runs = runs.saturating_mul(4).min(cap);
     }
-    rounds.push((1024, 24, true));
+    rounds.push((final_runs.max(1), finalists, true));
     rounds
 }
 
@@ -614,6 +628,26 @@ pub fn run_funnel(
             kb.total_cmp(&ka)
         });
         scored.truncate(keep);
+        // Adaptive racing cull (user, 2026-07-28: "reduce cleverly before
+        // the final"): beyond the planned 1/8, drop every survivor whose 3σ
+        // upper confidence bound still misses the finalists boundary's 3σ
+        // lower bound — statistically hopeless candidates never see another
+        // (4× more expensive) round. Needs runs ≥ 4 for a usable per-job σ;
+        // the final round's field is untouchable.
+        let floor = rounds.last().map_or(1, |&(_, f, _)| f);
+        if round + 1 < rounds.len() && runs >= 4 && scored.len() > floor {
+            let se3 = |s: &Summary| 3.0 * s.std_kills / f64::from(runs).sqrt();
+            let cut = {
+                let b = &scored[floor - 1].1;
+                b.mean_kill_progress - se3(b)
+            };
+            let mut i = 0usize;
+            scored.retain(|(_, s)| {
+                let keep_it = i < floor || s.mean_kill_progress + se3(s) >= cut;
+                i += 1;
+                keep_it
+            });
+        }
         if verbose {
             println!(
                 "[round {}] {} jobs x {} runs ({}) -> keep {} in {:.1?}; best {}",
@@ -645,6 +679,17 @@ pub fn run_funnel(
         }
         alive = scored.iter().map(|(j, _)| *j).collect();
         last = scored;
+        if let Some(st) = state {
+            // Replan the remaining work: adaptive culls shrink every later
+            // round, so done/planned stays a true percentage.
+            let mut field = alive.len() as u64;
+            let mut sims = st.sims_done.load(Ordering::Relaxed);
+            for &(r2, k2, _) in &rounds[round + 1..] {
+                sims += field * u64::from(r2);
+                field = field.min(k2 as u64);
+            }
+            st.sims_planned.store(sims, Ordering::Relaxed);
+        }
     }
     last
 }
@@ -793,25 +838,38 @@ mod tests {
 
     #[test]
     fn schedule_scales_with_the_job_count() {
-        // ~2M jobs: 1-run screen keeps 1/8, runs ×4 per round, kill-score
-        // ranking from 48 runs on, always closed by a 1024-run final.
+        // ~2M jobs: 1-run screen keeps 1/8, runs ×4 per round capped at
+        // final/4, EVERY round ranks by kill score, and the final-round
+        // contract closes the funnel: exactly `finalists` × `final_runs`.
         let s = schedule(1_950_192);
-        assert_eq!(s.first(), Some(&(1, 243_774, false)));
-        assert!(s.windows(2).all(|w| w[1].0 > w[0].0 && w[1].1 <= w[0].1));
+        assert_eq!(s.first(), Some(&(1, 243_774, true)));
+        assert!(s.windows(2).all(|w| w[1].0 >= w[0].0 && w[1].1 <= w[0].1));
+        assert!(s.iter().all(|&(_, _, by_kills)| by_kills), "kill score everywhere");
+        assert!(s[..s.len() - 1].iter().all(|&(r, _, _)| r <= 256), "intermediates ≤ final/4");
         assert_eq!(s.last(), Some(&(1024, 24, true)));
-        // Total sims ≈ Σ runs × field ≈ 2 × N — cheaper than the old
-        // fixed table's 3 × N first round alone.
+        // The round BEFORE the final already reaches the finalists count —
+        // the final evaluates exactly that field.
+        assert_eq!(s[s.len() - 2].1, 24);
+        // Total sims stays well below flat evaluation.
         let mut field = 1_950_192usize;
         let mut sims = 0usize;
         for &(runs, keep, _) in &s {
             sims += field * runs as usize;
-            field = keep;
+            field = field.min(keep);
         }
         assert!(sims < 3 * 1_950_192, "sims {sims}");
         // Small pools still get a sane funnel ending in the final.
         let small = schedule(500);
-        assert_eq!(small.first(), Some(&(1, 64, false)));
+        assert_eq!(small.first(), Some(&(1, 62, true)));
         assert_eq!(small.last(), Some(&(1024, 24, true)));
+
+        // The user's contract verbatim: final = 10_000 runs × 20 finalists.
+        let big = schedule_to(437_000, 10_000, 20);
+        assert_eq!(big.last(), Some(&(10_000, 20, true)));
+        assert_eq!(big[big.len() - 2].1, 20);
+        assert!(big[..big.len() - 1].iter().all(|&(r, _, _)| r <= 2500));
+        // Tiny fields skip straight to the final.
+        assert_eq!(schedule_to(15, 10_000, 20), vec![(10_000, 20, true)]);
     }
 
     #[test]

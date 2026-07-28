@@ -122,6 +122,11 @@
         <div id="opt-evos"></div>
         <h3 class="sim-h">Buffs <span class="sim-hint">across the whole scope — initial stacks + lock, applied per candidate</span></h3>
         <div id="opt-buffs"></div>
+        <div class="opt-final">
+          <label>Final runs <input id="opt-final-runs" type="number" min="1" max="100000" value="1024"></label>
+          <label>Finalists <input id="opt-finalists" type="number" min="1" max="100" value="20"></label>
+          <span class="sim-hint">the last round is guaranteed: finalists × final runs; earlier rounds only cut the field</span>
+        </div>
         <div id="opt-estimate" class="opt-est"></div>
         <button id="run-opt" class="run-btn">Run Optimizer</button>
         <div id="opt-results"></div>
