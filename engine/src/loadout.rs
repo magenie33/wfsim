@@ -581,37 +581,9 @@ impl WeaponBase {
     /// Dual Toxocyst Incarnon Form: RAW panel (wiki 11% cc, 75 base),
     /// NO evolutions applied. `frenzy_active`: the passive works while
     /// transformed (user-confirmed) — folds its +100% Toxin injection in.
+    /// Numbers live in `data/weapons/dual_toxocyst_incarnon.yaml`.
     fn dual_toxocyst_incarnon_raw(frenzy_active: bool) -> Self {
-        Self {
-            base_vector: DamageVector::new()
-                .with(DamageType::Impact, 15.0)
-                .with(DamageType::Puncture, 37.5)
-                .with(DamageType::Slash, 22.5),
-            base_crit_chance: 0.11,
-            base_crit_damage: 3.0,
-            base_status_chance: 0.43,
-            base_fire_rate: 4.5,
-            base_multishot: 1.0,
-            buff_multishot_bonus: 0.0,
-            buff_ms_max_stacks: 0,
-            magazine_size: 270.0,
-            base_reload: 3.35,
-            // Wiki CO catalog row: "Adding" class; the CO base fraction is
-            // derived by `apply` from the evolution flat damage.
-            innate_co_per_type: 0.0,
-            co_behavior: CoBehavior::AdditiveWithBaseDamage,
-            co_base_fraction: 1.0,
-            injected_elements: if frenzy_active {
-                vec![(DamageType::Toxin, 1.0)]
-            } else {
-                Vec::new()
-            },
-            traits: &["semi_auto"], // Dual Toxocyst: semi-auto trigger
-            // Charge-backed: 270 Max Charges (inert to magazine mods);
-            // transmute in = base reload 2.35 s, transmute out ≈ 1.0 s
-            // (estimate) — both scale with reload speed.
-            incarnon: Some(IncarnonForm { max_charges: 270.0, transmute_in: 2.35, transmute_out: 1.0 }),
-        }
+        crate::weapons_data::base_panel("dual_toxocyst_incarnon", frenzy_active)
     }
 
     /// Dual Toxocyst **base form** with the historical DEFAULT evolutions.
@@ -622,32 +594,9 @@ impl WeaponBase {
     /// Dual Toxocyst **base form**: RAW panel (wiki 5% cc, 75 base), NO
     /// evolutions applied. `frenzy_active` folds the +100% Toxin
     /// injection in (exact under a Permanent lock).
+    /// Numbers live in `data/weapons/dual_toxocyst.yaml`.
     fn dual_toxocyst_base_raw(frenzy_active: bool) -> Self {
-        Self {
-            base_vector: DamageVector::new()
-                .with(DamageType::Impact, 7.5)
-                .with(DamageType::Puncture, 60.0)
-                .with(DamageType::Slash, 7.5),
-            base_crit_chance: 0.05,
-            base_crit_damage: 2.0,
-            base_status_chance: 0.37,
-            base_fire_rate: 1.0, // semi-auto; Frenzy ×2.5 applies live
-            base_multishot: 1.0,
-            buff_multishot_bonus: 0.0,
-            buff_ms_max_stacks: 0,
-            magazine_size: 12.0,
-            base_reload: 2.35,
-            innate_co_per_type: 0.0,
-            co_behavior: CoBehavior::AdditiveWithBaseDamage,
-            co_base_fraction: 1.0,
-            injected_elements: if frenzy_active {
-                vec![(DamageType::Toxin, 1.0)]
-            } else {
-                Vec::new()
-            },
-            traits: &["semi_auto"], // Dual Toxocyst: semi-auto trigger
-            incarnon: None,
-        }
+        crate::weapons_data::base_panel("dual_toxocyst", frenzy_active)
     }
 
 }

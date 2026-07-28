@@ -24,7 +24,7 @@ General setup:
 damage reach health. Toxin never touches shields — is its direct damage
 gated inside that window, or does it pass in full?
 
-**Model assumption (2026-07-24, user; revised same day):** the gate is the
+**Model assumption (2026-07-24; revised same day):** the gate is the
 enemy analogue of the player shield-gate — a 0.1 s protection window on the
 unit — so Toxin is **gated to 5% too**. Status: **assumption / unverified**
 until this protocol is run. Outcome mapping: target **survives** the
@@ -100,7 +100,7 @@ the white (health-pool) damage number of the breaking shot: ≈`T` ungated,
 **Question.** Does the Corpus Mercy cap reach 100% (Parazon page) or only
 with shields removed (Impact page wording)?
 
-**Result (user in-game tests, 2026-07-24):**
+**Result (in-game tests, 2026-07-24):**
 1. Corpus units **do reach the 100% cap**.
 2. **Shields are a hard gate**: at 1 HP behind 10,000 shields there is no
    Mercy prompt — "shields removed" is a prerequisite, not a bonus
@@ -133,7 +133,7 @@ A 2.3x gap at level 100 — a health-bar read or a shots-to-kill count
 decides it.
 
 **Result (2026-07-24):** **Anarchs = Corrupted curves.** The wiki's own
-calculated stat block for Commandeered Ash Prime @L1000 (user-supplied:
+calculated stat block for Commandeered Ash Prime @L1000 (wiki calculator:
 18,275,927.85 HP / 623,680.94 shields / 2,700 armor / 27,531 affinity)
 matches our Corrupted health (2.1/0.685) and Corrupted shield (2.0/0.75)
 curves **to the cent**; the Unaffiliated pair is 3.6x off. Bonus
@@ -150,7 +150,7 @@ Murmur-tab text naming Anarchs is a wiki typo.
 faction brackets): does a strong first proc also elevate later unmodded
 contributions (the wiki left this direction unconfirmed)?
 
-**Result (user, 2026-07-24):** **Yes — bidirectional.** The first proc's
+**Result (in-game, 2026-07-24):** **Yes — bidirectional.** The first proc's
 brackets apply to every later contribution in both directions. Build
 consequence: light the first Heat proc with the best-modded weapon; any
 source can then feed the ramp at full value.
@@ -163,7 +163,7 @@ source can then feed the ramp at full value.
 remaining 3 Cold stacks the surviving old ones (carried timers) or a
 hard reset?
 
-**Result (user, 2026-07-24):** **Hard reset**: Freeze is set to exactly
+**Result (in-game, 2026-07-24):** **Hard reset**: Freeze is set to exactly
 3 stacks with fresh 6 s timers; pre-Frozen stacks and timers are
 irrelevant. Corollary: stack decay during Frozen is moot. Also observed:
 the Freeze display stays pinned at 10 throughout Frozen, and Cold procs
@@ -189,7 +189,7 @@ be Frozen (non-boss, no Overguard).
    attribution = nobody / flat base (A).
 3. Cross-check: all 10 from D+ → A predicts ~6 s, B and C predict ~12 s.
 
-**Result (user, 2026-07-24):** **Hypothesis B — the trigger.** The 3
+**Result (in-game, 2026-07-24):** **Hypothesis B — the trigger.** The 3
 fresh stacks use the status-duration modifier of the weapon that applied
 the **10th** stack (the 9→10 proc). Model: the Frozen entity snapshots
 its trigger's context and issues the reset stacks from it.
@@ -229,7 +229,7 @@ tick numbers (6 s window):
 **Question.** (a) Duration of the on-empty revert (fire the 270th round →
 first base-form shot possible); (b) whether transition animations scale
 with modded reload speed. Known: manual transmute-in = the weapon's
-reload time (user-confirmed).
+reload time (confirmed in-game).
 
 **Method** (deterministic animation — 1 trial suffices, do 3): record at
 60 fps, frame-step in PotPlayer (F/D).
@@ -250,7 +250,7 @@ reload time (user-confirmed).
 stands; ≈ 0 → pseudo-reload becomes 2.35 s; other → independent constant.
 Scaling result updates `transition_animation_seconds` semantics.
 
-**Result (user, 2026-07-26):** transmute-in = the weapon's reload time
+**Result (in-game, 2026-07-26):** transmute-in = the weapon's reload time
 (2.35 s unmodded); **revert-out has its own base of 1.0 s** (measured
 exactly 1.3 s under −30% reload speed). Both directions scale with
 reload-speed bonuses. Full cycle downtime = 2.35 + 1.0 = **3.35 s**

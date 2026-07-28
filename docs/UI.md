@@ -1,8 +1,8 @@
 # wfsim — UI Vision
 
-Decisions from 2026-07-24. This is what sets wfsim apart from
-predecessor calculators (Overframe-style form pages): besides a build/config
-UI, there is a **live 2D top-down view of the fight**.
+What sets wfsim apart from predecessor calculators (Overframe-style form
+pages): besides a build/config UI, there is a **live 2D top-down view of
+the fight**.
 
 ## Core decisions
 
@@ -35,8 +35,6 @@ UI, there is a **live 2D top-down view of the fight**.
 
 ## Not decided yet
 
-- UI technology (native / web / WASM build of the engine — CORE.md §6 notes
-  the engine can compile to WASM for a web UI).
 - Rendering cadence vs simulation tick (fixed 240 fps sim clock exists in
   `sim::SimConfig`).
 - How movement paths (target walking, player strafing) are authored in the

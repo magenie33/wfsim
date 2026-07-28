@@ -1,7 +1,7 @@
 # Optimizer search design
 
 How the optimizer walks the mod-combination space without wasting
-evaluations. Recorded 2026-07-24 (user design). Companion to
+evaluations. Recorded 2026-07-24. Companion to
 [`CORE.md`](CORE.md) §5 (objectives, constraints, engine-only principle)
 and [`MECHANICS.md`](MECHANICS.md) §2–§3 (capacity/polarity, elemental
 hierarchy).

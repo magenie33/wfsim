@@ -378,7 +378,7 @@ element procs are weighted, not uniform.
   low-quality procs from teammates flush high-quality stacks out (FIFO
   is owner-blind). No explicit wiki sentence — verifiable in co-op.
 - **Stack overflow is universally replace-oldest, FIFO by application
-  time** (user rule, 2026-07-24): every capped stacking debuff (Stagger 5,
+  time** (rule adopted 2026-07-24): every capped stacking debuff (Stagger 5,
   Weakened 5, Corrosion 10, Confusion 10, Gas Cloud 10) replaces the
   stack with the EARLIEST application timestamp — remaining duration is
   irrelevant (a stack applied at t=1 with 10,000 s left is replaced
@@ -387,7 +387,7 @@ element procs are weighted, not uniform.
   duration"); generalized to all. Uncapped debuffs (Bleed, Poison, Tesla
   Chain) never overflow; Freeze's and Detonate's caps trigger state
   transitions instead (Frozen / detonation).
-- **Status damage never procs status** (universal rule, user-confirmed
+- **Status damage never procs status** (universal rule, confirmed
   2026-07-24 by contradiction: Heat ticks proccing Heat would self-stack
   forever). No damage instance originating from a status effect — DoT
   ticks, Detonate bursts, Tesla Chain hits, Gas Clouds — ever rolls a
@@ -417,7 +417,7 @@ element procs are weighted, not uniform.
   Lifted / Microwave count toward Condition Overload's status-type count.
   ⚠️ Generic Stagger (PT_STAGGERED) ≠ Impact's Stagger (PT_KNOCKBACK).
 - **GunCO family = ONE machinery** (wiki `Condition_Overload_(Mechanic)`;
-  user 2026-07-27): every source contributes `rate × target-counter` into
+  2026-07-27): every source contributes `rate × target-counter` into
   ONE shared bracket — computed on the ORIGINAL base (evolution flat
   damage excluded, the `co_base_fraction`), combined per the weapon's
   CoBehavior class (additive-with-base-damage / independent / inert),
@@ -463,8 +463,8 @@ element procs are weighted, not uniform.
   its contribution into the single tick value and refreshes the one
   shared clock ("Heat Inherit"); the entity's Heat%/faction modifier
   context is fixed by the **first** proc (status-damage mods excepted),
-  enabling indefinite linear ramp while refreshed. **Measured 2026-07-24
-  (user): the context sync is bidirectional** — a strong first proc
+  enabling indefinite linear ramp while refreshed. **Measured 2026-07-24:
+  the context sync is bidirectional** — a strong first proc
   elevates later unmodded contributions just as a weak one drags modded
   ones down.
 - **Snapshot scaling** — a tick inherits from its proccing hit: total
@@ -836,7 +836,7 @@ complete rule set; the Impact page's list is a subset).
   Unseeing Herald, Fragments, Scaldra Dedicant/Eradicator, Techrot
   Obsolyte, Anarch Libritor).
 - **Hard gates (before any window math)** — measured/wiki-confirmed
-  2026-07-24: **shields must be fully depleted** (user test: 1 HP behind
+  2026-07-24: **shields must be fully depleted** (in-game test: 1 HP behind
   10k shields shows no prompt — the Corpus "shields removed" wording is a
   gate, not a bonus condition) and **Overguard must be gone** (wiki
   Overguard patch history: "you cannot Mercy Kill enemies with Overguard
@@ -881,7 +881,7 @@ up to `5 × Mastery Rank + 30` (+25 in some Simulacrum variants) — nowhere
 near 9999, so level-cap behavior is only verifiable in endless missions.
 The Simulacrum has **no** enemy-invincibility or instant-respawn toggle; the
 engine's `TargetMode::{InfiniteHealth, InstantRespawn}` are simulator
-conveniences (user decision 2026-07-24), and **on-death transformations are
+conveniences (decision 2026-07-24), and **on-death transformations are
 not modeled** (a respawned Thrax is always the physical form — the spectral
 form is skipped).
 

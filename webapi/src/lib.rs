@@ -60,41 +60,93 @@ fn assets() -> &'static Assets {
 // conditionals never fire).
 
 struct WeaponInfo {
-    id: &'static str,
-    name: &'static str,
+    id: String,
+    name: String,
     // The MOD-ELIGIBILITY group, not a cosmetic label. "pistol" = the Pistol
     // Mods pool, which (wiki Pistol_Mods) equips on secondary Pistols, Dual
     // Pistols, Shotgun Sidearms, Crossbows, and Tomes. This is the ACTUAL way
     // mods take effect, so the eligibility group is what drives the pool.
-    mod_class: &'static str, // "pistol" | "rifle"
+    mod_class: String, // "pistol" | "rifle"
     // Precise weapon type within that group (Dual Toxocyst = Dual Pistols).
-    // Kept explicit because the subtype IS the real mod-eligibility path.
-    subtype: &'static str,
+    subtype: String,
     sentinel: bool,
-    forms: &'static [(&'static str, &'static str)],
+    forms: Vec<(&'static str, String)>,
     uses_arcane: bool,
     uses_evo2: bool,
 }
 
-const WEAPONS: &[WeaponInfo] = &[
-    WeaponInfo {
-        id: "dual_toxocyst",
-        name: "Dual Toxocyst",
-        mod_class: "pistol",
-        subtype: "Dual Pistols",
-        sentinel: false,
-        forms: &[
-            ("incarnon_cycle", "Incarnon cycle (real two-form loop)"),
-            ("incarnon", "Incarnon form only"),
-            ("base", "Base form only"),
-        ],
-        uses_arcane: true,
-        uses_evo2: true,
-    },
-];
+/// "dual_pistols" → "Dual Pistols".
+fn title_case(snake: &str) -> String {
+    snake
+        .split('_')
+        .map(|w| {
+            let mut c = w.chars();
+            match c.next() {
+                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// One line stating a form's trigger/shot mechanics, from the weapon data.
+fn attack_desc(s: &wfsim_engine::weapons_data::WeaponSpec) -> String {
+    let mut parts = vec![title_case(&s.attack.trigger).replace(' ', "-")];
+    if let Some(st) = &s.attack.shot_type {
+        parts.push(st.clone());
+    }
+    if let Some(r) = &s.attack.ricochet {
+        parts.push(format!(
+            "ricochet to {} enem{} within {} m",
+            r.targets,
+            if r.targets == 1 { "y" } else { "ies" },
+            r.range_m
+        ));
+    }
+    parts.join(" · ")
+}
+
+// The weapon registry, derived from data/weapons/*.yaml (roster = transform
+// group base entries; an Incarnon form is a form, not a roster row).
+fn weapons() -> &'static [WeaponInfo] {
+    use std::sync::OnceLock;
+    static W: OnceLock<Vec<WeaponInfo>> = OnceLock::new();
+    W.get_or_init(|| {
+        wfsim_engine::weapons_data::roster()
+            .map(|s| {
+                let sentinel = s.class.contains("sentinel");
+                let incarnon = s.transforms_to.is_some();
+                let forms = if incarnon {
+                    vec![
+                        ("incarnon_cycle", "Incarnon cycle (real two-form loop)".to_string()),
+                        ("incarnon", "Incarnon form only".to_string()),
+                        ("base", "Base form only".to_string()),
+                    ]
+                } else {
+                    vec![("primary", "Standard".to_string())]
+                };
+                WeaponInfo {
+                    id: s.id.clone(),
+                    name: s.name.clone(),
+                    mod_class: s
+                        .mod_eligibility
+                        .as_deref()
+                        .map(|m| m.trim_end_matches("_mods").to_string())
+                        .unwrap_or_else(|| s.slot.clone()),
+                    subtype: title_case(&s.class),
+                    sentinel,
+                    forms,
+                    uses_arcane: !sentinel,
+                    uses_evo2: incarnon,
+                }
+            })
+            .collect()
+    })
+}
 
 fn weapon(id: &str) -> &'static WeaponInfo {
-    WEAPONS.iter().find(|w| w.id == id).unwrap_or(&WEAPONS[0])
+    weapons().iter().find(|w| w.id == id).unwrap_or(&weapons()[0])
 }
 
 // Every current weapon uses the pistol pool; `mod_class` stays on
@@ -103,12 +155,14 @@ fn mod_pool_for(_class: &str) -> Vec<ModDef> {
     pool()
 }
 
-// 8 main slots + the unpolarized exilus slot (the UI's 9th slot; same model
-// as autoForma and the optimizer) — without it a 9-mod build trips
-// plan_forma's mods≤slots assert.
-fn innate_slots_for(_id: &str) -> Vec<Option<Polarity>> {
-    let mut v = dual_toxocyst_innate_slots().to_vec();
-    v.push(None);
+// 8 main slots (innate polarities from the weapon yaml) + the exilus slot
+// as the UI's 9th slot, carrying ITS innate polarity too (wiki "Exilus
+// Polarity" — caught in the 2026-07-28 wiki cross-check; it was modeled as
+// unpolarized before). Same model as autoForma and the optimizer — without
+// the 9th slot a 9-mod build trips plan_forma's mods≤slots assert.
+fn innate_slots_for(id: &str) -> Vec<Option<Polarity>> {
+    let mut v = wfsim_engine::weapons_data::innate_slots(id).to_vec();
+    v.push(wfsim_engine::weapons_data::exilus_polarity(id));
     v
 }
 
@@ -170,7 +224,7 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
 }
 
 pub fn meta_json() -> Value {
-    let weapons: Vec<Value> = WEAPONS
+    let weapons: Vec<Value> = weapons()
         .iter()
         .map(|w| {
             json!({
@@ -182,8 +236,8 @@ pub fn meta_json() -> Value {
                 "uses_arcane": w.uses_arcane,
                 "uses_evo2": w.uses_evo2,
                 "arcane_slots": 1,
-                "image": assets().weapons.get(w.id),
-                "innate_polarities": innate_slots_for(w.id).iter()
+                "image": assets().weapons.get(&w.id),
+                "innate_polarities": innate_slots_for(&w.id).iter()
                     .map(|p| p.map(|x| format!("{x:?}")))
                     .collect::<Vec<_>>(),
                 "forms": w.forms.iter().map(|(id, name)| json!({"id": id, "name": name})).collect::<Vec<_>>(),
@@ -525,7 +579,7 @@ pub fn panel_json(v: &Value) -> Value {
     if mod_ids.len() > 9 {
         return err_json("at most 8 slots + 1 exilus");
     }
-    let p = mod_pool_for(info.mod_class);
+    let p = mod_pool_for(&info.mod_class);
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
     for id in &mod_ids {
         match p.iter().find(|m| m.id == id) {
@@ -538,16 +592,18 @@ pub fn panel_json(v: &Value) -> Value {
     // user decision). The Incarnon Form section exists only while its
     // tier-1 unlock is selected. `meta` states the trigger/shot mechanics
     // from the weapon data (data/weapons yamls).
-    let mut forms_list: Vec<(&'static str, &'static str, WeaponBase)> = Vec::new();
+    let base_spec = wfsim_engine::weapons_data::spec("dual_toxocyst").expect("weapon data");
+    let inc_spec = wfsim_engine::weapons_data::spec("dual_toxocyst_incarnon").expect("weapon data");
+    let mut forms_list: Vec<(&'static str, String, WeaponBase)> = Vec::new();
     forms_list.push((
         "Base Form",
-        "Semi-Auto · hitscan",
+        attack_desc(base_spec),
         WeaponBase::dual_toxocyst_base_evos(true, &evo_refs),
     ));
     if evo_refs.contains(&"dt_evo1_incarnon_form") {
         forms_list.push((
             "Incarnon Form",
-            "Auto · hitscan · ricochet to 1 enemy within 5 m",
+            attack_desc(inc_spec),
             WeaponBase::dual_toxocyst_incarnon_evos(true, &evo_refs),
         ));
     }
@@ -702,7 +758,7 @@ pub fn panel_json(v: &Value) -> Value {
 
     // One stats section per form; the closure names its params `base` /
     // `panel` so every row reads the ACTIVE form's numbers.
-    let section = |label: &'static str, meta: &'static str, base: &WeaponBase, panel: &ResolvedPanel| -> Value {
+    let section = |label: &'static str, meta: &str, base: &WeaponBase, panel: &ResolvedPanel| -> Value {
     let sources = |key: &str, tag: Option<&str>| -> Vec<Value> {
         let evo = evo_src
             .iter()
@@ -1047,7 +1103,7 @@ pub fn simulate_json(v: &Value) -> Value {
     // engine resolves any mod list honestly.
 
     // ---- resolve mods against the weapon's pool (honoring the given order) ----
-    let p = mod_pool_for(info.mod_class);
+    let p = mod_pool_for(&info.mod_class);
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
     for id in &mod_ids {
         match p.iter().find(|m| m.id == id) {
@@ -1086,7 +1142,7 @@ pub fn simulate_json(v: &Value) -> Value {
         .iter()
         .map(|m| PlannedMod { base_drain: m.base_drain, polarity: m.polarity })
         .collect();
-    let forma = match plan_forma(60, &innate_slots_for(info.id), &planned) {
+    let forma = match plan_forma(60, &innate_slots_for(&info.id), &planned) {
         Ok(fp) => json!({
             "legal": true,
             "used": fp.forma_used,
@@ -1233,7 +1289,7 @@ pub fn opt_buffs_json(v: &Value) -> Value {
     }
     ids.sort();
     ids.dedup();
-    let full = mod_pool_for(info.mod_class);
+    let full = mod_pool_for(&info.mod_class);
     let refs: Vec<&ModDef> = full.iter().filter(|m| ids.iter().any(|id| id.as_str() == m.id)).collect();
     let mut out: Vec<BuffMeta> = Vec::new();
     let none = wfsim_engine::arcanes_data::ArcaneFx::none();
@@ -1322,7 +1378,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     fixed_ids.sort();
     fixed_ids.dedup();
     search_ids.retain(|s| !fixed_ids.contains(s)); // fixed wins over search
-    let full = mod_pool_for(info.mod_class);
+    let full = mod_pool_for(&info.mod_class);
     for id in fixed_ids.iter().chain(search_ids.iter()) {
         if !full.iter().any(|m| m.id == id.as_str()) {
             return Err(err_json(format!("unknown mod id: {id}")));

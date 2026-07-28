@@ -266,10 +266,9 @@ function renderHome() {
   if (!grid) return;
   grid.innerHTML = (META.weapons || []).map((w) => {
     const tags = [
+      `<span class="tag">${w.subtype || w.mod_class}</span>`,
       w.uses_evo2 ? `<span class="tag">Incarnon</span>` : "",
       w.sentinel ? `<span class="tag">Sentinel</span>` : "",
-      `<span class="tag">${w.subtype || w.mod_class}</span>`,
-      `<span class="tag">${w.mod_class} mods</span>`,
     ].join("");
     return `<a class="wcard" href="/weapons/${wikiSlug(w)}">
       ${imgTag(IMG(w.image), "wc-img")}
@@ -495,9 +494,9 @@ function applyWeapon(id, presetMods) {
   // The weapon name links to its wiki page too (display suffixes like
   // " (sentinel)" are ours, not part of the page name).
   $("w-name").innerHTML = wl(w.name, wikiUrl(w.name.replace(" (sentinel)", "")));
-  // Subtype first (e.g. "Dual Pistols") — the precise weapon type that drives
-  // which mod pool actually applies; then the eligibility group + form tags.
-  $("w-tags").innerHTML = [w.subtype, w.mod_class + " mods", w.sentinel ? "sentinel" : null, w.uses_evo2 ? "Incarnon" : null]
+  // Subtype (e.g. "Dual Pistols") + form tags; the mod-eligibility group
+  // (mod_class) drives the picker's pool but isn't shown as a tag.
+  $("w-tags").innerHTML = [w.subtype, w.uses_evo2 ? "Incarnon" : null, w.sentinel ? "Sentinel" : null]
     .filter(Boolean).map((t) => `<span class="tag">${t}</span>`).join("");
 
   show("arcane-block", w.arcane_slots >= 1);

@@ -80,9 +80,9 @@ attack:
     range_m: 5.0
     notes:
       - Ricochets can headshot and trigger Frenzy.
-      - Per-hit trigger (wiki Ricochet): each multishot pellet and each
+      - "Per-hit trigger (wiki Ricochet): each multishot pellet and each
         punch-through victim ricochets separately; terrain never, corpses
-        do; ragdolled enemies cannot be ricochet targets.
+        do; ragdolled enemies cannot be ricochet targets."
       - Ricochet rounds scale with Galvanized Shot and the EVO2 perks'
         flat base damage.
   fire_rate: 4.5

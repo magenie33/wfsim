@@ -79,7 +79,7 @@ the attacker's `BuffBar` and the defender's `DebuffBar` (+ the defender's
 - **DoT debuffs** (Heat, Toxin, Slash, Gas, ...) are debuffs whose stacks
   emit damage events on the timeline (layer [8]) — each stack ticking on
   its own clock.
-- **The provenance principle** (user, 2026-07-24): *every trigger has a
+- **The provenance principle** (2026-07-24): *every trigger has a
   source, and every debuff instance records its full applier context.*
   A stack = `{ application timestamp (the FIFO key), applier context
   snapshot (the hit-formula inputs), expiry, payload values }`. This is

@@ -229,17 +229,3 @@ wfsim/
 - **Throughout:** every milestone must ship golden tests against in-game
   measurements, or it doesn't count as done.
 
----
-
-## 8. Handoff Notes (for a fresh session)
-
-If you are a new session taking over this project:
-
-1. **Read this file first**, then act. The soul of the project is "matches
-   in-game measurements"; every simplification must be explicitly marked.
-2. **Correctness is guaranteed by golden tests.** Without a measurement to
-   compare against, no "implementation complete" claim is trustworthy.
-3. The damage pipeline's **order** (§3) is the key to correctness; the
-   "high-risk traps" list at the end of §3 gets test coverage first.
-4. The user is a hardcore Warframe player aiming for faithful reproduction —
-   not satisfied by approximate DPS tables. Communicate accordingly.

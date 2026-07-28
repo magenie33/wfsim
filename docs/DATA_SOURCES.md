@@ -63,7 +63,7 @@ Our field names follow the wiki concept words (snake_case + unit suffixes):
   source) is an alternative bulk feed to consider for the importer.
 - **No `verification` blocks, no `schema_version`** (decision 2026-07-24):
   whatever is written in the data IS the current belief, corrected in place
-  as measurements land (the user revises continuously). Confidence lives in
+  as measurements land. Confidence lives in
   git history, not per-file status fields. Golden tests vs
   Simulacrum remain the arbiter of the ENGINE; the data is simply kept
   current.

@@ -37,13 +37,10 @@ pub fn pool() -> Vec<ModDef> {
     wfsim_engine::mods_data::pistol_pool().into_iter().filter(|m| !m.exilus).collect()
 }
 
-/// Dual Toxocyst's innate slot polarities (fully unlocked: Madurai +
-/// Naramon; the Naramon exilus is utility-only and outside this search).
+/// Dual Toxocyst's innate MAIN-slot polarities, from the weapon yaml (the
+/// exilus slot is utility-only and outside this search).
 pub fn dual_toxocyst_innate_slots() -> [Option<Polarity>; 8] {
-    let mut s = [None; 8];
-    s[0] = Some(Polarity::Madurai);
-    s[1] = Some(Polarity::Naramon);
-    s
+    wfsim_engine::weapons_data::innate_slots("dual_toxocyst")
 }
 
 /// Prescribed-mods constraints: forced inclusions/exclusions by mod id.

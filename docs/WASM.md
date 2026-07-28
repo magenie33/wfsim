@@ -120,17 +120,14 @@ per round; no shared memory needed), or (b) wasm threads
 
 ---
 
-## Gotchas for the implementing session
+## Build notes
 
 - Static assets are `include_str!`'d into the native server — rebuild
-  (`cargo build --release -p wfsim-web`) and restart after ANY static
-  edit; stop the exe before building (it locks the file). Serve `site/`
-  locally with `python -m http.server 8000 --directory site`.
-- The user's browser blocks `prompt()/alert()/confirm()` — never add
-  native dialogs to the UI.
-- Determinism matters: per-job seeds are fixed; serial wasm evaluation
-  must reproduce native results bit-for-bit (same seed math, same order).
-- Keep docs/CORE.md §5: the optimizer only calls the engine.
-- A concurrent "beautification" session may be rewriting history /
-  editing `site/` — commit early, re-read files before editing, expect
-  rebases.
+  (`cargo build --release -p wfsim-web`) and restart after any static
+  edit. Serve `site/` locally with
+  `python -m http.server 8000 --directory site`.
+- The UI never uses native `prompt()/alert()/confirm()` dialogs — inline
+  inputs only.
+- Determinism: per-job seeds are fixed; serial wasm evaluation must
+  reproduce native results bit-for-bit (same seed math, same order).
+- The optimizer only calls the engine (CORE.md §5).
