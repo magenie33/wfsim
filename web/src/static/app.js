@@ -1086,14 +1086,16 @@ function renderOpt() {
   // Seed scope from the current build once: equipped mods = fixed.
   if (!optSeeded) {
     opt.mods = {}; opt.exilus = {};
-    // Everything equipped seeds as REQ (pinned) — the scope mirrors the
-    // build until the user opens dimensions up.
+    // Everything equipped seeds as REQ (pinned) — first-ever content for
+    // the auto-created "preset 1"s; afterwards the ACTIVE presets are the
+    // scope (document model) and immediately overwrite this seed.
     slots.slice(0, 8).forEach((s) => { if (s.mod) opt.mods[s.mod] = "fixed"; });
     if (slots[EXILUS].mod) opt.exilus[slots[EXILUS].mod] = "fixed";
     opt.arcanes = arcane && arcane !== "none" ? { [arcane]: "fixed" } : {};
     opt.evos = {};
     Object.entries(evoSel).forEach(([t, id]) => { if (id) opt.evos[t] = { [id]: "fixed" }; });
     optSeeded = true;
+    bootstrapOptPresets();
   }
   renderOptMods();
   renderOptPresetBars();
@@ -1311,10 +1313,35 @@ const OPT_PRESET_GROUPS = {
   arcs: { key: "wfsim-opt-arc-presets", label: "Arcane presets", hint: "cross-weapon; unknown ids drop" },
   evos: { key: "wfsim-opt-evo-presets", label: "Evolution presets", hint: "cross-weapon; unknown ids drop" },
 };
+// Same DOCUMENT MODEL as the build presets (user, 2026-07-28: "all presets
+// use this model"): each group always has ≥1 preset, is always editing one
+// (the active), saves in place, and restores the active across reloads.
 let activeOptPreset = { mods: null, arcs: null, evos: null };
+const OPT_ACTIVE_KEY = "wfsim-opt-active";
+const saveOptActives = () => localStorage.setItem(OPT_ACTIVE_KEY, JSON.stringify(activeOptPreset));
 
 const loadOptGroup = (g) => { try { const p = JSON.parse(localStorage.getItem(OPT_PRESET_GROUPS[g].key)); return Array.isArray(p) ? p : []; } catch (_) { return []; } };
 const storeOptGroup = (g, ps) => localStorage.setItem(OPT_PRESET_GROUPS[g].key, JSON.stringify(ps));
+
+// Ensure every group has ≥1 preset and the actives are applied — called
+// from renderOpt's seed block (page load AND weapon switch). First-ever run
+// creates "preset 1" from the build-seeded scope; afterwards the active
+// preset IS the scope (cross-weapon: unknown ids drop on apply).
+function bootstrapOptPresets() {
+  let stored = {};
+  try { stored = JSON.parse(localStorage.getItem(OPT_ACTIVE_KEY)) || {}; } catch (_) {}
+  Object.keys(OPT_PRESET_GROUPS).forEach((g) => {
+    let ps = loadOptGroup(g);
+    if (!ps.length) {
+      ps = [{ name: "preset 1", savedAt: Date.now(), state: snapshotOptGroup(g) }];
+      storeOptGroup(g, ps);
+    }
+    const want = activeOptPreset[g] || stored[g];
+    activeOptPreset[g] = ps.some((p) => p.name === want) ? want : ps[0].name;
+    applyOptGroupState(g, ps.find((p) => p.name === activeOptPreset[g]).state);
+  });
+  saveOptActives();
+}
 
 // One-time split of the legacy single-bar presets into the three groups.
 (function migrateLegacyOptPresets() {
@@ -1345,7 +1372,8 @@ function snapshotOptGroup(g) {
   return { evos: JSON.parse(JSON.stringify(opt.evos)) };
 }
 
-function applyOptGroup(g, st) {
+// State-only apply (validation + cross-weapon id dropping); no re-render.
+function applyOptGroupState(g, st) {
   const norm = (s) => (s === true ? "search" : s); // boolean-era marks
   if (g === "mods") {
     // Cross-weapon import: ids missing from THIS weapon's pool drop out.
@@ -1373,6 +1401,10 @@ function applyOptGroup(g, st) {
       if (Object.keys(valid).length) opt.evos[t] = valid;
     });
   }
+}
+
+function applyOptGroup(g, st) {
+  applyOptGroupState(g, st);
   optSeeded = true;
   renderOpt(); fetchOptBuffs(); updateOptEstimate();
 }
@@ -1383,35 +1415,53 @@ function renderOptPresetBar(g) {
   const bar = $("opt-preset-" + g);
   if (!bar) return;
   const meta = OPT_PRESET_GROUPS[g];
-  const all = loadOptGroup(g);
-  const ps = all;
+  const ps = loadOptGroup(g);
   const active = activeOptPreset[g];
+  const storedP = ps.find((p) => p.name === active);
+  const dirty = !storedP || JSON.stringify(storedP.state) !== JSON.stringify(snapshotOptGroup(g));
   const chip = (p) => {
     const sel = p.name === active;
     const ops = sel
-      ? `<button class="pop upd" title="overwrite with the current selection">↻</button><button class="pop del" title="delete">✕</button>`
+      ? `<button class="pop upd" title="save the current selection into this preset">save</button>` +
+        `<button class="pop ren" title="rename">✎</button>` +
+        (ps.length > 1 ? `<button class="pop del" title="delete">✕</button>` : "")
       : "";
-    return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="load ${escHtml(p.name)} (${meta.hint})">${escHtml(p.name)}${ops}</span>`;
+    const dot = sel && dirty ? `<span class="dirty" title="unsaved changes">●</span>` : "";
+    return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)} (${meta.hint})">${escHtml(p.name)}${dot}${ops}</span>`;
   };
   bar.innerHTML =
     `<span class="plabel">${meta.label} <b>${ps.length}/${OPT_PRESET_MAX}</b></span>` +
     ps.map(chip).join("") +
-    (all.length < OPT_PRESET_MAX ? `<span class="pchip add" title="save the current selection (${meta.hint})">+ save</span>` : "");
-  bar.querySelectorAll(".pchip:not(.add)").forEach((c) => c.addEventListener("click", () => {
-    const p = loadOptGroup(g).find((x) => x.name === c.dataset.name);
-    if (p) { activeOptPreset[g] = p.name; applyOptGroup(g, p.state || {}); }
-  }));
-  const addBtn = bar.querySelector(".pchip.add");
-  if (addBtn) addBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    addBtn.outerHTML = `<input class="pname" type="text" placeholder="name, then Enter…" maxlength="24">`;
+    (ps.length < OPT_PRESET_MAX ? `<span class="pchip add" title="new preset from the current selection (${meta.hint})">+ new</span>` : "");
+  const nameInput = (placeholderEl, initial, onCommit) => {
+    placeholderEl.outerHTML = `<input class="pname" type="text" value="${escHtml(initial)}" placeholder="name, then Enter…" maxlength="24">`;
     const inp = bar.querySelector(".pname");
     inp.focus();
+    if (initial) inp.select();
     let done = false;
     const commit = () => {
       if (done) return;
       done = true;
-      const name = (inp.value || "").trim();
+      onCommit((inp.value || "").trim());
+    };
+    inp.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") commit();
+      if (ev.key === "Escape") { done = true; renderOptPresetBar(g); }
+    });
+    inp.addEventListener("blur", commit);
+  };
+  bar.querySelectorAll(".pchip:not(.add)").forEach((c) => c.addEventListener("click", () => {
+    const p = loadOptGroup(g).find((x) => x.name === c.dataset.name);
+    if (p && p.name !== activeOptPreset[g]) {
+      activeOptPreset[g] = p.name;
+      saveOptActives();
+      applyOptGroup(g, p.state || {});
+    }
+  }));
+  const addBtn = bar.querySelector(".pchip.add");
+  if (addBtn) addBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    nameInput(addBtn, "", (name) => {
       if (!name) { renderOptPresetBar(g); return; }
       const ps2 = loadOptGroup(g);
       const entry = { name, savedAt: Date.now(), state: snapshotOptGroup(g) };
@@ -1419,13 +1469,9 @@ function renderOptPresetBar(g) {
       if (at >= 0) ps2[at] = entry; else ps2.push(entry);
       storeOptGroup(g, ps2);
       activeOptPreset[g] = name;
+      saveOptActives();
       renderOptPresetBar(g);
-    };
-    inp.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") commit();
-      if (ev.key === "Escape") { done = true; renderOptPresetBar(g); }
     });
-    inp.addEventListener("blur", commit);
   });
   const on = (sel, fn) => { const b = bar.querySelector(sel); if (b) b.addEventListener("click", (ev) => { ev.stopPropagation(); fn(); }); };
   on(".pop.upd", () => {
@@ -1434,12 +1480,33 @@ function renderOptPresetBar(g) {
     if (at < 0) return;
     ps2[at] = { name: activeOptPreset[g], savedAt: Date.now(), state: snapshotOptGroup(g) };
     storeOptGroup(g, ps2);
-    renderOptPresetBar(g);
+    renderOptPresetBar(g); // the dirty dot clears
+  });
+  on(".pop.ren", () => {
+    const chipEl = bar.querySelector(".pchip.sel");
+    if (!chipEl) return;
+    nameInput(chipEl, activeOptPreset[g], (name) => {
+      const ps2 = loadOptGroup(g);
+      if (name && name !== activeOptPreset[g] && !ps2.some((p) => p.name === name)) {
+        const at = ps2.findIndex((p) => p.name === activeOptPreset[g]);
+        if (at >= 0) {
+          ps2[at].name = name;
+          storeOptGroup(g, ps2);
+          activeOptPreset[g] = name;
+          saveOptActives();
+        }
+      }
+      renderOptPresetBar(g);
+    });
   });
   on(".pop.del", () => {
-    storeOptGroup(g, loadOptGroup(g).filter((p) => p.name !== activeOptPreset[g]));
-    activeOptPreset[g] = null;
-    renderOptPresetBar(g);
+    // Only offered while >1 preset exists — there is always at least one.
+    const ps2 = loadOptGroup(g).filter((p) => p.name !== activeOptPreset[g]);
+    if (!ps2.length) return;
+    storeOptGroup(g, ps2);
+    activeOptPreset[g] = ps2[0].name;
+    saveOptActives();
+    applyOptGroup(g, ps2[0].state || {});
   });
 }
 
@@ -1603,7 +1670,12 @@ function updateOptEstimate() {
     : `<span class="warn">${dupReq ? `${(modById(dupReq) || { name: dupReq }).name} is required in both blocks — a mod equips once` : poolStarved ? `pooled mods reserve ≥1 open slot — raise max mods or clear pools` : `more required (${fixed}) than slots (${size})`}</span>`) + scenario;
   // Never re-enable while a background job is still running.
   $("run-opt").disabled = !valid || optJobId != null;
+  // Every scope mutation funnels through here — refresh the preset bars'
+  // unsaved-changes dots (debounced).
+  clearTimeout(optDirtyTimer);
+  optDirtyTimer = setTimeout(renderOptPresetBars, 300);
 }
+let optDirtyTimer = null;
 
 // The optimize run is a BACKGROUND JOB on the server: POST /api/optimize
 // returns a job_id immediately; we poll /api/optimize/status for live funnel
