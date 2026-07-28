@@ -241,13 +241,14 @@ let pickerPrefs = { sort: "name", dir: "asc", pol: null };
 try { const s = JSON.parse(localStorage.getItem("wfsim-picker")); if (s) pickerPrefs = { ...pickerPrefs, ...s }; } catch (_) {}
 const savePickerPrefs = () => localStorage.setItem("wfsim-picker", JSON.stringify(pickerPrefs));
 
-// language toggle (top right): switch reloads with the build stashed.
+// language dropdown (top right, beside the theme toggle): switching
+// reloads with the current build stashed and restored.
 (function () {
-  const btn = $("lang-toggle");
-  if (!btn) return;
-  btn.textContent = LANG === "zh" ? "EN" : "中";
-  btn.addEventListener("click", () => {
-    localStorage.setItem("wfsim-lang", LANG === "zh" ? "en" : "zh");
+  const sel = $("lang-select");
+  if (!sel) return;
+  sel.value = LANG;
+  sel.addEventListener("change", () => {
+    localStorage.setItem("wfsim-lang", sel.value);
     try { sessionStorage.setItem("wfsim-lang-stash", JSON.stringify(snapshotState())); } catch (_) {}
     location.reload();
   });

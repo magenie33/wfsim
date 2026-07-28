@@ -53,7 +53,7 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .pchip .pop.del:hover{color:#e05252}
 .ghost-btn{background:transparent;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:5px 9px;cursor:pointer;font:inherit}
 .ghost-btn:hover{background:var(--plane)}.ghost-btn.small{font-size:11px;padding:2px 7px}
-#theme-toggle{margin-left:auto}
+.lang-select{margin-left:auto;width:auto;padding:4px 6px;font-size:12px;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:8px}
 
 .config-page{max-width:760px;margin:0 auto;padding:18px}
 
