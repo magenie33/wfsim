@@ -22,7 +22,7 @@ reusable is defined once and referenced by `id` (stable English slugs, never
 translated). Read [`data/README.md`](data/README.md) for the reference graph
 and [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) for sourcing rules: values
 come from the wiki's structured Lua modules, and each entry cites its source
-module URL. Bulk import helpers live in `scripts/`.
+module URL.
 
 ### 3. Translations (`data/i18n/`, YAML — no code, lowest barrier)
 
