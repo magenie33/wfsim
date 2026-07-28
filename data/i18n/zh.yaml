@@ -142,6 +142,11 @@ evolutions: {}
 # an entry — the source string IS the fallback).
 ui:
   "Weapons": 武器
+  "Presets": 预设
+  "Mod presets": MOD 预设
+  "Arcane presets": 赋能预设
+  "Evolution presets": 进化预设
+  "filter…": 筛选…
   "Mods": MOD
   "Arcane": 赋能
   "Arcanes": 赋能

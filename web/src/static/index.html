@@ -52,9 +52,10 @@
       </div>
     </div>
 
-    <!-- Preset bar: click a chip to load; the active chip carries update /
-         delete; "+ save" stores the current build (max 10). -->
-    <div class="preset-bar" id="preset-bar"></div>
+    <!-- Preset bar: click a chip to load; the active chip carries save /
+         rename / delete; "+ new" stores the current build. Unlimited —
+         past 10 the bar grows a name filter. -->
+    <div class="preset-bar" id="preset-bar-builder-builds"></div>
 
     <!-- Block: Mods -->
     <section class="block" id="mod-block">
@@ -133,7 +134,7 @@
       <div class="bh"><span class="n">⚙</span><h2 data-i18n>Optimize</h2><span class="sub" id="opt-sub">self-contained — its own enemy, buffs and run budget</span></div>
       <div class="bb">
         <h3 class="sim-h" data-i18n>Mods <span class="sim-hint">search by name or effect; mark each as pool (search) or required</span></h3>
-        <div class="preset-bar" id="opt-preset-mods"></div>
+        <div class="preset-bar" id="preset-bar-optimizer-mods"></div>
         <div class="opt-mods-head">
           <input id="opt-mod-filter" type="text" placeholder="search mods by name or effect…" autocomplete="off">
           <label class="opt-size">Max mods / build <input id="opt-size" type="number" min="1" max="8" value="8"></label>
@@ -144,11 +145,11 @@
         <h3 class="sim-h" data-i18n>Exilus slot <span class="sim-hint">the +1 slot — pool = slot options, req = pin one; nothing marked = the slot stays empty</span></h3>
         <div id="opt-exilus" class="combo-menu opt-modlist"></div>
         <h3 class="sim-h" data-i18n>Arcanes <span class="sim-hint">pool = searched options, req = pin the slot</span></h3>
-        <div class="preset-bar" id="opt-preset-arcs"></div>
+        <div class="preset-bar" id="preset-bar-optimizer-arcanes"></div>
         <input id="opt-arc-filter" type="text" placeholder="search arcanes by name or effect…" autocomplete="off">
         <div id="opt-arcanes" class="combo-menu opt-modlist"></div>
         <h3 class="sim-h" data-i18n>Evolutions <span class="sim-hint">per tier: pool = searched options, req = pin</span></h3>
-        <div class="preset-bar" id="opt-preset-evos"></div>
+        <div class="preset-bar" id="preset-bar-optimizer-evolutions"></div>
         <div id="opt-evos"></div>
         <h3 class="sim-h" data-i18n>Enemy <span class="sim-hint">the optimizer's own scenario — independent of the Sim panel</span></h3>
         <div id="opt-enemy" class="field-grid"></div>
