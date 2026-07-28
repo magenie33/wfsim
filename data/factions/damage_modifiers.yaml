@@ -78,16 +78,16 @@ factions:
 # pools, regardless of the enemy's faction column.
 special:
   object:
-    note: No critical hits, no status effects, all multipliers 1.0.
+    # note: No critical hits, no status effects, all multipliers 1.0.
   overguard:
     void: 1.5                   # the only other Void-vulnerable pool
-    note: >-
-      Neutral to all other damage types. No status/damage spillover to
-      shields/health beneath it; grants crowd-control immunity while active
-      (max 4 Cold procs) and blocks Parazon Mercy entirely. Magnetic status
-      amplifies damage against it (+100% first stack, +25% per further
-      stack, max +325% at 10). Damage Vulnerability effects apply normally
-      to Overguard.
+    # note: >-
+    # Neutral to all other damage types. No status/damage spillover to
+    # shields/health beneath it; grants crowd-control immunity while active
+    # (max 4 Cold procs) and blocks Parazon Mercy entirely. Magnetic status
+    # amplifies damage against it (+100% first stack, +25% per further
+    # stack, max +325% at 10). Damage Vulnerability effects apply normally
+    # to Overguard.
 
 # ---------------------------------------------------------------------------
 # SYSTEM A - faction damage MODS (Bane/Cleanse/Expel/Smite) - a SEPARATE
@@ -103,26 +103,26 @@ faction_mods:
   multiplier_normal: 1.30      # +5%/rank, rank 5
   multiplier_primed: 1.55
   available_for: [grineer, corpus, infested, orokin, the_murmur]
-  sentient_special: >-
-    Melee only (Sacrificial Pressure/Steel, Umbra polarity, lower bonus,
-    set effect when both equipped).
+  # sentient_special: >-
+  # Melee only (Sacrificial Pressure/Steel, Umbra polarity, lower bonus,
+  # set effect when both equipped).
   no_mods_exist_for: [anarchs, narmer, scaldra, techrot, stalker, wild,
                       zariman, unknown]
-  strict_matching: >-
-    No inheritance across counterparts: Bane of Grineer works on Lancer but
-    NOT on Corrupted Lancer or Narmer Lancer; Infested mods do NOT affect
-    Techrot. Thrax units (Faction "Unknown") match no faction mod at all -
-    their Zariman override only selects the multiplier column above.
-  note: >-
-    Both systems stack multiplicatively when both apply (a regular Lancer
-    takes Bane of Grineer x1.55 AND Impact x1.5). The wiki enemy module even
-    contains a Corrupted unit with FactionDamageOverride "Corpus": it takes
-    Bane of Orokin (Faction) while using the Corpus multiplier column
-    (Override) - proof the two keys are independent.
+  # strict_matching: >-
+  # No inheritance across counterparts: Bane of Grineer works on Lancer but
+  # NOT on Corrupted Lancer or Narmer Lancer; Infested mods do NOT affect
+  # Techrot. Thrax units (Faction "Unknown") match no faction mod at all -
+  # their Zariman override only selects the multiplier column above.
+  # note: >-
+  # Both systems stack multiplicatively when both apply (a regular Lancer
+  # takes Bane of Grineer x1.55 AND Impact x1.5). The wiki enemy module even
+  # contains a Corrupted unit with FactionDamageOverride "Corpus": it takes
+  # Bane of Orokin (Faction) while using the Corpus multiplier column
+  # (Override) - proof the two keys are independent.
 
 source:
   url: https://wiki.warframe.com/w/Damage/Overview_Table
-  note: >-
-    Overview table plus the per-faction pages (Damage/Grineer,
-    Damage/Zariman, ...) and Overguard page; all state the U36 "Simplified
-    Faction Resistances" values. Faction-mod system from Faction_Damage_Bonus.
+  # note: >-
+  # Overview table plus the per-faction pages (Damage/Grineer,
+  # Damage/Zariman, ...) and Overguard page; all state the U36 "Simplified
+  # Faction Resistances" values. Faction-mod system from Faction_Damage_Bonus.
