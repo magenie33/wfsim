@@ -102,8 +102,8 @@
     <section class="block" id="opt-block">
       <div class="bh"><span class="n">⚙</span><h2>Optimize</h2><span class="sub" id="opt-sub">uses the Sim panel's enemy + buff settings</span></div>
       <div class="bb">
-        <div class="preset-bar" id="opt-preset-bar"></div>
         <h3 class="sim-h">Mods <span class="sim-hint">search by name or effect; mark each as pool (search) or required</span></h3>
+        <div class="preset-bar" id="opt-preset-mods"></div>
         <div class="opt-mods-head">
           <input id="opt-mod-filter" type="text" placeholder="search mods by name or effect…" autocomplete="off">
           <label class="opt-size">Max mods / build <input id="opt-size" type="number" min="1" max="8" value="8"></label>
@@ -114,9 +114,11 @@
         <h3 class="sim-h">Exilus slot <span class="sim-hint">the +1 slot — pool = slot options, req = pin one; nothing marked = the slot stays empty</span></h3>
         <div id="opt-exilus" class="combo-menu opt-modlist"></div>
         <h3 class="sim-h">Arcanes <span class="sim-hint">pool = searched options, req = pin the slot</span></h3>
+        <div class="preset-bar" id="opt-preset-arcs"></div>
         <input id="opt-arc-filter" type="text" placeholder="search arcanes by name or effect…" autocomplete="off">
         <div id="opt-arcanes" class="combo-menu opt-modlist"></div>
         <h3 class="sim-h">Evolutions <span class="sim-hint">per tier: pool = searched options, req = pin</span></h3>
+        <div class="preset-bar" id="opt-preset-evos"></div>
         <div id="opt-evos"></div>
         <h3 class="sim-h">Buffs <span class="sim-hint">across the whole scope — initial stacks + lock, applied per candidate</span></h3>
         <div id="opt-buffs"></div>
