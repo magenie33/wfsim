@@ -95,19 +95,17 @@ special:
 # (never by FactionDamageOverride, which only redirects the table above).
 # Total-damage multiplier; applied a SECOND time to DoT ticks from status
 # effects ("double dipping").
-faction_mods:
-  # Our canonical bucket name: faction_damage (GLOSSARY.md). Additive
-  # WITHIN the bucket, multiplies total damage, double-dips DoT ticks.
-  # Ability members: Roar (matches ALL factions), Paracesis anti-Sentient
-  # passive - they share the bucket with the mods below.
-  multiplier_normal: 1.30      # +5%/rank, rank 5
-  multiplier_primed: 1.55
-  available_for: [grineer, corpus, infested, orokin, the_murmur]
-  # sentient_special: >-
-  # Melee only (Sacrificial Pressure/Steel, Umbra polarity, lower bonus,
-  # set effect when both equipped).
-  no_mods_exist_for: [anarchs, narmer, scaldra, techrot, stalker, wild,
-                      zariman, unknown]
+# The faction damage MODS themselves (Bane/Cleanse/Expel/Smite) are MOD
+# entries with per-rank values — data/mods/*/expel_*.yaml is the source of
+# truth (normal +5%/rank to +30%, Primed to +55%). Nothing mod-shaped is
+# recorded here.
+# System notes: our canonical bucket is faction_damage (GLOSSARY.md) —
+# additive WITHIN the bucket, multiplies total damage, double-dips DoT
+# ticks. Ability members share the bucket: Roar (matches ALL factions),
+# Paracesis' anti-Sentient passive. Mods exist only for grineer, corpus,
+# infested, orokin, the_murmur; Sentient coverage is melee-only
+# (Sacrificial Pressure/Steel). No mods exist for anarchs, narmer, scaldra,
+# techrot, stalker, wild, zariman, unknown.
   # strict_matching: >-
   # No inheritance across counterparts: Bane of Grineer works on Lancer but
   # NOT on Corrupted Lancer or Narmer Lancer; Infested mods do NOT affect
