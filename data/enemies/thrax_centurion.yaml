@@ -50,10 +50,10 @@ mechanics:
   # the physical form's health. Void damage deals 10x damage to the spectral
   # form (100x while it is consuming an enemy).
   focus_on_kill: 2500
-  attacks: >-
-    Levitates and dashes three times in quick succession spinning its Hespar
-    (inflicts Magnetic damage); can jump at its target from afar causing a
-    shockwave.
+  # attacks: >-
+  # Levitates and dashes three times in quick succession spinning its Hespar
+  # (inflicts Magnetic damage); can jump at its target from afar causing a
+  # shockwave.
 
 source:
   url: https://wiki.warframe.com/w/Module:Enemies/data/unaffiliated

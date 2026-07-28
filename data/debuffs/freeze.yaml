@@ -37,7 +37,8 @@ modifier_conditions:
 # display stays pinned at 10 (user-observed); on Frozen expiry exactly
 # 3 Freeze stacks remain (remove-7 vs set-to-3 semantics unresolved -
 # open questions live in frozen.yaml).
-on_max_stacks: applies [[frozen]]
+# The 10th proc consumes the stacks and converts the target (see frozen.yaml).
+on_max_stacks_applies: frozen
 
 stack_caps:
   # Bosses and Overguard holders cap at 4 stacks (can never be Frozen).
@@ -47,9 +48,9 @@ on_player:
   # Enemy-inflicted Cold on players: -10% slow per stack, max 4 (-40%).
   action_speed_reduction_per_stack: 0.10
   max_stacks: 4
-  exception: >-
-    The Optimism Peely Pix (Temporal Archimedea) can accumulate 10 stacks
-    on players with progressively stronger slow and the Frozen state.
+  # exception: >-
+  # The Optimism Peely Pix (Temporal Archimedea) can accumulate 10 stacks
+  # on players with progressively stronger slow and the Frozen state.
 
 cc_effects:
   - kind: slow

@@ -35,8 +35,10 @@ effects:
 on_shield_or_overguard_break:
   forced_proc: tesla_chain
   # Total damage over the 6 s proc: 3% of MAX shields/overguard per
-  # Magnetic stack, capped at 30% at 10 stacks.
-  total_damage: 0.03 x max_pool x magnetic_stacks (cap 0.30 x max_pool)
+  # Magnetic stack, capped at 30% at 10 stacks
+  # (total = per_stack_fraction_of_max_pool x stacks, up to cap_fraction).
+  per_stack_fraction_of_max_pool: 0.03
+  cap_fraction_of_max_pool: 0.30
   # Attribution with mixed appliers (M8, open): EXPECTED = per-stack
   # (hypothesis D) - each surviving stack contributes its 3% chunk scaled
   # by ITS OWN applier's context, summed; the breaking weapon is
@@ -54,9 +56,9 @@ on_shield_or_overguard_break:
     electricity_mods: normal          # Convulsion applies even when
                                       # Electricity is combined into
                                       # another element on the panel
-    status_duration: >-
-      applies normally and acts as a FINAL multiplier on the total
-      (longer duration = more ticks = proportionally more total).
+    # status_duration: >-
+    # applies normally and acts as a FINAL multiplier on the total
+    # (longer duration = more ticks = proportionally more total).
   # note: >-
   # Archon Stretch triggers off this break-proc, but only when the
   # Magnetic came from an ability.
