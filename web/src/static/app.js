@@ -216,7 +216,7 @@ function initWeaponSearch() {
   const input = $("wsearch-input"), panel = $("wsearch-panel"),
         tools = $("wsearch-tools"), listEl = $("wsearch-list");
   if (!input) return;
-  input.placeholder = tr("Search weapons…");
+  input.placeholder = tr("Search…");
   let flt = "all", srt = "az";
   const cats = [...new Set((META.weapons || []).map((w) => w.subtype || w.mod_class))];
   tools.innerHTML =

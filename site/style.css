@@ -369,8 +369,6 @@ label.check input{width:auto}
 .wc-tags{display:flex;flex-wrap:wrap;gap:5px}
 .wc-tags .tag{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
 .topbar .brand{text-decoration:none;color:var(--text)}
-.back-home{text-decoration:none}
-body.on-home .back-home{display:none}
 .pchip .pop.upd{width:auto;padding:0 7px;border-radius:999px;font-size:10px}
 .block-lock.dis{opacity:.45}
 .opt-meta .warn{color:var(--critical)}

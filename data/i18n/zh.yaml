@@ -142,8 +142,6 @@ evolutions: {}
 # an entry — the source string IS the fallback).
 ui:
   "Weapons": 武器
-  "Weapon": 武器
-  "← Weapons": ← 武器
   "Mods": MOD
   "Arcane": 赋能
   "Arcanes": 赋能
@@ -185,7 +183,7 @@ ui:
   "Procs / run": 触发数/轮
   "DoT dmg": DoT 伤害
   "Reloads": 装填次数
-  "Search weapons…": 搜索武器…
+  "Search…": 搜索…
   "All": 全部
   "Name A→Z": 名称 A→Z
   "Name Z→A": 名称 Z→A
