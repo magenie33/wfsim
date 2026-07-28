@@ -1,0 +1,9 @@
+// Cloudflare Workers (static assets) config — deploys site/ to wfsim.app.
+// Assets-only: no worker script, requests are served straight from the CDN.
+{
+  "name": "wfsim",
+  "compatibility_date": "2026-07-28",
+  "assets": {
+    "directory": "./site"
+  }
+}
