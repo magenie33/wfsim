@@ -26,8 +26,13 @@ item  ──references──▶  perk (trigger + grants)
 - Referential integrity is machine-enforced (`engine::i18n_data` tests):
   every overlay key must be a real id — a translator's typo fails CI, so a
   translation PR can never break the app.
-- Name reference: the official CN client, cross-checked against
-  https://warframe.huijiwiki.com/wiki/Project:中英名称对照
+- **Dual verification**: every localized name should be witnessed by BOTH
+  sources — (1) DE's official client strings via WFCD warframe-items
+  (`python scripts/wfcd_i18n.py check` automates this arm, joining our
+  `internal_name` to their `uniqueName`), and (2) the community wiki's
+  对照 table (https://warframe.huijiwiki.com/wiki/Project:中英名称对照,
+  human cross-check in PR review). `wfcd_i18n.py fill` bulk-seeds a
+  section from source (1).
 - UI strings and effect-line phrase substitutions live in the SAME locale
   file (`ui:` keyed by the English source string; `effect_phrases:` an
   ORDERED `[regex, replacement(, flags)]` list) — one file per language

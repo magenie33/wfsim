@@ -17,6 +17,10 @@ web/cache/
 # Private, never committed
 /private/
 
+# Vendored reference datasets (fetched by scripts/vendor.py; MIT-licensed
+# upstream, never committed here)
+/vendor/
+
 # Editor / OS
 .idea/
 .vscode/
