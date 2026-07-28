@@ -19,6 +19,7 @@
 pub mod arcanes_data;
 pub mod buffs;
 pub mod damage;
+pub mod data;
 pub mod dummy;
 pub mod elements;
 pub mod enemy_data;

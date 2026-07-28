@@ -147,7 +147,9 @@ impl EnemySpec {
         Ok(spec)
     }
 
-    /// Load one enemy YAML file.
+    /// Load one enemy YAML file from disk (native tooling only — the CLI and
+    /// optimizer point at `data/enemies/` paths; the embedded set in [`all`]
+    /// is the source everything else uses).
     pub fn load(path: &Path) -> Result<Self, String> {
         let yaml = fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
         Self::from_yaml_str(&yaml)
@@ -223,21 +225,15 @@ impl EnemySpec {
     }
 }
 
-/// Load every `*.yaml` under a directory (recursively) — the "saved target
-/// types" library.
-pub fn load_dir(dir: &Path) -> Result<Vec<EnemySpec>, String> {
-    let mut specs = Vec::new();
-    let entries = fs::read_dir(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
-    let mut paths: Vec<_> = entries.filter_map(|e| e.ok().map(|e| e.path())).collect();
-    paths.sort();
-    for path in paths {
-        if path.is_dir() {
-            specs.extend(load_dir(&path)?);
-        } else if path.extension().is_some_and(|x| x == "yaml") {
-            specs.push(EnemySpec::load(&path)?);
-        }
-    }
-    Ok(specs)
+/// The full embedded enemy library — every `data/enemies/**.yaml` including
+/// `custom/` — the "saved target types" library. Panics on malformed data:
+/// the set is fixed at compile time and covered by tests.
+pub fn all() -> Vec<EnemySpec> {
+    crate::data::files_under("enemies/")
+        .map(|(path, text)| {
+            EnemySpec::from_yaml_str(text).unwrap_or_else(|e| panic!("parse {path}: {e}"))
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -275,7 +271,7 @@ mod tests {
 
     #[test]
     fn loads_the_whole_enemy_library_including_customs() {
-        let specs = load_dir(&data_enemies()).unwrap();
+        let specs = all();
         assert!(specs.iter().any(|s| s.id == "thrax_centurion"));
         assert!(specs.iter().any(|s| s.synthetic));
     }

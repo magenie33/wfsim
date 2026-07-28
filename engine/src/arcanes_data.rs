@@ -14,8 +14,6 @@
 //! under [`StackPolicy::AssumedMax`] — under `Emergent` they are honest
 //! no-ops until the configured-buff policy lands (devlog 2026-07-27).
 
-use std::fs;
-use std::path::Path;
 use std::sync::OnceLock;
 
 use serde::Deserialize;
@@ -648,20 +646,13 @@ fn rarity(name: &str) -> Rarity {
     }
 }
 
-/// Load every `<id>.yaml` under `dir` into arcane definitions (sorted by id).
-pub fn load_from_dir(dir: &Path) -> Vec<ArcaneDef> {
+/// Load every embedded arcane yaml under a `data/` prefix (e.g.
+/// `"arcanes/secondary/"`) into arcane definitions (sorted by id).
+pub fn load_pool(prefix: &str) -> Vec<ArcaneDef> {
     let mut out = Vec::new();
-    let entries = fs::read_dir(dir).unwrap_or_else(|e| panic!("read {}: {e}", dir.display()));
-    let mut paths: Vec<_> = entries
-        .filter_map(|e| e.ok().map(|e| e.path()))
-        .filter(|p| p.extension().is_some_and(|x| x == "yaml"))
-        .collect();
-    paths.sort();
-    for path in paths {
-        let text =
-            fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
-        let af: ArcaneFile = serde_norway::from_str(&text)
-            .unwrap_or_else(|e| panic!("parse {}: {e}", path.display()));
+    for (path, text) in crate::data::files_under(prefix) {
+        let af: ArcaneFile =
+            serde_norway::from_str(text).unwrap_or_else(|e| panic!("parse {path}: {e}"));
         let effects = af
             .effects
             .iter()
@@ -681,14 +672,10 @@ pub fn load_from_dir(dir: &Path) -> Vec<ArcaneDef> {
     out
 }
 
-fn arcanes_root() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../data/arcanes")
-}
-
 /// The secondary-arcane pool — `data/arcanes/secondary/*.yaml`. Cached.
 pub fn secondary_pool() -> &'static Vec<ArcaneDef> {
     static POOL: OnceLock<Vec<ArcaneDef>> = OnceLock::new();
-    POOL.get_or_init(|| load_from_dir(&arcanes_root().join("secondary")))
+    POOL.get_or_init(|| load_pool("arcanes/secondary/"))
 }
 
 /// Look up a secondary arcane by id.

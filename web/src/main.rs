@@ -35,26 +35,16 @@ const INDEX_HTML: &str = include_str!("static/index.html");
 const APP_JS: &str = include_str!("static/app.js");
 const STYLE_CSS: &str = include_str!("static/style.css");
 
-// ---- Embedded enemy library --------------------------------------------
-// Loaded at request time from these YAMLs (single source of truth: the same
-// data/ files the CLI and optimizer read).
-const ENEMY_YAMLS: &[&str] = &[
-    include_str!("../../data/enemies/thrax_centurion.yaml"),
-    include_str!("../../data/enemies/acolyte.yaml"),
-    include_str!("../../data/enemies/custom/fortress.yaml"),
-    include_str!("../../data/enemies/custom/glass_wall.yaml"),
-];
-
+// ---- Enemy library (the engine's embedded data/enemies/**) -------------
+// Single source of truth: the same data/ files the CLI and optimizer read,
+// embedded by the engine's build script. The UI lists the classics first;
+// anything new in data/enemies/ appends after them in path order.
 fn enemies() -> Vec<EnemySpec> {
-    ENEMY_YAMLS
-        .iter()
-        .map(|y| EnemySpec::from_yaml_str(y).expect("embedded enemy yaml parses"))
-        .collect()
+    let preferred = ["thrax_centurion", "acolyte", "fortress", "glass_wall"];
+    let mut specs = wfsim_engine::enemy_data::all();
+    specs.sort_by_key(|s| preferred.iter().position(|p| *p == s.id).unwrap_or(preferred.len()));
+    specs
 }
-
-// ---- Embedded image asset map (data/assets.yaml) -----------------------
-// id -> WFCD imageName; the frontend builds https://cdn.warframestat.us/img/<name>.
-const ASSETS_YAML: &str = include_str!("../../data/assets.yaml");
 
 #[derive(serde::Deserialize, Default)]
 struct Assets {
@@ -66,10 +56,15 @@ struct Assets {
     arcanes: std::collections::HashMap<String, String>,
 }
 
+// ---- Image asset map (data/assets.yaml, embedded by the engine) --------
+// id -> WFCD imageName; the frontend builds https://cdn.warframestat.us/img/<name>.
 fn assets() -> &'static Assets {
     use std::sync::OnceLock;
     static A: OnceLock<Assets> = OnceLock::new();
-    A.get_or_init(|| serde_norway::from_str(ASSETS_YAML).unwrap_or_default())
+    A.get_or_init(|| {
+        let yaml = wfsim_engine::data::file("assets.yaml").expect("embedded data/assets.yaml");
+        serde_norway::from_str(yaml).unwrap_or_default()
+    })
 }
 
 // ---- weapon registry ---------------------------------------------------

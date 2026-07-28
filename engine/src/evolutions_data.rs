@@ -10,8 +10,6 @@
 //! multiply). The engine previously hardcoded these numbers in the
 //! `DtEvo2` enum; the enum remains as a selector, the values live here.
 
-use std::fs;
-use std::path::Path;
 use std::sync::OnceLock;
 
 use serde::Deserialize;
@@ -231,27 +229,14 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
     }
 }
 
-fn evolutions_root() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../data/evolutions")
-}
-
-/// Every yaml under data/evolutions (cached).
+/// Every embedded yaml under data/evolutions (cached).
 pub fn pool() -> &'static Vec<EvolutionDef> {
     static POOL: OnceLock<Vec<EvolutionDef>> = OnceLock::new();
     POOL.get_or_init(|| {
         let mut out = Vec::new();
-        let entries = fs::read_dir(evolutions_root())
-            .unwrap_or_else(|e| panic!("read {}: {e}", evolutions_root().display()));
-        let mut paths: Vec<_> = entries
-            .filter_map(|e| e.ok().map(|e| e.path()))
-            .filter(|p| p.extension().is_some_and(|x| x == "yaml"))
-            .collect();
-        paths.sort();
-        for path in paths {
-            let text = fs::read_to_string(&path)
-                .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        for (_, text) in crate::data::files_under("evolutions/") {
             // The kind tag guards against a stray non-evolution yaml.
-            let Ok(ef) = serde_norway::from_str::<EvoFile>(&text) else { continue };
+            let Ok(ef) = serde_norway::from_str::<EvoFile>(text) else { continue };
             if ef.kind != "incarnon_evolution" {
                 continue;
             }

@@ -13,8 +13,6 @@
 //! are loaded as no-ops. Unknown kinds are ignored with the mod still loaded,
 //! so a not-yet-modeled special effect never silently drops the whole mod.
 
-use std::fs;
-use std::path::Path;
 use std::sync::OnceLock;
 
 use serde::Deserialize;
@@ -261,36 +259,24 @@ fn to_moddef(mf: ModFile) -> ModDef {
     }
 }
 
-/// Load every `<id>.yaml` under `dir` into mod definitions (sorted by id).
-pub fn load_from_dir(dir: &Path) -> Vec<ModDef> {
-    let mut out = Vec::new();
-    let entries = fs::read_dir(dir).unwrap_or_else(|e| panic!("read {}: {e}", dir.display()));
-    let mut paths: Vec<_> = entries
-        .filter_map(|e| e.ok().map(|e| e.path()))
-        .filter(|p| p.extension().is_some_and(|x| x == "yaml"))
-        .collect();
-    paths.sort();
-    for path in paths {
-        let text = fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
-        let mf: ModFile = serde_norway::from_str(&text)
-            .unwrap_or_else(|e| panic!("parse {}: {e}", path.display()));
-        out.push(to_moddef(mf));
-    }
-    out
-}
-
-/// Root of the per-class mod tree: `data/mods/<class>/*.yaml`. Each weapon
-/// class (pistol, rifle, …) gets its own subfolder so the flat pool doesn't
-/// get muddled as the mod count grows.
-fn mods_root() -> std::path::PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../data/mods")
+/// Load a weapon class's embedded mod pool — `data/mods/<class>/*.yaml`
+/// (each class gets its own subfolder so the flat pool doesn't get muddled
+/// as the mod count grows). Sorted by file path, i.e. by id.
+pub fn load_class(class: &str) -> Vec<ModDef> {
+    crate::data::files_under(&format!("mods/{class}/"))
+        .map(|(path, text)| {
+            let mf: ModFile =
+                serde_norway::from_str(text).unwrap_or_else(|e| panic!("parse {path}: {e}"));
+            to_moddef(mf)
+        })
+        .collect()
 }
 
 /// The secondary/pistol mod pool — `data/mods/pistol/*.yaml` (Dual Toxocyst's
 /// pool). Cached (leaks id/family strings once); cloned so callers own it.
 pub fn pistol_pool() -> Vec<ModDef> {
     static POOL: OnceLock<Vec<ModDef>> = OnceLock::new();
-    POOL.get_or_init(|| load_from_dir(&mods_root().join("pistol"))).to_vec()
+    POOL.get_or_init(|| load_class("pistol")).to_vec()
 }
 
 /// Display info for a mod's DESCRIPTION at any rank: the X-templated game
@@ -321,15 +307,9 @@ impl ModDescInfo {
 pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
     static INFO: OnceLock<std::collections::HashMap<String, ModDescInfo>> = OnceLock::new();
     INFO.get_or_init(|| {
-        let dir = mods_root().join("pistol");
         let mut map = std::collections::HashMap::new();
-        let Ok(entries) = fs::read_dir(&dir) else { return map };
-        for path in entries.filter_map(|e| e.ok().map(|e| e.path())) {
-            if path.extension().is_none_or(|x| x != "yaml") {
-                continue;
-            }
-            let Ok(text) = fs::read_to_string(&path) else { continue };
-            let Ok(mf) = serde_norway::from_str::<ModFile>(&text) else { continue };
+        for (_, text) in crate::data::files_under("mods/pistol/") {
+            let Ok(mf) = serde_norway::from_str::<ModFile>(text) else { continue };
             let Some(desc) = mf.description else { continue };
             let xvals = mf
                 .effects
@@ -355,7 +335,7 @@ mod tests {
 
     #[test]
     fn loads_the_pistol_pool_from_yaml() {
-        let mods = load_from_dir(&mods_root().join("pistol"));
+        let mods = load_class("pistol");
         assert!(mods.len() >= 26, "expected >=26 mods, got {}", mods.len());
 
         let by = |id: &str| mods.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("missing {id}"));
