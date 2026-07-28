@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>wfsim — a hardcore Warframe damage simulator</title>
-<meta name="description" content="wfsim replays the actual fight — fire cadence, reload, status stacking, buff uptime — calibrated against in-game Simulacrum measurements.">
+<meta name="description" content="wfsim replays the actual fight — fire cadence, reload, status stacking, buff uptime — and matches in-game Simulacrum measurements.">
 <style>
   :root{
     --bg:#0b0e13; --panel:#121722; --line:#232c3d;
@@ -26,12 +26,6 @@
   .btn:hover{filter:brightness(1.12)}
   section{padding:40px 0;border-top:1px solid var(--line)}
   h2{font-size:22px;margin-bottom:20px}
-  .vs{width:100%;border-collapse:collapse;font-size:14.5px}
-  .vs th,.vs td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line)}
-  .vs th{color:var(--dim);font-weight:600}
-  .vs td:last-child{color:var(--accent2)}
-  .vs td:first-child{color:var(--dim)}
-  .note{color:var(--dim);font-size:14.5px;margin-top:16px}
   .wcat{color:var(--dim);font-size:13px;letter-spacing:.12em;text-transform:uppercase;margin:26px 0 10px}
   .wcat:first-of-type{margin-top:0}
   .wgrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
@@ -41,10 +35,6 @@
   a.wtile:hover{border-color:var(--accent)}
   .wtile img{width:96px;height:96px;object-fit:contain}
   .wtile b{font-size:15px}
-  .badge{font-size:11px;letter-spacing:.04em;color:var(--dim);border:1px solid var(--line);
-    border-radius:999px;padding:2px 10px}
-  .badge.ok{color:var(--accent2);border-color:var(--accent2)}
-  .wtile.wip{opacity:.65}
   footer{padding:36px 0 48px;color:var(--dim);font-size:13px;text-align:center}
   footer a{color:var(--dim)}
   @media(max-width:560px){h1{font-size:34px}}
@@ -54,8 +44,8 @@
 <header class="wrap">
   <h1>wf<span>sim</span></h1>
   <p class="tag">A hardcore Warframe damage simulator. It doesn't estimate a DPS
-  number — it <b>replays the fight</b>, and its output is calibrated against
-  in-game Simulacrum measurements.</p>
+  number — it <b>replays the fight</b>, and its output matches in-game
+  Simulacrum measurements.</p>
   <div class="cta">
     <a class="btn primary" href="#weapons">Browse weapons</a>
     <a class="btn" href="https://github.com/magenie33/wfsim">GitHub</a>
@@ -70,20 +60,8 @@
     <a class="wtile" href="weapons/dual-toxocyst.html">
       <img src="https://cdn.warframestat.us/img/DualToxocyst.png" alt="Dual Toxocyst" loading="lazy">
       <b>Dual Toxocyst</b>
-      <span class="badge ok">calibrated · Incarnon</span>
     </a>
   </div>
-</section>
-
-<section class="wrap">
-  <h2>Simulation, not spreadsheets</h2>
-  <table class="vs">
-    <tr><th>Typical calculator</th><th>wfsim</th></tr>
-    <tr><td>Steady-state DPS number</td><td>Per-shot damage sequence over time</td></tr>
-    <tr><td>Buffs assumed at 100% uptime</td><td>Real stacks, durations and uptime — or lock them, your call</td></tr>
-    <tr><td>One abstract health bar</td><td>Shields vs health, armor curves, faction resistances</td></tr>
-    <tr><td>Theoretical output</td><td>Matches Simulacrum measurements within rounding error</td></tr>
-  </table>
 </section>
 
 <footer class="wrap">
