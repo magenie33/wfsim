@@ -819,8 +819,7 @@ function syncBuffConfig(list, cfg) {
 }
 
 // Shared buff-card renderer (Sim panel + Optimizer scope). `list` = the buff
-// metadata; `cfg` = the mutated config map; `feveredShown` gates the static
-// Fevered Frenzy info row.
+// metadata; `cfg` = the mutated config map.
 function renderBuffCards(box, list, cfg) {
   if (!box) return;
   syncBuffConfig(list, cfg);
@@ -1665,6 +1664,11 @@ function loadResult(res) {
   if (res.exilus && res.exilus !== "none" && modById(res.exilus)) {
     slots[EXILUS].mod = res.exilus; slots[EXILUS].rank = modById(res.exilus).max_rank;
   }
+  // The optimizer's per-buff config rides along too — otherwise "load then
+  // Run Sim" silently reverts to the Sim panel's own defaults and the two
+  // scores stop matching (user, 2026-07-28). Ids the loaded build lacks are
+  // pruned at send time; missing ones sync to defaults.
+  sim.buffs = JSON.parse(JSON.stringify(opt.buffs));
   arcane = res.arcane === "none" ? "none" : res.arcane;
   arcaneRank = res.arcane === "none" ? null : (res.arcane_rank ?? null);
   evoSel = { 1: null, 2: null, 3: null, 4: null };
