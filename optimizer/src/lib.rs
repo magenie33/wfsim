@@ -543,9 +543,19 @@ pub fn schedule_to(n_jobs: usize, final_runs: u32, finalists: usize) -> Vec<(u32
     rounds
 }
 
-/// Evaluate jobs concurrently across all cores. Returns summaries
+/// Deterministic per-job seed, mixed per round. One definition for both
+/// evaluation strategies: the seed depends only on (candidate, arcane), never
+/// on thread count or chunking, so serial wasm evaluation reproduces native
+/// results bit-for-bit.
+fn job_seed(seed: u64, ci: usize, ai: usize) -> u64 {
+    seed ^ (ci as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15) ^ ((ai as u64) << 56)
+}
+
+/// Evaluate jobs concurrently across all cores (single-threaded on wasm32 —
+/// same seeds, same order, identical results, just serial). Returns summaries
 /// index-aligned with `jobs`; entries are `None` only when a cancel
 /// request stopped the batch before that job ran.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn evaluate_batch(
     cands: &[Candidate],
     jobs: &[Job],
@@ -569,11 +579,9 @@ pub fn evaluate_batch(
                     if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
                         return;
                     }
-                    // Deterministic per-job seed, mixed per round.
-                    let s = seed
-                        ^ (ci as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15)
-                        ^ ((ai as u64) << 56);
-                    res[k] = Some(evaluate(&cands[ci], &arcanes[ai], &scenario, runs, s));
+                    res[k] = Some(evaluate(
+                        &cands[ci], &arcanes[ai], &scenario, runs, job_seed(seed, ci, ai),
+                    ));
                     if let Some(st) = state {
                         st.sims_done.fetch_add(runs as u64, Ordering::Relaxed);
                     }
@@ -584,6 +592,60 @@ pub fn evaluate_batch(
     results
 }
 
+/// wasm32 (docs/WASM.md phase 3): no threads in a Web Worker — evaluate the
+/// jobs sequentially with the identical per-job seeds.
+#[cfg(target_arch = "wasm32")]
+pub fn evaluate_batch(
+    cands: &[Candidate],
+    jobs: &[Job],
+    arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
+    scenario: &Scenario,
+    runs: u32,
+    seed: u64,
+    state: Option<&FunnelState>,
+) -> Vec<Option<Summary>> {
+    let mut results: Vec<Option<Summary>> = vec![None; jobs.len()];
+    for (k, &(ci, ai)) in jobs.iter().enumerate() {
+        if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
+            break;
+        }
+        results[k] = Some(evaluate(
+            &cands[ci], &arcanes[ai], scenario, runs, job_seed(seed, ci, ai),
+        ));
+        if let Some(st) = state {
+            st.sims_done.fetch_add(runs as u64, Ordering::Relaxed);
+        }
+    }
+    results
+}
+
+/// Round wall-clock, compiled out on wasm32: `std::time::Instant` does not
+/// exist on wasm32-unknown-unknown (it would panic at runtime), so there
+/// `ms()` reports 0 — progress display simply shows no round timing.
+struct RoundTimer {
+    #[cfg(not(target_arch = "wasm32"))]
+    t: std::time::Instant,
+}
+
+impl RoundTimer {
+    fn start() -> Self {
+        Self {
+            #[cfg(not(target_arch = "wasm32"))]
+            t: std::time::Instant::now(),
+        }
+    }
+    fn ms(&self) -> u64 {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.t.elapsed().as_millis() as u64
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            0
+        }
+    }
+}
+
 /// Drive the multi-round funnel: for each `(runs, keep, by_kills)` round,
 /// evaluate the surviving jobs, sort (kill-progress on kill rounds, effective
 /// damage on screen rounds), and cull to `keep`. Returns the final sorted,
@@ -592,6 +654,11 @@ pub fn evaluate_batch(
 /// same numbers off `state` instead). `state` (optional) receives live
 /// progress and carries the cancel flag: on cancel the in-flight round is
 /// discarded and the last COMPLETED round's leaderboard is returned.
+///
+/// `on_round` (optional) fires after every COMPLETED round (docs/WASM.md
+/// phase 3): single-threaded wasm cannot poll `state` from outside a busy
+/// worker, so the callback is where progress leaves the funnel — the caller
+/// reads `state` inside it. Native callers pass `None` and poll instead.
 #[allow(clippy::too_many_arguments)] // search-config surface, like enumerate_candidates
 pub fn run_funnel(
     cands: &[Candidate],
@@ -602,6 +669,7 @@ pub fn run_funnel(
     seed_base: u64,
     verbose: bool,
     state: Option<&FunnelState>,
+    on_round: Option<&dyn Fn()>,
 ) -> Vec<(Job, Summary)> {
     if let Some(st) = state {
         st.rounds.store(rounds.len(), Ordering::Relaxed);
@@ -632,7 +700,7 @@ pub fn run_funnel(
             st.round_jobs.store(alive.len(), Ordering::Relaxed);
             st.round_runs.store(runs, Ordering::Relaxed);
         }
-        let t = std::time::Instant::now();
+        let t = RoundTimer::start();
         let started = alive.len();
         let summaries =
             evaluate_batch(cands, &alive, arcanes, scenario, runs, seed_base + round as u64, state);
@@ -722,10 +790,10 @@ pub fn run_funnel(
         }
         if verbose {
             println!(
-                "[round {}] {} jobs x {} runs ({}) -> keep {} in {:.1?}; best {}",
+                "[round {}] {} jobs x {} runs ({}) -> keep {} in {:.1}s; best {}",
                 round + 1, started, runs,
                 if by_kills { "kills" } else { "eff dmg" },
-                scored.len(), t.elapsed(),
+                scored.len(), t.ms() as f64 / 1000.0,
                 if by_kills {
                     format!("{:.2} kill score", scored[0].1.mean_kill_progress)
                 } else {
@@ -746,7 +814,7 @@ pub fn run_funnel(
                 by_kills,
                 kept: scored.len(),
                 best,
-                ms: t.elapsed().as_millis() as u64,
+                ms: t.ms(),
             });
         }
         alive = scored.iter().map(|(j, _)| *j).collect();
@@ -764,6 +832,9 @@ pub fn run_funnel(
                 field = field.min(k2 as u64);
             }
             st.sims_planned.store(sims, Ordering::Relaxed);
+        }
+        if let Some(cb) = on_round {
+            cb();
         }
     }
     last

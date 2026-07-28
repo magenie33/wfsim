@@ -375,10 +375,15 @@ fn optimize_start(v: &Value) -> Value {
 
     let worker = job.clone();
     std::thread::spawn(move || {
-        let result = run_optimize(plan, &worker.state, |cands, jobs| {
-            *worker.counts.lock().unwrap() = Some((cands, jobs));
-            *worker.phase.lock().unwrap() = "running";
-        });
+        let result = run_optimize(
+            plan,
+            &worker.state,
+            |cands, jobs| {
+                *worker.counts.lock().unwrap() = Some((cands, jobs));
+                *worker.phase.lock().unwrap() = "running";
+            },
+            None, // native: the status endpoint polls FunnelState instead
+        );
         let ok = result.get("ok").and_then(|x| x.as_bool()).unwrap_or(false);
         let cancelled = result.get("cancelled").and_then(|x| x.as_bool()).unwrap_or(false);
         *worker.result.lock().unwrap() = Some(result);

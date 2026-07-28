@@ -222,7 +222,7 @@ fn main() {
     }
     // The multi-round funnel now lives in the lib (shared with the web
     // endpoint); the CLI runs it verbosely for per-round progress.
-    let last = run_funnel(&cands, &arcanes, &scenario, alive, &rounds, 0xDEAD_BEEF, true, None);
+    let last = run_funnel(&cands, &arcanes, &scenario, alive, &rounds, 0xDEAD_BEEF, true, None, None);
 
     println!();
     println!("=== FINAL LEADERBOARD (1024 x 60 s, kill score; searched: mods x element order x arcane x evo2) ===");

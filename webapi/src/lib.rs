@@ -1645,13 +1645,16 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
 /// payload. Blocking — the caller decides where it runs (a worker thread on
 /// the native server, a Web Worker under wasm). Progress is published
 /// through `state` (poll it from another thread, or — single-threaded —
-/// read it from the per-round callback added in phase 3); cancellation is
-/// `state.cancel`. `on_enumerated(candidates, jobs)` fires once when
-/// enumeration finishes and the funnel is about to start.
+/// read it inside `on_round`, which fires after every completed funnel
+/// round); cancellation is `state.cancel`. `on_enumerated(candidates,
+/// jobs)` fires once when enumeration finishes and the funnel is about to
+/// start. Native callers poll and pass `on_round: None`; the wasm build has
+/// no second thread to poll from, so the callback is its progress channel.
 pub fn run_optimize(
     plan: OptimizePlan,
     state: &FunnelState,
     on_enumerated: impl FnOnce(usize, usize),
+    on_round: Option<&dyn Fn()>,
 ) -> Value {
     let OptimizePlan {
         pool,
@@ -1698,7 +1701,7 @@ pub fn run_optimize(
     let rounds = schedule_to(n_jobs, final_runs, finalists);
     let last = run_funnel(
         &cands, &arcanes, &scenario, jobs, &rounds, 0xDEAD_BEEF, false,
-        Some(state),
+        Some(state), on_round,
     );
     let cancelled = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
 
