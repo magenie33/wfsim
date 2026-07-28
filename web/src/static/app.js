@@ -33,57 +33,27 @@ const POL = (p) => `/pol/${p === "Omni" ? "Any" : p}_Pol.${p === "Omni" ? "png" 
 // never translated; missing entries fall back to English).
 let LANG = localStorage.getItem("wfsim-lang") || "en";
 let I18N = null; // active locale's name overlay, fetched in init()
-const UI_ZH = {
-  "Weapons": "武器",
-  "Weapon": "武器",
-  "← Weapons": "← 武器",
-  "Mods": "MOD",
-  "Arcane": "赋能",
-  "Arcanes": "赋能",
-  "Evolution": "进化",
-  "Evolutions": "进化",
-  "Element": "元素",
-  "Stats": "属性",
-  "Sim": "模拟",
-  "Optimize": "优化",
-  "Run Simulation": "运行模拟",
-  "Run Optimizer": "运行优化",
-  "Incarnon Genesis": "灵化之源",
-  "Exilus slot": "Exilus 槽",
-  "1 · Enemy": "1 · 敌人",
-  "2 · Buffs": "2 · 增益",
-  "3 · Simulation": "3 · 模拟",
-  "Enemy": "敌人",
-  "Buffs": "增益",
-  // Stats panel row labels (webapi row labels are stable English strings).
-  "Base Damage": "基础伤害",
-  "Multishot": "多重射击",
-  "Crit Chance": "暴击几率",
-  "Crit Damage": "暴击伤害",
-  "Status Chance": "触发几率",
-  "Status Damage": "触发伤害",
-  "Status Duration": "触发持续时间",
-  "Fire Rate": "射速",
-  "Magazine": "弹匣容量",
-  "Reload": "装填时间",
-  "Max Charges": "最大充能",
-  "Transmute In": "灵化切入",
-  "Transmute Out": "灵化切出",
-  "Base Form": "基础形态",
-  "Incarnon Form": "灵化形态",
-  // Sim result labels.
-  "Result": "结果",
-  "Effective DPS": "有效 DPS",
-  "Crit rate": "暴击率",
-  "Orange+ crit": "橙暴以上",
-  "Headshot rate": "爆头率",
-  "Procs / run": "触发数/轮",
-  "DoT dmg": "DoT 伤害",
-  "Reloads": "装填次数",
-};
-const tr = (s) => (LANG === "zh" && UI_ZH[s]) || s;
+// UI strings and effect phrases live in data/i18n/<locale>.yaml (served at
+// /api/i18n) — nothing hardcoded here. English needs no catalog: the source
+// string is the fallback.
+const tr = (s) => (I18N && I18N.ui && I18N.ui[s]) || s;
 const LN = (table, id, en) => (I18N && I18N[table] && I18N[table][id]) || en;
 const DT = (ty) => LN("damage_types", String(ty).toLowerCase(), ty);
+// Effect-line phrase substitution ("+X% Critical Chance" → "+X% 暴击几率"):
+// the ORDERED [regex, replacement(, flags)] table comes from the locale's
+// effect_phrases (data/i18n). Compiled once on first use.
+let EFFECT_RES = null;
+const tf = (x) => {
+  if (!I18N || typeof x !== "string") return x;
+  if (!EFFECT_RES) {
+    EFFECT_RES = (I18N.effect_phrases || []).flatMap(([pat, cn, flags]) => {
+      try { return [[new RegExp(pat, flags || "gi"), cn]]; } catch (_) { return []; }
+    });
+  }
+  let s = x;
+  for (const [re, cn] of EFFECT_RES) s = s.replace(re, cn);
+  return s;
+};
 // Static labels: translate the first text node of every [data-i18n] element
 // (children like the .sim-hint spans stay untouched).
 function applyI18n() {
@@ -826,7 +796,7 @@ function buildSlot(i) {
     // slot's rank), exactly like the in-game card.
     const desc = descAt(m, r);
     el.innerHTML = polBtn(s.pol, i) + imgTag(IMG(m.image), "mod") +
-      `<div class="info"><div class="mn">${wl(m.name)}</div>${desc ? `<div class="me">${desc.map((x) => `<div>${x}</div>`).join("")}</div>` : ""}<div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div>` +
+      `<div class="info"><div class="mn">${wl(m.name)}</div>${desc ? `<div class="me">${desc.map((x) => `<div>${tf(x)}</div>`).join("")}</div>` : ""}<div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div>` +
       `<button class="dots" title="options">⋯</button>`;
     el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openSlotMenu(i, e.currentTarget); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
@@ -906,7 +876,7 @@ function renderMenu(slotIdx, query) {
     .filter((m) => slotIdx !== EXILUS || m.exilus) // exilus slot: utility mods only
     .filter((m) => !pickerPrefs.pol || m.polarity === pickerPrefs.pol)
     .filter((m) => !q || m.name.toLowerCase().includes(q) || m.effects.join(" ").toLowerCase().includes(q)
-      || (m.desc_ranks || []).join(" ").toLowerCase().includes(q))
+      || (m.desc_ranks || []).join(" ").toLowerCase().includes(q) || tf((m.desc_ranks || []).join(" ").toLowerCase()).includes(q))
     .sort((a, b) => {
       const g = group(a) - group(b); // current first, then equipped, then the rest
       if (g) return g;
@@ -935,7 +905,7 @@ function renderMenu(slotIdx, query) {
       : m.effects.join(" · ");
     return `<div class="opt ${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : at >= 0 ? "placed" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" data-id="${m.id}" title="${title}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
-      <div class="info"><div class="mn">${wl(m.name)}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${(descAt(m, m.max_rank) || m.effects).map((x) => `<div>${x}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
+      <div class="info"><div class="mn">${wl(m.name)}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${(descAt(m, m.max_rank) || m.effects).map((x) => `<div>${tf(x)}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => {
     const id = o.dataset.id;
@@ -992,7 +962,7 @@ const effectsAt = (a, r) => {
   if (!rk.length) return [];
   return rk[Math.max(0, Math.min(rk.length - 1, r))] || [];
 };
-const effLines = (arr) => arr.length ? `<div class="me">${arr.map((x) => `<div>${x}</div>`).join("")}</div>` : "";
+const effLines = (arr) => arr.length ? `<div class="me">${arr.map((x) => `<div>${tf(x)}</div>`).join("")}</div>` : "";
 
 function renderArcanes() {
   const box = $("arcane-slots");
@@ -1088,7 +1058,7 @@ function renderEvo() {
     const card = (o) => {
       const icon = o.icon ? `<img class="eicon" src="${IMG(o.icon)}" alt="">` : "";
       const cls = ["evopick", o.id === sel ? "sel" : "", o.broken ? "broken" : ""].join(" ");
-      const lines = (o.desc && o.desc.length ? o.desc : o.effects || []).map((x) => `<div>${x}</div>`).join("");
+      const lines = (o.desc && o.desc.length ? o.desc : o.effects || []).map((x) => `<div>${tf(x)}</div>`).join("");
       const title = (o.effects || []).join("\n"); // model statement as tooltip
       // The broken warning lives INSIDE the selected card, so it never
       // straddles the row divider into the next tier.
@@ -1451,7 +1421,7 @@ function renderOptExilus() {
     const poolDead = !!fam || (pinned && pinned !== m.id && st !== "search");
     const reqDead = !!fam || (hasPool && st !== "fixed");
     const why = fam ? `excluded: ${(modById(fam) || { name: fam }).name} is required (same family)` : "";
-    const eff = (descAt(m, m.max_rank) || m.effects || []).map((x) => `<div>${x}</div>`).join("");
+    const eff = (descAt(m, m.max_rank) || m.effects || []).map((x) => `<div>${tf(x)}</div>`).join("");
     return `<div class="opt ${st === "off" ? "" : st} ${fam ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
       <div class="info"><div class="mn">${wl(m.name)}</div><div class="me">${eff}</div></div>
@@ -1535,7 +1505,7 @@ function renderOptEvos() {
       // req (pooling = the tier is open for search). ON segs stay clickable.
       const poolDead = pinned && pinned !== o.id && st !== "search";
       const reqDead = hasPool && st !== "fixed";
-      const desc = (o.desc || o.effects || []).map((x) => `<div>${x}</div>`).join("");
+      const desc = (o.desc || o.effects || []).map((x) => `<div>${tf(x)}</div>`).join("");
       return `<div class="opt ${st === "off" ? "" : st} ${o.broken ? "dis-soft" : ""}">
         <div class="info"><div class="mn">${o.name}${o.broken ? ' <span class="exchip brk">BROKEN</span>' : ""}</div><div class="me">${desc}</div></div>
         <div class="oseg">
@@ -1816,7 +1786,7 @@ function renderOptModList() {
     .filter((m) => !optPrefs.pol || m.polarity === optPrefs.pol)
     .filter((m) => !q || m.name.toLowerCase().includes(q)
       || (m.effects || []).join(" ").toLowerCase().includes(q)
-      || (m.desc_ranks || []).join(" ").toLowerCase().includes(q))
+      || (m.desc_ranks || []).join(" ").toLowerCase().includes(q) || tf((m.desc_ranks || []).join(" ").toLowerCase()).includes(q))
     .sort((a, b) => {
       const c = optPrefs.sort === "drain" ? a.drain - b.drain : a.name.localeCompare(b.name);
       return optPrefs.dir === "desc" ? -c : c;
@@ -1839,7 +1809,7 @@ function renderOptModList() {
     const reqBlocked = st !== "fixed" && (fixedN + 1 > opt.size - (poolAfter > 0 ? 1 : 0));
     const why = fam ? `excluded: ${(modById(fam) || { name: fam }).name} is required (same family)`
       : dead ? `all ${opt.size} slots are required already` : "";
-    const eff = (descAt(m, m.max_rank) || m.effects || []).map((x) => `<div>${x}</div>`).join("");
+    const eff = (descAt(m, m.max_rank) || m.effects || []).map((x) => `<div>${tf(x)}</div>`).join("");
     return `<div class="opt ${st === "off" ? "" : st} ${dead ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why || (m.effects || []).join(" · ")}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
       <div class="info"><div class="mn">${wl(m.name)}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}</div><div class="me">${eff}</div></div>

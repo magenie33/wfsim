@@ -28,9 +28,11 @@ item  ──references──▶  perk (trigger + grants)
   translation PR can never break the app.
 - Name reference: the official CN client, cross-checked against
   https://warframe.huijiwiki.com/wiki/Project:中英名称对照
-- UI strings (buttons, panel titles, stat labels) are NOT data — they live
-  in the frontend catalog (`UI_ZH` in `web/src/static/app.js`), keyed by the
-  English source string.
+- UI strings and effect-line phrase substitutions live in the SAME locale
+  file (`ui:` keyed by the English source string; `effect_phrases:` an
+  ORDERED `[regex, replacement(, flags)]` list) — one file per language
+  covers everything a translator touches. English needs no entries: the
+  source string is the fallback.
 
 ## Perks: define once, reference anywhere
 

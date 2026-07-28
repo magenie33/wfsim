@@ -215,6 +215,8 @@ pub fn i18n_json() -> Value {
             "mods": l.mods,
             "arcanes": l.arcanes,
             "evolutions": l.evolutions,
+            "ui": l.ui,
+            "effect_phrases": l.effect_phrases,
         }));
     }
     Value::Object(out)

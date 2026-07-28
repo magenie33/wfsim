@@ -25,6 +25,13 @@ pub struct LocaleSpec {
     pub arcanes: BTreeMap<String, String>,
     #[serde(default)]
     pub evolutions: BTreeMap<String, String>,
+    /// UI strings keyed by the English source string.
+    #[serde(default)]
+    pub ui: BTreeMap<String, String>,
+    /// ORDERED effect-line substitutions: [regex, replacement] or
+    /// [regex, replacement, flags].
+    #[serde(default)]
+    pub effect_phrases: Vec<Vec<String>>,
 }
 
 /// Every overlay locale, `(code, spec)` — the code is the filename stem
@@ -53,6 +60,9 @@ mod tests {
         let (_, zh) = locales().iter().find(|(c, _)| c == "zh").expect("zh overlay");
         assert_eq!(zh.weapons.get("dual_toxocyst").map(String::as_str), Some("毒囊双枪"));
         assert!(!zh.damage_types.is_empty());
+        assert!(!zh.ui.is_empty());
+        assert!(zh.effect_phrases.iter().all(|p| p.len() == 2 || p.len() == 3),
+            "effect_phrases entries must be [regex, replacement(, flags)]");
     }
 
     /// Overlay keys must reference REAL ids — a translator's typo fails the

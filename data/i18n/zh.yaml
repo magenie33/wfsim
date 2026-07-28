@@ -36,3 +36,90 @@ damage_types:
 mods: {}
 arcanes: {}
 evolutions: {}
+
+# UI strings, keyed by the English source string (English itself never needs
+# an entry — the source string IS the fallback).
+ui:
+  "Weapons": 武器
+  "Weapon": 武器
+  "← Weapons": ← 武器
+  "Mods": MOD
+  "Arcane": 赋能
+  "Arcanes": 赋能
+  "Evolution": 进化
+  "Evolutions": 进化
+  "Element": 元素
+  "Stats": 属性
+  "Sim": 模拟
+  "Optimize": 优化
+  "Run Simulation": 运行模拟
+  "Run Optimizer": 运行优化
+  "Incarnon Genesis": 灵化之源
+  "Exilus slot": Exilus 槽
+  "1 · Enemy": 1 · 敌人
+  "2 · Buffs": 2 · 增益
+  "3 · Simulation": 3 · 模拟
+  "Enemy": 敌人
+  "Buffs": 增益
+  "Base Damage": 基础伤害
+  "Multishot": 多重射击
+  "Crit Chance": 暴击几率
+  "Crit Damage": 暴击伤害
+  "Status Chance": 触发几率
+  "Status Damage": 触发伤害
+  "Status Duration": 触发持续时间
+  "Fire Rate": 射速
+  "Magazine": 弹匣容量
+  "Reload": 装填时间
+  "Max Charges": 最大充能
+  "Transmute In": 灵化切入
+  "Transmute Out": 灵化切出
+  "Base Form": 基础形态
+  "Incarnon Form": 灵化形态
+  "Result": 结果
+  "Effective DPS": 有效 DPS
+  "Crit rate": 暴击率
+  "Orange+ crit": 橙暴以上
+  "Headshot rate": 爆头率
+  "Procs / run": 触发数/轮
+  "DoT dmg": DoT 伤害
+  "Reloads": 装填次数
+
+# Effect-line phrase substitutions for mod/arcane/evolution descriptions
+# ("+X% Critical Chance" → "+X% 暴击几率"). ORDERED — longest phrases first
+# so partial matches never clobber. Each entry: [regex, replacement] or
+# [regex, replacement, flags] (default flags: gi).
+effect_phrases:
+  - ['Status Duration', '触发持续时间']
+  - ['Critical Chance', '暴击几率']
+  - ['Critical Damage', '暴击伤害']
+  - ['Status Chance', '触发几率']
+  - ['Magazine Capacity', '弹匣容量']
+  - ['Reload Speed', '装填速度']
+  - ['Fire Rate', '射速']
+  - ['Multishot', '多重射击']
+  - ['Weapon Recoil', '武器后坐力']
+  - ['\bRecoil\b', '后坐力']
+  - ['Punch Through', '穿透']
+  - ['Projectile Speed', '抛射物飞行速度']
+  - ['Ammo Efficiency', '弹药效率']
+  - ['Ammo Maximum', '弹药上限']
+  - ['Dodge Speed', '闪避速度']
+  - ['\bAccuracy\b', '精准度']
+  - ['Weak Point Damage', '弱点伤害']
+  - ['Weak Point', '弱点']
+  - ['Damage to (Grineer|Corpus|Infested|Corrupted|The Murmur)', '对 $1 伤害']
+  - ['\bImpact\b', '冲击', 'g']
+  - ['\bPuncture\b', '穿刺', 'g']
+  - ['\bSlash\b', '切割', 'g']
+  - ['\bHeat\b', '火焰', 'g']
+  - ['\bCold\b', '冰冻', 'g']
+  - ['\bElectricity\b', '电击', 'g']
+  - ['\bToxin\b', '毒素', 'g']
+  - ['\bBlast\b', '爆炸', 'g']
+  - ['\bCorrosive\b', '腐蚀', 'g']
+  - ['\bGas\b', '毒气', 'g']
+  - ['\bMagnetic\b', '磁力', 'g']
+  - ['\bRadiation\b', '辐射', 'g']
+  - ['\bViral\b', '病毒', 'g']
+  - ['\bDamage\b', '伤害']

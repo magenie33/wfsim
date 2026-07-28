@@ -31,8 +31,9 @@ per table (weapons/enemies/mods/arcanes/evolutions/damage_types). Ten lines
 is a fine PR — anything untranslated just keeps showing English. Names
 follow the official CN client (cross-check
 https://warframe.huijiwiki.com/wiki/Project:中英名称对照). CI validates every
-key against the real ids, so a typo cannot break anything. UI strings live
-in `UI_ZH` in `web/src/static/app.js`.
+key against the real ids, so a typo cannot break anything. UI strings
+(`ui:`) and effect-line phrases (`effect_phrases:`) live in the same file —
+translations never touch code.
 
 ### 4. Engine mechanics (`engine/`, Rust)
 
