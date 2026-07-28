@@ -45,17 +45,29 @@ A parameter goes on whichever entity *owns* it, so it is not duplicated:
 
 ## Conventions
 
-- Every entry has `schema_version`, an `id` (matches the filename), a `source`
-  (`url` + `retrieved` date), and a `verification` block (`status`:
-  `unverified` / `verified` / `disputed`). Nothing is trusted until a golden test
-  moves it to `verified` (see [`../docs/CORE.md`](../docs/CORE.md) §5).
+- **Field discipline (2026-07-28): a field is structured data that a program
+  consumes; human narrative is a comment.** Every field must have a consumer —
+  the engine, the UI, a script, or a code==data pin test (e.g. Secondary
+  Enervate's ramp constants, pinned by
+  `perks::secondary_enervate::tests::from_rank_matches_the_arcane_yaml`).
+  Notes, rules-as-prose, caveats and reasoning go in `#` comments, never in
+  fields. Structured game facts WITHOUT a consumer yet (e.g. an unmodeled
+  mechanic's parameters) may stay as fields — they are columns awaiting a
+  consumer, and they must be values, not sentences.
+- Two metadata fields are kept by convention even without a code consumer:
+  `source` (`url` — provenance, see
+  [`../docs/DATA_SOURCES.md`](../docs/DATA_SOURCES.md)) and `internal_name`
+  (DE's uniqueName — the join key to external datasets/importers).
+- Every entry's `id` matches its filename. The directory IS the table: no
+  `kind`/type tags duplicating what the path already says.
+- No `schema_version`, no `verification` blocks (decision 2026-07-24): the
+  data is the current belief, corrected in place; confidence lives in git
+  history and golden tests.
 - Names can collide across kinds by design (a *Frenzy* perk grants a *Frenzy*
-  buff); the directory + `kind` disambiguate.
-- Schemas are drafts (`schema_version: 0`) and will be pinned as the loader lands.
+  buff); the directory disambiguates.
 - **Custom enemies**: any YAML dropped under `enemies/` (conventionally
   `enemies/custom/`) becomes a saved target type. Mark hand-made targets that
-  do not exist in-game with `synthetic: true` and `verification.status:
-  synthetic`. The loader rejects impossible data instead of guessing:
-  unsupported fields with consequences (e.g. `shield > 0` before shields are
-  implemented) and impossible combinations (e.g. Eximus of a unit with
-  `can_be_eximus: false`) are hard errors.
+  do not exist in-game with `synthetic: true`. The loader rejects impossible
+  data instead of guessing: unsupported fields with consequences (e.g.
+  `shield > 0` before shields are implemented) and impossible combinations
+  (e.g. Eximus of a unit with `can_be_eximus: false`) are hard errors.

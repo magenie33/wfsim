@@ -67,3 +67,6 @@ Our field names follow the wiki concept words (snake_case + unit suffixes):
   git history, not per-file status fields. Golden tests vs
   Simulacrum remain the arbiter of the ENGINE; the data is simply kept
   current.
+- **Field discipline** (decision 2026-07-28, full statement in
+  [`../data/README.md`](../data/README.md)): fields are structured data a
+  program consumes; human narrative is a `#` comment. No prose in fields.
