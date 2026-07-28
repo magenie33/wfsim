@@ -1463,17 +1463,24 @@ function updateOptEstimate() {
   let scenario = "";
   if (valid) {
     const en = (META.enemies || []).find((e) => e.id === sim.enemy) || {};
-    // Mirror of schedule_to(): ×4 runs capped at final/4, cull to 1/8
-    // floored at finalists, then the guaranteed final. Adaptive racing can
-    // only cut MORE, so this is an upper bound ("up to").
+    // Mirror of schedule_to()'s auto-planned cadence: k = ceil(log8(N/F))
+    // rounds, even log-space culls landing exactly on the finalists, runs
+    // from a halving cost budget ((ρ/2)^i, capped at final/4), then the
+    // guaranteed final. Racing/amnesty adapt this plan at runtime.
     const F = optRun.finalists, FR = optRun.final_runs;
-    const cap = Math.max(Math.floor(FR / 4), 1);
+    const N = Math.round(jobs);
     const rounds = [];
-    let runs = 1, keep = Math.round(jobs);
-    while (keep > F) {
-      keep = Math.max(Math.floor(keep / 8), F);
-      rounds.push([runs, keep]);
-      runs = Math.min(runs * 4, cap);
+    if (N > F) {
+      const k = Math.max(1, Math.ceil(Math.log(N / F) / Math.log(8)));
+      const rho = Math.pow(N / F, 1 / k);
+      const growth = Math.max(1, rho / 2);
+      const cap = Math.max(1, Math.floor(FR / 4));
+      let field = N, runsF = 1;
+      for (let i = 0; i < k; i++) {
+        const keep = i + 1 === k ? F : Math.max(F, Math.round(field / rho));
+        rounds.push([Math.min(cap, Math.max(1, Math.round(runsF))), keep]);
+        field = keep; runsF *= growth;
+      }
     }
     rounds.push([FR, F]);
     const parts = [];

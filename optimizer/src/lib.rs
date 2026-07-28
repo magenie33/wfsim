@@ -500,27 +500,46 @@ pub fn schedule(n_jobs: usize) -> Vec<(u32, usize, bool)> {
 /// `finalists` candidates at `final_runs` runs each — everything before it
 /// only whittles the field down to that size.
 ///
-/// Intermediate rounds: runs start at 1 and multiply ×4, CAPPED at
-/// `final_runs / 4` (the final stays a real step up); each keeps 1/8 of
-/// the field, floored at `finalists`. EVERY round ranks by kill score
-/// (mean kill progress = kills + depleted fraction of the final target's
-/// pool): it is just as continuous as the old mean-effective-damage
-/// screen and it IS the objective, so there is no metric switch to
-/// misrank across (user, 2026-07-28). On top of this fixed plan,
-/// [`run_funnel`] culls adaptively (3σ racing) — the schedule is an
-/// upper bound, not a promise of work.
+/// The cadence is AUTO-PLANNED from the inputs (user, 2026-07-28: "derive
+/// the elimination rhythm from N directly"):
+/// - round count: k = ceil(log₈(N/F)) — "cull at most ×8 per round" is the
+///   pace anchor and decides ONLY how many rounds exist;
+/// - per-round cull ratio: ρ = (N/F)^(1/k), spread EVENLY in log space so
+///   the last cut lands exactly on `finalists` (no floor-clamped tail
+///   rounds; a small N/F gets proportionally gentler cuts);
+/// - per-round runs: rᵢ = (ρ/2)^i — derived from a halving cost budget
+///   (each round costs about half the previous; ρ ≤ 8 keeps growth ≤ ×4),
+///   capped at `final_runs / 4` so the final stays a real step up.
+///
+/// EVERY round ranks by kill score (mean kill progress — just as
+/// continuous as the old effective-damage screen, and it IS the
+/// objective). The plan is an upper bound, not a promise of work:
+/// [`run_funnel`] adapts it both ways at runtime (3σ racing cuts deeper,
+/// tie amnesty keeps up to 2×, empty rounds are skipped).
 pub fn schedule_to(n_jobs: usize, final_runs: u32, finalists: usize) -> Vec<(u32, usize, bool)> {
     let finalists = finalists.max(1);
-    let cap = (final_runs / 4).max(1);
+    let final_runs = final_runs.max(1);
     let mut rounds = Vec::new();
-    let mut runs: u32 = 1;
-    let mut keep = n_jobs;
-    while keep > finalists {
-        keep = (keep / 8).max(finalists);
-        rounds.push((runs, keep, true));
-        runs = runs.saturating_mul(4).min(cap);
+    if n_jobs > finalists {
+        let ratio_total = n_jobs as f64 / finalists as f64;
+        let k = (ratio_total.ln() / 8f64.ln()).ceil().max(1.0) as usize;
+        let rho = ratio_total.powf(1.0 / k as f64);
+        let growth = (rho / 2.0).max(1.0);
+        let cap = (final_runs / 4).max(1);
+        let mut field = n_jobs as f64;
+        let mut runs_f = 1.0f64;
+        for i in 0..k {
+            let keep = if i + 1 == k {
+                finalists
+            } else {
+                ((field / rho).round() as usize).max(finalists)
+            };
+            rounds.push(((runs_f.round() as u32).clamp(1, cap), keep, true));
+            field = keep as f64;
+            runs_f *= growth;
+        }
     }
-    rounds.push((final_runs.max(1), finalists, true));
+    rounds.push((final_runs, finalists, true));
     rounds
 }
 
@@ -878,20 +897,30 @@ mod tests {
     }
 
     #[test]
-    fn schedule_scales_with_the_job_count() {
-        // ~2M jobs: 1-run screen keeps 1/8, runs ×4 per round capped at
-        // final/4, EVERY round ranks by kill score, and the final-round
-        // contract closes the funnel: exactly `finalists` × `final_runs`.
+    fn schedule_plans_the_cadence_from_the_inputs() {
+        // ~2M jobs, defaults (1024 × 24): k = ceil(log8(N/F)) rounds, even
+        // log-space culls ending EXACTLY on the finalists, runs from a
+        // halving cost budget, every round by kill score.
         let s = schedule(1_950_192);
-        assert_eq!(s.first(), Some(&(1, 243_774, true)));
+        let n = s.len();
+        assert_eq!(n, 7, "k = ceil(log8(81258)) = 6 intermediates + final");
+        assert_eq!(s[0].0, 1, "the screen starts at 1 run");
         assert!(s.windows(2).all(|w| w[1].0 >= w[0].0 && w[1].1 <= w[0].1));
         assert!(s.iter().all(|&(_, _, by_kills)| by_kills), "kill score everywhere");
-        assert!(s[..s.len() - 1].iter().all(|&(r, _, _)| r <= 256), "intermediates ≤ final/4");
+        assert!(s[..n - 1].iter().all(|&(r, _, _)| r <= 256), "intermediates ≤ final/4");
         assert_eq!(s.last(), Some(&(1024, 24, true)));
         // The round BEFORE the final already reaches the finalists count —
-        // the final evaluates exactly that field.
-        assert_eq!(s[s.len() - 2].1, 24);
-        // Total sims stays well below flat evaluation.
+        // the final evaluates exactly that field (the contract).
+        assert_eq!(s[n - 2].1, 24);
+        // Cull ratios are even: every intermediate cut is ≤ ×8 and the
+        // ratios stay within rounding of each other.
+        let mut field = 1_950_192usize;
+        for &(_, keep, _) in &s[..n - 1] {
+            let r = field as f64 / keep as f64;
+            assert!(r <= 8.01, "cull ratio {r}");
+            field = keep;
+        }
+        // Total sims stays well below flat evaluation (halving budget ≈ 2N).
         let mut field = 1_950_192usize;
         let mut sims = 0usize;
         for &(runs, keep, _) in &s {
@@ -899,9 +928,12 @@ mod tests {
             field = field.min(keep);
         }
         assert!(sims < 3 * 1_950_192, "sims {sims}");
-        // Small pools still get a sane funnel ending in the final.
+        // A small N/F gap plans proportionally GENTLER cuts (no ÷8 overshoot
+        // straight into the floor).
         let small = schedule(500);
-        assert_eq!(small.first(), Some(&(1, 62, true)));
+        assert_eq!(small.len(), 3, "two intermediates + final");
+        assert_eq!(small.first(), Some(&(1, 110, true)));
+        assert_eq!(small[1].1, 24);
         assert_eq!(small.last(), Some(&(1024, 24, true)));
 
         // The user's contract verbatim: final = 10_000 runs × 20 finalists.
