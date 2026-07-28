@@ -1043,22 +1043,6 @@ function renderOptMods() {
 function renderOptExilus() {
   const pinned = exilusPinned();
   const hasPool = Object.values(opt.exilus).some((s) => s === "search");
-  // "None" is a first-class option: pool it to keep "leave empty" among the
-  // searched options, req it to pin the slot empty. Marked pools OCCUPY the
-  // slot — empty is never an implicit extra next to pooled mods.
-  const noneRow = (() => {
-    const st = opt.exilus["none"] || "off";
-    const poolDead = pinned && pinned !== "none" && st !== "search";
-    const reqDead = hasPool && st !== "fixed";
-    return `<div class="opt ${st === "off" ? "" : st}">
-      <span class="mod none">∅</span>
-      <div class="info"><div class="mn">None</div><div class="me"><div>leave the exilus slot empty (no drain)</div></div></div>
-      <div class="oseg">
-        <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-m="none" data-s="search">pool</span>
-        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-m="none" data-s="fixed" ${reqDead ? 'title="clear the pool marks first — req pins the slot"' : ""}>req</span>
-      </div>
-    </div>`;
-  })();
   const row = (m) => {
     const st = opt.exilus[m.id] || "off";
     const fam = famReqBy(m);
@@ -1078,8 +1062,8 @@ function renderOptExilus() {
       </div>
     </div>`;
   };
-  $("opt-exilus").innerHTML = noneRow + (currentPool.filter((m) => m.exilus).map(row).join("")
-    || `<div class="opt dis">no exilus mods in this pool</div>`);
+  $("opt-exilus").innerHTML = currentPool.filter((m) => m.exilus).map(row).join("")
+    || `<div class="opt dis">no exilus mods in this pool</div>`;
   $("opt-exilus").querySelectorAll(".seg:not(.dis)").forEach((el) =>
     el.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -1199,6 +1183,7 @@ function restoreOpt(st) {
       if (m && m.exilus && !(id in opt.exilus)) { opt.exilus[id] = opt.mods[id]; delete opt.mods[id]; }
     });
   }
+  delete opt.exilus["none"]; // brief None-row era: unmarked already means empty
   // Boolean-era arcane/evo selections ({id: true}) become pool marks.
   Object.keys(opt.arcanes).forEach((id) => { if (opt.arcanes[id] === true) opt.arcanes[id] = "search"; });
   Object.values(opt.evos).forEach((m) => Object.keys(m).forEach((id) => { if (m[id] === true) m[id] = "search"; }));
@@ -1343,8 +1328,8 @@ function updateOptEstimate() {
   const search = Object.values(opt.mods).filter((s) => s === "search").length;
   const exFixed = exilusPinned();
   const exSearch = Object.values(opt.exilus).filter((s) => s === "search").length;
-  // Pooled exilus marks ARE the option set ("None" is itself a markable
-  // option); nothing marked = the slot stays empty (one option).
+  // Pooled exilus marks ARE the option set; nothing marked = the slot
+  // stays empty (one option).
   const exOptions = exFixed ? 1 : Math.max(1, exSearch);
   // Required in BOTH blocks = impossible (a mod equips once).
   const dupReq = exFixed && opt.mods[exFixed] === "fixed" ? exFixed : null;
