@@ -64,7 +64,11 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .pchip .pop.del:hover{color:#e05252}
 .ghost-btn{background:transparent;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:5px 9px;cursor:pointer;font:inherit}
 .ghost-btn:hover{background:var(--plane)}.ghost-btn.small{font-size:11px;padding:2px 7px}
-.lang-select{margin-left:auto;width:auto;padding:4px 6px;font-size:12px;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:8px}
+/* Topbar controls share ONE height so the row reads as a single system. */
+.topbar-inner .ghost-btn{height:28px;padding:0 8px;display:inline-flex;align-items:center;justify-content:center}
+.gh-link{margin-left:auto;color:var(--text);width:28px}
+.gh-link svg{display:block}
+.lang-select{width:auto;height:28px;padding:0 6px;font-size:12px;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:8px}
 
 .config-page{max-width:760px;margin:0 auto;padding:18px}
 
