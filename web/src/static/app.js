@@ -164,34 +164,77 @@ function restoreState(st) {
 
 const escHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-// The active (last loaded / saved) preset name, or null.
+// The ACTIVE preset — the one the editor is editing. Never null after
+// init: the page always has ≥1 preset and is always editing one (user's
+// mental model, 2026-07-28: "if no presets exist, the current state IS
+// preset 1"). Restored across reloads.
 let activePreset = null;
+const ACTIVE_PRESET_KEY = "wfsim-active-preset";
 
 function initPresets() {
+  let ps = loadPresets();
+  if (!ps.length) {
+    ps = [{ name: "preset 1", savedAt: Date.now(), state: snapshotState() }];
+    storePresets(ps);
+  }
+  const last = localStorage.getItem(ACTIVE_PRESET_KEY);
+  activePreset = ps.some((p) => p.name === last) ? last : ps[0].name;
+  localStorage.setItem(ACTIVE_PRESET_KEY, activePreset);
+  restoreState(ps.find((p) => p.name === activePreset).state);
   renderPresetBar();
+}
+
+// Unsaved-changes marker: build edits debounce into a bar re-render, where
+// the active chip compares the live snapshot against its stored state.
+let presetDirtyTimer = null;
+function markPresetDirty() {
+  clearTimeout(presetDirtyTimer);
+  presetDirtyTimer = setTimeout(() => { if (activePreset) renderPresetBar(); }, 300);
 }
 
 function renderPresetBar() {
   const bar = $("preset-bar");
   const ps = loadPresets();
+  const stored = ps.find((p) => p.name === activePreset);
+  // Canonicalize before comparing: buff entries still at their defaults are
+  // dropped — they fill in ASYNC after the panel fetch, and a default value
+  // is not a user change (else the dot shows on every fresh load).
+  const canon = (st) => {
+    const c = JSON.parse(JSON.stringify(st));
+    if (c.sim && c.sim.buffs) {
+      buffList.forEach((b) => {
+        const e = c.sim.buffs[b.id];
+        if (e && e.stacks === b.default_stacks && e.locked === b.default_locked) delete c.sim.buffs[b.id];
+      });
+    }
+    return JSON.stringify(c);
+  };
+  const dirty = !stored || canon(stored.state) !== canon(snapshotState());
   const chip = (p) => {
     const active = p.name === activePreset;
-    // The active chip carries its own update / rename / delete controls.
+    // The active chip carries its own save / rename / delete controls; the
+    // last remaining preset cannot be deleted (there is always one).
     const ops = active
-      ? `<button class="pop upd" title="overwrite this preset with the current build">↻</button>` +
+      ? `<button class="pop upd" title="save the current changes into this preset">save</button>` +
         `<button class="pop ren" title="rename">✎</button>` +
-        `<button class="pop del" title="delete">✕</button>`
+        (ps.length > 1 ? `<button class="pop del" title="delete">✕</button>` : "")
       : "";
-    return `<span class="pchip ${active ? "sel" : ""}" data-name="${escHtml(p.name)}" title="load ${escHtml(p.name)}">${escHtml(p.name)}${ops}</span>`;
+    const dot = active && dirty ? `<span class="dirty" title="unsaved changes">●</span>` : "";
+    return `<span class="pchip ${active ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}">${escHtml(p.name)}${dot}${ops}</span>`;
   };
   bar.innerHTML =
     `<span class="plabel">Presets <b>${ps.length}/${PRESET_MAX}</b></span>` +
     ps.map(chip).join("") +
-    (ps.length < PRESET_MAX ? `<span class="pchip add" title="save the current build as a new preset">+ save</span>` : "");
+    (ps.length < PRESET_MAX ? `<span class="pchip add" title="new preset from the current build">+ new</span>` : "");
 
   bar.querySelectorAll(".pchip:not(.add)").forEach((c) => c.addEventListener("click", () => {
     const p = loadPresets().find((x) => x.name === c.dataset.name);
-    if (p) { activePreset = p.name; restoreState(p.state); renderPresetBar(); }
+    if (p && p.name !== activePreset) {
+      activePreset = p.name;
+      localStorage.setItem(ACTIVE_PRESET_KEY, activePreset);
+      restoreState(p.state);
+      renderPresetBar();
+    }
   }));
   // No prompt()/alert()/confirm() anywhere — the browser can block those
   // dialogs, which made saving silently fail (user, 2026-07-28). Naming
@@ -224,6 +267,7 @@ function renderPresetBar() {
       if (at >= 0) ps2[at] = entry; else ps2.push(entry); // same name overwrites
       storePresets(ps2);
       activePreset = name;
+      localStorage.setItem(ACTIVE_PRESET_KEY, activePreset);
       renderPresetBar();
     });
   });
@@ -234,7 +278,7 @@ function renderPresetBar() {
     if (at < 0) return;
     ps2[at] = { name: activePreset, savedAt: Date.now(), state: snapshotState() };
     storePresets(ps2);
-    renderPresetBar();
+    renderPresetBar(); // the dirty dot clears
   });
   on(".pop.ren", () => {
     const chip = bar.querySelector(".pchip.sel");
@@ -244,14 +288,24 @@ function renderPresetBar() {
       // Empty, unchanged, or colliding names just cancel the rename.
       if (name && name !== activePreset && !ps2.some((p) => p.name === name)) {
         const at = ps2.findIndex((p) => p.name === activePreset);
-        if (at >= 0) { ps2[at].name = name; storePresets(ps2); activePreset = name; }
+        if (at >= 0) {
+          ps2[at].name = name;
+          storePresets(ps2);
+          activePreset = name;
+          localStorage.setItem(ACTIVE_PRESET_KEY, activePreset);
+        }
       }
       renderPresetBar();
     });
   });
   on(".pop.del", () => {
-    storePresets(loadPresets().filter((p) => p.name !== activePreset));
-    activePreset = null;
+    // Only offered while >1 preset exists — there is always at least one.
+    const ps2 = loadPresets().filter((p) => p.name !== activePreset);
+    if (!ps2.length) return;
+    storePresets(ps2);
+    activePreset = ps2[0].name;
+    localStorage.setItem(ACTIVE_PRESET_KEY, activePreset);
+    restoreState(ps2[0].state);
     renderPresetBar();
   });
 }
@@ -413,6 +467,7 @@ function buildPayload() {
 // ---- Stats panel: merged buckets, each explained by source ----
 let panelTimer = null;
 function refreshPanel() {
+  markPresetDirty(); // every build change funnels through here
   clearTimeout(panelTimer);
   panelTimer = setTimeout(async () => {
     const body = buildPayload();
@@ -827,6 +882,7 @@ function renderSim() {
         else if (el.type === "number") sim[k] = Number(el.value);
         else sim[k] = el.value;
         if (k === "enemy") $("arena-ename").textContent = (enemies.find((e) => e.id === sim.enemy) || {}).name || "Enemy";
+        markPresetDirty(); // sim settings are part of the preset
       });
     }));
   $("arena-ename").textContent = en ? en.name : "Enemy";
@@ -877,6 +933,7 @@ function renderBuffCards(box, list, cfg) {
       if (f === "locked") c.locked = el.checked;
       else if (el.type === "checkbox") c.stacks = el.checked ? 1 : 0;
       else c.stacks = Math.max(0, Number(el.value));
+      markPresetDirty(); // sim buff edits are preset content (opt's are not — no dot)
     });
   });
 }
