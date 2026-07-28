@@ -94,7 +94,10 @@ async function init() {
     headshot_pct: d.headshot_pct, duration: d.duration };
   applyWeapon(d.weapon, d.mods);
 
-  $("weapon").addEventListener("change", () => applyWeapon($("weapon").value, null));
+  $("weapon").addEventListener("change", () => {
+    applyWeapon($("weapon").value, null);
+    if (location.hash.startsWith("#/w/")) location.hash = "#/w/" + $("weapon").value;
+  });
   $("run-sim").addEventListener("click", runSim);
   $("run-opt").addEventListener("click", runOptimize);
   $("opt-mod-filter").addEventListener("input", renderOptModList);
@@ -121,6 +124,47 @@ async function init() {
     if (!e.target.closest(".popover") && !e.target.closest(".slot")) closePopovers();
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePopovers(); });
+  window.addEventListener("hashchange", route);
+  route();
+}
+
+// ---- views: '#/' = the weapon list (home), '#/w/<id>' = the config page --
+// The weapon <select> stays the internal source of truth; the home grid and
+// the hash just drive it.
+function route() {
+  const m = location.hash.match(/^#\/w\/([\w-]+)$/);
+  const w = m && (META.weapons || []).find((x) => x.id === m[1]);
+  document.body.classList.toggle("on-home", !w);
+  $("home-page").hidden = !!w;
+  document.querySelector(".config-page").hidden = !w;
+  if (w) {
+    if ($("weapon").value !== w.id) {
+      $("weapon").value = w.id;
+      applyWeapon(w.id, null);
+    }
+  } else {
+    renderHome();
+  }
+}
+
+function renderHome() {
+  const grid = $("weapon-grid");
+  if (!grid) return;
+  grid.innerHTML = (META.weapons || []).map((w) => {
+    const tags = [
+      w.uses_evo2 ? `<span class="tag">Incarnon</span>` : "",
+      w.sentinel ? `<span class="tag">Sentinel</span>` : "",
+      `<span class="tag">${w.subtype || w.mod_class}</span>`,
+      `<span class="tag">${w.mod_class} mods</span>`,
+    ].join("");
+    return `<a class="wcard" href="#/w/${w.id}">
+      ${imgTag(w.image ? CDN + w.image : null, "wc-img")}
+      <div class="wc-info">
+        <div class="wc-name">${w.name}</div>
+        <div class="wc-tags">${tags}</div>
+      </div>
+    </a>`;
+  }).join("");
 }
 
 // ---- Presets: up to 10 saved builds (localStorage) --------------------
@@ -148,6 +192,8 @@ function snapshotState() {
 function restoreState(st) {
   if (!st || !weaponInfo(st.weapon)) return;
   $("weapon").value = st.weapon;
+  // Keep the route honest when a preset switches weapons on the config page.
+  if (location.hash.startsWith("#/w/")) location.hash = "#/w/" + st.weapon;
   applyWeapon(st.weapon, null); // resets pool/innate/visibility
   (st.slots || []).forEach((s, i) => {
     if (i >= slots.length) return;

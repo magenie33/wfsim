@@ -348,6 +348,20 @@ label.check input{width:auto}
 .opt-scn{font-size:11px;color:var(--muted);margin-top:4px}
 .preset-bar .pname{font:inherit;font-size:12px;padding:2px 8px;border:1px solid var(--accent);border-radius:999px;background:var(--panel2);color:var(--text);width:150px}
 .pchip .dirty{color:var(--gold);margin-left:4px;font-size:9px;vertical-align:1px}
+/* ---- home: the weapon list ---- */
+.home-page{max-width:1060px;margin:0 auto;padding:28px 18px}
+.home-h{font-size:26px;margin:6px 0 4px}
+.home-sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+#weapon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.wcard{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel2);text-decoration:none;color:var(--text);transition:border-color .15s}
+.wcard:hover{border-color:var(--accent)}
+.wcard .wc-img{width:84px;height:84px;object-fit:contain;flex:0 0 auto}
+.wc-name{font-size:17px;font-weight:700;margin-bottom:6px}
+.wc-tags{display:flex;flex-wrap:wrap;gap:5px}
+.wc-tags .tag{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+.topbar .brand{text-decoration:none;color:var(--text)}
+.back-home{text-decoration:none}
+body.on-home .back-home,body.on-home .weapon-pick{display:none}
 .pchip .pop.upd{width:auto;padding:0 7px;border-radius:999px;font-size:10px}
 .block-lock.dis{opacity:.45}
 .opt-meta .warn{color:var(--critical)}

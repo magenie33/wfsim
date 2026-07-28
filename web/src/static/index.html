@@ -8,12 +8,20 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">WF<span>Sim</span></div>
+    <a class="brand" href="#/">WF<span>Sim</span></a>
+    <a id="back-home" class="ghost-btn small back-home" href="#/">← Weapons</a>
     <label class="weapon-pick">Weapon <select id="weapon"></select></label>
     <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
   </header>
 
-  <main class="config-page">
+  <!-- Home: the weapon list. Click a card → that weapon's config page. -->
+  <main id="home-page" class="home-page" hidden>
+    <h1 class="home-h">Pick a weapon</h1>
+    <p class="home-sub">Every weapon here is fully modeled and calibrated against in-game numbers — build it, simulate it, optimize it.</p>
+    <div id="weapon-grid"></div>
+  </main>
+
+  <main class="config-page" hidden>
     <div class="wstrip">
       <img id="w-img" alt="" />
       <div>
