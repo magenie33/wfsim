@@ -13,12 +13,14 @@ item  ──references──▶  perk (trigger + grants)
 (weapon / arcane / mod)   (data/perks/, carries its granted effects inline)
 ```
 
-- A `perks:` entry is **either a bare id** (reference into `perks/`) **or a
-  full inline definition** — both are valid. Most perks exist on exactly one
-  item, and those may stay inline; the moment a second item carries the same
-  perk, it is PROMOTED to `perks/<id>.yaml` and both reference the id (both
-  Dual Toxocyst forms reference `frenzy`). One fact, one home — inline is a
-  convenience, never a second copy.
+- A `perks:` entry is **either a bare id (a reference) or a full inline
+  definition** — both are valid, and both register the perk in the GLOBAL
+  perk namespace. A second carrier just writes the bare id, wherever the
+  definition lives (table file or another item's inline block). Ids are
+  globally unique, machine-enforced (`weapons_data` tests): one definition,
+  everywhere else references. Moving a much-shared inline perk into
+  `perks/<id>.yaml` is tidiness, not a requirement — both Dual Toxocyst
+  forms reference the table perk `frenzy`.
 - A perk carries its `grants` block inline; a separate buff table returns
   only if two perks ever grant the same effect.
 

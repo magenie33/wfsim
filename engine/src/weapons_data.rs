@@ -56,8 +56,9 @@ pub struct PseudoReloadSpec {
 }
 
 /// A perk definition — either a `data/perks/*.yaml` entry or an inline
-/// block in a weapon's `perks:` list (data/README.md: both modes are
-/// valid; a perk carried by two or more items must live in the table).
+/// block in a weapon's `perks:` list. Both modes register the perk in the
+/// GLOBAL namespace: define once anywhere, reference by bare id from
+/// everywhere else (data/README.md).
 #[derive(Debug, Clone, Deserialize)]
 pub struct PerkSpec {
     pub id: String,
@@ -65,8 +66,9 @@ pub struct PerkSpec {
     pub grants: Option<GrantsSpec>,
 }
 
-/// One entry of a weapon's `perks:` list: a bare id string (reference into
-/// `data/perks/`) or a full inline definition (one-off perks).
+/// One entry of a weapon's `perks:` list: a bare id string (a reference —
+/// resolved against the table AND every inline definition) or a full
+/// inline definition.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum PerkRef {
@@ -75,7 +77,7 @@ pub enum PerkRef {
 }
 
 impl PerkRef {
-    /// Resolve to the perk definition (table lookup for id refs).
+    /// Resolve to the perk definition (global-namespace lookup for ids).
     pub fn resolve(&self) -> &PerkSpec {
         match self {
             PerkRef::Inline(p) => p,
@@ -178,8 +180,28 @@ pub fn perks() -> &'static [PerkSpec] {
     })
 }
 
+/// Find an inline perk definition among the given weapon specs.
+fn inline_perk_in<'a>(
+    id: &str,
+    specs: impl Iterator<Item = &'a WeaponSpec>,
+) -> Option<&'a PerkSpec> {
+    specs
+        .flat_map(|w| w.perks.iter())
+        .find_map(|pr| match pr {
+            PerkRef::Inline(p) if p.id == id => Some(p),
+            _ => None,
+        })
+}
+
+/// Perk lookup over the GLOBAL namespace: the `data/perks/` table first,
+/// then every weapon's inline definitions. Defining a perk inline registers
+/// it globally — any other entry may reference it by bare id (uniqueness is
+/// enforced by the engine test suite, so a bare id is never ambiguous).
 pub fn perk(id: &str) -> Option<&'static PerkSpec> {
-    perks().iter().find(|p| p.id == id)
+    perks()
+        .iter()
+        .find(|p| p.id == id)
+        .or_else(|| inline_perk_in(id, all().iter()))
 }
 
 /// Registry view: the SELECTABLE weapons (transform-group base entries; an
@@ -394,6 +416,11 @@ perks:
         let g = s.perks[1].resolve().grants.as_ref().unwrap();
         let inj = g.injected_element.as_ref().unwrap();
         assert_eq!(inj.element, "heat");
+        // An inline definition registers in the perk namespace: a bare-id
+        // reference from ANOTHER entry finds it.
+        let found = inline_perk_in("one_off", std::iter::once(&s)).expect("inline registered");
+        assert!(found.grants.is_some());
+        assert!(inline_perk_in("nope", std::iter::once(&s)).is_none());
     }
 
     #[test]
