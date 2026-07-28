@@ -1,7 +1,5 @@
 id: secondary_kinship
-kind: arcane
 name: Secondary Kinship
-arcane_type: secondary
 rarity: rare
 max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SecondaryCritChancePerBuff

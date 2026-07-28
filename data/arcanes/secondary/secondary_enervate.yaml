@@ -1,7 +1,5 @@
 id: secondary_enervate
-kind: arcane
 name: Secondary Enervate
-arcane_type: secondary
 rarity: rare
 max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SecondaryCritOnHit
@@ -15,6 +13,9 @@ effects:
   # `reset_after_big_crits` big crits (crit tier >= 2; rank+1, so rank 5 =
   # 6). Untimed (persists until reset), no stack cap, trigger rate-limited
   # to 30/s in game. Mirrors engine::perks::secondary_enervate (from_rank).
+  # The ramp/reset implementation is engine::perks::secondary_enervate;
+  # these constants are the spec of record, and the perk's
+  # from_rank_matches_the_arcane_yaml test pins code == data.
   - kind: buff
     trigger: on_hit
     grants: crit_chance

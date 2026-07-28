@@ -1,7 +1,5 @@
 id: secondary_merciless
-kind: arcane
 name: Secondary Merciless
-arcane_type: secondary
 rarity: rare
 max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SecondaryDamageOnKill

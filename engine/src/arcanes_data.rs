@@ -25,8 +25,6 @@ use crate::loadout::{count_x, fill_x, pct, Rarity, StackPolicy};
 struct ArcaneFile {
     id: String,
     name: String,
-    #[allow(dead_code)]
-    arcane_type: String,
     rarity: String,
     max_rank: u32,
     /// Weapon trait required for the effects to apply (Akimbo Slip Shot →
