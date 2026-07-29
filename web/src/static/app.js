@@ -523,6 +523,55 @@ const storePresetList = (d, ps) => localStorage.setItem(presetListKey(d), JSON.s
   } catch (_) {}
 })();
 
+// One-time rewrite of the EVOLUTION ids that dropped their ad-hoc
+// abbreviations for full weapon names (2026-07-29: dt_ → dual_toxocyst_,
+// lae_ → laetum_). Saved builds store the per-tier selection and the
+// optimizer's scope stores its option sets, so both collections carry ids
+// that would otherwise silently stop resolving.
+(function migrateEvolutionIds() {
+  try {
+    const fix = (id) => (typeof id === "string"
+      ? id.replace(/^dt_/, "dual_toxocyst_").replace(/^lae_/, "laetum_")
+      : id);
+    const rewriteKeys = (obj) => {
+      if (!obj || typeof obj !== "object") return obj;
+      const out = {};
+      for (const [k, v] of Object.entries(obj)) out[fix(k)] = v;
+      return out;
+    };
+    // Build presets: state.evoSel = { tier: id|null }. The domain names
+    // are literals here on purpose: this block runs BEFORE the BUILDS
+    // constant is initialised, and a temporal-dead-zone throw would be
+    // swallowed by the catch, silently skipping the migration.
+    const buildsDomain = "builder-builds";
+    const builds = loadPresetList(buildsDomain);
+    let touched = false;
+    builds.forEach((p) => {
+      const sel = p.state && p.state.evoSel;
+      if (!sel) return;
+      Object.keys(sel).forEach((t) => {
+        const nv = fix(sel[t]);
+        if (nv !== sel[t]) { sel[t] = nv; touched = true; }
+      });
+    });
+    if (touched) storePresetList(buildsDomain, builds);
+    // Optimizer evolution presets: state.evos = { tier: { id: mark } }
+    const evoDomain = "optimizer-evolutions";
+    const evos = loadPresetList(evoDomain);
+    let touched2 = false;
+    evos.forEach((p) => {
+      const tiers = p.state && p.state.evos;
+      if (!tiers) return;
+      Object.keys(tiers).forEach((t) => {
+        const before = JSON.stringify(tiers[t]);
+        tiers[t] = rewriteKeys(tiers[t]);
+        if (JSON.stringify(tiers[t]) !== before) touched2 = true;
+      });
+    });
+    if (touched2) storePresetList(evoDomain, evos);
+  } catch (_) {}
+})();
+
 // The builder module's build presets — domain "builder-builds". A build
 // preset captures the WHOLE configuration: weapon, mod slots (mod id +
 // polarity + rank), arcane + rank, and the per-tier evolution selection.

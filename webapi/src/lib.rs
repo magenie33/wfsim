@@ -1312,13 +1312,13 @@ fn chosen_evolutions(v: &Value) -> Result<Vec<String>, String> {
         }
         return Ok(ids);
     }
-    let evo2 = match get_str(v, "evo2", "dt_fevered_frenzy") {
-        "carnage" | "dt_carnage_reign" => "dt_carnage_reign",
-        _ => "dt_fevered_frenzy",
+    let evo2 = match get_str(v, "evo2", "dual_toxocyst_fevered_frenzy") {
+        "carnage" | "dual_toxocyst_carnage_reign" => "dual_toxocyst_carnage_reign",
+        _ => "dual_toxocyst_fevered_frenzy",
     };
     Ok(vec![
-        "dt_commodores_fortune".to_string(),
-        "dt_evolved_autoloader".to_string(),
+        "dual_toxocyst_commodores_fortune".to_string(),
+        "dual_toxocyst_evolved_autoloader".to_string(),
         evo2.to_string(),
     ])
 }

@@ -53,22 +53,22 @@ attack:
   damage: { impact: 64.0, slash: 96.0 }   # total 160
 
 # Incarnon evolutions are perks shared by the transform group; definitions
-# live in data/evolutions/lae_*.yaml.
+# live in data/evolutions/laetum_*.yaml.
 # incarnon_evolutions:
 # - { tier: 1, unlock: kill 100 enemies,
-# options: [lae_evo1_incarnon_form] }
+# options: [laetum_evo1_incarnon_form] }
 # - { tier: 2, unlock: kill 8 Eximus with the Incarnon Form,
-# options: [lae_marksmans_hand, lae_rapid_wrath, lae_raptors_chase] }
+# options: [laetum_marksmans_hand, laetum_rapid_wrath, laetum_raptors_chase] }
 # - { tier: 3, unlock: land 8 headshots on Void Angels without reloading,
-# options: [lae_lethal_rearmament, lae_awakened_readiness,
-# lae_feather_of_justice] }
+# options: [laetum_lethal_rearmament, laetum_awakened_readiness,
+# laetum_feather_of_justice] }
 # - { tier: 4, unlock: close 12 Ruptures in Void Flood,
-# options: [lae_caput_mortuum, lae_incarnon_efficiency,
-# lae_elemental_excess] }
+# options: [laetum_caput_mortuum, laetum_incarnon_efficiency,
+# laetum_elemental_excess] }
 # - { tier: 5, unlock: complete a solo mission with an Incarnon weapon in
 # every slot,
-# options: [lae_devouring_attrition, lae_reapers_plenty,
-# lae_overwhelming_attrition] }
+# options: [laetum_devouring_attrition, laetum_reapers_plenty,
+# laetum_overwhelming_attrition] }
 
 source:
   url: https://wiki.warframe.com/w/Laetum

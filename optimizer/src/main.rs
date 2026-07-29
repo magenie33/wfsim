@@ -128,17 +128,17 @@ fn main() {
     // from_data builds either form from them.
     let evo2s: &[(&'static str, &'static str)] = if evo2_both {
         &[
-            ("dt_fevered_frenzy", "fevered"),
-            ("dt_carnage_reign", "carnage"),
+            ("dual_toxocyst_fevered_frenzy", "fevered"),
+            ("dual_toxocyst_carnage_reign", "carnage"),
         ]
     } else {
-        &[("dt_fevered_frenzy", "fevered")]
+        &[("dual_toxocyst_fevered_frenzy", "fevered")]
     };
     // `variant` is now an index into this evo-set label table (widened from a
     // &str so the web can search arbitrary per-tier evolution sets).
     let variant_labels: Vec<&'static str> = evo2s.iter().map(|(_, l)| *l).collect();
     for (vi, &(evo2, label)) in evo2s.iter().enumerate() {
-        let evos = ["dt_commodores_fortune", "dt_evolved_autoloader", evo2];
+        let evos = ["dual_toxocyst_commodores_fortune", "dual_toxocyst_evolved_autoloader", evo2];
         let base = WeaponBase::from_data("dual_toxocyst_incarnon", true, &evos);
         let base_form = WeaponBase::from_data("dual_toxocyst", true, &evos);
         let (mut c, stats) = enumerate_candidates(
@@ -179,9 +179,9 @@ fn main() {
         "dual_toxocyst",
         true,
         &[
-            "dt_commodores_fortune",
-            "dt_evolved_autoloader",
-            "dt_fevered_frenzy",
+            "dual_toxocyst_commodores_fortune",
+            "dual_toxocyst_evolved_autoloader",
+            "dual_toxocyst_fevered_frenzy",
         ],
     );
     let fx_of = |id: &str| -> ArcaneFx {

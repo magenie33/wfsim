@@ -599,7 +599,7 @@ mod laetum_tests {
         assert_eq!(f.transmute_out, 2.0);
         assert_eq!(f.charge_rate, 0.0);
 
-        let eff = WeaponBase::from_data("laetum_incarnon", true, &["lae_incarnon_efficiency"]);
+        let eff = WeaponBase::from_data("laetum_incarnon", true, &["laetum_incarnon_efficiency"]);
         let g = eff.incarnon.expect("incarnon economy");
         assert_eq!(g.charge_rate, 0.5);
         // 12 / 1.5 = 8 hits (wiki).

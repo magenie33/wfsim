@@ -1123,7 +1123,7 @@ mod tests {
 
     #[test]
     fn requires_gate_disables_and_cond_buff() {
-        let base = WeaponBase::from_data("dual_toxocyst", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]); // traits: semi_auto
+        let base = WeaponBase::from_data("dual_toxocyst", true, &["dual_toxocyst_commodores_fortune", "dual_toxocyst_evolved_autoloader", "dual_toxocyst_fevered_frenzy"]); // traits: semi_auto
         let p0 = resolve(&base, &[], StackPolicy::AssumedMax);
         // requires: a mod needing `beam` is INERT on Dual Toxocyst (no beam);
         // a mod needing `semi_auto` applies.
@@ -1197,7 +1197,7 @@ mod tests {
         ];
         let refs: Vec<&ModDef> = mods.iter().collect();
         let p = resolve(
-            &WeaponBase::from_data("dual_toxocyst_incarnon", false, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]),
+            &WeaponBase::from_data("dual_toxocyst_incarnon", false, &["dual_toxocyst_commodores_fortune", "dual_toxocyst_evolved_autoloader", "dual_toxocyst_fevered_frenzy"]),
             &refs,
             StackPolicy::AssumedMax,
         );
@@ -1236,7 +1236,7 @@ mod tests {
         ];
         let refs: Vec<&ModDef> = mods.iter().collect();
         let p = resolve(
-            &WeaponBase::from_data("dual_toxocyst_incarnon", false, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]),
+            &WeaponBase::from_data("dual_toxocyst_incarnon", false, &["dual_toxocyst_commodores_fortune", "dual_toxocyst_evolved_autoloader", "dual_toxocyst_fevered_frenzy"]),
             &refs,
             StackPolicy::AssumedMax,
         );
@@ -1247,7 +1247,7 @@ mod tests {
 
     #[test]
     fn magazine_and_status_duration_buckets_resolve() {
-        let base = WeaponBase::from_data("dual_toxocyst", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
+        let base = WeaponBase::from_data("dual_toxocyst", true, &["dual_toxocyst_commodores_fortune", "dual_toxocyst_evolved_autoloader", "dual_toxocyst_fevered_frenzy"]);
         let baseline = resolve(&base, &[], StackPolicy::AssumedMax).magazine_size;
         let mods = [
             m("mag", vec![ModEffect::MagazineCapacity(0.60)]),   // +60% of base
@@ -1265,7 +1265,7 @@ mod tests {
         // A +90% Impact physical mod scales the BASE Impact by ×1.9 and does
         // NOT add modified_base as a combined element (the old, wrong behavior).
         // Puncture/Slash are untouched; the total rises only by the impact gain.
-        let base = WeaponBase::from_data("dual_toxocyst", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
+        let base = WeaponBase::from_data("dual_toxocyst", true, &["dual_toxocyst_commodores_fortune", "dual_toxocyst_evolved_autoloader", "dual_toxocyst_fevered_frenzy"]);
         let p0 = resolve(&base, &[], StackPolicy::AssumedMax);
         let m_imp = m("phys", vec![ModEffect::Physical(Impact, 0.90)]);
         let p1 = resolve(&base, &[&m_imp], StackPolicy::AssumedMax);
@@ -1287,7 +1287,7 @@ mod tests {
                 ModEffect::StatusChance(0.60),
             ],
         );
-        let base = WeaponBase::from_data("dual_toxocyst_incarnon", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
+        let base = WeaponBase::from_data("dual_toxocyst_incarnon", true, &["dual_toxocyst_commodores_fortune", "dual_toxocyst_evolved_autoloader", "dual_toxocyst_fevered_frenzy"]);
         let p = resolve(&base, &[&pest], StackPolicy::AssumedMax);
         assert!(p
             .elem_dot_bonus
@@ -1303,7 +1303,7 @@ mod tests {
         let heat = m("scorch", vec![ModEffect::Element(Heat, 0.60)]);
         let cold = m("frostbite", vec![ModEffect::Element(Cold, 0.60)]);
         let tox = m("pestilence", vec![ModEffect::Element(Toxin, 0.60)]);
-        let base = WeaponBase::from_data("dual_toxocyst_incarnon", false, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
+        let base = WeaponBase::from_data("dual_toxocyst_incarnon", false, &["dual_toxocyst_commodores_fortune", "dual_toxocyst_evolved_autoloader", "dual_toxocyst_fevered_frenzy"]);
 
         // Heat,Cold,Toxin -> Blast + trailing Toxin.
         let p1 = resolve(&base, &[&heat, &cold, &tox], StackPolicy::AssumedMax);

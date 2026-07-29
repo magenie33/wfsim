@@ -304,6 +304,26 @@ pub fn pool() -> &'static Vec<EvolutionDef> {
             // everything under evolutions/ must parse as an evolution.
             let ef = serde_norway::from_str::<EvoFile>(text)
                 .unwrap_or_else(|e| panic!("parse {path}: {e}"));
+            // NAMING CONTRACT, enforced at load (user, 2026-07-29: full
+            // weapon names, no abbreviations — long but unambiguous):
+            //   id = "<weapon>_<evolution>"  and  filename = "<id>.yaml".
+            // Scoping is NOT redundant with the `weapon:` field: evolution
+            // NAMES repeat across weapons with different values (Marksman's
+            // Hand is −50% recoil on Dual Toxocyst, −40% on Laetum), so the
+            // id must carry the weapon. Deriving both the file name and the
+            // prefix from it means the three can never drift apart.
+            let stem = path.rsplit('/').next().unwrap_or(path).trim_end_matches(".yaml");
+            assert!(
+                ef.id == stem,
+                "{path}: id '{}' must match the filename",
+                ef.id
+            );
+            assert!(
+                ef.id.strip_prefix(&ef.weapon).is_some_and(|r| r.starts_with('_')),
+                "{path}: id '{}' must start with the weapon id '{}_'",
+                ef.id,
+                ef.weapon
+            );
             let effects = ef.effects.iter().filter_map(effect).collect();
             out.push(EvolutionDef {
                 id: ef.id,
@@ -355,30 +375,30 @@ mod tests {
         assert!(dt.len() >= 9, "expected the 9 DT evolutions, got {}", dt.len());
         assert_eq!(options("dual_toxocyst", 2).len(), 2); // the EVO II choice
         // Broken evolutions carry the wiki flag.
-        assert!(get("dt_ready_retaliation").unwrap().currently_broken);
-        assert!(get("dt_neurotoxin").unwrap().currently_broken);
+        assert!(get("dual_toxocyst_ready_retaliation").unwrap().currently_broken);
+        assert!(get("dual_toxocyst_neurotoxin").unwrap().currently_broken);
     }
 
     #[test]
     fn fevered_and_carnage_parse_their_wiki_values() {
-        let fe = get("dt_fevered_frenzy").unwrap();
+        let fe = get("dual_toxocyst_fevered_frenzy").unwrap();
         assert!(fe.effects.contains(&EvoEffect::FlatBaseDamage(50.0)));
         assert!(fe
             .effects
             .contains(&EvoEffect::AssumedMaxMultishot { total: 1.0, max_stacks: 20 }));
-        let ca = get("dt_carnage_reign").unwrap();
+        let ca = get("dual_toxocyst_carnage_reign").unwrap();
         assert!(ca.effects.contains(&EvoEffect::FlatBaseDamage(60.0)));
         assert!(ca.effects.contains(&EvoEffect::ConditionOverload { per_type: 0.33 }));
-        let cf = get("dt_commodores_fortune").unwrap();
+        let cf = get("dual_toxocyst_commodores_fortune").unwrap();
         assert!(cf.effects.contains(&EvoEffect::FlatBaseCritChance(0.20)));
     }
 
     #[test]
     fn broken_evolutions_apply_nothing() {
         use crate::loadout::WeaponBase;
-        let with = WeaponBase::from_data("dual_toxocyst", false, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
+        let with = WeaponBase::from_data("dual_toxocyst", false, &["dual_toxocyst_commodores_fortune", "dual_toxocyst_evolved_autoloader", "dual_toxocyst_fevered_frenzy"]);
         let mut probe = with.clone();
-        apply(&mut probe, &[get("dt_ready_retaliation").unwrap()]);
+        apply(&mut probe, &[get("dual_toxocyst_ready_retaliation").unwrap()]);
         assert!((probe.base_vector.total() - with.base_vector.total()).abs() < 1e-9);
         assert_eq!(probe.base_crit_chance, with.base_crit_chance);
     }

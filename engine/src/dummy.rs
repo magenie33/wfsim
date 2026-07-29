@@ -2669,7 +2669,7 @@ mod tests {
         let base = WeaponBase::from_data(
             "dual_toxocyst_incarnon",
             true,
-            &["dt_evo1_incarnon_form", "dt_fevered_frenzy"],
+            &["dual_toxocyst_evo1_incarnon_form", "dual_toxocyst_fevered_frenzy"],
         );
         let panel = resolve(&base, &[], StackPolicy::Emergent);
         let ms = panel.evo_ms.expect("fevered frenzy grants the evo ms buff");
@@ -2794,9 +2794,9 @@ mod tests {
             "dual_toxocyst",
             true,
             &[
-                "dt_commodores_fortune",
-                "dt_evolved_autoloader",
-                "dt_fevered_frenzy",
+                "dual_toxocyst_commodores_fortune",
+                "dual_toxocyst_evolved_autoloader",
+                "dual_toxocyst_fevered_frenzy",
             ],
         );
         let panel = resolve(&base, &[&expel], StackPolicy::AssumedMax);

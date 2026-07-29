@@ -1365,9 +1365,9 @@ mod tests {
             "dual_toxocyst_incarnon",
             true,
             &[
-                "dt_commodores_fortune",
-                "dt_evolved_autoloader",
-                "dt_fevered_frenzy",
+                "dual_toxocyst_commodores_fortune",
+                "dual_toxocyst_evolved_autoloader",
+                "dual_toxocyst_fevered_frenzy",
             ],
         );
         let (cands, stats) = enumerate_candidates(
@@ -1377,9 +1377,9 @@ mod tests {
                 "dual_toxocyst",
                 true,
                 &[
-                    "dt_commodores_fortune",
-                    "dt_evolved_autoloader",
-                    "dt_fevered_frenzy",
+                    "dual_toxocyst_commodores_fortune",
+                    "dual_toxocyst_evolved_autoloader",
+                    "dual_toxocyst_fevered_frenzy",
                 ],
             )),
             0,
@@ -1414,9 +1414,9 @@ mod tests {
                 "dual_toxocyst",
                 true,
                 &[
-                    "dt_commodores_fortune",
-                    "dt_evolved_autoloader",
-                    "dt_fevered_frenzy",
+                    "dual_toxocyst_commodores_fortune",
+                    "dual_toxocyst_evolved_autoloader",
+                    "dual_toxocyst_fevered_frenzy",
                 ],
             )),
             0,
@@ -1467,9 +1467,9 @@ mod tests {
             "dual_toxocyst_incarnon",
             true,
             &[
-                "dt_commodores_fortune",
-                "dt_evolved_autoloader",
-                "dt_fevered_frenzy",
+                "dual_toxocyst_commodores_fortune",
+                "dual_toxocyst_evolved_autoloader",
+                "dual_toxocyst_fevered_frenzy",
             ],
         );
         let run = |opts: &[Option<&ModDef>]| {
@@ -1573,9 +1573,9 @@ mod tests {
             "dual_toxocyst_incarnon",
             true,
             &[
-                "dt_commodores_fortune",
-                "dt_evolved_autoloader",
-                "dt_fevered_frenzy",
+                "dual_toxocyst_commodores_fortune",
+                "dual_toxocyst_evolved_autoloader",
+                "dual_toxocyst_fevered_frenzy",
             ],
         );
         let cons = Constraints {
