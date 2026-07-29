@@ -2050,11 +2050,9 @@ function updateOptEstimate() {
   // mods after marking — req clicks are blocked before this point).
   const poolStarved = search > 0 && fixed >= size;
   const valid = fixed <= size && subsets > 0 && !dupReq && !poolStarved;
-  const est = Math.round(subsets).toLocaleString();
   // No cap (user: use local resources). Show the estimate + a heads-up when big;
   // only block genuinely invalid scopes.
   const big = jobs > 500000;
-  const exNote = exFixed ? " (exilus pinned)" : exOptions > 1 ? ` (× ${exOptions} exilus options)` : "";
   // Scenario + funnel preview: what every candidate is actually tested
   // against — the Sim panel's enemy settings, and the successive-halving
   // schedule (survivors × runs per round; a JS mirror of schedule()).
@@ -2084,10 +2082,12 @@ function updateOptEstimate() {
     const parts = [];
     let field = Math.round(jobs);
     rounds.forEach(([r, k]) => { parts.push(`${field.toLocaleString()}×${r}`); field = Math.min(field, k); });
-    scenario = `<div class="opt-scn">each candidate vs <b>${en.name || optSim.enemy}</b> Lv ${optSim.level}${optSim.steel_path ? " (SP)" : ""} · ${optSim.headshot_pct}% headshots · ${optSim.duration} s engagements · planned funnel (jobs×runs): ${parts.join(" → ")} → ${F} finalists at ${FR.toLocaleString()} runs (racing cuts deeper, tie-amnesty keeps up to 2×)</div>`;
+    scenario = `<div class="opt-scn">each build vs <b>${en.name || optSim.enemy}</b> Lv ${optSim.level}${optSim.steel_path ? " (SP)" : ""} · ${optSim.headshot_pct}% headshots · ${optSim.duration} s engagements · planned funnel (builds×runs): ${parts.join(" → ")} → ${F} finalists at ${FR.toLocaleString()} runs (racing cuts deeper, tie-amnesty keeps up to 2×)</div>`;
   }
+  // ONE total, no decomposition — "×N arcanes" leaked a search-internal
+  // dimension into the summary line (user, 2026-07-29).
   $("opt-estimate").innerHTML = (valid
-    ? `~<b>${est}</b> candidates${exNote} × ${arcCount} arcanes ≈ ${Math.round(jobs).toLocaleString()} jobs${big ? ` <span class="warn">— large; this may take a while</span>` : ""}`
+    ? `~<b>${Math.round(jobs).toLocaleString()}</b> candidate builds${big ? ` <span class="warn">— large; this may take a while</span>` : ""}`
     : `<span class="warn">${dupReq ? `${(modById(dupReq) || { name: dupReq }).name} is required in both blocks — a mod equips once` : poolStarved ? `pooled mods reserve ≥1 open slot — raise max mods or clear pools` : `more required (${fixed}) than slots (${size})`}</span>`) + scenario;
   // Never re-enable while a background job is still running.
   $("run-opt").disabled = !valid || optJobId != null;
@@ -2200,7 +2200,7 @@ function renderOptProgress(st) {
   ).join("");
   const sub = st.phase === "enumerating"
     ? ""
-    : `<div class="opt-prog-sub">${pct.toFixed(1)}% · ${st.sims_done.toLocaleString()} / ${st.sims_planned.toLocaleString()} sims${st.candidates ? ` · ${st.candidates.toLocaleString()} candidates × arcanes = ${st.jobs.toLocaleString()} jobs` : ""}</div>`;
+    : `<div class="opt-prog-sub">${pct.toFixed(1)}% · ${st.sims_done.toLocaleString()} / ${st.sims_planned.toLocaleString()} sims${st.jobs ? ` · ${st.jobs.toLocaleString()} candidate builds` : ""}</div>`;
   $("opt-results").innerHTML = `<div class="opt-progress">
     <div class="opt-prog-head"><span>${head}</span><span class="opt-elapsed">${st.elapsed_s.toFixed(0)}s</span></div>
     <div class="opt-bar"><i style="width:${pct}%"></i></div>
@@ -2257,7 +2257,7 @@ function renderOptResults(r) {
       <div class="opt-mods">${mods}</div>
     </div>`;
   }).join("");
-  $("opt-results").innerHTML = `<div class="opt-meta">${r.cancelled ? `<span class="warn">cancelled — best-so-far ranking (lower precision than a full run)</span> · ` : ""}${r.candidates} candidates · ${r.jobs} jobs · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${r.headshot_pct ?? "?"}% headshots · ${r.duration ?? "?"} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
+  $("opt-results").innerHTML = `<div class="opt-meta">${r.cancelled ? `<span class="warn">cancelled — best-so-far ranking (lower precision than a full run)</span> · ` : ""}${(r.jobs || 0).toLocaleString()} candidate builds · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${r.headshot_pct ?? "?"}% headshots · ${r.duration ?? "?"} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
   $("opt-results").querySelectorAll(".opt-add").forEach((el) =>
     el.addEventListener("click", () => addResult(JSON.parse(el.dataset.r), el)));
 }
