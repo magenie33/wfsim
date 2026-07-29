@@ -343,6 +343,14 @@ Exceptions:
 - Some parts take location damage but no crit bonus at all (e.g. MOA "fanny
   pack": 3.0x, no crit interaction).
 
+**Where a pellet lands** is rolled **per pellet**, not per trigger pull: the
+sim's `headshot_pct` is a per-pellet aim weight, because aiming at the head
+does not put every pellet of a spread on it (decision 2026-07-29). It follows
+that the Incarnon gauge charges per headshot *pellet* (multishot fills it
+faster), on-headshot buffs trigger from any one pellet of a pull, and the
+reported headshot rate is pellets/pellets. Mean headshot rate is identical
+under either model; the per-pellet roll gives lower variance.
+
 Melee **combo** raises effective crit chance/damage; interaction with tiers is a
 high-risk area.
 

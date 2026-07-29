@@ -1941,6 +1941,15 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // Part FIRST, crit roll second: weak-point crit chance (Pistol
             // Acuity; Cascadia Accuracy under assumed-max) exists only on
             // the pellet that actually lands on a weak point.
+            //
+            // The landing spot is rolled PER PELLET, not per trigger pull
+            // (user, 2026-07-29): aiming at the head does not put every
+            // pellet of a spread on it, so `headshot_pct` is a per-pellet
+            // aim weight. Consequences that follow from this and are
+            // deliberate: the Incarnon gauge charges per headshot PELLET
+            // (multishot fills it faster), on-headshot buffs trigger from
+            // any one pellet, and the reported headshot rate is
+            // pellets/pellets. Do NOT "fix" this into a per-pull roll.
             let part = pick_part(&params.body_parts, rng);
             let cc_pellet = effective_cc
                 + if part.is_head {
