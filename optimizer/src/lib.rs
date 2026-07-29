@@ -34,7 +34,10 @@ pub fn pool() -> Vec<ModDef> {
     // engine::mods_data. Mods are DATA now — add/edit a YAML file, no code.
     // Exilus (utility) mods have no damage model — enumerating them only
     // multiplies the search space, so the optimizer's pool excludes them.
-    wfsim_engine::mods_data::pistol_pool().into_iter().filter(|m| !m.exilus).collect()
+    wfsim_engine::mods_data::pistol_pool()
+        .into_iter()
+        .filter(|m| !m.exilus)
+        .collect()
 }
 
 /// Prescribed-mods constraints: forced inclusions/exclusions by mod id.
@@ -103,8 +106,18 @@ pub fn enumerate_candidates(
     exilus_opts: &[Option<&ModDef>],
 ) -> (Vec<Candidate>, EnumStats) {
     let (out, stats, _complete) = enumerate_candidates_observed(
-        pool, base, second_form, variant, min_slots, max_slots, cap, innate, constraints,
-        exilus_opts, None, 0,
+        pool,
+        base,
+        second_form,
+        variant,
+        min_slots,
+        max_slots,
+        cap,
+        innate,
+        constraints,
+        exilus_opts,
+        None,
+        0,
     );
     (out, stats)
 }
@@ -144,7 +157,11 @@ pub fn enumerate_candidates_observed(
     let mut scratch = Vec::new();
     let mut subset = Vec::with_capacity(max_slots as usize);
     let default_opts = [None];
-    let exilus_opts = if exilus_opts.is_empty() { &default_opts[..] } else { exilus_opts };
+    let exilus_opts = if exilus_opts.is_empty() {
+        &default_opts[..]
+    } else {
+        exilus_opts
+    };
     let mut all: Vec<Candidate> = Vec::new();
     let complete = enumerate_rec(
         pool,
@@ -208,7 +225,11 @@ pub fn enumerate_candidates_each(
     let mut scratch = Vec::new();
     let mut subset = Vec::with_capacity(max_slots as usize);
     let default_opts = [None];
-    let exilus_opts = if exilus_opts.is_empty() { &default_opts[..] } else { exilus_opts };
+    let exilus_opts = if exilus_opts.is_empty() {
+        &default_opts[..]
+    } else {
+        exilus_opts
+    };
     enumerate_rec(
         pool,
         base,
@@ -370,9 +391,10 @@ fn expand_subset(
         // Equip-once + family exclusivity across the 8+1 slots (future-proof;
         // today's exilus mods share no family with damage mods).
         if let Some(x) = xopt {
-            if subset.iter().any(|&i| {
-                pool[i].id == x.id || (x.family.is_some() && pool[i].family == x.family)
-            }) {
+            if subset
+                .iter()
+                .any(|&i| pool[i].id == x.id || (x.family.is_some() && pool[i].family == x.family))
+            {
                 continue;
             }
         }
@@ -383,7 +405,10 @@ fn expand_subset(
         let mut slots_vec;
         let slots: &[Option<Polarity>] = match xopt {
             Some(x) => {
-                planned.push(PlannedMod { base_drain: x.base_drain, polarity: x.polarity });
+                planned.push(PlannedMod {
+                    base_drain: x.base_drain,
+                    polarity: x.polarity,
+                });
                 slots_vec = innate.to_vec();
                 slots_vec.push(None);
                 &slots_vec
@@ -660,6 +685,46 @@ pub fn schedule_to(n_jobs: usize, final_runs: u32, finalists: usize) -> Vec<(u32
     rounds
 }
 
+/// Worker-thread budget for [`evaluate_batch`] / [`stream_screen`]. 0 =
+/// auto: ALL CORES MINUS TWO — the optimizer must not freeze the machine
+/// it runs on (user, 2026-07-29: the full-core default made the whole
+/// system stutter). Set per request via [`set_worker_threads`]; the seeds
+/// never depend on the thread count, so any setting reproduces the same
+/// numbers.
+static WORKER_THREADS: AtomicUsize = AtomicUsize::new(0);
+
+pub fn set_worker_threads(n: usize) {
+    WORKER_THREADS.store(n, Ordering::Relaxed);
+}
+
+fn worker_threads() -> usize {
+    let n = WORKER_THREADS.load(Ordering::Relaxed);
+    if n > 0 {
+        return n;
+    }
+    std::thread::available_parallelism()
+        .map(|c| c.get())
+        .unwrap_or(8)
+        .saturating_sub(2)
+        .max(1)
+}
+
+/// Drop the CURRENT thread to below-normal scheduling priority (Windows;
+/// no-op elsewhere): the optimizer soaks idle cycles at full speed but
+/// yields the moment the user does anything interactive.
+pub fn deprioritize_current_thread() {
+    #[cfg(windows)]
+    unsafe {
+        #[link(name = "kernel32")]
+        unsafe extern "system" {
+            fn GetCurrentThread() -> *mut core::ffi::c_void;
+            fn SetThreadPriority(h: *mut core::ffi::c_void, p: i32) -> i32;
+        }
+        const THREAD_PRIORITY_BELOW_NORMAL: i32 = -1;
+        SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
+    }
+}
+
 /// Deterministic per-job seed, mixed per round. One definition for both
 /// evaluation strategies: the seed depends only on (candidate, arcane), never
 /// on thread count or chunking, so serial wasm evaluation reproduces native
@@ -682,22 +747,24 @@ pub fn evaluate_batch(
     seed: u64,
     state: Option<&FunnelState>,
 ) -> Vec<Option<Summary>> {
-    let threads = std::thread::available_parallelism()
-        .map(|n| n.get())
-        .unwrap_or(8)
-        .max(1);
+    let threads = worker_threads();
     let chunk = jobs.len().div_ceil(threads).max(1);
     let mut results: Vec<Option<Summary>> = vec![None; jobs.len()];
     std::thread::scope(|scope| {
         for (ids, res) in jobs.chunks(chunk).zip(results.chunks_mut(chunk)) {
             let scenario = scenario.clone();
             scope.spawn(move || {
+                deprioritize_current_thread();
                 for (k, &(ci, ai)) in ids.iter().enumerate() {
                     if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
                         return;
                     }
                     res[k] = Some(evaluate(
-                        &cands[ci], &arcanes[ai], &scenario, runs, job_seed(seed, ci, ai),
+                        &cands[ci],
+                        &arcanes[ai],
+                        &scenario,
+                        runs,
+                        job_seed(seed, ci, ai),
                     ));
                     if let Some(st) = state {
                         st.sims_done.fetch_add(runs as u64, Ordering::Relaxed);
@@ -727,7 +794,11 @@ pub fn evaluate_batch(
             break;
         }
         results[k] = Some(evaluate(
-            &cands[ci], &arcanes[ai], scenario, runs, job_seed(seed, ci, ai),
+            &cands[ci],
+            &arcanes[ai],
+            scenario,
+            runs,
+            job_seed(seed, ci, ai),
         ));
         if let Some(st) = state {
             st.sims_done.fetch_add(runs as u64, Ordering::Relaxed);
@@ -799,14 +870,11 @@ pub fn stream_screen(
     use std::cmp::Reverse;
     use std::collections::BinaryHeap;
     use std::sync::Arc;
-    let threads = std::thread::available_parallelism()
-        .map(|n| n.get())
-        .unwrap_or(8)
-        .saturating_sub(1) // the producer (enumeration) runs on the caller's thread
-        .max(1);
+    let threads = worker_threads();
     let (tx, rx) = std::sync::mpsc::sync_channel::<(usize, Arc<Candidate>)>(4096);
     let rx = std::sync::Mutex::new(rx);
-    let top: std::sync::Mutex<BinaryHeap<Reverse<Scored>>> = std::sync::Mutex::new(BinaryHeap::new());
+    let top: std::sync::Mutex<BinaryHeap<Reverse<Scored>>> =
+        std::sync::Mutex::new(BinaryHeap::new());
     // Fast-path floor: bits of the k-th kill progress once the heap is full
     // (kp ≥ 0 → to_bits is order-preserving). Strictly-below scores skip
     // the lock; boundary ties take the slow path and resolve under it.
@@ -815,40 +883,45 @@ pub fn stream_screen(
     std::thread::scope(|scope| {
         for _ in 0..threads {
             let (rx, top, floor, full) = (&rx, &top, &floor, &full);
-            scope.spawn(move || loop {
-                let msg = rx.lock().unwrap().recv();
-                let Ok((seq, cand)) = msg else { return };
-                for (ai, arc) in arcanes.iter().enumerate() {
-                    if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
-                        return;
-                    }
-                    let s = evaluate(&cand, arc, scenario, runs, job_seed(seed, seq, ai));
-                    if let Some(st) = state {
-                        st.sims_done.fetch_add(runs as u64, Ordering::Relaxed);
-                    }
-                    let kp = s.mean_kill_progress.max(0.0);
-                    if full.load(Ordering::Relaxed) && kp.to_bits() < floor.load(Ordering::Relaxed) {
-                        continue;
-                    }
-                    let item = Scored {
-                        kp,
-                        eff: s.mean_effective_damage,
-                        seq,
-                        ai,
-                        cand: cand.clone(),
-                        summary: s,
-                    };
-                    let mut h = top.lock().unwrap();
-                    if h.len() < keep {
-                        h.push(Reverse(item));
-                        if h.len() == keep {
-                            floor.store(h.peek().unwrap().0.kp.to_bits(), Ordering::Relaxed);
-                            full.store(true, Ordering::Relaxed);
+            scope.spawn(move || {
+                deprioritize_current_thread();
+                loop {
+                    let msg = rx.lock().unwrap().recv();
+                    let Ok((seq, cand)) = msg else { return };
+                    for (ai, arc) in arcanes.iter().enumerate() {
+                        if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
+                            return;
                         }
-                    } else if h.peek().is_some_and(|Reverse(min)| item > *min) {
-                        h.pop();
-                        h.push(Reverse(item));
-                        floor.store(h.peek().unwrap().0.kp.to_bits(), Ordering::Relaxed);
+                        let s = evaluate(&cand, arc, scenario, runs, job_seed(seed, seq, ai));
+                        if let Some(st) = state {
+                            st.sims_done.fetch_add(runs as u64, Ordering::Relaxed);
+                        }
+                        let kp = s.mean_kill_progress.max(0.0);
+                        if full.load(Ordering::Relaxed)
+                            && kp.to_bits() < floor.load(Ordering::Relaxed)
+                        {
+                            continue;
+                        }
+                        let item = Scored {
+                            kp,
+                            eff: s.mean_effective_damage,
+                            seq,
+                            ai,
+                            cand: cand.clone(),
+                            summary: s,
+                        };
+                        let mut h = top.lock().unwrap();
+                        if h.len() < keep {
+                            h.push(Reverse(item));
+                            if h.len() == keep {
+                                floor.store(h.peek().unwrap().0.kp.to_bits(), Ordering::Relaxed);
+                                full.store(true, Ordering::Relaxed);
+                            }
+                        } else if h.peek().is_some_and(|Reverse(min)| item > *min) {
+                            h.pop();
+                            h.push(Reverse(item));
+                            floor.store(h.peek().unwrap().0.kp.to_bits(), Ordering::Relaxed);
+                        }
                     }
                 }
             });
@@ -870,7 +943,13 @@ pub fn stream_screen(
     out.sort_by(|a, b| b.cmp(a));
     let complete = !state.is_some_and(|st| st.cancel.load(Ordering::Relaxed));
     (
-        out.into_iter().map(|s| ScreenedJob { cand: s.cand, ai: s.ai, summary: s.summary }).collect(),
+        out.into_iter()
+            .map(|s| ScreenedJob {
+                cand: s.cand,
+                ai: s.ai,
+                summary: s.summary,
+            })
+            .collect(),
         complete,
     )
 }
@@ -924,7 +1003,13 @@ pub fn stream_screen(
     out.sort_by(|a, b| b.cmp(a));
     let complete = !state.is_some_and(|st| st.cancel.load(Ordering::Relaxed));
     (
-        out.into_iter().map(|s| ScreenedJob { cand: s.cand, ai: s.ai, summary: s.summary }).collect(),
+        out.into_iter()
+            .map(|s| ScreenedJob {
+                cand: s.cand,
+                ai: s.ai,
+                summary: s.summary,
+            })
+            .collect(),
         complete,
     )
 }
@@ -1012,8 +1097,15 @@ pub fn run_funnel(
         }
         let t = RoundTimer::start();
         let started = alive.len();
-        let summaries =
-            evaluate_batch(cands, &alive, arcanes, scenario, runs, seed_base + round as u64, state);
+        let summaries = evaluate_batch(
+            cands,
+            &alive,
+            arcanes,
+            scenario,
+            runs,
+            seed_base + round as u64,
+            state,
+        );
         if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
             // Cancelled mid-round. The previous COMPLETED round's leaderboard
             // is preferred (uniform estimates) — but when no round ever
@@ -1041,8 +1133,16 @@ pub fn run_funnel(
         // Kill rounds rank by kill PROGRESS (kills + depleted fraction of the
         // final target's pool); screen rounds by mean effective damage.
         scored.sort_by(|a, b| {
-            let ka = if by_kills { a.1.mean_kill_progress } else { a.1.mean_effective_damage };
-            let kb = if by_kills { b.1.mean_kill_progress } else { b.1.mean_effective_damage };
+            let ka = if by_kills {
+                a.1.mean_kill_progress
+            } else {
+                a.1.mean_effective_damage
+            };
+            let kb = if by_kills {
+                b.1.mean_kill_progress
+            } else {
+                b.1.mean_effective_damage
+            };
             kb.total_cmp(&ka)
         });
         // SOFT cut line (user, 2026-07-28: "can the fixed 1/8 be dynamic?"):
@@ -1063,7 +1163,10 @@ pub fn run_funnel(
             let cap = (planned * 2).min(scored.len());
             let cut_score = scored[planned - 1].1.mean_kill_progress;
             let tol = if runs >= 2 {
-                let pooled = (scored.iter().map(|(_, s)| s.std_kills * s.std_kills).sum::<f64>()
+                let pooled = (scored
+                    .iter()
+                    .map(|(_, s)| s.std_kills * s.std_kills)
+                    .sum::<f64>()
                     / scored.len() as f64)
                     .sqrt();
                 3.0 * pooled / f64::from(runs).sqrt()
@@ -1101,9 +1204,12 @@ pub fn run_funnel(
         if verbose {
             println!(
                 "[round {}] {} jobs x {} runs ({}) -> keep {} in {:.1}s; best {}",
-                round + 1, started, runs,
+                round + 1,
+                started,
+                runs,
                 if by_kills { "kills" } else { "eff dmg" },
-                scored.len(), t.ms() as f64 / 1000.0,
+                scored.len(),
+                t.ms() as f64 / 1000.0,
                 if by_kills {
                     format!("{:.2} kill score", scored[0].1.mean_kill_progress)
                 } else {
@@ -1153,8 +1259,6 @@ pub fn run_funnel(
 #[cfg(test)]
 mod tests {
     use super::*;
-    
-
 
     #[test]
     fn pool_loads_from_yaml_with_family_exclusivity() {
@@ -1177,10 +1281,18 @@ mod tests {
         // and stable as the full data-driven pool grows (the optimizer never
         // enumerates the whole pool in practice — it searches a scoped subset).
         let ids = [
-            "hornet_strike", "barrel_diffusion", "amalgam_barrel_diffusion",
-            "galvanized_diffusion", "pistol_gambit", "primed_pistol_gambit",
-            "creeping_bullseye", "target_cracker", "primed_target_cracker",
-            "lethal_torrent", "frostbite", "jolt",
+            "hornet_strike",
+            "barrel_diffusion",
+            "amalgam_barrel_diffusion",
+            "galvanized_diffusion",
+            "pistol_gambit",
+            "primed_pistol_gambit",
+            "creeping_bullseye",
+            "target_cracker",
+            "primed_target_cracker",
+            "lethal_torrent",
+            "frostbite",
+            "jolt",
         ];
         let p: Vec<ModDef> = pool().into_iter().filter(|m| ids.contains(&m.id)).collect();
         assert_eq!(p.len(), ids.len(), "test sub-pool ids all present");
@@ -1210,11 +1322,27 @@ mod tests {
         }
         let expected = poly.get(8).copied().unwrap_or(0);
 
-        let base = WeaponBase::from_data("dual_toxocyst_incarnon", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
+        let base = WeaponBase::from_data(
+            "dual_toxocyst_incarnon",
+            true,
+            &[
+                "dt_commodores_fortune",
+                "dt_evolved_autoloader",
+                "dt_fevered_frenzy",
+            ],
+        );
         let (cands, stats) = enumerate_candidates(
             &p,
             &base,
-            Some(&WeaponBase::from_data("dual_toxocyst", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"])),
+            Some(&WeaponBase::from_data(
+                "dual_toxocyst",
+                true,
+                &[
+                    "dt_commodores_fortune",
+                    "dt_evolved_autoloader",
+                    "dt_fevered_frenzy",
+                ],
+            )),
             0,
             8,
             8,
@@ -1223,7 +1351,10 @@ mod tests {
             &Constraints::default(),
             &[None],
         );
-        assert_eq!(stats.subsets, expected, "subset count vs generating function");
+        assert_eq!(
+            stats.subsets, expected,
+            "subset count vs generating function"
+        );
         assert_eq!(
             cands.len() as u64 + stats.deduped,
             stats.order_variants,
@@ -1240,7 +1371,15 @@ mod tests {
         let (cands_le, stats_le) = enumerate_candidates(
             &p,
             &base,
-            Some(&WeaponBase::from_data("dual_toxocyst", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"])),
+            Some(&WeaponBase::from_data(
+                "dual_toxocyst",
+                true,
+                &[
+                    "dt_commodores_fortune",
+                    "dt_evolved_autoloader",
+                    "dt_fevered_frenzy",
+                ],
+            )),
             0,
             0,
             8,
@@ -1249,8 +1388,14 @@ mod tests {
             &Constraints::default(),
             &[None],
         );
-        assert_eq!(stats_le.subsets, expected_le, "≤8 subset count vs Σ coefficients");
-        assert!(cands_le.iter().any(|c| c.ordered.is_empty()), "the empty build is a candidate");
+        assert_eq!(
+            stats_le.subsets, expected_le,
+            "≤8 subset count vs Σ coefficients"
+        );
+        assert!(
+            cands_le.iter().any(|c| c.ordered.is_empty()),
+            "the empty build is a candidate"
+        );
         assert!(cands_le.iter().all(|c| c.ordered.len() <= 8));
     }
 
@@ -1261,31 +1406,63 @@ mod tests {
         // choice — and the occupied option must cost something (more drain,
         // or more Forma to squeeze back under the cap).
         let ids = [
-            "hornet_strike", "barrel_diffusion", "primed_pistol_gambit",
-            "primed_target_cracker", "lethal_torrent", "frostbite", "jolt",
+            "hornet_strike",
+            "barrel_diffusion",
+            "primed_pistol_gambit",
+            "primed_target_cracker",
+            "lethal_torrent",
+            "frostbite",
+            "jolt",
             "magnum_force",
         ];
         let p: Vec<ModDef> = pool().into_iter().filter(|m| ids.contains(&m.id)).collect();
         assert_eq!(p.len(), ids.len());
         let full = wfsim_engine::mods_data::pistol_pool();
-        let ex = full.iter().find(|m| m.exilus).expect("an exilus mod exists").clone();
+        let ex = full
+            .iter()
+            .find(|m| m.exilus)
+            .expect("an exilus mod exists")
+            .clone();
 
-        let base = WeaponBase::from_data("dual_toxocyst_incarnon", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
+        let base = WeaponBase::from_data(
+            "dual_toxocyst_incarnon",
+            true,
+            &[
+                "dt_commodores_fortune",
+                "dt_evolved_autoloader",
+                "dt_fevered_frenzy",
+            ],
+        );
         let run = |opts: &[Option<&ModDef>]| {
             enumerate_candidates(
-                &p, &base, None, 0, 8, 8, 60,
-                &wfsim_engine::weapons_data::innate_slots("dual_toxocyst"), &Constraints::default(), opts,
+                &p,
+                &base,
+                None,
+                0,
+                8,
+                8,
+                60,
+                &wfsim_engine::weapons_data::innate_slots("dual_toxocyst"),
+                &Constraints::default(),
+                opts,
             )
         };
         let (empty_only, _) = run(&[None]);
         let (both, _) = run(&[None, Some(&ex)]);
-        assert_eq!(both.len(), empty_only.len() * 2, "each exilus option expands every build");
+        assert_eq!(
+            both.len(),
+            empty_only.len() * 2,
+            "each exilus option expands every build"
+        );
         let w0 = &both.iter().find(|c| c.exilus == 0).unwrap().plan;
         let x0 = &both.iter().find(|c| c.exilus == 1).unwrap().plan;
         assert!(
             x0.total_drain > w0.total_drain || x0.forma_used > w0.forma_used,
             "exilus drain must count (drain {} -> {}, forma {} -> {})",
-            w0.total_drain, x0.total_drain, w0.forma_used, x0.forma_used
+            w0.total_drain,
+            x0.total_drain,
+            w0.forma_used,
+            x0.forma_used
         );
         // The occupied option plans a real 9th slot; the empty one stays 8.
         assert_eq!(x0.slots.len(), 9);
@@ -1302,8 +1479,14 @@ mod tests {
         assert_eq!(n, 7, "k = ceil(log8(81258)) = 6 intermediates + final");
         assert_eq!(s[0].0, 1, "the screen starts at 1 run");
         assert!(s.windows(2).all(|w| w[1].0 >= w[0].0 && w[1].1 <= w[0].1));
-        assert!(s.iter().all(|&(_, _, by_kills)| by_kills), "kill score everywhere");
-        assert!(s[..n - 1].iter().all(|&(r, _, _)| r <= 256), "intermediates ≤ final/4");
+        assert!(
+            s.iter().all(|&(_, _, by_kills)| by_kills),
+            "kill score everywhere"
+        );
+        assert!(
+            s[..n - 1].iter().all(|&(r, _, _)| r <= 256),
+            "intermediates ≤ final/4"
+        );
         assert_eq!(s.last(), Some(&(1024, 24, true)));
         // The round BEFORE the final already reaches the finalists count —
         // the final evaluates exactly that field (the contract).
@@ -1347,7 +1530,15 @@ mod tests {
                 UI-selected scoped subset (2026-07-26) — re-enable against a scope."]
     fn constraints_filter_the_space() {
         let p = pool();
-        let base = WeaponBase::from_data("dual_toxocyst_incarnon", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
+        let base = WeaponBase::from_data(
+            "dual_toxocyst_incarnon",
+            true,
+            &[
+                "dt_commodores_fortune",
+                "dt_evolved_autoloader",
+                "dt_fevered_frenzy",
+            ],
+        );
         let cons = Constraints {
             require: vec!["hornet_strike".into()],
             forbid: vec!["magnetic_might".into()],

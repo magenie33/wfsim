@@ -385,6 +385,9 @@ fn optimize_start(v: &Value) -> Value {
 
     let worker = job.clone();
     std::thread::spawn(move || {
+        // The enumeration/producer runs on THIS thread — it must yield to
+        // interactive work just like the evaluation workers do.
+        wfsim_optimizer::deprioritize_current_thread();
         let result = run_optimize(
             plan,
             &worker.state,

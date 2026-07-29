@@ -205,7 +205,7 @@ let optSim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot
 // The FINAL-ROUND CONTRACT (user): the funnel's last round is guaranteed
 // `finalists` candidates × `final_runs` runs. Persisted; survives weapon
 // switches (it is a run setting, not weapon scope).
-let optRun = { final_runs: 1024, finalists: 20 };
+let optRun = { final_runs: 1024, finalists: 20, threads: 0 }; // threads 0 = auto (cores − 2)
 try { const s = JSON.parse(localStorage.getItem("wfsim-opt-run")); if (s) optRun = { ...optRun, ...s }; } catch (_) {}
 const saveOptRun = () => localStorage.setItem("wfsim-opt-run", JSON.stringify(optRun));
 let pickerSlot = 0;
@@ -358,6 +358,11 @@ async function init() {
   $("opt-finalists").addEventListener("input", () => {
     optRun.finalists = Math.max(1, Math.min(100, Number($("opt-finalists").value) || 20));
     saveOptRun(); updateOptEstimate();
+  });
+  if (optRun.threads) $("opt-threads").value = optRun.threads;
+  $("opt-threads").addEventListener("input", () => {
+    optRun.threads = Math.max(0, Math.min(128, Number($("opt-threads").value) || 0));
+    saveOptRun();
   });
   initPresets();
   reattachOptimize(); // resume progress display if a server-side job survives a reload
@@ -2129,6 +2134,7 @@ async function runOptimize() {
       enemy: optSim.enemy, level: optSim.level, steel_path: optSim.steel_path,
       headshot_pct: optSim.headshot_pct, duration: optSim.duration,
       final_runs: optRun.final_runs, finalists: optRun.finalists,
+      threads: optRun.threads || 0, // 0 = auto (cores − 2)
       buffs,
     };
     const r = await postJson("/api/optimize", body);

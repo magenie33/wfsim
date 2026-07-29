@@ -175,7 +175,15 @@ fn main() {
     // policy (non-simmable triggers are honest no-ops there).
     use wfsim_engine::arcanes_data::{self, ArcaneFx};
     use wfsim_engine::loadout::StackPolicy;
-    let arc_base = wfsim_engine::loadout::WeaponBase::from_data("dual_toxocyst", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
+    let arc_base = wfsim_engine::loadout::WeaponBase::from_data(
+        "dual_toxocyst",
+        true,
+        &[
+            "dt_commodores_fortune",
+            "dt_evolved_autoloader",
+            "dt_fevered_frenzy",
+        ],
+    );
     let fx_of = |id: &str| -> ArcaneFx {
         if id == "none" {
             return ArcaneFx::none();
@@ -221,13 +229,27 @@ fn main() {
     }
     // The multi-round funnel now lives in the lib (shared with the web
     // endpoint); the CLI runs it verbosely for per-round progress.
-    let last = run_funnel(&cands, &arcanes, &scenario, alive, &rounds, 0xDEAD_BEEF, true, None, None);
+    let last = run_funnel(
+        &cands,
+        &arcanes,
+        &scenario,
+        alive,
+        &rounds,
+        0xDEAD_BEEF,
+        true,
+        None,
+        None,
+    );
 
     println!();
     println!("=== FINAL LEADERBOARD (1024 x 60 s, kill score; searched: mods x element order x arcane x evo2) ===");
     for (rank, ((ci, ai), s)) in last.iter().take(10).enumerate() {
         let c = &cands[*ci];
-        let arcane = if arcanes[*ai].id.is_empty() { "none" } else { &arcanes[*ai].id };
+        let arcane = if arcanes[*ai].id.is_empty() {
+            "none"
+        } else {
+            &arcanes[*ai].id
+        };
         let names: Vec<&str> = c.ordered.iter().map(|&i| p[i].id).collect();
         let vec_desc: Vec<String> = c
             .panel

@@ -1412,6 +1412,8 @@ pub struct OptimizePlan {
     target_name: String,
     level: u32,
     steel_path: bool,
+    /// Worker-thread budget; 0 = auto (all cores minus two).
+    threads: usize,
 }
 
 /// Validate an optimize request. `Err` is the ready-to-send error response.
@@ -1646,6 +1648,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         target_name: s_name(&specs, enemy_id),
         level,
         steel_path,
+        threads: v.get("threads").and_then(|x| x.as_u64()).unwrap_or(0).min(256) as usize,
     })
 }
 
@@ -1681,7 +1684,11 @@ pub fn run_optimize(
         level,
         steel_path,
         weapon_id,
+        threads,
     } = plan;
+    // Compute budget: 0 = auto (all cores minus two — the machine must stay
+    // usable while the search runs). Applies to the screen and every round.
+    wfsim_optimizer::set_worker_threads(threads);
     let info = weapon(&weapon_id);
 
     // ---- enumerate candidates per evo-set × exilus option ----
