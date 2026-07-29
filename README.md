@@ -27,7 +27,13 @@ cargo run -p wfsim-web   # web UI → http://localhost:8787
 
 ## License
 
-MIT. Game data derived from the community
-[Warframe Wiki](https://wiki.warframe.com/) (CC BY-SA). Unofficial fan
-project, not affiliated with Digital Extremes; Warframe is a trademark of
-Digital Extremes Ltd.
+[AGPL-3.0-or-later](LICENSE). If you use this code in a product or
+network service, you must release your modifications under the same
+license. The "wfsim" name and logo are not covered by the license and
+may not be used to brand derived products or services.
+
+Game data derived from the community
+[Warframe Wiki](https://wiki.warframe.com/) (CC BY-SA). Vendored
+[WFCD/warframe-items](vendor/warframe-items/LICENSE) data remains MIT.
+Unofficial fan project, not affiliated with Digital Extremes; Warframe
+is a trademark of Digital Extremes Ltd.
