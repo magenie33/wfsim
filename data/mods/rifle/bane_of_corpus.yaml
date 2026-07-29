@@ -13,5 +13,8 @@ effects:
     rank0: 0.05
     rankMax: 0.3
 
+family: bane_of_corpus
+incompatible_with: [primed_bane_of_corpus]
+
 source:
   url: https://wiki.warframe.com/w/Bane_of_Corpus

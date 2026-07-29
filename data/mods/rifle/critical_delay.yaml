@@ -15,5 +15,8 @@ effects:
     rank0: 0.1667
     rankMax: 1.0
 
+family: point_strike
+incompatible_with: [point_strike]
+
 source:
   url: https://wiki.warframe.com/w/Critical_Delay

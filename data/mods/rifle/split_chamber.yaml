@@ -12,5 +12,8 @@ effects:
     rank0: 0.15
     rankMax: 0.9
 
+family: split_chamber
+incompatible_with: [galvanized_chamber]
+
 source:
   url: https://wiki.warframe.com/w/Split_Chamber

@@ -12,5 +12,8 @@ effects:
     rank0: 0.15
     rankMax: 0.9
 
+family: rifle_aptitude
+incompatible_with: [galvanized_aptitude]
+
 source:
   url: https://wiki.warframe.com/w/Rifle_Aptitude

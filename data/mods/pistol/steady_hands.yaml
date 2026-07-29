@@ -11,6 +11,12 @@ description: "-60% Weapon Recoil"
 # −60% Weapon Recoil. Recoil is an aim/handling effect with no damage model
 # here (the sim assumes perfect aim), so this is intentionally unmodeled —
 # the mod exists for the builder's exilus slot.
+# WIKI TEXT LAGS MaxRank (verified 2026-07-30). `Module:Mods/data` gives this
+# mod MaxRank 5 but its Description - and the wiki page's rank table - still
+# show the old rank-3 numbers (-60% Weapon Recoil at rank 3). The module is the source of truth for
+# mechanical fields (AGENTS.md), and warframestat's MaxRank-5 entry agrees
+# with the extension below, so the ramp runs to rank 5: 15% per rank.
+# Do NOT "correct" this back to the description.
 effects:
   - kind: recoil_reduction
     rank0: -0.15

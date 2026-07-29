@@ -15,5 +15,8 @@ effects:
     rank0: 0.2
     rankMax: 1.2
 
+family: shred
+incompatible_with: [primed_shred]
+
 source:
   url: https://wiki.warframe.com/w/Shred

@@ -16,5 +16,8 @@ effects:
     rankMax: 0.25
     desc: "+25% Sprint Speed"
 
+family: serration
+incompatible_with: [serration, spectral_serration]
+
 source:
   url: https://wiki.warframe.com/w/Amalgam_Serration

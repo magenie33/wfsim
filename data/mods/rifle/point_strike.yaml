@@ -12,5 +12,8 @@ effects:
     rank0: 0.25
     rankMax: 1.5
 
+family: point_strike
+incompatible_with: [critical_delay]
+
 source:
   url: https://wiki.warframe.com/w/Point_Strike

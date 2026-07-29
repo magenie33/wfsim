@@ -8,11 +8,17 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/Event/StatusProcWhileAimingRifleMod
 description: "On Ability Cast:\n+X% Status Chance when Aiming for Xs"
 
 effects:
-  - kind: unmodeled
-    desc: "On Ability Cast:"
-  - kind: status_chance_bonus
+  # CONDITIONAL - pistol twin Embedded Catalyzer (+90% there, +60% here). The
+  # arena casts no abilities, so this contributes only through the assumed-max
+  # CondBuff path, never emergently.
+  - kind: buff
+    trigger: on_ability_cast
+    condition: while_aiming
+    grants: status_chance
     rank0: 0.1
     rankMax: 0.6
+    max_stacks: 1
+    duration: 9
 
 source:
   url: https://wiki.warframe.com/w/Catalyzer_Link

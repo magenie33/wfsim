@@ -15,5 +15,8 @@ effects:
     rank0: 0.04
     rankMax: 0.44
 
+family: firestorm
+incompatible_with: [firestorm]
+
 source:
   url: https://wiki.warframe.com/w/Primed_Firestorm

@@ -8,11 +8,21 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/Event/CritChanceWhileAimingRifleMod
 description: "On Headshot:\n+X% Critical Chance when Aiming for Xs"
 
 effects:
-  - kind: unmodeled
-    desc: "On Headshot:"
-  - kind: crit_chance_bonus
+  # CONDITIONAL, not a flat crit bonus - the skeleton had it always-on, which
+  # is the whole mod for free. Identical to the pistol twin Hydraulic
+  # Crosshairs, numbers included. The sim assumes constant aiming, so
+  # `while_aiming` is satisfied and only the headshot trigger gates it.
+  - kind: buff
+    trigger: on_headshot
+    condition: while_aiming
+    grants: crit_chance          # relative crit chance
     rank0: 0.225
     rankMax: 1.35
+    max_stacks: 1
+    duration: 9
+
+family: argon_scope
+incompatible_with: [galvanized_scope]
 
 source:
   url: https://wiki.warframe.com/w/Argon_Scope

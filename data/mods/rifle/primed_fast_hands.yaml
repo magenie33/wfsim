@@ -12,5 +12,8 @@ effects:
     rank0: 0.05
     rankMax: 0.55
 
+family: fast_hands
+incompatible_with: [fast_hands]
+
 source:
   url: https://wiki.warframe.com/w/Primed_Fast_Hands

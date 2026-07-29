@@ -8,16 +8,30 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/Event/CritChanceWhileAimingRifleSPMod
 description: "On Headshot:\n+X% Critical Chance when Aiming for Xs\nOn Headshot Kill:\n+X% Critical Chance when Aiming for Xs. Stacks up to Xx."
 
 effects:
-  - kind: unmodeled
-    desc: "On Headshot:"
-  - kind: crit_chance_bonus
+  # BOTH halves are conditional - the skeleton had them as unconditional crit
+  # chance, which is the whole mod's value handed over for free. Identical
+  # shape to the pistol twin Galvanized Crosshairs, same numbers.
+  - kind: buff
+    trigger: on_headshot
+    condition: while_aiming
+    grants: crit_chance          # relative crit chance
     rank0: 0.1091
     rankMax: 1.2
-  - kind: unmodeled
-    desc: "On Headshot Kill:"
-  - kind: crit_chance_bonus
+    max_stacks: 1
+    duration: 12
+  # Unlike the other Galvanized mods, each stack has its OWN duration.
+  - kind: buff
+    trigger: on_headshot_kill
+    condition: while_aiming
+    grants: crit_chance
     rank0: 0.0364
     rankMax: 0.4
+    max_stacks: 5
+    duration: 12
+    decay: per_stack_expiry
+
+family: argon_scope
+incompatible_with: [argon_scope]
 
 source:
   url: https://wiki.warframe.com/w/Galvanized_Scope

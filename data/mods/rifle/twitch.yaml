@@ -9,11 +9,23 @@ internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/HolsterSpeedBonusMod
 description: "On Equip: \n-X% Weapon Recoil and +X% Accuracy for Xs"
 
 effects:
-  - kind: unmodeled
-    desc: "On Equip:"
-  - kind: recoil_reduction
+  # CONDITIONAL, and indirect either way: recoil and accuracy have no damage
+  # model here (the sim assumes perfect aim), so this stays inert - but it must
+  # not read as an unconditional stat change in the builder panel.
+  - kind: buff
+    trigger: on_equip
+    grants: recoil_reduction
     rank0: -0.1
     rankMax: -0.4
+    max_stacks: 1
+    duration: 8
+  - kind: buff
+    trigger: on_equip
+    grants: accuracy
+    rank0: 0.1
+    rankMax: 0.4
+    max_stacks: 1
+    duration: 8
 
 source:
   url: https://wiki.warframe.com/w/Twitch

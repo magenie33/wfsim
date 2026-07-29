@@ -11,11 +11,26 @@ effects:
   - kind: status_chance_bonus
     rank0: 0.0727
     rankMax: 0.8
-  - kind: unmodeled
-    desc: "On Kill:"
-  - kind: base_damage_bonus
+  # Condition Overload payload - NOT an unconditional base-damage bonus, which
+  # is what the generated skeleton said. On kill it grants +rankMax per status
+  # TYPE on the target, per stack, DIRECT hits only; the arithmetic is
+  # per-weapon (the weapon's co_behavior). Rifle numbers differ from the pistol
+  # twin Galvanized Shot: 20s / 2 stacks here vs 14s / 3 stacks there.
+  #
+  # For AoE weapons this is the mod the Condition Overload catalog is about -
+  # e.g. the Torid's cloud takes it on the target the grenade is stuck to
+  # (MECHANICS section 7).
+  - kind: buff
+    trigger: on_kill
+    grants: condition_overload
     rank0: 0.0364
     rankMax: 0.4
+    max_stacks: 2
+    duration: 20
+    decay: lose_one_and_reset
+
+family: rifle_aptitude
+incompatible_with: [rifle_aptitude]
 
 source:
   url: https://wiki.warframe.com/w/Galvanized_Aptitude

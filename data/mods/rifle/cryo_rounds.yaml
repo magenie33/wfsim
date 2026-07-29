@@ -13,5 +13,8 @@ effects:
     rank0: 0.15
     rankMax: 0.9
 
+family: cryo_rounds
+incompatible_with: [primed_cryo_rounds]
+
 source:
   url: https://wiki.warframe.com/w/Cryo_Rounds

@@ -13,5 +13,8 @@ effects:
     rank0: 0.05
     rankMax: 0.55
 
+family: bane_of_infested
+incompatible_with: [bane_of_infested]
+
 source:
   url: https://wiki.warframe.com/w/Primed_Bane_of_Infested

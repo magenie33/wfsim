@@ -12,5 +12,8 @@ effects:
     rank0: 0.15
     rankMax: 1.65
 
+family: serration
+incompatible_with: [amalgam_serration, spectral_serration]
+
 source:
   url: https://wiki.warframe.com/w/Serration

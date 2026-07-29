@@ -12,5 +12,8 @@ effects:
     rank0: 0.05
     rankMax: 0.55
 
+family: magazine_warp
+incompatible_with: [magazine_warp]
+
 source:
   url: https://wiki.warframe.com/w/Primed_Magazine_Warp

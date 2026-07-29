@@ -13,5 +13,8 @@ effects:
     rank0: 0.05
     rankMax: 0.2
 
+family: comet_rounds
+incompatible_with: [comet_rounds, serrated_rounds]
+
 source:
   url: https://wiki.warframe.com/w/Ripper_Rounds

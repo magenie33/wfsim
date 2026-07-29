@@ -13,5 +13,8 @@ effects:
     rank0: -0.1
     rankMax: -0.6
 
+family: stabilizer
+incompatible_with: [primed_stabilizer]
+
 source:
   url: https://wiki.warframe.com/w/Stabilizer

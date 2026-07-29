@@ -8,6 +8,12 @@ exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponPistolZoomFovMod
 description: "+80% Zoom"
 
+# WIKI TEXT LAGS MaxRank (verified 2026-07-30). `Module:Mods/data` gives this
+# mod MaxRank 5 but its Description - and the wiki page's rank table - still
+# show the old rank-3 numbers (+80% Zoom at rank 3). The module is the source of truth for
+# mechanical fields (AGENTS.md), and warframestat's MaxRank-5 entry agrees
+# with the extension below, so the ramp runs to rank 5: 20% per rank.
+# Do NOT "correct" this back to the description.
 effects:
   - kind: zoom_bonus
     rank0: 0.2

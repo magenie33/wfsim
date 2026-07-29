@@ -13,5 +13,8 @@ effects:
     rank0: -0.0773
     rankMax: -0.85
 
+family: stabilizer
+incompatible_with: [stabilizer]
+
 source:
   url: https://wiki.warframe.com/w/Primed_Stabilizer

@@ -8,11 +8,16 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/Event/CritDamageWhileAimingRifleMod
 description: "On Kill:\n+X% Critical Damage when Aiming for Xs"
 
 effects:
-  - kind: unmodeled
-    desc: "On Kill:"
-  - kind: crit_damage_bonus
+  # CONDITIONAL - pistol twin Sharpened Bullets, but the rifle grants +120%
+  # against its +75%.
+  - kind: buff
+    trigger: on_kill
+    condition: while_aiming
+    grants: crit_damage
     rank0: 0.2
     rankMax: 1.2
+    max_stacks: 1
+    duration: 9
 
 source:
   url: https://wiki.warframe.com/w/Bladed_Rounds

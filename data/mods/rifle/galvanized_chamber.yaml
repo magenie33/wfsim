@@ -11,11 +11,20 @@ effects:
   - kind: multishot_bonus
     rank0: 0.0727
     rankMax: 0.8
-  - kind: unmodeled
-    desc: "On Kill:"
-  - kind: multishot_bonus
+  # On-kill STACKING multishot, not a second flat bonus. 5 stacks here against
+  # the pistol twin's 4 (Galvanized Diffusion), and the unconditional half is
+  # +80% against its +110%.
+  - kind: buff
+    trigger: on_kill
+    grants: multishot
     rank0: 0.0273
     rankMax: 0.3
+    max_stacks: 5
+    duration: 20
+    decay: lose_one_and_reset
+
+family: split_chamber
+incompatible_with: [split_chamber]
 
 source:
   url: https://wiki.warframe.com/w/Galvanized_Chamber
