@@ -56,7 +56,8 @@ enum EvoEffect {
     /// with mod CO sources. `excludes_evolution_damage`: the GunCO base
     /// excludes evolution flat damage (wiki CO catalog, DT row).
     ConditionOverload { per_type: f64 },
-    /// Additive fire-rate bonus, mod-like (Rapid Wrath).
+    /// Fire-rate bonus in the ORDINARY additive bucket — the same one the
+    /// fire-rate mods feed, so it SUMS with them (Rapid Wrath).
     FireRateBonus(f64),
     /// FLAT crit chance added AFTER mods (Elemental Excess: "Bonuses are
     /// added after mods as a flat value") — NOT the base-stat layer that

@@ -694,6 +694,31 @@ mod laetum_tests {
         );
     }
 
+    /// Rapid Wrath's +20% fire rate joins the ORDINARY fire-rate bucket —
+    /// the same additive one the mods feed (user, 2026-07-29). Additive with
+    /// Gunslinger's +72%: 6.67 x (1 + 0.72 + 0.20) = 12.81, NOT the
+    /// multiplicative 6.67 x 1.72 x 1.20 = 13.77.
+    #[test]
+    fn rapid_wrath_is_additive_with_fire_rate_mods() {
+        let pool = crate::mods_data::pistol_pool();
+        let gunslinger: Vec<&crate::loadout::ModDef> =
+            pool.iter().filter(|m| m.id == "gunslinger").collect();
+        let fr = |evos: &[&str], mods: &[&crate::loadout::ModDef]| {
+            let b = WeaponBase::from_data("laetum_incarnon", true, evos);
+            crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::AssumedMax).fire_rate
+        };
+        let base = fr(&[], &[]);
+        assert!((base - 6.67).abs() < 1e-9, "base fire rate {base}");
+        assert!((fr(&["laetum_rapid_wrath"], &[]) - 6.67 * 1.20).abs() < 1e-9);
+        assert!((fr(&[], &gunslinger) - 6.67 * 1.72).abs() < 1e-9);
+        let both = fr(&["laetum_rapid_wrath"], &gunslinger);
+        assert!(
+            (both - 6.67 * 1.92).abs() < 1e-9,
+            "must be ADDITIVE (12.81), got {both} — multiplicative would be {}",
+            6.67 * 1.72 * 1.20
+        );
+    }
+
     #[test]
     fn resolving_keeps_the_radial() {
         let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
