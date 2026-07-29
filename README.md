@@ -1,12 +1,20 @@
-# wfsim
+<div align="center">
+
+<img src="web/src/static/logo.svg" width="140" alt="WFSim" />
+
+# WFSim
+
+**The Simulacrum. The Primed One.**
+
+A Warframe builder, fight simulator, and Monte-Carlo build optimizer —
+true to in-game numbers and mechanics.
+
+[**wfsim.app**](https://wfsim.app) ·
+QQ group [995078378](https://qm.qq.com/q/uiXrMSTs8S)
 
 [![CI](https://github.com/magenie33/wfsim/actions/workflows/ci.yml/badge.svg)](https://github.com/magenie33/wfsim/actions/workflows/ci.yml)
 
-**The Simulacrum. The Primed One.** A Warframe builder, fight simulator,
-and Monte-Carlo build optimizer — true to in-game numbers and mechanics.
-
-Local web UI. Website: [wfsim.app](https://wfsim.app) ·
-Community QQ group: [**995078378**](https://qm.qq.com/q/uiXrMSTs8S)
+</div>
 
 **Status:** in development. One weapon fully modeled (Dual Toxocyst, incl.
 Incarnon). Single enemy per sim; no Rivens yet.
@@ -29,7 +37,7 @@ cargo run -p wfsim-web   # web UI → http://localhost:8787
 
 [AGPL-3.0-or-later](LICENSE). If you use this code in a product or
 network service, you must release your modifications under the same
-license. The "wfsim" name and logo are not covered by the license and
+license. The "WFSim" name and logo are not covered by the license and
 may not be used to brand derived products or services.
 
 Game data derived from the community
