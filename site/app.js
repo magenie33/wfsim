@@ -1535,7 +1535,7 @@ function renderResults(r, testedAt) {
   // amps included; the weapon-side raw number is out (user: in our
   // context every stat accounts for the enemy).
   const kpis = [
-    kpi("DPS", n0(r.effective_dps)),
+    kpi("DPS", n0(r.dps)),
     kpi("Crit rate", pc(r.crit_rate)), kpi("Orange+ crit", pc(r.big_crit_rate)),
     kpi("Procs", n1(r.procs)), kpi("Shots", n1(r.shots)),
     kpi("Reloads", n1(r.reloads)), kpi("Transforms", n1(r.transforms)),
@@ -2288,7 +2288,7 @@ function renderOptProgress(st) {
     ? `enumerating candidates…${st.enumerated ? ` ${st.enumerated.toLocaleString()} so far` : ""}${st.sims_done ? ` · ${st.sims_done.toLocaleString()} screened` : ""}`
     : `round ${st.round}/${st.rounds} — ${(st.round_jobs || 0).toLocaleString()} jobs × ${st.round_runs} runs`;
   const notes = (st.notes || []).map((n) =>
-    `<div class="opt-note">round ${n.round}: ${n.jobs.toLocaleString()} × ${n.runs} (${n.by_kills ? "kills" : "eff dmg"}) → keep ${n.kept.toLocaleString()} · best ${n.by_kills ? n.best.toFixed(2) + " kill score" : n.best.toExponential(2) + " eff"} · ${(n.ms / 1000).toFixed(1)}s</div>`
+    `<div class="opt-note">round ${n.round}: ${n.jobs.toLocaleString()} × ${n.runs} (${n.by_kills ? "kills" : "dmg"}) → keep ${n.kept.toLocaleString()} · best ${n.by_kills ? n.best.toFixed(2) + " kill score" : n.best.toExponential(2) + " dmg"} · ${(n.ms / 1000).toFixed(1)}s</div>`
   ).join("");
   const sub = st.phase === "enumerating"
     ? ""
@@ -2341,7 +2341,7 @@ function renderOptResults(r) {
       <div class="opt-head">
         <span class="opt-rank">#${res.rank}</span>
         <span class="opt-kills">${res.kills.toFixed(2)}<small> kills</small></span>
-        <span class="opt-dps">${(res.effective_dps || 0).toExponential(2)} eff DPS</span>
+        <span class="opt-dps">${(res.dps || res.effective_dps || 0).toExponential(2)} DPS</span>
         <span class="forma-badge legal">${res.forma.used} Forma</span>
         <button class="ghost-btn small opt-add" title="add as a new build preset" data-r='${JSON.stringify(res).replace(/'/g, "&#39;")}'>+ add</button>
       </div>
