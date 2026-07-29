@@ -161,7 +161,7 @@ impl EvolutionDef {
                 per_stack: *per_stack,
                 max_stacks: *max_stacks,
                 duration: *duration,
-                initial_stacks: 0,
+                initial_stacks: *max_stacks,
                 pinned: false,
             }),
             _ => None,
@@ -337,11 +337,13 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         per_stack: *per_stack,
                         max_stacks: *max_stacks,
                         duration: *duration,
-                                            // Earned in the run by default; the buff cards
-                        // override both when the user configures them.
-                        initial_stacks: 0,
+                        // Start FULL, like every other stacking buff
+                        // (StackSpec, the arcanes): a build is read at the
+                        // uptime it plays at, and the sim runs decay from
+                        // there. The buff card overrides both knobs.
+                        initial_stacks: *max_stacks,
                         pinned: false,
-});
+                    });
                 }
                 EvoEffect::Inert(_) => {}
             }

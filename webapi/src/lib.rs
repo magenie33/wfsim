@@ -651,16 +651,17 @@ fn evo_buffs(evo_ids: &[String]) -> Vec<BuffMeta> {
         }
         // Overwhelming Attrition: a conditional stacking buff of the same
         // shape as the Galvanized family (earned in the run, decays one
-        // stack per timeout), so it belongs on the buff cards next to them.
-        // Default 0 and unlocked = let the sim earn it, which is what the
-        // engine did before this buff was configurable at all.
+        // stack per timeout), so it belongs on the buff cards next to them
+        // AND defaults the same way — FULL stacks, unlocked. A build is
+        // read at the uptime it plays at, and the sim runs decay from
+        // there; starting a stacking buff empty would be the odd one out.
         if let Some(b) = def.plain_hit_buff() {
             out.push(BuffMeta {
                 id: "on_plain_hit_damage".into(),
                 name: def.name.clone(),
                 max_stacks: b.max_stacks,
                 kind: "stacking",
-                default_stacks: 0,
+                default_stacks: b.max_stacks,
                 default_locked: false,
                 permanent: false,
             });
