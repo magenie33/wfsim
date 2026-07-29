@@ -321,6 +321,7 @@ fn optimize_status(v: &Value) -> Value {
         "round_runs": st.round_runs.load(Ordering::Relaxed),
         "sims_done": st.sims_done.load(Ordering::Relaxed),
         "sims_planned": st.sims_planned.load(Ordering::Relaxed),
+        "enumerated": st.enumerated.load(Ordering::Relaxed),
         "notes": notes,
     });
     if let Some((cands, jobs)) = *j.counts.lock().unwrap() {
@@ -337,8 +338,8 @@ fn optimize_cancel(v: &Value) -> Value {
     let Some(j) = opt_job(v) else {
         return err_json("no such optimize job");
     };
-    // The flag is checked between jobs (not during enumeration, which is
-    // bounded and quick relative to the funnel); the worker flips the phase.
+    // The flag is checked between funnel jobs AND inside enumeration (a
+    // huge scope must stay cancellable); the worker flips the phase.
     j.state.cancel.store(true, Ordering::Relaxed);
     json!({ "ok": true, "job_id": j.id })
 }

@@ -17,7 +17,7 @@ use wfsim_engine::loadout::{
 use wfsim_engine::mods::{plan_forma, PlannedMod, Polarity};
 use wfsim_engine::mods_data::pistol_pool as pool; // FULL pool incl. exilus (the optimizer's pool() excludes exilus)
 use wfsim_optimizer::{
-    enumerate_candidates, run_funnel, schedule_to, Candidate,
+    enumerate_candidates_observed, run_funnel, schedule_to, Candidate,
     Constraints, FunnelState, Job, Scenario,
 };
 
@@ -1684,6 +1684,10 @@ pub fn run_optimize(
     let info = weapon(&weapon_id);
 
     // ---- enumerate candidates per evo-set × exilus option ----
+    // Observed: the walk stays CANCELLABLE (a huge scope used to freeze the
+    // job with a dead Cancel button) and hard-caps at MAX_CANDIDATES — past
+    // that the candidate Vec alone would eat gigabytes before round 1.
+    const MAX_CANDIDATES: usize = 2_000_000;
     let innate = wfsim_engine::weapons_data::innate_slots(&info.id);
     let exilus_refs: Vec<Option<&ModDef>> = exilus_defs.iter().map(|o| o.as_ref()).collect();
     let mut cands: Vec<Candidate> = Vec::new();
@@ -1691,11 +1695,38 @@ pub fn run_optimize(
         let refs: Vec<&str> = set.iter().map(String::as_str).collect();
         let base = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &refs);
         let base_form = WeaponBase::from_data(&info.id, true, &refs);
-        let (mut c, _stats) = enumerate_candidates(
+        let (mut c, _stats, complete) = enumerate_candidates_observed(
             &pool, &base, Some(&base_form), vi as u32, min_slots as u32, build_size as u32,
             60, &innate, &constraints, &exilus_refs,
+            Some(state), MAX_CANDIDATES - cands.len(),
         );
         cands.append(&mut c);
+        if !complete {
+            if state.cancel.load(std::sync::atomic::Ordering::Relaxed) {
+                // Cancelled mid-enumeration: nothing was simulated, so there
+                // is no leaderboard — report a clean empty cancellation.
+                return json!({
+                    "ok": true, "cancelled": true,
+                    "candidates": cands.len(), "jobs": 0,
+                    "final_runs": final_runs, "finalists": finalists,
+                    "headshot_pct": headshot_pct, "duration": duration,
+                    "results": [],
+                    "target": { "name": target_name, "level": level, "steel_path": steel_path },
+                });
+            }
+            return err_json(format!(
+                "scope too large: over {} candidate builds — require more mods, shrink the pools, or lower max mods",
+                MAX_CANDIDATES
+            ));
+        }
+        // Exactly-full guard: the next iteration would pass max_out = 0,
+        // which the observed walk reads as "no cap".
+        if cands.len() >= MAX_CANDIDATES && vi + 1 < evo_sets.len() {
+            return err_json(format!(
+                "scope too large: over {} candidate builds — require more mods, shrink the pools, or lower max mods",
+                MAX_CANDIDATES
+            ));
+        }
     }
     if cands.is_empty() {
         return err_json("no legal builds in this scope (Forma / family constraints eliminated all)");

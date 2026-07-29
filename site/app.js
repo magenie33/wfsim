@@ -2098,6 +2098,7 @@ let optDirtyTimer = null;
 // to a still-running job via a no-id status call.
 let optJobId = null;
 let optPollTimer = null;
+let optCancelling = false; // survives the poll's 500 ms re-renders
 
 const postJson = (url, body) => api(url, body);
 
@@ -2145,6 +2146,7 @@ async function runOptimize() {
 function optFinish(html) {
   if (optPollTimer) { clearTimeout(optPollTimer); optPollTimer = null; }
   optJobId = null;
+  optCancelling = false;
   if (html !== undefined) $("opt-results").innerHTML = html;
   $("run-opt").textContent = "Run Optimizer";
   updateOptEstimate(); // re-enables the button when the scope is valid
@@ -2183,7 +2185,7 @@ async function pollOptimize() {
 function renderOptProgress(st) {
   const pct = st.sims_planned ? Math.min(100, (100 * st.sims_done) / st.sims_planned) : 0;
   const head = st.phase === "enumerating"
-    ? "enumerating candidates…"
+    ? `enumerating candidates…${st.enumerated ? ` ${st.enumerated.toLocaleString()} so far` : ""}`
     : `round ${st.round}/${st.rounds} — ${(st.round_jobs || 0).toLocaleString()} jobs × ${st.round_runs} runs`;
   const notes = (st.notes || []).map((n) =>
     `<div class="opt-note">round ${n.round}: ${n.jobs.toLocaleString()} × ${n.runs} (${n.by_kills ? "kills" : "eff dmg"}) → keep ${n.kept.toLocaleString()} · best ${n.by_kills ? n.best.toFixed(2) + " kill score" : n.best.toExponential(2) + " eff"} · ${(n.ms / 1000).toFixed(1)}s</div>`
@@ -2195,9 +2197,13 @@ function renderOptProgress(st) {
     <div class="opt-prog-head"><span>${head}</span><span class="opt-elapsed">${st.elapsed_s.toFixed(0)}s</span></div>
     <div class="opt-bar"><i style="width:${pct}%"></i></div>
     ${sub}${notes}
-    <button class="ghost-btn small" id="opt-cancel">Cancel</button>
+    <button class="ghost-btn small" id="opt-cancel" ${optCancelling ? "disabled" : ""}>${optCancelling ? "Cancelling…" : "Cancel"}</button>
   </div>`;
+  // The 500 ms poll re-renders this whole block — `optCancelling` keeps the
+  // button's cancelling state alive across re-renders (it used to snap back
+  // to a live-looking "Cancel", making cancellation look ignored).
   $("opt-cancel").addEventListener("click", async () => {
+    optCancelling = true;
     $("opt-cancel").disabled = true; $("opt-cancel").textContent = "Cancelling…";
     try { await postJson("/api/optimize/cancel", { id: optJobId }); } catch (e) { /* poll reports */ }
   });

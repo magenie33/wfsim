@@ -102,6 +102,35 @@ pub fn enumerate_candidates(
     constraints: &Constraints,
     exilus_opts: &[Option<&ModDef>],
 ) -> (Vec<Candidate>, EnumStats) {
+    let (out, stats, _complete) = enumerate_candidates_observed(
+        pool, base, second_form, variant, min_slots, max_slots, cap, innate, constraints,
+        exilus_opts, None, 0,
+    );
+    (out, stats)
+}
+
+/// [`enumerate_candidates`] with an observer: `state` makes the walk
+/// CANCELLABLE (`state.cancel`) and publishes a live candidate count
+/// (`state.enumerated`); `max_out > 0` hard-caps the number of emitted
+/// candidates (a runaway scope would otherwise eat all memory before the
+/// funnel even starts). The third return is `true` iff the walk ran to
+/// completion — on `false`, inspect `state.cancel` vs the cap to tell
+/// which stop it was.
+#[allow(clippy::too_many_arguments)]
+pub fn enumerate_candidates_observed(
+    pool: &[ModDef],
+    base: &WeaponBase,
+    second_form: Option<&WeaponBase>,
+    variant: u32,
+    min_slots: u32,
+    max_slots: u32,
+    cap: u32,
+    innate: &[Option<Polarity>],
+    constraints: &Constraints,
+    exilus_opts: &[Option<&ModDef>],
+    state: Option<&FunnelState>,
+    max_out: usize,
+) -> (Vec<Candidate>, EnumStats, bool) {
     let usable: Vec<usize> = (0..pool.len())
         .filter(|&i| !constraints.forbid.iter().any(|f| f == pool[i].id))
         .collect();
@@ -116,7 +145,7 @@ pub fn enumerate_candidates(
     let mut subset = Vec::with_capacity(max_slots as usize);
     let default_opts = [None];
     let exilus_opts = if exilus_opts.is_empty() { &default_opts[..] } else { exilus_opts };
-    enumerate_rec(
+    let complete = enumerate_rec(
         pool,
         base,
         second_form,
@@ -132,10 +161,14 @@ pub fn enumerate_candidates(
         &mut subset,
         &mut stats,
         &mut out,
+        state,
+        max_out,
     );
-    (out, stats)
+    (out, stats, complete)
 }
 
+/// Returns `false` when the walk was stopped early (cancel or `max_out`);
+/// the abort propagates straight up the recursion.
 #[allow(clippy::too_many_arguments)]
 fn enumerate_rec(
     pool: &[ModDef],
@@ -153,12 +186,23 @@ fn enumerate_rec(
     subset: &mut Vec<usize>,
     stats: &mut EnumStats,
     out: &mut Vec<Candidate>,
-) {
+    state: Option<&FunnelState>,
+    max_out: usize,
+) -> bool {
+    if let Some(st) = state {
+        if st.cancel.load(std::sync::atomic::Ordering::Relaxed) {
+            return false;
+        }
+    }
+    if max_out > 0 && out.len() >= max_out {
+        return false;
+    }
     // Every node in the enumeration tree IS a subset — emit it once, here,
     // when it is big enough and carries every required mod (a subset missing
     // a required mod still recurses: descendants may pick it up).
     if subset.len() >= min && required.iter().all(|r| subset.contains(r)) {
         stats.subsets += 1;
+        let before = out.len();
         expand_subset(
             pool,
             base,
@@ -171,13 +215,18 @@ fn enumerate_rec(
             stats,
             out,
         );
+        if let Some(st) = state {
+            // fetch_add keeps the counter a TOTAL across evo-set calls.
+            st.enumerated
+                .fetch_add((out.len() - before) as u64, std::sync::atomic::Ordering::Relaxed);
+        }
     }
     if subset.len() == max {
-        return;
+        return true;
     }
     // Prune only branches that cannot even reach `min` any more.
     if subset.len() + (usable.len() - from) < min {
-        return;
+        return true;
     }
     for k in from..usable.len() {
         let i = usable[k];
@@ -188,7 +237,7 @@ fn enumerate_rec(
             }
         }
         subset.push(i);
-        enumerate_rec(
+        let cont = enumerate_rec(
             pool,
             base,
             second_form,
@@ -204,9 +253,15 @@ fn enumerate_rec(
             subset,
             stats,
             out,
+            state,
+            max_out,
         );
         subset.pop();
+        if !cont {
+            return false;
+        }
     }
+    true
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -460,8 +515,12 @@ pub struct FunnelState {
     /// The in-progress round's field size and per-job run count.
     pub round_jobs: AtomicUsize,
     pub round_runs: AtomicU32,
-    /// Observer → funnel: request a stop (checked before each job).
+    /// Observer → funnel: request a stop (checked before each job AND
+    /// inside candidate enumeration — a huge scope must stay cancellable).
     pub cancel: AtomicBool,
+    /// Candidates emitted so far by a running enumeration (progress for
+    /// the "enumerating" phase, where sims_done is still 0).
+    pub enumerated: AtomicU64,
     /// One entry per FINISHED round.
     pub notes: Mutex<Vec<RoundNote>>,
 }
