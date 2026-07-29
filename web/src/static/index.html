@@ -142,8 +142,14 @@
         <h3 class="sim-h" data-i18n>3 · Simulation</h3>
         <div id="sim-run" class="field-grid"></div>
         <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
-        <div id="sim-results"></div>
       </div>
+    </section>
+
+    <!-- Block: Result (SIMULATOR tab) — its own container, separate from
+         the settings above; hidden until the active preset has a result. -->
+    <section class="block" id="sim-results-block" hidden>
+      <div class="bh"><span class="n">Σ</span><h2 data-i18n>Result</h2><span class="sub" id="sim-results-sub"></span></div>
+      <div class="bb"><div id="sim-results"></div></div>
     </section>
 
     <!-- Block: Optimizer — scope (mods/arcanes/evolutions) + the Sim panel's

@@ -1459,6 +1459,7 @@ function renderSimBuffs() {
 async function runSim() {
   const btn = $("run-sim");
   btn.disabled = true; btn.textContent = "Simulating…";
+  show("sim-results-block", true);
   $("sim-results").innerHTML = `<div class="placeholder">running ${sim.runs} simulations…</div>`;
   try {
     // Send only the buffs the current build actually has (ids in buffList).
@@ -1497,7 +1498,9 @@ function renderStoredSimResult() {
   const box = $("sim-results");
   if (!box) return;
   const p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
-  if (p && p.lastResult && p.lastResult.r) renderResults(p.lastResult.r, p.lastResult.at);
+  const has = !!(p && p.lastResult && p.lastResult.r);
+  show("sim-results-block", has); // an untested build shows no Result block
+  if (has) renderResults(p.lastResult.r, p.lastResult.at);
   else box.innerHTML = "";
 }
 
@@ -1546,7 +1549,7 @@ function renderResults(r, testedAt) {
   ].join("");
   $("sim-results").innerHTML = `
     <div class="results">
-      <div class="hero"><div><div class="hero-label">${tr("Result")}</div><div class="hero-num">${heroNum}</div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
+      <div class="hero"><div><div class="hero-num">${heroNum}</div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
       <div class="kpi-row">${kpis}</div>
       <h3>${tr("Damage by source")}</h3>
       <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>

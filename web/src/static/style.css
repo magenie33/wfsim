@@ -63,7 +63,7 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .mtab:hover{color:var(--text)}
 .mtab.sel{color:var(--text);font-weight:600;border-color:var(--line);background:var(--panel2);position:relative;top:1px}
 body:not(.on-optimizer) #opt-block{display:none}
-body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block{display:none}
+body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body:not(.on-simulator) #sim-results-block{display:none}
 /* The simulator's read-only build summary */
 .sb-h{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 4px}
 .sb-chips{display:flex;flex-wrap:wrap;gap:6px}
