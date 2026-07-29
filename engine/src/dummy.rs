@@ -1080,6 +1080,14 @@ impl DummyParams {
         if let Some(s) = self.cc_stack.as_mut() {
             set_stack(s, cfg, "on_headshot_kill_cc");
         }
+        // Overwhelming Attrition: a stacking conditional like the
+        // Galvanized family, so it takes the same two knobs.
+        if let Some(b) = self.plain_hit_bonus.as_mut() {
+            if let Some(&(stacks, locked)) = cfg.get("on_plain_hit_damage") {
+                b.initial_stacks = stacks.min(b.max_stacks);
+                b.pinned = locked;
+            }
+        }
         if let Some(b) = self.cc_on_headshot.as_mut() {
             set_timed(b, cfg, "on_headshot_cc");
         }
@@ -1687,9 +1695,13 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             expiry: s.duration,
         };
     }
-    // Overwhelming Attrition's stacks are EARNED in the run (no trigger
-    // fires at t=0), so they start empty.
-    let mut plain_stacks = LiveStacks::default();
+    // Overwhelming Attrition's stacks are EARNED in the run — the default
+    // config seeds 0 so no trigger is invented at t = 0 — but a configured
+    // buff card seeds them like any other stacking buff.
+    let mut plain_stacks = params.plain_hit_bonus.map_or_else(LiveStacks::default, |b| LiveStacks {
+        stacks: b.initial_stacks.min(b.max_stacks),
+        expiry: b.duration,
+    });
     // Stacking arcanes start FULL (user setting) with a fresh timer; the
     // states run each spec's own decay family from there.
     let mut arc = ArcRuntime::init(params);
@@ -2274,7 +2286,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // granularity crit and status use: a shot whose direct hit and
             // whose explosion are both plain arms the buff twice (the
             // stack cap still bounds it).
-            if let Some(b) = ap.plain_hit_bonus {
+            if let Some(b) = ap.plain_hit_bonus.filter(|b| !b.pinned) {
                 if tier == 0 && procs.is_empty() {
                     plain_stacks.current(t, b.duration);
                     plain_stacks.stacks = (plain_stacks.stacks + 1).min(b.max_stacks);
@@ -3300,6 +3312,58 @@ mod tests {
             flat.sources.radial
         );
         assert_eq!(flat.sources.direct, 0.0, "the fixture's direct hit is inert");
+    }
+
+    #[test]
+    fn overwhelming_attrition_takes_the_buff_cards_two_knobs() {
+        use crate::loadout::PlainHitBuff;
+        // A pinned buff freezes at its configured stacks: no trigger, no
+        // decay, 100% uptime — the same contract the Galvanized family has.
+        let mk = |initial: u32, pinned: bool| {
+            let mut p = DummyParams {
+                plain_hit_bonus: Some(PlainHitBuff {
+                    per_stack: 4.0,
+                    max_stacks: 3,
+                    duration: 10.0,
+                    initial_stacks: initial,
+                    pinned,
+                }),
+                ..DummyParams::default()
+            };
+            // No crits and no procs, so an UNPINNED buff earns stacks on
+            // every hit and the two paths are distinguishable.
+            p.base_crit_chance = 0.0;
+            p.status_chance = 0.0;
+            p.forced_procs = Vec::new();
+            run_once(&p, &mut Rng::new(11)).total_damage
+        };
+        let earned = mk(0, false);
+        let locked_full = mk(3, true);
+        let locked_none = mk(0, true);
+        assert!(
+            locked_none < earned,
+            "locked at 0 stacks must beat nothing it can earn: {locked_none} vs {earned}"
+        );
+        assert!(
+            locked_full > earned,
+            "locked at 3 stacks (100% uptime) must beat stacks earned over the run:              {locked_full} vs {earned}"
+        );
+        // Locked at 0 == the buff absent entirely.
+        let without = run_once(
+            &DummyParams {
+                plain_hit_bonus: None,
+                base_crit_chance: 0.0,
+                status_chance: 0.0,
+                forced_procs: Vec::new(),
+                ..DummyParams::default()
+            },
+            &mut Rng::new(11),
+        )
+        .total_damage;
+        assert!(
+            (locked_none - without).abs() < 1e-6,
+            "a buff locked at 0 contributes nothing: {locked_none} vs {without}"
+        );
     }
 
     #[test]

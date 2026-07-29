@@ -531,6 +531,11 @@ pub struct PlainHitBuff {
     pub per_stack: f64,
     pub max_stacks: u32,
     pub duration: f64,
+    /// Stacks at t = 0, and whether the run FREEZES there — the same two
+    /// knobs [`StackSpec`] carries, so the Sim/Optimizer buff cards can
+    /// configure this buff like any other stacking buff.
+    pub initial_stacks: u32,
+    pub pinned: bool,
 }
 
 /// A weapon's radial (explosion) attack part, unmodded.

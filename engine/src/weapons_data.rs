@@ -605,7 +605,8 @@ mod laetum_tests {
         assert_eq!(f.charges_to_fill, 12.0);
         assert_eq!(f.max_charges, 216.0);
         assert_eq!(f.transmute_in, 2.0);
-        assert_eq!(f.transmute_out, 2.0);
+        // Reverts are a uniform 1 s across every weapon until measured.
+        assert_eq!(f.transmute_out, 1.0);
         assert_eq!(f.charge_rate, 0.0);
 
         let eff = WeaponBase::from_data("laetum_incarnon", true, &["laetum_incarnon_efficiency"]);

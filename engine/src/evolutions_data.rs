@@ -149,6 +149,25 @@ impl EvolutionDef {
         })
     }
 
+    /// The stacking on-plain-hit damage buff (Overwhelming Attrition), if
+    /// this evolution grants one. Drives its configurable buff card.
+    pub fn plain_hit_buff(&self) -> Option<crate::loadout::PlainHitBuff> {
+        self.active_effects().find_map(|e| match e {
+            EvoEffect::StackingDamageOnPlainHit {
+                per_stack,
+                max_stacks,
+                duration,
+            } => Some(crate::loadout::PlainHitBuff {
+                per_stack: *per_stack,
+                max_stacks: *max_stacks,
+                duration: *duration,
+                initial_stacks: 0,
+                pinned: false,
+            }),
+            _ => None,
+        })
+    }
+
     /// Σ unconditional CO rate per status type (Carnage Reign).
     pub fn co_per_type(&self) -> f64 {
         self.active_effects()
@@ -318,7 +337,11 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         per_stack: *per_stack,
                         max_stacks: *max_stacks,
                         duration: *duration,
-                    });
+                                            // Earned in the run by default; the buff cards
+                        // override both when the user configures them.
+                        initial_stacks: 0,
+                        pinned: false,
+});
                 }
                 EvoEffect::Inert(_) => {}
             }

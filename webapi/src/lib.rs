@@ -631,11 +631,15 @@ fn enumerate_buffs(
 /// in-sim trigger and no decay, so the stack count is a static choice (full
 /// by default) and the lock is display-only.
 fn evo_buffs(evo_ids: &[String]) -> Vec<BuffMeta> {
-    evo_ids
+    let mut out = Vec::new();
+    for def in evo_ids
         .iter()
         .filter_map(|id| wfsim_engine::evolutions_data::get(id))
-        .filter_map(|def| {
-            def.ms_buff().map(|(_, max_stacks)| BuffMeta {
+    {
+        // Fevered Frenzy: PERMANENT stacks, no in-sim trigger — the count is
+        // a static choice for the whole run, so it defaults full and locked.
+        if let Some((_, max_stacks)) = def.ms_buff() {
+            out.push(BuffMeta {
                 id: "evo_multishot".into(),
                 name: def.name.clone(),
                 max_stacks,
@@ -643,9 +647,26 @@ fn evo_buffs(evo_ids: &[String]) -> Vec<BuffMeta> {
                 default_stacks: max_stacks,
                 default_locked: true,
                 permanent: true,
-            })
-        })
-        .collect()
+            });
+        }
+        // Overwhelming Attrition: a conditional stacking buff of the same
+        // shape as the Galvanized family (earned in the run, decays one
+        // stack per timeout), so it belongs on the buff cards next to them.
+        // Default 0 and unlocked = let the sim earn it, which is what the
+        // engine did before this buff was configurable at all.
+        if let Some(b) = def.plain_hit_buff() {
+            out.push(BuffMeta {
+                id: "on_plain_hit_damage".into(),
+                name: def.name.clone(),
+                max_stacks: b.max_stacks,
+                kind: "stacking",
+                default_stacks: 0,
+                default_locked: false,
+                permanent: false,
+            });
+        }
+    }
+    out
 }
 
 fn buffs_json(list: &[BuffMeta]) -> Vec<Value> {

@@ -24,10 +24,9 @@ incarnon:
   transmute:
     activation: alt_fire
     # VERBATIM (wiki Laetum): "Mode switching is not instantaneous and has
-    # an animation equal to the weapon's reload speed." Both directions
-    # therefore cost the reload time and scale by the reload formula
-    # `base / (1 + reload bonus)` — unlike Dual Toxocyst, whose revert is
-    # a separate, shorter animation.
+    # an animation equal to the weapon's reload speed." Read as the cost of
+    # transmuting IN; the revert is a shorter putaway, and both scale by
+    # the reload formula `base / (1 + reload bonus)`.
     animation_seconds: reload_speed
     auto_transmute_out: on_incarnon_ammo_empty
   incarnon_magazine:
@@ -38,13 +37,16 @@ incarnon:
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
   transmute_in_seconds: 2.0      # = base reload time, unmodded (wiki)
-  transmute_out_seconds: 2.0     # same animation both ways (wiki)
+  # PROJECT-WIDE ASSUMPTION (user, 2026-07-29): every weapon's revert costs
+  # 1 s until someone measures one. Unverified, and deliberately uniform —
+  # Dual Toxocyst already used 1.0, so no weapon is special-cased.
+  transmute_out_seconds: 1.0
 
 # SIM CONVENIENCE: with the gauge LOCKED full the Incarnon cycle reduces to
 # a magazine/reload model the plain sim consumes directly.
 pseudo_reload:
   magazine: 216
-  reload_seconds: 4.0   # transmute out (2.0) + in (2.0), unmodded
+  reload_seconds: 3.0   # transmute out (1.0) + in (2.0), unmodded
   # note: excludes charge-rebuilding time (assumed locked); both components
   # scale with reload-speed bonuses
 
