@@ -1514,7 +1514,7 @@ function renderStoredSimResult() {
 
 function renderResults(r, testedAt) {
   const t = r.target || {};
-  const pc = (x) => ((x || 0) * 100).toFixed(1) + "%";
+  const pc = (x) => ((x || 0) * 100).toFixed(2) + "%"; // percent stats: 2-decimal precision (user)
   const n0 = (x) => Math.round(x || 0).toLocaleString();
   const n1 = (x) => (x || 0).toFixed(1);
   const killed = (r.kills || 0) >= 1;
@@ -1524,7 +1524,7 @@ function renderResults(r, testedAt) {
   const ttk = killed ? r.duration / r.kills : Infinity;
   const heroNum = killed ? n0(r.kills) : pc(r.score); // median run: kills is a whole number
   const heroSub = killed
-    ? `kills in ${n0(r.duration)}s · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s to first kill`
+    ? `kills in ${n0(r.duration)}s · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s avg per kill`
     : `of one ${LN("enemies", sim.enemy, t.name || "enemy")}'s EHP in ${n0(r.duration)}s (not killed)`;
   // No Forma/capacity here — the simulator reports EFFECTS only; build
   // legality is the Builder's business (user, 2026-07-29).
@@ -1550,7 +1550,7 @@ function renderResults(r, testedAt) {
   const meter = srcs.map((x, i) => `<div class="mrow">
       <span class="mname">${srcLabel(x.source)}</span>
       <div class="mbar"><i style="width:${(x.dmg / srcMax * 100).toFixed(1)}%;background:var(--s${(i % 8) + 1})"></i></div>
-      <span class="mval">${n0(x.dmg)} · ${(x.dmg / srcTotal * 100).toFixed(1)}%</span>
+      <span class="mval">${n0(x.dmg)} · ${(x.dmg / srcTotal * 100).toFixed(2)}%</span>
     </div>`).join("");
   // DPS-over-time curve (user, 2026-07-29): the MEDIAN run's per-bucket
   // EFFECTIVE dps. One series — the accent line, recessive grid, hover
