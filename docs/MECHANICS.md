@@ -735,6 +735,46 @@ target, so `d = 0` and the radial lands at full value; falloff only matters
 once multiple targets exist. The data still records `start/end/reduction` so
 the multi-target model has it.
 
+### Lingering damage FIELDS (zones)
+
+A third kind of attack part: an area that **persists and ticks**, rather than
+landing once. The Torid's grenade is the reference — it disperses a cloud that
+keeps damaging whatever stands in it.
+
+Torid's Poison Cloud, from the weapon data module: **40 Toxin, 1 tick per
+second, 10 s, 3 m radius**, its own **15% / 2.0×** crit and **25%** status,
+falloff `start 0, end 3, reduction 1.0` — note `reduction 1.0` means the
+damage falls to **zero** at the rim, unlike the Laetum radial's 0.2.
+
+A zone follows the radial's rules (no body-part multiplier — "headshot
+multiplier of 1x and cannot trigger headshot conditions"; its own crit and
+status rolls — "initial hit and explosion apply status separately"), plus:
+
+- **The direct hit and the field both apply.** Grenades *stick* to whatever
+  they hit, so a directly-hit enemy takes the impact AND cannot leave the
+  cloud: the wiki calls this out as guaranteeing "the maximum possible
+  damage". In a single-target arena that is the normal case — the target
+  takes every tick.
+- **Ticks are weapon damage, not a status DoT.** They roll crit per tick and
+  scale with the weapon's mods; they are not a Toxin *proc* and do not share
+  the status DoT's coefficients.
+- **No self-damage, no self-stagger** for this one (self-damage was removed in
+  Update 27.4.3; the page states the explosion "does not inflict
+  self-stagger").
+
+**Open questions — measure before trusting a number:**
+
+- Do overlapping fields from several grenades **stack** (N tick streams) or
+  refresh one? NOT DOCUMENTED. The magazine is 5 and the cloud lasts 10 s at
+  a 1.5/s fire rate, so the answer changes sustained DPS by up to ~5×.
+- Is a field eligible for **Condition Overload**? NOT stated for the Torid.
+  The CO catalog (§6) excludes "pure radial/AoE attacks" and explosion radii,
+  which *implies* no — recorded as an inference, not as fact.
+- Exactly which mod buckets scale the tick (the page confirms the cloud has
+  its own stat block, not the scaling rules).
+
+**Source:** weapon data module + wiki Torid. **Status:** unverified.
+
 **Source:** wiki (Area of Effect, Damage Falloff) + the weapon data modules.
 **Status:** unverified (needs Simulacrum measurement of direct+radial totals).
 
