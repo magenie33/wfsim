@@ -135,7 +135,9 @@ function woptStatus() {
   if (!wopt) return { ok: false, error: "no such optimize job" };
   const st = wopt.status || { round: 0, rounds: 0, round_jobs: 0, round_runs: 0, sims_done: 0, sims_planned: 0, notes: [] };
   const out = { ...st, ok: true, job_id: wopt.id, elapsed_s: (Date.now() - wopt.t0) / 1000,
-    phase: wopt.status ? "running" : "enumerating" };
+    // The worker's heartbeat carries its own phase (enumerating/running) —
+    // keep it; the fallbacks cover the moments before the first message.
+    phase: (wopt.status && wopt.status.phase) || (wopt.status ? "running" : "enumerating") };
   if (wopt.cancelled) out.phase = "cancelled";
   if (wopt.result) {
     out.result = wopt.result;

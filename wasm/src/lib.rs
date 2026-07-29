@@ -58,6 +58,7 @@ fn status_json(state: &FunnelState, phase: &str, counts: Option<(usize, usize)>,
         "round_runs": state.round_runs.load(Ordering::Relaxed),
         "sims_done": state.sims_done.load(Ordering::Relaxed),
         "sims_planned": state.sims_planned.load(Ordering::Relaxed),
+        "enumerated": state.enumerated.load(Ordering::Relaxed),
         "notes": notes,
     });
     if let Some((cands, jobs)) = counts {
@@ -68,8 +69,12 @@ fn status_json(state: &FunnelState, phase: &str, counts: Option<(usize, usize)>,
 }
 
 /// Run an optimize request to completion (blocking — call inside a Worker).
-/// `on_progress` receives a status-JSON string after enumeration and after
-/// every funnel round; the returned string is the final result JSON.
+/// `on_progress` receives a status-JSON string continuously: a throttled
+/// heartbeat DURING enumeration/screening/rounds (the optimizer lib's tick
+/// hook — a busy single-threaded worker cannot be polled, and before the
+/// heartbeat a big scope looked dead), plus one message after enumeration
+/// and after every funnel round. The returned string is the final result
+/// JSON.
 #[wasm_bindgen]
 pub fn optimize(body: &str, on_progress: &js_sys::Function) -> String {
     let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
@@ -77,12 +82,29 @@ pub fn optimize(body: &str, on_progress: &js_sys::Function) -> String {
         Ok(p) => p,
         Err(e) => return e.to_string(),
     };
-    let state = FunnelState::default();
+    let state = std::rc::Rc::new(FunnelState::default());
     let t0 = js_sys::Date::now();
     let post = |payload: String| {
         let _ = on_progress.call1(&JsValue::NULL, &JsValue::from_str(&payload));
     };
-    let counts = std::cell::Cell::new(None);
+    let counts = std::rc::Rc::new(std::cell::Cell::new(None));
+    {
+        // The ~4 Hz heartbeat out of the busy worker.
+        let state = state.clone();
+        let counts = counts.clone();
+        let f = on_progress.clone();
+        let last = std::cell::Cell::new(0.0f64);
+        wfsim_optimizer::set_tick_hook(Some(Box::new(move || {
+            let now = js_sys::Date::now();
+            if now - last.get() < 250.0 {
+                return;
+            }
+            last.set(now);
+            let phase = if counts.get().is_some() { "running" } else { "enumerating" };
+            let payload = status_json(&state, phase, counts.get(), (now - t0) / 1000.0);
+            let _ = f.call1(&JsValue::NULL, &JsValue::from_str(&payload));
+        })));
+    }
     let result = wfsim_webapi::run_optimize(
         plan,
         &state,
@@ -94,5 +116,6 @@ pub fn optimize(body: &str, on_progress: &js_sys::Function) -> String {
             post(status_json(&state, "running", counts.get(), (js_sys::Date::now() - t0) / 1000.0));
         }),
     );
+    wfsim_optimizer::set_tick_hook(None);
     result.to_string()
 }

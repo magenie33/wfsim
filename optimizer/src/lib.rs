@@ -308,6 +308,7 @@ fn enumerate_rec<S: FnMut(&mut Vec<Candidate>) -> bool>(
             return false;
         }
         scratch.clear(); // a sink may leave leftovers; the walk owns the scratch
+        tick(); // wasm heartbeat — no-op on native
     }
     if subset.len() == max {
         return true;
@@ -697,6 +698,7 @@ pub fn set_worker_threads(n: usize) {
     WORKER_THREADS.store(n, Ordering::Relaxed);
 }
 
+#[cfg(not(target_arch = "wasm32"))] // wasm is single-threaded; the budget is native-only
 fn worker_threads() -> usize {
     let n = WORKER_THREADS.load(Ordering::Relaxed);
     if n > 0 {
@@ -723,6 +725,39 @@ pub fn deprioritize_current_thread() {
         const THREAD_PRIORITY_BELOW_NORMAL: i32 = -1;
         SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
     }
+}
+
+// ---- wasm busy-loop progress hook --------------------------------------
+// A single-threaded Web Worker cannot be polled while it computes — before
+// this hook, the whole enumeration/screen phase was SILENT and a big scope
+// looked dead (user, 2026-07-29: "it just doesn't compute"). The hot loops
+// call `tick()`; the wasm host installs a throttled hook that posts live
+// status out of the worker. Native builds compile `tick()` to a no-op —
+// the status endpoint polls `FunnelState` instead.
+#[cfg(target_arch = "wasm32")]
+thread_local! {
+    static TICK_HOOK: std::cell::RefCell<Option<Box<dyn Fn()>>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn set_tick_hook(hook: Option<Box<dyn Fn()>>) {
+    TICK_HOOK.with(|h| *h.borrow_mut() = hook);
+}
+
+/// Native no-op twin — lets the wasm host crate compile for the host
+/// target too (the workspace builds it there for tests/clippy).
+#[cfg(not(target_arch = "wasm32"))]
+pub fn set_tick_hook(_hook: Option<Box<dyn Fn()>>) {}
+
+#[inline]
+pub fn tick() {
+    #[cfg(target_arch = "wasm32")]
+    TICK_HOOK.with(|h| {
+        if let Some(f) = h.borrow().as_ref() {
+            f();
+        }
+    });
 }
 
 /// Deterministic per-job seed, mixed per round. One definition for both
@@ -803,6 +838,7 @@ pub fn evaluate_batch(
         if let Some(st) = state {
             st.sims_done.fetch_add(runs as u64, Ordering::Relaxed);
         }
+        tick(); // wasm heartbeat: intra-round progress leaves the worker
     }
     results
 }

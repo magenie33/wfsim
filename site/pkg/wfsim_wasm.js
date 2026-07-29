@@ -33,8 +33,12 @@ let wasm_bindgen = (function(exports) {
 
     /**
      * Run an optimize request to completion (blocking — call inside a Worker).
-     * `on_progress` receives a status-JSON string after enumeration and after
-     * every funnel round; the returned string is the final result JSON.
+     * `on_progress` receives a status-JSON string continuously: a throttled
+     * heartbeat DURING enumeration/screening/rounds (the optimizer lib's tick
+     * hook — a busy single-threaded worker cannot be polled, and before the
+     * heartbeat a big scope looked dead), plus one message after enumeration
+     * and after every funnel round. The returned string is the final result
+     * JSON.
      * @param {string} body
      * @param {Function} on_progress
      * @returns {string}
