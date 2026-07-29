@@ -33,6 +33,10 @@ data + a dependency-free web UI, deployed as WASM on Cloudflare
   edit under `web/src/static/`, stop the running server (it holds the
   exe), `cargo build -p wfsim-web`, restart. `cargo test` does NOT
   refresh the exe.
+- **`data/` (weapons, mods, i18n, …) is embedded at COMPILE TIME too**
+  (`engine::data::files_under`): a YAML edit — including
+  `data/i18n/zh.yaml` translations — needs the same rebuild + restart,
+  and a site regeneration to reach wfsim.app.
 - After frontend or engine changes, regenerate the static site:
   `python scripts/build_site_app.py` (wasm-bindgen-cli version must match
   Cargo.lock). Commit the regenerated `site/`.
