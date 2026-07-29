@@ -620,6 +620,52 @@ independent damage instance (own crit roll, own status roll). No effect
 on speargun throws or on continuous weapons' blast radii; the Arsenal
 shows the summed damage (spread can waste pellets); accuracy interacts.
 
+**The rolling unit is the DAMAGE INSTANCE, and the instance is per attack
+part PER ENEMY.** Two wiki statements pin this, and together they settle
+every multi-target case:
+
+> "Each damage instance has its own chance to apply Critical Hits or
+> Status Effects." — `Multishot`
+
+> "If a single attack hits multiple enemies, each enemy gets their own
+> status roll to determine if they will receive a status effect from the
+> attack and which status effect they will receive." — `Status_Effect`
+
+So a shot that reaches three enemies is not one roll shared three ways —
+it is three instances, each rolling for itself. This holds for every way
+an attack reaches more than one target:
+
+| reaching multiple enemies via | instances | each rolls |
+| --- | --- | --- |
+| **Multishot** | one per projectile | own crit, own status |
+| **Punch through** | one per pierced enemy | own crit, own status |
+| **Radial (AoE)** | one per enemy in radius | own crit, own status |
+| **Ricochet** | one per redirected hit | own crit, own status |
+| **Direct + radial on the SAME enemy** | two (§7) | own crit, own status |
+
+Punch through has weapon-page corroboration: Sagek Prime's on-hit effect
+"is triggered separately for each bullet when using Multishot, as well as
+each enemy hit with Punch Through" — per victim, not per trigger pull.
+
+Crit granularity is stated per attack/pellet on `Critical_Hit` ("Each
+attack, or each pellet in the case of most shotguns and weapons with
+Multishot, rolls its own chance to critically hit") and is **not**
+spelled out per enemy anywhere. The per-enemy reading follows from the
+damage-instance rule above rather than from a sentence naming punch
+through — flagged as such: **status per enemy is verbatim; crit per enemy
+is inferred.**
+
+The one documented EXCEPTION is beam merging, below: on-target beams
+collapse into ONE instance whose status chance SUMS but whose crit
+chance stays single-beam. That exception is what makes the general rule
+legible — merging is called out precisely because instances are normally
+independent.
+
+**Single-target consequence.** Our arena has one enemy, so punch through,
+AoE spread and ricochet all currently resolve to zero extra instances and
+the rule costs nothing to honour. It is recorded now because the
+multi-target model must not "optimise" it into one shared roll.
+
 **Continuous (beam) weapons** (wiki `Continuous_Weapon` + `Multishot`
 §Continuous Weapons) — three big deviations:
 - **Damage ramp**: ticks start at ~20% damage and ramp to 100% over
