@@ -1371,6 +1371,15 @@ pub fn simulate_json(v: &Value) -> Value {
     } else {
         (frenzy_on, Vec::new()) // legacy single-form: on/off, natural triggering
     };
+    // The passive belongs to the WEAPON: a request can only turn Frenzy off
+    // or configure it, never grant it to a weapon that does not list the
+    // perk. Without this the Laetum inherited Dual Toxocyst's ×2.5 fire rate.
+    let has_frenzy = wfsim_engine::weapons_data::has_perk(&info.id, "frenzy")
+        || incarnon_id(info).is_some_and(|i| wfsim_engine::weapons_data::has_perk(i, "frenzy"));
+    // One value for all three forms: the weapon must OWN the passive, and
+    // the request may still switch it off (or configure it via buff_cfg).
+    // The cycle used to ignore this entirely — its knob was dead.
+    let frenzy_single = frenzy_single && has_frenzy;
     let form = get_str(v, "form", "incarnon_cycle");
     let evos = match chosen_evolutions(v) {
         Ok(e) => e,
@@ -1508,6 +1517,7 @@ pub fn simulate_json(v: &Value) -> Value {
             _ => DummyParams::incarnon_cycle_from_panels(
                 &incarnon_panel,
                 &base_panel,
+                frenzy_single,
                 cycle_frenzy_lock,
                 target,
                 body_parts,
@@ -1980,9 +1990,14 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     let body_parts = build_body_parts(spec, headshot_pct);
     let buff_cfg = parse_buff_config(v).unwrap_or_default();
     let frenzy_lock = frenzy_lock_mode(buff_cfg.get("frenzy"));
+    // Frenzy is the weapon's own perk — the optimizer must not hand it to a
+    // weapon that lacks it any more than the sim does.
+    let frenzy = wfsim_engine::weapons_data::has_perk(&info.id, "frenzy")
+        || incarnon_id(info).is_some_and(|i| wfsim_engine::weapons_data::has_perk(i, "frenzy"));
     let scenario = Scenario {
         target,
         body_parts,
+        frenzy,
         duration_secs: duration,
         incarnon_cycle: true,
         frenzy_lock,

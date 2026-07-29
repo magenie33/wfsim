@@ -517,6 +517,9 @@ pub struct Scenario {
     pub incarnon_cycle: bool,
     /// Frenzy's per-buff lock setting for the base-form phase.
     pub frenzy_lock: LockMode,
+    /// Does the weapon under search carry the Frenzy passive? It is a
+    /// per-weapon perk, not a constant — see weapons_data::has_perk.
+    pub frenzy: bool,
     /// Per-buff configured policy applied to every evaluated build (same id
     /// scheme as the web Sim panel). Empty = the emergent default.
     pub buff_cfg: BuffConfig,
@@ -534,6 +537,7 @@ pub fn evaluate(
         DummyParams::incarnon_cycle_from_panels(
             &c.panel,
             c.base_panel.as_ref().expect("cycle needs the base panel"),
+            s.frenzy,
             s.frenzy_lock,
             s.target.clone(),
             s.body_parts.clone(),

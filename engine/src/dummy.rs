@@ -1263,9 +1263,16 @@ impl DummyParams {
     /// the charge magazine; revert; rebuild 9 weakpoint charges in the
     /// base form (Frenzy per `frenzy_lock`); transmute; repeat. Both
     /// transitions scale by the reload formula (M9).
+    ///
+    /// `frenzy` is the WEAPON's passive, not a constant: it belongs to
+    /// whichever weapon lists the perk (Dual Toxocyst does, the Laetum does
+    /// not). Hardcoding it here handed DT's ×2.5-on-headshot fire rate to
+    /// every transform weapon and made the caller's on/off knob dead in
+    /// cycle mode.
     pub fn incarnon_cycle_from_panels(
         incarnon: &crate::loadout::ResolvedPanel,
         base: &crate::loadout::ResolvedPanel,
+        frenzy: bool,
         frenzy_lock: LockMode,
         target: TargetParams,
         body_parts: Vec<BodyPart>,
@@ -1274,13 +1281,14 @@ impl DummyParams {
         let rl = 1.0 + incarnon.reload_bonus;
         let inc_form = incarnon.incarnon;
         let base_form = DummyParams {
-            frenzy: true,
+            frenzy,
             ammo_efficiency_applies: true,
             ..Self::from_panel(base, target.clone(), body_parts.clone(), duration_secs)
         };
         Self {
-            // Frenzy exists in BOTH forms (user-confirmed 2026-07-24).
-            frenzy: true,
+            // Frenzy exists in BOTH forms (user-confirmed 2026-07-24) — when
+            // the weapon HAS it.
+            frenzy,
             locked_buffs: vec![BuffLock {
                 buff: LockedBuff::Frenzy,
                 mode: frenzy_lock,

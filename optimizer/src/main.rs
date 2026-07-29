@@ -85,6 +85,8 @@ fn main() {
             .target_params(9999, true, false, TargetMode::InstantRespawn)
             .expect("valid target"),
         body_parts: spec.aim_parts(&[("head", 1.0)]).expect("head aim"),
+        // The CLI drives Dual Toxocyst, which carries the Frenzy passive.
+        frenzy: wfsim_engine::weapons_data::has_perk("dual_toxocyst", "frenzy"),
         duration_secs,
         // The REAL Incarnon cycle (user flow): full gauge start -> dump ->
         // revert 1.0 s -> rebuild 9 weakpoint charges in base form ->

@@ -232,6 +232,14 @@ pub fn perk(id: &str) -> Option<&'static PerkSpec> {
         .or_else(|| inline_perk_in(id, all().iter()))
 }
 
+/// Does this weapon carry a given perk? Weapon PASSIVES are per weapon —
+/// Dual Toxocyst lists `frenzy`, the Laetum lists none — so anything that
+/// applies a passive must ask, never assume. A transform group's second
+/// form lists its own perks (Frenzy is active in both DT forms).
+pub fn has_perk(weapon_id: &str, perk_id: &str) -> bool {
+    spec(weapon_id).is_some_and(|s| s.perks.iter().any(|p| p.id() == perk_id))
+}
+
 /// Registry view: the SELECTABLE weapons (transform-group base entries; an
 /// Incarnon form is a form of its base weapon, not its own roster row).
 pub fn roster() -> impl Iterator<Item = &'static WeaponSpec> {
@@ -648,5 +656,22 @@ mod laetum_tests {
         let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::AssumedMax);
         let r = p.radial.expect("resolved panel keeps the radial");
         assert!((r.damage.total() - 300.0).abs() < 1e-9, "got {}", r.damage.total());
+    }
+}
+
+#[cfg(test)]
+mod passive_tests {
+    use super::*;
+
+    /// A weapon PASSIVE belongs to the weapon that lists it. Frenzy is Dual
+    /// Toxocyst's (both forms); the Laetum has none. Hardcoding it handed
+    /// DT's x2.5-on-headshot fire rate to every transform weapon.
+    #[test]
+    fn frenzy_belongs_only_to_the_weapon_that_lists_it() {
+        assert!(has_perk("dual_toxocyst", "frenzy"));
+        assert!(has_perk("dual_toxocyst_incarnon", "frenzy"));
+        assert!(!has_perk("laetum", "frenzy"));
+        assert!(!has_perk("laetum_incarnon", "frenzy"));
+        assert!(!has_perk("dual_toxocyst", "no_such_perk"));
     }
 }
