@@ -14,7 +14,8 @@
 //! under [`StackPolicy::AssumedMax`] — under `Emergent` they are honest
 //! no-ops until the configured-buff policy lands (devlog 2026-07-27).
 
-use std::sync::OnceLock;
+use std::collections::BTreeMap;
+use std::sync::{Mutex, OnceLock};
 
 use serde::Deserialize;
 use serde_norway::Value;
@@ -670,15 +671,47 @@ pub fn load_pool(prefix: &str) -> Vec<ArcaneDef> {
     out
 }
 
-/// The secondary-arcane pool — `data/arcanes/secondary/*.yaml`. Cached.
-pub fn secondary_pool() -> &'static Vec<ArcaneDef> {
-    static POOL: OnceLock<Vec<ArcaneDef>> = OnceLock::new();
-    POOL.get_or_init(|| load_pool("arcanes/secondary/"))
+/// Every arcane SLOT present in the data — one per `data/arcanes/<slot>/`
+/// directory, sorted. Same discovery rule as the mod classes: dropping in
+/// `data/arcanes/primary/` publishes primary arcanes with no code change.
+pub fn slots() -> Vec<&'static str> {
+    let mut out: Vec<&'static str> = crate::data::files_under("arcanes/")
+        .filter_map(|(p, _)| p.strip_prefix("arcanes/")?.split('/').next())
+        .collect();
+    out.sort_unstable();
+    out.dedup();
+    out
 }
 
-/// Look up a secondary arcane by id.
+/// The arcane pool of one slot — `data/arcanes/<slot>/*.yaml`. Cached per
+/// slot (each entry leaks once).
+pub fn slot_pool(slot: &str) -> &'static [ArcaneDef] {
+    static POOLS: OnceLock<Mutex<BTreeMap<String, &'static [ArcaneDef]>>> = OnceLock::new();
+    let cache = POOLS.get_or_init(|| Mutex::new(BTreeMap::new()));
+    let mut g = cache.lock().expect("arcane pool cache");
+    g.entry(slot.to_string())
+        .or_insert_with(|| {
+            Box::leak(load_pool(&format!("arcanes/{slot}/")).into_boxed_slice())
+        })
+}
+
+/// Which slot an arcane id belongs to, if any.
+pub fn slot_of(id: &str) -> Option<&'static str> {
+    slots()
+        .into_iter()
+        .find(|s| slot_pool(s).iter().any(|a| a.id == id))
+}
+
+/// The secondary-arcane pool — `data/arcanes/secondary/*.yaml`.
+pub fn secondary_pool() -> &'static [ArcaneDef] {
+    slot_pool("secondary")
+}
+
+/// Look up an arcane by id across EVERY slot (ids are globally unique).
 pub fn secondary(id: &str) -> Option<&'static ArcaneDef> {
-    secondary_pool().iter().find(|a| a.id == id)
+    slots()
+        .into_iter()
+        .find_map(|s| slot_pool(s).iter().find(|a| a.id == id))
 }
 
 #[cfg(test)]
@@ -838,5 +871,31 @@ mod tests {
             .fx(3, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
         assert_eq!(e.enervate_rank, Some(3));
         assert!(e.buffs.is_empty()); // the on_hit buff is perk-implemented
+    }
+}
+
+#[cfg(test)]
+mod slot_tests {
+    use super::*;
+
+    /// Arcane pools are DISCOVERED from `data/arcanes/<slot>/`, mirroring the
+    /// mod classes: adding `data/arcanes/primary/` is a data change, not a
+    /// code change. Ids stay globally unique, so a lookup never needs a slot.
+    #[test]
+    fn slots_come_from_the_data_tree() {
+        let ss = slots();
+        assert!(ss.contains(&"secondary"), "expected the secondary slot, got {ss:?}");
+        for s in &ss {
+            assert!(!slot_pool(s).is_empty(), "slot {s} has no arcanes");
+        }
+        assert!(slot_pool("no_such_slot").is_empty());
+        assert_eq!(slot_of("secondary_merciless"), Some("secondary"));
+        assert_eq!(slot_of("no_such_arcane"), None);
+        // Every id is unique across slots — what makes `secondary(id)` safe.
+        let mut ids: Vec<&str> = ss.iter().flat_map(|s| slot_pool(s).iter().map(|a| a.id.as_str())).collect();
+        let n = ids.len();
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), n, "arcane ids collide across slots");
     }
 }

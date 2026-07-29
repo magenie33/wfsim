@@ -78,6 +78,9 @@ struct WeaponInfo {
     sentinel: bool,
     forms: Vec<(&'static str, String)>,
     uses_arcane: bool,
+    /// Which arcane pool this weapon draws from — its own slot
+    /// ("secondary" / "primary"). The picker filters on it.
+    arcane_slot: String,
     uses_evo2: bool,
 }
 
@@ -147,6 +150,7 @@ fn weapons() -> &'static [WeaponInfo] {
                     sentinel,
                     forms,
                     uses_arcane: !sentinel,
+                    arcane_slot: s.slot.clone(),
                     uses_evo2: incarnon,
                 }
             })
@@ -313,6 +317,7 @@ pub fn meta_json() -> Value {
                 "subtype": w.subtype,
                 "sentinel": w.sentinel,
                 "uses_arcane": w.uses_arcane,
+                "arcane_slot": w.arcane_slot,
                 "uses_evo2": w.uses_evo2,
                 "arcane_slots": 1,
                 "image": assets().weapons.get(&w.id),
@@ -357,13 +362,16 @@ pub fn meta_json() -> Value {
         })
         .collect();
 
-    // Arcanes: the FULL data-driven pool (data/arcanes/secondary/*.yaml via
-    // engine::arcanes_data). Per-rank effect lines come from the same
-    // describe used by the model, so the picker states what the sim computes.
+    // Arcanes: every slot found under data/arcanes/ (secondary today,
+    // primary next), each entry TAGGED with its slot so the picker can show
+    // only the ones a weapon can equip. Per-rank effect lines come from the
+    // same describe the model uses, so the picker states what the sim
+    // computes. "none" belongs to every slot.
     let mut arcanes_json: Vec<Value> = vec![json!(
-        {"id": "none", "name": "None", "image": null, "ranks": [], "max_rank": 0, "rarity": null}
+        {"id": "none", "name": "None", "image": null, "ranks": [], "max_rank": 0, "rarity": null, "slot": null}
     )];
-    for a in wfsim_engine::arcanes_data::secondary_pool() {
+    for slot in wfsim_engine::arcanes_data::slots() {
+    for a in wfsim_engine::arcanes_data::slot_pool(slot) {
         let ranks: Vec<Vec<String>> = (0..=a.max_rank).map(|r| a.describe_at(r)).collect();
         // The verbatim in-game description per rank (X filled) — the display
         // text; `ranks` (model describe lines) stays for search.
@@ -376,7 +384,9 @@ pub fn meta_json() -> Value {
             "desc_ranks": desc_ranks,
             "max_rank": a.max_rank,
             "rarity": format!("{:?}", a.rarity).to_lowercase(),
+            "slot": slot,
         }));
+    }
     }
 
     json!({

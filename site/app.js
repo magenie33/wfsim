@@ -1276,6 +1276,13 @@ function openPolMenu(slotIdx) {
 // Full parity with mods: ONE slot card (rank stepper, ⋯ menu) → click opens a
 // searchable picker that matches name OR effect, with effect lines, rarity
 // frames, and the equipped arcane highlighted in the accent background family.
+// The arcanes the CURRENT weapon can equip: its own slot's pool, plus
+// "none" (which belongs to every slot). Arcane ids are globally unique, so
+// lookups stay unfiltered — only the PICKERS narrow.
+const arcanePool = () => {
+  const slot = weaponInfo($("weapon").value).arcane_slot;
+  return (META.arcanes || []).filter((a) => a.id === "none" || !a.slot || a.slot === slot);
+};
 const arcaneById = (id) => META.arcanes.find((x) => x.id === id);
 function setArcane(id) { arcane = id; arcaneRank = null; } // new arcane → max rank
 // Effect lines for a specific rank (clamped). Arcane strengths scale per rank
@@ -1342,7 +1349,7 @@ function renderArcaneMenu(query) {
   const q = query.trim().toLowerCase();
   // Search matches NAME (localized or English), ANY rank's effect text,
   // or the description — in either language (searchBlob).
-  const hits = META.arcanes.filter((a) => a.id === "none" || !q || searchBlob(a).includes(q));
+  const hits = arcanePool().filter((a) => a.id === "none" || !q || searchBlob(a).includes(q));
   menu.innerHTML = hits.length ? hits.map((a) => {
     const isCur = a.id === arcane;
     const none = a.id === "none";
@@ -1893,7 +1900,7 @@ function renderOptExilus() {
 // lines), searchable, with an include toggle on the right. "None" included.
 function renderOptArcanes() {
   const q = ($("opt-arc-filter") && $("opt-arc-filter").value || "").trim().toLowerCase();
-  const hits = (META.arcanes || []).filter((a) => a.id === "none" || !q || searchBlob(a).includes(q));
+  const hits = arcanePool().filter((a) => a.id === "none" || !q || searchBlob(a).includes(q));
   const pinned = arcanePinned();
   const hasPool = Object.values(opt.arcanes).some((s) => s === "search");
   $("opt-arcanes").innerHTML = hits.map((a) => {
