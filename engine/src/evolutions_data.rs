@@ -78,7 +78,10 @@ enum EvoEffect {
     /// Overwhelming Attrition: a hit that is NEITHER critical NOR applies a
     /// status grants a stack worth `+per_stack` damage for `duration`; on
     /// timeout ONE stack drops and the timer resets (the Galvanized decay,
-    /// wiki-verbatim). The buff multiplies subsequent instances.
+    /// wiki-verbatim). The bonus is ADDITIVE to the base-damage bucket
+    /// ("additive to base damage bonuses such as Hornet Strike") — unlike
+    /// [`EvoEffect::ChanceDamageOnNoncrit`], which the same page calls
+    /// multiplicative.
     StackingDamageOnPlainHit {
         per_stack: f64,
         max_stacks: u32,

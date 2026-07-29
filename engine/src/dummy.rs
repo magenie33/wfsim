@@ -1955,10 +1955,21 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 + debuffs.cold_cd_bonus(t)
                 + arc.cd_bonus(ap, t)
                 + params.arcane.cd_abs;
-            // Live arcane BASE-DAMAGE stacks (Merciless/Deadhead/Dexterity/
-            // Cascadia Flare join the Hornet Strike bucket, so they also
-            // scale ModifiedBase).
-            let arc_bd = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t);
+            // Live BASE-DAMAGE bucket additions, evaluated per instance:
+            //  - arcane stacks (Merciless/Deadhead/Dexterity/Cascadia Flare)
+            //  - Overwhelming Attrition's earned stacks — VERBATIM (wiki
+            //    Laetum): "Damage bonus is ADDITIVE to base damage bonuses
+            //    such as Hornet Strike", the opposite of its tier sibling
+            //    Devouring Attrition, which the same page calls
+            //    multiplicative. Both therefore also scale ModifiedBase, so
+            //    status payloads follow, exactly like Hornet Strike.
+            // The stacks read here are the ones EARNED so far; the hit that
+            // grants a stack does not benefit from it (the bump happens
+            // after the status roll below).
+            let arc_bd = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t)
+                + ap.plain_hit_bonus.map_or(0.0, |b| {
+                    b.per_stack * plain_stacks.current(t, b.duration) as f64
+                });
             let bd = ap.base_damage_bonus;
             let arc_ratio = (1.0 + bd + arc_bd) / (1.0 + bd);
             let mb_live = modded_base * arc_ratio;
@@ -2069,22 +2080,13 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // instances that did NOT crit (wiki: "multiplicative to base
             // damage bonuses such as Hornet Strike").
             let attrition = noncrit_mult(ap.noncrit_bonus, tier, rng);
-            // Overwhelming Attrition: the stacks EARNED so far multiply
-            // this instance; the hit that grants a stack does not benefit
-            // from it (the bump happens after the status roll below).
-            // UNVERIFIED bracket — modeled like its tier sibling, an
-            // independent multiplier.
-            let plain_mult = ap.plain_hit_bonus.map_or(1.0, |b| {
-                1.0 + b.per_stack * plain_stacks.current(t, b.duration) as f64
-            });
             let raw = qtotal
                 * part_factor
                 * crit_mult
                 * co_mult
                 * params.faction_mult
                 * arc_final
-                * attrition
-                * plain_mult;
+                * attrition;
             let (effective, killed, broke) = target.apply(
                 raw,
                 toxin_share,
@@ -2140,8 +2142,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     * arc_ratio
                     * params.faction_mult
                     * arc_final
-                    * r_attrition
-                    * plain_mult;
+                    * r_attrition;
                 let (r_eff, r_killed, r_broke) =
                     target.apply(r_raw, r_toxin, false, t, &params.target, false, &mit);
                 r.total_damage += r_raw;

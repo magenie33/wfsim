@@ -650,6 +650,50 @@ mod laetum_tests {
         );
     }
 
+    /// The two tier-5 Attritions sit in DIFFERENT brackets, and the wiki
+    /// says so explicitly: Overwhelming is "additive to base damage bonuses
+    /// such as Hornet Strike", Devouring is "multiplicative" to them. The
+    /// observable difference is DILUTION — an additive bonus loses relative
+    /// value as the base-damage bucket grows, a multiplicative one does not.
+    #[test]
+    fn overwhelming_attrition_is_diluted_by_base_damage_mods() {
+        use crate::dummy::{monte_carlo, DummyParams, TargetParams};
+        let parts = vec![crate::dummy::BodyPart {
+            name: "body".into(),
+            aim_weight: 1.0,
+            multiplier: 1.0,
+            is_head: false,
+            crit_bonus: false,
+        }];
+        let pool = crate::mods_data::pistol_pool();
+        let hornet: Vec<&crate::loadout::ModDef> =
+            pool.iter().filter(|m| m.id == "hornet_strike").collect();
+        let gain = |evos: &[&str], mods: &[&crate::loadout::ModDef]| {
+            let run = |e: &[&str]| {
+                let b = WeaponBase::from_data("laetum_incarnon", true, e);
+                let p = crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::AssumedMax);
+                let params =
+                    DummyParams::from_panel(&p, TargetParams::training_dummy(), parts.clone(), 20.0);
+                monte_carlo(&params, 60, 5).mean_effective_damage
+            };
+            run(evos) / run(&[])
+        };
+        let bare = gain(&["laetum_overwhelming_attrition"], &[]);
+        let modded = gain(&["laetum_overwhelming_attrition"], &hornet);
+        assert!(
+            bare > modded * 1.5,
+            "an ADDITIVE bonus must lose relative value once Hornet Strike              fills the same bucket: bare {bare:.2}x vs modded {modded:.2}x"
+        );
+        // …and the MULTIPLICATIVE sibling must NOT be diluted at all.
+        let d_bare = gain(&["laetum_devouring_attrition"], &[]);
+        let d_modded = gain(&["laetum_devouring_attrition"], &hornet);
+        let drift = (d_bare / d_modded - 1.0).abs();
+        assert!(
+            drift < 0.15,
+            "a MULTIPLICATIVE bonus keeps its relative value: bare {d_bare:.2}x              vs modded {d_modded:.2}x (drift {drift:.2})"
+        );
+    }
+
     #[test]
     fn resolving_keeps_the_radial() {
         let b = WeaponBase::from_data("laetum_incarnon", true, &[]);

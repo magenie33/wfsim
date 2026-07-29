@@ -7,9 +7,10 @@ selection: choose_one
 # Decay (wiki): "When the buff times out, one stack is lost and the buff
 # duration resets" - the Galvanized lose-one-and-reset model, not
 # per-stack expiry.
-# UNVERIFIED bracket: the wiki does not state which multiplier the +400%
-# joins. Modeled like its tier sibling Devouring Attrition (an
-# independent multiplier) until measured.
+# BRACKET (wiki, verbatim): "Damage bonus is ADDITIVE to base damage
+# bonuses such as Hornet Strike" — the OPPOSITE of its tier sibling
+# Devouring Attrition, which the same page calls multiplicative. So the
+# stacks join the base-damage bucket and scale ModifiedBase with it.
 
 effects:
   - kind: stacking_damage_on_plain_hit

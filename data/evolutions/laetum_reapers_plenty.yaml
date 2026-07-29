@@ -5,6 +5,9 @@ tier: 5
 description: "On Headshot: +40% Ammo Efficiency for 6s."
 selection: choose_one
 
+# VERBATIM (wiki): "Does not affect Incarnon Form" — so it is a base-state
+# perk even before our charge-backed magazine makes ammo efficiency inert.
+
 effects:
   # Inert on the charge-backed Incarnon magazine; the base form's ammo
   # economy is not a sim constraint (infinite reserve).
