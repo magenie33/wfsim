@@ -746,6 +746,13 @@ second, 10 s, 3 m radius**, its own **15% / 2.0×** crit and **25%** status,
 falloff `start 0, end 3, reduction 1.0` — note `reduction 1.0` means the
 damage falls to **zero** at the rim, unlike the Laetum radial's 0.2.
 
+The field belongs to the weapon's BASE state. Read the data module's attack
+list as the two STATES of a transform weapon, not as parallel attacks: Torid's
+`Grenade Impact` + `Poison Cloud` are the two parts of one base-state shot
+(direct + field, the same shape as the Laetum's direct + radial), while
+`Incarnon Form` is the other state entirely — a beam, which the wiki gives a
+2.3 m radius and a 5-target chain the module's summary does not enumerate.
+
 A zone follows the radial's rules (no body-part multiplier — "headshot
 multiplier of 1x and cannot trigger headshot conditions"; its own crit and
 status rolls — "initial hit and explosion apply status separately"), plus:
