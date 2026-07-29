@@ -38,6 +38,23 @@ Attacks = [ { AmmoCost, AttackIndex, AttackName, CritChance, CritMultiplier,
               IsSilent, [IncarnonCharges, Trigger] } ]
 ```
 
+## Incarnon evolutions: which page documents them
+
+Two kinds of Incarnon weapon, and they are documented in different places —
+guessing wrong costs a 404:
+
+- **Installed Genesis** (the Steel Path / Duviri route): the weapon has a
+  separate `<Weapon>_Incarnon_Genesis` page carrying the install cost, the
+  gauge economy and the evolution tiers. Dual Toxocyst →
+  `Dual_Toxocyst_Incarnon_Genesis` ✔ (200).
+- **Natively Incarnon** (the Zariman weapons — Laetum, Phenmor, Felarx,
+  Innodem…): there is nothing to install, so there is **no** Genesis page.
+  Everything lives on the weapon page itself. `Laetum_Incarnon_Genesis`
+  does not exist (404) — cite `/w/Laetum`.
+
+The data mirrors the same split: a natively-Incarnon entry carries no
+`incarnon.install_cost` block.
+
 ## Mapping to our schema
 
 Our field names follow the wiki concept words (snake_case + unit suffixes):
