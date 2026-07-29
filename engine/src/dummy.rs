@@ -2308,7 +2308,18 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // Secondary Encumber: on a status this pellet applied, roll
             // ONE extra status of a uniformly random type (13-type pool,
             // independent of the weapon's vector — wiki), at most once per
-            // instant (= per trigger pull).
+            // instant (= per trigger pull, and the radial STAGE shares the
+            // limit — the wiki names Explosions among the simultaneous
+            // attacks that "only proc up to once on a single target").
+            //
+            // This reproduces the wiki's per-shot rate
+            //   1 − (1 − chance × min(statusChance, 1)) ^ pellets
+            // exactly, without implementing the min() as a cap: a pellet
+            // either applied a status (`!procs.is_empty()`) or it did not, so
+            // status chance above 100% guarantees the first proc but cannot
+            // give a pellet two shots at Encumber. Trigger scope is
+            // health-bar statuses only (U33 patch note) — the only kind a
+            // proc list ever holds.
             if params.arcane.encumber_chance > 0.0
                 && !encumber_done
                 && !procs.is_empty()
@@ -4237,6 +4248,39 @@ mod tests {
         };
         let s = monte_carlo(&p, 4000, 11);
         assert!((s.mean_procs - 12.4).abs() < 0.3, "procs {}", s.mean_procs);
+    }
+
+    /// The wiki states Encumber's per-shot rate as a CLOSED FORM, and it is
+    /// about multishot — the one thing the single-pellet test above cannot
+    /// see:
+    ///
+    ///   1 − (1 − chance × min(statusChance, 1)) ^ pelletCount
+    ///
+    /// Every pellet that applied a status rolls `chance`, first success wins.
+    /// With forced procs each of 3 pellets always applies one, so the rate is
+    /// 1 − 0.76³ = 0.561024, and a 10-shot run lands
+    /// 10 × (3 forced + 0.561024) = 35.61 procs. The value of pinning this is
+    /// that the naive readings both give a different number: one roll per
+    /// PULL would give 10 × 3.24 = 32.4, and one roll per PELLET with no
+    /// per-instant limit would give 10 × 3.72 = 37.2.
+    #[test]
+    fn encumbers_per_shot_rate_matches_the_wikis_closed_form_under_multishot() {
+        let p = DummyParams {
+            arcane: arc("secondary_encumber"),
+            forced_procs: vec![DamageType::Impact],
+            multishot: 3.0,
+            ..flat_base()
+        };
+        let s = monte_carlo(&p, 4000, 17);
+        let want = 10.0 * (3.0 + (1.0 - 0.76_f64.powi(3)));
+        assert!(
+            (s.mean_procs - want).abs() < 0.3,
+            "procs {} vs closed form {want}",
+            s.mean_procs
+        );
+        // And it must NOT be either naive reading.
+        assert!((s.mean_procs - 32.4).abs() > 0.5, "one roll per PULL");
+        assert!((s.mean_procs - 37.2).abs() > 0.5, "one roll per PELLET, uncapped");
     }
 
     #[test]

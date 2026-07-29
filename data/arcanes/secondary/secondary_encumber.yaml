@@ -6,14 +6,34 @@ internal_name: /Lotus/Upgrades/CosmeticEnhancers/Utility/ExtraProcOnProc
 description: "On Status Effect: +X% chance to trigger a second random Status Effect."
 
 effects:
-  # On any applied status: roll `chance` to add ONE extra random status.
+  # On an applied status: roll `chance` to add ONE extra random status.
+  #
+  # TRIGGER SCOPE - VERBATIM (wiki patch history, U33, fixing a bug where it
+  # counted staggering): "This Arcane is intended to trigger only from Physical
+  # and Elemental Status Effects i.e. Status types which show on an enemy's
+  # health bar." So `any_status` means any HEALTH-BAR status, not any effect;
+  # stagger/knockdown do NOT arm it. The sim only ever puts physical/elemental
+  # types in a proc list, so this is already the modeled behaviour.
+  #
   # The random type is UNIFORM over the 13 physical+elemental types (wiki:
   # Impact/Puncture/Slash/Heat/Cold/Electricity/Toxin/Blast/Corrosive/
   # Magnetic/Viral/Gas/Radiation), independent of the weapon's damage vector.
+  #
   # HARD LIMIT of 1 extra proc per instant (a very short cooldown): multishot
-  # pellets / punch-through / beam chains landing simultaneously can produce at
-  # most one, and only on one target. Delayed hits (rebounds, embed delays) and
-  # forced procs can each trigger it.
+  # pellets / punch-through / beam chains / EXPLOSIONS landing simultaneously
+  # can produce at most one, and only on one target. Delayed hits (rebounds,
+  # embed delays, travel-time punch-through) and forced procs can each trigger
+  # it separately.
+  #
+  # PER-SHOT RATE, wiki-verbatim:
+  #   1 - (1 - 24% x min(statusChance, 1)) ^ pelletCount
+  # Read it as: every pellet that APPLIED a status rolls 24%, first success
+  # wins. That is what the engine does, and it is why the `min(statusChance, 1)`
+  # cap needs no special case - a pellet either applied a status or it did not,
+  # and status chance above 100% only guarantees the first proc, it cannot make
+  # a pellet proc twice for this purpose. "More multishot does allow more
+  # chances of an Encumber proc until one succeeds" (wiki) falls out the same
+  # way.
   - kind: proc_conversion
     trigger: any_status
     applies: random_status
