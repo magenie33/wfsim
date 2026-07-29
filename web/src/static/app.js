@@ -54,6 +54,18 @@ const tf = (x) => {
   for (const [re, cn] of EFFECT_RES) s = s.replace(re, cn);
   return s;
 };
+// One lowercase search haystack per entity: the LOCALIZED name, the
+// ENGLISH name, the English effect lines AND their translated phrases —
+// every search box matches in English and in the active language alike,
+// names and effects both (user, 2026-07-29). Cached on the entity (names
+// and overlay are fixed for the page's lifetime).
+const searchBlob = (x) => {
+  if (x._search) return x._search;
+  const eff = (x.effects || []).concat(x.desc_ranks || [], (x.ranks || []).flat());
+  x._search = [x.name, x.name_en, x.subtype, eff.join(" "), tf(eff.join(" "))]
+    .filter(Boolean).join(" ").toLowerCase();
+  return x._search;
+};
 // Static labels: translate the first text node of every [data-i18n] element
 // (children like the .sim-hint spans stay untouched).
 function applyI18n() {
@@ -235,10 +247,7 @@ function initWeaponSearch() {
     const q = input.value.trim().toLowerCase();
     const list = (META.weapons || [])
       .filter((w) => flt === "all" || (w.subtype || w.mod_class) === flt)
-      .filter((w) => !q
-        || w.name.toLowerCase().includes(q)
-        || (w.name_en || "").toLowerCase().includes(q)
-        || (w.subtype || "").toLowerCase().includes(q))
+      .filter((w) => !q || searchBlob(w).includes(q))
       .sort((a, b) => (srt === "za" ? -1 : 1) * a.name.localeCompare(b.name));
     listEl.innerHTML = list.map((w) => `
       <div class="opt" data-id="${w.id}">
@@ -1104,8 +1113,7 @@ function renderMenu(slotIdx, query) {
   const hits = currentPool
     .filter((m) => slotIdx !== EXILUS || m.exilus) // exilus slot: utility mods only
     .filter((m) => !pickerPrefs.pol || m.polarity === pickerPrefs.pol)
-    .filter((m) => !q || m.name.toLowerCase().includes(q) || m.effects.join(" ").toLowerCase().includes(q)
-      || (m.desc_ranks || []).join(" ").toLowerCase().includes(q) || tf((m.desc_ranks || []).join(" ").toLowerCase()).includes(q))
+    .filter((m) => !q || searchBlob(m).includes(q))
     .sort((a, b) => {
       const g = group(a) - group(b); // current first, then equipped, then the rest
       if (g) return g;
@@ -1246,11 +1254,9 @@ function openArcanePicker(anchor) {
 function renderArcaneMenu(query) {
   const menu = $("arcane-menu");
   const q = query.trim().toLowerCase();
-  // Search matches NAME, ANY rank's effect text, or the description.
-  const allEff = (a) => (a.ranks || []).reduce((acc, r) => acc.concat(r), [])
-    .concat(a.desc_ranks || []).join(" ").toLowerCase();
-  const hits = META.arcanes.filter((a) => a.id === "none" || !q ||
-    a.name.toLowerCase().includes(q) || allEff(a).includes(q));
+  // Search matches NAME (localized or English), ANY rank's effect text,
+  // or the description — in either language (searchBlob).
+  const hits = META.arcanes.filter((a) => a.id === "none" || !q || searchBlob(a).includes(q));
   menu.innerHTML = hits.length ? hits.map((a) => {
     const isCur = a.id === arcane;
     const none = a.id === "none";
@@ -1748,8 +1754,7 @@ function renderOptExilus() {
 // lines), searchable, with an include toggle on the right. "None" included.
 function renderOptArcanes() {
   const q = ($("opt-arc-filter") && $("opt-arc-filter").value || "").trim().toLowerCase();
-  const allEff = (a) => (a.ranks || []).reduce((acc, r) => acc.concat(r), []).concat(a.desc_ranks || []).join(" ").toLowerCase();
-  const hits = (META.arcanes || []).filter((a) => a.id === "none" || !q || a.name.toLowerCase().includes(q) || allEff(a).includes(q));
+  const hits = (META.arcanes || []).filter((a) => a.id === "none" || !q || searchBlob(a).includes(q));
   const pinned = arcanePinned();
   const hasPool = Object.values(opt.arcanes).some((s) => s === "search");
   $("opt-arcanes").innerHTML = hits.map((a) => {
@@ -1998,9 +2003,7 @@ function renderOptModList() {
   // has its own block below.
   const hits = currentPool
     .filter((m) => !optPrefs.pol || m.polarity === optPrefs.pol)
-    .filter((m) => !q || m.name.toLowerCase().includes(q)
-      || (m.effects || []).join(" ").toLowerCase().includes(q)
-      || (m.desc_ranks || []).join(" ").toLowerCase().includes(q) || tf((m.desc_ranks || []).join(" ").toLowerCase()).includes(q))
+    .filter((m) => !q || searchBlob(m).includes(q))
     .sort((a, b) => {
       const c = optPrefs.sort === "drain" ? a.drain - b.drain : a.name.localeCompare(b.name);
       return optPrefs.dir === "desc" ? -c : c;
