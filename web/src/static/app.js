@@ -1564,7 +1564,7 @@ function renderResults(r, testedAt) {
   const tlGrid = [0.25, 0.5, 0.75].map((f) =>
     `<line class="tl-grid" x1="${PADL}" x2="${W - PADR}" y1="${py(tlMax * f)}" y2="${py(tlMax * f)}"/>`).join("");
   const chart = tl.length ? `
-      <h3>${tr("Damage over time")}</h3>
+      <h3>${tr("Damage over time")} <span class="sim-hint">${tr("median run")}</span></h3>
       <div class="tl-wrap">
         <svg id="tl-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
           ${tlGrid}

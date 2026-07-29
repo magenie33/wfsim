@@ -2417,7 +2417,9 @@ pub struct Summary {
     pub mean_headshot_rate: f64,
     /// Mean effective damage by source (the damage-meter view).
     pub source_damage: SourceDamage,
-    /// Mean effective damage per time bucket (the damage-over-time curve).
+    /// The MEDIAN run's effective damage per time bucket (the
+    /// damage-over-time curve) — one real engagement's rhythm, chosen by
+    /// median total effective damage, not a cross-run average.
     pub timeline: Timeline,
 }
 
@@ -2436,10 +2438,14 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     let (mut min_kills, mut max_kills) = (u32::MAX, 0u32);
     let mut kill_progress = 0.0f64;
     let mut sources = SourceDamage::default();
-    let mut timeline = Timeline::default();
+    // The curve is the MEDIAN run's own timeline (by effective damage) —
+    // a real engagement's rhythm with its reload plateaus and transform
+    // kinks, not a smoothed cross-run average (user, 2026-07-29).
+    let mut run_curves: Vec<(f64, Timeline)> = Vec::with_capacity(runs as usize);
 
     for _ in 0..runs {
         let r = run_once(params, &mut rng);
+        run_curves.push((r.effective_damage, r.timeline));
         sum += r.total_damage;
         sum_sq += r.total_damage * r.total_damage;
         min = min.min(r.total_damage);
@@ -2462,9 +2468,6 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         sources.direct += r.sources.direct;
         sources.arcane_on_status += r.sources.arcane_on_status;
         for (acc, v) in sources.status.iter_mut().zip(r.sources.status) {
-            *acc += v;
-        }
-        for (acc, v) in timeline.0.iter_mut().zip(r.timeline.0) {
             *acc += v;
         }
     }
@@ -2511,11 +2514,8 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
             s
         },
         timeline: {
-            let mut t = timeline;
-            for v in t.0.iter_mut() {
-                *v /= n;
-            }
-            t
+            run_curves.sort_by(|a, b| a.0.total_cmp(&b.0));
+            run_curves.get(run_curves.len() / 2).map(|(_, t)| *t).unwrap_or_default()
         },
     }
 }
