@@ -17,7 +17,6 @@ use wfsim_engine::loadout::{
     pct as fpct, resolve, ModDef, ModEffect, ResolvedPanel, StackPolicy, WeaponBase,
 };
 use wfsim_engine::mods::{plan_forma, PlannedMod, Polarity};
-use wfsim_engine::mods_data::pistol_pool as pool; // FULL pool incl. exilus (the optimizer's pool() excludes exilus)
 use wfsim_optimizer::{
     enumerate_candidates_each, enumerate_candidates_observed, run_funnel, schedule_to,
     stream_screen, Candidate, Constraints, FunnelState, Job, Scenario,
@@ -195,10 +194,11 @@ fn default_weapon_id() -> &'static str {
     &weapons()[0].id
 }
 
-// Every current weapon uses the pistol pool; `mod_class` stays on
-// WeaponInfo so the next non-pistol weapon reintroduces pools per class.
-fn mod_pool_for(_class: &str) -> Vec<ModDef> {
-    pool()
+// The FULL pool (exilus included) of a weapon's mod class — the picker and
+// every id lookup go through here, so a weapon whose `mod_eligibility` names
+// a class with no data yet gets an empty pool rather than another weapon's.
+fn mod_pool_for(class: &str) -> Vec<ModDef> {
+    wfsim_engine::mods_data::class_pool(class)
 }
 
 // 8 main slots (innate polarities from the weapon yaml) + the exilus slot
@@ -381,9 +381,13 @@ pub fn meta_json() -> Value {
 
     json!({
         "weapons": weapons,
-        "mod_pools": {
-            "pistol": mods_json(&pool()),
-        },
+        // One pool per mod CLASS present in data/mods/ — a weapon's
+        // `mod_class` (derived from its mod_eligibility) indexes into this.
+        // Adding data/mods/rifle/ publishes a rifle pool with no code change.
+        "mod_pools": wfsim_engine::mods_data::classes()
+            .into_iter()
+            .map(|c| (c.to_string(), json!(mods_json(&wfsim_engine::mods_data::class_pool(c)))))
+            .collect::<serde_json::Map<String, Value>>(),
         "enemies": enemies,
         // Arcanes mirror the mod pool: per-rank effect lines (`ranks[r]`),
         // max_rank, rarity — so the web picker searches effects and the slot

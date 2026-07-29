@@ -13,7 +13,8 @@
 //! are loaded as no-ops. Unknown kinds are ignored with the mod still loaded,
 //! so a not-yet-modeled special effect never silently drops the whole mod.
 
-use std::sync::OnceLock;
+use std::collections::BTreeMap;
+use std::sync::{Mutex, OnceLock};
 
 use serde::Deserialize;
 use serde_norway::Value;
@@ -269,11 +270,33 @@ pub fn load_class(class: &str) -> Vec<ModDef> {
         .collect()
 }
 
+/// Every mod CLASS present in the data — one per `data/mods/<class>/`
+/// directory, sorted. The registry publishes a pool per class, so adding
+/// `data/mods/rifle/` is enough to make rifle mods reachable: no code.
+pub fn classes() -> Vec<&'static str> {
+    let mut out: Vec<&'static str> = crate::data::files_under("mods/")
+        .filter_map(|(p, _)| p.strip_prefix("mods/")?.split('/').next())
+        .collect();
+    out.sort_unstable();
+    out.dedup();
+    out
+}
+
+/// The mod pool of one class — `data/mods/<class>/*.yaml`. Cached per class
+/// (each entry leaks its id/family strings once); cloned so callers own it.
+pub fn class_pool(class: &str) -> Vec<ModDef> {
+    static POOLS: OnceLock<Mutex<BTreeMap<String, &'static [ModDef]>>> = OnceLock::new();
+    let cache = POOLS.get_or_init(|| Mutex::new(BTreeMap::new()));
+    let mut g = cache.lock().expect("mod pool cache");
+    g.entry(class.to_string())
+        .or_insert_with(|| Box::leak(load_class(class).into_boxed_slice()))
+        .to_vec()
+}
+
 /// The secondary/pistol mod pool — `data/mods/pistol/*.yaml` (Dual Toxocyst's
-/// pool). Cached (leaks id/family strings once); cloned so callers own it.
+/// and Laetum's pool).
 pub fn pistol_pool() -> Vec<ModDef> {
-    static POOL: OnceLock<Vec<ModDef>> = OnceLock::new();
-    POOL.get_or_init(|| load_class("pistol")).to_vec()
+    class_pool("pistol")
 }
 
 /// Display info for a mod's DESCRIPTION at any rank: the X-templated game
@@ -379,5 +402,24 @@ mod tests {
         assert_eq!(desc_info("seeker").unwrap().at(5), "+2.1 Punch Through");
         // Signed template + negative stored downside: magnitude only.
         assert_eq!(desc_info("anemic_agility").unwrap().at(5), "+90% Fire Rate\n-15% Damage");
+    }
+}
+
+#[cfg(test)]
+mod class_tests {
+    use super::*;
+
+    /// Mod pools are DISCOVERED from `data/mods/<class>/`, so adding a class
+    /// is a data change. Today only `pistol` exists; the moment
+    /// `data/mods/rifle/` lands it must appear here with no code edit.
+    #[test]
+    fn classes_come_from_the_data_tree() {
+        let cs = classes();
+        assert!(cs.contains(&"pistol"), "expected the pistol class, got {cs:?}");
+        for c in &cs {
+            assert!(!class_pool(c).is_empty(), "class {c} has no mods");
+        }
+        // An unknown class is empty, never another class's pool.
+        assert!(class_pool("no_such_class").is_empty());
     }
 }

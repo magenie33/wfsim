@@ -26,18 +26,20 @@ use wfsim_engine::dummy::{
 use wfsim_engine::loadout::{resolve, ModDef, ResolvedPanel, StackPolicy, WeaponBase};
 use wfsim_engine::mods::{plan_forma, FormaPlan, PlannedMod, Polarity};
 
-/// The pistol mod pool, mirrored from `data/mods/*.yaml` at MAX RANK
-/// (drain = base + max_rank). The YAML files are the source of record; this
-/// table is the engine-facing view until the declarative mod loader lands.
-pub fn pool() -> Vec<ModDef> {
-    // Source of truth: data/mods/*.yaml (mod_type: pistol), loaded by
-    // engine::mods_data. Mods are DATA now — add/edit a YAML file, no code.
-    // Exilus (utility) mods have no damage model — enumerating them only
-    // multiplies the search space, so the optimizer's pool excludes them.
-    wfsim_engine::mods_data::pistol_pool()
+/// The searchable mod pool of one CLASS at MAX RANK (drain = base +
+/// max_rank), from `data/mods/<class>/*.yaml`. Exilus (utility) mods have no
+/// damage model — enumerating them only multiplies the search space, so the
+/// optimizer's pool excludes them; the exilus SLOT is its own dimension.
+pub fn class_pool(class: &str) -> Vec<ModDef> {
+    wfsim_engine::mods_data::class_pool(class)
         .into_iter()
         .filter(|m| !m.exilus)
         .collect()
+}
+
+/// The pistol pool — the historical default, kept for the CLI and tests.
+pub fn pool() -> Vec<ModDef> {
+    class_pool("pistol")
 }
 
 /// Prescribed-mods constraints: forced inclusions/exclusions by mod id.
