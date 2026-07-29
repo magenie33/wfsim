@@ -1057,10 +1057,20 @@ function renderPanel(r) {
       ${row.note ? `<div class="srownote">⚙ ${row.note}</div>` : ""}
       ${(row.sources || []).map(srcLine).join("")}
     </div>`;
-  const dmgHtml = (f) => (f.damage && f.damage.length)
-    ? `<div class="sdmg-title">Damage (combined) — ${f.damage_total} total</div>` +
-      f.damage.map((d) => `<div class="sdmg"><span class="sk">${DT(d.type)}</span><span class="sv"><b>${d.amount}</b> <span class="snote">${d.share}</span></span></div>`).join("")
+  const dmgHtml = (p) => (p.damage && p.damage.length)
+    ? `<div class="sdmg-title">${tr("Damage (combined)")} — ${p.damage_total} ${tr("total")}</div>` +
+      p.damage.map((d) => `<div class="sdmg"><span class="sk">${DT(d.type)}</span><span class="sv"><b>${d.amount}</b> <span class="snote">${d.share}</span></span></div>`).join("")
     : "";
+  // A weapon is the GUN plus the PROJECTILE(s) it launches: the gun block
+  // carries cadence and capacity, each projectile block its own damage,
+  // crit and status — and a radial its blast geometry too. An Incarnon
+  // Laetum shot is two instances, so it renders two projectile blocks.
+  const partHtml = (p) => `
+    <div class="fpart" data-part="${p.id}">
+      <div class="fparth">${tr(p.label)}<span class="fmeta">${tr(p.meta)}</span></div>
+      ${(p.stats || []).map(rowHtml).join("")}
+      ${dmgHtml(p)}
+    </div>`;
   // EVERY available form renders as its own section (base + Incarnon side
   // by side — no switching), headed by the form name + trigger mechanics.
   // Indirect stats (recoil, accuracy, ammo…) render like any bucket — they
@@ -1069,7 +1079,7 @@ function renderPanel(r) {
     <div class="fsec">
       <div class="fhead">${tr(f.label)}<span class="fmeta">${f.meta}</span></div>
       ${[...(f.stats || []), ...(f.elements || []), ...(f.indirect || [])].map(rowHtml).join("")}
-      ${dmgHtml(f)}
+      ${(f.parts || []).map(partHtml).join("")}
     </div>`;
   $("stats-rows").innerHTML = (r.forms || []).map(section).join("");
   $("stats-damage").innerHTML = "";

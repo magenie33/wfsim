@@ -3252,6 +3252,9 @@ mod tests {
             crit_chance,
             crit_damage: 2.0,
             status_chance,
+            radius_m: 2.0,
+            falloff_start_m: 0.0,
+            falloff_reduction: 0.2,
         }
     }
 

@@ -283,6 +283,12 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 .shead .sbase{color:var(--muted)}
 .ssrc{font-size:12px;color:var(--text-2);padding:1px 0 0 14px;font-variant-numeric:tabular-nums}
 .snote{color:var(--muted);font-size:11px}
+/* Projectile blocks inside a form: the gun's rows sit flush, each
+   projectile it launches is boxed off with its own heading. */
+.fpart{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:8px 11px;margin-top:12px}
+.fparth{font-size:12px;font-weight:700;color:var(--text);border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:4px}
+.fparth .fmeta{color:var(--text-2);font-weight:400;font-size:11px;margin-left:8px}
+.fpart .sdmg-title{margin-top:10px}
 .sdmg-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 4px}
 .sdmg{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:13px}
 .scond{font-size:12px;color:var(--text-2);padding:3px 0}

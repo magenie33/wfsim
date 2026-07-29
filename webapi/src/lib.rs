@@ -1217,25 +1217,109 @@ pub fn panel_json(v: &Value) -> Value {
             );
         }
 
-        // The combined damage vector (post element-hierarchy).
-        let dmg_total = panel.damage.total();
-        let damage: Vec<Value> = panel
-            .damage
-            .iter_nonzero()
-            .map(|(t, amt)| {
-                json!({ "type": format!("{t:?}"), "amount": num(amt),
-            "share": format!("{:.0}%", amt / dmg_total * 100.0) })
-            })
-            .collect();
+        // A weapon is the GUN plus the PROJECTILE(s) it launches (user,
+        // 2026-07-29): the gun carries cadence and capacity, each projectile
+        // carries its own damage, crit, status — and, when it is a radial,
+        // its blast geometry. Split the flat row list along that line
+        // instead of stating a single "base attack" that belongs to neither.
+        const ON_PROJECTILE: &[&str] = &[
+            "base_damage",
+            "crit_chance",
+            "crit_damage",
+            "status_chance",
+            "status_damage",
+            "status_duration",
+            "co",
+            "shiver",
+        ];
+        let key_of = |r: &Value| r["key"].as_str().unwrap_or("").to_string();
+        let (direct_rows, weapon_rows): (Vec<Value>, Vec<Value>) = stats
+            .into_iter()
+            .partition(|r| ON_PROJECTILE.contains(&key_of(r).as_str()));
+
+        // A damage vector as displayed rows: type, amount, share of the total.
+        let vector_rows = |v: &wfsim_engine::damage::DamageVector| {
+            let total = v.total();
+            v.iter_nonzero()
+                .map(|(t, amt)| {
+                    json!({ "type": format!("{t:?}"), "amount": num(amt),
+                    "share": format!("{:.0}%", amt / total * 100.0) })
+                })
+                .collect::<Vec<Value>>()
+        };
+
+        let mut parts = vec![json!({
+            "id": "direct",
+            "label": "Direct hit",
+            "meta": "on contact",
+            "stats": direct_rows,
+            "damage": vector_rows(&panel.damage),
+            "damage_total": num(panel.damage.total()),
+        })];
+
+        // The radial explosion is a SECOND projectile-borne damage instance
+        // with its own crit and status (MECHANICS §7) — the panel states it
+        // in full rather than leaving the reader to assume it copies the
+        // direct hit. Status damage/duration are weapon-wide multipliers, so
+        // they repeat: they describe the procs THIS instance applies.
+        if let (Some(rb), Some(rr)) = (base.radial.as_ref(), panel.radial.as_ref()) {
+            let rsrc = |key: &'static str| sources(key, None);
+            // Geometry reads as a distance, not a stat: 2 m, not 2.0.
+            let dist = |x: f64| format!("{x}");
+            let mut rows = vec![
+                json!({ "key": "base_damage", "label": "Base Damage",
+                    "base": num(rb.base_vector.total()), "final": num(rr.modified_base),
+                    "sources": rsrc("base_damage") }),
+                json!({ "key": "crit_chance", "label": "Crit Chance",
+                    "base": pc(rb.base_crit_chance), "final": pc(rr.crit_chance),
+                    "sources": rsrc("crit_chance") }),
+                json!({ "key": "crit_damage", "label": "Crit Damage",
+                    "base": format!("×{}", num(rb.base_crit_damage)),
+                    "final": format!("×{}", num(rr.crit_damage)),
+                    "sources": rsrc("crit_damage") }),
+                json!({ "key": "status_chance", "label": "Status Chance",
+                    "base": pc(rb.base_status_chance), "final": pc(rr.status_chance),
+                    "sources": rsrc("status_chance") }),
+                json!({ "key": "status_damage", "label": "Status Damage",
+                    "base": format!("×{}", num(1.0)),
+                    "final": format!("×{}", num(panel.status_damage_mult)),
+                    "sources": rsrc("status_damage") }),
+                json!({ "key": "status_duration", "label": "Status Duration",
+                    "base": format!("×{}", num(1.0)),
+                    "final": format!("×{}", num(panel.status_duration_mult)),
+                    "sources": rsrc("status_duration") }),
+                json!({ "key": "radius", "label": "Blast Radius", "base": "—",
+                    "final": format!("{} m", dist(rr.radius_m)), "sources": json!([]) }),
+            ];
+            // Falloff: full damage inside `start`, then linear down to
+            // (1 − reduction) at the rim. Stated as what the rim actually
+            // takes, which is the number a reader can act on.
+            rows.push(json!({ "key": "falloff", "label": "Damage Falloff", "base": "—",
+                "final": format!("{}% at {} m", dist((1.0 - rr.falloff_reduction) * 100.0),
+                    dist(rr.radius_m)),
+                "note": if rr.falloff_start_m > 0.0 {
+                    format!("full damage within {} m, then linear", dist(rr.falloff_start_m))
+                } else {
+                    "linear from the epicentre; a directly-hit enemy takes 100%".to_string()
+                },
+                "sources": json!([]) }));
+            parts.push(json!({
+                "id": "radial",
+                "label": "Radial explosion",
+                "meta": format!("{} m radius", dist(rr.radius_m)),
+                "stats": rows,
+                "damage": vector_rows(&rr.damage),
+                "damage_total": num(rr.damage.total()),
+            }));
+        }
 
         json!({
             "label": label,
             "meta": meta,
-            "stats": stats,
+            "stats": weapon_rows,
             "elements": elem_rows,
             "indirect": indirect_rows,
-            "damage": damage,
-            "damage_total": num(dmg_total),
+            "parts": parts,
         })
     };
 

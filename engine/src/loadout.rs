@@ -557,6 +557,12 @@ pub struct ResolvedRadial {
     pub crit_chance: f64,
     pub crit_damage: f64,
     pub status_chance: f64,
+    /// Blast geometry, carried through unmodded — the sim's single target
+    /// stands at the epicentre, but the PANEL states it: a reader needs the
+    /// radius to know what the explosion is worth beyond one enemy.
+    pub radius_m: f64,
+    pub falloff_start_m: f64,
+    pub falloff_reduction: f64,
 }
 
 /// The Incarnon form's charge economy, for the panel's stat display (see
@@ -1024,6 +1030,9 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
             crit_damage: r.base_crit_damage * (1.0 + cd),
             status_chance: (r.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)
                 .max(0.0),
+            radius_m: r.radius_m,
+            falloff_start_m: r.falloff_start_m,
+            falloff_reduction: r.falloff_reduction,
         }
     });
 

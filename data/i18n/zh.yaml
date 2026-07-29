@@ -141,6 +141,13 @@ evolutions: {}
 # UI strings, keyed by the English source string (English itself never needs
 # an entry — the source string IS the fallback).
 ui:
+  "Direct hit": 直击
+  "Radial explosion": 范围爆炸
+  "on contact": 接触即中
+  "Damage (combined)": 伤害（合成后）
+  "total": 合计
+  "Blast Radius": 爆炸半径
+  "Damage Falloff": 距离衰减
   "QQ group": QQ官方交流群
   "copied": 已复制
   "Weapons": 武器
