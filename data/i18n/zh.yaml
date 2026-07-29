@@ -141,9 +141,12 @@ evolutions: {}
 # UI strings, keyed by the English source string (English itself never needs
 # an entry — the source string IS the fallback).
 ui:
+  "QQ group": 官方交流群
+  "copied": 已复制
   "Weapons": 武器
   "Presets": 预设
   "Builder": 配装
+  "Simulator": 模拟器
   "Optimizer": 优化器
   "Mod presets": MOD 预设
   "Arcane presets": 赋能预设

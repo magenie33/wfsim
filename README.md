@@ -5,7 +5,8 @@
 **The Simulacrum. The Primed One.** A Warframe builder, fight simulator,
 and Monte-Carlo build optimizer — true to in-game numbers and mechanics.
 
-Local web UI. Website: [wfsim.app](https://wfsim.app)
+Local web UI. Website: [wfsim.app](https://wfsim.app) ·
+Community QQ group: [**995078378**](https://qm.qq.com/q/uiXrMSTs8S)
 
 **Status:** in development. One weapon fully modeled (Dual Toxocyst, incl.
 Incarnon). Single enemy per sim; no Rivens yet.

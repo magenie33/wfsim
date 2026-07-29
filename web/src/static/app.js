@@ -15,7 +15,7 @@ const WASM = !!window.WFSIM_WASM;
 const IMG = (name) => {
   if (!name) return null;
   const n = encodeURIComponent(String(name));
-  if (!WASM) return "img/" + n;
+  if (!WASM) return "/img/" + n; // absolute: the SPA also loads at /weapons/<name>
   return String(name).includes("(")
     ? "https://wiki.warframe.com/w/Special:FilePath/" + n
     : "https://cdn.warframestat.us/img/" + n;
@@ -149,7 +149,8 @@ function woptCancel() {
 
 async function api(path, body) {
   if (!WASM) {
-    if (path === "/api/meta") return (await fetch(path)).json();
+    // GET endpoints (the rest are POST-with-body):
+    if (path === "/api/meta" || path === "/api/i18n") return (await fetch(path)).json();
     return (await fetch(path, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}),
     })).json();
@@ -261,7 +262,7 @@ function initWeaponSearch() {
     input.value = "";
     $("weapon").value = row.dataset.id;
     applyWeapon(row.dataset.id, null);
-    nav(weaponPath(row.dataset.id));
+    nav(weaponModPath(row.dataset.id));
   });
   document.addEventListener("click", (e) => {
     if (!e.target.closest(".wsearch")) panel.hidden = true;
@@ -279,6 +280,25 @@ function initWeaponSearch() {
     localStorage.setItem("wfsim-lang", sel.value);
     try { sessionStorage.setItem("wfsim-lang-stash", JSON.stringify(snapshotState())); } catch (_) {}
     location.reload();
+  });
+})();
+
+// Official QQ community group: the topbar mark and the footer entry LINK
+// to the join page (qm.qq.com deep-links into the QQ app, Discord-invite
+// style); the footer's ⧉ copies the raw number for manual in-QQ search.
+// Feedback is inline: no native dialogs.
+const QQ_GROUP = "995078378";
+(function () {
+  const btn = $("qq-copy-foot");
+  if (!btn) return;
+  btn.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(QQ_GROUP); } catch (_) {
+      const ta = document.createElement("textarea");
+      ta.value = QQ_GROUP; document.body.appendChild(ta);
+      ta.select(); document.execCommand("copy"); ta.remove();
+    }
+    btn.textContent = "✓";
+    setTimeout(() => { btn.textContent = "⧉"; }, 1200);
   });
 })();
 
@@ -317,7 +337,7 @@ async function init() {
 
   $("weapon").addEventListener("change", () => {
     applyWeapon($("weapon").value, null);
-    if (!document.querySelector(".config-page").hidden) nav(weaponPath($("weapon").value));
+    if (!document.querySelector(".config-page").hidden) nav(weaponModPath($("weapon").value));
   });
   $("run-sim").addEventListener("click", runSim);
   $("run-opt").addEventListener("click", runOptimize);
@@ -366,9 +386,10 @@ async function init() {
 }
 
 // ---- views: '/' = the weapon list (home); '/weapons/<Wiki_Name>' = the
-// BUILDER (with its simulator below — the sim tests this build);
-// '/weapons/<Wiki_Name>/optimizer' = the OPTIMIZER, its own view (the
-// page's three modules — user, 2026-07-29). URLs mirror wiki page names
+// BUILDER; '/weapons/<Wiki_Name>/simulator' = the SIMULATOR (tests the
+// current build); '/weapons/<Wiki_Name>/optimizer' = the OPTIMIZER — one
+// tab per module (the page's three modules — user, 2026-07-29, "Simulator
+// sits in the middle"). URLs mirror wiki page names
 // (display name, spaces → '_'); internal weapon ids never appear in URLs.
 // The weapon <select> stays the internal source of truth; the home grid
 // and the path just drive it.
@@ -382,29 +403,38 @@ function nav(path) {
   route();
 }
 function route() {
-  const m = location.pathname.match(/^\/weapons\/([^/]+?)(\/optimizer)?\/?$/);
+  const m = location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer)?\/?$/);
   const slug = m && decodeURIComponent(m[1]).toLowerCase();
   const w = slug && (META.weapons || []).find(
     (x) => wikiSlug(x).toLowerCase() === slug || x.id === slug
   );
-  const onOpt = !!(w && m[2]);
+  // The active module: "" = builder, "simulator", "optimizer".
+  const mod = (w && m[2]) ? m[2].slice(1) : "";
   document.body.classList.toggle("on-home", !w);
-  document.body.classList.toggle("on-optimizer", onOpt);
+  document.body.classList.toggle("on-simulator", mod === "simulator");
+  document.body.classList.toggle("on-optimizer", mod === "optimizer");
   $("home-page").hidden = !!w;
   document.querySelector(".config-page").hidden = !w;
-  document.title = w ? `${w.name}${onOpt ? " · Optimizer" : ""} — WFSim` : "WFSim — The Simulacrum. The Primed One.";
+  const modTitle = { simulator: " · Simulator", optimizer: " · Optimizer" }[mod] || "";
+  document.title = w ? `${w.name}${modTitle} — WFSim` : "WFSim — The Simulacrum. The Primed One.";
   if (w) {
     if ($("weapon").value !== w.id) {
       $("weapon").value = w.id;
       applyWeapon(w.id, null);
     }
     $("module-tabs").innerHTML =
-      `<a class="mtab ${onOpt ? "" : "sel"}" href="${weaponPath(w.id)}">${tr("Builder")}</a>` +
-      `<a class="mtab ${onOpt ? "sel" : ""}" href="${weaponPath(w.id)}/optimizer">${tr("Optimizer")}</a>`;
+      `<a class="mtab ${mod === "" ? "sel" : ""}" href="${weaponPath(w.id)}">${tr("Builder")}</a>` +
+      `<a class="mtab ${mod === "simulator" ? "sel" : ""}" href="${weaponPath(w.id)}/simulator">${tr("Simulator")}</a>` +
+      `<a class="mtab ${mod === "optimizer" ? "sel" : ""}" href="${weaponPath(w.id)}/optimizer">${tr("Optimizer")}</a>`;
   } else {
     renderHome();
   }
 }
+
+// The current module's path suffix — weapon switches (search, select,
+// preset load) keep the visitor on the tab they are on.
+const modSuffix = () => (location.pathname.match(/\/(simulator|optimizer)\/?$/) || [null, ""])[1];
+const weaponModPath = (id) => weaponPath(id) + (modSuffix() ? "/" + modSuffix() : "");
 
 function renderHome() {
   const grid = $("weapon-grid");
@@ -491,9 +521,10 @@ function snapshotState() {
 function restoreState(st) {
   if (!st || !weaponInfo(st.weapon)) return;
   $("weapon").value = st.weapon;
-  // Keep the route honest when a preset switches weapons on the config page.
+  // Keep the route honest when a preset switches weapons on the config page
+  // (the active module tab is preserved).
   if (!document.querySelector(".config-page").hidden) {
-    history.replaceState(null, "", weaponPath(st.weapon));
+    history.replaceState(null, "", weaponModPath(st.weapon));
   }
   applyWeapon(st.weapon, null); // resets pool/innate/visibility
   (st.slots || []).forEach((s, i) => {
@@ -541,8 +572,13 @@ function markPresetDirty() {
 // ---- The ONE preset-bar component -------------------------------------
 // Every preset bar on the page (the build bar and the optimizer's three
 // scope bars) is the same template on the same document model: label +
-// count, the chips (the active one carries save / rename / delete; the
-// last remaining preset cannot be deleted — there is always one), "+ new".
+// count, the chips (the active one carries save / duplicate / rename /
+// delete; the last remaining preset cannot be deleted — there is always
+// one), "+ new". "+ new" creates an EMPTY preset instantly under an
+// auto-name ("preset N") and switches to it — no naming step (user,
+// 2026-07-29); rename after via ✎. Branching an existing preset is the
+// ⧉ duplicate on the active chip (copies the LIVE state, so unsaved
+// edits carry into the copy while the original keeps its stored state).
 // Counts are UNLIMITED, so past PRESET_FILTER_AT chips the bar grows a
 // name filter; the active chip always shows (it is the document being
 // edited).
@@ -561,6 +597,7 @@ function renderPresetBarIn(bar, cfg) {
     const sel = p.name === active;
     const ops = sel
       ? `<button class="pop upd" title="save the current changes into this preset">save</button>` +
+        `<button class="pop dup" title="duplicate into a new preset (unsaved edits carry over)">⧉</button>` +
         `<button class="pop ren" title="rename">✎</button>` +
         (ps.length > 1 ? `<button class="pop del" title="delete">✕</button>` : "")
       : "";
@@ -571,7 +608,7 @@ function renderPresetBarIn(bar, cfg) {
     `<span class="plabel">${cfg.label} <b>${ps.length}</b></span>` +
     (ps.length > PRESET_FILTER_AT ? `<input class="pfilter" type="text" placeholder="${escHtml(tr("filter…"))}" value="${escHtml(ftext)}">` : "") +
     shown.map(chip).join("") +
-    `<span class="pchip add" title="new preset from the current ${cfg.what}${escHtml(hint)}">+ new</span>`;
+    `<span class="pchip add" title="new empty preset${escHtml(hint)}">+ new</span>`;
 
   // Typing re-renders the bar (chips re-filter), so hand focus back.
   const filt = bar.querySelector(".pfilter");
@@ -609,21 +646,38 @@ function renderPresetBarIn(bar, cfg) {
     });
     inp.addEventListener("blur", commit);
   };
+  // Unique auto-names: "+ new" takes the smallest free "preset N";
+  // duplicate takes "<name> copy", then "<name> copy 2", …
+  const freeName = (ps2, mk) => {
+    for (let n = 1; ; n++) { const nm = mk(n); if (!ps2.some((p) => p.name === nm)) return nm; }
+  };
   const addBtn = bar.querySelector(".pchip.add");
   addBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    nameInput(addBtn, "", (name) => {
-      if (!name) { cfg.rerender(); return; }
-      const ps2 = cfg.load();
-      const entry = { name, savedAt: Date.now(), state: cfg.snapshot() };
-      const at = ps2.findIndex((p) => p.name === name);
-      if (at >= 0) ps2[at] = entry; else ps2.push(entry); // same name overwrites
-      cfg.store(ps2);
-      cfg.setActive(name);
-      cfg.rerender();
-    });
+    const ps2 = cfg.load();
+    const name = freeName(ps2, (n) => "preset " + n);
+    // Apply the blank FIRST, then store the resulting live snapshot — so
+    // the stored state matches what the editor now shows (no instant
+    // dirty dot from representation differences like empty-vs-filled
+    // slot arrays).
+    cfg.apply(cfg.blank());
+    ps2.push({ name, savedAt: Date.now(), state: cfg.snapshot() });
+    cfg.store(ps2);
+    cfg.setActive(name);
+    cfg.rerender();
   });
   const on = (sel, fn) => { const b = bar.querySelector(sel); if (b) b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); };
+  on(".pop.dup", () => {
+    const ps2 = cfg.load();
+    const base = cfg.active();
+    const name = freeName(ps2, (n) => base + " copy" + (n > 1 ? " " + n : ""));
+    // The copy captures the LIVE state (unsaved edits included); the
+    // original keeps its stored state — branch-and-continue semantics.
+    ps2.push({ name, savedAt: Date.now(), state: cfg.snapshot() });
+    cfg.store(ps2);
+    cfg.setActive(name);
+    cfg.rerender();
+  });
   on(".pop.upd", () => {
     const ps2 = cfg.load();
     const at = ps2.findIndex((p) => p.name === cfg.active());
@@ -674,16 +728,33 @@ const canonBuildState = (st) => {
   return JSON.stringify(c);
 };
 
+// An EMPTY build for "+ new": the CURRENT weapon (the page is a weapon
+// page — a new preset should not navigate away), bare slots, no arcane,
+// no evolutions, sim back to the META defaults.
+function blankBuildState() {
+  const d = META.defaults;
+  return {
+    weapon: $("weapon").value,
+    evoSel: {},
+    arcane: "none",
+    arcaneRank: null,
+    slots: [],
+    sim: { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
+      headshot_pct: d.headshot_pct, duration: d.duration, runs: d.runs,
+      form: d.form, buffs: {} },
+  };
+}
+
 function renderPresetBar() {
   renderPresetBarIn($("preset-bar-" + BUILDS), {
     label: tr("Presets"),
-    what: "build",
     load: () => loadPresetList(BUILDS),
     store: (ps) => storePresetList(BUILDS, ps),
     active: () => activePreset,
     setActive: (n) => { activePreset = n; localStorage.setItem(presetActiveKey(BUILDS), n); },
     snapshot: snapshotState,
     apply: restoreState,
+    blank: blankBuildState,
     isDirty: (stored) => !stored || canonBuildState(stored.state) !== canonBuildState(snapshotState()),
     rerender: renderPresetBar,
   });
@@ -1792,13 +1863,14 @@ function renderOptPresetBar(g) {
   renderPresetBarIn(bar, {
     label: tr(meta.label),
     hint: meta.hint,
-    what: "selection",
     load: () => loadOptGroup(g),
     store: (ps) => storeOptGroup(g, ps),
     active: () => activeOptPreset[g],
     setActive: (n) => { activeOptPreset[g] = n; localStorage.setItem(presetActiveKey(optDomain(g)), n); },
     snapshot: () => snapshotOptGroup(g),
     apply: (st) => applyOptGroup(g, st || {}),
+    // An empty scope: nothing selected (size stays a fresh 8 for mods).
+    blank: () => (g === "mods" ? { mods: {}, exilus: {}, size: 8 } : g === "arcanes" ? { arcanes: {} } : { evos: {} }),
     isDirty: (stored) => !stored || JSON.stringify(stored.state) !== JSON.stringify(snapshotOptGroup(g)),
     rerender: () => renderOptPresetBar(g),
   });

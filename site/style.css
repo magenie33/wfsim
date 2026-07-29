@@ -56,13 +56,19 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .brand{font-weight:800;font-size:20px;letter-spacing:-.01em}.brand span{color:var(--gold)}
 /* Module tabs under the weapon strip: Builder | Optimizer. The sim is
    NOT a tab — it sits at the bottom of the builder as the build's test
-   bench. body.on-optimizer swaps which module's sections show. */
+   bench. body.on-simulator / body.on-optimizer swap which module's
+   sections show (Builder | Simulator | Optimizer). */
 .module-tabs{display:flex;gap:4px;margin:16px 0 14px;border-bottom:1px solid var(--line)}
 .mtab{display:inline-flex;align-items:center;line-height:1;padding:9px 16px;font-size:13.5px;color:var(--muted);text-decoration:none;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0}
 .mtab:hover{color:var(--text)}
 .mtab.sel{color:var(--text);font-weight:600;border-color:var(--line);background:var(--panel2);position:relative;top:1px}
 body:not(.on-optimizer) #opt-block{display:none}
-.on-optimizer #preset-bar-builder-builds,.on-optimizer #mod-block,.on-optimizer #arcane-block,.on-optimizer #evo-block,.on-optimizer #element-block,.on-optimizer #stats-block,.on-optimizer #sim-block{display:none}
+body:not(.on-simulator) #sim-block{display:none}
+.on-optimizer #preset-bar-builder-builds,.on-optimizer #mod-block,.on-optimizer #arcane-block,.on-optimizer #evo-block,.on-optimizer #element-block,.on-optimizer #stats-block{display:none}
+/* The simulator tab keeps the build preset bar (sim settings are preset
+   content — the dirty dot and save must be reachable) but hides the
+   builder's editing blocks. */
+.on-simulator #mod-block,.on-simulator #arcane-block,.on-simulator #evo-block,.on-simulator #element-block,.on-simulator #stats-block{display:none}
 
 /* Preset bar above the Mods block: chips CRUD in place. */
 .preset-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 12px;padding:8px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
@@ -83,6 +89,9 @@ body:not(.on-optimizer) #opt-block{display:none}
 .topbar-inner .ghost-btn{height:28px;padding:0 8px;display:inline-flex;align-items:center;justify-content:center}
 .gh-link{color:var(--text);width:28px;padding:0}
 .gh-link svg{display:block}
+.qq-link{width:28px;font-weight:800;font-size:10px;letter-spacing:.03em;text-decoration:none}
+.qq-copy-btn{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;padding:0 3px}
+.qq-copy-btn:hover{color:var(--text)}
 .lang-select{margin-left:auto;width:auto;height:28px;padding:0 24px 0 8px;font-size:12px;background-color:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:8px}
 
 .config-page{max-width:760px;margin:0 auto;padding:18px}

@@ -5,7 +5,7 @@ Steps:
   1. cargo build --release -p wfsim-wasm --target wasm32-unknown-unknown
   2. wasm-bindgen --target no-modules  ->  site/app/pkg/
   3. wasm-opt -Oz (if available; optional)
-  4. copy web/src/static/{index.html,app.js,style.css,worker.js,pol/} -> site/
+  4. copy web/src/static/{index.html,app.js,style.css,worker.js,logo.svg,pol/} -> site/
   5. inject <script>window.WFSIM_WASM = true;</script> into the copied
      index.html — that flag flips app.js's api() from fetch to worker RPC.
 
@@ -46,7 +46,7 @@ def main() -> None:
     else:
         print("(wasm-opt not found — skipping the size pass)")
 
-    for name in ("app.js", "style.css", "worker.js"):
+    for name in ("app.js", "style.css", "worker.js", "logo.svg"):
         shutil.copy2(STATIC / name, APP / name)
     shutil.copytree(STATIC / "pol", APP / "pol", dirs_exist_ok=True)
 

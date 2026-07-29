@@ -26,6 +26,7 @@ use wfsim_webapi::{
 const INDEX_HTML: &str = include_str!("static/index.html");
 const APP_JS: &str = include_str!("static/app.js");
 const STYLE_CSS: &str = include_str!("static/style.css");
+const LOGO_SVG: &str = include_str!("static/logo.svg");
 
 // ---- main / server loop ------------------------------------------------
 
@@ -211,6 +212,7 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
             APP_JS.as_bytes(),
         ),
         ("GET", "/style.css") => respond(&mut stream, "200 OK", "text/css; charset=utf-8", STYLE_CSS.as_bytes()),
+        ("GET", "/logo.svg") => respond(&mut stream, "200 OK", "image/svg+xml", LOGO_SVG.as_bytes()),
         ("GET", "/api/meta") => respond_json(&mut stream, &meta_json()),
         ("GET", "/api/i18n") => respond_json(&mut stream, &i18n_json()),
         ("POST", "/api/simulate") => {
