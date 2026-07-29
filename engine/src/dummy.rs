@@ -1393,7 +1393,7 @@ pub struct RunResult {
     pub procs: u32,      // status procs applied (all types)
     pub dot_ticks: u32,  // bleed ticks that landed
     pub reloads: u32,    // magazine reloads performed
-    pub transforms: u32, // Incarnon cycle transitions (each direction counts)
+    pub transforms: u32, // TRANSMUTES into the Incarnon form (reverts don't count)
     pub kills: u32,      // InstantRespawn deaths (0 with InfiniteHealth)
     /// Kills + the depleted fraction of the CURRENT target's total pool
     /// (overguard + health) at engagement end — partial credit so the
@@ -1720,9 +1720,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         if let Some(cy) = &params.cycle {
             if !in_base_form && magazine < 1e-9 {
                 // Charge magazine spent: revert to the base form. The swap
-                // fully reloads the base magazine (wiki side effect).
+                // fully reloads the base magazine (wiki side effect). The
+                // revert does NOT count as a transform — `transforms` counts
+                // TRANSMUTES INTO the Incarnon form only (user, 2026-07-29:
+                // both-directions counting read as doubled).
                 t += cy.transmute_out_seconds;
-                r.transforms += 1;
                 in_base_form = true;
                 charges = 0;
                 base_mag = cy.base_form.magazine_size;
@@ -3424,7 +3426,8 @@ mod tests {
         // transmute 1.0 s. Timeline over 10 s:
         //   inc @0,1 | revert 2->2.5 | base @2.5,3.5 -> transmute ->4.5
         //   inc @4.5,5.5 | revert 6.5->7 | base @7,8 -> transmute ->9
-        //   inc @9. Totals: 5x100 + 4x50 = 700; 9 shots; 4 transforms.
+        //   inc @9. Totals: 5x100 + 4x50 = 700; 9 shots; 2 transforms
+        //   (transmutes INTO the form only — the 2 reverts don't count).
         let head = vec![BodyPart {
             name: "head".into(),
             aim_weight: 1.0,
@@ -3460,7 +3463,7 @@ mod tests {
             s.mean_damage
         );
         assert!((s.mean_shots - 9.0).abs() < 1e-9, "shots {}", s.mean_shots);
-        assert!((s.mean_transforms - 4.0).abs() < 1e-9);
+        assert!((s.mean_transforms - 2.0).abs() < 1e-9);
         assert_eq!(s.mean_reloads, 0.0);
     }
 
