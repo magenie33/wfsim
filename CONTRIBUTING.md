@@ -1,6 +1,16 @@
-# Contributing to wfsim
+<div align="center">
 
-Thanks for your interest! wfsim's core promise is "matches in-game
+<img src="web/src/static/logo.svg" width="110" alt="WFSim" />
+
+# Contributing to WFSim
+
+[**wfsim.app**](https://wfsim.app) ·
+QQ group [995078378](https://qm.qq.com/q/uiXrMSTs8S) ·
+[README](README.md)
+
+</div>
+
+Thanks for your interest! WFSim's core promise is "matches in-game
 measurements", which shapes what contributions look like — **you don't need
 to write Rust to make the most valuable contributions here.**
 
