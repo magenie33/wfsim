@@ -88,6 +88,15 @@ enum EvoEffect {
         max_stacks: u32,
         duration: f64,
     },
+    /// Lethal Rearmament: every HEADSHOT grants a stack of reload speed
+    /// for `duration`, one stack lost per timeout (the Galvanized decay).
+    /// Reload speed also scales the Incarnon transmute animations, so this
+    /// shortens the whole cycle, not just reloads.
+    StackingReloadSpeedOnHeadshot {
+        per_stack: f64,
+        max_stacks: u32,
+        duration: f64,
+    },
     /// No damage payload here (holstered regen, recoil, timed utility
     /// buffs, the weapon unlock) — kept so the evolution loads and lists.
     Inert(String),
@@ -148,6 +157,67 @@ impl EvolutionDef {
             _ => None,
         })
     }
+}
+
+/// One configurable buff an evolution grants — everything the Sim's and
+/// the Optimizer's buff cards need, with no caller-side knowledge of which
+/// effect produced it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EvoBuffCard {
+    /// The `apply_buff_config` key this card writes.
+    pub id: &'static str,
+    pub max_stacks: u32,
+    /// PERMANENT stacks (no in-sim trigger, no decay): the count is a
+    /// static choice for the run, so the card defaults locked.
+    pub permanent: bool,
+}
+
+impl EvolutionDef {
+    /// EVERY configurable buff this evolution grants.
+    ///
+    /// The match below is EXHAUSTIVE on purpose: adding an `EvoEffect`
+    /// variant fails to compile until someone states whether it is a buff
+    /// the user can configure. That is the whole point — a buff that
+    /// exists in the engine but not on the cards is invisible, and the
+    /// only way to keep the two in step is to make forgetting impossible.
+    /// Every stacking buff defaults to FULL stacks (the standing "start
+    /// full" decision); only permanent ones default locked.
+    pub fn buff_cards(&self) -> Vec<EvoBuffCard> {
+        self.active_effects()
+            .filter_map(|e| match e {
+                EvoEffect::AssumedMaxMultishot { max_stacks, .. } => Some(EvoBuffCard {
+                    id: "evo_multishot",
+                    max_stacks: *max_stacks,
+                    permanent: true,
+                }),
+                EvoEffect::StackingDamageOnPlainHit { max_stacks, .. } => Some(EvoBuffCard {
+                    id: "on_plain_hit_damage",
+                    max_stacks: *max_stacks,
+                    permanent: false,
+                }),
+                EvoEffect::StackingReloadSpeedOnHeadshot { max_stacks, .. } => Some(EvoBuffCard {
+                    id: "on_headshot_reload_speed",
+                    max_stacks: *max_stacks,
+                    permanent: false,
+                }),
+                // Static stat changes — nothing to configure at runtime.
+                EvoEffect::FlatBaseDamage(_)
+                | EvoEffect::FlatBaseCritChance(_)
+                | EvoEffect::ConditionOverload { .. }
+                | EvoEffect::FireRateBonus(_)
+                | EvoEffect::PostModCritChance(_)
+                | EvoEffect::PostModStatusChance(_)
+                | EvoEffect::HeadshotDamage(_)
+                | EvoEffect::IncarnonChargeRate(_) => None,
+                // Rolled per instance, not a buff with an uptime.
+                EvoEffect::ChanceDamageOnNoncrit { .. } => None,
+                EvoEffect::Inert(_) => None,
+            })
+            .collect()
+    }
+}
+
+impl EvolutionDef {
 
     /// The stacking on-plain-hit damage buff (Overwhelming Attrition), if
     /// this evolution grants one. Drives its configurable buff card.
@@ -219,6 +289,14 @@ impl EvolutionDef {
                 EvoEffect::HeadshotDamage(v) => {
                     format!("+{:.0}% headshot damage (direct hits only)", v * 100.0)
                 }
+                EvoEffect::StackingReloadSpeedOnHeadshot {
+                    per_stack,
+                    max_stacks,
+                    duration,
+                } => format!(
+                    "+{:.0}% reload speed per headshot ({max_stacks} stacks, {duration:.0}s) — shortens the transmutes too",
+                    per_stack * 100.0
+                ),
                 EvoEffect::ChanceDamageOnNoncrit { chance, value } => format!(
                     "{:.0}% chance of +{:.0}% damage on a NON-crit instance (own multiplier, radial included)",
                     chance * 100.0,
@@ -290,6 +368,11 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
             duration: f(v, "duration").unwrap_or(0.0),
         },
+        "on_headshot_reload_speed" => EvoEffect::StackingReloadSpeedOnHeadshot {
+            per_stack: f(v, "per_stack").unwrap_or(0.0),
+            max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
+            duration: f(v, "duration").unwrap_or(0.0),
+        },
         other => EvoEffect::Inert(other.to_string()),
     })
 }
@@ -341,6 +424,20 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         // (StackSpec, the arcanes): a build is read at the
                         // uptime it plays at, and the sim runs decay from
                         // there. The buff card overrides both knobs.
+                        initial_stacks: *max_stacks,
+                        pinned: false,
+                    });
+                }
+                EvoEffect::StackingReloadSpeedOnHeadshot {
+                    per_stack,
+                    max_stacks,
+                    duration,
+                } => {
+                    base.reload_on_headshot = Some(crate::loadout::HeadshotReloadBuff {
+                        per_stack: *per_stack,
+                        max_stacks: *max_stacks,
+                        duration: *duration,
+                        // Start FULL like every other stacking buff.
                         initial_stacks: *max_stacks,
                         pinned: false,
                     });

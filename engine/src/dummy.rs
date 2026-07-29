@@ -210,6 +210,10 @@ pub struct IncarnonCycle {
     pub transmute_out_seconds: f64,
     /// Base → Incarnon transition (already reload-speed scaled).
     pub transmute_seconds: f64,
+    /// The reload-speed bucket the two times above were divided by. A
+    /// LIVE bonus (Lethal Rearmament) rescales them by
+    /// `(1 + bucket) / (1 + bucket + live)`.
+    pub reload_bucket: f64,
 }
 
 /// What happens when the target's health reaches zero.
@@ -949,6 +953,10 @@ pub struct DummyParams {
     /// stack drops and the timer resets. The buff multiplies subsequent
     /// instances, the radial part included.
     pub plain_hit_bonus: Option<crate::loadout::PlainHitBuff>,
+    /// Lethal Rearmament: stacking on-HEADSHOT reload speed. It joins the
+    /// reload-speed bucket, so it shortens magazine reloads AND both
+    /// Incarnon transmute animations (which scale by the same formula).
+    pub reload_on_headshot: Option<crate::loadout::HeadshotReloadBuff>,
     /// Magazine size; when it runs dry a reload (below) blocks firing.
     pub magazine_size: f64,
     pub reload_seconds: f64,
@@ -1084,6 +1092,12 @@ impl DummyParams {
         // Galvanized family, so it takes the same two knobs.
         if let Some(b) = self.plain_hit_bonus.as_mut() {
             if let Some(&(stacks, locked)) = cfg.get("on_plain_hit_damage") {
+                b.initial_stacks = stacks.min(b.max_stacks);
+                b.pinned = locked;
+            }
+        }
+        if let Some(b) = self.reload_on_headshot.as_mut() {
+            if let Some(&(stacks, locked)) = cfg.get("on_headshot_reload_speed") {
                 b.initial_stacks = stacks.min(b.max_stacks);
                 b.pinned = locked;
             }
@@ -1224,6 +1238,7 @@ impl DummyParams {
             headshot_damage_bonus: panel.headshot_damage_bonus,
             noncrit_bonus: panel.noncrit_bonus,
             plain_hit_bonus: panel.plain_hit_bonus,
+            reload_on_headshot: panel.reload_on_headshot,
             base_crit_chance: panel.crit_chance,
             crit_multiplier: panel.crit_damage,
             status_chance: panel.status_chance,
@@ -1313,6 +1328,7 @@ impl DummyParams {
                     .unwrap_or(9),
                 transmute_out_seconds: inc_form.map_or(1.0, |f| f.transmute_out) / rl,
                 transmute_seconds: inc_form.map_or(2.35, |f| f.transmute_in) / rl,
+                reload_bucket: rl - 1.0,
             }),
             ..Self::from_panel(incarnon, target, body_parts, duration_secs)
         }
@@ -1340,6 +1356,7 @@ impl Default for DummyParams {
             headshot_damage_bonus: 0.0,
             noncrit_bonus: None,
             plain_hit_bonus: None,
+            reload_on_headshot: None,
             base_crit_chance: 0.05,
             crit_multiplier: 2.0,
             status_chance: 0.37,
@@ -1661,14 +1678,45 @@ fn process_ticks(
 }
 
 /// Live reload time for the active form: the arcane's reload-speed sources
-/// (Merciless r5 static, Conjunction Voltage stacks) join the form's
-/// reload-speed BUCKET — time = base / (1 + bucket + arcane additions).
-fn live_reload_time(form: &DummyParams, outer: &DummyParams, arc: &mut ArcRuntime, t: f64) -> f64 {
-    let add = outer.arcane.reload_bonus + arc.total(&outer.arcane.buffs, ArcGrant::ReloadSpeed, t);
+/// (Merciless r5 static, Conjunction Voltage stacks) and Lethal
+/// Rearmament's headshot stacks join the form's reload-speed BUCKET —
+/// time = base / (1 + bucket + live additions).
+fn live_reload_time(
+    form: &DummyParams,
+    outer: &DummyParams,
+    arc: &mut ArcRuntime,
+    live_rs: f64,
+    t: f64,
+) -> f64 {
+    let add =
+        outer.arcane.reload_bonus + arc.total(&outer.arcane.buffs, ArcGrant::ReloadSpeed, t) + live_rs;
     if add <= 0.0 {
         return form.reload_seconds;
     }
     form.reload_seconds * (1.0 + form.reload_bonus) / (1.0 + form.reload_bonus + add)
+}
+
+/// Rescale a time already divided by `(1 + bucket)` so it also carries a
+/// LIVE addition to the same bucket — the transmute animations, which the
+/// wiki ties to reload speed.
+fn rescale_reload(secs: f64, bucket: f64, live: f64) -> f64 {
+    if live <= 0.0 {
+        return secs;
+    }
+    secs * (1.0 + bucket) / (1.0 + bucket + live)
+}
+
+/// Lethal Rearmament's CURRENT reload-speed bonus. A pinned buff freezes
+/// at its configured stacks; an unpinned one decays a stack per timeout.
+fn live_reload_speed(params: &DummyParams, stacks: &mut LiveStacks, t: f64) -> f64 {
+    params.reload_on_headshot.map_or(0.0, |b| {
+        let n = if b.pinned {
+            b.initial_stacks.min(b.max_stacks)
+        } else {
+            stacks.current(t, b.duration)
+        };
+        b.per_stack * n as f64
+    })
 }
 
 pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
@@ -1702,6 +1750,13 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         stacks: b.initial_stacks.min(b.max_stacks),
         expiry: b.duration,
     });
+    // Lethal Rearmament's on-headshot reload-speed stacks.
+    let mut rs_stacks = params
+        .reload_on_headshot
+        .map_or_else(LiveStacks::default, |b| LiveStacks {
+            stacks: b.initial_stacks.min(b.max_stacks),
+            expiry: b.duration,
+        });
     // Stacking arcanes start FULL (user setting) with a fresh timer; the
     // states run each spec's own decay family from there.
     let mut arc = ArcRuntime::init(params);
@@ -1799,7 +1854,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 // revert does NOT count as a transform — `transforms` counts
                 // TRANSMUTES INTO the Incarnon form only (user, 2026-07-29:
                 // both-directions counting read as doubled).
-                t += cy.transmute_out_seconds;
+                t += rescale_reload(cy.transmute_out_seconds, cy.reload_bucket,
+                    live_reload_speed(params, &mut rs_stacks, t));
                 in_base_form = true;
                 charges = 0;
                 base_mag = cy.base_form.magazine_size;
@@ -1807,7 +1863,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             }
             if in_base_form && base_mag < 1e-9 {
                 // Base-form reload (infinite reserve assumed in the cycle).
-                t += live_reload_time(&cy.base_form, params, &mut arc, t);
+                let rs = live_reload_speed(params, &mut rs_stacks, t);
+                t += live_reload_time(&cy.base_form, params, &mut arc, rs, t);
                 r.reloads += 1;
                 if let Some(b) = cy.base_form.fr_on_reload {
                     fr_reload_expiry = t + b.duration;
@@ -1821,7 +1878,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             if !params.infinite_reserve && reserve < 1e-9 {
                 break;
             }
-            t += live_reload_time(params, params, &mut arc, t);
+            let rs = live_reload_speed(params, &mut rs_stacks, t);
+            t += live_reload_time(params, params, &mut arc, rs, t);
             r.reloads += 1;
             if let Some(b) = params.fr_on_reload {
                 fr_reload_expiry = t + b.duration;
@@ -2197,6 +2255,13 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         if let Some(b) = params.cc_on_headshot {
                             ch_buff_expiry = t + b.duration;
                         }
+                        // Lethal Rearmament: every headshot grants a stack.
+                        // A pinned buff ignores the trigger, like the rest.
+                        if let Some(b) = params.reload_on_headshot.filter(|b| !b.pinned) {
+                            rs_stacks.current(t, b.duration);
+                            rs_stacks.stacks = (rs_stacks.stacks + 1).min(b.max_stacks);
+                            rs_stacks.expiry = t + b.duration;
+                        }
                     }
                 }
 
@@ -2524,7 +2589,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             if in_base_form {
                 charges += r.headshots - headshots_before;
                 if charges >= cy.charges_to_fill {
-                    t += cy.transmute_seconds;
+                    t += rescale_reload(cy.transmute_seconds, cy.reload_bucket,
+                        live_reload_speed(params, &mut rs_stacks, t));
                     r.transforms += 1;
                     in_base_form = false;
                     magazine = params.magazine_size; // full gauge = full charge mag
@@ -3772,6 +3838,7 @@ mod tests {
                 charges_to_fill: 2,
                 transmute_out_seconds: 0.5,
                 transmute_seconds: 1.0,
+                reload_bucket: 0.0,
             }),
             ..no_status()
         };

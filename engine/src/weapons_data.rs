@@ -404,6 +404,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         headshot_damage_bonus: 0.0,
         noncrit_bonus: None,
         plain_hit_bonus: None,
+        reload_on_headshot: None,
     }
 }
 
@@ -648,6 +649,39 @@ mod laetum_tests {
         assert!(
             with > without * 1.5,
             "the earned stacks must show up: {without:.0} -> {with:.0}"
+        );
+    }
+
+    /// Lethal Rearmament used to load INERT. It is an on-headshot stacking
+    /// reload-speed buff, and reload speed also scales the Incarnon
+    /// transmute animations — so on a weapon whose whole cycle is
+    /// reload-bound it must buy back real time.
+    #[test]
+    fn lethal_rearmament_shortens_the_cycle_not_just_reloads() {
+        use crate::dummy::{monte_carlo, DummyParams, TargetParams};
+        // 100% headshots so the trigger fires on every landed pellet.
+        let parts = vec![crate::dummy::BodyPart {
+            name: "head".into(),
+            aim_weight: 1.0,
+            multiplier: 3.0,
+            is_head: true,
+            crit_bonus: false,
+        }];
+        let run = |evos: &[&str]| {
+            let b = WeaponBase::from_data("laetum_incarnon", true, evos);
+            let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::Emergent);
+            let params =
+                DummyParams::from_panel(&p, TargetParams::training_dummy(), parts.clone(), 60.0);
+            let m = monte_carlo(&params, 24, 7);
+            (params.reload_on_headshot.is_some(), m.mean_effective_damage)
+        };
+        let (has_none, without) = run(&["laetum_evo1_incarnon_form"]);
+        let (has_buff, with) = run(&["laetum_evo1_incarnon_form", "laetum_lethal_rearmament"]);
+        assert!(!has_none, "no evolution, no buff");
+        assert!(has_buff, "the evolution must carry the buff (it loaded INERT before)");
+        assert!(
+            with > without,
+            "less time reloading and transmuting = more damage in the same 60 s:              {without:.0} -> {with:.0}"
         );
     }
 

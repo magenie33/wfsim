@@ -517,6 +517,8 @@ pub struct WeaponBase {
     pub noncrit_bonus: Option<(f64, f64)>,
     /// Overwhelming Attrition's stacking damage buff.
     pub plain_hit_bonus: Option<PlainHitBuff>,
+    /// Lethal Rearmament's stacking on-headshot reload speed.
+    pub reload_on_headshot: Option<HeadshotReloadBuff>,
     /// A RADIAL (AoE) attack part fired alongside the direct hit — the
     /// Laetum Incarnon's 300 Radiation explosion. Separate damage vector,
     /// crit and status stats; the directly-hit enemy takes both parts.
@@ -534,6 +536,20 @@ pub struct PlainHitBuff {
     /// Stacks at t = 0, and whether the run FREEZES there — the same two
     /// knobs [`StackSpec`] carries, so the Sim/Optimizer buff cards can
     /// configure this buff like any other stacking buff.
+    pub initial_stacks: u32,
+    pub pinned: bool,
+}
+
+/// Lethal Rearmament: every HEADSHOT grants a stack of reload speed for
+/// `duration`; on timeout ONE stack drops and the timer resets (the
+/// Galvanized decay). Reload speed also shortens the Incarnon transmute
+/// animations, so the buff reaches the whole cycle, not just reloads.
+#[derive(Debug, Clone, Copy)]
+pub struct HeadshotReloadBuff {
+    pub per_stack: f64,
+    pub max_stacks: u32,
+    pub duration: f64,
+    /// The same two knobs every other stacking buff carries.
     pub initial_stacks: u32,
     pub pinned: bool,
 }
@@ -634,6 +650,8 @@ pub struct ResolvedPanel {
     pub noncrit_bonus: Option<(f64, f64)>,
     /// Overwhelming Attrition's stacking damage buff.
     pub plain_hit_bonus: Option<PlainHitBuff>,
+    /// Lethal Rearmament's stacking on-headshot reload speed.
+    pub reload_on_headshot: Option<HeadshotReloadBuff>,
     /// ModifiedBase = unmodded total × (1 + Σ base damage) — the base of
     /// every status-payload formula (elemental portions excluded).
     pub modified_base: f64,
@@ -1058,6 +1076,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         headshot_damage_bonus: base.headshot_damage_bonus,
         noncrit_bonus: base.noncrit_bonus,
         plain_hit_bonus: base.plain_hit_bonus,
+        reload_on_headshot: base.reload_on_headshot,
         multishot: base.base_multishot * (1.0 + base.buff_multishot_bonus + ms),
         base_multishot: base.base_multishot,
         // Magazine capacity: +% of base, floored to whole rounds (in-game).
@@ -1116,6 +1135,7 @@ mod tests {
             headshot_damage_bonus: 0.0,
             noncrit_bonus: None,
             plain_hit_bonus: None,
+            reload_on_headshot: None,
             base_crit_chance: 0.14,
             base_crit_damage: 2.2,
             base_status_chance: 0.36,

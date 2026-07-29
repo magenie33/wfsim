@@ -631,43 +631,28 @@ fn enumerate_buffs(
 /// in-sim trigger and no decay, so the stack count is a static choice (full
 /// by default) and the lock is display-only.
 fn evo_buffs(evo_ids: &[String]) -> Vec<BuffMeta> {
-    let mut out = Vec::new();
-    for def in evo_ids
+    // NO per-effect knowledge here: the engine decides what is a
+    // configurable buff (`EvolutionDef::buff_cards`, an exhaustive match),
+    // so a new evolution mechanic surfaces on the cards the moment it is
+    // modeled — nothing to remember to add on this side.
+    evo_ids
         .iter()
         .filter_map(|id| wfsim_engine::evolutions_data::get(id))
-    {
-        // Fevered Frenzy: PERMANENT stacks, no in-sim trigger — the count is
-        // a static choice for the whole run, so it defaults full and locked.
-        if let Some((_, max_stacks)) = def.ms_buff() {
-            out.push(BuffMeta {
-                id: "evo_multishot".into(),
+        .flat_map(|def| {
+            def.buff_cards().into_iter().map(move |c| BuffMeta {
+                id: c.id.into(),
                 name: def.name.clone(),
-                max_stacks,
+                max_stacks: c.max_stacks,
                 kind: "stacking",
-                default_stacks: max_stacks,
-                default_locked: true,
-                permanent: true,
-            });
-        }
-        // Overwhelming Attrition: a conditional stacking buff of the same
-        // shape as the Galvanized family (earned in the run, decays one
-        // stack per timeout), so it belongs on the buff cards next to them
-        // AND defaults the same way — FULL stacks, unlocked. A build is
-        // read at the uptime it plays at, and the sim runs decay from
-        // there; starting a stacking buff empty would be the odd one out.
-        if let Some(b) = def.plain_hit_buff() {
-            out.push(BuffMeta {
-                id: "on_plain_hit_damage".into(),
-                name: def.name.clone(),
-                max_stacks: b.max_stacks,
-                kind: "stacking",
-                default_stacks: b.max_stacks,
-                default_locked: false,
-                permanent: false,
-            });
-        }
-    }
-    out
+                // Start FULL, like every other stacking buff in the
+                // product; only permanent stacks (no trigger, no decay)
+                // default LOCKED, because they cannot move either way.
+                default_stacks: c.max_stacks,
+                default_locked: c.permanent,
+                permanent: c.permanent,
+            })
+        })
+        .collect()
 }
 
 fn buffs_json(list: &[BuffMeta]) -> Vec<Value> {
