@@ -1,21 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- WFSim mark: dark tile, accent targeting reticle (the simulator),
-       the two-tone wordmark (gold "Sim" = the .brand wordmark). Colors
-       are the dark theme's tokens, fixed — the tile is self-colored so
-       it reads the same as a favicon, a QQ avatar, or on any page. -->
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1e222b"/>
-      <stop offset="1" stop-color="#0e1014"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <g stroke="#4a9eff" stroke-width="14" fill="none" stroke-linecap="round">
-    <circle cx="256" cy="256" r="192" opacity="0.55"/>
-    <path d="M256 40v52M256 420v52M40 256h52M420 256h52"/>
-  </g>
-  <g font-family="'Segoe UI',system-ui,sans-serif" text-anchor="middle">
-    <text x="256" y="276" font-size="168" font-weight="800" fill="#f2f4f8" letter-spacing="-4">WF</text>
-    <text x="256" y="382" font-size="92" font-weight="800" fill="#e8c37a" letter-spacing="2">Sim</text>
-  </g>
+  <!-- WFSim mark: the wordmark, nothing else — white tile, black "WF",
+       gold "Sim" (the light theme's text + gold tokens, same two-tone as
+       the topbar .brand). Self-colored so it reads the same as a favicon,
+       a QQ avatar, or on any page. -->
+  <rect width="512" height="512" rx="112" fill="#ffffff"/>
+  <text x="256" y="303" font-family="'Segoe UI',system-ui,sans-serif" font-size="130" font-weight="800" text-anchor="middle" letter-spacing="-2"><tspan fill="#0b0b0b">WF</tspan><tspan fill="#a9781f">Sim</tspan></text>
 </svg>
