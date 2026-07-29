@@ -141,10 +141,11 @@ pub fn enumerate_candidates_observed(
         .collect();
 
     let mut stats = EnumStats::default();
-    let mut out = Vec::new();
+    let mut scratch = Vec::new();
     let mut subset = Vec::with_capacity(max_slots as usize);
     let default_opts = [None];
     let exilus_opts = if exilus_opts.is_empty() { &default_opts[..] } else { exilus_opts };
+    let mut all: Vec<Candidate> = Vec::new();
     let complete = enumerate_rec(
         pool,
         base,
@@ -160,17 +161,83 @@ pub fn enumerate_candidates_observed(
         0,
         &mut subset,
         &mut stats,
-        &mut out,
+        &mut scratch,
+        &mut |scratch: &mut Vec<Candidate>| {
+            for c in scratch.drain(..) {
+                if max_out > 0 && all.len() >= max_out {
+                    return false;
+                }
+                all.push(c);
+            }
+            true
+        },
         state,
-        max_out,
     );
-    (out, stats, complete)
+    (all, stats, complete)
 }
 
-/// Returns `false` when the walk was stopped early (cancel or `max_out`);
-/// the abort propagates straight up the recursion.
+/// Streaming enumeration: every candidate goes to `emit` as it is built —
+/// nothing is materialized, so the scope size stops being a memory bound.
+/// `emit` returning `false` aborts the walk (so does `state.cancel`);
+/// returns `true` iff the walk ran to completion. `state` also receives the
+/// live `enumerated` count.
 #[allow(clippy::too_many_arguments)]
-fn enumerate_rec(
+pub fn enumerate_candidates_each(
+    pool: &[ModDef],
+    base: &WeaponBase,
+    second_form: Option<&WeaponBase>,
+    variant: u32,
+    min_slots: u32,
+    max_slots: u32,
+    cap: u32,
+    innate: &[Option<Polarity>],
+    constraints: &Constraints,
+    exilus_opts: &[Option<&ModDef>],
+    state: Option<&FunnelState>,
+    emit: &mut dyn FnMut(Candidate) -> bool,
+) -> bool {
+    let usable: Vec<usize> = (0..pool.len())
+        .filter(|&i| !constraints.forbid.iter().any(|f| f == pool[i].id))
+        .collect();
+    let required: Vec<usize> = constraints
+        .require
+        .iter()
+        .filter_map(|r| pool.iter().position(|m| m.id == *r))
+        .collect();
+    let mut stats = EnumStats::default();
+    let mut scratch = Vec::new();
+    let mut subset = Vec::with_capacity(max_slots as usize);
+    let default_opts = [None];
+    let exilus_opts = if exilus_opts.is_empty() { &default_opts[..] } else { exilus_opts };
+    enumerate_rec(
+        pool,
+        base,
+        second_form,
+        variant,
+        cap,
+        innate,
+        exilus_opts,
+        &usable,
+        &required,
+        min_slots as usize,
+        max_slots as usize,
+        0,
+        &mut subset,
+        &mut stats,
+        &mut scratch,
+        &mut |scratch: &mut Vec<Candidate>| scratch.drain(..).all(&mut *emit),
+        state,
+    )
+}
+
+/// The one enumeration walk behind both the materialized and streaming
+/// fronts. `expand_subset` fills `scratch`; after every expansion the
+/// `sink` consumes it (drain into a Vec, cap it, or feed a worker
+/// pipeline). Returns `false` when the walk was stopped early — a `false`
+/// from the sink or a `state.cancel` — and the abort propagates straight
+/// up the recursion.
+#[allow(clippy::too_many_arguments)]
+fn enumerate_rec<S: FnMut(&mut Vec<Candidate>) -> bool>(
     pool: &[ModDef],
     base: &WeaponBase,
     second_form: Option<&WeaponBase>,
@@ -185,24 +252,20 @@ fn enumerate_rec(
     from: usize,
     subset: &mut Vec<usize>,
     stats: &mut EnumStats,
-    out: &mut Vec<Candidate>,
+    scratch: &mut Vec<Candidate>,
+    sink: &mut S,
     state: Option<&FunnelState>,
-    max_out: usize,
 ) -> bool {
     if let Some(st) = state {
         if st.cancel.load(std::sync::atomic::Ordering::Relaxed) {
             return false;
         }
     }
-    if max_out > 0 && out.len() >= max_out {
-        return false;
-    }
     // Every node in the enumeration tree IS a subset — emit it once, here,
     // when it is big enough and carries every required mod (a subset missing
     // a required mod still recurses: descendants may pick it up).
     if subset.len() >= min && required.iter().all(|r| subset.contains(r)) {
         stats.subsets += 1;
-        let before = out.len();
         expand_subset(
             pool,
             base,
@@ -213,13 +276,17 @@ fn enumerate_rec(
             exilus_opts,
             subset,
             stats,
-            out,
+            scratch,
         );
         if let Some(st) = state {
             // fetch_add keeps the counter a TOTAL across evo-set calls.
             st.enumerated
-                .fetch_add((out.len() - before) as u64, std::sync::atomic::Ordering::Relaxed);
+                .fetch_add(scratch.len() as u64, std::sync::atomic::Ordering::Relaxed);
         }
+        if !sink(scratch) {
+            return false;
+        }
+        scratch.clear(); // a sink may leave leftovers; the walk owns the scratch
     }
     if subset.len() == max {
         return true;
@@ -252,9 +319,9 @@ fn enumerate_rec(
             k + 1,
             subset,
             stats,
-            out,
+            scratch,
+            sink,
             state,
-            max_out,
         );
         subset.pop();
         if !cont {
@@ -667,6 +734,199 @@ pub fn evaluate_batch(
         }
     }
     results
+}
+
+/// One streamed job that survived the screen: the candidate (shared — the
+/// same build may survive with several arcanes), its arcane index and the
+/// screen-run summary.
+pub struct ScreenedJob {
+    pub cand: std::sync::Arc<Candidate>,
+    pub ai: usize,
+    pub summary: Summary,
+}
+
+/// Screen ordering: kill progress, then effective damage, then earliest
+/// (seq, arcane) — a STRICT total order, so the surviving top-K set is
+/// unique regardless of worker interleaving.
+struct Scored {
+    kp: f64,
+    eff: f64,
+    seq: usize,
+    ai: usize,
+    cand: std::sync::Arc<Candidate>,
+    summary: Summary,
+}
+impl PartialEq for Scored {
+    fn eq(&self, o: &Self) -> bool {
+        self.cmp(o) == std::cmp::Ordering::Equal
+    }
+}
+impl Eq for Scored {}
+impl PartialOrd for Scored {
+    fn partial_cmp(&self, o: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(o))
+    }
+}
+impl Ord for Scored {
+    fn cmp(&self, o: &Self) -> std::cmp::Ordering {
+        self.kp
+            .total_cmp(&o.kp)
+            .then(self.eff.total_cmp(&o.eff))
+            .then(o.seq.cmp(&self.seq)) // earlier candidate wins exact ties
+            .then(o.ai.cmp(&self.ai))
+    }
+}
+
+/// Screen an UNBOUNDED candidate stream: `produce` drives the enumeration
+/// and hands each candidate over; the screen evaluates it against every
+/// arcane at `runs` (typically 1) and keeps only the best `keep`
+/// (candidate, arcane) jobs — memory stays O(keep) however large the scope
+/// is (this is what makes a no-cap optimizer possible). Returns the
+/// survivors best-first plus `true` iff the stream ran to completion
+/// (`false` = cancelled — the survivors are then a best-so-far). Per-job
+/// seeds derive from the candidate's global sequence number, so a given
+/// scope screens deterministically.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn stream_screen(
+    produce: impl FnOnce(&mut dyn FnMut(Candidate) -> bool),
+    arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
+    scenario: &Scenario,
+    runs: u32,
+    keep: usize,
+    seed: u64,
+    state: Option<&FunnelState>,
+) -> (Vec<ScreenedJob>, bool) {
+    use std::cmp::Reverse;
+    use std::collections::BinaryHeap;
+    use std::sync::Arc;
+    let threads = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(8)
+        .saturating_sub(1) // the producer (enumeration) runs on the caller's thread
+        .max(1);
+    let (tx, rx) = std::sync::mpsc::sync_channel::<(usize, Arc<Candidate>)>(4096);
+    let rx = std::sync::Mutex::new(rx);
+    let top: std::sync::Mutex<BinaryHeap<Reverse<Scored>>> = std::sync::Mutex::new(BinaryHeap::new());
+    // Fast-path floor: bits of the k-th kill progress once the heap is full
+    // (kp ≥ 0 → to_bits is order-preserving). Strictly-below scores skip
+    // the lock; boundary ties take the slow path and resolve under it.
+    let floor = std::sync::atomic::AtomicU64::new(0);
+    let full = std::sync::atomic::AtomicBool::new(false);
+    std::thread::scope(|scope| {
+        for _ in 0..threads {
+            let (rx, top, floor, full) = (&rx, &top, &floor, &full);
+            scope.spawn(move || loop {
+                let msg = rx.lock().unwrap().recv();
+                let Ok((seq, cand)) = msg else { return };
+                for (ai, arc) in arcanes.iter().enumerate() {
+                    if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
+                        return;
+                    }
+                    let s = evaluate(&cand, arc, scenario, runs, job_seed(seed, seq, ai));
+                    if let Some(st) = state {
+                        st.sims_done.fetch_add(runs as u64, Ordering::Relaxed);
+                    }
+                    let kp = s.mean_kill_progress.max(0.0);
+                    if full.load(Ordering::Relaxed) && kp.to_bits() < floor.load(Ordering::Relaxed) {
+                        continue;
+                    }
+                    let item = Scored {
+                        kp,
+                        eff: s.mean_effective_damage,
+                        seq,
+                        ai,
+                        cand: cand.clone(),
+                        summary: s,
+                    };
+                    let mut h = top.lock().unwrap();
+                    if h.len() < keep {
+                        h.push(Reverse(item));
+                        if h.len() == keep {
+                            floor.store(h.peek().unwrap().0.kp.to_bits(), Ordering::Relaxed);
+                            full.store(true, Ordering::Relaxed);
+                        }
+                    } else if h.peek().is_some_and(|Reverse(min)| item > *min) {
+                        h.pop();
+                        h.push(Reverse(item));
+                        floor.store(h.peek().unwrap().0.kp.to_bits(), Ordering::Relaxed);
+                    }
+                }
+            });
+        }
+        // The enumeration runs HERE; a full channel blocks send() — that
+        // backpressure is the memory bound.
+        let mut seq = 0usize;
+        produce(&mut |c: Candidate| {
+            if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
+                return false;
+            }
+            let ok = tx.send((seq, Arc::new(c))).is_ok();
+            seq += 1;
+            ok
+        });
+        drop(tx); // close the channel: workers drain and exit, the scope joins them
+    });
+    let mut out: Vec<Scored> = top.into_inner().unwrap().into_iter().map(|r| r.0).collect();
+    out.sort_by(|a, b| b.cmp(a));
+    let complete = !state.is_some_and(|st| st.cancel.load(Ordering::Relaxed));
+    (
+        out.into_iter().map(|s| ScreenedJob { cand: s.cand, ai: s.ai, summary: s.summary }).collect(),
+        complete,
+    )
+}
+
+/// wasm32 (docs/WASM.md phase 3): no threads in a Web Worker — the same
+/// screen runs inline on the producer, identical seeds and survivor set.
+#[cfg(target_arch = "wasm32")]
+pub fn stream_screen(
+    produce: impl FnOnce(&mut dyn FnMut(Candidate) -> bool),
+    arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
+    scenario: &Scenario,
+    runs: u32,
+    keep: usize,
+    seed: u64,
+    state: Option<&FunnelState>,
+) -> (Vec<ScreenedJob>, bool) {
+    use std::cmp::Reverse;
+    use std::collections::BinaryHeap;
+    use std::sync::Arc;
+    let mut top: BinaryHeap<Reverse<Scored>> = BinaryHeap::new();
+    let mut seq = 0usize;
+    produce(&mut |c: Candidate| {
+        if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
+            return false;
+        }
+        let cand = Arc::new(c);
+        for (ai, arc) in arcanes.iter().enumerate() {
+            let s = evaluate(&cand, arc, scenario, runs, job_seed(seed, seq, ai));
+            if let Some(st) = state {
+                st.sims_done.fetch_add(runs as u64, Ordering::Relaxed);
+            }
+            let item = Scored {
+                kp: s.mean_kill_progress.max(0.0),
+                eff: s.mean_effective_damage,
+                seq,
+                ai,
+                cand: cand.clone(),
+                summary: s,
+            };
+            if top.len() < keep {
+                top.push(Reverse(item));
+            } else if top.peek().is_some_and(|Reverse(min)| item > *min) {
+                top.pop();
+                top.push(Reverse(item));
+            }
+        }
+        seq += 1;
+        true
+    });
+    let mut out: Vec<Scored> = top.into_iter().map(|r| r.0).collect();
+    out.sort_by(|a, b| b.cmp(a));
+    let complete = !state.is_some_and(|st| st.cancel.load(Ordering::Relaxed));
+    (
+        out.into_iter().map(|s| ScreenedJob { cand: s.cand, ai: s.ai, summary: s.summary }).collect(),
+        complete,
+    )
 }
 
 /// Round wall-clock, compiled out on wasm32: `std::time::Instant` does not

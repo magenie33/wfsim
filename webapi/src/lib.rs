@@ -17,7 +17,8 @@ use wfsim_engine::loadout::{
 use wfsim_engine::mods::{plan_forma, PlannedMod, Polarity};
 use wfsim_engine::mods_data::pistol_pool as pool; // FULL pool incl. exilus (the optimizer's pool() excludes exilus)
 use wfsim_optimizer::{
-    enumerate_candidates_observed, run_funnel, schedule_to, Candidate,
+    enumerate_candidates_each, enumerate_candidates_observed, run_funnel, schedule_to, stream_screen,
+    Candidate,
     Constraints, FunnelState, Job, Scenario,
 };
 
@@ -1684,13 +1685,33 @@ pub fn run_optimize(
     let info = weapon(&weapon_id);
 
     // ---- enumerate candidates per evo-set × exilus option ----
-    // Observed: the walk stays CANCELLABLE (a huge scope used to freeze the
-    // job with a dead Cancel button) and hard-caps at MAX_CANDIDATES — past
-    // that the candidate Vec alone would eat gigabytes before round 1.
-    const MAX_CANDIDATES: usize = 2_000_000;
+    // Two regimes, NO scope cap (user, 2026-07-29: "no enumeration limit —
+    // find the smarter way"):
+    //  - a scope that fits MATERIALIZE_LIMIT is collected into a Vec and
+    //    runs the exact classic funnel (unchanged results);
+    //  - past the limit the partial Vec is discarded and the WHOLE scope is
+    //    re-walked STREAMING: each candidate is screened (1 run × every
+    //    arcane) as it is born and only the best SCREEN_KEEP jobs survive
+    //    into the funnel — memory stays O(SCREEN_KEEP) at any scope size,
+    //    and the walk answers `cancel` at every node.
+    const MATERIALIZE_LIMIT: usize = 2_000_000;
+    const SCREEN_KEEP: usize = 65_536;
     let innate = wfsim_engine::weapons_data::innate_slots(&info.id);
     let exilus_refs: Vec<Option<&ModDef>> = exilus_defs.iter().map(|o| o.as_ref()).collect();
+    let cancelled_json = |n_cands: usize| {
+        // Cancelled before anything was ranked — a clean empty cancellation.
+        json!({
+            "ok": true, "cancelled": true,
+            "candidates": n_cands, "jobs": 0,
+            "final_runs": final_runs, "finalists": finalists,
+            "headshot_pct": headshot_pct, "duration": duration,
+            "results": [],
+            "target": { "name": target_name, "level": level, "steel_path": steel_path },
+        })
+    };
+
     let mut cands: Vec<Candidate> = Vec::new();
+    let mut overflow = false;
     for (vi, set) in evo_sets.iter().enumerate() {
         let refs: Vec<&str> = set.iter().map(String::as_str).collect();
         let base = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &refs);
@@ -1698,52 +1719,102 @@ pub fn run_optimize(
         let (mut c, _stats, complete) = enumerate_candidates_observed(
             &pool, &base, Some(&base_form), vi as u32, min_slots as u32, build_size as u32,
             60, &innate, &constraints, &exilus_refs,
-            Some(state), MAX_CANDIDATES - cands.len(),
+            Some(state), MATERIALIZE_LIMIT - cands.len(),
         );
         cands.append(&mut c);
         if !complete {
             if state.cancel.load(std::sync::atomic::Ordering::Relaxed) {
-                // Cancelled mid-enumeration: nothing was simulated, so there
-                // is no leaderboard — report a clean empty cancellation.
-                return json!({
-                    "ok": true, "cancelled": true,
-                    "candidates": cands.len(), "jobs": 0,
-                    "final_runs": final_runs, "finalists": finalists,
-                    "headshot_pct": headshot_pct, "duration": duration,
-                    "results": [],
-                    "target": { "name": target_name, "level": level, "steel_path": steel_path },
-                });
+                return cancelled_json(cands.len());
             }
-            return err_json(format!(
-                "scope too large: over {} candidate builds — require more mods, shrink the pools, or lower max mods",
-                MAX_CANDIDATES
-            ));
+            overflow = true;
+            break;
         }
         // Exactly-full guard: the next iteration would pass max_out = 0,
         // which the observed walk reads as "no cap".
-        if cands.len() >= MAX_CANDIDATES && vi + 1 < evo_sets.len() {
-            return err_json(format!(
-                "scope too large: over {} candidate builds — require more mods, shrink the pools, or lower max mods",
-                MAX_CANDIDATES
-            ));
+        if cands.len() >= MATERIALIZE_LIMIT && vi + 1 < evo_sets.len() {
+            overflow = true;
+            break;
         }
     }
-    if cands.is_empty() {
-        return err_json("no legal builds in this scope (Forma / family constraints eliminated all)");
-    }
-    let jobs: Vec<Job> = (0..cands.len())
-        .flat_map(|i| (0..arcanes.len()).map(move |a| (i, a)))
-        .collect();
-    let n_jobs = jobs.len();
-    on_enumerated(cands.len(), n_jobs);
 
-    // ---- run the funnel (progress via FunnelState) ----
-    let rounds = schedule_to(n_jobs, final_runs, finalists);
-    let last = run_funnel(
-        &cands, &arcanes, &scenario, jobs, &rounds, 0xDEAD_BEEF, false,
-        Some(state), on_round,
-    );
-    let cancelled = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
+    let (cands, last, cancelled, n_jobs) = if !overflow {
+        // ---- classic path: materialized candidates, full funnel ----
+        if cands.is_empty() {
+            return err_json("no legal builds in this scope (Forma / family constraints eliminated all)");
+        }
+        let jobs: Vec<Job> = (0..cands.len())
+            .flat_map(|i| (0..arcanes.len()).map(move |a| (i, a)))
+            .collect();
+        let n_jobs = jobs.len();
+        on_enumerated(cands.len(), n_jobs);
+        let rounds = schedule_to(n_jobs, final_runs, finalists);
+        let last = run_funnel(
+            &cands, &arcanes, &scenario, jobs, &rounds, 0xDEAD_BEEF, false,
+            Some(state), on_round,
+        );
+        let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
+        (cands, last, c, n_jobs)
+    } else {
+        // ---- streaming path: re-walk the whole scope through the screen ----
+        drop(cands); // the partial materialization is dead weight
+        state.enumerated.store(0, std::sync::atomic::Ordering::Relaxed);
+        state.sims_done.store(0, std::sync::atomic::Ordering::Relaxed);
+        let (screened, complete) = stream_screen(
+            |emit| {
+                for (vi, set) in evo_sets.iter().enumerate() {
+                    let refs: Vec<&str> = set.iter().map(String::as_str).collect();
+                    let base =
+                        WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &refs);
+                    let base_form = WeaponBase::from_data(&info.id, true, &refs);
+                    if !enumerate_candidates_each(
+                        &pool, &base, Some(&base_form), vi as u32, min_slots as u32,
+                        build_size as u32, 60, &innate, &constraints, &exilus_refs,
+                        Some(state), emit,
+                    ) {
+                        break;
+                    }
+                }
+            },
+            &arcanes, &scenario, 1, SCREEN_KEEP, 0xDEAD_BEEF, Some(state),
+        );
+        if screened.is_empty() {
+            if state.cancel.load(std::sync::atomic::Ordering::Relaxed) {
+                return cancelled_json(0);
+            }
+            return err_json("no legal builds in this scope (Forma / family constraints eliminated all)");
+        }
+        // Survivors → a dedup'd candidate table (the same build survives
+        // with several arcanes) + (job, screen summary) pairs, best-first.
+        let mut sc: Vec<Candidate> = Vec::new();
+        let mut by_ptr: std::collections::HashMap<usize, usize> = std::collections::HashMap::new();
+        let mut slast = Vec::new();
+        for sj in &screened {
+            let key = std::sync::Arc::as_ptr(&sj.cand) as usize;
+            let ci = *by_ptr.entry(key).or_insert_with(|| {
+                sc.push((*sj.cand).clone());
+                sc.len() - 1
+            });
+            slast.push(((ci, sj.ai), sj.summary));
+        }
+        if !complete {
+            // Cancelled mid-screen: the screen's own ranking (1-run
+            // precision) is the best-so-far leaderboard.
+            let n = slast.len();
+            (sc, slast, true, n)
+        } else {
+            let jobs: Vec<Job> = slast.iter().map(|(j, _)| *j).collect();
+            let n = jobs.len();
+            state.sims_done.store(0, std::sync::atomic::Ordering::Relaxed); // fresh % for the funnel
+            on_enumerated(sc.len(), n);
+            let rounds = schedule_to(n, final_runs, finalists);
+            let last = run_funnel(
+                &sc, &arcanes, &scenario, jobs, &rounds, 0xDEAD_BEEF, false,
+                Some(state), on_round,
+            );
+            let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
+            (sc, last, c, n)
+        }
+    };
 
     // ---- the finalists leaderboard (on cancel: the last completed
     // round's top slice — intermediate rounds can be huge) ----

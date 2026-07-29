@@ -2185,7 +2185,7 @@ async function pollOptimize() {
 function renderOptProgress(st) {
   const pct = st.sims_planned ? Math.min(100, (100 * st.sims_done) / st.sims_planned) : 0;
   const head = st.phase === "enumerating"
-    ? `enumerating candidates…${st.enumerated ? ` ${st.enumerated.toLocaleString()} so far` : ""}`
+    ? `enumerating candidates…${st.enumerated ? ` ${st.enumerated.toLocaleString()} so far` : ""}${st.sims_done ? ` · ${st.sims_done.toLocaleString()} screened` : ""}`
     : `round ${st.round}/${st.rounds} — ${(st.round_jobs || 0).toLocaleString()} jobs × ${st.round_runs} runs`;
   const notes = (st.notes || []).map((n) =>
     `<div class="opt-note">round ${n.round}: ${n.jobs.toLocaleString()} × ${n.runs} (${n.by_kills ? "kills" : "eff dmg"}) → keep ${n.kept.toLocaleString()} · best ${n.by_kills ? n.best.toFixed(2) + " kill score" : n.best.toExponential(2) + " eff"} · ${(n.ms / 1000).toFixed(1)}s</div>`
