@@ -63,7 +63,15 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .mtab:hover{color:var(--text)}
 .mtab.sel{color:var(--text);font-weight:600;border-color:var(--line);background:var(--panel2);position:relative;top:1px}
 body:not(.on-optimizer) #opt-block{display:none}
-body:not(.on-simulator) #sim-block{display:none}
+body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block{display:none}
+/* The simulator's read-only build summary */
+.sb-h{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 4px}
+.sb-chips{display:flex;flex-wrap:wrap;gap:6px}
+.sb-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:3px 9px 3px 5px;font-size:12px;background:var(--panel3)}
+.sb-chip img{width:24px;height:24px;object-fit:contain}
+.sb-chip .rk{color:var(--muted);font-size:11px}
+.sb-empty{color:var(--muted);font-size:12px}
+.sb-edit{display:inline-flex;margin-top:12px;text-decoration:none}
 .on-optimizer #preset-bar-builder-builds,.on-optimizer #mod-block,.on-optimizer #arcane-block,.on-optimizer #evo-block,.on-optimizer #element-block,.on-optimizer #stats-block{display:none}
 /* The simulator tab keeps the build preset bar (sim settings are preset
    content — the dirty dot and save must be reachable) but hides the

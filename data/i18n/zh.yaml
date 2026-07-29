@@ -148,6 +148,12 @@ ui:
   "Builder": 配装
   "Simulator": 模拟器
   "Optimizer": 优化器
+  "Build": 当前配装
+  "testing preset": 测试预设
+  "no mods equipped": 未安装 MOD
+  "none": 无
+  "none selected": 未选择
+  "edit in Builder": 去配装页编辑
   "Mod presets": MOD 预设
   "Arcane presets": 赋能预设
   "Evolution presets": 进化预设

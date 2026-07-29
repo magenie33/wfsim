@@ -426,6 +426,9 @@ function route() {
       `<a class="mtab ${mod === "" ? "sel" : ""}" href="${weaponPath(w.id)}">${tr("Builder")}</a>` +
       `<a class="mtab ${mod === "simulator" ? "sel" : ""}" href="${weaponPath(w.id)}/simulator">${tr("Simulator")}</a>` +
       `<a class="mtab ${mod === "optimizer" ? "sel" : ""}" href="${weaponPath(w.id)}/optimizer">${tr("Optimizer")}</a>`;
+    // Arriving on the simulator: refresh its build summary (builder edits
+    // don't re-render sim views while they are hidden).
+    if (mod === "simulator") renderSimBuild();
   } else {
     renderHome();
   }
@@ -1298,8 +1301,46 @@ function renderEvo() {
 // The build (mods/arcane/evolutions) comes from buildPayload(); this block
 // only owns the scenario + engine-modeled buff levers (`sim`). Run POSTs to
 // /api/simulate and renders a summary card + an illustrative arena replay.
+// The SIMULATOR tab's read-only build summary — the sim always tests the
+// ACTIVE preset's build, and this card shows exactly what that is (mods
+// at rank, arcane, evolutions). Editing happens in the Builder; the
+// button jumps there.
+function renderSimBuild() {
+  const box = $("sim-build-info");
+  if (!box || !META) return;
+  const sub = $("sim-build-sub");
+  if (sub) sub.textContent = activePreset ? `${tr("testing preset")}: ${activePreset}` : "";
+  const chip = (img, label, rk) =>
+    `<span class="sb-chip">${imgTag(img, "sb-img")}<span>${escHtml(label)}</span>${rk != null ? `<span class="rk">R${rk}</span>` : ""}</span>`;
+  const w = weaponInfo($("weapon").value);
+  const parts = [];
+  const modChips = slots.map((s) => {
+    const m = s.mod && modById(s.mod);
+    if (!m) return "";
+    return chip(IMG(m.image), m.name, s.rank == null ? m.max_rank : s.rank);
+  }).filter(Boolean);
+  parts.push(`<div class="sb-h">${tr("Mods")} · ${modChips.length}</div>`);
+  parts.push(`<div class="sb-chips">${modChips.join("") || `<span class="sb-empty">${tr("no mods equipped")}</span>`}</div>`);
+  if (w.arcane_slots >= 1) {
+    const a = arcane !== "none" && arcaneById(arcane);
+    parts.push(`<div class="sb-h">${tr("Arcane")}</div>`);
+    parts.push(`<div class="sb-chips">${a ? chip(IMG(a.image), a.name, arcaneRank ?? ((a.ranks || []).length - 1)) : `<span class="sb-empty">${tr("none")}</span>`}</div>`);
+  }
+  if (w.uses_evo2) {
+    const evoChips = weaponEvos().map((t) => {
+      const o = evoSel[t.tier] && t.options.find((x) => x.id === evoSel[t.tier]);
+      return o ? chip(o.icon ? IMG(o.icon) : null, `${t.tier} · ${o.name}`) : "";
+    }).filter(Boolean);
+    parts.push(`<div class="sb-h">${tr("Evolutions")}</div>`);
+    parts.push(`<div class="sb-chips">${evoChips.join("") || `<span class="sb-empty">${tr("none selected")}</span>`}</div>`);
+  }
+  parts.push(`<a class="ghost-btn small sb-edit" href="${weaponPath($("weapon").value)}">${tr("edit in Builder")}</a>`);
+  box.innerHTML = parts.join("");
+}
+
 function renderSim() {
   if (!META) return;
+  renderSimBuild();
   const w = weaponInfo($("weapon").value);
   if (!w.uses_evo2) sim.form = "base"; // non-transforming weapons: single form
   const enemies = META.enemies || [];
