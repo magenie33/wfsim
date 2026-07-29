@@ -273,8 +273,7 @@ function initWeaponSearch() {
     if (!row) return;
     panel.hidden = true;
     input.value = "";
-    $("weapon").value = row.dataset.id;
-    applyWeapon(row.dataset.id, null);
+    switchWeapon(row.dataset.id);
     nav(weaponModPath(row.dataset.id));
   });
   document.addEventListener("click", (e) => {
@@ -349,7 +348,7 @@ async function init() {
   applyWeapon(d.weapon, d.mods);
 
   $("weapon").addEventListener("change", () => {
-    applyWeapon($("weapon").value, null);
+    switchWeapon($("weapon").value);
     if (!document.querySelector(".config-page").hidden) nav(weaponModPath($("weapon").value));
   });
   $("run-sim").addEventListener("click", runSim);
@@ -437,8 +436,7 @@ function route() {
   document.title = w ? `${w.name}${modTitle} — WFSim` : "WFSim — The Simulacrum. The Primed One.";
   if (w) {
     if ($("weapon").value !== w.id) {
-      $("weapon").value = w.id;
-      applyWeapon(w.id, null);
+      switchWeapon(w.id);
     }
     $("module-tabs").innerHTML =
       `<a class="mtab ${mod === "" ? "sel" : ""}" href="${weaponPath(w.id)}">${tr("Builder")}</a>` +
@@ -490,23 +488,37 @@ function renderHome() {
 // Full words only in durable names; abbreviations stay inside function
 // locals. No count cap — presets live in the user's localStorage, not
 // with us.
-const presetListKey = (d) => "wfsim-presets-" + d;
-const presetActiveKey = (d) => "wfsim-preset-active-" + d;
-const loadPresetList = (d) => {
-  try { const p = JSON.parse(localStorage.getItem(presetListKey(d))); return Array.isArray(p) ? p : []; }
+//
+// A preset BELONGS TO ONE WEAPON (user, 2026-07-30). The keys used to be
+// weapon-less, so one global list served the whole roster and edits on the
+// Laetum showed up on the Dual Toxocyst — the "cross-weapon apply prunes
+// unknown ids" path existed precisely because of that bleed. The weapon id
+// now joins the STORAGE key; the domain still names the collection, so DOM
+// ids and labels are untouched:
+//   localStorage  wfsim-presets-<weapon>-<domain>
+//                 wfsim-preset-active-<weapon>-<domain>
+// Copying a preset ACROSS weapons is a deliberate action instead — the
+// "⇤ import" control on each bar.
+const presetWeapon = () => ($("weapon") && $("weapon").value) || "";
+const presetListKey = (d, w) => "wfsim-presets-" + (w ?? presetWeapon()) + "-" + d;
+const presetActiveKey = (d, w) => "wfsim-preset-active-" + (w ?? presetWeapon()) + "-" + d;
+const loadPresetList = (d, w) => {
+  try { const p = JSON.parse(localStorage.getItem(presetListKey(d, w))); return Array.isArray(p) ? p : []; }
   catch (_) { return []; }
 };
-const storePresetList = (d, ps) => localStorage.setItem(presetListKey(d), JSON.stringify(ps));
+const storePresetList = (d, ps, w) => localStorage.setItem(presetListKey(d, w), JSON.stringify(ps));
 
 // One-time move of the pre-module storage keys (2026-07-29 rename).
 (function migratePresetKeys() {
   try {
+    // Targets are the WEAPON-LESS keys of the previous scheme; migrateWeaponScope()
+    // below moves those onto a weapon once META has told us which one.
     const moves = {
-      "wfsim-presets": presetListKey("builder-builds"),
-      "wfsim-active-preset": presetActiveKey("builder-builds"),
-      "wfsim-opt-mods-presets": presetListKey("optimizer-mods"),
-      "wfsim-opt-arc-presets": presetListKey("optimizer-arcanes"),
-      "wfsim-opt-evo-presets": presetListKey("optimizer-evolutions"),
+      "wfsim-presets": "wfsim-presets-builder-builds",
+      "wfsim-active-preset": "wfsim-preset-active-builder-builds",
+      "wfsim-opt-mods-presets": "wfsim-presets-optimizer-mods",
+      "wfsim-opt-arc-presets": "wfsim-presets-optimizer-arcanes",
+      "wfsim-opt-evo-presets": "wfsim-presets-optimizer-evolutions",
     };
     Object.entries(moves).forEach(([from, to]) => {
       const v = localStorage.getItem(from);
@@ -516,7 +528,8 @@ const storePresetList = (d, ps) => localStorage.setItem(presetListKey(d), JSON.s
     const oldActives = JSON.parse(localStorage.getItem("wfsim-opt-active") || "null");
     if (oldActives) {
       Object.entries({ mods: "optimizer-mods", arcs: "optimizer-arcanes", evos: "optimizer-evolutions" }).forEach(([k, d]) => {
-        if (oldActives[k] && localStorage.getItem(presetActiveKey(d)) === null) localStorage.setItem(presetActiveKey(d), oldActives[k]);
+        const to = "wfsim-preset-active-" + d;
+        if (oldActives[k] && localStorage.getItem(to) === null) localStorage.setItem(to, oldActives[k]);
       });
       localStorage.removeItem("wfsim-opt-active");
     }
@@ -628,6 +641,37 @@ const sig2 = (x, min = 2) => {
 };
 const pct2 = (x) => sig2((Number(x) || 0) * 100) + "%";
 
+// One-time move of the weapon-LESS preset lists onto a weapon. They were
+// written before presets were scoped, so they belong to whatever the user
+// was last looking at — which we cannot know. They go to the weapon that
+// is active when the migration runs (the one being restored on this load),
+// and everything else starts empty. Nothing is lost: "⇤ import" reaches
+// any weapon's presets from any other.
+const PRESET_DOMAINS = ["builder-builds", "optimizer-mods", "optimizer-arcanes", "optimizer-evolutions"];
+function migratePresetsToWeaponScope() {
+  const w = presetWeapon();
+  if (!w) return;
+  PRESET_DOMAINS.forEach((d) => {
+    [["wfsim-presets-" + d, presetListKey(d, w)],
+     ["wfsim-preset-active-" + d, presetActiveKey(d, w)]].forEach(([from, to]) => {
+      const v = localStorage.getItem(from);
+      if (v === null) return;
+      if (localStorage.getItem(to) === null) localStorage.setItem(to, v);
+      localStorage.removeItem(from);
+    });
+  });
+}
+
+// Every weapon that has at least one stored preset in `domain`, for the
+// import picker: [{ id, name, presets }]. Iterates META rather than parsing
+// key strings — weapon ids and domains both contain separators.
+function presetSources(domain, exceptWeapon) {
+  return (META ? META.weapons : [])
+    .filter((w) => w.id !== exceptWeapon)
+    .map((w) => ({ id: w.id, name: w.name, presets: loadPresetList(domain, w.id) }))
+    .filter((w) => w.presets.length);
+}
+
 // The ACTIVE preset — the one the editor is editing. Never null after
 // init: the page always has ≥1 preset and is always editing one (user's
 // mental model, 2026-07-28: "if no presets exist, the current state IS
@@ -635,6 +679,7 @@ const pct2 = (x) => sig2((Number(x) || 0) * 100) + "%";
 let activePreset = null;
 
 function initPresets() {
+  migratePresetsToWeaponScope();
   let ps = loadPresetList(BUILDS);
   // One-time default migration: presets saved under the old 300-run
   // default keep pinning the sim back to 300 — rewrite them to the new
@@ -729,7 +774,13 @@ function renderPresetBarIn(bar, cfg) {
     `<span class="plabel">${cfg.label} <b>${ps.length}</b></span>` +
     (ps.length > PRESET_FILTER_AT ? `<input class="pfilter" type="text" placeholder="${escHtml(tr("filter…"))}" value="${escHtml(ftext)}">` : "") +
     shown.map(chip).join("") +
-    `<span class="pchip add" title="new empty preset${escHtml(hint)}">+ new</span>`;
+    `<span class="pchip add" title="new empty preset${escHtml(hint)}">+ new</span>` +
+    // Presets are per weapon, so bringing one over from another weapon is
+    // an explicit action rather than a side effect of switching weapons.
+    (presetSources(cfg.domain, presetWeapon()).length
+      ? `<span class="pchip imp" title="${escHtml(tr("copy a preset from another weapon"))}">⇤ ${escHtml(tr("import"))}</span>`
+      : "") +
+    `<div class="pimport" hidden></div>`;
 
   // Typing re-renders the bar (chips re-filter), so hand focus back.
   const filt = bar.querySelector(".pfilter");
@@ -816,6 +867,43 @@ function renderPresetBarIn(bar, cfg) {
       cfg.rerender();
     });
   });
+  // ⇤ import: an INLINE panel (no native dialogs) listing every OTHER
+  // weapon's presets in this same collection. Picking one copies it here
+  // under a free name and makes it active; ids the current weapon cannot
+  // use are pruned by apply(), exactly as a normal load would.
+  const impBtn = bar.querySelector(".pchip.imp");
+  const impPanel = bar.querySelector(".pimport");
+  if (impBtn) impBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!impPanel.hidden) { impPanel.hidden = true; return; }
+    const src = presetSources(cfg.domain, presetWeapon());
+    impPanel.innerHTML = src.map((w) =>
+      `<div class="pimp-w"><span class="pimp-wn">${escHtml(w.name)}</span>` +
+      w.presets.map((p) =>
+        `<span class="pchip pimp-p" data-weapon="${escHtml(w.id)}" data-name="${escHtml(p.name)}">${escHtml(p.name)}</span>`
+      ).join("") + `</div>`).join("");
+    impPanel.hidden = false;
+    impPanel.querySelectorAll(".pimp-p").forEach((el) => el.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      const from = loadPresetList(cfg.domain, el.dataset.weapon).find((x) => x.name === el.dataset.name);
+      if (!from) return;
+      const ps2 = cfg.load();
+      const name = freeName(ps2, (n) => el.dataset.name + (n > 1 ? " " + n : ""));
+      // RESCOPE before applying. A build preset carries its own weapon, and
+      // restoreState honours it — so importing without this would navigate
+      // the editor back to the SOURCE weapon and then store the copy in the
+      // source's list, which is the bleed we are removing, not a fix for it.
+      const state = cfg.rescope ? cfg.rescope(from.state, presetWeapon()) : from.state;
+      cfg.setActive(name);
+      // Apply FIRST, then snapshot: what gets stored is what this weapon
+      // can actually hold, not the source weapon's raw state.
+      whileApplying(() => cfg.apply(state));
+      ps2.push({ name, savedAt: Date.now(), state: cfg.snapshot() });
+      cfg.store(ps2);
+      cfg.rerender();
+    }));
+  });
+
   on(".pop.del", () => {
     // Only offered while >1 preset exists — there is always at least one.
     const ps2 = cfg.load().filter((p) => p.name !== cfg.active());
@@ -846,6 +934,11 @@ function blankBuildState() {
 
 function renderPresetBar() {
   renderPresetBarIn($("preset-bar-" + BUILDS), {
+    domain: BUILDS,
+    // An imported build keeps its mods/arcane/sim scenario but belongs to
+    // the weapon it lands on; restoreState prunes whatever that weapon
+    // cannot equip (a different mod class, other evolution ids).
+    rescope: (st, weapon) => ({ ...st, weapon }),
     label: tr("Presets"),
     load: () => loadPresetList(BUILDS),
     store: (ps) => storePresetList(BUILDS, ps),
@@ -881,6 +974,19 @@ const placedAt = (id, exceptIdx) => slots.findIndex((s, i) => i !== exceptIdx &&
 function applyWeapon(id, presetMods) {
   whileApplying(() => applyWeaponInner(id, presetMods));
   markPresetDirty();
+}
+
+// A user-driven weapon CHANGE, as opposed to applyWeapon's "rebuild the
+// editor for this weapon". Presets are per weapon, so the bar must reload
+// from the new weapon's own storage — initPresets() restores its active
+// preset (creating "preset 1" the first time). The optimizer's groups
+// re-bootstrap on their own: applyWeaponInner clears optSeeded, and
+// renderOpt re-runs bootstrapOptPresets against the new scope.
+// NOT called from restoreState: loading a preset must not re-enter this.
+function switchWeapon(id) {
+  $("weapon").value = id;
+  applyWeapon(id, null);
+  initPresets();
 }
 
 function applyWeaponInner(id, presetMods) {
@@ -2114,6 +2220,7 @@ function renderOptPresetBar(g) {
   if (!bar) return;
   const meta = OPT_PRESET_GROUPS[g];
   renderPresetBarIn(bar, {
+    domain: optDomain(g),
     label: tr(meta.label),
     hint: meta.hint,
     load: () => loadOptGroup(g),

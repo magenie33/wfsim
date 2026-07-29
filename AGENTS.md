@@ -69,7 +69,10 @@ data + a dependency-free web UI, deployed as WASM on Cloudflare
   tab/view each. Preset collections are domain-named
   `<module>-<collection>` (e.g. `builder-builds`, `optimizer-mods`);
   every durable name (localStorage key, DOM id, label) derives from the
-  domain. URLs mirror English wiki page names (spaces → `_`); internal
+  domain. A preset belongs to ONE WEAPON, so the storage key also carries
+  it (`wfsim-presets-<weapon>-<domain>`) — DOM ids and labels stay
+  weapon-free, and copying a preset across weapons is the explicit
+  "⇤ import" action. URLs mirror English wiki page names (spaces → `_`); internal
   ids never appear in URLs.
 - `api()` transport: `/api/meta` and `/api/i18n` are GET, everything
   else is POST — the native server matches on exact (method, path).
