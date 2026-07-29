@@ -1377,8 +1377,16 @@ function openArcaneMenu(anchor) {
 // BROKEN badge, and selecting one shows a red note: the engine really
 // computes them as NO EFFECT. Deselecting tier 1 (the Incarnon Form
 // unlock) drops the weapon to its base form.
+// Evolution tiers are per weapon, not a fixed four: Zariman weapons run
+// I-V (Laetum), Incarnon Genesis adapters I-IV. Build the numeral instead
+// of indexing a table that stops at IV.
+const ROMAN = (n) => {
+  const T = [[10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
+  let out = "";
+  for (const [v, sym] of T) while (n >= v) { out += sym; n -= v; }
+  return out;
+};
 function renderEvo() {
-  const roman = { 1: "EVO I", 2: "EVO II", 3: "EVO III", 4: "EVO IV" };
   const tiers = weaponEvos();
   const rows = [];
   for (const t of tiers) {
@@ -1403,7 +1411,7 @@ function renderEvo() {
     const empty = `<span class="evopick empty ${sel === null ? "sel" : ""}" data-tier="${t.tier}" data-id="">
       <span class="einfo"><b class="en">None</b><span class="ed"><div>nothing installed at this tier</div></span></span></span>`;
     // None comes FIRST (the default state is a bare weapon).
-    rows.push(`<div class="evo"><span class="rank">${roman[t.tier] || "EVO " + t.tier}</span><div class="picks">${empty}${t.options.map(card).join("")}</div></div>`);
+    rows.push(`<div class="evo"><span class="rank">EVO ${ROMAN(t.tier)}</span><div class="picks">${empty}${t.options.map(card).join("")}</div></div>`);
   }
   $("evo-rows").innerHTML = rows.join("");
   $("evo-rows").querySelectorAll(".evopick").forEach((c) => c.addEventListener("click", () => {
@@ -1764,10 +1772,11 @@ const arcanePinned = () => Object.keys(opt.arcanes).find((id) => opt.arcanes[id]
 const evoPinned = (tier) => { const m = opt.evos[tier] || {}; return Object.keys(m).find((id) => m[id] === "fixed") || null; };
 
 function renderOpt() {
-  if (!META || weaponInfo($("weapon").value).id !== "dual_toxocyst") {
-    show("opt-block", weaponInfo($("weapon").value).id === "dual_toxocyst");
-    if (weaponInfo($("weapon").value).id !== "dual_toxocyst") return;
-  }
+  // Every weapon is optimizable: the scope is built from the weapon's OWN
+  // pools (mod class, arcane slot, evolution tiers), so nothing here is
+  // weapon-specific. META is the only prerequisite.
+  show("opt-block", !!META);
+  if (!META) return;
   // Seed scope from the current build once: equipped mods = fixed.
   if (!optSeeded) {
     opt.mods = {}; opt.exilus = {};
@@ -1940,7 +1949,6 @@ function renderOptArcanes() {
 // Evolution scope — per tier, the option rows with their verbatim description
 // and a search toggle (broken evolutions flagged).
 function renderOptEvos() {
-  const roman = ["", "I", "II", "III", "IV"];
   $("opt-evos").innerHTML = (weaponEvos()).map((t) => {
     const sel = opt.evos[t.tier] || {};
     const pinned = evoPinned(t.tier);
@@ -1960,7 +1968,7 @@ function renderOptEvos() {
         </div>
       </div>`;
     }).join("");
-    return `<div class="opt-tier-block"><div class="opt-tier-h">EVO ${roman[t.tier]}</div><div class="combo-menu opt-evolist">${rows}</div></div>`;
+    return `<div class="opt-tier-block"><div class="opt-tier-h">EVO ${ROMAN(t.tier)}</div><div class="combo-menu opt-evolist">${rows}</div></div>`;
   }).join("");
   $("opt-evos").querySelectorAll(".seg:not(.dis)").forEach((el) =>
     el.addEventListener("click", (e) => {
