@@ -515,11 +515,22 @@ pub struct WeaponBase {
     /// NOT crit, `chance` to multiply it by `(1 + bonus)`. Its own
     /// multiplier, applied to the direct hit and the radial alike.
     pub noncrit_bonus: Option<(f64, f64)>,
+    /// Overwhelming Attrition's stacking damage buff.
+    pub plain_hit_bonus: Option<PlainHitBuff>,
     /// A RADIAL (AoE) attack part fired alongside the direct hit — the
     /// Laetum Incarnon's 300 Radiation explosion. Separate damage vector,
     /// crit and status stats; the directly-hit enemy takes both parts.
     /// See MECHANICS §7 "Radial (AoE) attack parts" for the rule set.
     pub radial: Option<RadialBase>,
+}
+
+/// Overwhelming Attrition: a hit that neither crits nor applies a status
+/// grants a stack; on timeout ONE stack drops and the timer resets.
+#[derive(Debug, Clone, Copy)]
+pub struct PlainHitBuff {
+    pub per_stack: f64,
+    pub max_stacks: u32,
+    pub duration: f64,
 }
 
 /// A weapon's radial (explosion) attack part, unmodded.
@@ -610,6 +621,8 @@ pub struct ResolvedPanel {
     pub headshot_damage_bonus: f64,
     /// Devouring Attrition's (chance, bonus) on non-crit instances.
     pub noncrit_bonus: Option<(f64, f64)>,
+    /// Overwhelming Attrition's stacking damage buff.
+    pub plain_hit_bonus: Option<PlainHitBuff>,
     /// ModifiedBase = unmodded total × (1 + Σ base damage) — the base of
     /// every status-payload formula (elemental portions excluded).
     pub modified_base: f64,
@@ -1005,9 +1018,12 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         ResolvedRadial {
             damage: rd,
             modified_base: rmb,
-            crit_chance: r.base_crit_chance * (1.0 + cc),
+            // The post-mod flat layer (Elemental Excess) is a WEAPON stat
+            // change, so the explosion takes it too.
+            crit_chance: (r.base_crit_chance * (1.0 + cc) + base.post_mod_crit_chance).max(0.0),
             crit_damage: r.base_crit_damage * (1.0 + cd),
-            status_chance: r.base_status_chance * (1.0 + sc),
+            status_chance: (r.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)
+                .max(0.0),
         }
     });
 
@@ -1027,6 +1043,7 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         fire_rate: base.base_fire_rate * (1.0 + fr + base.evo_fire_rate_bonus),
         headshot_damage_bonus: base.headshot_damage_bonus,
         noncrit_bonus: base.noncrit_bonus,
+        plain_hit_bonus: base.plain_hit_bonus,
         multishot: base.base_multishot * (1.0 + base.buff_multishot_bonus + ms),
         base_multishot: base.base_multishot,
         // Magazine capacity: +% of base, floored to whole rounds (in-game).
@@ -1084,6 +1101,7 @@ mod tests {
             post_mod_status_chance: 0.0,
             headshot_damage_bonus: 0.0,
             noncrit_bonus: None,
+            plain_hit_bonus: None,
             base_crit_chance: 0.14,
             base_crit_damage: 2.2,
             base_status_chance: 0.36,

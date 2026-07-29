@@ -395,6 +395,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         post_mod_status_chance: 0.0,
         headshot_damage_bonus: 0.0,
         noncrit_bonus: None,
+        plain_hit_bonus: None,
     }
 }
 
@@ -610,6 +611,35 @@ mod laetum_tests {
         let d = dt.incarnon.expect("incarnon economy");
         assert_eq!(d.charges_to_fill, 9.0);
         assert_eq!(d.transmute_in, 2.35);
+    }
+
+    /// Overwhelming Attrition earns its stacks in-run: a plain hit (no
+    /// crit, no status) grants one, the buff multiplies later instances,
+    /// and a timeout drops ONE stack rather than the whole buff.
+    #[test]
+    fn overwhelming_attrition_earns_and_pays_out() {
+        use crate::dummy::{monte_carlo, DummyParams, TargetParams};
+        let parts = vec![crate::dummy::BodyPart {
+            name: "body".into(),
+            aim_weight: 1.0,
+            multiplier: 1.0,
+            is_head: false,
+            crit_bonus: false,
+        }];
+        let run = |evos: &[&str]| {
+            let b = WeaponBase::from_data("laetum_incarnon", true, evos);
+            let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::AssumedMax);
+            let params =
+                DummyParams::from_panel(&p, TargetParams::training_dummy(), parts.clone(), 20.0);
+            (params.plain_hit_bonus.is_some(), monte_carlo(&params, 40, 11).mean_effective_damage)
+        };
+        let (has_none, without) = run(&[]);
+        let (has_buff, with) = run(&["laetum_overwhelming_attrition"]);
+        assert!(!has_none && has_buff, "the evolution must carry the buff");
+        assert!(
+            with > without * 1.5,
+            "the earned stacks must show up: {without:.0} -> {with:.0}"
+        );
     }
 
     #[test]

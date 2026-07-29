@@ -23,6 +23,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         radial: None,
         headshot_damage_bonus: 0.0,
         noncrit_bonus: None,
+        plain_hit_bonus: None,
         damage: DamageVector::new()
             .with(DamageType::Impact, 7.5)
             .with(DamageType::Puncture, 60.0)

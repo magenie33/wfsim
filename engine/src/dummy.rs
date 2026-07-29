@@ -945,6 +945,11 @@ pub struct DummyParams {
     /// Devouring Attrition: (chance, bonus) rolled on every instance that
     /// did NOT crit — its own multiplier, on the direct hit AND the radial.
     pub noncrit_bonus: Option<(f64, f64)>,
+    /// Overwhelming Attrition: a hit that neither crits nor applies a
+    /// status grants a stack worth `+per_stack` damage; on timeout ONE
+    /// stack drops and the timer resets. The buff multiplies subsequent
+    /// instances, the radial part included.
+    pub plain_hit_bonus: Option<crate::loadout::PlainHitBuff>,
     /// Magazine size; when it runs dry a reload (below) blocks firing.
     pub magazine_size: f64,
     pub reload_seconds: f64,
@@ -1211,6 +1216,7 @@ impl DummyParams {
             radial: panel.radial,
             headshot_damage_bonus: panel.headshot_damage_bonus,
             noncrit_bonus: panel.noncrit_bonus,
+            plain_hit_bonus: panel.plain_hit_bonus,
             base_crit_chance: panel.crit_chance,
             crit_multiplier: panel.crit_damage,
             status_chance: panel.status_chance,
@@ -1318,6 +1324,7 @@ impl Default for DummyParams {
             radial: None,
             headshot_damage_bonus: 0.0,
             noncrit_bonus: None,
+            plain_hit_bonus: None,
             base_crit_chance: 0.05,
             crit_multiplier: 2.0,
             status_chance: 0.37,
@@ -1673,6 +1680,9 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             expiry: s.duration,
         };
     }
+    // Overwhelming Attrition's stacks are EARNED in the run (no trigger
+    // fires at t=0), so they start empty.
+    let mut plain_stacks = LiveStacks::default();
     // Stacking arcanes start FULL (user setting) with a fresh timer; the
     // states run each spec's own decay family from there.
     let mut arc = ArcRuntime::init(params);
@@ -2051,13 +2061,22 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // instances that did NOT crit (wiki: "multiplicative to base
             // damage bonuses such as Hornet Strike").
             let attrition = noncrit_mult(ap.noncrit_bonus, tier, rng);
+            // Overwhelming Attrition: the stacks EARNED so far multiply
+            // this instance; the hit that grants a stack does not benefit
+            // from it (the bump happens after the status roll below).
+            // UNVERIFIED bracket — modeled like its tier sibling, an
+            // independent multiplier.
+            let plain_mult = ap.plain_hit_bonus.map_or(1.0, |b| {
+                1.0 + b.per_stack * plain_stacks.current(t, b.duration) as f64
+            });
             let raw = qtotal
                 * part_factor
                 * crit_mult
                 * co_mult
                 * params.faction_mult
                 * arc_final
-                * attrition;
+                * attrition
+                * plain_mult;
             let (effective, killed, broke) = target.apply(
                 raw,
                 toxin_share,
@@ -2113,7 +2132,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     * arc_ratio
                     * params.faction_mult
                     * arc_final
-                    * r_attrition;
+                    * r_attrition
+                    * plain_mult;
                 let (r_eff, r_killed, r_broke) =
                     target.apply(r_raw, r_toxin, false, t, &params.target, false, &mit);
                 r.total_damage += r_raw;
@@ -2220,6 +2240,19 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     if rng.chance(chance) {
                         procs.push(pc.to);
                     }
+                }
+            }
+            // Overwhelming Attrition's TRIGGER, evaluated once the proc
+            // list is final: "On Hit that is neither Critical nor applies
+            // a Status Effect" (wiki). The DIRECT pellet is the hit that
+            // decides — the radial's own status roll does not exist yet
+            // (see `DummyParams::radial`), so letting the explosion arm the
+            // buff would be inventing a trigger the sim cannot judge.
+            if let Some(b) = ap.plain_hit_bonus {
+                if tier == 0 && procs.is_empty() {
+                    plain_stacks.current(t, b.duration);
+                    plain_stacks.stacks = (plain_stacks.stacks + 1).min(b.max_stacks);
+                    plain_stacks.expiry = t + b.duration;
                 }
             }
             // Elemental DoT tick (data/debuffs): 0.5 × ModifiedBase ×

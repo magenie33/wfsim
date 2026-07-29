@@ -75,6 +75,15 @@ enum EvoEffect {
     /// Incarnon gauge fill rate (Incarnon Efficiency): weakpoint hits build
     /// `1 + value` times the charge, so the hits needed to fill divide by it.
     IncarnonChargeRate(f64),
+    /// Overwhelming Attrition: a hit that is NEITHER critical NOR applies a
+    /// status grants a stack worth `+per_stack` damage for `duration`; on
+    /// timeout ONE stack drops and the timer resets (the Galvanized decay,
+    /// wiki-verbatim). The buff multiplies subsequent instances.
+    StackingDamageOnPlainHit {
+        per_stack: f64,
+        max_stacks: u32,
+        duration: f64,
+    },
     /// No damage payload here (holstered regen, recoil, timed utility
     /// buffs, the weapon unlock) — kept so the evolution loads and lists.
     Inert(String),
@@ -196,6 +205,14 @@ impl EvolutionDef {
                     "weakpoint hits build +{:.0}% Incarnon charge",
                     v * 100.0
                 ),
+                EvoEffect::StackingDamageOnPlainHit {
+                    per_stack,
+                    max_stacks,
+                    duration,
+                } => format!(
+                    "+{:.0}% damage per stack ({max_stacks} max, {duration:.0} s) on a hit that neither crits nor procs",
+                    per_stack * 100.0
+                ),
                 EvoEffect::Inert(what) => {
                     format!("{} (no single-target DPS effect)", what.replace('_', " "))
                 }
@@ -245,6 +262,11 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             value: f(v, "value").unwrap_or(0.0),
         },
         "incarnon_charge_rate" => EvoEffect::IncarnonChargeRate(f(v, "value").unwrap_or(0.0)),
+        "stacking_damage_on_plain_hit" => EvoEffect::StackingDamageOnPlainHit {
+            per_stack: f(v, "per_stack").unwrap_or(0.0),
+            max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
+            duration: f(v, "duration").unwrap_or(0.0),
+        },
         other => EvoEffect::Inert(other.to_string()),
     })
 }
@@ -282,6 +304,17 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     if let Some(i) = base.incarnon.as_mut() {
                         i.charge_rate += v;
                     }
+                }
+                EvoEffect::StackingDamageOnPlainHit {
+                    per_stack,
+                    max_stacks,
+                    duration,
+                } => {
+                    base.plain_hit_bonus = Some(crate::loadout::PlainHitBuff {
+                        per_stack: *per_stack,
+                        max_stacks: *max_stacks,
+                        duration: *duration,
+                    });
                 }
                 EvoEffect::Inert(_) => {}
             }
