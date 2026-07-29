@@ -65,18 +65,20 @@ function applyI18n() {
   });
 }
 // Mutate META once: every downstream renderer (home grid, selects, pickers,
-// optimizer lists) shows overlay names with zero per-site changes. The
-// English name is kept as name_en — URLs/wiki links always use it.
+// optimizer lists) shows overlay names with zero per-site changes. EVERY
+// entity keeps its English name as name_en — URLs/wiki links always build
+// from it (the wiki is English; a localized name in the URL 404s or lands
+// on oddities — user, 2026-07-29).
 function applyNameOverlay() {
   if (!I18N) return;
+  const over = (x, table) => { x.name_en = x.name; x.name = LN(table, x.id, x.name); };
   for (const w of META.weapons || []) {
-    w.name_en = w.name;
-    w.name = LN("weapons", w.id, w.name);
-    for (const t of w.evolutions || []) for (const o of t.options || []) o.name = LN("evolutions", o.id, o.name);
+    over(w, "weapons");
+    for (const t of w.evolutions || []) for (const o of t.options || []) over(o, "evolutions");
   }
-  for (const e of META.enemies || []) e.name = LN("enemies", e.id, e.name);
-  for (const pool of Object.values(META.mod_pools || {})) for (const m of pool) m.name = LN("mods", m.id, m.name);
-  for (const a of META.arcanes || []) a.name = LN("arcanes", a.id, a.name);
+  for (const e of META.enemies || []) over(e, "enemies");
+  for (const pool of Object.values(META.mod_pools || {})) for (const m of pool) over(m, "mods");
+  for (const a of META.arcanes || []) over(a, "arcanes");
 }
 // Polarities available on GUN slots. Zenurik/Unairu/Penjaga are Warframe-augment
 // / melee-stance / companion-ability polarities — not gun slots. "Omni" is the
@@ -982,6 +984,10 @@ function renderPanel(r) {
 const wikiUrl = (name) => "https://wiki.warframe.com/w/" + encodeURIComponent(name.replace(/ /g, "_"));
 // EVERY item name (mod / arcane / evolution) opens its wiki page in a new
 // tab; the click never triggers the card's own handlers.
+// ALWAYS pass an explicit url built from the ENGLISH name (x.name_en ||
+// x.name) — `text` is the displayed (possibly localized) name, and the
+// wiki only has English page names. The no-url fallback exists for plain
+// English literals only.
 const wl = (text, url) => `<a class="wl" href="${url || wikiUrl(text)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${text}</a>`;
 
 // Description lines at a rank: the verbatim in-game text with the
@@ -1010,7 +1016,7 @@ function buildSlot(i) {
     // slot's rank), exactly like the in-game card.
     const desc = descAt(m, r);
     el.innerHTML = polBtn(s.pol, i) + imgTag(IMG(m.image), "mod") +
-      `<div class="info"><div class="mn">${wl(m.name)}</div>${desc ? `<div class="me">${desc.map((x) => `<div>${tf(x)}</div>`).join("")}</div>` : ""}<div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div>` +
+      `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div>${desc ? `<div class="me">${desc.map((x) => `<div>${tf(x)}</div>`).join("")}</div>` : ""}<div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div>` +
       `<button class="dots" title="options">⋯</button>`;
     el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openSlotMenu(i, e.currentTarget); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
@@ -1119,7 +1125,7 @@ function renderMenu(slotIdx, query) {
       : m.effects.join(" · ");
     return `<div class="opt ${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : at >= 0 ? "placed" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" data-id="${m.id}" title="${title}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
-      <div class="info"><div class="mn">${wl(m.name)}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${(descAt(m, m.max_rank) || m.effects).map((x) => `<div>${tf(x)}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
+      <div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${(descAt(m, m.max_rank) || m.effects).map((x) => `<div>${tf(x)}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => {
     const id = o.dataset.id;
@@ -1198,7 +1204,7 @@ function renderArcanes() {
     // The slot shows the verbatim DESCRIPTION at the selected rank (like
     // the mod cards); model effect lines remain the search text.
     el.innerHTML = imgTag(IMG(a.image), "mod") +
-      `<div class="info"><div class="mn">${wl(a.name)}</div>${effLines(descAt(a, r) || effectsAt(a, r))}${rank}</div>` +
+      `<div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}</div>${effLines(descAt(a, r) || effectsAt(a, r))}${rank}</div>` +
       `<button class="dots" title="options">⋯</button>`;
     el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openArcaneMenu(el); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
@@ -1241,7 +1247,7 @@ function renderArcaneMenu(query) {
     const none = a.id === "none";
     return `<div class="opt ${isCur ? "cur" : ""} ${a.rarity ? "rar-" + a.rarity : ""}" data-id="${a.id}">
       ${none ? '<span class="mod none">∅</span>' : imgTag(IMG(a.image), "mod")}
-      <div class="info"><div class="mn">${none ? a.name : wl(a.name)}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}</div>${effLines(descAt(a, a.max_rank) || effectsAt(a, a.max_rank))}</div></div>`;
+      <div class="info"><div class="mn">${none ? a.name : wl(a.name, wikiUrl(a.name_en || a.name))}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}</div>${effLines(descAt(a, a.max_rank) || effectsAt(a, a.max_rank))}</div></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => { setArcane(o.dataset.id); closePopovers(); renderArcanes(); }));
 }
@@ -1281,7 +1287,8 @@ function renderEvo() {
         : "";
       // Evolutions have no standalone wiki pages — link to the weapon's
       // Incarnon Genesis page.
-      const genesis = wikiUrl(weaponInfo($("weapon").value).name.replace(" (sentinel)", "") + " Incarnon Genesis");
+      const wInfo = weaponInfo($("weapon").value);
+      const genesis = wikiUrl((wInfo.name_en || wInfo.name).replace(" (sentinel)", "") + " Incarnon Genesis");
       return `<span class="${cls}" data-tier="${t.tier}" data-id="${o.id}" title="${title}">
         ${icon}<span class="einfo"><b class="en">${wl(o.name, genesis)}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}</b><span class="ed">${lines}</span>${warn}</span></span>`;
     };
@@ -1676,7 +1683,7 @@ function renderOptExilus() {
     const eff = (descAt(m, m.max_rank) || m.effects || []).map((x) => `<div>${tf(x)}</div>`).join("");
     return `<div class="opt ${st === "off" ? "" : st} ${fam ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
-      <div class="info"><div class="mn">${wl(m.name)}</div><div class="me">${eff}</div></div>
+      <div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div><div class="me">${eff}</div></div>
       <div class="oseg">
         <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-m="${m.id}" data-s="search">pool</span>
         <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${reqDead && !fam ? 'title="clear the pool marks first — req pins the slot"' : ""}>req</span>
@@ -1721,7 +1728,7 @@ function renderOptArcanes() {
     const eff = none ? "" : effLines(descAt(a, a.max_rank) || effectsAt(a, a.max_rank));
     return `<div class="opt ${a.rarity ? "rar-" + a.rarity : ""} ${st === "off" ? "" : st}">
       ${none ? '<span class="mod none">∅</span>' : imgTag(IMG(a.image), "mod")}
-      <div class="info"><div class="mn">${none ? a.name : wl(a.name)}</div>${eff}</div>
+      <div class="info"><div class="mn">${none ? a.name : wl(a.name, wikiUrl(a.name_en || a.name))}</div>${eff}</div>
       <div class="oseg">
         <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-a="${a.id}" data-s="search">pool</span>
         <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-a="${a.id}" data-s="fixed" ${reqDead ? 'title="clear the pool marks first — req pins the slot"' : ""}>req</span>
@@ -1983,7 +1990,7 @@ function renderOptModList() {
     const eff = (descAt(m, m.max_rank) || m.effects || []).map((x) => `<div>${tf(x)}</div>`).join("");
     return `<div class="opt ${st === "off" ? "" : st} ${dead ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why || (m.effects || []).join(" · ")}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
-      <div class="info"><div class="mn">${wl(m.name)}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}</div><div class="me">${eff}</div></div>
+      <div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}</div><div class="me">${eff}</div></div>
       <div class="oseg">
         <span class="seg ${st === "search" ? "on" : ""} ${dead ? "dis" : ""}" data-m="${m.id}" data-s="search">pool</span>
         <span class="seg ${st === "fixed" ? "on" : ""} ${dead || reqBlocked ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${!dead && reqBlocked ? 'title="pooled mods reserve ≥1 open slot — raise max mods or clear pools"' : ""}>req</span>
