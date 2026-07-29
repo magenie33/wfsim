@@ -518,6 +518,64 @@ element procs are weighted, not uniform.
   entirely (armor strips don't change ticks). Enemy-inflicted Bleeds use
   **10%**, not 35%. Some melee types force Bleed on Heavy Attacks.
 
+### Condition Overload — the GunCO family, in full
+
+Source: wiki `Condition_Overload_(Mechanic)` (transcribed 2026-07-29). This is
+the authority for the bracket the engine implements as `CoBehavior` +
+`gunco_sources`; the summary bullet above is the short form.
+
+**The counter.** Distinct status **TYPES** on the target, each counted once no
+matter how many stacks: the three physical procs, the four primary elements,
+every combined element (Blast, Corrosive, Gas, Magnetic, Radiation, Viral,
+Void, Tau) and the "hidden" independent procs that carry a counter
+(Lifted, Knockdown, Microwave). Whether another player's statuses feed *your*
+counter is **not stated** by the wiki.
+
+**The two stacking classes** (the wiki's five ranked behaviours collapse to
+these, plus a null case):
+
+| class | formula | who |
+|---|---|---|
+| **Multiplying** | `base × most damage bonuses × CO × other multipliers` | the rarer case, mostly projectile weapons |
+| **Adding** | `base × [(most damage bonuses × other multipliers) + CO]` | the common case — hitscan and many projectiles |
+| **Inert** | no bonus at all | radial/AoE components |
+
+"Adding" is *additive with every +% damage source* — Serration-likes, Vex
+Armor, Arcane Fury and other CO-like bonuses all share the bracket.
+
+**What the bonus reaches.** Hitscan, direct projectile hits, hitscan ricochet,
+homing / bouncing / punch-through / wave projectiles, embedded clouds on the
+directly-embedded target, beams (including AoE / chain / multi-beam), and the
+Blast / Electricity / Gas **proc** damage generated on the initial target
+(which then carries to that proc's radius).
+
+**What it never reaches** — this is the rule §7's radial part obeys: projectile
+explosion radii (Ogris), hitscan explosion radii on non-directly-hit targets,
+embedded-cloud radii on non-directly-hit targets, and pure radial weapons
+(Balefire Charger, Stug, Sonicor, Azima turret). Weapon-specific exclusions
+exist too (Proboscis Cernos tendrils, Vadarya Prime lightning).
+
+**Multipliers the additive recalculation OMITS** (they are outside the
+bracket): Extinguished Dragon Key, range-based damage falloff, Longbow
+Sharpshot / Primary Compression, Warframe ability buffs (Furious Javelin,
+Equinox Duality …), and a bow's charge multiplier — a charged shot's CO is
+computed off the UNCHARGED base.
+
+**Evolution exclusion.** "CO-bonus does not use base damage increase
+Evolution": an Incarnon evolution that raises base damage does not raise the
+CO bonus. The engine carries this as `co_base_fraction =
+original_base / evolved_base`.
+
+**Sources and rates.** Melee Condition Overload +80%/status; Galvanized
+Aptitude +40%/status ×2 stacks (rifle); **Galvanized Shot +40%/status ×3
+stacks** (pistol); Galvanized Savvy +40%/status ×2 (shotgun); Secondary Shiver
++45% per Freeze stack (its counter is stacks, not types); innates such as Cedo
++60%/status and assorted Incarnon perks at +30–100%; the Shattering Frost
+decree (+80% vs Frozen, up to +240%).
+
+**Source:** wiki. **Status:** unverified (the class per weapon and the exact
+bracket arithmetic need Simulacrum measurement).
+
 **Source:** wiki + measured. **Status:** unverified. **High-risk** — status
 weighting and multishot interaction are top calibration targets (CORE.md §3).
 
