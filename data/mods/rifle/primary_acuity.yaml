@@ -1,0 +1,19 @@
+id: primary_acuity
+name: Primary Acuity
+rarity: rare
+polarity: naramon
+base_drain: 6                 # max drain 16 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponWeakpointCriticalChanceMod
+description: "+X% Weak Point Damage\n+X% Weak Point Critical Chance. Multishot cannot be modified."
+
+effects:
+  - kind: base_damage_bonus
+    rank0: 0.3182
+    rankMax: 3.5
+  - kind: crit_chance_bonus
+    rank0: 0.3182
+    rankMax: 3.5
+
+source:
+  url: https://wiki.warframe.com/w/Primary_Acuity

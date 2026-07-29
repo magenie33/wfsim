@@ -1,0 +1,19 @@
+id: rifle_elementalist
+name: Rifle Elementalist
+rarity: uncommon
+polarity: vazarin
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Rifle/RifleStatusDamageDuoMod
+description: "+X% Status Damage\n+X Punch Through"
+
+effects:
+  - kind: base_damage_bonus
+    rank0: 0.15
+    rankMax: 0.9
+  - kind: punch_through_bonus
+    rank0: 0.1
+    rankMax: 0.6
+
+source:
+  url: https://wiki.warframe.com/w/Rifle_Elementalist

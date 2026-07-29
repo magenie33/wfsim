@@ -1,0 +1,19 @@
+id: primed_shred
+name: Primed Shred
+rarity: legendary
+polarity: madurai
+base_drain: 6                 # max drain 16 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/PrimedShredMod
+description: "+X% Fire Rate (xX for Bows)\n+X Punch Through"
+
+effects:
+  - kind: fire_rate_bonus
+    rank0: 0.0909
+    rankMax: 1.0
+  - kind: punch_through_bonus
+    rank0: 0.2
+    rankMax: 2.2
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Shred

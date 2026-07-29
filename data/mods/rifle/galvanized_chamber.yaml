@@ -1,0 +1,21 @@
+id: galvanized_chamber
+name: Galvanized Chamber
+rarity: rare
+polarity: madurai
+base_drain: 6                 # max drain 16 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponFireIterationsSPMod
+description: "+X% Multishot\nOn Kill:\n+X% Multishot for Xs. Stacks up to Xx."
+
+effects:
+  - kind: multishot_bonus
+    rank0: 0.0727
+    rankMax: 0.8
+  - kind: unmodeled
+    desc: "On Kill:"
+  - kind: multishot_bonus
+    rank0: 0.0273
+    rankMax: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Galvanized_Chamber

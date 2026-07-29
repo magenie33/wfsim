@@ -1,0 +1,18 @@
+id: catalyzer_link
+name: Catalyzer Link
+rarity: common
+polarity: madurai
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Rifle/Event/StatusProcWhileAimingRifleMod
+description: "On Ability Cast:\n+X% Status Chance when Aiming for Xs"
+
+effects:
+  - kind: unmodeled
+    desc: "On Ability Cast:"
+  - kind: status_chance_bonus
+    rank0: 0.1
+    rankMax: 0.6
+
+source:
+  url: https://wiki.warframe.com/w/Catalyzer_Link

@@ -1,0 +1,21 @@
+id: galvanized_aptitude
+name: Galvanized Aptitude
+rarity: rare
+polarity: vazarin
+base_drain: 2                 # max drain 12 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponStatusChanceSPMod
+description: "+X% Status Chance\nOn Kill:\n+X% Direct Damage per Status Type affecting the target for Xs. Stacks up to Xx."
+
+effects:
+  - kind: status_chance_bonus
+    rank0: 0.0727
+    rankMax: 0.8
+  - kind: unmodeled
+    desc: "On Kill:"
+  - kind: base_damage_bonus
+    rank0: 0.0364
+    rankMax: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Galvanized_Aptitude

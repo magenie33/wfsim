@@ -1,0 +1,20 @@
+id: radiated_reload
+name: Radiated Reload
+rarity: rare
+polarity: madurai
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/RadiationReloadRifleMod
+description: "+X% Radiation\n+X% Reload Speed"
+
+effects:
+  - kind: elemental_damage_bonus
+    element: radiation
+    rank0: 0.15
+    rankMax: 0.6
+  - kind: reload_speed_bonus
+    rank0: 0.1
+    rankMax: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Radiated_Reload

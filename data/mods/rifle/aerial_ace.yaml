@@ -1,0 +1,20 @@
+id: aerial_ace
+name: Aerial Ace
+rarity: rare
+polarity: naramon
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Arbitration/JumpRefreshOnKillRifleMod
+description: "On Kill:\nRefresh Double Jump up to Xx while Airborne."
+
+effects:
+  - kind: unmodeled
+    desc: "On Kill:"
+  - kind: unmodeled
+    rank0: 0.01
+    rankMax: 0.06
+    desc: "Refresh Double Jump up to 6x while Airborne."
+
+source:
+  url: https://wiki.warframe.com/w/Aerial_Ace

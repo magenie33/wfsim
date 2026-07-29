@@ -1,0 +1,16 @@
+id: spectral_serration
+name: Spectral Serration
+rarity: rare
+polarity: madurai
+base_drain: 6                 # max drain 16 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponDamageAmountInvisibleMod
+description: "+X% Damage while Invisible"
+
+effects:
+  - kind: base_damage_bonus
+    rank0: 0.3
+    rankMax: 3.3
+
+source:
+  url: https://wiki.warframe.com/w/Spectral_Serration

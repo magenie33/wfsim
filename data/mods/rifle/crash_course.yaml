@@ -1,0 +1,17 @@
+id: crash_course
+name: Crash Course
+rarity: rare
+polarity: naramon
+base_drain: 6                 # max drain 11 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponEventRifleImpactDamageMod
+description: "+X% Impact"
+
+effects:
+  - kind: elemental_damage_bonus
+    element: impact
+    rank0: 0.2
+    rankMax: 1.2
+
+source:
+  url: https://wiki.warframe.com/w/Crash_Course

@@ -1,0 +1,17 @@
+id: primed_bane_of_the_murmur
+name: Primed Bane of The Murmur
+rarity: legendary
+polarity: madurai
+base_drain: 4                 # max drain 14 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/PrimedWeaponFactionDamageMurmurs
+description: "xX Damage to Murmur"
+
+effects:
+  - kind: faction_damage_bonus
+    faction: murmur
+    rank0: 0.05
+    rankMax: 0.55
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Bane_of_The_Murmur

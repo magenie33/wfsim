@@ -1,0 +1,18 @@
+id: argon_scope
+name: Argon Scope
+rarity: rare
+polarity: madurai
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Rifle/Event/CritChanceWhileAimingRifleMod
+description: "On Headshot:\n+X% Critical Chance when Aiming for Xs"
+
+effects:
+  - kind: unmodeled
+    desc: "On Headshot:"
+  - kind: crit_chance_bonus
+    rank0: 0.225
+    rankMax: 1.35
+
+source:
+  url: https://wiki.warframe.com/w/Argon_Scope

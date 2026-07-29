@@ -1,0 +1,23 @@
+id: galvanized_scope
+name: Galvanized Scope
+rarity: rare
+polarity: madurai
+base_drain: 2                 # max drain 12 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Rifle/Event/CritChanceWhileAimingRifleSPMod
+description: "On Headshot:\n+X% Critical Chance when Aiming for Xs\nOn Headshot Kill:\n+X% Critical Chance when Aiming for Xs. Stacks up to Xx."
+
+effects:
+  - kind: unmodeled
+    desc: "On Headshot:"
+  - kind: crit_chance_bonus
+    rank0: 0.1091
+    rankMax: 1.2
+  - kind: unmodeled
+    desc: "On Headshot Kill:"
+  - kind: crit_chance_bonus
+    rank0: 0.0364
+    rankMax: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Galvanized_Scope

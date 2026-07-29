@@ -1,0 +1,17 @@
+id: stabilizer
+name: Stabilizer
+rarity: rare
+polarity: naramon
+base_drain: 6                 # max drain 11 at rank 5
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponRecoilReductionMod
+description: "-X% Weapon Recoil"
+
+effects:
+  - kind: recoil_reduction
+    rank0: -0.1
+    rankMax: -0.6
+
+source:
+  url: https://wiki.warframe.com/w/Stabilizer

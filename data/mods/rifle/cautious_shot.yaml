@@ -1,0 +1,18 @@
+id: cautious_shot
+name: Cautious Shot
+rarity: rare
+polarity: naramon
+base_drain: 0                 # max drain 10 at rank 10
+max_rank: 10
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponResistSelfDamageMod
+description: "+X% chance to reduce the Stagger effect from self-imposed Radial Attacks"
+
+effects:
+  - kind: unmodeled
+    rank0: 0.0909
+    rankMax: 1.0
+    desc: "+100% chance to reduce the Stagger effect from self-imposed Radial Attacks"
+
+source:
+  url: https://wiki.warframe.com/w/Cautious_Shot

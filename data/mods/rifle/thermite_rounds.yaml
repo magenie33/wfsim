@@ -1,0 +1,20 @@
+id: thermite_rounds
+name: Thermite Rounds
+rarity: rare
+polarity: madurai
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/FireEventRifleMod
+description: "+X% Heat\n+X% Status Chance"
+
+effects:
+  - kind: elemental_damage_bonus
+    element: heat
+    rank0: 0.15
+    rankMax: 0.6
+  - kind: status_chance_bonus
+    rank0: 0.15
+    rankMax: 0.6
+
+source:
+  url: https://wiki.warframe.com/w/Thermite_Rounds

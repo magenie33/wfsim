@@ -1,0 +1,19 @@
+id: firestorm
+name: Firestorm
+rarity: rare
+polarity: madurai
+base_drain: 6                 # max drain 9 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponIncreaseRadialExplosionMod
+description: "Improves the Blast Radius of weapons with Radial Attacks.\n+X% Blast Range"
+
+effects:
+  - kind: elemental_damage_bonus
+    element: blast
+  - kind: elemental_damage_bonus
+    element: blast
+    rank0: 0.06
+    rankMax: 0.24
+
+source:
+  url: https://wiki.warframe.com/w/Firestorm

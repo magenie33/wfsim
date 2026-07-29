@@ -1,0 +1,16 @@
+id: primed_magazine_warp
+name: Primed Magazine Warp
+rarity: legendary
+polarity: naramon
+base_drain: 4                 # max drain 14 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponClipMaxModExpert
+description: "+X% Magazine Capacity"
+
+effects:
+  - kind: magazine_capacity_bonus
+    rank0: 0.05
+    rankMax: 0.55
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Magazine_Warp

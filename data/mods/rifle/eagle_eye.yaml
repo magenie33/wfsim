@@ -1,0 +1,17 @@
+id: eagle_eye
+name: Eagle Eye
+rarity: uncommon
+polarity: naramon
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponZoomFovMod
+description: "+X% Zoom"
+
+effects:
+  - kind: zoom_bonus
+    rank0: 0.0667
+    rankMax: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Eagle_Eye

@@ -1,0 +1,19 @@
+id: heavy_caliber
+name: Heavy Caliber
+rarity: rare
+polarity: madurai
+base_drain: 6                 # max drain 16 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/CorruptedDamageRecoilRifle
+description: "+X% Damage\n-X% Accuracy"
+
+effects:
+  - kind: base_damage_bonus
+    rank0: 0.15
+    rankMax: 1.65
+  - kind: accuracy_bonus
+    rank0: -0.05
+    rankMax: -0.55
+
+source:
+  url: https://wiki.warframe.com/w/Heavy_Caliber

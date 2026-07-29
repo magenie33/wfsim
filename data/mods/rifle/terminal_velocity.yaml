@@ -1,0 +1,17 @@
+id: terminal_velocity
+name: Terminal Velocity
+rarity: uncommon
+polarity: madurai
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponProjectileSpeedMod
+description: "+X% Projectile Speed"
+
+effects:
+  - kind: projectile_speed_bonus
+    rank0: 0.15
+    rankMax: 0.6
+
+source:
+  url: https://wiki.warframe.com/w/Terminal_Velocity
