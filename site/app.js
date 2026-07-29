@@ -1363,7 +1363,7 @@ function renderSim() {
   const en = enemies.find((e) => e.id === sim.enemy) || enemies[0];
   if (en) sim.enemy = en.id;
   const eopts = enemies.map((e) =>
-    `<option value="${e.id}" ${e.id === sim.enemy ? "selected" : ""}>${e.name} · Lv ${e.base_level}</option>`).join("");
+    `<option value="${e.id}" ${e.id === sim.enemy ? "selected" : ""}>${e.name}</option>`).join("");
   // Section 1 — the enemy / scenario.
   $("sim-enemy").innerHTML = `
     <label>Enemy <select data-k="enemy">${eopts}</select></label>
@@ -1682,7 +1682,7 @@ function renderOptEnemy() {
   const en = enemies.find((e) => e.id === optSim.enemy) || enemies[0];
   if (en) optSim.enemy = en.id;
   const eopts = enemies.map((e) =>
-    `<option value="${e.id}" ${e.id === optSim.enemy ? "selected" : ""}>${e.name} · Lv ${e.base_level}</option>`).join("");
+    `<option value="${e.id}" ${e.id === optSim.enemy ? "selected" : ""}>${e.name}</option>`).join("");
   box.innerHTML = `
     <label>Enemy <select data-k="enemy">${eopts}</select></label>
     <label>Level <input type="number" data-k="level" min="1" max="9999" value="${optSim.level}"></label>
