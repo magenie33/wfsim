@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- WFSim mark: the wordmark, nothing else — white tile, black "WF",
-       gold "Sim" (the light theme's text + gold tokens, same two-tone as
-       the topbar .brand). Self-colored so it reads the same as a favicon,
-       a QQ avatar, or on any page. -->
-  <rect width="512" height="512" rx="112" fill="#ffffff"/>
-  <text x="256" y="303" font-family="'Segoe UI',system-ui,sans-serif" font-size="130" font-weight="800" text-anchor="middle" letter-spacing="-2"><tspan fill="#0b0b0b">WF</tspan><tspan fill="#a9781f">Sim</tspan></text>
+  <!-- WFSim mark: a round badge — white disc, thin gold ring, the wordmark
+       dead-center (black "WF" + gold "Sim", the light theme's text + gold
+       tokens, same two-tone as the topbar .brand). The background is
+       TRANSPARENT: the favicon reads as a circle on any tab strip, and the
+       QQ avatar's circular crop matches the shape exactly. -->
+  <circle cx="256" cy="256" r="248" fill="#ffffff" stroke="#a9781f" stroke-width="10"/>
+  <text x="256" y="303" font-family="'Segoe UI',system-ui,sans-serif" font-size="126" font-weight="800" text-anchor="middle" letter-spacing="-2"><tspan fill="#0b0b0b">WF</tspan><tspan fill="#a9781f">Sim</tspan></text>
 </svg>
