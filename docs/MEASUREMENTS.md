@@ -284,6 +284,34 @@ animations by the live bucket); `charges_to_fill` is untouched.
 
 ---
 
+## M11 — Is an "on hit" perk judged per trigger pull or per damage instance? ✅ (informal, 2026-07-30)
+
+**Question.** Overwhelming Attrition reads "On Hit that is neither Critical
+nor applies a Status Effect". Is that ONE evaluation per shot, or one per
+damage instance the shot produces? The distinction decides what the perk is
+worth on an AoE weapon, and it is the same question as whether a Laetum's
+direct hit and its explosion each arm it.
+
+**Result (in-game, user, 2026-07-30):** per **damage instance**. Fired into
+a crowd, a SINGLE Laetum shot takes the buff from empty to its 3-stack cap.
+One trigger pull cannot grant three stacks under a per-shot reading.
+
+**Consequence for the model.** This measures the premise the single-target
+case rests on. Combined with the verbatim AoE rule (`Status_Effect`: each
+enemy hit gets its own status roll; Laetum: "Initial hit and explosion apply
+status separately"), a shot whose direct hit and whose explosion both come out
+plain arms the buff twice, capped at 3. That is what `engine::dummy`
+implements — the trigger is evaluated inside the attack-stage loop, so each
+stage judges its own crit and its own proc list.
+
+**Residue.** The measurement is across ENEMIES; it does not separately prove
+that two attack parts landing on the SAME enemy count as two instances. The
+separate-status rule already asserts exactly that for status, so the reading
+is consistent — but a Simulacrum trial against a lone target (does one shot
+grant one stack or two?) would close it outright.
+
+---
+
 ## M2 — Simulacrum "Steel Path" toggle: does it still boost armor?
 
 **Question.** The toggle was introduced (U33.5) as "+250% Health, Armor,

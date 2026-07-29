@@ -2347,10 +2347,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             }
             // Overwhelming Attrition's TRIGGER, evaluated once the proc
             // list is final: "On Hit that is neither Critical nor applies
-            // a Status Effect" (wiki). Read PER DAMAGE INSTANCE, the same
-            // granularity crit and status use: a shot whose direct hit and
-            // whose explosion are both plain arms the buff twice (the
-            // stack cap still bounds it).
+            // a Status Effect" (wiki). PER DAMAGE INSTANCE — measured
+            // (MEASUREMENTS M11: one shot into a crowd fills all 3 stacks,
+            // impossible under a per-trigger-pull reading). So a shot whose
+            // direct hit and whose explosion are both plain arms the buff
+            // twice, bounded by the stack cap.
             if let Some(b) = ap.plain_hit_bonus.filter(|b| !b.pinned) {
                 if tier == 0 && procs.is_empty() {
                     plain_stacks.current(t, b.duration);

@@ -807,11 +807,20 @@ alone carries the body-part multiplier, the forced procs and the CO bucket. A
 weapon with no radial has a one-stage list, which is why adding the stage loop
 left every non-AoE golden bit-identical.
 
-**Per-instance is the granularity for "on hit" perks too.** Overwhelming
-Attrition ("On Hit that is neither Critical nor applies a Status Effect")
-judges each stage separately, so a shot whose direct hit *and* whose explosion
-both come out plain arms it twice — bounded by the stack cap. Same reading as
-crit and status; **unverified** against a measurement.
+**Per-instance is the granularity for "on hit" perks too** — ✅ **measured**
+(MEASUREMENTS M11). Overwhelming Attrition ("On Hit that is neither Critical
+nor applies a Status Effect") is judged per damage instance, not per trigger
+pull: fired into a crowd, ONE Laetum shot takes the buff from empty to its
+3-stack cap, which is only possible if each instance the shot produced armed
+it separately.
+
+That measures the premise; the single-target consequence follows from it plus
+the verbatim rule above ("Initial hit and explosion apply status separately").
+A shot whose direct hit *and* whose explosion both come out plain arms the
+buff twice, bounded by the cap. The composition is an **inference from a
+measured premise** — what remains unmeasured is only whether the two parts on
+ONE enemy count as two, which the separate-status rule already asserts for
+status.
 
 ### Lingering damage FIELDS (zones)
 
