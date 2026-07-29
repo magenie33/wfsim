@@ -201,9 +201,9 @@ ui:
   "Crit rate": 暴击率
   "Orange+ crit": 橙暴以上
   "Headshot rate": 爆头率
-  "Procs / run": 触发数/轮
-  "DoT dmg": DoT 伤害
+  "Shots": 射击次数
   "Reloads": 装填次数
+  "Transforms": 形态切换
   "Search…": 搜索…
   "All": 全部
   "Name A→Z": 名称 A→Z

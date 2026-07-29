@@ -1510,8 +1510,10 @@ function renderResults(r, testedAt) {
   const n0 = (x) => Math.round(x || 0).toLocaleString();
   const n1 = (x) => (x || 0).toFixed(1);
   const killed = (r.kills || 0) >= 1;
-  const ehp = (t.overguard || 0) + (t.shield || 0) + (t.health || 0);
-  const ttk = r.effective_dps > 0 ? ehp / r.effective_dps : Infinity;
+  // Time to first kill from the MEAN KILL COUNT (user, 2026-07-29):
+  // duration / mean kills = average seconds per kill, as simulated —
+  // not an EHP/DPS back-calculation.
+  const ttk = killed ? r.duration / r.kills : Infinity;
   const heroNum = killed ? n1(r.kills) : pc(r.score);
   const heroSub = killed
     ? `kills in ${n0(r.duration)}s · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s to first kill`
@@ -1519,11 +1521,14 @@ function renderResults(r, testedAt) {
   // No Forma/capacity here — the simulator reports EFFECTS only; build
   // legality is the Builder's business (user, 2026-07-29).
   const kpi = (l, v) => `<div class="kpi"><div class="kv">${v}</div><div class="kl">${tr(l)}</div></div>`;
+  // KPI row: damage pace + crit feel + HANDLING feel (shots, reloads,
+  // transforms — user, 2026-07-29). DoT/proc numbers left the row: the
+  // damage-by-source meter below tells that story better.
   const kpis = [
     kpi("DPS", n0(r.dps)), kpi("Effective DPS", n0(r.effective_dps)),
     kpi("Crit rate", pc(r.crit_rate)), kpi("Orange+ crit", pc(r.big_crit_rate)),
-    kpi("Headshot rate", pc(r.headshot_rate)), kpi("Procs / run", n1(r.procs)),
-    kpi("DoT dmg", n0(r.dot)), kpi("Reloads", n1(r.reloads)),
+    kpi("Headshot rate", pc(r.headshot_rate)), kpi("Shots", n1(r.shots)),
+    kpi("Reloads", n1(r.reloads)), kpi("Transforms", n1(r.transforms)),
   ].join("");
   // WoW-style damage meter (user, 2026-07-29): effective damage BY SOURCE
   // over the whole engagement — what actually hurt the target. The panel's
@@ -1544,7 +1549,6 @@ function renderResults(r, testedAt) {
     row("Armor", n0(t.armor)),
     row("Shots / Pellets", `${n1(r.shots)} / ${n1(r.pellets)}`),
     row("Kills min–max (±σ)", `${r.kills_min}–${r.kills_max} (±${n1(r.kills_std)})`),
-    row("Transforms", n1(r.transforms)),
     row("Runs", n0(r.runs)),
   ].join("");
   $("sim-results").innerHTML = `
