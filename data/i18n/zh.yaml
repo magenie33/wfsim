@@ -150,6 +150,11 @@ ui:
   "Optimizer": 优化器
   "Build": 当前配装
   "testing preset": 测试预设
+  "last tested": 上次测试于
+  "Damage by source": 伤害构成
+  "Direct hits": 直接命中
+  "Arcane (on status)": 赋能附加伤害
+  "no damage dealt": 未造成伤害
   "no mods equipped": 未安装 MOD
   "none": 无
   "none selected": 未选择

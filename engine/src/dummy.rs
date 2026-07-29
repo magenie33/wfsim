@@ -24,10 +24,10 @@
 //! Body parts, crit tiers, and headcrit fold-in as documented in
 //! docs/MECHANICS.md §5/§7. All unverified until golden-tested.
 
+use crate::arcanes_data::{ArcBuffSpec, ArcGrant, ArcTrigger, ArcaneFx};
 use crate::buffs::BuffBar;
 use crate::damage::{DamageType, DamageVector};
 use crate::perks::frenzy::Frenzy;
-use crate::arcanes_data::{ArcBuffSpec, ArcGrant, ArcTrigger, ArcaneFx};
 use crate::perks::secondary_enervate::SecondaryEnervate;
 use crate::perks::Perk;
 use crate::rng::Rng;
@@ -145,7 +145,13 @@ impl ArcRuntime {
                 .collect(),
             // Seed active only if configured so (Sharpened Bullets defaults
             // inactive; a locked/initial-active config starts it running).
-            cd_kill_expiry: params.cd_on_kill.map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 }),
+            cd_kill_expiry: params.cd_on_kill.map_or(0.0, |b| {
+                if b.initial_active {
+                    b.duration
+                } else {
+                    0.0
+                }
+            }),
         }
     }
 
@@ -1042,16 +1048,32 @@ impl DummyParams {
                 self.multishot -= ms.full * (1.0 - frac);
             }
         }
-        if let Some(s) = self.co_stack.as_mut() { set_stack(s, cfg, "condition_overload"); }
-        if let Some(s) = self.ms_stack.as_mut() { set_stack(s, cfg, "on_kill_multishot"); }
-        if let Some(s) = self.cc_stack.as_mut() { set_stack(s, cfg, "on_headshot_kill_cc"); }
-        if let Some(b) = self.cc_on_headshot.as_mut() { set_timed(b, cfg, "on_headshot_cc"); }
-        if let Some(b) = self.cd_on_kill.as_mut() { set_timed(b, cfg, "on_kill_cd"); }
-        if let Some(b) = self.fr_on_reload.as_mut() { set_timed(b, cfg, "on_reload_fr"); }
+        if let Some(s) = self.co_stack.as_mut() {
+            set_stack(s, cfg, "condition_overload");
+        }
+        if let Some(s) = self.ms_stack.as_mut() {
+            set_stack(s, cfg, "on_kill_multishot");
+        }
+        if let Some(s) = self.cc_stack.as_mut() {
+            set_stack(s, cfg, "on_headshot_kill_cc");
+        }
+        if let Some(b) = self.cc_on_headshot.as_mut() {
+            set_timed(b, cfg, "on_headshot_cc");
+        }
+        if let Some(b) = self.cd_on_kill.as_mut() {
+            set_timed(b, cfg, "on_kill_cd");
+        }
+        if let Some(b) = self.fr_on_reload.as_mut() {
+            set_timed(b, cfg, "on_reload_fr");
+        }
         let aid = self.arcane.id.clone();
         let multi = self.arcane.buffs.len() > 1;
         for (i, spec) in self.arcane.buffs.iter_mut().enumerate() {
-            let id = if multi { format!("arcane:{aid}:{i}") } else { format!("arcane:{aid}") };
+            let id = if multi {
+                format!("arcane:{aid}:{i}")
+            } else {
+                format!("arcane:{aid}")
+            };
             if let Some(&(stacks, locked)) = cfg.get(&id) {
                 spec.initial_stacks = stacks.min(spec.max_stacks);
                 spec.pinned = locked;
@@ -1313,6 +1335,24 @@ impl Default for DummyParams {
     }
 }
 
+/// Effective damage attributed by SOURCE — the WoW-damage-meter view
+/// (user, 2026-07-29): direct pellet hits, each status settlement type
+/// (Slash bleed, Heat/Toxin/Gas/Electricity DoTs, Blast detonations —
+/// keyed by the proc's type), and the on-status arcane instance.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SourceDamage {
+    pub direct: f64,
+    pub arcane_on_status: f64,
+    /// Indexed by `DamageType as usize` (15 variants).
+    pub status: [f64; 15],
+}
+
+impl SourceDamage {
+    fn add_status(&mut self, t: DamageType, v: f64) {
+        self.status[t as usize] += v;
+    }
+}
+
 /// Result of a single engagement.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct RunResult {
@@ -1337,6 +1377,8 @@ pub struct RunResult {
     /// objective is not a step function (user, 2026-07-24: "draining 80%
     /// of the total pool scores 0.8").
     pub kill_progress: f64,
+    /// Effective damage by source (direct / per-proc-type / arcane).
+    pub sources: SourceDamage,
 }
 
 /// Roll a critical tier for an effective crit chance that may exceed 1.0.
@@ -1472,7 +1514,7 @@ fn process_ticks(
         let Some((now, ev)) = best else { break };
 
         let mit = debuffs.mitigation(now, sd);
-        let (value, ignores_armor, is_dot_tick, toxin_frac) = match &ev {
+        let (value, ignores_armor, is_dot_tick, toxin_frac, src) = match &ev {
             Ev::Dot(i) => {
                 let d = &mut debuffs.dots[*i];
                 d.next_tick += 1.0;
@@ -1483,14 +1525,20 @@ fn process_ticks(
                 } else {
                     0.0
                 };
-                (d.value, d.ignores_armor, true, tox)
+                (d.value, d.ignores_armor, true, tox, d.dtype)
             }
             Ev::Heat => {
                 let h = debuffs.heat.as_mut().expect("heat event needs entity");
                 h.next_tick += 1.0;
-                (h.value, false, true, 0.0)
+                (h.value, false, true, 0.0, DamageType::Heat)
             }
-            Ev::Blast(i) => (debuffs.blast.remove(*i).value, false, false, 0.0),
+            Ev::Blast(i) => (
+                debuffs.blast.remove(*i).value,
+                false,
+                false,
+                0.0,
+                DamageType::Blast,
+            ),
         };
 
         let (effective, killed, broke) =
@@ -1498,6 +1546,7 @@ fn process_ticks(
         r.total_damage += value;
         r.effective_damage += effective;
         r.dot_damage += effective;
+        r.sources.add_status(src, effective);
         r.dot_ticks += is_dot_tick as u32;
         r.kills += killed as u32;
         if let Some(pool) = broke {
@@ -1530,7 +1579,10 @@ fn live_reload_time(form: &DummyParams, outer: &DummyParams, arc: &mut ArcRuntim
 
 pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     let mut bar = BuffBar::new();
-    let mut enervate = params.arcane.enervate_rank.map(SecondaryEnervate::from_rank);
+    let mut enervate = params
+        .arcane
+        .enervate_rank
+        .map(SecondaryEnervate::from_rank);
     let mut frenzy = Frenzy::new();
     let mut target = TargetState::spawn(&params.target);
     let mut debuffs = DebuffState::default();
@@ -1555,11 +1607,15 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     // Pressurized Magazine's on-reload fire-rate buff clock (seeded active
     // only if configured so; defaults inactive).
     let mut fr_reload_expiry: f64 =
-        params.fr_on_reload.map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
+        params
+            .fr_on_reload
+            .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
     // Crosshairs (per-stack expiry FIFO + one refreshable buff); the on-head
     // buff seeds active per its `initial_active` (default on).
     let mut ch_buff_expiry: f64 =
-        params.cc_on_headshot.map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
+        params
+            .cc_on_headshot
+            .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
     let mut ch_stacks: Vec<f64> = params
         .cc_stack
         .as_ref()
@@ -1744,18 +1800,21 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         let weakened_cc = WEAKENED_FLAT_CC_PER_STACK * debuffs.weakened_active(t) as f64;
         // Crosshairs (assumes constant aiming): the on-headshot buff and
         // the live per-stack-expiry kill stacks add absolute crit chance.
-        let ch_cc = params
-            .cc_on_headshot
-            .map_or(0.0, |b| if b.locked || t < ch_buff_expiry { b.value } else { 0.0 })
-            + params.cc_stack.as_ref().map_or(0.0, |s| {
-                s.per_stack
-                    * if s.pinned {
-                        s.initial_stacks.min(s.max_stacks) as f64
-                    } else {
-                        ch_stacks.retain(|&e| e > t);
-                        ch_stacks.len() as f64
-                    }
-            });
+        let ch_cc = params.cc_on_headshot.map_or(0.0, |b| {
+            if b.locked || t < ch_buff_expiry {
+                b.value
+            } else {
+                0.0
+            }
+        }) + params.cc_stack.as_ref().map_or(0.0, |s| {
+            s.per_stack
+                * if s.pinned {
+                    s.initial_stacks.min(s.max_stacks) as f64
+                } else {
+                    ch_stacks.retain(|&e| e > t);
+                    ch_stacks.len() as f64
+                }
+        });
         // Arcane cc_abs: assumed-max conditionals (Overcharge/Outburst).
         let effective_cc =
             ap.base_crit_chance + flat_crit + weakened_cc + ch_cc + params.arcane.cc_abs;
@@ -1776,7 +1835,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         let ms_eff = ap.multishot
             + params.ms_stack.as_ref().map_or(0.0, |s| {
                 // Locked → frozen at the configured initial count; else live.
-                let stacks = if s.pinned { s.initial_stacks.min(s.max_stacks) } else { gal.ms.current(t, s.duration) };
+                let stacks = if s.pinned {
+                    s.initial_stacks.min(s.max_stacks)
+                } else {
+                    gal.ms.current(t, s.duration)
+                };
                 s.per_stack * stacks as f64
             })
             + ap.base_multishot * arc.total(&params.arcane.buffs, ArcGrant::Multishot, t);
@@ -1818,7 +1881,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             //   Secondary Shiver → live Cold STACKS (Frozen counts as 10).
             let co_rate = ap.co_per_type
                 + params.co_stack.as_ref().map_or(0.0, |s| {
-                    let stacks = if s.pinned { s.initial_stacks.min(s.max_stacks) } else { gal.co.current(t, s.duration) };
+                    let stacks = if s.pinned {
+                        s.initial_stacks.min(s.max_stacks)
+                    } else {
+                        gal.co.current(t, s.duration)
+                    };
                     s.per_stack * stacks as f64
                 });
             let gunco_sources = [
@@ -1907,6 +1974,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             );
             r.total_damage += raw;
             r.effective_damage += effective;
+            r.sources.direct += effective;
             r.kills += killed as u32;
             r.pellets += 1;
             r.crits += (tier >= 1) as u32;
@@ -2080,11 +2148,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         // Conjunction Voltage: each Electricity status this
                         // weapon applies grants one stack to both of its
                         // buffs (reload speed + multishot).
-                        arc.bump_trigger(
-                            &params.arcane.buffs,
-                            ArcTrigger::ElectricityStatus,
-                            t,
-                        );
+                        arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ElectricityStatus, t);
                         push_dot(
                             &mut debuffs,
                             DamageType::Electricity,
@@ -2158,7 +2222,12 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         }
                         debuffs.blast.push(BlastStack {
                             fuse: t + BLAST_FUSE * sd,
-                            value: BLAST_COEFFICIENT * mb_live * sdm * crit_mult * part_factor * fm2,
+                            value: BLAST_COEFFICIENT
+                                * mb_live
+                                * sdm
+                                * crit_mult
+                                * part_factor
+                                * fm2,
                         });
                         if debuffs.blast.len() >= TEN_STACK_CAP {
                             // Early detonation: every stack's single-target
@@ -2171,6 +2240,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                             r.total_damage += total;
                             r.effective_damage += eff;
                             r.dot_damage += eff;
+                            r.sources.add_status(DamageType::Blast, eff);
                             r.kills += killed as u32;
                             if let Some(pool) = broke {
                                 push_break_proc(&mut debuffs, params, t, pool);
@@ -2197,6 +2267,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         target.apply(amt, tox, false, t, &params.target, false, &mit);
                     r.total_damage += amt;
                     r.effective_damage += eff;
+                    r.sources.arcane_on_status += eff;
                     r.kills += killed as u32;
                     if let Some(pool) = broke {
                         push_break_proc(&mut debuffs, params, t, pool);
@@ -2316,6 +2387,8 @@ pub struct Summary {
     pub mean_crit_rate: f64,
     pub mean_big_crit_rate: f64,
     pub mean_headshot_rate: f64,
+    /// Mean effective damage by source (the damage-meter view).
+    pub source_damage: SourceDamage,
 }
 
 /// Run `runs` engagements from a single seed and summarize.
@@ -2332,6 +2405,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     let mut transforms = 0u64;
     let (mut min_kills, mut max_kills) = (u32::MAX, 0u32);
     let mut kill_progress = 0.0f64;
+    let mut sources = SourceDamage::default();
 
     for _ in 0..runs {
         let r = run_once(params, &mut rng);
@@ -2354,6 +2428,11 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         crits += r.crits as u64;
         big_crits += r.big_crits as u64;
         headshots += r.headshots as u64;
+        sources.direct += r.sources.direct;
+        sources.arcane_on_status += r.sources.arcane_on_status;
+        for (acc, v) in sources.status.iter_mut().zip(r.sources.status) {
+            *acc += v;
+        }
     }
 
     let n = runs.max(1) as f64;
@@ -2388,6 +2467,15 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         mean_crit_rate: crits as f64 / total_pellets,
         mean_big_crit_rate: big_crits as f64 / total_pellets,
         mean_headshot_rate: headshots as f64 / total_pellets,
+        source_damage: {
+            let mut s = sources;
+            s.direct /= n;
+            s.arcane_on_status /= n;
+            for v in s.status.iter_mut() {
+                *v /= n;
+            }
+            s
+        },
     }
 }
 
@@ -2410,7 +2498,8 @@ mod tests {
         // the resolved multishot; the per-buff config rescales it statically
         // (no in-sim trigger, no decay). Lock is meaningless and ignored.
         use crate::loadout::{resolve, StackPolicy, WeaponBase};
-        let base = WeaponBase::from_data("dual_toxocyst_incarnon", 
+        let base = WeaponBase::from_data(
+            "dual_toxocyst_incarnon",
             true,
             &["dt_evo1_incarnon_form", "dt_fevered_frenzy"],
         );
@@ -2432,18 +2521,34 @@ mod tests {
             p.multishot
         };
         let full = panel.multishot;
-        assert!((mk(20, true) - full).abs() < 1e-12, "full stacks = untouched");
-        assert!((mk(0, false) - (full - 1.0)).abs() < 1e-12, "0 stacks removes the whole bonus");
-        assert!((mk(10, false) - (full - 0.5)).abs() < 1e-12, "half stacks remove half");
-        assert!((mk(10, true) - mk(10, false)).abs() < 1e-12, "lock is ignored (permanent)");
+        assert!(
+            (mk(20, true) - full).abs() < 1e-12,
+            "full stacks = untouched"
+        );
+        assert!(
+            (mk(0, false) - (full - 1.0)).abs() < 1e-12,
+            "0 stacks removes the whole bonus"
+        );
+        assert!(
+            (mk(10, false) - (full - 0.5)).abs() < 1e-12,
+            "half stacks remove half"
+        );
+        assert!(
+            (mk(10, true) - mk(10, false)).abs() < 1e-12,
+            "lock is ignored (permanent)"
+        );
     }
 
     /// A secondary arcane at max rank under the Emergent policy (crit-base
     /// 0 — none of these tests use the assumed-max relative crit paths).
     fn arc(id: &str) -> ArcaneFx {
-        crate::arcanes_data::secondary(id)
-            .unwrap()
-            .fx(5, crate::loadout::StackPolicy::Emergent, 0.0, 0.0, &[])
+        crate::arcanes_data::secondary(id).unwrap().fx(
+            5,
+            crate::loadout::StackPolicy::Emergent,
+            0.0,
+            0.0,
+            &[],
+        )
     }
 
     /// Deterministic base: no crits, no procs, 1x body, no arcane.
@@ -2480,26 +2585,52 @@ mod tests {
         // and faction_mult is applied AFTER the RNG rolls, so the same seed
         // yields damage scaled exactly by faction_mult.
         let plain = single_part(BodyPart {
-            name: "body".into(), aim_weight: 1.0, multiplier: 1.0, is_head: false, crit_bonus: false,
+            name: "body".into(),
+            aim_weight: 1.0,
+            multiplier: 1.0,
+            is_head: false,
+            crit_bonus: false,
         });
-        let boosted = DummyParams { faction_mult: 1.30, ..plain.clone() };
+        let boosted = DummyParams {
+            faction_mult: 1.30,
+            ..plain.clone()
+        };
         let a = monte_carlo(&plain, 3000, 7);
         let b = monte_carlo(&boosted, 3000, 7);
-        assert!((b.mean_damage / a.mean_damage - 1.30).abs() < 1e-9,
-            "ratio was {}", b.mean_damage / a.mean_damage);
+        assert!(
+            (b.mean_damage / a.mean_damage - 1.30).abs() < 1e-9,
+            "ratio was {}",
+            b.mean_damage / a.mean_damage
+        );
     }
 
     #[test]
     fn faction_bonus_applies_only_vs_matching_target_faction() {
-        use crate::loadout::{resolve, Faction, ModDef, ModEffect, Rarity, StackPolicy, WeaponBase};
+        use crate::loadout::{
+            resolve, Faction, ModDef, ModEffect, Rarity, StackPolicy, WeaponBase,
+        };
         use crate::mods::Polarity;
         let expel = ModDef {
-            id: "expel_grineer", base_drain: 9, max_rank: 5,
-            polarity: Polarity::Madurai, rarity: Rarity::Uncommon, exilus: false, family: None,
-            requires: None, disables: Vec::new(),
+            id: "expel_grineer",
+            base_drain: 9,
+            max_rank: 5,
+            polarity: Polarity::Madurai,
+            rarity: Rarity::Uncommon,
+            exilus: false,
+            family: None,
+            requires: None,
+            disables: Vec::new(),
             effects: vec![ModEffect::FactionDamage(Faction::Grineer, 0.30)],
         };
-        let base = WeaponBase::from_data("dual_toxocyst", true, &["dt_commodores_fortune", "dt_evolved_autoloader", "dt_fevered_frenzy"]);
+        let base = WeaponBase::from_data(
+            "dual_toxocyst",
+            true,
+            &[
+                "dt_commodores_fortune",
+                "dt_evolved_autoloader",
+                "dt_fevered_frenzy",
+            ],
+        );
         let panel = resolve(&base, &[&expel], StackPolicy::AssumedMax);
         let parts = mono_body(1.0);
         let grineer_target = {
@@ -2509,8 +2640,16 @@ mod tests {
         };
         let vs_grineer = DummyParams::from_panel(&panel, grineer_target, parts.clone(), 10.0);
         let vs_other = DummyParams::from_panel(&panel, TargetParams::training_dummy(), parts, 10.0);
-        assert!((vs_grineer.faction_mult - 1.30).abs() < 1e-9, "grineer {}", vs_grineer.faction_mult);
-        assert!((vs_other.faction_mult - 1.0).abs() < 1e-9, "unknown {}", vs_other.faction_mult);
+        assert!(
+            (vs_grineer.faction_mult - 1.30).abs() < 1e-9,
+            "grineer {}",
+            vs_grineer.faction_mult
+        );
+        assert!(
+            (vs_other.faction_mult - 1.0).abs() < 1e-9,
+            "unknown {}",
+            vs_other.faction_mult
+        );
     }
 
     #[test]
@@ -3457,13 +3596,24 @@ mod tests {
             ..flat_base()
         };
         let s = monte_carlo(&p, 20, 5);
-        assert!((s.mean_damage - 1380.0).abs() < 1e-9, "dmg {}", s.mean_damage);
+        assert!(
+            (s.mean_damage - 1380.0).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
         // Kill family without kills: lose ONE stack per 4 s timeout.
         // Shots t0-3 @12, t4-7 @11, t8-9 @10 stacks:
         // 75 × (4×4.6 + 4×4.3 + 2×4.0) = 3270.
-        let p10 = DummyParams { duration_secs: 10.0, ..p };
+        let p10 = DummyParams {
+            duration_secs: 10.0,
+            ..p
+        };
         let s10 = monte_carlo(&p10, 20, 5);
-        assert!((s10.mean_damage - 3270.0).abs() < 1e-9, "dmg {}", s10.mean_damage);
+        assert!(
+            (s10.mean_damage - 3270.0).abs() < 1e-9,
+            "dmg {}",
+            s10.mean_damage
+        );
     }
 
     #[test]
@@ -3486,10 +3636,18 @@ mod tests {
             forced_procs: vec![DamageType::Electricity],
             ..flat_base()
         };
-        let fast = DummyParams { arcane: arc("conjunction_voltage"), ..slow.clone() };
+        let fast = DummyParams {
+            arcane: arc("conjunction_voltage"),
+            ..slow.clone()
+        };
         let a = monte_carlo(&slow, 20, 5);
         let b = monte_carlo(&fast, 20, 5);
-        assert!(b.mean_shots > a.mean_shots, "shots {} vs {}", b.mean_shots, a.mean_shots);
+        assert!(
+            b.mean_shots > a.mean_shots,
+            "shots {} vs {}",
+            b.mean_shots,
+            a.mean_shots
+        );
     }
 
     #[test]
@@ -3504,7 +3662,11 @@ mod tests {
             ..flat_base()
         };
         let s = monte_carlo(&p, 20, 5);
-        assert!((s.mean_damage - 1931.25).abs() < 1e-9, "dmg {}", s.mean_damage);
+        assert!(
+            (s.mean_damage - 1931.25).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
     }
 
     #[test]
@@ -3521,7 +3683,11 @@ mod tests {
             ..flat_base()
         };
         let s = monte_carlo(&p, 20, 5);
-        assert!((s.mean_damage - 1340.625).abs() < 1e-9, "dmg {}", s.mean_damage);
+        assert!(
+            (s.mean_damage - 1340.625).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
     }
 
     #[test]
@@ -3536,7 +3702,11 @@ mod tests {
             ..flat_base()
         };
         let s = monte_carlo(&p, 20, 5);
-        assert!((s.mean_damage - 6000.0).abs() < 1e-9, "dmg {}", s.mean_damage);
+        assert!(
+            (s.mean_damage - 6000.0).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
     }
 
     #[test]
@@ -3549,7 +3719,11 @@ mod tests {
             ..flat_base()
         };
         let s = monte_carlo(&p, 20, 5);
-        assert!((s.mean_damage - 8250.0).abs() < 1e-9, "dmg {}", s.mean_damage);
+        assert!(
+            (s.mean_damage - 8250.0).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
     }
 
     #[test]
@@ -3578,7 +3752,10 @@ mod tests {
             body_parts: mono_body(1.0),
             ..no_status()
         };
-        let with = DummyParams { arcane: arc("secondary_cryogenic"), ..base.clone() };
+        let with = DummyParams {
+            arcane: arc("secondary_cryogenic"),
+            ..base.clone()
+        };
         let a = monte_carlo(&base, 300, 5);
         let b = monte_carlo(&with, 300, 5);
         assert!(
@@ -3595,9 +3772,16 @@ mod tests {
         let fx = crate::arcanes_data::secondary("secondary_surge")
             .unwrap()
             .fx(5, crate::loadout::StackPolicy::AssumedMax, 0.0, 0.0, &[]);
-        let p = DummyParams { arcane: fx, ..flat_base() };
+        let p = DummyParams {
+            arcane: fx,
+            ..flat_base()
+        };
         let s = monte_carlo(&p, 20, 5);
-        assert!((s.mean_damage - 6000.0).abs() < 1e-9, "dmg {}", s.mean_damage);
+        assert!(
+            (s.mean_damage - 6000.0).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
     }
 
     #[test]
@@ -3615,7 +3799,10 @@ mod tests {
             forced_procs: vec![DamageType::Impact],
             ..flat_base()
         };
-        let without = DummyParams { proc_conversion: None, ..with.clone() };
+        let without = DummyParams {
+            proc_conversion: None,
+            ..with.clone()
+        };
         let a = monte_carlo(&without, 200, 5);
         let b = monte_carlo(&with, 200, 5);
         assert!(a.mean_dot_damage == 0.0, "impact alone must not bleed");
@@ -3646,7 +3833,11 @@ mod tests {
             ..flat_base()
         };
         let s = monte_carlo(&p, 20, 5);
-        assert!((s.mean_damage - 6187.5).abs() < 1e-9, "dmg {}", s.mean_damage);
+        assert!(
+            (s.mean_damage - 6187.5).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
     }
 
     #[test]
@@ -3669,10 +3860,21 @@ mod tests {
             ..no_status()
         };
         let s = monte_carlo(&head, 20, 5);
-        assert!((s.mean_damage - 1500.0).abs() < 1e-9, "dmg {}", s.mean_damage);
-        let body = DummyParams { body_parts: mono_body(1.0), ..head };
+        assert!(
+            (s.mean_damage - 1500.0).abs() < 1e-9,
+            "dmg {}",
+            s.mean_damage
+        );
+        let body = DummyParams {
+            body_parts: mono_body(1.0),
+            ..head
+        };
         let s2 = monte_carlo(&body, 20, 5);
-        assert!((s2.mean_damage - 750.0).abs() < 1e-9, "dmg {}", s2.mean_damage);
+        assert!(
+            (s2.mean_damage - 750.0).abs() < 1e-9,
+            "dmg {}",
+            s2.mean_damage
+        );
     }
 
     #[test]
@@ -3691,7 +3893,12 @@ mod tests {
             ..no_status()
         };
         let with = DummyParams {
-            cd_on_kill: Some(crate::loadout::TimedBuff { value: 1.0, duration: 9.0, initial_active: false, locked: false }),
+            cd_on_kill: Some(crate::loadout::TimedBuff {
+                value: 1.0,
+                duration: 9.0,
+                initial_active: false,
+                locked: false,
+            }),
             ..base.clone()
         };
         let a = monte_carlo(&base, 50, 5);
@@ -3714,12 +3921,22 @@ mod tests {
             ..flat_base()
         };
         let with = DummyParams {
-            fr_on_reload: Some(crate::loadout::TimedBuff { value: 1.0, duration: 9.0, initial_active: false, locked: false }),
+            fr_on_reload: Some(crate::loadout::TimedBuff {
+                value: 1.0,
+                duration: 9.0,
+                initial_active: false,
+                locked: false,
+            }),
             ..base.clone()
         };
         let a = monte_carlo(&base, 20, 5);
         let b = monte_carlo(&with, 20, 5);
-        assert!(b.mean_shots > a.mean_shots, "shots {} vs {}", b.mean_shots, a.mean_shots);
+        assert!(
+            b.mean_shots > a.mean_shots,
+            "shots {} vs {}",
+            b.mean_shots,
+            a.mean_shots
+        );
     }
 
     fn shielded_target(shield: f64, health: f64) -> TargetParams {
@@ -3872,7 +4089,12 @@ mod tests {
         // E = 18 × 75 × 1.22 = 1647.
         let p = DummyParams {
             base_crit_chance: 0.1,
-            cc_on_headshot: Some(crate::loadout::TimedBuff { value: 0.12, duration: 12.0, initial_active: true, locked: false }),
+            cc_on_headshot: Some(crate::loadout::TimedBuff {
+                value: 0.12,
+                duration: 12.0,
+                initial_active: true,
+                locked: false,
+            }),
             arcane: ArcaneFx::none(),
             body_parts: vec![BodyPart {
                 name: "head".into(),
@@ -3901,7 +4123,12 @@ mod tests {
         // E[total] = 75 × (12×1.42 + 6×1.1) = 1773.
         let p = DummyParams {
             base_crit_chance: 0.1,
-            cc_on_headshot: Some(crate::loadout::TimedBuff { value: 0.12, duration: 12.0, initial_active: true, locked: false }),
+            cc_on_headshot: Some(crate::loadout::TimedBuff {
+                value: 0.12,
+                duration: 12.0,
+                initial_active: true,
+                locked: false,
+            }),
             cc_stack: Some(crate::loadout::StackSpec {
                 per_stack: 0.04,
                 max_stacks: 5,

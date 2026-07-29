@@ -90,8 +90,11 @@ pub struct EnumStats {
 /// a 9th planned mod (extra unpolarized slot, matching the web UI's exilus
 /// model) and the resolve() so any modeled effect applies. Today's exilus
 /// mods are damage no-ops, so same-mods candidates differing only in exilus
-/// tie on score and differ in Forma/drain — still distinct builds. Pass
-/// `&[None]` (or `&[]`, treated the same) for a plain 8-slot search.
+/// tie on score and differ in Forma/drain — still distinct builds. The
+/// exilus dimension is NEVER special-cased out of the search (user,
+/// 2026-07-29): an exilus mod may affect the final outcome, so it stays a
+/// full search dimension like any other slot. Pass `&[None]` (or `&[]`,
+/// treated the same) for a plain 8-slot search.
 #[allow(clippy::too_many_arguments)] // search-config surface; a params struct isn't warranted yet
 pub fn enumerate_candidates(
     pool: &[ModDef],

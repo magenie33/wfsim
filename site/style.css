@@ -72,6 +72,14 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block{disp
 .sb-chip .rk{color:var(--muted);font-size:11px}
 .sb-empty{color:var(--muted);font-size:12px}
 .sb-edit{display:inline-flex;margin-top:12px;text-decoration:none}
+.hero-tested{color:var(--muted);font-size:11px;margin-top:4px}
+/* Sim results: the WoW-style damage-by-source meter */
+.meter{display:flex;flex-direction:column;gap:4px}
+.mrow{display:grid;grid-template-columns:140px 1fr auto;gap:8px;align-items:center;font-size:12px}
+.mrow .mname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .mbar{height:12px;background:var(--panel2);border-radius:6px;overflow:hidden}
+.mrow .mbar i{display:block;height:100%;border-radius:6px}
+.mrow .mval{color:var(--text-2);font-variant-numeric:tabular-nums;white-space:nowrap}
 .on-optimizer #preset-bar-builder-builds,.on-optimizer #mod-block,.on-optimizer #arcane-block,.on-optimizer #evo-block,.on-optimizer #element-block,.on-optimizer #stats-block{display:none}
 /* The simulator tab keeps the build preset bar (sim settings are preset
    content — the dirty dot and save must be reachable) but hides the

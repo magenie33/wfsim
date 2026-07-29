@@ -183,7 +183,7 @@ let evoSel = { 1: null, 2: null, 3: null, 4: null };
 // `buffs` maps buff id -> { stacks, locked } (section 2); the buff SET comes
 // from /api/panel and syncs as the build changes.
 let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100,
-  duration: 120, runs: 300, form: "incarnon_cycle", buffs: {} };
+  duration: 120, runs: 100, form: "incarnon_cycle", buffs: {} };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
 // Optimizer scope, 8 + 1 slots in TWO blocks: `mods` (id -> "search"|"fixed")
@@ -550,6 +550,7 @@ function restoreState(st) {
   arcaneRank = st.arcaneRank ?? null;
   if (st.sim) sim = { ...sim, ...st.sim };
   renderMods(); renderArcanes(); renderEvo(); renderSim(); refreshPanel();
+  renderStoredSimResult(); // the simulator shows THIS preset's last test
 }
 
 const escHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -668,14 +669,15 @@ function renderPresetBarIn(bar, cfg) {
     e.stopPropagation();
     const ps2 = cfg.load();
     const name = freeName(ps2, (n) => "preset " + n);
-    // Apply the blank FIRST, then store the resulting live snapshot — so
-    // the stored state matches what the editor now shows (no instant
-    // dirty dot from representation differences like empty-vs-filled
-    // slot arrays).
+    // Activate FIRST so everything that renders during apply() (e.g. the
+    // sim's per-preset stored result) already sees the NEW preset; then
+    // apply the blank and store the resulting live snapshot — the stored
+    // state matches what the editor now shows (no instant dirty dot from
+    // representation differences like empty-vs-filled slot arrays).
+    cfg.setActive(name);
     cfg.apply(cfg.blank());
     ps2.push({ name, savedAt: Date.now(), state: cfg.snapshot() });
     cfg.store(ps2);
-    cfg.setActive(name);
     cfg.rerender();
   });
   const on = (sel, fn) => { const b = bar.querySelector(sel); if (b) b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); };
@@ -1464,6 +1466,7 @@ async function runSim() {
     }
     renderResults(r);
     animateArena(r);
+    saveSimResult(r);
   } catch (e) {
     $("sim-results").innerHTML = `<div class="error">sim failed: ${e}</div>`;
   } finally {
@@ -1471,7 +1474,28 @@ async function runSim() {
   }
 }
 
-function renderResults(r) {
+// ---- per-preset result memory ------------------------------------------
+// The simulator shows the ACTIVE preset's LAST test (user, 2026-07-29:
+// switching builds must switch the displayed numbers too). A finished run
+// saves into the preset's entry — as `lastResult`, OUTSIDE `state`, so
+// the unsaved-changes dot ignores it — and every preset switch restores
+// it (or clears, when that build was never tested).
+function saveSimResult(r) {
+  const ps = loadPresetList(BUILDS);
+  const at = ps.findIndex((p) => p.name === activePreset);
+  if (at < 0) return;
+  ps[at].lastResult = { r, at: Date.now() };
+  storePresetList(BUILDS, ps);
+}
+function renderStoredSimResult() {
+  const box = $("sim-results");
+  if (!box) return;
+  const p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
+  if (p && p.lastResult && p.lastResult.r) renderResults(p.lastResult.r, p.lastResult.at);
+  else box.innerHTML = "";
+}
+
+function renderResults(r, testedAt) {
   const t = r.target || {};
   const pc = (x) => ((x || 0) * 100).toFixed(1) + "%";
   const n0 = (x) => Math.round(x || 0).toLocaleString();
@@ -1483,10 +1507,8 @@ function renderResults(r) {
   const heroSub = killed
     ? `kills in ${n0(r.duration)}s · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s to first kill`
     : `of one ${LN("enemies", sim.enemy, t.name || "enemy")}'s EHP in ${n0(r.duration)}s (not killed)`;
-  const f = r.forma || {};
-  const fbadge = f.legal
-    ? `<span class="forma-badge legal"><b>${f.used} Forma</b>${f.total_drain}/${f.cap} drain</span>`
-    : `<span class="forma-badge illegal"><b>illegal</b>${f.error || "over capacity"}</span>`;
+  // No Forma/capacity here — the simulator reports EFFECTS only; build
+  // legality is the Builder's business (user, 2026-07-29).
   const kpi = (l, v) => `<div class="kpi"><div class="kv">${v}</div><div class="kl">${tr(l)}</div></div>`;
   const kpis = [
     kpi("DPS", n0(r.dps)), kpi("Effective DPS", n0(r.effective_dps)),
@@ -1494,10 +1516,18 @@ function renderResults(r) {
     kpi("Headshot rate", pc(r.headshot_rate)), kpi("Procs / run", n1(r.procs)),
     kpi("DoT dmg", n0(r.dot)), kpi("Reloads", n1(r.reloads)),
   ].join("");
-  const dmg = (r.panel && r.panel.damage) || [];
-  const total = dmg.reduce((a, d) => a + d.value, 0) || 1;
-  const seg = dmg.map((d, i) => `<div class="dmg-seg" style="width:${(d.value / total * 100).toFixed(1)}%;background:var(--s${(i % 8) + 1})" title="${DT(d.type)}: ${n0(d.value)}"></div>`).join("");
-  const legend = dmg.map((d, i) => `<span class="li"><span class="dmgic" style="background:var(--s${(i % 8) + 1})"></span>${DT(d.type)} <span class="lv">${n0(d.value)}</span></span>`).join("");
+  // WoW-style damage meter (user, 2026-07-29): effective damage BY SOURCE
+  // over the whole engagement — what actually hurt the target. The panel's
+  // per-shot theory lives in the Builder's Stats, not here.
+  const srcs = r.damage_sources || [];
+  const srcTotal = srcs.reduce((a, x) => a + x.dmg, 0) || 1;
+  const srcMax = (srcs[0] && srcs[0].dmg) || 1;
+  const srcLabel = (k) => k === "direct" ? tr("Direct hits") : k === "arcane" ? tr("Arcane (on status)") : DT(k);
+  const meter = srcs.map((x, i) => `<div class="mrow">
+      <span class="mname">${srcLabel(x.source)}</span>
+      <div class="mbar"><i style="width:${(x.dmg / srcMax * 100).toFixed(1)}%;background:var(--s${(i % 8) + 1})"></i></div>
+      <span class="mval">${n0(x.dmg)} · ${(x.dmg / srcTotal * 100).toFixed(1)}%</span>
+    </div>`).join("");
   const row = (k, v) => `<div class="row"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   const detail = [
     row("Target", `${t.name || "?"} · Lv ${t.level}${t.steel_path ? " (SP)" : ""}`),
@@ -1510,11 +1540,10 @@ function renderResults(r) {
   ].join("");
   $("sim-results").innerHTML = `
     <div class="results">
-      <div class="hero"><div><div class="hero-label">${tr("Result")}</div><div class="hero-num">${heroNum}</div><div class="hero-sub">${heroSub}</div></div>${fbadge}</div>
+      <div class="hero"><div><div class="hero-label">${tr("Result")}</div><div class="hero-num">${heroNum}</div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
       <div class="kpi-row">${kpis}</div>
-      <h3>Damage per shot (combined)</h3>
-      <div class="dmg-bar">${seg}</div>
-      <div class="legend">${legend}</div>
+      <h3>${tr("Damage by source")}</h3>
+      <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>
       <h3>Detail</h3>
       <div class="stat-table">${detail}</div>
     </div>`;

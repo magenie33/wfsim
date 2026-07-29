@@ -124,6 +124,7 @@ impl Engagement {
                 mean_crit_rate: 0.0,
                 mean_big_crit_rate: 0.0,
                 mean_headshot_rate: 0.0,
+                source_damage: Default::default(),
             }
         }
     }

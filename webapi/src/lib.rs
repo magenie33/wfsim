@@ -9,7 +9,9 @@
 //! engine the CLI and optimizer use — this crate only shapes JSON.
 
 use serde_json::{json, Value};
-use wfsim_engine::dummy::{monte_carlo, BodyPart, BuffLock, DummyParams, LockMode, LockedBuff, TargetMode};
+use wfsim_engine::dummy::{
+    monte_carlo, BodyPart, BuffLock, DummyParams, LockMode, LockedBuff, TargetMode,
+};
 use wfsim_engine::enemy_data::EnemySpec;
 use wfsim_engine::loadout::{
     pct as fpct, resolve, ModDef, ModEffect, ResolvedPanel, StackPolicy, WeaponBase,
@@ -17,9 +19,8 @@ use wfsim_engine::loadout::{
 use wfsim_engine::mods::{plan_forma, PlannedMod, Polarity};
 use wfsim_engine::mods_data::pistol_pool as pool; // FULL pool incl. exilus (the optimizer's pool() excludes exilus)
 use wfsim_optimizer::{
-    enumerate_candidates_each, enumerate_candidates_observed, run_funnel, schedule_to, stream_screen,
-    Candidate,
-    Constraints, FunnelState, Job, Scenario,
+    enumerate_candidates_each, enumerate_candidates_observed, run_funnel, schedule_to,
+    stream_screen, Candidate, Constraints, FunnelState, Job, Scenario,
 };
 
 // ---- Enemy library (the engine's embedded data/enemies/**) -------------
@@ -29,7 +30,12 @@ use wfsim_optimizer::{
 fn enemies() -> Vec<EnemySpec> {
     let preferred = ["thrax_centurion"];
     let mut specs = wfsim_engine::enemy_data::all();
-    specs.sort_by_key(|s| preferred.iter().position(|p| *p == s.id).unwrap_or(preferred.len()));
+    specs.sort_by_key(|s| {
+        preferred
+            .iter()
+            .position(|p| *p == s.id)
+            .unwrap_or(preferred.len())
+    });
     specs
 }
 
@@ -120,7 +126,10 @@ fn weapons() -> &'static [WeaponInfo] {
                 let incarnon = s.transforms_to.is_some();
                 let forms = if incarnon {
                     vec![
-                        ("incarnon_cycle", "Incarnon cycle (real two-form loop)".to_string()),
+                        (
+                            "incarnon_cycle",
+                            "Incarnon cycle (real two-form loop)".to_string(),
+                        ),
                         ("incarnon", "Incarnon form only".to_string()),
                         ("base", "Base form only".to_string()),
                     ]
@@ -147,7 +156,10 @@ fn weapons() -> &'static [WeaponInfo] {
 }
 
 fn weapon(id: &str) -> &'static WeaponInfo {
-    weapons().iter().find(|w| w.id == id).unwrap_or(&weapons()[0])
+    weapons()
+        .iter()
+        .find(|w| w.id == id)
+        .unwrap_or(&weapons()[0])
 }
 
 // ---- spec-derived lookups: no weapon ids are hardcoded anywhere below ----
@@ -209,16 +221,19 @@ fn innate_slots_for(id: &str) -> Vec<Option<Polarity>> {
 pub fn i18n_json() -> Value {
     let mut out = serde_json::Map::new();
     for (code, l) in wfsim_engine::i18n_data::locales() {
-        out.insert(code.clone(), json!({
-            "weapons": l.weapons,
-            "enemies": l.enemies,
-            "damage_types": l.damage_types,
-            "mods": l.mods,
-            "arcanes": l.arcanes,
-            "evolutions": l.evolutions,
-            "ui": l.ui,
-            "effect_phrases": l.effect_phrases,
-        }));
+        out.insert(
+            code.clone(),
+            json!({
+                "weapons": l.weapons,
+                "enemies": l.enemies,
+                "damage_types": l.damage_types,
+                "mods": l.mods,
+                "arcanes": l.arcanes,
+                "evolutions": l.evolutions,
+                "ui": l.ui,
+                "effect_phrases": l.effect_phrases,
+            }),
+        );
     }
     Value::Object(out)
 }
@@ -240,7 +255,14 @@ fn mod_category(m: &ModDef) -> &'static str {
         )
     }) {
         "crit"
-    } else if has(|e| matches!(e, ModEffect::StatusChance(..) | ModEffect::StatusDamage(..) | ModEffect::ConditionOverload { .. })) {
+    } else if has(|e| {
+        matches!(
+            e,
+            ModEffect::StatusChance(..)
+                | ModEffect::StatusDamage(..)
+                | ModEffect::ConditionOverload { .. }
+        )
+    }) {
         "status"
     } else if has(|e| matches!(e, ModEffect::FireRate(..) | ModEffect::ReloadSpeed(..))) {
         "handling"
@@ -388,7 +410,7 @@ pub fn meta_json() -> Value {
             "steel_path": true,
             "headshot_pct": 100.0,
             "duration": 120.0,
-            "runs": 300,
+            "runs": 100,
             "mods": [],
         },
     })
@@ -417,7 +439,10 @@ fn get_f64(v: &Value, key: &str, default: f64) -> f64 {
     v.get(key).and_then(|x| x.as_f64()).unwrap_or(default)
 }
 fn get_u32(v: &Value, key: &str, default: u32) -> u32 {
-    v.get(key).and_then(|x| x.as_u64()).map(|n| n as u32).unwrap_or(default)
+    v.get(key)
+        .and_then(|x| x.as_u64())
+        .map(|n| n as u32)
+        .unwrap_or(default)
 }
 fn get_bool(v: &Value, key: &str, default: bool) -> bool {
     v.get(key).and_then(|x| x.as_bool()).unwrap_or(default)
@@ -477,8 +502,15 @@ fn enumerate_buffs(
     // Default UNLOCKED (user, 2026-07-28): starts active, then lives by its
     // real triggers (headshot refresh) instead of an assumed 100% uptime.
     if has_frenzy(info) {
-        push(BuffMeta { id: "frenzy".into(), name: "Frenzy".into(), max_stacks: 1,
-            kind: "toggle", default_stacks: 1, default_locked: false, permanent: false });
+        push(BuffMeta {
+            id: "frenzy".into(),
+            name: "Frenzy".into(),
+            max_stacks: 1,
+            kind: "toggle",
+            default_stacks: 1,
+            default_locked: false,
+            permanent: false,
+        });
     }
     // Mod-granted buffs.
     for m in refs {
@@ -486,18 +518,60 @@ fn enumerate_buffs(
         for e in &m.effects {
             use ModEffect::*;
             match *e {
-                OnKillMultishot { max_stacks, .. } => push(BuffMeta { id: "on_kill_multishot".into(),
-                    name: nm.clone(), max_stacks, kind: "stacking", default_stacks: max_stacks, default_locked: false, permanent: false }),
-                ConditionOverload { max_stacks, .. } => push(BuffMeta { id: "condition_overload".into(),
-                    name: nm.clone(), max_stacks, kind: "stacking", default_stacks: max_stacks, default_locked: false, permanent: false }),
-                OnHeadshotCritChance { .. } => push(BuffMeta { id: "on_headshot_cc".into(),
-                    name: nm.clone(), max_stacks: 1, kind: "toggle", default_stacks: 1, default_locked: false, permanent: false }),
-                OnHeadshotKillCritChance { max_stacks, .. } => push(BuffMeta { id: "on_headshot_kill_cc".into(),
-                    name: nm.clone(), max_stacks, kind: "stacking", default_stacks: max_stacks, default_locked: false, permanent: false }),
-                OnKillCritDamage { .. } => push(BuffMeta { id: "on_kill_cd".into(),
-                    name: nm.clone(), max_stacks: 1, kind: "toggle", default_stacks: 0, default_locked: false, permanent: false }),
-                OnReloadFireRate { .. } => push(BuffMeta { id: "on_reload_fr".into(),
-                    name: nm.clone(), max_stacks: 1, kind: "toggle", default_stacks: 0, default_locked: false, permanent: false }),
+                OnKillMultishot { max_stacks, .. } => push(BuffMeta {
+                    id: "on_kill_multishot".into(),
+                    name: nm.clone(),
+                    max_stacks,
+                    kind: "stacking",
+                    default_stacks: max_stacks,
+                    default_locked: false,
+                    permanent: false,
+                }),
+                ConditionOverload { max_stacks, .. } => push(BuffMeta {
+                    id: "condition_overload".into(),
+                    name: nm.clone(),
+                    max_stacks,
+                    kind: "stacking",
+                    default_stacks: max_stacks,
+                    default_locked: false,
+                    permanent: false,
+                }),
+                OnHeadshotCritChance { .. } => push(BuffMeta {
+                    id: "on_headshot_cc".into(),
+                    name: nm.clone(),
+                    max_stacks: 1,
+                    kind: "toggle",
+                    default_stacks: 1,
+                    default_locked: false,
+                    permanent: false,
+                }),
+                OnHeadshotKillCritChance { max_stacks, .. } => push(BuffMeta {
+                    id: "on_headshot_kill_cc".into(),
+                    name: nm.clone(),
+                    max_stacks,
+                    kind: "stacking",
+                    default_stacks: max_stacks,
+                    default_locked: false,
+                    permanent: false,
+                }),
+                OnKillCritDamage { .. } => push(BuffMeta {
+                    id: "on_kill_cd".into(),
+                    name: nm.clone(),
+                    max_stacks: 1,
+                    kind: "toggle",
+                    default_stacks: 0,
+                    default_locked: false,
+                    permanent: false,
+                }),
+                OnReloadFireRate { .. } => push(BuffMeta {
+                    id: "on_reload_fr".into(),
+                    name: nm.clone(),
+                    max_stacks: 1,
+                    kind: "toggle",
+                    default_stacks: 0,
+                    default_locked: false,
+                    permanent: false,
+                }),
                 _ => {}
             }
         }
@@ -509,11 +583,30 @@ fn enumerate_buffs(
             .unwrap_or_else(|| prettify(&arcane.id));
         let multi = arcane.buffs.len() > 1;
         for (i, b) in arcane.buffs.iter().enumerate() {
-            let id = if multi { format!("arcane:{}:{}", arcane.id, i) } else { format!("arcane:{}", arcane.id) };
-            let name = if multi { format!("{} ({})", aname, grant_label(b.grant)) } else { aname.clone() };
-            let kind = if b.max_stacks > 1 { "stacking" } else { "toggle" };
-            push(BuffMeta { id, name, max_stacks: b.max_stacks, kind,
-                default_stacks: b.max_stacks, default_locked: false, permanent: false });
+            let id = if multi {
+                format!("arcane:{}:{}", arcane.id, i)
+            } else {
+                format!("arcane:{}", arcane.id)
+            };
+            let name = if multi {
+                format!("{} ({})", aname, grant_label(b.grant))
+            } else {
+                aname.clone()
+            };
+            let kind = if b.max_stacks > 1 {
+                "stacking"
+            } else {
+                "toggle"
+            };
+            push(BuffMeta {
+                id,
+                name,
+                max_stacks: b.max_stacks,
+                kind,
+                default_stacks: b.max_stacks,
+                default_locked: false,
+                permanent: false,
+            });
         }
     }
     out
@@ -542,16 +635,25 @@ fn evo_buffs(evo_ids: &[String]) -> Vec<BuffMeta> {
 }
 
 fn buffs_json(list: &[BuffMeta]) -> Vec<Value> {
-    list.iter().map(|b| json!({
-        "id": b.id, "name": b.name, "max_stacks": b.max_stacks, "kind": b.kind,
-        "default_stacks": b.default_stacks, "default_locked": b.default_locked,
-        "permanent": b.permanent,
-    })).collect()
+    list.iter()
+        .map(|b| {
+            json!({
+                "id": b.id, "name": b.name, "max_stacks": b.max_stacks, "kind": b.kind,
+                "default_stacks": b.default_stacks, "default_locked": b.default_locked,
+                "permanent": b.permanent,
+            })
+        })
+        .collect()
 }
 
 // The build's resolved arcane fx (buff specs are policy-independent in shape);
 // used for buff enumeration. `none` when the weapon can't equip arcanes.
-fn arcane_fx_for(v: &Value, info: &WeaponInfo, base: &WeaponBase, policy: StackPolicy) -> wfsim_engine::arcanes_data::ArcaneFx {
+fn arcane_fx_for(
+    v: &Value,
+    info: &WeaponInfo,
+    base: &WeaponBase,
+    policy: StackPolicy,
+) -> wfsim_engine::arcanes_data::ArcaneFx {
     if !info.uses_arcane {
         return wfsim_engine::arcanes_data::ArcaneFx::none();
     }
@@ -564,7 +666,13 @@ fn arcane_fx_for(v: &Value, info: &WeaponInfo, base: &WeaponBase, policy: StackP
     match wfsim_engine::arcanes_data::secondary(aid) {
         Some(def) => {
             let rank = get_u32(v, "arcane_rank", def.max_rank).min(def.max_rank);
-            def.fx(rank, policy, base.base_crit_chance, base.base_crit_damage, base.traits)
+            def.fx(
+                rank,
+                policy,
+                base.base_crit_chance,
+                base.base_crit_damage,
+                base.traits,
+            )
         }
         None => wfsim_engine::arcanes_data::ArcaneFx::none(),
     }
@@ -621,7 +729,11 @@ fn frenzy_lock_mode(cfg: Option<&(u32, bool)>) -> LockMode {
 
 pub fn panel_json(v: &Value) -> Value {
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
-    let policy = if info.sentinel { StackPolicy::BaseOnly } else { StackPolicy::AssumedMax };
+    let policy = if info.sentinel {
+        StackPolicy::BaseOnly
+    } else {
+        StackPolicy::AssumedMax
+    };
     // (`form` in the request is ignored: every available form renders.)
     let evos = match chosen_evolutions(v) {
         Ok(e) => e,
@@ -632,7 +744,11 @@ pub fn panel_json(v: &Value) -> Value {
     let mod_ids: Vec<String> = v
         .get("mods")
         .and_then(|x| x.as_array())
-        .map(|a| a.iter().filter_map(|m| m.as_str().map(String::from)).collect())
+        .map(|a| {
+            a.iter()
+                .filter_map(|m| m.as_str().map(String::from))
+                .collect()
+        })
         .unwrap_or_default();
     if mod_ids.len() > 9 {
         return err_json("at most 8 slots + 1 exilus");
@@ -693,32 +809,59 @@ pub fn panel_json(v: &Value) -> Value {
                 Physical(t, x) => {
                     src.push(("physical", name.clone(), x, Some(format!("{t:?}"))));
                 }
-                OnKillMultishot { per_stack, max_stacks, .. } => match policy {
+                OnKillMultishot {
+                    per_stack,
+                    max_stacks,
+                    ..
+                } => match policy {
                     StackPolicy::BaseOnly => conditionals.push(json!({
                         "mod": name, "desc": e.describe(), "active": false,
                         "why": "sentinel weapons cannot proc on-kill stacks"})),
-                    _ => push("multishot", per_stack * max_stacks as f64,
-                        Some(format!("on kill, {max_stacks} stacks assumed"))),
+                    _ => push(
+                        "multishot",
+                        per_stack * max_stacks as f64,
+                        Some(format!("on kill, {max_stacks} stacks assumed")),
+                    ),
                 },
-                ConditionOverload { per_stack, max_stacks, .. } => match policy {
+                ConditionOverload {
+                    per_stack,
+                    max_stacks,
+                    ..
+                } => match policy {
                     StackPolicy::BaseOnly => conditionals.push(json!({
                         "mod": name, "desc": e.describe(), "active": false,
                         "why": "sentinel weapons cannot proc on-kill stacks"})),
-                    _ => push("co", per_stack * max_stacks as f64,
-                        Some(format!("on kill, {max_stacks} stacks assumed, per status type on target"))),
+                    _ => push(
+                        "co",
+                        per_stack * max_stacks as f64,
+                        Some(format!(
+                            "on kill, {max_stacks} stacks assumed, per status type on target"
+                        )),
+                    ),
                 },
                 OnHeadshotCritChance { bonus, .. } => match policy {
                     StackPolicy::BaseOnly => conditionals.push(json!({
                         "mod": name, "desc": e.describe(), "active": false,
                         "why": "sentinel weapons cannot headshot"})),
-                    _ => push("crit_chance", bonus, Some("on headshot, buff assumed up".into())),
+                    _ => push(
+                        "crit_chance",
+                        bonus,
+                        Some("on headshot, buff assumed up".into()),
+                    ),
                 },
-                OnHeadshotKillCritChance { per_stack, max_stacks, .. } => match policy {
+                OnHeadshotKillCritChance {
+                    per_stack,
+                    max_stacks,
+                    ..
+                } => match policy {
                     StackPolicy::BaseOnly => conditionals.push(json!({
                         "mod": name, "desc": e.describe(), "active": false,
                         "why": "sentinel weapons cannot headshot"})),
-                    _ => push("crit_chance", per_stack * max_stacks as f64,
-                        Some(format!("on headshot kill, {max_stacks} stacks assumed"))),
+                    _ => push(
+                        "crit_chance",
+                        per_stack * max_stacks as f64,
+                        Some(format!("on headshot kill, {max_stacks} stacks assumed")),
+                    ),
                 },
                 Indirect(stat, x) => {
                     src.push(("indirect", name.clone(), x, Some(stat.label().to_string())));
@@ -762,13 +905,21 @@ pub fn panel_json(v: &Value) -> Value {
                     StackPolicy::BaseOnly => conditionals.push(json!({
                         "mod": name, "desc": e.describe(), "active": false,
                         "why": "sentinel weapons cannot proc on-kill buffs"})),
-                    _ => push("crit_damage", bonus, Some("on kill, buff assumed up".into())),
+                    _ => push(
+                        "crit_damage",
+                        bonus,
+                        Some("on kill, buff assumed up".into()),
+                    ),
                 },
                 OnReloadFireRate { bonus, .. } => match policy {
                     StackPolicy::BaseOnly => conditionals.push(json!({
                         "mod": name, "desc": e.describe(), "active": false,
                         "why": "sentinel weapons cannot proc on-reload buffs"})),
-                    _ => push("fire_rate", bonus, Some("on reload, buff assumed up".into())),
+                    _ => push(
+                        "fire_rate",
+                        bonus,
+                        Some("on reload, buff assumed up".into()),
+                    ),
                 },
                 // Event mechanic — no static stat; the sim rolls it per hit.
                 ProcConversion { .. } => conditionals.push(json!({
@@ -787,105 +938,184 @@ pub fn panel_json(v: &Value) -> Value {
     let (mut evo_flat_bd, mut evo_flat_cc) = (0.0f64, 0.0f64);
     if form_unlock_evo(info).is_some() {
         let tiername = |t: u32| ["", "EVO I", "EVO II", "EVO III", "EVO IV"][t.min(4) as usize];
-        for def in evo_refs.iter().filter_map(|id| wfsim_engine::evolutions_data::get(id)) {
+        for def in evo_refs
+            .iter()
+            .filter_map(|id| wfsim_engine::evolutions_data::get(id))
+        {
             let name = format!("{} ({})", def.name, tiername(def.tier));
             let v = def.flat_base_damage();
             if v > 0.0 {
                 evo_flat_bd += v;
-                evo_src.push(("base_damage", name.clone(), format!("+{v:.0} flat"),
-                    Some("added to the weapon base pro-rata, before mods".into())));
+                evo_src.push((
+                    "base_damage",
+                    name.clone(),
+                    format!("+{v:.0} flat"),
+                    Some("added to the weapon base pro-rata, before mods".into()),
+                ));
             }
             let v = def.flat_base_crit_chance();
             if v > 0.0 {
                 evo_flat_cc += v;
-                evo_src.push(("crit_chance", name.clone(), format!("+{:.0}% base", v * 100.0),
-                    Some("into the BASE crit chance — crit mods multiply it".into())));
+                evo_src.push((
+                    "crit_chance",
+                    name.clone(),
+                    format!("+{:.0}% base", v * 100.0),
+                    Some("into the BASE crit chance — crit mods multiply it".into()),
+                ));
             }
             let v = def.assumed_multishot();
             if v > 0.0 {
-                evo_src.push(("multishot", name.clone(), fpct(v),
-                    Some("on-ability-cast stacks, assumed full".into())));
+                evo_src.push((
+                    "multishot",
+                    name.clone(),
+                    fpct(v),
+                    Some("on-ability-cast stacks, assumed full".into()),
+                ));
             }
             let v = def.co_per_type();
             if v > 0.0 {
-                evo_src.push(("co", name.clone(), fpct(v),
-                    Some("innate, per status type on target".into())));
+                evo_src.push((
+                    "co",
+                    name.clone(),
+                    fpct(v),
+                    Some("innate, per status type on target".into()),
+                ));
             }
         }
     }
 
     // One stats section per form; the closure names its params `base` /
     // `panel` so every row reads the ACTIVE form's numbers.
-    let section = |label: &'static str, meta: &str, base: &WeaponBase, panel: &ResolvedPanel| -> Value {
-    let sources = |key: &str, tag: Option<&str>| -> Vec<Value> {
-        let evo = evo_src
-            .iter()
-            .filter(move |(k, _, _, _)| *k == key && tag.is_none())
-            .map(|(_, name, v, note)| json!({ "mod": name, "value": v, "note": note }));
-        evo.chain(
-            src.iter()
-                .filter(|(k, _, _, note)| {
-                    *k == key && tag.is_none_or(|t| note.as_deref() == Some(t))
-                })
-                .map(|(_, name, v, note)| {
-                    json!({ "mod": name, "value": fpct(*v),
+    let section = |label: &'static str,
+                   meta: &str,
+                   base: &WeaponBase,
+                   panel: &ResolvedPanel|
+     -> Value {
+        let sources = |key: &str, tag: Option<&str>| -> Vec<Value> {
+            let evo = evo_src
+                .iter()
+                .filter(move |(k, _, _, _)| *k == key && tag.is_none())
+                .map(|(_, name, v, note)| json!({ "mod": name, "value": v, "note": note }));
+            evo.chain(
+                src.iter()
+                    .filter(|(k, _, _, note)| {
+                        *k == key && tag.is_none_or(|t| note.as_deref() == Some(t))
+                    })
+                    .map(|(_, name, v, note)| {
+                        json!({ "mod": name, "value": fpct(*v),
                             "note": if tag.is_some() { Value::Null } else { json!(note) } })
-                }),
-        )
-        .collect()
-    };
-    // ---- stat rows: base -> final, with the merged bonus and its sources ----
-    let num = |x: f64| -> String {
-        if x >= 100.0 { format!("{x:.0}") } else { format!("{x:.1}") }
-    };
-    let pc = |x: f64| format!("{:.1}%", x * 100.0);
-    let mut stats = Vec::new();
-    // Every base stat is ALWAYS listed (user: the panel must state the whole
-    // base panel, not just what changed) — the UI drops the arrow when
-    // base == final.
-    let mut row = |key: &'static str, label: &str, base_s: String, final_s: String| {
-        stats.push(json!({ "key": key, "label": label, "base": base_s, "final": final_s,
-            "sources": sources(key, None) }));
-    };
-    // Base columns show the RAW weapon base (pre-evolution): the evolution
-    // flat deltas are attributed as named source rows, not hidden in "base".
-    let raw_bd = base.base_vector.total() - evo_flat_bd;
-    let raw_cc = base.base_crit_chance - evo_flat_cc;
-    row("base_damage", "Base Damage", num(raw_bd), num(panel.modified_base));
-    row("multishot", "Multishot", format!("×{}", num(base.base_multishot)), format!("×{}", num(panel.multishot)));
-    row("crit_chance", "Crit Chance", pc(raw_cc), pc(panel.crit_chance));
-    row("crit_damage", "Crit Damage", format!("×{}", num(base.base_crit_damage)), format!("×{}", num(panel.crit_damage)));
-    row("status_chance", "Status Chance", pc(base.base_status_chance), pc(panel.status_chance));
-    // Identical formatting on both sides — the UI drops the arrow only
-    // when the strings match ("×1" vs "×1.0" must not differ).
-    row("status_damage", "Status Damage", format!("×{}", num(1.0)), format!("×{}", num(panel.status_damage_mult)));
-    row("status_duration", "Status Duration", format!("×{}", num(1.0)), format!("×{}", num(panel.status_duration_mult)));
-    row("fire_rate", "Fire Rate", format!("{}/s", num(base.base_fire_rate)), format!("{}/s", num(panel.fire_rate)));
-    // Incarnon form: the magazine is a charge-backed resource (Max Charges,
-    // inert to magazine mods) and there is no reload — instead two transition
-    // times, each scaled by the reload formula base/(1 + reload bonus).
-    if let Some(inc) = base.incarnon {
-        let rl = panel.reload_bonus;
-        stats.push(json!({ "key": "magazine", "label": "Max Charges",
+                    }),
+            )
+            .collect()
+        };
+        // ---- stat rows: base -> final, with the merged bonus and its sources ----
+        let num = |x: f64| -> String {
+            if x >= 100.0 {
+                format!("{x:.0}")
+            } else {
+                format!("{x:.1}")
+            }
+        };
+        let pc = |x: f64| format!("{:.1}%", x * 100.0);
+        let mut stats = Vec::new();
+        // Every base stat is ALWAYS listed (user: the panel must state the whole
+        // base panel, not just what changed) — the UI drops the arrow when
+        // base == final.
+        let mut row = |key: &'static str, label: &str, base_s: String, final_s: String| {
+            stats.push(
+                json!({ "key": key, "label": label, "base": base_s, "final": final_s,
+            "sources": sources(key, None) }),
+            );
+        };
+        // Base columns show the RAW weapon base (pre-evolution): the evolution
+        // flat deltas are attributed as named source rows, not hidden in "base".
+        let raw_bd = base.base_vector.total() - evo_flat_bd;
+        let raw_cc = base.base_crit_chance - evo_flat_cc;
+        row(
+            "base_damage",
+            "Base Damage",
+            num(raw_bd),
+            num(panel.modified_base),
+        );
+        row(
+            "multishot",
+            "Multishot",
+            format!("×{}", num(base.base_multishot)),
+            format!("×{}", num(panel.multishot)),
+        );
+        row(
+            "crit_chance",
+            "Crit Chance",
+            pc(raw_cc),
+            pc(panel.crit_chance),
+        );
+        row(
+            "crit_damage",
+            "Crit Damage",
+            format!("×{}", num(base.base_crit_damage)),
+            format!("×{}", num(panel.crit_damage)),
+        );
+        row(
+            "status_chance",
+            "Status Chance",
+            pc(base.base_status_chance),
+            pc(panel.status_chance),
+        );
+        // Identical formatting on both sides — the UI drops the arrow only
+        // when the strings match ("×1" vs "×1.0" must not differ).
+        row(
+            "status_damage",
+            "Status Damage",
+            format!("×{}", num(1.0)),
+            format!("×{}", num(panel.status_damage_mult)),
+        );
+        row(
+            "status_duration",
+            "Status Duration",
+            format!("×{}", num(1.0)),
+            format!("×{}", num(panel.status_duration_mult)),
+        );
+        row(
+            "fire_rate",
+            "Fire Rate",
+            format!("{}/s", num(base.base_fire_rate)),
+            format!("{}/s", num(panel.fire_rate)),
+        );
+        // Incarnon form: the magazine is a charge-backed resource (Max Charges,
+        // inert to magazine mods) and there is no reload — instead two transition
+        // times, each scaled by the reload formula base/(1 + reload bonus).
+        if let Some(inc) = base.incarnon {
+            let rl = panel.reload_bonus;
+            stats.push(json!({ "key": "magazine", "label": "Max Charges",
             "base": num(inc.max_charges), "final": num(inc.max_charges),
             "sources": json!([]) }));
-        stats.push(json!({ "key": "transmute_in", "label": "Transmute In",
+            stats.push(json!({ "key": "transmute_in", "label": "Transmute In",
             "base": format!("{}s", num(inc.transmute_in)),
             "final": format!("{}s", num(inc.transmute_in / (1.0 + rl))),
             "sources": sources("reload", None) }));
-        stats.push(json!({ "key": "transmute_out", "label": "Transmute Out",
+            stats.push(json!({ "key": "transmute_out", "label": "Transmute Out",
             "base": format!("{}s", num(inc.transmute_out)),
             "final": format!("{}s", num(inc.transmute_out / (1.0 + rl))),
             "sources": sources("reload", None) }));
-    } else {
-        row("magazine", "Magazine", num(base.magazine_size), num(panel.magazine_size));
-        row("reload", "Reload", format!("{}s", num(base.base_reload)), format!("{}s", num(panel.reload_seconds)));
-    }
-    // PER-WEAPON behavior: GunCO sources (Galvanized Shot, Carnage Reign,
-    // Secondary Shiver) combine differently per weapon class, and their base
-    // EXCLUDES evolution flat damage — this note states what the model
-    // actually computes on THIS weapon, and is shared by every GunCO row.
-    let behavior = match panel.co_behavior {
+        } else {
+            row(
+                "magazine",
+                "Magazine",
+                num(base.magazine_size),
+                num(panel.magazine_size),
+            );
+            row(
+                "reload",
+                "Reload",
+                format!("{}s", num(base.base_reload)),
+                format!("{}s", num(panel.reload_seconds)),
+            );
+        }
+        // PER-WEAPON behavior: GunCO sources (Galvanized Shot, Carnage Reign,
+        // Secondary Shiver) combine differently per weapon class, and their base
+        // EXCLUDES evolution flat damage — this note states what the model
+        // actually computes on THIS weapon, and is shared by every GunCO row.
+        let behavior = match panel.co_behavior {
         wfsim_engine::loadout::CoBehavior::AdditiveWithBaseDamage =>
             "joins the base-damage bracket on this weapon (additive with Hornet Strike), direct hits only",
         wfsim_engine::loadout::CoBehavior::Independent =>
@@ -893,92 +1123,106 @@ pub fn panel_json(v: &Value) -> Value {
         wfsim_engine::loadout::CoBehavior::Inert =>
             "INERT on this weapon — the bonus does not apply",
     };
-    let gunco_note = if (panel.co_base_fraction - 1.0).abs() > 1e-9 {
-        format!(
+        let gunco_note = if (panel.co_base_fraction - 1.0).abs() > 1e-9 {
+            format!(
             "computed on the ORIGINAL {:.0} base only — evolution flat damage is excluded ({:.0}% effectiveness); {behavior}",
             raw_bd,
             panel.co_base_fraction * 100.0
         )
-    } else {
-        behavior.to_string()
-    };
-    if panel.co_per_type > 0.0 {
-        stats.push(json!({ "key": "co", "label": "Condition Overload",
+        } else {
+            behavior.to_string()
+        };
+        if panel.co_per_type > 0.0 {
+            stats.push(json!({ "key": "co", "label": "Condition Overload",
             "base": "—", "final": format!("{} per status type on target", fpct(panel.co_per_type)),
             "note": gunco_note,
             "sources": sources("co", None) }));
-    }
+        }
 
-    // The equipped arcane on the panel: Secondary Shiver is a GunCO-family
-    // source, so its row carries the SAME per-weapon caveat as the CO row.
-    if info.uses_arcane {
-        let aid = match get_str(v, "arcane", "none") {
-            "enervate" => "secondary_enervate",
-            "deadhead" => "secondary_deadhead",
-            "flare" => "cascadia_flare",
-            other => other,
-        };
-        if let Some(def) = wfsim_engine::arcanes_data::secondary(aid) {
-            let rank = get_u32(v, "arcane_rank", def.max_rank).min(def.max_rank);
-            let fx = def.fx(rank, policy, base.base_crit_chance, base.base_crit_damage, base.traits);
-            if fx.per_cold_bd > 0.0 {
-                stats.push(json!({ "key": "shiver", "label": "Per Cold Status (Shiver)",
+        // The equipped arcane on the panel: Secondary Shiver is a GunCO-family
+        // source, so its row carries the SAME per-weapon caveat as the CO row.
+        if info.uses_arcane {
+            let aid = match get_str(v, "arcane", "none") {
+                "enervate" => "secondary_enervate",
+                "deadhead" => "secondary_deadhead",
+                "flare" => "cascadia_flare",
+                other => other,
+            };
+            if let Some(def) = wfsim_engine::arcanes_data::secondary(aid) {
+                let rank = get_u32(v, "arcane_rank", def.max_rank).min(def.max_rank);
+                let fx = def.fx(
+                    rank,
+                    policy,
+                    base.base_crit_chance,
+                    base.base_crit_damage,
+                    base.traits,
+                );
+                if fx.per_cold_bd > 0.0 {
+                    stats.push(json!({ "key": "shiver", "label": "Per Cold Status (Shiver)",
                     "base": "—",
                     "final": format!("{} damage per Cold status on target (cap {})",
                         fpct(fx.per_cold_bd), fx.cold_cap),
                     "note": format!("GunCO family — {gunco_note}"),
                     "sources": [json!({ "mod": format!("{} (arcane, rank {rank})", def.name),
                         "value": fpct(fx.per_cold_bd), "note": "per Cold stack; Frozen counts as the full 10" })] }));
-            }
-        }
-    }
-
-    // Elements: one row per contributed element (position/order matters for
-    // combining — the damage section shows the combined result).
-    let mut elem_rows = Vec::new();
-    let mut seen_elems: Vec<String> = Vec::new();
-    for (k, _, _, note) in &src {
-        if *k == "elements" {
-            if let Some(t) = note {
-                if !seen_elems.contains(t) {
-                    seen_elems.push(t.clone());
                 }
             }
         }
-    }
-    for t in &seen_elems {
-        let total: f64 = src.iter()
-            .filter(|(k, _, _, n)| *k == "elements" && n.as_deref() == Some(t))
-            .map(|(_, _, v, _)| v).sum();
-        elem_rows.push(json!({ "key": "elements", "label": t, "base": "—",
+
+        // Elements: one row per contributed element (position/order matters for
+        // combining — the damage section shows the combined result).
+        let mut elem_rows = Vec::new();
+        let mut seen_elems: Vec<String> = Vec::new();
+        for (k, _, _, note) in &src {
+            if *k == "elements" {
+                if let Some(t) = note {
+                    if !seen_elems.contains(t) {
+                        seen_elems.push(t.clone());
+                    }
+                }
+            }
+        }
+        for t in &seen_elems {
+            let total: f64 = src
+                .iter()
+                .filter(|(k, _, _, n)| *k == "elements" && n.as_deref() == Some(t))
+                .map(|(_, _, v, _)| v)
+                .sum();
+            elem_rows.push(json!({ "key": "elements", "label": t, "base": "—",
             "final": format!("{} of modified base", fpct(total)),
             "sources": sources("elements", Some(t)) }));
-    }
+        }
 
-    // Indirect stats (recoil, accuracy, ammo…): not in theoretical DPS,
-    // real in practice; base is unmodified (0%), final = Σ.
-    let mut indirect_rows = Vec::new();
-    for (stat, total) in &panel.indirect {
-        indirect_rows.push(json!({ "key": "indirect", "label": stat.label(), "base": "—",
-            "final": fpct(*total), "sources": sources("indirect", Some(stat.label())) }));
-    }
+        // Indirect stats (recoil, accuracy, ammo…): not in theoretical DPS,
+        // real in practice; base is unmodified (0%), final = Σ.
+        let mut indirect_rows = Vec::new();
+        for (stat, total) in &panel.indirect {
+            indirect_rows.push(
+                json!({ "key": "indirect", "label": stat.label(), "base": "—",
+            "final": fpct(*total), "sources": sources("indirect", Some(stat.label())) }),
+            );
+        }
 
-    // The combined damage vector (post element-hierarchy).
-    let dmg_total = panel.damage.total();
-    let damage: Vec<Value> = panel.damage.iter_nonzero()
-        .map(|(t, amt)| json!({ "type": format!("{t:?}"), "amount": num(amt),
-            "share": format!("{:.0}%", amt / dmg_total * 100.0) }))
-        .collect();
+        // The combined damage vector (post element-hierarchy).
+        let dmg_total = panel.damage.total();
+        let damage: Vec<Value> = panel
+            .damage
+            .iter_nonzero()
+            .map(|(t, amt)| {
+                json!({ "type": format!("{t:?}"), "amount": num(amt),
+            "share": format!("{:.0}%", amt / dmg_total * 100.0) })
+            })
+            .collect();
 
-    json!({
-        "label": label,
-        "meta": meta,
-        "stats": stats,
-        "elements": elem_rows,
-        "indirect": indirect_rows,
-        "damage": damage,
-        "damage_total": num(dmg_total),
-    })
+        json!({
+            "label": label,
+            "meta": meta,
+            "stats": stats,
+            "elements": elem_rows,
+            "indirect": indirect_rows,
+            "damage": damage,
+            "damage_total": num(dmg_total),
+        })
     };
 
     let forms: Vec<Value> = forms_list
@@ -1122,13 +1366,12 @@ pub fn simulate_json(v: &Value) -> Value {
     // No Incarnon Form unlock (tier 1) in an explicit selection = the weapon
     // cannot transform: honest fallback to the base form.
     let unlock = form_unlock_evo(info);
-    let form = if v.get("evolutions").is_some()
-        && unlock.is_some_and(|u| !evos.iter().any(|e| e == u))
-    {
-        "base"
-    } else {
-        form
-    };
+    let form =
+        if v.get("evolutions").is_some() && unlock.is_some_and(|u| !evos.iter().any(|e| e == u)) {
+            "base"
+        } else {
+            form
+        };
     // Arcane: a data-driven pool id (legacy short names accepted for old
     // saved builds) + optional `arcane_rank` (default: max).
     let arcane_id = if info.uses_arcane {
@@ -1153,7 +1396,11 @@ pub fn simulate_json(v: &Value) -> Value {
     let mod_ids: Vec<String> = v
         .get("mods")
         .and_then(|x| x.as_array())
-        .map(|a| a.iter().filter_map(|m| m.as_str().map(String::from)).collect())
+        .map(|a| {
+            a.iter()
+                .filter_map(|m| m.as_str().map(String::from))
+                .collect()
+        })
         .unwrap_or_default();
 
     // No count validation here (user, 2026-07-28): the sim runs whatever it
@@ -1192,13 +1439,21 @@ pub fn simulate_json(v: &Value) -> Value {
         Ok(t) => t,
         Err(e) => return err_json(e),
     };
-    let (og, sh, hp, ar) = (target.overguard(), target.max_shield(), target.max_health(), target.armor());
+    let (og, sh, hp, ar) = (
+        target.overguard(),
+        target.max_shield(),
+        target.max_health(),
+        target.armor(),
+    );
     let body_parts = build_body_parts(spec, headshot_pct);
 
     // ---- forma legality (order-independent; needs only the mod multiset) ----
     let planned: Vec<PlannedMod> = refs
         .iter()
-        .map(|m| PlannedMod { base_drain: m.base_drain, polarity: m.polarity })
+        .map(|m| PlannedMod {
+            base_drain: m.base_drain,
+            polarity: m.polarity,
+        })
         .collect();
     let forma = match plan_forma(60, &innate_slots_for(&info.id), &planned) {
         Ok(fp) => json!({
@@ -1218,7 +1473,11 @@ pub fn simulate_json(v: &Value) -> Value {
         let base_base = WeaponBase::from_data(&info.id, true, &evo_refs);
         let incarnon_panel = resolve(&incarnon_base, &refs, policy);
         let base_panel = resolve(&base_base, &refs, policy);
-        let report = if form == "base" { base_panel.clone() } else { incarnon_panel.clone() };
+        let report = if form == "base" {
+            base_panel.clone()
+        } else {
+            incarnon_panel.clone()
+        };
         let params = match form {
             "base" => {
                 let mut d = DummyParams::from_panel(&base_panel, target, body_parts, duration);
@@ -1255,7 +1514,13 @@ pub fn simulate_json(v: &Value) -> Value {
         // Under the sim's Emergent policy the non-simmable conditionals are
         // honest no-ops (same rule as mods' CondBuff).
         let ab = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &evo_refs);
-        def.fx(rank, policy, ab.base_crit_chance, ab.base_crit_damage, ab.traits)
+        def.fx(
+            rank,
+            policy,
+            ab.base_crit_chance,
+            ab.base_crit_damage,
+            ab.traits,
+        )
     };
     // ---- apply the per-buff configured policy onto the live specs ----
     // (weapon-scoped: recurses into the incarnon cycle's base form). Frenzy is
@@ -1274,6 +1539,43 @@ pub fn simulate_json(v: &Value) -> Value {
         .map(|(t, val)| json!({ "type": format!("{t:?}"), "value": val }))
         .collect();
 
+    // Damage-meter rows (mean effective damage by source), best-first,
+    // zeros dropped. Status keys are the proc's DamageType name.
+    const TYPE_NAMES: [&str; 15] = [
+        "Impact",
+        "Puncture",
+        "Slash",
+        "Cold",
+        "Electricity",
+        "Heat",
+        "Toxin",
+        "Blast",
+        "Corrosive",
+        "Gas",
+        "Magnetic",
+        "Radiation",
+        "Viral",
+        "True",
+        "Void",
+    ];
+    let sd = &s.source_damage;
+    let mut sources: Vec<(String, f64)> = vec![
+        ("direct".to_string(), sd.direct),
+        ("arcane".to_string(), sd.arcane_on_status),
+    ];
+    sources.extend(
+        sd.status
+            .iter()
+            .enumerate()
+            .map(|(i, &v)| (TYPE_NAMES[i].to_string(), v)),
+    );
+    sources.retain(|(_, v)| *v > 0.0);
+    sources.sort_by(|a, b| b.1.total_cmp(&a.1));
+    let damage_sources: Vec<Value> = sources
+        .iter()
+        .map(|(k, v)| json!({ "source": k, "dmg": v }))
+        .collect();
+
     json!({
         "ok": true,
         "score": s.mean_kill_progress,
@@ -1290,6 +1592,7 @@ pub fn simulate_json(v: &Value) -> Value {
         "headshot_rate": s.mean_headshot_rate,
         "procs": s.mean_procs,
         "dot": s.mean_dot_damage,
+        "damage_sources": damage_sources,
         "transforms": s.mean_transforms,
         "reloads": s.mean_reloads,
         "duration": s.duration_secs,
@@ -1349,7 +1652,10 @@ pub fn opt_buffs_json(v: &Value) -> Value {
     ids.sort();
     ids.dedup();
     let full = mod_pool_for(&info.mod_class);
-    let refs: Vec<&ModDef> = full.iter().filter(|m| ids.iter().any(|id| id.as_str() == m.id)).collect();
+    let refs: Vec<&ModDef> = full
+        .iter()
+        .filter(|m| ids.iter().any(|id| id.as_str() == m.id))
+        .collect();
     let mut out: Vec<BuffMeta> = Vec::new();
     let none = wfsim_engine::arcanes_data::ArcaneFx::none();
     merge(&mut out, enumerate_buffs(&refs, &none, info));
@@ -1360,7 +1666,13 @@ pub fn opt_buffs_json(v: &Value) -> Value {
                 continue;
             }
             if let Some(def) = wfsim_engine::arcanes_data::secondary(a) {
-                let fx = def.fx(def.max_rank, StackPolicy::Emergent, arc_base.base_crit_chance, arc_base.base_crit_damage, arc_base.traits);
+                let fx = def.fx(
+                    def.max_rank,
+                    StackPolicy::Emergent,
+                    arc_base.base_crit_chance,
+                    arc_base.base_crit_damage,
+                    arc_base.traits,
+                );
                 merge(&mut out, enumerate_buffs(&[], &fx, info));
             }
         }
@@ -1420,7 +1732,9 @@ pub struct OptimizePlan {
 pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
     if incarnon_id(info).is_none() {
-        return Err(err_json("the optimizer needs a transform-group weapon (v1)"));
+        return Err(err_json(
+            "the optimizer needs a transform-group weapon (v1)",
+        ));
     }
     // ---- mod scope (MAIN 8 slots): fixed ∪ search = pool; fixed = required.
     // Exilus-flagged mods MAY appear here too — all 9 slots accept them
@@ -1469,7 +1783,11 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     ex_search.retain(|s| !ex_fixed.contains(s));
     // "none" is a first-class option id: pool it to keep "leave empty" among
     // the searched options, req it to pin the slot empty.
-    for id in ex_fixed.iter().chain(ex_search.iter()).filter(|id| id.as_str() != "none") {
+    for id in ex_fixed
+        .iter()
+        .chain(ex_search.iter())
+        .filter(|id| id.as_str() != "none")
+    {
         let Some(m) = full.iter().find(|m| m.id == id.as_str()) else {
             return Err(err_json(format!("unknown exilus mod id: {id}")));
         };
@@ -1504,7 +1822,10 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     };
     let exilus_defs: Vec<Option<ModDef>> = exilus_ids
         .iter()
-        .map(|o| o.as_ref().and_then(|id| full.iter().find(|m| m.id == id.as_str()).cloned()))
+        .map(|o| {
+            o.as_ref()
+                .and_then(|id| full.iter().find(|m| m.id == id.as_str()).cloned())
+        })
         .collect();
 
     // The MAXIMUM main slots a build may fill (1..=8; the exilus slot is the
@@ -1536,7 +1857,10 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         .filter(|m| pool_ids.iter().any(|id| id.as_str() == m.id))
         .cloned()
         .collect();
-    let constraints = Constraints { require: fixed_ids.clone(), forbid: Vec::new() };
+    let constraints = Constraints {
+        require: fixed_ids.clone(),
+        forbid: Vec::new(),
+    };
 
     // ---- evolution scope: per-tier options → the Cartesian product ----
     let evo_req = v.get("evolutions").and_then(|x| x.as_object());
@@ -1545,14 +1869,20 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         let opts: Vec<Option<String>> = evo_req
             .and_then(|o| o.get(&tier.to_string()))
             .and_then(|a| a.as_array())
-            .map(|a| a.iter().filter_map(|x| x.as_str().map(|s| Some(s.to_string()))).collect())
+            .map(|a| {
+                a.iter()
+                    .filter_map(|x| x.as_str().map(|s| Some(s.to_string())))
+                    .collect()
+            })
             .unwrap_or_default();
         let picks = if opts.is_empty() { vec![None] } else { opts }; // empty = nothing at this tier
         let mut next = Vec::new();
         for base in &evo_sets {
             for pick in &picks {
                 let mut e = base.clone();
-                if let Some(id) = pick { e.push(id.clone()); }
+                if let Some(id) = pick {
+                    e.push(id.clone());
+                }
                 next.push(e);
             }
         }
@@ -1570,7 +1900,11 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     let arc_ids: Vec<String> = v
         .get("arcanes")
         .and_then(|x| x.as_array())
-        .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
+        .map(|a| {
+            a.iter()
+                .filter_map(|x| x.as_str().map(String::from))
+                .collect()
+        })
         .unwrap_or_else(|| vec!["none".into()]);
     let arc_base = WeaponBase::from_data(&info.id, true, &[]);
     let arcanes: Vec<wfsim_engine::arcanes_data::ArcaneFx> = arc_ids
@@ -1648,7 +1982,11 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         target_name: s_name(&specs, enemy_id),
         level,
         steel_path,
-        threads: v.get("threads").and_then(|x| x.as_u64()).unwrap_or(0).min(256) as usize,
+        threads: v
+            .get("threads")
+            .and_then(|x| x.as_u64())
+            .unwrap_or(0)
+            .min(256) as usize,
     })
 }
 
@@ -1724,9 +2062,18 @@ pub fn run_optimize(
         let base = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &refs);
         let base_form = WeaponBase::from_data(&info.id, true, &refs);
         let (mut c, _stats, complete) = enumerate_candidates_observed(
-            &pool, &base, Some(&base_form), vi as u32, min_slots as u32, build_size as u32,
-            60, &innate, &constraints, &exilus_refs,
-            Some(state), MATERIALIZE_LIMIT - cands.len(),
+            &pool,
+            &base,
+            Some(&base_form),
+            vi as u32,
+            min_slots as u32,
+            build_size as u32,
+            60,
+            &innate,
+            &constraints,
+            &exilus_refs,
+            Some(state),
+            MATERIALIZE_LIMIT - cands.len(),
         );
         cands.append(&mut c);
         if !complete {
@@ -1747,7 +2094,9 @@ pub fn run_optimize(
     let (cands, last, cancelled, n_jobs) = if !overflow {
         // ---- classic path: materialized candidates, full funnel ----
         if cands.is_empty() {
-            return err_json("no legal builds in this scope (Forma / family constraints eliminated all)");
+            return err_json(
+                "no legal builds in this scope (Forma / family constraints eliminated all)",
+            );
         }
         let jobs: Vec<Job> = (0..cands.len())
             .flat_map(|i| (0..arcanes.len()).map(move |a| (i, a)))
@@ -1756,16 +2105,27 @@ pub fn run_optimize(
         on_enumerated(cands.len(), n_jobs);
         let rounds = schedule_to(n_jobs, final_runs, finalists);
         let last = run_funnel(
-            &cands, &arcanes, &scenario, jobs, &rounds, 0xDEAD_BEEF, false,
-            Some(state), on_round,
+            &cands,
+            &arcanes,
+            &scenario,
+            jobs,
+            &rounds,
+            0xDEAD_BEEF,
+            false,
+            Some(state),
+            on_round,
         );
         let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
         (cands, last, c, n_jobs)
     } else {
         // ---- streaming path: re-walk the whole scope through the screen ----
         drop(cands); // the partial materialization is dead weight
-        state.enumerated.store(0, std::sync::atomic::Ordering::Relaxed);
-        state.sims_done.store(0, std::sync::atomic::Ordering::Relaxed);
+        state
+            .enumerated
+            .store(0, std::sync::atomic::Ordering::Relaxed);
+        state
+            .sims_done
+            .store(0, std::sync::atomic::Ordering::Relaxed);
         let (screened, complete) = stream_screen(
             |emit| {
                 for (vi, set) in evo_sets.iter().enumerate() {
@@ -1774,21 +2134,37 @@ pub fn run_optimize(
                         WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &refs);
                     let base_form = WeaponBase::from_data(&info.id, true, &refs);
                     if !enumerate_candidates_each(
-                        &pool, &base, Some(&base_form), vi as u32, min_slots as u32,
-                        build_size as u32, 60, &innate, &constraints, &exilus_refs,
-                        Some(state), emit,
+                        &pool,
+                        &base,
+                        Some(&base_form),
+                        vi as u32,
+                        min_slots as u32,
+                        build_size as u32,
+                        60,
+                        &innate,
+                        &constraints,
+                        &exilus_refs,
+                        Some(state),
+                        emit,
                     ) {
                         break;
                     }
                 }
             },
-            &arcanes, &scenario, 1, SCREEN_KEEP, 0xDEAD_BEEF, Some(state),
+            &arcanes,
+            &scenario,
+            1,
+            SCREEN_KEEP,
+            0xDEAD_BEEF,
+            Some(state),
         );
         if screened.is_empty() {
             if state.cancel.load(std::sync::atomic::Ordering::Relaxed) {
                 return cancelled_json(0);
             }
-            return err_json("no legal builds in this scope (Forma / family constraints eliminated all)");
+            return err_json(
+                "no legal builds in this scope (Forma / family constraints eliminated all)",
+            );
         }
         // Survivors → a dedup'd candidate table (the same build survives
         // with several arcanes) + (job, screen summary) pairs, best-first.
@@ -1811,12 +2187,21 @@ pub fn run_optimize(
         } else {
             let jobs: Vec<Job> = slast.iter().map(|(j, _)| *j).collect();
             let n = jobs.len();
-            state.sims_done.store(0, std::sync::atomic::Ordering::Relaxed); // fresh % for the funnel
+            state
+                .sims_done
+                .store(0, std::sync::atomic::Ordering::Relaxed); // fresh % for the funnel
             on_enumerated(sc.len(), n);
             let rounds = schedule_to(n, final_runs, finalists);
             let last = run_funnel(
-                &sc, &arcanes, &scenario, jobs, &rounds, 0xDEAD_BEEF, false,
-                Some(state), on_round,
+                &sc,
+                &arcanes,
+                &scenario,
+                jobs,
+                &rounds,
+                0xDEAD_BEEF,
+                false,
+                Some(state),
+                on_round,
             );
             let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
             (sc, last, c, n)
@@ -1833,11 +2218,17 @@ pub fn run_optimize(
             let c = &cands[*ci];
             let mods: Vec<&str> = c.ordered.iter().map(|&i| pool[i].id).collect();
             let arc = &arcanes[*ai];
-            let arcane_id = if arc.id.is_empty() { "none".to_string() } else { arc.id.clone() };
+            let arcane_id = if arc.id.is_empty() {
+                "none".to_string()
+            } else {
+                arc.id.clone()
+            };
             let arcane_rank = if arc.id.is_empty() {
                 0
             } else {
-                wfsim_engine::arcanes_data::secondary(&arc.id).map(|d| d.max_rank).unwrap_or(0)
+                wfsim_engine::arcanes_data::secondary(&arc.id)
+                    .map(|d| d.max_rank)
+                    .unwrap_or(0)
             };
             json!({
                 "rank": rank + 1,
