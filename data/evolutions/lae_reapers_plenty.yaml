@@ -1,0 +1,16 @@
+id: lae_reapers_plenty
+name: Reaper's Plenty
+weapon: laetum
+tier: 5
+description: "On Headshot: +40% Ammo Efficiency for 6s."
+selection: choose_one
+
+effects:
+  # Inert on the charge-backed Incarnon magazine; the base form's ammo
+  # economy is not a sim constraint (infinite reserve).
+  - kind: indirect
+    stat: ammo_efficiency_on_headshot
+    value: 0.40
+
+source:
+  url: https://wiki.warframe.com/w/Laetum

@@ -1,0 +1,14 @@
+id: lae_raptors_chase
+name: Raptor's Chase
+weapon: laetum
+tier: 2
+description: "+50% Movement Speed while Aiming."
+selection: choose_one
+
+effects:
+  - kind: indirect          # mobility only
+    stat: movement_speed_aiming
+    value: 0.50
+
+source:
+  url: https://wiki.warframe.com/w/Laetum

@@ -1,0 +1,18 @@
+id: lae_devouring_attrition
+name: Devouring Attrition
+weapon: laetum
+tier: 5
+description: "50% chance to deal +2000% damage on non-critical hits."
+selection: choose_one
+# VERBATIM (wiki): "Damage bonus is multiplicative to base damage bonuses
+# such as Hornet Strike" and it "Affects both forms" (the Incarnon
+# explosions included). So: an INDEPENDENT multiplier, rolled per damage
+# instance that did NOT crit.
+
+effects:
+  - kind: chance_damage_on_noncrit
+    chance: 0.50
+    value: 20.0            # +2000% => x21 on the instance
+
+source:
+  url: https://wiki.warframe.com/w/Laetum

@@ -1,0 +1,78 @@
+id: laetum
+name: Laetum
+slot: secondary
+# Single Pistol — takes the Pistol Mods pool (wiki Pistol_Mods), same
+# eligibility path as the Dual Toxocyst entry.
+class: pistol
+mod_eligibility: pistol_mods
+grip_type: PISTOL
+mastery_rank: 14
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group. Zariman weapons carry the
+# Incarnon Genesis innately — there is no separate Genesis item to install.
+transform_group: laetum
+transforms_to: laetum_incarnon
+
+# Weapon-level metadata (wiki data module / WFCD warframe-items).
+accuracy: 16
+disposition: 0.5             # riven disposition (●○○○○)
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Laetum
+traits: [zariman, incarnon]
+introduced: "31.5"           # Update 31.5 "Angels of the Zariman" (2022-04-27)
+internal_name: /Lotus/Weapons/Tenno/Zariman/Pistols/HeavyPistol/ZarimanHeavyPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 12
+reload_seconds: 2.0
+
+# Condition Overload behavior class (three exist: additive_with_base_damage /
+# independent / inert — see data/mods/galvanized_shot.yaml). UNVERIFIED for
+# this weapon: "Adding" is the common class (MECHANICS §2), assumed here
+# until the per-weapon catalog entry is transcribed or measured.
+co_behavior: additive_with_base_damage
+
+# Single attack profile — no radial component on the base form; the
+# explosion belongs to the Incarnon form only (see laetum_incarnon.yaml).
+attack:
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 2.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.22
+  crit_multiplier: 2.2
+  status_chance: 0.22
+  punch_through_m: 0.0
+  damage: { impact: 64.0, slash: 96.0 }   # total 160
+
+# Incarnon evolutions are perks shared by the transform group; definitions
+# live in data/evolutions/lae_*.yaml.
+# incarnon_evolutions:
+# - { tier: 1, unlock: kill 100 enemies,
+# options: [lae_evo1_incarnon_form] }
+# - { tier: 2, unlock: kill 8 Eximus with the Incarnon Form,
+# options: [lae_marksmans_hand, lae_rapid_wrath, lae_raptors_chase] }
+# - { tier: 3, unlock: land 8 headshots on Void Angels without reloading,
+# options: [lae_lethal_rearmament, lae_awakened_readiness,
+# lae_feather_of_justice] }
+# - { tier: 4, unlock: close 12 Ruptures in Void Flood,
+# options: [lae_caput_mortuum, lae_incarnon_efficiency,
+# lae_elemental_excess] }
+# - { tier: 5, unlock: complete a solo mission with an Incarnon weapon in
+# every slot,
+# options: [lae_devouring_attrition, lae_reapers_plenty,
+# lae_overwhelming_attrition] }
+
+source:
+  url: https://wiki.warframe.com/w/Laetum
+  # note: Stats cross-checked against the wiki page infobox and the WFCD
+  # warframe-items dataset (same datamined source). The dataset's summary
+  # `damage` object mislabels the 96 Slash as Puncture; `damagePerShot`
+  # and the per-attack tables agree on Impact 64 / Slash 96.

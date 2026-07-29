@@ -1,0 +1,21 @@
+id: lae_overwhelming_attrition
+name: Overwhelming Attrition
+weapon: laetum
+tier: 5
+description: "On Hit that is neither Critical nor applies a Status Effect: +400% damage for 10s. Stacks up to 3 times."
+selection: choose_one
+# Decay (wiki): "When the buff times out, one stack is lost and the buff
+# duration resets" - the Galvanized lose-one-and-reset model, not
+# per-stack expiry.
+# UNVERIFIED bracket: the wiki does not state which multiplier the +400%
+# joins. Modeled like its tier sibling Devouring Attrition (an
+# independent multiplier) until measured.
+
+effects:
+  - kind: stacking_damage_on_plain_hit
+    per_stack: 4.0         # +400% per stack
+    max_stacks: 3
+    duration: 10
+
+source:
+  url: https://wiki.warframe.com/w/Laetum

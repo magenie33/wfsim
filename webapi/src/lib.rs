@@ -320,7 +320,7 @@ pub fn meta_json() -> Value {
                     .map(|p| p.map(|x| format!("{x:?}")))
                     .collect::<Vec<_>>(),
                 "forms": w.forms.iter().map(|(id, name)| json!({"id": id, "name": name})).collect::<Vec<_>>(),
-                "evolutions": (1u32..=4)
+                "evolutions": (1u32..=wfsim_engine::evolutions_data::tier_count(evo_group(w)))
                     .map(|tier| json!({
                         "tier": tier,
                         "options": wfsim_engine::evolutions_data::options(evo_group(w), tier)
@@ -1564,6 +1564,7 @@ pub fn simulate_json(v: &Value) -> Value {
     let sd = &m.sources;
     let mut sources: Vec<(String, f64)> = vec![
         ("direct".to_string(), sd.direct),
+        ("radial".to_string(), sd.radial),
         ("arcane".to_string(), sd.arcane_on_status),
     ];
     sources.extend(
@@ -1868,9 +1869,13 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     };
 
     // ---- evolution scope: per-tier options → the Cartesian product ----
+    // The tier COUNT is per weapon (DT 4, Laetum 5) — read it from the data.
     let evo_req = v.get("evolutions").and_then(|x| x.as_object());
     let mut evo_sets: Vec<Vec<String>> = vec![Vec::new()];
-    for tier in 1u32..=4 {
+    let evo_tiers = wfsim_engine::evolutions_data::tier_count(
+        wspec(&info.id).transform_group.as_deref().unwrap_or(&info.id),
+    );
+    for tier in 1u32..=evo_tiers {
         let opts: Vec<Option<String>> = evo_req
             .and_then(|o| o.get(&tier.to_string()))
             .and_then(|a| a.as_array())

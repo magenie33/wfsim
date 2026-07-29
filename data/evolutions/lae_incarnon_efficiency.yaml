@@ -1,0 +1,15 @@
+id: lae_incarnon_efficiency
+name: Incarnon Efficiency
+weapon: laetum
+tier: 4
+description: "Headshots build +50% more Transmutation charge."
+selection: choose_one
+# 12 weakpoint hits to fill becomes 8 (wiki) - a CYCLE parameter: it
+# shortens the base-form phase of the Incarnon loop.
+
+effects:
+  - kind: incarnon_charge_rate
+    value: 0.50
+
+source:
+  url: https://wiki.warframe.com/w/Laetum

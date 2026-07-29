@@ -5,6 +5,8 @@
 weapons:
   dual_toxocyst: DualToxocyst.png
   dual_toxocyst_incarnon: DualToxocyst.png
+  laetum: ZarimanHeavyPistol.png
+  laetum_incarnon: ZarimanHeavyPistol.png
 
 mods:
   accelerated_isotope: RadiationFireratePistolMod.jpg

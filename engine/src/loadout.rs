@@ -501,6 +501,51 @@ pub struct WeaponBase {
     /// formula `base / (1 + reload bonus)`. `magazine_size` / `base_reload`
     /// still carry the pseudo-reload (270 / 3.35) the plain sim consumes.
     pub incarnon: Option<IncarnonForm>,
+    /// Evolution-granted additive fire rate (Rapid Wrath) — joins the
+    /// fire-rate-mod bucket.
+    pub evo_fire_rate_bonus: f64,
+    /// FLAT crit/status chance added AFTER mods (Elemental Excess) — a
+    /// different layer from the base-stat one `base_crit_chance` carries.
+    pub post_mod_crit_chance: f64,
+    pub post_mod_status_chance: f64,
+    /// Additive headshot-damage bonus (Caput Mortuum), inside the headshot
+    /// bracket `(1 + Σ)`. Direct hits only — a radial never headshots.
+    pub headshot_damage_bonus: f64,
+    /// Devouring Attrition: `(chance, bonus)` — on an instance that did
+    /// NOT crit, `chance` to multiply it by `(1 + bonus)`. Its own
+    /// multiplier, applied to the direct hit and the radial alike.
+    pub noncrit_bonus: Option<(f64, f64)>,
+    /// A RADIAL (AoE) attack part fired alongside the direct hit — the
+    /// Laetum Incarnon's 300 Radiation explosion. Separate damage vector,
+    /// crit and status stats; the directly-hit enemy takes both parts.
+    /// See MECHANICS §7 "Radial (AoE) attack parts" for the rule set.
+    pub radial: Option<RadialBase>,
+}
+
+/// A weapon's radial (explosion) attack part, unmodded.
+#[derive(Debug, Clone)]
+pub struct RadialBase {
+    pub base_vector: DamageVector,
+    pub base_crit_chance: f64,
+    pub base_crit_damage: f64,
+    pub base_status_chance: f64,
+    /// Blast radius = the falloff `end` distance.
+    pub radius_m: f64,
+    /// Linear falloff window and the fraction of damage REMOVED at max
+    /// distance: `mult(d) = 1 − reduction × clamp((d−start)/(end−start))`.
+    /// Only bites once the sim has targets away from the epicentre.
+    pub falloff_start_m: f64,
+    pub falloff_reduction: f64,
+}
+
+/// The radial part after mod resolution.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ResolvedRadial {
+    pub damage: DamageVector,
+    pub modified_base: f64,
+    pub crit_chance: f64,
+    pub crit_damage: f64,
+    pub status_chance: f64,
 }
 
 /// The Incarnon form's charge economy, for the panel's stat display (see
@@ -509,11 +554,18 @@ pub struct WeaponBase {
 pub struct IncarnonForm {
     /// Fixed charge capacity ("Max Charges") — magazine mods are inert.
     pub max_charges: f64,
+    /// Weakpoint hits needed to fill the gauge, UNMODIFIED by evolutions
+    /// (Dual Toxocyst 9, Laetum 12). `charge_rate` below shortens it.
+    pub charges_to_fill: f64,
     /// Transmute IN (enter the form) = the base form's reload time.
     pub transmute_in: f64,
     /// Transmute OUT (revert to the base form; officially unnamed) — an
     /// estimate, also shortened by reload-speed bonuses.
     pub transmute_out: f64,
+    /// Extra gauge fill rate from evolutions (Incarnon Efficiency: +0.5).
+    /// Weakpoint hits build `1 + charge_rate` times the charge, so the
+    /// hits needed to fill the gauge divide by that factor.
+    pub charge_rate: f64,
 }
 
 /// The Evolution II choice — a SEARCH DIMENSION (user, 2026-07-25). A
@@ -548,6 +600,16 @@ impl WeaponBase {
 pub struct ResolvedPanel {
     /// Post-hierarchy damage vector (physical × (1+bd) + combined elements).
     pub damage: DamageVector,
+    /// The resolved radial (AoE) part, when the weapon has one.
+    pub radial: Option<ResolvedRadial>,
+    /// The Incarnon transformation economy of THIS form, carried through
+    /// so the cycle model reads it from data instead of hardcoding one
+    /// weapon's numbers.
+    pub incarnon: Option<IncarnonForm>,
+    /// Additive headshot-damage bonus from evolutions (Caput Mortuum).
+    pub headshot_damage_bonus: f64,
+    /// Devouring Attrition's (chance, bonus) on non-crit instances.
+    pub noncrit_bonus: Option<(f64, f64)>,
     /// ModifiedBase = unmodded total × (1 + Σ base damage) — the base of
     /// every status-payload formula (elemental portions excluded).
     pub modified_base: f64,
@@ -872,8 +934,11 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
         }
     }
 
-    let modified_base = base.base_vector.total() * (1.0 + bd);
-
+    // The vector build, shared by the direct hit and the radial part: both
+    // run the SAME mod math on their OWN base vector (elemental mods are a
+    // percentage of THAT part's base damage — MECHANICS §7 "radial attack
+    // parts"). Returns (resolved vector, that part's ModifiedBase).
+    //
     // Split the (base-damage-scaled) innate vector. Physical IPS stays a fixed
     // component; innate PRIMARY elements (Verglas Prime's Cold, etc.) enter the
     // hierarchy at position 0 — BEFORE any mod element — so mod elements combine
@@ -881,55 +946,87 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
     // elementals are placed first and scale with base-damage mods like the rest
     // of the base. (A physical-innate weapon leaves `input` empty here, so this
     // is a no-op for Dual Toxocyst.)
-    let scale = 1.0 + bd;
-    let mut physical = DamageVector::new();
-    let mut input = ElementalInput::default();
-    for (t, v) in base.base_vector.iter_nonzero() {
-        if t.is_primary_element() {
-            input.push(t, v * scale);
-        } else {
-            // Physical (IPS): base_t × (1 + Σ physical mods) × (1 + base dmg).
-            // `scale` carries the base-damage multiplier; the physical bucket is
-            // multiplicative with it (wiki Damage/Calculation).
-            let pb = phys_bonus.iter().find(|(a, _)| *a == t).map_or(0.0, |(_, x)| *x);
-            physical.add(t, v * scale * (1.0 + pb));
-        }
-    }
-
-    // Mod-added elements append AFTER the innate ones, in mod order (first
-    // placement establishes an element's position; later same-element mods
-    // merge there).
-    for m in mods {
-        for e in &m.effects {
-            match *e {
-                ModEffect::Element(t, v) => input.push(t, modified_base * v),
-                ModEffect::CombinedElement(t, v) => {
-                    input.direct_secondary.push((t, modified_base * v))
-                }
-                _ => {}
+    let build = |base_vector: &DamageVector,
+                     elem_bonus: Option<&mut Vec<(DamageType, f64)>>|
+     -> (DamageVector, f64) {
+        let modified_base = base_vector.total() * (1.0 + bd);
+        let scale = 1.0 + bd;
+        let mut physical = DamageVector::new();
+        let mut input = ElementalInput::default();
+        for (t, v) in base_vector.iter_nonzero() {
+            if t.is_primary_element() {
+                input.push(t, v * scale);
+            } else {
+                // Physical (IPS): base_t × (1 + Σ physical mods) × (1 + base dmg).
+                // `scale` carries the base-damage multiplier; the physical bucket is
+                // multiplicative with it (wiki Damage/Calculation).
+                let pb = phys_bonus.iter().find(|(a, _)| *a == t).map_or(0.0, |(_, x)| *x);
+                physical.add(t, v * scale * (1.0 + pb));
             }
         }
-    }
-    for &(t, bonus) in &base.injected_elements {
-        input.injected.push((t, modified_base * bonus));
-        // The injection "behaves like a Toxin mod, additive with
-        // elemental mods" (frenzy.yaml) — so it ALSO raises that
-        // element's DoT tick bracket (1 + element bonuses).
-        if let Some(x) = elem_bonus.iter_mut().find(|(a, _)| *a == t) {
-            x.1 += bonus;
-        } else {
-            elem_bonus.push((t, bonus));
+
+        // Mod-added elements append AFTER the innate ones, in mod order (first
+        // placement establishes an element's position; later same-element mods
+        // merge there).
+        for m in mods {
+            for e in &m.effects {
+                match *e {
+                    ModEffect::Element(t, v) => input.push(t, modified_base * v),
+                    ModEffect::CombinedElement(t, v) => {
+                        input.direct_secondary.push((t, modified_base * v))
+                    }
+                    _ => {}
+                }
+            }
         }
-    }
-    let damage = elements::combine(&physical, &input);
+        let mut elem_bonus = elem_bonus;
+        for &(t, bonus) in &base.injected_elements {
+            input.injected.push((t, modified_base * bonus));
+            // The injection "behaves like a Toxin mod, additive with
+            // elemental mods" (frenzy.yaml) — so it ALSO raises that
+            // element's DoT tick bracket (1 + element bonuses). Recorded
+            // once, from the direct part's pass.
+            if let Some(eb) = elem_bonus.as_deref_mut() {
+                if let Some(x) = eb.iter_mut().find(|(a, _)| *a == t) {
+                    x.1 += bonus;
+                } else {
+                    eb.push((t, bonus));
+                }
+            }
+        }
+        (elements::combine(&physical, &input), modified_base)
+    };
+
+    let (damage, modified_base) = build(&base.base_vector, Some(&mut elem_bonus));
+    // The radial part (Laetum Incarnon's 300 Radiation explosion): its own
+    // base vector, crit and status stats, modded by the same buckets.
+    let radial = base.radial.as_ref().map(|r| {
+        let (rd, rmb) = build(&r.base_vector, None);
+        ResolvedRadial {
+            damage: rd,
+            modified_base: rmb,
+            crit_chance: r.base_crit_chance * (1.0 + cc),
+            crit_damage: r.base_crit_damage * (1.0 + cd),
+            status_chance: r.base_status_chance * (1.0 + sc),
+        }
+    });
 
     ResolvedPanel {
         damage,
+        radial,
+        incarnon: base.incarnon,
         modified_base,
-        crit_chance: base.base_crit_chance * (1.0 + cc),
+        // Elemental Excess adds its crit/status FLAT, after the mod
+        // multiply (wiki) — a different layer from the base-stat one.
+        crit_chance: (base.base_crit_chance * (1.0 + cc) + base.post_mod_crit_chance).max(0.0),
         crit_damage: base.base_crit_damage * (1.0 + cd),
-        status_chance: base.base_status_chance * (1.0 + sc),
-        fire_rate: base.base_fire_rate * (1.0 + fr),
+        // No upper clamp: status chance ABOVE 100% is meaningful (a
+        // guaranteed proc plus an extra roll) — DT resolves to 129%.
+        status_chance: (base.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)
+            .max(0.0),
+        fire_rate: base.base_fire_rate * (1.0 + fr + base.evo_fire_rate_bonus),
+        headshot_damage_bonus: base.headshot_damage_bonus,
+        noncrit_bonus: base.noncrit_bonus,
         multishot: base.base_multishot * (1.0 + base.buff_multishot_bonus + ms),
         base_multishot: base.base_multishot,
         // Magazine capacity: +% of base, floored to whole rounds (in-game).
@@ -981,6 +1078,12 @@ mod tests {
     fn verglas_prime() -> WeaponBase {
         WeaponBase {
             base_vector: DamageVector::new().with(DamageType::Cold, 32.0),
+            radial: None,
+            evo_fire_rate_bonus: 0.0,
+            post_mod_crit_chance: 0.0,
+            post_mod_status_chance: 0.0,
+            headshot_damage_bonus: 0.0,
+            noncrit_bonus: None,
             base_crit_chance: 0.14,
             base_crit_damage: 2.2,
             base_status_chance: 0.36,

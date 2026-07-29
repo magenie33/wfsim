@@ -926,6 +926,25 @@ pub struct DummyParams {
     pub locked_buffs: Vec<BuffLock>,
     /// The real Incarnon two-form cycle; `None` = single-phase run.
     pub cycle: Option<IncarnonCycle>,
+    /// The RADIAL (AoE) attack part, fired by every projectile that lands
+    /// (Laetum Incarnon: 300 Radiation beside the 100 Impact direct hit).
+    /// The directly-hit enemy takes both (MECHANICS §7). It carries its own
+    /// crit stats, never takes a body-part multiplier and never feeds
+    /// Condition Overload.
+    ///
+    /// LIMITATION (staged, 2026-07-29): the radial's own STATUS rolls are
+    /// not applied yet — the proc-application block lives inside the pellet
+    /// loop and needs extracting first. For the Laetum this costs the
+    /// Radiation procs the explosion would apply (confusion has no
+    /// single-target damage, but the status TYPE would feed Condition
+    /// Overload on the direct hits).
+    pub radial: Option<crate::loadout::ResolvedRadial>,
+    /// Evolution headshot-damage bonus (Caput Mortuum) — joins the
+    /// headshot bracket. Direct hits only; a radial never headshots.
+    pub headshot_damage_bonus: f64,
+    /// Devouring Attrition: (chance, bonus) rolled on every instance that
+    /// did NOT crit — its own multiplier, on the direct hit AND the radial.
+    pub noncrit_bonus: Option<(f64, f64)>,
     /// Magazine size; when it runs dry a reload (below) blocks firing.
     pub magazine_size: f64,
     pub reload_seconds: f64,
@@ -1189,6 +1208,9 @@ impl DummyParams {
         Self {
             faction_mult,
             damage: panel.damage,
+            radial: panel.radial,
+            headshot_damage_bonus: panel.headshot_damage_bonus,
+            noncrit_bonus: panel.noncrit_bonus,
             base_crit_chance: panel.crit_chance,
             crit_multiplier: panel.crit_damage,
             status_chance: panel.status_chance,
@@ -1244,6 +1266,7 @@ impl DummyParams {
         duration_secs: f64,
     ) -> Self {
         let rl = 1.0 + incarnon.reload_bonus;
+        let inc_form = incarnon.incarnon;
         let base_form = DummyParams {
             frenzy: true,
             ammo_efficiency_applies: true,
@@ -1258,11 +1281,17 @@ impl DummyParams {
             }],
             cycle: Some(IncarnonCycle {
                 base_form: Box::new(base_form),
-                // Dual Toxocyst gauge: 9 weakpoint charges
-                // (data/weapons/dual_toxocyst_incarnon.yaml).
-                charges_to_fill: 9,
-                transmute_out_seconds: 1.0 / rl,
-                transmute_seconds: 2.35 / rl,
+                // The gauge economy is DATA (the engine knows no weapon
+                // names): Dual Toxocyst 9 charges / 1.0 s revert / 2.35 s
+                // transmute, Laetum 12 / 2.0 / 2.0. Both transition times
+                // scale by the reload formula. An evolution that speeds up
+                // charge building (Incarnon Efficiency: +50%) divides the
+                // hits needed — 12 becomes 8.
+                charges_to_fill: inc_form
+                    .map(|f| (f.charges_to_fill / (1.0 + f.charge_rate)).ceil() as u32)
+                    .unwrap_or(9),
+                transmute_out_seconds: inc_form.map_or(1.0, |f| f.transmute_out) / rl,
+                transmute_seconds: inc_form.map_or(2.35, |f| f.transmute_in) / rl,
             }),
             ..Self::from_panel(incarnon, target, body_parts, duration_secs)
         }
@@ -1286,6 +1315,9 @@ impl Default for DummyParams {
     fn default() -> Self {
         Self {
             damage: Self::dual_toxocyst_base_vector(),
+            radial: None,
+            headshot_damage_bonus: 0.0,
+            noncrit_bonus: None,
             base_crit_chance: 0.05,
             crit_multiplier: 2.0,
             status_chance: 0.37,
@@ -1365,6 +1397,8 @@ impl Timeline {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SourceDamage {
     pub direct: f64,
+    /// The radial (AoE) attack part — MECHANICS §7.
+    pub radial: f64,
     pub arcane_on_status: f64,
     /// Indexed by `DamageType as usize` (15 variants).
     pub status: [f64; 15],
@@ -1404,6 +1438,18 @@ pub struct RunResult {
     pub sources: SourceDamage,
     /// Effective damage by time bucket (the damage-over-time curve).
     pub timeline: Timeline,
+}
+
+/// Devouring Attrition's multiplier for ONE damage instance: a
+/// non-critical instance (tier 0) rolls `chance` for `1 + bonus`; a
+/// critical instance is never eligible. Its own multiplicative bracket
+/// (wiki: "multiplicative to base damage bonuses such as Hornet Strike"),
+/// and it applies to the radial part too ("Affects both forms").
+fn noncrit_mult(spec: Option<(f64, f64)>, tier: u32, rng: &mut Rng) -> f64 {
+    match spec {
+        Some((chance, bonus)) if tier == 0 && rng.chance(chance) => 1.0 + bonus,
+        _ => 1.0,
+    }
 }
 
 /// Roll a critical tier for an effective crit chance that may exceed 1.0.
@@ -1967,7 +2013,9 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // 8.25x) and the bracket multiplies the sum. Rides the part
             // context into DoT snapshots.
             let head_bonus = if part.is_head {
-                params.arcane.headshot_mult_bonus
+                // Caput Mortuum's +50% joins the same additive bracket as
+                // the arcane's headshot-multiplier bonus.
+                params.arcane.headshot_mult_bonus + ap.headshot_damage_bonus
             } else {
                 0.0
             };
@@ -1999,7 +2047,17 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 } else {
                     1.0
                 };
-            let raw = qtotal * part_factor * crit_mult * co_mult * params.faction_mult * arc_final;
+            // Devouring Attrition: an INDEPENDENT multiplier rolled on
+            // instances that did NOT crit (wiki: "multiplicative to base
+            // damage bonuses such as Hornet Strike").
+            let attrition = noncrit_mult(ap.noncrit_bonus, tier, rng);
+            let raw = qtotal
+                * part_factor
+                * crit_mult
+                * co_mult
+                * params.faction_mult
+                * arc_final
+                * attrition;
             let (effective, killed, broke) = target.apply(
                 raw,
                 toxin_share,
@@ -2020,6 +2078,59 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             r.headshots += part.is_head as u32;
             any_head |= part.is_head;
             any_big |= tier >= 2;
+
+            // ---- the RADIAL part of this projectile (MECHANICS §7) ----
+            // Simultaneous with the direct hit, on the SAME enemy: its own
+            // crit roll off its own crit stats, a 1× body-part multiplier
+            // (an explosion never headshots), and NO Condition Overload —
+            // CO is direct-damage only. Faction and the arcane final
+            // multiplier still apply; mitigation is the target's normal
+            // pipeline. It fires even when the direct hit killed — the
+            // explosion happens regardless, and under InstantRespawn it
+            // simply lands on the fresh individual.
+            if let Some(rad) = &params.radial {
+                let r_tier = roll_crit_tier(rad.crit_chance, rng);
+                let r_crit_mult = 1.0 + r_tier as f64 * (rad.crit_damage - 1.0);
+                let r_qvec = rad.damage.quantized();
+                let r_total = r_qvec.total();
+                let r_toxin = if r_total > 0.0 {
+                    r_qvec.get(DamageType::Toxin) / r_total
+                } else {
+                    0.0
+                };
+                // Falloff: the projectile detonates ON the target, so the
+                // epicentre distance is 0 and the multiplier is 1. The
+                // radius/falloff data drives multi-target work later.
+                //
+                // `arc_ratio` — the arcane's LIVE base-damage stacks
+                // (Merciless & co) — is a weapon-wide damage bucket, so the
+                // explosion takes it too. What it must NOT take is the
+                // Condition Overload part of `co_mult`: CO is direct-damage
+                // only (MECHANICS §2/§7).
+                let r_attrition = noncrit_mult(ap.noncrit_bonus, r_tier, rng);
+                let r_raw = r_total
+                    * r_crit_mult
+                    * arc_ratio
+                    * params.faction_mult
+                    * arc_final
+                    * r_attrition;
+                let (r_eff, r_killed, r_broke) =
+                    target.apply(r_raw, r_toxin, false, t, &params.target, false, &mit);
+                r.total_damage += r_raw;
+                r.effective_damage += r_eff;
+                r.sources.radial += r_eff;
+                r.timeline.add(t, r_eff);
+                r.kills += r_killed as u32;
+                if let Some(pool) = r_broke {
+                    push_break_proc(&mut debuffs, params, t, pool);
+                }
+                if r_killed {
+                    gal.bump_on_kill(params, t);
+                    arc.on_kill(params, t);
+                    debuffs = DebuffState::default();
+                    continue;
+                }
+            }
 
             // Crosshairs' on-HEADSHOT buff refreshes on every head hit
             // (kills only matter for its stacks).
@@ -2480,6 +2591,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         big_crits += r.big_crits as u64;
         headshots += r.headshots as u64;
         sources.direct += r.sources.direct;
+        sources.radial += r.sources.radial;
         sources.arcane_on_status += r.sources.arcane_on_status;
         for (acc, v) in sources.status.iter_mut().zip(r.sources.status) {
             *acc += v;
@@ -2521,6 +2633,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         source_damage: {
             let mut s = sources;
             s.direct /= n;
+            s.radial /= n;
             s.arcane_on_status /= n;
             for v in s.status.iter_mut() {
                 *v /= n;

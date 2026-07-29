@@ -1,0 +1,17 @@
+id: lae_feather_of_justice
+name: Feather of Justice
+weapon: laetum
+tier: 3
+description: "60% Ammo Efficiency while Aim Gliding or Sliding."
+selection: choose_one
+
+effects:
+  # Ammo efficiency is INERT on the charge-backed Incarnon magazine
+  # (laetum_incarnon.yaml), and conditional on a movement state the sim
+  # does not model.
+  - kind: indirect
+    stat: ammo_efficiency_conditional
+    value: 0.60
+
+source:
+  url: https://wiki.warframe.com/w/Laetum

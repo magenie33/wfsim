@@ -10,7 +10,7 @@ use std::sync::OnceLock;
 use serde::Deserialize;
 
 use crate::damage::{DamageType, DamageVector};
-use crate::loadout::{CoBehavior, IncarnonForm, WeaponBase};
+use crate::loadout::{CoBehavior, IncarnonForm, RadialBase, WeaponBase};
 use crate::mods::Polarity;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -27,6 +27,28 @@ pub struct AttackSpec {
     pub damage: BTreeMap<String, f64>,
     #[serde(default)]
     pub ricochet: Option<RicochetSpec>,
+    /// A radial (AoE) part fired with every projectile of this attack.
+    #[serde(default)]
+    pub radial: Option<RadialSpec>,
+}
+
+/// The radial (explosion) part of an attack — MECHANICS §7. Crit/status
+/// default to the direct part's when the data does not state them.
+#[derive(Debug, Clone, Deserialize)]
+pub struct RadialSpec {
+    pub damage: BTreeMap<String, f64>,
+    pub radius_m: f64,
+    #[serde(default)]
+    pub crit_chance: Option<f64>,
+    #[serde(default)]
+    pub crit_multiplier: Option<f64>,
+    #[serde(default)]
+    pub status_chance: Option<f64>,
+    #[serde(default)]
+    pub falloff_start_m: Option<f64>,
+    /// Fraction of damage REMOVED at maximum distance (Laetum: 0.2 → 80%).
+    #[serde(default)]
+    pub falloff_reduction: Option<f64>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -46,6 +68,8 @@ pub struct IncarnonSpec {
 #[derive(Debug, Clone, Deserialize)]
 pub struct GaugeSpec {
     pub max_rounds: f64,
+    /// Weakpoint hits needed to fill the gauge (DT 9, Laetum 12).
+    pub charges_to_fill: f64,
 }
 
 /// The locked-gauge magazine/reload reduction of an Incarnon form.
@@ -223,6 +247,18 @@ fn damage_type(name: &str) -> DamageType {
         "cold" => DamageType::Cold,
         "electricity" => DamageType::Electricity,
         "toxin" => DamageType::Toxin,
+        // Innate COMBINED elements (Laetum Incarnon's radial is 300
+        // Radiation). They do not re-enter the elemental hierarchy — an
+        // innate combined element stays as it is and mod elements combine
+        // among themselves (wiki Damage/Elemental combination).
+        "blast" => DamageType::Blast,
+        "corrosive" => DamageType::Corrosive,
+        "gas" => DamageType::Gas,
+        "magnetic" => DamageType::Magnetic,
+        "radiation" => DamageType::Radiation,
+        "viral" => DamageType::Viral,
+        "true" => DamageType::True,
+        "void" => DamageType::Void,
         other => panic!("unknown damage type in weapon data: {other}"),
     }
 }
@@ -311,8 +347,28 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
 
     let incarnon = s.incarnon.as_ref().map(|inc| IncarnonForm {
         max_charges: inc.gauge.max_rounds,
+        charges_to_fill: inc.gauge.charges_to_fill,
         transmute_in: inc.transmute_in_seconds,
         transmute_out: inc.transmute_out_seconds,
+        charge_rate: 0.0, // raised by evolutions (Incarnon Efficiency)
+    });
+
+    // The radial (AoE) attack part, when the weapon data declares one.
+    let radial = s.attack.radial.as_ref().map(|r| {
+        let mut v = DamageVector::new();
+        for (t, val) in &r.damage {
+            v.add(damage_type(t), *val);
+        }
+        RadialBase {
+            base_vector: v,
+            // Each stat falls back to the direct part's when unstated.
+            base_crit_chance: r.crit_chance.unwrap_or(s.attack.crit_chance),
+            base_crit_damage: r.crit_multiplier.unwrap_or(s.attack.crit_multiplier),
+            base_status_chance: r.status_chance.unwrap_or(s.attack.status_chance),
+            radius_m: r.radius_m,
+            falloff_start_m: r.falloff_start_m.unwrap_or(0.0),
+            falloff_reduction: r.falloff_reduction.unwrap_or(0.0),
+        }
     });
 
     WeaponBase {
@@ -332,6 +388,13 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         injected_elements,
         traits: traits_for(s),
         incarnon,
+        radial,
+        // All raised by evolutions, never by the raw weapon data.
+        evo_fire_rate_bonus: 0.0,
+        post_mod_crit_chance: 0.0,
+        post_mod_status_chance: 0.0,
+        headshot_damage_bonus: 0.0,
+        noncrit_bonus: None,
     }
 }
 
@@ -446,5 +509,114 @@ perks:
         assert_eq!(s[0], Some(Polarity::Madurai));
         assert_eq!(s[1], Some(Polarity::Naramon));
         assert_eq!(s[2], None);
+    }
+}
+
+#[cfg(test)]
+mod laetum_tests {
+    use super::*;
+
+    #[test]
+    fn laetum_incarnon_carries_its_radial_part() {
+        let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
+        let r = b.radial.as_ref().expect("laetum_incarnon declares a radial part");
+        assert_eq!(r.base_vector.total(), 300.0, "300 Radiation");
+        assert_eq!(r.radius_m, 2.0);
+        assert_eq!(r.falloff_reduction, 0.2);
+        // The direct part is pure Impact 100.
+        assert_eq!(b.base_vector.total(), 100.0);
+    }
+
+    #[test]
+    fn the_sim_actually_applies_the_radial() {
+        use crate::dummy::{monte_carlo, DummyParams, TargetParams};
+        let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
+        let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::AssumedMax);
+        let parts = vec![crate::dummy::BodyPart {
+            name: "body".into(),
+            aim_weight: 1.0,
+            multiplier: 1.0,
+            is_head: false,
+            crit_bonus: false,
+        }];
+        let params =
+            DummyParams::from_panel(&p, TargetParams::training_dummy(), parts, 10.0);
+        assert!(params.radial.is_some(), "params carry the radial");
+        let s = monte_carlo(&params, 30, 7);
+        assert!(
+            s.source_damage.radial > 0.0,
+            "the radial must land damage, got {:?}",
+            s.source_damage
+        );
+        // 300 Radiation vs 100 Impact: the radial dominates.
+        assert!(
+            s.source_damage.radial > s.source_damage.direct,
+            "radial {} should exceed direct {}",
+            s.source_damage.radial,
+            s.source_damage.direct
+        );
+    }
+
+    /// Two-stage damage: the direct hit lands first, then the explosion,
+    /// both on the SAME enemy (user, 2026-07-29). With Laetum's 100 Impact
+    /// direct and 300 Radiation radial, and no body-part multiplier on the
+    /// explosion, a body-only engagement must settle at radial ~ 3x direct.
+    #[test]
+    fn direct_then_radial_lands_at_the_declared_ratio() {
+        use crate::dummy::{monte_carlo, DummyParams};
+        let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
+        let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::AssumedMax);
+        let specs = crate::enemy_data::all();
+        let spec = specs.iter().find(|e| e.id == "thrax_centurion").unwrap();
+        let target = spec
+            .target_params(1, false, false, crate::dummy::TargetMode::InstantRespawn)
+            .unwrap();
+        let parts = vec![crate::dummy::BodyPart {
+            name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
+            is_head: false, crit_bonus: false,
+        }];
+        let params = DummyParams::from_panel(&p, target, parts, 30.0);
+        let s = monte_carlo(&params, 40, 3);
+        let d = s.source_damage.direct;
+        let r = s.source_damage.radial;
+        let ratio = r / d;
+        assert!(
+            (ratio - 3.0).abs() < 0.25,
+            "radial/direct should be ~3 (300 vs 100), got {ratio:.2} (direct {d:.0}, radial {r:.0})"
+        );
+    }
+
+    /// The cycle economy is DATA, not a hardcoded weapon: Laetum fills in
+    /// 12 weakpoint hits and both transitions cost its 2.0 s reload, while
+    /// Incarnon Efficiency (+50% charge) drops the fill to 8 hits.
+    #[test]
+    fn the_cycle_reads_its_economy_from_the_weapon_data() {
+        let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
+        let f = b.incarnon.expect("incarnon economy");
+        assert_eq!(f.charges_to_fill, 12.0);
+        assert_eq!(f.max_charges, 216.0);
+        assert_eq!(f.transmute_in, 2.0);
+        assert_eq!(f.transmute_out, 2.0);
+        assert_eq!(f.charge_rate, 0.0);
+
+        let eff = WeaponBase::from_data("laetum_incarnon", true, &["lae_incarnon_efficiency"]);
+        let g = eff.incarnon.expect("incarnon economy");
+        assert_eq!(g.charge_rate, 0.5);
+        // 12 / 1.5 = 8 hits (wiki).
+        assert_eq!((g.charges_to_fill / (1.0 + g.charge_rate)).ceil() as u32, 8);
+
+        // Dual Toxocyst keeps its own numbers.
+        let dt = WeaponBase::from_data("dual_toxocyst_incarnon", true, &[]);
+        let d = dt.incarnon.expect("incarnon economy");
+        assert_eq!(d.charges_to_fill, 9.0);
+        assert_eq!(d.transmute_in, 2.35);
+    }
+
+    #[test]
+    fn resolving_keeps_the_radial() {
+        let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
+        let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::AssumedMax);
+        let r = p.radial.expect("resolved panel keeps the radial");
+        assert!((r.damage.total() - 300.0).abs() < 1e-9, "got {}", r.damage.total());
     }
 }

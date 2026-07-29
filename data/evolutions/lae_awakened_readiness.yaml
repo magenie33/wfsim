@@ -1,0 +1,14 @@
+id: lae_awakened_readiness
+name: Awakened Readiness
+weapon: laetum
+tier: 3
+description: "30% Magazine reloaded per second while Holstered."
+selection: choose_one
+
+effects:
+  - kind: indirect          # holstered regen - no in-fight payload here
+    stat: holstered_reload_per_second
+    value: 0.30
+
+source:
+  url: https://wiki.warframe.com/w/Laetum

@@ -1,0 +1,18 @@
+id: lae_lethal_rearmament
+name: Lethal Rearmament
+weapon: laetum
+tier: 3
+description: "On Headshot: +30% Reload Speed for 12s. Stacks up to 3 times."
+selection: choose_one
+
+effects:
+  # Reload speed shortens the Incarnon transmute animations too, so this
+  # DOES touch the cycle - but the trigger (headshot) and its stacks are
+  # not wired into the timeline yet. Loads inert; revisit with the cycle.
+  - kind: on_headshot_reload_speed
+    per_stack: 0.30
+    max_stacks: 3
+    duration: 12
+
+source:
+  url: https://wiki.warframe.com/w/Laetum

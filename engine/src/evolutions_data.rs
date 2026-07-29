@@ -56,6 +56,25 @@ enum EvoEffect {
     /// with mod CO sources. `excludes_evolution_damage`: the GunCO base
     /// excludes evolution flat damage (wiki CO catalog, DT row).
     ConditionOverload { per_type: f64 },
+    /// Additive fire-rate bonus, mod-like (Rapid Wrath).
+    FireRateBonus(f64),
+    /// FLAT crit chance added AFTER mods (Elemental Excess: "Bonuses are
+    /// added after mods as a flat value") — NOT the base-stat layer that
+    /// Commodore's Fortune occupies.
+    PostModCritChance(f64),
+    /// FLAT status chance added after mods (Elemental Excess).
+    PostModStatusChance(f64),
+    /// Additive headshot-damage bonus (Caput Mortuum): joins the headshot
+    /// bracket `(1 + Σ)` that multiplies the body-part multiplier.
+    HeadshotDamage(f64),
+    /// Devouring Attrition: on an instance that did NOT crit, `chance` to
+    /// multiply it by `(1 + value)`. An INDEPENDENT multiplier ("multiplicative
+    /// to base damage bonuses such as Hornet Strike") that applies to BOTH
+    /// attack parts, the radial explosion included.
+    ChanceDamageOnNoncrit { chance: f64, value: f64 },
+    /// Incarnon gauge fill rate (Incarnon Efficiency): weakpoint hits build
+    /// `1 + value` times the charge, so the hits needed to fill divide by it.
+    IncarnonChargeRate(f64),
     /// No damage payload here (holstered regen, recoil, timed utility
     /// buffs, the weapon unlock) — kept so the evolution loads and lists.
     Inert(String),
@@ -154,6 +173,29 @@ impl EvolutionDef {
                     "+{:.0}% direct damage per status type on the target",
                     per_type * 100.0
                 ),
+                EvoEffect::FireRateBonus(v) => format!("+{:.0}% fire rate", v * 100.0),
+                EvoEffect::PostModCritChance(v) => format!(
+                    "{}{:.0}% crit chance, flat AFTER mods",
+                    if *v >= 0.0 { "+" } else { "" },
+                    v * 100.0
+                ),
+                EvoEffect::PostModStatusChance(v) => format!(
+                    "{}{:.0}% status chance, flat AFTER mods",
+                    if *v >= 0.0 { "+" } else { "" },
+                    v * 100.0
+                ),
+                EvoEffect::HeadshotDamage(v) => {
+                    format!("+{:.0}% headshot damage (direct hits only)", v * 100.0)
+                }
+                EvoEffect::ChanceDamageOnNoncrit { chance, value } => format!(
+                    "{:.0}% chance of +{:.0}% damage on a NON-crit instance (own multiplier, radial included)",
+                    chance * 100.0,
+                    value * 100.0
+                ),
+                EvoEffect::IncarnonChargeRate(v) => format!(
+                    "weakpoint hits build +{:.0}% Incarnon charge",
+                    v * 100.0
+                ),
                 EvoEffect::Inert(what) => {
                     format!("{} (no single-target DPS effect)", what.replace('_', " "))
                 }
@@ -190,6 +232,19 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         "condition_overload" => EvoEffect::ConditionOverload {
             per_type: f(v, "value").unwrap_or(0.0),
         },
+        "fire_rate_bonus" => EvoEffect::FireRateBonus(f(v, "value").unwrap_or(0.0)),
+        "flat_crit_chance_after_mods" => {
+            EvoEffect::PostModCritChance(f(v, "value").unwrap_or(0.0))
+        }
+        "flat_status_chance_after_mods" => {
+            EvoEffect::PostModStatusChance(f(v, "value").unwrap_or(0.0))
+        }
+        "headshot_damage" => EvoEffect::HeadshotDamage(f(v, "value").unwrap_or(0.0)),
+        "chance_damage_on_noncrit" => EvoEffect::ChanceDamageOnNoncrit {
+            chance: f(v, "chance").unwrap_or(0.0),
+            value: f(v, "value").unwrap_or(0.0),
+        },
+        "incarnon_charge_rate" => EvoEffect::IncarnonChargeRate(f(v, "value").unwrap_or(0.0)),
         other => EvoEffect::Inert(other.to_string()),
     })
 }
@@ -215,6 +270,18 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::ConditionOverload { per_type } => {
                     base.innate_co_per_type += per_type;
+                }
+                EvoEffect::FireRateBonus(v) => base.evo_fire_rate_bonus += v,
+                EvoEffect::PostModCritChance(v) => base.post_mod_crit_chance += v,
+                EvoEffect::PostModStatusChance(v) => base.post_mod_status_chance += v,
+                EvoEffect::HeadshotDamage(v) => base.headshot_damage_bonus += v,
+                EvoEffect::ChanceDamageOnNoncrit { chance, value } => {
+                    base.noncrit_bonus = Some((*chance, *value));
+                }
+                EvoEffect::IncarnonChargeRate(v) => {
+                    if let Some(i) = base.incarnon.as_mut() {
+                        i.charge_rate += v;
+                    }
                 }
                 EvoEffect::Inert(_) => {}
             }
@@ -264,6 +331,18 @@ pub fn options(weapon: &str, tier: u32) -> Vec<&'static EvolutionDef> {
         .iter()
         .filter(|e| e.weapon == weapon && e.tier == tier)
         .collect()
+}
+
+/// How many evolution tiers this weapon's data declares — the tier count
+/// is per weapon (Dual Toxocyst has 4, Laetum has 5), so callers must
+/// never assume a fixed range.
+pub fn tier_count(weapon: &str) -> u32 {
+    pool()
+        .iter()
+        .filter(|e| e.weapon == weapon)
+        .map(|e| e.tier)
+        .max()
+        .unwrap_or(0)
 }
 
 #[cfg(test)]

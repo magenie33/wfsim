@@ -1,0 +1,91 @@
+id: laetum_incarnon
+name: Laetum (Incarnon Form)
+slot: secondary
+class: pistol
+
+# TWO WEAPONS MODEL: second entry of the transform group — see
+# data/weapons/secondary/laetum.yaml for the base form and the decision.
+transform_group: laetum
+transforms_from: laetum
+
+# The Incarnon transformation economy (wiki Laetum). Zariman weapons carry
+# the Genesis innately, so there is no install cost.
+incarnon:
+  gauge:
+    charge_on: weakpoint_hits
+    charges_to_fill: 12
+    rounds_per_charge: 18
+    max_rounds: 216
+    # charge_rules:
+    # - Each weakpoint hit grants 18 Incarnon rounds; 12 hits fill the
+    # gauge to the 216-round cap.
+    # - Individual multishot projectiles each build charge.
+    # - A full gauge is NOT required to transmute.
+  transmute:
+    activation: alt_fire
+    # VERBATIM (wiki Laetum): "Mode switching is not instantaneous and has
+    # an animation equal to the weapon's reload speed." Both directions
+    # therefore cost the reload time and scale by the reload formula
+    # `base / (1 + reload bonus)` — unlike Dual Toxocyst, whose revert is
+    # a separate, shorter animation.
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+  incarnon_magazine:
+    # Same CAUSAL MODEL as Dual Toxocyst: these rounds are CHARGE-BACKED,
+    # converted from weakpoint charges and entirely outside the ammo
+    # system — which is WHY magazine mods and ammo efficiency are inert.
+    resource: incarnon_charges
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 2.0      # = base reload time, unmodded (wiki)
+  transmute_out_seconds: 2.0     # same animation both ways (wiki)
+
+# SIM CONVENIENCE: with the gauge LOCKED full the Incarnon cycle reduces to
+# a magazine/reload model the plain sim consumes directly.
+pseudo_reload:
+  magazine: 216
+  reload_seconds: 4.0   # transmute out (2.0) + in (2.0), unmodded
+  # note: excludes charge-rebuilding time (assumed locked); both components
+  # scale with reload-speed bonuses
+
+# Condition Overload behavior class — UNVERIFIED for this weapon (see the
+# base entry). Note CO is DIRECT-DAMAGE ONLY, so it never applies to the
+# radial part below (MECHANICS §2 and §7).
+co_behavior: additive_with_base_damage
+
+# TWO ATTACK PARTS (wiki Laetum): "Shots deal pure Impact damage on direct
+# hits, and Radiation damage in a 2 meter radius." The directly-hit enemy
+# takes BOTH. "Initial hit and explosion apply status separately."
+attack:
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 40
+  fire_rate: 6.67
+  multishot: 1.0
+  ammo_cost: 1                  # of the separate incarnon magazine (216)
+  crit_chance: 0.22
+  crit_multiplier: 2.2
+  status_chance: 0.22
+  punch_through_m: 0.0
+  damage: { impact: 100.0 }
+  # The radial (AoE) part — rules in MECHANICS §7: own crit/status stats,
+  # 1x body-part multiplier (an explosion never headshots and never
+  # charges the weakpoint gauge), no Condition Overload, linear falloff
+  # to (1 - reduction) at the radius edge. Self-stagger only, never
+  # self-damage.
+  radial:
+    damage: { radiation: 300.0 }
+    radius_m: 2.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.2      # 300 at the centre -> 240 (80%) at 2 m
+    crit_chance: 0.22
+    crit_multiplier: 2.2
+    status_chance: 0.22
+
+# incarnon_evolutions: see data/weapons/secondary/laetum.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Laetum
+  # note: Stats from the wiki page and the WFCD warframe-items dataset
+  # (which lists the explosion as a separate "Auto Radial Attack" with
+  # falloff {start 0, end 2, reduction 0.2}).

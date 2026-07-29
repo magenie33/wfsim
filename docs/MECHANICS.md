@@ -630,6 +630,56 @@ instance or an enemy touched, and the count is weapon-archetype dependent:
 This governs how many `Hit` events the timeline emits per Shot, which drives
 on-hit effects (e.g. Secondary Enervate).
 
+### Radial (AoE) attack parts
+
+A shot can carry **more than one damage instance**: the *direct* hit and a
+*radial* explosion are **separate attack parts** with their own damage vector,
+crit chance/multiplier and status chance (the weapon data declares each part —
+e.g. Laetum Incarnon: direct 100 Impact, radial 300 Radiation). The
+directly-hit enemy takes **both**.
+
+**Falloff from the epicenter is linear**, between a `start` and an `end`
+distance, down to a floor set by `reduction` — the fraction of damage
+*removed* at maximum distance:
+
+```
+radial_mult(d) = 1 − reduction × clamp((d − start) / (end − start), 0, 1)
+```
+
+`end` is the blast radius. Laetum: `start 0, end 2 m, reduction 0.2` → 300 at
+the centre, 240 (80%) at 2 m and beyond. Cross-check (wiki AoE table):
+Acceltra, 50% max reduction, base 44 → minimum 22. ✔
+
+Rules the radial part follows, each differing from the direct part:
+
+- **No body-part multipliers.** "The explosion has a 1x headshot multiplier and
+  cannot trigger headshot conditions. This does not apply to the projectile
+  itself." So a radial instance never headshots, never feeds headshot-gated
+  buffs, and never charges an Incarnon gauge that counts weakpoint hits.
+- **It can crit** — the part carries its own crit chance/multiplier in the
+  weapon data (Laetum radial: 22% / 2.2×).
+- **Status rolls independently**, per enemy: "If one AoE hits multiple enemies,
+  each enemy gets their own status roll." Forced procs are declared per part
+  (Astilla: the direct hit forces Impact, the radial does not — §6).
+- **No Condition Overload.** CO is direct-damage only; radial/AoE components
+  and non-directly-hit targets are excluded (§2). CO also ignores falloff as a
+  final multiplier. Careful: CO is the *only* thing the radial loses here —
+  weapon-wide damage buckets still reach it. The arcane base-damage stacks
+  (Merciless & co) share a bracket with CO in the direct-hit formula, so the
+  radial takes that ratio **without** the CO term.
+- **Self-stagger, never self-damage** (post-U29): "The explosion inflicts
+  self-stagger to the user."
+- Only mods that increase the **explosion radius** change how far the falloff
+  reaches; they do not change the floor.
+
+**Single-target consequence.** In our arena the projectile detonates on the
+target, so `d = 0` and the radial lands at full value; falloff only matters
+once multiple targets exist. The data still records `start/end/reduction` so
+the multi-target model has it.
+
+**Source:** wiki (Area of Effect, Damage Falloff) + the weapon data modules.
+**Status:** unverified (needs Simulacrum measurement of direct+radial totals).
+
 **Source:** wiki + measured. **Status:** unverified (hit-counting rules sourced
 from wiki; falloff/ballistics/AoE math need measurement). **High-risk**
 (CORE.md §3).

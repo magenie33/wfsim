@@ -20,6 +20,9 @@ use wfsim_engine::scaling;
 
 fn dt_baseline() -> DummyParams {
     DummyParams {
+        radial: None,
+        headshot_damage_bonus: 0.0,
+        noncrit_bonus: None,
         damage: DamageVector::new()
             .with(DamageType::Impact, 7.5)
             .with(DamageType::Puncture, 60.0)

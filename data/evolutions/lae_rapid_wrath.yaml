@@ -1,0 +1,17 @@
+id: lae_rapid_wrath
+name: Rapid Wrath
+weapon: laetum
+tier: 2
+description: "+20% Fire Rate."
+selection: choose_one
+
+effects:
+  # UNVERIFIED bracket: the wiki does not say whether this joins the
+  # additive fire-rate-mod bucket or multiplies after it. Modeled as a
+  # mod-like additive bonus (the common evolution behavior); re-check
+  # against a measurement before trusting a tight number.
+  - kind: fire_rate_bonus
+    value: 0.20
+
+source:
+  url: https://wiki.warframe.com/w/Laetum

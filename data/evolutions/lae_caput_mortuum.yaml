@@ -1,0 +1,15 @@
+id: lae_caput_mortuum
+name: Caput Mortuum
+weapon: laetum
+tier: 4
+description: "+50% Headshot Damage."
+selection: choose_one
+# "Affects both modes" (wiki). The radial part never headshots, so this
+# only ever touches the DIRECT hit (MECHANICS section 7).
+
+effects:
+  - kind: headshot_damage
+    value: 0.50
+
+source:
+  url: https://wiki.warframe.com/w/Laetum

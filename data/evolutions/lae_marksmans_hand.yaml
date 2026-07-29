@@ -1,0 +1,14 @@
+id: lae_marksmans_hand
+name: Marksman's Hand
+weapon: laetum
+tier: 2
+description: "-40% Recoil."
+selection: choose_one
+
+effects:
+  - kind: indirect          # handling only - no single-target DPS payload
+    stat: recoil
+    value: -0.40
+
+source:
+  url: https://wiki.warframe.com/w/Laetum

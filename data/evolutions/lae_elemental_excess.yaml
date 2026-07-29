@@ -1,0 +1,18 @@
+id: lae_elemental_excess
+name: Elemental Excess
+weapon: laetum
+tier: 4
+description: "+20% Status Chance, -10% Critical Chance."
+selection: choose_one
+
+effects:
+  # VERBATIM (wiki): "Bonuses are added after mods as a flat value." So
+  # this is NOT the base-stat layer that Commodore's Fortune occupies on
+  # the Dual Toxocyst - it lands on the FINAL modded numbers.
+  - kind: flat_status_chance_after_mods
+    value: 0.20
+  - kind: flat_crit_chance_after_mods
+    value: -0.10
+
+source:
+  url: https://wiki.warframe.com/w/Laetum

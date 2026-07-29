@@ -1,0 +1,17 @@
+id: lae_evo1_incarnon_form
+name: Incarnon Form
+weapon: laetum
+tier: 1
+description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes.
+Gain an Auto fire mode whose shots deal Impact on direct hits and Radiation in a 2 m radius."
+selection: fixed                # tier 1 has no choice
+
+# Under the two-weapons model this perk IS the unlock of weapon #2: the
+# auto trigger, the higher stats and the radial part are properties of the
+# laetum_incarnon entry, not perk payload.
+effects:
+  - kind: unlocks_weapon
+    weapon: laetum_incarnon
+
+source:
+  url: https://wiki.warframe.com/w/Laetum
