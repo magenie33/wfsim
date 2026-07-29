@@ -719,6 +719,47 @@ mod laetum_tests {
         );
     }
 
+    /// The wiki CO catalog rates BOTH Laetum forms "Adding" at a 100% base
+    /// fraction, and notes the bonus "multiplies properly with Devouring
+    /// Attrition". Two consequences the engine must honour: CO reaches the
+    /// DIRECT hit only (never the 300 Radiation radial), and Devouring — its
+    /// own multiplicative bracket — multiplies the already-CO-boosted value.
+    #[test]
+    fn condition_overload_is_adding_direct_only_and_devouring_stacks_on_top() {
+        use crate::dummy::{monte_carlo, DummyParams, TargetParams};
+        let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
+        assert_eq!(b.co_behavior, crate::loadout::CoBehavior::AdditiveWithBaseDamage);
+        // 160/160 and 100/100 in the catalog: the whole base feeds the bonus.
+        assert!((b.co_base_fraction - 1.0).abs() < 1e-9);
+
+        let pool = crate::mods_data::pistol_pool();
+        let co: Vec<&crate::loadout::ModDef> =
+            pool.iter().filter(|m| m.id == "galvanized_shot").collect();
+        let parts = vec![crate::dummy::BodyPart {
+            name: "body".into(),
+            aim_weight: 1.0,
+            multiplier: 1.0,
+            is_head: false,
+            crit_bonus: false,
+        }];
+        let sources = |evos: &[&str], mods: &[&crate::loadout::ModDef]| {
+            let b = WeaponBase::from_data("laetum_incarnon", true, evos);
+            let p = crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::AssumedMax);
+            let params =
+                DummyParams::from_panel(&p, TargetParams::training_dummy(), parts.clone(), 20.0);
+            let s = monte_carlo(&params, 60, 17).source_damage;
+            (s.direct, s.radial)
+        };
+        // The radial is INDIFFERENT to a CO mod; the direct hit is not.
+        let (d0, r0) = sources(&[], &[]);
+        let (d1, r1) = sources(&[], &co);
+        assert!(d1 > d0 * 1.05, "CO must lift the direct hit: {d0:.0} -> {d1:.0}");
+        assert!(
+            (r1 / r0 - 1.0).abs() < 0.05,
+            "CO must NOT reach the radial: {r0:.0} -> {r1:.0}"
+        );
+    }
+
     #[test]
     fn resolving_keeps_the_radial() {
         let b = WeaponBase::from_data("laetum_incarnon", true, &[]);

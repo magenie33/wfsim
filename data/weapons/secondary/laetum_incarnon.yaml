@@ -48,9 +48,17 @@ pseudo_reload:
   # note: excludes charge-rebuilding time (assumed locked); both components
   # scale with reload-speed bonuses
 
-# Condition Overload behavior class — UNVERIFIED for this weapon (see the
-# base entry). Note CO is DIRECT-DAMAGE ONLY, so it never applies to the
-# radial part below (MECHANICS §2 and §7).
+# Condition Overload behavior class — VERIFIED from the wiki CO catalog:
+#   Laetum | Incarnon Form | Projectile | 100 | 100 | 100% | Adding
+# Same class as the base entry, and the 100/100 = 100% column again means
+# the full base feeds the bonus. CO boosts the DIRECT hit ONLY: the 300
+# Radiation radial below is excluded (MECHANICS §2 and §7).
+#
+# The catalog's note — "CO-bonus multiplies properly with Devouring
+# Attrition perk" — is a SUPPLEMENT, not a contradiction: Devouring is its
+# own multiplicative bracket (the Laetum page calls it "multiplicative to
+# base damage bonuses"), so it multiplies the already-CO-boosted damage.
+# The engine composes them in that order.
 co_behavior: additive_with_base_damage
 
 # TWO ATTACK PARTS (wiki Laetum): "Shots deal pure Impact damage on direct
