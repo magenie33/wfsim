@@ -95,11 +95,16 @@ cargo run -p wfsim-cli      # run the CLI
 
 See [`CORE.md`](CORE.md) §4 for the full architecture. In short:
 
-- `engine/`, `optimizer/`, `cli/` — the three Rust crates (Cargo workspace).
+- `engine/`, `optimizer/`, `cli/`, `web/`, `webapi/`, `wasm/` — the Rust
+  crates (Cargo workspace). `web` is the native dev server (UI in
+  `web/src/static/`); `webapi` holds endpoint logic shared with the
+  `wasm` build; `site/` is generated from it by
+  `scripts/build_site_app.py`.
 - `data/` — versioned game data (weapons, mods, enemies, factions, arcanes).
 - `docs/` — `CORE.md` (design), `MECHANICS.md` (how numbers are computed),
   this file.
 - `tests/golden/` — golden tests calibrated against in-game measurements.
+- `AGENTS.md` (repo root) — the condensed rulebook for AI coding agents.
 
 ## 6. Docker (deferred)
 

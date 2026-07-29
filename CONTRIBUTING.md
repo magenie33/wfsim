@@ -70,3 +70,5 @@ binary: rebuild `wfsim-web` after any JS/CSS/HTML change.
   overlay files — ids and source strings stay English.
 - Small, focused PRs over big ones. Open an issue first for anything
   design-shaped.
+- Working with an AI coding agent? The condensed repo rulebook lives in
+  [`AGENTS.md`](AGENTS.md) — point your agent at it.
