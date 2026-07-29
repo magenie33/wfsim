@@ -710,10 +710,22 @@ Acceltra, 50% max reduction, base 44 → minimum 22. ✔
 
 Rules the radial part follows, each differing from the direct part:
 
-- **No body-part multipliers.** "The explosion has a 1x headshot multiplier and
-  cannot trigger headshot conditions. This does not apply to the projectile
-  itself." So a radial instance never headshots, never feeds headshot-gated
-  buffs, and never charges an Incarnon gauge that counts weakpoint hits.
+- **No body-part multipliers, and no headshot CONDITIONS.** The rule is stated
+  per weapon on every AoE page — *"Explosion has a headshot multiplier of 1x
+  and cannot trigger headshot conditions"* (Aeolak, Torid, Corinth, Bubonico,
+  Tenet Envoy, Propa/Phahd Scaffold, …) — and generally in the AoE-rework
+  patch note: *"Radial damage no longer gains extra headshot damage or
+  triggers headshot conditions."* Note the *no longer*: before that pass a
+  radial DID headshot, so this is a deliberate design rule, not a side effect.
+  A radial instance therefore never headshots, never feeds headshot-gated
+  buffs, and **never charges an Incarnon gauge that counts weakpoint hits** —
+  where a blast lands on the model is irrelevant, it has no hit location.
+  Cross-check from the other direction: the two AoE Incarnon weapons don't
+  use weakpoint charging at all. *"Angstrum Incarnon Genesis and Torid
+  Incarnon Genesis are instead charged through direct hits"* (Incarnon), and
+  the Torid page spells the exclusion out: *"Direct shots charge Incarnon
+  Transmutation"*, *"Torid's poison cloud does not build charges."* That is
+  DE routing around a gauge an explosion can never fill.
 - **It can crit** — the part carries its own crit chance/multiplier in the
   weapon data (Laetum radial: 22% / 2.2×).
 - **Status rolls independently**, per enemy: "If one AoE hits multiple enemies,
