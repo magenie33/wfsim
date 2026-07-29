@@ -1,0 +1,30 @@
+id: primary_frostbite
+name: Primary Frostbite
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/PrimaryCritDmgAndMultishotOnColdProc
+description: "On Cold Status Effect:\n+X% Critical Damage and +X% Multishot for 12s. Stacks up to 40x."
+
+effects:
+  # Cold twin of Primary Blight: same shape, same 40 stacks / 12 s / all-drop
+  # timer. The weapon-only trigger restriction is carried over BY ANALOGY with
+  # Blight's explicit wiki note - not separately cited for this arcane.
+  - kind: buff
+    trigger: on_cold_status
+    grants: crit_damage
+    rank0: 0.005
+    rankMax: 0.03
+    max_stacks: 40
+    duration: 12
+    decay: all_drop_on_timeout
+  - kind: buff
+    trigger: on_cold_status
+    grants: multishot
+    rank0: 0.0038
+    rankMax: 0.0225
+    max_stacks: 40
+    duration: 12
+    decay: all_drop_on_timeout
+
+source:
+  url: https://wiki.warframe.com/w/Primary_Frostbite

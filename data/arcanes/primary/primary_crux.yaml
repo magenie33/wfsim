@@ -1,0 +1,22 @@
+id: primary_crux
+name: Primary Crux
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/StatusAndAmmoEfficiencyOnWeakpointHit
+description: "On Weak Point Hit: Gain +X% Status Chance and +X% Ammo Efficiency for 10s. Stacks up to 10x."
+
+effects:
+  # UNMODELED: a stacking STATUS CHANCE grant on weakpoint hit. The buff
+  # machinery already exists (trigger, stacks, timer); what is missing is a
+  # `status_chance` grant in ArcGrant. Numbers recorded so wiring it up needs
+  # no new data.
+  - kind: unmodeled
+    note: "+3% status chance per stack (10 stacks, 10s) on a weak point hit"
+    rank0: 0.05
+    rankMax: 0.3
+  - kind: ammo_efficiency
+    rank0: 0.01
+    rankMax: 0.06
+
+source:
+  url: https://wiki.warframe.com/w/Primary_Crux

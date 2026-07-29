@@ -2023,7 +2023,12 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // Crit damage: resolved multiplier + Cold's flat bonus received
             // + Sharpened Bullets' live on-kill buff + the arcane's
             // assumed-max conditional (Outburst).
+            // Primary Blight / Frostbite: a stacking crit-damage grant,
+            // already resolved to an ABSOLUTE per-stack value against the
+            // weapon's base crit damage (ArcaneDef::fx), so it adds straight
+            // into the same total as Cold's flat bonus.
             let cd_total = ap.crit_multiplier
+                + arc.total(&params.arcane.buffs, ArcGrant::CritDamage, t)
                 + debuffs.cold_cd_bonus(t)
                 + arc.cd_bonus(ap, t)
                 + params.arcane.cd_abs;
@@ -2422,15 +2427,22 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         delayed_ticks,
                         true, // Cinematic: ignores armor
                     ),
-                    DamageType::Toxin => push_dot(
-                        &mut debuffs,
-                        DamageType::Toxin,
-                        DOT_COEFFICIENT,
-                        ap.elem_bracket(DamageType::Toxin),
-                        1.0,
-                        delayed_ticks,
-                        false,
-                    ),
+                    DamageType::Toxin => {
+                        // Primary Blight: each Toxin status THIS WEAPON
+                        // applies grants one stack to both of its buffs
+                        // (crit damage + multishot). The weapon-only rule is
+                        // the arcane's own (wiki), not a sim limitation.
+                        arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ToxinStatus, t);
+                        push_dot(
+                            &mut debuffs,
+                            DamageType::Toxin,
+                            DOT_COEFFICIENT,
+                            ap.elem_bracket(DamageType::Toxin),
+                            1.0,
+                            delayed_ticks,
+                            false,
+                        )
+                    }
                     DamageType::Electricity => {
                         // Conjunction Voltage: each Electricity status this
                         // weapon applies grants one stack to both of its

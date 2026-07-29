@@ -1,0 +1,17 @@
+id: primary_bulwark
+name: Primary Bulwark
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/DamageForBonusArmour
+description: "Gain +1% damage for each unit of armor past 1,000, up to a max of +X%."
+
+effects:
+  # UNMODELED: the value depends on the WARFRAME's armor, which a weapon calc
+  # has no model of. Recorded so it still lists and displays.
+  - kind: unmodeled
+    note: "+1% damage per point of Warframe armor above 1,000, capped"
+    rank0: 2.5
+    rankMax: 5.0
+
+source:
+  url: https://wiki.warframe.com/w/Primary_Bulwark

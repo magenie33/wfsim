@@ -493,6 +493,7 @@ fn grant_label(g: wfsim_engine::arcanes_data::ArcGrant) -> &'static str {
         BaseDamage => "Base Damage",
         Multishot => "Multishot",
         ReloadSpeed => "Reload Speed",
+        CritDamage => "Critical Damage",
     }
 }
 

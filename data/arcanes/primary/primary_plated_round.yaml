@@ -1,0 +1,28 @@
+id: primary_plated_round
+name: Primary Plated Round
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/PrimaryDamagePerAmmoOnReload
+description: "On Reload: Deal increased damage per round loaded based on max magazine size. Lasts for Xs."
+
+effects:
+  # UNMODELED - the value is a FUNCTION OF THE WEAPON, which no arcane effect
+  # can express yet (ArcaneDef::fx sees crit stats and traits, not magazine
+  # size). The formula is recorded so implementing it is a code-only change:
+  #
+  #   damage bonus = 0.15 * sqrt(5 * max_magazine)   [additive, Serration bucket]
+  #
+  # Derived from and checked against EVERY worked example on the wiki page:
+  # mag 1 -> 33.5%, 5 -> 75%, 20 -> 150%, 80 -> 300%, 116 -> 361.2%.
+  # (Torid's 5-round magazine therefore scores 75%.)
+  # "Partial reloads of a magazine will only grant the % of missing magazine as
+  # % of the full potential bonus" - a sim that always reloads from empty gets
+  # the full value.
+  # Only the DURATION scales with rank: 3 / 4 / 5 / 6 / 8 / 10 s.
+  - kind: unmodeled
+    note: "on reload: +0.15*sqrt(5*magazine) damage (additive) for 10s at max rank"
+    rank0: 3
+    rankMax: 10
+
+source:
+  url: https://wiki.warframe.com/w/Primary_Plated_Round

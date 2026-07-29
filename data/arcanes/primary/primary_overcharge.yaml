@@ -1,0 +1,16 @@
+id: primary_overcharge
+name: Primary Overcharge
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/MultishotForMaxEnergy
+description: "While at or above 90% Energy: Gain 35% of Max Energy as Multishot, capped at X%."
+
+effects:
+  # UNMODELED: depends on the WARFRAME's max and current energy.
+  - kind: unmodeled
+    note: "at 90% energy or above: multishot = 35% of max energy, capped"
+    rank0: 1.0
+    rankMax: 3.5
+
+source:
+  url: https://wiki.warframe.com/w/Primary_Overcharge

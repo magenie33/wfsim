@@ -1,0 +1,40 @@
+id: primary_blight
+name: Primary Blight
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/PrimaryHeadshotCritMultOnHeadshot
+description: "On Toxin Status Effect:\n+X% Critical Damage and +X% Multishot for 12s. Stacks up to 40x."
+
+effects:
+  # Structural twin of Conjunction Voltage - two grants on one shared trigger,
+  # 40 stacks, 12 s, ALL stacks drop together on timeout - with ONE important
+  # difference. VERBATIM: "stacking the Blight buff requires the Toxin proc to
+  # be inflicted by using the attached primary weapon". Abilities, the
+  # secondary, melee and companions do NOT feed it, unlike the any-source
+  # on-status arcanes. So the sim's own Toxin procs are the only trigger, which
+  # is exactly what the engine models.
+  # The internal_name is a leftover from an earlier version of this arcane
+  # (headshot crit mult); the live effect is the Toxin one above.
+  # BRACKET: the wiki does not say which bracket these join. Modeled on the
+  # house convention for arcane relative crit bonuses - they join the mod
+  # buckets (ArcaneDef::fx) - so this is a MODELING CHOICE, not a cited fact,
+  # and a measurement can overturn it.
+  - kind: buff
+    trigger: on_toxin_status
+    grants: crit_damage
+    rank0: 0.006
+    rankMax: 0.036
+    max_stacks: 40
+    duration: 12
+    decay: all_drop_on_timeout
+  - kind: buff
+    trigger: on_toxin_status
+    grants: multishot
+    rank0: 0.003
+    rankMax: 0.018
+    max_stacks: 40
+    duration: 12
+    decay: all_drop_on_timeout
+
+source:
+  url: https://wiki.warframe.com/w/Primary_Blight

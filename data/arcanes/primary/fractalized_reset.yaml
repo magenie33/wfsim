@@ -1,0 +1,21 @@
+id: fractalized_reset
+name: Fractalized Reset
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Zariman/PrimaryOnAbilityReloadSpeed
+description: "On Ability Cast:\n+X% Reload Speed for 5s"
+
+effects:
+  # INERT in the sim: the arena has no Warframe and casts no abilities, so the
+  # trigger never fires. The GRANT is modeled (reload speed) - only the trigger
+  # is out of scope, which is why it is written as a real buff rather than as
+  # `unmodeled`.
+  - kind: buff
+    trigger: on_ability_cast
+    grants: reload_speed
+    rank0: 0.4
+    rankMax: 2.4
+    duration: 5
+
+source:
+  url: https://wiki.warframe.com/w/Fractalized_Reset

@@ -1,0 +1,18 @@
+id: primary_obstruct
+name: Primary Obstruct
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/PrimaryJamEnemyWeaponsOnMagneticProc
+description: "On Weapon Magnetic Status Effect: Enemy weapons jam within 15m of target. Cooldown Xs."
+
+effects:
+  # UNMODELED: acts on enemy behaviour, and the arena's target never shoots
+  # back - there is nothing to jam. Note the rank scaling INVERTS (a shorter
+  # cooldown is the better value).
+  - kind: unmodeled
+    note: "on Magnetic status: jams enemy weapons within 15 m; cooldown 60s -> 10s with rank"
+    rank0: 60
+    rankMax: 10
+
+source:
+  url: https://wiki.warframe.com/w/Primary_Obstruct

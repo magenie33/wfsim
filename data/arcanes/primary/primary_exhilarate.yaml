@@ -1,0 +1,16 @@
+id: primary_exhilarate
+name: Primary Exhilarate
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/PrimaryEnergyRegenOnImpactProc
+description: "On Weapon Impact Status Effect:\n+X Energy Regen/s for 10s. Stacks up to 3x."
+
+effects:
+  # UNMODELED: grants Warframe energy, which has no damage consequence here.
+  - kind: unmodeled
+    note: "on Impact status: energy regen per second, 3 stacks, 10s"
+    rank0: 0.2
+    rankMax: 1.2
+
+source:
+  url: https://wiki.warframe.com/w/Primary_Exhilarate

@@ -1,0 +1,38 @@
+id: primary_deadhead
+name: Primary Deadhead
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/PrimaryDamageOnNoMelee
+description: "On Headshot Kill:\n+X% Damage for 24s. Stacks up to 3x.\n+30% to Headshot Multiplier\n-50% Weapon Recoil"
+
+effects:
+  # TEXT DIFFERENCE from the secondary twin, deliberately NOT modeled as a
+  # mechanical one: the wiki module says "On Headshot Kill" here and "On
+  # PRECISION Headshot Kill" on Secondary Deadhead - but this page carries the
+  # same note, "'Precision' refers to direct hit headshots (not AoE)", and the
+  # AoE rule makes the distinction moot anyway: a radial can never headshot at
+  # all ("Radial damage no longer gains extra headshot damage or triggers
+  # headshot conditions", MECHANICS section 7). Only direct hits qualify either
+  # way, so both arcanes take the same trigger.
+  # Also excluded (wiki): "Kills from some status procs on the target's head do
+  # not count as a headshot kill." Electricity and Gas proc kills aimed at the
+  # head DO count - those procs land their own headshots.
+  - kind: buff
+    trigger: on_precision_headshot_kill
+    grants: base_damage
+    rank0: 0.2
+    rankMax: 1.2
+    max_stacks: 3
+    duration: 24
+    decay: lose_one_and_reset
+  # Headshot bonuses form an ADDITIVE BRACKET multiplying the body-part
+  # multiplier (MECHANICS section 7): a 3x head becomes 3.9x with this alone.
+  - kind: headshot_multiplier_bonus
+    rankMax: 0.3
+    unlocks_at_rank: 5
+  - kind: recoil_reduction
+    rankMax: 0.5
+    unlocks_at_rank: 5
+
+source:
+  url: https://wiki.warframe.com/w/Primary_Deadhead

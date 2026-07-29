@@ -1,0 +1,25 @@
+id: primary_merciless
+name: Primary Merciless
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/PrimaryDamageOnKill
+description: "On Kill:\n+X% Damage for 4s. Stacks up to 12x.\n+30% Reload Speed"
+
+effects:
+  # Identical shape to Secondary Merciless: additive with base-damage mods
+  # (the Serration bucket here), so it scales ModifiedBase too. On timeout:
+  # lose ONE stack and reset the timer (kill-family decay).
+  - kind: buff
+    trigger: on_kill
+    grants: base_damage
+    rank0: 0.05
+    rankMax: 0.3
+    max_stacks: 12
+    duration: 4
+    decay: lose_one_and_reset
+  - kind: reload_speed_bonus
+    rankMax: 0.3
+    unlocks_at_rank: 5
+
+source:
+  url: https://wiki.warframe.com/w/Primary_Merciless

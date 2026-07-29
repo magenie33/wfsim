@@ -77,6 +77,9 @@ pub enum ArcGrant {
     Multishot,
     /// Joins the reload-speed bucket (time = base / (1 + Σ)).
     ReloadSpeed,
+    /// Joins the crit-DAMAGE bucket — a RELATIVE bonus on the weapon's base
+    /// crit damage, like the crit-damage mods (Primary Blight/Frostbite).
+    CritDamage,
 }
 
 /// What event grants/refreshes a stack.
@@ -93,6 +96,13 @@ pub enum ArcTrigger {
     HeatStatus,
     /// An Electricity status this weapon applies (Conjunction Voltage).
     ElectricityStatus,
+    /// A Toxin status this weapon applies (Primary Blight). Blight is
+    /// stricter than the other on-status arcanes — wiki: "stacking the
+    /// Blight buff requires the Toxin proc to be inflicted by using the
+    /// attached primary weapon" — which is exactly what the sim can see.
+    ToxinStatus,
+    /// A Cold status this weapon applies (Primary Frostbite).
+    ColdStatus,
 }
 
 /// One emergent stacking buff, resolved at a rank.
@@ -286,6 +296,8 @@ fn effect(v: &Value) -> Option<ArcEffect> {
                 "on_melee_kill" => ArcTrigger::MeleeKill,
                 "on_heat_status" => ArcTrigger::HeatStatus,
                 "on_electricity_status" => ArcTrigger::ElectricityStatus,
+                "on_toxin_status" => ArcTrigger::ToxinStatus,
+                "on_cold_status" => ArcTrigger::ColdStatus,
                 // Non-simmed triggers with modeled grants:
                 "on_swap_consume_combo" => {
                     return Some(match grants {
@@ -314,6 +326,7 @@ fn effect(v: &Value) -> Option<ArcEffect> {
                 "base_damage" => ArcGrant::BaseDamage,
                 "multishot" => ArcGrant::Multishot,
                 "reload_speed" => ArcGrant::ReloadSpeed,
+                "crit_damage" => ArcGrant::CritDamage,
                 other => return inert(&format!("grant {other}")),
             };
             ArcEffect::Buff {
@@ -394,10 +407,20 @@ impl ArcaneDef {
                     if policy == StackPolicy::BaseOnly {
                         continue; // sentinel: conditional never fires
                     }
+                    // A crit-damage grant is RELATIVE to the weapon's base
+                    // crit damage (it joins that bucket), so it is resolved
+                    // to an ABSOLUTE per-stack value here — the same
+                    // treatment the static crit bonuses get below. Every
+                    // other grant is already absolute or a plain ratio.
+                    let per_stack = scale.at(rank, self.max_rank)
+                        * match grant {
+                            ArcGrant::CritDamage => base_cd,
+                            _ => 1.0,
+                        };
                     fx.buffs.push(ArcBuffSpec {
                         grant: *grant,
                         trigger: *trigger,
-                        per_stack: scale.at(rank, self.max_rank),
+                        per_stack,
                         max_stacks: *max_stacks,
                         duration: *duration,
                         all_drop: *all_drop,
@@ -553,6 +576,7 @@ impl ArcaneDef {
                         ArcGrant::BaseDamage => "Base Damage",
                         ArcGrant::Multishot => "Multishot",
                         ArcGrant::ReloadSpeed => "Reload Speed",
+                        ArcGrant::CritDamage => "Critical Damage",
                     };
                     let when = match trigger {
                         ArcTrigger::Kill => "On Kill",
@@ -560,6 +584,8 @@ impl ArcaneDef {
                         ArcTrigger::MeleeKill => "On Melee Kill",
                         ArcTrigger::HeatStatus => "On Heat Status",
                         ArcTrigger::ElectricityStatus => "On Electricity Status",
+                        ArcTrigger::ToxinStatus => "On Toxin Status",
+                        ArcTrigger::ColdStatus => "On Cold Status",
                     };
                     let decay = if *all_drop { "all drop on timeout" } else { "lose one on timeout" };
                     out.push(format!(
@@ -724,6 +750,54 @@ mod tests {
     fn loads_all_18_secondary_arcanes() {
         let pool = secondary_pool();
         assert_eq!(pool.len(), 18, "expected the full 18-arcane pool");
+    }
+
+    #[test]
+    fn loads_all_14_primary_arcanes() {
+        let pool = slot_pool("primary");
+        assert_eq!(pool.len(), 14, "expected the full 14-arcane primary pool");
+        // The slot registry discovers directories, so primary must show up
+        // next to secondary with no code change.
+        assert!(slots().contains(&"primary"), "slots(): {:?}", slots());
+    }
+
+    /// Primary Blight is the Torid-relevant one: a Toxin weapon feeds it
+    /// constantly. Two grants on ONE trigger, 40 stacks — the same shape as
+    /// Conjunction Voltage — and the crit-damage grant must resolve to an
+    /// ABSOLUTE value against the weapon's base crit damage.
+    #[test]
+    fn primary_blight_stacks_crit_damage_and_multishot_on_toxin() {
+        let a = slot_pool("primary")
+            .iter()
+            .find(|x| x.id == "primary_blight")
+            .expect("primary_blight");
+        let base_cd = 3.1; // Torid Incarnon's crit damage
+        let fx = a.fx(a.max_rank, StackPolicy::Emergent, 0.29, base_cd, NO_TRAITS);
+        assert_eq!(fx.buffs.len(), 2, "crit damage + multishot");
+        for b in &fx.buffs {
+            assert_eq!(b.trigger, ArcTrigger::ToxinStatus);
+            assert_eq!(b.max_stacks, 40);
+            assert!(b.all_drop, "on-status family: ALL stacks drop on timeout");
+        }
+        let cd = fx
+            .buffs
+            .iter()
+            .find(|b| b.grant == ArcGrant::CritDamage)
+            .expect("crit damage grant");
+        // +3.6% per stack is RELATIVE to base crit damage, so one stack is
+        // worth 0.036 x 3.1 of absolute crit damage.
+        assert!(
+            (cd.per_stack - 0.036 * base_cd).abs() < 1e-9,
+            "per stack {} vs {}",
+            cd.per_stack,
+            0.036 * base_cd
+        );
+        let ms = fx
+            .buffs
+            .iter()
+            .find(|b| b.grant == ArcGrant::Multishot)
+            .expect("multishot grant");
+        assert!((ms.per_stack - 0.018).abs() < 1e-9, "multishot stays a ratio");
     }
 
     #[test]

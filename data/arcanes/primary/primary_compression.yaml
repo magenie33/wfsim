@@ -1,0 +1,22 @@
+id: primary_compression
+name: Primary Compression
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Utility/ConvergeRadialAttackOnAim
+description: "On aim: x0.2 explosion radius, +X% damage and +X% ammo efficiency for every 1m radius lost."
+
+effects:
+  # UNMODELED, and THE one to revisit for AoE weapons: it trades blast RADIUS
+  # for damage, so its value is a function of the weapon's radial part (which
+  # the panel now states - MECHANICS section 7) rather than a fixed number.
+  # A 4.2 m radius shrinking to 0.84 m is 3.36 m lost -> +336% damage at max
+  # rank, which would dominate every other primary arcane on such a weapon.
+  # Needs the radius model before it can be trusted, so it stays inert rather
+  # than guessed.
+  - kind: unmodeled
+    note: "on aim: radius x0.2; +100% damage and +5.5% ammo efficiency per 1 m of radius lost"
+    rank0: 0.5
+    rankMax: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Primary_Compression
