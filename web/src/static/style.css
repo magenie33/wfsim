@@ -91,7 +91,7 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 .tl-tip{position:absolute;top:8px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:11px;pointer-events:none;white-space:nowrap}
 .on-optimizer #preset-bar-builder-builds,.on-optimizer #mod-block,.on-optimizer #arcane-block,.on-optimizer #evo-block,.on-optimizer #element-block,.on-optimizer #stats-block{display:none}
 /* The simulator tab keeps the build preset bar (sim settings are preset
-   content — the dirty dot and save must be reachable) but hides the
+   content — the auto-saving preset bar must stay reachable) but hides
    builder's editing blocks. */
 .on-simulator #mod-block,.on-simulator #arcane-block,.on-simulator #evo-block,.on-simulator #element-block,.on-simulator #stats-block{display:none}
 
@@ -412,7 +412,6 @@ label.check input{width:auto}
 .opt-meta{font-size:12px;color:var(--muted);margin:12px 0 8px}
 .opt-scn{font-size:11px;color:var(--muted);margin-top:4px}
 .preset-bar .pname{font:inherit;font-size:12px;padding:2px 8px;border:1px solid var(--accent);border-radius:999px;background:var(--panel2);color:var(--text);width:150px}
-.pchip .dirty{color:var(--gold);margin-left:4px;font-size:9px;vertical-align:1px}
 /* ---- home: hero + the weapon list ---- */
 .home-page{max-width:1060px;margin:0 auto;padding:28px 18px}
 .hero-h{font-size:32px;letter-spacing:-.01em;margin:22px 0 10px}
@@ -427,7 +426,6 @@ label.check input{width:auto}
 .wc-tags{display:flex;flex-wrap:wrap;gap:5px}
 .wc-tags .tag{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
 .topbar .brand{text-decoration:none;color:var(--text)}
-.pchip .pop.upd{width:auto;padding:0 7px;border-radius:999px;font-size:10px}
 .block-lock.dis{opacity:.45}
 .opt-meta .warn{color:var(--critical)}
 .opt-progress{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:12px}

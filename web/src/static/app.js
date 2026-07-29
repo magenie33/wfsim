@@ -602,28 +602,58 @@ function initPresets() {
   const last = localStorage.getItem(presetActiveKey(BUILDS));
   activePreset = ps.some((p) => p.name === last) ? last : ps[0].name;
   localStorage.setItem(presetActiveKey(BUILDS), activePreset);
-  restoreState(ps.find((p) => p.name === activePreset).state);
+  whileApplying(() => restoreState(ps.find((p) => p.name === activePreset).state));
   renderPresetBar();
 }
 
-// Unsaved-changes marker: build edits debounce into a bar re-render, where
-// the active chip compares the live snapshot against its stored state.
-let presetDirtyTimer = null;
+// ---- Auto-save (user, 2026-07-29: no manual save click) ---------------
+// A preset MIRRORS the editor: every edit debounces straight into the
+// active preset's stored state, so there is no save button and no
+// unsaved-changes dot. Branch before experimenting with "+ new" (empty)
+// or the ⧉ duplicate — the preset you leave behind keeps its content.
+//
+// `presetApplying` guards the other direction: loading a preset (or a
+// weapon switch) re-renders everything, and those renders must NOT be
+// mistaken for user edits and written back — a cross-weapon apply drops
+// unknown ids, which auto-save would otherwise make permanent.
+let presetApplying = 0;
+function whileApplying(fn) {
+  presetApplying++;
+  try {
+    fn();
+  } finally {
+    presetApplying--;
+    // Renders during the apply queue their own debounced saves — drop
+    // them, or the applied (possibly pruned) state writes itself back.
+    clearTimeout(presetSaveTimer);
+    clearTimeout(optSaveTimer);
+  }
+}
+
+let presetSaveTimer = null;
 function markPresetDirty() {
-  clearTimeout(presetDirtyTimer);
-  presetDirtyTimer = setTimeout(() => { if (activePreset) renderPresetBar(); }, 300);
+  if (presetApplying) return;
+  clearTimeout(presetSaveTimer);
+  presetSaveTimer = setTimeout(() => {
+    if (!activePreset || presetApplying) return;
+    const ps = loadPresetList(BUILDS);
+    const at = ps.findIndex((p) => p.name === activePreset);
+    if (at < 0) return;
+    ps[at] = { ...ps[at], savedAt: Date.now(), state: snapshotState() };
+    storePresetList(BUILDS, ps);
+  }, 400);
 }
 
 // ---- The ONE preset-bar component -------------------------------------
 // Every preset bar on the page (the build bar and the optimizer's three
 // scope bars) is the same template on the same document model: label +
-// count, the chips (the active one carries save / duplicate / rename /
-// delete; the last remaining preset cannot be deleted — there is always
-// one), "+ new". "+ new" creates an EMPTY preset instantly under an
-// auto-name ("preset N") and switches to it — no naming step (user,
-// 2026-07-29); rename after via ✎. Branching an existing preset is the
-// ⧉ duplicate on the active chip (copies the LIVE state, so unsaved
-// edits carry into the copy while the original keeps its stored state).
+// count, the chips (the active one carries duplicate / rename / delete;
+// the last remaining preset cannot be deleted — there is always one),
+// "+ new". Edits AUTO-SAVE into the active preset, so there is no save
+// button and no dirty marker. "+ new" creates an EMPTY preset instantly
+// under an auto-name ("preset N") and switches to it — no naming step
+// (user, 2026-07-29); rename after via ✎. Branching an existing preset
+// is the ⧉ duplicate on the active chip.
 // Counts are UNLIMITED, so past PRESET_FILTER_AT chips the bar grows a
 // name filter; the active chip always shows (it is the document being
 // edited).
@@ -633,7 +663,6 @@ const presetFilters = {}; // per-bar filter text — survives re-renders, not pe
 function renderPresetBarIn(bar, cfg) {
   const ps = cfg.load();
   const active = cfg.active();
-  const dirty = cfg.isDirty(ps.find((p) => p.name === active));
   const ftext = presetFilters[bar.id] || "";
   const f = ftext.trim().toLowerCase();
   const shown = f ? ps.filter((p) => p.name === active || p.name.toLowerCase().includes(f)) : ps;
@@ -641,13 +670,11 @@ function renderPresetBarIn(bar, cfg) {
   const chip = (p) => {
     const sel = p.name === active;
     const ops = sel
-      ? `<button class="pop upd" title="save the current changes into this preset">save</button>` +
-        `<button class="pop dup" title="duplicate into a new preset (unsaved edits carry over)">⧉</button>` +
+      ? `<button class="pop dup" title="duplicate into a new preset">⧉</button>` +
         `<button class="pop ren" title="rename">✎</button>` +
         (ps.length > 1 ? `<button class="pop del" title="delete">✕</button>` : "")
       : "";
-    const dot = sel && dirty ? `<span class="dirty" title="unsaved changes">●</span>` : "";
-    return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${escHtml(p.name)}${dot}${ops}</span>`;
+    return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${escHtml(p.name)}${ops}</span>`;
   };
   bar.innerHTML =
     `<span class="plabel">${cfg.label} <b>${ps.length}</b></span>` +
@@ -667,7 +694,7 @@ function renderPresetBarIn(bar, cfg) {
     const p = cfg.load().find((x) => x.name === c.dataset.name);
     if (p && p.name !== cfg.active()) {
       cfg.setActive(p.name);
-      cfg.apply(p.state);
+      whileApplying(() => cfg.apply(p.state)); // a load is not an edit
       cfg.rerender();
     }
   }));
@@ -703,11 +730,10 @@ function renderPresetBarIn(bar, cfg) {
     const name = freeName(ps2, (n) => "preset " + n);
     // Activate FIRST so everything that renders during apply() (e.g. the
     // sim's per-preset stored result) already sees the NEW preset; then
-    // apply the blank and store the resulting live snapshot — the stored
-    // state matches what the editor now shows (no instant dirty dot from
-    // representation differences like empty-vs-filled slot arrays).
+    // apply the blank and store the resulting live snapshot, so the stored
+    // state matches exactly what the editor now shows.
     cfg.setActive(name);
-    cfg.apply(cfg.blank());
+    whileApplying(() => cfg.apply(cfg.blank()));
     ps2.push({ name, savedAt: Date.now(), state: cfg.snapshot() });
     cfg.store(ps2);
     cfg.rerender();
@@ -717,20 +743,12 @@ function renderPresetBarIn(bar, cfg) {
     const ps2 = cfg.load();
     const base = cfg.active();
     const name = freeName(ps2, (n) => base + " copy" + (n > 1 ? " " + n : ""));
-    // The copy captures the LIVE state (unsaved edits included); the
-    // original keeps its stored state — branch-and-continue semantics.
+    // The copy captures the live editor state and becomes the active
+    // document; the original keeps what auto-save last wrote into it.
     ps2.push({ name, savedAt: Date.now(), state: cfg.snapshot() });
     cfg.store(ps2);
     cfg.setActive(name);
     cfg.rerender();
-  });
-  on(".pop.upd", () => {
-    const ps2 = cfg.load();
-    const at = ps2.findIndex((p) => p.name === cfg.active());
-    if (at < 0) return;
-    ps2[at] = { name: cfg.active(), savedAt: Date.now(), state: cfg.snapshot() };
-    cfg.store(ps2);
-    cfg.rerender(); // the dirty dot clears
   });
   on(".pop.ren", () => {
     const chipEl = bar.querySelector(".pchip.sel");
@@ -755,24 +773,10 @@ function renderPresetBarIn(bar, cfg) {
     if (!ps2.length) return;
     cfg.store(ps2);
     cfg.setActive(ps2[0].name);
-    cfg.apply(ps2[0].state);
+    whileApplying(() => cfg.apply(ps2[0].state));
     cfg.rerender();
   });
 }
-
-// Canonicalize before comparing: buff entries still at their defaults are
-// dropped — they fill in ASYNC after the panel fetch, and a default value
-// is not a user change (else the dot shows on every fresh load).
-const canonBuildState = (st) => {
-  const c = JSON.parse(JSON.stringify(st));
-  if (c.sim && c.sim.buffs) {
-    buffList.forEach((b) => {
-      const e = c.sim.buffs[b.id];
-      if (e && e.stacks === b.default_stacks && e.locked === b.default_locked) delete c.sim.buffs[b.id];
-    });
-  }
-  return JSON.stringify(c);
-};
 
 // An EMPTY build for "+ new": the CURRENT weapon (the page is a weapon
 // page — a new preset should not navigate away), bare slots, no arcane,
@@ -801,7 +805,6 @@ function renderPresetBar() {
     snapshot: snapshotState,
     apply: restoreState,
     blank: blankBuildState,
-    isDirty: (stored) => !stored || canonBuildState(stored.state) !== canonBuildState(snapshotState()),
     rerender: renderPresetBar,
   });
 }
@@ -820,7 +823,18 @@ const show = (id, on) => { const el = $(id); if (on) el.removeAttribute("hidden"
 // Where (other than exceptIdx) this mod is currently slotted, or -1.
 const placedAt = (id, exceptIdx) => slots.findIndex((s, i) => i !== exceptIdx && s.mod === id);
 
+// Switching weapons rebuilds every weapon-scoped view. It runs as an
+// APPLY (auto-save stays out of the reset/reseed churn — the optimizer
+// scope resets here, and saving that would wipe the scope presets); the
+// build preset then follows the new weapon via the explicit
+// markPresetDirty() below, which no-ops when this runs inside a preset
+// load (restoreState already holds the applying guard).
 function applyWeapon(id, presetMods) {
+  whileApplying(() => applyWeaponInner(id, presetMods));
+  markPresetDirty();
+}
+
+function applyWeaponInner(id, presetMods) {
   const w = weaponInfo(id);
   buffList = []; // rebuilt from the next /api/panel response for this build
   opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8, buffs: {} }; optSeeded = false; optBuffList = []; // reset scope
@@ -2036,7 +2050,6 @@ function renderOptPresetBar(g) {
     apply: (st) => applyOptGroup(g, st || {}),
     // An empty scope: nothing selected (size stays a fresh 8 for mods).
     blank: () => (g === "mods" ? { mods: {}, exilus: {}, size: 8 } : g === "arcanes" ? { arcanes: {} } : { evos: {} }),
-    isDirty: (stored) => !stored || JSON.stringify(stored.state) !== JSON.stringify(snapshotOptGroup(g)),
     rerender: () => renderOptPresetBar(g),
   });
 }
@@ -2199,12 +2212,22 @@ function updateOptEstimate() {
     : `<span class="warn">${dupReq ? `${(modById(dupReq) || { name: dupReq }).name} is required in both blocks — a mod equips once` : poolStarved ? `pooled mods reserve ≥1 open slot — raise max mods or clear pools` : `more required (${fixed}) than slots (${size})`}</span>`) + scenario;
   // Never re-enable while a background job is still running.
   $("run-opt").disabled = !valid || optJobId != null;
-  // Every scope mutation funnels through here — refresh the preset bars'
-  // unsaved-changes dots (debounced).
-  clearTimeout(optDirtyTimer);
-  optDirtyTimer = setTimeout(renderOptPresetBars, 300);
+  // Every scope mutation funnels through here — AUTO-SAVE each group into
+  // its active preset (debounced), same contract as the build bar.
+  clearTimeout(optSaveTimer);
+  optSaveTimer = setTimeout(() => {
+    if (presetApplying) return;
+    Object.keys(OPT_PRESET_GROUPS).forEach((g) => {
+      const ps = loadOptGroup(g);
+      const at = ps.findIndex((p) => p.name === activeOptPreset[g]);
+      if (at < 0) return;
+      ps[at] = { ...ps[at], savedAt: Date.now(), state: snapshotOptGroup(g) };
+      storeOptGroup(g, ps);
+    });
+    renderOptPresetBars();
+  }, 400);
 }
-let optDirtyTimer = null;
+let optSaveTimer = null;
 
 // The optimize run is a BACKGROUND JOB on the server: POST /api/optimize
 // returns a job_id immediately; we poll /api/optimize/status for live funnel
