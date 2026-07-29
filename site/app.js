@@ -564,6 +564,21 @@ function restoreState(st) {
 
 const escHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+// Decimal formatting with a SIGNIFICANCE floor (user, 2026-07-29): two
+// decimals normally, but a very small number grows decimals until it
+// carries 2 significant digits — 0.0085 stays 0.0085 instead of
+// collapsing to 0.01. Used for every score/percentage in the results.
+// EXACT ZERO keeps the plain "0.00" — only a nonzero-but-tiny value grows
+// decimals (log10(0) is -Infinity, so zero must short-circuit first).
+const sig2 = (x, min = 2) => {
+  const v = Number(x);
+  if (!Number.isFinite(v) || v === 0) return (0).toFixed(min);
+  const a = Math.abs(v);
+  const need = a >= 1 ? min : Math.max(min, 1 - Math.floor(Math.log10(a)));
+  return v.toFixed(need);
+};
+const pct2 = (x) => sig2((Number(x) || 0) * 100) + "%";
+
 // The ACTIVE preset — the one the editor is editing. Never null after
 // init: the page always has ≥1 preset and is always editing one (user's
 // mental model, 2026-07-28: "if no presets exist, the current state IS
@@ -1514,18 +1529,19 @@ function renderStoredSimResult() {
 
 function renderResults(r, testedAt) {
   const t = r.target || {};
-  const pc = (x) => ((x || 0) * 100).toFixed(2) + "%"; // percent stats: 2-decimal precision (user)
+  const pc = pct2; // 2 decimals, more when the value would otherwise vanish
   const n0 = (x) => Math.round(x || 0).toLocaleString();
-  const n1 = (x) => (x || 0).toFixed(1);
+  const n2 = sig2;
   const killed = (r.kills || 0) >= 1;
-  // Time to first kill from the MEAN KILL COUNT (user, 2026-07-29):
-  // duration / mean kills = average seconds per kill, as simulated —
-  // not an EHP/DPS back-calculation.
+  // ONE scoring unit, killed or not (user, 2026-07-29): the KILL SCORE
+  // (engine `kill_progress`) = whole kills + the fraction of the current
+  // target's pool already drained. 0.85% of an EHP is 0.01; two kills and
+  // 30% of the next is 2.30. The sub-line adds the context that differs.
   const ttk = killed ? r.duration / r.kills : Infinity;
-  const heroNum = killed ? n0(r.kills) : pc(r.score); // median run: kills is a whole number
-  const heroSub = killed
-    ? `kills in ${n0(r.duration)}s · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s avg per kill`
-    : `of one ${LN("enemies", sim.enemy, t.name || "enemy")}'s EHP in ${n0(r.duration)}s (not killed)`;
+  const heroNum = n2(r.score);
+  const heroSub = `kill score in ${n0(r.duration)}s · ` + (killed
+    ? `${n0(r.kills)} killed · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s avg per kill`
+    : `${pc(r.score)} of one ${LN("enemies", sim.enemy, t.name || "enemy")}'s EHP drained`);
   // No Forma/capacity here — the simulator reports EFFECTS only; build
   // legality is the Builder's business (user, 2026-07-29).
   const kpi = (l, v) => `<div class="kpi"><div class="kv">${v}</div><div class="kl">${tr(l)}</div></div>`;
@@ -1537,8 +1553,8 @@ function renderResults(r, testedAt) {
   const kpis = [
     kpi("DPS", n0(r.dps)),
     kpi("Crit rate", pc(r.crit_rate)), kpi("Orange+ crit", pc(r.big_crit_rate)),
-    kpi("Procs", n1(r.procs)), kpi("Shots", n1(r.shots)),
-    kpi("Reloads", n1(r.reloads)), kpi("Transforms", n1(r.transforms)),
+    kpi("Procs", n0(r.procs)), kpi("Shots", n0(r.shots)),
+    kpi("Reloads", n0(r.reloads)), kpi("Transforms", n0(r.transforms)),
   ].join("");
   // WoW-style damage meter (user, 2026-07-29): effective damage BY SOURCE
   // over the whole engagement — what actually hurt the target. The panel's
@@ -1550,7 +1566,7 @@ function renderResults(r, testedAt) {
   const meter = srcs.map((x, i) => `<div class="mrow">
       <span class="mname">${srcLabel(x.source)}</span>
       <div class="mbar"><i style="width:${(x.dmg / srcMax * 100).toFixed(1)}%;background:var(--s${(i % 8) + 1})"></i></div>
-      <span class="mval">${n0(x.dmg)} · ${(x.dmg / srcTotal * 100).toFixed(2)}%</span>
+      <span class="mval">${n0(x.dmg)} · ${pct2(x.dmg / srcTotal)}</span>
     </div>`).join("");
   // DPS-over-time curve (user, 2026-07-29): the MEDIAN run's per-bucket
   // EFFECTIVE dps. One series — the accent line, recessive grid, hover
@@ -1582,8 +1598,8 @@ function renderResults(r, testedAt) {
     row("Target", `${t.name || "?"} · Lv ${t.level}${t.steel_path ? " (SP)" : ""}`),
     row("OG / Shield / Health", `${n0(t.overguard)} / ${n0(t.shield)} / ${n0(t.health)}`),
     row("Armor", n0(t.armor)),
-    row("Shots / Pellets", `${n1(r.shots)} / ${n1(r.pellets)}`),
-    row("Kills min–max (±σ)", `${r.kills_min}–${r.kills_max} (±${n1(r.kills_std)})`),
+    row("Shots / Pellets", `${n0(r.shots)} / ${n0(r.pellets)}`),
+    row("Kills min–max (±σ)", `${r.kills_min}–${r.kills_max} (±${sig2(r.kills_std)})`),
     row("Runs", n0(r.runs)),
   ].join("");
   $("sim-results").innerHTML = `
@@ -2340,8 +2356,8 @@ function renderOptResults(r) {
     return `<div class="opt-row">
       <div class="opt-head">
         <span class="opt-rank">#${res.rank}</span>
-        <span class="opt-kills">${res.kills.toFixed(2)}<small> kills</small></span>
-        <span class="opt-dps">${(res.dps || res.effective_dps || 0).toExponential(2)} DPS</span>
+        <span class="opt-kills">${sig2(res.kill_progress ?? res.kills)}<small> kill score</small></span>
+        <span class="opt-dps">${Math.round(res.dps || res.effective_dps || 0).toLocaleString()} DPS</span>
         <span class="forma-badge legal">${res.forma.used} Forma</span>
         <button class="ghost-btn small opt-add" title="add as a new build preset" data-r='${JSON.stringify(res).replace(/'/g, "&#39;")}'>+ add</button>
       </div>
