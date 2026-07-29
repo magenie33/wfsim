@@ -854,18 +854,64 @@ status rolls — "initial hit and explosion apply status separately"), plus:
   Update 27.4.3; the page states the explosion "does not inflict
   self-stagger").
 
-**Open questions — measure before trusting a number:**
+**Condition Overload: the field DOES take it — on the attached target only.**
+This reverses an earlier inference here (that the CO catalog's "no radial/AoE"
+exclusion covered zones). The catalog has a category for exactly this shape,
+and Torid is its named example on the excluded side:
 
-- Do overlapping fields from several grenades **stack** (N tick streams) or
-  refresh one? NOT DOCUMENTED. The magazine is 5 and the cloud lasts 10 s at
-  a 1.5/s fire rate, so the answer changes sustained DPS by up to ~5×.
-- Is a field eligible for **Condition Overload**? NOT stated for the Torid.
-  The CO catalog (§6) excludes "pure radial/AoE attacks" and explosion radii,
-  which *implies* no — recorded as an inference, not as fact.
-- Exactly which mod buckets scale the tick (the page confirms the cloud has
-  its own stat block, not the scaling rules).
+> applies: "**Embedded Cloud** — *(e.g., Pox)* only on directly-embedded
+> target."
+> does not: "**Embedded Cloud Radius** — *(e.g., Torid primary fire)* on every
+> non-directly hit target."
 
-**Source:** weapon data module + wiki Torid. **Status:** unverified.
+The Torid page says the same thing from the weapon side: *"Galvanized Aptitude
+is multiplicative to base damage sources on direct hits and resulting clouds of
+regular form. Clouds receive the multiplicative bonus **only on the attached
+target**."* And the catalog row gives the class outright:
+
+| weapon | attack | type | base | CO base | % | behavior |
+| --- | --- | --- | --- | --- | --- | --- |
+| Torid | Main-fire | Projectile | 100 | 100 | 100% | **Multiplying** |
+| Torid | Toxin AoE Cloud | AoE | 40 | 40 | 100% | **Multiplying** |
+| Pox | DoT Cloud | AoE | 20 | 50 | 250% | Adding |
+
+So a grenade that STICKS to an enemy makes that enemy the directly-embedded
+target, and every tick it takes carries CO. In a single-target arena that is
+always the case. Pox's row adds the timing rule: *"Damage recalculates on every
+tick"* — the CO bonus is read LIVE per tick from the target's current status
+count, not snapshotted when the cloud is created.
+
+**Ticks are full damage instances, and mods reach them.** Three patch notes
+settle what used to be guesswork:
+- *"Fixed Torid gas clouds not receiving damage buffs from mods."* — the tick
+  takes the weapon's damage buckets.
+- *"Changed Critical Chance logic by allowing it to occur on Radial Explosions
+  … This fixes an issue with the Torid's gas cloud not allowing for
+  criticals."* — a tick rolls its own crit.
+- Firestorm-family radius mods *do* enlarge the cloud (per-weapon: the Torid
+  page says so explicitly).
+
+And status is per tick, not per cloud: *"Toxin clouds can proc Hunter Munitions
+on each tick of damage."* A forced-proc mod firing once per tick is only
+possible if each tick is its own instance — the same damage-instance rule §7
+opens with. First tick is DELAYED, not immediate: *"Clouds do not instantly do
+damage, so enemies that are quick may run through the cloud without taking any
+damage."*
+
+**Open question — the one that still needs a measurement:**
+
+- Do overlapping fields from several grenades **stack** (N concurrent tick
+  streams) or refresh one? Still NOT DOCUMENTED anywhere. The wiki only says
+  stacking clouds is effective (*"dealing large amounts of damage if the player
+  stacks multiple gas clouds"*, *"Stacking multiple grenades on an ally…"*),
+  which reads as N streams but never states it and never quantifies it. The
+  magazine is 5 and a cloud lasts 10 s at 1.5 shots/s, so all five can overlap
+  on one target: the answer moves sustained single-target DPS by up to ~5×.
+  Protocol in MEASUREMENTS M12.
+
+**Source:** wiki Torid + Condition Overload (Mechanic) catalog + patch history
++ the weapon data module. **Status:** CO eligibility, mod scaling, per-tick
+crit/status and the tick delay are sourced; **stacking is unverified**.
 
 **Source:** wiki (Area of Effect, Damage Falloff) + the weapon data modules.
 **Status:** unverified (needs Simulacrum measurement of direct+radial totals).
