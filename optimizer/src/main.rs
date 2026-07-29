@@ -81,6 +81,9 @@ fn main() {
     }
 
     let scenario = Scenario {
+        // The CLI has no scenario UI: aiming ASSUMED, matching resolve()'s
+        // default and every pre-scenario caller.
+        aiming: true,
         target: spec
             .target_params(9999, true, false, TargetMode::InstantRespawn)
             .expect("valid target"),

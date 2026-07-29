@@ -14,7 +14,8 @@ use wfsim_engine::dummy::{
 };
 use wfsim_engine::enemy_data::EnemySpec;
 use wfsim_engine::loadout::{
-    pct as fpct, resolve, ModDef, ModEffect, ResolvedPanel, StackPolicy, WeaponBase,
+    pct as fpct, resolve, resolve_with, ModDef, ModEffect, ResolvedPanel, StackPolicy,
+    WeaponBase,
 };
 use wfsim_engine::mods::{plan_forma, PlannedMod, Polarity};
 use wfsim_optimizer::{
@@ -423,6 +424,9 @@ pub fn meta_json() -> Value {
             "level": 9999,
             "steel_path": true,
             "headshot_pct": 100.0,
+            // Aiming ASSUMED by default - the sim's behaviour before the knob
+            // existed, so no stored preset silently changes meaning.
+            "aiming": true,
             "duration": 120.0,
             "runs": 100,
             "mods": [],
@@ -812,10 +816,19 @@ pub fn panel_json(v: &Value) -> Value {
         let name = prettify(m.id);
         for e in &m.effects {
             use ModEffect::*;
+            let before = src.len();
             let mut push = |key: &'static str, v: f64, note: Option<String>| {
                 src.push((key, name.clone(), v, note));
             };
+            // An aim-gated effect still LISTS: the reader needs to see the
+            // mod contributes, and under what condition. Unwrap it, let the
+            // ordinary arms push as usual, then tag those rows below.
+            let (e, aim_gated): (&ModEffect, bool) = match e {
+                WhileAiming(inner) => (inner, true),
+                other => (other, false),
+            };
             match *e {
+                WhileAiming(_) => unreachable!("unwrapped above"),
                 BaseDamage(x) => push("base_damage", x, None),
                 Multishot(x) => push("multishot", x, None),
                 CritChance(x) => push("crit_chance", x, None),
@@ -948,6 +961,16 @@ pub fn panel_json(v: &Value) -> Value {
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "rolled per damage instance in the sim"})),
             }
+            // Tag whatever the arms just pushed as aim-gated, so the panel
+            // never shows a contribution without the condition that earns it.
+            if aim_gated {
+                for row in src.iter_mut().skip(before) {
+                    row.3 = Some(match row.3.take() {
+                        Some(t) => format!("{t}; while aiming"),
+                        None => "while aiming".to_string(),
+                    });
+                }
+            }
         }
     }
     // Non-mod sources: the CHOSEN evolutions (data-driven). Flat base
@@ -959,7 +982,20 @@ pub fn panel_json(v: &Value) -> Value {
     let mut evo_src: Vec<(&'static str, String, String, Option<String>)> = Vec::new();
     let (mut evo_flat_bd, mut evo_flat_cc) = (0.0f64, 0.0f64);
     if form_unlock_evo(info).is_some() {
-        let tiername = |t: u32| ["", "EVO I", "EVO II", "EVO III", "EVO IV"][t.min(4) as usize];
+        // Tiers are per weapon (adapters I-IV, Zariman weapons I-V), so the
+        // numeral is BUILT, not indexed - a fixed table silently rendered the
+        // Laetum's fifth tier as "EVO IV".
+        let tiername = |t: u32| {
+            let mut n = t;
+            let mut out = String::from("EVO ");
+            for (v, sym) in [(10, "X"), (9, "IX"), (5, "V"), (4, "IV"), (1, "I")] {
+                while n >= v {
+                    out.push_str(sym);
+                    n -= v;
+                }
+            }
+            out
+        };
         for def in evo_refs
             .iter()
             .filter_map(|id| wfsim_engine::evolutions_data::get(id))
@@ -1504,6 +1540,11 @@ pub fn simulate_json(v: &Value) -> Value {
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
     let steel_path = get_bool(v, "steel_path", true);
     let headshot_pct = get_f64(v, "headshot_pct", 100.0);
+    // Is the player HOLDING AIM? Gates the `while_aiming` mod effects
+    // (Galvanized Crosshairs / Scope, Argon Scope, Sharpened Bullets, …).
+    // Defaults TRUE, which is what the sim silently assumed before this
+    // existed — so no stored preset changes meaning.
+    let aiming = get_bool(v, "aiming", true);
     let duration = get_f64(v, "duration", 120.0).clamp(1.0, 3600.0);
     let runs = get_u32(v, "runs", 300).clamp(1, 20_000);
     let seed = v.get("seed").and_then(|x| x.as_u64()).unwrap_or(0xC0FFEE);
@@ -1586,8 +1627,8 @@ pub fn simulate_json(v: &Value) -> Value {
         let incarnon_base =
             WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &evo_refs);
         let base_base = WeaponBase::from_data(&info.id, true, &evo_refs);
-        let incarnon_panel = resolve(&incarnon_base, &refs, policy);
-        let base_panel = resolve(&base_base, &refs, policy);
+        let incarnon_panel = resolve_with(&incarnon_base, &refs, policy, aiming);
+        let base_panel = resolve_with(&base_base, &refs, policy, aiming);
         let report = if form == "base" {
             base_panel.clone()
         } else {
@@ -2070,6 +2111,10 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
     let steel_path = get_bool(v, "steel_path", true);
     let headshot_pct = get_f64(v, "headshot_pct", 100.0);
+    // Same scenario knob as the Sim: the optimizer must score builds under the
+    // assumption the sim will replay them with, or the winner is scored on a
+    // buff the replay never grants.
+    let aiming = get_bool(v, "aiming", true);
     let duration = get_f64(v, "duration", 120.0).clamp(1.0, 3600.0);
     let specs = enemies();
     let Some(spec) = specs.iter().find(|e| e.id == enemy_id) else {
@@ -2087,6 +2132,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     let frenzy = wfsim_engine::weapons_data::has_perk(&info.id, "frenzy")
         || incarnon_id(info).is_some_and(|i| wfsim_engine::weapons_data::has_perk(i, "frenzy"));
     let scenario = Scenario {
+        aiming,
         target,
         body_parts,
         frenzy,
@@ -2276,6 +2322,7 @@ pub fn run_optimize(
                         &constraints,
                         &exilus_refs,
                         Some(state),
+                        scenario.aiming,
                         emit,
                     ) {
                         break;

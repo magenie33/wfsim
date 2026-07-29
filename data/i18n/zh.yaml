@@ -141,6 +141,7 @@ evolutions: {}
 # UI strings, keyed by the English source string (English itself never needs
 # an entry — the source string IS the fallback).
 ui:
+  "Aiming": 瞄准
   "import": 导入
   "copy a preset from another weapon": 从其他武器复制一个预设
   "Direct hit": 直击

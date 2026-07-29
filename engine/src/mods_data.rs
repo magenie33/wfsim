@@ -144,10 +144,20 @@ fn effect(v: &Value) -> Option<ModEffect> {
         "buff" => {
             let trigger = v.get("trigger").and_then(Value::as_str)?;
             let grants = v.get("grants").and_then(Value::as_str)?;
+            // `condition: while_aiming` wraps whatever this buff resolves to,
+            // so the scenario can switch it off (loadout::resolve_with).
+            let aim_gated = v.get("condition").and_then(Value::as_str) == Some("while_aiming");
             let per = max("rankMax"); // per-stack value at max rank
             let stacks = u(v, "max_stacks");
             let dur = f(v, "duration").unwrap_or(0.0);
-            match (trigger, grants) {
+            let wrap = |e: ModEffect| {
+                if aim_gated {
+                    ModEffect::WhileAiming(Box::new(e))
+                } else {
+                    e
+                }
+            };
+            wrap(match (trigger, grants) {
                 ("on_kill", "multishot") => {
                     ModEffect::OnKillMultishot { per_stack: per, max_stacks: stacks, duration: dur }
                 }
@@ -185,7 +195,7 @@ fn effect(v: &Value) -> Option<ModEffect> {
                     };
                     ModEffect::CondBuff(bucket, per * stacks.max(1) as f64)
                 }
-            }
+            })
         }
         // Weak-point effects (Pistol Acuity): conditional on the part hit.
         "weakpoint_damage_bonus" => ModEffect::WeakpointDamage(max("rankMax")),
@@ -368,7 +378,16 @@ mod tests {
         // Conditional families.
         assert!(by("galvanized_shot").effects.iter().any(|e| matches!(e, ModEffect::ConditionOverload { per_stack, max_stacks: 3, .. } if (*per_stack - 0.40).abs() < 1e-9)));
         assert!(by("galvanized_diffusion").effects.iter().any(|e| matches!(e, ModEffect::OnKillMultishot { per_stack, max_stacks: 4, .. } if (*per_stack - 0.30).abs() < 1e-9)));
-        assert!(by("galvanized_crosshairs").effects.iter().any(|e| matches!(e, ModEffect::OnHeadshotKillCritChance { max_stacks: 5, .. })));
+        // Galvanized Crosshairs is AIM-GATED, so its buffs arrive WRAPPED -
+        // asserting the bare variant would pass on a build where the gate had
+        // been silently dropped, which is the bug this wrapper exists to stop.
+        assert!(by("galvanized_crosshairs").effects.iter().any(|e| matches!(e,
+            ModEffect::WhileAiming(inner)
+                if matches!(**inner, ModEffect::OnHeadshotKillCritChance { max_stacks: 5, .. }))));
+        assert!(by("galvanized_crosshairs").effects.iter().all(|e| matches!(e, ModEffect::WhileAiming(_))),
+            "every Galvanized Crosshairs effect is while-aiming");
+        // ... and a mod with no condition is NOT wrapped.
+        assert!(by("galvanized_diffusion").effects.iter().all(|e| !matches!(e, ModEffect::WhileAiming(_))));
         // Faction-damage mod loads with the right faction + bonus (Expel Orokin
         // → Corrupted; +30% at max rank).
         assert!(by("expel_grineer").effects.iter().any(|e| matches!(e, ModEffect::FactionDamage(Faction::Grineer, v) if (*v - 0.30).abs() < 1e-9)));
@@ -379,8 +398,15 @@ mod tests {
         assert!(by("hemorrhage").effects.iter().any(|e| matches!(e,
             ModEffect::ProcConversion { from: DamageType::Impact, to: DamageType::Slash, chance, low_rate_threshold, low_rate_mult }
                 if (*chance - 0.35).abs() < 1e-9 && (*low_rate_threshold - 2.5).abs() < 1e-9 && (*low_rate_mult - 2.0).abs() < 1e-9)));
-        assert!(by("sharpened_bullets").effects.iter().any(|e| matches!(e, ModEffect::OnKillCritDamage { bonus, duration } if (*bonus - 0.75).abs() < 1e-9 && (*duration - 9.0).abs() < 1e-9)));
-        assert!(by("pressurized_magazine").effects.iter().any(|e| matches!(e, ModEffect::OnReloadFireRate { bonus, .. } if (*bonus - 0.90).abs() < 1e-9)));
+        // Both of these are while-aiming too, so they arrive wrapped.
+        assert!(by("sharpened_bullets").effects.iter().any(|e| matches!(e,
+            ModEffect::WhileAiming(inner)
+                if matches!(**inner, ModEffect::OnKillCritDamage { bonus, duration }
+                    if (bonus - 0.75).abs() < 1e-9 && (duration - 9.0).abs() < 1e-9))));
+        assert!(by("pressurized_magazine").effects.iter().any(|e| matches!(e,
+            ModEffect::WhileAiming(inner)
+                if matches!(**inner, ModEffect::OnReloadFireRate { bonus, .. }
+                    if (bonus - 0.90).abs() < 1e-9))));
     }
 
     #[test]

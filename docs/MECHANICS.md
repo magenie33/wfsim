@@ -613,6 +613,22 @@ launchers like Kuva Bramma); the **radial** part of AoE damage is always 1x
 and **cannot trigger headshot conditions** (the direct projectile can).
 Headshot-damage bonuses (e.g. sniper zoom) stack additively with each other.
 
+**Aiming is a SCENARIO input, not an assumption.** A pile of mods only pay out
+`while aiming` — Galvanized Crosshairs and Galvanized Scope, Hydraulic
+Crosshairs, Argon Scope, Sharpened Bullets, Bladed Rounds, Pressurized
+Magazine, Embedded Catalyzer and Catalyzer Link. The sim used to satisfy that
+condition silently, which flatters every build carrying one: a Dual Toxocyst
+with Galvanized Crosshairs measures **52.33% crit rate / 203,591 DPS** aiming
+against **36.92% / 150,041 DPS** hip-firing — a quarter of the DPS handed over
+for free. It is now `aiming` on the Sim and Optimizer scenario (default ON, the
+old behaviour), gating `ModEffect::WhileAiming` in `loadout::resolve_with`. The
+optimizer reads the same flag: scoring a build with aim assumed and replaying
+it without would rank a buff the replay never grants.
+
+Aiming does more in-game than gate buffs (zoom, spread, some weapons' fire
+behaviour, movement speed) — none of that is modeled yet, and the flag makes no
+claim about it.
+
 **Multishot** (wiki `Multishot`). `total_projectiles = base_count ×
 (1 + Σ multishot bonuses)`; the integer part is guaranteed, the fraction
 is a chance of one more, rolled per trigger pull. Each projectile is an

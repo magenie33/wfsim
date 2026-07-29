@@ -60,7 +60,11 @@ pub enum CondBucket {
 }
 
 /// One resolved effect of a mod at its equipped rank.
-#[derive(Debug, Clone, Copy, PartialEq)]
+///
+/// NOT `Copy`: [`ModEffect::WhileAiming`] nests an effect, which needs
+/// indirection. Every arm still binds only `Copy` payloads, so `match *e`
+/// works unchanged.
+#[derive(Debug, Clone, PartialEq)]
 pub enum ModEffect {
     /// Additive base-damage bucket (Hornet Strike).
     BaseDamage(f64),
@@ -131,6 +135,17 @@ pub enum ModEffect {
     /// Reflex Draw: temporary handling buff on weapon swap-in. Conditional
     /// and handling-only — never a static panel stat.
     OnEquipHandling { recoil: f64, accuracy: f64, duration: f64 },
+    /// An effect gated on the player AIMING (`condition: while_aiming` in the
+    /// data: Galvanized Crosshairs / Scope, Argon Scope, Hydraulic Crosshairs,
+    /// Sharpened Bullets, Bladed Rounds, Pressurized Magazine, the Catalyzers).
+    ///
+    /// The sim used to satisfy this silently — every aim-gated buff fired
+    /// whether or not the scenario implied aiming, which flatters any build
+    /// carrying one (user, 2026-07-30). It is now a SCENARIO knob: resolve with
+    /// `aiming = false` and the wrapped effect contributes nothing at all.
+    /// Wrapping rather than adding a flag to each variant keeps every other
+    /// arm of the resolver unaware that aiming exists.
+    WhileAiming(Box<ModEffect>),
     /// Faction damage bonus (Bane/Expel/Cleanse/Smite): +v total damage vs a
     /// MATCHING enemy faction. Its own multiplicative bucket, ADDITIVE with
     /// other faction sources; **double-dips on DoT ticks** (applied twice).
@@ -284,6 +299,8 @@ impl ModEffect {
     pub fn describe(&self) -> String {
         use ModEffect::*;
         match *self {
+            // The gate is stated as a suffix so the inner line reads normally.
+            WhileAiming(ref inner) => format!("{} (while aiming)", inner.describe()),
             BaseDamage(v) => format!("{} Base Damage", pct(v)),
             Multishot(v) => format!("{} Multishot", pct(v)),
             CritChance(v) => format!("{} Crit Chance", pct(v)),
@@ -744,7 +761,22 @@ pub struct ProcConv {
 }
 
 /// Resolve a mod set in slot order against a weapon base.
+/// Resolve a build with the player ASSUMED TO BE AIMING — the panel's and the
+/// optimizer's optimistic view, and the historical behaviour of every caller.
+/// The simulator uses [`resolve_with`] so its scenario can say otherwise.
 pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> ResolvedPanel {
+    resolve_with(base, mods, policy, true)
+}
+
+/// As [`resolve`], with the AIMING assumption explicit. `aiming = false` drops
+/// every [`ModEffect::WhileAiming`] contribution: the buff never arms, so it is
+/// absent from the static buckets AND from the emergent specs handed to the sim.
+pub fn resolve_with(
+    base: &WeaponBase,
+    mods: &[&ModDef],
+    policy: StackPolicy,
+    aiming: bool,
+) -> ResolvedPanel {
     let (mut bd, mut ms, mut cc, mut cd, mut sc, mut fr, mut rl, mut sd) =
         (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     // Magazine-capacity and status-duration additive buckets.
@@ -781,7 +813,15 @@ pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> Reso
             }
         }
         for e in &m.effects {
+            // Unwrap the aim gate HERE so no arm below has to know about it: a
+            // gated effect either becomes its inner effect or vanishes.
+            let e: &ModEffect = match e {
+                ModEffect::WhileAiming(inner) if aiming => inner,
+                ModEffect::WhileAiming(_) => continue,
+                other => other,
+            };
             match *e {
+                ModEffect::WhileAiming(_) => unreachable!("unwrapped above"),
                 ModEffect::BaseDamage(v) => bd += v,
                 ModEffect::Multishot(v) => ms += v,
                 ModEffect::CritChance(v) => cc += v,
@@ -1171,6 +1211,48 @@ mod tests {
 
     fn m_req(id: &'static str, requires: Option<&'static str>, disables: Vec<&'static str>, effects: Vec<ModEffect>) -> ModDef {
         ModDef { requires, disables, ..m(id, effects) }
+    }
+
+    /// The sim used to satisfy `while_aiming` silently, so every aim-gated
+    /// buff fired whether or not the scenario implied aiming (user,
+    /// 2026-07-30: "aim 会影响一些 buff 的触发，我们目前都让这些 buff 触发了").
+    /// `resolve_with(.., aiming)` is the knob; `resolve` keeps assuming aim.
+    #[test]
+    fn aiming_gates_the_while_aiming_effects_and_only_those() {
+        use crate::mods_data::class_pool;
+        let pool = class_pool("pistol");
+        let by = |id: &str| pool.iter().find(|m| m.id == id).expect(id);
+        let base = WeaponBase::from_data("dual_toxocyst", true, &[]);
+
+        // Galvanized Crosshairs is entirely aim-gated: dropping aim must
+        // remove its whole crit-chance contribution.
+        let gc = vec![by("galvanized_crosshairs")];
+        let aimed = resolve_with(&base, &gc, StackPolicy::AssumedMax, true);
+        let hip = resolve_with(&base, &gc, StackPolicy::AssumedMax, false);
+        assert!(
+            aimed.crit_chance > hip.crit_chance,
+            "aim-gated crit must vanish: {} vs {}",
+            aimed.crit_chance,
+            hip.crit_chance
+        );
+        let bare = resolve_with(&base, &[], StackPolicy::AssumedMax, false);
+        assert!(
+            (hip.crit_chance - bare.crit_chance).abs() < 1e-12,
+            "with no aim the mod contributes NOTHING, not something reduced"
+        );
+
+        // An UNGATED mod is untouched by the flag - the wrapper must not leak.
+        let hs = vec![by("hornet_strike")];
+        let a2 = resolve_with(&base, &hs, StackPolicy::AssumedMax, true);
+        let h2 = resolve_with(&base, &hs, StackPolicy::AssumedMax, false);
+        assert!(
+            (a2.modified_base - h2.modified_base).abs() < 1e-12,
+            "Hornet Strike does not care about aiming"
+        );
+
+        // And the plain entry point still assumes aim (30 callers rely on it).
+        let legacy = resolve(&base, &gc, StackPolicy::AssumedMax);
+        assert!((legacy.crit_chance - aimed.crit_chance).abs() < 1e-12);
     }
 
     #[test]

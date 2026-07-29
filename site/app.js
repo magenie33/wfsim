@@ -194,7 +194,12 @@ let evoSel = { 1: null, 2: null, 3: null, 4: null };
 // Sim scenario + per-buff config. Seeded from META.defaults in init().
 // `buffs` maps buff id -> { stacks, locked } (section 2); the buff SET comes
 // from /api/panel and syncs as the build changes.
-let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100,
+// `aiming`: is the player holding aim? Gates the while_aiming mod effects
+// (Galvanized Crosshairs / Scope, Argon Scope, Sharpened Bullets, Bladed
+// Rounds, Pressurized Magazine, the Catalyzers). Defaults TRUE because that is
+// what the sim silently assumed before the knob existed, so no stored preset
+// changes meaning.
+let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, aiming: true,
   duration: 120, runs: 100, form: "incarnon_cycle", buffs: {} };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
@@ -215,7 +220,7 @@ let optPrefs = { sort: "name", dir: "asc", pol: null };
 // The optimizer's OWN enemy scenario (user: fully decoupled from the Sim
 // panel — two independent configs that merely look alike; identical
 // parameters give identical numbers, verified 2026-07-28).
-let optSim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, duration: 120 };
+let optSim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, aiming: true, duration: 120 };
 // The FINAL-ROUND CONTRACT (user): the funnel's last round is guaranteed
 // `finalists` candidates × `final_runs` runs. Persisted; survives weapon
 // switches (it is a run setting, not weapon scope).
@@ -341,10 +346,10 @@ async function init() {
   arcane = d.arcane;
   evoSel = { 1: null, 2: null, 3: null, 4: null, ...(d.evolutions || {}) };
   sim = { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
-    headshot_pct: d.headshot_pct, duration: d.duration, runs: d.runs,
+    headshot_pct: d.headshot_pct, aiming: d.aiming !== false, duration: d.duration, runs: d.runs,
     form: d.form, buffs: {} };
   optSim = { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
-    headshot_pct: d.headshot_pct, duration: d.duration };
+    headshot_pct: d.headshot_pct, aiming: d.aiming !== false, duration: d.duration };
   applyWeapon(d.weapon, d.mods);
 
   $("weapon").addEventListener("change", () => {
@@ -1602,6 +1607,7 @@ function renderSim() {
       </select></label>` : "";
   $("sim-run").innerHTML = `
     <label>Headshot % <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>
+    <label class="check" title="${escHtml(tr("mods that only work while aiming (Galvanized Crosshairs, Argon Scope, Sharpened Bullets…) grant nothing when this is off"))}"><input type="checkbox" data-k="aiming" ${sim.aiming ? "checked" : ""}> ${escHtml(tr("Aiming"))}</label>
     <label>Duration (s) <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>
     <label>Runs <input type="number" data-k="runs" min="1" max="20000" value="${sim.runs}"></label>
     ${formField}`;
@@ -1965,6 +1971,7 @@ function renderOptEnemy() {
     <label>Level <input type="number" data-k="level" min="1" max="9999" value="${optSim.level}"></label>
     <label class="check"><input type="checkbox" data-k="steel_path" ${optSim.steel_path ? "checked" : ""}> Steel Path</label>
     <label>Headshot % <input type="number" data-k="headshot_pct" min="0" max="100" value="${optSim.headshot_pct}"></label>
+    <label class="check" title="${escHtml(tr("mods that only work while aiming grant nothing when this is off - the optimizer scores builds under the same assumption the sim replays them with"))}"><input type="checkbox" data-k="aiming" ${optSim.aiming ? "checked" : ""}> ${escHtml(tr("Aiming"))}</label>
     <label>Duration (s) <input type="number" data-k="duration" min="1" max="3600" value="${optSim.duration}"></label>`;
   box.querySelectorAll("[data-k]").forEach((el) =>
     el.addEventListener("change", () => {
@@ -2384,7 +2391,7 @@ function updateOptEstimate() {
     const parts = [];
     let field = Math.round(jobs);
     rounds.forEach(([r, k]) => { parts.push(`${field.toLocaleString()}×${r}`); field = Math.min(field, k); });
-    scenario = `<div class="opt-scn">each build vs <b>${en.name || optSim.enemy}</b> Lv ${optSim.level}${optSim.steel_path ? " (SP)" : ""} · ${optSim.headshot_pct}% headshots · ${optSim.duration} s engagements · planned funnel (builds×runs): ${parts.join(" → ")} → ${F} finalists at ${FR.toLocaleString()} runs (racing cuts deeper, tie-amnesty keeps up to 2×)</div>`;
+    scenario = `<div class="opt-scn">each build vs <b>${en.name || optSim.enemy}</b> Lv ${optSim.level}${optSim.steel_path ? " (SP)" : ""} · ${optSim.headshot_pct}% headshots${optSim.aiming ? "" : " · hip-fire"} · ${optSim.duration} s engagements · planned funnel (builds×runs): ${parts.join(" → ")} → ${F} finalists at ${FR.toLocaleString()} runs (racing cuts deeper, tie-amnesty keeps up to 2×)</div>`;
   }
   // ONE total, no decomposition — "×N arcanes" leaked a search-internal
   // dimension into the summary line (user, 2026-07-29).
@@ -2446,7 +2453,7 @@ async function runOptimize() {
       evolutions,
       exilus: opt.exilus,
       enemy: optSim.enemy, level: optSim.level, steel_path: optSim.steel_path,
-      headshot_pct: optSim.headshot_pct, duration: optSim.duration,
+      headshot_pct: optSim.headshot_pct, aiming: optSim.aiming, duration: optSim.duration,
       final_runs: optRun.final_runs, finalists: optRun.finalists,
       threads: optRun.threads || 0, // 0 = auto (cores − 2)
       buffs,

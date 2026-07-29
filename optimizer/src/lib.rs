@@ -23,7 +23,7 @@ use wfsim_engine::damage::DamageType;
 use wfsim_engine::dummy::{
     monte_carlo, BodyPart, BuffConfig, DummyParams, LockMode, Summary, TargetParams,
 };
-use wfsim_engine::loadout::{resolve, ModDef, ResolvedPanel, StackPolicy, WeaponBase};
+use wfsim_engine::loadout::{resolve_with, ModDef, ResolvedPanel, StackPolicy, WeaponBase};
 use wfsim_engine::mods::{plan_forma, FormaPlan, PlannedMod, Polarity};
 
 /// The searchable mod pool of one CLASS at MAX RANK (drain = base +
@@ -182,6 +182,10 @@ pub fn enumerate_candidates_observed(
         max_slots as usize,
         0,
         &mut subset,
+        // Aiming ASSUMED here: this front predates the scenario flag and is
+        // used by the CLI and the tests, which have no scenario. The
+        // streaming front (enumerate_candidates_each) takes the real value.
+        true,
         &mut stats,
         &mut scratch,
         &mut |scratch: &mut Vec<Candidate>| {
@@ -216,6 +220,10 @@ pub fn enumerate_candidates_each(
     constraints: &Constraints,
     exilus_opts: &[Option<&ModDef>],
     state: Option<&FunnelState>,
+    // `aiming`: scenario assumption - does the player hold aim? Gates the
+    // `while_aiming` mod effects, so the optimizer scores builds under the
+    // SAME assumption the sim will replay them with.
+    aiming: bool,
     emit: &mut dyn FnMut(Candidate) -> bool,
 ) -> bool {
     let usable: Vec<usize> = (0..pool.len())
@@ -249,6 +257,7 @@ pub fn enumerate_candidates_each(
         max_slots as usize,
         0,
         &mut subset,
+        aiming,
         &mut stats,
         &mut scratch,
         &mut |scratch: &mut Vec<Candidate>| scratch.drain(..).all(&mut *emit),
@@ -277,6 +286,7 @@ fn enumerate_rec<S: FnMut(&mut Vec<Candidate>) -> bool>(
     max: usize,
     from: usize,
     subset: &mut Vec<usize>,
+    aiming: bool,
     stats: &mut EnumStats,
     scratch: &mut Vec<Candidate>,
     sink: &mut S,
@@ -301,6 +311,7 @@ fn enumerate_rec<S: FnMut(&mut Vec<Candidate>) -> bool>(
             innate,
             exilus_opts,
             subset,
+            aiming,
             stats,
             scratch,
         );
@@ -345,6 +356,7 @@ fn enumerate_rec<S: FnMut(&mut Vec<Candidate>) -> bool>(
             max,
             k + 1,
             subset,
+            aiming,
             stats,
             scratch,
             sink,
@@ -368,6 +380,7 @@ fn expand_subset(
     innate: &[Option<Polarity>],
     exilus_opts: &[Option<&ModDef>],
     subset: &[usize],
+    aiming: bool,
     stats: &mut EnumStats,
     out: &mut Vec<Candidate>,
 ) {
@@ -458,7 +471,7 @@ fn expand_subset(
                 refs.push(x);
             }
             // On-kill stacks start at ZERO and are earned live (user policy).
-            let panel = resolve(base, &refs, StackPolicy::Emergent);
+            let panel = resolve_with(base, &refs, StackPolicy::Emergent, aiming);
 
             // Second-level dedup: orders resolving to the same combined
             // vector are the same build (docs/OPTIMIZER.md §1). Deduping on
@@ -479,7 +492,8 @@ fn expand_subset(
             out.push(Candidate {
                 ordered: ordered.clone(),
                 panel,
-                base_panel: second_form.map(|b| resolve(b, &refs, StackPolicy::Emergent)),
+                base_panel: second_form
+                    .map(|b| resolve_with(b, &refs, StackPolicy::Emergent, aiming)),
                 plan: plan.clone(),
                 variant,
                 exilus: xi as u32,
@@ -523,6 +537,11 @@ pub struct Scenario {
     /// Per-buff configured policy applied to every evaluated build (same id
     /// scheme as the web Sim panel). Empty = the emergent default.
     pub buff_cfg: BuffConfig,
+    /// Is the player HOLDING AIM? Gates the `while_aiming` mod effects.
+    /// Scoring a build with this true and replaying it false (or the reverse)
+    /// would rank a buff the replay never grants, so the optimizer and the sim
+    /// read the same flag.
+    pub aiming: bool,
 }
 
 /// Evaluate one candidate with a given arcane: engine Monte Carlo only.
