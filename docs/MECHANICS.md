@@ -719,6 +719,12 @@ Rules the radial part follows, each differing from the direct part:
 - **Status rolls independently**, per enemy: "If one AoE hits multiple enemies,
   each enemy gets their own status roll." Forced procs are declared per part
   (Astilla: the direct hit forces Impact, the radial does not — §6).
+  Independently of the DIRECT hit, too, on the very enemy that took both —
+  wiki (Laetum): *"Initial hit and explosion apply status separately."* The
+  explosion draws from its **own** damage vector, so a Laetum shot can proc
+  Impact/Slash off the direct hit and Radiation off the blast in the same
+  instant. Those radial procs then feed Condition Overload on subsequent
+  direct hits, even though the radial itself gets no CO bonus.
 - **No Condition Overload.** CO is direct-damage only; radial/AoE components
   and non-directly-hit targets are excluded (§2). CO also ignores falloff as a
   final multiplier. Careful: CO is the *only* thing the radial loses here —
@@ -734,6 +740,20 @@ Rules the radial part follows, each differing from the direct part:
 target, so `d = 0` and the radial lands at full value; falloff only matters
 once multiple targets exist. The data still records `start/end/reduction` so
 the multi-target model has it.
+
+**How the sim runs it** (`engine::dummy`): each landed projectile walks a
+short list of ATTACK STAGES — the direct hit, then the radial when the weapon
+declares one. A stage is one damage instance: it rolls its own crit tier, its
+own status draw, and reports into its own damage source. The direct stage
+alone carries the body-part multiplier, the forced procs and the CO bucket. A
+weapon with no radial has a one-stage list, which is why adding the stage loop
+left every non-AoE golden bit-identical.
+
+**Per-instance is the granularity for "on hit" perks too.** Overwhelming
+Attrition ("On Hit that is neither Critical nor applies a Status Effect")
+judges each stage separately, so a shot whose direct hit *and* whose explosion
+both come out plain arms it twice — bounded by the stack cap. Same reading as
+crit and status; **unverified** against a measurement.
 
 ### Lingering damage FIELDS (zones)
 

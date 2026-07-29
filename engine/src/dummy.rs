@@ -932,12 +932,11 @@ pub struct DummyParams {
     /// crit stats, never takes a body-part multiplier and never feeds
     /// Condition Overload.
     ///
-    /// LIMITATION (staged, 2026-07-29): the radial's own STATUS rolls are
-    /// not applied yet — the proc-application block lives inside the pellet
-    /// loop and needs extracting first. For the Laetum this costs the
-    /// Radiation procs the explosion would apply (confusion has no
-    /// single-target damage, but the status TYPE would feed Condition
-    /// Overload on the direct hits).
+    /// It is resolved as a SEPARATE damage instance — wiki (Laetum):
+    /// "Initial hit and explosion apply status separately" — so it rolls
+    /// its own crit tier and draws its own procs from its own damage
+    /// vector. Those procs land on the same target and therefore DO feed
+    /// Condition Overload on subsequent direct hits.
     pub radial: Option<crate::loadout::ResolvedRadial>,
     /// Evolution headshot-damage bonus (Caput Mortuum) — joins the
     /// headshot bracket. Direct hits only; a radial never headshots.
@@ -1835,11 +1834,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             Some(cy) if in_base_form => &cy.base_form,
             _ => params,
         };
-        let (qvec, qtotal, modded_base, toxin_share) = if in_base_form {
+        // qtotal / toxin_share are derived PER STAGE now (each attack part
+        // has its own vector), so only the vector and ModifiedBase survive
+        // at pellet scope.
+        let (qvec, modded_base) = if in_base_form {
             let p = base_pre.as_ref().expect("cycle state needs base pre");
-            (&p.0, p.1, p.2, p.3)
+            (&p.0, p.2)
         } else {
-            (&main_pre.0, main_pre.1, main_pre.2, main_pre.3)
+            (&main_pre.0, main_pre.2)
         };
 
         // Status events scheduled before this shot land first.
@@ -2065,8 +2067,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             let crit_mult = 1.0 + tier as f64 * (cd - 1.0);
 
             // Faction bonus (System A) is a total-damage multiplier applied
-            // once here on the direct hit; DoT/status ticks apply it a SECOND
-            // time (fm² below) — the wiki "double dip".
+            // once per instance; DoT/status ticks apply it a SECOND time
+            // (fm² below) — the wiki "double dip".
             // Secondary Surge (assumed-max): a FINAL multiplier on the shot,
             // multiplicative with Hornet Strike (wiki notes). Secondary
             // Fortifier: ×overguard_mult while the target's Overguard holds.
@@ -2076,136 +2078,151 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 } else {
                     1.0
                 };
-            // Devouring Attrition: an INDEPENDENT multiplier rolled on
-            // instances that did NOT crit (wiki: "multiplicative to base
-            // damage bonuses such as Hornet Strike").
-            let attrition = noncrit_mult(ap.noncrit_bonus, tier, rng);
-            let raw = qtotal
-                * part_factor
-                * crit_mult
-                * co_mult
-                * params.faction_mult
-                * arc_final
-                * attrition;
-            let (effective, killed, broke) = target.apply(
-                raw,
-                toxin_share,
-                part.is_head,
-                t,
-                &params.target,
-                false,
-                &mit,
-            );
-            r.total_damage += raw;
-            r.effective_damage += effective;
-            r.sources.direct += effective;
-            r.timeline.add(t, effective);
-            r.kills += killed as u32;
-            r.pellets += 1;
-            r.crits += (tier >= 1) as u32;
-            r.big_crits += (tier >= 2) as u32;
-            r.headshots += part.is_head as u32;
-            any_head |= part.is_head;
-            any_big |= tier >= 2;
 
-            // ---- the RADIAL part of this projectile (MECHANICS §7) ----
-            // Simultaneous with the direct hit, on the SAME enemy: its own
-            // crit roll off its own crit stats, a 1× body-part multiplier
-            // (an explosion never headshots), and NO Condition Overload —
-            // CO is direct-damage only. Faction and the arcane final
-            // multiplier still apply; mitigation is the target's normal
-            // pipeline. It fires even when the direct hit killed — the
-            // explosion happens regardless, and under InstantRespawn it
-            // simply lands on the fresh individual.
-            if let Some(rad) = &params.radial {
-                let r_tier = roll_crit_tier(rad.crit_chance, rng);
-                let r_crit_mult = 1.0 + r_tier as f64 * (rad.crit_damage - 1.0);
-                let r_qvec = rad.damage.quantized();
-                let r_total = r_qvec.total();
-                let r_toxin = if r_total > 0.0 {
-                    r_qvec.get(DamageType::Toxin) / r_total
+            // ---- ATTACK PARTS ----------------------------------------
+            // A projectile can carry TWO damage instances: the direct hit
+            // and, when the weapon declares one, the radial explosion. They
+            // are resolved SEPARATELY because they ARE separate damage —
+            // wiki (Laetum): "Initial hit and explosion apply status
+            // separately". Each rolls its own crit and its own status draw
+            // from its OWN damage vector.
+            //
+            // The per-stage bindings SHADOW the direct-hit names, so the
+            // proc-application block further down serves whichever instance
+            // is in flight without knowing which it is.
+            //
+            // What the radial stage does differently (MECHANICS §7):
+            //   · no body-part multiplier — an explosion never headshots,
+            //     so it also never charges a weakpoint gauge and never
+            //     feeds headshot-gated buffs;
+            //   · no Condition Overload — CO is direct-damage only. It
+            //     still takes the arcane's live base-damage bucket, which
+            //     shares `co_mult`'s bracket on the direct side;
+            //   · no forced procs — those are declared per attack part
+            //     (Astilla: the direct hit forces Impact, the radial does
+            //     not);
+            //   · falloff is 1.0 here: the projectile detonates ON the
+            //     target, so the epicentre distance is zero.
+            let radial_stage = params.radial;
+            for stage in 0..(1 + radial_stage.is_some() as usize) {
+                let rad = if stage == 1 { radial_stage } else { None };
+                let direct = rad.is_none();
+                // Instance values — the shadowing happens here.
+                let (qvec, tier) = match &rad {
+                    None => (*qvec, tier),
+                    Some(r) => {
+                        let t2 = roll_crit_tier(r.crit_chance, rng);
+                        (r.damage.quantized(), t2)
+                    }
+                };
+                let qtotal = qvec.total();
+                let toxin_share = if qtotal > 0.0 {
+                    qvec.get(DamageType::Toxin) / qtotal
                 } else {
                     0.0
                 };
-                // Falloff: the projectile detonates ON the target, so the
-                // epicentre distance is 0 and the multiplier is 1. The
-                // radius/falloff data drives multi-target work later.
-                //
-                // `arc_ratio` — the arcane's LIVE base-damage stacks
-                // (Merciless & co) — is a weapon-wide damage bucket, so the
-                // explosion takes it too. What it must NOT take is the
-                // Condition Overload part of `co_mult`: CO is direct-damage
-                // only (MECHANICS §2/§7).
-                let r_attrition = noncrit_mult(ap.noncrit_bonus, r_tier, rng);
-                let r_raw = r_total
-                    * r_crit_mult
-                    * arc_ratio
+                let crit_mult = match &rad {
+                    None => crit_mult,
+                    Some(r) => 1.0 + tier as f64 * (r.crit_damage - 1.0),
+                };
+                let part_factor = if direct { part_factor } else { 1.0 };
+                let mb_live = match &rad {
+                    None => mb_live,
+                    Some(r) => r.modified_base * arc_ratio,
+                };
+                // The direct hit's bracket carries CO; the radial's carries
+                // only the arcane base-damage ratio.
+                let bucket = if direct { co_mult } else { arc_ratio };
+                let status_chance = match &rad {
+                    None => ap.status_chance,
+                    Some(r) => r.status_chance,
+                };
+                const NO_FORCED: &[DamageType] = &[];
+                let forced: &[DamageType] = if direct { &ap.forced_procs } else { NO_FORCED };
+
+                // Devouring Attrition: an INDEPENDENT multiplier rolled per
+                // INSTANCE that did not crit (wiki: "multiplicative to base
+                // damage bonuses such as Hornet Strike"; "affects both
+                // forms", the explosions included).
+                let attrition = noncrit_mult(ap.noncrit_bonus, tier, rng);
+                let raw = qtotal
+                    * part_factor
+                    * crit_mult
+                    * bucket
                     * params.faction_mult
                     * arc_final
-                    * r_attrition;
-                let (r_eff, r_killed, r_broke) =
-                    target.apply(r_raw, r_toxin, false, t, &params.target, false, &mit);
-                r.total_damage += r_raw;
-                r.effective_damage += r_eff;
-                r.sources.radial += r_eff;
-                r.timeline.add(t, r_eff);
-                r.kills += r_killed as u32;
-                if let Some(pool) = r_broke {
+                    * attrition;
+                let head_direct = direct && part.is_head;
+                let (effective, killed, broke) = target.apply(
+                    raw,
+                    toxin_share,
+                    head_direct,
+                    t,
+                    &params.target,
+                    false,
+                    &mit,
+                );
+                r.total_damage += raw;
+                r.effective_damage += effective;
+                if direct {
+                    r.sources.direct += effective;
+                } else {
+                    r.sources.radial += effective;
+                }
+                r.timeline.add(t, effective);
+                r.kills += killed as u32;
+                if direct {
+                    r.pellets += 1;
+                    r.crits += (tier >= 1) as u32;
+                    r.big_crits += (tier >= 2) as u32;
+                    r.headshots += part.is_head as u32;
+                    any_head |= part.is_head;
+                    any_big |= tier >= 2;
+
+                    // Crosshairs' on-HEADSHOT buff refreshes on every head
+                    // hit (kills only matter for its stacks).
+                    if part.is_head {
+                        if let Some(b) = params.cc_on_headshot {
+                            ch_buff_expiry = t + b.duration;
+                        }
+                    }
+                }
+
+                if let Some(pool) = broke {
                     push_break_proc(&mut debuffs, params, t, pool);
                 }
-                if r_killed {
+                if killed {
                     gal.bump_on_kill(params, t);
                     arc.on_kill(params, t);
+                    if head_direct {
+                        // Deadhead's precision boundary: only direct-pellet
+                        // HEADSHOT kills grant/refresh its stacks.
+                        arc.bump_trigger(&params.arcane.buffs, ArcTrigger::HeadshotKill, t);
+                        // Crosshairs stacks: headshot kills, per-stack FIFO.
+                        if let Some(s) = &params.cc_stack {
+                            DebuffState::push_capped(
+                                &mut ch_stacks,
+                                t + s.duration,
+                                s.max_stacks as usize,
+                                t,
+                            );
+                        }
+                    }
+                    // The killing instance's procs die with the old
+                    // individual; what follows hits the fresh spawn.
                     debuffs = DebuffState::default();
                     continue;
                 }
-            }
-
-            // Crosshairs' on-HEADSHOT buff refreshes on every head hit
-            // (kills only matter for its stacks).
-            if part.is_head {
-                if let Some(b) = params.cc_on_headshot {
-                    ch_buff_expiry = t + b.duration;
-                }
-            }
-
-            if let Some(pool) = broke {
-                push_break_proc(&mut debuffs, params, t, pool);
-            }
-            if killed {
-                gal.bump_on_kill(params, t);
-                arc.on_kill(params, t);
-                // Deadhead's precision boundary: only direct-pellet
-                // HEADSHOT kills grant/refresh its stacks.
-                if part.is_head {
-                    arc.bump_trigger(&params.arcane.buffs, ArcTrigger::HeadshotKill, t);
-                }
-                // Crosshairs stacks: headshot kills, per-stack expiry FIFO.
-                if part.is_head {
-                    if let Some(s) = &params.cc_stack {
-                        DebuffState::push_capped(
-                            &mut ch_stacks,
-                            t + s.duration,
-                            s.max_stacks as usize,
-                            t,
-                        );
-                    }
-                }
-                // The killing pellet's procs die with the old individual;
-                // remaining pellets hit the fresh spawn.
-                debuffs = DebuffState::default();
-                continue;
-            }
-            // Per-pellet proc roll (wiki Multishot/Status_Effect): forced ++
-            // SC draws weighted by the QUANTIZED vector, unit immunities
-            // renormalized.
-            let mut procs = status::procs_for_hit(
-                &ap.forced_procs,
-                ap.status_chance,
-                qvec,
-                &params.target.status_immunities,
-                rng,
-            );
+                // Per-INSTANCE proc roll (wiki Multishot/Status_Effect):
+                // forced ++ SC draws weighted by the QUANTIZED vector, unit
+                // immunities renormalized.
+                let mut procs = status::procs_for_hit(
+                    forced,
+                    status_chance,
+                    &qvec,
+                    &params.target.status_immunities,
+                    rng,
+                );
             // Secondary Encumber: on a status this pellet applied, roll
             // ONE extra status of a uniformly random type (13-type pool,
             // independent of the weapon's vector — wiki), at most once per
@@ -2253,10 +2270,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             }
             // Overwhelming Attrition's TRIGGER, evaluated once the proc
             // list is final: "On Hit that is neither Critical nor applies
-            // a Status Effect" (wiki). The DIRECT pellet is the hit that
-            // decides — the radial's own status roll does not exist yet
-            // (see `DummyParams::radial`), so letting the explosion arm the
-            // buff would be inventing a trigger the sim cannot judge.
+            // a Status Effect" (wiki). Read PER DAMAGE INSTANCE, the same
+            // granularity crit and status use: a shot whose direct hit and
+            // whose explosion are both plain arms the buff twice (the
+            // stack cap still bounds it).
             if let Some(b) = ap.plain_hit_bonus {
                 if tier == 0 && procs.is_empty() {
                     plain_stacks.current(t, b.duration);
@@ -2471,6 +2488,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         debuffs = DebuffState::default();
                     }
                 }
+            }
             }
         }
 
@@ -3209,6 +3227,76 @@ mod tests {
             faction: crate::loadout::Faction::Unknown,
             mode,
         }
+    }
+
+    /// A radial params fixture: the direct hit is inert (no damage roll
+    /// noise, no status), so everything the run reports comes from the
+    /// explosion.
+    fn radial_only(radial: crate::loadout::ResolvedRadial) -> DummyParams {
+        DummyParams {
+            damage: DamageVector::default(),
+            radial: Some(radial),
+            status_chance: 0.0,
+            base_crit_chance: 0.0,
+            forced_procs: Vec::new(),
+            ..DummyParams::default()
+        }
+    }
+
+    fn radial_of(status_chance: f64, crit_chance: f64) -> crate::loadout::ResolvedRadial {
+        let mut damage = DamageVector::default();
+        damage.set(DamageType::Heat, 300.0);
+        crate::loadout::ResolvedRadial {
+            damage,
+            modified_base: 300.0,
+            crit_chance,
+            crit_damage: 2.0,
+            status_chance,
+        }
+    }
+
+    #[test]
+    fn the_explosion_rolls_its_own_status_apart_from_the_direct_hit() {
+        // Wiki (Laetum): "Initial hit and explosion apply status
+        // separately." The direct hit here can never proc (0% SC), so any
+        // proc at all is the explosion's own draw.
+        let quiet = run_once(&radial_only(radial_of(0.0, 0.0)), &mut Rng::new(7));
+        assert_eq!(quiet.procs, 0, "0% radial SC = no procs anywhere");
+
+        let loud = run_once(&radial_only(radial_of(1.0, 0.0)), &mut Rng::new(7));
+        assert_eq!(
+            loud.procs, loud.shots,
+            "100% radial SC = exactly one proc per landed explosion"
+        );
+        assert!(
+            loud.dot_damage > 0.0,
+            "the explosion's Heat procs must burn on their own"
+        );
+        assert_eq!(quiet.shots, loud.shots, "status does not change the cadence");
+    }
+
+    #[test]
+    fn the_explosion_rolls_its_own_crit_and_never_counts_as_a_pellet_crit() {
+        // Separate instance = separate crit roll. `crits`/`headshots` stay
+        // direct-pellet counters (an explosion never headshots), but the
+        // damage must show the radial's own multiplier.
+        let flat = run_once(&radial_only(radial_of(0.0, 0.0)), &mut Rng::new(3));
+        let crit = run_once(&radial_only(radial_of(0.0, 1.0)), &mut Rng::new(3));
+        assert_eq!(
+            crit.crits, flat.crits,
+            "the radial's crit chance must not move the pellet crit counter"
+        );
+        assert_eq!(
+            crit.headshots, flat.headshots,
+            "an explosion never headshots, so it adds nothing to that counter"
+        );
+        assert!(
+            (crit.sources.radial - 2.0 * flat.sources.radial).abs() < 1e-6,
+            "100% radial crit at 2x = double the explosion damage ({} vs {})",
+            crit.sources.radial,
+            flat.sources.radial
+        );
+        assert_eq!(flat.sources.direct, 0.0, "the fixture's direct hit is inert");
     }
 
     #[test]
