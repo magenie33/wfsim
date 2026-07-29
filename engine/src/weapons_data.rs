@@ -685,6 +685,70 @@ mod laetum_tests {
         );
     }
 
+    /// M10 (in-game, 2026-07-30): a reload-speed buff is live in BOTH
+    /// forms; it does NOT touch the gauge, but it DOES shorten transmute
+    /// in and out. The observable consequence in a fixed engagement is
+    /// that more cycles fit — the gauge requirement staying put.
+    #[test]
+    fn a_reload_buff_shortens_the_transmutes_but_never_the_gauge() {
+        use crate::dummy::{run_once, DummyParams, TargetParams};
+        use crate::rng::Rng;
+        let parts = vec![crate::dummy::BodyPart {
+            name: "head".into(),
+            aim_weight: 1.0,
+            multiplier: 3.0,
+            is_head: true,
+            crit_bonus: false,
+        }];
+        let params = |evos: &[&str], pin: bool| {
+            let inc = WeaponBase::from_data("laetum_incarnon", true, evos);
+            let base = WeaponBase::from_data("laetum", true, evos);
+            let pol = crate::loadout::StackPolicy::Emergent;
+            let pi = crate::loadout::resolve(&inc, &[], pol);
+            let pb = crate::loadout::resolve(&base, &[], pol);
+            let mut d = DummyParams::incarnon_cycle_from_panels(
+                &pi,
+                &pb,
+                false,
+                crate::dummy::LockMode::Initial(0),
+                TargetParams::training_dummy(),
+                parts.clone(),
+                300.0,
+            );
+            if !pin {
+                if let Some(b) = d.reload_on_headshot.as_mut() {
+                    b.initial_stacks = 0;
+                }
+            } else if let Some(b) = d.reload_on_headshot.as_mut() {
+                b.pinned = true;
+            }
+            d
+        };
+        let cycle_charges = |d: &DummyParams| {
+            d.cycle.as_ref().expect("the incarnon cycle").charges_to_fill
+        };
+
+        let off = params(&["laetum_evo1_incarnon_form"], false);
+        let on = params(
+            &["laetum_evo1_incarnon_form", "laetum_lethal_rearmament"],
+            true,
+        );
+        assert_eq!(
+            cycle_charges(&off),
+            cycle_charges(&on),
+            "reload speed must NOT shorten gauge building (M10)"
+        );
+
+        // Less downtime in a fixed engagement = more shots fired. (Transform
+        // COUNT is gauge-bound, not animation-bound, so it barely moves.)
+        let s_off = run_once(&off, &mut Rng::new(5)).shots;
+        let s_on = run_once(&on, &mut Rng::new(5)).shots;
+        assert!(
+            s_on > s_off,
+            "shorter transmutes = more shots in the same 300 s: {s_off} -> {s_on}"
+        );
+    }
+
     /// The two tier-5 Attritions sit in DIFFERENT brackets, and the wiki
     /// says so explicitly: Overwhelming is "additive to base damage bonuses
     /// such as Hornet Strike", Devouring is "multiplicative" to them. The
