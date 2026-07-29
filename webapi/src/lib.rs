@@ -1593,6 +1593,7 @@ pub fn simulate_json(v: &Value) -> Value {
         "procs": s.mean_procs,
         "dot": s.mean_dot_damage,
         "damage_sources": damage_sources,
+        "timeline": s.timeline.0.to_vec(),
         "transforms": s.mean_transforms,
         "reloads": s.mean_reloads,
         "duration": s.duration_secs,

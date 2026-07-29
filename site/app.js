@@ -572,6 +572,14 @@ let activePreset = null;
 
 function initPresets() {
   let ps = loadPresetList(BUILDS);
+  // One-time default migration: presets saved under the old 300-run
+  // default keep pinning the sim back to 300 — rewrite them to the new
+  // default (100). A deliberate non-default choice is left alone.
+  let migrated = false;
+  ps.forEach((p) => {
+    if (p.state && p.state.sim && p.state.sim.runs === 300) { p.state.sim.runs = 100; migrated = true; }
+  });
+  if (migrated) storePresetList(BUILDS, ps);
   if (!ps.length) {
     ps = [{ name: "preset 1", savedAt: Date.now(), state: snapshotState() }];
     storePresetList(BUILDS, ps);
@@ -1527,7 +1535,7 @@ function renderResults(r, testedAt) {
   const kpis = [
     kpi("DPS", n0(r.dps)), kpi("Effective DPS", n0(r.effective_dps)),
     kpi("Crit rate", pc(r.crit_rate)), kpi("Orange+ crit", pc(r.big_crit_rate)),
-    kpi("Headshot rate", pc(r.headshot_rate)), kpi("Shots", n1(r.shots)),
+    kpi("Procs", n1(r.procs)), kpi("Shots", n1(r.shots)),
     kpi("Reloads", n1(r.reloads)), kpi("Transforms", n1(r.transforms)),
   ].join("");
   // WoW-style damage meter (user, 2026-07-29): effective damage BY SOURCE
@@ -1542,6 +1550,31 @@ function renderResults(r, testedAt) {
       <div class="mbar"><i style="width:${(x.dmg / srcMax * 100).toFixed(1)}%;background:var(--s${(i % 8) + 1})"></i></div>
       <span class="mval">${n0(x.dmg)} · ${(x.dmg / srcTotal * 100).toFixed(1)}%</span>
     </div>`).join("");
+  // Damage-over-time curve (user, 2026-07-29): CUMULATIVE mean effective
+  // damage from the engine's time buckets. One series — the accent line,
+  // recessive grid, hover crosshair + tooltip; no legend needed.
+  const tl = r.timeline || [];
+  let tlCum = 0;
+  const cumPts = tl.map((v) => (tlCum += v));
+  const tlMax = tlCum || 1;
+  const W = 600, H = 170, PADL = 8, PADR = 8, PADT = 8, PADB = 6;
+  const px = (i) => PADL + ((i + 1) / tl.length) * (W - PADL - PADR);
+  const py = (v) => PADT + (1 - v / tlMax) * (H - PADT - PADB);
+  const pts = [`${PADL},${py(0)}`].concat(cumPts.map((v, i) => `${px(i)},${py(v)}`)).join(" ");
+  const tlGrid = [0.25, 0.5, 0.75].map((f) =>
+    `<line class="tl-grid" x1="${PADL}" x2="${W - PADR}" y1="${py(tlMax * f)}" y2="${py(tlMax * f)}"/>`).join("");
+  const chart = tl.length ? `
+      <h3>${tr("Damage over time")}</h3>
+      <div class="tl-wrap">
+        <svg id="tl-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+          ${tlGrid}
+          <polyline class="tl-line" points="${pts}"/>
+          <line id="tl-cross" class="tl-cross" y1="${PADT}" y2="${H - PADB}" hidden/>
+        </svg>
+        <div class="tl-x"><span>0s</span><span>${n0(r.duration)}s</span></div>
+        <div class="tl-ymax">${n0(tlMax)}</div>
+        <div id="tl-tip" class="tl-tip" hidden></div>
+      </div>` : "";
   const row = (k, v) => `<div class="row"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   const detail = [
     row("Target", `${t.name || "?"} · Lv ${t.level}${t.steel_path ? " (SP)" : ""}`),
@@ -1556,10 +1589,28 @@ function renderResults(r, testedAt) {
       <div class="hero"><div><div class="hero-num">${heroNum}</div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
       <div class="kpi-row">${kpis}</div>
       <h3>${tr("Damage by source")}</h3>
-      <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>
+      <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${chart}
       <h3>Detail</h3>
       <div class="stat-table">${detail}</div>
     </div>`;
+  // Chart hover: crosshair + tooltip on the nearest time bucket.
+  const wrap = $("sim-results").querySelector(".tl-wrap");
+  if (wrap) {
+    const svg = wrap.querySelector("#tl-svg");
+    const tip = wrap.querySelector("#tl-tip");
+    const cross = wrap.querySelector("#tl-cross");
+    wrap.addEventListener("mousemove", (ev) => {
+      const b = svg.getBoundingClientRect();
+      const fx = (ev.clientX - b.left) / b.width;
+      const i = Math.max(0, Math.min(tl.length - 1, Math.round(fx * tl.length) - 1));
+      cross.hidden = false;
+      cross.setAttribute("x1", px(i)); cross.setAttribute("x2", px(i));
+      tip.hidden = false;
+      tip.textContent = `${(((i + 1) / tl.length) * r.duration).toFixed(1)}s · ${n0(cumPts[i])}`;
+      tip.style.left = Math.min(b.width - 120, Math.max(0, ev.clientX - b.left + 10)) + "px";
+    });
+    wrap.addEventListener("mouseleave", () => { cross.hidden = true; tip.hidden = true; });
+  }
 }
 
 // Illustrative arena replay: drain the enemy's layered bars over a fixed

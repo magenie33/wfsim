@@ -204,6 +204,8 @@ ui:
   "Shots": 射击次数
   "Reloads": 装填次数
   "Transforms": 形态切换
+  "Procs": 触发数量
+  "Damage over time": 伤害曲线
   "Search…": 搜索…
   "All": 全部
   "Name A→Z": 名称 A→Z

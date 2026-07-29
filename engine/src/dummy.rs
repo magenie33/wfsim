@@ -1335,6 +1335,28 @@ impl Default for DummyParams {
     }
 }
 
+/// Time-bucketed effective damage for the results' damage-over-time curve
+/// (user, 2026-07-29). Fixed bucket count; each engagement's applications
+/// land in `bucket = t / duration × N`. A wrapper type because `[f64; 60]`
+/// has no derived `Default`.
+pub const TIMELINE_BUCKETS: usize = 60;
+
+#[derive(Debug, Clone, Copy)]
+pub struct Timeline(pub [f64; TIMELINE_BUCKETS]);
+
+impl Default for Timeline {
+    fn default() -> Self {
+        Timeline([0.0; TIMELINE_BUCKETS])
+    }
+}
+
+impl Timeline {
+    fn add(&mut self, t: f64, duration: f64, v: f64) {
+        let i = ((t / duration.max(1e-9)) * TIMELINE_BUCKETS as f64) as usize;
+        self.0[i.min(TIMELINE_BUCKETS - 1)] += v;
+    }
+}
+
 /// Effective damage attributed by SOURCE — the WoW-damage-meter view
 /// (user, 2026-07-29): direct pellet hits, each status settlement type
 /// (Slash bleed, Heat/Toxin/Gas/Electricity DoTs, Blast detonations —
@@ -1379,6 +1401,8 @@ pub struct RunResult {
     pub kill_progress: f64,
     /// Effective damage by source (direct / per-proc-type / arcane).
     pub sources: SourceDamage,
+    /// Effective damage by time bucket (the damage-over-time curve).
+    pub timeline: Timeline,
 }
 
 /// Roll a critical tier for an effective crit chance that may exceed 1.0.
@@ -1547,6 +1571,7 @@ fn process_ticks(
         r.effective_damage += effective;
         r.dot_damage += effective;
         r.sources.add_status(src, effective);
+        r.timeline.add(now, params.duration_secs, effective);
         r.dot_ticks += is_dot_tick as u32;
         r.kills += killed as u32;
         if let Some(pool) = broke {
@@ -1975,6 +2000,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             r.total_damage += raw;
             r.effective_damage += effective;
             r.sources.direct += effective;
+            r.timeline.add(t, params.duration_secs, effective);
             r.kills += killed as u32;
             r.pellets += 1;
             r.crits += (tier >= 1) as u32;
@@ -2241,6 +2267,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                             r.effective_damage += eff;
                             r.dot_damage += eff;
                             r.sources.add_status(DamageType::Blast, eff);
+                            r.timeline.add(t, params.duration_secs, eff);
                             r.kills += killed as u32;
                             if let Some(pool) = broke {
                                 push_break_proc(&mut debuffs, params, t, pool);
@@ -2268,6 +2295,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     r.total_damage += amt;
                     r.effective_damage += eff;
                     r.sources.arcane_on_status += eff;
+                    r.timeline.add(t, params.duration_secs, eff);
                     r.kills += killed as u32;
                     if let Some(pool) = broke {
                         push_break_proc(&mut debuffs, params, t, pool);
@@ -2389,6 +2417,8 @@ pub struct Summary {
     pub mean_headshot_rate: f64,
     /// Mean effective damage by source (the damage-meter view).
     pub source_damage: SourceDamage,
+    /// Mean effective damage per time bucket (the damage-over-time curve).
+    pub timeline: Timeline,
 }
 
 /// Run `runs` engagements from a single seed and summarize.
@@ -2406,6 +2436,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     let (mut min_kills, mut max_kills) = (u32::MAX, 0u32);
     let mut kill_progress = 0.0f64;
     let mut sources = SourceDamage::default();
+    let mut timeline = Timeline::default();
 
     for _ in 0..runs {
         let r = run_once(params, &mut rng);
@@ -2431,6 +2462,9 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         sources.direct += r.sources.direct;
         sources.arcane_on_status += r.sources.arcane_on_status;
         for (acc, v) in sources.status.iter_mut().zip(r.sources.status) {
+            *acc += v;
+        }
+        for (acc, v) in timeline.0.iter_mut().zip(r.timeline.0) {
             *acc += v;
         }
     }
@@ -2475,6 +2509,13 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
                 *v /= n;
             }
             s
+        },
+        timeline: {
+            let mut t = timeline;
+            for v in t.0.iter_mut() {
+                *v /= n;
+            }
+            t
         },
     }
 }
