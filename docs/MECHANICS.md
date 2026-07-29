@@ -814,13 +814,11 @@ pull: fired into a crowd, ONE Laetum shot takes the buff from empty to its
 3-stack cap, which is only possible if each instance the shot produced armed
 it separately.
 
-That measures the premise; the single-target consequence follows from it plus
-the verbatim rule above ("Initial hit and explosion apply status separately").
-A shot whose direct hit *and* whose explosion both come out plain arms the
-buff twice, bounded by the cap. The composition is an **inference from a
-measured premise** — what remains unmeasured is only whether the two parts on
-ONE enemy count as two, which the separate-status rule already asserts for
-status.
+The single-target case is measured too, and directly: one shot at a **lone**
+target grants exactly **2** stacks — the direct hit and the explosion each arm
+it. Two (not the cap of 3) is the tell: the count tracks instances. So two
+attack parts on the SAME enemy are two instances, which corroborates the
+verbatim separate-status rule above from the perk side.
 
 ### Lingering damage FIELDS (zones)
 

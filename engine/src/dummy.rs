@@ -2349,9 +2349,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // list is final: "On Hit that is neither Critical nor applies
             // a Status Effect" (wiki). PER DAMAGE INSTANCE — measured
             // (MEASUREMENTS M11: one shot into a crowd fills all 3 stacks,
-            // impossible under a per-trigger-pull reading). So a shot whose
-            // direct hit and whose explosion are both plain arms the buff
-            // twice, bounded by the stack cap.
+            // and one shot at a LONE target grants exactly 2 — the direct
+            // hit and the explosion each arm it). So a shot whose direct hit
+            // and whose explosion are both plain arms the buff twice,
+            // bounded by the stack cap.
             if let Some(b) = ap.plain_hit_bonus.filter(|b| !b.pinned) {
                 if tier == 0 && procs.is_empty() {
                     plain_stacks.current(t, b.duration);
@@ -3379,6 +3380,59 @@ mod tests {
             flat.sources.radial
         );
         assert_eq!(flat.sources.direct, 0.0, "the fixture's direct hit is inert");
+    }
+
+    /// M11 (in-game, 2026-07-30): on a LONE enemy one Laetum shot grants
+    /// TWO stacks of Overwhelming Attrition — the direct hit and the
+    /// explosion each arm it. The clean way to assert that here is a
+    /// ZERO-damage radial: it still runs as a stage, so any extra damage
+    /// can only come from the buff having been armed a second time.
+    #[test]
+    fn the_explosion_arms_an_on_hit_buff_of_its_own() {
+        use crate::loadout::PlainHitBuff;
+        let mk = |with_radial: bool| {
+            let radial = with_radial.then(|| crate::loadout::ResolvedRadial {
+                damage: DamageVector::default(), // 0 damage: a pure extra INSTANCE
+                modified_base: 0.0,
+                crit_chance: 0.0,
+                crit_damage: 2.0,
+                status_chance: 0.0,
+                radius_m: 2.0,
+                falloff_start_m: 0.0,
+                falloff_reduction: 0.0,
+            });
+            let p = DummyParams {
+                radial,
+                plain_hit_bonus: Some(PlainHitBuff {
+                    per_stack: 4.0,
+                    max_stacks: 3,
+                    duration: 10.0,
+                    // Earn them in the run — that is what is under test.
+                    initial_stacks: 0,
+                    pinned: false,
+                }),
+                // Never crits, never procs: every instance is "plain", so
+                // the only variable is HOW MANY instances a shot produces.
+                base_crit_chance: 0.0,
+                status_chance: 0.0,
+                forced_procs: Vec::new(),
+                // ONE body part at 1x: the radial stage consumes RNG draws,
+                // so a multi-part fixture would shift which part each shot
+                // lands on and drown the effect under aim variance.
+                body_parts: mono_body(1.0),
+                ..DummyParams::default()
+            };
+            let r = run_once(&p, &mut Rng::new(4));
+            (r.sources.direct, r.sources.radial)
+        };
+        let (solo, no_blast) = mk(false);
+        let (paired, blast) = mk(true);
+        assert_eq!(no_blast, 0.0, "control has no radial at all");
+        assert_eq!(blast, 0.0, "the radial deals zero damage by construction");
+        assert!(
+            paired > solo,
+            "the zero-damage explosion still arms the buff, so the DIRECT              damage must climb faster: {solo:.0} -> {paired:.0}"
+        );
     }
 
     #[test]
