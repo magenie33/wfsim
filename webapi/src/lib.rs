@@ -1539,8 +1539,11 @@ pub fn simulate_json(v: &Value) -> Value {
         .map(|(t, val)| json!({ "type": format!("{t:?}"), "value": val }))
         .collect();
 
-    // Damage-meter rows (mean effective damage by source), best-first,
-    // zeros dropped. Status keys are the proc's DamageType name.
+    // EVERY displayed number comes from the MEDIAN engagement (user,
+    // 2026-07-29: one internally consistent run — the meter, the curve,
+    // the kills and the handling stats all line up). The cross-run
+    // spread (min–max ±σ) stays as explicit spread stats.
+    let m = &s.median_run;
     const TYPE_NAMES: [&str; 15] = [
         "Impact",
         "Puncture",
@@ -1558,7 +1561,7 @@ pub fn simulate_json(v: &Value) -> Value {
         "True",
         "Void",
     ];
-    let sd = &s.source_damage;
+    let sd = &m.sources;
     let mut sources: Vec<(String, f64)> = vec![
         ("direct".to_string(), sd.direct),
         ("arcane".to_string(), sd.arcane_on_status),
@@ -1575,27 +1578,28 @@ pub fn simulate_json(v: &Value) -> Value {
         .iter()
         .map(|(k, v)| json!({ "source": k, "dmg": v }))
         .collect();
+    // One-second buckets, sliced to the engagement's actual duration.
+    let nb = (s.duration_secs.ceil() as usize).clamp(1, m.timeline.0.len());
+    let pel = m.pellets.max(1) as f64;
 
     json!({
         "ok": true,
-        "score": s.mean_kill_progress,
-        "kills": s.mean_kills,
+        "score": m.kill_progress,
+        "kills": m.kills,
         "kills_std": s.std_kills,
         "kills_min": s.min_kills,
         "kills_max": s.max_kills,
-        "dps": s.dps,
-        "effective_dps": s.effective_dps,
-        "shots": s.mean_shots,
-        "pellets": s.mean_pellets,
-        "crit_rate": s.mean_crit_rate,
-        "big_crit_rate": s.mean_big_crit_rate,
-        "headshot_rate": s.mean_headshot_rate,
-        "procs": s.mean_procs,
-        "dot": s.mean_dot_damage,
+        "effective_dps": m.effective_damage / s.duration_secs.max(1e-9),
+        "shots": m.shots,
+        "pellets": m.pellets,
+        "crit_rate": m.crits as f64 / pel,
+        "big_crit_rate": m.big_crits as f64 / pel,
+        "headshot_rate": m.headshots as f64 / pel,
+        "procs": m.procs,
         "damage_sources": damage_sources,
-        "timeline": s.timeline.0.to_vec(),
-        "transforms": s.mean_transforms,
-        "reloads": s.mean_reloads,
+        "timeline": m.timeline.0[..nb].to_vec(),
+        "transforms": m.transforms,
+        "reloads": m.reloads,
         "duration": s.duration_secs,
         "runs": s.runs,
         "panel": {

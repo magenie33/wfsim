@@ -1335,11 +1335,12 @@ impl Default for DummyParams {
     }
 }
 
-/// Time-bucketed effective damage for the results' damage-over-time curve
-/// (user, 2026-07-29). Fixed bucket count; each engagement's applications
-/// land in `bucket = t / duration × N`. A wrapper type because `[f64; 60]`
-/// has no derived `Default`.
-pub const TIMELINE_BUCKETS: usize = 60;
+/// Time-bucketed effective damage for the results' DPS-over-time curve
+/// (user, 2026-07-29). ONE-SECOND buckets (user: the precision should be
+/// 1 s); the array is capacity for the longest supported engagement —
+/// callers slice to the actual duration. A wrapper type because a large
+/// array has no derived `Default`.
+pub const TIMELINE_BUCKETS: usize = 600;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Timeline(pub [f64; TIMELINE_BUCKETS]);
@@ -1351,8 +1352,8 @@ impl Default for Timeline {
 }
 
 impl Timeline {
-    fn add(&mut self, t: f64, duration: f64, v: f64) {
-        let i = ((t / duration.max(1e-9)) * TIMELINE_BUCKETS as f64) as usize;
+    fn add(&mut self, t: f64, v: f64) {
+        let i = t.max(0.0) as usize;
         self.0[i.min(TIMELINE_BUCKETS - 1)] += v;
     }
 }
@@ -1571,7 +1572,7 @@ fn process_ticks(
         r.effective_damage += effective;
         r.dot_damage += effective;
         r.sources.add_status(src, effective);
-        r.timeline.add(now, params.duration_secs, effective);
+        r.timeline.add(now, effective);
         r.dot_ticks += is_dot_tick as u32;
         r.kills += killed as u32;
         if let Some(pool) = broke {
@@ -2000,7 +2001,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             r.total_damage += raw;
             r.effective_damage += effective;
             r.sources.direct += effective;
-            r.timeline.add(t, params.duration_secs, effective);
+            r.timeline.add(t, effective);
             r.kills += killed as u32;
             r.pellets += 1;
             r.crits += (tier >= 1) as u32;
@@ -2267,7 +2268,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                             r.effective_damage += eff;
                             r.dot_damage += eff;
                             r.sources.add_status(DamageType::Blast, eff);
-                            r.timeline.add(t, params.duration_secs, eff);
+                            r.timeline.add(t, eff);
                             r.kills += killed as u32;
                             if let Some(pool) = broke {
                                 push_break_proc(&mut debuffs, params, t, pool);
@@ -2295,7 +2296,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     r.total_damage += amt;
                     r.effective_damage += eff;
                     r.sources.arcane_on_status += eff;
-                    r.timeline.add(t, params.duration_secs, eff);
+                    r.timeline.add(t, eff);
                     r.kills += killed as u32;
                     if let Some(pool) = broke {
                         push_break_proc(&mut debuffs, params, t, pool);
@@ -2417,10 +2418,12 @@ pub struct Summary {
     pub mean_headshot_rate: f64,
     /// Mean effective damage by source (the damage-meter view).
     pub source_damage: SourceDamage,
-    /// The MEDIAN run's effective damage per time bucket (the
-    /// damage-over-time curve) — one real engagement's rhythm, chosen by
-    /// median total effective damage, not a cross-run average.
-    pub timeline: Timeline,
+    /// The complete MEDIAN engagement (by total effective damage). The
+    /// sim result DISPLAYS this run's numbers — kills, shots, procs,
+    /// sources, timeline — so every shown stat is one internally
+    /// consistent engagement (user, 2026-07-29); the mean fields above
+    /// stay for the optimizer's objectives and the golden tests.
+    pub median_run: RunResult,
 }
 
 /// Run `runs` engagements from a single seed and summarize.
@@ -2438,14 +2441,14 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     let (mut min_kills, mut max_kills) = (u32::MAX, 0u32);
     let mut kill_progress = 0.0f64;
     let mut sources = SourceDamage::default();
-    // The curve is the MEDIAN run's own timeline (by effective damage) —
-    // a real engagement's rhythm with its reload plateaus and transform
-    // kinks, not a smoothed cross-run average (user, 2026-07-29).
-    let mut run_curves: Vec<(f64, Timeline)> = Vec::with_capacity(runs as usize);
+    // Keep every engagement: the MEDIAN one (by effective damage) is
+    // what the sim result displays — one real, internally consistent
+    // engagement, not a smoothed cross-run average (user, 2026-07-29).
+    let mut all_runs: Vec<RunResult> = Vec::with_capacity(runs as usize);
 
     for _ in 0..runs {
         let r = run_once(params, &mut rng);
-        run_curves.push((r.effective_damage, r.timeline));
+        all_runs.push(r);
         sum += r.total_damage;
         sum_sq += r.total_damage * r.total_damage;
         min = min.min(r.total_damage);
@@ -2513,9 +2516,9 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
             }
             s
         },
-        timeline: {
-            run_curves.sort_by(|a, b| a.0.total_cmp(&b.0));
-            run_curves.get(run_curves.len() / 2).map(|(_, t)| *t).unwrap_or_default()
+        median_run: {
+            all_runs.sort_by(|a, b| a.effective_damage.total_cmp(&b.effective_damage));
+            all_runs.get(all_runs.len() / 2).copied().unwrap_or_default()
         },
     }
 }

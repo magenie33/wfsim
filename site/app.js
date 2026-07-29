@@ -1522,7 +1522,7 @@ function renderResults(r, testedAt) {
   // duration / mean kills = average seconds per kill, as simulated —
   // not an EHP/DPS back-calculation.
   const ttk = killed ? r.duration / r.kills : Infinity;
-  const heroNum = killed ? n1(r.kills) : pc(r.score);
+  const heroNum = killed ? n0(r.kills) : pc(r.score); // median run: kills is a whole number
   const heroSub = killed
     ? `kills in ${n0(r.duration)}s · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s to first kill`
     : `of one ${LN("enemies", sim.enemy, t.name || "enemy")}'s EHP in ${n0(r.duration)}s (not killed)`;
@@ -1530,10 +1530,12 @@ function renderResults(r, testedAt) {
   // legality is the Builder's business (user, 2026-07-29).
   const kpi = (l, v) => `<div class="kpi"><div class="kv">${v}</div><div class="kl">${tr(l)}</div></div>`;
   // KPI row: damage pace + crit feel + HANDLING feel (shots, reloads,
-  // transforms — user, 2026-07-29). DoT/proc numbers left the row: the
-  // damage-by-source meter below tells that story better.
+  // transforms — user, 2026-07-29). In THIS product "DPS" always means
+  // EFFECTIVE dps — what the target actually lost, armor and on-target
+  // amps included; the weapon-side raw number is out (user: in our
+  // context every stat accounts for the enemy).
   const kpis = [
-    kpi("DPS", n0(r.dps)), kpi("Effective DPS", n0(r.effective_dps)),
+    kpi("DPS", n0(r.effective_dps)),
     kpi("Crit rate", pc(r.crit_rate)), kpi("Orange+ crit", pc(r.big_crit_rate)),
     kpi("Procs", n1(r.procs)), kpi("Shots", n1(r.shots)),
     kpi("Reloads", n1(r.reloads)), kpi("Transforms", n1(r.transforms)),
@@ -1550,21 +1552,21 @@ function renderResults(r, testedAt) {
       <div class="mbar"><i style="width:${(x.dmg / srcMax * 100).toFixed(1)}%;background:var(--s${(i % 8) + 1})"></i></div>
       <span class="mval">${n0(x.dmg)} · ${(x.dmg / srcTotal * 100).toFixed(1)}%</span>
     </div>`).join("");
-  // Damage-over-time curve (user, 2026-07-29): CUMULATIVE mean effective
-  // damage from the engine's time buckets. One series — the accent line,
-  // recessive grid, hover crosshair + tooltip; no legend needed.
+  // DPS-over-time curve (user, 2026-07-29): the MEDIAN run's per-bucket
+  // EFFECTIVE dps. One series — the accent line, recessive grid, hover
+  // crosshair + tooltip; no legend needed.
   const tl = r.timeline || [];
-  let tlCum = 0;
-  const cumPts = tl.map((v) => (tlCum += v));
-  const tlMax = tlCum || 1;
+  const bucketSecs = (r.duration || 1) / (tl.length || 1);
+  const dpsPts = tl.map((v) => v / bucketSecs);
+  const tlMax = Math.max(1, ...dpsPts);
   const W = 600, H = 170, PADL = 8, PADR = 8, PADT = 8, PADB = 6;
   const px = (i) => PADL + ((i + 1) / tl.length) * (W - PADL - PADR);
   const py = (v) => PADT + (1 - v / tlMax) * (H - PADT - PADB);
-  const pts = [`${PADL},${py(0)}`].concat(cumPts.map((v, i) => `${px(i)},${py(v)}`)).join(" ");
+  const pts = dpsPts.map((v, i) => `${px(i)},${py(v)}`).join(" ");
   const tlGrid = [0.25, 0.5, 0.75].map((f) =>
     `<line class="tl-grid" x1="${PADL}" x2="${W - PADR}" y1="${py(tlMax * f)}" y2="${py(tlMax * f)}"/>`).join("");
   const chart = tl.length ? `
-      <h3>${tr("Damage over time")} <span class="sim-hint">${tr("median run")}</span></h3>
+      <h3>${tr("DPS over time")} <span class="sim-hint">${tr("median run")}</span></h3>
       <div class="tl-wrap">
         <svg id="tl-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
           ${tlGrid}
@@ -1606,7 +1608,7 @@ function renderResults(r, testedAt) {
       cross.hidden = false;
       cross.setAttribute("x1", px(i)); cross.setAttribute("x2", px(i));
       tip.hidden = false;
-      tip.textContent = `${(((i + 1) / tl.length) * r.duration).toFixed(1)}s · ${n0(cumPts[i])}`;
+      tip.textContent = `${(((i + 1) / tl.length) * r.duration).toFixed(1)}s · ${n0(dpsPts[i])} DPS`;
       tip.style.left = Math.min(b.width - 120, Math.max(0, ev.clientX - b.left + 10)) + "px";
     });
     wrap.addEventListener("mouseleave", () => { cross.hidden = true; tip.hidden = true; });
