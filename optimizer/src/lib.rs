@@ -506,6 +506,66 @@ fn expand_subset(
     }
 }
 
+/// Rebuild ONE candidate from its identity — the three things that are not
+/// derived: the ordered pool indices, the evolution-set index, and the exilus
+/// choice. Everything else on a [`Candidate`] (`panel`, `base_panel`, `plan`)
+/// is a pure function of those plus the weapon, so a rebuilt candidate is
+/// bit-identical to the enumerated one; this deliberately calls the SAME
+/// `plan_forma` / `resolve_with` the walk does rather than reimplementing them.
+///
+/// This is what makes a funnel run RESUMABLE: a checkpoint need only carry
+/// identities, not resolved panels, so it stays small enough for localStorage
+/// and cannot drift from what the enumerator would have produced.
+///
+/// `None` when the build is not legal under the capacity cap — a checkpoint
+/// written against a different pool or Forma budget is rejected rather than
+/// silently resolving to something else.
+#[allow(clippy::too_many_arguments)]
+pub fn rebuild_candidate(
+    pool: &[ModDef],
+    base: &WeaponBase,
+    second_form: Option<&WeaponBase>,
+    innate: &[Option<Polarity>],
+    cap: u32,
+    aiming: bool,
+    ordered: &[usize],
+    variant: u32,
+    exilus: u32,
+    exilus_opts: &[Option<&ModDef>],
+) -> Option<Candidate> {
+    if ordered.iter().any(|&i| i >= pool.len()) {
+        return None;
+    }
+    let xopt = *exilus_opts.get(exilus as usize)?;
+    let mut planned: Vec<PlannedMod> = ordered
+        .iter()
+        .map(|&i| PlannedMod { base_drain: pool[i].base_drain, polarity: pool[i].polarity })
+        .collect();
+    let mut slots_vec;
+    let slots: &[Option<Polarity>] = match xopt {
+        Some(x) => {
+            planned.push(PlannedMod { base_drain: x.base_drain, polarity: x.polarity });
+            slots_vec = innate.to_vec();
+            slots_vec.push(None);
+            &slots_vec
+        }
+        None => innate,
+    };
+    let plan = plan_forma(cap, slots, &planned).ok()?;
+    let mut refs: Vec<&ModDef> = ordered.iter().map(|&i| &pool[i]).collect();
+    if let Some(x) = xopt {
+        refs.push(x);
+    }
+    Some(Candidate {
+        ordered: ordered.to_vec(),
+        panel: resolve_with(base, &refs, StackPolicy::Emergent, aiming),
+        base_panel: second_form.map(|b| resolve_with(b, &refs, StackPolicy::Emergent, aiming)),
+        plan,
+        variant,
+        exilus,
+    })
+}
+
 fn permutations(rest: &[DamageType], acc: &mut Vec<DamageType>, out: &mut Vec<Vec<DamageType>>) {
     if rest.is_empty() {
         out.push(acc.clone());
@@ -1119,6 +1179,9 @@ impl RoundTimer {
     }
 }
 
+/// The funnel's checkpoint sink: `(next_round, surviving jobs)`.
+pub type CheckpointFn<'a> = dyn Fn(usize, &[Job]) + 'a;
+
 /// Drive the multi-round funnel: for each `(runs, keep, by_kills)` round,
 /// evaluate the surviving jobs, sort (kill-progress on kill rounds, effective
 /// damage on screen rounds), and cull to `keep`. Returns the final sorted,
@@ -1132,6 +1195,15 @@ impl RoundTimer {
 /// phase 3): single-threaded wasm cannot poll `state` from outside a busy
 /// worker, so the callback is where progress leaves the funnel — the caller
 /// reads `state` inside it. Native callers pass `None` and poll instead.
+///
+/// `start_round` RESUMES: rounds before it are skipped and `alive` is taken as
+/// that round's incoming field. Seeds key off the ABSOLUTE round index, so a
+/// resumed run draws exactly the numbers an uninterrupted one would.
+///
+/// `on_checkpoint(next_round, alive)` fires after each completed round with the
+/// survivors — the caller persists it so a reload costs one round instead of
+/// the whole search (browser workers do not survive a page reload; measured
+/// 2026-07-30, a SharedWorker does not either).
 #[allow(clippy::too_many_arguments)] // search-config surface, like enumerate_candidates
 pub fn run_funnel(
     cands: &[Candidate],
@@ -1143,15 +1215,20 @@ pub fn run_funnel(
     verbose: bool,
     state: Option<&FunnelState>,
     on_round: Option<&dyn Fn()>,
+    start_round: usize,
+    on_checkpoint: Option<&CheckpointFn<'_>>,
 ) -> Vec<(Job, Summary)> {
     if let Some(st) = state {
         st.rounds.store(rounds.len(), Ordering::Relaxed);
         // The schedule fixes every round's field size up front (truncate is a
         // no-op when the field is already below `keep`), so the total sim
         // count is exact — done/planned is a true percentage.
+        // On a RESUME the finished rounds are not going to run again, so they
+        // must not sit in the denominator — otherwise the bar would open at
+        // some fraction it can never reach.
         let mut field = alive.len() as u64;
         let mut sims = 0u64;
-        for &(runs, keep, _) in rounds {
+        for &(runs, keep, _) in rounds.iter().skip(start_round) {
             sims += field * runs as u64;
             field = field.min(keep as u64);
         }
@@ -1160,6 +1237,11 @@ pub fn run_funnel(
     let mut last: Vec<(Job, Summary)> = Vec::new();
     let floor = rounds.last().map_or(1, |&(_, f, _)| f);
     for (round, &(runs, keep, by_kills)) in rounds.iter().enumerate() {
+        // Already done in a previous session: `alive` came in as this round's
+        // output, so replaying it would only cost time and change nothing.
+        if round < start_round {
+            continue;
+        }
         // Racing/amnesty may reach the finalists count early — remaining
         // intermediate rounds have nothing left to cut; jump to the final.
         if round + 1 < rounds.len() && alive.len() <= floor {
@@ -1312,6 +1394,11 @@ pub fn run_funnel(
             });
         }
         alive = scored.iter().map(|(j, _)| *j).collect();
+        // A completed round is the natural checkpoint: the field is settled and
+        // the next round only needs THIS list.
+        if let Some(cp) = on_checkpoint {
+            cp(round + 1, &alive);
+        }
         last = scored;
         if let Some(st) = state {
             // Replan the remaining work: adaptive culls shrink every later
@@ -1337,6 +1424,98 @@ pub fn run_funnel(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A RESUMED funnel must produce exactly what an uninterrupted one would.
+    /// That is the entire promise of checkpointing — if the answer moved, the
+    /// feature would be trading correctness for convenience.
+    ///
+    /// The two halves are wired the way the browser does it: run to a
+    /// checkpoint, throw the run away, then start a fresh funnel from that
+    /// round with only the saved field. Seeds key off the ABSOLUTE round index
+    /// precisely so this holds.
+    #[test]
+    fn a_resumed_funnel_lands_on_the_same_leaderboard() {
+        use wfsim_engine::dummy::{BodyPart, TargetParams};
+        let pool = pool();
+        let base = wfsim_engine::loadout::WeaponBase::from_data("dual_toxocyst", true, &[]);
+        let innate = wfsim_engine::weapons_data::innate_slots("dual_toxocyst");
+        let (cands, _stats, _c) = enumerate_candidates_observed(
+            &pool, &base, None, 0, 8, 8, 60, &innate,
+            &Constraints::default(), &[None], None, 400,
+        );
+        assert!(cands.len() > 40, "need a field to cut, got {}", cands.len());
+        let arcanes = vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
+        let scenario = Scenario {
+            target: TargetParams::training_dummy(),
+            body_parts: vec![BodyPart {
+                name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
+                is_head: false, crit_bonus: false,
+            }],
+            duration_secs: 2.0,
+            incarnon_cycle: false,
+            frenzy_lock: LockMode::Initial(0),
+            frenzy: false,
+            buff_cfg: Default::default(),
+            aiming: true,
+        };
+        let jobs: Vec<Job> = (0..cands.len()).map(|i| (i, 0)).collect();
+        let rounds = schedule_to(jobs.len(), 8, 4);
+        assert!(rounds.len() >= 3, "need several rounds, got {}", rounds.len());
+
+        // (a) straight through.
+        let whole = run_funnel(
+            &cands, &arcanes, &scenario, jobs.clone(), &rounds, 0xDEAD_BEEF,
+            false, None, None, 0, None,
+        );
+
+        // (b) stop after round 1, keep only the identities, rebuild, continue.
+        let saved = std::cell::RefCell::new(None);
+        let cp = |next: usize, alive: &[Job]| {
+            if saved.borrow().is_none() {
+                let ids: Vec<(Vec<usize>, u32, u32, usize)> = alive
+                    .iter()
+                    .map(|&(ci, ai)| (cands[ci].ordered.clone(), cands[ci].variant, cands[ci].exilus, ai))
+                    .collect();
+                *saved.borrow_mut() = Some((next, ids));
+            }
+        };
+        run_funnel(
+            &cands, &arcanes, &scenario, jobs, &rounds, 0xDEAD_BEEF,
+            false, None, None, 0, Some(&cp),
+        );
+        let (next_round, ids) = saved.into_inner().expect("round 1 checkpointed");
+        assert!(next_round >= 1);
+
+        let mut rebuilt: Vec<Candidate> = Vec::new();
+        let mut rjobs: Vec<Job> = Vec::new();
+        for (ordered, variant, exilus, ai) in &ids {
+            let c = rebuild_candidate(
+                &pool, &base, None, &innate, 60, scenario.aiming,
+                ordered, *variant, *exilus, &[None],
+            )
+            .expect("a checkpointed build is still legal");
+            rebuilt.push(c);
+            rjobs.push((rebuilt.len() - 1, *ai));
+        }
+        let resumed = run_funnel(
+            &rebuilt, &arcanes, &scenario, rjobs, &rounds, 0xDEAD_BEEF,
+            false, None, None, next_round, None,
+        );
+
+        // Same builds, same order, same numbers.
+        assert_eq!(whole.len(), resumed.len(), "leaderboard length");
+        for (i, ((jw, sw), (jr, sr))) in whole.iter().zip(resumed.iter()).enumerate() {
+            assert_eq!(
+                cands[jw.0].ordered, rebuilt[jr.0].ordered,
+                "rank {i}: different build"
+            );
+            assert_eq!(jw.1, jr.1, "rank {i}: different arcane");
+            assert!(
+                (sw.mean_kill_progress - sr.mean_kill_progress).abs() < 1e-12,
+                "rank {i}: {} vs {}", sw.mean_kill_progress, sr.mean_kill_progress
+            );
+        }
+    }
 
     #[test]
     fn pool_loads_from_yaml_with_family_exclusivity() {

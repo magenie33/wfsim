@@ -2296,11 +2296,55 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
 /// jobs)` fires once when enumeration finishes and the funnel is about to
 /// start. Native callers poll and pass `on_round: None`; the wasm build has
 /// no second thread to poll from, so the callback is its progress channel.
+/// Where a previous session stopped: the round to start at, and the field that
+/// round takes as input, each entry the IDENTITY of a job — (ordered pool
+/// indices, evolution-set index, exilus choice, arcane index). Identities only:
+/// resolved panels are rebuilt, so a checkpoint stays small and cannot drift
+/// from what the enumerator would produce.
+#[derive(Debug, Clone)]
+pub struct ResumeFrom {
+    pub round: usize,
+    pub alive: Vec<JobIdentity>,
+    /// The job count the ORIGINAL run's schedule was built from. The round
+    /// plan is a function of it, so replaying round N needs the same number —
+    /// deriving it from the (already narrowed) survivor list would shorten the
+    /// schedule and change what round N means.
+    pub jobs_at_start: usize,
+}
+
+/// One surviving job, by identity: (ordered pool indices, evolution-set index,
+/// exilus choice, arcane index).
+pub type JobIdentity = (Vec<usize>, u32, u32, usize);
+
+/// Where a completed round publishes its field: `(next_round, jobs the
+/// schedule was built from, survivors)`.
+pub type CheckpointSink<'a> = dyn Fn(usize, usize, &[JobIdentity]) + 'a;
+
+/// The uninterrupted entry point — no checkpointing, no resume.
 pub fn run_optimize(
     plan: OptimizePlan,
     state: &FunnelState,
     on_enumerated: impl FnOnce(usize, usize),
     on_round: Option<&dyn Fn()>,
+) -> Value {
+    run_optimize_resumable(plan, state, on_enumerated, on_round, None, None)
+}
+
+/// As [`run_optimize`], plus the two halves of resumability: `resume` skips
+/// straight to a saved round, and `on_checkpoint` publishes the field after
+/// every completed round.
+#[allow(clippy::too_many_arguments)]
+pub fn run_optimize_resumable(
+    plan: OptimizePlan,
+    state: &FunnelState,
+    on_enumerated: impl FnOnce(usize, usize),
+    on_round: Option<&dyn Fn()>,
+    resume: Option<ResumeFrom>,
+    // (next_round, jobs_at_start, identities). The funnel hands back candidate
+    // INDICES, which mean nothing outside this call — translate them here,
+    // where the candidate table is, so a caller can persist something that
+    // survives the process.
+    on_checkpoint: Option<&CheckpointSink<'_>>,
 ) -> Value {
     let OptimizePlan {
         pool,
@@ -2412,7 +2456,56 @@ pub fn run_optimize(
         }
     }
 
-    let (cands, last, cancelled, n_jobs) = if !overflow {
+    let (cands, last, cancelled, n_jobs) = if let Some(r) = resume {
+        // ---- RESUME: no walk at all. The checkpoint holds identities, so the
+        // candidates are rebuilt with the same plan_forma / resolve_with the
+        // enumerator uses and come out bit-identical. Seeds key off the
+        // absolute round index, so the numbers match an uninterrupted run.
+        let mut cands: Vec<Candidate> = Vec::new();
+        let mut jobs: Vec<Job> = Vec::new();
+        for (ordered, variant, exilus, ai) in &r.alive {
+            let Some(set) = evo_sets.get(*variant as usize) else { continue };
+            let refs: Vec<&str> = set.iter().map(String::as_str).collect();
+            let base = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &refs);
+            let base_form = WeaponBase::from_data(&info.id, true, &refs);
+            let Some(c) = wfsim_optimizer::rebuild_candidate(
+                &pool, &base, Some(&base_form), &innate, 60, scenario.aiming,
+                ordered, *variant, *exilus, &exilus_refs,
+            ) else { continue };
+            if *ai >= arcanes.len() {
+                continue;
+            }
+            cands.push(c);
+            jobs.push((cands.len() - 1, *ai));
+        }
+        if jobs.is_empty() {
+            // A checkpoint that survives a pool or Forma change resolves to
+            // nothing: say so rather than returning an empty leaderboard.
+            return err_json("this saved run no longer matches the current scope — start a new one");
+        }
+        let n_jobs = jobs.len();
+        on_enumerated(cands.len(), n_jobs);
+        // The schedule is a function of the ORIGINAL field size, which the
+        // checkpoint's round index indexes into — rebuild it the same way so
+        // round N means the same thing it did before the reload.
+        let rounds = schedule_to(r.jobs_at_start.max(n_jobs), final_runs, finalists);
+        let ids_at = |alive: &[Job]| -> Vec<JobIdentity> {
+            alive.iter()
+                .map(|&(ci, ai)| (cands[ci].ordered.clone(), cands[ci].variant, cands[ci].exilus, ai))
+                .collect()
+        };
+        let started_with = r.jobs_at_start.max(n_jobs);
+        let wrap = on_checkpoint.map(|cp| move |round: usize, alive: &[Job]| {
+            cp(round, started_with, &ids_at(alive));
+        });
+        let last = run_funnel(
+            &cands, &arcanes, &scenario, jobs, &rounds, 0xDEAD_BEEF, false,
+            Some(state), on_round, r.round,
+            wrap.as_ref().map(|f| f as &dyn Fn(usize, &[Job])),
+        );
+        let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
+        (cands, last, c, n_jobs)
+    } else if !overflow {
         // ---- classic path: materialized candidates, full funnel ----
         if cands.is_empty() {
             return err_json(
@@ -2425,6 +2518,14 @@ pub fn run_optimize(
         let n_jobs = jobs.len();
         on_enumerated(cands.len(), n_jobs);
         let rounds = schedule_to(n_jobs, final_runs, finalists);
+        let ids_at = |alive: &[Job]| -> Vec<JobIdentity> {
+            alive.iter()
+                .map(|&(ci, ai)| (cands[ci].ordered.clone(), cands[ci].variant, cands[ci].exilus, ai))
+                .collect()
+        };
+        let wrap = on_checkpoint.map(|cp| move |round: usize, alive: &[Job]| {
+            cp(round, n_jobs, &ids_at(alive));
+        });
         let last = run_funnel(
             &cands,
             &arcanes,
@@ -2435,6 +2536,8 @@ pub fn run_optimize(
             false,
             Some(state),
             on_round,
+            0,
+            wrap.as_ref().map(|f| f as &dyn Fn(usize, &[Job])),
         );
         let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
         (cands, last, c, n_jobs)
@@ -2514,6 +2617,18 @@ pub fn run_optimize(
                 .store(0, std::sync::atomic::Ordering::Relaxed); // fresh % for the funnel
             on_enumerated(sc.len(), n);
             let rounds = schedule_to(n, final_runs, finalists);
+            // The screen itself is not resumable — it is a single walk of the
+            // whole scope. Its OUTPUT is: once the survivors are a candidate
+            // table, every funnel round can be checkpointed by identity, and a
+            // resume rebuilds them directly instead of screening again.
+            let ids_at = |alive: &[Job]| -> Vec<JobIdentity> {
+                alive.iter()
+                    .map(|&(ci, ai)| (sc[ci].ordered.clone(), sc[ci].variant, sc[ci].exilus, ai))
+                    .collect()
+            };
+            let wrap = on_checkpoint.map(|cp| move |round: usize, alive: &[Job]| {
+                cp(round, n, &ids_at(alive));
+            });
             let last = run_funnel(
                 &sc,
                 &arcanes,
@@ -2524,6 +2639,8 @@ pub fn run_optimize(
                 false,
                 Some(state),
                 on_round,
+                0, // the streaming path always screens first, so it starts fresh
+                wrap.as_ref().map(|f| f as &dyn Fn(usize, &[Job])),
             );
             let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
             (sc, last, c, n)

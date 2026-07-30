@@ -118,3 +118,10 @@ Implemented in `optimizer/` (`wfsim-optimizer` binary):
 - Benchmark scenario: Dual Toxocyst Incarnon (fixed evolutions, no
   arcanes) vs Thrax Centurion @9999 Steel Path, instant respawn, 100%
   headshots, 60 s, finals at 1000 runs.
+- Resumable rounds: `run_funnel` takes `start_round` and an
+  `on_checkpoint` sink, so a browser run that a page reload killed
+  continues from the last COMPLETED round instead of the beginning.
+  Seeds key off the ABSOLUTE round index, so the resumed run is not
+  merely similar to the uninterrupted one — it is the same
+  (`a_resumed_funnel_lands_on_the_same_leaderboard`). See docs/WASM.md
+  for the checkpoint format and what it deliberately does not cover.

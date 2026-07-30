@@ -76,7 +76,29 @@ fn status_json(state: &FunnelState, phase: &str, counts: Option<(usize, usize)>,
 /// and after every funnel round. The returned string is the final result
 /// JSON.
 #[wasm_bindgen]
-pub fn optimize(body: &str, on_progress: &js_sys::Function) -> String {
+pub fn optimize(body: &str, on_progress: &js_sys::Function, on_checkpoint: &js_sys::Function) -> String {
+    optimize_inner(body, "", on_progress, on_checkpoint)
+}
+
+/// Resume a run from a checkpoint written by a previous session — a page
+/// reload kills the worker (and a SharedWorker too; measured 2026-07-30), so
+/// this is what stops a reload costing the whole search.
+#[wasm_bindgen]
+pub fn optimize_resume(
+    body: &str,
+    checkpoint: &str,
+    on_progress: &js_sys::Function,
+    on_checkpoint: &js_sys::Function,
+) -> String {
+    optimize_inner(body, checkpoint, on_progress, on_checkpoint)
+}
+
+fn optimize_inner(
+    body: &str,
+    checkpoint: &str,
+    on_progress: &js_sys::Function,
+    on_checkpoint: &js_sys::Function,
+) -> String {
     let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
     let plan = match wfsim_webapi::parse_optimize(&v) {
         Ok(p) => p,
@@ -117,7 +139,27 @@ pub fn optimize(body: &str, on_progress: &js_sys::Function) -> String {
             let _ = f.call1(&JsValue::NULL, &JsValue::from_str(&payload));
         })));
     }
-    let result = wfsim_webapi::run_optimize(
+    // A checkpoint carries IDENTITIES only — (ordered pool indices, evo-set,
+    // exilus, arcane) — so it stays small enough for localStorage and cannot
+    // drift from what the enumerator would rebuild.
+    let resume: Option<wfsim_webapi::ResumeFrom> = (!checkpoint.is_empty())
+        .then(|| serde_json::from_str::<serde_json::Value>(checkpoint).ok())
+        .flatten()
+        .and_then(|cp| {
+            let alive = cp.get("alive")?.as_array()?.iter().filter_map(|e| {
+                let a = e.as_array()?;
+                let ordered = a.first()?.as_array()?
+                    .iter().filter_map(|x| x.as_u64().map(|n| n as usize)).collect();
+                Some((ordered, a.get(1)?.as_u64()? as u32, a.get(2)?.as_u64()? as u32,
+                      a.get(3)?.as_u64()? as usize))
+            }).collect::<Vec<_>>();
+            (!alive.is_empty()).then_some(wfsim_webapi::ResumeFrom {
+                round: cp.get("round").and_then(|r| r.as_u64()).unwrap_or(0) as usize,
+                jobs_at_start: cp.get("jobs_at_start").and_then(|r| r.as_u64()).unwrap_or(0) as usize,
+                alive,
+            })
+        });
+    let result = wfsim_webapi::run_optimize_resumable(
         plan,
         &state,
         |cands, jobs| {
@@ -126,6 +168,18 @@ pub fn optimize(body: &str, on_progress: &js_sys::Function) -> String {
         },
         Some(&|| {
             post(status_json(&state, "running", counts.get(), (js_sys::Date::now() - t0) / 1000.0));
+        }),
+        resume,
+        Some(&|round: usize, jobs_at_start: usize, ids: &[(Vec<usize>, u32, u32, usize)]| {
+            let list: Vec<serde_json::Value> = ids
+                .iter()
+                .map(|(o, v, x, a)| serde_json::json!([o, v, x, a]))
+                .collect();
+            let payload = serde_json::json!({
+                "round": round, "jobs_at_start": jobs_at_start, "alive": list,
+            })
+            .to_string();
+            let _ = on_checkpoint.call1(&JsValue::NULL, &JsValue::from_str(&payload));
         }),
     );
     wfsim_optimizer::set_tick_hook(None);

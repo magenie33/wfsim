@@ -126,20 +126,57 @@ const rpc = (path, body) => new Promise((resolve) => {
 
 let wopt = null; // the emulated optimize job: { id, worker, status, result, cancelled, t0 }
 let woptNextId = 1;
-function woptStart(body) {
+// ---- checkpoint / resume -------------------------------------------------
+// A reload KILLS the worker, and there is no browser mechanism that avoids it
+// (measured 2026-07-30: a SharedWorker is terminated too, the moment its last
+// client disconnects, busy or idle). So instead of pretending a run can
+// survive, make losing it cheap: the worker emits the surviving field after
+// every completed round, and a fresh page rebuilds from the last one.
+//
+// Stored as IDENTITIES only — (mod pool indices, evo set, exilus, arcane) — so
+// it fits localStorage and cannot drift from what the engine would rebuild.
+// The REQUEST is stored with it and is what a resume replays: a checkpoint
+// only ever means anything under the scope that produced it, so it is never
+// re-derived from whatever the form happens to say later.
+const OPT_CKPT = "wfsim-optimize-checkpoint";
+function saveCheckpoint(body, cp) {
+  try {
+    localStorage.setItem(OPT_CKPT, JSON.stringify({ body, cp, at: Date.now() }));
+  } catch (_) { /* quota: a checkpoint is a nicety, never a failure */ }
+}
+const clearCheckpoint = () => { try { localStorage.removeItem(OPT_CKPT); } catch (_) {} };
+function loadCheckpoint() {
+  try {
+    const s = JSON.parse(localStorage.getItem(OPT_CKPT));
+    if (!s || !s.body || !s.cp) return null;
+    // A day-old checkpoint is almost certainly not what the visitor meant to
+    // resume, and the data behind it may have been rebuilt since.
+    if (Date.now() - (s.at || 0) > 24 * 3600 * 1000) { clearCheckpoint(); return null; }
+    return s;
+  } catch (_) { return null; }
+}
+
+function woptStart(body, checkpoint) {
   if (wopt && wopt.worker) {
     return { ok: false, error: "an optimization is already running — cancel it or wait", job_id: wopt.id };
   }
+  const { __resume, ...req } = body ?? {}; // the resume marker is transport, not scope
+  body = req;
   const job = { id: woptNextId++, worker: new Worker("/worker.js"), status: null, result: null, cancelled: false, t0: Date.now() };
   job.worker.onmessage = (e) => {
     if (e.data.kind === "progress") job.status = e.data.payload;
-    if (e.data.kind === "result") { job.result = e.data.payload; job.worker.terminate(); job.worker = null; }
+    if (e.data.kind === "checkpoint") saveCheckpoint(body, e.data.payload);
+    if (e.data.kind === "result") {
+      job.result = e.data.payload;
+      clearCheckpoint(); // finished: nothing left to resume
+      job.worker.terminate(); job.worker = null;
+    }
   };
   job.worker.onerror = (e) => {
     job.result = { ok: false, error: String((e && e.message) || "worker error") };
     if (job.worker) { job.worker.terminate(); job.worker = null; }
   };
-  job.worker.postMessage({ kind: "optimize", body: body ?? {} });
+  job.worker.postMessage({ kind: "optimize", body, checkpoint: checkpoint || null });
   wopt = job;
   return { ok: true, job_id: job.id };
 }
@@ -171,7 +208,7 @@ async function api(path, body) {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}),
     })).json();
   }
-  if (path === "/api/optimize") return woptStart(body);
+  if (path === "/api/optimize") return woptStart(body, body && body.__resume);
   if (path === "/api/optimize/status") return woptStatus();
   if (path === "/api/optimize/cancel") return woptCancel();
   return rpc(path, body);
@@ -388,6 +425,20 @@ async function init() {
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePopovers(); });
   window.addEventListener("popstate", route);
+  // Reloading or closing the tab KILLS a run in progress: the worker dies with
+  // the page. That is not a limitation we can engineer around — measured
+  // 2026-07-30, a SharedWorker is terminated too, the moment its last client
+  // disconnects, whether or not it is busy.
+  //
+  // The browser's own unload prompt is the only guard that runs before the page
+  // goes, and it cannot be replaced by an inline one — so this is the single
+  // place the project's no-native-dialogs rule does not reach. It only fires
+  // while something is actually running.
+  window.addEventListener("beforeunload", (e) => {
+    if (optJobId == null) return;
+    e.preventDefault();
+    e.returnValue = ""; // required by older engines to trigger the prompt
+  });
   // In-app navigation: any same-origin root-relative link routes client-side
   // (modified clicks — new tab etc. — keep native behavior; a full page load
   // also works thanks to the server's SPA fallback).
@@ -2512,6 +2563,7 @@ let optCancelling = false; // survives the poll's 500 ms re-renders
 const postJson = (url, body) => api(url, body);
 
 async function runOptimize() {
+  clearCheckpoint(); // a fresh run supersedes any interrupted one
   $("run-opt").disabled = true; $("run-opt").textContent = "Optimizing…";
   $("opt-results").innerHTML = `<div class="placeholder">starting…</div>`;
   try {
@@ -2615,6 +2667,7 @@ function renderOptProgress(st) {
   $("opt-cancel").addEventListener("click", async () => {
     optCancelling = true;
     $("opt-cancel").disabled = true; $("opt-cancel").textContent = "Cancelling…";
+    clearCheckpoint(); // cancelling is a decision to stop, not an interruption
     try { await postJson("/api/optimize/cancel", { id: optJobId }); } catch (e) { /* poll reports */ }
   });
 }
@@ -2629,8 +2682,57 @@ async function reattachOptimize() {
       $("run-opt").disabled = true; $("run-opt").textContent = "Optimizing…";
       renderOptProgress(st);
       optPollTimer = setTimeout(pollOptimize, 500);
+      return;
     }
   } catch (e) { /* no server-side job — nothing to reattach */ }
+  offerResume(); // nothing is running: a reload may have killed a wasm run
+}
+
+// The run itself is gone, but the field it had narrowed to is not. Offer to
+// continue from the last completed round instead of paying for it again.
+// Never auto-start: resuming costs minutes of the visitor's CPU, so it takes a
+// click — and the offer only appears for the weapon the checkpoint belongs to.
+function offerResume() {
+  const saved = loadCheckpoint();
+  const box = $("opt-results");
+  if (!saved || !box || optJobId != null) return;
+  if (saved.body.weapon !== $("weapon").value) return;
+  const cp = saved.cp;
+  const el = document.createElement("div");
+  el.className = "opt-resume";
+  const sel = $("weapon");
+  const shown = (sel.selectedOptions[0] || {}).textContent || sel.value;
+  el.innerHTML = `<div>An optimization for <b>${escHtml(shown)}</b> was interrupted after `
+    + `round ${cp.round} — ${cp.alive.length.toLocaleString()} builds still standing.</div>`;
+  const go = document.createElement("button");
+  go.className = "ghost-btn"; go.textContent = "resume it";
+  go.onclick = () => resumeOptimize(saved);
+  const no = document.createElement("button");
+  no.className = "ghost-btn small"; no.textContent = "discard";
+  no.onclick = () => { clearCheckpoint(); box.innerHTML = `<div class="placeholder">no results yet</div>`; };
+  el.append(go, no);
+  box.innerHTML = "";
+  box.append(el);
+}
+
+async function resumeOptimize(saved) {
+  $("run-opt").disabled = true; $("run-opt").textContent = "Optimizing…";
+  $("opt-results").innerHTML = `<div class="placeholder">resuming from round ${saved.cp.round}…</div>`;
+  try {
+    // The STORED body, not the current form: the checkpoint describes a field
+    // narrowed under that exact scope, and re-deriving the body from the UI
+    // would let an edited setting resume into a run it never belonged to.
+    const r = await postJson("/api/optimize", { ...saved.body, __resume: saved.cp });
+    if (!r || r.ok === false) {
+      clearCheckpoint();
+      optFinish(`<div class="error">resume failed: ${r ? r.error : "no data"}</div>`);
+      return;
+    }
+    optJobId = r.job_id;
+    pollOptimize();
+  } catch (e) {
+    optFinish(`<div class="error">resume failed: ${e}</div>`);
+  }
 }
 
 const prettify = (id) => id.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());

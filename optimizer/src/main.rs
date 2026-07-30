@@ -238,6 +238,8 @@ fn main() {
         true,
         None,
         None,
+        0,    // the CLI always runs a fresh funnel
+        None, // and has nowhere to checkpoint to
     );
 
     println!();

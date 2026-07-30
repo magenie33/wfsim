@@ -110,6 +110,46 @@ Worker and the per-round progress arrives.
 **Done when:** wfsim.app/app runs a sim and an optimize with DevTools'
 network tab showing zero compute requests.
 
+## Checkpoint / resume (a reload kills the run)
+
+A page reload terminates the dedicated worker, and there is no browser
+mechanism that avoids it. A SharedWorker does not help: measured
+2026-07-30 with a probe that counts in a blocking loop, the shared
+instance is torn down the moment its last client disconnects — the
+reloaded page reconnects to a *fresh* worker whose counter restarts. (A
+nested `new Worker()` inside a SharedWorker is worse: it crashes the
+SharedWorker outright, so start succeeds and every later status says "no
+such job".) So the run cannot be made to survive; instead losing it is
+made cheap.
+
+- `run_funnel(…, start_round, on_checkpoint)` fires after every COMPLETED
+  round with the surviving field, and `start_round` skips straight to a
+  saved round taking `alive` as its input. Seeds key off the ABSOLUTE
+  round index, so a resumed run draws exactly the numbers an
+  uninterrupted one would — pinned by
+  `a_resumed_funnel_lands_on_the_same_leaderboard`.
+- A checkpoint holds IDENTITIES only — `(ordered pool indices,
+  evolution-set index, exilus choice, arcane index)` — so it fits
+  localStorage and cannot drift from what the enumerator would produce.
+  `webapi::run_optimize_resumable` rebuilds the candidates from them
+  (`optimizer::rebuild_candidate`); a checkpoint that no longer resolves
+  to any build under the current scope is refused, not silently emptied.
+- `jobs_at_start` travels with it: the round schedule is a function of
+  the ORIGINAL field size, so deriving it from the (already narrowed)
+  survivor list would shorten the schedule and change what round N means.
+- The page stores one checkpoint (`wfsim-optimize-checkpoint`) together
+  with the REQUEST that produced it, and a resume replays that stored
+  request — never one re-derived from the form, which may have been
+  edited since. It is dropped on completion, on cancel, when a fresh run
+  starts, and after 24 h. Resuming takes a click; it costs minutes of the
+  visitor's CPU, so it is never automatic.
+- A `beforeunload` guard warns while a run is in flight.
+- **Not resumable: the screening walk.** The streaming path (large
+  scopes) is one pass over the whole scope before any round exists, so
+  checkpoints only start once the survivors are a candidate table. On a
+  scope big enough to stream, a reload during the screen still costs the
+  screen.
+
 ## Phase 5 (later) — use all the player's cores
 
 Two options, decide then: (a) a JS-level Worker pool — partition jobs

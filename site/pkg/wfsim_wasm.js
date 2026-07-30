@@ -41,15 +41,16 @@ let wasm_bindgen = (function(exports) {
      * JSON.
      * @param {string} body
      * @param {Function} on_progress
+     * @param {Function} on_checkpoint
      * @returns {string}
      */
-    function optimize(body, on_progress) {
+    function optimize(body, on_progress, on_checkpoint) {
         let deferred2_0;
         let deferred2_1;
         try {
             const ptr0 = passStringToWasm0(body, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.optimize(ptr0, len0, on_progress);
+            const ret = wasm.optimize(ptr0, len0, on_progress, on_checkpoint);
             deferred2_0 = ret[0];
             deferred2_1 = ret[1];
             return getStringFromWasm0(ret[0], ret[1]);
@@ -58,6 +59,34 @@ let wasm_bindgen = (function(exports) {
         }
     }
     exports.optimize = optimize;
+
+    /**
+     * Resume a run from a checkpoint written by a previous session — a page
+     * reload kills the worker (and a SharedWorker too; measured 2026-07-30), so
+     * this is what stops a reload costing the whole search.
+     * @param {string} body
+     * @param {string} checkpoint
+     * @param {Function} on_progress
+     * @param {Function} on_checkpoint
+     * @returns {string}
+     */
+    function optimize_resume(body, checkpoint, on_progress, on_checkpoint) {
+        let deferred3_0;
+        let deferred3_1;
+        try {
+            const ptr0 = passStringToWasm0(body, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ptr1 = passStringToWasm0(checkpoint, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len1 = WASM_VECTOR_LEN;
+            const ret = wasm.optimize_resume(ptr0, len0, ptr1, len1, on_progress, on_checkpoint);
+            deferred3_0 = ret[0];
+            deferred3_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        }
+    }
+    exports.optimize_resume = optimize_resume;
     function __wbg_get_imports() {
         const import0 = {
             __proto__: null,

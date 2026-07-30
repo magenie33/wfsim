@@ -1,8 +1,11 @@
 // wfsim wasm worker (docs/WASM.md phase 4). Owns one wasm engine instance.
 // Protocol (from app.js's api() shim):
 //   { id, kind: "api", path, body }  → { id, payload }          (quick endpoints)
-//   { kind: "optimize", body }       → { kind: "progress", payload }*  then
-//                                      { kind: "result", payload }
+//   { kind: "optimize", body, checkpoint? }
+//                                    → { kind: "progress",   payload }*
+//                                      { kind: "checkpoint", payload }*
+//                                      { kind: "result",     payload }
+//   `checkpoint` (a JSON string from a previous session) RESUMES that run.
 // The optimize call blocks this worker until done — that is the design: the
 // page runs it in a DEDICATED worker and cancels by terminating it.
 importScripts("pkg/wfsim_wasm.js");
@@ -16,9 +19,15 @@ onmessage = async (e) => {
     const out = wasm_bindgen.api(msg.path, JSON.stringify(msg.body ?? {}));
     postMessage({ id: msg.id, payload: JSON.parse(out) });
   } else if (msg.kind === "optimize") {
-    const out = wasm_bindgen.optimize(JSON.stringify(msg.body ?? {}), (p) => {
-      postMessage({ kind: "progress", payload: JSON.parse(p) });
-    });
+    const onProgress = (p) => postMessage({ kind: "progress", payload: JSON.parse(p) });
+    // Emitted after every completed round; the page persists it so a reload
+    // costs ONE round instead of the whole search.
+    const onCheckpoint = (c) => postMessage({ kind: "checkpoint", payload: JSON.parse(c) });
+    const body = JSON.stringify(msg.body ?? {});
+    const cp = msg.checkpoint;
+    const out = cp
+      ? wasm_bindgen.optimize_resume(body, typeof cp === "string" ? cp : JSON.stringify(cp), onProgress, onCheckpoint)
+      : wasm_bindgen.optimize(body, onProgress, onCheckpoint);
     postMessage({ kind: "result", payload: JSON.parse(out) });
   }
 };
