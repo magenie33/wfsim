@@ -1807,6 +1807,9 @@ pub fn simulate_json(v: &Value) -> Value {
     let mut sources: Vec<(String, f64)> = vec![
         ("direct".to_string(), sd.direct),
         ("radial".to_string(), sd.radial),
+        // The lingering FIELD is its own bucket — on the Torid it is most of the
+        // output, and leaving it out silently lost it from the damage meter.
+        ("field".to_string(), sd.field),
         ("arcane".to_string(), sd.arcane_on_status),
     ];
     sources.extend(
@@ -1839,6 +1842,7 @@ pub fn simulate_json(v: &Value) -> Value {
         "big_crit_rate": m.big_crits as f64 / pel,
         "headshot_rate": m.headshots as f64 / pel,
         "procs": m.procs,
+        "field_ticks": m.field_ticks,
         "damage_sources": damage_sources,
         "timeline": m.timeline.0[..nb].to_vec(),
         "transforms": m.transforms,
