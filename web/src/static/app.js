@@ -1068,6 +1068,13 @@ function applyWeaponInner(id, presetMods) {
   $("w-name").innerHTML = wl(w.name, wikiUrl((w.name_en || w.name).replace(" (sentinel)", "")));
   // Subtype (e.g. "Dual Pistols") + form tags; the mod-eligibility group
   // (mod_class) drives the picker's pool but isn't shown as a tag.
+  // Name the POOL, the way the wiki does ("Rifle Mods" / "Pistol Mods"): the
+  // eligibility group is what actually decides which mods equip, and a bare
+  // "Mods" heading leaves the visitor guessing which pool a launcher draws
+  // from. Falls back to the plain word if a class ever has no label.
+  const poolName = { rifle: "Rifle Mods", pistol: "Pistol Mods" }[w.mod_class];
+  $("mod-block-h").textContent = tr(poolName || "Mods");
+
   $("w-tags").innerHTML = [w.subtype, w.uses_evo2 ? "Incarnon" : null, w.sentinel ? "Sentinel" : null]
     .filter(Boolean).map((t) => `<span class="tag">${t}</span>`).join("");
 

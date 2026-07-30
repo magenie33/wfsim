@@ -364,6 +364,43 @@ pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
 mod tests {
     use super::*;
 
+    /// PvP-EXCLUSIVE mods must not ship in a PvE pool — they are a separate
+    /// balance pass, and offering them makes the picker and the optimizer
+    /// propose builds that cannot exist in the mission the sim models.
+    ///
+    /// The trap is that `/Lotus/Upgrades/Mods/PvPMods/` in the `internal_name`
+    /// is an ORIGIN, not a restriction. Update 17.9 made a set of Conclave mods
+    /// equippable in PvE, so four of ours legitimately sit under that path.
+    /// Deleting on the path alone throws away real content; keeping everything
+    /// under it ships six mods that cannot be equipped.
+    ///
+    /// The authority is the wiki's `Rifle_Mods` / `Pistol_Mods` tables, which
+    /// tag the genuinely restricted ones "Exclusive to PvP". This pins the
+    /// survivors as an explicit allowlist, so neither mistake can be made
+    /// silently: a new PvP-path mod fails until someone checks that table.
+    #[test]
+    fn only_pve_legal_conclave_mods_are_in_the_pools() {
+        const PVE_LEGAL: [&str; 4] = ["agile_aim", "twitch", "eject_magazine", "reflex_draw"];
+        let mut found: Vec<String> = crate::data::files_under("mods/")
+            .filter(|(p, _)| p.ends_with(".yaml"))
+            .filter(|(_, text)| {
+                text.lines()
+                    .any(|l| l.starts_with("internal_name:") && l.contains("/PvPMods/"))
+            })
+            .map(|(p, _)| {
+                p.rsplit('/').next().unwrap_or(p).trim_end_matches(".yaml").to_string()
+            })
+            .collect();
+        found.sort();
+        let mut want: Vec<String> = PVE_LEGAL.iter().map(|s| s.to_string()).collect();
+        want.sort();
+        assert_eq!(
+            found, want,
+            "every mod under /PvPMods/ must be one the wiki does NOT tag \
+             \"Exclusive to PvP\" — check Rifle_Mods / Pistol_Mods before changing this"
+        );
+    }
+
     #[test]
     fn loads_the_pistol_pool_from_yaml() {
         let mods = load_class("pistol");

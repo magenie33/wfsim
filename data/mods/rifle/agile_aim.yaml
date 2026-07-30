@@ -1,3 +1,10 @@
+# CONCLAVE-ORIGIN BUT PvE-LEGAL. Its `internal_name` sits under
+# /Lotus/Upgrades/Mods/PvPMods/, which is NOT a usability marker: Update 17.9
+# made a set of Conclave mods equippable in PvE, and the wiki says of this one
+# "Agile Aim is an Exilus Weapon Mod for rifles usable in both PvE and Conclave".
+# The authority is the Rifle_Mods / Pistol_Mods table, which tags the genuinely
+# restricted ones "Exclusive to PvP" — this mod is NOT tagged. Do not delete it
+# on the strength of the path alone (engine::mods_data pins the whole set).
 id: agile_aim
 name: Agile Aim
 rarity: uncommon
