@@ -2609,6 +2609,11 @@ pub fn run_optimize_resumable(
         };
         let started_with = r_jobs_at_start.max(n_jobs);
         let n_cands = cands.len();
+        // A round is ONE blocking call, and round 1 of a big scope runs for
+        // many minutes — round boundaries are too coarse to answer a cancel.
+        let rboard = on_board.map(|b| move |top: &[(Job, Summary)]| {
+            b(&board_of(top, n_cands, n_jobs));
+        });
         let wrap = on_checkpoint.map(|cp| move |round: usize, alive: &[(Job, Summary)]| {
             cp(round, started_with, &ids_at(alive), &board_of(alive, n_cands, n_jobs));
         });
@@ -2616,6 +2621,7 @@ pub fn run_optimize_resumable(
             &cands, &arcanes, &scenario, jobs, &rounds, 0xDEAD_BEEF, false,
             Some(state), on_round, r_round,
             wrap.as_ref().map(|f| f as &wfsim_optimizer::CheckpointFn<'_>),
+            rboard.as_ref().map(|f| f as &wfsim_optimizer::RoundBoardFn<'_>),
         );
         let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
         (cands, last, c, n_jobs)
@@ -2646,6 +2652,9 @@ pub fn run_optimize_resumable(
             )
         };
         let n_cands = cands.len();
+        let rboard = on_board.map(|b| move |top: &[(Job, Summary)]| {
+            b(&board_of(top, n_cands, n_jobs));
+        });
         let wrap = on_checkpoint.map(|cp| move |round: usize, alive: &[(Job, Summary)]| {
             cp(round, n_jobs, &ids_at(alive), &board_of(alive, n_cands, n_jobs));
         });
@@ -2661,6 +2670,7 @@ pub fn run_optimize_resumable(
             on_round,
             0,
             wrap.as_ref().map(|f| f as &wfsim_optimizer::CheckpointFn<'_>),
+            rboard.as_ref().map(|f| f as &wfsim_optimizer::RoundBoardFn<'_>),
         );
         let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
         (cands, last, c, n_jobs)
@@ -2776,6 +2786,9 @@ pub fn run_optimize_resumable(
                 )
             };
             let n_sc = sc.len();
+            let rboard = on_board.map(|b| move |top: &[(Job, Summary)]| {
+                b(&board_of_sc(top, n_sc, n));
+            });
             let wrap = on_checkpoint.map(|cp| move |round: usize, alive: &[(Job, Summary)]| {
                 cp(round, n, &ids_at(alive), &board_of_sc(alive, n_sc, n));
             });
@@ -2791,6 +2804,7 @@ pub fn run_optimize_resumable(
                 on_round,
                 0, // the streaming path always screens first, so it starts fresh
                 wrap.as_ref().map(|f| f as &wfsim_optimizer::CheckpointFn<'_>),
+                rboard.as_ref().map(|f| f as &wfsim_optimizer::RoundBoardFn<'_>),
             );
             let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
             (sc, last, c, n)

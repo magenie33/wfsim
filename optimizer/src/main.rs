@@ -240,6 +240,7 @@ fn main() {
         None,
         0,    // the CLI always runs a fresh funnel
         None, // and has nowhere to checkpoint to
+        None, // (nor anywhere to publish a best-so-far — it prints per round)
     );
 
     println!();

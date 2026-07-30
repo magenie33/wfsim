@@ -159,6 +159,10 @@ made cheap.
   charging it would spend the whole 20 s catching up. A resumed screen
   therefore covers MORE of the scope than an uninterrupted one — which is
   the point of resuming, not a discrepancy.
+- Best-so-far also comes from INSIDE a round, every 4096 jobs. A round is
+  one blocking `evaluate_batch` call and round 1 of a materialized scope is
+  millions of jobs — round boundaries alone are far too coarse a heartbeat
+  to answer a cancel with.
 - **Still not resumable: the inside of a round.** Rounds are the resume
   granularity, so a reload 4 minutes into a 5-minute round 1 replays that
   round. Making it finer means persisting the evaluated prefix's summaries

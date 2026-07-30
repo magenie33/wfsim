@@ -880,6 +880,7 @@ fn job_seed(seed: u64, ci: usize, ai: usize) -> u64 {
 /// index-aligned with `jobs`; entries are `None` only when a cancel
 /// request stopped the batch before that job ran.
 #[cfg(not(target_arch = "wasm32"))]
+#[allow(clippy::too_many_arguments)] // search-config surface, like run_funnel
 pub fn evaluate_batch(
     cands: &[Candidate],
     jobs: &[Job],
@@ -888,6 +889,11 @@ pub fn evaluate_batch(
     runs: u32,
     seed: u64,
     state: Option<&FunnelState>,
+    // Never fired here: native cancel is cooperative, so `run_funnel` returns
+    // the mid-round best-so-far itself, and the status endpoint polls `state`.
+    // The browser can do neither — cancel there is a worker kill.
+    _on_board: Option<&RoundBoardFn<'_>>,
+    _by_kills: bool,
 ) -> Vec<Option<Summary>> {
     let threads = worker_threads();
     let chunk = jobs.len().div_ceil(threads).max(1);
@@ -921,6 +927,7 @@ pub fn evaluate_batch(
 /// wasm32 (docs/WASM.md phase 3): no threads in a Web Worker — evaluate the
 /// jobs sequentially with the identical per-job seeds.
 #[cfg(target_arch = "wasm32")]
+#[allow(clippy::too_many_arguments)] // search-config surface, like run_funnel
 pub fn evaluate_batch(
     cands: &[Candidate],
     jobs: &[Job],
@@ -929,21 +936,44 @@ pub fn evaluate_batch(
     runs: u32,
     seed: u64,
     state: Option<&FunnelState>,
+    on_board: Option<&RoundBoardFn<'_>>,
+    by_kills: bool,
 ) -> Vec<Option<Summary>> {
     let mut results: Vec<Option<Summary>> = vec![None; jobs.len()];
+    // The round's leaders so far, best-first. Ranked the way THIS round ranks,
+    // so the snapshot a cancel shows agrees with the cut the round would make.
+    let mut best: Vec<(Job, Summary)> = Vec::new();
+    let score = |s: &Summary| {
+        if by_kills {
+            s.mean_kill_progress
+        } else {
+            s.mean_effective_damage
+        }
+    };
     for (k, &(ci, ai)) in jobs.iter().enumerate() {
         if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
             break;
         }
-        results[k] = Some(evaluate(
+        let s = evaluate(
             &cands[ci],
             &arcanes[ai],
             scenario,
             runs,
             job_seed(seed, ci, ai),
-        ));
+        );
+        results[k] = Some(s);
         if let Some(st) = state {
             st.sims_done.fetch_add(runs as u64, Ordering::Relaxed);
+        }
+        if let Some(b) = on_board {
+            if best.len() < BOARD_TOP || score(&s) > score(&best[best.len() - 1].1) {
+                let at = best.partition_point(|(_, o)| score(o) >= score(&s));
+                best.insert(at, ((ci, ai), s));
+                best.truncate(BOARD_TOP);
+            }
+            if (k + 1).is_multiple_of(BOARD_EVERY) {
+                b(&best);
+            }
         }
         tick(); // wasm heartbeat: intra-round progress leaves the worker
     }
@@ -1282,6 +1312,14 @@ pub type CheckpointFn<'a> = dyn Fn(usize, &[(Job, Summary)]) + 'a;
 /// there depends on this.
 pub type ScreenBoardFn<'a> = dyn Fn(&[ScreenedJob]) + 'a;
 
+/// Best-so-far INSIDE a round, fired every `BOARD_EVERY` jobs evaluated. A
+/// round is one blocking `evaluate_batch` call, and round 1 of a materialized
+/// scope can be millions of jobs — tens of minutes in a browser worker with
+/// nothing published between its start and its end (user, 2026-07-30: still
+/// nothing after cancelling). Round boundaries alone are not a fine enough
+/// heartbeat to answer a cancel.
+pub type RoundBoardFn<'a> = dyn Fn(&[(Job, Summary)]) + 'a;
+
 /// How many entries a best-so-far snapshot carries. Comfortably above the
 /// 20 finalists the UI shows, so the board never runs short of rows.
 pub const BOARD_TOP: usize = 64;
@@ -1359,6 +1397,7 @@ pub fn run_funnel(
     on_round: Option<&dyn Fn()>,
     start_round: usize,
     on_checkpoint: Option<&CheckpointFn<'_>>,
+    on_round_board: Option<&RoundBoardFn<'_>>,
 ) -> Vec<(Job, Summary)> {
     if let Some(st) = state {
         st.rounds.store(rounds.len(), Ordering::Relaxed);
@@ -1407,6 +1446,8 @@ pub fn run_funnel(
             runs,
             seed_base + round as u64,
             state,
+            on_round_board,
+            by_kills,
         );
         if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
             // Cancelled mid-round. The previous COMPLETED round's leaderboard
@@ -1683,7 +1724,7 @@ mod tests {
         // (a) straight through.
         let whole = run_funnel(
             &cands, &arcanes, &scenario, jobs.clone(), &rounds, 0xDEAD_BEEF,
-            false, None, None, 0, None,
+            false, None, None, 0, None, None,
         );
 
         // (b) stop after round 1, keep only the identities, rebuild, continue.
@@ -1699,7 +1740,7 @@ mod tests {
         };
         run_funnel(
             &cands, &arcanes, &scenario, jobs, &rounds, 0xDEAD_BEEF,
-            false, None, None, 0, Some(&cp),
+            false, None, None, 0, Some(&cp), None,
         );
         let (next_round, ids) = saved.into_inner().expect("round 1 checkpointed");
         assert!(next_round >= 1);
@@ -1717,7 +1758,7 @@ mod tests {
         }
         let resumed = run_funnel(
             &rebuilt, &arcanes, &scenario, rjobs, &rounds, 0xDEAD_BEEF,
-            false, None, None, next_round, None,
+            false, None, None, next_round, None, None,
         );
 
         // Same builds, same order, same numbers.
