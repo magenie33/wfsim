@@ -967,6 +967,23 @@ opens with. First tick is DELAYED, not immediate: *"Clouds do not instantly do
 damage, so enemies that are quick may run through the cloud without taking any
 damage."*
 
+**How the sim runs it** (`engine::dummy`): every landed direct pellet spawns a
+`FieldState` — per PELLET, since each multishot projectile is its own grenade
+and its own cloud — whose first tick is one full period out. Ticks are settled
+by `process_field_ticks`, INTERLEAVED with the status settlement so that each
+tick sees the statuses its predecessors applied (that is what makes the live CO
+read meaningful) and its own procs still burn afterwards. Each tick runs
+`settle_procs`, the same status machinery a pellet and a radial stage use — one
+function, not three copies. A field carries the resolved part of the form that
+SPAWNED it: a cloud outlives a transmute, and only one form of a transform group
+has a field at all.
+
+Known approximation, recorded rather than hidden: the MOD-side buff state a tick
+reads (Galvanized Scope's crit buff, Overwhelming Attrition's stacks) is
+snapshotted at the most recent shot, not re-read at the tick. At 1.5 shots/s
+that is under a second of staleness on buffs measured in seconds. Condition
+Overload and the arcane runtime — the ones that matter — ARE read live.
+
 **Open question — the one that still needs a measurement:**
 
 - Do overlapping fields from several grenades **stack** (N concurrent tick
@@ -977,10 +994,15 @@ damage."*
   magazine is 5 and a cloud lasts 10 s at 1.5 shots/s, so all five can overlap
   on one target: the answer moves sustained single-target DPS by up to ~5×.
   Protocol in MEASUREMENTS M12.
+  **BOTH branches are implemented** and unit-tested, selected by the weapon
+  data's `lingering.stacking` (`stack` | `refresh`) — deliberately, so the
+  measurement flips one YAML line rather than a code path. `stack` is the
+  current default because it is the wiki's reading; it is NOT verified.
 
 **Source:** wiki Torid + Condition Overload (Mechanic) catalog + patch history
-+ the weapon data module. **Status:** CO eligibility, mod scaling, per-tick
-crit/status and the tick delay are sourced; **stacking is unverified**.
++ the weapon data module. **Status:** implemented; CO eligibility, mod scaling,
+per-tick crit/status and the tick delay are sourced; **stacking is
+unverified** (M12).
 
 **Source:** wiki (Area of Effect, Damage Falloff) + the weapon data modules.
 **Status:** unverified (needs Simulacrum measurement of direct+radial totals).

@@ -10,7 +10,9 @@ use std::sync::OnceLock;
 use serde::Deserialize;
 
 use crate::damage::{DamageType, DamageVector};
-use crate::loadout::{CoBehavior, IncarnonForm, RadialBase, WeaponBase};
+use crate::loadout::{
+    ChargeOn, CoBehavior, FieldStacking, IncarnonForm, LingeringBase, RadialBase, WeaponBase,
+};
 use crate::mods::Polarity;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -30,6 +32,39 @@ pub struct AttackSpec {
     /// A radial (AoE) part fired with every projectile of this attack.
     #[serde(default)]
     pub radial: Option<RadialSpec>,
+    /// A LINGERING FIELD left by every landed projectile (Torid's cloud).
+    #[serde(default)]
+    pub lingering: Option<LingeringSpec>,
+}
+
+/// A lingering damage FIELD — MECHANICS §7 "Lingering damage FIELDS". Unlike
+/// the radial this is not one instance at impact: it persists and TICKS.
+#[derive(Debug, Clone, Deserialize)]
+pub struct LingeringSpec {
+    pub damage: BTreeMap<String, f64>,
+    /// Ticks per second (the data module's per-attack `FireRate`).
+    pub tick_rate: f64,
+    /// Field lifetime in seconds (`EffectDuration`).
+    pub duration_s: f64,
+    pub radius_m: f64,
+    #[serde(default)]
+    pub crit_chance: Option<f64>,
+    #[serde(default)]
+    pub crit_multiplier: Option<f64>,
+    #[serde(default)]
+    pub status_chance: Option<f64>,
+    #[serde(default)]
+    pub falloff_start_m: Option<f64>,
+    #[serde(default)]
+    pub falloff_reduction: Option<f64>,
+    /// `stack` (default) or `refresh` — UNVERIFIED, see MEASUREMENTS M12. It
+    /// is a data field precisely so one measurement can flip it.
+    #[serde(default = "stack")]
+    pub stacking: String,
+}
+
+fn stack() -> String {
+    "stack".to_string()
 }
 
 /// The radial (explosion) part of an attack — MECHANICS §7. Crit/status
@@ -68,8 +103,17 @@ pub struct IncarnonSpec {
 #[derive(Debug, Clone, Deserialize)]
 pub struct GaugeSpec {
     pub max_rounds: f64,
-    /// Weakpoint hits needed to fill the gauge (DT 9, Laetum 12).
+    /// Hits needed to fill the gauge (DT 9, Laetum 12, Torid 5).
     pub charges_to_fill: f64,
+    /// WHICH hits count — `weakpoint_hits` (the Zariman default) or
+    /// `direct_hits` (Torid). A REAL field: it was documentation-only in the
+    /// yaml before, so every weapon silently charged off weak-point hits.
+    #[serde(default = "weakpoint_hits")]
+    pub charge_on: String,
+}
+
+fn weakpoint_hits() -> String {
+    "weakpoint_hits".to_string()
 }
 
 /// The locked-gauge magazine/reload reduction of an Incarnon form.
@@ -355,6 +399,11 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
 
     let incarnon = s.incarnon.as_ref().map(|inc| IncarnonForm {
         max_charges: inc.gauge.max_rounds,
+        charge_on: match inc.gauge.charge_on.as_str() {
+            "weakpoint_hits" => ChargeOn::WeakpointHits,
+            "direct_hits" => ChargeOn::DirectHits,
+            other => panic!("{id}: unknown incarnon charge_on: {other}"),
+        },
         charges_to_fill: inc.gauge.charges_to_fill,
         transmute_in: inc.transmute_in_seconds,
         transmute_out: inc.transmute_out_seconds,
@@ -379,6 +428,31 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         }
     });
 
+    // The lingering FIELD (Torid's Toxin cloud). Each stat falls back to the
+    // direct part's when unstated, same rule as the radial.
+    let lingering = s.attack.lingering.as_ref().map(|f| {
+        let mut v = DamageVector::new();
+        for (t, val) in &f.damage {
+            v.add(damage_type(t), *val);
+        }
+        LingeringBase {
+            base_vector: v,
+            base_crit_chance: f.crit_chance.unwrap_or(s.attack.crit_chance),
+            base_crit_damage: f.crit_multiplier.unwrap_or(s.attack.crit_multiplier),
+            base_status_chance: f.status_chance.unwrap_or(s.attack.status_chance),
+            tick_rate: f.tick_rate,
+            duration_s: f.duration_s,
+            radius_m: f.radius_m,
+            falloff_start_m: f.falloff_start_m.unwrap_or(0.0),
+            falloff_reduction: f.falloff_reduction.unwrap_or(0.0),
+            stacking: match f.stacking.as_str() {
+                "stack" => FieldStacking::Stack,
+                "refresh" => FieldStacking::Refresh,
+                other => panic!("{id}: unknown lingering stacking: {other}"),
+            },
+        }
+    });
+
     WeaponBase {
         base_vector: vector,
         base_crit_chance: s.attack.crit_chance,
@@ -397,6 +471,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         traits: traits_for(s),
         incarnon,
         radial,
+        lingering,
         // All raised by evolutions, never by the raw weapon data.
         evo_fire_rate_bonus: 0.0,
         post_mod_crit_chance: 0.0,

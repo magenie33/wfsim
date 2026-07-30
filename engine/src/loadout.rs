@@ -541,6 +541,10 @@ pub struct WeaponBase {
     /// crit and status stats; the directly-hit enemy takes both parts.
     /// See MECHANICS §7 "Radial (AoE) attack parts" for the rule set.
     pub radial: Option<RadialBase>,
+    /// A LINGERING FIELD left by every landed projectile of this attack — the
+    /// Torid's Toxin cloud. Grenades STICK, so a directly-hit enemy takes the
+    /// impact AND every tick. MECHANICS §7 "Lingering damage FIELDS".
+    pub lingering: Option<LingeringBase>,
 }
 
 /// Overwhelming Attrition: a hit that neither crits nor applies a status
@@ -569,6 +573,71 @@ pub struct HeadshotReloadBuff {
     /// The same two knobs every other stacking buff carries.
     pub initial_stacks: u32,
     pub pinned: bool,
+}
+
+/// What happens when a second field lands on a target that already has one.
+///
+/// UNVERIFIED — the one piece of the field model no source states (protocol in
+/// MEASUREMENTS M12). Torid's magazine is 5 and a cloud lasts 10 s at 1.5
+/// shots/s, so all five can be attached at once: the answer is worth up to ~5x
+/// sustained single-target DPS, which is why it is DATA rather than a constant.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum FieldStacking {
+    /// N concurrent tick streams, one per grenade. The wiki's reading — it
+    /// calls stacking clouds effective ("dealing large amounts of damage if
+    /// the player stacks multiple gas clouds", "Stacking multiple grenades on
+    /// an ally…") — but never says whether that is several streams on ONE
+    /// enemy or just wider coverage, and never quantifies it.
+    #[default]
+    Stack,
+    /// One field, re-armed: a second grenade resets duration instead of adding
+    /// a stream.
+    Refresh,
+}
+
+/// A weapon's LINGERING FIELD attack part — an area that persists and TICKS
+/// rather than landing once (Torid's Toxin cloud), unmodded. MECHANICS §7.
+#[derive(Debug, Clone)]
+pub struct LingeringBase {
+    pub base_vector: DamageVector,
+    pub base_crit_chance: f64,
+    pub base_crit_damage: f64,
+    pub base_status_chance: f64,
+    /// Ticks per second (the data module's `FireRate` for the part: Torid 1).
+    pub tick_rate: f64,
+    /// How long the field lives (`EffectDuration`: Torid 10 s).
+    pub duration_s: f64,
+    pub radius_m: f64,
+    pub falloff_start_m: f64,
+    /// Torid's cloud is `reduction 1.0` — damage falls to ZERO at the rim,
+    /// unlike the Laetum radial's 0.2.
+    pub falloff_reduction: f64,
+    pub stacking: FieldStacking,
+}
+
+/// The lingering field after mod resolution.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ResolvedLingering {
+    pub damage: DamageVector,
+    pub modified_base: f64,
+    pub crit_chance: f64,
+    pub crit_damage: f64,
+    pub status_chance: f64,
+    /// The field's own UNMODDED stats — the bases its RELATIVE live buffs
+    /// multiply (same rule as the radial: a bucket scales whichever base it is
+    /// applied to). Torid's cloud is 15% / 2.0x / 25%, none of which match its
+    /// grenade impact's 15% / 2.0x / 23%.
+    pub base_crit_chance: f64,
+    pub base_crit_damage: f64,
+    pub base_status_chance: f64,
+    pub tick_rate: f64,
+    pub duration_s: f64,
+    /// Geometry, carried through unmodded — single-target stands at the
+    /// epicentre, but the panel states it (and Firestorm enlarges it in game).
+    pub radius_m: f64,
+    pub falloff_start_m: f64,
+    pub falloff_reduction: f64,
+    pub stacking: FieldStacking,
 }
 
 /// A weapon's radial (explosion) attack part, unmodded.
@@ -621,8 +690,14 @@ pub struct ResolvedRadial {
 pub struct IncarnonForm {
     /// Fixed charge capacity ("Max Charges") — magazine mods are inert.
     pub max_charges: f64,
-    /// Weakpoint hits needed to fill the gauge, UNMODIFIED by evolutions
-    /// (Dual Toxocyst 9, Laetum 12). `charge_rate` below shortens it.
+    /// WHAT fills the gauge. Not cosmetic: the Zariman pistols count weak-point
+    /// hits, the Torid counts plain direct hits — "Angstrum Incarnon Genesis
+    /// and Torid Incarnon Genesis are instead charged through direct hits"
+    /// (wiki Incarnon). Either way it is PER PELLET: "Individual Multishot
+    /// bullets can build charges."
+    pub charge_on: ChargeOn,
+    /// Hits of `charge_on` needed to fill the gauge, UNMODIFIED by evolutions
+    /// (Dual Toxocyst 9, Laetum 12, Torid 5). `charge_rate` below shortens it.
     pub charges_to_fill: f64,
     /// Transmute IN (enter the form) = the base form's reload time.
     pub transmute_in: f64,
@@ -633,6 +708,20 @@ pub struct IncarnonForm {
     /// Weakpoint hits build `1 + charge_rate` times the charge, so the
     /// hits needed to fill the gauge divide by that factor.
     pub charge_rate: f64,
+}
+
+/// Which hits build an Incarnon gauge (weapon data, never assumed).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ChargeOn {
+    /// Weak-point hits only — the Zariman weapons (Dual Toxocyst, Laetum).
+    /// A radial/field instance can never contribute: it has no hit location.
+    #[default]
+    WeakpointHits,
+    /// Any direct hit on an enemy (Torid: 5 fill it). Its Toxin cloud is NOT a
+    /// direct hit and does not charge — the wiki says so outright ("Torid's
+    /// poison cloud does not build charges") and a 37.0 patch note fixed the
+    /// case where it did.
+    DirectHits,
 }
 
 /// The Evolution II choice — a SEARCH DIMENSION (user, 2026-07-25). A
@@ -669,6 +758,8 @@ pub struct ResolvedPanel {
     pub damage: DamageVector,
     /// The resolved radial (AoE) part, when the weapon has one.
     pub radial: Option<ResolvedRadial>,
+    /// The resolved lingering FIELD, when the weapon leaves one.
+    pub lingering: Option<ResolvedLingering>,
     /// The Incarnon transformation economy of THIS form, carried through
     /// so the cycle model reads it from data instead of hardcoding one
     /// weapon's numbers.
@@ -1124,9 +1215,38 @@ pub fn resolve_with(
         }
     });
 
+    // The lingering FIELD (Torid's Toxin cloud): its own base vector, crit and
+    // status stats, through the SAME mod buckets — three patch notes settle
+    // that ("Fixed Torid gas clouds not receiving damage buffs from mods";
+    // "…the Torid's gas cloud not allowing for criticals"). Tick rate and
+    // duration are NOT mod-scaled: fire-rate mods change shots per second, not
+    // the cloud's own clock, and the cloud is not a status effect so status
+    // duration does not reach it either.
+    let lingering = base.lingering.as_ref().map(|f| {
+        let (fd, fmb) = build(&f.base_vector, None);
+        ResolvedLingering {
+            damage: fd,
+            modified_base: fmb,
+            crit_chance: (f.base_crit_chance * (1.0 + cc) + base.post_mod_crit_chance).max(0.0),
+            crit_damage: f.base_crit_damage * (1.0 + cd),
+            status_chance: (f.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)
+                .max(0.0),
+            base_crit_chance: f.base_crit_chance,
+            base_crit_damage: f.base_crit_damage,
+            base_status_chance: f.base_status_chance,
+            tick_rate: f.tick_rate,
+            duration_s: f.duration_s,
+            radius_m: f.radius_m,
+            falloff_start_m: f.falloff_start_m,
+            falloff_reduction: f.falloff_reduction,
+            stacking: f.stacking,
+        }
+    });
+
     ResolvedPanel {
         damage,
         radial,
+        lingering,
         incarnon: base.incarnon,
         modified_base,
         // Elemental Excess adds its crit/status FLAT, after the mod
@@ -1198,6 +1318,7 @@ mod tests {
         WeaponBase {
             base_vector: DamageVector::new().with(DamageType::Cold, 32.0),
             radial: None,
+            lingering: None,
             evo_fire_rate_bonus: 0.0,
             post_mod_crit_chance: 0.0,
             post_mod_status_chance: 0.0,

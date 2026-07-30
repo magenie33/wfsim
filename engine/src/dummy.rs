@@ -205,7 +205,10 @@ pub struct IncarnonCycle {
     /// The base form's full engagement params (its own panel; target/aim/
     /// duration fields are ignored — the outer params' are shared).
     pub base_form: Box<DummyParams>,
-    /// Weakpoint hits to fill the gauge (Dual Toxocyst: 9).
+    /// WHICH hits fill the gauge — weapon data (Zariman: weak-point; Torid:
+    /// any direct hit).
+    pub charge_on: crate::loadout::ChargeOn,
+    /// Hits of `charge_on` to fill the gauge (Dual Toxocyst 9, Torid 5).
     pub charges_to_fill: u32,
     /// Incarnon → base transition (already reload-speed scaled).
     pub transmute_out_seconds: f64,
@@ -952,6 +955,13 @@ pub struct DummyParams {
     /// vector. Those procs land on the same target and therefore DO feed
     /// Condition Overload on subsequent direct hits.
     pub radial: Option<crate::loadout::ResolvedRadial>,
+    /// The LINGERING FIELD every landed projectile leaves (Torid's Toxin
+    /// cloud). A third kind of attack part: it persists and TICKS instead of
+    /// landing once, and each tick is a full damage instance — own crit roll,
+    /// own status draw ("Toxin clouds can proc Hunter Munitions on each tick
+    /// of damage"), the weapon's mod buckets, and Condition Overload live off
+    /// the target's current status count. MECHANICS §7.
+    pub lingering: Option<crate::loadout::ResolvedLingering>,
     /// Evolution headshot-damage bonus (Caput Mortuum) — joins the
     /// headshot bracket. Direct hits only; a radial never headshots.
     pub headshot_damage_bonus: f64,
@@ -1245,6 +1255,7 @@ impl DummyParams {
             faction_mult,
             damage: panel.damage,
             radial: panel.radial,
+            lingering: panel.lingering,
             headshot_damage_bonus: panel.headshot_damage_bonus,
             noncrit_bonus: panel.noncrit_bonus,
             plain_hit_bonus: panel.plain_hit_bonus,
@@ -1336,6 +1347,9 @@ impl DummyParams {
                 // scale by the reload formula. An evolution that speeds up
                 // charge building (Incarnon Efficiency: +50%) divides the
                 // hits needed — 12 becomes 8.
+                charge_on: inc_form
+                    .map(|f| f.charge_on)
+                    .unwrap_or_default(),
                 charges_to_fill: inc_form
                     .map(|f| (f.charges_to_fill / (1.0 + f.charge_rate)).ceil() as u32)
                     .unwrap_or(9),
@@ -1366,6 +1380,7 @@ impl Default for DummyParams {
         Self {
             damage: Self::dual_toxocyst_base_vector(),
             radial: None,
+            lingering: None,
             headshot_damage_bonus: 0.0,
             noncrit_bonus: None,
             plain_hit_bonus: None,
@@ -1454,6 +1469,10 @@ pub struct SourceDamage {
     pub direct: f64,
     /// The radial (AoE) attack part — MECHANICS §7.
     pub radial: f64,
+    /// The lingering FIELD's ticks (Torid's Toxin cloud). Its own bucket
+    /// because it is neither a direct hit nor a status DoT: it is weapon
+    /// damage on its own clock, and on that weapon it is most of the output.
+    pub field: f64,
     pub arcane_on_status: f64,
     /// Indexed by `DamageType as usize` (15 variants).
     pub status: [f64; 15],
@@ -1481,6 +1500,9 @@ pub struct RunResult {
     pub headshots: u32,  // hits on an `is_head` part
     pub procs: u32,      // status procs applied (all types)
     pub dot_ticks: u32,  // bleed ticks that landed
+    /// Lingering-FIELD ticks that landed (Torid's cloud) — its own counter
+    /// because a field tick is weapon damage, not a status DoT tick.
+    pub field_ticks: u32,
     pub reloads: u32,    // magazine reloads performed
     pub transforms: u32, // TRANSMUTES into the Incarnon form (reverts don't count)
     pub kills: u32,      // InstantRespawn deaths (0 with InfiniteHealth)
@@ -1596,11 +1618,516 @@ fn push_break_proc(debuffs: &mut DebuffState, params: &DummyParams, now: f64, po
     });
 }
 
-/// Timed status events due strictly before `until`, in chronological
-/// order: DoT ticks (Bleed/Toxin/Electricity/Gas + break-proc Tesla), the
-/// Heat singleton's anchored ticks, and Blast fuse expiries. Mitigation is
-/// evaluated LIVE at each event (the snapshot boundary rule); status
-/// damage never procs status.
+/// Settle ONE damage instance's status procs onto the target — MECHANICS §6.
+///
+/// Every instance kind applies status by identical rules, so this is one
+/// function rather than three copies: a direct pellet, a radial stage, and a
+/// lingering-FIELD tick all land here. `at` is the INSTANCE's own time, which
+/// is why it is a parameter and not the shot clock — a cloud ticks between
+/// shots, and its procs' durations have to run from the tick.
+///
+/// `scale` carries the instance's damage scaling for the DoT payloads
+/// (ModifiedBase × crit × body part), `params` is the engagement and `ap` the
+/// ACTIVE form (element brackets differ per form).
+#[allow(clippy::too_many_arguments)]
+fn settle_procs(
+    procs: Vec<DamageType>,
+    at: f64,
+    scale: InstanceScale,
+    debuffs: &mut DebuffState,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    target: &mut TargetState,
+    params: &DummyParams,
+    ap: &DummyParams,
+    mit: &Mitigation,
+    r: &mut RunResult,
+) {
+    let InstanceScale { mb_live, crit_mult, part_factor } = scale;
+    let sd = params.status_duration_mult;
+    let sdm = params.status_damage_mult;
+    let caps = params.target.stack_caps;
+    let gcap = |base: usize| caps.map_or(base, |c| base.min(c.general));
+    let stagger_cap = caps.map_or(STAGGER_CAP, |c| STAGGER_CAP.min(c.impact));
+    let heat_cap: Option<usize> = caps.map(|c| c.general);
+    let dot_cap: Option<usize> = caps.map(|c| c.general);
+    // Elemental DoT tick (data/debuffs): 0.5 × ModifiedBase ×
+    // (1 + element bonuses) × (1 + status damage) × crit/part
+    // snapshot. Delay-1 DoTs tick at +1..+6 s; delay-0 (Electricity/
+    // Gas) at 0..+5 s (the +6 s event is a dud).
+    let delayed_ticks = ((BLEED_TICKS as f64 * sd - BLEED_DELAY).floor() as u32) + 1;
+    let immediate_ticks = ((BLEED_TICKS as f64 * sd).floor() as u32).max(1);
+    // Faction DOUBLE-DIP: status/DoT payloads carry the faction bonus a
+    // SECOND time (the direct hit already applied it once), so ticks
+    // scale by faction_mult² (wiki Faction_Damage_Bonus; MECHANICS §8).
+    let fm2 = params.faction_mult * params.faction_mult;
+    let push_dot = |debuffs: &mut DebuffState,
+                    dtype: DamageType,
+                    coeff: f64,
+                    bracket: f64,
+                    delay: f64,
+                    ticks: u32,
+                    ignores_armor: bool| {
+        debuffs.push_dot_capped(
+            Dot {
+                next_tick: at + delay,
+                ticks_left: ticks,
+                value: coeff * mb_live * bracket * sdm * crit_mult * part_factor * fm2,
+                dtype,
+                ignores_armor,
+            },
+            dot_cap,
+        );
+    };
+    for proc in procs {
+        r.procs += 1;
+        match proc {
+            DamageType::Impact => DebuffState::push_capped(
+                &mut debuffs.stagger,
+                at + STAGGER_DURATION * sd,
+                stagger_cap,
+                at,
+            ),
+            DamageType::Puncture => {
+                DebuffState::push_capped(
+                    &mut debuffs.weakened,
+                    at + WEAKENED_DURATION * sd,
+                    gcap(WEAKENED_CAP),
+                    at,
+                );
+                // Secondary Cryogenic: each Puncture status applies
+                // N Cold stacks to targets around the hit — the
+                // single-target arena collapses that onto the main
+                // target (the wiki confirms it is included). The
+                // Cold procs scale with Status Duration.
+                for _ in 0..params.arcane.cold_burst_on_puncture {
+                    debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps);
+                }
+            }
+            DamageType::Slash => push_dot(
+                debuffs,
+                DamageType::Slash,
+                BLEED_COEFFICIENT,
+                1.0, // Bleed: elemental mods never scale the ticks
+                BLEED_DELAY,
+                delayed_ticks,
+                true, // Cinematic: ignores armor
+            ),
+            DamageType::Toxin => {
+                // Primary Blight: each Toxin status THIS WEAPON
+                // applies grants one stack to both of its buffs
+                // (crit damage + multishot). The weapon-only rule is
+                // the arcane's own (wiki), not a sim limitation.
+                arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ToxinStatus, at);
+                push_dot(
+                    debuffs,
+                    DamageType::Toxin,
+                    DOT_COEFFICIENT,
+                    ap.elem_bracket(DamageType::Toxin),
+                    1.0,
+                    delayed_ticks,
+                    false,
+                )
+            }
+            DamageType::Electricity => {
+                // Conjunction Voltage: each Electricity status this
+                // weapon applies grants one stack to both of its
+                // buffs (reload speed + multishot).
+                arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ElectricityStatus, at);
+                push_dot(
+                    debuffs,
+                    DamageType::Electricity,
+                    DOT_COEFFICIENT,
+                    ap.elem_bracket(DamageType::Electricity),
+                    0.0,
+                    immediate_ticks,
+                    false,
+                )
+            }
+            DamageType::Gas => push_dot(
+                debuffs,
+                DamageType::Gas,
+                DOT_COEFFICIENT,
+                1.0, // literal Gas sources only; Heat/Toxin mods: nothing
+                0.0,
+                immediate_ticks,
+                false,
+            ),
+            DamageType::Heat => {
+                // Singleton accumulator: add the contribution and
+                // refresh the shared clock; ticks stay anchored to
+                // the first proc (ignite.yaml).
+                // Cascadia Flare: each applied Heat status grants
+                // one stack and refreshes the shared timer (own
+                // procs only — the "any source" clause waits on a
+                // multi-actor world).
+                arc.bump_trigger(&params.arcane.buffs, ArcTrigger::HeatStatus, at);
+                let contrib = DOT_COEFFICIENT
+                    * mb_live
+                    * ap.elem_bracket(DamageType::Heat)
+                    * sdm
+                    * crit_mult
+                    * part_factor
+                    * fm2; // faction double-dip
+                let expiry = at + STATUS_DURATION * sd;
+                debuffs.apply_heat(at, contrib, expiry, heat_cap);
+            }
+            DamageType::Cold => {
+                debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps);
+            }
+            DamageType::Magnetic => DebuffState::push_capped(
+                &mut debuffs.disrupt,
+                at + STATUS_DURATION * sd,
+                gcap(TEN_STACK_CAP),
+                at,
+            ),
+            DamageType::Viral => DebuffState::push_capped(
+                &mut debuffs.virus,
+                at + STATUS_DURATION * sd,
+                gcap(TEN_STACK_CAP),
+                at,
+            ),
+            DamageType::Corrosive => DebuffState::push_capped(
+                &mut debuffs.corrosion,
+                at + CORROSION_DURATION * sd,
+                gcap(TEN_STACK_CAP),
+                at,
+            ),
+            DamageType::Radiation => DebuffState::push_capped(
+                &mut debuffs.confusion,
+                at + STATUS_DURATION * sd,
+                gcap(TEN_STACK_CAP),
+                at,
+            ),
+            DamageType::Blast => {
+                if let Some(c) = caps {
+                    if debuffs.blast.len() >= c.general {
+                        debuffs.blast.remove(0); // FIFO replace-oldest
+                    }
+                }
+                debuffs.blast.push(BlastStack {
+                    fuse: at + BLAST_FUSE * sd,
+                    value: BLAST_COEFFICIENT
+                        * mb_live
+                        * sdm
+                        * crit_mult
+                        * part_factor
+                        * fm2,
+                });
+                if debuffs.blast.len() >= TEN_STACK_CAP {
+                    // Early detonation: every stack's single-target
+                    // hit at once, all stacks consumed (radial
+                    // excluded — it never hits the host).
+                    let total: f64 = debuffs.blast.drain(..).map(|b| b.value).sum();
+                    let mit = debuffs.mitigation(at, sd);
+                    let (eff, killed, broke) =
+                        target.apply(total, 0.0, false, at, &params.target, false, &mit);
+                    r.total_damage += total;
+                    r.effective_damage += eff;
+                    r.dot_damage += eff;
+                    r.sources.add_status(DamageType::Blast, eff);
+                    r.timeline.add(at, eff);
+                    r.kills += killed as u32;
+                    if let Some(pool) = broke {
+                        push_break_proc(debuffs, params, at, pool);
+                    }
+                    if killed {
+                        gal.bump_on_kill(params, at);
+                        arc.on_kill(params, at);
+                        *debuffs = DebuffState::default();
+                    }
+                }
+            }
+            _ => {}
+        }
+        // Cascadia Empowered: each applied status adds an EXTRA
+        // FLAT damage instance of the proc's type — unaffected by
+        // damage/element/crit mods, Galvanized stacks, parts, or
+        // falloff; faction bonuses apply ONCE; enemy mitigation
+        // still applies (wiki notes). Toxin instances keep Toxin's
+        // shield bypass.
+        if params.arcane.flat_damage_on_status > 0.0 {
+            let amt = params.arcane.flat_damage_on_status * params.faction_mult;
+            let tox = if proc == DamageType::Toxin { 1.0 } else { 0.0 };
+            let (eff, killed, broke) =
+                target.apply(amt, tox, false, at, &params.target, false, mit);
+            r.total_damage += amt;
+            r.effective_damage += eff;
+            r.sources.arcane_on_status += eff;
+            r.timeline.add(at, eff);
+            r.kills += killed as u32;
+            if let Some(pool) = broke {
+                push_break_proc(debuffs, params, at, pool);
+            }
+            if killed {
+                gal.bump_on_kill(params, at);
+                arc.on_kill(params, at);
+                *debuffs = DebuffState::default();
+            }
+        }
+    }
+}
+
+/// One instance's damage scaling, as the status payloads need it.
+#[derive(Debug, Clone, Copy)]
+struct InstanceScale {
+    /// Live ModifiedBase (base-damage bucket applied).
+    mb_live: f64,
+    /// The instance's crit multiplier (1.0 when it did not crit).
+    crit_mult: f64,
+    /// Body-part multiplier — always 1.0 for a radial or a field.
+    part_factor: f64,
+}
+
+/// The GunCO-family bracket for one damage instance — MECHANICS §6. Every
+/// source contributes rate × its TARGET counter, is scaled by the
+/// original-base fraction, and combines per the weapon's [`CoBehavior`].
+///
+/// Shared by the direct hit and the lingering FIELD, because the CO catalog
+/// puts the cloud on the SAME rate and the SAME behavior as the main fire:
+///
+/// | weapon | attack | base | CO base | % | behavior |
+/// | --- | --- | --- | --- | --- | --- |
+/// | Torid | Main-fire | 100 | 100 | 100% | Multiplying |
+/// | Torid | Toxin AoE Cloud | 40 | 40 | 100% | Multiplying |
+///
+/// The counter is read HERE rather than snapshotted when the field spawned —
+/// Pox's row in the same catalog: "Damage recalculates on every tick".
+#[allow(clippy::too_many_arguments)]
+fn gunco_bucket(
+    params: &DummyParams,
+    ap: &DummyParams,
+    debuffs: &mut DebuffState,
+    gal: &mut GalStacks,
+    at: f64,
+    bd: f64,
+    arc_bd: f64,
+    arc_ratio: f64,
+) -> f64 {
+    let co_rate = ap.co_per_type
+        + params.co_stack.as_ref().map_or(0.0, |s| {
+            let stacks = if s.pinned {
+                s.initial_stacks.min(s.max_stacks)
+            } else {
+                gal.co.current(at, s.duration)
+            };
+            s.per_stack * stacks as f64
+        });
+    let cold = debuffs
+        .cold_status_count(at)
+        .min(params.arcane.cold_cap);
+    let gunco_total = [
+        (co_rate, debuffs.distinct_statuses() as u32),
+        (params.arcane.per_cold_bd, cold),
+    ]
+    .iter()
+    .map(|(rate, count)| rate * *count as f64)
+    .sum::<f64>()
+        * ap.co_base_fraction;
+    match ap.co_behavior {
+        // Joins the base-damage bucket: diluted by Hornet Strike, sharing the
+        // bracket with the arcane's bonus.
+        crate::loadout::CoBehavior::AdditiveWithBaseDamage => {
+            (1.0 + bd + arc_bd + gunco_total) / (1.0 + bd)
+        }
+        crate::loadout::CoBehavior::Independent => arc_ratio * (1.0 + gunco_total),
+        crate::loadout::CoBehavior::Inert => arc_ratio,
+    }
+}
+
+/// One live LINGERING FIELD attached to the target — one entity per grenade
+/// that stuck, since each multishot projectile is its own grenade and its own
+/// cloud. `FieldStacking::Refresh` keeps this list at length 1.
+#[derive(Debug, Clone, Copy)]
+struct FieldState {
+    next_tick: f64,
+    ticks_left: u32,
+    /// The part AS RESOLVED BY THE FORM THAT SPAWNED IT. A cloud outlives a
+    /// transmute, and only one form of a transform group has a field at all, so
+    /// the field cannot be re-read from the active form.
+    part: crate::loadout::ResolvedLingering,
+}
+
+/// The attacker-side buff state a FIELD tick reads, as of the most recent
+/// shot.
+///
+/// The parts that MATTER are live, not snapshotted: Condition Overload and the
+/// arcane runtime are both read at the tick itself (the CO catalog's Pox row is
+/// explicit — "damage recalculates on every tick"). What this carries is the
+/// MOD-side buffs whose state lives in the shot loop's locals — Galvanized
+/// Scope's crit buff, Overwhelming Attrition's stacks — snapshotted at the
+/// shot. At Torid's 1.5 shots/s that is under a second of staleness on buffs
+/// measured in seconds; it is recorded here rather than hidden because it IS an
+/// approximation.
+#[derive(Debug, Clone, Copy, Default)]
+struct FieldCtx {
+    /// Attacker BuffBar flat crit chance — ABSOLUTE, lands on every part.
+    flat_crit: f64,
+    /// Σ RELATIVE crit-chance bonuses from MOD buffs.
+    cc_rel_mods: f64,
+    /// Σ live base-damage bucket additions from MOD/evolution buffs.
+    bd_add_mods: f64,
+}
+
+/// Settle every FIELD tick due strictly before `until`, oldest first.
+///
+/// A separate pass from [`process_ticks`] on purpose — a field tick is weapon
+/// damage that rolls its own crit and its own status, not a status settlement —
+/// but the two are INTERLEAVED here: every status event preceding a field tick
+/// is settled before it. That matters in both directions. A field tick's own
+/// procs become DoTs that must still burn (the end-of-run drain used to run
+/// before the last clouds ticked, so those procs were pushed and never settled
+/// — a test caught it), and the CO bonus a tick reads has to include the
+/// statuses its predecessors applied.
+#[allow(clippy::too_many_arguments)]
+fn process_field_ticks(
+    fields: &mut Vec<FieldState>,
+    debuffs: &mut DebuffState,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    until: f64,
+    target: &mut TargetState,
+    params: &DummyParams,
+    ap: &DummyParams,
+    ctx: &FieldCtx,
+    r: &mut RunResult,
+    rng: &mut Rng,
+) {
+    // Oldest due tick first, re-scanned each time: a tick's own procs change
+    // what the NEXT tick sees, so the order has to be resolved live.
+    while let Some((i, at)) = fields
+        .iter()
+        .enumerate()
+        .filter(|(_, f)| f.ticks_left > 0 && f.next_tick < until)
+        .min_by(|a, b| a.1.next_tick.total_cmp(&b.1.next_tick))
+        .map(|(i, f)| (i, f.next_tick))
+    {
+        // Status events strictly before this tick land first.
+        process_ticks(debuffs, gal, arc, at + 1e-9, target, params, r);
+        let part = fields[i].part;
+        fields[i].next_tick += 1.0 / part.tick_rate;
+        fields[i].ticks_left -= 1;
+        let killed = field_tick(&part, at, ctx, debuffs, gal, arc, target, params, ap, r, rng);
+        if killed {
+            // Fresh individual: the clouds were stuck to the one that died, and
+            // its statuses go with it (the same rule the pellet path follows).
+            *debuffs = DebuffState::default();
+            fields.clear();
+            return;
+        }
+    }
+    fields.retain(|f| f.ticks_left > 0);
+}
+
+/// ONE tick of a lingering field, resolved as a full damage INSTANCE — returns
+/// whether it killed the target. MECHANICS §7 "Lingering damage FIELDS".
+///
+/// It follows the radial's rules — no body-part multiplier and no crit-headshot
+/// fold-in ("Explosion has a headshot multiplier of 1x and cannot trigger
+/// headshot conditions"), its own crit roll ("…the Torid's gas cloud not
+/// allowing for criticals" was a fixed BUG), its own status draw ("Toxin clouds
+/// can proc Hunter Munitions on each tick of damage") — and adds the one thing
+/// a field has that a radial does not: it TAKES Condition Overload, on the
+/// attached target, which a single-target arena always is.
+#[allow(clippy::too_many_arguments)]
+fn field_tick(
+    f: &crate::loadout::ResolvedLingering,
+    at: f64,
+    ctx: &FieldCtx,
+    debuffs: &mut DebuffState,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    target: &mut TargetState,
+    params: &DummyParams,
+    ap: &DummyParams,
+    r: &mut RunResult,
+    rng: &mut Rng,
+) -> bool {
+    let sd = params.status_duration_mult;
+    let mit = debuffs.mitigation(at, sd);
+    let qvec = f.damage.quantized();
+    let qtotal = qvec.total();
+    let toxin_share = if qtotal > 0.0 {
+        qvec.get(DamageType::Toxin) / qtotal
+    } else {
+        0.0
+    };
+
+    // Crit: the field's OWN base stats. Relative bonuses scale its base,
+    // absolute ones land flat (MECHANICS §7) — and no `part.crit_bonus`
+    // doubling, which is the crit-HEADSHOT rule.
+    let cc_rel = ctx.cc_rel_mods + params.arcane.cc_rel;
+    let cc = f.crit_chance + ctx.flat_crit + f.base_crit_chance * cc_rel;
+    let tier = roll_crit_tier(cc, rng);
+    let cd_rel = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, at)
+        + arc.cd_bonus(ap, at)
+        + params.arcane.cd_rel;
+    let cd = f.crit_damage + f.base_crit_damage * cd_rel + debuffs.cold_cd_bonus(at);
+    let crit_mult = 1.0 + tier as f64 * (cd - 1.0);
+
+    // Damage buckets: the same live base-damage additions the direct hit reads,
+    // then the GunCO bracket off the target's CURRENT status count.
+    let bd = ap.base_damage_bonus;
+    let arc_bd = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, at) + ctx.bd_add_mods;
+    let arc_ratio = (1.0 + bd + arc_bd) / (1.0 + bd);
+    let bucket = gunco_bucket(params, ap, debuffs, gal, at, bd, arc_bd, arc_ratio);
+    let mb_live = f.modified_base * arc_ratio;
+
+    // Falloff is 1.0: the grenade STICKS to the target, so the target stands at
+    // the epicentre for every tick — which is exactly why the wiki calls a
+    // direct hit "the maximum possible damage".
+    let raw = qtotal * crit_mult * bucket * params.faction_mult;
+    let (effective, killed, broke) =
+        target.apply(raw, toxin_share, false, at, &params.target, false, &mit);
+    r.total_damage += raw;
+    r.effective_damage += effective;
+    r.sources.field += effective;
+    r.timeline.add(at, effective);
+    r.field_ticks += 1;
+    r.kills += killed as u32;
+    if let Some(pool) = broke {
+        push_break_proc(debuffs, params, at, pool);
+    }
+    if killed {
+        gal.bump_on_kill(params, at);
+        arc.on_kill(params, at);
+        return true;
+    }
+    // Status per TICK, from the field's own vector and its own status chance.
+    // No forced procs: those are declared per attack part, and the cloud
+    // declares none.
+    let procs = status::procs_for_hit(
+        &[],
+        f.status_chance,
+        &qvec,
+        &params.target.status_immunities,
+        rng,
+    );
+    settle_procs(
+        procs,
+        at,
+        InstanceScale { mb_live, crit_mult, part_factor: 1.0 },
+        debuffs,
+        gal,
+        arc,
+        target,
+        params,
+        ap,
+        &mit,
+        r,
+    );
+    false
+}
+
+/// Timed STATUS events due strictly before `until`, in chronological order:
+/// DoT ticks (Bleed/Toxin/Electricity/Gas + break-proc Tesla), the Heat
+/// singleton's anchored ticks, and Blast fuse expiries. Mitigation is evaluated
+/// LIVE at each event (the snapshot boundary rule); status damage never procs
+/// status.
+///
+/// Lingering-FIELD ticks are NOT here — they are weapon damage that rolls its
+/// own crit and its own status, so they get their own pass
+/// ([`process_field_ticks`]).
 fn process_ticks(
     debuffs: &mut DebuffState,
     gal: &mut GalStacks,
@@ -1815,16 +2342,20 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     let main_pre = precompute(params);
     let base_pre = params.cycle.as_ref().map(|c| precompute(&c.base_form));
     let sd = params.status_duration_mult;
-    let sdm = params.status_damage_mult;
-    // Per-unit status stack caps (Acolytes: any 4, Impact 3).
-    let caps = params.target.stack_caps;
-    let gcap = |base: usize| caps.map_or(base, |c| base.min(c.general));
-    let stagger_cap = caps.map_or(STAGGER_CAP, |c| STAGGER_CAP.min(c.impact));
-    // Heat and the independent DoTs (Slash/Toxin/Electricity/Gas) have no
-    // NATURAL stack cap; a per-unit cap (Acolytes: any status 4) limits them,
-    // FIFO replace-oldest like every other capped status. `None` = uncapped.
-    let heat_cap: Option<usize> = caps.map(|c| c.general);
-    let dot_cap: Option<usize> = caps.map(|c| c.general);
+    // The per-unit status stack caps (Acolytes: any 4, Impact 3) and the
+    // status-payload scaling now live in `settle_procs`, which every instance
+    // kind shares.
+    // Live lingering FIELDS (Torid's clouds), one entry per grenade that stuck.
+    let mut fields: Vec<FieldState> = Vec::new();
+    let mut field_ctx = FieldCtx::default();
+    // The form whose panel SPAWNED the fields. Only one form of a transform
+    // group has a lingering part (Torid's cloud belongs to the base form; its
+    // Incarnon beam leaves none), so this is unambiguous - and it is the right
+    // answer even after a transmute, because a cloud outlives one.
+    let field_ap: &DummyParams = match &params.cycle {
+        Some(cy) if cy.base_form.lingering.is_some() => &cy.base_form,
+        _ => params,
+    };
 
     // Initial locks: one natural-duration grant at t = 0 (at the set
     // stack count); afterwards only the buff's own mechanics govern it.
@@ -2039,6 +2570,28 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         let n_pellets = ms_eff.floor() as u32 + rng.chance(ms_eff.fract()) as u32;
         let (mut any_head, mut any_big) = (false, false);
         let headshots_before = r.headshots;
+        let pellets_before = r.pellets;
+        // Field ticks due before this shot, with the buff state as of now.
+        field_ctx = FieldCtx {
+            flat_crit,
+            cc_rel_mods: cc_rel - params.arcane.cc_rel,
+            bd_add_mods: ap.plain_hit_bonus.map_or(0.0, |b| {
+                b.per_stack * plain_stacks.current(t, b.duration) as f64
+            }),
+        };
+        process_field_ticks(
+            &mut fields,
+            &mut debuffs,
+            &mut gal,
+            &mut arc,
+            t,
+            &mut target,
+            params,
+            field_ap,
+            &field_ctx,
+            &mut r,
+            rng,
+        );
         // Secondary Encumber: at most ONE extra proc per instant — pellets
         // of one pull land simultaneously, so one roll per pull.
         let mut encumber_done = false;
@@ -2091,36 +2644,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             //   Condition Overload (Galvanized Shot + innate, one merged
             //     rate since they share it) → distinct status TYPES;
             //   Secondary Shiver → live Cold STACKS (Frozen counts as 10).
-            let co_rate = ap.co_per_type
-                + params.co_stack.as_ref().map_or(0.0, |s| {
-                    let stacks = if s.pinned {
-                        s.initial_stacks.min(s.max_stacks)
-                    } else {
-                        gal.co.current(t, s.duration)
-                    };
-                    s.per_stack * stacks as f64
-                });
-            let gunco_sources = [
-                (co_rate, debuffs.distinct_statuses() as u32),
-                (
-                    params.arcane.per_cold_bd,
-                    debuffs.cold_status_count(t).min(params.arcane.cold_cap),
-                ),
-            ];
-            let gunco_total = gunco_sources
-                .iter()
-                .map(|(rate, count)| rate * *count as f64)
-                .sum::<f64>()
-                * ap.co_base_fraction;
-            let co_mult = match ap.co_behavior {
-                // Joins the base-damage bucket: diluted by Hornet Strike,
-                // sharing the bracket with the arcane's bonus.
-                crate::loadout::CoBehavior::AdditiveWithBaseDamage => {
-                    (1.0 + bd + arc_bd + gunco_total) / (1.0 + bd)
-                }
-                crate::loadout::CoBehavior::Independent => arc_ratio * (1.0 + gunco_total),
-                crate::loadout::CoBehavior::Inert => arc_ratio,
-            };
+            let co_mult =
+                gunco_bucket(params, ap, &mut debuffs, &mut gal, t, bd, arc_bd, arc_ratio);
 
             // Part FIRST, crit roll second: weak-point crit chance (Pistol
             // Acuity; Cascadia Accuracy under assumed-max) exists only on
@@ -2300,6 +2825,29 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 }
                 r.timeline.add(t, effective);
                 r.kills += killed as u32;
+                // A LANDED grenade leaves its field, whatever it rolled:
+                // "Grenades stick to allies, enemies and surfaces", and a stuck
+                // grenade means the target "cannot move out of the cloud".
+                // Per PELLET — each multishot projectile is its own grenade and
+                // its own cloud. The first tick is DELAYED by one period:
+                // "Clouds do not instantly do damage, so enemies that are quick
+                // may run through the cloud without taking any damage."
+                if direct {
+                    if let Some(fp) = &ap.lingering {
+                        let fresh = FieldState {
+                            next_tick: t + 1.0 / fp.tick_rate,
+                            ticks_left: (fp.duration_s * fp.tick_rate).round() as u32,
+                            part: *fp,
+                        };
+                        match fp.stacking {
+                            crate::loadout::FieldStacking::Stack => fields.push(fresh),
+                            crate::loadout::FieldStacking::Refresh => {
+                                fields.clear();
+                                fields.push(fresh);
+                            }
+                        }
+                    }
+                }
                 if direct {
                     r.pellets += 1;
                     r.crits += (tier >= 1) as u32;
@@ -2352,8 +2900,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         }
                     }
                     // The killing instance's procs die with the old
-                    // individual; what follows hits the fresh spawn.
+                    // individual, and so do the clouds stuck to it; what
+                    // follows hits the fresh spawn.
                     debuffs = DebuffState::default();
+                    fields.clear();
                     continue;
                 }
                 // Per-INSTANCE proc roll (wiki Multishot/Status_Effect):
@@ -2437,221 +2987,19 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     plain_stacks.expiry = t + b.duration;
                 }
             }
-            // Elemental DoT tick (data/debuffs): 0.5 × ModifiedBase ×
-            // (1 + element bonuses) × (1 + status damage) × crit/part
-            // snapshot. Delay-1 DoTs tick at +1..+6 s; delay-0 (Electricity/
-            // Gas) at 0..+5 s (the +6 s event is a dud).
-            let delayed_ticks = ((BLEED_TICKS as f64 * sd - BLEED_DELAY).floor() as u32) + 1;
-            let immediate_ticks = ((BLEED_TICKS as f64 * sd).floor() as u32).max(1);
-            // Faction DOUBLE-DIP: status/DoT payloads carry the faction bonus a
-            // SECOND time (the direct hit already applied it once), so ticks
-            // scale by faction_mult² (wiki Faction_Damage_Bonus; MECHANICS §8).
-            let fm2 = params.faction_mult * params.faction_mult;
-            let push_dot = |debuffs: &mut DebuffState,
-                            dtype: DamageType,
-                            coeff: f64,
-                            bracket: f64,
-                            delay: f64,
-                            ticks: u32,
-                            ignores_armor: bool| {
-                debuffs.push_dot_capped(
-                    Dot {
-                        next_tick: t + delay,
-                        ticks_left: ticks,
-                        value: coeff * mb_live * bracket * sdm * crit_mult * part_factor * fm2,
-                        dtype,
-                        ignores_armor,
-                    },
-                    dot_cap,
-                );
-            };
-            for proc in procs {
-                r.procs += 1;
-                match proc {
-                    DamageType::Impact => DebuffState::push_capped(
-                        &mut debuffs.stagger,
-                        t + STAGGER_DURATION * sd,
-                        stagger_cap,
-                        t,
-                    ),
-                    DamageType::Puncture => {
-                        DebuffState::push_capped(
-                            &mut debuffs.weakened,
-                            t + WEAKENED_DURATION * sd,
-                            gcap(WEAKENED_CAP),
-                            t,
-                        );
-                        // Secondary Cryogenic: each Puncture status applies
-                        // N Cold stacks to targets around the hit — the
-                        // single-target arena collapses that onto the main
-                        // target (the wiki confirms it is included). The
-                        // Cold procs scale with Status Duration.
-                        for _ in 0..params.arcane.cold_burst_on_puncture {
-                            debuffs.apply_cold_proc(t, sd, target.overguard > 0.0, caps);
-                        }
-                    }
-                    DamageType::Slash => push_dot(
-                        &mut debuffs,
-                        DamageType::Slash,
-                        BLEED_COEFFICIENT,
-                        1.0, // Bleed: elemental mods never scale the ticks
-                        BLEED_DELAY,
-                        delayed_ticks,
-                        true, // Cinematic: ignores armor
-                    ),
-                    DamageType::Toxin => {
-                        // Primary Blight: each Toxin status THIS WEAPON
-                        // applies grants one stack to both of its buffs
-                        // (crit damage + multishot). The weapon-only rule is
-                        // the arcane's own (wiki), not a sim limitation.
-                        arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ToxinStatus, t);
-                        push_dot(
-                            &mut debuffs,
-                            DamageType::Toxin,
-                            DOT_COEFFICIENT,
-                            ap.elem_bracket(DamageType::Toxin),
-                            1.0,
-                            delayed_ticks,
-                            false,
-                        )
-                    }
-                    DamageType::Electricity => {
-                        // Conjunction Voltage: each Electricity status this
-                        // weapon applies grants one stack to both of its
-                        // buffs (reload speed + multishot).
-                        arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ElectricityStatus, t);
-                        push_dot(
-                            &mut debuffs,
-                            DamageType::Electricity,
-                            DOT_COEFFICIENT,
-                            ap.elem_bracket(DamageType::Electricity),
-                            0.0,
-                            immediate_ticks,
-                            false,
-                        )
-                    }
-                    DamageType::Gas => push_dot(
-                        &mut debuffs,
-                        DamageType::Gas,
-                        DOT_COEFFICIENT,
-                        1.0, // literal Gas sources only; Heat/Toxin mods: nothing
-                        0.0,
-                        immediate_ticks,
-                        false,
-                    ),
-                    DamageType::Heat => {
-                        // Singleton accumulator: add the contribution and
-                        // refresh the shared clock; ticks stay anchored to
-                        // the first proc (ignite.yaml).
-                        // Cascadia Flare: each applied Heat status grants
-                        // one stack and refreshes the shared timer (own
-                        // procs only — the "any source" clause waits on a
-                        // multi-actor world).
-                        arc.bump_trigger(&params.arcane.buffs, ArcTrigger::HeatStatus, t);
-                        let contrib = DOT_COEFFICIENT
-                            * mb_live
-                            * ap.elem_bracket(DamageType::Heat)
-                            * sdm
-                            * crit_mult
-                            * part_factor
-                            * fm2; // faction double-dip
-                        let expiry = t + STATUS_DURATION * sd;
-                        debuffs.apply_heat(t, contrib, expiry, heat_cap);
-                    }
-                    DamageType::Cold => {
-                        debuffs.apply_cold_proc(t, sd, target.overguard > 0.0, caps);
-                    }
-                    DamageType::Magnetic => DebuffState::push_capped(
-                        &mut debuffs.disrupt,
-                        t + STATUS_DURATION * sd,
-                        gcap(TEN_STACK_CAP),
-                        t,
-                    ),
-                    DamageType::Viral => DebuffState::push_capped(
-                        &mut debuffs.virus,
-                        t + STATUS_DURATION * sd,
-                        gcap(TEN_STACK_CAP),
-                        t,
-                    ),
-                    DamageType::Corrosive => DebuffState::push_capped(
-                        &mut debuffs.corrosion,
-                        t + CORROSION_DURATION * sd,
-                        gcap(TEN_STACK_CAP),
-                        t,
-                    ),
-                    DamageType::Radiation => DebuffState::push_capped(
-                        &mut debuffs.confusion,
-                        t + STATUS_DURATION * sd,
-                        gcap(TEN_STACK_CAP),
-                        t,
-                    ),
-                    DamageType::Blast => {
-                        if let Some(c) = caps {
-                            if debuffs.blast.len() >= c.general {
-                                debuffs.blast.remove(0); // FIFO replace-oldest
-                            }
-                        }
-                        debuffs.blast.push(BlastStack {
-                            fuse: t + BLAST_FUSE * sd,
-                            value: BLAST_COEFFICIENT
-                                * mb_live
-                                * sdm
-                                * crit_mult
-                                * part_factor
-                                * fm2,
-                        });
-                        if debuffs.blast.len() >= TEN_STACK_CAP {
-                            // Early detonation: every stack's single-target
-                            // hit at once, all stacks consumed (radial
-                            // excluded — it never hits the host).
-                            let total: f64 = debuffs.blast.drain(..).map(|b| b.value).sum();
-                            let mit = debuffs.mitigation(t, sd);
-                            let (eff, killed, broke) =
-                                target.apply(total, 0.0, false, t, &params.target, false, &mit);
-                            r.total_damage += total;
-                            r.effective_damage += eff;
-                            r.dot_damage += eff;
-                            r.sources.add_status(DamageType::Blast, eff);
-                            r.timeline.add(t, eff);
-                            r.kills += killed as u32;
-                            if let Some(pool) = broke {
-                                push_break_proc(&mut debuffs, params, t, pool);
-                            }
-                            if killed {
-                                gal.bump_on_kill(params, t);
-                                arc.on_kill(params, t);
-                                debuffs = DebuffState::default();
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-                // Cascadia Empowered: each applied status adds an EXTRA
-                // FLAT damage instance of the proc's type — unaffected by
-                // damage/element/crit mods, Galvanized stacks, parts, or
-                // falloff; faction bonuses apply ONCE; enemy mitigation
-                // still applies (wiki notes). Toxin instances keep Toxin's
-                // shield bypass.
-                if params.arcane.flat_damage_on_status > 0.0 {
-                    let amt = params.arcane.flat_damage_on_status * params.faction_mult;
-                    let tox = if proc == DamageType::Toxin { 1.0 } else { 0.0 };
-                    let (eff, killed, broke) =
-                        target.apply(amt, tox, false, t, &params.target, false, &mit);
-                    r.total_damage += amt;
-                    r.effective_damage += eff;
-                    r.sources.arcane_on_status += eff;
-                    r.timeline.add(t, eff);
-                    r.kills += killed as u32;
-                    if let Some(pool) = broke {
-                        push_break_proc(&mut debuffs, params, t, pool);
-                    }
-                    if killed {
-                        gal.bump_on_kill(params, t);
-                        arc.on_kill(params, t);
-                        debuffs = DebuffState::default();
-                    }
-                }
-            }
+            settle_procs(
+                procs,
+                t,
+                InstanceScale { mb_live, crit_mult, part_factor },
+                &mut debuffs,
+                &mut gal,
+                &mut arc,
+                &mut target,
+                params,
+                ap,
+                &mit,
+                &mut r,
+            );
             }
         }
 
@@ -2673,7 +3021,13 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // charge (charge_rules); a full gauge transmutes back immediately.
         if let Some(cy) = &params.cycle {
             if in_base_form {
-                charges += r.headshots - headshots_before;
+                // Per PELLET, and per the WEAPON's rule: weak-point hits for
+                // the Zariman pistols, any direct hit for the Torid. A field
+                // or radial instance is neither, so neither can charge it.
+                charges += match cy.charge_on {
+                    crate::loadout::ChargeOn::WeakpointHits => r.headshots - headshots_before,
+                    crate::loadout::ChargeOn::DirectHits => r.pellets - pellets_before,
+                };
                 if charges >= cy.charges_to_fill {
                     t += rescale_reload(cy.transmute_seconds, cy.reload_bucket,
                         live_reload_speed(params, &mut rs_stacks, t));
@@ -2700,7 +3054,23 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         t += 1.0 / rate;
     }
 
-    // Drain remaining status events up to the end of the engagement.
+    // The clouds still burning after the last shot, with the buff snapshot from
+    // that shot (nothing refreshes it once firing stops). FIRST, because each
+    // tick settles the status events before it and pushes procs of its own…
+    process_field_ticks(
+        &mut fields,
+        &mut debuffs,
+        &mut gal,
+        &mut arc,
+        params.duration_secs,
+        &mut target,
+        params,
+        field_ap,
+        &field_ctx,
+        &mut r,
+        rng,
+    );
+    // …then drain what is left up to the end of the engagement.
     process_ticks(
         &mut debuffs,
         &mut gal,
@@ -2748,6 +3118,8 @@ pub struct Summary {
     pub effective_dps: f64,
     pub mean_dot_damage: f64,
     pub mean_procs: f64,
+    /// Mean lingering-FIELD ticks that landed (Torid's cloud).
+    pub mean_field_ticks: f64,
     pub mean_reloads: f64,
     pub mean_transforms: f64,
     pub mean_kills: f64,
@@ -2783,6 +3155,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         (0u64, 0u64, 0u64, 0u64, 0u64);
     let (mut effective, mut kills, mut kills_sq) = (0.0f64, 0u64, 0u64);
     let (mut dot, mut procs, mut reloads) = (0.0f64, 0u64, 0u64);
+    let mut field_ticks = 0u64;
     let mut transforms = 0u64;
     let (mut min_kills, mut max_kills) = (u32::MAX, 0u32);
     let mut kill_progress = 0.0f64;
@@ -2802,6 +3175,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         effective += r.effective_damage;
         dot += r.dot_damage;
         procs += r.procs as u64;
+        field_ticks += r.field_ticks as u64;
         reloads += r.reloads as u64;
         transforms += r.transforms as u64;
         kills += r.kills as u64;
@@ -2816,6 +3190,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         headshots += r.headshots as u64;
         sources.direct += r.sources.direct;
         sources.radial += r.sources.radial;
+        sources.field += r.sources.field;
         sources.arcane_on_status += r.sources.arcane_on_status;
         for (acc, v) in sources.status.iter_mut().zip(r.sources.status) {
             *acc += v;
@@ -2839,6 +3214,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         effective_dps: effective / n / params.duration_secs,
         mean_dot_damage: dot / n,
         mean_procs: procs as f64 / n,
+        mean_field_ticks: field_ticks as f64 / n,
         mean_reloads: reloads as f64 / n,
         mean_transforms: transforms as f64 / n,
         mean_kills: kills as f64 / n,
@@ -2858,6 +3234,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
             let mut s = sources;
             s.direct /= n;
             s.radial /= n;
+            s.field /= n;
             s.arcane_on_status /= n;
             for v in s.status.iter_mut() {
                 *v /= n;
@@ -3221,6 +3598,162 @@ mod tests {
             crux.mean_shots,
             bare.mean_shots
         );
+    }
+
+    /// A lingering FIELD fixture in Torid's shape: 40 Toxin a tick, 1 tick/s
+    /// for 10 s, its own 15% / 2.0x crit and 25% status. `refresh` flips the
+    /// one UNVERIFIED knob (MEASUREMENTS M12).
+    fn cloud(stacking: crate::loadout::FieldStacking) -> crate::loadout::ResolvedLingering {
+        let mut damage = DamageVector::default();
+        damage.set(DamageType::Toxin, 40.0);
+        crate::loadout::ResolvedLingering {
+            damage,
+            modified_base: 40.0,
+            crit_chance: 0.0,   // crit off: tick COUNTS are the assertion
+            crit_damage: 2.0,
+            status_chance: 0.0, // status off: no DoT confounding the total
+            base_crit_chance: 0.15,
+            base_crit_damage: 2.0,
+            base_status_chance: 0.25,
+            tick_rate: 1.0,
+            duration_s: 10.0,
+            radius_m: 3.0,
+            falloff_start_m: 0.0,
+            falloff_reduction: 1.0,
+            stacking,
+        }
+    }
+
+    /// The reference case, and the arithmetic the whole field model rests on:
+    /// ONE grenade at t=0 leaves ten 40-damage ticks at t=1..10. The first tick
+    /// is DELAYED a full period — "Clouds do not instantly do damage, so
+    /// enemies that are quick may run through the cloud without taking any
+    /// damage" — so a 10 s engagement sees 9 of them, not 10.
+    #[test]
+    fn one_grenade_leaves_ten_delayed_ticks() {
+        let p = DummyParams {
+            damage: DamageVector::default(), // inert impact: the field alone
+            lingering: Some(cloud(crate::loadout::FieldStacking::Stack)),
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            magazine_size: 1.0,
+            reload_seconds: 999.0, // exactly one shot in the window
+            infinite_reserve: false,
+            reserve_ammo: 0.0,
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 4, 3);
+        assert!((s.mean_shots - 1.0).abs() < 1e-9, "shots {}", s.mean_shots);
+        // Ticks at 1..9 land inside a 10 s run (10.0 is not < 10.0).
+        assert!(
+            (s.mean_field_ticks - 9.0).abs() < 1e-9,
+            "field ticks {}",
+            s.mean_field_ticks
+        );
+        assert!(
+            (s.mean_damage - 9.0 * 40.0).abs() < 1e-9,
+            "dmg {} (expected 9 x 40)",
+            s.mean_damage
+        );
+    }
+
+    /// The one UNVERIFIED lever in the field model, both branches pinned so a
+    /// measurement flips a data field and not a code path (MEASUREMENTS M12).
+    /// Three grenades one second apart: stacking runs three concurrent streams,
+    /// refresh keeps re-arming one.
+    #[test]
+    fn overlapping_fields_stack_or_refresh_per_the_weapon_data() {
+        let mk = |stacking| DummyParams {
+            damage: DamageVector::default(),
+            lingering: Some(cloud(stacking)),
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            fire_rate: 1.0,
+            magazine_size: 3.0,
+            reload_seconds: 999.0, // 3 shots at t=0,1,2 then dry
+            infinite_reserve: false,
+            reserve_ammo: 0.0,
+            duration_secs: 20.0,
+            ..no_status()
+        };
+        let st = monte_carlo(&mk(crate::loadout::FieldStacking::Stack), 4, 3);
+        assert!((st.mean_shots - 3.0).abs() < 1e-9, "shots {}", st.mean_shots);
+        // Three independent 10-tick streams, all finishing before t=20.
+        assert!(
+            (st.mean_field_ticks - 30.0).abs() < 1e-9,
+            "stacking ticks {}",
+            st.mean_field_ticks
+        );
+        let rf = monte_carlo(&mk(crate::loadout::FieldStacking::Refresh), 4, 3);
+        // One field, re-armed at t=1 and t=2: ticks at 3..12 = 10 of them.
+        assert!(
+            (rf.mean_field_ticks - 10.0).abs() < 1e-9,
+            "refresh ticks {}",
+            rf.mean_field_ticks
+        );
+    }
+
+    /// The field is a WEAPON damage instance, not a status DoT: it rolls its own
+    /// crit off its OWN base stats, and its ticks report in their own bucket
+    /// rather than the DoT one.
+    #[test]
+    fn field_ticks_roll_their_own_crit_and_report_as_field_damage() {
+        let mk = |cc: f64| {
+            let mut f = cloud(crate::loadout::FieldStacking::Stack);
+            f.crit_chance = cc;
+            DummyParams {
+                damage: DamageVector::default(),
+                lingering: Some(f),
+                crit_multiplier: 1.0,
+                base_crit_chance: 0.0,
+                magazine_size: 1.0,
+                reload_seconds: 999.0,
+                infinite_reserve: false,
+                reserve_ammo: 0.0,
+                    ..no_status()
+            }
+        };
+        let flat = monte_carlo(&mk(0.0), 4, 3);
+        let crit = monte_carlo(&mk(1.0), 4, 3);
+        // 100% crit at 2.0x doubles every tick.
+        assert!(
+            (crit.mean_damage - 2.0 * flat.mean_damage).abs() < 1e-6,
+            "{} vs {}",
+            crit.mean_damage,
+            flat.mean_damage
+        );
+        // Counted as FIELD damage, never as a DoT tick.
+        assert_eq!(flat.mean_dot_damage, 0.0, "a field tick is not a status DoT");
+        assert_eq!(flat.median_run.dot_ticks, 0, "no bleed/DoT ticks at all");
+        assert!((flat.source_damage.field - flat.mean_damage).abs() < 1e-9);
+    }
+
+    /// Status is per TICK — "Toxin clouds can proc Hunter Munitions on each tick
+    /// of damage" — so a 100%-status cloud procs once per tick, and those procs
+    /// then feed Condition Overload like any other.
+    #[test]
+    fn field_ticks_proc_status_once_each() {
+        let mut f = cloud(crate::loadout::FieldStacking::Stack);
+        f.status_chance = 1.0;
+        let p = DummyParams {
+            damage: DamageVector::default(),
+            lingering: Some(f),
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            magazine_size: 1.0,
+            reload_seconds: 999.0,
+            infinite_reserve: false,
+            reserve_ammo: 0.0,
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 4, 3);
+        assert!(
+            (s.mean_procs - s.mean_field_ticks).abs() < 1e-9,
+            "procs {} vs ticks {}",
+            s.mean_procs,
+            s.mean_field_ticks
+        );
+        assert!(s.mean_dot_damage > 0.0, "the cloud's Toxin procs must burn");
     }
 
     #[test]
@@ -4144,6 +4677,7 @@ mod tests {
             body_parts: head,
             cycle: Some(IncarnonCycle {
                 base_form: Box::new(base_form),
+                charge_on: crate::loadout::ChargeOn::WeakpointHits,
                 charges_to_fill: 2,
                 transmute_out_seconds: 0.5,
                 transmute_seconds: 1.0,
@@ -4160,6 +4694,53 @@ mod tests {
         assert!((s.mean_shots - 9.0).abs() < 1e-9, "shots {}", s.mean_shots);
         assert!((s.mean_transforms - 2.0).abs() < 1e-9);
         assert_eq!(s.mean_reloads, 0.0);
+    }
+
+    /// `charge_on` is WEAPON DATA, not a constant. It used to be documented in
+    /// the yaml and ignored by the loader, so every weapon charged off
+    /// weak-point hits — wrong for the Torid, which the wiki charges through
+    /// plain direct hits ("Angstrum Incarnon Genesis and Torid Incarnon Genesis
+    /// are instead charged through direct hits").
+    ///
+    /// Body-only aim is the discriminator: there are no weak-point hits at all,
+    /// so a `WeakpointHits` weapon never transforms again and a `DirectHits`
+    /// one keeps cycling.
+    #[test]
+    fn the_gauge_charges_off_whatever_the_weapon_data_says() {
+        let base_form = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 50.0),
+            crit_multiplier: 1.0,
+            body_parts: mono_body(1.0), // NO heads: no weak-point hits ever
+            ..no_status()
+        };
+        let mk = |charge_on| DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 100.0),
+            crit_multiplier: 1.0,
+            magazine_size: 2.0,
+            ammo_efficiency_applies: false,
+            arcane: ArcaneFx::none(),
+            body_parts: mono_body(1.0),
+            cycle: Some(IncarnonCycle {
+                base_form: Box::new(base_form.clone()),
+                charge_on,
+                charges_to_fill: 2,
+                transmute_out_seconds: 0.5,
+                transmute_seconds: 1.0,
+                reload_bucket: 0.0,
+            }),
+            ..no_status()
+        };
+        let wp = monte_carlo(&mk(crate::loadout::ChargeOn::WeakpointHits), 5, 9);
+        assert_eq!(
+            wp.mean_transforms, 0.0,
+            "no weak-point hits = the gauge never fills again"
+        );
+        let direct = monte_carlo(&mk(crate::loadout::ChargeOn::DirectHits), 5, 9);
+        assert!(
+            direct.mean_transforms > 0.0,
+            "plain direct hits must fill a direct-hit gauge (transforms {})",
+            direct.mean_transforms
+        );
     }
 
     #[test]
