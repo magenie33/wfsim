@@ -19,6 +19,12 @@ selection: choose_one
 # also raises base damage and is absent from the table, so it feeds CO in full
 # — as does every Torid perk, whose two rows sit at 100%. Hence the flag lives
 # on the PERK, which is the granularity the catalog names.
+#
+# The catalog is KNOWN to be incomplete (Lato Vandal has a row, Lato Prime does
+# not, same family and same Genesis), so "not listed" is a convention we follow
+# rather than proof. Decision, user 2026-07-30: follow it anyway — it is the
+# only source that quantifies this, and inventing exclusions would guess in the
+# more damaging direction. See MECHANICS §6.
 co_base_excludes_this_evolution: true
 
 effects:

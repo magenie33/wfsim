@@ -592,6 +592,21 @@ off the weapon would have docked Perk 2; keying it off the Adding behaviour
 class would have docked the Torid's Incarnon form as well. `co_base_fraction` is
 1.0 everywhere except Dual Toxocyst + Carnage Reign.
 
+**Known limitation: the catalog is incomplete, and we follow it anyway.** Its
+"not listed ⇒ 100%" convention is only as good as its coverage, and the coverage
+demonstrably has gaps — **Lato Vandal has a row while Lato Prime does not**,
+though they are the same weapon family with the same Incarnon Genesis. That is
+far more likely a data-entry omission than a real mechanical difference between
+two Latos.
+
+The decision (user, 2026-07-30) is to follow the table as written regardless,
+because it is the only source that QUANTIFIES any of this, and inventing
+exclusions for unlisted weapons would be guessing in the more damaging
+direction. The consequence to keep in mind: for a weapon the catalog forgot, the
+engine will model the CO term **optimistically** (full base). Anything built on
+that is a candidate for measurement before it is trusted — the Torid's Incarnon
+form especially, which has no row at all.
+
 **Sources and rates.** Melee Condition Overload +80%/status; Galvanized
 Aptitude +40%/status ×2 stacks (rifle); **Galvanized Shot +40%/status ×3
 stacks** (pistol); Galvanized Savvy +40%/status ×2 (shotgun); Secondary Shiver
