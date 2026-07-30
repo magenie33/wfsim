@@ -592,20 +592,24 @@ off the weapon would have docked Perk 2; keying it off the Adding behaviour
 class would have docked the Torid's Incarnon form as well. `co_base_fraction` is
 1.0 everywhere except Dual Toxocyst + Carnage Reign.
 
-**Known limitation: the catalog is incomplete, and we follow it anyway.** Its
-"not listed ⇒ 100%" convention is only as good as its coverage, and the coverage
-demonstrably has gaps — **Lato Vandal has a row while Lato Prime does not**,
-though they are the same weapon family with the same Incarnon Genesis. That is
-far more likely a data-entry omission than a real mechanical difference between
-two Latos.
+**The catalog is AUTHORITATIVE, and absence is a positive statement.** An attack
+missing from the table is not an attack nobody checked — it is an attack that
+behaves *normally*: Additive, +100% bonus, exactly what the mods say on the tin.
+The table's job is to enumerate the exceptions, so "not listed" carries as much
+information as a row does.
 
-The decision (user, 2026-07-30) is to follow the table as written regardless,
-because it is the only source that QUANTIFIES any of this, and inventing
-exclusions for unlisted weapons would be guessing in the more damaging
-direction. The consequence to keep in mind: for a weapon the catalog forgot, the
-engine will model the CO term **optimistically** (full base). Anything built on
-that is a candidate for measurement before it is trusted — the Torid's Incarnon
-form especially, which has no row at all.
+**And the exceptions are individual quirks, not a law.** The tell is that
+**Lato Vandal has a row while Lato Prime does not**, though they are the same
+weapon family with the same Incarnon Genesis. Nothing mechanical distinguishes
+two Latos; that asymmetry is what a per-entry slip in DE's code looks like —
+careless or deliberate, but attached to one entry rather than derived from a
+rule. A general mechanical law could not produce it.
+
+That is the evidence FOR modelling this per entry rather than per weapon or per
+behaviour class, and it is what makes the Dual Toxocyst reading exact rather
+than cautious: **Evolution II Perk 1 ⇒ GunCO computes on the unevolved base
+(56%); Perk 2 ⇒ GunCO computes on the full base (100%)**. Perk 2 is absent from
+the table, and absence means normal.
 
 **Sources and rates.** Melee Condition Overload +80%/status; Galvanized
 Aptitude +40%/status ×2 stacks (rifle); **Galvanized Shot +40%/status ×3
@@ -1144,17 +1148,18 @@ target**."* And the catalog row gives the class outright:
 | Pox | DoT Cloud | AoE | 20 | 50 | 250% | Adding |
 
 **The class is per FORM, and the Torid proves it.** Those two rows are the BASE
-form. The Incarnon form has no row at all, and the engine used to infer
-`Multiplying` from its siblings — wrongly: it is ordinary **Adding** (✅
-measured, user 2026-07-30), joining the base-damage bucket. So one weapon runs
-both classes depending on which form is out, which is why `co_behavior` is
-per-form weapon data rather than a weapon-wide property.
+form. The Incarnon form has **no row**, and the engine used to read that as "not
+covered" and infer `Multiplying` from its siblings. Backwards: the table
+enumerates exceptions, so absence is the positive statement that the attack is
+ordinary — **Adding at +100%**, joining the base-damage bucket like Hornet
+Strike (confirmed, user 2026-07-30). Both halves of the Incarnon form's CO
+behaviour follow from that one absence: the class *and* the 100% base.
 
-The table lists **only discrepancies** — *"anything not listed should be assumed
-to be Additive with +100% bonus"* — so the Incarnon form's absence is itself the
-statement that its CO base is 100%. Note the 100% in these two rows likewise
-holds *with evolutions equipped*: the Torid does not take Dual Toxocyst's
-Perk-1 exclusion (§6).
+So one weapon runs both classes depending on which form is out — Multiplying
+listed for the base form, Adding by omission for the Incarnon — which is why
+`co_behavior` is per-form weapon data rather than a weapon-wide property. Note
+the 100% in the two listed rows likewise holds *with evolutions equipped*: the
+Torid takes no exclusion, that being Dual Toxocyst Perk 1's alone (§6).
 
 So a grenade that STICKS to an enemy makes that enemy the directly-embedded
 target, and every tick it takes carries CO. In a single-target arena that is
