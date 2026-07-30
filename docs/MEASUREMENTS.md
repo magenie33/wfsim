@@ -484,10 +484,32 @@ buff (0.4 a shot) precisely because it does NOT divide a 5-round magazine
 evenly: carrying the debt gives 25 shots off two magazines, wiping it gives 26.
 Verified to fail with `got 26` against the old code.
 
-**Not tested, and left alone.** Whether an Incarnon **transform** carries a debt
-the same way a reload does. The swap "fully reloads" the base magazine, which is
-a different event from a reload-from-empty — the same reason it does not arm
-Renewed Horror (M13). It stays `=` there.
+**Follow-up (same session): a reload draws WHOLE rounds.** Reserve is spent in
+whole rounds only, so a reload tops the magazine up by
+`floor(capacity − current)` rather than filling it. Measured on the same 5-round
+magazine:
+
+| current | draw | after |
+| --- | --- | --- |
+| 1.50 | `floor(3.50)` = 3 | **4.50**, not 5 |
+| 3.25 | `floor(1.75)` = 1 | **4.25** |
+| 4.25 | `floor(0.75)` = 0 | **4.25** — the reload is refused outright |
+
+The refusal at 4.25 shows in game as an already-full magazine, because the HUD
+ceilings it to 5 — the same rounding that made the main result readable.
+
+This **subsumes the overdraw case rather than competing with it**: a shot cannot
+overdraw by a whole round, so after running dry `current` is in (−1, 0] and the
+draw is a full `capacity` — which is exactly how −0.75 comes back at 4.25. One
+rule, `engine::dummy::reload_draw`, and the earlier `+= capacity` was the
+special case of it that happened to be right.
+
+**And it is GLOBAL** (user, 2026-07-30): the auto-reload an Incarnon
+**transform** performs runs on the same mechanism, not a separate fill-to-full.
+That resolves what this entry previously left open — the transform paths use
+`reload_draw` too, so a base magazine sitting on 4.25 comes back on 4.25. (It
+still does not arm Renewed Horror; that gate is about reload-from-EMPTY, M13,
+and is a separate question from how many rounds move.)
 
 ---
 

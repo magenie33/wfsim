@@ -1586,6 +1586,33 @@ fn can_fire(magazine: f64, free_shot: bool) -> bool {
     magazine >= 1e-9 || free_shot
 }
 
+/// How many WHOLE rounds a reload moves out of reserve.
+///
+/// Reserve is spent in whole rounds only — ✅ measured (user, 2026-07-30) — so a
+/// reload tops the magazine up by `floor(capacity − current)` and a magazine
+/// sitting on a fraction comes back still holding that fraction. Measured on a
+/// 5-round magazine:
+///
+/// | current | draw | after |
+/// | --- | --- | --- |
+/// | 1.50 | `floor(3.50)` = 3 | 4.50 |
+/// | 3.25 | `floor(1.75)` = 1 | 4.25 |
+/// | 4.25 | `floor(0.75)` = 0 | 4.25 — the reload is refused outright |
+///
+/// The refusal at 4.25 is visible in game as the magazine reading FULL (the HUD
+/// ceilings it to 5), which is the same rounding that made M14 readable.
+///
+/// This also subsumes the reload-from-empty case without special-casing it: a
+/// shot can only overdraw by less than one round, so `current` is in (−1, 0]
+/// there and the draw is a full `capacity` — which is how a −0.75 counter comes
+/// back at 4.25 rather than 5.00.
+///
+/// It is the GLOBAL reload rule (user, 2026-07-30): the auto-reload an Incarnon
+/// transform performs runs on the same mechanism, not a separate "fill to full".
+fn reload_draw(capacity: f64, current: f64) -> f64 {
+    (capacity - current).floor().max(0.0)
+}
+
 /// The ammo efficiency in force right now: the sum of every source, CAPPED.
 ///
 /// Sources stack ADDITIVELY — VERBATIM (wiki `Ammo`): *"Sources of ammo
@@ -2559,7 +2586,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     live_reload_speed(params, &mut rs_stacks, t));
                 in_base_form = true;
                 charges = 0;
-                base_mag = cy.base_form.magazine_size;
+                // The swap's auto-reload is the SAME mechanism as a normal one
+                // (user, 2026-07-30), so it draws whole rounds rather than
+                // filling to capacity: a base magazine sitting on 4.25 comes
+                // back on 4.25, not 5.
+                base_mag += reload_draw(cy.base_form.magazine_size, base_mag);
                 continue;
             }
             if in_base_form && !can_fire(base_mag, free_shot) {
@@ -2570,10 +2601,9 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 if let Some(b) = cy.base_form.fr_on_reload {
                     fr_reload_expiry = t + b.duration;
                 }
-                // `+=` carries an efficiency overdraw's debt into the fresh
-                // magazine — ✅ measured (MEASUREMENTS M14), same rule as the
-                // plain reload below.
-                base_mag += cy.base_form.magazine_size;
+                // Same whole-rounds rule as the plain reload below (M14); the
+                // cycle assumes infinite reserve, so the draw is never short.
+                base_mag += reload_draw(cy.base_form.magazine_size, base_mag);
                 // Renewed Horror: "On Reload from Empty". This branch IS the
                 // reload-from-empty path.
                 field_duration_boost = true;
@@ -2591,18 +2621,19 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             if let Some(b) = params.fr_on_reload {
                 fr_reload_expiry = t + b.duration;
             }
-            let refill = if params.infinite_reserve {
-                params.magazine_size
+            // Whole rounds only, and `+=` not `=` — both measured (M14). The
+            // draw covers the overdraw debt for free: the counter is in (−1, 0]
+            // here, so `floor(capacity − current)` is a full magazine, and a
+            // −0.75 counter comes back at 4.25 rather than 5.00.
+            let want = reload_draw(params.magazine_size, magazine);
+            let take = if params.infinite_reserve {
+                want
             } else {
-                let take = params.magazine_size.min(reserve);
+                let take = want.min(reserve);
                 reserve -= take;
                 take
             };
-            // `+=`, NOT `=`: an ammo-efficiency overdraw leaves the counter
-            // NEGATIVE, and that debt is CARRIED into the fresh magazine —
-            // ✅ measured (MEASUREMENTS M14). A no-op without efficiency, since
-            // a 1.0 cost lands the magazine exactly on 0.
-            magazine += refill;
+            magazine += take;
             field_duration_boost = true; // reloaded from empty (Renewed Horror)
             if t >= params.duration_secs {
                 break;
@@ -3376,8 +3407,13 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         live_reload_speed(params, &mut rs_stacks, t));
                     r.transforms += 1;
                     in_base_form = false;
-                    magazine = params.magazine_size; // full gauge = full charge mag
-                    base_mag = cy.base_form.magazine_size; // swap reloads it
+                    // The CHARGE magazine is filled by the gauge, not reloaded
+                    // from reserve — it is outside the ammo economy, takes no
+                    // efficiency, and so is always whole anyway.
+                    magazine = params.magazine_size;
+                    // The base magazine's refill IS a reload (user,
+                    // 2026-07-30): whole rounds off whatever is already in it.
+                    base_mag += reload_draw(cy.base_form.magazine_size, base_mag);
                                                            // Frenzy persists across the transform (user-confirmed
                                                            // 2026-07-24: it exists in both forms).
                     continue;
@@ -4178,6 +4214,26 @@ mod tests {
              the extras. got {}",
             s.mean_pellets
         );
+    }
+
+    /// A reload draws WHOLE rounds — ✅ measured (user, 2026-07-30) on a
+    /// 5-round magazine. The table is the measurement, verbatim.
+    #[test]
+    fn a_reload_draws_whole_rounds_and_leaves_the_fraction_behind() {
+        let cap = 5.0;
+        // 1.5 -> floor(3.5) = 3 -> 4.5, NOT a full 5.
+        assert_eq!(reload_draw(cap, 1.5), 3.0);
+        // 3.25 -> floor(1.75) = 1 -> 4.25, which is what the user saw.
+        assert_eq!(reload_draw(cap, 3.25), 1.0);
+        // 4.25 -> floor(0.75) = 0: the reload is refused, and the HUD's
+        // ceiling makes it read as an already-full magazine.
+        assert_eq!(reload_draw(cap, 4.25), 0.0);
+        // Empty and overdrawn are the same rule, not a special case: a shot
+        // cannot overdraw by a whole round, so the draw is always `cap`.
+        assert_eq!(reload_draw(cap, 0.0), 5.0);
+        assert_eq!(reload_draw(cap, -0.75), 5.0, "M14: comes back at 4.25");
+        // Never negative, however overfull the magazine.
+        assert_eq!(reload_draw(cap, 9.0), 0.0);
     }
 
     /// The two arcane stack-decay families, told apart IN THE SIM. Primary

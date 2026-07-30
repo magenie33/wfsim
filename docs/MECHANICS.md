@@ -1506,14 +1506,27 @@ the floor rather than a waypoint.
 Efficiency (such as Energized Munitions)"*. So Primary Crux's efficiency grant
 goes inert in an Incarnon form while its status-chance grant keeps working.
 
-**An overdraw's DEBT survives the reload** — ✅ measured (MEASUREMENTS M14).
-When the efficiency source lapses mid-magazine the next shot costs a full round
-out of whatever fraction is left, the counter goes NEGATIVE, and the reload
-**adds** a magazine to that negative rather than resetting it. Measured on a
-5-round magazine: 3 buffed shots leave 4.25, five full-cost shots take it to
-−0.75, and the reload returns **4.25, not 5.00**. So `engine::dummy` reloads
-with `magazine += refill`; `=` would forgive the debt and hand back a free
-fraction. A no-op without efficiency, since a 1.0 cost lands exactly on 0.
+**A reload draws WHOLE rounds** — ✅ measured (M14). Reserve is spent in whole
+rounds only, so a reload adds `floor(capacity − current)` and a magazine sitting
+on a fraction keeps it: on a 5-round magazine 1.5 → **4.5**, 3.25 → **4.25**,
+and 4.25 → **refused**, because the draw would be zero (in game that reads as an
+already-full magazine, the HUD having ceilinged it to 5). One function,
+`engine::dummy::reload_draw`, and it is the **global** rule — the auto-reload an
+Incarnon transform performs runs on it too, not a separate fill-to-full.
+
+**An overdraw's DEBT survives the reload** — ✅ measured (M14). When the
+efficiency source lapses mid-magazine, the next shot costs a full round out of
+whatever fraction is left and the counter goes NEGATIVE. Measured on a 5-round
+magazine: 3 buffed shots leave 4.25, five full-cost shots take that to −0.75,
+and the reload returns **4.25, not 5.00**.
+
+This is the *same* rule as the one above rather than a second one, which is why
+the engine needs no special case for it: a shot cannot overdraw by a whole
+round, so after running dry the counter sits in (−1, 0] and
+`floor(capacity − current)` comes out to a full magazine. The reload therefore
+**adds** to the counter instead of assigning to it — assigning would forgive the
+debt and hand back a free fraction of a round. All of it is a no-op without an
+efficiency source, since a 1.0 cost lands the magazine exactly on 0.
 
 **Reloading is gated on "can I fire", not on "is the magazine empty"**
 (`engine::dummy::can_fire`). Two rules meet there and each rules out the naive
