@@ -89,15 +89,11 @@ attack:
   status_chance: 0.39
   punch_through_m: 0.0
   damage: { toxin: 51.0 }
-  # Blast geometry, carried for the panel and the future multi-target model.
-  # It is NOT an attack part (see above), and Firestorm DOES enlarge it: "The
-  # 2.3 meter damage radius from the point of impact CAN benefit from Firestorm
-  # (Primed)."
-  beam_radius_m: 2.3
-  beam_range_m: 37.0
-  chain_targets: 5
-  chain_range_m: 7.0
-  chain_falloff: 0.75
+  # Geometry, in COMMENTS because nothing consumes it yet (yaml fields are
+  # consumed data): 2.3 m damage radius, 37 m beam range, and a chain to 5
+  # targets within 7 m at 75% of the previous chain's damage. The radius is NOT
+  # an attack part (see above), and Firestorm DOES enlarge it — "The 2.3 meter
+  # damage radius from the point of impact CAN benefit from Firestorm (Primed)."
 
 # incarnon_evolutions: see data/weapons/primary/torid.yaml (shared group)
 

@@ -889,6 +889,49 @@ it. Two (not the cap of 3) is the tell: the count tracks instances. So two
 attack parts on the SAME enemy are two instances, which corroborates the
 verbatim separate-status rule above from the perk side.
 
+### Continuous (beam) weapons
+
+Trigger "Held". Two rules differ from a gun, both from wiki Continuous_Weapon
+and Multishot, and both are implemented (`WeaponBase::continuous`, set from the
+data module's trigger).
+
+**`fire_rate` is TICKS per second**, not shots. Torid Incarnon: 8.
+
+**Multishot MERGES.** VERBATIM (Multishot, Continuous Weapons): *"additional
+beams that hit the same target instead merge into a singular damage tick. This
+combined tick has damage **and** Status Chance equal to the **sum** of the
+individual beams, but the Critical Chance is still equal to that of a single
+beam."* The multiplier is the ROLLED integer, which the page works out
+explicitly (*"When multishot rolls a value of 2, the status chance of that
+damage instance would be 2 x 40% = 80%"*). Three consequences the page names,
+and all three fall out of merging rather than needing their own code:
+
+- Damaging status effects are *"affected **twice** by multishot"* — the summed
+  status chance produces more procs AND the merged instance's ModifiedBase makes
+  each payload bigger.
+- *"Forced status effects … are applied after the damage instances are merged"*,
+  so one forced proc per tick instead of one per beam — *"the number of forced
+  procs being lower than expected"*.
+- Crit chance is unchanged, so a beam gains nothing from multishot on the crit
+  roll — only one roll happens.
+
+**Damage RAMP.** *"Initial damage starts at a lower percentage, and ramps up to
+100% of its damage over 0.6 seconds of hitting a target. 0.8 seconds after the
+weapon stops hitting a target, the damage decays back to its initial point over
+2 seconds. For most weapons, this lower percentage is 20%."* Held fire advances
+the ramp one tick-period at a time; a gap longer than the 0.8 s grace decays it.
+The per-weapon exceptions the page lists (Convectrix 60/80%, Phage 70%, Embolist
+30%) would be weapon data; nothing in the roster needs one yet.
+
+Applied as a FINAL multiplier on the instance and NOT on ModifiedBase — a
+transient scaling of output, not a weapon-stat change, so the status payloads
+are left out of it. **Unsourced either way**, and unlike the merge it is a
+sub-2% question on sustained fire (at 8 ticks/s the ramp costs ~2.4 ticks out of
+a 170-round magazine).
+
+**Source:** wiki Continuous_Weapon + Multishot. **Status:** merge fully sourced;
+the ramp's interaction with status payloads is a modeling choice.
+
 ### Lingering damage FIELDS (zones)
 
 A third kind of attack part: an area that **persists and ticks**, rather than

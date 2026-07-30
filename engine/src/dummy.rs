@@ -962,6 +962,9 @@ pub struct DummyParams {
     /// of damage"), the weapon's mod buckets, and Condition Overload live off
     /// the target's current status count. MECHANICS §7.
     pub lingering: Option<crate::loadout::ResolvedLingering>,
+    /// CONTINUOUS (beam) weapon: `fire_rate` is ticks per second, and multishot
+    /// beams on one target MERGE into a single damage instance.
+    pub continuous: bool,
     /// Evolution headshot-damage bonus (Caput Mortuum) — joins the
     /// headshot bracket. Direct hits only; a radial never headshots.
     pub headshot_damage_bonus: f64,
@@ -1256,6 +1259,7 @@ impl DummyParams {
             damage: panel.damage,
             radial: panel.radial,
             lingering: panel.lingering,
+            continuous: panel.continuous,
             headshot_damage_bonus: panel.headshot_damage_bonus,
             noncrit_bonus: panel.noncrit_bonus,
             plain_hit_bonus: panel.plain_hit_bonus,
@@ -1381,6 +1385,7 @@ impl Default for DummyParams {
             damage: Self::dual_toxocyst_base_vector(),
             radial: None,
             lingering: None,
+            continuous: false,
             headshot_damage_bonus: 0.0,
             noncrit_bonus: None,
             plain_hit_bonus: None,
@@ -1935,6 +1940,46 @@ fn gunco_bucket(
     }
 }
 
+/// A continuous weapon's damage RAMP — wiki Continuous_Weapon, verbatim:
+/// "Initial damage starts at a lower percentage, and ramps up to 100% of its
+/// damage over 0.6 seconds of hitting a target. 0.8 seconds after the weapon
+/// stops hitting a target, the damage decays back to its initial point over 2
+/// seconds. For most weapons, this lower percentage is 20%."
+///
+/// The per-weapon exceptions the same page lists (Convectrix 60/80%, Phage 70%,
+/// Embolist 30%) would be weapon data; nothing in the roster needs one yet.
+const BEAM_RAMP_FLOOR: f64 = 0.20;
+const BEAM_RAMP_SECONDS: f64 = 0.6;
+const BEAM_DECAY_DELAY: f64 = 0.8;
+const BEAM_DECAY_SECONDS: f64 = 2.0;
+
+/// Progress along a continuous weapon's damage ramp: 0 = the 20% floor, 1 =
+/// full damage. Advanced by holding fire on a target and decayed by stopping.
+#[derive(Debug, Clone, Copy, Default)]
+struct BeamRamp {
+    progress: f64,
+    last_tick: Option<f64>,
+}
+
+impl BeamRamp {
+    /// The multiplier for a tick at `now`, then advance the ramp by one tick's
+    /// worth of held fire. The tick landing NOW is scaled by the progress it
+    /// arrives with, so the first tick of a burst deals the floor.
+    fn tick(&mut self, now: f64, tick_seconds: f64) -> f64 {
+        if let Some(prev) = self.last_tick {
+            let idle = now - prev - tick_seconds;
+            if idle > BEAM_DECAY_DELAY {
+                self.progress =
+                    (self.progress - (idle - BEAM_DECAY_DELAY) / BEAM_DECAY_SECONDS).max(0.0);
+            }
+        }
+        let mult = BEAM_RAMP_FLOOR + (1.0 - BEAM_RAMP_FLOOR) * self.progress;
+        self.progress = (self.progress + tick_seconds / BEAM_RAMP_SECONDS).min(1.0);
+        self.last_tick = Some(now);
+        mult
+    }
+}
+
 /// One live LINGERING FIELD attached to the target — one entity per grenade
 /// that stuck, since each multishot projectile is its own grenade and its own
 /// cloud. `FieldStacking::Refresh` keeps this list at length 1.
@@ -2345,6 +2390,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     // The per-unit status stack caps (Acolytes: any 4, Impact 3) and the
     // status-payload scaling now live in `settle_procs`, which every instance
     // kind shares.
+    // A continuous weapon's damage ramp, per run.
+    let mut beam = BeamRamp::default();
     // Live lingering FIELDS (Torid's clouds), one entry per grenade that stuck.
     let mut fields: Vec<FieldState> = Vec::new();
     let mut field_ctx = FieldCtx::default();
@@ -2567,7 +2614,38 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 s.per_stack * stacks as f64
             })
             + ap.base_multishot * arc.total(&params.arcane.buffs, ArcGrant::Multishot, t);
-        let n_pellets = ms_eff.floor() as u32 + rng.chance(ms_eff.fract()) as u32;
+        let rolled = ms_eff.floor() as u32 + rng.chance(ms_eff.fract()) as u32;
+        // CONTINUOUS weapons MERGE. VERBATIM (wiki Multishot §Continuous
+        // Weapons): "additional beams that hit the same target instead merge
+        // into a singular damage tick. This combined tick has damage AND Status
+        // Chance equal to the SUM of the individual beams, but the Critical
+        // Chance is still equal to that of a single beam."
+        //
+        // The multiplier is the ROLLED count, not the fractional average — the
+        // page works the example that way ("When multishot rolls a value of 2,
+        // the status chance of that damage instance would be 2 x 40% = 80%").
+        //
+        // Two consequences the page names and this reproduces for free:
+        // damaging status effects are "affected TWICE by multishot" (more procs
+        // AND a bigger payload each, since the merged instance's ModifiedBase
+        // carries the sum), and forced procs are "applied after the damage
+        // instances are merged", so one per tick rather than one per beam.
+        let (n_pellets, beam_merge) = if ap.continuous {
+            (1, rolled.max(1) as f64)
+        } else {
+            (rolled, 1.0)
+        };
+        // The damage ramp, evaluated once per tick. A FINAL multiplier on the
+        // instance and NOT on ModifiedBase: it is a transient scaling of the
+        // beam's output, not a weapon-stat change, so the status payloads are
+        // left out of it. Nothing sources that either way — flagged in
+        // MECHANICS — but it is a sub-2% question on sustained fire, unlike the
+        // merge above.
+        let beam_ramp = if ap.continuous {
+            beam.tick(t, 1.0 / live_rate.max(1e-9))
+        } else {
+            1.0
+        };
         let (mut any_head, mut any_big) = (false, false);
         let headshots_before = r.headshots;
         let pellets_before = r.pellets;
@@ -2759,7 +2837,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         (r.damage.quantized(), t2)
                     }
                 };
-                let qtotal = qvec.total();
+                // A merged beam tick carries the SUM of its beams. `qtotal`
+                // is what the instance deals; the crit CHANCE that produced
+                // `tier` above was deliberately left at one beam's.
+                let qtotal = qvec.total() * beam_merge;
                 let toxin_share = if qtotal > 0.0 {
                     qvec.get(DamageType::Toxin) / qtotal
                 } else {
@@ -2775,10 +2856,15 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     }
                 };
                 let part_factor = if direct { part_factor } else { 1.0 };
-                let mb_live = match &rad {
-                    None => mb_live,
-                    Some(r) => r.modified_base * arc_ratio,
-                };
+                // ModifiedBase carries the merge too, which is what makes
+                // damaging status effects "affected TWICE by multishot": more
+                // procs from the summed status chance, and a bigger payload
+                // each because the instance itself is bigger.
+                let mb_live = beam_merge
+                    * match &rad {
+                        None => mb_live,
+                        Some(r) => r.modified_base * arc_ratio,
+                    };
                 // The direct hit's bracket carries CO; the radial's carries
                 // only the arcane base-damage ratio.
                 let bucket = if direct { co_mult } else { arc_ratio };
@@ -2787,10 +2873,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 // bonus multiplies THIS part's own unmodded base — the
                 // explosion's differs from the direct hit's.
                 let sc_arc = arc.total(&params.arcane.buffs, ArcGrant::StatusChance, t);
-                let status_chance = match &rad {
-                    None => ap.status_chance + ap.base_status_chance * sc_arc,
-                    Some(r) => r.status_chance + r.base_status_chance * sc_arc,
-                };
+                let status_chance = beam_merge
+                    * match &rad {
+                        None => ap.status_chance + ap.base_status_chance * sc_arc,
+                        Some(r) => r.status_chance + r.base_status_chance * sc_arc,
+                    };
                 const NO_FORCED: &[DamageType] = &[];
                 let forced: &[DamageType] = if direct { &ap.forced_procs } else { NO_FORCED };
 
@@ -2805,7 +2892,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     * bucket
                     * params.faction_mult
                     * arc_final
-                    * attrition;
+                    * attrition
+                    * beam_ramp;
                 let head_direct = direct && part.is_head;
                 let (effective, killed, broke) = target.apply(
                     raw,
@@ -3754,6 +3842,130 @@ mod tests {
             s.mean_field_ticks
         );
         assert!(s.mean_dot_damage > 0.0, "the cloud's Toxin procs must burn");
+    }
+
+    /// CONTINUOUS weapons MERGE their multishot instead of making several
+    /// instances. VERBATIM (wiki Multishot §Continuous Weapons): the combined
+    /// tick has "damage AND Status Chance equal to the SUM of the individual
+    /// beams, but the Critical Chance is still equal to that of a single beam."
+    ///
+    /// Multishot is pinned at exactly 2.0 so the roll is deterministic, and
+    /// crit is off so the damage assertion is arithmetic.
+    #[test]
+    fn a_beam_merges_its_multishot_into_one_instance() {
+        let mk = |continuous, ms: f64| DummyParams {
+            damage: DamageVector::new().with(DamageType::Toxin, 50.0),
+            continuous,
+            multishot: ms,
+            base_multishot: 1.0,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            duration_secs: 4.0,
+            ..no_status()
+        };
+        // Doubling multishot doubles the damage either way…
+        let b1 = monte_carlo(&mk(true, 1.0), 8, 5);
+        let b2 = monte_carlo(&mk(true, 2.0), 8, 5);
+        assert!(
+            (b2.mean_damage - 2.0 * b1.mean_damage).abs() < 1e-6,
+            "beam {} vs 2x{}",
+            b2.mean_damage,
+            b1.mean_damage
+        );
+        // …but a beam does it in ONE instance per tick, where a gun fires two.
+        // That is the whole mechanic, and the reason crit stays a single roll.
+        assert!(
+            (b2.mean_pellets - b2.mean_shots).abs() < 1e-9,
+            "a beam tick is one instance ({} pellets, {} ticks)",
+            b2.mean_pellets,
+            b2.mean_shots
+        );
+        let g2 = monte_carlo(&mk(false, 2.0), 8, 5);
+        assert!(
+            (g2.mean_pellets - 2.0 * g2.mean_shots).abs() < 1e-9,
+            "a gun still fires two pellets ({} vs {})",
+            g2.mean_pellets,
+            g2.mean_shots
+        );
+        // And the beam pays the ramp a gun does not: the same two beams' worth
+        // of damage arrives lower over a short burst.
+        assert!(
+            b2.mean_damage < g2.mean_damage,
+            "the ramp must cost something: beam {} vs gun {}",
+            b2.mean_damage,
+            g2.mean_damage
+        );
+    }
+
+    /// The merge is why damaging status effects are "affected TWICE by
+    /// multishot": the summed status chance produces the same expected number of
+    /// procs, but each proc's payload is built from the merged instance, so the
+    /// DoT damage doubles where a gun's would not.
+    #[test]
+    fn merging_doubles_the_status_payload_not_the_proc_count() {
+        let mk = |continuous, ms: f64| DummyParams {
+            damage: DamageVector::new().with(DamageType::Toxin, 50.0),
+            continuous,
+            multishot: ms,
+            base_multishot: 1.0,
+            status_chance: 0.5,
+            base_status_chance: 0.5,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            duration_secs: 8.0,
+            ..DummyParams::default()
+        };
+        let one = monte_carlo(&mk(true, 1.0), 400, 11);
+        let two = monte_carlo(&mk(true, 2.0), 400, 11);
+        // 50% -> 100% status chance: procs roughly double (they cannot more than
+        // double, since one instance can only be guaranteed once here).
+        let ratio = two.mean_procs / one.mean_procs;
+        assert!(
+            (1.7..=2.3).contains(&ratio),
+            "proc ratio {ratio} (procs {} vs {})",
+            two.mean_procs,
+            one.mean_procs
+        );
+        // The DoT damage grows by MORE than the proc count: ~2x the procs, each
+        // carrying ~2x the payload.
+        let dot_ratio = two.mean_dot_damage / one.mean_dot_damage;
+        assert!(
+            dot_ratio > 1.5 * ratio,
+            "dot ratio {dot_ratio} should exceed the proc ratio {ratio} times the payload growth"
+        );
+    }
+
+    /// The damage RAMP: "Initial damage starts at a lower percentage, and ramps
+    /// up to 100% of its damage over 0.6 seconds of hitting a target … this
+    /// lower percentage is 20%." At 10 ticks/s that is the first tick at 20% and
+    /// full damage from the 7th on.
+    #[test]
+    fn a_beam_ramps_from_a_fifth_to_full_over_point_six_seconds() {
+        let mut ramp = BeamRamp::default();
+        let dt = 0.1; // 10 ticks/s
+        let mults: Vec<f64> = (0..8).map(|i| ramp.tick(i as f64 * dt, dt)).collect();
+        assert!((mults[0] - 0.20).abs() < 1e-9, "first tick {}", mults[0]);
+        // Each held tick adds 0.1/0.6 of the way from 20% to 100%.
+        assert!((mults[1] - (0.2 + 0.8 / 6.0)).abs() < 1e-9, "second {}", mults[1]);
+        assert!((mults[6] - 1.0).abs() < 1e-9, "7th tick should be full: {}", mults[6]);
+        assert!((mults[7] - 1.0).abs() < 1e-9);
+
+        // Stopping decays it: "0.8 seconds after the weapon stops hitting a
+        // target, the damage decays back to its initial point over 2 seconds."
+        // Idle time is the gap MINUS the tick that would have been due, so a
+        // 1.9 s gap is 1.8 s idle, 1.0 s of it past the delay = half the ramp.
+        let mut r2 = BeamRamp::default();
+        for i in 0..8 {
+            r2.tick(i as f64 * dt, dt);
+        }
+        let after = r2.tick(0.7 + 1.9, dt);
+        assert!((after - (0.2 + 0.8 * 0.5)).abs() < 1e-9, "after a gap {after}");
+        // And a long enough gap returns it all the way to the floor.
+        let mut r3 = BeamRamp::default();
+        for i in 0..8 {
+            r3.tick(i as f64 * dt, dt);
+        }
+        assert!((r3.tick(0.7 + 3.0, dt) - 0.20).abs() < 1e-9);
     }
 
     #[test]

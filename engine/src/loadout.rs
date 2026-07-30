@@ -545,6 +545,10 @@ pub struct WeaponBase {
     /// Torid's Toxin cloud. Grenades STICK, so a directly-hit enemy takes the
     /// impact AND every tick. MECHANICS §7 "Lingering damage FIELDS".
     pub lingering: Option<LingeringBase>,
+    /// CONTINUOUS (beam) weapon — trigger "Held". Two rules change, both wiki:
+    /// `fire_rate` is TICKS per second, and multishot beams hitting one target
+    /// MERGE into a single instance instead of making several.
+    pub continuous: bool,
 }
 
 /// Overwhelming Attrition: a hit that neither crits nor applies a status
@@ -760,6 +764,8 @@ pub struct ResolvedPanel {
     pub radial: Option<ResolvedRadial>,
     /// The resolved lingering FIELD, when the weapon leaves one.
     pub lingering: Option<ResolvedLingering>,
+    /// CONTINUOUS (beam) weapon — see [`WeaponBase::continuous`].
+    pub continuous: bool,
     /// The Incarnon transformation economy of THIS form, carried through
     /// so the cycle model reads it from data instead of hardcoding one
     /// weapon's numbers.
@@ -1247,6 +1253,7 @@ pub fn resolve_with(
         damage,
         radial,
         lingering,
+        continuous: base.continuous,
         incarnon: base.incarnon,
         modified_base,
         // Elemental Excess adds its crit/status FLAT, after the mod
@@ -1319,6 +1326,7 @@ mod tests {
             base_vector: DamageVector::new().with(DamageType::Cold, 32.0),
             radial: None,
             lingering: None,
+            continuous: false,
             evo_fire_rate_bonus: 0.0,
             post_mod_crit_chance: 0.0,
             post_mod_status_chance: 0.0,

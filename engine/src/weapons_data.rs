@@ -472,6 +472,9 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         incarnon,
         radial,
         lingering,
+        // The data module's Trigger for a beam. Not cosmetic: it decides
+        // whether `fire_rate` means shots or TICKS and whether multishot merges.
+        continuous: s.attack.trigger == "held",
         // All raised by evolutions, never by the raw weapon data.
         evo_fire_rate_bonus: 0.0,
         post_mod_crit_chance: 0.0,

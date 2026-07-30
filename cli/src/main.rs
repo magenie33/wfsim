@@ -22,6 +22,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
     DummyParams {
         radial: None,
         lingering: None,
+        continuous: false,
         headshot_damage_bonus: 0.0,
         noncrit_bonus: None,
         plain_hit_bonus: None,
