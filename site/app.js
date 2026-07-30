@@ -683,7 +683,19 @@ function migratePresetsToWeaponScope() {
      ["wfsim-preset-active-" + d, presetActiveKey(d, w)]].forEach(([from, to]) => {
       const v = localStorage.getItem(from);
       if (v === null) return;
-      if (localStorage.getItem(to) === null) localStorage.setItem(to, v);
+      // RESCOPE while moving. The legacy list was global, so its entries carry
+      // whatever weapon was current when each was saved — filing them verbatim
+      // under `w` leaves a preset that yanks the editor to another weapon the
+      // moment it loads. Only the preset LIST needs this; the active-name key
+      // is a bare string.
+      let out = v;
+      if (from.startsWith("wfsim-presets-")) {
+        try {
+          out = JSON.stringify(JSON.parse(v).map((p) =>
+            p && p.state ? { ...p, state: { ...p.state, weapon: w } } : p));
+        } catch (_) { /* unparseable: move it as-is, initPresets repairs it */ }
+      }
+      if (localStorage.getItem(to) === null) localStorage.setItem(to, out);
       localStorage.removeItem(from);
     });
   });
@@ -720,6 +732,28 @@ function initPresets() {
     ps = [{ name: "preset 1", savedAt: Date.now(), state: snapshotState() }];
     storePresetList(BUILDS, ps);
   }
+  // A preset stored under THIS weapon's key belongs to this weapon, whatever
+  // its payload claims. `restoreState` honours `state.weapon` — that is what
+  // makes ⇤ import work — so a preset carrying a FOREIGN id would drag the
+  // editor to that weapon and, because restoreState also rewrites the URL,
+  // land you on /weapons/<other> right after you asked for this one. The
+  // symptom is unmistakable: the address bar says one weapon and the page
+  // title, set earlier in route(), still says the one you clicked.
+  //
+  // The legacy global preset list is how ids got mismatched — the pre-scoping
+  // migration below files it under whichever weapon happened to be current
+  // without rescoping it. Repair the stored list rather than only reading
+  // around it, so the corruption does not outlive this load.
+  const here = presetWeapon();
+  let rescoped = false;
+  // No current weapon means the select is not populated yet; rescoping to ""
+  // would be worse than leaving the list alone.
+  if (here) {
+    ps.forEach((p) => {
+      if (p.state && p.state.weapon !== here) { p.state = { ...p.state, weapon: here }; rescoped = true; }
+    });
+  }
+  if (rescoped) storePresetList(BUILDS, ps);
   const last = localStorage.getItem(presetActiveKey(BUILDS));
   activePreset = ps.some((p) => p.name === last) ? last : ps[0].name;
   localStorage.setItem(presetActiveKey(BUILDS), activePreset);
