@@ -7,13 +7,17 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/ShredMod
 description: "+X% Fire Rate (x2 for Bows)\n+X Punch Through"
 
-# The "(x2 for Bows)" clause is a LITERAL - the multiplier does not scale
-# with rank (WFCD levelStats). Bows double this mod's fire-rate effect;
-# no bow is in data/weapons yet, so nothing models it.
+# The "(x2 for Bows)" clause is a LITERAL - the multiplier does not scale with
+# rank. BOTH sources agree: WFCD levelStats prints the same "x2" at every rank,
+# and the wiki's rank table carries a separate Fire Rate (Bows) column that is
+# exactly twice the rifle column at every rank. That column also settles the
+# scope - the multiplier applies to FIRE RATE only, not to punch through.
+# No bow is in data/weapons yet, so nothing models it.
 effects:
   - kind: fire_rate_bonus
-    # WFCD ramp: +5% -> +30%. Was the placeholder pair (1/6, 1.0), which
-    # is +100% fire rate at max - the sim read that, not just the card.
+    # +5% -> +30%, both sources: WFCD levelStats and the wiki rank table.
+    # Was the placeholder pair (1/6, 1.0) = +100% fire rate at max, which the
+    # sim built with - not just a wrong card.
     rank0: 0.05
     rankMax: 0.30
   - kind: punch_through_bonus

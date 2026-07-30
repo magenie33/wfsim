@@ -8,9 +8,12 @@ exilus: true
 internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/CorruptedRecoilFireRateRifle
 description: "-X% Weapon Recoil\n-X% Fire Rate (x2 for Bows)"
 
-# The "(x2 for Bows)" clause is a LITERAL - the multiplier does not scale
-# with rank (WFCD levelStats). Bows double this mod's fire-rate effect;
-# no bow is in data/weapons yet, so nothing models it.
+# The "(x2 for Bows)" clause is a LITERAL - the multiplier does not scale with
+# rank. BOTH sources agree: WFCD levelStats prints the same "x2" at every rank,
+# and the wiki's rank table carries a separate Fire Rate (Bows) column that is
+# exactly twice the rifle column at every rank. That column also settles the
+# scope - the multiplier applies to FIRE RATE only, not to punch through.
+# No bow is in data/weapons yet, so nothing models it.
 effects:
   - kind: recoil_reduction
     rank0: -0.15
