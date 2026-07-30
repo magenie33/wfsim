@@ -195,6 +195,13 @@ pub struct WeaponSpec {
     pub reload_seconds: Option<f64>,
     #[serde(default)]
     pub co_behavior: Option<String>,
+    /// Does this weapon's GunCO term compute on the base damage BEFORE its
+    /// evolutions' flat bonus? Declared per weapon from the CO catalog, never
+    /// inferred from the evolution list: including the perk damage is the
+    /// NORMAL behaviour (user, 2026-07-30) and Dual Toxocyst is the anomaly —
+    /// its catalog row is the one that reads "100% or 56%".
+    #[serde(default)]
+    pub co_base_excludes_evolution_damage: bool,
     #[serde(default)]
     pub transform_group: Option<String>,
     #[serde(default)]
@@ -467,7 +474,11 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         base_reload,
         innate_co_per_type: 0.0,
         co_behavior,
+        // 1.0 = the CO term uses the FULL base, evolution damage included,
+        // which is the normal case. The evolution loader only narrows it on a
+        // weapon that declares the exclusion.
         co_base_fraction: 1.0,
+        co_base_excludes_evolution_damage: s.co_base_excludes_evolution_damage,
         injected_elements,
         traits: traits_for(s),
         incarnon,
@@ -517,7 +528,9 @@ mod tests {
         assert!((b.magazine_size - 5.0).abs() < 1e-9);
         assert!((b.base_reload - 1.7).abs() < 1e-9);
         // "Multiplying" in the CO catalog = an INDEPENDENT multiplier, the
-        // opposite of the Laetum's "Adding".
+        // opposite of the Laetum's "Adding". Both BASE-form rows say so
+        // (Main-fire and Toxin AoE Cloud) — but the INCARNON form does not,
+        // which is checked below.
         assert_eq!(b.co_behavior, CoBehavior::Independent);
         // The FIELD, with its own stats: note status 25% where the impact is 23%.
         let f = b.lingering.as_ref().expect("torid leaves a cloud");
@@ -549,6 +562,46 @@ mod tests {
         // Charge-backed magazine, so the pseudo-reload supplies the sim's.
         assert!((i.magazine_size - 170.0).abs() < 1e-9);
         assert!((i.base_reload - 2.7).abs() < 1e-9);
+        // CO class is per FORM, not per weapon — ✅ measured (user,
+        // 2026-07-30). The base form's two catalog rows are "Multiplying"
+        // (asserted above); the Incarnon form is ordinary ADDITIVE. This used
+        // to be inferred from those rows and the inference was wrong.
+        assert_eq!(i.co_behavior, CoBehavior::AdditiveWithBaseDamage);
+    }
+
+    /// The CO term uses the FULL base including a perk's flat damage — the
+    /// normal behaviour (user, 2026-07-30). Dual Toxocyst is the one anomaly,
+    /// and it DECLARES itself: the exclusion is weapon data now, not something
+    /// inferred from "this weapon has a flat-damage evolution", which is what
+    /// spread DT's row onto the Torid.
+    #[test]
+    fn only_dual_toxocyst_excludes_its_evolution_damage_from_the_co_term() {
+        use crate::loadout::WeaponBase;
+        // Torid + Final Fusillade (+51 on a 140 base): the base scales, the CO
+        // fraction does NOT.
+        let bare = WeaponBase::from_data("torid", false, &[]);
+        let evolved = WeaponBase::from_data("torid", false, &["torid_final_fusillade"]);
+        assert!(
+            (evolved.base_vector.total() - (bare.base_vector.total() + 51.0)).abs() < 1e-9,
+            "the evolution still scales the base"
+        );
+        assert!(
+            (evolved.co_base_fraction - 1.0).abs() < 1e-9,
+            "the Torid's catalog rows stay 100%, got {}",
+            evolved.co_base_fraction
+        );
+        // Plentiful Mayhem (+31) likewise.
+        let pm = WeaponBase::from_data("torid", false, &["torid_plentiful_mayhem"]);
+        assert!((pm.co_base_fraction - 1.0).abs() < 1e-9);
+
+        // Dual Toxocyst + Carnage Reign (+60 on a 75 base) = the catalog's
+        // "100% or 56%" row.
+        let dt = WeaponBase::from_data("dual_toxocyst", false, &["dual_toxocyst_carnage_reign"]);
+        assert!(
+            (dt.co_base_fraction - 75.0 / 135.0).abs() < 1e-9,
+            "expected 75/135 = 0.5556, got {}",
+            dt.co_base_fraction
+        );
     }
 
     /// The roster is data-driven: dropping in `data/weapons/primary/` publishes

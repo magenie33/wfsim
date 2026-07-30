@@ -53,12 +53,18 @@ pseudo_reload:
   magazine: 170
   reload_seconds: 2.7
 
-# CO behavior: the catalog has NO row for this form. Beams DO take CO — its
-# eligibility list includes "Beam (e.g., Spectra)" and "Beam AoE (e.g., Glaxion
-# Vandal)" — but the CLASS is not stated, so `independent` is INFERRED from the
-# weapon's other two rows, both "Multiplying". A MODELING CHOICE, not a cited
-# fact; a measurement can overturn it.
-co_behavior: independent
+# CO behavior: ADDITIVE — ✅ measured (user, 2026-07-30). The catalog has no row
+# for this form, and `independent` used to be INFERRED here from the weapon's
+# other two rows (Main-fire and Toxin AoE Cloud, both "Multiplying"). The
+# inference was wrong: the Incarnon form takes the ordinary additive class,
+# joining the base-damage bucket like Hornet Strike, while the BASE form's two
+# parts really are Multiplying. So the two forms of one weapon differ in CO
+# class, which is exactly why this is per-form weapon data.
+#
+# The CO term uses the FULL base including evolution damage (the normal
+# behaviour), so no `co_base_excludes_evolution_damage` here — see
+# dual_toxocyst.yaml for the one weapon that is the exception.
+co_behavior: additive_with_base_damage
 
 # ONE attack part, which is the surprise and it is explicit. The form is a
 # CONTINUOUS beam with a 2.3 m damage radius, and VERBATIM: "The damage radius

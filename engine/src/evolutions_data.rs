@@ -583,7 +583,15 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
     if flat > 0.0 && original_total > 0.0 {
         let evolved = original_total + flat;
         base.base_vector = base.base_vector.scale(evolved / original_total);
-        base.co_base_fraction = original_total / evolved;
+        // The CO term keeps using the FULL evolved base — including a perk's
+        // flat damage is the normal behaviour (user, 2026-07-30). Only a weapon
+        // that DECLARES the exclusion narrows it, which today is Dual Toxocyst
+        // alone (its catalog row is the "100% or 56%" one). Deriving this from
+        // "does the weapon have a flat-damage evolution" generalised that
+        // anomaly to the Torid, where the catalog says 100% for both parts.
+        if base.co_base_excludes_evolution_damage {
+            base.co_base_fraction = original_total / evolved;
+        }
     }
 }
 

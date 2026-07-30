@@ -510,11 +510,22 @@ pub struct WeaponBase {
     pub innate_co_per_type: f64,
     /// This weapon's Condition Overload behavior class.
     pub co_behavior: CoBehavior,
-    /// CO base effectiveness: the CO bonus is computed on the ORIGINAL
-    /// base damage, EXCLUDING evolution flat damage (wiki CO catalog:
-    /// "CO-bonus does not use base damage increase Evolution"; DT row
-    /// "100% or 56%"). = original_base / evolved_base.
+    /// CO base effectiveness = `original_base / evolved_base`, i.e. how much of
+    /// the CO term the weapon's own evolutions dilute.
+    ///
+    /// **1.0 on every weapon but Dual Toxocyst.** Including a perk's flat base
+    /// damage in the CO term is the NORMAL behaviour (user, 2026-07-30) — the
+    /// Torid's catalog rows say 100% for both its parts and stay 100% with
+    /// Final Fusillade or Plentiful Mayhem equipped. Dual Toxocyst is the
+    /// anomaly the catalog calls out with a "100% or 56%" row, so the exclusion
+    /// is DECLARED by that weapon (`co_base_excludes_evolution_damage`) rather
+    /// than derived from the presence of a flat-damage evolution.
     pub co_base_fraction: f64,
+    /// Whether this weapon's CO term excludes its evolutions' flat base damage
+    /// — weapon data, straight from the CO catalog. It exists to stop Dual
+    /// Toxocyst's anomaly being generalised to weapons whose rows say
+    /// otherwise, which is what deriving it from the evolution list did.
+    pub co_base_excludes_evolution_damage: bool,
     /// Buff-injected elements as RELATIVE bonuses (element, bonus): each
     /// contributes ModifiedBase × bonus at the END of the hierarchy
     /// (rule 8) — Frenzy's +100% Toxin on the base Dual Toxocyst.
@@ -1388,6 +1399,7 @@ mod tests {
             innate_co_per_type: 0.0,
             co_behavior: CoBehavior::Independent,
             co_base_fraction: 1.0,
+            co_base_excludes_evolution_damage: false,
             injected_elements: Vec::new(),
             traits: &[],
             incarnon: None,

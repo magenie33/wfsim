@@ -44,9 +44,14 @@ reload_seconds: 1.7
 # opposite of the Laetum's "Adding". The Torid page says it from the weapon
 # side too: "Galvanized Aptitude is multiplicative to base damage sources on
 # direct hits and resulting clouds of regular form."
-# 100/100 and 40/40 = 100%: no base-damage evolution to exclude at rank 0, so
-# co_base_fraction is the loader default 1.0 (Final Fusillade / Plentiful
-# Mayhem lower it when equipped, which the evolution loader handles).
+# 100/100 and 40/40 = 100%, and they STAY 100% with Final Fusillade or
+# Plentiful Mayhem equipped: the CO term uses the full base including a perk's
+# flat damage, which is the normal behaviour (user, 2026-07-30). So no
+# `co_base_excludes_evolution_damage` here — Dual Toxocyst is the one weapon
+# whose catalog row ("100% or 56%") calls out the exclusion.
+#
+# NOTE this class is per FORM: the Incarnon form is ADDITIVE, not Multiplying
+# (torid_incarnon.yaml, measured).
 co_behavior: independent
 
 # TWO ATTACK PARTS, and the second is a FIELD, not an explosion (MECHANICS §7).
