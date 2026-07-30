@@ -80,6 +80,19 @@ pub enum ArcGrant {
     /// Joins the crit-DAMAGE bucket — a RELATIVE bonus on the weapon's base
     /// crit damage, like the crit-damage mods (Primary Blight/Frostbite).
     CritDamage,
+    /// Joins the status-chance bucket (Primary Crux). VERBATIM (wiki):
+    /// "Status Chance bonus is additive to mods like Rifle Aptitude", so it is
+    /// a RELATIVE bonus on the attack part's base status chance.
+    ///
+    /// Unlike `CritDamage` this is NOT resolved to an absolute value in
+    /// [`ArcaneDef::fx`]: the direct hit and the explosion carry DIFFERENT
+    /// base status chances, so only the sim — which knows which attack part it
+    /// is resolving — can multiply it out.
+    StatusChance,
+    /// Additive ammo efficiency, i.e. the refunded fraction of a round
+    /// (Primary Crux's second grant). Wiki: "additive with other sources of
+    /// Ammo Efficiency", the same bucket Frenzy feeds.
+    AmmoEfficiency,
 }
 
 /// What event grants/refreshes a stack.
@@ -103,6 +116,12 @@ pub enum ArcTrigger {
     ToxinStatus,
     /// A Cold status this weapon applies (Primary Frostbite).
     ColdStatus,
+    /// A direct-pellet hit on a natural weak point (Primary Crux) — a HIT, not
+    /// a kill, and PER PELLET: "Multiple individual pellets from a single shot
+    /// (either innate to the weapon or generated via Multishot) can build
+    /// stacks" (wiki). Weak spots created by Banshee's Sonar do NOT count,
+    /// which is also exactly what `BodyPart::is_head` means here.
+    WeakpointHit,
 }
 
 /// One emergent stacking buff, resolved at a rank.
@@ -241,6 +260,10 @@ enum ArcEffect {
     WeakpointCritChance(Scale),
     /// Surge: final damage-multiplier cap (stored as bonus; assumed-max).
     FinalDamageCap(Scale),
+    /// Fractalized Reset: reload speed on a trigger the arena cannot fire (an
+    /// ability cast). The GRANT is modeled, so it follows the house policy for
+    /// non-simmed triggers — assumed-max only, a no-op under `Emergent`.
+    CondReloadSpeed(Scale),
     HeadshotMultiplier { value: f64, unlocks_at: u32 },
     ReloadSpeed { value: f64, unlocks_at: u32 },
     PerColdDamage { scale: Scale, max_stacks: u32 },
@@ -255,9 +278,15 @@ enum ArcEffect {
     /// Irradiate: % of the hit damage echoed in a radius — AoE, inert in
     /// the single-target sim; values render in the description.
     AoeEcho { scale: Scale, radius0: f64, radius1: f64 },
-    /// No single-target sim payload (aoe_echo, overguard_on_damage, combo
-    /// duration, recoil, Kinship's uncapped team-context CC, …). Kept so the
-    /// arcane loads; the description line still shows it.
+    /// `kind: unmodeled` — an effect whose payload is OUT OF THE SIM'S WORLD
+    /// (Warframe armor/energy, enemy behaviour, a mechanic still to be built).
+    /// No sim payload, but it OWNS a description `X`: its per-rank value still
+    /// has to render, or the config page shows a literal "X". The yaml `note`
+    /// is what the panel says instead of a computed line.
+    Unmodeled { note: String, scale: Scale },
+    /// No single-target sim payload and NO description number of its own
+    /// (recoil, combo duration, overguard-on-damage: the description states
+    /// those literally). Kept so the arcane loads.
     Inert(String),
 }
 
@@ -298,6 +327,7 @@ fn effect(v: &Value) -> Option<ArcEffect> {
                 "on_electricity_status" => ArcTrigger::ElectricityStatus,
                 "on_toxin_status" => ArcTrigger::ToxinStatus,
                 "on_cold_status" => ArcTrigger::ColdStatus,
+                "on_weakpoint_hit" => ArcTrigger::WeakpointHit,
                 // Non-simmed triggers with modeled grants:
                 "on_swap_consume_combo" => {
                     return Some(match grants {
@@ -318,6 +348,9 @@ fn effect(v: &Value) -> Option<ArcEffect> {
                 "on_ability_cast" if grants == "final_damage" => {
                     return Some(ArcEffect::FinalDamageCap(scale(v)))
                 }
+                "on_ability_cast" if grants == "reload_speed" => {
+                    return Some(ArcEffect::CondReloadSpeed(scale(v)))
+                }
                 // Enervate's on_hit buff is implemented by its perk.
                 "on_hit" => return inert("perk-implemented (on_hit)"),
                 other => return inert(&format!("trigger {other}")),
@@ -327,6 +360,8 @@ fn effect(v: &Value) -> Option<ArcEffect> {
                 "multishot" => ArcGrant::Multishot,
                 "reload_speed" => ArcGrant::ReloadSpeed,
                 "crit_damage" => ArcGrant::CritDamage,
+                "status_chance" => ArcGrant::StatusChance,
+                "ammo_efficiency" => ArcGrant::AmmoEfficiency,
                 other => return inert(&format!("grant {other}")),
             };
             ArcEffect::Buff {
@@ -368,6 +403,10 @@ fn effect(v: &Value) -> Option<ArcEffect> {
         },
         "overguard_damage_bonus" => ArcEffect::OverguardDamage(scale(v)),
         "ammo_efficiency" => ArcEffect::AmmoEfficiency(scale(v)),
+        "unmodeled" => ArcEffect::Unmodeled {
+            note: s(v, "note").unwrap_or_default().to_string(),
+            scale: scale(v),
+        },
         other => return inert(other),
     })
 }
@@ -453,6 +492,11 @@ impl ArcaneDef {
                         fx.final_mult = 1.0 + sc.at(rank, self.max_rank);
                     }
                 }
+                ArcEffect::CondReloadSpeed(sc) => {
+                    if assumed {
+                        fx.reload_bonus += sc.at(rank, self.max_rank);
+                    }
+                }
                 ArcEffect::HeadshotMultiplier { value, unlocks_at } => {
                     if rank >= *unlocks_at {
                         fx.headshot_mult_bonus += value;
@@ -476,8 +520,10 @@ impl ArcaneDef {
                 ArcEffect::ColdBurst { scale, .. } => {
                     fx.cold_burst_on_puncture = scale.at(rank, self.max_rank).round() as u32;
                 }
-                // Team-context / AoE — no single-target sim payload.
-                ArcEffect::PerAllyCritChance(_) | ArcEffect::AoeEcho { .. } => {}
+                // Team-context / AoE / out-of-scope — no sim payload.
+                ArcEffect::PerAllyCritChance(_)
+                | ArcEffect::AoeEcho { .. }
+                | ArcEffect::Unmodeled { .. } => {}
                 ArcEffect::OverguardDamage(sc) => {
                     fx.overguard_mult = 1.0 + sc.at(rank, self.max_rank);
                 }
@@ -519,6 +565,9 @@ impl ArcaneDef {
                 | ArcEffect::EncumberChance(scale)
                 | ArcEffect::AmmoEfficiency(scale)
                 | ArcEffect::PerAllyCritChance(scale)
+                | ArcEffect::CondReloadSpeed(scale)
+                // Out of the sim's world, but it still owns its `X`.
+                | ArcEffect::Unmodeled { scale, .. }
                 // Multiplier kinds ("xX"): stored as the bonus — fill_x's
                 // xX rule renders the +1.
                 | ArcEffect::FinalDamageCap(scale)
@@ -577,6 +626,8 @@ impl ArcaneDef {
                         ArcGrant::Multishot => "Multishot",
                         ArcGrant::ReloadSpeed => "Reload Speed",
                         ArcGrant::CritDamage => "Critical Damage",
+                        ArcGrant::StatusChance => "Status Chance",
+                        ArcGrant::AmmoEfficiency => "Ammo Efficiency",
                     };
                     let when = match trigger {
                         ArcTrigger::Kill => "On Kill",
@@ -586,6 +637,7 @@ impl ArcaneDef {
                         ArcTrigger::ElectricityStatus => "On Electricity Status",
                         ArcTrigger::ToxinStatus => "On Toxin Status",
                         ArcTrigger::ColdStatus => "On Cold Status",
+                        ArcTrigger::WeakpointHit => "On Weak Point Hit",
                     };
                     let decay = if *all_drop { "all drop on timeout" } else { "lose one on timeout" };
                     out.push(format!(
@@ -611,6 +663,10 @@ impl ArcaneDef {
                 ArcEffect::FinalDamageCap(sc) => out.push(format!(
                     "On Ability Cast: next shot ×{:.0} damage cap (0.5%/energy)",
                     1.0 + at(sc)
+                )),
+                ArcEffect::CondReloadSpeed(sc) => out.push(format!(
+                    "On Ability Cast: {} Reload Speed (conditional)",
+                    pct(at(sc))
                 )),
                 ArcEffect::HeadshotMultiplier { value, unlocks_at } => {
                     if rank >= *unlocks_at {
@@ -654,6 +710,12 @@ impl ArcaneDef {
                     "{} ammo efficiency while sliding/aim gliding (Dual Pistols)",
                     pct(at(sc))
                 )),
+                // Say so, rather than silently listing nothing: the panel's
+                // job is to state what the model does, and "this one is out of
+                // scope" is part of that.
+                ArcEffect::Unmodeled { note, .. } => {
+                    out.push(format!("not modeled: {note}"));
+                }
                 ArcEffect::Inert(_) => {}
             }
         }
@@ -798,6 +860,53 @@ mod tests {
             .find(|b| b.grant == ArcGrant::Multishot)
             .expect("multishot grant");
         assert!((ms.per_stack - 0.018).abs() < 1e-9, "multishot stays a ratio");
+    }
+
+    /// Primary Crux: two grants on a weak-point HIT, 10 stacks, all-drop.
+    /// Both per-stack values stay plain RATIOS — the status-chance one is
+    /// relative to the ATTACK PART's base, which only the sim knows (the
+    /// explosion's differs), unlike `CritDamage`, resolved absolute here.
+    #[test]
+    fn primary_crux_grants_status_chance_and_ammo_efficiency_on_weakpoint_hits() {
+        let a = secondary("primary_crux").expect("primary_crux");
+        let fx = a.fx(a.max_rank, StackPolicy::Emergent, 0.29, 3.1, NO_TRAITS);
+        assert_eq!(fx.buffs.len(), 2, "status chance + ammo efficiency");
+        for b in &fx.buffs {
+            assert_eq!(b.trigger, ArcTrigger::WeakpointHit);
+            assert_eq!((b.max_stacks, b.all_drop), (10, true));
+            assert!((b.duration - 10.0).abs() < 1e-9);
+        }
+        let g = |grant| fx.buffs.iter().find(|b| b.grant == grant).map(|b| b.per_stack);
+        assert_eq!(g(ArcGrant::StatusChance), Some(0.3));
+        assert_eq!(g(ArcGrant::AmmoEfficiency), Some(0.06));
+        // Rank 0 (both ramps are linear from a fifth of max).
+        let fx0 = a.fx(0, StackPolicy::Emergent, 0.29, 3.1, NO_TRAITS);
+        assert!((fx0.buffs[0].per_stack - 0.05).abs() < 1e-9);
+        assert!((fx0.buffs[1].per_stack - 0.01).abs() < 1e-9);
+        // The static `ammo_efficiency` field belongs to the assumed-max
+        // conditionals (Akimbo Slip Shot) — Crux's is a live buff, not that.
+        assert_eq!(fx.ammo_efficiency, 0.0);
+        assert_eq!(
+            a.desc_at(5),
+            "On Weak Point Hit: Gain +30% Status Chance and +6% Ammo Efficiency for 10s. Stacks up to 10x."
+        );
+    }
+
+    /// The X-fill invariant, for the primary pool too (it holds for the
+    /// secondary pool above): every rank of every arcane renders.
+    #[test]
+    fn primary_desc_at_fills_every_x() {
+        for a in slot_pool("primary") {
+            for r in 0..=a.max_rank {
+                let d = a.desc_at(r);
+                assert_eq!(
+                    crate::loadout::count_x(&d),
+                    0,
+                    "{} rank {r}: unfilled X in {d:?}",
+                    a.id
+                );
+            }
+        }
     }
 
     #[test]

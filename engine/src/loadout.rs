@@ -595,6 +595,11 @@ pub struct ResolvedRadial {
     pub crit_chance: f64,
     pub crit_damage: f64,
     pub status_chance: f64,
+    /// The explosion's UNMODDED status chance — the base a RELATIVE live
+    /// status-chance buff (Primary Crux) multiplies. It differs from the
+    /// direct hit's, which is why the arcane grant stays relative until the
+    /// sim knows which attack part it is resolving.
+    pub base_status_chance: f64,
     /// Blast geometry, carried through unmodded — the sim's single target
     /// stands at the epicentre, but the PANEL states it: a reader needs the
     /// radius to know what the explosion is worth beyond one enemy.
@@ -675,6 +680,9 @@ pub struct ResolvedPanel {
     pub crit_chance: f64,
     pub crit_damage: f64,
     pub status_chance: f64,
+    /// UNMODDED status chance — the base a RELATIVE live status-chance buff
+    /// (Primary Crux) multiplies, the counterpart of `base_multishot`.
+    pub base_status_chance: f64,
     pub fire_rate: f64,
     pub multishot: f64,
     /// The weapon's UNMODDED pellet count — the base a relative multishot
@@ -1093,6 +1101,7 @@ pub fn resolve_with(
             crit_damage: r.base_crit_damage * (1.0 + cd),
             status_chance: (r.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)
                 .max(0.0),
+            base_status_chance: r.base_status_chance,
             radius_m: r.radius_m,
             falloff_start_m: r.falloff_start_m,
             falloff_reduction: r.falloff_reduction,
@@ -1112,6 +1121,7 @@ pub fn resolve_with(
         // guaranteed proc plus an extra roll) — DT resolves to 129%.
         status_chance: (base.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)
             .max(0.0),
+        base_status_chance: base.base_status_chance,
         fire_rate: base.base_fire_rate * (1.0 + fr + base.evo_fire_rate_bonus),
         headshot_damage_bonus: base.headshot_damage_bonus,
         noncrit_bonus: base.noncrit_bonus,

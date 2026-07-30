@@ -498,6 +498,8 @@ fn grant_label(g: wfsim_engine::arcanes_data::ArcGrant) -> &'static str {
         Multishot => "Multishot",
         ReloadSpeed => "Reload Speed",
         CritDamage => "Critical Damage",
+        StatusChance => "Status Chance",
+        AmmoEfficiency => "Ammo Efficiency",
     }
 }
 

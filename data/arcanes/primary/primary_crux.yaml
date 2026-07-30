@@ -6,17 +6,39 @@ internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/StatusAndAmmoEfficien
 description: "On Weak Point Hit: Gain +X% Status Chance and +X% Ammo Efficiency for 10s. Stacks up to 10x."
 
 effects:
-  # UNMODELED: a stacking STATUS CHANCE grant on weakpoint hit. The buff
-  # machinery already exists (trigger, stacks, timer); what is missing is a
-  # `status_chance` grant in ArcGrant. Numbers recorded so wiring it up needs
-  # no new data.
-  - kind: unmodeled
-    note: "+3% status chance per stack (10 stacks, 10s) on a weak point hit"
+  # Two grants on ONE trigger, 10 stacks, 10 s, ALL stacks drop together -
+  # structurally Conjunction Voltage with a weakpoint-HIT trigger instead of a
+  # status one. Both numbers cross-checked wiki rank table == WFCD levelStats
+  # (5%/1% at rank 0 -> 30%/6% at rank 5; "Max Bonus" column = per_stack x 10).
+  #
+  # VERBATIM (wiki notes):
+  #  - "All stacks are lost when the buff's duration expires" -> all_drop.
+  #  - "Status Chance bonus is additive to mods like Rifle Aptitude" -> it
+  #    joins the status-chance bucket, so the value is RELATIVE to the attack
+  #    part's base status chance (the explosion has its own base, so the sim
+  #    multiplies it out per part rather than fx()).
+  #  - "Multiple individual pellets from a single shot (either innate to the
+  #    weapon or generated via Multishot) can build stacks" -> per PELLET,
+  #    which the engine's pellet loop gives for free.
+  #  - "Weakspots created by Banshee's Sonar do not count as weak points" -
+  #    natural weak points only, which is what `BodyPart::is_head` models.
+  #  - Ammo efficiency is "additive with other sources", i.e. Frenzy's bucket.
+  - kind: buff
+    trigger: on_weakpoint_hit
+    grants: status_chance
     rank0: 0.05
     rankMax: 0.3
-  - kind: ammo_efficiency
+    max_stacks: 10
+    duration: 10
+    decay: all_drop_on_timeout
+  - kind: buff
+    trigger: on_weakpoint_hit
+    grants: ammo_efficiency
     rank0: 0.01
     rankMax: 0.06
+    max_stacks: 10
+    duration: 10
+    decay: all_drop_on_timeout
 
 source:
   url: https://wiki.warframe.com/w/Primary_Crux

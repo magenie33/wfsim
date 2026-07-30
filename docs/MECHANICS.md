@@ -815,6 +815,39 @@ target, so `d = 0` and the radial lands at full value; falloff only matters
 once multiple targets exist. The data still records `start/end/reduction` so
 the multi-target model has it.
 
+**Radius is worth DAMAGE, and only one thing buys it** — Primary Compression,
+which shrinks the blast while aiming and pays for the lost metres:
+
+```
+radius_lost  = radius_MODDED × (1 − 0.2)          # continuous, not per whole metre
+damage_bonus = damage_per_metre(rank) × radius_lost   # ×1.0/m at max rank
+ammo_eff     = eff_per_metre(rank)    × radius_lost   # ×0.055/m at max rank
+```
+
+Verbatim on the continuity: *"Despite the description stating 'per meter
+lost,' the bonuses smoothly scale between whole number radius values … a loss
+of 6.5 meters of radius gives +650% Damage and +35.75% Ammo Efficiency."* The
+formula reproduces the wiki's whole per-weapon table at max rank (0.8 × radius
+× 100%): Acceltra 4.0 m → +320%, Kuva Bramma 8.3 m → +664%, Miter 0.2 m →
++16%, Vectis 0.1 m → +8%.
+
+It reads the **modded** radius — the table's Primed Firestorm column is
+exactly 1.44× its base column on every row — which is why the engine cannot
+run it yet: `ResolvedRadial.radius_m` is carried through UNMODDED and there is
+no blast-radius bucket. Two further inputs are **per weapon attack**, from
+that table rather than from the arcane (the same shape as `CoBehavior`):
+whether the bonus **Multiplies, Adds or Both** (projectile weapons multiply,
+but Ambassador/Battacor/Ferrox/Opticor/Trumna and the Braton/Burston
+Incarnons add), and whether it works at all — *"Does not work on Continuous
+Weapons or beam attacks with an AoE component"*, plus a long tail of 0% rows.
+
+Torid is the cautionary pair: its normal **Toxin Cloud** is 100% effective and
+multiplies off a 3.0 m reference radius (+240% at max rank) while *"cloud
+radius is not reduced"* — it pays nothing and collects anyway — and its
+**Incarnon form AoE is a flat 0%, "Doesn't Work."** So on one weapon the same
+arcane is a top-tier multiplier in the base form and literally inert in the
+transformed one.
+
 **How the sim runs it** (`engine::dummy`): each landed projectile walks a
 short list of ATTACK STAGES — the direct hit, then the radial when the weapon
 declares one. A stage is one damage instance: it rolls its own crit tier, its

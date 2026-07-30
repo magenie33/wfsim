@@ -914,6 +914,9 @@ pub struct DummyParams {
     pub crit_multiplier: f64,
     /// Listed status chance per hit (may exceed 1.0).
     pub status_chance: f64,
+    /// UNMODDED status chance — the base a RELATIVE live status-chance buff
+    /// (Primary Crux) multiplies, exactly like `base_multishot`.
+    pub base_status_chance: f64,
     /// Forced procs on every hit (weapon data, per attack part).
     pub forced_procs: Vec<DamageType>,
     /// Status duration multiplier (1.0 = unmodded).
@@ -1242,6 +1245,7 @@ impl DummyParams {
             base_crit_chance: panel.crit_chance,
             crit_multiplier: panel.crit_damage,
             status_chance: panel.status_chance,
+            base_status_chance: panel.base_status_chance,
             fire_rate: panel.fire_rate,
             frenzy: false,
             magazine_size: panel.magazine_size,
@@ -1360,6 +1364,7 @@ impl Default for DummyParams {
             base_crit_chance: 0.05,
             crit_multiplier: 2.0,
             status_chance: 0.37,
+            base_status_chance: 0.37,
             forced_procs: Vec::new(),
             status_duration_mult: 1.0,
             fire_rate: 1.0,
@@ -1948,9 +1953,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // Ammo: consume (1 - efficiency) per shot; Frenzy's +100% efficiency
         // zeroes consumption (unless this magazine is charge-backed).
         let efficiency = if ap.ammo_efficiency_applies {
-            // BuffBar (Frenzy) + arcane (Akimbo Slip Shot, assumed-max)
-            // ammo-efficiency additively, clamped at free.
-            (contribs.ammo_efficiency + params.arcane.ammo_efficiency).clamp(0.0, 1.0)
+            // BuffBar (Frenzy) + static arcane (Akimbo Slip Shot, assumed-max)
+            // + live arcane stacks (Primary Crux) additively — wiki Crux:
+            // "additive with other sources of Ammo Efficiency" — clamped at
+            // free.
+            (contribs.ammo_efficiency
+                + params.arcane.ammo_efficiency
+                + arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t))
+            .clamp(0.0, 1.0)
         } else {
             0.0
         };
@@ -2208,9 +2218,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 // The direct hit's bracket carries CO; the radial's carries
                 // only the arcane base-damage ratio.
                 let bucket = if direct { co_mult } else { arc_ratio };
+                // Primary Crux's stacks join the status-chance BUCKET (wiki:
+                // "additive to mods like Rifle Aptitude"), so the relative
+                // bonus multiplies THIS part's own unmodded base — the
+                // explosion's differs from the direct hit's.
+                let sc_arc = arc.total(&params.arcane.buffs, ArcGrant::StatusChance, t);
                 let status_chance = match &rad {
-                    None => ap.status_chance,
-                    Some(r) => r.status_chance,
+                    None => ap.status_chance + ap.base_status_chance * sc_arc,
+                    Some(r) => r.status_chance + r.base_status_chance * sc_arc,
                 };
                 const NO_FORCED: &[DamageType] = &[];
                 let forced: &[DamageType] = if direct { &ap.forced_procs } else { NO_FORCED };
@@ -2267,6 +2282,13 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                             rs_stacks.stacks = (rs_stacks.stacks + 1).min(b.max_stacks);
                             rs_stacks.expiry = t + b.duration;
                         }
+                        // Primary Crux: a weak-point HIT (not a kill), per
+                        // PELLET. Bumped here, AFTER this pellet's status
+                        // chance was read above — the hit that grants a stack
+                        // does not benefit from it, the same rule the
+                        // base-damage stacks follow. A killing headshot still
+                        // counts: this runs before the kill path's `continue`.
+                        arc.bump_trigger(&params.arcane.buffs, ArcTrigger::WeakpointHit, t);
                     }
                 }
 
@@ -2819,6 +2841,9 @@ mod tests {
     fn no_status() -> DummyParams {
         DummyParams {
             status_chance: 0.0,
+            // Zero the BASE too, or a relative status-chance buff (Primary
+            // Crux) would resolve against 0.37 in a "no status" fixture.
+            base_status_chance: 0.0,
             ..DummyParams::default()
         }
     }
@@ -3073,6 +3098,96 @@ mod tests {
         let s = monte_carlo(&p, 20, 4);
         assert!((s.mean_shots - 26.0).abs() < 1e-9, "shots {}", s.mean_shots);
         assert!((s.mean_reloads - 2.0).abs() < 1e-9);
+    }
+
+    /// Primary Crux: a stacking buff on weak-point HITS (not kills), whose
+    /// status-chance grant joins the status BUCKET — wiki: "Status Chance
+    /// bonus is additive to mods like Rifle Aptitude" — so it is RELATIVE to
+    /// the attack part's own base. Pinned by arithmetic rather than a rate
+    /// estimate: 25% base + 10 stacks x +30% = 25% + 75% = exactly 100%, i.e.
+    /// one proc per instance.
+    #[test]
+    fn primary_crux_stacks_status_chance_on_weakpoint_hits() {
+        let part = |is_head| {
+            vec![BodyPart {
+                name: "part".into(),
+                aim_weight: 1.0,
+                multiplier: 1.0,
+                is_head,
+                crit_bonus: false,
+            }]
+        };
+        // 20 s against a 10 s buff: the initial full stacks (arcane stacking
+        // buffs start full) expire at t=10, so only a run that keeps LANDING
+        // weak-point hits still has them in the second half. That is what
+        // separates the trigger from the seeded stacks.
+        let mk = |is_head, a: ArcaneFx| DummyParams {
+            status_chance: 0.25,
+            base_status_chance: 0.25,
+            base_crit_chance: 0.0,
+            duration_secs: 20.0,
+            arcane: a,
+            body_parts: part(is_head),
+            ..DummyParams::default()
+        };
+        let bare = run_once(&mk(true, ArcaneFx::none()), &mut Rng::new(11));
+        assert!(
+            bare.procs < bare.pellets,
+            "25% status chance must not proc every instance ({} of {})",
+            bare.procs,
+            bare.pellets
+        );
+        let head = run_once(&mk(true, arc("primary_crux")), &mut Rng::new(11));
+        assert_eq!(
+            head.procs, head.pellets,
+            "25% + 10 x 30% of 25% = 100% status chance, so every instance procs"
+        );
+        // Body only: nothing re-arms it, so the seeded stacks are gone for the
+        // whole second half and the run falls short of one proc per instance.
+        let body = run_once(&mk(false, arc("primary_crux")), &mut Rng::new(11));
+        assert!(
+            body.procs < body.pellets,
+            "no weak-point hit = no refresh, so the buff must lapse ({} of {})",
+            body.procs,
+            body.pellets
+        );
+        assert!(
+            body.procs > bare.procs,
+            "the seeded stacks still cover the first 10 s ({} vs {})",
+            body.procs,
+            bare.procs
+        );
+    }
+
+    /// Crux's second grant feeds the SAME ammo-efficiency bucket as Frenzy
+    /// (wiki: "additive with other sources of Ammo Efficiency"). 10 stacks x
+    /// +6% = 60%, so a shot costs 0.4 rounds and the 12-round magazine covers
+    /// 30 shots — more than this 25 s window fires at 1 shot/s, so the reloads
+    /// disappear entirely.
+    #[test]
+    fn primary_crux_ammo_efficiency_stretches_the_magazine() {
+        let p = |a: ArcaneFx| DummyParams {
+            duration_secs: 25.0,
+            arcane: a,
+            body_parts: vec![BodyPart {
+                name: "head".into(),
+                aim_weight: 1.0,
+                multiplier: 3.0,
+                is_head: true,
+                crit_bonus: true,
+            }],
+            ..no_status()
+        };
+        let bare = monte_carlo(&p(ArcaneFx::none()), 20, 4);
+        assert!(bare.mean_reloads > 0.0, "the fixture must reload without it");
+        let crux = monte_carlo(&p(arc("primary_crux")), 20, 4);
+        assert_eq!(crux.mean_reloads, 0.0, "60% efficiency covers the window");
+        assert!(
+            crux.mean_shots >= bare.mean_shots,
+            "shots {} vs {}",
+            crux.mean_shots,
+            bare.mean_shots
+        );
     }
 
     #[test]
@@ -3340,6 +3455,7 @@ mod tests {
             damage: DamageVector::default(),
             radial: Some(radial),
             status_chance: 0.0,
+            base_status_chance: 0.0,
             base_crit_chance: 0.0,
             forced_procs: Vec::new(),
             ..DummyParams::default()
@@ -3355,6 +3471,7 @@ mod tests {
             crit_chance,
             crit_damage: 2.0,
             status_chance,
+            base_status_chance: status_chance,
             radius_m: 2.0,
             falloff_start_m: 0.0,
             falloff_reduction: 0.2,
@@ -3420,6 +3537,7 @@ mod tests {
                 crit_chance: 0.0,
                 crit_damage: 2.0,
                 status_chance: 0.0,
+                base_status_chance: 0.0,
                 radius_m: 2.0,
                 falloff_start_m: 0.0,
                 falloff_reduction: 0.0,

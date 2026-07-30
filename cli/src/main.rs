@@ -32,6 +32,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         base_crit_chance: 0.05,
         crit_multiplier: 2.0,
         status_chance: 0.37,
+        base_status_chance: 0.37,
         forced_procs: Vec::new(),
         status_duration_mult: 1.0,
         fire_rate: 1.0,

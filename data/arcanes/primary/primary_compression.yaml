@@ -7,16 +7,57 @@ description: "On aim: x0.2 explosion radius, +X% damage and +X% ammo efficiency 
 
 effects:
   # UNMODELED, and THE one to revisit for AoE weapons: it trades blast RADIUS
-  # for damage, so its value is a function of the weapon's radial part (which
-  # the panel now states - MECHANICS section 7) rather than a fixed number.
-  # A 4.2 m radius shrinking to 0.84 m is 3.36 m lost -> +336% damage at max
-  # rank, which would dominate every other primary arcane on such a weapon.
-  # Needs the radius model before it can be trusted, so it stays inert rather
-  # than guessed.
+  # for damage, so its value is a function of the weapon's radial part rather
+  # than a fixed number. The FORMULA is now settled (wiki's per-weapon
+  # effectiveness table, 2026-07-30) - what is missing is weapon data, not
+  # understanding:
+  #
+  #   radius_lost   = radius_MODDED x (1 - 0.2)          # continuous, not per whole metre
+  #   damage_bonus  = damage_per_metre(rank) x radius_lost
+  #   ammo_eff      = eff_per_metre(rank)    x radius_lost
+  #
+  # CONTINUOUS, verbatim: "Despite the description stating 'per meter lost,'
+  # the bonuses smoothly scale between whole number radius values ... a loss of
+  # 6.5 meters of radius gives +650% Damage and +35.75% Ammo Efficiency".
+  #
+  # It reads the MODDED radius, which the engine does not have yet: the table's
+  # Primed Firestorm column is exactly 1.44x the base column on every row
+  # (Acceltra 4.0 m -> +320% base, +460.8% modded), and `ResolvedRadial.radius_m`
+  # is carried through UNMODDED with no blast-radius bucket to feed it.
+  # Reproduces the whole "Max Damage Bonus @ Base Radius" column at max rank:
+  # 0.8 x radius x 100% - Acceltra 4.0 -> +320%, Kuva Bramma 8.3 -> +664%,
+  # Miter 0.2 -> +16%, Vectis 0.1 -> +8%.
+  #
+  # TWO more things are PER WEAPON ATTACK, from the wiki table, not derivable
+  # from the arcane (same shape as CoBehavior):
+  #  - the stacking class: Multiplies / Adds / Both. "On projectile weapons the
+  #    damage bonus is multiplicative to other damage bonus sources" is the
+  #    common case, but Ambassador, Battacor, Ferrox, Opticor, Trumna and the
+  #    Braton/Burston Incarnons ADD.
+  #  - whether it works at all. "Does not work on Continuous Weapons or beam
+  #    attacks with an AoE component", plus a long tail of 0% rows.
+  #
+  # TORID (both rows, because this weapon is next):
+  #  - normal Toxin Cloud: 100% effective, MULTIPLIES, reference radius 3.0 m
+  #    -> +240% at max rank. "Cloud radius is not reduced" - it pays nothing
+  #    and still collects the bonus.
+  #  - Incarnon Form + AoE: 0%, "Doesn't Work" (the continuous-beam exclusion).
+  #    So on Torid this arcane is worth +240% multiplicative in the BASE form
+  #    of the Incarnon cycle and exactly nothing in the transformed form.
+  #
+  # Stays inert rather than guessed until the radius model and those two
+  # weapon fields exist.
+  # TWO ramps, because the description carries two Xs (wiki rank table ==
+  # WFCD levelStats: +50% damage / +3.0% ammo efficiency at rank 0 -> +100% /
+  # +5.5% at rank 5; both linear, so rank 3 is 0.8 and 0.045).
   - kind: unmodeled
-    note: "on aim: radius x0.2; +100% damage and +5.5% ammo efficiency per 1 m of radius lost"
+    note: "while aiming: radius x0.2, then +100% damage per metre of radius lost (multiplicative on most weapons; nothing on continuous/beam AoE, Torid Incarnon included)"
     rank0: 0.5
     rankMax: 1.0
+  - kind: unmodeled
+    note: "while aiming: +5.5% ammo efficiency per metre of radius lost"
+    rank0: 0.03
+    rankMax: 0.055
 
 source:
   url: https://wiki.warframe.com/w/Primary_Compression
