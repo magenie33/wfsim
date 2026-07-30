@@ -1,0 +1,21 @@
+id: torid_extended_volley
+name: Extended Volley
+weapon: torid
+tier: 3
+icon: IncarnonClipSize(xWhite).png
+description: "Increase Base Magazine Capacity by +9."
+selection: choose_one
+
+effects:
+  # 5 -> 14 rounds. It is the BASE, so magazine mods multiply the new value
+  # (the same layer Commodore's Fortune occupies for crit chance). Nearly
+  # trebling a 5-round magazine against a 1.7 s reload is a large sustained-DPS
+  # change, not a convenience.
+  - kind: flat_base_magazine
+    value: 9
+    # "Does not apply to Incarnon Form's Magazine" — which needs no gate here:
+    # the Incarnon entry's magazine comes from its `pseudo_reload`, and the
+    # charge-backed 170 rounds are outside the ammo system entirely.
+
+source:
+  url: https://wiki.warframe.com/w/Torid_Incarnon_Genesis

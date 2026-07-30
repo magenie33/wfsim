@@ -495,6 +495,74 @@ mod tests {
         assert!(roster().all(|s| s.transforms_from.is_none()));
     }
 
+    /// The Torid is the first PRIMARY weapon and the first weapon with a
+    /// lingering FIELD, so this pins what the loader must produce for it — every
+    /// number cross-checked wiki data module == WFCD.
+    #[test]
+    fn torid_loads_both_forms_with_its_field_and_direct_hit_gauge() {
+        use crate::loadout::{ChargeOn, FieldStacking};
+        let b = base_panel("torid", false);
+        assert!((b.base_vector.get(DamageType::Toxin) - 100.0).abs() < 1e-9);
+        assert!((b.base_crit_chance - 0.15).abs() < 1e-9);
+        assert!((b.base_crit_damage - 2.0).abs() < 1e-9);
+        assert!((b.base_status_chance - 0.23).abs() < 1e-9);
+        assert!((b.base_fire_rate - 1.5).abs() < 1e-9);
+        assert!((b.magazine_size - 5.0).abs() < 1e-9);
+        assert!((b.base_reload - 1.7).abs() < 1e-9);
+        // "Multiplying" in the CO catalog = an INDEPENDENT multiplier, the
+        // opposite of the Laetum's "Adding".
+        assert_eq!(b.co_behavior, CoBehavior::Independent);
+        // The FIELD, with its own stats: note status 25% where the impact is 23%.
+        let f = b.lingering.as_ref().expect("torid leaves a cloud");
+        assert!((f.base_vector.get(DamageType::Toxin) - 40.0).abs() < 1e-9);
+        assert!((f.tick_rate - 1.0).abs() < 1e-9);
+        assert!((f.duration_s - 10.0).abs() < 1e-9);
+        assert!((f.base_status_chance - 0.25).abs() < 1e-9);
+        assert!((f.radius_m - 3.0).abs() < 1e-9);
+        // To ZERO at the rim, unlike the Laetum radial's 0.2.
+        assert!((f.falloff_reduction - 1.0).abs() < 1e-9);
+        assert_eq!(f.stacking, FieldStacking::Stack, "unverified default (M12)");
+        assert!(b.radial.is_none(), "the cloud is a field, not an explosion");
+
+        // The Incarnon form: a continuous beam, ONE attack part (its 2.3 m
+        // radius is explicitly not a separate instance), charged by DIRECT hits.
+        let i = base_panel("torid_incarnon", false);
+        assert!((i.base_vector.get(DamageType::Toxin) - 51.0).abs() < 1e-9);
+        assert!((i.base_crit_chance - 0.29).abs() < 1e-9);
+        assert!((i.base_crit_damage - 3.1).abs() < 1e-9);
+        assert!((i.base_status_chance - 0.39).abs() < 1e-9);
+        assert!((i.base_fire_rate - 8.0).abs() < 1e-9, "ticks per second");
+        assert!(i.radial.is_none(), "the damage radius is not its own instance");
+        assert!(i.lingering.is_none(), "no cloud in Incarnon form");
+        let g = i.incarnon.as_ref().expect("torid_incarnon has a gauge");
+        assert_eq!(g.charge_on, ChargeOn::DirectHits);
+        assert!((g.charges_to_fill - 5.0).abs() < 1e-9);
+        assert!((g.max_charges - 170.0).abs() < 1e-9);
+        assert!((g.transmute_in - 1.7).abs() < 1e-9, "= the base reload");
+        // Charge-backed magazine, so the pseudo-reload supplies the sim's.
+        assert!((i.magazine_size - 170.0).abs() < 1e-9);
+        assert!((i.base_reload - 2.7).abs() < 1e-9);
+    }
+
+    /// The roster is data-driven: dropping in `data/weapons/primary/` publishes
+    /// a primary weapon with no code change, and its mod pool and arcane slot
+    /// follow from `mod_eligibility` and `slot`.
+    #[test]
+    fn the_primary_slot_needed_no_code() {
+        let t = spec("torid").expect("torid");
+        assert_eq!(t.slot, "primary");
+        assert_eq!(t.mod_eligibility.as_deref(), Some("rifle_mods"));
+        assert!(roster().any(|s| s.id == "torid"), "selectable");
+        assert!(
+            !roster().any(|s| s.id == "torid_incarnon"),
+            "a form is not its own roster row"
+        );
+        assert!(
+            !crate::mods_data::class_pool("rifle").is_empty(),
+            "the rifle pool has to exist for it to be equippable"
+        );
+    }
+
     #[test]
     fn base_panels_match_the_wiki_values() {
         let b = base_panel("dual_toxocyst", true);

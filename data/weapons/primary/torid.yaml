@@ -1,0 +1,114 @@
+id: torid
+name: Torid
+slot: primary
+# LAUNCHER — takes the Rifle Mods pool (wiki Rifle_Mods: Assault Rifles, Bows,
+# Launchers, Snipers, Spearguns, Crossbows and Arm-Cannons all draw from it;
+# Shotguns are the pool that does not).
+class: launcher
+mod_eligibility: rifle_mods
+grip_type: ""                  # the data module records an empty GripType
+mastery_rank: 4
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are separate
+# entries linked by a transform group. Unlike the Zariman weapons the Torid's
+# Genesis is an INSTALLED item (20 Pathos Clamps, 60 Rune Marrow, 20 Maw Fangs
+# from Cavalero) — irrelevant to the calc, recorded so the acquisition
+# difference is not mistaken for a mechanical one.
+transform_group: torid
+transforms_to: torid_incarnon
+
+# Weapon-level metadata (wiki data module cross-checked against WFCD).
+accuracy: 100
+disposition: 1.3             # riven disposition (●●●●○)
+polarities: []               # NO innate main polarities (both sources agree)
+exilus_polarity: naramon
+riven_family: Torid
+traits: [infested, incarnon]
+introduced: "8.0"
+internal_name: /Lotus/Weapons/ClanTech/Bio/BioWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 60
+# AoE ammo-economy override (Update 32): 10 per pickup instead of the usual
+# rifle amount. Outside the theoretical-DPS math; recorded for the sustain model.
+ammo_pickup: 10
+magazine: 5
+reload_seconds: 1.7
+
+# Condition Overload behavior class — VERIFIED from the wiki CO catalog, which
+# gives the Torid TWO rows and the same class for both:
+#   Torid | Main-fire       | Projectile | 100 | 100 | 100% | Multiplying
+#   Torid | Toxin AoE Cloud | AoE        |  40 |  40 | 100% | Multiplying
+# "Multiplying" = an INDEPENDENT multiplier, not the Hornet Strike bucket — the
+# opposite of the Laetum's "Adding". The Torid page says it from the weapon
+# side too: "Galvanized Aptitude is multiplicative to base damage sources on
+# direct hits and resulting clouds of regular form."
+# 100/100 and 40/40 = 100%: no base-damage evolution to exclude at rank 0, so
+# co_base_fraction is the loader default 1.0 (Final Fusillade / Plentiful
+# Mayhem lower it when equipped, which the evolution loader handles).
+co_behavior: independent
+
+# TWO ATTACK PARTS, and the second is a FIELD, not an explosion (MECHANICS §7).
+# VERBATIM (wiki Torid): "Fires grenades that disperse clouds on impact, dealing
+# damage over time for 10 seconds over a 3 meter radius." Grenades STICK — "to
+# allies, enemies and surfaces" — so a directly-hit enemy takes the impact AND
+# cannot leave the cloud, which the page calls out as guaranteeing "the maximum
+# possible damage".
+attack:
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 40      # slow, heavy arc
+  fire_rate: 1.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.15
+  crit_multiplier: 2.0
+  status_chance: 0.23
+  punch_through_m: 0.0
+  damage: { toxin: 100.0 }      # "Grenade Impact", pure Toxin
+  # The LINGERING FIELD. Its own crit and status stats — note the status chance
+  # is 25%, NOT the impact's 23% — and its own clock: FireRate 1 in the data
+  # module is one tick per second, EffectDuration 10 is the lifetime.
+  #
+  # falloff_reduction 1.0: "Explosion has linear Damage Falloff from 100% to 0%
+  # from central impact" — the damage reaches ZERO at the rim, unlike the
+  # Laetum radial's 0.2. Irrelevant single-target (a stuck grenade puts the
+  # target at the epicentre) but it is what the multi-target model needs.
+  #
+  # stacking: UNVERIFIED — the only piece of the field model no source states.
+  # `stack` is the wiki's reading ("dealing large amounts of damage if the
+  # player stacks multiple gas clouds", "Stacking multiple grenades on an
+  # ally…") but nothing says whether that is several streams on ONE enemy or
+  # just wider coverage. Worth up to ~5x sustained single-target DPS, so it is
+  # a data field: MEASUREMENTS M12 flips this line, not any code.
+  lingering:
+    damage: { toxin: 40.0 }
+    tick_rate: 1.0
+    duration_s: 10.0
+    radius_m: 3.0
+    falloff_start_m: 0.0
+    falloff_reduction: 1.0
+    crit_chance: 0.15
+    crit_multiplier: 2.0
+    status_chance: 0.25
+    stacking: stack
+
+# incarnon_evolutions (data/evolutions/torid_*.yaml) — FOUR tiers, not five:
+# - { tier: 1, unlock: complete a solo mission with this weapon equipped,
+#     options: [torid_evo1_incarnon_form] }
+# - { tier: 2, unlock: kill 100 enemies with this weapon's Incarnon Form,
+#     options: [torid_final_fusillade, torid_plentiful_mayhem] }
+# - { tier: 3, unlock: activate Incarnon Form 15 times,
+#     options: [torid_swift_deliverance, torid_renewed_horror,
+#     torid_extended_volley] }
+# - { tier: 4, unlock: (the table's last tier),
+#     options: [torid_commodores_fortune, torid_survivors_edge,
+#     torid_elemental_balance] }
+
+source:
+  url: https://wiki.warframe.com/w/Torid
+  # note: every number cross-checked wiki Module:Weapons/data/primary ==
+  # WFCD warframe-items (joined on internal name). They agree exactly on all
+  # three attacks; the module additionally carries AmmoMax/AmmoPickup, the
+  # cloud's EffectDuration and AttackParentIndex, and IncarnonChargeGain.

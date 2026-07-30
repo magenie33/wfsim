@@ -978,6 +978,17 @@ function, not three copies. A field carries the resolved part of the form that
 SPAWNED it: a cloud outlives a transmute, and only one form of a transform group
 has a field at all.
 
+**A base-stat EVOLUTION reaches every attack part.** Commodore's Fortune,
+Survivor's Edge and Elemental Balance all say "Increase Base Critical/Status
+Chance", and that base-stat layer is a WEAPON stat change — the same reading
+already applied to Elemental Excess's post-mod layer above, and the base layer is
+the more clearly weapon-wide of the two. So the Torid's cloud takes them, which
+matters: the cloud is most of that weapon's damage, and Survivor's Edge would be
+nearly worthless on it otherwise. **INFERENCE, not a citation** — no source
+states it either way. Nothing else in the roster is affected (only Dual
+Toxocyst, which has neither a radial nor a field, and the Torid carry base-stat
+evolutions at all).
+
 Known approximation, recorded rather than hidden: the MOD-side buff state a tick
 reads (Galvanized Scope's crit buff, Overwhelming Attrition's stacks) is
 snapshotted at the most recent shot, not re-read at the tick. At 1.5 shots/s

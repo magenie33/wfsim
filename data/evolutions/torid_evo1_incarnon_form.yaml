@@ -1,0 +1,18 @@
+id: torid_evo1_incarnon_form
+name: Incarnon Form
+weapon: torid
+tier: 1
+icon: IncarnonFormLongRangeBeam(xWhite).png
+description: "Direct shots charge Incarnon Transmutation; Alt Fire transmutes.
+Fire a long-range Toxin beam."
+selection: fixed                # tier 1 has no choice
+
+# Under the two-weapons model this perk IS the unlock of weapon #2: the held
+# trigger, the beam, the higher stats and the 2.3 m damage radius are all
+# properties of the torid_incarnon entry, not perk payload.
+effects:
+  - kind: unlocks_weapon
+    weapon: torid_incarnon
+
+source:
+  url: https://wiki.warframe.com/w/Torid_Incarnon_Genesis

@@ -1,0 +1,18 @@
+id: torid_swift_deliverance
+name: Swift Deliverance
+weapon: torid
+tier: 3
+icon: IncarnonProjectileSpeed(xWhite).png
+description: "+50% Projectile Speed"
+selection: choose_one
+
+effects:
+  # INERT in the arena: the grenade's 40 m/s travel time is not simmed (the
+  # target is at point blank and every shot connects). It is real quality of
+  # life on a slow, heavily-arcing projectile — outside the DPS math.
+  - kind: unmodeled
+    note: "+50% projectile speed (travel time is not simmed)"
+    rankMax: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Torid_Incarnon_Genesis

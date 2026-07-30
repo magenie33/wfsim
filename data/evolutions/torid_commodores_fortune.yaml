@@ -1,0 +1,17 @@
+id: torid_commodores_fortune
+name: Commodore's Fortune
+weapon: torid
+tier: 4
+icon: HighCrit(xWhite).png
+description: "Increase Base Critical Chance by +20%."
+selection: choose_one
+
+effects:
+  # Same evolution as the Dual Toxocyst's, same layer: it adds into the BASE
+  # crit chance, so crit mods multiply the new base (15% -> 35% base here, and
+  # Point Strike then gives 35% x 2.5 = 87.5%).
+  - kind: flat_base_crit_chance
+    value: 0.20
+
+source:
+  url: https://wiki.warframe.com/w/Torid_Incarnon_Genesis

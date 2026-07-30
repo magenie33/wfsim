@@ -1,0 +1,27 @@
+id: torid_final_fusillade
+name: Final Fusillade
+weapon: torid
+tier: 2
+icon: DamageXMultishotOnLastShotInMag(xWhite).png
+description: "Increase Base Damage by +51.
++3 Multishot on last shot in magazine."
+selection: choose_one
+
+effects:
+  # +51 on a 140 base is a big pro-rata scale-up, and it lowers the CO base
+  # fraction the same way Ripper Rounds does on the Dual Toxocyst (the GunCO
+  # base excludes evolution flat damage).
+  - kind: flat_base_damage
+    value: 51.0
+  # UNMODELED: the multishot is CONDITIONAL on being the last round of the
+  # magazine. On a 5-round magazine that is one shot in five getting 4 pellets
+  # instead of 1 — worth roughly +60% average multishot, so this is NOT a
+  # rounding error and it needs a real effect kind (a magazine-position gate the
+  # sim can evaluate: it already tracks the live magazine count).
+  # Recorded so implementing it is code-only.
+  - kind: unmodeled
+    note: "+3 multishot on the last round of the magazine"
+    rankMax: 3
+
+source:
+  url: https://wiki.warframe.com/w/Torid_Incarnon_Genesis

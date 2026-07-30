@@ -46,6 +46,16 @@ enum EvoEffect {
     FlatBaseDamage(f64),
     /// Adds into the BASE crit chance (crit mods multiply the new base).
     FlatBaseCritChance(f64),
+    /// Adds into the BASE status chance — the same base-stat layer, so status
+    /// mods multiply the new base (Torid's Survivor's Edge and Elemental
+    /// Balance both say "Increase Base Status Chance"). NOT the post-mod flat
+    /// layer that Elemental Excess occupies.
+    FlatBaseStatusChance(f64),
+    /// Adds whole rounds to the BASE magazine, before magazine mods (Torid's
+    /// Extended Volley: +9 on a base of 5). Explicitly NOT the Incarnon form's
+    /// charge-backed magazine — "Does not apply to Incarnon Form's Magazine" —
+    /// which is why it lands on the base entry only.
+    FlatBaseMagazine(f64),
     /// A PERMANENT stacking multishot buff (Fevered Frenzy: on-ability-cast
     /// stacks with no timer, cleared only by death — so inside a sim run the
     /// stack count is a static CHOICE, full by default). `total` = the
@@ -139,6 +149,26 @@ impl EvolutionDef {
             .sum()
     }
 
+    /// Σ flat BASE status chance (Survivor's Edge, Elemental Balance).
+    pub fn flat_base_status_chance(&self) -> f64 {
+        self.active_effects()
+            .filter_map(|e| match e {
+                EvoEffect::FlatBaseStatusChance(v) => Some(*v),
+                _ => None,
+            })
+            .sum()
+    }
+
+    /// Σ flat BASE magazine rounds (Extended Volley).
+    pub fn flat_base_magazine(&self) -> f64 {
+        self.active_effects()
+            .filter_map(|e| match e {
+                EvoEffect::FlatBaseMagazine(v) => Some(*v),
+                _ => None,
+            })
+            .sum()
+    }
+
     /// Σ assumed-max multishot from permanent stacks (Fevered Frenzy).
     pub fn assumed_multishot(&self) -> f64 {
         self.active_effects()
@@ -203,6 +233,8 @@ impl EvolutionDef {
                 // Static stat changes — nothing to configure at runtime.
                 EvoEffect::FlatBaseDamage(_)
                 | EvoEffect::FlatBaseCritChance(_)
+                | EvoEffect::FlatBaseStatusChance(_)
+                | EvoEffect::FlatBaseMagazine(_)
                 | EvoEffect::ConditionOverload { .. }
                 | EvoEffect::FireRateBonus(_)
                 | EvoEffect::PostModCritChance(_)
@@ -266,6 +298,13 @@ impl EvolutionDef {
                 }
                 EvoEffect::FlatBaseCritChance(v) => {
                     format!("+{:.0}% BASE crit chance (crit mods multiply it)", v * 100.0)
+                }
+                EvoEffect::FlatBaseStatusChance(v) => format!(
+                    "+{:.0}% BASE status chance (status mods multiply it)",
+                    v * 100.0
+                ),
+                EvoEffect::FlatBaseMagazine(v) => {
+                    format!("+{v:.0} base magazine (magazine mods multiply it)")
                 }
                 EvoEffect::AssumedMaxMultishot { total, max_stacks } => format!(
                     "+{:.0}% multishot ({max_stacks} on-ability-cast stacks, full by default)",
@@ -331,6 +370,10 @@ fn effect(v: &Value) -> Option<EvoEffect> {
     Some(match kind {
         "flat_base_damage" => EvoEffect::FlatBaseDamage(f(v, "value").unwrap_or(0.0)),
         "flat_base_crit_chance" => EvoEffect::FlatBaseCritChance(f(v, "value").unwrap_or(0.0)),
+        "flat_base_status_chance" => {
+            EvoEffect::FlatBaseStatusChance(f(v, "value").unwrap_or(0.0))
+        }
+        "flat_base_magazine" => EvoEffect::FlatBaseMagazine(f(v, "value").unwrap_or(0.0)),
         "stacking_buff" => {
             // Only the multishot payload is modeled (Fevered Frenzy);
             // other stacking payloads load inert until needed.
@@ -391,7 +434,39 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
         for eff in &e.effects {
             match eff {
                 EvoEffect::FlatBaseDamage(v) => flat += v,
-                EvoEffect::FlatBaseCritChance(v) => base.base_crit_chance += v,
+                // A base-stat evolution is a WEAPON stat change, so it lands
+                // on EVERY attack part, not just the direct hit. That is the
+                // same reading `resolve` already applies to Elemental Excess's
+                // post-mod layer ("a WEAPON stat change, so the explosion takes
+                // it too"), and the base layer is the more clearly weapon-wide
+                // of the two.
+                //
+                // INFERENCE, not a citation: no source states whether Torid's
+                // Commodore's Fortune / Survivor's Edge / Elemental Balance
+                // reach its Toxin cloud. It matters — the cloud is most of that
+                // weapon's damage — so it is called out here and in MECHANICS.
+                // Nothing else in the roster is affected: only Dual Toxocyst
+                // (no radial, no field) and the Torid have base-stat
+                // evolutions at all.
+                EvoEffect::FlatBaseCritChance(v) => {
+                    base.base_crit_chance += v;
+                    if let Some(r) = base.radial.as_mut() {
+                        r.base_crit_chance += v;
+                    }
+                    if let Some(f) = base.lingering.as_mut() {
+                        f.base_crit_chance += v;
+                    }
+                }
+                EvoEffect::FlatBaseStatusChance(v) => {
+                    base.base_status_chance += v;
+                    if let Some(r) = base.radial.as_mut() {
+                        r.base_status_chance += v;
+                    }
+                    if let Some(f) = base.lingering.as_mut() {
+                        f.base_status_chance += v;
+                    }
+                }
+                EvoEffect::FlatBaseMagazine(v) => base.magazine_size += v,
                 EvoEffect::AssumedMaxMultishot { total, max_stacks } => {
                     base.buff_multishot_bonus += total;
                     base.buff_ms_max_stacks = base.buff_ms_max_stacks.max(*max_stacks);

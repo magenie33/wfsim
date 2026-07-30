@@ -1,0 +1,108 @@
+id: torid_incarnon
+name: Torid (Incarnon Form)
+slot: primary
+class: launcher
+
+# TWO WEAPONS MODEL: second entry of the transform group — see
+# data/weapons/primary/torid.yaml for the base form and the decision.
+transform_group: torid
+transforms_from: torid
+
+# The Incarnon transformation economy (wiki Torid Incarnon Genesis).
+incarnon:
+  gauge:
+    # DIRECT hits, not weakpoint hits — this is the field that used to be
+    # documentation-only, and getting it wrong silently gave the Torid the
+    # Zariman rule. VERBATIM (wiki Incarnon): "Angstrum Incarnon Genesis and
+    # Torid Incarnon Genesis are instead charged through direct hits."
+    charge_on: direct_hits
+    charges_to_fill: 5
+    rounds_per_charge: 34
+    max_rounds: 170
+    # charge_rules:
+    # - "5 direct hits will completely fill the gauge", each charge producing
+    #   34 rounds to the 170 cap.
+    # - "Individual Multishot bullets can build charges."
+    # - "Torid's poison cloud does not build charges" (and a 37.0 patch note
+    #   had to fix the case where it did).
+    # - "A full gauge is not required to activate Incarnon Form."
+    # - Charges cannot be gained while already in Incarnon form (33.0.13).
+  transmute:
+    activation: alt_fire
+    # VERBATIM: "Mode switching is not instantaneous and has an animation equal
+    # to the weapon's reload speed."
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+  incarnon_magazine:
+    resource: incarnon_charges
+    # Both stated outright: "Incarnon Form's magazine is not affected by mods"
+    # and "Incarnon Form is not affected by Ammo Efficiency (such as Energized
+    # Munitions)" — so Primary Crux's ammo-efficiency grant is inert HERE while
+    # its status-chance grant still works.
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 1.7      # = the base form's reload time, unmodded
+  # 1 s is MEASURED on Dual Toxocyst (MEASUREMENTS M9) and applied uniformly
+  # until some weapon is measured to differ — no weapon is special-cased.
+  transmute_out_seconds: 1.0
+
+# SIM CONVENIENCE: with the gauge LOCKED full, the cycle reduces to a
+# magazine/reload model. 170 rounds at 1 per tick, and 1.0 + 1.7 s of
+# transitions (both scale with reload speed).
+pseudo_reload:
+  magazine: 170
+  reload_seconds: 2.7
+
+# CO behavior: the catalog has NO row for this form. Beams DO take CO — its
+# eligibility list includes "Beam (e.g., Spectra)" and "Beam AoE (e.g., Glaxion
+# Vandal)" — but the CLASS is not stated, so `independent` is INFERRED from the
+# weapon's other two rows, both "Multiplying". A MODELING CHOICE, not a cited
+# fact; a measurement can overturn it.
+co_behavior: independent
+
+# ONE attack part, which is the surprise and it is explicit. The form is a
+# CONTINUOUS beam with a 2.3 m damage radius, and VERBATIM: "The damage radius
+# is not a separate damage instance from the beam, so a target that is directly
+# struck by the beam is still only hit once." So there is no `radial:` here —
+# adding one would double-count the single target.
+#
+# Also inert in a single-target arena, recorded so nobody looks for them:
+#  - the 5-target chain within 7 m at 75% of the previous chain's damage;
+#  - "As a continuous weapon, the spherical damage radius does not benefit from
+#    Multishot; only targets directly hit by the beam benefit";
+#  - 37 m range, and Punch Through mods "have no effect on the behavior of the
+#    beam";
+#  - Sinister Reach / Combustion Beam are NOT equippable, "as the base Torid is
+#    not a beam weapon" — a real constraint on builds, not on this calc.
+#
+# And there is NO cloud in this form: the data module lists the Poison Cloud as
+# a child of attack 1 (AttackParentIndex 1, the grenade), and the Incarnon
+# attack has no field of its own.
+attack:
+  trigger: held                 # continuous: `fire_rate` is TICKS per second
+  shot_type: beam
+  fire_rate: 8.0
+  multishot: 1.0
+  ammo_cost: 1                  # of the separate 170-round charge magazine
+  crit_chance: 0.29
+  crit_multiplier: 3.1
+  status_chance: 0.39
+  punch_through_m: 0.0
+  damage: { toxin: 51.0 }
+  # Blast geometry, carried for the panel and the future multi-target model.
+  # It is NOT an attack part (see above), and Firestorm DOES enlarge it: "The
+  # 2.3 meter damage radius from the point of impact CAN benefit from Firestorm
+  # (Primed)."
+  beam_radius_m: 2.3
+  beam_range_m: 37.0
+  chain_targets: 5
+  chain_range_m: 7.0
+  chain_falloff: 0.75
+
+# incarnon_evolutions: see data/weapons/primary/torid.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Torid_Incarnon_Genesis
+  # note: stats cross-checked wiki Module:Weapons/data/primary (attack 3,
+  # "Incarnon Form", Trigger "Held") == WFCD warframe-items. Both give
+  # 51 Toxin / 29% / 3.1x / 39% at 8 ticks per second.

@@ -1,0 +1,23 @@
+id: torid_renewed_horror
+name: Renewed Horror
+weapon: torid
+tier: 3
+icon: IncarnonReloadSpeed(xWhite).png
+description: "On Reload from Empty: Lingering damage field duration doubles on first shot."
+selection: choose_one
+
+effects:
+  # UNMODELED. The lingering field EXISTS in the engine now, so this needs no
+  # new machinery beyond the trigger: double `duration_s` for the field spawned
+  # by the FIRST shot after a reload-from-empty. On a 5-round magazine that is
+  # one cloud in five running 20 s instead of 10 — under `stack` semantics a
+  # straight +20% of the cloud's total ticks.
+  # Note it was BROKEN once and fixed in 33.6 ("Fixed Torid's Renewed Horror
+  # perk not doubling duration on the damage field duration on first shot as
+  # intended"), so it does work now.
+  - kind: unmodeled
+    note: "on reload from empty: the first shot's lingering field lasts twice as long"
+    rankMax: 2
+
+source:
+  url: https://wiki.warframe.com/w/Torid_Incarnon_Genesis

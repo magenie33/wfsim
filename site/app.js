@@ -1002,7 +1002,11 @@ function applyWeaponInner(id, presetMods) {
   innate = (w.innate_polarities || []).slice(0, 8);
   while (innate.length < 9) innate.push(null);
 
-  $("w-img").src = IMG(w.image) || "";
+  // A weapon with no asset yet must show NOTHING, not a broken-image box:
+  // src="" still resolves (to the page) and renders as a failed load.
+  const wimg = IMG(w.image);
+  $("w-img").hidden = !wimg;
+  if (wimg) $("w-img").src = wimg;
   // The weapon name links to its wiki page too (display suffixes like
   // " (sentinel)" are ours, not part of the page name).
   $("w-name").innerHTML = wl(w.name, wikiUrl((w.name_en || w.name).replace(" (sentinel)", "")));

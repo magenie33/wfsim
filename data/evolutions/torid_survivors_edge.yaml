@@ -1,0 +1,20 @@
+id: torid_survivors_edge
+name: Survivor's Edge
+weapon: torid
+tier: 4
+icon: XCritChanceYStatChance(xWhite).png
+description: "Increase Base Critical Chance by +15%.
+Increase Base Status Chance by +15%."
+selection: choose_one
+
+effects:
+  # Both are BASE-stat additions, the layer mods multiply — "Increase Base
+  # Critical Chance" / "Increase Base Status Chance" is the wiki's own wording,
+  # and it is a different layer from Elemental Excess's post-mod flat adds.
+  - kind: flat_base_crit_chance
+    value: 0.15
+  - kind: flat_base_status_chance
+    value: 0.15
+
+source:
+  url: https://wiki.warframe.com/w/Torid_Incarnon_Genesis

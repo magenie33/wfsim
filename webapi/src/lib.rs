@@ -977,6 +977,7 @@ pub fn panel_json(v: &Value) -> Value {
     // (key, source name, PRE-FORMATTED value, note)
     let mut evo_src: Vec<(&'static str, String, String, Option<String>)> = Vec::new();
     let (mut evo_flat_bd, mut evo_flat_cc) = (0.0f64, 0.0f64);
+    let (mut evo_flat_sc, mut evo_flat_mag) = (0.0f64, 0.0f64);
     if form_unlock_evo(info).is_some() {
         // Tiers are per weapon (adapters I-IV, Zariman weapons I-V), so the
         // numeral is BUILT, not indexed - a fixed table silently rendered the
@@ -1015,6 +1016,26 @@ pub fn panel_json(v: &Value) -> Value {
                     name.clone(),
                     format!("+{:.0}% base", v * 100.0),
                     Some("into the BASE crit chance — crit mods multiply it".into()),
+                ));
+            }
+            let v = def.flat_base_status_chance();
+            if v > 0.0 {
+                evo_flat_sc += v;
+                evo_src.push((
+                    "status_chance",
+                    name.clone(),
+                    format!("+{:.0}% base", v * 100.0),
+                    Some("into the BASE status chance — status mods multiply it".into()),
+                ));
+            }
+            let v = def.flat_base_magazine();
+            if v > 0.0 {
+                evo_flat_mag += v;
+                evo_src.push((
+                    "magazine",
+                    name.clone(),
+                    format!("+{v:.0} rounds"),
+                    Some("into the BASE magazine — magazine mods multiply it".into()),
                 ));
             }
             let v = def.assumed_multishot();
@@ -1085,6 +1106,8 @@ pub fn panel_json(v: &Value) -> Value {
         // flat deltas are attributed as named source rows, not hidden in "base".
         let raw_bd = base.base_vector.total() - evo_flat_bd;
         let raw_cc = base.base_crit_chance - evo_flat_cc;
+        let raw_sc = base.base_status_chance - evo_flat_sc;
+        let raw_mag = base.magazine_size - evo_flat_mag;
         row(
             "base_damage",
             "Base Damage",
@@ -1112,7 +1135,7 @@ pub fn panel_json(v: &Value) -> Value {
         row(
             "status_chance",
             "Status Chance",
-            pc(base.base_status_chance),
+            pc(raw_sc),
             pc(panel.status_chance),
         );
         // Identical formatting on both sides — the UI drops the arrow only
@@ -1155,7 +1178,7 @@ pub fn panel_json(v: &Value) -> Value {
             row(
                 "magazine",
                 "Magazine",
-                num(base.magazine_size),
+                num(raw_mag),
                 num(panel.magazine_size),
             );
             row(
@@ -1305,14 +1328,16 @@ pub fn panel_json(v: &Value) -> Value {
                     "base": num(rb.base_vector.total()), "final": num(rr.modified_base),
                     "sources": rsrc("base_damage") }),
                 json!({ "key": "crit_chance", "label": "Crit Chance",
-                    "base": pc(rb.base_crit_chance), "final": pc(rr.crit_chance),
+                    "base": pc(rb.base_crit_chance - evo_flat_cc),
+                    "final": pc(rr.crit_chance),
                     "sources": rsrc("crit_chance") }),
                 json!({ "key": "crit_damage", "label": "Crit Damage",
                     "base": format!("×{}", num(rb.base_crit_damage)),
                     "final": format!("×{}", num(rr.crit_damage)),
                     "sources": rsrc("crit_damage") }),
                 json!({ "key": "status_chance", "label": "Status Chance",
-                    "base": pc(rb.base_status_chance), "final": pc(rr.status_chance),
+                    "base": pc(rb.base_status_chance - evo_flat_sc),
+                    "final": pc(rr.status_chance),
                     "sources": rsrc("status_chance") }),
                 json!({ "key": "status_damage", "label": "Status Damage",
                     "base": format!("×{}", num(1.0)),
@@ -1344,6 +1369,82 @@ pub fn panel_json(v: &Value) -> Value {
                 "stats": rows,
                 "damage": vector_rows(&rr.damage),
                 "damage_total": num(rr.damage.total()),
+            }));
+        }
+
+        // The lingering FIELD is a THIRD kind of part (MECHANICS §7): it does
+        // not land once, it ticks. So it states its own clock — rate, lifetime
+        // and the resulting total — on top of the same per-instance stats,
+        // because "40 damage" means nothing here without "×10 ticks".
+        if let (Some(fb), Some(fr)) = (base.lingering.as_ref(), panel.lingering.as_ref()) {
+            let fsrc = |key: &'static str| sources(key, None);
+            let dist = |x: f64| format!("{x}");
+            let ticks = (fr.duration_s * fr.tick_rate).round();
+            let rows = vec![
+                json!({ "key": "base_damage", "label": "Damage per Tick",
+                    "base": num(fb.base_vector.total()), "final": num(fr.modified_base),
+                    "sources": fsrc("base_damage") }),
+                json!({ "key": "crit_chance", "label": "Crit Chance",
+                    "base": pc(fb.base_crit_chance - evo_flat_cc),
+                    "final": pc(fr.crit_chance),
+                    "sources": fsrc("crit_chance") }),
+                json!({ "key": "crit_damage", "label": "Crit Damage",
+                    "base": format!("×{}", num(fb.base_crit_damage)),
+                    "final": format!("×{}", num(fr.crit_damage)),
+                    "sources": fsrc("crit_damage") }),
+                json!({ "key": "status_chance", "label": "Status Chance",
+                    "base": pc(fb.base_status_chance - evo_flat_sc),
+                    "final": pc(fr.status_chance),
+                    "sources": fsrc("status_chance") }),
+                json!({ "key": "status_damage", "label": "Status Damage",
+                    "base": format!("×{}", num(1.0)),
+                    "final": format!("×{}", num(panel.status_damage_mult)),
+                    "sources": fsrc("status_damage") }),
+                json!({ "key": "status_duration", "label": "Status Duration",
+                    "base": format!("×{}", num(1.0)),
+                    "final": format!("×{}", num(panel.status_duration_mult)),
+                    "sources": fsrc("status_duration") }),
+                // The clock. Neither is mod-scaled: fire-rate mods change shots
+                // per second, not the cloud's own tick rate, and the cloud is
+                // not a status effect so status duration does not reach it.
+                json!({ "key": "tick_rate", "label": "Tick Rate", "base": "—",
+                    "final": format!("{}/s", dist(fr.tick_rate)), "sources": json!([]) }),
+                json!({ "key": "field_duration", "label": "Field Duration",
+                    "base": "—", "final": format!("{} s", dist(fr.duration_s)),
+                    "note": format!("{} ticks per field; the first is delayed one period",
+                        dist(ticks)),
+                    "sources": json!([]) }),
+                json!({ "key": "field_total", "label": "Total per Field",
+                    "base": num(fb.base_vector.total() * ticks),
+                    "final": num(fr.modified_base * ticks),
+                    "note": "one grenade, before crit and Condition Overload".to_string(),
+                    "sources": json!([]) }),
+                json!({ "key": "radius", "label": "Field Radius", "base": "—",
+                    "final": format!("{} m", dist(fr.radius_m)), "sources": json!([]) }),
+                json!({ "key": "falloff", "label": "Damage Falloff", "base": "—",
+                    "final": format!("{}% at {} m",
+                        dist((1.0 - fr.falloff_reduction) * 100.0), dist(fr.radius_m)),
+                    "note": "the grenade sticks, so the target stands at the epicentre"
+                        .to_string(),
+                    "sources": json!([]) }),
+                // The one unverified knob, stated on the panel rather than
+                // buried in the yaml — it is worth up to ~5x here.
+                json!({ "key": "field_stacking", "label": "Overlapping Fields",
+                    "base": "—",
+                    "final": match fr.stacking {
+                        wfsim_engine::loadout::FieldStacking::Stack => "stack",
+                        wfsim_engine::loadout::FieldStacking::Refresh => "refresh",
+                    },
+                    "note": "UNVERIFIED (MEASUREMENTS M12)".to_string(),
+                    "sources": json!([]) }),
+            ];
+            parts.push(json!({
+                "id": "field",
+                "label": "Lingering field",
+                "meta": format!("{} m, {} s", dist(fr.radius_m), dist(fr.duration_s)),
+                "stats": rows,
+                "damage": vector_rows(&fr.damage),
+                "damage_total": num(fr.damage.total()),
             }));
         }
 
