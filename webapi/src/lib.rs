@@ -2609,8 +2609,8 @@ pub fn run_optimize_resumable(
         };
         let started_with = r_jobs_at_start.max(n_jobs);
         let n_cands = cands.len();
-        // A round is ONE blocking call, and round 1 of a big scope runs for
-        // many minutes — round boundaries are too coarse to answer a cancel.
+        // A round is ONE blocking call, and round 1 is the whole field before
+        // any culling — round boundaries are too coarse to answer a cancel.
         let rboard = on_board.map(|b| move |top: &[(Job, Summary)]| {
             b(&board_of(top, n_cands, n_jobs));
         });

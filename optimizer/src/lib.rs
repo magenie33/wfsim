@@ -1312,12 +1312,14 @@ pub type CheckpointFn<'a> = dyn Fn(usize, &[(Job, Summary)]) + 'a;
 /// there depends on this.
 pub type ScreenBoardFn<'a> = dyn Fn(&[ScreenedJob]) + 'a;
 
-/// Best-so-far INSIDE a round, fired every `BOARD_EVERY` jobs evaluated. A
-/// round is one blocking `evaluate_batch` call, and round 1 of a materialized
-/// scope can be millions of jobs — tens of minutes in a browser worker with
-/// nothing published between its start and its end (user, 2026-07-30: still
-/// nothing after cancelling). Round boundaries alone are not a fine enough
-/// heartbeat to answer a cancel.
+/// Best-so-far INSIDE a round, fired every `BOARD_EVERY` jobs evaluated.
+///
+/// A round is ONE blocking `evaluate_batch` call, and round 1 is by far the
+/// longest — it is the whole field, before any culling. Nothing left the
+/// worker between its start and its end, so a cancel inside it had nothing to
+/// show (user, 2026-07-30: still nothing after cancelling). That holds in both
+/// regimes: round 1 is the materialized field, or the screen's survivors.
+/// Round boundaries alone are not a fine enough heartbeat to answer a cancel.
 pub type RoundBoardFn<'a> = dyn Fn(&[(Job, Summary)]) + 'a;
 
 /// How many entries a best-so-far snapshot carries. Comfortably above the
