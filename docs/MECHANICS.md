@@ -1277,6 +1277,16 @@ from wiki; falloff/ballistics/AoE math need measurement). **High-risk**
 
 ## 8. Target mitigation (pipeline layer [7])
 
+> **The other actor.** Everything in this section is about the TARGET, because
+> the target is the only actor the sim has ever had. The player now exists as
+> data — `data/tenno/`, loaded by `engine::tenno_data` — carrying health,
+> shield, overguard, armor and energy. It is **inert on purpose**: no damage
+> number moves because of it. It is the seam for the mechanics that need a
+> player and currently have nowhere to live — Secondary Fortifier's Overguard
+> gain, Secondary Surge's remaining-energy scaling, the Warframe abilities in
+> §6's GunCO omission list, and self-stagger. `health`/`shield` are placeholders
+> at 1; no frame has 1 health, and nothing may treat the value as meaningful.
+
 **Definition.** How the target reduces incoming damage.
 
 **Faction damage modifiers (post-U36 system).** As of **Update 36** ("Jade

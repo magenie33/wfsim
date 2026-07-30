@@ -86,6 +86,7 @@ sharing requirement: it is a pure move — no referencing entry changes.
 | `enemies/` | enemies (loaded by `engine::enemy_data`; `custom/` holds synthetic test targets) | `stats` (base values at `base_level`), `body_parts` (multiplier / `is_head` / `crit_bonus`; aim weights are scenario-side), `scaling_faction`, `can_be_eximus`, `faction_damage_override`, `synthetic`, raw `mechanics` |
 | `i18n/` | display-name overlays per locale (`zh.yaml`; loaded by `engine::i18n_data`, served at `/api/i18n`) | per-table `id → name` maps: `weapons`, `enemies`, `damage_types`, `mods`, `arcanes`, `evolutions` |
 | `factions/` | faction damage modifiers (post-U36, faction-wide) as **numeric multipliers** per damage type (unlisted = 1.0; today's values happen to be 1.5/0.5 — never assume it) | `factions.<id>.<damage_type>: <mult>`, `special` (Object, Overguard pools), `faction_mods` (Bane system) |
+| `tenno/` | the **player** (loaded by `engine::tenno_data`). **INERT on purpose** — it participates in no calculation yet; it exists so the mechanics that need a player have somewhere to attach instead of each inventing one. `health`/`shield` are PLACEHOLDERS at 1, not Warframe stats | `health`, `shield`, `overguard`, `armor`, `energy` |
 
 ## Where a parameter lives
 

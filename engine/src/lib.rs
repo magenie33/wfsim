@@ -34,6 +34,7 @@ pub mod rng;
 pub mod scaling;
 pub mod sim;
 pub mod status;
+pub mod tenno_data;
 pub mod weapons_data;
 pub mod world;
 

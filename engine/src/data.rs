@@ -27,7 +27,7 @@ mod tests {
 
     #[test]
     fn the_embedded_tree_covers_every_data_family() {
-        for prefix in ["mods/pistol/", "arcanes/secondary/", "evolutions/", "enemies/", "perks/", "weapons/", "i18n/"] {
+        for prefix in ["mods/pistol/", "arcanes/secondary/", "evolutions/", "enemies/", "perks/", "weapons/", "i18n/", "tenno/"] {
             assert!(files_under(prefix).count() > 0, "no embedded files under {prefix}");
         }
         assert!(file("assets.yaml").is_some());

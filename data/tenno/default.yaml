@@ -1,0 +1,44 @@
+# The TENNO — the player side of a fight.
+#
+# The sim has always modelled exactly one actor: the target. Everything that
+# depends on the PLAYER existing therefore had nowhere to live, and each such
+# mechanic was recorded as unmodelled one file at a time:
+#
+#   - Secondary Fortifier grants the player Overguard per damage dealt;
+#   - Secondary Surge scales damage by the ENERGY remaining after a cast;
+#   - the GunCO "Adding" omission list is largely Warframe abilities
+#     (Vex Armor, Eclipse, Furious Javelin, Parasitic Link) — MECHANICS §6;
+#   - self-stagger from one's own radial attacks (Cautious Shot).
+#
+# This entry is the seam those attach to. It is LOADED and pinned by a test,
+# and it deliberately does NOT participate in any calculation yet: no damage
+# number moves because this file exists. Introducing it now, rather than with
+# the first mechanic that needs it, is the point — the next change configures a
+# Tenno instead of also having to invent one (user, 2026-07-30).
+#
+# `health` and `shield` are PLACEHOLDERS at 1: present and non-zero so that a
+# future consumer reading them cannot silently divide by zero or read "dead",
+# but obviously not real Warframe values — no frame has 1 health. Replace them
+# with the chosen frame's stats when frames land; do not build anything that
+# treats 1 as meaningful.
+id: tenno
+name: Tenno
+
+# Survivability pools. Overguard sits ABOVE shields and blocks status; armor
+# mitigates health damage only. Both are 0 here because the placeholder Tenno
+# has no frame and no buffs — 0 is their true unbuffed value, unlike the two
+# placeholders above.
+health: 1
+shield: 1
+overguard: 0
+armor: 0
+
+# Ability energy. Secondary Surge reads what is LEFT after a cast, so this is a
+# pool the sim will have to spend from, not a static stat.
+energy: 0
+
+source:
+  # No wiki page defines "the default Tenno" — this is our own scaffold, and
+  # the values are placeholders rather than transcribed facts. The frame stats
+  # that will replace them come from the wiki Warframe data module.
+  url: null
