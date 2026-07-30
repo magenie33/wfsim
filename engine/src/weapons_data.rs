@@ -57,8 +57,9 @@ pub struct LingeringSpec {
     pub falloff_start_m: Option<f64>,
     #[serde(default)]
     pub falloff_reduction: Option<f64>,
-    /// `stack` (default) or `refresh` — UNVERIFIED, see MEASUREMENTS M12. It
-    /// is a data field precisely so one measurement can flip it.
+    /// `stack` (default) or `refresh`. The Torid STACKS — ✅ measured
+    /// (MEASUREMENTS M13) — but this stays weapon DATA rather than a constant:
+    /// the branch is per weapon, and a future one may refresh.
     #[serde(default = "stack")]
     pub stacking: String,
 }
@@ -475,6 +476,9 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // The data module's Trigger for a beam. Not cosmetic: it decides
         // whether `fire_rate` means shots or TICKS and whether multishot merges.
         continuous: s.attack.trigger == "held",
+        field_duration_on_empty_reload: 1.0, // raised by Renewed Horror
+        multishot_on_last_round: 0.0,        // raised by Final Fusillade
+        multishot_ammo_bonus: 0.0,           // raised by Plentiful Mayhem
         // All raised by evolutions, never by the raw weapon data.
         evo_fire_rate_bonus: 0.0,
         post_mod_crit_chance: 0.0,
@@ -524,7 +528,7 @@ mod tests {
         assert!((f.radius_m - 3.0).abs() < 1e-9);
         // To ZERO at the rim, unlike the Laetum radial's 0.2.
         assert!((f.falloff_reduction - 1.0).abs() < 1e-9);
-        assert_eq!(f.stacking, FieldStacking::Stack, "unverified default (M12)");
+        assert_eq!(f.stacking, FieldStacking::Stack, "measured (M13)");
         assert!(b.radial.is_none(), "the cloud is a field, not an explosion");
 
         // The Incarnon form: a continuous beam, ONE attack part (its 2.3 m

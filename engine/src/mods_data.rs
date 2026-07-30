@@ -113,6 +113,7 @@ fn effect(v: &Value) -> Option<ModEffect> {
         "fire_rate_bonus" => ModEffect::FireRate(max("rankMax")),
         "reload_speed_bonus" => ModEffect::ReloadSpeed(max("rankMax")),
         "magazine_capacity_bonus" => ModEffect::MagazineCapacity(max("rankMax")),
+        "blast_radius_bonus" => ModEffect::BlastRadius(max("rankMax")),
         "status_duration_bonus" => ModEffect::StatusDuration(max("rankMax")),
         // Faction damage (Bane/Expel): +max total damage vs the named faction.
         // An unrecognized faction (Unknown) drops the effect (mod still loads).

@@ -56,6 +56,18 @@ enum EvoEffect {
     /// charge-backed magazine — "Does not apply to Incarnon Form's Magazine" —
     /// which is why it lands on the base entry only.
     FlatBaseMagazine(f64),
+    /// Renewed Horror: reloading from EMPTY arms a buff that multiplies the
+    /// duration of the NEXT shot's lingering field. ✅ measured (M13): x2, so
+    /// that field ticks 20 times instead of 10.
+    FieldDurationOnEmptyReload(f64),
+    /// Final Fusillade: a FLAT multishot add on the last round of the magazine,
+    /// BASE FORM ONLY (user, 2026-07-30) — a charge-backed Incarnon magazine
+    /// has no "last shot in magazine" to gate on, so `apply` drops it there.
+    MultishotOnLastRound(f64),
+    /// Plentiful Mayhem: multishot draws its extra rounds from ammo, and the
+    /// projectiles it GENERATES deal +v damage as an independent multiplier.
+    /// Affects both forms; the sim reads the per-form rule off `continuous`.
+    MultishotConsumesAmmo(f64),
     /// A PERMANENT stacking multishot buff (Fevered Frenzy: on-ability-cast
     /// stacks with no timer, cleared only by death — so inside a sim run the
     /// stack count is a static CHOICE, full by default). `total` = the
@@ -235,6 +247,9 @@ impl EvolutionDef {
                 | EvoEffect::FlatBaseCritChance(_)
                 | EvoEffect::FlatBaseStatusChance(_)
                 | EvoEffect::FlatBaseMagazine(_)
+                | EvoEffect::FieldDurationOnEmptyReload(_)
+                | EvoEffect::MultishotOnLastRound(_)
+                | EvoEffect::MultishotConsumesAmmo(_)
                 | EvoEffect::ConditionOverload { .. }
                 | EvoEffect::FireRateBonus(_)
                 | EvoEffect::PostModCritChance(_)
@@ -306,6 +321,16 @@ impl EvolutionDef {
                 EvoEffect::FlatBaseMagazine(v) => {
                     format!("+{v:.0} base magazine (magazine mods multiply it)")
                 }
+                EvoEffect::FieldDurationOnEmptyReload(v) => format!(
+                    "On reload from empty: x{v:.0} lingering-field duration on the next shot"
+                ),
+                EvoEffect::MultishotOnLastRound(v) => {
+                    format!("+{v:.0} multishot on the last round of the magazine (base form only)")
+                }
+                EvoEffect::MultishotConsumesAmmo(v) => format!(
+                    "+{:.0}% damage on multishot-generated projectiles; multishot consumes ammo",
+                    v * 100.0
+                ),
                 EvoEffect::AssumedMaxMultishot { total, max_stacks } => format!(
                     "+{:.0}% multishot ({max_stacks} on-ability-cast stacks, full by default)",
                     total * 100.0
@@ -374,6 +399,15 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             EvoEffect::FlatBaseStatusChance(f(v, "value").unwrap_or(0.0))
         }
         "flat_base_magazine" => EvoEffect::FlatBaseMagazine(f(v, "value").unwrap_or(0.0)),
+        "field_duration_on_empty_reload" => {
+            EvoEffect::FieldDurationOnEmptyReload(f(v, "value").unwrap_or(1.0))
+        }
+        "multishot_on_last_round" => {
+            EvoEffect::MultishotOnLastRound(f(v, "value").unwrap_or(0.0))
+        }
+        "multishot_consumes_ammo" => {
+            EvoEffect::MultishotConsumesAmmo(f(v, "value").unwrap_or(0.0))
+        }
         "stacking_buff" => {
             // Only the multishot payload is modeled (Fevered Frenzy);
             // other stacking payloads load inert until needed.
@@ -467,6 +501,21 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     }
                 }
                 EvoEffect::FlatBaseMagazine(v) => base.magazine_size += v,
+                EvoEffect::FieldDurationOnEmptyReload(v) => {
+                    base.field_duration_on_empty_reload = *v;
+                }
+                // BASE FORM ONLY: `incarnon.is_some()` marks the charge-backed
+                // form, whose magazine is the gauge's round pool rather than a
+                // reloaded magazine — nothing there is "the last round".
+                EvoEffect::MultishotOnLastRound(v) => {
+                    if base.incarnon.is_none() {
+                        base.multishot_on_last_round = *v;
+                    }
+                }
+                // "Affects both modes" — unlike Final Fusillade this one lands
+                // on the charge-backed form too; what differs is the RULE, and
+                // the sim picks that off `continuous`, not off the form id.
+                EvoEffect::MultishotConsumesAmmo(v) => base.multishot_ammo_bonus = *v,
                 EvoEffect::AssumedMaxMultishot { total, max_stacks } => {
                     base.buff_multishot_bonus += total;
                     base.buff_ms_max_stacks = base.buff_ms_max_stacks.max(*max_stacks);
@@ -635,5 +684,30 @@ mod tests {
         apply(&mut probe, &[get("dual_toxocyst_ready_retaliation").unwrap()]);
         assert!((probe.base_vector.total() - with.base_vector.total()).abs() < 1e-9);
         assert_eq!(probe.base_crit_chance, with.base_crit_chance);
+    }
+
+    /// Final Fusillade is BASE FORM ONLY (user, 2026-07-30). Both forms load
+    /// the SAME evolution id — the gate has to be the form, not the id, so this
+    /// pins that the charge-backed form comes out with nothing.
+    #[test]
+    fn final_fusillades_last_round_multishot_skips_the_incarnon_form() {
+        use crate::loadout::WeaponBase;
+        let evos = ["torid_final_fusillade"];
+        let base = WeaponBase::from_data("torid", false, &evos);
+        let inc = WeaponBase::from_data("torid_incarnon", false, &evos);
+        assert!(
+            (base.multishot_on_last_round - 3.0).abs() < 1e-9,
+            "base form got {}",
+            base.multishot_on_last_round
+        );
+        assert_eq!(
+            inc.multishot_on_last_round, 0.0,
+            "a charge-backed magazine has no last round to gate on"
+        );
+        // The flat base damage on the same evolution DOES reach both forms —
+        // otherwise this test would pass on a build that dropped the whole
+        // evolution rather than just its conditional half.
+        let bare = WeaponBase::from_data("torid_incarnon", false, &[]);
+        assert!(inc.base_vector.total() > bare.base_vector.total());
     }
 }

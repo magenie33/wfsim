@@ -965,6 +965,17 @@ pub struct DummyParams {
     /// CONTINUOUS (beam) weapon: `fire_rate` is ticks per second, and multishot
     /// beams on one target MERGE into a single damage instance.
     pub continuous: bool,
+    /// Renewed Horror: what a reload-from-EMPTY does to the NEXT shot's field
+    /// duration (1.0 = none). ✅ measured x2 (M13).
+    pub field_duration_on_empty_reload: f64,
+    /// Final Fusillade: FLAT multishot added on the magazine's last round only
+    /// (0.0 = none). Base form only — the evolution loader already dropped it
+    /// on a charge-backed form, so this field just carries what survived.
+    pub multishot_on_last_round: f64,
+    /// Plentiful Mayhem: +v damage on multishot-GENERATED projectiles, and
+    /// multishot spends ammo to make them (0.0 = none). See `run_once` for the
+    /// two per-form rules this drives.
+    pub multishot_ammo_bonus: f64,
     /// Evolution headshot-damage bonus (Caput Mortuum) — joins the
     /// headshot bracket. Direct hits only; a radial never headshots.
     pub headshot_damage_bonus: f64,
@@ -1260,6 +1271,9 @@ impl DummyParams {
             radial: panel.radial,
             lingering: panel.lingering,
             continuous: panel.continuous,
+            field_duration_on_empty_reload: panel.field_duration_on_empty_reload,
+            multishot_on_last_round: panel.multishot_on_last_round,
+            multishot_ammo_bonus: panel.multishot_ammo_bonus,
             headshot_damage_bonus: panel.headshot_damage_bonus,
             noncrit_bonus: panel.noncrit_bonus,
             plain_hit_bonus: panel.plain_hit_bonus,
@@ -1386,6 +1400,9 @@ impl Default for DummyParams {
             radial: None,
             lingering: None,
             continuous: false,
+            field_duration_on_empty_reload: 1.0,
+            multishot_on_last_round: 0.0,
+            multishot_ammo_bonus: 0.0,
             headshot_damage_bonus: 0.0,
             noncrit_bonus: None,
             plain_hit_bonus: None,
@@ -1991,6 +2008,11 @@ struct FieldState {
     /// transmute, and only one form of a transform group has a field at all, so
     /// the field cannot be re-read from the active form.
     part: crate::loadout::ResolvedLingering,
+    /// Plentiful Mayhem: the independent damage multiplier the SPAWNING pellet
+    /// carried (1.0 for the weapon's own projectile, 1+bonus for one multishot
+    /// generated). Per field, because within one pull some grenades have it and
+    /// some do not.
+    damage_mult: f64,
 }
 
 /// The attacker-side buff state a FIELD tick reads, as of the most recent
@@ -2050,9 +2072,12 @@ fn process_field_ticks(
         // Status events strictly before this tick land first.
         process_ticks(debuffs, gal, arc, at + 1e-9, target, params, r);
         let part = fields[i].part;
+        let dmg_mult = fields[i].damage_mult;
         fields[i].next_tick += 1.0 / part.tick_rate;
         fields[i].ticks_left -= 1;
-        let killed = field_tick(&part, at, ctx, debuffs, gal, arc, target, params, ap, r, rng);
+        let killed = field_tick(
+            &part, dmg_mult, at, ctx, debuffs, gal, arc, target, params, ap, r, rng,
+        );
         if killed {
             // Fresh individual: the clouds were stuck to the one that died, and
             // its statuses go with it (the same rule the pellet path follows).
@@ -2077,6 +2102,9 @@ fn process_field_ticks(
 #[allow(clippy::too_many_arguments)]
 fn field_tick(
     f: &crate::loadout::ResolvedLingering,
+    // Plentiful Mayhem's independent multiplier, carried from the grenade that
+    // left this cloud (1.0 = the weapon's own projectile, or no such perk).
+    dmg_mult: f64,
     at: f64,
     ctx: &FieldCtx,
     debuffs: &mut DebuffState,
@@ -2121,7 +2149,13 @@ fn field_tick(
     // Falloff is 1.0: the grenade STICKS to the target, so the target stands at
     // the epicentre for every tick — which is exactly why the wiki calls a
     // direct hit "the maximum possible damage".
-    let raw = qtotal * crit_mult * bucket * params.faction_mult;
+    //
+    // `dmg_mult` (Plentiful Mayhem) rides here rather than inside ModifiedBase:
+    // the wiki calls it "multiplicative to base damage bonuses like Serration",
+    // i.e. its own bracket. Consequence, recorded because nothing sources it:
+    // the status payloads below are left OUT of it, the same treatment the beam
+    // ramp and Devouring Attrition already get.
+    let raw = qtotal * crit_mult * bucket * params.faction_mult * dmg_mult;
     let (effective, killed, broke) =
         target.apply(raw, toxin_share, false, at, &params.target, false, &mit);
     r.total_damage += raw;
@@ -2392,6 +2426,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     // kind shares.
     // A continuous weapon's damage ramp, per run.
     let mut beam = BeamRamp::default();
+    // Renewed Horror: armed by a reload from empty, spent by the next shot's
+    // field. The sim always reloads from empty (it fires until dry), so on the
+    // Torid this is the first shot of every magazine after the first.
+    let mut field_duration_boost = false;
     // Live lingering FIELDS (Torid's clouds), one entry per grenade that stuck.
     let mut fields: Vec<FieldState> = Vec::new();
     let mut field_ctx = FieldCtx::default();
@@ -2464,6 +2502,9 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     fr_reload_expiry = t + b.duration;
                 }
                 base_mag = cy.base_form.magazine_size;
+                // Renewed Horror: "On Reload from Empty". This branch IS the
+                // reload-from-empty path.
+                field_duration_boost = true;
                 continue;
             }
         } else if magazine < 1e-9 {
@@ -2486,6 +2527,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 take
             };
             magazine = refill;
+            field_duration_boost = true; // reloaded from empty (Renewed Horror)
             if t >= params.duration_secs {
                 break;
             }
@@ -2553,11 +2595,18 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         } else {
             0.0
         };
-        if in_base_form {
-            base_mag -= 1.0 - efficiency;
+        // Final Fusillade's gate, read BEFORE the round is spent: this pull is
+        // the magazine's last round if there is at most one left to fire. On a
+        // charge-backed form `multishot_on_last_round` is 0.0 anyway (the
+        // evolution loader dropped it), so the flag costs nothing there.
+        let last_round = if in_base_form {
+            base_mag <= 1.0 + 1e-9
         } else {
-            magazine -= 1.0 - efficiency;
-        }
+            magazine <= 1.0 + 1e-9
+        };
+        // The round itself is spent BELOW, once the multishot roll is known:
+        // Plentiful Mayhem makes the extra projectiles cost ammo too, so the
+        // draw cannot be settled before the roll.
 
         // CRIT SOURCES SPLIT BY KIND, because an attack part has its OWN base
         // crit stats (§7 Radial): a RELATIVE bonus joins the crit bucket and
@@ -2613,7 +2662,12 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 };
                 s.per_stack * stacks as f64
             })
-            + ap.base_multishot * arc.total(&params.arcane.buffs, ArcGrant::Multishot, t);
+            + ap.base_multishot * arc.total(&params.arcane.buffs, ArcGrant::Multishot, t)
+            // Final Fusillade: a FLAT add on the magazine's last round. It
+            // joins `ms_eff` rather than the multishot BUCKET because the
+            // evolution grants multishot outright ("+3 Multishot"), not a
+            // percentage of the weapon's base.
+            + if last_round { ap.multishot_on_last_round } else { 0.0 };
         let rolled = ms_eff.floor() as u32 + rng.chance(ms_eff.fract()) as u32;
         // CONTINUOUS weapons MERGE. VERBATIM (wiki Multishot §Continuous
         // Weapons): "additional beams that hit the same target instead merge
@@ -2630,11 +2684,66 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // AND a bigger payload each, since the merged instance's ModifiedBase
         // carries the sum), and forced procs are "applied after the damage
         // instances are merged", so one per tick rather than one per beam.
+        //
+        // PLENTIFUL MAYHEM, continuous branch. VERBATIM: "In the Incarnon form,
+        // instead of increasing the damage of additional projectiles created by
+        // multishot, all multishot bonuses are increased by 60%." A merged beam
+        // has no separable "generated projectile" to scale, so the perk scales
+        // the multishot BONUS instead — and the two readings agree in
+        // expectation, which is the tell that this is one perk stated twice:
+        //   base form   1 + (1+v)(M-1)     [1 original + (M-1) generated]
+        //   Incarnon    1 + (1+v)(M-1)     [merged, so damage ∝ multishot]
+        // The identity needs base multishot = 1; both Torid forms are.
+        let merge_bonus = if ap.multishot_ammo_bonus > 0.0 {
+            let base_ms = ap.base_multishot.max(1.0);
+            base_ms + (rolled.max(1) as f64 - base_ms) * (1.0 + ap.multishot_ammo_bonus)
+        } else {
+            rolled.max(1) as f64
+        };
         let (n_pellets, beam_merge) = if ap.continuous {
-            (1, rolled.max(1) as f64)
+            (1, merge_bonus)
         } else {
             (rolled, 1.0)
         };
+        // Ammo, settled now that the roll is known. Plentiful Mayhem: "Multishot
+        // consumes ammo directly from Capacity … In the case of Incarnon Form,
+        // it pools directly from its magazine" — so the EXTRA projectiles cost a
+        // round each, from the reserve in a magazine-fed form and from the
+        // charge pool in a charge-backed one. The draw follows the RAW rolled
+        // count, not the 60%-scaled one (user, 2026-07-30): the bonus is paid in
+        // damage, not billed again in ammo.
+        //
+        // Ammo efficiency is deliberately NOT applied to the extra rounds: it is
+        // a per-shot efficiency and nothing sources it reaching a multishot
+        // surcharge. On the Incarnon form the question is moot — that magazine
+        // takes no efficiency at all.
+        let extra_rounds = if ap.multishot_ammo_bonus > 0.0 {
+            (rolled.max(1) - 1) as f64
+        } else {
+            0.0
+        };
+        if in_base_form {
+            base_mag -= 1.0 - efficiency;
+        } else {
+            magazine -= 1.0 - efficiency;
+        }
+        if extra_rounds > 0.0 {
+            // `ammo_efficiency_applies == false` IS the charge-backed marker —
+            // such a magazine is "outside the ammo economy entirely", so it has
+            // no Capacity behind it and the surcharge comes out of the charge
+            // pool itself. That is what shortens the Incarnon window.
+            if ap.ammo_efficiency_applies {
+                // From CAPACITY: the magazine still lasts its full round count
+                // and only sustain pays. With infinite reserves — which the
+                // Incarnon cycle's base phase always assumes — that makes this
+                // free, which is correct rather than missing.
+                reserve = (reserve - extra_rounds).max(0.0);
+            } else if in_base_form {
+                base_mag -= extra_rounds;
+            } else {
+                magazine -= extra_rounds;
+            }
+        }
         // The damage ramp, evaluated once per tick. A FINAL multiplier on the
         // instance and NOT on ModifiedBase: it is a transient scaling of the
         // beam's output, not a weapon-stat change, so the status payloads are
@@ -2675,7 +2784,19 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         let mut encumber_done = false;
         r.shots += 1;
 
-        for _ in 0..n_pellets {
+        for pellet_idx in 0..n_pellets {
+            // PLENTIFUL MAYHEM, discrete branch: "Damage bonus from multishot
+            // consuming ammo only applies to projectiles GENERATED BY
+            // multishot" — pellet 0 is the weapon's own projectile and never
+            // takes it. An INDEPENDENT multiplier ("multiplicative to base
+            // damage bonuses like Serration"), so it multiplies the finished
+            // instance rather than joining a bucket. With no multishot source
+            // there is no pellet 1 and the perk is worth exactly nothing.
+            let pm_mult = if pellet_idx > 0 {
+                1.0 + ap.multishot_ammo_bonus
+            } else {
+                1.0
+            };
             // Live target-side state for THIS pellet (earlier pellets'
             // procs already count): mitigation amps, Cold's flat crit
             // damage received, and Condition Overload's type count.
@@ -2893,7 +3014,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     * params.faction_mult
                     * arc_final
                     * attrition
-                    * beam_ramp;
+                    * beam_ramp
+                    * pm_mult;
                 let head_direct = direct && part.is_head;
                 let (effective, killed, broke) = target.apply(
                     raw,
@@ -2917,15 +3039,36 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 // "Grenades stick to allies, enemies and surfaces", and a stuck
                 // grenade means the target "cannot move out of the cloud".
                 // Per PELLET — each multishot projectile is its own grenade and
-                // its own cloud. The first tick is DELAYED by one period:
+                // its own cloud, and stacking is MEASURED (M13).
+                //
+                // The first tick lands WITH the impact — ✅ measured (M13): a
+                // hit shows the direct number and the field's first number
+                // together, then 9 more over the remaining 9 s. The wiki's
                 // "Clouds do not instantly do damage, so enemies that are quick
-                // may run through the cloud without taking any damage."
+                // may run through the cloud" describes the grenade arming, not
+                // the tick clock; reading it as a delayed first tick cost a
+                // tenth of the field's damage.
                 if direct {
                     if let Some(fp) = &ap.lingering {
+                        // Renewed Horror doubles THIS field's lifetime, so it
+                        // ticks 20 times instead of 10 — ✅ measured (M13): one
+                        // direct number plus twenty field numbers.
+                        let boost = if field_duration_boost {
+                            ap.field_duration_on_empty_reload
+                        } else {
+                            1.0
+                        };
+                        let mut part = *fp;
+                        part.duration_s *= boost;
                         let fresh = FieldState {
-                            next_tick: t + 1.0 / fp.tick_rate,
-                            ticks_left: (fp.duration_s * fp.tick_rate).round() as u32,
-                            part: *fp,
+                            next_tick: t,
+                            ticks_left: (part.duration_s * part.tick_rate).round() as u32,
+                            part,
+                            // Plentiful Mayhem follows a GENERATED grenade into
+                            // the cloud it leaves (user, 2026-07-30) — which is
+                            // the whole value of the perk here, the cloud being
+                            // most of this weapon's damage.
+                            damage_mult: pm_mult,
                         };
                         match fp.stacking {
                             crate::loadout::FieldStacking::Stack => fields.push(fresh),
@@ -3090,6 +3233,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             );
             }
         }
+
+        // Renewed Horror is spent by the shot that follows the reload, however
+        // many grenades that shot put out.
+        field_duration_boost = false;
 
         // ONE Hit event per trigger pull (hitscan pellets are not separate
         // Hits - GLOSSARY): headshot/big-crit flags aggregate any pellet.
@@ -3571,6 +3718,159 @@ mod tests {
         assert_eq!(s.mean_reloads, 0.0);
     }
 
+    /// Final Fusillade: +3 multishot on the LAST round of the magazine, and on
+    /// no other. A 5-round magazine fired dry gives four 1-pellet pulls and one
+    /// 4-pellet pull — 8 pellets, not 5 (gate never fires) and not 20 (gate
+    /// always fires).
+    #[test]
+    fn final_fusillade_adds_multishot_only_on_the_magazines_last_round() {
+        let p = |bonus: f64| DummyParams {
+            multishot: 1.0,
+            multishot_on_last_round: bonus,
+            fire_rate: 1.0,
+            magazine_size: 5.0,
+            // Exactly one magazine: dry reserves stop the run rather than
+            // reloading into a second one, so the counts are exact.
+            infinite_reserve: false,
+            reserve_ammo: 0.0,
+            duration_secs: 10.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let off = monte_carlo(&p(0.0), 4, 3);
+        let on = monte_carlo(&p(3.0), 4, 3);
+        assert!((off.mean_shots - 5.0).abs() < 1e-9, "shots {}", off.mean_shots);
+        assert!((on.mean_shots - off.mean_shots).abs() < 1e-9, "cadence must not change");
+        assert!((off.mean_pellets - 5.0).abs() < 1e-9, "baseline {}", off.mean_pellets);
+        assert!((on.mean_pellets - 8.0).abs() < 1e-9, "boosted {}", on.mean_pellets);
+        assert_eq!(off.mean_reloads, 0.0);
+    }
+
+    /// Plentiful Mayhem, discrete branch: "only applies to projectiles
+    /// GENERATED BY multishot". Two pellets a pull means ONE plain and ONE at
+    /// x1.6, so a pull deals 2.6 pellet-units where it used to deal 2.0 — not
+    /// 3.2, which is what treating it as a weapon-wide bonus would give.
+    #[test]
+    fn plentiful_mayhem_pays_only_the_multishot_generated_projectiles() {
+        let p = |bonus: f64| DummyParams {
+            multishot: 2.0,
+            multishot_ammo_bonus: bonus,
+            // No crit variance: every pellet must deal the SAME number, or the
+            // ratio below would depend on which pellet happened to crit.
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let off = monte_carlo(&p(0.0), 4, 3);
+        let on = monte_carlo(&p(0.6), 4, 3);
+        assert!(
+            (on.mean_pellets - off.mean_pellets).abs() < 1e-9,
+            "the perk must not change the pellet count"
+        );
+        let ratio = on.mean_damage / off.mean_damage;
+        assert!((ratio - 2.6 / 2.0).abs() < 1e-9, "ratio {ratio}");
+        // With NO multishot source there is no generated projectile at all, so
+        // the perk is worth exactly nothing — the wiki's rule, stated as a test.
+        let solo = |bonus: f64| DummyParams { multishot: 1.0, ..p(bonus) };
+        let (a, b) = (monte_carlo(&solo(0.0), 4, 3), monte_carlo(&solo(0.6), 4, 3));
+        assert!((a.mean_damage - b.mean_damage).abs() < 1e-9, "inert at 1x multishot");
+    }
+
+    /// …and it follows the generated grenade into the CLOUD it leaves (user,
+    /// 2026-07-30). One pull, two grenades, ten ticks each: 400 plain + 640
+    /// boosted against a 800 baseline. That is where the perk's value is on
+    /// this weapon — the cloud is most of its damage.
+    #[test]
+    fn plentiful_mayhem_follows_the_generated_grenade_into_its_cloud() {
+        let p = |bonus: f64| DummyParams {
+            damage: DamageVector::default(), // inert impact: the fields alone
+            lingering: Some(cloud(crate::loadout::FieldStacking::Stack)),
+            multishot: 2.0,
+            multishot_ammo_bonus: bonus,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            fire_rate: 1.0,
+            // Exactly one pull, then a 60 s window so both clouds finish.
+            magazine_size: 1.0,
+            infinite_reserve: false,
+            reserve_ammo: 0.0,
+            duration_secs: 60.0,
+            ..no_status()
+        };
+        let off = monte_carlo(&p(0.0), 4, 3);
+        let on = monte_carlo(&p(0.6), 4, 3);
+        assert!((off.mean_shots - 1.0).abs() < 1e-9, "shots {}", off.mean_shots);
+        assert!(
+            (off.mean_field_ticks - 20.0).abs() < 1e-9,
+            "two grenades, ten ticks each: {}",
+            off.mean_field_ticks
+        );
+        assert!(
+            (on.mean_field_ticks - off.mean_field_ticks).abs() < 1e-9,
+            "a damage bonus must not change the tick COUNT"
+        );
+        assert!((off.mean_damage - 800.0).abs() < 1e-9, "baseline {}", off.mean_damage);
+        assert!(
+            (on.mean_damage - (400.0 + 640.0)).abs() < 1e-9,
+            "boosted {} (expected 400 plain + 640 from the generated grenade)",
+            on.mean_damage
+        );
+    }
+
+    /// Plentiful Mayhem, continuous branch. A merged beam has no separable
+    /// generated projectile, so the perk scales the multishot BONUS instead —
+    /// and lands on the same 1 + 1.6(M-1) the discrete branch reaches. The
+    /// ammo draw still bills the RAW rolled count, which is what shortens the
+    /// Incarnon window.
+    #[test]
+    fn plentiful_mayhem_on_a_beam_scales_the_bonus_and_drains_the_charge() {
+        let dmg = |bonus: f64| DummyParams {
+            continuous: true,
+            fire_rate: 8.0,
+            multishot: 2.0,
+            base_multishot: 1.0,
+            multishot_ammo_bonus: bonus,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            // Ammo must not bind here: both runs then tick at the SAME instants,
+            // so the beam ramp cancels out of the ratio.
+            magazine_size: 10_000.0,
+            infinite_reserve: true,
+            duration_secs: 2.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let (off, on) = (monte_carlo(&dmg(0.0), 4, 3), monte_carlo(&dmg(0.6), 4, 3));
+        assert!(
+            (on.mean_shots - off.mean_shots).abs() < 1e-9,
+            "same tick count: {} vs {}",
+            on.mean_shots,
+            off.mean_shots
+        );
+        let ratio = on.mean_damage / off.mean_damage;
+        assert!((ratio - 2.6 / 2.0).abs() < 1e-9, "ratio {ratio}");
+
+        // The charge magazine: 2x multishot bills 2 rounds a tick, so ten
+        // rounds last five ticks instead of ten.
+        let ammo = |bonus: f64| DummyParams {
+            magazine_size: 10.0,
+            infinite_reserve: false,
+            reserve_ammo: 0.0,
+            // The charge-backed marker: no Capacity behind this magazine, so
+            // the multishot surcharge comes out of the pool itself.
+            ammo_efficiency_applies: false,
+            duration_secs: 60.0,
+            ..dmg(bonus)
+        };
+        let (a, b) = (monte_carlo(&ammo(0.0), 4, 3), monte_carlo(&ammo(0.6), 4, 3));
+        assert!((a.mean_shots - 10.0).abs() < 1e-9, "baseline ticks {}", a.mean_shots);
+        assert!((b.mean_shots - 5.0).abs() < 1e-9, "boosted ticks {}", b.mean_shots);
+    }
+
     #[test]
     fn fractional_multishot_is_a_chance_for_one_more() {
         // Multishot 1.5 -> mean pellets/pull about 1.5.
@@ -3713,12 +4013,11 @@ mod tests {
     }
 
     /// The reference case, and the arithmetic the whole field model rests on:
-    /// ONE grenade at t=0 leaves ten 40-damage ticks at t=1..10. The first tick
-    /// is DELAYED a full period — "Clouds do not instantly do damage, so
-    /// enemies that are quick may run through the cloud without taking any
-    /// damage" — so a 10 s engagement sees 9 of them, not 10.
+    /// ONE grenade at t=0 leaves TEN 40-damage ticks at t=0..9 — ✅ measured
+    /// (MEASUREMENTS M13): the first lands WITH the impact, then nine more over
+    /// the remaining nine seconds. A 10 s engagement sees all ten.
     #[test]
-    fn one_grenade_leaves_ten_delayed_ticks() {
+    fn one_grenade_leaves_ten_ticks_starting_with_the_impact() {
         let p = DummyParams {
             damage: DamageVector::default(), // inert impact: the field alone
             lingering: Some(cloud(crate::loadout::FieldStacking::Stack)),
@@ -3732,23 +4031,23 @@ mod tests {
         };
         let s = monte_carlo(&p, 4, 3);
         assert!((s.mean_shots - 1.0).abs() < 1e-9, "shots {}", s.mean_shots);
-        // Ticks at 1..9 land inside a 10 s run (10.0 is not < 10.0).
+        // Ticks at 0..9, all ten inside a 10 s run.
         assert!(
-            (s.mean_field_ticks - 9.0).abs() < 1e-9,
+            (s.mean_field_ticks - 10.0).abs() < 1e-9,
             "field ticks {}",
             s.mean_field_ticks
         );
         assert!(
-            (s.mean_damage - 9.0 * 40.0).abs() < 1e-9,
-            "dmg {} (expected 9 x 40)",
+            (s.mean_damage - 10.0 * 40.0).abs() < 1e-9,
+            "dmg {} (expected 10 x 40 = the field's full 400)",
             s.mean_damage
         );
     }
 
-    /// The one UNVERIFIED lever in the field model, both branches pinned so a
-    /// measurement flips a data field and not a code path (MEASUREMENTS M12).
-    /// Three grenades one second apart: stacking runs three concurrent streams,
-    /// refresh keeps re-arming one.
+    /// Overlapping fields STACK — ✅ measured (MEASUREMENTS M13). Both branches
+    /// stay pinned because the branch is weapon data, not a global rule: a
+    /// future weapon may well refresh instead. Three grenades one second apart:
+    /// stacking runs three concurrent streams, refresh keeps re-arming one.
     #[test]
     fn overlapping_fields_stack_or_refresh_per_the_weapon_data() {
         let mk = |stacking| DummyParams {
@@ -3756,6 +4055,10 @@ mod tests {
             lingering: Some(cloud(stacking)),
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
+            // No arcane: the Default fixture's Enervate grants FLAT crit chance,
+            // which correctly reaches the field's ticks and would blur a
+            // tick-count assertion into a damage one.
+            arcane: ArcaneFx::none(),
             fire_rate: 1.0,
             magazine_size: 3.0,
             reload_seconds: 999.0, // 3 shots at t=0,1,2 then dry
@@ -3772,12 +4075,67 @@ mod tests {
             "stacking ticks {}",
             st.mean_field_ticks
         );
-        let rf = monte_carlo(&mk(crate::loadout::FieldStacking::Refresh), 4, 3);
-        // One field, re-armed at t=1 and t=2: ticks at 3..12 = 10 of them.
+        // A tenth of the damage was riding on the first-tick question alone.
         assert!(
-            (rf.mean_field_ticks - 10.0).abs() < 1e-9,
+            (st.mean_damage - 30.0 * 40.0).abs() < 1e-9,
+            "dmg {}",
+            st.mean_damage
+        );
+        let rf = monte_carlo(&mk(crate::loadout::FieldStacking::Refresh), 4, 3);
+        // One field, re-armed at t=1 and t=2 — each re-arm ticks immediately, so
+        // 3 shot-time ticks plus the surviving field's own 9 = 12.
+        assert!(
+            (rf.mean_field_ticks - 12.0).abs() < 1e-9,
             "refresh ticks {}",
             rf.mean_field_ticks
+        );
+    }
+
+    /// Renewed Horror — ✅ measured (MEASUREMENTS M13): reloading from EMPTY
+    /// makes the NEXT shot's pod live twice as long, "1 direct hit + 20 pod
+    /// ticks" against the normal 10. A one-round magazine makes every shot after
+    /// the first a post-reload shot, so the counts are exact: shot 1 leaves 10
+    /// ticks, shot 2 leaves 20.
+    #[test]
+    fn renewed_horror_doubles_only_the_post_reload_field() {
+        let p = |boost: f64| DummyParams {
+            damage: DamageVector::default(),
+            lingering: Some(cloud(crate::loadout::FieldStacking::Stack)),
+            field_duration_on_empty_reload: boost,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            fire_rate: 1.0,
+            magazine_size: 1.0,
+            reload_seconds: 1.0,
+            // EXACTLY two shots: one from the magazine, one from the single
+            // reserve round, then dry. The 60 s window then lets every field
+            // finish, so the tick counts are exact rather than truncated.
+            infinite_reserve: false,
+            reserve_ammo: 1.0,
+            duration_secs: 60.0,
+            ..no_status()
+        };
+        let off = monte_carlo(&p(1.0), 4, 3);
+        let on = monte_carlo(&p(2.0), 4, 3);
+        let shots = off.mean_shots;
+        assert!((shots - 2.0).abs() < 1e-9, "expected two shots, got {shots}");
+        assert!(
+            (on.mean_shots - shots).abs() < 1e-9,
+            "the buff must not change the cadence"
+        );
+        // Every shot but the first follows an empty reload, so each of those
+        // fields doubles: ticks go from 10n to 10 + 20(n-1).
+        let n = shots;
+        assert!(
+            (off.mean_field_ticks - 10.0 * n).abs() < 1e-9,
+            "baseline ticks {} for {n} shots",
+            off.mean_field_ticks
+        );
+        assert!(
+            (on.mean_field_ticks - (10.0 + 20.0 * (n - 1.0))).abs() < 1e-9,
+            "boosted ticks {} for {n} shots",
+            on.mean_field_ticks
         );
     }
 

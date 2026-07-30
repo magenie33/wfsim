@@ -154,6 +154,18 @@ pub enum ModEffect {
     /// Magazine capacity bonus (+v of base magazine, additive; floored to a
     /// whole round). Feeds reload cadence / long-fight sustain.
     MagazineCapacity(f64),
+    /// Blast RANGE (+v of base radius) — Firestorm/Fulmination. The mods say
+    /// "+X% Blast Range", NOT Blast damage: reading that description as an
+    /// element is what had Primed Firestorm inventing +44% Blast damage on
+    /// every AoE weapon.
+    ///
+    /// It scales every part that HAS a radius: the radial explosion and the
+    /// lingering field. The field is measured (2026-07-30) and the wiki says so
+    /// too ("Firestorm mods will now affect Torid gas clouds"). No single-target
+    /// damage consequence — the target stands at the epicentre either way — but
+    /// it is what the panel states, and Primary Compression reads the MODDED
+    /// radius (MECHANICS §7).
+    BlastRadius(f64),
     /// Status-duration bonus (+v): scales status-effect DoT DURATION (→ more
     /// ticks) and slows Heat's armour-strip ramp. No effect on instant procs.
     StatusDuration(f64),
@@ -334,6 +346,7 @@ impl ModEffect {
             }
             FactionDamage(fac, v) => format!("{} Damage to {fac:?}", pct(v)),
             MagazineCapacity(v) => format!("{} Magazine Capacity", pct(v)),
+            BlastRadius(v) => format!("{} Blast Range (radius)", pct(v)),
             StatusDuration(v) => format!("{} Status Duration", pct(v)),
             WeakpointDamage(v) => format!("{} Weak Point Damage", pct(v)),
             WeakpointCritChance(v) => format!("{} Weak Point Crit Chance", pct(v)),
@@ -547,8 +560,19 @@ pub struct WeaponBase {
     pub lingering: Option<LingeringBase>,
     /// CONTINUOUS (beam) weapon — trigger "Held". Two rules change, both wiki:
     /// `fire_rate` is TICKS per second, and multishot beams hitting one target
-    /// MERGE into a single instance instead of making several.
+    /// MERGE into a single instance.
     pub continuous: bool,
+    /// Renewed Horror: the multiplier a reload-from-EMPTY applies to the next
+    /// shot's field duration (1.0 = the evolution is not installed).
+    pub field_duration_on_empty_reload: f64,
+    /// Final Fusillade: a FLAT multishot add on the LAST round of the magazine
+    /// (0.0 = not installed). Base form only — the evolution loader drops it on
+    /// a charge-backed form, so this is always 0.0 there.
+    pub multishot_on_last_round: f64,
+    /// Plentiful Mayhem: multishot spends ammo, and what it GENERATES deals
+    /// +v damage (0.0 = not installed). Both forms carry it; the rule differs
+    /// by form and the sim reads that off `continuous`.
+    pub multishot_ammo_bonus: f64,
 }
 
 /// Overwhelming Attrition: a hit that neither crits nor applies a status
@@ -581,17 +605,12 @@ pub struct HeadshotReloadBuff {
 
 /// What happens when a second field lands on a target that already has one.
 ///
-/// UNVERIFIED — the one piece of the field model no source states (protocol in
-/// MEASUREMENTS M12). Torid's magazine is 5 and a cloud lasts 10 s at 1.5
-/// shots/s, so all five can be attached at once: the answer is worth up to ~5x
-/// sustained single-target DPS, which is why it is DATA rather than a constant.
+/// Weapon DATA, not a global rule — the Torid STACKS (✅ measured, MEASUREMENTS
+/// M13) but a future weapon may refresh, and the answer is worth up to ~5x
+/// sustained single-target DPS on a 5-round magazine, so it is not a constant.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum FieldStacking {
-    /// N concurrent tick streams, one per grenade. The wiki's reading — it
-    /// calls stacking clouds effective ("dealing large amounts of damage if
-    /// the player stacks multiple gas clouds", "Stacking multiple grenades on
-    /// an ally…") — but never says whether that is several streams on ONE
-    /// enemy or just wider coverage, and never quantifies it.
+    /// N concurrent tick streams, one per grenade — what the Torid does.
     #[default]
     Stack,
     /// One field, re-armed: a second grenade resets duration instead of adding
@@ -766,6 +785,17 @@ pub struct ResolvedPanel {
     pub lingering: Option<ResolvedLingering>,
     /// CONTINUOUS (beam) weapon — see [`WeaponBase::continuous`].
     pub continuous: bool,
+    /// Renewed Horror's field-duration multiplier on the shot after an empty
+    /// reload (1.0 = none).
+    pub field_duration_on_empty_reload: f64,
+    /// Final Fusillade's flat multishot add on the magazine's last round
+    /// (0.0 = none). NOT folded into `multishot`: it is conditional on the
+    /// magazine position, which only the sim can evaluate.
+    pub multishot_on_last_round: f64,
+    /// Plentiful Mayhem's damage bonus on multishot-GENERATED projectiles
+    /// (0.0 = none), which also makes multishot spend ammo. Not folded into any
+    /// damage bucket: it is an independent multiplier on part of the pellets.
+    pub multishot_ammo_bonus: f64,
     /// The Incarnon transformation economy of THIS form, carried through
     /// so the cycle model reads it from data instead of hardcoding one
     /// weapon's numbers.
@@ -895,6 +925,8 @@ pub fn resolve_with(
         (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     // Magazine-capacity and status-duration additive buckets.
     let (mut mag, mut sdur) = (0.0, 0.0);
+    // Blast RANGE bucket (Firestorm / Fulmination): + the sum, of base radius.
+    let mut br = 0.0;
     // Unconditional weapon-level CO (Carnage Reign) seeds the static rate.
     let mut co = base.innate_co_per_type;
     let (mut co_stack, mut ms_stack): (Option<StackSpec>, Option<StackSpec>) = (None, None);
@@ -1049,6 +1081,7 @@ pub fn resolve_with(
                     }
                 }
                 ModEffect::MagazineCapacity(v) => mag += v,
+                ModEffect::BlastRadius(v) => br += v,
                 ModEffect::StatusDuration(v) => sdur += v,
                 // Weak-point effects: conditional on the PART HIT, not on an
                 // uptime — active under every policy (the sim gates on
@@ -1215,8 +1248,11 @@ pub fn resolve_with(
             status_chance: (r.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)
                 .max(0.0),
             base_status_chance: r.base_status_chance,
-            radius_m: r.radius_m,
-            falloff_start_m: r.falloff_start_m,
+            // Blast RANGE mods scale the radius; the falloff FLOOR is
+            // unchanged ("Only mods that increase the explosion radius change
+            // how far the falloff reaches; they do not change the floor").
+            radius_m: r.radius_m * (1.0 + br),
+            falloff_start_m: r.falloff_start_m * (1.0 + br),
             falloff_reduction: r.falloff_reduction,
         }
     });
@@ -1242,8 +1278,8 @@ pub fn resolve_with(
             base_status_chance: f.base_status_chance,
             tick_rate: f.tick_rate,
             duration_s: f.duration_s,
-            radius_m: f.radius_m,
-            falloff_start_m: f.falloff_start_m,
+            radius_m: f.radius_m * (1.0 + br),
+            falloff_start_m: f.falloff_start_m * (1.0 + br),
             falloff_reduction: f.falloff_reduction,
             stacking: f.stacking,
         }
@@ -1254,6 +1290,9 @@ pub fn resolve_with(
         radial,
         lingering,
         continuous: base.continuous,
+        field_duration_on_empty_reload: base.field_duration_on_empty_reload,
+        multishot_on_last_round: base.multishot_on_last_round,
+        multishot_ammo_bonus: base.multishot_ammo_bonus,
         incarnon: base.incarnon,
         modified_base,
         // Elemental Excess adds its crit/status FLAT, after the mod
@@ -1327,6 +1366,9 @@ mod tests {
             radial: None,
             lingering: None,
             continuous: false,
+            field_duration_on_empty_reload: 1.0,
+            multishot_on_last_round: 0.0,
+            multishot_ammo_bonus: 0.0,
             evo_fire_rate_bonus: 0.0,
             post_mod_crit_chance: 0.0,
             post_mod_status_chance: 0.0,

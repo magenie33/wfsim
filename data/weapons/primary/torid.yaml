@@ -76,12 +76,14 @@ attack:
   # Laetum radial's 0.2. Irrelevant single-target (a stuck grenade puts the
   # target at the epicentre) but it is what the multi-target model needs.
   #
-  # stacking: UNVERIFIED — the only piece of the field model no source states.
-  # `stack` is the wiki's reading ("dealing large amounts of damage if the
-  # player stacks multiple gas clouds", "Stacking multiple grenades on an
-  # ally…") but nothing says whether that is several streams on ONE enemy or
-  # just wider coverage. Worth up to ~5x sustained single-target DPS, so it is
-  # a data field: MEASUREMENTS M12 flips this line, not any code.
+  # stacking: STACK — ✅ measured (MEASUREMENTS M13). Several clouds on ONE
+  # enemy run as N concurrent tick streams, which is worth up to ~5x sustained
+  # single-target DPS over the refresh reading and is what makes the cloud this
+  # weapon's main damage. It stays a data field rather than a constant: the
+  # branch is per weapon, and a future one may refresh.
+  #
+  # The clock is measured too (M13): the first tick lands WITH the impact, so
+  # duration_s 10 at tick_rate 1 is TEN ticks, not nine.
   lingering:
     damage: { toxin: 40.0 }
     tick_rate: 1.0

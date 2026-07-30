@@ -8,10 +8,12 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponIncreaseRadialExplosionMo
 description: "Improves the Blast Radius of weapons with Radial Attacks.\n+X% Blast Range"
 
 effects:
-  - kind: elemental_damage_bonus
-    element: blast
-  - kind: elemental_damage_bonus
-    element: blast
+  # "+X% Blast RANGE", not Blast damage. The generated skeleton read the
+  # description's word "Blast" as an element and gave this mod +44% Blast
+  # DAMAGE, which on an AoE weapon also drags a whole element into the vector.
+  # Same kind as the pistol twins Fulmination / Primed Fulmination, same
+  # numbers as WFCD's levelStats (+4% -> +44% Blast Range).
+  - kind: blast_radius_bonus
     rank0: 0.04
     rankMax: 0.44
 

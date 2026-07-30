@@ -907,6 +907,8 @@ pub fn panel_json(v: &Value) -> Value {
                     "why": format!("+{}% total damage only vs {fac:?} (applied ×2 on DoT ticks)",
                         (x * 100.0).round())})),
                 MagazineCapacity(x) => push("magazine", x, None),
+                // Attributed on the radius rows of whichever parts have one.
+                BlastRadius(x) => push("radius", x, None),
                 StatusDuration(x) => push("status_duration", x, None),
                 // Conditional buff, assumed active at max in this static panel.
                 CondBuff(b, x) => {
@@ -1347,8 +1349,10 @@ pub fn panel_json(v: &Value) -> Value {
                     "base": format!("×{}", num(1.0)),
                     "final": format!("×{}", num(panel.status_duration_mult)),
                     "sources": rsrc("status_duration") }),
-                json!({ "key": "radius", "label": "Blast Radius", "base": "—",
-                    "final": format!("{} m", dist(rr.radius_m)), "sources": json!([]) }),
+                json!({ "key": "radius", "label": "Blast Radius",
+                    "base": format!("{} m", dist(rb.radius_m)),
+                    "final": format!("{} m", dist(rr.radius_m)),
+                    "sources": rsrc("radius") }),
             ];
             // Falloff: full damage inside `start`, then linear down to
             // (1 − reduction) at the rim. Stated as what the rim actually
@@ -1379,7 +1383,14 @@ pub fn panel_json(v: &Value) -> Value {
         if let (Some(fb), Some(fr)) = (base.lingering.as_ref(), panel.lingering.as_ref()) {
             let fsrc = |key: &'static str| sources(key, None);
             let dist = |x: f64| format!("{x}");
+            // ✅ measured (MEASUREMENTS M13): the first tick lands WITH the
+            // impact, so the count is the plain product — ten for a 10 s cloud.
             let ticks = (fr.duration_s * fr.tick_rate).round();
+            // Renewed Horror: the shot after an empty reload gets a longer
+            // cloud. 1.0 = the evolution is not equipped, and the rows stay
+            // silent about it rather than stating a boost of ×1.
+            let boost = panel.field_duration_on_empty_reload;
+            let boosted = (boost > 1.0).then_some((fr.duration_s * boost, ticks * boost));
             let rows = vec![
                 json!({ "key": "base_damage", "label": "Damage per Tick",
                     "base": num(fb.base_vector.total()), "final": num(fr.modified_base),
@@ -1411,31 +1422,42 @@ pub fn panel_json(v: &Value) -> Value {
                     "final": format!("{}/s", dist(fr.tick_rate)), "sources": json!([]) }),
                 json!({ "key": "field_duration", "label": "Field Duration",
                     "base": "—", "final": format!("{} s", dist(fr.duration_s)),
-                    "note": format!("{} ticks per field; the first is delayed one period",
-                        dist(ticks)),
+                    "note": match boosted {
+                        // The doubled cloud is one shot in `magazine`, so state
+                        // both numbers rather than an average nobody can check
+                        // against a damage number in game.
+                        Some((d, n)) => format!(
+                            "{} ticks per field, the first landing with the impact; \
+                             the shot after an empty reload gets {} s = {} ticks",
+                            dist(ticks), dist(d), dist(n)),
+                        None => format!("{} ticks per field, the first landing with the impact",
+                            dist(ticks)),
+                    },
                     "sources": json!([]) }),
                 json!({ "key": "field_total", "label": "Total per Field",
                     "base": num(fb.base_vector.total() * ticks),
                     "final": num(fr.modified_base * ticks),
                     "note": "one grenade, before crit and Condition Overload".to_string(),
                     "sources": json!([]) }),
-                json!({ "key": "radius", "label": "Field Radius", "base": "—",
-                    "final": format!("{} m", dist(fr.radius_m)), "sources": json!([]) }),
+                json!({ "key": "radius", "label": "Field Radius",
+                    "base": format!("{} m", dist(fb.radius_m)),
+                    "final": format!("{} m", dist(fr.radius_m)),
+                    "sources": fsrc("radius") }),
                 json!({ "key": "falloff", "label": "Damage Falloff", "base": "—",
                     "final": format!("{}% at {} m",
                         dist((1.0 - fr.falloff_reduction) * 100.0), dist(fr.radius_m)),
                     "note": "the grenade sticks, so the target stands at the epicentre"
                         .to_string(),
                     "sources": json!([]) }),
-                // The one unverified knob, stated on the panel rather than
-                // buried in the yaml — it is worth up to ~5x here.
+                // Worth up to ~5x here, so it is stated on the panel rather
+                // than buried in the yaml.
                 json!({ "key": "field_stacking", "label": "Overlapping Fields",
                     "base": "—",
                     "final": match fr.stacking {
                         wfsim_engine::loadout::FieldStacking::Stack => "stack",
                         wfsim_engine::loadout::FieldStacking::Refresh => "refresh",
                     },
-                    "note": "UNVERIFIED (MEASUREMENTS M12)".to_string(),
+                    "note": "measured (MEASUREMENTS M13)".to_string(),
                     "sources": json!([]) }),
             ];
             parts.push(json!({

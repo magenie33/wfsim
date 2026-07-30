@@ -13,15 +13,17 @@ effects:
   # base excludes evolution flat damage).
   - kind: flat_base_damage
     value: 51.0
-  # UNMODELED: the multishot is CONDITIONAL on being the last round of the
-  # magazine. On a 5-round magazine that is one shot in five getting 4 pellets
-  # instead of 1 — worth roughly +60% average multishot, so this is NOT a
-  # rounding error and it needs a real effect kind (a magazine-position gate the
-  # sim can evaluate: it already tracks the live magazine count).
-  # Recorded so implementing it is code-only.
-  - kind: unmodeled
-    note: "+3 multishot on the last round of the magazine"
-    rankMax: 3
+  # A FLAT +3 on the multishot stat, gated on the shot being the last round of
+  # the magazine. On the base form's 5-round magazine that is one shot in five,
+  # worth roughly +60% average multishot — not a rounding error.
+  #
+  # BASE FORM ONLY (user, 2026-07-30): it does not fire in Incarnon Form. That
+  # form's magazine is the charge pool (170 rounds, "not affected by mods") fed
+  # by the gauge rather than a reloaded magazine, so "last shot in magazine"
+  # has nothing to gate on. The engine reads the gate off the form's own
+  # `incarnon` marker, not off the weapon id.
+  - kind: multishot_on_last_round
+    value: 3.0
 
 source:
   url: https://wiki.warframe.com/w/Torid_Incarnon_Genesis
