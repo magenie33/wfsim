@@ -628,15 +628,29 @@ function snapshotState() {
   };
 }
 
-function restoreState(st) {
-  if (!st || !weaponInfo(st.weapon)) return;
-  $("weapon").value = st.weapon;
-  // Keep the route honest when a preset switches weapons on the config page
-  // (the active module tab is preserved).
+// Apply a saved state. `weapon` is the weapon it belongs to — pass it and the
+// payload's own `st.weapon` is IGNORED.
+//
+// That parameter is the whole anti-crossing design. A preset's owner is already
+// decided by its storage key (`wfsim-presets-<weapon>-<domain>`), so carrying a
+// weapon inside the payload too gave the same fact two homes — and every
+// crossing bug was those two disagreeing: a payload saying `laetum` under Dual
+// Toxocyst's key dragged the editor (and the URL, below) to Laetum. Repairing
+// the stored data only chased the symptom; not READING it makes crossing
+// structurally impossible, whatever a payload happens to contain.
+//
+// Only the language-switch stash omits the argument: it restores the whole page
+// including which weapon was open, so there the payload IS the authority.
+function restoreState(st, weapon) {
+  const w = weapon || (st && st.weapon);
+  if (!st || !weaponInfo(w)) return;
+  $("weapon").value = w;
+  // Keep the route honest when the restore changes weapon (the stash case);
+  // for a preset `w` is already the current weapon, so this is a no-op.
   if (!document.querySelector(".config-page").hidden) {
-    history.replaceState(null, "", weaponModPath(st.weapon));
+    history.replaceState(null, "", weaponModPath(w));
   }
-  applyWeapon(st.weapon, null); // resets pool/innate/visibility
+  applyWeapon(w, null); // resets pool/innate/visibility
   (st.slots || []).forEach((s, i) => {
     if (i >= slots.length) return;
     slots[i].mod = s.mod && modById(s.mod) ? s.mod : null; // drop ids gone from the pool
@@ -732,32 +746,13 @@ function initPresets() {
     ps = [{ name: "preset 1", savedAt: Date.now(), state: snapshotState() }];
     storePresetList(BUILDS, ps);
   }
-  // A preset stored under THIS weapon's key belongs to this weapon, whatever
-  // its payload claims. `restoreState` honours `state.weapon` — that is what
-  // makes ⇤ import work — so a preset carrying a FOREIGN id would drag the
-  // editor to that weapon and, because restoreState also rewrites the URL,
-  // land you on /weapons/<other> right after you asked for this one. The
-  // symptom is unmistakable: the address bar says one weapon and the page
-  // title, set earlier in route(), still says the one you clicked.
-  //
-  // The legacy global preset list is how ids got mismatched — the pre-scoping
-  // migration below files it under whichever weapon happened to be current
-  // without rescoping it. Repair the stored list rather than only reading
-  // around it, so the corruption does not outlive this load.
   const here = presetWeapon();
-  let rescoped = false;
-  // No current weapon means the select is not populated yet; rescoping to ""
-  // would be worse than leaving the list alone.
-  if (here) {
-    ps.forEach((p) => {
-      if (p.state && p.state.weapon !== here) { p.state = { ...p.state, weapon: here }; rescoped = true; }
-    });
-  }
-  if (rescoped) storePresetList(BUILDS, ps);
   const last = localStorage.getItem(presetActiveKey(BUILDS));
   activePreset = ps.some((p) => p.name === last) ? last : ps[0].name;
   localStorage.setItem(presetActiveKey(BUILDS), activePreset);
-  whileApplying(() => restoreState(ps.find((p) => p.name === activePreset).state));
+  // Applied under THIS weapon, never the payload's — a preset filed here
+  // belongs here by definition.
+  whileApplying(() => restoreState(ps.find((p) => p.name === activePreset).state, here));
   renderPresetBar();
 }
 
@@ -1006,7 +1001,8 @@ function renderPresetBar() {
     active: () => activePreset,
     setActive: (n) => { activePreset = n; localStorage.setItem(presetActiveKey(BUILDS), n); },
     snapshot: snapshotState,
-    apply: restoreState,
+    // Never the payload's weapon — the scope's. See restoreState.
+    apply: (st) => restoreState(st, presetWeapon()),
     blank: blankBuildState,
     rerender: renderPresetBar,
   });
