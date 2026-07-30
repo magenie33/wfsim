@@ -242,6 +242,34 @@ order dependence remains a top calibration target (CORE.md §3).
 
 ---
 
+### Continuous ammo cost — OPEN
+
+Continuous weapons "consume 0.5 ammo per tick of damage", and the patch note
+the wiki quotes says it plainly: "To help with ammo economy, Beam Weapons
+consume 0.5 ammo per trace — unless they are Flamethrowers." Chained beams
+consume nothing extra.
+
+The engine does not model per-shot ammo COST at all: `ammo_cost` sits in every
+`data/weapons/` entry and no Rust code reads it; the sim spends a flat 1.0
+(minus ammo efficiency) per shot, beam ticks included.
+
+That currently changes no result, because the only beam in the roster is the
+Torid's Incarnon form and its pool is not ammo. The Torid page: "Instead of
+drawing ammunition from its reserves, the Torid's Incarnon Form uses a
+separate 'magazine'", and "Incarnon Form is not affected by Ammo Efficiency" —
+so it sits outside the ammo economy the 0.5 rule exists to help. Whether the
+rule reaches a charge pool anyway is unresolved, and the wiki does not say.
+
+**What settles it:** time one full Incarnon window at 8 ticks/s on 170
+charges. 1 charge per tick gives ~21 s; 0.5 gives ~42 s. Until that is
+measured the flat 1.0 stands, because it is what the charge count divides into
+cleanly — but it is an assumption, not a source.
+
+**Status:** unverified. Harmless today; load-bearing the moment a beam that
+draws from real reserves joins the roster.
+
+---
+
 ## 4. Per-hit damage vector (pipeline layer [3])
 
 **Definition.** After mods and elements, a single projectile has a concrete

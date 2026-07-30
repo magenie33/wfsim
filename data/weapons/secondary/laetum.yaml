@@ -49,6 +49,14 @@ attack:
   projectile_speed_mps: 100
   fire_rate: 2.5
   multishot: 1.0
+  # NOT READ by the engine (2026-07-31): nothing in engine/ references
+  # `ammo_cost` — the sim spends a flat 1.0 (minus ammo efficiency) per shot.
+  # It matters for CONTINUOUS weapons, which the wiki says "consume 0.5 ammo
+  # per trace - unless they are Flamethrowers", and the only beam in the
+  # roster is the Torid's Incarnon form, whose pool is charge-backed and
+  # "not affected by Ammo Efficiency" — i.e. outside the ammo economy that
+  # rule exists to help. So nothing in the sim turns on it today. See
+  # docs/MECHANICS.md "Continuous ammo cost" for what would settle it.
   ammo_cost: 1
   crit_chance: 0.22
   crit_multiplier: 2.2

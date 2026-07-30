@@ -540,8 +540,11 @@ const weaponModPath = (id) => weaponPath(id) + (modSuffix() ? "/" + modSuffix() 
 // one flat list stops being readable as soon as the roster holds more than one
 // slot's worth. A slot with no weapons renders nothing at all rather than an
 // empty heading, and an unknown slot still gets its weapons shown.
-const SLOT_ORDER = ["primary", "secondary", "melee"];
-const SLOT_LABEL = { primary: "Primary", secondary: "Secondary", melee: "Melee", other: "Other" };
+// Equipment slots, in the order the arsenal shows them. "sentinel" is a real
+// slot, not a kind of primary: a sentinel weapon rides the companion and draws
+// from the rifle mod pool without ever occupying a weapon slot.
+const SLOT_ORDER = ["primary", "secondary", "melee", "sentinel"];
+const SLOT_LABEL = { primary: "Primary", secondary: "Secondary", melee: "Melee", sentinel: "Sentinel Weapons", other: "Other" };
 
 function renderHome() {
   const grid = $("weapon-grid");
