@@ -75,9 +75,18 @@ fn status_json(state: &FunnelState, phase: &str, counts: Option<(usize, usize)>,
 /// heartbeat a big scope looked dead), plus one message after enumeration
 /// and after every funnel round. The returned string is the final result
 /// JSON.
+///
+/// `on_board` receives a RESULT-shaped best-so-far during the screen. Cancel
+/// in the browser is a worker kill, so a leaderboard that has not already left
+/// the worker dies with it (user 2026-07-30: 20 minutes, cancelled, nothing).
 #[wasm_bindgen]
-pub fn optimize(body: &str, on_progress: &js_sys::Function, on_checkpoint: &js_sys::Function) -> String {
-    optimize_inner(body, "", on_progress, on_checkpoint)
+pub fn optimize(
+    body: &str,
+    on_progress: &js_sys::Function,
+    on_checkpoint: &js_sys::Function,
+    on_board: &js_sys::Function,
+) -> String {
+    optimize_inner(body, "", on_progress, on_checkpoint, on_board)
 }
 
 /// Resume a run from a checkpoint written by a previous session — a page
@@ -89,8 +98,9 @@ pub fn optimize_resume(
     checkpoint: &str,
     on_progress: &js_sys::Function,
     on_checkpoint: &js_sys::Function,
+    on_board: &js_sys::Function,
 ) -> String {
-    optimize_inner(body, checkpoint, on_progress, on_checkpoint)
+    optimize_inner(body, checkpoint, on_progress, on_checkpoint, on_board)
 }
 
 fn optimize_inner(
@@ -98,6 +108,7 @@ fn optimize_inner(
     checkpoint: &str,
     on_progress: &js_sys::Function,
     on_checkpoint: &js_sys::Function,
+    on_board: &js_sys::Function,
 ) -> String {
     let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
     let plan = match wfsim_webapi::parse_optimize(&v) {
@@ -170,16 +181,28 @@ fn optimize_inner(
             post(status_json(&state, "running", counts.get(), (js_sys::Date::now() - t0) / 1000.0));
         }),
         resume,
-        Some(&|round: usize, jobs_at_start: usize, ids: &[(Vec<usize>, u32, u32, usize)]| {
-            let list: Vec<serde_json::Value> = ids
-                .iter()
-                .map(|(o, v, x, a)| serde_json::json!([o, v, x, a]))
-                .collect();
-            let payload = serde_json::json!({
-                "round": round, "jobs_at_start": jobs_at_start, "alive": list,
-            })
-            .to_string();
-            let _ = on_checkpoint.call1(&JsValue::NULL, &JsValue::from_str(&payload));
+        Some(
+            &|round: usize,
+              jobs_at_start: usize,
+              ids: &[(Vec<usize>, u32, u32, usize)],
+              board: &serde_json::Value| {
+                let list: Vec<serde_json::Value> = ids
+                    .iter()
+                    .map(|(o, v, x, a)| serde_json::json!([o, v, x, a]))
+                    .collect();
+                // The round's leaderboard rides with its resume point: one
+                // message answers both "continue from where?" and "what had
+                // it found?".
+                let payload = serde_json::json!({
+                    "round": round, "jobs_at_start": jobs_at_start, "alive": list,
+                    "board": board,
+                })
+                .to_string();
+                let _ = on_checkpoint.call1(&JsValue::NULL, &JsValue::from_str(&payload));
+            },
+        ),
+        Some(&|board: &serde_json::Value| {
+            let _ = on_board.call1(&JsValue::NULL, &JsValue::from_str(&board.to_string()));
         }),
     );
     wfsim_optimizer::set_tick_hook(None);

@@ -22,6 +22,7 @@ use wfsim_optimizer::{
     enumerate_candidates_each, enumerate_candidates_observed, run_funnel, schedule_to,
     stream_screen, Candidate, Constraints, FunnelState, Job, Scenario,
 };
+use wfsim_engine::dummy::Summary;
 
 // ---- Enemy library (the engine's embedded data/enemies/**) -------------
 // Single source of truth: the same data/ files the CLI and optimizer read,
@@ -2317,8 +2318,16 @@ pub struct ResumeFrom {
 pub type JobIdentity = (Vec<usize>, u32, u32, usize);
 
 /// Where a completed round publishes its field: `(next_round, jobs the
-/// schedule was built from, survivors)`.
-pub type CheckpointSink<'a> = dyn Fn(usize, usize, &[JobIdentity]) + 'a;
+/// schedule was built from, survivors, that round's leaderboard)`. The
+/// leaderboard rides along because the same snapshot answers both questions a
+/// killed run leaves open — where to continue, and what it had found.
+pub type CheckpointSink<'a> = dyn Fn(usize, usize, &[JobIdentity], &Value) + 'a;
+
+/// Where the SCREEN publishes its best-so-far. Result-shaped, so a cancel
+/// renders it through the same path a finished run takes. Display only: the
+/// screen is one pass over the whole scope, so a snapshot of it is NOT a
+/// resume point — continuing from one would silently drop the unwalked part.
+pub type BoardSink<'a> = dyn Fn(&Value) + 'a;
 
 /// The uninterrupted entry point — no checkpointing, no resume.
 pub fn run_optimize(
@@ -2327,7 +2336,7 @@ pub fn run_optimize(
     on_enumerated: impl FnOnce(usize, usize),
     on_round: Option<&dyn Fn()>,
 ) -> Value {
-    run_optimize_resumable(plan, state, on_enumerated, on_round, None, None)
+    run_optimize_resumable(plan, state, on_enumerated, on_round, None, None, None)
 }
 
 /// As [`run_optimize`], plus the two halves of resumability: `resume` skips
@@ -2345,6 +2354,10 @@ pub fn run_optimize_resumable(
     // where the candidate table is, so a caller can persist something that
     // survives the process.
     on_checkpoint: Option<&CheckpointSink<'_>>,
+    // Best-so-far during the screen. A browser cancel TERMINATES the worker,
+    // so a leaderboard that has not already left it is lost (user 2026-07-30:
+    // 20 minutes, cancelled, nothing shown).
+    on_board: Option<&BoardSink<'_>>,
 ) -> Value {
     let OptimizePlan {
         pool,
@@ -2392,6 +2405,51 @@ pub fn run_optimize_resumable(
             "final_runs": final_runs, "finalists": finalists,
             "headshot_pct": headshot_pct, "duration": duration,
             "results": [],
+            "target": { "name": target_name, "level": level, "steel_path": steel_path },
+        })
+    };
+
+    // One leaderboard row. The finished result and every best-so-far snapshot
+    // both go through this, so a cancelled run renders in exactly the same UI
+    // as a completed one — same fields, same renderer.
+    let entry = |rank: usize, c: &Candidate, ai: usize, s: &Summary| -> Value {
+        let mods: Vec<&str> = c.ordered.iter().map(|&i| pool[i].id).collect();
+        let arc = &arcanes[ai];
+        let (arcane_id, arcane_rank) = if arc.id.is_empty() {
+            ("none".to_string(), 0)
+        } else {
+            (
+                arc.id.clone(),
+                wfsim_engine::arcanes_data::secondary(&arc.id)
+                    .map(|d| d.max_rank)
+                    .unwrap_or(0),
+            )
+        };
+        json!({
+            "rank": rank + 1,
+            "kills": s.mean_kills,
+            "kill_progress": s.mean_kill_progress,
+            "dps": s.effective_dps,
+            "kills_min": s.min_kills,
+            "kills_max": s.max_kills,
+            "mods": mods,
+            "arcane": arcane_id,
+            "arcane_rank": arcane_rank,
+            "evolutions": evo_sets[c.variant as usize],
+            "exilus": exilus_defs[c.exilus as usize].as_ref().map(|m| m.id).unwrap_or("none"),
+            "forma": { "used": c.plan.forma_used, "total_drain": c.plan.total_drain },
+        })
+    };
+    // A whole result payload. Snapshots carry `cancelled: true` — a board only
+    // ever gets shown because a run stopped early, and the flag is what makes
+    // the UI label it best-so-far (lower precision than a full run).
+    let board_json = |rows: Vec<Value>, n_cands: usize, n_jobs: usize| -> Value {
+        json!({
+            "ok": true, "cancelled": true,
+            "candidates": n_cands, "jobs": n_jobs,
+            "final_runs": final_runs, "finalists": finalists,
+            "headshot_pct": headshot_pct, "duration": duration,
+            "results": rows,
             "target": { "name": target_name, "level": level, "steel_path": steel_path },
         })
     };
@@ -2489,19 +2547,28 @@ pub fn run_optimize_resumable(
         // checkpoint's round index indexes into — rebuild it the same way so
         // round N means the same thing it did before the reload.
         let rounds = schedule_to(r.jobs_at_start.max(n_jobs), final_runs, finalists);
-        let ids_at = |alive: &[Job]| -> Vec<JobIdentity> {
+        let ids_at = |alive: &[(Job, Summary)]| -> Vec<JobIdentity> {
             alive.iter()
-                .map(|&(ci, ai)| (cands[ci].ordered.clone(), cands[ci].variant, cands[ci].exilus, ai))
+                .map(|&((ci, ai), _)| (cands[ci].ordered.clone(), cands[ci].variant, cands[ci].exilus, ai))
                 .collect()
         };
+        let board_of = |alive: &[(Job, Summary)], nc: usize, nj: usize| -> Value {
+            board_json(
+                alive.iter().take(finalists).enumerate()
+                    .map(|(rank, ((ci, ai), s))| entry(rank, &cands[*ci], *ai, s))
+                    .collect(),
+                nc, nj,
+            )
+        };
         let started_with = r.jobs_at_start.max(n_jobs);
-        let wrap = on_checkpoint.map(|cp| move |round: usize, alive: &[Job]| {
-            cp(round, started_with, &ids_at(alive));
+        let n_cands = cands.len();
+        let wrap = on_checkpoint.map(|cp| move |round: usize, alive: &[(Job, Summary)]| {
+            cp(round, started_with, &ids_at(alive), &board_of(alive, n_cands, n_jobs));
         });
         let last = run_funnel(
             &cands, &arcanes, &scenario, jobs, &rounds, 0xDEAD_BEEF, false,
             Some(state), on_round, r.round,
-            wrap.as_ref().map(|f| f as &dyn Fn(usize, &[Job])),
+            wrap.as_ref().map(|f| f as &wfsim_optimizer::CheckpointFn<'_>),
         );
         let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
         (cands, last, c, n_jobs)
@@ -2518,13 +2585,22 @@ pub fn run_optimize_resumable(
         let n_jobs = jobs.len();
         on_enumerated(cands.len(), n_jobs);
         let rounds = schedule_to(n_jobs, final_runs, finalists);
-        let ids_at = |alive: &[Job]| -> Vec<JobIdentity> {
+        let ids_at = |alive: &[(Job, Summary)]| -> Vec<JobIdentity> {
             alive.iter()
-                .map(|&(ci, ai)| (cands[ci].ordered.clone(), cands[ci].variant, cands[ci].exilus, ai))
+                .map(|&((ci, ai), _)| (cands[ci].ordered.clone(), cands[ci].variant, cands[ci].exilus, ai))
                 .collect()
         };
-        let wrap = on_checkpoint.map(|cp| move |round: usize, alive: &[Job]| {
-            cp(round, n_jobs, &ids_at(alive));
+        let board_of = |alive: &[(Job, Summary)], nc: usize, nj: usize| -> Value {
+            board_json(
+                alive.iter().take(finalists).enumerate()
+                    .map(|(rank, ((ci, ai), s))| entry(rank, &cands[*ci], *ai, s))
+                    .collect(),
+                nc, nj,
+            )
+        };
+        let n_cands = cands.len();
+        let wrap = on_checkpoint.map(|cp| move |round: usize, alive: &[(Job, Summary)]| {
+            cp(round, n_jobs, &ids_at(alive), &board_of(alive, n_cands, n_jobs));
         });
         let last = run_funnel(
             &cands,
@@ -2537,7 +2613,7 @@ pub fn run_optimize_resumable(
             Some(state),
             on_round,
             0,
-            wrap.as_ref().map(|f| f as &dyn Fn(usize, &[Job])),
+            wrap.as_ref().map(|f| f as &wfsim_optimizer::CheckpointFn<'_>),
         );
         let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
         (cands, last, c, n_jobs)
@@ -2550,6 +2626,21 @@ pub fn run_optimize_resumable(
         state
             .sims_done
             .store(0, std::sync::atomic::Ordering::Relaxed);
+        // The screen is the long silent phase; publish its running top slice so
+        // a cancel there has numbers instead of an empty page.
+        let screen_board = on_board.map(|b| {
+            move |top: &[wfsim_optimizer::ScreenedJob]| {
+                let rows: Vec<Value> = top.iter().take(finalists).enumerate()
+                    .map(|(rank, sj)| entry(rank, &sj.cand, sj.ai, &sj.summary))
+                    .collect();
+                // Report what has been WALKED and SCREENED, not the snapshot's
+                // own length — the screen runs at one run per job, so
+                // `sims_done` is exactly the jobs it has ranked so far.
+                let walked = state.enumerated.load(std::sync::atomic::Ordering::Relaxed) as usize;
+                let screened = state.sims_done.load(std::sync::atomic::Ordering::Relaxed) as usize;
+                b(&board_json(rows, walked, screened));
+            }
+        });
         let (screened, complete) = stream_screen(
             |emit| {
                 for (vi, set) in evo_sets.iter().enumerate() {
@@ -2582,6 +2673,7 @@ pub fn run_optimize_resumable(
             SCREEN_KEEP,
             0xDEAD_BEEF,
             Some(state),
+            screen_board.as_ref().map(|f| f as &wfsim_optimizer::ScreenBoardFn<'_>),
         );
         if screened.is_empty() {
             if state.cancel.load(std::sync::atomic::Ordering::Relaxed) {
@@ -2621,13 +2713,22 @@ pub fn run_optimize_resumable(
             // whole scope. Its OUTPUT is: once the survivors are a candidate
             // table, every funnel round can be checkpointed by identity, and a
             // resume rebuilds them directly instead of screening again.
-            let ids_at = |alive: &[Job]| -> Vec<JobIdentity> {
+            let ids_at = |alive: &[(Job, Summary)]| -> Vec<JobIdentity> {
                 alive.iter()
-                    .map(|&(ci, ai)| (sc[ci].ordered.clone(), sc[ci].variant, sc[ci].exilus, ai))
+                    .map(|&((ci, ai), _)| (sc[ci].ordered.clone(), sc[ci].variant, sc[ci].exilus, ai))
                     .collect()
             };
-            let wrap = on_checkpoint.map(|cp| move |round: usize, alive: &[Job]| {
-                cp(round, n, &ids_at(alive));
+            let board_of_sc = |alive: &[(Job, Summary)], nc: usize, nj: usize| -> Value {
+                board_json(
+                    alive.iter().take(finalists).enumerate()
+                        .map(|(rank, ((ci, ai), s))| entry(rank, &sc[*ci], *ai, s))
+                        .collect(),
+                    nc, nj,
+                )
+            };
+            let n_sc = sc.len();
+            let wrap = on_checkpoint.map(|cp| move |round: usize, alive: &[(Job, Summary)]| {
+                cp(round, n, &ids_at(alive), &board_of_sc(alive, n_sc, n));
             });
             let last = run_funnel(
                 &sc,
@@ -2640,7 +2741,7 @@ pub fn run_optimize_resumable(
                 Some(state),
                 on_round,
                 0, // the streaming path always screens first, so it starts fresh
-                wrap.as_ref().map(|f| f as &dyn Fn(usize, &[Job])),
+                wrap.as_ref().map(|f| f as &wfsim_optimizer::CheckpointFn<'_>),
             );
             let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
             (sc, last, c, n)
@@ -2653,37 +2754,7 @@ pub fn run_optimize_resumable(
         .iter()
         .take(finalists)
         .enumerate()
-        .map(|(rank, ((ci, ai), s))| {
-            let c = &cands[*ci];
-            let mods: Vec<&str> = c.ordered.iter().map(|&i| pool[i].id).collect();
-            let arc = &arcanes[*ai];
-            let arcane_id = if arc.id.is_empty() {
-                "none".to_string()
-            } else {
-                arc.id.clone()
-            };
-            let arcane_rank = if arc.id.is_empty() {
-                0
-            } else {
-                wfsim_engine::arcanes_data::secondary(&arc.id)
-                    .map(|d| d.max_rank)
-                    .unwrap_or(0)
-            };
-            json!({
-                "rank": rank + 1,
-                "kills": s.mean_kills,
-                "kill_progress": s.mean_kill_progress,
-                "dps": s.effective_dps,
-                "kills_min": s.min_kills,
-                "kills_max": s.max_kills,
-                "mods": mods,
-                "arcane": arcane_id,
-                "arcane_rank": arcane_rank,
-                "evolutions": evo_sets[c.variant as usize],
-                "exilus": exilus_defs[c.exilus as usize].as_ref().map(|m| m.id).unwrap_or("none"),
-                "forma": { "used": c.plan.forma_used, "total_drain": c.plan.total_drain },
-            })
-        })
+        .map(|(rank, ((ci, ai), s))| entry(rank, &cands[*ci], *ai, s))
         .collect();
 
     json!({

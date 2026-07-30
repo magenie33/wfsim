@@ -4,6 +4,7 @@
 //   { kind: "optimize", body, checkpoint? }
 //                                    → { kind: "progress",   payload }*
 //                                      { kind: "checkpoint", payload }*
+//                                      { kind: "board",      payload }*
 //                                      { kind: "result",     payload }
 //   `checkpoint` (a JSON string from a previous session) RESUMES that run.
 // The optimize call blocks this worker until done — that is the design: the
@@ -23,11 +24,15 @@ onmessage = async (e) => {
     // Emitted after every completed round; the page persists it so a reload
     // costs ONE round instead of the whole search.
     const onCheckpoint = (c) => postMessage({ kind: "checkpoint", payload: JSON.parse(c) });
+    // Best-so-far during the screen — the long phase with no rounds in it.
+    // Cancel terminates this worker, so whatever has not been posted out by
+    // then is gone; this is what makes a cancel show numbers.
+    const onBoard = (b) => postMessage({ kind: "board", payload: JSON.parse(b) });
     const body = JSON.stringify(msg.body ?? {});
     const cp = msg.checkpoint;
     const out = cp
-      ? wasm_bindgen.optimize_resume(body, typeof cp === "string" ? cp : JSON.stringify(cp), onProgress, onCheckpoint)
-      : wasm_bindgen.optimize(body, onProgress, onCheckpoint);
+      ? wasm_bindgen.optimize_resume(body, typeof cp === "string" ? cp : JSON.stringify(cp), onProgress, onCheckpoint, onBoard)
+      : wasm_bindgen.optimize(body, onProgress, onCheckpoint, onBoard);
     postMessage({ kind: "result", payload: JSON.parse(out) });
   }
 };

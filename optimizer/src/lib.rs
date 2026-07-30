@@ -986,6 +986,22 @@ impl Ord for Scored {
     }
 }
 
+/// The `n` best entries of a screen heap, best-first — a snapshot for the
+/// board. The heap's own iteration order is arbitrary, so this is a scan; at
+/// the `BOARD_EVERY` cadence it costs a rounding error next to the sims.
+fn top_slice(heap: &std::collections::BinaryHeap<std::cmp::Reverse<Scored>>, n: usize) -> Vec<ScreenedJob> {
+    let mut v: Vec<&Scored> = heap.iter().map(|r| &r.0).collect();
+    let n = n.min(v.len());
+    if n > 0 && n < v.len() {
+        v.select_nth_unstable_by(n - 1, |a, b| b.cmp(a));
+    }
+    v.truncate(n);
+    v.sort_by(|a, b| b.cmp(a));
+    v.into_iter()
+        .map(|s| ScreenedJob { cand: s.cand.clone(), ai: s.ai, summary: s.summary })
+        .collect()
+}
+
 /// Screen an UNBOUNDED candidate stream: `produce` drives the enumeration
 /// and hands each candidate over; the screen evaluates it against every
 /// arcane at `runs` (typically 1) and keeps only the best `keep`
@@ -996,6 +1012,7 @@ impl Ord for Scored {
 /// seeds derive from the candidate's global sequence number, so a given
 /// scope screens deterministically.
 #[cfg(not(target_arch = "wasm32"))]
+#[allow(clippy::too_many_arguments)] // search-config surface, like run_funnel
 pub fn stream_screen(
     produce: impl FnOnce(&mut dyn FnMut(Candidate) -> bool),
     arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
@@ -1004,6 +1021,7 @@ pub fn stream_screen(
     keep: usize,
     seed: u64,
     state: Option<&FunnelState>,
+    on_board: Option<&ScreenBoardFn<'_>>,
 ) -> (Vec<ScreenedJob>, bool) {
     use std::cmp::Reverse;
     use std::collections::BinaryHeap;
@@ -1073,6 +1091,11 @@ pub fn stream_screen(
             }
             let ok = tx.send((seq, Arc::new(c))).is_ok();
             seq += 1;
+            if let Some(b) = on_board {
+                if seq.is_multiple_of(BOARD_EVERY) {
+                    b(&top_slice(&top.lock().unwrap(), BOARD_TOP));
+                }
+            }
             ok
         });
         drop(tx); // close the channel: workers drain and exit, the scope joins them
@@ -1095,6 +1118,7 @@ pub fn stream_screen(
 /// wasm32 (docs/WASM.md phase 3): no threads in a Web Worker — the same
 /// screen runs inline on the producer, identical seeds and survivor set.
 #[cfg(target_arch = "wasm32")]
+#[allow(clippy::too_many_arguments)] // search-config surface, like run_funnel
 pub fn stream_screen(
     produce: impl FnOnce(&mut dyn FnMut(Candidate) -> bool),
     arcanes: &[wfsim_engine::arcanes_data::ArcaneFx],
@@ -1103,6 +1127,7 @@ pub fn stream_screen(
     keep: usize,
     seed: u64,
     state: Option<&FunnelState>,
+    on_board: Option<&ScreenBoardFn<'_>>,
 ) -> (Vec<ScreenedJob>, bool) {
     use std::cmp::Reverse;
     use std::collections::BinaryHeap;
@@ -1135,6 +1160,11 @@ pub fn stream_screen(
             }
         }
         seq += 1;
+        if let Some(b) = on_board {
+            if seq.is_multiple_of(BOARD_EVERY) {
+                b(&top_slice(&top, BOARD_TOP));
+            }
+        }
         true
     });
     let mut out: Vec<Scored> = top.into_iter().map(|r| r.0).collect();
@@ -1179,8 +1209,27 @@ impl RoundTimer {
     }
 }
 
-/// The funnel's checkpoint sink: `(next_round, surviving jobs)`.
-pub type CheckpointFn<'a> = dyn Fn(usize, &[Job]) + 'a;
+/// The funnel's checkpoint sink: `(next_round, the round's ranked survivors)`.
+/// Scores travel with the identities because the same snapshot has to serve
+/// two purposes — resuming the search, and being the best-so-far leaderboard
+/// a cancel shows.
+pub type CheckpointFn<'a> = dyn Fn(usize, &[(Job, Summary)]) + 'a;
+
+/// Best-so-far sink for the SCREEN, which is one long phase with no rounds in
+/// it. Fires every `BOARD_EVERY` candidates with the current top slice.
+///
+/// It exists because a browser cancel is a KILL: the page terminates the
+/// worker, so anything the worker has not already pushed out is gone (a
+/// 20-minute run that showed nothing, user 2026-07-30). Native cancel is
+/// cooperative — `stream_screen` returns its own best-so-far — so nothing
+/// there depends on this.
+pub type ScreenBoardFn<'a> = dyn Fn(&[ScreenedJob]) + 'a;
+
+/// How many entries a best-so-far snapshot carries. Comfortably above the
+/// 20 finalists the UI shows, so the board never runs short of rows.
+pub const BOARD_TOP: usize = 64;
+/// How often the screen publishes one, in candidates produced.
+const BOARD_EVERY: usize = 4096;
 
 /// Drive the multi-round funnel: for each `(runs, keep, by_kills)` round,
 /// evaluate the surviving jobs, sort (kill-progress on kill rounds, effective
@@ -1397,7 +1446,7 @@ pub fn run_funnel(
         // A completed round is the natural checkpoint: the field is settled and
         // the next round only needs THIS list.
         if let Some(cp) = on_checkpoint {
-            cp(round + 1, &alive);
+            cp(round + 1, &scored);
         }
         last = scored;
         if let Some(st) = state {
@@ -1470,11 +1519,11 @@ mod tests {
 
         // (b) stop after round 1, keep only the identities, rebuild, continue.
         let saved = std::cell::RefCell::new(None);
-        let cp = |next: usize, alive: &[Job]| {
+        let cp = |next: usize, alive: &[(Job, Summary)]| {
             if saved.borrow().is_none() {
                 let ids: Vec<(Vec<usize>, u32, u32, usize)> = alive
                     .iter()
-                    .map(|&(ci, ai)| (cands[ci].ordered.clone(), cands[ci].variant, cands[ci].exilus, ai))
+                    .map(|&((ci, ai), _)| (cands[ci].ordered.clone(), cands[ci].variant, cands[ci].exilus, ai))
                     .collect();
                 *saved.borrow_mut() = Some((next, ids));
             }

@@ -39,18 +39,23 @@ let wasm_bindgen = (function(exports) {
      * heartbeat a big scope looked dead), plus one message after enumeration
      * and after every funnel round. The returned string is the final result
      * JSON.
+     *
+     * `on_board` receives a RESULT-shaped best-so-far during the screen. Cancel
+     * in the browser is a worker kill, so a leaderboard that has not already left
+     * the worker dies with it (user 2026-07-30: 20 minutes, cancelled, nothing).
      * @param {string} body
      * @param {Function} on_progress
      * @param {Function} on_checkpoint
+     * @param {Function} on_board
      * @returns {string}
      */
-    function optimize(body, on_progress, on_checkpoint) {
+    function optimize(body, on_progress, on_checkpoint, on_board) {
         let deferred2_0;
         let deferred2_1;
         try {
             const ptr0 = passStringToWasm0(body, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.optimize(ptr0, len0, on_progress, on_checkpoint);
+            const ret = wasm.optimize(ptr0, len0, on_progress, on_checkpoint, on_board);
             deferred2_0 = ret[0];
             deferred2_1 = ret[1];
             return getStringFromWasm0(ret[0], ret[1]);
@@ -68,9 +73,10 @@ let wasm_bindgen = (function(exports) {
      * @param {string} checkpoint
      * @param {Function} on_progress
      * @param {Function} on_checkpoint
+     * @param {Function} on_board
      * @returns {string}
      */
-    function optimize_resume(body, checkpoint, on_progress, on_checkpoint) {
+    function optimize_resume(body, checkpoint, on_progress, on_checkpoint, on_board) {
         let deferred3_0;
         let deferred3_1;
         try {
@@ -78,7 +84,7 @@ let wasm_bindgen = (function(exports) {
             const len0 = WASM_VECTOR_LEN;
             const ptr1 = passStringToWasm0(checkpoint, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len1 = WASM_VECTOR_LEN;
-            const ret = wasm.optimize_resume(ptr0, len0, ptr1, len1, on_progress, on_checkpoint);
+            const ret = wasm.optimize_resume(ptr0, len0, ptr1, len1, on_progress, on_checkpoint, on_board);
             deferred3_0 = ret[0];
             deferred3_1 = ret[1];
             return getStringFromWasm0(ret[0], ret[1]);

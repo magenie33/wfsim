@@ -139,9 +139,9 @@ let woptNextId = 1;
 // only ever means anything under the scope that produced it, so it is never
 // re-derived from whatever the form happens to say later.
 const OPT_CKPT = "wfsim-optimize-checkpoint";
-function saveCheckpoint(body, cp) {
+function saveCheckpoint(body, cp, board) {
   try {
-    localStorage.setItem(OPT_CKPT, JSON.stringify({ body, cp, at: Date.now() }));
+    localStorage.setItem(OPT_CKPT, JSON.stringify({ body, cp, board, at: Date.now() }));
   } catch (_) { /* quota: a checkpoint is a nicety, never a failure */ }
 }
 const clearCheckpoint = () => { try { localStorage.removeItem(OPT_CKPT); } catch (_) {} };
@@ -162,10 +162,18 @@ function woptStart(body, checkpoint) {
   }
   const { __resume, ...req } = body ?? {}; // the resume marker is transport, not scope
   body = req;
-  const job = { id: woptNextId++, worker: new Worker("/worker.js"), status: null, result: null, cancelled: false, t0: Date.now() };
+  const job = { id: woptNextId++, worker: new Worker("/worker.js"), status: null, result: null, board: null, cancelled: false, t0: Date.now() };
   job.worker.onmessage = (e) => {
     if (e.data.kind === "progress") job.status = e.data.payload;
-    if (e.data.kind === "checkpoint") saveCheckpoint(body, e.data.payload);
+    // The board is what a CANCEL shows. Cancelling terminates the worker, so
+    // nothing can be asked of it afterwards — the newest snapshot it managed
+    // to push out is all there is, and it has to already be here.
+    if (e.data.kind === "board") job.board = e.data.payload;
+    if (e.data.kind === "checkpoint") {
+      const cp = e.data.payload;
+      if (cp.board) job.board = cp.board; // a completed round outranks a screen snapshot
+      saveCheckpoint(body, { round: cp.round, jobs_at_start: cp.jobs_at_start, alive: cp.alive }, cp.board);
+    }
     if (e.data.kind === "result") {
       job.result = e.data.payload;
       clearCheckpoint(); // finished: nothing left to resume
@@ -187,7 +195,14 @@ function woptStatus() {
     // The worker's heartbeat carries its own phase (enumerating/running) —
     // keep it; the fallbacks cover the moments before the first message.
     phase: (wopt.status && wopt.status.phase) || (wopt.status ? "running" : "enumerating") };
-  if (wopt.cancelled) out.phase = "cancelled";
+  if (wopt.cancelled) {
+    out.phase = "cancelled";
+    // Cancel KILLED the worker, so there is no returned result and never will
+    // be — hand back the last best-so-far it pushed out instead. It is already
+    // result-shaped and flagged `cancelled`, so the normal renderer labels it
+    // lower-precision without knowing where it came from.
+    if (!wopt.result && wopt.board) out.result = wopt.board;
+  }
   if (wopt.result) {
     out.result = wopt.result;
     out.phase = wopt.result.ok === false ? "error" : (wopt.result.cancelled ? "cancelled" : "done");
@@ -2635,8 +2650,11 @@ async function pollOptimize() {
     optFinish();
     if (st.result && st.result.results && st.result.results.length) {
       renderOptResults(st.result);
+      // A cancel is not necessarily the end of the search — the run stopped,
+      // but its resume point is still on disk. Offer it under the results.
+      if (st.phase === "cancelled") appendResumeOffer();
     } else {
-      $("opt-results").innerHTML = `<div class="placeholder">cancelled before the first round finished — no results</div>`;
+      $("opt-results").innerHTML = `<div class="placeholder">cancelled before anything had been ranked — no results</div>`;
     }
     return;
   }
@@ -2667,7 +2685,6 @@ function renderOptProgress(st) {
   $("opt-cancel").addEventListener("click", async () => {
     optCancelling = true;
     $("opt-cancel").disabled = true; $("opt-cancel").textContent = "Cancelling…";
-    clearCheckpoint(); // cancelling is a decision to stop, not an interruption
     try { await postJson("/api/optimize/cancel", { id: optJobId }); } catch (e) { /* poll reports */ }
   });
 }
@@ -2693,26 +2710,39 @@ async function reattachOptimize() {
 // Never auto-start: resuming costs minutes of the visitor's CPU, so it takes a
 // click — and the offer only appears for the weapon the checkpoint belongs to.
 function offerResume() {
+  const el = resumeControl();
+  if (!el) return;
+  const box = $("opt-results");
+  box.innerHTML = "";
+  box.append(el);
+}
+
+// The same control, under a cancelled run's leaderboard.
+function appendResumeOffer() {
+  const el = resumeControl();
+  if (el) $("opt-results").append(el);
+}
+
+function resumeControl() {
   const saved = loadCheckpoint();
   const box = $("opt-results");
-  if (!saved || !box || optJobId != null) return;
-  if (saved.body.weapon !== $("weapon").value) return;
+  if (!saved || !box || optJobId != null) return null;
+  if (saved.body.weapon !== $("weapon").value) return null;
   const cp = saved.cp;
   const el = document.createElement("div");
   el.className = "opt-resume";
   const sel = $("weapon");
   const shown = (sel.selectedOptions[0] || {}).textContent || sel.value;
-  el.innerHTML = `<div>An optimization for <b>${escHtml(shown)}</b> was interrupted after `
+  el.innerHTML = `<div>An optimization for <b>${escHtml(shown)}</b> stopped after `
     + `round ${cp.round} — ${cp.alive.length.toLocaleString()} builds still standing.</div>`;
   const go = document.createElement("button");
   go.className = "ghost-btn"; go.textContent = "resume it";
   go.onclick = () => resumeOptimize(saved);
   const no = document.createElement("button");
   no.className = "ghost-btn small"; no.textContent = "discard";
-  no.onclick = () => { clearCheckpoint(); box.innerHTML = `<div class="placeholder">no results yet</div>`; };
+  no.onclick = () => { clearCheckpoint(); el.remove(); };
   el.append(go, no);
-  box.innerHTML = "";
-  box.append(el);
+  return el;
 }
 
 async function resumeOptimize(saved) {
