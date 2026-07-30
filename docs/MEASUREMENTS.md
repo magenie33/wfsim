@@ -425,6 +425,61 @@ measurement confirms it directly.
 
 ---
 
+## M14 — What happens to the ammo remainder when an efficiency buff expires?
+
+**Question.** Ammo Efficiency divides the per-shot ammo cost and *"keeps track
+of the fractions as well"* (wiki Energized Munitions), so a magazine can sit on
+a fractional value — 0.5 rounds left, say. When the buff then lapses and the
+cost snaps back to a full 1.0, what does the game do?
+
+Three candidate models, and they differ by up to one shot per magazine:
+1. **Fire and overdraw** — the shot happens, the remainder is spent and the
+   magazine bottoms out at 0. (What `engine::dummy` does today; it lets the
+   counter go negative and reloads on the next iteration.)
+2. **Fire and keep the credit** — the remainder is a pre-payment on the *next*
+   round, so a 0.5 remainder means the round after costs only 0.5.
+3. **Refuse** — a full round is required, so the weapon reloads with 0.5
+   showing and that fraction is discarded.
+
+**Why it is worth an entry, and why it is not urgent.** The bounded cost is one
+shot per magazine, and only when a *timed* efficiency source lapses mid-magazine
+— in the current roster that means Primary Crux's decaying stacks, since Frenzy
+grants a flat 100% (cost zero, magazine never drains) and Akimbo Slip Shot is
+static. So it cannot move a headline DPS number much, but it is a guess sitting
+in the ammo path and it should be labelled as one.
+
+**Method** (Simulacrum, and the point is to make the fraction VISIBLE):
+1. Pick a weapon with a **small magazine and a slow fire rate**, so single
+   rounds are readable on the HUD — a sniper or the Exergis is ideal, and the
+   Exergis's 1-round magazine makes every model give a different answer.
+2. Get a **timed** efficiency source whose expiry you control. Energized
+   Munitions (Helminth, +75% for 3–5 s) is the clean one: a known 0.25 cost and
+   a short, predictable window.
+3. Fire an ODD number of shots inside the window — with 75% efficiency, 2 shots
+   leaves the magazine at 0.5 of a round. **Stop firing** and let the buff run
+   out.
+4. Fire once more, watching the ammo counter:
+   - shot fires, counter drops to 0 (or the next whole round) ⇒ **model 1**;
+   - shot fires and the round AFTER it is unusually cheap ⇒ **model 2**;
+   - shot does not fire / the weapon auto-reloads instead ⇒ **model 3**.
+5. Repeat with a 3-shot prefix (leaving 0.25) to check the answer does not
+   depend on how big the remainder is.
+
+**Confounds to avoid.** No other ammo-efficiency source equipped — they stack
+additively (except Energized Munitions itself, which multiplies), and a second
+source changes the cost mid-test. Do not use a charge-backed Incarnon form: it
+is exempt from ammo efficiency entirely and would show no effect at all. Watch
+the RESERVE counter too, not just the magazine, so a reload does not hide where
+the round went.
+
+**Outcome mapping.** Model 1 is already implemented and needs nothing. Model 2
+means the sim must carry the remainder across the reload boundary rather than
+resetting it. Model 3 means the fire gate becomes `magazine >= cost` instead of
+`magazine > 0` — and note that gate must NOT be applied unconditionally, because
+the Exergis case proves a partial round fires while the buff is still up.
+
+---
+
 ## M2 — Simulacrum "Steel Path" toggle: does it still boost armor?
 
 **Question.** The toggle was introduced (U33.5) as "+250% Health, Armor,

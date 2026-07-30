@@ -1459,7 +1459,56 @@ form is skipped).
 DoT stacking, buff duration and refresh. Steady DPS, burst DPS, and TTK are
 **statistics derived from this series**, not primary inputs (CORE.md §2).
 
-**Source:** derived. **Status:** unverified.
+### Ammo Efficiency — a FRACTIONAL ammo cost
+
+Not a chance to save a round. VERBATIM (wiki `Ammo`): *"Ammo Efficiency
+determines the number of shots that occur before consuming ammo… if a weapon has
+75% ammo efficiency and each shot originally costs one ammo, every four shots
+will use one ammo"*, with
+
+```
+shots per ammo consumed = 1 / (1 − efficiency)
+```
+
+The implementation is a **divided cost with the remainder kept**, which the
+Energized Munitions page states outright: *"The way this works is by dividing
+the ammo cost so each shot consumes a quarter of the original, and keeps track
+of the fractions as well."* So the per-shot cost is `ammo_cost × (1 −
+efficiency)` and the magazine carries a fractional value — which is exactly what
+`engine::dummy` does (`magazine -= 1.0 - efficiency`, evaluated live per shot so
+a decaying buff is read at the moment of firing).
+
+**A partial round still fires.** The single-round-magazine case proves the gate
+is "anything left", not "a whole round left": *"For weapons with a single-round
+magazine like the Exergis, the round gets consumed after the 4th shot"* — at
+0.25 cost the magazine reads 0.75 / 0.50 / 0.25 / 0, and all four shots happen.
+The sim's gate is the same (`magazine < 1e-9` triggers the reload, so any
+positive remainder fires).
+
+**Stacking is ADDITIVE, with one named exception.** *"Sources of ammo efficiency
+stack additively with each other except for Energized Munitions, which stacks
+multiplicatively."* The engine sums its sources (Frenzy, Akimbo Slip Shot,
+Primary Crux) and clamps to 1.0 — correct for everything modelled, since
+Energized Munitions is a Warframe ability and out of scope. **If it is ever
+added it must multiply, not join the sum.**
+
+**Charge-backed magazines are exempt**, per weapon data
+(`unaffected_by_ammo_efficiency`): *"Incarnon Form is not affected by Ammo
+Efficiency (such as Energized Munitions)"*. So Primary Crux's efficiency grant
+goes inert in an Incarnon form while its status-chance grant keeps working.
+
+**Open question — what happens to the remainder when the buff expires?**
+NOT DOCUMENTED anywhere. With the magazine at 0.5 and efficiency back to zero,
+the next shot costs a full 1.0: does the game let it fire (and how is the debt
+settled), or does it demand a whole round? The sim currently fires it and lets
+the counter go negative before reloading, which is a guess. Protocol in
+MEASUREMENTS M14. Bounded impact — at most one shot per magazine, and only when
+a timed efficiency source lapses mid-magazine — which is why it is recorded
+rather than blocking.
+
+**Source:** wiki `Ammo` + `Ammo Efficiency` + `Energized Munitions`.
+**Status:** formula, fraction-keeping, the partial-round gate and the stacking
+rule are sourced; the expiry remainder is **unverified** (M14).
 
 ---
 

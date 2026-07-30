@@ -2583,6 +2583,16 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         let contribs = bar.total_contributions();
         // Ammo: consume (1 - efficiency) per shot; Frenzy's +100% efficiency
         // zeroes consumption (unless this magazine is charge-backed).
+        // Efficiency is a DIVIDED COST, not a chance to save a round: the cost
+        // is `1 x (1 - efficiency)` and the magazine keeps the fraction (wiki
+        // Energized Munitions: "dividing the ammo cost … and keeps track of the
+        // fractions as well"). A partial round still fires — the Exergis's
+        // 1-round magazine takes four 0.25 shots — which is why the gate above
+        // is "anything left" rather than "a whole round left".
+        //
+        // UNVERIFIED (MEASUREMENTS M14): what a lapsing buff does to a leftover
+        // fraction. This fires the shot and lets the counter go negative before
+        // the next iteration reloads. Bounded at one shot per magazine.
         let efficiency = if ap.ammo_efficiency_applies {
             // BuffBar (Frenzy) + static arcane (Akimbo Slip Shot, assumed-max)
             // + live arcane stacks (Primary Crux) additively — wiki Crux:
