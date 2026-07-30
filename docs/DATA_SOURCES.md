@@ -87,3 +87,41 @@ Our field names follow the wiki concept words (snake_case + unit suffixes):
 - **Field discipline** (decision 2026-07-28, full statement in
   [`../data/README.md`](../data/README.md)): fields are structured data a
   program consumes; human narrative is a `#` comment. No prose in fields.
+
+## Verification tooling (lives in `private/scripts/` — LOCAL, gitignored)
+
+The pipeline that fills and checks `data/` is not in the repo (`/private/` is
+"Private, never committed"), so it is listed here: the CHECKS are part of how
+this data is trusted, and a reader of `data/` should know they exist even
+though the scripts do not travel with it.
+
+| script | what it asserts |
+| --- | --- |
+| `wiki_mods.py` / `wiki_arcanes.py` | shared fetch + parse of the authoritative Lua modules |
+| `gen_mods.py --type <T>` | generate skeletons; never overwrites a curated file. Owns the import filters (PvP-only, removed-from-game, Flawed, Riven placeholders) |
+| `verify_mods.py --type <T>` | COVERAGE (every importable wiki mod of that Type has a file, and no file is a stranger) + drain / polarity / rarity / max_rank / exilus. Imports `gen_mods`' filters so the two cannot disagree about what the pool should hold |
+| `verify_arcanes.py --slot <S>` | same, for arcanes, plus the X-templated description token-matching the wiki's max-rank text |
+| `audit_mod_effects.py --type <T>` | the EFFECT NUMBERS: every modeled `rankMax` must appear in the mod's own wiki description. Also flags CONDITIONAL-AS-FLAT (a description with an `On <trigger>:` line must produce a `kind: buff`) and DESC-STALE (the module's text lagging its own MaxRank) |
+| `audit_arcane_effects.py --slot <S>` | the effect numbers at BOTH ends of the rank ramp, against warframestat `levelStats` |
+| `reconcile_families.py --type <T>` | `family` / `incompatible_with` by union-find over the wiki's `Incompatible` lists — the mutual-exclusivity groups the optimizer enforces |
+
+Two systematic failure modes these caught, worth knowing because they are
+INVISIBLE to a numbers-only check and both produce data that looks fine:
+
+- **A missing `family`** lets the optimizer equip mutually exclusive mods
+  together (Serration + Amalgam Serration) and report the result as a legal
+  build. The whole rifle set had none.
+- **A conditional bonus modeled as always-on**: the generator splits
+  `"On Kill:\n+120% Critical Damage"` into an `unmodeled` marker for the
+  trigger plus a plain bonus for the payload, so the value audits clean while
+  the mod hands its entire worth over for free. Seven rifle mods.
+
+And two cases where the wiki is the thing that is wrong, kept flagged rather
+than silenced:
+
+- The module's `Description` can **lag its own `MaxRank`** (Hawk Eye, Steady
+  Hands: MaxRank 5 with rank-3 text). The modeled value is the linear
+  extension along the same ramp; both files say so in a comment.
+- Amalgam Barrel Diffusion really grants **109.50%** multishot and the tooltip
+  rounds to 110% — an explicit allowlist entry with the wiki quote, not a
+  tolerance that would hide the next real error.

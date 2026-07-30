@@ -22,7 +22,12 @@ data + a dependency-free web UI, deployed as WASM on Cloudflare
 - `docs/` — CORE (design), MECHANICS (formulas), MEASUREMENTS (protocol +
   baselines), BUFFS, OPTIMIZER, UI, WASM, GLOSSARY, DEVELOPMENT (setup).
 - `tests/golden/` — golden tests calibrated against in-game measurements.
-- `private/` — gitignored (devlogs, drafts, local assets).
+- `private/` — gitignored (devlogs, drafts, local assets, the `data/`
+  verification scripts). **`git add -A` silently skips it**, so never report a
+  change under `private/` as shipped, and never let something the repo needs
+  live only there — put it in `docs/` (verification tooling is catalogued in
+  `docs/DATA_SOURCES.md`). Single-machine development (2026-07-30): local-only
+  is fine, invisible is not.
 
 ## Build, test, verify
 
