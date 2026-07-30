@@ -141,6 +141,15 @@ evolutions: {}
 # UI strings, keyed by the English source string (English itself never needs
 # an entry — the source string IS the fallback).
 ui:
+  "2 · Technique": 2 · 手法
+  "3 · Buffs": 3 · 增益
+  "4 · Simulation": 4 · 模拟
+  "Technique": 手法
+  "Form": 形态
+  "Headshot %": 爆头率 %
+  "how the weapon is played — this gates the buffs below": 你怎么打这把武器 —— 它决定下面的 buff 是否生效
+  "must match how you intend to play it — the winner is scored under these assumptions": 必须和你实际的打法一致 —— 最优解是在这些假设下算出来的
+  "a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet": 这是逐弹丸的瞄准权重，不是整片弹丸都爆头 —— 落点对每颗弹丸单独掷点
   "Aiming": 瞄准
   "import": 导入
   "copy a preset from another weapon": 从其他武器复制一个预设
@@ -187,8 +196,6 @@ ui:
   "Incarnon Genesis": 灵化之源
   "Exilus slot": Exilus 槽
   "1 · Enemy": 1 · 敌人
-  "2 · Buffs": 2 · 增益
-  "3 · Simulation": 3 · 模拟
   "Enemy": 敌人
   "Buffs": 增益
   "Base Damage": 基础伤害

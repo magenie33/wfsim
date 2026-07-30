@@ -137,9 +137,15 @@
         </div>
         <h3 class="sim-h" data-i18n>1 · Enemy</h3>
         <div id="sim-enemy" class="field-grid"></div>
-        <h3 class="sim-h" data-i18n>2 · Buffs <span class="sim-hint">initial stacks + lock (locked = 100% uptime)</span></h3>
+        <!-- Technique = what the PLAYER does, as opposed to who they fight
+             (1) or how long we measure (4). It comes before Buffs because it
+             GATES them: aiming decides whether the while-aiming mods pay out
+             at all. -->
+        <h3 class="sim-h" data-i18n>2 · Technique <span class="sim-hint">how the weapon is played — this gates the buffs below</span></h3>
+        <div id="sim-technique" class="field-grid"></div>
+        <h3 class="sim-h" data-i18n>3 · Buffs <span class="sim-hint">initial stacks + lock (locked = 100% uptime)</span></h3>
         <div id="sim-buffs"></div>
-        <h3 class="sim-h" data-i18n>3 · Simulation</h3>
+        <h3 class="sim-h" data-i18n>4 · Simulation</h3>
         <div id="sim-run" class="field-grid"></div>
         <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
       </div>
@@ -177,6 +183,8 @@
         <div id="opt-evos"></div>
         <h3 class="sim-h" data-i18n>Enemy <span class="sim-hint">the optimizer's own scenario — independent of the Sim panel</span></h3>
         <div id="opt-enemy" class="field-grid"></div>
+        <h3 class="sim-h" data-i18n>Technique <span class="sim-hint">must match how you intend to play it — the winner is scored under these assumptions</span></h3>
+        <div id="opt-technique" class="field-grid"></div>
         <h3 class="sim-h" data-i18n>Buffs <span class="sim-hint">across the whole scope — initial stacks + lock, applied per candidate</span></h3>
         <div id="opt-buffs"></div>
         <div class="opt-final">

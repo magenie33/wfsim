@@ -1597,21 +1597,27 @@ function renderSim() {
     <label>Enemy <select data-k="enemy">${eopts}</select></label>
     <label>Level <input type="number" data-k="level" min="1" max="9999" value="${sim.level}"></label>
     <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>`;
-  // Section 3 — how to test.
+  // Section 2 — TECHNIQUE: the player's execution, which is a different kind
+  // of input from the enemy (1) and from the measurement (4). Which form you
+  // fight in, whether you hold aim, and how often you land the head are all
+  // choices the player makes — and aiming GATES buffs, so it belongs here
+  // rather than mixed into the run settings (user, 2026-07-30).
   const formField = w.uses_evo2 ? `
-    <label>Form
+    <label>${escHtml(tr("Form"))}
       <select data-k="form">
         <option value="incarnon_cycle" ${sim.form === "incarnon_cycle" ? "selected" : ""}>Incarnon cycle</option>
         <option value="incarnon" ${sim.form === "incarnon" ? "selected" : ""}>Incarnon only</option>
         <option value="base" ${sim.form === "base" ? "selected" : ""}>Base only</option>
       </select></label>` : "";
-  $("sim-run").innerHTML = `
-    <label>Headshot % <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>
+  $("sim-technique").innerHTML = `
+    ${formField}
     <label class="check" title="${escHtml(tr("mods that only work while aiming (Galvanized Crosshairs, Argon Scope, Sharpened Bullets…) grant nothing when this is off"))}"><input type="checkbox" data-k="aiming" ${sim.aiming ? "checked" : ""}> ${escHtml(tr("Aiming"))}</label>
+    <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>`;
+  // Section 4 — the MEASUREMENT: nothing the player does in-game.
+  $("sim-run").innerHTML = `
     <label>Duration (s) <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>
-    <label>Runs <input type="number" data-k="runs" min="1" max="20000" value="${sim.runs}"></label>
-    ${formField}`;
-  [$("sim-enemy"), $("sim-run")].forEach((box) =>
+    <label>Runs <input type="number" data-k="runs" min="1" max="20000" value="${sim.runs}"></label>`;
+  [$("sim-enemy"), $("sim-technique"), $("sim-run")].forEach((box) =>
     box.querySelectorAll("[data-k]").forEach((el) => {
       el.addEventListener("change", () => {
         const k = el.dataset.k;
@@ -1970,17 +1976,25 @@ function renderOptEnemy() {
     <label>Enemy <select data-k="enemy">${eopts}</select></label>
     <label>Level <input type="number" data-k="level" min="1" max="9999" value="${optSim.level}"></label>
     <label class="check"><input type="checkbox" data-k="steel_path" ${optSim.steel_path ? "checked" : ""}> Steel Path</label>
-    <label>Headshot % <input type="number" data-k="headshot_pct" min="0" max="100" value="${optSim.headshot_pct}"></label>
-    <label class="check" title="${escHtml(tr("mods that only work while aiming grant nothing when this is off - the optimizer scores builds under the same assumption the sim replays them with"))}"><input type="checkbox" data-k="aiming" ${optSim.aiming ? "checked" : ""}> ${escHtml(tr("Aiming"))}</label>
     <label>Duration (s) <input type="number" data-k="duration" min="1" max="3600" value="${optSim.duration}"></label>`;
-  box.querySelectorAll("[data-k]").forEach((el) =>
-    el.addEventListener("change", () => {
-      const k = el.dataset.k;
-      if (el.type === "checkbox") optSim[k] = el.checked;
-      else if (el.type === "number") optSim[k] = Number(el.value);
-      else optSim[k] = el.value;
-      updateOptEstimate();
-    }));
+  // Same split as the Sim: technique is the player's execution, and it must
+  // match how the build will actually be played — the winner is only the
+  // winner under these assumptions.
+  const tech = $("opt-technique");
+  if (tech) {
+    tech.innerHTML = `
+    <label class="check" title="${escHtml(tr("mods that only work while aiming grant nothing when this is off - the optimizer scores builds under the same assumption the sim replays them with"))}"><input type="checkbox" data-k="aiming" ${optSim.aiming ? "checked" : ""}> ${escHtml(tr("Aiming"))}</label>
+    <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${optSim.headshot_pct}"></label>`;
+  }
+  [box, tech].filter(Boolean).forEach((b) =>
+    b.querySelectorAll("[data-k]").forEach((el) =>
+      el.addEventListener("change", () => {
+        const k = el.dataset.k;
+        if (el.type === "checkbox") optSim[k] = el.checked;
+        else if (el.type === "number") optSim[k] = Number(el.value);
+        else optSim[k] = el.value;
+        updateOptEstimate();
+      })));
 }
 
 // Exilus-slot scope (the +1 slot) — exilus-eligible mods with the same
