@@ -123,5 +123,12 @@ Implemented in `optimizer/` (`wfsim-optimizer` binary):
   continues from the last COMPLETED round instead of the beginning.
   Seeds key off the ABSOLUTE round index, so the resumed run is not
   merely similar to the uninterrupted one — it is the same
-  (`a_resumed_funnel_lands_on_the_same_leaderboard`). See docs/WASM.md
-  for the checkpoint format and what it deliberately does not cover.
+  (`a_resumed_funnel_lands_on_the_same_leaderboard`). The screen resumes
+  too, from a cut of the walk rather than a round boundary
+  (`a_resumed_screen_lands_on_the_same_survivors`). See docs/WASM.md for
+  the checkpoint format and what it deliberately does not cover.
+- Best-so-far snapshots: the screen publishes its top slice every 4096
+  candidates and every completed round publishes its leaderboard, both
+  result-shaped. A browser cancel TERMINATES the worker, so a leaderboard
+  that has not already left it cannot be recovered — this is what makes a
+  cancelled run show its ranking instead of an empty page.

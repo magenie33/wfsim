@@ -140,9 +140,15 @@ let woptNextId = 1;
 // re-derived from whatever the form happens to say later.
 const OPT_CKPT = "wfsim-optimize-checkpoint";
 function saveCheckpoint(body, cp, board) {
+  const write = (payload) => localStorage.setItem(OPT_CKPT, JSON.stringify(payload));
   try {
-    localStorage.setItem(OPT_CKPT, JSON.stringify({ body, cp, board, at: Date.now() }));
-  } catch (_) { /* quota: a checkpoint is a nicety, never a failure */ }
+    write({ body, cp, board, at: Date.now() });
+  } catch (_) {
+    // A screen cut is the whole surviving field — tens of thousands of pairs.
+    // If it does not fit alongside the leaderboard, the RESUME POINT is worth
+    // more than the display copy, so drop the board and keep the cut.
+    try { write({ body, cp, at: Date.now() }); } catch (_) { /* nothing fits: no checkpoint */ }
+  }
 }
 const clearCheckpoint = () => { try { localStorage.removeItem(OPT_CKPT); } catch (_) {} };
 function loadCheckpoint() {
@@ -170,9 +176,9 @@ function woptStart(body, checkpoint) {
     // to push out is all there is, and it has to already be here.
     if (e.data.kind === "board") job.board = e.data.payload;
     if (e.data.kind === "checkpoint") {
-      const cp = e.data.payload;
-      if (cp.board) job.board = cp.board; // a completed round outranks a screen snapshot
-      saveCheckpoint(body, { round: cp.round, jobs_at_start: cp.jobs_at_start, alive: cp.alive }, cp.board);
+      const { board, ...cp } = e.data.payload;
+      if (board) job.board = board; // a completed round outranks a screen snapshot
+      saveCheckpoint(body, cp, board || job.board);
     }
     if (e.data.kind === "result") {
       job.result = e.data.payload;
@@ -2733,8 +2739,11 @@ function resumeControl() {
   el.className = "opt-resume";
   const sel = $("weapon");
   const shown = (sel.selectedOptions[0] || {}).textContent || sel.value;
-  el.innerHTML = `<div>An optimization for <b>${escHtml(shown)}</b> stopped after `
-    + `round ${cp.round} — ${cp.alive.length.toLocaleString()} builds still standing.</div>`;
+  const where = cp.kind === "screen"
+    ? `while screening — ${cp.start_seq.toLocaleString()} candidates walked, `
+      + `${(cp.keepers.length / 2).toLocaleString()} jobs still standing`
+    : `after round ${cp.round} — ${cp.alive.length.toLocaleString()} builds still standing`;
+  el.innerHTML = `<div>An optimization for <b>${escHtml(shown)}</b> stopped ${where}.</div>`;
   const go = document.createElement("button");
   go.className = "ghost-btn"; go.textContent = "resume it";
   go.onclick = () => resumeOptimize(saved);
@@ -2747,7 +2756,9 @@ function resumeControl() {
 
 async function resumeOptimize(saved) {
   $("run-opt").disabled = true; $("run-opt").textContent = "Optimizing…";
-  $("opt-results").innerHTML = `<div class="placeholder">resuming from round ${saved.cp.round}…</div>`;
+  $("opt-results").innerHTML = `<div class="placeholder">${saved.cp.kind === "screen"
+    ? `re-walking to the saved point (${saved.cp.start_seq.toLocaleString()} candidates)…`
+    : `resuming from round ${saved.cp.round}…`}</div>`;
   try {
     // The STORED body, not the current form: the checkpoint describes a field
     // narrowed under that exact scope, and re-deriving the body from the UI

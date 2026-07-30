@@ -716,6 +716,11 @@ pub struct FunnelState {
     /// Candidates emitted so far by a running enumeration (progress for
     /// the "enumerating" phase, where sims_done is still 0).
     pub enumerated: AtomicU64,
+    /// A resumed screen is re-walking to its saved cut. Enumeration is cheap
+    /// here (the rejected candidates are skipped, not evaluated), so this is
+    /// NOT the phase the enumeration budget is meant to bound — a host that
+    /// counted it would cut the run short of even catching up.
+    pub rewalking: AtomicBool,
     /// One entry per FINISHED round.
     pub notes: Mutex<Vec<RoundNote>>,
 }
@@ -1022,12 +1027,19 @@ pub fn stream_screen(
     seed: u64,
     state: Option<&FunnelState>,
     on_board: Option<&ScreenBoardFn<'_>>,
+    resume: Option<&ScreenResume>,
+    // Never emitted here — see `ScreenSnapshotFn`: this heap lags its producer,
+    // so a cut taken from it would not be a consistent prefix of the walk.
+    _on_snapshot: Option<&ScreenSnapshotFn<'_>>,
 ) -> (Vec<ScreenedJob>, bool) {
     use std::cmp::Reverse;
     use std::collections::BinaryHeap;
     use std::sync::Arc;
     let threads = worker_threads();
-    let (tx, rx) = std::sync::mpsc::sync_channel::<(usize, Arc<Candidate>)>(4096);
+    // `None` = screen against every arcane; `Some` = a resumed cut's survivors,
+    // the only jobs of an already-walked candidate worth paying for again.
+    type Msg = (usize, Arc<Candidate>, Option<Vec<usize>>);
+    let (tx, rx) = std::sync::mpsc::sync_channel::<Msg>(4096);
     let rx = std::sync::Mutex::new(rx);
     let top: std::sync::Mutex<BinaryHeap<Reverse<Scored>>> =
         std::sync::Mutex::new(BinaryHeap::new());
@@ -1043,12 +1055,13 @@ pub fn stream_screen(
                 deprioritize_current_thread();
                 loop {
                     let msg = rx.lock().unwrap().recv();
-                    let Ok((seq, cand)) = msg else { return };
-                    for (ai, arc) in arcanes.iter().enumerate() {
+                    let Ok((seq, cand, only)) = msg else { return };
+                    let all: Vec<usize> = (0..arcanes.len()).collect();
+                    for &ai in only.as_deref().unwrap_or(&all) {
                         if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
                             return;
                         }
-                        let s = evaluate(&cand, arc, scenario, runs, job_seed(seed, seq, ai));
+                        let s = evaluate(&cand, &arcanes[ai], scenario, runs, job_seed(seed, seq, ai));
                         if let Some(st) = state {
                             st.sims_done.fetch_add(runs as u64, Ordering::Relaxed);
                         }
@@ -1089,8 +1102,16 @@ pub fn stream_screen(
             if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
                 return false;
             }
-            let ok = tx.send((seq, Arc::new(c))).is_ok();
+            let this = seq;
             seq += 1;
+            let only: Option<Vec<usize>> = match resume {
+                Some(r) if this < r.start_seq => match r.keepers.get(&this) {
+                    Some(v) => Some(v.clone()),
+                    None => return true, // rejected last time; do not pay again
+                },
+                _ => None,
+            };
+            let ok = tx.send((this, Arc::new(c), only)).is_ok();
             if let Some(b) = on_board {
                 if seq.is_multiple_of(BOARD_EVERY) {
                     b(&top_slice(&top.lock().unwrap(), BOARD_TOP));
@@ -1128,6 +1149,8 @@ pub fn stream_screen(
     seed: u64,
     state: Option<&FunnelState>,
     on_board: Option<&ScreenBoardFn<'_>>,
+    resume: Option<&ScreenResume>,
+    on_snapshot: Option<&ScreenSnapshotFn<'_>>,
 ) -> (Vec<ScreenedJob>, bool) {
     use std::cmp::Reverse;
     use std::collections::BinaryHeap;
@@ -1138,16 +1161,42 @@ pub fn stream_screen(
         if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
             return false;
         }
+        let this = seq;
+        seq += 1;
+        // Already walked last session: pay only for what SURVIVED that walk,
+        // with the same seeds, and skip everything the screen had rejected.
+        // The heap this rebuilds is the old one exactly — `Scored` is a strict
+        // total order, so the top-K set does not depend on insertion order.
+        let ais: Option<&[usize]> = match resume {
+            Some(r) if this < r.start_seq => {
+                if let Some(st) = state {
+                    st.rewalking.store(true, Ordering::Relaxed);
+                }
+                match r.keepers.get(&this) {
+                    Some(v) => Some(v.as_slice()),
+                    None => return true,
+                }
+            }
+            _ => {
+                if let Some(st) = state {
+                    if resume.is_some() {
+                        st.rewalking.store(false, Ordering::Relaxed);
+                    }
+                }
+                None
+            }
+        };
         let cand = Arc::new(c);
-        for (ai, arc) in arcanes.iter().enumerate() {
-            let s = evaluate(&cand, arc, scenario, runs, job_seed(seed, seq, ai));
+        let all: Vec<usize> = (0..arcanes.len()).collect();
+        for &ai in ais.unwrap_or(&all) {
+            let s = evaluate(&cand, &arcanes[ai], scenario, runs, job_seed(seed, this, ai));
             if let Some(st) = state {
                 st.sims_done.fetch_add(runs as u64, Ordering::Relaxed);
             }
             let item = Scored {
                 kp: s.mean_kill_progress.max(0.0),
                 eff: s.mean_effective_damage,
-                seq,
+                seq: this,
                 ai,
                 cand: cand.clone(),
                 summary: s,
@@ -1159,10 +1208,18 @@ pub fn stream_screen(
                 top.push(Reverse(item));
             }
         }
-        seq += 1;
         if let Some(b) = on_board {
             if seq.is_multiple_of(BOARD_EVERY) {
                 b(&top_slice(&top, BOARD_TOP));
+            }
+        }
+        if let Some(sn) = on_snapshot {
+            // Never mid-re-walk: a cut is only consistent once the heap holds
+            // everything up to `seq` again.
+            let rewalking = resume.is_some_and(|r| seq < r.start_seq);
+            if !rewalking && seq.is_multiple_of(SCREEN_SNAP_EVERY) {
+                let cut: Vec<(usize, usize)> = top.iter().map(|r| (r.0.seq, r.0.ai)).collect();
+                sn(seq, &cut);
             }
         }
         true
@@ -1230,6 +1287,42 @@ pub type ScreenBoardFn<'a> = dyn Fn(&[ScreenedJob]) + 'a;
 pub const BOARD_TOP: usize = 64;
 /// How often the screen publishes one, in candidates produced.
 const BOARD_EVERY: usize = 4096;
+
+/// Where to pick a SCREEN back up. The screen is a single pass over the whole
+/// scope, so before this it was all-or-nothing: a reload during it cost every
+/// minute of it.
+///
+/// The survivors are NOT stored as builds. The walk that produced them is
+/// deterministic, so re-walking regenerates them for free — the cut only has
+/// to say which ones were still standing, by their position in the walk. That
+/// makes a screen checkpoint O(keep) small integers instead of O(keep) builds,
+/// and the re-walk pays only for the survivors' own re-evaluation, not for the
+/// scope it already rejected.
+pub struct ScreenResume {
+    /// Candidates the previous session had walked. Everything below this is
+    /// skipped on the re-walk (except the keepers).
+    pub start_seq: usize,
+    /// The heap's contents at exactly that cut, `seq -> arcane indices`.
+    pub keepers: std::collections::HashMap<usize, Vec<usize>>,
+}
+
+/// Publishes a screen cut: `(candidates walked, survivors as (seq, arcane))`.
+///
+/// Only the SERIAL (wasm) screen emits one. The threaded screen's heap lags
+/// its producer — workers are still draining the channel — so a `(seq, heap)`
+/// pair taken there would not be a consistent cut of the walk, and resuming
+/// from it would drop whatever was in flight. Honouring a cut is fine on both.
+pub type ScreenSnapshotFn<'a> = dyn Fn(usize, &[(usize, usize)]) + 'a;
+
+/// How often the screen publishes a resume cut, in candidates produced. Rarer
+/// than a board — the payload is the whole surviving field, and it has to
+/// cross into JS and be persisted — but it has to be well inside what one
+/// screen actually walks: the browser's enumeration budget stops the walk at
+/// 20 s, which measured ~57k candidates on a 50-mod scope, so a cadence near
+/// `keep` would have fired zero times. Only the serial screen emits cuts, so
+/// the cadence only exists there.
+#[cfg(target_arch = "wasm32")]
+const SCREEN_SNAP_EVERY: usize = 8_192;
 
 /// Drive the multi-round funnel: for each `(runs, keep, by_kills)` round,
 /// evaluate the surviving jobs, sort (kill-progress on kill rounds, effective
@@ -1473,6 +1566,82 @@ pub fn run_funnel(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The SCREEN half of the same promise: a screen picked up from a cut must
+    /// end on exactly the survivor set an uninterrupted screen would.
+    ///
+    /// This is what makes the cut cheap enough to be worth having — it stores
+    /// positions in the walk, not builds, and trusts the re-walk to regenerate
+    /// them. If that trust were misplaced the resumed screen would silently
+    /// rank a different field.
+    #[test]
+    fn a_resumed_screen_lands_on_the_same_survivors() {
+        use wfsim_engine::dummy::{BodyPart, TargetParams};
+        let pool = pool();
+        let base = wfsim_engine::loadout::WeaponBase::from_data("dual_toxocyst", true, &[]);
+        let innate = wfsim_engine::weapons_data::innate_slots("dual_toxocyst");
+        let (cands, _stats, _c) = enumerate_candidates_observed(
+            &pool, &base, None, 0, 8, 8, 60, &innate,
+            &Constraints::default(), &[None], None, 400,
+        );
+        assert!(cands.len() > 100, "need a walk to cut, got {}", cands.len());
+        let arcanes = vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
+        let scenario = Scenario {
+            target: TargetParams::training_dummy(),
+            body_parts: vec![BodyPart {
+                name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
+                is_head: false, crit_bonus: false,
+            }],
+            duration_secs: 2.0,
+            incarnon_cycle: false,
+            frenzy_lock: LockMode::Initial(0),
+            frenzy: false,
+            buff_cfg: Default::default(),
+            aiming: true,
+        };
+        const KEEP: usize = 24;
+        let cut_at = cands.len() / 3;
+        let feed = |upto: usize| {
+            let cands = &cands;
+            move |emit: &mut dyn FnMut(Candidate) -> bool| {
+                for c in cands.iter().take(upto) {
+                    if !emit(c.clone()) {
+                        return;
+                    }
+                }
+            }
+        };
+        let ids = |v: &[ScreenedJob]| -> Vec<(usize, usize, f64)> {
+            v.iter().map(|s| (s.cand.variant as usize, s.ai, s.summary.mean_kill_progress)).collect()
+        };
+
+        // (a) the whole walk in one pass.
+        let (whole, done) =
+            stream_screen(feed(cands.len()), &arcanes, &scenario, 1, KEEP, 0xF00D, None, None, None, None);
+        assert!(done && whole.len() == KEEP);
+
+        // (b) walk a third of it — that heap IS the cut at `cut_at` — then
+        //     re-walk the whole thing from that cut.
+        let (partial, _) =
+            stream_screen(feed(cut_at), &arcanes, &scenario, 1, KEEP, 0xF00D, None, None, None, None);
+        // The cut is POSITIONS in the walk, so map each survivor back to its own.
+        let key = |c: &Candidate| (c.ordered.clone(), c.variant, c.exilus);
+        let mut keepers: std::collections::HashMap<usize, Vec<usize>> = std::collections::HashMap::new();
+        for s in &partial {
+            let seq = cands
+                .iter()
+                .take(cut_at)
+                .position(|c| key(c) == key(&s.cand))
+                .expect("a survivor of the partial walk sits inside it");
+            keepers.entry(seq).or_default().push(s.ai);
+        }
+        let resume = ScreenResume { start_seq: cut_at, keepers };
+        let (resumed, done2) = stream_screen(
+            feed(cands.len()), &arcanes, &scenario, 1, KEEP, 0xF00D, None, None, Some(&resume), None,
+        );
+        assert!(done2);
+        assert_eq!(ids(&resumed), ids(&whole), "a resumed screen changed the field");
+    }
 
     /// A RESUMED funnel must produce exactly what an uninterrupted one would.
     /// That is the entire promise of checkpointing — if the answer moved, the

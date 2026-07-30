@@ -2303,14 +2303,27 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
 /// resolved panels are rebuilt, so a checkpoint stays small and cannot drift
 /// from what the enumerator would produce.
 #[derive(Debug, Clone)]
-pub struct ResumeFrom {
-    pub round: usize,
-    pub alive: Vec<JobIdentity>,
-    /// The job count the ORIGINAL run's schedule was built from. The round
-    /// plan is a function of it, so replaying round N needs the same number —
-    /// deriving it from the (already narrowed) survivor list would shorten the
-    /// schedule and change what round N means.
-    pub jobs_at_start: usize,
+pub enum ResumeFrom {
+    /// Mid-SCREEN, on a scope large enough to stream. The screen has no rounds
+    /// in it — it is one pass over the whole scope — so this is the only way a
+    /// reload during it does not cost the whole pass.
+    Screen {
+        /// Candidates the previous session had walked.
+        start_seq: usize,
+        /// The survivors at that cut, `(sequence number, arcane index)`. Not
+        /// builds: the walk is deterministic, so re-walking regenerates them.
+        keepers: Vec<(usize, usize)>,
+    },
+    /// After a completed funnel ROUND.
+    Round {
+        round: usize,
+        alive: Vec<JobIdentity>,
+        /// The job count the ORIGINAL run's schedule was built from. The round
+        /// plan is a function of it, so replaying round N needs the same
+        /// number — deriving it from the (already narrowed) survivor list
+        /// would shorten the schedule and change what round N means.
+        jobs_at_start: usize,
+    },
 }
 
 /// One surviving job, by identity: (ordered pool indices, evolution-set index,
@@ -2336,7 +2349,7 @@ pub fn run_optimize(
     on_enumerated: impl FnOnce(usize, usize),
     on_round: Option<&dyn Fn()>,
 ) -> Value {
-    run_optimize_resumable(plan, state, on_enumerated, on_round, None, None, None)
+    run_optimize_resumable(plan, state, on_enumerated, on_round, None, None, None, None)
 }
 
 /// As [`run_optimize`], plus the two halves of resumability: `resume` skips
@@ -2358,6 +2371,9 @@ pub fn run_optimize_resumable(
     // so a leaderboard that has not already left it is lost (user 2026-07-30:
     // 20 minutes, cancelled, nothing shown).
     on_board: Option<&BoardSink<'_>>,
+    // `(candidates walked, survivors as (seq, arcane))` — a mid-screen resume
+    // point. Only the serial screen produces one; see `ScreenSnapshotFn`.
+    on_screen_snapshot: Option<&wfsim_optimizer::ScreenSnapshotFn<'_>>,
 ) -> Value {
     let OptimizePlan {
         pool,
@@ -2514,14 +2530,34 @@ pub fn run_optimize_resumable(
         }
     }
 
-    let (cands, last, cancelled, n_jobs) = if let Some(r) = resume {
+    // The two resume kinds land in different regimes: a screen cut only ever
+    // comes from the streaming path and goes straight back into it, a round
+    // checkpoint skips the walk entirely.
+    let screen_resume: Option<wfsim_optimizer::ScreenResume> = match &resume {
+        Some(ResumeFrom::Screen { start_seq, keepers }) => {
+            let mut map: std::collections::HashMap<usize, Vec<usize>> =
+                std::collections::HashMap::new();
+            for &(s, a) in keepers {
+                map.entry(s).or_default().push(a);
+            }
+            Some(wfsim_optimizer::ScreenResume { start_seq: *start_seq, keepers: map })
+        }
+        _ => None,
+    };
+    let round_resume = match resume {
+        Some(ResumeFrom::Round { round, alive, jobs_at_start }) => {
+            Some((round, alive, jobs_at_start))
+        }
+        _ => None,
+    };
+    let (cands, last, cancelled, n_jobs) = if let Some((r_round, r_alive, r_jobs_at_start)) = round_resume {
         // ---- RESUME: no walk at all. The checkpoint holds identities, so the
         // candidates are rebuilt with the same plan_forma / resolve_with the
         // enumerator uses and come out bit-identical. Seeds key off the
         // absolute round index, so the numbers match an uninterrupted run.
         let mut cands: Vec<Candidate> = Vec::new();
         let mut jobs: Vec<Job> = Vec::new();
-        for (ordered, variant, exilus, ai) in &r.alive {
+        for (ordered, variant, exilus, ai) in &r_alive {
             let Some(set) = evo_sets.get(*variant as usize) else { continue };
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
             let base = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &refs);
@@ -2546,7 +2582,7 @@ pub fn run_optimize_resumable(
         // The schedule is a function of the ORIGINAL field size, which the
         // checkpoint's round index indexes into — rebuild it the same way so
         // round N means the same thing it did before the reload.
-        let rounds = schedule_to(r.jobs_at_start.max(n_jobs), final_runs, finalists);
+        let rounds = schedule_to(r_jobs_at_start.max(n_jobs), final_runs, finalists);
         let ids_at = |alive: &[(Job, Summary)]| -> Vec<JobIdentity> {
             alive.iter()
                 .map(|&((ci, ai), _)| (cands[ci].ordered.clone(), cands[ci].variant, cands[ci].exilus, ai))
@@ -2560,19 +2596,19 @@ pub fn run_optimize_resumable(
                 nc, nj,
             )
         };
-        let started_with = r.jobs_at_start.max(n_jobs);
+        let started_with = r_jobs_at_start.max(n_jobs);
         let n_cands = cands.len();
         let wrap = on_checkpoint.map(|cp| move |round: usize, alive: &[(Job, Summary)]| {
             cp(round, started_with, &ids_at(alive), &board_of(alive, n_cands, n_jobs));
         });
         let last = run_funnel(
             &cands, &arcanes, &scenario, jobs, &rounds, 0xDEAD_BEEF, false,
-            Some(state), on_round, r.round,
+            Some(state), on_round, r_round,
             wrap.as_ref().map(|f| f as &wfsim_optimizer::CheckpointFn<'_>),
         );
         let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
         (cands, last, c, n_jobs)
-    } else if !overflow {
+    } else if !overflow && screen_resume.is_none() {
         // ---- classic path: materialized candidates, full funnel ----
         if cands.is_empty() {
             return err_json(
@@ -2674,6 +2710,8 @@ pub fn run_optimize_resumable(
             0xDEAD_BEEF,
             Some(state),
             screen_board.as_ref().map(|f| f as &wfsim_optimizer::ScreenBoardFn<'_>),
+            screen_resume.as_ref(),
+            on_screen_snapshot,
         );
         if screened.is_empty() {
             if state.cancel.load(std::sync::atomic::Ordering::Relaxed) {

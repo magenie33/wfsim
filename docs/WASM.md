@@ -144,11 +144,26 @@ made cheap.
   starts, and after 24 h. Resuming takes a click; it costs minutes of the
   visitor's CPU, so it is never automatic.
 - A `beforeunload` guard warns while a run is in flight.
-- **Not resumable: the screening walk.** The streaming path (large
-  scopes) is one pass over the whole scope before any round exists, so
-  checkpoints only start once the survivors are a candidate table. On a
-  scope big enough to stream, a reload during the screen still costs the
-  screen.
+- **The screen is a resume point too**, every 8,192 candidates walked. It
+  is the one phase with no rounds in it, so before that a reload during it
+  cost the whole pass. A screen cut is `(candidates walked, survivors as
+  (sequence number, arcane))` — POSITIONS in the walk, not builds: the walk
+  is deterministic, so re-walking regenerates them, and the resumed screen
+  pays only to re-evaluate the survivors, not for the scope it had already
+  rejected. `a_resumed_screen_lands_on_the_same_survivors` pins the set.
+  Only the SERIAL (wasm) screen emits cuts: the threaded screen's heap lags
+  its producer, so a cut taken there would not be a consistent prefix.
+  Honouring a cut works on both.
+- The enumeration budget's clock is held while a resumed screen re-walks.
+  That phase does no screening (rejected candidates are skipped), so
+  charging it would spend the whole 20 s catching up. A resumed screen
+  therefore covers MORE of the scope than an uninterrupted one — which is
+  the point of resuming, not a discrepancy.
+- **Still not resumable: the inside of a round.** Rounds are the resume
+  granularity, so a reload 4 minutes into a 5-minute round 1 replays that
+  round. Making it finer means persisting the evaluated prefix's summaries
+  (the cull needs every job's score and σ, not just the leaders) — order
+  MBs, so IndexedDB rather than localStorage. Not built.
 
 ## Phase 5 (later) — use all the player's cores
 

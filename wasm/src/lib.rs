@@ -59,6 +59,7 @@ fn status_json(state: &FunnelState, phase: &str, counts: Option<(usize, usize)>,
         "sims_done": state.sims_done.load(Ordering::Relaxed),
         "sims_planned": state.sims_planned.load(Ordering::Relaxed),
         "enumerated": state.enumerated.load(Ordering::Relaxed),
+        "rewalking": state.rewalking.load(Ordering::Relaxed),
         "notes": notes,
     });
     if let Some((cands, jobs)) = counts {
@@ -127,12 +128,20 @@ fn optimize_inner(
         let counts = counts.clone();
         let f = on_progress.clone();
         let last = std::cell::Cell::new(0.0f64);
+        // The budget clock. A RESUMED screen first re-walks to its saved cut;
+        // that phase does no screening (rejected candidates are skipped), so
+        // charging it would spend the budget on catching up and leave nothing
+        // for new ground. Hold the clock at `now` until the re-walk is done.
+        let budget_t0 = std::cell::Cell::new(t0);
         wfsim_optimizer::set_tick_hook(Some(Box::new(move || {
             let now = js_sys::Date::now();
             if now - last.get() < 250.0 {
                 return;
             }
             last.set(now);
+            if state.rewalking.load(std::sync::atomic::Ordering::Relaxed) {
+                budget_t0.set(now);
+            }
             // ENUMERATION BUDGET. A browser tab cannot sit through a full-pool
             // walk (C(72,8) ~ 1.1e10 subsets), so cap the time spent finding
             // candidates and let the streaming screen answer with the best it
@@ -140,7 +149,7 @@ fn optimize_inner(
             // for a best-so-far. Native builds have threads and a Cancel
             // button and take no budget.
             const ENUM_BUDGET_MS: f64 = 20_000.0;
-            if counts.get().is_none() && now - t0 > ENUM_BUDGET_MS {
+            if counts.get().is_none() && now - budget_t0.get() > ENUM_BUDGET_MS {
                 state
                     .stop_enumeration
                     .store(true, std::sync::atomic::Ordering::Relaxed);
@@ -156,19 +165,37 @@ fn optimize_inner(
     let resume: Option<wfsim_webapi::ResumeFrom> = (!checkpoint.is_empty())
         .then(|| serde_json::from_str::<serde_json::Value>(checkpoint).ok())
         .flatten()
-        .and_then(|cp| {
-            let alive = cp.get("alive")?.as_array()?.iter().filter_map(|e| {
-                let a = e.as_array()?;
-                let ordered = a.first()?.as_array()?
-                    .iter().filter_map(|x| x.as_u64().map(|n| n as usize)).collect();
-                Some((ordered, a.get(1)?.as_u64()? as u32, a.get(2)?.as_u64()? as u32,
-                      a.get(3)?.as_u64()? as usize))
-            }).collect::<Vec<_>>();
-            (!alive.is_empty()).then_some(wfsim_webapi::ResumeFrom {
-                round: cp.get("round").and_then(|r| r.as_u64()).unwrap_or(0) as usize,
-                jobs_at_start: cp.get("jobs_at_start").and_then(|r| r.as_u64()).unwrap_or(0) as usize,
-                alive,
-            })
+        .and_then(|cp| match cp.get("kind").and_then(|k| k.as_str()) {
+            // Mid-SCREEN: a flat [seq, arcane, seq, arcane, …] cut. Flat
+            // because it holds the whole surviving field (tens of thousands
+            // of pairs) and has to fit in the page's storage.
+            Some("screen") => {
+                let flat = cp.get("keepers")?.as_array()?;
+                let keepers: Vec<(usize, usize)> = flat
+                    .chunks_exact(2)
+                    .filter_map(|c| Some((c[0].as_u64()? as usize, c[1].as_u64()? as usize)))
+                    .collect();
+                (!keepers.is_empty()).then_some(wfsim_webapi::ResumeFrom::Screen {
+                    start_seq: cp.get("start_seq").and_then(|r| r.as_u64()).unwrap_or(0) as usize,
+                    keepers,
+                })
+            }
+            // After a completed ROUND: identities, rebuilt by the enumerator's
+            // own construction.
+            _ => {
+                let alive = cp.get("alive")?.as_array()?.iter().filter_map(|e| {
+                    let a = e.as_array()?;
+                    let ordered = a.first()?.as_array()?
+                        .iter().filter_map(|x| x.as_u64().map(|n| n as usize)).collect();
+                    Some((ordered, a.get(1)?.as_u64()? as u32, a.get(2)?.as_u64()? as u32,
+                          a.get(3)?.as_u64()? as usize))
+                }).collect::<Vec<_>>();
+                (!alive.is_empty()).then_some(wfsim_webapi::ResumeFrom::Round {
+                    round: cp.get("round").and_then(|r| r.as_u64()).unwrap_or(0) as usize,
+                    jobs_at_start: cp.get("jobs_at_start").and_then(|r| r.as_u64()).unwrap_or(0) as usize,
+                    alive,
+                })
+            }
         });
     let result = wfsim_webapi::run_optimize_resumable(
         plan,
@@ -194,6 +221,7 @@ fn optimize_inner(
                 // message answers both "continue from where?" and "what had
                 // it found?".
                 let payload = serde_json::json!({
+                    "kind": "round",
                     "round": round, "jobs_at_start": jobs_at_start, "alive": list,
                     "board": board,
                 })
@@ -203,6 +231,18 @@ fn optimize_inner(
         ),
         Some(&|board: &serde_json::Value| {
             let _ = on_board.call1(&JsValue::NULL, &JsValue::from_str(&board.to_string()));
+        }),
+        Some(&|start_seq: usize, cut: &[(usize, usize)]| {
+            let mut flat: Vec<u64> = Vec::with_capacity(cut.len() * 2);
+            for &(s, a) in cut {
+                flat.push(s as u64);
+                flat.push(a as u64);
+            }
+            let payload = serde_json::json!({
+                "kind": "screen", "start_seq": start_seq, "keepers": flat,
+            })
+            .to_string();
+            let _ = on_checkpoint.call1(&JsValue::NULL, &JsValue::from_str(&payload));
         }),
     );
     wfsim_optimizer::set_tick_hook(None);
