@@ -698,7 +698,9 @@ fn arcane_fx_for(
         "flare" => "cascadia_flare",
         other => other,
     };
-    match wfsim_engine::arcanes_data::secondary(aid) {
+    // Slot-scoped: an arcane from another slot is not equippable here, so it
+    // resolves to nothing rather than being applied.
+    match wfsim_engine::arcanes_data::for_slot(&info.arcane_slot, aid) {
         Some(def) => {
             let rank = get_u32(v, "arcane_rank", def.max_rank).min(def.max_rank);
             def.fx(rank, policy, base.traits)
@@ -1249,7 +1251,7 @@ pub fn panel_json(v: &Value) -> Value {
                 "flare" => "cascadia_flare",
                 other => other,
             };
-            if let Some(def) = wfsim_engine::arcanes_data::secondary(aid) {
+            if let Some(def) = wfsim_engine::arcanes_data::for_slot(&info.arcane_slot, aid) {
                 let rank = get_u32(v, "arcane_rank", def.max_rank).min(def.max_rank);
                 let fx = def.fx(rank, policy, base.traits);
                 if fx.per_cold_bd > 0.0 {
@@ -1797,8 +1799,14 @@ pub fn simulate_json(v: &Value) -> Value {
     params.arcane = if arcane_id == "none" {
         wfsim_engine::arcanes_data::ArcaneFx::none()
     } else {
-        let Some(def) = wfsim_engine::arcanes_data::secondary(&arcane_id) else {
-            return err_json(format!("unknown arcane id: {arcane_id}"));
+        let Some(def) = wfsim_engine::arcanes_data::for_slot(&info.arcane_slot, &arcane_id) else {
+            return err_json(match wfsim_engine::arcanes_data::slot_of(&arcane_id) {
+                Some(s) => format!(
+                    "{arcane_id} is a {s} arcane — {} takes a {} arcane",
+                    info.name, info.arcane_slot
+                ),
+                None => format!("unknown arcane id: {arcane_id}"),
+            });
         };
         let rank = get_u32(v, "arcane_rank", def.max_rank).min(def.max_rank);
         // Relative crit conditionals resolve against the weapon's BASE crit
@@ -1961,7 +1969,7 @@ pub fn opt_buffs_json(v: &Value) -> Value {
             if a == "none" {
                 continue;
             }
-            if let Some(def) = wfsim_engine::arcanes_data::secondary(a) {
+            if let Some(def) = wfsim_engine::arcanes_data::for_slot(&info.arcane_slot, a) {
                 let fx = def.fx(def.max_rank, StackPolicy::Emergent, arc_base.traits);
                 merge(&mut out, enumerate_buffs(&[], &fx, info));
             }
@@ -2201,22 +2209,25 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         })
         .unwrap_or_else(|| vec!["none".into()]);
     let arc_base = WeaponBase::from_data(&info.id, true, &[]);
+    // An arcane the weapon cannot equip is DROPPED from the scope, not mapped
+    // to the empty slot: collapsing it would search "no arcane" once per
+    // rejected id and report those runs as if they had been real options.
     let arcanes: Vec<wfsim_engine::arcanes_data::ArcaneFx> = arc_ids
         .iter()
-        .map(|id| {
+        .filter_map(|id| {
             if id == "none" {
-                wfsim_engine::arcanes_data::ArcaneFx::none()
-            } else {
-                match wfsim_engine::arcanes_data::secondary(id) {
-                    Some(def) => def.fx(def.max_rank, StackPolicy::Emergent, arc_base.traits),
-                    None => wfsim_engine::arcanes_data::ArcaneFx::none(),
-                }
+                return Some(wfsim_engine::arcanes_data::ArcaneFx::none());
             }
+            wfsim_engine::arcanes_data::for_slot(&info.arcane_slot, id)
+                .map(|def| def.fx(def.max_rank, StackPolicy::Emergent, arc_base.traits))
         })
         .collect();
-    if arcanes.is_empty() {
-        return Err(err_json("no arcanes selected"));
-    }
+    // Every id was another slot's: search the empty slot rather than nothing.
+    let arcanes = if arcanes.is_empty() {
+        vec![wfsim_engine::arcanes_data::ArcaneFx::none()]
+    } else {
+        arcanes
+    };
 
     // No cap (user: allow spending local resources). The funnel handles large
     // spaces by culling obviously-bad combos in cheap early rounds.

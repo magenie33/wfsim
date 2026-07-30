@@ -401,7 +401,7 @@ async function init() {
   initWeaponSearch();
   const d = META.defaults;
   $("weapon").value = d.weapon;
-  arcane = d.arcane;
+  arcane = arcaneFor(d.weapon, d.arcane);
   evoSel = { 1: null, 2: null, 3: null, 4: null, ...(d.evolutions || {}) };
   sim = { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
     headshot_pct: d.headshot_pct, aiming: d.aiming !== false, duration: d.duration, runs: d.runs,
@@ -730,7 +730,7 @@ function restoreState(st, weapon) {
     slots[i].rank = s.rank ?? null;
   });
   evoSel = { 1: null, 2: null, 3: null, 4: null, ...(st.evoSel || {}) };
-  arcane = st.arcane && arcaneById(st.arcane) ? st.arcane : "none";
+  arcane = arcaneFor(w, st.arcane);
   arcaneRank = st.arcaneRank ?? null;
   if (st.sim) sim = { ...sim, ...st.sim };
   renderMods(); renderArcanes(); renderEvo(); renderSim(); refreshPanel();
@@ -1150,7 +1150,7 @@ function applyWeaponInner(id, presetMods) {
   show("evo-block", w.uses_evo2);
   show("element-block", !!w.element_config);
   $("arcane-sub").textContent = w.sentinel ? "sentinels cannot equip arcanes" : `${w.arcane_slots} slot`;
-  if (w.arcane_slots < 1) arcane = "none";
+  arcane = arcaneFor(w.id, arcane); // the previous weapon's arcane may not fit this one
 
   slots = Array.from({ length: 9 }, (_, i) => ({ mod: null, pol: innate[i], rank: null }));
   (presetMods || []).filter((m) => modById(m)).slice(0, 8).forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });
@@ -1542,8 +1542,22 @@ function openPolMenu(slotIdx) {
 // already does (user, 2026-07-30).
 const arcanePool = () => {
   const slot = weaponInfo($("weapon").value).arcane_slot;
-  return (META.arcanes || []).filter((a) => a.id === "none" || !a.slot || a.slot === slot);
+  return (META.arcanes || []).filter((a) => a.id === "none" || a.slot === slot);
 };
+// An arcane belongs to ONE slot, so another slot's arcane is not a
+// questionable choice on this weapon — it cannot be equipped at all. Ids reach
+// the page from saved states, presets, shared URLs and optimizer results, so
+// every one of them goes through here instead of being trusted (a SECONDARY
+// arcane rode a saved state onto the first primary weapon — user, 2026-07-30).
+// The engine refuses the same thing independently
+// (`arcanes_data::for_slot`); this keeps the UI from ever showing a build the
+// sim would not run.
+function arcaneFor(weaponId, id) {
+  if (!id || id === "none") return "none";
+  const w = weaponInfo(weaponId);
+  const a = arcaneById(id);
+  return a && w && w.arcane_slots >= 1 && a.slot === w.arcane_slot ? id : "none";
+}
 /// The builder picker's list — real arcanes only.
 const arcanePickPool = () => arcanePool().filter((a) => a.id !== "none");
 const arcaneById = (id) => META.arcanes.find((x) => x.id === id);
@@ -2349,8 +2363,13 @@ function applyOptGroupState(g, st) {
     delete opt.exilus["none"]; // brief None-row era
     if (st.size) opt.size = st.size;
   } else if (g === "arcanes") {
+    // Cross-weapon import: another SLOT's arcanes are not equippable here, so
+    // they drop rather than becoming search dimensions the run cannot use.
     opt.arcanes = {};
-    Object.entries(st.arcanes || {}).forEach(([id, s]) => { if (id === "none" || arcaneById(id)) opt.arcanes[id] = norm(s); });
+    const w = $("weapon").value;
+    Object.entries(st.arcanes || {}).forEach(([id, s]) => {
+      if (id === "none" || arcaneFor(w, id) === id) opt.arcanes[id] = norm(s);
+    });
   } else {
     // Cross-weapon: keep only ids the CURRENT weapon's tiers actually offer
     // (ids are globally unique, so a family sharing evolutions imports

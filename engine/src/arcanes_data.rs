@@ -790,10 +790,25 @@ pub fn secondary_pool() -> &'static [ArcaneDef] {
 }
 
 /// Look up an arcane by id across EVERY slot (ids are globally unique).
+///
+/// This is the DISPLAY lookup — "what is this arcane?" — and it deliberately
+/// ignores where the arcane can go. Anything that APPLIES an arcane to a
+/// weapon must use [`for_slot`] instead.
 pub fn secondary(id: &str) -> Option<&'static ArcaneDef> {
     slots()
         .into_iter()
         .find_map(|s| slot_pool(s).iter().find(|a| a.id == id))
+}
+
+/// Resolve an arcane FOR A SLOT — the lookup every equipping path must use.
+///
+/// An arcane belongs to exactly one slot, so another slot's arcane is not a
+/// questionable choice on this weapon: it cannot be equipped at all. Ids
+/// arrive from saved builds, shared URLs and preset imports, so the refusal
+/// lives here rather than in each caller's own filtering (a SECONDARY arcane
+/// was silently applying to the first primary weapon — user, 2026-07-30).
+pub fn for_slot(slot: &str, id: &str) -> Option<&'static ArcaneDef> {
+    slot_pool(slot).iter().find(|a| a.id == id)
 }
 
 #[cfg(test)]
@@ -815,6 +830,26 @@ mod tests {
         // The slot registry discovers directories, so primary must show up
         // next to secondary with no code change.
         assert!(slots().contains(&"primary"), "slots(): {:?}", slots());
+    }
+
+    /// An arcane is not a preference, it is a SLOT. The display lookup finds
+    /// one anywhere; the equipping lookup refuses one from another slot, which
+    /// is what stops a saved secondary build putting Cascadia Flare on a rifle.
+    #[test]
+    fn an_arcane_only_resolves_into_its_own_slot() {
+        assert!(secondary("cascadia_flare").is_some(), "display lookup finds it");
+        assert!(
+            for_slot("secondary", "cascadia_flare").is_some(),
+            "a secondary arcane resolves into the secondary slot"
+        );
+        assert!(
+            for_slot("primary", "cascadia_flare").is_none(),
+            "a secondary arcane must NOT resolve onto a primary weapon"
+        );
+        assert!(
+            for_slot("secondary", "primary_blight").is_none(),
+            "and not the other way round either"
+        );
     }
 
     /// Primary Blight is the Torid-relevant one: a Toxin weapon feeds it
