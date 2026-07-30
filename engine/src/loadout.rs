@@ -422,6 +422,10 @@ pub struct ModDef {
     pub exilus: bool,
     /// Mods sharing a family are mutually exclusive (wiki Incompatible).
     pub family: Option<&'static str>,
+    /// The MOD SET this mod belongs to (`data/mod_sets/<id>.yaml`). A set
+    /// bonus is granted by the group, not by any member, and it scales per
+    /// equipped member with no threshold — see [`crate::mod_sets_data`].
+    pub set: Option<&'static str>,
     /// Weapon TRAIT this mod's effects require to apply (else the whole mod is
     /// inert — a calc-layer gate, NOT an equip block). Declared only for
     /// general effects that would otherwise be misapplied (Semi-Pistol
@@ -945,6 +949,10 @@ pub struct ResolvedPanel {
     pub status_damage_mult: f64,
     /// (1 + Σ status duration) — scales status-effect DoT durations.
     pub status_duration_mult: f64,
+    /// MOD SET bonus: chance for a hit that ALREADY crit to move up one
+    /// critical tier (Vigilante). Scales per equipped member with no
+    /// threshold — see [`crate::mod_sets_data`]. 0.0 = no set equipped.
+    pub crit_tier_upgrade_chance: f64,
     /// Summed INDIRECT buckets (recoil, accuracy, ammo…): outside the
     /// theoretical-DPS math, stated on the panel; a future shooter model
     /// (2D recoil/aim, travel time, ammo sustain) consumes them.
@@ -1381,10 +1389,23 @@ pub fn resolve_with(
         }
     });
 
+    // MOD SET bonuses. Every equipped member adds its own share — the set
+    // does not have to be complete to be worth carrying (wiki: 5% per
+    // Vigilante mod, 30% at six). A mod cannot be equipped twice, so counting
+    // members is just counting the mods that name the set.
+    let crit_tier_upgrade_chance: f64 = mods
+        .iter()
+        .filter_map(|m| m.set)
+        .filter_map(crate::mod_sets_data::set_def)
+        .filter(|s| s.kind == crate::mod_sets_data::SetBonusKind::CritTierUpgrade)
+        .map(|s| s.per_mod)
+        .sum();
+
     ResolvedPanel {
         damage,
         radial,
         lingering,
+        crit_tier_upgrade_chance,
         continuous: base.continuous,
         field_duration_on_empty_reload: base.field_duration_on_empty_reload,
         multishot_on_last_round: base.multishot_on_last_round,
@@ -1459,43 +1480,15 @@ mod tests {
     use super::*;
     use DamageType::*;
 
-    /// Innate-element sentinel fixture (values = Verglas Prime, wiki
-    /// 2026-07-25): 100% Cold(32) base vector, no traits, no Incarnon. Kept
-    /// as a test fixture after the weapon left the product roster — it
-    /// exercises the innate-element combination branch and BaseOnly policy.
+    /// Verglas Prime, from `data/weapons/sentinel/verglas_prime.yaml` — the
+    /// engine's reference elemental-innate weapon (100% Cold(32)), which is
+    /// what exercises the innate-element combination branch and the BaseOnly
+    /// policy a sentinel forces.
+    ///
+    /// It was a hand-built struct here while the weapon was ONLY a test
+    /// fixture, so its numbers had two homes and only one of them shipped.
     fn verglas_prime() -> WeaponBase {
-        WeaponBase {
-            base_vector: DamageVector::new().with(DamageType::Cold, 32.0),
-            radial: None,
-            lingering: None,
-            continuous: false,
-            field_duration_on_empty_reload: 1.0,
-            beam: None,
-            multishot_on_last_round: 0.0,
-            multishot_ammo_bonus: 0.0,
-            evo_fire_rate_bonus: 0.0,
-            post_mod_crit_chance: 0.0,
-            post_mod_status_chance: 0.0,
-            headshot_damage_bonus: 0.0,
-            noncrit_bonus: None,
-            plain_hit_bonus: None,
-            reload_on_headshot: None,
-            base_crit_chance: 0.14,
-            base_crit_damage: 2.2,
-            base_status_chance: 0.36,
-            base_fire_rate: 12.0,
-            base_multishot: 1.0,
-            buff_multishot_bonus: 0.0,
-            buff_ms_max_stacks: 0,
-            magazine_size: 80.0,
-            base_reload: 1.6,
-            innate_co_per_type: 0.0,
-            co_behavior: CoBehavior::Independent,
-            co_base_fraction: 1.0,
-            injected_elements: Vec::new(),
-            traits: &[],
-            incarnon: None,
-        }
+        WeaponBase::from_data("verglas_prime", true, &[])
     }
 
     fn m(id: &'static str, effects: Vec<ModEffect>) -> ModDef {
@@ -1507,6 +1500,7 @@ mod tests {
             rarity: Rarity::Common,
             exilus: false,
             family: None,
+            set: None,
             requires: None,
             disables: Vec::new(),
             effects,
@@ -1770,6 +1764,35 @@ mod tests {
         assert!(p2.damage.get(Heat) > 0.0);
         // Totals identical either way.
         assert!((p1.damage.total() - p2.damage.total()).abs() < 1e-9);
+    }
+
+    /// A set bonus scales PER EQUIPPED MEMBER with no threshold — one
+    /// Vigilante mod already pays its 5%, which is what makes an otherwise
+    /// weak member (Supplies contributes nothing on its own) worth a slot.
+    #[test]
+    fn each_vigilante_member_adds_its_share_of_the_set_bonus() {
+        let pool = crate::mods_data::class_pool("rifle");
+        let pick = |id: &str| pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{id}"));
+        let base = WeaponBase::from_data("verglas_prime", true, &[]);
+        let chance = |mods: &[&ModDef]| resolve(&base, mods, StackPolicy::BaseOnly).crit_tier_upgrade_chance;
+
+        assert_eq!(chance(&[]), 0.0);
+        assert!((chance(&[pick("vigilante_armaments")]) - 0.05).abs() < 1e-12);
+        assert!(
+            (chance(&[
+                pick("vigilante_armaments"),
+                pick("vigilante_fervor"),
+                pick("vigilante_offense"),
+                pick("vigilante_supplies"),
+            ]) - 0.20)
+                .abs()
+                < 1e-12,
+            "all FOUR primary members = 20%; the other two are Warframe mods"
+        );
+        // A non-member contributes nothing, set or no set.
+        assert!(
+            (chance(&[pick("vigilante_armaments"), pick("serration")]) - 0.05).abs() < 1e-12
+        );
     }
 
     #[test]

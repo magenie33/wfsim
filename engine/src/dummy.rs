@@ -917,6 +917,9 @@ pub struct DummyParams {
     /// RESOLVED (modded) crit chance of the DIRECT part — the name is
     /// historical; `unmodded_crit_chance` below is the real base.
     pub base_crit_chance: f64,
+    /// MOD SET bonus: chance for a hit that ALREADY crit to move up one
+    /// critical tier (Vigilante). 0.0 = no set member equipped.
+    pub crit_tier_upgrade_chance: f64,
     pub crit_multiplier: f64,
     /// UNMODDED crit stats of the DIRECT part — the bases a RELATIVE live crit
     /// buff multiplies (the radial carries its own pair on `ResolvedRadial`).
@@ -1306,6 +1309,7 @@ impl DummyParams {
             dot_modified_base: Some(panel.modified_base),
             reload_bonus: panel.reload_bonus,
             weakpoint_damage: panel.weakpoint_damage,
+            crit_tier_upgrade_chance: panel.crit_tier_upgrade_chance,
             weakpoint_cc_rel: panel.weakpoint_cc_rel,
             cd_on_kill: panel.cd_on_kill,
             fr_on_reload: panel.fr_on_reload,
@@ -1441,6 +1445,7 @@ impl Default for DummyParams {
             dot_modified_base: None,
             reload_bonus: 0.0,
             weakpoint_damage: 0.0,
+            crit_tier_upgrade_chance: 0.0,
             weakpoint_cc_rel: 0.0,
             cd_on_kill: None,
             fr_on_reload: None,
@@ -1548,6 +1553,19 @@ fn noncrit_mult(spec: Option<(f64, f64)>, tier: u32, rng: &mut Rng) -> f64 {
     match spec {
         Some((chance, bonus)) if tier == 0 && rng.chance(chance) => 1.0 + bonus,
         _ => 1.0,
+    }
+}
+
+/// A mod SET may promote a hit by one critical tier (Vigilante: 5% per
+/// equipped member). The wiki is explicit that it "triggers exclusively on
+/// critical hits" — a normal hit is never promoted, so tier 0 is untouched.
+/// The tier formula does the rest: crit_mult = 1 + tier x (cd - 1), so one
+/// extra tier is worth exactly one more crit-damage step.
+fn upgrade_crit_tier(tier: u32, chance: f64, rng: &mut Rng) -> u32 {
+    if tier >= 1 && chance > 0.0 && rng.chance(chance) {
+        tier + 1
+    } else {
+        tier
     }
 }
 
@@ -2194,7 +2212,7 @@ fn field_tick(
     // doubling, which is the crit-HEADSHOT rule.
     let cc_rel = ctx.cc_rel_mods + params.arcane.cc_rel;
     let cc = f.crit_chance + ctx.flat_crit + f.base_crit_chance * cc_rel;
-    let tier = roll_crit_tier(cc, rng);
+    let tier = upgrade_crit_tier(roll_crit_tier(cc, rng), ap.crit_tier_upgrade_chance, rng);
     let cd_rel = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, at)
         + arc.cd_bonus(ap, at)
         + params.arcane.cd_rel;
@@ -3017,7 +3035,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 } else {
                     0.0
                 };
-            let tier = roll_crit_tier(cc_pellet, rng);
+            let tier =
+                upgrade_crit_tier(roll_crit_tier(cc_pellet, rng), ap.crit_tier_upgrade_chance, rng);
             // Headshot bonuses form an additive bracket that MULTIPLIES
             // the base multiplier (Enemy_Body_Parts, verbatim template:
             // 3 × (1 + Deadhead 30% + Target Acquired 75%) = 6.15x). A 1x
@@ -3783,6 +3802,7 @@ mod tests {
             rarity: Rarity::Uncommon,
             exilus: false,
             family: None,
+            set: None,
             requires: None,
             disables: Vec::new(),
             effects: vec![ModEffect::FactionDamage(Faction::Grineer, 0.30)],
@@ -3821,6 +3841,23 @@ mod tests {
     fn ten_shots_in_ten_seconds_at_one_per_second() {
         let s = monte_carlo(&DummyParams::default(), 100, 1);
         assert!((s.mean_shots - 10.0).abs() < 1e-9);
+    }
+
+    /// The set promotes a hit that ALREADY crit, and only that one — the wiki
+    /// is explicit that it "triggers exclusively on critical hits", so a
+    /// normal hit can never be turned into one.
+    #[test]
+    fn the_set_bonus_promotes_only_a_hit_that_already_crit() {
+        let mut rng = Rng::new(7);
+        assert_eq!(upgrade_crit_tier(0, 1.0, &mut rng), 0, "a normal hit stays normal");
+        assert_eq!(upgrade_crit_tier(1, 1.0, &mut rng), 2, "yellow -> orange");
+        assert_eq!(upgrade_crit_tier(2, 1.0, &mut rng), 3, "orange -> red");
+        assert_eq!(upgrade_crit_tier(1, 0.0, &mut rng), 1, "no set, no promotion");
+        // At 20% (all four primary members) roughly a fifth of crits move up.
+        let n = 20_000;
+        let up = (0..n).filter(|_| upgrade_crit_tier(1, 0.20, &mut rng) == 2).count();
+        let f = up as f64 / n as f64;
+        assert!((f - 0.20).abs() < 0.02, "promoted {f:.3} of crits, expected ~0.20");
     }
 
     #[test]
@@ -6402,6 +6439,7 @@ mod tests {
         // 8.25x -> 10 × 75 × 8.25 = 6187.5 (wiki Pistol_Acuity example).
         let p = DummyParams {
             weakpoint_damage: 3.5,
+            crit_tier_upgrade_chance: 0.0,
             body_parts: vec![BodyPart {
                 name: "head".into(),
                 aim_weight: 1.0,

@@ -35,6 +35,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
             .with(DamageType::Puncture, 60.0)
             .with(DamageType::Slash, 7.5),
         base_crit_chance: 0.05,
+        crit_tier_upgrade_chance: 0.0,
         crit_multiplier: 2.0,
         unmodded_crit_chance: 0.05,
         unmodded_crit_damage: 2.0,

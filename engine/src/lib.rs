@@ -27,6 +27,7 @@ pub mod evolutions_data;
 pub mod i18n_data;
 pub mod loadout;
 pub mod mercy;
+pub mod mod_sets_data;
 pub mod mods;
 pub mod mods_data;
 pub mod perks;

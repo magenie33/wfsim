@@ -1,0 +1,21 @@
+id: vigilante_offense
+name: Vigilante Offense
+rarity: rare
+polarity: naramon
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sets/Vigilante/PrimaryVigilanteOffenseMod
+description: "+X Punch Through"
+
+# Punch through is an INDIRECT stat: loaded and shown on the card, worth zero
+# in the sim until the multi-target model lands (it only pays off through a
+# second target). So this mod is, for now, a set member with no damage.
+effects:
+  - kind: punch_through_bonus
+    rank0: 0.3
+    rankMax: 1.5
+
+set: vigilante
+
+source:
+  url: https://wiki.warframe.com/w/Vigilante_Offense

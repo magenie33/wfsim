@@ -1,0 +1,17 @@
+id: augur
+name: Augur
+# The set bonus is a WARFRAME effect, not a weapon one: a share of the shields
+# spent casting an ability is converted into ability damage. Nothing about it
+# touches the weapon's damage, so it is declared UNMODELED rather than left
+# undefined — a member naming a set with no definition would look identical to
+# a bonus we simply forgot to implement.
+#
+# Two of the six are secondary mods (Pact, Seeker), which is why the set turns
+# up in a weapon pool at all.
+members: 6
+bonus:
+  kind: unmodeled
+  per_mod: 0.0
+
+source:
+  url: https://wiki.warframe.com/w/Augur_Set

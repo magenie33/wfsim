@@ -1,0 +1,18 @@
+id: vigilante_armaments
+name: Vigilante Armaments
+rarity: common
+polarity: naramon
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sets/Vigilante/PrimaryVigilanteArmamentsMod
+description: "+X% Multishot"
+
+effects:
+  - kind: multishot_bonus
+    rank0: 0.10
+    rankMax: 0.60
+
+set: vigilante
+
+source:
+  url: https://wiki.warframe.com/w/Vigilante_Armaments

@@ -39,6 +39,9 @@ struct ModFile {
     exilus: bool,
     #[serde(default)]
     family: Option<String>,
+    /// Mod SET membership — the bonus itself lives in `data/mod_sets/`.
+    #[serde(default)]
+    set: Option<String>,
     /// Weapon trait required for the mod to apply (calc-layer gate).
     #[serde(default)]
     requires: Option<String>,
@@ -265,6 +268,7 @@ fn to_moddef(mf: ModFile) -> ModDef {
         rarity: rarity(&mf.rarity),
         exilus: mf.exilus,
         family: mf.family.map(|s| &*Box::leak(s.into_boxed_str())),
+        set: mf.set.map(|s| &*Box::leak(s.into_boxed_str())),
         requires: mf.requires.map(|s| &*Box::leak(s.into_boxed_str())),
         disables: mf
             .disables

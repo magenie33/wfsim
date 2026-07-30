@@ -1,0 +1,22 @@
+id: vigilante
+name: Vigilante
+# The set bonus, from the wiki (Vigilante_Set): "X% chance to enhance Critical
+# Hits from Primary Weapons" - 5% per equipped member, 30% with all six.
+#
+# "Enhance" is not defined on the mod pages; the set page states it: the hit's
+# critical TIER goes up by one (yellow -> orange -> red), and it "triggers
+# exclusively on critical hits" - a non-crit is never promoted. That lands
+# exactly on the engine's tier model, where crit_mult = 1 + tier x (cd - 1).
+#
+# It scales PER MEMBER, with no threshold: one mod already gives its share
+# (user, 2026-07-31). Six members exist but only FOUR are primary-weapon mods;
+# Pursuit and Vigor are Warframe mods, so a weapon build alone can reach 20%.
+# The engine has no Warframe loadout, so that is the cap it can see - stated
+# here rather than pretending the other two do not exist.
+members: 6
+bonus:
+  kind: crit_tier_upgrade_chance
+  per_mod: 0.05
+
+source:
+  url: https://wiki.warframe.com/w/Vigilante_Set

@@ -1,0 +1,24 @@
+id: vigilante_supplies
+name: Vigilante Supplies
+rarity: rare
+polarity: naramon
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Sets/Vigilante/PrimaryVigilanteSuppliesMod
+description: "Converts Secondary ammo pickups to X% of Ammo Pick Up."
+
+# A PICKUP conversion, not an ammo-reserve bonus: it changes what a secondary
+# ammo drop is worth to this weapon. The sim has no pickups in it, so the
+# effect is unmodeled and the mod contributes nothing on its own - its whole
+# value here is being a Vigilante member in the exilus slot, where it costs a
+# build nothing to carry.
+effects:
+  - kind: unmodeled
+    rank0: 0.05
+    rankMax: 0.30
+
+set: vigilante
+
+source:
+  url: https://wiki.warframe.com/w/Vigilante_Supplies
