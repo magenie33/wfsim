@@ -8,9 +8,10 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/CorruptedFireRateDamageRifle
 description: "+X% Fire Rate (xX for Bows)\n-X% Damage"
 
 effects:
+  # WFCD ramp: +15% -> +90%. Was the placeholder pair (1/6, 1.0).
   - kind: fire_rate_bonus
-    rank0: 0.1667
-    rankMax: 1.0
+    rank0: 0.15
+    rankMax: 0.9
   - kind: base_damage_bonus
     rank0: -0.025
     rankMax: -0.15

@@ -2,7 +2,7 @@ id: infected_clip
 name: Infected Clip
 rarity: uncommon
 polarity: naramon
-base_drain: 4                 # max drain 9 at rank 5
+base_drain: 6
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponToxinDamageMod
 description: "+X% Toxin"

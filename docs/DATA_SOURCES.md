@@ -88,6 +88,49 @@ Our field names follow the wiki concept words (snake_case + unit suffixes):
   [`../data/README.md`](../data/README.md)): fields are structured data a
   program consumes; human narrative is a `#` comment. No prose in fields.
 
+## Which source wins (revised 2026-07-30)
+
+The rule used to be "the wiki module is authoritative for every mechanical
+field". That was wrong for two of them, and nothing could show it while only
+one source was consulted.
+
+| field | authority | why |
+| --- | --- | --- |
+| `base_drain`, `max_rank` | **WFCD** (`vendor/warframe-items`) | `Module:Mods/data` is wrong for ~20 mods. Checked against the wiki PAGE rank tables as a third, independent data point (hand-maintained but per-rank, so hard to get wrong) — Point Strike, Split Chamber, Metal Auger, Barrel Diffusion, Convulsion, Deep Freeze, Gunslinger, Suppress — and the page agreed with WFCD **8/8** |
+| `polarity`, `rarity`, `exilus`, `internal_name`, verbatim `description` | **wiki module** | unchanged; WFCD has no exilus flag and its display text is rounded |
+| per-rank effect VALUES | **WFCD `levelStats`** | a full ramp, both ends checkable; the module gives max rank only |
+| everything mechanical | **cross-check both** | a disagreement is itself the finding — `crosscheck.py` reports SOURCE-SPLIT |
+
+**Join by `internal_name` == WFCD's `uniqueName`. Never by name.** WFCD carries
+stale duplicates sharing a display name: its first entry called "Serration" is
+*Flawed* Serration. That join is exact — every mod and arcane file in `data/`
+matches exactly one entry, none unmatched. A name-keyed lookup is what made an
+earlier pass "confirm" MaxRank 5 for Hawk Eye and Steady Hands from a
+collision duplicate, and record the wrong conclusion in both files.
+
+### What the second source caught
+
+Cost of having had only one: **20 mods** wrong on `base_drain`/`max_rank`, and
+**7** wrong on effect values. The value errors mattered more than the drains:
+
+- `fire_rate_bonus` sat at the placeholder pair `rank0 0.1667 / rankMax 1.0`
+  (= 1/6 and 1.0, never filled in) on **five** rifle mods. Two of them are
+  DRAWBACK mods, so the sim read Critical Delay's −20% and Vile Precision's
+  −36% fire-rate penalties as **+100% bonuses**. Primed Shred read +100%
+  instead of +55%.
+- `internal_bleeding` had a `proc_conversion` mod modeled as an
+  `elemental_damage_bonus` — the generator read the element out of the
+  description and invented a damage bucket. Its pistol twin Hemorrhage was
+  already correct.
+- `metal_auger`'s punch-through ramp is NON-linear (0.4 / 0.7 / 1.0 / 1.4 /
+  1.8 / 2.1), so `rankMax/6` was the wrong rank-0.
+
+Note the single-source audit could not have found the Primed Shred one even in
+principle: it checks that a modeled value appears in the mod's own description,
+and `1.0` matched via the "+1 multiplier" reading against the `2` in
+"(x2 for Bows)". A wrong value hiding behind a coincidence in the same string
+is exactly what a second, independent ramp rules out.
+
 ## Verification tooling (lives in `private/scripts/` — LOCAL, gitignored)
 
 The pipeline that fills and checks `data/` is not in the repo (`/private/` is
@@ -103,6 +146,9 @@ though the scripts do not travel with it.
 | `verify_arcanes.py --slot <S>` | same, for arcanes, plus the X-templated description token-matching the wiki's max-rank text |
 | `audit_mod_effects.py --type <T>` | the EFFECT NUMBERS: every modeled `rankMax` must appear in the mod's own wiki description. Also flags CONDITIONAL-AS-FLAT (a description with an `On <trigger>:` line must produce a `kind: buff`) and DESC-STALE (the module's text lagging its own MaxRank) |
 | `audit_arcane_effects.py --slot <S>` | the effect numbers at BOTH ends of the rank ramp, against warframestat `levelStats` |
+| `wfcd.py` | loads the vendored WFCD export, indexed by `uniqueName` |
+| `crosscheck.py --type <T>` / `--arcanes <S>` | DUAL VERIFICATION: ours vs wiki vs WFCD. Reports MISMATCH (ours disagrees with WFCD) and SOURCE-SPLIT (the two sources disagree with each other). Compares each number at the SOURCE's own precision, since WFCD's display rounds |
+| `reconcile_wfcd.py --type <T>` | rewrites `base_drain` / `max_rank` from WFCD. Only those two — matching an effect kind to a phrase in a stat string is guesswork, and a wrong guess there changes damage |
 | `reconcile_families.py --type <T>` | `family` / `incompatible_with` by union-find over the wiki's `Incompatible` lists — the mutual-exclusivity groups the optimizer enforces |
 
 Two systematic failure modes these caught, worth knowing because they are
@@ -119,9 +165,12 @@ INVISIBLE to a numbers-only check and both produce data that looks fine:
 And two cases where the wiki is the thing that is wrong, kept flagged rather
 than silenced:
 
-- The module's `Description` can **lag its own `MaxRank`** (Hawk Eye, Steady
-  Hands: MaxRank 5 with rank-3 text). The modeled value is the linear
-  extension along the same ramp; both files say so in a comment.
+- ~~The module's `Description` can lag its own `MaxRank`~~ — **withdrawn
+  2026-07-30.** That read Hawk Eye and Steady Hands backwards: the module's
+  `MaxRank` 5 is the wrong field, not its description. WFCD says fusionLimit 3
+  and the wiki page's rank table agrees, so the rank-3 text was right all
+  along. `audit_mod_effects.py` still has a DESC-STALE category because the
+  shape is possible in principle, but neither known case is one.
 - Amalgam Barrel Diffusion really grants **109.50%** multishot and the tooltip
   rounds to 110% — an explicit allowlist entry with the wiki quote, not a
   tolerance that would hide the next real error.

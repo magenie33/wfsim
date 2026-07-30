@@ -8,10 +8,20 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponBleedOnImpactProcRifleMod
 description: " Impact Status Effects have X% chance to apply a Slash Status Effect (xX when Fire Rate is below X)"
 
 effects:
-  - kind: elemental_damage_bonus
-    element: impact
-    rank0: 0.1667
-    rankMax: 1.0
+  # This is a PROC CONVERSION, not an Impact damage bonus - the generated
+  # skeleton read the description's element and invented a damage bucket. Same
+  # mod as the pistol's Hemorrhage, same schema, same numbers.
+  # On an applied Impact status, roll `chance` to also apply a Slash status.
+  # ONE roll per damage instance, never alongside another same-instance Slash
+  # source (wiki). The threshold reads the LIVE modded fire rate; exactly 2.5
+  # gets NO bonus (strictly below).
+  - kind: proc_conversion
+    trigger: impact
+    applies: slash
+    rank0: 0.1
+    rankMax: 0.35
+    condition: fire_rate_below_2.5   # the chance is DOUBLED while this holds
+    condition_multiplier: 2
 
 source:
   url: https://wiki.warframe.com/w/Internal_Bleeding

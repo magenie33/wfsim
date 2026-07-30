@@ -11,9 +11,12 @@ effects:
   - kind: crit_chance_bonus
     rank0: 0.3333
     rankMax: 2.0
+  # DRAWBACK: Critical Delay COSTS fire rate (-20% at max), it does not
+  # grant it. This was the placeholder pair (rank0 1/6, rankMax 1.0), so the
+  # sim read a penalty as a +100% bonus. WFCD ramp: -3.3% -> -20%.
   - kind: fire_rate_bonus
-    rank0: 0.1667
-    rankMax: 1.0
+    rank0: -0.0333
+    rankMax: -0.2
 
 family: point_strike
 incompatible_with: [point_strike]

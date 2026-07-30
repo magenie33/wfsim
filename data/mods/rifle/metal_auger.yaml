@@ -2,14 +2,16 @@ id: metal_auger
 name: Metal Auger
 rarity: rare
 polarity: naramon
-base_drain: 6                 # max drain 11 at rank 5
+base_drain: 10
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponPunctureDepthMod
 description: "+X Punch Through"
 
 effects:
+  # NON-LINEAR ramp (WFCD / wiki page): 0.4 / 0.7 / 1.0 / 1.4 / 1.8 / 2.1 -
+  # rank 0 is 0.4, not rankMax/6.
   - kind: punch_through_bonus
-    rank0: 0.35
+    rank0: 0.4
     rankMax: 2.1
 
 source:

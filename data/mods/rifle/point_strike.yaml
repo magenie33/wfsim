@@ -2,7 +2,7 @@ id: point_strike
 name: Point Strike
 rarity: common
 polarity: madurai
-base_drain: 2                 # max drain 7 at rank 5
+base_drain: 4
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponCritChanceMod
 description: "+X% Critical Chance"

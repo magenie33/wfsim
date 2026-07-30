@@ -8,9 +8,10 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponFireRateMod
 description: "+X% Fire Rate (xX for Bows)"
 
 effects:
+  # WFCD ramp: +10% -> +60%. Was the placeholder pair (1/6, 1.0).
   - kind: fire_rate_bonus
-    rank0: 0.1667
-    rankMax: 1.0
+    rank0: 0.1
+    rankMax: 0.6
 
 source:
   url: https://wiki.warframe.com/w/Speed_Trigger

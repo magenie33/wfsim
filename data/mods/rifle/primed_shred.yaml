@@ -8,9 +8,12 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/PrimedShredMod
 description: "+X% Fire Rate (xX for Bows)\n+X Punch Through"
 
 effects:
+  # WFCD ramp: +5% -> +55%, NOT +100%. The single-source audit missed this
+  # because candidates(1.0) includes the +1 multiplier reading 2.0, which
+  # matched the "(x2 for Bows)" in the mod's own description.
   - kind: fire_rate_bonus
-    rank0: 0.0909
-    rankMax: 1.0
+    rank0: 0.05
+    rankMax: 0.55
   - kind: punch_through_bonus
     rank0: 0.2
     rankMax: 2.2

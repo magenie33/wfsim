@@ -2,22 +2,22 @@ id: hawk_eye
 name: Hawk Eye
 rarity: uncommon
 polarity: naramon
-base_drain: 4                 # max drain 9 at rank 5
-max_rank: 5
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponPistolZoomFovMod
 description: "+80% Zoom"
 
-# WIKI TEXT LAGS MaxRank (verified 2026-07-30). `Module:Mods/data` gives this
-# mod MaxRank 5 but its Description - and the wiki page's rank table - still
-# show the old rank-3 numbers (+80% Zoom at rank 3). The module is the source of truth for
-# mechanical fields (AGENTS.md), and warframestat's MaxRank-5 entry agrees
-# with the extension below, so the ramp runs to rank 5: 20% per rank.
-# Do NOT "correct" this back to the description.
+# MaxRank 3, and the wiki MODULE says 5 — the module is wrong here. WFCD's
+# export (DE's own, joined by uniqueName) gives fusionLimit 3 with four rank
+# entries, and the wiki PAGE's rank table agrees: ranks 0–3, +20% Zoom to +80% Zoom.
+# An earlier pass had this at 5 on the strength of a warframestat entry that
+# was a NAME-COLLISION DUPLICATE — the exact trap that made internal_name the
+# only acceptable join key (private/scripts/wfcd.py).
 effects:
   - kind: zoom_bonus
     rank0: 0.2
-    rankMax: 1.2
+    rankMax: 0.8
 
 source:
   url: https://wiki.warframe.com/w/Hawk_Eye

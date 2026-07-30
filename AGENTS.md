@@ -18,7 +18,11 @@ data + a dependency-free web UI, deployed as WASM on Cloudflare
 - `wasm/` + `site/` — the static deployment. `site/` is **generated** by
   `scripts/build_site_app.py` — never hand-edit it.
 - `data/` — versioned game data. `data/README.md` explains the reference
-  graph; `docs/DATA_SOURCES.md` the sourcing rules.
+  graph; `docs/DATA_SOURCES.md` the sourcing rules. **Two sources, always
+  cross-checked**: the wiki Lua modules and WFCD's export (`vendor/`). The wiki
+  is NOT authoritative for `base_drain`/`max_rank` — it is wrong for ~20 mods.
+  Join the two by `internal_name` == `uniqueName`, **never by name** (WFCD has
+  stale duplicates sharing a display name).
 - `docs/` — CORE (design), MECHANICS (formulas), MEASUREMENTS (protocol +
   baselines), BUFFS, OPTIMIZER, UI, WASM, GLOSSARY, DEVELOPMENT (setup).
 - `tests/golden/` — golden tests calibrated against in-game measurements.

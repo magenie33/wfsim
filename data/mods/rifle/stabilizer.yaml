@@ -2,15 +2,19 @@ id: stabilizer
 name: Stabilizer
 rarity: rare
 polarity: naramon
-base_drain: 6                 # max drain 11 at rank 5
-max_rank: 5
+base_drain: 6                 # max drain 9 at rank 3
+max_rank: 3
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponRecoilReductionMod
 description: "-X% Weapon Recoil"
 
+# MaxRank 3, and the wiki MODULE says 5 — the module is wrong here. WFCD's
+# export (DE's own, joined by uniqueName) gives fusionLimit 3 with four rank
+# entries and the wiki PAGE's rank table agrees (-15% Weapon Recoil to -60% Weapon Recoil), so the
+# per-rank step is rankMax/4, not rankMax/6.
 effects:
   - kind: recoil_reduction
-    rank0: -0.1
+    rank0: -0.15
     rankMax: -0.6
 
 family: stabilizer

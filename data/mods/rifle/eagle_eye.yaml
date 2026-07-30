@@ -2,15 +2,19 @@ id: eagle_eye
 name: Eagle Eye
 rarity: uncommon
 polarity: naramon
-base_drain: 4                 # max drain 9 at rank 5
-max_rank: 5
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponZoomFovMod
 description: "+X% Zoom"
 
+# MaxRank 3, and the wiki MODULE says 5 — the module is wrong here. WFCD's
+# export (DE's own, joined by uniqueName) gives fusionLimit 3 with four rank
+# entries and the wiki PAGE's rank table agrees (+10% Zoom to +40% Zoom), so the
+# per-rank step is rankMax/4, not rankMax/6.
 effects:
   - kind: zoom_bonus
-    rank0: 0.0667
+    rank0: 0.1
     rankMax: 0.4
 
 source:

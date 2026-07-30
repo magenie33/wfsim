@@ -2,13 +2,19 @@ id: suppress
 name: Suppress
 rarity: common
 polarity: naramon
-base_drain: 2                 # max drain 7 at rank 5
-max_rank: 5
+base_drain: 2                 # max drain 5 at rank 3
+max_rank: 3
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponNoiseReductionMod
 description: "Reduces the chance an enemy will hear gunfire by X%."
 
 # −100% chance enemies hear gunfire. Pure stealth utility — no damage model.
+# MaxRank 3, and the wiki MODULE says 5 — the module is wrong here. WFCD's
+# export (DE's own, joined by uniqueName) gives fusionLimit 3 with four rank
+# entries, and the wiki PAGE's rank table agrees: ranks 0–3, +25% to +100%.
+# An earlier pass had this at 5 on the strength of a warframestat entry that
+# was a NAME-COLLISION DUPLICATE — the exact trap that made internal_name the
+# only acceptable join key (private/scripts/wfcd.py).
 effects:
   - kind: noise_reduction
     rank0: 0.25
