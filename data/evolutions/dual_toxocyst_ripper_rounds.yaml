@@ -7,6 +7,11 @@ description: "On Kill: +3 Punch Through for 7s."
 selection: choose_one
 
 effects:
+  # NOT LOADED: `evolutions_data::effect()` has no `timed_buff` arm — the
+  # modelled shape is `stacking_buff` — so this resolves to `EvoEffect::Inert`
+  # and the engine takes nothing; `trigger`, `duration_seconds` and `modifiers`
+  # go unread with it (data/README.md). No DPS consequence single-target:
+  # punch-through moves damage to enemies BEHIND the first, and there are none.
   - kind: timed_buff
     trigger: on_kill
     duration_seconds: 7

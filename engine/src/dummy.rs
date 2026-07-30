@@ -2700,48 +2700,69 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         } else {
             rolled.max(1) as f64
         };
-        let (n_pellets, beam_merge) = if ap.continuous {
+        let (n_pellets, mut beam_merge) = if ap.continuous {
             (1, merge_bonus)
         } else {
             (rolled, 1.0)
         };
-        // Ammo, settled now that the roll is known. Plentiful Mayhem: "Multishot
-        // consumes ammo directly from Capacity … In the case of Incarnon Form,
-        // it pools directly from its magazine" — so the EXTRA projectiles cost a
-        // round each, from the reserve in a magazine-fed form and from the
-        // charge pool in a charge-backed one. The draw follows the RAW rolled
-        // count, not the 60%-scaled one (user, 2026-07-30): the bonus is paid in
-        // damage, not billed again in ammo.
+        // Ammo, settled now that the roll is known.
         //
-        // Ammo efficiency is deliberately NOT applied to the extra rounds: it is
-        // a per-shot efficiency and nothing sources it reaching a multishot
-        // surcharge. On the Incarnon form the question is moot — that magazine
-        // takes no efficiency at all.
-        let extra_rounds = if ap.multishot_ammo_bonus > 0.0 {
-            (rolled.max(1) - 1) as f64
-        } else {
-            0.0
-        };
+        // The ROUND itself always comes from the magazine and always takes ammo
+        // efficiency — that path is unchanged by any perk.
+        //
+        // PLENTIFUL MAYHEM bills the EXTRA projectiles on top, one round each,
+        // and the draw follows the RAW rolled count rather than the 60%-scaled
+        // one (user, 2026-07-30): the bonus is paid in damage, not billed twice.
+        // Efficiency does NOT reach the surcharge — the magazine keeps its own
+        // efficient round, the extras come from a different pool entirely.
+        //
+        // AMMO STARVATION IS REAL, and it is why this is a loop rather than one
+        // subtraction (user, 2026-07-30): the projectiles are produced in order,
+        // each paying as it goes, and one that cannot pay simply IS NOT FIRED.
+        // So a 4-multishot pull against 3 remaining charges spends the round,
+        // fires two extras, and drops the third — three pellets, not four, and
+        // the pool lands on empty rather than going negative or silently
+        // clamping while all four fly.
         if in_base_form {
             base_mag -= 1.0 - efficiency;
         } else {
             magazine -= 1.0 - efficiency;
         }
-        if extra_rounds > 0.0 {
+        let mut n_pellets = n_pellets;
+        if ap.multishot_ammo_bonus > 0.0 && rolled > 1 {
             // `ammo_efficiency_applies == false` IS the charge-backed marker —
             // such a magazine is "outside the ammo economy entirely", so it has
             // no Capacity behind it and the surcharge comes out of the charge
             // pool itself. That is what shortens the Incarnon window.
-            if ap.ammo_efficiency_applies {
-                // From CAPACITY: the magazine still lasts its full round count
-                // and only sustain pays. With infinite reserves — which the
-                // Incarnon cycle's base phase always assumes — that makes this
-                // free, which is correct rather than missing.
-                reserve = (reserve - extra_rounds).max(0.0);
-            } else if in_base_form {
-                base_mag -= extra_rounds;
+            let charge_backed = !ap.ammo_efficiency_applies;
+            let mut afforded = 0u32;
+            for _ in 0..rolled - 1 {
+                let pool = if charge_backed {
+                    if in_base_form { &mut base_mag } else { &mut magazine }
+                } else {
+                    // From CAPACITY. With infinite reserves — which the Incarnon
+                    // cycle's base phase always assumes — nothing can starve,
+                    // which is correct rather than missing.
+                    if params.infinite_reserve {
+                        afforded += 1;
+                        continue;
+                    }
+                    &mut reserve
+                };
+                if *pool < 1.0 - 1e-9 {
+                    break;
+                }
+                *pool -= 1.0;
+                afforded += 1;
+            }
+            // A beam merges its multishot into ONE instance, so starvation
+            // shows up as a smaller merge multiplier, not as fewer instances.
+            if ap.continuous {
+                let base_ms = ap.base_multishot.max(1.0);
+                let live = (1 + afforded) as f64;
+                beam_merge = base_ms + (live - base_ms) * (1.0 + ap.multishot_ammo_bonus);
             } else {
-                magazine -= extra_rounds;
+                n_pellets = 1 + afforded;
             }
         }
         // The damage ramp, evaluated once per tick. A FINAL multiplier on the
@@ -3793,10 +3814,13 @@ mod tests {
             base_crit_chance: 0.0,
             arcane: ArcaneFx::none(),
             fire_rate: 1.0,
-            // Exactly one pull, then a 60 s window so both clouds finish.
+            // Exactly one pull — a one-round magazine behind a reload longer
+            // than the run — then a 60 s window so both clouds finish. Reserves
+            // stay INFINITE so the generated grenade can always pay its round;
+            // starving it is the next test, and it must not leak into this one.
             magazine_size: 1.0,
-            infinite_reserve: false,
-            reserve_ammo: 0.0,
+            reload_seconds: 999.0,
+            infinite_reserve: true,
             duration_secs: 60.0,
             ..no_status()
         };
@@ -3817,6 +3841,50 @@ mod tests {
             (on.mean_damage - (400.0 + 640.0)).abs() < 1e-9,
             "boosted {} (expected 400 plain + 640 from the generated grenade)",
             on.mean_damage
+        );
+    }
+
+    /// Plentiful Mayhem STARVES: the projectiles are produced in order, each
+    /// paying a round as it goes, and one that cannot pay is simply not fired
+    /// (user, 2026-07-30). The round itself always comes from the magazine, so
+    /// the shot still happens — it just fires fewer pellets.
+    #[test]
+    fn plentiful_mayhem_drops_the_pellets_the_reserve_cannot_pay_for() {
+        // 4x multishot, one magazine round, and only TWO reserve rounds for the
+        // three extras: two are afforded, the third is dropped -> 3 pellets.
+        let p = |reserve: f64| DummyParams {
+            multishot: 4.0,
+            multishot_ammo_bonus: 0.6,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            fire_rate: 1.0,
+            magazine_size: 1.0,
+            infinite_reserve: false,
+            reserve_ammo: reserve,
+            duration_secs: 30.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let starved = monte_carlo(&p(2.0), 4, 3);
+        assert!((starved.mean_shots - 1.0).abs() < 1e-9, "the shot still fires");
+        assert!(
+            (starved.mean_pellets - 3.0).abs() < 1e-9,
+            "1 magazine round + 2 affordable extras = 3 pellets, got {}",
+            starved.mean_pellets
+        );
+        // Dry reserve starves every extra, leaving the weapon's own projectile.
+        let dry = monte_carlo(&p(0.0), 4, 3);
+        assert!(
+            (dry.mean_pellets - 1.0).abs() < 1e-9,
+            "only the magazine round's own pellet survives, got {}",
+            dry.mean_pellets
+        );
+        // And the dropped pellets are not billed: damage tracks what FIRED.
+        assert!(
+            (starved.mean_damage / dry.mean_damage - (1.0 + 2.0 * 1.6)).abs() < 1e-9,
+            "ratio {}",
+            starved.mean_damage / dry.mean_damage
         );
     }
 

@@ -14,6 +14,9 @@ effects:
     rankMax: 7.0               # x8
   # Defensive: +1 Overguard per 100 damage dealt to Overguard (constant at
   # every rank; self-Overguard cap 15,000). DoTs also steal. Not a DPS stat.
+  # NOT LOADED: `arcanes_data` has no `overguard_on_damage` arm, so this entry is
+  # dropped (data/README.md). It is a SELF-buff (player Overguard gain); the sim
+  # models the target's pools, never the attacker's.
   - kind: overguard_on_damage
     rankMax: 0.01
 

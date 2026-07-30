@@ -11,6 +11,10 @@ effects:
   # multiplier), roll their own crits, and apply the same status effects as the
   # triggering hit.
   - kind: aoe_echo
+    # NOT READ by `arcanes_data`: the loader takes `trigger`/`grants` and the
+    # per-rank values, never `condition`. So the buff resolves as if its gate were
+    # always satisfied — the house assumed-max reading, recorded here because
+    # it is optimistic, not neutral (data/README.md).
     condition: target_has_10_radiation_stacks
     rank0: 0.8                 # fraction of the hit damage dealt in the radius
     rankMax: 1.8

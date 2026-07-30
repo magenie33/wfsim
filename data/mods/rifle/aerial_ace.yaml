@@ -9,12 +9,15 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Arbitration/JumpRefreshOnKillRif
 description: "On Kill:\nRefresh Double Jump up to Xx while Airborne."
 
 effects:
+  # NOT LOADED, both entries: `mods_data::effect()` has no `unmodeled` arm, so
+  # they are dropped and the mod loads with NO effects (data/README.md).
+  # Mobility, with no damage payload at all.
+  # "On Kill:"
   - kind: unmodeled
-    desc: "On Kill:"
+  # "Refresh Double Jump up to 6x while Airborne."
   - kind: unmodeled
     rank0: 0.01
     rankMax: 0.06
-    desc: "Refresh Double Jump up to 6x while Airborne."
 
 source:
   url: https://wiki.warframe.com/w/Aerial_Ace

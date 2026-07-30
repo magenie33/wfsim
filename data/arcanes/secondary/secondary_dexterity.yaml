@@ -18,6 +18,9 @@ effects:
     decay: lose_one_and_reset
   # Melee Combo Counter duration (seconds) - a melee stat, inert for the
   # secondary-weapon calc.
+  # NOT LOADED: `arcanes_data` has no `combo_duration_bonus` arm, so this entry
+  # is dropped entirely (data/README.md). Doubly inert — it is a MELEE stat and
+  # this is a gun calc — but the drop is the reason nothing shows on the panel.
   - kind: combo_duration_bonus
     rankMax: 7.5
     unlocks_at_rank: 5

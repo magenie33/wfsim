@@ -11,10 +11,13 @@ effects:
   - kind: base_damage_bonus
     rank0: 0.1409
     rankMax: 1.55
+  # NOT LOADED: `mods_data::effect()` has no `unmodeled` arm, so this half is
+  # dropped (data/README.md). Only the base-damage half above reaches the
+  # engine — which is the whole reason the Amalgam variant is worth modelling.
+  # "+25% Sprint Speed"
   - kind: unmodeled
     rank0: 0.0227
     rankMax: 0.25
-    desc: "+25% Sprint Speed"
 
 family: serration
 incompatible_with: [serration, spectral_serration]

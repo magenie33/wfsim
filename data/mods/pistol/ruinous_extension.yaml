@@ -9,8 +9,12 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponBeamDistanceMod
 description: "+Xm Beam Range"
 
 effects:
-  # Beam range: inherently inert on non-continuous weapons (no beam to extend) —
-  # no gate needed; the calculation layer simply does nothing here.
+  # NOT LOADED: `mods_data::effect()` has no `beam_range_bonus` arm, so this is
+  # dropped and the mod loads with NO effects (data/README.md). Two separate
+  # reasons it costs nothing today, and only the first was recorded before:
+  # beam range is inert on a non-continuous weapon (no beam to extend), AND the
+  # arena is single-target at a fixed distance, so range buys nothing even on a
+  # beam. It becomes real data the day the 2D world scores reach.
   - kind: beam_range_bonus
     rank0: 2.0
     rankMax: 8.0

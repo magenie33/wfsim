@@ -16,6 +16,13 @@ effects:
     grants: final_damage
     rank0: 2.0                 # cap as a bonus: x3 at rank 0
     rankMax: 7.0               # x8 at rank 5
+    # NOT LOADED: `arcanes_data` reads neither `per_energy_bonus` nor
+    # `consumed_on_shot`, so the buff resolves at its CAP and never spends
+    # itself (data/README.md). Both directions of error are recorded rather
+    # than hidden: the sim has no energy pool, so assuming the cap is the
+    # optimistic read, and not consuming it on the shot makes it permanent
+    # instead of one-shot. Overstated for this arcane until an energy model and
+    # a consume-on-fire hook exist.
     per_energy_bonus: 0.005
     consumed_on_shot: true
 

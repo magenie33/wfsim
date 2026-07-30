@@ -7,6 +7,10 @@ description: "-50% Weapon Recoil."
 selection: choose_one
 
 effects:
+  # NOT LOADED: `evolutions_data::effect()` has no `recoil_reduction` arm (the
+  # MODS loader has one — different loader, different vocabulary), so this
+  # resolves to `EvoEffect::Inert` and the engine takes nothing
+  # (data/README.md).
   - kind: recoil_reduction      # not a damage bucket; recorded for parity
     value: 0.50
 

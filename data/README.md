@@ -110,6 +110,23 @@ A parameter goes on whichever entity *owns* it, so it is not duplicated:
   fields. Structured game facts WITHOUT a consumer yet (e.g. an unmodeled
   mechanic's parameters) may stay as fields — they are columns awaiting a
   consumer, and they must be values, not sentences.
+- **An effect the loader does not parse must SAY SO, in a comment.** The three
+  loaders disagree about what happens to a `kind` they do not recognise, and
+  only one of them leaves a trace:
+  - `evolutions_data` falls through to `EvoEffect::Inert(kind)`, which the UI
+    renders as *"<kind> (no single-target DPS effect)"* — visible, honest.
+  - `arcanes_data` has an explicit `kind: unmodeled` carrying a **`note`**,
+    which `describe()` renders. There, `note` IS a consumed field.
+  - `mods_data` hits `_ => return None`: the effect is dropped and the mod
+    loads **as if the entry were not there**, with nothing on screen to say so.
+  That silence is how `blast_radius_bonus` sat inert on Fulmination for months.
+  So any entry whose `kind` its own loader does not match carries a comment
+  naming the consequence. Grep the loader before assuming a kind is live —
+  `note`/`desc` are consumed for arcanes and dead everywhere else.
+- **`data/debuffs/` is loaded by nothing.** It is the written spec for status
+  effects; the behaviour is hand-implemented in `engine::dummy` /
+  `engine::status`, which cite the files by name. Treat a change there as a
+  documentation change that also needs code.
 - Two metadata fields are kept by convention even without a code consumer:
   `source` (`url` — provenance, see
   [`../docs/DATA_SOURCES.md`](../docs/DATA_SOURCES.md)) and `internal_name`

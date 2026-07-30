@@ -20,6 +20,9 @@ effects:
     rankMax: 0.4
     max_stacks: 3
     duration: 14
+    # `decay` is NOT read by mods_data. The engine hardcodes the matching model
+    # per effect kind — `LiveStacks` (dummy.rs): on timeout lose ONE stack and
+    # reset the timer. This line is the written record, not the source.
     decay: lose_one_and_reset
 
 family: sure_shot

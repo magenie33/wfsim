@@ -9,6 +9,8 @@ effects:
   # Ammo efficiency is INERT on the charge-backed Incarnon magazine
   # (laetum_incarnon.yaml), and conditional on a movement state the sim
   # does not model.
+  # NOT LOADED either way: `indirect` resolves to `EvoEffect::Inert`, so even a
+  # weapon this WOULD apply to takes nothing (data/README.md). `stat` is unread.
   - kind: indirect
     stat: ammo_efficiency_conditional
     value: 0.60

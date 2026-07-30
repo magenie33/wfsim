@@ -11,6 +11,11 @@ selection: fixed                # tier 1 has no choice
 # trigger, the beam, the higher stats and the 2.3 m damage radius are all
 # properties of the torid_incarnon entry, not perk payload.
 effects:
+  # NOT LOADED: `evolutions_data::effect()` has no `unlocks_weapon` arm, so this
+  # resolves to `EvoEffect::Inert` and contributes nothing (data/README.md).
+  # Nothing is gated on it: the Incarnon form's availability comes from the
+  # weapon data's `transforms_to`, and `weapon` below is unread too. The entry
+  # records that this tier is what unlocks the form in game.
   - kind: unlocks_weapon
     weapon: torid_incarnon
 

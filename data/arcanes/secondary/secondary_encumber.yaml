@@ -36,6 +36,9 @@ effects:
   # way.
   - kind: proc_conversion
     trigger: any_status
+    # `applies` is NOT read by `arcanes_data` — the `proc_conversion` arm takes
+    # the trigger and the chance, and the engine picks the random status itself.
+    # A label pinned by code, not an input (data/README.md).
     applies: random_status
     rank0: 0.04
     rankMax: 0.24

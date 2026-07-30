@@ -12,6 +12,11 @@ effects:
   # on the GunCO exceptions (Cyanex/Catchmoon/Epitaph/...) - per-weapon
   # co_behavior. Additive with Galvanized Shot's per-status-type bonus.
   # Does NOT apply to radial (AoE) damage. Only the equipped weapon benefits.
+  # `status` is NOT read by `arcanes_data` — the `per_status_damage_bonus` arm
+  # takes only the per-stack value and the cap. Harmless while this is the only
+  # arcane of its shape (the engine's counter is the Cold stack count), but the
+  # day a second one keys off a different proc the field has to become a real
+  # input rather than a label (data/README.md).
   - kind: per_status_damage_bonus
     status: cold
     rank0: 0.075

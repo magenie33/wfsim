@@ -28,6 +28,9 @@ effects:
   - kind: headshot_multiplier_bonus
     rankMax: 0.3
     unlocks_at_rank: 5
+  # NOT LOADED: `arcanes_data` has no `recoil_reduction` arm, so this entry is
+  # dropped (data/README.md). The MODS loader has one — different loader,
+  # different vocabulary. Recoil is handling, not a damage bucket.
   - kind: recoil_reduction
     rankMax: 0.5
     unlocks_at_rank: 5

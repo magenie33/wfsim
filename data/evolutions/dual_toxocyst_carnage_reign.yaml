@@ -22,6 +22,13 @@ effects:
     # excluded from its own CO chunk: "CO-bonus does not use base damage
     # increase Evolution"), and ignores final multipliers (falloff etc.).
     # Additive with all other CO sources (Galvanized Shot etc.).
+    # NOT LOADED, all four of the keys above and below: `evolutions_data` reads
+    # only `kind` and `value` from a `condition_overload` entry. `applies_to`,
+    # `condition`, `co_behavior` and `co_base_excludes_evolution_damage` are the
+    # written spec — the engine gets the same three facts from elsewhere and
+    # they are pinned there, not here: `co_behavior` from the WEAPON file
+    # (dual_toxocyst.yaml), and the base-exclusion from `co_base_fraction`,
+    # which `apply` computes as original/evolved total (data/README.md).
     co_behavior: adding
     co_base_excludes_evolution_damage: true
 

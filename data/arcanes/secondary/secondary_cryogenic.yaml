@@ -12,6 +12,11 @@ effects:
   # scaled by the weapon's Status Duration.
   - kind: proc_burst
     trigger: puncture
+    # `applies` is NOT read by `arcanes_data` — the `proc_burst` arm takes the
+    # trigger and the stack count, and the procs it emits are Cold because the
+    # engine says so, not because this line does. A label pinned by code, not
+    # an input; a second proc_burst arcane emitting anything else would need it
+    # to become real (data/README.md).
     applies: cold
     rank0: 1
     rankMax: 3

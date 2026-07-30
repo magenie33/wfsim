@@ -9,10 +9,13 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponResistSelfDamageMod
 description: "+X% chance to reduce the Stagger effect from self-imposed Radial Attacks"
 
 effects:
+  # NOT LOADED: `mods_data::effect()` has no `unmodeled` arm, so this is dropped
+  # and the mod loads with NO effects (data/README.md). Self-stagger is a
+  # survivability/handling concern; the sim never shoots itself.
+  # "+100% chance to reduce the Stagger effect from self-imposed Radial Attacks"
   - kind: unmodeled
     rank0: 0.0909
     rankMax: 1.0
-    desc: "+100% chance to reduce the Stagger effect from self-imposed Radial Attacks"
 
 source:
   url: https://wiki.warframe.com/w/Cautious_Shot

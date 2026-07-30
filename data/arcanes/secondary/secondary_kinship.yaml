@@ -11,6 +11,10 @@ effects:
   # ally-affecting buff, counted PER TARGET each buff reaches - a team-context
   # mechanic with no fixed cap; inert in the single-actor sim.
   - kind: crit_chance_bonus
+    # NOT READ by `arcanes_data`: the loader takes `trigger`/`grants` and the
+    # per-rank values, never `condition`. So the buff resolves as if its gate were
+    # always satisfied — the house assumed-max reading, recorded here because
+    # it is optimistic, not neutral (data/README.md).
     condition: while_buffing_ally_warframes
     per: ally_buff
     rank0: 0.03

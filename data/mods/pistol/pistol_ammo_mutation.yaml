@@ -9,7 +9,12 @@ internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponPistolConvertAmmoMod
 description: "Converts Primary ammo pickups to X% of Ammo Pick Up."
 
 effects:
-  - kind: ammo_conversion    # primary ammo pickups -> pistol ammo (economy; long-fight sustain, no per-hit DPS)
+  # NOT LOADED: `mods_data::effect()` has no `ammo_conversion` arm, so this is
+  # dropped and the mod loads with NO effects (data/README.md). Primary ammo
+  # pickups become pistol ammo — an economy stat that only moves long-fight
+  # sustain, never per-hit DPS. `from` is likewise unread; it is the column a
+  # future ammo-economy consumer would want.
+  - kind: ammo_conversion
     from: primary
     rank0: 0.08
     rankMax: 0.5

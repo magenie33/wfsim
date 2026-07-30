@@ -8,6 +8,12 @@ selection: choose_one
 currently_broken: true          # wiki: "Currently does not work"
 
 effects:
+  # NOT LOADED: `evolutions_data::effect()` has no `timed_buff` arm — the
+  # modelled shape is `stacking_buff` — so this resolves to `EvoEffect::Inert`
+  # and the engine takes nothing. `trigger`, `duration_seconds` and `modifiers`
+  # are unread with it (data/README.md). Moot today because the evolution is
+  # `currently_broken` and `apply` skips those wholesale, but it would still be
+  # inert once DE fixes it: converting it needs a real `timed_buff` arm.
   - kind: timed_buff
     trigger: on_headshot
     duration_seconds: 3

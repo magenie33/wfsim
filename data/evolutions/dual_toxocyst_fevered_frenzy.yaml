@@ -16,6 +16,12 @@ effects:
     trigger: on_ability_cast
     per_stack: { multishot_bonus: 0.05 }   # additive with multishot mods
     max_stacks: 20
+    # `duration`/`cleared_on` are NOT loaded: `evolutions_data` maps a
+    # `stacking_buff` with a `multishot_bonus` payload to
+    # `AssumedMaxMultishot`, which carries only the total and the cap. That IS
+    # the permanence — a buff with no timer and no in-sim trigger is a static
+    # choice, full by default — so the two keys are the written record of why,
+    # not an input (data/README.md).
     duration: permanent          # MEASURED (2026-07-24, user): stacks have
     cleared_on: [death]          # no timer; only player death clears them
 

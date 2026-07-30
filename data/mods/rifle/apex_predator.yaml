@@ -9,12 +9,15 @@ internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/MarkTargetRifleMod
 description: "On Hit:\nReveals target on Minimap for +Xs."
 
 effects:
+  # NOT LOADED, both entries: `mods_data::effect()` has no `unmodeled` arm, so
+  # they are dropped and the mod loads with NO effects (data/README.md). Target
+  # marking is UI, not damage.
+  # "On Hit:"
   - kind: unmodeled
-    desc: "On Hit:"
+  # "Reveals target on Minimap for +6s."
   - kind: unmodeled
     rank0: 0.01
     rankMax: 0.06
-    desc: "Reveals target on Minimap for +6s."
 
 source:
   url: https://wiki.warframe.com/w/Apex_Predator

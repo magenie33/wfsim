@@ -25,6 +25,9 @@ effects:
     rankMax: 0.40
     max_stacks: 5
     duration: 12
+    # `decay` is NOT read by mods_data. The engine hardcodes the matching model
+    # per effect kind — `ch_stacks` (dummy.rs) keeps one expiry PER stack and
+    # retains the live ones. This line is the written record, not the source.
     decay: per_stack_expiry
 
 family: hydraulic_crosshairs

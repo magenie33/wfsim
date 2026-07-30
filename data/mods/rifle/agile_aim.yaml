@@ -9,10 +9,13 @@ internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/FasterMovementWhileAimingRifle
 description: "+X% Movement Speed when Aiming"
 
 effects:
+  # NOT LOADED: `mods_data::effect()` has no `unmodeled` arm, so this is dropped
+  # and the mod loads with NO effects (data/README.md). Movement speed is not a
+  # damage stat and the arena has no traversal.
+  # "+20% Movement Speed when Aiming"
   - kind: unmodeled
     rank0: 0.05
     rankMax: 0.2
-    desc: "+20% Movement Speed when Aiming"
 
 source:
   url: https://wiki.warframe.com/w/Agile_Aim

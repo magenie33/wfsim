@@ -8,6 +8,12 @@ selection: choose_one
 currently_broken: true          # wiki: "Currently does not work"
 
 effects:
+  # NOT LOADED, twice over. `evolutions_data::effect()` has no
+  # `reload_speed_bonus` arm (the MODS loader has one — different loader,
+  # different vocabulary), so this resolves to `EvoEffect::Inert`; `condition`
+  # is unread there too. It is moot in this file's case because the evolution
+  # carries `currently_broken`, and `apply` skips broken evolutions wholesale —
+  # but the entry would be inert even once DE fixes it (data/README.md).
   - kind: reload_speed_bonus
     value: 1.00
     condition: reload_from_empty

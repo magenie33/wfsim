@@ -6,6 +6,10 @@ description: "30% Magazine reloaded per second while Holstered."
 selection: choose_one
 
 effects:
+  # NOT LOADED: `indirect` resolves to `EvoEffect::Inert` — the UI says "no
+  # single-target DPS effect" and the engine takes nothing (data/README.md).
+  # `stat` is unread. Holstered regen needs a weapon-swap model the sim has no
+  # concept of: it fires one weapon continuously.
   - kind: indirect          # holstered regen - no in-fight payload here
     stat: holstered_reload_per_second
     value: 0.30

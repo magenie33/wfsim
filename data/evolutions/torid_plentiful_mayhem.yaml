@@ -21,7 +21,14 @@ effects:
   #  - "Affects both modes. In the case of Incarnon Form, it pools directly from
   #    its magazine" — base form draws the extra rounds from reserve Capacity,
   #    the Incarnon form from its own charge magazine, which SHORTENS the
-  #    Incarnon window;
+  #    Incarnon window. The MAGAZINE round itself is never part of this: it
+  #    comes from the magazine and always takes ammo efficiency, perk or no;
+  #  - and the extras can STARVE (user, 2026-07-30). The projectiles are
+  #    produced in order, each paying its round as it goes, and one that cannot
+  #    pay is not fired at all — same rule as running dry normally. With 3
+  #    charges left and a 4-multishot pull: the round is spent, two extras fire,
+  #    the third does not exist. So the perk's damage silently degrades as the
+  #    pool empties, which is the opposite of a flat bonus;
   #  - "In the Incarnon form, instead of increasing the damage of additional
   #    projectiles created by multishot, all multishot bonuses are increased by
   #    60%" — a different rule per form, and it exists because a beam MERGES its

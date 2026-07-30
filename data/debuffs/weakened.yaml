@@ -1,3 +1,9 @@
+# NOT LOADED BY ANY CODE. `data/debuffs/` is the written SPEC for status
+# effects: no `files_under("debuffs/")` call exists, and the behaviour is
+# hand-implemented in `engine::dummy` / `engine::status`, which cite these
+# files by name. Changing a number here changes nothing on its own — it is a
+# documentation change that also needs the matching code edit and a test.
+# See data/README.md "Conventions".
 id: weakened
 name: Weakened
 default_scope: enemy

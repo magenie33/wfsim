@@ -1003,10 +1003,20 @@ Four rules, all wiki, and the per-form split is the interesting one:
 - *"Affects both modes. In the case of Incarnon Form, it pools directly from its
   magazine"* — the extra projectiles cost a round each: from reserve Capacity on
   a magazine-fed form, from the charge pool on a charge-backed one, which
-  SHORTENS the Incarnon window. The draw bills the RAW rolled multishot, not the
-  60%-scaled figure (user, 2026-07-30) — the bonus is paid in damage, not billed
-  again in ammo. Ammo efficiency is not applied to the surcharge (nothing
-  sources it reaching one, and a charge magazine takes no efficiency anyway).
+  SHORTENS the Incarnon window. The magazine round itself is never part of this;
+  it comes from the magazine and always takes ammo efficiency, perk or no. The
+  surcharge bills the RAW rolled multishot, not the 60%-scaled figure (user,
+  2026-07-30) — the bonus is paid in damage, not billed again in ammo — and
+  efficiency does not reach it.
+- **The extras can STARVE** (user, 2026-07-30). Projectiles are produced in
+  order, each paying its round as it goes, and one that cannot pay **is not
+  fired at all** — the same rule as running dry normally. With 3 charges left
+  and a 4-multishot pull: the round is spent, two extras fire, the third does
+  not exist. So the perk degrades as the pool empties instead of holding a flat
+  value, and a starved pull is cheaper AND weaker rather than being clamped
+  while every projectile still flies. On a beam the merge means starvation shows
+  up as a smaller merge multiplier, not as fewer instances. Pinned by
+  `plentiful_mayhem_drops_the_pellets_the_reserve_cannot_pay_for`.
 - *"In the Incarnon form, instead of increasing the damage of additional
   projectiles created by multishot, all multishot bonuses are increased by 60%"*
   — because a merged beam has no separable generated projectile to scale.
