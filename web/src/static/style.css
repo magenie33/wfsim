@@ -411,9 +411,15 @@ label.check input{width:auto}
 .oseg .seg[data-s="fixed"].on{border-color:var(--gold);color:#fff;background:var(--gold)}
 .oselrow{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-bottom:5px}
 .osellbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-right:3px}
-.oselchip{font-size:11px;padding:2px 8px;border-radius:999px;cursor:pointer;user-select:none;color:#fff}
+.oselchip{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 3px 2px 8px;border-radius:999px;cursor:pointer;user-select:none;color:#fff}
 .oselchip.search{background:var(--accent)}
 .oselchip.fixed{background:var(--gold)}
+/* The ✕ is the only delete: give it its own hit area so the chip body can
+   mean "show me this one" without the two actions overlapping. */
+.oselx{border:0;background:transparent;color:inherit;font:inherit;line-height:1;opacity:.7;cursor:pointer;padding:1px 5px;border-radius:999px}
+.oselx:hover{opacity:1;background:rgba(0,0,0,.28)}
+/* Where the chip lands you. */
+.opt.revealed{outline:2px solid var(--accent);outline-offset:-2px}
 .opt-tier{display:flex;align-items:center;gap:8px;margin:4px 0}
 .opt-tier .rk{font-size:11px;color:var(--muted);min-width:22px;font-weight:700}
 .opt-est{font-size:12px;color:var(--text-2);margin:12px 0 4px}

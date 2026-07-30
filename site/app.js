@@ -2431,10 +2431,32 @@ function renderOptTools() {
   t.querySelectorAll(".pk-pol").forEach((o) => o.onclick = () => { optPrefs.pol = o.dataset.p || null; renderOptTools(); renderOptModList(); });
 }
 
+// A chip's ✕ removes; the chip itself REVEALS the mod in the list below.
+// Making the whole chip a delete button meant reaching for a selected mod to
+// look at it threw it away instead (user, 2026-07-30) — and the ✕ was sitting
+// right there looking like the control that did it.
+function revealOptMod(id) {
+  const m = modById(id);
+  if (!m) return;
+  // The list is filtered; a chip must be able to reach a row the current
+  // filter hides, so clear whatever would keep it off screen.
+  if (optPrefs.pol && m.polarity !== optPrefs.pol) { optPrefs.pol = null; renderOptTools(); }
+  const q = ($("opt-mod-filter").value || "").trim().toLowerCase();
+  if (q && !searchBlob(m).includes(q)) $("opt-mod-filter").value = "";
+  renderOptModList();
+  const row = $("opt-mods").querySelector(`.opt .seg[data-m="${CSS.escape(id)}"]`);
+  if (!row) return;
+  const box = row.closest(".opt");
+  box.scrollIntoView({ block: "center", behavior: "smooth" });
+  box.classList.add("revealed");
+  setTimeout(() => box.classList.remove("revealed"), 1600);
+}
+
 function renderOptModSel() {
   const chip = (id, cls) => {
     const m = modById(id);
-    return `<span class="oselchip ${cls}" data-m="${id}" title="click to remove">${m ? m.name : id} ✕</span>`;
+    return `<span class="oselchip ${cls}" data-m="${id}" title="click to find it in the list below">`
+      + `${m ? m.name : id}<button class="oselx" data-x="${id}" title="remove">✕</button></span>`;
   };
   const req = Object.keys(opt.mods).filter((id) => opt.mods[id] === "fixed").map((id) => chip(id, "fixed"));
   const pool = Object.keys(opt.mods).filter((id) => opt.mods[id] === "search").map((id) => chip(id, "search"));
@@ -2443,8 +2465,14 @@ function renderOptModSel() {
     (req.length ? `<div class="oselrow"><span class="osellbl">required (${req.length}/${opt.size})</span>${req.join("")}</div>` : "") +
     (pool.length ? `<div class="oselrow"><span class="osellbl">pool (${pool.length})</span>${pool.join("")}</div>` : "") +
     (!req.length && !pool.length ? `<div class="sim-empty">nothing selected yet — mark mods below as pool or required.</div>` : "");
-  box.querySelectorAll("[data-m]").forEach((el) =>
-    el.addEventListener("click", () => { delete opt.mods[el.dataset.m]; renderOptMods(); updateOptEstimate(); }));
+  box.querySelectorAll("[data-x]").forEach((el) =>
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      delete opt.mods[el.dataset.x];
+      renderOptMods(); renderOptExilus(); updateOptEstimate(); fetchOptBuffs();
+    }));
+  box.querySelectorAll(".oselchip[data-m]").forEach((el) =>
+    el.addEventListener("click", () => revealOptMod(el.dataset.m)));
 }
 
 function renderOptModList() {
