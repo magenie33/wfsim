@@ -1586,6 +1586,27 @@ fn can_fire(magazine: f64, free_shot: bool) -> bool {
     magazine >= 1e-9 || free_shot
 }
 
+/// The ammo efficiency in force right now: the sum of every source, CAPPED.
+///
+/// Sources stack ADDITIVELY — VERBATIM (wiki `Ammo`): *"Sources of ammo
+/// efficiency stack additively with each other except for Energized Munitions,
+/// which stacks multiplicatively."* Energized Munitions is a Warframe ability
+/// and out of scope; if it is ever modelled it must MULTIPLY, not join this sum.
+///
+/// **The cap is 100% and it is a real ceiling, not a clamp of convenience**
+/// (user, 2026-07-30): a shot can cost nothing, never less. Stacking past 100%
+/// buys nothing and in particular never starts REFUNDING ammo, so the magazine
+/// cannot climb while firing.
+///
+/// Charge-backed magazines are outside the ammo economy entirely and take no
+/// efficiency at all, which is why `applies` short-circuits to zero.
+fn ammo_efficiency(applies: bool, bar: f64, arcane_static: f64, arcane_live: f64) -> f64 {
+    if !applies {
+        return 0.0;
+    }
+    (bar + arcane_static + arcane_live).clamp(0.0, 1.0)
+}
+
 /// Live on-kill stack state (Galvanized graceful decay: on timeout lose
 /// ONE stack and reset the duration for the remainder).
 #[derive(Default)]
@@ -2516,14 +2537,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     }
                 }
             }
-            // Does the next shot cost anything? Feeds `can_fire` below.
-            // Charge-backed magazines can never be free: they take no ammo
-            // efficiency at all, so this is always false for them.
-            ap.ammo_efficiency_applies
-                && (bar.total_contributions().ammo_efficiency
-                    + params.arcane.ammo_efficiency
-                    + arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t))
-                    >= 1.0 - 1e-9
+            // Does the next shot cost anything? Feeds `can_fire` below. Capped
+            // at 100%, so this is "exactly free", never "more than free".
+            ammo_efficiency(
+                ap.ammo_efficiency_applies,
+                bar.total_contributions().ammo_efficiency,
+                params.arcane.ammo_efficiency,
+                arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
+            ) >= 1.0 - 1e-9
         };
 
         // Phase transitions and reloads.
@@ -2649,18 +2670,16 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // (MEASUREMENTS M14): the shot fires at full cost off whatever is left,
         // the counter goes NEGATIVE, and the reload carries that debt into the
         // fresh magazine (see the `+=` above).
-        let efficiency = if ap.ammo_efficiency_applies {
-            // BuffBar (Frenzy) + static arcane (Akimbo Slip Shot, assumed-max)
-            // + live arcane stacks (Primary Crux) additively — wiki Crux:
-            // "additive with other sources of Ammo Efficiency" — clamped at
-            // free.
-            (contribs.ammo_efficiency
-                + params.arcane.ammo_efficiency
-                + arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t))
-            .clamp(0.0, 1.0)
-        } else {
-            0.0
-        };
+        // BuffBar (Frenzy) + static arcane (Akimbo Slip Shot, assumed-max) +
+        // live arcane stacks (Primary Crux). Summed and capped by
+        // `ammo_efficiency`, which is also what the `free_shot` gate above
+        // reads — one definition, so the two cannot drift apart.
+        let efficiency = ammo_efficiency(
+            ap.ammo_efficiency_applies,
+            contribs.ammo_efficiency,
+            params.arcane.ammo_efficiency,
+            arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
+        );
         // Final Fusillade's gate, read BEFORE the round is spent: this pull is
         // the magazine's last round if there is at most one left to fire. On a
         // charge-backed form `multishot_on_last_round` is 0.0 anyway (the
@@ -4022,6 +4041,44 @@ mod tests {
             with.mean_shots,
             without.mean_shots
         );
+    }
+
+    /// Ammo efficiency CAPS at 100% (user, 2026-07-30): a shot can cost
+    /// nothing, never less. Stacking past the cap buys nothing and must never
+    /// start refunding ammo — a magazine cannot grow while the weapon fires.
+    #[test]
+    fn ammo_efficiency_caps_at_free_and_never_refunds() {
+        // The pure function first, since that is where the ceiling lives.
+        assert_eq!(ammo_efficiency(true, 1.0, 1.0, 1.0), 1.0, "3x over the cap");
+        assert_eq!(ammo_efficiency(true, 0.0, 0.0, 0.0), 0.0);
+        assert_eq!(ammo_efficiency(false, 1.0, 1.0, 1.0), 0.0, "charge-backed is exempt");
+
+        // End to end: an absurd stack behaves exactly like a plain 100%. Note
+        // this half cannot catch a silent refund on its own — a magazine that
+        // grows is not reported anywhere, so nothing downstream would move.
+        // The assertions above are the real guard; this one pins that going
+        // over the cap does not disturb the cadence.
+        let p = |eff: f64| DummyParams {
+            arcane: ArcaneFx { ammo_efficiency: eff, ..ArcaneFx::none() },
+            ammo_efficiency_applies: true,
+            fire_rate: 1.0,
+            magazine_size: 3.0,
+            infinite_reserve: false,
+            reserve_ammo: 0.0, // no reserve at all: a refund would be visible
+            duration_secs: 20.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let exact = monte_carlo(&p(1.0), 4, 3);
+        let over = monte_carlo(&p(5.0), 4, 3);
+        assert!((exact.mean_shots - 20.0).abs() < 1e-9, "shots {}", exact.mean_shots);
+        assert!(
+            (over.mean_shots - exact.mean_shots).abs() < 1e-9,
+            "over-cap must behave as exactly free: {} vs {}",
+            over.mean_shots,
+            exact.mean_shots
+        );
+        assert_eq!(over.mean_reloads, 0.0);
     }
 
     /// Plentiful Mayhem STARVES: the projectiles are produced in order, each

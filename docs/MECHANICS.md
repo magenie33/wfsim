@@ -1491,9 +1491,15 @@ positive remainder fires).
 **Stacking is ADDITIVE, with one named exception.** *"Sources of ammo efficiency
 stack additively with each other except for Energized Munitions, which stacks
 multiplicatively."* The engine sums its sources (Frenzy, Akimbo Slip Shot,
-Primary Crux) and clamps to 1.0 — correct for everything modelled, since
-Energized Munitions is a Warframe ability and out of scope. **If it is ever
-added it must multiply, not join the sum.**
+Primary Crux) in `engine::dummy::ammo_efficiency` — correct for everything
+modelled, since Energized Munitions is a Warframe ability and out of scope. **If
+it is ever added it must multiply, not join the sum.**
+
+**100% is a real ceiling** (user, 2026-07-30): a shot can cost nothing, never
+less. Stacking past the cap buys nothing, and in particular efficiency never
+starts *refunding* — the magazine cannot climb while the weapon fires. So the
+per-shot cost is `max(0, ammo_cost × (1 − min(1, Σ efficiency)))`, and "free" is
+the floor rather than a waypoint.
 
 **Charge-backed magazines are exempt**, per weapon data
 (`unaffected_by_ammo_efficiency`): *"Incarnon Form is not affected by Ammo
