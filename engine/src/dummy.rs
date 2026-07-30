@@ -1571,6 +1571,21 @@ fn pick_part<'a>(parts: &'a [BodyPart], rng: &mut Rng) -> &'a BodyPart {
     parts.last().expect("dummy needs at least one body part")
 }
 
+/// Can a shot be taken right now? This — not "is the magazine empty" — is what
+/// gates the reload: the weapon reloads exactly when it CANNOT fire.
+///
+/// Two rules, and each is the reason the naive test is wrong in one direction:
+/// - the magazine gate is **anything left**, not *enough to pay*. ✅ measured
+///   (MEASUREMENTS M14): a 0.25 remainder fires a full-cost shot and overdraws
+///   the counter to negative.
+/// - a shot that costs **nothing** needs no round at all (user, 2026-07-30).
+///   Dual Toxocyst hits this exactly: the last round headshots, the magazine
+///   lands on 0, and that same kill arms Frenzy's +100% ammo efficiency — so
+///   the next shot is free and fires instead of forcing a reload.
+fn can_fire(magazine: f64, free_shot: bool) -> bool {
+    magazine >= 1e-9 || free_shot
+}
+
 /// Live on-kill stack state (Galvanized graceful decay: on timeout lose
 /// ONE stack and reset the duration for the remainder).
 #[derive(Default)]
@@ -2478,6 +2493,39 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             break;
         }
 
+        // The buff bar has to be settled BEFORE the reload decision, not after:
+        // whether an empty magazine reloads depends on what the NEXT shot would
+        // cost, and that is a live buff read. Expiry is monotone, so the second
+        // `bar.expire` below (at the post-reload t) is still correct.
+        // Whether the NEXT shot costs zero ammo — it decides whether an empty
+        // magazine reloads, so it has to be known before that branch.
+        let free_shot = {
+            let ap: &DummyParams = match &params.cycle {
+                Some(cy) if in_base_form => &cy.base_form,
+                _ => params,
+            };
+            bar.expire(t);
+            for lock in &params.locked_buffs {
+                if lock.mode == LockMode::Permanent {
+                    match lock.buff {
+                        LockedBuff::Frenzy => {
+                            if ap.frenzy {
+                                bar.upsert(Frenzy::permanent_buff());
+                            }
+                        }
+                    }
+                }
+            }
+            // Does the next shot cost anything? Feeds `can_fire` below.
+            // Charge-backed magazines can never be free: they take no ammo
+            // efficiency at all, so this is always false for them.
+            ap.ammo_efficiency_applies
+                && (bar.total_contributions().ammo_efficiency
+                    + params.arcane.ammo_efficiency
+                    + arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t))
+                    >= 1.0 - 1e-9
+        };
+
         // Phase transitions and reloads.
         if let Some(cy) = &params.cycle {
             if !in_base_form && magazine < 1e-9 {
@@ -2493,7 +2541,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 base_mag = cy.base_form.magazine_size;
                 continue;
             }
-            if in_base_form && base_mag < 1e-9 {
+            if in_base_form && !can_fire(base_mag, free_shot) {
                 // Base-form reload (infinite reserve assumed in the cycle).
                 let rs = live_reload_speed(params, &mut rs_stacks, t);
                 t += live_reload_time(&cy.base_form, params, &mut arc, rs, t);
@@ -2510,9 +2558,9 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 field_duration_boost = true;
                 continue;
             }
-        } else if magazine < 1e-9 {
-            // Out of magazine: reload (blocking) or, with dry finite
-            // reserves, stop firing altogether (DoTs still drain below).
+        } else if !can_fire(magazine, free_shot) {
+            // Cannot fire: reload (blocking) or, with dry finite reserves,
+            // stop firing altogether (DoTs still drain below).
             if !params.infinite_reserve && reserve < 1e-9 {
                 break;
             }
@@ -2731,8 +2779,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // PLENTIFUL MAYHEM bills the EXTRA projectiles on top, one round each,
         // and the draw follows the RAW rolled count rather than the 60%-scaled
         // one (user, 2026-07-30): the bonus is paid in damage, not billed twice.
-        // Efficiency does NOT reach the surcharge — the magazine keeps its own
-        // efficient round, the extras come from a different pool entirely.
+        // Ammo efficiency does NOT reach the surcharge — ✅ measured (user,
+        // 2026-07-30): the extras take no efficiency at all. So the magazine
+        // round keeps its discount while every generated projectile pays full
+        // price, and a 100% efficiency source does NOT make multishot free.
         //
         // AMMO STARVATION IS REAL, and it is why this is a loop rather than one
         // subtraction (user, 2026-07-30): the projectiles are produced in order,
@@ -3923,6 +3973,54 @@ mod tests {
             "expected 25 shots (13 + 12, the debt carried); 26 would mean the \
              reload wiped it. got {}",
             s.mean_shots
+        );
+    }
+
+    /// A FREE shot needs no round in the magazine (user, 2026-07-30). At 100%
+    /// ammo efficiency the cost is zero, so an empty magazine is not a reason to
+    /// reload — the Dual Toxocyst case, where the last round headshots, the
+    /// magazine lands on 0 and that same kill arms Frenzy.
+    #[test]
+    fn a_zero_cost_shot_fires_off_an_empty_magazine_instead_of_reloading() {
+        // A ONE-round magazine is what puts the boundary in reach: shot 1 is
+        // taken before Frenzy exists, so it pays full price and lands the
+        // magazine on exactly 0 — and that same headshot arms the +100%
+        // efficiency. Every later shot is free, so the magazine must never be
+        // refilled. A static 100% efficiency could not test this: the magazine
+        // would never reach 0 in the first place.
+        let head = vec![BodyPart {
+            name: "head".into(),
+            aim_weight: 1.0,
+            multiplier: 3.0,
+            is_head: true,
+            crit_bonus: true,
+        }];
+        let p = |frenzy: bool| DummyParams {
+            frenzy,
+            magazine_size: 1.0,
+            // One spare round, so a reload is possible AND countable if the
+            // gate wrongly fires.
+            infinite_reserve: false,
+            reserve_ammo: 1.0,
+            body_parts: head.clone(),
+            ..no_status()
+        };
+        let with = monte_carlo(&p(true), 20, 4);
+        assert_eq!(
+            with.mean_reloads, 0.0,
+            "a free shot must fire off the empty magazine, not reload"
+        );
+        // Without Frenzy every shot costs a round, so the same fixture spends
+        // its one reserve round on a reload and then runs dry at 2 shots —
+        // which is exactly what the old gate did even WITH Frenzy.
+        let without = monte_carlo(&p(false), 20, 4);
+        assert!((without.mean_reloads - 1.0).abs() < 1e-9, "reloads {}", without.mean_reloads);
+        assert!((without.mean_shots - 2.0).abs() < 1e-9, "shots {}", without.mean_shots);
+        assert!(
+            with.mean_shots > without.mean_shots,
+            "free shots keep firing: {} vs {}",
+            with.mean_shots,
+            without.mean_shots
         );
     }
 

@@ -1006,8 +1006,11 @@ Four rules, all wiki, and the per-form split is the interesting one:
   SHORTENS the Incarnon window. The magazine round itself is never part of this;
   it comes from the magazine and always takes ammo efficiency, perk or no. The
   surcharge bills the RAW rolled multishot, not the 60%-scaled figure (user,
-  2026-07-30) — the bonus is paid in damage, not billed again in ammo — and
-  efficiency does not reach it.
+  2026-07-30) — the bonus is paid in damage, not billed again in ammo. **Ammo
+  efficiency does not reach the surcharge at all** (✅ measured, user
+  2026-07-30): the magazine round keeps its discount, every generated
+  projectile pays full price, and even a 100% efficiency source does not make
+  multishot free. The two ammo paths are genuinely separate systems.
 - **The extras can STARVE** (user, 2026-07-30). Projectiles are produced in
   order, each paying its round as it goes, and one that cannot pay **is not
   fired at all** — the same rule as running dry normally. With 3 charges left
@@ -1505,6 +1508,16 @@ out of whatever fraction is left, the counter goes NEGATIVE, and the reload
 −0.75, and the reload returns **4.25, not 5.00**. So `engine::dummy` reloads
 with `magazine += refill`; `=` would forgive the debt and hand back a free
 fraction. A no-op without efficiency, since a 1.0 cost lands exactly on 0.
+
+**Reloading is gated on "can I fire", not on "is the magazine empty"**
+(`engine::dummy::can_fire`). Two rules meet there and each rules out the naive
+test in one direction: the magazine gate is *anything left* rather than *enough
+to pay* (M14 — a 0.25 remainder fires a full-cost shot), and a shot that costs
+**nothing** needs no round at all (user, 2026-07-30). The Dual Toxocyst hits the
+second exactly: its last round headshots, the magazine lands on 0, and that same
+kill arms Frenzy's +100% efficiency — so the next shot is free and fires instead
+of forcing a reload. A charge-backed magazine can never take that branch, since
+it is exempt from efficiency entirely.
 
 **The in-game HUD shows the CEILING** of that fractional counter, which is how
 M14 was readable at all: from 4.25 a single 0.25 shot moves the readout 5 → 4,

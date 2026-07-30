@@ -22,7 +22,9 @@ effects:
   #    its magazine" — base form draws the extra rounds from reserve Capacity,
   #    the Incarnon form from its own charge magazine, which SHORTENS the
   #    Incarnon window. The MAGAZINE round itself is never part of this: it
-  #    comes from the magazine and always takes ammo efficiency, perk or no;
+  #    comes from the magazine and always takes ammo efficiency, perk or no —
+  #    while the SURCHARGE takes no efficiency at all (measured, user
+  #    2026-07-30), so even a 100% source does not make multishot free;
   #  - and the extras can STARVE (user, 2026-07-30). The projectiles are
   #    produced in order, each paying its round as it goes, and one that cannot
   #    pay is not fired at all — same rule as running dry normally. With 3
