@@ -194,13 +194,7 @@ fn main() {
             return ArcaneFx::none();
         }
         let d = arcanes_data::secondary(id).unwrap_or_else(|| panic!("unknown arcane id: {id}"));
-        d.fx(
-            d.max_rank,
-            StackPolicy::Emergent,
-            arc_base.base_crit_chance,
-            arc_base.base_crit_damage,
-            arc_base.traits,
-        )
+        d.fx(d.max_rank, StackPolicy::Emergent, arc_base.traits)
     };
     let arcanes: Vec<ArcaneFx> = match &arcane_only {
         Some(a) => vec![fx_of(a)],

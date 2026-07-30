@@ -789,7 +789,27 @@ Rules the radial part follows, each differing from the direct part:
   Transmutation"*, *"Torid's poison cloud does not build charges."* That is
   DE routing around a gauge an explosion can never fill.
 - **It can crit** — the part carries its own crit chance/multiplier in the
-  weapon data (Laetum radial: 22% / 2.2×).
+  weapon data (Laetum radial: 22% / 2.2×). And crit BUFFS reach it, scaled
+  against **that part's** base. The rule is the same one mods already follow —
+  a relative bonus joins the crit bucket, and a bucket multiplies whichever
+  base it is applied to (`r.base_crit_damage × (1 + Σ)`) — so a buff in that
+  bucket cannot be direct-only. The distinction that matters is *relative vs
+  absolute*, not direct vs radial:
+  - **relative** (Galvanized Crosshairs/Scope, Primary Blight/Frostbite's
+    stacks, Sharpened Bullets, Overcharge, Outburst) → each part multiplies
+    its **own** unmodded base. Resolving one of these against the direct
+    part's base and storing the absolute result is a trap: it silently
+    excludes the explosion, *and* it makes the same mod behave differently
+    under `AssumedMax` (where the bonus arrives inside the resolved part stat
+    through the bucket) than under `Emergent`. Two policies disagreeing about
+    one mod is the tell.
+  - **absolute** (Cold's flat crit damage *received*, a flat crit-chance
+    grant like Enervate's, the Weakened debuff) → lands identically on every
+    part; nothing to rescale.
+
+  The only crit thing a radial genuinely loses is the body-part layer: the
+  crit-headshot `2×cd` fold-in needs a hit location, and an explosion has
+  none.
 - **Status rolls independently**, per enemy: "If one AoE hits multiple enemies,
   each enemy gets their own status roll." Forced procs are declared per part
   (Astilla: the direct hit forces Impact, the radial does not — §6).

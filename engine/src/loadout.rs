@@ -594,6 +594,13 @@ pub struct ResolvedRadial {
     pub modified_base: f64,
     pub crit_chance: f64,
     pub crit_damage: f64,
+    /// The explosion's UNMODDED crit stats — the bases a RELATIVE live crit
+    /// buff multiplies. A weapon may give its explosion different crit stats
+    /// from its direct hit (Laetum Incarnon happens to use 22%/2.2x for both),
+    /// which is why those bonuses stay relative until the sim knows which
+    /// stage it is resolving.
+    pub base_crit_chance: f64,
+    pub base_crit_damage: f64,
     pub status_chance: f64,
     /// The explosion's UNMODDED status chance — the base a RELATIVE live
     /// status-chance buff (Primary Crux) multiplies. It differs from the
@@ -680,8 +687,10 @@ pub struct ResolvedPanel {
     pub crit_chance: f64,
     pub crit_damage: f64,
     pub status_chance: f64,
-    /// UNMODDED status chance — the base a RELATIVE live status-chance buff
-    /// (Primary Crux) multiplies, the counterpart of `base_multishot`.
+    /// UNMODDED crit and status stats of the DIRECT part — the bases a
+    /// RELATIVE live buff multiplies, the counterpart of `base_multishot`.
+    pub base_crit_chance: f64,
+    pub base_crit_damage: f64,
     pub base_status_chance: f64,
     pub fire_rate: f64,
     pub multishot: f64,
@@ -732,7 +741,7 @@ pub struct ResolvedPanel {
     pub weakpoint_damage: f64,
     /// ABSOLUTE crit chance added on weak-point hits only (base_cc × Σ
     /// relative weak-point CC bonuses); part-conditional, all policies.
-    pub weakpoint_cc_abs: f64,
+    pub weakpoint_cc_rel: f64,
     /// Sharpened Bullets under Emergent: ABSOLUTE crit-damage add as a timed
     /// buff (starts inactive), granted/refreshed on every kill.
     pub cd_on_kill: Option<TimedBuff>,
@@ -892,7 +901,12 @@ pub fn resolve_with(
                     StackPolicy::AssumedMax => cc += bonus,
                     StackPolicy::Emergent => {
                         cc_on_headshot = Some(TimedBuff {
-                            value: base.base_crit_chance * bonus,
+                            // RELATIVE, deliberately: `cc += bonus` is what
+                            // the AssumedMax arm does, and that bonus reaches
+                            // EVERY attack part through the bucket. Resolving
+                            // it against the direct part's base here made the
+                            // same mod skip the explosion under Emergent.
+                            value: bonus,
                             duration,
                             initial_active: true, // Crosshairs' HS buff seeds active
                             locked: false,
@@ -908,7 +922,7 @@ pub fn resolve_with(
                     StackPolicy::AssumedMax => cc += per_stack * max_stacks as f64,
                     StackPolicy::Emergent => {
                         cc_stack = Some(StackSpec {
-                            per_stack: base.base_crit_chance * per_stack,
+                            per_stack, // RELATIVE — see cc_on_headshot above
                             max_stacks,
                             duration,
                             initial_stacks: max_stacks, // start full (user decision)
@@ -952,7 +966,7 @@ pub fn resolve_with(
                     StackPolicy::AssumedMax => cd += bonus,
                     StackPolicy::Emergent => {
                         cd_on_kill = Some(TimedBuff {
-                            value: base.base_crit_damage * bonus,
+                            value: bonus, // RELATIVE — see cc_on_headshot above
                             duration,
                             initial_active: false, // Sharpened Bullets seeds inactive
                             locked: false,
@@ -1099,6 +1113,8 @@ pub fn resolve_with(
             // change, so the explosion takes it too.
             crit_chance: (r.base_crit_chance * (1.0 + cc) + base.post_mod_crit_chance).max(0.0),
             crit_damage: r.base_crit_damage * (1.0 + cd),
+            base_crit_chance: r.base_crit_chance,
+            base_crit_damage: r.base_crit_damage,
             status_chance: (r.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)
                 .max(0.0),
             base_status_chance: r.base_status_chance,
@@ -1121,6 +1137,8 @@ pub fn resolve_with(
         // guaranteed proc plus an extra roll) — DT resolves to 129%.
         status_chance: (base.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)
             .max(0.0),
+        base_crit_chance: base.base_crit_chance,
+        base_crit_damage: base.base_crit_damage,
         base_status_chance: base.base_status_chance,
         fire_rate: base.base_fire_rate * (1.0 + fr + base.evo_fire_rate_bonus),
         headshot_damage_bonus: base.headshot_damage_bonus,
@@ -1153,7 +1171,8 @@ pub fn resolve_with(
         indirect,
         faction_damage: faction_bonus,
         weakpoint_damage: wp_dmg,
-        weakpoint_cc_abs: base.base_crit_chance * wp_cc,
+        // RELATIVE; direct-head only, so the sim uses the direct base.
+        weakpoint_cc_rel: wp_cc,
         cd_on_kill,
         fr_on_reload,
         proc_conversion: proc_conv,

@@ -694,13 +694,7 @@ fn arcane_fx_for(
     match wfsim_engine::arcanes_data::secondary(aid) {
         Some(def) => {
             let rank = get_u32(v, "arcane_rank", def.max_rank).min(def.max_rank);
-            def.fx(
-                rank,
-                policy,
-                base.base_crit_chance,
-                base.base_crit_damage,
-                base.traits,
-            )
+            def.fx(rank, policy, base.traits)
         }
         None => wfsim_engine::arcanes_data::ArcaneFx::none(),
     }
@@ -1210,13 +1204,7 @@ pub fn panel_json(v: &Value) -> Value {
             };
             if let Some(def) = wfsim_engine::arcanes_data::secondary(aid) {
                 let rank = get_u32(v, "arcane_rank", def.max_rank).min(def.max_rank);
-                let fx = def.fx(
-                    rank,
-                    policy,
-                    base.base_crit_chance,
-                    base.base_crit_damage,
-                    base.traits,
-                );
+                let fx = def.fx(rank, policy, base.traits);
                 if fx.per_cold_bd > 0.0 {
                     stats.push(json!({ "key": "shiver", "label": "Per Cold Status (Shiver)",
                     "base": "—",
@@ -1673,13 +1661,7 @@ pub fn simulate_json(v: &Value) -> Value {
         // Under the sim's Emergent policy the non-simmable conditionals are
         // honest no-ops (same rule as mods' CondBuff).
         let ab = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &evo_refs);
-        def.fx(
-            rank,
-            policy,
-            ab.base_crit_chance,
-            ab.base_crit_damage,
-            ab.traits,
-        )
+        def.fx(rank, policy, ab.traits)
     };
     // ---- apply the per-buff configured policy onto the live specs ----
     // (weapon-scoped: recurses into the incarnon cycle's base form). Frenzy is
@@ -1831,13 +1813,7 @@ pub fn opt_buffs_json(v: &Value) -> Value {
                 continue;
             }
             if let Some(def) = wfsim_engine::arcanes_data::secondary(a) {
-                let fx = def.fx(
-                    def.max_rank,
-                    StackPolicy::Emergent,
-                    arc_base.base_crit_chance,
-                    arc_base.base_crit_damage,
-                    arc_base.traits,
-                );
+                let fx = def.fx(def.max_rank, StackPolicy::Emergent, arc_base.traits);
                 merge(&mut out, enumerate_buffs(&[], &fx, info));
             }
         }
@@ -2083,13 +2059,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
                 wfsim_engine::arcanes_data::ArcaneFx::none()
             } else {
                 match wfsim_engine::arcanes_data::secondary(id) {
-                    Some(def) => def.fx(
-                        def.max_rank,
-                        StackPolicy::Emergent,
-                        arc_base.base_crit_chance,
-                        arc_base.base_crit_damage,
-                        arc_base.traits,
-                    ),
+                    Some(def) => def.fx(def.max_rank, StackPolicy::Emergent, arc_base.traits),
                     None => wfsim_engine::arcanes_data::ArcaneFx::none(),
                 }
             }

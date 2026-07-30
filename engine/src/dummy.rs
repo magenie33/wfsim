@@ -182,7 +182,8 @@ impl ArcRuntime {
         }
     }
 
-    /// Sharpened Bullets' live ABSOLUTE crit-damage addition.
+    /// Sharpened Bullets' live RELATIVE crit-damage addition (it joins the
+    /// crit-damage bucket, so each attack part scales its own base by it).
     fn cd_bonus(&self, params: &DummyParams, now: f64) -> f64 {
         match params.cd_on_kill {
             Some(b) if b.locked || now < self.cd_kill_expiry => b.value,
@@ -910,8 +911,14 @@ pub struct DummyParams {
     /// The weapon's (modded) base damage vector. Quantized once per run for
     /// dealing damage and proc-type weighting.
     pub damage: DamageVector,
+    /// RESOLVED (modded) crit chance of the DIRECT part — the name is
+    /// historical; `unmodded_crit_chance` below is the real base.
     pub base_crit_chance: f64,
     pub crit_multiplier: f64,
+    /// UNMODDED crit stats of the DIRECT part — the bases a RELATIVE live crit
+    /// buff multiplies (the radial carries its own pair on `ResolvedRadial`).
+    pub unmodded_crit_chance: f64,
+    pub unmodded_crit_damage: f64,
     /// Listed status chance per hit (may exceed 1.0).
     pub status_chance: f64,
     /// UNMODDED status chance — the base a RELATIVE live status-chance buff
@@ -1031,7 +1038,7 @@ pub struct DummyParams {
     /// multiplier of true weak points, before the headshot bracket.
     pub weakpoint_damage: f64,
     /// ABSOLUTE crit chance added on weak-point pellets only (Acuity).
-    pub weakpoint_cc_abs: f64,
+    pub weakpoint_cc_rel: f64,
     /// Sharpened Bullets (Emergent): ABSOLUTE crit-damage add as a timed buff
     /// (starts inactive), granted/refreshed on every kill.
     pub cd_on_kill: Option<crate::loadout::TimedBuff>,
@@ -1244,6 +1251,8 @@ impl DummyParams {
             reload_on_headshot: panel.reload_on_headshot,
             base_crit_chance: panel.crit_chance,
             crit_multiplier: panel.crit_damage,
+            unmodded_crit_chance: panel.base_crit_chance,
+            unmodded_crit_damage: panel.base_crit_damage,
             status_chance: panel.status_chance,
             base_status_chance: panel.base_status_chance,
             fire_rate: panel.fire_rate,
@@ -1268,7 +1277,7 @@ impl DummyParams {
             dot_modified_base: Some(panel.modified_base),
             reload_bonus: panel.reload_bonus,
             weakpoint_damage: panel.weakpoint_damage,
-            weakpoint_cc_abs: panel.weakpoint_cc_abs,
+            weakpoint_cc_rel: panel.weakpoint_cc_rel,
             cd_on_kill: panel.cd_on_kill,
             fr_on_reload: panel.fr_on_reload,
             proc_conversion: panel.proc_conversion,
@@ -1363,6 +1372,8 @@ impl Default for DummyParams {
             reload_on_headshot: None,
             base_crit_chance: 0.05,
             crit_multiplier: 2.0,
+            unmodded_crit_chance: 0.05,
+            unmodded_crit_damage: 2.0,
             status_chance: 0.37,
             base_status_chance: 0.37,
             forced_procs: Vec::new(),
@@ -1393,7 +1404,7 @@ impl Default for DummyParams {
             dot_modified_base: None,
             reload_bonus: 0.0,
             weakpoint_damage: 0.0,
-            weakpoint_cc_abs: 0.0,
+            weakpoint_cc_rel: 0.0,
             cd_on_kill: None,
             fr_on_reload: None,
             proc_conversion: None,
@@ -1970,11 +1981,20 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             magazine -= 1.0 - efficiency;
         }
 
+        // CRIT SOURCES SPLIT BY KIND, because an attack part has its OWN base
+        // crit stats (§7 Radial): a RELATIVE bonus joins the crit bucket and
+        // therefore scales each part's own base, while an ABSOLUTE add (a
+        // target-side debuff, a flat grant) lands the same on every part. Both
+        // reach the explosion — the only crit thing a radial loses is the
+        // body-part/headshot layer, which it has no hit location for.
+        //
+        // Absolute, shared by every stage:
         let flat_crit = contribs.flat_crit_chance;
         let weakened_cc = WEAKENED_FLAT_CC_PER_STACK * debuffs.weakened_active(t) as f64;
-        // Crosshairs (assumes constant aiming): the on-headshot buff and
-        // the live per-stack-expiry kill stacks add absolute crit chance.
-        let ch_cc = params.cc_on_headshot.map_or(0.0, |b| {
+        // Relative, shared by every stage: Crosshairs' on-headshot buff and
+        // its per-stack-expiry kill stacks (assumes constant aiming), plus the
+        // arcane's assumed-max conditionals (Overcharge/Outburst).
+        let cc_rel = params.cc_on_headshot.map_or(0.0, |b| {
             if b.locked || t < ch_buff_expiry {
                 b.value
             } else {
@@ -1988,10 +2008,9 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     ch_stacks.retain(|&e| e > t);
                     ch_stacks.len() as f64
                 }
-        });
-        // Arcane cc_abs: assumed-max conditionals (Overcharge/Outburst).
+        }) + params.arcane.cc_rel;
         let effective_cc =
-            ap.base_crit_chance + flat_crit + weakened_cc + ch_cc + params.arcane.cc_abs;
+            ap.base_crit_chance + flat_crit + weakened_cc + ap.unmodded_crit_chance * cc_rel;
 
         // Live fire rate (base + Pressurized Magazine's on-reload buff, ×
         // the BuffBar multiplier) — schedules shots below and gates
@@ -2037,11 +2056,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // already resolved to an ABSOLUTE per-stack value against the
             // weapon's base crit damage (ArcaneDef::fx), so it adds straight
             // into the same total as Cold's flat bonus.
-            let cd_total = ap.crit_multiplier
-                + arc.total(&params.arcane.buffs, ArcGrant::CritDamage, t)
-                + debuffs.cold_cd_bonus(t)
+            // Same split as crit chance above: `cd_rel` is a bucket bonus every
+            // stage scales by its OWN base crit damage; `cd_abs` is a flat add
+            // every stage takes as-is.
+            let cd_rel = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, t)
                 + arc.cd_bonus(ap, t)
-                + params.arcane.cd_abs;
+                + params.arcane.cd_rel;
+            let cd_abs = debuffs.cold_cd_bonus(t);
+            let cd_total = ap.crit_multiplier + ap.unmodded_crit_damage * cd_rel + cd_abs;
             // Live BASE-DAMAGE bucket additions, evaluated per instance:
             //  - arcane stacks (Merciless/Deadhead/Dexterity/Cascadia Flare)
             //  - Overwhelming Attrition's earned stacks — VERBATIM (wiki
@@ -2115,7 +2137,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             let part = pick_part(&params.body_parts, rng);
             let cc_pellet = effective_cc
                 + if part.is_head {
-                    ap.weakpoint_cc_abs + params.arcane.weakpoint_cc_abs
+                    // Weak-point-only crit chance is relative too, and it is
+                    // DIRECT-only, so the direct part's base is the right one.
+                    ap.unmodded_crit_chance
+                        * (ap.weakpoint_cc_rel + params.arcane.weakpoint_cc_rel)
                 } else {
                     0.0
                 };
@@ -2192,11 +2217,20 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             for stage in 0..(1 + radial_stage.is_some() as usize) {
                 let rad = if stage == 1 { radial_stage } else { None };
                 let direct = rad.is_none();
-                // Instance values — the shadowing happens here.
+                // Instance values — the shadowing happens here. The explosion
+                // rolls its own crit tier off its own crit chance, and the live
+                // crit buffs reach it: the relative ones scale ITS base, the
+                // absolute ones add flat. Under AssumedMax those same bonuses
+                // arrive through the mod bucket in `r.crit_chance`, so this is
+                // what makes the two policies agree about one mod.
                 let (qvec, tier) = match &rad {
                     None => (*qvec, tier),
                     Some(r) => {
-                        let t2 = roll_crit_tier(r.crit_chance, rng);
+                        let rcc = r.crit_chance
+                            + flat_crit
+                            + weakened_cc
+                            + r.base_crit_chance * cc_rel;
+                        let t2 = roll_crit_tier(rcc, rng);
                         (r.damage.quantized(), t2)
                     }
                 };
@@ -2208,7 +2242,12 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 };
                 let crit_mult = match &rad {
                     None => crit_mult,
-                    Some(r) => 1.0 + tier as f64 * (r.crit_damage - 1.0),
+                    Some(r) => {
+                        // No `part.crit_bonus` doubling: that is the crit-
+                        // HEADSHOT rule and an explosion has no hit location.
+                        let rcd = r.crit_damage + r.base_crit_damage * cd_rel + cd_abs;
+                        1.0 + tier as f64 * (rcd - 1.0)
+                    }
                 };
                 let part_factor = if direct { part_factor } else { 1.0 };
                 let mb_live = match &rad {
@@ -2898,13 +2937,7 @@ mod tests {
     /// A secondary arcane at max rank under the Emergent policy (crit-base
     /// 0 — none of these tests use the assumed-max relative crit paths).
     fn arc(id: &str) -> ArcaneFx {
-        crate::arcanes_data::secondary(id).unwrap().fx(
-            5,
-            crate::loadout::StackPolicy::Emergent,
-            0.0,
-            0.0,
-            &[],
-        )
+        crate::arcanes_data::secondary(id).unwrap().fx(5, crate::loadout::StackPolicy::Emergent, &[])
     }
 
     /// Deterministic base: no crits, no procs, 1x body, no arcane.
@@ -3454,6 +3487,10 @@ mod tests {
         DummyParams {
             damage: DamageVector::default(),
             radial: Some(radial),
+            // No arcane: `DummyParams::default()` carries Enervate, whose FLAT
+            // crit chance reaches the explosion (absolute sources land on every
+            // stage) - real behaviour, but not what this fixture is isolating.
+            arcane: ArcaneFx::none(),
             status_chance: 0.0,
             base_status_chance: 0.0,
             base_crit_chance: 0.0,
@@ -3470,6 +3507,8 @@ mod tests {
             modified_base: 300.0,
             crit_chance,
             crit_damage: 2.0,
+            base_crit_chance: crit_chance,
+            base_crit_damage: 2.0,
             status_chance,
             base_status_chance: status_chance,
             radius_m: 2.0,
@@ -3522,6 +3561,78 @@ mod tests {
         assert_eq!(flat.sources.direct, 0.0, "the fixture's direct hit is inert");
     }
 
+    /// A RELATIVE crit buff joins the crit BUCKET, so it reaches the explosion
+    /// — and scales the EXPLOSION's own base, not the direct hit's. Both halves
+    /// matter: under `AssumedMax` these bonuses arrive inside `r.crit_damage`
+    /// through the mod bucket, so an Emergent path that skipped them made one
+    /// mod behave differently under two policies.
+    ///
+    /// Pinned stacks make it arithmetic, and the direct part is given a very
+    /// different base (10x) on purpose: had the buff been resolved against the
+    /// direct base — the bug — the explosion would have landed at cd 12, not 4.
+    /// Laetum Incarnon uses the same 22%/2.2x for both parts, so only a fixture
+    /// with deliberately different bases can catch that half.
+    #[test]
+    fn a_relative_crit_buff_reaches_the_explosion_against_its_own_base() {
+        use crate::arcanes_data::{ArcBuffSpec, ArcGrant, ArcTrigger};
+        let radial = |crit_damage: f64| {
+            let mut damage = DamageVector::default();
+            damage.set(DamageType::Heat, 300.0);
+            crate::loadout::ResolvedRadial {
+                damage,
+                modified_base: 300.0,
+                crit_chance: 1.0, // always crits: no crit-roll noise
+                crit_damage,
+                base_crit_chance: 1.0,
+                base_crit_damage: 2.0,
+                status_chance: 0.0,
+                base_status_chance: 0.0,
+                radius_m: 2.0,
+                falloff_start_m: 0.0,
+                falloff_reduction: 0.0,
+            }
+        };
+        // +50% x 2 pinned stacks = +100% of the part's base crit damage.
+        let buff = ArcaneFx {
+            buffs: vec![ArcBuffSpec {
+                grant: ArcGrant::CritDamage,
+                trigger: ArcTrigger::ToxinStatus,
+                per_stack: 0.5,
+                max_stacks: 2,
+                duration: 99.0,
+                all_drop: true,
+                initial_stacks: 2,
+                pinned: true,
+            }],
+            ..ArcaneFx::none()
+        };
+        let live = run_once(
+            &DummyParams {
+                unmodded_crit_damage: 10.0, // NOT the base the radial must use
+                arcane: buff,
+                ..radial_only(radial(2.0))
+            },
+            &mut Rng::new(4),
+        );
+        // What the same bonus looks like folded into the radial's resolved crit
+        // damage — i.e. what AssumedMax produces through the bucket.
+        let folded = run_once(&radial_only(radial(4.0)), &mut Rng::new(4));
+        assert!(
+            (live.sources.radial - folded.sources.radial).abs() < 1e-6,
+            "explosion {} vs bucket-equivalent {}",
+            live.sources.radial,
+            folded.sources.radial
+        );
+        // And it really is a change: cd 2 -> 4 doubles a guaranteed crit.
+        let bare = run_once(&radial_only(radial(2.0)), &mut Rng::new(4));
+        assert!(
+            (live.sources.radial - 2.0 * bare.sources.radial).abs() < 1e-6,
+            "explosion {} vs unbuffed {}",
+            live.sources.radial,
+            bare.sources.radial
+        );
+    }
+
     /// M11 (in-game, 2026-07-30): on a LONE enemy one Laetum shot grants
     /// TWO stacks of Overwhelming Attrition — the direct hit and the
     /// explosion each arm it. The clean way to assert that here is a
@@ -3536,6 +3647,8 @@ mod tests {
                 modified_base: 0.0,
                 crit_chance: 0.0,
                 crit_damage: 2.0,
+                base_crit_chance: 0.0,
+                base_crit_damage: 2.0,
                 status_chance: 0.0,
                 base_status_chance: 0.0,
                 radius_m: 2.0,
@@ -4151,7 +4264,7 @@ mod tests {
             base_crit_chance: 0.0,
             arcane: crate::arcanes_data::secondary("secondary_deadhead")
                 .unwrap()
-                .fx(5, crate::loadout::StackPolicy::Emergent, 0.0, 0.0, &[]),
+                .fx(5, crate::loadout::StackPolicy::Emergent, &[]),
             body_parts: vec![BodyPart {
                 name: "head".into(),
                 aim_weight: 1.0,
@@ -4180,7 +4293,7 @@ mod tests {
             base_crit_chance: 0.0,
             arcane: crate::arcanes_data::secondary("cascadia_flare")
                 .unwrap()
-                .fx(5, crate::loadout::StackPolicy::Emergent, 0.0, 0.0, &[]),
+                .fx(5, crate::loadout::StackPolicy::Emergent, &[]),
             forced_procs: vec![DamageType::Impact],
             body_parts: mono_body(1.0),
             duration_secs: 15.0,
@@ -4433,7 +4546,7 @@ mod tests {
         // AssumedMax: the ×8 cap on every shot — 10 × 75 × 8 = 6000.
         let fx = crate::arcanes_data::secondary("secondary_surge")
             .unwrap()
-            .fx(5, crate::loadout::StackPolicy::AssumedMax, 0.0, 0.0, &[]);
+            .fx(5, crate::loadout::StackPolicy::AssumedMax, &[]);
         let p = DummyParams {
             arcane: fx,
             ..flat_base()
@@ -4508,7 +4621,9 @@ mod tests {
         // tier-1 crits (×2); body pellets never crit. 100% head aim:
         // 10 × 75 × 2 = 1500.
         let head = DummyParams {
-            weakpoint_cc_abs: 1.0,
+            // RELATIVE now: 1.0 x a base of 1.0 = +100% absolute.
+            weakpoint_cc_rel: 1.0,
+            unmodded_crit_chance: 1.0,
             crit_multiplier: 2.0,
             base_crit_chance: 0.0,
             arcane: ArcaneFx::none(),
@@ -4751,6 +4866,10 @@ mod tests {
         // E = 18 × 75 × 1.22 = 1647.
         let p = DummyParams {
             base_crit_chance: 0.1,
+            // The buff value is RELATIVE now (it joins the crit bucket, so it
+            // scales each part's own base). A base of 1.0 makes 0.12 land as
+            // +12% absolute, leaving the arithmetic above unchanged.
+            unmodded_crit_chance: 1.0,
             cc_on_headshot: Some(crate::loadout::TimedBuff {
                 value: 0.12,
                 duration: 12.0,
@@ -4785,6 +4904,7 @@ mod tests {
         // E[total] = 75 × (12×1.42 + 6×1.1) = 1773.
         let p = DummyParams {
             base_crit_chance: 0.1,
+            unmodded_crit_chance: 1.0, // relative buff values — see above
             cc_on_headshot: Some(crate::loadout::TimedBuff {
                 value: 0.12,
                 duration: 12.0,
@@ -5015,3 +5135,4 @@ mod tests {
         );
     }
 }
+

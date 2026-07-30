@@ -77,8 +77,9 @@ pub enum ArcGrant {
     Multishot,
     /// Joins the reload-speed bucket (time = base / (1 + Σ)).
     ReloadSpeed,
-    /// Joins the crit-DAMAGE bucket — a RELATIVE bonus on the weapon's base
-    /// crit damage, like the crit-damage mods (Primary Blight/Frostbite).
+    /// Joins the crit-DAMAGE bucket — a RELATIVE bonus on the attack part's
+    /// own base crit damage, like the crit-damage mods (Primary
+    /// Blight/Frostbite). Multiplied out per stage in the sim, not here.
     CritDamage,
     /// Joins the status-chance bucket (Primary Crux). VERBATIM (wiki):
     /// "Status Chance bonus is additive to mods like Rifle Aptitude", so it is
@@ -157,14 +158,18 @@ pub struct ArcaneFx {
     pub headshot_mult_bonus: f64,
     /// Static reload-speed bucket addition (Merciless rank 5).
     pub reload_bonus: f64,
-    /// ABSOLUTE crit-chance add (assumed-max conditionals: Overcharge,
-    /// Outburst) — base_cc × Σ relative bonuses.
-    pub cc_abs: f64,
-    /// ABSOLUTE crit-damage add (Outburst) — base_cd × Σ relative bonuses.
-    pub cd_abs: f64,
-    /// ABSOLUTE crit chance on weak-point hits only (Cascadia Accuracy,
-    /// assumed-max).
-    pub weakpoint_cc_abs: f64,
+    /// Σ RELATIVE crit-chance bonuses from assumed-max conditionals
+    /// (Overcharge, Outburst) — they join the crit-chance BUCKET, so each
+    /// attack part multiplies its OWN unmodded base by this. Kept relative all
+    /// the way into the sim on purpose: resolving it against the direct part's
+    /// base here is what silently excluded the explosion.
+    pub cc_rel: f64,
+    /// Σ RELATIVE crit-damage bonuses (Outburst) — same rule as `cc_rel`.
+    pub cd_rel: f64,
+    /// Σ RELATIVE crit chance on weak-point hits only (Cascadia Accuracy,
+    /// assumed-max). Direct hits only — a radial never hits a weak point — so
+    /// the sim multiplies it by the DIRECT part's base.
+    pub weakpoint_cc_rel: f64,
     /// Final damage multiplier on direct hits (Secondary Surge assumed-max:
     /// the cap, multiplicative with Hornet Strike). 1.0 = none.
     pub final_mult: f64,
@@ -201,9 +206,9 @@ impl Default for ArcaneFx {
             enervate_rank: None,
             headshot_mult_bonus: 0.0,
             reload_bonus: 0.0,
-            cc_abs: 0.0,
-            cd_abs: 0.0,
-            weakpoint_cc_abs: 0.0,
+            cc_rel: 0.0,
+            cd_rel: 0.0,
+            weakpoint_cc_rel: 0.0,
             final_mult: 1.0,
             per_cold_bd: 0.0,
             cold_cap: 0,
@@ -414,18 +419,13 @@ fn effect(v: &Value) -> Option<ArcEffect> {
 impl ArcaneDef {
     /// Resolve this arcane at `rank` into the sim parameter block.
     ///
-    /// `base_cc`/`base_cd` are the WEAPON's unmodded crit stats — the
-    /// arcane's relative crit bonuses join the mod buckets, so their
-    /// absolute value is base × bonus (same rule as Galvanized Crosshairs).
-    /// `traits` gates `requires` (calc-layer inert, like mods).
-    pub fn fx(
-        &self,
-        rank: u32,
-        policy: StackPolicy,
-        base_cc: f64,
-        base_cd: f64,
-        traits: &[&str],
-    ) -> ArcaneFx {
+    /// Relative crit bonuses stay RELATIVE here (they join the mod buckets):
+    /// resolving them against the weapon's base at this layer means resolving
+    /// them against the DIRECT part's base, which silently excludes the
+    /// explosion — every attack part has its own base crit stats, so only the
+    /// sim can multiply them out. `traits` gates `requires` (calc-layer inert,
+    /// like mods).
+    pub fn fx(&self, rank: u32, policy: StackPolicy, traits: &[&str]) -> ArcaneFx {
         let rank = rank.min(self.max_rank);
         let mut fx = ArcaneFx {
             id: self.id.clone(),
@@ -446,16 +446,10 @@ impl ArcaneDef {
                     if policy == StackPolicy::BaseOnly {
                         continue; // sentinel: conditional never fires
                     }
-                    // A crit-damage grant is RELATIVE to the weapon's base
-                    // crit damage (it joins that bucket), so it is resolved
-                    // to an ABSOLUTE per-stack value here — the same
-                    // treatment the static crit bonuses get below. Every
-                    // other grant is already absolute or a plain ratio.
-                    let per_stack = scale.at(rank, self.max_rank)
-                        * match grant {
-                            ArcGrant::CritDamage => base_cd,
-                            _ => 1.0,
-                        };
+                    // Every grant is stored as the raw per-rank value: a plain
+                    // ratio, or a RELATIVE bonus the sim multiplies by the
+                    // attack part's own base (CritDamage, StatusChance).
+                    let per_stack = scale.at(rank, self.max_rank);
                     fx.buffs.push(ArcBuffSpec {
                         grant: *grant,
                         trigger: *trigger,
@@ -469,22 +463,22 @@ impl ArcaneDef {
                 }
                 ArcEffect::CondCritChance(sc) => {
                     if assumed {
-                        fx.cc_abs += base_cc * sc.at(rank, self.max_rank);
+                        fx.cc_rel += sc.at(rank, self.max_rank);
                     }
                 }
                 ArcEffect::CondCritChanceStacked { scale, max_stacks } => {
                     if assumed {
-                        fx.cc_abs += base_cc * scale.at(rank, self.max_rank) * *max_stacks as f64;
+                        fx.cc_rel += scale.at(rank, self.max_rank) * *max_stacks as f64;
                     }
                 }
                 ArcEffect::CondCritDamageStacked { scale, max_stacks } => {
                     if assumed {
-                        fx.cd_abs += base_cd * scale.at(rank, self.max_rank) * *max_stacks as f64;
+                        fx.cd_rel += scale.at(rank, self.max_rank) * *max_stacks as f64;
                     }
                 }
                 ArcEffect::WeakpointCritChance(sc) => {
                     if assumed {
-                        fx.weakpoint_cc_abs += base_cc * sc.at(rank, self.max_rank);
+                        fx.weakpoint_cc_rel += sc.at(rank, self.max_rank);
                     }
                 }
                 ArcEffect::FinalDamageCap(sc) => {
@@ -825,16 +819,16 @@ mod tests {
 
     /// Primary Blight is the Torid-relevant one: a Toxin weapon feeds it
     /// constantly. Two grants on ONE trigger, 40 stacks — the same shape as
-    /// Conjunction Voltage — and the crit-damage grant must resolve to an
-    /// ABSOLUTE value against the weapon's base crit damage.
+    /// Conjunction Voltage — and BOTH grants stay plain RELATIVE ratios, so
+    /// each attack part can scale its own base by them (the explosion's base
+    /// crit damage is not the direct hit's).
     #[test]
     fn primary_blight_stacks_crit_damage_and_multishot_on_toxin() {
         let a = slot_pool("primary")
             .iter()
             .find(|x| x.id == "primary_blight")
             .expect("primary_blight");
-        let base_cd = 3.1; // Torid Incarnon's crit damage
-        let fx = a.fx(a.max_rank, StackPolicy::Emergent, 0.29, base_cd, NO_TRAITS);
+        let fx = a.fx(a.max_rank, StackPolicy::Emergent, NO_TRAITS);
         assert_eq!(fx.buffs.len(), 2, "crit damage + multishot");
         for b in &fx.buffs {
             assert_eq!(b.trigger, ArcTrigger::ToxinStatus);
@@ -846,13 +840,12 @@ mod tests {
             .iter()
             .find(|b| b.grant == ArcGrant::CritDamage)
             .expect("crit damage grant");
-        // +3.6% per stack is RELATIVE to base crit damage, so one stack is
-        // worth 0.036 x 3.1 of absolute crit damage.
+        // +3.6% per stack, stored RELATIVE: at 40 stacks that is +144% of
+        // whichever part's base crit damage the sim is resolving.
         assert!(
-            (cd.per_stack - 0.036 * base_cd).abs() < 1e-9,
-            "per stack {} vs {}",
-            cd.per_stack,
-            0.036 * base_cd
+            (cd.per_stack - 0.036).abs() < 1e-9,
+            "per stack {} vs 0.036",
+            cd.per_stack
         );
         let ms = fx
             .buffs
@@ -869,7 +862,7 @@ mod tests {
     #[test]
     fn primary_crux_grants_status_chance_and_ammo_efficiency_on_weakpoint_hits() {
         let a = secondary("primary_crux").expect("primary_crux");
-        let fx = a.fx(a.max_rank, StackPolicy::Emergent, 0.29, 3.1, NO_TRAITS);
+        let fx = a.fx(a.max_rank, StackPolicy::Emergent, NO_TRAITS);
         assert_eq!(fx.buffs.len(), 2, "status chance + ammo efficiency");
         for b in &fx.buffs {
             assert_eq!(b.trigger, ArcTrigger::WeakpointHit);
@@ -880,7 +873,7 @@ mod tests {
         assert_eq!(g(ArcGrant::StatusChance), Some(0.3));
         assert_eq!(g(ArcGrant::AmmoEfficiency), Some(0.06));
         // Rank 0 (both ramps are linear from a fifth of max).
-        let fx0 = a.fx(0, StackPolicy::Emergent, 0.29, 3.1, NO_TRAITS);
+        let fx0 = a.fx(0, StackPolicy::Emergent, NO_TRAITS);
         assert!((fx0.buffs[0].per_stack - 0.05).abs() < 1e-9);
         assert!((fx0.buffs[1].per_stack - 0.01).abs() < 1e-9);
         // The static `ammo_efficiency` field belongs to the assumed-max
@@ -912,7 +905,7 @@ mod tests {
     #[test]
     fn merciless_resolves_kill_family_buff_plus_rank5_reload() {
         let a = secondary("secondary_merciless").unwrap();
-        let fx = a.fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+        let fx = a.fx(5, StackPolicy::Emergent, NO_TRAITS);
         let b = &fx.buffs[0];
         assert_eq!(b.trigger, ArcTrigger::Kill);
         assert_eq!(b.grant, ArcGrant::BaseDamage);
@@ -921,7 +914,7 @@ mod tests {
         assert!(!b.all_drop); // kill family: lose one + reset
         assert!((fx.reload_bonus - 0.30).abs() < 1e-9);
         // Rank 4: no reload passive; per-stack 25% (linear).
-        let fx4 = a.fx(4, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+        let fx4 = a.fx(4, StackPolicy::Emergent, NO_TRAITS);
         assert_eq!(fx4.reload_bonus, 0.0);
         assert!((fx4.buffs[0].per_stack - 0.25).abs() < 1e-9);
     }
@@ -930,7 +923,7 @@ mod tests {
     fn deadhead_and_flare_match_the_historical_hardcoded_specs() {
         let d = secondary("secondary_deadhead")
             .unwrap()
-            .fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+            .fx(5, StackPolicy::Emergent, NO_TRAITS);
         let b = &d.buffs[0];
         assert_eq!(b.trigger, ArcTrigger::HeadshotKill);
         assert!((b.per_stack - 1.20).abs() < 1e-9);
@@ -940,7 +933,7 @@ mod tests {
 
         let fl = secondary("cascadia_flare")
             .unwrap()
-            .fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+            .fx(5, StackPolicy::Emergent, NO_TRAITS);
         let b = &fl.buffs[0];
         assert_eq!(b.trigger, ArcTrigger::HeatStatus);
         assert!((b.per_stack - 0.12).abs() < 1e-9);
@@ -953,7 +946,7 @@ mod tests {
         // 1,1,2,2,3,3 — rank 3 must be 2, not a lerp of 1..3.
         let c = secondary("secondary_cryogenic").unwrap();
         assert_eq!(
-            c.fx(3, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS).cold_burst_on_puncture,
+            c.fx(3, StackPolicy::Emergent, NO_TRAITS).cold_burst_on_puncture,
             2
         );
     }
@@ -961,23 +954,24 @@ mod tests {
     #[test]
     fn assumed_max_only_conditionals_are_emergent_noops() {
         let o = secondary("cascadia_overcharge").unwrap();
-        let em = o.fx(5, StackPolicy::Emergent, 0.10, 2.0, NO_TRAITS);
-        assert_eq!(em.cc_abs, 0.0);
-        let am = o.fx(5, StackPolicy::AssumedMax, 0.10, 2.0, NO_TRAITS);
-        assert!((am.cc_abs - 0.10 * 3.0).abs() < 1e-9);
+        let em = o.fx(5, StackPolicy::Emergent, NO_TRAITS);
+        assert_eq!(em.cc_rel, 0.0);
+        let am = o.fx(5, StackPolicy::AssumedMax, NO_TRAITS);
+        // RELATIVE now: +300% of whichever part's base the sim resolves.
+        assert!((am.cc_rel - 3.0).abs() < 1e-9);
 
         // Surge: ×8 cap under AssumedMax, no-op under Emergent.
         let s = secondary("secondary_surge").unwrap();
-        assert_eq!(s.fx(5, StackPolicy::Emergent, 0.1, 2.0, NO_TRAITS).final_mult, 1.0);
-        assert!((s.fx(5, StackPolicy::AssumedMax, 0.1, 2.0, NO_TRAITS).final_mult - 8.0).abs() < 1e-9);
+        assert_eq!(s.fx(5, StackPolicy::Emergent, NO_TRAITS).final_mult, 1.0);
+        assert!((s.fx(5, StackPolicy::AssumedMax, NO_TRAITS).final_mult - 8.0).abs() < 1e-9);
     }
 
     #[test]
     fn requires_gates_akimbo_on_the_dual_pistols_trait() {
         let a = secondary("akimbo_slip_shot").unwrap();
-        let off = a.fx(5, StackPolicy::AssumedMax, 0.1, 2.0, NO_TRAITS);
+        let off = a.fx(5, StackPolicy::AssumedMax, NO_TRAITS);
         assert_eq!(off.ammo_efficiency, 0.0);
-        let on = a.fx(5, StackPolicy::AssumedMax, 0.1, 2.0, &["dual_pistols"]);
+        let on = a.fx(5, StackPolicy::AssumedMax, &["dual_pistols"]);
         assert!((on.ammo_efficiency - 0.65).abs() < 1e-9);
     }
 
@@ -985,25 +979,25 @@ mod tests {
     fn shiver_fortifier_encumber_empowered_cryogenic_resolve() {
         let sh = secondary("secondary_shiver")
             .unwrap()
-            .fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+            .fx(5, StackPolicy::Emergent, NO_TRAITS);
         assert!((sh.per_cold_bd - 0.45).abs() < 1e-9);
         assert_eq!(sh.cold_cap, 10);
         let ft = secondary("secondary_fortifier")
             .unwrap()
-            .fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+            .fx(5, StackPolicy::Emergent, NO_TRAITS);
         assert!((ft.overguard_mult - 8.0).abs() < 1e-9);
         let en = secondary("secondary_encumber")
             .unwrap()
-            .fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+            .fx(5, StackPolicy::Emergent, NO_TRAITS);
         assert!((en.encumber_chance - 0.24).abs() < 1e-9);
         let em = secondary("cascadia_empowered")
             .unwrap()
-            .fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+            .fx(5, StackPolicy::Emergent, NO_TRAITS);
         assert!((em.flat_damage_on_status - 750.0).abs() < 1e-9);
         // Voltage: two status-family buffs sharing the 40-stack pool.
         let cv = secondary("conjunction_voltage")
             .unwrap()
-            .fx(5, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+            .fx(5, StackPolicy::Emergent, NO_TRAITS);
         assert_eq!(cv.buffs.len(), 2);
         assert!(cv.buffs.iter().all(|b| b.all_drop && b.max_stacks == 40));
     }
@@ -1051,7 +1045,7 @@ mod tests {
     fn enervate_runs_as_the_perk() {
         let e = secondary("secondary_enervate")
             .unwrap()
-            .fx(3, StackPolicy::Emergent, 0.05, 2.0, NO_TRAITS);
+            .fx(3, StackPolicy::Emergent, NO_TRAITS);
         assert_eq!(e.enervate_rank, Some(3));
         assert!(e.buffs.is_empty()); // the on_hit buff is perk-implemented
     }
