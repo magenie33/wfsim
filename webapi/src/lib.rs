@@ -327,7 +327,9 @@ pub fn meta_json() -> Value {
                 "uses_arcane": w.uses_arcane,
                 "arcane_slot": w.arcane_slot,
                 "uses_evo2": w.uses_evo2,
-                "arcane_slots": 1,
+                // A sentinel weapon has no arcane slot. This was hardcoded to
+                // 1 while every weapon in the roster had one.
+                "arcane_slots": u32::from(w.uses_arcane),
                 "image": assets().weapons.get(&w.id),
                 "innate_polarities": innate_slots_for(&w.id).iter()
                     .map(|p| p.map(|x| format!("{x:?}")))

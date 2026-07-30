@@ -1,0 +1,59 @@
+id: verglas_prime
+name: Verglas Prime
+# SENTINEL WEAPON (the default weapon of Nautilus Prime). Its own equipment
+# slot: it is not a Primary, it sits on the companion — but it draws from the
+# RIFLE mod pool, which is what actually decides what fits (wiki: Mod Pool =
+# Rifle Mods; WFCD productCategory = SentinelWeapons).
+slot: sentinel
+class: sentinel_weapon         # the "sentinel" in the class is what gates the
+                               # arcane and exilus rules below
+mod_eligibility: rifle_mods
+mastery_rank: 0
+max_rank: 30
+
+# A sentinel weapon has NO exilus slot and takes NO arcane (user, 2026-07-31;
+# the builder already says "sentinel weapons have no exilus slot"). Both follow
+# from `class` containing "sentinel", so there is nothing to declare here —
+# recorded so the ABSENCE of `exilus_polarity` reads as a fact, not an omission.
+
+# Weapon-level metadata (wiki cross-checked against WFCD).
+accuracy: 100                  # hit-scan; the wiki page prints N/A for that
+disposition: 1.3               # riven disposition (●●●●○)
+polarities: [naramon]          # one innate Naramon (both sources agree)
+riven_family: Verglas
+traits: [prime]
+internal_name: /Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayPrimeRifle
+noise: alarming
+# Sentinel weapons draw from an INFINITE reserve — there is no ammo pickup
+# economy to model, so no `ammo_max`. The magazine and reload are real.
+magazine: 80
+reload_seconds: 1.6
+
+# No CO catalog row for this weapon, so the normal class applies.
+co_behavior: independent
+
+# Innate damage is pure COLD, which makes this the engine's reference case for
+# an elemental-innate weapon: the innate element enters the hierarchy LAST and
+# takes whatever the mod elements leave (MECHANICS §3 rule 2).
+attack:
+  trigger: held
+  shot_type: hitscan
+  fire_rate: 12.0
+  multishot: 1.0
+  # NOT READ by the engine (2026-07-31): nothing in engine/ references
+  # `ammo_cost` — the sim spends a flat 1.0 (minus ammo efficiency) per shot.
+  # It matters for CONTINUOUS weapons, which the wiki says "consume 0.5 ammo
+  # per trace - unless they are Flamethrowers", and the only beam in the
+  # roster is the Torid's Incarnon form, whose pool is charge-backed and
+  # "not affected by Ammo Efficiency" — i.e. outside the ammo economy that
+  # rule exists to help. So nothing in the sim turns on it today. See
+  # docs/MECHANICS.md "Continuous ammo cost" for what would settle it.
+  ammo_cost: 1
+  crit_chance: 0.14
+  crit_multiplier: 2.2
+  status_chance: 0.36
+  punch_through_m: 0.0
+  damage: { cold: 32.0 }
+
+source:
+  url: https://wiki.warframe.com/w/Verglas_Prime
