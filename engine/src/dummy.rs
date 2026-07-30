@@ -2206,7 +2206,17 @@ fn field_tick(
     let bd = ap.base_damage_bonus;
     let arc_bd = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, at) + ctx.bd_add_mods;
     let arc_ratio = (1.0 + bd + arc_bd) / (1.0 + bd);
-    let bucket = gunco_bucket(params, ap, debuffs, gal, at, bd, arc_bd, arc_ratio);
+    // CO on an AoE part is the EXCEPTION, not the default. What the mods say is
+    // direct hits only — which is why the radial path never takes it — and the
+    // Torid's cloud is an anomaly the CO catalog gives its own row (user,
+    // 2026-07-30: in theory an AoE would not get it, but DE let this one). So
+    // the field takes CO only where the weapon declares it; otherwise it gets
+    // the same bracket the radial does.
+    let bucket = if f.takes_condition_overload {
+        gunco_bucket(params, ap, debuffs, gal, at, bd, arc_bd, arc_ratio)
+    } else {
+        arc_ratio
+    };
     let mb_live = f.modified_base * arc_ratio;
 
     // Falloff is 1.0: the grenade STICKS to the target, so the target stands at
@@ -3125,9 +3135,19 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                         None => mb_live,
                         Some(r) => r.modified_base * arc_ratio,
                     };
-                // The direct hit's bracket carries CO; the radial's carries
-                // only the arcane base-damage ratio.
-                let bucket = if direct { co_mult } else { arc_ratio };
+                // The direct hit always carries CO. An explosion does NOT by
+                // default — the mods say direct hits only — but the engine
+                // supports the case the mods forbid, because some entries do it
+                // anyway and the CO catalog lists them one at a time: the
+                // Zylok's Incarnon radial has a row reading "Radial hit only
+                // receives CO bonus on target DIRECTLY HIT by bullet", which
+                // the single-target arena always is. Per-entry weapon data, so
+                // no roster weapon is affected until one declares it.
+                let bucket = match &rad {
+                    None => co_mult,
+                    Some(r) if r.takes_condition_overload => co_mult,
+                    Some(_) => arc_ratio,
+                };
                 // Primary Crux's stacks join the status-chance BUCKET (wiki:
                 // "additive to mods like Rifle Aptitude"), so the relative
                 // bonus multiplies THIS part's own unmodded base — the
@@ -4216,6 +4236,118 @@ mod tests {
         );
     }
 
+    /// CO on an AoE part is the EXCEPTION. The mods say Condition Overload
+    /// boosts DIRECT hits, so a field gets nothing unless its weapon declares
+    /// otherwise — the Torid's cloud does, and the CO catalog gives it a row
+    /// precisely because an AoE part taking CO is not supposed to happen (user,
+    /// 2026-07-30). This pins the DEFAULT, which no roster weapon exercises yet
+    /// and which the engine used to get wrong for every field.
+    #[test]
+    fn a_field_takes_condition_overload_only_where_the_weapon_declares_it() {
+        let p = |takes: bool| DummyParams {
+            // Zero-damage impact that still forces an IMPACT proc: the target
+            // carries one status TYPE for the CO bracket to count, and a
+            // stagger adds no damage of its own to confound the field's total.
+            damage: DamageVector::default(),
+            forced_procs: vec![DamageType::Impact],
+            lingering: Some(crate::loadout::ResolvedLingering {
+                takes_condition_overload: takes,
+                ..cloud(crate::loadout::FieldStacking::Stack)
+            }),
+            co_per_type: 1.0,
+            co_behavior: crate::loadout::CoBehavior::Independent,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            fire_rate: 1.0,
+            magazine_size: 1.0,
+            reload_seconds: 999.0,
+            duration_secs: 60.0,
+            ..no_status()
+        };
+        let off = monte_carlo(&p(false), 4, 3);
+        let on = monte_carlo(&p(true), 4, 3);
+        assert!(
+            (off.mean_field_ticks - on.mean_field_ticks).abs() < 1e-9,
+            "the flag must move damage, not tick counts"
+        );
+        assert!(
+            on.mean_damage > off.mean_damage + 1e-9,
+            "declaring it must be worth something: {} vs {}",
+            on.mean_damage,
+            off.mean_damage
+        );
+        // The un-declared field is the plain 10 x 40 with no CO bracket at all.
+        assert!(
+            (off.mean_damage - 400.0).abs() < 1e-9,
+            "expected a bare 400, got {}",
+            off.mean_damage
+        );
+    }
+
+    /// …and the same for an EXPLOSION. The mods forbid it — CO boosts direct
+    /// hits — but the engine supports the case anyway, because the CO catalog
+    /// lists entries that do it: the Zylok's Incarnon radial receives CO "on
+    /// target directly hit by bullet", which the arena always is. No roster
+    /// weapon declares it, so this test is the only thing holding the branch
+    /// open.
+    #[test]
+    fn a_radial_takes_condition_overload_only_where_the_weapon_declares_it() {
+        let radial = |takes: bool| crate::loadout::ResolvedRadial {
+            damage: {
+                let mut d = DamageVector::default();
+                d.set(DamageType::Radiation, 100.0);
+                d
+            },
+            modified_base: 100.0,
+            crit_chance: 0.0,
+            crit_damage: 1.0,
+            base_crit_chance: 0.0,
+            base_crit_damage: 1.0,
+            status_chance: 0.0,
+            base_status_chance: 0.0,
+            radius_m: 2.0,
+            falloff_start_m: 0.0,
+            falloff_reduction: 0.0,
+            takes_condition_overload: takes,
+        };
+        // Zero-damage direct hit that still forces an Impact proc, so the only
+        // damage reported is the explosion's and the target carries one status
+        // type for CO to count.
+        let p = |takes: bool| DummyParams {
+            damage: DamageVector::default(),
+            forced_procs: vec![DamageType::Impact],
+            radial: Some(radial(takes)),
+            co_per_type: 1.0,
+            co_behavior: crate::loadout::CoBehavior::Independent,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            fire_rate: 1.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let off = monte_carlo(&p(false), 4, 3);
+        let on = monte_carlo(&p(true), 4, 3);
+        assert!(
+            (on.mean_shots - off.mean_shots).abs() < 1e-9,
+            "the flag must not change the cadence"
+        );
+        assert!(
+            on.mean_damage > off.mean_damage + 1e-9,
+            "declaring it must be worth something: {} vs {}",
+            on.mean_damage,
+            off.mean_damage
+        );
+        // Shot 1 lands before any status exists, so every shot after it doubles
+        // under CO — the un-declared explosion stays flat at 100 a shot.
+        assert!(
+            (off.mean_damage - 100.0 * off.mean_shots).abs() < 1e-9,
+            "expected a flat 100/shot with no CO, got {}",
+            off.mean_damage
+        );
+    }
+
     /// A reload draws WHOLE rounds — ✅ measured (user, 2026-07-30) on a
     /// 5-round magazine. The table is the measurement, verbatim.
     #[test]
@@ -4505,8 +4637,9 @@ mod tests {
     }
 
     /// A lingering FIELD fixture in Torid's shape: 40 Toxin a tick, 1 tick/s
-    /// for 10 s, its own 15% / 2.0x crit and 25% status. `refresh` flips the
-    /// one UNVERIFIED knob (MEASUREMENTS M12).
+    /// for 10 s, its own 15% / 2.0x crit and 25% status, and the Torid's
+    /// anomalous CO eligibility. `stacking` picks the branch (MEASUREMENTS M13
+    /// measured `stack`; `refresh` is the other weapon-data option).
     fn cloud(stacking: crate::loadout::FieldStacking) -> crate::loadout::ResolvedLingering {
         let mut damage = DamageVector::default();
         damage.set(DamageType::Toxin, 40.0);
@@ -4525,6 +4658,7 @@ mod tests {
             falloff_start_m: 0.0,
             falloff_reduction: 1.0,
             stacking,
+            takes_condition_overload: true,
         }
     }
 
@@ -5133,6 +5267,7 @@ mod tests {
             radius_m: 2.0,
             falloff_start_m: 0.0,
             falloff_reduction: 0.2,
+            takes_condition_overload: false, // the default: an explosion gets no CO
         }
     }
 
@@ -5209,6 +5344,7 @@ mod tests {
                 radius_m: 2.0,
                 falloff_start_m: 0.0,
                 falloff_reduction: 0.0,
+                takes_condition_overload: false, // the default: an explosion gets no CO
             }
         };
         // +50% x 2 pinned stacks = +100% of the part's base crit damage.
@@ -5273,6 +5409,7 @@ mod tests {
                 radius_m: 2.0,
                 falloff_start_m: 0.0,
                 falloff_reduction: 0.0,
+                takes_condition_overload: false, // the default: an explosion gets no CO
             });
             let p = DummyParams {
                 radial,

@@ -57,6 +57,11 @@ pub struct LingeringSpec {
     pub falloff_start_m: Option<f64>,
     #[serde(default)]
     pub falloff_reduction: Option<f64>,
+    /// Does this field take Condition Overload? Default NO: the mods say CO
+    /// boosts DIRECT hits, so an AoE part getting it is the exception the CO
+    /// catalog spells out per weapon.
+    #[serde(default)]
+    pub takes_condition_overload: bool,
     /// `stack` (default) or `refresh`. The Torid STACKS — ✅ measured
     /// (MEASUREMENTS M13) — but this stays weapon DATA rather than a constant:
     /// the branch is per weapon, and a future one may refresh.
@@ -85,6 +90,11 @@ pub struct RadialSpec {
     /// Fraction of damage REMOVED at maximum distance (Laetum: 0.2 → 80%).
     #[serde(default)]
     pub falloff_reduction: Option<f64>,
+    /// Does this explosion take Condition Overload? Default NO — the mods say
+    /// direct hits only, so an AoE part receiving it is a per-entry exception
+    /// the CO catalog lists (the Zylok's Incarnon radial has such a row).
+    #[serde(default)]
+    pub takes_condition_overload: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -426,6 +436,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
             radius_m: r.radius_m,
             falloff_start_m: r.falloff_start_m.unwrap_or(0.0),
             falloff_reduction: r.falloff_reduction.unwrap_or(0.0),
+            takes_condition_overload: r.takes_condition_overload,
         }
     });
 
@@ -446,6 +457,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
             radius_m: f.radius_m,
             falloff_start_m: f.falloff_start_m.unwrap_or(0.0),
             falloff_reduction: f.falloff_reduction.unwrap_or(0.0),
+            takes_condition_overload: f.takes_condition_overload,
             stacking: match f.stacking.as_str() {
                 "stack" => FieldStacking::Stack,
                 "refresh" => FieldStacking::Refresh,

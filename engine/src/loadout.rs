@@ -642,6 +642,13 @@ pub struct LingeringBase {
     /// unlike the Laetum radial's 0.2.
     pub falloff_reduction: f64,
     pub stacking: FieldStacking,
+    /// Does this field take Condition Overload? **Default NO** — the normal
+    /// rule is what the mods say on the tin: CO boosts DIRECT hits only, and an
+    /// AoE part should get nothing. The Torid's cloud is an ANOMALY that the CO
+    /// catalog records with a row of its own (user, 2026-07-30: "in theory it
+    /// would not get it, but the programmer let it"), so the weapon declares it
+    /// rather than the engine assuming every field behaves that way.
+    pub takes_condition_overload: bool,
 }
 
 /// The lingering field after mod resolution.
@@ -667,6 +674,9 @@ pub struct ResolvedLingering {
     pub falloff_start_m: f64,
     pub falloff_reduction: f64,
     pub stacking: FieldStacking,
+    /// See [`LingeringBase::takes_condition_overload`] — CO on an AoE part is
+    /// the exception, not the default.
+    pub takes_condition_overload: bool,
 }
 
 /// A weapon's radial (explosion) attack part, unmodded.
@@ -683,6 +693,14 @@ pub struct RadialBase {
     /// Only bites once the sim has targets away from the epicentre.
     pub falloff_start_m: f64,
     pub falloff_reduction: f64,
+    /// Does this explosion take Condition Overload? **Default NO** — the mods
+    /// say CO boosts DIRECT hits, so an AoE part is not supposed to receive it
+    /// at all. Some entries do anyway, and the CO catalog lists them one at a
+    /// time: the Zylok's Incarnon radial has a row reading "Radial hit only
+    /// receives CO bonus on target directly hit by bullet", which the sim's
+    /// single-target arena always is. Declared per weapon because it is a
+    /// per-entry quirk, never a rule (MECHANICS §6).
+    pub takes_condition_overload: bool,
 }
 
 /// The radial part after mod resolution.
@@ -711,6 +729,9 @@ pub struct ResolvedRadial {
     pub radius_m: f64,
     pub falloff_start_m: f64,
     pub falloff_reduction: f64,
+    /// See [`RadialBase::takes_condition_overload`] — CO on an explosion is the
+    /// exception, not the default.
+    pub takes_condition_overload: bool,
 }
 
 /// The Incarnon form's charge economy, for the panel's stat display (see
@@ -1260,6 +1281,7 @@ pub fn resolve_with(
             radius_m: r.radius_m * (1.0 + br),
             falloff_start_m: r.falloff_start_m * (1.0 + br),
             falloff_reduction: r.falloff_reduction,
+            takes_condition_overload: r.takes_condition_overload,
         }
     });
 
@@ -1288,6 +1310,7 @@ pub fn resolve_with(
             falloff_start_m: f.falloff_start_m * (1.0 + br),
             falloff_reduction: f.falloff_reduction,
             stacking: f.stacking,
+            takes_condition_overload: f.takes_condition_overload,
         }
     });
 

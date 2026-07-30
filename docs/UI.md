@@ -33,6 +33,19 @@ the fight**.
 | target that never wastes DPS | `dummy::TargetMode::InstantRespawn` |
 | aim quality / headshot feel | `dummy::BodyPart::aim_weight` |
 
+## Planned
+
+- **Surface each attack part's CO anomalies in the builder panel** (user,
+  2026-07-30). Condition Overload is full of per-entry quirks that no rule
+  predicts — the CO catalog lists them one attack at a time, and weapon families
+  split down the middle (Lato Vandal has a row, Lato Prime does not; Zylok Prime
+  is docked to 94%, the plain Zylok is not). MECHANICS §6 has the evidence.
+  The panel already renders per-part rows, so each part should state its own CO
+  standing: the behaviour class, whether that part receives CO at all (an AoE
+  part normally does not — the Torid's cloud is an exception), and the base
+  fraction with what dilutes it. Today a build can silently differ from another
+  by a factor the panel never mentions.
+
 ## Not decided yet
 
 - Rendering cadence vs simulation tick (fixed 240 fps sim clock exists in

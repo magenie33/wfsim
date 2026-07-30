@@ -598,12 +598,35 @@ behaves *normally*: Additive, +100% bonus, exactly what the mods say on the tin.
 The table's job is to enumerate the exceptions, so "not listed" carries as much
 information as a row does.
 
-**And the exceptions are individual quirks, not a law.** The tell is that
-**Lato Vandal has a row while Lato Prime does not**, though they are the same
-weapon family with the same Incarnon Genesis. Nothing mechanical distinguishes
-two Latos; that asymmetry is what a per-entry slip in DE's code looks like —
-careless or deliberate, but attached to one entry rather than derived from a
-rule. A general mechanical law could not produce it.
+**And the exceptions are individual quirks, not a law.** Two independent tells,
+both the same shape — a weapon family split down the middle:
+
+- **Lato Vandal has a row, Lato Prime does not**, same family, same Genesis.
+- **Zylok Prime's Incarnon Mode has a row** (*"500 or 530 (with Evolution II)"*,
+  CO base 500, so 100% or 94%) **while the base Zylok's does not** — the plain
+  Zylok takes CO in full, the Prime does not.
+
+Nothing mechanical separates two Latos or two Zyloks. That asymmetry is what a
+per-entry slip in DE's code looks like — careless or deliberate, attached to one
+entry rather than derived from a rule. No general mechanical law could produce
+it, which is exactly why none of this may be modelled as one.
+
+The Zylok's second row is worth reading for a different reason: *"Zylok / Zylok
+Prime | Incarnon Form Radial Attack | AoE | 776 | 700 | 90% | Adding — Radial
+hit only receives CO bonus on target directly hit by bullet. AoE does not scale
+off multishot."* An AoE part receiving CO **at all** is an exception (the normal
+rule is direct hits only), and it arrives with its own base fraction (90%) that
+has nothing to do with an evolution. Three unrelated discrepancies in two rows
+of one weapon.
+
+**So AoE parts carry their own CO eligibility, defaulting to NO.** Both the
+explosion and the lingering field take a `takes_condition_overload` flag from
+weapon data. The engine deliberately supports what the mods forbid, because the
+game does it: the Torid's cloud declares it (its own catalog row), the Zylok's
+Incarnon radial would, and every unlisted AoE part gets nothing. Note the
+Zylok's qualifier — CO reaches the radial only *on the target directly hit* —
+which a single-target arena always satisfies; a multi-target model would have to
+gate it per enemy.
 
 That is the evidence FOR modelling this per entry rather than per weapon or per
 behaviour class, and it is what makes the Dual Toxocyst reading exact rather

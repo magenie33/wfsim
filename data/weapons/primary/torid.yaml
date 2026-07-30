@@ -100,6 +100,15 @@ attack:
     crit_multiplier: 2.0
     status_chance: 0.25
     stacking: stack
+    # This cloud takes Condition Overload — an ANOMALY, and it needs declaring
+    # because the default is NO. What the mods say is that CO boosts DIRECT
+    # hits, so an AoE part should get nothing at all; in theory this cloud would
+    # not (user, 2026-07-30) and DE let it anyway. The CO catalog records the
+    # exception with a row of its own:
+    #   Torid | Toxin AoE Cloud | AoE | 40 | 40 | 100% | Multiplying
+    # which is doubly discrepant: an AoE part receiving CO, and receiving it as
+    # a MULTIPLYING bonus. Both halves are why the row exists.
+    takes_condition_overload: true
 
 # incarnon_evolutions (data/evolutions/torid_*.yaml) — FOUR tiers, not five:
 # - { tier: 1, unlock: complete a solo mission with this weapon equipped,
