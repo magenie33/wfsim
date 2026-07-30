@@ -6,6 +6,21 @@ icon: DamagePerStatusOnEnemyWithEnergyPool(xWhite).png   # wiki File: name (Dual
 description: "Increase Base Damage by +60.\n+33% Direct Damage per Status Type affecting the target."
 selection: choose_one
 
+# THIS perk's +60 base damage does not feed the GunCO term. The CO catalog row
+# is explicit about which perk it means:
+#   Dual Toxocyst | Incarnon Mode | Projectile
+#     Attack Unmodded Damage ......... 75 or 135 (with Evolution II Perk 1)
+#     Actual CO Bonus at +100% ....... 75
+#     Relative to Base Damage ........ 100% or 56%
+#     Notes .......................... CO-bonus does not use base damage
+#                                      increase Evolution
+# i.e. a +100% CO adds 75, never 135. The catalog "lists only discrepant
+# attacks", so this is NOT a general law: Evolution II Perk 2 (Fevered Frenzy)
+# also raises base damage and is absent from the table, so it feeds CO in full
+# — as does every Torid perk, whose two rows sit at 100%. Hence the flag lives
+# on the PERK, which is the granularity the catalog names.
+co_base_excludes_this_evolution: true
+
 effects:
   - kind: flat_base_damage
     # Adds to the BASE TOTAL, distributed PRO-RATA across the existing

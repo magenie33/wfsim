@@ -521,11 +521,6 @@ pub struct WeaponBase {
     /// is DECLARED by that weapon (`co_base_excludes_evolution_damage`) rather
     /// than derived from the presence of a flat-damage evolution.
     pub co_base_fraction: f64,
-    /// Whether this weapon's CO term excludes its evolutions' flat base damage
-    /// — weapon data, straight from the CO catalog. It exists to stop Dual
-    /// Toxocyst's anomaly being generalised to weapons whose rows say
-    /// otherwise, which is what deriving it from the evolution list did.
-    pub co_base_excludes_evolution_damage: bool,
     /// Buff-injected elements as RELATIVE bonuses (element, bonus): each
     /// contributes ModifiedBase × bonus at the END of the hierarchy
     /// (rule 8) — Frenzy's +100% Toxin on the base Dual Toxocyst.
@@ -1399,7 +1394,6 @@ mod tests {
             innate_co_per_type: 0.0,
             co_behavior: CoBehavior::Independent,
             co_base_fraction: 1.0,
-            co_base_excludes_evolution_damage: false,
             injected_elements: Vec::new(),
             traits: &[],
             incarnon: None,

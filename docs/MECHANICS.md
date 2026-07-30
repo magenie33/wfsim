@@ -561,21 +561,36 @@ Sharpshot / Primary Compression, Warframe ability buffs (Furious Javelin,
 Equinox Duality …), and a bow's charge multiplier — a charged shot's CO is
 computed off the UNCHARGED base.
 
-**Evolution exclusion — a per-weapon ANOMALY, not the rule.** The wiki line
-*"CO-bonus does not use base damage increase Evolution"* reads like a general
-law, and the engine used to treat it as one: any weapon carrying a flat-damage
-evolution had its CO term scaled by `co_base_fraction = original_base /
-evolved_base`. **That is wrong.** Including a perk's flat base damage in the CO
-term is the NORMAL behaviour (user, 2026-07-30); the catalog's Torid rows say
-100% for both parts and stay 100% with Final Fusillade or Plentiful Mayhem
-equipped.
+**Evolution exclusion — a per-PERK anomaly, not a law.** The line *"CO-bonus
+does not use base damage increase Evolution"* reads like a general rule, and the
+engine used to treat it as one: any weapon carrying a flat-damage evolution had
+its CO term scaled by `co_base_fraction = original_base / evolved_base`. **That
+is wrong**, and reading the catalog's columns is what settles it:
 
-**Dual Toxocyst is the exception**, and its catalog row is the one that spells
-it out: *"100% or 56%"* — 75 base, or 135 with Carnage Reign's +60, giving
-75/135 ≈ 0.556. So the exclusion is DECLARED by that weapon
-(`co_base_excludes_evolution_damage` in its yaml) instead of being inferred from
-the presence of an evolution, which is what let one weapon's quirk spread to
-every other. `co_base_fraction` stays 1.0 everywhere else.
+| column | Dual Toxocyst, Incarnon Mode |
+| --- | --- |
+| Attack Unmodded Damage | 75 **or 135 (with Evolution II Perk 1)** |
+| **Actual CO Damage Bonus at +100%** | **75** |
+| CO Damage Bonus Relative To Base Damage | 100% **or 56%** |
+| Math/Behavior Type | Adding |
+| Notes | CO-bonus does not use base damage increase Evolution |
+
+A +100% CO adds **75**, never 135 — so the CO term is computed on the *unevolved*
+base and the "56%" is just 75/135 restated. Crucially the row names **Perk 1**
+(Carnage Reign), and the table's own preamble says it is *"listing only
+discrepant attacks. Anything not listed should be assumed to be Additive with
++100% bonus"*. So:
+
+- **Perk 2 (Fevered Frenzy) feeds CO in full**, even though it also raises base
+  damage (+50). It is not in the table, therefore not discrepant.
+- **Every Torid perk feeds CO in full** — its two rows sit at 100%, and they stay
+  there with Final Fusillade or Plentiful Mayhem equipped.
+
+The flag therefore lives on the **evolution** (`co_base_excludes_this_evolution`
+on `carnage_reign.yaml`), which is the granularity the catalog names. Keying it
+off the weapon would have docked Perk 2; keying it off the Adding behaviour
+class would have docked the Torid's Incarnon form as well. `co_base_fraction` is
+1.0 everywhere except Dual Toxocyst + Carnage Reign.
 
 **Sources and rates.** Melee Condition Overload +80%/status; Galvanized
 Aptitude +40%/status ×2 stacks (rifle); **Galvanized Shot +40%/status ×3
@@ -1118,9 +1133,13 @@ form. The Incarnon form has no row at all, and the engine used to infer
 `Multiplying` from its siblings — wrongly: it is ordinary **Adding** (✅
 measured, user 2026-07-30), joining the base-damage bucket. So one weapon runs
 both classes depending on which form is out, which is why `co_behavior` is
-per-form weapon data rather than a weapon-wide property. Note also the 100% in
-the "CO base" column holds *with evolutions equipped* — the Torid does not take
-Dual Toxocyst's exclusion (§6).
+per-form weapon data rather than a weapon-wide property.
+
+The table lists **only discrepancies** — *"anything not listed should be assumed
+to be Additive with +100% bonus"* — so the Incarnon form's absence is itself the
+statement that its CO base is 100%. Note the 100% in these two rows likewise
+holds *with evolutions equipped*: the Torid does not take Dual Toxocyst's
+Perk-1 exclusion (§6).
 
 So a grenade that STICKS to an enemy makes that enemy the directly-embedded
 target, and every tick it takes carries CO. In a single-target arena that is

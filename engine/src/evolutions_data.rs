@@ -33,6 +33,11 @@ struct EvoFile {
     /// Wiki-flagged non-functional evolutions apply NOTHING.
     #[serde(default)]
     currently_broken: bool,
+    /// Does THIS evolution's flat base damage stay out of the weapon's GunCO
+    /// term? The CO catalog names the offending perk explicitly, so the flag
+    /// belongs to the perk, not to the weapon and not to the CO class.
+    #[serde(default)]
+    co_base_excludes_this_evolution: bool,
     effects: Vec<Value>,
 }
 
@@ -136,6 +141,13 @@ pub struct EvolutionDef {
     /// Verbatim effect text — what the cards display (like mods/arcanes).
     pub description: String,
     pub currently_broken: bool,
+    /// This evolution's flat base damage does NOT feed the weapon's GunCO
+    /// term. Dual Toxocyst's Carnage Reign is the only one: its catalog row
+    /// reads "75 or 135 (with Evolution II Perk 1)" against a CO base of a
+    /// flat 75. The wiki lists ONLY discrepant cases, so an evolution without
+    /// this flag — including Dual Toxocyst's OTHER Evolution II option — feeds
+    /// the CO term in full.
+    pub co_base_excludes_this_evolution: bool,
     effects: Vec<EvoEffect>,
 }
 
@@ -584,12 +596,19 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
         let evolved = original_total + flat;
         base.base_vector = base.base_vector.scale(evolved / original_total);
         // The CO term keeps using the FULL evolved base — including a perk's
-        // flat damage is the normal behaviour (user, 2026-07-30). Only a weapon
-        // that DECLARES the exclusion narrows it, which today is Dual Toxocyst
-        // alone (its catalog row is the "100% or 56%" one). Deriving this from
-        // "does the weapon have a flat-damage evolution" generalised that
-        // anomaly to the Torid, where the catalog says 100% for both parts.
-        if base.co_base_excludes_evolution_damage {
+        // flat damage is the normal behaviour (user, 2026-07-30), and the Torid
+        // counts its Incarnon perks in full.
+        //
+        // The exclusion belongs to the PERK, because that is the granularity
+        // the CO catalog names: its Dual Toxocyst row reads "75 or 135 (with
+        // Evolution II **Perk 1**)". The catalog lists only DISCREPANT cases,
+        // so Perk 2 — Fevered Frenzy, which also raises base damage — is not
+        // discrepant and feeds the CO term in full. Keying this off the weapon,
+        // or off the Adding behaviour class, would silently dock Perk 2 too.
+        if evos
+            .iter()
+            .any(|e| !e.currently_broken && e.co_base_excludes_this_evolution)
+        {
             base.co_base_fraction = original_total / evolved;
         }
     }
@@ -634,6 +653,7 @@ pub fn pool() -> &'static Vec<EvolutionDef> {
                 icon: ef.icon,
                 description: ef.description.unwrap_or_default(),
                 currently_broken: ef.currently_broken,
+                co_base_excludes_this_evolution: ef.co_base_excludes_this_evolution,
                 effects,
             });
         }

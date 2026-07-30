@@ -195,13 +195,6 @@ pub struct WeaponSpec {
     pub reload_seconds: Option<f64>,
     #[serde(default)]
     pub co_behavior: Option<String>,
-    /// Does this weapon's GunCO term compute on the base damage BEFORE its
-    /// evolutions' flat bonus? Declared per weapon from the CO catalog, never
-    /// inferred from the evolution list: including the perk damage is the
-    /// NORMAL behaviour (user, 2026-07-30) and Dual Toxocyst is the anomaly —
-    /// its catalog row is the one that reads "100% or 56%".
-    #[serde(default)]
-    pub co_base_excludes_evolution_damage: bool,
     #[serde(default)]
     pub transform_group: Option<String>,
     #[serde(default)]
@@ -475,10 +468,9 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         innate_co_per_type: 0.0,
         co_behavior,
         // 1.0 = the CO term uses the FULL base, evolution damage included,
-        // which is the normal case. The evolution loader only narrows it on a
-        // weapon that declares the exclusion.
+        // which is the normal case. Only an evolution that declares itself
+        // excluded narrows it (evolutions_data::apply).
         co_base_fraction: 1.0,
-        co_base_excludes_evolution_damage: s.co_base_excludes_evolution_damage,
         injected_elements,
         traits: traits_for(s),
         incarnon,
@@ -569,11 +561,12 @@ mod tests {
         assert_eq!(i.co_behavior, CoBehavior::AdditiveWithBaseDamage);
     }
 
-    /// The CO term uses the FULL base including a perk's flat damage — the
-    /// normal behaviour (user, 2026-07-30). Dual Toxocyst is the one anomaly,
-    /// and it DECLARES itself: the exclusion is weapon data now, not something
-    /// inferred from "this weapon has a flat-damage evolution", which is what
-    /// spread DT's row onto the Torid.
+    /// The CO term uses the FULL base including a perk's flat damage. The CO
+    /// catalog "lists only discrepant attacks", so the ONE exclusion in the
+    /// roster is the one it names: Dual Toxocyst's Evolution II **Perk 1**
+    /// (Carnage Reign). Perk 2 raises base damage too and is absent from the
+    /// table, so it feeds CO in full — which is why the flag lives on the perk
+    /// rather than on the weapon or on the Adding behaviour class.
     #[test]
     fn only_dual_toxocyst_excludes_its_evolution_damage_from_the_co_term() {
         use crate::loadout::WeaponBase;
@@ -594,13 +587,31 @@ mod tests {
         let pm = WeaponBase::from_data("torid", false, &["torid_plentiful_mayhem"]);
         assert!((pm.co_base_fraction - 1.0).abs() < 1e-9);
 
-        // Dual Toxocyst + Carnage Reign (+60 on a 75 base) = the catalog's
-        // "100% or 56%" row.
-        let dt = WeaponBase::from_data("dual_toxocyst", false, &["dual_toxocyst_carnage_reign"]);
+        // Dual Toxocyst + Carnage Reign (Perk 1, +60 on a 75 base) = the
+        // catalog's "100% or 56%" row: a +100% CO adds 75, never 135.
+        for form in ["dual_toxocyst", "dual_toxocyst_incarnon"] {
+            let dt = WeaponBase::from_data(form, false, &["dual_toxocyst_carnage_reign"]);
+            assert!(
+                (dt.co_base_fraction - 75.0 / 135.0).abs() < 1e-9,
+                "{form}: expected 75/135 = 0.5556, got {}",
+                dt.co_base_fraction
+            );
+        }
+        // …and Perk 2 does NOT. Fevered Frenzy also raises base damage (+50),
+        // so keying the exclusion off the WEAPON — or off its Adding CO class —
+        // would dock it to 75/125 = 0.6. The catalog does not list it, and the
+        // table lists only discrepancies, so it feeds the CO term in full.
+        let perk2 =
+            WeaponBase::from_data("dual_toxocyst", false, &["dual_toxocyst_fevered_frenzy"]);
         assert!(
-            (dt.co_base_fraction - 75.0 / 135.0).abs() < 1e-9,
-            "expected 75/135 = 0.5556, got {}",
-            dt.co_base_fraction
+            (perk2.base_vector.total() - 125.0).abs() < 1e-9,
+            "the +50 still reaches the base, got {}",
+            perk2.base_vector.total()
+        );
+        assert!(
+            (perk2.co_base_fraction - 1.0).abs() < 1e-9,
+            "Perk 2 is not a listed discrepancy; expected 1.0, got {}",
+            perk2.co_base_fraction
         );
     }
 

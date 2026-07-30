@@ -68,14 +68,6 @@ pseudo_reload:
 # adding behavior; re-verify per form.
 co_behavior: additive_with_base_damage
 
-# The CO term on THIS weapon excludes its evolutions' flat base damage - the
-# catalog row that reads "100% or 56%" (75 base, or 135 with Carnage Reign's
-# +60). That is an ANOMALY, not the rule: including a perk's damage is the
-# normal behaviour (user, 2026-07-30), which is why the Torid's rows stay at
-# 100%. Declared here rather than derived from "has a flat-damage evolution",
-# so the anomaly cannot spread to weapons whose rows say otherwise.
-co_base_excludes_evolution_damage: true
-
 attack:
   trigger: auto
   # DISPUTED (2026-07-24): the wiki data module and the Ricochet page
