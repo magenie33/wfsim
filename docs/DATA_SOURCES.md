@@ -108,6 +108,27 @@ matches exactly one entry, none unmatched. A name-keyed lookup is what made an
 earlier pass "confirm" MaxRank 5 for Hawk Eye and Steady Hands from a
 collision duplicate, and record the wrong conclusion in both files.
 
+### Open SOURCE-SPLIT: the Torid Incarnon's beam geometry
+
+The official wiki's raw wikitext (`?action=raw`, 2026-07-30) reads, with markup:
+
+```
+'''37''' meter range, and a '''2.3''' meter damage radius ...
+chaining to up to '''5''' nearby enemies within '''7''' meters
+```
+
+Secondary sources in circulation — the abandoned Fandom wiki, Overframe build
+pages, Steam threads — quote **40 m / 3 m / 6 m** instead, and at least one
+search index asserts 37/2.3 is the *older* pair. WFCD cannot arbitrate: its
+export carries **no radius or range at all** for the Incarnon attack, only the
+Poison Cloud's falloff.
+
+We follow the official wiki (37 / 2.3 / 7), which is what `torid_incarnon.yaml`
+holds. **Nothing computes with these yet** — they are geometry for the
+multi-target model, so a wrong value cannot currently move a result. Worth a
+measurement before the 2D model consumes them; MEASUREMENTS M15 already needs
+the same setup and can take the tape measure at the same time.
+
 ### What the second source caught
 
 Cost of having had only one: **20 mods** wrong on `base_drain`/`max_rank`, and

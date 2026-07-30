@@ -35,6 +35,9 @@ pub struct AttackSpec {
     /// A LINGERING FIELD left by every landed projectile (Torid's cloud).
     #[serde(default)]
     pub lingering: Option<LingeringSpec>,
+    /// Continuous-beam geometry (Torid Incarnon). Shape, not a damage part.
+    #[serde(default)]
+    pub beam: Option<BeamSpec>,
 }
 
 /// A lingering damage FIELD — MECHANICS §7 "Lingering damage FIELDS". Unlike
@@ -71,6 +74,45 @@ pub struct LingeringSpec {
 
 fn stack() -> String {
     "stack".to_string()
+}
+
+/// A continuous BEAM's geometry — range, its impact sphere, and the chain.
+///
+/// Deliberately NOT `RadialSpec`: a radial is a second damage INSTANCE, and
+/// the wiki forbids that reading here ("the damage radius is not a separate
+/// damage instance from the beam"). This is shape, not a damage part.
+///
+/// The single-target arena consumes none of it except `damage_radius_m`, which
+/// Firestorm scales and the panel states. The rest is the multi-target model's
+/// input, kept as values rather than prose per data/README.md.
+#[derive(Debug, Clone, Deserialize)]
+pub struct BeamSpec {
+    pub range_m: f64,
+    pub damage_radius_m: f64,
+    /// The sphere does NOT take multishot; only the directly-hit target does.
+    #[serde(default)]
+    pub radius_takes_multishot: bool,
+    pub chain: ChainSpec,
+}
+
+/// The chain a beam propagates through enemies.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ChainSpec {
+    /// Hops in ONE chain — a sequence, each at `damage_per_hop` of the last.
+    pub hops: u32,
+    pub range_m: f64,
+    pub damage_per_hop: f64,
+    /// Which targets start a chain (`radius_targets`: every enemy the sphere
+    /// catches starts its own).
+    pub origin: String,
+    #[serde(default)]
+    pub takes_multishot: bool,
+    /// Does every chain NODE carry a sphere too, or only the beam's contact
+    /// point? UNVERIFIED — a user call on in-game experience against four
+    /// pieces of circumstantial evidence and no citation either way
+    /// (MEASUREMENTS M15). A data switch so it costs one line to flip.
+    #[serde(default)]
+    pub nodes_have_radius: bool,
 }
 
 /// The radial (explosion) part of an attack — MECHANICS §7. Crit/status
@@ -491,6 +533,16 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // The data module's Trigger for a beam. Not cosmetic: it decides
         // whether `fire_rate` means shots or TICKS and whether multishot merges.
         continuous: s.attack.trigger == "held",
+        beam: s.attack.beam.as_ref().map(|b| crate::loadout::BeamGeometry {
+            range_m: b.range_m,
+            damage_radius_m: b.damage_radius_m,
+            radius_takes_multishot: b.radius_takes_multishot,
+            chain_hops: b.chain.hops,
+            chain_range_m: b.chain.range_m,
+            chain_damage_per_hop: b.chain.damage_per_hop,
+            chain_takes_multishot: b.chain.takes_multishot,
+            chain_nodes_have_radius: b.chain.nodes_have_radius,
+        }),
         field_duration_on_empty_reload: 1.0, // raised by Renewed Horror
         multishot_on_last_round: 0.0,        // raised by Final Fusillade
         multishot_ammo_bonus: 0.0,           // raised by Plentiful Mayhem
@@ -571,6 +623,47 @@ mod tests {
         // (asserted above); the Incarnon form is ordinary ADDITIVE. This used
         // to be inferred from those rows and the inference was wrong.
         assert_eq!(i.co_behavior, CoBehavior::AdditiveWithBaseDamage);
+
+        // BEAM GEOMETRY — shape, not a damage part. Pinned because it is data
+        // now rather than prose, and because one of these values is a decision
+        // rather than a citation.
+        let bm = i.beam.expect("the incarnon form is a beam");
+        assert!((bm.range_m - 37.0).abs() < 1e-9);
+        assert!((bm.damage_radius_m - 2.3).abs() < 1e-9);
+        assert!(!bm.radius_takes_multishot, "the sphere never takes multishot");
+        assert_eq!(bm.chain_hops, 5);
+        assert!((bm.chain_range_m - 7.0).abs() < 1e-9);
+        assert!((bm.chain_damage_per_hop - 0.75).abs() < 1e-9);
+        assert!(!bm.chain_takes_multishot);
+        // UNVERIFIED (MEASUREMENTS M15) — a user call on in-game experience,
+        // against four pieces of circumstantial evidence and no citation
+        // either way. One data line flips it.
+        assert!(bm.chain_nodes_have_radius, "user, 2026-07-30: every node spheres");
+        // The base form is not a beam.
+        assert!(b.beam.is_none());
+    }
+
+    /// Firestorm reaches the beam's sphere — "The 2.3 meter damage radius from
+    /// the point of impact CAN benefit from Firestorm (Primed)." It buys no
+    /// single-target damage (a struck target is hit once), which is why the
+    /// panel states the radius rather than a DPS delta.
+    #[test]
+    fn blast_range_mods_enlarge_the_beam_sphere() {
+        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        let base = WeaponBase::from_data("torid_incarnon", false, &[]);
+        let bare = resolve(&base, &[], StackPolicy::AssumedMax);
+        assert!((bare.beam.expect("beam").damage_radius_m - 2.3).abs() < 1e-9);
+
+        let pool = crate::mods_data::class_pool("rifle");
+        let pf: Vec<&crate::loadout::ModDef> =
+            pool.iter().filter(|m| m.id == "primed_firestorm").collect();
+        let modded = resolve(&base, &pf, StackPolicy::AssumedMax);
+        // +44% Blast Range at max rank.
+        assert!(
+            (modded.beam.expect("beam").damage_radius_m - 2.3 * 1.44).abs() < 1e-9,
+            "expected 3.312 m, got {}",
+            modded.beam.unwrap().damage_radius_m
+        );
     }
 
     /// The CO term uses the FULL base including a perk's flat damage. The CO

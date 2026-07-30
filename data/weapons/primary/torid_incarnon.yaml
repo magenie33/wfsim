@@ -95,11 +95,52 @@ attack:
   status_chance: 0.39
   punch_through_m: 0.0
   damage: { toxin: 51.0 }
-  # Geometry, in COMMENTS because nothing consumes it yet (yaml fields are
-  # consumed data): 2.3 m damage radius, 37 m beam range, and a chain to 5
-  # targets within 7 m at 75% of the previous chain's damage. The radius is NOT
-  # an attack part (see above), and Firestorm DOES enlarge it — "The 2.3 meter
-  # damage radius from the point of impact CAN benefit from Firestorm (Primed)."
+  # BEAM GEOMETRY. Real fields now, not prose: the single-target arena consumes
+  # none of it, but `damage_radius_m` is what Firestorm scales (the panel shows
+  # that today) and the whole block is what the multi-target model will read.
+  # It is NOT a `radial:` — that word means "a second damage instance" in this
+  # engine, which the wiki forbids for this weapon (see the note above).
+  beam:
+    range_m: 37.0
+    # Firestorm (Primed) enlarges THIS — verbatim: "The 2.3 meter damage radius
+    # from the point of impact CAN benefit from Firestorm (Primed)."
+    damage_radius_m: 2.3
+    # "As a continuous weapon, the spherical damage radius does not benefit
+    # from Multishot; only targets directly hit by the beam benefit." So the
+    # merged-beam multishot multiplier reaches the DIRECT target and nothing
+    # the sphere catches.
+    radius_takes_multishot: false
+    chain:
+      # "chaining to up to 5 nearby enemies within 7 meters of each other, with
+      # each chain doing 75% of the previous chain's damage" — a SEQUENCE of
+      # hops, each at 75% of the one before, not five simultaneous targets.
+      hops: 5
+      range_m: 7.0
+      damage_per_hop: 0.75
+      # "The beam will chain independently to 5 additional enemies starting
+      # from EACH target hit by the initial damage radius" — every enemy the
+      # sphere catches starts its own chain, which is why a bigger sphere is
+      # worth so much more than the sphere's own damage.
+      origin: radius_targets
+      # Chains from sphere-only targets inherit the sphere's multishot rule.
+      takes_multishot: false
+      # ── THE FLIPPABLE LINE ────────────────────────────────────────────────
+      # Does each chain NODE also carry a damage_radius_m sphere, or is there
+      # only the one at the beam's contact point?
+      #
+      # DECIDED true (user, 2026-07-30) on in-game experience: a clump lights
+      # up in a way that reads as overlapping spheres. The wiki does NOT say
+      # either way — it never mentions a sphere at a chain node, calls the
+      # first one "the INITIAL damage radius", defines the sphere as "from the
+      # point of impact against a surface" while a chain lands on an ENEMY, and
+      # the datamined attack table carries no radius for this attack at all.
+      # Those are four pieces of circumstantial evidence for `false` and ZERO
+      # citations for either value, so they do not outweigh someone who has the
+      # game open.
+      #
+      # Recorded as a data switch precisely so it costs one line to flip.
+      # MEASUREMENTS M15 has the discriminating test.
+      nodes_have_radius: true
 
 # incarnon_evolutions: see data/weapons/primary/torid.yaml (shared group)
 

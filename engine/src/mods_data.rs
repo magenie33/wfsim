@@ -97,6 +97,13 @@ fn f(v: &Value, k: &str) -> Option<f64> {
 fn u(v: &Value, k: &str) -> u32 {
     v.get(k).and_then(Value::as_u64).unwrap_or(0) as u32
 }
+/// Any YAML number, integer or float. `as_f64` alone returns None for a plain
+/// integer scalar, which is why `duration: 9` silently read as absent and left
+/// a literal "X" in the rendered description.
+fn n(v: &Value, k: &str) -> Option<f64> {
+    let x = v.get(k)?;
+    x.as_f64().or_else(|| x.as_i64().map(|i| i as f64))
+}
 
 /// Map one YAML effect entry to a [`ModEffect`] at max rank (None = no damage
 /// effect / not modeled — the mod still loads).
@@ -352,14 +359,31 @@ pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
         for (_, text) in crate::data::files_under("mods/") {
             let Ok(mf) = serde_norway::from_str::<ModFile>(text) else { continue };
             let Some(desc) = mf.description else { continue };
-            let xvals = mf
-                .effects
-                .iter()
-                .filter_map(|e| {
-                    let (a, b) = (f(e, "rank0")?, f(e, "rankMax")?);
-                    ((a - b).abs() > 1e-12).then_some((a, b))
-                })
-                .collect();
+            // The X's in a description are consumed IN ORDER, and an effect
+            // can supply more than one: "+X% Multishot for Xs. Stacks up to
+            // Xx." is one buff spending three of them. So walk each effect and
+            // emit its rank-varying value, then its duration, then its stack
+            // cap — the order they appear in the in-game text.
+            //
+            // Constants ride as (v, v) so `at(rank)` interpolates them to
+            // themselves. Without this the tail X's stayed literal: Galvanized
+            // Chamber rendered "Stacks up to Xx."
+            let mut xvals: Vec<(f64, f64)> = Vec::new();
+            for e in &mf.effects {
+                if let (Some(a), Some(b)) = (f(e, "rank0"), f(e, "rankMax")) {
+                    if (a - b).abs() > 1e-12 {
+                        xvals.push((a, b));
+                    }
+                }
+                // `duration` (buff) and `duration_seconds` (on_equip_buff) are
+                // the same slot in the sentence; a mod carries one or neither.
+                if let Some(d) = n(e, "duration").or_else(|| n(e, "duration_seconds")) {
+                    xvals.push((d, d));
+                }
+                if let Some(m) = n(e, "max_stacks") {
+                    xvals.push((m, m));
+                }
+            }
             map.insert(
                 mf.id,
                 ModDescInfo { description: desc, xvals, max_rank: mf.max_rank },
@@ -409,6 +433,41 @@ mod tests {
             "every mod under /PvPMods/ must be one the wiki does NOT tag \
              \"Exclusive to PvP\" — check Rifle_Mods / Pistol_Mods before changing this"
         );
+    }
+
+    /// Every `X` in a description must be filled. A literal X on a mod card is
+    /// a rendering failure — "Stacks up to Xx." is what it looked like — and it
+    /// only became visible on the rifle pool once `desc_info` started covering
+    /// it, so the pool asserts it rather than waiting to be noticed again.
+    #[test]
+    fn every_mod_description_fills_all_its_x() {
+        // KNOWN GAP, not a tolerance: these carry a parenthetical about BOWS
+        // ("(xX for Bows)", and Internal Bleeding's fire-rate clause) whose
+        // multiplier is real in-game data we do not hold. Because `fill_x`
+        // substitutes positionally, that missing value does not merely leave an
+        // X — it SHIFTS every later one, so Shred renders its punch-through
+        // (1.2) as the bow multiplier "x2.2" and then has nothing left for
+        // "+X Punch Through". Fixing it means adding the datum, not deleting
+        // the clause: bows draw from the rifle pool, so the text is relevant.
+        const MISSING_BOW_MULTIPLIER: [&str; 7] = [
+            "critical_delay", "internal_bleeding", "primed_shred", "shred",
+            "speed_trigger", "vile_acceleration", "vile_precision",
+        ];
+        let mut bad = Vec::new();
+        for class in ["pistol", "rifle"] {
+            for m in class_pool(class) {
+                if MISSING_BOW_MULTIPLIER.contains(&m.id) {
+                    continue;
+                }
+                if let Some(info) = desc_info(m.id) {
+                    let s = info.at(info.max_rank);
+                    if s.contains('X') {
+                        bad.push(format!("{}: {}", m.id, s.replace('\n', " / ")));
+                    }
+                }
+            }
+        }
+        assert!(bad.is_empty(), "unfilled X placeholders:\n{}", bad.join("\n"));
     }
 
     #[test]

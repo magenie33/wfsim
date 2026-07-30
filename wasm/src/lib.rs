@@ -100,6 +100,18 @@ pub fn optimize(body: &str, on_progress: &js_sys::Function) -> String {
                 return;
             }
             last.set(now);
+            // ENUMERATION BUDGET. A browser tab cannot sit through a full-pool
+            // walk (C(72,8) ~ 1.1e10 subsets), so cap the time spent finding
+            // candidates and let the streaming screen answer with the best it
+            // saw. NOT `cancel`: that would return an empty result — this asks
+            // for a best-so-far. Native builds have threads and a Cancel
+            // button and take no budget.
+            const ENUM_BUDGET_MS: f64 = 20_000.0;
+            if counts.get().is_none() && now - t0 > ENUM_BUDGET_MS {
+                state
+                    .stop_enumeration
+                    .store(true, std::sync::atomic::Ordering::Relaxed);
+            }
             let phase = if counts.get().is_some() { "running" } else { "enumerating" };
             let payload = status_json(&state, phase, counts.get(), (now - t0) / 1000.0);
             let _ = f.call1(&JsValue::NULL, &JsValue::from_str(&payload));

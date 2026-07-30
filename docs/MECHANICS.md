@@ -1039,6 +1039,53 @@ a 170-round magazine).
 **Source:** wiki Continuous_Weapon + Multishot. **Status:** merge fully sourced;
 the ramp's interaction with status payloads is a modeling choice.
 
+#### A beam's GEOMETRY — sphere and chain (Torid Incarnon)
+
+Shape, not a damage part. It lives in `attack.beam` and is deliberately **not**
+a `radial:`, because in this engine that word means *a second damage instance*
+and the wiki forbids that reading: *"The damage radius is not a separate damage
+instance from the beam, so a target that is directly struck by the beam is still
+only hit once."* Adding a radial here would double-count the one target the
+arena has.
+
+| field | Torid Incarnon | |
+| --- | --- | --- |
+| `range_m` | 37 | Punch Through *"has no effect on the behavior of the beam"* |
+| `damage_radius_m` | 2.3 | the impact sphere; **Firestorm (Primed) enlarges it** |
+| `radius_takes_multishot` | false | *"only targets directly hit by the beam benefit"* |
+| `chain.hops` / `range_m` / `damage_per_hop` | 5 / 7 m / ×0.75 | a SEQUENCE of hops, each 75% of the one before — not five simultaneous targets |
+| `chain.origin` | `radius_targets` | *"chain independently to 5 additional enemies starting from **each** target hit by the initial damage radius"* |
+| `chain.takes_multishot` | false | chains from sphere-only targets inherit the sphere's rule |
+
+**Why the sphere is worth so much more than its own damage.** Every enemy it
+catches becomes a chain origin, so the instance count grows as `1 + 5·Y` in the
+number of enemies inside it. That, not the sphere's damage, is what Firestorm
+buys — and it is why the community describes Primed Firestorm as *"more enemies
+hit and more beams spawned"* rather than a damage increase.
+
+**Multishot is asymmetric here, and it is easy to get backwards.** The merged
+beam multiplier reaches the **directly struck** target and nothing else: not the
+sphere, and not chains that start from a sphere-only target. Chains starting
+from the directly struck target are not excluded by the wiki's wording and so do
+take it.
+
+**`chain.nodes_have_radius` is a DECISION, not a citation.** Whether a chain hop
+also drops a sphere where it lands is set `true` on the user's in-game read
+(2026-07-30); the wiki never addresses it, and four circumstantial signals point
+the other way. It is one line of weapon data, and MEASUREMENTS **M15** carries a
+protocol that settles it — including why counting damage numbers in a clump
+cannot.
+
+**Single-target impact: none.** Nothing in this block feeds a damage number
+today; the arena has one enemy and the sphere cannot hit it twice. The panel
+states the (mod-scaled) radius so an equipped Firestorm is not invisible, and
+the rest is the multi-target model's input.
+
+**Source:** wiki Torid Incarnon Genesis (verbatim throughout) + user
+(2026-07-30) for `nodes_have_radius`. **Status:** geometry transcribed; the
+node-sphere question is **unverified** (M15), and the 37 / 2.3 / 7 values
+themselves have a SOURCE-SPLIT recorded in DATA_SOURCES.
+
 ### Multishot perks that are not a flat bonus
 
 Two Torid evolutions grant multishot without being a number the resolver can

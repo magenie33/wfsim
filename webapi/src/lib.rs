@@ -1196,6 +1196,21 @@ pub fn panel_json(v: &Value) -> Value {
                 format!("{}s", num(panel.reload_seconds)),
             );
         }
+        // A continuous beam's impact SPHERE. Firestorm enlarges it, and without
+        // this row the mod reads as equipped-but-doing-nothing on this form.
+        // The note carries the honest part: the sphere adds no damage to a
+        // target the beam already struck, so it is worth nothing single-target
+        // and a great deal in a crowd, where every enemy it catches starts its
+        // own chain.
+        if let (Some(bb), Some(bp)) = (base.beam, panel.beam) {
+            stats.push(json!({ "key": "radius", "label": "Beam Radius",
+                "base": format!("{} m", num(bb.damage_radius_m)),
+                "final": format!("{} m", num(bp.damage_radius_m)),
+                "note": format!(
+                    "no single-target damage (a struck target is hit once); in a crowd every enemy it catches starts its own chain ({} hops, {} m, x{} per hop)",
+                    bp.chain_hops, num(bp.chain_range_m), num(bp.chain_damage_per_hop)),
+                "sources": sources("radius", None) }));
+        }
         // PER-WEAPON behavior: GunCO sources (Galvanized Shot, Carnage Reign,
         // Secondary Shiver) combine differently per weapon class, and their base
         // EXCLUDES evolution flat damage — this note states what the model
@@ -2338,8 +2353,32 @@ pub fn run_optimize(
     };
 
     let mut cands: Vec<Candidate> = Vec::new();
-    let mut overflow = false;
+    // Decide the regime BEFORE walking, from the scope's own size. Walking
+    // first and waiting for the count to cross MATERIALIZE_LIMIT is what made
+    // a full pool look dead: the legal builds run out early (a 60-capacity cap
+    // rejects most subsets) so the counter freezes, while the walk still has
+    // C(72,8) ~ 1.1e10 nodes of illegal territory to grind before it can say
+    // it is finished. The estimate is exact enough — it is a threshold test,
+    // not a number anyone reads.
+    let n_usable = pool
+        .iter()
+        .filter(|m| !constraints.forbid.iter().any(|f| f == m.id))
+        .count();
+    let subsets: f64 = (min_slots..=build_size)
+        .map(|k| {
+            // C(n, k), saturating: anything astronomically large only has to
+            // compare greater than the limit.
+            (0..k).fold(1.0f64, |acc, i| acc * (n_usable as f64 - i as f64) / (i as f64 + 1.0))
+        })
+        .sum();
+    let scope_estimate = subsets
+        * evo_sets.len().max(1) as f64
+        * exilus_refs.len().max(1) as f64;
+    let mut overflow = scope_estimate > MATERIALIZE_LIMIT as f64;
     for (vi, set) in evo_sets.iter().enumerate() {
+        if overflow {
+            break;
+        }
         let refs: Vec<&str> = set.iter().map(String::as_str).collect();
         let base = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &refs);
         let base_form = WeaponBase::from_data(&info.id, true, &refs);

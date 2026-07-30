@@ -237,17 +237,25 @@ impl IndirectStat {
 
 /// Is the char at `i` a rank-varying `X` placeholder in a description
 /// template? Matches the data convention (docs: description-X): a bare `X`
-/// (`+X%`, `+X Punch Through`), the multiplier form `xX`, and the metric
-/// form `Xm` — but never a letter inside a word.
+/// (`+X%`, `+X Punch Through`), the multiplier form `xX`, and the UNIT forms
+/// `Xm` / `Xs` / `Xx` — but never a letter inside a word.
+///
+/// The unit suffixes are the subtle ones. Without them "…for Xs" and "Stacks
+/// up to Xx." were not placeholders at all, so no value could ever be
+/// substituted and the card showed a literal X — which is exactly how
+/// Galvanized Chamber came to read "Stacks up to Xx."
 fn is_x_at(b: &[char], i: usize) -> bool {
     if b[i] != 'X' {
         return false;
     }
     let prev_ok = i == 0 || !b[i - 1].is_ascii_alphabetic() || b[i - 1] == 'x';
+    // A unit letter counts only when the word ENDS there: "Xm"/"Xs"/"Xx" are
+    // placeholders, "Xmod" or "Xstack" would be a word starting with X.
+    let unit_ends = |j: usize| b.get(j + 1).is_none_or(|c| !c.is_ascii_alphabetic());
     let next_ok = match b.get(i + 1) {
         None => true,
         Some('%') => true,
-        Some('m') => b.get(i + 2).is_none_or(|c| !c.is_ascii_alphabetic()),
+        Some('m' | 's' | 'x') => unit_ends(i + 1),
         Some(c) => !c.is_ascii_alphabetic(),
     };
     prev_ok && next_ok
@@ -571,6 +579,8 @@ pub struct WeaponBase {
     /// Renewed Horror: the multiplier a reload-from-EMPTY applies to the next
     /// shot's field duration (1.0 = the evolution is not installed).
     pub field_duration_on_empty_reload: f64,
+    /// Continuous-beam geometry, when this form is one.
+    pub beam: Option<BeamGeometry>,
     /// Final Fusillade: a FLAT multishot add on the LAST round of the magazine
     /// (0.0 = not installed). Base form only — the evolution loader drops it on
     /// a charge-backed form, so this is always 0.0 there.
@@ -734,6 +744,26 @@ pub struct ResolvedRadial {
     pub takes_condition_overload: bool,
 }
 
+/// A continuous beam's GEOMETRY — shape, not a damage part. Carried so
+/// Firestorm has a radius to scale and the multi-target model has its inputs;
+/// the single-target arena reads none of it.
+#[derive(Debug, Clone, Copy)]
+pub struct BeamGeometry {
+    pub range_m: f64,
+    /// The impact sphere. Firestorm (Primed) enlarges it.
+    pub damage_radius_m: f64,
+    /// The sphere does NOT take multishot; only the direct target does.
+    pub radius_takes_multishot: bool,
+    pub chain_hops: u32,
+    pub chain_range_m: f64,
+    /// Each hop deals this fraction of the hop before it.
+    pub chain_damage_per_hop: f64,
+    pub chain_takes_multishot: bool,
+    /// Does every chain NODE carry a sphere too? UNVERIFIED (MEASUREMENTS
+    /// M15) — one line of weapon data so a measurement flips it.
+    pub chain_nodes_have_radius: bool,
+}
+
 /// The Incarnon form's charge economy, for the panel's stat display (see
 /// [`WeaponBase::incarnon`]). All times are UNMODDED bases.
 #[derive(Debug, Clone, Copy)]
@@ -827,6 +857,11 @@ pub struct ResolvedPanel {
     /// so the cycle model reads it from data instead of hardcoding one
     /// weapon's numbers.
     pub incarnon: Option<IncarnonForm>,
+    /// Beam geometry with `damage_radius_m` already scaled by Blast Range mods.
+    /// Firestorm (Primed) enlarges the impact sphere — the one thing a
+    /// single-target panel can honestly report about it, since the sphere adds
+    /// no damage to a target the beam already struck.
+    pub beam: Option<BeamGeometry>,
     /// Additive headshot-damage bonus from evolutions (Caput Mortuum).
     pub headshot_damage_bonus: f64,
     /// Devouring Attrition's (chance, bonus) on non-crit instances.
@@ -1323,6 +1358,13 @@ pub fn resolve_with(
         multishot_on_last_round: base.multishot_on_last_round,
         multishot_ammo_bonus: base.multishot_ammo_bonus,
         incarnon: base.incarnon,
+        // Blast Range reaches the beam's sphere too — wiki: "The 2.3 meter
+        // damage radius from the point of impact CAN benefit from Firestorm
+        // (Primed)." Same `br` bucket the radial and the field use.
+        beam: base.beam.map(|b| BeamGeometry {
+            damage_radius_m: b.damage_radius_m * (1.0 + br),
+            ..b
+        }),
         modified_base,
         // Elemental Excess adds its crit/status FLAT, after the mod
         // multiply (wiki) — a different layer from the base-stat one.
@@ -1396,6 +1438,7 @@ mod tests {
             lingering: None,
             continuous: false,
             field_duration_on_empty_reload: 1.0,
+            beam: None,
             multishot_on_last_round: 0.0,
             multishot_ammo_bonus: 0.0,
             evo_fire_rate_bonus: 0.0,

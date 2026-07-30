@@ -293,7 +293,11 @@ fn enumerate_rec<S: FnMut(&mut Vec<Candidate>) -> bool>(
     state: Option<&FunnelState>,
 ) -> bool {
     if let Some(st) = state {
-        if st.cancel.load(std::sync::atomic::Ordering::Relaxed) {
+        // Either signal stops the walk; the CALLER tells them apart, because
+        // they mean opposite things about the result (empty vs best-so-far).
+        if st.cancel.load(std::sync::atomic::Ordering::Relaxed)
+            || st.stop_enumeration.load(std::sync::atomic::Ordering::Relaxed)
+        {
             return false;
         }
     }
@@ -639,6 +643,16 @@ pub struct FunnelState {
     /// Observer → funnel: request a stop (checked before each job AND
     /// inside candidate enumeration — a huge scope must stay cancellable).
     pub cancel: AtomicBool,
+    /// Enumeration BUDGET exhausted — stop walking, keep what was found.
+    ///
+    /// Deliberately NOT `cancel`: cancelling means "the user asked to stop",
+    /// and the caller answers it with an empty result. This means "the scope
+    /// is bigger than the time allowed", and the caller must answer it with
+    /// the best builds found so far. A full mod pool is C(72,8) ~ 1.1e10
+    /// subsets; the legal ones run out early but the walk still has to grind
+    /// the illegal remainder to prove it, which no browser tab should be asked
+    /// to sit through.
+    pub stop_enumeration: AtomicBool,
     /// Candidates emitted so far by a running enumeration (progress for
     /// the "enumerating" phase, where sims_done is still 0).
     pub enumerated: AtomicU64,

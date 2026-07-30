@@ -1464,13 +1464,20 @@ function openPolMenu(slotIdx) {
 // Full parity with mods: ONE slot card (rank stepper, ⋯ menu) → click opens a
 // searchable picker that matches name OR effect, with effect lines, rarity
 // frames, and the equipped arcane highlighted in the accent background family.
-// The arcanes the CURRENT weapon can equip: its own slot's pool, plus
-// "none" (which belongs to every slot). Arcane ids are globally unique, so
-// lookups stay unfiltered — only the PICKERS narrow.
+// The arcanes the CURRENT weapon can equip: its own slot's pool. Arcane ids
+// are globally unique, so lookups stay unfiltered — only the PICKERS narrow.
+//
+// "none" (the empty-slot SENTINEL) stays in the pool because the OPTIMIZER
+// scope legitimately searches it — "consider running no arcane" is a real
+// choice there. The BUILDER picker drops it: offering "None" in a list of
+// arcanes is a second, worse way to do what that slot's own "Remove arcane"
+// already does (user, 2026-07-30).
 const arcanePool = () => {
   const slot = weaponInfo($("weapon").value).arcane_slot;
   return (META.arcanes || []).filter((a) => a.id === "none" || !a.slot || a.slot === slot);
 };
+/// The builder picker's list — real arcanes only.
+const arcanePickPool = () => arcanePool().filter((a) => a.id !== "none");
 const arcaneById = (id) => META.arcanes.find((x) => x.id === id);
 function setArcane(id) { arcane = id; arcaneRank = null; } // new arcane → max rank
 // Effect lines for a specific rank (clamped). Arcane strengths scale per rank
@@ -1537,13 +1544,12 @@ function renderArcaneMenu(query) {
   const q = query.trim().toLowerCase();
   // Search matches NAME (localized or English), ANY rank's effect text,
   // or the description — in either language (searchBlob).
-  const hits = arcanePool().filter((a) => a.id === "none" || !q || searchBlob(a).includes(q));
+  const hits = arcanePickPool().filter((a) => !q || searchBlob(a).includes(q));
   menu.innerHTML = hits.length ? hits.map((a) => {
     const isCur = a.id === arcane;
-    const none = a.id === "none";
     return `<div class="opt ${isCur ? "cur" : ""} ${a.rarity ? "rar-" + a.rarity : ""}" data-id="${a.id}">
-      ${none ? '<span class="mod none">∅</span>' : imgTag(IMG(a.image), "mod")}
-      <div class="info"><div class="mn">${none ? a.name : wl(a.name, wikiUrl(a.name_en || a.name))}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}</div>${effLines(descAt(a, a.max_rank) || effectsAt(a, a.max_rank))}</div></div>`;
+      ${imgTag(IMG(a.image), "mod")}
+      <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}</div>${effLines(descAt(a, a.max_rank) || effectsAt(a, a.max_rank))}</div></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => { setArcane(o.dataset.id); closePopovers(); renderArcanes(); }));
 }
