@@ -5,8 +5,11 @@ polarity: madurai
 base_drain: 6                 # max drain 16 at rank 10
 max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/PrimedShredMod
-description: "+X% Fire Rate (xX for Bows)\n+X Punch Through"
+description: "+X% Fire Rate (x2 for Bows)\n+X Punch Through"
 
+# The "(x2 for Bows)" clause is a LITERAL - the multiplier does not scale
+# with rank (WFCD levelStats). Bows double this mod's fire-rate effect;
+# no bow is in data/weapons yet, so nothing models it.
 effects:
   # WFCD ramp: +5% -> +55%, NOT +100%. The single-source audit missed this
   # because candidates(1.0) includes the +1 multiplier reading 2.0, which

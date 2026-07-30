@@ -518,14 +518,28 @@ mod tests {
 
     #[test]
     fn desc_info_fills_every_x_across_the_pool() {
-        // Every pistol mod's description must fill cleanly at every rank
+        // EVERY class, not just pistol. The pool this walked was the only one
+        // that existed when it was written, so a guard that NAMES a pool stops
+        // guarding the moment a second appears — the rifle pool then shipped
+        // descriptions whose X count exceeded their values, and Vile
+        // Acceleration showed its damage downside as a bare placeholder (user,
+        // 2026-07-30). It reads the class registry now.
+        //
         // (X count <= varying-effect count; hidden tail stats — Amalgam's
-        // acrobatic speed — are legitimately unconsumed).
-        for m in pistol_pool() {
-            let info = desc_info(m.id).unwrap_or_else(|| panic!("{} has no description", m.id));
-            for r in 0..=info.max_rank {
-                let d = info.at(r);
-                assert_eq!(crate::loadout::count_x(&d), 0, "{} rank {r}: unfilled X in {d:?}", m.id);
+        // acrobatic speed — are legitimately unconsumed.)
+        for c in classes() {
+            for m in class_pool(c) {
+                let info =
+                    desc_info(m.id).unwrap_or_else(|| panic!("{} has no description", m.id));
+                for r in 0..=info.max_rank {
+                    let d = info.at(r);
+                    assert_eq!(
+                        crate::loadout::count_x(&d),
+                        0,
+                        "{} rank {r}: unfilled X in {d:?}",
+                        m.id
+                    );
+                }
             }
         }
         // Spot checks: linear fill, the xX faction form, and a flat value.
@@ -535,6 +549,13 @@ mod tests {
         assert_eq!(desc_info("seeker").unwrap().at(5), "+2.1 Punch Through");
         // Signed template + negative stored downside: magnitude only.
         assert_eq!(desc_info("anemic_agility").unwrap().at(5), "+90% Fire Rate\n-15% Damage");
+        // Its rifle twin, plus the literal bows clause: the `2` is TEXT, not a
+        // value — written as `X` it ate the damage stat and left the last
+        // placeholder unfilled.
+        assert_eq!(
+            desc_info("vile_acceleration").unwrap().at(5),
+            "+90% Fire Rate (x2 for Bows)\n-15% Damage"
+        );
     }
 }
 

@@ -5,8 +5,11 @@ polarity: madurai
 base_drain: 4                 # max drain 9 at rank 5
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponFireRateMod
-description: "+X% Fire Rate (xX for Bows)"
+description: "+X% Fire Rate (x2 for Bows)"
 
+# The "(x2 for Bows)" clause is a LITERAL - the multiplier does not scale
+# with rank (WFCD levelStats). Bows double this mod's fire-rate effect;
+# no bow is in data/weapons yet, so nothing models it.
 effects:
   # WFCD ramp: +10% -> +60%. Was the placeholder pair (1/6, 1.0).
   - kind: fire_rate_bonus
