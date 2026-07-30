@@ -333,13 +333,23 @@ impl ModDescInfo {
     }
 }
 
-/// Description info for the pistol pool, by mod id (None: no yaml
-/// description — e.g. the hardcoded rifle pool).
+/// Description info by mod id — the VERBATIM in-game text with each `X`
+/// filled, which is what the picker and a configured slot display.
+///
+/// Covers EVERY class. It used to scan `mods/pistol/` alone, from when the
+/// rifle pool was hardcoded; the rifle pool has been yaml-driven with a
+/// description on every file for a while, so every rifle mod silently fell
+/// back to the engine's modeled effect lines. That fallback only states what
+/// the ENGINE models, so anything unmodeled on a mod simply vanished from the
+/// UI — the card looked like it did less than it does.
+///
+/// None means the file genuinely has no `description`, and the caller falls
+/// back to the effect lines.
 pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
     static INFO: OnceLock<std::collections::HashMap<String, ModDescInfo>> = OnceLock::new();
     INFO.get_or_init(|| {
         let mut map = std::collections::HashMap::new();
-        for (_, text) in crate::data::files_under("mods/pistol/") {
+        for (_, text) in crate::data::files_under("mods/") {
             let Ok(mf) = serde_norway::from_str::<ModFile>(text) else { continue };
             let Some(desc) = mf.description else { continue };
             let xvals = mf
