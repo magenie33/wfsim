@@ -1497,18 +1497,25 @@ added it must multiply, not join the sum.**
 Efficiency (such as Energized Munitions)"*. So Primary Crux's efficiency grant
 goes inert in an Incarnon form while its status-chance grant keeps working.
 
-**Open question — what happens to the remainder when the buff expires?**
-NOT DOCUMENTED anywhere. With the magazine at 0.5 and efficiency back to zero,
-the next shot costs a full 1.0: does the game let it fire (and how is the debt
-settled), or does it demand a whole round? The sim currently fires it and lets
-the counter go negative before reloading, which is a guess. Protocol in
-MEASUREMENTS M14. Bounded impact — at most one shot per magazine, and only when
-a timed efficiency source lapses mid-magazine — which is why it is recorded
-rather than blocking.
+**An overdraw's DEBT survives the reload** — ✅ measured (MEASUREMENTS M14).
+When the efficiency source lapses mid-magazine the next shot costs a full round
+out of whatever fraction is left, the counter goes NEGATIVE, and the reload
+**adds** a magazine to that negative rather than resetting it. Measured on a
+5-round magazine: 3 buffed shots leave 4.25, five full-cost shots take it to
+−0.75, and the reload returns **4.25, not 5.00**. So `engine::dummy` reloads
+with `magazine += refill`; `=` would forgive the debt and hand back a free
+fraction. A no-op without efficiency, since a 1.0 cost lands exactly on 0.
 
-**Source:** wiki `Ammo` + `Ammo Efficiency` + `Energized Munitions`.
-**Status:** formula, fraction-keeping, the partial-round gate and the stacking
-rule are sourced; the expiry remainder is **unverified** (M14).
+**The in-game HUD shows the CEILING** of that fractional counter, which is how
+M14 was readable at all: from 4.25 a single 0.25 shot moves the readout 5 → 4,
+where a clean 5.00 magazine would have stayed at 5. Worth knowing before
+comparing any sim ammo number against a screenshot — and if the UI ever displays
+a live magazine, it must ceil, not round or truncate.
+
+**Source:** wiki `Ammo` + `Ammo Efficiency` + `Energized Munitions` +
+MEASUREMENTS M14. **Status:** formula, fraction-keeping, the partial-round gate
+and the stacking rule are sourced; the overdraw debt, its survival across a
+reload, and the ceiling display are **measured** (M14).
 
 ---
 

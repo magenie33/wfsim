@@ -2501,7 +2501,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 if let Some(b) = cy.base_form.fr_on_reload {
                     fr_reload_expiry = t + b.duration;
                 }
-                base_mag = cy.base_form.magazine_size;
+                // `+=` carries an efficiency overdraw's debt into the fresh
+                // magazine — ✅ measured (MEASUREMENTS M14), same rule as the
+                // plain reload below.
+                base_mag += cy.base_form.magazine_size;
                 // Renewed Horror: "On Reload from Empty". This branch IS the
                 // reload-from-empty path.
                 field_duration_boost = true;
@@ -2526,7 +2529,11 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 reserve -= take;
                 take
             };
-            magazine = refill;
+            // `+=`, NOT `=`: an ammo-efficiency overdraw leaves the counter
+            // NEGATIVE, and that debt is CARRIED into the fresh magazine —
+            // ✅ measured (MEASUREMENTS M14). A no-op without efficiency, since
+            // a 1.0 cost lands the magazine exactly on 0.
+            magazine += refill;
             field_duration_boost = true; // reloaded from empty (Renewed Horror)
             if t >= params.duration_secs {
                 break;
@@ -2590,9 +2597,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // 1-round magazine takes four 0.25 shots — which is why the gate above
         // is "anything left" rather than "a whole round left".
         //
-        // UNVERIFIED (MEASUREMENTS M14): what a lapsing buff does to a leftover
-        // fraction. This fires the shot and lets the counter go negative before
-        // the next iteration reloads. Bounded at one shot per magazine.
+        // A lapsing buff does NOT strand the remainder — ✅ measured
+        // (MEASUREMENTS M14): the shot fires at full cost off whatever is left,
+        // the counter goes NEGATIVE, and the reload carries that debt into the
+        // fresh magazine (see the `+=` above).
         let efficiency = if ap.ammo_efficiency_applies {
             // BuffBar (Frenzy) + static arcane (Akimbo Slip Shot, assumed-max)
             // + live arcane stacks (Primary Crux) additively — wiki Crux:
@@ -3851,6 +3859,70 @@ mod tests {
             (on.mean_damage - (400.0 + 640.0)).abs() < 1e-9,
             "boosted {} (expected 400 plain + 640 from the generated grenade)",
             on.mean_damage
+        );
+    }
+
+    /// Ammo efficiency is a DIVIDED COST and the magazine keeps the fraction —
+    /// ✅ measured (MEASUREMENTS M14). A 5-round magazine at 75% efficiency
+    /// takes 20 shots, because each costs 0.25.
+    #[test]
+    fn ammo_efficiency_divides_the_cost_and_the_magazine_keeps_the_fraction() {
+        let p = |eff: f64| DummyParams {
+            arcane: ArcaneFx { ammo_efficiency: eff, ..ArcaneFx::none() },
+            ammo_efficiency_applies: true,
+            fire_rate: 1.0,
+            magazine_size: 5.0,
+            // One magazine only: dry reserves stop the run instead of
+            // reloading, so the shot count is exactly what the magazine bought.
+            infinite_reserve: false,
+            reserve_ammo: 0.0,
+            duration_secs: 100.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let plain = monte_carlo(&p(0.0), 4, 3);
+        assert!((plain.mean_shots - 5.0).abs() < 1e-9, "shots {}", plain.mean_shots);
+        let eff = monte_carlo(&p(0.75), 4, 3);
+        assert!(
+            (eff.mean_shots - 20.0).abs() < 1e-9,
+            "5 rounds at 0.25 each = 20 shots, got {}",
+            eff.mean_shots
+        );
+    }
+
+    /// …and an overdraw's DEBT survives the reload — ✅ measured (M14, user's
+    /// in-game run on a 5-round magazine): 3 buffed shots leave 4.25, five
+    /// full-cost shots take that to −0.75 and trigger the reload, and the fresh
+    /// magazine comes back at 4.25, not 5. The tell in game is the UI, which
+    /// shows the CEILING: one more 0.25 shot moves 4.25 to exactly 4.00 and the
+    /// readout drops 5 -> 4, which a clean 5.00 magazine could never do.
+    #[test]
+    fn an_efficiency_overdraw_carries_its_debt_through_the_reload() {
+        // 60% efficiency = 0.4 a shot, chosen because it does NOT divide a
+        // 5-round magazine evenly — which is the only way the two models can
+        // be told apart:
+        //   magazine 1: 13 shots take 5.0 to -0.2, then reload.
+        //   carry    -> 5.0 + (-0.2) = 4.8, which buys exactly 12 more = 25.
+        //   reset    -> a clean 5.0, which buys 13 more = 26.
+        let p = DummyParams {
+            arcane: ArcaneFx { ammo_efficiency: 0.6, ..ArcaneFx::none() },
+            ammo_efficiency_applies: true,
+            fire_rate: 1.0,
+            magazine_size: 5.0,
+            reserve_ammo: 5.0, // exactly one reload's worth, then dry
+            infinite_reserve: false,
+            reload_seconds: 0.001,
+            duration_secs: 100.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 4, 3);
+        assert!((s.mean_reloads - 1.0).abs() < 1e-9, "reloads {}", s.mean_reloads);
+        assert!(
+            (s.mean_shots - 25.0).abs() < 1e-9,
+            "expected 25 shots (13 + 12, the debt carried); 26 would mean the \
+             reload wiped it. got {}",
+            s.mean_shots
         );
     }
 

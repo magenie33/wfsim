@@ -425,7 +425,7 @@ measurement confirms it directly.
 
 ---
 
-## M14 — What happens to the ammo remainder when an efficiency buff expires?
+## M14 — What happens to the ammo remainder when an efficiency buff expires? ✅ (2026-07-30)
 
 **Question.** Ammo Efficiency divides the per-shot ammo cost and *"keeps track
 of the fractions as well"* (wiki Energized Munitions), so a magazine can sit on
@@ -434,49 +434,60 @@ cost snaps back to a full 1.0, what does the game do?
 
 Three candidate models, and they differ by up to one shot per magazine:
 1. **Fire and overdraw** — the shot happens, the remainder is spent and the
-   magazine bottoms out at 0. (What `engine::dummy` does today; it lets the
-   counter go negative and reloads on the next iteration.)
+   magazine bottoms out at 0.
 2. **Fire and keep the credit** — the remainder is a pre-payment on the *next*
    round, so a 0.5 remainder means the round after costs only 0.5.
 3. **Refuse** — a full round is required, so the weapon reloads with 0.5
    showing and that fraction is discarded.
 
-**Why it is worth an entry, and why it is not urgent.** The bounded cost is one
-shot per magazine, and only when a *timed* efficiency source lapses mid-magazine
-— in the current roster that means Primary Crux's decaying stacks, since Frenzy
-grants a flat 100% (cost zero, magazine never drains) and Akimbo Slip Shot is
-static. So it cannot move a headline DPS number much, but it is a guess sitting
-in the ammo path and it should be labelled as one.
+**Result (in-game, user, 2026-07-30).** **Model 1 — and the debt survives the
+reload**, which none of the three candidates had anticipated. Run on a 5-round
+magazine with a 75% efficiency buff:
 
-**Method** (Simulacrum, and the point is to make the fraction VISIBLE):
-1. Pick a weapon with a **small magazine and a slow fire rate**, so single
-   rounds are readable on the HUD — a sniper or the Exergis is ideal, and the
-   Exergis's 1-round magazine makes every model give a different answer.
-2. Get a **timed** efficiency source whose expiry you control. Energized
-   Munitions (Helminth, +75% for 3–5 s) is the clean one: a known 0.25 cost and
-   a short, predictable window.
-3. Fire an ODD number of shots inside the window — with 75% efficiency, 2 shots
-   leaves the magazine at 0.5 of a round. **Stop firing** and let the buff run
-   out.
-4. Fire once more, watching the ammo counter:
-   - shot fires, counter drops to 0 (or the next whole round) ⇒ **model 1**;
-   - shot fires and the round AFTER it is unusually cheap ⇒ **model 2**;
-   - shot does not fire / the weapon auto-reloads instead ⇒ **model 3**.
-5. Repeat with a 3-shot prefix (leaving 0.25) to check the answer does not
-   depend on how big the remainder is.
+| step | internal | UI |
+| --- | --- | --- |
+| full magazine | 5.00 | 5 |
+| buff ON, 3 shots at 0.25 | **4.25** | 5 |
+| buff OFF, 5 shots at 1.00 | **−0.75** → reload | — |
+| after the reload | **4.25** | 5 |
+| buff ON, 1 shot at 0.25 | **4.00** | **4** |
 
-**Confounds to avoid.** No other ammo-efficiency source equipped — they stack
-additively (except Energized Munitions itself, which multiplies), and a second
-source changes the cost mid-test. Do not use a charge-backed Incarnon form: it
-is exempt from ammo efficiency entirely and would show no effect at all. Watch
-the RESERVE counter too, not just the magazine, so a reload does not hide where
-the round went.
+Three separate rules fall out of that one run:
 
-**Outcome mapping.** Model 1 is already implemented and needs nothing. Model 2
-means the sim must carry the remainder across the reload boundary rather than
-resetting it. Model 3 means the fire gate becomes `magazine >= cost` instead of
-`magazine > 0` — and note that gate must NOT be applied unconditionally, because
-the Exergis case proves a partial round fires while the buff is still up.
+1. **The cost really is divided and the fraction really is kept** — 3 buffed
+   shots cost 0.75 of a round, not 1 and not 3.
+2. **A partial round fires at full cost, and overdraws.** From 4.25 with the
+   buff gone, five full-cost shots all fire; the fifth goes off with 0.25 left
+   and lands the counter at −0.75. So the fire gate is "anything left", never
+   "enough to pay".
+3. **The reload ADDS to the counter rather than setting it** — the fresh
+   magazine came back at 4.25, not 5.00.
+
+**How rule 3 is known, given the HUD shows whole numbers.** The **UI displays
+the CEILING** of the internal value, which is what makes the last row decisive:
+one 0.25 shot dropped the readout from 5 to 4. That only happens from 4.25 →
+4.00 (`ceil` 5 → 4). Had the reload handed back a clean 5.00, the same shot
+would land on 4.75 and the readout would have stayed at **5**. The UI's rounding
+is doing the measuring here.
+
+**Consequence for the model.** `engine::dummy` had rules 1 and 2 right already —
+the fire gate is `magazine < 1e-9` and the cost is `1 − efficiency`, so a
+partial round fires and the counter is allowed to go negative. Rule 3 was
+**wrong**: the reload did `magazine = refill`, silently forgiving the debt and
+handing back a free fraction of a round. It is `magazine += refill` now, on both
+reload paths (the plain one and the Incarnon cycle's base-form reload).
+
+The fix is a no-op without an efficiency source, since a 1.0 cost lands the
+magazine exactly on 0 — which is why nothing else moved. Pinned by
+`an_efficiency_overdraw_carries_its_debt_through_the_reload`, built on a 60%
+buff (0.4 a shot) precisely because it does NOT divide a 5-round magazine
+evenly: carrying the debt gives 25 shots off two magazines, wiping it gives 26.
+Verified to fail with `got 26` against the old code.
+
+**Not tested, and left alone.** Whether an Incarnon **transform** carries a debt
+the same way a reload does. The swap "fully reloads" the base magazine, which is
+a different event from a reload-from-empty — the same reason it does not arm
+Renewed Horror (M13). It stays `=` there.
 
 ---
 
