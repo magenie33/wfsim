@@ -7,12 +7,30 @@ description: "+50% Projectile Speed"
 selection: choose_one
 
 effects:
-  # INERT in the arena: the grenade's 40 m/s travel time is not simmed (the
-  # target is at point blank and every shot connects). It is real quality of
-  # life on a slow, heavily-arcing projectile — outside the DPS math.
+  # NOT merely quality of life: projectile speed BUYS RANGE. VERBATIM (wiki
+  # Range): "Some weapons that shoot projectiles may have a projectile lifetime
+  # associated and not an explicit maximum range stat. For these weapons, the
+  # only way to increase their maximum range is to use Projectile Speed bonuses
+  # instead of range ones" — max range = speed x lifetime, worked on the page as
+  # Arca Plasmor 60 m/s x 0.5 s = 30 m, and 84 m/s = 42 m under Fatal
+  # Acceleration. So +50% speed is +50% max range on the grenade.
+  #
+  # It does NOT touch the cloud's 3 m radius. Projectile speed and blast radius
+  # are separate stats, which Static Alacrity proves by carrying both at once
+  # ("+50% Projectile Speed" AND "-50% Blast Radius", scaling independently
+  # across ranks).
+  #
+  # Still INERT here, but for a stated reason rather than by dismissal: the
+  # arena is single-target at a fixed engagement, so it models neither travel
+  # time nor range. And the number is not even derivable — NEITHER source gives
+  # the Torid's projectile lifetime (the wiki page and WFCD both stop at
+  # shot_speed 40), so the new max range cannot be computed from data.
+  #
+  # `note`/`rankMax` used to sit here as YAML fields. The evolution loader reads
+  # NEITHER (`kind: unmodeled` resolves to `Inert`, which contributes nothing) —
+  # they were copied from the ARCANE schema, where `note` really is consumed and
+  # rendered. Prose belongs in comments; only consumed data gets a field.
   - kind: unmodeled
-    note: "+50% projectile speed (travel time is not simmed)"
-    rankMax: 0.5
 
 source:
   url: https://wiki.warframe.com/w/Torid_Incarnon_Genesis

@@ -500,7 +500,17 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         f.base_status_chance += v;
                     }
                 }
-                EvoEffect::FlatBaseMagazine(v) => base.magazine_size += v,
+                // BASE FORM ONLY, and the gate is load-bearing: an Incarnon
+                // form's `magazine_size` IS its charge pool (the pseudo-reload
+                // rounds), so an ungated `+=` handed Extended Volley's +9 to
+                // the 170-round gauge as well — "Does not apply to Incarnon
+                // Form's Magazine" (wiki), and that magazine is outside the
+                // ammo system entirely (user, 2026-07-30: it uses max charges).
+                EvoEffect::FlatBaseMagazine(v) => {
+                    if base.incarnon.is_none() {
+                        base.magazine_size += v;
+                    }
+                }
                 EvoEffect::FieldDurationOnEmptyReload(v) => {
                     base.field_duration_on_empty_reload = *v;
                 }
@@ -709,5 +719,23 @@ mod tests {
         // evolution rather than just its conditional half.
         let bare = WeaponBase::from_data("torid_incarnon", false, &[]);
         assert!(inc.base_vector.total() > bare.base_vector.total());
+    }
+
+    /// Extended Volley: "Does not apply to Incarnon Form's Magazine", and that
+    /// form uses max charges rather than a magazine (user, 2026-07-30). The
+    /// gate is load-bearing because an Incarnon form's `magazine_size` IS its
+    /// charge pool — an ungated `+=` quietly made it 179 rounds.
+    #[test]
+    fn extended_volley_leaves_the_charge_pool_alone() {
+        use crate::loadout::WeaponBase;
+        let evos = ["torid_extended_volley"];
+        let base = WeaponBase::from_data("torid", false, &evos);
+        let inc = WeaponBase::from_data("torid_incarnon", false, &evos);
+        assert!((base.magazine_size - 14.0).abs() < 1e-9, "5 + 9 = {}", base.magazine_size);
+        assert!(
+            (inc.magazine_size - 170.0).abs() < 1e-9,
+            "the charge pool must stay 170, got {}",
+            inc.magazine_size
+        );
     }
 }

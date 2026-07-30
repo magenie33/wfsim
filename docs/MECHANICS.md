@@ -751,6 +751,31 @@ consequence — a stuck grenade puts the target at the epicentre either way — 
 it is what the panel states, and Primary Compression reads the MODDED radius
 (below).
 
+**Projectile SPEED is a range stat, and a different one.** VERBATIM (wiki
+`Range`): *"Some weapons that shoot projectiles may have a projectile lifetime
+associated and not an explicit maximum range stat. For these weapons, the only
+way to increase their maximum range is to use Projectile Speed bonuses instead
+of range ones."* So **max range = projectile speed × projectile lifetime**,
+which the page works out: *"Arca Plasmor shoots a projectile that travels at
+60m/s with a 0.5s duration, meaning that its maximum range is 30m. Applying a
+Fatal Acceleration, will increase the projectile's speed to 84m/s, meaning its
+new maximum range will be 42m."* A projectile-speed bonus (Terminal Velocity,
+Torid's Swift Deliverance evolution) is therefore a real capability change, not
+cosmetics.
+
+It does **not** touch AoE radius — the two are independent stats, which Static
+Alacrity proves by carrying both at once (*"+50% Projectile Speed"* AND *"-50%
+Blast Radius"*, scaling independently across ranks). What it does also scale is
+travel-distance falloff: *"Mods including Rivens that have positive or negative
+Projectile speeds will affect a weapon's entire Damage Falloff range
+accordingly, making them more or less effective at longer ranges."*
+
+**Unmodeled, deliberately.** The arena is single-target at a fixed engagement,
+so it models neither travel time nor range, and no roster weapon publishes a
+projectile lifetime — the Torid's wiki page and WFCD both stop at `shot_speed:
+40` — so the resulting range is not even derivable from data. Recorded here so
+the omission is a stated scope boundary rather than an oversight.
+
 The critical-headshot damage interaction is specified in §5.
 
 **How many Hits a Shot produces (source: wiki).** A **Hit** (the on-hit-effect

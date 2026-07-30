@@ -13,9 +13,11 @@ effects:
   # change, not a convenience.
   - kind: flat_base_magazine
     value: 9
-    # "Does not apply to Incarnon Form's Magazine" — which needs no gate here:
-    # the Incarnon entry's magazine comes from its `pseudo_reload`, and the
-    # charge-backed 170 rounds are outside the ammo system entirely.
+    # "Does not apply to Incarnon Form's Magazine" (wiki), and that form uses
+    # max charges rather than a magazine at all (user, 2026-07-30). This DOES
+    # need a gate: the Incarnon entry's `magazine_size` is its pseudo-reload
+    # charge pool, so the effect is applied to the base form only — the loader
+    # drops it on any charge-backed form.
 
 source:
   url: https://wiki.warframe.com/w/Torid_Incarnon_Genesis
