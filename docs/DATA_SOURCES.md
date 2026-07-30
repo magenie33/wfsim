@@ -152,6 +152,33 @@ and `1.0` matched via the "+1 multiplier" reading against the `2` in
 "(x2 for Bows)". A wrong value hiding behind a coincidence in the same string
 is exactly what a second, independent ramp rules out.
 
+### Second pass: rendered text vs `levelStats`, rank by rank (2026-07-31)
+
+The checks above compare stored VALUES. This one compares what the card
+SAYS — `desc_ranks` from `/api/meta` against WFCD's `levelStats`, every mod
+at every rank, 1050 mod-ranks over 153 mods. It is the only check that can
+see a value landing in the wrong SLOT, because both sides are the same
+sentence. What it caught:
+
+- **`shred` was a sixth survivor of the `(1/6, 1.0)` placeholder pair** — the
+  audit above found five and this one was still reading **+100% fire rate at
+  max instead of +30%**. That one is not cosmetic: the sim built with it.
+- Values matched to placeholders by POSITION rather than by kind. Galvanized
+  Crosshairs writes its duration and stack cap as literals, so its two X's are
+  both crit — by position the 12-second duration took the second and printed
+  "+1200% Critical Chance". Same shape in Galvanized Scope, Twitch, Reflex
+  Draw, Aerial Ace.
+- Rank-varying numbers written as LITERALS: `hawk_eye` "+80% Zoom" and
+  `steady_hands` "-60% Weapon Recoil" (both ramp from a quarter of that), and
+  "for 9s" in five pistol buff mods whose duration ramps 2s → 9s.
+- A ramping duration stored as one constant (eight mods): the card read the
+  max-rank duration at every rank. `duration_rank0` states the other end;
+  `duration` stays the max-rank value the engine builds with.
+
+`fixed_and_rank_varying_values_land_in_the_right_slots` pins the cases;
+`desc_info_fills_every_x_across_the_pool` (now over EVERY class, not just the
+pistol pool it was written for) fails on any placeholder left unfilled.
+
 ## Verification tooling (lives in `private/scripts/` — LOCAL, gitignored)
 
 The pipeline that fills and checks `data/` is not in the repo (`/private/` is

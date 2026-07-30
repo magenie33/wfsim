@@ -6,7 +6,7 @@ base_drain: 4                 # max drain 7 at rank 3
 max_rank: 3
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponPistolZoomFovMod
-description: "+80% Zoom"
+description: "+X% Zoom"
 
 # MaxRank 3, and the wiki MODULE says 5 — the module is wrong here. WFCD's
 # export (DE's own, joined by uniqueName) gives fusionLimit 3 with four rank

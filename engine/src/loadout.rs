@@ -261,6 +261,37 @@ fn is_x_at(b: &[char], i: usize) -> bool {
     prev_ok && next_ok
 }
 
+/// What a description placeholder expects, read off the character right after
+/// it. The `X` in "for Xs" wants a DURATION and the one in "up to Xx" a stack
+/// cap; every other `X` wants the effect's rank-varying value.
+///
+/// Filling by POSITION alone put Galvanized Crosshairs' 12-second duration in
+/// its crit slot and printed "+1200% Critical Chance" — a description that
+/// writes its duration as a literal supplies no slot for it, so the values
+/// after it all shifted up one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum XKind {
+    /// A rank-varying stat.
+    Value,
+    /// Seconds — "for Xs".
+    Duration,
+    /// A stack cap — "up to Xx".
+    Stacks,
+}
+
+/// The kind of every `X` in a template, in order.
+pub fn x_kinds(template: &str) -> Vec<XKind> {
+    let b: Vec<char> = template.chars().collect();
+    (0..b.len())
+        .filter(|&i| is_x_at(&b, i))
+        .map(|i| match b.get(i + 1) {
+            Some('s') => XKind::Duration,
+            Some('x') => XKind::Stacks,
+            _ => XKind::Value,
+        })
+        .collect()
+}
+
 /// Number of rank-varying `X` placeholders in a description template.
 pub fn count_x(template: &str) -> usize {
     let b: Vec<char> = template.chars().collect();

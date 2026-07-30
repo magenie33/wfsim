@@ -12,8 +12,10 @@ description: "+X% Fire Rate (x2 for Bows)\n+X Punch Through"
 # no bow is in data/weapons yet, so nothing models it.
 effects:
   - kind: fire_rate_bonus
-    rank0: 0.1667
-    rankMax: 1.0
+    # WFCD ramp: +5% -> +30%. Was the placeholder pair (1/6, 1.0), which
+    # is +100% fire rate at max - the sim read that, not just the card.
+    rank0: 0.05
+    rankMax: 0.30
   - kind: punch_through_bonus
     rank0: 0.2
     rankMax: 1.2

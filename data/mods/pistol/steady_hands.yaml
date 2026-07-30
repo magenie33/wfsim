@@ -6,7 +6,7 @@ base_drain: 6                 # max drain 9 at rank 3
 max_rank: 3
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponRecoilReductionMod
-description: "-60% Weapon Recoil"
+description: "-X% Weapon Recoil"
 
 # −60% Weapon Recoil. Recoil is an aim/handling effect with no damage model
 # here (the sim assumes perfect aim), so this is intentionally unmodeled —

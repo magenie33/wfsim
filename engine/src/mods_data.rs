@@ -361,27 +361,89 @@ pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
             let Some(desc) = mf.description else { continue };
             // The X's in a description are consumed IN ORDER, and an effect
             // can supply more than one: "+X% Multishot for Xs. Stacks up to
-            // Xx." is one buff spending three of them. So walk each effect and
-            // emit its rank-varying value, then its duration, then its stack
-            // cap — the order they appear in the in-game text.
+            // Xx." is one buff spending three of them.
+            //
+            // But the values are matched to placeholders BY KIND, not by
+            // position, because a description is free to write any of them as
+            // a literal — Galvanized Crosshairs spells out its 12s and its 5x
+            // and leaves only two X's, both for crit. Feeding values in effect
+            // order there put the duration in a crit slot: "+1200% Critical
+            // Chance", with everything after it shifted up one.
             //
             // Constants ride as (v, v) so `at(rank)` interpolates them to
-            // themselves. Without this the tail X's stayed literal: Galvanized
-            // Chamber rendered "Stacks up to Xx."
+            // themselves. A kind with nothing left to give STOPS the fill, so
+            // the placeholder stays visible and
+            // `desc_info_fills_every_x_across_the_pool` fails, rather than a
+            // wrong-kind value quietly taking the slot.
+            // Values are matched to placeholders by KIND and by SENTENCE, not by
+            // position in a flat queue.
+            //
+            // A `X%`-style placeholder opens the next effect that has a
+            // rank-varying value; "for Xs" and "up to Xx" then describe THAT
+            // effect. Position alone put Galvanized Crosshairs' 12-second
+            // duration into its crit slot — "+1200% Critical Chance" — because
+            // that description spells its duration out and offers no slot for
+            // it, so everything after shifted up one. A flat per-kind queue
+            // gets Galvanized Scope wrong the same way: its first buff carries
+            // `max_stacks: 1` that the text never mentions, and the one "Xx"
+            // in the sentence belongs to the second buff.
+            //
+            // Constants ride as (v, v) so `at(rank)` interpolates them to
+            // themselves. A placeholder with nothing to fill it STOPS the fill,
+            // so it stays visible and
+            // `desc_info_fills_every_x_across_the_pool` fails, rather than a
+            // wrong-kind value quietly taking the slot.
+            let varying = |e: &Value| match (f(e, "rank0"), f(e, "rankMax")) {
+                (Some(a), Some(b)) if (a - b).abs() > 1e-12 => Some((a, b)),
+                _ => None,
+            };
+            // `duration` (buff) and `duration_seconds` (on_equip_buff) are the
+            // same slot in the sentence; a mod carries one or neither. A
+            // duration that RAMPS with rank (Argon Scope: 2s -> 9s) also states
+            // `duration_rank0` — without it the card read "for 9s" at every
+            // rank, a rank-varying value shown as a constant.
+            let dur = |e: &Value| {
+                let d = n(e, "duration").or_else(|| n(e, "duration_seconds"))?;
+                Some((n(e, "duration_rank0").unwrap_or(d), d))
+            };
             let mut xvals: Vec<(f64, f64)> = Vec::new();
-            for e in &mf.effects {
-                if let (Some(a), Some(b)) = (f(e, "rank0"), f(e, "rankMax")) {
-                    if (a - b).abs() > 1e-12 {
-                        xvals.push((a, b));
+            let mut ei: Option<usize> = None; // the effect the sentence is on
+            for kind in crate::loadout::x_kinds(&desc) {
+                use crate::loadout::XKind;
+                // Seek forward to an effect that can answer this placeholder;
+                // a `Value` always moves on, the others stay put once the
+                // sentence has an effect to describe.
+                let seek = |from: usize, pick: &dyn Fn(&Value) -> bool| {
+                    (from..mf.effects.len()).find(|&i| pick(&mf.effects[i]))
+                };
+                let next = match kind {
+                    XKind::Value => {
+                        ei = seek(ei.map_or(0, |i| i + 1), &|e| varying(e).is_some());
+                        ei.and_then(|i| varying(&mf.effects[i]))
                     }
-                }
-                // `duration` (buff) and `duration_seconds` (on_equip_buff) are
-                // the same slot in the sentence; a mod carries one or neither.
-                if let Some(d) = n(e, "duration").or_else(|| n(e, "duration_seconds")) {
-                    xvals.push((d, d));
-                }
-                if let Some(m) = n(e, "max_stacks") {
-                    xvals.push((m, m));
+                    XKind::Duration => {
+                        if ei.is_none() {
+                            ei = seek(0, &|e| dur(e).is_some());
+                        }
+                        ei.and_then(|i| dur(&mf.effects[i]))
+                    }
+                    XKind::Stacks => {
+                        if ei.is_none() {
+                            ei = seek(0, &|e| n(e, "max_stacks").is_some());
+                        }
+                        // A stack CAP that scales with rank (Aerial Ace's
+                        // 1x -> 6x) is a rank-varying value, not a constant.
+                        ei.and_then(|i| n(&mf.effects[i], "max_stacks"))
+                            .map(|s| (s, s))
+                            .or_else(|| {
+                                ei = seek(ei.map_or(0, |i| i + 1), &|e| varying(e).is_some());
+                                ei.and_then(|i| varying(&mf.effects[i]))
+                            })
+                    }
+                };
+                match next {
+                    Some(v) => xvals.push(v),
+                    None => break,
                 }
             }
             map.insert(
@@ -514,6 +576,53 @@ mod tests {
             ModEffect::WhileAiming(inner)
                 if matches!(**inner, ModEffect::OnReloadFireRate { bonus, .. }
                     if (bonus - 0.90).abs() < 1e-9))));
+    }
+
+    /// A description's numbers are of two kinds and they must not swap places:
+    /// some RAMP with rank, some are FIXED. Every case here was wrong when the
+    /// values were handed out by position (checked against WFCD `levelStats`,
+    /// 2026-07-31).
+    #[test]
+    fn fixed_and_rank_varying_values_land_in_the_right_slots() {
+        // Literal duration and stack cap in the text, so the two X's are both
+        // crit. By position the 12-second duration took the second one and
+        // printed "+1200% Critical Chance".
+        assert_eq!(
+            desc_info("galvanized_crosshairs").unwrap().at(10),
+            "On Headshot:
++120% Critical Chance when Aiming for 12s
+On Headshot Kill:
++40% Critical Chance when Aiming for 12s. Stacks up to 5x."
+        );
+        // Its rifle twin spells all five out. The first buff carries a
+        // `max_stacks: 1` the text never mentions, so a per-kind queue would
+        // hand THAT to "Stacks up to Xx" instead of the second buff's 5.
+        assert_eq!(
+            desc_info("galvanized_scope").unwrap().at(10),
+            "On Headshot:
++120% Critical Chance when Aiming for 12s
+On Headshot Kill:
++40% Critical Chance when Aiming for 12s. Stacks up to 5x."
+        );
+        // A duration that RAMPS: 2s at rank 0, 9s at max. Stored as one number
+        // it read "for 9s" at every rank.
+        let argon = desc_info("argon_scope").unwrap();
+        assert_eq!(argon.at(0), "On Headshot:
++22.5% Critical Chance when Aiming for 2s");
+        assert_eq!(argon.at(5), "On Headshot:
++135% Critical Chance when Aiming for 9s");
+        // A stack CAP that ramps, 1x -> 6x — rank-varying, not fixed.
+        assert_eq!(
+            desc_info("aerial_ace").unwrap().at(5),
+            "On Kill:
+Refresh Double Jump up to 6x while Airborne."
+        );
+        // The bows multiplier is fixed text; the fire rate is not.
+        assert_eq!(
+            desc_info("shred").unwrap().at(5),
+            "+30% Fire Rate (x2 for Bows)
++1.2 Punch Through"
+        );
     }
 
     #[test]

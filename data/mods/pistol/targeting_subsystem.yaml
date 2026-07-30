@@ -6,7 +6,7 @@ base_drain: 2                 # max drain 7 at rank 5
 max_rank: 5
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/Event/AccuracyWhileAimingPistolMod
-description: "On Hit:\n+X% Accuracy when Aiming for 9s"
+description: "On Hit:\n+X% Accuracy when Aiming for Xs"
 
 effects:
   - kind: buff
@@ -16,6 +16,9 @@ effects:
     rank0: 0.05
     rankMax: 0.3
     max_stacks: 1
+    # RAMPS with rank (WFCD levelStats); `duration` is the max-rank value
+    # the engine builds with, `duration_rank0` is where the card starts.
+    duration_rank0: 2
     duration: 9
 
 source:

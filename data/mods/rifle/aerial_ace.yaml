@@ -16,8 +16,10 @@ effects:
   - kind: unmodeled
   # "Refresh Double Jump up to 6x while Airborne."
   - kind: unmodeled
-    rank0: 0.01
-    rankMax: 0.06
+    # The double-jump count, 1x -> 6x by rank (WFCD levelStats). It was
+    # stored as 0.01/0.06 - a fraction where the text wants a count.
+    rank0: 1
+    rankMax: 6
 
 source:
   url: https://wiki.warframe.com/w/Aerial_Ace
