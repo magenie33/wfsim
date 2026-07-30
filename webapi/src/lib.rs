@@ -317,6 +317,12 @@ pub fn meta_json() -> Value {
                 "mod_class": w.mod_class,
                 "subtype": w.subtype,
                 "sentinel": w.sentinel,
+                // The EQUIPMENT slot ("primary" / "secondary"), which is what
+                // the home grid groups by. `arcane_slot` happens to hold the
+                // same string today because a weapon draws its arcane from its
+                // own slot — but that is a coincidence of the arcane rule, not
+                // a name the UI should be reading for grouping.
+                "slot": w.arcane_slot,
                 "uses_arcane": w.uses_arcane,
                 "arcane_slot": w.arcane_slot,
                 "uses_evo2": w.uses_evo2,

@@ -3,8 +3,7 @@ name: Final Fusillade
 weapon: torid
 tier: 2
 icon: DamageXMultishotOnLastShotInMag(xWhite).png
-description: "Increase Base Damage by +51.
-+3 Multishot on last shot in magazine."
+description: "Increase Base Damage by +51.\n+3 Multishot on last shot in magazine."
 selection: choose_one
 
 effects:

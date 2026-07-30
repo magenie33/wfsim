@@ -150,6 +150,7 @@ though the scripts do not travel with it.
 | `crosscheck.py --type <T>` / `--arcanes <S>` | DUAL VERIFICATION: ours vs wiki vs WFCD. Reports MISMATCH (ours disagrees with WFCD) and SOURCE-SPLIT (the two sources disagree with each other). Compares each number at the SOURCE's own precision, since WFCD's display rounds |
 | `reconcile_wfcd.py --type <T>` | rewrites `base_drain` / `max_rank` from WFCD. Only those two — matching an effect kind to a phrase in a stat string is guesswork, and a wrong guess there changes damage |
 | `reconcile_families.py --type <T>` | `family` / `incompatible_with` by union-find over the wiki's `Incompatible` lists — the mutual-exclusivity groups the optimizer enforces |
+| `gen_assets.py` | writes `data/assets.yaml`: our ids → WFCD `imageName`, which the UI serves from `cdn.warframestat.us`. **Re-run whenever a weapon, mod or arcane is added** — a missing entry is a silently image-less card, which is how the Torid shipped with no picture and the whole rifle mod set with none either. Misses are written as commented lines for a human to fill; `<weapon>_incarnon` is always a miss worth fixing by hand, because the resolver finds the Genesis ADAPTER item rather than the gun |
 
 Two systematic failure modes these caught, worth knowing because they are
 INVISIBLE to a numbers-only check and both produce data that looks fine:

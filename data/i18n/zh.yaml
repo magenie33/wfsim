@@ -141,6 +141,11 @@ evolutions: {}
 # UI strings, keyed by the English source string (English itself never needs
 # an entry — the source string IS the fallback).
 ui:
+  # Equipment slots — the home grid's group headings.
+  "Primary": 主武器
+  "Secondary": 副武器
+  "Melee": 近战
+  "Other": 其他
   "2 · Technique": 2 · 手法
   "3 · Buffs": 3 · 增益
   "4 · Simulation": 4 · 模拟

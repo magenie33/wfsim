@@ -426,7 +426,11 @@ function nav(path) {
 }
 function route() {
   const m = location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer)?\/?$/);
-  const slug = m && decodeURIComponent(m[1]).toLowerCase();
+  // A hand-typed URL is not the canonical slug. Fold case and treat spaces
+  // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
+  // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
+  // to the home grid — which reads as "the site sent me somewhere else".
+  const slug = m && decodeURIComponent(m[1]).trim().toLowerCase().replace(/[\s-]+/g, "_");
   const w = slug && (META.weapons || []).find(
     (x) => wikiSlug(x).toLowerCase() === slug || x.id === slug
   );
@@ -460,10 +464,17 @@ function route() {
 const modSuffix = () => (location.pathname.match(/\/(simulator|optimizer)\/?$/) || [null, ""])[1];
 const weaponModPath = (id) => weaponPath(id) + (modSuffix() ? "/" + modSuffix() : "");
 
+// The home grid groups by EQUIPMENT SLOT in loadout order (user, 2026-07-30):
+// one flat list stops being readable as soon as the roster holds more than one
+// slot's worth. A slot with no weapons renders nothing at all rather than an
+// empty heading, and an unknown slot still gets its weapons shown.
+const SLOT_ORDER = ["primary", "secondary", "melee"];
+const SLOT_LABEL = { primary: "Primary", secondary: "Secondary", melee: "Melee", other: "Other" };
+
 function renderHome() {
   const grid = $("weapon-grid");
   if (!grid) return;
-  grid.innerHTML = (META.weapons || []).map((w) => {
+  const card = (w) => {
     const tags = [
       `<span class="tag">${w.subtype || w.mod_class}</span>`,
       w.uses_evo2 ? `<span class="tag">Incarnon</span>` : "",
@@ -476,7 +487,18 @@ function renderHome() {
         <div class="wc-tags">${tags}</div>
       </div>
     </a>`;
-  }).join("");
+  };
+  const all = META.weapons || [];
+  const groups = SLOT_ORDER
+    .map((s) => [s, all.filter((w) => (w.slot || "") === s)])
+    .filter(([, ws]) => ws.length);
+  const rest = all.filter((w) => !SLOT_ORDER.includes(w.slot || ""));
+  if (rest.length) groups.push(["other", rest]);
+  grid.innerHTML = groups.map(([slot, ws]) => `
+    <section class="wgroup">
+      <h3 class="wgroup-h">${tr(SLOT_LABEL[slot] || slot)}</h3>
+      <div class="wgrid">${ws.map(card).join("")}</div>
+    </section>`).join("");
 }
 
 // ---- Presets ----------------------------------------------------------

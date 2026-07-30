@@ -429,7 +429,10 @@ label.check input{width:auto}
 .hero-h span{color:var(--gold)}
 .hero-sub{color:var(--text-2);font-size:15px;max-width:620px;margin:0 0 34px}
 .home-h{font-size:26px;margin:6px 0 18px}
-#weapon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+#weapon-grid{display:block}
+.wgroup+.wgroup{margin-top:26px}
+.wgroup-h{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 10px}
+.wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
 .wcard{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel2);text-decoration:none;color:var(--text);transition:border-color .15s}
 .wcard:hover{border-color:var(--accent)}
 .wcard .wc-img{width:84px;height:84px;object-fit:contain;flex:0 0 auto}
