@@ -12,7 +12,10 @@ effects:
   # (5%/1% at rank 0 -> 30%/6% at rank 5; "Max Bonus" column = per_stack x 10).
   #
   # VERBATIM (wiki notes):
-  #  - "All stacks are lost when the buff's duration expires" -> all_drop.
+  #  - "All stacks are lost when the buff's duration expires" -> all_drop, and
+  #    confirmed in game (user, 2026-07-30): the timer runs out and the whole
+  #    pile goes at once, not one stack at a time. The sim tells the two
+  #    families apart in `arcane_stacks_all_drop_on_timeout_or_bleed_off_one_at_a_time`.
   #  - "Status Chance bonus is additive to mods like Rifle Aptitude" -> it
   #    joins the status-chance bucket, so the value is RELATIVE to the attack
   #    part's base status chance (the explosion has its own base, so the sim

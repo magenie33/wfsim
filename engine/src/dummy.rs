@@ -4081,6 +4081,161 @@ mod tests {
         assert_eq!(over.mean_reloads, 0.0);
     }
 
+    /// Plentiful Mayhem on the real Incarnon numbers — ✅ measured (user,
+    /// 2026-07-30, two different multishot values): the 170-charge pool at 8
+    /// ticks per second lasts **170 / 8 / multishot** seconds, against 170/8 =
+    /// 21.25 s without the perk. That is the whole cost of the +60%.
+    #[test]
+    fn plentiful_mayhem_shortens_the_incarnon_window_by_the_multishot_factor() {
+        // torid_incarnon.yaml: pseudo_reload.magazine 170, attack.fire_rate 8
+        // (ticks per second, trigger "held").
+        const CHARGES: f64 = 170.0;
+        const TICK_RATE: f64 = 8.0;
+        let p = |ms: f64, bonus: f64| DummyParams {
+            continuous: true,
+            fire_rate: TICK_RATE,
+            multishot: ms,
+            base_multishot: 1.0,
+            multishot_ammo_bonus: bonus,
+            magazine_size: CHARGES,
+            // The charge pool is outside the ammo economy: no reserve behind
+            // it, and no efficiency reaches it.
+            ammo_efficiency_applies: false,
+            infinite_reserve: false,
+            reserve_ammo: 0.0,
+            duration_secs: 120.0,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        // Without the perk the window is multishot-independent: a merged beam
+        // still bills ONE charge a tick however many beams it merges.
+        for ms in [1.0, 2.0, 5.0] {
+            let s = monte_carlo(&p(ms, 0.0), 4, 3);
+            assert!(
+                (s.mean_shots - CHARGES).abs() < 1e-9,
+                "no perk at {ms}x: expected {CHARGES} ticks, got {}",
+                s.mean_shots
+            );
+        }
+        // With it, every projectile bills a charge, so the window divides.
+        for ms in [1.0, 2.0, 5.0] {
+            let s = monte_carlo(&p(ms, 0.6), 4, 3);
+            let want = CHARGES / ms;
+            assert!(
+                (s.mean_shots - want).abs() < 1e-9,
+                "{ms}x multishot: expected {want} ticks, got {}",
+                s.mean_shots
+            );
+            // …and that is the user's 170/8/multishot, stated as seconds.
+            let seconds = s.mean_shots / TICK_RATE;
+            assert!(
+                (seconds - CHARGES / TICK_RATE / ms).abs() < 1e-9,
+                "{ms}x multishot: expected {} s, got {seconds}",
+                CHARGES / TICK_RATE / ms
+            );
+        }
+    }
+
+    /// Ammo efficiency serves the MAGAZINE round only — it never reaches
+    /// Plentiful Mayhem's multishot surcharge (✅ measured, user 2026-07-30).
+    /// So 100% efficiency makes the shot itself free while every generated
+    /// projectile still pays full price out of reserve, and the two pools
+    /// empty independently.
+    #[test]
+    fn ammo_efficiency_does_not_pay_for_plentiful_mayhems_extra_projectiles() {
+        let p = DummyParams {
+            arcane: ArcaneFx { ammo_efficiency: 1.0, ..ArcaneFx::none() },
+            ammo_efficiency_applies: true,
+            multishot: 3.0, // 1 magazine round + 2 surcharged extras
+            multishot_ammo_bonus: 0.6,
+            fire_rate: 1.0,
+            magazine_size: 5.0,
+            infinite_reserve: false,
+            // Exactly two shots' worth of extras, so the starvation boundary
+            // lands inside the window and is visible.
+            reserve_ammo: 4.0,
+            duration_secs: 5.0,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 4, 3);
+        // The magazine round is free, so the weapon never reloads and fires
+        // the whole window: 5 shots at 1/s.
+        assert!((s.mean_shots - 5.0).abs() < 1e-9, "shots {}", s.mean_shots);
+        assert_eq!(s.mean_reloads, 0.0, "a free magazine round never reloads");
+        // Reserve pays for the extras at FULL price: 2 + 2, then it is dry and
+        // the remaining shots fire alone. 3 + 3 + 1 + 1 + 1 = 9 pellets.
+        // Were efficiency to reach the surcharge, all five shots would carry
+        // three pellets for 15.
+        assert!(
+            (s.mean_pellets - 9.0).abs() < 1e-9,
+            "expected 9 pellets (3+3+1+1+1); 15 would mean efficiency paid for \
+             the extras. got {}",
+            s.mean_pellets
+        );
+    }
+
+    /// The two arcane stack-decay families, told apart IN THE SIM. Primary
+    /// Crux is the `all_drop` one — VERBATIM (wiki): *"All stacks are lost when
+    /// the buff's duration expires"*, confirmed in game (user, 2026-07-30):
+    /// the timer runs out and the whole pile goes at once. The other family
+    /// (Merciless/Deadhead/Dexterity) loses ONE stack and resets the timer.
+    ///
+    /// `arcanes_data` already pins Crux's flag; this pins that the flag still
+    /// means something by the time the shot loop reads it.
+    #[test]
+    fn arcane_stacks_all_drop_on_timeout_or_bleed_off_one_at_a_time() {
+        // 3 stacks x +1 multishot each, on a trigger that can never fire (no
+        // status in this fixture), so the run only ever DECAYS from full.
+        // Stacks are seeded full with expiry = duration (ArcRuntime::init).
+        let p = |all_drop: bool| DummyParams {
+            arcane: ArcaneFx {
+                buffs: vec![ArcBuffSpec {
+                    grant: ArcGrant::Multishot,
+                    trigger: ArcTrigger::ToxinStatus,
+                    per_stack: 1.0,
+                    max_stacks: 3,
+                    duration: 2.0,
+                    all_drop,
+                    initial_stacks: 3,
+                    pinned: false,
+                }],
+                ..ArcaneFx::none()
+            },
+            multishot: 1.0,
+            base_multishot: 1.0,
+            fire_rate: 1.0,
+            magazine_size: 100.0, // no reload inside the window
+            duration_secs: 8.0,   // shots at t = 0..7
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        // all_drop: 3 stacks until t=2, then nothing at all.
+        //   4 4 1 1 1 1 1 1 = 14
+        let cliff = monte_carlo(&p(true), 4, 3);
+        assert!((cliff.mean_shots - 8.0).abs() < 1e-9, "shots {}", cliff.mean_shots);
+        assert!(
+            (cliff.mean_pellets - 14.0).abs() < 1e-9,
+            "expected 14 pellets (4 4 1 1 1 1 1 1), got {}",
+            cliff.mean_pellets
+        );
+        // lose-one-and-reset: one stack every 2 s instead of a cliff.
+        //   4 4 3 3 2 2 1 1 = 20
+        let graceful = monte_carlo(&p(false), 4, 3);
+        assert!(
+            (graceful.mean_pellets - 20.0).abs() < 1e-9,
+            "expected 20 pellets (4 4 3 3 2 2 1 1), got {}",
+            graceful.mean_pellets
+        );
+    }
+
     /// Plentiful Mayhem STARVES: the projectiles are produced in order, each
     /// paying a round as it goes, and one that cannot pay is simply not fired
     /// (user, 2026-07-30). The round itself always comes from the magazine, so
