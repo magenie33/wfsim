@@ -1236,12 +1236,13 @@ pub fn resolve_with(
     // parts"). Returns (resolved vector, that part's ModifiedBase).
     //
     // Split the (base-damage-scaled) innate vector. Physical IPS stays a fixed
-    // component; innate PRIMARY elements (Verglas Prime's Cold, etc.) enter the
-    // hierarchy at position 0 — BEFORE any mod element — so mod elements combine
-    // with them (innate Cold + a Heat mod -> Blast). Wiki Load Order: innate
-    // elementals are placed first and scale with base-damage mods like the rest
-    // of the base. (A physical-innate weapon leaves `input` empty here, so this
-    // is a no-op for Dual Toxocyst.)
+    // component; innate PRIMARY elements (Torid's Toxin, Verglas Prime's Cold)
+    // go into their own bucket, which the hierarchy places LAST — the mods
+    // combine among themselves and the innate takes what is left over
+    // (MECHANICS §3 rule 2; the code used to place them FIRST, which is the
+    // superseded draft the doc calls out). They still scale with base-damage
+    // mods like the rest of the base. (A physical-innate weapon leaves `input`
+    // empty here, so this is a no-op for Dual Toxocyst.)
     let build = |base_vector: &DamageVector,
                      elem_bonus: Option<&mut Vec<(DamageType, f64)>>|
      -> (DamageVector, f64) {
@@ -1251,7 +1252,7 @@ pub fn resolve_with(
         let mut input = ElementalInput::default();
         for (t, v) in base_vector.iter_nonzero() {
             if t.is_primary_element() {
-                input.push(t, v * scale);
+                input.innate.push((t, v * scale));
             } else {
                 // Physical (IPS): base_t × (1 + Σ physical mods) × (1 + base dmg).
                 // `scale` carries the base-damage multiplier; the physical bucket is
@@ -1704,6 +1705,23 @@ mod tests {
         assert!((p.damage.get(Toxin) - 200.0).abs() < 1e-9);
     }
 
+    /// Torid is the first weapon whose innate damage is itself an element, so
+    /// it is the first build where "innate last" is observable: Heat(1) and
+    /// Electricity(2) combine with EACH OTHER into Radiation and the innate
+    /// Toxin, last, is left pure. Placing the innate first — the superseded
+    /// draft the engine used to implement — would give Gas + Electricity.
+    #[test]
+    fn torid_innate_toxin_takes_what_the_mods_leave() {
+        let heat = m("hellfire", vec![ModEffect::Element(Heat, 0.90)]);
+        let elec = m("stormbringer", vec![ModEffect::Element(Electricity, 0.90)]);
+        let base = WeaponBase::from_data("torid", true, &[]);
+        let p = resolve(&base, &[&heat, &elec], StackPolicy::BaseOnly);
+        assert!(p.damage.get(Radiation) > 0.0, "Heat(1)+Electricity(2)");
+        assert!(p.damage.get(Toxin) > 0.0, "innate Toxin, last, stays pure");
+        assert_eq!(p.damage.get(Gas), 0.0, "innate first would have made Gas");
+        assert_eq!(p.damage.get(Corrosive), 0.0);
+    }
+
     #[test]
     fn element_mod_order_changes_the_combination() {
         let heat = m("scorch", vec![ModEffect::Element(Heat, 0.60)]);
@@ -1725,9 +1743,12 @@ mod tests {
 
     #[test]
     fn verglas_innate_cold_combines_with_mod_elements() {
-        // Innate Cold(32) enters the hierarchy at position 0, so a Heat mod
-        // pairs with it into Blast (not pure Cold + pure Heat). No base-damage
-        // mod -> modified_base 32; Heat mod = 32 × 0.9 = 28.8; Blast = 60.8.
+        // Innate Cold(32) sits LAST, so the lone Heat mod is the only thing
+        // ahead of it and the two pair into Blast (not pure Cold + pure Heat).
+        // One mod element cannot tell first from last — see
+        // `innate_elements_go_last_not_first` for the case that can. No
+        // base-damage mod -> modified_base 32; Heat mod = 32 × 0.9 = 28.8;
+        // Blast = 60.8.
         let heat = m("hellfire", vec![ModEffect::Element(Heat, 0.90)]);
         let p = resolve(&verglas_prime(), &[&heat], StackPolicy::BaseOnly);
         assert!((p.damage.get(Blast) - 60.8).abs() < 1e-9);

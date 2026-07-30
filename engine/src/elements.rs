@@ -3,9 +3,8 @@
 //! Implements the hierarchy algorithm of docs/MECHANICS.md §3 (wiki `Damage`
 //! §Modding/§Load Order) for the cases the engine currently needs: a weapon
 //! with a **purely physical innate vector** (Dual Toxocyst) plus mod-added
-//! primaries, combined-element mods, and buff-injected elements. Innate
-//! elemental weapons (rules 2/3/5/7 innate clauses) are recorded but not yet
-//! wired — no such weapon is in the database.
+//! primaries, combined-element mods, buff-injected elements, and weapons whose
+//! innate damage is itself elemental (Torid's Toxin).
 
 use crate::damage::{DamageType, DamageVector};
 
@@ -30,6 +29,15 @@ pub struct ElementalInput {
     /// first mod of an element establishes its position; later same-element
     /// mods are pre-merged into that entry by the caller or via `push`).
     pub ordered: Vec<(DamageType, f64)>,
+    /// Weapon-innate primaries (Torid's Toxin, Verglas Prime's Cold). Rule 2:
+    /// these come **LAST** in the hierarchy, not first — the mods combine
+    /// among themselves and the innate takes what is left over. Rule 3 pulls
+    /// one forward when a mod shares its element.
+    ///
+    /// Kept apart from `ordered` rather than pushed into it, because "last"
+    /// is not a position the caller can know: it depends on how many mod
+    /// elements there turn out to be.
+    pub innate: Vec<(DamageType, f64)>,
     /// Combined-element mod amounts (Magnetic Might family): added directly,
     /// outside the primary hierarchy (rule 7).
     pub direct_secondary: Vec<(DamageType, f64)>,
@@ -49,13 +57,39 @@ impl ElementalInput {
     }
 }
 
+/// Hierarchy rank of the innate elements among themselves — Kuva/Tenet
+/// weapons carry two (weapon + progenitor) and rule 2 breaks the tie by
+/// **HCET**: whichever comes first here sits second-to-last, the other last.
+fn hcet(t: DamageType) -> u8 {
+    match t {
+        DamageType::Heat => 0,
+        DamageType::Cold => 1,
+        DamageType::Electricity => 2,
+        DamageType::Toxin => 3,
+        _ => 4,
+    }
+}
+
 /// Combine the physical vector with the elemental hierarchy.
 ///
 /// Adjacent uncombined primaries merge pairwise into secondaries (rule 1);
-/// an odd trailing primary stays pure. Injected elements enter last: into
-/// their element's existing position if one exists, else appended.
+/// an odd trailing primary stays pure. Then the weapon's own innate elements
+/// (rule 2: LAST) and finally injected elements (rule 8), each merging into
+/// its element's existing position if one exists, else appended.
 pub fn combine(physical: &DamageVector, input: &ElementalInput) -> DamageVector {
     let mut order = input.ordered.clone();
+    // Rule 2: innate elements go at the END of the mod order. Rule 3: unless a
+    // mod already placed that element, in which case the innate is pulled
+    // FORWARD onto the mod's position and pools there (Stormbringer in slot 1
+    // moves Amprex's innate Electricity to first).
+    let mut innate = input.innate.clone();
+    innate.sort_by_key(|&(t, _)| hcet(t));
+    for (t, amount) in innate {
+        match order.iter_mut().find(|(x, _)| *x == t) {
+            Some(e) => e.1 += amount,
+            None => order.push((t, amount)),
+        }
+    }
     for &(t, amount) in &input.injected {
         if let Some(e) = order.iter_mut().find(|(x, _)| *x == t) {
             e.1 += amount;
@@ -109,6 +143,55 @@ mod tests {
         let out = combine(&DamageVector::new(), &input);
         assert_eq!(out.get(Viral), 30.0);
         assert_eq!(out.get(Heat), 30.0);
+    }
+
+    /// MECHANICS §3 rule 2, and the doc's own worked example: Prova/Lecta
+    /// (innate Electricity) + Cold(1) Toxin(2) Heat(3) -> Viral + Radiation.
+    ///
+    /// Placing the innate FIRST instead — which is what the engine used to do
+    /// — gives Magnetic + Gas, a different build entirely. One mod element
+    /// cannot tell the two apart; two can, which is why this is the test that
+    /// matters.
+    #[test]
+    fn innate_elements_go_last_not_first() {
+        let mut input = ElementalInput::default();
+        input.push(Cold, 10.0);
+        input.push(Toxin, 20.0);
+        input.push(Heat, 30.0);
+        input.innate.push((Electricity, 40.0));
+        let out = combine(&DamageVector::new(), &input);
+        assert_eq!(out.get(Viral), 30.0, "Cold(1)+Toxin(2)");
+        assert_eq!(out.get(Radiation), 70.0, "Heat(3)+innate Electricity LAST");
+        assert_eq!(out.get(Magnetic), 0.0, "innate first would have made Magnetic");
+    }
+
+    /// Rule 3: a mod sharing the innate's element pulls it FORWARD to that
+    /// mod's position, where the two pool.
+    #[test]
+    fn a_mod_of_the_same_element_pulls_the_innate_forward() {
+        let mut input = ElementalInput::default();
+        input.push(Electricity, 10.0); // Stormbringer in slot 1
+        input.push(Heat, 20.0);
+        input.innate.push((Electricity, 40.0)); // Amprex's own Electricity
+        let out = combine(&DamageVector::new(), &input);
+        assert_eq!(out.get(Radiation), 70.0, "innate pooled into slot 1, then paired with Heat");
+        assert_eq!(out.get(Electricity), 0.0);
+    }
+
+    /// Rule 2's exception: a Kuva/Tenet weapon carries two innates (weapon +
+    /// progenitor) and HCET (Heat > Cold > Electricity > Toxin) decides which
+    /// of them sits second-to-last.
+    #[test]
+    fn two_innates_order_by_hcet() {
+        let mut input = ElementalInput::default();
+        input.push(Heat, 10.0);
+        // Declared Toxin-first; HCET must still put Cold ahead of it.
+        input.innate.push((Toxin, 20.0));
+        input.innate.push((Cold, 30.0));
+        let out = combine(&DamageVector::new(), &input);
+        assert_eq!(out.get(Blast), 40.0, "Heat(mod) + Cold(innate, HCET-first)");
+        assert_eq!(out.get(Toxin), 20.0, "Toxin is the odd one out");
+        assert_eq!(out.get(Gas), 0.0);
     }
 
     #[test]
