@@ -1535,14 +1535,14 @@ function openPolMenu(slotIdx) {
 // The arcanes the CURRENT weapon can equip: its own slot's pool. Arcane ids
 // are globally unique, so lookups stay unfiltered — only the PICKERS narrow.
 //
-// "none" (the empty-slot SENTINEL) stays in the pool because the OPTIMIZER
-// scope legitimately searches it — "consider running no arcane" is a real
-// choice there. The BUILDER picker drops it: offering "None" in a list of
-// arcanes is a second, worse way to do what that slot's own "Remove arcane"
-// already does (user, 2026-07-30).
+// The EQUIPPABLE arcanes of this weapon's slot. "none" is the empty-slot
+// sentinel, not an arcane, and it is offered in NO list: the builder slot has
+// its own "Remove arcane", and in the optimizer an empty arcane scope already
+// means "run no arcane" — a "None" row there was a second way to say the same
+// thing, sitting in a list of real choices (user, 2026-07-30 / 2026-07-31).
 const arcanePool = () => {
   const slot = weaponInfo($("weapon").value).arcane_slot;
-  return (META.arcanes || []).filter((a) => a.id === "none" || a.slot === slot);
+  return (META.arcanes || []).filter((a) => a.id !== "none" && a.slot === slot);
 };
 // An arcane belongs to ONE slot, so another slot's arcane is not a
 // questionable choice on this weapon — it cannot be equipped at all. Ids reach
@@ -1558,8 +1558,9 @@ function arcaneFor(weaponId, id) {
   const a = arcaneById(id);
   return a && w && w.arcane_slots >= 1 && a.slot === w.arcane_slot ? id : "none";
 }
-/// The builder picker's list — real arcanes only.
-const arcanePickPool = () => arcanePool().filter((a) => a.id !== "none");
+/// The builder picker's list. Same set — kept as its own name because the
+/// picker is where a reader looks for it.
+const arcanePickPool = arcanePool;
 const arcaneById = (id) => META.arcanes.find((x) => x.id === id);
 function setArcane(id) { arcane = id; arcaneRank = null; } // new arcane → max rank
 // Effect lines for a specific rank (clamped). Arcane strengths scale per rank
@@ -1723,7 +1724,7 @@ function renderSimBuild() {
   if (w.arcane_slots >= 1) {
     const a = arcane !== "none" && arcaneById(arcane);
     parts.push(`<div class="sb-h">${tr("Arcane")}</div>`);
-    parts.push(`<div class="sb-chips">${a ? chip(IMG(a.image), a.name, arcaneRank ?? ((a.ranks || []).length - 1)) : `<span class="sb-empty">${tr("none")}</span>`}</div>`);
+    parts.push(`<div class="sb-chips">${a ? chip(IMG(a.image), a.name, arcaneRank ?? ((a.ranks || []).length - 1)) : `<span class="sb-empty">${tr("no arcane")}</span>`}</div>`);
   }
   if (w.uses_evo2) {
     const evoChips = weaponEvos().map((t) => {
@@ -2198,14 +2199,15 @@ function renderOptExilus() {
 }
 
 // Arcane scope — the SAME rich rows as the arcane picker (image, name, effect
-// lines), searchable, with an include toggle on the right. "None" included.
+// lines), searchable, with an include toggle on the right. Marking nothing is
+// what searches the empty slot, so there is no "None" row to mark.
 function renderOptArcanes() {
   const q = ($("opt-arc-filter") && $("opt-arc-filter").value || "").trim().toLowerCase();
-  const hits = arcanePool().filter((a) => a.id === "none" || !q || searchBlob(a).includes(q));
+  const hits = arcanePool().filter((a) => !q || searchBlob(a).includes(q));
   const pinned = arcanePinned();
   const hasPool = Object.values(opt.arcanes).some((s) => s === "search");
   $("opt-arcanes").innerHTML = hits.map((a) => {
-    const st = opt.arcanes[a.id] || "off", none = a.id === "none";
+    const st = opt.arcanes[a.id] || "off";
     // One arcane slot: pool and req are exclusive GROUP states — a pin
     // kills every other pool; any pool mark kills req (pooling means the
     // slot is open for search; pinning would silently discard that, so it
@@ -2213,10 +2215,10 @@ function renderOptArcanes() {
     // clickable — it must be able to toggle itself off.
     const poolDead = pinned && pinned !== a.id && st !== "search";
     const reqDead = hasPool && st !== "fixed";
-    const eff = none ? "" : effLines(descAt(a, a.max_rank) || effectsAt(a, a.max_rank));
+    const eff = effLines(descAt(a, a.max_rank) || effectsAt(a, a.max_rank));
     return `<div class="opt ${a.rarity ? "rar-" + a.rarity : ""} ${st === "off" ? "" : st}">
-      ${none ? '<span class="mod none">∅</span>' : imgTag(IMG(a.image), "mod")}
-      <div class="info"><div class="mn">${none ? a.name : wl(a.name, wikiUrl(a.name_en || a.name))}</div>${eff}</div>
+      ${imgTag(IMG(a.image), "mod")}
+      <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}</div>${eff}</div>
       <div class="oseg">
         <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-a="${a.id}" data-s="search">pool</span>
         <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-a="${a.id}" data-s="fixed" ${reqDead ? 'title="clear the pool marks first — req pins the slot"' : ""}>req</span>
@@ -2368,7 +2370,7 @@ function applyOptGroupState(g, st) {
     opt.arcanes = {};
     const w = $("weapon").value;
     Object.entries(st.arcanes || {}).forEach(([id, s]) => {
-      if (id === "none" || arcaneFor(w, id) === id) opt.arcanes[id] = norm(s);
+      if (arcaneFor(w, id) === id) opt.arcanes[id] = norm(s); // drops a stored "none" too
     });
   } else {
     // Cross-weapon: keep only ids the CURRENT weapon's tiers actually offer
