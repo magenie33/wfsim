@@ -210,6 +210,19 @@ fn form_unlock_evo(info: &WeaponInfo) -> Option<&'static str> {
         .map(|e| e.id.as_str())
 }
 
+/// The headshot rate a weapon is played at when nothing says otherwise.
+///
+/// A SENTINEL weapon is fired by the companion, which picks its own targets
+/// and does not aim for the head — so 0, not the player's 100 (user,
+/// 2026-07-31). It stays a knob: this is the default, not a ceiling.
+fn default_headshot_pct(info: &WeaponInfo) -> f64 {
+    if info.sentinel {
+        0.0
+    } else {
+        100.0
+    }
+}
+
 /// Whether the weapon's data declares the Frenzy perk (data/perks/).
 fn has_frenzy(info: &WeaponInfo) -> bool {
     wspec(&info.id).perks.iter().any(|p| p.id() == "frenzy")
@@ -2058,7 +2071,7 @@ pub fn simulate_json(v: &Value) -> Value {
     let enemy_id = get_str(v, "enemy", "thrax_centurion");
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
     let steel_path = get_bool(v, "steel_path", true);
-    let headshot_pct = get_f64(v, "headshot_pct", 100.0);
+    let headshot_pct = get_f64(v, "headshot_pct", default_headshot_pct(info));
     // Is the player HOLDING AIM? Gates the `while_aiming` mod effects
     // (Galvanized Crosshairs / Scope, Argon Scope, Sharpened Bullets, …).
     // Defaults TRUE, which is what the sim silently assumed before this
@@ -2631,7 +2644,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     let enemy_id = get_str(v, "enemy", "thrax_centurion");
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
     let steel_path = get_bool(v, "steel_path", true);
-    let headshot_pct = get_f64(v, "headshot_pct", 100.0);
+    let headshot_pct = get_f64(v, "headshot_pct", default_headshot_pct(info));
     // Same scenario knob as the Sim: the optimizer must score builds under the
     // assumption the sim will replay them with, or the winner is scored on a
     // buff the replay never grants.

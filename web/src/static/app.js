@@ -1294,7 +1294,9 @@ function restoreState(st, weapon) {
   evoSel = { 1: null, 2: null, 3: null, 4: null, ...(st.evoSel || {}) };
   arcane = arcaneFor(w, st.arcane);
   arcaneRank = st.arcaneRank ?? null;
-  if (st.sim) sim = { ...sim, ...st.sim };
+  // The preset's own scenario wins over the per-weapon seeding, so the marker
+  // is stamped with it rather than left for renderSim to notice.
+  if (st.sim) sim = { ...sim, ...st.sim, __weapon: w };
   renderMods(); renderArcanes(); renderEvo(); renderSim(); refreshPanel();
   renderStoredSimResult(); // the simulator shows THIS preset's last test
 }
@@ -1625,8 +1627,8 @@ function blankBuildState() {
     arcaneRank: null,
     slots: [],
     sim: { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
-      headshot_pct: d.headshot_pct, duration: d.duration, runs: d.runs,
-      form: d.form, buffs: {} },
+      headshot_pct: defaultHeadshotPct(weaponInfo($("weapon").value)),
+      duration: d.duration, runs: d.runs, form: d.form, buffs: {} },
   };
 }
 
@@ -2348,6 +2350,12 @@ function renderSimBuild() {
   box.innerHTML = parts.join("");
 }
 
+// The headshot rate a weapon is played at. A SENTINEL is fired by the
+// companion, which picks its own targets and does not aim for the head, so it
+// starts at 0 rather than the player's 100 (user, 2026-07-31). Still a knob —
+// this seeds it, it does not cap it.
+const defaultHeadshotPct = (w) => ((w || {}).sentinel ? 0 : META.defaults.headshot_pct);
+
 // How THIS weapon is played: the Incarnon cycle where there is one to run,
 // and the weapon's own default form (`default_form` in data/weapons — the
 // arsenal's form) where there is not.
@@ -2403,6 +2411,14 @@ function renderSim() {
   // a form this weapon does not list — fall back to how this weapon is
   // played, which is a question about the weapon and not about list order.
   if (formOpts.length && !formOpts.some(([id]) => id === sim.form)) sim.form = defaultFormId(w, formOpts);
+  // Scenario knobs that are a property of the WEAPON rather than of the
+  // fight: re-seeded when the weapon changes, kept when a preset set them
+  // (restoreState stamps the marker itself, so a saved value stands).
+  if (sim.__weapon !== w.id) {
+    sim.__weapon = w.id;
+    sim.headshot_pct = defaultHeadshotPct(w);
+    optSim.headshot_pct = sim.headshot_pct;
+  }
   $("sim-technique").innerHTML = `
     ${formField(formOpts, sim.form)}
     <label class="check" title="${escHtml(tr("mods that only work while aiming (Galvanized Crosshairs, Argon Scope, Sharpened Bullets…) grant nothing when this is off"))}"><input type="checkbox" data-k="aiming" ${sim.aiming ? "checked" : ""}> ${escHtml(tr("Aiming"))}</label>
