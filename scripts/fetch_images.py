@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Pre-warm the local art cache: download every image referenced in
-data/assets.yaml from the WFCD CDN into web/cache/img/ (gitignored).
+"""Fill the local art cache: download every image referenced in
+data/assets.yaml into web/cache/img/ (gitignored).
 
-The web server serves art from that cache via /img/<name>, falling back to the
-CDN on a miss — so this script is optional (it just makes the first load fast
-and enables offline use). DE art stays out of the repo (cache is gitignored).
+NOT optional any more. Both deployments serve art SAME-ORIGIN — the native
+server from this cache, the static build from site/img/, which
+`scripts/build_site_app.py` copies out of it and refuses to build without.
+The static build used to hotlink the CDN instead, and that CDN 301s to
+raw.githubusercontent.com: unreliable to blocked from mainland China, where
+the players are. (DE permits hosting the art; their Content Policy asks only
+that the use be non-commercial.)
 
 Usage: python scripts/fetch_images.py
 """
@@ -19,13 +23,21 @@ UA = "wfsim/0.1 (https://github.com/magenie33/wfsim; magenie33@gmail.com)"
 
 
 def image_names():
-    names = set()
+    """(cdn_names, wiki_names) from data/assets.yaml.
+
+    A `wiki:` prefix says the CDN does not carry that file (the wiki does).
+    It is quoted in the yaml, which the old end-of-line regex could not match
+    at all — so those entries were silently never cached, and the page fell
+    back to hotlinking the wiki. With art served same-origin that is no longer
+    a fallback but a hole, so the prefix is parsed here.
+    """
+    cdn, wiki = set(), set()
     with open(os.path.join(ROOT, "data", "assets.yaml"), encoding="utf-8") as fh:
         for line in fh:
-            m = re.search(r":\s*([A-Za-z0-9_.-]+\.(?:png|jpg|jpeg))\s*$", line)
+            m = re.search(r":\s*\"?(wiki:)?([A-Za-z0-9_.-]+\.(?:png|jpg|jpeg))\"?\s*$", line)
             if m:
-                names.add(m.group(1))
-    return sorted(names)
+                (wiki if m.group(1) else cdn).add(m.group(2))
+    return sorted(cdn), sorted(wiki)
 
 
 def wiki_icon_names():
@@ -47,8 +59,10 @@ def wiki_icon_names():
 def main():
     os.makedirs(CACHE, exist_ok=True)
     # (name, base url) pairs: CDN art + wiki-hosted evolution icons.
-    jobs = [(n, CDN + n) for n in image_names()] + [
-        (n, "https://wiki.warframe.com/w/Special:FilePath/" + n) for n in wiki_icon_names()
+    cdn_names, wiki_names = image_names()
+    wiki_names = sorted(set(wiki_names) | set(wiki_icon_names()))
+    jobs = [(n, CDN + n) for n in cdn_names] + [
+        (n, "https://wiki.warframe.com/w/Special:FilePath/" + n) for n in wiki_names
     ]
     have = fetched = 0
     for n, url in jobs:

@@ -62,19 +62,22 @@ around (decision 2026-07-31).
   removes on boot), plus `sitemap.xml` and `robots.txt` — without them
   every URL answered with the same contentless shell, which is a soft 404
   to a crawler and an empty preview to a chat app.
-- **Images: commit what WE made, never commit DE's** (rule 2026-07-31).
-  Ours — `logo.svg`, the generated `site/og/*.png` link cards — ship in
-  the repo, because a preview crawler must be able to fetch them from our
-  own domain with no redirect. DE's weapon/mod art stays out: the native
-  server reads it from the gitignored `web/cache/img/` (filled by
-  `scripts/fetch_images.py`) and the static build loads it from the CDN at
-  runtime. That is also why an OG card cannot just point at the art —
-  `cdn.warframestat.us/img/…` answers **301 → raw.githubusercontent.com**,
-  which a Chinese chat app's crawler typically neither follows nor can
-  reach, so the card is drawn instead. ⚠ OPEN: runtime art still takes
-  that redirect, so CN users may see slow or missing images; a
-  `/img/*` edge proxy is the candidate fix, pending a report from a player
-  in China (asked 2026-07-31).
+- **Images are SAME-ORIGIN, and the art ships with the site** (rule
+  2026-07-31, replacing "DE art stays out of the repo"). `site/img/` holds
+  every file `data/assets.yaml` references (`scripts/fetch_images.py` fills
+  `web/cache/img/`, `build_site_app.py` copies it and FAILS the build on a
+  missing one). Why it changed: the static build used to hotlink
+  `cdn.warframestat.us/img/…`, which answers **301 → raw.githubusercontent.com**
+  — unreliable to blocked from mainland China, i.e. precisely where the
+  players are, so the app's own art was the least reliable thing on the page.
+  Same-origin ends the question: if wfsim.app loads, its art loads. The cost
+  is ~4.3 MB write-once, against a 2 MB wasm this build rewrites every time.
+  DE permits this: their Content Policy requires only that use of Warframe
+  assets be non-commercial, and the wiki hosts the same files on the same
+  basis — what it forbids is their LOGOS, so the only mark here stays ours.
+  A `wiki:` prefix in `assets.yaml` means the CDN lacks that file and the
+  FETCHER takes it from the wiki; the cached name and the page's URL are the
+  bare name either way.
 - Deploy = push to `main`: Cloudflare picks up `site/` automatically
   (takes ~1–2 min). There is no deploy step in CI.
 - UI verification: drive headless Chrome over CDP (Node ≥22 has a global

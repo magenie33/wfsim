@@ -8,7 +8,8 @@ Steps:
   4. copy web/src/static/{index.html,app.js,style.css,worker.js,logo.svg,pol/} -> site/
   5. inject <script>window.WFSIM_WASM = true;</script> into the copied
      index.html — that flag flips app.js's api() from fetch to worker RPC.
-  6. prerender one HTML file per weapon (its own title/description/OG plus a
+  6. copy the art cache into site/img/ (same-origin art — see ship_art)
+  7. prerender one HTML file per weapon (its own title/description/OG plus a
      crawler-visible summary), and write sitemap.xml + robots.txt — see
      prerender() for why a single shell was not enough.
 
@@ -79,15 +80,12 @@ def card_font(size: int):
 def og_card(out: Path, name: str, cn: str | None, facts: str, stats: str) -> bool:
     """Draw the link-preview image for one weapon — OUR art, not DE's.
 
-    The weapon renders belong to Digital Extremes and deliberately stay out of
-    the repo (`scripts/fetch_images.py`: the cache is gitignored), and pointing
-    og:image at the CDN does not work either — `cdn.warframestat.us/img/…`
-    answers 301 to raw.githubusercontent.com, and a link-preview crawler that
-    does not follow redirects (or cannot reach GitHub, which is the case for
-    the crawlers behind Chinese chat apps) renders an empty card.
-
-    So the card is generated: the wordmark, the weapon's name in both
-    languages, and the numbers. Self-hosted, no redirect, nothing of DE's.
+    The site now ships the weapon renders too (`ship_art`), so this is no
+    longer about what we may host. It is about what a card has to SAY: a
+    preview in a chat window is read in one glance, and a render on a
+    transparent background says only "a gun". The card names the weapon in
+    both languages, states the numbers the reader came for, and carries our
+    wordmark — and being ours, no policy question touches it.
     """
     try:
         from PIL import Image, ImageDraw
@@ -124,6 +122,54 @@ def og_card(out: Path, name: str, cn: str | None, facts: str, stats: str) -> boo
     out.parent.mkdir(parents=True, exist_ok=True)
     img.save(out, "PNG", optimize=True)
     return True
+
+
+def ship_art() -> None:
+    """Copy the art cache into `site/img/`, so the static deployment serves
+    game art from ITS OWN ORIGIN.
+
+    It used to load straight from the CDN, and that CDN is a redirector:
+    `cdn.warframestat.us/img/X.png` answers 301 to raw.githubusercontent.com.
+    GitHub is unreliable-to-blocked from mainland China, which is where the
+    players are — so the app's own images were the slowest, least reliable
+    thing on the page for its actual audience. Same-origin removes the
+    question entirely: if wfsim.app loads, its art loads.
+
+    DE's art may be redistributed non-commercially — their Content Policy
+    ("Use of Warframe assets must be non-commercial. You cannot profit from
+    the direct sale of Warframe's IP"), and the wiki hosts the same files on
+    the same basis. What the policy does forbid is their LOGOS, which is why
+    the only mark on this site is our own (decision 2026-07-31, superseding
+    "DE art stays out of the repo": ~4.5 MB, write-once, against a 2 MB wasm
+    this script rewrites on every build).
+    """
+    cache = ROOT / "web" / "cache" / "img"
+    assets = yaml.safe_load((ROOT / "data" / "assets.yaml").read_text(encoding="utf-8"))
+    # `wiki:` says where the BUILD fetches it from; the cached file is bare.
+    want = {
+        v[5:] if str(v).startswith("wiki:") else v
+        for table in assets.values() if isinstance(table, dict)
+        for v in table.values()
+    }
+    want |= {
+        spec["icon"]
+        for f in (ROOT / "data" / "evolutions").glob("*.yaml")
+        for spec in [yaml.safe_load(f.read_text(encoding="utf-8"))]
+        if spec.get("icon")
+    }
+    missing = sorted(n for n in want if not (cache / n).exists())
+    if missing:
+        sys.exit(
+            f"{len(missing)} images are not in the cache "
+            f"({', '.join(missing[:4])}{' …' if len(missing) > 4 else ''}) — "
+            "run `python scripts/fetch_images.py` first"
+        )
+    out = APP / "img"
+    out.mkdir(parents=True, exist_ok=True)
+    for name in sorted(want):
+        shutil.copy2(cache / name, out / name)
+    size = sum((out / n).stat().st_size for n in want)
+    print(f"art: {len(want)} images -> site/img/ ({size / 1e6:.1f} MB)")
 
 
 def prerender(flagged: str) -> None:
@@ -279,6 +325,7 @@ def main() -> None:
     if flagged == html:
         sys.exit("index.html: <script src=\"app.js\"> anchor not found — flag not injected")
     (APP / "index.html").write_text(flagged, encoding="utf-8", newline="\n")
+    ship_art()
     prerender(flagged)
 
     size = (APP / "pkg" / "wfsim_wasm_bg.wasm").stat().st_size

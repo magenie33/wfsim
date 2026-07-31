@@ -12,13 +12,19 @@ const WASM = !!window.WFSIM_WASM;
 // cache, WFCD fallback) — fast, offline-capable, one source. The static
 // deployment has no proxy: straight to the WFCD CDN (wiki Special:FilePath
 // for the paren-named evolution icons).
+// Art is SAME-ORIGIN in both deployments: the native server reads
+// web/cache/img/, and the static build ships the same files in site/img/
+// (build_site_app.py `ship_art`). It used to hotlink the CDN on the static
+// build, and that CDN 301s to raw.githubusercontent.com — unreliable to
+// blocked from mainland China, which is where the players are.
+//
+// `wiki:` (data/assets.yaml) marks a file the CDN does not carry; it changes
+// where the BUILD fetches from, not where the page asks — the cache holds it
+// under its bare name like everything else.
 const IMG = (name) => {
   if (!name) return null;
-  const n = encodeURIComponent(String(name));
-  if (!WASM) return "/img/" + n; // absolute: the SPA also loads at /weapons/<name>
-  return String(name).includes("(")
-    ? "https://wiki.warframe.com/w/Special:FilePath/" + n
-    : "https://cdn.warframestat.us/img/" + n;
+  const s = String(name);
+  return "/img/" + encodeURIComponent(s.startsWith("wiki:") ? s.slice(5) : s);
 };
 // Polarity icons are vendored locally (pol/, shipped with both deployments)
 // — no more slow wiki 302 redirects. Omni (universal) uses the "Any" symbol
