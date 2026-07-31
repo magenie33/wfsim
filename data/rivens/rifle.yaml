@@ -10,10 +10,15 @@
 # `curse: false` = wiki-listed positive-only, never the negative stat.
 # `kind: unmodeled` = a real riven stat the engine does not model; it
 # still occupies a rolled slot and still shapes the name.
+#
+# `order` is DE's own index in upgradeEntries. Seven rifle stats share
+# the same base, so two of them at the same roll are worth exactly the
+# same and the name's magnitude ordering ties. This is what breaks it.
 class: rifle
 stats:
   - id: ammo_maximum
     tag: WeaponAmmoMaxMod
+    order: 12
     base: 0.0055499999
     prefix: ampi
     suffix: bin
@@ -21,6 +26,7 @@ stats:
     kind: ammo_max_bonus
   - id: cold
     tag: WeaponFreezeDamageMod
+    order: 6
     base: 0.0099999998
     prefix: geli
     suffix: do
@@ -30,6 +36,7 @@ stats:
     curse: false
   - id: critical_chance
     tag: WeaponCritChanceMod
+    order: 1
     base: 0.016666001
     prefix: crita
     suffix: cron
@@ -37,6 +44,7 @@ stats:
     kind: crit_chance_bonus
   - id: critical_damage
     tag: WeaponCritDamageMod
+    order: 2
     base: 0.013333
     prefix: acri
     suffix: tis
@@ -44,6 +52,7 @@ stats:
     kind: crit_damage_bonus
   - id: damage
     tag: WeaponDamageAmountMod
+    order: 14
     base: 0.018333299
     prefix: visi
     suffix: ata
@@ -51,6 +60,7 @@ stats:
     kind: base_damage_bonus
   - id: damage_to_corpus
     tag: WeaponFactionDamageCorpus
+    order: 20
     base: 0.0049999999
     prefix: manti
     suffix: tron
@@ -59,6 +69,7 @@ stats:
     arg: corpus
   - id: damage_to_grineer
     tag: WeaponFactionDamageGrineer
+    order: 21
     base: 0.0049999999
     prefix: argi
     suffix: con
@@ -67,6 +78,7 @@ stats:
     arg: grineer
   - id: damage_to_infested
     tag: WeaponFactionDamageInfested
+    order: 22
     base: 0.0049999999
     prefix: pura
     suffix: ada
@@ -75,6 +87,7 @@ stats:
     arg: infested
   - id: electricity
     tag: WeaponElectricityDamageMod
+    order: 3
     base: 0.0099999998
     prefix: vexi
     suffix: tio
@@ -84,6 +97,7 @@ stats:
     curse: false
   - id: fire_rate
     tag: WeaponFireRateMod
+    order: 5
     base: 0.00667
     prefix: croni
     suffix: dra
@@ -91,6 +105,7 @@ stats:
     kind: fire_rate_bonus
   - id: heat
     tag: WeaponFireDamageMod
+    order: 4
     base: 0.0099999998
     prefix: igni
     suffix: pha
@@ -100,6 +115,7 @@ stats:
     curse: false
   - id: impact
     tag: WeaponImpactDamageMod
+    order: 7
     base: 0.013333
     prefix: magna
     suffix: ton
@@ -108,6 +124,7 @@ stats:
     arg: impact
   - id: magazine_capacity
     tag: WeaponClipMaxMod
+    order: 13
     base: 0.0055550002
     prefix: arma
     suffix: tin
@@ -115,6 +132,7 @@ stats:
     kind: magazine_capacity_bonus
   - id: multishot
     tag: WeaponFireIterationsMod
+    order: 15
     base: 0.0099999998
     prefix: sati
     suffix: can
@@ -122,6 +140,7 @@ stats:
     kind: multishot_bonus
   - id: projectile_speed
     tag: WeaponProjectileSpeedMod
+    order: 16
     base: 0.0099999998
     prefix: conci
     suffix: nak
@@ -129,6 +148,7 @@ stats:
     kind: projectile_speed_bonus
   - id: punch_through
     tag: WeaponPunctureDepthMod
+    order: 17
     base: 0.029999999
     prefix: lexi
     suffix: nok
@@ -137,6 +157,7 @@ stats:
     curse: false
   - id: puncture
     tag: WeaponArmorPiercingDamageMod
+    order: 0
     base: 0.01333
     prefix: insi
     suffix: cak
@@ -145,6 +166,7 @@ stats:
     arg: puncture
   - id: reload_speed
     tag: WeaponReloadSpeedMod
+    order: 19
     base: 0.0055550002
     prefix: feva
     suffix: tak
@@ -152,6 +174,7 @@ stats:
     kind: reload_speed_bonus
   - id: slash
     tag: WeaponSlashDamageMod
+    order: 9
     base: 0.013333
     prefix: sci
     suffix: sus
@@ -160,6 +183,7 @@ stats:
     arg: slash
   - id: status_chance
     tag: WeaponStunChanceMod
+    order: 10
     base: 0.0099999998
     prefix: hexa
     suffix: dex
@@ -167,6 +191,7 @@ stats:
     kind: status_chance_bonus
   - id: status_duration
     tag: WeaponProcTimeMod
+    order: 8
     base: 0.01111
     prefix: deci
     suffix: des
@@ -174,6 +199,7 @@ stats:
     kind: status_duration_bonus
   - id: toxin
     tag: WeaponToxinDamageMod
+    order: 11
     base: 0.0099999998
     prefix: toxi
     suffix: tox
@@ -183,6 +209,7 @@ stats:
     curse: false
   - id: weapon_recoil
     tag: WeaponRecoilReductionMod
+    order: 18
     base: -0.0099999998
     prefix: zeti
     suffix: mag
@@ -190,6 +217,7 @@ stats:
     kind: recoil_reduction
   - id: zoom
     tag: WeaponZoomFovMod
+    order: 23
     base: 0.006666
     prefix: hera
     suffix: lis

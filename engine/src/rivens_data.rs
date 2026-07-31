@@ -108,6 +108,11 @@ pub struct RivenStat {
     pub id: String,
     /// DE's internal tag, the join key back to the export.
     pub tag: String,
+    /// DE's own index in `upgradeEntries`. Seven rifle stats share one base
+    /// value, so two of them at the same roll are worth EXACTLY the same and
+    /// the name's magnitude ordering ties — this is what breaks it.
+    #[serde(default)]
+    pub order: u32,
     /// DE's per-stat base number.
     pub base: f64,
     /// Name fragments. A riven's name is GENERATED from its stats; these are
@@ -220,6 +225,48 @@ impl RivenSpec {
         out
     }
 
+    /// Legality that depends on the WEAPON, not just on the riven.
+    ///
+    /// Wiki: "Weapons without more than 25% of a physical damage type usually
+    /// cannot roll that respective attribute. For example, a Simulor Riven
+    /// will never have +/- Slash Damage stat."
+    ///
+    /// It matters immediately: the Torid is pure Toxin, so no Impact, Puncture
+    /// or Slash riven stat can exist on it at all. On the Dual Toxocyst
+    /// (7.5 Impact / 60 Puncture / 7.5 Slash) only Puncture clears the bar.
+    ///
+    /// The wiki says "usually", and "Exceptions exist on a case by case
+    /// basis" — so this is the general rule and a named exception would have
+    /// to be data on the weapon, not a hole in this check.
+    pub fn illegal_on(&self, base: &crate::loadout::WeaponBase) -> Vec<String> {
+        let mut out = self.illegal();
+        let total = base.base_vector.total();
+        let p = pool(&self.class);
+        for s in self.positives.iter().chain(self.curse.iter()) {
+            let Some(def) = p.iter().find(|x| x.id == s.id) else { continue };
+            if def.kind != "physical_damage_bonus" {
+                continue;
+            }
+            let Some(t) = def.arg.as_deref().and_then(|a| match a {
+                "impact" => Some(DamageType::Impact),
+                "puncture" => Some(DamageType::Puncture),
+                "slash" => Some(DamageType::Slash),
+                _ => None,
+            }) else {
+                continue;
+            };
+            let share = if total > 0.0 { base.base_vector.get(t) / total } else { 0.0 };
+            if share <= 0.25 {
+                out.push(format!(
+                    "{} needs more than 25% {t:?} in the weapon's base, and it has {:.0}%",
+                    def.id,
+                    share * 100.0
+                ));
+            }
+        }
+        out
+    }
+
     /// The value a stat SHOWS, sign included. `positive = false` applies the
     /// curse multiplier, which is negative and flips the stat.
     pub fn value_of(&self, stat: &RivenStat, roll: f64, positive: bool, disposition: f64) -> f64 {
@@ -256,15 +303,32 @@ impl RivenSpec {
     /// With two positives there is no third fragment and the pattern the wiki
     /// also names, `CoreSuffix`, applies. That reading of the two-stat case is
     /// inference from the two patterns it lists, not something it states.
-    pub fn name(&self, disposition: f64) -> String {
+    pub fn name(&self, _disposition: f64) -> String {
+        let p = pool(&self.class);
         let mut pos: Vec<(&'static RivenStat, f64)> = self
-            .resolved(disposition)
-            .into_iter()
-            .take(self.positives.len())
+            .positives
+            .iter()
+            .filter_map(|s| p.iter().find(|x| x.id == s.id).map(|d| (d, s.roll)))
             .collect();
-        // By MAGNITUDE: recoil reduction shows as a negative number and is
-        // still a positive stat, so its size is what ranks it.
-        pos.sort_by(|a, b| b.1.abs().total_cmp(&a.1.abs()));
+        // Ranked by the ROLL, not by the value. The wiki is explicit —
+        // "determined by the magnitude of the randomized MODIFIER on that
+        // stat" — and its example proves it: Vectis "Sati-critaata" has
+        // Multishot leading, and Multishot's base (90%) is the SMALLEST of
+        // the three it carries. Only its roll can have been the largest.
+        //
+        // This is why the name is disposition-independent: disposition scales
+        // every stat alike and cannot reorder anything, and the value never
+        // enters at all.
+        //
+        // TIES ARE THE NORM here rather than the exception, and more so than
+        // when this ranked by value: in a CONSTRUCTOR every stat can sit at
+        // 1.1 at once, and then all three rolls are equal (user, 2026-07-31).
+        // The tiebreak is DE's own `upgradeEntries` index — explicit, because
+        // a stable sort would have fallen back to the order the stats were
+        // added, and a name must not depend on which one someone clicked
+        // first. Whether the game breaks the tie the same way is UNVERIFIED;
+        // what is verified is that our answer does not move.
+        pos.sort_by(|a, b| b.1.total_cmp(&a.1).then(a.0.order.cmp(&b.0.order)));
         let cap = |s: &str| {
             let mut c = s.chars();
             match c.next() {
@@ -489,6 +553,62 @@ mod tests {
         assert!(alien.illegal().iter().any(|r| r.contains("not a rifle riven stat")));
     }
 
+    /// A physical stat needs the weapon to actually deal that type.
+    #[test]
+    fn a_physical_stat_needs_more_than_25_percent_of_that_type() {
+        use crate::loadout::WeaponBase;
+        // The Torid is pure Toxin: no physical riven stat exists on it.
+        let torid = WeaponBase::from_data("torid", true, &[]);
+        for id in ["impact", "puncture", "slash"] {
+            let s = spec(&["damage", id], None, 8);
+            assert!(
+                s.illegal_on(&torid).iter().any(|r| r.contains("more than 25%")),
+                "{id} should be impossible on the Torid: {:?}",
+                s.illegal_on(&torid)
+            );
+        }
+        // And it is the RIVEN that is fine — only the pairing is wrong.
+        assert!(spec(&["damage", "slash"], None, 8).illegal().is_empty());
+
+        // Dual Toxocyst is 7.5 Impact / 60 Puncture / 7.5 Slash = 75, so only
+        // Puncture (80%) clears the bar; the other two sit at 10%.
+        let toxo = WeaponBase::from_data("dual_toxocyst", true, &[]);
+        let ok = RivenSpec { class: "pistol".into(), ..spec(&["damage", "puncture"], None, 8) };
+        assert!(ok.illegal_on(&toxo).is_empty(), "{:?}", ok.illegal_on(&toxo));
+        let no = RivenSpec { class: "pistol".into(), ..spec(&["damage", "slash"], None, 8) };
+        assert!(no.illegal_on(&toxo).iter().any(|r| r.contains("10%")), "{:?}", no.illegal_on(&toxo));
+
+        // A curse is restricted the same way.
+        let cursed = RivenSpec { class: "pistol".into(), ..spec(&["damage", "multishot"], Some("impact"), 8) };
+        assert!(cursed.illegal_on(&toxo).iter().any(|r| r.contains("more than 25%")));
+    }
+
+    /// A tie is the NORM in a constructor, because ranking is by ROLL and
+    /// every stat can sit at 1.1 at once (user, 2026-07-31: what if all three
+    /// roll 1.1?). The name must then still be one name, and must not depend
+    /// on the order the stats were entered.
+    #[test]
+    fn a_tied_name_does_not_depend_on_the_order_the_stats_were_entered() {
+        let all_max = |ids: &[&str]| {
+            let mut s = spec(ids, None, 8);
+            for st in &mut s.positives {
+                st.roll = ROLL_MAX;
+            }
+            s
+        };
+        let a = all_max(&["heat", "cold", "multishot"]);
+        let b = all_max(&["multishot", "heat", "cold"]);
+        let c = all_max(&["cold", "multishot", "heat"]);
+        assert_eq!(a.name(1.3), b.name(1.3), "declaration order must not show");
+        assert_eq!(a.name(1.3), c.name(1.3));
+
+        // And it holds for stats with DIFFERENT bases too, because the value
+        // never enters the ranking — three at 1.1 tie however big they are.
+        let x = all_max(&["damage", "critical_chance", "multishot"]);
+        let y = all_max(&["multishot", "damage", "critical_chance"]);
+        assert_eq!(x.name(1.3), y.name(1.3));
+    }
+
     /// Every stat rolls its band INDEPENDENTLY, so the corner where all three
     /// positives are maximal and the curse minimal is a legal riven — merely
     /// astronomically unlikely (user, 2026-07-31: "can they all be max at
@@ -524,24 +644,61 @@ mod tests {
         assert!(mixed.illegal().is_empty());
     }
 
-    /// The name is GENERATED, and it is generated from the positives only.
+    /// The name is GENERATED, from the positives, ranked by ROLL.
+    ///
+    /// The wiki's own worked example is the test: a Vectis riven named
+    /// "Sati-critaata" has "Multishot as the highest stat, Critical Chance as
+    /// the second highest, and Base Damage as the lowest". Multishot's base
+    /// (90%) is the SMALLEST of those three — Damage is 165% — so "highest"
+    /// cannot mean the value. It means the roll.
     #[test]
-    fn the_name_comes_from_the_stats() {
-        // damage (visi/ata) is the biggest, multishot (sati/can) next.
-        let two = spec(&["damage", "multishot"], None, 8);
-        assert_eq!(two.name(1.0), "Visican", "prefix of the biggest + suffix of the smallest");
+    fn the_name_comes_from_the_stats_ranked_by_roll() {
+        let rolled = |pairs: &[(&str, f64)], curse: Option<&str>| RivenSpec {
+            class: "rifle".into(),
+            positives: pairs
+                .iter()
+                .map(|(id, r)| RolledStat { id: (*id).into(), roll: *r })
+                .collect(),
+            curse: curse.map(|id| RolledStat { id: id.into(), roll: 1.0 }),
+            rank: 8,
+            polarity: Polarity::Madurai,
+        };
 
-        // Three: prefix of the biggest, PREFIX of the second, suffix of the
-        // smallest — "Visi-critacan".
-        let three = spec(&["damage", "critical_chance", "multishot"], None, 8);
-        assert_eq!(three.name(1.0), "Visi-critacan");
+        // The wiki's Vectis, verbatim.
+        let vectis = rolled(
+            &[("multishot", 1.10), ("critical_chance", 1.05), ("damage", 0.95)],
+            None,
+        );
+        assert_eq!(vectis.name(1.0), "Sati-critaata");
 
-        // Order of declaration does not matter; magnitude does.
-        let shuffled = spec(&["multishot", "damage", "critical_chance"], None, 8);
-        assert_eq!(shuffled.name(1.0), three.name(1.0));
+        // Value ordering would have said Visi- (damage 165% is the biggest),
+        // which is the whole point of the example.
+        assert!(!vectis.name(1.0).starts_with("Visi"));
 
-        // The curse contributes nothing to the name.
-        let cursed = spec(&["damage", "multishot"], Some("weapon_recoil"), 8);
+        // Declaration order does not matter; the roll does.
+        let shuffled = rolled(
+            &[("damage", 0.95), ("multishot", 1.10), ("critical_chance", 1.05)],
+            None,
+        );
+        assert_eq!(shuffled.name(1.0), "Sati-critaata");
+
+        // Two positives: no core, so "CoreSuffix" — the higher roll's PREFIX
+        // fragment and the lower one's suffix.
+        let two = rolled(&[("damage", 1.10), ("multishot", 0.95)], None);
+        assert_eq!(two.name(1.0), "Visican");
+
+        // Disposition cannot rename a riven: it scales every stat alike, and
+        // the ranking never looks at the value anyway.
+        assert_eq!(vectis.name(1.0), vectis.name(1.55));
+
+        // The curse contributes no fragment.
+        //
+        // UNVERIFIED: the wiki says names are drawn from "the randomized
+        // attributes the mod has" without saying whether the curse is one of
+        // them, and its example has three positives so it cannot settle this.
+        // An in-game 2-positive-plus-curse riven does.
+        let cursed = rolled(&[("damage", 1.10), ("multishot", 0.95)], Some("weapon_recoil"));
         assert_eq!(cursed.name(1.0), two.name(1.0));
     }
+
 }

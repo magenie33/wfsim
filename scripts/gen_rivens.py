@@ -90,7 +90,7 @@ def main():
             print(f"! no export entry for {cls}: {unique}")
             continue
         rows = []
-        for e in item["upgradeEntries"]:
+        for order, e in enumerate(item["upgradeEntries"]):
             tag = e["tag"]
             val = e["upgradeValues"][0]
             kind, arg = KIND.get(tag, (None, None))
@@ -100,6 +100,11 @@ def main():
                 {
                     "id": slug(tag, val["locTag"]),
                     "tag": tag,
+                    # DE's own position in `upgradeEntries`. Rows are written
+                    # sorted by id for reading; this keeps the export's order,
+                    # which is the only non-arbitrary way to break a tie
+                    # between two stats that share a base value.
+                    "order": order,
                     "base": val["value"],
                     "prefix": e.get("prefixTag", ""),
                     "suffix": e.get("suffixTag", ""),
@@ -126,12 +131,17 @@ def main():
                 "# `curse: false` = wiki-listed positive-only, never the negative stat.",
                 "# `kind: unmodeled` = a real riven stat the engine does not model; it",
                 "# still occupies a rolled slot and still shapes the name.",
+                "#",
+                "# `order` is DE's own index in upgradeEntries. Seven rifle stats share",
+                "# the same base, so two of them at the same roll are worth exactly the",
+                "# same and the name's magnitude ordering ties. This is what breaks it.",
                 f"class: {cls}",
                 "stats:",
             ]
             for r in rows:
                 out.append(f"  - id: {r['id']}")
                 out.append(f"    tag: {r['tag']}")
+                out.append(f"    order: {r['order']}")
                 out.append(f"    base: {r['base']}")
                 out.append(f"    prefix: {r['prefix']}")
                 out.append(f"    suffix: {r['suffix']}")
