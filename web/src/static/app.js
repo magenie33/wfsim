@@ -79,6 +79,13 @@ function applyI18n() {
     if (!el.dataset.i18nPhSrc) el.dataset.i18nPhSrc = el.placeholder;
     el.placeholder = tr(el.dataset.i18nPhSrc);
   });
+  // …and the tooltip of every [data-i18n-title]. A hover hint is a UI string
+  // like any other; it was simply the kind nothing reached, so a fully
+  // translated page still explained itself in English on hover.
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    if (!el.dataset.i18nTitleSrc) el.dataset.i18nTitleSrc = el.title;
+    el.title = tr(el.dataset.i18nTitleSrc);
+  });
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const node = [...el.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
     if (!node) return;

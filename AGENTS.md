@@ -93,8 +93,17 @@ data + a dependency-free web UI, deployed as WASM on Cloudflare
 
 - English everywhere in the repo; all-lowercase commit subjects in the
   form `area: what changed and why it is right`, no AI attribution, no
-  marketing copy anywhere.
+  marketing copy — **with ONE exception: the home hero** (`.hero-h` /
+  `.hero-sub`), which is allowed to make a bold claim (decision
+  2026-07-31). It stays a CHECKABLE one: "true to in-game numbers, down
+  to the last proc" and "Theorycrafting, solved" are the golden tests and
+  the optimizer, stated. Adjectives that nothing backs are still out —
+  bold here means specific, not loud. Everywhere else, still no
+  marketing copy.
 - The product name is **WFSim** (repo slug stays `wfsim`). The wordmark
-  is two-tone: "WF" + gold "Sim". Logo: `web/src/static/logo.svg`.
+  is two-tone: "WF" + gold "Sim". Logo: `web/src/static/logo.svg`. In
+  Chinese PROSE the product is **WF模拟** (user, 2026-07-31) — the
+  wordmark itself is never translated, so the topbar and `<title>` stay
+  WFSim while the zh footer says WF模拟.
 - Match the surrounding code's comment density and idiom; comments state
   constraints/sources, not narration.

@@ -6,8 +6,8 @@
 
 **The Simulacrum. The Primed One.**
 
-A Warframe builder, fight simulator, and Monte-Carlo build optimizer —
-true to in-game numbers and mechanics.
+The ultimate Warframe builder, fight simulator, and Monte-Carlo optimizer —
+true to in-game numbers, down to the last proc. Theorycrafting, solved.
 
 [**wfsim.app**](https://wfsim.app) ·
 QQ group [995078378](https://qm.qq.com/q/uiXrMSTs8S)

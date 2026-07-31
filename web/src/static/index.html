@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WFSim — The Simulacrum. The Primed One.</title>
-  <meta name="description" content="The Simulacrum. The Primed One. A Warframe builder, fight simulator, and Monte-Carlo build optimizer — true to in-game numbers and mechanics." />
+  <meta name="description" content="The Simulacrum. The Primed One. The ultimate Warframe builder, fight simulator, and Monte-Carlo optimizer — true to in-game numbers, down to the last proc. Theorycrafting, solved." />
   <!-- Absolute asset paths: with real-path routing the document can sit at
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
   <link rel="stylesheet" href="/style.css" />
@@ -28,7 +28,7 @@
         <option value="en">English</option>
         <option value="zh">中文</option>
       </select>
-      <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
+      <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" data-i18n-title aria-label="Toggle theme">◐</button>
       <a class="gh-link ghost-btn" href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub">
         <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
       </a>
@@ -38,15 +38,14 @@
            topbar size where two letters did not, it needs no asset, and a
            monochrome silhouette sits with the other ghost buttons instead of
            dropping a brand block into them. -->
-      <a class="qq-link ghost-btn" href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" title="Join the QQ group — 995078378" aria-label="QQ group"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M12 1.8c-2.9 0-5.2 2.3-5.2 5.2v1.1c0 .9-.35 1.75-.98 2.4C4.35 12 3.7 13.8 3.7 15.3c0 .85.5 1.45 1.25 1.45.5 0 .95-.25 1.25-.7.2.5.48.95.83 1.35-.95.35-1.55 1-1.55 1.75 0 1.1 1.3 1.85 2.9 1.85.95 0 1.8-.3 2.35-.75.42.06.85.09 1.27.09s.85-.03 1.27-.09c.55.45 1.4.75 2.35.75 1.6 0 2.9-.75 2.9-1.85 0-.75-.6-1.4-1.55-1.75.35-.4.63-.85.83-1.35.3.45.75.7 1.25.7.75 0 1.25-.6 1.25-1.45 0-1.5-.65-3.3-2.12-4.8-.63-.65-.98-1.5-.98-2.4V7c0-2.9-2.3-5.2-5.2-5.2zM9.05 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0zM12.65 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0z"/></svg></a>
+      <a class="qq-link ghost-btn" href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" title="Join the QQ group — 995078378" data-i18n-title aria-label="QQ group"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M12 1.8c-2.9 0-5.2 2.3-5.2 5.2v1.1c0 .9-.35 1.75-.98 2.4C4.35 12 3.7 13.8 3.7 15.3c0 .85.5 1.45 1.25 1.45.5 0 .95-.25 1.25-.7.2.5.48.95.83 1.35-.95.35-1.55 1-1.55 1.75 0 1.1 1.3 1.85 2.9 1.85.95 0 1.8-.3 2.35-.75.42.06.85.09 1.27.09s.85-.03 1.27-.09c.55.45 1.4.75 2.35.75 1.6 0 2.9-.75 2.9-1.85 0-.75-.6-1.4-1.55-1.75.35-.4.63-.85.83-1.35.3.45.75.7 1.25.7.75 0 1.25-.6 1.25-1.45 0-1.5-.65-3.3-2.12-4.8-.63-.65-.98-1.5-.98-2.4V7c0-2.9-2.3-5.2-5.2-5.2zM9.05 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0zM12.65 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0z"/></svg></a>
     </div>
   </header>
 
   <!-- Home: the weapon list. Click a card → that weapon's config page. -->
   <main id="home-page" class="home-page" hidden>
-    <h1 class="hero-h">The Simulacrum. <span>The Primed One.</span></h1>
-    <p class="hero-sub">A Warframe builder, fight simulator, and Monte-Carlo
-    build optimizer — true to in-game numbers and mechanics.</p>
+    <h1 class="hero-h" data-i18n>The Simulacrum. <span data-i18n>The Primed One.</span></h1>
+    <p class="hero-sub" data-i18n>The ultimate Warframe builder, fight simulator, and Monte-Carlo optimizer — true to in-game numbers, down to the last proc. Theorycrafting, solved.</p>
     <h2 class="home-h" data-i18n>Weapons</h2>
     <div id="weapon-grid"></div>
   </main>
@@ -76,7 +75,7 @@
         <span class="sub">
           <span class="cap" id="capacity">0 / 60</span>
           <span class="forma" id="forma">0 Forma</span>
-          <button id="auto-forma" class="ghost-btn small" title="auto-assign polarities for minimum Forma">auto</button>
+          <button id="auto-forma" class="ghost-btn small" title="auto-assign polarities for minimum Forma" data-i18n-title>auto</button>
           <button id="clear-mods" class="ghost-btn small">clear</button>
         </span>
       </div>
@@ -246,12 +245,11 @@
 
   <footer class="footer">
     <div class="footer-inner">
-      WFSim is an unofficial fan project, not affiliated with or endorsed by
-    Digital Extremes. Warframe is a trademark of Digital Extremes Ltd.
-    Game data derived from the community
+      <span data-i18n>WFSim is an unofficial fan project, not affiliated with or endorsed by Digital Extremes. Warframe is a trademark of Digital Extremes Ltd.</span>
+    <span data-i18n>Game data derived from the community</span>
     <a href="https://wiki.warframe.com/" target="_blank" rel="noopener">Warframe Wiki</a> (CC BY-SA) ·
     <a href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener">github.com/magenie33/wfsim</a> · AGPL-3.0 ·
-    <a href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" title="join via QQ"><span data-i18n>QQ group</span> 995078378</a><button id="qq-copy-foot" class="qq-copy-btn" title="copy the group number">⧉</button>
+    <a href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" title="join via QQ" data-i18n-title><span data-i18n>QQ group</span> 995078378</a><button id="qq-copy-foot" class="qq-copy-btn" title="copy the group number" data-i18n-title>⧉</button>
     </div>
   </footer>
 
