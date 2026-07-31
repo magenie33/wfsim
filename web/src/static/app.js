@@ -71,8 +71,14 @@ const searchBlob = (x) => {
   return x._search;
 };
 // Static labels: translate the first text node of every [data-i18n] element
-// (children like the .sim-hint spans stay untouched).
+// (children like the .sim-hint spans stay untouched), and the placeholder of
+// every [data-i18n-ph] input — a search box's prompt is a UI string like any
+// other, and it was the one kind the sweep did not reach.
 function applyI18n() {
+  document.querySelectorAll("[data-i18n-ph]").forEach((el) => {
+    if (!el.dataset.i18nPhSrc) el.dataset.i18nPhSrc = el.placeholder;
+    el.placeholder = tr(el.dataset.i18nPhSrc);
+  });
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const node = [...el.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
     if (!node) return;
@@ -621,6 +627,10 @@ function rivenMods() {
       name_en: official,
       subtype: "Riven",
       riven: true,
+      // A weapon takes ONE riven. Same family = mutually exclusive, the rule
+      // the pool already has — so every list, slot and scope enforces it
+      // without knowing what a riven is (user, 2026-07-31).
+      family: "riven",
       rarity: "legendary",
       polarity: (st.polarity || "madurai").replace(/^./, (c) => c.toUpperCase()),
       drain: 2 + 2 * (st.rank ?? 8),
@@ -695,8 +705,15 @@ const rivenRules = () => META.riven_rules || { roll_min: 0.9, roll_max: 1.1, max
 const rivenStat = (id) => rivenPool().find((s) => s.id === id);
 // The stat's NAME, without the placeholder or the unit: the row already
 // shows the value, so repeating "X%" in the picker is noise.
-const rivenStatName = (s) =>
+//
+// A riven line is OUR sentence built from DE's template, so it localizes the
+// way every other engine-generated effect line does — through the locale's
+// effect_phrases, which are the official client's words (data/i18n). There is
+// nothing riven-specific to translate: "+150% Critical Chance" reads the same
+// on a riven as on Point Strike.
+const rivenStatNameEn = (s) =>
   s.text.replace("|val|", "").replace(/^\s*%\s*/, "").replace(/\s+/g, " ").trim();
+const rivenStatName = (s) => tf(rivenStatNameEn(s));
 
 // The shape, in the notation everyone already uses: 2, 3, 2+1, 3+1 — the
 // count of bonuses, and a +1 for the malus. It leads because it is the
@@ -832,7 +849,7 @@ function renderRivens() {
     riven = { ...withDrafts((cur && cur.state) || blankRiven()), __weapon: w.id };
   }
   $("riven-sub").textContent =
-    `${w.name} · disposition ${(w.disposition || 1).toFixed(2)} — every value below is already scaled by it`;
+    `${w.name} · ${tr("disposition")} ${(w.disposition || 1).toFixed(2)} — ${tr("every value below is already scaled by it")}`;
   renderRivenPresetBar();
   renderRivenShape();
   renderRivenStats();
@@ -841,15 +858,19 @@ function renderRivens() {
   resolveRiven();
 }
 
+// "3 Bonus, 1 Malus" — the shape said in words, in whichever language.
+const shapeWords = (s) =>
+  `${s.bonuses} ${tr("Bonus")}${s.malus ? `, 1 ${tr("Malus")}` : ""}`;
+
 function renderRivenShape() {
   const now = riven.shape || `${riven.bonuses.length}${riven.malus ? "+1" : ""}`;
   const shapeNow = RIVEN_SHAPES.find((x) => x.id === now) || RIVEN_SHAPES[0];
   $("riven-shape").innerHTML =
-    `<span class="rv-lbl">Shape</span><span class="oseg">` +
+    `<span class="rv-lbl">${escHtml(tr("Shape"))}</span><span class="oseg">` +
     RIVEN_SHAPES.map((s) =>
       `<span class="seg ${s.id === now ? "on" : ""}" data-rv="${s.id}"
-             title="${s.bonuses} Bonus${s.malus ? ", 1 Malus" : ""}">${s.id}</span>`).join("") +
-    `</span><span class="rv-lbl dim">${shapeNow.bonuses} Bonus${shapeNow.malus ? ", 1 Malus" : ""}</span>`;
+             title="${escHtml(shapeWords(s))}">${s.id}</span>`).join("") +
+    `</span><span class="rv-lbl dim">${escHtml(shapeWords(shapeNow))}</span>`;
   $("riven-shape").querySelectorAll("[data-rv]").forEach((el) => el.onclick = () => {
     const want = el.dataset.rv;
     if (want === riven.shape) return;
@@ -876,12 +897,12 @@ function renderRivenStats() {
   const row = (slot, s, isMalus) => {
     const def = rivenStat(s.id);
     return `<div class="rv-row ${isMalus ? "malus" : ""}">
-      <span class="rv-tag">${isMalus ? "Malus" : "Bonus"}</span>
-      <button class="rv-pick" data-slot="${slot}">${def ? escHtml(rivenStatName(def)) : "choose a stat"}</button>
+      <span class="rv-tag">${escHtml(tr(isMalus ? "Malus" : "Bonus"))}</span>
+      <button class="rv-pick" data-slot="${slot}">${def ? escHtml(rivenStatName(def)) : escHtml(tr("choose a stat"))}</button>
       <input class="rv-roll" type="range" data-slot="${slot}"
              min="${rules.roll_min}" max="${rules.roll_max}" step="0.001" value="${s.roll}">
       <input class="rv-num" type="number" data-slot="${slot}" step="0.1" placeholder="—">
-      <span class="rv-pct" data-slot="${slot}" title="where this roll landed in its 0.9-1.1 band"></span>
+      <span class="rv-pct" data-slot="${slot}" title="${escHtml(tr("where this roll landed in its 0.9-1.1 band"))}"></span>
       <span class="rv-unit" data-slot="${slot}"></span>
     </div>`;
   };
@@ -926,11 +947,12 @@ function openRivenPicker(anchor, slot) {
       // A stat cannot appear twice on one riven, and five are bonus-only
       // and can never be the malus.
       .filter((x) => (!used.has(x.id) || x.id === at.id) && (slot !== "malus" || x.malus))
-      .filter((x) => !f || rivenStatName(x).toLowerCase().includes(f))
+      // Both languages match, exactly as the mod picker does.
+      .filter((x) => !f || `${rivenStatNameEn(x)} ${rivenStatName(x)}`.toLowerCase().includes(f))
       .map((x) => `<div class="opt ${x.id === at.id ? "search" : ""}" data-rvid="${x.id}">
         <div class="info"><div class="mn">${escHtml(rivenStatName(x))}</div>
-        <div class="me">${x.modeled ? "" : "<div>not modeled — it rolls and it names the riven, but it adds no damage</div>"}</div></div>
-      </div>`).join("") || `<div class="opt dis">no matching stat</div>`;
+        <div class="me">${x.modeled ? "" : `<div>${escHtml(tr("not modeled — it rolls and it names the riven, but it adds no damage"))}</div>`}</div></div>
+      </div>`).join("") || `<div class="opt dis">${escHtml(tr("no matching stat"))}</div>`;
     menu.querySelectorAll("[data-rvid]").forEach((el) => el.onclick = () => {
       at.id = el.dataset.rvid;
       closePopovers();
@@ -955,12 +977,12 @@ function renderRivenFoot() {
   // one place it is spelled out.
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   $("riven-foot").innerHTML =
-    `<label class="rv-lbl">Rank <input id="rv-rank" type="range" min="0" max="${rules.max_rank}" step="1" value="${riven.rank}">` +
+    `<label class="rv-lbl">${escHtml(tr("Rank"))} <input id="rv-rank" type="range" min="0" max="${rules.max_rank}" step="1" value="${riven.rank}">` +
     `<b id="rv-rank-n">${riven.rank}</b></label>` +
-    `<span class="rv-lbl">Polarity</span><span class="oseg">` +
+    `<span class="rv-lbl">${escHtml(tr("Polarity"))}</span><span class="oseg">` +
     pols.map((x) => `<span class="seg pol ${riven.polarity === x ? "on" : ""}" data-pol="${x}" title="${cap(x)}">${imgTag(POL(cap(x)), "pol")}</span>`).join("") +
     `</span>` +
-    `<button class="ghost-btn small" id="rv-max">roll everything maximal</button>`;
+    `<button class="ghost-btn small" id="rv-max">${escHtml(tr("roll everything maximal"))}</button>`;
   $("rv-rank").oninput = () => {
     riven.rank = Number($("rv-rank").value);
     $("rv-rank-n").textContent = riven.rank;
@@ -1002,16 +1024,16 @@ function renderRivenAll() {
             ${imgTag(POL(cap(st.polarity || "madurai")), "pol")}
             <b>${escHtml(p.name)}</b>
             ${meta.name ? `<span class="rv-official">${escHtml(meta.name)}</span>` : ""}
-            <span class="rv-meta">${shape} · rank ${st.rank ?? 8} · ${2 + 2 * (st.rank ?? 8)} capacity</span>
+            <span class="rv-meta">${shape} · ${escHtml(tr("Rank"))} ${st.rank ?? 8} · ${2 + 2 * (st.rank ?? 8)} ${escHtml(tr("capacity"))}</span>
           </div>
           <div class="rv-all-s">${
             lines.length
-              ? lines.map((x, i) => `<span class="rv-chip ${i >= nBonus ? "neg" : ""}">${escHtml(x)}</span>`).join("")
-              : `<span class="sim-empty">nothing rolled yet</span>`
+              ? lines.map((x, i) => `<span class="rv-chip ${i >= nBonus ? "neg" : ""}">${escHtml(tf(x))}</span>`).join("")
+              : `<span class="sim-empty">${escHtml(tr("nothing rolled yet"))}</span>`
           }</div>
         </div>`;
       }).join("")
-    : `<div class="sim-empty">no rivens for this weapon yet</div>`;
+    : `<div class="sim-empty">${escHtml(tr("no rivens for this weapon yet"))}</div>`;
   // Clicking one opens it, the same as clicking its chip in the bar.
   box.querySelectorAll("[data-open]").forEach((el) => el.onclick = () => {
     const p = loadPresetList(RIVENS).find((x) => x.name === el.dataset.open);
@@ -1021,12 +1043,6 @@ function renderRivenAll() {
     riven = { ...withDrafts(p.state || blankRiven()), __weapon: $("weapon").value };
     renderRivens();
   });
-}
-
-// 0th, 1st, 2nd, 3rd, 21st, 100th.
-function ordinal(n) {
-  const v = n % 100;
-  return n + (["th", "st", "nd", "rd"][(v - 20) % 10] || ["th", "st", "nd", "rd"][v] || "th");
 }
 
 function renderRivenCard() {
@@ -1061,12 +1077,15 @@ function renderRivenCard() {
       // How good the ROLL is, with disposition, shape and base divided out —
       // so two stats on one card compare, and so do two cards.
       const q = Math.round(s.percentile ?? 50);
-      pct.textContent = ordinal(q);
+      // A bare number in ANGLE brackets. An ordinal suffix read as clutter
+      // (user, 2026-07-31), and parentheses were taken — DE's own stat text
+      // already uses them ("(x2 for Bows)").
+      pct.textContent = `<${q}>`;
       pct.className = `rv-pct${q >= 90 ? " top" : ""}${q <= 10 ? " low" : ""}`;
-      pct.title = `${q}th percentile of this stat's roll band`;
+      pct.title = tr("where this roll landed in its 0.9-1.1 band");
     }
     if (unit) {
-      unit.textContent = s.text;
+      unit.textContent = tf(s.text);
       unit.className = `rv-unit${s.value < 0 ? " neg" : ""}${s.modeled ? "" : " unmodeled"}`;
     }
     const roll = box.querySelector(`.rv-roll[data-slot="${s.slot}"]`);
@@ -1075,13 +1094,16 @@ function renderRivenCard() {
   const bad = (r && r.illegal) || [];
   if (!rivenComplete()) {
     const n = riven.bonuses.filter((s) => !s.id).length + (riven.malus && !riven.malus.id ? 1 : 0);
-    $("riven-card").innerHTML = `<div class="rv-meta">pick ${n} more stat${n === 1 ? "" : "s"} to finish this riven</div>`;
+    const msg = n === 1
+      ? tr("one more stat to finish this riven")
+      : tr("pick {n} more stats to finish this riven").replace("{n}", n);
+    $("riven-card").innerHTML = `<div class="rv-meta">${escHtml(msg)}</div>`;
     return;
   }
   $("riven-card").innerHTML = bad.length
-    ? `<div class="error"><b>not a legal riven</b><ul>${bad.map((x) => `<li>${escHtml(x)}</li>`).join("")}</ul></div>`
+    ? `<div class="error"><b>${escHtml(tr("not a legal riven"))}</b><ul>${bad.map((x) => `<li>${escHtml(x)}</li>`).join("")}</ul></div>`
     : `<div class="rv-name">${escHtml(r.name)}</div>
-       <div class="rv-meta">${r.drain} capacity · ${escHtml(r.class)} riven · disposition ${Number(r.disposition).toFixed(2)}</div>`;
+       <div class="rv-meta">${r.drain} ${escHtml(tr("capacity"))} · ${escHtml(tr(r.class))} ${escHtml(tr("riven"))} · ${escHtml(tr("disposition"))} ${Number(r.disposition).toFixed(2)}</div>`;
 }
 
 // Rivens are a PRESET COLLECTION, on the same bar as builds and the
@@ -2095,7 +2117,7 @@ function renderMenu(slotIdx, query) {
     const s = m.riven ? "Riven" : "Mods";
     if (s === section) return "";
     section = s;
-    return `<div class="menu-head">${s}</div>`;
+    return `<div class="menu-head">${escHtml(tr(s))}</div>`;
   };
   menu.innerHTML = hits.length ? hits.map((m) => {
     const head = heading(m);
@@ -3196,7 +3218,7 @@ function renderOptModList() {
   let section = null;
   const row = (m) => {
     const s = m.riven ? "Riven" : "Mods";
-    const head = s === section ? "" : ((section = s), `<div class="menu-head">${s}</div>`);
+    const head = s === section ? "" : ((section = s), `<div class="menu-head">${escHtml(tr(s))}</div>`);
     const st = opt.mods[m.id] || "off";
     const fam = famReqBy(m);
     const dead = !!fam || (full && st === "off");

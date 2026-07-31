@@ -497,7 +497,12 @@ impl RivenSpec {
             polarity: self.polarity,
             rarity: Rarity::Legendary,
             exilus: false,
-            family: None,
+            // A weapon takes ONE riven (user, 2026-07-31). Rivens all share
+            // one family, which is the rule the pool already has for mutually
+            // exclusive mods — so the picker greys the others out, the panel
+            // refuses the pair, and the optimizer never enumerates a build
+            // holding two, with nothing riven-specific added anywhere.
+            family: Some("riven"),
             requires_weapon: None,
             set: None,
             requires: None,
@@ -749,6 +754,20 @@ mod tests {
         assert!(clo.abs() < chi.abs(), "the gentlest malus is the smallest");
         assert!((with_malus.roll_for_value(rec, false, 1.3, clo) - ROLL_MIN).abs() < 1e-9);
         assert!((with_malus.roll_for_value(rec, false, 1.3, chi) - ROLL_MAX).abs() < 1e-9);
+    }
+
+    /// A weapon takes ONE riven, and the pool already has a word for that.
+    #[test]
+    fn two_rivens_cannot_be_equipped_together() {
+        let a = spec(&["damage", "multishot"], None, 8).to_mod_def("riven:a", 1.3);
+        let b = spec(&["critical_chance", "heat"], None, 8).to_mod_def("riven:b", 1.3);
+        assert_eq!(a.family, Some("riven"));
+        assert_eq!(a.family, b.family, "any two rivens exclude each other");
+        // And it is the same mechanism ordinary mods use, not a parallel one:
+        // the pool already excludes mods this way.
+        assert!(crate::mods_data::class_pool("rifle")
+            .iter()
+            .any(|m| m.family.is_some_and(|f| f != "riven")));
     }
 
     /// Faction damage prints as a MULTIPLIER, because that is what the card

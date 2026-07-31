@@ -118,7 +118,8 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 .topbar-inner .ghost-btn{height:28px;padding:0 8px;display:inline-flex;align-items:center;justify-content:center}
 .gh-link{color:var(--text);width:28px;padding:0}
 .gh-link svg{display:block}
-.qq-link{width:28px;font-weight:800;font-size:10px;letter-spacing:.03em;text-decoration:none}
+.qq-link{width:28px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.qq-link svg{display:block}
 .qq-copy-btn{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;padding:0 3px}
 .qq-copy-btn:hover{color:var(--text)}
 .lang-select{margin-left:auto;width:auto;height:28px;padding:0 24px 0 8px;font-size:12px;background-color:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:8px}

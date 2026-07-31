@@ -118,6 +118,45 @@ ui:
 # ("+X% Critical Chance" → "+X% 暴击几率"). ORDERED — longest phrases first
 # so partial matches never clobber. Each entry: [regex, replacement] or
 # [regex, replacement, flags] (default flags: gi).
+  # --- Rivens (裂罅) ------------------------------------------------------
+  # DE's own word: the CN client calls these "步枪裂罅 Mod" / "手枪裂罅 Mod"
+  # (WFCD i18n, joined on internal_name), so the noun is 裂罅 and the class
+  # prefixes are its own. Bonus/Malus have no official CN string — they are
+  # the wiki's words for the two halves of a card — so they take the standard
+  # 增益/减益 pair. Every VALUE line localizes through effect_phrases below:
+  # "+150% Critical Chance" reads the same on a riven as on Point Strike.
+  "Rivens": 裂罅
+  "Riven": 裂罅
+  "riven": 裂罅
+  "rifle": 步枪
+  "pistol": 手枪
+  "Shape": 词条构成
+  "Bonus": 增益
+  "Malus": 减益
+  "Rank": 等级
+  "Polarity": 极性
+  "capacity": 容量
+  "disposition": 倾向
+  "choose a stat": 选择词条
+  "no matching stat": 没有匹配的词条
+  "Search a riven stat…": 搜索裂罅词条…
+  "nothing rolled yet": 尚未选择词条
+  "no rivens for this weapon yet": 这把武器还没有裂罅
+  "not a legal riven": 不是合法的裂罅
+  "one more stat to finish this riven": 还差 1 条词条这张裂罅就完整了
+  "pick {n} more stats to finish this riven": 还差 {n} 条词条这张裂罅就完整了
+  "every value below is already scaled by it": 下面每个数值都已经按它换算过了
+  "where this roll landed in its 0.9-1.1 band": 这条词条的随机值在 0.9-1.1 区间里的位置
+  "not modeled — it rolls and it names the riven, but it adds no damage": 未建模 —— 它会开出来，也参与命名，但不提供伤害
+  "All rivens": 全部裂罅
+  "roll everything maximal": 全部拉到最高
+  "every riven saved for this weapon, with what it actually rolls": 这把武器保存的每张裂罅，以及它实际开出的数值
+  # Search boxes.
+  "Search a mod…": 搜索 MOD…
+  "Search arcane / effect…": 搜索赋能 / 效果…
+  "search mods by name or effect…": 按名称或效果搜索 MOD…
+  "search arcanes by name or effect…": 按名称或效果搜索赋能…
+
 effect_phrases:
   - ['Status Duration', '触发持续时间']
   - ['Critical Chance', '暴击几率']
