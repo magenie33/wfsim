@@ -21,6 +21,13 @@ pub struct AttackSpec {
     #[serde(default)]
     pub shot_type: Option<String>,
     pub fire_rate: f64,
+    /// CHARGE trigger only (the module's per-attack `ChargeTime`): the draw
+    /// that precedes the shot. It — not `fire_rate` — sets the cadence of a
+    /// charged weapon, and fire-rate bonuses DIVIDE it (wiki Fire Rate:
+    /// "charge weapons ... the charge time is reduced"). `fire_rate` stays the
+    /// weapon's listed stat, which is what the low-fire-rate gates read.
+    #[serde(default)]
+    pub charge_seconds: Option<f64>,
     #[serde(default = "one")]
     pub multishot: f64,
     pub crit_chance: f64,
@@ -229,12 +236,94 @@ pub struct InjectedElementSpec {
     pub amount: f64,
 }
 
+/// The CLOSED vocabulary of attack FORMS. Weapons are operated differently one
+/// from the next, but the handful of MODES they are operated in is shared —
+/// so a form is a kind from this list, and every weapon entry REGISTERS which
+/// one it is (`form:` in its yaml). Nothing may name a form the engine does
+/// not know: an unknown string is a hard error, not a silent fallback.
+///
+/// Adding a kind is one arm here plus one in [`FormKind::parse`] — that is the
+/// whole extension point. `alt_fire` is the obvious next one; it is NOT
+/// declared until a weapon in `data/` needs it, because a kind nothing
+/// registers is a kind nothing tests.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FormKind {
+    /// The ordinary attack — what almost every weapon has, and by definition
+    /// the UNCHARGED one. Verglas Prime has only this; the Torid, Laetum and
+    /// Dual Toxocyst carry it as the form their Incarnon transforms out of.
+    Base,
+    /// A charge-trigger weapon's fully drawn shot (Cernos Prime). Its own kind
+    /// because the draw REPLACES the fire-rate cadence and, on a bow, the
+    /// damage is the uncharged base times the charge multiplier.
+    Charged,
+    /// The gauge-backed transformed form (Incarnon Genesis).
+    Incarnon,
+}
+
+impl FormKind {
+    /// The stable id — the wire value in an API request and in a saved preset,
+    /// so these strings are durable names, not labels.
+    pub fn id(self) -> &'static str {
+        match self {
+            FormKind::Base => "base",
+            FormKind::Charged => "charged",
+            FormKind::Incarnon => "incarnon",
+        }
+    }
+
+    /// English display name (the i18n overlay translates from this).
+    pub fn label(self) -> &'static str {
+        match self {
+            FormKind::Base => "Base Form",
+            FormKind::Charged => "Charged Shot",
+            FormKind::Incarnon => "Incarnon Form",
+        }
+    }
+
+    /// Does ENTERING this form cost a gated transition — a resource meter to
+    /// fill and an animation to play — rather than being a per-shot choice?
+    ///
+    /// This is what separates the two ways a weapon switches form, and it is a
+    /// property of the KIND, not of the weapon: an Incarnon form is always
+    /// paid for with a gauge and two transmute animations, while charged vs
+    /// uncharged is chosen freely on every trigger pull. Only a gauge-switched
+    /// form gives the sim a CYCLE to run.
+    pub fn is_gauge_switched(self) -> bool {
+        matches!(self, FormKind::Incarnon)
+    }
+
+    pub fn parse(s: &str) -> FormKind {
+        match s {
+            "base" => FormKind::Base,
+            "charged" => FormKind::Charged,
+            "incarnon" => FormKind::Incarnon,
+            other => panic!("unknown form kind in weapon data: {other}"),
+        }
+    }
+}
+
+/// One registered form of a weapon: which yaml ENTRY provides it, what kind it
+/// is, and whether it is the one the weapon is normally fired in.
+#[derive(Debug, Clone, Copy)]
+pub struct FormRef {
+    /// The weapon entry id backing this form — the key `base_panel` takes.
+    pub weapon_id: &'static str,
+    pub kind: FormKind,
+    /// The arsenal's form: the group's roster entry (the wiki module says it
+    /// per weapon with `_TooltipAttackDisplay`).
+    pub is_default: bool,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct WeaponSpec {
     pub id: String,
     pub name: String,
     pub slot: String,
     pub class: String,
+    /// Which FORM of its weapon this entry is — a kind from the closed
+    /// [`FormKind`] vocabulary. REQUIRED: a form is registered, never guessed,
+    /// so a new entry cannot quietly inherit someone else's mode.
+    pub form: String,
     /// The mod POOLS this weapon draws from, as a union — `data/mods/<pool>/`.
     /// A weapon is not served by one list: a launcher takes both the
     /// primary-wide pool and the rifle class pool, and takes no assault-rifle
@@ -251,6 +340,19 @@ pub struct WeaponSpec {
     pub reload_seconds: Option<f64>,
     #[serde(default)]
     pub co_behavior: Option<String>,
+    /// How much of the base the CO term computes on (the catalog's "CO Damage
+    /// Bonus Relative To Base Damage" column) when the WEAPON, not one of its
+    /// evolutions, is what narrows it. A bow's charged shot: 0.5 — "CO-bonus
+    /// only applies to base (uncharged) damage; bows have innate 2x damage
+    /// multiplier when fully charged" (CO catalog, Cernos Prime row).
+    /// Unset = 1.0, the normal case.
+    #[serde(default)]
+    pub co_base_fraction: Option<f64>,
+    /// Innate additive headshot-damage bonus — the module's per-attack
+    /// `ExtraHeadshotDmg` (Cernos Prime: 0.5). Joins the same additive
+    /// headshot bracket the arcane and evolution bonuses use.
+    #[serde(default)]
+    pub headshot_damage_bonus: Option<f64>,
     #[serde(default)]
     pub transform_group: Option<String>,
     #[serde(default)]
@@ -345,6 +447,52 @@ pub fn has_perk(weapon_id: &str, perk_id: &str) -> bool {
 /// Incarnon form is a form of its base weapon, not its own roster row).
 pub fn roster() -> impl Iterator<Item = &'static WeaponSpec> {
     all().iter().filter(|s| s.transforms_from.is_none())
+}
+
+impl WeaponSpec {
+    pub fn form_kind(&self) -> FormKind {
+        FormKind::parse(&self.form)
+    }
+
+    /// The transform group this entry belongs to — its own id when it is a
+    /// group of one (Verglas Prime: one weapon, one form).
+    pub fn group(&self) -> &str {
+        self.transform_group.as_deref().unwrap_or(&self.id)
+    }
+}
+
+/// The forms a weapon REGISTERS, default first.
+///
+/// A weapon's forms are the entries of its transform group: the two-weapons
+/// model (decision 2026-07-24) gives every form its own yaml entry, and this
+/// is the view that reads them back as ONE weapon with several modes. A
+/// weapon with a single entry has exactly one form — that is the common case,
+/// and it is a real registration (`form: base`), not an absence.
+pub fn forms_of(weapon_id: &str) -> Vec<FormRef> {
+    let Some(spec) = spec(weapon_id) else { return Vec::new() };
+    let group = spec.group();
+    let mut out: Vec<FormRef> = all()
+        .iter()
+        .filter(|s| s.group() == group)
+        .map(|s| FormRef {
+            weapon_id: &s.id,
+            kind: s.form_kind(),
+            // The roster entry IS the default form: everything else in the
+            // group is reached from it.
+            is_default: s.transforms_from.is_none(),
+        })
+        .collect();
+    // Default first; the rest keep the vocabulary's order so two weapons never
+    // list the same forms differently.
+    out.sort_by_key(|f| (!f.is_default, f.kind as u8));
+    out
+}
+
+/// Does this weapon have a form you TRANSFORM into (a gauge and two transmute
+/// animations)? Only such a weapon has a cycle to simulate — anything else is
+/// fired in one form at a time, whatever forms it registers.
+pub fn has_gauge_switched_form(weapon_id: &str) -> bool {
+    forms_of(weapon_id).iter().any(|f| f.kind.is_gauge_switched())
 }
 
 fn damage_type(name: &str) -> DamageType {
@@ -518,6 +666,22 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         base_crit_damage: s.attack.crit_multiplier,
         base_status_chance: s.attack.status_chance,
         base_fire_rate: s.attack.fire_rate,
+        // A CHARGE trigger without a `charge_seconds` would silently fall back
+        // to the `1 / fire_rate` cadence, so the data has to state it.
+        charge_seconds: match (s.attack.trigger.as_str(), s.attack.charge_seconds) {
+            ("charge", Some(c)) => Some(c),
+            ("charge", None) => panic!("{id}: trigger charge needs charge_seconds"),
+            (_, Some(_)) => panic!("{id}: charge_seconds on a non-charge trigger"),
+            (_, None) => None,
+        },
+        // "(x2 for Bows)" — the clause every fire-rate mod card carries
+        // (Shred, Primed Shred, Speed Trigger, Vile Acceleration, Vigilante
+        // Fervor, and the two DRAWBACK mods Critical Delay / Vile Precision,
+        // so it doubles a penalty just as literally). It is keyed on the
+        // weapon CLASS, not on a per-weapon flag: the cards say "for Bows",
+        // and the wiki's rank tables carry a whole "Fire Rate (Bows)" column
+        // at exactly twice the rifle one.
+        fire_rate_mod_multiplier: if s.class == "bow" { 2.0 } else { 1.0 },
         base_multishot: s.attack.multishot,
         buff_multishot_bonus: 0.0,
         buff_ms_max_stacks: 0,
@@ -526,9 +690,11 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         innate_co_per_type: 0.0,
         co_behavior,
         // 1.0 = the CO term uses the FULL base, evolution damage included,
-        // which is the normal case. Only an evolution that declares itself
-        // excluded narrows it (evolutions_data::apply).
-        co_base_fraction: 1.0,
+        // which is the normal case. An evolution that declares itself excluded
+        // narrows it later (evolutions_data::apply); a WEAPON-level narrowing
+        // (a bow's charged shot computing CO off the uncharged base) is
+        // declared here, and no weapon has both.
+        co_base_fraction: s.co_base_fraction.unwrap_or(1.0),
         injected_elements,
         traits: traits_for(s),
         incarnon,
@@ -550,11 +716,13 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         field_duration_on_empty_reload: 1.0, // raised by Renewed Horror
         multishot_on_last_round: 0.0,        // raised by Final Fusillade
         multishot_ammo_bonus: 0.0,           // raised by Plentiful Mayhem
-        // All raised by evolutions, never by the raw weapon data.
+        // Raised by evolutions, never by the raw weapon data.
         evo_fire_rate_bonus: 0.0,
         post_mod_crit_chance: 0.0,
         post_mod_status_chance: 0.0,
-        headshot_damage_bonus: 0.0,
+        // Evolutions ADD to this (Caput Mortuum); a weapon's innate share is
+        // the module's `ExtraHeadshotDmg`.
+        headshot_damage_bonus: s.headshot_damage_bonus.unwrap_or(0.0),
         noncrit_bonus: None,
         plain_hit_bonus: None,
         reload_on_headshot: None,
@@ -645,6 +813,162 @@ mod tests {
         assert!(bm.chain_nodes_have_radius, "user, 2026-07-30: every node spheres");
         // The base form is not a beam.
         assert!(b.beam.is_none());
+    }
+
+    /// Every weapon REGISTERS its form, and the registration has to agree with
+    /// the entry's own mechanics — a form is a claim about how the weapon is
+    /// operated, so a `charge` trigger filed as `base` is a data error, not a
+    /// stylistic one. This is the check that keeps the vocabulary honest as
+    /// weapons are added.
+    #[test]
+    fn every_weapon_registers_a_form_that_matches_its_mechanics() {
+        for s in all() {
+            let kind = s.form_kind(); // panics on a name outside the vocabulary
+            let charge_trigger = s.attack.trigger == "charge";
+            assert_eq!(
+                charge_trigger,
+                kind == FormKind::Charged,
+                "{}: a charge trigger IS the charged form, and nothing else is",
+                s.id
+            );
+            // A gauge-switched form is the one that carries the gauge economy.
+            assert_eq!(
+                s.incarnon.is_some(),
+                kind.is_gauge_switched(),
+                "{}: the gauge and the incarnon form are the same claim",
+                s.id
+            );
+            // The entry reached BY a transform is never the default form.
+            assert_eq!(
+                s.transforms_from.is_some(),
+                kind.is_gauge_switched(),
+                "{}: only a transformed-into form has a form to come from",
+                s.id
+            );
+        }
+        // A group never registers one kind twice — otherwise a form id could
+        // not name a form.
+        for s in roster() {
+            let forms = forms_of(&s.id);
+            let mut kinds: Vec<u8> = forms.iter().map(|f| f.kind as u8).collect();
+            kinds.sort_unstable();
+            let n = kinds.len();
+            kinds.dedup();
+            assert_eq!(kinds.len(), n, "{}: duplicate form kind in one group", s.id);
+            assert_eq!(
+                forms.iter().filter(|f| f.is_default).count(),
+                1,
+                "{}: exactly one default form",
+                s.id
+            );
+        }
+    }
+
+    /// What the registry reads back: one weapon, its forms, default first.
+    #[test]
+    fn a_weapons_forms_are_its_transform_group() {
+        // Two forms, and only the Incarnon one is transformed INTO — which is
+        // what decides whether there is a cycle to simulate.
+        let torid = forms_of("torid");
+        assert_eq!(torid.len(), 2);
+        assert_eq!(torid[0].kind, FormKind::Base);
+        assert!(torid[0].is_default && torid[0].weapon_id == "torid");
+        assert_eq!(torid[1].kind, FormKind::Incarnon);
+        assert!(!torid[1].is_default && torid[1].weapon_id == "torid_incarnon");
+        assert!(has_gauge_switched_form("torid"));
+        // Asking from the non-default entry gives the SAME group.
+        assert_eq!(forms_of("torid_incarnon").len(), 2);
+
+        // One form is a registration, not an absence — and a beam weapon has
+        // nothing to transform into.
+        let verglas = forms_of("verglas_prime");
+        assert_eq!(verglas.len(), 1);
+        assert_eq!(verglas[0].kind, FormKind::Base);
+        assert!(verglas[0].is_default);
+        assert!(!has_gauge_switched_form("verglas_prime"));
+
+        // The bow is fired in its CHARGED form and transforms into nothing:
+        // its second form (the uncharged shot) is not modeled yet, and when
+        // it is it will be freely switched, not transformed into.
+        let bow = forms_of("cernos_prime");
+        assert_eq!(bow.len(), 1);
+        assert_eq!(bow[0].kind, FormKind::Charged);
+        assert!(bow[0].is_default);
+        assert!(!has_gauge_switched_form("cernos_prime"));
+
+        // Wire ids are stable: they are what a saved preset stores.
+        assert_eq!(FormKind::Base.id(), "base");
+        assert_eq!(FormKind::Incarnon.id(), "incarnon");
+        assert_eq!(FormKind::Charged.id(), "charged");
+    }
+
+    /// The Cernos Prime is the first CHARGE-trigger weapon, so this pins the
+    /// three things a bow brings that no other roster entry has: a draw that
+    /// replaces the fire-rate cadence, an innate headshot bonus, and a CO term
+    /// computed off the UNCHARGED base. Every number is wiki data module ==
+    /// WFCD (joined on internal name), except `co_base_fraction`, which is the
+    /// CO catalog's own column.
+    #[test]
+    fn cernos_prime_loads_as_a_charged_bow() {
+        let b = base_panel("cernos_prime", false);
+        // PER ARROW — 3 x 184 = the 552 the page quotes for the whole shot.
+        assert!((b.base_vector.get(DamageType::Impact) - 165.6).abs() < 1e-9);
+        assert!((b.base_vector.get(DamageType::Puncture) - 9.2).abs() < 1e-9);
+        assert!((b.base_vector.get(DamageType::Slash) - 9.2).abs() < 1e-9);
+        assert!((b.base_vector.total() - 184.0).abs() < 1e-9);
+        assert!((b.base_multishot - 3.0).abs() < 1e-9, "innate 3 arrows");
+        assert!((b.base_crit_chance - 0.35).abs() < 1e-9);
+        assert!((b.base_crit_damage - 2.0).abs() < 1e-9);
+        assert!((b.base_status_chance - 0.30).abs() < 1e-9);
+        assert!((b.magazine_size - 1.0).abs() < 1e-9, "one nocked arrow");
+        assert!((b.base_reload - 0.65).abs() < 1e-9);
+        // The listed stat stays the listed stat; the DRAW is what paces it.
+        assert!((b.base_fire_rate - 1.0).abs() < 1e-9);
+        assert_eq!(b.charge_seconds, Some(0.5));
+        // "(x2 for Bows)" — the clause on every fire-rate mod card.
+        assert!((b.fire_rate_mod_multiplier - 2.0).abs() < 1e-9);
+        // ExtraHeadshotDmg 0.5 on both attacks ("Deals 50% bonus damage on
+        // headshots"), into the additive headshot bracket.
+        assert!((b.headshot_damage_bonus - 0.5).abs() < 1e-9);
+        // CO catalog: 552 | 276 | 50% | Adding. The 50% is the charge
+        // multiplier sitting OUTSIDE the additive bracket, not an evolution
+        // exclusion — this weapon has no evolutions.
+        assert_eq!(b.co_behavior, CoBehavior::AdditiveWithBaseDamage);
+        assert!((b.co_base_fraction - 0.5).abs() < 1e-9);
+        // A bow is neither a beam nor an AoE weapon.
+        assert!(!b.continuous);
+        assert!(b.radial.is_none() && b.lingering.is_none() && b.beam.is_none());
+        // Charge is its own trigger family: a mod gated on `semi_auto`
+        // (Semi-Rifle Cannonade) is inert on it, which is the in-game rule.
+        assert!(b.traits.is_empty());
+    }
+
+    /// The draw, not the fire-rate stat, is what a fire-rate mod shortens —
+    /// and on a bow it is shortened by DOUBLE the printed bonus.
+    #[test]
+    fn fire_rate_mods_halve_a_bow_charge_at_double_value() {
+        use crate::loadout::{resolve, ModEffect, StackPolicy, WeaponBase};
+        let base = WeaponBase::from_data("cernos_prime", false, &[]);
+        let bare = resolve(&base, &[], StackPolicy::AssumedMax);
+        assert_eq!(bare.charge_seconds, Some(0.5));
+        assert!((bare.fire_rate - 1.0).abs() < 1e-9);
+
+        // Shred: +30% on the card, +60% here.
+        let shred = crate::mods_data::class_pool("rifle")
+            .into_iter()
+            .find(|m| m.id == "shred")
+            .expect("shred is in the rifle pool");
+        assert!(shred.effects.iter().any(|e| matches!(e, ModEffect::FireRate(v) if (v - 0.30).abs() < 1e-9)));
+        let p = resolve(&base, &[&shred], StackPolicy::AssumedMax);
+        assert!((p.fire_rate - 1.6).abs() < 1e-9, "1.0 x (1 + 2 x 0.30)");
+        // 0.5 / 1.6 = 0.3125 s of draw — the reciprocal of the same bucket.
+        assert!((p.charge_seconds.expect("still a bow") - 0.3125).abs() < 1e-9);
+
+        // A non-bow spends the bucket the ordinary way: one x, on the rate.
+        let torid = WeaponBase::from_data("torid", false, &[]);
+        let t = resolve(&torid, &[&shred], StackPolicy::AssumedMax);
+        assert!((t.fire_rate - 1.5 * 1.30).abs() < 1e-9);
+        assert!(t.charge_seconds.is_none());
     }
 
     /// Firestorm reaches the beam's sphere — "The 2.3 meter damage radius from
@@ -872,6 +1196,7 @@ id: test_gun
 name: Test Gun
 slot: secondary
 class: pistols
+form: base
 magazine: 10
 reload_seconds: 1.0
 attack: { trigger: auto, fire_rate: 5.0, crit_chance: 0.1, crit_multiplier: 2.0, status_chance: 0.1, damage: { toxin: 10.0 } }

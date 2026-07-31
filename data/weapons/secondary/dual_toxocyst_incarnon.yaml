@@ -2,6 +2,7 @@ id: dual_toxocyst_incarnon
 name: Dual Toxocyst (Incarnon Form)
 slot: secondary
 class: dual_pistols
+form: incarnon
 
 # TWO WEAPONS MODEL: this is the second weapon of the transform group -
 # see data/weapons/dual_toxocyst.yaml for the base form and the decision.

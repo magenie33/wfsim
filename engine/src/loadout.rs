@@ -558,6 +558,18 @@ pub struct WeaponBase {
     pub base_crit_damage: f64,
     pub base_status_chance: f64,
     pub base_fire_rate: f64,
+    /// CHARGE trigger (bows): the draw before the shot, unmodded. `Some` moves
+    /// the cadence off `1 / fire_rate` — a charged weapon fires once its draw
+    /// completes, and fire-rate bonuses shorten THAT. `base_fire_rate` stays
+    /// the listed stat (Cernos Prime: 1.0), which is what reads it as a stat
+    /// (Hemorrhage's below-2.5 gate) still sees.
+    pub charge_seconds: Option<f64>,
+    /// What a fire-rate MOD's bonus is multiplied by on this weapon — 2.0 for
+    /// bows, whose cards all print "(x2 for Bows)". It reaches the mod bucket
+    /// only: a mod-granted BUFF (Pressurized Magazine's on-reload fire rate)
+    /// carries no such clause, so it is not doubled. UNVERIFIED for buffs; no
+    /// bow-eligible fire-rate buff is in the roster to measure it with.
+    pub fire_rate_mod_multiplier: f64,
     /// Stored pellet count (wiki Multishot).
     pub base_multishot: f64,
     /// Extra additive multishot from non-mod sources at assumed-max
@@ -939,6 +951,11 @@ pub struct ResolvedPanel {
     pub base_crit_damage: f64,
     pub base_status_chance: f64,
     pub fire_rate: f64,
+    /// MODDED charge time (bows) — `base / (1 + fire-rate bonuses)`, the same
+    /// factor `fire_rate` is multiplied by, so the two never disagree about
+    /// what a fire-rate mod did. `Some` means the sim paces on this instead of
+    /// `1 / fire_rate`.
+    pub charge_seconds: Option<f64>,
     pub multishot: f64,
     /// The weapon's UNMODDED pellet count — the base a relative multishot
     /// buff (Conjunction Voltage) multiplies when it joins the bucket live.
@@ -1101,7 +1118,11 @@ pub fn resolve_with(
                 ModEffect::CritChance(v) => cc += v,
                 ModEffect::CritDamage(v) => cd += v,
                 ModEffect::StatusChance(v) => sc += v,
-                ModEffect::FireRate(v) => fr += v,
+                // "(x2 for Bows)" is on the CARD of every fire-rate mod, so it
+                // is the mod's own bonus that doubles — penalties included
+                // (Critical Delay reads −40% on a bow). Buff-granted fire rate
+                // joins the bucket further down UNDOUBLED: no such card says it.
+                ModEffect::FireRate(v) => fr += v * base.fire_rate_mod_multiplier,
                 ModEffect::ReloadSpeed(v) => rl += v,
                 ModEffect::StatusDamage(v) => sd += v,
                 // Independent of everything else: it is its own roll on a
@@ -1462,6 +1483,13 @@ pub fn resolve_with(
         base_crit_damage: base.base_crit_damage,
         base_status_chance: base.base_status_chance,
         fire_rate: base.base_fire_rate * (1.0 + fr + base.evo_fire_rate_bonus),
+        // A charged weapon's fire-rate bonuses DIVIDE the draw instead of
+        // multiplying a rate (wiki Fire Rate: on charge weapons the bonus
+        // "decreases the charge time"). Same bucket, reciprocal application —
+        // and on a bow the bucket already carries the x2.
+        charge_seconds: base
+            .charge_seconds
+            .map(|c| c / (1.0 + fr + base.evo_fire_rate_bonus).max(1e-9)),
         headshot_damage_bonus: base.headshot_damage_bonus,
         noncrit_bonus: base.noncrit_bonus,
         plain_hit_bonus: base.plain_hit_bonus,

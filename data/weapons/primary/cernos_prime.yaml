@@ -1,0 +1,120 @@
+id: cernos_prime
+name: Cernos Prime
+slot: primary
+# BOW — the first charge-trigger weapon in the roster.
+class: bow
+# The fully drawn shot. This weapon's OTHER form — the uncharged shot, which
+# is `base` by definition — is not modeled yet (see the attack block); when it
+# is, it becomes a second entry in this transform group, freely switched
+# rather than transformed into.
+form: charged
+# A bow's pool is the widest union in the game: `primary` fits ANY primary
+# (Hunter Munitions, the Vigilante set), `rifle` is the class pool bows draw
+# (wiki Rifle_Mods: Assault Rifles, Bows, Launchers, Snipers, Spearguns,
+# Crossbows and Arm-Cannons), and `bow` is the narrow tag only bows carry
+# (DE's `BOW` compatName — Thunderbolt and friends).
+mod_pools: [primary, rifle, bow]
+grip_type: BOW
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary cross-checked
+# against WFCD warframe-items, joined on internal name — they agree on every
+# number below; the module additionally carries AmmoMax/AmmoPickup, the spread
+# cone and ExtraHeadshotDmg, which WFCD does not export).
+accuracy: 16.7               # the page prints "Very High" for this number
+disposition: 1.25            # riven disposition (●●●●○)
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Cernos         # shared with Cernos / Rakta / Mutalist Cernos
+traits: [prime, never_vaulted]
+introduced: "19.0.7"         # Hotfix 19.0.7 (2016-11-22)
+internal_name: /Lotus/Weapons/Tenno/Bows/PrimeCernos/PrimeCernos
+noise: silent                # IsSilent on both attacks — it never alerts
+ammo_type: primary
+ammo_max: 72
+ammo_pickup: 15
+magazine: 1                  # one nocked arrow; the "reload" is nocking the next
+reload_seconds: 0.65
+
+# The innate +50% headshot damage — the module's per-attack `ExtraHeadshotDmg`
+# (0.5 on BOTH the uncharged and the charged shot), which the page states as
+# "Deals 50% bonus damage on headshots". It joins the additive headshot
+# bracket, the same one Caput Mortuum and the arcane bonus sit in
+# (MECHANICS: `3 x (1 + 0.3 + 0.75)`), so on a 2x head it is 2 x 1.5 = 3x.
+# NOT MEASURED: no source says whether a weapon's innate share joins that
+# bracket or multiplies it separately. The bracket is the reading every other
+# +headshot% source in the game obeys, so it is what we model — a measurement
+# (stack it with Primary Deadhead and read the number) would settle it.
+headshot_damage_bonus: 0.5
+
+# Condition Overload behavior class — VERIFIED from the wiki CO catalog, one
+# row, VERBATIM:
+#   Cernos Prime | Charged Attack | Projectile | 552 | 276 | 50% | Adding |
+#   CO-bonus only applies to base (uncharged) damage; bows have innate 2x
+#   damage multiplier when fully charged
+# "Adding" = the bonus joins the base-damage bucket, Hornet-Strike style (the
+# Laetum's class, the opposite of the Torid's "Multiplying").
+co_behavior: additive_with_base_damage
+# The 50% column, and it is NOT an evolution exclusion — this weapon has no
+# evolutions. It is the CHARGE multiplier being outside the additive bracket,
+# which MECHANICS already lists among the omitted multipliers ("a bow's charge
+# multiplier — a charged shot's CO is computed off the UNCHARGED base").
+# 276/552 = 0.5 exactly: the uncharged shot is half the charged one.
+# The catalog's two columns are FULL-SHOT totals (3 arrows x 184 and x 92);
+# the fraction is the same per projectile.
+co_base_fraction: 0.5
+
+# THE CHARGED SHOT is the modeled attack. The module says so itself —
+# `_TooltipAttackDisplay = 2` points the arsenal tooltip at attack index 2 —
+# and it is what WFCD's summary `damagePerShot` carries (184 per arrow).
+# The UNCHARGED shot (attack index 1) is a real second attack, at exactly half
+# the damage (92/arrow: Impact 82.8 / Puncture 4.6 / Slash 4.6), 70 m/s, no
+# punch through, 0-12 degrees of spread and a Semi-Auto trigger. It is not
+# modeled: one `attack` per weapon entry, and nobody builds a bow to release
+# it early. It would need the two-entry treatment the Incarnon forms get.
+attack:
+  trigger: charge
+  # The draw. It — not `fire_rate` — is the cadence of a charged weapon, and
+  # fire-rate bonuses DIVIDE it. Unmodded the cycle is 0.5 charge + 0.65
+  # reload = 1.15 s per shot, i.e. 0.87 shots/s, NOT the 1.0 the fire-rate
+  # stat would suggest.
+  charge_seconds: 0.5
+  shot_type: projectile
+  projectile_speed_mps: 95      # 70 uncharged — the draw speeds the arrow up
+  # The LISTED stat, kept as the stat: it is what the panel prints and what
+  # fire-rate GATES read (Hemorrhage's "below 2.5"). The sim paces on
+  # charge_seconds instead.
+  fire_rate: 1.0
+  # Innate 3 arrows, fired in a horizontal line ("Alternate Fire can toggle a
+  # horizontal or vertical spread shot" — the toggle changes the pattern, not
+  # the count). Base damage below is PER ARROW; 3 x 184 = the 552 the wiki
+  # and the CO catalog quote for the whole shot.
+  multishot: 3.0
+  # NOT READ by the engine (2026-07-31): nothing in engine/ references
+  # `ammo_cost` — the sim spends a flat 1.0 (minus ammo efficiency) per shot.
+  ammo_cost: 1
+  crit_chance: 0.35
+  crit_multiplier: 2.0
+  status_chance: 0.30
+  # Charged shots have innate 1 m punch through (0 uncharged). NOT READ by the
+  # engine — single-target, punch-through only adds targets — and recorded so
+  # a multi-target model finds it.
+  punch_through_m: 1.0
+  damage: { impact: 165.6, puncture: 9.2, slash: 9.2 }   # 184 per arrow
+
+# The module's `DefaultUpgrades` names an innate mod
+# (/Lotus/Weapons/Tenno/Bows/PrimeCernos/CernosPrimeInnateMod) exactly as it
+# does for Dual Toxocyst's Frenzy, but this one carries no stats: the wiki's
+# mod module marks it `_IgnoreEntry` with no effects. What it vehicles is the
+# page's kill quirk — "On kill, bodies will follow the arrow that killed them,
+# damaging enemies in their path and pinning the corpse to walls" — which is a
+# multi-target ragdoll effect with no single-target DPS. So NO `perks` entry:
+# there is nothing for a perk to grant.
+
+source:
+  url: https://wiki.warframe.com/w/Cernos_Prime
+  # note: every number cross-checked wiki Module:Weapons/data/primary ==
+  # WFCD warframe-items (joined on internal name). They agree exactly on both
+  # attacks, the polarities, the exilus, disposition, mastery, magazine and
+  # reload; the CO row is from Condition_Overload_(Mechanic).

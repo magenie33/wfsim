@@ -2,6 +2,7 @@ id: laetum_incarnon
 name: Laetum (Incarnon Form)
 slot: secondary
 class: pistol
+form: incarnon
 
 # TWO WEAPONS MODEL: second entry of the transform group — see
 # data/weapons/secondary/laetum.yaml for the base form and the decision.

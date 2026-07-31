@@ -940,6 +940,15 @@ pub struct DummyParams {
     /// Base fire rate; multiplied live by BuffBar fire-rate multipliers
     /// (Frenzy x2.5) to schedule the next shot.
     pub fire_rate: f64,
+    /// CHARGE trigger (bows): the modded draw before the shot. When `Some` it
+    /// REPLACES `1 / fire_rate` as the interval between pulls — the weapon
+    /// fires the moment the draw finishes — and live fire-rate buffs divide it
+    /// by the same factor they would have multiplied the rate by. `fire_rate`
+    /// stays the listed stat, which is what Hemorrhage's below-2.5 gate reads.
+    ///
+    /// A bow's magazine is 1, so the reload lands between two draws either way
+    /// and the cycle is `charge + reload` however the two are ordered.
+    pub charge_seconds: Option<f64>,
     /// Whether the weapon's Frenzy passive is equipped (Dual Toxocyst base
     /// form). Wired: fire-rate x2.5 on true headshots (3 s, refreshable).
     /// NOT yet wired: +100% Toxin injection (needs the element layer) and
@@ -1291,6 +1300,7 @@ impl DummyParams {
             status_chance: panel.status_chance,
             base_status_chance: panel.base_status_chance,
             fire_rate: panel.fire_rate,
+            charge_seconds: panel.charge_seconds,
             frenzy: false,
             magazine_size: panel.magazine_size,
             reload_seconds: panel.reload_seconds,
@@ -1424,6 +1434,7 @@ impl Default for DummyParams {
             forced_procs: Vec::new(),
             status_duration_mult: 1.0,
             fire_rate: 1.0,
+            charge_seconds: None,
             frenzy: false,
             locked_buffs: Vec::new(),
             cycle: None,
@@ -3532,7 +3543,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             _ => 0.0,
         };
         let rate = (ap.fire_rate + fr_add) * bar.total_contributions().fire_rate_multiplier;
-        t += 1.0 / rate;
+        // On a CHARGE weapon the pull costs a draw, not a rate: divide the
+        // modded charge time by whatever the live buffs did to the rate
+        // (`rate / ap.fire_rate` is exactly that factor, and it is 1.0 when no
+        // buff is up). Same bucket, reciprocal application — see `charge_seconds`.
+        t += match ap.charge_seconds {
+            Some(c) => c * ap.fire_rate / rate.max(1e-9),
+            None => 1.0 / rate,
+        };
     }
 
     // The clouds still burning after the last shot, with the buff snapshot from
@@ -3814,6 +3832,38 @@ mod tests {
             body_parts: vec![part],
             ..no_status()
         }
+    }
+
+    /// A CHARGE weapon paces on its draw, not on `1 / fire_rate`. Cernos
+    /// Prime's numbers: 0.5 s draw + 0.65 s reload of its single nocked arrow
+    /// = 1.15 s a shot, against the 1.65 s the fire-rate stat alone would give.
+    /// The stat itself is untouched — it is what fire-rate GATES read.
+    #[test]
+    fn a_charge_weapon_paces_on_the_draw_not_the_fire_rate() {
+        let bow = DummyParams {
+            fire_rate: 1.0,
+            charge_seconds: Some(0.5),
+            magazine_size: 1.0,
+            reload_seconds: 0.65,
+            duration_secs: 10.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        // Shots at 0, 1.15, 2.30 … 9.20 — nine of them inside 10 s.
+        let r = run_once(&bow, &mut Rng::new(1));
+        assert_eq!(r.shots, 9, "10 s / 1.15 s + 1");
+
+        // The same weapon read as an ordinary 1.0 fire-rate gun: 1.65 s a
+        // shot, seven shots. This is what the roster did before charge times.
+        let as_rate = DummyParams { charge_seconds: None, ..bow.clone() };
+        assert_eq!(run_once(&as_rate, &mut Rng::new(1)).shots, 7);
+
+        // `fire_rate` here is the RESOLVED stat and `charge_seconds` the
+        // RESOLVED draw — the panel already spent the mod bucket on both, so
+        // raising the stat alone must NOT shorten the draw a second time.
+        // Only a live in-sim buff does, and it divides by its own factor.
+        let stat_only = DummyParams { fire_rate: 2.0, ..bow.clone() };
+        assert_eq!(run_once(&stat_only, &mut Rng::new(1)).shots, 9, "mods are not re-applied");
     }
 
     fn mono_body(multiplier: f64) -> Vec<BodyPart> {

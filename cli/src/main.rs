@@ -45,6 +45,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         forced_procs: Vec::new(),
         status_duration_mult: 1.0,
         fire_rate: 1.0,
+        charge_seconds: None, // not a charge weapon (that is a bow's cadence)
         frenzy: false,
         locked_buffs: Vec::new(),
         cycle: None,

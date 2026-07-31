@@ -31,6 +31,7 @@ pub mod mod_sets_data;
 pub mod mods;
 pub mod mods_data;
 pub mod perks;
+pub mod rivens_data;
 pub mod rng;
 pub mod scaling;
 pub mod sim;

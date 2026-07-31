@@ -6,6 +6,7 @@ slot: secondary
 # Tomes (wiki Pistol_Mods). Dual Toxocyst is Dual Pistols, so it takes the
 # Pistol Mods pool. (See wiki Weapons#Weapon_Type for the full taxonomy.)
 class: dual_pistols
+form: base
 # Pistol mods. No `secondary`-wide pool exists in the data.
 mod_pools: [pistol]
 grip_type: DUAL_GUN_GUN

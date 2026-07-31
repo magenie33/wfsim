@@ -8,6 +8,7 @@ weapons:
   # icon — the form is the same gun. Hand-set, because the generator resolves
   # "<weapon>_incarnon" to the adapter item (ToridIncarnonAdapter.png) and
   # cannot resolve laetum_incarnon at all.
+  cernos_prime: CernosPrime.png
   dual_toxocyst: DualToxocyst.png
   dual_toxocyst_incarnon: DualToxocyst.png
   laetum: ZarimanHeavyPistol.png

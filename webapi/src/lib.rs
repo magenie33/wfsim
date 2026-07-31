@@ -85,7 +85,14 @@ struct WeaponInfo {
     // Precise weapon type within that group (Dual Toxocyst = Dual Pistols).
     subtype: String,
     sentinel: bool,
+    /// The forms this weapon REGISTERS (`data/weapons/*.yaml` `form:`), default
+    /// first: `(wire id, display name)`. Data-driven — it used to be hardcoded
+    /// as "the three Incarnon options, or a single fake form called `primary`".
     forms: Vec<(&'static str, String)>,
+    /// Does a form have to be TRANSFORMED into (gauge + transmute animations)?
+    /// Only then is there a two-form cycle to simulate; without it the weapon
+    /// is fired in one form and asking for a cycle is meaningless.
+    has_cycle: bool,
     uses_arcane: bool,
     /// Which arcane pool this weapon draws from — its own slot
     /// ("secondary" / "primary"). The picker filters on it.
@@ -135,18 +142,15 @@ fn weapons() -> &'static [WeaponInfo] {
             .map(|s| {
                 let sentinel = s.class.contains("sentinel");
                 let incarnon = s.transforms_to.is_some();
-                let forms = if incarnon {
-                    vec![
-                        (
-                            "incarnon_cycle",
-                            "Incarnon cycle (real two-form loop)".to_string(),
-                        ),
-                        ("incarnon", "Incarnon form only".to_string()),
-                        ("base", "Base form only".to_string()),
-                    ]
-                } else {
-                    vec![("primary", "Standard".to_string())]
-                };
+                // The weapon's OWN forms, in its own order — every entry of
+                // its transform group, each registering a kind from the
+                // closed vocabulary. The two-form CYCLE is not in this list:
+                // it is a mode over two of these forms, published separately
+                // as `has_cycle`.
+                let forms = wfsim_engine::weapons_data::forms_of(&s.id)
+                    .into_iter()
+                    .map(|f| (f.kind.id(), f.kind.label().to_string()))
+                    .collect();
                 WeaponInfo {
                     id: s.id.clone(),
                     name: s.name.clone(),
@@ -159,6 +163,7 @@ fn weapons() -> &'static [WeaponInfo] {
                     subtype: title_case(&s.class),
                     sentinel,
                     forms,
+                    has_cycle: wfsim_engine::weapons_data::has_gauge_switched_form(&s.id),
                     uses_arcane: !sentinel,
                     arcane_slot: s.slot.clone(),
                     uses_evo2: incarnon,
@@ -820,20 +825,22 @@ pub fn panel_json(v: &Value) -> Value {
     // user decision). The Incarnon Form section exists only while its
     // tier-1 unlock is selected. `meta` states the trigger/shot mechanics
     // from the weapon data (data/weapons yamls).
+    // Section titles come from the REGISTERED form (`data/weapons` `form:`),
+    // so a bow's section says "Charged Shot" instead of the "Base Form" every
+    // weapon's first section used to be called.
     let mut forms_list: Vec<(&'static str, String, WeaponBase)> = Vec::new();
-    forms_list.push((
-        "Base Form",
-        attack_desc(wspec(&info.id)),
-        WeaponBase::from_data(&info.id, true, &evo_refs),
-    ));
-    if let Some(inc) = incarnon_id(info) {
-        if form_unlock_evo(info).is_some_and(|u| evo_refs.contains(&u)) {
-            forms_list.push((
-                "Incarnon Form",
-                attack_desc(wspec(inc)),
-                WeaponBase::from_data(inc, true, &evo_refs),
-            ));
+    for f in wfsim_engine::weapons_data::forms_of(&info.id) {
+        // A gauge-switched form exists only while its tier-1 unlock is chosen.
+        if f.kind.is_gauge_switched()
+            && !form_unlock_evo(info).is_some_and(|u| evo_refs.contains(&u))
+        {
+            continue;
         }
+        forms_list.push((
+            f.kind.label(),
+            attack_desc(wspec(f.weapon_id)),
+            WeaponBase::from_data(f.weapon_id, true, &evo_refs),
+        ));
     }
 
     // ---- per-bucket source attribution (mirrors resolve()'s buckets) ----
@@ -1223,6 +1230,26 @@ pub fn panel_json(v: &Value) -> Value {
                 "Reload",
                 format!("{}s", num(base.base_reload)),
                 format!("{}s", num(panel.reload_seconds)),
+            );
+        }
+        // CHARGE weapons (bows): the draw is the real cadence — fire rate is
+        // only the stat the gates read — and it is the SAME fire-rate bonuses
+        // that shorten it, so the row borrows their sources rather than a
+        // bucket of its own. Two decimals: a doubled bow bonus lands on values
+        // like 0.31 s that `num`'s one decimal would round away.
+        //
+        // INSERTED beside the Fire Rate row it belongs next to rather than
+        // pushed here: `row` holds the `stats` borrow until its last call.
+        if let (Some(b), Some(f)) = (base.charge_seconds, panel.charge_seconds) {
+            let at = stats
+                .iter()
+                .position(|s| s["key"] == "fire_rate")
+                .map_or(stats.len(), |i| i + 1);
+            stats.insert(
+                at,
+                json!({ "key": "charge_time", "label": "Charge Time",
+                    "base": format!("{b:.2}s"), "final": format!("{f:.2}s"),
+                    "sources": sources("fire_rate", None) }),
             );
         }
         // A continuous beam's impact SPHERE. Firestorm enlarges it, and without
@@ -1678,7 +1705,7 @@ pub fn simulate_json(v: &Value) -> Value {
     };
     let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
     // No Incarnon Form unlock (tier 1) in an explicit selection = the weapon
-    // cannot transform: honest fallback to the base form.
+    // cannot transform: honest fallback to the DEFAULT form.
     let unlock = form_unlock_evo(info);
     let form =
         if v.get("evolutions").is_some() && unlock.is_some_and(|u| !evos.iter().any(|e| e == u)) {
@@ -1686,6 +1713,25 @@ pub fn simulate_json(v: &Value) -> Value {
         } else {
             form
         };
+    // ---- WHICH FORM (or the two-form CYCLE) this run simulates -------------
+    // A cycle is a MODE over two forms, not a form, and it exists only where a
+    // form must be TRANSFORMED into. Requiring that is a fix, not a tidy-up:
+    // the default used to fall through to the cycle for every weapon, so a
+    // weapon with no Incarnon form — a sentinel weapon, a bow — was simulated
+    // transforming on a borrowed gauge (9 weakpoint hits, 2.35 s + 1.0 s of
+    // animation), and the dead time came straight off its DPS.
+    let registered = wfsim_engine::weapons_data::forms_of(&info.id);
+    let run_cycle = info.has_cycle
+        && registered.iter().all(|f| f.kind.id() != form)
+        && incarnon_id(info).is_some();
+    // The single form to fire: the requested kind if this weapon registers it,
+    // else its default (which is what an unknown or stale preset value gets).
+    let single_form = registered
+        .iter()
+        .find(|f| f.kind.id() == form)
+        .or_else(|| registered.iter().find(|f| f.is_default))
+        .map(|f| f.weapon_id)
+        .unwrap_or(&info.id);
     // Arcane: a data-driven pool id (legacy short names accepted for old
     // saved builds) + optional `arcane_rank` (default: max).
     let arcane_id = if info.uses_arcane {
@@ -1785,32 +1831,21 @@ pub fn simulate_json(v: &Value) -> Value {
     };
 
     // ---- resolve panel(s) and build sim params, per weapon ----
-    // Dual Toxocyst: two forms + the real Incarnon cycle.
+    // Either ONE registered form, or the real two-form cycle (which needs the
+    // gauge form and the form it transforms out of, so it resolves both).
     let (report_panel, mut params): (ResolvedPanel, DummyParams) = {
-        let incarnon_base =
-            WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &evo_refs);
-        let base_base = WeaponBase::from_data(&info.id, true, &evo_refs);
-        let incarnon_panel = resolve_with(&incarnon_base, &refs, policy, aiming);
-        let base_panel = resolve_with(&base_base, &refs, policy, aiming);
-        let report = if form == "base" {
-            base_panel.clone()
-        } else {
-            incarnon_panel.clone()
+        let panel_of = |id: &str| {
+            resolve_with(
+                &WeaponBase::from_data(id, true, &evo_refs),
+                &refs,
+                policy,
+                aiming,
+            )
         };
-        let params = match form {
-            "base" => {
-                let mut d = DummyParams::from_panel(&base_panel, target, body_parts, duration);
-                d.frenzy = frenzy_single; // base-form Frenzy passive (×2.5 on true headshots)
-                d.locked_buffs = frenzy_locks.clone();
-                d
-            }
-            "incarnon" => {
-                let mut d = DummyParams::from_panel(&incarnon_panel, target, body_parts, duration);
-                d.frenzy = frenzy_single; // Frenzy persists in the Incarnon form (user-confirmed)
-                d.locked_buffs = frenzy_locks.clone();
-                d
-            }
-            _ => DummyParams::incarnon_cycle_from_panels(
+        if run_cycle {
+            let incarnon_panel = panel_of(incarnon_id(info).unwrap_or(&info.id));
+            let base_panel = panel_of(&info.id);
+            let params = DummyParams::incarnon_cycle_from_panels(
                 &incarnon_panel,
                 &base_panel,
                 frenzy_single,
@@ -1818,9 +1853,18 @@ pub fn simulate_json(v: &Value) -> Value {
                 target,
                 body_parts,
                 duration,
-            ),
-        };
-        (report, params)
+            );
+            // The cycle reports the form it transforms INTO, as it always has.
+            (incarnon_panel, params)
+        } else {
+            let panel = panel_of(single_form);
+            let mut d = DummyParams::from_panel(&panel, target, body_parts, duration);
+            // Frenzy is the WEAPON's passive: it persists across its forms
+            // (user-confirmed 2026-07-24), so it rides whichever one is fired.
+            d.frenzy = frenzy_single;
+            d.locked_buffs = frenzy_locks.clone();
+            (panel, d)
+        }
     };
     params.arcane = if arcane_id == "none" {
         wfsim_engine::arcanes_data::ArcaneFx::none()

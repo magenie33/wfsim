@@ -6,6 +6,9 @@ name: Verglas Prime
 # Rifle Mods; WFCD productCategory = SentinelWeapons).
 slot: sentinel
 class: sentinel_weapon         # the "sentinel" in the class is what gates the
+# One form, and it is a real registration rather than an absence: a beam
+# weapon has nothing to charge and nothing to transform into.
+form: base
                                # arcane and exilus rules below
 # RIFLE mods only. A sentinel weapon is not a Primary weapon - DE's own
 # compat tag for it is SentinelWeapons, not LongGuns - so the `primary` pool
