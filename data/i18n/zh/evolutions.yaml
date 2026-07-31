@@ -1,0 +1,101 @@
+# 简体中文 — Incarnon EVOLUTIONS (hand-transcribed).
+#
+# WHY THIS FILE EXISTS SEPARATELY. Every other card in the app takes DE's own
+# localized string from their export (descriptions.yaml). Evolutions cannot:
+# they are not items, so they appear in NEITHER source we normally use —
+# checked, not assumed:
+#   - WFCD warframe-items: no entity at all (the only hit for "Devouring
+#     Attrition" across every export file is a Laetum PATCHLOG line);
+#   - DE's own PublicExport (`index_zh.txt.lzma` → 16 files): ExportUpgrades
+#     is mods and arcanes; the only "灵化" in ExportWeapons is weapon flavour
+#     text. The evolution strings live in the client's localization tables,
+#     which are not exported.
+#
+# So the source here is the community wiki's transcription of the CN client —
+# the SAME second source data/README.md already names for display names
+# (https://warframe.huijiwiki.com), read 2026-07-31 from:
+#   奏凯                (Laetum, evolutions on the weapon page)
+#   托里德灵化之源       (Torid Incarnon Genesis)
+#   毒囊双枪灵化之源     (Dual Toxocyst Incarnon Genesis)
+# Wiki markup is resolved to plain text ({{D|Toxin}} → 毒素, '''+51''' → +51)
+# and the line breaks follow our English `description` field, so the two read
+# as the same card.
+#
+# It is hand-written and stays hand-written: there is no export to regenerate
+# it from. An entry whose English source is reworded should be re-checked
+# here — nothing detects that automatically, which is the cost of a source
+# that is a wiki page rather than a data file.
+
+evolutions:
+  # Dual Toxocyst
+  dual_toxocyst_evo1_incarnon_form: 灵化形态
+  dual_toxocyst_carnage_reign: 屠杀统治
+  dual_toxocyst_fevered_frenzy: 狂热乱暴
+  dual_toxocyst_ready_retaliation: 待命报复
+  dual_toxocyst_evolved_autoloader: 进化自填器
+  dual_toxocyst_marksmans_hand: 善射之手
+  dual_toxocyst_commodores_fortune: 准将沐福
+  dual_toxocyst_neurotoxin: 神经毒素
+  dual_toxocyst_ripper_rounds: 撕裂弹头
+  # Laetum
+  laetum_evo1_incarnon_form: 灵化形态
+  laetum_marksmans_hand: 善射之手
+  laetum_rapid_wrath: 极速之怒
+  laetum_raptors_chase: 猛禽追逐
+  laetum_lethal_rearmament: 致命重装
+  laetum_awakened_readiness: 觉醒备战
+  laetum_feather_of_justice: 正义之羽
+  laetum_caput_mortuum: 死亡首级
+  laetum_incarnon_efficiency: 灵化效率
+  laetum_elemental_excess: 元素超量
+  laetum_devouring_attrition: 压制损耗
+  laetum_reapers_plenty: 死神之裕
+  laetum_overwhelming_attrition: 强袭损耗
+  # Torid
+  torid_evo1_incarnon_form: 灵化形态
+  torid_final_fusillade: 终结齐发
+  torid_plentiful_mayhem: 丰饶混乱
+  torid_swift_deliverance: 迅速判决
+  torid_renewed_horror: 再续恐惧
+  torid_extended_volley: 扩充齐发
+  torid_commodores_fortune: 准将沐福
+  torid_survivors_edge: 生还占优
+  torid_elemental_balance: 元素平衡
+
+# The card text. One string per evolution; `\n` where our English description
+# breaks a line.
+evolution_descriptions:
+  # ---- Dual Toxocyst ----
+  dual_toxocyst_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  dual_toxocyst_carnage_reign: "基础伤害增加 +60。\n目标身上的每种异常状态可增加 +33% 直接伤害。"
+  dual_toxocyst_fevered_frenzy: "基础伤害增加 +50。\n使用技能后：+5% 多重射击。最多叠加到 20 层。"
+  dual_toxocyst_ready_retaliation: "空弹匣装填时：+100% 装填速度。"
+  dual_toxocyst_evolved_autoloader: "收起武器时弹匣每秒自动装填 +50%。"
+  dual_toxocyst_marksmans_hand: "-50% 武器后坐力。"
+  dual_toxocyst_commodores_fortune: "基础暴击几率增加 +20%。"
+  dual_toxocyst_neurotoxin: "造成爆头后：+70% 毒素伤害，持续 3 秒。"
+  dual_toxocyst_ripper_rounds: "击杀时：+3 穿透，持续 7 秒。"
+  # ---- Laetum ----
+  laetum_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  laetum_marksmans_hand: "-40% 武器后坐力。"
+  laetum_rapid_wrath: "+20% 射速。"
+  laetum_raptors_chase: "瞄准时增加 50% 移动速度。"
+  laetum_lethal_rearmament: "造成爆头后：+30% 装填速度，持续 12 秒。最多叠加到 3 层。"
+  laetum_awakened_readiness: "收起武器时弹匣每秒自动装填 +30%。"
+  laetum_feather_of_justice: "飞身瞄准和滑行时获得 60% 弹药效率。"
+  laetum_caput_mortuum: "+50% 爆头伤害。"
+  laetum_incarnon_efficiency: "爆头增加 50% 灵化转变充能。"
+  laetum_elemental_excess: "+20% 触发几率，-10% 暴击几率。"
+  laetum_devouring_attrition: "有 50% 的几率在非暴击时造成 +2000% 伤害。"
+  laetum_reapers_plenty: "造成爆头后：+40% 弹药效率，持续 6 秒。"
+  laetum_overwhelming_attrition: "非暴击且非触发异常状态命中时：+400% 伤害，持续 10 秒。最多叠加到 3 层。"
+  # ---- Torid ----
+  torid_evo1_incarnon_form: "直接命中为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  torid_final_fusillade: "基础伤害增加 +51。\n弹匣中的最后一发子弹 +3 多重射击。"
+  torid_plentiful_mayhem: "基础伤害增加 +31。\n多重射击直接消耗弹匣中的弹药，并将其伤害提升 +60%。"
+  torid_swift_deliverance: "+50% 投射物速度。"
+  torid_renewed_horror: "空弹匣装填时：在首次射击后，残留伤害区域的持续时间翻倍。"
+  torid_extended_volley: "基础弹匣容量增加 +9。"
+  torid_commodores_fortune: "基础暴击几率增加 +20%。"
+  torid_survivors_edge: "基础暴击几率增加 +15%。\n基础触发几率增加 +15%。"
+  torid_elemental_balance: "基础触发几率增加 +34%。"

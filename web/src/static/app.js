@@ -1990,6 +1990,19 @@ const officialDesc = (o, r) => {
 // there is one, otherwise our English line with the phrase table applied.
 // Every caller renders these verbatim — nothing runs `tf` over a line that
 // was already written in the target language.
+// An EVOLUTION's card lines. Same rule as a mod's, with one difference that
+// matters: when the locale has no transcription, the English falls through
+// UNTOUCHED. Running the phrase table over prose is what produced
+// "Increase Base 伤害 by +60." — half-swapped is worse than either language,
+// and evolutions are the only card written as prose rather than as terms.
+// `o.effects` (our own model statement) IS term-shaped, so it still gets tf.
+const evoLines = (o) => {
+  const zh = I18N && (I18N.evolution_descriptions || {})[o.id];
+  if (zh) return zh.split("\n");
+  if (o.desc && o.desc.length) return o.desc;      // English, as written
+  return (o.effects || []).map(tf);
+};
+
 const cardLines = (o, r, fallback) =>
   officialDesc(o, r) || (descAt(o, r) || fallback || o.effects || []).map(tf);
 
@@ -2329,7 +2342,7 @@ function renderEvo() {
     const card = (o) => {
       const icon = o.icon ? `<img class="eicon" src="${IMG(o.icon)}" alt="">` : "";
       const cls = ["evopick", o.id === sel ? "sel" : "", o.broken ? "broken" : ""].join(" ");
-      const lines = (o.desc && o.desc.length ? o.desc : o.effects || []).map((x) => `<div>${tf(x)}</div>`).join("");
+      const lines = evoLines(o).map((x) => `<div>${escHtml(x)}</div>`).join("");
       const title = (o.effects || []).join("\n"); // model statement as tooltip
       // The broken warning lives INSIDE the selected card, so it never
       // straddles the row divider into the next tier.
@@ -2978,7 +2991,7 @@ function renderOptEvos() {
     const rows = t.options.map((o) => {
       const st = sel[o.id] || "off";
       // Neither mark blocks the other — clicking one rewrites the tier.
-      const desc = (o.desc || o.effects || []).map((x) => `<div>${tf(x)}</div>`).join("");
+      const desc = evoLines(o).map((x) => `<div>${escHtml(x)}</div>`).join("");
       return `<div class="opt ${st === "off" ? "" : st} ${o.broken ? "dis-soft" : ""}">
         <div class="info"><div class="mn">${o.name}${o.broken ? ' <span class="exchip brk">BROKEN</span>' : ""}</div><div class="me">${desc}</div></div>
         <div class="oseg">

@@ -374,6 +374,9 @@ pub fn i18n_json() -> Value {
                 // effect lines, panel labels, Incarnon evolutions).
                 "mod_descriptions": l.mod_descriptions,
                 "arcane_descriptions": l.arcane_descriptions,
+                // Evolutions carry no ranks, so one string each — and no
+                // export to generate them from (data/i18n/zh/evolutions.yaml).
+                "evolution_descriptions": l.evolution_descriptions,
             }),
         );
     }

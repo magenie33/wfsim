@@ -6,12 +6,17 @@
 //! UI), and never touch ids. Referential integrity is enforced by the tests
 //! below: every key must be a real id.
 //!
-//! **A locale is a DIRECTORY, and its files are merged** — because the two
-//! kinds of content in it have different authors. `names.yaml` and `ui.yaml`
-//! are written by a translator; `descriptions.yaml` is GENERATED from DE's own
-//! localized client strings (`scripts/wfcd_i18n.py descriptions`) and is
-//! rewritten wholesale. Sharing one file would bury the hand-written part
-//! under a thousand generated lines and make regeneration a merge problem.
+//! **A locale is a DIRECTORY, and its files are merged** — because the content
+//! in it has different AUTHORS, and they have different lifecycles:
+//!
+//! | file | author | lifecycle |
+//! |---|---|---|
+//! | `names.yaml`, `ui.yaml` | a translator | edited by hand |
+//! | `descriptions.yaml` | DE, via their export | rewritten wholesale by `scripts/wfcd_i18n.py descriptions` |
+//! | `evolutions.yaml` | DE, via a wiki transcription | edited by hand — there is no export to regenerate it from |
+//!
+//! Sharing one file would bury the hand-written parts under a thousand
+//! generated lines and make regeneration a merge problem.
 //!
 //! Which sections come from where is not enforced — a locale's tables are
 //! simply the union of its files, and the same table may not be filled twice
@@ -62,6 +67,18 @@ pub struct LocaleSpec {
     /// The same, for arcanes (`arcanes/*/*.yaml` ids).
     #[serde(default)]
     pub arcane_descriptions: BTreeMap<String, Vec<String>>,
+    /// An Incarnon evolution's card text — ONE string (they have no ranks),
+    /// `\n` between lines like the English `description` it mirrors.
+    ///
+    /// Hand-transcribed rather than generated: evolutions are not items, so
+    /// they are in neither DE's PublicExport nor WFCD's derivative of it (see
+    /// `data/i18n/zh/evolutions.yaml` for what was checked). That makes them
+    /// the one card the phrase table used to mangle — "Increase Base Damage
+    /// by +60." came out as "Increase Base 伤害 by +60." — and the reason the
+    /// UI now shows a whole sentence or clean English, never a half-swapped
+    /// one.
+    #[serde(default)]
+    pub evolution_descriptions: BTreeMap<String, String>,
 }
 
 impl LocaleSpec {
@@ -96,6 +113,7 @@ impl LocaleSpec {
         maps(&mut self.arcanes, other.arcanes, path, "arcanes");
         maps(&mut self.evolutions, other.evolutions, path, "evolutions");
         maps(&mut self.ui, other.ui, path, "ui");
+        maps(&mut self.evolution_descriptions, other.evolution_descriptions, path, "evolution_descriptions");
         lists(&mut self.mod_descriptions, other.mod_descriptions, path, "mod_descriptions");
         lists(&mut self.arcane_descriptions, other.arcane_descriptions, path, "arcane_descriptions");
         // ORDERED and therefore appended, not merged by key. Files are
@@ -195,7 +213,7 @@ mod tests {
             for id in spec.arcanes.keys().chain(spec.arcane_descriptions.keys()) {
                 assert!(known_arcane(id).is_some(), "i18n/{code}: unknown arcane id '{id}'");
             }
-            for id in spec.evolutions.keys() {
+            for id in spec.evolutions.keys().chain(spec.evolution_descriptions.keys()) {
                 assert!(
                     crate::evolutions_data::get(id.as_str()).is_some(),
                     "i18n/{code}: unknown evolution id '{id}'"
@@ -318,5 +336,27 @@ mod tests {
             }
         }
         assert!(bad.is_empty(), "{} disagreements:\n{}", bad.len(), bad.join("\n"));
+    }
+
+    /// An evolution's NAME and its card text are transcribed together from
+    /// the same wiki page, so one without the other is a half-finished entry
+    /// — a card headed 灵化形态 whose body is still English, or the reverse.
+    /// Partial translation stays legal, but only per ENTITY.
+    #[test]
+    fn a_transcribed_evolution_has_both_a_name_and_its_text() {
+        for (code, spec) in locales() {
+            for id in spec.evolutions.keys() {
+                assert!(
+                    spec.evolution_descriptions.contains_key(id),
+                    "i18n/{code}: evolution '{id}' is named but its card text is not"
+                );
+            }
+            for id in spec.evolution_descriptions.keys() {
+                assert!(
+                    spec.evolutions.contains_key(id),
+                    "i18n/{code}: evolution '{id}' has card text but no name"
+                );
+            }
+        }
     }
 }
