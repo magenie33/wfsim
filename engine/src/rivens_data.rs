@@ -202,6 +202,12 @@ impl RivenSpec {
         }
         let mut seen: Vec<&str> = Vec::new();
         for s in self.positives.iter().chain(self.curse.iter()) {
+            // An EMPTY slot is a riven not described yet, not an illegal one.
+            // The caller decides when a card is finished; this only judges
+            // what has actually been said.
+            if s.id.is_empty() {
+                continue;
+            }
             let Some(def) = p.iter().find(|x| x.id == s.id) else {
                 out.push(format!("{} is not a {} riven stat", s.id, self.class));
                 continue;
@@ -276,22 +282,52 @@ impl RivenSpec {
         stat.base * rank_scale * disposition * cfg * roll
     }
 
-    /// `(stat, shown value)` for every rolled stat, positives then the curse.
-    pub fn resolved(&self, disposition: f64) -> Vec<(&'static RivenStat, f64)> {
+    /// `(slot, stat, shown value)` for every FILLED slot.
+    ///
+    /// The slot travels with the value because a card can be half-described
+    /// and still have real numbers: the shape is settled the moment it is
+    /// chosen, so a stat's value never depends on the other slots being
+    /// filled. Skipping the empty ones would slide the rest up by one.
+    pub fn resolved_slots(&self, disposition: f64) -> Vec<(usize, &'static RivenStat, f64)> {
         let p = pool(&self.class);
         let find = |id: &str| p.iter().find(|x| x.id == id);
-        let mut out: Vec<(&'static RivenStat, f64)> = Vec::new();
-        for s in &self.positives {
+        let mut out = Vec::new();
+        for (i, s) in self.positives.iter().enumerate() {
             if let Some(def) = find(&s.id) {
-                out.push((def, self.value_of(def, s.roll, true, disposition)));
+                out.push((i, def, self.value_of(def, s.roll, true, disposition)));
             }
         }
         if let Some(c) = &self.curse {
             if let Some(def) = find(&c.id) {
-                out.push((def, self.value_of(def, c.roll, false, disposition)));
+                out.push((self.positives.len(), def, self.value_of(def, c.roll, false, disposition)));
             }
         }
         out
+    }
+
+    /// `(stat, shown value)` for every rolled stat, positives then the curse.
+    pub fn resolved(&self, disposition: f64) -> Vec<(&'static RivenStat, f64)> {
+        self.resolved_slots(disposition).into_iter().map(|(_, d, v)| (d, v)).collect()
+    }
+
+    /// The value a stat would show at the ENDS of its roll band, lowest
+    /// first. This is what lets a number box be typed into and stay legal:
+    /// the bounds come from the same formula that produces the value.
+    pub fn bounds_of(&self, stat: &RivenStat, positive: bool, disposition: f64) -> (f64, f64) {
+        let a = self.value_of(stat, ROLL_MIN, positive, disposition);
+        let b = self.value_of(stat, ROLL_MAX, positive, disposition);
+        if a <= b { (a, b) } else { (b, a) }
+    }
+
+    /// The roll a desired VALUE implies, clamped into the legal band — so a
+    /// number typed straight from a riven you own lands on a legal roll
+    /// instead of being refused.
+    pub fn roll_for_value(&self, stat: &RivenStat, positive: bool, disposition: f64, value: f64) -> f64 {
+        let unit = self.value_of(stat, 1.0, positive, disposition);
+        if unit.abs() < 1e-12 {
+            return 1.0;
+        }
+        (value / unit).clamp(ROLL_MIN, ROLL_MAX)
     }
 
     /// The riven's NAME, generated from its stats — it is not a free field.
@@ -581,6 +617,48 @@ mod tests {
         // A curse is restricted the same way.
         let cursed = RivenSpec { class: "pistol".into(), ..spec(&["damage", "multishot"], Some("impact"), 8) };
         assert!(cursed.illegal_on(&toxo).iter().any(|r| r.contains("more than 25%")));
+    }
+
+    /// A value can be typed IN, not just rolled to — that is how a riven you
+    /// already own gets entered. Out of range snaps to the nearest legal end
+    /// rather than being refused, so typing is never a dead end.
+    #[test]
+    fn a_typed_value_becomes_the_roll_it_implies_and_stays_legal() {
+        let by = |id: &str| pool("rifle").iter().find(|x| x.id == id).unwrap();
+        let s = spec(&["damage", "multishot"], None, 8);
+        let dmg = by("damage");
+        let (lo, hi) = s.bounds_of(dmg, true, 1.3);
+        // Torid, two positives, no curse: base x 90 x 1.3 x 0.99, at each
+        // end. Written from the stored base rather than the round 1.65,
+        // because the stored number is 0.018333299 and 90x it is 1.6499969.
+        let unit = dmg.base * 90.0 * 1.3 * 0.99;
+        assert!((lo - unit * ROLL_MIN).abs() < 1e-9);
+        assert!((hi - unit * ROLL_MAX).abs() < 1e-9);
+
+        // A value inside the band round-trips to itself.
+        let want = (lo + hi) / 2.0;
+        let r = s.roll_for_value(dmg, true, 1.3, want);
+        assert!((s.value_of(dmg, r, true, 1.3) - want).abs() < 1e-9, "round trip");
+        assert!((ROLL_MIN..=ROLL_MAX).contains(&r));
+
+        // Outside it, each end. Note both clamps: asking for far too little
+        // must land on the MINIMUM, not the maximum — the sign of the miss
+        // has to be respected.
+        assert!((s.roll_for_value(dmg, true, 1.3, 0.01) - ROLL_MIN).abs() < 1e-9);
+        assert!((s.roll_for_value(dmg, true, 1.3, 99.0) - ROLL_MAX).abs() < 1e-9);
+
+        // A CURSE flips its stat, and Weapon Recoil is stored NEGATIVE, so
+        // cursing it comes out positive — recoil going UP, which is the harm.
+        // Bounds still come back ordered, and the smallest roll is still the
+        // gentlest curse.
+        let cursed = spec(&["damage", "multishot"], Some("weapon_recoil"), 8);
+        let rec = by("weapon_recoil");
+        let (clo, chi) = cursed.bounds_of(rec, false, 1.3);
+        assert!(clo <= chi, "bounds come back ordered");
+        assert!(clo > 0.0, "cursing a negative stat raises it: {clo}");
+        assert!(clo.abs() < chi.abs(), "the gentlest curse is the smallest");
+        assert!((cursed.roll_for_value(rec, false, 1.3, clo) - ROLL_MIN).abs() < 1e-9);
+        assert!((cursed.roll_for_value(rec, false, 1.3, chi) - ROLL_MAX).abs() < 1e-9);
     }
 
     /// A tie is the NORM in a constructor, because ranking is by ROLL and

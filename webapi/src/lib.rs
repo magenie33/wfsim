@@ -522,9 +522,18 @@ pub fn riven_json(v: &Value) -> Value {
     // A riven draws from the weapon's NARROWEST pool — the class one. The
     // primary-wide pool has no rivens of its own.
     let class = info.mod_pools.last().cloned().unwrap_or_default();
+    // A slot may carry a `roll` OR a `value`. `value` is what you type off a
+    // riven you already own; it is turned into the roll it implies and
+    // clamped into the legal band, so a number from anywhere lands legal
+    // instead of being refused. An empty id is a slot not filled in yet.
     let rolled = |x: &Value| -> Option<RolledStat> {
+        // A null curse is NO curse — the shape depends on it, so reading one
+        // as an empty slot made every riven resolve as if it had one.
+        if !x.is_object() {
+            return None;
+        }
         Some(RolledStat {
-            id: x.get("id")?.as_str()?.to_string(),
+            id: x.get("id").and_then(|i| i.as_str()).unwrap_or("").to_string(),
             roll: x.get("roll").and_then(|r| r.as_f64()).unwrap_or(1.0),
         })
     };
@@ -547,19 +556,56 @@ pub fn riven_json(v: &Value) -> Value {
     let base = WeaponBase::from_data(&info.id, true, &evo_refs);
     let disposition = info.disposition;
     let n_pos = spec.positives.len();
+    // A typed VALUE overrides the roll, once the stat is known.
+    let mut spec = spec;
+    let want_value = |arr: Option<&Value>, i: usize| -> Option<f64> {
+        arr?.as_array()?.get(i)?.get("value")?.as_f64()
+    };
+    let p = wfsim_engine::rivens_data::pool(&class);
+    // A typed value arrives in the units the CARD shows — "200" means 200%,
+    // where the formula works in fractions. Dividing by 100 for a template
+    // that carries a `%` is what makes a number copied off a real riven mean
+    // what it says; without it 200 read as 200x and clamped to the top.
+    let as_fraction = |def: &wfsim_engine::rivens_data::RivenStat, v: f64| {
+        if def.text.contains('%') { v / 100.0 } else { v }
+    };
+    for i in 0..spec.positives.len() {
+        let Some(v) = want_value(v.get("positives"), i) else { continue };
+        let id = spec.positives[i].id.clone();
+        if let Some(def) = p.iter().find(|x| x.id == id) {
+            spec.positives[i].roll = spec.roll_for_value(def, true, disposition, as_fraction(def, v));
+        }
+    }
+    if let (Some(c), Some(v)) = (spec.curse.clone(), v.get("curse").and_then(|c| c.get("value")).and_then(|x| x.as_f64())) {
+        if let Some(def) = p.iter().find(|x| x.id == c.id) {
+            let r = spec.roll_for_value(def, false, disposition, as_fraction(def, v));
+            if let Some(cc) = spec.curse.as_mut() { cc.roll = r; }
+        }
+    }
+    // The number a template shows: a `%` in it means the stored fraction is
+    // shown times 100; without one it is a raw number (Punch Through is
+    // metres, faction damage a multiplier).
+    let shown_of = |def: &wfsim_engine::rivens_data::RivenStat, v: f64| {
+        if def.text.contains('%') { v * 100.0 } else { v }
+    };
     let stats: Vec<Value> = spec
-        .resolved(disposition)
+        .resolved_slots(disposition)
         .into_iter()
-        .enumerate()
-        .map(|(i, (def, value))| {
-            // DE's own template, `|val|` filled. A `%` in it means the stored
-            // fraction is shown times 100; without one it is a raw number
-            // (Punch Through is metres).
-            let shown = if def.text.contains('%') { value * 100.0 } else { value };
+        .map(|(slot, def, value)| {
+            let positive = slot < n_pos;
+            let shown = shown_of(def, value);
             let text = def.text.replace("|val|", &format!("{}{:.2}", if shown >= 0.0 { "+" } else { "" }, shown));
+            let (lo, hi) = spec.bounds_of(def, positive, disposition);
+            let roll = if positive { spec.positives[slot].roll } else { spec.curse.as_ref().map_or(1.0, |c| c.roll) };
             json!({
-                "id": def.id, "text": text, "value": value,
-                "positive": i < n_pos, "modeled": def.kind != "unmodeled",
+                // The SLOT, because a half-described card still has real
+                // numbers and skipping the empty slots would slide the rest.
+                "slot": if positive { slot.to_string() } else { "curse".to_string() },
+                "id": def.id, "text": text, "value": value, "shown": shown, "roll": roll,
+                // The ends of the roll band, in shown units — what a number
+                // box may be typed to without leaving the legal riven.
+                "min": shown_of(def, lo), "max": shown_of(def, hi),
+                "positive": positive, "modeled": def.kind != "unmodeled",
             })
         })
         .collect();

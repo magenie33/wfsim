@@ -487,20 +487,26 @@ label.check input{width:auto}
    roll is not something the control can express. */
 .rv-shape,.rv-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .rv-lbl{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
-.rv-row{display:grid;grid-template-columns:64px minmax(150px,1fr) minmax(90px,1.2fr) 76px minmax(130px,1fr);
+.rv-row{display:grid;grid-template-columns:64px minmax(150px,1.1fr) minmax(90px,1.2fr) 90px minmax(150px,1.2fr);
   align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid var(--line)}
+/* The stat picker opens the SAME searchable popover as the mod and arcane
+   slots — one way to pick a thing on this page. */
+.rv-pick{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:7px;
+  padding:5px 9px;font:inherit;font-size:12px;cursor:pointer;text-align:left;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rv-pick:hover{background:var(--plane)}
+/* The value box takes the number printed on a riven, not the roll. */
+.rv-num{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:7px;
+  padding:4px 6px;font:inherit;font-size:12px;min-width:0;font-variant-numeric:tabular-nums;text-align:right}
+.rv-num:disabled{opacity:.4}
+.rv-unit{font-size:12px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.rv-unit.neg{color:var(--bad,#e06c75)}
+.rv-unit.unmodeled{opacity:.55}
+.seg.pol{display:inline-flex;align-items:center;justify-content:center;padding:3px 8px}
+.seg.pol img{width:13px;height:13px;display:block}
 .rv-row.curse .rv-tag{color:var(--bad,#e06c75)}
 .rv-tag{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
-.rv-row select,.rv-rollnum{background:var(--panel2);border:1px solid var(--line);color:var(--text);
-  border-radius:7px;padding:4px 6px;font:inherit;font-size:12px;min-width:0}
 .rv-roll{width:100%}
-.rv-val{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
-.rv-val.neg{color:var(--bad,#e06c75)}
-/* A stat the engine does not model still rolls and still shapes the name —
-   it just contributes no damage, and must not read as if it did. */
-.rv-val.unmodeled{opacity:.55;font-weight:400}
 .rv-card{margin:12px 0}
 .rv-name{font-size:22px;font-weight:800;letter-spacing:.01em}
 .rv-meta{font-size:12px;color:var(--muted)}
-.rv-saved{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
-.rv-saved b{font-size:14px}
