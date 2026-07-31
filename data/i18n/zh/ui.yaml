@@ -63,6 +63,14 @@ ui:
   "Optimize": 优化
   "Run Simulation": 运行模拟
   "Run Optimizer": 运行优化
+  # The optimizer's per-option segments: `pool` = the search may pick this
+  # one, `req` = pin it and search around it. Kept SHORT — they sit inside a
+  # two-segment button, and a long label breaks the row.
+  "pool": 候选
+  "req": 必带
+  "clear the pool marks first — req pins the slot": 先清掉候选标记 —— 必带会锁定这个槽位
+  "clear the pool marks first — req pins the tier": 先清掉候选标记 —— 必带会锁定这一层
+  "pooled mods reserve ≥1 open slot — raise max mods or clear pools": 候选 mod 至少要留 1 个空槽 —— 提高 mod 上限或清掉候选
   "Incarnon Genesis": 灵化之源
   "Exilus slot": Exilus 槽
   "1 · Enemy": 1 · 敌人

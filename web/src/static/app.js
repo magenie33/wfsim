@@ -2867,8 +2867,8 @@ function renderOptExilus() {
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
       <div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div><div class="me">${eff}</div></div>
       <div class="oseg">
-        <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-m="${m.id}" data-s="search">pool</span>
-        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${reqDead && !fam ? 'title="clear the pool marks first — req pins the slot"' : ""}>req</span>
+        <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-m="${m.id}" data-s="search">${tr("pool")}</span>
+        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${reqDead && !fam ? `title="${escHtml(tr("clear the pool marks first — req pins the slot"))}"` : ""}>${tr("req")}</span>
       </div>
     </div>`;
   };
@@ -2912,8 +2912,8 @@ function renderOptArcanes() {
       ${imgTag(IMG(a.image), "mod")}
       <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}</div>${eff}</div>
       <div class="oseg">
-        <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-a="${a.id}" data-s="search">pool</span>
-        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-a="${a.id}" data-s="fixed" ${reqDead ? 'title="clear the pool marks first — req pins the slot"' : ""}>req</span>
+        <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-a="${a.id}" data-s="search">${tr("pool")}</span>
+        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-a="${a.id}" data-s="fixed" ${reqDead ? `title="${escHtml(tr("clear the pool marks first — req pins the slot"))}"` : ""}>${tr("req")}</span>
       </div>
     </div>`;
   }).join("");
@@ -2949,8 +2949,8 @@ function renderOptEvos() {
       return `<div class="opt ${st === "off" ? "" : st} ${o.broken ? "dis-soft" : ""}">
         <div class="info"><div class="mn">${o.name}${o.broken ? ' <span class="exchip brk">BROKEN</span>' : ""}</div><div class="me">${desc}</div></div>
         <div class="oseg">
-          <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="search">pool</span>
-          <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="fixed" ${reqDead ? 'title="clear the pool marks first — req pins the tier"' : ""}>req</span>
+          <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="search">${tr("pool")}</span>
+          <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="fixed" ${reqDead ? `title="${escHtml(tr("clear the pool marks first — req pins the tier"))}"` : ""}>${tr("req")}</span>
         </div>
       </div>`;
     }).join("");
@@ -3210,8 +3210,8 @@ function renderOptModList() {
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
       <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}</div><div class="me">${eff}</div></div>
       <div class="oseg">
-        <span class="seg ${st === "search" ? "on" : ""} ${dead ? "dis" : ""}" data-m="${m.id}" data-s="search">pool</span>
-        <span class="seg ${st === "fixed" ? "on" : ""} ${dead || reqBlocked ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${!dead && reqBlocked ? 'title="pooled mods reserve ≥1 open slot — raise max mods or clear pools"' : ""}>req</span>
+        <span class="seg ${st === "search" ? "on" : ""} ${dead ? "dis" : ""}" data-m="${m.id}" data-s="search">${tr("pool")}</span>
+        <span class="seg ${st === "fixed" ? "on" : ""} ${dead || reqBlocked ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${!dead && reqBlocked ? `title="${escHtml(tr("pooled mods reserve ≥1 open slot — raise max mods or clear pools"))}"` : ""}>${tr("req")}</span>
       </div>
     </div>`;
   };

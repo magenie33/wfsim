@@ -21,7 +21,7 @@
 # while `mods`/`arcanes` below are filled by the script.
 weapons:
   cernos_prime: 西诺斯 Prime
-  cernos_prime_uncharged: 西诺斯 Prime (点射)   # the tapped form, same weapon
+  cernos_prime_uncharged: 西诺斯 Prime (速射)   # the tapped form, same weapon
   dual_toxocyst: 毒囊双枪
   dual_toxocyst_incarnon: 毒囊双枪 (灵化形态)   # Incarnon Genesis = 灵化之源
   laetum: 奏凯
@@ -49,8 +49,11 @@ damage_types:
   radiation: 辐射
   viral: 病毒
 
-# Contributor entry points — fill from the 对照 page; untranslated names
-# simply keep showing English:
+# GENERATED SECTIONS. `mods:` and `arcanes:` below are written by
+# `python scripts/wfcd_i18n.py fill --section mods --section arcanes` from
+# DE's own client strings — the same source as descriptions.yaml, so a card's
+# name and its text always come from one place. Hand-edit only to correct a
+# name the community wiki's 对照 table disagrees with, and say so in a comment.
 mods:
   accelerated_isotope: 迅发核素
   aerial_ace: 空中制霸
