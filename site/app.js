@@ -1186,11 +1186,15 @@ function renderRivenPresetBar() {
 
 // ---- Presets ----------------------------------------------------------
 // The page is THREE MODULES — builder, simulator, optimizer (user,
-// 2026-07-29) — and every preset collection is owned by one of them:
-//   builder-builds        the whole build (later: builder-rivens, …)
+// 2026-07-29) — plus EDITORS that feed them, and every preset collection is
+// owned by one of those:
+//   builder-builds        the whole build
 //   optimizer-mods / optimizer-arcanes / optimizer-evolutions
+//   rivens                the riven editor, which is ALL collection: there
+//                         is no second one to tell it apart from, so the
+//                         owner name alone is the domain
 //   (simulator-enemies, simulator-scenarios … planned)
-// A collection's DOMAIN id is "<module>-<collection>", and every durable
+// A collection's DOMAIN id is "<owner>-<collection>", and every durable
 // name derives from it mechanically:
 //   localStorage  wfsim-presets-<domain>        the list
 //                 wfsim-preset-active-<domain>  the active pointer

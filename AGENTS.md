@@ -1,9 +1,17 @@
 # WFSim — agent guide
 
-A Warframe builder, fight simulator, and Monte-Carlo build optimizer.
+The ultimate Warframe **calculator** — builder, simulator, optimizer.
 Core promise: **matches in-game measurements**. Rust workspace + YAML game
 data + a dependency-free web UI, deployed as WASM on Cloudflare
 (wfsim.app).
+
+Those three are `docs/CORE.md`'s own sentence — "given weapon + mods +
+target + scenario, output damage matching in-game measurements item by
+item, and search backwards for the optimal build" — as three verbs: BUILD,
+SIMULATE, SOLVE. Nothing else is a peer of them; anything new either feeds
+one or reports from one. "fight simulator" and "Monte-Carlo optimizer"
+named the implementation, which is not what the product is organised
+around (decision 2026-07-31).
 
 ## Map
 
@@ -78,10 +86,19 @@ data + a dependency-free web UI, deployed as WASM on Cloudflare
   the SPA also loads at `/weapons/<Wiki_Name>`, where relative paths
   resolve into the SPA fallback's HTML.
 - The page is THREE MODULES — Builder | Simulator | Optimizer — with one
-  tab/view each. Preset collections are domain-named
-  `<module>-<collection>` (e.g. `builder-builds`, `optimizer-mods`);
-  every durable name (localStorage key, DOM id, label) derives from the
-  domain. A preset belongs to ONE WEAPON, so the storage key also carries
+  tab/view each, plus EDITORS that feed them. An editor is not a fourth
+  module: it produces something the three consume, and it earns a tab only
+  because it is too big to live inside one of them. Rivens is the first
+  (`/weapons/<Name>/rivens`, decision 2026-07-31) — what it produces is a
+  MOD, which is why a riven equips, searches, and gets optimized through
+  the ordinary pool with no riven-specific code in any of the three. A new
+  tab has to pass that test: name what the three do with its output, or it
+  belongs inside one of them. Preset collections are domain-named
+  `<owner>-<collection>` (e.g. `builder-builds`, `optimizer-mods`), where
+  the owner is a module — or an editor, and an editor whose ENTIRE content
+  is one collection is its own domain (`rivens`), because there is no
+  second collection to tell it apart from. Every durable name (localStorage
+  key, DOM id, label) derives from the domain. A preset belongs to ONE WEAPON, so the storage key also carries
   it (`wfsim-presets-<weapon>-<domain>`) — DOM ids and labels stay
   weapon-free, and copying a preset across weapons is the explicit
   "⇤ import" action. URLs mirror English wiki page names (spaces → `_`); internal
