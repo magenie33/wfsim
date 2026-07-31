@@ -331,6 +331,14 @@ crits and applies an Impact status the Slash chance is 54.5% at fire rate
 is what shows the exclusion is modeled as an exclusion rather than as a second
 bleed quietly going missing.
 
+**Which attack parts roll it.** Hunter Munitions rolls on every SHOT instance
+that crits — the direct hit and, off its own crit roll, the explosion. It does
+NOT roll on lingering-FIELD ticks. That is a deliberate omission, not an
+oversight: a field ticking several times a second would mint bleeds at a rate
+nothing in the sources supports, and no source says whether it should. The
+Vigilante promotion, which only raises a crit that already happened, does
+reach all three.
+
 **Status:** the mechanic is wiki-sourced; the resulting DPS is not measured.
 On a 5-mod crit Torid vs a Thrax Centurion @9999 Steel Path it is worth
 +20.5% DPS (21,092 -> 25,414), which is the shape expected of an

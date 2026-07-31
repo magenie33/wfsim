@@ -3127,7 +3127,16 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                             + flat_crit
                             + weakened_cc
                             + r.base_crit_chance * cc_rel;
-                        let t2 = roll_crit_tier(rcc, rng);
+                        // The set promotes a critical hit "from Primary
+                        // Weapons" with no qualifier about which attack part
+                        // made it, and the direct hit and the lingering field
+                        // both get it — an explosion left out would be an
+                        // artifact of where the code was edited, not a rule.
+                        let t2 = upgrade_crit_tier(
+                            roll_crit_tier(rcc, rng),
+                            ap.crit_tier_upgrade_chance,
+                            rng,
+                        );
                         (r.damage.quantized(), t2)
                     }
                 };
@@ -5354,6 +5363,63 @@ mod tests {
             f.mean_dot_damage
         );
         assert!(i.mean_dot_damage > 0.0);
+    }
+
+    /// The Vigilante promotion reaches EVERY attack part that can crit. The
+    /// set says "enhance Critical Hits from Primary Weapons" with no qualifier
+    /// about which part made the hit, so a direct hit, a lingering field tick
+    /// and an EXPLOSION all take it — the explosion was left out at first,
+    /// which was an artifact of where the code was edited and nothing else.
+    #[test]
+    fn the_vigilante_promotion_reaches_an_explosion_too() {
+        let radial = crate::loadout::ResolvedRadial {
+            damage: {
+                let mut d = DamageVector::default();
+                d.set(DamageType::Radiation, 100.0);
+                d
+            },
+            modified_base: 100.0,
+            crit_chance: 1.0, // always a tier-1 crit, so a promotion is visible
+            crit_damage: 3.0,
+            base_crit_chance: 1.0,
+            base_crit_damage: 3.0,
+            status_chance: 0.0,
+            base_status_chance: 0.0,
+            radius_m: 2.0,
+            falloff_start_m: 0.0,
+            falloff_reduction: 0.0,
+            takes_condition_overload: false,
+        };
+        // A zero-damage direct hit, so everything reported is the explosion's.
+        let p = |promote: f64| DummyParams {
+            damage: DamageVector::default(),
+            radial: Some(radial),
+            crit_tier_upgrade_chance: promote,
+            base_crit_chance: 0.0,
+            crit_multiplier: 1.0,
+            fire_rate: 1.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let off = monte_carlo(&p(0.0), 200, 51);
+        let on = monte_carlo(&p(1.0), 200, 51);
+        // The explosion always crits at tier 1; promoting it makes every one a
+        // BIG crit, which is the exact statement — the damage ratio is not,
+        // because this fixture's total is not all crit-scaled.
+        assert!(off.mean_big_crit_rate < 1e-9, "no promotion, no big crits");
+        // ~0.5, not 1.0: the rate divides by ALL instances, and the
+        // zero-damage direct hit is one of them and never crits.
+        assert!(
+            on.mean_big_crit_rate > 0.44,
+            "every explosion crit promoted: {:.3}",
+            on.mean_big_crit_rate
+        );
+        assert!(
+            on.mean_damage > off.mean_damage * 1.3,
+            "and it is worth damage: {:.0} -> {:.0}",
+            off.mean_damage,
+            on.mean_damage
+        );
     }
 
     /// HUNTER MUNITIONS + INTERNAL BLEEDING, against a number the wiki
