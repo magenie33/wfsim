@@ -695,6 +695,12 @@ pub fn riven_json(v: &Value) -> Value {
                 "slot": if bonus { slot.to_string() } else { "malus".to_string() },
                 "id": def.id, "text": def.print(value), "value": value,
                 "shown": def.shown(value), "roll": roll,
+                // The card's precision, so a box cannot offer a decimal the
+                // game never showed anyone.
+                "decimals": def.decimals(),
+                // Where the roll landed in its own band, 0-100 — the one
+                // number that compares two stats on one card.
+                "percentile": wfsim_engine::rivens_data::percentile(roll),
                 // The ends of the roll band, in shown units — what a number
                 // box may be typed to without leaving the legal riven.
                 "min": def.shown(lo), "max": def.shown(hi),

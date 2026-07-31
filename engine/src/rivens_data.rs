@@ -181,17 +181,48 @@ impl RivenStat {
         }
     }
 
+    /// Decimals the CARD shows — and therefore all anyone can read off a
+    /// riven they own (user, 2026-07-31). A percentage shows ONE, so a box
+    /// offering two invites a precision the game never gave you.
+    ///
+    /// The full-precision value is still what the sim computes with: this is
+    /// the reading, not the number. A stat entered at 144.8 keeps whatever
+    /// roll 144.8 implies, and that roll is exact.
+    pub fn decimals(&self) -> usize {
+        match self.shown_as() {
+            // The card's own two, and the reason the faction stats read
+            // x0.59 rather than x0.6.
+            Shown::Multiplier => 2,
+            Shown::Percent | Shown::Number => 1,
+        }
+    }
+
     /// The whole line, template filled in.
     pub fn print(&self, value: f64) -> String {
         let s = self.shown(value);
+        let d = self.decimals();
         let n = match self.shown_as() {
             // A multiplier carries its meaning in the `x`, not in a sign:
             // x0.59 is already the bad one.
-            Shown::Multiplier => format!("x{s:.2}"),
-            _ => format!("{}{s:.2}", if s >= 0.0 { "+" } else { "" }),
+            Shown::Multiplier => format!("x{s:.d$}"),
+            _ => format!("{}{s:.d$}", if s >= 0.0 { "+" } else { "" }),
         };
         self.text.replace("|val|", &n)
     }
+}
+
+/// Where in its 0.9-1.1 band a roll landed, as 0-100.
+///
+/// This is the number riven traders read first: it says how good the ROLL is
+/// with the stat, the weapon's disposition and the shape all divided out, so
+/// two stats on one card are comparable and so are two cards. 100 is the top
+/// of the band for a bonus AND for a malus — it is the size of the roll, not
+/// a judgement about it (user, 2026-07-31).
+///
+/// Uniform in the roll, because that is what the band is: the wiki gives a
+/// +/-10% randomisation and no shape to it.
+pub fn percentile(roll: f64) -> f64 {
+    ((roll - ROLL_MIN) / (ROLL_MAX - ROLL_MIN) * 100.0).clamp(0.0, 100.0)
 }
 
 #[derive(Debug, Deserialize)]
@@ -746,9 +777,57 @@ mod tests {
 
         // Percent and plain-number stats are untouched.
         assert_eq!(by("damage").shown_as(), Shown::Percent);
-        assert!(by("damage").print(1.65).starts_with("+165.00%"));
+        assert!(by("damage").print(1.65).starts_with("+165.0%"));
         assert_eq!(by("punch_through").shown_as(), Shown::Number);
-        assert!(by("punch_through").print(2.7).starts_with("+2.70 "));
+        assert!(by("punch_through").print(2.7).starts_with("+2.7 "));
+    }
+
+    /// The card shows ONE decimal on a percentage, so we show one: nobody can
+    /// read a second one off a riven they own (user, 2026-07-31). What is NOT
+    /// rounded is the arithmetic — the roll behind a displayed 144.8 is
+    /// whatever 144.8 implies, exactly.
+    #[test]
+    fn the_reading_is_the_cards_precision_and_the_maths_is_not() {
+        let by = |id: &str| pool("rifle").iter().find(|x| x.id == id).unwrap();
+        let ms = by("multishot");
+        assert_eq!(ms.decimals(), 1);
+        assert_eq!(ms.print(1.447_87), "+144.8% Multishot");
+        assert_eq!(by("damage_to_corpus").decimals(), 2, "the card's own two");
+
+        // The value behind it is untouched: `shown` is exact and the roll a
+        // typed reading implies is exact too, one decimal in or not. Read off
+        // the middle of the band so the case is an ordinary roll and not a
+        // clamp — the band moves with shape and disposition, so it is asked
+        // for rather than written down.
+        let s = spec(&["multishot", "damage"], None, 8);
+        let (lo, hi) = s.bounds_of(ms, true, 1.3);
+        let reading = (ms.shown((lo + hi) / 2.0) * 10.0).round() / 10.0;
+        let r = s.roll_for_value(ms, true, 1.3, ms.from_shown(reading));
+        assert!((ms.shown(s.value_of(ms, r, true, 1.3)) - reading).abs() < 1e-9);
+        assert!(r > ROLL_MIN && r < ROLL_MAX, "an ordinary roll, not an end: {r}");
+    }
+
+    /// The percentile is the roll's place in its own band, so it compares two
+    /// stats on one card and two cards on different weapons — disposition,
+    /// shape and base all divide out.
+    #[test]
+    fn the_percentile_is_where_the_roll_landed_in_its_band() {
+        assert!((percentile(ROLL_MIN) - 0.0).abs() < 1e-9);
+        assert!((percentile(ROLL_MAX) - 100.0).abs() < 1e-9);
+        assert!((percentile(1.0) - 50.0).abs() < 1e-9);
+        assert!((percentile(1.08) - 90.0).abs() < 1e-9);
+        // Out-of-band rolls cannot report out-of-band positions.
+        assert!((percentile(2.0) - 100.0).abs() < 1e-9);
+        assert!((percentile(0.0) - 0.0).abs() < 1e-9);
+
+        // It is the SIZE of the roll, not a judgement: a malus at the top of
+        // its band is the 100th too, and it is the worst one there is.
+        let by = |id: &str| pool("rifle").iter().find(|x| x.id == id).unwrap();
+        let s = spec(&["damage", "multishot"], Some("weapon_recoil"), 8);
+        let worst = s.value_of(by("weapon_recoil"), ROLL_MAX, false, 1.3);
+        let mild = s.value_of(by("weapon_recoil"), ROLL_MIN, false, 1.3);
+        assert!(worst.abs() > mild.abs());
+        assert!(percentile(ROLL_MAX) > percentile(ROLL_MIN));
     }
 
     /// A tie is the NORM in a constructor, because ranking is by ROLL and

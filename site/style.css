@@ -488,7 +488,8 @@ label.check input{width:auto}
 .rv-shape,.rv-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .rv-lbl{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
 .rv-lbl.dim{opacity:.7;font-variant-numeric:tabular-nums}
-.rv-row{display:grid;grid-template-columns:64px minmax(150px,1.1fr) minmax(90px,1.2fr) 90px minmax(150px,1.2fr);
+.rv-row{display:grid;
+  grid-template-columns:64px minmax(150px,1.1fr) minmax(90px,1.2fr) 84px 44px minmax(150px,1.2fr);
   align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid var(--line)}
 /* The stat picker opens the SAME searchable popover as the mod and arcane
    slots — one way to pick a thing on this page. */
@@ -500,6 +501,12 @@ label.check input{width:auto}
 .rv-num{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:7px;
   padding:4px 6px;font:inherit;font-size:12px;min-width:0;font-variant-numeric:tabular-nums;text-align:right}
 .rv-num:disabled{opacity:.4}
+/* Where the roll landed in its own band. It sits next to the value because
+   it is the same fact read a different way: the value says what you get, the
+   percentile says how close to the best that stat gets. */
+.rv-pct{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.rv-pct.top{color:var(--gold)}
+.rv-pct.low{opacity:.6}
 .rv-unit{font-size:12px;color:var(--text-2);font-variant-numeric:tabular-nums}
 .rv-unit.neg{color:var(--bad,#e06c75)}
 .rv-unit.unmodeled{opacity:.55}

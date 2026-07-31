@@ -875,7 +875,8 @@ function renderRivenStats() {
       <button class="rv-pick" data-slot="${slot}">${def ? escHtml(rivenStatName(def)) : "choose a stat"}</button>
       <input class="rv-roll" type="range" data-slot="${slot}"
              min="${rules.roll_min}" max="${rules.roll_max}" step="0.001" value="${s.roll}">
-      <input class="rv-num" type="number" data-slot="${slot}" step="0.01" placeholder="—">
+      <input class="rv-num" type="number" data-slot="${slot}" step="0.1" placeholder="—">
+      <span class="rv-pct" data-slot="${slot}" title="where this roll landed in its 0.9-1.1 band"></span>
       <span class="rv-unit" data-slot="${slot}"></span>
     </div>`;
   };
@@ -1017,6 +1018,12 @@ function renderRivenAll() {
   });
 }
 
+// 0th, 1st, 2nd, 3rd, 21st, 100th.
+function ordinal(n) {
+  const v = n % 100;
+  return n + (["th", "st", "nd", "rd"][(v - 20) % 10] || ["th", "st", "nd", "rd"][v] || "th");
+}
+
 function renderRivenCard() {
   const r = rivenResolved;
   const box = $("riven-stats");
@@ -1024,19 +1031,34 @@ function renderRivenCard() {
   // number sitting next to it.
   box.querySelectorAll(".rv-num").forEach((el) => { el.value = ""; el.disabled = true; });
   box.querySelectorAll(".rv-unit").forEach((el) => { el.textContent = ""; el.className = "rv-unit"; });
+  box.querySelectorAll(".rv-pct").forEach((el) => { el.textContent = ""; el.className = "rv-pct"; });
   (r && r.stats || []).forEach((s) => {
     const num = box.querySelector(`.rv-num[data-slot="${s.slot}"]`);
     const unit = box.querySelector(`.rv-unit[data-slot="${s.slot}"]`);
+    const pct = box.querySelector(`.rv-pct[data-slot="${s.slot}"]`);
+    // The CARD's precision, which is all anyone can read off a riven they
+    // own. The roll behind it stays exact — this is the reading, not the
+    // number the sim uses.
+    const d = s.decimals ?? 2;
     if (num) {
       num.disabled = false;
-      num.value = s.shown.toFixed(2);
+      num.value = s.shown.toFixed(d);
+      num.step = (0.1 ** d).toFixed(d);
       // The ends of the legal band, so the browser guards the box too.
-      num.min = Math.min(s.min, s.max).toFixed(2);
-      num.max = Math.max(s.min, s.max).toFixed(2);
+      num.min = Math.min(s.min, s.max).toFixed(d);
+      num.max = Math.max(s.min, s.max).toFixed(d);
       // In the box's OWN units: a faction stat holds a multiplier, so its
       // band reads x0.68 … x0.74 and never looks like a percentage.
       const u = (n) => (s.unit === "x" ? `x${n}` : `${n}${s.unit || ""}`);
       num.title = `legal range ${u(num.min)} … ${u(num.max)}`;
+    }
+    if (pct) {
+      // How good the ROLL is, with disposition, shape and base divided out —
+      // so two stats on one card compare, and so do two cards.
+      const q = Math.round(s.percentile ?? 50);
+      pct.textContent = ordinal(q);
+      pct.className = `rv-pct${q >= 90 ? " top" : ""}${q <= 10 ? " low" : ""}`;
+      pct.title = `${q}th percentile of this stat's roll band`;
     }
     if (unit) {
       unit.textContent = s.text;
