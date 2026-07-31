@@ -4,6 +4,25 @@ What sets wfsim apart from predecessor calculators (Overframe-style form
 pages): besides a build/config UI, there is a **live 2D top-down view of
 the fight**.
 
+## Kill score is reported as a RATE (KPM)
+
+The kill score — whole kills plus the fraction of the current target's pool
+already drained — grows with the engagement, so two runs of different length
+could not be compared at a glance. The headline is now **KPM**, score per
+minute, and the score itself sits beside it as the engagement total. That is
+the same shape the damage numbers already had: a rate to compare with, a total
+to read.
+
+Simulator: `1.20 KPM · 2.40 kill score in 120s · …`
+Optimizer row: `#1 · 1.20 KPM · 552,523 DPS · 2.40 kill score / 120s`
+
+Presentation only — nothing was rescaled underneath. The optimizer still ranks
+on the score, and at a fixed duration KPM is a monotone transform of it, so no
+ordering moves. KPM is only as duration-invariant as DPS is: measured on one
+Torid build, 30 s vs 120 s gave 0.044 vs 0.049 KPM while the totals went 0.022
+vs 0.098 — the residual is ramp-up, reloads and the DoT tail, exactly the
+drift DPS shows over the same pair (18,653 vs 20,551).
+
 ## Core decisions
 
 - **Two surfaces**:

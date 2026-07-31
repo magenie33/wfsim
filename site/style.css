@@ -466,6 +466,8 @@ label.check input{width:auto}
 .opt-head .opt-kills{font-size:18px;font-weight:800}
 .opt-head .opt-kills small{font-size:11px;font-weight:400;color:var(--muted)}
 .opt-head .opt-dps{font-size:12px;color:var(--text-2);font-variant-numeric:tabular-nums}
+/* The engagement TOTAL, beside the rate — recessive, like a unit suffix. */
+.opt-head .opt-total{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
 .opt-head .opt-load{margin-left:auto}
 .opt-detail{font-size:12px;color:var(--text-2);margin-top:5px}
 .opt-mods{font-size:12px;color:var(--muted);margin-top:3px}

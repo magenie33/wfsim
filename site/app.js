@@ -740,6 +740,12 @@ function restoreState(st, weapon) {
   renderStoredSimResult(); // the simulator shows THIS preset's last test
 }
 
+// Kill score PER MINUTE. The score is whole kills plus the fraction of the
+// current target's pool already drained, so it grows with the engagement —
+// dividing by the clock is what makes two runs of different length
+// comparable, exactly as DPS does for damage (user, 2026-07-31).
+const kpm = (score, duration) => (duration > 0 ? ((score || 0) * 60) / duration : 0);
+
 const escHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 // Decimal formatting with a SIGNIFICANCE floor (user, 2026-07-29): two
@@ -1915,8 +1921,12 @@ function renderResults(r, testedAt) {
   // target's pool already drained. 0.85% of an EHP is 0.01; two kills and
   // 30% of the next is 2.30. The sub-line adds the context that differs.
   const ttk = killed ? r.duration / r.kills : Infinity;
-  const heroNum = n2(r.score);
-  const heroSub = `kill score in ${n0(r.duration)}s · ` + (killed
+  // The headline is a RATE, like DPS: kill score PER MINUTE, so a 20-second
+  // run and a 120-second one produce comparable numbers (user, 2026-07-31).
+  // The score itself is the total over the engagement and stays beside it,
+  // the same way total damage sits beside DPS.
+  const heroNum = n2(kpm(r.score, r.duration));
+  const heroSub = `KPM · ${n2(r.score)} kill score in ${n0(r.duration)}s · ` + (killed
     ? `${n0(r.kills)} killed · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s avg per kill`
     : `${pc(r.score)} of one ${LN("enemies", sim.enemy, t.name || "enemy")}'s EHP drained`);
   // No Forma/capacity here — the simulator reports EFFECTS only; build
@@ -2738,7 +2748,7 @@ function renderOptProgress(st) {
     ? `enumerating candidates…${st.enumerated ? ` ${st.enumerated.toLocaleString()} so far` : ""}${st.sims_done ? ` · ${st.sims_done.toLocaleString()} screened` : ""}`
     : `round ${st.round}/${st.rounds} — ${(st.round_jobs || 0).toLocaleString()} jobs × ${st.round_runs} runs`;
   const notes = (st.notes || []).map((n) =>
-    `<div class="opt-note">round ${n.round}: ${n.jobs.toLocaleString()} × ${n.runs} (${n.by_kills ? "kills" : "dmg"}) → keep ${n.kept.toLocaleString()} · best ${n.by_kills ? n.best.toFixed(2) + " kill score" : n.best.toExponential(2) + " dmg"} · ${(n.ms / 1000).toFixed(1)}s</div>`
+    `<div class="opt-note">round ${n.round}: ${n.jobs.toLocaleString()} × ${n.runs} (${n.by_kills ? "kills" : "dmg"}) → keep ${n.kept.toLocaleString()} · best ${n.by_kills ? sig2(kpm(n.best, optSim.duration)) + " KPM" : n.best.toExponential(2) + " dmg"} · ${(n.ms / 1000).toFixed(1)}s</div>`
   ).join("");
   const sub = st.phase === "enumerating"
     ? ""
@@ -2857,8 +2867,9 @@ function renderOptResults(r) {
     return `<div class="opt-row">
       <div class="opt-head">
         <span class="opt-rank">#${res.rank}</span>
-        <span class="opt-kills">${sig2(res.kill_progress ?? res.kills)}<small> kill score</small></span>
+        <span class="opt-kills">${sig2(kpm(res.kill_progress ?? res.kills, r.duration))}<small> KPM</small></span>
         <span class="opt-dps">${Math.round(res.dps || res.effective_dps || 0).toLocaleString()} DPS</span>
+        <span class="opt-total">${sig2(res.kill_progress ?? res.kills)} kill score / ${Math.round(r.duration || 0)}s</span>
         <span class="forma-badge legal">${res.forma.used} Forma</span>
         <button class="ghost-btn small opt-add" title="add as a new build preset" data-r='${JSON.stringify(res).replace(/'/g, "&#39;")}'>+ add</button>
       </div>
