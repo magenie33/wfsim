@@ -14,6 +14,9 @@ const WASM = !!window.WFSIM_WASM;
 // for the paren-named evolution icons).
 const IMG = (name) => {
   if (!name) return null;
+  // An absolute URL is already an answer. Riven art is only on the wiki (the
+  // CDN 404s for it), so those entries carry the whole address.
+  if (/^https?:\/\//.test(String(name))) return String(name);
   const n = encodeURIComponent(String(name));
   if (!WASM) return "/img/" + n; // absolute: the SPA also loads at /weapons/<name>
   return String(name).includes("(")
@@ -602,6 +605,8 @@ let rivenModCache = { key: null, list: [] };
 // picker and slot that already understands a mod understands these.
 function rivenMods() {
   const w = $("weapon").value;
+  // "rifle" -> "Rifle", which is how the wiki names the card art.
+  const cls = (weaponInfo(w).mod_class || "rifle").replace(/^./, (c) => c.toUpperCase());
   const raw = loadPresetList(RIVENS);
   const key = w + "|" + JSON.stringify(raw) + "|" + JSON.stringify(rivenNames);
   if (rivenModCache.key === key) return rivenModCache.list;
@@ -621,7 +626,10 @@ function rivenMods() {
       drain: 2 + 2 * (st.rank ?? 8),
       max_rank: 8,
       exilus: false,
-      image: null,
+      // The riven card art, per weapon class. It is a wiki file rather than a
+      // CDN one — cdn.warframestat.us has no riven images, and DE's export
+      // points every riven type at the same veiled-mod icon.
+      image: `https://wiki.warframe.com/w/Special:FilePath/${cls}RivenMod.png`,
       // Every printed value is searchable, which is how you find the riven
       // with the crit damage on it without remembering what you called it.
       effects: lines.length ? lines : stats.filter((s) => s && s.id).map((s) => s.id.replace(/_/g, " ")),
@@ -1911,19 +1919,26 @@ function renderMenu(slotIdx, query) {
     .sort((a, b) => {
       const g = group(a) - group(b); // current first, then equipped, then the rest
       if (g) return g;
-      // RIVENS last, as their own block: they are a different kind of thing
-      // and sorting them in by name would scatter them through the pool.
-      const r = (a.riven ? 1 : 0) - (b.riven ? 1 : 0);
+      // RIVENS FIRST, as their own block: they are the build's own items and
+      // sorting them in by name would scatter them through the pool.
+      const r = (b.riven ? 1 : 0) - (a.riven ? 1 : 0);
       if (r) return r;
       const c = pickerPrefs.sort === "drain" ? a.drain - b.drain : a.name.localeCompare(b.name);
       return pickerPrefs.dir === "desc" ? -c : c;
     });
   // No cap: every pool mod must be reachable. The popover menu scrolls
   // (`.combo-menu` overflow-y), so the whole sorted/filtered list is browsable.
-  let headed = false;
+  // Two sections, each labelled. With rivens leading, an unlabelled pool
+  // below them would read as a continuation of the riven list.
+  let section = null;
+  const heading = (m) => {
+    const s = m.riven ? "Riven" : "Mods";
+    if (s === section) return "";
+    section = s;
+    return `<div class="menu-head">${s}</div>`;
+  };
   menu.innerHTML = hits.length ? hits.map((m) => {
-    // One heading, where the rivens start.
-    const head = m.riven && !headed ? ((headed = true), `<div class="menu-head">Riven</div>`) : "";
+    const head = heading(m);
     const isCur = slots[slotIdx].mod === m.id;
     const at = placedAt(m.id, slotIdx);
     // Exchanging with the exilus slot would move OUR mod there — only legal
@@ -2958,8 +2973,8 @@ function renderOptModList() {
     .filter((m) => !optPrefs.pol || m.polarity === optPrefs.pol)
     .filter((m) => !q || searchBlob(m).includes(q))
     .sort((a, b) => {
-      // Rivens as their own block at the end, as in the builder's picker.
-      const r = (a.riven ? 1 : 0) - (b.riven ? 1 : 0);
+      // Rivens first, as their own block, as in the builder's picker.
+      const r = (b.riven ? 1 : 0) - (a.riven ? 1 : 0);
       if (r) return r;
       const c = optPrefs.sort === "drain" ? a.drain - b.drain : a.name.localeCompare(b.name);
       return optPrefs.dir === "desc" ? -c : c;
@@ -2973,9 +2988,10 @@ function renderOptModList() {
   const fixedN = reqCountMain();
   const poolN = Object.values(opt.mods).filter((s) => s === "search").length;
   const full = fixedN >= opt.size;
-  let headed = false;
+  let section = null;
   const row = (m) => {
-    const head = m.riven && !headed ? ((headed = true), `<div class="menu-head">Riven</div>`) : "";
+    const s = m.riven ? "Riven" : "Mods";
+    const head = s === section ? "" : ((section = s), `<div class="menu-head">${s}</div>`);
     const st = opt.mods[m.id] || "off";
     const fam = famReqBy(m);
     const dead = !!fam || (full && st === "off");
