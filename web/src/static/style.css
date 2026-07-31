@@ -516,3 +516,17 @@ label.check input{width:auto}
 .menu-head{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
   padding:8px 10px 4px;border-top:1px solid var(--line);margin-top:4px;position:sticky;top:0;
   background:var(--panel)}
+
+/* Every saved riven, with what it rolls. The bar above chooses; this is what
+   you choose between. */
+.rv-all{border:1px solid var(--line);border-radius:10px;padding:8px 11px;margin-bottom:7px;cursor:pointer}
+.rv-all:hover{background:var(--plane)}
+.rv-all.sel{border-color:var(--accent)}
+.rv-all-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px}
+.rv-all-h img.pol{width:12px;height:12px}
+.rv-all-h b{font-size:14px}
+.rv-official{font-size:12px;color:var(--gold)}
+.rv-all-s{display:flex;flex-wrap:wrap;gap:6px}
+.rv-chip{font-size:11px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+  padding:2px 8px;font-variant-numeric:tabular-nums}
+.rv-chip.neg{color:var(--bad,#e06c75)}

@@ -652,6 +652,7 @@ async function refreshRivenNames() {
   // The lists that show a riven's printed values may already have rendered
   // with only its stat ids — this arrives afterwards, so they get redrawn.
   if (typeof renderOptModList === "function" && $("opt-mods") && !$("opt-block").hidden) renderOptModList();
+  if ($("riven-all") && !$("riven-block").hidden) renderRivenAll();
   if ($("mod-popover") && !$("mod-popover").hidden && rivenPickerSlot != null) renderMenu(rivenPickerSlot, $("mod-search").value || "");
 }
 // Which slot the builder's mod picker is open for, so an async refresh can
@@ -706,13 +707,53 @@ const RIVEN_SHAPES = [
 // An EMPTY card. Nothing is pre-picked: a default stat is a claim the visitor
 // did not make. Two positives is the game's floor for a riven rather than a
 // suggestion, and the rolls sit at 1.0 because a slider has to be somewhere.
+// FOUR drafts, one per shape, and only the active one is the riven.
+//
+// Switching 3+1 -> 2+1 -> 3+1 used to lose the third stat: the slot was
+// popped and there was nowhere for it to have gone (user, 2026-07-31).
+// Keeping each shape's own stats means a shape switch is a switch, not an
+// edit — you can compare a 2+1 against a 3+1 by clicking between them.
+//
+// `positives` / `curse` stay the ACTIVE shape's, so everything downstream —
+// the rows, the payload, the engine — keeps reading a riven the same way.
+const RIVEN_BLANK_DRAFT = (n, curse) => ({
+  positives: Array.from({ length: n }, () => ({ id: null, roll: 1.0 })),
+  curse: curse ? { id: null, roll: 1.0 } : null,
+});
 function blankRiven() {
+  const drafts = {};
+  RIVEN_SHAPES.forEach((s) => { drafts[s.id] = RIVEN_BLANK_DRAFT(s.positives, s.curse); });
   return {
-    positives: [{ id: null, roll: 1.0 }, { id: null, roll: 1.0 }],
-    curse: null,
+    shape: "2",
+    drafts,
+    positives: drafts["2"].positives,
+    curse: drafts["2"].curse,
     rank: rivenRules().max_rank,
     polarity: "madurai",
   };
+}
+
+/// Bring a riven up to the four-draft shape — older saved ones carry only the
+/// active stats, and a missing draft is simply an empty one.
+function withDrafts(r) {
+  const out = JSON.parse(JSON.stringify(r || {}));
+  out.rank = out.rank ?? rivenRules().max_rank;
+  out.polarity = out.polarity || "madurai";
+  out.positives = out.positives || [];
+  out.curse = out.curse || null;
+  out.shape = out.shape || `${out.positives.length || 2}${out.curse ? "+1" : ""}`;
+  out.drafts = out.drafts || {};
+  RIVEN_SHAPES.forEach((s) => {
+    if (!out.drafts[s.id]) out.drafts[s.id] = RIVEN_BLANK_DRAFT(s.positives, s.curse);
+  });
+  // The stats it was saved with belong to the shape it was saved in.
+  if (out.positives.length) {
+    out.drafts[out.shape] = { positives: out.positives, curse: out.curse };
+  }
+  const d = out.drafts[out.shape];
+  out.positives = d.positives;
+  out.curse = d.curse;
+  return out;
 }
 
 /// Every slot filled? An unfinished card is not an ILLEGAL riven — it is one
@@ -772,7 +813,7 @@ function renderRivens() {
     // bar and the editor disagreeing about which document is open.
     const ps = ensureRivenList();
     const cur = ps.find((p) => p.name === activeRivenName());
-    riven = { ...JSON.parse(JSON.stringify((cur && cur.state) || blankRiven())), __weapon: w.id };
+    riven = { ...withDrafts((cur && cur.state) || blankRiven()), __weapon: w.id };
   }
   $("riven-sub").textContent =
     `${w.name} · disposition ${(w.disposition || 1).toFixed(2)} — every value below is already scaled by it`;
@@ -780,21 +821,28 @@ function renderRivens() {
   renderRivenShape();
   renderRivenStats();
   renderRivenFoot();
+  renderRivenAll();
   resolveRiven();
 }
 
 function renderRivenShape() {
-  const now = `${riven.positives.length}${riven.curse ? "+1" : ""}`;
+  const now = riven.shape || `${riven.positives.length}${riven.curse ? "+1" : ""}`;
   $("riven-shape").innerHTML =
     `<span class="rv-lbl">Shape</span><span class="oseg">` +
     RIVEN_SHAPES.map((s) => `<span class="seg ${s.id === now ? "on" : ""}" data-rv="${s.id}">${s.id}</span>`).join("") +
     `</span>`;
   $("riven-shape").querySelectorAll("[data-rv]").forEach((el) => el.onclick = () => {
-    const s = RIVEN_SHAPES.find((x) => x.id === el.dataset.rv);
-    // Stats already chosen SURVIVE the change — only the slot count moves.
-    while (riven.positives.length > s.positives) riven.positives.pop();
-    while (riven.positives.length < s.positives) riven.positives.push({ id: null, roll: 1.0 });
-    riven.curse = s.curse ? (riven.curse || { id: null, roll: 1.0 }) : null;
+    const want = el.dataset.rv;
+    if (want === riven.shape) return;
+    // Park the current shape's stats in its own draft, then adopt the target
+    // shape's. Nothing is discarded, so clicking back and forth is free.
+    riven.drafts[riven.shape] = { positives: riven.positives, curse: riven.curse };
+    riven.shape = want;
+    const s = RIVEN_SHAPES.find((x) => x.id === want);
+    const d = riven.drafts[want] || RIVEN_BLANK_DRAFT(s.positives, s.curse);
+    riven.drafts[want] = d;
+    riven.positives = d.positives;
+    riven.curse = d.curse;
     markRivenDirty();
     renderRivens();
   });
@@ -912,6 +960,49 @@ function renderRivenFoot() {
   };
 }
 
+// Every riven saved for this weapon, with what it actually rolls — the
+// collection bar shows names, this shows the numbers you choose between
+// (user, 2026-07-31). The values are the engine's, from the same refresh the
+// mod lists use, so nothing here is a second opinion.
+function renderRivenAll() {
+  const box = $("riven-all");
+  if (!box) return;
+  const ps = loadPresetList(RIVENS);
+  const active = activeRivenName();
+  const cap = (s) => String(s || "").replace(/^./, (c) => c.toUpperCase());
+  box.innerHTML = ps.length
+    ? ps.map((p) => {
+        const st = p.state || {};
+        const meta = rivenNames[p.name] || {};
+        const lines = meta.lines || [];
+        const shape = st.shape || `${(st.positives || []).length}${st.curse ? "+1" : ""}`;
+        const nPos = (st.positives || []).length;
+        return `<div class="rv-all ${p.name === active ? "sel" : ""}" data-open="${escHtml(p.name)}">
+          <div class="rv-all-h">
+            ${imgTag(POL(cap(st.polarity || "madurai")), "pol")}
+            <b>${escHtml(p.name)}</b>
+            ${meta.name ? `<span class="rv-official">${escHtml(meta.name)}</span>` : ""}
+            <span class="rv-meta">${shape} · rank ${st.rank ?? 8} · ${2 + 2 * (st.rank ?? 8)} capacity</span>
+          </div>
+          <div class="rv-all-s">${
+            lines.length
+              ? lines.map((x, i) => `<span class="rv-chip ${i >= nPos ? "neg" : ""}">${escHtml(x)}</span>`).join("")
+              : `<span class="sim-empty">nothing rolled yet</span>`
+          }</div>
+        </div>`;
+      }).join("")
+    : `<div class="sim-empty">no rivens for this weapon yet</div>`;
+  // Clicking one opens it, the same as clicking its chip in the bar.
+  box.querySelectorAll("[data-open]").forEach((el) => el.onclick = () => {
+    const p = loadPresetList(RIVENS).find((x) => x.name === el.dataset.open);
+    if (!p) return;
+    activeRiven = p.name;
+    localStorage.setItem(presetActiveKey(RIVENS), activeRiven);
+    riven = { ...withDrafts(p.state || blankRiven()), __weapon: $("weapon").value };
+    renderRivens();
+  });
+}
+
 function renderRivenCard() {
   const r = rivenResolved;
   const box = $("riven-stats");
@@ -971,8 +1062,12 @@ function saveRivenSoon() {
     }
   }, 250);
 }
+// The saved shape keeps `positives`/`curse` at the top level — that is what
+// the engine reads — and carries the other three drafts alongside so a
+// reload does not flatten them back into one.
 const snapshotRiven = () => ({
   positives: riven.positives, curse: riven.curse, rank: riven.rank, polarity: riven.polarity,
+  shape: riven.shape, drafts: riven.drafts,
 });
 let activeRiven = null;
 const activeRivenName = () => activeRiven || localStorage.getItem(presetActiveKey(RIVENS)) || "";
@@ -992,7 +1087,7 @@ function renderRivenPresetBar() {
     setActive: (n) => { activeRiven = n; localStorage.setItem(presetActiveKey(RIVENS), n); },
     snapshot: snapshotRiven,
     apply: (st) => {
-      riven = { ...JSON.parse(JSON.stringify(st)), __weapon: $("weapon").value };
+      riven = { ...withDrafts(st), __weapon: $("weapon").value };
       renderRivenShape(); renderRivenStats(); renderRivenFoot(); resolveRiven();
     },
     blank: blankRiven,
