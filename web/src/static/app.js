@@ -31,7 +31,30 @@ const POL = (p) => `/pol/${p === "Omni" ? "Any" : p}_Pol.${p === "Omni" ? "png" 
 // other languages are overlays. UI strings: tr() over the catalog below.
 // Game-entity names: LN() over /api/i18n (data/i18n/<locale>.yaml — ids are
 // never translated; missing entries fall back to English).
-let LANG = localStorage.getItem("wfsim-lang") || "en";
+// The language on a FIRST visit is the browser's, not English (user,
+// 2026-07-31). Every zh-* maps to our one Chinese: a reader of Traditional
+// is closer to Simplified than to English, and the choice is one click away
+// either way.
+//
+// The detected value is deliberately NOT written to storage. The key holds a
+// CHOICE and nothing else, so "never picked" stays distinguishable from
+// "picked English" — a visitor who lands in the wrong language once and
+// fixes it is remembered, and one who never touches it follows their
+// browser if they later switch systems. Writing the guess would make those
+// two states the same and freeze the guess forever.
+const LOCALES = ["en", "zh"];
+function detectLang() {
+  const want = navigator.languages && navigator.languages.length
+    ? navigator.languages : [navigator.language || "en"];
+  for (const raw of want) {
+    const tag = String(raw).toLowerCase();
+    const hit = LOCALES.find((l) => l !== "en" && (tag === l || tag.startsWith(l + "-")));
+    if (hit) return hit;
+    if (tag === "en" || tag.startsWith("en-")) return "en";
+  }
+  return "en";
+}
+let LANG = localStorage.getItem("wfsim-lang") || detectLang();
 let I18N = null; // active locale's name overlay, fetched in init()
 // UI strings and effect phrases live in data/i18n/<locale>.yaml (served at
 // /api/i18n) — nothing hardcoded here. English needs no catalog: the source
@@ -378,6 +401,10 @@ function initWeaponSearch() {
 // language dropdown (top right, beside the theme toggle): switching
 // reloads with the current build stashed and restored.
 (function () {
+  // What the DOCUMENT says it is, so a screen reader picks the right voice
+  // and a crawler indexes the page under the language it is actually in.
+  // The tag ships as `en` and the page may be zh from the first paint.
+  document.documentElement.lang = LANG;
   const sel = $("lang-select");
   if (!sel) return;
   sel.value = LANG;
