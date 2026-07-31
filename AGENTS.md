@@ -56,7 +56,25 @@ around (decision 2026-07-31).
   and a site regeneration to reach wfsim.app.
 - After frontend or engine changes, regenerate the static site:
   `python scripts/build_site_app.py` (wasm-bindgen-cli version must match
-  Cargo.lock). Commit the regenerated `site/`.
+  Cargo.lock). Commit the regenerated `site/`. It also PRERENDERS one
+  `site/weapons/<Wiki_Name>/index.html` per roster weapon (own
+  title/description/canonical/OG + a crawler-visible summary the app
+  removes on boot), plus `sitemap.xml` and `robots.txt` — without them
+  every URL answered with the same contentless shell, which is a soft 404
+  to a crawler and an empty preview to a chat app.
+- **Images: commit what WE made, never commit DE's** (rule 2026-07-31).
+  Ours — `logo.svg`, the generated `site/og/*.png` link cards — ship in
+  the repo, because a preview crawler must be able to fetch them from our
+  own domain with no redirect. DE's weapon/mod art stays out: the native
+  server reads it from the gitignored `web/cache/img/` (filled by
+  `scripts/fetch_images.py`) and the static build loads it from the CDN at
+  runtime. That is also why an OG card cannot just point at the art —
+  `cdn.warframestat.us/img/…` answers **301 → raw.githubusercontent.com**,
+  which a Chinese chat app's crawler typically neither follows nor can
+  reach, so the card is drawn instead. ⚠ OPEN: runtime art still takes
+  that redirect, so CN users may see slow or missing images; a
+  `/img/*` edge proxy is the candidate fix, pending a report from a player
+  in China (asked 2026-07-31).
 - Deploy = push to `main`: Cloudflare picks up `site/` automatically
   (takes ~1–2 min). There is no deploy step in CI.
 - UI verification: drive headless Chrome over CDP (Node ≥22 has a global

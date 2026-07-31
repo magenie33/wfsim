@@ -8,6 +8,9 @@ Steps:
   4. copy web/src/static/{index.html,app.js,style.css,worker.js,logo.svg,pol/} -> site/
   5. inject <script>window.WFSIM_WASM = true;</script> into the copied
      index.html — that flag flips app.js's api() from fetch to worker RPC.
+  6. prerender one HTML file per weapon (its own title/description/OG plus a
+     crawler-visible summary), and write sitemap.xml + robots.txt — see
+     prerender() for why a single shell was not enough.
 
 wrangler already serves site/ at wfsim.app, so after this script the builder
 lives at wfsim.app/ and every simulation runs on the visitor's own CPU.
@@ -16,16 +19,232 @@ Prereqs: rustup target add wasm32-unknown-unknown;
          cargo install wasm-bindgen-cli --version <matching Cargo.lock>.
 """
 
+import html as html_mod
 import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = ROOT / "web" / "src" / "static"
 APP = ROOT / "site"
 WASM = ROOT / "target" / "wasm32-unknown-unknown" / "release" / "wfsim_wasm.wasm"
+SITE = "https://wfsim.app"
+
+
+def roster() -> list[dict]:
+    """The weapons that get a page: one per WEAPON, not per form.
+
+    `default_form` is the arsenal's form and therefore the roster row
+    (engine::weapons_data::roster does the same filter) — a bow's tapped shot
+    and an Incarnon form are forms of a weapon, not separate pages.
+    """
+    out = []
+    for f in sorted((ROOT / "data" / "weapons").rglob("*.yaml")):
+        spec = yaml.safe_load(f.read_text(encoding="utf-8"))
+        if spec.get("default_form"):
+            out.append(spec)
+    return sorted(out, key=lambda s: s["name"])
+
+
+def wiki_path(name: str) -> str:
+    """The URL a weapon lives at — the English wiki page name, spaces to
+    underscores (AGENTS.md: URLs mirror wiki page names; ids never appear)."""
+    return "/weapons/" + name.replace(" ", "_")
+
+
+# The app's dark palette (style.css `prefers-color-scheme: dark`), so a card
+# pasted into a chat looks like the page it opens.
+CARD_BG, CARD_TEXT, CARD_MUTED, CARD_GOLD = "#0e1014", "#f2f4f8", "#a6adbb", "#e8c37a"
+# CJK-capable, in preference order; the last entry is the graceful give-up.
+CARD_FONTS = ("C:/Windows/Fonts/msyhbd.ttc", "C:/Windows/Fonts/msyh.ttc",
+              "C:/Windows/Fonts/simhei.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+
+
+def card_font(size: int):
+    from PIL import ImageFont
+
+    for path in CARD_FONTS:
+        if Path(path).exists():
+            try:
+                return ImageFont.truetype(path, size)
+            except OSError:
+                pass
+    return ImageFont.load_default(size)
+
+
+def og_card(out: Path, name: str, cn: str | None, facts: str, stats: str) -> bool:
+    """Draw the link-preview image for one weapon — OUR art, not DE's.
+
+    The weapon renders belong to Digital Extremes and deliberately stay out of
+    the repo (`scripts/fetch_images.py`: the cache is gitignored), and pointing
+    og:image at the CDN does not work either — `cdn.warframestat.us/img/…`
+    answers 301 to raw.githubusercontent.com, and a link-preview crawler that
+    does not follow redirects (or cannot reach GitHub, which is the case for
+    the crawlers behind Chinese chat apps) renders an empty card.
+
+    So the card is generated: the wordmark, the weapon's name in both
+    languages, and the numbers. Self-hosted, no redirect, nothing of DE's.
+    """
+    try:
+        from PIL import Image, ImageDraw
+    except ImportError:
+        return False
+    img = Image.new("RGB", (1200, 630), CARD_BG)
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, 1200, 6], fill=CARD_GOLD)
+    mark = card_font(34)
+    d.text((72, 64), "WF", font=mark, fill=CARD_TEXT)
+    d.text((72 + d.textlength("WF", font=mark), 64), "Sim", font=mark, fill=CARD_GOLD)
+
+    y = 190
+    d.text((72, y), name, font=card_font(76), fill=CARD_TEXT)
+    y += 96
+    if cn:
+        d.text((72, y), cn, font=card_font(40), fill=CARD_GOLD)
+        y += 62
+    d.text((72, y), facts, font=card_font(28), fill=CARD_MUTED)
+    y += 52
+    # The stat line is long; wrap it rather than let it run off the card.
+    line, words, f = "", stats.split(" "), card_font(26)
+    for w in words:
+        probe = f"{line} {w}".strip()
+        if d.textlength(probe, font=f) > 1056:
+            d.text((72, y), line, font=f, fill=CARD_TEXT)
+            y, line = y + 38, w
+        else:
+            line = probe
+    if line:
+        d.text((72, y), line, font=f, fill=CARD_TEXT)
+    d.text((72, 548), "wfsim.app · builder · simulator · optimizer",
+           font=card_font(26), fill=CARD_MUTED)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out, "PNG", optimize=True)
+    return True
+
+
+def prerender(flagged: str) -> None:
+    """Write a real HTML file per weapon, plus robots.txt and sitemap.xml.
+
+    WHY, in one line: before this, every URL returned the identical 16 KB app
+    shell — `/weapons/Torid`, `/robots.txt` and `/sitemap.xml` all served the
+    same bytes, so a crawler saw one contentless page for the whole site and a
+    pasted link had nothing to preview.
+
+    Two things fix that, and they are different problems:
+
+      1. **Per-page HEAD** — title, description, canonical, OG. This is what a
+         QQ group or a forum renders when the link is pasted, and it is read
+         without running any JavaScript.
+      2. **Per-page BODY** — the weapon's actual numbers as text. Google runs
+         JS and would eventually see the app render; **Baidu largely does
+         not**, and the audience here is Chinese players. So each page states
+         its weapon in HTML, and an inline script removes that block the
+         moment the app boots. Not cloaking: the text says exactly what the
+         app renders, and the visitor sees the app.
+    """
+    assets = yaml.safe_load((ROOT / "data" / "assets.yaml").read_text(encoding="utf-8"))
+    zh = yaml.safe_load((ROOT / "data" / "i18n" / "zh" / "names.yaml").read_text(encoding="utf-8"))
+    zh_names = zh.get("weapons", {})
+
+    for spec in roster():
+        wid, name = spec["id"], spec["name"]
+        cn = zh_names.get(wid)
+        atk = spec["attack"]
+        dmg = atk["damage"]
+        total = sum(dmg.values())
+        ms = atk.get("multishot", 1.0)
+        # The same sentence a player would write about the weapon: what it is,
+        # then the numbers they came to compare.
+        facts = (
+            f"{spec['class'].replace('_', ' ').title()} · {spec['slot'].title()} · "
+            f"Mastery Rank {spec.get('mastery_rank', 0)}"
+        )
+        stats = (
+            f"{total:g} base damage"
+            + (f" x{ms:g} multishot" if ms != 1.0 else "")
+            + f" ({', '.join(f'{k} {v:g}' for k, v in sorted(dmg.items()))}), "
+            f"{atk['crit_chance'] * 100:g}% crit chance, {atk['crit_multiplier']:g}x crit "
+            f"multiplier, {atk['status_chance'] * 100:g}% status chance"
+        )
+        title = f"{name} — Warframe build, damage & DPS | WFSim"
+        desc = (
+            f"{name}{f' ({cn})' if cn else ''} — {facts}. {stats}. "
+            "Build it, simulate the fight, and optimize the mods — "
+            "true to in-game numbers."
+        )
+        card = f"/og/{name.replace(' ', '_')}.png"
+        drew = og_card(APP / card.lstrip("/"), name, cn, facts, stats)
+        og_img = SITE + card if drew else f"{SITE}/logo.svg"
+        url = SITE + wiki_path(name)
+
+        page = flagged
+        page = page.replace(
+            "<title>WFSim — Ultimate Warframe Calculator</title>",
+            f"<title>{html_mod.escape(title)}</title>",
+        )
+        page = re.sub(
+            r'<meta name="description" content="[^"]*" />',
+            f'<meta name="description" content="{html_mod.escape(desc, quote=True)}" />',
+            page,
+            count=1,
+        )
+        for prop, value in (
+            ("og:title", title),
+            ("og:description", desc),
+            ("og:url", url),
+            ("og:image", og_img),
+        ):
+            page = re.sub(
+                rf'<meta property="{prop}" content="[^"]*" />',
+                f'<meta property="{prop}" content="{html_mod.escape(value, quote=True)}" />',
+                page,
+                count=1,
+            )
+        page = page.replace(
+            '<meta property="og:type" content="website" />',
+            '<meta property="og:type" content="website" />\n'
+            f'  <link rel="canonical" href="{url}" />',
+            1,
+        )
+        # The crawler-visible body, removed as soon as the app takes over.
+        seo = (
+            '<div id="seo-fallback">\n'
+            f"    <h1>{html_mod.escape(name)}"
+            f"{f' / {html_mod.escape(cn)}' if cn else ''} — Warframe</h1>\n"
+            f"    <p>{html_mod.escape(facts)}</p>\n"
+            f"    <p>{html_mod.escape(stats)}.</p>\n"
+            "    <p>Build, simulate and optimize this weapon at "
+            f'<a href="{SITE}/">wfsim.app</a>.</p>\n'
+            "  </div>\n"
+            "  <script>document.getElementById('seo-fallback').remove()</script>\n  "
+        )
+        page = page.replace("<body>\n  ", "<body>\n  " + seo, 1)
+
+        out = APP / wiki_path(name).lstrip("/") / "index.html"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(page, encoding="utf-8", newline="\n")
+
+    urls = [SITE + "/"] + [SITE + wiki_path(s["name"]) for s in roster()]
+    (APP / "sitemap.xml").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        + "".join(f"  <url><loc>{u}</loc></url>\n" for u in urls)
+        + "</urlset>\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    # Without this file the SPA fallback answered /robots.txt with HTML and a
+    # 200, which is a soft 404 for every crawler that asks.
+    (APP / "robots.txt").write_text(
+        f"User-agent: *\nAllow: /\n\nSitemap: {SITE}/sitemap.xml\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    print(f"prerendered {len(urls) - 1} weapon pages + sitemap.xml + robots.txt")
 
 
 def run(*cmd: str) -> None:
@@ -60,6 +279,7 @@ def main() -> None:
     if flagged == html:
         sys.exit("index.html: <script src=\"app.js\"> anchor not found — flag not injected")
     (APP / "index.html").write_text(flagged, encoding="utf-8", newline="\n")
+    prerender(flagged)
 
     size = (APP / "pkg" / "wfsim_wasm_bg.wasm").stat().st_size
     print(f"site/ ready — wasm {size / 1e6:.1f} MB")
