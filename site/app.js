@@ -75,6 +75,18 @@ const searchBlob = (x) => {
 // every [data-i18n-ph] input — a search box's prompt is a UI string like any
 // other, and it was the one kind the sweep did not reach.
 function applyI18n() {
+  // A translated line with ONE word picked out — the hero's "Prime", gold
+  // because that is the game's own colour for a Prime item. The whole
+  // sentence stays a single key: the marked word is Latin in every language,
+  // so it can be found after translation instead of being carved out of the
+  // source into a key of its own.
+  document.querySelectorAll("[data-i18n-gold]").forEach((el) => {
+    if (!el.dataset.i18nSrc) el.dataset.i18nSrc = el.textContent.trim();
+    const word = el.dataset.i18nGold;
+    el.innerHTML = escHtml(tr(el.dataset.i18nSrc))
+      .split(word)
+      .join(`<span>${escHtml(word)}</span>`);
+  });
   document.querySelectorAll("[data-i18n-ph]").forEach((el) => {
     if (!el.dataset.i18nPhSrc) el.dataset.i18nPhSrc = el.placeholder;
     el.placeholder = tr(el.dataset.i18nPhSrc);

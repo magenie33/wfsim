@@ -44,7 +44,11 @@
 
   <!-- Home: the weapon list. Click a card → that weapon's config page. -->
   <main id="home-page" class="home-page" hidden>
-    <h1 class="hero-h" data-i18n>The real Simulacrum Prime.</h1>
+    <!-- ONE i18n key for the whole sentence; the gold on "Prime" is applied
+         after translation (applyI18n), because those four letters are the
+         same in every language. Splitting it into two keys is what made the
+         old "The Simulacrum. / The Primed One." pair awkward to translate. -->
+    <h1 class="hero-h" data-i18n-gold="Prime">The real Simulacrum Prime.</h1>
     <p class="hero-sub" data-i18n>WFSim is the ultimate Warframe calculator — builder, simulator, optimizer. True to in-game numbers, down to the last proc. Theorycrafting, solved.</p>
     <h2 class="home-h" data-i18n>Weapons</h2>
     <div id="weapon-grid"></div>
