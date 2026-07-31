@@ -44,7 +44,7 @@ data + a dependency-free web UI, deployed as WASM on Cloudflare
   refresh the exe.
 - **`data/` (weapons, mods, i18n, …) is embedded at COMPILE TIME too**
   (`engine::data::files_under`): a YAML edit — including
-  `data/i18n/zh.yaml` translations — needs the same rebuild + restart,
+  `data/i18n/zh/` translations — needs the same rebuild + restart,
   and a site regeneration to reach wfsim.app.
 - After frontend or engine changes, regenerate the static site:
   `python scripts/build_site_app.py` (wasm-bindgen-cli version must match
@@ -65,10 +65,13 @@ data + a dependency-free web UI, deployed as WASM on Cloudflare
   narrative/prose belongs in comments. Perks: define-once /
   reference-anywhere (see `data/README.md`); violations fail the build.
 - **i18n is an overlay**: English is the source everywhere (code,
-  comments, data, UI strings). Locale files (`data/i18n/<locale>.yaml`)
-  map ids/source-strings to names; ids are never translated. Wiki URLs
-  are ALWAYS built from the English name (`x.name_en || x.name`) — a
-  localized name in a wiki URL lands on garbage.
+  comments, data, UI strings). A locale is a DIRECTORY of merged files
+  (`data/i18n/<locale>/`: hand-written `names.yaml` + `ui.yaml`, generated
+  `descriptions.yaml`); ids are never translated. Mod and arcane CARD TEXT
+  is DE's own localized sentence per rank, never a phrase-substituted
+  English line — substitution is the fallback for what DE never wrote.
+  Wiki URLs are ALWAYS built from the English name (`x.name_en || x.name`)
+  — a localized name in a wiki URL lands on garbage.
 - **No native dialogs in the UI** — `prompt`/`alert`/`confirm` are
   blocked in the owner's browser. Use inline inputs/feedback.
 - **Absolute asset paths in the UI** (`/img/…`, `/pol/…`, `/logo.svg`):

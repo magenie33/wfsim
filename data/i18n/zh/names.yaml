@@ -1,0 +1,256 @@
+# 简体中文 — display NAMES (hand-written).
+#
+# RULES (data/README.md "i18n"): ids are NEVER translated — this file maps
+# id → display name only. Missing entries fall back to English, so partial
+# translation is always safe. Every key must be a real id (machine-enforced
+# by engine::i18n_data tests — a typo fails the build).
+#
+# Canonical reference: the official CN client (WFCD i18n, joined on
+# internal_name), cross-checked against the community wiki's 对照 table
+# https://warframe.huijiwiki.com/wiki/Project:中英名称对照
+#
+# A locale is a DIRECTORY and its files are merged (engine::i18n_data):
+#   names.yaml         this file — hand-written
+#   ui.yaml            UI strings + the phrase-substitution fallback
+#   descriptions.yaml  GENERATED from DE's client strings, never hand-edited
+
+# Every name here is the official CN client string (WFCD i18n, joined on
+# internal_name). The FORM suffixes are ours, not DE's: the client has one
+# name per weapon, and our roster splits a weapon into entries per form, so
+# the suffix says which form — which is why this section is hand-written
+# while `mods`/`arcanes` below are filled by the script.
+weapons:
+  cernos_prime: 西诺斯 Prime
+  cernos_prime_uncharged: 西诺斯 Prime (点射)   # the tapped form, same weapon
+  dual_toxocyst: 毒囊双枪
+  dual_toxocyst_incarnon: 毒囊双枪 (灵化形态)   # Incarnon Genesis = 灵化之源
+  laetum: 奏凯
+  laetum_incarnon: 奏凯 (灵化形态)
+  torid: 托里德
+  torid_incarnon: 托里德 (灵化形态)
+  verglas_prime: 冰凇 Prime
+
+enemies:
+  thrax_centurion: 凶魂百夫长
+
+# Official CN client damage-type names.
+damage_types:
+  impact: 冲击
+  puncture: 穿刺
+  slash: 切割
+  cold: 冰冻
+  electricity: 电击
+  heat: 火焰
+  toxin: 毒素
+  blast: 爆炸
+  corrosive: 腐蚀
+  gas: 毒气
+  magnetic: 磁力
+  radiation: 辐射
+  viral: 病毒
+
+# Contributor entry points — fill from the 对照 page; untranslated names
+# simply keep showing English:
+mods:
+  accelerated_isotope: 迅发核素
+  aerial_ace: 空中制霸
+  aero_periphery: 空飞 边际
+  agile_aim: 机动瞄准
+  amalgam_barrel_diffusion: 并合 弹头扩散
+  amalgam_serration: 并合 膛线
+  ammo_drum: 弹鼓
+  anemic_agility: 乏能迅敏
+  argon_scope: 氩晶瞄具
+  augur_pact: 预言 契约
+  augur_seeker: 预言 探求
+  bane_of_corpus: 灭亡 Corpus
+  bane_of_grineer: 灭亡 Grineer
+  bane_of_infested: 灭亡 Infested
+  bane_of_orokin: 灭亡奥罗金
+  bane_of_the_murmur: 灭亡低语者
+  barrel_diffusion: 弹头扩散
+  bladed_rounds: 尖刃弹头
+  bore: 枪膛
+  carnis_stinger: 肉碾虫 针刺
+  catalyzer_link: 触媒连动
+  cautious_shot: 谨慎射击
+  combustion_beam: 灼热光束
+  concussion_rounds: 震荡弹头
+  continuous_misery: 无尽苦难
+  convulsion: 痉挛
+  crash_course: 连续冲击
+  creeping_bullseye: 匍匐靶心
+  critical_delay: 关键延迟
+  cryo_rounds: 低温弹头
+  deep_freeze: 深层冷冻
+  eagle_eye: 鹰眼
+  eject_magazine: 弹匣置换
+  embedded_catalyzer: 内置触媒
+  expel_corpus: 驱逐 Corpus
+  expel_grineer: 驱逐 Grineer
+  expel_infested: 驱逐 Infested
+  expel_orokin: 驱逐奥罗金
+  expel_the_murmur: 驱逐低语者
+  fanged_fusillade: 尖牙连射
+  fast_hands: 爆发装填
+  firestorm: 烈焰风暴
+  frostbite: 结霜侵蚀
+  fulmination: 猛烈爆发
+  galvanized_aptitude: 镀层 步枪才能
+  galvanized_chamber: 镀层 分裂膛室
+  galvanized_crosshairs: 镀层 液压准心
+  galvanized_diffusion: 镀层 弹头扩散
+  galvanized_scope: 镀层 氩晶瞄具
+  galvanized_shot: 镀层 准确射手
+  gunslinger: 神枪手
+  hammer_shot: 重锤射击
+  hawk_eye: 隼目
+  heated_charge: 火焰装填
+  heavy_caliber: 重口径
+  hellfire: 地狱火
+  hemorrhage: 失血
+  high_voltage: 高压电流
+  hollow_point: 空尖弹
+  hornet_strike: 黄蜂螫刺
+  hunter_munitions: 猎人 战备
+  hunter_track: 猎人 追踪
+  hush: 消音器
+  hydraulic_crosshairs: 液压准心
+  ice_storm: 冰风暴
+  infected_clip: 污染弹匣
+  internal_bleeding: 内部出血
+  jolt: 电流震击
+  jugulus_spines: 喉骨刃者 脊刺
+  lethal_momentum: 致命动量
+  lethal_torrent: 致命洪流
+  magazine_warp: 弹匣增幅
+  magnetic_capacity: 磁性弹容
+  magnetic_might: 磁吸巨力
+  magnum_force: 重装火力
+  maim: 致残枪弹
+  malignant_force: 致命火力
+  merciless_gunfight: 无情枪斗
+  metal_auger: 合金钻头
+  pathogen_rounds: 病原弹头
+  perpetual_agony: 永恒苦痛
+  piercing_caliber: 穿甲口径
+  piercing_hit: 穿甲伤害
+  pistol_acuity: 敏锐手枪
+  pistol_ammo_mutation: 手枪弹药转换
+  pistol_elementalist: 手枪元素师
+  pistol_gambit: 手枪精通
+  pistol_pestilence: 瘟疫手枪
+  point_strike: 致命一击
+  pressurized_magazine: 增压弹匣
+  primary_acuity: 敏锐主武
+  primed_bane_of_corpus: 灭亡 Corpus Prime
+  primed_bane_of_grineer: 灭亡 Grineer Prime
+  primed_bane_of_infested: 灭亡 Infested Prime
+  primed_bane_of_orokin: 灭亡奥罗金 Prime
+  primed_bane_of_the_murmur: 灭亡低语者 Prime
+  primed_convulsion: 痉挛 Prime
+  primed_cryo_rounds: 低温弹头 Prime
+  primed_expel_corpus: 驱逐 Corpus Prime
+  primed_expel_grineer: 驱逐 Grineer Prime
+  primed_expel_infested: 驱逐 Infested Prime
+  primed_expel_orokin: 驱逐奥罗金 Prime
+  primed_expel_the_murmur: 驱逐低语者 Prime
+  primed_fast_hands: 爆发装填 Prime
+  primed_firestorm: 烈焰风暴 Prime
+  primed_fulmination: 猛烈爆发 Prime
+  primed_heated_charge: 火焰装填 Prime
+  primed_magazine_warp: 弹匣增幅 Prime
+  primed_pistol_ammo_mutation: 手枪弹药转换 Prime
+  primed_pistol_gambit: 手枪精通 Prime
+  primed_quickdraw: 持续火力 Prime
+  primed_shred: 撕裂 Prime
+  primed_slip_magazine: 串联弹匣 Prime
+  primed_stabilizer: 稳定 Prime
+  primed_steady_hands: 稳定枪手 Prime
+  primed_target_cracker: 弱点专精 Prime
+  proton_jet: 质子 喷射
+  pummel: 强力猛击
+  quickdraw: 持续火力
+  radiated_reload: 辐能装填
+  razor_shot: 剃刀射击
+  reflex_draw: 反射拔枪
+  rifle_aptitude: 步枪才能
+  rifle_elementalist: 步枪元素师
+  rime_rounds: 白霜弹头
+  ruinous_extension: 毁灭扩展
+  rupture: 破裂
+  sawtooth_clip: 锯齿弹链
+  saxum_spittle: 重岩者 唾液
+  scorch: 灼痕焦点
+  seeker: 弹头导引
+  semi_pistol_cannonade: 半自动手枪炮轰
+  semi_rifle_cannonade: 半自动步枪炮轰
+  serration: 膛线
+  sharpened_bullets: 尖锐子弹
+  shivering_contagion: 冷颤触染
+  shred: 撕裂
+  sinister_reach: 凶恶延伸
+  slip_magazine: 串联弹匣
+  spectral_serration: 幽灵 膛线
+  speed_trigger: 灵敏扳机
+  split_chamber: 分裂膛室
+  stabilizer: 稳定
+  steady_hands: 稳定枪手
+  stormbringer: 暴风使者
+  stunning_speed: 慑人神速
+  suppress: 消音
+  sure_shot: 准确射手
+  synth_charge: 合成 充能
+  target_cracker: 弱点专精
+  targeting_subsystem: 定位辅助
+  terminal_velocity: 极限速度
+  thermite_rounds: 铝热焊弹
+  trick_mag: 戏法增幅
+  twitch: 迅速抽换
+  vigilante_armaments: 私法 军备
+  vigilante_fervor: 私法 热诚
+  vigilante_offense: 私法 进攻
+  vigilante_supplies: 私法 补给
+  vile_acceleration: 卑劣加速
+  vile_precision: 极恶精准
+  vital_sense: 弱点感应
+  wildfire: 野火
+
+arcanes:
+  akimbo_slip_shot: 双枪·滑射
+  cascadia_accuracy: 瀑流·精准
+  cascadia_empowered: 瀑流·强化
+  cascadia_flare: 瀑流·耀炎
+  cascadia_overcharge: 瀑流·溢能
+  conjunction_voltage: 联结·电压
+  fractalized_reset: 分形·重置
+  primary_blight: 主要·毒侵
+  primary_bulwark: 主要·堡垒
+  primary_compression: 主要·压缩
+  primary_crux: 主要·准星
+  primary_deadhead: 主要·死首
+  primary_debilitate: 主要·衰弱
+  primary_dexterity: 主要·熟练
+  primary_exhilarate: 主要·激昂
+  primary_frostbite: 主要·霜冻
+  primary_merciless: 主要·无情
+  primary_obstruct: 主要·滞阻
+  primary_overcharge: 主要·过载
+  primary_plated_round: 主要·镀金弹头
+  secondary_cryogenic: 次要·低温
+  secondary_deadhead: 次要·死首
+  secondary_dexterity: 次要·熟练
+  secondary_encumber: 次要·妨害
+  secondary_enervate: 次要·失活
+  secondary_fortifier: 次要·筑垒
+  secondary_irradiate: 次要·照射
+  secondary_kinship: 次要·手足
+  secondary_merciless: 次要·无情
+  secondary_outburst: 次要·爆发
+  secondary_shiver: 次要·冷颤
+  secondary_surge: 次要·激涌
+
+evolutions: {}
+
+# UI strings, keyed by the English source string (English itself never needs
+# an entry — the source string IS the fallback).

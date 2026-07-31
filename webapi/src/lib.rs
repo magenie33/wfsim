@@ -368,6 +368,12 @@ pub fn i18n_json() -> Value {
                 "evolutions": l.evolutions,
                 "ui": l.ui,
                 "effect_phrases": l.effect_phrases,
+                // DE's OWN card text, per rank — what the UI shows instead of
+                // running the phrase table over our English line. The phrase
+                // table stays for what DE never wrote (our engine-generated
+                // effect lines, panel labels, Incarnon evolutions).
+                "mod_descriptions": l.mod_descriptions,
+                "arcane_descriptions": l.arcane_descriptions,
             }),
         );
     }

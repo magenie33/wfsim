@@ -19,8 +19,18 @@ item  ──references──▶  perk (trigger + grants)
 ## i18n: English is the source, translations are overlays
 
 - ids are NEVER translated; every entity's own `name` field is the English
-  source of truth. `data/i18n/<locale>.yaml` maps `id → localized display
-  name` — there is NO English overlay file.
+  source of truth. A locale is a DIRECTORY — `data/i18n/<locale>/` — whose
+  yaml files are MERGED into one overlay (`engine::i18n_data`), and there is
+  no English overlay at all:
+
+  | file | written by | holds |
+  |---|---|---|
+  | `names.yaml` | a translator | `id → display name`, per entity table |
+  | `ui.yaml` | a translator | `ui:` (keyed by the English source string) + `effect_phrases:` |
+  | `descriptions.yaml` | **generated** | mod/arcane card text in DE's own words, one entry per rank |
+
+  Two files may not fill the same table — a duplicate key is a hard error,
+  not a last-one-wins.
 - Overlays may be arbitrarily incomplete: a missing entry falls back to
   English in the UI. Partial translation is always a valid state.
 - Referential integrity is machine-enforced (`engine::i18n_data` tests):
@@ -33,11 +43,21 @@ item  ──references──▶  perk (trigger + grants)
   对照 table (https://warframe.huijiwiki.com/wiki/Project:中英名称对照,
   human cross-check in PR review). `wfcd_i18n.py fill` bulk-seeds a
   section from source (1).
-- UI strings and effect-line phrase substitutions live in the SAME locale
-  file (`ui:` keyed by the English source string; `effect_phrases:` an
-  ORDERED `[regex, replacement(, flags)]` list) — one file per language
-  covers everything a translator touches. English needs no entries: the
-  source string is the fallback.
+- **A card is not a bag of terms.** Mod and arcane descriptions are NOT
+  assembled by substituting terms into our English line — they are DE's own
+  localized sentence, per rank, taken whole
+  (`python scripts/wfcd_i18n.py descriptions` → `descriptions.yaml`). Phrase
+  substitution reaches "Fire Rate" → "射速" and stops there: the same card's
+  "(x2 for Bows)" stayed English, where DE writes "（弓类武器效果加倍）". Two
+  tests hold the generated file to our data — one entry per rank, and every
+  number it states must be one we state too (allowing for DE's display
+  rounding; ranks between the two we store are our interpolation, so only the
+  endpoints are compared).
+- `effect_phrases` remains, DEMOTED to the fallback: it translates what DE
+  never wrote — our engine-generated effect lines, panel labels, and the
+  entities their export cannot be joined to (Incarnon evolutions carry no
+  `internal_name`, so all 31 are still on this path). `ui:` is keyed by the
+  English source string. English needs no entries: the source is the fallback.
 
 ## Perks: define once, reference anywhere
 
