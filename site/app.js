@@ -678,7 +678,13 @@ let riven = null;      // the riven being edited
 let rivenResolved = null;
 const RIVENS = "rivens";   // its preset domain, per weapon like the builds
 
-const rivenPool = () => (META.riven_stats || {})[weaponInfo($("weapon").value).mod_class] || [];
+// The stat pool this weapon's rivens draw from. NOT its mod class: a bow's
+// mods are `bow` and its rivens are `rifle`, so the server derives which pool
+// applies and says so.
+const rivenPool = () => {
+  const w = weaponInfo($("weapon").value);
+  return (META.riven_stats || {})[w.riven_class || w.mod_class] || [];
+};
 const rivenRules = () => META.riven_rules || { roll_min: 0.9, roll_max: 1.1, max_rank: 8 };
 const rivenStat = (id) => rivenPool().find((s) => s.id === id);
 // The stat's NAME, without the placeholder or the unit: the row already

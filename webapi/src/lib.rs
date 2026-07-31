@@ -255,7 +255,7 @@ fn intern(s: String) -> &'static str {
 /// thing for a build to contain (user, 2026-07-31).
 fn rivens_from(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
     use wfsim_engine::rivens_data::{RivenSpec, RolledStat};
-    let class = info.mod_pools.last().cloned().unwrap_or_default();
+    let class = riven_class(info);
     let rolled = |x: &Value| -> Option<RolledStat> {
         if !x.is_object() {
             return None;
@@ -291,6 +291,24 @@ fn rivens_from(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
                 })
                 .collect()
         })
+        .unwrap_or_default()
+}
+
+/// Which riven stat pool a weapon draws from: the NARROWEST of its mod pools
+/// that actually has one.
+///
+/// It is derived rather than declared because a weapon's riven class is not
+/// always its mod class. A bow's mod pool is `bow`, and there is no bow riven
+/// — the wiki's table has no bow column and its RIFLE row is the one that
+/// reads "(x2 for Bows)". Walking outward from the narrowest finds `rifle`
+/// for a bow today, and would find a real bow pool the day one exists,
+/// without a weapon having to name it.
+fn riven_class(info: &WeaponInfo) -> String {
+    info.mod_pools
+        .iter()
+        .rev()
+        .find(|c| !wfsim_engine::rivens_data::pool(c).is_empty())
+        .cloned()
         .unwrap_or_default()
 }
 
@@ -421,6 +439,9 @@ pub fn meta_json() -> Value {
                 // for modding purposes.
                 "continuous": w.continuous,
                 "disposition": w.disposition,
+                // The riven stat pool this weapon draws from — not always its
+                // mod class (a bow's mods are `bow`, its rivens are `rifle`).
+                "riven_class": riven_class(w),
                 "mod_class": w.mod_pools.last().cloned().unwrap_or_default(),
                 "subtype": w.subtype,
                 "sentinel": w.sentinel,
@@ -594,9 +615,7 @@ pub fn meta_json() -> Value {
 pub fn riven_json(v: &Value) -> Value {
     use wfsim_engine::rivens_data::{RivenSpec, RolledStat};
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
-    // A riven draws from the weapon's NARROWEST pool — the class one. The
-    // primary-wide pool has no rivens of its own.
-    let class = info.mod_pools.last().cloned().unwrap_or_default();
+    let class = riven_class(info);
     // A slot may carry a `roll` OR a `value`. `value` is what you type off a
     // riven you already own; it is turned into the roll it implies and
     // clamped into the legal band, so a number from anywhere lands legal
