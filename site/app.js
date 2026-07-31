@@ -14,9 +14,6 @@ const WASM = !!window.WFSIM_WASM;
 // for the paren-named evolution icons).
 const IMG = (name) => {
   if (!name) return null;
-  // An absolute URL is already an answer. Riven art is only on the wiki (the
-  // CDN 404s for it), so those entries carry the whole address.
-  if (/^https?:\/\//.test(String(name))) return String(name);
   const n = encodeURIComponent(String(name));
   if (!WASM) return "/img/" + n; // absolute: the SPA also loads at /weapons/<name>
   return String(name).includes("(")
@@ -605,8 +602,6 @@ let rivenModCache = { key: null, list: [] };
 // picker and slot that already understands a mod understands these.
 function rivenMods() {
   const w = $("weapon").value;
-  // "rifle" -> "Rifle", which is how the wiki names the card art.
-  const cls = (weaponInfo(w).mod_class || "rifle").replace(/^./, (c) => c.toUpperCase());
   const raw = loadPresetList(RIVENS);
   const key = w + "|" + JSON.stringify(raw) + "|" + JSON.stringify(rivenNames);
   if (rivenModCache.key === key) return rivenModCache.list;
@@ -626,10 +621,10 @@ function rivenMods() {
       drain: 2 + 2 * (st.rank ?? 8),
       max_rank: 8,
       exilus: false,
-      // The riven card art, per weapon class. It is a wiki file rather than a
-      // CDN one — cdn.warframestat.us has no riven images, and DE's export
-      // points every riven type at the same veiled-mod icon.
-      image: `https://wiki.warframe.com/w/Special:FilePath/${cls}RivenMod.png`,
+      // The VEILED riven card — DE's own image for every riven type
+      // (`imageName` on the riven mod item), and the one on the CDN like
+      // every other mod picture (user, 2026-07-31).
+      image: "OmegaMod.png",
       // Every printed value is searchable, which is how you find the riven
       // with the crit damage on it without remembering what you called it.
       effects: lines.length ? lines : stats.filter((s) => s && s.id).map((s) => s.id.replace(/_/g, " ")),
