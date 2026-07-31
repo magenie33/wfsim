@@ -9,11 +9,19 @@
 //! shown value = base x 10 x (rank + 1) x disposition x config x roll
 //! ```
 //!
-//! `base` is DE's own per-stat number (`upgradeEntries` in the export). At
-//! rank 8 the `10 x (rank + 1)` term is 90, and that lands on the canonical
-//! riven values exactly — Damage 165%, Critical Chance 150%, Critical Damage
-//! 120%, Multishot 90% at disposition 1.0 — which is what identifies the
-//! scale as 90 rather than anything published.
+//! `base` is DE's own per-stat number (`upgradeEntries` in the export). The
+//! `10 x (rank + 1)` term is 90 at rank 8, and TWO independent sources agree
+//! on it: the wiki publishes its own base-value column and it is DE's number
+//! times 90, to four figures including the ugly ones — Damage 165%, Critical
+//! Chance 149.99%, Fire Rate 60.03% against 164.9997 / 149.9940 / 60.0300.
+//! Three values that are not round cannot match by coincidence.
+//!
+//! Every stat rolls its 0.9-1.1 INDEPENDENTLY — there is no shared per-riven
+//! quality. That is what makes a "god roll" a thing to hunt rather than one
+//! number, and it means the corner where every positive is maximal and the
+//! curse minimal is legal, merely astronomically unlikely. This builder is a
+//! CONSTRUCTOR, not a roller, so it must be able to reach that corner: it is
+//! the ceiling the optimizer wants.
 
 use std::sync::OnceLock;
 
@@ -40,28 +48,42 @@ pub struct Shape {
 }
 
 impl Shape {
-    /// Multiplier on every POSITIVE stat.
+    /// Multiplier on every POSITIVE stat — the wiki's table.
     ///
-    /// SOURCE CONFLICT, deliberately resolved. The wiki's table reads 0.99 /
-    /// 1.2375 / 0.75 / 0.9375 with maluses -0.495 / -0.75; the community
-    /// calculators read 1.0 / 1.25 / 0.75 / 0.9375 with -0.5 / -0.75. The two
-    /// agree exactly on the three-positive rows and differ by a flat 0.99 on
-    /// the two-positive ones.
+    /// Three published tables disagree and only one survives checking:
     ///
-    /// We take 1.0, because it is what makes `base x 90` land on FOUR round
-    /// canonical numbers at once (165 / 150 / 120 / 90). Under 0.99 they would
-    /// be 163.35 / 148.5 / 118.8 / 89.1, and four stats do not miss round
-    /// numbers by the same 1% by coincidence. Still unmeasured — one in-game
-    /// riven with a known roll settles it.
+    /// - **wiki**: 0.99 / 1.2375 / 0.75 / 0.9375, maluses -0.495 / -0.75.
+    ///   Stated verbatim as a table, and internally consistent — 1.2375 is
+    ///   exactly 0.99 x 1.25 and 0.9375 exactly 0.75 x 1.25, so a curse pays
+    ///   the positives 25% in both rows. A typo would not propagate like that.
+    /// - "community calculators read 1.0 / 1.25": could not be confirmed on
+    ///   any page. semlar's calculator computes client-side and states no
+    ///   constants; the claim only ever appeared in search summaries.
+    /// - codingace: 1.30 / 1.10 / 0.90 by positive COUNT with no curse row.
+    ///   It also has a "1 positive" case, which weapon rivens do not roll, so
+    ///   its table is describing something else.
+    ///
+    /// We take the wiki's, as the only one verified from a primary source.
+    ///
+    /// AN EARLIER VERSION OF THIS CODE TOOK 1.0, arguing that it made
+    /// `base x 90` land on round canonical numbers (165 / 150 / 120 / 90).
+    /// That argument was wrong: the wiki publishes its own base-value column
+    /// and it IS `base x 90` — Damage 165%, Critical Chance 149.99%, Fire Rate
+    /// 60.03%, matching DE's export to four figures including the ugly ones.
+    /// So those numbers are the BASE, reached before any config multiplier,
+    /// and their roundness says nothing about it.
+    ///
+    /// What remains is a 1% uncertainty on two-positive rivens, and one
+    /// in-game riven with a known roll settles it.
     pub fn positive_mult(&self) -> f64 {
         match (self.positives, self.curse) {
-            (2, false) => 1.0,
-            (2, true) => 1.25,
+            (2, false) => 0.99,
+            (2, true) => 1.2375,
             (3, false) => 0.75,
             (3, true) => 0.9375,
             // Not a shape the game rolls; treated as plain so a caller that
             // constructs one still gets a number instead of a panic.
-            _ => 1.0,
+            _ => 0.99,
         }
     }
 
@@ -70,7 +92,7 @@ impl Shape {
         if self.positives >= 3 {
             -0.75
         } else {
-            -0.5
+            -0.495
         }
     }
 
@@ -360,21 +382,30 @@ mod tests {
         assert!(pool("nonexistent").is_empty());
     }
 
-    /// The scale is 90 at rank 8, and it is 90 because THIS is what it
-    /// produces: the four canonical riven numbers, exactly, at disposition
-    /// 1.0 with two positives and no curse.
+    /// The scale is 90 at rank 8, and TWO sources say so. DE's export gives
+    /// the base; the wiki publishes its own "base value" column, and that
+    /// column IS `base x 90`. The check is the UGLY entries — 149.99 and
+    /// 60.03 are not round, so matching them to four figures is not luck.
+    ///
+    /// Note what this test does NOT do: it does not apply a config
+    /// multiplier. These are BASE values, reached before the shape is known,
+    /// which is precisely why their roundness says nothing about whether the
+    /// two-positive multiplier is 0.99 or 1.0.
     #[test]
-    fn the_canonical_values_fall_out_at_rank_8() {
-        let s = spec(&["damage", "critical_chance"], None, 8);
+    fn the_scale_is_90_and_the_wikis_base_column_agrees() {
         let by = |id: &str| pool("rifle").iter().find(|x| x.id == id).unwrap();
-        for (id, want) in [
-            ("damage", 1.65),
-            ("critical_chance", 1.50),
-            ("critical_damage", 1.20),
-            ("multishot", 0.90),
+        for (id, wiki_pct) in [
+            ("damage", 165.00),
+            ("critical_chance", 149.99),
+            ("fire_rate", 60.03),
+            ("critical_damage", 120.00),
+            ("multishot", 90.00),
         ] {
-            let v = s.value_of(by(id), 1.0, true, 1.0);
-            assert!((v - want).abs() < 5e-4, "{id}: {v:.4}, expected {want}");
+            let ours = by(id).base * 90.0 * 100.0;
+            assert!(
+                (ours - wiki_pct).abs() < 0.01,
+                "{id}: DE base x 90 = {ours:.4}%, wiki publishes {wiki_pct}%"
+            );
         }
     }
 
@@ -398,14 +429,17 @@ mod tests {
         let three = spec(&["damage", "multishot", "critical_chance"], None, 8);
 
         let d = |s: &RivenSpec| s.value_of(by("damage"), 1.0, true, 1.0);
-        assert!((d(&two) - 1.65).abs() < 5e-4);
-        assert!((d(&two_cursed) - 1.65 * 1.25).abs() < 5e-4, "a curse pays the positives");
+        assert!((d(&two) - 1.65 * 0.99).abs() < 5e-4);
+        // A curse pays the positives exactly 25%, in both shapes.
+        assert!((d(&two_cursed) - 1.65 * 0.99 * 1.25).abs() < 5e-4);
         assert!((d(&three) - 1.65 * 0.75).abs() < 5e-4, "a third positive costs 25%");
+        let three_cursed = spec(&["damage", "multishot", "critical_chance"], Some("weapon_recoil"), 8);
+        assert!((d(&three_cursed) - 1.65 * 0.75 * 1.25).abs() < 5e-4);
 
         // The curse itself: negative multiplier, so the stat inverts.
         let c = two_cursed.value_of(by("multishot"), 1.0, false, 1.0);
         assert!(c < 0.0, "a curse is negative: {c}");
-        assert!((c + 0.90 * 0.5).abs() < 5e-4);
+        assert!((c + 0.90 * 0.495).abs() < 5e-4);
     }
 
     /// Disposition is the WEAPON's, so one riven reads differently on two.
@@ -414,7 +448,7 @@ mod tests {
         let by = |id: &str| pool("rifle").iter().find(|x| x.id == id).unwrap();
         let s = spec(&["damage", "multishot"], None, 8);
         let torid = s.value_of(by("damage"), 1.0, true, 1.3);
-        assert!((torid - 1.65 * 1.3).abs() < 5e-4, "Torid at 1.3: {torid:.3}");
+        assert!((torid - 1.65 * 0.99 * 1.3).abs() < 5e-4, "Torid at 1.3: {torid:.3}");
     }
 
     #[test]
@@ -424,7 +458,7 @@ mod tests {
         assert_eq!(m.base_drain, 18, "rank 8 costs 18");
         assert_eq!(m.max_rank, MAX_RANK);
         assert_eq!(m.effects.len(), 3, "two positives and the curse");
-        assert!(matches!(m.effects[0], ModEffect::BaseDamage(v) if (v - 1.65 * 1.3 * 1.25).abs() < 1e-3));
+        assert!(matches!(m.effects[0], ModEffect::BaseDamage(v) if (v - 1.65 * 1.2375 * 1.3).abs() < 1e-3));
     }
 
     /// Illegal rivens are refused by REASON, so the builder can say which
@@ -453,6 +487,41 @@ mod tests {
         let mut alien = spec(&["damage", "multishot"], None, 8);
         alien.positives[1].id = "not_a_stat".into();
         assert!(alien.illegal().iter().any(|r| r.contains("not a rifle riven stat")));
+    }
+
+    /// Every stat rolls its band INDEPENDENTLY, so the corner where all three
+    /// positives are maximal and the curse minimal is a legal riven — merely
+    /// astronomically unlikely (user, 2026-07-31: "can they all be max at
+    /// once?"). It has to be constructible, because it is the CEILING, which
+    /// is exactly the riven an optimizer wants to know about.
+    #[test]
+    fn the_god_roll_corner_is_legal_and_is_the_ceiling() {
+        let by = |id: &str| pool("rifle").iter().find(|x| x.id == id).unwrap();
+        let mut god = spec(&["damage", "multishot", "critical_chance"], Some("weapon_recoil"), 8);
+        for s in &mut god.positives {
+            s.roll = ROLL_MAX;
+        }
+        god.curse.as_mut().unwrap().roll = ROLL_MIN;
+        assert!(god.illegal().is_empty(), "{:?}", god.illegal());
+
+        // Nothing legal beats it on a positive...
+        let mid = spec(&["damage", "multishot", "critical_chance"], Some("weapon_recoil"), 8);
+        assert!(
+            god.value_of(by("damage"), ROLL_MAX, true, 1.3)
+                > mid.value_of(by("damage"), 1.0, true, 1.3)
+        );
+        // ...and nothing legal has a gentler curse: the curse is negative, so
+        // the smallest roll is the least harmful.
+        let worst = mid.value_of(by("weapon_recoil"), ROLL_MAX, false, 1.3);
+        let best = god.value_of(by("weapon_recoil"), ROLL_MIN, false, 1.3);
+        assert!(best.abs() < worst.abs(), "min roll is the kindest curse");
+
+        // Independence is the point: two stats at different rolls is legal,
+        // which it would not be if one quality applied to the whole riven.
+        let mut mixed = spec(&["damage", "multishot"], None, 8);
+        mixed.positives[0].roll = ROLL_MIN;
+        mixed.positives[1].roll = ROLL_MAX;
+        assert!(mixed.illegal().is_empty());
     }
 
     /// The name is GENERATED, and it is generated from the positives only.

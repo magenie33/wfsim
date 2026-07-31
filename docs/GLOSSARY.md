@@ -60,6 +60,39 @@ conflate them (decision 2026-07-24):
   identifies such weapons). Each entry simulates standalone; the live
   weapon-1→weapon-2 transformation cycle is future work.
 
+### FORMS: the closed vocabulary a weapon registers (2026-07-31)
+
+The last two rows above are both **forms** — an attack profile with its own
+weapon entry — and every entry **registers** which one it is with a required
+`form:` field. Weapons are operated differently one from the next, but the set
+of MODES they are operated in is small and shared, so the vocabulary is CLOSED
+(`engine::weapons_data::FormKind`) and an unregistered name is a hard error:
+
+| `form:` | what it is | who |
+|---|---|---|
+| `base` | the ordinary attack, by definition the UNCHARGED one — nearly every weapon has one | Verglas Prime (its only form), Torid / Laetum / Dual Toxocyst (the form they transform out of) |
+| `charged` | a charge-trigger weapon's fully drawn shot; the draw REPLACES the fire-rate cadence | Cernos Prime |
+| `incarnon` | the gauge-backed transformed form | the `*_incarnon` entries |
+
+`alt_fire` is the obvious next kind; it is deliberately NOT declared until a
+weapon in `data/` registers it.
+
+**A form is not a mode of the run.** How you ENTER a form is a property of the
+kind, not of the weapon: an `incarnon` form is *gauge-switched* (a meter to
+fill and two transmute animations to play), while `base` ↔ `charged` is a free
+per-trigger-pull choice. Only a gauge-switched form gives the simulator a
+two-form **cycle** to run, which is why the registry publishes `has_cycle`
+beside the form list instead of listing "Incarnon cycle" as if it were a form.
+The sim request carries `form` = a registered kind (or `incarnon_cycle` for the
+mode); an unknown value falls back to the weapon's DEFAULT form — the roster
+entry, which is the one the wiki module marks with `_TooltipAttackDisplay`.
+
+Before this was data, the registry advertised a fake form called `primary` for
+every non-Incarnon weapon while the simulator understood only
+`base`/`incarnon`/cycle, so asking for the advertised form built a cycle out of
+a borrowed gauge — a weapon with nothing to transform into paid 2.35 s + 1.0 s
+of animation every 9 weakpoint hits.
+
 ## Firing and hits
 
 - **Shot** — one activation of the weapon's trigger: the rounds produced by a

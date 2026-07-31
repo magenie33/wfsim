@@ -218,8 +218,13 @@ ui:
   "Max Charges": 最大充能
   "Transmute In": 灵化切入
   "Transmute Out": 灵化切出
+  # The FORM vocabulary (engine FormKind) — a weapon registers one of these
+  # per entry, so the labels are shared by every weapon that registers them.
   "Base Form": 基础形态
+  "Charged Shot": 蓄力射击
   "Incarnon Form": 灵化形态
+  "Incarnon cycle": 灵化循环
+  "only": 单独        # "<form> only" — one form, no cycle
   "Result": 结果
   "Crit rate": 暴击率
   "Orange+ crit": 橙暴以上

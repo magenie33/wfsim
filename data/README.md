@@ -80,7 +80,7 @@ sharing requirement: it is a pure move — no referencing entry changes.
 |---|---|---|
 | `perks/` | grantors (weapon passives; loaded by `engine::weapons_data::perks`) | `trigger`, `scope`, `duration_seconds`, `max_stacks`, `grants` (inline effect block) |
 | `arcanes/` | arcane **items** | `rarity`, `max_rank`, `arcanes_to_max`, `drop_chance`, `perk` |
-| `weapons/` | weapons | `forms` (multi-form), `perks` (perk id list), `incarnon_evolutions` |
+| `weapons/` | weapons | **`form`** (REQUIRED — which form this entry is, from the closed vocabulary `base` / `charged` / `incarnon`; see [`../docs/GLOSSARY.md`](../docs/GLOSSARY.md) "FORMS"), `transform_group` (the entries that are forms of ONE weapon), `perks` (perk id list), `incarnon_evolutions` |
 | `mods/` | mods | `polarity`, `base_drain`/`max_rank` (drain = base+rank), bucketed `effects` with `per_rank`, **`family` + `incompatible_with`** (variants of one mod are mutually exclusive - the wiki module's `Incompatible` field, machine-readable) |
 | `debuffs/` | **debuffs** applied by procs — same shape as `buffs/`, scoped to the target (a proc is only the trigger; see BUFFS.md "Debuffs") | `applied_by.damage_type`, `duration_seconds`, `max_stacks`, `stack_overflow`, `per_stack_modifiers`, `modifier_caps/conditions`, `cc_effects`, `aliases`, `internal_name` |
 | `enemies/` | enemies (loaded by `engine::enemy_data`; `custom/` holds synthetic test targets) | `stats` (base values at `base_level`), `body_parts` (multiplier / `is_head` / `crit_bonus`; aim weights are scenario-side), `scaling_faction`, `can_be_eximus`, `faction_damage_override`, `synthetic`, raw `mechanics` |

@@ -1765,7 +1765,6 @@ function renderSim() {
   if (!META) return;
   renderSimBuild();
   const w = weaponInfo($("weapon").value);
-  if (!w.uses_evo2) sim.form = "base"; // non-transforming weapons: single form
   const enemies = META.enemies || [];
   const en = enemies.find((e) => e.id === sim.enemy) || enemies[0];
   if (en) sim.enemy = en.id;
@@ -1781,12 +1780,22 @@ function renderSim() {
   // fight in, whether you hold aim, and how often you land the head are all
   // choices the player makes — and aiming GATES buffs, so it belongs here
   // rather than mixed into the run settings (user, 2026-07-30).
-  const formField = w.uses_evo2 ? `
+  // The FORMS are the weapon's own (registered in data/weapons, served by
+  // /api/meta) — not a hardcoded Incarnon triple. The two-form CYCLE is not a
+  // form but a MODE over them, so it is listed first and only when the weapon
+  // has something to transform into (`has_cycle`). A weapon with one form and
+  // no cycle has nothing to choose, so no selector is drawn.
+  const formOpts = [
+    ...(w.has_cycle ? [["incarnon_cycle", tr("Incarnon cycle")]] : []),
+    ...(w.forms || []).map((f) => [f.id, w.has_cycle ? `${tr(f.name)} ${tr("only")}` : tr(f.name)]),
+  ];
+  // A stale preset (or another weapon's choice) can name a form this weapon
+  // does not have — fall back to the first option rather than sending it.
+  if (formOpts.length && !formOpts.some(([id]) => id === sim.form)) sim.form = formOpts[0][0];
+  const formField = formOpts.length > 1 ? `
     <label>${escHtml(tr("Form"))}
-      <select data-k="form">
-        <option value="incarnon_cycle" ${sim.form === "incarnon_cycle" ? "selected" : ""}>Incarnon cycle</option>
-        <option value="incarnon" ${sim.form === "incarnon" ? "selected" : ""}>Incarnon only</option>
-        <option value="base" ${sim.form === "base" ? "selected" : ""}>Base only</option>
+      <select data-k="form">${formOpts.map(([id, label]) =>
+        `<option value="${id}" ${sim.form === id ? "selected" : ""}>${escHtml(label)}</option>`).join("")}
       </select></label>` : "";
   $("sim-technique").innerHTML = `
     ${formField}

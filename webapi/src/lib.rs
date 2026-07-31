@@ -361,6 +361,12 @@ pub fn meta_json() -> Value {
                     .map(|p| p.map(|x| format!("{x:?}")))
                     .collect::<Vec<_>>(),
                 "forms": w.forms.iter().map(|(id, name)| json!({"id": id, "name": name})).collect::<Vec<_>>(),
+                // Is there a form to TRANSFORM into? Then the sim can run the
+                // real two-form loop as a MODE over the forms above; without
+                // one the weapon is fired in a single form (`forms` may still
+                // hold several — charged vs uncharged is a free choice, not a
+                // transformation).
+                "has_cycle": w.has_cycle,
                 "evolutions": (1u32..=wfsim_engine::evolutions_data::tier_count(evo_group(w)))
                     .map(|tier| json!({
                         "tier": tier,
