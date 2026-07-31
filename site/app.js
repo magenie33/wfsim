@@ -655,10 +655,35 @@ async function resolveRiven(pending) {
   renderRivenCard();
 }
 
+// The collection, guaranteed non-empty and with a live active name. There is
+// ALWAYS one riven, exactly as the builder always has "preset 1": a bar whose
+// only option is "+ new" makes the visitor do a step the page could have done
+// (user, 2026-07-31), and the first one is the empty card they were going to
+// fill in anyway.
+function ensureRivenList() {
+  let ps = loadPresetList(RIVENS);
+  if (!ps.length) {
+    ps = [{ name: "riven 1", savedAt: Date.now(), state: blankRiven() }];
+    storePresetList(RIVENS, ps);
+  }
+  if (!ps.some((p) => p.name === activeRivenName())) {
+    activeRiven = ps[0].name;
+    localStorage.setItem(presetActiveKey(RIVENS), activeRiven);
+  }
+  return ps;
+}
+
 function renderRivens() {
   if (!META || !$("riven-block")) return;
   const w = weaponInfo($("weapon").value);
-  if (!riven || riven.__weapon !== w.id) { riven = blankRiven(); riven.__weapon = w.id; }
+  if (!riven || riven.__weapon !== w.id) {
+    // Arriving (or reloading) opens the ACTIVE riven, not a blank one — the
+    // chip said "riven 1" while the editor showed an empty card, which is the
+    // bar and the editor disagreeing about which document is open.
+    const ps = ensureRivenList();
+    const cur = ps.find((p) => p.name === activeRivenName());
+    riven = { ...JSON.parse(JSON.stringify((cur && cur.state) || blankRiven())), __weapon: w.id };
+  }
   $("riven-sub").textContent =
     `${w.name} · disposition ${(w.disposition || 1).toFixed(2)} — every value below is already scaled by it`;
   renderRivenPresetBar();
@@ -728,9 +753,13 @@ function renderRivenStats() {
 // is picked the way everything else on this page is picked.
 function openRivenPicker(anchor, slot) {
   closePopovers();
-  const pop = $("mod-popover");
-  const search = $("mod-search");
-  const menu = $("mod-menu");
+  // ITS OWN popover. Borrowing the mod picker's nodes dragged the mod
+  // picker's sort header in with them, and using it rendered the mod list
+  // into this menu (user, 2026-07-31). Separate elements is the only
+  // isolation that cannot leak.
+  const pop = $("riven-popover");
+  const search = $("riven-search");
+  const menu = $("riven-menu");
   const at = slot === "curse" ? riven.curse : riven.positives[Number(slot)];
   const used = new Set(riven.positives.map((x) => x.id).concat(riven.curse ? [riven.curse.id] : []));
   const draw = (q) => {
@@ -740,12 +769,12 @@ function openRivenPicker(anchor, slot) {
       // and can never be the curse.
       .filter((x) => (!used.has(x.id) || x.id === at.id) && (slot !== "curse" || x.curse))
       .filter((x) => !f || rivenStatName(x).toLowerCase().includes(f))
-      .map((x) => `<div class="opt ${x.id === at.id ? "search" : ""}" data-id="${x.id}">
+      .map((x) => `<div class="opt ${x.id === at.id ? "search" : ""}" data-rvid="${x.id}">
         <div class="info"><div class="mn">${escHtml(rivenStatName(x))}</div>
         <div class="me">${x.modeled ? "" : "<div>not modeled — it rolls and it names the riven, but it adds no damage</div>"}</div></div>
       </div>`).join("") || `<div class="opt dis">no matching stat</div>`;
-    menu.querySelectorAll("[data-id]").forEach((el) => el.onclick = () => {
-      at.id = el.dataset.id;
+    menu.querySelectorAll("[data-rvid]").forEach((el) => el.onclick = () => {
+      at.id = el.dataset.rvid;
       closePopovers();
       markRivenDirty();
       renderRivens();
@@ -854,7 +883,9 @@ const activeRivenName = () => activeRiven || localStorage.getItem(presetActiveKe
 function renderRivenPresetBar() {
   const bar = $("preset-bar-rivens");
   if (!bar) return;
+  ensureRivenList();
   renderPresetBarIn(bar, {
+    newName: (n) => "riven " + n,
     domain: RIVENS,
     label: tr("Rivens"),
     hint: "per weapon — a riven's values are its weapon's disposition applied to a roll",
@@ -1260,7 +1291,9 @@ function renderPresetBarIn(bar, cfg) {
   addBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     const ps2 = cfg.load();
-    const name = freeName(ps2, (n) => "preset " + n);
+    // "preset N" everywhere except where the thing has its own noun — the
+    // riven bar names them "riven N", because that is what they are.
+    const name = freeName(ps2, cfg.newName || ((n) => "preset " + n));
     // Activate FIRST so everything that renders during apply() (e.g. the
     // sim's per-preset stored result) already sees the NEW preset; then
     // apply the blank and store the resulting live snapshot, so the stored
@@ -1718,7 +1751,13 @@ function buildSlot(i) {
 const slotEl = (i) => i === EXILUS ? $("exilus").firstElementChild : $("mod-slots").children[i];
 
 // ---- popovers ----
-function closePopovers() { $("mod-popover").hidden = true; $("slot-menu").hidden = true; $("arcane-popover").hidden = true; }
+function closePopovers() {
+  $("mod-popover").hidden = true;
+  $("slot-menu").hidden = true;
+  $("arcane-popover").hidden = true;
+  const rv = $("riven-popover");
+  if (rv) rv.hidden = true;
+}
 function place(pop, anchor) {
   const r = anchor.getBoundingClientRect();
   pop.hidden = false;

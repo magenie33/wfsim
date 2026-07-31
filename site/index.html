@@ -224,6 +224,14 @@
     <div id="picker-tools" class="picker-tools"></div>
     <div id="mod-menu" class="combo-menu"></div>
   </div>
+  <!-- The riven stat picker has its OWN popover. It borrowed the mod
+       picker's nodes at first, and the mod picker's sort header came with
+       them — clicking it rendered the MOD list into the riven menu. Two
+       features sharing one element is not a picker, it is a collision. -->
+  <div id="riven-popover" class="popover" hidden>
+    <div class="addbar"><span>🔍</span><input id="riven-search" type="text" placeholder="Search a riven stat…" autocomplete="off" /></div>
+    <div id="riven-menu" class="combo-menu"></div>
+  </div>
   <div id="slot-menu" class="popover menu" hidden></div>
   <div id="arcane-popover" class="popover" hidden>
     <div class="addbar"><span>🔍</span><input id="arcane-search" type="text" placeholder="Search arcane / effect…" autocomplete="off" /></div>
