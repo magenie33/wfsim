@@ -21,7 +21,7 @@ use std::sync::Mutex;
 
 use wfsim_engine::damage::DamageType;
 use wfsim_engine::dummy::{
-    monte_carlo, BodyPart, BuffConfig, DummyParams, LockMode, Summary, TargetParams,
+    monte_carlo, BodyPart, BuffConfig, BuffLock, DummyParams, LockMode, Summary, TargetParams,
 };
 use wfsim_engine::loadout::{resolve_with, ModDef, ResolvedPanel, StackPolicy, WeaponBase};
 use wfsim_engine::mods::{plan_forma, FormaPlan, PlannedMod, Polarity};
@@ -595,6 +595,11 @@ pub struct Scenario {
     pub incarnon_cycle: bool,
     /// Frenzy's per-buff lock setting for the base-form phase.
     pub frenzy_lock: LockMode,
+    /// The same setting for a SINGLE-form run, where the lock is a vector on
+    /// the params rather than something baked into the cycle. Frenzy is the
+    /// weapon's passive and persists across its forms, so a build scored in
+    /// one form keeps it — a cycle is not what grants it.
+    pub frenzy_locks: Vec<BuffLock>,
     /// Does the weapon under search carry the Frenzy passive? It is a
     /// per-weapon perk, not a constant — see weapons_data::has_perk.
     pub frenzy: bool,
@@ -616,23 +621,35 @@ pub fn evaluate(
     runs: u32,
     seed: u64,
 ) -> Summary {
-    let mut params = if s.incarnon_cycle {
-        DummyParams::incarnon_cycle_from_panels(
+    // The cycle needs a form to transform INTO, and whether this candidate
+    // has one is the candidate's own question: the Incarnon form is unlocked
+    // by an evolution and evolutions are a search dimension, so one scope can
+    // hold both sets that transform and sets that cannot. A candidate
+    // enumerated without a second form is fired in the one form it has.
+    let mut params = match (s.incarnon_cycle, c.base_panel.as_ref()) {
+        (true, Some(base)) => DummyParams::incarnon_cycle_from_panels(
             &c.panel,
-            c.base_panel.as_ref().expect("cycle needs the base panel"),
+            base,
             s.frenzy,
             s.frenzy_lock,
             s.target.clone(),
             s.body_parts.clone(),
             s.duration_secs,
-        )
-    } else {
-        DummyParams::from_panel(
-            &c.panel,
-            s.target.clone(),
-            s.body_parts.clone(),
-            s.duration_secs,
-        )
+        ),
+        _ => {
+            let mut d = DummyParams::from_panel(
+                &c.panel,
+                s.target.clone(),
+                s.body_parts.clone(),
+                s.duration_secs,
+            );
+            // Frenzy is the WEAPON's passive: it rides whichever form is
+            // fired (the Sim's rule). Dropping it here scored a base-form
+            // Dual Toxocyst without its own x2.5 fire rate.
+            d.frenzy = s.frenzy;
+            d.locked_buffs = if s.frenzy { s.frenzy_locks.clone() } else { Vec::new() };
+            d
+        }
     };
     params.arcane = arcane.clone();
     // Per-buff configured policy (weapon-scoped; recurses into the cycle base
@@ -1638,6 +1655,7 @@ mod tests {
             duration_secs: 2.0,
             incarnon_cycle: false,
             frenzy_lock: LockMode::Initial(0),
+            frenzy_locks: Vec::new(),
             frenzy: false,
             buff_cfg: Default::default(),
             aiming: true,
@@ -1715,6 +1733,7 @@ mod tests {
             duration_secs: 2.0,
             incarnon_cycle: false,
             frenzy_lock: LockMode::Initial(0),
+            frenzy_locks: Vec::new(),
             frenzy: false,
             buff_cfg: Default::default(),
             aiming: true,

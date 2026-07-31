@@ -89,9 +89,11 @@ struct WeaponInfo {
     subtype: String,
     sentinel: bool,
     /// The forms this weapon REGISTERS (`data/weapons/*.yaml` `form:`), default
-    /// first: `(wire id, display name)`. Data-driven — it used to be hardcoded
-    /// as "the three Incarnon options, or a single fake form called `primary`".
-    forms: Vec<(&'static str, String)>,
+    /// first: `(wire id, display name, is the arsenal's default)`. Data-driven
+    /// — it used to be hardcoded as "the three Incarnon options, or a single
+    /// fake form called `primary`". The default travels with the list because
+    /// it is the form a weapon is FIRED in when nothing else is asked for.
+    forms: Vec<(&'static str, String, bool)>,
     /// Does a form have to be TRANSFORMED into (gauge + transmute animations)?
     /// Only then is there a two-form cycle to simulate; without it the weapon
     /// is fired in one form and asking for a cycle is meaningless.
@@ -152,7 +154,7 @@ fn weapons() -> &'static [WeaponInfo] {
                 // as `has_cycle`.
                 let forms = wfsim_engine::weapons_data::forms_of(&s.id)
                     .into_iter()
-                    .map(|f| (f.kind.id(), f.kind.label().to_string()))
+                    .map(|f| (f.kind.id(), f.kind.label().to_string(), f.is_default))
                     .collect();
                 WeaponInfo {
                     id: s.id.clone(),
@@ -464,7 +466,9 @@ pub fn meta_json() -> Value {
                 "innate_polarities": innate_slots_for(&w.id).iter()
                     .map(|p| p.map(|x| format!("{x:?}")))
                     .collect::<Vec<_>>(),
-                "forms": w.forms.iter().map(|(id, name)| json!({"id": id, "name": name})).collect::<Vec<_>>(),
+                "forms": w.forms.iter()
+                    .map(|(id, name, def)| json!({"id": id, "name": name, "is_default": def}))
+                    .collect::<Vec<_>>(),
                 // Is there a form to TRANSFORM into? Then the sim can run the
                 // real two-form loop as a MODE over the forms above; without
                 // one the weapon is fired in a single form (`forms` may still
@@ -590,7 +594,11 @@ pub fn meta_json() -> Value {
         // effect text (like the mod/arcane cards).
         "defaults": {
             "weapon": default_weapon_id(),
-            "form": "incarnon_cycle",
+            // The weapon's OWN default form, whatever that is (the arsenal's
+            // form, `default_form` in data/weapons). Not the Incarnon cycle:
+            // most weapons are played by firing, reloading and firing again,
+            // and a cycle is a technique you choose (user, 2026-07-31).
+            "form": "default",
             // The page starts EMPTY (user decision): no mods, no arcane, no
             // evolutions — a bare weapon. Reference builds live as presets /
             // data/builds, not as the initial state.
@@ -1994,7 +2002,7 @@ pub fn simulate_json(v: &Value) -> Value {
     // the request may still switch it off (or configure it via buff_cfg).
     // The cycle used to ignore this entirely — its knob was dead.
     let frenzy_single = frenzy_single && has_frenzy;
-    let form = get_str(v, "form", "incarnon_cycle");
+    let form = get_str(v, "form", "default");
     let evos = match chosen_evolutions(v, info) {
         Ok(e) => e,
         Err(e) => return err_json(e),
@@ -2017,9 +2025,10 @@ pub fn simulate_json(v: &Value) -> Value {
     // transforming on a borrowed gauge (9 weakpoint hits, 2.35 s + 1.0 s of
     // animation), and the dead time came straight off its DPS.
     let registered = wfsim_engine::weapons_data::forms_of(&info.id);
-    let run_cycle = info.has_cycle
-        && registered.iter().all(|f| f.kind.id() != form)
-        && incarnon_id(info).is_some();
+    // Asked for BY NAME. It used to be "any form string this weapon does not
+    // register", which made the cycle the destination of every typo and of
+    // the default — and the default is now the weapon's own form.
+    let run_cycle = form == "incarnon_cycle" && info.has_cycle && incarnon_id(info).is_some();
     // The single form to fire: the requested kind if this weapon registers it,
     // else its default (which is what an unknown or stale preset value gets).
     let single_form = registered
@@ -2395,6 +2404,12 @@ pub struct OptimizePlan {
     /// The form the cycle transforms OUT of. `Some` only when the run is the
     /// two-form cycle, which is a MODE over forms rather than a form.
     cycle_from: Option<String>,
+    /// The evolution that UNLOCKS the second form, and the form to fall back
+    /// to without it. Evolutions are a search dimension, so one scope can
+    /// hold sets that transform and sets that cannot — which of the two a
+    /// candidate is depends on its own set, not on the run.
+    unlock_evo: Option<String>,
+    untransformed_id: String,
     /// Worker-thread budget; 0 = auto (all cores minus two).
     threads: usize,
 }
@@ -2640,11 +2655,9 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // just has one, and a bow has two that are not a cycle. The optimizer now
     // assembles the same way the builder and the sim do — from the weapon's
     // own registered forms.
-    let form = get_str(v, "form", "incarnon_cycle");
+    let form = get_str(v, "form", "default");
     let registered = wfsim_engine::weapons_data::forms_of(&info.id);
-    let run_cycle = info.has_cycle
-        && registered.iter().all(|f| f.kind.id() != form)
-        && incarnon_id(info).is_some();
+    let run_cycle = form == "incarnon_cycle" && info.has_cycle && incarnon_id(info).is_some();
     let fire_id = if run_cycle {
         incarnon_id(info).unwrap_or(&info.id).to_string()
     } else {
@@ -2659,6 +2672,16 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             .to_string()
     };
     let cycle_from = run_cycle.then(|| info.id.clone());
+    // Tier 1 is the Incarnon Form unlock; an evolution set without it is a
+    // weapon that cannot transform, exactly as the builder shows it.
+    let unlock_evo = form_unlock_evo(info).map(String::from);
+    let untransformed_id = registered
+        .iter()
+        .find(|f| f.is_default && !f.kind.is_gauge_switched())
+        .or_else(|| registered.iter().find(|f| !f.kind.is_gauge_switched()))
+        .map(|f| f.weapon_id)
+        .unwrap_or(&info.id)
+        .to_string();
 
     let scenario = Scenario {
         aiming,
@@ -2668,6 +2691,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         duration_secs: duration,
         incarnon_cycle: run_cycle,
         frenzy_lock,
+        frenzy_locks: frenzy_apply(buff_cfg.get("frenzy")).1,
         buff_cfg,
     };
 
@@ -2690,6 +2714,8 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         steel_path,
         fire_id,
         cycle_from,
+        unlock_evo,
+        untransformed_id,
         threads: v
             .get("threads")
             .and_then(|x| x.as_u64())
@@ -2804,6 +2830,8 @@ pub fn run_optimize_resumable(
         weapon_id,
         fire_id,
         cycle_from,
+        unlock_evo,
+        untransformed_id,
         threads,
     } = plan;
     // Compute budget: 0 = auto (all cores minus two — the machine must stay
@@ -2829,7 +2857,21 @@ pub fn run_optimize_resumable(
     // `parse_optimize`. A single-form weapon has NO second panel — handing
     // the enumerator a duplicate of the first would tell it there was a cycle
     // to simulate, and the scenario says there is not.
-    let forms_for = |refs: &[&str]| {
+    let forms_for = |set: &[String], refs: &[&str]| {
+        // Can THIS evolution set reach the second form? Without the unlock
+        // there is nothing to transform into, so the candidate is fired in
+        // the form it has and carries no second panel — which is what tells
+        // `evaluate` not to run a cycle for it.
+        let unlocked = match unlock_evo.as_deref() {
+            Some(u) => set.iter().any(|e| e == u),
+            None => true,
+        };
+        if !unlocked {
+            return (
+                WeaponBase::from_data(&untransformed_id, true, refs),
+                None,
+            );
+        }
         (
             WeaponBase::from_data(&fire_id, true, refs),
             cycle_from
@@ -2922,7 +2964,7 @@ pub fn run_optimize_resumable(
             break;
         }
         let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-        let (base, base_form) = forms_for(&refs);
+        let (base, base_form) = forms_for(set, &refs);
         let (mut c, _stats, complete) = enumerate_candidates_observed(
             &pool,
             &base,
@@ -2983,7 +3025,7 @@ pub fn run_optimize_resumable(
         for (ordered, variant, exilus, ai) in &r_alive {
             let Some(set) = evo_sets.get(*variant as usize) else { continue };
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-            let (base, base_form) = forms_for(&refs);
+            let (base, base_form) = forms_for(set, &refs);
             let Some(c) = wfsim_optimizer::rebuild_candidate(
                 &pool, &base, base_form.as_ref(), &innate, 60, scenario.aiming,
                 ordered, *variant, *exilus, &exilus_refs,
@@ -3113,7 +3155,7 @@ pub fn run_optimize_resumable(
             |emit| {
                 for (vi, set) in evo_sets.iter().enumerate() {
                     let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-                    let (base, base_form) = forms_for(&refs);
+                    let (base, base_form) = forms_for(set, &refs);
                     if !enumerate_candidates_each(
                         &pool,
                         &base,
@@ -3340,7 +3382,7 @@ mod form_tests {
     /// and separately whether any of them is transformed into.
     #[test]
     fn the_registry_publishes_each_weapons_own_forms() {
-        let ids = |w: &WeaponInfo| w.forms.iter().map(|(i, _)| *i).collect::<Vec<_>>();
+        let ids = |w: &WeaponInfo| w.forms.iter().map(|(i, _, _)| *i).collect::<Vec<_>>();
         let get = |id: &str| weapons().iter().find(|w| w.id == id).expect(id);
 
         let bow = get("cernos_prime");

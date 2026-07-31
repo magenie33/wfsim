@@ -258,7 +258,7 @@ let evoSel = { 1: null, 2: null, 3: null, 4: null };
 // what the sim silently assumed before the knob existed, so no stored preset
 // changes meaning.
 let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, aiming: true,
-  duration: 120, runs: 100, form: "incarnon_cycle", buffs: {} };
+  duration: 120, runs: 100, form: "default", buffs: {} };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
 // Optimizer scope, 8 + 1 slots in TWO blocks: `mods` (id -> "search"|"fixed")
@@ -279,7 +279,7 @@ let optPrefs = { sort: "name", dir: "asc", pol: null };
 // panel — two independent configs that merely look alike; identical
 // parameters give identical numbers, verified 2026-07-28).
 let optSim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, aiming: true,
-  duration: 120, form: "incarnon_cycle" };
+  duration: 120, form: "default" };
 // The FINAL-ROUND CONTRACT (user): the funnel's last round is guaranteed
 // `finalists` candidates × `final_runs` runs. Persisted; survives weapon
 // switches (it is a run setting, not weapon scope).
@@ -2348,6 +2348,11 @@ function renderSimBuild() {
   box.innerHTML = parts.join("");
 }
 
+// The weapon's own default form (`default_form` in data/weapons) — the
+// arsenal's form, and what "keep firing, reload, keep firing" means.
+const defaultFormId = (w, formOpts) =>
+  (((w || {}).forms || []).find((f) => f.is_default) || {}).id || (formOpts[0] || [])[0] || "base";
+
 function renderSim() {
   if (!META) return;
   renderSimBuild();
@@ -2378,7 +2383,12 @@ function renderSim() {
   ];
   // A stale preset (or another weapon's choice) can name a form this weapon
   // does not have — fall back to the first option rather than sending it.
-  if (formOpts.length && !formOpts.some(([id]) => id === sim.form)) sim.form = formOpts[0][0];
+  // A stale preset (or another weapon's choice, or the "default" seed) names
+  // a form this weapon does not list — fall back to the weapon's OWN default
+  // form. NOT to the first option: that is the Incarnon cycle where there is
+  // one, and the cycle is a technique you choose, not what a weapon does
+  // (user, 2026-07-31).
+  if (formOpts.length && !formOpts.some(([id]) => id === sim.form)) sim.form = defaultFormId(w, formOpts);
   const formField = formOpts.length > 1 ? `
     <label>${escHtml(tr("Form"))}
       <select data-k="form">${formOpts.map(([id, label]) =>
@@ -2769,7 +2779,7 @@ function renderOptEnemy() {
       ...(w.has_cycle ? [["incarnon_cycle", tr("Incarnon cycle")]] : []),
       ...(w.forms || []).map((f) => [f.id, w.has_cycle ? `${tr(f.name)} ${tr("only")}` : tr(f.name)]),
     ];
-    if (formOpts.length && !formOpts.some(([id]) => id === optSim.form)) optSim.form = formOpts[0][0];
+    if (formOpts.length && !formOpts.some(([id]) => id === optSim.form)) optSim.form = defaultFormId(w, formOpts);
     const formField = formOpts.length > 1 ? `
     <label>${escHtml(tr("Form"))}
       <select data-k="form">${formOpts.map(([id, label]) =>
