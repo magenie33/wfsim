@@ -2859,3 +2859,48 @@ pub fn run_optimize_resumable(
         "target": { "name": target_name, "level": level, "steel_path": steel_path },
     })
 }
+
+#[cfg(test)]
+mod asset_tests {
+    use super::*;
+
+    /// Every weapon, mod and arcane in `data/` must have an image entry.
+    ///
+    /// A missing one does not fail anything at runtime — it renders as
+    /// nothing, and the card just looks empty (Verglas Prime and ten mods
+    /// shipped that way, user 2026-07-31). The map is filled by
+    /// `scripts/gen_assets.py` from the committed WFCD export, so a failure
+    /// here is one command away from fixed, and this is what makes anyone
+    /// run it.
+    #[test]
+    fn every_data_entry_has_an_image() {
+        let a = assets();
+        let mut missing: Vec<String> = Vec::new();
+        for w in weapons() {
+            if !a.weapons.contains_key(&w.id) {
+                missing.push(format!("weapon {}", w.id));
+            }
+        }
+        for class in wfsim_engine::mods_data::classes() {
+            for m in wfsim_engine::mods_data::class_pool(class) {
+                if !a.mods.contains_key(m.id) {
+                    missing.push(format!("mod {}", m.id));
+                }
+            }
+        }
+        for slot in wfsim_engine::arcanes_data::slots() {
+            for arc in wfsim_engine::arcanes_data::slot_pool(slot) {
+                if !a.arcanes.contains_key(arc.id.as_str()) {
+                    missing.push(format!("arcane {}", arc.id));
+                }
+            }
+        }
+        assert!(
+            missing.is_empty(),
+            "no image in data/assets.yaml for {} entries: {}
+             run `python scripts/gen_assets.py --write`",
+            missing.len(),
+            missing.join(", ")
+        );
+    }
+}

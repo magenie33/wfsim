@@ -4,20 +4,23 @@
 # gitignored local tooling — catalogued in docs/DATA_SOURCES.md)
 
 weapons:
-  dual_toxocyst: DualToxocyst.png
-  dual_toxocyst_incarnon: DualToxocyst.png
-  laetum: ZarimanHeavyPistol.png
-  torid: Torid.png
   # An Incarnon FORM shows its BASE weapon's image, not the Genesis adapter
   # icon — the form is the same gun. Hand-set, because the generator resolves
   # "<weapon>_incarnon" to the adapter item (ToridIncarnonAdapter.png) and
   # cannot resolve laetum_incarnon at all.
-  torid_incarnon: Torid.png
+  dual_toxocyst: DualToxocyst.png
+  dual_toxocyst_incarnon: DualToxocyst.png
+  laetum: ZarimanHeavyPistol.png
   laetum_incarnon: ZarimanHeavyPistol.png
+  torid: Torid.png
+  torid_incarnon: Torid.png
+  verglas_prime: VerglasPrime.png
 
 mods:
+  # semi_rifle_cannonade:   # UNRESOLVED — fill the WFCD imageName by hand
   accelerated_isotope: RadiationFireratePistolMod.jpg
   aerial_ace: JumpRefreshOnKillRifleMod.jpg
+  aero_periphery: HawksPeriphery.jpg
   agile_aim: FasterMovementWhileAimingRifle.jpg
   amalgam_barrel_diffusion: TacticalDiffusion.jpg
   amalgam_serration: SerratedRush.jpg
@@ -38,6 +41,7 @@ mods:
   carnis_stinger: AshenStinger.jpg
   catalyzer_link: StatusChanceWhileAimingMods.jpg
   cautious_shot: WeaponResistSelfDamageMod.jpg
+  combustion_beam: WeaponBeamExplodeOnDeathMod.jpg
   comet_rounds: DamageBiasImpactRifleMod.jpg
   concussion_rounds: ImpactDamagePistolMod.jpg
   continuous_misery: WeaponProcTimeRifleMod.jpg
@@ -76,6 +80,8 @@ mods:
   high_voltage: ElectEventRifleMod.jpg
   hollow_point: CorruptedCritDmgForDmgMod.jpg
   hornet_strike: PistolDamageAmountMod.jpg
+  hunter_munitions: HunterMunitions.jpg
+  hunter_track: HunterTrack.jpg
   hush: RifleSilencerMod.jpg
   hydraulic_crosshairs: CritChanceWhileAimingMods.jpg
   ice_storm: PistolIceStormMod.jpg
@@ -148,10 +154,13 @@ mods:
   scorch: DualStatFireProcPistol.jpg
   seeker: PistolPunctureDepthMod.jpg
   semi_pistol_cannonade: PistolSemiAutoFantasyMod.jpg
+  semi_rifle_cannonade: RifleSemiAutoFantasyMod.jpg
   serrated_rounds: DamageBiasSlashRifleMod.jpg
   serration: RifleDamageAmountMod.jpg
   sharpened_bullets: CritDamageWhileAimingMods.jpg
+  shivering_contagion: WeaponSpreadFreezeProcsMod.jpg
   shred: Shred.jpg
+  sinister_reach: WeaponBeamDistanceRifleMod.jpg
   slip_magazine: PistolClipMax.jpg
   spectral_serration: WeaponDamageAmountInvisibleMod.jpg
   speed_trigger: RifleFireRateMod.jpg
@@ -170,11 +179,14 @@ mods:
   trick_mag: PistolAmmoMaxMod.jpg
   twitch: PvPWeaponSwapSpeedRifle.jpg
   vanquished_prey: RestoreShieldsOnKillRifleMod.jpg
+  vigilante_armaments: VigilanteArmaments.jpg
+  vigilante_fervor: VigilanteFervor.jpg
+  vigilante_offense: VigilanteOffense.jpg
+  vigilante_supplies: VigilanteSupplies.jpg
   vile_acceleration: CorruptedFireRateDamageRifleMod.jpg
   vile_precision: CorruptedRecoilForFireRateMod.jpg
   vital_sense: RifleCritDamageMod.jpg
   wildfire: RifleWildfireMod.jpg
-  # semi_rifle_cannonade:   # UNRESOLVED — fill the WFCD imageName by hand
 
 arcanes:
   akimbo_slip_shot: ArcaneProjectionCT.png

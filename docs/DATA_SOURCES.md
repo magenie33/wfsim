@@ -224,6 +224,29 @@ BASE form, a semi-auto grenade launcher. So `requires_weapon: continuous` is
 an EQUIP gate — the mod is never offered — as distinct from `requires`, which
 lets a mod equip and sit inert.
 
+### Images: a map in the repo, the pictures on a CDN
+
+`data/assets.yaml` maps id -> image filename; the images themselves are served
+from `https://cdn.warframestat.us/img/<name>` and no binary ever enters the
+repo. The map is small, diffable and auditable, and it carries deliberate
+overrides with their reasons (an Incarnon FORM shows its BASE weapon's image —
+the generator would otherwise resolve it to the Genesis adapter icon).
+
+Two things about it were weak, and both bit on 2026-07-31 when Verglas Prime
+and ten mods shipped with no picture at all:
+
+- **Nothing enforced completeness.** A missing entry fails nothing — it just
+  renders as blank. `every_data_entry_has_an_image` now walks every weapon,
+  mod and arcane in `data/` and names what is missing.
+- **The generator was gitignored and fetched a live API**, so nobody else
+  could run it and its output could not be reproduced. `scripts/gen_assets.py`
+  is committed now and reads the COMMITTED WFCD export instead, joined by
+  `internal_name` == `uniqueName` like everything else here. It only ADDS what
+  is missing, so the hand-written overrides survive.
+
+      python scripts/gen_assets.py           # report
+      python scripts/gen_assets.py --write   # fill in
+
 ## Verification tooling (lives in `private/scripts/` — LOCAL, gitignored)
 
 The pipeline that fills and checks `data/` is not in the repo (`/private/` is
