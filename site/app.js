@@ -497,7 +497,7 @@ function nav(path) {
   route();
 }
 function route() {
-  const m = location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer)?\/?$/);
+  const m = location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens)?\/?$/);
   // A hand-typed URL is not the canonical slug. Fold case and treat spaces
   // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
   // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
@@ -511,9 +511,10 @@ function route() {
   document.body.classList.toggle("on-home", !w);
   document.body.classList.toggle("on-simulator", mod === "simulator");
   document.body.classList.toggle("on-optimizer", mod === "optimizer");
+  document.body.classList.toggle("on-rivens", mod === "rivens");
   $("home-page").hidden = !!w;
   document.querySelector(".config-page").hidden = !w;
-  const modTitle = { simulator: " · Simulator", optimizer: " · Optimizer" }[mod] || "";
+  const modTitle = { simulator: " · Simulator", optimizer: " · Optimizer", rivens: " · Rivens" }[mod] || "";
   document.title = w ? `${w.name}${modTitle} — WFSim` : "WFSim — The Simulacrum. The Primed One.";
   if (w) {
     if ($("weapon").value !== w.id) {
@@ -522,10 +523,12 @@ function route() {
     $("module-tabs").innerHTML =
       `<a class="mtab ${mod === "" ? "sel" : ""}" href="${weaponPath(w.id)}">${tr("Builder")}</a>` +
       `<a class="mtab ${mod === "simulator" ? "sel" : ""}" href="${weaponPath(w.id)}/simulator">${tr("Simulator")}</a>` +
-      `<a class="mtab ${mod === "optimizer" ? "sel" : ""}" href="${weaponPath(w.id)}/optimizer">${tr("Optimizer")}</a>`;
+      `<a class="mtab ${mod === "optimizer" ? "sel" : ""}" href="${weaponPath(w.id)}/optimizer">${tr("Optimizer")}</a>` +
+      `<a class="mtab ${mod === "rivens" ? "sel" : ""}" href="${weaponPath(w.id)}/rivens">${tr("Rivens")}</a>`;
     // Arriving on the simulator: refresh its build summary (builder edits
     // don't re-render sim views while they are hidden).
     if (mod === "simulator") renderSimBuild();
+    if (mod === "rivens") renderRivens();
   } else {
     renderHome();
   }
@@ -533,7 +536,7 @@ function route() {
 
 // The current module's path suffix — weapon switches (search, select,
 // preset load) keep the visitor on the tab they are on.
-const modSuffix = () => (location.pathname.match(/\/(simulator|optimizer)\/?$/) || [null, ""])[1];
+const modSuffix = () => (location.pathname.match(/\/(simulator|optimizer|rivens)\/?$/) || [null, ""])[1];
 const weaponModPath = (id) => weaponPath(id) + (modSuffix() ? "/" + modSuffix() : "");
 
 // The home grid groups by EQUIPMENT SLOT in loadout order (user, 2026-07-30):
@@ -574,6 +577,209 @@ function renderHome() {
       <h3 class="wgroup-h">${tr(SLOT_LABEL[slot] || slot)}</h3>
       <div class="wgrid">${ws.map(card).join("")}</div>
     </section>`).join("");
+}
+
+// ---- Rivens ------------------------------------------------------------
+// A CONSTRUCTOR, not a roller. Every control is bounded by the formula, so
+// the only rivens it can express are legal ones — including the corner where
+// every positive rolls maximal and the curse minimal, which is not an edge
+// case here but the CEILING, the riven an optimizer wants to know about.
+//
+// The arithmetic is NOT duplicated: every change asks `/api/riven`, so a
+// slider can never drift from what the sim would build. Under wasm that call
+// is local, so asking on every keystroke is free.
+let riven = null;      // the riven being constructed
+let rivenResolved = null;
+
+const rivenPool = () => (META.riven_stats || {})[weaponInfo($("weapon").value).mod_class] || [];
+const rivenRules = () => META.riven_rules || { roll_min: 0.9, roll_max: 1.1, max_rank: 8 };
+// Saved per WEAPON: a riven's values are its weapon's disposition applied to
+// a roll, so the same spec on another gun is a different mod. Storing it
+// under the gun it was built for is the honest home.
+const rivenKey = () => `wfsim-rivens-${$("weapon").value}`;
+const loadRivens = () => { try { return JSON.parse(localStorage.getItem(rivenKey())) || []; } catch (_) { return []; } };
+const storeRivens = (v) => { try { localStorage.setItem(rivenKey(), JSON.stringify(v)); } catch (_) {} };
+
+function blankRiven() {
+  const p = rivenPool();
+  const pick = (i) => (p[i] ? p[i].id : null);
+  return {
+    positives: [{ id: pick(0), roll: 1.0 }, { id: pick(1), roll: 1.0 }],
+    curse: null,
+    rank: rivenRules().max_rank,
+    polarity: "madurai",
+  };
+}
+
+async function resolveRiven() {
+  if (!riven) return;
+  try {
+    rivenResolved = await api("/api/riven", { weapon: $("weapon").value, ...riven });
+  } catch (e) {
+    rivenResolved = { ok: false, illegal: [String(e)], stats: [] };
+  }
+  renderRivenCard();
+}
+
+function renderRivens() {
+  if (!META || !$("riven-block")) return;
+  const w = weaponInfo($("weapon").value);
+  if (!riven || riven.__weapon !== w.id) { riven = blankRiven(); riven.__weapon = w.id; }
+  $("riven-sub").textContent =
+    `${w.name} · disposition ${(w.disposition || 1).toFixed(2)} — every value below is already scaled by it`;
+  renderRivenShape();
+  renderRivenStats();
+  renderRivenFoot();
+  renderRivenList();
+  resolveRiven();
+}
+
+// How many positives, and whether there is a curse. This is the ONLY thing
+// that decides the multipliers, so it leads.
+function renderRivenShape() {
+  const seg = (label, on) => `<span class="seg ${on ? "on" : ""}" data-rv="${label}">${label}</span>`;
+  $("riven-shape").innerHTML =
+    `<span class="rv-lbl">Shape</span>` +
+    `<span class="oseg">${seg("2 positives", riven.positives.length === 2)}${seg("3 positives", riven.positives.length === 3)}</span>` +
+    `<span class="oseg">${seg("curse", !!riven.curse)}</span>`;
+  $("riven-shape").querySelectorAll("[data-rv]").forEach((el) => el.onclick = () => {
+    const p = rivenPool();
+    const want = el.dataset.rv;
+    if (want === "curse") {
+      // Default to the first stat that may be one AND is not already taken:
+      // five are positive-only and can never be cursed at all, and a stat
+      // cannot appear twice on one riven. Defaulting into a duplicate would
+      // open the tab on an illegal riven.
+      const taken = new Set(riven.positives.map((x) => x.id));
+      const free = p.find((s) => s.curse && !taken.has(s.id));
+      riven.curse = riven.curse ? null : { id: free && free.id, roll: 1.0 };
+    } else {
+      const n = want === "3 positives" ? 3 : 2;
+      while (riven.positives.length > n) riven.positives.pop();
+      while (riven.positives.length < n) {
+        const used = new Set(riven.positives.map((x) => x.id));
+        const free = p.find((s) => !used.has(s.id));
+        riven.positives.push({ id: free && free.id, roll: 1.0 });
+      }
+    }
+    renderRivens();
+  });
+}
+
+// One row per rolled stat: which stat, and where in the 0.9-1.1 band it
+// landed. The slider's ENDS are the band, so it cannot express an illegal
+// roll — that is what makes "any legal riven, and only legal ones" true by
+// construction rather than by validation.
+function renderRivenStats() {
+  const p = rivenPool();
+  const rules = rivenRules();
+  const row = (slot, s, isCurse) => {
+    const used = new Set(riven.positives.map((x) => x.id).concat(riven.curse ? [riven.curse.id] : []));
+    const opts = p
+      // A stat cannot appear twice on one riven, and only some may be cursed.
+      .filter((x) => (!used.has(x.id) || x.id === s.id) && (!isCurse || x.curse))
+      .map((x) => `<option value="${x.id}" ${x.id === s.id ? "selected" : ""}>${escHtml(x.text.replace("|val|", "X"))}${x.modeled ? "" : " (not modeled)"}</option>`)
+      .join("");
+    return `<div class="rv-row ${isCurse ? "curse" : ""}">
+      <span class="rv-tag">${isCurse ? "curse" : "positive"}</span>
+      <select class="rv-stat" data-slot="${slot}">${opts}</select>
+      <input class="rv-roll" type="range" data-slot="${slot}"
+             min="${rules.roll_min}" max="${rules.roll_max}" step="0.001" value="${s.roll}">
+      <input class="rv-rollnum" type="number" data-slot="${slot}"
+             min="${rules.roll_min}" max="${rules.roll_max}" step="0.001" value="${s.roll.toFixed(3)}">
+      <span class="rv-val" data-slot="${slot}">…</span>
+    </div>`;
+  };
+  $("riven-stats").innerHTML =
+    riven.positives.map((s, i) => row(String(i), s, false)).join("") +
+    (riven.curse ? row("curse", riven.curse, true) : "");
+
+  const at = (slot) => (slot === "curse" ? riven.curse : riven.positives[Number(slot)]);
+  $("riven-stats").querySelectorAll(".rv-stat").forEach((el) => el.onchange = () => {
+    at(el.dataset.slot).id = el.value; renderRivens();
+  });
+  const setRoll = (slot, v) => {
+    const r = Math.min(rules.roll_max, Math.max(rules.roll_min, Number(v) || 1));
+    at(slot).roll = r;
+    const box = $("riven-stats");
+    box.querySelector(`.rv-roll[data-slot="${slot}"]`).value = r;
+    box.querySelector(`.rv-rollnum[data-slot="${slot}"]`).value = r.toFixed(3);
+    resolveRiven();
+  };
+  $("riven-stats").querySelectorAll(".rv-roll").forEach((el) => el.oninput = () => setRoll(el.dataset.slot, el.value));
+  $("riven-stats").querySelectorAll(".rv-rollnum").forEach((el) => el.onchange = () => setRoll(el.dataset.slot, el.value));
+}
+
+function renderRivenFoot() {
+  const rules = rivenRules();
+  const pols = rules.polarities || ["madurai", "vazarin", "naramon"];
+  $("riven-foot").innerHTML =
+    `<label class="rv-lbl">Rank <input id="rv-rank" type="range" min="0" max="${rules.max_rank}" step="1" value="${riven.rank}">` +
+    `<b id="rv-rank-n">${riven.rank}</b></label>` +
+    `<span class="rv-lbl">Polarity</span><span class="oseg">` +
+    pols.map((x) => `<span class="seg ${riven.polarity === x ? "on" : ""}" data-pol="${x}">${x}</span>`).join("") +
+    `</span>` +
+    `<button class="ghost-btn small" id="rv-max">roll everything maximal</button>` +
+    `<button class="run-btn" id="rv-save">save this riven</button>`;
+  $("rv-rank").oninput = () => { riven.rank = Number($("rv-rank").value); $("rv-rank-n").textContent = riven.rank; resolveRiven(); };
+  $("riven-foot").querySelectorAll("[data-pol]").forEach((el) => el.onclick = () => { riven.polarity = el.dataset.pol; renderRivenFoot(); resolveRiven(); });
+  // The ceiling, in one click: every positive at the top of its band and the
+  // curse at the bottom, which is the least harmful it can be.
+  $("rv-max").onclick = () => {
+    riven.positives.forEach((s) => { s.roll = rules.roll_max; });
+    if (riven.curse) riven.curse.roll = rules.roll_min;
+    renderRivens();
+  };
+  $("rv-save").onclick = () => {
+    if (!rivenResolved || (rivenResolved.illegal || []).length) return;
+    const all = loadRivens();
+    all.push({
+      spec: { positives: riven.positives, curse: riven.curse, rank: riven.rank, polarity: riven.polarity },
+      name: rivenResolved.name, savedAt: Date.now(),
+    });
+    storeRivens(all);
+    renderRivenList();
+  };
+}
+
+function renderRivenCard() {
+  const r = rivenResolved;
+  if (!r) return;
+  const bad = r.illegal || [];
+  // Each row's live value is filled IN PLACE, so dragging a slider updates
+  // the number without the block around it flickering.
+  (r.stats || []).forEach((s, i) => {
+    const slot = i < riven.positives.length ? String(i) : "curse";
+    const el = $("riven-stats").querySelector(`.rv-val[data-slot="${slot}"]`);
+    if (el) {
+      el.textContent = s.text;
+      el.className = `rv-val${s.value < 0 ? " neg" : ""}${s.modeled ? "" : " unmodeled"}`;
+    }
+  });
+  $("riven-card").innerHTML = bad.length
+    ? `<div class="error"><b>not a legal riven</b><ul>${bad.map((x) => `<li>${escHtml(x)}</li>`).join("")}</ul></div>`
+    : `<div class="rv-name">${escHtml(r.name)}</div>
+       <div class="rv-meta">${r.drain} capacity · ${escHtml(r.class)} riven · disposition ${Number(r.disposition).toFixed(2)}</div>`;
+  const save = $("rv-save");
+  if (save) save.disabled = bad.length > 0;
+}
+
+function renderRivenList() {
+  const all = loadRivens();
+  $("riven-list").innerHTML = all.length
+    ? all.map((r, i) => `<div class="rv-saved"><b>${escHtml(r.name || "riven")}</b>
+        <span class="rv-meta">${r.spec.positives.length} positive${r.spec.curse ? " + curse" : ""} · rank ${r.spec.rank}</span>
+        <button class="ghost-btn small" data-rv-load="${i}">edit</button>
+        <button class="ghost-btn small" data-rv-del="${i}">delete</button></div>`).join("")
+    : `<div class="sim-empty">no rivens saved for this weapon yet</div>`;
+  $("riven-list").querySelectorAll("[data-rv-load]").forEach((el) => el.onclick = () => {
+    const r = all[Number(el.dataset.rvLoad)];
+    riven = { ...JSON.parse(JSON.stringify(r.spec)), __weapon: $("weapon").value };
+    renderRivens();
+  });
+  $("riven-list").querySelectorAll("[data-rv-del]").forEach((el) => el.onclick = () => {
+    all.splice(Number(el.dataset.rvDel), 1); storeRivens(all); renderRivenList();
+  });
 }
 
 // ---- Presets ----------------------------------------------------------
@@ -1765,7 +1971,6 @@ function renderSim() {
   if (!META) return;
   renderSimBuild();
   const w = weaponInfo($("weapon").value);
-  if (!w.uses_evo2) sim.form = "base"; // non-transforming weapons: single form
   const enemies = META.enemies || [];
   const en = enemies.find((e) => e.id === sim.enemy) || enemies[0];
   if (en) sim.enemy = en.id;
@@ -1781,12 +1986,22 @@ function renderSim() {
   // fight in, whether you hold aim, and how often you land the head are all
   // choices the player makes — and aiming GATES buffs, so it belongs here
   // rather than mixed into the run settings (user, 2026-07-30).
-  const formField = w.uses_evo2 ? `
+  // The FORMS are the weapon's own (registered in data/weapons, served by
+  // /api/meta) — not a hardcoded Incarnon triple. The two-form CYCLE is not a
+  // form but a MODE over them, so it is listed first and only when the weapon
+  // has something to transform into (`has_cycle`). A weapon with one form and
+  // no cycle has nothing to choose, so no selector is drawn.
+  const formOpts = [
+    ...(w.has_cycle ? [["incarnon_cycle", tr("Incarnon cycle")]] : []),
+    ...(w.forms || []).map((f) => [f.id, w.has_cycle ? `${tr(f.name)} ${tr("only")}` : tr(f.name)]),
+  ];
+  // A stale preset (or another weapon's choice) can name a form this weapon
+  // does not have — fall back to the first option rather than sending it.
+  if (formOpts.length && !formOpts.some(([id]) => id === sim.form)) sim.form = formOpts[0][0];
+  const formField = formOpts.length > 1 ? `
     <label>${escHtml(tr("Form"))}
-      <select data-k="form">
-        <option value="incarnon_cycle" ${sim.form === "incarnon_cycle" ? "selected" : ""}>Incarnon cycle</option>
-        <option value="incarnon" ${sim.form === "incarnon" ? "selected" : ""}>Incarnon only</option>
-        <option value="base" ${sim.form === "base" ? "selected" : ""}>Base only</option>
+      <select data-k="form">${formOpts.map(([id, label]) =>
+        `<option value="${id}" ${sim.form === id ? "selected" : ""}>${escHtml(label)}</option>`).join("")}
       </select></label>` : "";
   $("sim-technique").innerHTML = `
     ${formField}

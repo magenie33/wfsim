@@ -21,11 +21,25 @@ pub struct AttackSpec {
     #[serde(default)]
     pub shot_type: Option<String>,
     pub fire_rate: f64,
-    /// CHARGE trigger only (the module's per-attack `ChargeTime`): the draw
-    /// that precedes the shot. It — not `fire_rate` — sets the cadence of a
-    /// charged weapon, and fire-rate bonuses DIVIDE it (wiki Fire Rate:
-    /// "charge weapons ... the charge time is reduced"). `fire_rate` stays the
-    /// weapon's listed stat, which is what the low-fire-rate gates read.
+    /// The DRAW before the shot (the module's per-attack `ChargeTime`), and
+    /// with it the weapon's real cadence. VERBATIM (wiki Fire Rate), the bow
+    /// formula and the one it excludes bows from:
+    ///
+    /// - *"Effective Fire Rate = 1 / (Modded Charge Time + Modded Reload
+    ///   Time)"* — "Calculation for true fire rate for **bow** weapons."
+    /// - *"1 / (Modded Charge Time + 1 / Modded Fire Rate)"* — "for charge
+    ///   weapons **with the exception of bows**, Epitaph, and Lanka."
+    ///
+    /// So a BOW's cadence carries no fire-rate term at all: draw plus nock.
+    /// Every bow attack states this — **`0.0` for the tapped shot**, which is
+    /// not an absence but the statement that releasing early costs no draw, so
+    /// the nock alone paces it. Fire-rate bonuses DIVIDE it (*"Charge Time =
+    /// Base Charge Time / (1 + Mod Bonus)"*), which is why `fire_rate` stays
+    /// the listed stat: it is the number the fire-rate GATES read.
+    ///
+    /// The roster has no non-bow charge weapon yet. When one arrives it needs
+    /// the other formula — `1 / fire_rate` in place of the reload — which is a
+    /// second cadence rule, not a tweak to this one.
     #[serde(default)]
     pub charge_seconds: Option<f64>,
     #[serde(default = "one")]
@@ -324,12 +338,25 @@ pub struct WeaponSpec {
     /// [`FormKind`] vocabulary. REQUIRED: a form is registered, never guessed,
     /// so a new entry cannot quietly inherit someone else's mode.
     pub form: String,
+    /// Is this the form the weapon is normally fired in — the arsenal's, which
+    /// the wiki module names per weapon with `_TooltipAttackDisplay`? Exactly
+    /// one entry per transform group declares it, and that entry is the
+    /// weapon's roster row. Declared rather than inferred from
+    /// `transforms_from`, because two forms need not be a transformation:
+    /// tapping a bow instead of drawing it switches form for free.
+    #[serde(default)]
+    pub default_form: bool,
     /// The mod POOLS this weapon draws from, as a union — `data/mods/<pool>/`.
     /// A weapon is not served by one list: a launcher takes both the
     /// primary-wide pool and the rifle class pool, and takes no assault-rifle
     /// or bow mods, which is why those are pools of their own.
     #[serde(default)]
     pub mod_pools: Vec<String>,
+    /// Riven disposition — the multiplier every riven stat on this weapon is
+    /// scaled by. It belongs to the WEAPON, not to the riven, which is why
+    /// one riven reads differently on two guns.
+    #[serde(default)]
+    pub disposition: Option<f64>,
     #[serde(default)]
     pub polarities: Vec<String>,
     #[serde(default)]
@@ -443,10 +470,11 @@ pub fn has_perk(weapon_id: &str, perk_id: &str) -> bool {
     spec(weapon_id).is_some_and(|s| s.perks.iter().any(|p| p.id() == perk_id))
 }
 
-/// Registry view: the SELECTABLE weapons (transform-group base entries; an
-/// Incarnon form is a form of its base weapon, not its own roster row).
+/// Registry view: the SELECTABLE weapons — one row per weapon, which is the
+/// entry that declares itself the DEFAULT form. Every other form (an Incarnon
+/// form, a bow's tapped shot) is a form of that weapon, not its own row.
 pub fn roster() -> impl Iterator<Item = &'static WeaponSpec> {
-    all().iter().filter(|s| s.transforms_from.is_none())
+    all().iter().filter(|s| s.default_form)
 }
 
 impl WeaponSpec {
@@ -477,9 +505,7 @@ pub fn forms_of(weapon_id: &str) -> Vec<FormRef> {
         .map(|s| FormRef {
             weapon_id: &s.id,
             kind: s.form_kind(),
-            // The roster entry IS the default form: everything else in the
-            // group is reached from it.
-            is_default: s.transforms_from.is_none(),
+            is_default: s.default_form,
         })
         .collect();
     // Default first; the rest keep the vocabulary's order so two weapons never
@@ -666,12 +692,23 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         base_crit_damage: s.attack.crit_multiplier,
         base_status_chance: s.attack.status_chance,
         base_fire_rate: s.attack.fire_rate,
-        // A CHARGE trigger without a `charge_seconds` would silently fall back
-        // to the `1 / fire_rate` cadence, so the data has to state it.
-        charge_seconds: match (s.attack.trigger.as_str(), s.attack.charge_seconds) {
-            ("charge", Some(c)) => Some(c),
-            ("charge", None) => panic!("{id}: trigger charge needs charge_seconds"),
-            (_, Some(_)) => panic!("{id}: charge_seconds on a non-charge trigger"),
+        // A BOW paces on draw + nock, every form of it (wiki Fire Rate's
+        // bow-specific formula — see `AttackSpec::charge_seconds`), so a bow
+        // states the draw even when it is 0.0 and anything else must not.
+        // Silence here would mean falling back to the `1 / fire_rate` cadence,
+        // which for a bow is the one reading the wiki rules out.
+        charge_seconds: match (s.class.as_str(), s.attack.charge_seconds) {
+            ("bow", Some(c)) => {
+                // A zero draw makes the nock the whole cycle, which only reads
+                // as a cadence while the magazine is the one nocked arrow.
+                assert!(
+                    c > 0.0 || s.magazine == Some(1.0),
+                    "{id}: a 0.0 draw paces on the reload, so the magazine must be 1"
+                );
+                Some(c)
+            }
+            ("bow", None) => panic!("{id}: a bow's cadence is draw + nock — state charge_seconds"),
+            (_, Some(_)) => panic!("{id}: charge_seconds outside a bow needs the other formula"),
             (_, None) => None,
         },
         // "(x2 for Bows)" — the clause every fire-rate mod card carries
@@ -887,14 +924,20 @@ mod tests {
         assert!(verglas[0].is_default);
         assert!(!has_gauge_switched_form("verglas_prime"));
 
-        // The bow is fired in its CHARGED form and transforms into nothing:
-        // its second form (the uncharged shot) is not modeled yet, and when
-        // it is it will be freely switched, not transformed into.
+        // TWO forms with NO transformation between them: a bow is drawn or
+        // tapped, and switching costs nothing but a shorter press. So it has
+        // no cycle to simulate even though it has more than one form — which
+        // is the whole reason "does it have two forms" and "does it transform"
+        // are separate questions.
         let bow = forms_of("cernos_prime");
-        assert_eq!(bow.len(), 1);
-        assert_eq!(bow[0].kind, FormKind::Charged);
-        assert!(bow[0].is_default);
+        assert_eq!(bow.len(), 2);
+        assert_eq!(bow[0].kind, FormKind::Charged, "the arsenal's form comes first");
+        assert!(bow[0].is_default && bow[0].weapon_id == "cernos_prime");
+        assert_eq!(bow[1].kind, FormKind::Base, "the tapped shot is the uncharged form");
+        assert!(!bow[1].is_default && bow[1].weapon_id == "cernos_prime_uncharged");
         assert!(!has_gauge_switched_form("cernos_prime"));
+        // Asking from either entry gives the same weapon's forms.
+        assert_eq!(forms_of("cernos_prime_uncharged").len(), 2);
 
         // Wire ids are stable: they are what a saved preset stores.
         assert_eq!(FormKind::Base.id(), "base");
@@ -941,6 +984,36 @@ mod tests {
         // Charge is its own trigger family: a mod gated on `semi_auto`
         // (Semi-Rifle Cannonade) is inert on it, which is the in-game rule.
         assert!(b.traits.is_empty());
+    }
+
+    /// The TAPPED shot: same weapon, half the damage per arrow, and a cadence
+    /// of pure nock. Wiki Fire Rate gives bows their own effective-fire-rate
+    /// formula — `1 / (charge + reload)`, no fire-rate term — so a shot with
+    /// no draw to pay is paced by the 0.65 s nock alone.
+    #[test]
+    fn the_tapped_bow_shot_is_the_same_weapon_at_half_damage() {
+        let charged = base_panel("cernos_prime", false);
+        let tapped = base_panel("cernos_prime_uncharged", false);
+        // "bows have innate 2x damage multiplier when fully charged" — the CO
+        // catalog's words, and the two entries hold both sides of it.
+        assert!((tapped.base_vector.total() * 2.0 - charged.base_vector.total()).abs() < 1e-9);
+        assert!((tapped.base_vector.total() - 92.0).abs() < 1e-9);
+        // The draw buys damage, speed and punch through — not crit or status.
+        assert_eq!(tapped.base_crit_chance, charged.base_crit_chance);
+        assert_eq!(tapped.base_status_chance, charged.base_status_chance);
+        assert_eq!(tapped.base_multishot, charged.base_multishot);
+        // The innate headshot bonus is the WEAPON's: both attacks carry
+        // ExtraHeadshotDmg 0.5 in the module.
+        assert!((tapped.headshot_damage_bonus - 0.5).abs() < 1e-9);
+        // No charge multiplier to leave out, so CO computes on the full base
+        // here — the catalog lists no row for this attack, and absence there
+        // is a positive statement.
+        assert!((tapped.co_base_fraction - 1.0).abs() < 1e-9);
+        assert!((charged.co_base_fraction - 0.5).abs() < 1e-9);
+        // ZERO draw is a cadence statement, not a missing value: 1 / 0.65 =
+        // 1.54 shots/s against the charged form's 1 / 1.15 = 0.87.
+        assert_eq!(tapped.charge_seconds, Some(0.0));
+        assert!(tapped.fire_rate_mod_multiplier > 1.9, "still a bow");
     }
 
     /// The draw, not the fire-rate stat, is what a fire-rate mod shortens —

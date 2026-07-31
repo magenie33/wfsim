@@ -82,6 +82,9 @@ struct WeaponInfo {
     /// Continuous (beam) weapon, from the BASE form's trigger — what the
     /// beam-only mods gate on.
     continuous: bool,
+    /// Riven disposition. 1.0 when the data does not say, so a weapon with no
+    /// disposition yet reads as neutral rather than as zero.
+    disposition: f64,
     // Precise weapon type within that group (Dual Toxocyst = Dual Pistols).
     subtype: String,
     sentinel: bool,
@@ -160,6 +163,7 @@ fn weapons() -> &'static [WeaponInfo] {
                         s.mod_pools.clone()
                     },
                     continuous: s.attack.trigger == "held",
+                    disposition: s.disposition.unwrap_or(1.0),
                     subtype: title_case(&s.class),
                     sentinel,
                     forms,
@@ -341,6 +345,7 @@ pub fn meta_json() -> Value {
                 // form is a beam and the weapon still is not a continuous one
                 // for modding purposes.
                 "continuous": w.continuous,
+                "disposition": w.disposition,
                 "mod_class": w.mod_pools.last().cloned().unwrap_or_default(),
                 "subtype": w.subtype,
                 "sentinel": w.sentinel,
@@ -446,6 +451,37 @@ pub fn meta_json() -> Value {
         // steps ranks with the strength updating per rank. `arcane_rank` in
         // the sim request selects the modeled rank (default: max).
         "arcanes": arcanes_json,
+        // Riven stat pools, keyed by mod class. The builder needs the whole
+        // pool to offer choices; the VALUES it must ask for, because the
+        // formula lives in one place (`/api/riven`).
+        "riven_stats": wfsim_engine::mods_data::classes()
+            .into_iter()
+            .filter_map(|c| {
+                let p = wfsim_engine::rivens_data::pool(c);
+                (!p.is_empty()).then(|| {
+                    (
+                        c.to_string(),
+                        json!(p
+                            .iter()
+                            .map(|s| json!({
+                                "id": s.id, "text": s.text, "base": s.base,
+                                "prefix": s.prefix, "suffix": s.suffix,
+                                "curse": s.curse, "modeled": s.kind != "unmodeled",
+                            }))
+                            .collect::<Vec<_>>()),
+                    )
+                })
+            })
+            .collect::<serde_json::Map<String, Value>>(),
+        "riven_rules": {
+            "roll_min": wfsim_engine::rivens_data::ROLL_MIN,
+            "roll_max": wfsim_engine::rivens_data::ROLL_MAX,
+            "max_rank": wfsim_engine::rivens_data::MAX_RANK,
+            // The polarities a riven rolls (wiki: one of three).
+            "polarities": ["madurai", "vazarin", "naramon"],
+            "mastery_min": 8,
+            "mastery_max": 16,
+        },
         // Choosable evolution tiers from data/evolutions/*.yaml (tier 1 =
         // the Incarnon Form unlock — deselecting it means no transformation,
         // so the panel/sim fall back to the base form). Every tier also gets
@@ -472,6 +508,71 @@ pub fn meta_json() -> Value {
             "runs": 100,
             "mods": [],
         },
+    })
+}
+
+/// Resolve a riven SPEC against a weapon: the values it shows, its generated
+/// name, its drain, and every reason it could not exist.
+///
+/// The page owns the knobs and this owns the arithmetic — one implementation
+/// of the formula, so a slider cannot drift from what the sim would build.
+pub fn riven_json(v: &Value) -> Value {
+    use wfsim_engine::rivens_data::{RivenSpec, RolledStat};
+    let info = weapon(get_str(v, "weapon", default_weapon_id()));
+    // A riven draws from the weapon's NARROWEST pool — the class one. The
+    // primary-wide pool has no rivens of its own.
+    let class = info.mod_pools.last().cloned().unwrap_or_default();
+    let rolled = |x: &Value| -> Option<RolledStat> {
+        Some(RolledStat {
+            id: x.get("id")?.as_str()?.to_string(),
+            roll: x.get("roll").and_then(|r| r.as_f64()).unwrap_or(1.0),
+        })
+    };
+    let spec = RivenSpec {
+        class: class.clone(),
+        positives: v
+            .get("positives")
+            .and_then(|a| a.as_array())
+            .map(|a| a.iter().filter_map(rolled).collect())
+            .unwrap_or_default(),
+        curse: v.get("curse").and_then(rolled),
+        rank: get_u32(v, "rank", wfsim_engine::rivens_data::MAX_RANK),
+        polarity: match get_str(v, "polarity", "madurai") {
+            "vazarin" => wfsim_engine::mods::Polarity::Vazarin,
+            "naramon" => wfsim_engine::mods::Polarity::Naramon,
+            _ => wfsim_engine::mods::Polarity::Madurai,
+        },
+    };
+    let evo_refs: Vec<&str> = Vec::new();
+    let base = WeaponBase::from_data(&info.id, true, &evo_refs);
+    let disposition = info.disposition;
+    let n_pos = spec.positives.len();
+    let stats: Vec<Value> = spec
+        .resolved(disposition)
+        .into_iter()
+        .enumerate()
+        .map(|(i, (def, value))| {
+            // DE's own template, `|val|` filled. A `%` in it means the stored
+            // fraction is shown times 100; without one it is a raw number
+            // (Punch Through is metres).
+            let shown = if def.text.contains('%') { value * 100.0 } else { value };
+            let text = def.text.replace("|val|", &format!("{}{:.2}", if shown >= 0.0 { "+" } else { "" }, shown));
+            json!({
+                "id": def.id, "text": text, "value": value,
+                "positive": i < n_pos, "modeled": def.kind != "unmodeled",
+            })
+        })
+        .collect();
+    json!({
+        "ok": true,
+        "class": class,
+        "disposition": disposition,
+        "name": spec.name(disposition),
+        "drain": spec.drain(),
+        "stats": stats,
+        // Every reason at once, so the UI can point at the knob that is wrong
+        // instead of only refusing.
+        "illegal": spec.illegal_on(&base),
     })
 }
 
@@ -800,7 +901,7 @@ pub fn panel_json(v: &Value) -> Value {
         StackPolicy::AssumedMax
     };
     // (`form` in the request is ignored: every available form renders.)
-    let evos = match chosen_evolutions(v) {
+    let evos = match chosen_evolutions(v, info) {
         Ok(e) => e,
         Err(e) => return err_json(e),
     };
@@ -1238,11 +1339,15 @@ pub fn panel_json(v: &Value) -> Value {
                 format!("{}s", num(panel.reload_seconds)),
             );
         }
-        // CHARGE weapons (bows): the draw is the real cadence — fire rate is
-        // only the stat the gates read — and it is the SAME fire-rate bonuses
-        // that shorten it, so the row borrows their sources rather than a
-        // bucket of its own. Two decimals: a doubled bow bonus lands on values
-        // like 0.31 s that `num`'s one decimal would round away.
+        // BOWS state their cadence, because the Fire Rate row above is NOT it:
+        // wiki Fire Rate gives bows a formula of their own — "Effective Fire
+        // Rate = 1 / (Modded Charge Time + Modded Reload Time)" — which has no
+        // fire-rate term at all. So the panel prints the draw (the half a
+        // fire-rate mod actually shortens, at double value on a bow) and the
+        // rate that formula yields, or a build reads 1.6/s where it fires 1.0.
+        //
+        // A tapped shot has NO draw: its row would be a constant 0.00s, so it
+        // is left out and only the effective rate is stated.
         //
         // INSERTED beside the Fire Rate row it belongs next to rather than
         // pushed here: `row` holds the `stats` borrow until its last call.
@@ -1251,12 +1356,23 @@ pub fn panel_json(v: &Value) -> Value {
                 .iter()
                 .position(|s| s["key"] == "fire_rate")
                 .map_or(stats.len(), |i| i + 1);
-            stats.insert(
-                at,
-                json!({ "key": "charge_time", "label": "Charge Time",
+            let mut rows = Vec::new();
+            if b > 0.0 {
+                // Two decimals: a doubled bow bonus lands on values like
+                // 0.31 s that `num`'s one decimal would round away.
+                rows.push(json!({ "key": "charge_time", "label": "Charge Time",
                     "base": format!("{b:.2}s"), "final": format!("{f:.2}s"),
-                    "sources": sources("fire_rate", None) }),
-            );
+                    "sources": sources("fire_rate", None) }));
+            }
+            let eff = |charge: f64, reload: f64| format!("{:.2}/s", 1.0 / (charge + reload));
+            rows.push(json!({ "key": "effective_fire_rate", "label": "Effective Fire Rate",
+                "base": eff(b, base.base_reload), "final": eff(f, panel.reload_seconds),
+                "note": "a bow's real cadence: 1 / (charge + reload), with no fire-rate term \
+                         (wiki Fire Rate)".to_string(),
+                "sources": json!([]) }));
+            for (i, r) in rows.into_iter().enumerate() {
+                stats.insert(at + i, r);
+            }
         }
         // A continuous beam's impact SPHERE. Firestorm enlarges it, and without
         // this row the mod reads as equipped-but-doing-nothing on this form.
@@ -1635,7 +1751,25 @@ fn build_body_parts(spec: &EnemySpec, headshot_pct: f64) -> Vec<BodyPart> {
 /// The chosen evolution set: `evolutions` (an array of data ids; ABSENT
 /// entries = empty tier — nothing installed) wins; a legacy `evo2` string
 /// (short names accepted) maps to the historical default trio.
-fn chosen_evolutions(v: &Value) -> Result<Vec<String>, String> {
+/// The evolutions this run installs — always filtered to the ones that BELONG
+/// to this weapon.
+///
+/// An evolution is a per-weapon item, so another weapon's is not "unselected",
+/// it is nonsense — and two ways of getting one were live: the legacy default
+/// below (written when Dual Toxocyst was the whole roster, and applied to
+/// every weapon that omitted the key — a bow silently gained its +50 base
+/// damage, +20% crit and +100% multishot), and a preset copied across weapons
+/// by the builder's "⇤ import". Both are dropped here rather than refused: a
+/// build is still a legal build without another weapon's perks.
+fn chosen_evolutions(v: &Value, info: &WeaponInfo) -> Result<Vec<String>, String> {
+    let mine = |ids: Vec<String>| -> Vec<String> {
+        let group = evo_group(info);
+        ids.into_iter()
+            .filter(|id| {
+                wfsim_engine::evolutions_data::get(id).is_some_and(|e| e.weapon == group)
+            })
+            .collect()
+    };
     if let Some(arr) = v.get("evolutions").and_then(|x| x.as_array()) {
         let ids: Vec<String> = arr
             .iter()
@@ -1648,17 +1782,21 @@ fn chosen_evolutions(v: &Value) -> Result<Vec<String>, String> {
                 return Err(format!("unknown evolution id: {id}"));
             }
         }
-        return Ok(ids);
+        return Ok(mine(ids));
     }
+    // No `evolutions` key: the historical default build, which is Dual
+    // Toxocyst's. `mine` reduces it to nothing on every other weapon — an
+    // omitted key means "unstated", and the honest reading of unstated is a
+    // weapon with no evolutions installed, not another weapon's.
     let evo2 = match get_str(v, "evo2", "dual_toxocyst_fevered_frenzy") {
         "carnage" | "dual_toxocyst_carnage_reign" => "dual_toxocyst_carnage_reign",
         _ => "dual_toxocyst_fevered_frenzy",
     };
-    Ok(vec![
+    Ok(mine(vec![
         "dual_toxocyst_commodores_fortune".to_string(),
         "dual_toxocyst_evolved_autoloader".to_string(),
         evo2.to_string(),
-    ])
+    ]))
 }
 
 pub fn simulate_json(v: &Value) -> Value {
@@ -1705,7 +1843,7 @@ pub fn simulate_json(v: &Value) -> Value {
     // The cycle used to ignore this entirely — its knob was dead.
     let frenzy_single = frenzy_single && has_frenzy;
     let form = get_str(v, "form", "incarnon_cycle");
-    let evos = match chosen_evolutions(v) {
+    let evos = match chosen_evolutions(v, info) {
         Ok(e) => e,
         Err(e) => return err_json(e),
     };
@@ -2952,5 +3090,74 @@ mod asset_tests {
             missing.len(),
             missing.join(", ")
         );
+    }
+}
+
+#[cfg(test)]
+mod form_tests {
+    use super::*;
+
+    fn sim(weapon: &str, form: &str) -> Value {
+        simulate_json(&json!({
+            "weapon": weapon, "form": form, "mods": [], "arcane": "none",
+            "enemy": "thrax_centurion", "duration": 30.0, "runs": 8,
+            "headshot_pct": 100.0, "seed": 7,
+        }))
+    }
+
+    /// A weapon is fired in ITS OWN forms, with ITS OWN evolutions. Both used
+    /// to leak across weapons from the same place — a request that named
+    /// neither got Dual Toxocyst's evolutions and, for anything but `base`,
+    /// an Incarnon cycle built on a borrowed gauge. A bow has neither, so it
+    /// is the case that shows both.
+    #[test]
+    fn a_weapon_never_inherits_another_weapons_form_or_evolutions() {
+        // The gauge one first: asking a bow for the two-form cycle cannot
+        // produce a transformation, because it has nothing to transform into.
+        for form in ["charged", "base", "incarnon_cycle", "primary", ""] {
+            let r = sim("cernos_prime", form);
+            assert_eq!(r["ok"], json!(true), "form {form}");
+            assert_eq!(r["transforms"], json!(0), "bow transformed on form {form}");
+        }
+        assert_eq!(sim("verglas_prime", "incarnon_cycle")["transforms"], json!(0));
+
+        // The evolution one: an unstated `evolutions` key falls back to the
+        // historical Dual Toxocyst build, which must reduce to nothing here.
+        // Cernos Prime's unmodded base is 184 per arrow (3 x 184 = the 552 the
+        // wiki quotes); Dual Toxocyst's Commodore's Fortune would add 50.
+        let bow = sim("cernos_prime", "charged");
+        let base_of = |r: &Value| r["panel"]["total"].as_f64().expect("a base damage");
+        assert!((base_of(&bow) - 184.0).abs() < 1e-6, "{}", base_of(&bow));
+        assert_eq!(bow["panel"]["multishot"], json!(3.0));
+        assert_eq!(bow["panel"]["crit_chance"], json!(0.35));
+
+        // Both bow forms are the same weapon: half the base damage per arrow,
+        // and the tap fires more often for it (no draw, wiki Fire Rate's bow
+        // formula) — the trade that makes tapping a real pattern.
+        let tapped = sim("cernos_prime", "base");
+        assert!((base_of(&tapped) - 92.0).abs() < 1e-6, "{}", base_of(&tapped));
+        let (drawn_shots, tapped_shots) = (bow["shots"].as_u64(), tapped["shots"].as_u64());
+        assert_eq!(drawn_shots, Some(27), "30 s / (0.5 + 0.65) + 1");
+        assert_eq!(tapped_shots, Some(47), "30 s / 0.65 + 1");
+    }
+
+    /// The registry publishes what each weapon actually has: its own forms,
+    /// and separately whether any of them is transformed into.
+    #[test]
+    fn the_registry_publishes_each_weapons_own_forms() {
+        let ids = |w: &WeaponInfo| w.forms.iter().map(|(i, _)| *i).collect::<Vec<_>>();
+        let get = |id: &str| weapons().iter().find(|w| w.id == id).expect(id);
+
+        let bow = get("cernos_prime");
+        assert_eq!(ids(bow), ["charged", "base"], "the arsenal's form first");
+        assert!(!bow.has_cycle, "two forms, but nothing to transform into");
+
+        let torid = get("torid");
+        assert_eq!(ids(torid), ["base", "incarnon"]);
+        assert!(torid.has_cycle);
+
+        let verglas = get("verglas_prime");
+        assert_eq!(ids(verglas), ["base"]);
+        assert!(!verglas.has_cycle);
     }
 }

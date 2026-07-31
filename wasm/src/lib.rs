@@ -28,6 +28,7 @@ pub fn api(endpoint: &str, body: &str) -> String {
         "/api/panel" => wfsim_webapi::panel_json(&v),
         "/api/simulate" => wfsim_webapi::simulate_json(&v),
         "/api/opt-buffs" => wfsim_webapi::opt_buffs_json(&v),
+        "/api/riven" => wfsim_webapi::riven_json(&v),
         other => wfsim_webapi::err_json(format!("unknown endpoint: {other}")),
     };
     out.to_string()
