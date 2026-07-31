@@ -644,26 +644,30 @@ function renderRivens() {
   resolveRiven();
 }
 
-// How many positives, and whether there is a curse. This is the ONLY thing
-// that decides the multipliers, so it leads.
+// The shape, in the notation everyone already uses: 2, 3, 2+1, 3+1 — the
+// count of positives, and a +1 for the curse (user, 2026-07-31). It leads
+// because it is the ONLY thing that decides the multipliers; a 2 and a 2+1
+// pay their positives differently before a single stat is chosen.
+const RIVEN_SHAPES = [
+  { id: "2", positives: 2, curse: false },
+  { id: "3", positives: 3, curse: false },
+  { id: "2+1", positives: 2, curse: true },
+  { id: "3+1", positives: 3, curse: true },
+];
 function renderRivenShape() {
-  const seg = (label, on) => `<span class="seg ${on ? "on" : ""}" data-rv="${label}">${label}</span>`;
+  const now = `${riven.positives.length}${riven.curse ? "+1" : ""}`;
   $("riven-shape").innerHTML =
-    `<span class="rv-lbl">Shape</span>` +
-    `<span class="oseg">${seg("2 positives", riven.positives.length === 2)}${seg("3 positives", riven.positives.length === 3)}</span>` +
-    `<span class="oseg">${seg("curse", !!riven.curse)}</span>`;
+    `<span class="rv-lbl">Shape</span><span class="oseg">` +
+    RIVEN_SHAPES.map((s) => `<span class="seg ${s.id === now ? "on" : ""}" data-rv="${s.id}">${s.id}</span>`).join("") +
+    `</span>`;
   $("riven-shape").querySelectorAll("[data-rv]").forEach((el) => el.onclick = () => {
-    const p = rivenPool();
-    const want = el.dataset.rv;
-    if (want === "curse") {
-      // Empty, like every other slot — picking one FOR the visitor would be
-      // guessing, and the first version guessed into a stat already used.
-      riven.curse = riven.curse ? null : { id: null, roll: 1.0 };
-    } else {
-      const n = want === "3 positives" ? 3 : 2;
-      while (riven.positives.length > n) riven.positives.pop();
-      while (riven.positives.length < n) riven.positives.push({ id: null, roll: 1.0 });
-    }
+    const s = RIVEN_SHAPES.find((x) => x.id === el.dataset.rv);
+    // Stats already chosen SURVIVE the change — only the slot count moves.
+    // Switching 2 -> 2+1 is the same two positives worth 25% more, and
+    // re-picking them to see that would be busywork.
+    while (riven.positives.length > s.positives) riven.positives.pop();
+    while (riven.positives.length < s.positives) riven.positives.push({ id: null, roll: 1.0 });
+    riven.curse = s.curse ? (riven.curse || { id: null, roll: 1.0 }) : null;
     renderRivens();
   });
 }
