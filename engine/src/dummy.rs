@@ -5208,6 +5208,89 @@ mod tests {
         assert!((per_shot - 0.30).abs() < 0.02, "procced {per_shot:.3} per shot, expected ~0.30");
     }
 
+    /// Hunter Munitions is a CRITICAL HIT'S PRIVILEGE, not a bleed of its own:
+    /// the trigger changed, nothing else did (user, 2026-07-31). Every DoT in
+    /// this engine hangs off a PARENT hit and inherits that hit's multipliers,
+    /// and the whole point of pushing `Slash` onto the pellet's proc list is
+    /// that the mod's bleed gets the same parent as a naturally rolled one.
+    ///
+    /// Proven rather than argued: against a FORCED Slash proc under identical
+    /// conditions the bleeds must agree, in every condition a bleed reads.
+    ///
+    /// They agree to ~0.06% rather than exactly, and that gap is not
+    /// mechanical: the mod's own roll consumes an RNG draw per pellet, so the
+    /// two builds walk different random streams. It shrinks with runs
+    /// (1.6% at 200, 0.06% at 6000), which is what sampling noise does and a
+    /// real difference does not.
+    #[test]
+    fn a_hunter_munitions_bleed_is_indistinguishable_from_any_other_slash() {
+        // Guaranteed crit + guaranteed roll, so both builds proc exactly once
+        // per pellet and the only difference is WHERE the proc came from.
+        let pair = |tweak: fn(&mut DummyParams)| {
+            let base = || {
+                let mut p = DummyParams {
+                    damage: DamageVector::new().with(DamageType::Puncture, 75.0),
+                    base_crit_chance: 1.0,
+                    body_parts: mono_body(1.0),
+                    ..no_status()
+                };
+                tweak(&mut p);
+                p
+            };
+            let mut forced = base();
+            forced.forced_procs = vec![DamageType::Slash];
+            let mut hm = base();
+            hm.slash_on_crit = 1.0;
+            let (f, h) = (monte_carlo(&forced, 6000, 21), monte_carlo(&hm, 6000, 21));
+            assert_eq!(f.mean_procs, h.mean_procs, "one proc per pellet either way");
+            (f.mean_dot_damage, h.mean_dot_damage)
+        };
+        let same = |(f, h): (f64, f64), what: &str| {
+            assert!(
+                (f - h).abs() / f < 0.005,
+                "{what}: forced {f:.2} vs hunter munitions {h:.2}"
+            );
+            h
+        };
+
+        // The bleed coefficient and its armour bypass.
+        let plain = same(pair(|_| {}), "plain bleed");
+        // The PARENT's crit multiplier — the tier that pellet rolled.
+        same(pair(|p| p.crit_multiplier = 3.0), "crit multiplier");
+        // The PARENT's body part — a 3x head multiplies the bleed too.
+        same(pair(|p| p.body_parts = mono_body(3.0)), "part multiplier");
+        // Red crits: cc 2.0 is tier 2 guaranteed on both.
+        let tier2 = same(
+            pair(|p| {
+                p.base_crit_chance = 2.0;
+                p.crit_multiplier = 3.0;
+            }),
+            "tier 2",
+        );
+        // Status DURATION — its own set mate, Hunter Track, does exactly this.
+        let longer = same(pair(|p| p.status_duration_mult = 1.9), "status duration");
+        // The status DAMAGE bucket.
+        same(pair(|p| p.status_damage_mult = 1.5), "status damage");
+        // A Vigilante promotion happens BEFORE this roll reads the tier, so
+        // the promoted crit is the parent.
+        let promoted = same(
+            pair(|p| {
+                p.crit_tier_upgrade_chance = 1.0;
+                p.crit_multiplier = 3.0;
+            }),
+            "vigilante-promoted parent",
+        );
+
+        // And each of those conditions actually moved the bleed — an
+        // agreement between two numbers that never change proves nothing.
+        // Only ~14%, not 90%: the engagement window truncates the tail, so a
+        // longer bleed only pays for shots with room left to tick.
+        assert!(longer > plain * 1.10, "duration added ticks: {plain:.0} -> {longer:.0}");
+        let crit_only = same(pair(|p| p.crit_multiplier = 3.0), "crit multiplier");
+        assert!(tier2 > crit_only * 1.4, "tier 2 hit harder: {crit_only:.0} -> {tier2:.0}");
+        assert!(promoted > crit_only * 1.4, "the promotion reached the bleed");
+    }
+
     /// The roll hangs off the CRIT, so at half the crit chance it bleeds half
     /// as often — "indirectly affected by its Critical Chance" (wiki).
     #[test]

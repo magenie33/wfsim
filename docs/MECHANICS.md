@@ -290,6 +290,21 @@ bleed, with nothing restated.
 It never fires on a non-crit, and a Slash-immune target is skipped before the
 roll rather than after.
 
+**Every DoT has a PARENT** — that is the design this follows, in the game and
+in the engine. A bleed is not an independent damage source: it belongs to the
+hit that caused it and reads that hit's multipliers off a provenance snapshot.
+So "a critical hit's privilege" is the whole description of Hunter Munitions:
+the TRIGGER changed from a status roll to a crit, and nothing else did.
+
+That is verified, not asserted. `a_hunter_munitions_bleed_is_indistinguishable_from_any_other_slash`
+runs the mod's bleed against a FORCED Slash proc under identical conditions —
+plain, a 3x crit multiplier, a 3x body part, a tier-2 red crit, 1.9x status
+duration, 1.5x status damage, and a Vigilante-promoted parent — and the two
+agree in all seven. They agree to ~0.06% rather than exactly, and that gap is
+not mechanical: the mod's roll consumes an RNG draw per pellet, so the builds
+walk different random streams. It shrinks with runs (1.6% at 200, 0.06% at
+6000), which is what sampling noise does and a real difference does not.
+
 **Status:** the mechanic is wiki-sourced; the resulting DPS is not measured.
 On a 5-mod crit Torid vs a Thrax Centurion @9999 Steel Path it is worth
 +20.5% DPS (21,092 -> 25,414), which is the shape expected of an
