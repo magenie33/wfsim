@@ -226,6 +226,81 @@ fn mod_pool_for(weapon_id: &str) -> Vec<ModDef> {
     wfsim_engine::mods_data::pool_for_weapon(weapon_id)
 }
 
+/// A mod id that must outlive the request. Riven ids are made from a name the
+/// visitor typed, so they cannot be `&'static` on their own — interning keeps
+/// one copy per distinct id instead of leaking a fresh one per keystroke.
+fn intern(s: String) -> &'static str {
+    use std::sync::{Mutex, OnceLock};
+    static POOL: OnceLock<Mutex<std::collections::HashSet<&'static str>>> = OnceLock::new();
+    let set = POOL.get_or_init(|| Mutex::new(std::collections::HashSet::new()));
+    let mut g = set.lock().expect("intern");
+    if let Some(x) = g.get(s.as_str()) {
+        return x;
+    }
+    let leaked: &'static str = Box::leak(s.into_boxed_str());
+    g.insert(leaked);
+    leaked
+}
+
+/// The rivens a request carries, as ordinary [`ModDef`]s.
+///
+/// A riven is not part of any pool — it is the visitor's own item, built
+/// against THIS weapon's disposition — so it travels with the request and
+/// joins the pool only for the build being resolved. That keeps one shared
+/// mod pool for everyone and still lets a riven be equipped, searched and
+/// optimized exactly like a mod.
+///
+/// An INCOMPLETE riven is fine and resolves to whatever it does say. A card
+/// with no stats is a mod that does nothing, which is a perfectly ordinary
+/// thing for a build to contain (user, 2026-07-31).
+fn rivens_from(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
+    use wfsim_engine::rivens_data::{RivenSpec, RolledStat};
+    let class = info.mod_pools.last().cloned().unwrap_or_default();
+    let rolled = |x: &Value| -> Option<RolledStat> {
+        if !x.is_object() {
+            return None;
+        }
+        Some(RolledStat {
+            id: x.get("id").and_then(|i| i.as_str()).unwrap_or("").to_string(),
+            roll: x.get("roll").and_then(|r| r.as_f64()).unwrap_or(1.0),
+        })
+    };
+    v.get("rivens")
+        .and_then(|a| a.as_array())
+        .map(|a| {
+            a.iter()
+                .filter_map(|r| {
+                    let name = r.get("name")?.as_str()?;
+                    let s = r.get("spec")?;
+                    let spec = RivenSpec {
+                        class: class.clone(),
+                        positives: s
+                            .get("positives")
+                            .and_then(|x| x.as_array())
+                            .map(|x| x.iter().filter_map(rolled).collect())
+                            .unwrap_or_default(),
+                        curse: s.get("curse").and_then(rolled),
+                        rank: s.get("rank").and_then(|x| x.as_u64()).unwrap_or(8) as u32,
+                        polarity: match s.get("polarity").and_then(|x| x.as_str()).unwrap_or("madurai") {
+                            "vazarin" => wfsim_engine::mods::Polarity::Vazarin,
+                            "naramon" => wfsim_engine::mods::Polarity::Naramon,
+                            _ => wfsim_engine::mods::Polarity::Madurai,
+                        },
+                    };
+                    Some(spec.to_mod_def(intern(format!("riven:{name}")), info.disposition))
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// The weapon's pool PLUS the request's own rivens.
+fn mod_pool_with_rivens(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
+    let mut p = mod_pool_for(&info.id);
+    p.extend(rivens_from(v, info));
+    p
+}
+
 // 8 main slots (innate polarities from the weapon yaml) + the exilus slot
 // as the UI's 9th slot, carrying ITS innate polarity too (wiki "Exilus
 // Polarity" — caught in the 2026-07-28 wiki cross-check; it was modeled as
@@ -965,7 +1040,7 @@ pub fn panel_json(v: &Value) -> Value {
     if mod_ids.len() > 9 {
         return err_json("at most 8 slots + 1 exilus");
     }
-    let p = mod_pool_for(&info.id);
+    let p = mod_pool_with_rivens(v, info);
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
     for id in &mod_ids {
         match p.iter().find(|m| m.id == id) {
@@ -1963,7 +2038,7 @@ pub fn simulate_json(v: &Value) -> Value {
     // engine resolves any mod list honestly.
 
     // ---- resolve mods against the weapon's pool (honoring the given order) ----
-    let p = mod_pool_for(&info.id);
+    let p = mod_pool_with_rivens(v, info);
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
     for id in &mod_ids {
         match p.iter().find(|m| m.id == id) {
@@ -2215,7 +2290,8 @@ pub fn opt_buffs_json(v: &Value) -> Value {
     }
     ids.sort();
     ids.dedup();
-    let full = mod_pool_for(&info.id);
+    // Rivens the request carries join the searchable pool like any mod.
+    let full = mod_pool_with_rivens(v, info);
     let refs: Vec<&ModDef> = full
         .iter()
         .filter(|m| ids.iter().any(|id| id.as_str() == m.id))
@@ -2312,7 +2388,8 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     fixed_ids.sort();
     fixed_ids.dedup();
     search_ids.retain(|s| !fixed_ids.contains(s)); // fixed wins over search
-    let full = mod_pool_for(&info.id);
+    // Rivens the request carries join the searchable pool like any mod.
+    let full = mod_pool_with_rivens(v, info);
     for id in fixed_ids.iter().chain(search_ids.iter()) {
         if !full.iter().any(|m| m.id == id.as_str()) {
             return Err(err_json(format!("unknown mod id: {id}")));

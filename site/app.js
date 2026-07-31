@@ -581,6 +581,87 @@ function renderHome() {
     </section>`).join("");
 }
 
+// ---- Rivens as MODS ----------------------------------------------------
+// A saved riven is equipment, so it belongs in the mod list — findable by its
+// preset name ("riven 1"), by its generated name ("Visican"), or by any value
+// printed on it (user, 2026-07-31).
+//
+// It is NOT put in `META.mod_pools`: a riven is the visitor's own item, built
+// against this weapon's disposition, so it travels WITH the request. The
+// engine adds it to the pool for that build only, which is why one shared
+// pool can still serve everyone.
+//
+// An INCOMPLETE riven is deliberately allowed through. A card with no stats
+// is a mod that does nothing, which is an ordinary thing for a build to
+// contain and not worth refusing.
+const RIVEN_PREFIX = "riven:";
+const isRivenId = (id) => typeof id === "string" && id.startsWith(RIVEN_PREFIX);
+let rivenModCache = { key: null, list: [] };
+
+// The saved rivens of the CURRENT weapon, shaped like mods so every list,
+// picker and slot that already understands a mod understands these.
+function rivenMods() {
+  const w = $("weapon").value;
+  const raw = loadPresetList(RIVENS);
+  const key = w + "|" + JSON.stringify(raw) + "|" + JSON.stringify(rivenNames);
+  if (rivenModCache.key === key) return rivenModCache.list;
+  const list = raw.map((p) => {
+    const st = p.state || {};
+    const stats = (st.positives || []).concat(st.curse ? [st.curse] : []);
+    const lines = (rivenNames[p.name] || {}).lines || [];
+    const official = (rivenNames[p.name] || {}).name || "";
+    return {
+      id: RIVEN_PREFIX + p.name,
+      name: official ? `${p.name} · ${official}` : p.name,
+      name_en: official,
+      subtype: "Riven",
+      riven: true,
+      rarity: "legendary",
+      polarity: (st.polarity || "madurai").replace(/^./, (c) => c.toUpperCase()),
+      drain: 2 + 2 * (st.rank ?? 8),
+      max_rank: 8,
+      exilus: false,
+      image: null,
+      // Every printed value is searchable, which is how you find the riven
+      // with the crit damage on it without remembering what you called it.
+      effects: lines.length ? lines : stats.filter((s) => s && s.id).map((s) => s.id.replace(/_/g, " ")),
+      __spec: st,
+    };
+  });
+  rivenModCache = { key, list };
+  return list;
+}
+
+// The generated name and printed lines per saved riven, filled in by asking
+// the engine — the page never computes a riven value itself.
+let rivenNames = {};
+async function refreshRivenNames() {
+  const ps = loadPresetList(RIVENS);
+  const out = {};
+  for (const p of ps) {
+    try {
+      const r = await api("/api/riven", { weapon: $("weapon").value, ...(p.state || {}) });
+      out[p.name] = { name: r.name || "", lines: (r.stats || []).map((s) => s.text) };
+    } catch (_) { /* a name is a nicety; the riven still equips */ }
+  }
+  rivenNames = out;
+  rivenModCache = { key: null, list: [] };
+  // The lists that show a riven's printed values may already have rendered
+  // with only its stat ids — this arrives afterwards, so they get redrawn.
+  if (typeof renderOptModList === "function" && $("opt-mods") && !$("opt-block").hidden) renderOptModList();
+  if ($("mod-popover") && !$("mod-popover").hidden && rivenPickerSlot != null) renderMenu(rivenPickerSlot, $("mod-search").value || "");
+}
+// Which slot the builder's mod picker is open for, so an async refresh can
+// redraw it without reopening it.
+let rivenPickerSlot = null;
+
+/// Everything equippable on this weapon: the pool, plus this weapon's rivens.
+const poolWithRivens = () => currentPool.concat(rivenMods());
+
+/// The rivens a request must carry for its `riven:` ids to mean anything.
+const rivenPayload = () =>
+  loadPresetList(RIVENS).map((p) => ({ name: p.name, spec: p.state || {} }));
+
 // ---- Rivens ------------------------------------------------------------
 // A CONSTRUCTOR, not a roller. Every control is bounded by the formula, so
 // the only rivens it can express are legal ones — including the corner where
@@ -871,7 +952,14 @@ function saveRivenSoon() {
     const ps = loadPresetList(RIVENS);
     const name = activeRivenName();
     const i = ps.findIndex((p) => p.name === name);
-    if (i >= 0) { ps[i].state = snapshotRiven(); storePresetList(RIVENS, ps); renderRivenPresetBar(); }
+    if (i >= 0) {
+      ps[i].state = snapshotRiven();
+      storePresetList(RIVENS, ps);
+      renderRivenPresetBar();
+      // The mod lists show each riven's generated name and printed values, so
+      // they have to be re-asked for after an edit.
+      refreshRivenNames();
+    }
   }, 250);
 }
 const snapshotRiven = () => ({
@@ -1427,7 +1515,7 @@ const weaponInfo = (id) => META.weapons.find((w) => w.id === id) || META.weapons
 // Evolutions moved into each weapon's meta entry (they are per transform
 // group); this reads the CURRENT weapon's tiers.
 const weaponEvos = () => weaponInfo($("weapon").value).evolutions || [];
-const modById = (id) => currentPool.find((m) => m.id === id);
+const modById = (id) => poolWithRivens().find((m) => m.id === id);
 const show = (id, on) => { const el = $(id); if (on) el.removeAttribute("hidden"); else el.setAttribute("hidden", ""); };
 // Where (other than exceptIdx) this mod is currently slotted, or -1.
 const placedAt = (id, exceptIdx) => slots.findIndex((s, i) => i !== exceptIdx && s.mod === id);
@@ -1463,6 +1551,8 @@ function applyWeaponInner(id, presetMods) {
   // A weapon's pool is the UNION of the pools it draws from: `primary` mods
   // fit any primary weapon, `rifle` is the class pool. One flat list per
   // weapon was right only while every rifle-class weapon was a launcher.
+  rivenModCache = { key: null, list: [] };
+  refreshRivenNames(); // this weapon's rivens, named by the engine
   currentPool = (w.mod_pools || [w.mod_class])
     .flatMap((p) => META.mod_pools[p] || [])
     // The pool tag is not the whole rule: the beam-only mods are tagged
@@ -1621,6 +1711,9 @@ function buildPayload() {
     arcane,
     arcane_rank: arcaneRank,
     mods: slots.filter((s) => s.mod).map((s) => s.mod),
+    // A `riven:` id means nothing without the riven itself — it is the
+    // visitor's item, not a pool entry, so it rides along with the request.
+    rivens: rivenPayload(),
   };
 }
 
@@ -1805,24 +1898,32 @@ function familyConflict(mod, exceptIdx) {
 }
 
 function renderMenu(slotIdx, query) {
+  rivenPickerSlot = slotIdx;
   const menu = $("mod-menu");
   const q = query.trim().toLowerCase();
   // Equipped mods stay LISTED: the current slot's mod is marked, mods in other
   // slots show their slot number — picking one of those EXCHANGES the two slots.
   const group = (m) => slots[slotIdx].mod === m.id ? 0 : placedAt(m.id, slotIdx) >= 0 ? 1 : 2;
-  const hits = currentPool
+  const hits = poolWithRivens()
     .filter((m) => slotIdx !== EXILUS || m.exilus) // exilus slot: utility mods only
     .filter((m) => !pickerPrefs.pol || m.polarity === pickerPrefs.pol)
     .filter((m) => !q || searchBlob(m).includes(q))
     .sort((a, b) => {
       const g = group(a) - group(b); // current first, then equipped, then the rest
       if (g) return g;
+      // RIVENS last, as their own block: they are a different kind of thing
+      // and sorting them in by name would scatter them through the pool.
+      const r = (a.riven ? 1 : 0) - (b.riven ? 1 : 0);
+      if (r) return r;
       const c = pickerPrefs.sort === "drain" ? a.drain - b.drain : a.name.localeCompare(b.name);
       return pickerPrefs.dir === "desc" ? -c : c;
     });
   // No cap: every pool mod must be reachable. The popover menu scrolls
   // (`.combo-menu` overflow-y), so the whole sorted/filtered list is browsable.
+  let headed = false;
   menu.innerHTML = hits.length ? hits.map((m) => {
+    // One heading, where the rivens start.
+    const head = m.riven && !headed ? ((headed = true), `<div class="menu-head">Riven</div>`) : "";
     const isCur = slots[slotIdx].mod === m.id;
     const at = placedAt(m.id, slotIdx);
     // Exchanging with the exilus slot would move OUR mod there — only legal
@@ -1840,9 +1941,9 @@ function renderMenu(slotIdx, query) {
       : exIllegal ? `cannot swap: ${ownMod.name} is not an exilus mod`
       : at >= 0 ? `swap with ${at === EXILUS ? "the exilus slot" : "slot " + (at + 1)}`
       : m.effects.join(" · ");
-    return `<div class="opt ${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : at >= 0 ? "placed" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" data-id="${m.id}" title="${title}">
+    return head + `<div class="opt ${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : at >= 0 ? "placed" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" data-id="${m.id}" title="${title}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
-      <div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${(descAt(m, m.max_rank) || m.effects).map((x) => `<div>${tf(x)}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
+      <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${(descAt(m, m.max_rank) || m.effects).map((x) => `<div>${tf(x)}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => {
     const id = o.dataset.id;
@@ -2853,10 +2954,13 @@ function renderOptModList() {
   // Exilus mods are IN this list too — all 9 slots accept them (game rule),
   // so marking one here makes it compete for a MAIN slot; the exilus SLOT
   // has its own block below.
-  const hits = currentPool
+  const hits = poolWithRivens()
     .filter((m) => !optPrefs.pol || m.polarity === optPrefs.pol)
     .filter((m) => !q || searchBlob(m).includes(q))
     .sort((a, b) => {
+      // Rivens as their own block at the end, as in the builder's picker.
+      const r = (a.riven ? 1 : 0) - (b.riven ? 1 : 0);
+      if (r) return r;
       const c = optPrefs.sort === "drain" ? a.drain - b.drain : a.name.localeCompare(b.name);
       return optPrefs.dir === "desc" ? -c : c;
     });
@@ -2869,7 +2973,9 @@ function renderOptModList() {
   const fixedN = reqCountMain();
   const poolN = Object.values(opt.mods).filter((s) => s === "search").length;
   const full = fixedN >= opt.size;
+  let headed = false;
   const row = (m) => {
+    const head = m.riven && !headed ? ((headed = true), `<div class="menu-head">Riven</div>`) : "";
     const st = opt.mods[m.id] || "off";
     const fam = famReqBy(m);
     const dead = !!fam || (full && st === "off");
@@ -2879,9 +2985,9 @@ function renderOptModList() {
     const why = fam ? `excluded: ${(modById(fam) || { name: fam }).name} is required (same family)`
       : dead ? `all ${opt.size} slots are required already` : "";
     const eff = (descAt(m, m.max_rank) || m.effects || []).map((x) => `<div>${tf(x)}</div>`).join("");
-    return `<div class="opt ${st === "off" ? "" : st} ${dead ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why || (m.effects || []).join(" · ")}">
+    return head + `<div class="opt ${st === "off" ? "" : st} ${dead ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why || (m.effects || []).join(" · ")}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
-      <div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}</div><div class="me">${eff}</div></div>
+      <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}</div><div class="me">${eff}</div></div>
       <div class="oseg">
         <span class="seg ${st === "search" ? "on" : ""} ${dead ? "dis" : ""}" data-m="${m.id}" data-s="search">pool</span>
         <span class="seg ${st === "fixed" ? "on" : ""} ${dead || reqBlocked ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${!dead && reqBlocked ? 'title="pooled mods reserve ≥1 open slot — raise max mods or clear pools"' : ""}>req</span>
@@ -3024,6 +3130,7 @@ async function runOptimize() {
     const body = {
       weapon: $("weapon").value,
       mods: opt.mods,
+      rivens: rivenPayload(),
       build_size: opt.size,
       arcanes: arcs.length ? arcs : ["none"],
       evolutions,

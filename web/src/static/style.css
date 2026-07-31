@@ -510,3 +510,9 @@ label.check input{width:auto}
 .rv-card{margin:12px 0}
 .rv-name{font-size:22px;font-weight:800;letter-spacing:.01em}
 .rv-meta{font-size:12px;color:var(--muted)}
+
+/* A section heading inside a picker list — rivens are a different kind of
+   thing from pool mods and read as their own block. */
+.menu-head{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+  padding:8px 10px 4px;border-top:1px solid var(--line);margin-top:4px;position:sticky;top:0;
+  background:var(--panel)}
