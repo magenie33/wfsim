@@ -6,8 +6,8 @@
 
 **The Simulacrum. The Primed One.**
 
-The ultimate Warframe builder, fight simulator, and Monte-Carlo optimizer —
-true to in-game numbers, down to the last proc. Theorycrafting, solved.
+WFSim is the ultimate Warframe calculator — builder, simulator, optimizer.
+True to in-game numbers, down to the last proc. Theorycrafting, solved.
 
 [**wfsim.app**](https://wfsim.app) ·
 QQ group [995078378](https://qm.qq.com/q/uiXrMSTs8S)

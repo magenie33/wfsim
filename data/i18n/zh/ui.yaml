@@ -19,7 +19,19 @@ ui:
   # The claim leads with the NAME — a sentence that starts "WFSim is"
   # says whose claim it is; one that starts "The ultimate…" is a
   # category description with nobody behind it (user, 2026-07-31).
-  "WFSim is the ultimate Warframe builder, fight simulator, and Monte-Carlo optimizer — true to in-game numbers, down to the last proc. Theorycrafting, solved.": WF模拟是终极的 Warframe 配装器、战斗模拟器与蒙特卡洛优化器 —— 与游戏内数值完全一致，精确到每一次触发。配装不靠猜，是算出来的。
+  #
+  # One NOUN for what the whole thing is — a calculator — and the three
+  # modules in apposition under it, named exactly as the page names them
+  # (user, 2026-07-31). "fight simulator" and "Monte-Carlo optimizer"
+  # described the implementation; a list of three parallel products
+  # described no whole at all. The sub-features go unsaid: they are what
+  # the three are made of, and naming them would only date the sentence.
+  #
+  # "Theorycrafting, solved." is a NOUN, a comma, and a verdict — two words,
+  # clipped, final. "配装不靠猜，是算出来的" explained it instead of landing
+  # it. 「理论配装，已解」keeps the shape: same noun-comma-verdict, same
+  # length, and 已解 is what you write on a problem that is finished.
+  "WFSim is the ultimate Warframe calculator — builder, simulator, optimizer. True to in-game numbers, down to the last proc. Theorycrafting, solved.": WF模拟是终极的 Warframe 计算器 —— 配装器、模拟器、优化器。与游戏内数值完全一致，精确到每一次触发。理论配装，已解。
   # Footer — legal text, so it says the same thing in both languages.
   "WFSim is an unofficial fan project, not affiliated with or endorsed by Digital Extremes. Warframe is a trademark of Digital Extremes Ltd.": WF模拟 是非官方粉丝项目，与 Digital Extremes 无从属关系，也未获其认可。Warframe 是 Digital Extremes Ltd. 的商标。
   "Game data derived from the community": 游戏数据来自社区
