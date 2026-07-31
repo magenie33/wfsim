@@ -315,6 +315,27 @@ pub fn class_pool(class: &str) -> Vec<ModDef> {
         .to_vec()
 }
 
+/// The pool a weapon actually sees: the UNION of the named pools, in order,
+/// deduplicated by mod id.
+///
+/// The game's compatibility is not one flat list per weapon. DE tags a mod
+/// PRIMARY (fits any primary weapon), Rifle (the class), or narrower still —
+/// Assault Rifle, Bow, Sniper — and a weapon draws every tag that applies to
+/// it. Collapsing that into a single directory per weapon was right only
+/// while every rifle-class weapon in the roster was a launcher.
+pub fn pool_union(pools: &[String]) -> Vec<ModDef> {
+    let mut out: Vec<ModDef> = Vec::new();
+    for p in pools {
+        for m in class_pool(p) {
+            if !out.iter().any(|x| x.id == m.id) {
+                out.push(m);
+            }
+        }
+    }
+    out.sort_by_key(|m| m.id);
+    out
+}
+
 /// The secondary/pistol mod pool — `data/mods/pistol/*.yaml` (Dual Toxocyst's
 /// and Laetum's pool).
 pub fn pistol_pool() -> Vec<ModDef> {

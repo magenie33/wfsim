@@ -1771,7 +1771,9 @@ mod tests {
     /// weak member (Supplies contributes nothing on its own) worth a slot.
     #[test]
     fn each_vigilante_member_adds_its_share_of_the_set_bonus() {
-        let pool = crate::mods_data::class_pool("rifle");
+        // The Vigilante mods are PRIMARY-tagged, not rifle-tagged, so this has
+        // to be the union the Torid actually sees.
+        let pool = crate::mods_data::pool_union(&["primary".into(), "rifle".into()]);
         let pick = |id: &str| pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{id}"));
         let base = WeaponBase::from_data("verglas_prime", true, &[]);
         let chance = |mods: &[&ModDef]| resolve(&base, mods, StackPolicy::BaseOnly).crit_tier_upgrade_chance;

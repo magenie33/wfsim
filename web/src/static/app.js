@@ -1125,7 +1125,10 @@ function applyWeaponInner(id, presetMods) {
   const w = weaponInfo(id);
   buffList = []; // rebuilt from the next /api/panel response for this build
   opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8, buffs: {} }; optSeeded = false; optBuffList = []; // reset scope
-  currentPool = META.mod_pools[w.mod_class] || [];
+  // A weapon's pool is the UNION of the pools it draws from: `primary` mods
+  // fit any primary weapon, `rifle` is the class pool. One flat list per
+  // weapon was right only while every rifle-class weapon was a launcher.
+  currentPool = (w.mod_pools || [w.mod_class]).flatMap((p) => META.mod_pools[p] || []);
   innate = (w.innate_polarities || []).slice(0, 8);
   while (innate.length < 9) innate.push(null);
 
@@ -1143,7 +1146,10 @@ function applyWeaponInner(id, presetMods) {
   // eligibility group is what actually decides which mods equip, and a bare
   // "Mods" heading leaves the visitor guessing which pool a launcher draws
   // from. Falls back to the plain word if a class ever has no label.
-  const poolName = { rifle: "Rifle Mods", pistol: "Pistol Mods" }[w.mod_class];
+  const POOL_NAME = { rifle: "Rifle Mods", pistol: "Pistol Mods", primary: "Primary Mods" };
+  // Names the pools it actually draws, widest first — "Primary + Rifle Mods".
+  const poolName = (w.mod_pools || [w.mod_class])
+    .map((p) => (POOL_NAME[p] || p).replace(/ Mods$/, "")).join(" + ") + " Mods";
   $("mod-block-h").textContent = tr(poolName || "Mods");
 
   $("w-tags").innerHTML = [w.subtype, w.uses_evo2 ? "Incarnon" : null, w.sentinel ? "Sentinel" : null]

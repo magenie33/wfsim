@@ -4,7 +4,8 @@ slot: secondary
 # Single Pistol — takes the Pistol Mods pool (wiki Pistol_Mods), same
 # eligibility path as the Dual Toxocyst entry.
 class: pistol
-mod_eligibility: pistol_mods
+# Pistol mods. No `secondary`-wide pool exists in the data.
+mod_pools: [pistol]
 grip_type: PISTOL
 mastery_rank: 14
 max_rank: 30

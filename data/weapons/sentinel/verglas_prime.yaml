@@ -7,7 +7,11 @@ name: Verglas Prime
 slot: sentinel
 class: sentinel_weapon         # the "sentinel" in the class is what gates the
                                # arcane and exilus rules below
-mod_eligibility: rifle_mods
+# RIFLE mods only. A sentinel weapon is not a Primary weapon - DE's own
+# compat tag for it is SentinelWeapons, not LongGuns - so the `primary` pool
+# (Hunter Munitions, Vigilante) is NOT claimed here. Unsourced either way;
+# omitting compatibility we cannot cite beats inventing it.
+mod_pools: [rifle]
 mastery_rank: 0
 max_rank: 30
 

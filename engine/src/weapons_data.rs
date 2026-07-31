@@ -235,8 +235,12 @@ pub struct WeaponSpec {
     pub name: String,
     pub slot: String,
     pub class: String,
+    /// The mod POOLS this weapon draws from, as a union — `data/mods/<pool>/`.
+    /// A weapon is not served by one list: a launcher takes both the
+    /// primary-wide pool and the rifle class pool, and takes no assault-rifle
+    /// or bow mods, which is why those are pools of their own.
     #[serde(default)]
-    pub mod_eligibility: Option<String>,
+    pub mod_pools: Vec<String>,
     #[serde(default)]
     pub polarities: Vec<String>,
     #[serde(default)]
@@ -721,13 +725,38 @@ mod tests {
     }
 
     /// The roster is data-driven: dropping in `data/weapons/primary/` publishes
-    /// a primary weapon with no code change, and its mod pool and arcane slot
-    /// follow from `mod_eligibility` and `slot`.
+    /// a primary weapon with no code change, and its mod pools and arcane slot
+    /// follow from `mod_pools` and `slot`.
+    /// A weapon's pool is the union of the pools it draws. The Torid sees the
+    /// primary-wide mods AND the rifle class pool; Verglas Prime, a sentinel
+    /// weapon, sees only the rifle pool — it is not a Primary weapon, so it
+    /// does not claim mods DE tags PRIMARY.
+    #[test]
+    fn a_weapons_pool_is_the_union_of_the_pools_it_draws() {
+        use crate::mods_data::{class_pool, pool_union};
+        let torid = pool_union(&spec("torid").unwrap().mod_pools);
+        let verglas = pool_union(&spec("verglas_prime").unwrap().mod_pools);
+        let rifle = class_pool("rifle").len();
+        let primary = class_pool("primary").len();
+        assert!(primary > 0, "data/mods/primary/ exists");
+        assert_eq!(torid.len(), rifle + primary, "union of both, no overlap");
+        assert_eq!(verglas.len(), rifle, "sentinel: rifle only");
+        assert!(torid.iter().any(|m| m.id == "vigilante_armaments"));
+        assert!(!verglas.iter().any(|m| m.id == "vigilante_armaments"));
+        // A mod in two pools would still appear once.
+        let mut ids: Vec<&str> = torid.iter().map(|m| m.id).collect();
+        let n = ids.len();
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), n, "the union deduplicates by id");
+    }
+
     #[test]
     fn the_primary_slot_needed_no_code() {
         let t = spec("torid").expect("torid");
         assert_eq!(t.slot, "primary");
-        assert_eq!(t.mod_eligibility.as_deref(), Some("rifle_mods"));
+        // A UNION, widest first: primary-wide mods AND the rifle class pool.
+        assert_eq!(t.mod_pools, ["primary", "rifle"]);
         assert!(roster().any(|s| s.id == "torid"), "selectable");
         assert!(
             !roster().any(|s| s.id == "torid_incarnon"),

@@ -74,7 +74,11 @@ struct WeaponInfo {
     // Mods pool, which (wiki Pistol_Mods) equips on secondary Pistols, Dual
     // Pistols, Shotgun Sidearms, Crossbows, and Tomes. This is the ACTUAL way
     // mods take effect, so the eligibility group is what drives the pool.
-    mod_class: String, // "pistol" | "rifle"
+    /// The pools this weapon draws from, as a union ("primary" + "rifle" for a
+    /// launcher). Compatibility is not one list: DE tags a mod PRIMARY, Rifle,
+    /// or narrower (Assault Rifle / Bow / Sniper), and a weapon takes every
+    /// tag that applies to it.
+    mod_pools: Vec<String>,
     // Precise weapon type within that group (Dual Toxocyst = Dual Pistols).
     subtype: String,
     sentinel: bool,
@@ -143,11 +147,11 @@ fn weapons() -> &'static [WeaponInfo] {
                 WeaponInfo {
                     id: s.id.clone(),
                     name: s.name.clone(),
-                    mod_class: s
-                        .mod_eligibility
-                        .as_deref()
-                        .map(|m| m.trim_end_matches("_mods").to_string())
-                        .unwrap_or_else(|| s.slot.clone()),
+                    mod_pools: if s.mod_pools.is_empty() {
+                        vec![s.slot.clone()]
+                    } else {
+                        s.mod_pools.clone()
+                    },
                     subtype: title_case(&s.class),
                     sentinel,
                     forms,
@@ -203,8 +207,9 @@ fn default_weapon_id() -> &'static str {
 // The FULL pool (exilus included) of a weapon's mod class — the picker and
 // every id lookup go through here, so a weapon whose `mod_eligibility` names
 // a class with no data yet gets an empty pool rather than another weapon's.
-fn mod_pool_for(class: &str) -> Vec<ModDef> {
-    wfsim_engine::mods_data::class_pool(class)
+/// The pool a weapon actually sees — the UNION of the pools it draws from.
+fn mod_pool_for(pools: &[String]) -> Vec<ModDef> {
+    wfsim_engine::mods_data::pool_union(pools)
 }
 
 // 8 main slots (innate polarities from the weapon yaml) + the exilus slot
@@ -315,7 +320,10 @@ pub fn meta_json() -> Value {
             json!({
                 "id": w.id,
                 "name": w.name,
-                "mod_class": w.mod_class,
+                // The pools to union, in order. `mod_class` stays as the
+                // NARROWEST one, which is what labels and filters read.
+                "mod_pools": w.mod_pools,
+                "mod_class": w.mod_pools.last().cloned().unwrap_or_default(),
                 "subtype": w.subtype,
                 "sentinel": w.sentinel,
                 // The EQUIPMENT slot ("primary" / "secondary"), which is what
@@ -786,7 +794,7 @@ pub fn panel_json(v: &Value) -> Value {
     if mod_ids.len() > 9 {
         return err_json("at most 8 slots + 1 exilus");
     }
-    let p = mod_pool_for(&info.mod_class);
+    let p = mod_pool_for(&info.mod_pools);
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
     for id in &mod_ids {
         match p.iter().find(|m| m.id == id) {
@@ -1703,7 +1711,7 @@ pub fn simulate_json(v: &Value) -> Value {
     // engine resolves any mod list honestly.
 
     // ---- resolve mods against the weapon's pool (honoring the given order) ----
-    let p = mod_pool_for(&info.mod_class);
+    let p = mod_pool_for(&info.mod_pools);
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
     for id in &mod_ids {
         match p.iter().find(|m| m.id == id) {
@@ -1957,7 +1965,7 @@ pub fn opt_buffs_json(v: &Value) -> Value {
     }
     ids.sort();
     ids.dedup();
-    let full = mod_pool_for(&info.mod_class);
+    let full = mod_pool_for(&info.mod_pools);
     let refs: Vec<&ModDef> = full
         .iter()
         .filter(|m| ids.iter().any(|id| id.as_str() == m.id))
@@ -2054,7 +2062,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     fixed_ids.sort();
     fixed_ids.dedup();
     search_ids.retain(|s| !fixed_ids.contains(s)); // fixed wins over search
-    let full = mod_pool_for(&info.mod_class);
+    let full = mod_pool_for(&info.mod_pools);
     for id in fixed_ids.iter().chain(search_ids.iter()) {
         if !full.iter().any(|m| m.id == id.as_str()) {
             return Err(err_json(format!("unknown mod id: {id}")));

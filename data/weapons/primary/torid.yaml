@@ -5,7 +5,13 @@ slot: primary
 # Launchers, Snipers, Spearguns, Crossbows and Arm-Cannons all draw from it;
 # Shotguns are the pool that does not).
 class: launcher
-mod_eligibility: rifle_mods
+# A weapon's pool is a UNION, not one list: `primary` mods fit ANY primary
+# weapon (Hunter Munitions, the Vigilante set), `rifle` is the class pool a
+# LAUNCHER draws (wiki Rifle_Mods: Assault Rifles, Bows, Launchers, Snipers,
+# Spearguns, Crossbows and Arm-Cannons; Shotguns are the pool that does not).
+# A launcher takes no `assault_rifle` / `bow` / `sniper` mods, which is why
+# those are their own pools rather than more entries in `rifle`.
+mod_pools: [primary, rifle]
 grip_type: ""                  # the data module records an empty GripType
 mastery_rank: 4
 max_rank: 30

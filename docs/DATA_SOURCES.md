@@ -179,6 +179,43 @@ sentence. What it caught:
 `desc_info_fills_every_x_across_the_pool` (now over EVERY class, not just the
 pistol pool it was written for) fails on any placeholder left unfilled.
 
+### Mod compatibility is a UNION of pools (2026-07-31)
+
+"Primary Mod" is not one pool. DE tags every mod, and WFCD carries the tag as
+`compatName`:
+
+| tag | count | who draws it |
+|---|---|---|
+| `PRIMARY` | 10 | every primary weapon |
+| `Rifle` | 118 | the rifle class — assault rifles, bows, launchers, snipers, spearguns, crossbows, arm-cannons |
+| `Assault Rifle` | 15 | assault rifles only |
+| `Sniper` | 14 | snipers only |
+| `Bow` | 10 | bows only |
+| `Shotgun` | 119 | shotguns — a separate pool, not a subset of Rifle |
+
+So a weapon's pool is a union: a launcher draws `PRIMARY` + `Rifle` and no
+narrower tag; a bow draws `PRIMARY` + `Rifle` + `Bow`; a shotgun draws
+`PRIMARY` + `Shotgun`. `data/mods/<pool>/` is one pool each and a weapon names
+the ones it draws (`mod_pools: [primary, rifle]`).
+
+One flat pool per weapon was right only while every rifle-class weapon in the
+roster was a launcher. It fails in both directions the moment a second type
+arrives: an assault-rifle mod would be offered to a launcher, and a shotgun
+would draw nothing.
+
+**Still missing: 6 of the 10 `PRIMARY` mods.** Two matter a great deal —
+**Hunter Munitions** (+30% chance to apply Slash on a critical hit) and
+**Sinister Reach** (+12m beam range, which the Torid Incarnon's beam wants).
+The others are Combustion Beam, Hunter Track, Shivering Contagion, Aero
+Periphery.
+
+They are NOT added yet on purpose. Their mechanics — slash-on-crit, kill
+explosions, status spread — are not in the engine, and a mod the engine cannot
+model does not merely go missing from the optimizer: it gets RANKED, at zero.
+A build page that lists Hunter Munitions and scores it worthless is worse than
+one that does not list it, because the first looks like an answer. Each needs
+its mechanic before its card.
+
 ## Verification tooling (lives in `private/scripts/` — LOCAL, gitignored)
 
 The pipeline that fills and checks `data/` is not in the repo (`/private/` is
