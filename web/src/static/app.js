@@ -600,19 +600,29 @@ const rivenKey = () => `wfsim-rivens-${$("weapon").value}`;
 const loadRivens = () => { try { return JSON.parse(localStorage.getItem(rivenKey())) || []; } catch (_) { return []; } };
 const storeRivens = (v) => { try { localStorage.setItem(rivenKey(), JSON.stringify(v)); } catch (_) {} };
 
+// An EMPTY card. Nothing is pre-picked: opening the tab must not look like
+// a riven someone already made, and a default stat is a claim the visitor did
+// not make (user, 2026-07-31). The shape starts at two positives because a
+// riven has at least two — that is the game's floor, not a suggestion — and
+// the rolls sit at 1.0, the middle of the band, because a slider has to be
+// somewhere.
 function blankRiven() {
-  const p = rivenPool();
-  const pick = (i) => (p[i] ? p[i].id : null);
   return {
-    positives: [{ id: pick(0), roll: 1.0 }, { id: pick(1), roll: 1.0 }],
+    positives: [{ id: null, roll: 1.0 }, { id: null, roll: 1.0 }],
     curse: null,
     rank: rivenRules().max_rank,
     polarity: "madurai",
   };
 }
 
+/// Every slot filled? An unfinished card is not an ILLEGAL riven — it is one
+/// that has not been described yet, and it must not be reported as an error.
+const rivenComplete = () =>
+  riven && riven.positives.every((s) => s.id) && (!riven.curse || riven.curse.id);
+
 async function resolveRiven() {
   if (!riven) return;
+  if (!rivenComplete()) { rivenResolved = null; renderRivenCard(); return; }
   try {
     rivenResolved = await api("/api/riven", { weapon: $("weapon").value, ...riven });
   } catch (e) {
@@ -646,21 +656,13 @@ function renderRivenShape() {
     const p = rivenPool();
     const want = el.dataset.rv;
     if (want === "curse") {
-      // Default to the first stat that may be one AND is not already taken:
-      // five are positive-only and can never be cursed at all, and a stat
-      // cannot appear twice on one riven. Defaulting into a duplicate would
-      // open the tab on an illegal riven.
-      const taken = new Set(riven.positives.map((x) => x.id));
-      const free = p.find((s) => s.curse && !taken.has(s.id));
-      riven.curse = riven.curse ? null : { id: free && free.id, roll: 1.0 };
+      // Empty, like every other slot — picking one FOR the visitor would be
+      // guessing, and the first version guessed into a stat already used.
+      riven.curse = riven.curse ? null : { id: null, roll: 1.0 };
     } else {
       const n = want === "3 positives" ? 3 : 2;
       while (riven.positives.length > n) riven.positives.pop();
-      while (riven.positives.length < n) {
-        const used = new Set(riven.positives.map((x) => x.id));
-        const free = p.find((s) => !used.has(s.id));
-        riven.positives.push({ id: free && free.id, roll: 1.0 });
-      }
+      while (riven.positives.length < n) riven.positives.push({ id: null, roll: 1.0 });
     }
     renderRivens();
   });
@@ -675,11 +677,13 @@ function renderRivenStats() {
   const rules = rivenRules();
   const row = (slot, s, isCurse) => {
     const used = new Set(riven.positives.map((x) => x.id).concat(riven.curse ? [riven.curse.id] : []));
-    const opts = p
-      // A stat cannot appear twice on one riven, and only some may be cursed.
-      .filter((x) => (!used.has(x.id) || x.id === s.id) && (!isCurse || x.curse))
-      .map((x) => `<option value="${x.id}" ${x.id === s.id ? "selected" : ""}>${escHtml(x.text.replace("|val|", "X"))}${x.modeled ? "" : " (not modeled)"}</option>`)
-      .join("");
+    const opts =
+      `<option value="" ${s.id ? "" : "selected"}>— choose a stat —</option>` +
+      p
+        // A stat cannot appear twice on one riven, and only some may be cursed.
+        .filter((x) => (!used.has(x.id) || x.id === s.id) && (!isCurse || x.curse))
+        .map((x) => `<option value="${x.id}" ${x.id === s.id ? "selected" : ""}>${escHtml(x.text.replace("|val|", "X"))}${x.modeled ? "" : " (not modeled)"}</option>`)
+        .join("");
     return `<div class="rv-row ${isCurse ? "curse" : ""}">
       <span class="rv-tag">${isCurse ? "curse" : "positive"}</span>
       <select class="rv-stat" data-slot="${slot}">${opts}</select>
@@ -696,7 +700,7 @@ function renderRivenStats() {
 
   const at = (slot) => (slot === "curse" ? riven.curse : riven.positives[Number(slot)]);
   $("riven-stats").querySelectorAll(".rv-stat").forEach((el) => el.onchange = () => {
-    at(el.dataset.slot).id = el.value; renderRivens();
+    at(el.dataset.slot).id = el.value || null; renderRivens();
   });
   const setRoll = (slot, v) => {
     const r = Math.min(rules.roll_max, Math.max(rules.roll_min, Number(v) || 1));
@@ -744,7 +748,16 @@ function renderRivenFoot() {
 
 function renderRivenCard() {
   const r = rivenResolved;
-  if (!r) return;
+  const save = $("rv-save");
+  if (!r) {
+    // Not described yet. Say what is still needed, and say it quietly — this
+    // is not a mistake the visitor made.
+    $("riven-stats").querySelectorAll(".rv-val").forEach((el) => { el.textContent = "—"; el.className = "rv-val"; });
+    const n = riven.positives.filter((s) => !s.id).length + (riven.curse && !riven.curse.id ? 1 : 0);
+    $("riven-card").innerHTML = `<div class="rv-meta">pick ${n} more stat${n === 1 ? "" : "s"} to make a riven</div>`;
+    if (save) save.disabled = true;
+    return;
+  }
   const bad = r.illegal || [];
   // Each row's live value is filled IN PLACE, so dragging a slider updates
   // the number without the block around it flickering.
@@ -760,7 +773,6 @@ function renderRivenCard() {
     ? `<div class="error"><b>not a legal riven</b><ul>${bad.map((x) => `<li>${escHtml(x)}</li>`).join("")}</ul></div>`
     : `<div class="rv-name">${escHtml(r.name)}</div>
        <div class="rv-meta">${r.drain} capacity · ${escHtml(r.class)} riven · disposition ${Number(r.disposition).toFixed(2)}</div>`;
-  const save = $("rv-save");
   if (save) save.disabled = bad.length > 0;
 }
 
