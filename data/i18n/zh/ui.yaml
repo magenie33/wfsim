@@ -14,8 +14,17 @@ ui:
   # The hero is the one place in this app that makes a CLAIM rather than
   # stating a fact, and it stays a checkable one: "down to the last proc" and
   # "solved" are things the golden tests and the optimizer actually do.
-  "The Simulacrum.": 模拟厅。
-  "The Primed One.": Prime 之作。
+  # DE's OWN word for the Simulacrum is 幻影装置 — every one of its arena
+  # tiles is "<place>幻影装置" in the CN client (WFCD i18n, the DangerRoomTile
+  # entries). 模拟厅 was the community's word, not the client's.
+  #
+  # The headline is a JOKE ONLY A PLAYER GETS, and that is its whole job: the
+  # subtitle below it makes the claim, the weapon grid says what to do next,
+  # and the title/meta carry the search terms. What nothing else on the page
+  # does is show that whoever built this plays the game. "Prime" attaches to
+  # the SIMULACRUM here — a thing that could plausibly have one — instead of
+  # to the website, which is what made "The Primed One" read as a boast.
+  "The real Simulacrum Prime.": 真正的幻影装置 Prime。
   # The claim leads with the NAME — a sentence that starts "WFSim is"
   # says whose claim it is; one that starts "The ultimate…" is a
   # category description with nobody behind it (user, 2026-07-31).

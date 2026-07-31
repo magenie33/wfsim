@@ -4,7 +4,7 @@
 
 # WFSim
 
-**The Simulacrum. The Primed One.**
+**The real Simulacrum Prime.**
 
 WFSim is the ultimate Warframe calculator — builder, simulator, optimizer.
 True to in-game numbers, down to the last proc. Theorycrafting, solved.

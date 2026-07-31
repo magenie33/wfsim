@@ -535,7 +535,11 @@ function route() {
   $("home-page").hidden = !!w;
   document.querySelector(".config-page").hidden = !w;
   const modTitle = { simulator: " · Simulator", optimizer: " · Optimizer", rivens: " · Rivens" }[mod] || "";
-  document.title = w ? `${w.name}${modTitle} — WFSim` : "WFSim — The Simulacrum. The Primed One.";
+  // The home title carries the SEARCH TERMS, not the headline: nobody looks
+  // for "Simulacrum Prime", and the tab/result/share-card is the one place
+  // that has to be found rather than enjoyed (user, 2026-07-31). The joke
+  // stays on the page, which is where a player meets it.
+  document.title = w ? `${w.name}${modTitle} — WFSim` : "WFSim — Ultimate Warframe Calculator";
   if (w) {
     if ($("weapon").value !== w.id) {
       switchWeapon(w.id);
