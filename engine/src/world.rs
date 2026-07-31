@@ -123,6 +123,7 @@ impl Engagement {
                 mean_shots: shots_per_run,
                 mean_pellets: 0.0,
                 mean_crit_rate: 0.0,
+                mean_crit_tier: 0.0,
                 mean_big_crit_rate: 0.0,
                 mean_headshot_rate: 0.0,
                 source_damage: Default::default(),

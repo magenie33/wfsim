@@ -2291,6 +2291,10 @@ pub fn simulate_json(v: &Value) -> Value {
         "pellets": m.pellets,
         "crit_rate": m.crits as f64 / pel,
         "big_crit_rate": m.big_crits as f64 / pel,
+        // The tier, because the RATE stops saying anything past 100% crit
+        // chance: every pellet crits, so it reads 1.0 whether the build is
+        // at 110% or 410%. Uncapped — red is not the top.
+        "crit_tier": m.crit_tier_sum as f64 / pel,
         "headshot_rate": m.headshots as f64 / pel,
         "procs": m.procs,
         "field_ticks": m.field_ticks,

@@ -68,8 +68,6 @@ ui:
   # two-segment button, and a long label breaks the row.
   "pool": 候选
   "req": 必带
-  "clear the pool marks first — req pins the slot": 先清掉候选标记 —— 必带会锁定这个槽位
-  "clear the pool marks first — req pins the tier": 先清掉候选标记 —— 必带会锁定这一层
   "pooled mods reserve ≥1 open slot — raise max mods or clear pools": 候选 mod 至少要留 1 个空槽 —— 提高 mod 上限或清掉候选
   "Incarnon Genesis": 灵化之源
   "Exilus slot": Exilus 槽
@@ -98,9 +96,17 @@ ui:
   "Incarnon Form": 灵化形态
   "Incarnon cycle": 灵化循环
   "only": 单独        # "<form> only" — one form, no cycle
+  # Single-slot scope groups: the last click wins and rewrites the group.
+  "req pins the slot — the pool marks give way": 必带会钉死这个槽位 —— 候选标记随之清除
+  "req pins the tier — the pool marks give way": 必带会钉死这一层 —— 候选标记随之清除
+  "pooling opens the slot — the pin gives way": 候选会把槽位交给搜索 —— 必带随之清除
+  "pooling opens the tier — the pin gives way": 候选会把这一层交给搜索 —— 必带随之清除
   "Result": 结果
-  "Crit rate": 暴击率
-  "Orange+ crit": 橙暴以上
+  # Crit KPIs. 1 = 黄暴, 2 = 橙暴, 3 = 红暴 — and above red the game keeps
+  # counting, so no label here may imply 红 is the ceiling.
+  "Crit tier": 平均暴击层数
+  "Pellets crit": 暴击弹丸占比
+  "Orange+": 橙暴以上
   "Headshot rate": 爆头率
   "Shots": 射击次数
   "Reloads": 装填次数

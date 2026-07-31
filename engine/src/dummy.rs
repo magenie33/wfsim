@@ -1540,6 +1540,14 @@ pub struct RunResult {
     pub pellets: u32,    // multishot instances (>= shots)
     pub crits: u32,      // tier >= 1, counted per pellet
     pub big_crits: u32,  // tier >= 2
+    /// Sum of every DIRECT pellet's crit TIER, normal hits included as 0.
+    ///
+    /// Its mean is the number `crits / pellets` stops being once a build
+    /// passes 100% crit chance: the rate saturates at 1.0 while the tier
+    /// keeps climbing, and it is the tier that multiplies the damage
+    /// (`crit_mult = 1 + tier x (cd - 1)`, uncapped — red is not the top).
+    /// Below 100% the two are the same number.
+    pub crit_tier_sum: u32,
     pub headshots: u32,  // hits on an `is_head` part
     pub procs: u32,      // status procs applied (all types)
     pub dot_ticks: u32,  // bleed ticks that landed
@@ -3286,6 +3294,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     r.pellets += 1;
                     r.crits += (tier >= 1) as u32;
                     r.big_crits += (tier >= 2) as u32;
+                    r.crit_tier_sum += tier;
                     r.headshots += part.is_head as u32;
                     any_head |= part.is_head;
                     any_big |= tier >= 2;
@@ -3632,6 +3641,11 @@ pub struct Summary {
     pub mean_pellets: f64,
     pub mean_crit_rate: f64,
     pub mean_big_crit_rate: f64,
+    /// Mean crit TIER over every direct pellet: 0 = a normal hit, 1 yellow,
+    /// 2 orange, 3 red, and ABOVE red keeps going — the game shows those and
+    /// so must we. Equal to `mean_crit_rate` below 100% crit chance and the
+    /// only one of the two that still moves above it.
+    pub mean_crit_tier: f64,
     pub mean_headshot_rate: f64,
     /// Mean effective damage by source (the damage-meter view).
     pub source_damage: SourceDamage,
@@ -3652,6 +3666,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     let mut max = f64::NEG_INFINITY;
     let (mut shots, mut pellets, mut crits, mut big_crits, mut headshots) =
         (0u64, 0u64, 0u64, 0u64, 0u64);
+    let mut crit_tier_sum = 0u64;
     let (mut effective, mut kills, mut kills_sq) = (0.0f64, 0u64, 0u64);
     let (mut dot, mut procs, mut reloads) = (0.0f64, 0u64, 0u64);
     let mut field_ticks = 0u64;
@@ -3686,6 +3701,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         pellets += r.pellets as u64;
         crits += r.crits as u64;
         big_crits += r.big_crits as u64;
+        crit_tier_sum += r.crit_tier_sum as u64;
         headshots += r.headshots as u64;
         sources.direct += r.sources.direct;
         sources.radial += r.sources.radial;
@@ -3728,6 +3744,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         mean_pellets: pellets as f64 / n,
         mean_crit_rate: crits as f64 / total_pellets,
         mean_big_crit_rate: big_crits as f64 / total_pellets,
+        mean_crit_tier: crit_tier_sum as f64 / total_pellets,
         mean_headshot_rate: headshots as f64 / total_pellets,
         source_damage: {
             let mut s = sources;
@@ -7398,6 +7415,49 @@ mod tests {
             "crit rate was {}",
             s.mean_crit_rate
         );
+    }
+
+    /// Past 100% crit chance the RATE stops saying anything — every pellet
+    /// crits, so it reads 1.0 whether the build is at 110% or 410%. The mean
+    /// TIER is the number that keeps going, and it is the one that
+    /// multiplies the damage (user, via the QQ group, 2026-07-31).
+    ///
+    /// Red is NOT the ceiling: tier 4 and above are real, the game shows
+    /// them, and `crit_mult = 1 + tier x (cd - 1)` has no cap either — so
+    /// neither may the report.
+    #[test]
+    fn the_crit_tier_keeps_climbing_where_the_rate_saturates() {
+        let at = |cc: f64| {
+            let p = DummyParams {
+                base_crit_chance: cc,
+                // Measure the ROLL, not a promotion or a stacking arcane.
+                crit_tier_upgrade_chance: 0.0,
+                arcane: crate::arcanes_data::ArcaneFx::none(),
+                ..Default::default()
+            };
+            monte_carlo(&p, 400, 11)
+        };
+        // Below 100% the two are the SAME number — the tier is not a second
+        // opinion, it is the rate without the >= 1 truncation.
+        let half = at(0.5);
+        assert!(
+            (half.mean_crit_tier - half.mean_crit_rate).abs() < 1e-9,
+            "below 100% they must agree: tier {} vs rate {}",
+            half.mean_crit_tier,
+            half.mean_crit_rate
+        );
+
+        // At 100% and beyond the rate is pinned at 1.0 and only the tier moves.
+        let one = at(1.0);
+        let past_red = at(4.2);
+        assert!((one.mean_crit_rate - 1.0).abs() < 1e-9);
+        assert!((past_red.mean_crit_rate - 1.0).abs() < 1e-9, "the rate saturates");
+        assert!(
+            past_red.mean_crit_tier > 4.0,
+            "above RED and still counting: {}",
+            past_red.mean_crit_tier
+        );
+        assert!(past_red.mean_crit_tier > one.mean_crit_tier + 3.0);
     }
 }
 

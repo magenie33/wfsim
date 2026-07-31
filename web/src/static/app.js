@@ -2618,7 +2618,14 @@ function renderResults(r, testedAt) {
   // context every stat accounts for the enemy).
   const kpis = [
     kpi("DPS", n0(r.dps)),
-    kpi("Crit rate", pc(r.crit_rate)), kpi("Orange+ crit", pc(r.big_crit_rate)),
+    // The TIER leads, and the rate is renamed to what it actually measures.
+    // "Crit rate" reads as "my crit chance", and it stops being that the
+    // moment a build passes 100%: every pellet crits, so it pins at 100%
+    // whether the build is at 110% or 410% (group, 2026-07-31). The tier is
+    // the same number without that truncation — and the one that multiplies
+    // the damage. 1 = yellow, 2 = orange, 3 = red, and it keeps going.
+    kpi("Crit tier", (r.crit_tier ?? 0).toFixed(2)),
+    kpi("Pellets crit", pc(r.crit_rate)), kpi("Orange+", pc(r.big_crit_rate)),
     kpi("Procs", n0(r.procs)), kpi("Shots", n0(r.shots)),
     kpi("Reloads", n0(r.reloads)), kpi("Transforms", n0(r.transforms)),
   ].join("");
@@ -2738,6 +2745,32 @@ function nChooseK(n, k) {
 }
 
 // ---- scope mutex helpers -----------------------------------------------
+// A SINGLE-SLOT group (the exilus slot, the arcane slot, one evolution tier)
+// holds either "these are the options" or "it is this one" — never both. The
+// two used to BLOCK each other, and asymmetrically: any pool mark greyed out
+// every req, while a pin still let you click pool (user, 2026-07-31: 点了候选
+// 就没法点必带，但是点了必带可以切到候选，能不能直接打通).
+//
+// Blocking was the wrong answer to a question that has an obvious one. The
+// marks are not in conflict, they are two ways of saying what the slot does,
+// so the LAST click wins and the group is rewritten to mean it: req clears
+// the pools, pool clears the pin. Nothing is refused and the scope never
+// lies about itself — the same rule `clearFamMarks` already applies to
+// families.
+function setSingleSlotMark(map, id, want) {
+  if ((map[id] || "off") === want) {   // clicking the ON seg turns it off
+    delete map[id];
+    return;
+  }
+  // req pins the slot: every other mark in the group goes, pools included.
+  // pool opens it for search: a pin cannot survive that, but other pools can.
+  Object.keys(map).forEach((o) => {
+    if (o === id) return;
+    if (want === "fixed" || map[o] === "fixed") delete map[o];
+  });
+  map[id] = want;
+}
+
 // Family exclusivity is a GAME rule across all 9 slots: req'ing a mod kills
 // its family siblings everywhere (e.g. req Primed Pistol Gambit → plain
 // Pistol Gambit can be neither pool nor req). The UI greys them out; setting
@@ -2878,11 +2911,10 @@ function renderOptExilus() {
   const row = (m) => {
     const st = opt.exilus[m.id] || "off";
     const fam = famReqBy(m);
-    // Family conflict kills the row. One slot: a pin kills other pools; any
-    // pool mark kills req (pooling = the slot is open for search — pinning
-    // would silently discard that). ON segs stay clickable to toggle off.
-    const poolDead = !!fam || (pinned && pinned !== m.id && st !== "search");
-    const reqDead = !!fam || (hasPool && st !== "fixed");
+    // Only a FAMILY conflict can kill a row: pool and req no longer block
+    // each other — clicking one rewrites the group (setSingleSlotMark).
+    const poolDead = !!fam;
+    const reqDead = !!fam;
     const why = fam ? `excluded: ${(modById(fam) || { name: fam }).name} is required (same family)` : "";
     const eff = cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("");
     return `<div class="opt ${st === "off" ? "" : st} ${fam ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why}">
@@ -2890,7 +2922,7 @@ function renderOptExilus() {
       <div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div><div class="me">${eff}</div></div>
       <div class="oseg">
         <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-m="${m.id}" data-s="search">${tr("pool")}</span>
-        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${reqDead && !fam ? `title="${escHtml(tr("clear the pool marks first — req pins the slot"))}"` : ""}>${tr("req")}</span>
+        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${!reqDead && hasPool ? `title="${escHtml(tr("req pins the slot — the pool marks give way"))}"` : ""}>${tr("req")}</span>
       </div>
     </div>`;
   };
@@ -2899,15 +2931,9 @@ function renderOptExilus() {
   $("opt-exilus").querySelectorAll(".seg:not(.dis)").forEach((el) =>
     el.addEventListener("click", (e) => {
       e.stopPropagation();
-      const id = el.dataset.m, want = el.dataset.s, cur = opt.exilus[id] || "off";
-      if (cur === want) { delete opt.exilus[id]; }
-      else {
-        if (want === "fixed") { // one slot — req is a radio
-          Object.keys(opt.exilus).forEach((o) => { if (opt.exilus[o] === "fixed") delete opt.exilus[o]; });
-        }
-        opt.exilus[id] = want;
-        if (want === "fixed") clearFamMarks(id);
-      }
+      const id = el.dataset.m, want = el.dataset.s;
+      setSingleSlotMark(opt.exilus, id, want);
+      if (opt.exilus[id] === "fixed") clearFamMarks(id);
       renderOptMods(); renderOptExilus(); updateOptEstimate();
     }));
 }
@@ -2922,34 +2948,22 @@ function renderOptArcanes() {
   const hasPool = Object.values(opt.arcanes).some((s) => s === "search");
   $("opt-arcanes").innerHTML = hits.map((a) => {
     const st = opt.arcanes[a.id] || "off";
-    // One arcane slot: pool and req are exclusive GROUP states — a pin
-    // kills every other pool; any pool mark kills req (pooling means the
-    // slot is open for search; pinning would silently discard that, so it
-    // is blocked until the pools are cleared). An ON seg always stays
-    // clickable — it must be able to toggle itself off.
-    const poolDead = pinned && pinned !== a.id && st !== "search";
-    const reqDead = hasPool && st !== "fixed";
+    // Neither mark blocks the other: clicking one rewrites the group
+    // (setSingleSlotMark), so every seg here is live.
     const eff = effLines(cardLines(a, a.max_rank, effectsAt(a, a.max_rank)));
     return `<div class="opt ${a.rarity ? "rar-" + a.rarity : ""} ${st === "off" ? "" : st}">
       ${imgTag(IMG(a.image), "mod")}
       <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}</div>${eff}</div>
       <div class="oseg">
-        <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-a="${a.id}" data-s="search">${tr("pool")}</span>
-        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-a="${a.id}" data-s="fixed" ${reqDead ? `title="${escHtml(tr("clear the pool marks first — req pins the slot"))}"` : ""}>${tr("req")}</span>
+        <span class="seg ${st === "search" ? "on" : ""}" data-a="${a.id}" data-s="search" ${pinned && pinned !== a.id ? `title="${escHtml(tr("pooling opens the slot — the pin gives way"))}"` : ""}>${tr("pool")}</span>
+        <span class="seg ${st === "fixed" ? "on" : ""}" data-a="${a.id}" data-s="fixed" ${hasPool ? `title="${escHtml(tr("req pins the slot — the pool marks give way"))}"` : ""}>${tr("req")}</span>
       </div>
     </div>`;
   }).join("");
   $("opt-arcanes").querySelectorAll(".seg:not(.dis)").forEach((el) =>
     el.addEventListener("click", (e) => {
       e.stopPropagation();
-      const id = el.dataset.a, want = el.dataset.s, cur = opt.arcanes[id] || "off";
-      if (cur === want) { delete opt.arcanes[id]; }
-      else {
-        if (want === "fixed") { // one slot — req is a radio
-          Object.keys(opt.arcanes).forEach((o) => { if (opt.arcanes[o] === "fixed") delete opt.arcanes[o]; });
-        }
-        opt.arcanes[id] = want;
-      }
+      setSingleSlotMark(opt.arcanes, el.dataset.a, el.dataset.s);
       renderOptArcanes(); updateOptEstimate(); fetchOptBuffs();
     }));
 }
@@ -2963,16 +2977,13 @@ function renderOptEvos() {
     const hasPool = Object.values(sel).some((s) => s === "search");
     const rows = t.options.map((o) => {
       const st = sel[o.id] || "off";
-      // One choice per tier: a pin kills other pools; any pool mark kills
-      // req (pooling = the tier is open for search). ON segs stay clickable.
-      const poolDead = pinned && pinned !== o.id && st !== "search";
-      const reqDead = hasPool && st !== "fixed";
+      // Neither mark blocks the other — clicking one rewrites the tier.
       const desc = (o.desc || o.effects || []).map((x) => `<div>${tf(x)}</div>`).join("");
       return `<div class="opt ${st === "off" ? "" : st} ${o.broken ? "dis-soft" : ""}">
         <div class="info"><div class="mn">${o.name}${o.broken ? ' <span class="exchip brk">BROKEN</span>' : ""}</div><div class="me">${desc}</div></div>
         <div class="oseg">
-          <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="search">${tr("pool")}</span>
-          <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="fixed" ${reqDead ? `title="${escHtml(tr("clear the pool marks first — req pins the tier"))}"` : ""}>${tr("req")}</span>
+          <span class="seg ${st === "search" ? "on" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="search" ${pinned && pinned !== o.id ? `title="${escHtml(tr("pooling opens the tier — the pin gives way"))}"` : ""}>${tr("pool")}</span>
+          <span class="seg ${st === "fixed" ? "on" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="fixed" ${hasPool ? `title="${escHtml(tr("req pins the tier — the pool marks give way"))}"` : ""}>${tr("req")}</span>
         </div>
       </div>`;
     }).join("");
@@ -2983,14 +2994,7 @@ function renderOptEvos() {
       e.stopPropagation();
       const t = el.dataset.t, id = el.dataset.e, want = el.dataset.s;
       opt.evos[t] = opt.evos[t] || {};
-      const cur = opt.evos[t][id] || "off";
-      if (cur === want) { delete opt.evos[t][id]; }
-      else {
-        if (want === "fixed") { // one choice per tier — req is a radio
-          Object.keys(opt.evos[t]).forEach((o) => { if (opt.evos[t][o] === "fixed") delete opt.evos[t][o]; });
-        }
-        opt.evos[t][id] = want;
-      }
+      setSingleSlotMark(opt.evos[t], id, want);
       renderOptEvos(); updateOptEstimate(); fetchOptBuffs();
     }));
 }
