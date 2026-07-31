@@ -594,10 +594,10 @@ pub fn meta_json() -> Value {
         // effect text (like the mod/arcane cards).
         "defaults": {
             "weapon": default_weapon_id(),
-            // The weapon's OWN default form, whatever that is (the arsenal's
-            // form, `default_form` in data/weapons). Not the Incarnon cycle:
-            // most weapons are played by firing, reloading and firing again,
-            // and a cycle is a technique you choose (user, 2026-07-31).
+            // Per-weapon, because "the form this is played in" is: the
+            // Incarnon cycle where there is one, and the weapon's own default
+            // form (`default_form` in data/weapons) where there is not. A
+            // fixed string could only ever be right for one of the two.
             "form": "default",
             // The page starts EMPTY (user decision): no mods, no arcane, no
             // evolutions — a bare weapon. Reference builds live as presets /
@@ -2025,9 +2025,14 @@ pub fn simulate_json(v: &Value) -> Value {
     // transforming on a borrowed gauge (9 weakpoint hits, 2.35 s + 1.0 s of
     // animation), and the dead time came straight off its DPS.
     let registered = wfsim_engine::weapons_data::forms_of(&info.id);
-    // Asked for BY NAME. It used to be "any form string this weapon does not
-    // register", which made the cycle the destination of every typo and of
-    // the default — and the default is now the weapon's own form.
+    // `default` = however THIS weapon is played: the cycle where there is one
+    // to run, its own default form where there is not. A weapon that
+    // transforms is played transforming (user, 2026-07-31).
+    let form = if form == "default" && info.has_cycle { "incarnon_cycle" } else { form };
+    // Otherwise the cycle is asked for BY NAME. It used to be "any form
+    // string this weapon does not register", which made it the destination of
+    // every typo as well — a stale preset naming another weapon's form now
+    // falls back to a real form instead of transforming.
     let run_cycle = form == "incarnon_cycle" && info.has_cycle && incarnon_id(info).is_some();
     // The single form to fire: the requested kind if this weapon registers it,
     // else its default (which is what an unknown or stale preset value gets).
@@ -2657,6 +2662,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // own registered forms.
     let form = get_str(v, "form", "default");
     let registered = wfsim_engine::weapons_data::forms_of(&info.id);
+    let form = if form == "default" && info.has_cycle { "incarnon_cycle" } else { form };
     let run_cycle = form == "incarnon_cycle" && info.has_cycle && incarnon_id(info).is_some();
     let fire_id = if run_cycle {
         incarnon_id(info).unwrap_or(&info.id).to_string()

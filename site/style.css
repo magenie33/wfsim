@@ -538,3 +538,8 @@ label.check input{width:auto}
 .rv-chip{font-size:11px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;
   padding:2px 8px;font-variant-numeric:tabular-nums}
 .rv-chip.neg{color:var(--bad,#e06c75)}
+
+/* A setting with only one possible value: stated, not offered. Reads like the
+   select it replaces so a one-form weapon's panel is not a gap. */
+.fixed-val{display:inline-block;padding:4px 8px;border:1px solid var(--line);border-radius:7px;
+  background:var(--panel2);color:var(--text-2);font-size:12px}

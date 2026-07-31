@@ -2348,10 +2348,26 @@ function renderSimBuild() {
   box.innerHTML = parts.join("");
 }
 
-// The weapon's own default form (`default_form` in data/weapons) — the
-// arsenal's form, and what "keep firing, reload, keep firing" means.
+// How THIS weapon is played: the Incarnon cycle where there is one to run,
+// and the weapon's own default form (`default_form` in data/weapons — the
+// arsenal's form) where there is not.
+// The Form control, ALWAYS drawn: several forms is a dropdown, one form is
+// still stated rather than left silent — a weapon with a single form is being
+// fired in it, and the panel should say so (user, 2026-07-31).
+const formField = (formOpts, current) => {
+  if (!formOpts.length) return "";
+  const body = formOpts.length > 1
+    ? `<select data-k="form">${formOpts.map(([id, label]) =>
+        `<option value="${id}" ${current === id ? "selected" : ""}>${escHtml(label)}</option>`).join("")}
+       </select>`
+    : `<span class="fixed-val">${escHtml(formOpts[0][1])}</span>`;
+  return `<label>${escHtml(tr("Form"))} ${body}</label>`;
+};
+
 const defaultFormId = (w, formOpts) =>
-  (((w || {}).forms || []).find((f) => f.is_default) || {}).id || (formOpts[0] || [])[0] || "base";
+  ((w || {}).has_cycle && "incarnon_cycle") ||
+  (((w || {}).forms || []).find((f) => f.is_default) || {}).id ||
+  (formOpts[0] || [])[0] || "base";
 
 function renderSim() {
   if (!META) return;
@@ -2384,18 +2400,11 @@ function renderSim() {
   // A stale preset (or another weapon's choice) can name a form this weapon
   // does not have — fall back to the first option rather than sending it.
   // A stale preset (or another weapon's choice, or the "default" seed) names
-  // a form this weapon does not list — fall back to the weapon's OWN default
-  // form. NOT to the first option: that is the Incarnon cycle where there is
-  // one, and the cycle is a technique you choose, not what a weapon does
-  // (user, 2026-07-31).
+  // a form this weapon does not list — fall back to how this weapon is
+  // played, which is a question about the weapon and not about list order.
   if (formOpts.length && !formOpts.some(([id]) => id === sim.form)) sim.form = defaultFormId(w, formOpts);
-  const formField = formOpts.length > 1 ? `
-    <label>${escHtml(tr("Form"))}
-      <select data-k="form">${formOpts.map(([id, label]) =>
-        `<option value="${id}" ${sim.form === id ? "selected" : ""}>${escHtml(label)}</option>`).join("")}
-      </select></label>` : "";
   $("sim-technique").innerHTML = `
-    ${formField}
+    ${formField(formOpts, sim.form)}
     <label class="check" title="${escHtml(tr("mods that only work while aiming (Galvanized Crosshairs, Argon Scope, Sharpened Bullets…) grant nothing when this is off"))}"><input type="checkbox" data-k="aiming" ${sim.aiming ? "checked" : ""}> ${escHtml(tr("Aiming"))}</label>
     <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>`;
   // Section 4 — the MEASUREMENT: nothing the player does in-game.
@@ -2780,13 +2789,8 @@ function renderOptEnemy() {
       ...(w.forms || []).map((f) => [f.id, w.has_cycle ? `${tr(f.name)} ${tr("only")}` : tr(f.name)]),
     ];
     if (formOpts.length && !formOpts.some(([id]) => id === optSim.form)) optSim.form = defaultFormId(w, formOpts);
-    const formField = formOpts.length > 1 ? `
-    <label>${escHtml(tr("Form"))}
-      <select data-k="form">${formOpts.map(([id, label]) =>
-        `<option value="${id}" ${optSim.form === id ? "selected" : ""}>${escHtml(label)}</option>`).join("")}
-      </select></label>` : "";
     tech.innerHTML = `
-    ${formField}
+    ${formField(formOpts, optSim.form)}
     <label class="check" title="${escHtml(tr("mods that only work while aiming grant nothing when this is off - the optimizer scores builds under the same assumption the sim replays them with"))}"><input type="checkbox" data-k="aiming" ${optSim.aiming ? "checked" : ""}> ${escHtml(tr("Aiming"))}</label>
     <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${optSim.headshot_pct}"></label>`;
   }
