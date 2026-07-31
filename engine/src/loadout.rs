@@ -478,10 +478,21 @@ pub enum StackPolicy {
     /// (full, per user 2026-07-24 correction) and then evolve purely by
     /// mechanics: kills refresh/grant, timeouts decay one stack.
     Emergent,
-    /// Sentinel / robotic weapons: Galvanized (and other conditional
-    /// on-kill/on-headshot) effects can be EQUIPPED but never trigger — the
-    /// companion cannot generate the stacks itself (wiki `Galvanized_Mods`;
-    /// user 2026-07-25). Only each mod's unconditional BASE part applies.
+    /// A COMPANION's weapon. Galvanized (and other conditional
+    /// on-kill/on-headshot/on-reload) effects can be EQUIPPED and only their
+    /// unconditional BASE part applies.
+    ///
+    /// The reason is not that a companion is excluded from the buff — it is
+    /// not. The TRIGGER belongs to the Tenno: the on-kill roll comes from the
+    /// Tenno's own weapons, and the stacks it grants then apply to the Tenno
+    /// AND the companion (user, 2026-07-31). What this arena cannot do is
+    /// simulate the two together — it fires ONE weapon — so when that weapon
+    /// is the companion's, nothing on the field can generate the stacks and
+    /// only the base is honest.
+    ///
+    /// So this is an ARENA limit, not a game rule, and it is the wrong answer
+    /// the moment a Tenno weapon and a companion weapon are simulated side by
+    /// side. (wiki `Galvanized_Mods`; user 2026-07-25, corrected 2026-07-31)
     BaseOnly,
 }
 

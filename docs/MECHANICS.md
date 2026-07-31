@@ -1437,6 +1437,25 @@ from wiki; falloff/ballistics/AoE math need measurement). **High-risk**
 > gain, Secondary Surge's remaining-energy scaling, the Warframe abilities in
 > §6's GunCO omission list, and self-stagger. `health`/`shield` are placeholders
 > at 1; no frame has 1 health, and nothing may treat the value as meaningful.
+>
+> **The third actor: the COMPANION.** A sentinel weapon does not belong to the
+> Tenno — it belongs to a companion standing beside them, and that distinction
+> is load-bearing for the Galvanized mods. Their trigger is the TENNO's: the
+> on-kill roll comes from the Tenno's own weapons. The buff it grants then
+> applies to the Tenno **and** the companion (user, 2026-07-31).
+>
+> So `StackPolicy::BaseOnly` is not "a companion is excluded". It is "this
+> arena fires ONE weapon, so when that weapon is the companion's there is
+> nothing on the field to generate the stacks, and only the unconditional base
+> is honest". Measured: Galvanized Chamber on Verglas Prime resolves to
+> multishot x1.8 (base +80% alone); the same mod on the Torid gives x3.3
+> (+80% and five on-kill stacks of +30%).
+>
+> That answer becomes WRONG the day a Tenno weapon and a companion weapon are
+> simulated side by side — the companion would then receive the Tenno's stacks
+> and the base-only rule would be understating it. The companion has no entity
+> of its own yet; when it gets one it belongs next to `data/tenno/`, and this
+> policy is the first thing that has to change.
 
 **Definition.** How the target reduces incoming damage.
 

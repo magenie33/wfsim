@@ -882,7 +882,7 @@ pub fn panel_json(v: &Value) -> Value {
                 } => match policy {
                     StackPolicy::BaseOnly => conditionals.push(json!({
                         "mod": name, "desc": e.describe(), "active": false,
-                        "why": "sentinel weapons cannot proc on-kill stacks"})),
+                        "why": "a companion weapon cannot TRIGGER this - the on-kill roll comes from the Tenno's own weapons - and this arena simulates one weapon alone, so the stacks the Tenno would share never arrive"})),
                     _ => push(
                         "multishot",
                         per_stack * max_stacks as f64,
@@ -896,7 +896,7 @@ pub fn panel_json(v: &Value) -> Value {
                 } => match policy {
                     StackPolicy::BaseOnly => conditionals.push(json!({
                         "mod": name, "desc": e.describe(), "active": false,
-                        "why": "sentinel weapons cannot proc on-kill stacks"})),
+                        "why": "a companion weapon cannot TRIGGER this - the on-kill roll comes from the Tenno's own weapons - and this arena simulates one weapon alone, so the stacks the Tenno would share never arrive"})),
                     _ => push(
                         "co",
                         per_stack * max_stacks as f64,
@@ -972,7 +972,7 @@ pub fn panel_json(v: &Value) -> Value {
                 OnKillCritDamage { bonus, .. } => match policy {
                     StackPolicy::BaseOnly => conditionals.push(json!({
                         "mod": name, "desc": e.describe(), "active": false,
-                        "why": "sentinel weapons cannot proc on-kill buffs"})),
+                        "why": "a companion weapon cannot TRIGGER this - the on-kill roll comes from the Tenno's own weapons - and this arena simulates one weapon alone, so the stacks the Tenno would share never arrive"})),
                     _ => push(
                         "crit_damage",
                         bonus,
@@ -982,7 +982,7 @@ pub fn panel_json(v: &Value) -> Value {
                 OnReloadFireRate { bonus, .. } => match policy {
                     StackPolicy::BaseOnly => conditionals.push(json!({
                         "mod": name, "desc": e.describe(), "active": false,
-                        "why": "sentinel weapons cannot proc on-reload buffs"})),
+                        "why": "a companion weapon cannot TRIGGER this - the reload is the Tenno's - and this arena simulates one weapon alone, so the buff the Tenno would share never arrives"})),
                     _ => push(
                         "fire_rate",
                         bonus,

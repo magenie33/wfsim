@@ -1270,13 +1270,15 @@ function renderMods() {
   for (let i = 0; i < 8; i++) box.appendChild(buildSlot(i));
 
   // Exilus: a REAL slot (utility mods only, drain counts) — absent on sentinels.
+  // A sentinel weapon has no exilus slot, so it shows no exilus block —
+  // label included. Standing a placeholder where the slot would be says
+  // "something is missing here"; the truth is that nothing belongs there
+  // (user, 2026-07-31).
+  const hasExilus = !weaponInfo($("weapon").value).sentinel;
+  show("exilus-block", hasExilus);
   const ex = $("exilus");
   ex.innerHTML = "";
-  if (weaponInfo($("weapon").value).sentinel) {
-    ex.innerHTML = `<div class="slot empty exl"><span class="plus">sentinel weapons have no exilus slot</span></div>`;
-  } else {
-    ex.appendChild(buildSlot(EXILUS));
-  }
+  if (hasExilus) ex.appendChild(buildSlot(EXILUS));
   refreshPanel();
 }
 
