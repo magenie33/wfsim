@@ -1335,8 +1335,12 @@ impl DummyParams {
             forced_procs: Vec::new(),
             locked_buffs: Vec::new(),
             cycle: None,
-            infinite_reserve: true,
-            reserve_ammo: 0.0, // unused while infinite_reserve is on
+            // A weapon runs dry only where the game gives no way to resupply
+            // (a ground Arch-Gun). Everywhere else the reserve is a panel
+            // figure and the sim keeps firing — we do not model pickups, so
+            // stopping would be an artefact of the model, not the game.
+            infinite_reserve: !panel.finite_reserve,
+            reserve_ammo: panel.ammo_reserve,
         }
     }
 
@@ -7415,6 +7419,46 @@ mod tests {
             "crit rate was {}",
             s.mean_crit_rate
         );
+    }
+
+    /// The DEFAULT is what this is about. `finite_reserve_stops_the_gun`
+    /// already proves a finite pool ends the run; what matters for the data
+    /// path is that switching it on is the ONLY thing that does, and that the
+    /// size of the pool is then worth modding for.
+    ///
+    /// Ammo PICKUPS are not modelled, so a weapon that can be resupplied
+    /// mid-fight must keep the infinite default or it would run dry for a
+    /// reason the game does not have. A ground Arch-Gun is the case that
+    /// cannot: "Archguns only have a limited amount of ammo", and when it is
+    /// gone the weapon is removed for a five-minute cooldown (wiki Arch-Gun).
+    #[test]
+    fn only_a_finite_reserve_ends_a_run_early_and_its_size_then_matters() {
+        let params = |finite: bool, reserve: f64| DummyParams {
+            magazine_size: 10.0,
+            fire_rate: 20.0,
+            reload_seconds: 0.1,
+            duration_secs: 30.0,
+            infinite_reserve: !finite,
+            reserve_ammo: reserve,
+            arcane: crate::arcanes_data::ArcaneFx::none(),
+            ..Default::default()
+        };
+        let shots = |p: &DummyParams| monte_carlo(p, 1, 5).mean_shots;
+
+        // The same weapon, the same reserve, one flag apart: 600 rounds of
+        // clock against 35 rounds of ammunition.
+        let finite = shots(&params(true, 25.0));
+        let infinite = shots(&params(false, 25.0));
+        assert!(finite < 40.0 && infinite > 300.0, "{finite} vs {infinite}");
+
+        // A bigger pool lasts longer, which is what makes Ammo Chain and a
+        // riven's Ammo Maximum worth a slot on such a weapon at all.
+        assert!(shots(&params(true, 90.0)) > finite);
+
+        // And the reserve is not the magazine: with none, the magazine is all
+        // there is.
+        let one = shots(&params(true, 0.0));
+        assert!((one - 10.0).abs() < 1e-9, "just the magazine: {one}");
     }
 
     /// Past 100% crit chance the RATE stops saying anything — every pellet

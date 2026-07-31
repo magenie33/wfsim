@@ -581,6 +581,10 @@ pub struct WeaponBase {
     /// static per-buff CHOICE, full by default. 0 = no such buff.
     pub buff_ms_max_stacks: u32,
     pub magazine_size: f64,
+    /// Base reserve rounds (wiki "Ammo Max"), before mods.
+    pub ammo_reserve: f64,
+    /// Can this weapon actually run dry? See `WeaponSpec::finite_reserve`.
+    pub finite_reserve: bool,
     pub base_reload: f64,
     /// Unconditional CO rate baked into the weapon config (Carnage
     /// Reign's +33% per status type) — additive with mod CO sources.
@@ -961,6 +965,11 @@ pub struct ResolvedPanel {
     /// buff (Conjunction Voltage) multiplies when it joins the bucket live.
     pub base_multishot: f64,
     pub magazine_size: f64,
+    /// Reserve rounds after mods (Ammo Chain, a riven's Ammo Maximum…), and
+    /// whether the sim is allowed to spend them. Both travel together: a
+    /// number without the flag is a panel figure, not a limit.
+    pub ammo_reserve: f64,
+    pub finite_reserve: bool,
     pub reload_seconds: f64,
     /// Σ reload-speed bonuses — transitions (Incarnon transmute/revert)
     /// scale by the same formula: time = base / (1 + this).
@@ -1504,6 +1513,18 @@ pub fn resolve_with(
         } else {
             (base.magazine_size * (1.0 + mag)).floor()
         },
+        // Reserve: +% of base, the same shape as the magazine, and floored
+        // for the same reason — a fraction of a round is not a round. The
+        // bonus is the Ammo Reserve bucket the panel already shows, which is
+        // where Ammo Chain and a riven's Ammo Maximum land.
+        ammo_reserve: (base.ammo_reserve
+            * (1.0
+                + indirect
+                    .iter()
+                    .find(|(s, _)| *s == IndirectStat::AmmoMax)
+                    .map_or(0.0, |(_, v)| *v)))
+        .floor(),
+        finite_reserve: base.finite_reserve,
         reload_seconds: base.base_reload / (1.0 + rl),
         reload_bonus: rl,
         base_damage_bonus: bd,

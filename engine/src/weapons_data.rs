@@ -363,6 +363,21 @@ pub struct WeaponSpec {
     pub exilus_polarity: Option<String>,
     #[serde(default)]
     pub magazine: Option<f64>,
+    /// Reserve rounds outside the magazine — the wiki's "Ammo Max".
+    ///
+    /// Present on nearly every weapon and, until now, read by nobody: the sim
+    /// treats reserves as INFINITE by default (decision 2026-07-24) because it
+    /// does not model ammo PICKUPS, and a weapon that can be resupplied mid
+    /// fight would otherwise run dry for a reason the game does not have.
+    #[serde(default)]
+    pub ammo_max: Option<f64>,
+    /// Does this form actually run out? Only where the game gives no way to
+    /// resupply — a ground Arch-Gun is the case this exists for: "Archguns
+    /// only have a limited amount of ammo", and when it is gone the weapon is
+    /// removed for a five-minute cooldown (wiki Arch-Gun). Everything else
+    /// keeps the infinite default, and needs `ammo_max` only for the panel.
+    #[serde(default)]
+    pub finite_reserve: bool,
     #[serde(default)]
     pub reload_seconds: Option<f64>,
     #[serde(default)]
@@ -723,6 +738,11 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         buff_multishot_bonus: 0.0,
         buff_ms_max_stacks: 0,
         magazine_size,
+        // The reserve the sim may spend. `finite_reserve` is what decides
+        // whether it is spendable at all; the number alone means nothing,
+        // which is why every weapon can carry one.
+        ammo_reserve: s.ammo_max.unwrap_or(0.0),
+        finite_reserve: s.finite_reserve,
         base_reload,
         innate_co_per_type: 0.0,
         co_behavior,
@@ -768,6 +788,29 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
 
 #[cfg(test)]
 mod tests {
+    /// `ammo_max` sat in every weapon's YAML and was read by NOBODY until
+    /// the reserve was wired up (2026-07-31) — it is the wiki's Ammo Max and
+    /// it now reaches the panel. It is still not a LIMIT: that takes
+    /// `finite_reserve`, which nothing in the roster sets, because everything
+    /// in it can be resupplied from an ammo pickup and the sim does not model
+    /// pickups.
+    #[test]
+    fn ammo_max_reaches_the_base_and_is_not_a_limit_on_its_own() {
+        use crate::loadout::WeaponBase;
+        let torid = WeaponBase::from_data("torid", true, &[]);
+        assert!((torid.ammo_reserve - 60.0).abs() < 1e-9, "wiki Ammo Max 60");
+        assert!(!torid.finite_reserve, "a Primary can be resupplied");
+
+        let laetum = WeaponBase::from_data("laetum", true, &[]);
+        assert!((laetum.ammo_reserve - 210.0).abs() < 1e-9);
+
+        // A sentinel weapon states no reserve at all — it draws from an
+        // infinite one, so there is no number to carry.
+        let verglas = WeaponBase::from_data("verglas_prime", true, &[]);
+        assert!((verglas.ammo_reserve - 0.0).abs() < 1e-9);
+        assert!(!verglas.finite_reserve);
+    }
+
     use super::*;
 
     #[test]
