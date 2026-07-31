@@ -18,8 +18,8 @@
 //!
 //! Every stat rolls its 0.9-1.1 INDEPENDENTLY — there is no shared per-riven
 //! quality. That is what makes a "god roll" a thing to hunt rather than one
-//! number, and it means the corner where every positive is maximal and the
-//! curse minimal is legal, merely astronomically unlikely. This builder is a
+//! number, and it means the corner where every bonus is maximal and the
+//! malus minimal is legal, merely astronomically unlikely. This builder is a
 //! CONSTRUCTOR, not a roller, so it must be able to reach that corner: it is
 //! the ceiling the optimizer wants.
 
@@ -39,12 +39,12 @@ pub const MAX_RANK: u32 = 8;
 /// `base x 10 x (rank + 1)`, so 90 at max rank.
 const PER_RANK: f64 = 10.0;
 
-/// How many positives a riven carries, and whether it carries a curse. This
+/// How many bonuses a riven carries, and whether it carries a malus. This
 /// is the ONLY thing that decides the config multipliers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Shape {
-    pub positives: u32,
-    pub curse: bool,
+    pub bonuses: u32,
+    pub malus: bool,
 }
 
 impl Shape {
@@ -54,13 +54,13 @@ impl Shape {
     ///
     /// - **wiki**: 0.99 / 1.2375 / 0.75 / 0.9375, maluses -0.495 / -0.75.
     ///   Stated verbatim as a table, and internally consistent — 1.2375 is
-    ///   exactly 0.99 x 1.25 and 0.9375 exactly 0.75 x 1.25, so a curse pays
-    ///   the positives 25% in both rows. A typo would not propagate like that.
+    ///   exactly 0.99 x 1.25 and 0.9375 exactly 0.75 x 1.25, so a malus pays
+    ///   the bonuses 25% in both rows. A typo would not propagate like that.
     /// - "community calculators read 1.0 / 1.25": could not be confirmed on
     ///   any page. semlar's calculator computes client-side and states no
     ///   constants; the claim only ever appeared in search summaries.
-    /// - codingace: 1.30 / 1.10 / 0.90 by positive COUNT with no curse row.
-    ///   It also has a "1 positive" case, which weapon rivens do not roll, so
+    /// - codingace: 1.30 / 1.10 / 0.90 by bonus COUNT with no malus row.
+    ///   It also has a "1 bonus" case, which weapon rivens do not roll, so
     ///   its table is describing something else.
     ///
     /// We take the wiki's, as the only one verified from a primary source.
@@ -73,10 +73,10 @@ impl Shape {
     /// So those numbers are the BASE, reached before any config multiplier,
     /// and their roundness says nothing about it.
     ///
-    /// What remains is a 1% uncertainty on two-positive rivens, and one
+    /// What remains is a 1% uncertainty on two-bonus rivens, and one
     /// in-game riven with a known roll settles it.
-    pub fn positive_mult(&self) -> f64 {
-        match (self.positives, self.curse) {
+    pub fn bonus_mult(&self) -> f64 {
+        match (self.bonuses, self.malus) {
             (2, false) => 0.99,
             (2, true) => 1.2375,
             (3, false) => 0.75,
@@ -87,9 +87,9 @@ impl Shape {
         }
     }
 
-    /// Multiplier on the CURSE. Negative: it flips the stat's sign.
-    pub fn curse_mult(&self) -> f64 {
-        if self.positives >= 3 {
+    /// Multiplier on the MALUS. Negative: it flips the stat's sign.
+    pub fn malus_mult(&self) -> f64 {
+        if self.bonuses >= 3 {
             -0.75
         } else {
             -0.495
@@ -97,7 +97,7 @@ impl Shape {
     }
 
     pub fn is_legal(&self) -> bool {
-        (2..=3).contains(&self.positives)
+        (2..=3).contains(&self.bonuses)
     }
 }
 
@@ -126,13 +126,72 @@ pub struct RivenStat {
     /// Element / physical type / faction, where the kind needs one.
     #[serde(default)]
     pub arg: Option<String>,
-    /// May this stat be the CURSE? Wiki lists five that are positive-only.
+    /// May this stat be the MALUS? Wiki lists five that are bonus-only.
     #[serde(default = "yes")]
-    pub curse: bool,
+    pub malus: bool,
 }
 
 fn yes() -> bool {
     true
+}
+
+/// How the CARD prints a stat's number — the stored value is a fraction and
+/// the card is not obliged to agree with it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Shown {
+    /// `x100`, with a sign. Most stats.
+    Percent,
+    /// The raw number, with a sign. Punch Through is metres.
+    Number,
+    /// A MULTIPLIER off 1, no sign: the card reads "x0.59 Damage to Corpus"
+    /// where the stored value is -0.41 (user, 2026-07-31). Only the three
+    /// faction stats print this way, and it is why their range runs 0.xx-1.xx
+    /// instead of straddling zero.
+    Multiplier,
+}
+
+impl RivenStat {
+    pub fn shown_as(&self) -> Shown {
+        if self.kind == "faction_damage_bonus" {
+            Shown::Multiplier
+        } else if self.text.contains('%') {
+            Shown::Percent
+        } else {
+            Shown::Number
+        }
+    }
+
+    /// Stored fraction -> the number printed on the card.
+    pub fn shown(&self, value: f64) -> f64 {
+        match self.shown_as() {
+            Shown::Percent => value * 100.0,
+            Shown::Number => value,
+            Shown::Multiplier => 1.0 + value,
+        }
+    }
+
+    /// The number printed on the card -> the stored fraction. Exactly the
+    /// inverse of [`Self::shown`], so a value typed off a real riven means
+    /// what it says.
+    pub fn from_shown(&self, shown: f64) -> f64 {
+        match self.shown_as() {
+            Shown::Percent => shown / 100.0,
+            Shown::Number => shown,
+            Shown::Multiplier => shown - 1.0,
+        }
+    }
+
+    /// The whole line, template filled in.
+    pub fn print(&self, value: f64) -> String {
+        let s = self.shown(value);
+        let n = match self.shown_as() {
+            // A multiplier carries its meaning in the `x`, not in a sign:
+            // x0.59 is already the bad one.
+            Shown::Multiplier => format!("x{s:.2}"),
+            _ => format!("{}{s:.2}", if s >= 0.0 { "+" } else { "" }),
+        };
+        self.text.replace("|val|", &n)
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -176,8 +235,8 @@ pub struct RolledStat {
 #[derive(Debug, Clone)]
 pub struct RivenSpec {
     pub class: String,
-    pub positives: Vec<RolledStat>,
-    pub curse: Option<RolledStat>,
+    pub bonuses: Vec<RolledStat>,
+    pub malus: Option<RolledStat>,
     pub rank: u32,
     pub polarity: Polarity,
 }
@@ -185,8 +244,8 @@ pub struct RivenSpec {
 impl RivenSpec {
     pub fn shape(&self) -> Shape {
         Shape {
-            positives: self.positives.len() as u32,
-            curse: self.curse.is_some(),
+            bonuses: self.bonuses.len() as u32,
+            malus: self.malus.is_some(),
         }
     }
 
@@ -195,13 +254,13 @@ impl RivenSpec {
         let mut out = Vec::new();
         let p = pool(&self.class);
         if !self.shape().is_legal() {
-            out.push(format!("a riven has 2 or 3 positives, not {}", self.positives.len()));
+            out.push(format!("a riven has 2 or 3 bonuses, not {}", self.bonuses.len()));
         }
         if self.rank > MAX_RANK {
             out.push(format!("rank {} is above {MAX_RANK}", self.rank));
         }
         let mut seen: Vec<&str> = Vec::new();
-        for s in self.positives.iter().chain(self.curse.iter()) {
+        for s in self.bonuses.iter().chain(self.malus.iter()) {
             // An EMPTY slot is a riven not described yet, not an illegal one.
             // The caller decides when a card is finished; this only judges
             // what has actually been said.
@@ -212,7 +271,7 @@ impl RivenSpec {
                 out.push(format!("{} is not a {} riven stat", s.id, self.class));
                 continue;
             };
-            // One stat cannot appear twice, curse included.
+            // One stat cannot appear twice, malus included.
             if seen.contains(&def.id.as_str()) {
                 out.push(format!("{} appears twice", def.id));
             }
@@ -221,10 +280,10 @@ impl RivenSpec {
                 out.push(format!("{} rolled {:.3}, outside {ROLL_MIN}-{ROLL_MAX}", def.id, s.roll));
             }
         }
-        if let Some(c) = &self.curse {
+        if let Some(c) = &self.malus {
             if let Some(def) = p.iter().find(|x| x.id == c.id) {
-                if !def.curse {
-                    out.push(format!("{} is positive-only and can never be the curse", def.id));
+                if !def.malus {
+                    out.push(format!("{} is bonus-only and can never be the malus", def.id));
                 }
             }
         }
@@ -248,7 +307,7 @@ impl RivenSpec {
         let mut out = self.illegal();
         let total = base.base_vector.total();
         let p = pool(&self.class);
-        for s in self.positives.iter().chain(self.curse.iter()) {
+        for s in self.bonuses.iter().chain(self.malus.iter()) {
             let Some(def) = p.iter().find(|x| x.id == s.id) else { continue };
             if def.kind != "physical_damage_bonus" {
                 continue;
@@ -273,12 +332,12 @@ impl RivenSpec {
         out
     }
 
-    /// The value a stat SHOWS, sign included. `positive = false` applies the
-    /// curse multiplier, which is negative and flips the stat.
-    pub fn value_of(&self, stat: &RivenStat, roll: f64, positive: bool, disposition: f64) -> f64 {
+    /// The value a stat SHOWS, sign included. `bonus = false` applies the
+    /// malus multiplier, which is negative and flips the stat.
+    pub fn value_of(&self, stat: &RivenStat, roll: f64, bonus: bool, disposition: f64) -> f64 {
         let rank_scale = PER_RANK * (self.rank + 1) as f64;
         let shape = self.shape();
-        let cfg = if positive { shape.positive_mult() } else { shape.curse_mult() };
+        let cfg = if bonus { shape.bonus_mult() } else { shape.malus_mult() };
         stat.base * rank_scale * disposition * cfg * roll
     }
 
@@ -292,20 +351,20 @@ impl RivenSpec {
         let p = pool(&self.class);
         let find = |id: &str| p.iter().find(|x| x.id == id);
         let mut out = Vec::new();
-        for (i, s) in self.positives.iter().enumerate() {
+        for (i, s) in self.bonuses.iter().enumerate() {
             if let Some(def) = find(&s.id) {
                 out.push((i, def, self.value_of(def, s.roll, true, disposition)));
             }
         }
-        if let Some(c) = &self.curse {
+        if let Some(c) = &self.malus {
             if let Some(def) = find(&c.id) {
-                out.push((self.positives.len(), def, self.value_of(def, c.roll, false, disposition)));
+                out.push((self.bonuses.len(), def, self.value_of(def, c.roll, false, disposition)));
             }
         }
         out
     }
 
-    /// `(stat, shown value)` for every rolled stat, positives then the curse.
+    /// `(stat, shown value)` for every rolled stat, bonuses then the malus.
     pub fn resolved(&self, disposition: f64) -> Vec<(&'static RivenStat, f64)> {
         self.resolved_slots(disposition).into_iter().map(|(_, d, v)| (d, v)).collect()
     }
@@ -313,17 +372,17 @@ impl RivenSpec {
     /// The value a stat would show at the ENDS of its roll band, lowest
     /// first. This is what lets a number box be typed into and stay legal:
     /// the bounds come from the same formula that produces the value.
-    pub fn bounds_of(&self, stat: &RivenStat, positive: bool, disposition: f64) -> (f64, f64) {
-        let a = self.value_of(stat, ROLL_MIN, positive, disposition);
-        let b = self.value_of(stat, ROLL_MAX, positive, disposition);
+    pub fn bounds_of(&self, stat: &RivenStat, bonus: bool, disposition: f64) -> (f64, f64) {
+        let a = self.value_of(stat, ROLL_MIN, bonus, disposition);
+        let b = self.value_of(stat, ROLL_MAX, bonus, disposition);
         if a <= b { (a, b) } else { (b, a) }
     }
 
     /// The roll a desired VALUE implies, clamped into the legal band — so a
     /// number typed straight from a riven you own lands on a legal roll
     /// instead of being refused.
-    pub fn roll_for_value(&self, stat: &RivenStat, positive: bool, disposition: f64, value: f64) -> f64 {
-        let unit = self.value_of(stat, 1.0, positive, disposition);
+    pub fn roll_for_value(&self, stat: &RivenStat, bonus: bool, disposition: f64, value: f64) -> f64 {
+        let unit = self.value_of(stat, 1.0, bonus, disposition);
         if unit.abs() < 1e-12 {
             return 1.0;
         }
@@ -332,17 +391,17 @@ impl RivenSpec {
 
     /// The riven's NAME, generated from its stats — it is not a free field.
     ///
-    /// Wiki: the prefix and the core come from the two highest positive
+    /// Wiki: the prefix and the core come from the two highest bonus
     /// magnitudes and the suffix from the lowest, in the pattern
-    /// `Prefix-CoreSuffix`; the CURSE never contributes a fragment.
+    /// `Prefix-CoreSuffix`; the MALUS never contributes a fragment.
     ///
-    /// With two positives there is no third fragment and the pattern the wiki
+    /// With two bonuses there is no third fragment and the pattern the wiki
     /// also names, `CoreSuffix`, applies. That reading of the two-stat case is
     /// inference from the two patterns it lists, not something it states.
     pub fn name(&self, _disposition: f64) -> String {
         let p = pool(&self.class);
         let mut pos: Vec<(&'static RivenStat, f64)> = self
-            .positives
+            .bonuses
             .iter()
             .filter_map(|s| p.iter().find(|x| x.id == s.id).map(|d| (d, s.roll)))
             .collect();
@@ -462,14 +521,14 @@ fn effect_of(def: &RivenStat, v: f64) -> Option<ModEffect> {
 mod tests {
     use super::*;
 
-    fn spec(ids: &[&str], curse: Option<&str>, rank: u32) -> RivenSpec {
+    fn spec(ids: &[&str], malus: Option<&str>, rank: u32) -> RivenSpec {
         RivenSpec {
             class: "rifle".into(),
-            positives: ids
+            bonuses: ids
                 .iter()
                 .map(|id| RolledStat { id: (*id).into(), roll: 1.0 })
                 .collect(),
-            curse: curse.map(|id| RolledStat { id: id.into(), roll: 1.0 }),
+            malus: malus.map(|id| RolledStat { id: id.into(), roll: 1.0 }),
             rank,
             polarity: Polarity::Madurai,
         }
@@ -490,7 +549,7 @@ mod tests {
     /// Note what this test does NOT do: it does not apply a config
     /// multiplier. These are BASE values, reached before the shape is known,
     /// which is precisely why their roundness says nothing about whether the
-    /// two-positive multiplier is 0.99 or 1.0.
+    /// two-bonus multiplier is 0.99 or 1.0.
     #[test]
     fn the_scale_is_90_and_the_wikis_base_column_agrees() {
         let by = |id: &str| pool("rifle").iter().find(|x| x.id == id).unwrap();
@@ -520,25 +579,25 @@ mod tests {
         assert!((at(4) - full * 5.0 / 9.0).abs() < 1e-9);
     }
 
-    /// The curse flips the sign, and a third positive costs every stat 25%.
+    /// The malus flips the sign, and a third bonus costs every stat 25%.
     #[test]
     fn the_shape_moves_every_stat() {
         let by = |id: &str| pool("rifle").iter().find(|x| x.id == id).unwrap();
         let two = spec(&["damage", "multishot"], None, 8);
-        let two_cursed = spec(&["damage", "multishot"], Some("weapon_recoil"), 8);
+        let two_with_malus = spec(&["damage", "multishot"], Some("weapon_recoil"), 8);
         let three = spec(&["damage", "multishot", "critical_chance"], None, 8);
 
         let d = |s: &RivenSpec| s.value_of(by("damage"), 1.0, true, 1.0);
         assert!((d(&two) - 1.65 * 0.99).abs() < 5e-4);
-        // A curse pays the positives exactly 25%, in both shapes.
-        assert!((d(&two_cursed) - 1.65 * 0.99 * 1.25).abs() < 5e-4);
-        assert!((d(&three) - 1.65 * 0.75).abs() < 5e-4, "a third positive costs 25%");
-        let three_cursed = spec(&["damage", "multishot", "critical_chance"], Some("weapon_recoil"), 8);
-        assert!((d(&three_cursed) - 1.65 * 0.75 * 1.25).abs() < 5e-4);
+        // A malus pays the bonuses exactly 25%, in both shapes.
+        assert!((d(&two_with_malus) - 1.65 * 0.99 * 1.25).abs() < 5e-4);
+        assert!((d(&three) - 1.65 * 0.75).abs() < 5e-4, "a third bonus costs 25%");
+        let three_with_malus = spec(&["damage", "multishot", "critical_chance"], Some("weapon_recoil"), 8);
+        assert!((d(&three_with_malus) - 1.65 * 0.75 * 1.25).abs() < 5e-4);
 
-        // The curse itself: negative multiplier, so the stat inverts.
-        let c = two_cursed.value_of(by("multishot"), 1.0, false, 1.0);
-        assert!(c < 0.0, "a curse is negative: {c}");
+        // The malus itself: negative multiplier, so the stat inverts.
+        let c = two_with_malus.value_of(by("multishot"), 1.0, false, 1.0);
+        assert!(c < 0.0, "a malus is negative: {c}");
         assert!((c + 0.90 * 0.495).abs() < 5e-4);
     }
 
@@ -557,7 +616,7 @@ mod tests {
         let m = s.to_mod_def("riven_test", 1.3);
         assert_eq!(m.base_drain, 18, "rank 8 costs 18");
         assert_eq!(m.max_rank, MAX_RANK);
-        assert_eq!(m.effects.len(), 3, "two positives and the curse");
+        assert_eq!(m.effects.len(), 3, "two bonuses and the malus");
         assert!(matches!(m.effects[0], ModEffect::BaseDamage(v) if (v - 1.65 * 1.2375 * 1.3).abs() < 1e-3));
     }
 
@@ -566,26 +625,26 @@ mod tests {
     #[test]
     fn illegality_is_reported_per_reason() {
         assert!(spec(&["damage", "multishot"], None, 8).illegal().is_empty());
-        // Four positives is not a riven.
+        // Four bonuses is not a riven.
         let too_many = spec(&["damage", "multishot", "critical_chance", "critical_damage"], None, 8);
-        assert!(too_many.illegal().iter().any(|r| r.contains("2 or 3 positives")));
-        // Toxin is positive-only; it can never be the curse.
-        let bad_curse = spec(&["damage", "multishot"], Some("toxin"), 8);
+        assert!(too_many.illegal().iter().any(|r| r.contains("2 or 3 bonuses")));
+        // Toxin is bonus-only; it can never be the malus.
+        let bad_malus = spec(&["damage", "multishot"], Some("toxin"), 8);
         assert!(
-            bad_curse.illegal().iter().any(|r| r.contains("positive-only")),
+            bad_malus.illegal().iter().any(|r| r.contains("bonus-only")),
             "{:?}",
-            bad_curse.illegal()
+            bad_malus.illegal()
         );
         // A stat cannot appear twice.
         let dup = spec(&["damage", "damage"], None, 8);
         assert!(dup.illegal().iter().any(|r| r.contains("twice")));
         // Rolls live in 0.9-1.1.
         let mut wild = spec(&["damage", "multishot"], None, 8);
-        wild.positives[0].roll = 1.5;
+        wild.bonuses[0].roll = 1.5;
         assert!(wild.illegal().iter().any(|r| r.contains("outside")));
         // And a stat from the wrong pool.
         let mut alien = spec(&["damage", "multishot"], None, 8);
-        alien.positives[1].id = "not_a_stat".into();
+        alien.bonuses[1].id = "not_a_stat".into();
         assert!(alien.illegal().iter().any(|r| r.contains("not a rifle riven stat")));
     }
 
@@ -614,9 +673,9 @@ mod tests {
         let no = RivenSpec { class: "pistol".into(), ..spec(&["damage", "slash"], None, 8) };
         assert!(no.illegal_on(&toxo).iter().any(|r| r.contains("10%")), "{:?}", no.illegal_on(&toxo));
 
-        // A curse is restricted the same way.
-        let cursed = RivenSpec { class: "pistol".into(), ..spec(&["damage", "multishot"], Some("impact"), 8) };
-        assert!(cursed.illegal_on(&toxo).iter().any(|r| r.contains("more than 25%")));
+        // A malus is restricted the same way.
+        let with_malus = RivenSpec { class: "pistol".into(), ..spec(&["damage", "multishot"], Some("impact"), 8) };
+        assert!(with_malus.illegal_on(&toxo).iter().any(|r| r.contains("more than 25%")));
     }
 
     /// A value can be typed IN, not just rolled to — that is how a riven you
@@ -628,7 +687,7 @@ mod tests {
         let s = spec(&["damage", "multishot"], None, 8);
         let dmg = by("damage");
         let (lo, hi) = s.bounds_of(dmg, true, 1.3);
-        // Torid, two positives, no curse: base x 90 x 1.3 x 0.99, at each
+        // Torid, two bonuses, no malus: base x 90 x 1.3 x 0.99, at each
         // end. Written from the stored base rather than the round 1.65,
         // because the stored number is 0.018333299 and 90x it is 1.6499969.
         let unit = dmg.base * 90.0 * 1.3 * 0.99;
@@ -647,18 +706,49 @@ mod tests {
         assert!((s.roll_for_value(dmg, true, 1.3, 0.01) - ROLL_MIN).abs() < 1e-9);
         assert!((s.roll_for_value(dmg, true, 1.3, 99.0) - ROLL_MAX).abs() < 1e-9);
 
-        // A CURSE flips its stat, and Weapon Recoil is stored NEGATIVE, so
-        // cursing it comes out positive — recoil going UP, which is the harm.
+        // A MALUS flips its stat, and Weapon Recoil is stored NEGATIVE, so
+        // the malus flips it upward — recoil going UP, which is the harm.
         // Bounds still come back ordered, and the smallest roll is still the
-        // gentlest curse.
-        let cursed = spec(&["damage", "multishot"], Some("weapon_recoil"), 8);
+        // gentlest malus.
+        let with_malus = spec(&["damage", "multishot"], Some("weapon_recoil"), 8);
         let rec = by("weapon_recoil");
-        let (clo, chi) = cursed.bounds_of(rec, false, 1.3);
+        let (clo, chi) = with_malus.bounds_of(rec, false, 1.3);
         assert!(clo <= chi, "bounds come back ordered");
-        assert!(clo > 0.0, "cursing a negative stat raises it: {clo}");
-        assert!(clo.abs() < chi.abs(), "the gentlest curse is the smallest");
-        assert!((cursed.roll_for_value(rec, false, 1.3, clo) - ROLL_MIN).abs() < 1e-9);
-        assert!((cursed.roll_for_value(rec, false, 1.3, chi) - ROLL_MAX).abs() < 1e-9);
+        assert!(clo > 0.0, "a malus flips a negative stat upward: {clo}");
+        assert!(clo.abs() < chi.abs(), "the gentlest malus is the smallest");
+        assert!((with_malus.roll_for_value(rec, false, 1.3, clo) - ROLL_MIN).abs() < 1e-9);
+        assert!((with_malus.roll_for_value(rec, false, 1.3, chi) - ROLL_MAX).abs() < 1e-9);
+    }
+
+    /// Faction damage prints as a MULTIPLIER, because that is what the card
+    /// says: a malus the sim stores as -0.41 reads "x0.59 Damage to Corpus"
+    /// (user, 2026-07-31), so its range runs 0.xx-1.xx and never shows a
+    /// minus sign. Everything else keeps its sign and its percent.
+    #[test]
+    fn a_faction_stat_prints_the_multiplier_the_card_shows() {
+        let by = |id: &str| pool("rifle").iter().find(|x| x.id == id).unwrap();
+        let corpus = by("damage_to_corpus");
+        assert_eq!(corpus.shown_as(), Shown::Multiplier);
+        assert!((corpus.shown(-0.41) - 0.59).abs() < 1e-9, "the card's own number");
+        assert!(corpus.print(-0.41).starts_with("x0.59"), "{}", corpus.print(-0.41));
+        assert!(corpus.print(0.45).starts_with("x1.45"), "{}", corpus.print(0.45));
+        // And a typed card number comes back to the stored fraction.
+        assert!((corpus.from_shown(0.59) + 0.41).abs() < 1e-9);
+        assert!((corpus.from_shown(corpus.shown(0.123)) - 0.123).abs() < 1e-12);
+
+        // A real malus on a real weapon lands in 0.xx, never below zero: the
+        // malus multiplier is -0.495 at two bonuses, so 0.45 x 1.3 x 0.495.
+        let s = spec(&["damage", "multishot"], Some("damage_to_corpus"), 8);
+        let v = s.value_of(corpus, 1.0, false, 1.3);
+        assert!(v < 0.0, "stored as a loss: {v}");
+        let (lo, hi) = s.bounds_of(corpus, false, 1.3);
+        assert!(corpus.shown(lo) > 0.0 && corpus.shown(hi) < 1.0, "0.xx band");
+
+        // Percent and plain-number stats are untouched.
+        assert_eq!(by("damage").shown_as(), Shown::Percent);
+        assert!(by("damage").print(1.65).starts_with("+165.00%"));
+        assert_eq!(by("punch_through").shown_as(), Shown::Number);
+        assert!(by("punch_through").print(2.7).starts_with("+2.70 "));
     }
 
     /// A tie is the NORM in a constructor, because ranking is by ROLL and
@@ -669,7 +759,7 @@ mod tests {
     fn a_tied_name_does_not_depend_on_the_order_the_stats_were_entered() {
         let all_max = |ids: &[&str]| {
             let mut s = spec(ids, None, 8);
-            for st in &mut s.positives {
+            for st in &mut s.bonuses {
                 st.roll = ROLL_MAX;
             }
             s
@@ -688,7 +778,7 @@ mod tests {
     }
 
     /// Every stat rolls its band INDEPENDENTLY, so the corner where all three
-    /// positives are maximal and the curse minimal is a legal riven — merely
+    /// bonuses are maximal and the malus minimal is a legal riven — merely
     /// astronomically unlikely (user, 2026-07-31: "can they all be max at
     /// once?"). It has to be constructible, because it is the CEILING, which
     /// is exactly the riven an optimizer wants to know about.
@@ -696,33 +786,33 @@ mod tests {
     fn the_god_roll_corner_is_legal_and_is_the_ceiling() {
         let by = |id: &str| pool("rifle").iter().find(|x| x.id == id).unwrap();
         let mut god = spec(&["damage", "multishot", "critical_chance"], Some("weapon_recoil"), 8);
-        for s in &mut god.positives {
+        for s in &mut god.bonuses {
             s.roll = ROLL_MAX;
         }
-        god.curse.as_mut().unwrap().roll = ROLL_MIN;
+        god.malus.as_mut().unwrap().roll = ROLL_MIN;
         assert!(god.illegal().is_empty(), "{:?}", god.illegal());
 
-        // Nothing legal beats it on a positive...
+        // Nothing legal beats it on a bonus...
         let mid = spec(&["damage", "multishot", "critical_chance"], Some("weapon_recoil"), 8);
         assert!(
             god.value_of(by("damage"), ROLL_MAX, true, 1.3)
                 > mid.value_of(by("damage"), 1.0, true, 1.3)
         );
-        // ...and nothing legal has a gentler curse: the curse is negative, so
+        // ...and nothing legal has a gentler malus: the malus is negative, so
         // the smallest roll is the least harmful.
         let worst = mid.value_of(by("weapon_recoil"), ROLL_MAX, false, 1.3);
         let best = god.value_of(by("weapon_recoil"), ROLL_MIN, false, 1.3);
-        assert!(best.abs() < worst.abs(), "min roll is the kindest curse");
+        assert!(best.abs() < worst.abs(), "min roll is the kindest malus");
 
         // Independence is the point: two stats at different rolls is legal,
         // which it would not be if one quality applied to the whole riven.
         let mut mixed = spec(&["damage", "multishot"], None, 8);
-        mixed.positives[0].roll = ROLL_MIN;
-        mixed.positives[1].roll = ROLL_MAX;
+        mixed.bonuses[0].roll = ROLL_MIN;
+        mixed.bonuses[1].roll = ROLL_MAX;
         assert!(mixed.illegal().is_empty());
     }
 
-    /// The name is GENERATED, from the positives, ranked by ROLL.
+    /// The name is GENERATED, from the bonuses, ranked by ROLL.
     ///
     /// The wiki's own worked example is the test: a Vectis riven named
     /// "Sati-critaata" has "Multishot as the highest stat, Critical Chance as
@@ -731,13 +821,13 @@ mod tests {
     /// cannot mean the value. It means the roll.
     #[test]
     fn the_name_comes_from_the_stats_ranked_by_roll() {
-        let rolled = |pairs: &[(&str, f64)], curse: Option<&str>| RivenSpec {
+        let rolled = |pairs: &[(&str, f64)], malus: Option<&str>| RivenSpec {
             class: "rifle".into(),
-            positives: pairs
+            bonuses: pairs
                 .iter()
                 .map(|(id, r)| RolledStat { id: (*id).into(), roll: *r })
                 .collect(),
-            curse: curse.map(|id| RolledStat { id: id.into(), roll: 1.0 }),
+            malus: malus.map(|id| RolledStat { id: id.into(), roll: 1.0 }),
             rank: 8,
             polarity: Polarity::Madurai,
         };
@@ -760,7 +850,7 @@ mod tests {
         );
         assert_eq!(shuffled.name(1.0), "Sati-critaata");
 
-        // Two positives: no core, so "CoreSuffix" — the higher roll's PREFIX
+        // Two bonuses: no core, so "CoreSuffix" — the higher roll's PREFIX
         // fragment and the lower one's suffix.
         let two = rolled(&[("damage", 1.10), ("multishot", 0.95)], None);
         assert_eq!(two.name(1.0), "Visican");
@@ -769,14 +859,14 @@ mod tests {
         // the ranking never looks at the value anyway.
         assert_eq!(vectis.name(1.0), vectis.name(1.55));
 
-        // The curse contributes no fragment.
+        // The malus contributes no fragment.
         //
         // UNVERIFIED: the wiki says names are drawn from "the randomized
-        // attributes the mod has" without saying whether the curse is one of
-        // them, and its example has three positives so it cannot settle this.
-        // An in-game 2-positive-plus-curse riven does.
-        let cursed = rolled(&[("damage", 1.10), ("multishot", 0.95)], Some("weapon_recoil"));
-        assert_eq!(cursed.name(1.0), two.name(1.0));
+        // attributes the mod has" without saying whether the malus is one of
+        // them, and its example has three bonuses so it cannot settle this.
+        // An in-game 2-bonus-plus-malus riven does.
+        let with_malus = rolled(&[("damage", 1.10), ("multishot", 0.95)], Some("weapon_recoil"));
+        assert_eq!(with_malus.name(1.0), two.name(1.0));
     }
 
 }

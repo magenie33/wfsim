@@ -607,7 +607,7 @@ function rivenMods() {
   if (rivenModCache.key === key) return rivenModCache.list;
   const list = raw.map((p) => {
     const st = p.state || {};
-    const stats = (st.positives || []).concat(st.curse ? [st.curse] : []);
+    const stats = (st.bonuses || st.positives || []).concat(st.malus || st.curse || []);
     const lines = (rivenNames[p.name] || {}).lines || [];
     const official = (rivenNames[p.name] || {}).name || "";
     return {
@@ -669,7 +669,7 @@ const rivenPayload = () =>
 // ---- Rivens ------------------------------------------------------------
 // A CONSTRUCTOR, not a roller. Every control is bounded by the formula, so
 // the only rivens it can express are legal ones — including the corner where
-// every positive rolls maximal and the curse minimal, which is not an edge
+// every bonus rolls maximal and the malus minimal, which is not an edge
 // case here but the CEILING, the riven an optimizer wants to know about.
 //
 // The arithmetic is NOT duplicated: every change asks `/api/riven`, so a
@@ -694,18 +694,18 @@ const rivenStatName = (s) =>
   s.text.replace("|val|", "").replace(/^\s*%\s*/, "").replace(/\s+/g, " ").trim();
 
 // The shape, in the notation everyone already uses: 2, 3, 2+1, 3+1 — the
-// count of positives, and a +1 for the curse. It leads because it is the
-// ONLY thing that decides the multipliers; a 2 and a 2+1 pay their positives
+// count of bonuses, and a +1 for the malus. It leads because it is the
+// ONLY thing that decides the multipliers; a 2 and a 2+1 pay their bonuses
 // differently before a single stat is chosen.
 const RIVEN_SHAPES = [
-  { id: "2", positives: 2, curse: false },
-  { id: "3", positives: 3, curse: false },
-  { id: "2+1", positives: 2, curse: true },
-  { id: "3+1", positives: 3, curse: true },
+  { id: "2", bonuses: 2, malus: false },
+  { id: "3", bonuses: 3, malus: false },
+  { id: "2+1", bonuses: 2, malus: true },
+  { id: "3+1", bonuses: 3, malus: true },
 ];
 
 // An EMPTY card. Nothing is pre-picked: a default stat is a claim the visitor
-// did not make. Two positives is the game's floor for a riven rather than a
+// did not make. Two bonuses is the game's floor for a riven rather than a
 // suggestion, and the rolls sit at 1.0 because a slider has to be somewhere.
 // FOUR drafts, one per shape, and only the active one is the riven.
 //
@@ -714,20 +714,20 @@ const RIVEN_SHAPES = [
 // Keeping each shape's own stats means a shape switch is a switch, not an
 // edit — you can compare a 2+1 against a 3+1 by clicking between them.
 //
-// `positives` / `curse` stay the ACTIVE shape's, so everything downstream —
+// `bonuses` / `malus` stay the ACTIVE shape's, so everything downstream —
 // the rows, the payload, the engine — keeps reading a riven the same way.
-const RIVEN_BLANK_DRAFT = (n, curse) => ({
-  positives: Array.from({ length: n }, () => ({ id: null, roll: 1.0 })),
-  curse: curse ? { id: null, roll: 1.0 } : null,
+const RIVEN_BLANK_DRAFT = (n, malus) => ({
+  bonuses: Array.from({ length: n }, () => ({ id: null, roll: 1.0 })),
+  malus: malus ? { id: null, roll: 1.0 } : null,
 });
 function blankRiven() {
   const drafts = {};
-  RIVEN_SHAPES.forEach((s) => { drafts[s.id] = RIVEN_BLANK_DRAFT(s.positives, s.curse); });
+  RIVEN_SHAPES.forEach((s) => { drafts[s.id] = RIVEN_BLANK_DRAFT(s.bonuses, s.malus); });
   return {
     shape: "2",
     drafts,
-    positives: drafts["2"].positives,
-    curse: drafts["2"].curse,
+    bonuses: drafts["2"].bonuses,
+    malus: drafts["2"].malus,
     rank: rivenRules().max_rank,
     polarity: "madurai",
   };
@@ -739,27 +739,38 @@ function withDrafts(r) {
   const out = JSON.parse(JSON.stringify(r || {}));
   out.rank = out.rank ?? rivenRules().max_rank;
   out.polarity = out.polarity || "madurai";
-  out.positives = out.positives || [];
-  out.curse = out.curse || null;
-  out.shape = out.shape || `${out.positives.length || 2}${out.curse ? "+1" : ""}`;
+  // A riven saved before the wiki's Bonus/Malus wording still says
+  // positives/curse. It is the visitor's own item and outlives our
+  // vocabulary, so it is read either way and re-saved in the new words.
+  out.bonuses = out.bonuses || out.positives || [];
+  out.malus = out.malus || out.curse || null;
+  delete out.positives;
+  delete out.curse;
+  Object.values(out.drafts || {}).forEach((d) => {
+    d.bonuses = d.bonuses || d.positives || [];
+    d.malus = d.malus || d.curse || null;
+    delete d.positives;
+    delete d.curse;
+  });
+  out.shape = out.shape || `${out.bonuses.length || 2}${out.malus ? "+1" : ""}`;
   out.drafts = out.drafts || {};
   RIVEN_SHAPES.forEach((s) => {
-    if (!out.drafts[s.id]) out.drafts[s.id] = RIVEN_BLANK_DRAFT(s.positives, s.curse);
+    if (!out.drafts[s.id]) out.drafts[s.id] = RIVEN_BLANK_DRAFT(s.bonuses, s.malus);
   });
   // The stats it was saved with belong to the shape it was saved in.
-  if (out.positives.length) {
-    out.drafts[out.shape] = { positives: out.positives, curse: out.curse };
+  if (out.bonuses.length) {
+    out.drafts[out.shape] = { bonuses: out.bonuses, malus: out.malus };
   }
   const d = out.drafts[out.shape];
-  out.positives = d.positives;
-  out.curse = d.curse;
+  out.bonuses = d.bonuses;
+  out.malus = d.malus;
   return out;
 }
 
 /// Every slot filled? An unfinished card is not an ILLEGAL riven — it is one
 /// that has not been described yet, and it must not be reported as an error.
 const rivenComplete = () =>
-  riven && riven.positives.every((s) => s.id) && (!riven.curse || riven.curse.id);
+  riven && riven.bonuses.every((s) => s.id) && (!riven.malus || riven.malus.id);
 
 async function resolveRiven(pending) {
   if (!riven) return;
@@ -769,12 +780,12 @@ async function resolveRiven(pending) {
     const body = { weapon: $("weapon").value, ...riven };
     if (pending) {
       const clone = JSON.parse(JSON.stringify(body));
-      if (pending.slot === "curse") clone.curse.value = pending.value;
-      else clone.positives[Number(pending.slot)].value = pending.value;
+      if (pending.slot === "malus") clone.malus.value = pending.value;
+      else clone.bonuses[Number(pending.slot)].value = pending.value;
       rivenResolved = await api("/api/riven", clone);
       // Adopt the roll the value implied, so slider and box agree.
       (rivenResolved.stats || []).forEach((s) => {
-        const at = s.slot === "curse" ? riven.curse : riven.positives[Number(s.slot)];
+        const at = s.slot === "malus" ? riven.malus : riven.bonuses[Number(s.slot)];
         if (at) at.roll = s.roll;
       });
     } else {
@@ -826,23 +837,26 @@ function renderRivens() {
 }
 
 function renderRivenShape() {
-  const now = riven.shape || `${riven.positives.length}${riven.curse ? "+1" : ""}`;
+  const now = riven.shape || `${riven.bonuses.length}${riven.malus ? "+1" : ""}`;
+  const shapeNow = RIVEN_SHAPES.find((x) => x.id === now) || RIVEN_SHAPES[0];
   $("riven-shape").innerHTML =
     `<span class="rv-lbl">Shape</span><span class="oseg">` +
-    RIVEN_SHAPES.map((s) => `<span class="seg ${s.id === now ? "on" : ""}" data-rv="${s.id}">${s.id}</span>`).join("") +
-    `</span>`;
+    RIVEN_SHAPES.map((s) =>
+      `<span class="seg ${s.id === now ? "on" : ""}" data-rv="${s.id}"
+             title="${s.bonuses} Bonus${s.malus ? ", 1 Malus" : ""}">${s.id}</span>`).join("") +
+    `</span><span class="rv-lbl dim">${shapeNow.bonuses} Bonus${shapeNow.malus ? ", 1 Malus" : ""}</span>`;
   $("riven-shape").querySelectorAll("[data-rv]").forEach((el) => el.onclick = () => {
     const want = el.dataset.rv;
     if (want === riven.shape) return;
     // Park the current shape's stats in its own draft, then adopt the target
     // shape's. Nothing is discarded, so clicking back and forth is free.
-    riven.drafts[riven.shape] = { positives: riven.positives, curse: riven.curse };
+    riven.drafts[riven.shape] = { bonuses: riven.bonuses, malus: riven.malus };
     riven.shape = want;
     const s = RIVEN_SHAPES.find((x) => x.id === want);
-    const d = riven.drafts[want] || RIVEN_BLANK_DRAFT(s.positives, s.curse);
+    const d = riven.drafts[want] || RIVEN_BLANK_DRAFT(s.bonuses, s.malus);
     riven.drafts[want] = d;
-    riven.positives = d.positives;
-    riven.curse = d.curse;
+    riven.bonuses = d.bonuses;
+    riven.malus = d.malus;
     markRivenDirty();
     renderRivens();
   });
@@ -854,10 +868,10 @@ function renderRivenShape() {
 // express — "any legal riven and only legal ones" holds by construction.
 function renderRivenStats() {
   const rules = rivenRules();
-  const row = (slot, s, isCurse) => {
+  const row = (slot, s, isMalus) => {
     const def = rivenStat(s.id);
-    return `<div class="rv-row ${isCurse ? "curse" : ""}">
-      <span class="rv-tag">${isCurse ? "curse" : "positive"}</span>
+    return `<div class="rv-row ${isMalus ? "malus" : ""}">
+      <span class="rv-tag">${isMalus ? "Malus" : "Bonus"}</span>
       <button class="rv-pick" data-slot="${slot}">${def ? escHtml(rivenStatName(def)) : "choose a stat"}</button>
       <input class="rv-roll" type="range" data-slot="${slot}"
              min="${rules.roll_min}" max="${rules.roll_max}" step="0.001" value="${s.roll}">
@@ -866,10 +880,10 @@ function renderRivenStats() {
     </div>`;
   };
   $("riven-stats").innerHTML =
-    riven.positives.map((s, i) => row(String(i), s, false)).join("") +
-    (riven.curse ? row("curse", riven.curse, true) : "");
+    riven.bonuses.map((s, i) => row(String(i), s, false)).join("") +
+    (riven.malus ? row("malus", riven.malus, true) : "");
 
-  const at = (slot) => (slot === "curse" ? riven.curse : riven.positives[Number(slot)]);
+  const at = (slot) => (slot === "malus" ? riven.malus : riven.bonuses[Number(slot)]);
   $("riven-stats").querySelectorAll(".rv-pick").forEach((el) =>
     el.onclick = () => openRivenPicker(el, el.dataset.slot));
   $("riven-stats").querySelectorAll(".rv-roll").forEach((el) => el.oninput = () => {
@@ -898,14 +912,14 @@ function openRivenPicker(anchor, slot) {
   const pop = $("riven-popover");
   const search = $("riven-search");
   const menu = $("riven-menu");
-  const at = slot === "curse" ? riven.curse : riven.positives[Number(slot)];
-  const used = new Set(riven.positives.map((x) => x.id).concat(riven.curse ? [riven.curse.id] : []));
+  const at = slot === "malus" ? riven.malus : riven.bonuses[Number(slot)];
+  const used = new Set(riven.bonuses.map((x) => x.id).concat(riven.malus ? [riven.malus.id] : []));
   const draw = (q) => {
     const f = (q || "").trim().toLowerCase();
     menu.innerHTML = rivenPool()
-      // A stat cannot appear twice on one riven, and five are positive-only
-      // and can never be the curse.
-      .filter((x) => (!used.has(x.id) || x.id === at.id) && (slot !== "curse" || x.curse))
+      // A stat cannot appear twice on one riven, and five are bonus-only
+      // and can never be the malus.
+      .filter((x) => (!used.has(x.id) || x.id === at.id) && (slot !== "malus" || x.malus))
       .filter((x) => !f || rivenStatName(x).toLowerCase().includes(f))
       .map((x) => `<div class="opt ${x.id === at.id ? "search" : ""}" data-rvid="${x.id}">
         <div class="info"><div class="mn">${escHtml(rivenStatName(x))}</div>
@@ -950,11 +964,11 @@ function renderRivenFoot() {
   $("riven-foot").querySelectorAll("[data-pol]").forEach((el) => el.onclick = () => {
     riven.polarity = el.dataset.pol; markRivenDirty(); renderRivenFoot(); resolveRiven();
   });
-  // The ceiling, in one click: every positive at the top of its band and the
-  // curse at the bottom, which is the least harmful it can be.
+  // The ceiling, in one click: every bonus at the top of its band and the
+  // malus at the bottom, which is the least harmful it can be.
   $("rv-max").onclick = () => {
-    riven.positives.forEach((s) => { s.roll = rules.roll_max; });
-    if (riven.curse) riven.curse.roll = rules.roll_min;
+    riven.bonuses.forEach((s) => { s.roll = rules.roll_max; });
+    if (riven.malus) riven.malus.roll = rules.roll_min;
     markRivenDirty();
     renderRivens();
   };
@@ -975,8 +989,8 @@ function renderRivenAll() {
         const st = p.state || {};
         const meta = rivenNames[p.name] || {};
         const lines = meta.lines || [];
-        const shape = st.shape || `${(st.positives || []).length}${st.curse ? "+1" : ""}`;
-        const nPos = (st.positives || []).length;
+        const shape = st.shape || `${(st.bonuses || st.positives || []).length}${st.malus || st.curse ? "+1" : ""}`;
+        const nBonus = (st.bonuses || st.positives || []).length;
         return `<div class="rv-all ${p.name === active ? "sel" : ""}" data-open="${escHtml(p.name)}">
           <div class="rv-all-h">
             ${imgTag(POL(cap(st.polarity || "madurai")), "pol")}
@@ -986,7 +1000,7 @@ function renderRivenAll() {
           </div>
           <div class="rv-all-s">${
             lines.length
-              ? lines.map((x, i) => `<span class="rv-chip ${i >= nPos ? "neg" : ""}">${escHtml(x)}</span>`).join("")
+              ? lines.map((x, i) => `<span class="rv-chip ${i >= nBonus ? "neg" : ""}">${escHtml(x)}</span>`).join("")
               : `<span class="sim-empty">nothing rolled yet</span>`
           }</div>
         </div>`;
@@ -1019,7 +1033,10 @@ function renderRivenCard() {
       // The ends of the legal band, so the browser guards the box too.
       num.min = Math.min(s.min, s.max).toFixed(2);
       num.max = Math.max(s.min, s.max).toFixed(2);
-      num.title = `legal range ${num.min} … ${num.max}`;
+      // In the box's OWN units: a faction stat holds a multiplier, so its
+      // band reads x0.68 … x0.74 and never looks like a percentage.
+      const u = (n) => (s.unit === "x" ? `x${n}` : `${n}${s.unit || ""}`);
+      num.title = `legal range ${u(num.min)} … ${u(num.max)}`;
     }
     if (unit) {
       unit.textContent = s.text;
@@ -1030,7 +1047,7 @@ function renderRivenCard() {
   });
   const bad = (r && r.illegal) || [];
   if (!rivenComplete()) {
-    const n = riven.positives.filter((s) => !s.id).length + (riven.curse && !riven.curse.id ? 1 : 0);
+    const n = riven.bonuses.filter((s) => !s.id).length + (riven.malus && !riven.malus.id ? 1 : 0);
     $("riven-card").innerHTML = `<div class="rv-meta">pick ${n} more stat${n === 1 ? "" : "s"} to finish this riven</div>`;
     return;
   }
@@ -1062,11 +1079,11 @@ function saveRivenSoon() {
     }
   }, 250);
 }
-// The saved shape keeps `positives`/`curse` at the top level — that is what
+// The saved shape keeps `bonuses`/`malus` at the top level — that is what
 // the engine reads — and carries the other three drafts alongside so a
 // reload does not flatten them back into one.
 const snapshotRiven = () => ({
-  positives: riven.positives, curse: riven.curse, rank: riven.rank, polarity: riven.polarity,
+  bonuses: riven.bonuses, malus: riven.malus, rank: riven.rank, polarity: riven.polarity,
   shape: riven.shape, drafts: riven.drafts,
 });
 let activeRiven = null;

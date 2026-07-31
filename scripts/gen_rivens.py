@@ -60,8 +60,8 @@ KIND = {
     "WeaponZoomFovMod": ("zoom_bonus", None),
 }
 
-# wiki Riven_Mods: these roll POSITIVE ONLY and never appear as the curse.
-NEVER_CURSED = {
+# wiki Riven_Mods: these roll as a BONUS ONLY and never appear as the malus.
+NEVER_MALUS = {
     "WeaponFireDamageMod",
     "WeaponFreezeDamageMod",
     "WeaponElectricityDamageMod",
@@ -111,7 +111,7 @@ def main():
                     "text": re.sub(r"<[^>]*>", "", val["locTag"]).strip(),
                     "kind": kind or "unmodeled",
                     "arg": arg,
-                    "curse": tag not in NEVER_CURSED,
+                    "malus": tag not in NEVER_MALUS,
                 }
             )
         rows.sort(key=lambda r: r["id"])
@@ -128,7 +128,7 @@ def main():
                 "# the canonical values exactly: Damage 165%, Crit Chance 150%,",
                 "# Crit Damage 120%, Multishot 90% at disposition 1.0.",
                 "#",
-                "# `curse: false` = wiki-listed positive-only, never the negative stat.",
+                "# `malus: false` = wiki-listed bonus-only, never the negative stat.",
                 "# `kind: unmodeled` = a real riven stat the engine does not model; it",
                 "# still occupies a rolled slot and still shapes the name.",
                 "#",
@@ -149,8 +149,8 @@ def main():
                 out.append(f"    kind: {r['kind']}")
                 if r["arg"]:
                     out.append(f"    arg: {r['arg']}")
-                if not r["curse"]:
-                    out.append("    curse: false")
+                if not r["malus"]:
+                    out.append("    malus: false")
             io.open(OUT / f"{cls}.yaml", "w", encoding="utf-8", newline="\n").write(
                 "\n".join(out) + "\n"
             )

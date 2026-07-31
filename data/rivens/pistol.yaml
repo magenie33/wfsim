@@ -7,7 +7,7 @@
 # the canonical values exactly: Damage 165%, Crit Chance 150%,
 # Crit Damage 120%, Multishot 90% at disposition 1.0.
 #
-# `curse: false` = wiki-listed positive-only, never the negative stat.
+# `malus: false` = wiki-listed bonus-only, never the negative stat.
 # `kind: unmodeled` = a real riven stat the engine does not model; it
 # still occupies a rolled slot and still shapes the name.
 #
@@ -33,7 +33,7 @@ stats:
     text: "|val|% Cold"
     kind: elemental_damage_bonus
     arg: cold
-    curse: false
+    malus: false
   - id: critical_chance
     tag: WeaponCritChanceMod
     order: 1
@@ -94,7 +94,7 @@ stats:
     text: "|val|% Electricity"
     kind: elemental_damage_bonus
     arg: electricity
-    curse: false
+    malus: false
   - id: fire_rate
     tag: WeaponFireRateMod
     order: 5
@@ -112,7 +112,7 @@ stats:
     text: "|val|% Heat"
     kind: elemental_damage_bonus
     arg: heat
-    curse: false
+    malus: false
   - id: impact
     tag: WeaponImpactDamageMod
     order: 7
@@ -154,7 +154,7 @@ stats:
     suffix: nok
     text: "|val| Punch Through"
     kind: punch_through_bonus
-    curse: false
+    malus: false
   - id: puncture
     tag: WeaponArmorPiercingDamageMod
     order: 0
@@ -206,7 +206,7 @@ stats:
     text: "|val|% Toxin"
     kind: elemental_damage_bonus
     arg: toxin
-    curse: false
+    malus: false
   - id: weapon_recoil
     tag: WeaponRecoilReductionMod
     order: 18

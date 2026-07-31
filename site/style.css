@@ -487,6 +487,7 @@ label.check input{width:auto}
    roll is not something the control can express. */
 .rv-shape,.rv-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .rv-lbl{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.rv-lbl.dim{opacity:.7;font-variant-numeric:tabular-nums}
 .rv-row{display:grid;grid-template-columns:64px minmax(150px,1.1fr) minmax(90px,1.2fr) 90px minmax(150px,1.2fr);
   align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid var(--line)}
 /* The stat picker opens the SAME searchable popover as the mod and arcane
@@ -504,7 +505,7 @@ label.check input{width:auto}
 .rv-unit.unmodeled{opacity:.55}
 .seg.pol{display:inline-flex;align-items:center;justify-content:center;padding:3px 8px}
 .seg.pol img{width:13px;height:13px;display:block}
-.rv-row.curse .rv-tag{color:var(--bad,#e06c75)}
+.rv-row.malus .rv-tag{color:var(--bad,#e06c75)}
 .rv-tag{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
 .rv-roll{width:100%}
 .rv-card{margin:12px 0}

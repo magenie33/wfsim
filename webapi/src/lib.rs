@@ -274,12 +274,15 @@ fn rivens_from(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
                     let s = r.get("spec")?;
                     let spec = RivenSpec {
                         class: class.clone(),
-                        positives: s
-                            .get("positives")
+                        // Both spellings: a riven saved before Bonus/Malus
+                        // still equips (see `riven_json`).
+                        bonuses: s
+                            .get("bonuses")
+                            .or_else(|| s.get("positives"))
                             .and_then(|x| x.as_array())
                             .map(|x| x.iter().filter_map(rolled).collect())
                             .unwrap_or_default(),
-                        curse: s.get("curse").and_then(rolled),
+                        malus: s.get("malus").or_else(|| s.get("curse")).and_then(rolled),
                         rank: s.get("rank").and_then(|x| x.as_u64()).unwrap_or(8) as u32,
                         polarity: match s.get("polarity").and_then(|x| x.as_str()).unwrap_or("madurai") {
                             "vazarin" => wfsim_engine::mods::Polarity::Vazarin,
@@ -562,7 +565,7 @@ pub fn meta_json() -> Value {
                             .map(|s| json!({
                                 "id": s.id, "text": s.text, "base": s.base,
                                 "prefix": s.prefix, "suffix": s.suffix,
-                                "curse": s.curse, "modeled": s.kind != "unmodeled",
+                                "malus": s.malus, "modeled": s.kind != "unmodeled",
                             }))
                             .collect::<Vec<_>>()),
                     )
@@ -621,7 +624,7 @@ pub fn riven_json(v: &Value) -> Value {
     // clamped into the legal band, so a number from anywhere lands legal
     // instead of being refused. An empty id is a slot not filled in yet.
     let rolled = |x: &Value| -> Option<RolledStat> {
-        // A null curse is NO curse — the shape depends on it, so reading one
+        // A null malus is NO malus — the shape depends on it, so reading one
         // as an empty slot made every riven resolve as if it had one.
         if !x.is_object() {
             return None;
@@ -631,14 +634,17 @@ pub fn riven_json(v: &Value) -> Value {
             roll: x.get("roll").and_then(|r| r.as_f64()).unwrap_or(1.0),
         })
     };
+    // The wiki's words are Bonus and Malus and so are ours. A riven saved
+    // before the rename still arrives spelled the old way, and a stored riven
+    // is the visitor's own — it outlives our vocabulary.
+    let field = |a: &str, b: &str| v.get(a).or_else(|| v.get(b));
     let spec = RivenSpec {
         class: class.clone(),
-        positives: v
-            .get("positives")
+        bonuses: field("bonuses", "positives")
             .and_then(|a| a.as_array())
             .map(|a| a.iter().filter_map(rolled).collect())
             .unwrap_or_default(),
-        curse: v.get("curse").and_then(rolled),
+        malus: field("malus", "curse").and_then(rolled),
         rank: get_u32(v, "rank", wfsim_engine::rivens_data::MAX_RANK),
         polarity: match get_str(v, "polarity", "madurai") {
             "vazarin" => wfsim_engine::mods::Polarity::Vazarin,
@@ -649,7 +655,7 @@ pub fn riven_json(v: &Value) -> Value {
     let evo_refs: Vec<&str> = Vec::new();
     let base = WeaponBase::from_data(&info.id, true, &evo_refs);
     let disposition = info.disposition;
-    let n_pos = spec.positives.len();
+    let n_pos = spec.bonuses.len();
     // A typed VALUE overrides the roll, once the stat is known.
     let mut spec = spec;
     let want_value = |arr: Option<&Value>, i: usize| -> Option<f64> {
@@ -657,49 +663,49 @@ pub fn riven_json(v: &Value) -> Value {
     };
     let p = wfsim_engine::rivens_data::pool(&class);
     // A typed value arrives in the units the CARD shows — "200" means 200%,
-    // where the formula works in fractions. Dividing by 100 for a template
-    // that carries a `%` is what makes a number copied off a real riven mean
-    // what it says; without it 200 read as 200x and clamped to the top.
-    let as_fraction = |def: &wfsim_engine::rivens_data::RivenStat, v: f64| {
-        if def.text.contains('%') { v / 100.0 } else { v }
-    };
-    for i in 0..spec.positives.len() {
-        let Some(v) = want_value(v.get("positives"), i) else { continue };
-        let id = spec.positives[i].id.clone();
+    // "0.59" on a faction stat means a x0.59 multiplier. `from_shown` is the
+    // engine's own inverse of what it printed, so a number copied off a real
+    // riven means what it says instead of being clamped to an end.
+    for i in 0..spec.bonuses.len() {
+        let Some(v) = want_value(field("bonuses", "positives"), i) else { continue };
+        let id = spec.bonuses[i].id.clone();
         if let Some(def) = p.iter().find(|x| x.id == id) {
-            spec.positives[i].roll = spec.roll_for_value(def, true, disposition, as_fraction(def, v));
+            spec.bonuses[i].roll = spec.roll_for_value(def, true, disposition, def.from_shown(v));
         }
     }
-    if let (Some(c), Some(v)) = (spec.curse.clone(), v.get("curse").and_then(|c| c.get("value")).and_then(|x| x.as_f64())) {
+    if let (Some(c), Some(v)) = (
+        spec.malus.clone(),
+        field("malus", "curse").and_then(|c| c.get("value")).and_then(|x| x.as_f64()),
+    ) {
         if let Some(def) = p.iter().find(|x| x.id == c.id) {
-            let r = spec.roll_for_value(def, false, disposition, as_fraction(def, v));
-            if let Some(cc) = spec.curse.as_mut() { cc.roll = r; }
+            let r = spec.roll_for_value(def, false, disposition, def.from_shown(v));
+            if let Some(cc) = spec.malus.as_mut() { cc.roll = r; }
         }
     }
-    // The number a template shows: a `%` in it means the stored fraction is
-    // shown times 100; without one it is a raw number (Punch Through is
-    // metres, faction damage a multiplier).
-    let shown_of = |def: &wfsim_engine::rivens_data::RivenStat, v: f64| {
-        if def.text.contains('%') { v * 100.0 } else { v }
-    };
     let stats: Vec<Value> = spec
         .resolved_slots(disposition)
         .into_iter()
         .map(|(slot, def, value)| {
-            let positive = slot < n_pos;
-            let shown = shown_of(def, value);
-            let text = def.text.replace("|val|", &format!("{}{:.2}", if shown >= 0.0 { "+" } else { "" }, shown));
-            let (lo, hi) = spec.bounds_of(def, positive, disposition);
-            let roll = if positive { spec.positives[slot].roll } else { spec.curse.as_ref().map_or(1.0, |c| c.roll) };
+            let bonus = slot < n_pos;
+            let (lo, hi) = spec.bounds_of(def, bonus, disposition);
+            let roll = if bonus { spec.bonuses[slot].roll } else { spec.malus.as_ref().map_or(1.0, |c| c.roll) };
             json!({
                 // The SLOT, because a half-described card still has real
                 // numbers and skipping the empty slots would slide the rest.
-                "slot": if positive { slot.to_string() } else { "curse".to_string() },
-                "id": def.id, "text": text, "value": value, "shown": shown, "roll": roll,
+                "slot": if bonus { slot.to_string() } else { "malus".to_string() },
+                "id": def.id, "text": def.print(value), "value": value,
+                "shown": def.shown(value), "roll": roll,
                 // The ends of the roll band, in shown units — what a number
                 // box may be typed to without leaving the legal riven.
-                "min": shown_of(def, lo), "max": shown_of(def, hi),
-                "positive": positive, "modeled": def.kind != "unmodeled",
+                "min": def.shown(lo), "max": def.shown(hi),
+                // A multiplier has no sign to read, so the box needs to be
+                // told the number it holds is not a percentage.
+                "unit": match def.shown_as() {
+                    wfsim_engine::rivens_data::Shown::Percent => "%",
+                    wfsim_engine::rivens_data::Shown::Multiplier => "x",
+                    wfsim_engine::rivens_data::Shown::Number => "",
+                },
+                "bonus": bonus, "modeled": def.kind != "unmodeled",
             })
         })
         .collect();
