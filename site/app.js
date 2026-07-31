@@ -278,7 +278,8 @@ let optPrefs = { sort: "name", dir: "asc", pol: null };
 // The optimizer's OWN enemy scenario (user: fully decoupled from the Sim
 // panel — two independent configs that merely look alike; identical
 // parameters give identical numbers, verified 2026-07-28).
-let optSim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, aiming: true, duration: 120 };
+let optSim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, aiming: true,
+  duration: 120, form: "incarnon_cycle" };
 // The FINAL-ROUND CONTRACT (user): the funnel's last round is guaranteed
 // `finalists` candidates × `final_runs` runs. Persisted; survives weapon
 // switches (it is a run setting, not weapon scope).
@@ -407,7 +408,7 @@ async function init() {
     headshot_pct: d.headshot_pct, aiming: d.aiming !== false, duration: d.duration, runs: d.runs,
     form: d.form, buffs: {} };
   optSim = { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
-    headshot_pct: d.headshot_pct, aiming: d.aiming !== false, duration: d.duration };
+    headshot_pct: d.headshot_pct, aiming: d.aiming !== false, duration: d.duration, form: d.form };
   applyWeapon(d.weapon, d.mods);
 
   $("weapon").addEventListener("change", () => {
@@ -2760,7 +2761,22 @@ function renderOptEnemy() {
   // winner under these assumptions.
   const tech = $("opt-technique");
   if (tech) {
+    // WHICH FORM the search fires. The optimizer scores builds the way the
+    // sim will replay them, so it offers the weapon's own registered forms —
+    // exactly the sim's list, cycle included where there is one to cycle.
+    const w = weaponInfo($("weapon").value) || {};
+    const formOpts = [
+      ...(w.has_cycle ? [["incarnon_cycle", tr("Incarnon cycle")]] : []),
+      ...(w.forms || []).map((f) => [f.id, w.has_cycle ? `${tr(f.name)} ${tr("only")}` : tr(f.name)]),
+    ];
+    if (formOpts.length && !formOpts.some(([id]) => id === optSim.form)) optSim.form = formOpts[0][0];
+    const formField = formOpts.length > 1 ? `
+    <label>${escHtml(tr("Form"))}
+      <select data-k="form">${formOpts.map(([id, label]) =>
+        `<option value="${id}" ${optSim.form === id ? "selected" : ""}>${escHtml(label)}</option>`).join("")}
+      </select></label>` : "";
     tech.innerHTML = `
+    ${formField}
     <label class="check" title="${escHtml(tr("mods that only work while aiming grant nothing when this is off - the optimizer scores builds under the same assumption the sim replays them with"))}"><input type="checkbox" data-k="aiming" ${optSim.aiming ? "checked" : ""}> ${escHtml(tr("Aiming"))}</label>
     <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${optSim.headshot_pct}"></label>`;
   }
@@ -3288,6 +3304,7 @@ async function runOptimize() {
       exilus: opt.exilus,
       enemy: optSim.enemy, level: optSim.level, steel_path: optSim.steel_path,
       headshot_pct: optSim.headshot_pct, aiming: optSim.aiming, duration: optSim.duration,
+      form: optSim.form,
       final_runs: optRun.final_runs, finalists: optRun.finalists,
       threads: optRun.threads || 0, // 0 = auto (cores − 2)
       buffs,

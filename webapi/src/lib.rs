@@ -2389,6 +2389,12 @@ pub struct OptimizePlan {
     target_name: String,
     level: u32,
     steel_path: bool,
+    /// The form this run FIRES — a weapon id, because a form is a weapon
+    /// entry. Every weapon has one; only a gauge-switched pair has two.
+    fire_id: String,
+    /// The form the cycle transforms OUT of. `Some` only when the run is the
+    /// two-form cycle, which is a MODE over forms rather than a form.
+    cycle_from: Option<String>,
     /// Worker-thread budget; 0 = auto (all cores minus two).
     threads: usize,
 }
@@ -2396,11 +2402,6 @@ pub struct OptimizePlan {
 /// Validate an optimize request. `Err` is the ready-to-send error response.
 pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
-    if incarnon_id(info).is_none() {
-        return Err(err_json(
-            "the optimizer needs a transform-group weapon (v1)",
-        ));
-    }
     // ---- mod scope (MAIN 8 slots): fixed ∪ search = pool; fixed = required.
     // Exilus-flagged mods MAY appear here too — all 9 slots accept them
     // (game rule), so putting one in the main scope makes it compete for a
@@ -2631,13 +2632,41 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // weapon that lacks it any more than the sim does.
     let frenzy = wfsim_engine::weapons_data::has_perk(&info.id, "frenzy")
         || incarnon_id(info).is_some_and(|i| wfsim_engine::weapons_data::has_perk(i, "frenzy"));
+    // ---- WHICH FORM this search fires — the Sim's rule, not a second one.
+    //
+    // A cycle is a MODE over two forms and exists only where there is a form
+    // to transform INTO. Demanding one of every weapon is what refused the
+    // Verglas outright (user, 2026-07-31): a sentinel beam HAS a form, it
+    // just has one, and a bow has two that are not a cycle. The optimizer now
+    // assembles the same way the builder and the sim do — from the weapon's
+    // own registered forms.
+    let form = get_str(v, "form", "incarnon_cycle");
+    let registered = wfsim_engine::weapons_data::forms_of(&info.id);
+    let run_cycle = info.has_cycle
+        && registered.iter().all(|f| f.kind.id() != form)
+        && incarnon_id(info).is_some();
+    let fire_id = if run_cycle {
+        incarnon_id(info).unwrap_or(&info.id).to_string()
+    } else {
+        // The requested kind if this weapon registers it, else its default —
+        // which is what an unknown or stale preset value gets.
+        registered
+            .iter()
+            .find(|f| f.kind.id() == form)
+            .or_else(|| registered.iter().find(|f| f.is_default))
+            .map(|f| f.weapon_id)
+            .unwrap_or(&info.id)
+            .to_string()
+    };
+    let cycle_from = run_cycle.then(|| info.id.clone());
+
     let scenario = Scenario {
         aiming,
         target,
         body_parts,
         frenzy,
         duration_secs: duration,
-        incarnon_cycle: true,
+        incarnon_cycle: run_cycle,
         frenzy_lock,
         buff_cfg,
     };
@@ -2659,6 +2688,8 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         target_name: s_name(&specs, enemy_id),
         level,
         steel_path,
+        fire_id,
+        cycle_from,
         threads: v
             .get("threads")
             .and_then(|x| x.as_u64())
@@ -2771,6 +2802,8 @@ pub fn run_optimize_resumable(
         level,
         steel_path,
         weapon_id,
+        fire_id,
+        cycle_from,
         threads,
     } = plan;
     // Compute budget: 0 = auto (all cores minus two — the machine must stay
@@ -2792,6 +2825,18 @@ pub fn run_optimize_resumable(
     const SCREEN_KEEP: usize = 65_536;
     let innate = wfsim_engine::weapons_data::innate_slots(&info.id);
     let exilus_refs: Vec<Option<&ModDef>> = exilus_defs.iter().map(|o| o.as_ref()).collect();
+    // The form(s) an evolution set resolves to, decided once in
+    // `parse_optimize`. A single-form weapon has NO second panel — handing
+    // the enumerator a duplicate of the first would tell it there was a cycle
+    // to simulate, and the scenario says there is not.
+    let forms_for = |refs: &[&str]| {
+        (
+            WeaponBase::from_data(&fire_id, true, refs),
+            cycle_from
+                .as_ref()
+                .map(|id| WeaponBase::from_data(id, true, refs)),
+        )
+    };
     let cancelled_json = |n_cands: usize| {
         // Cancelled before anything was ranked — a clean empty cancellation.
         json!({
@@ -2877,12 +2922,11 @@ pub fn run_optimize_resumable(
             break;
         }
         let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-        let base = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &refs);
-        let base_form = WeaponBase::from_data(&info.id, true, &refs);
+        let (base, base_form) = forms_for(&refs);
         let (mut c, _stats, complete) = enumerate_candidates_observed(
             &pool,
             &base,
-            Some(&base_form),
+            base_form.as_ref(),
             vi as u32,
             min_slots as u32,
             build_size as u32,
@@ -2939,10 +2983,9 @@ pub fn run_optimize_resumable(
         for (ordered, variant, exilus, ai) in &r_alive {
             let Some(set) = evo_sets.get(*variant as usize) else { continue };
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-            let base = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &refs);
-            let base_form = WeaponBase::from_data(&info.id, true, &refs);
+            let (base, base_form) = forms_for(&refs);
             let Some(c) = wfsim_optimizer::rebuild_candidate(
-                &pool, &base, Some(&base_form), &innate, 60, scenario.aiming,
+                &pool, &base, base_form.as_ref(), &innate, 60, scenario.aiming,
                 ordered, *variant, *exilus, &exilus_refs,
             ) else { continue };
             if *ai >= arcanes.len() {
@@ -3070,13 +3113,11 @@ pub fn run_optimize_resumable(
             |emit| {
                 for (vi, set) in evo_sets.iter().enumerate() {
                     let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-                    let base =
-                        WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &refs);
-                    let base_form = WeaponBase::from_data(&info.id, true, &refs);
+                    let (base, base_form) = forms_for(&refs);
                     if !enumerate_candidates_each(
                         &pool,
                         &base,
-                        Some(&base_form),
+                        base_form.as_ref(),
                         vi as u32,
                         min_slots as u32,
                         build_size as u32,
