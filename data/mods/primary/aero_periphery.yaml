@@ -1,0 +1,22 @@
+id: aero_periphery
+name: Aero Periphery
+rarity: common
+polarity: naramon
+base_drain: 2                 # max drain 5 at rank 3
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Sets/Hawk/HawkModC
+description: "-X% Zoom while Aim Gliding"
+
+# NOT MODELED: aim-glide zoom is a handling effect with no damage term, like
+# the other zoom mods. Its value in a build is being an Aero set member in the
+# exilus slot - and that set's bonus is itself unmodeled (data/mod_sets/aero).
+effects:
+  - kind: unmodeled
+    rank0: 0.125
+    rankMax: 0.50
+
+set: aero
+
+source:
+  url: https://wiki.warframe.com/w/Aero_Periphery

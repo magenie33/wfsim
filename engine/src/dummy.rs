@@ -3802,6 +3802,7 @@ mod tests {
             rarity: Rarity::Uncommon,
             exilus: false,
             family: None,
+            requires_weapon: None,
             set: None,
             requires: None,
             disables: Vec::new(),

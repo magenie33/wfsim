@@ -731,6 +731,39 @@ mod tests {
     /// primary-wide mods AND the rifle class pool; Verglas Prime, a sentinel
     /// weapon, sees only the rifle pool — it is not a Primary weapon, so it
     /// does not claim mods DE tags PRIMARY.
+    /// A compat tag is not the whole restriction. Sinister Reach and
+    /// Combustion Beam are tagged PRIMARY and still cannot go on the Torid
+    /// (user, 2026-07-31) — they need a CONTINUOUS weapon, and the Torid is a
+    /// semi-auto grenade launcher. Its INCARNON form is a beam and that
+    /// changes nothing: modding is decided on the base form.
+    #[test]
+    fn a_beam_only_mod_needs_a_continuous_weapon_to_be_offered_at_all() {
+        use crate::mods_data::{pool_for_weapon, pool_union};
+        let beam_only = ["sinister_reach", "combustion_beam"];
+        let torid = pool_for_weapon("torid");
+        for id in beam_only {
+            assert!(
+                pool_union(&["primary".to_string()]).iter().any(|m| m.id == id),
+                "{id} is in the primary pool"
+            );
+            assert!(
+                !torid.iter().any(|m| m.id == id),
+                "{id} must not be offered on the Torid"
+            );
+        }
+        // The rest of the primary pool still reaches it.
+        assert!(torid.iter().any(|m| m.id == "hunter_munitions"));
+        assert!(torid.iter().any(|m| m.id == "vigilante_armaments"));
+        // Verglas Prime IS continuous (wiki: Continuous Weapons category), so
+        // the gate would pass — it just draws the rifle pool, where these are
+        // not, which is a separate question this test does not decide.
+        assert_eq!(
+            spec("verglas_prime").unwrap().attack.trigger,
+            "held",
+            "continuous, per the wiki category"
+        );
+    }
+
     #[test]
     fn a_weapons_pool_is_the_union_of_the_pools_it_draws() {
         use crate::mods_data::{class_pool, pool_union};

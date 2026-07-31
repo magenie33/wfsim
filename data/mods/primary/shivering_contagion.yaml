@@ -1,0 +1,19 @@
+id: shivering_contagion
+name: Shivering Contagion
+rarity: rare
+polarity: naramon
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponSpreadFreezeProcsMod
+description: "On Cold Status Effect: X% chance to spread that status to other enemies within 6m."
+
+# NOT MODELED: status SPREAD is a multi-target mechanic and the arena is one
+# target, so there is nothing for a proc to spread to. Worth zero here and
+# worth a great deal in a crowd.
+effects:
+  - kind: unmodeled
+    rank0: 0.17
+    rankMax: 1.00
+
+source:
+  url: https://wiki.warframe.com/w/Shivering_Contagion

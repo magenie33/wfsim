@@ -1,0 +1,13 @@
+id: hunter
+name: Hunter
+# Six mods: 1 Warframe, 2 Primary (Munitions, Track), 3 Beast. The bonus gives
+# COMPANIONS 25% per member (150% at six) extra damage against enemies under a
+# Slash status - a companion effect, nothing to do with the weapon's own
+# damage, so it is declared UNMODELED rather than left undefined.
+members: 6
+bonus:
+  kind: unmodeled
+  per_mod: 0.0
+
+source:
+  url: https://wiki.warframe.com/w/Hunter_Set

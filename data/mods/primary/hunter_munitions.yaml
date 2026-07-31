@@ -1,0 +1,29 @@
+id: hunter_munitions
+name: Hunter Munitions
+rarity: uncommon
+polarity: madurai
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sets/Hunter/PrimaryHunterMunitionsMod
+description: "+X% chance to apply Slash on Critical"
+
+# NOT MODELED, and this one is expensive. A critical hit rolls to apply a
+# SLASH status independently of the weapon's own status chance - on a
+# high-crit build it is one of the largest damage sources in the game, because
+# Slash bypasses armour. The engine has status procs and it has crit tiers,
+# but nothing that fires a proc OFF a crit, so the mod loads and contributes
+# zero.
+#
+# That is why this card was held back once and is recorded now: an unmodeled
+# mod does not go missing from the optimizer, it gets RANKED, and this one
+# will be ranked at the bottom while being a top-tier pick in game. Treat any
+# build page that omits it as incomplete until the mechanic lands.
+effects:
+  - kind: unmodeled
+    rank0: 0.05
+    rankMax: 0.30
+
+set: hunter
+
+source:
+  url: https://wiki.warframe.com/w/Hunter_Munitions

@@ -1128,7 +1128,13 @@ function applyWeaponInner(id, presetMods) {
   // A weapon's pool is the UNION of the pools it draws from: `primary` mods
   // fit any primary weapon, `rifle` is the class pool. One flat list per
   // weapon was right only while every rifle-class weapon was a launcher.
-  currentPool = (w.mod_pools || [w.mod_class]).flatMap((p) => META.mod_pools[p] || []);
+  currentPool = (w.mod_pools || [w.mod_class])
+    .flatMap((p) => META.mod_pools[p] || [])
+    // The pool tag is not the whole rule: the beam-only mods are tagged
+    // `primary` and still need a CONTINUOUS weapon. The Torid cannot take
+    // them even though its Incarnon form is a beam — modding is decided on
+    // the base form.
+    .filter((m) => !m.requires_weapon || (m.requires_weapon === "continuous" && w.continuous));
   innate = (w.innate_polarities || []).slice(0, 8);
   while (innate.length < 9) innate.push(null);
 

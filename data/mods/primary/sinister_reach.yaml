@@ -1,0 +1,28 @@
+id: sinister_reach
+name: Sinister Reach
+rarity: uncommon
+polarity: naramon
+base_drain: 2                 # max drain 5 at rank 3
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponBeamDistanceMod
+description: "+Xm Beam Range"
+
+# CONTINUOUS WEAPONS ONLY - an EQUIP restriction, not an inert effect. WFCD
+# tags it PRIMARY, which is not the whole rule: the Torid cannot install it
+# (user, 2026-07-31), and DE's own internal name is WeaponBeamDistanceMod.
+#
+# The Torid is the case that shows where the line is drawn: its INCARNON form
+# is a continuous beam, and it still cannot take this mod. Modding is decided
+# on the BASE form, which is a semi-auto grenade launcher.
+requires_weapon: continuous
+
+# NOT MODELED: the engine carries `beam.range_m` but has no mod kind that
+# scales it. Nothing in the roster can equip this today anyway.
+effects:
+  - kind: unmodeled
+    rank0: 3.0
+    rankMax: 12.0
+
+source:
+  url: https://wiki.warframe.com/w/Sinister_Reach

@@ -79,6 +79,9 @@ struct WeaponInfo {
     /// or narrower (Assault Rifle / Bow / Sniper), and a weapon takes every
     /// tag that applies to it.
     mod_pools: Vec<String>,
+    /// Continuous (beam) weapon, from the BASE form's trigger — what the
+    /// beam-only mods gate on.
+    continuous: bool,
     // Precise weapon type within that group (Dual Toxocyst = Dual Pistols).
     subtype: String,
     sentinel: bool,
@@ -152,6 +155,7 @@ fn weapons() -> &'static [WeaponInfo] {
                     } else {
                         s.mod_pools.clone()
                     },
+                    continuous: s.attack.trigger == "held",
                     subtype: title_case(&s.class),
                     sentinel,
                     forms,
@@ -207,9 +211,10 @@ fn default_weapon_id() -> &'static str {
 // The FULL pool (exilus included) of a weapon's mod class — the picker and
 // every id lookup go through here, so a weapon whose `mod_eligibility` names
 // a class with no data yet gets an empty pool rather than another weapon's.
-/// The pool a weapon actually sees — the UNION of the pools it draws from.
-fn mod_pool_for(pools: &[String]) -> Vec<ModDef> {
-    wfsim_engine::mods_data::pool_union(pools)
+/// The pool a weapon actually sees: its pools unioned, minus mods it cannot
+/// equip (the beam-only mods need a continuous weapon).
+fn mod_pool_for(weapon_id: &str) -> Vec<ModDef> {
+    wfsim_engine::mods_data::pool_for_weapon(weapon_id)
 }
 
 // 8 main slots (innate polarities from the weapon yaml) + the exilus slot
@@ -299,6 +304,10 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 // One line per modeled effect — engine describe() stays the
                 // model's own statement (search + panel attribution).
                 "effects": m.effects.iter().map(|e| e.describe()).collect::<Vec<_>>(),
+                // Equip restriction beyond the pool tag: "continuous" for the
+                // beam-only mods. The picker filters on it, the same way the
+                // engine's `pool_for_weapon` does.
+                "requires_weapon": m.requires_weapon,
             });
             // The verbatim in-game DESCRIPTION per rank (X filled) — what
             // the picker and the configured slot display. Absent for pools
@@ -323,6 +332,10 @@ pub fn meta_json() -> Value {
                 // The pools to union, in order. `mod_class` stays as the
                 // NARROWEST one, which is what labels and filters read.
                 "mod_pools": w.mod_pools,
+                // The BASE form's trigger decides this — the Torid's Incarnon
+                // form is a beam and the weapon still is not a continuous one
+                // for modding purposes.
+                "continuous": w.continuous,
                 "mod_class": w.mod_pools.last().cloned().unwrap_or_default(),
                 "subtype": w.subtype,
                 "sentinel": w.sentinel,
@@ -794,7 +807,7 @@ pub fn panel_json(v: &Value) -> Value {
     if mod_ids.len() > 9 {
         return err_json("at most 8 slots + 1 exilus");
     }
-    let p = mod_pool_for(&info.mod_pools);
+    let p = mod_pool_for(&info.id);
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
     for id in &mod_ids {
         match p.iter().find(|m| m.id == id) {
@@ -1711,7 +1724,7 @@ pub fn simulate_json(v: &Value) -> Value {
     // engine resolves any mod list honestly.
 
     // ---- resolve mods against the weapon's pool (honoring the given order) ----
-    let p = mod_pool_for(&info.mod_pools);
+    let p = mod_pool_for(&info.id);
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
     for id in &mod_ids {
         match p.iter().find(|m| m.id == id) {
@@ -1965,7 +1978,7 @@ pub fn opt_buffs_json(v: &Value) -> Value {
     }
     ids.sort();
     ids.dedup();
-    let full = mod_pool_for(&info.mod_pools);
+    let full = mod_pool_for(&info.id);
     let refs: Vec<&ModDef> = full
         .iter()
         .filter(|m| ids.iter().any(|id| id.as_str() == m.id))
@@ -2062,7 +2075,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     fixed_ids.sort();
     fixed_ids.dedup();
     search_ids.retain(|s| !fixed_ids.contains(s)); // fixed wins over search
-    let full = mod_pool_for(&info.mod_pools);
+    let full = mod_pool_for(&info.id);
     for id in fixed_ids.iter().chain(search_ids.iter()) {
         if !full.iter().any(|m| m.id == id.as_str()) {
             return Err(err_json(format!("unknown mod id: {id}")));

@@ -422,6 +422,10 @@ pub struct ModDef {
     pub exilus: bool,
     /// Mods sharing a family are mutually exclusive (wiki Incompatible).
     pub family: Option<&'static str>,
+    /// Weapon property required to EQUIP this mod at all — "continuous" for
+    /// the beam-only mods. Distinct from `requires`, which is a calc-layer
+    /// gate: that one equips and sits inert, this one is never offered.
+    pub requires_weapon: Option<&'static str>,
     /// The MOD SET this mod belongs to (`data/mod_sets/<id>.yaml`). A set
     /// bonus is granted by the group, not by any member, and it scales per
     /// equipped member with no threshold — see [`crate::mod_sets_data`].
@@ -1500,6 +1504,7 @@ mod tests {
             rarity: Rarity::Common,
             exilus: false,
             family: None,
+            requires_weapon: None,
             set: None,
             requires: None,
             disables: Vec::new(),

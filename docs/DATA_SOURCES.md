@@ -203,18 +203,30 @@ roster was a launcher. It fails in both directions the moment a second type
 arrives: an assault-rifle mod would be offered to a launcher, and a shotgun
 would draw nothing.
 
-**Still missing: 6 of the 10 `PRIMARY` mods.** Two matter a great deal —
-**Hunter Munitions** (+30% chance to apply Slash on a critical hit) and
-**Sinister Reach** (+12m beam range, which the Torid Incarnon's beam wants).
-The others are Combustion Beam, Hunter Track, Shivering Contagion, Aero
-Periphery.
+All 10 `PRIMARY` mods are recorded (user, 2026-07-31: record the cards first).
+Six of them carry `kind: unmodeled`, and one of those is dangerous rather than
+merely absent: **Hunter Munitions** applies a Slash status off a CRITICAL hit,
+independently of status chance, which on a crit build is one of the largest
+damage sources in the game because Slash bypasses armour. The engine has crit
+tiers and it has status procs, but nothing that fires a proc off a crit, so
+the card loads and scores zero — and an unmodeled mod does not go missing from
+the optimizer, it gets RANKED. Treat any build page that omits it as
+incomplete until the mechanic lands. Combustion Beam, Shivering Contagion and
+Aero Periphery are the same shape but far less costly (corpse explosions and
+status spread need a second target; aim-glide zoom has no damage term).
 
-They are NOT added yet on purpose. Their mechanics — slash-on-crit, kill
-explosions, status spread — are not in the engine, and a mod the engine cannot
-model does not merely go missing from the optimizer: it gets RANKED, at zero.
-A build page that lists Hunter Munitions and scores it worthless is worse than
-one that does not list it, because the first looks like an answer. Each needs
-its mechanic before its card.
+### A compat tag is not the whole restriction
+
+`compatName` says WHICH POOL, not whether the weapon qualifies. Sinister Reach
+and Combustion Beam are both tagged `PRIMARY` and neither can go on the Torid
+(user, 2026-07-31) — they need a CONTINUOUS weapon, which DE's own internal
+names say plainly (`WeaponBeamDistanceMod`, `WeaponBeamExplodeOnDeath`).
+
+The Torid is the case that shows where the line falls: **its Incarnon form IS
+a continuous beam and it still cannot take them.** Modding is decided on the
+BASE form, a semi-auto grenade launcher. So `requires_weapon: continuous` is
+an EQUIP gate — the mod is never offered — as distinct from `requires`, which
+lets a mod equip and sit inert.
 
 ## Verification tooling (lives in `private/scripts/` — LOCAL, gitignored)
 

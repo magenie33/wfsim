@@ -42,6 +42,9 @@ struct ModFile {
     /// Mod SET membership — the bonus itself lives in `data/mod_sets/`.
     #[serde(default)]
     set: Option<String>,
+    /// Weapon property required to EQUIP this mod ("continuous").
+    #[serde(default)]
+    requires_weapon: Option<String>,
     /// Weapon trait required for the mod to apply (calc-layer gate).
     #[serde(default)]
     requires: Option<String>,
@@ -269,6 +272,7 @@ fn to_moddef(mf: ModFile) -> ModDef {
         exilus: mf.exilus,
         family: mf.family.map(|s| &*Box::leak(s.into_boxed_str())),
         set: mf.set.map(|s| &*Box::leak(s.into_boxed_str())),
+        requires_weapon: mf.requires_weapon.map(|s| &*Box::leak(s.into_boxed_str())),
         requires: mf.requires.map(|s| &*Box::leak(s.into_boxed_str())),
         disables: mf
             .disables
@@ -334,6 +338,33 @@ pub fn pool_union(pools: &[String]) -> Vec<ModDef> {
     }
     out.sort_by_key(|m| m.id);
     out
+}
+
+/// The pool a weapon can actually EQUIP: its pools unioned, minus mods whose
+/// equip requirement the weapon does not meet.
+///
+/// The compat tag is not the whole rule. Sinister Reach and Combustion Beam
+/// are tagged PRIMARY and still cannot go on the Torid (user, 2026-07-31):
+/// they need a CONTINUOUS weapon. The Torid is the case that shows where the
+/// line falls — its Incarnon form IS a continuous beam and it still cannot
+/// take them, because modding is decided on the BASE form, a semi-auto
+/// grenade launcher.
+pub fn pool_for_weapon(weapon_id: &str) -> Vec<ModDef> {
+    let Some(spec) = crate::weapons_data::spec(weapon_id) else {
+        return Vec::new();
+    };
+    // The BASE form's trigger, which is what `WeaponBase::continuous` reads.
+    let continuous = spec.attack.trigger == "held";
+    pool_union(&spec.mod_pools)
+        .into_iter()
+        .filter(|m| match m.requires_weapon {
+            None => true,
+            Some("continuous") => continuous,
+            // An unknown requirement hides the mod rather than ignoring the
+            // restriction — a mod offered where it cannot go is the worse bug.
+            Some(_) => false,
+        })
+        .collect()
 }
 
 /// The secondary/pistol mod pool — `data/mods/pistol/*.yaml` (Dual Toxocyst's
