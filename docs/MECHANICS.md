@@ -305,6 +305,32 @@ not mechanical: the mod's roll consumes an RNG draw per pellet, so the builds
 walk different random streams. It shrinks with runs (1.6% at 200, 0.06% at
 6000), which is what sampling noise does and a real difference does not.
 
+**Internal Bleeding / Hemorrhage is the same mechanic with a different
+trigger** — an Impact status instead of a crit — and it has always fed the
+same per-pellet proc list, so it has always had the same parent
+(`an_internal_bleeding_bleed_is_indistinguishable_from_any_other_slash`).
+
+The two STACKING rules differ, and the difference is not decorative:
+
+- Hunter Munitions "can stack with Slash statuses applied using a weapon's
+  innate status chance" — two bleeds on one hit — but "cannot produce multiple
+  procs in a single instance of damage alongside FORCED Slash". So its push is
+  guarded on `forced_procs`, not on the proc list.
+- Internal Bleeding is stricter: it cannot double up with **any** other Slash
+  source, "such as a weapon's innate Slash, Hunter Munitions, or the debuff
+  from Seeking Talons". So its guard reads the proc list.
+- Together: "drawn independently, and if both proc at the same time, only 1
+  slash proc is applied." Hunter Munitions pushes first, so Internal
+  Bleeding's guard sees it and skips — which IS the exclusion.
+
+That exclusion reproduces a number the wiki publishes. On a shot that both
+crits and applies an Impact status the Slash chance is 54.5% at fire rate
+>= 2.5 and 79% below it — the union `1 - (1-0.30)(1-0.35)` and
+`1 - (1-0.30)(1-0.70)`. The engine hits both from the two rolls
+(`hunter_munitions_and_internal_bleeding_union_to_the_wikis_numbers`), which
+is what shows the exclusion is modeled as an exclusion rather than as a second
+bleed quietly going missing.
+
 **Status:** the mechanic is wiki-sourced; the resulting DPS is not measured.
 On a 5-mod crit Torid vs a Thrax Centurion @9999 Steel Path it is worth
 +20.5% DPS (21,092 -> 25,414), which is the shape expected of an

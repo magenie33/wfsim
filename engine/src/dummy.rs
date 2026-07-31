@@ -3346,8 +3346,22 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 // Vigilante promotion) and the body part it struck already
                 // scale it — "Headshots, orange and red Critical Hits will
                 // greatly increase the damage dealt".
+                //
+                // It STACKS with a Slash the weapon's own status chance
+                // applied — the wiki says so outright, "but can stack with
+                // Slash statuses applied using a weapon's innate status
+                // chance" — so this pushes a second bleed and does not check
+                // `procs`. What it cannot double up with is a FORCED Slash:
+                // "cannot produce multiple procs in a single instance of
+                // damage alongside forced Slash from sources such as Internal
+                // Bleeding or the debuff from Seeking Talons". Internal
+                // Bleeding is handled below by its own guard, which sees this
+                // push because it runs after; a weapon-forced Slash has to be
+                // checked here, at its source, since `procs` cannot say which
+                // Slash came from where.
                 if ap.slash_on_crit > 0.0
                     && tier >= 1
+                    && !params.forced_procs.contains(&DamageType::Slash)
                     && !params
                         .target
                         .status_immunities
@@ -3395,10 +3409,19 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 procs.push(POOL[idx]);
                 encumber_done = true;
             }
-            // Hemorrhage: one roll per damage INSTANCE when a `from` status
-            // landed and no `to` status did (never stacks with another
-            // same-instance `to` source — wiki notes); chance ×2 while the
-            // LIVE fire rate is strictly below 2.5.
+            // Internal Bleeding / Hemorrhage: one roll per damage INSTANCE
+            // when a `from` status landed and no `to` status did; chance ×2
+            // while the LIVE fire rate is strictly below 2.5.
+            //
+            // The `!procs.contains(to)` guard is the whole stacking rule, and
+            // it is STRICTER than Hunter Munitions': this one "cannot produce
+            // multiple procs in a single instance of damage alongside ANY
+            // other Slash sources, such as a weapon's innate Slash, Hunter
+            // Munitions, or the debuff from Seeking Talons" (wiki) — innate
+            // Slash included, which is why it reads `procs` rather than
+            // `forced_procs`. Hunter Munitions pushes above, so it is already
+            // in `procs` here and this roll is skipped, which is exactly
+            // "if both proc at the same time, only 1 slash proc is applied".
             if let Some(pc) = ap.proc_conversion {
                 if procs.contains(&pc.from) && !procs.contains(&pc.to) {
                     let chance = pc.chance
@@ -5289,6 +5312,93 @@ mod tests {
         let crit_only = same(pair(|p| p.crit_multiplier = 3.0), "crit multiplier");
         assert!(tier2 > crit_only * 1.4, "tier 2 hit harder: {crit_only:.0} -> {tier2:.0}");
         assert!(promoted > crit_only * 1.4, "the promotion reached the bleed");
+    }
+
+    /// INTERNAL BLEEDING's bleed is an ordinary bleed too. It has always fed
+    /// the same per-pellet proc list, so it has always had the same parent —
+    /// this makes that checkable rather than something to take on trust, and
+    /// pins that the two mods differ ONLY in what triggers them.
+    #[test]
+    fn an_internal_bleeding_bleed_is_indistinguishable_from_any_other_slash() {
+        use crate::loadout::ProcConv;
+        let base = || DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 75.0),
+            base_crit_chance: 0.0,
+            crit_multiplier: 3.0,
+            status_chance: 1.0,
+            base_status_chance: 1.0,
+            body_parts: mono_body(3.0), // a 3x part, so the parent matters
+            ..DummyParams::default()
+        };
+        // Converted at 100%: every pellet lands Impact and turns it into Slash.
+        let mut ib = base();
+        ib.proc_conversion = Some(ProcConv {
+            from: DamageType::Impact,
+            to: DamageType::Slash,
+            chance: 1.0,
+            low_rate_threshold: 0.0, // never doubled, so the rate is irrelevant
+            low_rate_mult: 1.0,
+        });
+        // The same bleed, forced, on a weapon that cannot roll one itself.
+        let mut forced = base();
+        forced.damage = DamageVector::new().with(DamageType::Puncture, 75.0);
+        forced.status_chance = 0.0;
+        forced.base_status_chance = 0.0;
+        forced.forced_procs = vec![DamageType::Slash];
+
+        let (i, f) = (monte_carlo(&ib, 6000, 41), monte_carlo(&forced, 6000, 41));
+        assert!(
+            (i.mean_dot_damage - f.mean_dot_damage).abs() / f.mean_dot_damage < 0.005,
+            "internal bleeding {:.2} vs forced Slash {:.2}",
+            i.mean_dot_damage,
+            f.mean_dot_damage
+        );
+        assert!(i.mean_dot_damage > 0.0);
+    }
+
+    /// HUNTER MUNITIONS + INTERNAL BLEEDING, against a number the wiki
+    /// publishes: on a shot that both crits and applies an Impact status the
+    /// Slash chance is **54.5%** at fire rate >= 2.5, and **79%** below it.
+    ///
+    /// The two are "drawn independently, and if both proc at the same time,
+    /// only 1 slash proc is applied" — so the combined chance is a union,
+    /// 1 - (1-0.30)(1-0.35) = 0.545, and with Internal Bleeding doubled below
+    /// 2.5, 1 - (1-0.30)(1-0.70) = 0.79. Reproducing both from the two rolls
+    /// is what shows the exclusion is modeled as an exclusion and not as some
+    /// second bleed quietly going missing.
+    #[test]
+    fn hunter_munitions_and_internal_bleeding_union_to_the_wikis_numbers() {
+        use crate::loadout::ProcConv;
+        // Pure Impact at 100% status: every pellet lands the Impact proc that
+        // Internal Bleeding converts from, and every pellet crits.
+        let build = |fire_rate: f64| DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 75.0),
+            base_crit_chance: 1.0,
+            crit_multiplier: 1.0,
+            status_chance: 1.0,
+            base_status_chance: 1.0,
+            fire_rate,
+            slash_on_crit: 0.30,
+            proc_conversion: Some(ProcConv {
+                from: DamageType::Impact,
+                to: DamageType::Slash,
+                chance: 0.35,
+                low_rate_threshold: 2.5,
+                low_rate_mult: 2.0,
+            }),
+            body_parts: mono_body(1.0),
+            ..DummyParams::default()
+        };
+        // procs per pellet = 1 Impact + P(Slash), so P falls straight out.
+        let p_slash = |fr: f64, seed: u64| {
+            let p = build(fr);
+            let s = monte_carlo(&p, 8000, seed);
+            s.mean_procs / s.mean_pellets - 1.0 // reloads make shots != duration x rate
+        };
+        let fast = p_slash(4.0, 31);
+        let slow = p_slash(2.0, 32);
+        assert!((fast - 0.545).abs() < 0.015, "fire rate 4.0: {fast:.3}, wiki 0.545");
+        assert!((slow - 0.79).abs() < 0.015, "fire rate 2.0: {slow:.3}, wiki 0.79");
     }
 
     /// The roll hangs off the CRIT, so at half the crit chance it bleeds half
