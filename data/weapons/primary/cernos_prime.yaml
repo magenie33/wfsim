@@ -3,11 +3,12 @@ name: Cernos Prime
 slot: primary
 # BOW — the first charge-trigger weapon in the roster.
 class: bow
-# The fully drawn shot. This weapon's OTHER form — the uncharged shot, which
-# is `base` by definition — is not modeled yet (see the attack block); when it
-# is, it becomes a second entry in this transform group, freely switched
-# rather than transformed into.
+# The fully drawn shot — the form the arsenal shows and the one a bow is
+# usually built for. Its sibling `cernos_prime_uncharged` (`form: base`) is
+# the tapped shot: the same weapon, switched to for FREE by releasing early.
 form: charged
+transform_group: cernos_prime
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 # A bow's pool is the widest union in the game: `primary` fits ANY primary
 # (Hunter Munitions, the Vigilante set), `rifle` is the class pool bows draw
 # (wiki Rifle_Mods: Assault Rifles, Bows, Launchers, Snipers, Spearguns,
@@ -65,20 +66,17 @@ co_behavior: additive_with_base_damage
 # the fraction is the same per projectile.
 co_base_fraction: 0.5
 
-# THE CHARGED SHOT is the modeled attack. The module says so itself —
-# `_TooltipAttackDisplay = 2` points the arsenal tooltip at attack index 2 —
-# and it is what WFCD's summary `damagePerShot` carries (184 per arrow).
-# The UNCHARGED shot (attack index 1) is a real second attack, at exactly half
-# the damage (92/arrow: Impact 82.8 / Puncture 4.6 / Slash 4.6), 70 m/s, no
-# punch through, 0-12 degrees of spread and a Semi-Auto trigger. It is not
-# modeled: one `attack` per weapon entry, and nobody builds a bow to release
-# it early. It would need the two-entry treatment the Incarnon forms get.
+# THE CHARGED SHOT — the module's Attacks[2], which it marks as the arsenal's
+# with `_TooltipAttackDisplay = 2`, and what WFCD's summary `damagePerShot`
+# carries (184 per arrow). Attacks[1], the tapped shot at exactly half the
+# damage, is the sibling entry.
 attack:
   trigger: charge
-  # The draw. It — not `fire_rate` — is the cadence of a charged weapon, and
-  # fire-rate bonuses DIVIDE it. Unmodded the cycle is 0.5 charge + 0.65
-  # reload = 1.15 s per shot, i.e. 0.87 shots/s, NOT the 1.0 the fire-rate
-  # stat would suggest.
+  # The draw. It — not `fire_rate` — is this weapon's cadence: wiki Fire Rate
+  # gives bows their own formula, "Effective Fire Rate = 1 / (Modded Charge
+  # Time + Modded Reload Time)", with no fire-rate term in it. So 0.5 draw +
+  # 0.65 nock = 1.15 s per shot (0.87 shots/s), NOT the 1.0 the fire-rate stat
+  # suggests. Fire-rate bonuses divide the draw instead of multiplying a rate.
   charge_seconds: 0.5
   shot_type: projectile
   projectile_speed_mps: 95      # 70 uncharged — the draw speeds the arrow up

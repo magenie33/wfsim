@@ -3858,6 +3858,13 @@ mod tests {
         let as_rate = DummyParams { charge_seconds: None, ..bow.clone() };
         assert_eq!(run_once(&as_rate, &mut Rng::new(1)).shots, 7);
 
+        // A TAPPED bow: no draw to pay, so the 0.65 s nock is the whole cycle
+        // (wiki Fire Rate's bow formula with a zero charge term). Shots at 0,
+        // 0.65, 1.30 … 9.75 — sixteen inside 10 s, against the charged form's
+        // nine, for half the damage each.
+        let tapped = DummyParams { charge_seconds: Some(0.0), ..bow.clone() };
+        assert_eq!(run_once(&tapped, &mut Rng::new(1)).shots, 16, "10 s / 0.65 s + 1");
+
         // `fire_rate` here is the RESOLVED stat and `charge_seconds` the
         // RESOLVED draw — the panel already spent the mod bucket on both, so
         // raising the stat alone must NOT shorten the draw a second time.

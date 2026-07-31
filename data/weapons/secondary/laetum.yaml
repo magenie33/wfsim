@@ -5,6 +5,7 @@ slot: secondary
 # eligibility path as the Dual Toxocyst entry.
 class: pistol
 form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 # Pistol mods. No `secondary`-wide pool exists in the data.
 mod_pools: [pistol]
 grip_type: PISTOL

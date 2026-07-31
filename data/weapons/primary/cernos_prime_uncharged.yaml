@@ -1,0 +1,85 @@
+id: cernos_prime_uncharged
+name: Cernos Prime
+slot: primary
+class: bow
+# THE TAPPED SHOT — the other way a bow is actually played: click instead of
+# hold, half the damage per arrow, but the draw is skipped. `base` is the
+# uncharged form by definition (docs/GLOSSARY.md "FORMS"), and it is reached
+# from the charged form for FREE: no gauge, no transmute animation, just a
+# shorter press. That is why this entry carries no `transforms_from` — it is a
+# form of the same weapon, not a transformation of it.
+form: base
+
+# Same weapon, so everything below the attack profile is identical to
+# cernos_prime.yaml (mod pools, polarities, ammo, mastery…). Only the ATTACK
+# differs — this is the module's Attacks[1], "Uncharged Horizontal/Vertical
+# Shot", against the charged Attacks[2] the default entry carries.
+transform_group: cernos_prime
+mod_pools: [primary, rifle, bow]
+grip_type: BOW
+mastery_rank: 12
+max_rank: 30
+
+accuracy: 16.7
+disposition: 1.25
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Cernos
+traits: [prime, never_vaulted]
+introduced: "19.0.7"
+internal_name: /Lotus/Weapons/Tenno/Bows/PrimeCernos/PrimeCernos
+noise: silent
+ammo_type: primary
+ammo_max: 72
+ammo_pickup: 15
+magazine: 1
+reload_seconds: 0.65
+
+# `ExtraHeadshotDmg = 0.5` is on BOTH attacks in the module — the innate
+# headshot bonus is the weapon's, not the charged shot's.
+headshot_damage_bonus: 0.5
+
+# NO CO catalog row for this attack, and the catalog's preamble makes that a
+# positive statement: it lists "only discrepant attacks. Anything not listed
+# should be assumed to be Additive with +100% bonus". So the tapped shot takes
+# CO on its FULL base — `co_base_fraction` stays 1.0 (the loader default),
+# unlike the charged shot's 0.5. The 0.5 there is the charge multiplier being
+# outside the additive bracket, and there is no charge multiplier here.
+co_behavior: additive_with_base_damage
+
+attack:
+  # The module's own trigger for this attack: releasing early is a semi-auto
+  # press, not a draw.
+  trigger: semi_auto
+  # ZERO DRAW, and it is the cadence statement — not a missing value. Wiki
+  # Fire Rate, for bows: "Effective Fire Rate = 1 / (Modded Charge Time +
+  # Modded Reload Time)", a formula with NO fire-rate term (bows are named as
+  # the exception to the generic charge-weapon one). With no draw to pay, the
+  # nock alone paces the tap: 1 / 0.65 = 1.54 shots/s, against the charged
+  # form's 1 / (0.5 + 0.65) = 0.87.
+  #
+  # ⚠ NOT MEASURED. This is the wiki formula taken at its word, and the reading
+  # it rules out — a semi-auto cap of 1/`fire_rate` on top of the nock — would
+  # make the tap 0.61 shots/s and therefore strictly worse than charging, which
+  # is not how the weapon is played (user, 2026-07-31: tapping is a real
+  # pattern). MEASUREMENTS M16 settles it; one number changes here.
+  charge_seconds: 0.0
+  shot_type: projectile
+  projectile_speed_mps: 70      # 95 charged — the draw speeds the arrow up
+  fire_rate: 1.0                # the listed stat; NOT this weapon's cadence
+  multishot: 3.0
+  ammo_cost: 1
+  # Identical crit/status to the charged shot: the draw buys damage, speed and
+  # punch through, nothing else.
+  crit_chance: 0.35
+  crit_multiplier: 2.0
+  status_chance: 0.30
+  punch_through_m: 0.0          # 1 m charged
+  damage: { impact: 82.8, puncture: 4.6, slash: 4.6 }   # 92 per arrow = half
+
+source:
+  url: https://wiki.warframe.com/w/Cernos_Prime
+  # note: wiki Module:Weapons/data/primary Attacks[1] == WFCD's
+  # "Uncharged Horizontal/Vertical Shot" (joined on internal name), exactly.
+  # The module additionally carries MinSpread 0 / MaxSpread 12 for this attack
+  # — the wide cone the page calls out — which nothing consumes single-target.

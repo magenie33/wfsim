@@ -1724,6 +1724,35 @@ form is skipped).
 DoT stacking, buff duration and refresh. Steady DPS, burst DPS, and TTK are
 **statistics derived from this series**, not primary inputs (CORE.md §2).
 
+### Fire cadence on a CHARGE weapon — bows have their own formula
+
+The shot interval is normally `1 / modded fire rate`. A charge weapon pays a
+DRAW instead, and the wiki (`Fire Rate`) states two different formulas for
+what that costs — VERBATIM, with the exception spelled out in the second:
+
+```
+Effective Fire Rate = 1 / (Modded Charge Time + Modded Reload Time)   ← BOWS
+Effective Fire Rate = 1 / (Modded Charge Time + 1 / Modded Fire Rate) ← "charge
+    weapons with the exception of bows, Epitaph, and Lanka"
+```
+
+So **a bow's cadence contains no fire-rate term at all**: draw + nock. What a
+fire-rate bonus does instead is shorten the draw — *"Charge Time = Base Charge
+Time / (1 + Mod Bonus)"* — and on a bow the bonus is doubled first, because
+every fire-rate mod card prints "(x2 for Bows)". Cernos Prime unmodded:
+`0.5 + 0.65 = 1.15 s` a shot (0.87/s), where the fire-rate stat alone would
+have said 1.0/s; with Shred (+30% → +60%) the draw is `0.5 / 1.6 = 0.31 s` and
+the cycle 0.96 s.
+
+The fire-rate STAT is still the stat — it is what fire-rate gates read
+(Hemorrhage's below-2.5 doubling), which is why the engine keeps both:
+`base_fire_rate` and `charge_seconds` (`engine::loadout::WeaponBase`).
+
+A tapped bow shot pays no draw, so the nock alone paces it (`charge_seconds:
+0.0` → 1.54 shots/s on Cernos Prime). That is the bow formula taken at its
+word rather than a measurement — **MEASUREMENTS M16**. The engine does NOT yet
+implement the second formula: the roster has no non-bow charge weapon.
+
 ### Ammo Efficiency — a FRACTIONAL ammo cost
 
 Not a chance to save a round. VERBATIM (wiki `Ammo`): *"Ammo Efficiency

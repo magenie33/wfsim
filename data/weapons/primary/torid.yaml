@@ -8,6 +8,7 @@ class: launcher
 # The ordinary attack — the form this weapon is fired in until its gauge
 # fills. `base` is the near-universal registration (data/README.md: forms).
 form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 # A weapon's pool is a UNION, not one list: `primary` mods fit ANY primary
 # weapon (Hunter Munitions, the Vigilante set), `rifle` is the class pool a
 # LAUNCHER draws (wiki Rifle_Mods: Assault Rifles, Bows, Launchers, Snipers,

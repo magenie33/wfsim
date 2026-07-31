@@ -7,6 +7,7 @@ slot: secondary
 # Pistol Mods pool. (See wiki Weapons#Weapon_Type for the full taxonomy.)
 class: dual_pistols
 form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 # Pistol mods. No `secondary`-wide pool exists in the data.
 mod_pools: [pistol]
 grip_type: DUAL_GUN_GUN

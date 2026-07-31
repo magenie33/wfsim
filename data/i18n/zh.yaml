@@ -213,6 +213,7 @@ ui:
   "Status Duration": 触发持续时间
   "Fire Rate": 射速
   "Charge Time": 蓄力时间     # the client's own word for a Charge trigger: 蓄力
+  "Effective Fire Rate": 实际射速
   "Magazine": 弹匣容量
   "Reload": 装填时间
   "Max Charges": 最大充能
