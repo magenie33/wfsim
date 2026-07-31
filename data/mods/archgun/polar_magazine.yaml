@@ -1,0 +1,17 @@
+id: polar_magazine
+name: Polar Magazine
+rarity: uncommon
+polarity: vazarin
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/ArchwingWeaponFreezeDamageMod
+description: "+X% Cold"
+
+effects:
+  - kind: elemental_damage_bonus
+    element: cold
+    rank0: 0.2
+    rankMax: 1.2
+
+source:
+  url: https://wiki.warframe.com/w/Polar_Magazine

@@ -1,0 +1,17 @@
+id: electrified_barrel
+name: Electrified Barrel
+rarity: uncommon
+polarity: naramon
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/ArchwingWeaponElectricityDamageMod
+description: "+X% Electricity"
+
+effects:
+  - kind: elemental_damage_bonus
+    element: electricity
+    rank0: 0.2
+    rankMax: 1.2
+
+source:
+  url: https://wiki.warframe.com/w/Electrified_Barrel

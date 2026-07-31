@@ -1,0 +1,19 @@
+id: sabot_rounds
+name: Sabot Rounds
+rarity: rare
+polarity: naramon
+base_drain: 10                 # max drain 15 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/ArchwingRiflePunchthroughMod
+description: "+X% Damage\n+X Punch Through"
+
+effects:
+  - kind: base_damage_bonus
+    rank0: 0.1
+    rankMax: 0.6
+  - kind: punch_through_bonus
+    rank0: 0.5
+    rankMax: 3.0
+
+source:
+  url: https://wiki.warframe.com/w/Sabot_Rounds

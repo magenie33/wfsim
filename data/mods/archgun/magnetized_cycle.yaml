@@ -1,0 +1,20 @@
+id: magnetized_cycle
+name: Magnetized Cycle
+rarity: rare
+polarity: madurai
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/ArchwingEventMagneticFireRateRifleMod
+description: "+X% Magnetic\n+X% Fire Rate"
+
+effects:
+  - kind: elemental_damage_bonus
+    element: magnetic
+    rank0: 0.15
+    rankMax: 0.6
+  - kind: fire_rate_bonus
+    rank0: 0.075
+    rankMax: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Magnetized_Cycle

@@ -1,0 +1,17 @@
+id: primed_venomous_clip
+name: Primed Venomous Clip
+rarity: legendary
+polarity: vazarin
+base_drain: 4                 # max drain 14 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/Expert/ArchwingWeaponToxinDamageModExpert
+description: "+X% Toxin"
+
+effects:
+  - kind: elemental_damage_bonus
+    element: toxin
+    rank0: 0.17
+    rankMax: 1.87
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Venomous_Clip

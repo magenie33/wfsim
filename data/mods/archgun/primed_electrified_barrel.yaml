@@ -1,0 +1,17 @@
+id: primed_electrified_barrel
+name: Primed Electrified Barrel
+rarity: legendary
+polarity: naramon
+base_drain: 4                 # max drain 14 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/Expert/ArchwingWeaponElectricityDamageModExpert
+description: "+X% Electricity"
+
+effects:
+  - kind: elemental_damage_bonus
+    element: electricity
+    rank0: 0.17
+    rankMax: 1.87
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Electrified_Barrel

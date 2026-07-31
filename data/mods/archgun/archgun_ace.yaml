@@ -1,0 +1,35 @@
+id: archgun_ace
+name: Archgun Ace
+rarity: rare
+polarity: madurai
+base_drain: 6                 # max drain 11 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/ArchwingHeadshotKillAmmoEfficiencyMod
+description: "On Headshot Kill:\n+X% Fire/Charge Rate\n+X% Reload Speed for Xs"
+
+effects:
+  # TRIGGERED - "On Headshot Kill: ... for 9s". The skeleton had the reload
+  # half always-on and dropped the fire rate entirely.
+  - kind: buff
+    trigger: on_headshot_kill
+    grants: fire_rate
+    rank0: 0.0833
+    rankMax: 0.5
+    max_stacks: 1
+    # RAMPS with rank: 2s at rank 0.
+    duration_rank0: 2
+    duration: 9
+  # Reload speed is not a DPS bucket the conditional path models, so this
+  # half stays stated and inert rather than silently flat.
+  - kind: unmodeled
+    rank0: 0.1667
+    rankMax: 1.0
+    # The "for Xs" belongs to THIS sentence, and the description filler walks
+    # the effects in order — so the duration has to sit on the effect the
+    # sentence has reached, not only on the buff that uses it.
+    duration_rank0: 2
+    duration: 9
+    desc: "+100% Reload Speed on headshot kill for 9s"
+
+source:
+  url: https://wiki.warframe.com/w/Archgun_Ace

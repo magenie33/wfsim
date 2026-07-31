@@ -1,0 +1,28 @@
+id: deadly_efficiency
+name: Deadly Efficiency
+rarity: rare
+polarity: madurai
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/ArchwingDamageAfterReloadMod
+description: "On Reload From Empty:\n+X% Damage for Xs"
+
+effects:
+  # TRIGGERED, not flat - the skeleton had the damage always-on, which is
+  # the mod for free. `on_reload` is the sim's nearest event: it fires on
+  # every reload, where the card wants only a reload FROM EMPTY, so this
+  # OVERSTATES uptime on a weapon that tops up early. Acceptable while the
+  # sim reloads on empty anyway; a magazine-position-aware trigger is what
+  # would make it exact.
+  - kind: buff
+    trigger: on_reload
+    grants: base_damage
+    rank0: 0.2
+    rankMax: 1.2
+    max_stacks: 1
+    # RAMPS with rank: 2s at rank 0.
+    duration_rank0: 2
+    duration: 9
+
+source:
+  url: https://wiki.warframe.com/w/Deadly_Efficiency

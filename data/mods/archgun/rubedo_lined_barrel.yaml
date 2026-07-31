@@ -1,0 +1,16 @@
+id: rubedo_lined_barrel
+name: Rubedo-Lined Barrel
+rarity: uncommon
+polarity: madurai
+base_drain: 6                 # max drain 11 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/ArchwingRifleDamageAmountMod
+description: "+X% Damage"
+
+effects:
+  - kind: base_damage_bonus
+    rank0: 0.1667
+    rankMax: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Rubedo-Lined_Barrel

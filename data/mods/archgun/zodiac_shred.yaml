@@ -1,0 +1,20 @@
+id: zodiac_shred
+name: Zodiac Shred
+rarity: rare
+polarity: naramon
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/ArchwingDualStatSlashStatusMod
+description: "+X% Slash"
+
+effects:
+  # PHYSICAL, not elemental: it scales the weapon's own Slash and
+  # never joins the elemental combination hierarchy.
+  - kind: physical_damage_bonus
+    element: slash
+    rank0: 0.15
+    rankMax: 0.9
+
+source:
+  url: https://wiki.warframe.com/w/Zodiac_Shred

@@ -116,7 +116,15 @@ fn n(v: &Value, k: &str) -> Option<f64> {
 fn effect(v: &Value) -> Option<ModEffect> {
     let kind = v.get("kind").and_then(Value::as_str)?;
     let max = |k: &str| f(v, k).unwrap_or(0.0);
-    Some(match kind {
+    // `condition: while_aiming` gates ANY effect, not only a triggered one.
+    // Critical Focus is a flat crit bonus that simply does not exist unless
+    // you are aiming — there is no event to wait for, so `kind: buff` (which
+    // requires a trigger) cannot say it. The wrapper already existed; only
+    // the data path was missing. The `buff` arm reads the same key itself,
+    // for the effect it builds, and is skipped here so nothing double-wraps.
+    let aim_gated = kind != "buff"
+        && v.get("condition").and_then(Value::as_str) == Some("while_aiming");
+    let out = match kind {
         "base_damage_bonus" => ModEffect::BaseDamage(max("rankMax")),
         "multishot_bonus" => ModEffect::Multishot(max("rankMax")),
         "crit_chance_bonus" => ModEffect::CritChance(max("rankMax")),
@@ -259,7 +267,8 @@ fn effect(v: &Value) -> Option<ModEffect> {
         // Scoping markers (weapon_scoped) or an effect not yet modeled:
         // load the mod without this effect.
         _ => return None,
-    })
+    };
+    Some(if aim_gated { ModEffect::WhileAiming(Box::new(out)) } else { out })
 }
 
 fn to_moddef(mf: ModFile) -> ModDef {

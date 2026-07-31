@@ -1,0 +1,20 @@
+id: marked_target
+name: Marked Target
+rarity: rare
+polarity: naramon
+base_drain: 6                 # max drain 11 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/ArchwingRifleStatusChanceAimingMod
+description: "+X% Status Chance when Aiming"
+
+effects:
+  # CONDITIONAL - the card says "when Aiming", and the skeleton had it
+  # always-on, which is the whole mod for free. The sim assumes constant
+  # aiming, so the scenario's Aiming switch is what turns it off.
+  - kind: status_chance_bonus
+    condition: while_aiming
+    rank0: 0.2
+    rankMax: 1.2
+
+source:
+  url: https://wiki.warframe.com/w/Marked_Target

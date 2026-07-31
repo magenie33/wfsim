@@ -1,0 +1,24 @@
+id: critical_focus
+name: Critical Focus
+rarity: rare
+polarity: madurai
+base_drain: 6                 # max drain 11 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/ArchwingRifleCritChanceDamageAimingMod
+description: "+X% Critical Chance and Damage when Aiming"
+
+effects:
+  # ONE number, TWO buckets, and both gated on aiming: the card reads
+  # "+X% Critical Chance and Damage when Aiming". The skeleton took the
+  # crit-chance half only, unconditionally - wrong twice over.
+  - kind: crit_chance_bonus
+    condition: while_aiming
+    rank0: 0.1
+    rankMax: 0.6
+  - kind: crit_damage_bonus
+    condition: while_aiming
+    rank0: 0.1
+    rankMax: 0.6
+
+source:
+  url: https://wiki.warframe.com/w/Critical_Focus

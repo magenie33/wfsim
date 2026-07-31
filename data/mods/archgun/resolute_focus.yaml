@@ -1,0 +1,20 @@
+id: resolute_focus
+name: Resolute Focus
+rarity: uncommon
+polarity: naramon
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/ArchwingCCImmunityIfAimingMod
+description: "+X% Chance to Resist Staggers/Knockdowns when Aiming\n+X% Accuracy when Aiming"
+
+effects:
+  - kind: unmodeled
+    rank0: 0.1667
+    rankMax: 1.0
+    desc: "+100% Chance to Resist Staggers/Knockdowns when Aiming"
+  - kind: accuracy_bonus
+    rank0: 0.0833
+    rankMax: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Resolute_Focus
