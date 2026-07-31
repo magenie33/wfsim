@@ -62,7 +62,11 @@ const tf = (x) => {
 const searchBlob = (x) => {
   if (x._search) return x._search;
   const eff = (x.effects || []).concat(x.desc_ranks || [], (x.ranks || []).flat());
-  x._search = [x.name, x.name_en, x.subtype, eff.join(" "), tf(eff.join(" "))]
+  // …plus DE's own card text when the locale has it, so a search for 弓类 or
+  // 加倍 hits the mod whose card says it (the phrase table never produced
+  // those words — see officialDesc).
+  const official = (I18N && ((I18N.mod_descriptions || {})[x.id] || (I18N.arcane_descriptions || {})[x.id])) || [];
+  x._search = [x.name, x.name_en, x.subtype, eff.join(" "), tf(eff.join(" ")), official.join(" ")]
     .filter(Boolean).join(" ").toLowerCase();
   return x._search;
 };
@@ -1949,6 +1953,24 @@ const descAt = (o, r) => o.desc_ranks
   ? o.desc_ranks[Math.max(0, Math.min(o.desc_ranks.length - 1, r))].split("\n")
   : null;
 
+// The SAME card, in DE's own words, when the active locale has them
+// (data/i18n/<locale>/descriptions.yaml — mods and arcanes, one entry per
+// rank). Preferred over translating our English line, because a card is not
+// a bag of terms: "(x2 for Bows)" is "（弓类武器效果加倍）", which no phrase
+// table reaches. Ids never collide across the two tables (engine test).
+const officialDesc = (o, r) => {
+  if (!I18N || !o || !o.id) return null;
+  const t = (I18N.mod_descriptions || {})[o.id] || (I18N.arcane_descriptions || {})[o.id];
+  return t && t.length ? t[Math.max(0, Math.min(t.length - 1, r))].split("\n") : null;
+};
+
+// Card lines at a rank, ALREADY in the display language: DE's sentence when
+// there is one, otherwise our English line with the phrase table applied.
+// Every caller renders these verbatim — nothing runs `tf` over a line that
+// was already written in the target language.
+const cardLines = (o, r, fallback) =>
+  officialDesc(o, r) || (descAt(o, r) || fallback || o.effects || []).map(tf);
+
 // One slot card (regular or exilus) with its polarity / rank / menu wiring.
 function buildSlot(i) {
   const s = slots[i];
@@ -1965,9 +1987,9 @@ function buildSlot(i) {
       : "";
     // The configured mod shows its CURRENT description (values at the
     // slot's rank), exactly like the in-game card.
-    const desc = descAt(m, r);
+    const desc = m.desc_ranks || officialDesc(m, r) ? cardLines(m, r) : null;
     el.innerHTML = polBtn(s.pol, i) + imgTag(IMG(m.image), "mod") +
-      `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div>${desc ? `<div class="me">${desc.map((x) => `<div>${tf(x)}</div>`).join("")}</div>` : ""}<div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div>` +
+      `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div>${desc ? `<div class="me">${desc.map((x) => `<div>${x}</div>`).join("")}</div>` : ""}<div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div>` +
       `<button class="dots" title="options">⋯</button>`;
     el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openSlotMenu(i, e.currentTarget); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
@@ -2096,7 +2118,7 @@ function renderMenu(slotIdx, query) {
       : m.effects.join(" · ");
     return head + `<div class="opt ${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : at >= 0 ? "placed" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" data-id="${m.id}" title="${title}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
-      <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${(descAt(m, m.max_rank) || m.effects).map((x) => `<div>${tf(x)}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
+      <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => {
     const id = o.dataset.id;
@@ -2182,7 +2204,9 @@ const effectsAt = (a, r) => {
   if (!rk.length) return [];
   return rk[Math.max(0, Math.min(rk.length - 1, r))] || [];
 };
-const effLines = (arr) => arr.length ? `<div class="me">${arr.map((x) => `<div>${tf(x)}</div>`).join("")}</div>` : "";
+// Renders card lines that are ALREADY in the display language (cardLines
+// did the choosing) — this is layout, not translation.
+const effLines = (arr) => arr.length ? `<div class="me">${arr.map((x) => `<div>${x}</div>`).join("")}</div>` : "";
 
 function renderArcanes() {
   const box = $("arcane-slots");
@@ -2204,7 +2228,7 @@ function renderArcanes() {
     // The slot shows the verbatim DESCRIPTION at the selected rank (like
     // the mod cards); model effect lines remain the search text.
     el.innerHTML = imgTag(IMG(a.image), "mod") +
-      `<div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}</div>${effLines(descAt(a, r) || effectsAt(a, r))}${rank}</div>` +
+      `<div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}</div>${effLines(cardLines(a, r, effectsAt(a, r)))}${rank}</div>` +
       `<button class="dots" title="options">⋯</button>`;
     el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openArcaneMenu(el); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
@@ -2244,7 +2268,7 @@ function renderArcaneMenu(query) {
     const isCur = a.id === arcane;
     return `<div class="opt ${isCur ? "cur" : ""} ${a.rarity ? "rar-" + a.rarity : ""}" data-id="${a.id}">
       ${imgTag(IMG(a.image), "mod")}
-      <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}</div>${effLines(descAt(a, a.max_rank) || effectsAt(a, a.max_rank))}</div></div>`;
+      <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}</div>${effLines(cardLines(a, a.max_rank, effectsAt(a, a.max_rank)))}</div></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => { setArcane(o.dataset.id); closePopovers(); renderArcanes(); }));
 }
@@ -2838,13 +2862,13 @@ function renderOptExilus() {
     const poolDead = !!fam || (pinned && pinned !== m.id && st !== "search");
     const reqDead = !!fam || (hasPool && st !== "fixed");
     const why = fam ? `excluded: ${(modById(fam) || { name: fam }).name} is required (same family)` : "";
-    const eff = (descAt(m, m.max_rank) || m.effects || []).map((x) => `<div>${tf(x)}</div>`).join("");
+    const eff = cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("");
     return `<div class="opt ${st === "off" ? "" : st} ${fam ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
       <div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div><div class="me">${eff}</div></div>
       <div class="oseg">
-        <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-m="${m.id}" data-s="search">pool</span>
-        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${reqDead && !fam ? 'title="clear the pool marks first — req pins the slot"' : ""}>req</span>
+        <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-m="${m.id}" data-s="search">${tr("pool")}</span>
+        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${reqDead && !fam ? `title="${escHtml(tr("clear the pool marks first — req pins the slot"))}"` : ""}>${tr("req")}</span>
       </div>
     </div>`;
   };
@@ -2883,13 +2907,13 @@ function renderOptArcanes() {
     // clickable — it must be able to toggle itself off.
     const poolDead = pinned && pinned !== a.id && st !== "search";
     const reqDead = hasPool && st !== "fixed";
-    const eff = effLines(descAt(a, a.max_rank) || effectsAt(a, a.max_rank));
+    const eff = effLines(cardLines(a, a.max_rank, effectsAt(a, a.max_rank)));
     return `<div class="opt ${a.rarity ? "rar-" + a.rarity : ""} ${st === "off" ? "" : st}">
       ${imgTag(IMG(a.image), "mod")}
       <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}</div>${eff}</div>
       <div class="oseg">
-        <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-a="${a.id}" data-s="search">pool</span>
-        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-a="${a.id}" data-s="fixed" ${reqDead ? 'title="clear the pool marks first — req pins the slot"' : ""}>req</span>
+        <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-a="${a.id}" data-s="search">${tr("pool")}</span>
+        <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-a="${a.id}" data-s="fixed" ${reqDead ? `title="${escHtml(tr("clear the pool marks first — req pins the slot"))}"` : ""}>${tr("req")}</span>
       </div>
     </div>`;
   }).join("");
@@ -2925,8 +2949,8 @@ function renderOptEvos() {
       return `<div class="opt ${st === "off" ? "" : st} ${o.broken ? "dis-soft" : ""}">
         <div class="info"><div class="mn">${o.name}${o.broken ? ' <span class="exchip brk">BROKEN</span>' : ""}</div><div class="me">${desc}</div></div>
         <div class="oseg">
-          <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="search">pool</span>
-          <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="fixed" ${reqDead ? 'title="clear the pool marks first — req pins the tier"' : ""}>req</span>
+          <span class="seg ${st === "search" ? "on" : ""} ${poolDead ? "dis" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="search">${tr("pool")}</span>
+          <span class="seg ${st === "fixed" ? "on" : ""} ${reqDead ? "dis" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="fixed" ${reqDead ? `title="${escHtml(tr("clear the pool marks first — req pins the tier"))}"` : ""}>${tr("req")}</span>
         </div>
       </div>`;
     }).join("");
@@ -3181,13 +3205,13 @@ function renderOptModList() {
     const reqBlocked = st !== "fixed" && (fixedN + 1 > opt.size - (poolAfter > 0 ? 1 : 0));
     const why = fam ? `excluded: ${(modById(fam) || { name: fam }).name} is required (same family)`
       : dead ? `all ${opt.size} slots are required already` : "";
-    const eff = (descAt(m, m.max_rank) || m.effects || []).map((x) => `<div>${tf(x)}</div>`).join("");
+    const eff = cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("");
     return head + `<div class="opt ${st === "off" ? "" : st} ${dead ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why || (m.effects || []).join(" · ")}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
       <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}</div><div class="me">${eff}</div></div>
       <div class="oseg">
-        <span class="seg ${st === "search" ? "on" : ""} ${dead ? "dis" : ""}" data-m="${m.id}" data-s="search">pool</span>
-        <span class="seg ${st === "fixed" ? "on" : ""} ${dead || reqBlocked ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${!dead && reqBlocked ? 'title="pooled mods reserve ≥1 open slot — raise max mods or clear pools"' : ""}>req</span>
+        <span class="seg ${st === "search" ? "on" : ""} ${dead ? "dis" : ""}" data-m="${m.id}" data-s="search">${tr("pool")}</span>
+        <span class="seg ${st === "fixed" ? "on" : ""} ${dead || reqBlocked ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${!dead && reqBlocked ? `title="${escHtml(tr("pooled mods reserve ≥1 open slot — raise max mods or clear pools"))}"` : ""}>${tr("req")}</span>
       </div>
     </div>`;
   };
