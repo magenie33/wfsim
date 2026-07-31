@@ -521,10 +521,15 @@ label.check input{width:auto}
 .rv-meta{font-size:12px;color:var(--muted)}
 
 /* A section heading inside a picker list — rivens are a different kind of
-   thing from pool mods and read as their own block. */
+   thing from pool mods and read as their own block.
+   ONE BOX PER SECTION: a sticky heading is confined to its containing block,
+   so headings that are siblings of the rows all stick at top:0 at once and
+   pile up on one line. Its own box makes each heading leave with its rows. */
+.menu-sect{position:relative}
 .menu-head{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
   padding:8px 10px 4px;border-top:1px solid var(--line);margin-top:4px;position:sticky;top:0;
-  background:var(--panel)}
+  z-index:2;background:var(--panel)}
+.menu-sect:first-child .menu-head{border-top:none;margin-top:0}
 
 /* Every saved riven, with what it rolls. The bar above chooses; this is what
    you choose between. */

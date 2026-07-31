@@ -79,6 +79,13 @@ function applyI18n() {
     if (!el.dataset.i18nPhSrc) el.dataset.i18nPhSrc = el.placeholder;
     el.placeholder = tr(el.dataset.i18nPhSrc);
   });
+  // …and the tooltip of every [data-i18n-title]. A hover hint is a UI string
+  // like any other; it was simply the kind nothing reached, so a fully
+  // translated page still explained itself in English on hover.
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    if (!el.dataset.i18nTitleSrc) el.dataset.i18nTitleSrc = el.title;
+    el.title = tr(el.dataset.i18nTitleSrc);
+  });
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const node = [...el.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
     if (!node) return;
@@ -1990,6 +1997,19 @@ const officialDesc = (o, r) => {
 // there is one, otherwise our English line with the phrase table applied.
 // Every caller renders these verbatim — nothing runs `tf` over a line that
 // was already written in the target language.
+// An EVOLUTION's card lines. Same rule as a mod's, with one difference that
+// matters: when the locale has no transcription, the English falls through
+// UNTOUCHED. Running the phrase table over prose is what produced
+// "Increase Base 伤害 by +60." — half-swapped is worse than either language,
+// and evolutions are the only card written as prose rather than as terms.
+// `o.effects` (our own model statement) IS term-shaped, so it still gets tf.
+const evoLines = (o) => {
+  const zh = I18N && (I18N.evolution_descriptions || {})[o.id];
+  if (zh) return zh.split("\n");
+  if (o.desc && o.desc.length) return o.desc;      // English, as written
+  return (o.effects || []).map(tf);
+};
+
 const cardLines = (o, r, fallback) =>
   officialDesc(o, r) || (descAt(o, r) || fallback || o.effects || []).map(tf);
 
@@ -2087,6 +2107,29 @@ function familyConflict(mod, exceptIdx) {
   return slots.some((s, i) => { if (i === exceptIdx || !s.mod) return false; const o = modById(s.mod); return o && o.family === mod.family; });
 }
 
+// Rows grouped under STICKY headings, each section in its own box.
+//
+// A sticky element is confined to its containing block, so headings that are
+// all siblings of the rows share one: the first one sticks at the top and
+// never leaves, and the second slides underneath it — two headings on one
+// line (user, 2026-07-31). A box per section is the whole fix: each heading
+// sticks while its own rows are on screen and is pushed out by the next.
+function sectionedRows(items, sectionOf, rowHtml) {
+  const parts = [];
+  let cur = null;
+  items.forEach((m, i) => {
+    const s = sectionOf(m);
+    if (s !== cur) {
+      if (cur !== null) parts.push("</div>");
+      cur = s;
+      parts.push(`<div class="menu-sect"><div class="menu-head">${escHtml(tr(s))}</div>`);
+    }
+    parts.push(rowHtml(m, i));
+  });
+  if (cur !== null) parts.push("</div>");
+  return parts.join("");
+}
+
 function renderMenu(slotIdx, query) {
   rivenPickerSlot = slotIdx;
   const menu = $("mod-menu");
@@ -2112,15 +2155,7 @@ function renderMenu(slotIdx, query) {
   // (`.combo-menu` overflow-y), so the whole sorted/filtered list is browsable.
   // Two sections, each labelled. With rivens leading, an unlabelled pool
   // below them would read as a continuation of the riven list.
-  let section = null;
-  const heading = (m) => {
-    const s = m.riven ? "Riven" : "Mods";
-    if (s === section) return "";
-    section = s;
-    return `<div class="menu-head">${escHtml(tr(s))}</div>`;
-  };
-  menu.innerHTML = hits.length ? hits.map((m) => {
-    const head = heading(m);
+  const row = (m) => {
     const isCur = slots[slotIdx].mod === m.id;
     const at = placedAt(m.id, slotIdx);
     // Exchanging with the exilus slot would move OUR mod there — only legal
@@ -2138,10 +2173,13 @@ function renderMenu(slotIdx, query) {
       : exIllegal ? `cannot swap: ${ownMod.name} is not an exilus mod`
       : at >= 0 ? `swap with ${at === EXILUS ? "the exilus slot" : "slot " + (at + 1)}`
       : m.effects.join(" · ");
-    return head + `<div class="opt ${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : at >= 0 ? "placed" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" data-id="${m.id}" title="${title}">
+    return `<div class="opt ${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : at >= 0 ? "placed" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" data-id="${m.id}" title="${title}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
       <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
-  }).join("") : `<div class="opt dis">no matches</div>`;
+  };
+  menu.innerHTML = hits.length
+    ? sectionedRows(hits, (m) => (m.riven ? "Riven" : "Mods"), row)
+    : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => {
     const id = o.dataset.id;
     if (slots[slotIdx].mod === id) { closePopovers(); return; } // already here
@@ -2329,7 +2367,7 @@ function renderEvo() {
     const card = (o) => {
       const icon = o.icon ? `<img class="eicon" src="${IMG(o.icon)}" alt="">` : "";
       const cls = ["evopick", o.id === sel ? "sel" : "", o.broken ? "broken" : ""].join(" ");
-      const lines = (o.desc && o.desc.length ? o.desc : o.effects || []).map((x) => `<div>${tf(x)}</div>`).join("");
+      const lines = evoLines(o).map((x) => `<div>${escHtml(x)}</div>`).join("");
       const title = (o.effects || []).join("\n"); // model statement as tooltip
       // The broken warning lives INSIDE the selected card, so it never
       // straddles the row divider into the next tier.
@@ -2978,7 +3016,7 @@ function renderOptEvos() {
     const rows = t.options.map((o) => {
       const st = sel[o.id] || "off";
       // Neither mark blocks the other — clicking one rewrites the tier.
-      const desc = (o.desc || o.effects || []).map((x) => `<div>${tf(x)}</div>`).join("");
+      const desc = evoLines(o).map((x) => `<div>${escHtml(x)}</div>`).join("");
       return `<div class="opt ${st === "off" ? "" : st} ${o.broken ? "dis-soft" : ""}">
         <div class="info"><div class="mn">${o.name}${o.broken ? ' <span class="exchip brk">BROKEN</span>' : ""}</div><div class="me">${desc}</div></div>
         <div class="oseg">
@@ -3219,10 +3257,7 @@ function renderOptModList() {
   const fixedN = reqCountMain();
   const poolN = Object.values(opt.mods).filter((s) => s === "search").length;
   const full = fixedN >= opt.size;
-  let section = null;
   const row = (m) => {
-    const s = m.riven ? "Riven" : "Mods";
-    const head = s === section ? "" : ((section = s), `<div class="menu-head">${escHtml(tr(s))}</div>`);
     const st = opt.mods[m.id] || "off";
     const fam = famReqBy(m);
     const dead = !!fam || (full && st === "off");
@@ -3232,7 +3267,7 @@ function renderOptModList() {
     const why = fam ? `excluded: ${(modById(fam) || { name: fam }).name} is required (same family)`
       : dead ? `all ${opt.size} slots are required already` : "";
     const eff = cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("");
-    return head + `<div class="opt ${st === "off" ? "" : st} ${dead ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why || (m.effects || []).join(" · ")}">
+    return `<div class="opt ${st === "off" ? "" : st} ${dead ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why || (m.effects || []).join(" · ")}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
       <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}</div><div class="me">${eff}</div></div>
       <div class="oseg">
@@ -3241,7 +3276,9 @@ function renderOptModList() {
       </div>
     </div>`;
   };
-  $("opt-mods").innerHTML = hits.length ? hits.map(row).join("") : `<div class="opt dis">no matches</div>`;
+  $("opt-mods").innerHTML = hits.length
+    ? sectionedRows(hits, (m) => (m.riven ? "Riven" : "Mods"), row)
+    : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
   $("opt-mods").querySelectorAll(".seg:not(.dis)").forEach((el) =>
     el.addEventListener("click", (e) => {
       e.stopPropagation();
