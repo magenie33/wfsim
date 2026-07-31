@@ -80,6 +80,12 @@ pub enum ModEffect {
     FireRate(f64),
     /// Reload speed bonus (time = base / (1 + Σ)).
     ReloadSpeed(f64),
+    /// Hunter Munitions / Internal Bleeding: chance for a CRITICAL hit to
+    /// apply a Slash status, rolled per pellet and INDEPENDENT of status
+    /// chance and of the weapon's damage types (wiki: "not affected by the
+    /// weapon's Status Chance, or damage type distribution, besides being
+    /// indirectly affected by its Critical Chance").
+    SlashOnCrit(f64),
     /// Status-damage bucket (Pistol Elementalist) — scales status payloads.
     StatusDamage(f64),
     /// Primary element: ModifiedBase × bonus enters the hierarchy at this
@@ -360,6 +366,7 @@ impl ModEffect {
             FireRate(v) => format!("{} Fire Rate", pct(v)),
             ReloadSpeed(v) => format!("{} Reload Speed", pct(v)),
             StatusDamage(v) => format!("{} Status Damage", pct(v)),
+            SlashOnCrit(v) => format!("{} chance to apply Slash on Critical", pct(v)),
             Element(t, v) => format!("{} {t:?}", pct(v)),
             CombinedElement(t, v) => format!("{} {t:?}", pct(v)),
             Physical(t, v) => format!("{} {t:?}", pct(v)),
@@ -953,6 +960,9 @@ pub struct ResolvedPanel {
     pub status_damage_mult: f64,
     /// (1 + Σ status duration) — scales status-effect DoT durations.
     pub status_duration_mult: f64,
+    /// Σ chance for a CRITICAL hit to apply a Slash status (Hunter
+    /// Munitions), rolled per pellet, independent of status chance.
+    pub slash_on_crit: f64,
     /// MOD SET bonus: chance for a hit that ALREADY crit to move up one
     /// critical tier (Vigilante). Scales per equipped member with no
     /// threshold — see [`crate::mod_sets_data`]. 0.0 = no set equipped.
@@ -1032,6 +1042,8 @@ pub fn resolve_with(
     let (mut mag, mut sdur) = (0.0, 0.0);
     // Blast RANGE bucket (Firestorm / Fulmination): + the sum, of base radius.
     let mut br = 0.0;
+    // Hunter Munitions: its own bucket, because its roll is its own.
+    let mut slash_on_crit = 0.0;
     // Unconditional weapon-level CO (Carnage Reign) seeds the static rate.
     let mut co = base.innate_co_per_type;
     let (mut co_stack, mut ms_stack): (Option<StackSpec>, Option<StackSpec>) = (None, None);
@@ -1081,6 +1093,9 @@ pub fn resolve_with(
                 ModEffect::FireRate(v) => fr += v,
                 ModEffect::ReloadSpeed(v) => rl += v,
                 ModEffect::StatusDamage(v) => sd += v,
+                // Independent of everything else: it is its own roll on a
+                // crit, so it is its own bucket rather than joining status.
+                ModEffect::SlashOnCrit(v) => slash_on_crit += v,
                 // Physical (IPS) bonus: accumulate per type; applied to the
                 // BASE physical component below (NOT the elemental hierarchy).
                 ModEffect::Physical(t, v) => {
@@ -1409,6 +1424,7 @@ pub fn resolve_with(
         damage,
         radial,
         lingering,
+        slash_on_crit,
         crit_tier_upgrade_chance,
         continuous: base.continuous,
         field_duration_on_empty_reload: base.field_duration_on_empty_reload,

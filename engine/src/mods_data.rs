@@ -123,6 +123,9 @@ fn effect(v: &Value) -> Option<ModEffect> {
         "crit_damage_bonus" => ModEffect::CritDamage(max("rankMax")),
         "status_chance_bonus" => ModEffect::StatusChance(max("rankMax")),
         "status_damage_bonus" => ModEffect::StatusDamage(max("rankMax")),
+        // Hunter Munitions / Internal Bleeding: a Slash status rolled off a
+        // CRITICAL hit, independently of status chance.
+        "slash_on_crit" => ModEffect::SlashOnCrit(max("rankMax")),
         "fire_rate_bonus" => ModEffect::FireRate(max("rankMax")),
         "reload_speed_bonus" => ModEffect::ReloadSpeed(max("rankMax")),
         "magazine_capacity_bonus" => ModEffect::MagazineCapacity(max("rankMax")),

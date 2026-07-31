@@ -7,19 +7,20 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Sets/Hunter/PrimaryHunterMunitionsMod
 description: "+X% chance to apply Slash on Critical"
 
-# NOT MODELED, and this one is expensive. A critical hit rolls to apply a
-# SLASH status independently of the weapon's own status chance - on a
-# high-crit build it is one of the largest damage sources in the game, because
-# Slash bypasses armour. The engine has status procs and it has crit tiers,
-# but nothing that fires a proc OFF a crit, so the mod loads and contributes
-# zero.
+# A CRITICAL hit rolls this chance to apply a Slash status, per pellet, and
+# the roll is its own: "not affected by the weapon's Status Chance, or damage
+# type distribution, besides being indirectly affected by its Critical Chance"
+# (wiki). A weapon with no Slash in its vector still gets one - that is the
+# whole mod. On a high-crit build it is one of the largest damage sources in
+# the game, because Slash bleeds bypass armour entirely.
 #
-# That is why this card was held back once and is recorded now: an unmodeled
-# mod does not go missing from the optimizer, it gets RANKED, and this one
-# will be ranked at the bottom while being a top-tier pick in game. Treat any
-# build page that omits it as incomplete until the mechanic lands.
+# The proc it applies is an ORDINARY Slash status, so it inherits that
+# mechanic whole: 0.35 x ModdedBase per tick, ignoring armour, scaled by the
+# PROCCING hit's crit and body-part multipliers - "Headshots, orange and red
+# Critical Hits will greatly increase the damage dealt" - and lengthened by
+# status duration mods (its own set mate, Hunter Track, does exactly that).
 effects:
-  - kind: unmodeled
+  - kind: slash_on_crit
     rank0: 0.05
     rankMax: 0.30
 

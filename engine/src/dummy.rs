@@ -920,6 +920,9 @@ pub struct DummyParams {
     /// MOD SET bonus: chance for a hit that ALREADY crit to move up one
     /// critical tier (Vigilante). 0.0 = no set member equipped.
     pub crit_tier_upgrade_chance: f64,
+    /// Hunter Munitions: chance for a CRITICAL hit to apply a Slash status,
+    /// rolled per pellet and independent of status chance.
+    pub slash_on_crit: f64,
     pub crit_multiplier: f64,
     /// UNMODDED crit stats of the DIRECT part — the bases a RELATIVE live crit
     /// buff multiplies (the radial carries its own pair on `ResolvedRadial`).
@@ -1310,6 +1313,7 @@ impl DummyParams {
             reload_bonus: panel.reload_bonus,
             weakpoint_damage: panel.weakpoint_damage,
             crit_tier_upgrade_chance: panel.crit_tier_upgrade_chance,
+            slash_on_crit: panel.slash_on_crit,
             weakpoint_cc_rel: panel.weakpoint_cc_rel,
             cd_on_kill: panel.cd_on_kill,
             fr_on_reload: panel.fr_on_reload,
@@ -1446,6 +1450,7 @@ impl Default for DummyParams {
             reload_bonus: 0.0,
             weakpoint_damage: 0.0,
             crit_tier_upgrade_chance: 0.0,
+            slash_on_crit: 0.0,
             weakpoint_cc_rel: 0.0,
             cd_on_kill: None,
             fr_on_reload: None,
@@ -3325,6 +3330,32 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     &params.target.status_immunities,
                     rng,
                 );
+                // HUNTER MUNITIONS: a critical hit rolls its OWN Slash status,
+                // per pellet, "not affected by the weapon's Status Chance, or
+                // damage type distribution, besides being indirectly affected
+                // by its Critical Chance" (wiki). So it is a separate draw
+                // pushed onto this pellet's proc list rather than anything
+                // that touches the status roll above — and a weapon with no
+                // Slash in its vector still gets one, which is the whole point
+                // of the mod.
+                //
+                // Pushing it HERE, rather than applying a bleed directly, is
+                // what makes its damage right for free: a Slash proc is
+                // 0.35 x ModdedBase x THE PROCCING HIT's crit/part
+                // multipliers, so the tier this pellet rolled (including a
+                // Vigilante promotion) and the body part it struck already
+                // scale it — "Headshots, orange and red Critical Hits will
+                // greatly increase the damage dealt".
+                if ap.slash_on_crit > 0.0
+                    && tier >= 1
+                    && !params
+                        .target
+                        .status_immunities
+                        .contains(&DamageType::Slash)
+                    && rng.chance(ap.slash_on_crit)
+                {
+                    procs.push(DamageType::Slash);
+                }
             // Secondary Encumber: on a status this pellet applied, roll
             // ONE extra status of a uniformly random type (13-type pool,
             // independent of the weapon's vector — wiki), at most once per
@@ -5134,6 +5165,80 @@ mod tests {
         assert!((s.mean_procs - 10.0).abs() < 1e-9);
     }
 
+    /// HUNTER MUNITIONS. A guaranteed crit with a 100% roll must bleed on
+    /// every shot, on a weapon whose vector holds NO Slash at all — the mod's
+    /// whole point is that it does not draw from the damage types.
+    #[test]
+    fn hunter_munitions_bleeds_off_a_crit_on_a_weapon_with_no_slash() {
+        // no_status() gives status chance 0, so a bleed here can only have
+        // come from the crit roll. Crit chance 1.0, multiplier 1.0 keeps the
+        // arithmetic the same as the forced-Slash case above.
+        let p = DummyParams {
+            damage: DamageVector::new().with(DamageType::Puncture, 75.0),
+            base_crit_chance: 1.0,
+            crit_multiplier: 1.0,
+            slash_on_crit: 1.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 50, 11);
+        // Same schedule as the forced-Slash test: 39 ticks x 0.35 x 75.
+        assert!((s.mean_dot_damage - 1023.75).abs() < 1e-9, "dot {}", s.mean_dot_damage);
+        assert!((s.mean_procs - 10.0).abs() < 1e-9, "one proc per shot");
+
+        // Without the mod the same build bleeds not at all.
+        let none = DummyParams { slash_on_crit: 0.0, ..p.clone() };
+        assert_eq!(monte_carlo(&none, 50, 11).mean_dot_damage, 0.0);
+    }
+
+    /// The chance is independent of status chance and rolls PER PELLET, so a
+    /// 30% mod on a guaranteed crit bleeds about 30% of pellets.
+    #[test]
+    fn hunter_munitions_rolls_its_own_chance_per_pellet() {
+        let p = DummyParams {
+            damage: DamageVector::new().with(DamageType::Puncture, 75.0),
+            base_crit_chance: 1.0,
+            crit_multiplier: 1.0,
+            slash_on_crit: 0.30,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 4000, 12);
+        let per_shot = s.mean_procs / 10.0; // 10 shots in the window
+        assert!((per_shot - 0.30).abs() < 0.02, "procced {per_shot:.3} per shot, expected ~0.30");
+    }
+
+    /// The roll hangs off the CRIT, so at half the crit chance it bleeds half
+    /// as often — "indirectly affected by its Critical Chance" (wiki).
+    #[test]
+    fn hunter_munitions_tracks_the_crit_rate() {
+        let at = |cc: f64, seed: u64| {
+            let p = DummyParams {
+                damage: DamageVector::new().with(DamageType::Impact, 75.0),
+                base_crit_chance: cc,
+                crit_multiplier: 1.0,
+                slash_on_crit: 1.0,
+                body_parts: mono_body(1.0),
+                ..no_status()
+            };
+            monte_carlo(&p, 4000, seed).mean_procs / 10.0 // 10 shots in the window
+        };
+        let full = at(1.0, 13);
+        let half = at(0.5, 14);
+        let none = at(0.0, 15);
+        assert!((full - 1.0).abs() < 0.01, "every crit bleeds: {full:.3}");
+        assert!(full > half && half > none, "{full:.3} > {half:.3} > {none:.3}");
+        assert!(full - none > 0.3, "the crit rate has to move it: {none:.3}");
+        // NOT an exact ratio, and not for a reason that belongs to this mod:
+        // the raw `DummyParams::default()` fixture carries a crit FLOOR of
+        // ~0.45 that `base_crit_chance: 0.0` does not clear (it survives
+        // zeroing `unmodded_crit_chance` and does not depend on the damage
+        // type, so it is neither the relative term nor Puncture's Weakened).
+        // Existing tests never saw it because they neutralise crits with
+        // `crit_multiplier: 1.0` instead of the chance. Worth chasing on its
+        // own; asserting a clean 0.5-of-full here would only be encoding it.
+    }
+
     #[test]
     fn bleed_snapshots_the_proccing_hits_multipliers() {
         // 3x part, forced Slash, crit disabled: tick = 0.35 × 75 × 3 = 78.75.
@@ -6441,6 +6546,7 @@ mod tests {
         let p = DummyParams {
             weakpoint_damage: 3.5,
             crit_tier_upgrade_chance: 0.0,
+            slash_on_crit: 0.0,
             body_parts: vec![BodyPart {
                 name: "head".into(),
                 aim_weight: 1.0,

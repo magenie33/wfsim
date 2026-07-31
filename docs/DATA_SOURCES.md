@@ -204,16 +204,12 @@ arrives: an assault-rifle mod would be offered to a launcher, and a shotgun
 would draw nothing.
 
 All 10 `PRIMARY` mods are recorded (user, 2026-07-31: record the cards first).
-Six of them carry `kind: unmodeled`, and one of those is dangerous rather than
-merely absent: **Hunter Munitions** applies a Slash status off a CRITICAL hit,
-independently of status chance, which on a crit build is one of the largest
-damage sources in the game because Slash bypasses armour. The engine has crit
-tiers and it has status procs, but nothing that fires a proc off a crit, so
-the card loads and scores zero — and an unmodeled mod does not go missing from
-the optimizer, it gets RANKED. Treat any build page that omits it as
-incomplete until the mechanic lands. Combustion Beam, Shivering Contagion and
-Aero Periphery are the same shape but far less costly (corpse explosions and
-status spread need a second target; aim-glide zoom has no damage term).
+**Hunter Munitions is modeled** — see MECHANICS §"Slash on critical". Four
+still carry `kind: unmodeled`, and none of them is costly the way that one
+would have been: corpse explosions (Combustion Beam) and status spread
+(Shivering Contagion) only pay against a second target, aim-glide zoom (Aero
+Periphery) has no damage term, and beam range (Sinister Reach) has no mod kind
+yet and nothing in the roster can equip it anyway.
 
 ### A compat tag is not the whole restriction
 

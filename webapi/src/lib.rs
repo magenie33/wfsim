@@ -863,6 +863,9 @@ pub fn panel_json(v: &Value) -> Value {
                 CritDamage(x) => push("crit_damage", x, None),
                 StatusChance(x) => push("status_chance", x, None),
                 StatusDamage(x) => push("status_damage", x, None),
+                // Its own row: the chance is not a status chance and does not
+                // pool with one - it is a separate roll off a critical hit.
+                SlashOnCrit(x) => push("slash_on_crit", x, None),
                 FireRate(x) => push("fire_rate", x, None),
                 ReloadSpeed(x) => push("reload", x, None),
                 Element(t, x) | CombinedElement(t, x) => {

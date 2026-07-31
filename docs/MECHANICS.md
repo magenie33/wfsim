@@ -270,6 +270,33 @@ draws from real reserves joins the roster.
 
 ---
 
+### Slash on critical (Hunter Munitions / Internal Bleeding)
+
+A CRITICAL hit rolls its own chance to apply a Slash status. The roll is
+**independent**: wiki, "not affected by the weapon's Status Chance, or damage
+type distribution, besides being indirectly affected by its Critical Chance".
+It is per PELLET, and a weapon with no Slash anywhere in its vector still gets
+one — that is the entire mod.
+
+Modeled by pushing `Slash` onto that pellet's proc list, next to whatever the
+status roll produced, rather than applying a bleed directly. That is what
+makes the damage right by construction: a Slash proc is already
+`0.35 x ModdedBase` per tick, armour ignored, scaled by **the proccing hit's**
+crit and body-part multipliers, and lengthened by status-duration mods. So the
+wiki's "Headshots, orange and red Critical Hits will greatly increase the
+damage dealt" and Hunter Track's longer bleed both follow from the existing
+bleed, with nothing restated.
+
+It never fires on a non-crit, and a Slash-immune target is skipped before the
+roll rather than after.
+
+**Status:** the mechanic is wiki-sourced; the resulting DPS is not measured.
+On a 5-mod crit Torid vs a Thrax Centurion @9999 Steel Path it is worth
++20.5% DPS (21,092 -> 25,414), which is the shape expected of an
+armour-bypassing bleed on a 64%-crit build — but it wants a measurement.
+
+---
+
 ## 4. Per-hit damage vector (pipeline layer [3])
 
 **Definition.** After mods and elements, a single projectile has a concrete
