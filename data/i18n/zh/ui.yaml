@@ -84,6 +84,7 @@ ui:
   # actually is: how much better the build gets (user, 2026-08-01).
   "Gain": 提升
   "Sort": 排序
+  "open a slot to rank its mods by effect": 打开任一槽位，按效果排序
   "simulate every mod IN THIS SLOT and show what each would change": 把这个槽换成每一张 mod 各模拟一遍，标出击杀速度会变化多少
   "kill rate": 击杀速度
   "Measure": 衡量指标

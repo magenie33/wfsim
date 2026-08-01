@@ -2341,7 +2341,8 @@ function openPicker(slotIdx, anchor) {
   renderTools();
   renderMenu(slotIdx, "");
   // Sorted by EFFECT by default (user, 2026-08-01) — which means computing it.
-  ensureGains();
+  ensureGains({ kind: "mods", idx: slotIdx },
+    () => { if (!$("mod-popover").hidden) renderMenu(pickerSlot, $("mod-search").value); });
   search.focus();
 }
 
@@ -2419,8 +2420,9 @@ function gainScenario() {
     scenario: { ...st, runs, seed: GAIN_SEED, buffs: st.buffs || {} } };
 }
 
-// A scan belongs to ONE slot of ONE build under ONE scenario.
-const gainKey = () => JSON.stringify([pickerSlot, buildPayload(), gainPrefs,
+// A scan belongs to ONE AXIS POSITION of one build under one scenario.
+let gainAxis = { kind: "mods", idx: 0 };
+const gainKey = () => JSON.stringify([gainAxis, buildPayload(), gainPrefs,
   sim.enemy, sim.level, sim.steel_path, sim.headshot_pct, sim.aiming,
   sim.infinite_ammo, sim.duration, sim.runs, sim.form, sim.deployment]);
 
@@ -2430,40 +2432,63 @@ const modsCompatible = (ids) => {
   return new Set(fams).size === fams.length;
 };
 
-async function scanModGains(slotIdx, onTick) {
+/// Every candidate for an axis position, as `{ id, payload }` — the payload
+/// being what to OVERRIDE on `buildPayload()` to try it.
+///
+/// The three axes differ only here. A mod replaces one slot, an arcane one
+/// pool, an evolution one tier — and evolutions are scanned across EVERY tier
+/// at once, because they are all on screen at once and there are a dozen of
+/// them, not seventy (user, 2026-08-01: arcanes and evolutions use this too).
+function gainCandidates(axis) {
+  if (axis.kind === "arcane") {
+    const cur = arcanes.slice();
+    return arcanePool(axis.idx)
+      .filter((a) => a.id !== cur[axis.idx])
+      .map((a) => { const next = cur.slice(); next[axis.idx] = a.id; return { id: a.id, payload: { arcane: next } }; });
+  }
+  if (axis.kind === "evo") {
+    const out = [];
+    weaponEvos().forEach((tier) => {
+      tier.options.forEach((o) => {
+        if (evoSel[tier.tier] === o.id) return;
+        const next = { ...evoSel, [tier.tier]: o.id };
+        out.push({ id: o.id, payload: { evolutions: Object.values(next).filter(Boolean) } });
+      });
+    });
+    return out;
+  }
+  const cur = slots.map((s) => s.mod);
+  return poolWithRivens()
+    .filter((m) => !cur.includes(m.id))
+    .filter((m) => axis.idx !== EXILUS || m.exilus)
+    .map((m) => { const next = cur.slice(); next[axis.idx] = m.id; return { id: m.id, payload: { mods: next.filter(Boolean) } }; })
+    .filter((c) => modsCompatible(c.payload.mods));
+}
+
+async function scanGains(axis, onTick) {
   if (gainScan.running) return;
+  gainAxis = axis;
   const { name, scenario } = gainScenario();
   gainScan = { key: gainKey(), running: true, base: 0, by: {}, done: 0, total: 0,
     note: `${name} · ${scenario.runs}×`, metric: "" };
   // Kill progress is the optimizer's metric and the one a player is actually
   // buying; DPS is the fallback for a target this build cannot kill at all,
-  // where the ratio has no denominator.
-  // The SCENARIO decides; the fallback below is only for a target the build
-  // cannot kill at all, where a kill-rate ratio has no denominator.
+  // where the ratio has no denominator. The SCENARIO decides which.
   let useKills = (scenario.metric || "kpm") !== "dps";
-  const run = async (mods) => {
-    const r = await api("/api/simulate", { ...buildPayload(), ...scenario, mods });
+  const run = async (override) => {
+    const r = await api("/api/simulate", { ...buildPayload(), ...scenario, ...override });
     if (!r || !r.ok) return null;
     return useKills ? (r.score ?? r.kills ?? 0) : (r.dps || 0);
   };
-  const cur = slots.map((s) => s.mod);
-  const bare = cur.filter(Boolean);
-  let base = await run(bare);
-  if (!base && useKills) { useKills = false; base = await run(bare); }
+  let base = await run({});
+  if (!base && useKills) { useKills = false; base = await run({}); }
   if (!base) { gainScan.running = false; if (onTick) onTick(gainScan); return; }
   gainScan.base = base;
   gainScan.metric = useKills ? tr("kill rate") : tr("DPS");
-  // The candidate goes in THIS slot, replacing whatever is there. The mod
-  // already in it is not a candidate (it is the baseline), and neither is one
-  // sitting in another slot — moving it would empty that one.
-  const cands = poolWithRivens()
-    .filter((m) => !cur.includes(m.id))
-    .filter((m) => slotIdx !== EXILUS || m.exilus)
-    .map((m) => { const next = cur.slice(); next[slotIdx] = m.id; return { id: m.id, mods: next.filter(Boolean) }; })
-    .filter((c) => modsCompatible(c.mods));
+  const cands = gainCandidates(axis);
   gainScan.total = cands.length;
   for (const c of cands) {
-    const v = await run(c.mods);
+    const v = await run(c.payload);
     gainScan.done++;
     if (v != null) gainScan.by[c.id] = { pct: (v - base) / base };
     if (onTick) onTick(gainScan);
@@ -2472,7 +2497,35 @@ async function scanModGains(slotIdx, onTick) {
   if (onTick) onTick(gainScan);
 }
 
-/// The gain for `id`, or null when this slot/build/scenario has not been scanned.
+/// The gain chip: what this option is worth, once scanned. Shared by all
+/// three lists — a mod, an arcane and an evolution are the same question
+/// asked of different axes, so they say it the same way.
+const gainChipFor = (id, where) => {
+  const g = gainOf(id);
+  return g
+    ? `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}" title="${escHtml(
+        `${where} · ${gainScan.metric} · ${gainScan.note}`)}">${gainPct(g.pct)}</span>`
+    : "";
+};
+
+/// The picker's ONE ordering rule, over whatever keys an axis has.
+/// Descending on every key, the chosen one first, the rest in a fixed order —
+/// and an unscanned option sorts last whichever way the arrow points, because
+/// an absent answer is not a small one.
+function gainSort(a, b, keys) {
+  const ga = gainOf(a.id), gb = gainOf(b.id);
+  if (!ga !== !gb) return ga ? -1 : 1;
+  const cmp = { gain: () => (ga && gb ? gb.pct - ga.pct : 0),
+                drain: () => (b.drain || 0) - (a.drain || 0),
+                name: () => String(b.name).localeCompare(String(a.name)) };
+  for (const k of keys) {
+    const c = cmp[k]();
+    if (Math.abs(c) > 1e-9) return pickerPrefs.dir === "desc" ? c : -c;
+  }
+  return 0;
+}
+
+/// The gain for `id`, or null when this axis position has not been scanned.
 const gainOf = (id) => (gainScan.key === gainKey() ? gainScan.by[id] || null : null);
 
 /// QUICK CALC — page level, above the mods.
@@ -2512,19 +2565,16 @@ function renderQuickCalc() {
   });
 }
 
-/// Compute this slot's ranking, unless it is already the answer on screen.
-/// `gainKey` covers the slot, the build, the scenario and the settings, so a
-/// second open of the same picker costs nothing and any edit invalidates it.
-function ensureGains() {
+/// Compute this axis position's ranking, unless it is already on screen.
+/// `gainKey` covers the axis, the build, the scenario and the settings, so
+/// re-opening the same picker costs nothing and any edit invalidates it.
+function ensureGains(axis, repaint) {
+  gainAxis = axis;                       // so the key describes what we want
   if (gainScan.running || gainScan.key === gainKey()) return;
   let last = 0;
-  scanModGains(pickerSlot, (st) => {
+  scanGains(axis, (st) => {
     const now = Date.now();
-    if (!st.running || now - last > 250) {
-      last = now;
-      renderQuickCalc();
-      if (!$("mod-popover").hidden) renderMenu(pickerSlot, $("mod-search").value);
-    }
+    if (!st.running || now - last > 250) { last = now; renderQuickCalc(); repaint(); }
   });
 }
 
@@ -2596,17 +2646,8 @@ function renderMenu(slotIdx, query) {
       // The arrow flips the whole comparison, keys and all — one rule means
       // one direction. What it does not flip is UNSCANNED-LAST: an absent
       // answer is not a small one, so it stays at the bottom either way.
-      const ga = gainOf(a.id), gb = gainOf(b.id);
-      if (!ga !== !gb) return ga ? -1 : 1;
-      const cmp = { gain: () => (ga && gb ? gb.pct - ga.pct : 0),
-                    drain: () => b.drain - a.drain,
-                    name: () => b.name.localeCompare(a.name) };
-      const keys = [pickerPrefs.sort, ...["gain", "drain", "name"].filter((k) => k !== pickerPrefs.sort)];
-      for (const k of keys) {
-        const c = cmp[k]();
-        if (Math.abs(c) > 1e-9) return pickerPrefs.dir === "desc" ? c : -c;
-      }
-      return 0;
+      return gainSort(a, b, [pickerPrefs.sort,
+        ...["gain", "drain", "name"].filter((k) => k !== pickerPrefs.sort)]);
     });
   // No cap: every pool mod must be reachable. The popover menu scrolls
   // (`.combo-menu` overflow-y), so the whole sorted/filtered list is browsable.
@@ -2626,15 +2667,9 @@ function renderMenu(slotIdx, query) {
     const slotName = (idx) => idx === EXILUS ? "exilus" : "slot " + (idx + 1);
     const badge = isCur ? `<span class="slotchip cur">${slotName(slotIdx)}</span>`
       : at >= 0 ? `<span class="slotchip">${slotName(at)}</span>` : "";
-    // The gain is THIS SLOT's: what changes if it becomes this mod. The
-    // tooltip names the slot, the metric and the scenario, because the same
-    // mod is worth something different in another slot (elements combine by
-    // mod order) and under another fight.
-    const g = gainOf(m.id);
-    const gainChip = g
-      ? `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}" title="${escHtml(
-          `${slotName(slotIdx)} · ${gainScan.metric} · ${gainScan.note}`)}">${gainPct(g.pct)}</span>`
-      : "";
+    // The gain is THIS SLOT's — the same mod is worth something different in
+    // another slot, because elements combine by mod order.
+    const gainChip = gainChipFor(m.id, slotName(slotIdx));
     const title = conflict ? `incompatible (${m.family})`
       : exIllegal ? `cannot swap: ${ownMod.name} is not an exilus mod`
       : at >= 0 ? `swap with ${at === EXILUS ? "the exilus slot" : "slot " + (at + 1)}`
@@ -2823,6 +2858,8 @@ function openArcanePicker(anchor, i = 0) {
   search.oninput = () => renderArcaneMenu(search.value);
   renderArcaneMenu("");
   search.focus();
+  ensureGains({ kind: "arcane", idx: i },
+    () => { if (!$("arcane-popover").hidden) renderArcaneMenu($("arcane-search").value); });
 }
 
 // Search matches NAME or any EFFECT line (like the mod picker). "None" always
@@ -2832,12 +2869,17 @@ function renderArcaneMenu(query) {
   const q = query.trim().toLowerCase();
   // Search matches NAME (localized or English), ANY rank's effect text,
   // or the description — in either language (searchBlob).
-  const hits = arcanePickPool(arcaneSlotIdx).filter((a) => !q || searchBlob(a).includes(q));
+  // Same rule as the mod picker, minus a key an arcane does not have: there
+  // is no drain on an arcane, so it is effect then name.
+  const hits = arcanePickPool(arcaneSlotIdx)
+    .filter((a) => !q || searchBlob(a).includes(q))
+    .sort((a, b) => (a.id === arcanes[arcaneSlotIdx] ? -1 : b.id === arcanes[arcaneSlotIdx] ? 1 : 0)
+      || gainSort(a, b, ["gain", "name"]));
   menu.innerHTML = hits.length ? hits.map((a) => {
     const isCur = a.id === arcanes[arcaneSlotIdx];
     return `<div class="opt ${isCur ? "cur" : ""} ${a.rarity ? "rar-" + a.rarity : ""}" data-id="${a.id}">
       ${imgTag(IMG(a.image), "mod")}
-      <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}</div>${effLines(cardLines(a, a.max_rank, effectsAt(a, a.max_rank)))}</div></div>`;
+      <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}${gainChipFor(a.id, tr("Arcane"))}</div>${effLines(cardLines(a, a.max_rank, effectsAt(a, a.max_rank)))}</div></div>`;
   }).join("") : `<div class="opt dis">no matches</div>`;
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => { setArcane(o.dataset.id); closePopovers(); renderArcanes(); }));
 }
@@ -2889,7 +2931,8 @@ function renderEvo() {
       const wInfo = weaponInfo($("weapon").value);
       const genesis = wikiUrl(wikiWeaponName(wInfo) + " Incarnon Genesis");
       return `<span class="${cls}" data-tier="${t.tier}" data-id="${o.id}" title="${title}">
-        ${icon}<span class="einfo"><b class="en">${wl(o.name, genesis)}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}</b><span class="ed">${lines}</span>${warn}</span></span>`;
+        ${icon}<span class="einfo"><b class="en">${wl(o.name, genesis)}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}${
+          gainChipFor(o.id, `EVO ${ROMAN(t.tier)}`)}</b><span class="ed">${lines}</span>${warn}</span></span>`;
     };
     const empty = `<span class="evopick empty ${sel === null ? "sel" : ""}" data-tier="${t.tier}" data-id="">
       <span class="einfo"><b class="en">None</b><span class="ed"><div>nothing installed at this tier</div></span></span></span>`;
@@ -2897,6 +2940,11 @@ function renderEvo() {
     rows.push(`<div class="evo"><span class="rank">EVO ${ROMAN(t.tier)}</span><div class="picks">${empty}${t.options.map(card).join("")}</div></div>`);
   }
   $("evo-rows").innerHTML = rows.join("");
+  // Evolutions are all on screen at once, so they are scanned ACROSS EVERY
+  // TIER in one pass — a dozen candidates, not seventy, which is why they can
+  // afford to answer without being opened (user, 2026-08-01: arcanes and
+  // evolutions use this too). The key guards the repeat.
+  if (tiers.length) ensureGains({ kind: "evo", idx: 0 }, () => renderEvo());
   $("evo-rows").querySelectorAll(".evopick").forEach((c) => c.addEventListener("click", () => {
     evoSel[Number(c.dataset.tier)] = c.dataset.id || null;
     renderEvo(); refreshPanel();
