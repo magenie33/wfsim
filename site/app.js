@@ -2562,16 +2562,14 @@ function renderMenu(slotIdx, query) {
   const q = query.trim().toLowerCase();
   // Equipped mods stay LISTED: the current slot's mod is marked, mods in other
   // slots show their slot number — picking one of those EXCHANGES the two slots.
-  // Grouping: this slot's own mod, then mods sitting in other slots, then the
-  // pool. Under EFFECT order that middle group steps aside — a mod in another
-  // slot is a swap, not an upgrade, and it has no gain to rank by, so pinning
-  // eight of them above the ranking is exactly what the ranking is for
-  // (user, 2026-08-01). The slot's OWN mod stays first either way: it is the
-  // baseline every number below is measured against.
-  const byGain = pickerPrefs.sort === "gain";
-  const group = (m) => slots[slotIdx].mod === m.id ? 0
-    : byGain ? 1
-    : placedAt(m.id, slotIdx) >= 0 ? 1 : 2;
+  // ONE group ahead of the rule: this slot's own mod, because it is the
+  // baseline every number below is measured against. Everything else obeys
+  // the sort — including mods sitting in OTHER slots, which used to be pinned
+  // into a band of their own. That band contradicted whichever order was
+  // chosen (eight rows of unsorted drain at the top of a drain sort), and it
+  // was never load-bearing: every placed mod already carries a "slot N" chip
+  // that says where it is (user, 2026-08-01: the sort follows one rule).
+  const group = (m) => (slots[slotIdx].mod === m.id ? 0 : 1);
   const hits = poolWithRivens()
     // The exilus slot takes what `exilusPool()` says, which is the same
     // question the optimizer's exilus scope asks.
@@ -2585,25 +2583,30 @@ function renderMenu(slotIdx, query) {
       // sorting them in by name would scatter them through the pool.
       const r = (b.riven ? 1 : 0) - (a.riven ? 1 : 0);
       if (r) return r;
-      // Unscanned mods sort LAST whichever way the arrow points — an absent
-      // answer is not a small one.
+      // ONE RULE, not three special cases (user, 2026-08-01).
       //
-      // Ties break on DRAIN, then NAME (user, 2026-08-01): two mods worth the
-      // same are not equally good, and the cheaper one is the one to take.
-      // Without it a tie fell back on insertion order, which is no order at
-      // all — and ties are common here, since anything the target ignores
-      // scores exactly 0.
-      if (pickerPrefs.sort === "gain") {
-        const ga = gainOf(a.id), gb = gainOf(b.id);
-        const tie = () => (a.drain - b.drain) || a.name.localeCompare(b.name);
-        if (!ga && !gb) return tie();
-        if (!ga) return 1;
-        if (!gb) return -1;
-        const d = pickerPrefs.dir === "desc" ? gb.pct - ga.pct : ga.pct - gb.pct;
-        return Math.abs(d) > 1e-9 ? d : tie();
+      //   · every key sorts DESCENDING — effect, then drain, then name;
+      //   · the key you PICK is hoisted to the front, and the rest keep that
+      //     fixed order behind it. Pick drain and you get drain, effect, name.
+      //
+      // Drain descending is deliberate: two mods the target ignores score the
+      // same, and the expensive one is doing more (it just is not doing it
+      // HERE), so it is the one worth looking at first.
+      //
+      // The arrow flips the whole comparison, keys and all — one rule means
+      // one direction. What it does not flip is UNSCANNED-LAST: an absent
+      // answer is not a small one, so it stays at the bottom either way.
+      const ga = gainOf(a.id), gb = gainOf(b.id);
+      if (!ga !== !gb) return ga ? -1 : 1;
+      const cmp = { gain: () => (ga && gb ? gb.pct - ga.pct : 0),
+                    drain: () => b.drain - a.drain,
+                    name: () => b.name.localeCompare(a.name) };
+      const keys = [pickerPrefs.sort, ...["gain", "drain", "name"].filter((k) => k !== pickerPrefs.sort)];
+      for (const k of keys) {
+        const c = cmp[k]();
+        if (Math.abs(c) > 1e-9) return pickerPrefs.dir === "desc" ? c : -c;
       }
-      const c = pickerPrefs.sort === "drain" ? a.drain - b.drain : a.name.localeCompare(b.name);
-      return pickerPrefs.dir === "desc" ? -c : c;
+      return 0;
     });
   // No cap: every pool mod must be reachable. The popover menu scrolls
   // (`.combo-menu` overflow-y), so the whole sorted/filtered list is browsable.
