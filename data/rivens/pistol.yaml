@@ -4,16 +4,16 @@
 # `base` is DE's own per-stat number. The value a riven SHOWS is
 #   base x 10 x (rank + 1) x disposition x config multiplier x roll
 # where roll is 0.9-1.1. At rank 8 that is base x 90, which lands on
-# the canonical values exactly: Damage 165%, Crit Chance 150%,
-# Crit Damage 120%, Multishot 90% at disposition 1.0.
+# this class's canonical values exactly: Damage 219.6%, Crit Chance 150%, Crit Damage 90%, Multishot 119.7%
+# at disposition 1.0.
 #
 # `malus: false` = wiki-listed bonus-only, never the negative stat.
 # `kind: unmodeled` = a real riven stat the engine does not model; it
 # still occupies a rolled slot and still shapes the name.
 #
-# `order` is DE's own index in upgradeEntries. Seven rifle stats share
-# the same base, so two of them at the same roll are worth exactly the
-# same and the name's magnitude ordering ties. This is what breaks it.
+# `order` is DE's own index in upgradeEntries. Stats that share a base
+# are worth exactly the same at the same roll, so the name's magnitude
+# ordering ties between them. This is what breaks it.
 class: pistol
 stats:
   - id: ammo_maximum
