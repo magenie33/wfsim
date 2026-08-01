@@ -246,7 +246,11 @@
           <div class="preset-bar" id="preset-bar-optimizer-evolutions"></div>
           <div id="opt-evos"></div>
         </div>
-        <h3 class="sim-h" data-i18n>Enemy <span class="sim-hint">the optimizer's own scenario — independent of the Sim panel</span></h3>
+        <!-- The SCENARIO is the simulator's; the optimizer points at it
+             rather than keeping a second one, so the winner is scored under
+             the fight the replay will run. -->
+        <h3 class="sim-h" data-i18n>Enemy <span class="sim-hint">the scenario the simulator is set to — editing it here edits it there</span></h3>
+        <div class="preset-bar" id="preset-bar-optimizer-scenario"></div>
         <div id="opt-enemy" class="field-grid"></div>
         <h3 class="sim-h" data-i18n>Technique <span class="sim-hint">must match how you intend to play it — the winner is scored under these assumptions</span></h3>
         <div id="opt-technique" class="field-grid"></div>

@@ -351,12 +351,6 @@ let optBuffList = [];
 let optBuffTimer = null;
 // Sort/polarity prefs for the optimizer mod list (independent of the picker's).
 let optPrefs = { sort: "name", dir: "asc", pol: null };
-// The optimizer's OWN enemy scenario (user: fully decoupled from the Sim
-// panel — two independent configs that merely look alike; identical
-// parameters give identical numbers, verified 2026-07-28).
-let optSim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, aiming: true,
-  infinite_ammo: true,
-  duration: 300, form: "default" };
 // The FINAL-ROUND CONTRACT (user): the funnel's last round is guaranteed
 // `finalists` candidates × `final_runs` runs. Persisted; survives weapon
 // switches (it is a run setting, not weapon scope).
@@ -485,17 +479,14 @@ async function init() {
   $("weapon").value = d.weapon;
   arcanes = arcanesFor(d.weapon, d.arcane);
   evoSel = { 1: null, 2: null, 3: null, 4: null, ...(d.evolutions || {}) };
-  // Both scenarios are rebuilt FIELD BY FIELD from the server's defaults, so
-  // a field missing here is a field that silently reverts to `undefined` —
+  // The scenario is rebuilt FIELD BY FIELD from the server's defaults, so a
+  // field missing here is a field that silently reverts to `undefined` —
   // which is how `infinite_ammo` came to be absent from state while the
   // declaration above set it. The server owns every default; this copies them.
   sim = { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
     headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
     infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
     duration: d.duration, runs: d.runs, form: d.form, buffs: {} };
-  optSim = { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
-    headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
-    infinite_ammo: d.infinite_ammo !== false, duration: d.duration, form: d.form };
   optRun = { ...optRun, final_runs: d.final_runs ?? optRun.final_runs,
     finalists: d.finalists ?? optRun.finalists };
   applyWeapon(d.weapon, d.mods);
@@ -627,8 +618,12 @@ function route() {
       `<a class="mtab ${mod === "optimizer" ? "sel" : ""}" href="${weaponPath(w.id)}/optimizer">${tr("Optimizer")}</a>` +
       `<a class="mtab ${mod === "rivens" ? "sel" : ""}" href="${weaponPath(w.id)}/rivens">${tr("Rivens")}</a>`;
     // Arriving on the simulator: refresh its build summary (builder edits
-    // don't re-render sim views while they are hidden).
-    if (mod === "simulator") renderSimBuild();
+    // don't re-render sim views while they are hidden). The SCENARIO is one
+    // state shared with the optimizer, so each tab redraws its own copy of
+    // those fields on arrival — the other tab may have moved them, and the
+    // tabs are CSS-hidden rather than re-rendered.
+    if (mod === "simulator") renderSim();
+    if (mod === "optimizer") { renderOptEnemy(); updateOptEstimate(); }
     if (mod === "rivens") renderRivens();
   } else {
     renderHome();
@@ -3113,74 +3108,55 @@ const defaultFormId = (w, formOpts) =>
   (((w || {}).forms || []).find((f) => f.is_default) || {}).id ||
   (formOpts[0] || [])[0] || "base";
 
-function renderSim() {
-  if (!META) return;
-  renderSimBuild();
+// The SCENARIO — enemy, technique, measurement — is the SIMULATOR's, and the
+// optimizer borrows it instead of keeping a lookalike of its own (user,
+// 2026-08-02). One state, one renderer: the search is then, by construction,
+// scored under the fight you are simulating with, and a scenario preset
+// switches both at once. It also ends the whole class of bug where the two
+// copies drifted a field apart and the winner was crowned under a fight the
+// replay never ran.
+//
+// `ids` names the host element per section; a section with no host is not
+// drawn. `duration_in_enemy` puts the engagement length beside the enemy for
+// hosts that have no measurement section of their own (the optimizer: the
+// funnel owns run counts, but the engagement is still the scenario's).
+function renderScenarioFields(ids, opts = {}) {
   const w = weaponInfo($("weapon").value);
   const enemies = META.enemies || [];
   const en = enemies.find((e) => e.id === sim.enemy) || enemies[0];
   if (en) sim.enemy = en.id;
   const eopts = enemies.map((e) =>
     `<option value="${e.id}" ${e.id === sim.enemy ? "selected" : ""}>${e.name}</option>`).join("");
+  const durationField =
+    `<label>${escHtml(tr("Duration (s)"))} <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>`;
   // Section 1 — the enemy / scenario.
-  $("sim-enemy").innerHTML = `
-    <label>Enemy <select data-k="enemy">${eopts}</select></label>
-    <label>Level <input type="number" data-k="level" min="1" max="9999" value="${sim.level}"></label>
-    <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
-    ${deployField(w, sim)}`;
-  // Section 2 — TECHNIQUE: the player's execution, which is a different kind
-  // of input from the enemy (1) and from the measurement (4). Which form you
-  // fight in, whether you hold aim, and how often you land the head are all
-  // choices the player makes — and aiming GATES buffs, so it belongs here
-  // rather than mixed into the run settings (user, 2026-07-30).
-  // The FORMS are the weapon's own (registered in data/weapons, served by
-  // /api/meta) — not a hardcoded Incarnon triple. The two-form CYCLE is not a
-  // form but a MODE over them, so it is listed first and only when the weapon
-  // has something to transform into (`has_cycle`). A weapon with one form and
-  // no cycle has nothing to choose, so no selector is drawn.
-  // The cycle is offered — and defaulted to — whenever the WEAPON has one,
-  // installed perk or not (user, 2026-08-01). It stays honest because the sim
-  // falls back to the base form when the unlock is missing, and it stays
-  // STABLE, which is the point: re-seeding the choice every time tier 1 is
-  // touched would move the selection under someone who had already made it.
-  const formOpts = [
-    ...(w.has_cycle ? [["incarnon_cycle", tr("Incarnon cycle")]] : []),
-    ...(w.forms || []).map((f) => [f.id, w.has_cycle ? `${tr(f.name)} ${tr("only")}` : tr(f.name)]),
-  ];
-  // A stale preset (or another weapon's choice) can name a form this weapon
-  // does not have — fall back to the first option rather than sending it.
-  // A stale preset (or another weapon's choice, or the "default" seed) names
-  // a form this weapon does not list — fall back to how this weapon is
-  // played, which is a question about the weapon and not about list order.
-  if (formOpts.length && !formOpts.some(([id]) => id === sim.form)) sim.form = defaultFormId(w, formOpts);
-  // Scenario knobs that are a property of the WEAPON rather than of the
-  // fight: re-seeded when the weapon changes, kept when a preset set them
-  // (restoreState stamps the marker itself, so a saved value stands).
-  if (sim.__weapon !== w.id) {
-    sim.__weapon = w.id;
-    sim.headshot_pct = defaultHeadshotPct(w);
-    optSim.headshot_pct = sim.headshot_pct;
-    // The form is weapon-scoped for the same reason: "base" is a legal id on
-    // almost every weapon, so without this an Incarnon weapon opened after a
-    // plain one would keep the plain one's form and quietly skip the cycle
-    // that is supposed to be its default.
-    sim.form = defaultFormId(w, formOpts);
-    optSim.form = sim.form;
+  if (ids.enemy) {
+    $(ids.enemy).innerHTML = `
+      <label>Enemy <select data-k="enemy">${eopts}</select></label>
+      <label>Level <input type="number" data-k="level" min="1" max="9999" value="${sim.level}"></label>
+      <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
+      ${deployField(w, sim)}
+      ${opts.duration_in_enemy ? durationField : ""}`;
   }
-  $("sim-technique").innerHTML = `
-    ${formField(formOpts, sim.form)}
-    ${aimField(w, sim)}
-    <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>
-    ${ammoField(w, sim)}`;
+  const formOpts = simFormOpts(w);
+  if (ids.technique) {
+    $(ids.technique).innerHTML = `
+      ${formField(formOpts, sim.form)}
+      ${aimField(w, sim)}
+      <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>
+      ${ammoField(w, sim)}`;
+  }
   // Section 4 — the MEASUREMENT: nothing the player does in-game.
-  $("sim-run").innerHTML = `
-    <label>Duration (s) <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>
-    <label>Runs <input type="number" data-k="runs" min="1" max="20000" value="${sim.runs}"></label>
-    <label title="${escHtml(tr("what the run is judged by — the headline number and the picker's gain scan both follow it"))}">${escHtml(tr("Measure"))} <select data-k="metric">${
-      [["kpm", tr("KPM")], ["dps", tr("DPS")]].map(([v, l]) =>
-        `<option value="${v}"${sim.metric === v ? " selected" : ""}>${escHtml(l)}</option>`).join("")
-    }</select></label>`;
-  [$("sim-enemy"), $("sim-technique"), $("sim-run")].forEach((box) =>
+  if (ids.run) {
+    $(ids.run).innerHTML = `
+      ${durationField}
+      <label>Runs <input type="number" data-k="runs" min="1" max="20000" value="${sim.runs}"></label>
+      <label title="${escHtml(tr("what the run is judged by — the headline number and the picker's gain scan both follow it"))}">${escHtml(tr("Measure"))} <select data-k="metric">${
+        [["kpm", tr("KPM")], ["dps", tr("DPS")]].map(([v, l]) =>
+          `<option value="${v}"${sim.metric === v ? " selected" : ""}>${escHtml(l)}</option>`).join("")
+      }</select></label>`;
+  }
+  [ids.enemy, ids.technique, ids.run].filter(Boolean).map($).forEach((box) =>
     box.querySelectorAll("[data-k]").forEach((el) => {
       el.addEventListener("change", () => {
         const k = el.dataset.k;
@@ -3192,8 +3168,56 @@ function renderSim() {
         // tested with, and the scenario library keeps the fight itself.
         markPresetDirty();
         markScenarioDirty();
+        // Whichever tab drew the field, both are looking at this one state.
+        if (opts.after) opts.after();
       });
     }));
+}
+
+// Which forms this weapon offers, and the reseed when it does not offer the
+// one currently chosen.
+//
+// The FORMS are the weapon's own (registered in data/weapons, served by
+// /api/meta) — not a hardcoded Incarnon triple. The two-form CYCLE is not a
+// form but a MODE over them, so it is listed first and only when the weapon
+// has something to transform into (`has_cycle`). A weapon with one form and
+// no cycle has nothing to choose, so no selector is drawn.
+//
+// The cycle is offered — and defaulted to — whenever the WEAPON has one,
+// installed perk or not (user, 2026-08-01). It stays honest because the sim
+// falls back to the base form when the unlock is missing, and it stays
+// STABLE, which is the point: re-seeding the choice every time tier 1 is
+// touched would move the selection under someone who had already made it.
+function simFormOpts(w) {
+  const formOpts = [
+    ...(w.has_cycle ? [["incarnon_cycle", tr("Incarnon cycle")]] : []),
+    ...(w.forms || []).map((f) => [f.id, w.has_cycle ? `${tr(f.name)} ${tr("only")}` : tr(f.name)]),
+  ];
+  // A stale preset (or another weapon's choice, or the "default" seed) names
+  // a form this weapon does not list — fall back to how this weapon is
+  // played, which is a question about the weapon and not about list order.
+  if (formOpts.length && !formOpts.some(([id]) => id === sim.form)) sim.form = defaultFormId(w, formOpts);
+  // Scenario knobs that are a property of the WEAPON rather than of the
+  // fight: re-seeded when the weapon changes, kept when a preset set them
+  // (restoreState stamps the marker itself, so a saved value stands).
+  if (sim.__weapon !== w.id) {
+    sim.__weapon = w.id;
+    sim.headshot_pct = defaultHeadshotPct(w);
+    // The form is weapon-scoped for the same reason: "base" is a legal id on
+    // almost every weapon, so without this an Incarnon weapon opened after a
+    // plain one would keep the plain one's form and quietly skip the cycle
+    // that is supposed to be its default.
+    sim.form = defaultFormId(w, formOpts);
+  }
+  return formOpts;
+}
+
+function renderSim() {
+  if (!META) return;
+  renderSimBuild();
+  const enemies = META.enemies || [];
+  const en = enemies.find((e) => e.id === sim.enemy) || enemies[0];
+  renderScenarioFields({ enemy: "sim-enemy", technique: "sim-technique", run: "sim-run" });
   renderScenarioBar();
   $("arena-ename").textContent = en ? en.name : "Enemy";
   $("sim-sub").textContent = "current build vs the enemy";
@@ -3707,51 +3731,35 @@ function renderOptMods() {
   renderOptModList();
 }
 
-// The optimizer's OWN enemy/scenario block — the same fields as the Sim
-// panel's section 1 but writing `optSim` (fully decoupled; user).
+// The optimizer does NOT own a scenario (user, 2026-08-02): it runs the
+// SIMULATOR's, drawn here by the same renderer so the two cannot drift and a
+// scenario preset switched on either tab is switched on both. What the search
+// owns is its funnel — how many candidates survive each round — and that is
+// the block below the buffs, not this one.
+//
+// No Runs/Measure section here: the funnel decides run counts round by round,
+// so the engagement LENGTH is the only measurement input the search takes,
+// and it sits beside the enemy.
 function renderOptEnemy() {
-  const box = $("opt-enemy");
-  if (!box) return;
-  const enemies = META.enemies || [];
-  const en = enemies.find((e) => e.id === optSim.enemy) || enemies[0];
-  if (en) optSim.enemy = en.id;
-  const eopts = enemies.map((e) =>
-    `<option value="${e.id}" ${e.id === optSim.enemy ? "selected" : ""}>${e.name}</option>`).join("");
-  box.innerHTML = `
-    <label>Enemy <select data-k="enemy">${eopts}</select></label>
-    <label>Level <input type="number" data-k="level" min="1" max="9999" value="${optSim.level}"></label>
-    <label class="check"><input type="checkbox" data-k="steel_path" ${optSim.steel_path ? "checked" : ""}> Steel Path</label>
-    ${deployField(weaponInfo($("weapon").value) || {}, optSim)}
-    <label>Duration (s) <input type="number" data-k="duration" min="1" max="3600" value="${optSim.duration}"></label>`;
-  // Same split as the Sim: technique is the player's execution, and it must
-  // match how the build will actually be played — the winner is only the
-  // winner under these assumptions.
-  const tech = $("opt-technique");
-  if (tech) {
-    // WHICH FORM the search fires. The optimizer scores builds the way the
-    // sim will replay them, so it offers the weapon's own registered forms —
-    // exactly the sim's list, cycle included where there is one to cycle.
-    const w = weaponInfo($("weapon").value) || {};
-    const formOpts = [
-      ...(w.has_cycle ? [["incarnon_cycle", tr("Incarnon cycle")]] : []),
-      ...(w.forms || []).map((f) => [f.id, w.has_cycle ? `${tr(f.name)} ${tr("only")}` : tr(f.name)]),
-    ];
-    if (formOpts.length && !formOpts.some(([id]) => id === optSim.form)) optSim.form = defaultFormId(w, formOpts);
-    tech.innerHTML = `
-    ${formField(formOpts, optSim.form)}
-    ${aimField(weaponInfo($("weapon").value) || {}, optSim)}
-    ${ammoField(weaponInfo($("weapon").value) || {}, optSim)}
-    <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${optSim.headshot_pct}"></label>`;
-  }
-  [box, tech].filter(Boolean).forEach((b) =>
-    b.querySelectorAll("[data-k]").forEach((el) =>
-      el.addEventListener("change", () => {
-        const k = el.dataset.k;
-        if (el.type === "checkbox") optSim[k] = el.checked;
-        else if (el.type === "number") optSim[k] = Number(el.value);
-        else optSim[k] = el.value;
-        updateOptEstimate();
-      })));
+  if (!$("opt-enemy")) return;
+  renderScenarioFields(
+    { enemy: "opt-enemy", technique: "opt-technique" },
+    { duration_in_enemy: true, after: updateOptEstimate },
+  );
+  renderPresetBarIn($("preset-bar-optimizer-scenario"), {
+    domain: SCENARIOS,
+    label: tr("Scenarios"),
+    load: () => loadPresetList(SCENARIOS),
+    store: (ps) => storePresetList(SCENARIOS, ps),
+    active: () => activeScenario,
+    setActive: (n) => { activeScenario = n; localStorage.setItem(presetActiveKey(SCENARIOS), n); },
+    snapshot: snapshotScenario,
+    // The scenario is one document: applying it here redraws the Sim panel
+    // too, and the estimate follows the new fight.
+    apply: (st) => { applyScenario(st); renderOptEnemy(); updateOptEstimate(); },
+    blank: snapshotScenario,
+    rerender: renderOptEnemy,
+  });
 }
 
 // Exilus-slot scope (the +1 slot) — exilus-eligible mods with the same
@@ -4205,7 +4213,7 @@ function updateOptEstimate() {
   // schedule (survivors × runs per round; a JS mirror of schedule()).
   let scenario = "";
   if (valid) {
-    const en = (META.enemies || []).find((e) => e.id === optSim.enemy) || {};
+    const en = (META.enemies || []).find((e) => e.id === sim.enemy) || {};
     // Mirror of schedule_to()'s auto-planned cadence: k = ceil(log8(N/F))
     // rounds, even log-space culls landing exactly on the finalists, runs
     // from a halving cost budget ((ρ/2)^i, capped at final/4), then the
@@ -4229,7 +4237,13 @@ function updateOptEstimate() {
     const parts = [];
     let field = Math.round(jobs);
     rounds.forEach(([r, k]) => { parts.push(`${field.toLocaleString()}×${r}`); field = Math.min(field, k); });
-    scenario = `<div class="opt-scn">each build vs <b>${en.name || optSim.enemy}</b> Lv ${optSim.level}${optSim.steel_path ? " (SP)" : ""} · ${optSim.headshot_pct}% headshots${optSim.aiming ? "" : " · hip-fire"} · ${optSim.duration} s engagements · planned funnel (builds×runs): ${parts.join(" → ")} → ${F} finalists at ${FR.toLocaleString()} runs (racing cuts deeper, tie-amnesty keeps up to 2×)</div>`;
+    // The scenario's Measure is the SIMULATOR's; the funnel still ranks by
+    // kills whatever it says, so say so rather than letting the shared state
+    // imply a DPS search that does not exist yet.
+    const measured = sim.metric === "dps"
+      ? ` · <span class="warn">${escHtml(tr("the search ranks by kills — the scenario's DPS measure applies to the simulator"))}</span>`
+      : "";
+    scenario = `<div class="opt-scn">each build vs <b>${en.name || sim.enemy}</b> Lv ${sim.level}${sim.steel_path ? " (SP)" : ""} · ${sim.headshot_pct}% headshots${sim.aiming ? "" : " · hip-fire"} · ${sim.duration} s engagements · planned funnel (builds×runs): ${parts.join(" → ")} → ${F} finalists at ${FR.toLocaleString()} runs (racing cuts deeper, tie-amnesty keeps up to 2×)${measured}</div>`;
   }
   // ONE total, no decomposition — "×N arcanes" leaked a search-internal
   // dimension into the summary line (user, 2026-07-29).
@@ -4297,10 +4311,10 @@ async function runOptimize() {
       arcanes: arcs,
       evolutions,
       exilus: opt.exilus,
-      enemy: optSim.enemy, level: optSim.level, steel_path: optSim.steel_path,
-      headshot_pct: optSim.headshot_pct, aiming: optSim.aiming,
-      infinite_ammo: optSim.infinite_ammo, duration: optSim.duration,
-      form: optSim.form,
+      enemy: sim.enemy, level: sim.level, steel_path: sim.steel_path,
+      headshot_pct: sim.headshot_pct, aiming: sim.aiming,
+      infinite_ammo: sim.infinite_ammo, duration: sim.duration,
+      form: sim.form,
       final_runs: optRun.final_runs, finalists: optRun.finalists,
       threads: optRun.threads || 0, // 0 = auto (cores − 2)
       buffs,
@@ -4365,7 +4379,7 @@ function renderOptProgress(st) {
     ? `enumerating candidates…${st.enumerated ? ` ${st.enumerated.toLocaleString()} so far` : ""}${st.sims_done ? ` · ${st.sims_done.toLocaleString()} screened` : ""}`
     : `round ${st.round}/${st.rounds} — ${(st.round_jobs || 0).toLocaleString()} jobs × ${st.round_runs} runs`;
   const notes = (st.notes || []).map((n) =>
-    `<div class="opt-note">round ${n.round}: ${n.jobs.toLocaleString()} × ${n.runs} (${n.by_kills ? "kills" : "dmg"}) → keep ${n.kept.toLocaleString()} · best ${n.by_kills ? sig2(kpm(n.best, optSim.duration)) + " KPM" : n.best.toExponential(2) + " dmg"} · ${(n.ms / 1000).toFixed(1)}s</div>`
+    `<div class="opt-note">round ${n.round}: ${n.jobs.toLocaleString()} × ${n.runs} (${n.by_kills ? "kills" : "dmg"}) → keep ${n.kept.toLocaleString()} · best ${n.by_kills ? sig2(kpm(n.best, sim.duration)) + " KPM" : n.best.toExponential(2) + " dmg"} · ${(n.ms / 1000).toFixed(1)}s</div>`
   ).join("");
   const sub = st.phase === "enumerating"
     ? ""

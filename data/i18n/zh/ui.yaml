@@ -175,6 +175,8 @@ ui:
   "Evolution": 进化
   "Evolutions": 进化
   "install the previous tier first": 需要先安装上一层
+  "the search ranks by kills — the scenario's DPS measure applies to the simulator": 搜索按击杀排名——场景里的 DPS 指标只作用于模拟器
+  "Duration (s)": 时长（秒）
   "Element": 元素
   "Stats": 属性
   "Sim": 模拟
