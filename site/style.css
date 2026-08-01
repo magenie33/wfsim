@@ -569,3 +569,6 @@ label.check input{width:auto}
 .gainchip small{opacity:.7;font-size:10px}
 .picker-tools .pk-note{color:var(--muted);font-size:11px;margin-left:auto}
 .picker-tools #pk-gain-scen,.picker-tools #pk-gain-prec{font:inherit;font-size:11px;max-width:120px}
+/* The wider buff view: a setting held for a mod the build does not carry. */
+.buff-card.off{opacity:.72}
+.buff-card .bnot{color:var(--muted);font-size:10px;font-weight:400}

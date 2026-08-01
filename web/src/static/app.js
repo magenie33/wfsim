@@ -2369,7 +2369,7 @@ function renderTools() {
     pickerPrefs.dir = "desc"; // best first, which is the only useful default
     savePickerPrefs();
     let last = 0;
-    scanModGains((st) => {
+    scanModGains(pickerSlot, (st) => {
       const now = Date.now();
       if (!st.running || now - last > 250) { last = now; renderTools(); renderMenu(pickerSlot, $("mod-search").value); }
     });
@@ -2378,36 +2378,38 @@ function renderTools() {
   t.querySelectorAll(".pk-pol").forEach((o) => o.onclick = (e) => { e.stopPropagation(); pickerPrefs.pol = o.dataset.p || null; redraw(); });
 }
 
-// ---- MARGINAL GAIN: what would the NEXT mod be worth? ---------------------
+// ---- MARGINAL GAIN: what is THIS SLOT worth as something else? ------------
 //
-// One question, asked of every mod the build does not carry: what does the
-// score become if it goes in? Answered by SIMULATING each candidate, so it is
-// the real number and not a heuristic — the builder has no second damage model
-// and must not grow one.
+// The question is asked OF A SLOT, which is the one the picker is already
+// open on: "if slot N became this mod, what happens to the kill rate?"
+// (user, 2026-08-01). That framing is not a convenience — it is the correct
+// one, for two reasons:
 //
-// ONLY WITH AN EMPTY SLOT (user, 2026-08-01). "Adding" a mod to a full build
-// means dropping one, which is a different question with a different answer
-// for every slot; this one stays the simple one it reads as.
+//   · ELEMENT ORDER. Elements combine by MOD ORDER (MECHANICS §3, Load
+//     Order), and the payload's mod list is slot-ordered — so the same mod in
+//     slot 2 and in slot 6 can produce different elements. A scan that picked
+//     a position for you would be answering a question you did not ask.
+//   · A FULL BUILD is the case worth analysing, and "replace slot N" is
+//     defined there. An empty slot is just the degenerate case of it.
 //
-// AGAINST A SAVED SCENARIO, chosen by name — the same fight the Simulator
-// runs, because a gain has no meaning without one. And at a chosen precision:
-// the scenario's own run count, or a TENTH of it for a fast sweep.
+// Answered by SIMULATING each candidate — the builder has no second damage
+// model and must not grow one. The metric is KILL PROGRESS (the optimizer's
+// own), so a percentage here is a percentage of KPM; it falls back to DPS when
+// the baseline cannot kill at all and the ratio would be undefined.
 //
-// PAIRED RANDOMNESS is what makes the fast sweep usable. A run of this arena
-// swings by a few percent, which is more than many mods are worth, so an
-// unpaired A-vs-B would rank noise. Every candidate and the baseline take the
-// SAME seed, so they walk the same random stream and the difference between
-// them is the mod rather than the dice.
+// AGAINST A SAVED SCENARIO, chosen by name, at a chosen precision: its own run
+// count or a tenth of it. PAIRED randomness is what makes the tenth usable —
+// baseline and every candidate take the same seed, so they walk the same
+// random stream and the difference between them is the mod, not the dice.
 const GAIN_SEED = 0x5EED;
 // A gain READS with its sign — "12.3%" and "+12.3%" are different claims.
 const gainPct = (x) => (x >= 0 ? "+" : "−") + sig2(Math.abs(x) * 100) + "%";
-const modLabel = (id) => (modById(id) || {}).name || prettify(id);
 
 let gainPrefs = { scenario: null, precision: "tenth" };
 try { const s = JSON.parse(localStorage.getItem("wfsim-gain")); if (s) gainPrefs = { ...gainPrefs, ...s }; } catch (_) {}
 const saveGainPrefs = () => localStorage.setItem("wfsim-gain", JSON.stringify(gainPrefs));
 
-let gainScan = { key: null, running: false, base: 0, by: {}, done: 0, total: 0, note: "" };
+let gainScan = { key: null, running: false, base: 0, by: {}, done: 0, total: 0, note: "", metric: "" };
 
 /// The scenario a scan runs under: the chosen preset, else the live one.
 function gainScenario() {
@@ -2423,14 +2425,10 @@ function gainScenario() {
     scenario: { ...st, runs, seed: GAIN_SEED, buffs: st.buffs || {} } };
 }
 
-/// The first empty MAIN slot, or -1. The exilus slot is its own pool and its
-/// own question, so it is not a home for a general mod.
-const freeSlot = () => slots.slice(0, 8).findIndex((s) => !s.mod);
-
-// A scan is only about THIS build under THAT scenario; anything else invalidates.
-const gainKey = () => JSON.stringify([buildPayload(), gainPrefs, sim.enemy, sim.level,
-  sim.steel_path, sim.headshot_pct, sim.aiming, sim.infinite_ammo, sim.duration,
-  sim.runs, sim.form, sim.deployment]);
+// A scan belongs to ONE slot of ONE build under ONE scenario.
+const gainKey = () => JSON.stringify([pickerSlot, buildPayload(), gainPrefs,
+  sim.enemy, sim.level, sim.steel_path, sim.headshot_pct, sim.aiming,
+  sim.infinite_ammo, sim.duration, sim.runs, sim.form, sim.deployment]);
 
 const famOf = (id) => (modById(id) || {}).family || null;
 const modsCompatible = (ids) => {
@@ -2438,46 +2436,53 @@ const modsCompatible = (ids) => {
   return new Set(fams).size === fams.length;
 };
 
-async function scanModGains(onTick) {
+async function scanModGains(slotIdx, onTick) {
   if (gainScan.running) return;
-  const at = freeSlot();
-  if (at < 0) return;
   const { name, scenario } = gainScenario();
   gainScan = { key: gainKey(), running: true, base: 0, by: {}, done: 0, total: 0,
-    note: `${name} · ${scenario.runs}×` };
+    note: `${name} · ${scenario.runs}×`, metric: "" };
+  // Kill progress is the optimizer's metric and the one a player is actually
+  // buying; DPS is the fallback for a target this build cannot kill at all,
+  // where the ratio has no denominator.
+  let useKills = true;
   const run = async (mods) => {
     const r = await api("/api/simulate", { ...buildPayload(), ...scenario, mods });
-    return r && r.ok ? r.dps : null;
+    if (!r || !r.ok) return null;
+    return useKills ? (r.score ?? r.kills ?? 0) : (r.dps || 0);
   };
   const cur = slots.map((s) => s.mod);
-  const base = await run(cur.filter(Boolean));
+  const bare = cur.filter(Boolean);
+  let base = await run(bare);
+  if (!base) { useKills = false; base = await run(bare); }
   if (!base) { gainScan.running = false; if (onTick) onTick(gainScan); return; }
   gainScan.base = base;
+  gainScan.metric = useKills ? tr("kill rate") : tr("DPS");
+  // The candidate goes in THIS slot, replacing whatever is there. The mod
+  // already in it is not a candidate (it is the baseline), and neither is one
+  // sitting in another slot — moving it would empty that one.
   const cands = poolWithRivens()
     .filter((m) => !cur.includes(m.id))
-    .map((m) => { const next = cur.slice(); next[at] = m.id; return { id: m.id, mods: next.filter(Boolean) }; })
+    .filter((m) => slotIdx !== EXILUS || m.exilus)
+    .map((m) => { const next = cur.slice(); next[slotIdx] = m.id; return { id: m.id, mods: next.filter(Boolean) }; })
     .filter((c) => modsCompatible(c.mods));
   gainScan.total = cands.length;
   for (const c of cands) {
-    const dps = await run(c.mods);
+    const v = await run(c.mods);
     gainScan.done++;
-    if (dps != null) gainScan.by[c.id] = { pct: (dps - base) / base };
+    if (v != null) gainScan.by[c.id] = { pct: (v - base) / base };
     if (onTick) onTick(gainScan);
   }
   gainScan.running = false;
   if (onTick) onTick(gainScan);
 }
 
-/// The gain for `id`, or null when this build/scenario has not been scanned.
+/// The gain for `id`, or null when this slot/build/scenario has not been scanned.
 const gainOf = (id) => (gainScan.key === gainKey() ? gainScan.by[id] || null : null);
 
 /// The scan's controls: which saved scenario, at what precision, and go.
 /// Hidden entirely on a full build — the scan only answers "what goes in the
 /// empty slot", so offering it there would promise an answer it will not give.
 function gainTools() {
-  if (freeSlot() < 0) {
-    return `<span class="pk-note" title="${escHtml(tr("the gain scan fills an EMPTY slot — free one to compare mods"))}">${escHtml(tr("no empty slot"))}</span>`;
-  }
   const ps = loadPresetList(SCENARIOS);
   const cur = ps.some((p) => p.name === gainPrefs.scenario) ? gainPrefs.scenario : "";
   return `<select id="pk-gain-scen" title="${escHtml(tr("which saved scenario to measure under"))}">` +
@@ -2488,7 +2493,7 @@ function gainTools() {
     `<option value="tenth"${gainPrefs.precision === "tenth" ? " selected" : ""}>1/10</option>` +
     `<option value="full"${gainPrefs.precision === "full" ? " selected" : ""}>${escHtml(tr("full runs"))}</option>` +
     `</select>` +
-    `<button id="pk-gain" class="ghost-btn small" title="${escHtml(tr("simulate every mod in the empty slot and show what each would add"))}">${
+    `<button id="pk-gain" class="ghost-btn small" title="${escHtml(tr("simulate every mod IN THIS SLOT and show what each would change"))}">${
       gainScan.running ? `${gainScan.done}/${gainScan.total}` : `⚡ ${escHtml(tr("Gain"))}`}</button>`;
 }
 
@@ -2600,13 +2605,14 @@ function renderMenu(slotIdx, query) {
     const slotName = (idx) => idx === EXILUS ? "exilus" : "slot " + (idx + 1);
     const badge = isCur ? `<span class="slotchip cur">${slotName(slotIdx)}</span>`
       : at >= 0 ? `<span class="slotchip">${slotName(at)}</span>` : "";
-    // What this mod is WORTH here, once scanned. `replaces` names the mod it
-    // would displace on a full build — the answer is "swap that for this",
-    // and without it a bare percentage would not say where it goes.
+    // The gain is THIS SLOT's: what changes if it becomes this mod. The
+    // tooltip names the slot, the metric and the scenario, because the same
+    // mod is worth something different in another slot (elements combine by
+    // mod order) and under another fight.
     const g = gainOf(m.id);
     const gainChip = g
       ? `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}" title="${escHtml(
-          tr("in the empty slot") + " · " + gainScan.note)}">${gainPct(g.pct)}</span>`
+          `${slotName(slotIdx)} · ${gainScan.metric} · ${gainScan.note}`)}">${gainPct(g.pct)}</span>`
       : "";
     const title = conflict ? `incompatible (${m.family})`
       : exIllegal ? `cannot swap: ${ownMod.name} is not an exilus mod`
@@ -3034,7 +3040,25 @@ function syncBuffConfig(list, cfg) {
 
 // Shared buff-card renderer (Sim panel + Optimizer scope). `list` = the buff
 // metadata; `cfg` = the mutated config map.
-function renderBuffCards(box, list, cfg) {
+/// A buff card's name, in the display language.
+///
+/// The server names a buff after the mod or arcane that grants it — in
+/// ENGLISH, because English is the source everywhere. The overlay that
+/// translates that name is already on the client (every mod and arcane in
+/// META carries `name_en`), so the lookup is by English name and the grant
+/// suffix goes through the ordinary UI table. Invisible while the panel only
+/// ever showed a build's own two or three cards; the all-potential view shows
+/// eleven at once.
+function buffCardName(name) {
+  const [head, tail] = String(name).split(" (");
+  const owner = [...(META.mods || []), ...(META.arcanes || []),
+    ...Object.values(META.mod_pools || {}).flat()]
+    .find((x) => (x.name_en || x.name) === head);
+  const label = owner ? owner.name : head;
+  return tail ? `${label} (${tr(tail.replace(/\)$/, ""))})` : label;
+}
+
+function renderBuffCards(box, list, cfg, have) {
   if (!box) return;
   syncBuffConfig(list, cfg);
   if (!list.length) {
@@ -3051,8 +3075,11 @@ function renderBuffCards(box, list, cfg) {
     const lock = b.permanent
       ? `<label class="block-lock dis" title="permanent stacks — they never decay (and cannot build in-sim), so the count holds for the whole run; lock is implied"><input type="checkbox" checked disabled> lock</label>`
       : `<label class="block-lock" title="lock = permanent 100% uptime"><input type="checkbox" data-b="${b.id}" data-f="locked" ${c.locked ? "checked" : ""}> lock</label>`;
-    return `<div class="buff-card">
-      <span class="bn">${b.name}</span>
+    // In the WIDER view, a buff the build does not carry is still settable —
+    // it just says so, so the panel never reads as "this is active now".
+    const off = have && !have.has(b.id);
+    return `<div class="buff-card${off ? " off" : ""}">
+      <span class="bn">${escHtml(buffCardName(b.name))}${off ? ` <small class="bnot">${escHtml(tr("not equipped"))}</small>` : ""}</span>
       <span class="bctl">${ctl}</span>
       ${lock}
     </div>`;
@@ -3064,13 +3091,64 @@ function renderBuffCards(box, list, cfg) {
       if (f === "locked") c.locked = el.checked;
       else if (el.type === "checkbox") c.stacks = el.checked ? 1 : 0;
       else c.stacks = Math.max(0, Number(el.value));
-      markPresetDirty(); // sim buff edits are preset content (opt's are not — no dot)
+      // A buff edit belongs to BOTH: the build remembers what it was tested
+      // with, and the scenario library keeps the fight — including settings
+      // for mods this build does not carry.
+      markPresetDirty();
+      if (typeof markScenarioDirty === "function") markScenarioDirty();
     });
   });
 }
 
+// The buff panel has TWO views. By default it lists what the current build
+// actually carries. "All potential" widens it to every buff this WEAPON could
+// ever have — every mod in its pool, every arcane it can seat, every
+// evolution option — because a scenario is meant to describe a fight, not a
+// build, and a setting for a mod you have not equipped yet is exactly what the
+// marginal-gain scan reads (user, 2026-08-01: the settings were only reachable
+// once the mod was on).
+//
+// The union comes from `/api/opt-buffs`, which already answers "every buff
+// this SCOPE could produce" for the optimizer — handing it a scope of
+// everything is the same question, and a second implementation of it would be
+// a second thing to keep right.
+let simBuffsAll = false;
+let allBuffList = null;   // cached per weapon; null = not fetched
+let allBuffWeapon = null;
+
+async function fetchAllBuffs() {
+  const w = $("weapon").value;
+  if (allBuffWeapon === w && allBuffList) return allBuffList;
+  const mark = (ids) => Object.fromEntries(ids.map((id) => [id, "search"]));
+  const AX = weaponAxes(w);
+  const r = await api("/api/opt-buffs", {
+    weapon: w,
+    mods: mark([...AX.mods.map((m) => m.id), ...AX.exilus.map((m) => m.id)]),
+    arcanes: mark(AX.arcanes.flatMap((a) => a.options.map((x) => x.id))),
+    evolutions: Object.fromEntries(AX.evolutions.map((t, i) => [i, t.options.map((o) => o.id)])),
+    rivens: rivenPayload(),
+  });
+  allBuffList = r && r.ok ? r.buffs || [] : [];
+  allBuffWeapon = w;
+  return allBuffList;
+}
+
 function renderSimBuffs() {
-  renderBuffCards($("sim-buffs"), buffList, sim.buffs);
+  const btn = $("sim-buffs-all");
+  const list = simBuffsAll && allBuffList ? allBuffList : buffList;
+  if (btn) {
+    btn.textContent = simBuffsAll ? tr("in this build") : tr("all potential buffs");
+    btn.title = tr("a scenario can set a buff for a mod this build does not carry — the gain scan reads it");
+    btn.onclick = async () => {
+      simBuffsAll = !simBuffsAll;
+      if (simBuffsAll) { btn.disabled = true; await fetchAllBuffs(); btn.disabled = false; }
+      renderSimBuffs();
+    };
+  }
+  // Which of them the build actually has, so the wider list still says where
+  // you are: everything else is a setting held for later.
+  const have = new Set(buffList.map((b) => b.id));
+  renderBuffCards($("sim-buffs"), list, sim.buffs, simBuffsAll ? have : null);
 }
 
 async function runSim() {

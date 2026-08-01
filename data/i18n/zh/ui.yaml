@@ -80,14 +80,13 @@ ui:
   "Name": 名称
   "Drain": 消耗
   "Gain": 增益
-  "simulate every mod in the empty slot and show what each would add": 把每张 mod 放进空槽各模拟一遍，标出它能带来多少提升
+  "simulate every mod IN THIS SLOT and show what each would change": 把这个槽换成每一张 mod 各模拟一遍，标出击杀速度会变化多少
+  "kill rate": 击杀速度
+  "DPS": DPS
   "which saved scenario to measure under": 用哪个已保存的场景来测
   "a tenth of the runs is a fast sweep; the baseline and every candidate share one seed, so the comparison stays paired": 十分之一次数是快速扫描；基准和每个候选共用同一随机种子，所以比较是成对的，噪声会抵消
-  "the gain scan fills an EMPTY slot — free one to compare mods": 增益扫描是往空槽里放 —— 腾出一个空槽才能比较
-  "no empty slot": 无空槽
   "full runs": 完整次数
   "current": 当前
-  "in the empty slot": 放入空槽
   "Atmosphere": 地面
   "Archwing": 空战
   "where the weapon is fired — it changes reload and ammo, nothing else": 武器在哪里开火 —— 它只影响装填和弹药，其余不变
@@ -110,6 +109,14 @@ ui:
   "Weapons": 武器
   "Presets": 预设
   "Scenarios": 场景
+  "all potential buffs": 全部潜在增益
+  "in this build": 仅当前配装
+  "not equipped": 未装备
+  # Buff-card grant suffixes: "Primary Crux (Status Chance)".
+  "Ammo Efficiency": 弹药效率
+  "Critical Damage": 暴击伤害
+  "Critical Chance": 暴击几率
+  "a scenario can set a buff for a mod this build does not carry — the gain scan reads it": 场景可以为当前配装没装的 mod 预设增益状态 —— 增益扫描会读它
   "Builder": 配装器
   "Simulator": 模拟器
   "Optimizer": 优化器
