@@ -9,11 +9,12 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponResistSelfDamageMod
 description: "+X% chance to reduce the Stagger effect from self-imposed Radial Attacks"
 
 effects:
-  # NOT LOADED: `mods_data::effect()` has no `unmodeled` arm, so this is dropped
-  # and the mod loads with NO effects (data/README.md). Self-stagger is a
-  # survivability/handling concern; the sim never shoots itself.
+  # Self-stagger is a survivability/handling concern; the sim never shoots
+  # itself.
   # "+100% chance to reduce the Stagger effect from self-imposed Radial Attacks"
-  - kind: unmodeled
+  # 2D groundwork (2026-08-01): a real stat with no SINGLE-TARGET damage
+  # payload. It used to be `kind: unmodeled`, which threw the number away.
+  - kind: self_stagger_reduction
     rank0: 0.0909
     rankMax: 1.0
 

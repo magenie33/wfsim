@@ -1287,6 +1287,9 @@ pub fn panel_json(v: &Value) -> Value {
                 // pool with one - it is a separate roll off a critical hit.
                 SlashOnCrit(x) => push("slash_on_crit", x, None),
                 FireRate(x) => push("fire_rate", x, None),
+                // Its own row, not fire rate's: a charge-rate mod shortens the
+                // DRAW and leaves an uncharged form's cadence alone.
+                ChargeRate(x) => push("charge_rate", x, None),
                 ReloadSpeed(x) => push("reload", x, None),
                 Element(t, x) | CombinedElement(t, x) => {
                     src.push(("elements", name.clone(), x, Some(format!("{t:?}"))));
@@ -1376,6 +1379,7 @@ pub fn panel_json(v: &Value) -> Value {
                         B::StatusChance => "status_chance",
                         B::StatusDamage => "status_damage",
                         B::FireRate => "fire_rate",
+                        B::ReloadSpeed => "reload",
                     };
                     push(key, x, Some("conditional buff, assumed active".into()));
                 }
@@ -1768,10 +1772,25 @@ pub fn panel_json(v: &Value) -> Value {
         // Indirect stats (recoil, accuracy, ammo…): not in theoretical DPS,
         // real in practice; base is unmodified (0%), final = Σ.
         let mut indirect_rows = Vec::new();
+        // Not every indirect stat is a fraction. Punch through and beam range
+        // are METRES, a double-jump refresh is a COUNT, an explosion-on-kill is
+        // flat DAMAGE — printing "+1200%" for Sinister Reach's +12 m is worse
+        // than not stating it. `unit()` is the stat's own answer.
+        let ind_fmt = |stat: &wfsim_engine::loadout::IndirectStat, v: f64| match stat.unit() {
+            "%" => fpct(v),
+            u => {
+                let n = if (v - v.round()).abs() < 1e-6 {
+                    format!("{}", v.round() as i64)
+                } else {
+                    format!("{v:.2}").trim_end_matches('0').trim_end_matches('.').to_string()
+                };
+                format!("{}{n}{u}", if v >= 0.0 { "+" } else { "−" })
+            }
+        };
         for (stat, total) in &panel.indirect {
             indirect_rows.push(
                 json!({ "key": "indirect", "label": stat.label(), "base": "—",
-            "final": fpct(*total), "sources": sources("indirect", Some(stat.label())) }),
+            "final": ind_fmt(stat, *total), "sources": sources("indirect", Some(stat.label())) }),
             );
         }
 

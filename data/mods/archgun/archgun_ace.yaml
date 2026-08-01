@@ -19,9 +19,14 @@ effects:
     # RAMPS with rank: 2s at rank 0.
     duration_rank0: 2
     duration: 9
-  # Reload speed is not a DPS bucket the conditional path models, so this
-  # half stays stated and inert rather than silently flat.
-  - kind: unmodeled
+  # The same TRIGGER, granting reload speed. `CondBucket::ReloadSpeed` exists
+  # for this (2026-08-01): it contributes under AssumedMax, and under Emergent
+  # it is an honest no-op, because a live reload-speed timer is machinery
+  # nothing else in the sim needs yet.
+  - kind: buff
+    trigger: on_headshot_kill
+    grants: reload_speed
+    max_stacks: 1
     rank0: 0.1667
     rankMax: 1.0
     # The "for Xs" belongs to THIS sentence, and the description filler walks

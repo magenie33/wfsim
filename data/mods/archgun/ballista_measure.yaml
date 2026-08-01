@@ -8,7 +8,9 @@ internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/ArchwingRifleRangeMod
 description: "+X% Range"
 
 effects:
-  - kind: unmodeled
+  # 2D groundwork (2026-08-01): a real stat with no SINGLE-TARGET damage
+  # payload. It used to be `kind: unmodeled`, which threw the number away.
+  - kind: range_bonus
     rank0: 0.05
     rankMax: 0.2
     desc: "+20% Range"

@@ -14,7 +14,9 @@ requires_weapon: continuous
 # NOT MODELED: a corpse explosion only pays against a SECOND target, and the
 # arena has one. Flat damage, not a percentage - stored as the raw number.
 effects:
-  - kind: unmodeled
+  # 2D groundwork (2026-08-01): a real stat with no SINGLE-TARGET damage
+  # payload. It used to be `kind: unmodeled`, which threw the number away.
+  - kind: explosion_on_kill
     rank0: 100.0
     rankMax: 600.0
 

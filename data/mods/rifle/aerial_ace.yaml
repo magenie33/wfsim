@@ -9,13 +9,18 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Arbitration/JumpRefreshOnKillRif
 description: "On Kill:\nRefresh Double Jump up to Xx while Airborne."
 
 effects:
-  # NOT LOADED, both entries: `mods_data::effect()` has no `unmodeled` arm, so
-  # they are dropped and the mod loads with NO effects (data/README.md).
-  # Mobility, with no damage payload at all.
+  # The trigger SENTENCE, which the description filler walks past. It carries
+  # no value, so it stays unmodeled - there is nothing to keep.
   # "On Kill:"
   - kind: unmodeled
-  # "Refresh Double Jump up to 6x while Airborne."
-  - kind: unmodeled
+  # "Refresh Double Jump up to 6x while Airborne." Mobility: no damage payload
+  # on any target count, but the number is real and now survives (2026-08-01).
+  # `audit_mod_effects` flags this CONDITIONAL-AS-FLAT, correctly: the refresh
+  # is granted on kill. It stays flat anyway, because `kind: buff` resolves
+  # through `CondBucket`, every arm of which is a DAMAGE bucket — a triggered
+  # mobility stat would be dropped again, which is the state this change
+  # exists to end. Flat records the capability; the trigger is in the card.
+  - kind: double_jump_refresh
     # The double-jump count, 1x -> 6x by rank (WFCD levelStats). It was
     # stored as 0.01/0.06 - a fraction where the text wants a count.
     rank0: 1

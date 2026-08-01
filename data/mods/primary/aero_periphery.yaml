@@ -12,9 +12,12 @@ description: "-X% Zoom while Aim Gliding"
 # the other zoom mods. Its value in a build is being an Aero set member in the
 # exilus slot - and that set's bonus is itself unmodeled (data/mod_sets/aero).
 effects:
-  - kind: unmodeled
-    rank0: 0.125
-    rankMax: 0.50
+  # 2D groundwork (2026-08-01): zoom already had a bucket - this mod just had
+  # no way into it. The card REDUCES zoom, so the value is negative: the bucket
+  # sums signed contributions and a riven's +zoom lands in the same one.
+  - kind: zoom_bonus
+    rank0: -0.125
+    rankMax: -0.50
 
 set: aero
 

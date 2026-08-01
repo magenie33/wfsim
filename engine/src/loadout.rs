@@ -57,6 +57,10 @@ pub enum CondBucket {
     StatusChance,
     StatusDamage,
     FireRate,
+    /// Archgun Ace's second half. Reload is not a per-hit bucket, so this
+    /// contributes only under AssumedMax — under Emergent the sim would have
+    /// to hold a live reload-speed timer, which nothing else needs yet.
+    ReloadSpeed,
 }
 
 /// One resolved effect of a mod at its equipped rank.
@@ -78,6 +82,11 @@ pub enum ModEffect {
     StatusChance(f64),
     /// Relative fire rate (negative for Creeping Bullseye's downside).
     FireRate(f64),
+    /// Relative CHARGE rate — shortens the draw ONLY (Shell Rush "+50% Charge
+    /// Rate"). Its own bucket rather than `FireRate` because a charge-rate mod
+    /// must not also speed up an uncharged form: on the Larkspur Prime that
+    /// would hand the hit-scan attack a bonus the card never grants.
+    ChargeRate(f64),
     /// Reload speed bonus (time = base / (1 + Σ)).
     ReloadSpeed(f64),
     /// Hunter Munitions / Internal Bleeding: chance for a CRITICAL hit to
@@ -222,6 +231,40 @@ pub enum IndirectStat {
     PunchThrough,
     /// Aim zoom (FOV) — pistol zoom carries no damage bonus (unlike snipers).
     Zoom,
+
+    // ---- 2D groundwork (2026-08-01) ------------------------------------
+    // Everything below was `kind: unmodeled` — LOADED AS NOTHING, so the mod
+    // equipped and the number vanished. They are real stats with no
+    // SINGLE-TARGET damage payload, which is what this bucket is for: the
+    // value now survives into the panel, the API and a build's saved state,
+    // and the 2D world reads them instead of re-deriving them from card text.
+    /// Weapon RANGE, as a fraction (Ballista Measure +20%). Not beam length.
+    Range,
+    /// Beam LENGTH in metres, flat (Sinister Reach +12 m, Ruinous Extension
+    /// +8 m). A separate stat from `Range`: different unit, different weapons.
+    BeamRange,
+    /// Movement speed while AIMING (Agile Aim).
+    MovementSpeed,
+    /// Sprint speed — a WARFRAME stat the weapon carries (Amalgam Serration),
+    /// which is exactly why an Amalgam mod cannot go on a companion weapon.
+    SprintSpeed,
+    /// Ammo PICKUP conversion: what another slot's ammo drop is worth to this
+    /// weapon (Ammo Mutation, Vigilante Supplies). Needs a pickup economy.
+    AmmoConversion,
+    /// Chance to resist staggers/knockdowns while aiming (Resolute Focus).
+    StaggerResist,
+    /// Chance to reduce the stagger a SELF-inflicted radial attack causes
+    /// (Cautious Shot) — the self-damage side of an AoE weapon.
+    SelfStagger,
+    /// Extra double jumps refreshed on kill while airborne (Aerial Ace) — a
+    /// COUNT, not a fraction.
+    DoubleJump,
+    /// Flat damage a killed enemy explodes for (Combustion Beam). Real damage,
+    /// but it needs a second enemy to land on.
+    KillExplosion,
+    /// Chance for a status to spread to enemies within 6 m (Shivering
+    /// Contagion). Also multi-target only.
+    StatusSpread,
 }
 
 impl IndirectStat {
@@ -237,6 +280,28 @@ impl IndirectStat {
             IndirectStat::Accuracy => "Accuracy",
             IndirectStat::PunchThrough => "Punch Through (m)",
             IndirectStat::Zoom => "Zoom",
+            IndirectStat::Range => "Range",
+            IndirectStat::BeamRange => "Beam Range (m)",
+            IndirectStat::MovementSpeed => "Movement Speed (aiming)",
+            IndirectStat::SprintSpeed => "Sprint Speed",
+            IndirectStat::AmmoConversion => "Ammo Pickup Conversion",
+            IndirectStat::StaggerResist => "Stagger Resist (aiming)",
+            IndirectStat::SelfStagger => "Self-Stagger Reduction",
+            IndirectStat::DoubleJump => "Double Jumps",
+            IndirectStat::KillExplosion => "Explosion on Kill",
+            IndirectStat::StatusSpread => "Status Spread Chance",
+        }
+    }
+
+    /// How the stored number READS. Most of these are fractions and print as
+    /// a percentage, but three are not, and printing "+1200.0%" for a 12 m
+    /// beam extension is worse than not stating it at all.
+    pub fn unit(&self) -> &'static str {
+        match self {
+            IndirectStat::PunchThrough | IndirectStat::BeamRange => "m",
+            IndirectStat::DoubleJump => "x",
+            IndirectStat::KillExplosion => "",
+            _ => "%",
         }
     }
 }
@@ -364,6 +429,7 @@ impl ModEffect {
             CritDamage(v) => format!("{} Crit Damage", pct(v)),
             StatusChance(v) => format!("{} Status Chance", pct(v)),
             FireRate(v) => format!("{} Fire Rate", pct(v)),
+            ChargeRate(v) => format!("{} Charge Rate", pct(v)),
             ReloadSpeed(v) => format!("{} Reload Speed", pct(v)),
             StatusDamage(v) => format!("{} Status Damage", pct(v)),
             SlashOnCrit(v) => format!("{} chance to apply Slash on Critical", pct(v)),
@@ -1102,6 +1168,9 @@ pub fn resolve_with(
     let mut proc_conv: Option<ProcConv> = None;
     let mut elem_bonus: Vec<(DamageType, f64)> = Vec::new();
     let mut indirect: Vec<(IndirectStat, f64)> = Vec::new();
+    // Charge-rate bonuses, summed apart from fire rate: both shorten the draw,
+    // only fire rate also raises an uncharged form's cadence.
+    let mut cr = 0.0f64;
     let mut faction_bonus: Vec<(Faction, f64)> = Vec::new();
     // Physical (IPS) bonuses, per type — scale the base of that physical type.
     let mut phys_bonus: Vec<(DamageType, f64)> = Vec::new();
@@ -1142,6 +1211,9 @@ pub fn resolve_with(
                 // (Critical Delay reads −40% on a bow). Buff-granted fire rate
                 // joins the bucket further down UNDOUBLED: no such card says it.
                 ModEffect::FireRate(v) => fr += v * base.fire_rate_mod_multiplier,
+                // The draw's own bucket. `fire_rate_mod_multiplier` is the
+                // bow x2, which belongs to fire-rate mods and not to this.
+                ModEffect::ChargeRate(v) => cr += v,
                 ModEffect::ReloadSpeed(v) => rl += v,
                 ModEffect::StatusDamage(v) => sd += v,
                 // Independent of everything else: it is its own roll on a
@@ -1304,6 +1376,7 @@ pub fn resolve_with(
                             CondBucket::StatusChance => sc += v,
                             CondBucket::StatusDamage => sd += v,
                             CondBucket::FireRate => fr += v,
+                            CondBucket::ReloadSpeed => rl += v,
                         }
                     }
                 }
@@ -1508,7 +1581,7 @@ pub fn resolve_with(
         // and on a bow the bucket already carries the x2.
         charge_seconds: base
             .charge_seconds
-            .map(|c| c / (1.0 + fr + base.evo_fire_rate_bonus).max(1e-9)),
+            .map(|c| c / (1.0 + fr + cr + base.evo_fire_rate_bonus).max(1e-9)),
         charge_cadence: base.charge_cadence,
         headshot_damage_bonus: base.headshot_damage_bonus,
         noncrit_bonus: base.noncrit_bonus,

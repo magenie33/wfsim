@@ -11,11 +11,12 @@ effects:
   - kind: base_damage_bonus
     rank0: 0.1409
     rankMax: 1.55
-  # NOT LOADED: `mods_data::effect()` has no `unmodeled` arm, so this half is
-  # dropped (data/README.md). Only the base-damage half above reaches the
-  # engine — which is the whole reason the Amalgam variant is worth modelling.
+  # A WARFRAME stat the weapon carries — which is exactly why this mod cannot
+  # go on a companion weapon (see `excludes_weapon` below).
   # "+25% Sprint Speed"
-  - kind: unmodeled
+  # 2D groundwork (2026-08-01): a real stat with no SINGLE-TARGET damage
+  # payload. It used to be `kind: unmodeled`, which threw the number away.
+  - kind: sprint_speed_bonus
     rank0: 0.0227
     rankMax: 0.25
 

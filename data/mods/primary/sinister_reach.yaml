@@ -20,7 +20,9 @@ requires_weapon: continuous
 # NOT MODELED: the engine carries `beam.range_m` but has no mod kind that
 # scales it. Nothing in the roster can equip this today anyway.
 effects:
-  - kind: unmodeled
+  # 2D groundwork (2026-08-01): a real stat with no SINGLE-TARGET damage
+  # payload. It used to be `kind: unmodeled`, which threw the number away.
+  - kind: beam_range_bonus
     rank0: 3.0
     rankMax: 12.0
 

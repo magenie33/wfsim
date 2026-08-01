@@ -117,6 +117,32 @@ fn n(v: &Value, k: &str) -> Option<f64> {
     x.as_f64().or_else(|| x.as_i64().map(|i| i as f64))
 }
 
+/// A buff's `grants:` naming an INDIRECT stat rather than a damage bucket.
+///
+/// Both spellings of recoil are here because the data has both: a standalone
+/// `kind: recoil_reduction` and a buff granting `recoil`. They mean the same
+/// stat and the same sign convention — a reduction is stored NEGATIVE, which
+/// every recoil mod in `data/` already does.
+fn indirect_grant(grants: &str) -> Option<IndirectStat> {
+    Some(match grants {
+        "recoil" | "recoil_reduction" => IndirectStat::Recoil,
+        "accuracy" => IndirectStat::Accuracy,
+        "noise" => IndirectStat::Noise,
+        "zoom" => IndirectStat::Zoom,
+        "ammo_max" => IndirectStat::AmmoMax,
+        "projectile_speed" => IndirectStat::ProjectileSpeed,
+        "holstered_reload" => IndirectStat::HolsteredReload,
+        "dodge_speed" => IndirectStat::DodgeSpeed,
+        "acrobatic_speed" => IndirectStat::AcrobaticSpeed,
+        "punch_through" => IndirectStat::PunchThrough,
+        "range" => IndirectStat::Range,
+        "beam_range" => IndirectStat::BeamRange,
+        "movement_speed" => IndirectStat::MovementSpeed,
+        "sprint_speed" => IndirectStat::SprintSpeed,
+        _ => return None,
+    })
+}
+
 /// Map one YAML effect entry to a [`ModEffect`] at max rank (None = no damage
 /// effect / not modeled — the mod still loads).
 fn effect(v: &Value) -> Option<ModEffect> {
@@ -222,7 +248,20 @@ fn effect(v: &Value) -> Option<ModEffect> {
                         "status_chance" => CondBucket::StatusChance,
                         "status_damage" => CondBucket::StatusDamage,
                         "fire_rate" => CondBucket::FireRate,
-                        _ => return None,
+                        "reload_speed" => CondBucket::ReloadSpeed,
+                        // An INDIRECT grant used to hit `return None` here,
+                        // which threw the number away and left three mods
+                        // (Twitch, Reflex Draw, Targeting Subsystem) loading
+                        // with no effects at all. `CondBucket` is damage
+                        // buckets only, so route these to the indirect
+                        // bucket instead — flat, like every other indirect
+                        // stat. The trigger stays on the card; a stat with no
+                        // damage payload has nothing to gate in this sim, and
+                        // the 2D world wants the magnitude either way.
+                        _ => {
+                            let stat = indirect_grant(grants)?;
+                            return Some(ModEffect::Indirect(stat, per * stacks.max(1) as f64));
+                        }
                     };
                     ModEffect::CondBuff(bucket, per * stacks.max(1) as f64)
                 }
@@ -264,6 +303,24 @@ fn effect(v: &Value) -> Option<ModEffect> {
         "punch_through_bonus" => ModEffect::Indirect(IndirectStat::PunchThrough, max("rankMax")),
         "zoom_bonus" => ModEffect::Indirect(IndirectStat::Zoom, max("rankMax")),
         "accuracy_bonus" => ModEffect::Indirect(IndirectStat::Accuracy, max("rankMax")),
+        // 2D groundwork (2026-08-01): these were `kind: unmodeled`, i.e. the
+        // mod equipped and the number was thrown away. They carry no
+        // SINGLE-TARGET damage, which is what `Indirect` is for.
+        "range_bonus" => ModEffect::Indirect(IndirectStat::Range, max("rankMax")),
+        "beam_range_bonus" => ModEffect::Indirect(IndirectStat::BeamRange, max("rankMax")),
+        "movement_speed_bonus" => ModEffect::Indirect(IndirectStat::MovementSpeed, max("rankMax")),
+        "sprint_speed_bonus" => ModEffect::Indirect(IndirectStat::SprintSpeed, max("rankMax")),
+        "ammo_conversion" => ModEffect::Indirect(IndirectStat::AmmoConversion, max("rankMax")),
+        "stagger_resist_bonus" => ModEffect::Indirect(IndirectStat::StaggerResist, max("rankMax")),
+        "self_stagger_reduction" => ModEffect::Indirect(IndirectStat::SelfStagger, max("rankMax")),
+        "double_jump_refresh" => ModEffect::Indirect(IndirectStat::DoubleJump, max("rankMax")),
+        "explosion_on_kill" => ModEffect::Indirect(IndirectStat::KillExplosion, max("rankMax")),
+        "status_spread_chance" => ModEffect::Indirect(IndirectStat::StatusSpread, max("rankMax")),
+        // NOT indirect: a CHARGE-rate bonus shortens the draw, and a charged
+        // form's cadence IS its draw (`ChargeCadence`), so this is DPS. It is
+        // its own bucket rather than `fire_rate_bonus` because Shell Rush says
+        // "Charge Rate" — it must not also speed up an uncharged form.
+        "charge_rate_bonus" => ModEffect::ChargeRate(max("rankMax")),
         // Reflex Draw: on swap-in, −recoil/+accuracy for a few seconds.
         "on_equip_buff" => ModEffect::OnEquipHandling {
             recoil: -max("rankMax").abs(),
@@ -563,6 +620,40 @@ pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// NO mod loads with an empty effect list.
+    ///
+    /// A mod that parses to nothing equips, costs capacity, prints its card —
+    /// and does nothing, which the picker and the optimizer cannot see. 14 of
+    /// them shipped that way until 2026-08-01, every one a `kind: unmodeled`
+    /// the loader dropped on the floor: beam range, movement speed, ammo
+    /// conversion, self-stagger, noise, double jumps, kill explosions, status
+    /// spread. They carry no SINGLE-TARGET damage, which is what
+    /// [`ModEffect::Indirect`] is for — the value now survives into the panel
+    /// and the API, where the 2D multi-target model will read it instead of
+    /// re-deriving it from card text.
+    ///
+    /// One of them, Shell Rush's "+50% Charge Rate", was not indirect at all:
+    /// a charged form's cadence IS its draw, so that was DPS being discarded.
+    #[test]
+    fn no_mod_loads_with_nothing() {
+        let mut empty: Vec<&str> = Vec::new();
+        for class in classes() {
+            for m in class_pool(class) {
+                if m.effects.is_empty() {
+                    empty.push(m.id);
+                }
+            }
+        }
+        empty.sort_unstable();
+        empty.dedup();
+        assert!(
+            empty.is_empty(),
+            "mods that equip and do nothing: {empty:?} — give the effect a \
+             `kind` the loader knows, or an `IndirectStat` if it carries no \
+             single-target damage"
+        );
+    }
 
     /// Every AMALGAM mod must declare that it cannot go on a sentinel weapon.
     ///
