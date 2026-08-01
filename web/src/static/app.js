@@ -1897,14 +1897,22 @@ function renderPresetBar() {
   });
 }
 
-// A scenario is exactly the `sim` object minus the per-build buff pinning:
-// buffs name THIS build's buffs, so they cannot travel to another one.
+// A scenario is the `sim` object, BUFF CONFIG INCLUDED (user, 2026-08-01:
+// "preset 要记住所有潜在 buff 的设置情况").
+//
+// Buff ids are global — `arcane:primary_deadhead`, a mod's own buff — so a
+// setting travels, and `sim.buffs` deliberately keeps entries for buffs the
+// build does not currently carry. That is what lets a scenario say "in THIS
+// fight, Deadhead starts at zero stacks" and have it hold when the mod is
+// added later, or when the marginal-gain scan tries it as a candidate.
+// Anything the map does not mention takes the buff's own default, which is
+// full stacks and unlocked.
 function snapshotScenario() {
-  const { buffs, __weapon, ...rest } = sim;
-  return { ...rest };
+  const { __weapon, ...rest } = sim;
+  return JSON.parse(JSON.stringify(rest));
 }
 function applyScenario(st) {
-  sim = { ...sim, ...st, buffs: sim.buffs };
+  sim = { ...sim, ...st, buffs: JSON.parse(JSON.stringify(st.buffs || {})) };
   renderSim();      // redraws every knob, and the bar with them
   markPresetDirty(); // the build remembers what it is being tested with
 }
@@ -2407,7 +2415,12 @@ function gainScenario() {
   const p = ps.find((x) => x.name === gainPrefs.scenario);
   const st = p ? { ...sim, ...p.state } : { ...sim };
   const runs = Math.max(1, gainPrefs.precision === "tenth" ? Math.ceil((st.runs || 1) / 10) : (st.runs || 1));
-  return { name: p ? p.name : tr("current"), scenario: { ...st, runs, seed: GAIN_SEED, buffs: {} } };
+  // The WHOLE buff map travels, not just the current build's cards: a
+  // candidate's buff is by definition not in `buffList`, and the scenario may
+  // well have an opinion about it. Unmentioned buffs take their own default
+  // (full stacks, unlocked), which is the honest reading of "no opinion".
+  return { name: p ? p.name : tr("current"),
+    scenario: { ...st, runs, seed: GAIN_SEED, buffs: st.buffs || {} } };
 }
 
 /// The first empty MAIN slot, or -1. The exilus slot is its own pool and its
