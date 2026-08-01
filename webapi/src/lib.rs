@@ -596,6 +596,12 @@ pub fn meta_json() -> Value {
                 // entry and sends one arcane per entry.
                 "arcane_pools": w.arcane_pools,
                 "uses_evo2": w.uses_evo2,
+                // The tier-1 evolution that UNLOCKS the second form. Without
+                // it there is nothing to transform into, and the sim already
+                // falls back to the base form — but the client was offering
+                // "Incarnon cycle" anyway, so the panel said one thing and the
+                // run did another (user, 2026-08-01). Now it can ask.
+                "unlock_evo": form_unlock_evo(w),
                 // A sentinel weapon has no arcane slot. This was hardcoded to
                 // 1 while every weapon in the roster had one.
                 "arcane_slots": w.arcane_pools.len(),
@@ -2168,9 +2174,30 @@ fn build_body_parts(spec: &EnemySpec, headshot_pct: f64) -> Vec<BodyPart> {
 fn chosen_evolutions(v: &Value, info: &WeaponInfo) -> Result<Vec<String>, String> {
     let mine = |ids: Vec<String>| -> Vec<String> {
         let group = evo_group(info);
-        ids.into_iter()
+        let kept: Vec<String> = ids
+            .into_iter()
             .filter(|id| {
                 wfsim_engine::evolutions_data::get(id).is_some_and(|e| e.weapon == group)
+            })
+            .collect();
+        // The tiers are a LADDER: tier N is only reachable once tier N-1 is
+        // installed, so a set that skips one does not describe a weapon anyone
+        // can hold. The UI locks the rows, but a saved preset or a hand-built
+        // request can still carry the gap — drop it here too, where every
+        // entry point passes, rather than pricing a perk the weapon never got.
+        let mut tiers: Vec<u32> = kept
+            .iter()
+            .filter_map(|id| wfsim_engine::evolutions_data::get(id).map(|e| e.tier))
+            .collect();
+        tiers.sort_unstable();
+        let reach = tiers
+            .iter()
+            .enumerate()
+            .take_while(|(i, t)| **t == *i as u32 + 1)
+            .count() as u32;
+        kept.into_iter()
+            .filter(|id| {
+                wfsim_engine::evolutions_data::get(id).is_some_and(|e| e.tier <= reach)
             })
             .collect()
     };
@@ -3669,6 +3696,30 @@ mod asset_tests {
     /// `scripts/gen_assets.py` from the committed WFCD export, so a failure
     /// here is one command away from fixed, and this is what makes anyone
     /// run it.
+    /// Every weapon can be given a riven, so every weapon must reach a stat
+    /// pool. `riven_class` walks outward from the narrowest mod pool and stops
+    /// at the first one that has stats — with none, it returns "" and the
+    /// editor renders a riven with NOTHING to roll, which is how the Larkspur
+    /// Prime shipped until `data/rivens/archgun.yaml` existed (user,
+    /// 2026-08-01). The next class added lands here instead of in the UI.
+    #[test]
+    fn every_weapon_reaches_a_riven_stat_pool() {
+        let mut orphans: Vec<String> = Vec::new();
+        for w in weapons() {
+            let class = riven_class(w);
+            let n = wfsim_engine::rivens_data::pool(&class).len();
+            // What is left after the weapon's own exclusions is what the
+            // editor actually offers — a pool the weapon excludes down to
+            // nothing is the same empty card by another route.
+            let excluded = wfsim_engine::rivens_data::excluded_for(&w.id).len();
+            if n == 0 || n <= excluded {
+                orphans.push(format!("{} (pools {:?} -> {class:?}, {n} stats, {excluded} excluded)",
+                    w.id, w.mod_pools));
+            }
+        }
+        assert!(orphans.is_empty(), "weapons with no riven stats: {orphans:#?}");
+    }
+
     #[test]
     fn every_data_entry_has_an_image() {
         let a = assets();
@@ -3908,6 +3959,45 @@ mod form_tests {
         let (drawn_shots, tapped_shots) = (bow["shots"].as_u64(), tapped["shots"].as_u64());
         assert_eq!(drawn_shots, Some(27), "30 s / (0.5 + 0.65) + 1");
         assert_eq!(tapped_shots, Some(47), "30 s / 0.65 + 1");
+    }
+
+    /// Evolutions are a LADDER, not a menu: tier N needs tier N-1 installed.
+    /// The UI locks the rows, but a preset saved before the rule existed can
+    /// still name a tier-4 perk with nothing under it — that build is not
+    /// weaker, it is unreachable, so its orphans are dropped rather than
+    /// priced. Commodore's Fortune (tier 4, +20% base crit) shows it: alone it
+    /// must change nothing, and only the full 1-2-3-4 chain may pay out.
+    #[test]
+    fn an_evolution_tier_needs_the_one_below_it() {
+        let with = |evos: Value| {
+            let p = panel_json(&json!({ "weapon": "torid", "evolutions": evos }));
+            // Crit chance rides the projectile, so it is a row of the "direct
+            // hit" PART rather than of the weapon block.
+            p["forms"][0]["parts"][0]["stats"]
+                .as_array()
+                .expect("stat rows")
+                .iter()
+                .find(|r| r["key"] == json!("crit_chance"))
+                .expect("a crit chance row")["final"]
+                .as_str()
+                .expect("a formatted crit chance")
+                .to_string()
+        };
+        let bare = with(json!([]));
+        assert_eq!(bare, "15.0%", "the Torid's unmodded crit chance");
+        assert_eq!(with(json!(["torid_commodores_fortune"])), bare, "tier 4 alone paid out");
+        assert_eq!(
+            with(json!(["torid_evo1_incarnon_form", "torid_commodores_fortune"])),
+            bare,
+            "tier 4 paid out over a gap at tiers 2-3"
+        );
+        // Order in the array is the client's, not the ladder's — the whole
+        // chain counts however it arrives.
+        let full = json!([
+            "torid_commodores_fortune", "torid_extended_volley",
+            "torid_final_fusillade", "torid_evo1_incarnon_form",
+        ]);
+        assert_eq!(with(full), "35.0%", "the full chain did not pay out");
     }
 
     /// The registry publishes what each weapon actually has: its own forms,

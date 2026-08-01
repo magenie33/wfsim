@@ -582,3 +582,6 @@ label.check input{width:auto}
 /* A gain the second pass confirmed reads a touch stronger than a one-run one. */
 .gainchip.deep{font-weight:600}
 .quick-calc input[type=number]{width:64px;font:inherit;font-size:12px}
+/* A tier that cannot be chosen yet: the one before it is not installed. */
+.evo.locked .rank{opacity:.45}
+.evopick.tlocked{opacity:.4;cursor:not-allowed;pointer-events:none}

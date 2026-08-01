@@ -2977,11 +2977,23 @@ const ROMAN = (n) => {
 function renderEvo() {
   const tiers = weaponEvos();
   const rows = [];
+  // TIERS UNLOCK IN ORDER, as they do in game: tier N is reachable only once
+  // tier N-1 is installed (user, 2026-08-01). Without it the whole branch is
+  // void — a tier-2 perk with no tier 1 is not a weaker build, it is not a
+  // build — so the later rows are shown DISABLED rather than silently
+  // contributing to a number nobody could reach.
+  const openTo = (() => {
+    let n = 0;
+    for (const t of tiers) { if (!evoSel[t.tier]) break; n = t.tier; }
+    return n + 1;   // the deepest tier that may be chosen
+  })();
   for (const t of tiers) {
     const sel = evoSel[t.tier] || null;
+    const locked = t.tier > openTo;
     const card = (o) => {
       const icon = o.icon ? `<img class="eicon" src="${IMG(o.icon)}" alt="">` : "";
-      const cls = ["evopick", o.id === sel ? "sel" : "", o.broken ? "broken" : ""].join(" ");
+      const cls = ["evopick", o.id === sel ? "sel" : "", o.broken ? "broken" : "",
+        locked ? "tlocked" : ""].join(" ");
       const lines = evoLines(o).map((x) => `<div>${escHtml(x)}</div>`).join("");
       const title = (o.effects || []).join("\n"); // model statement as tooltip
       // The broken warning lives INSIDE the selected card, so it never
@@ -2999,10 +3011,12 @@ function renderEvo() {
         ${icon}<span class="einfo"><b class="en">${wl(o.name, genesis)}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}${
           gainChipFor(o.id, `EVO ${ROMAN(t.tier)}`)}</b><span class="ed">${lines}</span>${warn}</span></span>`;
     };
-    const empty = `<span class="evopick empty ${sel === null ? "sel" : ""}" data-tier="${t.tier}" data-id="">
+    const empty = `<span class="evopick empty ${sel === null ? "sel" : ""} ${locked ? "tlocked" : ""}" data-tier="${t.tier}" data-id="">
       <span class="einfo"><b class="en">None</b><span class="ed"><div>nothing installed at this tier</div></span></span></span>`;
     // None comes FIRST (the default state is a bare weapon).
-    rows.push(`<div class="evo"><span class="rank">EVO ${ROMAN(t.tier)}</span><div class="picks">${empty}${t.options.map(card).join("")}</div></div>`);
+    rows.push(`<div class="evo${locked ? " locked" : ""}" ${locked
+      ? `title="${escHtml(tr("install the previous tier first"))}"` : ""
+    }><span class="rank">EVO ${ROMAN(t.tier)}</span><div class="picks">${empty}${t.options.map(card).join("")}</div></div>`);
   }
   $("evo-rows").innerHTML = rows.join("");
   // Evolutions are all on screen at once, so they are scanned ACROSS EVERY
@@ -3010,8 +3024,15 @@ function renderEvo() {
   // afford to answer without being opened (user, 2026-08-01: arcanes and
   // evolutions use this too). The key guards the repeat.
   if (tiers.length) ensureGains({ kind: "evo", idx: 0 }, () => renderEvo());
-  $("evo-rows").querySelectorAll(".evopick").forEach((c) => c.addEventListener("click", () => {
-    evoSel[Number(c.dataset.tier)] = c.dataset.id || null;
+  $("evo-rows").querySelectorAll(".evopick:not(.tlocked)").forEach((c) => c.addEventListener("click", () => {
+    const tier = Number(c.dataset.tier);
+    evoSel[tier] = c.dataset.id || null;
+    // Removing a tier removes everything that stood on it. Leaving them
+    // selected-but-void would show a build the game cannot make, and the
+    // engine would price perks the weapon never reached.
+    if (!evoSel[tier]) tiers.forEach((x) => { if (x.tier > tier) evoSel[x.tier] = null; });
+    // Redraw the whole ladder, not just this row: a pick opens (or a removal
+    // shuts) every tier below it.
     renderEvo(); refreshPanel();
   }));
 }
@@ -3114,6 +3135,11 @@ function renderSim() {
   // form but a MODE over them, so it is listed first and only when the weapon
   // has something to transform into (`has_cycle`). A weapon with one form and
   // no cycle has nothing to choose, so no selector is drawn.
+  // The cycle is offered — and defaulted to — whenever the WEAPON has one,
+  // installed perk or not (user, 2026-08-01). It stays honest because the sim
+  // falls back to the base form when the unlock is missing, and it stays
+  // STABLE, which is the point: re-seeding the choice every time tier 1 is
+  // touched would move the selection under someone who had already made it.
   const formOpts = [
     ...(w.has_cycle ? [["incarnon_cycle", tr("Incarnon cycle")]] : []),
     ...(w.forms || []).map((f) => [f.id, w.has_cycle ? `${tr(f.name)} ${tr("only")}` : tr(f.name)]),
@@ -3131,6 +3157,12 @@ function renderSim() {
     sim.__weapon = w.id;
     sim.headshot_pct = defaultHeadshotPct(w);
     optSim.headshot_pct = sim.headshot_pct;
+    // The form is weapon-scoped for the same reason: "base" is a legal id on
+    // almost every weapon, so without this an Incarnon weapon opened after a
+    // plain one would keep the plain one's form and quietly skip the cycle
+    // that is supposed to be its default.
+    sim.form = defaultFormId(w, formOpts);
+    optSim.form = sim.form;
   }
   $("sim-technique").innerHTML = `
     ${formField(formOpts, sim.form)}
