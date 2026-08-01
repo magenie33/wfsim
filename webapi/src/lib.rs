@@ -1036,17 +1036,34 @@ fn enumerate_buffs(
     }
     // Arcane buffs (one card per spec; stacking arcanes start full).
     if !arcane.buffs.is_empty() {
-        let aname = wfsim_engine::arcanes_data::secondary(&arcane.id)
-            .map(|d| d.name.clone())
-            .unwrap_or_else(|| prettify(&arcane.id));
+        // The buff's OWN arcane names it, not the merged `arcane.id`. A weapon
+        // that seats two folds them into one `ArcaneFx` whose id is
+        // "primary_deadhead+secondary_deadhead", and every card read that —
+        // two identically-named cards the player could not tell apart, which
+        // is the whole reason `ArcBuffSpec::owner` exists (2026-08-01).
+        let named = |id: &str| {
+            wfsim_engine::arcanes_data::secondary(id)
+                .map(|d| d.name.clone())
+                .unwrap_or_else(|| prettify(id))
+        };
         let multi = arcane.buffs.len() > 1;
         for (i, b) in arcane.buffs.iter().enumerate() {
+            let aname = named(if b.owner.is_empty() { &arcane.id } else { &b.owner });
             let id = if multi {
                 format!("arcane:{}:{}", arcane.id, i)
             } else {
                 format!("arcane:{}", arcane.id)
             };
-            let name = if multi {
+            // Two arcanes CAN each grant one buff, so "more than one card"
+            // no longer implies "one arcane with several grants": qualify the
+            // name by its grant only when the same arcane owns both.
+            let same_owner = arcane
+                .buffs
+                .iter()
+                .filter(|x| x.owner == b.owner)
+                .count()
+                > 1;
+            let name = if same_owner {
                 format!("{} ({})", aname, grant_label(b.grant))
             } else {
                 aname.clone()
