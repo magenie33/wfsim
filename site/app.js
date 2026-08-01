@@ -1382,7 +1382,172 @@ const loadPresetList = (d, w) => {
   try { const p = JSON.parse(localStorage.getItem(presetListKey(d, w))); return Array.isArray(p) ? p : []; }
   catch (_) { return []; }
 };
-const storePresetList = (d, ps, w) => localStorage.setItem(presetListKey(d, w), JSON.stringify(ps));
+const storePresetList = (d, ps, w) => {
+  const weapon = w ?? presetWeapon();
+  recordUndo(d, weapon, ps);
+  localStorage.setItem(presetListKey(d, weapon), JSON.stringify(ps));
+};
+
+// ---- UNDO — Ctrl+Z across every preset collection ----------------------
+//
+// Presets AUTO-SAVE, which is exactly what makes a slip expensive: a cleared
+// tier, a deleted preset, a mis-aimed import is written the instant it
+// happens and there is no save button to not press (user, 2026-08-02: "我已经
+// 手滑好几次了"). Every collection — builds, scenarios, searches, rivens —
+// writes through `storePresetList`, so that one call is where a "before" can
+// be taken, and one stack covers the whole page rather than four.
+//
+// What is remembered is the whole COLLECTION plus which preset was active,
+// not a field-level diff: a delete and an edit are then the same kind of
+// event, and undoing either is a plain write-back.
+const UNDO_LIMIT = 60;
+// Two consecutive EDITS to the same collection within this window are ONE
+// step — the auto-save fires per settled edit, and a Ctrl+Z that walked back
+// through every keystroke would not be an undo, it would be a rewind. Adding,
+// deleting, renaming or importing a preset never coalesces, however fast it
+// follows: those are the slips worth one Ctrl+Z each, and folding a delete
+// into the edit before it would undo both or neither.
+const UNDO_COALESCE_MS = 900;
+let undoStack = [], redoStack = [], undoSuspended = false;
+
+const presetSnapshotOf = (d, w) => ({
+  domain: d, weapon: w,
+  list: localStorage.getItem(presetListKey(d, w)),
+  active: localStorage.getItem(presetActiveKey(d, w)),
+  at: Date.now(),
+});
+
+function recordUndo(d, w, next) {
+  if (undoSuspended) return;
+  const before = presetSnapshotOf(d, w);
+  if (before.list === null) return;          // nothing existed to go back to
+  // A no-op write is not a step. Switching weapons re-applies and re-saves
+  // every collection, and a stack full of those would make the first Ctrl+Z
+  // do nothing visible.
+  if (before.list === JSON.stringify(next)) return;
+  const names = (l) => (l || []).map((p) => p.name).join(" ");
+  let structural = true;
+  try { structural = names(JSON.parse(before.list)) !== names(next); } catch (_) {}
+  const top = undoStack[undoStack.length - 1];
+  // Same collection, still mid-gesture, same presets: keep the OLDER "before".
+  if (!structural && top && top.domain === d && top.weapon === w
+      && before.at - top.at < UNDO_COALESCE_MS) {
+    top.at = before.at;
+    return;
+  }
+  undoStack.push(before);
+  if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+  redoStack = [];   // a new edit forks the timeline
+}
+
+// Each domain's "make the page show this again". The bars already own these
+// three operations; this is the same trio the preset bar is built from.
+function presetDoc(d) {
+  if (d === BUILDS) return {
+    setActive: (n) => { activePreset = n; },
+    apply: (st) => restoreState(st, presetWeapon()),
+    rerender: renderPresetBar,
+  };
+  if (d === SCENARIOS) return {
+    setActive: (n) => { activeScenario = n; },
+    apply: applyScenario,
+    rerender: renderScenarioBar,
+  };
+  if (d === OPT_DOMAIN) return {
+    setActive: (n) => { activeOptPreset = n; },
+    apply: applyOptPreset,
+    rerender: renderOptPresetBars,
+  };
+  if (d === RIVENS) return {
+    setActive: (n) => { activeRiven = n; },
+    apply: (st) => {
+      riven = { ...withDrafts(st), __weapon: $("weapon").value };
+      renderRivenShape(); renderRivenStats(); renderRivenFoot(); resolveRiven();
+    },
+    rerender: renderRivenPresetBar,
+  };
+  return null;
+}
+
+// Write a remembered collection back and make the page reflect it.
+function restorePresetSnapshot(s) {
+  undoSuspended = true;
+  try {
+    if (s.list === null) localStorage.removeItem(presetListKey(s.domain, s.weapon));
+    else localStorage.setItem(presetListKey(s.domain, s.weapon), s.list);
+    if (s.active === null) localStorage.removeItem(presetActiveKey(s.domain, s.weapon));
+    else localStorage.setItem(presetActiveKey(s.domain, s.weapon), s.active);
+    // A step taken on ANOTHER weapon is restored in storage but not applied:
+    // yanking the editor to a weapon the user has since left would be a
+    // second surprise on top of the one being undone.
+    if (s.weapon !== presetWeapon()) return;
+    const doc = presetDoc(s.domain);
+    const list = JSON.parse(s.list || "[]");
+    const active = list.find((p) => p.name === s.active) || list[0];
+    if (!doc || !active) return;
+    doc.setActive(active.name);
+    whileApplying(() => doc.apply(active.state));   // a restore is not an edit
+    doc.rerender();
+  } finally {
+    undoSuspended = false;
+  }
+}
+
+function undoPreset() {
+  const step = undoStack.pop();
+  if (!step) return presetToast(tr("nothing to undo"));
+  redoStack.push(presetSnapshotOf(step.domain, step.weapon));
+  restorePresetSnapshot(step);
+  presetToast(`${tr("undone")} · ${tr(PRESET_LABELS[step.domain] || step.domain)}`);
+}
+
+function redoPreset() {
+  const step = redoStack.pop();
+  if (!step) return presetToast(tr("nothing to redo"));
+  undoStack.push(presetSnapshotOf(step.domain, step.weapon));
+  restorePresetSnapshot(step);
+  presetToast(`${tr("redone")} · ${tr(PRESET_LABELS[step.domain] || step.domain)}`);
+}
+
+const PRESET_LABELS = {
+  "builder-builds": "Presets",
+  "simulator-scenarios": "Scenarios",
+  optimizer: "Searches",
+  rivens: "Rivens",
+};
+
+// Inline feedback, never a native dialog (those are blocked in the owner's
+// browser). It has to say WHICH collection moved: the shortcut is global and
+// the slip may have been two tabs ago.
+let toastTimer = null;
+function presetToast(msg) {
+  let el = $("toast");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "toast";
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add("on");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("on"), 2200);
+}
+
+// Ctrl/Cmd+Z, and Ctrl+Shift+Z / Ctrl+Y to come back. Never while a text
+// field has focus: there the browser's own undo is the one being asked for,
+// and stealing it would make renaming a preset a trap.
+document.addEventListener("keydown", (e) => {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k !== "z" && k !== "y") return;
+  // The event's own target first: that is where a real keystroke lands, and
+  // it is true even when the page itself does not hold focus.
+  const el = (e.target && e.target.nodeType === 1 ? e.target : null) || document.activeElement;
+  if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+  e.preventDefault();
+  if (k === "y" || e.shiftKey) redoPreset(); else undoPreset();
+});
+
 
 // One-time move of the pre-module storage keys (2026-07-29 rename).
 (function migratePresetKeys() {
@@ -1721,7 +1886,10 @@ function renderPresetBarIn(bar, cfg) {
     return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${escHtml(p.name)}${ops}</span>`;
   };
   bar.innerHTML =
-    `<span class="plabel">${cfg.label} <b>${ps.length}</b></span>` +
+    // Every bar says the shortcut: auto-save means a slip is written before
+    // you can regret it, so the way back has to be visible on the thing that
+    // slipped.
+    `<span class="plabel" title="${escHtml(tr("Ctrl+Z undoes the last change to any preset"))}">${cfg.label} <b>${ps.length}</b></span>` +
     (ps.length > PRESET_FILTER_AT ? `<input class="pfilter" type="text" placeholder="${escHtml(tr("filter…"))}" value="${escHtml(ftext)}">` : "") +
     shown.map(chip).join("") +
     `<span class="pchip add" title="new empty preset${escHtml(hint)}">+ new</span>` +

@@ -588,3 +588,10 @@ label.check input{width:auto}
 .opt-tier-block.locked .opt-tier-h{opacity:.45}
 .opt-tier-block.locked .opt{opacity:.45}
 .seg.tlocked{cursor:not-allowed;pointer-events:none}
+
+/* Undo/redo feedback — inline, never a native dialog. */
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(8px);
+  background:#1b1d22;color:#e9e6df;border:1px solid #3a3f49;border-radius:8px;
+  padding:8px 14px;font-size:13px;letter-spacing:.02em;box-shadow:0 6px 24px rgba(0,0,0,.45);
+  opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;z-index:120}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
