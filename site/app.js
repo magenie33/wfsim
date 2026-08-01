@@ -803,12 +803,26 @@ const RIVENS = "rivens";   // its preset domain, per weapon like the builds
 // The stat pool this weapon's rivens draw from. NOT its mod class: a bow's
 // mods are `bow` and its rivens are `rifle`, so the server derives which pool
 // applies and says so.
-const rivenPool = () => {
+// `riven_excludes` takes out what THIS weapon cannot roll: a sentinel weapon
+// has no Zoom and no Recoil, a hit-scan one no flight speed, an infinite-ammo
+// one no Ammo Maximum, and a weapon with no physical damage rolls no physical
+// attribute (the wiki's 25% rule). The class table stays shared; only the
+// weapon's view of it narrows.
+const rivenPoolAll = () => {
   const w = weaponInfo($("weapon").value);
   return (META.riven_stats || {})[w.riven_class || w.mod_class] || [];
 };
+const rivenPool = () => {
+  const out = (weaponInfo($("weapon").value).riven_excludes) || [];
+  const all = rivenPoolAll();
+  return out.length ? all.filter((s) => !out.includes(s.id)) : all;
+};
 const rivenRules = () => META.riven_rules || { roll_min: 0.9, roll_max: 1.1, max_rank: 8 };
-const rivenStat = (id) => rivenPool().find((s) => s.id === id);
+// Lookup goes through the UNFILTERED pool: a riven saved before its weapon
+// learned it could not roll that stat still has to render and still resolves
+// server-side (`resolved_slots` finds by id in the whole class pool). Only
+// what the picker OFFERS narrows.
+const rivenStat = (id) => rivenPoolAll().find((s) => s.id === id);
 // The stat's NAME, without the placeholder or the unit: the row already
 // shows the value, so repeating "X%" in the picker is noise.
 //

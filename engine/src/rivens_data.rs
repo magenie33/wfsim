@@ -250,6 +250,59 @@ struct PoolFile {
     stats: Vec<RivenStat>,
 }
 
+/// Riven stats THIS WEAPON cannot roll, out of its class pool.
+///
+/// The pool is per CLASS, but two rifles do not roll the same stats: DE does
+/// not hand a weapon an attribute for a stat the weapon does not have. Two
+/// rules cover the roster, and both read facts the weapon already states, so
+/// a new weapon arrives correct without anyone remembering this list exists.
+///
+/// 1. **Physical damage** — wiki (`Riven_Mods`, attributes-table legend),
+///    verbatim: *"Weapons without more than 25% of a physical damage type
+///    usually cannot roll that respective attribute. For example, a Simulor
+///    Riven will never have +/- Slash Damage stat. Exceptions exist on a case
+///    by case basis."* The "exceptions" clause is why this is a derivation and
+///    not a law — the day one shows up it becomes a per-weapon override.
+/// 2. **A stat the weapon does not have** is inert whatever DE rolls, and the
+///    weapon's own wiki table is the evidence. Verglas Prime's has no Zoom row
+///    and no Recoil row (a SENTINEL weapon is never aimed by the player), says
+///    "Ammo Max: ∞ / Ammo Type: None", and says "Projectile Type: Hit-Scan".
+///
+/// Takes the weapon as the arsenal shows it — a riven belongs to the WEAPON,
+/// so an Incarnon form's own vector never decides this. The Torid's grenade is
+/// pure Toxin, so it loses the three physical stats as well.
+pub fn excluded_for(weapon_id: &str) -> Vec<&'static str> {
+    let Some(s) = crate::weapons_data::spec(weapon_id) else { return Vec::new() };
+    let mut out: Vec<&'static str> = Vec::new();
+
+    let total: f64 = s.attack.damage.values().sum();
+    for (stat, key) in [("impact", "impact"), ("puncture", "puncture"), ("slash", "slash")] {
+        let share = if total > 0.0 {
+            s.attack.damage.get(key).copied().unwrap_or(0.0) / total
+        } else {
+            0.0
+        };
+        if share <= 0.25 {
+            out.push(stat);
+        }
+    }
+    // The player never aims a sentinel weapon, so it has neither stat. Same
+    // `class.contains("sentinel")` test the exilus and arcane rules use.
+    if s.class.contains("sentinel") {
+        out.push("zoom");
+        out.push("weapon_recoil");
+    }
+    // No ammo pool at all — a percentage of infinity is not a stat.
+    if s.ammo_max.is_none() {
+        out.push("ammo_maximum");
+    }
+    // Nothing flies: a hit-scan trace and a beam both arrive instantly.
+    if matches!(s.attack.shot_type.as_deref(), Some("hitscan") | Some("beam")) {
+        out.push("projectile_speed");
+    }
+    out
+}
+
 /// The stat pool of one mod class — `data/rivens/<class>.yaml`.
 pub fn pool(class: &str) -> &'static [RivenStat] {
     static POOLS: OnceLock<std::sync::Mutex<std::collections::BTreeMap<String, &'static [RivenStat]>>> =
@@ -826,6 +879,39 @@ mod tests {
         assert!(crate::mods_data::class_pool("rifle")
             .iter()
             .any(|m| m.family.is_some_and(|f| f != "riven")));
+    }
+
+    /// A weapon does not roll a stat it does not have.
+    ///
+    /// Verglas Prime is the case that prompted this (user, 2026-08-01): a
+    /// SENTINEL weapon the player never aims, hit-scan, "Ammo Max: ∞ / Ammo
+    /// Type: None", 100% Cold. Its wiki table has no Zoom row and no Recoil
+    /// row, so four stats plus all three physical ones are impossible on it —
+    /// out of a 24-stat rifle pool, seven were being offered as choices that
+    /// could never appear on a real card.
+    #[test]
+    fn a_weapon_does_not_roll_a_stat_it_does_not_have() {
+        let v = excluded_for("verglas_prime");
+        for id in ["zoom", "weapon_recoil", "ammo_maximum", "projectile_speed"] {
+            assert!(v.contains(&id), "verglas_prime must not roll {id}: {v:?}");
+        }
+        // The wiki's 25% rule, on a weapon with no physical damage at all.
+        for id in ["impact", "puncture", "slash"] {
+            assert!(v.contains(&id), "verglas_prime is 100% Cold, so no {id}: {v:?}");
+        }
+        // …and it keeps everything a sentinel weapon really has.
+        for id in ["magazine_capacity", "reload_speed", "punch_through", "cold"] {
+            assert!(!v.contains(&id), "verglas_prime does have {id}: {v:?}");
+        }
+
+        // The rule is a SHARE, not "has any": Cernos Prime is 165.6/9.2/9.2,
+        // so Impact stays and the two 5% components go.
+        let c = excluded_for("cernos_prime");
+        assert!(!c.contains(&"impact"), "impact is 90% of the arrow: {c:?}");
+        assert!(c.contains(&"puncture") && c.contains(&"slash"), "both are 5%: {c:?}");
+        // A projectile weapon keeps its flight speed, and one with a real ammo
+        // pool keeps Ammo Maximum.
+        assert!(!c.contains(&"projectile_speed") && !c.contains(&"ammo_maximum"), "{c:?}");
     }
 
     /// Faction damage prints as a MULTIPLIER, because that is what the card

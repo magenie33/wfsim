@@ -522,6 +522,13 @@ pub fn meta_json() -> Value {
                 // The riven stat pool this weapon draws from — not always its
                 // mod class (a bow's mods are `bow`, its rivens are `rifle`).
                 "riven_class": riven_class(w),
+                // …minus the stats THIS weapon cannot roll. The pool is per
+                // class, but a sentinel weapon has no Zoom and no Recoil, a
+                // hit-scan one has no flight speed, an infinite-ammo one has
+                // no Ammo Maximum, and a weapon with no IPS rolls no physical
+                // attribute (wiki's 25% rule). Sent as a list rather than a
+                // filtered pool so the class table stays shared.
+                "riven_excludes": wfsim_engine::rivens_data::excluded_for(&w.id),
                 "mod_class": w.mod_pools.last().cloned().unwrap_or_default(),
                 "subtype": w.subtype,
                 "sentinel": w.sentinel,
