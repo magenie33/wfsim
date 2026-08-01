@@ -2360,21 +2360,6 @@ function renderTools() {
   $("pk-sort").onclick = (e) => e.stopPropagation();
   $("pk-sort").onchange = (e) => { e.stopPropagation(); pickerPrefs.sort = $("pk-sort").value; redraw(); };
   $("pk-dir").onclick = (e) => { e.stopPropagation(); pickerPrefs.dir = pickerPrefs.dir === "asc" ? "desc" : "asc"; redraw(); };
-  // The scan is long enough to watch: the button becomes its own progress
-  // counter, and the menu redraws as answers land so the list fills in.
-  $("pk-gain").onclick = (e) => {
-    e.stopPropagation();
-    if (gainScan.running) return;
-    pickerPrefs.sort = "gain";
-    pickerPrefs.dir = "desc"; // best first, which is the only useful default
-    savePickerPrefs();
-    let last = 0;
-    scanModGains(pickerSlot, (st) => {
-      const now = Date.now();
-      if (!st.running || now - last > 250) { last = now; renderTools(); renderMenu(pickerSlot, $("mod-search").value); }
-    });
-    renderTools();
-  };
   t.querySelectorAll(".pk-pol").forEach((o) => o.onclick = (e) => { e.stopPropagation(); pickerPrefs.pol = o.dataset.p || null; redraw(); });
 }
 
@@ -2405,7 +2390,10 @@ const GAIN_SEED = 0x5EED;
 // A gain READS with its sign — "12.3%" and "+12.3%" are different claims.
 const gainPct = (x) => (x >= 0 ? "+" : "−") + sig2(Math.abs(x) * 100) + "%";
 
-let gainPrefs = { scenario: null, precision: "tenth" };
+// The quick-calc panel's own settings. `scenario` names a SAVED one — there
+// is no "current", because a scan is only reproducible against something that
+// has a name (user, 2026-08-01). `metric` may defer to that scenario's own.
+let gainPrefs = { scenario: null, precision: "tenth", metric: "auto" };
 try { const s = JSON.parse(localStorage.getItem("wfsim-gain")); if (s) gainPrefs = { ...gainPrefs, ...s }; } catch (_) {}
 const saveGainPrefs = () => localStorage.setItem("wfsim-gain", JSON.stringify(gainPrefs));
 
@@ -2414,14 +2402,16 @@ let gainScan = { key: null, running: false, base: 0, by: {}, done: 0, total: 0, 
 /// The scenario a scan runs under: the chosen preset, else the live one.
 function gainScenario() {
   const ps = loadPresetList(SCENARIOS);
-  const p = ps.find((x) => x.name === gainPrefs.scenario);
+  const p = ps.find((x) => x.name === gainPrefs.scenario)
+    || ps.find((x) => x.name === activeScenario) || ps[0];
   const st = p ? { ...sim, ...p.state } : { ...sim };
+  if (gainPrefs.metric && gainPrefs.metric !== "auto") st.metric = gainPrefs.metric;
   const runs = Math.max(1, gainPrefs.precision === "tenth" ? Math.ceil((st.runs || 1) / 10) : (st.runs || 1));
   // The WHOLE buff map travels, not just the current build's cards: a
   // candidate's buff is by definition not in `buffList`, and the scenario may
   // well have an opinion about it. Unmentioned buffs take their own default
   // (full stacks, unlocked), which is the honest reading of "no opinion".
-  return { name: p ? p.name : tr("current"),
+  return { name: p ? p.name : "—",
     scenario: { ...st, runs, seed: GAIN_SEED, buffs: st.buffs || {} } };
 }
 
@@ -2481,47 +2471,63 @@ async function scanModGains(slotIdx, onTick) {
 /// The gain for `id`, or null when this slot/build/scenario has not been scanned.
 const gainOf = (id) => (gainScan.key === gainKey() ? gainScan.by[id] || null : null);
 
-/// The scan's controls: which saved scenario, at what precision, and go.
-/// Hidden entirely on a full build — the scan only answers "what goes in the
-/// empty slot", so offering it there would promise an answer it will not give.
+/// The QUICK-CALC panel: a small popup on the picker, because three choices
+/// and a verb do not belong strung along a tool bar (user, 2026-08-01).
+/// Choose a SAVED scenario, how many runs, and what to measure by — then go.
+let gainPanelOpen = false;
+
 function gainTools() {
+  return `<button id="pk-gain" class="ghost-btn small" title="${escHtml(tr("simulate every mod IN THIS SLOT and show what each would change"))}">${
+    gainScan.running ? `${gainScan.done}/${gainScan.total}` : `⚡ ${escHtml(tr("Quick calc"))}`}</button>` +
+    (gainPanelOpen ? gainPanel() : "");
+}
+
+function gainPanel() {
   const ps = loadPresetList(SCENARIOS);
-  const cur = ps.some((p) => p.name === gainPrefs.scenario) ? gainPrefs.scenario : "";
-  return `<select id="pk-gain-scen" title="${escHtml(tr("which saved scenario to measure under"))}">` +
-    `<option value=""${cur ? "" : " selected"}>${escHtml(tr("current"))}</option>` +
-    ps.map((p) => `<option value="${escHtml(p.name)}"${p.name === cur ? " selected" : ""}>${escHtml(p.name)}</option>`).join("") +
-    `</select>` +
-    `<select id="pk-gain-prec" title="${escHtml(tr("a tenth of the runs is a fast sweep; the baseline and every candidate share one seed, so the comparison stays paired"))}">` +
-    `<option value="tenth"${gainPrefs.precision === "tenth" ? " selected" : ""}>1/10</option>` +
-    `<option value="full"${gainPrefs.precision === "full" ? " selected" : ""}>${escHtml(tr("full runs"))}</option>` +
-    `</select>` +
-    `<button id="pk-gain" class="ghost-btn small" title="${escHtml(tr("simulate every mod IN THIS SLOT and show what each would change"))}">${
-      gainScan.running ? `${gainScan.done}/${gainScan.total}` : `⚡ ${escHtml(tr("Gain"))}`}</button>`;
+  const cur = ps.some((p) => p.name === gainPrefs.scenario) ? gainPrefs.scenario
+    : (ps.some((p) => p.name === activeScenario) ? activeScenario : (ps[0] || {}).name);
+  const opt = (v, label, sel) => `<option value="${escHtml(v)}"${v === sel ? " selected" : ""}>${escHtml(label)}</option>`;
+  return `<div class="gain-pop" id="gain-pop">
+    <label>${escHtml(tr("Scenario"))}<select id="gp-scen">${ps.map((p) => opt(p.name, p.name, cur)).join("")}</select></label>
+    <label>${escHtml(tr("Runs"))}<select id="gp-prec">${
+      opt("tenth", "1/10", gainPrefs.precision) + opt("full", tr("full runs"), gainPrefs.precision)}</select></label>
+    <label title="${escHtml(tr("auto = whatever that scenario measures by"))}">${escHtml(tr("Measure"))}<select id="gp-metric">${
+      opt("auto", tr("auto"), gainPrefs.metric) + opt("kpm", tr("KPM"), gainPrefs.metric) + opt("dps", tr("DPS"), gainPrefs.metric)}</select></label>
+    <button id="gp-run" class="run-btn small">${escHtml(tr("Calculate"))}</button>
+  </div>`;
 }
 
 function wireGainTools(redraw) {
-  const scen = $("pk-gain-scen"), prec = $("pk-gain-prec"), go = $("pk-gain");
+  const go = $("pk-gain");
   if (!go) return;
-  [scen, prec].forEach((el) => {
-    el.onclick = (e) => e.stopPropagation();
-    el.onchange = (e) => {
-      e.stopPropagation();
-      gainPrefs.scenario = scen.value || null;
-      gainPrefs.precision = prec.value;
-      saveGainPrefs();
-      redraw();
-    };
-  });
-  // The scan is long enough to watch: the button becomes its own counter and
-  // the menu fills in as answers land.
   go.onclick = (e) => {
     e.stopPropagation();
     if (gainScan.running) return;
+    gainPanelOpen = !gainPanelOpen;
+    redraw();
+  };
+  const pop = $("gain-pop");
+  if (!pop) return;
+  // The panel lives INSIDE the picker popover, so every click in it has to
+  // stay there — the document's outside-click handler closes on anything
+  // whose `.popover` ancestor is gone, and a redraw detaches these nodes.
+  pop.onclick = (e) => e.stopPropagation();
+  const save = () => {
+    gainPrefs = { scenario: $("gp-scen").value, precision: $("gp-prec").value, metric: $("gp-metric").value };
+    saveGainPrefs();
+  };
+  ["gp-scen", "gp-prec", "gp-metric"].forEach((id) => {
+    $(id).onchange = (e) => { e.stopPropagation(); save(); };
+  });
+  $("gp-run").onclick = (e) => {
+    e.stopPropagation();
+    save();
+    gainPanelOpen = false;
     pickerPrefs.sort = "gain";
     pickerPrefs.dir = "desc"; // best first, the only useful default
     savePickerPrefs();
     let last = 0;
-    scanModGains((st) => {
+    scanModGains(pickerSlot, (st) => {
       const now = Date.now();
       if (!st.running || now - last > 250) { last = now; redraw(); }
     });
