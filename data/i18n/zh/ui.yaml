@@ -96,6 +96,29 @@ ui:
   "Arcane (on status)": 赋能附加伤害
   "Radial (AoE)": 范围伤害
   "Lingering field": 持续云雾
+  # Indirect stat labels (panel rows go through tr(), exact match). The ten
+  # that existed before were never translated; the ten added on 2026-08-01
+  # join them here rather than repeating the omission.
+  "Recoil": 后坐力
+  "Noise Reduction": 消音
+  "Ammo Reserve": 备弹
+  "Projectile Speed": 抛射物飞行速度
+  "Holstered Reload/s": 收枪装填/秒
+  "Dodge Speed": 闪避速度
+  "Acrobatic Speed": 翻滚速度
+  "Accuracy": 精准度
+  "Punch Through": 穿透
+  "Zoom": 变焦
+  "Range": 射程
+  "Beam Range": 光束长度
+  "Movement Speed (aiming)": 移动速度（瞄准时）
+  "Sprint Speed": 冲刺速度
+  "Ammo Pickup Conversion": 弹药拾取转换
+  "Stagger Resist (aiming)": 抗击退（瞄准时）
+  "Self-Stagger Reduction": 自我击退减免
+  "Double Jumps": 二段跳
+  "Explosion on Kill": 击杀爆炸
+  "Status Spread Chance": 异常扩散几率
   "no damage dealt": 未造成伤害
   "no mods equipped": 未安装 MOD
   "none": 无
@@ -217,6 +240,23 @@ ui:
   "search arcanes by name or effect…": 按名称或效果搜索赋能…
 
 effect_phrases:
+  - ['Ammo Pickup Conversion', '弹药拾取转换']
+  - ['Self-Stagger Reduction', '自我击退减免']
+  - ['Status Spread Chance', '异常扩散几率']
+  - ['Stagger Resist', '抗击退']
+  - ['Explosion on Kill', '击杀爆炸']
+  - ['Movement Speed', '移动速度']
+  - ['Acrobatic Speed', '翻滚速度']
+  - ['Noise Reduction', '消音']
+  - ['Sprint Speed', '冲刺速度']
+  - ['Charge Rate', '蓄力速度']
+  - ['Double Jumps', '二段跳']
+  - ['Beam Range', '光束长度']
+  - ['Ammo Reserve', '备弹']
+  - ['Holstered Reload/s', '收枪装填/秒']
+  - ['\bRange\b', '射程']
+  - ['\bZoom\b', '变焦']
+  - ['\(aiming\)', '（瞄准时）']
   - ['Status Duration', '触发持续时间']
   - ['Critical Chance', '暴击几率']
   - ['Critical Damage', '暴击伤害']

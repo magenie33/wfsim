@@ -293,6 +293,23 @@ fn intern(s: String) -> &'static str {
 /// slot, drained capacity and granted nothing — silently, with the card still
 /// naming the stats. That is the one failure a damage calculator must never
 /// hide, and it is the same rule `mods` already follows ("unknown mod id").
+/// Why a mod id did not resolve against THIS weapon's pool.
+///
+/// "unknown mod id: amalgam_serration" is true of the pool and false of the
+/// world, and it is what a saved build got the moment the pool learned a rule
+/// (Amalgam mods off sentinel weapons, ammo mods off an infinite reserve).
+/// A mod that exists but does not fit says so.
+fn mod_not_here(id: &str, weapon: &WeaponInfo) -> String {
+    let known = wfsim_engine::mods_data::classes()
+        .into_iter()
+        .any(|c| wfsim_engine::mods_data::class_pool(c).iter().any(|m| m.id == id));
+    if known {
+        format!("{id} cannot be equipped on {} — it is not in this weapon's pool", weapon.name)
+    } else {
+        format!("unknown mod id: {id}")
+    }
+}
+
 fn riven_stat_ids_ok(v: &Value, info: &WeaponInfo) -> Result<(), String> {
     let class = riven_class(info);
     let pool = wfsim_engine::rivens_data::pool(&class);
@@ -1230,7 +1247,7 @@ pub fn panel_json(v: &Value) -> Value {
     for id in &mod_ids {
         match p.iter().find(|m| m.id == id) {
             Some(m) => refs.push(m),
-            None => return err_json(format!("unknown mod id: {id}")),
+            None => return err_json(mod_not_here(id, info)),
         }
     }
 
@@ -1772,25 +1789,14 @@ pub fn panel_json(v: &Value) -> Value {
         // Indirect stats (recoil, accuracy, ammo…): not in theoretical DPS,
         // real in practice; base is unmodified (0%), final = Σ.
         let mut indirect_rows = Vec::new();
-        // Not every indirect stat is a fraction. Punch through and beam range
+        // Not every indirect stat is a fraction — punch through and beam range
         // are METRES, a double-jump refresh is a COUNT, an explosion-on-kill is
-        // flat DAMAGE — printing "+1200%" for Sinister Reach's +12 m is worse
-        // than not stating it. `unit()` is the stat's own answer.
-        let ind_fmt = |stat: &wfsim_engine::loadout::IndirectStat, v: f64| match stat.unit() {
-            "%" => fpct(v),
-            u => {
-                let n = if (v - v.round()).abs() < 1e-6 {
-                    format!("{}", v.round() as i64)
-                } else {
-                    format!("{v:.2}").trim_end_matches('0').trim_end_matches('.').to_string()
-                };
-                format!("{}{n}{u}", if v >= 0.0 { "+" } else { "−" })
-            }
-        };
+        // flat DAMAGE. `IndirectStat::format` owns that, so this table and the
+        // effect line on the card cannot drift apart.
         for (stat, total) in &panel.indirect {
             indirect_rows.push(
                 json!({ "key": "indirect", "label": stat.label(), "base": "—",
-            "final": ind_fmt(stat, *total), "sources": sources("indirect", Some(stat.label())) }),
+            "final": stat.format(*total), "sources": sources("indirect", Some(stat.label())) }),
             );
         }
 
@@ -2237,7 +2243,7 @@ pub fn simulate_json(v: &Value) -> Value {
     for id in &mod_ids {
         match p.iter().find(|m| m.id == id) {
             Some(m) => refs.push(m),
-            None => return err_json(format!("unknown mod id: {id}")),
+            None => return err_json(mod_not_here(id, info)),
         }
     }
     // Reject family collisions (wiki Incompatible mods).
@@ -2628,7 +2634,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     let full = mod_pool_with_rivens(v, info);
     for id in fixed_ids.iter().chain(search_ids.iter()) {
         if !full.iter().any(|m| m.id == id.as_str()) {
-            return Err(err_json(format!("unknown mod id: {id}")));
+            return Err(err_json(mod_not_here(id, info)));
         }
     }
 

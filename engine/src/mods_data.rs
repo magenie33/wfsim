@@ -258,9 +258,16 @@ fn effect(v: &Value) -> Option<ModEffect> {
                         // stat. The trigger stays on the card; a stat with no
                         // damage payload has nothing to gate in this sim, and
                         // the 2D world wants the magnitude either way.
+                        // `wrap`, not a bare return: Targeting Subsystem is
+                        // `condition: while_aiming`, and skipping the wrapper
+                        // would report it on the panel as an unconditional
+                        // stat change — the exact thing the buff shape exists
+                        // to prevent. The outer `aim_gated` is false for
+                        // `kind: buff`, so this cannot double-wrap.
                         _ => {
                             let stat = indirect_grant(grants)?;
-                            return Some(ModEffect::Indirect(stat, per * stacks.max(1) as f64));
+                            let v = per * stacks.max(1) as f64;
+                            return Some(wrap(ModEffect::Indirect(stat, v)));
                         }
                     };
                     ModEffect::CondBuff(bucket, per * stacks.max(1) as f64)

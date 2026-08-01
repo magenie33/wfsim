@@ -63,6 +63,23 @@ pub enum CondBucket {
     ReloadSpeed,
 }
 
+impl CondBucket {
+    /// Printed on a card, so it is words and not the variant name — a
+    /// conditional fire-rate buff used to read "+50% FireRate".
+    pub fn label(&self) -> &'static str {
+        match self {
+            CondBucket::BaseDamage => "Base Damage",
+            CondBucket::Multishot => "Multishot",
+            CondBucket::CritChance => "Crit Chance",
+            CondBucket::CritDamage => "Crit Damage",
+            CondBucket::StatusChance => "Status Chance",
+            CondBucket::StatusDamage => "Status Damage",
+            CondBucket::FireRate => "Fire Rate",
+            CondBucket::ReloadSpeed => "Reload Speed",
+        }
+    }
+}
+
 /// One resolved effect of a mod at its equipped rank.
 ///
 /// NOT `Copy`: [`ModEffect::WhileAiming`] nests an effect, which needs
@@ -271,17 +288,17 @@ impl IndirectStat {
     pub fn label(&self) -> &'static str {
         match self {
             IndirectStat::Recoil => "Recoil",
-            IndirectStat::Noise => "Noise",
+            IndirectStat::Noise => "Noise Reduction",
             IndirectStat::AmmoMax => "Ammo Reserve",
             IndirectStat::ProjectileSpeed => "Projectile Speed",
             IndirectStat::HolsteredReload => "Holstered Reload/s",
             IndirectStat::DodgeSpeed => "Dodge Speed",
             IndirectStat::AcrobaticSpeed => "Acrobatic Speed",
             IndirectStat::Accuracy => "Accuracy",
-            IndirectStat::PunchThrough => "Punch Through (m)",
+            IndirectStat::PunchThrough => "Punch Through",
             IndirectStat::Zoom => "Zoom",
             IndirectStat::Range => "Range",
-            IndirectStat::BeamRange => "Beam Range (m)",
+            IndirectStat::BeamRange => "Beam Range",
             IndirectStat::MovementSpeed => "Movement Speed (aiming)",
             IndirectStat::SprintSpeed => "Sprint Speed",
             IndirectStat::AmmoConversion => "Ammo Pickup Conversion",
@@ -303,6 +320,24 @@ impl IndirectStat {
             IndirectStat::KillExplosion => "",
             _ => "%",
         }
+    }
+
+    /// The stat's value as it READS. One implementation, because there are two
+    /// callers — this enum's own effect line and the API's stat table — and
+    /// they disagreeing is how "+800% Beam Range (m)" reached the picker for a
+    /// mod that grants 8 metres.
+    pub fn format(&self, v: f64) -> String {
+        let unit = self.unit();
+        if unit == "%" {
+            return pct(v);
+        }
+        let a = v.abs();
+        let s = if (a - a.round()).abs() < 1e-6 {
+            format!("{}", a.round() as i64)
+        } else {
+            format!("{a:.2}").trim_end_matches('0').trim_end_matches('.').to_string()
+        };
+        format!("{}{s}{unit}", if v >= 0.0 { "+" } else { "−" })
     }
 }
 
@@ -436,7 +471,9 @@ impl ModEffect {
             Element(t, v) => format!("{} {t:?}", pct(v)),
             CombinedElement(t, v) => format!("{} {t:?}", pct(v)),
             Physical(t, v) => format!("{} {t:?}", pct(v)),
-            CondBuff(b, v) => format!("{} {b:?} (conditional, assumed active)", pct(v)),
+            CondBuff(b, v) => {
+                format!("{} {} (conditional, assumed active)", pct(v), b.label())
+            }
             OnKillMultishot { per_stack, max_stacks, duration } => {
                 format!("On Kill: {} Multishot per stack ×{max_stacks}, {duration}s", pct(per_stack))
             }
@@ -452,7 +489,7 @@ impl ModEffect {
             OnHeadshotKillCritChance { per_stack, max_stacks, duration } => {
                 format!("On Headshot Kill: {} Crit Chance per stack ×{max_stacks}, {duration}s", pct(per_stack))
             }
-            Indirect(stat, v) => format!("{} {}", pct(v), stat.label()),
+            Indirect(stat, v) => format!("{} {}", stat.format(v), stat.label()),
             OnEquipHandling { recoil, accuracy, duration } => {
                 format!("On Equip: {} Recoil, {} Accuracy, {duration}s", pct(recoil), pct(accuracy))
             }

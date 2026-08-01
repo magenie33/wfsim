@@ -253,6 +253,38 @@ mod tests {
         }
     }
 
+    /// Every INDIRECT stat label is translated.
+    ///
+    /// The panel renders these rows through `tr(label)`, an EXACT-match
+    /// lookup, so a label with no entry silently prints in English on a
+    /// Chinese page. All ten of the original ones did exactly that until
+    /// 2026-08-01 — nothing was watching, because the miss is invisible from
+    /// the English side. Ten more landed that day, which is what made it worth
+    /// a guard rather than another sweep.
+    ///
+    /// Listed explicitly because `IndirectStat` has no `ALL`: a new variant
+    /// fails here until it is added to both, which is the point.
+    #[test]
+    fn every_indirect_stat_label_is_translated() {
+        use crate::loadout::IndirectStat as I;
+        const ALL: [I; 20] = [
+            I::Recoil, I::Noise, I::AmmoMax, I::ProjectileSpeed, I::HolsteredReload,
+            I::DodgeSpeed, I::AcrobaticSpeed, I::Accuracy, I::PunchThrough, I::Zoom,
+            I::Range, I::BeamRange, I::MovementSpeed, I::SprintSpeed, I::AmmoConversion,
+            I::StaggerResist, I::SelfStagger, I::DoubleJump, I::KillExplosion,
+            I::StatusSpread,
+        ];
+        let mut missing: Vec<String> = Vec::new();
+        for (code, spec) in locales() {
+            for s in ALL {
+                if !spec.ui.contains_key(s.label()) {
+                    missing.push(format!("i18n/{code}: \"{}\"", s.label()));
+                }
+            }
+        }
+        assert!(missing.is_empty(), "untranslated stat labels:\n{}", missing.join("\n"));
+    }
+
     /// A card never states the same line twice.
     ///
     /// DE's `levelStats` is not one line per entry: on a rank that UNLOCKS
