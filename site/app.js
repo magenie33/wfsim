@@ -331,7 +331,7 @@ let evoSel = { 1: null, 2: null, 3: null, 4: null };
 // what the sim silently assumed before the knob existed, so no stored preset
 // changes meaning.
 let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, aiming: true,
-  infinite_ammo: true, duration: 120, runs: 100, form: "default", buffs: {} };
+  infinite_ammo: true, duration: 300, runs: 100, form: "default", buffs: {} };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
 // Damage-meter rows the player has expanded into their per-type split, kept
@@ -356,11 +356,11 @@ let optPrefs = { sort: "name", dir: "asc", pol: null };
 // parameters give identical numbers, verified 2026-07-28).
 let optSim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, aiming: true,
   infinite_ammo: true,
-  duration: 120, form: "default" };
+  duration: 300, form: "default" };
 // The FINAL-ROUND CONTRACT (user): the funnel's last round is guaranteed
 // `finalists` candidates × `final_runs` runs. Persisted; survives weapon
 // switches (it is a run setting, not weapon scope).
-let optRun = { final_runs: 1024, finalists: 20, threads: 0 }; // threads 0 = auto (cores − 2)
+let optRun = { final_runs: 100, finalists: 10, threads: 0 }; // threads 0 = auto (cores − 2)
 try { const s = JSON.parse(localStorage.getItem("wfsim-opt-run")); if (s) optRun = { ...optRun, ...s }; } catch (_) {}
 const saveOptRun = () => localStorage.setItem("wfsim-opt-run", JSON.stringify(optRun));
 let pickerSlot = 0;
@@ -485,11 +485,19 @@ async function init() {
   $("weapon").value = d.weapon;
   arcanes = arcanesFor(d.weapon, d.arcane);
   evoSel = { 1: null, 2: null, 3: null, 4: null, ...(d.evolutions || {}) };
+  // Both scenarios are rebuilt FIELD BY FIELD from the server's defaults, so
+  // a field missing here is a field that silently reverts to `undefined` —
+  // which is how `infinite_ammo` came to be absent from state while the
+  // declaration above set it. The server owns every default; this copies them.
   sim = { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
-    headshot_pct: d.headshot_pct, aiming: d.aiming !== false, duration: d.duration, runs: d.runs,
+    headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
+    infinite_ammo: d.infinite_ammo !== false, duration: d.duration, runs: d.runs,
     form: d.form, buffs: {} };
   optSim = { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
-    headshot_pct: d.headshot_pct, aiming: d.aiming !== false, duration: d.duration, form: d.form };
+    headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
+    infinite_ammo: d.infinite_ammo !== false, duration: d.duration, form: d.form };
+  optRun = { ...optRun, final_runs: d.final_runs ?? optRun.final_runs,
+    finalists: d.finalists ?? optRun.finalists };
   applyWeapon(d.weapon, d.mods);
 
   $("weapon").addEventListener("change", () => {
@@ -507,11 +515,11 @@ async function init() {
   $("opt-final-runs").value = optRun.final_runs;
   $("opt-finalists").value = optRun.finalists;
   $("opt-final-runs").addEventListener("input", () => {
-    optRun.final_runs = Math.max(1, Math.min(100000, Number($("opt-final-runs").value) || 1024));
+    optRun.final_runs = Math.max(1, Math.min(100000, Number($("opt-final-runs").value) || 100));
     saveOptRun(); updateOptEstimate();
   });
   $("opt-finalists").addEventListener("input", () => {
-    optRun.finalists = Math.max(1, Math.min(100, Number($("opt-finalists").value) || 20));
+    optRun.finalists = Math.max(1, Math.min(100, Number($("opt-finalists").value) || 10));
     saveOptRun(); updateOptEstimate();
   });
   if (optRun.threads) $("opt-threads").value = optRun.threads;

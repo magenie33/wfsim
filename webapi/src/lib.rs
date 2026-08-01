@@ -729,8 +729,16 @@ pub fn meta_json() -> Value {
             // Aiming ASSUMED by default - the sim's behaviour before the knob
             // existed, so no stored preset silently changes meaning.
             "aiming": true,
-            "duration": 120.0,
+            // INFINITE AMMO by default — see `simulate_json` for why.
+            "infinite_ammo": true,
+            // Test precision (user, 2026-08-01): 300 s x 100 runs everywhere,
+            // and the optimizer's last round is 100 runs on the top 10. Kept
+            // in step with `simulate_json` / `parse_optimize`, whose own
+            // fallbacks are what an API caller naming none of these gets.
+            "duration": 300.0,
             "runs": 100,
+            "final_runs": 100,
+            "finalists": 10,
             "mods": [],
         },
     })
@@ -2258,8 +2266,8 @@ pub fn simulate_json(v: &Value) -> Value {
     // The MAGAZINE is unaffected either way: this is the reserve behind it, so
     // reload cadence — and `ammo_cost` — still bite.
     let infinite_ammo = get_bool(v, "infinite_ammo", true);
-    let duration = get_f64(v, "duration", 120.0).clamp(1.0, 3600.0);
-    let runs = get_u32(v, "runs", 300).clamp(1, 20_000);
+    let duration = get_f64(v, "duration", 300.0).clamp(1.0, 3600.0);
+    let runs = get_u32(v, "runs", 100).clamp(1, 20_000);
     let seed = v.get("seed").and_then(|x| x.as_u64()).unwrap_or(0xC0FFEE);
 
     let mod_ids: Vec<String> = v
@@ -2903,8 +2911,8 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // ---- final-round contract (user, 2026-07-28): the last round is
     // guaranteed `finalists` candidates × `final_runs` runs; everything
     // before only whittles the field down (schedule + adaptive racing).
-    let final_runs = get_u32(v, "final_runs", 1024).clamp(1, 100_000);
-    let finalists = get_u32(v, "finalists", 20).clamp(1, 100) as usize;
+    let final_runs = get_u32(v, "final_runs", 100).clamp(1, 100_000);
+    let finalists = get_u32(v, "finalists", 10).clamp(1, 100) as usize;
 
     // ---- scenario (reuse the Sim inputs) ----
     let enemy_id = get_str(v, "enemy", "thrax_centurion");
@@ -2915,7 +2923,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // assumption the sim will replay them with, or the winner is scored on a
     // buff the replay never grants.
     let aiming = get_bool(v, "aiming", true);
-    let duration = get_f64(v, "duration", 120.0).clamp(1.0, 3600.0);
+    let duration = get_f64(v, "duration", 300.0).clamp(1.0, 3600.0);
     let specs = enemies();
     let Some(spec) = specs.iter().find(|e| e.id == enemy_id) else {
         return Err(err_json(format!("unknown enemy: {enemy_id}")));

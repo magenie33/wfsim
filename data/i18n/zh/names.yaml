@@ -29,6 +29,10 @@ weapons:
   torid: 托里德
   torid_incarnon: 托里德 (灵化形态)
   verglas_prime: 冰凇 Prime
+  # Arch-Gun (2026-08-01). Both entries are the same weapon; the FORM is
+  # named separately in the UI, so neither gets an invented suffix.
+  larkspur_prime: 翠雀 Prime
+  larkspur_prime_charged: 翠雀 Prime
 
 enemies:
   thrax_centurion: 凶魂百夫长
@@ -218,6 +222,44 @@ mods:
   vile_precision: 极恶精准
   vital_sense: 弱点感应
   wildfire: 野火
+  # Arch-Gun pool (2026-08-01) — DE's own strings, verbatim.
+  ammo_chain: 弹链
+  archgun_ace: 曲翼枪械行家
+  automatic_trigger: 自动扳机
+  ballista_measure: 弩炮测距
+  charged_bullets: 带电子弹
+  combustion_rounds: 燃烧弹头
+  comet_blast: 彗星爆发
+  containment_breach: 核控突破
+  contamination_casing: 毒染套管
+  critical_focus: 关键焦点
+  deadly_efficiency: 致命效率
+  dual_rounds: 双重弹头
+  electrified_barrel: 带电枪管
+  hollowed_bullets: 中空子弹
+  hypothermic_shell: 低温外壳
+  magazine_extension: 扩充弹匣
+  magma_chamber: 熔岩弹膛
+  magnetized_cycle: 磁场循环
+  marked_target: 标记目标
+  modified_munitions: 弹药改良
+  parallax_scope: 视差瞄具
+  polar_magazine: 极地弹仓
+  primed_ammo_chain: 弹链 Prime
+  primed_combustion_rounds: 燃烧弹头 Prime
+  primed_deadly_efficiency: 致命效率 Prime
+  primed_dual_rounds: 双重弹头 Prime
+  primed_electrified_barrel: 带电枪管 Prime
+  primed_rubedo_lined_barrel: 红晶枪管 Prime
+  primed_venomous_clip: 恶毒弹匣 Prime
+  quasar_drill: 类星钻体
+  quick_reload: 快速装填
+  resolute_focus: 坚决专注
+  rubedo_lined_barrel: 红晶枪管
+  sabot_rounds: 覆壳弹药
+  shell_rush: 填弹加速
+  venomous_clip: 恶毒弹匣
+  zodiac_shred: 黄道碎裂
 
 arcanes:
   akimbo_slip_shot: 双枪·滑射
