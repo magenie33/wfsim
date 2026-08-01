@@ -4056,6 +4056,7 @@ mod tests {
             exilus: false,
             family: None,
             requires_weapon: None,
+            excludes_weapon: Vec::new(),
             set: None,
             requires: None,
             disables: Vec::new(),

@@ -120,6 +120,32 @@ A parameter goes on whichever entity *owns* it, so it is not duplicated:
   table lives on the **perk**; the buff's `reset.threshold_param` points at it.
 - **Item-intrinsic**: rarity, drop chance, max rank, slot. Live on the **item**.
 
+## Which mods a weapon can equip
+
+The pool tag is not the whole rule, and every part of the rule is DATA:
+
+| key | on | means |
+|---|---|---|
+| `mod_pools` | weapon | the class tables it draws (`primary` + `rifle`, …) |
+| `requires_weapon` | mod | a weapon PROPERTY the mod needs (`continuous`) |
+| `excludes_weapon` | mod | DE's INCOMPATIBILITY tags (`sentinel_weapon`, `power_weapon`) |
+| `family` | mod | mutually exclusive with its family-mates |
+| `requires` | mod | a calc-layer gate: it equips and sits inert |
+
+`engine::mods_data::pool_for_weapon` is the only place that combines them, and
+`/api/meta` sends each weapon the resulting **id list** — the client never
+re-derives it. Two rules there are read off the weapon rather than declared: a
+weapon with no `ammo_max` is offered no ammo-maximum mod ("Mods that affect
+Ammo Maximum have no effect on Robotic weapon because they already have
+unlimited ammo reserves", wiki `Sentinel`), and a sentinel weapon is offered no
+mod tagged `sentinel_weapon`. That last one is why plain Serration equips on
+Verglas Prime and **Amalgam** Serration does not — an Amalgam mod's second half
+buffs the Warframe, and a companion is not the Warframe.
+
+There is also an `incompatible_with:` key on 83 mods naming other MODS. It
+duplicates `family`, nothing reads it, and every entry is covered by a shared
+family (checked). Do not confuse it with `excludes_weapon`.
+
 ## Conventions
 
 - **Field discipline (2026-07-28): a field is structured data that a program

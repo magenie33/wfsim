@@ -45,6 +45,12 @@ struct ModFile {
     /// Weapon property required to EQUIP this mod ("continuous").
     #[serde(default)]
     requires_weapon: Option<String>,
+    /// DE's own INCOMPATIBILITY tags, lowercased ("sentinel_weapon",
+    /// "power_weapon") — the mirror of `requires_weapon`. NOT the existing
+    /// `incompatible_with:` key, which names other MODS and duplicates
+    /// `family`; this one names weapon KINDS.
+    #[serde(default)]
+    excludes_weapon: Vec<String>,
     /// Weapon trait required for the mod to apply (calc-layer gate).
     #[serde(default)]
     requires: Option<String>,
@@ -285,6 +291,11 @@ fn to_moddef(mf: ModFile) -> ModDef {
         family: mf.family.map(|s| &*Box::leak(s.into_boxed_str())),
         set: mf.set.map(|s| &*Box::leak(s.into_boxed_str())),
         requires_weapon: mf.requires_weapon.map(|s| &*Box::leak(s.into_boxed_str())),
+        excludes_weapon: mf
+            .excludes_weapon
+            .into_iter()
+            .map(|s| &*Box::leak(s.into_boxed_str()))
+            .collect(),
         requires: mf.requires.map(|s| &*Box::leak(s.into_boxed_str())),
         disables: mf
             .disables
@@ -367,6 +378,19 @@ pub fn pool_for_weapon(weapon_id: &str) -> Vec<ModDef> {
     };
     // The BASE form's trigger, which is what `WeaponBase::continuous` reads.
     let continuous = spec.attack.trigger == "held";
+    // "Mods that affect Ammo Maximum have no effect on Robotic weapon because
+    // they already have unlimited ammo reserves" (wiki `Sentinel`). Stated for
+    // robotic weapons, true of any weapon with no ammo pool, and read off the
+    // one fact that says so — `ammo_max` absent. A mod is dropped only when
+    // ammo maximum is ALL it does: a dual-stat keeps its other half, whose
+    // ammo share is already inert.
+    let no_ammo_pool = spec.ammo_max.is_none();
+    let only_ammo_max = |m: &ModDef| {
+        !m.effects.is_empty()
+            && m.effects.iter().all(|e| {
+                matches!(e, ModEffect::Indirect(crate::loadout::IndirectStat::AmmoMax, _))
+            })
+    };
     pool_union(&spec.mod_pools)
         .into_iter()
         .filter(|m| match m.requires_weapon {
@@ -375,6 +399,18 @@ pub fn pool_for_weapon(weapon_id: &str) -> Vec<ModDef> {
             // An unknown requirement hides the mod rather than ignoring the
             // restriction — a mod offered where it cannot go is the worse bug.
             Some(_) => false,
+        })
+        .filter(|m| !(no_ammo_pool && only_ammo_max(m)))
+        // DE's INCOMPATIBILITY tags — the mirror of `requires_weapon`, and the
+        // reason plain Serration goes on a sentinel weapon while Amalgam
+        // Serration does not (user, 2026-08-01). An Amalgam mod's second half
+        // buffs the WARFRAME ("+25% Sprint Speed... always applies, regardless
+        // of whether or not you are holding the weapon"), and a companion is
+        // not the Warframe, so the wiki states it outright: "This mod cannot be
+        // equipped on Sentinel weapons", tags `SENTINEL_WEAPON, POWER_WEAPON`.
+        // We model no exalted weapon, so `power_weapon` is carried and unused.
+        .filter(|m| {
+            !(spec.class.contains("sentinel") && m.excludes_weapon.contains(&"sentinel_weapon"))
         })
         .collect()
 }
@@ -527,6 +563,50 @@ pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Every AMALGAM mod must declare that it cannot go on a sentinel weapon.
+    ///
+    /// The wiki states it per mod — "This mod cannot be equipped on Sentinel
+    /// weapons", infobox tags `SENTINEL_WEAPON, POWER_WEAPON` — and the reason
+    /// is structural: an Amalgam mod's second half buffs the WARFRAME, which a
+    /// companion is not. DE's own taxonomy names that structure, so the check
+    /// can be mechanical: `/Lotus/Upgrades/Mods/DualSource/` is the directory
+    /// every Amalgam mod lives in.
+    ///
+    /// The PATH is the check, not the rule — the wiki tag is the rule, and
+    /// each mod's yaml carries it with its citation. This exists so the next
+    /// Amalgam mod cannot be added without someone reading that infobox.
+    #[test]
+    fn every_amalgam_mod_declares_it_cannot_go_on_a_sentinel_weapon() {
+        let mut missing: Vec<String> = Vec::new();
+        for (p, text) in crate::data::files_under("mods/").filter(|(p, _)| p.ends_with(".yaml")) {
+            let dual = text
+                .lines()
+                .any(|l| l.starts_with("internal_name:") && l.contains("/DualSource/"));
+            if dual && !text.contains("sentinel_weapon") {
+                missing.push(p.to_string());
+            }
+        }
+        assert!(
+            missing.is_empty(),
+            "Amalgam (DualSource) mods with no `excludes_weapon: [sentinel_weapon, ...]`: \
+             {missing:?} — check the wiki infobox's incompatibility tags"
+        );
+        // And the rule reaches the pool: plain Serration equips on a sentinel
+        // weapon, the Amalgam one does not.
+        let ids: Vec<&str> = pool_for_weapon("verglas_prime").iter().map(|m| m.id).collect();
+        assert!(ids.contains(&"serration"), "plain Serration is fine on a sentinel weapon");
+        assert!(!ids.contains(&"amalgam_serration"), "Amalgam Serration is not: {ids:?}");
+        // Ammo Maximum is the wiki's other stated sentinel rule: "Mods that
+        // affect Ammo Maximum have no effect on Robotic weapon because they
+        // already have unlimited ammo reserves."
+        assert!(!ids.contains(&"ammo_drum"), "an infinite reserve takes no ammo mod: {ids:?}");
+        // The Torid keeps all three — it is neither a sentinel nor ammo-less.
+        let torid: Vec<&str> = pool_for_weapon("torid").iter().map(|m| m.id).collect();
+        for id in ["serration", "amalgam_serration", "ammo_drum"] {
+            assert!(torid.contains(&id), "the torid keeps {id}");
+        }
+    }
 
     /// PvP-EXCLUSIVE mods must not ship in a PvE pool — they are a separate
     /// balance pass, and offering them makes the picker and the optimizer

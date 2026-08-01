@@ -529,6 +529,17 @@ pub fn meta_json() -> Value {
                 // attribute (wiki's 25% rule). Sent as a list rather than a
                 // filtered pool so the class table stays shared.
                 "riven_excludes": wfsim_engine::rivens_data::excluded_for(&w.id),
+                // The mods this weapon can actually EQUIP, by id. The client
+                // used to union the class tables and re-apply the rules in JS,
+                // which is one fact stated twice — and the copy went stale the
+                // moment the engine learned a new rule (Amalgam mods off
+                // sentinel weapons, ammo mods off an infinite reserve: neither
+                // reached the builder or the optimizer). `pool_for_weapon` is
+                // now the only place that decides, and this is it speaking.
+                "mods": wfsim_engine::mods_data::pool_for_weapon(&w.id)
+                    .iter()
+                    .map(|m| m.id)
+                    .collect::<Vec<_>>(),
                 "mod_class": w.mod_pools.last().cloned().unwrap_or_default(),
                 "subtype": w.subtype,
                 "sentinel": w.sentinel,

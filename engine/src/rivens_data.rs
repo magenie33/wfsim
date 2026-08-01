@@ -575,6 +575,7 @@ impl RivenSpec {
             // holding two, with nothing riven-specific added anywhere.
             family: Some("riven"),
             requires_weapon: None,
+            excludes_weapon: Vec::new(),
             set: None,
             requires: None,
             disables: Vec::new(),

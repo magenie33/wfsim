@@ -433,6 +433,13 @@ pub struct ModDef {
     /// the beam-only mods. Distinct from `requires`, which is a calc-layer
     /// gate: that one equips and sits inert, this one is never offered.
     pub requires_weapon: Option<&'static str>,
+    /// DE's INCOMPATIBILITY tags for this mod, lowercased — the mirror of
+    /// `requires_weapon`, and the reason Amalgam Serration is not offered on
+    /// a sentinel weapon while plain Serration is (wiki: "This mod cannot be
+    /// equipped on Sentinel weapons", tags `SENTINEL_WEAPON, POWER_WEAPON`).
+    /// An Amalgam mod's second half buffs the WARFRAME, which is why the
+    /// weapon a companion carries cannot hold one.
+    pub excludes_weapon: Vec<&'static str>,
     /// The MOD SET this mod belongs to (`data/mod_sets/<id>.yaml`). A set
     /// bonus is granted by the group, not by any member, and it scales per
     /// equipped member with no threshold — see [`crate::mod_sets_data`].
@@ -1585,6 +1592,7 @@ mod tests {
             exilus: false,
             family: None,
             requires_weapon: None,
+            excludes_weapon: Vec::new(),
             set: None,
             requires: None,
             disables: Vec::new(),

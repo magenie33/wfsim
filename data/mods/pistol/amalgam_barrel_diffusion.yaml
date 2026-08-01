@@ -22,7 +22,13 @@ effects:
 # Utility bonuses are UNIVERSAL while the mod is on the carried secondary -
 # no need to wield or aim it (holstered works).
 utility_scope: universal_while_carried
-restrictions: [not_on_sentinel_weapons]
+# DE's own incompatibility tags, wiki infobox: `SENTINEL_WEAPON, POWER_WEAPON`
+# — "Cannot be equipped on Sentinel weapons". Same reason as Amalgam Serration:
+# the utility half above is a WARFRAME buff, and a companion is not the
+# Warframe. This replaces a `restrictions: [not_on_sentinel_weapons]` note that
+# stated the same fact in a spelling nothing read (2026-08-01); one vocabulary,
+# and it is the mirror of `requires_weapon`.
+excludes_weapon: [sentinel_weapon, power_weapon]
 
 
 family: barrel_diffusion

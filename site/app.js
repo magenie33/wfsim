@@ -1849,13 +1849,17 @@ function applyWeaponInner(id, presetMods) {
   // weapon was right only while every rifle-class weapon was a launcher.
   rivenModCache = { key: null, list: [] };
   refreshRivenNames(); // this weapon's rivens, named by the engine
-  currentPool = (w.mod_pools || [w.mod_class])
-    .flatMap((p) => META.mod_pools[p] || [])
-    // The pool tag is not the whole rule: the beam-only mods are tagged
-    // `primary` and still need a CONTINUOUS weapon. The Torid cannot take
-    // them even though its Incarnon form is a beam — modding is decided on
-    // the base form.
-    .filter((m) => !m.requires_weapon || (m.requires_weapon === "continuous" && w.continuous));
+  // The SERVER decides which mods this weapon can equip (`pool_for_weapon`)
+  // and sends the id list; the class tables are only where the mod objects
+  // live. This used to be a JS re-implementation of the same rules, and it
+  // went stale the moment the engine learned a new one — Amalgam mods are not
+  // equippable on a sentinel weapon and ammo mods do nothing on an infinite
+  // reserve, and neither reached the builder or the optimizer while the pool
+  // was computed twice.
+  const byId = new Map(
+    Object.values(META.mod_pools || {}).flat().map((m) => [m.id, m]),
+  );
+  currentPool = (w.mods || []).map((id) => byId.get(id)).filter(Boolean);
   innate = (w.innate_polarities || []).slice(0, 8);
   while (innate.length < 9) innate.push(null);
 
