@@ -1425,7 +1425,7 @@ function recordUndo(d, w, next) {
   // every collection, and a stack full of those would make the first Ctrl+Z
   // do nothing visible.
   if (before.list === JSON.stringify(next)) return;
-  const names = (l) => (l || []).map((p) => p.name).join(" ");
+  const names = (l) => (l || []).map((p) => p.name).join("\u0000");
   let structural = true;
   try { structural = names(JSON.parse(before.list)) !== names(next); } catch (_) {}
   const top = undoStack[undoStack.length - 1];
