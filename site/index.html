@@ -216,15 +216,25 @@
         <div id="opt-picker-tools" class="picker-tools"></div>
         <div id="opt-mods-sel"></div>
         <div id="opt-mods" class="combo-menu opt-modlist"></div>
-        <h3 class="sim-h" data-i18n>Exilus slot <span class="sim-hint">the +1 slot — pool = slot options, req = pin one; nothing marked = the slot stays empty</span></h3>
-        <div id="opt-exilus" class="combo-menu opt-modlist"></div>
-        <h3 class="sim-h" data-i18n>Arcanes <span class="sim-hint">pool = searched options, req = pin the slot</span></h3>
-        <div class="preset-bar" id="preset-bar-optimizer-arcanes"></div>
-        <input id="opt-arc-filter" type="text" placeholder="search arcanes by name or effect…" data-i18n-ph autocomplete="off">
-        <div id="opt-arcanes" class="combo-menu opt-modlist"></div>
-        <h3 class="sim-h" data-i18n>Evolutions <span class="sim-hint">per tier: pool = searched options, req = pin</span></h3>
-        <div class="preset-bar" id="preset-bar-optimizer-evolutions"></div>
-        <div id="opt-evos"></div>
+        <!-- Each scope is an AXIS of the search, and a weapon that has no
+             such axis shows nothing here — heading included. The builder
+             already hid the three matching BLOCKS; these are the same three
+             facts, asked in the module that searches them. -->
+        <div id="opt-exilus-sect">
+          <h3 class="sim-h" data-i18n>Exilus slot <span class="sim-hint">the +1 slot — pool = slot options, req = pin one; nothing marked = the slot stays empty</span></h3>
+          <div id="opt-exilus" class="combo-menu opt-modlist"></div>
+        </div>
+        <div id="opt-arcanes-sect">
+          <h3 class="sim-h" data-i18n>Arcanes <span class="sim-hint">pool = searched options, req = pin the slot</span></h3>
+          <div class="preset-bar" id="preset-bar-optimizer-arcanes"></div>
+          <input id="opt-arc-filter" type="text" placeholder="search arcanes by name or effect…" data-i18n-ph autocomplete="off">
+          <div id="opt-arcanes" class="combo-menu opt-modlist"></div>
+        </div>
+        <div id="opt-evos-sect">
+          <h3 class="sim-h" data-i18n>Evolutions <span class="sim-hint">per tier: pool = searched options, req = pin</span></h3>
+          <div class="preset-bar" id="preset-bar-optimizer-evolutions"></div>
+          <div id="opt-evos"></div>
+        </div>
         <h3 class="sim-h" data-i18n>Enemy <span class="sim-hint">the optimizer's own scenario — independent of the Sim panel</span></h3>
         <div id="opt-enemy" class="field-grid"></div>
         <h3 class="sim-h" data-i18n>Technique <span class="sim-hint">must match how you intend to play it — the winner is scored under these assumptions</span></h3>

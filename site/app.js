@@ -2966,6 +2966,13 @@ function renderOpt() {
   // weapon-specific. META is the only prerequisite.
   show("opt-block", !!META);
   if (!META) return;
+  // A scope for an axis the weapon does not have is a heading over nothing —
+  // and worse, an invitation to configure a slot it cannot equip. The same
+  // three facts the builder hides its blocks on (user, 2026-08-01).
+  const w = weaponInfo($("weapon").value) || {};
+  show("opt-exilus-sect", !w.sentinel);
+  show("opt-arcanes-sect", (w.arcane_pools || []).length > 0);
+  show("opt-evos-sect", !!w.uses_evo2);
   // Seed scope from the current build once: equipped mods = fixed.
   if (!optSeeded) {
     opt.mods = {}; opt.exilus = {};
