@@ -2349,7 +2349,7 @@ function renderTools() {
   const t = $("picker-tools");
   const pols = ["Madurai", "Naramon", "Vazarin", "Umbra"].filter((p) => currentPool.some((m) => m.polarity === p));
   t.innerHTML =
-    `<label>Sort <select id="pk-sort"><option value="name">${escHtml(tr("Name"))}</option><option value="drain">${escHtml(tr("Drain"))}</option><option value="gain">${escHtml(tr("Gain"))}</option></select></label>` +
+    `<label>${escHtml(tr("Sort"))} <select id="pk-sort"><option value="name">${escHtml(tr("Name"))}</option><option value="drain">${escHtml(tr("Drain"))}</option><option value="gain">${escHtml(tr("Gain"))}</option></select></label>` +
     `<button id="pk-dir" class="ghost-btn small" title="direction">${pickerPrefs.dir === "asc" ? "▲" : "▼"}</button>` +
     `<span class="pk-pols"><span class="pk-pol ${!pickerPrefs.pol ? "sel" : ""}" data-p="">all</span>` +
     pols.map((p) => `<span class="pk-pol ${pickerPrefs.pol === p ? "sel" : ""}" data-p="${p}" title="${p}">${imgTag(POL(p), "pol")}</span>`).join("") +
