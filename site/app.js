@@ -308,8 +308,10 @@ let innate = [];     // 9 × innate polarity name|null (exilus never innate)
 // two Primary arcanes is not a build the page can express.
 let arcanes = ["none"];
 let arcaneRanks = [null];   // null → max rank (mirrors mod slot ranks)
-// A state saved before Arch-Guns holds one arcane as a bare value; a state
-// saved after holds a list. Read either, always end up with the list.
+// Pad or trim to the weapon's pool count. Storage is migrated to the list
+// shape on load (`migrateArcaneShape`), so a bare value only ever arrives
+// from something hand-written — and it is read the obvious way rather than
+// silently dropped.
 const asArcaneList = (v, n) => {
   const a = Array.isArray(v) ? v.slice() : v == null ? [] : [v];
   while (a.length < n) a.push(undefined);
@@ -2326,10 +2328,20 @@ const arcanePool = (i = 0) => {
 // The engine refuses the same thing independently
 // (`arcanes_data::for_slot`); this keeps the UI from ever showing a build the
 // sim would not run.
+// Pre-data short names, from builds saved before arcane ids were data. They
+// are rewritten HERE, at the one point an id enters state, so the wire format
+// stays a single shape and nothing downstream reads two spellings (user,
+// 2026-08-01). A row in someone's localStorage is history, not a format.
+const ARCANE_RENAMED = {
+  enervate: "secondary_enervate",
+  deadhead: "secondary_deadhead",
+  flare: "cascadia_flare",
+};
 function arcaneFor(weaponId, id, i = 0) {
   if (!id || id === "none") return "none";
-  const a = arcaneById(id);
-  return a && a.slot === arcanePools(weaponId)[i] ? id : "none";
+  const canon = ARCANE_RENAMED[id] || id;
+  const a = arcaneById(canon);
+  return a && a.slot === arcanePools(weaponId)[i] ? canon : "none";
 }
 /// Every slot's id, validated against the pool that slot draws from.
 const arcanesFor = (weaponId, list) =>

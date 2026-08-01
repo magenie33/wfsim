@@ -1059,36 +1059,32 @@ fn arcane_in_pools(
 
 /// The arcane chosen for each of the weapon's pools: `(pool, id, rank)`.
 ///
-/// The wire format takes either shape, because a build saved before Arch-Guns
-/// carries one arcane and must keep meaning what it meant:
+/// ONE wire shape — a LIST, one entry per pool, in the weapon's pool order:
 ///
 /// ```text
-/// "arcane": "primary_deadhead",         "arcane_rank": 5      one, legacy
-/// "arcane": ["primary_deadhead", "secondary_merciless"]        one per pool
+/// "arcane": ["primary_deadhead", "secondary_merciless"]
 /// "arcane_rank": [5, 5]
 /// ```
 ///
-/// A string fills the FIRST pool. Entries past the weapon's pool count are
-/// dropped: what a weapon can seat is the weapon's business, not the caller's.
+/// A build saved before a weapon could seat two held a bare value under a
+/// pre-data short name ("deadhead"). Both are rewritten ONCE, in the client's
+/// storage (`migrateArcaneShape`), so nothing here has to know there was ever
+/// another shape — the alternative is two ways of saying the same thing, kept
+/// alive forever by the code that reads both (user, 2026-08-01).
+///
+/// Entries past the weapon's pool count are dropped: what a weapon can seat is
+/// the weapon's business, not the caller's.
 fn arcane_choices(v: &Value, info: &WeaponInfo) -> Vec<(String, String, Option<u32>)> {
-    // Legacy short names, kept for builds saved before the ids were data.
-    let canon = |s: &str| match s {
-        "enervate" => "secondary_enervate",
-        "deadhead" => "secondary_deadhead",
-        "flare" => "cascadia_flare",
-        other => other,
-    }
-    .to_string();
-    let ids: Vec<String> = match v.get("arcane") {
-        Some(Value::Array(a)) => a.iter().filter_map(|x| x.as_str()).map(canon).collect(),
-        Some(Value::String(s)) => vec![canon(s)],
-        _ => Vec::new(),
-    };
-    let ranks: Vec<Option<u32>> = match v.get("arcane_rank") {
-        Some(Value::Array(a)) => a.iter().map(|x| x.as_u64().map(|n| n as u32)).collect(),
-        Some(x) => vec![x.as_u64().map(|n| n as u32)],
-        None => Vec::new(),
-    };
+    let ids: Vec<String> = v
+        .get("arcane")
+        .and_then(|x| x.as_array())
+        .map(|a| a.iter().filter_map(|x| x.as_str()).map(String::from).collect())
+        .unwrap_or_default();
+    let ranks: Vec<Option<u32>> = v
+        .get("arcane_rank")
+        .and_then(|x| x.as_array())
+        .map(|a| a.iter().map(|x| x.as_u64().map(|n| n as u32)).collect())
+        .unwrap_or_default();
     info.arcane_pools
         .iter()
         .enumerate()
@@ -3463,18 +3459,22 @@ mod arcane_slot_tests {
         assert!(swapped.id.is_empty(), "wrong pool, wrong slot: {}", swapped.id);
     }
 
-    /// A build saved before any of this carries ONE arcane as a bare string
-    /// and must keep meaning what it meant.
+    /// ONE wire shape: a list, one entry per pool. A bare value is not a
+    /// second spelling the server understands — the client rewrites storage
+    /// to the list shape once, so nothing here reads two formats.
     #[test]
-    fn a_legacy_single_arcane_still_means_what_it_meant() {
+    fn the_wire_shape_is_a_list_and_only_a_list() {
         let torid = weapon("torid");
         let base = WeaponBase::from_data("torid", true, &[]);
         let fx = |v: Value| arcane_fx_for(&v, torid, &base, StackPolicy::AssumedMax);
 
-        let legacy = fx(json!({ "arcane": "primary_deadhead", "arcane_rank": 5 }));
         let listed = fx(json!({ "arcane": ["primary_deadhead"], "arcane_rank": [5] }));
-        assert_eq!(legacy.id, "primary_deadhead");
-        assert!((legacy.headshot_mult_bonus - listed.headshot_mult_bonus).abs() < 1e-9);
+        assert_eq!(listed.id, "primary_deadhead");
+        assert!(listed.headshot_mult_bonus > 0.0);
+
+        // A bare value is not a shape: it resolves to nothing rather than
+        // being quietly accepted as a second way to say the same thing.
+        assert!(fx(json!({ "arcane": "primary_deadhead" })).id.is_empty());
 
         // A weapon with one pool ignores a second entry: what it can seat is
         // the weapon's business, not the caller's.
