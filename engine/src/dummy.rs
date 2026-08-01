@@ -1682,16 +1682,29 @@ fn pick_part<'a>(parts: &'a [BodyPart], rng: &mut Rng) -> &'a BodyPart {
 /// Can a shot be taken right now? This — not "is the magazine empty" — is what
 /// gates the reload: the weapon reloads exactly when it CANNOT fire.
 ///
-/// Two rules, and each is the reason the naive test is wrong in one direction:
-/// - the magazine gate is **anything left**, not *enough to pay*. ✅ measured
-///   (MEASUREMENTS M14): a 0.25 remainder fires a full-cost shot and overdraws
-///   the counter to negative.
-/// - a shot that costs **nothing** needs no round at all (user, 2026-07-30).
-///   Dual Toxocyst hits this exactly: the last round headshots, the magazine
-///   lands on 0, and that same kill arms Frenzy's +100% ammo efficiency — so
-///   the next shot is free and fires instead of forcing a reload.
-fn can_fire(magazine: f64, free_shot: bool) -> bool {
-    magazine >= 1e-9 || free_shot
+/// The rule is `cost <= ceil(current)`, floored at zero (owner, 2026-08-01),
+/// and it takes both of the facts already measured here as special cases.
+///
+/// A REMAINDER SMALLER THAN THE SHOT still fires. ✅ measured (MEASUREMENTS
+/// M14): 0.25 left pays a full-cost shot and overdraws the counter negative.
+/// The ceiling is why — `1 <= ceil(0.25)` — and the debt is bounded to
+/// (−1, 0], so `reload_draw`'s whole-round rule brings the magazine back at
+/// `capacity − 0.75` rather than full.
+///
+/// A SHOT THAT COSTS NOTHING needs no round at all (user, 2026-07-30). Dual
+/// Toxocyst hits this exactly: the last round headshots, the magazine lands on
+/// 0, and that same kill arms Frenzy's +100% ammo efficiency — so the next shot
+/// is free and fires instead of forcing a reload.
+///
+/// What the ceiling ADDS is the case above one round. Seven left and a shot
+/// costing ten: `10 <= ceil(7)` is false, so the weapon reloads. The old test
+/// was "anything left", so it fired, and landed on −3 — a debt one whole-round
+/// draw cannot clear. That hid for as long as it did because the two tests
+/// agree for every cost at or below one round (`ceil(x) >= 1` on any positive
+/// magazine): ammo efficiency put costs in the 0.x range and exposed nothing
+/// (owner). The Larkspur Prime's alt-fire costs TEN.
+fn can_fire(magazine: f64, cost: f64, free_shot: bool) -> bool {
+    free_shot || cost <= (magazine - 1e-9).max(0.0).ceil() + 1e-9
 }
 
 /// How many WHOLE rounds a reload moves out of reserve.
@@ -2669,7 +2682,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // `bar.expire` below (at the post-reload t) is still correct.
         // Whether the NEXT shot costs zero ammo — it decides whether an empty
         // magazine reloads, so it has to be known before that branch.
-        let free_shot = {
+        let next_cost = {
             let ap: &DummyParams = match &params.cycle {
                 Some(cy) if in_base_form => &cy.base_form,
                 _ => params,
@@ -2688,13 +2701,21 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             }
             // Does the next shot cost anything? Feeds `can_fire` below. Capped
             // at 100%, so this is "exactly free", never "more than free".
-            ammo_efficiency(
+            let eff = ammo_efficiency(
                 ap.ammo_efficiency_applies,
                 bar.total_contributions().ammo_efficiency,
                 params.arcane.ammo_efficiency,
                 arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
-            ) >= 1.0 - 1e-9
+            );
+            // `ap` already picks the form whose magazine is about to be
+            // checked, so this is THAT form's cost.
+            if eff >= 1.0 - 1e-9 {
+                0.0
+            } else {
+                ap.ammo_cost * (1.0 - eff)
+            }
         };
+        let free_shot = next_cost <= 1e-9;
 
         // Phase transitions and reloads.
         if let Some(cy) = &params.cycle {
@@ -2715,7 +2736,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 base_mag += reload_draw(cy.base_form.magazine_size, base_mag);
                 continue;
             }
-            if in_base_form && !can_fire(base_mag, free_shot) {
+            if in_base_form && !can_fire(base_mag, next_cost, free_shot) {
                 // Base-form reload (infinite reserve assumed in the cycle).
                 let rs = live_reload_speed(params, &mut rs_stacks, t);
                 t += live_reload_time(&cy.base_form, params, &mut arc, rs, t);
@@ -2734,7 +2755,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 field_duration_boost = true;
                 continue;
             }
-        } else if !can_fire(magazine, free_shot) {
+        } else if !can_fire(magazine, next_cost, free_shot) {
             // Cannot fire: reload (blocking) or, with dry finite reserves,
             // stop firing altogether (DoTs still drain below).
             if !params.infinite_reserve && reserve < 1e-9 {
@@ -7568,6 +7589,35 @@ mod tests {
             "crit rate was {}",
             s.mean_crit_rate
         );
+    }
+
+    /// A magazine reloads when the NEXT SHOT cannot be paid for, and the test
+    /// is `cost <= ceil(current)` — not `current > 0`.
+    ///
+    /// Both cases are the owner's (2026-08-01), and the rule hid for as long
+    /// as it did because it only bites above 1: for any cost <= 1 the two
+    /// tests agree on every positive magazine, since `ceil(x) >= 1` there.
+    /// Ammo efficiency put costs in the 0.x range and exposed nothing. The
+    /// Larkspur Prime's alt-fire costs TEN, and there they part company.
+    #[test]
+    fn a_reload_is_decided_by_what_the_next_shot_costs() {
+        // 7 left, the shot costs 10: it does NOT fire. Under `current > 0` it
+        // did, and landed on −3 — a debt one whole-round draw cannot clear.
+        assert!(!can_fire(7.0, 10.0, false), "7 cannot pay for 10");
+        assert!(can_fire(10.0, 10.0, false), "10 pays for 10 exactly");
+        // 0.2 left, the shot costs 1: it DOES fire, because ceil(0.2) is 1.
+        assert!(can_fire(0.2, 1.0, false), "the ceiling is what lets this through");
+        assert!(!can_fire(0.0, 1.0, false), "empty is empty");
+        // A beam tick at 0.5 clears the same ceiling with room to spare.
+        assert!(can_fire(0.2, 0.5, false), "0.5 <= ceil(0.2)");
+        // A free shot ignores the whole question.
+        assert!(can_fire(0.0, 10.0, true), "a free shot costs nothing");
+
+        // The overdraw the second case creates is bounded to (−1, 0], which is
+        // what keeps `reload_draw`'s whole-round rule (M14) correct: a
+        // magazine sitting at −0.8 comes back at capacity − 0.8, not capacity.
+        let after = -0.8 + reload_draw(100.0, -0.8);
+        assert!((after - 99.2).abs() < 1e-9, "capacity - 0.8: {after}");
     }
 
     /// The DEFAULT is what this is about. `finite_reserve_stops_the_gun`
