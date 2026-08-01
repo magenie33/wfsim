@@ -564,6 +564,8 @@ pub struct WeaponBase {
     /// the listed stat (Cernos Prime: 1.0), which is what reads it as a stat
     /// (Hemorrhage's below-2.5 gate) still sees.
     pub charge_seconds: Option<f64>,
+    /// Which charge formula paces it — see [`crate::weapons_data::ChargeCadence`].
+    pub charge_cadence: crate::weapons_data::ChargeCadence,
     /// What a fire-rate MOD's bonus is multiplied by on this weapon — 2.0 for
     /// bows, whose cards all print "(x2 for Bows)". It reaches the mod bucket
     /// only: a mod-granted BUFF (Pressurized Magazine's on-reload fire rate)
@@ -960,6 +962,7 @@ pub struct ResolvedPanel {
     /// what a fire-rate mod did. `Some` means the sim paces on this instead of
     /// `1 / fire_rate`.
     pub charge_seconds: Option<f64>,
+    pub charge_cadence: crate::weapons_data::ChargeCadence,
     pub multishot: f64,
     /// The weapon's UNMODDED pellet count — the base a relative multishot
     /// buff (Conjunction Voltage) multiplies when it joins the bucket live.
@@ -1499,6 +1502,7 @@ pub fn resolve_with(
         charge_seconds: base
             .charge_seconds
             .map(|c| c / (1.0 + fr + base.evo_fire_rate_bonus).max(1e-9)),
+        charge_cadence: base.charge_cadence,
         headshot_damage_bonus: base.headshot_damage_bonus,
         noncrit_bonus: base.noncrit_bonus,
         plain_hit_bonus: base.plain_hit_bonus,

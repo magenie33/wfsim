@@ -190,6 +190,21 @@ fn weakpoint_hits() -> String {
     "weakpoint_hits".to_string()
 }
 
+/// Which of the wiki's two charge-weapon cadence formulas applies.
+///
+/// - `DrawOnly` — bows: "Effective Fire Rate = 1 / Modded Charge Time".
+/// - `DrawThenRate` — everything else: "1 / (Modded Charge Time + 1 / Modded
+///   Fire Rate)". The listed rate is the cadence AFTER the charge, not the
+///   whole cycle, so the two add.
+///
+/// Fire-rate bonuses shorten the charge in both ("Charge Time = Base Charge
+/// Time / (1 + Mod Bonus)").
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChargeCadence {
+    DrawOnly,
+    DrawThenRate,
+}
+
 /// The locked-gauge magazine/reload reduction of an Incarnon form.
 #[derive(Debug, Clone, Deserialize)]
 pub struct PseudoReloadSpec {
@@ -723,8 +738,28 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
                 Some(c)
             }
             ("bow", None) => panic!("{id}: a bow's cadence is draw + nock — state charge_seconds"),
-            (_, Some(_)) => panic!("{id}: charge_seconds outside a bow needs the other formula"),
+            // Every OTHER charge weapon uses the wiki's general formula,
+            // which is a different sentence: "Effective Fire Rate =
+            // 1 / (Modded Charge Time + 1 / Modded Fire Rate)". The listed
+            // rate is not the whole cycle there — it is what happens AFTER
+            // the charge completes — so the two are added, and the guard
+            // that used to refuse this case now routes it (Larkspur Prime's
+            // alt-fire: 0.5 s draw + 1/2.0 s = 1.0 s per shot).
+            (_, Some(c)) => {
+                assert!(c > 0.0, "{id}: a 0.0 charge outside a bow is just a fire rate");
+                Some(c)
+            }
             (_, None) => None,
+        },
+        // WHICH of the wiki's two charge formulas paces this weapon. A bow's
+        // draw IS its cycle; everything else pays the draw and then the
+        // listed rate's interval. Carried as a fact about the weapon rather
+        // than re-derived from the class in the sim, which has no business
+        // knowing what a bow is.
+        charge_cadence: if s.class == "bow" {
+            ChargeCadence::DrawOnly
+        } else {
+            ChargeCadence::DrawThenRate
         },
         // "(x2 for Bows)" — the clause every fire-rate mod card carries
         // (Shred, Primed Shred, Speed Trigger, Vile Acceleration, Vigilante
@@ -788,6 +823,60 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
 
 #[cfg(test)]
 mod tests {
+    /// The Larkspur Prime is the first weapon that can RUN OUT, and this is
+    /// the whole data path end to end: YAML -> spec -> base -> panel -> sim.
+    ///
+    /// Ground Arch-Gun: 100 in the magazine, 400 behind it, and no way to
+    /// resupply (wiki Arch-Gun). At 12 rounds/second that is 500 rounds and
+    /// then the weapon is gone — inside a 120 s engagement, so the clock is
+    /// not what stops it.
+    #[test]
+    fn the_larkspur_runs_out_where_a_primary_would_not() {
+        use crate::dummy::{monte_carlo, DummyParams};
+        use crate::loadout::{resolve_with, StackPolicy, WeaponBase};
+
+        let base = WeaponBase::from_data("larkspur_prime", true, &[]);
+        assert!((base.ammo_reserve - 400.0).abs() < 1e-9, "the Atmosphere column");
+        assert!(base.finite_reserve, "a ground Arch-Gun cannot be resupplied");
+
+        let panel = resolve_with(&base, &[], StackPolicy::Emergent, true);
+        let mut p = DummyParams::from_panel(
+            &panel,
+            crate::dummy::TargetParams::training_dummy(),
+            DummyParams::humanoid_parts(),
+            120.0,
+        );
+        p.arcane = crate::arcanes_data::ArcaneFx::none();
+        let s = monte_carlo(&p, 1, 3);
+        assert!(
+            (s.mean_shots - 500.0).abs() < 1e-9,
+            "magazine + reserve, exactly: {}",
+            s.mean_shots
+        );
+
+        // The clock did not stop it: 120 s at 12 rounds/second is far more.
+        assert!(120.0 * panel.fire_rate > 900.0);
+
+        // The alt-fire form draws from the SAME pool — one weapon, one supply.
+        let alt = WeaponBase::from_data("larkspur_prime_charged", true, &[]);
+        assert!((alt.ammo_reserve - 400.0).abs() < 1e-9);
+        assert!(alt.finite_reserve);
+
+        // And a Primary with the same shape does NOT run out: the Torid
+        // states a 60-round reserve and keeps firing, because ammo pickups
+        // exist and the sim does not model them.
+        let torid = WeaponBase::from_data("torid", true, &[]);
+        let tp = resolve_with(&torid, &[], StackPolicy::Emergent, true);
+        let mut q = DummyParams::from_panel(
+            &tp,
+            crate::dummy::TargetParams::training_dummy(),
+            DummyParams::humanoid_parts(),
+            120.0,
+        );
+        q.arcane = crate::arcanes_data::ArcaneFx::none();
+        assert!(monte_carlo(&q, 1, 3).mean_shots > 60.0, "a Primary is resupplied");
+    }
+
     /// `ammo_max` sat in every weapon's YAML and was read by NOBODY until
     /// the reserve was wired up (2026-07-31) — it is the wiki's Ammo Max and
     /// it now reaches the panel. It is still not a LIMIT: that takes

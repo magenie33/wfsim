@@ -1,0 +1,88 @@
+id: larkspur_prime
+name: Larkspur Prime
+# ARCH-GUN — its own equipment slot, and the first weapon in the roster that
+# is neither a Primary nor a Secondary. The wiki is explicit that it is not
+# either: Archguns "are not considered either primary or secondary weapons",
+# which is also why they carry two arcane slots of their own (see below).
+slot: archgun
+class: archgun
+# The normal fire, and the form the arsenal shows. The alt-fire is the
+# sibling entry `larkspur_prime_charged` (`form: charged`), reached for FREE
+# by holding the alternate button — a form of the same weapon, not a
+# transformation of it, so neither entry carries `transforms_to`.
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: larkspur_prime
+
+# ONLY THE GROUND WEAPON IS MODELLED, and that is a scope statement, not a
+# simplification. An Arch-Gun is two different weapons depending on where it
+# is fired, and the wiki gives both columns:
+#
+#   |            | reload | Ammo Max | resupply                          |
+#   | Archwing   | 4.50 s | 0        | regenerating magazine = unlimited |
+#   | Atmosphere | 2.50 s | 400      | none — the weapon is REMOVED when  |
+#   |            |        |          | empty, five-minute cooldown        |
+#
+# Archwing is space combat: no Simulacrum, no dummy, no ground scenario — the
+# whole sim is the Atmosphere case, so the Archwing column is recorded here
+# and not built. If Archwing is ever simulated it is a sibling entry with its
+# own reload and no `finite_reserve`, exactly as the two rows read.
+mod_pools: [archgun]
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki Larkspur_Prime cross-checked against WFCD
+# warframe-items, joined on internal name — they agree on every number).
+accuracy: 8.33               # the page prints "Low" for this number
+disposition: 0.80            # riven disposition (●●○○○), WFCD omegaAttenuation
+polarities: [madurai, madurai, madurai]
+riven_family: Larkspur
+traits: [prime, vaulted]
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/PrimeLarkspur/PrimeLarkspurWeapon
+noise: alarming
+magazine: 100
+# THE ATMOSPHERE COLUMN. 2.50 s, against 4.50 s in Archwing.
+reload_seconds: 2.5
+
+ammo_type: archgun
+ammo_max: 400
+# THE FIRST FINITE RESERVE IN THE ROSTER, and the reason the flag exists.
+# Every other weapon keeps the infinite default because the sim does not model
+# ammo PICKUPS — a weapon that can be resupplied mid-fight would otherwise run
+# dry for a reason the game does not have. A ground Arch-Gun cannot be:
+# "Archguns only have a limited amount of ammo along with using magazines and
+# standard reloading", and "once all of an Archgun's ammunition is used up,
+# the weapon is removed and can only be called down again after a 5-minute
+# cooldown period" (wiki Arch-Gun). 100 in the magazine and 400 behind it is
+# the whole engagement.
+finite_reserve: true
+
+# No CO catalog row for this weapon, so the normal class applies.
+co_behavior: independent
+
+# THE NORMAL FIRE — the module's "Normal Attack", hit-scan and held. Innate
+# damage is 89% RADIATION (80 of 90), which puts it in the same shape as the
+# Verglas' pure Cold: the innate element enters the hierarchy LAST and takes
+# whatever the mod elements leave (MECHANICS §3 rule 2). Radiation is a
+# COMBINED element, so it cannot be consumed by a mod pairing at all.
+attack:
+  trigger: held
+  shot_type: hitscan
+  fire_rate: 12.0
+  multishot: 1.0
+  # NOT READ by the engine (2026-07-31): nothing in engine/ references
+  # `ammo_cost` — the sim spends a flat 1.0 (minus ammo efficiency) per shot.
+  ammo_cost: 1
+  crit_chance: 0.14
+  crit_multiplier: 1.6
+  status_chance: 0.50
+  punch_through_m: 0.0
+  damage: { impact: 10.0, radiation: 80.0 }
+
+source:
+  url: https://wiki.warframe.com/w/Larkspur_Prime
+  # note: every number cross-checked wiki page == WFCD warframe-items
+  # (joined on internal name). They agree on both attacks, the explosion and
+  # its falloff, the polarities, disposition, mastery, magazine and the two
+  # reload columns. The Arch-Gun deployment rules (Ammo Max by mode, the
+  # five-minute cooldown, the two arcane slots) are from wiki Arch-Gun.

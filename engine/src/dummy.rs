@@ -949,6 +949,8 @@ pub struct DummyParams {
     /// A bow's magazine is 1, so the reload lands between two draws either way
     /// and the cycle is `charge + reload` however the two are ordered.
     pub charge_seconds: Option<f64>,
+    /// Which charge formula paces the shot — see `ChargeCadence`.
+    pub charge_cadence: crate::weapons_data::ChargeCadence,
     /// Whether the weapon's Frenzy passive is equipped (Dual Toxocyst base
     /// form). Wired: fire-rate x2.5 on true headshots (3 s, refreshable).
     /// NOT yet wired: +100% Toxin injection (needs the element layer) and
@@ -1301,6 +1303,7 @@ impl DummyParams {
             base_status_chance: panel.base_status_chance,
             fire_rate: panel.fire_rate,
             charge_seconds: panel.charge_seconds,
+            charge_cadence: panel.charge_cadence,
             frenzy: false,
             magazine_size: panel.magazine_size,
             reload_seconds: panel.reload_seconds,
@@ -1439,6 +1442,7 @@ impl Default for DummyParams {
             status_duration_mult: 1.0,
             fire_rate: 1.0,
             charge_seconds: None,
+            charge_cadence: crate::weapons_data::ChargeCadence::DrawThenRate,
             frenzy: false,
             locked_buffs: Vec::new(),
             cycle: None,
@@ -3561,7 +3565,17 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // (`rate / ap.fire_rate` is exactly that factor, and it is 1.0 when no
         // buff is up). Same bucket, reciprocal application — see `charge_seconds`.
         t += match ap.charge_seconds {
-            Some(c) => c * ap.fire_rate / rate.max(1e-9),
+            Some(c) => {
+                let draw = c * ap.fire_rate / rate.max(1e-9);
+                match ap.charge_cadence {
+                    // A bow's draw IS the cycle (wiki's bow formula).
+                    crate::weapons_data::ChargeCadence::DrawOnly => draw,
+                    // Everything else pays the draw AND the listed rate's
+                    // interval: "1 / (Modded Charge Time + 1 / Modded Fire
+                    // Rate)". The rate is what happens after the charge.
+                    crate::weapons_data::ChargeCadence::DrawThenRate => draw + 1.0 / rate,
+                }
+            }
             None => 1.0 / rate,
         };
     }
@@ -3848,6 +3862,41 @@ mod tests {
         }
     }
 
+    /// Every charge weapon that is NOT a bow pays the draw AND the listed
+    /// rate's interval — the wiki's general formula, "Effective Fire Rate =
+    /// 1 / (Modded Charge Time + 1 / Modded Fire Rate)". The listed rate is
+    /// what happens AFTER the charge, which is why it is added and not
+    /// replaced.
+    ///
+    /// Larkspur Prime's alt-fire is the case that brought this in: 0.5 s
+    /// charge at a listed 2.0/s = 1.0 s a shot, where a bow would fire twice
+    /// as often off the same two numbers.
+    #[test]
+    fn a_general_charge_weapon_pays_the_draw_and_the_rate() {
+        let base = DummyParams {
+            fire_rate: 2.0,
+            charge_seconds: Some(0.5),
+            magazine_size: 1000.0, // no reload inside the window
+            duration_secs: 10.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let general = DummyParams {
+            charge_cadence: crate::weapons_data::ChargeCadence::DrawThenRate,
+            ..base.clone()
+        };
+        // 0.5 + 1/2.0 = 1.0 s: shots at 0, 1, 2 … 9 — ten inside 10 s.
+        assert_eq!(run_once(&general, &mut Rng::new(1)).shots, 10);
+
+        // The bow reading of the SAME two numbers is the draw alone, 0.5 s —
+        // twice as many shots. One weapon's formula is not the other's.
+        let bow = DummyParams {
+            charge_cadence: crate::weapons_data::ChargeCadence::DrawOnly,
+            ..base
+        };
+        assert_eq!(run_once(&bow, &mut Rng::new(1)).shots, 20);
+    }
+
     fn single_part(part: BodyPart) -> DummyParams {
         DummyParams {
             body_parts: vec![part],
@@ -3855,15 +3904,20 @@ mod tests {
         }
     }
 
-    /// A CHARGE weapon paces on its draw, not on `1 / fire_rate`. Cernos
-    /// Prime's numbers: 0.5 s draw + 0.65 s reload of its single nocked arrow
-    /// = 1.15 s a shot, against the 1.65 s the fire-rate stat alone would give.
-    /// The stat itself is untouched — it is what fire-rate GATES read.
+    /// A BOW paces on its draw alone, not on `1 / fire_rate`. Cernos Prime's
+    /// numbers: 0.5 s draw + 0.65 s reload of its single nocked arrow = 1.15 s
+    /// a shot, against the 1.65 s the fire-rate stat alone would give. The
+    /// stat itself is untouched — it is what fire-rate GATES read.
+    ///
+    /// `DrawOnly` is stated because it is the exception: every OTHER charge
+    /// weapon adds the listed rate's interval to the draw (see
+    /// `a_general_charge_weapon_pays_the_draw_AND_the_rate`).
     #[test]
     fn a_charge_weapon_paces_on_the_draw_not_the_fire_rate() {
         let bow = DummyParams {
             fire_rate: 1.0,
             charge_seconds: Some(0.5),
+            charge_cadence: crate::weapons_data::ChargeCadence::DrawOnly,
             magazine_size: 1.0,
             reload_seconds: 0.65,
             duration_secs: 10.0,

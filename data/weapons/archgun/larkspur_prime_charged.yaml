@@ -1,0 +1,77 @@
+id: larkspur_prime_charged
+name: Larkspur Prime
+slot: archgun
+class: archgun
+# THE ALT-FIRE — a half-second charge that throws an explosive projectile
+# instead of the hit-scan chainfire. `charged` is the kind for a shot whose
+# DRAW replaces the fire-rate cadence (docs/GLOSSARY.md "FORMS"), which is
+# exactly what this is, and it is reached from the normal fire for FREE: no
+# gauge, no transmute animation, just the other button. That is why this
+# entry carries no `transforms_from` — a form of the same weapon, not a
+# transformation of it.
+form: charged
+transform_group: larkspur_prime
+
+# Same weapon, so everything below the attack profile is identical to
+# larkspur_prime.yaml (mod pool, polarities, ammo, mastery, the finite ground
+# reserve). Only the ATTACK differs — this is the module's "Alt-Fire
+# Projectile Impact" plus its "Explosion", against the "Normal Attack" the
+# default entry carries.
+mod_pools: [archgun]
+mastery_rank: 8
+max_rank: 30
+
+accuracy: 100                # the page prints "Very High" for the alt-fire
+disposition: 0.80
+polarities: [madurai, madurai, madurai]
+riven_family: Larkspur
+traits: [prime, vaulted]
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/PrimeLarkspur/PrimeLarkspurWeapon
+noise: alarming
+magazine: 100
+reload_seconds: 2.5
+
+ammo_type: archgun
+ammo_max: 400
+finite_reserve: true         # see larkspur_prime.yaml — the ground column
+
+co_behavior: independent
+
+# TWO ATTACK PARTS. The directly-hit enemy takes both, as on the Laetum:
+# the projectile lands its own Impact/Blast/Radiation, and the explosion adds
+# Blast + Radiation in a 9.6 m radius with its own crit and status stats.
+attack:
+  trigger: charge
+  # The charge, and it — not `fire_rate` — is this form's cadence. The listed
+  # 2.00 attacks/sec is kept as the STAT (it is what the panel prints and what
+  # fire-rate gates read); the sim paces on the charge.
+  charge_seconds: 0.5
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 2.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.28
+  crit_multiplier: 2.2
+  status_chance: 0.38
+  punch_through_m: 0.0
+  damage: { impact: 140.0, blast: 180.0, radiation: 100.0 }   # 420 on impact
+  # The radial (AoE) part — rules in MECHANICS §7: own crit/status stats,
+  # 1x body-part multiplier (an explosion never headshots and never charges a
+  # weakpoint gauge), no Condition Overload, linear falloff to
+  # (1 - reduction) at the radius edge. Self-stagger only, never self-damage.
+  radial:
+    damage: { blast: 400.0, radiation: 400.0 }   # 800 at the centre
+    radius_m: 9.6
+    falloff_start_m: 0.0
+    falloff_reduction: 0.6      # 800 at the centre -> 320 (40%) at 9.6 m
+    crit_chance: 0.28
+    crit_multiplier: 2.2
+    status_chance: 0.38
+
+source:
+  url: https://wiki.warframe.com/w/Larkspur_Prime
+  # note: WFCD lists the two parts separately as "Alt-Fire Projectile Impact"
+  # (charge_time 0.5, shot_speed 100) and "Explosion" (AoE, falloff
+  # {start 0, end 9.6, reduction 0.6}); the wiki page states the same numbers
+  # and the 9.6 m range.
