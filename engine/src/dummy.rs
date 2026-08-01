@@ -1327,7 +1327,17 @@ impl DummyParams {
             frenzy: false,
             magazine_size: panel.magazine_size,
             reload_seconds: panel.reload_seconds,
-            ammo_efficiency_applies: false,
+            // A CHARGE-BACKED form is "not affected by Ammo Efficiency" (wiki,
+            // Torid Incarnon) and every other weapon is. `incarnon.is_some()`
+            // is the same marker the magazine rule reads, so the two cannot
+            // disagree about which pool is outside the ammo economy.
+            //
+            // This was hardcoded `false`, which switched ammo efficiency off
+            // for EVERY weapon the API simulates — Primary Crux's +60% did
+            // nothing, and neither did Frenzy's or a Deadly-Efficiency build.
+            // Nothing caught it because every test here builds `DummyParams`
+            // by hand, where the field defaults to `true` (2026-08-01).
+            ammo_efficiency_applies: panel.incarnon.is_none(),
             multishot: panel.multishot,
             base_multishot: panel.base_multishot,
             evo_ms: panel.evo_ms,
@@ -1393,7 +1403,10 @@ impl DummyParams {
         let inc_form = incarnon.incarnon;
         let base_form = DummyParams {
             frenzy,
-            ammo_efficiency_applies: true,
+            // No ammo-efficiency override here any more: `from_panel` derives
+            // it from the panel, and a hardcoded `true` would outrank the data
+            // the day a base form became charge-backed. That override existed
+            // only to compensate for the broken default it sat next to.
             ..Self::from_panel(base, target.clone(), body_parts.clone(), duration_secs)
         };
         Self {

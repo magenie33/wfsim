@@ -907,6 +907,44 @@ mod tests {
         );
     }
 
+    /// AMMO EFFICIENCY REACHES A WEAPON BUILT FROM ITS PANEL.
+    ///
+    /// `DummyParams::from_panel` hardcoded `ammo_efficiency_applies: false`,
+    /// so every weapon the API simulates had ammo efficiency switched off
+    /// entirely — Primary Crux's +60% did nothing at all. Nothing caught it
+    /// because every test of the mechanic builds `DummyParams` by hand, where
+    /// the field defaults to `true`; this one goes through the panel, which is
+    /// the path a request takes (2026-08-01).
+    ///
+    /// The flag is a real distinction, not a nuisance: a CHARGE-BACKED form is
+    /// "not affected by Ammo Efficiency" (wiki, Torid Incarnon). So the test
+    /// has two halves — it must reach the Larkspur and it must NOT reach the
+    /// Torid's Incarnon form.
+    #[test]
+    fn ammo_efficiency_survives_the_trip_through_the_panel() {
+        use crate::dummy::{DummyParams, TargetParams};
+        use crate::loadout::{resolve_with, StackPolicy, WeaponBase};
+
+        let of = |id: &str| {
+            let base = WeaponBase::from_data(id, true, &[]);
+            let panel = resolve_with(&base, &[], StackPolicy::Emergent, true);
+            DummyParams::from_panel(
+                &panel,
+                TargetParams::training_dummy(),
+                DummyParams::humanoid_parts(),
+                60.0,
+            )
+            .ammo_efficiency_applies
+        };
+        assert!(of("larkspur_prime"), "an ordinary weapon spends real ammo");
+        assert!(of("verglas_prime"), "so does a sentinel weapon");
+        assert!(of("cernos_prime"), "and a bow");
+        assert!(
+            !of("torid_incarnon"),
+            "a charge-backed form is outside the ammo economy (wiki)"
+        );
+    }
+
     /// EVERYTHING THE WEAPON CAN FIRE IS `magazine + reserve`, and the two
     /// mods move different halves of it (owner, 2026-08-01).
     ///
