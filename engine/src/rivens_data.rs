@@ -56,9 +56,27 @@ impl Shape {
     ///   Stated verbatim as a table, and internally consistent — 1.2375 is
     ///   exactly 0.99 x 1.25 and 0.9375 exactly 0.75 x 1.25, so a malus pays
     ///   the bonuses 25% in both rows. A typo would not propagate like that.
-    /// - "community calculators read 1.0 / 1.25": could not be confirmed on
-    ///   any page. semlar's calculator computes client-side and states no
-    ///   constants; the claim only ever appeared in search summaries.
+    /// - **pa001024/riven-mirror** (MIT), read from source rather than from a
+    ///   claim about it — `toUpLevel` / `toNegaUpLevel` in
+    ///   `src/warframe/rivenmod.ts`:
+    ///
+    ///   | shape | riven-mirror | wiki (ours) |
+    ///   |---|---|---|
+    ///   | 2     | 1.0   | 0.99   |
+    ///   | 3     | 0.755 | 0.75   |
+    ///   | 2+1   | 1.243 | 1.2375 |
+    ///   | 3+1   | 0.942 | 0.9375 |
+    ///   | malus 2+1 | 0.5   | 0.495 |
+    ///   | malus 3+1 | 0.755 | 0.75  |
+    ///
+    ///   So the "community calculators read 1.0" claim IS real — this is
+    ///   where it comes from. It does not overturn the wiki set, because the
+    ///   wiki's is INTERNALLY CONSISTENT and this one is not: 1.2375 is
+    ///   exactly 0.99 x 1.25 and 0.9375 exactly 0.75 x 1.25, while
+    ///   1.243/1.0 = 1.243 against 0.942/0.755 = 1.2477. A rounding of a
+    ///   consistent set is what riven-mirror's numbers look like; a rounding
+    ///   is not what the wiki's look like.
+    /// - semlar's calculator computes client-side and states no constants.
     /// - codingace: 1.30 / 1.10 / 0.90 by bonus COUNT with no malus row.
     ///   It also has a "1 bonus" case, which weapon rivens do not roll, so
     ///   its table is describing something else.
