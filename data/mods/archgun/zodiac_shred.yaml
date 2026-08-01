@@ -4,7 +4,15 @@ rarity: rare
 polarity: naramon
 base_drain: 2                 # max drain 7 at rank 5
 max_rank: 5
-exilus: true
+# SOURCES DISAGREE, and we take the safer reading: the wiki MODULE flags this
+# IsExilus, but the wiki's own Category:Exilus_Weapon_Mods does not list it —
+# and every one of the 74 mods that category does list is utility (ammo, zoom,
+# recoil, silence, speed). Not one grants damage, which is what this is: +90%
+# Slash. A wrong `true` puts a damage mod in a free slot, so the asymmetry
+# decides it. The module's flag is otherwise perfect (153/153 against our
+# verified rifle and pistol pools), which is why this is recorded rather than
+# assumed — an in-game Arch-Gun exilus slot settles it in one look.
+exilus: false
 internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/ArchwingDualStatSlashStatusMod
 description: "+X% Slash"
 

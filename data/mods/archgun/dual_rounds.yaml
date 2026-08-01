@@ -12,5 +12,8 @@ effects:
     rank0: 0.1
     rankMax: 0.6
 
+family: dual_rounds
+incompatible_with: [primed_dual_rounds]
+
 source:
   url: https://wiki.warframe.com/w/Dual_Rounds

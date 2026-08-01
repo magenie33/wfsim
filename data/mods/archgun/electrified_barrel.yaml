@@ -13,5 +13,8 @@ effects:
     rank0: 0.2
     rankMax: 1.2
 
+family: electrified_barrel
+incompatible_with: [primed_electrified_barrel]
+
 source:
   url: https://wiki.warframe.com/w/Electrified_Barrel

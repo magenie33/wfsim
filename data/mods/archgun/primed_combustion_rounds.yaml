@@ -13,5 +13,8 @@ effects:
     rank0: 0.17
     rankMax: 1.87
 
+family: combustion_rounds
+incompatible_with: [combustion_rounds]
+
 source:
   url: https://wiki.warframe.com/w/Primed_Combustion_Rounds

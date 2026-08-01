@@ -12,5 +12,8 @@ effects:
     rank0: 0.1667
     rankMax: 1.0
 
+family: ammo_chain
+incompatible_with: [primed_ammo_chain]
+
 source:
   url: https://wiki.warframe.com/w/Ammo_Chain

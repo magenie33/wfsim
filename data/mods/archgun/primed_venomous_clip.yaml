@@ -13,5 +13,8 @@ effects:
     rank0: 0.17
     rankMax: 1.87
 
+family: venomous_clip
+incompatible_with: [venomous_clip]
+
 source:
   url: https://wiki.warframe.com/w/Primed_Venomous_Clip

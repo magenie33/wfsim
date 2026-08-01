@@ -24,5 +24,8 @@ effects:
     duration_rank0: 2
     duration: 16.5
 
+family: deadly_efficiency
+incompatible_with: [deadly_efficiency]
+
 source:
   url: https://wiki.warframe.com/w/Primed_Deadly_Efficiency

@@ -12,5 +12,8 @@ effects:
     rank0: 0.17
     rankMax: 1.87
 
+family: rubedo_lined_barrel
+incompatible_with: [rubedo_lined_barrel]
+
 source:
   url: https://wiki.warframe.com/w/Primed_Rubedo-Lined_Barrel
