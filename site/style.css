@@ -562,3 +562,10 @@ label.check input{width:auto}
    select it replaces so a one-form weapon's panel is not a gap. */
 .fixed-val{display:inline-block;padding:4px 8px;border:1px solid var(--line);border-radius:7px;
   background:var(--panel2);color:var(--text-2);font-size:12px}
+/* Marginal gain, on a picker row: what this mod would add to the build. */
+.gainchip{margin-left:6px;padding:0 6px;border-radius:8px;font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.gainchip.up{background:rgba(90,190,120,.16);color:#7fd39a}
+.gainchip.down{background:rgba(200,90,90,.14);color:#d98c8c}
+.gainchip small{opacity:.7;font-size:10px}
+.picker-tools .pk-note{color:var(--muted);font-size:11px;margin-left:auto}
+.picker-tools #pk-gain-scen,.picker-tools #pk-gain-prec{font:inherit;font-size:11px;max-width:120px}

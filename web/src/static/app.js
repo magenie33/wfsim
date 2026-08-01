@@ -1541,7 +1541,15 @@ const pct2 = (x) => sig2((Number(x) || 0) * 100) + "%";
 // is active when the migration runs (the one being restored on this load),
 // and everything else starts empty. Nothing is lost: "⇤ import" reaches
 // any weapon's presets from any other.
-const PRESET_DOMAINS = ["builder-builds", "optimizer-mods", "optimizer-arcanes", "optimizer-evolutions"];
+const PRESET_DOMAINS = ["builder-builds", "optimizer-mods", "optimizer-arcanes",
+  "optimizer-evolutions", "simulator-scenarios"];
+// The SIMULATOR's collection: one saved fight — enemy, technique, measurement.
+// Its own domain because a build is tested against SEVERAL of them, and
+// because the marginal-gain scan needs to name which one it ran under. The
+// build preset keeps carrying its own `sim` (a build remembers what it was
+// last tested with); this is the reusable library beside it.
+const SCENARIOS = "simulator-scenarios";
+let activeScenario = "";
 function migratePresetsToWeaponScope() {
   const w = presetWeapon();
   if (!w) return;
@@ -1599,6 +1607,15 @@ function initPresets() {
     ps = [{ name: "preset 1", savedAt: Date.now(), state: snapshotState() }];
     storePresetList(BUILDS, ps);
   }
+  let sc = loadPresetList(SCENARIOS);
+  if (!sc.length) {
+    sc = [{ name: "scenario 1", savedAt: Date.now(), state: snapshotScenario() }];
+    storePresetList(SCENARIOS, sc);
+  }
+  const lastSc = localStorage.getItem(presetActiveKey(SCENARIOS));
+  activeScenario = sc.some((p) => p.name === lastSc) ? lastSc : sc[0].name;
+  localStorage.setItem(presetActiveKey(SCENARIOS), activeScenario);
+
   const here = presetWeapon();
   const last = localStorage.getItem(presetActiveKey(BUILDS));
   activePreset = ps.some((p) => p.name === last) ? last : ps[0].name;
@@ -1644,6 +1661,23 @@ function markPresetDirty() {
     if (at < 0) return;
     ps[at] = { ...ps[at], savedAt: Date.now(), state: snapshotState() };
     storePresetList(BUILDS, ps);
+  }, 400);
+}
+
+let scenarioSaveTimer = null;
+// The scenario's own auto-save. Same contract as the build's — the editor IS
+// the preset — but a different collection, because a build is tested against
+// several fights and each of them is worth keeping.
+function markScenarioDirty() {
+  if (presetApplying) return;
+  clearTimeout(scenarioSaveTimer);
+  scenarioSaveTimer = setTimeout(() => {
+    if (!activeScenario || presetApplying) return;
+    const ps = loadPresetList(SCENARIOS);
+    const at = ps.findIndex((p) => p.name === activeScenario);
+    if (at < 0) return;
+    ps[at] = { ...ps[at], savedAt: Date.now(), state: snapshotScenario() };
+    storePresetList(SCENARIOS, ps);
   }, 400);
 }
 
@@ -1860,6 +1894,32 @@ function renderPresetBar() {
     apply: (st) => restoreState(st, presetWeapon()),
     blank: blankBuildState,
     rerender: renderPresetBar,
+  });
+}
+
+// A scenario is exactly the `sim` object minus the per-build buff pinning:
+// buffs name THIS build's buffs, so they cannot travel to another one.
+function snapshotScenario() {
+  const { buffs, __weapon, ...rest } = sim;
+  return { ...rest };
+}
+function applyScenario(st) {
+  sim = { ...sim, ...st, buffs: sim.buffs };
+  renderSim();      // redraws every knob, and the bar with them
+  markPresetDirty(); // the build remembers what it is being tested with
+}
+function renderScenarioBar() {
+  renderPresetBarIn($("preset-bar-" + SCENARIOS), {
+    domain: SCENARIOS,
+    label: tr("Scenarios"),
+    load: () => loadPresetList(SCENARIOS),
+    store: (ps) => storePresetList(SCENARIOS, ps),
+    active: () => activeScenario,
+    setActive: (n) => { activeScenario = n; localStorage.setItem(presetActiveKey(SCENARIOS), n); },
+    snapshot: snapshotScenario,
+    apply: applyScenario,
+    blank: snapshotScenario,
+    rerender: renderScenarioBar,
   });
 }
 
@@ -2276,7 +2336,8 @@ function renderTools() {
   const t = $("picker-tools");
   const pols = ["Madurai", "Naramon", "Vazarin", "Umbra"].filter((p) => currentPool.some((m) => m.polarity === p));
   t.innerHTML =
-    `<label>Sort <select id="pk-sort"><option value="name">Name</option><option value="drain">Drain</option></select></label>` +
+    `<label>Sort <select id="pk-sort"><option value="name">${escHtml(tr("Name"))}</option><option value="drain">${escHtml(tr("Drain"))}</option><option value="gain">${escHtml(tr("Gain"))}</option></select></label>` +
+    gainTools() +
     `<button id="pk-dir" class="ghost-btn small" title="direction">${pickerPrefs.dir === "asc" ? "▲" : "▼"}</button>` +
     `<span class="pk-pols"><span class="pk-pol ${!pickerPrefs.pol ? "sel" : ""}" data-p="">all</span>` +
     pols.map((p) => `<span class="pk-pol ${pickerPrefs.pol === p ? "sel" : ""}" data-p="${p}" title="${p}">${imgTag(POL(p), "pol")}</span>`).join("") +
@@ -2286,11 +2347,166 @@ function renderTools() {
   // outside-click handler, whose closest(".popover") now fails on the detached
   // target → the picker would wrongly close. Keep every tool click inside.
   const redraw = () => { savePickerPrefs(); renderTools(); renderMenu(pickerSlot, $("mod-search").value); };
+  wireGainTools(redraw);
   $("pk-sort").value = pickerPrefs.sort;
   $("pk-sort").onclick = (e) => e.stopPropagation();
   $("pk-sort").onchange = (e) => { e.stopPropagation(); pickerPrefs.sort = $("pk-sort").value; redraw(); };
   $("pk-dir").onclick = (e) => { e.stopPropagation(); pickerPrefs.dir = pickerPrefs.dir === "asc" ? "desc" : "asc"; redraw(); };
+  // The scan is long enough to watch: the button becomes its own progress
+  // counter, and the menu redraws as answers land so the list fills in.
+  $("pk-gain").onclick = (e) => {
+    e.stopPropagation();
+    if (gainScan.running) return;
+    pickerPrefs.sort = "gain";
+    pickerPrefs.dir = "desc"; // best first, which is the only useful default
+    savePickerPrefs();
+    let last = 0;
+    scanModGains((st) => {
+      const now = Date.now();
+      if (!st.running || now - last > 250) { last = now; renderTools(); renderMenu(pickerSlot, $("mod-search").value); }
+    });
+    renderTools();
+  };
   t.querySelectorAll(".pk-pol").forEach((o) => o.onclick = (e) => { e.stopPropagation(); pickerPrefs.pol = o.dataset.p || null; redraw(); });
+}
+
+// ---- MARGINAL GAIN: what would the NEXT mod be worth? ---------------------
+//
+// One question, asked of every mod the build does not carry: what does the
+// score become if it goes in? Answered by SIMULATING each candidate, so it is
+// the real number and not a heuristic — the builder has no second damage model
+// and must not grow one.
+//
+// ONLY WITH AN EMPTY SLOT (user, 2026-08-01). "Adding" a mod to a full build
+// means dropping one, which is a different question with a different answer
+// for every slot; this one stays the simple one it reads as.
+//
+// AGAINST A SAVED SCENARIO, chosen by name — the same fight the Simulator
+// runs, because a gain has no meaning without one. And at a chosen precision:
+// the scenario's own run count, or a TENTH of it for a fast sweep.
+//
+// PAIRED RANDOMNESS is what makes the fast sweep usable. A run of this arena
+// swings by a few percent, which is more than many mods are worth, so an
+// unpaired A-vs-B would rank noise. Every candidate and the baseline take the
+// SAME seed, so they walk the same random stream and the difference between
+// them is the mod rather than the dice.
+const GAIN_SEED = 0x5EED;
+// A gain READS with its sign — "12.3%" and "+12.3%" are different claims.
+const gainPct = (x) => (x >= 0 ? "+" : "−") + sig2(Math.abs(x) * 100) + "%";
+const modLabel = (id) => (modById(id) || {}).name || prettify(id);
+
+let gainPrefs = { scenario: null, precision: "tenth" };
+try { const s = JSON.parse(localStorage.getItem("wfsim-gain")); if (s) gainPrefs = { ...gainPrefs, ...s }; } catch (_) {}
+const saveGainPrefs = () => localStorage.setItem("wfsim-gain", JSON.stringify(gainPrefs));
+
+let gainScan = { key: null, running: false, base: 0, by: {}, done: 0, total: 0, note: "" };
+
+/// The scenario a scan runs under: the chosen preset, else the live one.
+function gainScenario() {
+  const ps = loadPresetList(SCENARIOS);
+  const p = ps.find((x) => x.name === gainPrefs.scenario);
+  const st = p ? { ...sim, ...p.state } : { ...sim };
+  const runs = Math.max(1, gainPrefs.precision === "tenth" ? Math.ceil((st.runs || 1) / 10) : (st.runs || 1));
+  return { name: p ? p.name : tr("current"), scenario: { ...st, runs, seed: GAIN_SEED, buffs: {} } };
+}
+
+/// The first empty MAIN slot, or -1. The exilus slot is its own pool and its
+/// own question, so it is not a home for a general mod.
+const freeSlot = () => slots.slice(0, 8).findIndex((s) => !s.mod);
+
+// A scan is only about THIS build under THAT scenario; anything else invalidates.
+const gainKey = () => JSON.stringify([buildPayload(), gainPrefs, sim.enemy, sim.level,
+  sim.steel_path, sim.headshot_pct, sim.aiming, sim.infinite_ammo, sim.duration,
+  sim.runs, sim.form, sim.deployment]);
+
+const famOf = (id) => (modById(id) || {}).family || null;
+const modsCompatible = (ids) => {
+  const fams = ids.map(famOf).filter(Boolean);
+  return new Set(fams).size === fams.length;
+};
+
+async function scanModGains(onTick) {
+  if (gainScan.running) return;
+  const at = freeSlot();
+  if (at < 0) return;
+  const { name, scenario } = gainScenario();
+  gainScan = { key: gainKey(), running: true, base: 0, by: {}, done: 0, total: 0,
+    note: `${name} · ${scenario.runs}×` };
+  const run = async (mods) => {
+    const r = await api("/api/simulate", { ...buildPayload(), ...scenario, mods });
+    return r && r.ok ? r.dps : null;
+  };
+  const cur = slots.map((s) => s.mod);
+  const base = await run(cur.filter(Boolean));
+  if (!base) { gainScan.running = false; if (onTick) onTick(gainScan); return; }
+  gainScan.base = base;
+  const cands = poolWithRivens()
+    .filter((m) => !cur.includes(m.id))
+    .map((m) => { const next = cur.slice(); next[at] = m.id; return { id: m.id, mods: next.filter(Boolean) }; })
+    .filter((c) => modsCompatible(c.mods));
+  gainScan.total = cands.length;
+  for (const c of cands) {
+    const dps = await run(c.mods);
+    gainScan.done++;
+    if (dps != null) gainScan.by[c.id] = { pct: (dps - base) / base };
+    if (onTick) onTick(gainScan);
+  }
+  gainScan.running = false;
+  if (onTick) onTick(gainScan);
+}
+
+/// The gain for `id`, or null when this build/scenario has not been scanned.
+const gainOf = (id) => (gainScan.key === gainKey() ? gainScan.by[id] || null : null);
+
+/// The scan's controls: which saved scenario, at what precision, and go.
+/// Hidden entirely on a full build — the scan only answers "what goes in the
+/// empty slot", so offering it there would promise an answer it will not give.
+function gainTools() {
+  if (freeSlot() < 0) {
+    return `<span class="pk-note" title="${escHtml(tr("the gain scan fills an EMPTY slot — free one to compare mods"))}">${escHtml(tr("no empty slot"))}</span>`;
+  }
+  const ps = loadPresetList(SCENARIOS);
+  const cur = ps.some((p) => p.name === gainPrefs.scenario) ? gainPrefs.scenario : "";
+  return `<select id="pk-gain-scen" title="${escHtml(tr("which saved scenario to measure under"))}">` +
+    `<option value=""${cur ? "" : " selected"}>${escHtml(tr("current"))}</option>` +
+    ps.map((p) => `<option value="${escHtml(p.name)}"${p.name === cur ? " selected" : ""}>${escHtml(p.name)}</option>`).join("") +
+    `</select>` +
+    `<select id="pk-gain-prec" title="${escHtml(tr("a tenth of the runs is a fast sweep; the baseline and every candidate share one seed, so the comparison stays paired"))}">` +
+    `<option value="tenth"${gainPrefs.precision === "tenth" ? " selected" : ""}>1/10</option>` +
+    `<option value="full"${gainPrefs.precision === "full" ? " selected" : ""}>${escHtml(tr("full runs"))}</option>` +
+    `</select>` +
+    `<button id="pk-gain" class="ghost-btn small" title="${escHtml(tr("simulate every mod in the empty slot and show what each would add"))}">${
+      gainScan.running ? `${gainScan.done}/${gainScan.total}` : `⚡ ${escHtml(tr("Gain"))}`}</button>`;
+}
+
+function wireGainTools(redraw) {
+  const scen = $("pk-gain-scen"), prec = $("pk-gain-prec"), go = $("pk-gain");
+  if (!go) return;
+  [scen, prec].forEach((el) => {
+    el.onclick = (e) => e.stopPropagation();
+    el.onchange = (e) => {
+      e.stopPropagation();
+      gainPrefs.scenario = scen.value || null;
+      gainPrefs.precision = prec.value;
+      saveGainPrefs();
+      redraw();
+    };
+  });
+  // The scan is long enough to watch: the button becomes its own counter and
+  // the menu fills in as answers land.
+  go.onclick = (e) => {
+    e.stopPropagation();
+    if (gainScan.running) return;
+    pickerPrefs.sort = "gain";
+    pickerPrefs.dir = "desc"; // best first, the only useful default
+    savePickerPrefs();
+    let last = 0;
+    scanModGains((st) => {
+      const now = Date.now();
+      if (!st.running || now - last > 250) { last = now; redraw(); }
+    });
+    redraw();
+  };
 }
 
 function familyConflict(mod, exceptIdx) {
@@ -2341,6 +2557,15 @@ function renderMenu(slotIdx, query) {
       // sorting them in by name would scatter them through the pool.
       const r = (b.riven ? 1 : 0) - (a.riven ? 1 : 0);
       if (r) return r;
+      // Unscanned mods sort LAST whichever way the arrow points — an absent
+      // answer is not a small one.
+      if (pickerPrefs.sort === "gain") {
+        const ga = gainOf(a.id), gb = gainOf(b.id);
+        if (!ga && !gb) return a.name.localeCompare(b.name);
+        if (!ga) return 1;
+        if (!gb) return -1;
+        return pickerPrefs.dir === "desc" ? gb.pct - ga.pct : ga.pct - gb.pct;
+      }
       const c = pickerPrefs.sort === "drain" ? a.drain - b.drain : a.name.localeCompare(b.name);
       return pickerPrefs.dir === "desc" ? -c : c;
     });
@@ -2362,13 +2587,21 @@ function renderMenu(slotIdx, query) {
     const slotName = (idx) => idx === EXILUS ? "exilus" : "slot " + (idx + 1);
     const badge = isCur ? `<span class="slotchip cur">${slotName(slotIdx)}</span>`
       : at >= 0 ? `<span class="slotchip">${slotName(at)}</span>` : "";
+    // What this mod is WORTH here, once scanned. `replaces` names the mod it
+    // would displace on a full build — the answer is "swap that for this",
+    // and without it a bare percentage would not say where it goes.
+    const g = gainOf(m.id);
+    const gainChip = g
+      ? `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}" title="${escHtml(
+          tr("in the empty slot") + " · " + gainScan.note)}">${gainPct(g.pct)}</span>`
+      : "";
     const title = conflict ? `incompatible (${m.family})`
       : exIllegal ? `cannot swap: ${ownMod.name} is not an exilus mod`
       : at >= 0 ? `swap with ${at === EXILUS ? "the exilus slot" : "slot " + (at + 1)}`
       : m.effects.join(" · ");
     return `<div class="opt ${conflict || exIllegal ? "dis" : ""} ${isCur ? "cur" : at >= 0 ? "placed" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" data-id="${m.id}" title="${title}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
-      <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}</div><div class="me">${cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
+      <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}${gainChip}</div><div class="me">${cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
   };
   menu.innerHTML = hits.length
     ? sectionedRows(hits, (m) => (m.riven ? "Riven" : "Mods"), row)
@@ -2763,9 +2996,13 @@ function renderSim() {
         else if (el.type === "number") sim[k] = Number(el.value);
         else sim[k] = el.value;
         if (k === "enemy") $("arena-ename").textContent = (enemies.find((e) => e.id === sim.enemy) || {}).name || "Enemy";
-        markPresetDirty(); // sim settings are part of the preset
+        // A sim knob belongs to BOTH: the build remembers what it was last
+        // tested with, and the scenario library keeps the fight itself.
+        markPresetDirty();
+        markScenarioDirty();
       });
     }));
+  renderScenarioBar();
   $("arena-ename").textContent = en ? en.name : "Enemy";
   $("sim-sub").textContent = "current build vs the enemy";
   renderSimBuffs();
