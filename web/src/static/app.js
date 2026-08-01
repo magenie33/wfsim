@@ -2587,12 +2587,20 @@ function renderMenu(slotIdx, query) {
       if (r) return r;
       // Unscanned mods sort LAST whichever way the arrow points — an absent
       // answer is not a small one.
+      //
+      // Ties break on DRAIN, then NAME (user, 2026-08-01): two mods worth the
+      // same are not equally good, and the cheaper one is the one to take.
+      // Without it a tie fell back on insertion order, which is no order at
+      // all — and ties are common here, since anything the target ignores
+      // scores exactly 0.
       if (pickerPrefs.sort === "gain") {
         const ga = gainOf(a.id), gb = gainOf(b.id);
-        if (!ga && !gb) return a.name.localeCompare(b.name);
+        const tie = () => (a.drain - b.drain) || a.name.localeCompare(b.name);
+        if (!ga && !gb) return tie();
         if (!ga) return 1;
         if (!gb) return -1;
-        return pickerPrefs.dir === "desc" ? gb.pct - ga.pct : ga.pct - gb.pct;
+        const d = pickerPrefs.dir === "desc" ? gb.pct - ga.pct : ga.pct - gb.pct;
+        return Math.abs(d) > 1e-9 ? d : tie();
       }
       const c = pickerPrefs.sort === "drain" ? a.drain - b.drain : a.name.localeCompare(b.name);
       return pickerPrefs.dir === "desc" ? -c : c;

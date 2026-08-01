@@ -96,14 +96,14 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 .tl-x{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;margin-top:2px}
 .tl-ymax{position:absolute;top:0;left:4px;color:var(--muted);font-size:10px}
 .tl-tip{position:absolute;top:8px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:11px;pointer-events:none;white-space:nowrap}
-.on-optimizer #preset-bar-builder-builds,.on-optimizer #mod-block,.on-optimizer #arcane-block,.on-optimizer #evo-block,.on-optimizer #element-block,.on-optimizer #stats-block{display:none}
+.on-optimizer #preset-bar-builder-builds,.on-optimizer #quick-calc,.on-optimizer #mod-block,.on-optimizer #arcane-block,.on-optimizer #evo-block,.on-optimizer #element-block,.on-optimizer #stats-block{display:none}
 /* The RIVENS tab is its own bench: the builder's blocks step aside, the same
    way they do for the other two modules. */
-.on-rivens #preset-bar-builder-builds,.on-rivens #mod-block,.on-rivens #arcane-block,.on-rivens #evo-block,.on-rivens #element-block,.on-rivens #stats-block{display:none}
+.on-rivens #preset-bar-builder-builds,.on-rivens #quick-calc,.on-rivens #mod-block,.on-rivens #arcane-block,.on-rivens #evo-block,.on-rivens #element-block,.on-rivens #stats-block{display:none}
 /* The simulator tab keeps the build preset bar (sim settings are preset
    content — the auto-saving preset bar must stay reachable) but hides
    builder's editing blocks. */
-.on-simulator #mod-block,.on-simulator #arcane-block,.on-simulator #evo-block,.on-simulator #element-block,.on-simulator #stats-block{display:none}
+.on-simulator #quick-calc,.on-simulator #mod-block,.on-simulator #arcane-block,.on-simulator #evo-block,.on-simulator #element-block,.on-simulator #stats-block{display:none}
 
 /* Preset bar above the Mods block: chips CRUD in place. */
 .preset-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 12px;padding:8px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
