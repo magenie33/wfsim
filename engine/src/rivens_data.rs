@@ -774,6 +774,46 @@ mod tests {
         assert!((with_malus.roll_for_value(rec, false, 1.3, chi) - ROLL_MAX).abs() < 1e-9);
     }
 
+    /// A riven's Damage is IN SERRATION'S BUCKET, not a multiplier of its own.
+    ///
+    /// Asked directly (user, 2026-08-01: "did you treat the riven's base
+    /// damage as an extra multiplicative bucket?"), and the answer has to be
+    /// a number rather than a reading of the code: if it were its own bucket,
+    /// a riven would be worth far more than the same percentage on a mod, and
+    /// every riven comparison downstream would be wrong in the same direction.
+    #[test]
+    fn a_rivens_damage_joins_serrations_bucket_and_does_not_multiply_it() {
+        use crate::loadout::{resolve_with, StackPolicy, WeaponBase};
+        let base = WeaponBase::from_data("torid", true, &[]);
+        let serration = crate::mods_data::class_pool("rifle")
+            .into_iter()
+            .find(|m| m.id == "serration")
+            .expect("serration");
+        // A riven whose Damage is deliberately NOT a round number, so an
+        // accidental match cannot be luck.
+        let riven = spec(&["damage", "multishot"], None, 8).to_mod_def("riven:x", 1.3);
+        let bucket = |mods: &[&ModDef]| {
+            resolve_with(&base, mods, StackPolicy::AssumedMax, true).base_damage_bonus
+        };
+
+        let s = bucket(&[&serration]);
+        let r = bucket(&[&riven]);
+        let both = bucket(&[&serration, &riven]);
+        assert!(s > 1.0 && r > 1.0, "both are real bonuses: {s} {r}");
+        // ADDITIVE: the bucket is a sum. A separate multiplicative bucket
+        // would give (1+s)(1+r) - 1 = s + r + s*r, which for these two is
+        // ~2.7 higher — not a rounding difference.
+        assert!(
+            (both - (s + r)).abs() < 1e-9,
+            "riven + mod must SUM in one bucket: {both} vs {s} + {r} = {}",
+            s + r
+        );
+        assert!(
+            (both - (s + r + s * r)).abs() > 1.0,
+            "and it is nowhere near the multiplicative reading"
+        );
+    }
+
     /// A weapon takes ONE riven, and the pool already has a word for that.
     #[test]
     fn two_rivens_cannot_be_equipped_together() {
