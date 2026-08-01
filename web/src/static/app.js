@@ -2399,7 +2399,7 @@ const gainPct = (x) => (x >= 0 ? "+" : "−") + sig2(Math.abs(x) * 100) + "%";
 // the same fact stated twice (user, 2026-08-01). `scenario` names a SAVED one;
 // there is no "current", because a scan is only worth reading against
 // something that has a name and can be returned to.
-let gainPrefs = { scenario: null, precision: "tenth" };
+let gainPrefs = { scenario: null, precision: "auto", runs: 1 };
 try { const s = JSON.parse(localStorage.getItem("wfsim-gain")); if (s) gainPrefs = { ...gainPrefs, ...s }; } catch (_) {}
 const saveGainPrefs = () => localStorage.setItem("wfsim-gain", JSON.stringify(gainPrefs));
 
@@ -2411,12 +2411,16 @@ function gainScenario() {
   const p = ps.find((x) => x.name === gainPrefs.scenario)
     || ps.find((x) => x.name === activeScenario) || ps[0];
   const st = p ? { ...sim, ...p.state } : { ...sim };
-  const runs = Math.max(1, gainPrefs.precision === "tenth" ? Math.ceil((st.runs || 1) / 10) : (st.runs || 1));
+  // AUTO is two passes: one run over everything, then the contenders again
+  // with more. CUSTOM is one pass at whatever you typed.
+  const auto = gainPrefs.precision === "auto";
+  const runs = auto ? 1 : Math.max(1, Math.min(20000, gainPrefs.runs || 1));
+  const refine = auto ? Math.max(2, Math.ceil((st.runs || 1) / 10)) : 0;
   // The WHOLE buff map travels, not just the current build's cards: a
   // candidate's buff is by definition not in `buffList`, and the scenario may
   // well have an opinion about it. Unmentioned buffs take their own default
   // (full stacks, unlocked), which is the honest reading of "no opinion".
-  return { name: p ? p.name : "—",
+  return { name: p ? p.name : "—", refine,
     scenario: { ...st, runs, seed: GAIN_SEED, buffs: st.buffs || {} } };
 }
 
@@ -2465,12 +2469,16 @@ function gainCandidates(axis) {
     .filter((c) => modsCompatible(c.payload.mods));
 }
 
+// How many of the leaders AUTO looks at twice. Small on purpose: the second
+// pass exists to settle an ORDER, and an order is decided at the top.
+const GAIN_REFINE_TOP = 12;
+
 async function scanGains(axis, onTick) {
   if (gainScan.running) return;
   gainAxis = axis;
-  const { name, scenario } = gainScenario();
+  const { name, scenario, refine } = gainScenario();
   gainScan = { key: gainKey(), running: true, base: 0, by: {}, done: 0, total: 0,
-    note: `${name} · ${scenario.runs}×`, metric: "" };
+    note: `${name} · ${scenario.runs}×${refine ? ` → ${refine}×` : ""}`, metric: "" };
   // Kill progress is the optimizer's metric and the one a player is actually
   // buying; DPS is the fallback for a target this build cannot kill at all,
   // where the ratio has no denominator. The SCENARIO decides which.
@@ -2486,12 +2494,39 @@ async function scanGains(axis, onTick) {
   gainScan.base = base;
   gainScan.metric = useKills ? tr("kill rate") : tr("DPS");
   const cands = gainCandidates(axis);
-  gainScan.total = cands.length;
+  gainScan.total = cands.length + (refine ? Math.min(GAIN_REFINE_TOP, cands.length) + 1 : 0);
   for (const c of cands) {
     const v = await run(c.payload);
     gainScan.done++;
-    if (v != null) gainScan.by[c.id] = { pct: (v - base) / base };
+    if (v != null) gainScan.by[c.id] = { pct: (v - base) / base, runs: scenario.runs };
     if (onTick) onTick(gainScan);
+  }
+  // SECOND PASS. One run ranks the field cheaply but cannot separate its top
+  // few — so the leaders are asked again with more, against a baseline
+  // measured the same way. Everything below them keeps its first answer,
+  // which is all a position near the bottom needs to be right about.
+  if (refine) {
+    const deep = { ...scenario, runs: refine };
+    const runDeep = async (override) => {
+      const r = await api("/api/simulate", { ...buildPayload(), ...deep, ...override });
+      if (!r || !r.ok) return null;
+      return useKills ? (r.score ?? r.kills ?? 0) : (r.dps || 0);
+    };
+    const deepBase = await runDeep({});
+    gainScan.done++;
+    if (onTick) onTick(gainScan);
+    if (deepBase) {
+      const top = cands
+        .filter((c) => gainScan.by[c.id])
+        .sort((a, b) => gainScan.by[b.id].pct - gainScan.by[a.id].pct)
+        .slice(0, GAIN_REFINE_TOP);
+      for (const c of top) {
+        const v = await runDeep(c.payload);
+        gainScan.done++;
+        if (v != null) gainScan.by[c.id] = { pct: (v - deepBase) / deepBase, runs: refine };
+        if (onTick) onTick(gainScan);
+      }
+    }
   }
   gainScan.running = false;
   if (onTick) onTick(gainScan);
@@ -2503,8 +2538,8 @@ async function scanGains(axis, onTick) {
 const gainChipFor = (id, where) => {
   const g = gainOf(id);
   return g
-    ? `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}" title="${escHtml(
-        `${where} · ${gainScan.metric} · ${gainScan.note}`)}">${gainPct(g.pct)}</span>`
+    ? `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}${g.runs > 1 ? " deep" : ""}" title="${escHtml(
+        `${where} · ${gainScan.metric} · ${gainScan.note} · ${g.runs}×`)}">${gainPct(g.pct)}</span>`
     : "";
 };
 
@@ -2547,18 +2582,24 @@ function renderQuickCalc() {
     `<span class="pc-h">⚡ ${escHtml(tr("Quick calc"))}</span>` +
     `<select id="gp-scen" title="${escHtml(tr("the saved scenario to measure under — it also decides KPM or DPS"))}">${
       ps.map((p) => opt(p.name, p.name, cur)).join("")}</select>` +
-    `<select id="gp-prec" title="${escHtml(tr("a tenth of the runs is a fast sweep; the baseline and every candidate share one seed, so the comparison stays paired"))}">${
-      opt("tenth", "1/10", gainPrefs.precision) + opt("full", tr("full runs"), gainPrefs.precision)}</select>` +
+    `<select id="gp-prec" title="${escHtml(tr("auto: one run over everything, then the leaders again with more — the baseline and every candidate share one seed, so the comparison stays paired"))}">${
+      opt("auto", tr("auto"), gainPrefs.precision) + opt("custom", tr("custom"), gainPrefs.precision)}</select>` +
+    (gainPrefs.precision === "custom"
+      ? `<input id="gp-runs" type="number" min="1" max="20000" value="${gainPrefs.runs || 1}" title="${escHtml(tr("runs per candidate"))}">`
+      : "") +
     `<span class="pc-note">${gainScan.running
       ? `${gainScan.done}/${gainScan.total}`
       : (gainScan.note ? escHtml(gainScan.note) : escHtml(tr("open a slot to rank its mods by effect")))}</span>`;
   // Every click stays inside: a redraw detaches these nodes, and the document
   // outside-click handler closes on a target whose `.popover` ancestor is gone.
   box.onclick = (e) => e.stopPropagation();
-  ["gp-scen", "gp-prec"].forEach((id) => {
-    $(id).onchange = (e) => {
+  ["gp-scen", "gp-prec", "gp-runs"].forEach((id) => {
+    const el = $(id);
+    if (!el) return;
+    el.onchange = (e) => {
       e.stopPropagation();
-      gainPrefs = { scenario: $("gp-scen").value, precision: $("gp-prec").value };
+      gainPrefs = { scenario: $("gp-scen").value, precision: $("gp-prec").value,
+        runs: $("gp-runs") ? Math.max(1, Number($("gp-runs").value) || 1) : (gainPrefs.runs || 1) };
       saveGainPrefs();
       renderQuickCalc();
     };

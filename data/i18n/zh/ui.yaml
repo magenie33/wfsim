@@ -95,8 +95,10 @@ ui:
   "KPM": KPM
   "what the run is judged by — the headline number and the picker's gain scan both follow it": 这次模拟以什么为准 —— 主数字和选择器的提升排序都跟着它
   "DPS": DPS
-  "a tenth of the runs is a fast sweep; the baseline and every candidate share one seed, so the comparison stays paired": 十分之一次数是快速扫描；基准和每个候选共用同一随机种子，所以比较是成对的，噪声会抵消
-  "full runs": 完整次数
+  "auto": 自动
+  "custom": 自定义
+  "runs per candidate": 每个候选跑几次
+  "auto: one run over everything, then the leaders again with more — the baseline and every candidate share one seed, so the comparison stays paired": 自动：先用 1 次粗筛全部候选，再对领先者加大次数复算 —— 基准和每个候选共用同一随机种子，比较是成对的
   "Atmosphere": 地面
   "Archwing": 空战
   "where the weapon is fired — it changes reload and ammo, nothing else": 武器在哪里开火 —— 它只影响装填和弹药，其余不变

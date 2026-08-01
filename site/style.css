@@ -579,3 +579,6 @@ label.check input{width:auto}
 .quick-calc .pc-h{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .quick-calc select{font:inherit;font-size:12px;max-width:150px}
 .quick-calc .pc-note{margin-left:auto;color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+/* A gain the second pass confirmed reads a touch stronger than a one-run one. */
+.gainchip.deep{font-weight:600}
+.quick-calc input[type=number]{width:64px;font:inherit;font-size:12px}
