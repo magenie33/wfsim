@@ -1694,7 +1694,10 @@ fn pick_part<'a>(parts: &'a [BodyPart], rng: &mut Rng) -> &'a BodyPart {
 /// A SHOT THAT COSTS NOTHING needs no round at all (user, 2026-07-30). Dual
 /// Toxocyst hits this exactly: the last round headshots, the magazine lands on
 /// 0, and that same kill arms Frenzy's +100% ammo efficiency — so the next shot
-/// is free and fires instead of forcing a reload.
+/// is free and fires instead of forcing a reload. That used to be its own
+/// `free_shot` flag threaded through this call; the ceiling subsumes it, since
+/// `0 <= ceil(anything)` holds on an empty magazine too (owner, 2026-08-01:
+/// the free shot is not the fundamental thing, the COST is).
 ///
 /// What the ceiling ADDS is the case above one round. Seven left and a shot
 /// costing ten: `10 <= ceil(7)` is false, so the weapon reloads. The old test
@@ -1703,8 +1706,8 @@ fn pick_part<'a>(parts: &'a [BodyPart], rng: &mut Rng) -> &'a BodyPart {
 /// agree for every cost at or below one round (`ceil(x) >= 1` on any positive
 /// magazine): ammo efficiency put costs in the 0.x range and exposed nothing
 /// (owner). The Larkspur Prime's alt-fire costs TEN.
-fn can_fire(magazine: f64, cost: f64, free_shot: bool) -> bool {
-    free_shot || cost <= (magazine - 1e-9).max(0.0).ceil() + 1e-9
+fn can_fire(magazine: f64, cost: f64) -> bool {
+    cost <= (magazine - 1e-9).max(0.0).ceil() + 1e-9
 }
 
 /// How many WHOLE rounds a reload moves out of reserve.
@@ -2715,7 +2718,6 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 ap.ammo_cost * (1.0 - eff)
             }
         };
-        let free_shot = next_cost <= 1e-9;
 
         // Phase transitions and reloads.
         if let Some(cy) = &params.cycle {
@@ -2736,7 +2738,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 base_mag += reload_draw(cy.base_form.magazine_size, base_mag);
                 continue;
             }
-            if in_base_form && !can_fire(base_mag, next_cost, free_shot) {
+            if in_base_form && !can_fire(base_mag, next_cost) {
                 // Base-form reload (infinite reserve assumed in the cycle).
                 let rs = live_reload_speed(params, &mut rs_stacks, t);
                 t += live_reload_time(&cy.base_form, params, &mut arc, rs, t);
@@ -2755,7 +2757,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 field_duration_boost = true;
                 continue;
             }
-        } else if !can_fire(magazine, next_cost, free_shot) {
+        } else if !can_fire(magazine, next_cost) {
             // Cannot fire: reload (blocking) or, with dry finite reserves,
             // stop firing altogether (DoTs still drain below).
             if !params.infinite_reserve && reserve < 1e-9 {
@@ -2852,8 +2854,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // fresh magazine (see the `+=` above).
         // BuffBar (Frenzy) + static arcane (Akimbo Slip Shot, assumed-max) +
         // live arcane stacks (Primary Crux). Summed and capped by
-        // `ammo_efficiency`, which is also what the `free_shot` gate above
-        // reads — one definition, so the two cannot drift apart.
+        // `ammo_efficiency`, which is also what `next_cost` above reads — one
+        // definition, so the two cannot drift apart.
         let efficiency = ammo_efficiency(
             ap.ammo_efficiency_applies,
             contribs.ammo_efficiency,
@@ -7603,15 +7605,18 @@ mod tests {
     fn a_reload_is_decided_by_what_the_next_shot_costs() {
         // 7 left, the shot costs 10: it does NOT fire. Under `current > 0` it
         // did, and landed on −3 — a debt one whole-round draw cannot clear.
-        assert!(!can_fire(7.0, 10.0, false), "7 cannot pay for 10");
-        assert!(can_fire(10.0, 10.0, false), "10 pays for 10 exactly");
+        assert!(!can_fire(7.0, 10.0), "7 cannot pay for 10");
+        assert!(can_fire(10.0, 10.0), "10 pays for 10 exactly");
         // 0.2 left, the shot costs 1: it DOES fire, because ceil(0.2) is 1.
-        assert!(can_fire(0.2, 1.0, false), "the ceiling is what lets this through");
-        assert!(!can_fire(0.0, 1.0, false), "empty is empty");
+        assert!(can_fire(0.2, 1.0), "the ceiling is what lets this through");
+        assert!(!can_fire(0.0, 1.0), "empty is empty");
         // A beam tick at 0.5 clears the same ceiling with room to spare.
-        assert!(can_fire(0.2, 0.5, false), "0.5 <= ceil(0.2)");
-        // A free shot ignores the whole question.
-        assert!(can_fire(0.0, 10.0, true), "a free shot costs nothing");
+        assert!(can_fire(0.2, 0.5), "0.5 <= ceil(0.2)");
+        // A FREE shot is not a special case, it is `cost == 0`: the ceiling
+        // lets it through on an empty magazine, which is what the `free_shot`
+        // flag used to be for.
+        assert!(can_fire(0.0, 0.0), "0 <= ceil(0)");
+        assert!(can_fire(-0.8, 0.0), "and on an overdrawn one");
 
         // The overdraw the second case creates is bounded to (−1, 0], which is
         // what keeps `reload_draw`'s whole-round rule (M14) correct: a
