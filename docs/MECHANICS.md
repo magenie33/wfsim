@@ -260,6 +260,14 @@ separate 'magazine'", and "Incarnon Form is not affected by Ammo Efficiency" —
 so it sits outside the ammo economy the 0.5 rule exists to help. Whether the
 rule reaches a charge pool anyway is unresolved, and the wiki does not say.
 
+**What it is worth, if it does** (measured 2026-08-01): the Torid Incarnon's
+charge window lives in `pseudo_reload.magazine`, whose 170 already encodes the
+assumption of 1 charge per tick — half-cost is that number doubled, not an
+`ammo_cost` change. Doubling it to 340 over a 60 s run took DPS 3634 → 3919
+(**+7.8%**) and transforms 4 → 2: a longer window spends proportionally less
+time in the two transitions. So the open question is worth ~8% on this weapon,
+and settling it needs one measurement — how many ticks a full gauge fires.
+
 **What settles it:** time one full Incarnon window at 8 ticks/s on 170
 charges. 1 charge per tick gives ~21 s; 0.5 gives ~42 s. Until that is
 measured the flat 1.0 stands, because it is what the charge count divides into
