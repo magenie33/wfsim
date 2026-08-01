@@ -2221,7 +2221,13 @@ pub fn simulate_json(v: &Value) -> Value {
     // (Galvanized Crosshairs / Scope, Argon Scope, Sharpened Bullets, …).
     // Defaults TRUE, which is what the sim silently assumed before this
     // existed — so no stored preset changes meaning.
-    let aiming = get_bool(v, "aiming", true);
+    // A SENTINEL WEAPON IS ALWAYS AIMING (user, 2026-08-01, settling M18a).
+    // What it cannot do is trigger the on-HEADSHOT half of an aiming mod,
+    // because it never aims at the head — which the sim already gets right
+    // from the other end: `default_headshot_pct` is 0 for a sentinel, so no
+    // headshot lands and no on-headshot buff fires. So the state is on, the
+    // triggers stay dead, and the request cannot say otherwise.
+    let aiming = info.sentinel || get_bool(v, "aiming", true);
     // INFINITE AMMO, and it is the DEFAULT for every weapon (user, 2026-08-01).
     // The sim models no ammo PICKUPS, so a finite reserve is the pessimistic
     // half of a mechanic we only half have — and the headline number people

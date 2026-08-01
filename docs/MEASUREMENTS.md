@@ -665,34 +665,34 @@ the Simulacrum as a lab — missions are authoritative for the engine.)
 
 ---
 
-## M18 — Does a SENTINEL weapon have an aiming state, and does the beam ammo rule hold?
+## M18 — Sentinel aiming (answered), and the beam ammo rule (implemented)
 
 Two questions the wiki does not answer, both raised on 2026-08-01, both about
 weapons already in the roster.
 
-### (a) Aiming
+### (a) Aiming — ANSWERED, and implemented
 
-`Sentinel` says nothing about it. What the data says instead: **Verglas Prime's
-stat table has no Zoom row and no Recoil row** — the two stats an aim state
-exists to change — and a companion is never held by the player. So there is
-reason to think a sentinel weapon simply has no aimed state, and every
-`while_aiming` effect on one is dead.
+**A sentinel weapon is ALWAYS aiming** (owner, 2026-08-01). What it cannot do
+is TRIGGER the on-headshot half of an aiming mod, because it never aims at the
+head.
 
-**What it is worth today: nothing.** All four aim-gated rifle mods (Argon
-Scope, Galvanized Scope, Bladed Rounds, Catalyzer Link) are CONDITIONAL buffs,
-and a sentinel runs `StackPolicy::BaseOnly`, so their triggers never fire
-whatever the Aiming box says. The toggle moves no number on Verglas Prime —
-measured. It becomes load-bearing the day a FLAT aim-gated effect can reach a
-sentinel weapon (Critical Focus is one, but it is Arch-Gun only).
+That is two facts, and the sim already had the second one: `default_headshot_pct`
+is 0 for a sentinel, so no headshot lands and no on-headshot buff can fire.
+The first is now stated too — `aiming` is forced true for a sentinel weapon and
+the request cannot say otherwise, with the box shown ticked and DISABLED, the
+same shape as infinite ammo. The state is real; the control is honestly
+unavailable.
 
-**Status:** unverified, and deliberately NOT implemented as a rule. The box
-stays live rather than being forced off on a guess — the same reasoning that
-kept `zodiac_shred` at `exilus: false` in M17, applied to the other direction:
-here the safe error is to leave the visible control alone, because forcing it
-would assert a mechanic no source states.
+Why it was worth settling even though it moves no number today: all four
+aim-gated rifle mods (Argon Scope, Galvanized Scope, Bladed Rounds, Catalyzer
+Link) are CONDITIONAL, so a sentinel's `BaseOnly` policy kills them anyway.
+A FLAT aim-gated effect would have been read wrong the moment one could reach
+a sentinel weapon — Critical Focus is exactly that, and it is Arch-Gun only by
+luck rather than by rule.
 
-**What settles it:** equip a flat aim-gated mod on a sentinel weapon and read
-the arsenal panel, or watch a Galvanized Scope stack land on one.
+Evidence that agrees: Verglas Prime's stat table has no Zoom row and no Recoil
+row, which is what "the player never aims it" looks like from the stat side —
+the aim STATE is not the same thing as an aim-down-sights optic.
 
 ### (b) The 0.5-per-trace beam ammo cost — IMPLEMENTED, needs confirming
 

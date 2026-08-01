@@ -676,6 +676,9 @@ pub struct WeaponBase {
     pub charge_seconds: Option<f64>,
     /// Ammo spent per shot / per beam tick (weapon data `attack.ammo_cost`).
     pub ammo_cost: f64,
+    /// Does a fire-rate bonus shorten the DRAW? False for Arch-Guns, whose
+    /// fire rate paces only the interval — see `weapons_data`.
+    pub fire_rate_shortens_draw: bool,
     /// Which charge formula paces it — see [`crate::weapons_data::ChargeCadence`].
     pub charge_cadence: crate::weapons_data::ChargeCadence,
     /// What a fire-rate MOD's bonus is multiplied by on this weapon — 2.0 for
@@ -1620,9 +1623,16 @@ pub fn resolve_with(
         // multiplying a rate (wiki Fire Rate: on charge weapons the bonus
         // "decreases the charge time"). Same bucket, reciprocal application —
         // and on a bow the bucket already carries the x2.
-        charge_seconds: base
-            .charge_seconds
-            .map(|c| c / (1.0 + fr + cr + base.evo_fire_rate_bonus).max(1e-9)),
+        // The DRAW's divisor. Charge-rate bonuses always count; fire-rate
+        // ones count only where the weapon lets them (an Arch-Gun does not).
+        charge_seconds: base.charge_seconds.map(|c| {
+            let from_rate = if base.fire_rate_shortens_draw {
+                fr + base.evo_fire_rate_bonus
+            } else {
+                0.0
+            };
+            c / (1.0 + cr + from_rate).max(1e-9)
+        }),
         ammo_cost: base.ammo_cost,
         charge_cadence: base.charge_cadence,
         headshot_damage_bonus: base.headshot_damage_bonus,

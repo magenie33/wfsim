@@ -780,6 +780,18 @@ const exilusPool = () => poolWithRivens().filter((m) => m.exilus);
 // a TICKED, DISABLED box: the state is real and the control is honestly
 // unavailable, which a hidden control would not say.
 const ammoForced = (w) => !w.finite_reserve;
+// A SENTINEL WEAPON IS ALWAYS AIMING (user, 2026-08-01) — it just never aims
+// at the HEAD, which is why its headshot default is 0 and every on-headshot
+// trigger stays dead anyway. Ticked and disabled, the same shape as infinite
+// ammo: the state is real, the control is honestly unavailable.
+const aimField = (w, state) => {
+  const forced = !!w.sentinel;
+  const on = forced || state.aiming;
+  const why = forced
+    ? tr("a sentinel weapon is always aiming — it just never aims at the head, so on-headshot effects never fire")
+    : tr("mods that only work while aiming (Galvanized Crosshairs, Argon Scope, Sharpened Bullets…) grant nothing when this is off");
+  return `<label class="check" title="${escHtml(why)}"><input type="checkbox" data-k="aiming"${on ? " checked" : ""}${forced ? " disabled" : ""}> ${escHtml(tr("Aiming"))}</label>`;
+};
 const ammoField = (w, state) => {
   const forced = ammoForced(w);
   const on = forced || state.infinite_ammo !== false;
@@ -2694,7 +2706,7 @@ function renderSim() {
   }
   $("sim-technique").innerHTML = `
     ${formField(formOpts, sim.form)}
-    <label class="check" title="${escHtml(tr("mods that only work while aiming (Galvanized Crosshairs, Argon Scope, Sharpened Bullets…) grant nothing when this is off"))}"><input type="checkbox" data-k="aiming" ${sim.aiming ? "checked" : ""}> ${escHtml(tr("Aiming"))}</label>
+    ${aimField(w, sim)}
     <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>
     ${ammoField(w, sim)}`;
   // Section 4 — the MEASUREMENT: nothing the player does in-game.
@@ -3181,7 +3193,7 @@ function renderOptEnemy() {
     if (formOpts.length && !formOpts.some(([id]) => id === optSim.form)) optSim.form = defaultFormId(w, formOpts);
     tech.innerHTML = `
     ${formField(formOpts, optSim.form)}
-    <label class="check" title="${escHtml(tr("mods that only work while aiming grant nothing when this is off - the optimizer scores builds under the same assumption the sim replays them with"))}"><input type="checkbox" data-k="aiming" ${optSim.aiming ? "checked" : ""}> ${escHtml(tr("Aiming"))}</label>
+    ${aimField(weaponInfo($("weapon").value) || {}, optSim)}
     ${ammoField(weaponInfo($("weapon").value) || {}, optSim)}
     <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${optSim.headshot_pct}"></label>`;
   }

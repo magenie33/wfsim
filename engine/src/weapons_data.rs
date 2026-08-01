@@ -772,6 +772,21 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         } else {
             ChargeCadence::DrawThenRate
         },
+        // Does a FIRE-RATE bonus shorten the draw as well as the interval?
+        //
+        // The wiki's general charge formula says yes — "Charge Time = Base
+        // Charge Time / (1 + Mod Bonus)". An ARCH-GUN is the exception (owner,
+        // 2026-08-01): its fire rate governs only the interval between shots,
+        // and the draw answers to a stat of its own. The mod cards are the
+        // visible half of that split — Shell Rush is "+50% Charge Rate" where
+        // Automatic Trigger is "+X% Fire Rate", and Archgun Ace grants
+        // "Fire/Charge Rate", naming two things a single card would not.
+        //
+        // CHARGE-rate bonuses shorten the draw on every weapon; this flag is
+        // only about fire rate. Kept beside `charge_cadence` because it is the
+        // same kind of fact — how a weapon's draw and its rate compose — and
+        // the sim has no business knowing what an Arch-Gun is.
+        fire_rate_shortens_draw: s.class != "archgun",
         // "(x2 for Bows)" — the clause every fire-rate mod card carries
         // (Shred, Primed Shred, Speed Trigger, Vile Acceleration, Vigilante
         // Fervor, and the two DRAWBACK mods Critical Delay / Vile Precision,
@@ -837,6 +852,62 @@ mod tests {
     /// The Larkspur Prime is the first weapon that can RUN OUT, and this is
     /// the whole data path end to end: YAML -> spec -> base -> panel -> sim.
     ///
+    /// AN ARCH-GUN'S FIRE RATE DOES NOT SHORTEN ITS DRAW.
+    ///
+    /// The two are separate stats on this weapon class (owner, 2026-08-01),
+    /// and the mod cards show the split: Shell Rush is "+50% Charge Rate"
+    /// where Automatic Trigger is "+60% Fire Rate", and Archgun Ace grants
+    /// "Fire/Charge Rate" — two names one card would not carry if they were
+    /// one stat. The wiki's general charge formula does divide the draw by
+    /// fire rate; the Arch-Gun is the exception, which is why the fact rides
+    /// on the weapon next to `charge_cadence` instead of being assumed.
+    ///
+    /// The cycle is draw, shot, then an interval of 1/rate — the wiki's own
+    /// "Effective Fire Rate = 1 / (Modded Charge Time + 1/Modded Fire Rate)".
+    #[test]
+    fn an_archgun_charge_answers_to_charge_rate_and_its_interval_to_fire_rate() {
+        use crate::loadout::{resolve_with, ModEffect, StackPolicy, WeaponBase};
+        let base = WeaponBase::from_data("larkspur_prime_charged", true, &[]);
+        assert!(!base.fire_rate_shortens_draw, "an arch-gun keeps them apart");
+
+        let with = |e: Vec<ModEffect>| {
+            let m = crate::loadout::ModDef {
+                id: "t",
+                base_drain: 0,
+                max_rank: 0,
+                polarity: crate::mods::Polarity::Madurai,
+                rarity: crate::loadout::Rarity::Common,
+                exilus: false,
+                family: None,
+                requires_weapon: None,
+                excludes_weapon: Vec::new(),
+                set: None,
+                requires: None,
+                disables: Vec::new(),
+                effects: e,
+            };
+            let p = resolve_with(&base, &[&m], StackPolicy::AssumedMax, true);
+            (p.charge_seconds.expect("a charged form draws"), p.fire_rate)
+        };
+        let (d0, r0) = with(Vec::new());
+        assert!((d0 - 0.5).abs() < 1e-9 && (r0 - 2.0).abs() < 1e-9, "{d0} {r0}");
+
+        // Fire rate moves the INTERVAL only.
+        let (d1, r1) = with(vec![ModEffect::FireRate(0.60)]);
+        assert!((d1 - 0.5).abs() < 1e-9, "the draw is untouched: {d1}");
+        assert!((r1 - 3.2).abs() < 1e-9, "2.0 x 1.6: {r1}");
+
+        // Charge rate moves the DRAW only.
+        let (d2, r2) = with(vec![ModEffect::ChargeRate(0.50)]);
+        assert!((d2 - 0.5 / 1.5).abs() < 1e-9, "0.5 / 1.5: {d2}");
+        assert!((r2 - 2.0).abs() < 1e-9, "the rate is untouched: {r2}");
+
+        // Together: 0.3333 draw + 0.3125 interval = 0.6458 s per shot.
+        let (d3, r3) = with(vec![ModEffect::FireRate(0.60), ModEffect::ChargeRate(0.50)]);
+        assert!((d3 - 0.5 / 1.5).abs() < 1e-9, "{d3}");
+        assert!((d3 + 1.0 / r3 - 0.645833333).abs() < 1e-6, "cycle: {}", d3 + 1.0 / r3);
+    }
+
     /// Ground Arch-Gun: 100 in the magazine, 400 behind it, and no way to
     /// resupply (wiki Arch-Gun). 500 ROUNDS and then the weapon is gone —
     /// inside a 120 s engagement, so the clock is not what stops it.
