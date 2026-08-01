@@ -748,6 +748,37 @@ let rivenPickerSlot = null;
 
 /// Everything equippable on this weapon: the pool, plus this weapon's rivens.
 const poolWithRivens = () => currentPool.concat(rivenMods());
+/// What may go in the EXILUS slot. Both modules ask this one function: the
+/// builder used `poolWithRivens()` and the optimizer `currentPool`, which
+/// agreed only because no riven is exilus-eligible — a coincidence, not a
+/// rule, and the sort that stops being true without anyone noticing.
+const exilusPool = () => poolWithRivens().filter((m) => m.exilus);
+
+/// THE WEAPON'S BUILD AXES — one description, read by BOTH modules.
+///
+/// The builder fills these slots and the optimizer searches them, so they are
+/// the same question asked twice. Stating them once is what makes a new
+/// weapon a ONE-PLACE change (user, 2026-08-01): a sentinel that seats no
+/// arcane, an Arch-Gun that seats two, a pool with no exilus mod in it — each
+/// is a fact about the weapon, and neither module gets its own opinion.
+///
+/// AN AXIS IS SHOWN IFF IT HAS OPTIONS. That one rule replaced three separate
+/// conditions (`!sentinel`, `arcane_slots >= 1`, `uses_evo2`), each of which
+/// was a category guess standing in for "is there anything to choose here" —
+/// and each of which had to be remembered twice.
+function weaponAxes(weaponId) {
+  const w = weaponInfo(weaponId || $("weapon").value) || {};
+  const exilus = w.sentinel ? [] : exilusPool();
+  return {
+    mods: poolWithRivens(),
+    exilus,
+    hasExilus: exilus.length > 0,
+    // One entry per arcane pool, in the weapon's own pool order.
+    arcanes: (w.arcane_pools || []).map((pool, i) => ({ pool, options: arcanePool(i) })),
+    // One entry per evolution tier.
+    evolutions: weaponEvos(),
+  };
+}
 
 /// The rivens a request must carry for its `riven:` ids to mean anything.
 const rivenPayload = () =>
@@ -1834,8 +1865,9 @@ function applyWeaponInner(id, presetMods) {
   $("w-tags").innerHTML = [w.subtype, w.uses_evo2 ? "Incarnon" : null, w.sentinel ? "Sentinel" : null]
     .filter(Boolean).map((t) => `<span class="tag">${t}</span>`).join("");
 
-  show("arcane-block", (w.arcane_slots || 0) >= 1);
-  show("evo-block", w.uses_evo2);
+  const AX = weaponAxes(w.id);
+  show("arcane-block", AX.arcanes.length > 0);
+  show("evo-block", AX.evolutions.length > 0);
   show("element-block", !!w.element_config);
   // An Arch-Gun's two slots are NOT interchangeable, so the line names the
   // pools rather than counting them: "primary + secondary", not "2 slots".
@@ -1947,7 +1979,7 @@ function renderMods() {
   // label included. Standing a placeholder where the slot would be says
   // "something is missing here"; the truth is that nothing belongs there
   // (user, 2026-07-31).
-  const hasExilus = !weaponInfo($("weapon").value).sentinel;
+  const hasExilus = weaponAxes().hasExilus;
   show("exilus-block", hasExilus);
   const ex = $("exilus");
   ex.innerHTML = "";
@@ -2215,7 +2247,9 @@ function renderMenu(slotIdx, query) {
   // slots show their slot number — picking one of those EXCHANGES the two slots.
   const group = (m) => slots[slotIdx].mod === m.id ? 0 : placedAt(m.id, slotIdx) >= 0 ? 1 : 2;
   const hits = poolWithRivens()
-    .filter((m) => slotIdx !== EXILUS || m.exilus) // exilus slot: utility mods only
+    // The exilus slot takes what `exilusPool()` says, which is the same
+    // question the optimizer's exilus scope asks.
+    .filter((m) => slotIdx !== EXILUS || m.exilus)
     .filter((m) => !pickerPrefs.pol || m.polarity === pickerPrefs.pol)
     .filter((m) => !q || searchBlob(m).includes(q))
     .sort((a, b) => {
@@ -2368,7 +2402,7 @@ const effLines = (arr) => arr.length ? `<div class="me">${arr.map((x) => `<div>$
 function renderArcanes() {
   const box = $("arcane-slots");
   box.innerHTML = "";
-  arcanePools().forEach((pool, i) => box.appendChild(arcaneSlotEl(pool, i)));
+  weaponAxes().arcanes.forEach((ax, i) => box.appendChild(arcaneSlotEl(ax.pool, i)));
 }
 
 // One arcane slot: the card if filled, the "+ add" plate if not. The POOL is
@@ -2970,9 +3004,10 @@ function renderOpt() {
   // and worse, an invitation to configure a slot it cannot equip. The same
   // three facts the builder hides its blocks on (user, 2026-08-01).
   const w = weaponInfo($("weapon").value) || {};
-  show("opt-exilus-sect", !w.sentinel);
-  show("opt-arcanes-sect", (w.arcane_pools || []).length > 0);
-  show("opt-evos-sect", !!w.uses_evo2);
+  const AX = weaponAxes(w.id);
+  show("opt-exilus-sect", AX.hasExilus);
+  show("opt-arcanes-sect", AX.arcanes.length > 0);
+  show("opt-evos-sect", AX.evolutions.length > 0);
   // Seed scope from the current build once: equipped mods = fixed.
   if (!optSeeded) {
     opt.mods = {}; opt.exilus = {};
@@ -3102,7 +3137,7 @@ function renderOptExilus() {
       </div>
     </div>`;
   };
-  $("opt-exilus").innerHTML = currentPool.filter((m) => m.exilus).map(row).join("")
+  $("opt-exilus").innerHTML = weaponAxes().exilus.map(row).join("")
     || `<div class="opt dis">no exilus mods in this pool</div>`;
   $("opt-exilus").querySelectorAll(".seg:not(.dis)").forEach((el) =>
     el.addEventListener("click", (e) => {
@@ -3119,7 +3154,7 @@ function renderOptExilus() {
 // what searches the empty slot, so there is no "None" row to mark.
 function renderOptArcanes() {
   const q = ($("opt-arc-filter") && $("opt-arc-filter").value || "").trim().toLowerCase();
-  const pools = arcanePools();
+  const axes = weaponAxes().arcanes;
   const row = (a, pinned, hasPool) => {
     const st = opt.arcanes[a.id] || "off";
     // Neither mark blocks the other: clicking one rewrites the group
@@ -3139,14 +3174,14 @@ function renderOptArcanes() {
   // be per-pool is the RULE: "req pins the slot" pins THAT slot, and a pin in
   // the Primary section has nothing to do with the Secondary one. The section
   // header is drawn only when there is more than one, as everywhere else.
-  $("opt-arcanes").innerHTML = pools
-    .map((pool, i) => {
-      const inPool = arcanePool(i).filter((a) => !q || searchBlob(a).includes(q));
-      const ids = new Set(arcanePool(i).map((a) => a.id));
+  $("opt-arcanes").innerHTML = axes
+    .map(({ pool, options }, i) => {
+      const inPool = options.filter((a) => !q || searchBlob(a).includes(q));
+      const ids = new Set(options.map((a) => a.id));
       const marks = Object.keys(opt.arcanes).filter((id) => ids.has(id));
       const pinned = marks.find((id) => opt.arcanes[id] === "fixed") || null;
       const hasPool = marks.some((id) => opt.arcanes[id] === "search");
-      const head = pools.length > 1
+      const head = axes.length > 1
         ? `<div class="menu-head">${escHtml(tr(SLOT_LABEL[pool] || pool))}</div>`
         : "";
       const rows = inPool.map((a) => row(a, pinned, hasPool)).join("")
