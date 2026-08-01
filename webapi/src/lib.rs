@@ -287,6 +287,40 @@ fn intern(s: String) -> &'static str {
 /// An INCOMPLETE riven is fine and resolves to whatever it does say. A card
 /// with no stats is a mod that does nothing, which is a perfectly ordinary
 /// thing for a build to contain (user, 2026-07-31).
+///
+/// An UNKNOWN stat id is not that, and it is an ERROR. `resolved_slots` drops
+/// a stat it cannot find, so a typo used to equip a riven that occupied a
+/// slot, drained capacity and granted nothing — silently, with the card still
+/// naming the stats. That is the one failure a damage calculator must never
+/// hide, and it is the same rule `mods` already follows ("unknown mod id").
+fn riven_stat_ids_ok(v: &Value, info: &WeaponInfo) -> Result<(), String> {
+    let class = riven_class(info);
+    let pool = wfsim_engine::rivens_data::pool(&class);
+    let known = |x: &Value| -> Result<(), String> {
+        let Some(id) = x.get("id").and_then(|i| i.as_str()) else { return Ok(()) };
+        if id.is_empty() || pool.iter().any(|s| s.id == id) {
+            return Ok(());
+        }
+        Err(format!("unknown riven stat id: {id} (pool: {class})"))
+    };
+    for r in v.get("rivens").and_then(|a| a.as_array()).into_iter().flatten() {
+        let Some(s) = r.get("spec") else { continue };
+        for b in s
+            .get("bonuses")
+            .or_else(|| s.get("positives"))
+            .and_then(|x| x.as_array())
+            .into_iter()
+            .flatten()
+        {
+            known(b)?;
+        }
+        if let Some(c) = s.get("malus").or_else(|| s.get("curse")) {
+            known(c)?;
+        }
+    }
+    Ok(())
+}
+
 fn rivens_from(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
     use wfsim_engine::rivens_data::{RivenSpec, RolledStat};
     let class = riven_class(info);
@@ -1169,6 +1203,9 @@ pub fn panel_json(v: &Value) -> Value {
         .unwrap_or_default();
     if mod_ids.len() > 9 {
         return err_json("at most 8 slots + 1 exilus");
+    }
+    if let Err(e) = riven_stat_ids_ok(v, info) {
+        return err_json(e);
     }
     let p = mod_pool_with_rivens(v, info);
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
@@ -2155,6 +2192,9 @@ pub fn simulate_json(v: &Value) -> Value {
     // engine resolves any mod list honestly.
 
     // ---- resolve mods against the weapon's pool (honoring the given order) ----
+    if let Err(e) = riven_stat_ids_ok(v, info) {
+        return err_json(e);
+    }
     let p = mod_pool_with_rivens(v, info);
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
     for id in &mod_ids {
@@ -2412,6 +2452,9 @@ pub fn opt_buffs_json(v: &Value) -> Value {
     ids.sort();
     ids.dedup();
     // Rivens the request carries join the searchable pool like any mod.
+    if let Err(e) = riven_stat_ids_ok(v, info) {
+        return err_json(e);
+    }
     let full = mod_pool_with_rivens(v, info);
     let refs: Vec<&ModDef> = full
         .iter()
@@ -2520,6 +2563,9 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     fixed_ids.dedup();
     search_ids.retain(|s| !fixed_ids.contains(s)); // fixed wins over search
     // Rivens the request carries join the searchable pool like any mod.
+    if let Err(e) = riven_stat_ids_ok(v, info) {
+        return Err(err_json(e));
+    }
     let full = mod_pool_with_rivens(v, info);
     for id in fixed_ids.iter().chain(search_ids.iter()) {
         if !full.iter().any(|m| m.id == id.as_str()) {
@@ -3461,6 +3507,46 @@ mod asset_tests {
              run `python scripts/gen_assets.py --write`",
             missing.len(),
             missing.join(", ")
+        );
+    }
+}
+
+#[cfg(test)]
+mod riven_stat_id_tests {
+    use super::*;
+
+    fn req(stat: &str) -> Value {
+        json!({
+            "weapon": "torid",
+            "mods": ["riven:Test"],
+            "rivens": [{"name": "Test", "spec": {
+                "bonuses": [{"id": stat, "roll": 1.1}],
+                "rank": 8, "polarity": "madurai"}}],
+        })
+    }
+
+    /// A typo'd riven stat is an ERROR, not a blank card.
+    ///
+    /// `resolved_slots` drops a stat whose id is not in the pool, so before
+    /// this the riven still equipped, still drained capacity, still showed
+    /// its name — and granted nothing. The failure that found it: a request
+    /// built with the stats' `kind` names (`multishot_bonus`) instead of
+    /// their ids (`multishot`) simulated a full build to the DECIMAL of the
+    /// same build with no riven at all.
+    #[test]
+    fn an_unknown_riven_stat_id_is_rejected() {
+        let bad = simulate_json(&req("multishot_bonus"));
+        assert_eq!(bad["ok"], json!(false), "typo'd stat id must not simulate");
+        assert!(
+            bad["error"].as_str().unwrap_or_default().contains("multishot_bonus"),
+            "the error must name the offending id: {bad:?}"
+        );
+        let good = simulate_json(&req("multishot"));
+        assert_eq!(good["ok"], json!(true), "the real id still works: {good:?}");
+        assert!(
+            (good["panel"]["multishot"].as_f64().unwrap_or(0.0) - 1.0).abs() > 0.5,
+            "and it actually grants multishot: {:?}",
+            good["panel"]
         );
     }
 }

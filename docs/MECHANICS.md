@@ -1589,7 +1589,13 @@ component** of the hit vector:
   every shield break.
 - Magnetic status: +100% damage to shields/Overguard on the first stack,
   +25%/stack after (max +325%), and blocks natural shield regen; on
-  break, Electricity burst = 3%/stack of max shields (max 30%).
+  break, Electricity burst = 3%/stack of **the broken pool's** max (max
+  30%), "**When Shield or Overguard breaks**, deal Electricity Damage for
+  3% of enemy's Max Shield or Overguard per stack with a forced Electricity
+  Status Effect" — this line used to say "max shields", which understated
+  it on the only enemy in the roster: a Thrax Centurion carries 15.5 M
+  Overguard and no shield at all, so reading it as shields-only would have
+  deleted the burst entirely. The engine takes the pool that broke.
 - Shields recharge after a delay when not hit; status DoTs do not reset the
   delay timer.
 - Faction vulnerability/resistance (×1.5/×0.5) applies **per component at
