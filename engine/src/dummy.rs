@@ -1539,11 +1539,45 @@ pub struct SourceDamage {
     pub arcane_on_status: f64,
     /// Indexed by `DamageType as usize` (15 variants).
     pub status: [f64; 15],
+    /// The three WEAPON-damage buckets above, each split across the damage
+    /// VECTOR that dealt them (same indexing as `status`).
+    ///
+    /// A status row is already one type — that is what a proc is. A weapon
+    /// hit is not: "direct 3.1 G" hides that it was Corrosive and Magnetic in
+    /// a 76/24 split, which is the part of a build a player actually tunes
+    /// (user, 2026-08-01: "直伤也是有属性的").
+    pub direct_by_type: [f64; 15],
+    pub radial_by_type: [f64; 15],
+    pub field_by_type: [f64; 15],
 }
 
 impl SourceDamage {
     fn add_status(&mut self, t: DamageType, v: f64) {
         self.status[t as usize] += v;
+    }
+}
+
+/// Credit one weapon-damage instance to its bucket's per-type split.
+///
+/// Attribution is by each component's SHARE of the instance's vector, which
+/// is exact wherever a pool takes the whole hit (Overguard, health) and an
+/// approximation in exactly one place: while shields are up, Toxin bypasses
+/// them and its siblings do not, so the components were mitigated
+/// differently and a proportional split cannot see that. The bucket TOTAL is
+/// unaffected either way — this only distributes a number already computed.
+///
+/// The vector passed here is the QUANTIZED one, so the shares are the ones
+/// that actually landed and they will not match the panel's exactly: the
+/// Torid build reading Corrosive 164.73 / Magnetic 52.02 (76/24) snaps to
+/// 24/32 and 8/32 of the total, i.e. exactly 75/25. That gap is the wiki's
+/// quantization, not an error in either number.
+fn add_by_type(dst: &mut [f64; 15], v: &DamageVector, effective: f64) {
+    let total = v.total();
+    if total <= 0.0 {
+        return;
+    }
+    for (t, amount) in v.iter_nonzero() {
+        dst[t as usize] += effective * amount / total;
     }
 }
 
@@ -2296,6 +2330,7 @@ fn field_tick(
     r.total_damage += raw;
     r.effective_damage += effective;
     r.sources.field += effective;
+    add_by_type(&mut r.sources.field_by_type, &qvec, effective);
     r.timeline.add(at, effective);
     r.field_ticks += 1;
     r.kills += killed as u32;
@@ -3261,8 +3296,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 r.effective_damage += effective;
                 if direct {
                     r.sources.direct += effective;
+                    add_by_type(&mut r.sources.direct_by_type, &qvec, effective);
                 } else {
                     r.sources.radial += effective;
+                    add_by_type(&mut r.sources.radial_by_type, &qvec, effective);
                 }
                 r.timeline.add(t, effective);
                 r.kills += killed as u32;
@@ -3739,6 +3776,15 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         sources.arcane_on_status += r.sources.arcane_on_status;
         for (acc, v) in sources.status.iter_mut().zip(r.sources.status) {
             *acc += v;
+        }
+        for (acc, v) in [
+            (&mut sources.direct_by_type, r.sources.direct_by_type),
+            (&mut sources.radial_by_type, r.sources.radial_by_type),
+            (&mut sources.field_by_type, r.sources.field_by_type),
+        ] {
+            for (a, x) in acc.iter_mut().zip(v) {
+                *a += x;
+            }
         }
     }
 

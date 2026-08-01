@@ -94,6 +94,8 @@ ui:
   "Damage by source": 伤害构成
   "Direct hits": 直接命中
   "Arcane (on status)": 赋能附加伤害
+  "Radial (AoE)": 范围伤害
+  "Lingering field": 持续云雾
   "no damage dealt": 未造成伤害
   "no mods equipped": 未安装 MOD
   "none": 无

@@ -334,6 +334,9 @@ let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pc
   duration: 120, runs: 100, form: "default", buffs: {} };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
+// Damage-meter rows the player has expanded into their per-type split, kept
+// across runs so a simulate does not re-collapse them.
+const simMeterOpen = new Set();
 // Optimizer scope, 8 + 1 slots in TWO blocks: `mods` (id -> "search"|"fixed")
 // scopes the MAIN 8 slots — exilus-flagged mods may sit here too, all 9
 // slots accept them (game rule); `exilus` (same states, exilus-eligible mods
@@ -2821,12 +2824,39 @@ function renderResults(r, testedAt) {
   const srcs = r.damage_sources || [];
   const srcTotal = srcs.reduce((a, x) => a + x.dmg, 0) || 1;
   const srcMax = (srcs[0] && srcs[0].dmg) || 1;
-  const srcLabel = (k) => k === "direct" ? tr("Direct hits") : k === "arcane" ? tr("Arcane (on status)") : DT(k);
-  const meter = srcs.map((x, i) => `<div class="mrow">
-      <span class="mname">${srcLabel(x.source)}</span>
-      <div class="mbar"><i style="width:${(x.dmg / srcMax * 100).toFixed(1)}%;background:var(--s${(i % 8) + 1})"></i></div>
+  // Bucket rows are named; a status row is named by its damage type. `field`
+  // and `radial` fell through to `DT()`, which knows damage types only, so
+  // they printed their raw wire key in every language.
+  const SRC_LABEL = { direct: "Direct hits", radial: "Radial (AoE)",
+    field: "Lingering field", arcane: "Arcane (on status)" };
+  const srcLabel = (k) => (SRC_LABEL[k] ? tr(SRC_LABEL[k]) : DT(k));
+  // A WEAPON-damage row EXPANDS into the damage types it was dealt as — a
+  // status row already IS one type, which is what a proc is. Both levels use
+  // the same denominator, so every percentage in the meter reads against the
+  // engagement total and the numbers still sum to 100%.
+  //
+  // The shares are the QUANTIZED ones (the vector that actually landed), so
+  // they will not match the Builder's panel exactly — the Torid's 164.73
+  // Corrosive / 52.02 Magnetic reads 76/24 there and 75/25 here, because
+  // quantization snaps each component to a multiple of total/32.
+  const mbar = (w, c, dim) =>
+    `<div class="mbar"><i style="width:${w.toFixed(1)}%;background:var(--s${c})${dim ? ";opacity:.5" : ""}"></i></div>`;
+  const meter = srcs.map((x, i) => {
+    const c = (i % 8) + 1;
+    const parts = x.by_type && x.by_type.length > 1 ? x.by_type : null;
+    const open = !!parts && simMeterOpen.has(x.source);
+    const head = `<div class="mrow${parts ? " exp" : ""}" data-src="${escHtml(x.source)}">
+      <span class="mname">${parts ? `<span class="mcaret">${open ? "▾" : "▸"}</span>` : ""}${srcLabel(x.source)}</span>
+      ${mbar(x.dmg / srcMax * 100, c, false)}
       <span class="mval">${n0(x.dmg)} · ${pct2(x.dmg / srcTotal)}</span>
+    </div>`;
+    if (!parts) return head;
+    return head + parts.map((p) => `<div class="mrow sub" data-of="${escHtml(x.source)}"${open ? "" : " hidden"}>
+      <span class="mname">${DT(p.type)}</span>
+      ${mbar(p.dmg / srcMax * 100, c, true)}
+      <span class="mval">${n0(p.dmg)} · ${pct2(p.dmg / srcTotal)}</span>
     </div>`).join("");
+  }).join("");
   // DPS-over-time curve (user, 2026-07-29): the MEDIAN run's per-bucket
   // EFFECTIVE dps. One series — the accent line, recessive grid, hover
   // crosshair + tooltip; no legend needed.
@@ -2870,6 +2900,21 @@ function renderResults(r, testedAt) {
       <h3>Detail</h3>
       <div class="stat-table">${detail}</div>
     </div>`;
+  // Meter rows that carry a per-type split toggle theirs. The choice is kept
+  // across runs — a player who opened Direct hits wants it open on the next
+  // simulate, not to reopen it every time.
+  $("sim-results").querySelectorAll(".mrow.exp").forEach((el) => {
+    el.addEventListener("click", () => {
+      const k = el.dataset.src;
+      const open = !simMeterOpen.has(k);
+      if (open) simMeterOpen.add(k);
+      else simMeterOpen.delete(k);
+      el.querySelector(".mcaret").textContent = open ? "▾" : "▸";
+      $("sim-results")
+        .querySelectorAll(`.mrow.sub[data-of="${CSS.escape(k)}"]`)
+        .forEach((c) => { c.hidden = !open; });
+    });
+  });
   // Chart hover: crosshair + tooltip on the nearest time bucket.
   const wrap = $("sim-results").querySelector(".tl-wrap");
   if (wrap) {

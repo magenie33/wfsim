@@ -81,6 +81,12 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 .mrow .mbar{height:12px;background:var(--panel2);border-radius:6px;overflow:hidden}
 .mrow .mbar i{display:block;height:100%;border-radius:6px}
 .mrow .mval{color:var(--text-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* A weapon-damage row expands into the damage types it was dealt as. */
+.mrow.exp{cursor:pointer}
+.mrow.exp:hover .mname{color:var(--text)}
+.mcaret{display:inline-block;width:14px;font-size:10px;color:var(--text-2)}
+.mrow.sub .mname{padding-left:12px;color:var(--text-2)}
+.mrow.sub .mbar{height:8px}
 /* Sim results: damage-over-time curve */
 .tl-wrap{position:relative;margin-top:4px}
 .tl-wrap svg{width:100%;height:170px;display:block}

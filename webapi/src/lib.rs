@@ -2348,25 +2348,47 @@ pub fn simulate_json(v: &Value) -> Value {
         "Void",
     ];
     let sd = &m.sources;
-    let mut sources: Vec<(String, f64)> = vec![
-        ("direct".to_string(), sd.direct),
-        ("radial".to_string(), sd.radial),
+    // A WEAPON-damage row expands into the vector that dealt it — a status
+    // row is already one type, which is what a proc is. Parts are ordered
+    // biggest-first, the same rule the rows themselves follow.
+    let by_type = |split: &[f64; 15]| -> Option<Value> {
+        let mut parts: Vec<(&str, f64)> = split
+            .iter()
+            .enumerate()
+            .filter(|(_, v)| **v > 0.0)
+            .map(|(i, &v)| (TYPE_NAMES[i], v))
+            .collect();
+        if parts.is_empty() {
+            return None;
+        }
+        parts.sort_by(|a, b| b.1.total_cmp(&a.1));
+        Some(json!(parts
+            .iter()
+            .map(|(t, v)| json!({ "type": t, "dmg": v }))
+            .collect::<Vec<Value>>()))
+    };
+    let mut sources: Vec<(String, f64, Option<Value>)> = vec![
+        ("direct".to_string(), sd.direct, by_type(&sd.direct_by_type)),
+        ("radial".to_string(), sd.radial, by_type(&sd.radial_by_type)),
         // The lingering FIELD is its own bucket — on the Torid it is most of the
         // output, and leaving it out silently lost it from the damage meter.
-        ("field".to_string(), sd.field),
-        ("arcane".to_string(), sd.arcane_on_status),
+        ("field".to_string(), sd.field, by_type(&sd.field_by_type)),
+        ("arcane".to_string(), sd.arcane_on_status, None),
     ];
     sources.extend(
         sd.status
             .iter()
             .enumerate()
-            .map(|(i, &v)| (TYPE_NAMES[i].to_string(), v)),
+            .map(|(i, &v)| (TYPE_NAMES[i].to_string(), v, None)),
     );
-    sources.retain(|(_, v)| *v > 0.0);
+    sources.retain(|(_, v, _)| *v > 0.0);
     sources.sort_by(|a, b| b.1.total_cmp(&a.1));
     let damage_sources: Vec<Value> = sources
         .iter()
-        .map(|(k, v)| json!({ "source": k, "dmg": v }))
+        .map(|(k, v, parts)| match parts {
+            Some(p) => json!({ "source": k, "dmg": v, "by_type": p }),
+            None => json!({ "source": k, "dmg": v }),
+        })
         .collect();
     // One-second buckets, sliced to the engagement's actual duration.
     let nb = (s.duration_secs.ceil() as usize).clamp(1, m.timeline.0.len());
