@@ -585,3 +585,6 @@ label.check input{width:auto}
 /* A tier that cannot be chosen yet: the one before it is not installed. */
 .evo.locked .rank{opacity:.45}
 .evopick.tlocked{opacity:.4;cursor:not-allowed;pointer-events:none}
+.opt-tier-block.locked .opt-tier-h{opacity:.45}
+.opt-tier-block.locked .opt{opacity:.45}
+.seg.tlocked{cursor:not-allowed;pointer-events:none}

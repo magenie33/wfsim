@@ -1029,8 +1029,11 @@ function renderRivens() {
     const cur = ps.find((p) => p.name === activeRivenName());
     riven = { ...withDrafts((cur && cur.state) || blankRiven()), __weapon: w.id };
   }
+  // The weapon and its disposition, and nothing else: that the values below
+  // are scaled by it is what a disposition IS, so saying it was noise (user,
+  // 2026-08-02).
   $("riven-sub").textContent =
-    `${w.name} · ${tr("disposition")} ${(w.disposition || 1).toFixed(2)} — ${tr("every value below is already scaled by it")}`;
+    `${w.name} · ${tr("disposition")} ${(w.disposition || 1).toFixed(2)}`;
   renderRivenPresetBar();
   renderRivenShape();
   renderRivenStats();
@@ -3851,9 +3854,26 @@ function renderOptArcanes() {
 // Evolution scope — per tier, the option rows with their verbatim description
 // and a search toggle (broken evolutions flagged).
 function renderOptEvos() {
-  $("opt-evos").innerHTML = (weaponEvos()).map((t) => {
+  const tiers = weaponEvos();
+  // The same LADDER the builder draws: a tier is markable only once the one
+  // before it has a mark, because every set the search enumerates installs
+  // one option per marked tier — mark tier 2 with tier 1 blank and every set
+  // it produces skips a rung. The scope cannot express what the sim would
+  // then refuse to price.
+  const optOpenTo = (() => {
+    let n = 0;
+    for (const t of tiers) { if (!Object.keys(opt.evos[t.tier] || {}).length) break; n = t.tier; }
+    return n + 1;
+  })();
+  // A scope preset saved before the rule existed can still carry marks above
+  // the gap. Drop them here so what is drawn, what is counted in the estimate
+  // and what is sent all say the same thing — the server truncates the sets
+  // either way, and a mark that changes nothing is worse than no mark.
+  tiers.forEach((t) => { if (t.tier > optOpenTo) delete opt.evos[t.tier]; });
+  $("opt-evos").innerHTML = tiers.map((t) => {
     const sel = opt.evos[t.tier] || {};
     const pinned = evoPinned(t.tier);
+    const locked = t.tier > optOpenTo;
     const hasPool = Object.values(sel).some((s) => s === "search");
     const rows = t.options.map((o) => {
       const st = sel[o.id] || "off";
@@ -3862,19 +3882,26 @@ function renderOptEvos() {
       return `<div class="opt ${st === "off" ? "" : st} ${o.broken ? "dis-soft" : ""}">
         <div class="info"><div class="mn">${o.name}${o.broken ? ' <span class="exchip brk">BROKEN</span>' : ""}</div><div class="me">${desc}</div></div>
         <div class="oseg">
-          <span class="seg ${st === "search" ? "on" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="search" ${pinned && pinned !== o.id ? `title="${escHtml(tr("pooling opens the tier — the pin gives way"))}"` : ""}>${tr("pool")}</span>
-          <span class="seg ${st === "fixed" ? "on" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="fixed" ${hasPool ? `title="${escHtml(tr("req pins the tier — the pool marks give way"))}"` : ""}>${tr("req")}</span>
+          <span class="seg ${st === "search" ? "on" : ""} ${locked ? "tlocked" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="search" ${pinned && pinned !== o.id ? `title="${escHtml(tr("pooling opens the tier — the pin gives way"))}"` : ""}>${tr("pool")}</span>
+          <span class="seg ${st === "fixed" ? "on" : ""} ${locked ? "tlocked" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="fixed" ${hasPool ? `title="${escHtml(tr("req pins the tier — the pool marks give way"))}"` : ""}>${tr("req")}</span>
         </div>
       </div>`;
     }).join("");
-    return `<div class="opt-tier-block"><div class="opt-tier-h">EVO ${ROMAN(t.tier)}</div><div class="combo-menu opt-evolist">${rows}</div></div>`;
+    return `<div class="opt-tier-block${locked ? " locked" : ""}" ${locked
+      ? `title="${escHtml(tr("install the previous tier first"))}"` : ""
+    }><div class="opt-tier-h">EVO ${ROMAN(t.tier)}</div><div class="combo-menu opt-evolist">${rows}</div></div>`;
   }).join("");
-  $("opt-evos").querySelectorAll(".seg:not(.dis)").forEach((el) =>
+  $("opt-evos").querySelectorAll(".seg:not(.dis):not(.tlocked)").forEach((el) =>
     el.addEventListener("click", (e) => {
       e.stopPropagation();
       const t = el.dataset.t, id = el.dataset.e, want = el.dataset.s;
       opt.evos[t] = opt.evos[t] || {};
       setSingleSlotMark(opt.evos[t], id, want);
+      // Clearing a tier shuts every tier above it, marks and all — the same
+      // cascade the builder does, for the same reason.
+      if (!Object.keys(opt.evos[t]).length) {
+        tiers.forEach((x) => { if (x.tier > Number(t)) delete opt.evos[x.tier]; });
+      }
       renderOptEvos(); updateOptEstimate(); fetchOptBuffs();
     }));
 }

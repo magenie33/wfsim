@@ -2171,35 +2171,37 @@ fn build_body_parts(spec: &EnemySpec, headshot_pct: f64) -> Vec<BodyPart> {
 /// damage, +20% crit and +100% multishot), and a preset copied across weapons
 /// by the builder's "⇤ import". Both are dropped here rather than refused: a
 /// build is still a legal build without another weapon's perks.
+/// The evolutions of `ids` that the weapon can actually REACH, in order.
+///
+/// The tiers are a LADDER: tier N is installed only after tier N-1, so a set
+/// that skips one does not describe a weapon anyone can hold. Everything from
+/// the first gap upward is dropped. The UI locks the rows, but it cannot be
+/// the only place the rule holds — a preset saved before it existed, or a
+/// hand-built request, still carries the gap, and the engine would price it.
+fn ladder_prefix(ids: Vec<String>) -> Vec<String> {
+    let tier_of = |id: &String| wfsim_engine::evolutions_data::get(id).map(|e| e.tier);
+    let mut tiers: Vec<u32> = ids.iter().filter_map(tier_of).collect();
+    tiers.sort_unstable();
+    let reach = tiers
+        .iter()
+        .enumerate()
+        .take_while(|(i, t)| **t == *i as u32 + 1)
+        .count() as u32;
+    ids.into_iter()
+        .filter(|id| wfsim_engine::evolutions_data::get(id).is_some_and(|e| e.tier <= reach))
+        .collect()
+}
+
 fn chosen_evolutions(v: &Value, info: &WeaponInfo) -> Result<Vec<String>, String> {
     let mine = |ids: Vec<String>| -> Vec<String> {
         let group = evo_group(info);
-        let kept: Vec<String> = ids
-            .into_iter()
-            .filter(|id| {
-                wfsim_engine::evolutions_data::get(id).is_some_and(|e| e.weapon == group)
-            })
-            .collect();
-        // The tiers are a LADDER: tier N is only reachable once tier N-1 is
-        // installed, so a set that skips one does not describe a weapon anyone
-        // can hold. The UI locks the rows, but a saved preset or a hand-built
-        // request can still carry the gap — drop it here too, where every
-        // entry point passes, rather than pricing a perk the weapon never got.
-        let mut tiers: Vec<u32> = kept
-            .iter()
-            .filter_map(|id| wfsim_engine::evolutions_data::get(id).map(|e| e.tier))
-            .collect();
-        tiers.sort_unstable();
-        let reach = tiers
-            .iter()
-            .enumerate()
-            .take_while(|(i, t)| **t == *i as u32 + 1)
-            .count() as u32;
-        kept.into_iter()
-            .filter(|id| {
-                wfsim_engine::evolutions_data::get(id).is_some_and(|e| e.tier <= reach)
-            })
-            .collect()
+        ladder_prefix(
+            ids.into_iter()
+                .filter(|id| {
+                    wfsim_engine::evolutions_data::get(id).is_some_and(|e| e.weapon == group)
+                })
+                .collect(),
+        )
     };
     if let Some(arr) = v.get("evolutions").and_then(|x| x.as_array()) {
         let ids: Vec<String> = arr
@@ -2901,6 +2903,16 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         }
         evo_sets = next;
     }
+    // The product can skip a tier — mark tier 2 and leave tier 1 unmarked and
+    // it pairs "nothing at 1" with "Final Fusillade at 2", which is a build
+    // the game cannot make. Cut each set to its reachable prefix (the same
+    // rule every other entry point applies) and dedupe, rather than searching
+    // variants that would be filtered away at the moment they were scored.
+    for set in evo_sets.iter_mut() {
+        *set = ladder_prefix(std::mem::take(set));
+    }
+    evo_sets.sort();
+    evo_sets.dedup();
     for set in &evo_sets {
         for id in set {
             if wfsim_engine::evolutions_data::get(id).is_none() {
@@ -4018,5 +4030,53 @@ mod form_tests {
         let verglas = get("verglas_prime");
         assert_eq!(ids(verglas), ["base"]);
         assert!(!verglas.has_cycle);
+    }
+}
+
+#[cfg(test)]
+mod optimizer_evolution_tests {
+    use super::*;
+
+    fn sets(evolutions: Value) -> Vec<Vec<String>> {
+        parse_optimize(&json!({
+            "weapon": "torid",
+            "size": 1,
+            "mods": { "serration": "search" },
+            "evolutions": evolutions,
+        }))
+        .expect("a plan")
+        .evo_sets
+    }
+
+    /// The scope's Cartesian product must not enumerate a gapped LADDER.
+    ///
+    /// A tier with no marks contributes "nothing here", so marking tier 2 and
+    /// leaving tier 1 blank pairs them into a set the game cannot make. Every
+    /// such set would be truncated at the moment it was scored, so searching
+    /// it is not a wrong answer, it is a wasted variant — and a reported one,
+    /// since the winner prints the set it was given.
+    #[test]
+    fn the_search_never_enumerates_a_tier_without_the_one_below_it() {
+        // Tier 2 alone: nothing to search, one empty set.
+        assert_eq!(sets(json!({ "2": ["torid_final_fusillade"] })), vec![Vec::<String>::new()]);
+
+        // Tier 1 alone: the tier's own two options, both legal.
+        let one = sets(json!({ "1": ["torid_evo1_incarnon_form"] }));
+        assert_eq!(one, vec![vec!["torid_evo1_incarnon_form".to_string()]]);
+
+        // Both marked: the product stands, because now every set is reachable.
+        let two = sets(json!({
+            "1": ["torid_evo1_incarnon_form"],
+            "2": ["torid_final_fusillade", "torid_survivors_edge"],
+        }));
+        assert_eq!(two.len(), 2, "{two:?}");
+        assert!(two.iter().all(|s| s.contains(&"torid_evo1_incarnon_form".to_string())));
+
+        // A gap ABOVE a legal prefix cuts only what is above it.
+        let gapped = sets(json!({
+            "1": ["torid_evo1_incarnon_form"],
+            "3": ["torid_extended_volley"],
+        }));
+        assert_eq!(gapped, vec![vec!["torid_evo1_incarnon_form".to_string()]]);
     }
 }

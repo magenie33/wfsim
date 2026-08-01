@@ -31,10 +31,18 @@ POOLS = {
     # Arch-Guns roll their own riven, on the ground and in Archwing alike --
     # one item, because the deployment is a scenario and not a second weapon.
     # Its pool is 22 stats, two short of the rifle's: no Projectile Speed and
-    # no Damage to Infested. The wiki's table prints x0.45 in the Infested row
-    # for every column, which is the one place the two sources disagree --
-    # DE's own upgradeEntries has no such entry, and the game has never rolled
-    # one on an Archgun (there are no Infested in Archwing).
+    # no Damage to Infested.
+    #
+    # The wiki agrees on the first ("-" in the Archgun column of the Projectile
+    # Speed row) and disagrees on the second, printing x0.45 in the Infested
+    # row for every class. DE is right and the wiki's row is a fill: checked
+    # 2026-08-02 against the LIVE PublicExport
+    # (content.warframe.com/PublicExport/Manifest/ExportUpgrades_en.json),
+    # which is 22 entries with Corpus and Grineer and no Infested -- byte-equal
+    # to the vendored snapshot this script reads. The classes are internally
+    # consistent about it too: melee/zaw carry their own
+    # WeaponMeleeFactionDamage* trio, every other gun class carries all three
+    # WeaponFactionDamage* tags, and the archgun alone carries two.
     "archgun": "/Lotus/Upgrades/Mods/Randomized/LotusArchgunRandomModRare",
 }
 

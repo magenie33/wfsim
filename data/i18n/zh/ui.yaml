@@ -269,7 +269,6 @@ ui:
   "not a legal riven": 不是合法的裂罅
   "one more stat to finish this riven": 还差 1 条词条这张裂罅就完整了
   "pick {n} more stats to finish this riven": 还差 {n} 条词条这张裂罅就完整了
-  "every value below is already scaled by it": 下面每个数值都已经按它换算过了
   "where this roll landed in its 0.9-1.1 band": 这条词条的随机值在 0.9-1.1 区间里的位置
   "not modeled — it rolls and it names the riven, but it adds no damage": 未建模 —— 它会开出来，也参与命名，但不提供伤害
   "All rivens": 全部裂罅
