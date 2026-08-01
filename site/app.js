@@ -615,8 +615,9 @@ const weaponModPath = (id) => weaponPath(id) + (modSuffix() ? "/" + modSuffix() 
 // Equipment slots, in the order the arsenal shows them. "sentinel" is a real
 // slot, not a kind of primary: a sentinel weapon rides the companion and draws
 // from the rifle mod pool without ever occupying a weapon slot.
-const SLOT_ORDER = ["primary", "secondary", "melee", "sentinel"];
-const SLOT_LABEL = { primary: "Primary", secondary: "Secondary", melee: "Melee", sentinel: "Sentinel Weapons", other: "Other" };
+const SLOT_ORDER = ["primary", "secondary", "melee", "sentinel", "archgun"];
+const SLOT_LABEL = { primary: "Primary", secondary: "Secondary", melee: "Melee",
+  sentinel: "Sentinel Weapons", archgun: "Arch-Guns", other: "Other" };
 
 function renderHome() {
   const grid = $("weapon-grid");

@@ -118,7 +118,14 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 .topbar-inner .ghost-btn{height:28px;padding:0 8px;display:inline-flex;align-items:center;justify-content:center}
 .gh-link{color:var(--text);width:28px;padding:0}
 .gh-link svg{display:block}
-.qq-link{width:28px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+/* The icon links are 28px of ICON. `.topbar-inner .ghost-btn` sets
+   `padding:0 8px` for the TEXT buttons and outranks a single class, so
+   it was eating 16 of the 28 and squeezing every mark to a third of its
+   size — the override has to match that specificity to win. */
+.topbar-inner .qq-link,.topbar-inner .dc-link,.topbar-inner .gh-link{
+  width:28px;padding:0;text-decoration:none;
+  display:inline-flex;align-items:center;justify-content:center}
+.dc-link svg{display:block}
 .qq-link svg{display:block}
 .qq-copy-btn{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;padding:0 3px}
 .qq-copy-btn:hover{color:var(--text)}

@@ -54,6 +54,8 @@ ui:
   "Primary": 主武器
   "Secondary": 副武器
   "Melee": 近战
+  "Arch-Guns": 空战武器
+  "Sentinel Weapons": 守护武器
   "Other": 其他
   "2 · Technique": 2 · 手法
   "3 · Buffs": 3 · 增益
@@ -75,6 +77,8 @@ ui:
   "Blast Radius": 爆炸半径
   "Damage Falloff": 距离衰减
   "QQ group": QQ官方交流群
+  "Join the Discord": 加入官方 Discord
+  "join the Discord": 加入官方 Discord
   "copied": 已复制
   "Weapons": 武器
   "Presets": 预设
