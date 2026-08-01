@@ -108,6 +108,24 @@ matches exactly one entry, none unmatched. A name-keyed lookup is what made an
 earlier pass "confirm" MaxRank 5 for Hawk Eye and Steady Hands from a
 collision duplicate, and record the wrong conclusion in both files.
 
+### Sources we do NOT use, and what each would be good for (2026-08-01)
+
+Found in wfhub.top's own credits page (Tenno Hub, a Chinese Warframe
+companion site) — its data sources barely overlap ours, and three are worth
+knowing about. None of them is adopted: the two-source cross-check is what
+caught four classes of generator error in the Arch-Gun pool, so a third
+source belongs as a third CHECK, not as a replacement for either.
+
+| source | what it is | what it would fix here |
+| --- | --- | --- |
+| [calamity-inc/warframe-public-export-plus](https://github.com/calamity-inc/warframe-public-export-plus) | DE's own PUBLIC EXPORT, mirrored and enriched | WFCD is a cleaned second-hand dataset and has gaps: **Primed Deadly Efficiency is absent entirely** — no entry, no `imageName`, and the CDN 404s the card — and its `i18n.json` carries only `name` for riven items, no localized `upgradeEntries`. DE's export would answer both. |
+| [oracle.browse.wf/dicts](https://oracle.browse.wf/dicts/zh.json) | DE's own localization dictionaries, per language | our Chinese is assembled from three paths (WFCD i18n whole sentences, a hand-written `effect_phrases` table, hand-written names). One source could unify them. |
+| [pa001024/riven-mirror](https://github.com/pa001024/riven-mirror) (MIT) | a riven calculator, source-available | ALREADY USED as a third opinion on the riven config multipliers — see the table in `engine/src/rivens_data.rs`. It is where the "community calculators read 1.0" claim actually comes from, and reading its source is what turned that from a rumour into a citation that can be weighed. |
+
+The rest of Tenno Hub's list is worldstate and market data (`api.warframestat.us`,
+`api.warframe.market`, `oracle.browse.wf/worldState.json`, `browse.wf/arbys.txt`),
+which is live-service state — nothing this project models.
+
 ### Open SOURCE-SPLIT: the Torid Incarnon's beam geometry
 
 The official wiki's raw wikitext (`?action=raw`, 2026-07-30) reads, with markup:
