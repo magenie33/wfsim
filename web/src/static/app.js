@@ -365,7 +365,7 @@ try { const s = JSON.parse(localStorage.getItem("wfsim-opt-run")); if (s) optRun
 const saveOptRun = () => localStorage.setItem("wfsim-opt-run", JSON.stringify(optRun));
 let pickerSlot = 0;
 // Mod-picker sort/filter prefs — persisted across slots, presets and weapons.
-let pickerPrefs = { sort: "name", dir: "asc", pol: null };
+let pickerPrefs = { sort: "gain", dir: "desc", pol: null };
 try { const s = JSON.parse(localStorage.getItem("wfsim-picker")); if (s) pickerPrefs = { ...pickerPrefs, ...s }; } catch (_) {}
 const savePickerPrefs = () => localStorage.setItem("wfsim-picker", JSON.stringify(pickerPrefs));
 
@@ -2112,6 +2112,9 @@ function polBtn(pol, i) {
   return `<button class="pol-btn" data-i="${i}" title="change polarity">${pol ? imgTag(POL(pol), "pol") : '<span class="nopol">◇</span>'}</button>`;
 }
 function renderMods() {
+  // The quick-calc bar sits above this block and is measured against the same
+  // build, so it redraws with it.
+  if (typeof renderQuickCalc === "function") renderQuickCalc();
   const used = capacityUsed();
   const capEl = $("capacity");
   capEl.textContent = `${used} / ${CAP}`;
@@ -2335,9 +2338,10 @@ function openPicker(slotIdx, anchor) {
   const search = $("mod-search");
   search.value = "";
   search.oninput = () => renderMenu(slotIdx, search.value);
-  renderPickerCalc();
   renderTools();
   renderMenu(slotIdx, "");
+  // Sorted by EFFECT by default (user, 2026-08-01) — which means computing it.
+  ensureGains();
   search.focus();
 }
 
@@ -2471,12 +2475,16 @@ async function scanModGains(slotIdx, onTick) {
 /// The gain for `id`, or null when this slot/build/scenario has not been scanned.
 const gainOf = (id) => (gainScan.key === gainKey() ? gainScan.by[id] || null : null);
 
-/// QUICK CALC, at the TOP of the picker: it is the configuration everything
-/// below is measured with, not one more tool beside sort and polarity (user,
-/// 2026-08-01). Two settings and a verb — the SCENARIO (a saved one, which
-/// also decides KPM-or-DPS) and how many runs.
-function renderPickerCalc() {
-  const box = $("picker-calc");
+/// QUICK CALC — page level, above the mods.
+///
+/// It is ONE configuration for every slot's question, so it does not live
+/// inside any slot's picker (user, 2026-08-01). Two settings: the SCENARIO (a
+/// saved one, which also decides KPM-or-DPS) and how many runs. There is no
+/// run button because there is no slot here to run against — opening a
+/// picker computes with these, which is what "sorted by effect by default"
+/// means in practice.
+function renderQuickCalc() {
+  const box = $("quick-calc");
   if (!box) return;
   const ps = loadPresetList(SCENARIOS);
   const cur = ps.some((p) => p.name === gainPrefs.scenario) ? gainPrefs.scenario
@@ -2488,31 +2496,36 @@ function renderPickerCalc() {
       ps.map((p) => opt(p.name, p.name, cur)).join("")}</select>` +
     `<select id="gp-prec" title="${escHtml(tr("a tenth of the runs is a fast sweep; the baseline and every candidate share one seed, so the comparison stays paired"))}">${
       opt("tenth", "1/10", gainPrefs.precision) + opt("full", tr("full runs"), gainPrefs.precision)}</select>` +
-    `<button id="gp-run" class="ghost-btn small">${
-      gainScan.running ? `${gainScan.done}/${gainScan.total}` : escHtml(tr("Calculate"))}</button>`;
+    `<span class="pc-note">${gainScan.running
+      ? `${gainScan.done}/${gainScan.total}`
+      : (gainScan.note ? escHtml(gainScan.note) : escHtml(tr("open a slot to rank its mods by effect")))}</span>`;
   // Every click stays inside: a redraw detaches these nodes, and the document
   // outside-click handler closes on a target whose `.popover` ancestor is gone.
   box.onclick = (e) => e.stopPropagation();
-  const redraw = () => { renderPickerCalc(); renderMenu(pickerSlot, $("mod-search").value); };
-  const save = () => {
-    gainPrefs = { scenario: $("gp-scen").value, precision: $("gp-prec").value };
-    saveGainPrefs();
-  };
-  ["gp-scen", "gp-prec"].forEach((id) => { $(id).onchange = (e) => { e.stopPropagation(); save(); redraw(); }; });
-  $("gp-run").onclick = (e) => {
-    e.stopPropagation();
-    if (gainScan.running) return;
-    save();
-    pickerPrefs.sort = "gain";
-    pickerPrefs.dir = "desc"; // best first, the only useful default
-    savePickerPrefs();
-    let last = 0;
-    scanModGains(pickerSlot, (st) => {
-      const now = Date.now();
-      if (!st.running || now - last > 250) { last = now; renderTools(); redraw(); }
-    });
-    renderTools(); redraw();
-  };
+  ["gp-scen", "gp-prec"].forEach((id) => {
+    $(id).onchange = (e) => {
+      e.stopPropagation();
+      gainPrefs = { scenario: $("gp-scen").value, precision: $("gp-prec").value };
+      saveGainPrefs();
+      renderQuickCalc();
+    };
+  });
+}
+
+/// Compute this slot's ranking, unless it is already the answer on screen.
+/// `gainKey` covers the slot, the build, the scenario and the settings, so a
+/// second open of the same picker costs nothing and any edit invalidates it.
+function ensureGains() {
+  if (gainScan.running || gainScan.key === gainKey()) return;
+  let last = 0;
+  scanModGains(pickerSlot, (st) => {
+    const now = Date.now();
+    if (!st.running || now - last > 250) {
+      last = now;
+      renderQuickCalc();
+      if (!$("mod-popover").hidden) renderMenu(pickerSlot, $("mod-search").value);
+    }
+  });
 }
 
 function familyConflict(mod, exceptIdx) {
@@ -2549,7 +2562,16 @@ function renderMenu(slotIdx, query) {
   const q = query.trim().toLowerCase();
   // Equipped mods stay LISTED: the current slot's mod is marked, mods in other
   // slots show their slot number — picking one of those EXCHANGES the two slots.
-  const group = (m) => slots[slotIdx].mod === m.id ? 0 : placedAt(m.id, slotIdx) >= 0 ? 1 : 2;
+  // Grouping: this slot's own mod, then mods sitting in other slots, then the
+  // pool. Under EFFECT order that middle group steps aside — a mod in another
+  // slot is a swap, not an upgrade, and it has no gain to rank by, so pinning
+  // eight of them above the ranking is exactly what the ranking is for
+  // (user, 2026-08-01). The slot's OWN mod stays first either way: it is the
+  // baseline every number below is measured against.
+  const byGain = pickerPrefs.sort === "gain";
+  const group = (m) => slots[slotIdx].mod === m.id ? 0
+    : byGain ? 1
+    : placedAt(m.id, slotIdx) >= 0 ? 1 : 2;
   const hits = poolWithRivens()
     // The exilus slot takes what `exilusPool()` says, which is the same
     // question the optimizer's exilus scope asks.

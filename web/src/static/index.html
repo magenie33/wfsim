@@ -90,6 +90,12 @@
          past 10 the bar grows a name filter. -->
     <div class="preset-bar" id="preset-bar-builder-builds"></div>
 
+    <!-- QUICK CALC settings: what every "what would this slot be worth as X"
+         answer below is measured with. Page level, above the mods, because it
+         is one configuration for all of them — not a tool inside one slot's
+         picker (user, 2026-08-01). -->
+    <div class="quick-calc" id="quick-calc"></div>
+
     <!-- Block: Mods -->
     <section class="block" id="mod-block">
       <div class="bh"><span class="n">1</span><h2 id="mod-block-h" data-i18n>Mods</h2>
@@ -261,7 +267,6 @@
 
   <!-- floating popovers (positioned at the active slot) -->
   <div id="mod-popover" class="popover" hidden>
-    <div id="picker-calc" class="picker-calc"></div>
     <div class="addbar"><span>🔍</span><input id="mod-search" type="text" placeholder="Search a mod…" data-i18n-ph autocomplete="off" /></div>
     <div id="picker-tools" class="picker-tools"></div>
     <div id="mod-menu" class="combo-menu"></div>

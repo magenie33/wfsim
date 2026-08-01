@@ -572,8 +572,10 @@ label.check input{width:auto}
 /* The wider buff view: a setting held for a mod the build does not carry. */
 .buff-card.off{opacity:.72}
 .buff-card .bnot{color:var(--muted);font-size:10px;font-weight:400}
-/* QUICK CALC — the picker's top row: the configuration everything below is
-   measured with, so it reads before the search rather than beside the sort. */
-.picker-calc{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--panel3)}
-.picker-calc .pc-h{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-right:auto}
-.picker-calc select{font:inherit;font-size:12px;max-width:130px}
+/* QUICK CALC — a page-level bar above the mods: ONE configuration for every
+   slot's "what would this be worth as X", so it reads before them all. */
+.quick-calc{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px;padding:7px 12px;
+  border:1px solid var(--line);border-radius:10px;background:var(--panel3)}
+.quick-calc .pc-h{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.quick-calc select{font:inherit;font-size:12px;max-width:150px}
+.quick-calc .pc-note{margin-left:auto;color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
