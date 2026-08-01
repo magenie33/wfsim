@@ -103,6 +103,27 @@ def clean_line(s: str) -> str:
     return MARKUP.sub("", s.replace("\\n", "\n")).strip()
 
 
+def card_text(stats: list) -> str:
+    """One card, from DE's stat list for one rank.
+
+    The list is NOT one line per entry. When a rank UNLOCKS extra bonuses,
+    DE's first entry is the whole card — unlock lines included — and the
+    remaining entries repeat those same lines on their own. Joining verbatim
+    printed them twice on the top-rank card of Primary/Secondary Deadhead,
+    Primary/Secondary Dexterity, Primary/Secondary Merciless, and on EVERY
+    rank of Secondary Fortifier. A card never states the same line twice, so
+    the first occurrence wins.
+    """
+    seen, out = set(), []
+    for s in stats:
+        for line in clean_line(s).split("\n"):
+            line = line.strip()
+            if line and line not in seen:
+                seen.add(line)
+                out.append(line)
+    return "\n".join(out)
+
+
 def wfcd_descriptions(wfcd: dict, locale: str, section: str) -> tuple[dict, list]:
     """id -> one card text per rank (rank 0 first), from DE's levelStats."""
     hits, missing = {}, []
@@ -111,7 +132,7 @@ def wfcd_descriptions(wfcd: dict, locale: str, section: str) -> tuple[dict, list
         if not ranks:
             missing.append(idv)
             continue
-        hits[idv] = ["\n".join(clean_line(s) for s in r.get("stats", [])) for r in ranks]
+        hits[idv] = [card_text(r.get("stats", [])) for r in ranks]
     return hits, missing
 
 

@@ -253,6 +253,36 @@ mod tests {
         }
     }
 
+    /// A card never states the same line twice.
+    ///
+    /// DE's `levelStats` is not one line per entry: on a rank that UNLOCKS
+    /// extra bonuses, the first entry is the whole card — unlock lines
+    /// included — and the remaining entries repeat those same lines on their
+    /// own. Joining them verbatim printed them twice, which is what the top
+    /// rank of Primary Deadhead read in the UI ("+30% 爆头倍率" twice).
+    /// `scripts/wfcd_i18n.py card_text` drops the repeats; this is the guard
+    /// that a regeneration cannot bring them back.
+    #[test]
+    fn no_localized_card_repeats_a_line() {
+        let mut bad: Vec<String> = Vec::new();
+        for (code, spec) in locales() {
+            let cards = spec.mod_descriptions.iter().chain(&spec.arcane_descriptions);
+            for (id, ranks) in cards {
+                for (rank, text) in ranks.iter().enumerate() {
+                    let lines: Vec<&str> =
+                        text.lines().map(str::trim).filter(|l| !l.is_empty()).collect();
+                    let mut seen: std::collections::BTreeSet<&str> = Default::default();
+                    for line in &lines {
+                        if !seen.insert(line) {
+                            bad.push(format!("i18n/{code} {id} rank {rank}: '{line}' twice"));
+                        }
+                    }
+                }
+            }
+        }
+        assert!(bad.is_empty(), "repeated card lines:\n{}", bad.join("\n"));
+    }
+
     /// The localized card and OUR card must state the same numbers.
     ///
     /// The two sides are independent: our English text is the wiki module's
