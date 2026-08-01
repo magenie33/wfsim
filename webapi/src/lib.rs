@@ -3659,6 +3659,55 @@ mod asset_tests {
 }
 
 #[cfg(test)]
+mod optimizer_arcane_tests {
+    use super::*;
+
+    fn sets(arcanes: Value) -> Vec<Vec<String>> {
+        let plan = parse_optimize(&json!({
+            "weapon": "larkspur_prime",
+            "size": 1,
+            "mods": { "rubedo_lined_barrel": "search" },
+            "arcanes": arcanes,
+        }))
+        .expect("a plan");
+        plan.arcane_sets
+    }
+
+    /// A slot with candidates is never left EMPTY.
+    ///
+    /// An arcane slot costs nothing — no capacity, no Forma — so empty can
+    /// never beat filled, and marking a candidate IS the statement that the
+    /// slot should be filled (user, 2026-08-01). Every slot used to carry an
+    /// implicit "none", so marking 3 primaries and 4 secondaries enumerated
+    /// 4 x 5 = 20 sets, eight of which had a hole in them and could only ever
+    /// tie the same build with the arcane in it.
+    #[test]
+    fn a_slot_with_candidates_is_never_left_empty() {
+        let s = sets(json!({
+            "primary_deadhead": "search",
+            "primary_merciless": "search",
+            "primary_crux": "search",
+            "secondary_deadhead": "search",
+            "secondary_merciless": "search",
+            "secondary_fortifier": "search",
+            "secondary_shiver": "search",
+        }));
+        assert_eq!(s.len(), 12, "3 primaries x 4 secondaries, and nothing else");
+        assert!(
+            !s.iter().any(|set| set.iter().any(|id| id == "none")),
+            "no set may leave a marked slot empty: {s:?}"
+        );
+
+        // A slot with NOTHING marked is still empty — that is what an empty
+        // slot IS, and it is the only way "none" survives.
+        let s = sets(json!({ "primary_deadhead": "search" }));
+        assert_eq!(s, vec![vec!["primary_deadhead".to_string(), "none".to_string()]]);
+        let s = sets(json!({}));
+        assert_eq!(s, vec![vec!["none".to_string(), "none".to_string()]]);
+    }
+}
+
+#[cfg(test)]
 mod riven_stat_id_tests {
     use super::*;
 
