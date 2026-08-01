@@ -20,10 +20,23 @@
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
-import { extname, join, resolve } from "node:path";
+import { existsSync } from "node:fs";
+import { extname, join, resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const CHROME = process.env.CHROME || "C:/Program Files/Google/Chrome/Application/chrome.exe";
-const ROOT = resolve(new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"), "site");
+// Where Chrome lives differs per platform and per CI image, so try the known
+// places rather than betting on one. `CHROME=` overrides all of it.
+const CHROME_CANDIDATES = process.platform === "win32"
+  ? ["C:/Program Files/Google/Chrome/Application/chrome.exe",
+     "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"]
+  : process.platform === "darwin"
+    ? ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"]
+    : ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable",
+       "/usr/bin/chromium-browser", "/usr/bin/chromium", "/snap/bin/chromium"];
+const CHROME = process.env.CHROME
+  || CHROME_CANDIDATES.find((p) => existsSync(p))
+  || CHROME_CANDIDATES[0];
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "site");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- a static server for site/, with the SPA fallback the app needs -------
@@ -55,6 +68,10 @@ async function serve() {
 async function browser(port) {
   const proc = spawn(CHROME, [`--remote-debugging-port=${port}`, "--headless=new",
     "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+    // A CI runner has no usable user namespace for Chrome's sandbox. The page
+    // is local content we generated, so this costs nothing there and is not
+    // enabled anywhere else.
+    ...(process.env.CI ? ["--no-sandbox", "--disable-dev-shm-usage"] : []),
     `--user-data-dir=${process.env.TEMP || "/tmp"}/wfsim-parity-${port}`, "about:blank"],
     { stdio: "ignore" });
   let page = null;
@@ -65,7 +82,9 @@ async function browser(port) {
     } catch { /* not up yet */ }
     if (!page) await sleep(250);
   }
-  if (!page) throw new Error("chrome did not start — set CHROME to its path");
+  if (!page) {
+    throw new Error(`chrome did not start (tried ${CHROME}) — set CHROME to its path`);
+  }
   const ws = new WebSocket(page.webSocketDebuggerUrl);
   let id = 0;
   const pending = new Map();

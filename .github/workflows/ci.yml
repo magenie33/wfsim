@@ -20,3 +20,20 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Tests
         run: cargo test --workspace
+
+  # The page is not something `cargo test` can see. This drives headless
+  # Chrome over the COMMITTED site/ — the artefact Cloudflare deploys — and
+  # asserts the builder and the optimizer offer the same options and the same
+  # visibility on every axis of every weapon. No Rust, so it runs alongside.
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # >= 22 for the global WebSocket the CDP client uses.
+          node-version: "22"
+      - name: Builder / optimizer parity
+        # `CI` is set by Actions; the script reads it to drop Chrome's sandbox,
+        # which a runner has no user namespace for.
+        run: node scripts/check_parity.mjs
