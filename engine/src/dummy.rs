@@ -996,6 +996,9 @@ pub struct DummyParams {
     /// Evolution headshot-damage bonus (Caput Mortuum) — joins the
     /// headshot bracket. Direct hits only; a radial never headshots.
     pub headshot_damage_bonus: f64,
+    /// The weapon's innate headshot bonus MULTIPLIES the additive bracket
+    /// rather than joining it (wiki, Cernos Prime — a per-weapon anomaly).
+    pub headshot_bonus_multiplicative: bool,
     /// Devouring Attrition: (chance, bonus) rolled on every instance that
     /// did NOT crit — its own multiplier, on the direct hit AND the radial.
     pub noncrit_bonus: Option<(f64, f64)>,
@@ -1312,6 +1315,7 @@ impl DummyParams {
             multishot_on_last_round: panel.multishot_on_last_round,
             multishot_ammo_bonus: panel.multishot_ammo_bonus,
             headshot_damage_bonus: panel.headshot_damage_bonus,
+            headshot_bonus_multiplicative: panel.headshot_bonus_multiplicative,
             noncrit_bonus: panel.noncrit_bonus,
             plain_hit_bonus: panel.plain_hit_bonus,
             reload_on_headshot: panel.reload_on_headshot,
@@ -1464,6 +1468,7 @@ impl Default for DummyParams {
             multishot_on_last_round: 0.0,
             multishot_ammo_bonus: 0.0,
             headshot_damage_bonus: 0.0,
+            headshot_bonus_multiplicative: false,
             noncrit_bonus: None,
             plain_hit_bonus: None,
             reload_on_headshot: None,
@@ -3194,19 +3199,29 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // on true weak points — wiki Pistol_Acuity: 3 + 3.5×1.5 =
             // 8.25x) and the bracket multiplies the sum. Rides the part
             // context into DoT snapshots.
-            let head_bonus = if part.is_head {
-                // Caput Mortuum's +50% joins the same additive bracket as
-                // the arcane's headshot-multiplier bonus.
-                params.arcane.headshot_mult_bonus + ap.headshot_damage_bonus
+            // The additive bracket, and the ONE weapon whose innate share is
+            // not in it. An innate headshot bonus normally joins the bracket
+            // (the wiki lists Kuva Chakkhurr among the additive sources), but
+            // "Cernos Prime's headshot bonus is unique and stacks
+            // MULTIPLICATIVELY with Primary Deadhead's headshot bonus" — a
+            // per-weapon anomaly, carried on the weapon rather than inferred
+            // from anything about it (2026-08-01). On a 3x head with Primary
+            // Deadhead that is 3 x 1.3 x 1.5 = 5.85x, against 5.4x additive.
+            let (head_bonus, head_innate) = if part.is_head {
+                if ap.headshot_bonus_multiplicative {
+                    (params.arcane.headshot_mult_bonus, ap.headshot_damage_bonus)
+                } else {
+                    (params.arcane.headshot_mult_bonus + ap.headshot_damage_bonus, 0.0)
+                }
             } else {
-                0.0
+                (0.0, 0.0)
             };
             let wp_mult = if part.is_head {
                 part.multiplier + 1.5 * ap.weakpoint_damage
             } else {
                 part.multiplier
             };
-            let part_factor = wp_mult * (1.0 + head_bonus);
+            let part_factor = wp_mult * (1.0 + head_bonus) * (1.0 + head_innate);
             // Wiki Critical_Hit §Critical Headshots: a crit on an eligible
             // >1x location doubles cd inside the tier formula (a cd_total
             // that INCLUDES Cold's flat bonus — freeze.yaml notes).
@@ -3924,6 +3939,57 @@ mod tests {
             base_status_chance: 0.0,
             ..DummyParams::default()
         }
+    }
+
+    /// Cernos Prime's innate headshot bonus MULTIPLIES the additive bracket.
+    ///
+    /// "Cernos Prime's headshot bonus is unique and stacks multiplicatively
+    /// with Primary Deadhead's headshot bonus" (wiki, Primary Deadhead). The
+    /// word that matters is UNIQUE: the same note lists innate bonuses on
+    /// weapons like Kuva Chakkhurr among the ADDITIVE sources, so this is a
+    /// per-weapon anomaly and the flag rides on the weapon.
+    ///
+    /// On a 3x head with the arcane's +30% and an innate +50%:
+    ///   additive       3 x (1 + 0.3 + 0.5) = 5.40
+    ///   multiplicative 3 x 1.3 x 1.5       = 5.85   (+8.33%)
+    #[test]
+    fn cernos_primes_innate_headshot_bonus_multiplies_instead_of_adding() {
+        let build = |mult: bool| DummyParams {
+            duration_secs: 30.0,
+            headshot_damage_bonus: 0.5,
+            headshot_bonus_multiplicative: mult,
+            arcane: crate::arcanes_data::ArcaneFx {
+                headshot_mult_bonus: 0.3,
+                ..crate::arcanes_data::ArcaneFx::none()
+            },
+            body_parts: vec![BodyPart {
+                name: "head".into(),
+                aim_weight: 1.0,
+                multiplier: 3.0,
+                is_head: true,
+                crit_bonus: false,
+            }],
+            ..no_status()
+        };
+        let add = monte_carlo(&build(false), 1, 5).mean_damage;
+        let mul = monte_carlo(&build(true), 1, 5).mean_damage;
+        assert!(
+            (mul / add - 5.85 / 5.40).abs() < 1e-6,
+            "5.85 / 5.40 = 1.0833…, got {}",
+            mul / add
+        );
+
+        // With NO arcane bonus the two readings agree — the anomaly is about
+        // how the innate share COMBINES, not about its size.
+        let bare = |mult: bool| DummyParams {
+            arcane: crate::arcanes_data::ArcaneFx::none(),
+            ..build(mult)
+        };
+        let (a, m) = (
+            monte_carlo(&bare(false), 1, 5).mean_damage,
+            monte_carlo(&bare(true), 1, 5).mean_damage,
+        );
+        assert!((a - m).abs() < 1e-9, "3 x 1.5 either way: {a} vs {m}");
     }
 
     #[test]

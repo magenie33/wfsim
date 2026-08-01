@@ -357,6 +357,13 @@ pub struct WeaponSpec {
     pub name: String,
     pub slot: String,
     pub class: String,
+    /// Does this weapon's INNATE headshot bonus multiply the additive bracket
+    /// instead of joining it? A PER-WEAPON anomaly, not a class rule: the wiki
+    /// lists innate bonuses (Kuva Chakkhurr) among the ADDITIVE sources and
+    /// then singles one out — "Cernos Prime's headshot bonus is unique and
+    /// stacks multiplicatively with Primary Deadhead's headshot bonus".
+    #[serde(default)]
+    pub headshot_bonus_multiplicative: bool,
     /// Which FORM of its weapon this entry is — a kind from the closed
     /// [`FormKind`] vocabulary. REQUIRED: a form is registered, never guessed,
     /// so a new entry cannot quietly inherit someone else's mode.
@@ -730,6 +737,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         base_crit_damage: s.attack.crit_multiplier,
         base_status_chance: s.attack.status_chance,
         base_fire_rate: s.attack.fire_rate,
+        headshot_bonus_multiplicative: s.headshot_bonus_multiplicative,
         // Straight through: what a shot COSTS is a weapon constant, and no mod
         // in the roster changes it (ammo EFFICIENCY is its own, separate term).
         ammo_cost: s.attack.ammo_cost,

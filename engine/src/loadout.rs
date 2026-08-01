@@ -685,6 +685,8 @@ pub struct WeaponBase {
     pub charge_seconds: Option<f64>,
     /// Ammo spent per shot / per beam tick (weapon data `attack.ammo_cost`).
     pub ammo_cost: f64,
+    /// See `weapons_data::WeaponSpec::headshot_bonus_multiplicative`.
+    pub headshot_bonus_multiplicative: bool,
     /// Does a fire-rate bonus shorten the DRAW? False for Arch-Guns, whose
     /// fire rate paces only the interval — see `weapons_data`.
     pub fire_rate_shortens_draw: bool,
@@ -1088,6 +1090,8 @@ pub struct ResolvedPanel {
     pub charge_seconds: Option<f64>,
     /// Ammo per shot — a WEAPON constant, so no mod bucket touches it.
     pub ammo_cost: f64,
+    /// See `weapons_data::WeaponSpec::headshot_bonus_multiplicative`.
+    pub headshot_bonus_multiplicative: bool,
     pub charge_cadence: crate::weapons_data::ChargeCadence,
     pub multishot: f64,
     /// The weapon's UNMODDED pellet count — the base a relative multishot
@@ -1666,6 +1670,7 @@ pub fn resolve_with(
             c / (1.0 + cr + from_rate).max(1e-9)
         }),
         ammo_cost: base.ammo_cost,
+        headshot_bonus_multiplicative: base.headshot_bonus_multiplicative,
         charge_cadence: base.charge_cadence,
         headshot_damage_bonus: base.headshot_damage_bonus,
         noncrit_bonus: base.noncrit_bonus,

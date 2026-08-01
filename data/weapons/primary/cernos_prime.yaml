@@ -48,6 +48,14 @@ reload_seconds: 0.65
 # +headshot% source in the game obeys, so it is what we model — a measurement
 # (stack it with Primary Deadhead and read the number) would settle it.
 headshot_damage_bonus: 0.5
+# ...and it does NOT join that bracket after all — ANSWERED by the wiki's own
+# notes (2026-08-01), which is the measurement the paragraph above asked for:
+# "Cernos Prime's headshot bonus is unique and stacks multiplicatively with
+# Primary Deadhead's headshot bonus." A PER-WEAPON anomaly, not a class rule —
+# the same note lists innate bonuses on weapons like Kuva Chakkhurr among the
+# ADDITIVE sources. On a 3x head with Primary Deadhead: 3 x 1.3 x 1.5 = 5.85x,
+# where the additive reading gave 5.4x.
+headshot_bonus_multiplicative: true
 
 # Condition Overload behavior class — VERIFIED from the wiki CO catalog, one
 # row, VERBATIM:

@@ -2893,11 +2893,23 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             if let Some((id, _)) = mine.iter().find(|(_, m)| m.as_str() == "fixed") {
                 return vec![((*id).clone(), fx(id))];
             }
-            let mut opts = vec![("none".to_string(), wfsim_engine::arcanes_data::ArcaneFx::none())];
-            for (id, _) in mine.iter().filter(|(_, m)| m.as_str() == "search") {
-                opts.push(((*id).clone(), fx(id)));
+            // EMPTY is an option only when the slot has no candidates.
+            //
+            // An arcane slot costs nothing — no capacity, no Forma — so
+            // leaving it empty can never beat filling it with something that
+            // helps, and marking a candidate IS the statement that the slot
+            // should be filled (user, 2026-08-01: "没有理由放空一个"). Keeping
+            // `none` alongside doubled the space per slot and put builds with
+            // a hole in them on the results board, where they can only ever
+            // tie the same build with the arcane in it.
+            //
+            // A slot with nothing marked still resolves to `none`, which is
+            // what an empty slot IS — that case is the `else` below.
+            let marked: Vec<_> = mine.iter().filter(|(_, m)| m.as_str() == "search").collect();
+            if marked.is_empty() {
+                return vec![("none".to_string(), wfsim_engine::arcanes_data::ArcaneFx::none())];
             }
-            opts
+            marked.into_iter().map(|(id, _)| ((*id).clone(), fx(id))).collect()
         })
         .collect();
     // The product, in pool order: `arcane_sets[i]` names what `arcanes[i]` is.
