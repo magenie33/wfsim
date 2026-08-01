@@ -54,6 +54,9 @@ ui:
   "Primary": 主武器
   "Secondary": 副武器
   "Melee": 近战
+  "add arcane": 添加赋能
+  "add {pool} arcane": 添加{pool}赋能
+  "sentinels cannot equip arcanes": 守护武器无法装备赋能
   "Arch-Guns": 空战武器
   "Sentinel Weapons": 守护武器
   "Other": 其他

@@ -300,8 +300,21 @@ let META = null;
 const EXILUS = 8;
 let slots = [];
 let innate = [];     // 9 × innate polarity name|null (exilus never innate)
-let arcane = "none";
-let arcaneRank = null;   // null → max rank (mirrors mod slot ranks)
+// ONE ENTRY PER ARCANE POOL the weapon seats, in the weapon's own pool
+// order. Almost always a single entry; an Arch-Gun seats two — one Primary
+// and one Secondary (wiki Arch-Gun) — and a sentinel seats none.
+//
+// A weapon never seats two of the SAME pool: slot i draws from pool i, so
+// two Primary arcanes is not a build the page can express.
+let arcanes = ["none"];
+let arcaneRanks = [null];   // null → max rank (mirrors mod slot ranks)
+// A state saved before Arch-Guns holds one arcane as a bare value; a state
+// saved after holds a list. Read either, always end up with the list.
+const asArcaneList = (v, n) => {
+  const a = Array.isArray(v) ? v.slice() : v == null ? [] : [v];
+  while (a.length < n) a.push(undefined);
+  return a.slice(0, n);
+};
 // Per-tier evolution selection {tier: id|null}; null = EMPTY (nothing
 // installed at that tier). Tier 1 is the Incarnon Form unlock: empty there
 // means no transformation, so the panel falls back to the base form.
@@ -464,7 +477,7 @@ async function init() {
   initWeaponSearch();
   const d = META.defaults;
   $("weapon").value = d.weapon;
-  arcane = arcaneFor(d.weapon, d.arcane);
+  arcanes = arcanesFor(d.weapon, d.arcane);
   evoSel = { 1: null, 2: null, 3: null, 4: null, ...(d.evolutions || {}) };
   sim = { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
     headshot_pct: d.headshot_pct, aiming: d.aiming !== false, duration: d.duration, runs: d.runs,
@@ -1342,8 +1355,8 @@ function snapshotState() {
   return {
     weapon: $("weapon").value,
     evoSel: { ...evoSel },
-    arcane,
-    arcaneRank,
+    arcane: arcanes,
+    arcaneRank: arcaneRanks,
     slots: slots.map((s) => ({ mod: s.mod, pol: s.pol, rank: s.rank })),
     sim: { ...sim },
   };
@@ -1379,8 +1392,8 @@ function restoreState(st, weapon) {
     slots[i].rank = s.rank ?? null;
   });
   evoSel = { 1: null, 2: null, 3: null, 4: null, ...(st.evoSel || {}) };
-  arcane = arcaneFor(w, st.arcane);
-  arcaneRank = st.arcaneRank ?? null;
+  arcanes = arcanesFor(w, st.arcane);
+  arcaneRanks = asArcaneList(st.arcaneRank, arcanes.length).map((x) => x ?? null);
   // The preset's own scenario wins over the per-weapon seeding, so the marker
   // is stamped with it rather than left for renderSim to notice.
   if (st.sim) sim = { ...sim, ...st.sim, __weapon: w };
@@ -1710,8 +1723,8 @@ function blankBuildState() {
   return {
     weapon: $("weapon").value,
     evoSel: {},
-    arcane: "none",
-    arcaneRank: null,
+    arcane: ["none"],
+    arcaneRank: [null],
     slots: [],
     sim: { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
       headshot_pct: defaultHeadshotPct(weaponInfo($("weapon").value)),
@@ -1819,11 +1832,17 @@ function applyWeaponInner(id, presetMods) {
   $("w-tags").innerHTML = [w.subtype, w.uses_evo2 ? "Incarnon" : null, w.sentinel ? "Sentinel" : null]
     .filter(Boolean).map((t) => `<span class="tag">${t}</span>`).join("");
 
-  show("arcane-block", w.arcane_slots >= 1);
+  show("arcane-block", (w.arcane_slots || 0) >= 1);
   show("evo-block", w.uses_evo2);
   show("element-block", !!w.element_config);
-  $("arcane-sub").textContent = w.sentinel ? "sentinels cannot equip arcanes" : `${w.arcane_slots} slot`;
-  arcane = arcaneFor(w.id, arcane); // the previous weapon's arcane may not fit this one
+  // An Arch-Gun's two slots are NOT interchangeable, so the line names the
+  // pools rather than counting them: "primary + secondary", not "2 slots".
+  $("arcane-sub").textContent = w.sentinel
+    ? tr("sentinels cannot equip arcanes")
+    : (w.arcane_pools || []).map((p) => tr(SLOT_LABEL[p] || p)).join(" + ");
+  // The previous weapon's arcanes may not fit this one, slot by slot.
+  arcanes = arcanesFor(w.id, arcanes);
+  arcaneRanks = asArcaneList(arcaneRanks, arcanes.length).map((x) => x ?? null);
 
   slots = Array.from({ length: 9 }, (_, i) => ({ mod: null, pol: innate[i], rank: null }));
   (presetMods || []).filter((m) => modById(m)).slice(0, 8).forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });
@@ -1941,8 +1960,10 @@ function buildPayload() {
   return {
     weapon: $("weapon").value,
     evolutions: Object.values(evoSel).filter(Boolean),
-    arcane,
-    arcane_rank: arcaneRank,
+    // One per pool, in the weapon's pool order — the server reads either
+    // this or a bare value, so an old saved build still means what it meant.
+    arcane: arcanes,
+    arcane_rank: arcaneRanks,
     mods: slots.filter((s) => s.mod).map((s) => s.mod),
     // A `riven:` id means nothing without the riven itself — it is the
     // visitor's item, not a pool entry, so it rides along with the request.
@@ -2288,9 +2309,14 @@ function openPolMenu(slotIdx) {
 // its own "Remove arcane", and in the optimizer an empty arcane scope already
 // means "run no arcane" — a "None" row there was a second way to say the same
 // thing, sitting in a list of real choices (user, 2026-07-30 / 2026-07-31).
-const arcanePool = () => {
-  const slot = weaponInfo($("weapon").value).arcane_slot;
-  return (META.arcanes || []).filter((a) => a.id !== "none" && a.slot === slot);
+const arcanePools = (weaponId) =>
+  (weaponInfo(weaponId || $("weapon").value) || {}).arcane_pools || [];
+// The arcanes SLOT i may hold — pool i's, and only pool i's. A picker that
+// offers the whole set and then refuses the pick is a worse way to say the
+// same thing.
+const arcanePool = (i = 0) => {
+  const pool = arcanePools()[i];
+  return (META.arcanes || []).filter((a) => a.id !== "none" && a.slot === pool);
 };
 // An arcane belongs to ONE slot, so another slot's arcane is not a
 // questionable choice on this weapon — it cannot be equipped at all. Ids reach
@@ -2300,17 +2326,22 @@ const arcanePool = () => {
 // The engine refuses the same thing independently
 // (`arcanes_data::for_slot`); this keeps the UI from ever showing a build the
 // sim would not run.
-function arcaneFor(weaponId, id) {
+function arcaneFor(weaponId, id, i = 0) {
   if (!id || id === "none") return "none";
-  const w = weaponInfo(weaponId);
   const a = arcaneById(id);
-  return a && w && w.arcane_slots >= 1 && a.slot === w.arcane_slot ? id : "none";
+  return a && a.slot === arcanePools(weaponId)[i] ? id : "none";
 }
+/// Every slot's id, validated against the pool that slot draws from.
+const arcanesFor = (weaponId, list) =>
+  arcanePools(weaponId).map((_, i) => arcaneFor(weaponId, asArcaneList(list, i + 1)[i], i));
 /// The builder picker's list. Same set — kept as its own name because the
 /// picker is where a reader looks for it.
 const arcanePickPool = arcanePool;
+/// Which slot the picker is filling — the popover is shared, the slot is not.
+let arcaneSlotIdx = 0;
 const arcaneById = (id) => META.arcanes.find((x) => x.id === id);
-function setArcane(id) { arcane = id; arcaneRank = null; } // new arcane → max rank
+// new arcane → max rank, in the slot the picker was opened from
+function setArcane(id, i = arcaneSlotIdx) { arcanes[i] = id; arcaneRanks[i] = null; }
 // Effect lines for a specific rank (clamped). Arcane strengths scale per rank
 // (wiki), so the slot shows the SELECTED rank; the picker shows max rank.
 const effectsAt = (a, r) => {
@@ -2325,15 +2356,25 @@ const effLines = (arr) => arr.length ? `<div class="me">${arr.map((x) => `<div>$
 function renderArcanes() {
   const box = $("arcane-slots");
   box.innerHTML = "";
-  const a = arcaneById(arcane);
+  arcanePools().forEach((pool, i) => box.appendChild(arcaneSlotEl(pool, i)));
+}
+
+// One arcane slot: the card if filled, the "+ add" plate if not. The POOL is
+// named on the plate only when a weapon seats more than one, because that is
+// the only time it tells you anything.
+function arcaneSlotEl(pool, i) {
+  const many = arcanePools().length > 1;
+  const a = arcaneById(arcanes[i]);
   const none = !a || a.id === "none";
   const el = document.createElement("div");
   if (none) {
     el.className = "slot empty arc";
-    el.innerHTML = `<span class="plus">+ add arcane</span>`;
+    el.innerHTML = `<span class="plus">+ ${escHtml(
+      many ? tr("add {pool} arcane").replace("{pool}", tr(SLOT_LABEL[pool] || pool)) : tr("add arcane"),
+    )}</span>`;
   } else {
     const maxr = a.max_rank || 0;
-    const r = arcaneRank == null ? maxr : Math.max(0, Math.min(maxr, arcaneRank));
+    const r = arcaneRanks[i] == null ? maxr : Math.max(0, Math.min(maxr, arcaneRanks[i]));
     const lowered = r < maxr;
     const rank = maxr > 0
       ? `<span class="rank ${lowered ? "lowered" : ""}"><button class="rk" data-d="-1">−</button><b>R${r}${lowered ? "/" + maxr : ""}</b><button class="rk" data-d="1">+</button></span>`
@@ -2344,22 +2385,23 @@ function renderArcanes() {
     el.innerHTML = imgTag(IMG(a.image), "mod") +
       `<div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}</div>${effLines(cardLines(a, r, effectsAt(a, r)))}${rank}</div>` +
       `<button class="dots" title="options">⋯</button>`;
-    el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openArcaneMenu(el); });
+    el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openArcaneMenu(el, i); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
       e.stopPropagation();
-      arcaneRank = Math.max(0, Math.min(maxr, r + Number(b.dataset.d)));
+      arcaneRanks[i] = Math.max(0, Math.min(maxr, r + Number(b.dataset.d)));
       renderArcanes();
     }));
   }
   // Mod-slot parity: only the EMPTY slot opens the picker on click; a
   // filled card swaps via its ⋯ menu — so its text stays selectable.
   if (none) {
-    el.addEventListener("click", (e) => { e.stopPropagation(); openArcanePicker(el); });
+    el.addEventListener("click", (e) => { e.stopPropagation(); openArcanePicker(el, i); });
   }
-  box.appendChild(el);
+  return el;
 }
 
-function openArcanePicker(anchor) {
+function openArcanePicker(anchor, i = 0) {
+  arcaneSlotIdx = i;
   closePopovers();
   const pop = $("arcane-popover");
   place(pop, anchor);
@@ -2377,9 +2419,9 @@ function renderArcaneMenu(query) {
   const q = query.trim().toLowerCase();
   // Search matches NAME (localized or English), ANY rank's effect text,
   // or the description — in either language (searchBlob).
-  const hits = arcanePickPool().filter((a) => !q || searchBlob(a).includes(q));
+  const hits = arcanePickPool(arcaneSlotIdx).filter((a) => !q || searchBlob(a).includes(q));
   menu.innerHTML = hits.length ? hits.map((a) => {
-    const isCur = a.id === arcane;
+    const isCur = a.id === arcanes[arcaneSlotIdx];
     return `<div class="opt ${isCur ? "cur" : ""} ${a.rarity ? "rar-" + a.rarity : ""}" data-id="${a.id}">
       ${imgTag(IMG(a.image), "mod")}
       <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}</div>${effLines(cardLines(a, a.max_rank, effectsAt(a, a.max_rank)))}</div></div>`;
@@ -2388,13 +2430,14 @@ function renderArcaneMenu(query) {
 }
 
 // ⋯ on a filled arcane slot: mirror the mod slot menu (remove).
-function openArcaneMenu(anchor) {
+function openArcaneMenu(anchor, i = 0) {
+  arcaneSlotIdx = i;
   closePopovers();
   const menu = $("slot-menu");
   menu.innerHTML = `<div class="mi" data-a="swap">Swap arcane</div><div class="mi danger" data-a="remove">Remove arcane</div>`;
   place(menu, anchor);
-  menu.querySelector('[data-a="swap"]').addEventListener("click", () => openArcanePicker(anchor));
-  menu.querySelector('[data-a="remove"]').addEventListener("click", () => { setArcane("none"); closePopovers(); renderArcanes(); });
+  menu.querySelector('[data-a="swap"]').addEventListener("click", () => openArcanePicker(anchor, i));
+  menu.querySelector('[data-a="remove"]').addEventListener("click", () => { setArcane("none", i); closePopovers(); renderArcanes(); });
 }
 
 // ---- Evolution ----
@@ -2471,10 +2514,15 @@ function renderSimBuild() {
   }).filter(Boolean);
   parts.push(`<div class="sb-h">${tr("Mods")} · ${modChips.length}</div>`);
   parts.push(`<div class="sb-chips">${modChips.join("") || `<span class="sb-empty">${tr("no mods equipped")}</span>`}</div>`);
-  if (w.arcane_slots >= 1) {
-    const a = arcane !== "none" && arcaneById(arcane);
+  if ((w.arcane_slots || 0) >= 1) {
+    const arcChips = arcanes
+      .map((id, i) => {
+        const a = id !== "none" && arcaneById(id);
+        return a ? chip(IMG(a.image), a.name, arcaneRanks[i] ?? ((a.ranks || []).length - 1)) : "";
+      })
+      .filter(Boolean);
     parts.push(`<div class="sb-h">${tr("Arcane")}</div>`);
-    parts.push(`<div class="sb-chips">${a ? chip(IMG(a.image), a.name, arcaneRank ?? ((a.ranks || []).length - 1)) : `<span class="sb-empty">${tr("no arcane")}</span>`}</div>`);
+    parts.push(`<div class="sb-chips">${arcChips.join("") || `<span class="sb-empty">${tr("no arcane")}</span>`}</div>`);
   }
   if (w.uses_evo2) {
     const evoChips = weaponEvos().map((t) => {
@@ -2898,7 +2946,8 @@ function renderOpt() {
     // scope (document model) and immediately overwrite this seed.
     slots.slice(0, 8).forEach((s) => { if (s.mod) opt.mods[s.mod] = "fixed"; });
     if (slots[EXILUS].mod) opt.exilus[slots[EXILUS].mod] = "fixed";
-    opt.arcanes = arcane && arcane !== "none" ? { [arcane]: "fixed" } : {};
+    opt.arcanes = {};
+    arcanes.filter((a) => a && a !== "none").forEach((a) => { opt.arcanes[a] = "fixed"; });
     opt.evos = {};
     Object.entries(evoSel).forEach(([t, id]) => { if (id) opt.evos[t] = { [id]: "fixed" }; });
     optSeeded = true;
@@ -3698,8 +3747,18 @@ function resultToState(res) {
   return {
     weapon: $("weapon").value,
     evoSel: evo,
-    arcane: res.arcane === "none" ? "none" : res.arcane,
-    arcaneRank: res.arcane === "none" ? null : (res.arcane_rank ?? null),
+    // The optimizer searches ONE arcane axis, so a result names one arcane —
+    // seat it in the slot whose POOL it belongs to. On an Arch-Gun the scope
+    // may legitimately have offered a Secondary, and dropping it into slot 0
+    // (Primary) would have thrown a valid result away.
+    ...(() => {
+      const pools = arcanePools($("weapon").value);
+      const at = res.arcane === "none" ? -1 : pools.indexOf((arcaneById(res.arcane) || {}).slot);
+      return {
+        arcane: pools.map((_, i) => (i === at ? res.arcane : "none")),
+        arcaneRank: pools.map((_, i) => (i === at ? (res.arcane_rank ?? null) : null)),
+      };
+    })(),
     slots: sl,
     // The optimizer's per-buff config rides along — otherwise "add then
     // Run Sim" silently reverts to the Sim panel's own defaults and the
