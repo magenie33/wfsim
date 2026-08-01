@@ -4,7 +4,16 @@ rarity: legendary
 polarity: madurai
 base_drain: 4                 # max drain 14 at rank 10
 max_rank: 10
-internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/PrimedArchwingDamageAfterReloadMod
+# SOURCE SPLIT, and WFCD wins: the wiki module says
+# `...PrimedArchwingDamageAfterReloadMod`, WFCD says `...DamageOnReloadMod`.
+# The internal name is the JOIN KEY to DE's export, so it is decidable rather
+# than a matter of taste — with the wiki's spelling this mod was the ONE
+# archgun mod with no localized card text, because the join silently found
+# nothing. WFCD's spelling joins and yields all 11 ranks (2026-08-01). The
+# wiki module is hand-maintained; WFCD is generated from DE's own export, so
+# it is authoritative for this field the same way it already is for
+# `base_drain` / `max_rank` (AGENTS.md).
+internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/PrimedArchwingDamageOnReloadMod
 description: "On Reload From Empty:\n+X% Damage for Xs"
 
 effects:

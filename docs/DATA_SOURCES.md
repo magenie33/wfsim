@@ -97,7 +97,8 @@ one source was consulted.
 | field | authority | why |
 | --- | --- | --- |
 | `base_drain`, `max_rank` | **WFCD** (`vendor/warframe-items`) | `Module:Mods/data` is wrong for ~20 mods. Checked against the wiki PAGE rank tables as a third, independent data point (hand-maintained but per-rank, so hard to get wrong) — Point Strike, Split Chamber, Metal Auger, Barrel Diffusion, Convulsion, Deep Freeze, Gunslinger, Suppress — and the page agreed with WFCD **8/8** |
-| `polarity`, `rarity`, `exilus`, `internal_name`, verbatim `description` | **wiki module** | unchanged; WFCD has no exilus flag and its display text is rounded |
+| `polarity`, `rarity`, `exilus`, verbatim `description` | **wiki module** | unchanged; WFCD has no exilus flag and its display text is rounded |
+| `internal_name` | **WFCD**, when they split | it is the JOIN KEY, so it is decidable rather than a matter of taste. `Primed Deadly Efficiency` (2026-08-01): module `…PrimedArchwingDamageAfterReloadMod`, WFCD `…DamageOnReloadMod`. With the module's spelling it was the ONE Arch-Gun mod with no localized card text — the join silently found nothing. WFCD's joins and yields all 11 ranks, which the number-agreement test then validates against our own values. The module is hand-maintained; WFCD is generated from DE's export |
 | per-rank effect VALUES | **WFCD `levelStats`** | a full ramp, both ends checkable; the module gives max rank only |
 | everything mechanical | **cross-check both** | a disagreement is itself the finding — `crosscheck.py` reports SOURCE-SPLIT |
 
@@ -277,6 +278,23 @@ though the scripts do not travel with it.
 | `wiki_mods.py` / `wiki_arcanes.py` | shared fetch + parse of the authoritative Lua modules |
 | `gen_mods.py --type <T>` | generate skeletons; never overwrites a curated file. Owns the import filters (PvP-only, removed-from-game, Flawed, Riven placeholders) |
 | `verify_mods.py --type <T>` | COVERAGE (every importable wiki mod of that Type has a file, and no file is a stranger) + drain / polarity / rarity / max_rank / exilus. Imports `gen_mods`' filters so the two cannot disagree about what the pool should hold |
+
+**Two of its findings are EXPECTED, and both are decisions, not gaps** — read
+this before "fixing" either (audited 2026-08-01):
+
+- `--type Rifle` reports 6 MISSING: **Apex Predator, Comet Rounds, Lucky Shot,
+  Ripper Rounds, Serrated Rounds, Vanquished Prey**. All six are
+  `/Lotus/Upgrades/Mods/PvPMods/Rifle/…` and the module tags them
+  `Conclave: true` — but so are the four we DO ship (Agile Aim, Twitch, Eject
+  Magazine, Reflex Draw), which Update 17.9 made PvE-legal. The module cannot
+  tell the two apart; the authority is the wiki's `Rifle_Mods` / `Pistol_Mods`
+  tables, which tag the restricted ones "Exclusive to PvP". The allowlist that
+  encodes this lives in the engine test
+  `mods_data::tests::only_pve_legal_conclave_mods_are_in_the_pools`, so the
+  rule ships with the repo even though the script does not.
+- `--type Archgun` reports `zodiac_shred` exilus false != wiki true. Deliberate
+  — `MEASUREMENTS.md` **M17** holds the reasoning and the measurement that
+  would settle it.
 | `verify_arcanes.py --slot <S>` | same, for arcanes, plus the X-templated description token-matching the wiki's max-rank text |
 | `audit_mod_effects.py --type <T>` | the EFFECT NUMBERS: every modeled `rankMax` must appear in the mod's own wiki description. Also flags CONDITIONAL-AS-FLAT (a description with an `On <trigger>:` line must produce a `kind: buff`) and DESC-STALE (the module's text lagging its own MaxRank) |
 | `audit_arcane_effects.py --slot <S>` | the effect numbers at BOTH ends of the rank ramp, against warframestat `levelStats` |
