@@ -1438,6 +1438,10 @@ pub fn panel_json(v: &Value) -> Value {
                         B::FireRate => "fire_rate",
                         B::ReloadSpeed => "reload",
                     };
+                    // "assumed active" is exactly what this panel is: it
+                    // resolves under AssumedMax, so the number belongs here.
+                    // What it does NOT mean is that the SIM has it — see
+                    // MECHANICS "Conditional buffs with no live model".
                     push(key, x, Some("conditional buff, assumed active".into()));
                 }
                 // Weak-point effects: conditional on the part hit — listed,

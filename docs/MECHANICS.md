@@ -1861,3 +1861,40 @@ reload, and the ceiling display are **measured** (M14).
 - Innate-vs-mod elemental combination timing on multi-innate weapons (§3).
 - Proc-weight formula when 3+ elements coexist (§6).
 - Incarnon-form stat/mechanic overrides (see the Dual Toxocyst prototype).
+
+---
+
+### Conditional buffs with no live model — OPEN
+
+`ModEffect::CondBuff` is the catch-all for a triggered buff whose TRIGGER the
+sim does not model as an event. It is applied by `resolve_with` **under
+AssumedMax only**, which has a consequence worth stating plainly:
+
+- the **Stats panel** shows its number, correctly — that panel resolves under
+  AssumedMax and says "conditional buff, assumed active";
+- the **Simulator** runs Emergent, where the effect contributes **nothing**;
+- and there is **no buff card** to switch it on, because a card needs
+  something live to toggle. The Sim's buff list is built from effects that
+  carry a real window (`OnReloadFireRate`, `OnReloadDamage`, the arcane
+  buffs), and `CondBuff` carries none.
+
+So a player equips one of these, sees the Stats panel change, runs the Sim,
+and sees nothing move — with no control that explains the difference (owner,
+2026-08-01, on Archgun Ace).
+
+**Scope: three mods**, all of them a trigger nothing else needs yet.
+
+| mod | trigger | grants |
+|---|---|---|
+| `archgun_ace` | on headshot kill | fire rate, reload speed |
+| `catalyzer_link` | on ability cast (while aiming) | status chance |
+| `embedded_catalyzer` | on ability cast (while aiming) | status chance |
+
+An ability cast is not an event this arena has at all, so those two are honest
+no-ops until a Warframe model exists. **Archgun Ace is the one that is simply
+missing**: on-headshot-kill IS an event the sim raises (Deadhead rides it), so
+its two grants want the same treatment `OnReloadFireRate` already has — a
+`TimedBuff` on the panel, a window in the sim, and a card.
+
+**Status:** known gap, not a wrong number — the Stats panel's reading is right
+for what that panel is.

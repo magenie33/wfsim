@@ -2438,6 +2438,18 @@ function arcaneFor(weaponId, id, i = 0) {
   const a = arcaneById(canon);
   return a && a.slot === arcanePools(weaponId)[i] ? canon : "none";
 }
+/// Can this weapon seat this arcane in ANY of its slots?
+///
+/// `arcaneFor` answers a different question — "does it fit slot i" — and its
+/// `i` defaults to 0. The optimizer's SCOPE is not per-slot (an arcane belongs
+/// to exactly one pool, so the flat mark map already says which), so asking
+/// `arcaneFor(w, id)` there silently meant "does it fit the FIRST pool": every
+/// secondary mark was dropped on restoring an optimizer-arcanes preset, and
+/// the search then had nothing to put in the second slot (user, 2026-08-01).
+const arcaneFitsWeapon = (weaponId, id) => {
+  const a = arcaneById(ARCANE_RENAMED[id] || id);
+  return !!a && arcanePools(weaponId).includes(a.slot);
+};
 /// Every slot's id, validated against the pool that slot draws from.
 const arcanesFor = (weaponId, list) =>
   arcanePools(weaponId).map((_, i) => arcaneFor(weaponId, asArcaneList(list, i + 1)[i], i));
@@ -3433,7 +3445,9 @@ function applyOptGroupState(g, st) {
     opt.arcanes = {};
     const w = $("weapon").value;
     Object.entries(st.arcanes || {}).forEach(([id, s]) => {
-      if (arcaneFor(w, id) === id) opt.arcanes[id] = norm(s); // drops a stored "none" too
+      // ANY of the weapon's pools, not just the first — see arcaneFitsWeapon.
+      // (A stored "none" fails this too, which is what we want.)
+      if (arcaneFitsWeapon(w, id)) opt.arcanes[ARCANE_RENAMED[id] || id] = norm(s);
     });
   } else {
     // Cross-weapon: keep only ids the CURRENT weapon's tiers actually offer
