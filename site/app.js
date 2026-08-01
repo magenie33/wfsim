@@ -2350,7 +2350,7 @@ function renderTools() {
   const t = $("picker-tools");
   const pols = ["Madurai", "Naramon", "Vazarin", "Umbra"].filter((p) => currentPool.some((m) => m.polarity === p));
   t.innerHTML =
-    `<label>${escHtml(tr("Sort"))} <select id="pk-sort"><option value="name">${escHtml(tr("Name"))}</option><option value="drain">${escHtml(tr("Drain"))}</option><option value="gain">${escHtml(tr("Gain"))}</option></select></label>` +
+    `<label>${escHtml(tr("Sort"))} <select id="pk-sort"><option value="name">${escHtml(tr("Name"))}</option><option value="drain">${escHtml(tr("Drain"))}</option>${gainPrefs.on === false ? "" : `<option value="gain">${escHtml(tr("Gain"))}</option>`}</select></label>` +
     `<button id="pk-dir" class="ghost-btn small" title="direction">${pickerPrefs.dir === "asc" ? "▲" : "▼"}</button>` +
     `<span class="pk-pols"><span class="pk-pol ${!pickerPrefs.pol ? "sel" : ""}" data-p="">all</span>` +
     pols.map((p) => `<span class="pk-pol ${pickerPrefs.pol === p ? "sel" : ""}" data-p="${p}" title="${p}">${imgTag(POL(p), "pol")}</span>`).join("") +
@@ -2403,7 +2403,10 @@ const gainPct = (x) => (x >= 0 ? "+" : "−") + sig2(Math.abs(x) * 100) + "%";
 //
 // There is no "current" scenario either: a scan is only worth reading against
 // something that has a name and can be returned to.
-let gainPrefs = { scenario: null };
+// ON by default (user, 2026-08-01): the ranking is the reason the picker is
+// worth opening. Off, nothing simulates, no chip is drawn, and "提升" is not
+// offered as an order — a sort key with no values behind it is a trap.
+let gainPrefs = { on: true, scenario: null };
 try { const s = JSON.parse(localStorage.getItem("wfsim-gain")); if (s) gainPrefs = { ...gainPrefs, ...s }; } catch (_) {}
 const saveGainPrefs = () => localStorage.setItem("wfsim-gain", JSON.stringify(gainPrefs));
 
@@ -2578,21 +2581,39 @@ const gainOf = (id) => (gainScan.key === gainKey() ? gainScan.by[id] || null : n
 function renderQuickCalc() {
   const box = $("quick-calc");
   if (!box) return;
+  const on = gainPrefs.on !== false;
   const ps = loadPresetList(SCENARIOS);
   const cur = ps.some((p) => p.name === gainPrefs.scenario) ? gainPrefs.scenario
     : (ps.some((p) => p.name === activeScenario) ? activeScenario : (ps[0] || {}).name);
   const opt = (v, label, sel) => `<option value="${escHtml(v)}"${v === sel ? " selected" : ""}>${escHtml(label)}</option>`;
   box.innerHTML =
-    `<span class="pc-h">⚡ ${escHtml(tr("Quick calc"))}</span>` +
+    `<label class="pc-h" title="${escHtml(tr("rank a slot's options by what they would change — off, nothing is simulated"))}">` +
+    `<input type="checkbox" id="gp-on"${on ? " checked" : ""}> ⚡ ${escHtml(tr("Quick calc"))}</label>` +
+    (!on ? "" :
     `<select id="gp-scen" title="${escHtml(tr("the saved scenario to measure under — it decides the enemy, the technique and whether the ranking is KPM or DPS"))}">${
       ps.map((p) => opt(p.name, p.name, cur)).join("")}</select>` +
 
     `<span class="pc-note">${gainScan.running
       ? `${gainScan.done}/${gainScan.total}`
-      : (gainScan.note ? escHtml(gainScan.note) : escHtml(tr("open a slot to rank its mods by effect")))}</span>`;
+      : (gainScan.note ? escHtml(gainScan.note) : escHtml(tr("open a slot to rank its mods by effect")))}</span>`);
   // Every click stays inside: a redraw detaches these nodes, and the document
   // outside-click handler closes on a target whose `.popover` ancestor is gone.
   box.onclick = (e) => e.stopPropagation();
+  $("gp-on").onchange = (e) => {
+    e.stopPropagation();
+    gainPrefs = { ...gainPrefs, on: $("gp-on").checked };
+    // A stale ranking must not outlive the switch, and "提升" must not stay
+    // selected with nothing behind it.
+    if (!gainPrefs.on) {
+      gainScan = { key: null, running: false, base: 0, by: {}, done: 0, total: 0, note: "", metric: "" };
+      if (pickerPrefs.sort === "gain") { pickerPrefs.sort = "drain"; savePickerPrefs(); }
+    }
+    saveGainPrefs();
+    renderQuickCalc();
+    if (!$("mod-popover").hidden) { renderTools(); renderMenu(pickerSlot, $("mod-search").value); }
+    renderEvo();
+  };
+  if (!$("gp-scen")) return;
   $("gp-scen").onchange = (e) => {
     e.stopPropagation();
     gainPrefs = { scenario: $("gp-scen").value };
@@ -2609,6 +2630,7 @@ function ensureGains(axis, repaint) {
   // opened, so on a cold load they can fire before `initPresets` has seeded
   // the scenario library — and a scan with no named scenario is one nobody
   // can reproduce or compare against (it labelled itself "—").
+  if (gainPrefs.on === false) return;
   if (!loadPresetList(SCENARIOS).length) return;
   gainAxis = axis;                       // so the key describes what we want
   if (gainScan.running || gainScan.key === gainKey()) return;
@@ -2967,10 +2989,12 @@ function renderEvo() {
       const warn = o.broken && o.id === sel
         ? `<span class="ed warn">⚠ does not work in-game (wiki) — the simulation computes it as NO EFFECT</span>`
         : "";
-      // Evolutions have no standalone wiki pages — link to the weapon's
-      // Incarnon Genesis page.
-      const wInfo = weaponInfo($("weapon").value);
-      const genesis = wikiUrl(wikiWeaponName(wInfo) + " Incarnon Genesis");
+      // Evolutions have no standalone wiki pages, so they link to the
+      // WEAPON's — which carries the same evolution tables and is where you
+      // wanted to end up anyway (user, 2026-08-01). It used to point at the
+      // "<Weapon> Incarnon Genesis" page: correct, and one hop further from
+      // everything else you would look up while reading the card.
+      const genesis = wikiUrl(wikiWeaponName(weaponInfo($("weapon").value)));
       return `<span class="${cls}" data-tier="${t.tier}" data-id="${o.id}" title="${title}">
         ${icon}<span class="einfo"><b class="en">${wl(o.name, genesis)}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}${
           gainChipFor(o.id, `EVO ${ROMAN(t.tier)}`)}</b><span class="ed">${lines}</span>${warn}</span></span>`;

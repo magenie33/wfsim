@@ -89,6 +89,7 @@ ui:
   "kill rate": 击杀速度
   "Measure": 衡量指标
   "Quick calc": 快速计算
+  "rank a slot's options by what they would change — off, nothing is simulated": 按「换上去会有多大变化」给槽位的候选排序 —— 关闭后不会进行任何模拟
   "open a slot to rank its mods by effect": 打开任一槽位，按效果排序它的 mod
   "Runs": 次数
   "the saved scenario to measure under — it decides the enemy, the technique and whether the ranking is KPM or DPS": 用哪个已保存的场景来测 —— 敌人、手法、以及按 KPM 还是 DPS 排序，都由它决定
