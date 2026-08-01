@@ -1579,6 +1579,11 @@ pub struct SourceDamage {
     pub direct_by_type: [f64; 15],
     pub radial_by_type: [f64; 15],
     pub field_by_type: [f64; 15],
+    /// `arcane_on_status` split the same way. Cascadia Empowered's instance
+    /// takes the PROC's damage type ("matching the Damage Type of the Status
+    /// Effect"), so this row has a vector too — it is just a vector of one
+    /// type per instance rather than a mixed one.
+    pub arcane_by_type: [f64; 15],
 }
 
 impl SourceDamage {
@@ -2081,6 +2086,7 @@ fn settle_procs(
             r.total_damage += amt;
             r.effective_damage += eff;
             r.sources.arcane_on_status += eff;
+            r.sources.arcane_by_type[proc as usize] += eff;
             r.timeline.add(at, eff);
             r.kills += killed as u32;
             if let Some(pool) = broke {
@@ -3866,6 +3872,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
             (&mut sources.direct_by_type, r.sources.direct_by_type),
             (&mut sources.radial_by_type, r.sources.radial_by_type),
             (&mut sources.field_by_type, r.sources.field_by_type),
+            (&mut sources.arcane_by_type, r.sources.arcane_by_type),
         ] {
             for (a, x) in acc.iter_mut().zip(v) {
                 *a += x;

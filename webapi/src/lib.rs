@@ -2486,7 +2486,10 @@ pub fn simulate_json(v: &Value) -> Value {
         // The lingering FIELD is its own bucket — on the Torid it is most of the
         // output, and leaving it out silently lost it from the damage meter.
         ("field".to_string(), sd.field, by_type(&sd.field_by_type)),
-        ("arcane".to_string(), sd.arcane_on_status, None),
+        // Cascadia Empowered's instance matches the PROC's type, so this row
+        // expands like the weapon-damage ones (user's rule for the direct row,
+        // 2026-08-01: the damage has elements, so the meter should say which).
+        ("arcane".to_string(), sd.arcane_on_status, by_type(&sd.arcane_by_type)),
     ];
     sources.extend(
         sd.status
