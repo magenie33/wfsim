@@ -101,7 +101,18 @@ struct WeaponInfo {
     uses_arcane: bool,
     /// Which arcane pool this weapon draws from — its own slot
     /// ("secondary" / "primary"). The picker filters on it.
-    arcane_slot: String,
+    /// The EQUIPMENT slot — primary / secondary / sentinel / archgun. What
+    /// the home grid groups by. It used to be read off `arcane_slot`, which
+    /// worked only while every weapon's arcane pool was named after its slot;
+    /// an Arch-Gun seats two pools and is neither of them, so the two facts
+    /// are now two fields.
+    slot: String,
+    /// The arcane POOLS this weapon seats, one arcane each. Almost always a
+    /// single pool named after the equipment slot; a sentinel seats none; an
+    /// Arch-Gun seats TWO — "Archguns possess two Arcane Enhancement slots to
+    /// equip one Primary Arcane and one Secondary Arcane" (wiki Arch-Gun),
+    /// which is also why it is "not considered either primary or secondary".
+    arcane_pools: Vec<String>,
     uses_evo2: bool,
 }
 
@@ -170,8 +181,16 @@ fn weapons() -> &'static [WeaponInfo] {
                     sentinel,
                     forms,
                     has_cycle: wfsim_engine::weapons_data::has_gauge_switched_form(&s.id),
+                    slot: s.slot.clone(),
                     uses_arcane: !sentinel,
-                    arcane_slot: s.slot.clone(),
+                    // Keyed on the equipment SLOT, which is what the game
+                    // keys it on — a category rule, like `sentinel` above,
+                    // not per-weapon data.
+                    arcane_pools: match s.slot.as_str() {
+                        _ if sentinel => Vec::new(),
+                        "archgun" => vec!["primary".to_string(), "secondary".to_string()],
+                        other => vec![other.to_string()],
+                    },
                     uses_evo2: incarnon,
                 }
             })
@@ -477,13 +496,15 @@ pub fn meta_json() -> Value {
                 // same string today because a weapon draws its arcane from its
                 // own slot — but that is a coincidence of the arcane rule, not
                 // a name the UI should be reading for grouping.
-                "slot": w.arcane_slot,
+                "slot": w.slot,
                 "uses_arcane": w.uses_arcane,
-                "arcane_slot": w.arcane_slot,
+                // The POOLS, in slot order — the page draws one picker per
+                // entry and sends one arcane per entry.
+                "arcane_pools": w.arcane_pools,
                 "uses_evo2": w.uses_evo2,
                 // A sentinel weapon has no arcane slot. This was hardcoded to
                 // 1 while every weapon in the roster had one.
-                "arcane_slots": u32::from(w.uses_arcane),
+                "arcane_slots": w.arcane_pools.len(),
                 "image": assets().weapons.get(&w.id),
                 "innate_polarities": innate_slots_for(&w.id).iter()
                     .map(|p| p.map(|x| format!("{x:?}")))
@@ -1009,21 +1030,73 @@ fn arcane_fx_for(
     if !info.uses_arcane {
         return wfsim_engine::arcanes_data::ArcaneFx::none();
     }
-    let aid = match get_str(v, "arcane", "none") {
+    let parts: Vec<wfsim_engine::arcanes_data::ArcaneFx> = arcane_choices(v, info)
+        .into_iter()
+        .filter_map(|(pool, aid, rank)| {
+            // POOL-scoped: an arcane from another pool is not equippable in
+            // that slot, so it resolves to nothing rather than being applied.
+            let def = wfsim_engine::arcanes_data::for_slot(&pool, &aid)?;
+            let rank = rank.unwrap_or(def.max_rank).min(def.max_rank);
+            Some(def.fx(rank, policy, base.traits))
+        })
+        .collect();
+    // Two arcanes are one effect set — see `ArcaneFx::merged`.
+    wfsim_engine::arcanes_data::ArcaneFx::merged(&parts)
+}
+
+/// An arcane by id, in ANY pool this weapon seats. The optimizer's scope is a
+/// flat list of ids rather than one per slot, so it asks this question
+/// instead of "is it in THE pool" — an Arch-Gun's scope legitimately mixes
+/// Primary and Secondary arcanes.
+fn arcane_in_pools(
+    info: &WeaponInfo,
+    id: &str,
+) -> Option<&'static wfsim_engine::arcanes_data::ArcaneDef> {
+    info.arcane_pools
+        .iter()
+        .find_map(|p| wfsim_engine::arcanes_data::for_slot(p, id))
+}
+
+/// The arcane chosen for each of the weapon's pools: `(pool, id, rank)`.
+///
+/// The wire format takes either shape, because a build saved before Arch-Guns
+/// carries one arcane and must keep meaning what it meant:
+///
+/// ```text
+/// "arcane": "primary_deadhead",         "arcane_rank": 5      one, legacy
+/// "arcane": ["primary_deadhead", "secondary_merciless"]        one per pool
+/// "arcane_rank": [5, 5]
+/// ```
+///
+/// A string fills the FIRST pool. Entries past the weapon's pool count are
+/// dropped: what a weapon can seat is the weapon's business, not the caller's.
+fn arcane_choices(v: &Value, info: &WeaponInfo) -> Vec<(String, String, Option<u32>)> {
+    // Legacy short names, kept for builds saved before the ids were data.
+    let canon = |s: &str| match s {
         "enervate" => "secondary_enervate",
         "deadhead" => "secondary_deadhead",
         "flare" => "cascadia_flare",
         other => other,
-    };
-    // Slot-scoped: an arcane from another slot is not equippable here, so it
-    // resolves to nothing rather than being applied.
-    match wfsim_engine::arcanes_data::for_slot(&info.arcane_slot, aid) {
-        Some(def) => {
-            let rank = get_u32(v, "arcane_rank", def.max_rank).min(def.max_rank);
-            def.fx(rank, policy, base.traits)
-        }
-        None => wfsim_engine::arcanes_data::ArcaneFx::none(),
     }
+    .to_string();
+    let ids: Vec<String> = match v.get("arcane") {
+        Some(Value::Array(a)) => a.iter().filter_map(|x| x.as_str()).map(canon).collect(),
+        Some(Value::String(s)) => vec![canon(s)],
+        _ => Vec::new(),
+    };
+    let ranks: Vec<Option<u32>> = match v.get("arcane_rank") {
+        Some(Value::Array(a)) => a.iter().map(|x| x.as_u64().map(|n| n as u32)).collect(),
+        Some(x) => vec![x.as_u64().map(|n| n as u32)],
+        None => Vec::new(),
+    };
+    info.arcane_pools
+        .iter()
+        .enumerate()
+        .filter_map(|(i, pool)| {
+            let id = ids.get(i)?;
+            (id != "none").then(|| (pool.clone(), id.clone(), ranks.get(i).copied().flatten()))
+        })
+        .collect()
 }
 
 // ---- per-buff configured policy ----------------------------------------
@@ -1601,15 +1674,9 @@ pub fn panel_json(v: &Value) -> Value {
 
         // The equipped arcane on the panel: Secondary Shiver is a GunCO-family
         // source, so its row carries the SAME per-weapon caveat as the CO row.
-        if info.uses_arcane {
-            let aid = match get_str(v, "arcane", "none") {
-                "enervate" => "secondary_enervate",
-                "deadhead" => "secondary_deadhead",
-                "flare" => "cascadia_flare",
-                other => other,
-            };
-            if let Some(def) = wfsim_engine::arcanes_data::for_slot(&info.arcane_slot, aid) {
-                let rank = get_u32(v, "arcane_rank", def.max_rank).min(def.max_rank);
+        for (pool, aid, want_rank) in arcane_choices(v, info) {
+            if let Some(def) = wfsim_engine::arcanes_data::for_slot(&pool, &aid) {
+                let rank = want_rank.unwrap_or(def.max_rank).min(def.max_rank);
                 let fx = def.fx(rank, policy, base.traits);
                 if fx.per_cold_bd > 0.0 {
                     stats.push(json!({ "key": "shiver", "label": "Per Cold Status (Shiver)",
@@ -2064,19 +2131,6 @@ pub fn simulate_json(v: &Value) -> Value {
         .or_else(|| registered.iter().find(|f| f.is_default))
         .map(|f| f.weapon_id)
         .unwrap_or(&info.id);
-    // Arcane: a data-driven pool id (legacy short names accepted for old
-    // saved builds) + optional `arcane_rank` (default: max).
-    let arcane_id = if info.uses_arcane {
-        match get_str(v, "arcane", "secondary_deadhead") {
-            "enervate" => "secondary_enervate",
-            "deadhead" => "secondary_deadhead",
-            "flare" => "cascadia_flare",
-            other => other,
-        }
-        .to_string()
-    } else {
-        "none".to_string() // sentinels / robotic weapons cannot equip arcanes
-    };
     let enemy_id = get_str(v, "enemy", "thrax_centurion");
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
     let steel_path = get_bool(v, "steel_path", true);
@@ -2198,26 +2252,26 @@ pub fn simulate_json(v: &Value) -> Value {
             (panel, d)
         }
     };
-    params.arcane = if arcane_id == "none" {
-        wfsim_engine::arcanes_data::ArcaneFx::none()
-    } else {
-        let Some(def) = wfsim_engine::arcanes_data::for_slot(&info.arcane_slot, &arcane_id) else {
-            return err_json(match wfsim_engine::arcanes_data::slot_of(&arcane_id) {
+    // An arcane the weapon cannot seat is an ERROR here, not a silent drop:
+    // the sim is the one place a visitor is owed a reason.
+    for (pool, aid, _) in arcane_choices(v, info) {
+        if wfsim_engine::arcanes_data::for_slot(&pool, &aid).is_none() {
+            return err_json(match wfsim_engine::arcanes_data::slot_of(&aid) {
                 Some(s) => format!(
-                    "{arcane_id} is a {s} arcane — {} takes a {} arcane",
-                    info.name, info.arcane_slot
+                    "{aid} is a {s} arcane — {} seats {}",
+                    info.name,
+                    info.arcane_pools.join(" + ")
                 ),
-                None => format!("unknown arcane id: {arcane_id}"),
+                None => format!("unknown arcane id: {aid}"),
             });
-        };
-        let rank = get_u32(v, "arcane_rank", def.max_rank).min(def.max_rank);
-        // Relative crit conditionals resolve against the weapon's BASE crit
-        // stats; `requires` gates on the weapon traits (Akimbo Slip Shot).
-        // Under the sim's Emergent policy the non-simmable conditionals are
-        // honest no-ops (same rule as mods' CondBuff).
-        let ab = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &evo_refs);
-        def.fx(rank, policy, ab.traits)
-    };
+        }
+    }
+    // Relative crit conditionals resolve against the weapon's BASE crit
+    // stats; `requires` gates on the weapon traits (Akimbo Slip Shot). Under
+    // the sim's Emergent policy the non-simmable conditionals are honest
+    // no-ops (same rule as mods' CondBuff).
+    let ab = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &evo_refs);
+    params.arcane = arcane_fx_for(v, info, &ab, policy);
     // ---- apply the per-buff configured policy onto the live specs ----
     // (weapon-scoped: recurses into the incarnon cycle's base form). Frenzy is
     // already applied above (cycle lock at construction / single-form vector).
@@ -2376,7 +2430,7 @@ pub fn opt_buffs_json(v: &Value) -> Value {
             if a == "none" {
                 continue;
             }
-            if let Some(def) = wfsim_engine::arcanes_data::for_slot(&info.arcane_slot, a) {
+            if let Some(def) = arcane_in_pools(info, a) {
                 let fx = def.fx(def.max_rank, StackPolicy::Emergent, arc_base.traits);
                 merge(&mut out, enumerate_buffs(&[], &fx, info));
             }
@@ -2633,7 +2687,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             if id == "none" {
                 return Some(wfsim_engine::arcanes_data::ArcaneFx::none());
             }
-            wfsim_engine::arcanes_data::for_slot(&info.arcane_slot, id)
+            arcane_in_pools(info, id)
                 .map(|def| def.fx(def.max_rank, StackPolicy::Emergent, arc_base.traits))
         })
         .collect();
@@ -3359,6 +3413,73 @@ mod asset_tests {
             missing.len(),
             missing.join(", ")
         );
+    }
+}
+
+#[cfg(test)]
+mod arcane_slot_tests {
+    use super::*;
+
+    /// An Arch-Gun seats TWO arcanes, one from each pool — "Archguns possess
+    /// two Arcane Enhancement slots to equip one Primary Arcane and one
+    /// Secondary Arcane" (wiki Arch-Gun) — and it is neither a Primary nor a
+    /// Secondary weapon itself.
+    #[test]
+    fn an_archgun_seats_one_arcane_from_each_pool() {
+        let lark = weapon("larkspur_prime");
+        assert_eq!(lark.slot, "archgun", "its own equipment slot");
+        assert_eq!(lark.arcane_pools, vec!["primary", "secondary"]);
+
+        // Every other weapon still seats exactly one, named after its slot.
+        assert_eq!(weapon("torid").arcane_pools, vec!["primary"]);
+        assert_eq!(weapon("laetum").arcane_pools, vec!["secondary"]);
+        // And a sentinel weapon seats none.
+        assert!(weapon("verglas_prime").arcane_pools.is_empty());
+    }
+
+    /// Both chosen arcanes reach the sim, folded into one effect set. The
+    /// pools are ORDERED, so entry i is the arcane for pool i and an id from
+    /// the wrong pool resolves to nothing rather than being applied anyway.
+    #[test]
+    fn both_arcanes_apply_and_the_pools_stay_ordered() {
+        let lark = weapon("larkspur_prime");
+        let base = WeaponBase::from_data("larkspur_prime", true, &[]);
+        let fx = |v: Value| arcane_fx_for(&v, lark, &base, StackPolicy::AssumedMax);
+
+        let one = fx(json!({ "arcane": ["primary_deadhead"] }));
+        let two = fx(json!({ "arcane": ["primary_deadhead", "cascadia_overcharge"] }));
+        assert!(!one.id.is_empty(), "the primary alone resolves");
+        assert!(two.id.contains('+'), "two folded: {}", two.id);
+        assert!(
+            two.cc_rel > one.cc_rel,
+            "the secondary's crit chance joined: {} vs {}",
+            two.cc_rel,
+            one.cc_rel
+        );
+
+        // SWAPPED: each id is now in the other's slot, so neither is
+        // equippable and nothing applies.
+        let swapped = fx(json!({ "arcane": ["cascadia_overcharge", "primary_deadhead"] }));
+        assert!(swapped.id.is_empty(), "wrong pool, wrong slot: {}", swapped.id);
+    }
+
+    /// A build saved before any of this carries ONE arcane as a bare string
+    /// and must keep meaning what it meant.
+    #[test]
+    fn a_legacy_single_arcane_still_means_what_it_meant() {
+        let torid = weapon("torid");
+        let base = WeaponBase::from_data("torid", true, &[]);
+        let fx = |v: Value| arcane_fx_for(&v, torid, &base, StackPolicy::AssumedMax);
+
+        let legacy = fx(json!({ "arcane": "primary_deadhead", "arcane_rank": 5 }));
+        let listed = fx(json!({ "arcane": ["primary_deadhead"], "arcane_rank": [5] }));
+        assert_eq!(legacy.id, "primary_deadhead");
+        assert!((legacy.headshot_mult_bonus - listed.headshot_mult_bonus).abs() < 1e-9);
+
+        // A weapon with one pool ignores a second entry: what it can seat is
+        // the weapon's business, not the caller's.
+        let extra = fx(json!({ "arcane": ["primary_deadhead", "cascadia_overcharge"] }));
+        assert_eq!(extra.id, "primary_deadhead");
     }
 }
 
