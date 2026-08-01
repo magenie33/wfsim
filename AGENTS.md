@@ -82,7 +82,11 @@ around (decision 2026-07-31).
   (takes ~1–2 min). There is no deploy step in CI.
 - UI verification: drive headless Chrome over CDP (Node ≥22 has a global
   WebSocket; Chrome is at the default install path). Assert real DOM
-  state; screenshots for layout review.
+  state; screenshots for layout review. `node scripts/check_parity.mjs`
+  is the committed one — the builder and the optimizer must offer the
+  same options and the same visibility on every axis, and it exits
+  non-zero when they do not. Run it after adding a weapon or anything a
+  weapon can carry.
 
 ## Hard rules
 

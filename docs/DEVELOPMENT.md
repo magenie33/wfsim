@@ -91,6 +91,33 @@ cargo test                  # run all tests, including golden tests
 cargo run -p wfsim-cli      # run the CLI
 ```
 
+### UI checks (headless Chrome over CDP)
+
+`cargo test` cannot see the page. Anything that lives in the browser is
+checked by driving headless Chrome — Node >= 22 has a global `WebSocket`, and
+Chrome is expected at its default install path (override with `CHROME=`).
+
+```sh
+python scripts/build_site_app.py   # the checks read site/, so build it first
+node scripts/check_parity.mjs      # builder vs optimizer, every weapon
+```
+
+**`check_parity.mjs` — the builder and the optimizer must offer the same
+thing.** They are the same question asked twice: the builder fills a weapon's
+slots, the optimizer searches them. The script serves `site/` itself, walks
+every weapon, and compares each AXIS — mods, exilus, arcanes per pool,
+evolutions per tier — option set against option set, plus what each module
+decides to SHOW. Exits non-zero on any mismatch, so it can gate a push.
+
+Run it after adding a weapon, a mod pool, or anything a weapon can carry. It
+is the check that makes `weaponAxes()` in `web/src/static/app.js` worth having:
+that function is one description of a weapon's axes so a special case is a
+one-place change, and this is what notices when a second place appears
+anyway. In the two hours around its own writing it caught the optimizer
+offering Exilus and Arcane scopes on a sentinel weapon, an exilus slot on the
+Larkspur with no mod that could enter it, and the two modules computing the
+exilus pool from different sources — agreeing only by coincidence.
+
 ## 5. Repo layout at a glance
 
 See [`CORE.md`](CORE.md) §4 for the full architecture. In short:
