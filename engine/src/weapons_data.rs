@@ -907,6 +907,62 @@ mod tests {
         );
     }
 
+    /// EVERYTHING THE WEAPON CAN FIRE IS `magazine + reserve`, and the two
+    /// mods move different halves of it (owner, 2026-08-01).
+    ///
+    /// A magazine mod raises the TOTAL, not just how long between reloads:
+    /// the loaded magazine is ammo you have, and nothing draws it out of the
+    /// reserve. An ammo-maximum mod raises the reserve alone. Stated because
+    /// the opposite is a natural thing to assume — that the magazine is the
+    /// first slice of the reserve — and it would make a magazine mod free.
+    ///
+    /// The Larkspur Prime is the only weapon that can show it, being the only
+    /// finite reserve in the roster. Counted in ROUNDS: its primary is a beam
+    /// and spends 0.5 per tick, so the tick count is double.
+    #[test]
+    fn total_ammo_is_the_magazine_plus_the_reserve() {
+        use crate::dummy::{monte_carlo, DummyParams};
+        use crate::loadout::{resolve_with, StackPolicy, WeaponBase};
+
+        let base = WeaponBase::from_data("larkspur_prime", true, &[]);
+        let pool = crate::mods_data::pool_for_weapon("larkspur_prime");
+        let by = |id: &str| pool.iter().find(|m| m.id == id).expect("archgun pool");
+
+        // An hour is far more than any of these can sustain, so what stops the
+        // run is always the ammo.
+        let rounds = |ids: &[&str]| {
+            let refs: Vec<&crate::loadout::ModDef> = ids.iter().map(|i| by(i)).collect();
+            let panel = resolve_with(&base, &refs, StackPolicy::Emergent, true);
+            let mut p = DummyParams::from_panel(
+                &panel,
+                crate::dummy::TargetParams::training_dummy(),
+                DummyParams::humanoid_parts(),
+                3600.0,
+            );
+            p.arcane = crate::arcanes_data::ArcaneFx::none();
+            (panel.magazine_size, panel.ammo_reserve, monte_carlo(&p, 1, 11).mean_shots * 0.5)
+        };
+
+        let (m, r, fired) = rounds(&[]);
+        assert_eq!((m, r), (100.0, 400.0), "the ground column");
+        assert!((fired - 500.0).abs() < 1e-9, "magazine + reserve: {fired}");
+
+        // +60% magazine: the RESERVE is untouched and the total still grew.
+        let (m, r, fired) = rounds(&["magazine_extension"]);
+        assert_eq!((m, r), (160.0, 400.0), "only the magazine moved");
+        assert!((fired - 560.0).abs() < 1e-9, "{fired}");
+
+        // +165% ammo maximum: the MAGAZINE is untouched.
+        let (m, r, fired) = rounds(&["primed_ammo_chain"]);
+        assert_eq!((m, r), (100.0, 1060.0), "only the reserve moved");
+        assert!((fired - 1160.0).abs() < 1e-9, "{fired}");
+
+        // Together they simply add: 160 + 1060.
+        let (m, r, fired) = rounds(&["magazine_extension", "primed_ammo_chain"]);
+        assert_eq!((m, r), (160.0, 1060.0));
+        assert!((fired - 1220.0).abs() < 1e-9, "{fired}");
+    }
+
     /// AN ARCH-GUN'S FIRE RATE DOES NOT SHORTEN ITS DRAW.
     ///
     /// The two are separate stats on this weapon class (owner, 2026-08-01),
