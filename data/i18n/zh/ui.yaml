@@ -82,6 +82,9 @@ ui:
   "Gain": 增益
   "simulate every mod IN THIS SLOT and show what each would change": 把这个槽换成每一张 mod 各模拟一遍，标出击杀速度会变化多少
   "kill rate": 击杀速度
+  "Measure": 衡量指标
+  "KPM": KPM
+  "what the run is judged by — the headline number and the picker's gain scan both follow it": 这次模拟以什么为准 —— 主数字和选择器的增益扫描都跟着它
   "DPS": DPS
   "which saved scenario to measure under": 用哪个已保存的场景来测
   "a tenth of the runs is a fast sweep; the baseline and every candidate share one seed, so the comparison stays paired": 十分之一次数是快速扫描；基准和每个候选共用同一随机种子，所以比较是成对的，噪声会抵消

@@ -331,7 +331,7 @@ let evoSel = { 1: null, 2: null, 3: null, 4: null };
 // what the sim silently assumed before the knob existed, so no stored preset
 // changes meaning.
 let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, aiming: true,
-  infinite_ammo: true, duration: 300, runs: 100, form: "default", buffs: {} };
+  infinite_ammo: true, metric: "kpm", duration: 300, runs: 100, form: "default", buffs: {} };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
 // Damage-meter rows the player has expanded into their per-type split, kept
@@ -491,8 +491,8 @@ async function init() {
   // declaration above set it. The server owns every default; this copies them.
   sim = { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
     headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
-    infinite_ammo: d.infinite_ammo !== false, duration: d.duration, runs: d.runs,
-    form: d.form, buffs: {} };
+    infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
+    duration: d.duration, runs: d.runs, form: d.form, buffs: {} };
   optSim = { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
     headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
     infinite_ammo: d.infinite_ammo !== false, duration: d.duration, form: d.form };
@@ -2444,7 +2444,9 @@ async function scanModGains(slotIdx, onTick) {
   // Kill progress is the optimizer's metric and the one a player is actually
   // buying; DPS is the fallback for a target this build cannot kill at all,
   // where the ratio has no denominator.
-  let useKills = true;
+  // The SCENARIO decides; the fallback below is only for a target the build
+  // cannot kill at all, where a kill-rate ratio has no denominator.
+  let useKills = (scenario.metric || "kpm") !== "dps";
   const run = async (mods) => {
     const r = await api("/api/simulate", { ...buildPayload(), ...scenario, mods });
     if (!r || !r.ok) return null;
@@ -2453,7 +2455,7 @@ async function scanModGains(slotIdx, onTick) {
   const cur = slots.map((s) => s.mod);
   const bare = cur.filter(Boolean);
   let base = await run(bare);
-  if (!base) { useKills = false; base = await run(bare); }
+  if (!base && useKills) { useKills = false; base = await run(bare); }
   if (!base) { gainScan.running = false; if (onTick) onTick(gainScan); return; }
   gainScan.base = base;
   gainScan.metric = useKills ? tr("kill rate") : tr("DPS");
@@ -3006,7 +3008,11 @@ function renderSim() {
   // Section 4 — the MEASUREMENT: nothing the player does in-game.
   $("sim-run").innerHTML = `
     <label>Duration (s) <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>
-    <label>Runs <input type="number" data-k="runs" min="1" max="20000" value="${sim.runs}"></label>`;
+    <label>Runs <input type="number" data-k="runs" min="1" max="20000" value="${sim.runs}"></label>
+    <label title="${escHtml(tr("what the run is judged by — the headline number and the picker's gain scan both follow it"))}">${escHtml(tr("Measure"))} <select data-k="metric">${
+      [["kpm", tr("KPM")], ["dps", tr("DPS")]].map(([v, l]) =>
+        `<option value="${v}"${sim.metric === v ? " selected" : ""}>${escHtml(l)}</option>`).join("")
+    }</select></label>`;
   [$("sim-enemy"), $("sim-technique"), $("sim-run")].forEach((box) =>
     box.querySelectorAll("[data-k]").forEach((el) => {
       el.addEventListener("change", () => {
@@ -3214,8 +3220,10 @@ function renderResults(r, testedAt) {
   // run and a 120-second one produce comparable numbers (user, 2026-07-31).
   // The score itself is the total over the engagement and stays beside it,
   // the same way total damage sits beside DPS.
-  const heroNum = n2(kpm(r.score, r.duration));
-  const heroSub = `KPM · ${n2(r.score)} kill score in ${n0(r.duration)}s · ` + (killed
+  const byDps = sim.metric === "dps";
+  const heroNum = byDps ? n0(r.dps) : n2(kpm(r.score, r.duration));
+  const heroSub = (byDps ? `DPS · ${n2(kpm(r.score, r.duration))} KPM · ` : `KPM · `) +
+    `${n2(r.score)} kill score in ${n0(r.duration)}s · ` + (killed
     ? `${n0(r.kills)} killed · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s avg per kill`
     : `${pc(r.score)} of one ${LN("enemies", sim.enemy, t.name || "enemy")}'s EHP drained`);
   // No Forma/capacity here — the simulator reports EFFECTS only; build

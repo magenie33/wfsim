@@ -754,6 +754,12 @@ pub fn meta_json() -> Value {
             // and the optimizer's last round is 100 runs on the top 10. Kept
             // in step with `simulate_json` / `parse_optimize`, whose own
             // fallbacks are what an API caller naming none of these gets.
+            // WHAT THE RUN IS JUDGED BY. KPM is the default because it is
+            // what a build is for; DPS is the other honest answer and some
+            // targets cannot be killed at all. The scenario carries it, so
+            // whatever ranks — the headline number, the picker's gain scan —
+            // ranks by the same thing (user, 2026-08-01).
+            "metric": "kpm",
             "duration": 300.0,
             "runs": 100,
             "final_runs": 100,
