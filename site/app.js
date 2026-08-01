@@ -579,7 +579,12 @@ async function init() {
 // (display name, spaces → '_'); internal weapon ids never appear in URLs.
 // The weapon <select> stays the internal source of truth; the home grid
 // and the path just drive it.
-const wikiSlug = (w) => (w.name_en || w.name).split(" (")[0].replace(/ /g, "_");
+// The WIKI PAGE name behind a weapon's display name. A parenthesised
+// qualifier is OURS — "Larkspur Prime (Atmosphere)" is one wiki page with two
+// stat columns, and we ship the ground one — so it never reaches a URL.
+// `build_site_app.py`'s `wiki_name` splits on the same " (".
+const wikiWeaponName = (w) => (w.name_en || w.name).split(" (")[0];
+const wikiSlug = (w) => wikiWeaponName(w).replace(/ /g, "_");
 const weaponPath = (id) => {
   const w = (META.weapons || []).find((x) => x.id === id);
   return "/weapons/" + (w ? wikiSlug(w) : id);
@@ -787,6 +792,22 @@ const exilusPool = () => poolWithRivens().filter((m) => m.exilus);
 // sentinel weapon prints "Ammo Max: infinity / Ammo Type: None". That shows as
 // a TICKED, DISABLED box: the state is real and the control is honestly
 // unavailable, which a hidden control would not say.
+// WHERE the fight happens, when that changes the weapon. An Arch-Gun on the
+// ground and in Archwing is the SAME weapon — same damage, same mod pool, same
+// riven — and only its sustain differs (reload 2.50 vs 4.50, a finite 400-round
+// reserve vs a regenerating magazine), so it is a scenario axis and not a
+// second entry (user, 2026-08-01). Shown only where there is a choice, the
+// rule every axis here follows.
+const deployField = (w, state) => {
+  const opts = w.deployments || [];
+  if (opts.length < 2) return "";
+  const cur = opts.includes(state.deployment) ? state.deployment : opts[0];
+  return `<label title="${escHtml(tr("where the weapon is fired — it changes reload and ammo, nothing else"))}">${escHtml(tr("Environment"))} <select data-k="deployment">${
+    // The data keys are lowercase; the LABEL is the wiki's own column head.
+    opts.map((o) => `<option value="${o}"${o === cur ? " selected" : ""}>${escHtml(tr(o[0].toUpperCase() + o.slice(1)))}</option>`).join("")
+  }</select></label>`;
+};
+
 const ammoForced = (w) => !w.finite_reserve;
 // A SENTINEL WEAPON IS ALWAYS AIMING (user, 2026-08-01) — it just never aims
 // at the HEAD, which is why its headshot default is 0 and every on-headshot
@@ -1910,7 +1931,7 @@ function applyWeaponInner(id, presetMods) {
   if (wimg) $("w-img").src = wimg;
   // The weapon name links to its wiki page too (display suffixes like
   // " (sentinel)" are ours, not part of the page name).
-  $("w-name").innerHTML = wl(w.name, wikiUrl((w.name_en || w.name).replace(" (sentinel)", "")));
+  $("w-name").innerHTML = wl(w.name, wikiUrl(wikiWeaponName(w)));
   // Subtype (e.g. "Dual Pistols") + form tags; the mod-eligibility group
   // (mod_class) drives the picker's pool but isn't shown as a tag.
   // Name the POOL, the way the wiki does ("Rifle Mods" / "Pistol Mods"): the
@@ -2593,7 +2614,7 @@ function renderEvo() {
       // Evolutions have no standalone wiki pages — link to the weapon's
       // Incarnon Genesis page.
       const wInfo = weaponInfo($("weapon").value);
-      const genesis = wikiUrl((wInfo.name_en || wInfo.name).replace(" (sentinel)", "") + " Incarnon Genesis");
+      const genesis = wikiUrl(wikiWeaponName(wInfo) + " Incarnon Genesis");
       return `<span class="${cls}" data-tier="${t.tier}" data-id="${o.id}" title="${title}">
         ${icon}<span class="einfo"><b class="en">${wl(o.name, genesis)}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}</b><span class="ed">${lines}</span>${warn}</span></span>`;
     };
@@ -2695,7 +2716,8 @@ function renderSim() {
   $("sim-enemy").innerHTML = `
     <label>Enemy <select data-k="enemy">${eopts}</select></label>
     <label>Level <input type="number" data-k="level" min="1" max="9999" value="${sim.level}"></label>
-    <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>`;
+    <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
+    ${deployField(w, sim)}`;
   // Section 2 — TECHNIQUE: the player's execution, which is a different kind
   // of input from the enemy (1) and from the measurement (4). Which form you
   // fight in, whether you hold aim, and how often you land the head are all
@@ -3196,6 +3218,7 @@ function renderOptEnemy() {
     <label>Enemy <select data-k="enemy">${eopts}</select></label>
     <label>Level <input type="number" data-k="level" min="1" max="9999" value="${optSim.level}"></label>
     <label class="check"><input type="checkbox" data-k="steel_path" ${optSim.steel_path ? "checked" : ""}> Steel Path</label>
+    ${deployField(weaponInfo($("weapon").value) || {}, optSim)}
     <label>Duration (s) <input type="number" data-k="duration" min="1" max="3600" value="${optSim.duration}"></label>`;
   // Same split as the Sim: technique is the player's execution, and it must
   // match how the build will actually be played — the winner is only the

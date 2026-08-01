@@ -71,6 +71,14 @@ ui:
   "a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet": 这是逐弹丸的瞄准权重，不是整片弹丸都爆头 —— 落点对每颗弹丸单独掷点
   "Aiming": 瞄准
   "Infinite ammo": 无限弹药
+  # WHERE the weapon is fired. DE's own words for the two Arch-Gun columns:
+  # the wiki's table heads them Archwing / Atmosphere, and the CN client calls
+  # the deployed ground gun 陆战 — but the owner's word for it is 地面
+  # (2026-08-01), which is what a player reading the panel will expect.
+  "Environment": 环境
+  "Atmosphere": 地面
+  "Archwing": 空战
+  "where the weapon is fired — it changes reload and ammo, nothing else": 武器在哪里开火 —— 它只影响装填和弹药，其余不变
   "a sentinel weapon is always aiming — it just never aims at the head, so on-headshot effects never fire": 守护武器永远处于瞄准状态 —— 它只是从不瞄准头部，所以爆头触发类效果不会生效
   "this weapon has no ammo reserve to run out of": 这把武器没有会耗尽的备弹
   "off = the reserve is finite and the weapon can run dry; the magazine and its reloads apply either way": 关闭 = 备弹有限，武器会打空；弹匣和换弹无论开关都照常计算

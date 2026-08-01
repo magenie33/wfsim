@@ -15,6 +15,55 @@ use crate::loadout::{
 };
 use crate::mods::Polarity;
 
+/// What one deployment changes about a weapon. Every field is optional: a
+/// column states only where it differs from the entry's own.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct DeploymentSpec {
+    #[serde(default)]
+    pub reload_seconds: Option<f64>,
+    #[serde(default)]
+    pub magazine: Option<f64>,
+    #[serde(default)]
+    pub ammo_max: Option<f64>,
+    #[serde(default)]
+    pub finite_reserve: Option<bool>,
+}
+
+/// Apply a DEPLOYMENT's overrides to a resolved base, in place.
+///
+/// A no-op for the weapon's own deployment (its fields already are that
+/// column) and for a name it does not have — an unknown environment leaves the
+/// weapon alone rather than half-applying something.
+pub fn apply_deployment(base: &mut WeaponBase, id: &str, deployment: &str) {
+    let Some(s) = spec(id) else { return };
+    if s.deployment.as_deref() == Some(deployment) {
+        return;
+    }
+    let Some(d) = s.deployments.get(deployment) else { return };
+    if let Some(v) = d.reload_seconds {
+        base.base_reload = v;
+    }
+    if let Some(v) = d.magazine {
+        base.magazine_size = v;
+    }
+    if let Some(v) = d.ammo_max {
+        base.ammo_reserve = v;
+    }
+    if let Some(v) = d.finite_reserve {
+        base.finite_reserve = v;
+    }
+}
+
+/// Every deployment this weapon has, its OWN first. Fewer than two means the
+/// axis does not exist for it and nothing should offer a choice.
+pub fn deployments_of(id: &str) -> Vec<String> {
+    let Some(s) = spec(id) else { return Vec::new() };
+    let Some(own) = s.deployment.clone() else { return Vec::new() };
+    let mut out = vec![own];
+    out.extend(s.deployments.keys().cloned());
+    out
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct AttackSpec {
     pub trigger: String,
@@ -357,6 +406,16 @@ pub struct WeaponSpec {
     pub name: String,
     pub slot: String,
     pub class: String,
+    /// Which DEPLOYMENT the fields on this entry describe (Arch-Guns:
+    /// "atmosphere"). `None` = the weapon has only one.
+    #[serde(default)]
+    pub deployment: Option<String>,
+    /// The OTHER deployments, by name, each stating only what it overrides.
+    /// An Arch-Gun is the same weapon on the ground and in Archwing — same
+    /// damage, same mods, same riven — and only its sustain differs, so this
+    /// is a SCENARIO axis rather than a second weapon (user, 2026-08-01).
+    #[serde(default)]
+    pub deployments: BTreeMap<String, DeploymentSpec>,
     /// Does this weapon's INNATE headshot bonus multiply the additive bracket
     /// instead of joining it? A PER-WEAPON anomaly, not a class rule: the wiki
     /// lists innate bonuses (Kuva Chakkhurr) among the ADDITIVE sources and

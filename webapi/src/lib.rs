@@ -310,6 +310,21 @@ fn mod_not_here(id: &str, weapon: &WeaponInfo) -> String {
     }
 }
 
+/// A weapon's base for THIS request, with the chosen DEPLOYMENT applied.
+///
+/// Where an Arch-Gun is fired changes its sustain and nothing else — same
+/// damage, same mods, same riven — so the environment is a scenario knob and
+/// not a second weapon (user, 2026-08-01). Absent or unknown leaves the
+/// weapon on its own column, which is the one its fields state.
+fn base_for(v: &Value, id: &str, evos: &[&str]) -> WeaponBase {
+    let mut b = WeaponBase::from_data(id, true, evos);
+    let dep = get_str(v, "deployment", "");
+    if !dep.is_empty() {
+        wfsim_engine::weapons_data::apply_deployment(&mut b, id, dep);
+    }
+    b
+}
+
 fn riven_stat_ids_ok(v: &Value, info: &WeaponInfo) -> Result<(), String> {
     let class = riven_class(info);
     let pool = wfsim_engine::rivens_data::pool(&class);
@@ -546,6 +561,10 @@ pub fn meta_json() -> Value {
                 // attribute (wiki's 25% rule). Sent as a list rather than a
                 // filtered pool so the class table stays shared.
                 "riven_excludes": wfsim_engine::rivens_data::excluded_for(&w.id),
+                // WHERE it is fired, when that changes the weapon. Fewer than
+                // two means the axis does not exist for it and nothing should
+                // offer a choice - the same rule every other axis follows.
+                "deployments": wfsim_engine::weapons_data::deployments_of(&w.id),
                 // Has this weapon a reserve that can RUN OUT? False for every
                 // sentinel weapon ("Ammo Max: infinity / Ammo Type: None") and
                 // for anything else the data leaves infinite, which is what
@@ -1309,7 +1328,7 @@ pub fn panel_json(v: &Value) -> Value {
         forms_list.push((
             f.kind.label(),
             attack_desc(wspec(f.weapon_id)),
-            WeaponBase::from_data(f.weapon_id, true, &evo_refs),
+            base_for(v, f.weapon_id, &evo_refs),
         ));
     }
 
@@ -2372,7 +2391,7 @@ pub fn simulate_json(v: &Value) -> Value {
     let (report_panel, mut params): (ResolvedPanel, DummyParams) = {
         let panel_of = |id: &str| {
             resolve_with(
-                &WeaponBase::from_data(id, true, &evo_refs),
+                &base_for(v, id, &evo_refs),
                 &refs,
                 policy,
                 aiming,
@@ -2659,6 +2678,9 @@ pub struct OptimizePlan {
     /// "none" for an empty one. The effects are merged and cannot be read
     /// back apart, so the naming travels beside them.
     arcane_sets: Vec<Vec<String>>,
+    /// The DEPLOYMENT every candidate is built in — see `base_for`. Empty =
+    /// the weapon's own column.
+    deployment: String,
     scenario: Scenario,
     final_runs: u32,
     finalists: usize,
@@ -2920,6 +2942,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         })
         .collect();
     // The product, in pool order: `arcane_sets[i]` names what `arcanes[i]` is.
+    let deployment = get_str(v, "deployment", "").to_string();
     let mut arcane_sets: Vec<Vec<String>> = vec![Vec::new()];
     let mut arcanes: Vec<wfsim_engine::arcanes_data::ArcaneFx> =
         vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
@@ -3034,6 +3057,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         exilus_defs,
         arcanes,
         arcane_sets,
+        deployment: deployment.clone(),
         scenario,
         final_runs,
         finalists,
@@ -3150,6 +3174,7 @@ pub fn run_optimize_resumable(
         exilus_defs,
         arcanes,
         arcane_sets,
+        deployment,
         scenario,
         final_runs,
         finalists,
@@ -3188,6 +3213,15 @@ pub fn run_optimize_resumable(
     // `parse_optimize`. A single-form weapon has NO second panel — handing
     // the enumerator a duplicate of the first would tell it there was a cycle
     // to simulate, and the scenario says there is not.
+    // Every base the worker builds sits in the run's DEPLOYMENT, so a search
+    // scores the same environment the sim would replay it in.
+    let deployed = |id: &str, refs: &[&str]| {
+        let mut b = WeaponBase::from_data(id, true, refs);
+        if !deployment.is_empty() {
+            wfsim_engine::weapons_data::apply_deployment(&mut b, id, &deployment);
+        }
+        b
+    };
     let forms_for = |set: &[String], refs: &[&str]| {
         // Can THIS evolution set reach the second form? Without the unlock
         // there is nothing to transform into, so the candidate is fired in
@@ -3198,16 +3232,13 @@ pub fn run_optimize_resumable(
             None => true,
         };
         if !unlocked {
-            return (
-                WeaponBase::from_data(&untransformed_id, true, refs),
-                None,
-            );
+            return (deployed(&untransformed_id, refs), None);
         }
         (
-            WeaponBase::from_data(&fire_id, true, refs),
+            deployed(&fire_id, refs),
             cycle_from
                 .as_ref()
-                .map(|id| WeaponBase::from_data(id, true, refs)),
+                .map(|id| deployed(id, refs)),
         )
     };
     let cancelled_json = |n_cands: usize| {

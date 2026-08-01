@@ -14,19 +14,25 @@ form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: larkspur_prime
 
-# ONLY THE GROUND WEAPON IS MODELLED, and that is a scope statement, not a
-# simplification. An Arch-Gun is two different weapons depending on where it
-# is fired, and the wiki gives both columns:
+# WHERE IT IS FIRED changes the weapon, and the wiki gives it as ONE table
+# with two columns rather than two weapons — same damage, same crit, same
+# status, same mods, same riven. Only the sustain differs:
 #
 #   |            | reload | Ammo Max | resupply                          |
+#   | Atmosphere | 2.50 s | 400      | none — the weapon is REMOVED when |
+#   |            |        |          | empty, five-minute cooldown       |
 #   | Archwing   | 4.50 s | 0        | regenerating magazine = unlimited |
-#   | Atmosphere | 2.50 s | 400      | none — the weapon is REMOVED when  |
-#   |            |        |          | empty, five-minute cooldown        |
 #
-# Archwing is space combat: no Simulacrum, no dummy, no ground scenario — the
-# whole sim is the Atmosphere case, so the Archwing column is recorded here
-# and not built. If Archwing is ever simulated it is a sibling entry with its
-# own reload and no `finite_reserve`, exactly as the two rows read.
+# So it is a SCENARIO axis, not an identity: one weapon, one mod pool, one
+# riven, and the environment chooses the column (user, 2026-08-01 — "mod 其实
+# 是通用的，还是一个武器，但是模拟和 optimizer 的时候不一样"). The fields on
+# this file are the ATMOSPHERE column, because the arena is ground; the block
+# below is what the other column overrides, and nothing else moves.
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 4.5
+    finite_reserve: false      # a regenerating magazine, so no reserve to dry
 mod_pools: [archgun]
 mastery_rank: 8
 max_rank: 30

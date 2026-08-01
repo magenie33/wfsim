@@ -51,10 +51,22 @@ def roster() -> list[dict]:
     return sorted(out, key=lambda s: s["name"])
 
 
+def wiki_name(name: str) -> str:
+    """The WIKI PAGE name behind a display name.
+
+    A display name may carry a parenthesised qualifier that is OURS, not part
+    of the page: "Larkspur Prime (Atmosphere)" is one weapon on the wiki with
+    two stat columns, and we ship the ground one. The wiki has no page by that
+    name, so every URL — the page path, the OG card, the outbound link — is
+    built from the bare name. `wikiSlug` in app.js splits on the same " (".
+    """
+    return name.split(" (")[0]
+
+
 def wiki_path(name: str) -> str:
     """The URL a weapon lives at — the English wiki page name, spaces to
     underscores (AGENTS.md: URLs mirror wiki page names; ids never appear)."""
-    return "/weapons/" + name.replace(" ", "_")
+    return "/weapons/" + wiki_name(name).replace(" ", "_")
 
 
 # The app's dark palette (style.css `prefers-color-scheme: dark`), so a card
@@ -222,7 +234,7 @@ def prerender(flagged: str) -> None:
             "Build it, simulate the fight, and optimize the mods — "
             "true to in-game numbers."
         )
-        card = f"/og/{name.replace(' ', '_')}.png"
+        card = f"/og/{wiki_name(name).replace(' ', '_')}.png"
         drew = og_card(APP / card.lstrip("/"), name, cn, facts, stats)
         og_img = SITE + card if drew else f"{SITE}/logo.svg"
         url = SITE + wiki_path(name)

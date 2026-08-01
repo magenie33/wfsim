@@ -17,6 +17,14 @@ transform_group: larkspur_prime
 # reserve). Only the ATTACK differs — this is the module's "Alt-Fire
 # Projectile Impact" plus its "Explosion", against the "Normal Attack" the
 # default entry carries.
+# Same two columns as the base entry (see larkspur_prime.yaml): the ENVIRONMENT
+# picks one, and it is a scenario axis rather than a second weapon.
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 4.5
+    finite_reserve: false
+
 mod_pools: [archgun]
 mastery_rank: 8
 max_rank: 30
