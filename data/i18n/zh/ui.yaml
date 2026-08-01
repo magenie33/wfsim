@@ -85,10 +85,8 @@ ui:
   "Measure": 衡量指标
   "Quick calc": 快速计算
   "Calculate": 开始计算
-  "Scenario": 场景
   "Runs": 次数
-  "auto": 自动
-  "auto = whatever that scenario measures by": 自动 = 跟随该场景自己的衡量指标
+  "the saved scenario to measure under — it also decides KPM or DPS": 用哪个已保存的场景来测 —— 它同时决定按 KPM 还是 DPS
   "KPM": KPM
   "what the run is judged by — the headline number and the picker's gain scan both follow it": 这次模拟以什么为准 —— 主数字和选择器的增益扫描都跟着它
   "DPS": DPS

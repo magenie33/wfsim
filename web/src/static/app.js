@@ -2335,6 +2335,7 @@ function openPicker(slotIdx, anchor) {
   const search = $("mod-search");
   search.value = "";
   search.oninput = () => renderMenu(slotIdx, search.value);
+  renderPickerCalc();
   renderTools();
   renderMenu(slotIdx, "");
   search.focus();
@@ -2345,7 +2346,6 @@ function renderTools() {
   const pols = ["Madurai", "Naramon", "Vazarin", "Umbra"].filter((p) => currentPool.some((m) => m.polarity === p));
   t.innerHTML =
     `<label>Sort <select id="pk-sort"><option value="name">${escHtml(tr("Name"))}</option><option value="drain">${escHtml(tr("Drain"))}</option><option value="gain">${escHtml(tr("Gain"))}</option></select></label>` +
-    gainTools() +
     `<button id="pk-dir" class="ghost-btn small" title="direction">${pickerPrefs.dir === "asc" ? "▲" : "▼"}</button>` +
     `<span class="pk-pols"><span class="pk-pol ${!pickerPrefs.pol ? "sel" : ""}" data-p="">all</span>` +
     pols.map((p) => `<span class="pk-pol ${pickerPrefs.pol === p ? "sel" : ""}" data-p="${p}" title="${p}">${imgTag(POL(p), "pol")}</span>`).join("") +
@@ -2355,7 +2355,6 @@ function renderTools() {
   // outside-click handler, whose closest(".popover") now fails on the detached
   // target → the picker would wrongly close. Keep every tool click inside.
   const redraw = () => { savePickerPrefs(); renderTools(); renderMenu(pickerSlot, $("mod-search").value); };
-  wireGainTools(redraw);
   $("pk-sort").value = pickerPrefs.sort;
   $("pk-sort").onclick = (e) => e.stopPropagation();
   $("pk-sort").onchange = (e) => { e.stopPropagation(); pickerPrefs.sort = $("pk-sort").value; redraw(); };
@@ -2390,10 +2389,12 @@ const GAIN_SEED = 0x5EED;
 // A gain READS with its sign — "12.3%" and "+12.3%" are different claims.
 const gainPct = (x) => (x >= 0 ? "+" : "−") + sig2(Math.abs(x) * 100) + "%";
 
-// The quick-calc panel's own settings. `scenario` names a SAVED one — there
-// is no "current", because a scan is only reproducible against something that
-// has a name (user, 2026-08-01). `metric` may defer to that scenario's own.
-let gainPrefs = { scenario: null, precision: "tenth", metric: "auto" };
+// Quick calc's settings — TWO, because the third was never a choice: what a
+// run is measured by belongs to the SCENARIO, and asking again here would be
+// the same fact stated twice (user, 2026-08-01). `scenario` names a SAVED one;
+// there is no "current", because a scan is only worth reading against
+// something that has a name and can be returned to.
+let gainPrefs = { scenario: null, precision: "tenth" };
 try { const s = JSON.parse(localStorage.getItem("wfsim-gain")); if (s) gainPrefs = { ...gainPrefs, ...s }; } catch (_) {}
 const saveGainPrefs = () => localStorage.setItem("wfsim-gain", JSON.stringify(gainPrefs));
 
@@ -2405,7 +2406,6 @@ function gainScenario() {
   const p = ps.find((x) => x.name === gainPrefs.scenario)
     || ps.find((x) => x.name === activeScenario) || ps[0];
   const st = p ? { ...sim, ...p.state } : { ...sim };
-  if (gainPrefs.metric && gainPrefs.metric !== "auto") st.metric = gainPrefs.metric;
   const runs = Math.max(1, gainPrefs.precision === "tenth" ? Math.ceil((st.runs || 1) / 10) : (st.runs || 1));
   // The WHOLE buff map travels, not just the current build's cards: a
   // candidate's buff is by definition not in `buffList`, and the scenario may
@@ -2471,67 +2471,47 @@ async function scanModGains(slotIdx, onTick) {
 /// The gain for `id`, or null when this slot/build/scenario has not been scanned.
 const gainOf = (id) => (gainScan.key === gainKey() ? gainScan.by[id] || null : null);
 
-/// The QUICK-CALC panel: a small popup on the picker, because three choices
-/// and a verb do not belong strung along a tool bar (user, 2026-08-01).
-/// Choose a SAVED scenario, how many runs, and what to measure by — then go.
-let gainPanelOpen = false;
-
-function gainTools() {
-  return `<button id="pk-gain" class="ghost-btn small" title="${escHtml(tr("simulate every mod IN THIS SLOT and show what each would change"))}">${
-    gainScan.running ? `${gainScan.done}/${gainScan.total}` : `⚡ ${escHtml(tr("Quick calc"))}`}</button>` +
-    (gainPanelOpen ? gainPanel() : "");
-}
-
-function gainPanel() {
+/// QUICK CALC, at the TOP of the picker: it is the configuration everything
+/// below is measured with, not one more tool beside sort and polarity (user,
+/// 2026-08-01). Two settings and a verb — the SCENARIO (a saved one, which
+/// also decides KPM-or-DPS) and how many runs.
+function renderPickerCalc() {
+  const box = $("picker-calc");
+  if (!box) return;
   const ps = loadPresetList(SCENARIOS);
   const cur = ps.some((p) => p.name === gainPrefs.scenario) ? gainPrefs.scenario
     : (ps.some((p) => p.name === activeScenario) ? activeScenario : (ps[0] || {}).name);
   const opt = (v, label, sel) => `<option value="${escHtml(v)}"${v === sel ? " selected" : ""}>${escHtml(label)}</option>`;
-  return `<div class="gain-pop" id="gain-pop">
-    <label>${escHtml(tr("Scenario"))}<select id="gp-scen">${ps.map((p) => opt(p.name, p.name, cur)).join("")}</select></label>
-    <label>${escHtml(tr("Runs"))}<select id="gp-prec">${
-      opt("tenth", "1/10", gainPrefs.precision) + opt("full", tr("full runs"), gainPrefs.precision)}</select></label>
-    <label title="${escHtml(tr("auto = whatever that scenario measures by"))}">${escHtml(tr("Measure"))}<select id="gp-metric">${
-      opt("auto", tr("auto"), gainPrefs.metric) + opt("kpm", tr("KPM"), gainPrefs.metric) + opt("dps", tr("DPS"), gainPrefs.metric)}</select></label>
-    <button id="gp-run" class="run-btn small">${escHtml(tr("Calculate"))}</button>
-  </div>`;
-}
-
-function wireGainTools(redraw) {
-  const go = $("pk-gain");
-  if (!go) return;
-  go.onclick = (e) => {
-    e.stopPropagation();
-    if (gainScan.running) return;
-    gainPanelOpen = !gainPanelOpen;
-    redraw();
-  };
-  const pop = $("gain-pop");
-  if (!pop) return;
-  // The panel lives INSIDE the picker popover, so every click in it has to
-  // stay there — the document's outside-click handler closes on anything
-  // whose `.popover` ancestor is gone, and a redraw detaches these nodes.
-  pop.onclick = (e) => e.stopPropagation();
+  box.innerHTML =
+    `<span class="pc-h">⚡ ${escHtml(tr("Quick calc"))}</span>` +
+    `<select id="gp-scen" title="${escHtml(tr("the saved scenario to measure under — it also decides KPM or DPS"))}">${
+      ps.map((p) => opt(p.name, p.name, cur)).join("")}</select>` +
+    `<select id="gp-prec" title="${escHtml(tr("a tenth of the runs is a fast sweep; the baseline and every candidate share one seed, so the comparison stays paired"))}">${
+      opt("tenth", "1/10", gainPrefs.precision) + opt("full", tr("full runs"), gainPrefs.precision)}</select>` +
+    `<button id="gp-run" class="ghost-btn small">${
+      gainScan.running ? `${gainScan.done}/${gainScan.total}` : escHtml(tr("Calculate"))}</button>`;
+  // Every click stays inside: a redraw detaches these nodes, and the document
+  // outside-click handler closes on a target whose `.popover` ancestor is gone.
+  box.onclick = (e) => e.stopPropagation();
+  const redraw = () => { renderPickerCalc(); renderMenu(pickerSlot, $("mod-search").value); };
   const save = () => {
-    gainPrefs = { scenario: $("gp-scen").value, precision: $("gp-prec").value, metric: $("gp-metric").value };
+    gainPrefs = { scenario: $("gp-scen").value, precision: $("gp-prec").value };
     saveGainPrefs();
   };
-  ["gp-scen", "gp-prec", "gp-metric"].forEach((id) => {
-    $(id).onchange = (e) => { e.stopPropagation(); save(); };
-  });
+  ["gp-scen", "gp-prec"].forEach((id) => { $(id).onchange = (e) => { e.stopPropagation(); save(); redraw(); }; });
   $("gp-run").onclick = (e) => {
     e.stopPropagation();
+    if (gainScan.running) return;
     save();
-    gainPanelOpen = false;
     pickerPrefs.sort = "gain";
     pickerPrefs.dir = "desc"; // best first, the only useful default
     savePickerPrefs();
     let last = 0;
     scanModGains(pickerSlot, (st) => {
       const now = Date.now();
-      if (!st.running || now - last > 250) { last = now; redraw(); }
+      if (!st.running || now - last > 250) { last = now; renderTools(); redraw(); }
     });
-    redraw();
+    renderTools(); redraw();
   };
 }
 
