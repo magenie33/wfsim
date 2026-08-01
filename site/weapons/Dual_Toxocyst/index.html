@@ -224,10 +224,12 @@
     <!-- Block: Optimizer — scope (mods/arcanes/evolutions) + the Sim panel's
          enemy & buff settings → top-10 ranked builds, each loadable. -->
     <section class="block" id="opt-block">
-      <div class="bh"><span class="n">⚙</span><h2 data-i18n>Optimize</h2><span class="sub" id="opt-sub">self-contained — its own enemy, buffs and run budget</span></div>
+      <div class="bh"><span class="n">⚙</span><h2 data-i18n>Optimize</h2><span class="sub" id="opt-sub">what to search, and how hard — the fight is the simulator's</span></div>
       <div class="bb">
+        <!-- ONE preset per weapon: the whole search (scope + final round).
+             Not the scenario — the optimizer runs the simulator's. -->
+        <div class="preset-bar" id="preset-bar-optimizer"></div>
         <h3 class="sim-h" data-i18n>Mods <span class="sim-hint">search by name or effect; mark each as pool (search) or required</span></h3>
-        <div class="preset-bar" id="preset-bar-optimizer-mods"></div>
         <div class="opt-mods-head">
           <input id="opt-mod-filter" type="text" placeholder="search mods by name or effect…" data-i18n-ph autocomplete="off">
           <label class="opt-size">Max mods / build <input id="opt-size" type="number" min="1" max="8" value="8"></label>
@@ -245,13 +247,11 @@
         </div>
         <div id="opt-arcanes-sect">
           <h3 class="sim-h" data-i18n>Arcanes <span class="sim-hint">pool = searched options, req = pin the slot</span></h3>
-          <div class="preset-bar" id="preset-bar-optimizer-arcanes"></div>
           <input id="opt-arc-filter" type="text" placeholder="search arcanes by name or effect…" data-i18n-ph autocomplete="off">
           <div id="opt-arcanes" class="combo-menu opt-modlist"></div>
         </div>
         <div id="opt-evos-sect">
           <h3 class="sim-h" data-i18n>Evolutions <span class="sim-hint">per tier: pool = searched options, req = pin</span></h3>
-          <div class="preset-bar" id="preset-bar-optimizer-evolutions"></div>
           <div id="opt-evos"></div>
         </div>
         <!-- The SCENARIO is the simulator's; the optimizer points at it

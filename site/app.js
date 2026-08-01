@@ -354,9 +354,13 @@ let optPrefs = { sort: "name", dir: "asc", pol: null };
 // The FINAL-ROUND CONTRACT (user): the funnel's last round is guaranteed
 // `finalists` candidates × `final_runs` runs. Persisted; survives weapon
 // switches (it is a run setting, not weapon scope).
+// `final_runs` / `finalists` are the SEARCH's — they ride the optimizer preset
+// (applyOptState writes them). `threads` is the MACHINE's and stays here: a
+// preset that carried it would re-tune the CPU every time it loaded, and
+// would do it wrong on any other machine.
 let optRun = { final_runs: 100, finalists: 10, threads: 0 }; // threads 0 = auto (cores − 2)
-try { const s = JSON.parse(localStorage.getItem("wfsim-opt-run")); if (s) optRun = { ...optRun, ...s }; } catch (_) {}
-const saveOptRun = () => localStorage.setItem("wfsim-opt-run", JSON.stringify(optRun));
+try { const s = JSON.parse(localStorage.getItem("wfsim-opt-run")); if (s && s.threads) optRun.threads = s.threads; } catch (_) {}
+const saveOptRun = () => localStorage.setItem("wfsim-opt-run", JSON.stringify({ threads: optRun.threads }));
 let pickerSlot = 0;
 // Mod-picker sort/filter prefs — persisted across slots, presets and weapons.
 let pickerPrefs = { sort: "gain", dir: "desc", pol: null };
@@ -505,13 +509,15 @@ async function init() {
   });
   $("opt-final-runs").value = optRun.final_runs;
   $("opt-finalists").value = optRun.finalists;
+  // updateOptEstimate is also the scope's auto-save, so the contract lands in
+  // the active preset the same way every other search setting does.
   $("opt-final-runs").addEventListener("input", () => {
     optRun.final_runs = Math.max(1, Math.min(100000, Number($("opt-final-runs").value) || 100));
-    saveOptRun(); updateOptEstimate();
+    updateOptEstimate();
   });
   $("opt-finalists").addEventListener("input", () => {
     optRun.finalists = Math.max(1, Math.min(100, Number($("opt-finalists").value) || 10));
-    saveOptRun(); updateOptEstimate();
+    updateOptEstimate();
   });
   if (optRun.threads) $("opt-threads").value = optRun.threads;
   $("opt-threads").addEventListener("input", () => {
@@ -1539,8 +1545,11 @@ const pct2 = (x) => sig2((Number(x) || 0) * 100) + "%";
 // is active when the migration runs (the one being restored on this load),
 // and everything else starts empty. Nothing is lost: "⇤ import" reaches
 // any weapon's presets from any other.
-const PRESET_DOMAINS = ["builder-builds", "optimizer-mods", "optimizer-arcanes",
-  "optimizer-evolutions", "simulator-scenarios"];
+// The optimizer's three scope domains merged into one on 2026-08-02; the old
+// names stay listed so a browser arriving from before the weapon-scope move
+// still lands its data where migrateOptPresets can find it.
+const PRESET_DOMAINS = ["builder-builds", "optimizer", "optimizer-mods",
+  "optimizer-arcanes", "optimizer-evolutions", "simulator-scenarios"];
 // The SIMULATOR's collection: one saved fight — enemy, technique, measurement.
 // Its own domain because a build is tested against SEVERAL of them, and
 // because the marginal-gain scan needs to name which one it ran under. The
@@ -3914,142 +3923,182 @@ function renderOptEvos() {
     }));
 }
 
-// ---- Optimizer scope presets — THREE independent groups (user):
-//   mods (mods + exilus + max size) — CROSS-WEAPON: mod pools are shared
-//     between similar weapons, so a saved scope imports anywhere (ids the
-//     current weapon's pool lacks are dropped on apply);
-//   arcanes — cross-weapon likewise;
-//   evolutions — cross-weapon TOO (user): weapon families can share the
-//     same evolutions, so matching ids import; ids this weapon lacks drop
-//     out harmlessly (ids are globally unique).
-// Saving uses an INLINE name input — the native prompt() dialog can be
-// blocked by the browser, which made saving silently fail.
-// Group ids are the optimizer module's collection names; the storage /
-// DOM names derive from the domain "optimizer-<group>".
-const OPT_PRESET_GROUPS = {
-  mods: { label: "Mod presets", hint: "cross-weapon; unknown ids drop" },
-  arcanes: { label: "Arcane presets", hint: "cross-weapon; unknown ids drop" },
-  evolutions: { label: "Evolution presets", hint: "cross-weapon; unknown ids drop" },
-};
-const optDomain = (g) => "optimizer-" + g;
-// Same DOCUMENT MODEL as the build presets (user, 2026-07-28: "all presets
-// use this model"): each group always has ≥1 preset, is always editing one
-// (the active), saves in place, and restores the active across reloads.
-let activeOptPreset = { mods: null, arcanes: null, evolutions: null };
+// ---- The optimizer preset — ONE document per weapon (user, 2026-08-02).
+//
+// It was three (mods / arcanes / evolutions), split so the parts could be
+// reused across weapons. They no longer need to be: preset storage is
+// weapon-scoped (`wfsim-presets-<weapon>-optimizer`), and carrying a search to
+// another weapon is the explicit IMPORT, which filters per axis. Three lists
+// bought nothing and cost three bootstraps, three actives and three bars over
+// one search.
+//
+// What it holds is the SEARCH: the scope (mods + exilus + max size, arcanes,
+// per-tier evolutions) and the funnel's final-round contract. NOT the
+// scenario — the optimizer does not own one; it runs the simulator's, which
+// has its own preset domain.
+//
+// `threads` stays out too: it is a property of the MACHINE, not of a search,
+// and a preset carrying it would re-tune the CPU on every load.
+const OPT_DOMAIN = "optimizer";
+// Same DOCUMENT MODEL as every other bar (user, 2026-07-28: "all presets use
+// this model"): there is always >=1 preset, one is always active and being
+// edited, edits auto-save in place, and the active survives a reload.
+let activeOptPreset = null;
 
-const loadOptGroup = (g) => loadPresetList(optDomain(g));
-const storeOptGroup = (g, ps) => storePresetList(optDomain(g), ps);
+const loadOptPresets = () => loadPresetList(OPT_DOMAIN);
+const storeOptPresets = (ps) => storePresetList(OPT_DOMAIN, ps);
 
-// Ensure every group has ≥1 preset and the actives are applied — called
-// from renderOpt's seed block (page load AND weapon switch). First-ever run
-// creates "preset 1" from the build-seeded scope; afterwards the active
-// preset IS the scope (cross-weapon: unknown ids drop on apply).
+// Called from renderOpt's seed block (page load AND weapon switch). The
+// first-ever run creates "preset 1" from the build-seeded scope; afterwards
+// the active preset IS the scope.
 function bootstrapOptPresets() {
-  Object.keys(OPT_PRESET_GROUPS).forEach((g) => {
-    let ps = loadOptGroup(g);
-    if (!ps.length) {
-      ps = [{ name: "preset 1", savedAt: Date.now(), state: snapshotOptGroup(g) }];
-      storeOptGroup(g, ps);
-    }
-    const want = activeOptPreset[g] || localStorage.getItem(presetActiveKey(optDomain(g)));
-    activeOptPreset[g] = ps.some((p) => p.name === want) ? want : ps[0].name;
-    localStorage.setItem(presetActiveKey(optDomain(g)), activeOptPreset[g]);
-    applyOptGroupState(g, ps.find((p) => p.name === activeOptPreset[g]).state);
-  });
+  let ps = loadOptPresets();
+  if (!ps.length) {
+    ps = [{ name: "preset 1", savedAt: Date.now(), state: snapshotOpt() }];
+    storeOptPresets(ps);
+  }
+  const want = activeOptPreset || localStorage.getItem(presetActiveKey(OPT_DOMAIN));
+  activeOptPreset = ps.some((p) => p.name === want) ? want : ps[0].name;
+  localStorage.setItem(presetActiveKey(OPT_DOMAIN), activeOptPreset);
+  applyOptState(ps.find((p) => p.name === activeOptPreset).state);
 }
 
-// One-time split of the legacy single-bar presets into the three groups.
-(function migrateLegacyOptPresets() {
-  try {
-    const old = JSON.parse(localStorage.getItem("wfsim-opt-presets"));
-    if (Array.isArray(old)) {
-      old.forEach((p) => {
-        const st = p.state || {};
-        const add = (g, state) => {
-          const ps = loadOptGroup(g);
-          if (!ps.some((x) => x.name === p.name)) {
-            ps.push({ name: p.name, savedAt: p.savedAt || Date.now(), state });
-            storeOptGroup(g, ps);
-          }
-        };
-        add("mods", { mods: st.mods || {}, exilus: typeof st.exilus === "object" && st.exilus ? st.exilus : {}, size: st.size || 8 });
-        add("arcanes", { arcanes: st.arcanes || {} });
-        add("evolutions", { evos: st.evos || {} });
+// One-time merges, oldest first: the single legacy bar was split into three
+// groups, and the three are now one again. Both run over whatever is on the
+// machine, so a browser that skipped a release still lands on the current
+// shape. Names are the join key — a preset named "crit" in each group was one
+// search described three times, which is exactly what it becomes.
+(function migrateOptPresets() {
+  const parse = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch (_) { return null; } };
+  // Step 1 (2026-07-28): one bar -> three groups, under the current weapon.
+  const legacy = parse("wfsim-opt-presets");
+  if (Array.isArray(legacy)) {
+    legacy.forEach((p) => {
+      const st = p.state || {};
+      [["mods", { mods: st.mods || {}, exilus: (st.exilus && typeof st.exilus === "object") ? st.exilus : {}, size: st.size || 8 }],
+       ["arcanes", { arcanes: st.arcanes || {} }],
+       ["evolutions", { evos: st.evos || {} }]].forEach(([g, state]) => {
+        const key = "wfsim-presets-" + presetWeapon() + "-optimizer-" + g;
+        const ps = parse(key) || [];
+        if (!ps.some((x) => x.name === p.name)) {
+          ps.push({ name: p.name, savedAt: p.savedAt || Date.now(), state });
+          localStorage.setItem(key, JSON.stringify(ps));
+        }
       });
-    }
+    });
     localStorage.removeItem("wfsim-opt-presets");
-  } catch (_) {}
+  }
+  // Step 2 (2026-08-02): three groups -> one, for EVERY weapon that has them.
+  const groups = ["mods", "arcanes", "evolutions"];
+  const weapons = new Set();
+  for (let i = 0; i < localStorage.length; i++) {
+    const m = /^wfsim-presets-(.+)-optimizer-(mods|arcanes|evolutions)$/.exec(localStorage.key(i));
+    if (m) weapons.add(m[1]);
+  }
+  weapons.forEach((w) => {
+    const merged = parse(`wfsim-presets-${w}-optimizer`) || [];
+    const byName = new Map(merged.map((p) => [p.name, p]));
+    groups.forEach((g) => {
+      (parse(`wfsim-presets-${w}-optimizer-${g}`) || []).forEach((p) => {
+        const into = byName.get(p.name)
+          || { name: p.name, savedAt: p.savedAt || Date.now(), state: {} };
+        into.state = { ...into.state, ...(p.state || {}) };
+        byName.set(p.name, into);
+      });
+    });
+    if (byName.size) {
+      localStorage.setItem(`wfsim-presets-${w}-optimizer`, JSON.stringify([...byName.values()]));
+      // The three old actives disagree by construction (three bars, three
+      // choices); the mod scope is the one that decided what the search was.
+      const act = localStorage.getItem(`wfsim-preset-active-${w}-optimizer-mods`);
+      if (act && byName.has(act)) localStorage.setItem(`wfsim-preset-active-${w}-optimizer`, act);
+    }
+    groups.forEach((g) => {
+      localStorage.removeItem(`wfsim-presets-${w}-optimizer-${g}`);
+      localStorage.removeItem(`wfsim-preset-active-${w}-optimizer-${g}`);
+    });
+  });
 })();
 
-function snapshotOptGroup(g) {
-  if (g === "mods") return { mods: { ...opt.mods }, exilus: { ...opt.exilus }, size: opt.size };
-  if (g === "arcanes") return { arcanes: { ...opt.arcanes } };
-  return { evos: JSON.parse(JSON.stringify(opt.evos)) };
+function snapshotOpt() {
+  return {
+    mods: { ...opt.mods }, exilus: { ...opt.exilus }, size: opt.size,
+    arcanes: { ...opt.arcanes },
+    evos: JSON.parse(JSON.stringify(opt.evos)),
+    final_runs: optRun.final_runs, finalists: optRun.finalists,
+  };
 }
+
+// An empty search: nothing marked, a fresh size, the contract left alone (it
+// is how hard to search, not what to search).
+const blankOpt = () => ({ mods: {}, exilus: {}, size: 8, arcanes: {}, evos: {},
+  final_runs: optRun.final_runs, finalists: optRun.finalists });
 
 // State-only apply (validation + cross-weapon id dropping); no re-render.
-function applyOptGroupState(g, st) {
+//
+// Every axis drops what THIS weapon cannot hold, which is what makes a preset
+// carried over from another weapon land as "the part that still applies"
+// rather than as a search the run cannot execute.
+function applyOptState(st) {
   const norm = (s) => (s === true ? "search" : s); // boolean-era marks
-  if (g === "mods") {
-    // Cross-weapon import: ids missing from THIS weapon's pool drop out.
-    opt.mods = {}; opt.exilus = {};
-    Object.entries(st.mods || {}).forEach(([id, s]) => { if (modById(id)) opt.mods[id] = norm(s); });
-    Object.entries(st.exilus || {}).forEach(([id, s]) => { const m = modById(id); if (m && m.exilus) opt.exilus[id] = norm(s); });
-    delete opt.exilus["none"]; // brief None-row era
-    if (st.size) opt.size = st.size;
-  } else if (g === "arcanes") {
-    // Cross-weapon import: another SLOT's arcanes are not equippable here, so
-    // they drop rather than becoming search dimensions the run cannot use.
-    opt.arcanes = {};
-    const w = $("weapon").value;
-    Object.entries(st.arcanes || {}).forEach(([id, s]) => {
-      // ANY of the weapon's pools, not just the first — see arcaneFitsWeapon.
-      // (A stored "none" fails this too, which is what we want.)
-      if (arcaneFitsWeapon(w, id)) opt.arcanes[ARCANE_RENAMED[id] || id] = norm(s);
+  // Mods: ids missing from this weapon's pool drop out.
+  opt.mods = {}; opt.exilus = {};
+  Object.entries(st.mods || {}).forEach(([id, s]) => { if (modById(id)) opt.mods[id] = norm(s); });
+  Object.entries(st.exilus || {}).forEach(([id, s]) => { const m = modById(id); if (m && m.exilus) opt.exilus[id] = norm(s); });
+  delete opt.exilus["none"]; // brief None-row era
+  if (st.size) opt.size = st.size;
+  // Arcanes: another SLOT's arcanes are not equippable here, so they drop
+  // rather than becoming search dimensions the run cannot use.
+  opt.arcanes = {};
+  const w = $("weapon").value;
+  Object.entries(st.arcanes || {}).forEach(([id, s]) => {
+    // ANY of the weapon's pools, not just the first — see arcaneFitsWeapon.
+    // (A stored "none" fails this too, which is what we want.)
+    if (arcaneFitsWeapon(w, id)) opt.arcanes[ARCANE_RENAMED[id] || id] = norm(s);
+  });
+  // Evolutions: keep only ids the CURRENT weapon's tiers actually offer (ids
+  // are globally unique, so a family sharing evolutions imports cleanly and a
+  // different weapon's ids just drop).
+  const tiers = weaponEvos();
+  opt.evos = {};
+  Object.entries(st.evos || {}).forEach(([t, m]) => {
+    const tier = tiers.find((x) => String(x.tier) === String(t));
+    if (!tier) return;
+    const valid = {};
+    Object.entries(m || {}).forEach(([id, s]) => {
+      if (tier.options.some((o) => o.id === id)) valid[id] = norm(s);
     });
-  } else {
-    // Cross-weapon: keep only ids the CURRENT weapon's tiers actually offer
-    // (ids are globally unique, so a family sharing evolutions imports
-    // cleanly and a different weapon's ids just drop).
-    const tiers = weaponEvos();
-    opt.evos = {};
-    Object.entries(st.evos || {}).forEach(([t, m]) => {
-      const tier = tiers.find((x) => String(x.tier) === String(t));
-      if (!tier) return;
-      const valid = {};
-      Object.entries(m || {}).forEach(([id, s]) => {
-        if (tier.options.some((o) => o.id === id)) valid[id] = norm(s);
-      });
-      if (Object.keys(valid).length) opt.evos[t] = valid;
-    });
-  }
+    if (Object.keys(valid).length) opt.evos[t] = valid;
+  });
+  // The final-round contract travels with the search it was tuned for.
+  if (st.final_runs) optRun.final_runs = st.final_runs;
+  if (st.finalists) optRun.finalists = st.finalists;
+  const fr = $("opt-final-runs"), f = $("opt-finalists");
+  if (fr) fr.value = optRun.final_runs;
+  if (f) f.value = optRun.finalists;
 }
 
-function applyOptGroup(g, st) {
-  applyOptGroupState(g, st);
+function applyOptPreset(st) {
+  applyOptState(st);
   optSeeded = true;
   renderOpt(); fetchOptBuffs(); updateOptEstimate();
 }
 
-function renderOptPresetBars() { Object.keys(OPT_PRESET_GROUPS).forEach(renderOptPresetBar); }
-
-function renderOptPresetBar(g) {
-  const bar = $("preset-bar-" + optDomain(g));
+function renderOptPresetBars() {
+  const bar = $("preset-bar-" + OPT_DOMAIN);
   if (!bar) return;
-  const meta = OPT_PRESET_GROUPS[g];
   renderPresetBarIn(bar, {
-    domain: optDomain(g),
-    label: tr(meta.label),
-    hint: meta.hint,
-    load: () => loadOptGroup(g),
-    store: (ps) => storeOptGroup(g, ps),
-    active: () => activeOptPreset[g],
-    setActive: (n) => { activeOptPreset[g] = n; localStorage.setItem(presetActiveKey(optDomain(g)), n); },
-    snapshot: () => snapshotOptGroup(g),
-    apply: (st) => applyOptGroup(g, st || {}),
-    // An empty scope: nothing selected (size stays a fresh 8 for mods).
-    blank: () => (g === "mods" ? { mods: {}, exilus: {}, size: 8 } : g === "arcanes" ? { arcanes: {} } : { evos: {} }),
-    rerender: () => renderOptPresetBar(g),
+    domain: OPT_DOMAIN,
+    label: tr("Searches"),
+    hint: "scope + final round; import filters per axis",
+    load: loadOptPresets,
+    store: storeOptPresets,
+    active: () => activeOptPreset,
+    setActive: (n) => { activeOptPreset = n; localStorage.setItem(presetActiveKey(OPT_DOMAIN), n); },
+    snapshot: snapshotOpt,
+    apply: (st) => applyOptPreset(st || {}),
+    blank: blankOpt,
+    rerender: renderOptPresetBars,
   });
 }
 
@@ -4252,18 +4301,16 @@ function updateOptEstimate() {
     : `<span class="warn">${dupReq ? `${(modById(dupReq) || { name: dupReq }).name} is required in both blocks — a mod equips once` : poolStarved ? `pooled mods reserve ≥1 open slot — raise max mods or clear pools` : `more required (${fixed}) than slots (${size})`}</span>`) + scenario;
   // Never re-enable while a background job is still running.
   $("run-opt").disabled = !valid || optJobId != null;
-  // Every scope mutation funnels through here — AUTO-SAVE each group into
-  // its active preset (debounced), same contract as the build bar.
+  // Every scope mutation funnels through here — AUTO-SAVE into the active
+  // preset (debounced), same contract as the build bar.
   clearTimeout(optSaveTimer);
   optSaveTimer = setTimeout(() => {
     if (presetApplying) return;
-    Object.keys(OPT_PRESET_GROUPS).forEach((g) => {
-      const ps = loadOptGroup(g);
-      const at = ps.findIndex((p) => p.name === activeOptPreset[g]);
-      if (at < 0) return;
-      ps[at] = { ...ps[at], savedAt: Date.now(), state: snapshotOptGroup(g) };
-      storeOptGroup(g, ps);
-    });
+    const ps = loadOptPresets();
+    const at = ps.findIndex((p) => p.name === activeOptPreset);
+    if (at < 0) return;
+    ps[at] = { ...ps[at], savedAt: Date.now(), state: snapshotOpt() };
+    storeOptPresets(ps);
     renderOptPresetBars();
   }, 400);
 }
