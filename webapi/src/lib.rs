@@ -1004,6 +1004,15 @@ fn enumerate_buffs(
                     default_locked: false,
                     permanent: false,
                 }),
+                OnReloadDamage { .. } => push(BuffMeta {
+                    id: "on_reload_bd".into(),
+                    name: nm.clone(),
+                    max_stacks: 1,
+                    kind: "toggle",
+                    default_stacks: 0,
+                    default_locked: false,
+                    permanent: false,
+                }),
                 OnReloadFireRate { .. } => push(BuffMeta {
                     id: "on_reload_fr".into(),
                     name: nm.clone(),
@@ -1424,6 +1433,16 @@ pub fn panel_json(v: &Value) -> Value {
                         "crit_damage",
                         bonus,
                         Some("on kill, buff assumed up".into()),
+                    ),
+                },
+                OnReloadDamage { bonus, .. } => match policy {
+                    StackPolicy::BaseOnly => conditionals.push(json!({
+                        "mod": name, "desc": e.describe(), "active": false,
+                        "why": "a companion weapon cannot TRIGGER this - the reload is the Tenno's - and this arena simulates one weapon alone, so the buff the Tenno would share never arrives"})),
+                    _ => push(
+                        "base_damage",
+                        bonus,
+                        Some("on reload from empty, buff assumed up".into()),
                     ),
                 },
                 OnReloadFireRate { bonus, .. } => match policy {

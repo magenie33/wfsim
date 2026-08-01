@@ -1091,6 +1091,9 @@ pub struct DummyParams {
     /// Pressurized Magazine (Emergent): ABSOLUTE fire-rate add as a timed buff
     /// (starts inactive), granted on every reload.
     pub fr_on_reload: Option<crate::loadout::TimedBuff>,
+    /// Deadly Efficiency: a RELATIVE base-damage bonus whose window opens when
+    /// the reload COMPLETES (owner, 2026-08-01), not when the magazine empties.
+    pub bd_on_reload: Option<crate::loadout::TimedBuff>,
     /// Hemorrhage's status-conversion roll (per damage instance, max one).
     pub proc_conversion: Option<crate::loadout::ProcConv>,
     /// The equipped secondary arcane, resolved at its rank from
@@ -1347,6 +1350,7 @@ impl DummyParams {
             weakpoint_cc_rel: panel.weakpoint_cc_rel,
             cd_on_kill: panel.cd_on_kill,
             fr_on_reload: panel.fr_on_reload,
+            bd_on_reload: panel.bd_on_reload,
             proc_conversion: panel.proc_conversion,
             arcane: ArcaneFx::none(),
             body_parts,
@@ -1492,6 +1496,7 @@ impl Default for DummyParams {
             weakpoint_cc_rel: 0.0,
             cd_on_kill: None,
             fr_on_reload: None,
+            bd_on_reload: None,
             proc_conversion: None,
             // Secondary Enervate at max rank — the historical calibration
             // profile's arcane (the ramp/reset mechanic is the perk).
@@ -2643,6 +2648,9 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     let mut t = 0.0f64;
     let mut magazine = params.magazine_size;
     let mut reserve = params.reserve_ammo;
+    // Deadly Efficiency's window. Opens at reload COMPLETION — `t` is already
+    // past the reload when this is set, the same as `fr_reload_expiry`.
+    let mut bd_reload_expiry = 0.0f64;
     // Incarnon cycle state: the run STARTS transformed with a full gauge.
     let mut in_base_form = false;
     let mut charges = 0u32;
@@ -2715,6 +2723,9 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 if let Some(b) = cy.base_form.fr_on_reload {
                     fr_reload_expiry = t + b.duration;
                 }
+                if let Some(b) = cy.base_form.bd_on_reload {
+                    bd_reload_expiry = t + b.duration;
+                }
                 // Same whole-rounds rule as the plain reload below (M14); the
                 // cycle assumes infinite reserve, so the draw is never short.
                 base_mag += reload_draw(cy.base_form.magazine_size, base_mag);
@@ -2734,6 +2745,9 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             r.reloads += 1;
             if let Some(b) = params.fr_on_reload {
                 fr_reload_expiry = t + b.duration;
+            }
+            if let Some(b) = params.bd_on_reload {
+                bd_reload_expiry = t + b.duration;
             }
             // Whole rounds only, and `+=` not `=` — both measured (M14). The
             // draw covers the overdraw debt for free: the counter is in (−1, 0]
@@ -2877,6 +2891,12 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             _ => 0.0,
         };
         let live_rate = (ap.fire_rate + fr_reload_add) * contribs.fire_rate_multiplier;
+        // Deadly Efficiency's live share of the BASE-DAMAGE bucket. Zero until
+        // a reload has finished, and zero again when the window closes.
+        let bd_reload_add = match ap.bd_on_reload {
+            Some(b) if b.locked || t < bd_reload_expiry => b.value,
+            _ => 0.0,
+        };
 
         // Multishot: pellets this pull = floor + fractional chance; every
         // pellet is an independent damage instance. Earned Galvanized
@@ -3020,7 +3040,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         field_ctx = FieldCtx {
             flat_crit,
             cc_rel_mods: cc_rel - params.arcane.cc_rel,
-            bd_add_mods: ap.plain_hit_bonus.map_or(0.0, |b| {
+            bd_add_mods: bd_reload_add
+                + ap.plain_hit_bonus.map_or(0.0, |b| {
                 b.per_stack * plain_stacks.current(t, b.duration) as f64
             }),
         };
@@ -3086,6 +3107,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             // grants a stack does not benefit from it (the bump happens
             // after the status roll below).
             let arc_bd = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t)
+                + bd_reload_add
                 + ap.plain_hit_bonus.map_or(0.0, |b| {
                     b.per_stack * plain_stacks.current(t, b.duration) as f64
                 });

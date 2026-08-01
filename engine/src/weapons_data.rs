@@ -852,6 +852,61 @@ mod tests {
     /// The Larkspur Prime is the first weapon that can RUN OUT, and this is
     /// the whole data path end to end: YAML -> spec -> base -> panel -> sim.
     ///
+    /// "On Reload From Empty" opens when the RELOAD COMPLETES.
+    ///
+    /// Not when the magazine runs out (owner, 2026-08-01) — the difference is
+    /// the reload itself, 2.5 s of a 17 s window on this weapon. The test that
+    /// can see it is the FIRST magazine: nothing has reloaded yet, so Deadly
+    /// Efficiency must be worth exactly nothing.
+    ///
+    /// Before 2026-08-01 it was worth nothing for the whole run: `on_reload`
+    /// granting damage fell through to a `CondBuff`, which contributes only
+    /// under AssumedMax — so the panel showed +220% and the sim showed none.
+    #[test]
+    fn a_reload_from_empty_buff_is_worth_nothing_until_the_first_reload() {
+        use crate::dummy::{monte_carlo, DummyParams};
+        use crate::loadout::{resolve_with, StackPolicy, WeaponBase};
+
+        let base = WeaponBase::from_data("larkspur_prime", true, &[]);
+        let mods = crate::mods_data::pool_for_weapon("larkspur_prime");
+        let de = mods.iter().find(|m| m.id == "primed_deadly_efficiency").expect("archgun pool");
+
+        // 200 beam ticks at 12/s is 16.7 s of firing before the magazine is
+        // empty (100 rounds at 0.5 each), so 10 s cannot have reloaded.
+        let run = |with: bool, secs: f64| {
+            let refs: Vec<&crate::loadout::ModDef> = if with { vec![de] } else { Vec::new() };
+            let panel = resolve_with(&base, &refs, StackPolicy::Emergent, true);
+            let mut p = DummyParams::from_panel(
+                &panel,
+                crate::dummy::TargetParams::training_dummy(),
+                DummyParams::humanoid_parts(),
+                secs,
+            );
+            p.arcane = crate::arcanes_data::ArcaneFx::none();
+            p.infinite_reserve = true;
+            let s = monte_carlo(&p, 1, 7);
+            (s.mean_damage, s.median_run.reloads)
+        };
+        let (bare, r0) = run(false, 10.0);
+        let (armed, r1) = run(true, 10.0);
+        assert_eq!((r0, r1), (0, 0), "10 s cannot reach a reload");
+        assert!(
+            (armed - bare).abs() < 1e-6,
+            "no reload has completed, so the buff cannot be up: {bare} vs {armed}"
+        );
+
+        // Over a run that DOES reload, it is worth a great deal — the check
+        // that the window opens at all, so the assertion above is not passing
+        // because the mod does nothing anywhere.
+        let (long_bare, _) = run(false, 120.0);
+        let (long_armed, rl) = run(true, 120.0);
+        assert!(rl >= 1, "120 s reloads");
+        assert!(
+            long_armed > long_bare * 2.0,
+            "+220% base damage at high uptime: {long_bare} vs {long_armed}"
+        );
+    }
+
     /// AN ARCH-GUN'S FIRE RATE DOES NOT SHORTEN ITS DRAW.
     ///
     /// The two are separate stats on this weapon class (owner, 2026-08-01),

@@ -217,6 +217,12 @@ pub enum ModEffect {
     /// Pressurized Magazine: on reload, +bonus relative fire rate (while
     /// aiming) for `duration` seconds.
     OnReloadFireRate { bonus: f64, duration: f64 },
+    /// Deadly Efficiency: "On Reload From Empty: +X% Damage for Xs" — a
+    /// relative BASE-damage bonus whose window opens when the reload
+    /// COMPLETES, not when the magazine runs out (owner, 2026-08-01). The
+    /// distinction is worth a modelled buff: at rank 10 it is +220% for 17 s,
+    /// and under Emergent it used to contribute nothing at all.
+    OnReloadDamage { bonus: f64, duration: f64 },
     /// Hemorrhage: each `from` status APPLIED rolls `chance` to also apply
     /// one `to` status (at most one roll per damage instance, and never
     /// alongside another `to` proc in the same instance). The chance is
@@ -501,6 +507,9 @@ impl ModEffect {
             WeakpointCritChance(v) => format!("{} Weak Point Crit Chance", pct(v)),
             OnKillCritDamage { bonus, duration } => {
                 format!("On Kill: {} Crit Damage, {duration}s", pct(bonus))
+            }
+            OnReloadDamage { bonus, duration } => {
+                format!("On reload from empty: {} Damage, {duration}s", pct(bonus))
             }
             OnReloadFireRate { bonus, duration } => {
                 format!("On Reload: {} Fire Rate, {duration}s", pct(bonus))
@@ -1147,6 +1156,10 @@ pub struct ResolvedPanel {
     /// Pressurized Magazine under Emergent: ABSOLUTE fire-rate add as a timed
     /// buff (starts inactive), granted on every reload.
     pub fr_on_reload: Option<TimedBuff>,
+    /// Deadly Efficiency's window — see [`ModEffect::OnReloadDamage`]. Its
+    /// `value` is the RELATIVE bonus, because it joins the base-damage bucket
+    /// rather than replacing a rate.
+    pub bd_on_reload: Option<TimedBuff>,
     /// Hemorrhage's status-conversion roll (an event mechanic — active under
     /// every policy; contributes no static panel stat).
     pub proc_conversion: Option<ProcConv>,
@@ -1209,6 +1222,7 @@ pub fn resolve_with(
     let (mut wp_dmg, mut wp_cc) = (0.0, 0.0);
     let mut cd_on_kill: Option<TimedBuff> = None;
     let mut fr_on_reload: Option<TimedBuff> = None;
+    let mut bd_on_reload: Option<TimedBuff> = None;
     let mut proc_conv: Option<ProcConv> = None;
     let mut elem_bonus: Vec<(DamageType, f64)> = Vec::new();
     let mut indirect: Vec<(IndirectStat, f64)> = Vec::new();
@@ -1391,6 +1405,21 @@ pub fn resolve_with(
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
                 },
+                ModEffect::OnReloadDamage { bonus, duration } => match policy {
+                    StackPolicy::AssumedMax => bd += bonus,
+                    StackPolicy::Emergent => {
+                        bd_on_reload = Some(TimedBuff {
+                            // RELATIVE: the sim adds it into the base-damage
+                            // bucket alongside Serration, which is where the
+                            // card's "+X% Damage" belongs.
+                            value: bonus,
+                            duration,
+                            initial_active: false, // no reload has happened yet
+                            locked: false,
+                        })
+                    }
+                    StackPolicy::BaseOnly => {} // sentinel: conditional never fires
+                },
                 ModEffect::OnReloadFireRate { bonus, duration } => match policy {
                     StackPolicy::AssumedMax => fr += bonus,
                     StackPolicy::Emergent => {
@@ -1451,7 +1480,10 @@ pub fn resolve_with(
                 cd_on_kill = None;
             }
             "status_chance" => sc = 0.0,
-            "base_damage" => bd = 0.0,
+            "base_damage" => {
+                bd = 0.0;
+                bd_on_reload = None;
+            }
             _ => {}
         }
     }
@@ -1681,6 +1713,7 @@ pub fn resolve_with(
         weakpoint_cc_rel: wp_cc,
         cd_on_kill,
         fr_on_reload,
+        bd_on_reload,
         proc_conversion: proc_conv,
         evo_ms: (base.buff_multishot_bonus > 0.0 && base.buff_ms_max_stacks > 0).then_some(
             EvoMsBuff {

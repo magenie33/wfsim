@@ -233,6 +233,12 @@ fn effect(v: &Value) -> Option<ModEffect> {
                 ("on_kill", "crit_damage") => {
                     ModEffect::OnKillCritDamage { bonus: per, duration: dur }
                 }
+                // "On Reload From Empty: +X% Damage" — its own event, because
+                // the window opens when the RELOAD COMPLETES and a CondBuff
+                // would have to pretend it is always on.
+                ("on_reload", "base_damage") | ("on_reload", "damage") => {
+                    ModEffect::OnReloadDamage { bonus: per, duration: dur }
+                }
                 ("on_reload", "fire_rate") => {
                     ModEffect::OnReloadFireRate { bonus: per, duration: dur }
                 }
