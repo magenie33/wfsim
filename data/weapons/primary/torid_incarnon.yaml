@@ -50,8 +50,11 @@ incarnon:
   transmute_out_seconds: 1.0
 
 # SIM CONVENIENCE: with the gauge LOCKED full, the cycle reduces to a
-# magazine/reload model. 170 rounds at 1 per tick, and 1.0 + 1.7 s of
-# transitions (both scale with reload speed).
+# magazine/reload model. 170 rounds at 1 per tick — ✅ measured (user,
+# 2026-08-01): the beam "0.5 ammo per trace" rule does NOT reach a charge
+# pool, so a full gauge is 170 ticks, not 340 (MECHANICS "Continuous ammo
+# cost"; the difference is worth 7.8% DPS, so it is not a rounding choice).
+# Plus 1.0 + 1.7 s of transitions (both scale with reload speed).
 pseudo_reload:
   magazine: 170
   reload_seconds: 2.7

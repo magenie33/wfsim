@@ -242,7 +242,7 @@ order dependence remains a top calibration target (CORE.md §3).
 
 ---
 
-### Continuous ammo cost — OPEN
+### Continuous ammo cost — the 0.5 rule does NOT reach a charge pool
 
 Continuous weapons "consume 0.5 ammo per tick of damage", and the patch note
 the wiki quotes says it plainly: "To help with ammo economy, Beam Weapons
@@ -253,28 +253,24 @@ The engine does not model per-shot ammo COST at all: `ammo_cost` sits in every
 `data/weapons/` entry and no Rust code reads it; the sim spends a flat 1.0
 (minus ammo efficiency) per shot, beam ticks included.
 
-That currently changes no result, because the only beam in the roster is the
-Torid's Incarnon form and its pool is not ammo. The Torid page: "Instead of
-drawing ammunition from its reserves, the Torid's Incarnon Form uses a
-separate 'magazine'", and "Incarnon Form is not affected by Ammo Efficiency" —
-so it sits outside the ammo economy the 0.5 rule exists to help. Whether the
-rule reaches a charge pool anyway is unresolved, and the wiki does not say.
+**A charge pool is not ammo, and spends 1 per tick** (owner, 2026-08-01,
+measured in game). The Torid page had already put the Incarnon outside the
+ammo economy — "instead of drawing ammunition from its reserves, the Torid's
+Incarnon Form uses a separate 'magazine'", and it "is not affected by Ammo
+Efficiency" — and the 0.5 rule exists to help that economy, so it stops at the
+boundary. 170 charges is therefore 170 ticks, which is what
+`pseudo_reload.magazine` states.
 
-**What it is worth, if it does** (measured 2026-08-01): the Torid Incarnon's
-charge window lives in `pseudo_reload.magazine`, whose 170 already encodes the
-assumption of 1 charge per tick — half-cost is that number doubled, not an
-`ammo_cost` change. Doubling it to 340 over a 60 s run took DPS 3634 → 3919
-(**+7.8%**) and transforms 4 → 2: a longer window spends proportionally less
-time in the two transitions. So the open question is worth ~8% on this weapon,
-and settling it needs one measurement — how many ticks a full gauge fires.
+That was worth checking rather than assuming: doubling the window to 340 over
+a 60 s run took DPS 3634 → 3919 (**+7.8%**) and transforms 4 → 2, because a
+longer window spends proportionally less time in the two transitions. The
+number we ship is the measured one.
 
-**What settles it:** time one full Incarnon window at 8 ticks/s on 170
-charges. 1 charge per tick gives ~21 s; 0.5 gives ~42 s. Until that is
-measured the flat 1.0 stands, because it is what the charge count divides into
-cleanly — but it is an assumption, not a source.
-
-**Status:** unverified. Harmless today; load-bearing the moment a beam that
-draws from real reserves joins the roster.
+**Still open, but unreachable today:** whether OUR flat 1.0 per tick is wrong
+for a beam that draws from REAL reserves — the 0.5 rule says it is. No such
+weapon is in the roster (the Torid Incarnon is the only beam), so nothing
+reads it. It becomes load-bearing the moment one joins, and the fix is in the
+sim's per-shot spend, not in the data.
 
 ---
 
