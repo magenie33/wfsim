@@ -181,7 +181,7 @@
              together, because "the fight I test against" is one decision and
              a build is compared across several of them. -->
         <div class="preset-bar" id="preset-bar-simulator-scenarios"></div>
-        <h3 class="sim-h" data-i18n>1 · Enemy</h3>
+        <h3 class="sim-h" data-i18n>1 · Enemy <span class="sim-hint">who you fight, where, and for how long — the optimizer searches against this same block</span></h3>
         <div id="sim-enemy" class="field-grid"></div>
         <!-- Technique = what the PLAYER does, as opposed to who they fight
              (1) or how long we measure (4). It comes before Buffs because it
@@ -192,7 +192,7 @@
         <h3 class="sim-h" data-i18n>3 · Buffs <span class="sim-hint">initial stacks + lock (locked = 100% uptime)</span>
           <button id="sim-buffs-all" class="ghost-btn small"></button></h3>
         <div id="sim-buffs"></div>
-        <h3 class="sim-h" data-i18n>4 · Simulation</h3>
+        <h3 class="sim-h" data-i18n>4 · Simulation <span class="sim-hint">how many times to replay it, and what to read off — the search sets its own</span></h3>
         <div id="sim-run" class="field-grid"></div>
         <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
       </div>
@@ -257,8 +257,8 @@
         <!-- The SCENARIO is the simulator's; the optimizer points at it
              rather than keeping a second one, so the winner is scored under
              the fight the replay will run. -->
-        <h3 class="sim-h" data-i18n>Enemy <span class="sim-hint">the scenario the simulator is set to — editing it here edits it there</span></h3>
-        <div class="preset-bar" id="preset-bar-optimizer-scenario"></div>
+        <h3 class="sim-h" data-i18n>Enemy <span class="sim-hint">read-only — the fight belongs to the simulator, which is where it is edited</span></h3>
+        <div class="preset-bar" id="opt-scenario-ref"></div>
         <div id="opt-enemy" class="field-grid"></div>
         <h3 class="sim-h" data-i18n>Technique <span class="sim-hint">must match how you intend to play it — the winner is scored under these assumptions</span></h3>
         <div id="opt-technique" class="field-grid"></div>

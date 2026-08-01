@@ -133,7 +133,9 @@ around (decision 2026-07-31).
   included), `optimizer` (a search: scope + the funnel's final-round
   contract), `rivens` (a riven). The optimizer owns no scenario — it RUNS the
   simulator's, drawn by the same renderer over the same state, so the winner
-  is scored under the fight the replay will run. Its three old collections
+  is scored under the fight the replay will run — READ-ONLY there, with a link
+  to the simulator: a preset is edited in exactly one place, because two
+  editors over one document is how it gets edited twice and saved once. Its three old collections
   (`optimizer-mods` / `-arcanes` / `-evolutions`) merged into one: they were
   split for cross-weapon reuse, which is the import's job.
   A build preset also carries a `sim` SNAPSHOT — "what this build was last

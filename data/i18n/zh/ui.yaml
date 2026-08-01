@@ -176,6 +176,11 @@ ui:
   "Evolutions": 进化
   "install the previous tier first": 需要先安装上一层
   "Searches": 搜索方案
+  "Scenario": 场景
+  "edit in the Simulator": 去模拟器修改
+  "edit this in the Simulator": 这一项在模拟器里修改
+  "the scenario the simulator is set to": 模拟器当前选中的场景
+  "current": 当前
   "Ctrl+Z undoes the last change to any preset": Ctrl+Z 撤销对任意预设的上一步改动
   "nothing to undo": 没有可撤销的操作
   "nothing to redo": 没有可重做的操作

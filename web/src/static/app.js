@@ -3300,9 +3300,13 @@ const defaultFormId = (w, formOpts) =>
 // replay never ran.
 //
 // `ids` names the host element per section; a section with no host is not
-// drawn. `duration_in_enemy` puts the engagement length beside the enemy for
-// hosts that have no measurement section of their own (the optimizer: the
-// funnel owns run counts, but the engagement is still the scenario's).
+// drawn. Nothing is drawn differently per host — a flag that moved one field
+// for one tab would be the same lookalike-that-drifts in miniature (user,
+// 2026-08-02, on finding the optimizer's enemy box one field longer).
+//
+// ENGAGEMENT LENGTH sits with the enemy, not with the measurement: it is a
+// property of the fight, which is exactly why the optimizer needs it while
+// needing neither Runs (the funnel sets those round by round) nor Measure.
 function renderScenarioFields(ids, opts = {}) {
   const w = weaponInfo($("weapon").value);
   const enemies = META.enemies || [];
@@ -3319,7 +3323,7 @@ function renderScenarioFields(ids, opts = {}) {
       <label>Level <input type="number" data-k="level" min="1" max="9999" value="${sim.level}"></label>
       <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
       ${deployField(w, sim)}
-      ${opts.duration_in_enemy ? durationField : ""}`;
+      ${durationField}`;
   }
   const formOpts = simFormOpts(w);
   if (ids.technique) {
@@ -3332,12 +3336,24 @@ function renderScenarioFields(ids, opts = {}) {
   // Section 4 — the MEASUREMENT: nothing the player does in-game.
   if (ids.run) {
     $(ids.run).innerHTML = `
-      ${durationField}
       <label>Runs <input type="number" data-k="runs" min="1" max="20000" value="${sim.runs}"></label>
       <label title="${escHtml(tr("what the run is judged by — the headline number and the picker's gain scan both follow it"))}">${escHtml(tr("Measure"))} <select data-k="metric">${
         [["kpm", tr("KPM")], ["dps", tr("DPS")]].map(([v, l]) =>
           `<option value="${v}"${sim.metric === v ? " selected" : ""}>${escHtml(l)}</option>`).join("")
       }</select></label>`;
+  }
+  // READ-ONLY hosts get the same fields, in the same order, showing the same
+  // values — and no way to change them. A preset is edited in exactly ONE
+  // place (user, 2026-08-02): two editors over one document is how a document
+  // gets edited twice and saved once. The optimizer therefore SHOWS the fight
+  // and links to the module that owns it.
+  if (opts.readonly) {
+    [ids.enemy, ids.technique, ids.run].filter(Boolean).map($).forEach((box) =>
+      box.querySelectorAll("[data-k]").forEach((el) => {
+        el.disabled = true;
+        el.title = tr("edit this in the Simulator");
+      }));
+    return;
   }
   [ids.enemy, ids.technique, ids.run].filter(Boolean).map($).forEach((box) =>
     box.querySelectorAll("[data-k]").forEach((el) => {
@@ -3927,22 +3943,19 @@ function renderOptEnemy() {
   if (!$("opt-enemy")) return;
   renderScenarioFields(
     { enemy: "opt-enemy", technique: "opt-technique" },
-    { duration_in_enemy: true, after: updateOptEstimate },
+    { readonly: true },
   );
-  renderPresetBarIn($("preset-bar-optimizer-scenario"), {
-    domain: SCENARIOS,
-    label: tr("Scenarios"),
-    load: () => loadPresetList(SCENARIOS),
-    store: (ps) => storePresetList(SCENARIOS, ps),
-    active: () => activeScenario,
-    setActive: (n) => { activeScenario = n; localStorage.setItem(presetActiveKey(SCENARIOS), n); },
-    snapshot: snapshotScenario,
-    // The scenario is one document: applying it here redraws the Sim panel
-    // too, and the estimate follows the new fight.
-    apply: (st) => { applyScenario(st); renderOptEnemy(); updateOptEstimate(); },
-    blank: snapshotScenario,
-    rerender: renderOptEnemy,
-  });
+  // Which fight, and where it is edited. Not a preset bar: that bar can
+  // rename, duplicate, delete and import, all of which are edits, and the
+  // scenario collection is the SIMULATOR's to edit.
+  const ref = $("opt-scenario-ref");
+  if (ref) {
+    const w = weaponInfo($("weapon").value) || {};
+    ref.innerHTML =
+      `<span class="plabel">${escHtml(tr("Scenario"))}</span>` +
+      `<span class="pchip sel" title="${escHtml(tr("the scenario the simulator is set to"))}">${escHtml(activeScenario || tr("current"))}</span>` +
+      `<a class="pchip" href="${weaponPath(w.id)}/simulator">${escHtml(tr("edit in the Simulator"))} →</a>`;
+  }
 }
 
 // Exilus-slot scope (the +1 slot) — exilus-eligible mods with the same
