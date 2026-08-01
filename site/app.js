@@ -2394,12 +2394,16 @@ const GAIN_SEED = 0x5EED;
 // A gain READS with its sign — "12.3%" and "+12.3%" are different claims.
 const gainPct = (x) => (x >= 0 ? "+" : "−") + sig2(Math.abs(x) * 100) + "%";
 
-// Quick calc's settings — TWO, because the third was never a choice: what a
-// run is measured by belongs to the SCENARIO, and asking again here would be
-// the same fact stated twice (user, 2026-08-01). `scenario` names a SAVED one;
-// there is no "current", because a scan is only worth reading against
+// Quick calc's ONE setting: which saved scenario. Everything else that was
+// ever offered here turned out not to be a choice (user, 2026-08-01) — what a
+// run is measured by belongs to the scenario, and how many runs it takes is a
+// question the algorithm answers better than a person can, since the right
+// number depends on how close the leaders turn out to be. A mode selector is
+// one more thing to get wrong for no answer it can give you.
+//
+// There is no "current" scenario either: a scan is only worth reading against
 // something that has a name and can be returned to.
-let gainPrefs = { scenario: null, precision: "auto", runs: 1 };
+let gainPrefs = { scenario: null };
 try { const s = JSON.parse(localStorage.getItem("wfsim-gain")); if (s) gainPrefs = { ...gainPrefs, ...s }; } catch (_) {}
 const saveGainPrefs = () => localStorage.setItem("wfsim-gain", JSON.stringify(gainPrefs));
 
@@ -2411,11 +2415,11 @@ function gainScenario() {
   const p = ps.find((x) => x.name === gainPrefs.scenario)
     || ps.find((x) => x.name === activeScenario) || ps[0];
   const st = p ? { ...sim, ...p.state } : { ...sim };
-  // AUTO is two passes: one run over everything, then the contenders again
-  // with more. CUSTOM is one pass at whatever you typed.
-  const auto = gainPrefs.precision === "auto";
-  const runs = auto ? 1 : Math.max(1, Math.min(20000, gainPrefs.runs || 1));
-  const refine = auto ? Math.max(2, Math.ceil((st.runs || 1) / 10)) : 0;
+  // TWO PASSES, always: one run over everything, then the leaders again with
+  // a tenth of the scenario's runs. A ranking is cheap at the bottom and
+  // expensive at the top, and this spends accordingly.
+  const runs = 1;
+  const refine = Math.max(2, Math.ceil((st.runs || 1) / 10));
   // The WHOLE buff map travels, not just the current build's cards: a
   // candidate's buff is by definition not in `buffList`, and the scenario may
   // well have an opinion about it. Unmentioned buffs take their own default
@@ -2580,36 +2584,32 @@ function renderQuickCalc() {
   const opt = (v, label, sel) => `<option value="${escHtml(v)}"${v === sel ? " selected" : ""}>${escHtml(label)}</option>`;
   box.innerHTML =
     `<span class="pc-h">⚡ ${escHtml(tr("Quick calc"))}</span>` +
-    `<select id="gp-scen" title="${escHtml(tr("the saved scenario to measure under — it also decides KPM or DPS"))}">${
+    `<select id="gp-scen" title="${escHtml(tr("the saved scenario to measure under — it decides the enemy, the technique and whether the ranking is KPM or DPS"))}">${
       ps.map((p) => opt(p.name, p.name, cur)).join("")}</select>` +
-    `<select id="gp-prec" title="${escHtml(tr("auto: one run over everything, then the leaders again with more — the baseline and every candidate share one seed, so the comparison stays paired"))}">${
-      opt("auto", tr("auto"), gainPrefs.precision) + opt("custom", tr("custom"), gainPrefs.precision)}</select>` +
-    (gainPrefs.precision === "custom"
-      ? `<input id="gp-runs" type="number" min="1" max="20000" value="${gainPrefs.runs || 1}" title="${escHtml(tr("runs per candidate"))}">`
-      : "") +
+
     `<span class="pc-note">${gainScan.running
       ? `${gainScan.done}/${gainScan.total}`
       : (gainScan.note ? escHtml(gainScan.note) : escHtml(tr("open a slot to rank its mods by effect")))}</span>`;
   // Every click stays inside: a redraw detaches these nodes, and the document
   // outside-click handler closes on a target whose `.popover` ancestor is gone.
   box.onclick = (e) => e.stopPropagation();
-  ["gp-scen", "gp-prec", "gp-runs"].forEach((id) => {
-    const el = $(id);
-    if (!el) return;
-    el.onchange = (e) => {
-      e.stopPropagation();
-      gainPrefs = { scenario: $("gp-scen").value, precision: $("gp-prec").value,
-        runs: $("gp-runs") ? Math.max(1, Number($("gp-runs").value) || 1) : (gainPrefs.runs || 1) };
-      saveGainPrefs();
-      renderQuickCalc();
-    };
-  });
+  $("gp-scen").onchange = (e) => {
+    e.stopPropagation();
+    gainPrefs = { scenario: $("gp-scen").value };
+    saveGainPrefs();
+    renderQuickCalc();
+  };
 }
 
 /// Compute this axis position's ranking, unless it is already on screen.
 /// `gainKey` covers the axis, the build, the scenario and the settings, so
 /// re-opening the same picker costs nothing and any edit invalidates it.
 function ensureGains(axis, repaint) {
+  // Nothing to measure against yet. The evolution rows scan without being
+  // opened, so on a cold load they can fire before `initPresets` has seeded
+  // the scenario library — and a scan with no named scenario is one nobody
+  // can reproduce or compare against (it labelled itself "—").
+  if (!loadPresetList(SCENARIOS).length) return;
   gainAxis = axis;                       // so the key describes what we want
   if (gainScan.running || gainScan.key === gainKey()) return;
   let last = 0;
