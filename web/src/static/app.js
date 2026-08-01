@@ -1638,6 +1638,12 @@ function snapshotState() {
     arcane: arcanes,
     arcaneRank: arcaneRanks,
     slots: slots.map((s) => ({ mod: s.mod, pol: s.pol, rank: s.rank })),
+    // A SNAPSHOT of the fight, not a pointer into `simulator-scenarios`
+    // (user, 2026-08-02). The scenario library is the reusable thing; this
+    // field is a different sentence — "what this build was last tested
+    // with" — and a reference would let editing a scenario months later
+    // silently rewrite what an old build claims it was measured under.
+    // Two homes for scenario-shaped data is the point, not an oversight.
     sim: { ...sim },
   };
 }

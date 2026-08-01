@@ -119,15 +119,30 @@ around (decision 2026-07-31).
   the ordinary pool with no riven-specific code in any of the three. A new
   tab has to pass that test: name what the three do with its output, or it
   belongs inside one of them. Preset collections are domain-named
-  `<owner>-<collection>` (e.g. `builder-builds`, `optimizer-mods`), where
-  the owner is a module — or an editor, and an editor whose ENTIRE content
-  is one collection is its own domain (`rivens`), because there is no
-  second collection to tell it apart from. Every durable name (localStorage
-  key, DOM id, label) derives from the domain. A preset belongs to ONE WEAPON, so the storage key also carries
-  it (`wfsim-presets-<weapon>-<domain>`) — DOM ids and labels stay
-  weapon-free, and copying a preset across weapons is the explicit
-  "⇤ import" action. URLs mirror English wiki page names (spaces → `_`); internal
-  ids never appear in URLs.
+  `<owner>-<collection>`, where the owner is a module — or an editor, and an
+  editor whose ENTIRE content is one collection is its own domain (`rivens`),
+  because there is no second collection to tell it apart from. Every durable
+  name (localStorage key, DOM id, label) derives from the domain. A preset
+  belongs to ONE WEAPON, so the storage key also carries it
+  (`wfsim-presets-<weapon>-<domain>`) — DOM ids and labels stay weapon-free,
+  and copying a preset across weapons is the explicit "⇤ import" action, which
+  drops per axis what the target cannot hold. URLs mirror English wiki page
+  names (spaces → `_`); internal ids never appear in URLs.
+- **FOUR collections, one per thing a module owns** (2026-08-02):
+  `builder-builds` (a build), `simulator-scenarios` (a fight, buff settings
+  included), `optimizer` (a search: scope + the funnel's final-round
+  contract), `rivens` (a riven). The optimizer owns no scenario — it RUNS the
+  simulator's, drawn by the same renderer over the same state, so the winner
+  is scored under the fight the replay will run. Its three old collections
+  (`optimizer-mods` / `-arcanes` / `-evolutions`) merged into one: they were
+  split for cross-weapon reuse, which is the import's job.
+  A build preset also carries a `sim` SNAPSHOT — "what this build was last
+  tested with". That is a copy, not a pointer to a scenario preset, and it
+  stays one (user, 2026-08-02): editing a scenario later must not rewrite
+  what an old build says it was measured under.
+  Every collection writes through `storePresetList`, which is what makes one
+  Ctrl+Z stack cover all four — presets auto-save, so the way back is not
+  optional.
 - `api()` transport: `/api/meta` and `/api/i18n` are GET, everything
   else is POST — the native server matches on exact (method, path).
 
