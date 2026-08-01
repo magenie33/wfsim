@@ -70,6 +70,9 @@ ui:
   "must match how you intend to play it — the winner is scored under these assumptions": 必须和你实际的打法一致 —— 最优解是在这些假设下算出来的
   "a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet": 这是逐弹丸的瞄准权重，不是整片弹丸都爆头 —— 落点对每颗弹丸单独掷点
   "Aiming": 瞄准
+  "Infinite ammo": 无限弹药
+  "this weapon has no ammo reserve to run out of": 这把武器没有会耗尽的备弹
+  "off = the reserve is finite and the weapon can run dry; the magazine and its reloads apply either way": 关闭 = 备弹有限，武器会打空；弹匣和换弹无论开关都照常计算
   "import": 导入
   "copy a preset from another weapon": 从其他武器复制一个预设
   "Direct hit": 直击

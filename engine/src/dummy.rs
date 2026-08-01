@@ -1015,6 +1015,11 @@ pub struct DummyParams {
     /// simulate finite reserves - firing stops when magazine + reserve are
     /// both dry (DoTs keep ticking).
     pub infinite_reserve: bool,
+    /// Ammo a shot COSTS (a beam tick included). 1.0 for almost everything;
+    /// the wiki states 0.5 per trace for a beam and 10 for the Larkspur
+    /// Prime's alt-fire. Multiplies the magazine spend, so it changes how
+    /// often a weapon reloads even when the reserve is infinite.
+    pub ammo_cost: f64,
     /// Reserve pool, consumed by reloads when `infinite_reserve` is off.
     pub reserve_ammo: f64,
     /// Whether BuffBar ammo efficiency (Frenzy's +100%) reduces consumption.
@@ -1355,6 +1360,7 @@ impl DummyParams {
             // figure and the sim keeps firing — we do not model pickups, so
             // stopping would be an artefact of the model, not the game.
             infinite_reserve: !panel.finite_reserve,
+            ammo_cost: panel.ammo_cost,
             reserve_ammo: panel.ammo_reserve,
         }
     }
@@ -1461,6 +1467,7 @@ impl Default for DummyParams {
             magazine_size: 12.0,
             reload_seconds: 2.35,
             infinite_reserve: true,
+            ammo_cost: 1.0,
             reserve_ammo: 72.0,
             ammo_efficiency_applies: true,
             multishot: 1.0,
@@ -2948,10 +2955,15 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // fires two extras, and drops the third — three pellets, not four, and
         // the pool lands on empty rather than going negative or silently
         // clamping while all four fly.
+        // `ammo_cost` scales the whole spend: efficiency is a DISCOUNT on the
+        // cost, not a separate round. A beam paying 0.5 with 20% efficiency
+        // spends 0.4, which is what "0.5 ammo per trace" plus an efficiency
+        // mod has to mean.
+        let spend = ap.ammo_cost * (1.0 - efficiency);
         if in_base_form {
-            base_mag -= 1.0 - efficiency;
+            base_mag -= spend;
         } else {
-            magazine -= 1.0 - efficiency;
+            magazine -= spend;
         }
         let mut n_pellets = n_pellets;
         if ap.multishot_ammo_bonus > 0.0 && rolled > 1 {

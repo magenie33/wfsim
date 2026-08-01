@@ -18,6 +18,14 @@ use crate::mods::Polarity;
 #[derive(Debug, Clone, Deserialize)]
 pub struct AttackSpec {
     pub trigger: String,
+    /// Ammo spent per SHOT (per tick on a continuous weapon). Default 1.
+    ///
+    /// Read at last (2026-08-01). It sat in every weapon file unread while the
+    /// sim spent a flat 1.0, which was harmless only while no weapon disagreed
+    /// with it — the Larkspur Prime disagrees on BOTH of its modes: "Alt-fire
+    /// consumes 10 ammo per shot" against "0.5 per primary tick" (wiki).
+    #[serde(default = "one")]
+    pub ammo_cost: f64,
     #[serde(default)]
     pub shot_type: Option<String>,
     pub fire_rate: f64,
@@ -722,6 +730,9 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         base_crit_damage: s.attack.crit_multiplier,
         base_status_chance: s.attack.status_chance,
         base_fire_rate: s.attack.fire_rate,
+        // Straight through: what a shot COSTS is a weapon constant, and no mod
+        // in the roster changes it (ammo EFFICIENCY is its own, separate term).
+        ammo_cost: s.attack.ammo_cost,
         // A BOW paces on draw + nock, every form of it (wiki Fire Rate's
         // bow-specific formula — see `AttackSpec::charge_seconds`), so a bow
         // states the draw even when it is 0.0 and anything else must not.
@@ -827,9 +838,14 @@ mod tests {
     /// the whole data path end to end: YAML -> spec -> base -> panel -> sim.
     ///
     /// Ground Arch-Gun: 100 in the magazine, 400 behind it, and no way to
-    /// resupply (wiki Arch-Gun). At 12 rounds/second that is 500 rounds and
-    /// then the weapon is gone — inside a 120 s engagement, so the clock is
-    /// not what stops it.
+    /// resupply (wiki Arch-Gun). 500 ROUNDS and then the weapon is gone —
+    /// inside a 120 s engagement, so the clock is not what stops it.
+    ///
+    /// Rounds, not ticks: the primary is a BEAM and a beam tick costs 0.5
+    /// ("Beam Weapons consume 0.5 ammo per trace", and the Larkspur Prime page
+    /// repeats it for this weapon), so 500 rounds is 1000 ticks. This read 500
+    /// until 2026-08-01, when `ammo_cost` was read at last — the weapon had
+    /// been running dry in half the time the wiki gives it.
     #[test]
     fn the_larkspur_runs_out_where_a_primary_would_not() {
         use crate::dummy::{monte_carlo, DummyParams};
@@ -849,8 +865,8 @@ mod tests {
         p.arcane = crate::arcanes_data::ArcaneFx::none();
         let s = monte_carlo(&p, 1, 3);
         assert!(
-            (s.mean_shots - 500.0).abs() < 1e-9,
-            "magazine + reserve, exactly: {}",
+            (s.mean_shots - 1000.0).abs() < 1e-9,
+            "500 rounds at 0.5 per beam tick, exactly: {}",
             s.mean_shots
         );
 

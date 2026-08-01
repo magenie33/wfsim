@@ -266,11 +266,13 @@ a 60 s run took DPS 3634 → 3919 (**+7.8%**) and transforms 4 → 2, because a
 longer window spends proportionally less time in the two transitions. The
 number we ship is the measured one.
 
-**Still open, but unreachable today:** whether OUR flat 1.0 per tick is wrong
-for a beam that draws from REAL reserves — the 0.5 rule says it is. No such
-weapon is in the roster (the Torid Incarnon is the only beam), so nothing
-reads it. It becomes load-bearing the moment one joins, and the fix is in the
-sim's per-shot spend, not in the data.
+**The ammo-pool half is now IMPLEMENTED** (2026-08-01). It stopped being
+unreachable the moment the Larkspur Prime and Verglas Prime joined the roster:
+both are beams with real magazines, and the Larkspur page states its own
+numbers — "0.5 per primary tick" against "Alt-fire consumes 10 ammo per shot".
+`attack.ammo_cost` is read at last, and it multiplies the MAGAZINE spend, so it
+changes reload cadence even where the reserve is infinite. See MEASUREMENTS
+**M18(b)** for what it moved and what would confirm it.
 
 ---
 

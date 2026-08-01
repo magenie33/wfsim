@@ -331,7 +331,7 @@ let evoSel = { 1: null, 2: null, 3: null, 4: null };
 // what the sim silently assumed before the knob existed, so no stored preset
 // changes meaning.
 let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, aiming: true,
-  duration: 120, runs: 100, form: "default", buffs: {} };
+  infinite_ammo: true, duration: 120, runs: 100, form: "default", buffs: {} };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
 // Damage-meter rows the player has expanded into their per-type split, kept
@@ -355,6 +355,7 @@ let optPrefs = { sort: "name", dir: "asc", pol: null };
 // panel — two independent configs that merely look alike; identical
 // parameters give identical numbers, verified 2026-07-28).
 let optSim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, aiming: true,
+  infinite_ammo: true,
   duration: 120, form: "default" };
 // The FINAL-ROUND CONTRACT (user): the funnel's last round is guaranteed
 // `finalists` candidates × `final_runs` runs. Persisted; survives weapon
@@ -769,6 +770,25 @@ const exilusPool = () => poolWithRivens().filter((m) => m.exilus);
 /// conditions (`!sentinel`, `arcane_slots >= 1`, `uses_evo2`), each of which
 /// was a category guess standing in for "is there anything to choose here" —
 /// and each of which had to be remembered twice.
+// INFINITE AMMO — on by DEFAULT for every weapon (user, 2026-08-01), because
+// the sim models no ammo PICKUPS: a finite reserve is the pessimistic half of
+// a mechanic we only half have, and the number people compare across weapons
+// is the one where ammo is not the limit.
+//
+// A weapon whose reserve is infinite IN GAME cannot be switched off it — every
+// sentinel weapon prints "Ammo Max: infinity / Ammo Type: None". That shows as
+// a TICKED, DISABLED box: the state is real and the control is honestly
+// unavailable, which a hidden control would not say.
+const ammoForced = (w) => !w.finite_reserve;
+const ammoField = (w, state) => {
+  const forced = ammoForced(w);
+  const on = forced || state.infinite_ammo !== false;
+  const why = forced
+    ? tr("this weapon has no ammo reserve to run out of")
+    : tr("off = the reserve is finite and the weapon can run dry; the magazine and its reloads apply either way");
+  return `<label class="check" title="${escHtml(why)}"><input type="checkbox" data-k="infinite_ammo"${on ? " checked" : ""}${forced ? " disabled" : ""}> ${escHtml(tr("Infinite ammo"))}</label>`;
+};
+
 function weaponAxes(weaponId) {
   const w = weaponInfo(weaponId || $("weapon").value) || {};
   const exilus = w.sentinel ? [] : exilusPool();
@@ -2675,7 +2695,8 @@ function renderSim() {
   $("sim-technique").innerHTML = `
     ${formField(formOpts, sim.form)}
     <label class="check" title="${escHtml(tr("mods that only work while aiming (Galvanized Crosshairs, Argon Scope, Sharpened Bullets…) grant nothing when this is off"))}"><input type="checkbox" data-k="aiming" ${sim.aiming ? "checked" : ""}> ${escHtml(tr("Aiming"))}</label>
-    <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>`;
+    <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>
+    ${ammoField(w, sim)}`;
   // Section 4 — the MEASUREMENT: nothing the player does in-game.
   $("sim-run").innerHTML = `
     <label>Duration (s) <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>
@@ -3161,6 +3182,7 @@ function renderOptEnemy() {
     tech.innerHTML = `
     ${formField(formOpts, optSim.form)}
     <label class="check" title="${escHtml(tr("mods that only work while aiming grant nothing when this is off - the optimizer scores builds under the same assumption the sim replays them with"))}"><input type="checkbox" data-k="aiming" ${optSim.aiming ? "checked" : ""}> ${escHtml(tr("Aiming"))}</label>
+    ${ammoField(weaponInfo($("weapon").value) || {}, optSim)}
     <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${optSim.headshot_pct}"></label>`;
   }
   [box, tech].filter(Boolean).forEach((b) =>
@@ -3692,7 +3714,8 @@ async function runOptimize() {
       evolutions,
       exilus: opt.exilus,
       enemy: optSim.enemy, level: optSim.level, steel_path: optSim.steel_path,
-      headshot_pct: optSim.headshot_pct, aiming: optSim.aiming, duration: optSim.duration,
+      headshot_pct: optSim.headshot_pct, aiming: optSim.aiming,
+      infinite_ammo: optSim.infinite_ammo, duration: optSim.duration,
       form: optSim.form,
       final_runs: optRun.final_runs, finalists: optRun.finalists,
       threads: optRun.threads || 0, // 0 = auto (cores − 2)

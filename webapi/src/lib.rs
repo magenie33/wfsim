@@ -546,6 +546,12 @@ pub fn meta_json() -> Value {
                 // attribute (wiki's 25% rule). Sent as a list rather than a
                 // filtered pool so the class table stays shared.
                 "riven_excludes": wfsim_engine::rivens_data::excluded_for(&w.id),
+                // Has this weapon a reserve that can RUN OUT? False for every
+                // sentinel weapon ("Ammo Max: infinity / Ammo Type: None") and
+                // for anything else the data leaves infinite, which is what
+                // makes the Infinite-ammo box ticked-and-disabled there.
+                "finite_reserve": wfsim_engine::weapons_data::spec(&w.id)
+                    .is_some_and(|s| s.finite_reserve),
                 // The mods this weapon can actually EQUIP, by id. The client
                 // used to union the class tables and re-apply the rules in JS,
                 // which is one fact stated twice — and the copy went stale the
@@ -2216,6 +2222,17 @@ pub fn simulate_json(v: &Value) -> Value {
     // Defaults TRUE, which is what the sim silently assumed before this
     // existed — so no stored preset changes meaning.
     let aiming = get_bool(v, "aiming", true);
+    // INFINITE AMMO, and it is the DEFAULT for every weapon (user, 2026-08-01).
+    // The sim models no ammo PICKUPS, so a finite reserve is the pessimistic
+    // half of a mechanic we only half have — and the headline number people
+    // compare across weapons is the one where ammo is not the limit. A weapon
+    // whose reserve is infinite in game (every sentinel weapon: "Ammo Max: ∞ /
+    // Ammo Type: None") cannot be switched off it, which the UI shows as a
+    // ticked, disabled box rather than a control that does nothing.
+    //
+    // The MAGAZINE is unaffected either way: this is the reserve behind it, so
+    // reload cadence — and `ammo_cost` — still bite.
+    let infinite_ammo = get_bool(v, "infinite_ammo", true);
     let duration = get_f64(v, "duration", 120.0).clamp(1.0, 3600.0);
     let runs = get_u32(v, "runs", 300).clamp(1, 20_000);
     let seed = v.get("seed").and_then(|x| x.as_u64()).unwrap_or(0xC0FFEE);
@@ -2320,10 +2337,13 @@ pub fn simulate_json(v: &Value) -> Value {
                 duration,
             );
             // The cycle reports the form it transforms INTO, as it always has.
+            let mut params = params;
+            params.infinite_reserve = infinite_ammo || !incarnon_panel.finite_reserve;
             (incarnon_panel, params)
         } else {
             let panel = panel_of(single_form);
             let mut d = DummyParams::from_panel(&panel, target, body_parts, duration);
+            d.infinite_reserve = infinite_ammo || !panel.finite_reserve;
             // Frenzy is the WEAPON's passive: it persists across its forms
             // (user-confirmed 2026-07-24), so it rides whichever one is fired.
             d.frenzy = frenzy_single;

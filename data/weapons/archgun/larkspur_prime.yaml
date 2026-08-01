@@ -70,9 +70,12 @@ attack:
   shot_type: hitscan
   fire_rate: 12.0
   multishot: 1.0
-  # NOT READ by the engine (2026-07-31): nothing in engine/ references
-  # `ammo_cost` — the sim spends a flat 1.0 (minus ammo efficiency) per shot.
-  ammo_cost: 1
+  # 0.5 PER TICK, and this weapon is why the field is read at last: the wiki
+  # states the general rule ("Beam Weapons consume 0.5 ammo per trace — unless
+  # they are Flamethrowers") and the Larkspur Prime page states it again for
+  # this weapon, "0.5 per primary tick", against 10 for the alt-fire. The sim
+  # spent a flat 1.0 until 2026-08-01, which halved this magazine.
+  ammo_cost: 0.5
   crit_chance: 0.14
   crit_multiplier: 1.6
   status_chance: 0.50

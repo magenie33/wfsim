@@ -662,3 +662,59 @@ damage numbers of the same weapon with the toggle on/off; any change beyond
 the Simulacrum as a lab — missions are authoritative for the engine.)
 
 **Result:** _not yet run._
+
+---
+
+## M18 — Does a SENTINEL weapon have an aiming state, and does the beam ammo rule hold?
+
+Two questions the wiki does not answer, both raised on 2026-08-01, both about
+weapons already in the roster.
+
+### (a) Aiming
+
+`Sentinel` says nothing about it. What the data says instead: **Verglas Prime's
+stat table has no Zoom row and no Recoil row** — the two stats an aim state
+exists to change — and a companion is never held by the player. So there is
+reason to think a sentinel weapon simply has no aimed state, and every
+`while_aiming` effect on one is dead.
+
+**What it is worth today: nothing.** All four aim-gated rifle mods (Argon
+Scope, Galvanized Scope, Bladed Rounds, Catalyzer Link) are CONDITIONAL buffs,
+and a sentinel runs `StackPolicy::BaseOnly`, so their triggers never fire
+whatever the Aiming box says. The toggle moves no number on Verglas Prime —
+measured. It becomes load-bearing the day a FLAT aim-gated effect can reach a
+sentinel weapon (Critical Focus is one, but it is Arch-Gun only).
+
+**Status:** unverified, and deliberately NOT implemented as a rule. The box
+stays live rather than being forced off on a guess — the same reasoning that
+kept `zodiac_shred` at `exilus: false` in M17, applied to the other direction:
+here the safe error is to leave the visible control alone, because forcing it
+would assert a mechanic no source states.
+
+**What settles it:** equip a flat aim-gated mod on a sentinel weapon and read
+the arsenal panel, or watch a Galvanized Scope stack land on one.
+
+### (b) The 0.5-per-trace beam ammo cost — IMPLEMENTED, needs confirming
+
+`ammo_cost` was read for the first time on 2026-08-01 (it had sat in every
+weapon file while the sim spent a flat 1.0). The values come from the wiki:
+"Beam Weapons consume 0.5 ammo per trace — unless they are Flamethrowers",
+and the Larkspur Prime page states both of its own numbers, "0.5 per primary
+tick" against "Alt-fire consumes 10 ammo per shot".
+
+What changed, all exact:
+
+| | before | after |
+|---|---|---|
+| Larkspur Prime, primary | 500 ticks to dry | **1000** (500 rounds ÷ 0.5) |
+| Larkspur Prime, alt-fire | 118 shots / 120 s | **50** (500 rounds ÷ 10) |
+| Verglas Prime | 14 reloads / 120 s | **8** (80 magazine ÷ 0.5 = 160 ticks) |
+
+The Torid's Incarnon form keeps 1.0 per tick — that one IS measured (the
+charge pool is not ammo, see MECHANICS "Continuous ammo cost").
+
+**What settles it:** fire a full Larkspur Prime magazine on the ground and
+count the ticks — 100 rounds should give 200. Then one alt-fire shot and read
+the magazine: 100 → 90.
+
+**Result:** _not yet run._

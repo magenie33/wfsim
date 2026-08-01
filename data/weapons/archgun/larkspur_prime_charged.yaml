@@ -50,7 +50,11 @@ attack:
   projectile_speed_mps: 100
   fire_rate: 2.0
   multishot: 1.0
-  ammo_cost: 1
+  # "Alt-fire consumes 10 ammo per shot" (wiki Larkspur Prime) — TEN, against
+  # 0.5 for the primary tick. On a 100-round magazine that is 10 shots, not
+  # 100, and with the ground column's finite 400 reserve the whole engagement
+  # is 50 alt-fire shots. The sim spent a flat 1.0 until 2026-08-01.
+  ammo_cost: 10
   crit_chance: 0.28
   crit_multiplier: 2.2
   status_chance: 0.38
