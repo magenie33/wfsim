@@ -2941,7 +2941,23 @@ function clearFamMarks(id) {
 }
 const reqCountMain = () => Object.values(opt.mods).filter((s) => s === "fixed").length;
 const exilusPinned = () => Object.keys(opt.exilus).find((id) => opt.exilus[id] === "fixed") || null;
-const arcanePinned = () => Object.keys(opt.arcanes).find((id) => opt.arcanes[id] === "fixed") || null;
+// The arcane pinned in a given POOL. A weapon with two slots has two
+// independent pins — one Primary and one Secondary — so the question only
+// means something with a pool attached.
+const arcanePinnedIn = (pool) =>
+  Object.keys(opt.arcanes).find(
+    (id) => opt.arcanes[id] === "fixed" && (arcaneById(id) || {}).slot === pool,
+  ) || null;
+/// Options this pool contributes to the search: a pin is one, otherwise the
+/// marked ones PLUS the empty choice — "no arcane in this slot" is always
+/// reachable, so a scope never forces a slot to be filled.
+const arcaneOptionsIn = (pool) => {
+  if (arcanePinnedIn(pool)) return 1;
+  const marked = Object.keys(opt.arcanes).filter(
+    (id) => opt.arcanes[id] === "search" && (arcaneById(id) || {}).slot === pool,
+  ).length;
+  return marked + 1;
+};
 const evoPinned = (tier) => { const m = opt.evos[tier] || {}; return Object.keys(m).find((id) => m[id] === "fixed") || null; };
 
 function renderOpt() {
@@ -3096,10 +3112,8 @@ function renderOptExilus() {
 // what searches the empty slot, so there is no "None" row to mark.
 function renderOptArcanes() {
   const q = ($("opt-arc-filter") && $("opt-arc-filter").value || "").trim().toLowerCase();
-  const hits = arcanePool().filter((a) => !q || searchBlob(a).includes(q));
-  const pinned = arcanePinned();
-  const hasPool = Object.values(opt.arcanes).some((s) => s === "search");
-  $("opt-arcanes").innerHTML = hits.map((a) => {
+  const pools = arcanePools();
+  const row = (a, pinned, hasPool) => {
     const st = opt.arcanes[a.id] || "off";
     // Neither mark blocks the other: clicking one rewrites the group
     // (setSingleSlotMark), so every seg here is live.
@@ -3112,11 +3126,42 @@ function renderOptArcanes() {
         <span class="seg ${st === "fixed" ? "on" : ""}" data-a="${a.id}" data-s="fixed" ${hasPool ? `title="${escHtml(tr("req pins the slot — the pool marks give way"))}"` : ""}>${tr("req")}</span>
       </div>
     </div>`;
-  }).join("");
+  };
+  // ONE SECTION PER SLOT. An arcane belongs to exactly one pool, so the flat
+  // `opt.arcanes` map already says which slot each mark is for — what has to
+  // be per-pool is the RULE: "req pins the slot" pins THAT slot, and a pin in
+  // the Primary section has nothing to do with the Secondary one. The section
+  // header is drawn only when there is more than one, as everywhere else.
+  $("opt-arcanes").innerHTML = pools
+    .map((pool, i) => {
+      const inPool = arcanePool(i).filter((a) => !q || searchBlob(a).includes(q));
+      const ids = new Set(arcanePool(i).map((a) => a.id));
+      const marks = Object.keys(opt.arcanes).filter((id) => ids.has(id));
+      const pinned = marks.find((id) => opt.arcanes[id] === "fixed") || null;
+      const hasPool = marks.some((id) => opt.arcanes[id] === "search");
+      const head = pools.length > 1
+        ? `<div class="menu-head">${escHtml(tr(SLOT_LABEL[pool] || pool))}</div>`
+        : "";
+      const rows = inPool.map((a) => row(a, pinned, hasPool)).join("")
+        || `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
+      return `<div class="menu-sect">${head}${rows}</div>`;
+    })
+    .join("");
   $("opt-arcanes").querySelectorAll(".seg:not(.dis)").forEach((el) =>
     el.addEventListener("click", (e) => {
       e.stopPropagation();
-      setSingleSlotMark(opt.arcanes, el.dataset.a, el.dataset.s);
+      // The group is this arcane's OWN pool: pinning a Primary must not
+      // clear a Secondary mark, because they fill different slots.
+      const own = arcaneById(el.dataset.a);
+      const group = {};
+      Object.keys(opt.arcanes).forEach((id) => {
+        if ((arcaneById(id) || {}).slot === (own || {}).slot) group[id] = opt.arcanes[id];
+      });
+      setSingleSlotMark(group, el.dataset.a, el.dataset.s);
+      Object.keys(opt.arcanes).forEach((id) => {
+        if ((arcaneById(id) || {}).slot === (own || {}).slot) delete opt.arcanes[id];
+      });
+      Object.assign(opt.arcanes, group);
       renderOptArcanes(); updateOptEstimate(); fetchOptBuffs();
     }));
 }
@@ -3419,8 +3464,10 @@ function updateOptEstimate() {
   const exOptions = exFixed ? 1 : Math.max(1, exSearch);
   // Required in BOTH blocks = impossible (a mod equips once).
   const dupReq = exFixed && opt.mods[exFixed] === "fixed" ? exFixed : null;
-  const arcCount = arcanePinned() ? 1
-    : Math.max(1, Object.values(opt.arcanes).filter((s) => s === "search").length);
+  // Slots MULTIPLY: a weapon that seats two arcanes is searched over pairs,
+  // because the best Primary and the best Secondary are not independent
+  // questions.
+  const arcCount = arcanePools().reduce((n, p) => n * arcaneOptionsIn(p), 1);
   let evoProduct = 1;
   (weaponEvos()).forEach((t) => {
     const m = opt.evos[t.tier] || {};
@@ -3521,8 +3568,13 @@ async function runOptimize() {
       const ids = f ? [f] : Object.keys(m).filter((id) => m[id] === "search");
       if (ids.length) evolutions[t] = ids;
     });
-    const arcFixed = arcanePinned();
-    const arcs = arcFixed ? [arcFixed] : Object.keys(opt.arcanes).filter((id) => opt.arcanes[id] === "search");
+    // The MARKS, like `mods` and `exilus` — a pin means "this slot is
+    // settled", which a flat list of ids cannot say. The server splits them
+    // by pool and takes the product.
+    const arcs = {};
+    Object.keys(opt.arcanes).forEach((id) => {
+      if (opt.arcanes[id] && opt.arcanes[id] !== "off") arcs[id] = opt.arcanes[id];
+    });
     // Buffs configured over the whole scope (opt.buffs), pruned to the current scope's ids.
     const buffs = {};
     optBuffList.forEach((b) => { const c = opt.buffs[b.id]; if (c) buffs[b.id] = { stacks: c.stacks, locked: c.locked }; });
@@ -3531,7 +3583,7 @@ async function runOptimize() {
       mods: opt.mods,
       rivens: rivenPayload(),
       build_size: opt.size,
-      arcanes: arcs.length ? arcs : ["none"],
+      arcanes: arcs,
       evolutions,
       exilus: opt.exilus,
       enemy: optSim.enemy, level: optSim.level, steel_path: optSim.steel_path,
@@ -3715,7 +3767,13 @@ function renderOptResults(r) {
   const rows = (r.results || []).map((res) => {
     const ex = res.exilus && res.exilus !== "none" ? `, ${modName(res.exilus)} (exilus)` : "";
     const mods = res.mods.map(modName).join(", ") + ex;
-    const arc = res.arcane === "none" ? "no arcane" : `${arcName(res.arcane)} r${res.arcane_rank}`;
+    // One id per slot: name the ones that are filled, or say there are none.
+    const arcNames = asArcaneList(res.arcane, (res.arcane || []).length)
+      .map((id, i) => (id && id !== "none"
+        ? `${arcName(id)} r${asArcaneList(res.arcane_rank, i + 1)[i] ?? ""}`
+        : ""))
+      .filter(Boolean);
+    const arc = arcNames.join(" + ") || tr("no arcane");
     const evos = (res.evolutions || []).map(evoName).join(" · ") || "—";
     return `<div class="opt-row">
       <div class="opt-head">
@@ -3759,18 +3817,12 @@ function resultToState(res) {
   return {
     weapon: $("weapon").value,
     evoSel: evo,
-    // The optimizer searches ONE arcane axis, so a result names one arcane —
-    // seat it in the slot whose POOL it belongs to. On an Arch-Gun the scope
-    // may legitimately have offered a Secondary, and dropping it into slot 0
-    // (Primary) would have thrown a valid result away.
-    ...(() => {
-      const pools = arcanePools($("weapon").value);
-      const at = res.arcane === "none" ? -1 : pools.indexOf((arcaneById(res.arcane) || {}).slot);
-      return {
-        arcane: pools.map((_, i) => (i === at ? res.arcane : "none")),
-        arcaneRank: pools.map((_, i) => (i === at ? (res.arcane_rank ?? null) : null)),
-      };
-    })(),
+    // The optimizer reports one id PER SLOT, in the same pool order the
+    // builder uses — so applying a result is a copy, not a translation.
+    arcane: asArcaneList(res.arcane, arcanePools($("weapon").value).length)
+      .map((x) => x || "none"),
+    arcaneRank: asArcaneList(res.arcane_rank, arcanePools($("weapon").value).length)
+      .map((x) => x ?? null),
     slots: sl,
     // The optimizer's per-buff config rides along — otherwise "add then
     // Run Sim" silently reverts to the Sim panel's own defaults and the

@@ -2421,11 +2421,10 @@ pub fn opt_buffs_json(v: &Value) -> Value {
     let none = wfsim_engine::arcanes_data::ArcaneFx::none();
     merge(&mut out, enumerate_buffs(&refs, &none, info));
     let arc_base = WeaponBase::from_data(&info.id, true, &[]);
-    if let Some(arr) = v.get("arcanes").and_then(|x| x.as_array()) {
-        for a in arr.iter().filter_map(|x| x.as_str()) {
-            if a == "none" {
-                continue;
-            }
+    // The scope is a MARK MAP (id -> "search" | "fixed"), the same shape as
+    // `mods`; every marked arcane's buffs are configurable, pins included.
+    if let Some(obj) = v.get("arcanes").and_then(|x| x.as_object()) {
+        for a in obj.keys().filter(|k| k.as_str() != "none") {
             if let Some(def) = arcane_in_pools(info, a) {
                 let fx = def.fx(def.max_rank, StackPolicy::Emergent, arc_base.traits);
                 merge(&mut out, enumerate_buffs(&[], &fx, info));
@@ -2471,6 +2470,10 @@ pub struct OptimizePlan {
     evo_sets: Vec<Vec<String>>,
     exilus_defs: Vec<Option<ModDef>>,
     arcanes: Vec<wfsim_engine::arcanes_data::ArcaneFx>,
+    /// What each entry of `arcanes` IS, in pool order — one id per slot,
+    /// "none" for an empty one. The effects are merged and cannot be read
+    /// back apart, so the naming travels beside them.
+    arcane_sets: Vec<Vec<String>>,
     scenario: Scenario,
     final_runs: u32,
     finalists: usize,
@@ -2664,35 +2667,79 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     }
 
     // ---- arcane scope ----
-    let arc_ids: Vec<String> = v
+    // The same shape as `mods` and `exilus`: id -> "search" | "fixed". A pin
+    // says "this slot is settled", which a flat list of ids cannot say.
+    let arc_marks: Vec<(String, String)> = v
         .get("arcanes")
-        .and_then(|x| x.as_array())
-        .map(|a| {
-            a.iter()
-                .filter_map(|x| x.as_str().map(String::from))
+        .and_then(|x| x.as_object())
+        .map(|o| {
+            o.iter()
+                .filter_map(|(k, m)| m.as_str().map(|s| (k.clone(), s.to_string())))
                 .collect()
         })
-        .unwrap_or_else(|| vec!["none".into()]);
+        .unwrap_or_default();
     let arc_base = WeaponBase::from_data(&info.id, true, &[]);
+    // ONE AXIS PER SLOT, then their CROSS PRODUCT — a weapon that seats two
+    // arcanes is searched over pairs, because "the best Primary" and "the
+    // best Secondary" are not independent questions: an on-kill Secondary is
+    // worth more next to a Primary that gets you the kill.
+    //
+    // The funnel is untouched by this. Its arcane axis has always been a flat
+    // `Vec<ArcaneFx>` indexed by a job, and a merged pair IS one `ArcaneFx`
+    // (see `ArcaneFx::merged`) — so the product is built here and nothing
+    // downstream learns that a weapon can seat two.
+    //
     // An arcane the weapon cannot equip is DROPPED from the scope, not mapped
     // to the empty slot: collapsing it would search "no arcane" once per
     // rejected id and report those runs as if they had been real options.
-    let arcanes: Vec<wfsim_engine::arcanes_data::ArcaneFx> = arc_ids
+    // Each slot also always offers the EMPTY choice, so "one arcane, not two"
+    // stays reachable — the scope says what MAY be worn, not what must be.
+    let per_slot: Vec<Vec<(String, wfsim_engine::arcanes_data::ArcaneFx)>> = info
+        .arcane_pools
         .iter()
-        .filter_map(|id| {
-            if id == "none" {
-                return Some(wfsim_engine::arcanes_data::ArcaneFx::none());
+        .map(|pool| {
+            let mine: Vec<(&String, &String)> = arc_marks
+                .iter()
+                .filter(|(id, _)| wfsim_engine::arcanes_data::for_slot(pool, id).is_some())
+                .map(|(id, m)| (id, m))
+                .collect();
+            let fx = |id: &str| {
+                wfsim_engine::arcanes_data::for_slot(pool, id)
+                    .map(|d| d.fx(d.max_rank, StackPolicy::Emergent, arc_base.traits))
+                    .unwrap_or_else(wfsim_engine::arcanes_data::ArcaneFx::none)
+            };
+            // A PIN settles the slot: one option, and no empty choice.
+            if let Some((id, _)) = mine.iter().find(|(_, m)| m.as_str() == "fixed") {
+                return vec![((*id).clone(), fx(id))];
             }
-            arcane_in_pools(info, id)
-                .map(|def| def.fx(def.max_rank, StackPolicy::Emergent, arc_base.traits))
+            let mut opts = vec![("none".to_string(), wfsim_engine::arcanes_data::ArcaneFx::none())];
+            for (id, _) in mine.iter().filter(|(_, m)| m.as_str() == "search") {
+                opts.push(((*id).clone(), fx(id)));
+            }
+            opts
         })
         .collect();
-    // Every id was another slot's: search the empty slot rather than nothing.
-    let arcanes = if arcanes.is_empty() {
-        vec![wfsim_engine::arcanes_data::ArcaneFx::none()]
-    } else {
-        arcanes
-    };
+    // The product, in pool order: `arcane_sets[i]` names what `arcanes[i]` is.
+    let mut arcane_sets: Vec<Vec<String>> = vec![Vec::new()];
+    let mut arcanes: Vec<wfsim_engine::arcanes_data::ArcaneFx> =
+        vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
+    for slot in &per_slot {
+        let mut ids = Vec::new();
+        let mut fxs = Vec::new();
+        for (set, fx) in arcane_sets.iter().zip(arcanes.iter()) {
+            for (id, add) in slot {
+                let mut s = set.clone();
+                s.push(id.clone());
+                ids.push(s);
+                fxs.push(wfsim_engine::arcanes_data::ArcaneFx::merged(&[
+                    fx.clone(),
+                    add.clone(),
+                ]));
+            }
+        }
+        arcane_sets = ids;
+        arcanes = fxs;
+    }
 
     // No cap (user: allow spending local resources). The funnel handles large
     // spaces by culling obviously-bad combos in cheap early rounds.
@@ -2786,6 +2833,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         evo_sets,
         exilus_defs,
         arcanes,
+        arcane_sets,
         scenario,
         final_runs,
         finalists,
@@ -2901,6 +2949,7 @@ pub fn run_optimize_resumable(
         evo_sets,
         exilus_defs,
         arcanes,
+        arcane_sets,
         scenario,
         final_runs,
         finalists,
@@ -2978,17 +3027,21 @@ pub fn run_optimize_resumable(
     // as a completed one — same fields, same renderer.
     let entry = |rank: usize, c: &Candidate, ai: usize, s: &Summary| -> Value {
         let mods: Vec<&str> = c.ordered.iter().map(|&i| pool[i].id).collect();
-        let arc = &arcanes[ai];
-        let (arcane_id, arcane_rank) = if arc.id.is_empty() {
-            ("none".to_string(), 0)
-        } else {
-            (
-                arc.id.clone(),
-                wfsim_engine::arcanes_data::secondary(&arc.id)
+        // One id per slot, in pool order — the same shape the builder takes,
+        // because "apply this result" should be a copy and not a translation.
+        let ids: Vec<String> = arcane_sets
+            .get(ai)
+            .cloned()
+            .unwrap_or_else(|| vec!["none".to_string()]);
+        let ranks: Vec<u32> = ids
+            .iter()
+            .map(|id| {
+                wfsim_engine::arcanes_data::slot_of(id)
+                    .and_then(|s| wfsim_engine::arcanes_data::for_slot(s, id))
                     .map(|d| d.max_rank)
-                    .unwrap_or(0),
-            )
-        };
+                    .unwrap_or(0)
+            })
+            .collect();
         json!({
             "rank": rank + 1,
             "kills": s.mean_kills,
@@ -2997,8 +3050,8 @@ pub fn run_optimize_resumable(
             "kills_min": s.min_kills,
             "kills_max": s.max_kills,
             "mods": mods,
-            "arcane": arcane_id,
-            "arcane_rank": arcane_rank,
+            "arcane": ids,
+            "arcane_rank": ranks,
             "evolutions": evo_sets[c.variant as usize],
             "exilus": exilus_defs[c.exilus as usize].as_ref().map(|m| m.id).unwrap_or("none"),
             "forma": { "used": c.plan.forma_used, "total_drain": c.plan.total_drain },
