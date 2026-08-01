@@ -1162,10 +1162,22 @@ impl DummyParams {
         if let Some(b) = self.fr_on_reload.as_mut() {
             set_timed(b, cfg, "on_reload_fr");
         }
-        let aid = self.arcane.id.clone();
-        let multi = self.arcane.buffs.len() > 1;
-        for (i, spec) in self.arcane.buffs.iter_mut().enumerate() {
-            let id = if multi {
+        // Keyed off the buff's OWN arcane and its index WITHIN that arcane:
+        // a weapon may seat two (an Arch-Gun), and a key built from the
+        // merged set's id and a global index would rename every buff the
+        // moment a second arcane joined.
+        let counts = self.arcane.buffs.iter().fold(
+            std::collections::BTreeMap::<String, usize>::new(),
+            |mut m, b| {
+                *m.entry(b.owner.clone()).or_default() += 1;
+                m
+            },
+        );
+        let mut seen = std::collections::BTreeMap::<String, usize>::new();
+        for spec in self.arcane.buffs.iter_mut() {
+            let aid = spec.owner.clone();
+            let i = *seen.entry(aid.clone()).and_modify(|n| *n += 1).or_insert(0);
+            let id = if counts.get(&aid).copied().unwrap_or(0) > 1 {
                 format!("arcane:{aid}:{i}")
             } else {
                 format!("arcane:{aid}")
@@ -4617,6 +4629,7 @@ mod tests {
         let p = |all_drop: bool| DummyParams {
             arcane: ArcaneFx {
                 buffs: vec![ArcBuffSpec {
+                owner: "test".into(),
                     grant: ArcGrant::Multishot,
                     trigger: ArcTrigger::ToxinStatus,
                     per_stack: 1.0,
@@ -5884,6 +5897,7 @@ mod tests {
         // +50% x 2 pinned stacks = +100% of the part's base crit damage.
         let buff = ArcaneFx {
             buffs: vec![ArcBuffSpec {
+                owner: "test".into(),
                 grant: ArcGrant::CritDamage,
                 trigger: ArcTrigger::ToxinStatus,
                 per_stack: 0.5,

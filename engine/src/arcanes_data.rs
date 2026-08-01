@@ -128,6 +128,11 @@ pub enum ArcTrigger {
 /// One emergent stacking buff, resolved at a rank.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ArcBuffSpec {
+    /// The arcane that granted this buff. A weapon may seat MORE THAN ONE
+    /// (an Arch-Gun takes a Primary and a Secondary), and the per-buff config
+    /// key is `arcane:<owner>[:<index within that arcane>]` — so the buff has
+    /// to carry its origin or merging two arcanes would lose which is which.
+    pub owner: String,
     pub grant: ArcGrant,
     pub trigger: ArcTrigger,
     pub per_stack: f64,
@@ -224,6 +229,56 @@ impl Default for ArcaneFx {
 impl ArcaneFx {
     pub fn none() -> Self {
         Self::default()
+    }
+
+    /// Fold several arcanes into ONE effect set.
+    ///
+    /// An Arch-Gun seats two — "Archguns possess two Arcane Enhancement slots
+    /// to equip one Primary Arcane and one Secondary Arcane" (wiki Arch-Gun)
+    /// — and two arcanes stack the way two mods do: their buckets add and
+    /// their buffs coexist. So the SIM never has to learn that a weapon can
+    /// have more than one; it reads one `ArcaneFx`, as it always has.
+    ///
+    /// Every field folds the way its own mechanic does:
+    /// - additive buckets SUM (`cc_rel`, `reload_bonus`, …)
+    /// - multipliers MULTIPLY (`final_mult`, `overguard_mult` — 1.0 = none)
+    /// - the buff lists CONCATENATE, each spec carrying its `owner` so a
+    ///   per-buff config key still names the arcane it came from
+    /// - a per-arcane PERK (`enervate_rank`) is whichever states one; no two
+    ///   arcanes carry the same perk, so there is nothing to combine
+    ///
+    /// `id` becomes a joined name for display only — the config keys read
+    /// `owner`, not this.
+    pub fn merged(parts: &[ArcaneFx]) -> ArcaneFx {
+        let live: Vec<&ArcaneFx> = parts.iter().filter(|a| !a.id.is_empty()).collect();
+        match live.len() {
+            0 => ArcaneFx::none(),
+            1 => live[0].clone(),
+            _ => {
+                let mut out = ArcaneFx {
+                    id: live.iter().map(|a| a.id.as_str()).collect::<Vec<_>>().join("+"),
+                    ..ArcaneFx::none()
+                };
+                for a in live {
+                    out.buffs.extend(a.buffs.iter().cloned());
+                    out.enervate_rank = out.enervate_rank.or(a.enervate_rank);
+                    out.headshot_mult_bonus += a.headshot_mult_bonus;
+                    out.reload_bonus += a.reload_bonus;
+                    out.cc_rel += a.cc_rel;
+                    out.cd_rel += a.cd_rel;
+                    out.weakpoint_cc_rel += a.weakpoint_cc_rel;
+                    out.per_cold_bd += a.per_cold_bd;
+                    out.cold_cap = out.cold_cap.max(a.cold_cap);
+                    out.flat_damage_on_status += a.flat_damage_on_status;
+                    out.encumber_chance += a.encumber_chance;
+                    out.cold_burst_on_puncture += a.cold_burst_on_puncture;
+                    out.ammo_efficiency += a.ammo_efficiency;
+                    out.final_mult *= a.final_mult;
+                    out.overguard_mult *= a.overguard_mult;
+                }
+                out
+            }
+        }
     }
 }
 
@@ -451,6 +506,7 @@ impl ArcaneDef {
                     // attack part's own base (CritDamage, StatusChance).
                     let per_stack = scale.at(rank, self.max_rank);
                     fx.buffs.push(ArcBuffSpec {
+                        owner: self.id.clone(),
                         grant: *grant,
                         trigger: *trigger,
                         per_stack,
@@ -813,6 +869,65 @@ pub fn for_slot(slot: &str, id: &str) -> Option<&'static ArcaneDef> {
 
 #[cfg(test)]
 mod tests {
+    /// Two arcanes on one weapon are ONE effect set — which is why the sim
+    /// never learns that an Arch-Gun seats two ("Archguns possess two Arcane
+    /// Enhancement slots to equip one Primary Arcane and one Secondary
+    /// Arcane", wiki Arch-Gun). Each field folds the way its own mechanic
+    /// does, and the merge is lossless: a buff still names the arcane that
+    /// granted it, so a per-buff config key does not move when a second
+    /// arcane joins.
+    #[test]
+    fn two_arcanes_fold_into_one_effect_set() {
+        let a = ArcaneFx {
+            id: "a".into(),
+            cc_rel: 0.3,
+            reload_bonus: 0.2,
+            final_mult: 2.0,
+            buffs: vec![ArcBuffSpec {
+                owner: "a".into(),
+                grant: ArcGrant::BaseDamage,
+                trigger: ArcTrigger::Kill,
+                per_stack: 0.1,
+                max_stacks: 3,
+                duration: 5.0,
+                all_drop: false,
+                initial_stacks: 3,
+                pinned: false,
+            }],
+            ..ArcaneFx::none()
+        };
+        let b = ArcaneFx {
+            id: "b".into(),
+            cc_rel: 0.5,
+            final_mult: 3.0,
+            enervate_rank: Some(5),
+            ..ArcaneFx::none()
+        };
+
+        let m = ArcaneFx::merged(&[a.clone(), b.clone()]);
+        assert!((m.cc_rel - 0.8).abs() < 1e-9, "additive buckets SUM");
+        assert!((m.reload_bonus - 0.2).abs() < 1e-9);
+        assert!((m.final_mult - 6.0).abs() < 1e-9, "multipliers MULTIPLY");
+        assert_eq!(m.enervate_rank, Some(5), "a perk is whichever states one");
+        assert_eq!(m.buffs.len(), 1);
+        assert_eq!(m.buffs[0].owner, "a", "the buff still names its arcane");
+
+        // One arcane is itself, untouched — the common case must not go
+        // through a fold that could round or rename anything.
+        let one = ArcaneFx::merged(&[a.clone(), ArcaneFx::none()]);
+        assert_eq!(one.id, "a");
+        assert!((one.final_mult - 2.0).abs() < 1e-9);
+
+        // None at all is none, not an identity element with a joined name.
+        assert_eq!(ArcaneFx::merged(&[]).id, "");
+        assert_eq!(ArcaneFx::merged(&[ArcaneFx::none()]).id, "");
+
+        // Order does not change the result.
+        let rev = ArcaneFx::merged(&[b, a]);
+        assert!((rev.cc_rel - m.cc_rel).abs() < 1e-9);
+        assert!((rev.final_mult - m.final_mult).abs() < 1e-9);
+    }
+
     use super::*;
 
     const NO_TRAITS: &[&str] = &[];
