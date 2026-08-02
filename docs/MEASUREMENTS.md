@@ -931,3 +931,21 @@ dimmed, with a tooltip explaining the band; only the second pass (the leaders,
 at a tenth of the scenario's count) prints a bare number. The two-pass design
 was already right; what was wrong was presenting its cheap half with the same
 authority as its careful half.
+
+## M25 — Spectral Serration paid +330% to builds that were not invisible (2026-08-02)
+
+Third of the same shape (M22 Primary Acuity, M23 Semi-Rifle Cannonade). The
+card is "+330% Damage **while Invisible**"; the file was a flat
+`base_damage_bonus`, so every build collected it.
+
+Invisibility is a WARFRAME state and this is a weapon calculator, so it takes
+the shape every unevaluable condition takes: an unhandled `trigger` resolves to
+`CondBuff(BaseDamage)` — the panel shows it at full value under its
+assumed-max policy, and the SIMULATION contributes nothing. Verified: Torid,
+Thrax Lv 300 SP, 120 s, 100 runs — 0.2865 with no fifth mod, **0.2865 with
+Spectral Serration**, 0.3437 with plain Serration.
+
+The condition test from M22 walked past it, because it knew the two phrases it
+had been written for ("Weak Point", "when/while Aiming"). It now flags ANY
+"while/when …" clause on a card whose effects carry no condition and no
+trigger — verified to fail on this mod.

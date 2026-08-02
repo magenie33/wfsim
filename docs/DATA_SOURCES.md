@@ -353,3 +353,28 @@ did not write it:
 Equippability beyond the pool (a mod a weapon may not take even though the
 pool offers it) is `excludes_weapon` / `requires_weapon`, and the export does
 not carry those tags — they come from the wiki page, one mod at a time.
+
+## Equippability: the wiki module is the only structured source (2026-08-02)
+
+A mod's `excludes_weapon` mirrors DE's own incompatibility tags. The WFCD
+export does NOT carry them — it has `compatName` (which pool) and nothing
+about what a mod refuses. The wiki's **`Module:Mods/data`** does, as
+`IncompatibilityTags`, the same list the mod infobox prints:
+
+    curl "https://wiki.warframe.com/index.php?title=Module:Mods/data&action=raw"
+
+157 entries in it carry tags; 13 of those are mods we have, and after this
+pass all 13 match our files exactly. Eleven were missing before it
+(`power_weapon` on Aerial Ace, Argon Scope, Bladed Rounds, Catalyzer Link,
+Galvanized Scope/Crosshairs, Hydraulic Crosshairs, Sharpened Bullets, Eject
+Magazine; `modular_gun` on Semi-Rifle Cannonade; `sentinel_mod`/`singleshot`
+on Synth Charge). Only `sentinel_weapon` is consulted by the pool filter
+today — the rest are recorded because the tag is the fact, and a weapon class
+that reads them can arrive later.
+
+**A fetched PROSE summary is not a source.** Primary Acuity briefly carried
+`excludes_weapon: [sentinel_weapon, power_weapon]` on the strength of a
+page-summary that read "cannot be equipped on sentinel or companion weapons".
+The page's own wikitext says nothing of the kind and the module gives the mod
+no tags at all. Both structured sources agreed and the sentence was invented.
+Use the module, or the raw `action=raw` wikitext — never a summary of either.

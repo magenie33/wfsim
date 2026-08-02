@@ -6,6 +6,11 @@ base_drain: 4                 # max drain 9 at rank 5
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Rifle/Event/CritDamageWhileAimingRifleMod
 description: "On Kill:\n+X% Critical Damage when Aiming for Xs"
+# DE's own incompatibility tags, from the wiki's `Module:Mods/data`
+# (`IncompatibilityTags`) — the same list the mod infobox prints. The
+# WFCD export carries no such field, so this module is the only
+# structured source for what a mod REFUSES to be equipped on.
+excludes_weapon: [power_weapon]
 
 effects:
   # CONDITIONAL - pistol twin Sharpened Bullets, but the rifle grants +120%

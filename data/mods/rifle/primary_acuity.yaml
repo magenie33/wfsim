@@ -6,11 +6,12 @@ base_drain: 6                 # max drain 16 at rank 10
 max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponWeakpointCriticalChanceMod
 description: "+X% Weak Point Damage\n+X% Weak Point Critical Chance. Multishot cannot be modified."
-# "It cannot be equipped on sentinel or companion weapons — only primary
-# rifles" (wiki). Without this a sentinel weapon could take it, and since the
-# bonuses below are weak-point only and a sentinel never aims at a head, it
-# would have been a mod that equips, costs capacity and does nothing.
-excludes_weapon: [sentinel_weapon, power_weapon]
+# NO `excludes_weapon`. A first pass here carried
+# `[sentinel_weapon, power_weapon]` on the strength of a summary that read
+# "cannot be equipped on sentinel or companion weapons" — the page's own
+# wikitext says no such thing, and `Module:Mods/data` gives this mod NO
+# IncompatibilityTags at all. Both structured sources agree it is a plain
+# Rifle mod, so it is offered wherever rifle mods are.
 disables: [multishot]    # locks Multishot from being modified while equipped
 
 effects:

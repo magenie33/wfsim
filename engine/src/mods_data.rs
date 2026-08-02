@@ -984,13 +984,33 @@ mod class_tests {
                     .join("\n"),
                 None => String::new(),
             };
+            let has_damage = DAMAGE_KINDS.iter().any(|k| effects.contains(k));
             if desc.contains("weak point") && !effects.contains("weakpoint_") {
                 bad.push(format!("{id}: card says Weak Point, no weakpoint_* effect"));
             }
-            let aiming = desc.contains("when aiming") || desc.contains("while aiming");
-            let has_damage = DAMAGE_KINDS.iter().any(|k| effects.contains(k));
-            if aiming && has_damage && !effects.contains("while_aiming") {
-                bad.push(format!("{id}: card says Aiming, damage effect is unconditional"));
+            // ANY "while/when <state>" clause, not the two phrases that
+            // happened to be known. Spectral Serration reads "+330% Damage
+            // while Invisible" and was a flat bonus every build collected —
+            // the check knew about aiming and weak points, so it walked past
+            // (user, 2026-08-02). A conditional is satisfied by a `condition:`,
+            // by a `trigger:` the sim can evaluate, or by resolving to a
+            // CondBuff — all three leave the word in the effects block.
+            let conditional = effects.contains("condition:") || effects.contains("trigger:");
+            if !conditional && has_damage {
+                for clause in ["while ", "when "] {
+                    if let Some(at) = desc.find(clause) {
+                        // "+X% Damage while Airborne" is a condition; "while
+                        // Aiming" is too. A sentence that merely CONTAINS the
+                        // word later (a note, not a gate) is why this looks
+                        // only at what follows it.
+                        let tail: String = desc[at..].chars().take(40).collect();
+                        bad.push(format!(
+                            "{id}: card gates on \"{}\" and no effect is conditional",
+                            tail.trim_end()
+                        ));
+                        break;
+                    }
+                }
             }
         }
         assert!(bad.is_empty(), "{} mod(s):\n  {}", bad.len(), bad.join("\n  "));

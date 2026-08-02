@@ -3723,11 +3723,14 @@ function gainScenario() {
   const p = ps.find((x) => x.name === gainPrefs.scenario)
     || ps.find((x) => x.name === activeScenario) || ps[0];
   const st = p ? { ...sim, ...p.state } : { ...sim };
-  // TWO PASSES, always: one run over everything, then the leaders again with
-  // a tenth of the scenario's runs. A ranking is cheap at the bottom and
-  // expensive at the top, and this spends accordingly.
-  const runs = 1;
-  const refine = Math.max(2, Math.ceil((st.runs || 1) / 10));
+  // TEN RUNS FOR EVERYTHING, one pass (user, 2026-08-02). It was one run over
+  // the field and then the leaders again — two numbers with two precisions,
+  // and the cheap one printed a minus sign in front of mods worth +40%
+  // (M24: a status mod swings ±39 points on a single run). Ten is where a
+  // status mod's answer stops being a coin flip; it is not where it stops
+  // moving, which is why every tooltip says so.
+  const runs = 10;
+  const refine = 0;
   // The WHOLE buff map travels, not just the current build's cards: a
   // candidate's buff is by definition not in `buffList`, and the scenario may
   // well have an opinion about it. Unmentioned buffs take their own default
@@ -3863,13 +3866,13 @@ const gainChipFor = (id, where) => {
   //
   // So the screen says "about", and only the second pass — the leaders, run
   // again with a tenth of the scenario's count — prints a bare number.
-  const rough = g.runs <= 1;
-  const why = rough
-    ? tr("a single screening run — the order is rough here, and a status mod can swing wide")
-    : tr("measured over {n} runs").replace("{n}", g.runs);
-  return `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}${g.runs > 1 ? " deep" : " rough"}" title="${escHtml(
-    `${where} · ${gainScan.metric} · ${gainScan.note} · ${g.runs}× — ${why}`)}">${
-    rough ? "≈" : ""}${gainPct(g.pct)}</span>`;
+  // EVERY number here is an average of a few runs, so every number reads the
+  // same way: approximate, and said to be. A status mod's payoff is decided by
+  // which procs land, and ten runs narrows that without settling it.
+  const why = tr("averaged over {n} runs — this number moves between scans, most of all for status mods")
+    .replace("{n}", g.runs);
+  return `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}" title="${escHtml(
+    `${where} · ${gainScan.metric} · ${gainScan.note} · ${why}`)}">≈${gainPct(g.pct)}</span>`;
 };
 
 /// The picker's ONE ordering rule, over whatever keys an axis has.

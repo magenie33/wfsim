@@ -15,6 +15,11 @@ max_rank: 3
 exilus: true
 internal_name: /Lotus/Upgrades/Mods/PvPMods/Pistol/PassiveReloadMod
 description: "+X% Magazine Reloaded/s when Holstered"
+# DE's own incompatibility tags, from the wiki's `Module:Mods/data`
+# (`IncompatibilityTags`) — the same list the mod infobox prints. The
+# WFCD export carries no such field, so this module is the only
+# structured source for what a mod REFUSES to be equipped on.
+excludes_weapon: [aoe, power_weapon]
 
 # +20% Magazine Reloaded/s while HOLSTERED. The sim fires one weapon
 # continuously (never holsters), so this is unmodeled; would matter for a
