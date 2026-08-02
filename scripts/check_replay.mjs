@@ -57,7 +57,8 @@ const r = await evaluate(`(async () => {
   const read = () => ({
     kpi: Object.fromEntries([...document.querySelectorAll('[data-kpi]')].map(e=>[e.dataset.kpi, e.textContent])),
     meter: [...document.querySelectorAll('#sim-results .mrow[data-mk]:not(.sub)')].map(e=>e.querySelector('.mval').textContent.trim()),
-    pools: document.getElementById('rp-pools').textContent.replace(/\s+/g,' ').trim(),
+    pools: [...document.querySelectorAll('#rp-pools .rp-cell b')].map(e=>e.textContent).join('|'),
+    hero: document.querySelector('[data-hero]').textContent,
   });
   const atEnd = read();
   // ...and the replay BELOW everything it drives.
@@ -89,15 +90,19 @@ check("one row per buff, drawn and open by default",
   r.rows.length === 1 && r.rows[0].open && r.rows[0].pts === 600, JSON.stringify(r.rows[0]));
 check("the header states average and uptime",
   /avg .*40/.test(r.rows[0].stat) && /uptime/.test(r.rows[0].stat), r.rows[0].stat);
-check("the replay sits BELOW everything it drives",
-  r.iBar > r.iMeter && r.iBar > r.iTable, JSON.stringify(r.kids));
+check("the replay sits ABOVE everything it drives",
+  r.iBar < r.iMeter && r.iBar < r.iTable, JSON.stringify(r.kids));
 check("it opens on the finished fight", r.nowAtEnd[0] === "40/40", String(r.nowAtEnd));
 check("rewinding empties the KPIs and the meter",
   r.atZero.kpi.shots === "0" && r.atZero.kpi.procs === "0" &&
   r.atZero.meter.every((v) => /^0 /.test(v)),
   JSON.stringify(r.atZero));
 check("...and the pools go back to full",
-  r.atZero.pools !== r.atEnd.pools && r.atZero.pools.includes("659,445"), r.atZero.pools);
+  r.atZero.pools !== r.atEnd.pools && r.atZero.pools.startsWith("659,445"), r.atZero.pools);
+check("the headline follows too", r.atZero.hero !== r.atEnd.hero,
+  r.atEnd.hero + " -> " + r.atZero.hero);
+check("the unit sits on the number's line",
+  /KPM|DPS/.test(r.atEnd.hero), r.atEnd.hero);
 check("returning to the end restores the panel exactly",
   JSON.stringify(r.restored) === JSON.stringify(r.atEnd),
   JSON.stringify(r.atEnd) + " vs " + JSON.stringify(r.restored));

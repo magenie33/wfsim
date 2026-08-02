@@ -5016,7 +5016,7 @@ function replayMarkup(r) {
     </div>`;
   }).join("");
   return `
-      <h3>${escHtml(tr("Replay"))} <span class="sim-hint">${escHtml(tr("play the median engagement back — everything above re-reads itself at the instant you stop on"))}</span></h3>
+      <h3>${escHtml(tr("Replay"))}</h3>
       <div class="rp-bar">
         <button id="rp-play" class="ghost-btn small rp-play">▶ ${escHtml(tr("play"))}</button>
         <select id="rp-speed">${REPLAY_SPEEDS.map((s) => `<option value="${s}"${s === 5 ? " selected" : ""}>${s}x</option>`).join("")}</select>
@@ -5047,12 +5047,37 @@ function replayApply(rp, i) {
 
   $("rp-clock").textContent = `${rp.t[i].toFixed(1)}s / ${rp.t[last].toFixed(0)}s`;
   $("rp-scrub").value = i;
+  // A FIXED GRID, not a flowing row (user, 2026-08-03). Every value here
+  // changes on every frame, and a flex row re-measures itself each time — the
+  // labels slide left and right for the whole playback, which reads as the
+  // page shaking. Fixed columns and tabular figures hold still, and the grid
+  // is what lets a second and third enemy join without a re-layout.
+  const cell = (label, v) =>
+    `<span class="rp-cell"><i>${escHtml(label)}</i><b>${v}</b></span>`;
   $("rp-pools").innerHTML =
-    `<span>${escHtml(tr("Overguard"))} <b>${n(rp.og[i])}</b></span>` +
-    `<span>${escHtml(tr("Shield"))} <b>${n(rp.sh[i])}</b></span>` +
-    `<span>${escHtml(tr("Health"))} <b>${n(rp.hp[i])}</b></span>` +
-    `<span>${escHtml(tr("Damage"))} <b>${n(rp.dmg[i])}</b></span>` +
-    `<span>${escHtml(tr("Kills"))} <b>${rp.kills[i]}</b></span>`;
+    cell(tr("Overguard"), n(rp.og[i])) +
+    cell(tr("Shield"), n(rp.sh[i])) +
+    cell(tr("Health"), n(rp.hp[i])) +
+    cell(tr("Damage"), n(rp.dmg[i])) +
+    cell(tr("Kills"), rp.kills[i]);
+
+  // The headline. KPM is `kill_progress / minutes`, and `kill_progress` is
+  // kills plus the fraction of the CURRENT target's pool already gone — which
+  // the frames carry directly, so it is derived here rather than shipped as a
+  // fourth series that could disagree with them.
+  const hero = document.querySelector("[data-hero]");
+  if (hero) {
+    const pool0 = (rp.og[0] || 0) + (rp.hp[0] || 0) + (rp.sh[0] || 0);
+    const left = (rp.og[i] || 0) + (rp.hp[i] || 0) + (rp.sh[i] || 0);
+    const progress = (rp.kills[i] || 0) + (pool0 > 0 ? 1 - left / pool0 : 0);
+    const mins = rp.t[i] / 60;
+    const v = hero.dataset.hero === "dps"
+      ? n((rp.kpi && rp.kpi.dps ? rp.kpi.dps[i] : 0))
+      : (mins > 0 ? progress / mins : 0).toFixed(2);
+    const unit = hero.querySelector(".hero-unit");
+    hero.textContent = v;
+    if (unit) hero.appendChild(unit);
+  }
 
   // KPIs. Rates are fractions, counters are counts, DPS is a number — the
   // key says which, so a new KPI needs no new branch here.
@@ -5186,7 +5211,11 @@ function renderResults(r, testedAt) {
   // the same way total damage sits beside DPS.
   const byDps = sim.metric === "dps";
   const heroNum = byDps ? n0(r.dps) : n2(kpm(r.score, r.duration));
-  const heroSub = (byDps ? `DPS · ${n2(kpm(r.score, r.duration))} KPM · ` : `KPM · `) +
+  // The UNIT belongs beside the number, not under it: "5.29" on one line and
+  // "KPM · …" starting the next read as two facts (user, 2026-08-03). Set
+  // small and spaced away, so it labels the figure without competing with it.
+  const heroUnit = byDps ? "DPS" : "KPM";
+  const heroSub = (byDps ? `${n2(kpm(r.score, r.duration))} KPM · ` : ``) +
     `${n2(r.score)} kill score in ${n0(r.duration)}s · ` + (killed
     ? `${n0(r.kills)} killed · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s avg per kill`
     : `${pc(r.score)} of one ${LN("enemies", sim.enemy, t.name || "enemy")}'s EHP drained`);
@@ -5294,12 +5323,13 @@ function renderResults(r, testedAt) {
   ].join("");
   $("sim-results").innerHTML = `
     <div class="results">
-      <div class="hero"><div><div class="hero-num">${heroNum}</div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
+      <div class="hero"><div><div class="hero-num" data-hero="${byDps ? "dps" : "kpm"}">${heroNum}<span class="hero-unit">${heroUnit}</span></div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
+      ${replay}
       <div class="kpi-row">${kpis}</div>
       <h3>${tr("Damage by source")}</h3>
       <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${chart}
       <h3>Detail</h3>
-      <div class="stat-table">${detail}</div>${replay}
+      <div class="stat-table">${detail}</div>
     </div>`;
   // Meter rows that carry a per-type split toggle theirs. The choice is kept
   // across runs — a player who opened Direct hits wants it open on the next

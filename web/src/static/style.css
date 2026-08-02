@@ -658,8 +658,14 @@ label.check input{width:auto}
 .rp-play{min-width:64px}
 .rp-scrub{flex:1;accent-color:var(--accent)}
 .rp-clock{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;min-width:96px;text-align:right}
-.rp-pools{display:flex;gap:14px;font-size:12px;flex-wrap:wrap;margin-bottom:8px}
-.rp-pools b{font-variant-numeric:tabular-nums}
+/* FIXED columns: every figure changes on every frame, and a flowing row
+   re-measures itself each time — the labels slide about for the whole
+   playback and the page reads as if it were shaking. This also has room for
+   a second and third enemy without a re-layout. */
+.rp-pools{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:2px 16px;font-size:12px;margin-bottom:8px}
+.rp-cell{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted var(--line);padding:2px 0}
+.rp-cell i{font-style:normal;color:var(--muted)}
+.rp-cell b{font-variant-numeric:tabular-nums;font-weight:600}
 .rp-row{border-top:1px solid var(--line);padding:5px 0}
 .rp-head{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px}
 .rp-head .rp-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -674,3 +680,5 @@ label.check input{width:auto}
    walking through has to stay legible while you walk it. */
 .tl-ahead,.rp-ahead{fill:var(--bg);opacity:.62}
 .tl-now{stroke:var(--text);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.55}
+/* The unit labels the figure without competing with it. */
+.hero-unit{font-size:14px;font-weight:600;letter-spacing:0;color:var(--muted);margin-left:16px;vertical-align:baseline}

@@ -69,12 +69,23 @@ The Simulator's result carries the MEDIAN engagement, frame by frame: the
 target's pools, every counter the panel reports, the damage meter's own
 composition, and **live stacks per buff**.
 
-**It sits at the BOTTOM and drives everything above it** (user, 2026-08-03).
+**It sits at the TOP and drives the whole panel** (user, 2026-08-03).
 The panel renders once at its finished state — hero, KPIs, damage meter, DPS
 curve, detail — and the replay re-reads all of it at whatever instant the
-cursor stops on: KPIs recount, the meter re-composes against the damage dealt
-SO FAR (a composition of a fight in progress is read against that fight, not
-against its end), both curves grey out everything past `t`, the pools refill.
+cursor stops on: the headline recounts, the KPIs recount, the meter
+re-composes against the damage dealt SO FAR (a composition of a fight in
+progress is read against that fight, not against its end), both curves grey
+out everything past `t`, the pools refill.
+
+Its own heading is the word "Replay" and nothing else — a transport control
+does not need explaining, and the sentence that was there took a line from the
+thing it was describing.
+
+The target's pools are a FIXED GRID, not a flowing row: every figure changes on
+every frame, and a flex row re-measures itself each time, so the labels slid
+about for the whole playback and the page read as if it were shaking. Fixed
+columns and tabular figures hold still — and leave room for a second and third
+enemy without a re-layout.
 Rewind to 0 and the panel reads as a fight that has not happened; return to the
 end and it is byte-identical to how it first rendered. That is what "replay"
 means — a cursor that only slid along a line would be a decoration.
