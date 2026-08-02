@@ -1047,6 +1047,36 @@ LANDED and the bump is gated on it. A capped stack list still counts —
 pushing past a cap replaces the oldest, which is an application; only Frozen
 returns false.
 
+**OPEN, and it decides most of what Frostbite is worth here.** That last
+sentence is an INFERENCE, not a source: nothing says a replace-oldest at the
+cap counts as "a Cold Status Effect applied" for an arcane trigger. The
+alternative reading is that the trigger needs the stack COUNT to rise, and the
+two disagree exactly where it matters most (user, 2026-08-02).
+
+An OVERGUARD holder caps Freeze at 4 and can never be Frozen (sourced —
+`data/debuffs/freeze.yaml`, "Bosses and Overguard holders cap at 4 stacks").
+So against one, the fix above never fires: Frozen never happens, and under our
+reading every Cold proc keeps stacking the arcane forever, pinning it at 40.
+Measured — Cernos Prime + Primed Cryo Rounds + a crit set, Thrax Lv 300 SP,
+300 s, 40 runs:
+
+| arcane | DPS |
+|---|---|
+| none | 19,951 |
+| Primary Frostbite | 51,684 (**x2.59**) |
+
+Under the other reading the arcane would stall at 4 triggers' worth and then
+decay on its 12 s all-drop timer, and that x2.59 largely collapses. On a normal
+enemy the two readings barely differ — the 10-stack cap is reached and Frozen
+takes over. On an overguard holder they differ by everything, and the roster's
+only enemy is an overguard holder.
+
+**The measurement**: in the Simulacrum, on an overguard enemy, apply Cold until
+the stack display pins at 4, then keep applying it and watch the Frostbite
+counter. Still climbing/refreshing ⇒ this model is right. Stuck ⇒ the trigger
+needs the count to rise, and `apply_cold_proc` has to report "the count went
+up" rather than "a status landed".
+
 **Measured impact: inside the noise floor.** Cernos Prime + Primed Cryo Rounds
 + Serration + Split Chamber + Point Strike + Vital Sense + Primary Frostbite,
 Thrax Steel Path, 300 s, 120 runs, seed 11 (KPM):
