@@ -2893,6 +2893,41 @@ function presetSources(domain, exceptWeapon) {
 // preset 1"). Restored across reloads.
 let activePreset = null;
 
+// A stored buff config outlives the RULE it was written under. Every stacking
+// buff used to open at full stacks; they open EARNED at zero now, and
+// `syncBuffConfig` only seeds an id it has never seen — so every scenario
+// saved before that change kept the old numbers and the new rule looked
+// broken on exactly the builds that had been tested most (user, 2026-08-03).
+//
+// One-time, and it drops the whole map rather than guessing which entries were
+// deliberate: `{stacks: 3}` on a 3-stack buff is what "never touched" and
+// "chose the maximum" both look like, and there is no third field to tell them
+// apart. Re-seeding from the server's defaults is the answer the rule change
+// promised; a wrong guess about intent is not.
+(function migrateBuffDefaults() {
+  const FLAG = "wfsim-buff-defaults-earned";
+  try {
+    if (localStorage.getItem(FLAG)) return;
+    Object.keys(localStorage)
+      .filter((k) => /^wfsim-presets-.*-(simulator-scenarios|builder-builds)$/.test(k))
+      .forEach((k) => {
+        const list = JSON.parse(localStorage.getItem(k));
+        if (!Array.isArray(list)) return;
+        let hit = false;
+        list.forEach((p) => {
+          if (p.state && p.state.buffs && Object.keys(p.state.buffs).length) {
+            p.state.buffs = {}; hit = true;
+          }
+          // Builds no longer carry a fight at all — drop the dead copy while
+          // we are here rather than leaving it to be misread later.
+          if (p.state && p.state.sim) { delete p.state.sim; hit = true; }
+        });
+        if (hit) localStorage.setItem(k, JSON.stringify(list));
+      });
+    localStorage.setItem(FLAG, "1");
+  } catch (_) { /* a browser with no storage has nothing to migrate */ }
+})();
+
 function initPresets() {
   migratePresetsToWeaponScope();
   let ps = loadPresetList(BUILDS);
@@ -4776,7 +4811,12 @@ function syncBuffConfig(list, cfg) {
 /// eleven at once.
 function buffCardName(name) {
   const [head, tail] = String(name).split(" (");
-  const owner = [...(META.mods || []), ...(META.arcanes || []),
+  // EVOLUTIONS grant buffs too (Overwhelming Attrition, Lethal Rearmament),
+  // and they were missing from this lookup — so those two cards were the only
+  // ones on the page still in English (user, 2026-08-03).
+  const evos = (weaponInfo($("weapon").value).evolutions || [])
+    .flatMap((tier) => tier.options || []);
+  const owner = [...(META.mods || []), ...(META.arcanes || []), ...evos,
     ...Object.values(META.mod_pools || {}).flat()]
     .find((x) => (x.name_en || x.name) === head);
   const label = owner ? owner.name : head;
@@ -4997,7 +5037,7 @@ let replayState = null; // { data, i, playing, speed, raf }
 
 function replayMarkup(r) {
   const rp = r && r.replay;
-  if (!rp || !rp.t || rp.t.length < 2) return "";
+  if (!rp || !rp.t || rp.t.length < 2) return { bar: "", curves: "" };
   // Buff names come from the CARDS — same ids, so the two can never disagree
   // about what a series is called.
   const named = (id) => {
@@ -5013,15 +5053,27 @@ function replayMarkup(r) {
     const pts = s.map((v, j) => `${px(j).toFixed(1)},${py(v).toFixed(1)}`).join(" ");
     const mean = s.reduce((a, v) => a + v, 0) / (s.length || 1);
     const up = s.filter((v) => v > 0).length / (s.length || 1);
+    // WHERE IT WAS OFF. A buff at zero is not a low buff, it is an absent one,
+    // and a flat line along the axis says that far too quietly — the run that
+    // never earned a stack and the run that lost them all draw the same
+    // picture (user, 2026-08-03). Every zero stretch gets a band.
+    const dead = [];
+    for (let j = 0; j < s.length; j++) {
+      if (s[j] > 0) continue;
+      const from = j;
+      while (j + 1 < s.length && s[j + 1] === 0) j++;
+      dead.push(`<rect class="rp-dead" x="${px(from).toFixed(1)}" y="0" width="${Math.max(1, px(j) - px(from)).toFixed(1)}" height="${H}"/>`);
+    }
     return `<div class="rp-row" data-buff="${i}">
       <div class="rp-head">
         <span class="rp-caret">▾</span>
         <span class="rp-name">${escHtml(named(b.id))}</span>
-        <span class="rp-stat">${escHtml(tr("avg"))} ${mean.toFixed(1)}/${b.max} · ${escHtml(tr("uptime"))} ${Math.round(up * 100)}%</span>
+        <span class="rp-stat">${escHtml(tr("avg"))} ${mean.toFixed(1)}/${b.max} · ${escHtml(tr("uptime"))} ${Math.round(up * 100)}%${up < 1 ? ` · <span class="rp-off">${escHtml(tr("inactive"))} ${Math.round((1 - up) * 100)}%</span>` : ""}</span>
         <span class="rp-now" data-now="${i}">${s[s.length - 1]}/${b.max}</span>
       </div>
       <div class="rp-chart">
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+          ${dead.join("")}
           <polygon class="rp-area" points="0,${H} ${pts} ${W},${H}"/>
           <polyline class="rp-line" points="${pts}"/>
           <rect class="rp-ahead" data-ahead="${i}" x="${W}" y="0" width="0" height="${H}"/>
@@ -5030,7 +5082,11 @@ function replayMarkup(r) {
       </div>
     </div>`;
   }).join("");
-  return `
+  // TWO pieces, deliberately far apart (user, 2026-08-03). The transport
+  // belongs at the top, next to the numbers it drives; the CURVES are charts
+  // and belong with the other chart, under the DPS curve. Moving both up put
+  // a wall of graphs above the result they explain.
+  const bar = `
       <h3>${escHtml(tr("Replay"))}</h3>
       <div class="rp-bar">
         <button id="rp-play" class="ghost-btn small rp-play">▶ ${escHtml(tr("play"))}</button>
@@ -5038,8 +5094,11 @@ function replayMarkup(r) {
         <input id="rp-scrub" class="rp-scrub" type="range" min="0" max="${rp.t.length - 1}" value="${rp.t.length - 1}">
         <span id="rp-clock" class="rp-clock">${rp.t[rp.t.length - 1].toFixed(0)}s / ${rp.t[rp.t.length - 1].toFixed(0)}s</span>
       </div>
-      <div class="rp-pools" id="rp-pools"></div>
+      <div class="rp-pools" id="rp-pools"></div>`;
+  const curves = `
+      <h3>${escHtml(tr("Buff coverage"))} <span class="sim-hint">${escHtml(tr("live stacks through the engagement"))}</span></h3>
       ${rows}`;
+  return { bar, curves };
 }
 
 // Re-read the WHOLE result panel at frame `i` — KPIs, the damage meter, the
@@ -5326,7 +5385,7 @@ function renderResults(r, testedAt) {
         <div class="tl-ymax">${n0(tlMax)}</div>
         <div id="tl-tip" class="tl-tip" hidden></div>
       </div>` : "";
-  const replay = replayMarkup(r);
+  const { bar: replayBar, curves: replayCurves } = replayMarkup(r);
   const row = (k, v) => `<div class="row"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   const detail = [
     row("Target", `${t.name || "?"} · Lv ${t.level}${t.steel_path ? " (SP)" : ""}`),
@@ -5339,10 +5398,10 @@ function renderResults(r, testedAt) {
   $("sim-results").innerHTML = `
     <div class="results">
       <div class="hero"><div><div class="hero-num" data-hero="${byDps ? "dps" : "kpm"}">${heroNum}<span class="hero-unit">${heroUnit}</span></div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
-      ${replay}
+      ${replayBar}
       <div class="kpi-row">${kpis}</div>
       <h3>${tr("Damage by source")}</h3>
-      <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${chart}
+      <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${chart}${replayCurves}
       <h3>Detail</h3>
       <div class="stat-table">${detail}</div>
     </div>`;

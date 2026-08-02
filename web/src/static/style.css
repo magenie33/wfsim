@@ -682,3 +682,8 @@ label.check input{width:auto}
 .tl-now{stroke:var(--text);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.55}
 /* The unit labels the figure without competing with it. */
 .hero-unit{font-size:14px;font-weight:600;letter-spacing:0;color:var(--muted);margin-left:16px;vertical-align:baseline}
+/* A buff at zero is ABSENT, not low — a flat line on the axis says that too
+   quietly, and the run that never earned a stack draws the same picture as
+   the one that lost them all. */
+.rp-dead{fill:var(--muted);opacity:.10}
+.rp-off{color:var(--muted)}

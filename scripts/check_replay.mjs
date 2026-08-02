@@ -67,6 +67,7 @@ const r = await evaluate(`(async () => {
   const iBar = [...res.children].findIndex(e=>e.classList.contains('rp-bar'));
   const iMeter = [...res.children].findIndex(e=>e.classList.contains('meter'));
   const iTable = [...res.children].findIndex(e=>e.classList.contains('stat-table'));
+  const iRow = [...res.children].findIndex(e=>e.classList.contains('rp-row'));
 
   // Rewind to the very start: the panel must read as a fight that has not
   // happened yet.
@@ -82,7 +83,7 @@ const r = await evaluate(`(async () => {
   document.getElementById('rp-play').click(); await sleep(1500);
   const movedTo = Number(document.getElementById('rp-scrub').value);
   document.getElementById('rp-play').click();
-  return { rows, atEnd, atZero, restored, nowAtEnd, movedTo, iBar, iMeter, iTable, kids,
+  return { rows, atEnd, atZero, restored, nowAtEnd, movedTo, iBar, iMeter, iTable, iRow, kids,
            clock: document.getElementById('rp-clock').textContent };
 })()`);
 if (r.fail) { console.log("FAIL  no replay section — sim-results:", r.resultsHtml); process.exit(1); }
@@ -90,8 +91,10 @@ check("one row per buff, drawn and open by default",
   r.rows.length === 1 && r.rows[0].open && r.rows[0].pts === 600, JSON.stringify(r.rows[0]));
 check("the header states average and uptime",
   /avg .*40/.test(r.rows[0].stat) && /uptime/.test(r.rows[0].stat), r.rows[0].stat);
-check("the replay sits ABOVE everything it drives",
+check("the replay BAR sits above everything it drives",
   r.iBar < r.iMeter && r.iBar < r.iTable, JSON.stringify(r.kids));
+check("...and the buff CURVES stay down with the other chart",
+  r.iRow > r.iMeter && r.iRow < r.iTable, JSON.stringify(r.kids));
 check("it opens on the finished fight", r.nowAtEnd[0] === "40/40", String(r.nowAtEnd));
 check("rewinding empties the KPIs and the meter",
   r.atZero.kpi.shots === "0" && r.atZero.kpi.procs === "0" &&
