@@ -208,6 +208,27 @@ ui:
   "not simulated yet": 尚未模拟
   "hip-fire": 腰射
   "headshots": 爆头
+  "choose the target": 选择目标
+  "no enemy matches": 没有匹配的目标
+  "Search a target…": 搜索目标…
+  "1 · The fight": 1 · 这场仗
+  "3 · Limits": 3 · 限制
+  "4 · Buffs": 4 · 增益
+  "5 · Simulation": 5 · 模拟
+  "The fight": 这场仗
+  "Limits": 限制
+  "Eximus": 精英
+  "Overguard": 超宏护盾
+  "Health": 生命
+  "Shield": 护盾
+  "Armor": 护甲
+  "Grineer": Grineer
+  "Corpus": Corpus
+  "Infested": 感染者
+  "Corrupted": 堕落者
+  "Murmur": 低语者
+  "Sentient": 意识体
+  "Headshot": 爆头
   "simulating this build in the current scenario…": 正在用当前场景模拟这套配装…
   "finite ammo": 有限弹药
   "imported": 已导入

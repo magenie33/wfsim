@@ -3218,7 +3218,7 @@ function applyScenario(st) {
 function scenariosChanged() {
   renderScenarioBar();
   if ($("quick-calc")) renderQuickCalc();
-  if ($("opt-enemy")) renderOptEnemy();
+  if ($("opt-target")) renderOptEnemy();
 }
 
 function renderScenarioBar() {
@@ -3622,12 +3622,11 @@ function buildSlot(i) {
 const slotEl = (i) => i === EXILUS ? $("exilus").firstElementChild : $("mod-slots").children[i];
 
 // ---- popovers ----
+// EVERY popover, found by class rather than by a list that a new one has to
+// remember to join — the enemy picker opened and would not close, because it
+// was not on the list.
 function closePopovers() {
-  $("mod-popover").hidden = true;
-  $("slot-menu").hidden = true;
-  $("arcane-popover").hidden = true;
-  const rv = $("riven-popover");
-  if (rv) rv.hidden = true;
+  document.querySelectorAll(".popover").forEach((p) => { p.hidden = true; });
 }
 function place(pop, anchor) {
   const r = anchor.getBoundingClientRect();
@@ -4437,28 +4436,49 @@ function renderScenarioFields(ids, opts = {}) {
   const enemies = META.enemies || [];
   const en = enemies.find((e) => e.id === sim.enemy) || enemies[0];
   if (en) sim.enemy = en.id;
-  const eopts = enemies.map((e) =>
-    `<option value="${e.id}" ${e.id === sim.enemy ? "selected" : ""}>${e.name}</option>`).join("");
-  const durationField =
-    `<label>${escHtml(tr("Duration (s)"))} <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>`;
-  // Section 1 — the enemy / scenario.
-  if (ids.enemy) {
-    $(ids.enemy).innerHTML = `
-      <label>Enemy <select data-k="enemy">${eopts}</select></label>
-      <label>Level <input type="number" data-k="level" min="1" max="9999" value="${sim.level}"></label>
-      <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
-      ${deployField(w, sim)}
-      ${durationField}`;
+
+  // ---- 1. THE FIGHT: who, where, how strong, how long ------------------
+  // Target and arena in ONE block, not two (user, 2026-08-02): an enemy is
+  // not a name, it is a name plus everything about the encounter, and the
+  // enemies still to come bring their own assortment of those — a level, an
+  // arena, an Eximus flag, a faction override. They all answer "what am I
+  // shooting at, under what conditions", so they belong in one place that can
+  // grow rather than in a grid that has to be re-cut every time.
+  if (ids.target) {
+    $(ids.target).innerHTML =
+      `<button class="en-card" id="${ids.target}-pick" title="${escHtml(tr("choose the target"))}">
+         <span class="en-name">${escHtml(en ? en.name : tr("Enemy"))}</span>
+         <span class="en-meta">${escHtml(enemyMeta(en))}</span>
+       </button>` +
+      `<div class="field-grid">
+        <label>${escHtml(tr("Level"))} <input type="number" data-k="level" min="1" max="9999" value="${sim.level}"></label>
+        <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
+        ${deployField(w, sim)}
+        <label>${escHtml(tr("Duration (s)"))} <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>
+      </div>`;
+    const pick = $(`${ids.target}-pick`);
+    if (pick && !opts.readonly) pick.onclick = (e) => { e.stopPropagation(); openEnemyPicker(pick); };
+    if (pick && opts.readonly) pick.disabled = true;
   }
+
+  // ---- 2. TECHNIQUE: what the PLAYER does ------------------------------
   const formOpts = simFormOpts(w);
   if (ids.technique) {
     $(ids.technique).innerHTML = `
       ${formField(formOpts, sim.form)}
       ${aimField(w, sim)}
-      <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>
-      ${ammoField(w, sim)}`;
+      <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>`;
   }
-  // Section 4 — the MEASUREMENT: nothing the player does in-game.
+
+  // ---- 3. LIMITS: what the simulation is allowed to assume -------------
+  // Infinite ammo is NOT a technique (user, 2026-08-02) — nobody plays it. It
+  // is a statement about what this run does not model, and the things that
+  // will join it are the same kind of statement.
+  if (ids.limits) {
+    $(ids.limits).innerHTML = ammoField(w, sim);
+  }
+
+  // ---- 4. MEASUREMENT: nothing the player does in-game -----------------
   if (ids.run) {
     $(ids.run).innerHTML = `
       <label>Runs <input type="number" data-k="runs" min="1" max="20000" value="${sim.runs}"></label>
@@ -4467,20 +4487,21 @@ function renderScenarioFields(ids, opts = {}) {
           `<option value="${v}"${sim.metric === v ? " selected" : ""}>${escHtml(l)}</option>`).join("")
       }</select></label>`;
   }
+
+  const boxes = [ids.target, ids.technique, ids.limits, ids.run].filter(Boolean).map($);
   // READ-ONLY hosts get the same fields, in the same order, showing the same
   // values — and no way to change them. A preset is edited in exactly ONE
   // place (user, 2026-08-02): two editors over one document is how a document
   // gets edited twice and saved once. The optimizer therefore SHOWS the fight
   // and links to the module that owns it.
   if (opts.readonly) {
-    [ids.enemy, ids.technique, ids.run].filter(Boolean).map($).forEach((box) =>
-      box.querySelectorAll("[data-k]").forEach((el) => {
-        el.disabled = true;
-        el.title = tr("edit this in the Simulator");
-      }));
+    boxes.forEach((box) => box.querySelectorAll("[data-k]").forEach((el) => {
+      el.disabled = true;
+      el.title = tr("edit this in the Simulator");
+    }));
     return;
   }
-  [ids.enemy, ids.technique, ids.run].filter(Boolean).map($).forEach((box) =>
+  boxes.forEach((box) =>
     box.querySelectorAll("[data-k]").forEach((el) => {
       el.addEventListener("change", () => {
         const k = el.dataset.k;
@@ -4496,6 +4517,65 @@ function renderScenarioFields(ids, opts = {}) {
         if (opts.after) opts.after();
       });
     }));
+}
+
+// What the target card says under the name. The enemy's own facts, not its
+// stats: the stats depend on the level beside it, and stating them here would
+// be a second answer to a question the field grid already asks.
+function enemyMeta(en) {
+  if (!en) return "";
+  const bits = [];
+  if (en.faction && en.faction !== "unknown") bits.push(tr(cap1(en.faction)));
+  // What it is MADE OF, at its own base level — the pools a build has to get
+  // through. The numbers at the CHOSEN level belong to the field beside the
+  // card, not here: two answers to one question is how they drift apart.
+  const pools = [
+    en.health ? `${Math.round(en.health)} ${tr("Health")}` : null,
+    en.shield ? `${Math.round(en.shield)} ${tr("Shield")}` : null,
+    en.armor ? `${Math.round(en.armor)} ${tr("Armor")}` : null,
+    en.overguard ? `${Math.round(en.overguard)} ${tr("Overguard")}` : null,
+  ].filter(Boolean);
+  if (pools.length) bits.push(pools.join(" · "));
+  const head = (en.parts || []).find((p) => p.is_head);
+  if (head) bits.push(`${tr("Headshot")} ×${head.multiplier}`);
+  if (en.can_be_eximus) bits.push(tr("Eximus"));
+  return bits.join(" · ");
+}
+
+// THE TARGET PICKER — the same component as the mod and arcane pickers, on
+// the same rule: search matches anything the reader can see. One enemy in the
+// roster today, so this is the shape the roster grows into rather than a
+// convenience over a two-item list.
+function openEnemyPicker(anchor) {
+  closePopovers();
+  const pop = $("enemy-popover");
+  place(pop, anchor);
+  const search = $("enemy-search");
+  search.value = "";
+  search.oninput = () => renderEnemyMenu(search.value);
+  renderEnemyMenu("");
+  search.focus();
+}
+
+function renderEnemyMenu(query) {
+  const menu = $("enemy-menu");
+  const q = (query || "").trim().toLowerCase();
+  const blob = (e) => [e.name, e.name_en, e.id, e.faction, e.scaling]
+    .filter(Boolean).join(" ").toLowerCase();
+  const hits = (META.enemies || []).filter((e) => !q || blob(e).includes(q));
+  menu.innerHTML = hits.length
+    ? hits.map((e) => `<div class="opt ${e.id === sim.enemy ? "sel" : ""}" data-e="${escHtml(e.id)}">
+         <div class="info"><div class="mn">${escHtml(e.name)}</div>
+         <div class="me">${escHtml(enemyMeta(e))}</div></div>
+       </div>`).join("")
+    : `<div class="sim-empty">${escHtml(tr("no enemy matches"))}</div>`;
+  menu.querySelectorAll("[data-e]").forEach((el) => el.onclick = () => {
+    sim.enemy = el.dataset.e;
+    closePopovers();
+    markPresetDirty(); markScenarioDirty();
+    renderSim();
+    if ($("opt-target")) renderOptEnemy();
+  });
 }
 
 // Which forms this weapon offers, and the reseed when it does not offer the
@@ -4541,7 +4621,8 @@ function renderSim() {
   renderSimBuild();
   const enemies = META.enemies || [];
   const en = enemies.find((e) => e.id === sim.enemy) || enemies[0];
-  renderScenarioFields({ enemy: "sim-enemy", technique: "sim-technique", run: "sim-run" });
+  renderScenarioFields({ target: "sim-target", technique: "sim-technique",
+    limits: "sim-limits", run: "sim-run" });
   renderScenarioBar();
   $("arena-ename").textContent = en ? en.name : "Enemy";
   $("sim-sub").textContent = "current build vs the enemy";
@@ -5096,9 +5177,9 @@ function renderOptMods() {
 // so the engagement LENGTH is the only measurement input the search takes,
 // and it sits beside the enemy.
 function renderOptEnemy() {
-  if (!$("opt-enemy")) return;
+  if (!$("opt-target")) return;
   renderScenarioFields(
-    { enemy: "opt-enemy", technique: "opt-technique" },
+    { target: "opt-target", technique: "opt-technique", limits: "opt-limits" },
     { readonly: true },
   );
   // Which fight, and where it is edited. Not a preset bar: that bar can

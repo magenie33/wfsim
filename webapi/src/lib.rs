@@ -648,6 +648,19 @@ pub fn meta_json() -> Value {
                 "synthetic": e.synthetic,
                 "base_level": e.stats.base_level,
                 "can_be_eximus": e.can_be_eximus,
+                // What the TARGET PICKER searches and shows. A name alone is
+                // not enough to pick between units that differ in the two
+                // things a build cares about — who they belong to and what
+                // they are made of.
+                // The COMBAT faction (what a Bane mod answers to), not the
+                // scaling one — they differ, and the picker is about what a
+                // build cares about.
+                "faction": e.combat_faction.clone().unwrap_or_else(|| "unknown".into()),
+                "scaling": format!("{:?}", e.scaling_faction).to_lowercase(),
+                "health": e.stats.health,
+                "shield": e.stats.shield,
+                "armor": e.stats.armor,
+                "overguard": e.stats.overguard,
                 "parts": e.body_parts.iter().map(|b| json!({
                     "name": b.name, "multiplier": b.multiplier, "is_head": b.is_head
                 })).collect::<Vec<_>>(),
