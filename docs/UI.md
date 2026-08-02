@@ -65,8 +65,29 @@ that would have them, not in a parallel module.
 
 ## Replay (2026-08-02)
 
-The Simulator's result carries the MEDIAN engagement, frame by frame: target
-pools, cumulative damage, kills, and **live stacks per buff**. One row per
+The Simulator's result carries the MEDIAN engagement, frame by frame: the
+target's pools, every counter the panel reports, the damage meter's own
+composition, and **live stacks per buff**.
+
+**It sits at the BOTTOM and drives everything above it** (user, 2026-08-03).
+The panel renders once at its finished state — hero, KPIs, damage meter, DPS
+curve, detail — and the replay re-reads all of it at whatever instant the
+cursor stops on: KPIs recount, the meter re-composes against the damage dealt
+SO FAR (a composition of a fight in progress is read against that fight, not
+against its end), both curves grey out everything past `t`, the pools refill.
+Rewind to 0 and the panel reads as a fight that has not happened; return to the
+end and it is byte-identical to how it first rendered. That is what "replay"
+means — a cursor that only slid along a line would be a decoration.
+
+Re-read IN PLACE, never re-rendered: rebuilding the markup sixty times a second
+would drop every open sub-row, every scroll position and the caret you just
+clicked. Cells carry `data-kpi` / `data-mk` keys naming the series that feeds
+them, and the wire format is the panel's own shapes with arrays where it has
+numbers (`kpi` mirrors the KPI row, `sources` mirrors `damage_sources`), so the
+client draws an instant of the fight with the same code that draws the end of
+it. ~88 KB for a 60 s fight.
+
+One row per
 buff, each a short curve, all open by default — the question they answer is
 "was this thing actually up", and a row you have to click to answer it will not
 be clicked. `avg` and `uptime` sit in the header so the group reads at a
