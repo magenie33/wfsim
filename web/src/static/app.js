@@ -2288,10 +2288,24 @@ function applyScenario(st) {
   renderSim();      // redraws every knob, and the bar with them
   markPresetDirty(); // the build remembers what it is being tested with
 }
+// A scenario is CONSUMED outside the simulator — the quick calc scans under
+// one by name, and the optimizer states the one it will search with — so
+// creating, renaming or deleting one has to reach those lists at once, the
+// way a new riven reaches the mod pool (user, 2026-08-02). One hook: the bar
+// calls `rerender` after every mutation, switching included.
+function scenariosChanged() {
+  renderScenarioBar();
+  if ($("quick-calc")) renderQuickCalc();
+  if ($("opt-enemy")) renderOptEnemy();
+}
+
 function renderScenarioBar() {
   renderPresetBarIn($("preset-bar-" + SCENARIOS), {
     domain: SCENARIOS,
     label: tr("Scenarios"),
+    // "scenario N", not "preset N": the bootstrap already named the first one
+    // that way, so "+ new" was contradicting it on the second.
+    newName: (n) => "scenario " + n,
     load: () => loadPresetList(SCENARIOS),
     store: (ps) => storePresetList(SCENARIOS, ps),
     active: () => activeScenario,
@@ -2299,7 +2313,7 @@ function renderScenarioBar() {
     snapshot: snapshotScenario,
     apply: applyScenario,
     blank: snapshotScenario,
-    rerender: renderScenarioBar,
+    rerender: scenariosChanged,
   });
 }
 
@@ -4332,7 +4346,9 @@ const storeOptPresets = (ps) => storePresetList(OPT_DOMAIN, ps);
 function bootstrapOptPresets() {
   let ps = loadOptPresets();
   if (!ps.length) {
-    ps = [{ name: "preset 1", savedAt: Date.now(), state: snapshotOpt() }];
+    // Named after what it is, like the scenario and riven collections. An
+    // existing "preset 1" is the user's name now and is left alone.
+    ps = [{ name: "search 1", savedAt: Date.now(), state: snapshotOpt() }];
     storeOptPresets(ps);
   }
   const want = activeOptPreset || localStorage.getItem(presetActiveKey(OPT_DOMAIN));
@@ -4468,6 +4484,7 @@ function renderOptPresetBars() {
   renderPresetBarIn(bar, {
     domain: OPT_DOMAIN,
     label: tr("Searches"),
+    newName: (n) => "search " + n,
     hint: "scope + final round; import filters per axis",
     load: loadOptPresets,
     store: storeOptPresets,
