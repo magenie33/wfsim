@@ -1693,11 +1693,11 @@ async function openSharePanel(bar) {
     `<button class="cu-btn sh-img">${escHtml(tr("copy image"))}</button>` +
     `<button class="cu-btn sh-dl">${escHtml(tr("download image"))}</button></div>` +
     `<div class="sh-note">${escHtml(tr("the link carries the build, its rivens, the fight it was measured in and the measurement — opening it saves a new copy of each"))}</div>` +
-    `<canvas class="sh-canvas" width="900" height="470"></canvas>`;
+    `<canvas class="sh-canvas" width="900" height="640"></canvas>`;
   const urlBox = panel.querySelector(".sh-url");
   urlBox.onclick = () => urlBox.select();
   const canvas = panel.querySelector(".sh-canvas");
-  await drawShareCard(canvas, url);
+  await drawShareCard(canvas);
 
   const say = (msg) => presetToast(tr(msg));
   panel.querySelector(".sh-copy").onclick = async () => {
@@ -1726,9 +1726,16 @@ async function openSharePanel(bar) {
 // actually gets shown around.
 //
 // It shows EVERYTHING the link carries that a reader can act on — the weapon,
-// every slot, the arcane, the evolutions, the riven's own rolls, and the
-// number with the fight it was measured under. A card that showed the mods
-// and hid the Incarnon would be the thing this whole feature exists to stop.
+// the mod cards with their polarities, capacity and Forma, the arcane, the
+// evolutions, the riven's own rolls, and the number with the fight and the
+// technique it came from. A card that showed the mods and hid the Incarnon
+// would be the thing this whole feature exists to stop.
+// The site's own name, not wherever this page happens to be served from: the
+// card is a thing that travels, and a preview host or a localhost in the
+// corner of it would be wrong everywhere it landed (user, 2026-08-02).
+const SITE_HOST = "wfsim.app";
+const CARD_W = 900, CARD_H = 560;
+
 const loadImg = (src) => new Promise((res) => {
   if (!src) return res(null);
   const im = new Image();
@@ -1737,9 +1744,28 @@ const loadImg = (src) => new Promise((res) => {
   im.src = src;
 });
 
-async function drawShareCard(canvas, url) {
+// Draw `im` to fit a box, centred, aspect kept.
+function drawFit(g, im, x, y, w, h) {
+  if (!im) return;
+  const s = Math.min(w / im.width, h / im.height);
+  const dw = im.width * s, dh = im.height * s;
+  g.drawImage(im, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+}
+
+async function drawShareCard(canvas) {
+  // The card is exactly as tall as it needs to be. A fixed height left a band
+  // of empty background above the number on a build with few mods, which
+  // reads as a rendering fault rather than as space.
+  const named0 = slots.map((s, i) => ({ m: s.mod && modById(s.mod), i })).filter((z) => z.m);
+  const perCol0 = Math.ceil(named0.length / 3) || 1;
+  const arc0 = (arcanes || []).filter((a) => a && a !== "none");
+  const rid0 = slots.map((s) => s.mod).find(isRivenId);
+  const rlines0 = rid0 && ((rivenNames[String(rid0).slice(RIVEN_PREFIX.length)] || {}).lines || []);
+  const W = CARD_W;
+  const H = 104 + 88 + 26 + perCol0 * 24 + 8
+    + (arc0.length ? 24 : 0) + ((rlines0 || []).length ? 24 : 0) + 128;
+  canvas.width = W; canvas.height = H;
   const g = canvas.getContext("2d");
-  const W = canvas.width, H = canvas.height;
   const css = getComputedStyle(document.documentElement);
   const v = (n, fallback) => (css.getPropertyValue(n) || "").trim() || fallback;
   const bg = v("--surface", "#171a21"), fg = v("--text", "#f2f4f8");
@@ -1750,47 +1776,85 @@ async function drawShareCard(canvas, url) {
 
   const w = weaponInfo($("weapon").value);
   const art = await loadImg(IMG(w.image));
-  // The weapon's own art, large and faint behind the right half — recognisable
+  // The weapon's own art, large and faint behind the lower right — recognisable
   // at a glance in a chat scroll, and never in the way of the text.
   if (art) {
     const h = 300, wid = h * (art.width / art.height || 2);
     g.save();
-    g.globalAlpha = 0.10;
-    g.drawImage(art, W - wid + 60, H - h - 40, wid, h);
+    g.globalAlpha = 0.09;
+    g.drawImage(art, W - wid + 60, H - h - 30, wid, h);
     g.restore();
   }
 
-  g.fillStyle = fg;
-  g.font = F(36, "600");
-  g.fillText(w.name, 36, 60);
-  if (art) {
-    const th = 34, tw = th * (art.width / art.height || 2);
-    g.drawImage(art, 36 + g.measureText(w.name).width + 16, 30, tw, th);
-  }
-  g.fillStyle = dim;
-  g.font = F(15);
+  // ---- header: what it is, and what it costs to build ------------------
+  g.fillStyle = fg; g.font = F(34, "600");
+  g.fillText(w.name, 36, 56);
+  if (art) drawFit(g, art, 40 + g.measureText(w.name).width, 26, 60, 34);
+  g.fillStyle = dim; g.font = F(15);
   const evos = Object.values(evoSel).filter(Boolean).length;
-  const sub = [activePreset, tr(w.subtype || w.mod_class || "")]
-    .concat(evos ? [`${evos} ${tr("Evolutions")}`] : []).join(" · ");
-  g.fillText(sub, 36, 86);
+  g.fillText([activePreset, tr(w.subtype || w.mod_class || "")]
+    .concat(evos ? [`${evos} ${tr("Evolutions")}`] : []).join(" · "), 36, 82);
 
-  // Every slot, in the order they sit in.
+  // Capacity and Forma, right-aligned — the price of the build, which is half
+  // of what a reader is judging.
+  const fc = formaCount();
+  const cost = [`${capacityUsed()} / ${CAP}`,
+    [`${fc.regular} Forma`, fc.umbra ? `${fc.umbra} Umbra` : null, fc.omni ? `${fc.omni} Omni` : null]
+      .filter(Boolean).join(" · ")].join("   ");
+  g.textAlign = "right";
+  g.fillStyle = capacityUsed() > CAP ? v("--critical", "#e05656") : fg2;
   g.font = F(15);
-  let y = 128;
+  g.fillText(cost, W - 36, 56);
+  g.textAlign = "left";
+
+  // ---- the mod cards, with their polarities ----------------------------
+  // An EMPTY slot draws NOTHING (user, 2026-08-02) — no placeholder, no dash.
+  // A gap says "nothing here" without a mark that reads as one.
+  const CW = 88, CH = 88, GAP = 8;
+  const imgs = await Promise.all(slots.map((s) => {
+    const m = s.mod && modById(s.mod);
+    return m ? loadImg(IMG(m.image)) : null;
+  }));
+  const pols = await Promise.all(slots.map((s) => (s.pol ? loadImg(POL(s.pol)) : null)));
+  let x = 36, y = 104;
   slots.forEach((s, i) => {
     const m = s.mod && modById(s.mod);
-    const col = 36 + (i % 2) * 424;
-    if (i % 2 === 0 && i) y += 25;
-    g.fillStyle = m ? fg : dim;
-    const tag = i === EXILUS ? "E" : String(i + 1);
-    let label = m ? m.name : "—";
-    if (label.length > 34) label = label.slice(0, 33) + "…";
-    g.fillText(`${tag}. ${label}`, col, y);
+    const cx = x + i * (CW + GAP);
+    if (!m) return;
+    if (imgs[i]) drawFit(g, imgs[i], cx, y, CW, CH);
+    else {
+      // A riven has no art — DE never drew one. A gold-edged tile saying what
+      // it is beats a blank box that reads as a broken image.
+      g.strokeStyle = gold; g.lineWidth = 1;
+      g.strokeRect(cx + .5, y + .5, CW - 1, CH - 1);
+      g.fillStyle = gold; g.font = F(13, "600");
+      g.textAlign = "center";
+      g.fillText(tr("Riven"), cx + CW / 2, y + CH / 2 + 5);
+      g.textAlign = "left";
+    }
+    // Polarity badge, on the card it belongs to.
+    if (pols[i]) {
+      g.fillStyle = bg;
+      g.globalAlpha = .75; g.fillRect(cx, y, 20, 20); g.globalAlpha = 1;
+      drawFit(g, pols[i], cx + 3, y + 3, 14, 14);
+    }
   });
 
-  // The ARCANE and the RIVEN's own rolls: the two things a reader cannot
-  // infer from the mod names.
-  y += 34;
+  // ---- the names, because a 88px card is art, not text -----------------
+  y += CH + 26;
+  g.font = F(15);
+  const named = named0, perCol = perCol0;
+  named.forEach((r, n) => {
+    const col = Math.floor(n / perCol), row = n % perCol;
+    g.fillStyle = fg;
+    const tag = r.i === EXILUS ? "E" : String(r.i + 1);
+    let label = `${tag}. ${r.m.name}`;
+    if (label.length > 24) label = label.slice(0, 23) + "…";
+    g.fillText(label, 36 + col * 290, y + row * 24);
+  });
+  y += perCol * 24 + 8;
+
+  // ---- the two things a reader cannot infer from mod names -------------
   const arc = (arcanes || []).filter((a) => a && a !== "none")
     .map((a) => (arcaneById(a) || {}).name || a);
   if (arc.length) {
@@ -1802,59 +1866,53 @@ async function drawShareCard(canvas, url) {
   const rmeta = rid && rivenNames[String(rid).slice(RIVEN_PREFIX.length)];
   if (rmeta && (rmeta.lines || []).length) {
     g.fillStyle = fg2; g.font = F(14);
-    g.fillText(rmeta.lines.map((x) => tf(x)).join("   "), 36, y);
+    g.fillText(rmeta.lines.map((z) => tf(z)).join("   "), 36, y);
     y += 24;
   }
 
-  // The NUMBER, if this build has been measured, with the fight it came from
-  // — a number with no fight attached is a boast.
-  const p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
+  // ---- the number, in the app's own units and its own formatting -------
+  // `kpm(score, duration)` and `sig2`, exactly as the results panel: the
+  // score counts the fraction of a kill too, so a build that drains 0.28% of
+  // one enemy reads 0.0028 rather than the 0.00 that `kills` alone produced.
+  const p = loadPresetList(BUILDS).find((z) => z.name === activePreset);
   const r = p && p.lastResult && p.lastResult.r;
-  y = Math.max(y + 12, H - 128);
+  y = H - 128;
   g.strokeStyle = line;
   g.beginPath(); g.moveTo(36, y); g.lineTo(W - 36, y); g.stroke();
-  y += 44;
+  y += 46;
   if (r) {
-    const kpm = r.duration ? (r.kills || 0) / (r.duration / 60) : 0;
+    const byDps = sim.metric === "dps";
     g.fillStyle = gold; g.font = F(40, "600");
-    g.fillText(sig2(kpm) + " KPM", 36, y);
+    g.fillText(byDps
+      ? Math.round(r.dps || 0).toLocaleString() + " DPS"
+      : sig2(kpm(r.score, r.duration)) + " KPM", 36, y);
     g.fillStyle = dim; g.font = F(15);
     const en = (META.enemies || []).find((e) => e.id === sim.enemy) || {};
     // The fight AND the technique (user, 2026-08-02). Which form, how often
     // the head is hit and whether aim is held change the number as much as
-    // the enemy does — a reader comparing two cards has to see both. Buffs
-    // are deliberately absent: they follow from the build, and a card that
-    // listed eleven of them would say nothing.
-    const fight = [
+    // the enemy does. Buffs are deliberately absent: they follow from the
+    // build, and a card listing eleven of them would say nothing.
+    const formLabel = (simFormOpts(w).find(([id]) => id === sim.form) || [])[1];
+    g.fillText([
       en.name || sim.enemy,
       `Lv ${sim.level}${sim.steel_path ? " SP" : ""}`,
       `${sim.duration}s`,
-    ];
-    const formLabel = (simFormOpts(w).find(([id]) => id === sim.form) || [])[1];
-    const tech = [
       formLabel,
-      // Not the field label — that one already ends in "%", so reusing it
-      // printed "100% 爆头率 %".
       `${sim.headshot_pct}% ${tr("headshots")}`,
       (w.sentinel || sim.aiming) ? tr("Aiming") : tr("hip-fire"),
       sim.infinite_ammo === false ? tr("finite ammo") : null,
-    ].filter(Boolean);
-    g.fillText(fight.concat(tech).join(" · "), 36, y + 25);
-  } else {
-    g.fillStyle = dim; g.font = F(17);
-    g.fillText(tr("not simulated yet"), 36, y);
+    ].filter(Boolean).join(" · "), 36, y + 25);
   }
 
   // The address, always. An image that travels without one is a screenshot of
   // nowhere.
   g.textAlign = "right";
   g.font = F(21, "600");
-  const host = new URL(url).host;
   g.fillStyle = fg; g.fillText("Sim", W - 36, H - 38);
   const sw = g.measureText("Sim").width;
   g.fillStyle = gold; g.fillText("WF", W - 36 - sw, H - 38);
   g.fillStyle = dim; g.font = F(14);
-  g.fillText(host, W - 36, H - 16);
+  g.fillText(SITE_HOST, W - 36, H - 16);
   g.textAlign = "left";
 }
 
@@ -4238,6 +4296,13 @@ function saveSimResult(r) {
 async function resultForShare() {
   const p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
   if (p && p.lastResult && p.lastResult.r && p.lastResult.key === simKey()) return p.lastResult;
+  // The PANEL first, awaited. `refreshPanel` is debounced and returns before
+  // it has answered, so a share clicked seconds after an edit was composing
+  // its buff map from the PREVIOUS build's `buffList` — a buff the new mod
+  // grants was simply absent from the payload, and the server fell back to
+  // its own default. That is the whole of "0.4 shared vs 0.56 run by hand"
+  // (user, 2026-08-02): same seed, same build, a different buff map.
+  try { renderPanel(await api("/api/panel", buildPayload())); } catch (_) { /* keep going */ }
   const buffs = {};
   buffList.forEach((b) => { const c = sim.buffs[b.id]; if (c) buffs[b.id] = { stacks: c.stacks, locked: c.locked }; });
   const r = await api("/api/simulate", { ...buildPayload(), ...sim, buffs });
