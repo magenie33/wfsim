@@ -595,3 +595,6 @@ label.check input{width:auto}
   padding:8px 14px;font-size:13px;letter-spacing:.02em;box-shadow:0 6px 24px rgba(0,0,0,.45);
   opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;z-index:120}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* An OPTIONAL collection with nothing in it — the editor stands down. */
+.rv-none{color:#8b8f98;font-size:13px;padding:10px 2px}

@@ -145,6 +145,14 @@ around (decision 2026-07-31).
   Every collection writes through `storePresetList`, which is what makes one
   Ctrl+Z stack cover all four — presets auto-save, so the way back is not
   optional.
+  A collection is OPTIONAL (`optional: true` on the bar) when zero of them is
+  a real answer: nothing is auto-created, the last one can be deleted, and the
+  editor stands down instead of showing a document that is not there. Rivens
+  are the first — not owning one is the ordinary case, and the blank card that
+  stood in for it put a phantom legendary in every weapon's pool (user,
+  2026-08-02). Custom enemies will be the second. The other three are NOT
+  optional: the modules behind them always have a state, and "no build" is not
+  something the builder can show.
 - `api()` transport: `/api/meta` and `/api/i18n` are GET, everything
   else is POST — the native server matches on exact (method, path).
 

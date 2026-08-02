@@ -177,6 +177,7 @@ ui:
   "install the previous tier first": 需要先安装上一层
   "Searches": 搜索方案
   "Scenario": 场景
+  "no riven saved for this weapon — \"+ new\" builds one": 这把武器还没有保存紫卡——点“+ new”新建一张
   "edit in the Simulator": 去模拟器修改
   "edit this in the Simulator": 这一项在模拟器里修改
   "the scenario the simulator is set to": 模拟器当前选中的场景

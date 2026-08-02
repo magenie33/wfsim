@@ -901,12 +901,19 @@ const rivenStatName = (s) => tf(rivenStatNameEn(s));
 // count of bonuses, and a +1 for the malus. It leads because it is the
 // ONLY thing that decides the multipliers; a 2 and a 2+1 pay their bonuses
 // differently before a single stat is chosen.
+// Best first, left to right (user, 2026-08-02): 3+1, 3, 2+1, 2. A riven is
+// shopped for from the top — the third bonus is what makes one worth having,
+// and the malus is the price, so the pairs read as "with / without price"
+// rather than as a count that happens to climb.
 const RIVEN_SHAPES = [
-  { id: "2", bonuses: 2, malus: false },
+  { id: "3+1", bonuses: 3, malus: true },
   { id: "3", bonuses: 3, malus: false },
   { id: "2+1", bonuses: 2, malus: true },
-  { id: "3+1", bonuses: 3, malus: true },
+  { id: "2", bonuses: 2, malus: false },
 ];
+// The fallback for an unknown shape id is stated by ID, not by position: the
+// display order above is a display decision and must not double as a default.
+const RIVEN_SHAPE_DEFAULT = "2";
 
 // An EMPTY card. Nothing is pre-picked: a default stat is a claim the visitor
 // did not make. Two bonuses is the game's floor for a riven rather than a
@@ -928,10 +935,10 @@ function blankRiven() {
   const drafts = {};
   RIVEN_SHAPES.forEach((s) => { drafts[s.id] = RIVEN_BLANK_DRAFT(s.bonuses, s.malus); });
   return {
-    shape: "2",
+    shape: RIVEN_SHAPE_DEFAULT,
     drafts,
-    bonuses: drafts["2"].bonuses,
-    malus: drafts["2"].malus,
+    bonuses: drafts[RIVEN_SHAPE_DEFAULT].bonuses,
+    malus: drafts[RIVEN_SHAPE_DEFAULT].malus,
     rank: rivenRules().max_rank,
     polarity: "madurai",
   };
@@ -1006,15 +1013,20 @@ async function resolveRiven(pending) {
 // only option is "+ new" makes the visitor do a step the page could have done
 // (user, 2026-07-31), and the first one is the empty card they were going to
 // fill in anyway.
+// Rivens are an OPTIONAL collection: zero is a legal, and the ordinary,
+// number to own (user, 2026-08-02). Nothing is auto-created — a blank card
+// standing in for "no riven" is a claim the visitor never made, and it put a
+// phantom legendary in every weapon's mod pool. Custom enemies will be the
+// same shape when they arrive.
 function ensureRivenList() {
-  let ps = loadPresetList(RIVENS);
-  if (!ps.length) {
-    ps = [{ name: "riven 1", savedAt: Date.now(), state: blankRiven() }];
-    storePresetList(RIVENS, ps);
-  }
-  if (!ps.some((p) => p.name === activeRivenName())) {
+  const ps = loadPresetList(RIVENS);
+  if (ps.length && !ps.some((p) => p.name === activeRivenName())) {
     activeRiven = ps[0].name;
     localStorage.setItem(presetActiveKey(RIVENS), activeRiven);
+  }
+  if (!ps.length && activeRiven) {
+    activeRiven = "";
+    localStorage.removeItem(presetActiveKey(RIVENS));
   }
   return ps;
 }
@@ -1022,11 +1034,28 @@ function ensureRivenList() {
 function renderRivens() {
   if (!META || !$("riven-block")) return;
   const w = weaponInfo($("weapon").value);
+  const ps = ensureRivenList();
+  if (!ps.length) {
+    // NOTHING to edit. The bar keeps its "+ new" (and ⇤ import), so the way
+    // in is where the way in always is; the editor below it stands down
+    // rather than showing a card for a riven that does not exist.
+    $("riven-sub").textContent =
+      `${w.name} · ${tr("disposition")} ${(w.disposition || 1).toFixed(2)}`;
+    renderRivenPresetBar();
+    ["riven-shape", "riven-stats", "riven-foot", "riven-card"].forEach((id) => {
+      if ($(id)) $(id).innerHTML = "";
+    });
+    if ($("riven-all")) {
+      $("riven-all").innerHTML =
+        `<div class="rv-none">${escHtml(tr("no riven saved for this weapon — \"+ new\" builds one"))}</div>`;
+    }
+    riven = null;
+    return;
+  }
   if (!riven || riven.__weapon !== w.id) {
     // Arriving (or reloading) opens the ACTIVE riven, not a blank one — the
     // chip said "riven 1" while the editor showed an empty card, which is the
     // bar and the editor disagreeing about which document is open.
-    const ps = ensureRivenList();
     const cur = ps.find((p) => p.name === activeRivenName());
     riven = { ...withDrafts((cur && cur.state) || blankRiven()), __weapon: w.id };
   }
@@ -1049,7 +1078,8 @@ const shapeWords = (s) =>
 
 function renderRivenShape() {
   const now = riven.shape || `${riven.bonuses.length}${riven.malus ? "+1" : ""}`;
-  const shapeNow = RIVEN_SHAPES.find((x) => x.id === now) || RIVEN_SHAPES[0];
+  const shapeNow = RIVEN_SHAPES.find((x) => x.id === now)
+    || RIVEN_SHAPES.find((x) => x.id === RIVEN_SHAPE_DEFAULT);
   $("riven-shape").innerHTML =
     `<span class="rv-lbl">${escHtml(tr("Shape"))}</span><span class="oseg">` +
     RIVEN_SHAPES.map((s) =>
@@ -1338,11 +1368,15 @@ function renderRivenPresetBar() {
     setActive: (n) => { activeRiven = n; localStorage.setItem(presetActiveKey(RIVENS), n); },
     snapshot: snapshotRiven,
     apply: (st) => {
+      if (!st) { renderRivens(); return; }   // deleted the last one
       riven = { ...withDrafts(st), __weapon: $("weapon").value };
       renderRivenShape(); renderRivenStats(); renderRivenFoot(); resolveRiven();
     },
     blank: blankRiven,
-    rerender: renderRivenPresetBar,
+    // Zero rivens is legal, so the last one can be deleted — and when it is,
+    // the whole editor has to stand down, not just this bar.
+    optional: true,
+    rerender: () => renderRivens(),
   });
 }
 
@@ -1887,7 +1921,7 @@ function renderPresetBarIn(bar, cfg) {
     const ops = sel
       ? `<button class="pop dup" title="duplicate into a new preset">⧉</button>` +
         `<button class="pop ren" title="rename">✎</button>` +
-        (ps.length > 1 ? `<button class="pop del" title="delete">✕</button>` : "")
+        (ps.length > 1 || cfg.optional ? `<button class="pop del" title="delete">✕</button>` : "")
       : "";
     return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${escHtml(p.name)}${ops}</span>`;
   };
@@ -2031,12 +2065,16 @@ function renderPresetBarIn(bar, cfg) {
   });
 
   on(".pop.del", () => {
-    // Only offered while >1 preset exists — there is always at least one.
     const ps2 = cfg.load().filter((p) => p.name !== cfg.active());
-    if (!ps2.length) return;
+    // OPTIONAL collections may go to zero. For everything else there is
+    // always at least one, because the module behind it always has a state —
+    // a build, a fight, a search — and "no build" is not a thing the builder
+    // can show. A riven is different: not owning one is the common case, and
+    // a blank card standing in for it is a claim nobody made.
+    if (!ps2.length && !cfg.optional) return;
     cfg.store(ps2);
-    cfg.setActive(ps2[0].name);
-    whileApplying(() => cfg.apply(ps2[0].state));
+    cfg.setActive(ps2.length ? ps2[0].name : "");
+    whileApplying(() => cfg.apply(ps2.length ? ps2[0].state : null));
     cfg.rerender();
   });
 }
