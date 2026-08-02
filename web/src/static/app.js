@@ -355,29 +355,31 @@ let optBuffList = [];
 let optBuffTimer = null;
 // Sort/polarity prefs for the optimizer mod list (independent of the picker's).
 let optPrefs = { sort: "name", dir: "asc", pol: null };
-// The FINAL-ROUND CONTRACT: the funnel's last round is guaranteed
-// `finalists` candidates × the SCENARIO's run count.
+// HOW THE SEARCH RUNS — `finalists` and `threads`, and both are the search's
+// (user, 2026-08-02: "挪到 search 这个 preset，就彻底干净了").
 //
-// NEITHER IS A SETTING ANY MORE (user, 2026-08-02). The optimizer tab is
-// read-only about configuration — it shows the fight and the scope and runs
-// them; it does not offer a second place to tune either. So:
+// The optimizer tab is TWO HALVES and the split is now total: everything from
+// its own preset bar down through the Search block is the SEARCH and is saved
+// in the search preset; everything under the fight's bar is the SIMULATOR's
+// and is read-only. There is nothing left that belongs to neither, which is
+// what makes the two preset domains legible rather than a rule to remember.
 //
-//   · final runs = `sim.runs`. It is HOW HARD YOU MEASURE, which is the
-//     scenario's question and already answered there. Two boxes for one number
-//     is how a winner gets crowned at a precision the replay never used.
-//   · finalists and threads ARE the search's, and they live in the Search
-//     block with nothing from the fight in it (user, 2026-08-02). How many
-//     winners to keep and how much of the machine to spend are things you
-//     decide about a SEARCH; how hard to measure is not.
+// `threads` rides the preset with the rest of it. It does describe this
+// MACHINE rather than the search — the earlier reading, and why it used to sit
+// in its own localStorage key — but an optimizer preset never leaves this
+// machine (a share link carries builds, scenarios and rivens, not searches),
+// so the only thing that reading bought was a second place to look. A heavy
+// scope wanting more cores than a light one is a real setting to save.
 //
-// `finalists` rides the optimizer preset like the rest of the scope.
-// `threads` deliberately does NOT: it describes this machine, so a preset
-// carrying it would re-tune the CPU on every load and be wrong on any other
-// computer. Same block, different lifetime — stated in its own tooltip.
+// The FINAL-ROUND CONTRACT is `finalists` × the SCENARIO's run count. Runs are
+// deliberately not here: HOW HARD YOU MEASURE is the fight's question and is
+// already answered there, and two boxes for one number is how a winner gets
+// crowned at a precision the replay never used.
 const finalRuns = () => sim.runs;
 let optRun = { finalists: 10, threads: 0 }; // threads 0 = auto (cores − 2)
+// One-time migration off the old machine-local key; the preset auto-save
+// takes it from here.
 try { const s = JSON.parse(localStorage.getItem("wfsim-opt-run")); if (s && s.threads) optRun.threads = s.threads; } catch (_) {}
-const saveOptRun = () => localStorage.setItem("wfsim-opt-run", JSON.stringify({ threads: optRun.threads }));
 let pickerSlot = 0;
 // Mod-picker sort/filter prefs — persisted across slots, presets and weapons.
 let pickerPrefs = { sort: "gain", dir: "desc", pol: null };
@@ -533,10 +535,10 @@ async function init() {
     updateOptEstimate();
   });
   if (optRun.threads) $("opt-threads").value = optRun.threads;
-  $("opt-threads").title = tr("blank = every core minus two, at low priority — the machine stays responsive either way. This one is NOT saved into the search: it describes this computer, so it would be wrong on any other");
+  $("opt-threads").title = tr("blank = every core minus two, at low priority — the machine stays responsive either way. Saved with the search, so a heavy scope can ask for more than a light one");
   $("opt-threads").addEventListener("input", () => {
     optRun.threads = Math.max(0, Math.min(128, Number($("opt-threads").value) || 0));
-    saveOptRun();
+    updateOptEstimate(); // the scope's auto-save; threads lands in the preset
   });
   initPresets();
   reattachOptimize(); // resume progress display if a server-side job survives a reload
@@ -5543,13 +5545,14 @@ function snapshotOpt() {
     arcanes: { ...opt.arcanes },
     evos: JSON.parse(JSON.stringify(opt.evos)),
     finalists: optRun.finalists,
+    threads: optRun.threads,
   };
 }
 
 // An empty search: nothing marked, a fresh size, the contract left alone (it
 // is how hard to search, not what to search).
 const blankOpt = () => ({ mods: {}, exilus: {}, size: 8, arcanes: {}, evos: {},
-  finalists: optRun.finalists });
+  finalists: optRun.finalists, threads: optRun.threads });
 
 // State-only apply (validation + cross-weapon id dropping); no re-render.
 //
@@ -5587,13 +5590,15 @@ function applyOptState(st) {
     });
     if (Object.keys(valid).length) opt.evos[t] = valid;
   });
-  // `finalists` travels with the search it was tuned for. `final_runs` does
-  // NOT and is deliberately not read back: an old preset may still carry it
-  // from when it was a setting, and it is the fight's `runs` now — honouring a
-  // stored copy would resurrect exactly the second opinion that removed.
+  // How the search RUNS travels with the search it was tuned for. Not
+  // `final_runs`: an old preset may still carry it from when it was a setting,
+  // and it is the fight's `runs` now — honouring a stored copy would resurrect
+  // exactly the second opinion that removed.
   if (st.finalists) optRun.finalists = st.finalists;
-  const f = $("opt-finalists");
+  if (st.threads != null) optRun.threads = st.threads;
+  const f = $("opt-finalists"), th = $("opt-threads");
   if (f) f.value = optRun.finalists;
+  if (th) th.value = optRun.threads || "";
 }
 
 function applyOptPreset(st) {

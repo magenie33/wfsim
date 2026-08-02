@@ -261,6 +261,18 @@
           <h3 class="sim-h" data-i18n>Evolutions <span class="sim-hint">per tier: pool = searched options, req = pin</span></h3>
           <div id="opt-evos"></div>
         </div>
+        <!-- HOW to search, closing the scope. The page is two halves and this
+             is the end of the first: everything from the optimizer's preset
+             bar down to here belongs to the SEARCH and is saved in the search
+             preset; everything below the fight's own bar belongs to the
+             SIMULATOR and is shown read-only (user, 2026-08-02).
+             Runs are deliberately not here — the last round uses the fight's
+             own count, so there is one answer to "how hard do we measure". -->
+        <h3 class="sim-h" data-i18n>Search <span class="sim-hint">how many winners to keep, and how much of the machine to spend — the final round runs each of them at the fight's own run count</span></h3>
+        <div id="opt-search" class="field-grid">
+          <label data-i18n>Finalists <input id="opt-finalists" type="number" min="1" max="100" value="10"></label>
+          <label data-i18n>CPU threads <input id="opt-threads" type="number" min="0" max="128" placeholder="auto"></label>
+        </div>
         <!-- The SCENARIO is the simulator's; the optimizer points at it
              rather than keeping a second one, so the winner is scored under
              the fight the replay will run. -->
@@ -273,16 +285,6 @@
         <div id="opt-limits" class="field-grid"></div>
         <h3 class="sim-h" data-i18n>Buffs <span class="sim-hint">across the whole scope — initial stacks + lock, applied per candidate</span></h3>
         <div id="opt-buffs"></div>
-        <!-- Everything above belongs to the FIGHT and is read-only here. This
-             block is the search's own: how many winners to keep, and how much
-             of this machine to spend. Runs are not here — the last round uses
-             the fight's own count, so there is one answer to "how hard do we
-             measure". -->
-        <h3 class="sim-h" data-i18n>Search <span class="sim-hint">how many winners to keep, and how much of the machine to spend — the final round runs each of them at the fight's own run count</span></h3>
-        <div id="opt-search" class="field-grid">
-          <label data-i18n>Finalists <input id="opt-finalists" type="number" min="1" max="100" value="10"></label>
-          <label data-i18n>CPU threads <input id="opt-threads" type="number" min="0" max="128" placeholder="auto"></label>
-        </div>
         <div id="opt-estimate" class="opt-est"></div>
         <button id="run-opt" class="run-btn" data-i18n>Run Optimizer</button>
         <div id="opt-results"></div>

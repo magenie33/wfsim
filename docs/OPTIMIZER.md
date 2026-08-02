@@ -138,20 +138,39 @@ Implemented in `optimizer/` (`wfsim-optimizer` binary):
   that has not already left it cannot be recovered — this is what makes a
   cancelled run show its ranking instead of an empty page.
 
-## The optimizer owns the SEARCH, and nothing else (2026-08-02)
+## The optimizer tab is TWO HALVES (2026-08-02)
 
-Its tab shows the fight read-only, holds the scope, and adds ONE block of its
-own — Search. Every number that decides a run lives with whoever the question
-belongs to:
+Two preset bars, and the page is cut cleanly between them — nothing on it
+belongs to neither, which is what makes the two domains legible instead of a
+rule to remember (user: "挪到 search 这个 preset，就彻底干净了").
+
+```
+preset bar: SEARCH  ─┐
+  Mods                │  the search preset. What to look through,
+  Exilus              │  and how to look: scope + finalists + threads.
+  Arcanes             │
+  Evolutions          │
+  Search  ────────────┘   finalists · CPU threads
+preset bar: SCENARIO ─┐
+  The fight           │  the SIMULATOR's, shown READ-ONLY. Edited there,
+  The Tenno           │  because a preset is edited in exactly one place.
+  Limits              │
+  Buffs   ────────────┘
+```
 
 | what | where it lives | why |
 |---|---|---|
-| the fight | the SIMULATOR's scenario, shown read-only | a preset is edited in exactly one place |
-| final runs | the scenario's `runs` | how hard you measure is the fight's question; a second box crowns a winner at a precision the replay never used |
-| finalists | the **Search** block, in the optimizer preset | how many winners to keep is a thing you decide about a SEARCH |
-| CPU threads | the **Search** block, machine-local | same block, different lifetime: it describes this computer, so a preset carrying it would re-tune the CPU on every load and be wrong on any other machine |
+| scope, finalists, CPU threads | the SEARCH preset | all three are decisions about a search: what to look through, how many winners to keep, how much of the machine to spend |
+| the fight, the player, the buffs | the SCENARIO preset, read-only here | a preset is edited in exactly one place; the winner has to be scored under the fight the replay will run |
+| final runs | the scenario's `runs` | how hard you measure is the FIGHT's question, and a second box crowns a winner at a precision the replay never used |
 
-So the optimizer tab has exactly one block of its own, and everything in it is
-about the search rather than about the fight. An older preset may still carry
-`final_runs`; it is deliberately ignored on load rather than migrated —
-reading it back would resurrect the second opinion this removed.
+`threads` does describe this MACHINE rather than the search — the earlier
+reading, and why it used to live in its own localStorage key. But an optimizer
+preset never leaves this machine (a share link carries builds, scenarios and
+rivens, not searches), so the only thing that reading bought was a second place
+to look; a heavy scope wanting more cores than a light one is a real setting to
+save. The old key is read once, as a migration.
+
+An older preset may still carry `final_runs`; it is deliberately ignored on
+load rather than migrated — reading it back would resurrect the second opinion
+this removed.

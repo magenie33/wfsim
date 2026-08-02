@@ -147,7 +147,10 @@ around (decision 2026-07-31).
   new items ("build 2") and every tooltip that refers to one. A **preset** is a saved state of something that
   always exists, read only by its own module: `builder-builds` (a build),
   `simulator-scenarios` (a fight, buff settings included), `optimizer` (a
-  search: the SCOPE + how many finalists to keep. The final round is
+  search: the SCOPE and HOW to run it — finalists and CPU threads. The
+  optimizer tab is two halves split at its two preset bars, with nothing on it
+  belonging to neither: everything above the fight's bar is the search preset,
+  everything below is the simulator's, read-only. The final round is
   `finalists × the SCENARIO's runs` — how hard you measure belongs to the
   fight, so the optimizer offers no control for it (user, 2026-08-02)).
   There is always ≥1,
