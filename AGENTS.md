@@ -164,6 +164,20 @@ around (decision 2026-07-31).
   deleted, and the editor stands down instead of showing a document that is not
   there. Presets are not — the modules behind them always have a state, and
   "no build" is not something the builder can show.
+- **A SHARE LINK reproduces the whole thing** (2026-08-02):
+  `/weapons/<Wiki_Name>?b=<code>` carries the build, the RIVENS it equips
+  (a custom exists only on the machine that made it, so it must travel
+  inline), the scenario it was measured in, and the measurement itself as the
+  sharer's claim. Opening one creates a NEW copy of each — never a merge, never
+  an overwrite — repoints the build's riven ids at the copies, strips the query
+  so a refresh cannot import twice, and says what it dropped. The payload is
+  JSON → `deflate-raw` → base64url behind a one-character version; a full share
+  is ~600 chars. IDs travel as their own stable slugs, never as indices into a
+  table: a table would have to stay append-only forever or silently reinterpret
+  every link already posted. It rides the QUERY, not the fragment — a fragment
+  never reaches a crawler and these links are meant to be posted. The card
+  (`drawShareCard`, a canvas PNG to paste into chat) always carries the
+  wordmark and the site's host.
 - `api()` transport: `/api/meta` and `/api/i18n` are GET, everything
   else is POST — the native server matches on exact (method, path).
 

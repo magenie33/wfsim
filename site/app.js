@@ -591,6 +591,15 @@ function nav(path) {
   route();
 }
 function route() {
+  // A SHARED LINK is answered before anything else on the page is drawn for
+  // it, and the query is stripped afterwards so a refresh does not import the
+  // same build a second time. `?b=` only ever ADDS — see importShare.
+  const shared = new URLSearchParams(location.search).get(SHARE_PARAM);
+  if (shared) {
+    history.replaceState(null, "", location.pathname);
+    importShare(shared);
+    return;
+  }
   const m = location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens)?\/?$/);
   // A hand-typed URL is not the canonical slug. Fold case and treat spaces
   // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
@@ -1493,6 +1502,291 @@ function renderRivenTools() {
   });
 }
 
+// ---- SHARING — a link that reproduces the whole thing ------------------
+//
+// The principle (user, 2026-08-02): everything travels, and nothing has to be
+// set up by hand on arrival. Most build links elsewhere carry the mods and
+// leave you to re-enter the enemy, the buffs, the riven — so the number the
+// sharer quoted is one you cannot reproduce. Here the payload is the build,
+// the rivens it equips, the fight it was measured in, and the measurement
+// itself, and opening it creates a fresh copy of each. Nothing is overwritten.
+//
+// It rides the QUERY, not the fragment (user): a fragment never reaches a
+// crawler, and the link is meant to be posted, previewed and looked at.
+//
+// Encoding: JSON -> deflate-raw -> base64url, behind a one-character version
+// so the reader knows what it is holding. A full share — build + riven +
+// scenario + result — is ~600 characters, which no chat app will break. IDs
+// travel as their own stable English slugs rather than as indices into a
+// table: the table would have to be append-only forever, and one reordering
+// would silently reinterpret every link ever posted.
+const SHARE_PARAM = "b";
+const SHARE_V_DEFLATE = "1";
+const SHARE_V_PLAIN = "0";
+
+const b64urlEnc = (u8) => {
+  let s = "";
+  u8.forEach((b) => { s += String.fromCharCode(b); });
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+};
+const b64urlDec = (s) => {
+  const b = atob(s.replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(b, (c) => c.charCodeAt(0));
+};
+
+async function deflate(u8) {
+  if (typeof CompressionStream === "undefined") return null;
+  const cs = new CompressionStream("deflate-raw");
+  const w = cs.writable.getWriter();
+  w.write(u8); w.close();
+  return new Uint8Array(await new Response(cs.readable).arrayBuffer());
+}
+async function inflate(u8) {
+  const ds = new DecompressionStream("deflate-raw");
+  const w = ds.writable.getWriter();
+  w.write(u8); w.close();
+  return new Uint8Array(await new Response(ds.readable).arrayBuffer());
+}
+
+// Everything this build needs to exist somewhere else.
+function sharePayload() {
+  const st = snapshotState();
+  const p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
+  // The RIVENS the build actually equips, by definition — the recipient has
+  // no such item and never will unless it travels. This is the custom/preset
+  // line showing up in the wire format: a preset is a state both sides can
+  // hold, a custom is a thing only one of them made.
+  const used = new Set(st.slots.map((s) => s.mod).filter(isRivenId));
+  const rivens = loadPresetList(RIVENS)
+    .filter((x) => used.has(RIVEN_PREFIX + x.name))
+    .map((x) => ({ n: x.name, s: x.state }));
+  return {
+    v: 1,
+    w: st.weapon,
+    n: activePreset,
+    b: { slots: st.slots, arcane: st.arcane, arcaneRank: st.arcaneRank, evoSel: st.evoSel },
+    r: rivens,
+    sc: { name: activeScenario, state: snapshotScenario() },
+    // The sharer's MEASUREMENT, kept as a claim rather than as a fact: the
+    // recipient's own run is what decides, and showing both is the honest
+    // form of "this build does X".
+    m: p && p.lastResult ? { r: p.lastResult.r, at: p.lastResult.at } : null,
+  };
+}
+
+async function shareUrl() {
+  const json = new TextEncoder().encode(JSON.stringify(sharePayload()));
+  const z = await deflate(json);
+  const code = z && z.length < json.length
+    ? SHARE_V_DEFLATE + b64urlEnc(z)
+    : SHARE_V_PLAIN + b64urlEnc(json);
+  const w = weaponInfo($("weapon").value);
+  return `${location.origin}${weaponPath(w.id)}?${SHARE_PARAM}=${code}`;
+}
+
+async function decodeShare(code) {
+  if (!code) return null;
+  const body = code.slice(1);
+  const bytes = b64urlDec(body);
+  const json = code[0] === SHARE_V_DEFLATE ? await inflate(bytes) : bytes;
+  const data = JSON.parse(new TextDecoder().decode(json));
+  return data && data.b ? data : null;
+}
+
+// Land a shared link: a NEW copy of every part, never a merge into what is
+// already there. A link is someone else's work — it may not overwrite yours,
+// and it may not need you to rebuild half of it by hand.
+async function importShare(code) {
+  let data;
+  try { data = await decodeShare(code); } catch (_) { data = null; }
+  if (!data) { presetToast(tr("that share link could not be read")); return false; }
+  const w = (META.weapons || []).find((x) => x.id === data.w);
+  if (!w) { presetToast(tr("that share link is for a weapon this build of the site does not have")); return false; }
+
+  switchWeapon(w.id);
+  const dropped = [];
+
+  // 1. The RIVENS first: the build's slots point at them by name, and the
+  //    name may already be taken here, so the map from old name to new is
+  //    what the slots are rewritten with.
+  const renamed = {};
+  if ((data.r || []).length) {
+    const ps = loadPresetList(RIVENS);
+    (data.r || []).forEach((x) => {
+      const name = freeName(ps, (n) => x.n + (n > 1 ? " " + n : ""));
+      renamed[x.n] = name;
+      ps.push({ name, savedAt: Date.now(), state: x.s });
+    });
+    storePresetList(RIVENS, ps);
+    refreshRivenNames();
+  }
+
+  // 2. The SCENARIO, as its own new entry — the fight the number was measured
+  //    in is half of what makes the number checkable.
+  if (data.sc && data.sc.state) {
+    const sc = loadPresetList(SCENARIOS);
+    const name = freeName(sc, (n) => (data.sc.name || "scenario") + (n > 1 ? " " + n : ""));
+    sc.push({ name, savedAt: Date.now(), state: data.sc.state });
+    storePresetList(SCENARIOS, sc);
+    activeScenario = name;
+    localStorage.setItem(presetActiveKey(SCENARIOS), name);
+  }
+
+  // 3. The BUILD, with riven ids repointed at the copies just made.
+  const slots2 = (data.b.slots || []).map((s) => {
+    if (!isRivenId(s.mod)) return s;
+    const was = String(s.mod).slice(RIVEN_PREFIX.length);
+    return { ...s, mod: RIVEN_PREFIX + (renamed[was] || was) };
+  });
+  const state = {
+    weapon: w.id,
+    slots: slots2,
+    arcane: data.b.arcane,
+    arcaneRank: data.b.arcaneRank,
+    evoSel: data.b.evoSel || {},
+    sim: (data.sc && data.sc.state) || undefined,
+  };
+  const builds = loadPresetList(BUILDS);
+  // Named for where it came from. Without it a link lands as "build 1 2",
+  // which says nothing about being someone else's work.
+  const base = `${data.n || "build"} (shared)`;
+  const name = freeName(builds, (n) => base + (n > 1 ? " " + n : ""));
+  activePreset = name;
+  localStorage.setItem(presetActiveKey(BUILDS), name);
+  whileApplying(() => restoreState(state, w.id));
+  // What THIS build of the site could not hold — an id from a newer release,
+  // a mod this weapon does not take. Said out loud rather than silently
+  // dropped, the same rule the cross-weapon import follows.
+  (data.b.slots || []).forEach((s) => {
+    if (s.mod && !slots.some((x) => x.mod === s.mod) && !isRivenId(s.mod)) dropped.push(s.mod);
+  });
+  builds.push({ name, savedAt: Date.now(), state: snapshotState(),
+    ...(data.m ? { lastResult: data.m } : {}) });
+  storePresetList(BUILDS, builds);
+
+  renderPresetBar(); renderScenarioBar(); renderMods(); renderSim(); refreshPanel();
+  renderStoredSimResult();
+  const bits = [tr("build")];
+  if ((data.r || []).length) bits.push(`${data.r.length} ${tr("riven")}`);
+  if (data.sc) bits.push(tr("scenario"));
+  presetToast(`${tr("imported")}: ${name} · ${bits.join(" + ")}` +
+    (dropped.length ? ` · ${tr("dropped")} ${dropped.length}` : ""));
+  return true;
+}
+
+// The share panel: the link, and a CARD to paste into a chat. Both carry the
+// site's own address — an image that travels without one is a screenshot of
+// nowhere (user, 2026-08-02).
+async function openSharePanel(bar) {
+  const panel = bar.querySelector(".pshare");
+  if (!panel) return;
+  if (!panel.hidden) { panel.hidden = true; return; }
+  const url = await shareUrl();
+  panel.innerHTML =
+    `<div class="sh-row"><input class="sh-url" type="text" readonly value="${escHtml(url)}">` +
+    `<button class="cu-btn sh-copy">${escHtml(tr("copy link"))}</button>` +
+    `<button class="cu-btn sh-img">${escHtml(tr("copy image"))}</button>` +
+    `<button class="cu-btn sh-dl">${escHtml(tr("download image"))}</button></div>` +
+    `<div class="sh-note">${escHtml(tr("the link carries the build, its rivens, the fight it was measured in and the measurement — opening it saves a new copy of each"))}</div>` +
+    `<canvas class="sh-canvas" width="900" height="470"></canvas>`;
+  panel.hidden = false;
+  const urlBox = panel.querySelector(".sh-url");
+  urlBox.onclick = () => urlBox.select();
+  const canvas = panel.querySelector(".sh-canvas");
+  await drawShareCard(canvas, url);
+
+  const say = (msg) => presetToast(tr(msg));
+  panel.querySelector(".sh-copy").onclick = async () => {
+    try { await navigator.clipboard.writeText(url); say("link copied"); }
+    // Clipboard permission can be refused; selecting the text is the fallback
+    // that always works, and no dialog is involved either way.
+    catch (_) { urlBox.select(); say("press Ctrl+C to copy the selected link"); }
+  };
+  panel.querySelector(".sh-img").onclick = async () => {
+    try {
+      const blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      say("image copied");
+    } catch (_) { say("this browser will not copy images — use download"); }
+  };
+  panel.querySelector(".sh-dl").onclick = () => {
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = `wfsim-${$("weapon").value}-${activePreset}.png`.replace(/\s+/g, "-");
+    a.click();
+  };
+}
+
+// The card. Drawn here rather than server-side: it has to work on a static
+// site with no backend, and pasting a picture into a group chat is how a
+// build actually gets shown around.
+async function drawShareCard(canvas, url) {
+  const g = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  const css = getComputedStyle(document.documentElement);
+  const v = (n, fallback) => (css.getPropertyValue(n) || "").trim() || fallback;
+  const bg = v("--surface", "#171a21"), fg = v("--text", "#f2f4f8");
+  const dim = v("--muted", "#6b7280"), gold = v("--gold", "#e8c37a");
+  const line = v("--line", "rgba(255,255,255,.09)");
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  g.strokeStyle = line; g.strokeRect(.5, .5, W - 1, H - 1);
+
+  const w = weaponInfo($("weapon").value);
+  g.fillStyle = fg;
+  g.font = "600 34px system-ui, sans-serif";
+  g.fillText(w.name, 36, 62);
+  g.fillStyle = dim;
+  g.font = "15px system-ui, sans-serif";
+  g.fillText(`${activePreset} · ${tr(w.subtype || w.mod_class || "")}`, 36, 88);
+
+  // The MODS, as they are equipped — the thing a reader is actually looking
+  // for when a build is posted.
+  g.font = "15px system-ui, sans-serif";
+  let y = 132;
+  slots.forEach((s, i) => {
+    const m = s.mod && modById(s.mod);
+    const col = 36 + (i % 2) * 430;
+    if (i % 2 === 0 && i) y += 26;
+    g.fillStyle = m ? fg : dim;
+    const label = m ? m.name : "—";
+    g.fillText(`${i === EXILUS ? "E" : i + 1}. ${label}`.slice(0, 42), col, y);
+  });
+
+  // The NUMBER, if this build has been measured. It is the sharer's claim and
+  // the card says under what — a number with no fight attached is a boast.
+  const p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
+  const r = p && p.lastResult && p.lastResult.r;
+  y += 44;
+  g.strokeStyle = line;
+  g.beginPath(); g.moveTo(36, y); g.lineTo(W - 36, y); g.stroke();
+  y += 40;
+  if (r) {
+    const kpm = r.duration ? (r.kills || 0) / (r.duration / 60) : 0;
+    g.fillStyle = gold;
+    g.font = "600 40px system-ui, sans-serif";
+    g.fillText(sig2(kpm) + " KPM", 36, y);
+    g.fillStyle = dim;
+    g.font = "15px system-ui, sans-serif";
+    const en = (META.enemies || []).find((e) => e.id === sim.enemy) || {};
+    g.fillText(`${en.name || sim.enemy} · Lv ${sim.level}${sim.steel_path ? " · SP" : ""} · ${sim.duration}s`, 36, y + 26);
+  } else {
+    g.fillStyle = dim;
+    g.font = "17px system-ui, sans-serif";
+    g.fillText(tr("not simulated yet"), 36, y);
+  }
+
+  // The address, always. Bottom right, where a watermark belongs.
+  g.fillStyle = gold;
+  g.font = "600 20px system-ui, sans-serif";
+  g.fillText("WF", W - 190, H - 34);
+  const wf = g.measureText("WF").width;
+  g.fillStyle = fg;
+  g.fillText("Sim", W - 190 + wf, H - 34);
+  g.fillStyle = dim;
+  g.font = "14px system-ui, sans-serif";
+  g.fillText(new URL(url).host, W - 190, H - 14);
+}
+
 // ---- Presets ----------------------------------------------------------
 // The page is THREE MODULES — builder, simulator, optimizer (user,
 // 2026-07-29) — plus EDITORS that feed them, and every preset collection is
@@ -2151,9 +2445,11 @@ function renderPresetBarIn(bar, cfg) {
     (presetSources(cfg.domain, presetWeapon()).length
       ? `<span class="pchip imp" title="${escHtml(tr("copy one from another weapon"))}">⇤ ${escHtml(tr("import"))}</span>`
       : "") +
+    (cfg.extra || "") +
     undoButtons(cfg.domain) +
-    `<div class="pimport" hidden></div>`;
+    `<div class="pimport" hidden></div><div class="pshare" hidden></div>`;
   wireUndoButtons(bar, cfg.domain);
+  if (cfg.onExtra) cfg.onExtra(bar);
 
   // Typing re-renders the bar (chips re-filter), so hand focus back.
   const filt = bar.querySelector(".pfilter");
@@ -2317,6 +2613,13 @@ function renderPresetBar() {
     rescope: (st, weapon) => ({ ...st, weapon }),
     label: tr("Builds"),
     noun: "build",
+    // Sharing belongs to the BUILD bar: what travels is the open build, plus
+    // everything needed to reproduce its number.
+    extra: `<button class="pchip share">${escHtml(tr("share"))}</button>`,
+    onExtra: (bar) => {
+      const b = bar.querySelector(".share");
+      if (b) b.onclick = (e) => { e.stopPropagation(); openSharePanel(bar); };
+    },
     load: () => loadPresetList(BUILDS),
     store: (ps) => storePresetList(BUILDS, ps),
     active: () => activePreset,

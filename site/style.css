@@ -627,3 +627,11 @@ label.check input{width:auto}
   color:var(--muted);cursor:pointer;font-size:13px;line-height:1;padding:3px 6px}
 .pundo .pop:hover:not([disabled]){color:var(--text);border-color:var(--line)}
 .pundo .pop[disabled]{opacity:.3;cursor:default}
+
+/* Share panel — the link and the card, on the build bar. */
+.pshare{flex-basis:100%;margin-top:8px}
+.sh-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.sh-url{flex:1;min-width:240px;background:var(--panel3);color:var(--text);
+  border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit;font-size:12px}
+.sh-note{color:var(--muted);font-size:12px;margin:8px 0 6px}
+.sh-canvas{max-width:100%;height:auto;border:1px solid var(--line);border-radius:10px;display:block}

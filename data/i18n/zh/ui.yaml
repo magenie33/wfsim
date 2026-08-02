@@ -194,6 +194,22 @@ ui:
   "current": 当前
   "Ctrl+Z undoes the last change": Ctrl+Z 撤销上一步改动
   "undo (Ctrl+Z)": 撤销（Ctrl+Z）
+  "share": 分享
+  "copy link": 复制链接
+  "copy image": 复制图片
+  "download image": 下载图片
+  "link copied": 链接已复制
+  "image copied": 图片已复制
+  "press Ctrl+C to copy the selected link": 已选中链接，按 Ctrl+C 复制
+  "this browser will not copy images — use download": 这个浏览器不支持复制图片，请用下载
+  "the link carries the build, its rivens, the fight it was measured in and the measurement — opening it saves a new copy of each": 链接带上了配装、它装的裂罅、测它用的那场仗，以及测出的数字——对方打开会各存一份新的，不会覆盖他原有的
+  "that share link could not be read": 这条分享链接读不出来
+  "that share link is for a weapon this build of the site does not have": 这条分享链接指向本站还没有的武器
+  "not simulated yet": 尚未模拟
+  "imported": 已导入
+  "dropped": 丢弃
+  "build": 配装
+  "riven": 裂罅
   "redo (Ctrl+Shift+Z)": 重做（Ctrl+Shift+Z）
   "save as a new build": 存为一套新配装
   "nothing to undo": 没有可撤销的操作
