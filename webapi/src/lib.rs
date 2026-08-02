@@ -1406,12 +1406,18 @@ pub fn panel_json(v: &Value) -> Value {
             // An aim-gated effect still LISTS: the reader needs to see the
             // mod contributes, and under what condition. Unwrap it, let the
             // ordinary arms push as usual, then tag those rows below.
-            let (e, aim_gated): (&ModEffect, bool) = match e {
-                WhileAiming(inner) => (inner, true),
-                other => (other, false),
+            // A TENNO-gated effect lists the same way, tagged with the state
+            // it waits on. The neutral Tenno is doing none of them, so the row
+            // says what the mod WOULD give and why it currently gives nothing
+            // — which is the whole reason the condition is modelled rather
+            // than folded in.
+            let (e, aim_gated, tenno_gate): (&ModEffect, bool, Option<&'static str>) = match e {
+                WhileAiming(inner) => (inner, true, None),
+                WhileTenno(c, inner) => (&**inner, false, Some(c.label())),
+                other => (other, false, None),
             };
             match *e {
-                WhileAiming(_) => unreachable!("unwrapped above"),
+                WhileAiming(_) | WhileTenno(..) => unreachable!("unwrapped above"),
                 BaseDamage(x) => push("base_damage", x, None),
                 Multishot(x) => push("multishot", x, None),
                 CritChance(x) => push("crit_chance", x, None),
@@ -1569,11 +1575,14 @@ pub fn panel_json(v: &Value) -> Value {
             }
             // Tag whatever the arms just pushed as aim-gated, so the panel
             // never shows a contribution without the condition that earns it.
-            if aim_gated {
+            for cond in [aim_gated.then_some("while aiming"), tenno_gate]
+                .into_iter()
+                .flatten()
+            {
                 for row in src.iter_mut().skip(before) {
                     row.3 = Some(match row.3.take() {
-                        Some(t) => format!("{t}; while aiming"),
-                        None => "while aiming".to_string(),
+                        Some(t) => format!("{t}; {cond}"),
+                        None => cond.to_string(),
                     });
                 }
             }

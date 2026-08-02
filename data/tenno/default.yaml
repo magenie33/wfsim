@@ -37,6 +37,25 @@ armor: 0
 # pool the sim will have to spend from, not a static stat.
 energy: 0
 
+# Sprint multiplier (wiki `Module:Warframes/data` field `Sprint`; Loki Prime is
+# 1.25). Nothing reads it for damage — it is here because a frame has it, and
+# the point of this entry is that a frame fills it in rather than adding it.
+sprint: 1.0
+
+# WHAT THE PLAYER IS DOING. A mod card gates on these in words ("while
+# Invisible", "while Airborne") and until now each such mod was modelled as
+# either unconditional (Spectral Serration paid +330% to everyone) or as an
+# unevaluable conditional. They are conditions the ENGINE can now ask about.
+#
+# The neutral Tenno is doing none of them, which is the honest default for
+# "some max-rank frame with no abilities running": those mods contribute
+# nothing, and the panel says so rather than folding a number in. Give a frame
+# `invisible: true` and Spectral Serration starts paying, with no code change —
+# that is the whole reason this block exists.
+state:
+  invisible: false
+  airborne: false
+
 source:
   # No wiki page defines "the default Tenno" — this is our own scaffold, and
   # the values are placeholders rather than transcribed facts. The frame stats

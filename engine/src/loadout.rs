@@ -80,6 +80,31 @@ impl CondBucket {
     }
 }
 
+/// A player STATE a mod can be conditional on. One variant per field of
+/// [`crate::tenno_data::TennoState`] — the two are meant to be read together.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TennoCondition {
+    Invisible,
+    Airborne,
+}
+
+impl TennoCondition {
+    /// Is this condition true of `t`?
+    pub fn holds(self, t: &crate::tenno_data::Tenno) -> bool {
+        match self {
+            TennoCondition::Invisible => t.state.invisible,
+            TennoCondition::Airborne => t.state.airborne,
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            TennoCondition::Invisible => "while Invisible",
+            TennoCondition::Airborne => "while Airborne",
+        }
+    }
+}
+
 /// One resolved effect of a mod at its equipped rank.
 ///
 /// NOT `Copy`: [`ModEffect::WhileAiming`] nests an effect, which needs
@@ -178,6 +203,15 @@ pub enum ModEffect {
     /// Wrapping rather than adding a flag to each variant keeps every other
     /// arm of the resolver unaware that aiming exists.
     WhileAiming(Box<ModEffect>),
+    /// Gated on what the PLAYER is doing — "while Invisible", "while
+    /// Airborne". `WhileAiming` is the same idea and came first; this is the
+    /// general form, asked of [`crate::tenno_data::Tenno`] rather than of a
+    /// bool threaded through resolve.
+    ///
+    /// The neutral Tenno does none of these, so today every one of them
+    /// resolves to nothing — which is the point. A frame that turns one on
+    /// makes the mod pay with no change here (user, 2026-08-02).
+    WhileTenno(TennoCondition, Box<ModEffect>),
     /// Faction damage bonus (Bane/Expel/Cleanse/Smite): +v total damage vs a
     /// MATCHING enemy faction. Its own multiplicative bucket, ADDITIVE with
     /// other faction sources; **double-dips on DoT ticks** (applied twice).
@@ -464,6 +498,7 @@ impl ModEffect {
         match *self {
             // The gate is stated as a suffix so the inner line reads normally.
             WhileAiming(ref inner) => format!("{} (while aiming)", inner.describe()),
+            WhileTenno(c, ref inner) => format!("{} ({})", inner.describe(), c.label()),
             BaseDamage(v) => format!("{} Base Damage", pct(v)),
             Multishot(v) => format!("{} Multishot", pct(v)),
             CritChance(v) => format!("{} Crit Chance", pct(v)),
@@ -1210,6 +1245,21 @@ pub fn resolve_with(
     policy: StackPolicy,
     aiming: bool,
 ) -> ResolvedPanel {
+    resolve_for(base, mods, policy, aiming, crate::tenno_data::default_tenno())
+}
+
+/// As [`resolve_with`], for a GIVEN Tenno. Every weapon is fired by somebody;
+/// today that somebody is the neutral entry in `data/tenno/`, doing none of the
+/// things a mod card gates on. This is the seam a real frame arrives through —
+/// pass one whose `state.invisible` is true and Spectral Serration pays,
+/// without a line changing here (user, 2026-08-02).
+pub fn resolve_for(
+    base: &WeaponBase,
+    mods: &[&ModDef],
+    policy: StackPolicy,
+    aiming: bool,
+    tenno: &crate::tenno_data::Tenno,
+) -> ResolvedPanel {
     let (mut bd, mut ms, mut cc, mut cd, mut sc, mut fr, mut rl, mut sd) =
         (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     // Magazine-capacity and status-duration additive buckets.
@@ -1254,15 +1304,21 @@ pub fn resolve_with(
             }
         }
         for e in &m.effects {
-            // Unwrap the aim gate HERE so no arm below has to know about it: a
-            // gated effect either becomes its inner effect or vanishes.
+            // Unwrap the player gates HERE so no arm below has to know about
+            // them: a gated effect either becomes its inner effect or vanishes.
+            // `aiming` is the older, bare form of the same idea; the Tenno one
+            // asks the player's state instead of a threaded bool.
             let e: &ModEffect = match e {
                 ModEffect::WhileAiming(inner) if aiming => inner,
                 ModEffect::WhileAiming(_) => continue,
+                ModEffect::WhileTenno(c, inner) if c.holds(tenno) => inner,
+                ModEffect::WhileTenno(..) => continue,
                 other => other,
             };
             match *e {
-                ModEffect::WhileAiming(_) => unreachable!("unwrapped above"),
+                ModEffect::WhileAiming(_) | ModEffect::WhileTenno(..) => {
+                    unreachable!("unwrapped above")
+                }
                 ModEffect::BaseDamage(v) => bd += v,
                 ModEffect::Multishot(v) => ms += v,
                 ModEffect::CritChance(v) => cc += v,
@@ -1765,6 +1821,54 @@ mod tests {
 
     fn m_req(id: &'static str, requires: Option<&'static str>, disables: Vec<&'static str>, effects: Vec<ModEffect>) -> ModDef {
         ModDef { requires, disables, ..m(id, effects) }
+    }
+
+    /// Spectral Serration reads "+330% Damage while Invisible", and used to be
+    /// a flat `base_damage_bonus` — every shot of every build collected it.
+    /// The condition is now a TENNO question: the neutral player in
+    /// `data/tenno/` is visible, so the mod contributes nothing, and the same
+    /// mod on an invisible Tenno pays in full through the same code path.
+    ///
+    /// That last half is the point of the seam. Nothing in the engine, the
+    /// data, or the UI has to learn about invisibility again when a real frame
+    /// arrives — it arrives as a `Tenno` (user, 2026-08-02).
+    #[test]
+    fn a_player_state_condition_is_asked_of_the_tenno() {
+        let base = verglas_prime();
+        let ss = crate::mods_data::load_class("rifle")
+            .into_iter()
+            .find(|d| d.id == "spectral_serration")
+            .expect("spectral_serration is in the rifle pool");
+        // It loads WRAPPED. Asserting the bare bonus would pass on a build
+        // where the gate had been dropped, which is the bug this exists to stop.
+        assert!(
+            ss.effects.iter().any(|e| matches!(e,
+                ModEffect::WhileTenno(TennoCondition::Invisible, inner)
+                    if matches!(**inner, ModEffect::BaseDamage(v) if (v - 3.3).abs() < 1e-9))),
+            "spectral_serration is gated on invisibility, got {:?}",
+            ss.effects
+        );
+
+        let plain = resolve(&base, &[], StackPolicy::AssumedMax).modified_base;
+        let neutral = crate::tenno_data::default_tenno();
+        assert!(!neutral.state.invisible, "the default Tenno is visible");
+        assert!(
+            (resolve_for(&base, &[&ss], StackPolicy::AssumedMax, true, neutral).modified_base
+                - plain)
+                .abs()
+                < 1e-9,
+            "a visible Tenno collects nothing from a while-Invisible mod"
+        );
+
+        let mut hidden = neutral.clone();
+        hidden.state.invisible = true;
+        let paid =
+            resolve_for(&base, &[&ss], StackPolicy::AssumedMax, true, &hidden).modified_base;
+        assert!(
+            (paid - plain * 4.3).abs() < 1e-6,
+            "an invisible Tenno collects +330%: {paid} vs {}",
+            plain * 4.3
+        );
     }
 
     /// The sim used to satisfy `while_aiming` silently, so every aim-gated

@@ -180,6 +180,26 @@ bucket effect **and** a `kind: buff` effect.
   decay: lose_one_and_reset   # lose_one_and_reset | per_stack_expiry | all_drop
 ```
 
+### `condition:` — the state that has to hold
+
+`condition:` gates ANY effect, not only a `kind: buff` one: put it on a plain
+bucket and the bucket only counts while the state holds.
+
+| value | asked of | means |
+|---|---|---|
+| `while_aiming` | the SCENARIO (`resolve_with(.., aiming)`) | the player is aiming down sights |
+| `while_invisible` | the TENNO (`data/tenno/`, `state.invisible`) | e.g. Spectral Serration's "+330% Damage while Invisible" |
+| `while_airborne` | the TENNO (`state.airborne`) | e.g. the Aero set |
+
+The player-state values resolve to `ModEffect::WhileTenno(TennoCondition, …)`,
+which `loadout::resolve_for` evaluates against the Tenno it was handed. The
+neutral Tenno in `data/tenno/` is doing none of them, so such a mod contributes
+nothing today and the panel labels the row with the condition rather than
+hiding it — and the day a frame turns the state on, the mod pays with no code
+change (user, 2026-08-02). An unrecognised `condition:` gates NOTHING, which
+`mods_data`'s card-vs-model test catches as "the card states a condition and
+the model has none".
+
 `engine::mods_data` maps the modeled `(trigger, grants)` combos to the buff
 `ModEffect` variants at max rank (`OnKillMultishot`, `ConditionOverload`,
 `OnHeadshotCritChance`, `OnHeadshotKillCritChance`); triggers not yet modeled

@@ -21,9 +21,10 @@ use std::sync::OnceLock;
 
 use serde::Deserialize;
 
-/// The player's stat block. Survivability pools plus the ability-energy pool,
-/// which is a pool rather than a stat: Secondary Surge reads what is LEFT after
-/// a cast.
+/// The player's stat block, shaped like a WARFRAME's — the field names are the
+/// wiki's own (`Module:Warframes/data`: Armor, Health, Shield, Energy, Sprint),
+/// so the day a frame is transcribed it fills these in rather than needing a
+/// second vocabulary invented for it (user, 2026-08-02).
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct Tenno {
     pub id: String,
@@ -34,9 +35,36 @@ pub struct Tenno {
     pub shield: f64,
     /// Above shields, and blocks status. 0 is its true unbuffed value.
     pub overguard: f64,
-    /// Mitigates health damage only. 0 is its true unbuffed value.
+    /// Mitigates health damage only. 0 is its true unbuffed value — and the
+    /// number Primary Bulwark reads ("+1% damage per point above 1,000").
     pub armor: f64,
     pub energy: f64,
+    /// Sprint multiplier (wiki `Sprint`; Loki Prime 1.25). No damage reader
+    /// yet — recorded because the frame has it.
+    #[serde(default = "one")]
+    pub sprint: f64,
+    /// What the player is DOING. A mod's card gates on these ("while
+    /// Invisible", "while Airborne"), and the neutral Tenno is doing none of
+    /// them — which is why those mods contribute nothing today and will
+    /// contribute the moment a frame that does turns one on.
+    #[serde(default)]
+    pub state: TennoState,
+}
+
+fn one() -> f64 {
+    1.0
+}
+
+/// The player STATES a weapon mod can be conditional on. Every field defaults
+/// to false: the neutral Tenno is standing still, visible, on the ground.
+#[derive(Debug, Clone, Deserialize, PartialEq, Default)]
+pub struct TennoState {
+    /// Spectral Serration: "+330% Damage while Invisible".
+    #[serde(default)]
+    pub invisible: bool,
+    /// Aerial Ace and the Aero set: "while Airborne".
+    #[serde(default)]
+    pub airborne: bool,
 }
 
 /// The default Tenno (`data/tenno/default.yaml`), parsed once.

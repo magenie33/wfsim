@@ -1435,14 +1435,31 @@ from wiki; falloff/ballistics/AoE math need measurement). **High-risk**
 ## 8. Target mitigation (pipeline layer [7])
 
 > **The other actor.** Everything in this section is about the TARGET, because
-> the target is the only actor the sim has ever had. The player now exists as
-> data — `data/tenno/`, loaded by `engine::tenno_data` — carrying health,
-> shield, overguard, armor and energy. It is **inert on purpose**: no damage
-> number moves because of it. It is the seam for the mechanics that need a
-> player and currently have nowhere to live — Secondary Fortifier's Overguard
-> gain, Secondary Surge's remaining-energy scaling, the Warframe abilities in
-> §6's GunCO omission list, and self-stagger. `health`/`shield` are placeholders
-> at 1; no frame has 1 health, and nothing may treat the value as meaningful.
+> the target is the only actor the sim has ever had. The player exists as data
+> — `data/tenno/`, loaded by `engine::tenno_data` — shaped like a WARFRAME:
+> health, shield, overguard, armor, energy, sprint (the wiki's own
+> `Module:Warframes/data` field names, so a transcribed frame fills these in
+> rather than needing a second vocabulary), plus a `state` block for what the
+> player is DOING.
+>
+> **`state` is the first thing about the Tenno that moves a number.** A mod
+> card gates on player state in words — "while Invisible", "while Airborne" —
+> and `condition: while_invisible` in a mod file resolves to
+> `ModEffect::WhileTenno(TennoCondition::Invisible, …)`, which
+> `loadout::resolve_for` asks of the Tenno it was handed. The neutral entry is
+> doing none of them, so those mods contribute nothing and the panel says so on
+> the row (`while Invisible`) instead of folding the number in. Hand
+> `resolve_for` a Tenno with `state.invisible: true` and Spectral Serration
+> pays its +330% through the same path, with no code change anywhere — which is
+> the point of modelling the player before there is a frame (user, 2026-08-02).
+>
+> The stat block is still inert: nothing reads health/shield/armor/energy yet.
+> It is the seam for the mechanics that need a player and currently have
+> nowhere to live — Secondary Fortifier's Overguard gain, Secondary Surge's
+> remaining-energy scaling, Primary Bulwark's "+1% damage per armor above
+> 1,000", the Warframe abilities in §6's GunCO omission list, and self-stagger.
+> `health`/`shield` are placeholders at 1; no frame has 1 health, and nothing
+> may treat the value as meaningful.
 >
 > **The third actor: the COMPANION.** A sentinel weapon does not belong to the
 > Tenno — it belongs to a companion standing beside them, and that distinction

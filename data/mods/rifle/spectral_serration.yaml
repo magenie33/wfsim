@@ -13,16 +13,13 @@ effects:
   # stated in the description and modelled nowhere (user, 2026-08-02, the same
   # report as Primary Acuity's "Weak Point").
   #
-  # Invisibility is a WARFRAME state and this is a weapon calculator: there is
-  # nothing here that could turn it on or off. So it takes the shape every
-  # other unevaluable condition takes — an unhandled `trigger` resolves to
-  # `CondBuff(BaseDamage)`, which the PANEL shows at full value on its own
-  # conditional line, and which the SIMULATION contributes nothing to. A number
-  # you can see and reason about, rather than one folded silently into a build
-  # that is not invisible.
-  - kind: buff
-    trigger: while_invisible
-    grants: base_damage
+  # Invisibility is a WARFRAME state, and the calculator now has one to ask:
+  # `condition: while_invisible` is read against `data/tenno/`, whose neutral
+  # entry is not invisible — so this contributes nothing, in the panel and in
+  # the sim alike. Give the Tenno `state.invisible: true` and it pays, with no
+  # code change anywhere (user, 2026-08-02).
+  - kind: base_damage_bonus
+    condition: while_invisible
     rank0: 0.3
     rankMax: 3.3
 

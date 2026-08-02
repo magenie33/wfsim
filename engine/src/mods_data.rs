@@ -145,17 +145,34 @@ fn indirect_grant(grants: &str) -> Option<IndirectStat> {
 
 /// Map one YAML effect entry to a [`ModEffect`] at max rank (None = no damage
 /// effect / not modeled — the mod still loads).
+/// `condition:` values that name a PLAYER STATE rather than an aim. Each maps
+/// to a [`TennoCondition`], which resolve asks of `data/tenno/` — so the mod
+/// pays exactly when the Tenno is doing the thing, and nothing changes here
+/// when a real frame arrives. An unrecognised string gates nothing, which the
+/// mod-condition test catches as "the card states a condition, the model has
+/// none".
+fn tenno_condition(cond: Option<&str>) -> Option<crate::loadout::TennoCondition> {
+    match cond? {
+        "while_invisible" => Some(crate::loadout::TennoCondition::Invisible),
+        "while_airborne" => Some(crate::loadout::TennoCondition::Airborne),
+        _ => None,
+    }
+}
+
 fn effect(v: &Value) -> Option<ModEffect> {
     let kind = v.get("kind").and_then(Value::as_str)?;
     let max = |k: &str| f(v, k).unwrap_or(0.0);
-    // `condition: while_aiming` gates ANY effect, not only a triggered one.
+    // `condition:` gates ANY effect, not only a triggered one. `while_aiming`
+    // has its own wrapper (it predates the Tenno); every other player state is
+    // a `TennoCondition`, asked of `data/tenno/` at resolve time.
     // Critical Focus is a flat crit bonus that simply does not exist unless
     // you are aiming — there is no event to wait for, so `kind: buff` (which
     // requires a trigger) cannot say it. The wrapper already existed; only
     // the data path was missing. The `buff` arm reads the same key itself,
     // for the effect it builds, and is skipped here so nothing double-wraps.
-    let aim_gated = kind != "buff"
-        && v.get("condition").and_then(Value::as_str) == Some("while_aiming");
+    let cond = v.get("condition").and_then(Value::as_str);
+    let aim_gated = kind != "buff" && cond == Some("while_aiming");
+    let tenno_cond = tenno_condition(cond);
     let out = match kind {
         "base_damage_bonus" => ModEffect::BaseDamage(max("rankMax")),
         "multishot_bonus" => ModEffect::Multishot(max("rankMax")),
@@ -202,16 +219,19 @@ fn effect(v: &Value) -> Option<ModEffect> {
             let trigger = v.get("trigger").and_then(Value::as_str)?;
             let grants = v.get("grants").and_then(Value::as_str)?;
             // `condition: while_aiming` wraps whatever this buff resolves to,
-            // so the scenario can switch it off (loadout::resolve_with).
-            let aim_gated = v.get("condition").and_then(Value::as_str) == Some("while_aiming");
+            // so the scenario can switch it off (loadout::resolve_with). A
+            // player-state condition wraps it the same way, asked of the Tenno.
+            let cond = v.get("condition").and_then(Value::as_str);
+            let aim_gated = cond == Some("while_aiming");
+            let tenno_cond = tenno_condition(cond);
             let per = max("rankMax"); // per-stack value at max rank
             let stacks = u(v, "max_stacks");
             let dur = f(v, "duration").unwrap_or(0.0);
             let wrap = |e: ModEffect| {
-                if aim_gated {
-                    ModEffect::WhileAiming(Box::new(e))
-                } else {
-                    e
+                let e = if aim_gated { ModEffect::WhileAiming(Box::new(e)) } else { e };
+                match tenno_cond {
+                    Some(c) => ModEffect::WhileTenno(c, Box::new(e)),
+                    None => e,
                 }
             };
             wrap(match (trigger, grants) {
@@ -344,7 +364,11 @@ fn effect(v: &Value) -> Option<ModEffect> {
         // load the mod without this effect.
         _ => return None,
     };
-    Some(if aim_gated { ModEffect::WhileAiming(Box::new(out)) } else { out })
+    let out = if aim_gated { ModEffect::WhileAiming(Box::new(out)) } else { out };
+    Some(match tenno_cond {
+        Some(c) => ModEffect::WhileTenno(c, Box::new(out)),
+        None => out,
+    })
 }
 
 fn to_moddef(mf: ModFile) -> ModDef {
