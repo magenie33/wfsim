@@ -171,8 +171,15 @@ around (decision 2026-07-31).
   sharer's claim. Opening one creates a NEW copy of each — never a merge, never
   an overwrite — repoints the build's riven ids at the copies, strips the query
   so a refresh cannot import twice, and says what it dropped. The payload is
-  JSON → `deflate-raw` → base64url behind a one-character version; a full share
-  is ~600 chars. IDs travel as their own stable slugs, never as indices into a
+  JSON → `deflate-raw` → base64url behind a one-character version. The payload
+  is POSITIONAL and omits everything derivable (defaults, max ranks, a buff
+  left at its own default, the shape drafts a riven regenerates), which took a
+  full share from ~865 characters to ~425. The card carries a QR of the same
+  link — `qrMatrix` is a from-scratch encoder (byte mode, ECC L, mask 0),
+  VERIFIED against a reference encoder's matrices and decoded back out of the
+  rendered PNG by an independent decoder; three bugs in it (a reversed
+  generator polynomial, transposed format bits, alignment patterns skipped
+  where they cross the timing line) only showed up under that check. IDs travel as their own stable slugs, never as indices into a
   table: a table would have to stay append-only forever or silently reinterpret
   every link already posted. It rides the QUERY, not the fragment — a fragment
   never reaches a crawler and these links are meant to be posted. The card

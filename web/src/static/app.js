@@ -1551,31 +1551,125 @@ async function inflate(u8) {
   return new Uint8Array(await new Response(ds.readable).arrayBuffer());
 }
 
-// Everything this build needs to exist somewhere else.
+// v2 — POSITIONAL, and nothing that can be derived travels.
+//
+// v1 was 2.5 kB of JSON before compression and most of it was waste: a
+// 914-byte freshness key (a serialised copy of the build, inside the payload
+// describing that build), 401 bytes of riven shape DRAFTS the recipient
+// regenerates blank anyway, and a JSON key beside every value. Links are
+// posted into chat windows and printed into QR codes, so length is a feature
+// (user, 2026-08-02).
+//
+// The layout, by index — read it beside `decodeShare`:
+//   0  version (2)
+//   1  weapon id
+//   2  build name
+//   3  slots: 9 entries, each null | [modId] | [modId, pol] | [modId, pol, rank]
+//      pol is one letter, rank omitted when it is the mod's max
+//   4  arcanes: [] | [id] | [[id, rank], …]      rank omitted when max
+//   5  evolutions by tier: ["evo1_incarnon_form", "", …] — the weapon prefix
+//      is stripped, since a tier's options belong to the weapon in field 1
+//   6  rivens: [[name, shape, rank, pol, [[statId, roll], …], [malusId, roll]|0], …]
+//   7  scenario: only what DIFFERS from the server's own defaults
+//   8  measurement: [score, duration, dps] | 0
+const POL_LETTER = { Madurai: "M", Naramon: "N", Vazarin: "V", Umbra: "U", Omni: "O" };
+const LETTER_POL = Object.fromEntries(Object.entries(POL_LETTER).map(([k, x]) => [x, k]));
+
+// The weapon's evolution group, so ids can travel without their prefix.
+const evoPrefix = () => {
+  const tiers = weaponEvos();
+  const any = (tiers[0] || { options: [] }).options[0];
+  if (!any) return "";
+  const w = $("weapon").value;
+  // Ids are "<group>_<name>" and the group is the transform group, which is
+  // the weapon id for every weapon that has one today.
+  return any.id.startsWith(w + "_") ? w + "_" : "";
+};
+
 function sharePayload() {
   const st = snapshotState();
   const p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
+  const pre = evoPrefix();
+
+  // The RIVENS the build equips travel whole (field 6), so a slot names one
+  // by its index there — "~0" instead of "riven:some long name" repeated.
+  const used = st.slots.map((s) => s.mod).filter(isRivenId);
+  const rivenOrder = [...new Set(used)].map((id) => String(id).slice(RIVEN_PREFIX.length));
+  const slots9 = st.slots.map((s) => {
+    if (!s.mod) return 0;
+    const id = isRivenId(s.mod)
+      ? "~" + rivenOrder.indexOf(String(s.mod).slice(RIVEN_PREFIX.length))
+      : s.mod;
+    const m = modById(s.mod);
+    const pol = POL_LETTER[s.pol] || "";
+    const rankOff = m && s.rank != null && s.rank !== m.max_rank;
+    // A plain slot is the id alone. The array form only appears when there is
+    // something else to say about it.
+    if (!pol && !rankOff) return id;
+    return rankOff ? [id, pol, s.rank] : [id, pol];
+  });
+
+  const arcs = (st.arcane || []).filter((a) => a && a !== "none").map((a, i) => {
+    const def = arcaneById(a);
+    const rank = (st.arcaneRank || [])[i];
+    return (def && rank != null && rank !== def.max_rank) ? [a, rank] : a;
+  });
+
+  const tiers = weaponEvos();
+  const evos = tiers.map((x) => {
+    const id = evoSel[x.tier];
+    return id ? (pre && id.startsWith(pre) ? id.slice(pre.length) : id) : "";
+  });
+  while (evos.length && !evos[evos.length - 1]) evos.pop();
+
   // The RIVENS the build actually equips, by definition — the recipient has
   // no such item and never will unless it travels. This is the custom/preset
   // line showing up in the wire format: a preset is a state both sides can
-  // hold, a custom is a thing only one of them made.
-  const used = new Set(st.slots.map((s) => s.mod).filter(isRivenId));
-  const rivens = loadPresetList(RIVENS)
-    .filter((x) => used.has(RIVEN_PREFIX + x.name))
-    .map((x) => ({ n: x.name, s: x.state }));
-  return {
-    v: 1,
-    w: st.weapon,
-    n: activePreset,
-    b: { slots: st.slots, arcane: st.arcane, arcaneRank: st.arcaneRank, evoSel: st.evoSel },
-    r: rivens,
-    sc: { name: activeScenario, state: snapshotScenario() },
-    // The sharer's MEASUREMENT, kept as a claim rather than as a fact: the
-    // recipient's own run is what decides, and showing both is the honest
-    // form of "this build does X".
-    m: p && p.lastResult ? { r: p.lastResult.r, at: p.lastResult.at, key: p.lastResult.key } : null,
-  };
+  // hold, a custom is a thing only one of them made. Only the ACTIVE shape
+  // goes: the other three drafts are scratch paper.
+  const byName = new Map(loadPresetList(RIVENS).map((x) => [x.name, x]));
+  const rivens = rivenOrder.map((n) => byName.get(n)).filter(Boolean)
+    .map((x) => {
+      const s = x.state || {};
+      return [x.name, s.shape || "", s.rank ?? 8, POL_LETTER[cap1(s.polarity)] || "M",
+        (s.bonuses || []).map((b) => [b.id, r3(b.roll)]),
+        s.malus ? [s.malus.id, r3(s.malus.roll)] : 0];
+    });
+
+  // Only what DIFFERS from the defaults both sides already have.
+  const d = META.defaults || {};
+  const sc = {};
+  const live = snapshotScenario();
+  Object.keys(live).forEach((k) => {
+    const val = live[k];
+    if (k === "buffs") {
+      // A buff left at its own default is not a setting — both sides derive
+      // the same default from the same mod, so sending it is pure length.
+      const def = Object.fromEntries((buffList || []).map((b) => [b.id, b]));
+      const out = {};
+      Object.entries(val || {}).forEach(([id, c]) => {
+        const b = def[id];
+        if (b && c.stacks === b.default_stacks && !!c.locked === !!b.default_locked) return;
+        out[id] = c.locked ? [c.stacks, 1] : [c.stacks];
+      });
+      if (Object.keys(out).length) sc.buffs = out;
+      return;
+    }
+    if (val !== d[k]) sc[k] = val;
+  });
+
+  // The sharer's MEASUREMENT, kept as a claim rather than as a fact: the
+  // recipient's own run is what decides. Three numbers, not the whole result
+  // object — the card needs the headline and the fight, and the fight is
+  // field 7.
+  const r = p && p.lastResult && p.lastResult.r;
+  const m = r ? [r3(r.score), r.duration, Math.round(r.dps || 0)] : 0;
+
+  return [2, st.weapon, activePreset, slots9, arcs, evos, rivens, sc, m];
 }
+
+const r3 = (x) => Math.round((Number(x) || 0) * 1000) / 1000;
+const cap1 = (s) => String(s || "").replace(/^./, (c) => c.toUpperCase());
 
 async function shareUrl() {
   const json = new TextEncoder().encode(JSON.stringify(sharePayload()));
@@ -1589,11 +1683,58 @@ async function shareUrl() {
 
 async function decodeShare(code) {
   if (!code) return null;
-  const body = code.slice(1);
-  const bytes = b64urlDec(body);
+  const bytes = b64urlDec(code.slice(1));
   const json = code[0] === SHARE_V_DEFLATE ? await inflate(bytes) : bytes;
   const data = JSON.parse(new TextDecoder().decode(json));
-  return data && data.b ? data : null;
+  if (!Array.isArray(data)) return v1Share(data);      // links posted before v2
+  const [, weapon, name, slots9, arcs, evos, rivens, sc, m] = data;
+  return {
+    w: weapon,
+    n: name,
+    slots: (slots9 || []).map((s) => {
+      if (!s) return { mod: null, pol: null, rank: null };
+      const [id, pol, rank] = typeof s === "string" ? [s] : s;
+      return { mod: id, pol: LETTER_POL[pol] || null, rank: rank ?? null };
+    }),
+    arcane: (arcs || []).map((a) => (Array.isArray(a) ? a[0] : a)),
+    arcaneRank: (arcs || []).map((a) => (Array.isArray(a) ? a[1] : null)),
+    evos: evos || [],
+    rivens: (rivens || []).map(([rn, shape, rank, pol, bonuses, malus]) => ({
+      n: rn,
+      s: {
+        shape, rank, polarity: (LETTER_POL[pol] || "Madurai").toLowerCase(),
+        bonuses: (bonuses || []).map(([id, roll]) => ({ id, roll })),
+        malus: malus ? { id: malus[0], roll: malus[1] } : null,
+      },
+    })),
+    sc: expandScenario(sc || {}),
+    m: m ? { score: m[0], duration: m[1], dps: m[2] } : null,
+  };
+}
+
+// `buffs` travels as {id: [stacks] | [stacks, 1]} — the pair the panel wants
+// is rebuilt here rather than spelled out in the link.
+function expandScenario(sc) {
+  if (!sc.buffs) return sc;
+  const buffs = {};
+  Object.entries(sc.buffs).forEach(([id, c]) => {
+    buffs[id] = Array.isArray(c) ? { stacks: c[0], locked: !!c[1] } : c;
+  });
+  return { ...sc, buffs };
+}
+
+// A v1 link (the first shape this shipped in) read into the v2 structure.
+function v1Share(d) {
+  if (!d || !d.b) return null;
+  return {
+    w: d.w, n: d.n,
+    slots: d.b.slots || [],
+    arcane: d.b.arcane || [], arcaneRank: d.b.arcaneRank || [],
+    evos: Object.values(d.b.evoSel || {}).map((x) => x || ""),
+    rivens: d.r || [],
+    sc: (d.sc && d.sc.state) || {},
+    m: d.m && d.m.r ? { score: d.m.r.score, duration: d.m.r.duration, dps: d.m.r.dps } : null,
+  };
 }
 
 // Land a shared link: a NEW copy of every part, never a merge into what is
@@ -1607,47 +1748,73 @@ async function importShare(code) {
   if (!w) { presetToast(tr("that share link is for a weapon this build of the site does not have")); return false; }
 
   switchWeapon(w.id);
-  const dropped = [];
 
   // 1. The RIVENS first: the build's slots point at them by name, and the
   //    name may already be taken here, so the map from old name to new is
   //    what the slots are rewritten with.
   const renamed = {};
-  if ((data.r || []).length) {
+  if ((data.rivens || []).length) {
     const ps = loadPresetList(RIVENS);
-    (data.r || []).forEach((x) => {
+    data.rivens.forEach((x) => {
       const name = freeName(ps, (n) => x.n + (n > 1 ? " " + n : ""));
       renamed[x.n] = name;
-      ps.push({ name, savedAt: Date.now(), state: x.s });
+      ps.push({ name, savedAt: Date.now(), state: withDrafts(x.s) });
     });
     storePresetList(RIVENS, ps);
     refreshRivenNames();
   }
 
   // 2. The SCENARIO, as its own new entry — the fight the number was measured
-  //    in is half of what makes the number checkable.
-  if (data.sc && data.sc.state) {
-    const sc = loadPresetList(SCENARIOS);
-    const name = freeName(sc, (n) => (data.sc.name || "scenario") + (n > 1 ? " " + n : ""));
-    sc.push({ name, savedAt: Date.now(), state: data.sc.state });
-    storePresetList(SCENARIOS, sc);
-    activeScenario = name;
-    localStorage.setItem(presetActiveKey(SCENARIOS), name);
-  }
+  //    in is half of what makes the number checkable. Only the differences
+  //    travelled, so the defaults fill the rest back in.
+  // Only the DIFFERENCES travelled; the server's own defaults fill the rest
+  // back in, which is the same table the sender diffed against.
+  const d = META.defaults || {};
+  const scState = {
+    enemy: d.enemy, level: d.level, steel_path: d.steel_path,
+    headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
+    infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
+    duration: d.duration, runs: d.runs, form: d.form, buffs: {},
+    ...(data.sc || {}),
+  };
+  const sc = loadPresetList(SCENARIOS);
+  const scName = freeName(sc, (n) => "scenario" + (n > 1 ? " " + n : ""));
+  sc.push({ name: scName, savedAt: Date.now(), state: scState });
+  storePresetList(SCENARIOS, sc);
+  activeScenario = scName;
+  localStorage.setItem(presetActiveKey(SCENARIOS), scName);
 
-  // 3. The BUILD, with riven ids repointed at the copies just made.
-  const slots2 = (data.b.slots || []).map((s) => {
-    if (!isRivenId(s.mod)) return s;
-    const was = String(s.mod).slice(RIVEN_PREFIX.length);
-    return { ...s, mod: RIVEN_PREFIX + (renamed[was] || was) };
+  // 3. The BUILD, with riven ids repointed at the copies just made and any id
+  //    this build of the site does not know dropped — said out loud rather
+  //    than silently, the same rule the cross-weapon import follows.
+  const dropped = [];
+  const slots2 = (data.slots || []).map((s) => {
+    if (!s || !s.mod) return { mod: null, pol: s ? s.pol : null, rank: null };
+    // "~<n>" names the nth riven in field 6 — resolve it to the copy just
+    // imported, whatever that copy had to be renamed to.
+    if (/^~\d+$/.test(s.mod)) {
+      const src = (data.rivens || [])[Number(s.mod.slice(1))];
+      const nm = src && (renamed[src.n] || src.n);
+      return nm ? { ...s, mod: RIVEN_PREFIX + nm } : { mod: null, pol: s.pol, rank: null };
+    }
+    if (isRivenId(s.mod)) {                       // v1 links
+      const was = String(s.mod).slice(RIVEN_PREFIX.length);
+      return { ...s, mod: RIVEN_PREFIX + (renamed[was] || was) };
+    }
+    if (!modById(s.mod)) { dropped.push(s.mod); return { mod: null, pol: s.pol, rank: null }; }
+    return s;
   });
+  const pre = evoPrefix();
+  const evoSel2 = {};
+  (data.evos || []).forEach((id, i) => { if (id) evoSel2[i + 1] = pre && !id.startsWith(pre) ? pre + id : id; });
+
   const state = {
     weapon: w.id,
     slots: slots2,
-    arcane: data.b.arcane,
-    arcaneRank: data.b.arcaneRank,
-    evoSel: data.b.evoSel || {},
-    sim: (data.sc && data.sc.state) || undefined,
+    arcane: data.arcane,
+    arcaneRank: data.arcaneRank,
+    evoSel: evoSel2,
+    sim: scState,
   };
   const builds = loadPresetList(BUILDS);
   // Named for where it came from. Without it a link lands as "build 1 2",
@@ -1657,21 +1824,20 @@ async function importShare(code) {
   activePreset = name;
   localStorage.setItem(presetActiveKey(BUILDS), name);
   whileApplying(() => restoreState(state, w.id));
-  // What THIS build of the site could not hold — an id from a newer release,
-  // a mod this weapon does not take. Said out loud rather than silently
-  // dropped, the same rule the cross-weapon import follows.
-  (data.b.slots || []).forEach((s) => {
-    if (s.mod && !slots.some((x) => x.mod === s.mod) && !isRivenId(s.mod)) dropped.push(s.mod);
+  builds.push({
+    name, savedAt: Date.now(), state: snapshotState(),
+    // The sharer's number, as THEIR claim: it is stamped with a key that
+    // cannot match this machine's, so the first thing measured here replaces
+    // it rather than silently inheriting someone else's measurement.
+    ...(data.m ? { lastResult: { r: data.m, at: Date.now(), key: "shared" } } : {}),
   });
-  builds.push({ name, savedAt: Date.now(), state: snapshotState(),
-    ...(data.m ? { lastResult: data.m } : {}) });
   storePresetList(BUILDS, builds);
 
   renderPresetBar(); renderScenarioBar(); renderMods(); renderSim(); refreshPanel();
   renderStoredSimResult();
   const bits = [tr("build")];
-  if ((data.r || []).length) bits.push(`${data.r.length} ${tr("riven")}`);
-  if (data.sc) bits.push(tr("scenario"));
+  if ((data.rivens || []).length) bits.push(`${data.rivens.length} ${tr("riven")}`);
+  bits.push(tr("scenario"));
   presetToast(`${tr("imported")}: ${name} · ${bits.join(" + ")}` +
     (dropped.length ? ` · ${tr("dropped")} ${dropped.length}` : ""));
   return true;
@@ -1700,7 +1866,7 @@ async function openSharePanel(bar) {
   const urlBox = panel.querySelector(".sh-url");
   urlBox.onclick = () => urlBox.select();
   const canvas = panel.querySelector(".sh-canvas");
-  await drawShareCard(canvas);
+  await drawShareCard(canvas, url);
 
   const say = (msg) => presetToast(tr(msg));
   panel.querySelector(".sh-copy").onclick = async () => {
@@ -1724,6 +1890,246 @@ async function openSharePanel(bar) {
   };
 }
 
+// ---- QR ---------------------------------------------------------------
+// A card is pasted into a chat and read on a phone, and a phone cannot click
+// a picture (user, 2026-08-02). Written here rather than pulled in: the repo
+// takes no dependencies, and a QR encoder is a bounded piece of arithmetic —
+// byte mode, error correction L (the most data per module, and a card is not
+// a sticker on a wet crate), smallest version that fits.
+//
+// Spec: ISO/IEC 18004. The three tables below are the parts of it that cannot
+// be derived — everything else is computed.
+const QR_ECC_L = [
+  [7, 1], [10, 1], [15, 1], [20, 1], [26, 1], [18, 2], [20, 2], [24, 2], [30, 2], [18, 4],
+  [20, 4], [24, 4], [26, 4], [30, 4], [22, 6], [24, 6], [28, 6], [30, 6], [28, 7], [28, 8],
+  [28, 8], [28, 9], [30, 9], [30, 10], [26, 12], [28, 12], [30, 12], [30, 13], [30, 14], [30, 15],
+  [30, 16], [30, 17], [30, 18], [30, 19], [30, 19], [30, 20], [30, 21], [30, 22], [30, 24], [30, 25],
+];
+// Total codewords per version (data + ecc).
+const QR_TOTAL = [26, 44, 70, 100, 134, 172, 196, 242, 292, 346, 404, 466, 532, 581, 655, 733,
+  815, 901, 991, 1085, 1156, 1258, 1364, 1474, 1588, 1706, 1828, 1921, 2051, 2185, 2323, 2465,
+  2611, 2761, 2876, 3034, 3196, 3362, 3532, 3706];
+// Alignment-pattern centres per version (empty for version 1).
+const QR_ALIGN = [[], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42],
+  [6, 26, 46], [6, 28, 50], [6, 30, 54], [6, 32, 58], [6, 34, 62], [6, 26, 46, 66], [6, 26, 48, 70],
+  [6, 26, 50, 74], [6, 30, 54, 78], [6, 30, 56, 82], [6, 30, 58, 86], [6, 34, 62, 90],
+  [6, 28, 50, 72, 94], [6, 26, 50, 74, 98], [6, 30, 54, 78, 102], [6, 28, 54, 80, 106],
+  [6, 32, 58, 84, 110], [6, 30, 58, 86, 114], [6, 34, 62, 90, 118], [6, 26, 50, 74, 98, 122],
+  [6, 30, 54, 78, 102, 126], [6, 26, 52, 78, 104, 130], [6, 30, 56, 82, 108, 134],
+  [6, 34, 60, 86, 112, 138], [6, 30, 58, 86, 114, 142], [6, 34, 62, 90, 118, 146],
+  [6, 30, 54, 78, 102, 126, 150], [6, 24, 50, 76, 102, 128, 154], [6, 28, 54, 80, 106, 132, 158],
+  [6, 32, 58, 84, 110, 136, 162], [6, 26, 54, 82, 110, 138, 166], [6, 30, 58, 86, 114, 142, 170]];
+
+// GF(256) with the QR primitive polynomial 0x11d.
+const GF_EXP = new Uint8Array(512), GF_LOG = new Uint8Array(256);
+(() => {
+  let x = 1;
+  for (let i = 0; i < 255; i++) {
+    GF_EXP[i] = x; GF_LOG[x] = i;
+    x <<= 1; if (x & 0x100) x ^= 0x11d;
+  }
+  for (let i = 255; i < 512; i++) GF_EXP[i] = GF_EXP[i - 255];
+})();
+const gfMul = (a, b) => (a && b ? GF_EXP[GF_LOG[a] + GF_LOG[b]] : 0);
+
+// The generator polynomial for `n` ecc codewords.
+function qrGenPoly(n) {
+  let poly = [1];
+  for (let i = 0; i < n; i++) {
+    const next = new Array(poly.length + 1).fill(0);
+    for (let j = 0; j < poly.length; j++) {
+      next[j] ^= gfMul(poly[j], GF_EXP[i]);
+      next[j + 1] ^= poly[j];
+    }
+    poly = next;
+  }
+  // Built LOW-degree-first; the division below indexes it high-degree-first
+  // (gen[0] is the monic leading 1 it skips). Verified against a reference
+  // encoder: without this the ECC block is wrong and nothing scans.
+  return poly.reverse();
+}
+
+function qrEcc(data, n) {
+  const gen = qrGenPoly(n);
+  const rem = new Array(n).fill(0);
+  for (const d of data) {
+    const factor = d ^ rem[0];
+    rem.shift(); rem.push(0);
+    for (let j = 0; j < n; j++) rem[j] ^= gfMul(gen[j + 1], factor);
+  }
+  return rem;
+}
+
+// Bytes -> the module matrix, or null when the text does not fit any version.
+function qrMatrix(text) {
+  const bytes = new TextEncoder().encode(text);
+  let version = 0, dataCw = 0, eccPer = 0, blocks = 0;
+  for (let v = 1; v <= 40; v++) {
+    const [e, b] = QR_ECC_L[v - 1];
+    const total = QR_TOTAL[v - 1];
+    const cap = total - e * b;
+    const lenBits = v < 10 ? 8 : 16;
+    if (4 + lenBits + bytes.length * 8 <= cap * 8) {
+      version = v; dataCw = cap; eccPer = e; blocks = b; break;
+    }
+  }
+  if (!version) return null;
+
+  // ---- bit stream: mode 0100, length, data, terminator, pad --------------
+  const bits = [];
+  const push = (val, n) => { for (let i = n - 1; i >= 0; i--) bits.push((val >> i) & 1); };
+  push(0b0100, 4);
+  push(bytes.length, version < 10 ? 8 : 16);
+  bytes.forEach((b) => push(b, 8));
+  for (let i = 0; i < 4 && bits.length < dataCw * 8; i++) bits.push(0);
+  while (bits.length % 8) bits.push(0);
+  const cw = [];
+  for (let i = 0; i < bits.length; i += 8) {
+    cw.push(bits.slice(i, i + 8).reduce((a, b) => (a << 1) | b, 0));
+  }
+  for (let i = 0; cw.length < dataCw; i++) cw.push(i % 2 ? 0x11 : 0xec);
+
+  // ---- split into blocks, interleave data then ecc ----------------------
+  const short = Math.floor(dataCw / blocks), extra = dataCw % blocks;
+  const dblocks = [], eblocks = [];
+  let at = 0;
+  for (let i = 0; i < blocks; i++) {
+    const n = short + (i >= blocks - extra ? 1 : 0);
+    const d = cw.slice(at, at + n); at += n;
+    dblocks.push(d);
+    eblocks.push(qrEcc(d, eccPer));
+  }
+  const out = [];
+  for (let i = 0; i < Math.max(...dblocks.map((d) => d.length)); i++) {
+    dblocks.forEach((d) => { if (i < d.length) out.push(d[i]); });
+  }
+  for (let i = 0; i < eccPer; i++) eblocks.forEach((e) => out.push(e[i]));
+
+  // ---- the matrix -------------------------------------------------------
+  const size = version * 4 + 17;
+  const m = Array.from({ length: size }, () => new Array(size).fill(null));
+  const set = (r, c, v) => { if (r >= 0 && c >= 0 && r < size && c < size) m[r][c] = v; };
+  const finder = (r, c) => {
+    for (let i = -1; i <= 7; i++) for (let j = -1; j <= 7; j++) {
+      const on = i >= 0 && i <= 6 && j >= 0 && j <= 6
+        && (i === 0 || i === 6 || j === 0 || j === 6 || (i >= 2 && i <= 4 && j >= 2 && j <= 4));
+      set(r + i, c + j, on ? 1 : 0);
+    }
+  };
+  finder(0, 0); finder(0, size - 7); finder(size - 7, 0);
+  for (let i = 8; i < size - 8; i++) {
+    m[6][i] = i % 2 === 0 ? 1 : 0;
+    m[i][6] = i % 2 === 0 ? 1 : 0;
+  }
+  // Alignment patterns sit at every pairing of the centres EXCEPT the three
+  // that would land on a finder. Testing "is this module already set" instead
+  // also skipped the ones that sit ON the timing line — which the spec puts
+  // there deliberately — and every version 7 and up came out unreadable.
+  const centres = QR_ALIGN[version - 1];
+  const last = centres[centres.length - 1];
+  centres.forEach((r) => centres.forEach((c) => {
+    if ((r === 6 && c === 6) || (r === 6 && c === last) || (r === last && c === 6)) return;
+    for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) {
+      set(r + i, c + j, (Math.abs(i) === 2 || Math.abs(j) === 2 || (i === 0 && j === 0)) ? 1 : 0);
+    }
+  }));
+  m[size - 8][8] = 1;                              // the always-dark module
+
+  // Version information (7 versions and up), BCH(18,6).
+  if (version >= 7) {
+    // BCH(18,6) over the 6-bit version, generator 0x1F25 — 12 check bits.
+    let rem = version;
+    for (let i = 0; i < 12; i++) rem = (rem << 1) ^ ((rem >> 11) * 0x1f25);
+    const info = ((version << 12) | (rem & 0xfff)) >>> 0;
+    for (let i = 0; i < 18; i++) {
+      const bit = (info >> i) & 1;
+      m[Math.floor(i / 3)][size - 11 + (i % 3)] = bit;
+      m[size - 11 + (i % 3)][Math.floor(i / 3)] = bit;
+    }
+  }
+
+  // Reserve the format area so the data walk skips it. Cells are [row, col];
+  // the spec states them as (x, y) = (column, row), which is the transposition
+  // that had the walk skipping the wrong modules.
+  const fmtCells = [[7, 8], [8, 8], [8, 7]];
+  for (let i = 0; i <= 5; i++) fmtCells.push([i, 8], [8, i]);
+  for (let i = 0; i < 8; i++) fmtCells.push([8, size - 1 - i], [size - 1 - i, 8]);
+  fmtCells.forEach(([r, c]) => { if (m[r][c] === null) m[r][c] = 0; });
+
+  // ---- the data walk, mask 0 -------------------------------------------
+  // One mask, not eight: the spec's penalty scoring picks the prettiest of
+  // eight, but every one of them scans. Mask 0 (`(r+c) % 2`) on a payload
+  // this dense is well inside what any reader handles, and eight passes of
+  // penalty arithmetic is a lot of code to own for a cosmetic gain.
+  const taken = m.map((row) => row.map((x) => x !== null));
+  let bi = 0;
+  const dataBit = () => {
+    const byte = out[bi >> 3];
+    const bit = byte === undefined ? 0 : (byte >> (7 - (bi & 7))) & 1;
+    bi++;
+    return bit;
+  };
+  let upward = true;
+  for (let col = size - 1; col > 0; col -= 2) {
+    if (col === 6) col--;                          // the timing column
+    for (let n = 0; n < size; n++) {
+      const row = upward ? size - 1 - n : n;
+      for (const c of [col, col - 1]) {
+        if (taken[row][c]) continue;
+        const bit = dataBit() ^ ((row + c) % 2 === 0 ? 1 : 0);
+        m[row][c] = bit;
+      }
+    }
+    upward = !upward;
+  }
+
+  // ---- format information: ecc L (01) + mask 0, BCH(15,5) + 0x5412 ------
+  const fmtData = (0b01 << 3) | 0;
+  let rem = fmtData << 10;
+  for (let i = 4; i >= 0; i--) if ((rem >> (i + 10)) & 1) rem ^= 0x537 << i;
+  const fmt = ((fmtData << 10) | rem) ^ 0x5412;
+  const fbit = (i) => (fmt >> i) & 1;
+  for (let i = 0; i <= 5; i++) m[i][8] = fbit(i);
+  m[7][8] = fbit(6);
+  m[8][8] = fbit(7);
+  m[8][7] = fbit(8);
+  for (let i = 9; i <= 14; i++) m[8][14 - i] = fbit(i);
+  for (let i = 0; i <= 7; i++) m[8][size - 1 - i] = fbit(i);
+  for (let i = 8; i <= 14; i++) m[size - 15 + i][8] = fbit(i);
+  m[size - 8][8] = 1;                              // the always-dark module
+
+  return m;
+}
+
+// A QR as its OWN canvas, at a whole number of pixels per module.
+//
+// Drawn straight onto the card it came out unreadable: a dense symbol scaled
+// to fit a box lands on fractional module sizes, and rounding each one up
+// smears neighbours together. Rendering at an integer scale and then placing
+// it at its natural size is the difference between a picture of a QR and one
+// that scans. Quiet zone six, not the spec's minimum four — a reference
+// encoder's own output fails to scan at four on a dense symbol.
+function qrCanvas(text, targetPx) {
+  const m = qrMatrix(text);
+  if (!m) return null;
+  const n = m.length, quiet = 6;
+  const modulePx = Math.max(2, Math.round(targetPx / (n + quiet * 2)));
+  const side = (n + quiet * 2) * modulePx;
+  const c = document.createElement("canvas");
+  c.width = side; c.height = side;
+  const g = c.getContext("2d");
+  g.fillStyle = "#fff"; g.fillRect(0, 0, side, side);
+  g.fillStyle = "#000";
+  for (let r = 0; r < n; r++) {
+    for (let col = 0; col < n; col++) {
+      if (m[r][col]) {
+        g.fillRect((col + quiet) * modulePx, (r + quiet) * modulePx, modulePx, modulePx);
+      }
+    }
+  }
+  return c;
+}
+
 // The card. Drawn here rather than server-side: it has to work on a static
 // site with no backend, and pasting a picture into a group chat is how a build
 // actually gets shown around.
@@ -1737,7 +2143,7 @@ async function openSharePanel(bar) {
 // card is a thing that travels, and a preview host or a localhost in the
 // corner of it would be wrong everywhere it landed (user, 2026-08-02).
 const SITE_HOST = "wfsim.app";
-const CARD_W = 900, CARD_H = 560;
+const CARD_W = 900, CARD_H = 560, CARD_DPR = 2;
 
 const loadImg = (src) => new Promise((res) => {
   if (!src) return res(null);
@@ -1755,7 +2161,7 @@ function drawFit(g, im, x, y, w, h) {
   g.drawImage(im, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
 }
 
-async function drawShareCard(canvas) {
+async function drawShareCard(canvas, url) {
   // The card is exactly as tall as it needs to be. A fixed height left a band
   // of empty background above the number on a build with few mods, which
   // reads as a rendering fault rather than as space.
@@ -1766,9 +2172,12 @@ async function drawShareCard(canvas) {
   const rlines0 = rid0 && ((rivenNames[String(rid0).slice(RIVEN_PREFIX.length)] || {}).lines || []);
   const W = CARD_W;
   const H = 104 + 88 + 26 + perCol0 * 24 + 8
-    + (arc0.length ? 24 : 0) + ((rlines0 || []).length ? 24 : 0) + 128;
-  canvas.width = W; canvas.height = H;
+    + (arc0.length ? 24 : 0) + ((rlines0 || []).length ? 24 : 0) + 176;
+  // Twice the pixels: the QR needs whole device pixels per module, and the
+  // picture is looked at full size in a chat.
+  canvas.width = W * CARD_DPR; canvas.height = H * CARD_DPR;
   const g = canvas.getContext("2d");
+  g.scale(CARD_DPR, CARD_DPR);
   const css = getComputedStyle(document.documentElement);
   const v = (n, fallback) => (css.getPropertyValue(n) || "").trim() || fallback;
   const bg = v("--surface", "#171a21"), fg = v("--text", "#f2f4f8");
@@ -1879,7 +2288,7 @@ async function drawShareCard(canvas) {
   // one enemy reads 0.0028 rather than the 0.00 that `kills` alone produced.
   const p = loadPresetList(BUILDS).find((z) => z.name === activePreset);
   const r = p && p.lastResult && p.lastResult.r;
-  y = H - 128;
+  y = H - 176;
   g.strokeStyle = line;
   g.beginPath(); g.moveTo(36, y); g.lineTo(W - 36, y); g.stroke();
   y += 46;
@@ -1907,15 +2316,24 @@ async function drawShareCard(canvas) {
     ].filter(Boolean).join(" · "), 36, y + 25);
   }
 
-  // The address, always. An image that travels without one is a screenshot of
-  // nowhere.
+  // The QR, and the address. A card is pasted into a chat and read on a
+  // PHONE, which cannot click a picture — without this the link and the
+  // image are two separate things to send (user, 2026-08-02).
+  const qc = qrCanvas(url, 150 * CARD_DPR);
+  const qs = qc ? qc.width / CARD_DPR : 0;
+  const qx = W - 30 - qs, qy = H - 14 - qs;
+  if (qc) {
+    g.imageSmoothingEnabled = false;
+    g.drawImage(qc, qx, qy, qs, qs);
+  }
   g.textAlign = "right";
+  const tx = qc ? qx - 14 : W - 36;
   g.font = F(21, "600");
-  g.fillStyle = fg; g.fillText("Sim", W - 36, H - 38);
+  g.fillStyle = fg; g.fillText("Sim", tx, H - 44);
   const sw = g.measureText("Sim").width;
-  g.fillStyle = gold; g.fillText("WF", W - 36 - sw, H - 38);
+  g.fillStyle = gold; g.fillText("WF", tx - sw, H - 44);
   g.fillStyle = dim; g.font = F(14);
-  g.fillText(SITE_HOST, W - 36, H - 16);
+  g.fillText(SITE_HOST, tx, H - 22);
   g.textAlign = "left";
 }
 
