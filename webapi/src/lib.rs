@@ -692,6 +692,10 @@ pub fn meta_json() -> Value {
             .map(|c| (c.to_string(), json!(mods_json(&wfsim_engine::mods_data::class_pool(c)))))
             .collect::<serde_json::Map<String, Value>>(),
         "enemies": enemies,
+        // A RIVEN's card image, once. Rivens are made by the visitor, so no
+        // per-riven entry could exist in data/assets.yaml — the game draws
+        // every riven with the same card and so does this.
+        "riven_image": assets().mods.get("riven"),
         // Arcanes mirror the mod pool: per-rank effect lines (`ranks[r]`),
         // max_rank, rarity — so the web picker searches effects and the slot
         // steps ranks with the strength updating per rank. `arcane_rank` in

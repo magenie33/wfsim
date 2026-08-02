@@ -21,6 +21,12 @@ weapons:
   verglas_prime: VerglasPrime.png
 
 mods:
+  # A RIVEN's card, DE's own: every riven shares one image because the game
+  # draws them all the same — `OmegaMod.png` is the unveiled riven mod on
+  # /Lotus/Upgrades/Mods/Randomized/Lotus*RandomModRare. Rivens are made by
+  # the visitor, so no per-riven entry could exist; the client stamps this one
+  # onto each of them (see `rivenMods`).
+  riven: OmegaMod.png
   # semi_rifle_cannonade:   # UNRESOLVED — fill the WFCD imageName by hand
   accelerated_isotope: RadiationFireratePistolMod.jpg
   aerial_ace: JumpRefreshOnKillRifleMod.jpg

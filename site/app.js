@@ -722,6 +722,9 @@ function rivenMods() {
     const official = (rivenNames[p.name] || {}).name || "";
     return {
       id: RIVEN_PREFIX + p.name,
+      // DE's own riven card — the game draws every riven the same, so one
+      // image serves them all (`data/assets.yaml` mods.riven).
+      image: META.riven_image || null,
       name: official ? `${p.name} · ${official}` : p.name,
       name_en: official,
       subtype: "Riven",
@@ -1823,13 +1826,13 @@ async function drawShareCard(canvas) {
     if (!m) return;
     if (imgs[i]) drawFit(g, imgs[i], cx, y, CW, CH);
     else {
-      // A riven has no art — DE never drew one. A gold-edged tile saying what
-      // it is beats a blank box that reads as a broken image.
-      g.strokeStyle = gold; g.lineWidth = 1;
+      // Only reachable if the art is missing from site/img/, which the build
+      // refuses to allow — a named tile beats a blank box either way.
+      g.strokeStyle = line;
       g.strokeRect(cx + .5, y + .5, CW - 1, CH - 1);
-      g.fillStyle = gold; g.font = F(13, "600");
+      g.fillStyle = dim; g.font = F(12);
       g.textAlign = "center";
-      g.fillText(tr("Riven"), cx + CW / 2, y + CH / 2 + 5);
+      g.fillText(m.name.slice(0, 8), cx + CW / 2, y + CH / 2 + 4);
       g.textAlign = "left";
     }
     // Polarity badge, on the card it belongs to.
