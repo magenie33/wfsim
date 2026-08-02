@@ -3849,10 +3849,24 @@ async function scanGains(axis, onTick) {
 /// asked of different axes, so they say it the same way.
 const gainChipFor = (id, where) => {
   const g = gainOf(id);
-  return g
-    ? `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}${g.runs > 1 ? " deep" : ""}" title="${escHtml(
-        `${where} · ${gainScan.metric} · ${gainScan.note} · ${g.runs}×`)}">${gainPct(g.pct)}</span>`
-    : "";
+  if (!g) return "";
+  // A ONE-RUN number is a SCREEN, not a measurement, and it has to read like
+  // one. Measured across three seeds on a status mod, a single run lands
+  // anywhere in a ±39-point band — wide enough to print a minus sign in front
+  // of a mod worth +40% (user, 2026-08-02: "why does adding status chance
+  // LOWER the damage?"). A damage mod barely moves, because paired seeds
+  // cancel almost everything about it; a status mod's payoff is decided by
+  // which procs land, which is the one thing the dice still choose.
+  //
+  // So the screen says "about", and only the second pass — the leaders, run
+  // again with a tenth of the scenario's count — prints a bare number.
+  const rough = g.runs <= 1;
+  const why = rough
+    ? tr("a single screening run — the order is rough here, and a status mod can swing wide")
+    : tr("measured over {n} runs").replace("{n}", g.runs);
+  return `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}${g.runs > 1 ? " deep" : " rough"}" title="${escHtml(
+    `${where} · ${gainScan.metric} · ${gainScan.note} · ${g.runs}× — ${why}`)}">${
+    rough ? "≈" : ""}${gainPct(g.pct)}</span>`;
 };
 
 /// The picker's ONE ordering rule, over whatever keys an axis has.
