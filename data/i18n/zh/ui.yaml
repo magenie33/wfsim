@@ -219,6 +219,9 @@ ui:
   "Limits": 限制
   "Eximus": 精英
   "Overguard": 超宏护盾
+  "no timeout": 无限持续
+  "the stacks never expire — they still start where you set them and still build on every trigger": 层数不会过期——仍然从你设定的层数开始，也仍然会随触发继续叠加
+  "permanent stacks — they never decay and cannot build in-sim, so the count holds for the whole run": 永久层数——不会衰减也无法在模拟中叠加，整局保持这个层数
   "Health": 生命
   "Shield": 护盾
   "Armor": 护甲

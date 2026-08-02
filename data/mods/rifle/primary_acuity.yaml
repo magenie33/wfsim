@@ -6,12 +6,31 @@ base_drain: 6                 # max drain 16 at rank 10
 max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponWeakpointCriticalChanceMod
 description: "+X% Weak Point Damage\n+X% Weak Point Critical Chance. Multishot cannot be modified."
+# "It cannot be equipped on sentinel or companion weapons — only primary
+# rifles" (wiki). Without this a sentinel weapon could take it, and since the
+# bonuses below are weak-point only and a sentinel never aims at a head, it
+# would have been a mod that equips, costs capacity and does nothing.
+excludes_weapon: [sentinel_weapon, power_weapon]
+disables: [multishot]    # locks Multishot from being modified while equipped
 
 effects:
-  - kind: base_damage_bonus
+  # WEAK POINT ONLY, exactly as the pistol twin has always been modelled. This
+  # file had them as `base_damage_bonus` / `crit_chance_bonus` — +350% damage
+  # and +350% crit chance on EVERY shot — so a build that never hit a head
+  # still collected both. That is how it was found (user, 2026-08-02: "the
+  # headshot rate is zero, why is there still a damage bonus?").
+  #
+  # Weak Point Damage is ADDED to the enemy's weak-point multiplier at 1.5×
+  # the listed value on true weak points (wiki: Butcher 3x head + rank 10 =
+  # 3 + 3.5 × 1.5 = 8.25x; MOA backpack is the listed-value exception), and
+  # the sum is MULTIPLICATIVE with headshot-multiplier bonuses (Deadhead).
+  - kind: weakpoint_damage_bonus
     rank0: 0.3182
     rankMax: 3.5
-  - kind: crit_chance_bonus
+  # Weak Point Crit Chance is a NORMAL relative crit-chance bonus (additive
+  # with Point Strike) active on weak-point hits only — the multiplicative-
+  # crit behavior on some weapons was a bug fixed in 38.5.
+  - kind: weakpoint_crit_chance_bonus
     rank0: 0.3182
     rankMax: 3.5
 

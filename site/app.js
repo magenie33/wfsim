@@ -4669,19 +4669,25 @@ function renderBuffCards(box, list, cfg, have) {
   }
   const card = (b) => {
     const c = cfg[b.id];
-    const ctl = b.kind === "toggle"
-      ? `<label class="bchk"><input type="checkbox" data-b="${b.id}" data-f="stacks" ${c.stacks > 0 ? "checked" : ""}> active</label>`
-      : `<span class="bstep"><input type="number" data-b="${b.id}" data-f="stacks" min="0" max="${b.max_stacks}" value="${c.stacks}"><span class="bmax">/ ${b.max_stacks}</span></span>`;
-    // Permanent stacks (Fevered Frenzy): no in-sim trigger, no decay — the
-    // count above holds for the whole run, so the lock is implied and greyed.
+    // ONE control for every buff, a toggle included (user, 2026-08-02): a
+    // one-stack buff reads "1 / 1" like the rest instead of a checkbox that
+    // said "active" and meant the same thing in different words.
+    const ctl = `<span class="bstep"><input type="number" data-b="${b.id}" data-f="stacks" min="0" max="${b.max_stacks}" value="${c.stacks}"><span class="bmax">/ ${b.max_stacks}</span></span>`;
+    // NOT "lock" (user, 2026-08-02): that read as "freeze this buff", so
+    // locking one at zero looked like a way to switch it off forever. It only
+    // removes the TIMEOUT — the count still starts where it is set and still
+    // climbs on every trigger.
     const lock = b.permanent
-      ? `<label class="block-lock dis" title="permanent stacks — they never decay (and cannot build in-sim), so the count holds for the whole run; lock is implied"><input type="checkbox" checked disabled> lock</label>`
-      : `<label class="block-lock" title="lock = permanent 100% uptime"><input type="checkbox" data-b="${b.id}" data-f="locked" ${c.locked ? "checked" : ""}> lock</label>`;
+      ? `<label class="block-lock dis" title="${escHtml(tr("permanent stacks — they never decay and cannot build in-sim, so the count holds for the whole run"))}"><input type="checkbox" checked disabled> ${escHtml(tr("no timeout"))}</label>`
+      : `<label class="block-lock" title="${escHtml(tr("the stacks never expire — they still start where you set them and still build on every trigger"))}"><input type="checkbox" data-b="${b.id}" data-f="locked" ${c.locked ? "checked" : ""}> ${escHtml(tr("no timeout"))}</label>`;
     // In the WIDER view, a buff the build does not carry is still settable —
     // it just says so, so the panel never reads as "this is active now".
     const off = have && !have.has(b.id);
+    // What one stack count buys, when the source grants more than one thing
+    // off the same trigger — they are the same count by construction.
+    const grants = b.grants ? `<small class="bgr">${escHtml(tf(b.grants))}</small>` : "";
     return `<div class="buff-card${off ? " off" : ""}">
-      <span class="bn">${escHtml(buffCardName(b.name))}${off ? ` <small class="bnot">${escHtml(tr("not equipped"))}</small>` : ""}</span>
+      <span class="bn">${escHtml(buffCardName(b.name))}${grants}${off ? ` <small class="bnot">${escHtml(tr("not equipped"))}</small>` : ""}</span>
       <span class="bctl">${ctl}</span>
       ${lock}
     </div>`;

@@ -957,6 +957,10 @@ pub fn err_json(msg: impl Into<String>) -> Value {
 struct BuffMeta {
     id: String,
     name: String,
+    /// What this one stack count buys, when the source grants more than one
+    /// thing off the same trigger ("Critical Damage + Multishot"). Empty for
+    /// a single-grant buff, where the name already says it.
+    grants: String,
     max_stacks: u32,
     kind: &'static str, // "stacking" | "toggle"
     default_stacks: u32,
@@ -1002,6 +1006,7 @@ fn enumerate_buffs(
         push(BuffMeta {
             id: "frenzy".into(),
             name: "Frenzy".into(),
+            grants: String::new(),
             max_stacks: 1,
             kind: "toggle",
             default_stacks: 1,
@@ -1014,10 +1019,20 @@ fn enumerate_buffs(
         let nm = prettify(m.id);
         for e in &m.effects {
             use ModEffect::*;
+            // UNWRAP the aiming condition first. Argon Scope's on-headshot
+            // crit is `WhileAiming(OnHeadshotCritChance)`, and matching the
+            // outer value meant it never produced a card: the sim ran the buff
+            // (the resolver unwraps) while the panel offered no way to set it,
+            // so one of the two knew about a buff the other did not.
+            let e = match e {
+                WhileAiming(inner) => &**inner,
+                other => other,
+            };
             match *e {
                 OnKillMultishot { max_stacks, .. } => push(BuffMeta {
                     id: "on_kill_multishot".into(),
                     name: nm.clone(),
+                    grants: String::new(),
                     max_stacks,
                     kind: "stacking",
                     default_stacks: max_stacks,
@@ -1027,6 +1042,7 @@ fn enumerate_buffs(
                 ConditionOverload { max_stacks, .. } => push(BuffMeta {
                     id: "condition_overload".into(),
                     name: nm.clone(),
+                    grants: String::new(),
                     max_stacks,
                     kind: "stacking",
                     default_stacks: max_stacks,
@@ -1036,6 +1052,7 @@ fn enumerate_buffs(
                 OnHeadshotCritChance { .. } => push(BuffMeta {
                     id: "on_headshot_cc".into(),
                     name: nm.clone(),
+                    grants: String::new(),
                     max_stacks: 1,
                     kind: "toggle",
                     default_stacks: 1,
@@ -1045,6 +1062,7 @@ fn enumerate_buffs(
                 OnHeadshotKillCritChance { max_stacks, .. } => push(BuffMeta {
                     id: "on_headshot_kill_cc".into(),
                     name: nm.clone(),
+                    grants: String::new(),
                     max_stacks,
                     kind: "stacking",
                     default_stacks: max_stacks,
@@ -1054,27 +1072,30 @@ fn enumerate_buffs(
                 OnKillCritDamage { .. } => push(BuffMeta {
                     id: "on_kill_cd".into(),
                     name: nm.clone(),
+                    grants: String::new(),
                     max_stacks: 1,
                     kind: "toggle",
-                    default_stacks: 0,
+                    default_stacks: 1,
                     default_locked: false,
                     permanent: false,
                 }),
                 OnReloadDamage { .. } => push(BuffMeta {
                     id: "on_reload_bd".into(),
                     name: nm.clone(),
+                    grants: String::new(),
                     max_stacks: 1,
                     kind: "toggle",
-                    default_stacks: 0,
+                    default_stacks: 1,
                     default_locked: false,
                     permanent: false,
                 }),
                 OnReloadFireRate { .. } => push(BuffMeta {
                     id: "on_reload_fr".into(),
                     name: nm.clone(),
+                    grants: String::new(),
                     max_stacks: 1,
                     kind: "toggle",
-                    default_stacks: 0,
+                    default_stacks: 1,
                     default_locked: false,
                     permanent: false,
                 }),
@@ -1082,7 +1103,12 @@ fn enumerate_buffs(
             }
         }
     }
-    // Arcane buffs (one card per spec; stacking arcanes start full).
+    // Arcane buffs — ONE CARD PER ARCANE, not per grant (user, 2026-08-02).
+    //
+    // Frostbite grants crit damage AND multishot off the same Cold proc, and
+    // they are the same stack count by construction: there is no state of the
+    // game where one is at 1 and the other at 10. Two cards invited a setting
+    // that cannot exist, and the sim had to pick one of them anyway.
     if !arcane.buffs.is_empty() {
         // The buff's OWN arcane names it, not the merged `arcane.id`. A weapon
         // that seats two folds them into one `ArcaneFx` whose id is
@@ -1094,39 +1120,41 @@ fn enumerate_buffs(
                 .map(|d| d.name.clone())
                 .unwrap_or_else(|| prettify(id))
         };
-        let multi = arcane.buffs.len() > 1;
-        for (i, b) in arcane.buffs.iter().enumerate() {
-            let aname = named(if b.owner.is_empty() { &arcane.id } else { &b.owner });
-            let id = if multi {
-                format!("arcane:{}:{}", arcane.id, i)
-            } else {
-                format!("arcane:{}", arcane.id)
-            };
-            // Two arcanes CAN each grant one buff, so "more than one card"
-            // no longer implies "one arcane with several grants": qualify the
-            // name by its grant only when the same arcane owns both.
-            let same_owner = arcane
+        let mut seen: Vec<String> = Vec::new();
+        for b in arcane.buffs.iter() {
+            let owner = if b.owner.is_empty() { arcane.id.clone() } else { b.owner.clone() };
+            if seen.contains(&owner) {
+                continue;
+            }
+            seen.push(owner.clone());
+            // Every grant this arcane makes, so the card can say what the one
+            // stack count is buying.
+            let grants: Vec<&'static str> = arcane
                 .buffs
                 .iter()
-                .filter(|x| x.owner == b.owner)
-                .count()
-                > 1;
-            let name = if same_owner {
-                format!("{} ({})", aname, grant_label(b.grant))
-            } else {
-                aname.clone()
-            };
-            let kind = if b.max_stacks > 1 {
-                "stacking"
-            } else {
-                "toggle"
-            };
+                .filter(|x| {
+                    let o = if x.owner.is_empty() { &arcane.id } else { &x.owner };
+                    *o == owner
+                })
+                .map(|x| grant_label(x.grant))
+                .collect();
+            let max_stacks = arcane
+                .buffs
+                .iter()
+                .filter(|x| {
+                    let o = if x.owner.is_empty() { &arcane.id } else { &x.owner };
+                    *o == owner
+                })
+                .map(|x| x.max_stacks)
+                .max()
+                .unwrap_or(1);
             push(BuffMeta {
-                id,
-                name,
-                max_stacks: b.max_stacks,
-                kind,
-                default_stacks: b.max_stacks,
+                id: format!("arcane:{owner}"),
+                name: named(&owner),
+                grants: grants.join(" + "),
+                max_stacks,
+                kind: if max_stacks > 1 { "stacking" } else { "toggle" },
+                default_stacks: max_stacks,
                 default_locked: false,
                 permanent: false,
             });
@@ -1151,13 +1179,14 @@ fn evo_buffs(evo_ids: &[String]) -> Vec<BuffMeta> {
             def.buff_cards().into_iter().map(move |c| BuffMeta {
                 id: c.id.into(),
                 name: def.name.clone(),
+                grants: String::new(),
                 max_stacks: c.max_stacks,
                 kind: "stacking",
                 // Start FULL, like every other stacking buff in the
                 // product; only permanent stacks (no trigger, no decay)
                 // default LOCKED, because they cannot move either way.
                 default_stacks: c.max_stacks,
-                default_locked: c.permanent,
+                default_locked: false,
                 permanent: c.permanent,
             })
         })
@@ -1168,7 +1197,8 @@ fn buffs_json(list: &[BuffMeta]) -> Vec<Value> {
     list.iter()
         .map(|b| {
             json!({
-                "id": b.id, "name": b.name, "max_stacks": b.max_stacks, "kind": b.kind,
+                "id": b.id, "name": b.name, "grants": b.grants, "max_stacks": b.max_stacks,
+                "kind": b.kind,
                 "default_stacks": b.default_stacks, "default_locked": b.default_locked,
                 "permanent": b.permanent,
             })

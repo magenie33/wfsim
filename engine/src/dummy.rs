@@ -91,10 +91,13 @@ impl ArcState {
     /// Apply pending decay per the spec's family and return live stacks.
     fn current(&mut self, spec: &ArcBuffSpec, now: f64) -> u32 {
         if spec.pinned {
-            // Locked: frozen at the configured initial count (= max_stacks
-            // under AssumedMax, so bit-identical there; a partial count when
-            // the user locks a lower stack count).
-            return spec.initial_stacks.min(spec.max_stacks);
+            // Locked = NO TIMEOUT, not frozen (user, 2026-08-02). The count
+            // still starts where it was configured and still climbs on every
+            // trigger; what "locked" removes is the expiry. Freezing it
+            // instead made one setting mean two things, and read as "this
+            // buff can never fire again" — which is exactly what a visitor
+            // feared when locking a zero-stack buff.
+            return self.stacks.min(spec.max_stacks);
         }
         if spec.all_drop {
             // On-status family (Cascadia Flare, Conjunction Voltage): one
@@ -145,11 +148,17 @@ impl ArcRuntime {
                 .collect(),
             // Seed active only if configured so (Sharpened Bullets defaults
             // inactive; a locked/initial-active config starts it running).
+            // A locked toggle gets an INFINITE window rather than a second
+            // condition beside the timer: then "active" is one question with
+            // one answer everywhere, and a locked buff that has not fired yet
+            // is still off — which is what the label now promises.
             cd_kill_expiry: params.cd_on_kill.map_or(0.0, |b| {
-                if b.initial_active {
-                    b.duration
-                } else {
+                if !b.initial_active {
                     0.0
+                } else if b.locked {
+                    f64::INFINITY
+                } else {
+                    b.duration
                 }
             }),
         }
@@ -178,7 +187,7 @@ impl ArcRuntime {
     fn on_kill(&mut self, params: &DummyParams, now: f64) {
         self.bump_trigger(&params.arcane.buffs, ArcTrigger::Kill, now);
         if let Some(b) = params.cd_on_kill {
-            self.cd_kill_expiry = now + b.duration;
+            self.cd_kill_expiry = if b.locked { f64::INFINITY } else { now + b.duration };
         }
     }
 
@@ -186,7 +195,7 @@ impl ArcRuntime {
     /// crit-damage bucket, so each attack part scales its own base by it).
     fn cd_bonus(&self, params: &DummyParams, now: f64) -> f64 {
         match params.cd_on_kill {
-            Some(b) if b.locked || now < self.cd_kill_expiry => b.value,
+            Some(b) if now < self.cd_kill_expiry => b.value,
             _ => 0.0,
         }
     }
@@ -1111,7 +1120,7 @@ pub struct DummyParams {
 /// Per-buff configured policy: buff id → (initial stacks, locked). Ids match
 /// the web's `enumerate_buffs` (`condition_overload`, `on_kill_multishot`,
 /// `on_headshot_cc`, `on_headshot_kill_cc`, `on_kill_cd`, `on_reload_fr`,
-/// `arcane:{id}[:{i}]`). Frenzy is configured via [`LockMode`], not here.
+/// `arcane:{id}`). Frenzy is configured via [`LockMode`], not here.
 pub type BuffConfig = std::collections::HashMap<String, (u32, bool)>;
 
 impl DummyParams {
@@ -1173,27 +1182,16 @@ impl DummyParams {
         if let Some(b) = self.fr_on_reload.as_mut() {
             set_timed(b, cfg, "on_reload_fr");
         }
-        // Keyed off the buff's OWN arcane and its index WITHIN that arcane:
-        // a weapon may seat two (an Arch-Gun), and a key built from the
-        // merged set's id and a global index would rename every buff the
-        // moment a second arcane joined.
-        let counts = self.arcane.buffs.iter().fold(
-            std::collections::BTreeMap::<String, usize>::new(),
-            |mut m, b| {
-                *m.entry(b.owner.clone()).or_default() += 1;
-                m
-            },
-        );
-        let mut seen = std::collections::BTreeMap::<String, usize>::new();
+        // Keyed off the buff's OWN arcane — not the merged set's id, because a
+        // weapon may seat two (an Arch-Gun) and every buff would be renamed the
+        // moment a second joined; and not by index either, because ONE ARCANE
+        // IS ONE CARD (user, 2026-08-02). Frostbite's crit damage and multishot
+        // come off the same Cold proc and are the same count by construction,
+        // so one setting drives every spec that arcane owns.
+        let arcane_id = self.arcane.id.clone();
         for spec in self.arcane.buffs.iter_mut() {
-            let aid = spec.owner.clone();
-            let i = *seen.entry(aid.clone()).and_modify(|n| *n += 1).or_insert(0);
-            let id = if counts.get(&aid).copied().unwrap_or(0) > 1 {
-                format!("arcane:{aid}:{i}")
-            } else {
-                format!("arcane:{aid}")
-            };
-            if let Some(&(stacks, locked)) = cfg.get(&id) {
+            let owner = if spec.owner.is_empty() { &arcane_id } else { &spec.owner };
+            if let Some(&(stacks, locked)) = cfg.get(&format!("arcane:{owner}")) {
                 spec.initial_stacks = stacks.min(spec.max_stacks);
                 spec.pinned = locked;
             }
@@ -2613,16 +2611,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     let mut arc = ArcRuntime::init(params);
     // Pressurized Magazine's on-reload fire-rate buff clock (seeded active
     // only if configured so; defaults inactive).
-    let mut fr_reload_expiry: f64 =
-        params
-            .fr_on_reload
-            .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
+    let mut fr_reload_expiry: f64 = params.fr_on_reload.map_or(0.0, |b| {
+        if !b.initial_active { 0.0 } else if b.locked { f64::INFINITY } else { b.duration }
+    });
     // Crosshairs (per-stack expiry FIFO + one refreshable buff); the on-head
     // buff seeds active per its `initial_active` (default on).
-    let mut ch_buff_expiry: f64 =
-        params
-            .cc_on_headshot
-            .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
+    let mut ch_buff_expiry: f64 = params.cc_on_headshot.map_or(0.0, |b| {
+        if !b.initial_active { 0.0 } else if b.locked { f64::INFINITY } else { b.duration }
+    });
     let mut ch_stacks: Vec<f64> = params
         .cc_stack
         .as_ref()
@@ -2775,10 +2771,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 t += live_reload_time(&cy.base_form, params, &mut arc, rs, t);
                 r.reloads += 1;
                 if let Some(b) = cy.base_form.fr_on_reload {
-                    fr_reload_expiry = t + b.duration;
+                    fr_reload_expiry = if b.locked { f64::INFINITY } else { t + b.duration };
                 }
                 if let Some(b) = cy.base_form.bd_on_reload {
-                    bd_reload_expiry = t + b.duration;
+                    bd_reload_expiry = if b.locked { f64::INFINITY } else { t + b.duration };
                 }
                 // Same whole-rounds rule as the plain reload below (M14); the
                 // cycle assumes infinite reserve, so the draw is never short.
@@ -2798,10 +2794,10 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
             t += live_reload_time(params, params, &mut arc, rs, t);
             r.reloads += 1;
             if let Some(b) = params.fr_on_reload {
-                fr_reload_expiry = t + b.duration;
+                fr_reload_expiry = if b.locked { f64::INFINITY } else { t + b.duration };
             }
             if let Some(b) = params.bd_on_reload {
-                bd_reload_expiry = t + b.duration;
+                bd_reload_expiry = if b.locked { f64::INFINITY } else { t + b.duration };
             }
             // Whole rounds only, and `+=` not `=` — both measured (M14). The
             // draw covers the overdraw debt for free: the counter is in (−1, 0]
@@ -2921,7 +2917,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // its per-stack-expiry kill stacks (assumes constant aiming), plus the
         // arcane's assumed-max conditionals (Overcharge/Outburst).
         let cc_rel = params.cc_on_headshot.map_or(0.0, |b| {
-            if b.locked || t < ch_buff_expiry {
+            if t < ch_buff_expiry {
                 b.value
             } else {
                 0.0
@@ -2942,14 +2938,14 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // the BuffBar multiplier) — schedules shots below and gates
         // Hemorrhage's below-2.5 doubled chance.
         let fr_reload_add = match ap.fr_on_reload {
-            Some(b) if b.locked || t < fr_reload_expiry => b.value,
+            Some(b) if t < fr_reload_expiry => b.value,
             _ => 0.0,
         };
         let live_rate = (ap.fire_rate + fr_reload_add) * contribs.fire_rate_multiplier;
         // Deadly Efficiency's live share of the BASE-DAMAGE bucket. Zero until
         // a reload has finished, and zero again when the window closes.
         let bd_reload_add = match ap.bd_on_reload {
-            Some(b) if b.locked || t < bd_reload_expiry => b.value,
+            Some(b) if t < bd_reload_expiry => b.value,
             _ => 0.0,
         };
 
@@ -3465,7 +3461,8 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                     // hit (kills only matter for its stacks).
                     if part.is_head {
                         if let Some(b) = params.cc_on_headshot {
-                            ch_buff_expiry = t + b.duration;
+                            ch_buff_expiry =
+                                if b.locked { f64::INFINITY } else { t + b.duration };
                         }
                         // Lethal Rearmament: every headshot grants a stack.
                         // A pinned buff ignores the trigger, like the rest.
@@ -3710,7 +3707,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // Magazine's live on-reload fire-rate buff.
         bar.expire(t);
         let fr_add = match ap.fr_on_reload {
-            Some(b) if b.locked || t < fr_reload_expiry => b.value,
+            Some(b) if t < fr_reload_expiry => b.value,
             _ => 0.0,
         };
         let rate = (ap.fire_rate + fr_add) * bar.total_contributions().fire_rate_multiplier;
@@ -7869,5 +7866,97 @@ mod tests {
             expected
         );
         assert!(s.median_run.crits > 0, "the DIRECT hit should still crit off Weakened");
+    }
+
+    /// LOCKED MEANS "NO TIMEOUT", NOT "FROZEN" (user, 2026-08-02).
+    ///
+    /// The old reading froze a locked buff at whatever count it was configured
+    /// with, so locking one at a partial count also stopped it EARNING — and
+    /// locking one at zero meant it could never turn on at all, which is
+    /// exactly what a visitor assumed the control did. It now only removes the
+    /// expiry: the count starts where it was set and still climbs.
+    ///
+    /// A killable target and an on-kill stacking arcane make it arithmetic:
+    /// seeded at ONE of three stacks and locked, the buff must end the run
+    /// worth more than one stack.
+    #[test]
+    fn a_locked_buff_still_earns_stacks() {
+        use crate::arcanes_data::{ArcBuffSpec, ArcGrant, ArcTrigger};
+        let mk = |initial: u32| {
+            let mut damage = DamageVector::default();
+            damage.set(DamageType::Impact, 100.0);
+            DummyParams {
+                damage,
+                // Dies to every shot and comes straight back, so the on-kill
+                // trigger fires on a schedule instead of by luck.
+                target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+                arcane: ArcaneFx {
+                    buffs: vec![ArcBuffSpec {
+                        owner: "test".into(),
+                        grant: ArcGrant::BaseDamage,
+                        trigger: ArcTrigger::Kill,
+                        per_stack: 1.0,          // +100% of base per stack
+                        max_stacks: 3,
+                        duration: 999.0,
+                        all_drop: false,
+                        initial_stacks: initial,
+                        pinned: true,            // LOCKED
+                    }],
+                    ..ArcaneFx::none()
+                },
+                magazine_size: 60.0,
+                reload_seconds: 0.1,
+                base_crit_chance: 0.0,
+                crit_multiplier: 1.0,
+                ..no_status()
+            }
+        };
+        let one = monte_carlo(&mk(1), 6, 5);
+        let full = monte_carlo(&mk(3), 6, 5);
+        // Frozen at one stack it would never approach the seeded-full run.
+        assert!(
+            one.mean_damage > 0.9 * full.mean_damage,
+            "locked at 1 stack stayed at 1: {} vs {}",
+            one.mean_damage,
+            full.mean_damage
+        );
+    }
+
+    /// ONE ARCANE IS ONE CARD, so one setting must reach every spec it owns.
+    ///
+    /// Frostbite grants crit damage AND multishot off the same Cold proc and
+    /// they are the same count by construction — there is no state of the game
+    /// where one is at 1 and the other at 10. The card was per GRANT, which
+    /// offered a setting that cannot exist and keyed each half separately;
+    /// configuring the arcane now has to move both halves or the merge is a
+    /// display trick over a split model.
+    #[test]
+    fn one_config_reaches_every_grant_of_its_arcane() {
+        use crate::arcanes_data::{ArcBuffSpec, ArcGrant, ArcTrigger};
+        let spec = |grant: ArcGrant| ArcBuffSpec {
+            owner: "primary_frostbite".into(),
+            grant,
+            trigger: ArcTrigger::ColdStatus,
+            per_stack: 0.03,
+            max_stacks: 40,
+            duration: 12.0,
+            all_drop: true,
+            initial_stacks: 40,
+            pinned: false,
+        };
+        let mut p = DummyParams {
+            arcane: ArcaneFx {
+                buffs: vec![spec(ArcGrant::CritDamage), spec(ArcGrant::Multishot)],
+                ..ArcaneFx::none()
+            },
+            ..DummyParams::default()
+        };
+        let mut cfg = BuffConfig::new();
+        cfg.insert("arcane:primary_frostbite".into(), (7, true));
+        p.apply_buff_config(&cfg);
+        for b in &p.arcane.buffs {
+            assert_eq!(b.initial_stacks, 7, "{:?} kept its own count", b.grant);
+            assert!(b.pinned, "{:?} kept its own timeout", b.grant);
+        }
     }
 }
