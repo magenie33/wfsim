@@ -147,9 +147,10 @@ around (decision 2026-07-31).
   new items ("build 2") and every tooltip that refers to one. A **preset** is a saved state of something that
   always exists, read only by its own module: `builder-builds` (a build),
   `simulator-scenarios` (a fight, buff settings included), `optimizer` (a
-  search: the SCOPE, and only that — the funnel's final round is `10 finalists
-  × the scenario's runs`, neither of which the optimizer offers a control for,
-  because the tab configures nothing (user, 2026-08-02)). There is always ≥1,
+  search: the SCOPE + how many finalists to keep. The final round is
+  `finalists × the SCENARIO's runs` — how hard you measure belongs to the
+  fight, so the optimizer offers no control for it (user, 2026-08-02)).
+  There is always ≥1,
   "active" means the state you are in, and the key is
   `wfsim-presets-<weapon>-<domain>`. A **custom** is a thing you MADE that the
   OTHER modules consume — `rivens` becomes a mod in the pool, custom enemies

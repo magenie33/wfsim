@@ -356,7 +356,7 @@ let optBuffTimer = null;
 // Sort/polarity prefs for the optimizer mod list (independent of the picker's).
 let optPrefs = { sort: "name", dir: "asc", pol: null };
 // The FINAL-ROUND CONTRACT: the funnel's last round is guaranteed
-// `FINALISTS` candidates × the SCENARIO's run count.
+// `finalists` candidates × the SCENARIO's run count.
 //
 // NEITHER IS A SETTING ANY MORE (user, 2026-08-02). The optimizer tab is
 // read-only about configuration — it shows the fight and the scope and runs
@@ -365,18 +365,18 @@ let optPrefs = { sort: "name", dir: "asc", pol: null };
 //   · final runs = `sim.runs`. It is HOW HARD YOU MEASURE, which is the
 //     scenario's question and already answered there. Two boxes for one number
 //     is how a winner gets crowned at a precision the replay never used.
-//   · finalists = 10, fixed. It is how many answers a person reads, not a
-//     property of a search — nobody tuned it, and a knob nobody turns is a
-//     knob that only ever disagrees with itself across presets.
-//   · threads is the MACHINE's, not a search's. It has no control here; the
-//     stored value is still honoured so a power user can set it, and when
-//     there is a machine-settings surface it belongs there.
-const FINALISTS = 10;
+//   · finalists and threads ARE the search's, and they live in the Search
+//     block with nothing from the fight in it (user, 2026-08-02). How many
+//     winners to keep and how much of the machine to spend are things you
+//     decide about a SEARCH; how hard to measure is not.
+//
+// `finalists` rides the optimizer preset like the rest of the scope.
+// `threads` deliberately does NOT: it describes this machine, so a preset
+// carrying it would re-tune the CPU on every load and be wrong on any other
+// computer. Same block, different lifetime — stated in its own tooltip.
 const finalRuns = () => sim.runs;
-let optRun = { threads: 0 }; // threads 0 = auto (cores − 2)
+let optRun = { finalists: 10, threads: 0 }; // threads 0 = auto (cores − 2)
 try { const s = JSON.parse(localStorage.getItem("wfsim-opt-run")); if (s && s.threads) optRun.threads = s.threads; } catch (_) {}
-// Read-only for now: no control writes it (the optimizer tab configures
-// nothing), so this exists to keep an already-stored value working.
 const saveOptRun = () => localStorage.setItem("wfsim-opt-run", JSON.stringify({ threads: optRun.threads }));
 let pickerSlot = 0;
 // Mod-picker sort/filter prefs — persisted across slots, presets and weapons.
@@ -523,6 +523,20 @@ async function init() {
   $("opt-size").addEventListener("input", () => {
     opt.size = Math.max(1, Math.min(8, Number($("opt-size").value) || 8));
     updateOptEstimate();
+  });
+  // updateOptEstimate is also the scope's auto-save, so finalists lands in the
+  // active preset the same way every other search setting does.
+  $("opt-finalists").value = optRun.finalists;
+  $("opt-finalists").title = tr("how many builds survive to the last round — each is then run at the fight's own run count");
+  $("opt-finalists").addEventListener("input", () => {
+    optRun.finalists = Math.max(1, Math.min(100, Number($("opt-finalists").value) || 10));
+    updateOptEstimate();
+  });
+  if (optRun.threads) $("opt-threads").value = optRun.threads;
+  $("opt-threads").title = tr("blank = every core minus two, at low priority — the machine stays responsive either way. This one is NOT saved into the search: it describes this computer, so it would be wrong on any other");
+  $("opt-threads").addEventListener("input", () => {
+    optRun.threads = Math.max(0, Math.min(128, Number($("opt-threads").value) || 0));
+    saveOptRun();
   });
   initPresets();
   reattachOptimize(); // resume progress display if a server-side job survives a reload
@@ -5528,12 +5542,14 @@ function snapshotOpt() {
     mods: { ...opt.mods }, exilus: { ...opt.exilus }, size: opt.size,
     arcanes: { ...opt.arcanes },
     evos: JSON.parse(JSON.stringify(opt.evos)),
+    finalists: optRun.finalists,
   };
 }
 
 // An empty search: nothing marked, a fresh size, the contract left alone (it
 // is how hard to search, not what to search).
-const blankOpt = () => ({ mods: {}, exilus: {}, size: 8, arcanes: {}, evos: {} });
+const blankOpt = () => ({ mods: {}, exilus: {}, size: 8, arcanes: {}, evos: {},
+  finalists: optRun.finalists });
 
 // State-only apply (validation + cross-weapon id dropping); no re-render.
 //
@@ -5571,10 +5587,13 @@ function applyOptState(st) {
     });
     if (Object.keys(valid).length) opt.evos[t] = valid;
   });
-  // `final_runs` / `finalists` are DELIBERATELY not read back. An old preset
-  // may still carry them from when they were settings; they are derived now
-  // (the scenario's runs, and a fixed 10), and honouring a stored copy would
-  // resurrect exactly the second opinion this removed.
+  // `finalists` travels with the search it was tuned for. `final_runs` does
+  // NOT and is deliberately not read back: an old preset may still carry it
+  // from when it was a setting, and it is the fight's `runs` now — honouring a
+  // stored copy would resurrect exactly the second opinion that removed.
+  if (st.finalists) optRun.finalists = st.finalists;
+  const f = $("opt-finalists");
+  if (f) f.value = optRun.finalists;
 }
 
 function applyOptPreset(st) {
@@ -5767,7 +5786,7 @@ function updateOptEstimate() {
     // rounds, even log-space culls landing exactly on the finalists, runs
     // from a halving cost budget ((ρ/2)^i, capped at final/4), then the
     // guaranteed final. Racing/amnesty adapt this plan at runtime.
-    const F = FINALISTS, FR = finalRuns();
+    const F = optRun.finalists, FR = finalRuns();
     const N = Math.round(jobs);
     const rounds = [];
     if (N > F) {
@@ -5867,7 +5886,7 @@ async function runOptimize() {
       wf_armor: sim.wf_armor, wf_energy: sim.wf_energy,
       infinite_ammo: sim.infinite_ammo, duration: sim.duration,
       form: sim.form,
-      final_runs: finalRuns(), finalists: FINALISTS,
+      final_runs: finalRuns(), finalists: optRun.finalists,
       threads: optRun.threads || 0, // 0 = auto (cores − 2)
       buffs,
     };

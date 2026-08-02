@@ -138,19 +138,20 @@ Implemented in `optimizer/` (`wfsim-optimizer` binary):
   that has not already left it cannot be recovered — this is what makes a
   cancelled run show its ranking instead of an empty page.
 
-## The optimizer configures NOTHING (2026-08-02)
+## The optimizer owns the SEARCH, and nothing else (2026-08-02)
 
-Its tab shows the fight, shows the scope, and runs them. Every number that
-decides the search comes from somewhere that already owns it:
+Its tab shows the fight read-only, holds the scope, and adds ONE block of its
+own — Search. Every number that decides a run lives with whoever the question
+belongs to:
 
-| what | where it comes from | why not here |
+| what | where it lives | why |
 |---|---|---|
-| the fight | the SIMULATOR's scenario, read-only | a preset is edited in exactly one place |
-| final runs | the scenario's `runs` | how hard you measure is the scenario's question; a second box crowns a winner at a precision the replay never used |
-| finalists | fixed at **10** | it is how many answers a person reads, not a property of a search — nobody ever tuned it, and a knob nobody turns only disagrees with itself across presets |
-| CPU threads | auto (cores − 2), low priority | a property of the MACHINE, not of a search; it has no control until there is a machine-settings surface, and a stored value is still honoured |
+| the fight | the SIMULATOR's scenario, shown read-only | a preset is edited in exactly one place |
+| final runs | the scenario's `runs` | how hard you measure is the fight's question; a second box crowns a winner at a precision the replay never used |
+| finalists | the **Search** block, in the optimizer preset | how many winners to keep is a thing you decide about a SEARCH |
+| CPU threads | the **Search** block, machine-local | same block, different lifetime: it describes this computer, so a preset carrying it would re-tune the CPU on every load and be wrong on any other machine |
 
-The optimizer preset therefore holds the SCOPE and nothing else. An older one
-may still carry `final_runs`/`finalists`; they are deliberately ignored on load
-rather than migrated — reading them back would resurrect the second opinion
-this removed.
+So the optimizer tab has exactly one block of its own, and everything in it is
+about the search rather than about the fight. An older preset may still carry
+`final_runs`; it is deliberately ignored on load rather than migrated —
+reading it back would resurrect the second opinion this removed.
