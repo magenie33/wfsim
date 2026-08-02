@@ -164,6 +164,25 @@ impl ArcRuntime {
         }
     }
 
+    /// Sharpened Bullets' on-kill window end — the replay reads it to say
+    /// whether that buff is up.
+    fn cd_kill_expiry(&self) -> f64 {
+        self.cd_kill_expiry
+    }
+
+    /// Live stacks of whichever specs belong to `owner`. They share one count
+    /// by construction (one arcane is one card), so the first answers for all.
+    fn owner_stacks(&mut self, fx: &ArcaneFx, owner: &str, now: f64) -> u32 {
+        fx.buffs
+            .iter()
+            .zip(self.states.iter_mut())
+            .find(|(s, _)| {
+                let o = if s.owner.is_empty() { fx.id.as_str() } else { s.owner.as_str() };
+                o == owner
+            })
+            .map_or(0, |(s, st)| st.current(s, now))
+    }
+
     /// Σ per_stack × live stacks over every buff granting `grant`.
     fn total(&mut self, specs: &[ArcBuffSpec], grant: ArcGrant, now: f64) -> f64 {
         specs
@@ -1140,6 +1159,49 @@ pub struct DummyParams {
     pub duration_secs: f64,
 }
 
+/// ONE FRAME of a replayed engagement: where the fight stood at `t`.
+///
+/// The frames come from re-running the MEDIAN engagement — the one the result
+/// already reports — so the curve a player scrubs is the same fight the
+/// headline number came from, not an average of fights that never happened.
+#[derive(Debug, Clone, Default)]
+pub struct Frame {
+    pub t: f64,
+    /// The target's pools as they stood. A respawn (InstantRespawn) shows as
+    /// them jumping back up, which is the truth of that scenario.
+    pub overguard: f64,
+    pub shield: f64,
+    pub health: f64,
+    /// Cumulative EFFECTIVE damage dealt by `t`, and kills completed.
+    pub damage: f64,
+    pub kills: u32,
+    /// Live stacks per buff, positionally matching [`Replay::buffs`].
+    pub stacks: Vec<u8>,
+}
+
+/// A replay of one engagement: the buff roster it was fought with, and a frame
+/// every `dt` seconds.
+///
+/// Sampling costs ONE extra run, not one per Monte Carlo iteration: `Rng` is
+/// SplitMix64 with a single `u64` of state, so a run records the state it
+/// STARTED from ([`RunResult::rng_state`]) and can be replayed bit-for-bit
+/// afterwards. Carrying frames on every `RunResult` would have cost the trace
+/// times `runs` — 20,000 of them at the cap (user, 2026-08-02).
+#[derive(Debug, Clone, Default)]
+pub struct Replay {
+    /// Seconds between frames.
+    pub dt: f64,
+    /// (buff id, max stacks) — ids are the SAME vocabulary as [`BuffConfig`]
+    /// and the web's buff cards, because they come from one place:
+    /// [`DummyParams::buff_roster`].
+    pub buffs: Vec<(String, u32)>,
+    pub frames: Vec<Frame>,
+}
+
+/// Frames in a replay, whatever the engagement length. 600 over 300 s is one
+/// every half second — smooth enough to scrub, small enough to ship as JSON.
+pub const REPLAY_FRAMES: usize = 600;
+
 /// Per-buff configured policy: buff id → (initial stacks, locked). Ids match
 /// the web's `enumerate_buffs` (`condition_overload`, `on_kill_multishot`,
 /// `on_headshot_cc`, `on_headshot_kill_cc`, `on_kill_cd`, `on_reload_fr`,
@@ -1147,6 +1209,62 @@ pub struct DummyParams {
 pub type BuffConfig = std::collections::HashMap<String, (u32, bool)>;
 
 impl DummyParams {
+    /// EVERY configurable buff this build carries, as `(id, max_stacks)`.
+    ///
+    /// Deliberately adjacent to [`Self::apply_buff_config`] and written in the
+    /// same order off the same fields: the ids are one vocabulary shared by
+    /// the config, the web's cards and the replay, and the way to keep three
+    /// readers in step is to give them one writer. A buff that gains a config
+    /// knob and not a roster entry would be configurable and invisible.
+    pub fn buff_roster(&self) -> Vec<(String, u32)> {
+        let mut out: Vec<(String, u32)> = Vec::new();
+        if self.frenzy {
+            out.push(("frenzy".into(), 1));
+        }
+        if let Some(ms) = self.evo_ms {
+            out.push(("evo_multishot".into(), ms.max_stacks));
+        }
+        if let Some(s) = &self.co_stack {
+            out.push(("condition_overload".into(), s.max_stacks));
+        }
+        if let Some(s) = &self.ms_stack {
+            out.push(("on_kill_multishot".into(), s.max_stacks));
+        }
+        if let Some(s) = &self.cc_stack {
+            out.push(("on_headshot_kill_cc".into(), s.max_stacks));
+        }
+        if let Some(b) = &self.plain_hit_bonus {
+            out.push(("on_plain_hit_damage".into(), b.max_stacks));
+        }
+        if let Some(b) = &self.reload_on_headshot {
+            out.push(("on_headshot_reload_speed".into(), b.max_stacks));
+        }
+        if self.cc_on_headshot.is_some() {
+            out.push(("on_headshot_cc".into(), 1));
+        }
+        if self.cd_on_kill.is_some() {
+            out.push(("on_kill_cd".into(), 1));
+        }
+        if self.bd_on_reload.is_some() {
+            out.push(("on_reload_bd".into(), 1));
+        }
+        if self.fr_on_reload.is_some() {
+            out.push(("on_reload_fr".into(), 1));
+        }
+        // One entry per ARCANE, not per grant — the same rule the cards
+        // follow, and for the same reason: Frostbite's crit damage and
+        // multishot are one stack count by construction.
+        let arcane_id = self.arcane.id.clone();
+        for spec in self.arcane.buffs.iter() {
+            let owner = if spec.owner.is_empty() { &arcane_id } else { &spec.owner };
+            let id = format!("arcane:{owner}");
+            if !out.iter().any(|(x, _)| *x == id) {
+                out.push((id, spec.max_stacks));
+            }
+        }
+        out
+    }
+
     /// Apply a per-buff configured policy onto the live specs — locked ⇒
     /// `pinned` (frozen at `initial_stacks`), unlocked ⇒ seed then decay.
     /// Weapon-scoped: recurses into the incarnon cycle's base form.
@@ -1169,8 +1287,12 @@ impl DummyParams {
         // either way) and is deliberately ignored.
         if let Some(ms) = self.evo_ms {
             if let Some(&(stacks, _)) = cfg.get("evo_multishot") {
-                let frac = f64::from(stacks.min(ms.max_stacks)) / f64::from(ms.max_stacks);
+                let stacks = stacks.min(ms.max_stacks);
+                let frac = f64::from(stacks) / f64::from(ms.max_stacks);
                 self.multishot -= ms.full * (1.0 - frac);
+                if let Some(m) = self.evo_ms.as_mut() {
+                    m.stacks = stacks;
+                }
             }
         }
         if let Some(s) = self.co_stack.as_mut() {
@@ -1672,6 +1794,11 @@ pub struct RunResult {
     pub sources: SourceDamage,
     /// Effective damage by time bucket (the damage-over-time curve).
     pub timeline: Timeline,
+    /// The `Rng` state this run STARTED from. SplitMix64 keeps all of its
+    /// state in one `u64`, so this is the whole of what it takes to replay
+    /// the run bit-for-bit — which is how the MEDIAN engagement gets traced
+    /// without every run carrying a trace (see [`Replay`]).
+    pub rng_state: u64,
 }
 
 /// Devouring Attrition's multiplier for ONE damage instance: a
@@ -2591,7 +2718,89 @@ fn live_reload_speed(params: &DummyParams, stacks: &mut LiveStacks, t: f64) -> f
     })
 }
 
+/// The live stack count of every buff in [`Replay::buffs`], in that order.
+///
+/// The roster and this reader are two halves of one fact and sit as close
+/// together as the code allows: `buff_roster` says what exists, this says
+/// where it currently is. A `_ => 0` arm would let a rostered buff draw a flat
+/// line forever and look like a finding, so the match is written to be read
+/// against the roster, entry for entry.
+///
+/// Several containers hold "stacks" here because the sim's buffs genuinely
+/// live in different shapes — decaying stack lists, single expiries, a
+/// weapon passive. Normalising them into one number is this function's whole
+/// job; nothing downstream should learn the difference.
+#[allow(clippy::too_many_arguments)]
+fn sample_stacks(
+    params: &DummyParams,
+    rep: &Replay,
+    now: f64,
+    arc: &mut ArcRuntime,
+    gal: &mut GalStacks,
+    plain: &mut LiveStacks,
+    reload_hs: &mut LiveStacks,
+    ch_stacks: &[f64],
+    ch_buff_expiry: f64,
+    fr_reload_expiry: f64,
+    bd_reload_expiry: f64,
+    bar: &BuffBar,
+) -> Vec<u8> {
+    let cap = |n: u32| n.min(u8::MAX as u32) as u8;
+    let live = |on: bool| u8::from(on);
+    rep.buffs
+        .iter()
+        .map(|(id, _max)| match id.as_str() {
+            // A weapon passive, not a stack: it is up or it is not.
+            "frenzy" => live(bar.get(crate::perks::frenzy::BUFF_ID).is_some()),
+            // PERMANENT (no trigger, no decay): whatever it was configured to,
+            // for the whole run. `multishot` already carries it, so the count
+            // is reconstructed from the fraction that survived the config.
+            "evo_multishot" => params.evo_ms.map_or(0, |ms| cap(ms.stacks)),
+            "condition_overload" => cap(gal.co.current(now, dur(&params.co_stack))),
+            "on_kill_multishot" => cap(gal.ms.current(now, dur(&params.ms_stack))),
+            "on_headshot_kill_cc" => cap(ch_stacks.iter().filter(|&&e| e > now).count() as u32),
+            "on_plain_hit_damage" => cap(plain.current(now, params.plain_hit_bonus.map_or(0.0, |b| b.duration))),
+            "on_headshot_reload_speed" => {
+                cap(reload_hs.current(now, params.reload_on_headshot.map_or(0.0, |b| b.duration)))
+            }
+            "on_headshot_cc" => live(now < ch_buff_expiry),
+            "on_kill_cd" => live(now < arc.cd_kill_expiry()),
+            "on_reload_bd" => live(now < bd_reload_expiry),
+            "on_reload_fr" => live(now < fr_reload_expiry),
+            other => match other.strip_prefix("arcane:") {
+                // One card per arcane: every spec it owns shares a count, so
+                // the first one answers for all of them.
+                Some(owner) => cap(arc.owner_stacks(&params.arcane, owner, now)),
+                None => 0,
+            },
+        })
+        .collect()
+}
+
+/// A stacking spec's decay period, or 0 when the spec is absent.
+fn dur(spec: &Option<crate::loadout::StackSpec>) -> f64 {
+    spec.as_ref().map_or(0.0, |s| s.duration)
+}
+
 pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
+    run_once_traced(params, rng, None)
+}
+
+/// One engagement, optionally SAMPLED into a [`Replay`].
+///
+/// `trace` is `Some` for exactly one run per `monte_carlo` — the median one,
+/// replayed afterwards from its recorded RNG state. Threading an `Option`
+/// through rather than duplicating the loop is the point: a traced run and a
+/// scored run must be the same code, or the replay shows a fight that did not
+/// happen (user, 2026-08-02).
+pub fn run_once_traced(
+    params: &DummyParams,
+    rng: &mut Rng,
+    mut trace: Option<&mut Replay>,
+) -> RunResult {
+    let started_at = rng.state();
+    let mut next_frame = 0.0f64;
+    let frame_dt = trace.as_ref().map_or(f64::INFINITY, |r| r.dt);
     let mut bar = BuffBar::new();
     let mut enervate = params
         .arcane
@@ -2647,7 +2856,7 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         .as_ref()
         .map_or(Vec::new(), |s| vec![s.duration; s.initial_stacks as usize]);
 
-    let mut r = RunResult::default();
+    let mut r = RunResult { rng_state: started_at, ..Default::default() };
 
     // Per-phase precomputation: the quantized vector is static per phase
     // (no dynamic mods); ModdedBase for proc payload formulas stays
@@ -2725,6 +2934,32 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         .as_ref()
         .map_or(0.0, |c| c.base_form.magazine_size);
     loop {
+        // SAMPLE first, so a frame shows the fight as it stood BEFORE the
+        // shot at `t` — the same convention the timeline buckets use.
+        // Sampling here rather than on a fixed clock is deliberate: this loop
+        // is the only place that advances time, and a buff can only change on
+        // an event this loop drives. A gap between shots emits repeated
+        // frames, which is exactly what a fight with nothing happening in it
+        // looks like.
+        if let Some(rep) = trace.as_deref_mut() {
+            while next_frame <= t && next_frame < params.duration_secs {
+                let stacks = sample_stacks(
+                    params, rep, next_frame, &mut arc, &mut gal, &mut plain_stacks,
+                    &mut rs_stacks, &ch_stacks, ch_buff_expiry, fr_reload_expiry,
+                    bd_reload_expiry, &bar,
+                );
+                rep.frames.push(Frame {
+                    t: next_frame,
+                    overguard: target.overguard,
+                    shield: target.shield,
+                    health: target.health,
+                    damage: r.effective_damage,
+                    kills: r.kills,
+                    stacks,
+                });
+                next_frame += frame_dt;
+            }
+        }
         if t >= params.duration_secs {
             break;
         }
@@ -3802,6 +4037,28 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
     r.kill_progress = r.kills as f64 + partial;
 
     r
+}
+
+/// Replay ONE engagement, sampled into frames.
+///
+/// Deliberately NOT part of [`Summary`]: a summary is `Copy` and is produced
+/// by the optimizer thousands of times a second, which must not pay for a
+/// trace it never looks at. The simulator asks for this separately, with the
+/// median run's `rng_state`, and gets the same fight back frame by frame.
+///
+/// ```ignore
+/// let s = monte_carlo(&params, 100, seed);
+/// let rep = replay(&params, s.median_run.rng_state, REPLAY_FRAMES);
+/// ```
+pub fn replay(params: &DummyParams, rng_state: u64, frames: usize) -> Replay {
+    let frames = frames.max(1);
+    let mut rep = Replay {
+        dt: (params.duration_secs / frames as f64).max(1e-6),
+        buffs: params.buff_roster(),
+        frames: Vec::with_capacity(frames),
+    };
+    run_once_traced(params, &mut Rng::new(rng_state), Some(&mut rep));
+    rep
 }
 
 /// Aggregate statistics over many engagements.
@@ -8050,6 +8307,66 @@ mod tests {
         }
         assert_eq!(og.freeze.len(), FREEZE_CAP_UNDER_OVERGUARD);
         assert!(og.frozen_until.is_none(), "an overguard holder never freezes");
+    }
+
+    /// A REPLAY IS THE SAME FIGHT, not a re-roll of it.
+    ///
+    /// The whole design rests on `Rng` being SplitMix64 with one `u64` of
+    /// state: a run records what it started from, and replaying from that
+    /// number reproduces it exactly. If that ever stops being true the replay
+    /// silently starts showing a DIFFERENT engagement than the one whose
+    /// number is on screen — which is worse than having no replay.
+    #[test]
+    fn a_replay_reproduces_the_run_it_came_from() {
+        let p = DummyParams {
+            arcane: arc_stacked("secondary_merciless"),
+            duration_secs: 30.0,
+            ..flat_base()
+        };
+        let s = monte_carlo(&p, 12, 99);
+        let rep = replay(&p, s.median_run.rng_state, 60);
+        assert_eq!(rep.frames.len(), 60, "one frame per slot, gaps filled");
+        assert!((rep.dt - 0.5).abs() < 1e-9, "30 s over 60 frames");
+
+        // Re-running from the same state gives the identical RunResult.
+        let again = run_once(&p, &mut Rng::new(s.median_run.rng_state));
+        assert_eq!(again.total_damage.to_bits(), s.median_run.total_damage.to_bits());
+        assert_eq!(again.pellets, s.median_run.pellets);
+        assert_eq!(again.crits, s.median_run.crits);
+
+        // The last frame's cumulative damage is the run's own effective total
+        // minus whatever landed after the final sample — never more.
+        let last = rep.frames.last().unwrap();
+        assert!(last.damage <= s.median_run.effective_damage + 1e-6);
+        assert!(last.damage > 0.0, "something happened");
+        // Frames advance in time and never go backwards.
+        for w in rep.frames.windows(2) {
+            assert!(w[1].t > w[0].t);
+            assert!(w[1].damage >= w[0].damage, "cumulative damage cannot fall");
+        }
+    }
+
+    /// The roster names every buff the sampler can answer for, and the
+    /// sampler answers for every buff the roster names. A rostered buff the
+    /// sampler does not know would draw a flat zero and read as a finding.
+    #[test]
+    fn every_rostered_buff_is_sampled() {
+        let p = DummyParams {
+            arcane: arc_stacked("secondary_merciless"),
+            duration_secs: 10.0,
+            ..DummyParams::default()
+        };
+        let roster = p.buff_roster();
+        assert!(!roster.is_empty(), "this fixture carries buffs");
+        let rep = replay(&p, 12345, 20);
+        assert_eq!(rep.buffs, roster);
+        for f in &rep.frames {
+            assert_eq!(f.stacks.len(), roster.len(), "one sample per rostered buff");
+        }
+        // Merciless was seeded full, so its series starts at its cap rather
+        // than at the zero an unknown id would produce.
+        let at = roster.iter().position(|(id, _)| id.starts_with("arcane:")).expect("an arcane");
+        assert_eq!(u32::from(rep.frames[0].stacks[at]), roster[at].1);
     }
 
 }

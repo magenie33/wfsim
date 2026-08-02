@@ -16,6 +16,14 @@ impl Rng {
         Self { state: seed }
     }
 
+    /// The generator's ENTIRE state. SplitMix64 keeps it in one `u64`, so
+    /// `Rng::new(rng.state())` is an exact clone — which is what lets the
+    /// simulator replay one chosen engagement out of thousands without
+    /// storing anything per run but this number.
+    pub fn state(&self) -> u64 {
+        self.state
+    }
+
     fn next_u64(&mut self) -> u64 {
         self.state = self.state.wrapping_add(0x9E3779B97F4A7C15);
         let mut z = self.state;

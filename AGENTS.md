@@ -92,7 +92,10 @@ around (decision 2026-07-31).
   is the committed one — the builder and the optimizer must offer the
   same options and the same visibility on every axis, and it exits
   non-zero when they do not. Run it after adding a weapon or anything a
-  weapon can carry. `node scripts/check_preset_independence.mjs` is the
+  weapon can carry. `node scripts/check_replay.mjs` is the fifth: the
+  median engagement plays back on screen — the buff curves draw, scrubbing
+  drains the pools, and play advances the clock at the chosen multiplier.
+  `node scripts/check_preset_independence.mjs` is the
   fourth: it asserts no collection's state is written from outside it —
   switching a build must not move the fight, and editing the fight must not
   touch a build. `node scripts/check_share.mjs` is the second: it opens a

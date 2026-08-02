@@ -4895,7 +4895,9 @@ async function runSim() {
     // Send only the buffs the current build actually has (ids in buffList).
     const buffs = {};
     buffList.forEach((b) => { const c = sim.buffs[b.id]; if (c) buffs[b.id] = { stacks: c.stacks, locked: c.locked }; });
-    const body = { ...buildPayload(), ...sim, buffs };
+    // `replay: true` only HERE. The gain scan hits the same endpoint once per
+    // candidate and shows no replay, so it must not pay for one.
+    const body = { ...buildPayload(), ...sim, buffs, replay: true };
     const r = await api("/api/simulate", body);
     if (!r || r.ok === false) {
       $("sim-results").innerHTML = `<div class="error">sim failed: ${r ? r.error : "no data"}</div>`;
@@ -4963,6 +4965,136 @@ function renderStoredSimResult() {
   show("sim-results-block", has); // an untested build shows no Result block
   if (has) renderResults(p.lastResult.r, p.lastResult.at);
   else box.innerHTML = "";
+}
+
+// ---- REPLAY -------------------------------------------------------------
+//
+// The MEDIAN engagement, played back. Not a new simulation and not an average:
+// the engine re-ran that one run from the RNG state it recorded, so this is
+// the fight the headline number came from, frame by frame (user, 2026-08-02).
+//
+// One row per buff, each a short curve of LIVE STACKS over time, all open by
+// default — the question they answer is "was this thing actually up", and a
+// row that has to be clicked to answer it will not be. `mean` and `uptime`
+// sit in the header so the group reads without expanding anything at all.
+const REPLAY_SPEEDS = [1, 2, 5, 20];
+let replayState = null; // { data, i, playing, speed, raf }
+
+function replayMarkup(r) {
+  const rp = r && r.replay;
+  if (!rp || !rp.t || rp.t.length < 2) return "";
+  // Buff names come from the CARDS — same ids, so the two can never disagree
+  // about what a series is called.
+  const named = (id) => {
+    const b = (buffList || []).find((x) => x.id === id);
+    return b ? buffCardName(b.name) : id;
+  };
+  const W = 600, H = 28;
+  const rows = rp.buffs.map((b, i) => {
+    const s = rp.stacks[i] || [];
+    const max = Math.max(1, b.max);
+    const px = (j) => (j / (s.length - 1)) * W;
+    const py = (v) => H - 1 - (v / max) * (H - 2);
+    const pts = s.map((v, j) => `${px(j).toFixed(1)},${py(v).toFixed(1)}`).join(" ");
+    const mean = s.reduce((a, v) => a + v, 0) / (s.length || 1);
+    const up = s.filter((v) => v > 0).length / (s.length || 1);
+    return `<div class="rp-row" data-buff="${i}">
+      <div class="rp-head">
+        <span class="rp-caret">▾</span>
+        <span class="rp-name">${escHtml(named(b.id))}</span>
+        <span class="rp-stat">${escHtml(tr("avg"))} ${mean.toFixed(1)}/${b.max} · ${escHtml(tr("uptime"))} ${Math.round(up * 100)}%</span>
+        <span class="rp-now" data-now="${i}">–</span>
+      </div>
+      <div class="rp-chart">
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+          <polygon class="rp-area" points="0,${H} ${pts} ${W},${H}"/>
+          <polyline class="rp-line" points="${pts}"/>
+          <line class="rp-cur" data-cur="${i}" y1="0" y2="${H}" x1="0" x2="0"/>
+        </svg>
+      </div>
+    </div>`;
+  }).join("");
+  return `
+      <h3>${escHtml(tr("Replay"))} <span class="sim-hint">${escHtml(tr("the median engagement, frame by frame — the one the numbers above came from"))}</span></h3>
+      <div class="rp-bar">
+        <button id="rp-play" class="ghost-btn small rp-play">▶ ${escHtml(tr("play"))}</button>
+        <select id="rp-speed">${REPLAY_SPEEDS.map((s) => `<option value="${s}"${s === 5 ? " selected" : ""}>${s}x</option>`).join("")}</select>
+        <input id="rp-scrub" class="rp-scrub" type="range" min="0" max="${rp.t.length - 1}" value="0">
+        <span id="rp-clock" class="rp-clock">0.0s</span>
+      </div>
+      <div class="rp-pools" id="rp-pools"></div>
+      ${rows}`;
+}
+
+function wireReplay(r) {
+  const rp = r && r.replay;
+  if (replayState && replayState.raf) cancelAnimationFrame(replayState.raf);
+  replayState = null;
+  if (!rp || !$("rp-scrub")) return;
+  // `pos` is a FLOAT cursor in frames — playback advances it by fractions of
+  // a frame per animation tick. Every array read goes through the rounded
+  // index: `rp.t[3.7]` is `undefined`, which threw inside the animation
+  // callback and killed the loop with no console entry to show for it.
+  const st = { data: rp, pos: 0, i: 0, playing: false, speed: 5, raf: 0, last: 0 };
+  replayState = st;
+
+  const draw = () => {
+    const i = Math.max(0, Math.min(rp.t.length - 1, Math.round(st.pos)));
+    st.i = i;
+    $("rp-clock").textContent = `${rp.t[i].toFixed(1)}s / ${rp.t[rp.t.length - 1].toFixed(0)}s`;
+    $("rp-scrub").value = i;
+    const n = (x) => Math.round(x || 0).toLocaleString();
+    const f = (x) => n(rp[x][i]);
+    $("rp-pools").innerHTML =
+      `<span>${escHtml(tr("Overguard"))} <b>${f("og")}</b></span>` +
+      `<span>${escHtml(tr("Shield"))} <b>${f("sh")}</b></span>` +
+      `<span>${escHtml(tr("Health"))} <b>${f("hp")}</b></span>` +
+      `<span>${escHtml(tr("damage"))} <b>${f("dmg")}</b></span>` +
+      `<span>${escHtml(tr("kills"))} <b>${rp.kills[i]}</b></span>`;
+    const x = (i / (rp.t.length - 1)) * 600;
+    document.querySelectorAll("[data-cur]").forEach((el) => {
+      el.setAttribute("x1", x); el.setAttribute("x2", x);
+    });
+    document.querySelectorAll("[data-now]").forEach((el) => {
+      const k = Number(el.dataset.now);
+      el.textContent = `${rp.stacks[k][i]}/${rp.buffs[k].max}`;
+    });
+  };
+
+  const tick = (now) => {
+    if (!st.playing) return;
+    // Wall-clock paced, so `speed` means what it says however fast the
+    // browser paints: 5x is five seconds of fight per second of watching.
+    const dtms = st.last ? now - st.last : 16;
+    st.last = now;
+    st.pos += (dtms / 1000) * st.speed / rp.dt;
+    if (st.pos >= rp.t.length - 1) { st.pos = rp.t.length - 1; stop(); }
+    draw();
+    if (st.playing) st.raf = requestAnimationFrame(tick);
+  };
+  const stop = () => {
+    st.playing = false; st.last = 0;
+    $("rp-play").textContent = `▶ ${tr("play")}`;
+  };
+  $("rp-play").onclick = () => {
+    if (st.playing) { stop(); return; }
+    if (st.pos >= rp.t.length - 1) st.pos = 0;
+    st.playing = true; st.last = 0;
+    $("rp-play").textContent = `❚❚ ${tr("pause")}`;
+    st.raf = requestAnimationFrame(tick);
+  };
+  $("rp-speed").onchange = () => { st.speed = Number($("rp-speed").value) || 1; };
+  $("rp-scrub").oninput = () => { stop(); st.pos = Number($("rp-scrub").value); draw(); };
+  // Collapse one row without losing its place in the group.
+  document.querySelectorAll(".rp-row .rp-head").forEach((h) => {
+    h.onclick = () => {
+      const chart = h.parentElement.querySelector(".rp-chart");
+      const open = chart.hidden;
+      chart.hidden = !open;
+      h.querySelector(".rp-caret").textContent = open ? "▾" : "▸";
+    };
+  });
+  draw();
 }
 
 function renderResults(r, testedAt) {
@@ -5071,6 +5203,7 @@ function renderResults(r, testedAt) {
         <div class="tl-ymax">${n0(tlMax)}</div>
         <div id="tl-tip" class="tl-tip" hidden></div>
       </div>` : "";
+  const replay = replayMarkup(r);
   const row = (k, v) => `<div class="row"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   const detail = [
     row("Target", `${t.name || "?"} · Lv ${t.level}${t.steel_path ? " (SP)" : ""}`),
@@ -5085,7 +5218,7 @@ function renderResults(r, testedAt) {
       <div class="hero"><div><div class="hero-num">${heroNum}</div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
       <div class="kpi-row">${kpis}</div>
       <h3>${tr("Damage by source")}</h3>
-      <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${chart}
+      <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${chart}${replay}
       <h3>Detail</h3>
       <div class="stat-table">${detail}</div>
     </div>`;
@@ -5104,6 +5237,7 @@ function renderResults(r, testedAt) {
         .forEach((c) => { c.hidden = !open; });
     });
   });
+  wireReplay(r);
   // Chart hover: crosshair + tooltip on the nearest time bucket.
   const wrap = $("sim-results").querySelector(".tl-wrap");
   if (wrap) {

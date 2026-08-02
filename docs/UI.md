@@ -63,6 +63,27 @@ why they live here and not in code.
 When positions become real they belong ON `arena::Arena`, beside the actors
 that would have them, not in a parallel module.
 
+## Replay (2026-08-02)
+
+The Simulator's result carries the MEDIAN engagement, frame by frame: target
+pools, cumulative damage, kills, and **live stacks per buff**. One row per
+buff, each a short curve, all open by default — the question they answer is
+"was this thing actually up", and a row you have to click to answer it will not
+be clicked. `avg` and `uptime` sit in the header so the group reads at a
+glance; play/pause + 1x/2x/5x/20x + a scrubber move one cursor across every
+curve at once.
+
+It is the same fight the headline number came from, not a fresh run and not an
+average. `Rng` is SplitMix64 with a single `u64` of state, so a run records
+what it started from (`RunResult::rng_state`) and `dummy::replay` re-runs that
+one bit-for-bit. Cost: ONE extra engagement, and only when asked — the
+marginal-gain scan calls the same endpoint once per candidate and shows no
+replay, so `replay: true` is opt-in and only the Simulator's Run sends it.
+
+Why it earns its space: it turns arguments into pictures. "Is Primary Frostbite
+pinned at 40 stacks or decaying?" was a paragraph of reasoning; it is now a
+curve that climbs 0 → 40 over sixty seconds and answers itself.
+
 ## Planned
 
 - **Surface each attack part's CO anomalies in the builder panel** (user,

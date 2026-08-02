@@ -1218,6 +1218,10 @@ pub struct EvoMsBuff {
     /// FINAL multishot contributed at full stacks (base pellets × Σ bonus).
     pub full: f64,
     pub max_stacks: u32,
+    /// The count actually in play. PERMANENT stacks never move during a run,
+    /// so this is a static choice — but the replay still has to be able to say
+    /// what it was, and `multishot` has already absorbed it by then.
+    pub stacks: u32,
 }
 
 /// A resolved status-conversion roll (Hemorrhage).
@@ -1768,6 +1772,9 @@ pub fn resolve_for(
             EvoMsBuff {
                 full: base.base_multishot * base.buff_multishot_bonus,
                 max_stacks: base.buff_ms_max_stacks,
+                // Full until a buff card says otherwise — it is permanent, so
+                // "the count in play" starts at the count the panel resolved.
+                stacks: base.buff_ms_max_stacks,
             },
         ),
     }

@@ -649,3 +649,24 @@ label.check input{width:auto}
 .buff-card .bgr{color:var(--muted);font-size:11px;margin-left:6px}
 /* A screening number reads as approximate; a refined one reads as measured. */
 .gainchip.rough{opacity:.72}
+
+/* ---- REPLAY: the median engagement, scrubbable ------------------------
+   One row per buff, deliberately short (28px of curve): five of them have to
+   read as a group at a glance, which a stack of full-height charts cannot do
+   (user, 2026-08-02: "都是空间要小一点"). */
+.rp-bar{display:flex;align-items:center;gap:10px;margin:6px 0 10px}
+.rp-play{min-width:64px}
+.rp-scrub{flex:1;accent-color:var(--accent)}
+.rp-clock{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;min-width:96px;text-align:right}
+.rp-pools{display:flex;gap:14px;font-size:12px;flex-wrap:wrap;margin-bottom:8px}
+.rp-pools b{font-variant-numeric:tabular-nums}
+.rp-row{border-top:1px solid var(--line);padding:5px 0}
+.rp-head{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px}
+.rp-head .rp-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rp-head .rp-now{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:600}
+.rp-head .rp-stat{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.rp-chart{position:relative;height:28px;margin-top:3px}
+.rp-chart svg{width:100%;height:28px;display:block}
+.rp-area{fill:var(--accent);opacity:.16}
+.rp-line{fill:none;stroke:var(--accent);stroke-width:1.5;vector-effect:non-scaling-stroke}
+.rp-cur{stroke:var(--text);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.55}

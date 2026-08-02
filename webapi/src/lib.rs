@@ -2699,6 +2699,42 @@ pub fn simulate_json(v: &Value) -> Value {
     let nb = (s.duration_secs.ceil() as usize).clamp(1, m.timeline.0.len());
     let pel = m.pellets.max(1) as f64;
 
+    // THE REPLAY: the median engagement, re-run from the RNG state it started
+    // from and sampled into frames. Buff series ride the same frames as the
+    // pools, because "what were my stacks when its overguard broke" is one
+    // question.
+    //
+    // OPT-IN, and that is not a micro-optimisation: the marginal-gain scan
+    // calls this endpoint once per CANDIDATE — seventy mods on an axis — and
+    // shows none of it. Only the Simulator's own Run asks for it, and pays one
+    // extra engagement plus the frames on the wire (user, 2026-08-02).
+    let replay = if get_bool(v, "replay", false) {
+        let rep = wfsim_engine::dummy::replay(
+            &params,
+            m.rng_state,
+            wfsim_engine::dummy::REPLAY_FRAMES,
+        );
+        json!({
+            "dt": rep.dt,
+            // Ids are the buff cards' own — the client joins on them for names.
+            "buffs": rep.buffs.iter().map(|(id, max)| json!({ "id": id, "max": max }))
+                .collect::<Vec<_>>(),
+            "t": rep.frames.iter().map(|f| (f.t * 100.0).round() / 100.0).collect::<Vec<_>>(),
+            "og": rep.frames.iter().map(|f| f.overguard.round()).collect::<Vec<_>>(),
+            "sh": rep.frames.iter().map(|f| f.shield.round()).collect::<Vec<_>>(),
+            "hp": rep.frames.iter().map(|f| f.health.round()).collect::<Vec<_>>(),
+            "dmg": rep.frames.iter().map(|f| f.damage.round()).collect::<Vec<_>>(),
+            "kills": rep.frames.iter().map(|f| f.kills).collect::<Vec<_>>(),
+            // Per BUFF, not per frame: a flat array per series is what a chart
+            // wants, and it compresses far better than 600 tiny objects.
+            "stacks": (0..rep.buffs.len())
+                .map(|i| rep.frames.iter().map(|f| f.stacks[i]).collect::<Vec<_>>())
+                .collect::<Vec<_>>(),
+        })
+    } else {
+        Value::Null
+    };
+
     json!({
         "ok": true,
         "score": m.kill_progress,
@@ -2720,6 +2756,7 @@ pub fn simulate_json(v: &Value) -> Value {
         "field_ticks": m.field_ticks,
         "damage_sources": damage_sources,
         "timeline": m.timeline.0[..nb].to_vec(),
+        "replay": replay,
         "transforms": m.transforms,
         "reloads": m.reloads,
         "duration": s.duration_secs,
