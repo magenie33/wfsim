@@ -868,3 +868,38 @@ about which buffs exist":
 - Arcane buff cards were one per GRANT. Frostbite grants crit damage and
   multishot off the same Cold proc — one count by construction — so it is one
   card, and one config now reaches every spec its arcane owns.
+
+## M23 — Semi-Rifle Cannonade stated its rules in prose and modelled none (2026-08-02)
+
+The same shape as M22, found the same way — by looking at the one file whose
+twin was already right. Its card:
+
+> Only compatible with Semi-Auto Trigger. Fire Rate cannot be modified.
+> +240% Damage / +1.5 Punch Through
+
+`semi_pistol_cannonade` has carried `requires: semi_auto` and
+`disables: [fire_rate]` since it was written. `semi_rifle_cannonade` had
+NEITHER, plus a bare `- kind: fire_rate_bonus` with no value — a reading of
+"Fire Rate cannot be modified" as an effect rather than as the lock it is. It
+parsed to a zero-valued bonus, so it moved no number, and the lock went
+unmodelled: Shred's +30% fire rate applied underneath it, and the mod paid its
++240% on a weapon it cannot go on.
+
+Verified after: Shred is listed as a fire-rate source and the final fire rate
+stays at the weapon's base, while the damage bonus pays (100 -> 505 with
+Serration).
+
+Values were already right (+240%, +1.5) — the mod-wide value sweep had
+compared them against DE's card and found no disagreement. What the sweep
+cannot see is a rule stated only in the description, which is why the
+condition test from that pass exists.
+
+### Open question, deliberately not changed
+
+`traits_for` gives BOTH forms of a transform group the base entry's trigger,
+so the Torid's Incarnon form (continuous) still counts as `semi_auto` and the
+mod keeps paying there. That is a documented choice — "traits describe the
+WEAPON" — and it is the arsenal's reading: you equip the mod because the
+weapon's listed trigger is Semi-Auto. Whether DE keeps the bonus live once the
+weapon transforms is UNVERIFIED, and needs an in-game measurement rather than
+a guess in either direction.
