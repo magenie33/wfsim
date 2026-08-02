@@ -327,3 +327,29 @@ than silenced:
 - Amalgam Barrel Diffusion really grants **109.50%** multishot and the tooltip
   rounds to 110% — an explicit allowlist entry with the wiki quote, not a
   tolerance that would hide the next real error.
+
+## Auditing the mod set (2026-08-02)
+
+Three mechanical sweeps, run after M22 found Primary Acuity modelled as an
+unconditional +350%/+350%. Each compares `data/mods/` against a source that
+did not write it:
+
+1. **Values vs DE's card.** `levelStats[last].stats` in the committed export is
+   the exact line DE prints at max rank. Compared unit-aware (percent kinds as
+   percentages, faction `xN.N` as `N-1`, metres and flat counts on their own
+   terms) against each effect's `rankMax`: **161 mods with percentage effects,
+   0 disagreements**.
+2. **Conditions vs the card's own words.** If the card says "Weak Point" or
+   "when Aiming", the model must carry the matching condition. This is the one
+   that catches the Acuity class of bug, so it is now a TEST rather than a
+   script — `a_condition_on_the_card_is_a_condition_in_the_model`, verified to
+   fail on the bug it was written for. The three mods it flags by hand are
+   indirect-only payloads (movement speed, accuracy, double jump), which the
+   test exempts because the condition cannot change a number this calculator
+   produces.
+3. **Pool vs `compatName`.** Every mod filed under `data/mods/<class>/` checked
+   against the export's own compatibility field: **0 misfiled**.
+
+Equippability beyond the pool (a mod a weapon may not take even though the
+pool offers it) is `excludes_weapon` / `requires_weapon`, and the export does
+not carry those tags — they come from the wiki page, one mod at a time.
