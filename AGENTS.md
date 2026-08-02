@@ -86,7 +86,11 @@ around (decision 2026-07-31).
   is the committed one — the builder and the optimizer must offer the
   same options and the same visibility on every axis, and it exits
   non-zero when they do not. Run it after adding a weapon or anything a
-  weapon can carry.
+  weapon can carry. `node scripts/check_share.mjs` is the second: it opens a
+  share link in a browser that has never seen the build and asserts what is on
+  SCREEN, not what is in the variables — that distinction is the whole reason
+  it exists, since the path has twice landed the data correctly and shown an
+  empty page.
 
 ## Hard rules
 

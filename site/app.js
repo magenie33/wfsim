@@ -597,6 +597,12 @@ function route() {
   const shared = new URLSearchParams(location.search).get(SHARE_PARAM);
   if (shared) {
     history.replaceState(null, "", location.pathname);
+    // DRAW THE PAGE FIRST, then land the payload into it. Returning here
+    // instead left the visitor on the home grid staring at nothing until they
+    // refreshed: `importShare` fills the editor in, but which module is
+    // VISIBLE is this function's job and it had been skipped. The query is
+    // already stripped, so this re-entry takes the ordinary path.
+    route();
     importShare(shared);
     return;
   }
