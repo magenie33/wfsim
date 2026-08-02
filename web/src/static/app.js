@@ -1570,7 +1570,7 @@ function sharePayload() {
     // The sharer's MEASUREMENT, kept as a claim rather than as a fact: the
     // recipient's own run is what decides, and showing both is the honest
     // form of "this build does X".
-    m: p && p.lastResult ? { r: p.lastResult.r, at: p.lastResult.at } : null,
+    m: p && p.lastResult ? { r: p.lastResult.r, at: p.lastResult.at, key: p.lastResult.key } : null,
   };
 }
 
@@ -1681,6 +1681,11 @@ async function openSharePanel(bar) {
   const panel = bar.querySelector(".pshare");
   if (!panel) return;
   if (!panel.hidden) { panel.hidden = true; return; }
+  // Measure BEFORE building the link, so both the card and the payload carry
+  // a number produced by exactly this build in exactly this fight.
+  panel.hidden = false;
+  panel.innerHTML = `<div class="sh-note">${escHtml(tr("simulating this build in the current scenario…"))}</div>`;
+  await resultForShare();
   const url = await shareUrl();
   panel.innerHTML =
     `<div class="sh-row"><input class="sh-url" type="text" readonly value="${escHtml(url)}">` +
@@ -1689,7 +1694,6 @@ async function openSharePanel(bar) {
     `<button class="cu-btn sh-dl">${escHtml(tr("download image"))}</button></div>` +
     `<div class="sh-note">${escHtml(tr("the link carries the build, its rivens, the fight it was measured in and the measurement — opening it saves a new copy of each"))}</div>` +
     `<canvas class="sh-canvas" width="900" height="470"></canvas>`;
-  panel.hidden = false;
   const urlBox = panel.querySelector(".sh-url");
   urlBox.onclick = () => urlBox.select();
   const canvas = panel.querySelector(".sh-canvas");
@@ -1816,8 +1820,26 @@ async function drawShareCard(canvas, url) {
     g.fillText(sig2(kpm) + " KPM", 36, y);
     g.fillStyle = dim; g.font = F(15);
     const en = (META.enemies || []).find((e) => e.id === sim.enemy) || {};
-    g.fillText(`${en.name || sim.enemy} · Lv ${sim.level}${sim.steel_path ? " · SP" : ""} · ${sim.duration}s`,
-      36, y + 25);
+    // The fight AND the technique (user, 2026-08-02). Which form, how often
+    // the head is hit and whether aim is held change the number as much as
+    // the enemy does — a reader comparing two cards has to see both. Buffs
+    // are deliberately absent: they follow from the build, and a card that
+    // listed eleven of them would say nothing.
+    const fight = [
+      en.name || sim.enemy,
+      `Lv ${sim.level}${sim.steel_path ? " SP" : ""}`,
+      `${sim.duration}s`,
+    ];
+    const formLabel = (simFormOpts(w).find(([id]) => id === sim.form) || [])[1];
+    const tech = [
+      formLabel,
+      // Not the field label — that one already ends in "%", so reusing it
+      // printed "100% 爆头率 %".
+      `${sim.headshot_pct}% ${tr("headshots")}`,
+      (w.sentinel || sim.aiming) ? tr("Aiming") : tr("hip-fire"),
+      sim.infinite_ammo === false ? tr("finite ammo") : null,
+    ].filter(Boolean);
+    g.fillText(fight.concat(tech).join(" · "), 36, y + 25);
   } else {
     g.fillStyle = dim; g.font = F(17);
     g.fillText(tr("not simulated yet"), 36, y);
@@ -4193,12 +4215,36 @@ async function runSim() {
 // saves into the preset's entry — as `lastResult`, OUTSIDE `state`, so
 // the unsaved-changes dot ignores it — and every preset switch restores
 // it (or clears, when that build was never tested).
+// WHAT was measured: the build and the fight, together. A number is only
+// this build's number while both are unchanged — the share card states the
+// two side by side, so it has to know when the stored one stopped matching.
+function simKey() {
+  const st = snapshotState();
+  return JSON.stringify([st.slots, st.arcane, st.arcaneRank, st.evoSel, snapshotScenario()]);
+}
+
 function saveSimResult(r) {
   const ps = loadPresetList(BUILDS);
   const at = ps.findIndex((p) => p.name === activePreset);
   if (at < 0) return;
-  ps[at].lastResult = { r, at: Date.now() };
+  ps[at].lastResult = { r, at: Date.now(), key: simKey() };
   storePresetList(BUILDS, ps);
+}
+
+// The result to PUT ON A CARD: the stored one if it still describes this
+// build in this fight, else a fresh run (user, 2026-08-02: sharing always has
+// a number). Reusing a stale one would be worse than having none — the card
+// would attach a measurement to a build that never produced it.
+async function resultForShare() {
+  const p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
+  if (p && p.lastResult && p.lastResult.r && p.lastResult.key === simKey()) return p.lastResult;
+  const buffs = {};
+  buffList.forEach((b) => { const c = sim.buffs[b.id]; if (c) buffs[b.id] = { stacks: c.stacks, locked: c.locked }; });
+  const r = await api("/api/simulate", { ...buildPayload(), ...sim, buffs });
+  if (!r || r.ok === false) return null;
+  saveSimResult(r);
+  renderStoredSimResult();
+  return { r, at: Date.now(), key: simKey() };
 }
 function renderStoredSimResult() {
   const box = $("sim-results");

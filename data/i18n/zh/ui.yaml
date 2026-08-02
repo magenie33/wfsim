@@ -206,6 +206,10 @@ ui:
   "that share link could not be read": 这条分享链接读不出来
   "that share link is for a weapon this build of the site does not have": 这条分享链接指向本站还没有的武器
   "not simulated yet": 尚未模拟
+  "hip-fire": 腰射
+  "headshots": 爆头
+  "simulating this build in the current scenario…": 正在用当前场景模拟这套配装…
+  "finite ammo": 有限弹药
   "imported": 已导入
   "dropped": 丢弃
   "build": 配装
