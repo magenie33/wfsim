@@ -3789,8 +3789,11 @@ async function scanGains(axis, onTick) {
   if (gainScan.running) return;
   gainAxis = axis;
   const { name, scenario, refine } = gainScenario();
+  // The note is WHICH FIGHT this was measured in. The run counts used to ride
+  // along here too and were dropped: each chip's tooltip states its own count,
+  // which is the only place the number changes how a reading should be taken.
   gainScan = { key: gainKey(), running: true, base: 0, by: {}, done: 0, total: 0,
-    note: `${name} · ${scenario.runs}×${refine ? ` → ${refine}×` : ""}`, metric: "" };
+    note: name, metric: "" };
   // Kill progress is the optimizer's metric and the one a player is actually
   // buying; DPS is the fallback for a target this build cannot kill at all,
   // where the ratio has no denominator. The SCENARIO decides which.
@@ -3912,9 +3915,13 @@ function renderQuickCalc() {
     `<select id="gp-scen" title="${escHtml(tr("the saved scenario to measure under — it decides the enemy, the technique and whether the ranking is KPM or DPS"))}">${
       ps.map((p) => opt(p.name, p.name, cur)).join("")}</select>` +
 
+    // PROGRESS while it runs, and an invitation before it has. The run counts
+    // ("1x -> 10x") are gone from here (user, 2026-08-02): they are a property
+    // of the algorithm, not a setting, and the one place they change a reading
+    // is on the chip itself, where each number already carries its own count.
     `<span class="pc-note">${gainScan.running
       ? `${gainScan.done}/${gainScan.total}`
-      : (gainScan.note ? escHtml(gainScan.note) : escHtml(tr("open a slot to rank its mods by effect")))}</span>`);
+      : (gainScan.note ? "" : escHtml(tr("open a slot to rank its mods by effect")))}</span>`);
   // Every click stays inside: a redraw detaches these nodes, and the document
   // outside-click handler closes on a target whose `.popover` ancestor is gone.
   box.onclick = (e) => e.stopPropagation();
