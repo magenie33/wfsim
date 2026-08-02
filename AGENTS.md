@@ -150,7 +150,8 @@ around (decision 2026-07-31).
   new items ("build 2") and every tooltip that refers to one. A **preset** is a saved state of something that
   always exists, read only by its own module: `builder-builds` (a build),
   `simulator-scenarios` (a fight, buff settings included), `optimizer` (a
-  search: the SCOPE and HOW to run it — finalists and CPU threads. The
+  search: the SCOPE and HOW to run it — finalists and CPU threads (never
+  buffs: those are the fight's). The
   optimizer tab is two halves split at its two preset bars, with nothing on it
   belonging to neither: everything above the fight's bar is the search preset,
   everything below is the simulator's, read-only. The final round is
@@ -171,7 +172,12 @@ around (decision 2026-07-31).
   simulator's, drawn by the same renderer over the same state, so the winner
   is scored under the fight the replay will run — READ-ONLY there, with a link
   to the simulator: a preset is edited in exactly one place, because two
-  editors over one document is how it gets edited twice and saved once. Its three old collections
+  editors over one document is how it gets edited twice and saved once. That
+  includes the BUFFS (user, 2026-08-02): the optimizer kept a scope-wide buff
+  config of its own, so the two modules scored the same fight under different
+  buffs and "add this winner, then Run Sim" only agreed because adding a winner
+  silently copied the search's config into your scenario. The chain is
+  builder → simulator → optimizer, each reading upstream and writing nothing. Its three old collections
   (`optimizer-mods` / `-arcanes` / `-evolutions`) merged into one: they were
   split for cross-weapon reuse, which is the import's job.
   **NOTHING OUTSIDE A COLLECTION WRITES ITS STATE** (user, 2026-08-02). A build

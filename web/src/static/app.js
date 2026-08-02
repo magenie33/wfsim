@@ -348,11 +348,10 @@ const simMeterOpen = new Set();
 // empty", "fixed" = pin it (max one). Plus the arcane set and per-tier
 // evolution option sets. Enemy + buffs are shared with the Sim panel
 // (`sim`). Seeded from the current build on weapon change.
-let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8, buffs: {} };
+let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8 };
 let optSeeded = false;
-// Buffs across the WHOLE optimizer scope (from /api/opt-buffs), + a debounce.
-let optBuffList = [];
-let optBuffTimer = null;
+// (The optimizer used to keep its own scope-wide buff list and config here.
+// It reads the SCENARIO's now — see `renderOptBuffs`.)
 // Sort/polarity prefs for the optimizer mod list (independent of the picker's).
 let optPrefs = { sort: "name", dir: "asc", pol: null };
 // HOW THE SEARCH RUNS — `finalists` and `threads`, and both are the search's
@@ -3248,6 +3247,7 @@ function applyScenario(st) {
 // calls `rerender` after every mutation, switching included.
 function scenariosChanged() {
   renderScenarioBar();
+  if ($("opt-buffs")) renderOptBuffs();
   if ($("quick-calc")) renderQuickCalc();
   if ($("opt-target")) renderOptEnemy();
 }
@@ -3309,7 +3309,7 @@ function switchWeapon(id) {
 function applyWeaponInner(id, presetMods) {
   const w = weaponInfo(id);
   buffList = []; // rebuilt from the next /api/panel response for this build
-  opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8, buffs: {} }; optSeeded = false; optBuffList = []; // reset scope
+  opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8 }; optSeeded = false; // reset scope
   // A weapon's pool is the UNION of the pools it draws from: `primary` mods
   // fit any primary weapon, `rifle` is the class pool. One flat list per
   // weapon was right only while every rifle-class weapon was a launcher.
@@ -4751,7 +4751,7 @@ function buffCardName(name) {
   return tail ? `${label} (${tr(tail.replace(/\)$/, ""))})` : label;
 }
 
-function renderBuffCards(box, list, cfg, have) {
+function renderBuffCards(box, list, cfg, have, opts = {}) {
   if (!box) return;
   syncBuffConfig(list, cfg);
   if (!list.length) {
@@ -4791,17 +4791,29 @@ function renderBuffCards(box, list, cfg, have) {
     </div>`;
   };
   box.innerHTML = list.map(card).join("");
+  // READ-ONLY: the same cards, the same values, and no way to change them. A
+  // preset is edited in exactly one place (the rule the fight above already
+  // follows), so the optimizer SHOWS the buffs and links to the module that
+  // owns them.
+  if (opts.readonly) {
+    box.querySelectorAll("[data-b]").forEach((el) => {
+      el.disabled = true;
+      el.title = tr("edit this in the Simulator");
+    });
+    return;
+  }
   box.querySelectorAll("[data-b]").forEach((el) => {
     el.addEventListener("change", () => {
       const id = el.dataset.b, f = el.dataset.f, c = cfg[id];
       if (f === "locked") c.locked = el.checked;
       else if (el.type === "checkbox") c.stacks = el.checked ? 1 : 0;
       else c.stacks = Math.max(0, Number(el.value));
-      // A buff edit belongs to BOTH: the build remembers what it was tested
-      // with, and the scenario library keeps the fight — including settings
-      // for mods this build does not carry.
-      markPresetDirty();
-      if (typeof markScenarioDirty === "function") markScenarioDirty();
+      // A buff belongs to the FIGHT and to nothing else — including settings
+      // for mods this build does not carry. It used to dirty the build too,
+      // back when a build kept a copy of the scenario (user, 2026-08-02).
+      markScenarioDirty();
+      // The optimizer shows these read-only, so redraw its copy if it is up.
+      if ($("opt-buffs") && !opts.readonly) renderOptBuffs();
     });
   });
 }
@@ -5235,29 +5247,30 @@ function renderOpt() {
   renderOptEvos();
   renderOptEnemy();
   updateOptEstimate();
-  fetchOptBuffs();
+  renderOptBuffs();
 }
 
 // The buffs across the WHOLE scope (union of every fixed/search mod + every
 // searched arcane + every marked evolution option) — enumerated server-side;
-// the optimizer configures these, NOT the current build's buffs. Debounced
-// as the scope changes.
-function fetchOptBuffs() {
-  clearTimeout(optBuffTimer);
-  optBuffTimer = setTimeout(async () => {
-    try {
-      const evolutions = {};
-      Object.entries(opt.evos).forEach(([t, m]) => { const ids = Object.keys(m); if (ids.length) evolutions[t] = ids; });
-      const r = await api("/api/opt-buffs",
-        { weapon: $("weapon").value, mods: opt.mods, arcanes: Object.keys(opt.arcanes), evolutions });
-      optBuffList = (r && r.buffs) || [];
-    } catch (_) { optBuffList = []; }
-    renderOptBuffs();
-  }, 250);
-}
-
-function renderOptBuffs() {
-  renderBuffCards($("opt-buffs"), optBuffList, opt.buffs);
+// The SCENARIO's buffs, READ-ONLY — the optimizer reads the simulator the way
+// the simulator reads the builder (user, 2026-08-02).
+//
+// It used to keep its own: a scope-wide union with its own stack settings,
+// because a candidate carries mods the current build does not. That bought one
+// real thing and cost a worse one — the two modules scored the same fight
+// under different buffs, and "add this winner, then Run Sim" only matched
+// because adding a winner secretly copied the search's config into your
+// scenario. One fight, one buff config, and the disagreement cannot exist.
+//
+// The list is the WIDE one (`fetchAllBuffs`: every buff this weapon could
+// produce, cached per weapon), because a search covers builds you are not
+// holding — which is exactly what the scenario's "all potential buffs" view is
+// for. A buff nobody set falls to its own default, which is now 0 for anything
+// timed: a candidate is credited with a stack only if the fight says so.
+async function renderOptBuffs() {
+  const box = $("opt-buffs");
+  if (!box) return;
+  renderBuffCards(box, await fetchAllBuffs(), sim.buffs, null, { readonly: true });
 }
 
 // The mod scope: the SAME rich list as the mod picker (image, polarity icon,
@@ -5392,7 +5405,7 @@ function renderOptArcanes() {
         if ((arcaneById(id) || {}).slot === (own || {}).slot) delete opt.arcanes[id];
       });
       Object.assign(opt.arcanes, group);
-      renderOptArcanes(); updateOptEstimate(); fetchOptBuffs();
+      renderOptArcanes(); updateOptEstimate();
     }));
 }
 
@@ -5447,7 +5460,7 @@ function renderOptEvos() {
       if (!Object.keys(opt.evos[t]).length) {
         tiers.forEach((x) => { if (x.tier > Number(t)) delete opt.evos[x.tier]; });
       }
-      renderOptEvos(); updateOptEstimate(); fetchOptBuffs();
+      renderOptEvos(); updateOptEstimate();
     }));
 }
 
@@ -5615,7 +5628,7 @@ function applyOptState(st) {
 function applyOptPreset(st) {
   applyOptState(st);
   optSeeded = true;
-  renderOpt(); fetchOptBuffs(); updateOptEstimate();
+  renderOpt(); updateOptEstimate();
 }
 
 function renderOptPresetBars() {
@@ -5690,7 +5703,7 @@ function renderOptModSel() {
     el.addEventListener("click", (e) => {
       e.stopPropagation();
       delete opt.mods[el.dataset.x];
-      renderOptMods(); renderOptExilus(); updateOptEstimate(); fetchOptBuffs();
+      renderOptMods(); renderOptExilus(); updateOptEstimate();
     }));
   box.querySelectorAll(".oselchip[data-m]").forEach((el) =>
     el.addEventListener("click", () => revealOptMod(el.dataset.m)));
@@ -5748,7 +5761,7 @@ function renderOptModList() {
       const id = el.dataset.m, want = el.dataset.s, cur = opt.mods[id] || "off";
       if (cur === want) delete opt.mods[id]; else opt.mods[id] = want; // toggle off if same
       if (opt.mods[id] === "fixed") clearFamMarks(id);
-      renderOptMods(); renderOptExilus(); updateOptEstimate(); fetchOptBuffs();
+      renderOptMods(); renderOptExilus(); updateOptEstimate();
     }));
 }
 
@@ -5882,9 +5895,14 @@ async function runOptimize() {
     Object.keys(opt.arcanes).forEach((id) => {
       if (opt.arcanes[id] && opt.arcanes[id] !== "off") arcs[id] = opt.arcanes[id];
     });
-    // Buffs configured over the whole scope (opt.buffs), pruned to the current scope's ids.
+    // The SCENARIO's buffs, WHOLE — not pruned to the current build's, the way
+    // the simulator prunes. A candidate carries mods you are not holding, and
+    // a setting for one of them is exactly what the scenario's wide buff view
+    // exists to record. An id no candidate has is simply never matched.
     const buffs = {};
-    optBuffList.forEach((b) => { const c = opt.buffs[b.id]; if (c) buffs[b.id] = { stacks: c.stacks, locked: c.locked }; });
+    Object.entries(sim.buffs || {}).forEach(([id, c]) => {
+      if (c) buffs[id] = { stacks: c.stacks, locked: c.locked };
+    });
     const body = {
       weapon: $("weapon").value,
       mods: opt.mods,

@@ -162,6 +162,18 @@ preset bar: SCENARIO ─┐
 |---|---|---|
 | scope, finalists, CPU threads | the SEARCH preset | all three are decisions about a search: what to look through, how many winners to keep, how much of the machine to spend |
 | the fight, the player, the buffs | the SCENARIO preset, read-only here | a preset is edited in exactly one place; the winner has to be scored under the fight the replay will run |
+
+The BUFFS were the last thing to move (2026-08-02). The optimizer kept its own
+scope-wide config — a union over everything searchable, with its own stack
+settings — on the reasonable ground that a candidate carries mods the current
+build does not. That bought one real thing and cost a worse one: the two
+modules scored the same fight under different buffs, and "add this winner, then
+Run Sim" only agreed because adding a winner secretly copied the search's
+config into the user's scenario. One fight, one buff config, and the
+disagreement cannot exist. The section still shows the WIDE list — every buff
+this weapon could produce, which is what the scenario's "all potential buffs"
+view is for — because a search does cover builds you are not holding; a buff
+nobody set simply falls to its own default, which for anything timed is now 0.
 | final runs | the scenario's `runs` | how hard you measure is the FIGHT's question, and a second box crowns a winner at a precision the replay never used |
 
 `threads` does describe this MACHINE rather than the search — the earlier

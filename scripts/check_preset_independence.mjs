@@ -83,8 +83,29 @@ const r = await evaluate(`(async () => {
   await sleep(1800);
   const scope = JSON.stringify(opt.mods), fin = optRun.finalists;
 
+  // The optimizer's BUFFS are the scenario's, read-only. Set one in the
+  // simulator and the search must show it, without a control to change it.
+  document.querySelectorAll('.tab').forEach(x => { if(/Build/i.test(x.textContent)) x.click(); });
+  await sleep(700);
+  slots[1].mod = 'galvanized_chamber'; slots[1].rank = modById('galvanized_chamber').max_rank;
+  markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
+  document.querySelectorAll('.tab').forEach(x => { if(/Sim/i.test(x.textContent)) x.click(); });
+  await sleep(1500);
+  const simBox = $$('#sim-buffs');
+  const one = simBox.querySelector('input[data-f="stacks"]');
+  const buffId = one ? one.dataset.b : null;
+  if (one) { one.value = '3'; one.dispatchEvent(new Event('change')); }
+  await sleep(1200);
+  document.querySelectorAll('.tab').forEach(x => { if(/Optim/i.test(x.textContent)) x.click(); });
+  await sleep(2500);
+  const optBox = $$('#opt-buffs');
+  const mirrored = buffId ? optBox.querySelector('input[data-b="'+buffId+'"][data-f="stacks"]') : null;
+  const optOwnsBuffs = typeof opt.buffs !== 'undefined';
+
   return { names, carriesSim, levelBefore, levelAfter, onScreen, modAfter,
-           buildUntouched: buildJson === buildJson2, scope, fin };
+           buildUntouched: buildJson === buildJson2, scope, fin,
+           buffId, mirroredValue: mirrored ? mirrored.value : null,
+           mirroredLocked: mirrored ? mirrored.disabled : null, optOwnsBuffs };
 })()`);
 
 check("two builds exist", r.names.length >= 2, r.names.join(","));
@@ -96,6 +117,9 @@ check("editing the fight leaves the build alone", r.buildUntouched);
 check("switching build leaves the SEARCH scope alone",
   r.scope === '{"serration":"search","heavy_caliber":"fixed"}', r.scope);
 check("...and its finalists", r.fin === 13, String(r.fin));
+check("the optimizer keeps no buff state of its own", !r.optOwnsBuffs);
+check("it shows the scenario's buff value", r.mirroredValue === "3", `${r.buffId} = ${r.mirroredValue}`);
+check("...and offers no way to change it", r.mirroredLocked === true, String(r.mirroredLocked));
 ws.close();proc.kill();srv.close();
 console.log(fail?`\n${fail} failed`:"\nevery collection owns its own state");
 process.exit(fail?1:0);
