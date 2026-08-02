@@ -802,9 +802,23 @@ impl DebuffState {
     /// Apply one Cold proc (data/debuffs/freeze.yaml + frozen.yaml):
     /// inert while Frozen; the 10th stack CONSUMES all Freeze stacks and
     /// enters Frozen; overguard holders cap at 4 (never Frozen).
-    fn apply_cold_proc(&mut self, t: f64, sd: f64, under_overguard: bool, caps: Option<StackCaps>) {
+    ///
+    /// Returns whether a Cold status was actually APPLIED. `false` only while
+    /// Frozen, where `frozen.yaml` is explicit — `refreshable: false`, "cannot
+    /// be extended: Cold procs are inert". Anything that keys on "this weapon
+    /// applied a Cold status" must read this rather than the attempt: no
+    /// status landed, so Primary Frostbite has nothing to stack off (user,
+    /// 2026-08-02). A CAPPED stack list still returns true — pushing past a
+    /// cap replaces the oldest, which is an application.
+    fn apply_cold_proc(
+        &mut self,
+        t: f64,
+        sd: f64,
+        under_overguard: bool,
+        caps: Option<StackCaps>,
+    ) -> bool {
         if self.frozen_until.is_some_and(|f| f > t) {
-            return; // inert
+            return false; // inert
         }
         self.freeze.retain(|&e| e > t);
         if under_overguard {
@@ -812,12 +826,12 @@ impl DebuffState {
                 FREEZE_CAP_UNDER_OVERGUARD.min(c.general)
             });
             DebuffState::push_capped(&mut self.freeze, t + STATUS_DURATION * sd, cap, t);
-            return;
+            return true;
         }
         if let Some(c) = caps {
             // A per-unit cap below 10 also means Frozen is unreachable.
             DebuffState::push_capped(&mut self.freeze, t + STATUS_DURATION * sd, c.general, t);
-            return;
+            return true;
         }
         if self.freeze.len() >= FREEZE_STACKS_BEFORE_FROZEN {
             self.freeze.clear();
@@ -825,6 +839,7 @@ impl DebuffState {
         } else {
             self.freeze.push(t + STATUS_DURATION * sd);
         }
+        true
     }
 
     /// Heat armor-strip ramp-UP: 15/30/40/50% at 0.5 s steps after the
@@ -2007,14 +2022,18 @@ fn settle_procs(
                 debuffs.apply_heat(at, contrib, expiry, heat_cap);
             }
             DamageType::Cold => {
-                // Primary Frostbite: each Cold status THIS WEAPON applies
+                // Primary Frostbite: each Cold status THIS WEAPON APPLIES
                 // grants one stack to both of its buffs (crit damage +
-                // multishot). Its three siblings above were wired and this
-                // one was not, so the arcane could never earn a stack back —
-                // it spent one duration at its seeded count and then sat at
-                // zero for the rest of the run.
-                arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ColdStatus, at);
-                debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps);
+                // multishot). "Applies" is the whole of it — the bump used to
+                // run before the proc and unconditionally, so a Cold proc that
+                // landed on a FROZEN target stacked the arcane even though
+                // `frozen.yaml` says such a proc is inert and no status
+                // exists (user, 2026-08-02). Frozen lasts 3 s against a 12 s
+                // buff, so it never showed as the arcane going dark — it
+                // showed as it never quite decaying.
+                if debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps) {
+                    arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ColdStatus, at);
+                }
             }
             DamageType::Magnetic => DebuffState::push_capped(
                 &mut debuffs.disrupt,
@@ -7979,6 +7998,58 @@ mod tests {
             assert_eq!(b.initial_stacks, 7, "{:?} kept its own count", b.grant);
             assert!(b.pinned, "{:?} kept its own timeout", b.grant);
         }
+    }
+
+    /// A COLD PROC ON A FROZEN TARGET IS INERT, so it stacks nothing.
+    ///
+    /// `data/debuffs/frozen.yaml` is explicit — `refreshable: false`, "cannot
+    /// be extended: Cold procs are inert" — and `apply_cold_proc` has always
+    /// honoured it for the debuff. Primary Frostbite did not: the trigger was
+    /// bumped BEFORE the proc and unconditionally, so an arcane whose card
+    /// reads "On Cold Status Effect" earned a stack from a proc that applied
+    /// no status (user, 2026-08-02).
+    ///
+    /// It hid well. Frozen lasts 3 s against the arcane's 12 s all-drop timer,
+    /// so it never looked like the buff going dark — it looked like the buff
+    /// never quite decaying, in exactly the fight (heavy Cold, one target)
+    /// where you would credit the arcane for it.
+    #[test]
+    fn a_cold_proc_on_a_frozen_target_stacks_nothing() {
+        // Ten procs, one per shot, on a target with no overguard and no
+        // per-unit caps: the 10th freezes it, and everything after is inert
+        // until Frozen expires.
+        let mut d = DebuffState::default();
+        let mut applied = 0;
+        for i in 0..10 {
+            if d.apply_cold_proc(i as f64 * 0.1, 1.0, false, None) {
+                applied += 1;
+            }
+        }
+        assert_eq!(applied, 10, "nine stacks, then the tenth converts to Frozen");
+        assert!(d.frozen_until.is_some_and(|f| f > 1.0), "it is Frozen");
+        // While Frozen: every further proc reports FALSE. That is the whole
+        // fix — the caller stacks the arcane off this answer, not off the
+        // attempt.
+        for i in 0..5 {
+            assert!(
+                !d.apply_cold_proc(1.0 + i as f64 * 0.1, 1.0, false, None),
+                "a proc during Frozen applied a status"
+            );
+        }
+        // ...and once it thaws, procs land again.
+        assert!(d.apply_cold_proc(1.0 + FROZEN_DURATION + 0.01, 1.0, false, None));
+
+        // A CAPPED list is not the same case: pushing past a cap replaces the
+        // oldest, which IS an application, so the arcane keeps stacking there.
+        let mut og = DebuffState::default();
+        for i in 0..8 {
+            assert!(
+                og.apply_cold_proc(i as f64 * 0.1, 1.0, true, None),
+                "under overguard the list caps at 4 but every proc still lands"
+            );
+        }
+        assert_eq!(og.freeze.len(), FREEZE_CAP_UNDER_OVERGUARD);
+        assert!(og.frozen_until.is_none(), "an overguard holder never freezes");
     }
 
 }
