@@ -2910,8 +2910,9 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
         // crit stats (§7 Radial): a RELATIVE bonus joins the crit bucket and
         // therefore scales each part's own base, while an ABSOLUTE add (a
         // target-side debuff, a flat grant) lands the same on every part. Both
-        // reach the explosion — the only crit thing a radial loses is the
-        // body-part/headshot layer, which it has no hit location for.
+        // reach the explosion — the crit things a radial loses are the
+        // body-part/headshot layer, which it has no hit location for, and
+        // Puncture's Weakened, which the wiki excludes from AoE by name.
         //
         // Absolute, shared by every stage:
         let flat_crit = contribs.flat_crit_chance;
@@ -3295,10 +3296,16 @@ pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
                 let (qvec, tier) = match &rad {
                     None => (*qvec, tier),
                     Some(r) => {
-                        let rcc = r.crit_chance
-                            + flat_crit
-                            + weakened_cc
-                            + r.base_crit_chance * cc_rel;
+                        // NO `weakened_cc` here. Puncture's Weakened is a flat
+                        // crit-chance buff on the VICTIM, and the wiki states
+                        // its one exclusion outright: "This is a flat critical
+                        // chance buff (like Arcane Avenger), but does not apply
+                        // to Area of Effect damage or Warframe abilities"
+                        // (Damage/Puncture_Damage). An explosion is Area of
+                        // Effect damage, so it does not get it — the lingering
+                        // field never did, and the radial's copy of this line
+                        // was the odd one out.
+                        let rcc = r.crit_chance + flat_crit + r.base_crit_chance * cc_rel;
                         // The set promotes a critical hit "from Primary
                         // Weapons" with no qualifier about which attack part
                         // made it, and the direct hit and the lingering field
@@ -7822,5 +7829,45 @@ mod tests {
             assert!(fired, "ArcTrigger::{name} is never bumped — an arcane that \
                 waits on it can never earn a stack");
         }
+    }
+
+    /// PUNCTURE'S WEAKENED DOES NOT REACH AN EXPLOSION.
+    ///
+    /// Wiki (Damage/Puncture_Damage): "Weapon damage that the victim receives
+    /// has 5% increased Critical Chance per proc up to 25% at max stacks …
+    /// This is a flat critical chance buff (like Arcane Avenger), but does not
+    /// apply to Area of Effect damage or Warframe abilities."
+    ///
+    /// The radial had its own copy of the crit line and that copy added the
+    /// buff, so a build that stacked Puncture crit its explosion up to 25% of
+    /// the time for free. The fixture makes that visible rather than statistical:
+    /// the explosion has ZERO crit chance of its own, so any crit at all can
+    /// only have come from Weakened.
+    #[test]
+    fn weakened_never_crits_an_explosion() {
+        let mut p = radial_only(radial_of(0.0, 0.0));
+        // The direct hit forces Puncture every shot, so Weakened saturates.
+        p.forced_procs = vec![DamageType::Puncture];
+        p.status_chance = 1.0;
+        p.base_status_chance = 1.0;
+        let mut damage = DamageVector::default();
+        damage.set(DamageType::Puncture, 100.0);
+        p.damage = damage;
+        p.magazine_size = 200.0;
+        p.reload_seconds = 0.1;
+        let s = monte_carlo(&p, 8, 11);
+        // The DIRECT hit is allowed to crit off Weakened — it is weapon damage
+        // the victim receives, which is exactly what the buff is for. Only the
+        // explosion is excluded, so the explosion's own bucket is the
+        // assertion: with zero crit chance it must be shots x its flat base,
+        // and any crit at all would show as more than that.
+        let expected = s.mean_shots * 300.0;
+        assert!(
+            (s.source_damage.radial - expected).abs() < 1e-6,
+            "explosion dealt {} where a never-critting one deals {} — Weakened              reached the AoE",
+            s.source_damage.radial,
+            expected
+        );
+        assert!(s.median_run.crits > 0, "the DIRECT hit should still crit off Weakened");
     }
 }
