@@ -907,8 +907,11 @@ an **aoe_radial** instance (the explosion):
 - **Linear damage falloff** from epicenter to sphere edge (per-weapon
   floor; exact falloff numbers live on `Damage_Falloff` — not yet
   transcribed).
-- Zone shapes: sphere / cylinder / cone (engine: circle intersection on
-  the 2D plane, `world::Circle::intersects`).
+- Zone shapes: sphere / cylinder / cone — **not modelled**. The sim fights
+  ONE target, which is either in the blast or is the blast's origin, so a
+  zone has nothing to intersect. This becomes real with multi-target, and
+  the geometry decisions it inherits are in [`UI.md`](UI.md) §Core decisions
+  (top-down plane, actors as circles of radius 0.25 m).
 - **Each enemy caught rolls its own status** (and its own proc type).
 - Explosions **self-stagger** the user (closer = harder knockback).
 - Radius mods: Firestorm / Fulmination (+ primed variants) increase;

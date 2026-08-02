@@ -41,16 +41,27 @@ drift DPS shows over the same pair (18,653 vs 20,551).
   Warframe vs one target circle with `TargetMode::InstantRespawn` — the
   target respawns in place the instant it dies (no on-death transformations).
 
-## Engine mapping (already in place)
+## Engine mapping
 
 | UI concept | engine |
 |---|---|
-| plane, positions, ranges | `world::Vec2` |
-| actor footprint | `world::Circle` (`Circle::actor`, `ACTOR_RADIUS_M`) |
-| AoE primitive | `world::Circle::intersects` (blast circle vs footprint) |
-| one-vs-one scenario | `world::Engagement` (shooter, target circle, weapon range, combat params) |
+| the fight, both actors | `arena::Arena` (a `Tenno`, a target with its hitboxes, a duration) |
+| the player | `tenno_data::Tenno` — stats, and a `state` every conditional mod is asked about |
 | target that never wastes DPS | `dummy::TargetMode::InstantRespawn` |
 | aim quality / headshot feel | `dummy::BodyPart::aim_weight` |
+| plane, positions, ranges | **nothing yet** — see below |
+
+**The Arena VIEW has no engine behind it.** There was an `engine::world`
+(`Vec2`, `Circle`, an `Engagement` of shooter-vs-target-circle with a hard
+range cutoff) written alongside these decisions in 2026-07-24. It was deleted
+on 2026-08-02 with **zero callers**, having never been wired to anything: the
+sim fights one target and assumes it is in range, so a plane had nothing to
+decide. Two modules named after the same thing, one of them dead, is worse than
+one honest gap — and the decisions above are the part worth keeping, which is
+why they live here and not in code.
+
+When positions become real they belong ON `arena::Arena`, beside the actors
+that would have them, not in a parallel module.
 
 ## Planned
 

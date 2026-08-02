@@ -39,7 +39,6 @@ pub mod sim;
 pub mod status;
 pub mod tenno_data;
 pub mod weapons_data;
-pub mod world;
 
 // Damage-pipeline layers will be split into their own modules, e.g.:
 // pub mod mod_resolution;
