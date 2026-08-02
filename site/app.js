@@ -1838,7 +1838,6 @@ async function importShare(code) {
     arcane: data.arcane,
     arcaneRank: data.arcaneRank,
     evoSel: evoSel2,
-    sim: scState,
   };
   const builds = loadPresetList(BUILDS);
   // Named for where it came from. Without it a link lands as "build 1 2",
@@ -1847,7 +1846,11 @@ async function importShare(code) {
   const name = freeName(builds, (n) => base + (n > 1 ? " " + n : ""));
   activePreset = name;
   localStorage.setItem(presetActiveKey(BUILDS), name);
-  whileApplying(() => restoreState(state, w.id));
+  // The build, then the FIGHT — through the scenario's own door. The link
+  // carries both and both must land, but a build does not set a scenario:
+  // the copy above is already the active `simulator-scenarios` entry, and
+  // this is what puts it on screen.
+  whileApplying(() => { restoreState(state, w.id); applyScenario(scState); });
   builds.push({
     name, savedAt: Date.now(), state: snapshotState(),
     // The sharer's number, as THEIR claim: it is stamped with a key that
@@ -2748,13 +2751,14 @@ function snapshotState() {
     arcane: arcanes,
     arcaneRank: arcaneRanks,
     slots: slots.map((s) => ({ mod: s.mod, pol: s.pol, rank: s.rank })),
-    // A SNAPSHOT of the fight, not a pointer into `simulator-scenarios`
-    // (user, 2026-08-02). The scenario library is the reusable thing; this
-    // field is a different sentence — "what this build was last tested
-    // with" — and a reference would let editing a scenario months later
-    // silently rewrite what an old build claims it was measured under.
-    // Two homes for scenario-shaped data is the point, not an oversight.
-    sim: { ...sim },
+    // NO `sim` FIELD. A build used to carry a snapshot of the fight, which
+    // `restoreState` then applied — so picking a build silently rewrote the
+    // scenario you were working in. The scenario is INDEPENDENT (user,
+    // 2026-08-02): nothing outside `simulator-scenarios` writes it.
+    //
+    // Nothing is lost. "What this build was last measured under" was never
+    // this field's job — `lastResult.key` is that record, it lives outside
+    // `state`, and it is what makes a stale result show as stale.
   };
 }
 
@@ -2790,9 +2794,10 @@ function restoreState(st, weapon) {
   evoSel = { 1: null, 2: null, 3: null, 4: null, ...(st.evoSel || {}) };
   arcanes = arcanesFor(w, st.arcane);
   arcaneRanks = asArcaneList(st.arcaneRank, arcanes.length).map((x) => x ?? null);
-  // The preset's own scenario wins over the per-weapon seeding, so the marker
-  // is stamped with it rather than left for renderSim to notice.
-  if (st.sim) sim = { ...sim, ...st.sim, __weapon: w };
+  // The scenario is NOT restored: it belongs to `simulator-scenarios` and a
+  // build has no opinion about it. An old preset may still carry `st.sim`;
+  // it is ignored rather than migrated, because reading it back is the exact
+  // behaviour this removed (user, 2026-08-02).
   renderMods(); renderArcanes(); renderEvo(); renderSim(); refreshPanel();
   renderStoredSimResult(); // the simulator shows THIS preset's last test
 }
@@ -2883,14 +2888,9 @@ let activePreset = null;
 function initPresets() {
   migratePresetsToWeaponScope();
   let ps = loadPresetList(BUILDS);
-  // One-time default migration: presets saved under the old 300-run
-  // default keep pinning the sim back to 300 — rewrite them to the new
-  // default (100). A deliberate non-default choice is left alone.
-  let migrated = false;
-  ps.forEach((p) => {
-    if (p.state && p.state.sim && p.state.sim.runs === 300) { p.state.sim.runs = 100; migrated = true; }
-  });
-  if (migrated) storePresetList(BUILDS, ps);
+  // (The old 300-run migration lived here. It rewrote `state.sim.runs` inside
+  // BUILD presets — a field nothing reads any more, because a build no longer
+  // carries a copy of the fight.)
   if (!ps.length) {
     ps = [{ name: "build 1", savedAt: Date.now(), state: snapshotState() }];
     storePresetList(BUILDS, ps);
@@ -2910,7 +2910,14 @@ function initPresets() {
   localStorage.setItem(presetActiveKey(BUILDS), activePreset);
   // Applied under THIS weapon, never the payload's — a preset filed here
   // belongs here by definition.
-  whileApplying(() => restoreState(ps.find((p) => p.name === activePreset).state, here));
+  whileApplying(() => {
+    restoreState(ps.find((p) => p.name === activePreset).state, here);
+    // THE FIGHT, from its own collection. It used to arrive inside the build
+    // preset, which is exactly why picking a build changed the scenario; it
+    // now comes from the active `simulator-scenarios` entry, and this is the
+    // only place the live scenario is seeded on load or on a weapon switch.
+    applyScenario(sc.find((p) => p.name === activeScenario).state);
+  });
   renderPresetBar();
 }
 
@@ -3227,8 +3234,12 @@ function snapshotScenario() {
 }
 function applyScenario(st) {
   sim = { ...sim, ...st, buffs: JSON.parse(JSON.stringify(st.buffs || {})) };
+  // A scenario preset is stored per weapon, so its weapon-scoped fields
+  // (headshot %, form) are already right — stamp the marker so the re-seed in
+  // `simFormOpts` does not overwrite a saved choice with a default.
+  sim.__weapon = $("weapon").value;
   renderSim();      // redraws every knob, and the bar with them
-  markPresetDirty(); // the build remembers what it is being tested with
+  refreshPanel();   // the Tenno half of a scenario changes what the build is worth
 }
 // A scenario is CONSUMED outside the simulator — the quick calc scans under
 // one by name, and the optimizer states the one it will search with — so
@@ -4589,9 +4600,9 @@ function renderScenarioFields(ids, opts = {}) {
         // fight looks like — the panel resolves against the player now, so it
         // has to be asked again. The enemy half changes no panel number.
         if (TENNO_KEYS.includes(k)) refreshPanel();
-        // A sim knob belongs to BOTH: the build remembers what it was last
-        // tested with, and the scenario library keeps the fight itself.
-        markPresetDirty();
+        // ONLY the scenario. A sim knob used to dirty the build preset too,
+        // back when a build carried a copy of the fight; it does not, so this
+        // is the scenario's edit and nobody else's (user, 2026-08-02).
         markScenarioDirty();
         // Whichever tab drew the field, both are looking at this one state.
         if (opts.after) opts.after();
@@ -6126,10 +6137,13 @@ function resultToState(res) {
     arcaneRank: asArcaneList(res.arcane_rank, arcanePools($("weapon").value).length)
       .map((x) => x ?? null),
     slots: sl,
-    // The optimizer's per-buff config rides along — otherwise "add then
-    // Run Sim" silently reverts to the Sim panel's own defaults and the
-    // two scores stop matching (user, 2026-07-28).
-    sim: { ...sim, buffs: JSON.parse(JSON.stringify(opt.buffs)) },
+    // NO `sim`. Adding a winner used to copy the optimizer's own buff config
+    // into the scenario so that "add then Run Sim" matched its score. It does
+    // not any more: a result is a BUILD, and a build does not get to rewrite
+    // the fight you are working in (user, 2026-08-02). The two configs can
+    // still disagree — the search's is scope-wide, the scenario's is this
+    // build's — and that disagreement is now visible instead of resolved by
+    // silently editing a preset the user owns.
   };
 }
 

@@ -92,7 +92,10 @@ around (decision 2026-07-31).
   is the committed one — the builder and the optimizer must offer the
   same options and the same visibility on every axis, and it exits
   non-zero when they do not. Run it after adding a weapon or anything a
-  weapon can carry. `node scripts/check_share.mjs` is the second: it opens a
+  weapon can carry. `node scripts/check_preset_independence.mjs` is the
+  fourth: it asserts no collection's state is written from outside it —
+  switching a build must not move the fight, and editing the fight must not
+  touch a build. `node scripts/check_share.mjs` is the second: it opens a
   share link in a browser that has never seen the build and asserts what is on
   SCREEN, not what is in the variables — that distinction is the whole reason
   it exists, since the path has twice landed the data correctly and shown an
@@ -171,10 +174,16 @@ around (decision 2026-07-31).
   editors over one document is how it gets edited twice and saved once. Its three old collections
   (`optimizer-mods` / `-arcanes` / `-evolutions`) merged into one: they were
   split for cross-weapon reuse, which is the import's job.
-  A build preset also carries a `sim` SNAPSHOT — "what this build was last
-  tested with". That is a copy, not a pointer to a scenario preset, and it
-  stays one (user, 2026-08-02): editing a scenario later must not rewrite
-  what an old build says it was measured under.
+  **NOTHING OUTSIDE A COLLECTION WRITES ITS STATE** (user, 2026-08-02). A build
+  used to carry a `sim` snapshot that loading it then APPLIED, so picking a
+  build silently rewrote the fight you were working in — and the scenario bar,
+  whose whole job is to be the one place a fight is edited, moved under you.
+  The field is gone: a build is a build, and the live scenario is seeded from
+  the active `simulator-scenarios` entry and from nowhere else. Nothing is
+  lost — "what this build was last measured under" was never that field's job;
+  `lastResult.key` is that record, it lives outside `state`, and it is what
+  makes a stale result show as stale. `scripts/check_preset_independence.mjs`
+  asserts it in both directions.
   Every collection writes through `storePresetList`, which is what makes one
   Ctrl+Z stack cover all four — presets auto-save, so the way back is not
   optional.
