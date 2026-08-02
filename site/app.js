@@ -1718,73 +1718,122 @@ async function openSharePanel(bar) {
 }
 
 // The card. Drawn here rather than server-side: it has to work on a static
-// site with no backend, and pasting a picture into a group chat is how a
-// build actually gets shown around.
+// site with no backend, and pasting a picture into a group chat is how a build
+// actually gets shown around.
+//
+// It shows EVERYTHING the link carries that a reader can act on — the weapon,
+// every slot, the arcane, the evolutions, the riven's own rolls, and the
+// number with the fight it was measured under. A card that showed the mods
+// and hid the Incarnon would be the thing this whole feature exists to stop.
+const loadImg = (src) => new Promise((res) => {
+  if (!src) return res(null);
+  const im = new Image();
+  im.onload = () => res(im);
+  im.onerror = () => res(null);      // same-origin art, but never block on it
+  im.src = src;
+});
+
 async function drawShareCard(canvas, url) {
   const g = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
   const css = getComputedStyle(document.documentElement);
   const v = (n, fallback) => (css.getPropertyValue(n) || "").trim() || fallback;
   const bg = v("--surface", "#171a21"), fg = v("--text", "#f2f4f8");
-  const dim = v("--muted", "#6b7280"), gold = v("--gold", "#e8c37a");
-  const line = v("--line", "rgba(255,255,255,.09)");
+  const dim = v("--muted", "#6b7280"), fg2 = v("--text-2", "#a6adbb");
+  const gold = v("--gold", "#e8c37a"), line = v("--line", "rgba(255,255,255,.09)");
+  const F = (s, w) => `${w || ""} ${s}px system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif`;
   g.fillStyle = bg; g.fillRect(0, 0, W, H);
-  g.strokeStyle = line; g.strokeRect(.5, .5, W - 1, H - 1);
 
   const w = weaponInfo($("weapon").value);
-  g.fillStyle = fg;
-  g.font = "600 34px system-ui, sans-serif";
-  g.fillText(w.name, 36, 62);
-  g.fillStyle = dim;
-  g.font = "15px system-ui, sans-serif";
-  g.fillText(`${activePreset} · ${tr(w.subtype || w.mod_class || "")}`, 36, 88);
+  const art = await loadImg(IMG(w.image));
+  // The weapon's own art, large and faint behind the right half — recognisable
+  // at a glance in a chat scroll, and never in the way of the text.
+  if (art) {
+    const h = 300, wid = h * (art.width / art.height || 2);
+    g.save();
+    g.globalAlpha = 0.10;
+    g.drawImage(art, W - wid + 60, H - h - 40, wid, h);
+    g.restore();
+  }
 
-  // The MODS, as they are equipped — the thing a reader is actually looking
-  // for when a build is posted.
-  g.font = "15px system-ui, sans-serif";
-  let y = 132;
+  g.fillStyle = fg;
+  g.font = F(36, "600");
+  g.fillText(w.name, 36, 60);
+  if (art) {
+    const th = 34, tw = th * (art.width / art.height || 2);
+    g.drawImage(art, 36 + g.measureText(w.name).width + 16, 30, tw, th);
+  }
+  g.fillStyle = dim;
+  g.font = F(15);
+  const evos = Object.values(evoSel).filter(Boolean).length;
+  const sub = [activePreset, tr(w.subtype || w.mod_class || "")]
+    .concat(evos ? [`${evos} ${tr("Evolutions")}`] : []).join(" · ");
+  g.fillText(sub, 36, 86);
+
+  // Every slot, in the order they sit in.
+  g.font = F(15);
+  let y = 128;
   slots.forEach((s, i) => {
     const m = s.mod && modById(s.mod);
-    const col = 36 + (i % 2) * 430;
-    if (i % 2 === 0 && i) y += 26;
+    const col = 36 + (i % 2) * 424;
+    if (i % 2 === 0 && i) y += 25;
     g.fillStyle = m ? fg : dim;
-    const label = m ? m.name : "—";
-    g.fillText(`${i === EXILUS ? "E" : i + 1}. ${label}`.slice(0, 42), col, y);
+    const tag = i === EXILUS ? "E" : String(i + 1);
+    let label = m ? m.name : "—";
+    if (label.length > 34) label = label.slice(0, 33) + "…";
+    g.fillText(`${tag}. ${label}`, col, y);
   });
 
-  // The NUMBER, if this build has been measured. It is the sharer's claim and
-  // the card says under what — a number with no fight attached is a boast.
+  // The ARCANE and the RIVEN's own rolls: the two things a reader cannot
+  // infer from the mod names.
+  y += 34;
+  const arc = (arcanes || []).filter((a) => a && a !== "none")
+    .map((a) => (arcaneById(a) || {}).name || a);
+  if (arc.length) {
+    g.fillStyle = fg2; g.font = F(15);
+    g.fillText(`${tr("Arcanes")}: ${arc.join(" · ")}`, 36, y);
+    y += 24;
+  }
+  const rid = slots.map((s) => s.mod).find(isRivenId);
+  const rmeta = rid && rivenNames[String(rid).slice(RIVEN_PREFIX.length)];
+  if (rmeta && (rmeta.lines || []).length) {
+    g.fillStyle = fg2; g.font = F(14);
+    g.fillText(rmeta.lines.map((x) => tf(x)).join("   "), 36, y);
+    y += 24;
+  }
+
+  // The NUMBER, if this build has been measured, with the fight it came from
+  // — a number with no fight attached is a boast.
   const p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
   const r = p && p.lastResult && p.lastResult.r;
-  y += 44;
+  y = Math.max(y + 12, H - 128);
   g.strokeStyle = line;
   g.beginPath(); g.moveTo(36, y); g.lineTo(W - 36, y); g.stroke();
-  y += 40;
+  y += 44;
   if (r) {
     const kpm = r.duration ? (r.kills || 0) / (r.duration / 60) : 0;
-    g.fillStyle = gold;
-    g.font = "600 40px system-ui, sans-serif";
+    g.fillStyle = gold; g.font = F(40, "600");
     g.fillText(sig2(kpm) + " KPM", 36, y);
-    g.fillStyle = dim;
-    g.font = "15px system-ui, sans-serif";
+    g.fillStyle = dim; g.font = F(15);
     const en = (META.enemies || []).find((e) => e.id === sim.enemy) || {};
-    g.fillText(`${en.name || sim.enemy} · Lv ${sim.level}${sim.steel_path ? " · SP" : ""} · ${sim.duration}s`, 36, y + 26);
+    g.fillText(`${en.name || sim.enemy} · Lv ${sim.level}${sim.steel_path ? " · SP" : ""} · ${sim.duration}s`,
+      36, y + 25);
   } else {
-    g.fillStyle = dim;
-    g.font = "17px system-ui, sans-serif";
+    g.fillStyle = dim; g.font = F(17);
     g.fillText(tr("not simulated yet"), 36, y);
   }
 
-  // The address, always. Bottom right, where a watermark belongs.
-  g.fillStyle = gold;
-  g.font = "600 20px system-ui, sans-serif";
-  g.fillText("WF", W - 190, H - 34);
-  const wf = g.measureText("WF").width;
-  g.fillStyle = fg;
-  g.fillText("Sim", W - 190 + wf, H - 34);
-  g.fillStyle = dim;
-  g.font = "14px system-ui, sans-serif";
-  g.fillText(new URL(url).host, W - 190, H - 14);
+  // The address, always. An image that travels without one is a screenshot of
+  // nowhere.
+  g.textAlign = "right";
+  g.font = F(21, "600");
+  const host = new URL(url).host;
+  g.fillStyle = fg; g.fillText("Sim", W - 36, H - 38);
+  const sw = g.measureText("Sim").width;
+  g.fillStyle = gold; g.fillText("WF", W - 36 - sw, H - 38);
+  g.fillStyle = dim; g.font = F(14);
+  g.fillText(host, W - 36, H - 16);
+  g.textAlign = "left";
 }
 
 // ---- Presets ----------------------------------------------------------
