@@ -177,7 +177,12 @@ ui:
   "install the previous tier first": 需要先安装上一层
   "Searches": 搜索方案
   "Scenario": 场景
-  "no riven saved for this weapon — \"+ new\" builds one": 这把武器还没有保存紫卡——点“+ new”新建一张
+  "new riven": 新建裂罅
+  "all rivens": 全部裂罅
+  "copy a riven from another weapon": 从其他武器复制一张裂罅
+  "duplicate": 复制
+  "rename": 重命名
+  "delete": 删除
   "edit in the Simulator": 去模拟器修改
   "edit this in the Simulator": 这一项在模拟器里修改
   "the scenario the simulator is set to": 模拟器当前选中的场景
@@ -287,7 +292,7 @@ ui:
   "not modeled — it rolls and it names the riven, but it adds no damage": 未建模 —— 它会开出来，也参与命名，但不提供伤害
   "All rivens": 全部裂罅
   "roll everything maximal": 全部拉到最高
-  "every riven saved for this weapon, with what it actually rolls": 这把武器保存的每张裂罅，以及它实际开出的数值
+  "every riven you have made for this weapon, with what it actually rolls": 你为这把武器做的每张裂罅，以及它实际开出的数值
   # Search boxes.
   "Search a mod…": 搜索 MOD…
   "Search arcane / effect…": 搜索赋能 / 效果…

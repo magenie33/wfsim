@@ -128,10 +128,22 @@ around (decision 2026-07-31).
   and copying a preset across weapons is the explicit "⇤ import" action, which
   drops per axis what the target cannot hold. URLs mirror English wiki page
   names (spaces → `_`); internal ids never appear in URLs.
-- **FOUR collections, one per thing a module owns** (2026-08-02):
-  `builder-builds` (a build), `simulator-scenarios` (a fight, buff settings
-  included), `optimizer` (a search: scope + the funnel's final-round
-  contract), `rivens` (a riven). The optimizer owns no scenario — it RUNS the
+- **PRESETS vs CUSTOMS** — two kinds of collection, and the difference is who
+  CONSUMES them (2026-08-02). A **preset** is a saved state of something that
+  always exists, read only by its own module: `builder-builds` (a build),
+  `simulator-scenarios` (a fight, buff settings included), `optimizer` (a
+  search: scope + the funnel's final-round contract). There is always ≥1,
+  "active" means the state you are in, and the key is
+  `wfsim-presets-<weapon>-<domain>`. A **custom** is a thing you MADE that the
+  OTHER modules consume — `rivens` becomes a mod in the pool, custom enemies
+  will become entries in the scenario's enemy list. Owning none is ordinary,
+  each carries its own identity rather than a label you invented, and deleting
+  one breaks references elsewhere (a riven delete clears the slot that equipped
+  it — a preset delete can never do that). The mental model is a FILE: a list
+  you pick from, one open at a time, none open being a real state — so the UI
+  is a list + editor, NOT the preset chip bar, and the key is
+  `wfsim-customs-<weapon>-<domain>` / `wfsim-custom-open-…`. Everything below
+  the key is shared: storage, undo, per-weapon scoping, ⇤ import. The optimizer owns no scenario — it RUNS the
   simulator's, drawn by the same renderer over the same state, so the winner
   is scored under the fight the replay will run — READ-ONLY there, with a link
   to the simulator: a preset is edited in exactly one place, because two
@@ -145,14 +157,10 @@ around (decision 2026-07-31).
   Every collection writes through `storePresetList`, which is what makes one
   Ctrl+Z stack cover all four — presets auto-save, so the way back is not
   optional.
-  A collection is OPTIONAL (`optional: true` on the bar) when zero of them is
-  a real answer: nothing is auto-created, the last one can be deleted, and the
-  editor stands down instead of showing a document that is not there. Rivens
-  are the first — not owning one is the ordinary case, and the blank card that
-  stood in for it put a phantom legendary in every weapon's pool (user,
-  2026-08-02). Custom enemies will be the second. The other three are NOT
-  optional: the modules behind them always have a state, and "no build" is not
-  something the builder can show.
+  Customs are OPTIONAL by nature: nothing is auto-created, the last one can be
+  deleted, and the editor stands down instead of showing a document that is not
+  there. Presets are not — the modules behind them always have a state, and
+  "no build" is not something the builder can show.
 - `api()` transport: `/api/meta` and `/api/i18n` are GET, everything
   else is POST — the native server matches on exact (method, path).
 

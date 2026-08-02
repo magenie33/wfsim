@@ -911,9 +911,10 @@ const RIVEN_SHAPES = [
   { id: "2+1", bonuses: 2, malus: true },
   { id: "2", bonuses: 2, malus: false },
 ];
-// The fallback for an unknown shape id is stated by ID, not by position: the
-// display order above is a display decision and must not double as a default.
-const RIVEN_SHAPE_DEFAULT = "2";
+// A new card starts at 3+1 (user, 2026-08-02) — the shape a riven worth
+// making is in. Stated by ID, not by position, so the display order above
+// stays a display decision and never doubles as the default.
+const RIVEN_SHAPE_DEFAULT = "3+1";
 
 // An EMPTY card. Nothing is pre-picked: a default stat is a claim the visitor
 // did not make. Two bonuses is the game's floor for a riven rather than a
@@ -1018,13 +1019,12 @@ async function resolveRiven(pending) {
 // standing in for "no riven" is a claim the visitor never made, and it put a
 // phantom legendary in every weapon's mod pool. Custom enemies will be the
 // same shape when they arrive.
+// The stored list, with a stale "open" pointer cleared. It does NOT open
+// anything: closing the last file is a state, and re-opening one behind the
+// user's back would make "← all rivens" a button that does nothing.
 function ensureRivenList() {
   const ps = loadPresetList(RIVENS);
-  if (ps.length && !ps.some((p) => p.name === activeRivenName())) {
-    activeRiven = ps[0].name;
-    localStorage.setItem(presetActiveKey(RIVENS), activeRiven);
-  }
-  if (!ps.length && activeRiven) {
+  if (activeRivenName() && !ps.some((p) => p.name === activeRivenName())) {
     activeRiven = "";
     localStorage.removeItem(presetActiveKey(RIVENS));
   }
@@ -1035,36 +1035,28 @@ function renderRivens() {
   if (!META || !$("riven-block")) return;
   const w = weaponInfo($("weapon").value);
   const ps = ensureRivenList();
-  if (!ps.length) {
-    // NOTHING to edit. The bar keeps its "+ new" (and ⇤ import), so the way
-    // in is where the way in always is; the editor below it stands down
-    // rather than showing a card for a riven that does not exist.
-    $("riven-sub").textContent =
-      `${w.name} · ${tr("disposition")} ${(w.disposition || 1).toFixed(2)}`;
-    renderRivenPresetBar();
-    ["riven-shape", "riven-stats", "riven-foot", "riven-card"].forEach((id) => {
-      if ($(id)) $(id).innerHTML = "";
-    });
-    if ($("riven-all")) {
-      $("riven-all").innerHTML =
-        `<div class="rv-none">${escHtml(tr("no riven saved for this weapon — \"+ new\" builds one"))}</div>`;
-    }
-    riven = null;
-    return;
-  }
-  if (!riven || riven.__weapon !== w.id) {
-    // Arriving (or reloading) opens the ACTIVE riven, not a blank one — the
-    // chip said "riven 1" while the editor showed an empty card, which is the
-    // bar and the editor disagreeing about which document is open.
-    const cur = ps.find((p) => p.name === activeRivenName());
-    riven = { ...withDrafts((cur && cur.state) || blankRiven()), __weapon: w.id };
-  }
+  const open = ps.find((p) => p.name === activeRivenName());
   // The weapon and its disposition, and nothing else: that the values below
   // are scaled by it is what a disposition IS, so saying it was noise (user,
   // 2026-08-02).
   $("riven-sub").textContent =
     `${w.name} · ${tr("disposition")} ${(w.disposition || 1).toFixed(2)}`;
-  renderRivenPresetBar();
+  renderRivenTools();
+  if (!open) {
+    // LIST MODE — nothing is being edited, so nothing pretends to be. The
+    // editor's boxes are emptied rather than hidden: an empty container in
+    // the flow keeps the page from jumping when a file is opened.
+    riven = null;
+    ["riven-shape", "riven-stats", "riven-foot", "riven-card"].forEach((id) => {
+      if ($(id)) $(id).innerHTML = "";
+    });
+    renderRivenAll();
+    return;
+  }
+  // EDIT MODE — the open file, re-read when the weapon changed under it.
+  if (!riven || riven.__weapon !== w.id) {
+    riven = { ...withDrafts(open.state || blankRiven()), __weapon: w.id };
+  }
   renderRivenShape();
   renderRivenStats();
   renderRivenFoot();
@@ -1250,12 +1242,13 @@ function renderRivenAll() {
       }).join("")
     : `<div class="sim-empty">${escHtml(tr("no rivens for this weapon yet"))}</div>`;
   // Clicking one opens it, the same as clicking its chip in the bar.
+  // Clicking a card OPENS it — the list is the folder, this is the file.
   box.querySelectorAll("[data-open]").forEach((el) => el.onclick = () => {
     const p = loadPresetList(RIVENS).find((x) => x.name === el.dataset.open);
     if (!p) return;
     activeRiven = p.name;
     localStorage.setItem(presetActiveKey(RIVENS), activeRiven);
-    riven = { ...withDrafts(p.state || blankRiven()), __weapon: $("weapon").value };
+    riven = null;   // renderRivens re-reads the file it is being asked to open
     renderRivens();
   });
 }
@@ -1350,7 +1343,7 @@ function saveRivenSoon() {
     if (i >= 0) {
       ps[i].state = snapshotRiven();
       storePresetList(RIVENS, ps);
-      renderRivenPresetBar();
+      renderRivenTools();
       // The mod lists show each riven's generated name and printed values, so
       // they have to be re-asked for after an edit.
       refreshRivenNames();
@@ -1367,31 +1360,133 @@ const snapshotRiven = () => ({
 let activeRiven = null;
 const activeRivenName = () => activeRiven || localStorage.getItem(presetActiveKey(RIVENS)) || "";
 
-function renderRivenPresetBar() {
-  const bar = $("preset-bar-rivens");
-  if (!bar) return;
-  ensureRivenList();
-  renderPresetBarIn(bar, {
-    newName: (n) => "riven " + n,
-    domain: RIVENS,
-    label: tr("Rivens"),
-    hint: "per weapon — a riven's values are its weapon's disposition applied to a roll",
-    load: () => loadPresetList(RIVENS),
-    store: (ps) => storePresetList(RIVENS, ps),
-    active: () => activeRivenName(),
-    setActive: (n) => { activeRiven = n; localStorage.setItem(presetActiveKey(RIVENS), n); },
-    snapshot: snapshotRiven,
-    apply: (st) => {
-      if (!st) { renderRivens(); return; }   // deleted the last one
-      riven = { ...withDrafts(st), __weapon: $("weapon").value };
-      renderRivenShape(); renderRivenStats(); renderRivenFoot(); resolveRiven();
-    },
-    blank: blankRiven,
-    // Zero rivens is legal, so the last one can be deleted — and when it is,
-    // the whole editor has to stand down, not just this bar. A delete or a
-    // rename also changes the POOL, so the builder's slots are re-checked.
-    optional: true,
-    rerender: () => { renderRivens(); pruneDanglingRivens(); },
+// A custom is a FILE (user, 2026-08-02). Two modes, and the tools strip says
+// which one you are in:
+//
+//   LIST — nothing open. Make one, or bring one over from another weapon.
+//          This is a real state, not an empty editor: most weapons own no
+//          riven and the page should say so rather than show a blank card.
+//   EDIT — one open. Its identity is named, the editor below is live, and
+//          "← back" closes it without deleting anything.
+//
+// It is deliberately NOT the preset bar: a preset is a label you invented for
+// a state your module is always in, and switching one is switching state. A
+// riven is a thing with its own name, capacity and polarity, which other
+// modules then consume. Same storage, same undo, same import underneath —
+// different noun on top.
+function renderRivenTools() {
+  const box = $("riven-tools");
+  if (!box) return;
+  const ps = loadPresetList(RIVENS);
+  const open = activeRivenName();
+  const cur = ps.find((x) => x.name === open);
+  const impAvailable = presetSources(RIVENS, presetWeapon()).length > 0;
+  const impBtn = impAvailable
+    ? `<button class="cu-btn cu-imp" title="${escHtml(tr("copy a riven from another weapon"))}">⇤ ${escHtml(tr("import"))}</button>`
+    : "";
+  if (!cur) {
+    box.innerHTML =
+      `<button class="cu-btn cu-new">+ ${escHtml(tr("new riven"))}</button>${impBtn}` +
+      `<div class="cu-import" hidden></div>`;
+  } else {
+    const official = (rivenNames[cur.name] || {}).name || "";
+    box.innerHTML =
+      `<button class="cu-btn cu-back">← ${escHtml(tr("all rivens"))}</button>` +
+      `<span class="cu-open"><b>${escHtml(cur.name)}</b>${
+        official ? `<span class="rv-official">${escHtml(official)}</span>` : ""}</span>` +
+      `<span class="cu-ops">` +
+      `<button class="cu-btn cu-dup" title="${escHtml(tr("duplicate"))}">⧉</button>` +
+      `<button class="cu-btn cu-ren" title="${escHtml(tr("rename"))}">✎</button>` +
+      `<button class="cu-btn cu-del" title="${escHtml(tr("delete"))}">✕</button>` +
+      `</span><div class="cu-import" hidden></div>`;
+  }
+  const q = (s) => box.querySelector(s);
+  const openIt = (name) => {
+    activeRiven = name;
+    if (name) localStorage.setItem(presetActiveKey(RIVENS), name);
+    else localStorage.removeItem(presetActiveKey(RIVENS));
+    riven = null;
+    renderRivens();
+  };
+  const click = (sel, fn) => { const b = q(sel); if (b) b.onclick = (e) => { e.stopPropagation(); fn(); }; };
+
+  click(".cu-new", () => {
+    const ps2 = loadPresetList(RIVENS);
+    const name = freeName(ps2, (n) => "riven " + n);
+    riven = { ...withDrafts(blankRiven()), __weapon: $("weapon").value };
+    ps2.push({ name, savedAt: Date.now(), state: snapshotRiven() });
+    storePresetList(RIVENS, ps2);
+    openIt(name);
+  });
+  click(".cu-back", () => openIt(""));
+  click(".cu-dup", () => {
+    const ps2 = loadPresetList(RIVENS);
+    const name = freeName(ps2, (n) => open + " copy" + (n > 1 ? " " + n : ""));
+    ps2.push({ name, savedAt: Date.now(), state: snapshotRiven() });
+    storePresetList(RIVENS, ps2);
+    openIt(name);
+  });
+  click(".cu-del", () => {
+    storePresetList(RIVENS, loadPresetList(RIVENS).filter((x) => x.name !== open));
+    // Back to the LIST, not to another riven: deleting the thing you had open
+    // is not a request to open a different one.
+    openIt("");
+    pruneDanglingRivens();
+  });
+  // Renaming happens in an INLINE input — no prompt(), which the owner's
+  // browser blocks. Enter commits, Esc cancels.
+  click(".cu-ren", () => {
+    const host = q(".cu-open");
+    host.innerHTML = `<input class="cu-name" type="text" maxlength="24" value="${escHtml(open)}">`;
+    const inp = q(".cu-name");
+    inp.focus(); inp.select();
+    let done = false;
+    const commit = (ok) => {
+      if (done) return;
+      done = true;
+      const want = (inp.value || "").trim();
+      if (!ok || !want || want === open) return renderRivenTools();
+      const ps2 = loadPresetList(RIVENS);
+      if (ps2.some((x) => x.name === want)) return renderRivenTools();
+      const at = ps2.findIndex((x) => x.name === open);
+      if (at < 0) return renderRivenTools();
+      ps2[at] = { ...ps2[at], name: want };
+      storePresetList(RIVENS, ps2);
+      // The id a slot holds is `riven:<name>`, so a rename moves the item the
+      // builder is pointing at — follow it rather than orphan the slot.
+      slots.forEach((s) => { if (s.mod === RIVEN_PREFIX + open) s.mod = RIVEN_PREFIX + want; });
+      openIt(want);
+      renderMods(); refreshPanel();
+    };
+    inp.onkeydown = (ev) => {
+      if (ev.key === "Enter") commit(true);
+      if (ev.key === "Escape") commit(false);
+    };
+    inp.onblur = () => commit(true);
+  });
+  click(".cu-imp", () => {
+    const panel = q(".cu-import");
+    if (!panel.hidden) { panel.hidden = true; return; }
+    panel.innerHTML = presetSources(RIVENS, presetWeapon()).map((w) =>
+      `<div class="pimp-w"><span class="pimp-wn">${escHtml(w.name)}</span>` +
+      w.presets.map((x) =>
+        `<span class="cu-btn pimp-p" data-weapon="${escHtml(w.id)}" data-name="${escHtml(x.name)}">${escHtml(x.name)}</span>`
+      ).join("") + `</div>`).join("");
+    panel.hidden = false;
+    panel.querySelectorAll(".pimp-p").forEach((el) => el.onclick = (ev) => {
+      ev.stopPropagation();
+      const from = loadPresetList(RIVENS, el.dataset.weapon).find((x) => x.name === el.dataset.name);
+      if (!from) return;
+      const ps2 = loadPresetList(RIVENS);
+      const name = freeName(ps2, (n) => el.dataset.name + (n > 1 ? " " + n : ""));
+      // A riven's VALUES are its weapon's disposition applied to a roll, so
+      // the copy is the roll — the numbers re-derive here, which is the whole
+      // reason importing one is useful.
+      riven = { ...withDrafts(from.state), __weapon: $("weapon").value };
+      ps2.push({ name, savedAt: Date.now(), state: snapshotRiven() });
+      storePresetList(RIVENS, ps2);
+      openIt(name);
+    });
   });
 }
 
@@ -1425,12 +1520,58 @@ function renderRivenPresetBar() {
 // Copying a preset ACROSS weapons is a deliberate action instead — the
 // "⇤ import" control on each bar.
 const presetWeapon = () => ($("weapon") && $("weapon").value) || "";
-const presetListKey = (d, w) => "wfsim-presets-" + (w ?? presetWeapon()) + "-" + d;
-const presetActiveKey = (d, w) => "wfsim-preset-active-" + (w ?? presetWeapon()) + "-" + d;
+// PRESETS vs CUSTOMS — two kinds of collection, and the difference is who
+// consumes them (user, 2026-08-02).
+//
+// A PRESET is a saved state of something that always exists: the builder
+// always has a build, the simulator a fight, the optimizer a search. Only its
+// own module reads it, there is always at least one, and "active" means the
+// state you are currently in.
+//
+// A CUSTOM is a thing you MADE, and the other modules consume it: a riven
+// becomes a mod in the pool, a custom enemy becomes an entry in the scenario's
+// enemy list. Owning none is ordinary, each one carries its own identity
+// rather than a label you invented, and deleting one breaks references
+// elsewhere — which a preset delete can never do. The mental model is a FILE:
+// it sits in a list, you open one to edit it, and you can have none open.
+//
+// Different noun, different key. Everything BELOW the key is shared —
+// storage, undo, per-weapon scoping, ⇤ import — because none of that depends
+// on which kind it is.
+const CUSTOM_DOMAINS = new Set(["rivens"]);
+const isCustomDomain = (d) => CUSTOM_DOMAINS.has(d);
+const presetListKey = (d, w) =>
+  (isCustomDomain(d) ? "wfsim-customs-" : "wfsim-presets-") + (w ?? presetWeapon()) + "-" + d;
+const presetActiveKey = (d, w) =>
+  (isCustomDomain(d) ? "wfsim-custom-open-" : "wfsim-preset-active-") + (w ?? presetWeapon()) + "-" + d;
+
+// One-time rename of every custom collection out of the preset namespace.
+// The data is unchanged; only the noun was wrong.
+(function migrateCustomKeys() {
+  const moves = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    let m = /^wfsim-presets-(.+)-([^-]+)$/.exec(k);
+    if (m && isCustomDomain(m[2])) moves.push([k, `wfsim-customs-${m[1]}-${m[2]}`]);
+    m = /^wfsim-preset-active-(.+)-([^-]+)$/.exec(k);
+    if (m && isCustomDomain(m[2])) moves.push([k, `wfsim-custom-open-${m[1]}-${m[2]}`]);
+  }
+  moves.forEach(([from, to]) => {
+    const v = localStorage.getItem(from);
+    if (v !== null && localStorage.getItem(to) === null) localStorage.setItem(to, v);
+    localStorage.removeItem(from);
+  });
+})();
 const loadPresetList = (d, w) => {
   try { const p = JSON.parse(localStorage.getItem(presetListKey(d, w))); return Array.isArray(p) ? p : []; }
   catch (_) { return []; }
 };
+// The first "<thing> N" this collection does not already hold. Shared by both
+// kinds — naming a new item is the same problem whatever it is called.
+const freeName = (ps, mk) => {
+  for (let n = 1; ; n++) { const nm = mk(n); if (!ps.some((p) => p.name === nm)) return nm; }
+};
+
 const storePresetList = (d, ps, w) => {
   const weapon = w ?? presetWeapon();
   recordUndo(d, weapon, ps);
@@ -1509,11 +1650,11 @@ function presetDoc(d) {
   };
   if (d === RIVENS) return {
     setActive: (n) => { activeRiven = n; },
-    apply: (st) => {
-      riven = { ...withDrafts(st), __weapon: $("weapon").value };
-      renderRivenShape(); renderRivenStats(); renderRivenFoot(); resolveRiven();
-    },
-    rerender: renderRivenPresetBar,
+    // An undo can land on a collection that is now empty (the last riven
+    // deleted) — renderRivens is the one that decides between the list and
+    // the editor, so it does the applying too.
+    apply: () => { riven = null; },
+    rerender: () => { renderRivens(); pruneDanglingRivens(); },
   };
   return null;
 }
@@ -1993,9 +2134,6 @@ function renderPresetBarIn(bar, cfg) {
   };
   // Unique auto-names: "+ new" takes the smallest free "preset N";
   // duplicate takes "<name> copy", then "<name> copy 2", …
-  const freeName = (ps2, mk) => {
-    for (let n = 1; ; n++) { const nm = mk(n); if (!ps2.some((p) => p.name === nm)) return nm; }
-  };
   const addBtn = bar.querySelector(".pchip.add");
   addBtn.addEventListener("click", (e) => {
     e.stopPropagation();

@@ -211,12 +211,15 @@
     <section class="block" id="riven-block">
       <div class="bh"><span class="n">4</span><h2 data-i18n>Rivens</h2><span class="sub" id="riven-sub"></span></div>
       <div class="bb">
-        <div class="preset-bar" id="preset-bar-rivens"></div>
+        <!-- A CUSTOM, not a preset: a riven is a thing you made, which the
+             other modules then consume as a mod. It reads as a file — a list
+             you pick from, one open at a time, none open being a real state. -->
+        <div class="cu-tools" id="riven-tools"></div>
         <div id="riven-shape" class="rv-shape"></div>
         <div id="riven-stats"></div>
         <div id="riven-foot" class="rv-foot"></div>
         <div id="riven-card" class="rv-card"></div>
-        <h3 class="sim-h" data-i18n>All rivens <span class="sim-hint" data-i18n>every riven saved for this weapon, with what it actually rolls</span></h3>
+        <h3 class="sim-h" id="riven-all-h" data-i18n>All rivens <span class="sim-hint" data-i18n>every riven you have made for this weapon, with what it actually rolls</span></h3>
         <div id="riven-all"></div>
       </div>
     </section>

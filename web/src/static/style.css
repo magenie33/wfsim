@@ -589,12 +589,32 @@ label.check input{width:auto}
 .opt-tier-block.locked .opt{opacity:.45}
 .seg.tlocked{cursor:not-allowed;pointer-events:none}
 
-/* Undo/redo feedback — inline, never a native dialog. */
+/* Undo/redo feedback — inline, never a native dialog. Theme-aware like
+   everything else: the first cut hardcoded a dark palette and became a black
+   box on the light theme. */
 #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(8px);
-  background:#1b1d22;color:#e9e6df;border:1px solid #3a3f49;border-radius:8px;
-  padding:8px 14px;font-size:13px;letter-spacing:.02em;box-shadow:0 6px 24px rgba(0,0,0,.45);
+  background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:8px;
+  padding:8px 14px;font-size:13px;letter-spacing:.02em;box-shadow:0 6px 24px rgba(0,0,0,.28);
   opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;z-index:120}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
-/* An OPTIONAL collection with nothing in it — the editor stands down. */
-.rv-none{color:#8b8f98;font-size:13px;padding:10px 2px}
+/* ---- CUSTOMS — a thing you MADE, not a saved state, and deliberately not
+   the preset bar: no chip row, no "active" pill. A toolbar over a list of
+   items, each carrying its own identity. The toolbar says which of the two
+   modes you are in — browsing the list, or with one open. */
+.cu-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 12px;
+  padding-bottom:12px;border-bottom:1px solid var(--line)}
+.cu-btn{background:var(--panel3);color:var(--text);border:1px solid var(--line);
+  border-radius:8px;padding:5px 11px;font:inherit;font-size:12.5px;cursor:pointer}
+.cu-btn:hover{border-color:var(--accent)}
+/* Creating is the one action the empty state exists to offer. */
+.cu-new{color:var(--gold);border-color:var(--gold)}
+.cu-new:hover{background:var(--panel2)}
+.cu-open{display:flex;align-items:baseline;gap:8px;font-size:14px}
+.cu-open .rv-official{color:var(--muted);font-size:12px}
+.cu-ops{margin-left:auto;display:flex;gap:6px}
+.cu-del:hover{border-color:var(--critical);color:var(--critical)}
+.cu-name{background:var(--plane);color:var(--text);border:1px solid var(--accent);
+  border-radius:8px;padding:4px 8px;font:inherit;font-size:14px;width:14em}
+.cu-import{flex-basis:100%;margin-top:6px}
+.rv-none{color:var(--muted);font-size:13px;padding:10px 2px}
