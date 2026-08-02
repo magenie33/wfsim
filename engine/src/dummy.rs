@@ -2005,6 +2005,13 @@ fn settle_procs(
                 debuffs.apply_heat(at, contrib, expiry, heat_cap);
             }
             DamageType::Cold => {
+                // Primary Frostbite: each Cold status THIS WEAPON applies
+                // grants one stack to both of its buffs (crit damage +
+                // multishot). Its three siblings above were wired and this
+                // one was not, so the arcane could never earn a stack back —
+                // it spent one duration at its seeded count and then sat at
+                // zero for the rest of the run.
+                arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ColdStatus, at);
                 debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps);
             }
             DamageType::Magnetic => DebuffState::push_capped(
@@ -7793,5 +7800,27 @@ mod tests {
         );
         assert!(past_red.mean_crit_tier > one.mean_crit_tier + 3.0);
     }
-}
 
+    /// EVERY on-status trigger the data can express must actually be fired by
+    /// the sim. Toxin, Electricity and Heat were wired and COLD was not, so
+    /// Primary Frostbite spent one duration at its seeded stack count and then
+    /// sat at zero for the rest of every run — it looked implemented, listed
+    /// in the picker, and quietly did nothing after twelve seconds.
+    ///
+    /// The check is mechanical rather than by name: it asserts each variant
+    /// appears in a `bump_trigger` call in this file's source. A new
+    /// on-status arcane cannot be added without wiring it.
+    #[test]
+    fn every_on_status_trigger_is_fired_somewhere() {
+        let src = include_str!("dummy.rs");
+        for name in ["ToxinStatus", "ElectricityStatus", "HeatStatus", "ColdStatus"] {
+            let needle = format!("ArcTrigger::{name}");
+            let fired = src
+                .lines()
+                .filter(|l| !l.trim_start().starts_with("//"))
+                .any(|l| l.contains("bump_trigger") && l.contains(&needle));
+            assert!(fired, "ArcTrigger::{name} is never bumped — an arcane that \
+                waits on it can never earn a stack");
+        }
+    }
+}
