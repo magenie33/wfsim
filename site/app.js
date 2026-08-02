@@ -1010,7 +1010,7 @@ async function resolveRiven(pending) {
 }
 
 // The collection, guaranteed non-empty and with a live active name. There is
-// ALWAYS one riven, exactly as the builder always has "preset 1": a bar whose
+// ALWAYS one riven, exactly as the builder always has "build 1": a bar whose
 // only option is "+ new" makes the visitor do a step the page could have done
 // (user, 2026-07-31), and the first one is the empty card they were going to
 // fill in anyway.
@@ -1700,7 +1700,7 @@ function redoPreset() {
 }
 
 const PRESET_LABELS = {
-  "builder-builds": "Presets",
+  "builder-builds": "Builds",
   "simulator-scenarios": "Scenarios",
   optimizer: "Searches",
   rivens: "Rivens",
@@ -1972,7 +1972,7 @@ function initPresets() {
   });
   if (migrated) storePresetList(BUILDS, ps);
   if (!ps.length) {
-    ps = [{ name: "preset 1", savedAt: Date.now(), state: snapshotState() }];
+    ps = [{ name: "build 1", savedAt: Date.now(), state: snapshotState() }];
     storePresetList(BUILDS, ps);
   }
   let sc = loadPresetList(SCENARIOS);
@@ -2066,6 +2066,12 @@ const PRESET_FILTER_AT = 10;
 const presetFilters = {}; // per-bar filter text — survives re-renders, not persisted
 
 function renderPresetBarIn(bar, cfg) {
+  // WHAT ONE OF THESE IS CALLED. "Preset" is the CATEGORY — a saved state of
+  // a module, as opposed to a custom — and no collection is named after its
+  // category (user, 2026-08-02). A build is a build, a scenario a scenario, a
+  // search a search; the noun names new ones and every tooltip that has to
+  // refer to one.
+  const noun = cfg.noun || "preset";
   const ps = cfg.load();
   const active = cfg.active();
   const ftext = presetFilters[bar.id] || "";
@@ -2075,7 +2081,7 @@ function renderPresetBarIn(bar, cfg) {
   const chip = (p) => {
     const sel = p.name === active;
     const ops = sel
-      ? `<button class="pop dup" title="duplicate into a new preset">⧉</button>` +
+      ? `<button class="pop dup" title="${escHtml(tr("duplicate"))}">⧉</button>` +
         `<button class="pop ren" title="rename">✎</button>` +
         (ps.length > 1 || cfg.optional ? `<button class="pop del" title="delete">✕</button>` : "")
       : "";
@@ -2085,14 +2091,18 @@ function renderPresetBarIn(bar, cfg) {
     // Every bar says the shortcut: auto-save means a slip is written before
     // you can regret it, so the way back has to be visible on the thing that
     // slipped.
-    `<span class="plabel" title="${escHtml(tr("Ctrl+Z undoes the last change to any preset"))}">${cfg.label} <b>${ps.length}</b></span>` +
+    `<span class="plabel" title="${escHtml(tr("Ctrl+Z undoes the last change"))}">${cfg.label} <b>${ps.length}</b></span>` +
     (ps.length > PRESET_FILTER_AT ? `<input class="pfilter" type="text" placeholder="${escHtml(tr("filter…"))}" value="${escHtml(ftext)}">` : "") +
     shown.map(chip).join("") +
-    `<span class="pchip add" title="new empty preset${escHtml(hint)}">+ new</span>` +
+    // One template, not two words joined by a space: Chinese does not put one
+    // between them, so concatenating produced "新建空白 配装".
+    `<span class="pchip add" title="${escHtml(
+      tr("new empty {thing}").replace("{thing}", tr(noun)) + (cfg.hint ? " · " + cfg.hint : "")
+    )}">+ new</span>` +
     // Presets are per weapon, so bringing one over from another weapon is
     // an explicit action rather than a side effect of switching weapons.
     (presetSources(cfg.domain, presetWeapon()).length
-      ? `<span class="pchip imp" title="${escHtml(tr("copy a preset from another weapon"))}">⇤ ${escHtml(tr("import"))}</span>`
+      ? `<span class="pchip imp" title="${escHtml(tr("copy one from another weapon"))}">⇤ ${escHtml(tr("import"))}</span>`
       : "") +
     `<div class="pimport" hidden></div>`;
 
@@ -2140,7 +2150,7 @@ function renderPresetBarIn(bar, cfg) {
     const ps2 = cfg.load();
     // "preset N" everywhere except where the thing has its own noun — the
     // riven bar names them "riven N", because that is what they are.
-    const name = freeName(ps2, cfg.newName || ((n) => "preset " + n));
+    const name = freeName(ps2, (n) => noun + " " + n);
     // Activate FIRST so everything that renders during apply() (e.g. the
     // sim's per-preset stored result) already sees the NEW preset; then
     // apply the blank and store the resulting live snapshot, so the stored
@@ -2256,7 +2266,8 @@ function renderPresetBar() {
     // the weapon it lands on; restoreState prunes whatever that weapon
     // cannot equip (a different mod class, other evolution ids).
     rescope: (st, weapon) => ({ ...st, weapon }),
-    label: tr("Presets"),
+    label: tr("Builds"),
+    noun: "build",
     load: () => loadPresetList(BUILDS),
     store: (ps) => storePresetList(BUILDS, ps),
     active: () => activePreset,
@@ -2303,9 +2314,7 @@ function renderScenarioBar() {
   renderPresetBarIn($("preset-bar-" + SCENARIOS), {
     domain: SCENARIOS,
     label: tr("Scenarios"),
-    // "scenario N", not "preset N": the bootstrap already named the first one
-    // that way, so "+ new" was contradicting it on the second.
-    newName: (n) => "scenario " + n,
+    noun: "scenario",
     load: () => loadPresetList(SCENARIOS),
     store: (ps) => storePresetList(SCENARIOS, ps),
     active: () => activeScenario,
@@ -2345,7 +2354,7 @@ function applyWeapon(id, presetMods) {
 // A user-driven weapon CHANGE, as opposed to applyWeapon's "rebuild the
 // editor for this weapon". Presets are per weapon, so the bar must reload
 // from the new weapon's own storage — initPresets() restores its active
-// preset (creating "preset 1" the first time). The optimizer's groups
+// preset (creating "build 1" the first time). The optimizer's groups
 // re-bootstrap on their own: applyWeaponInner clears optSeeded, and
 // renderOpt re-runs bootstrapOptPresets against the new scope.
 // NOT called from restoreState: loading a preset must not re-enter this.
@@ -3435,7 +3444,7 @@ function renderSimBuild() {
   const box = $("sim-build-info");
   if (!box || !META) return;
   const sub = $("sim-build-sub");
-  if (sub) sub.textContent = activePreset ? `${tr("testing preset")}: ${activePreset}` : "";
+  if (sub) sub.textContent = activePreset ? `${tr("testing build")}: ${activePreset}` : "";
   const chip = (img, label, rk) =>
     `<span class="sb-chip">${imgTag(img, "sb-img")}<span>${escHtml(label)}</span>${rk != null ? `<span class="rk">R${rk}</span>` : ""}</span>`;
   const w = weaponInfo($("weapon").value);
@@ -4081,7 +4090,7 @@ function renderOpt() {
   if (!optSeeded) {
     opt.mods = {}; opt.exilus = {};
     // Everything equipped seeds as REQ (pinned) — first-ever content for
-    // the auto-created "preset 1"s; afterwards the ACTIVE presets are the
+    // the auto-created "search 1"; afterwards the ACTIVE preset is the
     // scope (document model) and immediately overwrite this seed.
     slots.slice(0, 8).forEach((s) => { if (s.mod) opt.mods[s.mod] = "fixed"; });
     if (slots[EXILUS].mod) opt.exilus[slots[EXILUS].mod] = "fixed";
@@ -4341,7 +4350,7 @@ const loadOptPresets = () => loadPresetList(OPT_DOMAIN);
 const storeOptPresets = (ps) => storePresetList(OPT_DOMAIN, ps);
 
 // Called from renderOpt's seed block (page load AND weapon switch). The
-// first-ever run creates "preset 1" from the build-seeded scope; afterwards
+// first-ever run creates "search 1" from the build-seeded scope; afterwards
 // the active preset IS the scope.
 function bootstrapOptPresets() {
   let ps = loadOptPresets();
@@ -4484,7 +4493,7 @@ function renderOptPresetBars() {
   renderPresetBarIn(bar, {
     domain: OPT_DOMAIN,
     label: tr("Searches"),
-    newName: (n) => "search " + n,
+    noun: "search",
     hint: "scope + final round; import filters per axis",
     load: loadOptPresets,
     store: storeOptPresets,
@@ -4950,7 +4959,7 @@ function renderOptResults(r) {
         <span class="opt-dps">${Math.round(res.dps || res.effective_dps || 0).toLocaleString()} DPS</span>
         <span class="opt-total">${sig2(res.kill_progress ?? res.kills)} kill score / ${Math.round(r.duration || 0)}s</span>
         <span class="forma-badge legal">${res.forma.used} Forma</span>
-        <button class="ghost-btn small opt-add" title="add as a new build preset" data-r='${JSON.stringify(res).replace(/'/g, "&#39;")}'>+ add</button>
+        <button class="ghost-btn small opt-add" title="${escHtml(tr("save as a new build"))}" data-r='${JSON.stringify(res).replace(/'/g, "&#39;")}'>+ add</button>
       </div>
       <div class="opt-detail"><b>${arc}</b> · ${evos}</div>
       <div class="opt-mods">${mods}</div>

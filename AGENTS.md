@@ -129,7 +129,10 @@ around (decision 2026-07-31).
   drops per axis what the target cannot hold. URLs mirror English wiki page
   names (spaces → `_`); internal ids never appear in URLs.
 - **PRESETS vs CUSTOMS** — two kinds of collection, and the difference is who
-  CONSUMES them (2026-08-02). A **preset** is a saved state of something that
+  CONSUMES them (2026-08-02). "Preset" is the CATEGORY and never the name of a
+  collection or of an item in one: a build is a build, a scenario a scenario, a
+  search a search, a riven a riven. Each bar declares its `noun`, which names
+  new items ("build 2") and every tooltip that refers to one. A **preset** is a saved state of something that
   always exists, read only by its own module: `builder-builds` (a build),
   `simulator-scenarios` (a fight, buff settings included), `optimizer` (a
   search: scope + the funnel's final-round contract). There is always ≥1,

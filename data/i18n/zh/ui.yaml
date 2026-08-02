@@ -103,7 +103,7 @@ ui:
   "this weapon has no ammo reserve to run out of": 这把武器没有会耗尽的备弹
   "off = the reserve is finite and the weapon can run dry; the magazine and its reloads apply either way": 关闭 = 备弹有限，武器会打空；弹匣和换弹无论开关都照常计算
   "import": 导入
-  "copy a preset from another weapon": 从其他武器复制一个预设
+  "copy one from another weapon": 从其他武器复制一个
   "Direct hit": 直击
   "Radial explosion": 范围爆炸
   "on contact": 接触即中
@@ -117,6 +117,11 @@ ui:
   "copied": 已复制
   "Weapons": 武器
   "Presets": 预设
+  "Builds": 配装
+  "build": 配装
+  "scenario": 场景
+  "search": 搜索方案
+  "new empty {thing}": 新建空白{thing}
   "Scenarios": 场景
   "all potential buffs": 全部潜在增益
   "in this build": 仅当前配装
@@ -130,7 +135,7 @@ ui:
   "Simulator": 模拟器
   "Optimizer": 优化器
   "Build": 当前配装
-  "testing preset": 测试预设
+  "testing build": 测试配装
   "last tested": 上次测试于
   "Damage by source": 伤害构成
   "Direct hits": 直接命中
@@ -187,7 +192,8 @@ ui:
   "edit this in the Simulator": 这一项在模拟器里修改
   "the scenario the simulator is set to": 模拟器当前选中的场景
   "current": 当前
-  "Ctrl+Z undoes the last change to any preset": Ctrl+Z 撤销对任意预设的上一步改动
+  "Ctrl+Z undoes the last change": Ctrl+Z 撤销上一步改动
+  "save as a new build": 存为一套新配装
   "nothing to undo": 没有可撤销的操作
   "nothing to redo": 没有可重做的操作
   "undone": 已撤销
