@@ -1907,6 +1907,10 @@ mod laetum_tests {
                     b.initial_stacks = 0;
                 }
             } else if let Some(b) = d.reload_on_headshot.as_mut() {
+                // Pinned AT FULL. Buffs start earned-from-zero now, so
+                // "pinned" alone would freeze it at nothing — the two knobs
+                // are separate and this test wants both.
+                b.initial_stacks = b.max_stacks;
                 b.pinned = true;
             }
             d

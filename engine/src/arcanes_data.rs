@@ -576,7 +576,10 @@ impl ArcaneDef {
                         max_stacks: *max_stacks,
                         duration: *duration,
                         all_drop: *all_drop,
-                        initial_stacks: *max_stacks, // start full (user decision)
+                        // EARNED from zero: an arcane's stacks come from kills
+                        // and procs, and a fight that cannot produce them must
+                        // not be credited with them (docs/BUFFS.md).
+                        initial_stacks: 0,
                         pinned: assumed,
                     });
                 }

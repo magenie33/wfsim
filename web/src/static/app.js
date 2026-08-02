@@ -355,15 +355,28 @@ let optBuffList = [];
 let optBuffTimer = null;
 // Sort/polarity prefs for the optimizer mod list (independent of the picker's).
 let optPrefs = { sort: "name", dir: "asc", pol: null };
-// The FINAL-ROUND CONTRACT (user): the funnel's last round is guaranteed
-// `finalists` candidates × `final_runs` runs. Persisted; survives weapon
-// switches (it is a run setting, not weapon scope).
-// `final_runs` / `finalists` are the SEARCH's — they ride the optimizer preset
-// (applyOptState writes them). `threads` is the MACHINE's and stays here: a
-// preset that carried it would re-tune the CPU every time it loaded, and
-// would do it wrong on any other machine.
-let optRun = { final_runs: 100, finalists: 10, threads: 0 }; // threads 0 = auto (cores − 2)
+// The FINAL-ROUND CONTRACT: the funnel's last round is guaranteed
+// `FINALISTS` candidates × the SCENARIO's run count.
+//
+// NEITHER IS A SETTING ANY MORE (user, 2026-08-02). The optimizer tab is
+// read-only about configuration — it shows the fight and the scope and runs
+// them; it does not offer a second place to tune either. So:
+//
+//   · final runs = `sim.runs`. It is HOW HARD YOU MEASURE, which is the
+//     scenario's question and already answered there. Two boxes for one number
+//     is how a winner gets crowned at a precision the replay never used.
+//   · finalists = 10, fixed. It is how many answers a person reads, not a
+//     property of a search — nobody tuned it, and a knob nobody turns is a
+//     knob that only ever disagrees with itself across presets.
+//   · threads is the MACHINE's, not a search's. It has no control here; the
+//     stored value is still honoured so a power user can set it, and when
+//     there is a machine-settings surface it belongs there.
+const FINALISTS = 10;
+const finalRuns = () => sim.runs;
+let optRun = { threads: 0 }; // threads 0 = auto (cores − 2)
 try { const s = JSON.parse(localStorage.getItem("wfsim-opt-run")); if (s && s.threads) optRun.threads = s.threads; } catch (_) {}
+// Read-only for now: no control writes it (the optimizer tab configures
+// nothing), so this exists to keep an already-stored value working.
 const saveOptRun = () => localStorage.setItem("wfsim-opt-run", JSON.stringify({ threads: optRun.threads }));
 let pickerSlot = 0;
 // Mod-picker sort/filter prefs — persisted across slots, presets and weapons.
@@ -497,8 +510,6 @@ async function init() {
     wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
     infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
     duration: d.duration, runs: d.runs, form: d.form, buffs: {} };
-  optRun = { ...optRun, final_runs: d.final_runs ?? optRun.final_runs,
-    finalists: d.finalists ?? optRun.finalists };
   applyWeapon(d.weapon, d.mods);
 
   $("weapon").addEventListener("change", () => {
@@ -512,23 +523,6 @@ async function init() {
   $("opt-size").addEventListener("input", () => {
     opt.size = Math.max(1, Math.min(8, Number($("opt-size").value) || 8));
     updateOptEstimate();
-  });
-  $("opt-final-runs").value = optRun.final_runs;
-  $("opt-finalists").value = optRun.finalists;
-  // updateOptEstimate is also the scope's auto-save, so the contract lands in
-  // the active preset the same way every other search setting does.
-  $("opt-final-runs").addEventListener("input", () => {
-    optRun.final_runs = Math.max(1, Math.min(100000, Number($("opt-final-runs").value) || 100));
-    updateOptEstimate();
-  });
-  $("opt-finalists").addEventListener("input", () => {
-    optRun.finalists = Math.max(1, Math.min(100, Number($("opt-finalists").value) || 10));
-    updateOptEstimate();
-  });
-  if (optRun.threads) $("opt-threads").value = optRun.threads;
-  $("opt-threads").addEventListener("input", () => {
-    optRun.threads = Math.max(0, Math.min(128, Number($("opt-threads").value) || 0));
-    saveOptRun();
   });
   initPresets();
   reattachOptimize(); // resume progress display if a server-side job survives a reload
@@ -4742,7 +4736,14 @@ function renderBuffCards(box, list, cfg, have) {
     // ONE control for every buff, a toggle included (user, 2026-08-02): a
     // one-stack buff reads "1 / 1" like the rest instead of a checkbox that
     // said "active" and meant the same thing in different words.
-    const ctl = `<span class="bstep"><input type="number" data-b="${b.id}" data-f="stacks" min="0" max="${b.max_stacks}" value="${c.stacks}"><span class="bmax">/ ${b.max_stacks}</span></span>`;
+    // WHERE THE RUN STARTS, not what the buff is worth. A timed buff opens at
+    // 0 because the modelled fight is "in it a while, but not in contact for
+    // the last few seconds" — it is earned back on its own trigger. Only a
+    // permanent buff opens full, because a lull cannot take it away.
+    const startWhy = b.permanent
+      ? tr("permanent — nothing grants or decays it, so it holds all run")
+      : tr("stacks the run STARTS with. 0 = earned in-fight on this buff's own trigger, which is what a fight that has not been in contact for a few seconds looks like");
+    const ctl = `<span class="bstep" title="${escHtml(startWhy)}"><input type="number" data-b="${b.id}" data-f="stacks" min="0" max="${b.max_stacks}" value="${c.stacks}"><span class="bmax">/ ${b.max_stacks}</span></span>`;
     // NOT "lock" (user, 2026-08-02): that read as "freeze this buff", so
     // locking one at zero looked like a way to switch it off forever. It only
     // removes the TIMEOUT — the count still starts where it is set and still
@@ -5527,14 +5528,12 @@ function snapshotOpt() {
     mods: { ...opt.mods }, exilus: { ...opt.exilus }, size: opt.size,
     arcanes: { ...opt.arcanes },
     evos: JSON.parse(JSON.stringify(opt.evos)),
-    final_runs: optRun.final_runs, finalists: optRun.finalists,
   };
 }
 
 // An empty search: nothing marked, a fresh size, the contract left alone (it
 // is how hard to search, not what to search).
-const blankOpt = () => ({ mods: {}, exilus: {}, size: 8, arcanes: {}, evos: {},
-  final_runs: optRun.final_runs, finalists: optRun.finalists });
+const blankOpt = () => ({ mods: {}, exilus: {}, size: 8, arcanes: {}, evos: {} });
 
 // State-only apply (validation + cross-weapon id dropping); no re-render.
 //
@@ -5572,12 +5571,10 @@ function applyOptState(st) {
     });
     if (Object.keys(valid).length) opt.evos[t] = valid;
   });
-  // The final-round contract travels with the search it was tuned for.
-  if (st.final_runs) optRun.final_runs = st.final_runs;
-  if (st.finalists) optRun.finalists = st.finalists;
-  const fr = $("opt-final-runs"), f = $("opt-finalists");
-  if (fr) fr.value = optRun.final_runs;
-  if (f) f.value = optRun.finalists;
+  // `final_runs` / `finalists` are DELIBERATELY not read back. An old preset
+  // may still carry them from when they were settings; they are derived now
+  // (the scenario's runs, and a fixed 10), and honouring a stored copy would
+  // resurrect exactly the second opinion this removed.
 }
 
 function applyOptPreset(st) {
@@ -5770,7 +5767,7 @@ function updateOptEstimate() {
     // rounds, even log-space culls landing exactly on the finalists, runs
     // from a halving cost budget ((ρ/2)^i, capped at final/4), then the
     // guaranteed final. Racing/amnesty adapt this plan at runtime.
-    const F = optRun.finalists, FR = optRun.final_runs;
+    const F = FINALISTS, FR = finalRuns();
     const N = Math.round(jobs);
     const rounds = [];
     if (N > F) {
@@ -5870,7 +5867,7 @@ async function runOptimize() {
       wf_armor: sim.wf_armor, wf_energy: sim.wf_energy,
       infinite_ammo: sim.infinite_ammo, duration: sim.duration,
       form: sim.form,
-      final_runs: optRun.final_runs, finalists: optRun.finalists,
+      final_runs: finalRuns(), finalists: FINALISTS,
       threads: optRun.threads || 0, // 0 = auto (cores − 2)
       buffs,
     };

@@ -4062,6 +4062,21 @@ mod tests {
         crate::arcanes_data::secondary(id).unwrap().fx(5, crate::loadout::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno())
     }
 
+    /// The same arcane with its stacks ALREADY EARNED.
+    ///
+    /// Buffs start at zero now (docs/BUFFS.md §Activation policy), which is
+    /// the right default for a fight and the wrong fixture for a test about
+    /// what a full stack is worth or how it decays. Seeding it here says which
+    /// of the two a test is measuring, instead of leaning on whatever the
+    /// default happens to be — the reason these tests moved when it changed.
+    fn arc_stacked(id: &str) -> ArcaneFx {
+        let mut fx = arc(id);
+        for b in fx.buffs.iter_mut() {
+            b.initial_stacks = b.max_stacks;
+        }
+        fx
+    }
+
     /// Deterministic base: no crits, no procs, 1x body, no arcane.
     fn flat_base() -> DummyParams {
         DummyParams {
@@ -5014,10 +5029,12 @@ mod tests {
                 crit_bonus: false,
             }]
         };
-        // 20 s against a 10 s buff: the initial full stacks (arcane stacking
-        // buffs start full) expire at t=10, so only a run that keeps LANDING
-        // weak-point hits still has them in the second half. That is what
-        // separates the trigger from the seeded stacks.
+        // Stacks are EARNED (docs/BUFFS.md), so this reads the trigger with
+        // nothing else in it: weak-point hits build the buff to its cap, body
+        // hits build nothing at all. The body run is therefore not "the buff
+        // lapsed" but "the buff never existed" — identical to no arcane,
+        // instance for instance, which is a stricter statement than the
+        // seeded version of this test could make.
         let mk = |is_head, a: ArcaneFx| DummyParams {
             status_chance: 0.25,
             base_status_chance: 0.25,
@@ -5034,25 +5051,29 @@ mod tests {
             bare.procs,
             bare.pellets
         );
+        // Weak-point hits: every hit is a trigger, so the buff reaches its
+        // 10-stack cap within ten instances and 25% + 10 x 30% of 25% = 100%
+        // status chance from there on — most instances proc, and far more
+        // than the unbuffed run does.
         let head = run_once(&mk(true, arc("primary_crux")), &mut Rng::new(11));
-        assert_eq!(
-            head.procs, head.pellets,
-            "25% + 10 x 30% of 25% = 100% status chance, so every instance procs"
-        );
-        // Body only: nothing re-arms it, so the seeded stacks are gone for the
-        // whole second half and the run falls short of one proc per instance.
-        let body = run_once(&mk(false, arc("primary_crux")), &mut Rng::new(11));
         assert!(
-            body.procs < body.pellets,
-            "no weak-point hit = no refresh, so the buff must lapse ({} of {})",
-            body.procs,
-            body.pellets
-        );
-        assert!(
-            body.procs > bare.procs,
-            "the seeded stacks still cover the first 10 s ({} vs {})",
-            body.procs,
+            head.procs > bare.procs,
+            "weak-point hits build the buff ({} vs {})",
+            head.procs,
             bare.procs
+        );
+        assert!(
+            head.procs >= head.pellets - 10,
+            "at the cap every instance procs; only the climb falls short ({} of {})",
+            head.procs,
+            head.pellets
+        );
+        // Body only: nothing ever triggers it, so the arcane contributes
+        // NOTHING — not "less", nothing. Same seed, same count as no arcane.
+        let body = run_once(&mk(false, arc("primary_crux")), &mut Rng::new(11));
+        assert_eq!(
+            body.procs, bare.procs,
+            "no weak-point hit = no stack = the arcane may not change a thing"
         );
     }
 
@@ -5077,7 +5098,7 @@ mod tests {
         };
         let bare = monte_carlo(&p(ArcaneFx::none()), 20, 4);
         assert!(bare.mean_reloads > 0.0, "the fixture must reload without it");
-        let crux = monte_carlo(&p(arc("primary_crux")), 20, 4);
+        let crux = monte_carlo(&p(arc_stacked("primary_crux")), 20, 4);
         assert_eq!(crux.mean_reloads, 0.0, "60% efficiency covers the window");
         assert!(
             crux.mean_shots >= bare.mean_shots,
@@ -6819,9 +6840,7 @@ mod tests {
         let p = DummyParams {
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
-            arcane: crate::arcanes_data::secondary("secondary_deadhead")
-                .unwrap()
-                .fx(5, crate::loadout::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno()),
+            arcane: arc_stacked("secondary_deadhead"),
             body_parts: vec![BodyPart {
                 name: "head".into(),
                 aim_weight: 1.0,
@@ -6848,9 +6867,7 @@ mod tests {
         let starved = DummyParams {
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
-            arcane: crate::arcanes_data::secondary("cascadia_flare")
-                .unwrap()
-                .fx(5, crate::loadout::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno()),
+            arcane: arc_stacked("cascadia_flare"),
             forced_procs: vec![DamageType::Impact],
             body_parts: mono_body(1.0),
             duration_secs: 15.0,
@@ -6890,7 +6907,7 @@ mod tests {
         // Full 12 stacks × 30% = +360% -> ratio 4.6 (bd 0). Within the
         // first 4 s no decay: 4 shots × 75 × 4.6 = 1380.
         let p = DummyParams {
-            arcane: arc("secondary_merciless"),
+            arcane: arc_stacked("secondary_merciless"),
             duration_secs: 3.9,
             ..flat_base()
         };
@@ -6920,7 +6937,7 @@ mod tests {
         // 40 stacks × 3% multishot = +120% -> 2.2 expected pellets/shot;
         // forced Electricity keeps the shared 12 s timer refreshed.
         let p = DummyParams {
-            arcane: arc("conjunction_voltage"),
+            arcane: arc_stacked("conjunction_voltage"),
             forced_procs: vec![DamageType::Electricity],
             ..flat_base()
         };
@@ -6936,7 +6953,7 @@ mod tests {
             ..flat_base()
         };
         let fast = DummyParams {
-            arcane: arc("conjunction_voltage"),
+            arcane: arc_stacked("conjunction_voltage"),
             ..slow.clone()
         };
         let a = monte_carlo(&slow, 20, 5);

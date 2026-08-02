@@ -234,20 +234,64 @@ turn it up.
 keep their uniform data and resolve to a no-op until the generic interpreter
 below lands. Replaces the old ad-hoc `stacking_buff` / `on_headshot_*` kinds.
 
-## Activation policy: assumed, configured, or emergent
+## Activation policy: what a buff is worth at t = 0
 
 A conditional/stacking buff can be evaluated under three policies
 (recorded 2026-07-24; see [`OPTIMIZER.md`](OPTIMIZER.md) §3):
 
-1. **`assumed_max` (default)** — full stacks, 100% uptime. Today's
-   `LockedBuff` in `engine::dummy` (Frenzy locked, Fevered Frenzy at 20
-   stacks) is the seed of this; it generalizes to a per-buff map.
-2. **`configured`** — explicit per-buff stack counts/uptimes.
-3. **`emergent` (future)** — no assumption; the timeline itself grants
-   and decays stacks (on-kill grants, Galvanized one-stack decay,
-   death-clears).
+1. **`assumed_max`** — full stacks, 100% uptime. What the **PANEL** shows: a
+   build's ceiling, which is the question the panel answers.
+2. **`configured`** — explicit per-buff stack counts/uptimes (the buff cards).
+3. **`emergent`** — the timeline grants and decays stacks itself. What the
+   **SIM** runs.
 
 The policy changes results, so it is part of any evaluation cache key.
+
+### Every timed buff starts EARNED, at zero
+
+**A buff with a duration starts at 0 stacks; a buff with no trigger and no
+decay starts full.** The `permanent` flag on a buff card is exactly this
+distinction, and it is the only input the rule takes.
+
+The modelled fight is therefore: *you have been at it a while, but you have not
+been in contact for the last few seconds and are about to be.* Whatever
+survives a lull is up; whatever expires in one is not (user, 2026-08-02).
+
+This REPLACES the 2026-08-02 decision that every buff starts full. That one was
+made to keep the buff cards uniform, and uniform they stay — the number they
+open on is what changed. The reason it had to change is not the scenario, it is
+that the old default asserted stacks the fight could not produce:
+
+| target | full-start | zero-start | apart |
+|---|---|---|---|
+| Lv 30 | 524.80 | 520.00 | **0.9%** |
+| Lv 100 | 58.81 | 49.94 | 15% |
+| Lv 300 | 38.82 | 28.63 | 26% |
+| Lv 1000 | 22.80 | 7.95 | **65%** |
+| Lv 9999 SP | 4.87 | 1.95 | **60%** |
+
+(Torid, Galvanized Chamber + Galvanized Aptitude + Primary Deadhead, 300 s,
+60 runs, KPM.) Where kills are fast the seed is irrelevant — the fight rebuilds
+the stacks in seconds and the two answers converge to under a percent. Where
+kills are slow it is *everything*: at Lv 9999 you kill twice a minute, so
+on-kill stacks never accumulate, and seeding them full handed the build a buff
+it can never earn and then held it there for five minutes. Zero-start is not a
+more pessimistic guess in that case; it is the correct one.
+
+Which buffs stay full, in the whole data set: **Fevered Frenzy** (`on_ability_cast`,
+20 stacks, no duration). That is the list. Everything else — every Galvanized
+mod, every on-kill/on-status arcane, Argon Scope, Sharpened Bullets, and the
+Dual Toxocyst's own **Frenzy** passive — has a 3–30 s timer and is earned.
+
+Two things carry no duration but are NOT permanent, and must never be treated
+as such by inferring the rule from `duration == 0`: **Secondary Enervate** (a
+ramp/reset perk) and **Secondary Surge** (affects the next shot only). They end
+by their own rule, not by a timer.
+
+`tenno_scaled` arcanes (Primary Bulwark, Primary Overcharge) are not buff cards
+at all. Their value is a Warframe stat, not a stack anyone earns or loses; they
+ride the buff machinery to reach their bucket and that is an implementation
+detail. Their control is WF Armor / WF Energy in the Tenno block.
 
 ## What actually guarantees correctness
 

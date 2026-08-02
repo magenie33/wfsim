@@ -234,8 +234,9 @@ impl EvolutionDef {
     /// the user can configure. That is the whole point — a buff that
     /// exists in the engine but not on the cards is invisible, and the
     /// only way to keep the two in step is to make forgetting impossible.
-    /// Every stacking buff defaults to FULL stacks (the standing "start
-    /// full" decision); only permanent ones default locked.
+    /// `permanent` is the ONE thing this has to get right: a permanent buff
+    /// has no trigger and no decay, so it survives a lull and starts full,
+    /// while every timed buff starts EARNED at zero (docs/BUFFS.md).
     pub fn buff_cards(&self) -> Vec<EvoBuffCard> {
         self.active_effects()
             .filter_map(|e| match e {
@@ -290,7 +291,7 @@ impl EvolutionDef {
                 per_stack: *per_stack,
                 max_stacks: *max_stacks,
                 duration: *duration,
-                initial_stacks: *max_stacks,
+                initial_stacks: 0, // EARNED — docs/BUFFS.md §Activation policy
                 pinned: false,
             }),
             _ => None,
@@ -566,11 +567,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         per_stack: *per_stack,
                         max_stacks: *max_stacks,
                         duration: *duration,
-                        // Start FULL, like every other stacking buff
-                        // (StackSpec, the arcanes): a build is read at the
-                        // uptime it plays at, and the sim runs decay from
-                        // there. The buff card overrides both knobs.
-                        initial_stacks: *max_stacks,
+                        // EARNED from zero, like every other TIMED buff: it
+                        // has a duration, so a lull empties it and the fight
+                        // has to fill it again (docs/BUFFS.md).
+                        initial_stacks: 0,
                         pinned: false,
                     });
                 }
@@ -583,8 +583,8 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         per_stack: *per_stack,
                         max_stacks: *max_stacks,
                         duration: *duration,
-                        // Start FULL like every other stacking buff.
-                        initial_stacks: *max_stacks,
+                        // EARNED from zero, like every other timed buff.
+                        initial_stacks: 0,
                         pinned: false,
                     });
                 }

@@ -1352,7 +1352,7 @@ pub fn resolve_for(
                             per_stack: base.base_multishot * per_stack,
                             max_stacks,
                             duration,
-                            initial_stacks: max_stacks, // start full (user decision)
+                            initial_stacks: 0, // EARNED — docs/BUFFS.md §Activation policy
                             pinned: false,
                         })
                     }
@@ -1369,7 +1369,7 @@ pub fn resolve_for(
                             per_stack,
                             max_stacks,
                             duration,
-                            initial_stacks: max_stacks, // start full (user decision)
+                            initial_stacks: 0, // EARNED — docs/BUFFS.md §Activation policy
                             pinned: false,
                         })
                     }
@@ -1386,7 +1386,7 @@ pub fn resolve_for(
                             // same mod skip the explosion under Emergent.
                             value: bonus,
                             duration,
-                            initial_active: true, // Crosshairs' HS buff seeds active
+                            initial_active: false, // EARNED, like every timed buff
                             locked: false,
                         })
                     }
@@ -1403,7 +1403,7 @@ pub fn resolve_for(
                             per_stack, // RELATIVE — see cc_on_headshot above
                             max_stacks,
                             duration,
-                            initial_stacks: max_stacks, // start full (user decision)
+                            initial_stacks: 0, // EARNED — docs/BUFFS.md §Activation policy
                             pinned: false,
                         })
                     }

@@ -73,15 +73,17 @@ const r = await evaluate(`(async () => {
   // Equip Primary Bulwark, then give the Warframe armor.
   arcanes = ['primary_bulwark'];
   markPresetDirty(); renderMods(); refreshPanel(); await sleep(2200);
-  // Bulwark grants BASE DAMAGE as a live buff, like every other arcane that
-  // feeds a bucket — so what appears is a buff card, not a changed stat row.
-  const buffIds = () => (buffList || []).map(b => b.id).join(',');
-  const before = buffIds();
+  // Bulwark is NOT a buff card — its value is a Warframe stat, not a stack
+  // anyone earns. It lists as a CONDITIONAL, the panel's channel for "this
+  // pays and here is what decides it".
+  const conds = () => [...document.querySelectorAll('#stats-conditionals .scond')]
+    .map(e => e.textContent).join(' | ');
+  const before = conds();
 
   const armor = box.querySelector('[data-k="wf_armor"]');
   armor.value = '1500'; armor.dispatchEvent(new Event('change'));
   await sleep(2500);
-  const after = buffIds();
+  const after = conds();
   return { keys, before: before.replace(/\\s+/g,' ').trim().slice(0,120),
            after: after.replace(/\\s+/g,' ').trim().slice(0,120),
            simArmor: sim.wf_armor, url: await shareUrl() };
@@ -91,8 +93,8 @@ check("the Tenno block carries every player field",
   ["aiming", "headshot_pct", "invisible", "airborne", "wf_armor", "wf_energy"].every((k) => r.keys.includes(k)),
   r.keys.join(","));
 check("typing armor reaches the scenario state", r.simArmor === 1500, String(r.simArmor));
-check("no frame: Bulwark grants nothing", !r.before.includes("bulwark"), r.before || "(no buffs)");
-check("1,500 armor: Bulwark is live", r.after.includes("bulwark"), r.after || "(no buffs)");
+check("no frame: Bulwark says nothing", !/Bulwark/i.test(r.before), r.before || "(no conditionals)");
+check("1,500 armor: the panel states Bulwark's +500%", /Bulwark/i.test(r.after) && /500/.test(r.after), r.after || "(no conditionals)");
 
 await evaluate(`(() => { localStorage.clear(); location.href = ${JSON.stringify(r.url)}; })()`);
 await sleep(12000);

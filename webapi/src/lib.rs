@@ -824,6 +824,10 @@ pub fn meta_json() -> Value {
             "metric": "kpm",
             "duration": 300.0,
             "runs": 100,
+            // The final-round contract, for an API caller. The WEB does not
+            // read these: `final_runs` is the scenario's `runs` and
+            // `finalists` is a fixed 10, because neither is a setting the
+            // optimizer tab offers any more (user, 2026-08-02).
             "final_runs": 100,
             "finalists": 10,
             "mods": [],
@@ -1040,8 +1044,10 @@ fn enumerate_buffs(
         }
     };
     // Weapon passive: Frenzy (Dual Toxocyst); a single on/off "stack".
-    // Default UNLOCKED (user, 2026-07-28): starts active, then lives by its
-    // real triggers (headshot refresh) instead of an assumed 100% uptime.
+    // EARNED like every other timed buff (user, 2026-08-02): it lasts 3 s off
+    // a headshot, so a fight that has not started has not got it. Cheap to
+    // earn — the first headshot turns it on — which is exactly why seeding it
+    // bought nothing and cost the truth.
     if has_frenzy(info) {
         push(BuffMeta {
             id: "frenzy".into(),
@@ -1049,7 +1055,7 @@ fn enumerate_buffs(
             grants: String::new(),
             max_stacks: 1,
             kind: "toggle",
-            default_stacks: 1,
+            default_stacks: 0,
             default_locked: false,
             permanent: false,
         });
@@ -1080,7 +1086,7 @@ fn enumerate_buffs(
                     grants: String::new(),
                     max_stacks,
                     kind: "stacking",
-                    default_stacks: max_stacks,
+                    default_stacks: 0,
                     default_locked: false,
                     permanent: false,
                 }),
@@ -1090,7 +1096,7 @@ fn enumerate_buffs(
                     grants: String::new(),
                     max_stacks,
                     kind: "stacking",
-                    default_stacks: max_stacks,
+                    default_stacks: 0,
                     default_locked: false,
                     permanent: false,
                 }),
@@ -1100,7 +1106,7 @@ fn enumerate_buffs(
                     grants: String::new(),
                     max_stacks: 1,
                     kind: "toggle",
-                    default_stacks: 1,
+                    default_stacks: 0,
                     default_locked: false,
                     permanent: false,
                 }),
@@ -1110,7 +1116,7 @@ fn enumerate_buffs(
                     grants: String::new(),
                     max_stacks,
                     kind: "stacking",
-                    default_stacks: max_stacks,
+                    default_stacks: 0,
                     default_locked: false,
                     permanent: false,
                 }),
@@ -1120,7 +1126,7 @@ fn enumerate_buffs(
                     grants: String::new(),
                     max_stacks: 1,
                     kind: "toggle",
-                    default_stacks: 1,
+                    default_stacks: 0,
                     default_locked: false,
                     permanent: false,
                 }),
@@ -1130,7 +1136,7 @@ fn enumerate_buffs(
                     grants: String::new(),
                     max_stacks: 1,
                     kind: "toggle",
-                    default_stacks: 1,
+                    default_stacks: 0,
                     default_locked: false,
                     permanent: false,
                 }),
@@ -1140,7 +1146,7 @@ fn enumerate_buffs(
                     grants: String::new(),
                     max_stacks: 1,
                     kind: "toggle",
-                    default_stacks: 1,
+                    default_stacks: 0,
                     default_locked: false,
                     permanent: false,
                 }),
@@ -1167,6 +1173,15 @@ fn enumerate_buffs(
         };
         let mut seen: Vec<String> = Vec::new();
         for b in arcane.buffs.iter() {
+            // A `tenno_scaled` arcane is NOT a card. Primary Bulwark's value
+            // is a WARFRAME STAT — not a stack anybody earns or loses — and a
+            // "0/1" knob for it would invite switching off a number the frame
+            // simply has. It rides the buff machinery to reach its bucket;
+            // that is an implementation detail and it stops here (user,
+            // 2026-08-02). Its own control is WF Armor, in the Tenno block.
+            if b.trigger == wfsim_engine::arcanes_data::ArcTrigger::Passive {
+                continue;
+            }
             let owner = if b.owner.is_empty() { arcane.id.clone() } else { b.owner.clone() };
             if seen.contains(&owner) {
                 continue;
@@ -1199,7 +1214,7 @@ fn enumerate_buffs(
                 grants: grants.join(" + "),
                 max_stacks,
                 kind: if max_stacks > 1 { "stacking" } else { "toggle" },
-                default_stacks: max_stacks,
+                default_stacks: 0,
                 default_locked: false,
                 permanent: false,
             });
@@ -1227,10 +1242,10 @@ fn evo_buffs(evo_ids: &[String]) -> Vec<BuffMeta> {
                 grants: String::new(),
                 max_stacks: c.max_stacks,
                 kind: "stacking",
-                // Start FULL, like every other stacking buff in the
-                // product; only permanent stacks (no trigger, no decay)
-                // default LOCKED, because they cannot move either way.
-                default_stacks: c.max_stacks,
+                // A PERMANENT buff (no trigger, no decay) survives a lull,
+                // so it starts full; every timed one is earned from zero.
+                // This is the whole of the rule, in one expression.
+                default_stacks: if c.permanent { c.max_stacks } else { 0 },
                 default_locked: false,
                 permanent: c.permanent,
             })
@@ -1628,6 +1643,33 @@ pub fn panel_json(v: &Value) -> Value {
                     });
                 }
             }
+        }
+    }
+    // A `tenno_scaled` ARCANE contributes without being a mod, a bucket or a
+    // buff card: its value is a WARFRAME STAT read off the fight's Tenno, so
+    // there is no stack to configure and nothing in the resolved panel to
+    // attribute it to. It gets a conditional line — the one channel for "this
+    // pays, and here is what decides it" — because a contribution the sim
+    // applies and the panel never mentions is exactly the disagreement the
+    // rest of this function exists to prevent (user, 2026-08-02).
+    {
+        let arc = arcane_fx_for(v, info, &forms_list[0].2, policy);
+        let t = tenno_from(v, info);
+        for b in arc.buffs.iter() {
+            if b.trigger != wfsim_engine::arcanes_data::ArcTrigger::Passive {
+                continue;
+            }
+            let what = match b.grant {
+                wfsim_engine::arcanes_data::ArcGrant::Multishot => "Multishot",
+                _ => "Base Damage",
+            };
+            conditionals.push(json!({
+                "mod": prettify(&b.owner),
+                "desc": format!("{} {what}", fpct(b.per_stack)),
+                "active": true,
+                "why": format!("from your Warframe — armor {:.0}, max energy {:.0}. Set them in the Tenno block; with no frame this pays nothing",
+                    t.armor, t.energy),
+            }));
         }
     }
     // Non-mod sources: the CHOSEN evolutions (data-driven). Flat base
@@ -3106,7 +3148,13 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // ---- final-round contract (user, 2026-07-28): the last round is
     // guaranteed `finalists` candidates × `final_runs` runs; everything
     // before only whittles the field down (schedule + adaptive racing).
-    let final_runs = get_u32(v, "final_runs", 100).clamp(1, 100_000);
+    //
+    // `final_runs` FALLS BACK TO THE SCENARIO'S `runs` (user, 2026-08-02).
+    // How hard you measure is the scenario's question and it is already
+    // answered there — a second default here is how a winner gets crowned at a
+    // precision the replay never used. The web client stops sending its own
+    // and this is what it lands on.
+    let final_runs = get_u32(v, "final_runs", get_u32(v, "runs", 100)).clamp(1, 100_000);
     let finalists = get_u32(v, "finalists", 10).clamp(1, 100) as usize;
 
     // ---- scenario (reuse the Sim inputs) ----

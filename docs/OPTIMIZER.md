@@ -68,26 +68,31 @@ Forma count is not free in-game; later it can become a secondary
 objective or constraint (e.g. "best build within 3 Forma") — but it
 never affects the damage ranking of legal builds.
 
-## 3. Conditional-effect policy — assumed-max by default
+## 3. Conditional-effect policy — the search runs EMERGENT
 
 Stacking/triggered effects (Galvanized Diffusion's on-kill multishot
 stacks, Galvanized Shot's CO stacks, Fevered Frenzy's 20, Frenzy's
 headshot buff, …) evaluate under one of three policies:
 
-1. **`assumed_max` (default):** every conditional buff at full
-   stacks/100% uptime — the community "assume max stacks" convention. This is
-   what today's `LockedBuff` mechanism in `engine::dummy` implements
-   (Frenzy locked, Fevered Frenzy at 20); it generalizes to a
-   per-buff map.
-2. **`configured`:** explicit per-buff stack counts / uptimes (e.g.
-   Galvanized Diffusion held at 2 stacks) for what-if comparisons.
-3. **`emergent` (future):** no assumption — stacks rise and decay from
-   the simulated timeline itself (kills grant, Galvanized decay drops
-   one stack and resets duration, deaths clear), so sparse-kill
-   scenarios price the Galvanized family honestly.
+1. **`assumed_max`:** every conditional buff at full stacks / 100% uptime —
+   the community "assume max stacks" convention. This is what the PANEL shows:
+   a build's ceiling.
+2. **`configured`:** explicit per-buff stack counts / uptimes (the buff
+   cards) for what-if comparisons.
+3. **`emergent`:** no assumption — stacks rise and decay from the simulated
+   timeline itself (kills grant, Galvanized decay drops one stack and resets
+   duration, deaths clear). **What the search and the sim both run.**
 
 The policy is part of the evaluation cache key (§1), since it changes
 results.
+
+Emergent is not a detail here — it is most of the ranking. Every timed buff
+now STARTS AT ZERO ([`BUFFS.md`](BUFFS.md) §Activation policy), so a build that
+depends on on-kill stacks is priced by whether this fight can actually produce
+them. Against a Lv 9999 Steel Path target that dies twice a minute, it cannot,
+and the Galvanized family is worth a fraction of its card — which is the whole
+reason the optimizer should be trusted to rank a boss build differently from a
+horde build. Measured, both directions: MEASUREMENTS M27.
 
 ## 4. Evaluation
 
@@ -132,3 +137,20 @@ Implemented in `optimizer/` (`wfsim-optimizer` binary):
   result-shaped. A browser cancel TERMINATES the worker, so a leaderboard
   that has not already left it cannot be recovered — this is what makes a
   cancelled run show its ranking instead of an empty page.
+
+## The optimizer configures NOTHING (2026-08-02)
+
+Its tab shows the fight, shows the scope, and runs them. Every number that
+decides the search comes from somewhere that already owns it:
+
+| what | where it comes from | why not here |
+|---|---|---|
+| the fight | the SIMULATOR's scenario, read-only | a preset is edited in exactly one place |
+| final runs | the scenario's `runs` | how hard you measure is the scenario's question; a second box crowns a winner at a precision the replay never used |
+| finalists | fixed at **10** | it is how many answers a person reads, not a property of a search — nobody ever tuned it, and a knob nobody turns only disagrees with itself across presets |
+| CPU threads | auto (cores − 2), low priority | a property of the MACHINE, not of a search; it has no control until there is a machine-settings surface, and a stored value is still honoured |
+
+The optimizer preset therefore holds the SCOPE and nothing else. An older one
+may still carry `final_runs`/`finalists`; they are deliberately ignored on load
+rather than migrated — reading them back would resurrect the second opinion
+this removed.
