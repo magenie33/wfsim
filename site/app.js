@@ -1327,6 +1327,20 @@ function renderRivenCard() {
 // there is no save button — the same contract as everywhere else.
 const markRivenDirty = () => { if (typeof markPresetDirty === "function") markPresetDirty(); saveRivenSoon(); };
 let rivenSaveTimer = null;
+// A riven is CONSUMED by the builder (it is a mod in the pool), so deleting
+// one has a consequence no preset delete has: a slot can be left pointing at
+// an id that no longer exists. Nothing downstream would say so — the slot
+// renders blank and the panel quietly prices a build with a hole in it.
+function pruneDanglingRivens() {
+  let hit = false;
+  slots.forEach((s) => {
+    if (isRivenId(s.mod) && !modById(s.mod)) {
+      s.mod = null; s.rank = null; hit = true;
+    }
+  });
+  if (hit) { renderMods(); refreshPanel(); markPresetDirty(); }
+}
+
 function saveRivenSoon() {
   clearTimeout(rivenSaveTimer);
   rivenSaveTimer = setTimeout(() => {
@@ -1374,9 +1388,10 @@ function renderRivenPresetBar() {
     },
     blank: blankRiven,
     // Zero rivens is legal, so the last one can be deleted — and when it is,
-    // the whole editor has to stand down, not just this bar.
+    // the whole editor has to stand down, not just this bar. A delete or a
+    // rename also changes the POOL, so the builder's slots are re-checked.
     optional: true,
-    rerender: () => renderRivens(),
+    rerender: () => { renderRivens(); pruneDanglingRivens(); },
   });
 }
 
