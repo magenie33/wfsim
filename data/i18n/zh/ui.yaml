@@ -193,6 +193,8 @@ ui:
   "the scenario the simulator is set to": 模拟器当前选中的场景
   "current": 当前
   "Ctrl+Z undoes the last change": Ctrl+Z 撤销上一步改动
+  "undo (Ctrl+Z)": 撤销（Ctrl+Z）
+  "redo (Ctrl+Shift+Z)": 重做（Ctrl+Shift+Z）
   "save as a new build": 存为一套新配装
   "nothing to undo": 没有可撤销的操作
   "nothing to redo": 没有可重做的操作

@@ -618,3 +618,12 @@ label.check input{width:auto}
   border-radius:8px;padding:4px 8px;font:inherit;font-size:14px;width:14em}
 .cu-import{flex-basis:100%;margin-top:6px}
 .rv-none{color:var(--muted);font-size:13px;padding:10px 2px}
+
+/* Undo/redo, where the change happened — the shortcut alone hid the fact
+   that there IS a way back. Dimmed to zero when there is nothing to undo,
+   so the pair never invites a click that does nothing. */
+.pundo{display:inline-flex;gap:2px;margin-left:auto;padding-left:8px}
+.pundo .pop{background:transparent;border:1px solid transparent;border-radius:6px;
+  color:var(--muted);cursor:pointer;font-size:13px;line-height:1;padding:3px 6px}
+.pundo .pop:hover:not([disabled]){color:var(--text);border-color:var(--line)}
+.pundo .pop[disabled]{opacity:.3;cursor:default}

@@ -1387,6 +1387,7 @@ function renderRivenTools() {
   if (!cur) {
     box.innerHTML =
       `<button class="cu-btn cu-new">+ ${escHtml(tr("new riven"))}</button>${impBtn}` +
+      `<span class="cu-ops">${undoButtons(RIVENS)}</span>` +
       `<div class="cu-import" hidden></div>`;
   } else {
     const official = (rivenNames[cur.name] || {}).name || "";
@@ -1398,8 +1399,10 @@ function renderRivenTools() {
       `<button class="cu-btn cu-dup" title="${escHtml(tr("duplicate"))}">⧉</button>` +
       `<button class="cu-btn cu-ren" title="${escHtml(tr("rename"))}">✎</button>` +
       `<button class="cu-btn cu-del" title="${escHtml(tr("delete"))}">✕</button>` +
+      undoButtons(RIVENS) +
       `</span><div class="cu-import" hidden></div>`;
   }
+  wireUndoButtons(box, RIVENS);
   const q = (s) => box.querySelector(s);
   const openIt = (name) => {
     activeRiven = name;
@@ -1681,6 +1684,50 @@ function restorePresetSnapshot(s) {
   } finally {
     undoSuspended = false;
   }
+}
+
+// The stack is ONE timeline, but a button lives on ONE collection, so it acts
+// on that collection's most recent step (user, 2026-08-02: undo has to be
+// visible, not only a shortcut). Clicking ↶ on the riven toolbar undoing a
+// scenario edit would be the shortcut's behaviour wearing a button's clothes.
+// Ctrl+Z stays global — that is what a global key should mean.
+//
+// Filtering is safe because every entry is a whole snapshot of ONE collection:
+// restoring an older one for a domain does not depend on what other domains
+// did in between.
+const lastIn = (stack, d, w) => {
+  for (let i = stack.length - 1; i >= 0; i--) {
+    if (stack[i].domain === d && stack[i].weapon === w) return i;
+  }
+  return -1;
+};
+const canUndoIn = (d) => lastIn(undoStack, d, presetWeapon()) >= 0;
+const canRedoIn = (d) => lastIn(redoStack, d, presetWeapon()) >= 0;
+
+function stepIn(from, to, d, label) {
+  const w = presetWeapon();
+  const i = lastIn(from, d, w);
+  if (i < 0) return;
+  const step = from.splice(i, 1)[0];
+  to.push(presetSnapshotOf(d, w));
+  restorePresetSnapshot(step);
+  presetToast(`${tr(label)} · ${tr(PRESET_LABELS[d] || d)}`);
+}
+const undoIn = (d) => stepIn(undoStack, redoStack, d, "undone");
+const redoIn = (d) => stepIn(redoStack, undoStack, d, "redone");
+
+// The pair of buttons, for any bar that wants to show them.
+const undoButtons = (d) =>
+  `<span class="pundo">` +
+  `<button class="pop pundo-u" ${canUndoIn(d) ? "" : "disabled"} title="${escHtml(tr("undo (Ctrl+Z)"))}">↶</button>` +
+  `<button class="pop pundo-r" ${canRedoIn(d) ? "" : "disabled"} title="${escHtml(tr("redo (Ctrl+Shift+Z)"))}">↷</button>` +
+  `</span>`;
+
+// Wire them wherever they were drawn.
+function wireUndoButtons(host, d) {
+  const u = host.querySelector(".pundo-u"), r = host.querySelector(".pundo-r");
+  if (u) u.onclick = (e) => { e.stopPropagation(); undoIn(d); };
+  if (r) r.onclick = (e) => { e.stopPropagation(); redoIn(d); };
 }
 
 function undoPreset() {
@@ -2104,7 +2151,9 @@ function renderPresetBarIn(bar, cfg) {
     (presetSources(cfg.domain, presetWeapon()).length
       ? `<span class="pchip imp" title="${escHtml(tr("copy one from another weapon"))}">⇤ ${escHtml(tr("import"))}</span>`
       : "") +
+    undoButtons(cfg.domain) +
     `<div class="pimport" hidden></div>`;
+  wireUndoButtons(bar, cfg.domain);
 
   // Typing re-renders the bar (chips re-filter), so hand focus back.
   const filt = bar.querySelector(".pfilter");
