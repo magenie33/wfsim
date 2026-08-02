@@ -2109,11 +2109,17 @@ function qrMatrix(text) {
 // it at its natural size is the difference between a picture of a QR and one
 // that scans. Quiet zone six, not the spec's minimum four — a reference
 // encoder's own output fails to scan at four on a dense symbol.
-function qrCanvas(text, targetPx) {
+// EIGHT device pixels per module, always — the size is a consequence, not a
+// setting. Measured against a real decoder after the resizing a chat app
+// does: at 4 px a card only reads at full size, at 6 it survives a 0.66x
+// shrink, at 8 it still reads after 0.5x AND JPEG 80. A QR that only scans
+// from the original file is a QR nobody scans.
+const QR_MODULE_PX = 8;
+function qrCanvas(text) {
   const m = qrMatrix(text);
   if (!m) return null;
   const n = m.length, quiet = 6;
-  const modulePx = Math.max(2, Math.round(targetPx / (n + quiet * 2)));
+  const modulePx = QR_MODULE_PX;
   const side = (n + quiet * 2) * modulePx;
   const c = document.createElement("canvas");
   c.width = side; c.height = side;
@@ -2143,7 +2149,7 @@ function qrCanvas(text, targetPx) {
 // card is a thing that travels, and a preview host or a localhost in the
 // corner of it would be wrong everywhere it landed (user, 2026-08-02).
 const SITE_HOST = "wfsim.app";
-const CARD_W = 900, CARD_H = 560, CARD_DPR = 2;
+const CARD_W = 1000, CARD_DPR = 2;
 
 const loadImg = (src) => new Promise((res) => {
   if (!src) return res(null);
@@ -2162,22 +2168,31 @@ function drawFit(g, im, x, y, w, h) {
 }
 
 async function drawShareCard(canvas, url) {
-  // The card is exactly as tall as it needs to be. A fixed height left a band
-  // of empty background above the number on a build with few mods, which
-  // reads as a rendering fault rather than as space.
-  const named0 = slots.map((s, i) => ({ m: s.mod && modById(s.mod), i })).filter((z) => z.m);
-  const perCol0 = Math.ceil(named0.length / 3) || 1;
-  const arc0 = (arcanes || []).filter((a) => a && a !== "none");
-  const rid0 = slots.map((s) => s.mod).find(isRivenId);
-  const rlines0 = rid0 && ((rivenNames[String(rid0).slice(RIVEN_PREFIX.length)] || {}).lines || []);
   const W = CARD_W;
-  const H = 104 + 88 + 26 + perCol0 * 24 + 8
-    + (arc0.length ? 24 : 0) + ((rlines0 || []).length ? 24 : 0) + 176;
-  // Twice the pixels: the QR needs whole device pixels per module, and the
-  // picture is looked at full size in a chat.
+  // The QR is built first: its size is fixed by its module count and cannot be
+  // squeezed, so the layout is built around it rather than the other way.
+  const qc = qrCanvas(url);
+  const qs = qc ? qc.width / CARD_DPR : 0;
+
+  const named = slots.map((s, i) => ({ m: s.mod && modById(s.mod), i })).filter((z) => z.m);
+  const arc = (arcanes || []).filter((a) => a && a !== "none")
+    .map((a) => (arcaneById(a) || {}).name || a);
+  const rid = slots.map((s) => s.mod).find(isRivenId);
+  const rlines = (rid && ((rivenNames[String(rid).slice(RIVEN_PREFIX.length)] || {}).lines || [])) || [];
+
+  // Below the mod strip the card is TWO COLUMNS: everything a reader reads on
+  // the left, the code on the right. One column under a 340px square left a
+  // band of empty background as tall as the code itself.
+  const NAME_COLS = 2;
+  const perCol = Math.ceil(named.length / NAME_COLS) || 1;
+  const colTop = 104 + 88 + 26;
+  const leftH = perCol * 24 + (arc.length ? 24 : 0) + (rlines.length ? 24 : 0) + 24 + 78;
+  const H = colTop + Math.max(leftH, qs + 40) + 22;
+
   canvas.width = W * CARD_DPR; canvas.height = H * CARD_DPR;
   const g = canvas.getContext("2d");
   g.scale(CARD_DPR, CARD_DPR);
+
   const css = getComputedStyle(document.documentElement);
   const v = (n, fallback) => (css.getPropertyValue(n) || "").trim() || fallback;
   const bg = v("--surface", "#171a21"), fg = v("--text", "#f2f4f8");
@@ -2188,13 +2203,13 @@ async function drawShareCard(canvas, url) {
 
   const w = weaponInfo($("weapon").value);
   const art = await loadImg(IMG(w.image));
-  // The weapon's own art, large and faint behind the lower right — recognisable
+  // The weapon's own art, large and faint behind the lower left — recognisable
   // at a glance in a chat scroll, and never in the way of the text.
   if (art) {
     const h = 300, wid = h * (art.width / art.height || 2);
     g.save();
     g.globalAlpha = 0.09;
-    g.drawImage(art, W - wid + 60, H - h - 30, wid, h);
+    g.drawImage(art, 20, H - h - 10, wid, h);
     g.restore();
   }
 
@@ -2228,69 +2243,59 @@ async function drawShareCard(canvas, url) {
     return m ? loadImg(IMG(m.image)) : null;
   }));
   const pols = await Promise.all(slots.map((s) => (s.pol ? loadImg(POL(s.pol)) : null)));
-  let x = 36, y = 104;
   slots.forEach((s, i) => {
     const m = s.mod && modById(s.mod);
-    const cx = x + i * (CW + GAP);
+    const cx = 36 + i * (CW + GAP), cy = 104;
     if (!m) return;
-    if (imgs[i]) drawFit(g, imgs[i], cx, y, CW, CH);
+    if (imgs[i]) drawFit(g, imgs[i], cx, cy, CW, CH);
     else {
-      // Only reachable if the art is missing from site/img/, which the build
-      // refuses to allow — a named tile beats a blank box either way.
       g.strokeStyle = line;
-      g.strokeRect(cx + .5, y + .5, CW - 1, CH - 1);
+      g.strokeRect(cx + .5, cy + .5, CW - 1, CH - 1);
       g.fillStyle = dim; g.font = F(12);
       g.textAlign = "center";
-      g.fillText(m.name.slice(0, 8), cx + CW / 2, y + CH / 2 + 4);
+      g.fillText(m.name.slice(0, 8), cx + CW / 2, cy + CH / 2 + 4);
       g.textAlign = "left";
     }
-    // Polarity badge, on the card it belongs to.
     if (pols[i]) {
       g.fillStyle = bg;
-      g.globalAlpha = .75; g.fillRect(cx, y, 20, 20); g.globalAlpha = 1;
-      drawFit(g, pols[i], cx + 3, y + 3, 14, 14);
+      g.globalAlpha = .75; g.fillRect(cx, cy, 20, 20); g.globalAlpha = 1;
+      drawFit(g, pols[i], cx + 3, cy + 3, 14, 14);
     }
   });
 
-  // ---- the names, because a 88px card is art, not text -----------------
-  y += CH + 26;
+  // ---- left column: names, then the two things names cannot say --------
+  let y = colTop;
   g.font = F(15);
-  const named = named0, perCol = perCol0;
   named.forEach((r, n) => {
     const col = Math.floor(n / perCol), row = n % perCol;
     g.fillStyle = fg;
     const tag = r.i === EXILUS ? "E" : String(r.i + 1);
     let label = `${tag}. ${r.m.name}`;
-    if (label.length > 24) label = label.slice(0, 23) + "…";
-    g.fillText(label, 36 + col * 290, y + row * 24);
+    if (label.length > 22) label = label.slice(0, 21) + "…";
+    g.fillText(label, 36 + col * 280, y + row * 24);
   });
   y += perCol * 24 + 8;
-
-  // ---- the two things a reader cannot infer from mod names -------------
-  const arc = (arcanes || []).filter((a) => a && a !== "none")
-    .map((a) => (arcaneById(a) || {}).name || a);
   if (arc.length) {
     g.fillStyle = fg2; g.font = F(15);
     g.fillText(`${tr("Arcanes")}: ${arc.join(" · ")}`, 36, y);
     y += 24;
   }
-  const rid = slots.map((s) => s.mod).find(isRivenId);
-  const rmeta = rid && rivenNames[String(rid).slice(RIVEN_PREFIX.length)];
-  if (rmeta && (rmeta.lines || []).length) {
+  if (rlines.length) {
     g.fillStyle = fg2; g.font = F(14);
-    g.fillText(rmeta.lines.map((z) => tf(z)).join("   "), 36, y);
+    g.fillText(rlines.map((z) => tf(z)).join("   "), 36, y);
     y += 24;
   }
 
   // ---- the number, in the app's own units and its own formatting -------
-  // `kpm(score, duration)` and `sig2`, exactly as the results panel: the
-  // score counts the fraction of a kill too, so a build that drains 0.28% of
-  // one enemy reads 0.0028 rather than the 0.00 that `kills` alone produced.
+  // `kpm(score, duration)` and `sig2`, exactly as the results panel: the score
+  // counts the fraction of a kill too, so a build that drains 0.28% of one
+  // enemy reads 0.0028 rather than the 0.00 that `kills` alone produced.
   const p = loadPresetList(BUILDS).find((z) => z.name === activePreset);
   const r = p && p.lastResult && p.lastResult.r;
-  y = H - 176;
+  const lineEnd = qs ? W - qs - 50 : W - 36;
+  y += 8;
   g.strokeStyle = line;
-  g.beginPath(); g.moveTo(36, y); g.lineTo(W - 36, y); g.stroke();
+  g.beginPath(); g.moveTo(36, y); g.lineTo(lineEnd, y); g.stroke();
   y += 46;
   if (r) {
     const byDps = sim.metric === "dps";
@@ -2301,9 +2306,9 @@ async function drawShareCard(canvas, url) {
     g.fillStyle = dim; g.font = F(15);
     const en = (META.enemies || []).find((e) => e.id === sim.enemy) || {};
     // The fight AND the technique (user, 2026-08-02). Which form, how often
-    // the head is hit and whether aim is held change the number as much as
-    // the enemy does. Buffs are deliberately absent: they follow from the
-    // build, and a card listing eleven of them would say nothing.
+    // the head is hit and whether aim is held change the number as much as the
+    // enemy does. Buffs are deliberately absent: they follow from the build,
+    // and a card listing eleven of them would say nothing.
     const formLabel = (simFormOpts(w).find(([id]) => id === sim.form) || [])[1];
     g.fillText([
       en.name || sim.enemy,
@@ -2316,25 +2321,23 @@ async function drawShareCard(canvas, url) {
     ].filter(Boolean).join(" · "), 36, y + 25);
   }
 
-  // The QR, and the address. A card is pasted into a chat and read on a
-  // PHONE, which cannot click a picture — without this the link and the
-  // image are two separate things to send (user, 2026-08-02).
-  const qc = qrCanvas(url, 150 * CARD_DPR);
-  const qs = qc ? qc.width / CARD_DPR : 0;
-  const qx = W - 30 - qs, qy = H - 14 - qs;
+  // ---- right column: the code, and the address -------------------------
+  // A card is pasted into a chat and read on a PHONE, which cannot click a
+  // picture — without this the link and the image are two things to send.
   if (qc) {
+    const qx = W - 26 - qs, qy = colTop;
     g.imageSmoothingEnabled = false;
     g.drawImage(qc, qx, qy, qs, qs);
+    g.textAlign = "center";
+    g.font = F(21, "600");
+    const cx = qx + qs / 2;
+    const sw = g.measureText("Sim").width, ww = g.measureText("WF").width;
+    g.fillStyle = gold; g.fillText("WF", cx - sw / 2, qy + qs + 26);
+    g.fillStyle = fg; g.fillText("Sim", cx + ww / 2, qy + qs + 26);
+    g.fillStyle = dim; g.font = F(14);
+    g.fillText(SITE_HOST, cx, qy + qs + 46);
+    g.textAlign = "left";
   }
-  g.textAlign = "right";
-  const tx = qc ? qx - 14 : W - 36;
-  g.font = F(21, "600");
-  g.fillStyle = fg; g.fillText("Sim", tx, H - 44);
-  const sw = g.measureText("Sim").width;
-  g.fillStyle = gold; g.fillText("WF", tx - sw, H - 44);
-  g.fillStyle = dim; g.font = F(14);
-  g.fillText(SITE_HOST, tx, H - 22);
-  g.textAlign = "left";
 }
 
 // ---- Presets ----------------------------------------------------------

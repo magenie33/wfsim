@@ -179,7 +179,11 @@ around (decision 2026-07-31).
   VERIFIED against a reference encoder's matrices and decoded back out of the
   rendered PNG by an independent decoder; three bugs in it (a reversed
   generator polynomial, transposed format bits, alignment patterns skipped
-  where they cross the timing line) only showed up under that check. IDs travel as their own stable slugs, never as indices into a
+  where they cross the timing line) only showed up under that check. It is
+  drawn at a FIXED 8 device pixels per module — measured, not chosen: at 4 the
+  card only scans at full size, at 6 it survives a 0.66x shrink, at 8 it still
+  reads at 1080px wide after JPEG 60, which is what a chat app hands back.
+  The code's size is therefore an input to the layout, not an output of it. IDs travel as their own stable slugs, never as indices into a
   table: a table would have to stay append-only forever or silently reinterpret
   every link already posted. It rides the QUERY, not the fragment — a fragment
   never reaches a crawler and these links are meant to be posted. The card
