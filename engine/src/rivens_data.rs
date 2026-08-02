@@ -837,7 +837,7 @@ mod tests {
     /// every riven comparison downstream would be wrong in the same direction.
     #[test]
     fn a_rivens_damage_joins_serrations_bucket_and_does_not_multiply_it() {
-        use crate::loadout::{resolve_with, StackPolicy, WeaponBase};
+        use crate::loadout::{resolve, StackPolicy, WeaponBase};
         let base = WeaponBase::from_data("torid", true, &[]);
         let serration = crate::mods_data::class_pool("rifle")
             .into_iter()
@@ -847,7 +847,7 @@ mod tests {
         // accidental match cannot be luck.
         let riven = spec(&["damage", "multishot"], None, 8).to_mod_def("riven:x", 1.3);
         let bucket = |mods: &[&ModDef]| {
-            resolve_with(&base, mods, StackPolicy::AssumedMax, true).base_damage_bonus
+            resolve(&base, mods, StackPolicy::AssumedMax).base_damage_bonus
         };
 
         let s = bucket(&[&serration]);

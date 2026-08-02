@@ -325,12 +325,16 @@ let evoSel = { 1: null, 2: null, 3: null, 4: null };
 // Sim scenario + per-buff config. Seeded from META.defaults in init().
 // `buffs` maps buff id -> { stacks, locked } (section 2); the buff SET comes
 // from /api/panel and syncs as the build changes.
-// `aiming`: is the player holding aim? Gates the while_aiming mod effects
-// (Galvanized Crosshairs / Scope, Argon Scope, Sharpened Bullets, Bladed
-// Rounds, Pressurized Magazine, the Catalyzers). Defaults TRUE because that is
-// what the sim silently assumed before the knob existed, so no stored preset
-// changes meaning.
+// THE TENNO's fields (`aiming`, `invisible`, `airborne`, `wf_armor`,
+// `wf_energy`) describe the fight's other actor — who is holding the weapon
+// and what they are doing. Every `condition:` on a mod card is a question
+// about them, and the arcanes that scale off a Warframe read the two stats.
+// They live flat on `sim` like every other scenario field; the engine is
+// where they become a Tenno (`data/tenno/default.yaml` + these overrides).
+// `aiming` defaults TRUE because that is what the sim silently assumed before
+// the knob existed, so no stored preset changes meaning.
 let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, aiming: true,
+  invisible: false, airborne: false, wf_armor: 0, wf_energy: 0,
   infinite_ammo: true, metric: "kpm", duration: 300, runs: 100, form: "default", buffs: {} };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
@@ -489,6 +493,8 @@ async function init() {
   // declaration above set it. The server owns every default; this copies them.
   sim = { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
     headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
+    invisible: !!d.invisible, airborne: !!d.airborne,
+    wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
     infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
     duration: d.duration, runs: d.runs, form: d.form, buffs: {} };
   optRun = { ...optRun, final_runs: d.final_runs ?? optRun.final_runs,
@@ -1779,6 +1785,8 @@ async function importShare(code) {
   const scState = {
     enemy: d.enemy, level: d.level, steel_path: d.steel_path,
     headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
+    invisible: !!d.invisible, airborne: !!d.airborne,
+    wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
     infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
     duration: d.duration, runs: d.runs, form: d.form, buffs: {},
     ...(data.sc || {}),
@@ -2323,6 +2331,8 @@ async function drawShareCard(canvas, url) {
       formLabel,
       `${sim.headshot_pct}% ${tr("headshots")}`,
       (w.sentinel || sim.aiming) ? tr("Aiming") : tr("hip-fire"),
+      ...(sim.invisible ? [tr("Invisible")] : []),
+      ...(sim.airborne ? [tr("Airborne")] : []),
       sim.infinite_ammo === false ? tr("finite ammo") : null,
     ].filter(Boolean).join(" · "), 36, y + 25);
   }
@@ -3449,8 +3459,28 @@ function renderMods() {
 // The current build as a request payload — shared by /api/panel and
 // /api/simulate so the stats panel and the sim always agree on the loadout.
 // Mods keep slot order (elements are position-sensitive).
+//
+// It carries the TENNO as well as the weapon, because half of what a build is
+// worth is a question about the player: a mod gated `while_invisible` pays or
+// does not, and Primary Bulwark is worth +500% or nothing depending on the
+// frame's armor. The panel used to resolve against the NEUTRAL player while
+// the sim resolved against the fight's — so the panel offered a buff card the
+// sim never ran, and hid a contribution the sim was paying. One player, both
+// answers (user, 2026-08-02: "这个目标也要在场上").
+// The scenario fields that describe the PLAYER rather than the fight.
+const TENNO_KEYS = ["aiming", "invisible", "airborne", "wf_armor", "wf_energy"];
+
+// The fight's player, as request fields. Its own function because three
+// callers need exactly this subset and a fourth will: it is the actor, not the
+// scenario, and the enemy half of the scenario has no business travelling with
+// a panel request.
+function tennoPayload() {
+  return Object.fromEntries(TENNO_KEYS.map((k) => [k, sim[k]]));
+}
+
 function buildPayload() {
   return {
+    ...tennoPayload(),
     weapon: $("weapon").value,
     evolutions: Object.values(evoSel).filter(Boolean),
     // One per pool, in the weapon's pool order — the server reads either
@@ -3743,6 +3773,7 @@ function gainScenario() {
 let gainAxis = { kind: "mods", idx: 0 };
 const gainKey = () => JSON.stringify([gainAxis, buildPayload(), gainPrefs,
   sim.enemy, sim.level, sim.steel_path, sim.headshot_pct, sim.aiming,
+  sim.invisible, sim.airborne, sim.wf_armor, sim.wf_energy,
   sim.infinite_ammo, sim.duration, sim.runs, sim.form, sim.deployment]);
 
 const famOf = (id) => (modById(id) || {}).family || null;
@@ -4485,13 +4516,24 @@ function renderScenarioFields(ids, opts = {}) {
     if (pick && opts.readonly) pick.disabled = true;
   }
 
-  // ---- 2. TECHNIQUE: what the PLAYER does ------------------------------
+  // ---- 2. THE TENNO: who is holding the weapon, and what they are doing --
+  // Block 1 is the other actor; this is you. It grew from "technique" when
+  // the engine got a Tenno (user, 2026-08-02): the form you fire, how you
+  // fire it, the states a mod card gates on, and the Warframe behind it are
+  // all one answer to "who is shooting". A neutral frame wears nothing and is
+  // doing nothing, which is why the states are off and the stats are 0 —
+  // and why the mods and arcanes that read them contribute nothing until you
+  // say otherwise, on the panel, in the sim and in the search alike.
   const formOpts = simFormOpts(w);
   if (ids.technique) {
     $(ids.technique).innerHTML = `
       ${formField(formOpts, sim.form)}
       ${aimField(w, sim)}
-      <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>`;
+      <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>
+      <label class="check" title="${escHtml(tr("Warframe state: mods that only pay while Invisible (Spectral Serration) grant nothing when this is off"))}"><input type="checkbox" data-k="invisible"${sim.invisible ? " checked" : ""}> ${escHtml(tr("Invisible"))}</label>
+      <label class="check" title="${escHtml(tr("Warframe state: what a card means by \"while Airborne\""))}"><input type="checkbox" data-k="airborne"${sim.airborne ? " checked" : ""}> ${escHtml(tr("Airborne"))}</label>
+      <label title="${escHtml(tr("your Warframe's armor, buffs included — Primary Bulwark pays +1% damage per point past 1,000. 0 = no frame"))}">${escHtml(tr("WF Armor"))} <input type="number" data-k="wf_armor" min="0" max="100000" step="1" value="${sim.wf_armor || 0}"></label>
+      <label title="${escHtml(tr("your Warframe's MAX energy — Primary Overcharge turns 35% of it into multishot. 0 = no frame"))}">${escHtml(tr("WF Energy"))} <input type="number" data-k="wf_energy" min="0" max="100000" step="1" value="${sim.wf_energy || 0}"></label>`;
   }
 
   // ---- 3. LIMITS: what the simulation is allowed to assume -------------
@@ -4533,6 +4575,10 @@ function renderScenarioFields(ids, opts = {}) {
         else if (el.type === "number") sim[k] = Number(el.value);
         else sim[k] = el.value;
         if (k === "enemy") $("arena-ename").textContent = (enemies.find((e) => e.id === sim.enemy) || {}).name || "Enemy";
+        // A TENNO field changes what the BUILD is worth, not just what the
+        // fight looks like — the panel resolves against the player now, so it
+        // has to be asked again. The enemy half changes no panel number.
+        if (TENNO_KEYS.includes(k)) refreshPanel();
         // A sim knob belongs to BOTH: the build remembers what it was last
         // tested with, and the scenario library keeps the fight itself.
         markPresetDirty();
@@ -5816,7 +5862,12 @@ async function runOptimize() {
       evolutions,
       exilus: opt.exilus,
       enemy: sim.enemy, level: sim.level, steel_path: sim.steel_path,
+      // The TENNO travels whole. The optimizer scores builds under the same
+      // player the simulator will replay them as — a field left behind here
+      // crowns a build under a fight the replay never runs.
       headshot_pct: sim.headshot_pct, aiming: sim.aiming,
+      invisible: sim.invisible, airborne: sim.airborne,
+      wf_armor: sim.wf_armor, wf_energy: sim.wf_energy,
       infinite_ammo: sim.infinite_ammo, duration: sim.duration,
       form: sim.form,
       final_runs: optRun.final_runs, finalists: optRun.finalists,

@@ -82,8 +82,15 @@ impl CondBucket {
 
 /// A player STATE a mod can be conditional on. One variant per field of
 /// [`crate::tenno_data::TennoState`] — the two are meant to be read together.
+///
+/// `Aiming` is in here rather than beside it: it was a bool threaded through
+/// `resolve` while the other states lived on the Tenno, which is two homes for
+/// one kind of fact and two places to remember when the third state lands
+/// (user, 2026-08-02). A card says "while X"; the fight says who is doing what;
+/// one enum joins them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TennoCondition {
+    Aiming,
     Invisible,
     Airborne,
 }
@@ -92,6 +99,7 @@ impl TennoCondition {
     /// Is this condition true of `t`?
     pub fn holds(self, t: &crate::tenno_data::Tenno) -> bool {
         match self {
+            TennoCondition::Aiming => t.state.aiming,
             TennoCondition::Invisible => t.state.invisible,
             TennoCondition::Airborne => t.state.airborne,
         }
@@ -99,6 +107,7 @@ impl TennoCondition {
 
     pub fn label(self) -> &'static str {
         match self {
+            TennoCondition::Aiming => "while aiming",
             TennoCondition::Invisible => "while Invisible",
             TennoCondition::Airborne => "while Airborne",
         }
@@ -107,7 +116,7 @@ impl TennoCondition {
 
 /// One resolved effect of a mod at its equipped rank.
 ///
-/// NOT `Copy`: [`ModEffect::WhileAiming`] nests an effect, which needs
+/// NOT `Copy`: [`ModEffect::WhileTenno`] nests an effect, which needs
 /// indirection. Every arm still binds only `Copy` payloads, so `match *e`
 /// works unchanged.
 #[derive(Debug, Clone, PartialEq)]
@@ -202,15 +211,10 @@ pub enum ModEffect {
     /// `aiming = false` and the wrapped effect contributes nothing at all.
     /// Wrapping rather than adding a flag to each variant keeps every other
     /// arm of the resolver unaware that aiming exists.
-    WhileAiming(Box<ModEffect>),
-    /// Gated on what the PLAYER is doing — "while Invisible", "while
-    /// Airborne". `WhileAiming` is the same idea and came first; this is the
-    /// general form, asked of [`crate::tenno_data::Tenno`] rather than of a
-    /// bool threaded through resolve.
-    ///
-    /// The neutral Tenno does none of these, so today every one of them
-    /// resolves to nothing — which is the point. A frame that turns one on
-    /// makes the mod pay with no change here (user, 2026-08-02).
+    /// Gated on what the PLAYER is doing — "while aiming", "while Invisible",
+    /// "while Airborne". Asked of [`crate::tenno_data::Tenno`], the fight's
+    /// second actor, so a card's condition and the fight's state meet in one
+    /// place instead of aiming having its own parameter (user, 2026-08-02).
     WhileTenno(TennoCondition, Box<ModEffect>),
     /// Faction damage bonus (Bane/Expel/Cleanse/Smite): +v total damage vs a
     /// MATCHING enemy faction. Its own multiplicative bucket, ADDITIVE with
@@ -497,7 +501,6 @@ impl ModEffect {
         use ModEffect::*;
         match *self {
             // The gate is stated as a suffix so the inner line reads normally.
-            WhileAiming(ref inner) => format!("{} (while aiming)", inner.describe()),
             WhileTenno(c, ref inner) => format!("{} ({})", inner.describe(), c.label()),
             BaseDamage(v) => format!("{} Base Damage", pct(v)),
             Multishot(v) => format!("{} Multishot", pct(v)),
@@ -1229,35 +1232,22 @@ pub struct ProcConv {
 }
 
 /// Resolve a mod set in slot order against a weapon base.
-/// Resolve a build with the player ASSUMED TO BE AIMING — the panel's and the
-/// optimizer's optimistic view, and the historical behaviour of every caller.
-/// The simulator uses [`resolve_with`] so its scenario can say otherwise.
+/// Resolve a build for the NEUTRAL Tenno (`data/tenno/default.yaml`): aiming,
+/// no frame chosen, no ability running. The panel's and the optimizer's
+/// default view, and the historical behaviour of every caller.
 pub fn resolve(base: &WeaponBase, mods: &[&ModDef], policy: StackPolicy) -> ResolvedPanel {
-    resolve_with(base, mods, policy, true)
+    resolve_for(base, mods, policy, crate::tenno_data::default_tenno())
 }
 
-/// As [`resolve`], with the AIMING assumption explicit. `aiming = false` drops
-/// every [`ModEffect::WhileAiming`] contribution: the buff never arms, so it is
-/// absent from the static buckets AND from the emergent specs handed to the sim.
-pub fn resolve_with(
-    base: &WeaponBase,
-    mods: &[&ModDef],
-    policy: StackPolicy,
-    aiming: bool,
-) -> ResolvedPanel {
-    resolve_for(base, mods, policy, aiming, crate::tenno_data::default_tenno())
-}
-
-/// As [`resolve_with`], for a GIVEN Tenno. Every weapon is fired by somebody;
-/// today that somebody is the neutral entry in `data/tenno/`, doing none of the
-/// things a mod card gates on. This is the seam a real frame arrives through —
-/// pass one whose `state.invisible` is true and Spectral Serration pays,
-/// without a line changing here (user, 2026-08-02).
+/// Resolve a build for a GIVEN Tenno — the fight's second actor. Every
+/// `condition:` a mod card states is a question about this player: aiming,
+/// invisible, airborne. A gated effect whose condition is false is absent from
+/// the static buckets AND from the emergent specs handed to the sim, so the
+/// buff never arms rather than arming and contributing zero.
 pub fn resolve_for(
     base: &WeaponBase,
     mods: &[&ModDef],
     policy: StackPolicy,
-    aiming: bool,
     tenno: &crate::tenno_data::Tenno,
 ) -> ResolvedPanel {
     let (mut bd, mut ms, mut cc, mut cd, mut sc, mut fr, mut rl, mut sd) =
@@ -1309,14 +1299,12 @@ pub fn resolve_for(
             // `aiming` is the older, bare form of the same idea; the Tenno one
             // asks the player's state instead of a threaded bool.
             let e: &ModEffect = match e {
-                ModEffect::WhileAiming(inner) if aiming => inner,
-                ModEffect::WhileAiming(_) => continue,
                 ModEffect::WhileTenno(c, inner) if c.holds(tenno) => inner,
                 ModEffect::WhileTenno(..) => continue,
                 other => other,
             };
             match *e {
-                ModEffect::WhileAiming(_) | ModEffect::WhileTenno(..) => {
+                ModEffect::WhileTenno(..) => {
                     unreachable!("unwrapped above")
                 }
                 ModEffect::BaseDamage(v) => bd += v,
@@ -1823,6 +1811,14 @@ mod tests {
         ModDef { requires, disables, ..m(id, effects) }
     }
 
+    /// The neutral Tenno with one state flipped — how a fight says "hip fire",
+    /// "invisible", "airborne". There is one knob shape for all of them now.
+    fn tenno_who(f: impl FnOnce(&mut crate::tenno_data::TennoState)) -> crate::tenno_data::Tenno {
+        let mut t = crate::tenno_data::default_tenno().clone();
+        f(&mut t.state);
+        t
+    }
+
     /// Spectral Serration reads "+330% Damage while Invisible", and used to be
     /// a flat `base_damage_bonus` — every shot of every build collected it.
     /// The condition is now a TENNO question: the neutral player in
@@ -1853,7 +1849,7 @@ mod tests {
         let neutral = crate::tenno_data::default_tenno();
         assert!(!neutral.state.invisible, "the default Tenno is visible");
         assert!(
-            (resolve_for(&base, &[&ss], StackPolicy::AssumedMax, true, neutral).modified_base
+            (resolve_for(&base, &[&ss], StackPolicy::AssumedMax, neutral).modified_base
                 - plain)
                 .abs()
                 < 1e-9,
@@ -1863,7 +1859,7 @@ mod tests {
         let mut hidden = neutral.clone();
         hidden.state.invisible = true;
         let paid =
-            resolve_for(&base, &[&ss], StackPolicy::AssumedMax, true, &hidden).modified_base;
+            resolve_for(&base, &[&ss], StackPolicy::AssumedMax, &hidden).modified_base;
         assert!(
             (paid - plain * 4.3).abs() < 1e-6,
             "an invisible Tenno collects +330%: {paid} vs {}",
@@ -1881,19 +1877,20 @@ mod tests {
         let pool = class_pool("pistol");
         let by = |id: &str| pool.iter().find(|m| m.id == id).expect(id);
         let base = WeaponBase::from_data("dual_toxocyst", true, &[]);
+        let hipfire = tenno_who(|s| s.aiming = false);
 
         // Galvanized Crosshairs is entirely aim-gated: dropping aim must
         // remove its whole crit-chance contribution.
         let gc = vec![by("galvanized_crosshairs")];
-        let aimed = resolve_with(&base, &gc, StackPolicy::AssumedMax, true);
-        let hip = resolve_with(&base, &gc, StackPolicy::AssumedMax, false);
+        let aimed = resolve(&base, &gc, StackPolicy::AssumedMax);
+        let hip = resolve_for(&base, &gc, StackPolicy::AssumedMax, &hipfire);
         assert!(
             aimed.crit_chance > hip.crit_chance,
             "aim-gated crit must vanish: {} vs {}",
             aimed.crit_chance,
             hip.crit_chance
         );
-        let bare = resolve_with(&base, &[], StackPolicy::AssumedMax, false);
+        let bare = resolve_for(&base, &[], StackPolicy::AssumedMax, &hipfire);
         assert!(
             (hip.crit_chance - bare.crit_chance).abs() < 1e-12,
             "with no aim the mod contributes NOTHING, not something reduced"
@@ -1901,8 +1898,8 @@ mod tests {
 
         // An UNGATED mod is untouched by the flag - the wrapper must not leak.
         let hs = vec![by("hornet_strike")];
-        let a2 = resolve_with(&base, &hs, StackPolicy::AssumedMax, true);
-        let h2 = resolve_with(&base, &hs, StackPolicy::AssumedMax, false);
+        let a2 = resolve(&base, &hs, StackPolicy::AssumedMax);
+        let h2 = resolve_for(&base, &hs, StackPolicy::AssumedMax, &hipfire);
         assert!(
             (a2.modified_base - h2.modified_base).abs() < 1e-12,
             "Hornet Strike does not care about aiming"

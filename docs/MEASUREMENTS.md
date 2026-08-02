@@ -938,14 +938,52 @@ Third of the same shape (M22 Primary Acuity, M23 Semi-Rifle Cannonade). The
 card is "+330% Damage **while Invisible**"; the file was a flat
 `base_damage_bonus`, so every build collected it.
 
-Invisibility is a WARFRAME state and this is a weapon calculator, so it takes
-the shape every unevaluable condition takes: an unhandled `trigger` resolves to
-`CondBuff(BaseDamage)` — the panel shows it at full value under its
-assumed-max policy, and the SIMULATION contributes nothing. Verified: Torid,
-Thrax Lv 300 SP, 120 s, 100 runs — 0.2865 with no fifth mod, **0.2865 with
-Spectral Serration**, 0.3437 with plain Serration.
+Invisibility is a WARFRAME state, and the fight now has a Warframe in it:
+`condition: while_invisible` is asked of the arena's Tenno. The neutral Tenno
+is visible, so the mod contributes nothing and the panel's row says why
+("+330%, while Invisible"). Verified: Torid, Thrax Lv 300 SP, 120 s, 100 runs —
+0.2865 with no fifth mod, **0.2865 with Spectral Serration**, 0.3437 with plain
+Serration; and with `invisible: true` in the scenario the same build pays in
+full.
+
+(It first shipped as an unevaluable `CondBuff(BaseDamage)` — full value on the
+panel, nothing in the sim. That was the right shape for a calculator with no
+player in it, and it stopped being one the moment the player arrived.)
 
 The condition test from M22 walked past it, because it knew the two phrases it
 had been written for ("Weak Point", "when/while Aiming"). It now flags ANY
 "while/when …" clause on a card whose effects carry no condition and no
 trigger — verified to fail on this mod.
+
+## M26 — the two arcanes that read a WARFRAME, and the one fact still missing (2026-08-02)
+
+Primary Bulwark and Primary Overcharge were both `kind: unmodeled`, for the
+same stated reason: "the value depends on the Warframe, which a weapon calc has
+no model of". It has one now — a fight carries a Tenno — so both are modelled:
+
+| arcane | card | model |
+|---|---|---|
+| Primary Bulwark | "+1% damage for each unit of armor past 1,000, up to +500%" | `tenno_scaled` off `armor`, `above: 1000`, `per_unit: 0.01`, cap 5.0 |
+| Primary Overcharge | "While at or above 90% Energy: gain 35% of Max Energy as Multishot, capped at 350%" | `tenno_scaled` off `max_energy`, `per_unit: 0.0035`, `min_energy_pct: 0.9`, cap 3.5 |
+
+**Checked by construction, not by measurement.** Torid, Thrax Lv 9999 SP, 30 s,
+5 runs:
+
+- no frame → both contribute nothing (5,348.9 DPS, identical to the arcane
+  slot being empty), which is what "no frame chosen" should mean;
+- `wf_armor: 1500` + Bulwark → 32,093.5 DPS, exactly ×6.0 — the cap is +500%
+  and it lands in the base-damage bracket;
+- `wf_energy: 257` + Overcharge → 15,255.7 DPS, and **Split Chamber at rank 5
+  gives 15,255.7 DPS**. 0.0035 × 257 = +90%, which is Split Chamber's number,
+  so the arcane demonstrably feeds the same multishot bucket a mod does;
+- `wf_energy_pct: 0.5` → back to 5,348.9: the 90% gate holds.
+
+**What is NOT verified, and is the whole of M26's ask**: which multiplier each
+bonus JOINS. Both are modelled as additive with their family's mods, because
+that is what every other "+X% Damage" / multishot source in this data set does
+and what Primary/Secondary Merciless and Primary Plated Round state outright.
+Nothing on either card says so. The measurement that settles it is the ordinary
+one: a build with a known Serration bonus, in-game panel damage with and
+without Bulwark at a known Warframe armor value. If the bonus is an independent
+multiplier instead, only the bucket changes — the card's own numbers (1% per
+point past 1,000, 35% of max energy, the two caps) are not in question.

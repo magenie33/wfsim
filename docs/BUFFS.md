@@ -185,20 +185,48 @@ bucket effect **and** a `kind: buff` effect.
 `condition:` gates ANY effect, not only a `kind: buff` one: put it on a plain
 bucket and the bucket only counts while the state holds.
 
-| value | asked of | means |
-|---|---|---|
-| `while_aiming` | the SCENARIO (`resolve_with(.., aiming)`) | the player is aiming down sights |
-| `while_invisible` | the TENNO (`data/tenno/`, `state.invisible`) | e.g. Spectral Serration's "+330% Damage while Invisible" |
-| `while_airborne` | the TENNO (`state.airborne`) | e.g. the Aero set |
+Every value names a state of the fight's TENNO (`data/tenno/`), and they all
+resolve to `ModEffect::WhileTenno(TennoCondition, …)`, which
+`loadout::resolve_for` evaluates against the Tenno it was handed:
 
-The player-state values resolve to `ModEffect::WhileTenno(TennoCondition, …)`,
-which `loadout::resolve_for` evaluates against the Tenno it was handed. The
-neutral Tenno in `data/tenno/` is doing none of them, so such a mod contributes
-nothing today and the panel labels the row with the condition rather than
-hiding it — and the day a frame turns the state on, the mod pays with no code
-change (user, 2026-08-02). An unrecognised `condition:` gates NOTHING, which
-`mods_data`'s card-vs-model test catches as "the card states a condition and
-the model has none".
+| value | `TennoState` field | means |
+|---|---|---|
+| `while_aiming` | `aiming` | aiming down sights — Galvanized Crosshairs / Scope, Argon Scope, … |
+| `while_invisible` | `invisible` | Spectral Serration's "+330% Damage while Invisible" |
+| `while_airborne` | `airborne` | the Aero set |
+
+`while_aiming` is one of these rather than a case beside them: it was a bool
+threaded through the resolver while the other states lived on the Tenno, which
+is two homes for one kind of fact (user, 2026-08-02).
+
+The neutral Tenno is aiming and doing nothing else, so a while-Invisible mod
+contributes nothing until a scenario says otherwise — and the panel labels the
+row with the condition rather than hiding it. An unrecognised `condition:`
+gates NOTHING, which `mods_data`'s card-vs-model test catches as "the card
+states a condition and the model has none".
+
+## Arcane data: a Warframe stat is `kind: tenno_scaled`
+
+An arcane whose value comes from the PLAYER rather than from anything the
+weapon does reads it off the fight's Tenno:
+
+```yaml
+- kind: tenno_scaled
+  stat: armor           # armor | max_energy
+  above: 1000           # the first N units pay nothing (default 0)
+  per_unit: 0.01        # bonus per unit past `above`
+  min_energy_pct: 0.9   # optional gate: at or above this fraction of the pool
+  grants: base_damage   # base_damage | multishot — the bucket it joins
+  rank0: 2.5            # the CAP at rank 0
+  rankMax: 5.0          # the CAP at max rank
+```
+
+It resolves to a passive one-stack `ArcBuffSpec` (`ArcTrigger::Passive`,
+pinned): a Warframe stat does not decay mid-fight and no event grants it, so it
+rides the grant machinery the on-kill arcanes already feed correctly instead of
+adding a static bucket to the damage path. A bonus of zero produces NO buff at
+all — a zero-value stack would still list in the picker and invite someone to
+turn it up.
 
 `engine::mods_data` maps the modeled `(trigger, grants)` combos to the buff
 `ModEffect` variants at max rank (`OnKillMultishot`, `ConditionOverload`,

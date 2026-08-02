@@ -1113,7 +1113,15 @@ pub struct DummyParams {
     /// compares scenarios per arcane). `ArcaneFx::none()` = empty slot.
     pub arcane: ArcaneFx,
     pub body_parts: Vec<BodyPart>,
+    /// The TARGET — one of the fight's two actors.
     pub target: TargetParams,
+    /// The TENNO — the other one. Who is holding this weapon, and what they
+    /// are doing: `resolve` has already asked its state which conditional mods
+    /// pay, and the arcanes that scale off Warframe armor or energy read its
+    /// stats. It rides on the params rather than being resolved away so the
+    /// fight can be replayed, reported and shared as what it was: somebody,
+    /// shooting somebody (user, 2026-08-02).
+    pub tenno: crate::tenno_data::Tenno,
     pub duration_secs: f64,
 }
 
@@ -1288,12 +1296,8 @@ impl DummyParams {
     /// Build engagement params from a resolved mod loadout (pipeline
     /// [1]+[2] output). Bare-frame scenario: no arcanes, no Frenzy passive
     /// (Incarnon Form), infinite reserve.
-    pub fn from_panel(
-        panel: &crate::loadout::ResolvedPanel,
-        target: TargetParams,
-        body_parts: Vec<BodyPart>,
-        duration_secs: f64,
-    ) -> Self {
+    pub fn from_panel(panel: &crate::loadout::ResolvedPanel, arena: &crate::arena::Arena) -> Self {
+        let crate::arena::Arena { tenno, target, body_parts, duration_secs } = arena.clone();
         // Resolve the faction bucket against THIS target's faction (additive
         // within the matching faction; 1.0 vs a non-match / Unknown).
         let faction_mult = 1.0
@@ -1378,6 +1382,7 @@ impl DummyParams {
             infinite_reserve: !panel.finite_reserve,
             ammo_cost: panel.ammo_cost,
             reserve_ammo: panel.ammo_reserve,
+            tenno,
         }
     }
 
@@ -1397,9 +1402,7 @@ impl DummyParams {
         base: &crate::loadout::ResolvedPanel,
         frenzy: bool,
         frenzy_lock: LockMode,
-        target: TargetParams,
-        body_parts: Vec<BodyPart>,
-        duration_secs: f64,
+        arena: &crate::arena::Arena,
     ) -> Self {
         let rl = 1.0 + incarnon.reload_bonus;
         let inc_form = incarnon.incarnon;
@@ -1409,7 +1412,7 @@ impl DummyParams {
             // it from the panel, and a hardcoded `true` would outrank the data
             // the day a base form became charge-backed. That override existed
             // only to compensate for the broken default it sat next to.
-            ..Self::from_panel(base, target.clone(), body_parts.clone(), duration_secs)
+            ..Self::from_panel(base, arena)
         };
         Self {
             // Frenzy exists in BOTH forms (user-confirmed 2026-07-24) — when
@@ -1437,7 +1440,7 @@ impl DummyParams {
                 transmute_seconds: inc_form.map_or(2.35, |f| f.transmute_in) / rl,
                 reload_bucket: rl - 1.0,
             }),
-            ..Self::from_panel(incarnon, target, body_parts, duration_secs)
+            ..Self::from_panel(incarnon, arena)
         }
     }
 
@@ -1523,6 +1526,7 @@ impl Default for DummyParams {
             },
             body_parts: Self::humanoid_parts(),
             target: TargetParams::training_dummy(),
+            tenno: crate::tenno_data::default_tenno().clone(),
             duration_secs: 10.0,
         }
     }
@@ -4027,12 +4031,7 @@ mod tests {
         assert!((ms.full - 1.0).abs() < 1e-12, "1 pellet × +100% = 1.0");
 
         let mk = |stacks: u32, locked: bool| {
-            let mut p = DummyParams::from_panel(
-                &panel,
-                TargetParams::training_dummy(),
-                DummyParams::humanoid_parts(),
-                10.0,
-            );
+            let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(10.0));
             let mut cfg = BuffConfig::new();
             cfg.insert("evo_multishot".into(), (stacks, locked));
             p.apply_buff_config(&cfg);
@@ -4060,7 +4059,7 @@ mod tests {
     /// A secondary arcane at max rank under the Emergent policy (crit-base
     /// 0 — none of these tests use the assumed-max relative crit paths).
     fn arc(id: &str) -> ArcaneFx {
-        crate::arcanes_data::secondary(id).unwrap().fx(5, crate::loadout::StackPolicy::Emergent, &[])
+        crate::arcanes_data::secondary(id).unwrap().fx(5, crate::loadout::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno())
     }
 
     /// Deterministic base: no crits, no procs, 1x body, no arcane.
@@ -4232,8 +4231,13 @@ mod tests {
             t.faction = Faction::Grineer;
             t
         };
-        let vs_grineer = DummyParams::from_panel(&panel, grineer_target, parts.clone(), 10.0);
-        let vs_other = DummyParams::from_panel(&panel, TargetParams::training_dummy(), parts, 10.0);
+        let arena = |target, body_parts| crate::arena::Arena {
+            target,
+            body_parts,
+            ..crate::arena::Arena::training(10.0)
+        };
+        let vs_grineer = DummyParams::from_panel(&panel, &arena(grineer_target, parts.clone()));
+        let vs_other = DummyParams::from_panel(&panel, &arena(TargetParams::training_dummy(), parts));
         assert!(
             (vs_grineer.faction_mult - 1.30).abs() < 1e-9,
             "grineer {}",
@@ -6817,7 +6821,7 @@ mod tests {
             base_crit_chance: 0.0,
             arcane: crate::arcanes_data::secondary("secondary_deadhead")
                 .unwrap()
-                .fx(5, crate::loadout::StackPolicy::Emergent, &[]),
+                .fx(5, crate::loadout::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno()),
             body_parts: vec![BodyPart {
                 name: "head".into(),
                 aim_weight: 1.0,
@@ -6846,7 +6850,7 @@ mod tests {
             base_crit_chance: 0.0,
             arcane: crate::arcanes_data::secondary("cascadia_flare")
                 .unwrap()
-                .fx(5, crate::loadout::StackPolicy::Emergent, &[]),
+                .fx(5, crate::loadout::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno()),
             forced_procs: vec![DamageType::Impact],
             body_parts: mono_body(1.0),
             duration_secs: 15.0,
@@ -7099,7 +7103,7 @@ mod tests {
         // AssumedMax: the ×8 cap on every shot — 10 × 75 × 8 = 6000.
         let fx = crate::arcanes_data::secondary("secondary_surge")
             .unwrap()
-            .fx(5, crate::loadout::StackPolicy::AssumedMax, &[]);
+            .fx(5, crate::loadout::StackPolicy::AssumedMax, &[], crate::tenno_data::default_tenno());
         let p = DummyParams {
             arcane: fx,
             ..flat_base()

@@ -117,6 +117,13 @@ pub enum ArcTrigger {
     ToxinStatus,
     /// A Cold status this weapon applies (Primary Frostbite).
     ColdStatus,
+    /// Nothing grants it — it is simply ON. A Tenno-scaled arcane (Primary
+    /// Bulwark, Primary Overcharge) reads a Warframe stat that does not change
+    /// during the fight, so its buff starts at its one stack, is pinned there,
+    /// and no event has to fire. It rides the buff machinery rather than a new
+    /// static bucket because the GRANTS are the same ones the on-kill arcanes
+    /// already feed correctly.
+    Passive,
     /// A direct-pellet hit on a natural weak point (Primary Crux) — a HIT, not
     /// a kill, and PER PELLET: "Multiple individual pellets from a single shot
     /// (either innate to the weapon or generated via Multishot) can build
@@ -296,6 +303,25 @@ pub struct ArcaneDef {
     effects: Vec<ArcEffect>,
 }
 
+/// Which WARFRAME stat an arcane scales off. The Tenno carries them; this
+/// names the one an arcane reads.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TennoStat {
+    /// Primary Bulwark: "+1% damage for each unit of armor past 1,000".
+    Armor,
+    /// Primary Overcharge: "35% of Max Energy as Multishot".
+    MaxEnergy,
+}
+
+impl TennoStat {
+    fn of(self, t: &crate::tenno_data::Tenno) -> f64 {
+        match self {
+            TennoStat::Armor => t.armor,
+            TennoStat::MaxEnergy => t.energy,
+        }
+    }
+}
+
 /// One rank-parameterized arcane effect (the loader's vocabulary — every
 /// structured kind in data/arcanes; kinds with no single-target sim payload
 /// load as `Inert` so the arcane still resolves).
@@ -308,6 +334,21 @@ enum ArcEffect {
         max_stacks: u32,
         duration: f64,
         all_drop: bool,
+    },
+    /// Scales off a WARFRAME STAT rather than off anything the weapon does:
+    /// `per_unit x (stat - above)`, capped at the rank's value, gated on the
+    /// player holding at least `min_energy_pct` of their energy pool.
+    ///
+    /// The neutral Tenno has no frame, so every one of these resolves to zero
+    /// until a fight says what the player is wearing — which is the honest
+    /// answer, and the reason the stat block exists.
+    TennoScaled {
+        stat: TennoStat,
+        above: f64,
+        per_unit: f64,
+        min_energy_pct: f64,
+        grant: ArcGrant,
+        cap: Scale,
     },
     /// Relative crit chance under a non-simmed condition (Overcharge).
     CondCritChance(Scale),
@@ -463,6 +504,22 @@ fn effect(v: &Value) -> Option<ArcEffect> {
         },
         "overguard_damage_bonus" => ArcEffect::OverguardDamage(scale(v)),
         "ammo_efficiency" => ArcEffect::AmmoEfficiency(scale(v)),
+        "tenno_scaled" => ArcEffect::TennoScaled {
+            stat: match s(v, "stat")? {
+                "armor" => TennoStat::Armor,
+                "max_energy" => TennoStat::MaxEnergy,
+                other => return inert(&format!("tenno stat {other}")),
+            },
+            above: f(v, "above").unwrap_or(0.0),
+            per_unit: f(v, "per_unit")?,
+            min_energy_pct: f(v, "min_energy_pct").unwrap_or(0.0),
+            grant: match s(v, "grants")? {
+                "base_damage" => ArcGrant::BaseDamage,
+                "multishot" => ArcGrant::Multishot,
+                other => return inert(&format!("grant {other}")),
+            },
+            cap: scale(v),
+        },
         "unmodeled" => ArcEffect::Unmodeled {
             note: s(v, "note").unwrap_or_default().to_string(),
             scale: scale(v),
@@ -480,7 +537,13 @@ impl ArcaneDef {
     /// explosion — every attack part has its own base crit stats, so only the
     /// sim can multiply them out. `traits` gates `requires` (calc-layer inert,
     /// like mods).
-    pub fn fx(&self, rank: u32, policy: StackPolicy, traits: &[&str]) -> ArcaneFx {
+    pub fn fx(
+        &self,
+        rank: u32,
+        policy: StackPolicy,
+        traits: &[&str],
+        tenno: &crate::tenno_data::Tenno,
+    ) -> ArcaneFx {
         let rank = rank.min(self.max_rank);
         let mut fx = ArcaneFx {
             id: self.id.clone(),
@@ -515,6 +578,32 @@ impl ArcaneDef {
                         all_drop: *all_drop,
                         initial_stacks: *max_stacks, // start full (user decision)
                         pinned: assumed,
+                    });
+                }
+                ArcEffect::TennoScaled { stat, above, per_unit, min_energy_pct, grant, cap } => {
+                    if policy == StackPolicy::BaseOnly {
+                        continue; // sentinel: no Tenno stands behind it
+                    }
+                    // The gate first, then the value, then the rank's cap.
+                    let bonus = if tenno.state.energy_pct + 1e-12 < *min_energy_pct {
+                        0.0
+                    } else {
+                        (per_unit * (stat.of(tenno) - above).max(0.0))
+                            .min(cap.at(rank, self.max_rank))
+                    };
+                    if bonus <= 0.0 {
+                        continue; // no frame, or below the threshold: nothing to list
+                    }
+                    fx.buffs.push(ArcBuffSpec {
+                        owner: self.id.clone(),
+                        grant: *grant,
+                        trigger: ArcTrigger::Passive,
+                        per_stack: bonus,
+                        max_stacks: 1,
+                        duration: 0.0,
+                        all_drop: false,
+                        initial_stacks: 1,
+                        pinned: true, // a Warframe stat does not decay mid-fight
                     });
                 }
                 ArcEffect::CondCritChance(sc) => {
@@ -606,6 +695,7 @@ impl ArcaneDef {
         for e in &self.effects {
             match e {
                 ArcEffect::Buff { scale, .. }
+                | ArcEffect::TennoScaled { cap: scale, .. }
                 | ArcEffect::CondCritChance(scale)
                 | ArcEffect::CondCritChanceStacked { scale, .. }
                 | ArcEffect::CondCritDamageStacked { scale, .. }
@@ -688,11 +778,33 @@ impl ArcaneDef {
                         ArcTrigger::ToxinStatus => "On Toxin Status",
                         ArcTrigger::ColdStatus => "On Cold Status",
                         ArcTrigger::WeakpointHit => "On Weak Point Hit",
+                        ArcTrigger::Passive => "Always",
                     };
                     let decay = if *all_drop { "all drop on timeout" } else { "lose one on timeout" };
                     out.push(format!(
                         "{when}: {} {what} per stack ×{max_stacks}, {duration}s ({decay})",
                         pct(at(scale))
+                    ));
+                }
+                ArcEffect::TennoScaled { stat, above, per_unit, min_energy_pct, grant, cap } => {
+                    let what = match grant {
+                        ArcGrant::Multishot => "Multishot",
+                        _ => "Damage",
+                    };
+                    let of = match stat {
+                        TennoStat::Armor => "Warframe Armor",
+                        TennoStat::MaxEnergy => "Warframe Max Energy",
+                    };
+                    let past = if *above > 0.0 { format!(" past {above}") } else { String::new() };
+                    let gate = if *min_energy_pct > 0.0 {
+                        format!(" while at or above {}% Energy", (min_energy_pct * 100.0).round())
+                    } else {
+                        String::new()
+                    };
+                    out.push(format!(
+                        "{} {what} per point of {of}{past}, up to {}{gate}",
+                        pct(*per_unit),
+                        pct(at(cap))
                     ));
                 }
                 ArcEffect::CondCritChance(sc) => {
@@ -978,7 +1090,7 @@ mod tests {
             .iter()
             .find(|x| x.id == "primary_blight")
             .expect("primary_blight");
-        let fx = a.fx(a.max_rank, StackPolicy::Emergent, NO_TRAITS);
+        let fx = a.fx(a.max_rank, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
         assert_eq!(fx.buffs.len(), 2, "crit damage + multishot");
         for b in &fx.buffs {
             assert_eq!(b.trigger, ArcTrigger::ToxinStatus);
@@ -1012,7 +1124,7 @@ mod tests {
     #[test]
     fn primary_crux_grants_status_chance_and_ammo_efficiency_on_weakpoint_hits() {
         let a = secondary("primary_crux").expect("primary_crux");
-        let fx = a.fx(a.max_rank, StackPolicy::Emergent, NO_TRAITS);
+        let fx = a.fx(a.max_rank, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
         assert_eq!(fx.buffs.len(), 2, "status chance + ammo efficiency");
         for b in &fx.buffs {
             assert_eq!(b.trigger, ArcTrigger::WeakpointHit);
@@ -1023,7 +1135,7 @@ mod tests {
         assert_eq!(g(ArcGrant::StatusChance), Some(0.3));
         assert_eq!(g(ArcGrant::AmmoEfficiency), Some(0.06));
         // Rank 0 (both ramps are linear from a fifth of max).
-        let fx0 = a.fx(0, StackPolicy::Emergent, NO_TRAITS);
+        let fx0 = a.fx(0, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
         assert!((fx0.buffs[0].per_stack - 0.05).abs() < 1e-9);
         assert!((fx0.buffs[1].per_stack - 0.01).abs() < 1e-9);
         // The static `ammo_efficiency` field belongs to the assumed-max
@@ -1055,7 +1167,7 @@ mod tests {
     #[test]
     fn merciless_resolves_kill_family_buff_plus_rank5_reload() {
         let a = secondary("secondary_merciless").unwrap();
-        let fx = a.fx(5, StackPolicy::Emergent, NO_TRAITS);
+        let fx = a.fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
         let b = &fx.buffs[0];
         assert_eq!(b.trigger, ArcTrigger::Kill);
         assert_eq!(b.grant, ArcGrant::BaseDamage);
@@ -1064,7 +1176,7 @@ mod tests {
         assert!(!b.all_drop); // kill family: lose one + reset
         assert!((fx.reload_bonus - 0.30).abs() < 1e-9);
         // Rank 4: no reload passive; per-stack 25% (linear).
-        let fx4 = a.fx(4, StackPolicy::Emergent, NO_TRAITS);
+        let fx4 = a.fx(4, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
         assert_eq!(fx4.reload_bonus, 0.0);
         assert!((fx4.buffs[0].per_stack - 0.25).abs() < 1e-9);
     }
@@ -1073,7 +1185,7 @@ mod tests {
     fn deadhead_and_flare_match_the_historical_hardcoded_specs() {
         let d = secondary("secondary_deadhead")
             .unwrap()
-            .fx(5, StackPolicy::Emergent, NO_TRAITS);
+            .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
         let b = &d.buffs[0];
         assert_eq!(b.trigger, ArcTrigger::HeadshotKill);
         assert!((b.per_stack - 1.20).abs() < 1e-9);
@@ -1083,7 +1195,7 @@ mod tests {
 
         let fl = secondary("cascadia_flare")
             .unwrap()
-            .fx(5, StackPolicy::Emergent, NO_TRAITS);
+            .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
         let b = &fl.buffs[0];
         assert_eq!(b.trigger, ArcTrigger::HeatStatus);
         assert!((b.per_stack - 0.12).abs() < 1e-9);
@@ -1096,7 +1208,7 @@ mod tests {
         // 1,1,2,2,3,3 — rank 3 must be 2, not a lerp of 1..3.
         let c = secondary("secondary_cryogenic").unwrap();
         assert_eq!(
-            c.fx(3, StackPolicy::Emergent, NO_TRAITS).cold_burst_on_puncture,
+            c.fx(3, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno()).cold_burst_on_puncture,
             2
         );
     }
@@ -1104,24 +1216,24 @@ mod tests {
     #[test]
     fn assumed_max_only_conditionals_are_emergent_noops() {
         let o = secondary("cascadia_overcharge").unwrap();
-        let em = o.fx(5, StackPolicy::Emergent, NO_TRAITS);
+        let em = o.fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
         assert_eq!(em.cc_rel, 0.0);
-        let am = o.fx(5, StackPolicy::AssumedMax, NO_TRAITS);
+        let am = o.fx(5, StackPolicy::AssumedMax, NO_TRAITS, crate::tenno_data::default_tenno());
         // RELATIVE now: +300% of whichever part's base the sim resolves.
         assert!((am.cc_rel - 3.0).abs() < 1e-9);
 
         // Surge: ×8 cap under AssumedMax, no-op under Emergent.
         let s = secondary("secondary_surge").unwrap();
-        assert_eq!(s.fx(5, StackPolicy::Emergent, NO_TRAITS).final_mult, 1.0);
-        assert!((s.fx(5, StackPolicy::AssumedMax, NO_TRAITS).final_mult - 8.0).abs() < 1e-9);
+        assert_eq!(s.fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno()).final_mult, 1.0);
+        assert!((s.fx(5, StackPolicy::AssumedMax, NO_TRAITS, crate::tenno_data::default_tenno()).final_mult - 8.0).abs() < 1e-9);
     }
 
     #[test]
     fn requires_gates_akimbo_on_the_dual_pistols_trait() {
         let a = secondary("akimbo_slip_shot").unwrap();
-        let off = a.fx(5, StackPolicy::AssumedMax, NO_TRAITS);
+        let off = a.fx(5, StackPolicy::AssumedMax, NO_TRAITS, crate::tenno_data::default_tenno());
         assert_eq!(off.ammo_efficiency, 0.0);
-        let on = a.fx(5, StackPolicy::AssumedMax, &["dual_pistols"]);
+        let on = a.fx(5, StackPolicy::AssumedMax, &["dual_pistols"], crate::tenno_data::default_tenno());
         assert!((on.ammo_efficiency - 0.65).abs() < 1e-9);
     }
 
@@ -1129,25 +1241,25 @@ mod tests {
     fn shiver_fortifier_encumber_empowered_cryogenic_resolve() {
         let sh = secondary("secondary_shiver")
             .unwrap()
-            .fx(5, StackPolicy::Emergent, NO_TRAITS);
+            .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
         assert!((sh.per_cold_bd - 0.45).abs() < 1e-9);
         assert_eq!(sh.cold_cap, 10);
         let ft = secondary("secondary_fortifier")
             .unwrap()
-            .fx(5, StackPolicy::Emergent, NO_TRAITS);
+            .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
         assert!((ft.overguard_mult - 8.0).abs() < 1e-9);
         let en = secondary("secondary_encumber")
             .unwrap()
-            .fx(5, StackPolicy::Emergent, NO_TRAITS);
+            .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
         assert!((en.encumber_chance - 0.24).abs() < 1e-9);
         let em = secondary("cascadia_empowered")
             .unwrap()
-            .fx(5, StackPolicy::Emergent, NO_TRAITS);
+            .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
         assert!((em.flat_damage_on_status - 750.0).abs() < 1e-9);
         // Voltage: two status-family buffs sharing the 40-stack pool.
         let cv = secondary("conjunction_voltage")
             .unwrap()
-            .fx(5, StackPolicy::Emergent, NO_TRAITS);
+            .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
         assert_eq!(cv.buffs.len(), 2);
         assert!(cv.buffs.iter().all(|b| b.all_drop && b.max_stacks == 40));
     }
@@ -1195,9 +1307,82 @@ mod tests {
     fn enervate_runs_as_the_perk() {
         let e = secondary("secondary_enervate")
             .unwrap()
-            .fx(3, StackPolicy::Emergent, NO_TRAITS);
+            .fx(3, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
         assert_eq!(e.enervate_rank, Some(3));
         assert!(e.buffs.is_empty()); // the on_hit buff is perk-implemented
+    }
+    /// A WARFRAME STAT reaches the weapon, and nothing else does.
+    ///
+    /// Primary Bulwark and Primary Overcharge were both `unmodeled` because
+    /// "the value depends on the Warframe, which a weapon calc has no model
+    /// of". The fight now carries a Tenno, so it does: the arcane reads the
+    /// stat off it, and the NEUTRAL Tenno — no frame, no pool — makes both
+    /// resolve to nothing, which is the honest answer rather than a zero
+    /// invented to dodge the question (user, 2026-08-02).
+    #[test]
+    fn an_arcane_that_scales_off_a_warframe_reads_the_fights_tenno() {
+        let bulwark = for_slot("primary", "primary_bulwark").expect("primary_bulwark");
+        let overcharge = for_slot("primary", "primary_overcharge").expect("primary_overcharge");
+        let frame = |armor: f64, energy: f64, pct: f64| {
+            let mut t = crate::tenno_data::default_tenno().clone();
+            t.armor = armor;
+            t.energy = energy;
+            t.state.energy_pct = pct;
+            t
+        };
+        let bd = |t: &crate::tenno_data::Tenno| {
+            bulwark
+                .fx(5, StackPolicy::Emergent, NO_TRAITS, t)
+                .buffs
+                .iter()
+                .map(|b| b.per_stack)
+                .sum::<f64>()
+        };
+        let ms = |t: &crate::tenno_data::Tenno| {
+            overcharge
+                .fx(5, StackPolicy::Emergent, NO_TRAITS, t)
+                .buffs
+                .iter()
+                .map(|b| b.per_stack)
+                .sum::<f64>()
+        };
+
+        // No frame: NO buff at all, not a buff worth zero. A zero-value stack
+        // would still list in the picker and invite someone to "turn it up".
+        let neutral = crate::tenno_data::default_tenno();
+        assert!(bulwark.fx(5, StackPolicy::Emergent, NO_TRAITS, neutral).buffs.is_empty());
+        assert!(overcharge.fx(5, StackPolicy::Emergent, NO_TRAITS, neutral).buffs.is_empty());
+
+        // Bulwark: +1% per point PAST 1,000 — so 1,000 armor still pays
+        // nothing, 1,200 pays +200%, and the rank-5 cap of +500% is reached at
+        // 1,500 and never exceeded.
+        assert!(bulwark.fx(5, StackPolicy::Emergent, NO_TRAITS, &frame(1000.0, 0.0, 1.0)).buffs.is_empty());
+        assert!((bd(&frame(1200.0, 0.0, 1.0)) - 2.0).abs() < 1e-9);
+        assert!((bd(&frame(1500.0, 0.0, 1.0)) - 5.0).abs() < 1e-9);
+        assert!((bd(&frame(9000.0, 0.0, 1.0)) - 5.0).abs() < 1e-9, "capped at +500%");
+        // It is a BASE DAMAGE grant, pinned at its one stack: a Warframe stat
+        // does not decay mid-fight, and no event grants it.
+        let b = &bulwark.fx(5, StackPolicy::Emergent, NO_TRAITS, &frame(1200.0, 0.0, 1.0)).buffs[0];
+        assert_eq!(b.grant, ArcGrant::BaseDamage);
+        assert_eq!(b.trigger, ArcTrigger::Passive);
+        assert_eq!((b.max_stacks, b.initial_stacks, b.pinned), (1, 1, true));
+
+        // Overcharge: 35% of MAX energy, and the gate is on how FULL the pool
+        // is — 300 energy at 100% pays +105%, the same frame at 50% pays
+        // nothing, and the cap needs 1,000 energy.
+        assert!((ms(&frame(0.0, 300.0, 1.0)) - 1.05).abs() < 1e-9);
+        assert!((ms(&frame(0.0, 300.0, 0.9)) - 1.05).abs() < 1e-9, "at exactly 90%");
+        assert!(overcharge.fx(5, StackPolicy::Emergent, NO_TRAITS, &frame(0.0, 300.0, 0.5)).buffs.is_empty());
+        assert!((ms(&frame(0.0, 1000.0, 1.0)) - 3.5).abs() < 1e-9);
+        assert!((ms(&frame(0.0, 5000.0, 1.0)) - 3.5).abs() < 1e-9, "capped at +350%");
+        assert_eq!(
+            overcharge.fx(5, StackPolicy::Emergent, NO_TRAITS, &frame(0.0, 300.0, 1.0)).buffs[0].grant,
+            ArcGrant::Multishot
+        );
+
+        // A SENTINEL fires under BaseOnly, where no conditional arms — there is
+        // no Tenno standing behind a companion's gun either.
+        assert!(bulwark.fx(5, StackPolicy::BaseOnly, NO_TRAITS, &frame(1500.0, 0.0, 1.0)).buffs.is_empty());
     }
 }
 

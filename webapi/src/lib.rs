@@ -14,7 +14,7 @@ use wfsim_engine::dummy::{
 };
 use wfsim_engine::enemy_data::EnemySpec;
 use wfsim_engine::loadout::{
-    pct as fpct, resolve, resolve_with, ModDef, ModEffect, ResolvedPanel, StackPolicy,
+    pct as fpct, resolve, resolve_for, ModDef, ModEffect, ResolvedPanel, StackPolicy,
     WeaponBase,
 };
 use wfsim_engine::mods::{plan_forma, PlannedMod, Polarity};
@@ -234,6 +234,36 @@ fn form_unlock_evo(info: &WeaponInfo) -> Option<&'static str> {
 /// A SENTINEL weapon is fired by the companion, which picks its own targets
 /// and does not aim for the head — so 0, not the player's 100 (user,
 /// 2026-07-31). It stays a knob: this is the default, not a ceiling.
+/// The fight's TENNO — who is holding this weapon, and what they are doing.
+///
+/// ONE builder for both the simulator and the optimizer, on purpose: the
+/// optimizer must score builds under the player the sim will replay them with,
+/// and two readers of the same JSON is how that drifts a field at a time
+/// (user, 2026-08-02). The neutral entry in `data/tenno/` is the starting
+/// point and the request overrides what it knows, so a field nobody sent keeps
+/// its documented default instead of a zero invented here.
+///
+/// A SENTINEL WEAPON IS ALWAYS AIMING (user, 2026-08-01, settling M18a). What
+/// it cannot do is trigger the on-HEADSHOT half of an aiming mod, because it
+/// never aims at the head — which the sim already gets right from the other
+/// end: `default_headshot_pct` is 0 for a sentinel, so no headshot lands and
+/// no on-headshot buff fires. So the state is on, the triggers stay dead, and
+/// the request cannot say otherwise.
+fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
+    let mut t = wfsim_engine::tenno_data::default_tenno().clone();
+    t.state.aiming = info.sentinel || get_bool(v, "aiming", true);
+    t.state.invisible = get_bool(v, "invisible", t.state.invisible);
+    t.state.airborne = get_bool(v, "airborne", t.state.airborne);
+    // The WARFRAME behind the gun. Armor and energy are the two stats a weapon
+    // arcane reads (Primary Bulwark, Primary Overcharge); 0 means "no frame
+    // chosen", which is what the neutral Tenno says and what makes those
+    // arcanes contribute nothing until you say otherwise.
+    t.armor = get_f64(v, "wf_armor", t.armor).clamp(0.0, 100_000.0);
+    t.energy = get_f64(v, "wf_energy", t.energy).clamp(0.0, 100_000.0);
+    t.state.energy_pct = get_f64(v, "wf_energy_pct", t.state.energy_pct).clamp(0.0, 1.0);
+    t
+}
+
 fn default_headshot_pct(info: &WeaponInfo) -> f64 {
     if info.sentinel {
         0.0
@@ -768,9 +798,18 @@ pub fn meta_json() -> Value {
             "level": 9999,
             "steel_path": true,
             "headshot_pct": 100.0,
-            // Aiming ASSUMED by default - the sim's behaviour before the knob
-            // existed, so no stored preset silently changes meaning.
+            // ---- the TENNO, the fight's other actor. Every field here is
+            // `data/tenno/default.yaml`'s: the NEUTRAL player, aiming, no
+            // frame chosen, no ability running. Aiming is true because that is
+            // the sim's behaviour before the knob existed, so no stored preset
+            // silently changes meaning; the rest are false/0 because "some
+            // max-rank neutral Warframe" is doing none of them and wearing
+            // nothing (user, 2026-08-02).
             "aiming": true,
+            "invisible": false,
+            "airborne": false,
+            "wf_armor": 0.0,
+            "wf_energy": 0.0,
             // INFINITE AMMO by default — see `simulate_json` for why.
             "infinite_ammo": true,
             // Test precision (user, 2026-08-01): 300 s x 100 runs everywhere,
@@ -987,6 +1026,7 @@ fn enumerate_buffs(
     refs: &[&ModDef],
     arcane: &wfsim_engine::arcanes_data::ArcaneFx,
     info: &WeaponInfo,
+    tenno: &wfsim_engine::tenno_data::Tenno,
 ) -> Vec<BuffMeta> {
     // Sentinels resolve under BaseOnly — conditional buffs never fire, so
     // there is nothing to configure.
@@ -1019,13 +1059,18 @@ fn enumerate_buffs(
         let nm = prettify(m.id);
         for e in &m.effects {
             use ModEffect::*;
-            // UNWRAP the aiming condition first. Argon Scope's on-headshot
-            // crit is `WhileAiming(OnHeadshotCritChance)`, and matching the
-            // outer value meant it never produced a card: the sim ran the buff
-            // (the resolver unwraps) while the panel offered no way to set it,
-            // so one of the two knew about a buff the other did not.
+            // UNWRAP the player condition, and DROP the effect when the
+            // condition does not hold. Argon Scope's on-headshot crit is
+            // `WhileTenno(Aiming, OnHeadshotCritChance)`: matching the outer
+            // value meant it never produced a card at all, so the sim ran a
+            // buff the panel offered no way to set. Unwrapping it
+            // unconditionally then made the opposite mistake — a card for a
+            // buff that cannot arm, in a fight where the player is not aiming.
+            // The resolver already drops it; this is the same question, asked
+            // of the same Tenno (user, 2026-08-02).
             let e = match e {
-                WhileAiming(inner) => &**inner,
+                WhileTenno(c, inner) if c.holds(tenno) => &**inner,
+                WhileTenno(..) => continue,
                 other => other,
             };
             match *e {
@@ -1217,6 +1262,9 @@ fn arcane_fx_for(
     if !info.uses_arcane {
         return wfsim_engine::arcanes_data::ArcaneFx::none();
     }
+    // The same player the sim and the optimizer fight as: an arcane that
+    // scales off Warframe armor or energy reads it from here.
+    let tenno = tenno_from(v, info);
     let parts: Vec<wfsim_engine::arcanes_data::ArcaneFx> = arcane_choices(v, info)
         .into_iter()
         .filter_map(|(pool, aid, rank)| {
@@ -1224,7 +1272,7 @@ fn arcane_fx_for(
             // that slot, so it resolves to nothing rather than being applied.
             let def = wfsim_engine::arcanes_data::for_slot(&pool, &aid)?;
             let rank = rank.unwrap_or(def.max_rank).min(def.max_rank);
-            Some(def.fx(rank, policy, base.traits))
+            Some(def.fx(rank, policy, base.traits, &tenno))
         })
         .collect();
     // Two arcanes are one effect set — see `ArcaneFx::merged`.
@@ -1403,21 +1451,18 @@ pub fn panel_json(v: &Value) -> Value {
             let mut push = |key: &'static str, v: f64, note: Option<String>| {
                 src.push((key, name.clone(), v, note));
             };
-            // An aim-gated effect still LISTS: the reader needs to see the
-            // mod contributes, and under what condition. Unwrap it, let the
-            // ordinary arms push as usual, then tag those rows below.
-            // A TENNO-gated effect lists the same way, tagged with the state
-            // it waits on. The neutral Tenno is doing none of them, so the row
-            // says what the mod WOULD give and why it currently gives nothing
-            // — which is the whole reason the condition is modelled rather
-            // than folded in.
-            let (e, aim_gated, tenno_gate): (&ModEffect, bool, Option<&'static str>) = match e {
-                WhileAiming(inner) => (inner, true, None),
-                WhileTenno(c, inner) => (&**inner, false, Some(c.label())),
-                other => (other, false, None),
+            // A player-gated effect still LISTS, tagged with the state it
+            // waits on: the reader needs to see that the mod contributes, and
+            // under what condition. When the fight's Tenno is not doing it the
+            // row says what the mod WOULD give and gives nothing — which is
+            // the whole reason the condition is modelled rather than folded
+            // in. Unwrap here, let the ordinary arms push, tag them below.
+            let (e, tenno_gate): (&ModEffect, Option<&'static str>) = match e {
+                WhileTenno(c, inner) => (&**inner, Some(c.label())),
+                other => (other, None),
             };
             match *e {
-                WhileAiming(_) | WhileTenno(..) => unreachable!("unwrapped above"),
+                WhileTenno(..) => unreachable!("unwrapped above"),
                 BaseDamage(x) => push("base_damage", x, None),
                 Multishot(x) => push("multishot", x, None),
                 CritChance(x) => push("crit_chance", x, None),
@@ -1573,12 +1618,9 @@ pub fn panel_json(v: &Value) -> Value {
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "rolled per damage instance in the sim"})),
             }
-            // Tag whatever the arms just pushed as aim-gated, so the panel
-            // never shows a contribution without the condition that earns it.
-            for cond in [aim_gated.then_some("while aiming"), tenno_gate]
-                .into_iter()
-                .flatten()
-            {
+            // Tag whatever the arms just pushed, so the panel never shows a
+            // contribution without the condition that earns it.
+            if let Some(cond) = tenno_gate {
                 for row in src.iter_mut().skip(before) {
                     row.3 = Some(match row.3.take() {
                         Some(t) => format!("{t}; {cond}"),
@@ -1887,10 +1929,11 @@ pub fn panel_json(v: &Value) -> Value {
 
         // The equipped arcane on the panel: Secondary Shiver is a GunCO-family
         // source, so its row carries the SAME per-weapon caveat as the CO row.
+        let tenno = tenno_from(v, info);
         for (pool, aid, want_rank) in arcane_choices(v, info) {
             if let Some(def) = wfsim_engine::arcanes_data::for_slot(&pool, &aid) {
                 let rank = want_rank.unwrap_or(def.max_rank).min(def.max_rank);
-                let fx = def.fx(rank, policy, base.traits);
+                let fx = def.fx(rank, policy, base.traits, &tenno);
                 if fx.per_cold_bd > 0.0 {
                     stats.push(json!({ "key": "shiver", "label": "Per Cold Status (Shiver)",
                     "base": "—",
@@ -2154,7 +2197,7 @@ pub fn panel_json(v: &Value) -> Value {
     // mods + arcane + the weapon passive, plus evolution-granted buffs
     // (Fevered Frenzy's permanent stacks).
     let arcane_fx = arcane_fx_for(v, info, &forms_list[0].2, policy);
-    let mut buffs = enumerate_buffs(&refs, &arcane_fx, info);
+    let mut buffs = enumerate_buffs(&refs, &arcane_fx, info, &tenno_from(v, info));
     for b in evo_buffs(&evos) {
         if !buffs.iter().any(|x| x.id == b.id) {
             buffs.push(b);
@@ -2375,17 +2418,7 @@ pub fn simulate_json(v: &Value) -> Value {
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
     let steel_path = get_bool(v, "steel_path", true);
     let headshot_pct = get_f64(v, "headshot_pct", default_headshot_pct(info));
-    // Is the player HOLDING AIM? Gates the `while_aiming` mod effects
-    // (Galvanized Crosshairs / Scope, Argon Scope, Sharpened Bullets, …).
-    // Defaults TRUE, which is what the sim silently assumed before this
-    // existed — so no stored preset changes meaning.
-    // A SENTINEL WEAPON IS ALWAYS AIMING (user, 2026-08-01, settling M18a).
-    // What it cannot do is trigger the on-HEADSHOT half of an aiming mod,
-    // because it never aims at the head — which the sim already gets right
-    // from the other end: `default_headshot_pct` is 0 for a sentinel, so no
-    // headshot lands and no on-headshot buff fires. So the state is on, the
-    // triggers stay dead, and the request cannot say otherwise.
-    let aiming = info.sentinel || get_bool(v, "aiming", true);
+    let tenno = tenno_from(v, info);
     // INFINITE AMMO, and it is the DEFAULT for every weapon (user, 2026-08-01).
     // The sim models no ammo PICKUPS, so a finite reserve is the pessimistic
     // half of a mechanic we only half have — and the headline number people
@@ -2457,6 +2490,15 @@ pub fn simulate_json(v: &Value) -> Value {
         target.armor(),
     );
     let body_parts = build_body_parts(spec, headshot_pct);
+    // ---- the ARENA: both actors, and how long they are at it. Assembled
+    // once and handed whole to whichever constructor runs, so the two forms
+    // of a cycle cannot end up fighting two different fights.
+    let arena = wfsim_engine::arena::Arena {
+        tenno: tenno.clone(),
+        target,
+        body_parts,
+        duration_secs: duration,
+    };
 
     // ---- forma legality (order-independent; needs only the mod multiset) ----
     let planned: Vec<PlannedMod> = refs
@@ -2480,14 +2522,7 @@ pub fn simulate_json(v: &Value) -> Value {
     // Either ONE registered form, or the real two-form cycle (which needs the
     // gauge form and the form it transforms out of, so it resolves both).
     let (report_panel, mut params): (ResolvedPanel, DummyParams) = {
-        let panel_of = |id: &str| {
-            resolve_with(
-                &base_for(v, id, &evo_refs),
-                &refs,
-                policy,
-                aiming,
-            )
-        };
+        let panel_of = |id: &str| resolve_for(&base_for(v, id, &evo_refs), &refs, policy, &tenno);
         if run_cycle {
             let incarnon_panel = panel_of(incarnon_id(info).unwrap_or(&info.id));
             let base_panel = panel_of(&info.id);
@@ -2496,9 +2531,7 @@ pub fn simulate_json(v: &Value) -> Value {
                 &base_panel,
                 frenzy_single,
                 cycle_frenzy_lock,
-                target,
-                body_parts,
-                duration,
+                &arena,
             );
             // The cycle reports the form it transforms INTO, as it always has.
             let mut params = params;
@@ -2506,7 +2539,7 @@ pub fn simulate_json(v: &Value) -> Value {
             (incarnon_panel, params)
         } else {
             let panel = panel_of(single_form);
-            let mut d = DummyParams::from_panel(&panel, target, body_parts, duration);
+            let mut d = DummyParams::from_panel(&panel, &arena);
             d.infinite_reserve = infinite_ammo || !panel.finite_reserve;
             // Frenzy is the WEAPON's passive: it persists across its forms
             // (user-confirmed 2026-07-24), so it rides whichever one is fired.
@@ -2714,15 +2747,16 @@ pub fn opt_buffs_json(v: &Value) -> Value {
         .collect();
     let mut out: Vec<BuffMeta> = Vec::new();
     let none = wfsim_engine::arcanes_data::ArcaneFx::none();
-    merge(&mut out, enumerate_buffs(&refs, &none, info));
     let arc_base = WeaponBase::from_data(&info.id, true, &[]);
+    let tenno = tenno_from(v, info);
+    merge(&mut out, enumerate_buffs(&refs, &none, info, &tenno));
     // The scope is a MARK MAP (id -> "search" | "fixed"), the same shape as
     // `mods`; every marked arcane's buffs are configurable, pins included.
     if let Some(obj) = v.get("arcanes").and_then(|x| x.as_object()) {
         for a in obj.keys().filter(|k| k.as_str() != "none") {
             if let Some(def) = arcane_in_pools(info, a) {
-                let fx = def.fx(def.max_rank, StackPolicy::Emergent, arc_base.traits);
-                merge(&mut out, enumerate_buffs(&[], &fx, info));
+                let fx = def.fx(def.max_rank, StackPolicy::Emergent, arc_base.traits, &tenno);
+                merge(&mut out, enumerate_buffs(&[], &fx, info, &tenno));
             }
         }
     }
@@ -2990,6 +3024,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         })
         .unwrap_or_default();
     let arc_base = WeaponBase::from_data(&info.id, true, &[]);
+    let tenno = tenno_from(v, info);
     // ONE AXIS PER SLOT, then their CROSS PRODUCT — a weapon that seats two
     // arcanes is searched over pairs, because "the best Primary" and "the
     // best Secondary" are not independent questions: an on-kill Secondary is
@@ -3016,7 +3051,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
                 .collect();
             let fx = |id: &str| {
                 wfsim_engine::arcanes_data::for_slot(pool, id)
-                    .map(|d| d.fx(d.max_rank, StackPolicy::Emergent, arc_base.traits))
+                    .map(|d| d.fx(d.max_rank, StackPolicy::Emergent, arc_base.traits, &tenno))
                     .unwrap_or_else(wfsim_engine::arcanes_data::ArcaneFx::none)
             };
             // A PIN settles the slot: one option, and no empty choice.
@@ -3079,10 +3114,8 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
     let steel_path = get_bool(v, "steel_path", true);
     let headshot_pct = get_f64(v, "headshot_pct", default_headshot_pct(info));
-    // Same scenario knob as the Sim: the optimizer must score builds under the
-    // assumption the sim will replay them with, or the winner is scored on a
-    // buff the replay never grants.
-    let aiming = get_bool(v, "aiming", true);
+    // The same builder the Sim uses — see `tenno_from`.
+    let tenno = tenno_from(v, info);
     let duration = get_f64(v, "duration", 300.0).clamp(1.0, 3600.0);
     let specs = enemies();
     let Some(spec) = specs.iter().find(|e| e.id == enemy_id) else {
@@ -3137,11 +3170,13 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         .to_string();
 
     let scenario = Scenario {
-        aiming,
-        target,
-        body_parts,
+        arena: wfsim_engine::arena::Arena {
+            tenno,
+            target,
+            body_parts,
+            duration_secs: duration,
+        },
         frenzy,
-        duration_secs: duration,
         incarnon_cycle: run_cycle,
         frenzy_lock,
         frenzy_locks: frenzy_apply(buff_cfg.get("frenzy")).1,
@@ -3494,7 +3529,7 @@ pub fn run_optimize_resumable(
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
             let (base, base_form) = forms_for(set, &refs);
             let Some(c) = wfsim_optimizer::rebuild_candidate(
-                &pool, &base, base_form.as_ref(), &innate, 60, scenario.aiming,
+                &pool, &base, base_form.as_ref(), &innate, 60, &scenario.arena.tenno,
                 ordered, *variant, *exilus, &exilus_refs,
             ) else { continue };
             if *ai >= arcanes.len() {
@@ -3635,7 +3670,7 @@ pub fn run_optimize_resumable(
                         &constraints,
                         &exilus_refs,
                         Some(state),
-                        scenario.aiming,
+                        &scenario.arena.tenno,
                         emit,
                     ) {
                         break;

@@ -6,11 +6,24 @@ internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/MultishotForMaxEnergy
 description: "While at or above 90% Energy: Gain 35% of Max Energy as Multishot, capped at X%."
 
 effects:
-  # UNMODELED: depends on the WARFRAME's max and current energy.
-  - kind: unmodeled
-    note: "at 90% energy or above: multishot = 35% of max energy, capped"
-    rank0: 1.0
-    rankMax: 3.5
+  # Reads the WARFRAME's energy POOL (not what is left in it) and gates on how
+  # full that pool is — both live on the fight's Tenno. The neutral Tenno has no
+  # frame and therefore no pool, so this contributes nothing until a scenario
+  # says otherwise.
+  #
+  # "35% of Max Energy as Multishot": 300 energy -> +105% multishot, and the
+  # rank-5 cap of +350% needs 1,000 energy. Stored per POINT of energy, which is
+  # what `per_unit` means everywhere: 0.35 / 100.
+  #
+  # ASSUMED BUCKET, pending measurement (M26): additive with the multishot mods,
+  # the bracket every other multishot source in this data set joins.
+  - kind: tenno_scaled
+    stat: max_energy
+    per_unit: 0.0035
+    min_energy_pct: 0.9   # "While at or above 90% Energy"
+    grants: multishot
+    rank0: 1.0            # cap at rank 0: +100%
+    rankMax: 3.5          # cap at rank 5: +350%
 
 source:
   url: https://wiki.warframe.com/w/Primary_Overcharge

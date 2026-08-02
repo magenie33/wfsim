@@ -6,12 +6,25 @@ internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/DamageForBonusArmour
 description: "Gain +1% damage for each unit of armor past 1,000, up to a max of +X%."
 
 effects:
-  # UNMODELED: the value depends on the WARFRAME's armor, which a weapon calc
-  # has no model of. Recorded so it still lists and displays.
-  - kind: unmodeled
-    note: "+1% damage per point of Warframe armor above 1,000, capped"
-    rank0: 2.5
-    rankMax: 5.0
+  # Reads the WARFRAME's armor, which the calculator now has: the fight carries
+  # a Tenno, and `data/tenno/` says how much armor it has. The neutral Tenno has
+  # none, so this contributes nothing until a scenario says what frame is behind
+  # the gun — which is the honest answer for "no frame chosen", not a zero
+  # invented to avoid the question (user, 2026-08-02).
+  #
+  # ASSUMED BUCKET, pending measurement (M26): "+X% damage" on an arcane card is
+  # additive with the base-damage mods everywhere else in this data set
+  # (Primary/Secondary Merciless, Primary Plated Round both state it), so this
+  # takes the same bracket. The card's own numbers — 1% per point, past 1,000,
+  # capped at +500% at rank 5 — are not in question; only which multiplier the
+  # result joins is.
+  - kind: tenno_scaled
+    stat: armor
+    above: 1000           # the first 1,000 armor pays nothing
+    per_unit: 0.01        # +1% per point past it
+    grants: base_damage
+    rank0: 2.5            # cap at rank 0: +250%
+    rankMax: 5.0          # cap at rank 5: +500%
 
 source:
   url: https://wiki.warframe.com/w/Primary_Bulwark

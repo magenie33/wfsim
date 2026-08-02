@@ -33,8 +33,9 @@ shield: 1
 overguard: 0
 armor: 0
 
-# Ability energy. Secondary Surge reads what is LEFT after a cast, so this is a
-# pool the sim will have to spend from, not a static stat.
+# MAX ability energy — the pool, not what is left in it (`state.energy_pct`
+# below is that). Primary Overcharge reads both: "While at or above 90% Energy:
+# gain 35% of Max Energy as Multishot". 0 = no frame chosen, so it pays nothing.
 energy: 0
 
 # Sprint multiplier (wiki `Module:Warframes/data` field `Sprint`; Loki Prime is
@@ -42,10 +43,12 @@ energy: 0
 # the point of this entry is that a frame fills it in rather than adding it.
 sprint: 1.0
 
-# WHAT THE PLAYER IS DOING. A mod card gates on these in words ("while
-# Invisible", "while Airborne") and until now each such mod was modelled as
-# either unconditional (Spectral Serration paid +330% to everyone) or as an
-# unevaluable conditional. They are conditions the ENGINE can now ask about.
+# WHAT THE PLAYER IS DOING. A mod card gates on these in words ("while aiming",
+# "while Invisible", "while Airborne") and each such mod used to be modelled as
+# either unconditional (Spectral Serration paid +330% to everyone), as an
+# unevaluable conditional, or — for aim — as a bool threaded through the
+# resolver beside this file. They are one set of conditions now, and the engine
+# asks all of them here.
 #
 # The neutral Tenno is doing none of them, which is the honest default for
 # "some max-rank frame with no abilities running": those mods contribute
@@ -53,8 +56,15 @@ sprint: 1.0
 # `invisible: true` and Spectral Serration starts paying, with no code change —
 # that is the whole reason this block exists.
 state:
+  # Holding aim. TRUE, unlike the rest: it is what the sim assumed before any
+  # of this was configurable, so no stored scenario changes meaning, and it is
+  # the panel's optimistic view of a build.
+  aiming: true
   invisible: false
   airborne: false
+  # CURRENT energy as a fraction of the pool above. Full, because a build
+  # calculator is asked what the gun does, not what it does eleven casts in.
+  energy_pct: 1.0
 
 source:
   # No wiki page defines "the default Tenno" — this is our own scaffold, and

@@ -21,9 +21,11 @@ use std::sync::Mutex;
 
 use wfsim_engine::damage::DamageType;
 use wfsim_engine::dummy::{
-    monte_carlo, BodyPart, BuffConfig, BuffLock, DummyParams, LockMode, Summary, TargetParams,
+    monte_carlo, BuffConfig, BuffLock, DummyParams, LockMode, Summary,
 };
-use wfsim_engine::loadout::{resolve_with, ModDef, ResolvedPanel, StackPolicy, WeaponBase};
+use wfsim_engine::arena::Arena;
+use wfsim_engine::tenno_data::Tenno;
+use wfsim_engine::loadout::{resolve_for, ModDef, ResolvedPanel, StackPolicy, WeaponBase};
 use wfsim_engine::mods::{plan_forma, FormaPlan, PlannedMod, Polarity};
 
 /// The searchable mod pool of one CLASS at MAX RANK (drain = base +
@@ -182,10 +184,10 @@ pub fn enumerate_candidates_observed(
         max_slots as usize,
         0,
         &mut subset,
-        // Aiming ASSUMED here: this front predates the scenario flag and is
-        // used by the CLI and the tests, which have no scenario. The
-        // streaming front (enumerate_candidates_each) takes the real value.
-        true,
+        // The NEUTRAL Tenno here: this front predates the scenario and is used
+        // by the CLI and the tests, which have no fight to draw a player from.
+        // The streaming front (enumerate_candidates_each) takes the real one.
+        wfsim_engine::tenno_data::default_tenno(),
         &mut stats,
         &mut scratch,
         &mut |scratch: &mut Vec<Candidate>| {
@@ -220,10 +222,12 @@ pub fn enumerate_candidates_each(
     constraints: &Constraints,
     exilus_opts: &[Option<&ModDef>],
     state: Option<&FunnelState>,
-    // `aiming`: scenario assumption - does the player hold aim? Gates the
-    // `while_aiming` mod effects, so the optimizer scores builds under the
-    // SAME assumption the sim will replay them with.
-    aiming: bool,
+    // The fight's TENNO. Every `condition:` a mod card states is a question
+    // about this player (aiming, invisible, airborne), so the optimizer scores
+    // builds under the same player the sim will replay them with — score a
+    // build aiming and replay it hip-firing and you crown a buff the replay
+    // never grants.
+    tenno: &Tenno,
     emit: &mut dyn FnMut(Candidate) -> bool,
 ) -> bool {
     let usable: Vec<usize> = (0..pool.len())
@@ -257,7 +261,7 @@ pub fn enumerate_candidates_each(
         max_slots as usize,
         0,
         &mut subset,
-        aiming,
+        tenno,
         &mut stats,
         &mut scratch,
         &mut |scratch: &mut Vec<Candidate>| scratch.drain(..).all(&mut *emit),
@@ -286,7 +290,7 @@ fn enumerate_rec<S: FnMut(&mut Vec<Candidate>) -> bool>(
     max: usize,
     from: usize,
     subset: &mut Vec<usize>,
-    aiming: bool,
+    tenno: &Tenno,
     stats: &mut EnumStats,
     scratch: &mut Vec<Candidate>,
     sink: &mut S,
@@ -315,7 +319,7 @@ fn enumerate_rec<S: FnMut(&mut Vec<Candidate>) -> bool>(
             innate,
             exilus_opts,
             subset,
-            aiming,
+            tenno,
             stats,
             scratch,
         );
@@ -360,7 +364,7 @@ fn enumerate_rec<S: FnMut(&mut Vec<Candidate>) -> bool>(
             max,
             k + 1,
             subset,
-            aiming,
+            tenno,
             stats,
             scratch,
             sink,
@@ -384,7 +388,7 @@ fn expand_subset(
     innate: &[Option<Polarity>],
     exilus_opts: &[Option<&ModDef>],
     subset: &[usize],
-    aiming: bool,
+    tenno: &Tenno,
     stats: &mut EnumStats,
     out: &mut Vec<Candidate>,
 ) {
@@ -475,7 +479,7 @@ fn expand_subset(
                 refs.push(x);
             }
             // On-kill stacks start at ZERO and are earned live (user policy).
-            let panel = resolve_with(base, &refs, StackPolicy::Emergent, aiming);
+            let panel = resolve_for(base, &refs, StackPolicy::Emergent, tenno);
 
             // Second-level dedup: orders resolving to the same combined
             // vector are the same build (docs/OPTIMIZER.md §1). Deduping on
@@ -497,7 +501,7 @@ fn expand_subset(
                 ordered: ordered.clone(),
                 panel,
                 base_panel: second_form
-                    .map(|b| resolve_with(b, &refs, StackPolicy::Emergent, aiming)),
+                    .map(|b| resolve_for(b, &refs, StackPolicy::Emergent, tenno)),
                 plan: plan.clone(),
                 variant,
                 exilus: xi as u32,
@@ -527,7 +531,7 @@ pub fn rebuild_candidate(
     second_form: Option<&WeaponBase>,
     innate: &[Option<Polarity>],
     cap: u32,
-    aiming: bool,
+    tenno: &Tenno,
     ordered: &[usize],
     variant: u32,
     exilus: u32,
@@ -558,8 +562,8 @@ pub fn rebuild_candidate(
     }
     Some(Candidate {
         ordered: ordered.to_vec(),
-        panel: resolve_with(base, &refs, StackPolicy::Emergent, aiming),
-        base_panel: second_form.map(|b| resolve_with(b, &refs, StackPolicy::Emergent, aiming)),
+        panel: resolve_for(base, &refs, StackPolicy::Emergent, tenno),
+        base_panel: second_form.map(|b| resolve_for(b, &refs, StackPolicy::Emergent, tenno)),
         plan,
         variant,
         exilus,
@@ -580,14 +584,16 @@ fn permutations(rest: &[DamageType], acc: &mut Vec<DamageType>, out: &mut Vec<Ve
     }
 }
 
-/// The benchmark engagement (target, aim, duration, equipped extras).
-/// The arcane is a SEARCH DIMENSION (user, 2026-07-25) — passed per
+/// The benchmark engagement: an [`Arena`] plus what the SEARCH needs on top of
+/// it. The arcane is a SEARCH DIMENSION (user, 2026-07-25) — passed per
 /// evaluation job, not fixed here.
 #[derive(Clone)]
 pub struct Scenario {
-    pub target: TargetParams,
-    pub body_parts: Vec<BodyPart>,
-    pub duration_secs: f64,
+    /// The fight itself — both actors and how long they are at it. EMBEDDED,
+    /// not restated: the optimizer scores a build under the same arena the
+    /// simulator will replay it in, and a lookalike of the four fields is how
+    /// the two drift a field at a time (user, 2026-08-02).
+    pub arena: Arena,
     /// Run the REAL Incarnon two-form cycle (full gauge start → dump →
     /// revert → rebuild 9 weakpoint charges → transmute → …) instead of
     /// the locked-gauge pseudo-reload model. Needs candidates enumerated
@@ -606,11 +612,6 @@ pub struct Scenario {
     /// Per-buff configured policy applied to every evaluated build (same id
     /// scheme as the web Sim panel). Empty = the emergent default.
     pub buff_cfg: BuffConfig,
-    /// Is the player HOLDING AIM? Gates the `while_aiming` mod effects.
-    /// Scoring a build with this true and replaying it false (or the reverse)
-    /// would rank a buff the replay never grants, so the optimizer and the sim
-    /// read the same flag.
-    pub aiming: bool,
 }
 
 /// Evaluate one candidate with a given arcane: engine Monte Carlo only.
@@ -632,17 +633,10 @@ pub fn evaluate(
             base,
             s.frenzy,
             s.frenzy_lock,
-            s.target.clone(),
-            s.body_parts.clone(),
-            s.duration_secs,
+            &s.arena,
         ),
         _ => {
-            let mut d = DummyParams::from_panel(
-                &c.panel,
-                s.target.clone(),
-                s.body_parts.clone(),
-                s.duration_secs,
-            );
+            let mut d = DummyParams::from_panel(&c.panel, &s.arena);
             // Frenzy is the WEAPON's passive: it rides whichever form is
             // fired (the Sim's rule). Dropping it here scored a base-form
             // Dual Toxocyst without its own x2.5 fire rate.
@@ -1636,7 +1630,7 @@ mod tests {
     /// rank a different field.
     #[test]
     fn a_resumed_screen_lands_on_the_same_survivors() {
-        use wfsim_engine::dummy::{BodyPart, TargetParams};
+        use wfsim_engine::dummy::BodyPart;
         let pool = pool();
         let base = wfsim_engine::loadout::WeaponBase::from_data("dual_toxocyst", true, &[]);
         let innate = wfsim_engine::weapons_data::innate_slots("dual_toxocyst");
@@ -1647,18 +1641,19 @@ mod tests {
         assert!(cands.len() > 100, "need a walk to cut, got {}", cands.len());
         let arcanes = vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
         let scenario = Scenario {
-            target: TargetParams::training_dummy(),
-            body_parts: vec![BodyPart {
-                name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
-                is_head: false, crit_bonus: false,
-            }],
-            duration_secs: 2.0,
+            arena: Arena {
+                body_parts: vec![BodyPart {
+                    name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
+                    is_head: false, crit_bonus: false,
+                }],
+                duration_secs: 2.0,
+                ..Arena::training(2.0)
+            },
             incarnon_cycle: false,
             frenzy_lock: LockMode::Initial(0),
             frenzy_locks: Vec::new(),
             frenzy: false,
             buff_cfg: Default::default(),
-            aiming: true,
         };
         const KEEP: usize = 24;
         let cut_at = cands.len() / 3;
@@ -1714,7 +1709,7 @@ mod tests {
     /// precisely so this holds.
     #[test]
     fn a_resumed_funnel_lands_on_the_same_leaderboard() {
-        use wfsim_engine::dummy::{BodyPart, TargetParams};
+        use wfsim_engine::dummy::BodyPart;
         let pool = pool();
         let base = wfsim_engine::loadout::WeaponBase::from_data("dual_toxocyst", true, &[]);
         let innate = wfsim_engine::weapons_data::innate_slots("dual_toxocyst");
@@ -1725,18 +1720,19 @@ mod tests {
         assert!(cands.len() > 40, "need a field to cut, got {}", cands.len());
         let arcanes = vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
         let scenario = Scenario {
-            target: TargetParams::training_dummy(),
-            body_parts: vec![BodyPart {
-                name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
-                is_head: false, crit_bonus: false,
-            }],
-            duration_secs: 2.0,
+            arena: Arena {
+                body_parts: vec![BodyPart {
+                    name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
+                    is_head: false, crit_bonus: false,
+                }],
+                duration_secs: 2.0,
+                ..Arena::training(2.0)
+            },
             incarnon_cycle: false,
             frenzy_lock: LockMode::Initial(0),
             frenzy_locks: Vec::new(),
             frenzy: false,
             buff_cfg: Default::default(),
-            aiming: true,
         };
         let jobs: Vec<Job> = (0..cands.len()).map(|i| (i, 0)).collect();
         let rounds = schedule_to(jobs.len(), 8, 4);
@@ -1770,7 +1766,7 @@ mod tests {
         let mut rjobs: Vec<Job> = Vec::new();
         for (ordered, variant, exilus, ai) in &ids {
             let c = rebuild_candidate(
-                &pool, &base, None, &innate, 60, scenario.aiming,
+                &pool, &base, None, &innate, 60, &scenario.arena.tenno,
                 ordered, *variant, *exilus, &[None],
             )
             .expect("a checkpointed build is still legal");

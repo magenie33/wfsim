@@ -1434,30 +1434,53 @@ from wiki; falloff/ballistics/AoE math need measurement). **High-risk**
 
 ## 8. Target mitigation (pipeline layer [7])
 
-> **The other actor.** Everything in this section is about the TARGET, because
-> the target is the only actor the sim has ever had. The player exists as data
-> — `data/tenno/`, loaded by `engine::tenno_data` — shaped like a WARFRAME:
-> health, shield, overguard, armor, energy, sprint (the wiki's own
+> **A fight has TWO actors.** This section is about the target because the
+> target is the one that takes damage — but it is no longer the only one on the
+> field. `engine::arena::Arena` is the engagement: a Tenno, a `TargetParams`
+> with its hitboxes, and how long they are at it. The web api and the optimizer
+> each build one from the same scenario and hand it to the same constructor,
+> which is what makes a search's winner scored under the fight the replay runs.
+>
+> The **Tenno** (`data/tenno/`, `engine::tenno_data`) is shaped like a
+> WARFRAME: health, shield, overguard, armor, energy, sprint — the wiki's own
 > `Module:Warframes/data` field names, so a transcribed frame fills these in
-> rather than needing a second vocabulary), plus a `state` block for what the
-> player is DOING.
+> rather than needing a second vocabulary — plus a `state` block for what the
+> player is DOING. `data/tenno/default.yaml` is the NEUTRAL player: aiming, no
+> frame chosen, nothing running, energy full.
 >
-> **`state` is the first thing about the Tenno that moves a number.** A mod
-> card gates on player state in words — "while Invisible", "while Airborne" —
-> and `condition: while_invisible` in a mod file resolves to
-> `ModEffect::WhileTenno(TennoCondition::Invisible, …)`, which
-> `loadout::resolve_for` asks of the Tenno it was handed. The neutral entry is
-> doing none of them, so those mods contribute nothing and the panel says so on
-> the row (`while Invisible`) instead of folding the number in. Hand
-> `resolve_for` a Tenno with `state.invisible: true` and Spectral Serration
-> pays its +330% through the same path, with no code change anywhere — which is
-> the point of modelling the player before there is a frame (user, 2026-08-02).
+> **Player STATE gates mods.** One wrapper covers all of it:
+> `condition: while_aiming | while_invisible | while_airborne` in a mod file
+> resolves to `ModEffect::WhileTenno(TennoCondition, …)`, which
+> `loadout::resolve_for` asks of the fight's Tenno. Aiming used to be a bool
+> threaded through the resolver while the other states lived on the Tenno —
+> two homes for one kind of fact (user, 2026-08-02). A gated effect whose
+> condition is false is absent from the static buckets AND from the emergent
+> specs, so the buff never arms; the panel still lists the row, tagged with the
+> condition, rather than folding a number in or hiding the mod.
 >
-> The stat block is still inert: nothing reads health/shield/armor/energy yet.
-> It is the seam for the mechanics that need a player and currently have
-> nowhere to live — Secondary Fortifier's Overguard gain, Secondary Surge's
-> remaining-energy scaling, Primary Bulwark's "+1% damage per armor above
-> 1,000", the Warframe abilities in §6's GunCO omission list, and self-stagger.
+> **Player STATS scale arcanes.** `kind: tenno_scaled` reads one Warframe stat:
+> `per_unit × (stat − above)`, capped at the rank's value, optionally gated on
+> how full the energy pool is. Two arcanes use it, and both were `unmodeled`
+> until there was a player to ask:
+>
+> | arcane | reads | pays |
+> |---|---|---|
+> | Primary Bulwark | `armor` | +1% base damage per point past 1,000, cap +500% |
+> | Primary Overcharge | `energy` | 35% of max energy as multishot at ≥90% energy, cap +350% |
+>
+> Both resolve to a passive one-stack buff on the bucket their family already
+> feeds, so there is no new damage path to get wrong — checked by construction:
+> Primary Overcharge at 257 energy and Split Chamber at rank 5 give the
+> identical DPS, because +90% multishot is +90% multishot. **The BRACKET each
+> joins is assumed, not measured** — see MEASUREMENTS M26.
+>
+> The neutral Tenno has no frame, so both contribute nothing until a scenario
+> says what is behind the gun. That is the honest answer to "no frame chosen",
+> not a zero invented to dodge the question.
+>
+> What still waits on a player who can be SHOT AT, all recorded as unmodelled:
+> Secondary Fortifier's Overguard gain, Secondary Surge's remaining-energy
+> scaling, the Warframe abilities in §6's GunCO omission list, and self-stagger.
 > `health`/`shield` are placeholders at 1; no frame has 1 health, and nothing
 > may treat the value as meaningful.
 >

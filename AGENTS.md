@@ -15,7 +15,13 @@ around (decision 2026-07-31).
 
 ## Map
 
-- `engine/` — all game mechanics. Every formula carries a comment citing
+- `engine/` — all game mechanics. A fight has TWO actors and
+  `engine::arena::Arena` is both of them (a `Tenno` from `data/tenno/`, a
+  target with its hitboxes, a duration): the web api and the optimizer each
+  build one from the same scenario and hand it to the same constructor, which
+  is what makes a search's winner scored under the fight the replay runs.
+  Every `condition:` on a mod card and every `kind: tenno_scaled` arcane is a
+  question about that Tenno — see MECHANICS §8. Every formula carries a comment citing
   its source (wiki page / datamine / measurement). The engine knows NO
   weapon names: weapons/mods/etc. are loaded from `data/` YAML.
 - `optimizer/` — build search (successive-halving funnel). It only ever
@@ -90,7 +96,9 @@ around (decision 2026-07-31).
   share link in a browser that has never seen the build and asserts what is on
   SCREEN, not what is in the variables — that distinction is the whole reason
   it exists, since the path has twice landed the data correctly and shown an
-  empty page.
+  empty page. `node scripts/check_tenno.mjs` is the third: the fight's PLAYER
+  reaches the panel, the sim and a share link, so an arcane that scales off a
+  Warframe is worth nothing with no frame and +500% with one.
 
 ## Hard rules
 

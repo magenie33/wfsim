@@ -145,14 +145,17 @@ fn indirect_grant(grants: &str) -> Option<IndirectStat> {
 
 /// Map one YAML effect entry to a [`ModEffect`] at max rank (None = no damage
 /// effect / not modeled — the mod still loads).
-/// `condition:` values that name a PLAYER STATE rather than an aim. Each maps
-/// to a [`TennoCondition`], which resolve asks of `data/tenno/` — so the mod
-/// pays exactly when the Tenno is doing the thing, and nothing changes here
-/// when a real frame arrives. An unrecognised string gates nothing, which the
-/// mod-condition test catches as "the card states a condition, the model has
-/// none".
+/// `condition:` values that name a PLAYER STATE. Each maps to a
+/// [`TennoCondition`], which resolve asks of the fight's Tenno — so the mod
+/// pays exactly when the player is doing the thing. `while_aiming` is one of
+/// these, not a case beside them: a card gates on aim the same way it gates on
+/// invisibility, and there is one place to look for either (user, 2026-08-02).
+///
+/// An unrecognised string gates nothing, which the mod-condition test catches
+/// as "the card states a condition, the model has none".
 fn tenno_condition(cond: Option<&str>) -> Option<crate::loadout::TennoCondition> {
     match cond? {
+        "while_aiming" => Some(crate::loadout::TennoCondition::Aiming),
         "while_invisible" => Some(crate::loadout::TennoCondition::Invisible),
         "while_airborne" => Some(crate::loadout::TennoCondition::Airborne),
         _ => None,
@@ -171,8 +174,9 @@ fn effect(v: &Value) -> Option<ModEffect> {
     // the data path was missing. The `buff` arm reads the same key itself,
     // for the effect it builds, and is skipped here so nothing double-wraps.
     let cond = v.get("condition").and_then(Value::as_str);
-    let aim_gated = kind != "buff" && cond == Some("while_aiming");
-    let tenno_cond = tenno_condition(cond);
+    // A `kind: buff` reads its own condition below (it wraps what the trigger
+    // resolves to); every other kind wraps here.
+    let tenno_cond = if kind == "buff" { None } else { tenno_condition(cond) };
     let out = match kind {
         "base_damage_bonus" => ModEffect::BaseDamage(max("rankMax")),
         "multishot_bonus" => ModEffect::Multishot(max("rankMax")),
@@ -218,21 +222,15 @@ fn effect(v: &Value) -> Option<ModEffect> {
         "buff" => {
             let trigger = v.get("trigger").and_then(Value::as_str)?;
             let grants = v.get("grants").and_then(Value::as_str)?;
-            // `condition: while_aiming` wraps whatever this buff resolves to,
-            // so the scenario can switch it off (loadout::resolve_with). A
-            // player-state condition wraps it the same way, asked of the Tenno.
-            let cond = v.get("condition").and_then(Value::as_str);
-            let aim_gated = cond == Some("while_aiming");
-            let tenno_cond = tenno_condition(cond);
+            // The condition wraps whatever this buff resolves to, so the
+            // fight's Tenno decides whether it arms at all.
+            let tenno_cond = tenno_condition(v.get("condition").and_then(Value::as_str));
             let per = max("rankMax"); // per-stack value at max rank
             let stacks = u(v, "max_stacks");
             let dur = f(v, "duration").unwrap_or(0.0);
-            let wrap = |e: ModEffect| {
-                let e = if aim_gated { ModEffect::WhileAiming(Box::new(e)) } else { e };
-                match tenno_cond {
-                    Some(c) => ModEffect::WhileTenno(c, Box::new(e)),
-                    None => e,
-                }
+            let wrap = |e: ModEffect| match tenno_cond {
+                Some(c) => ModEffect::WhileTenno(c, Box::new(e)),
+                None => e,
             };
             wrap(match (trigger, grants) {
                 ("on_kill", "multishot") => {
@@ -364,7 +362,6 @@ fn effect(v: &Value) -> Option<ModEffect> {
         // load the mod without this effect.
         _ => return None,
     };
-    let out = if aim_gated { ModEffect::WhileAiming(Box::new(out)) } else { out };
     Some(match tenno_cond {
         Some(c) => ModEffect::WhileTenno(c, Box::new(out)),
         None => out,
@@ -827,12 +824,12 @@ mod tests {
         // asserting the bare variant would pass on a build where the gate had
         // been silently dropped, which is the bug this wrapper exists to stop.
         assert!(by("galvanized_crosshairs").effects.iter().any(|e| matches!(e,
-            ModEffect::WhileAiming(inner)
+            ModEffect::WhileTenno(crate::loadout::TennoCondition::Aiming, inner)
                 if matches!(**inner, ModEffect::OnHeadshotKillCritChance { max_stacks: 5, .. }))));
-        assert!(by("galvanized_crosshairs").effects.iter().all(|e| matches!(e, ModEffect::WhileAiming(_))),
+        assert!(by("galvanized_crosshairs").effects.iter().all(|e| matches!(e, ModEffect::WhileTenno(crate::loadout::TennoCondition::Aiming, _))),
             "every Galvanized Crosshairs effect is while-aiming");
         // ... and a mod with no condition is NOT wrapped.
-        assert!(by("galvanized_diffusion").effects.iter().all(|e| !matches!(e, ModEffect::WhileAiming(_))));
+        assert!(by("galvanized_diffusion").effects.iter().all(|e| !matches!(e, ModEffect::WhileTenno(crate::loadout::TennoCondition::Aiming, _))));
         // Faction-damage mod loads with the right faction + bonus (Expel Orokin
         // → Corrupted; +30% at max rank).
         assert!(by("expel_grineer").effects.iter().any(|e| matches!(e, ModEffect::FactionDamage(Faction::Grineer, v) if (*v - 0.30).abs() < 1e-9)));
@@ -845,11 +842,11 @@ mod tests {
                 if (*chance - 0.35).abs() < 1e-9 && (*low_rate_threshold - 2.5).abs() < 1e-9 && (*low_rate_mult - 2.0).abs() < 1e-9)));
         // Both of these are while-aiming too, so they arrive wrapped.
         assert!(by("sharpened_bullets").effects.iter().any(|e| matches!(e,
-            ModEffect::WhileAiming(inner)
+            ModEffect::WhileTenno(crate::loadout::TennoCondition::Aiming, inner)
                 if matches!(**inner, ModEffect::OnKillCritDamage { bonus, duration }
                     if (bonus - 0.75).abs() < 1e-9 && (duration - 9.0).abs() < 1e-9))));
         assert!(by("pressurized_magazine").effects.iter().any(|e| matches!(e,
-            ModEffect::WhileAiming(inner)
+            ModEffect::WhileTenno(crate::loadout::TennoCondition::Aiming, inner)
                 if matches!(**inner, ModEffect::OnReloadFireRate { bonus, .. }
                     if (bonus - 0.90).abs() < 1e-9))));
     }

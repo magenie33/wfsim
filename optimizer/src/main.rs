@@ -81,18 +81,20 @@ fn main() {
     }
 
     let scenario = Scenario {
-        // The CLI has no scenario UI: aiming ASSUMED, matching resolve()'s
-        // default and every pre-scenario caller.
-        aiming: true,
-        target: spec
-            .target_params(9999, true, false, TargetMode::InstantRespawn)
-            .expect("valid target"),
-        body_parts: spec.aim_parts(&[("head", 1.0)]).expect("head aim"),
+        arena: wfsim_engine::arena::Arena {
+            // The CLI has no scenario UI, so it fights the NEUTRAL Tenno:
+            // aiming, no frame, nothing running — resolve()'s own default.
+            tenno: wfsim_engine::tenno_data::default_tenno().clone(),
+            target: spec
+                .target_params(9999, true, false, TargetMode::InstantRespawn)
+                .expect("valid target"),
+            body_parts: spec.aim_parts(&[("head", 1.0)]).expect("head aim"),
+            duration_secs,
+        },
         // The CLI drives Dual Toxocyst, which carries the Frenzy passive.
         frenzy: wfsim_engine::weapons_data::has_perk("dual_toxocyst", "frenzy"),
         // Unused here: the CLI runs the cycle, which bakes its own lock.
         frenzy_locks: Vec::new(),
-        duration_secs,
         // The REAL Incarnon cycle (user flow): full gauge start -> dump ->
         // revert 1.0 s -> rebuild 9 weakpoint charges in base form ->
         // transmute 2.35 s -> repeat. Frenzy locked Permanent (chosen
@@ -105,15 +107,15 @@ fn main() {
     };
     println!(
         "[scenario] {} @9999 STEEL PATH, instant respawn, 100% headshots, {} s, REAL incarnon cycle",
-        scenario.target.name, scenario.duration_secs
+        scenario.arena.target.name, scenario.arena.duration_secs
     );
     println!(
         "  pools: overguard {:.3e}, shield {:.3e}, health {:.3e}, armor {:.0}{}",
-        scenario.target.overguard(),
-        scenario.target.max_shield(),
-        scenario.target.max_health(),
-        scenario.target.armor(),
-        match scenario.target.attenuation {
+        scenario.arena.target.overguard(),
+        scenario.arena.target.max_shield(),
+        scenario.arena.target.max_health(),
+        scenario.arena.target.armor(),
+        match scenario.arena.target.attenuation {
             Some(a) => format!(
                 " | attenuation: instance {:.0}% / dps {:.0}% of max HP (ESTIMATES)",
                 a.instance_frac * 100.0,
@@ -196,7 +198,7 @@ fn main() {
             return ArcaneFx::none();
         }
         let d = arcanes_data::secondary(id).unwrap_or_else(|| panic!("unknown arcane id: {id}"));
-        d.fx(d.max_rank, StackPolicy::Emergent, arc_base.traits)
+        d.fx(d.max_rank, StackPolicy::Emergent, arc_base.traits, wfsim_engine::tenno_data::default_tenno())
     };
     let arcanes: Vec<ArcaneFx> = match &arcane_only {
         Some(a) => vec![fx_of(a)],

@@ -1,52 +1,55 @@
 //! The TENNO — the player side of a fight, loaded from `data/tenno/`.
 //!
-//! **Nothing here participates in a damage calculation yet, by design.** The
-//! sim models one actor, the target; this module exists so the mechanics that
-//! need a *player* have a place to attach when they are implemented, instead of
-//! each one inventing its own (user, 2026-07-30). Today it loads, it is pinned
-//! by a test, and no number in the sim changes because of it.
+//! A fight has TWO actors. The target has always been one; this is the other.
+//! It carries what the player IS (a Warframe's stat block) and what the player
+//! is DOING ([`TennoState`]), and both reach the calculation: a mod's
+//! `condition: while_invisible` is asked of the state, and an arcane that
+//! scales off Warframe armor or energy reads the stats.
 //!
-//! What is waiting on it, all currently recorded as unmodelled:
+//! Field names are the wiki's own (`Module:Warframes/data`: Armor, Health,
+//! Shield, Energy, Sprint), so the day a frame is transcribed it fills these in
+//! rather than needing a second vocabulary invented for it (user, 2026-08-02).
+//!
+//! `data/tenno/default.yaml` is the NEUTRAL Tenno — no frame chosen, no
+//! abilities running, aiming down sights. A scenario starts from it and
+//! overrides what it knows; that is why every field has a defined meaning at
+//! its default rather than being a placeholder waiting for a frame.
+//!
+//! `health` / `shield` are still PLACEHOLDERS at 1 (see the yaml): nothing
+//! reads them, because nothing shoots BACK yet. What is waiting on that, all
+//! currently recorded as unmodelled:
 //! - Secondary Fortifier — Overguard gained per damage dealt to Overguard;
-//! - Secondary Surge — damage scaled by the ENERGY left after an ability cast;
+//! - self-stagger from one's own radial attacks (Cautious Shot);
 //! - the GunCO "Adding" omission list, which is mostly Warframe abilities
-//!   (Vex Armor, Eclipse, Furious Javelin, Parasitic Link) — MECHANICS §6;
-//! - self-stagger from one's own radial attacks (Cautious Shot).
-//!
-//! `health` / `shield` are PLACEHOLDERS at 1 (see the yaml). They are not
-//! Warframe stats and nothing should treat the value as meaningful — a frame's
-//! real numbers replace them when frames land.
+//!   (Vex Armor, Eclipse, Furious Javelin, Parasitic Link) — MECHANICS §6.
 
 use std::sync::OnceLock;
 
 use serde::Deserialize;
 
-/// The player's stat block, shaped like a WARFRAME's — the field names are the
-/// wiki's own (`Module:Warframes/data`: Armor, Health, Shield, Energy, Sprint),
-/// so the day a frame is transcribed it fills these in rather than needing a
-/// second vocabulary invented for it (user, 2026-08-02).
+/// The player's stat block plus what the player is doing — the fight's second
+/// actor, and the counterpart of [`crate::dummy::TargetParams`].
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct Tenno {
     pub id: String,
     pub name: String,
-    /// PLACEHOLDER (1). Not a Warframe value.
+    /// PLACEHOLDER (1). Not a Warframe value — nothing shoots back yet.
     pub health: f64,
     /// PLACEHOLDER (1). Not a Warframe value.
     pub shield: f64,
     /// Above shields, and blocks status. 0 is its true unbuffed value.
     pub overguard: f64,
-    /// Mitigates health damage only. 0 is its true unbuffed value — and the
-    /// number Primary Bulwark reads ("+1% damage per point above 1,000").
+    /// Mitigates health damage only, and the number **Primary Bulwark** reads:
+    /// "+1% damage for each unit of armor past 1,000". 0 = no frame chosen.
     pub armor: f64,
+    /// MAX energy — the pool, not what is left in it (that is
+    /// [`TennoState::energy_pct`]). **Primary Overcharge** reads both.
     pub energy: f64,
     /// Sprint multiplier (wiki `Sprint`; Loki Prime 1.25). No damage reader
     /// yet — recorded because the frame has it.
     #[serde(default = "one")]
     pub sprint: f64,
-    /// What the player is DOING. A mod's card gates on these ("while
-    /// Invisible", "while Airborne"), and the neutral Tenno is doing none of
-    /// them — which is why those mods contribute nothing today and will
-    /// contribute the moment a frame that does turns one on.
+    /// What the player is DOING.
     #[serde(default)]
     pub state: TennoState,
 }
@@ -55,16 +58,52 @@ fn one() -> f64 {
     1.0
 }
 
-/// The player STATES a weapon mod can be conditional on. Every field defaults
-/// to false: the neutral Tenno is standing still, visible, on the ground.
-#[derive(Debug, Clone, Deserialize, PartialEq, Default)]
+fn yes() -> bool {
+    true
+}
+
+/// The player STATES a card can be conditional on. One home for all of them:
+/// `aiming` used to be a bool threaded through `loadout::resolve` beside a
+/// separate Tenno holding the rest, which is two places for one kind of fact
+/// (user, 2026-08-02).
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct TennoState {
+    /// Holding aim. Gates every `while_aiming` mod (Galvanized Crosshairs /
+    /// Scope, Argon Scope, Sharpened Bullets, …). Defaults TRUE — the panel's
+    /// optimistic view, and what the sim silently assumed before any of this
+    /// was configurable, so no stored scenario changes meaning.
+    #[serde(default = "yes")]
+    pub aiming: bool,
     /// Spectral Serration: "+330% Damage while Invisible".
     #[serde(default)]
     pub invisible: bool,
     /// Aerial Ace and the Aero set: "while Airborne".
     #[serde(default)]
     pub airborne: bool,
+    /// CURRENT energy as a fraction of [`Tenno::energy`]. 1.0 = full, which is
+    /// the honest default for a build calculator: you are asking what the gun
+    /// does, not what it does eleven casts in. Primary Overcharge's card gates
+    /// on "at or above 90% Energy", so this is the number that decides it.
+    #[serde(default = "full")]
+    pub energy_pct: f64,
+}
+
+fn full() -> f64 {
+    1.0
+}
+
+impl Default for TennoState {
+    fn default() -> Self {
+        Self { aiming: true, invisible: false, airborne: false, energy_pct: 1.0 }
+    }
+}
+
+impl Tenno {
+    /// Current energy = max × `energy_pct`. What Primary Overcharge's gate
+    /// compares, and what Secondary Surge will spend from.
+    pub fn energy_now(&self) -> f64 {
+        self.energy * self.state.energy_pct
+    }
 }
 
 /// The default Tenno (`data/tenno/default.yaml`), parsed once.
@@ -97,5 +136,13 @@ mod tests {
         assert_eq!(t.overguard, 0.0);
         assert_eq!(t.armor, 0.0);
         assert_eq!(t.energy, 0.0);
+        // The NEUTRAL state, which every scenario starts from: aiming (the
+        // panel's optimistic view and the historical assumption), no ability
+        // running, feet on the ground, energy full.
+        assert!(t.state.aiming);
+        assert!(!t.state.invisible);
+        assert!(!t.state.airborne);
+        assert_eq!(t.state.energy_pct, 1.0);
+        assert_eq!(t.energy_now(), 0.0, "no frame chosen: no pool to be full of");
     }
 }
