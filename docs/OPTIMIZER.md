@@ -186,3 +186,26 @@ save. The old key is read once, as a migration.
 An older preset may still carry `final_runs`; it is deliberately ignored on
 load rather than migrated — reading it back would resurrect the second opinion
 this removed.
+
+## The search and the replay must be the SAME fight (2026-08-03)
+
+Three ways they were not, all found by running one build through both:
+
+| what | the simulator | the optimizer (was) |
+|---|---|---|
+| `infinite_ammo` | applied — `infinite_reserve = infinite_ammo \|\| !panel.finite_reserve` | IGNORED; the panel's own reserve stood |
+| `StackPolicy` for a SENTINEL | `BaseOnly` — nothing on the field triggers a companion gun's conditionals | `Emergent`, hardcoded |
+| the Incarnon-form unlock | applied only when the request CARRIED an `evolutions` key | applied unconditionally |
+
+The first is why the search reported LOWER: Larkspur Prime bare, Thrax Lv 300
+SP, 300 s — **0.301 with a reserve, 0.149 without**, and the optimizer always
+searched it without. Now 0.30085 vs 0.30074, which is seed noise.
+
+The third produced an eye-watering 8x for anything that skipped the key — the
+Torid's cycle for free (5.400 vs 0.663). The web always sent it, so only the
+CLI, the API and anyone testing by hand ever saw it. The guard is gone: no
+unlock, no transformation, whoever is asking.
+
+`Scenario` carries `infinite_ammo` and `policy` now, so a scenario fact the
+simulator applies has a field the optimizer applies it from — the two cannot
+drift by omission again.

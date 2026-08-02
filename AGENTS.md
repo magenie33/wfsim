@@ -92,7 +92,9 @@ around (decision 2026-07-31).
   is the committed one — the builder and the optimizer must offer the
   same options and the same visibility on every axis, and it exits
   non-zero when they do not. Run it after adding a weapon or anything a
-  weapon can carry. `node scripts/check_replay.mjs` is the fifth: the
+  weapon can carry. `node scripts/check_gain_axes.mjs` is the sixth: the
+  quick-calc gain scan obeys the evolution TIER LADDER, so it never ranks a
+  perk the builder will not let you click. `node scripts/check_replay.mjs` is the fifth: the
   median engagement plays back on screen — the buff curves draw, scrubbing
   drains the pools, and play advances the clock at the chosen multiplier.
   `node scripts/check_preset_independence.mjs` is the

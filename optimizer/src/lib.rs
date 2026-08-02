@@ -184,10 +184,12 @@ pub fn enumerate_candidates_observed(
         max_slots as usize,
         0,
         &mut subset,
-        // The NEUTRAL Tenno here: this front predates the scenario and is used
-        // by the CLI and the tests, which have no fight to draw a player from.
-        // The streaming front (enumerate_candidates_each) takes the real one.
+        // The NEUTRAL Tenno and the ordinary policy here: this front predates
+        // the scenario and is used by the CLI and the tests, which have no
+        // fight to draw either from. The streaming front
+        // (enumerate_candidates_each) takes the real ones.
         wfsim_engine::tenno_data::default_tenno(),
+        StackPolicy::Emergent,
         &mut stats,
         &mut scratch,
         &mut |scratch: &mut Vec<Candidate>| {
@@ -228,6 +230,7 @@ pub fn enumerate_candidates_each(
     // build aiming and replay it hip-firing and you crown a buff the replay
     // never grants.
     tenno: &Tenno,
+    policy: StackPolicy,
     emit: &mut dyn FnMut(Candidate) -> bool,
 ) -> bool {
     let usable: Vec<usize> = (0..pool.len())
@@ -262,6 +265,7 @@ pub fn enumerate_candidates_each(
         0,
         &mut subset,
         tenno,
+        policy,
         &mut stats,
         &mut scratch,
         &mut |scratch: &mut Vec<Candidate>| scratch.drain(..).all(&mut *emit),
@@ -291,6 +295,7 @@ fn enumerate_rec<S: FnMut(&mut Vec<Candidate>) -> bool>(
     from: usize,
     subset: &mut Vec<usize>,
     tenno: &Tenno,
+    policy: StackPolicy,
     stats: &mut EnumStats,
     scratch: &mut Vec<Candidate>,
     sink: &mut S,
@@ -320,6 +325,7 @@ fn enumerate_rec<S: FnMut(&mut Vec<Candidate>) -> bool>(
             exilus_opts,
             subset,
             tenno,
+            policy,
             stats,
             scratch,
         );
@@ -365,6 +371,7 @@ fn enumerate_rec<S: FnMut(&mut Vec<Candidate>) -> bool>(
             k + 1,
             subset,
             tenno,
+            policy,
             stats,
             scratch,
             sink,
@@ -389,6 +396,7 @@ fn expand_subset(
     exilus_opts: &[Option<&ModDef>],
     subset: &[usize],
     tenno: &Tenno,
+    policy: StackPolicy,
     stats: &mut EnumStats,
     out: &mut Vec<Candidate>,
 ) {
@@ -479,7 +487,7 @@ fn expand_subset(
                 refs.push(x);
             }
             // On-kill stacks start at ZERO and are earned live (user policy).
-            let panel = resolve_for(base, &refs, StackPolicy::Emergent, tenno);
+            let panel = resolve_for(base, &refs, policy, tenno);
 
             // Second-level dedup: orders resolving to the same combined
             // vector are the same build (docs/OPTIMIZER.md §1). Deduping on
@@ -501,7 +509,7 @@ fn expand_subset(
                 ordered: ordered.clone(),
                 panel,
                 base_panel: second_form
-                    .map(|b| resolve_for(b, &refs, StackPolicy::Emergent, tenno)),
+                    .map(|b| resolve_for(b, &refs, policy, tenno)),
                 plan: plan.clone(),
                 variant,
                 exilus: xi as u32,
@@ -532,6 +540,7 @@ pub fn rebuild_candidate(
     innate: &[Option<Polarity>],
     cap: u32,
     tenno: &Tenno,
+    policy: StackPolicy,
     ordered: &[usize],
     variant: u32,
     exilus: u32,
@@ -562,8 +571,8 @@ pub fn rebuild_candidate(
     }
     Some(Candidate {
         ordered: ordered.to_vec(),
-        panel: resolve_for(base, &refs, StackPolicy::Emergent, tenno),
-        base_panel: second_form.map(|b| resolve_for(b, &refs, StackPolicy::Emergent, tenno)),
+        panel: resolve_for(base, &refs, policy, tenno),
+        base_panel: second_form.map(|b| resolve_for(b, &refs, policy, tenno)),
         plan,
         variant,
         exilus,
@@ -612,6 +621,17 @@ pub struct Scenario {
     /// Per-buff configured policy applied to every evaluated build (same id
     /// scheme as the web Sim panel). Empty = the emergent default.
     pub buff_cfg: BuffConfig,
+    /// INFINITE RESERVE — the simulator's own scenario knob, which the
+    /// optimizer used to ignore. A weapon with a finite reserve (Larkspur
+    /// Prime) was therefore SEARCHED running dry while the simulator replayed
+    /// it resupplied, and the search reported half the number for the same
+    /// build (user, 2026-08-03: "optimizer 算出的结果又比 simulator 的要小").
+    pub infinite_ammo: bool,
+    /// How conditional buffs are valued. NOT a constant: a SENTINEL weapon
+    /// resolves under `BaseOnly` — this arena fires one weapon, so nothing on
+    /// the field can trigger a companion gun's conditionals — and hardcoding
+    /// `Emergent` handed it buffs the simulator refuses it.
+    pub policy: StackPolicy,
 }
 
 /// Evaluate one candidate with a given arcane: engine Monte Carlo only.
@@ -628,15 +648,23 @@ pub fn evaluate(
     // hold both sets that transform and sets that cannot. A candidate
     // enumerated without a second form is fired in the one form it has.
     let mut params = match (s.incarnon_cycle, c.base_panel.as_ref()) {
-        (true, Some(base)) => DummyParams::incarnon_cycle_from_panels(
-            &c.panel,
-            base,
-            s.frenzy,
-            s.frenzy_lock,
-            &s.arena,
-        ),
+        (true, Some(base)) => {
+            let mut p = DummyParams::incarnon_cycle_from_panels(
+                &c.panel,
+                base,
+                s.frenzy,
+                s.frenzy_lock,
+                &s.arena,
+            );
+            // The cycle reports the form it transforms INTO, so its reserve is
+            // that form's — the same line `simulate_json` runs.
+            p.infinite_reserve = s.infinite_ammo || !c.panel.finite_reserve;
+            p
+        }
         _ => {
             let mut d = DummyParams::from_panel(&c.panel, &s.arena);
+            // The scenario's ammo rule, exactly as `simulate_json` applies it.
+            d.infinite_reserve = s.infinite_ammo || !c.panel.finite_reserve;
             // Frenzy is the WEAPON's passive: it rides whichever form is
             // fired (the Sim's rule). Dropping it here scored a base-form
             // Dual Toxocyst without its own x2.5 fire rate.
@@ -1654,6 +1682,8 @@ mod tests {
             frenzy_locks: Vec::new(),
             frenzy: false,
             buff_cfg: Default::default(),
+            infinite_ammo: true,
+            policy: StackPolicy::Emergent,
         };
         const KEEP: usize = 24;
         let cut_at = cands.len() / 3;
@@ -1733,6 +1763,8 @@ mod tests {
             frenzy_locks: Vec::new(),
             frenzy: false,
             buff_cfg: Default::default(),
+            infinite_ammo: true,
+            policy: StackPolicy::Emergent,
         };
         let jobs: Vec<Job> = (0..cands.len()).map(|i| (i, 0)).collect();
         let rounds = schedule_to(jobs.len(), 8, 4);
@@ -1766,7 +1798,7 @@ mod tests {
         let mut rjobs: Vec<Job> = Vec::new();
         for (ordered, variant, exilus, ai) in &ids {
             let c = rebuild_candidate(
-                &pool, &base, None, &innate, 60, &scenario.arena.tenno,
+                &pool, &base, None, &innate, 60, &scenario.arena.tenno, scenario.policy,
                 ordered, *variant, *exilus, &[None],
             )
             .expect("a checkpointed build is still legal");

@@ -95,6 +95,10 @@ fn main() {
         frenzy: wfsim_engine::weapons_data::has_perk("dual_toxocyst", "frenzy"),
         // Unused here: the CLI runs the cycle, which bakes its own lock.
         frenzy_locks: Vec::new(),
+        // The CLI drives one weapon with an infinite reserve and no companion,
+        // so these are the ordinary answers rather than a choice it offers.
+        infinite_ammo: true,
+        policy: wfsim_engine::loadout::StackPolicy::Emergent,
         // The REAL Incarnon cycle (user flow): full gauge start -> dump ->
         // revert 1.0 s -> rebuild 9 weakpoint charges in base form ->
         // transmute 2.35 s -> repeat. Frenzy locked Permanent (chosen

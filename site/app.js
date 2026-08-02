@@ -3286,6 +3286,16 @@ const weaponInfo = (id) => META.weapons.find((w) => w.id === id) || META.weapons
 // Evolutions moved into each weapon's meta entry (they are per transform
 // group); this reads the CURRENT weapon's tiers.
 const weaponEvos = () => weaponInfo($("weapon").value).evolutions || [];
+// THE TIER LADDER, in one place. Tier N is choosable only once N-1 is filled:
+// a tier-2 perk with no tier 1 is not a weaker build, it is not a build. The
+// builder greys the later rows out; the gain scan has to obey the same rule or
+// it measures — and recommends — evolutions nobody can select (user,
+// 2026-08-03: "快速计算是不准的，对于 evo 的部分").
+const evoOpenTo = () => {
+  let n = 0;
+  for (const t of weaponEvos()) { if (!evoSel[t.tier]) break; n = t.tier; }
+  return n + 1; // the deepest tier that may be chosen
+};
 const modById = (id) => poolWithRivens().find((m) => m.id === id);
 const show = (id, on) => { const el = $(id); if (on) el.removeAttribute("hidden"); else el.setAttribute("hidden", ""); };
 // Where (other than exceptIdx) this mod is currently slotted, or -1.
@@ -3835,8 +3845,17 @@ function gainCandidates(axis) {
       .map((a) => { const next = cur.slice(); next[axis.idx] = a.id; return { id: a.id, payload: { arcane: next } }; });
   }
   if (axis.kind === "evo") {
+    // Every tier at once, because they are all on screen at once — but only
+    // the tiers the LADDER opens. A locked tier's options used to be scanned
+    // too, so the picker offered (and ranked) an evolution the builder will
+    // not let you click, measured on a build that cannot exist.
+    //
+    // Within a tier this is exactly "current vs replacement": the base run is
+    // the build as it stands, and each candidate swaps ONE tier's choice and
+    // leaves the rest alone.
+    const openTo = evoOpenTo();
     const out = [];
-    weaponEvos().forEach((tier) => {
+    weaponEvos().filter((tier) => tier.tier <= openTo).forEach((tier) => {
       tier.options.forEach((o) => {
         if (evoSel[tier.tier] === o.id) return;
         const next = { ...evoSel, [tier.tier]: o.id };
@@ -4380,11 +4399,7 @@ function renderEvo() {
   // void — a tier-2 perk with no tier 1 is not a weaker build, it is not a
   // build — so the later rows are shown DISABLED rather than silently
   // contributing to a number nobody could reach.
-  const openTo = (() => {
-    let n = 0;
-    for (const t of tiers) { if (!evoSel[t.tier]) break; n = t.tier; }
-    return n + 1;   // the deepest tier that may be chosen
-  })();
+  const openTo = evoOpenTo();
   for (const t of tiers) {
     const sel = evoSel[t.tier] || null;
     const locked = t.tier > openTo;

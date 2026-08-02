@@ -2431,15 +2431,20 @@ pub fn simulate_json(v: &Value) -> Value {
         Err(e) => return err_json(e),
     };
     let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
-    // No Incarnon Form unlock (tier 1) in an explicit selection = the weapon
-    // cannot transform: honest fallback to the DEFAULT form.
+    // No Incarnon Form unlock (tier 1) = the weapon cannot transform: honest
+    // fallback to the DEFAULT form.
+    //
+    // This used to fire only when the request CARRIED an `evolutions` key, so
+    // a caller that omitted it was handed the Incarnon cycle for free — worth
+    // 8x on the Torid — while the optimizer, whose rule has no such guard,
+    // scored the base form. The web always sends the key so nobody saw it;
+    // every other caller did (user, 2026-08-03).
     let unlock = form_unlock_evo(info);
-    let form =
-        if v.get("evolutions").is_some() && unlock.is_some_and(|u| !evos.iter().any(|e| e == u)) {
-            "base"
-        } else {
-            form
-        };
+    let form = if unlock.is_some_and(|u| !evos.iter().any(|e| e == u)) {
+        "base"
+    } else {
+        form
+    };
     // ---- WHICH FORM (or the two-form CYCLE) this run simulates -------------
     // A cycle is a MODE over two forms, not a form, and it exists only where a
     // form must be TRANSFORMED into. Requiring that is a fix, not a tidy-up:
@@ -3339,6 +3344,17 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         frenzy_lock,
         frenzy_locks: frenzy_apply(buff_cfg.get("frenzy")).1,
         buff_cfg,
+        // The SAME two scenario facts the simulator applies. Both were missing
+        // and both made the search disagree with the replay: a finite-reserve
+        // weapon was searched running dry, and a SENTINEL was searched with
+        // conditional buffs nothing on the field can trigger (user,
+        // 2026-08-03).
+        infinite_ammo: get_bool(v, "infinite_ammo", true),
+        policy: if info.sentinel {
+            StackPolicy::BaseOnly
+        } else {
+            StackPolicy::Emergent
+        },
     };
 
     Ok(OptimizePlan {
@@ -3687,7 +3703,7 @@ pub fn run_optimize_resumable(
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
             let (base, base_form) = forms_for(set, &refs);
             let Some(c) = wfsim_optimizer::rebuild_candidate(
-                &pool, &base, base_form.as_ref(), &innate, 60, &scenario.arena.tenno,
+                &pool, &base, base_form.as_ref(), &innate, 60, &scenario.arena.tenno, scenario.policy,
                 ordered, *variant, *exilus, &exilus_refs,
             ) else { continue };
             if *ai >= arcanes.len() {
@@ -3829,6 +3845,7 @@ pub fn run_optimize_resumable(
                         &exilus_refs,
                         Some(state),
                         &scenario.arena.tenno,
+                        scenario.policy,
                         emit,
                     ) {
                         break;
