@@ -670,3 +670,7 @@ label.check input{width:auto}
 .rp-area{fill:var(--accent);opacity:.16}
 .rp-line{fill:none;stroke:var(--accent);stroke-width:1.5;vector-effect:non-scaling-stroke}
 .rp-cur{stroke:var(--text);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.55}
+/* Everything past the cursor is greyed, not removed: the shape you are
+   walking through has to stay legible while you walk it. */
+.tl-ahead,.rp-ahead{fill:var(--bg);opacity:.62}
+.tl-now{stroke:var(--text);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.55}

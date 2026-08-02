@@ -52,34 +52,57 @@ const r = await evaluate(`(async () => {
     stat:e.querySelector('.rp-stat').textContent,
     now:e.querySelector('.rp-now').textContent,
     open:!e.querySelector('.rp-chart').hidden,
-    pts:(e.querySelector('.rp-line')||{}).getAttribute?e.querySelector('.rp-line').getAttribute('points').split(' ').length:0 }));
-  const poolsAt0 = document.getElementById('rp-pools').textContent.replace(/\s+/g,' ').trim();
-  // scrub to the end and read again
+    pts:e.querySelector('.rp-line').getAttribute('points').split(' ').length }));
+  // The panel as the FINISHED fight, which is where a replay opens.
+  const read = () => ({
+    kpi: Object.fromEntries([...document.querySelectorAll('[data-kpi]')].map(e=>[e.dataset.kpi, e.textContent])),
+    meter: [...document.querySelectorAll('#sim-results .mrow[data-mk]:not(.sub)')].map(e=>e.querySelector('.mval').textContent.trim()),
+    pools: document.getElementById('rp-pools').textContent.replace(/\s+/g,' ').trim(),
+  });
+  const atEnd = read();
+  // ...and the replay BELOW everything it drives.
+  const res = document.querySelector('#sim-results .results');
+  const kids = [...res.children].map(e=>e.tagName+'.'+(e.className||''));
+  const iBar = [...res.children].findIndex(e=>e.classList.contains('rp-bar'));
+  const iMeter = [...res.children].findIndex(e=>e.classList.contains('meter'));
+  const iTable = [...res.children].findIndex(e=>e.classList.contains('stat-table'));
+
+  // Rewind to the very start: the panel must read as a fight that has not
+  // happened yet.
   const sc=document.getElementById('rp-scrub');
+  sc.value=0; sc.dispatchEvent(new Event('input')); await sleep(300);
+  const atZero = read();
+  // ...and back to the end restores it exactly.
   sc.value=sc.max; sc.dispatchEvent(new Event('input')); await sleep(300);
-  const poolsAtEnd = document.getElementById('rp-pools').textContent.replace(/\s+/g,' ').trim();
+  const restored = read();
   const nowAtEnd=[...document.querySelectorAll('.rp-now')].map(e=>e.textContent);
-  // press play for a moment
-  document.getElementById('rp-play').click(); await sleep(50);
+
   sc.value=0; sc.dispatchEvent(new Event('input')); await sleep(200);
   document.getElementById('rp-play').click(); await sleep(1500);
   const movedTo = Number(document.getElementById('rp-scrub').value);
   document.getElementById('rp-play').click();
-  return { rows, poolsAt0, poolsAtEnd, nowAtEnd, movedTo, clock: document.getElementById('rp-clock').textContent };
+  return { rows, atEnd, atZero, restored, nowAtEnd, movedTo, iBar, iMeter, iTable, kids,
+           clock: document.getElementById('rp-clock').textContent };
 })()`);
 if (r.fail) { console.log("FAIL  no replay section — sim-results:", r.resultsHtml); process.exit(1); }
 check("one row per buff, drawn and open by default",
-  r.rows.length === 1 && r.rows[0].open && r.rows[0].pts === 600,
-  JSON.stringify(r.rows[0]));
+  r.rows.length === 1 && r.rows[0].open && r.rows[0].pts === 600, JSON.stringify(r.rows[0]));
 check("the header states average and uptime",
-  /avg .*\/40/.test(r.rows[0].stat) && /uptime/.test(r.rows[0].stat), r.rows[0].stat);
-check("at t=0 the target is whole and nothing has been dealt",
-  r.poolsAt0.includes("659,445") && /(damage|伤害)\s*0/.test(r.poolsAt0), r.poolsAt0);
-check("scrubbing to the end drains the pools and books the damage",
-  r.poolsAtEnd !== r.poolsAt0 && !r.poolsAtEnd.includes("659,445"), r.poolsAtEnd);
-check("the buff reached its cap by the end", r.nowAtEnd[0] === "40/40", String(r.nowAtEnd));
+  /avg .*40/.test(r.rows[0].stat) && /uptime/.test(r.rows[0].stat), r.rows[0].stat);
+check("the replay sits BELOW everything it drives",
+  r.iBar > r.iMeter && r.iBar > r.iTable, JSON.stringify(r.kids));
+check("it opens on the finished fight", r.nowAtEnd[0] === "40/40", String(r.nowAtEnd));
+check("rewinding empties the KPIs and the meter",
+  r.atZero.kpi.shots === "0" && r.atZero.kpi.procs === "0" &&
+  r.atZero.meter.every((v) => /^0 /.test(v)),
+  JSON.stringify(r.atZero));
+check("...and the pools go back to full",
+  r.atZero.pools !== r.atEnd.pools && r.atZero.pools.includes("659,445"), r.atZero.pools);
+check("returning to the end restores the panel exactly",
+  JSON.stringify(r.restored) === JSON.stringify(r.atEnd),
+  JSON.stringify(r.atEnd) + " vs " + JSON.stringify(r.restored));
 check("play advances the clock at the chosen multiplier",
-  r.movedTo > 40 && r.movedTo < 120, `frame ${r.movedTo} after 1.5s at 5x (expect ~75)`);
+  r.movedTo > 40 && r.movedTo < 120, "frame " + r.movedTo + " after 1.5s at 5x (expect ~75)");
 ws.close(); proc.kill(); srv.close();
-console.log(fail ? fail + " failed" : "the median engagement plays back");
+console.log(fail ? fail + " failed" : "the whole panel replays");
 process.exit(fail ? 1 : 0);

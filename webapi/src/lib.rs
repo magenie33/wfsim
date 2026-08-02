@@ -264,6 +264,15 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
     t
 }
 
+/// One and three decimals — a replay ships 600 frames per series, and full
+/// f64 text triples the payload for digits no chart can draw.
+fn r1(v: f64) -> f64 {
+    (v * 10.0).round() / 10.0
+}
+fn r3(v: f64) -> f64 {
+    (v * 1000.0).round() / 1000.0
+}
+
 fn default_headshot_pct(info: &WeaponInfo) -> f64 {
     if info.sentinel {
         0.0
@@ -2714,17 +2723,81 @@ pub fn simulate_json(v: &Value) -> Value {
             m.rng_state,
             wfsim_engine::dummy::REPLAY_FRAMES,
         );
+        // The panel's OWN shapes, one array per series instead of one number.
+        // A frame is not a separate format: `kpi` mirrors the KPI row and
+        // `sources` mirrors `damage_sources` key for key, so the client draws
+        // an instant of the fight with the same code that draws the end of it.
+        let pel = |f: &wfsim_engine::dummy::Frame| f.pellets.max(1) as f64;
+        let series = |g: fn(&wfsim_engine::dummy::Frame) -> f64| {
+            rep.frames.iter().map(&g).map(r1).collect::<Vec<_>>()
+        };
+        // Every (source, type) pair that carries damage BY THE END — the set
+        // only ever grows, so the last frame names all of them and an earlier
+        // frame simply reads zero there.
+        let last = rep.frames.last().cloned().unwrap_or_default();
+        let pick = |f: &wfsim_engine::dummy::Frame, k: &str| -> (f64, [f64; 15]) {
+            match k {
+                "direct" => (f.sources.direct, f.sources.direct_by_type),
+                "radial" => (f.sources.radial, f.sources.radial_by_type),
+                "field" => (f.sources.field, f.sources.field_by_type),
+                "arcane" => (f.sources.arcane_on_status, f.sources.arcane_by_type),
+                other => {
+                    let i = TYPE_NAMES.iter().position(|n| *n == other).unwrap_or(0);
+                    (f.sources.status[i], [0.0; 15])
+                }
+            }
+        };
+        let rp_sources: Vec<Value> = sources
+            .iter()
+            .map(|(name, _, by)| {
+                let dmg: Vec<f64> =
+                    rep.frames.iter().map(|f| pick(f, name).0.round()).collect();
+                let types: Vec<Value> = if by.is_some() {
+                    (0..15)
+                        .filter(|&i| pick(&last, name).1[i] > 0.0)
+                        .map(|i| {
+                            json!({
+                                "type": TYPE_NAMES[i],
+                                "dmg": rep.frames.iter()
+                                    .map(|f| pick(f, name).1[i].round())
+                                    .collect::<Vec<_>>(),
+                            })
+                        })
+                        .collect()
+                } else {
+                    Vec::new()
+                };
+                json!({ "source": name, "dmg": dmg, "by_type": types })
+            })
+            .collect();
         json!({
             "dt": rep.dt,
             // Ids are the buff cards' own — the client joins on them for names.
             "buffs": rep.buffs.iter().map(|(id, max)| json!({ "id": id, "max": max }))
                 .collect::<Vec<_>>(),
             "t": rep.frames.iter().map(|f| (f.t * 100.0).round() / 100.0).collect::<Vec<_>>(),
-            "og": rep.frames.iter().map(|f| f.overguard.round()).collect::<Vec<_>>(),
-            "sh": rep.frames.iter().map(|f| f.shield.round()).collect::<Vec<_>>(),
-            "hp": rep.frames.iter().map(|f| f.health.round()).collect::<Vec<_>>(),
-            "dmg": rep.frames.iter().map(|f| f.damage.round()).collect::<Vec<_>>(),
+            "og": series(|f| f.overguard),
+            "sh": series(|f| f.shield),
+            "hp": series(|f| f.health),
+            "dmg": series(|f| f.damage),
             "kills": rep.frames.iter().map(|f| f.kills).collect::<Vec<_>>(),
+            "kpi": {
+                "dps": rep.frames.iter()
+                    .map(|f| if f.t > 0.0 { (f.damage / f.t).round() } else { 0.0 })
+                    .collect::<Vec<_>>(),
+                "procs": rep.frames.iter().map(|f| f.procs).collect::<Vec<_>>(),
+                "shots": rep.frames.iter().map(|f| f.shots).collect::<Vec<_>>(),
+                "reloads": rep.frames.iter().map(|f| f.reloads).collect::<Vec<_>>(),
+                "transforms": rep.frames.iter().map(|f| f.transforms).collect::<Vec<_>>(),
+                "crit_tier": series(|f| f.crit_tier_sum as f64 / f.pellets.max(1) as f64),
+                "crit_rate": rep.frames.iter()
+                    .map(|f| r3(f.crits as f64 / pel(f))).collect::<Vec<_>>(),
+                "big_crit_rate": rep.frames.iter()
+                    .map(|f| r3(f.big_crits as f64 / pel(f))).collect::<Vec<_>>(),
+                "headshot_rate": rep.frames.iter()
+                    .map(|f| r3(f.headshots as f64 / pel(f))).collect::<Vec<_>>(),
+            },
+            "sources": rp_sources,
             // Per BUFF, not per frame: a flat array per series is what a chart
             // wants, and it compresses far better than 600 tiny objects.
             "stacks": (0..rep.buffs.len())

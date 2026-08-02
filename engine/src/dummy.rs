@@ -1175,6 +1175,23 @@ pub struct Frame {
     /// Cumulative EFFECTIVE damage dealt by `t`, and kills completed.
     pub damage: f64,
     pub kills: u32,
+    /// Every counter the RESULT panel reports, as it stood at `t`. A replay
+    /// that only moved a cursor would be a decoration; these are what let the
+    /// whole panel — KPIs, the damage meter, the curves — be re-read at any
+    /// instant of the fight (user, 2026-08-03: "点击 replay，应该可以重新把
+    /// 上面的所有复原").
+    pub shots: u32,
+    pub pellets: u32,
+    pub crits: u32,
+    pub big_crits: u32,
+    pub crit_tier_sum: u32,
+    pub headshots: u32,
+    pub procs: u32,
+    pub field_ticks: u32,
+    pub reloads: u32,
+    pub transforms: u32,
+    /// Effective damage by source, cumulative — the damage meter's own shape.
+    pub sources: SourceDamage,
     /// Live stacks per buff, positionally matching [`Replay::buffs`].
     pub stacks: Vec<u8>,
 }
@@ -2955,6 +2972,17 @@ pub fn run_once_traced(
                     health: target.health,
                     damage: r.effective_damage,
                     kills: r.kills,
+                    shots: r.shots,
+                    pellets: r.pellets,
+                    crits: r.crits,
+                    big_crits: r.big_crits,
+                    crit_tier_sum: r.crit_tier_sum,
+                    headshots: r.headshots,
+                    procs: r.procs,
+                    field_ticks: r.field_ticks,
+                    reloads: r.reloads,
+                    transforms: r.transforms,
+                    sources: r.sources,
                     stacks,
                 });
                 next_frame += frame_dt;

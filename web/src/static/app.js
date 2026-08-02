@@ -5003,27 +5003,116 @@ function replayMarkup(r) {
         <span class="rp-caret">▾</span>
         <span class="rp-name">${escHtml(named(b.id))}</span>
         <span class="rp-stat">${escHtml(tr("avg"))} ${mean.toFixed(1)}/${b.max} · ${escHtml(tr("uptime"))} ${Math.round(up * 100)}%</span>
-        <span class="rp-now" data-now="${i}">–</span>
+        <span class="rp-now" data-now="${i}">${s[s.length - 1]}/${b.max}</span>
       </div>
       <div class="rp-chart">
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
           <polygon class="rp-area" points="0,${H} ${pts} ${W},${H}"/>
           <polyline class="rp-line" points="${pts}"/>
-          <line class="rp-cur" data-cur="${i}" y1="0" y2="${H}" x1="0" x2="0"/>
+          <rect class="rp-ahead" data-ahead="${i}" x="${W}" y="0" width="0" height="${H}"/>
+          <line class="rp-cur" data-cur="${i}" y1="0" y2="${H}" x1="${W}" x2="${W}"/>
         </svg>
       </div>
     </div>`;
   }).join("");
   return `
-      <h3>${escHtml(tr("Replay"))} <span class="sim-hint">${escHtml(tr("the median engagement, frame by frame — the one the numbers above came from"))}</span></h3>
+      <h3>${escHtml(tr("Replay"))} <span class="sim-hint">${escHtml(tr("play the median engagement back — everything above re-reads itself at the instant you stop on"))}</span></h3>
       <div class="rp-bar">
         <button id="rp-play" class="ghost-btn small rp-play">▶ ${escHtml(tr("play"))}</button>
         <select id="rp-speed">${REPLAY_SPEEDS.map((s) => `<option value="${s}"${s === 5 ? " selected" : ""}>${s}x</option>`).join("")}</select>
-        <input id="rp-scrub" class="rp-scrub" type="range" min="0" max="${rp.t.length - 1}" value="0">
-        <span id="rp-clock" class="rp-clock">0.0s</span>
+        <input id="rp-scrub" class="rp-scrub" type="range" min="0" max="${rp.t.length - 1}" value="${rp.t.length - 1}">
+        <span id="rp-clock" class="rp-clock">${rp.t[rp.t.length - 1].toFixed(0)}s / ${rp.t[rp.t.length - 1].toFixed(0)}s</span>
       </div>
       <div class="rp-pools" id="rp-pools"></div>
       ${rows}`;
+}
+
+// Re-read the WHOLE result panel at frame `i` — KPIs, the damage meter, the
+// DPS curve, the buff curves, the target's pools.
+//
+// This is what makes it a replay rather than a cursor (user, 2026-08-03:
+// "点击 replay，应该可以重新把上面的所有复原"). The panel is rendered ONCE at
+// its final state and then re-read in place: rebuilding the markup sixty times
+// a second would drop every open sub-row, every scroll position and the
+// caret you just clicked.
+//
+// It starts at the LAST frame, which is the finished fight — the same numbers
+// the panel would show with no replay at all. Playing rewinds to 0 and walks
+// forward; stopping anywhere leaves the panel reading that instant.
+function replayApply(rp, i) {
+  const n = (x) => Math.round(x || 0).toLocaleString();
+  const pc = (x) => `${((x || 0) * 100).toFixed(1)}%`;
+  const last = rp.t.length - 1;
+  const frac = last > 0 ? i / last : 1;
+
+  $("rp-clock").textContent = `${rp.t[i].toFixed(1)}s / ${rp.t[last].toFixed(0)}s`;
+  $("rp-scrub").value = i;
+  $("rp-pools").innerHTML =
+    `<span>${escHtml(tr("Overguard"))} <b>${n(rp.og[i])}</b></span>` +
+    `<span>${escHtml(tr("Shield"))} <b>${n(rp.sh[i])}</b></span>` +
+    `<span>${escHtml(tr("Health"))} <b>${n(rp.hp[i])}</b></span>` +
+    `<span>${escHtml(tr("Damage"))} <b>${n(rp.dmg[i])}</b></span>` +
+    `<span>${escHtml(tr("Kills"))} <b>${rp.kills[i]}</b></span>`;
+
+  // KPIs. Rates are fractions, counters are counts, DPS is a number — the
+  // key says which, so a new KPI needs no new branch here.
+  const k = rp.kpi || {};
+  document.querySelectorAll("[data-kpi]").forEach((el) => {
+    const key = el.dataset.kpi, s = k[key];
+    if (!s) return;
+    el.textContent = key === "crit_tier" ? (s[i] || 0).toFixed(2)
+      : /_rate$/.test(key) ? pc(s[i])
+      : n(s[i]);
+  });
+
+  // The damage meter, rescaled to the damage dealt SO FAR: the bars are a
+  // composition, and a composition of a fight in progress is read against
+  // that fight, not against its end.
+  const byKey = {};
+  (rp.sources || []).forEach((s) => {
+    byKey[s.source] = s.dmg;
+    (s.by_type || []).forEach((ty) => { byKey[`${s.source}::${ty.type}`] = ty.dmg; });
+  });
+  let total = 0, max = 0;
+  (rp.sources || []).forEach((s) => { total += s.dmg[i]; max = Math.max(max, s.dmg[i]); });
+  document.querySelectorAll("#sim-results [data-mk]").forEach((el) => {
+    const s = byKey[el.dataset.mk];
+    if (!s) return;
+    const v = s[i];
+    const sub = el.classList.contains("sub");
+    // A sub-row is drawn against its own source's bar, exactly as at the end.
+    const own = sub ? (byKey[el.dataset.mk.split("::")[0]] || [])[i] || 1 : max || 1;
+    const bar = el.querySelector(".mbar i");
+    if (bar) bar.style.width = `${Math.max(0, (v / own) * 100).toFixed(1)}%`;
+    const val = el.querySelector(".mval");
+    if (val) val.textContent = `${n(v)} · ${total > 0 ? ((v / total) * 100).toFixed(1) : "0.0"}%`;
+  });
+
+  // The DPS curve: everything past `t` is greyed rather than removed, so the
+  // shape you are walking through stays legible.
+  const svg = $("tl-svg");
+  if (svg) {
+    const w = Number(svg.viewBox.baseVal.width) || 600;
+    const now = $("tl-now"), ahead = $("tl-ahead");
+    if (now) { now.hidden = false; now.setAttribute("x1", w * frac); now.setAttribute("x2", w * frac); }
+    if (ahead) {
+      ahead.hidden = false;
+      ahead.setAttribute("x", w * frac);
+      ahead.setAttribute("width", w * (1 - frac));
+    }
+  }
+
+  // The buff curves, same treatment, plus the live count in each header.
+  document.querySelectorAll("[data-cur]").forEach((el) => {
+    el.setAttribute("x1", 600 * frac); el.setAttribute("x2", 600 * frac);
+  });
+  document.querySelectorAll("[data-ahead]").forEach((el) => {
+    el.setAttribute("x", 600 * frac); el.setAttribute("width", 600 * (1 - frac));
+  });
+  document.querySelectorAll("[data-now]").forEach((el) => {
+    const j = Number(el.dataset.now);
+    el.textContent = `${rp.stacks[j][i]}/${rp.buffs[j].max}`;
+  });
 }
 
 function wireReplay(r) {
@@ -5035,32 +5124,17 @@ function wireReplay(r) {
   // a frame per animation tick. Every array read goes through the rounded
   // index: `rp.t[3.7]` is `undefined`, which threw inside the animation
   // callback and killed the loop with no console entry to show for it.
-  const st = { data: rp, pos: 0, i: 0, playing: false, speed: 5, raf: 0, last: 0 };
+  const st = { data: rp, pos: rp.t.length - 1, i: rp.t.length - 1, playing: false, speed: 5, raf: 0, last: 0 };
   replayState = st;
 
   const draw = () => {
-    const i = Math.max(0, Math.min(rp.t.length - 1, Math.round(st.pos)));
-    st.i = i;
-    $("rp-clock").textContent = `${rp.t[i].toFixed(1)}s / ${rp.t[rp.t.length - 1].toFixed(0)}s`;
-    $("rp-scrub").value = i;
-    const n = (x) => Math.round(x || 0).toLocaleString();
-    const f = (x) => n(rp[x][i]);
-    $("rp-pools").innerHTML =
-      `<span>${escHtml(tr("Overguard"))} <b>${f("og")}</b></span>` +
-      `<span>${escHtml(tr("Shield"))} <b>${f("sh")}</b></span>` +
-      `<span>${escHtml(tr("Health"))} <b>${f("hp")}</b></span>` +
-      `<span>${escHtml(tr("damage"))} <b>${f("dmg")}</b></span>` +
-      `<span>${escHtml(tr("kills"))} <b>${rp.kills[i]}</b></span>`;
-    const x = (i / (rp.t.length - 1)) * 600;
-    document.querySelectorAll("[data-cur]").forEach((el) => {
-      el.setAttribute("x1", x); el.setAttribute("x2", x);
-    });
-    document.querySelectorAll("[data-now]").forEach((el) => {
-      const k = Number(el.dataset.now);
-      el.textContent = `${rp.stacks[k][i]}/${rp.buffs[k].max}`;
-    });
+    st.i = Math.max(0, Math.min(rp.t.length - 1, Math.round(st.pos)));
+    replayApply(rp, st.i);
   };
-
+  const stop = () => {
+    st.playing = false; st.last = 0;
+    $("rp-play").textContent = `▶ ${tr("play")}`;
+  };
   const tick = (now) => {
     if (!st.playing) return;
     // Wall-clock paced, so `speed` means what it says however fast the
@@ -5072,12 +5146,10 @@ function wireReplay(r) {
     draw();
     if (st.playing) st.raf = requestAnimationFrame(tick);
   };
-  const stop = () => {
-    st.playing = false; st.last = 0;
-    $("rp-play").textContent = `▶ ${tr("play")}`;
-  };
   $("rp-play").onclick = () => {
     if (st.playing) { stop(); return; }
+    // Pressing play on a FINISHED fight rewinds it — that is what the button
+    // means, and leaving it stuck at the end made it look broken.
     if (st.pos >= rp.t.length - 1) st.pos = 0;
     st.playing = true; st.last = 0;
     $("rp-play").textContent = `❚❚ ${tr("pause")}`;
@@ -5120,24 +5192,26 @@ function renderResults(r, testedAt) {
     : `${pc(r.score)} of one ${LN("enemies", sim.enemy, t.name || "enemy")}'s EHP drained`);
   // No Forma/capacity here — the simulator reports EFFECTS only; build
   // legality is the Builder's business (user, 2026-07-29).
-  const kpi = (l, v) => `<div class="kpi"><div class="kv">${v}</div><div class="kl">${tr(l)}</div></div>`;
+  // `k` names the replay series that re-reads this cell. Without it a replay
+  // could only move a cursor; with it the whole row is a function of time.
+  const kpi = (l, v, k) => `<div class="kpi"><div class="kv"${k ? ` data-kpi="${k}"` : ""}>${v}</div><div class="kl">${tr(l)}</div></div>`;
   // KPI row: damage pace + crit feel + HANDLING feel (shots, reloads,
   // transforms — user, 2026-07-29). In THIS product "DPS" always means
   // EFFECTIVE dps — what the target actually lost, armor and on-target
   // amps included; the weapon-side raw number is out (user: in our
   // context every stat accounts for the enemy).
   const kpis = [
-    kpi("DPS", n0(r.dps)),
+    kpi("DPS", n0(r.dps), "dps"),
     // The TIER leads, and the rate is renamed to what it actually measures.
     // "Crit rate" reads as "my crit chance", and it stops being that the
     // moment a build passes 100%: every pellet crits, so it pins at 100%
     // whether the build is at 110% or 410% (group, 2026-07-31). The tier is
     // the same number without that truncation — and the one that multiplies
     // the damage. 1 = yellow, 2 = orange, 3 = red, and it keeps going.
-    kpi("Crit tier", (r.crit_tier ?? 0).toFixed(2)),
-    kpi("Pellets crit", pc(r.crit_rate)), kpi("Orange+", pc(r.big_crit_rate)),
-    kpi("Procs", n0(r.procs)), kpi("Shots", n0(r.shots)),
-    kpi("Reloads", n0(r.reloads)), kpi("Transforms", n0(r.transforms)),
+    kpi("Crit tier", (r.crit_tier ?? 0).toFixed(2), "crit_tier"),
+    kpi("Pellets crit", pc(r.crit_rate), "crit_rate"), kpi("Orange+", pc(r.big_crit_rate), "big_crit_rate"),
+    kpi("Procs", n0(r.procs), "procs"), kpi("Shots", n0(r.shots), "shots"),
+    kpi("Reloads", n0(r.reloads), "reloads"), kpi("Transforms", n0(r.transforms), "transforms"),
   ].join("");
   // WoW-style damage meter (user, 2026-07-29): effective damage BY SOURCE
   // over the whole engagement — what actually hurt the target. The panel's
@@ -5162,17 +5236,20 @@ function renderResults(r, testedAt) {
   // quantization snaps each component to a multiple of total/32.
   const mbar = (w, c, dim) =>
     `<div class="mbar"><i style="width:${w.toFixed(1)}%;background:var(--s${c})${dim ? ";opacity:.5" : ""}"></i></div>`;
+  // The meter is re-read per frame too, so every row carries the key of the
+  // series that feeds it — top-level by source, sub-rows by source+type.
+  const mkey = (s, ty) => ` data-mk="${escHtml(ty ? `${s}::${ty}` : s)}"`;
   const meter = srcs.map((x, i) => {
     const c = (i % 8) + 1;
     const parts = x.by_type && x.by_type.length > 1 ? x.by_type : null;
     const open = !!parts && simMeterOpen.has(x.source);
-    const head = `<div class="mrow${parts ? " exp" : ""}" data-src="${escHtml(x.source)}">
+    const head = `<div class="mrow${parts ? " exp" : ""}" data-src="${escHtml(x.source)}"${mkey(x.source)} data-c="${c}">
       <span class="mname">${parts ? `<span class="mcaret">${open ? "▾" : "▸"}</span>` : ""}${srcLabel(x.source)}</span>
       ${mbar(x.dmg / srcMax * 100, c, false)}
       <span class="mval">${n0(x.dmg)} · ${pct2(x.dmg / srcTotal)}</span>
     </div>`;
     if (!parts) return head;
-    return head + parts.map((p) => `<div class="mrow sub" data-of="${escHtml(x.source)}"${open ? "" : " hidden"}>
+    return head + parts.map((p) => `<div class="mrow sub" data-of="${escHtml(x.source)}"${mkey(x.source, p.type)} data-c="${c}"${open ? "" : " hidden"}>
       <span class="mname">${DT(p.type)}</span>
       ${mbar(p.dmg / srcMax * 100, c, true)}
       <span class="mval">${n0(p.dmg)} · ${pct2(p.dmg / srcTotal)}</span>
@@ -5197,6 +5274,8 @@ function renderResults(r, testedAt) {
         <svg id="tl-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
           ${tlGrid}
           <polyline class="tl-line" points="${pts}"/>
+          <rect id="tl-ahead" class="tl-ahead" x="${W}" y="0" width="0" height="${H}" hidden/>
+          <line id="tl-now" class="tl-now" y1="0" y2="${H}" x1="0" x2="0" hidden/>
           <line id="tl-cross" class="tl-cross" y1="${PADT}" y2="${H - PADB}" hidden/>
         </svg>
         <div class="tl-x"><span>0s</span><span>${n0(r.duration)}s</span></div>
@@ -5218,9 +5297,9 @@ function renderResults(r, testedAt) {
       <div class="hero"><div><div class="hero-num">${heroNum}</div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
       <div class="kpi-row">${kpis}</div>
       <h3>${tr("Damage by source")}</h3>
-      <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${chart}${replay}
+      <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${chart}
       <h3>Detail</h3>
-      <div class="stat-table">${detail}</div>
+      <div class="stat-table">${detail}</div>${replay}
     </div>`;
   // Meter rows that carry a per-type split toggle theirs. The choice is kept
   // across runs — a player who opened Direct hits wants it open on the next
