@@ -180,6 +180,14 @@ around (decision 2026-07-31).
   builder → simulator → optimizer, each reading upstream and writing nothing. Its three old collections
   (`optimizer-mods` / `-arcanes` / `-evolutions`) merged into one: they were
   split for cross-weapon reuse, which is the import's job.
+  **NOTHING CROSSES BETWEEN WEAPONS** (user, 2026-08-02: "绝对不能串"). Two
+  weapons' fights may LOOK alike; they are never born from each other. A weapon
+  opened for the first time gets `defaultScenario()` — the server's defaults and
+  nothing else — because the live `sim` at that moment still belongs to the
+  weapon you just left. The same applies to the search's `finalists`/`threads`,
+  and the previous weapon's optimizer RANKING is cleared rather than left on
+  screen under the new weapon's name.
+
   **NOTHING OUTSIDE A COLLECTION WRITES ITS STATE** (user, 2026-08-02). A build
   used to carry a `sim` snapshot that loading it then APPLIED, so picking a
   build silently rewrote the fight you were working in — and the scenario bar,

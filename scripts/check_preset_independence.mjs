@@ -102,10 +102,26 @@ const r = await evaluate(`(async () => {
   const mirrored = buffId ? optBox.querySelector('input[data-b="'+buffId+'"][data-f="stacks"]') : null;
   const optOwnsBuffs = typeof opt.buffs !== 'undefined';
 
+  // ---- and NOTHING crosses between WEAPONS. A weapon that has never been
+  // opened starts from the server's defaults, not from the fight on screen.
+  $$('#opt-results').innerHTML = '<div id="stale-marker">last weapon ranking</div>';
+  sim.duration = 77; markScenarioDirty(); await sleep(900);
+  const aFight = { level: sim.level, dur: sim.duration };
+  history.pushState({},'','/weapons/Dual_Toxocyst'); route(); await sleep(3000);
+  const bFight = { level: sim.level, dur: sim.duration };
+  const bStored = JSON.parse(localStorage.getItem('wfsim-presets-dual_toxocyst-simulator-scenarios'));
+  const staleResults = !!document.getElementById('stale-marker');
+  sim.level = 4242; markScenarioDirty(); await sleep(900);
+  history.pushState({},'','/weapons/Torid'); route(); await sleep(3000);
+  const backFight = { level: sim.level, dur: sim.duration };
+
   return { names, carriesSim, levelBefore, levelAfter, onScreen, modAfter,
            buildUntouched: buildJson === buildJson2, scope, fin,
            buffId, mirroredValue: mirrored ? mirrored.value : null,
-           mirroredLocked: mirrored ? mirrored.disabled : null, optOwnsBuffs };
+           mirroredLocked: mirrored ? mirrored.disabled : null, optOwnsBuffs,
+           aFight, bFight, backFight, staleResults,
+           bStoredLevel: bStored && bStored[0].state.level,
+           defLevel: (META.defaults || {}).level };
 })()`);
 
 check("two builds exist", r.names.length >= 2, r.names.join(","));
@@ -120,6 +136,15 @@ check("...and its finalists", r.fin === 13, String(r.fin));
 check("the optimizer keeps no buff state of its own", !r.optOwnsBuffs);
 check("it shows the scenario's buff value", r.mirroredValue === "3", `${r.buffId} = ${r.mirroredValue}`);
 check("...and offers no way to change it", r.mirroredLocked === true, String(r.mirroredLocked));
+check("a NEW weapon does not inherit the last one's fight",
+  r.bFight.level === r.defLevel && r.bFight.dur !== r.aFight.dur,
+  `${JSON.stringify(r.aFight)} -> ${JSON.stringify(r.bFight)}`);
+check("...and its stored scenario is the DEFAULT, not a copy",
+  r.bStoredLevel === r.defLevel, `${r.bStoredLevel} vs default ${r.defLevel}`);
+check("switching weapon clears the last one's optimizer ranking", !r.staleResults);
+check("coming back restores THIS weapon's fight",
+  r.backFight.level === r.aFight.level && r.backFight.dur === r.aFight.dur,
+  JSON.stringify(r.backFight));
 ws.close();proc.kill();srv.close();
 console.log(fail?`\n${fail} failed`:"\nevery collection owns its own state");
 process.exit(fail?1:0);

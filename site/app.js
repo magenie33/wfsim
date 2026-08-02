@@ -322,6 +322,32 @@ const asArcaneList = (v, n) => {
 // means no transformation, so the panel falls back to the base form.
 // Overwritten by META.defaults on init.
 let evoSel = { 1: null, 2: null, 3: null, 4: null };
+// A FRESH scenario, built from the server's defaults and from nothing else.
+//
+// This is what a weapon that has never been opened gets. It used to be
+// `snapshotScenario()` — the live fight, which at that moment still belongs to
+// the weapon you just left — so opening a new weapon inherited the previous
+// one's level, duration, Tenno and buffs, and saved them as that weapon's
+// "scenario 1". Two weapons' fights are ALLOWED to look alike; they are never
+// allowed to be the same object or to be born from each other (user,
+// 2026-08-02: "绝对不能串").
+//
+// Rebuilt FIELD BY FIELD, because a field missing here is a field that
+// silently becomes `undefined` — which is how `infinite_ammo` once vanished
+// from state while the declaration below set it. The server owns every
+// default; this copies them.
+function defaultScenario() {
+  const d = META.defaults || {};
+  return {
+    enemy: d.enemy, level: d.level, steel_path: d.steel_path,
+    headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
+    invisible: !!d.invisible, airborne: !!d.airborne,
+    wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
+    infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
+    duration: d.duration, runs: d.runs, form: d.form, buffs: {},
+  };
+}
+
 // Sim scenario + per-buff config. Seeded from META.defaults in init().
 // `buffs` maps buff id -> { stacks, locked } (section 2); the buff SET comes
 // from /api/panel and syncs as the build changes.
@@ -375,7 +401,8 @@ let optPrefs = { sort: "name", dir: "asc", pol: null };
 // already answered there, and two boxes for one number is how a winner gets
 // crowned at a precision the replay never used.
 const finalRuns = () => sim.runs;
-let optRun = { finalists: 10, threads: 0 }; // threads 0 = auto (cores − 2)
+const OPT_RUN_DEFAULTS = { finalists: 10, threads: 0 }; // threads 0 = auto (cores − 2)
+let optRun = { ...OPT_RUN_DEFAULTS };
 // One-time migration off the old machine-local key; the preset auto-save
 // takes it from here.
 try { const s = JSON.parse(localStorage.getItem("wfsim-opt-run")); if (s && s.threads) optRun.threads = s.threads; } catch (_) {}
@@ -501,16 +528,7 @@ async function init() {
   $("weapon").value = d.weapon;
   arcanes = arcanesFor(d.weapon, d.arcane);
   evoSel = { 1: null, 2: null, 3: null, 4: null, ...(d.evolutions || {}) };
-  // The scenario is rebuilt FIELD BY FIELD from the server's defaults, so a
-  // field missing here is a field that silently reverts to `undefined` —
-  // which is how `infinite_ammo` came to be absent from state while the
-  // declaration above set it. The server owns every default; this copies them.
-  sim = { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
-    headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
-    invisible: !!d.invisible, airborne: !!d.airborne,
-    wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
-    infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
-    duration: d.duration, runs: d.runs, form: d.form, buffs: {} };
+  sim = defaultScenario();
   applyWeapon(d.weapon, d.mods);
 
   $("weapon").addEventListener("change", () => {
@@ -1790,16 +1808,7 @@ async function importShare(code) {
   //    travelled, so the defaults fill the rest back in.
   // Only the DIFFERENCES travelled; the server's own defaults fill the rest
   // back in, which is the same table the sender diffed against.
-  const d = META.defaults || {};
-  const scState = {
-    enemy: d.enemy, level: d.level, steel_path: d.steel_path,
-    headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
-    invisible: !!d.invisible, airborne: !!d.airborne,
-    wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
-    infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
-    duration: d.duration, runs: d.runs, form: d.form, buffs: {},
-    ...(data.sc || {}),
-  };
+  const scState = { ...defaultScenario(), ...(data.sc || {}) };
   const sc = loadPresetList(SCENARIOS);
   const scName = freeName(sc, (n) => "scenario" + (n > 1 ? " " + n : ""));
   sc.push({ name: scName, savedAt: Date.now(), state: scState });
@@ -2896,7 +2905,10 @@ function initPresets() {
   }
   let sc = loadPresetList(SCENARIOS);
   if (!sc.length) {
-    sc = [{ name: "scenario 1", savedAt: Date.now(), state: snapshotScenario() }];
+    // FROM THE DEFAULTS, never from the live fight — see `defaultScenario`.
+    // This runs on a weapon switch, when `sim` still holds the weapon you
+    // just left.
+    sc = [{ name: "scenario 1", savedAt: Date.now(), state: defaultScenario() }];
     storePresetList(SCENARIOS, sc);
   }
   const lastSc = localStorage.getItem(presetActiveKey(SCENARIOS));
@@ -3173,19 +3185,16 @@ function renderPresetBarIn(bar, cfg) {
 }
 
 // An EMPTY build for "+ new": the CURRENT weapon (the page is a weapon
-// page — a new preset should not navigate away), bare slots, no arcane,
-// no evolutions, sim back to the META defaults.
+// page — a new preset should not navigate away), bare slots, no arcane, no
+// evolutions. NO scenario: a build does not carry a fight, so making one
+// cannot reset the fight you are in.
 function blankBuildState() {
-  const d = META.defaults;
   return {
     weapon: $("weapon").value,
     evoSel: {},
     arcane: ["none"],
     arcaneRank: [null],
     slots: [],
-    sim: { enemy: d.enemy, level: d.level, steel_path: d.steel_path,
-      headshot_pct: defaultHeadshotPct(weaponInfo($("weapon").value)),
-      duration: d.duration, runs: d.runs, form: d.form, buffs: {} },
   };
 }
 
@@ -3310,6 +3319,14 @@ function applyWeaponInner(id, presetMods) {
   const w = weaponInfo(id);
   buffList = []; // rebuilt from the next /api/panel response for this build
   opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8 }; optSeeded = false; // reset scope
+  // ...and how it RUNS, for the same reason the scenario resets: a weapon that
+  // has never been searched must not inherit the last weapon's finalists or
+  // thread count into the "search 1" it is about to be given.
+  optRun = { ...OPT_RUN_DEFAULTS };
+  // Last weapon's ranking is not this weapon's. Nothing else clears it — the
+  // tabs are CSS-hidden rather than re-rendered, so it simply stayed on screen
+  // under the new weapon's name (user, 2026-08-02).
+  if ($("opt-results")) $("opt-results").innerHTML = "";
   // A weapon's pool is the UNION of the pools it draws from: `primary` mods
   // fit any primary weapon, `rifle` is the class pool. One flat list per
   // weapon was right only while every rifle-class weapon was a launcher.
