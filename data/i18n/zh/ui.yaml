@@ -364,6 +364,10 @@ ui:
   "All rivens": 全部裂罅
   "roll everything maximal": 全部拉到最高
   "every riven you have made for this weapon, with what it actually rolls": 你为这把武器做的每张裂罅，以及它实际开出的数值
+  # The buff block sets the run's STARTING state, not the buff's worth — the
+  # fight goes on granting and decaying on each buff's own trigger. Saying only
+  # "locked = 100% uptime" read as "this box decides how much you get".
+  "the stacks the run STARTS with — the fight still grants and decays them on their own triggers": 这里设的是开战时的层数 —— 战斗中该触发的仍会照常触发、该衰减的也照常衰减
   # How FULL a searched build must be, as a range: "exactly 8" is 8–8, "up to
   # 7" is 1–7. One setting, not three behaviours.
   "Mods / build": 每套配装 MOD 数

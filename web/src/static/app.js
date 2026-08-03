@@ -2457,9 +2457,21 @@ const presetActiveKey = (d, w) =>
     localStorage.removeItem(from);
   });
 })();
+// Parsed lists, memoised on the RAW STRING. The stored text IS the
+// invalidation — nothing to keep in sync, and a stale read is impossible.
+// Worth having because `gainKey()` resolves a whole scenario and is called
+// from a sort comparator, i.e. O(n log n) times per picker render.
+const presetParseCache = new Map();
 const loadPresetList = (d, w) => {
-  try { const p = JSON.parse(localStorage.getItem(presetListKey(d, w))); return Array.isArray(p) ? p : []; }
-  catch (_) { return []; }
+  const k = presetListKey(d, w);
+  let raw;
+  try { raw = localStorage.getItem(k); } catch (_) { return []; }
+  const hit = presetParseCache.get(k);
+  if (hit && hit.raw === raw) return hit.list;
+  let list = [];
+  try { const p = JSON.parse(raw); if (Array.isArray(p)) list = p; } catch (_) { /* empty */ }
+  presetParseCache.set(k, { raw, list });
+  return list;
 };
 // The first "<thing> N" this collection does not already hold. Shared by both
 // kinds — naming a new item is the same problem whatever it is called.
@@ -3014,6 +3026,7 @@ function markPresetDirty() {
 }
 
 let scenarioSaveTimer = null;
+let gainRefreshTimer = null;
 // The scenario's own auto-save. Same contract as the build's — the editor IS
 // the preset — but a different collection, because a build is tested against
 // several fights and each of them is worth keeping.
@@ -3028,6 +3041,13 @@ function markScenarioDirty() {
     ps[at] = { ...ps[at], savedAt: Date.now(), state: snapshotScenario() };
     storePresetList(SCENARIOS, ps);
   }, 400);
+  // ...and the QUICK CALC, which measures under a scenario and therefore goes
+  // stale when one is edited. It waits for the same debounce because the scan
+  // resolves the SAVED preset over `sim` — refreshing before the write would
+  // re-measure the old fight. `ensureGains` re-checks the key, so an edit the
+  // chosen scenario does not use costs nothing.
+  clearTimeout(gainRefreshTimer);
+  gainRefreshTimer = setTimeout(refreshGains, 450);
 }
 
 // ---- The ONE preset-bar component -------------------------------------
@@ -3862,10 +3882,17 @@ function gainScenario() {
 
 // A scan belongs to ONE AXIS POSITION of one build under one scenario.
 let gainAxis = { kind: "mods", idx: 0 };
-const gainKey = () => JSON.stringify([gainAxis, buildPayload(), gainPrefs,
-  sim.enemy, sim.level, sim.steel_path, sim.headshot_pct, sim.aiming,
-  sim.invisible, sim.airborne, sim.wf_armor, sim.wf_energy,
-  sim.infinite_ammo, sim.duration, sim.runs, sim.form, sim.deployment]);
+// The key is the AXIS, the BUILD and the FIGHT THIS SCAN WILL ACTUALLY RUN —
+// `gainScenario()`'s own output, not a hand-listed copy of some of `sim`.
+//
+// It used to name the scenario fields one by one, and the list had drifted:
+// `buffs` was missing, so raising a buff's starting stacks changed what the
+// scan would measure without changing the key, and the old ranking stayed on
+// screen looking current (user, 2026-08-03). `metric` was missing too. Any
+// hand-maintained list of "the fields that matter" grows a hole the moment a
+// field is added; deriving the key from the payload cannot.
+const gainKey = () => JSON.stringify([gainAxis, buildPayload(), gainPrefs.on,
+  gainScenario().scenario]);
 
 const famOf = (id) => (modById(id) || {}).family || null;
 const modsCompatible = (ids) => {
@@ -4078,8 +4105,28 @@ function renderQuickCalc() {
     e.stopPropagation();
     gainPrefs = { scenario: $("gp-scen").value };
     saveGainPrefs();
-    renderQuickCalc();
+    // Measuring under a different fight is a different question — answer it
+    // now rather than at the next time a picker happens to open.
+    refreshGains();
   };
+}
+
+/// Re-run whatever quick-calc surface is on screen. Called after ANY scenario
+/// edit: the scan is measured under the scenario, so a change to it makes the
+/// numbers on screen answers to a question nobody is asking any more.
+///
+/// It is not a repaint — `ensureGains` compares the key first, so a change the
+/// chosen scenario does not care about costs nothing here. Evolution rows scan
+/// without being opened, so they always refresh; the pickers only when open.
+function refreshGains() {
+  if (gainPrefs.on === false) return;
+  renderQuickCalc();
+  if ($("mod-popover") && !$("mod-popover").hidden) {
+    renderTools();
+    renderMenu(pickerSlot, $("mod-search").value);
+  }
+  if ($("arcane-popover") && !$("arcane-popover").hidden) renderArcaneMenu($("arcane-search").value);
+  renderEvo();
 }
 
 /// Compute this axis position's ranking, unless it is already on screen.
