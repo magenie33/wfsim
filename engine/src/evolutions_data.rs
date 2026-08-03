@@ -72,18 +72,19 @@ enum EvoEffect {
     /// +14". It is applied UNCONDITIONALLY, i.e. the run is modelled as
     /// holding it from t = 0 (user, 2026-08-03: "我们也开头是1").
     ///
-    /// That is the honest reading rather than a shortcut. The wiki states the
-    /// bonus "lasts indefinitely until a manual reload is initiated while the
-    /// magazine is not empty", and a sustained engagement empties the magazine
-    /// every time — so the buff is up for all of a fight worth measuring. It
-    /// is also the only shape this layer can take: base-damage evolutions are
-    /// baked into `WeaponBase` BEFORE mods, while a runtime buff is applied to
-    /// `DummyParams` after, so a configurable version would have to re-derive
-    /// the panel mid-run.
+    /// Held is EXACT here, not an approximation, and the timing is why: the
+    /// bonus lands the moment an empty reload BEGINS and does not wait for it
+    /// to finish (measured in game — user, 2026-08-03; the wiki claims the
+    /// opposite and loses, as it does to every measurement). So there is no
+    /// gap: the magazine empties, the reload starts, the buff is already back,
+    /// and it "lasts indefinitely until a manual reload is initiated while the
+    /// magazine is not empty" — which the sim never does. Under the wiki's
+    /// reading the buff would instead be DOWN for one reload every cycle, and
+    /// holding it would overstate the build.
     ///
-    /// It stays its own variant rather than being folded into
-    /// `FlatBaseDamage` so the card can say what it assumed, and so the day
-    /// the sim can toggle it there is one place to change.
+    /// It stays its own variant rather than being folded into `FlatBaseDamage`
+    /// because it is a BUFF: `resolve` turns it into an `EvoBdBuff` so the bar
+    /// can show it and a card can scale it back out.
     FlatBaseDamageOnEmptyReload(f64),
     /// A handling / mobility / multi-target stat with no single-target damage
     /// payload — recoil, accuracy, punch through, projectile speed, holstered
@@ -400,7 +401,7 @@ impl EvolutionDef {
                 }
                 EvoEffect::AmmoMaxSet(v) => format!("ammo reserve set to {v:.0}"),
                 EvoEffect::FlatBaseDamageOnEmptyReload(v) => format!(
-                    "+{v:.0} base damage after an empty reload — held for the whole run"
+                    "+{v:.0} base damage from the moment an empty reload starts — held all run"
                 ),
                 EvoEffect::FlatBaseStatusChance(v) => format!(
                     "+{:.0}% BASE status chance (status mods multiply it)",

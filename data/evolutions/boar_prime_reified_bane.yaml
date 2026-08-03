@@ -13,10 +13,23 @@ effects:
   # evolution occupies.
   - kind: flat_base_damage
     value: 10.0
-  # The conditional half, MODELLED AS HELD (user, 2026-08-03: 开头是 1).
-  # The wiki: the bonus "lasts indefinitely until a manual reload is initiated
-  # while the magazine is not empty" — a sustained engagement empties the
-  # magazine every time, so it is up for all of a fight worth measuring.
+  # The conditional half, MODELLED AS HELD — and the TIMING is what makes that
+  # correct rather than convenient.
+  #
+  # IN GAME the bonus lands the MOMENT an empty reload BEGINS; it does not wait
+  # for the reload to finish (user, 2026-08-03: "换弹的那一刻就有了，不需要等待
+  # 换弹完成"). The wiki says the opposite — "applied after finishing a reload
+  # while the magazine is empty" — and a measurement beats the wiki here, as
+  # everywhere.
+  #
+  # That distinction is not pedantry, it is the whole justification. Under the
+  # wiki's reading the buff would be DOWN for one reload every cycle — 2.75 s
+  # of a magazine that lasts 20 rounds — so "held for the whole run" would
+  # overstate the build every cycle. Under the measured behaviour there is no
+  # gap at all: the magazine empties, the reload starts, the buff is already
+  # back, and it "lasts indefinitely until a manual reload is initiated while
+  # the magazine is not empty" (the wiki's own words, and the sim never does
+  # that). So held is exact, not an approximation.
   #
   # The wiki also records that the game MISPRINTS this half as +10 on the card
   # ("Reload From empty bonus is incorrectly listed as +10 in game"); the
