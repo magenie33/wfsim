@@ -1,0 +1,20 @@
+id: primed_chilling_grasp
+name: Primed Chilling Grasp
+rarity: legendary
+polarity: vazarin
+base_drain: 6                 # max drain 16 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Shotgun/Expert/WeaponFreezeDamageModExpert
+description: "+X% Cold"
+
+effects:
+  - kind: elemental_damage_bonus
+    element: cold
+    rank0: 0.15
+    rankMax: 1.65
+
+family: chilling_grasp
+incompatible_with: [chilling_grasp]
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Chilling_Grasp

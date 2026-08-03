@@ -1,0 +1,17 @@
+id: fatal_acceleration
+name: Fatal Acceleration
+rarity: uncommon
+polarity: madurai
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponProjectileSpeedMod
+description: "+X% Projectile Speed"
+
+effects:
+  - kind: projectile_speed_bonus
+    rank0: 0.1
+    rankMax: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Fatal_Acceleration

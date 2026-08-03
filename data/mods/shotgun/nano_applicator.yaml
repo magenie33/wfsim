@@ -1,0 +1,26 @@
+id: nano_applicator
+name: Nano-Applicator
+rarity: rare
+polarity: madurai
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Shotgun/Event/StatusProcWhileAimingShotgunMod
+description: "On Ability Cast:\n+X% Status Chance when Aiming for Xs"
+
+effects:
+  # CONDITIONAL on an ABILITY CAST, which this arena has no way to perform —
+  # the sim fires one weapon and casts nothing. Modelled honestly anyway: the
+  # trigger exists, it simply never fires here, so the mod contributes nothing
+  # rather than contributing its full value for free.
+  - kind: buff
+    trigger: on_ability_cast
+    condition: while_aiming
+    grants: status_chance
+    rank0: 0.15
+    rankMax: 0.9
+    max_stacks: 1
+    duration_rank0: 2
+    duration: 9
+
+source:
+  url: https://wiki.warframe.com/w/Nano-Applicator

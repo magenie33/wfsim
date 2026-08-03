@@ -1,0 +1,20 @@
+id: charged_shell
+name: Charged Shell
+rarity: uncommon
+polarity: naramon
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponElectricityDamageMod
+description: "+X% Electricity"
+
+effects:
+  - kind: elemental_damage_bonus
+    element: electricity
+    rank0: 0.15
+    rankMax: 0.9
+
+family: charged_shell
+incompatible_with: [primed_charged_shell]
+
+source:
+  url: https://wiki.warframe.com/w/Charged_Shell

@@ -1,0 +1,20 @@
+id: primed_cleanse_corpus
+name: Primed Cleanse Corpus
+rarity: legendary
+polarity: madurai
+base_drain: 4                 # max drain 14 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Shotgun/Expert/WeaponShotgunFactionDamageCorpusExpert
+description: "xX Damage to Corpus"
+
+effects:
+  - kind: faction_damage_bonus
+    faction: corpus
+    rank0: 0.05
+    rankMax: 0.55
+
+family: cleanse_corpus
+incompatible_with: [cleanse_corpus]
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Cleanse_Corpus

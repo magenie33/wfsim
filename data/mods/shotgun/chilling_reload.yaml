@@ -1,0 +1,20 @@
+id: chilling_reload
+name: Chilling Reload
+rarity: rare
+polarity: madurai
+base_drain: 2                 # max drain 5 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Shotgun/DualStat/ColdDmgReloadSpeedMod
+description: "+X% Cold\n+X% Reload Speed"
+
+effects:
+  - kind: elemental_damage_bonus
+    element: cold
+    rank0: 0.15
+    rankMax: 0.6
+  - kind: reload_speed_bonus
+    rank0: 0.1
+    rankMax: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Chilling_Reload

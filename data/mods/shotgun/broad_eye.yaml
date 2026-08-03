@@ -1,0 +1,17 @@
+id: broad_eye
+name: Broad Eye
+rarity: uncommon
+polarity: naramon
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/PvPMods/Shotgun/HigherAirAimFoVShotgunMod
+description: "-X% Zoom while Aim Gliding"
+
+effects:
+  - kind: zoom_bonus
+    rank0: -0.1
+    rankMax: -0.6
+
+source:
+  url: https://wiki.warframe.com/w/Broad_Eye

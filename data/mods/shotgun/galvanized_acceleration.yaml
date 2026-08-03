@@ -1,0 +1,39 @@
+id: galvanized_acceleration
+name: Galvanized Acceleration
+rarity: rare
+polarity: madurai
+base_drain: 2                 # max drain 12 at rank 10
+max_rank: 10
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponProjectileSpeedSPMod
+description: "+X% Projectile Speed and +X% Beam Range\nOn Kill:\n+X% Projectile Speed and +X% Beam Range for Xs. Stacks up to Xx."
+
+effects:
+  - kind: projectile_speed_bonus
+    rank0: 0.0273
+    rankMax: 0.3
+  - kind: beam_range_bonus
+    rank0: 0.0273
+    rankMax: 0.3
+  # TWO grants off ONE trigger, the way Primary Frostbite grants crit damage
+  # and multishot off one Cold proc. They are the same stack count by
+  # construction — the card gives them one number and one timer.
+  - kind: buff
+    trigger: on_kill
+    grants: projectile_speed
+    rank0: 0.0273
+    rankMax: 0.3
+    max_stacks: 2
+    duration: 10
+    decay: lose_one_and_reset
+  - kind: buff
+    trigger: on_kill
+    grants: beam_range
+    rank0: 0.0273
+    rankMax: 0.3
+    max_stacks: 2
+    duration: 10
+    decay: lose_one_and_reset
+
+source:
+  url: https://wiki.warframe.com/w/Galvanized_Acceleration

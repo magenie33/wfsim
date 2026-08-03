@@ -1,0 +1,19 @@
+id: ammo_stock
+name: Ammo Stock
+rarity: uncommon
+polarity: naramon
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponClipMaxMod
+description: "+X% Magazine Capacity"
+
+effects:
+  - kind: magazine_capacity_bonus
+    rank0: 0.1
+    rankMax: 0.6
+
+family: ammo_stock
+incompatible_with: [primed_ammo_stock]
+
+source:
+  url: https://wiki.warframe.com/w/Ammo_Stock

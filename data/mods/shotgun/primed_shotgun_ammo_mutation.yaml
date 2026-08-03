@@ -1,0 +1,20 @@
+id: primed_shotgun_ammo_mutation
+name: Primed Shotgun Ammo Mutation
+rarity: legendary
+polarity: naramon
+base_drain: 0                 # max drain 10 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Shotgun/Expert/WeaponShotgunConvertAmmoModExpert
+description: "Converts Secondary ammo pickups to X% of Ammo Pick Up."
+
+effects:
+  - kind: ammo_conversion
+    from: secondary
+    rank0: 0.08
+    rankMax: 0.92
+
+family: shotgun_ammo_mutation
+incompatible_with: [shotgun_ammo_mutation]
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Shotgun_Ammo_Mutation

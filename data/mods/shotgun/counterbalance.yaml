@@ -1,0 +1,20 @@
+id: counterbalance
+name: Counterbalance
+rarity: rare
+polarity: naramon
+base_drain: 6                 # max drain 9 at rank 3
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponRecoilReductionMod
+description: "-X% Weapon Recoil"
+
+effects:
+  - kind: recoil_reduction
+    rank0: -0.15
+    rankMax: -0.6
+
+family: counterbalance
+incompatible_with: [primed_counterbalance]
+
+source:
+  url: https://wiki.warframe.com/w/Counterbalance

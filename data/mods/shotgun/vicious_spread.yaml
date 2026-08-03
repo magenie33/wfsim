@@ -1,0 +1,19 @@
+id: vicious_spread
+name: Vicious Spread
+rarity: rare
+polarity: madurai
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Shotgun/DualStat/CorruptedDamageAccuracyShotgun
+description: "+X% Damage\n-X% Accuracy"
+
+effects:
+  - kind: base_damage_bonus
+    rank0: 0.15
+    rankMax: 0.9
+  - kind: accuracy_bonus
+    rank0: -0.1
+    rankMax: -0.6
+
+source:
+  url: https://wiki.warframe.com/w/Vicious_Spread

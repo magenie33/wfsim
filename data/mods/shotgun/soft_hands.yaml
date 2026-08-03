@@ -1,0 +1,31 @@
+id: soft_hands
+name: Soft Hands
+rarity: uncommon
+polarity: naramon
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/PvPMods/Shotgun/HolsterSpeedBonusMod
+description: "On Equip: \n-X% Weapon Recoil and +X% Accuracy for Xs"
+
+effects:
+  # CONDITIONAL, ON EQUIP — two indirect stats off one trigger with one timer,
+  # and the recoil half is NEGATIVE (a reduction), which is the sign convention
+  # every recoil mod in `data/` already uses. 8s at every rank (WFCD levelStats).
+  - kind: buff
+    trigger: on_equip
+    grants: recoil
+    rank0: -0.1
+    rankMax: -0.4
+    max_stacks: 1
+    duration: 8
+  - kind: buff
+    trigger: on_equip
+    grants: accuracy
+    rank0: 0.1
+    rankMax: 0.4
+    max_stacks: 1
+    duration: 8
+
+source:
+  url: https://wiki.warframe.com/w/Soft_Hands

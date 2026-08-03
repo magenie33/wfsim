@@ -1,0 +1,19 @@
+id: tainted_shell
+name: Tainted Shell
+rarity: rare
+polarity: vazarin
+base_drain: 4                 # max drain 14 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Shotgun/DualStat/CorruptedAccuracyFireRateShotgun
+description: "+X% Accuracy\n-X% Fire Rate"
+
+effects:
+  - kind: accuracy_bonus
+    rank0: 0.07
+    rankMax: 0.77
+  - kind: fire_rate_bonus
+    rank0: -0.05
+    rankMax: -0.55
+
+source:
+  url: https://wiki.warframe.com/w/Tainted_Shell

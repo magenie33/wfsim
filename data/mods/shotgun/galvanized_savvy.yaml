@@ -1,0 +1,32 @@
+id: galvanized_savvy
+name: Galvanized Savvy
+rarity: rare
+polarity: vazarin
+base_drain: 2                 # max drain 12 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponStatusChanceSPMod
+description: "+X% Status Chance\nOn Kill:\n+X% Direct Damage per Status Type affecting the target for Xs. Stacks up to Xx."
+
+effects:
+  - kind: status_chance_bonus
+    rank0: 0.0727
+    rankMax: 0.8
+  # Condition Overload payload — NOT an unconditional base-damage bonus, which
+  # is what the skeleton said. On kill it grants +rankMax per status TYPE on the
+  # target, per stack, DIRECT hits only; the arithmetic is per-weapon (the
+  # weapon's `co_behavior`). Shotgun numbers match the rifle twin Galvanized
+  # Aptitude exactly — 20 s, 2 stacks, +40% (WFCD levelStats r0/r10).
+  - kind: buff
+    trigger: on_kill
+    grants: condition_overload
+    rank0: 0.036
+    rankMax: 0.4
+    max_stacks: 2
+    duration: 20
+    decay: lose_one_and_reset
+
+family: shotgun_savvy
+incompatible_with: [shotgun_savvy]
+
+source:
+  url: https://wiki.warframe.com/w/Galvanized_Savvy

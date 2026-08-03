@@ -1,0 +1,20 @@
+id: blaze
+name: Blaze
+rarity: rare
+polarity: madurai
+base_drain: 6                 # max drain 9 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Shotgun/DualStat/BlazeMod
+description: "+X% Damage\n+X% Heat"
+
+effects:
+  - kind: base_damage_bonus
+    rank0: 0.15
+    rankMax: 0.6
+  - kind: elemental_damage_bonus
+    element: heat
+    rank0: 0.15
+    rankMax: 0.6
+
+source:
+  url: https://wiki.warframe.com/w/Blaze

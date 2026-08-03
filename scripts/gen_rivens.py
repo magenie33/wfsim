@@ -44,6 +44,11 @@ POOLS = {
     # WeaponMeleeFactionDamage* trio, every other gun class carries all three
     # WeaponFactionDamage* tags, and the archgun alone carries two.
     "archgun": "/Lotus/Upgrades/Mods/Randomized/LotusArchgunRandomModRare",
+    # Shotguns roll their own riven — the pool is NOT the rifle's. Its own
+    # stats are what make it a different item: Multishot is worth far more on
+    # a weapon whose damage is already per-pellet, and the class carries a
+    # Punch Through entry the rifle pool words differently.
+    "shotgun": "/Lotus/Upgrades/Mods/Randomized/LotusShotgunRandomModRare",
 }
 
 # DE's tag -> our effect kind (engine/src/mods_data.rs `effect`). `None` = a

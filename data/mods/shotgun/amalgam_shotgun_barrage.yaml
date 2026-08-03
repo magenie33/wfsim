@@ -1,0 +1,28 @@
+id: amalgam_shotgun_barrage
+name: Amalgam Shotgun Barrage
+rarity: rare
+polarity: madurai
+base_drain: 6                 # max drain 11 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/DualSource/Shotgun/ShotgunMedicMod
+description: "+X% Fire Rate\n+X% Revive Speed"
+
+effects:
+  - kind: fire_rate_bonus
+    rank0: 0.1417
+    rankMax: 0.85
+  - kind: unmodeled
+    rank0: 0.075
+    rankMax: 0.45
+    desc: "+45% Revive Speed"
+
+# DE's own incompatibility tags, from the wiki's `Module:Mods/data`
+# (`IncompatibilityTags`). An Amalgam mod grants a WARFRAME stat — here Revive
+# Speed — which is why it cannot go on a weapon nobody is holding.
+excludes_weapon: [sentinel_weapon, power_weapon]
+
+family: shotgun_barrage
+incompatible_with: [shotgun_barrage]
+
+source:
+  url: https://wiki.warframe.com/w/Amalgam_Shotgun_Barrage

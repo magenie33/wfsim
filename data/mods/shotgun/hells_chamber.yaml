@@ -1,0 +1,19 @@
+id: hells_chamber
+name: Hell's Chamber
+rarity: rare
+polarity: madurai
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponFireIterationsMod
+description: "+X% Multishot"
+
+effects:
+  - kind: multishot_bonus
+    rank0: 0.2
+    rankMax: 1.2
+
+family: hells_chamber
+incompatible_with: [galvanized_hell]
+
+source:
+  url: https://wiki.warframe.com/w/Hell's_Chamber

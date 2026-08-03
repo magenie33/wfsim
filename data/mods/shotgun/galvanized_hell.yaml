@@ -1,0 +1,34 @@
+id: galvanized_hell
+name: Galvanized Hell
+rarity: rare
+polarity: madurai
+base_drain: 6                 # max drain 16 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponFireIterationsSPMod
+description: "+X% Multishot\nOn Kill:\n+X% Multishot for Xs. Stacks up to Xx."
+
+effects:
+  - kind: multishot_bonus
+    rank0: 0.1
+    rankMax: 1.1
+  # On-kill STACKING multishot, not a second flat bonus — the shotgun twin of
+  # Galvanized Chamber (rifle, 5 stacks) and Galvanized Diffusion (pistol, 4).
+  # This one is 4 stacks at +30% each, 20 s, and its unconditional half is
+  # +110% against the rifle's +80% (WFCD levelStats r0/r10).
+  - kind: buff
+    trigger: on_kill
+    grants: multishot
+    rank0: 0.027
+    rankMax: 0.3
+    max_stacks: 4
+    duration: 20
+    # `decay` is NOT read by mods_data. The engine hardcodes the matching model
+    # per effect kind — `LiveStacks` (dummy.rs): on timeout lose ONE stack and
+    # reset the timer. This line is the written record, not the source.
+    decay: lose_one_and_reset
+
+family: hells_chamber
+incompatible_with: [hells_chamber]
+
+source:
+  url: https://wiki.warframe.com/w/Galvanized_Hell

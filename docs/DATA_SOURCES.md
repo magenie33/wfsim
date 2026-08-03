@@ -210,7 +210,7 @@ pistol pool it was written for) fails on any placeholder left unfilled.
 | `Assault Rifle` | 15 | assault rifles only |
 | `Sniper` | 14 | snipers only |
 | `Bow` | 10 | bows only |
-| `Shotgun` | 119 | shotguns — a separate pool, not a subset of Rifle |
+| `Shotgun` | 119 | shotguns — a separate pool, not a subset of Rifle. **Imported 2026-08-03**: 86 importable, 76 shipped (ten are PvP-exclusive, see below) |
 
 So a weapon's pool is a union: a launcher draws `PRIMARY` + `Rifle` and no
 narrower tag; a bow draws `PRIMARY` + `Rifle` + `Bow`; a shotgun draws
@@ -292,6 +292,13 @@ this before "fixing" either (audited 2026-08-01):
   encodes this lives in the engine test
   `mods_data::tests::only_pve_legal_conclave_mods_are_in_the_pools`, so the
   rule ships with the repo even though the script does not.
+- `--type Shotgun` reports 10 MISSING: **Bounty Hunter, Crash Shot, Flak Shot,
+  Hydraulic Chamber, Kill Switch, Loaded Capacity, Loose Chamber, Momentary
+  Pause, Prize Kill, Shred Shot** — the same class of finding as the Rifle six,
+  and settled the same way. All ten are `/Lotus/Upgrades/Mods/PvPMods/Shotgun/…`
+  and `Shotgun_Mods` tags each "Exclusive to PvP"; the five that page leaves
+  unmarked (Broad Eye, Double-Barrel Drift, Lock and Load, Snap Shot, Soft
+  Hands) DO ship and are in the engine allowlist (2026-08-03).
 - `--type Archgun` reports `zodiac_shred` exilus false != wiki true. Deliberate
   — `MEASUREMENTS.md` **M17** holds the reasoning and the measurement that
   would settle it.

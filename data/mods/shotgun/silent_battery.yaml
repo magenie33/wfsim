@@ -1,0 +1,17 @@
+id: silent_battery
+name: Silent Battery
+rarity: uncommon
+polarity: naramon
+base_drain: 2                 # max drain 5 at rank 3
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Shotgun/Event/ProjectNightwatch/WeaponNoiseReductionMod
+description: "Reduces the chance an enemy will hear gunfire by X%."
+
+effects:
+  - kind: noise_reduction
+    rank0: 0.4
+    rankMax: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Silent_Battery

@@ -743,13 +743,25 @@ mod tests {
     /// Deleting on the path alone throws away real content; keeping everything
     /// under it ships six mods that cannot be equipped.
     ///
-    /// The authority is the wiki's `Rifle_Mods` / `Pistol_Mods` tables, which
-    /// tag the genuinely restricted ones "Exclusive to PvP". This pins the
-    /// survivors as an explicit allowlist, so neither mistake can be made
-    /// silently: a new PvP-path mod fails until someone checks that table.
+    /// The authority is the wiki's `Rifle_Mods` / `Pistol_Mods` /
+    /// `Shotgun_Mods` tables, which tag the genuinely restricted ones
+    /// "Exclusive to PvP". This pins the survivors as an explicit allowlist,
+    /// so neither mistake can be made silently: a new PvP-path mod fails until
+    /// someone checks that table.
+    ///
+    /// The SHOTGUN import (2026-08-03) is what this test was written for. The
+    /// generator brought 15 mods in under that path; `Shotgun_Mods` tags ten
+    /// of them "Exclusive to PvP" — Bounty Hunter, Crash Shot, Flak Shot,
+    /// Hydraulic Chamber, Kill Switch, Loaded Capacity, Loose Chamber,
+    /// Momentary Pause, Prize Kill, Shred Shot — and they were deleted. The
+    /// five below are the ones the table leaves unmarked.
     #[test]
     fn only_pve_legal_conclave_mods_are_in_the_pools() {
-        const PVE_LEGAL: [&str; 4] = ["agile_aim", "twitch", "eject_magazine", "reflex_draw"];
+        const PVE_LEGAL: [&str; 9] = [
+            "agile_aim", "twitch", "eject_magazine", "reflex_draw",
+            // Shotgun, from `Shotgun_Mods` (2026-08-03).
+            "broad_eye", "double_barrel_drift", "lock_and_load", "snap_shot", "soft_hands",
+        ];
         let mut found: Vec<String> = crate::data::files_under("mods/")
             .filter(|(p, _)| p.ends_with(".yaml"))
             .filter(|(_, text)| {

@@ -1,0 +1,20 @@
+id: accelerated_blast
+name: Accelerated Blast
+rarity: rare
+polarity: madurai
+base_drain: 6                 # max drain 9 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Shotgun/DualStat/AcceleratedBlastMod
+description: "+X% Fire Rate\n+X% Puncture"
+
+effects:
+  - kind: fire_rate_bonus
+    rank0: 0.15
+    rankMax: 0.6
+  - kind: elemental_damage_bonus
+    element: puncture
+    rank0: 0.15
+    rankMax: 0.6
+
+source:
+  url: https://wiki.warframe.com/w/Accelerated_Blast

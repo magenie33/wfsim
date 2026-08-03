@@ -1,0 +1,24 @@
+id: magnetic_welt
+name: Magnetic Welt
+rarity: rare
+polarity: madurai
+base_drain: 10                 # max drain 15 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponMagneticOnImpactShotgunMod
+# The two CONSTANTS are spelled out rather than left as X's, exactly as the
+# pistol twin Hemorrhage writes them: they do not ramp with rank, so an X
+# there has no value to take and the fill would stop on it. WFCD levelStats at
+# max rank: "...have 35% chance... (x2 when Fire Rate is below 2.5)".
+description: "Impact Status Effects have X% chance to apply a Magnetic Status Effect (x2 when Fire Rate is below 2.5)"
+
+effects:
+  - kind: proc_conversion
+    trigger: impact
+    applies: magnetic
+    rank0: 0.1
+    rankMax: 0.35
+    condition: fire_rate_below_2.5   # the chance is DOUBLED while this holds
+    condition_multiplier: 2
+
+source:
+  url: https://wiki.warframe.com/w/Magnetic_Welt

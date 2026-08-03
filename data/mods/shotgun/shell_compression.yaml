@@ -1,0 +1,17 @@
+id: shell_compression
+name: Shell Compression
+rarity: uncommon
+polarity: naramon
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponAmmoMaxMod
+description: "+X% Ammo Maximum"
+
+effects:
+  - kind: ammo_max_bonus
+    rank0: 0.15
+    rankMax: 0.9
+
+source:
+  url: https://wiki.warframe.com/w/Shell_Compression

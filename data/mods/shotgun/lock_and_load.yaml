@@ -1,0 +1,17 @@
+id: lock_and_load
+name: Lock and Load
+rarity: rare
+polarity: naramon
+base_drain: 6                 # max drain 9 at rank 3
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/PvPMods/Shotgun/PassiveReloadMod
+description: "+X% Magazine Reloaded/s when Holstered"
+
+effects:
+  - kind: holstered_reload
+    rank0: 0.05
+    rankMax: 0.2
+
+source:
+  url: https://wiki.warframe.com/w/Lock_and_Load

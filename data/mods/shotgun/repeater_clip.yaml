@@ -1,0 +1,24 @@
+id: repeater_clip
+name: Repeater Clip
+rarity: uncommon
+polarity: madurai
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Shotgun/Event/FireRateWhileAimingShotgunMod
+description: "On Reload:\n+X% Fire Rate when Aiming for Xs"
+
+effects:
+  # CONDITIONAL — the shotgun twin of Pressurized Magazine (rifle) and
+  # Lethal Torrent's on-reload family. The window opens on the RELOAD.
+  - kind: buff
+    trigger: on_reload
+    condition: while_aiming
+    grants: fire_rate
+    rank0: 0.175
+    rankMax: 1.05
+    max_stacks: 1
+    duration_rank0: 2
+    duration: 9
+
+source:
+  url: https://wiki.warframe.com/w/Repeater_Clip

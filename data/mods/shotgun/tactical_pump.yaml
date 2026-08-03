@@ -1,0 +1,19 @@
+id: tactical_pump
+name: Tactical Pump
+rarity: uncommon
+polarity: naramon
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponReloadSpeedMod
+description: "+X% Reload Speed"
+
+effects:
+  - kind: reload_speed_bonus
+    rank0: 0.1
+    rankMax: 0.6
+
+family: tactical_pump
+incompatible_with: [primed_tactical_pump]
+
+source:
+  url: https://wiki.warframe.com/w/Tactical_Pump

@@ -1,0 +1,19 @@
+id: primed_tactical_pump
+name: Primed Tactical Pump
+rarity: legendary
+polarity: naramon
+base_drain: 2                 # max drain 12 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Shotgun/Expert/WeaponReloadSpeedModExpert
+description: "+X% Reload Speed"
+
+effects:
+  - kind: reload_speed_bonus
+    rank0: 0.0909
+    rankMax: 1.0
+
+family: tactical_pump
+incompatible_with: [tactical_pump]
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Tactical_Pump

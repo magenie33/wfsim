@@ -1,0 +1,21 @@
+id: shotgun_ammo_mutation
+name: Shotgun Ammo Mutation
+rarity: rare
+polarity: naramon
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponShotgunConvertAmmoMod
+description: "Converts Secondary ammo pickups to X% of Ammo Pick Up."
+
+effects:
+  - kind: ammo_conversion
+    from: secondary
+    rank0: 0.08
+    rankMax: 0.5
+
+family: shotgun_ammo_mutation
+incompatible_with: [primed_shotgun_ammo_mutation]
+
+source:
+  url: https://wiki.warframe.com/w/Shotgun_Ammo_Mutation

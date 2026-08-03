@@ -1,0 +1,20 @@
+id: semi_shotgun_cannonade
+name: Semi-Shotgun Cannonade
+rarity: uncommon
+polarity: vazarin
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Shotgun/ShotgunSemiAutoFantasyMod
+description: "Only compatible with Semi-Auto Trigger. Fire Rate cannot be modified.\n+X% Damage\n+X Punch Through"
+
+effects:
+  - kind: fire_rate_bonus
+  - kind: base_damage_bonus
+    rank0: 0.4
+    rankMax: 2.4
+  - kind: punch_through_bonus
+    rank0: 0.25
+    rankMax: 1.5
+
+source:
+  url: https://wiki.warframe.com/w/Semi-Shotgun_Cannonade

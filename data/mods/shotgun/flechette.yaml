@@ -1,0 +1,17 @@
+id: flechette
+name: Flechette
+rarity: common
+polarity: naramon
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponArmorPiercingDamageMod
+description: "+X% Puncture"
+
+effects:
+  - kind: elemental_damage_bonus
+    element: puncture
+    rank0: 0.15
+    rankMax: 0.9
+
+source:
+  url: https://wiki.warframe.com/w/Flechette

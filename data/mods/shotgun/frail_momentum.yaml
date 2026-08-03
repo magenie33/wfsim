@@ -1,0 +1,19 @@
+id: frail_momentum
+name: Frail Momentum
+rarity: rare
+polarity: madurai
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Shotgun/DualStat/CorruptedFireRateDamageShotgun
+description: "+X% Fire Rate\n-X% Damage"
+
+effects:
+  - kind: fire_rate_bonus
+    rank0: 0.15
+    rankMax: 0.9
+  - kind: base_damage_bonus
+    rank0: -0.025
+    rankMax: -0.15
+
+source:
+  url: https://wiki.warframe.com/w/Frail_Momentum

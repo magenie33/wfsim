@@ -1,0 +1,20 @@
+id: chilling_grasp
+name: Chilling Grasp
+rarity: uncommon
+polarity: vazarin
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponFreezeDamageMod
+description: "+X% Cold"
+
+effects:
+  - kind: elemental_damage_bonus
+    element: cold
+    rank0: 0.15
+    rankMax: 0.9
+
+family: chilling_grasp
+incompatible_with: [primed_chilling_grasp]
+
+source:
+  url: https://wiki.warframe.com/w/Chilling_Grasp

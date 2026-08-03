@@ -1,0 +1,20 @@
+id: primed_counterbalance
+name: Primed Counterbalance
+rarity: legendary
+polarity: naramon
+base_drain: 2                 # max drain 12 at rank 10
+max_rank: 10
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Shotgun/Expert/WeaponRecoilReductionModExpert
+description: "-X% Weapon Recoil"
+
+effects:
+  - kind: recoil_reduction
+    rank0: -0.0773
+    rankMax: -0.85
+
+family: counterbalance
+incompatible_with: [counterbalance]
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Counterbalance

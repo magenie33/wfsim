@@ -1,0 +1,19 @@
+id: burdened_magazine
+name: Burdened Magazine
+rarity: rare
+polarity: naramon
+base_drain: 6                 # max drain 11 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Shotgun/DualStat/CorruptedMaxClipReloadSpeedShotgun
+description: "+X% Magazine Capacity\n-X% Reload Speed"
+
+effects:
+  - kind: magazine_capacity_bonus
+    rank0: 0.1
+    rankMax: 0.6
+  - kind: reload_speed_bonus
+    rank0: -0.03
+    rankMax: -0.18
+
+source:
+  url: https://wiki.warframe.com/w/Burdened_Magazine

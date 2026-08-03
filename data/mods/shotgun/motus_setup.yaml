@@ -1,0 +1,39 @@
+id: motus_setup
+name: Motus Setup
+rarity: rare
+polarity: madurai
+base_drain: 6                 # max drain 9 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Sets/Raptor/RaptorModB
+description: "X% Critical and Status Chance for Xs after landing from a Double or Bullet Jump."
+
+effects:
+  # CONDITIONAL, and it grants BOTH — the skeleton read it as a flat status
+  # bonus, which is the wrong stat AND the wrong shape: the card is "+X%
+  # Critical and Status Chance FOR Xs AFTER LANDING from a Double or Bullet
+  # Jump", a window opened by a movement event.
+  #
+  # The sim has no traversal and never jumps, so the trigger cannot fire here
+  # and both halves resolve to a no-op — which is the honest answer, and the
+  # same one Nano-Applicator's ability cast gets. Written as the real trigger
+  # rather than dropped, so the day the arena has movement this mod is already
+  # described correctly. Duration ramps 1s -> 4s with rank (WFCD levelStats).
+  - kind: buff
+    trigger: on_bullet_jump_land
+    grants: crit_chance
+    rank0: 0.25
+    rankMax: 1.0
+    max_stacks: 1
+    duration_rank0: 1
+    duration: 4
+  - kind: buff
+    trigger: on_bullet_jump_land
+    grants: status_chance
+    rank0: 0.25
+    rankMax: 1.0
+    max_stacks: 1
+    duration_rank0: 1
+    duration: 4
+
+source:
+  url: https://wiki.warframe.com/w/Motus_Setup
