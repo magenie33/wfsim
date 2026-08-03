@@ -336,3 +336,62 @@ pooled mod and all of the required ones. A `build_min` below that is raised to
 it — it asks for builds the scope has already ruled out — while one above it
 wins. `scripts/check_build_size.mjs` asserts both ends on screen, in the preset
 and in the request.
+
+## The search (2026-08-03)
+
+Candidate GENERATION and candidate RANKING are different problems, and only
+the second was ever solved here. The funnel culls 22,316 jobs to 10 for 1.5%
+of the flat cost and loses nothing (§Accuracy) — it never needed replacing.
+What did was the enumeration in front of it.
+
+**The space is an index range, not a walk.** `optimizer/src/space.rs`:
+`SubsetSpace::nth(i)` unranks the i-th subset in colex order, O(k log n).
+Family exclusivity is REJECTED rather than folded into the index — measured
+over the four shipped pools, family-legal subsets are 79–85% of C(n, 8), so
+rejection costs ~25% of a walk against an evaluation that costs a whole
+simulated engagement.
+
+**One loop is both regimes.** `Shuffle` is a pseudorandom bijection on
+`0..len` (a 4-round Feistel network with cycle-walking). The search walks it:
+reaching the end visits every subset exactly once, so the run IS an exhaustive
+enumeration; stopping early leaves a uniform sample WITHOUT REPLACEMENT. There
+is no mode to select and no size threshold — the 2,000,000-candidate
+materialize/stream split is gone, and with it the class of bug where one
+regime had a fix the other did not (the tenno/policy leak was in exactly one).
+`SearchStats::exhaustive` reports which a run turned out to be, and
+`coverage()` is exact because the denominator is a counted index range.
+
+**Sampling alone is not an answer**, so the budget splits: `explore_frac` of it
+samples, the rest climbs. The climb is BEST-FIRST and takes the WHOLE
+neighbourhood of an elite — every 1-swap, add and drop — because that
+neighbourhood is small (62 subsets for 8-of-14) and enumerating it is both
+cheaper and far better than sampling it. Measured, 14-mod scope, 22,316 jobs,
+graded against ground truth:
+
+| | rank | regret |
+|---|---|---|
+| random mutation, 3,000 evals | 10 | 2.9% |
+| whole neighbourhood, 800 evals | **1** | **0.000%** |
+| whole neighbourhood, 1,500 evals | **1** | **0.000%** (top-10 recall 100%) |
+
+`explore_frac` is 0.3 on measurement, not on taste — 0.45 fails to find the
+optimum at 500 evals where 0.15 and 0.30 both find it, and 0.30 keeps twice
+the exploration of 0.15 for the same result.
+
+**Inside a subset, everything stays exhaustive**: element orders, exilus
+options, evolution sets. A couple of dozen cheap combinations each — handing an
+exact subproblem to a stochastic search is how an answer gets lost for no
+reason.
+
+**The walk is kept, as the GRADER's enumeration.**
+`enumerate_candidates_observed` is no longer in the product path but is what
+`grade_optimize` exhausts a scope with — a reference must not share machinery
+with what it grades. `optimizer/tests/enumeration_equivalence.rs` pins the two
+together: a full sweep of the index space is exactly the walk's output on a
+real pool, in both directions, with required mods and family collisions in it.
+
+**One regression, recorded as a decision.** Mid-search resume is gone; the
+funnel's ROUND checkpoint stays. The old one stored a position in a
+depth-first walk plus the survivors at that cut, and a position in a shuffled
+range with an elite pool behind it is not the same thing. Restoring it means
+checkpointing the elites by identity and re-screening them on resume.

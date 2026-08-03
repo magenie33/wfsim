@@ -68,8 +68,15 @@ fn main() {
 
     let truth_runs = num("truth_runs", 200) as u32;
     let max_jobs = num("max_jobs", 200_000) as usize;
+    // The SEARCH's budget under test. 0 = let it run to the end of the space,
+    // which is what a scope small enough to exhaust gets in production; any
+    // other value asks the question that actually matters — how good is the
+    // answer when the budget only buys a slice.
+    let search_evals = num("search_evals", 0);
+    // How much of that budget goes to SAMPLING before the climb takes over.
+    let explore_frac = get("explore_frac", "0.6").parse::<f64>().unwrap_or(0.6);
     let t0 = std::time::Instant::now();
-    let out = wfsim_webapi::grade_optimize(&req, truth_runs, max_jobs);
+    let out = wfsim_webapi::grade_optimize(&req, truth_runs, max_jobs, search_evals, explore_frac);
     if out.get("ok").and_then(|x| x.as_bool()) != Some(true) {
         eprintln!("{}", out.get("error").and_then(|e| e.as_str()).unwrap_or("failed"));
         std::process::exit(1);
@@ -92,6 +99,21 @@ fn main() {
     if refr["settled"].as_bool() != Some(true) {
         println!("    !! the two reference seeds disagree on the best build — raise truth_runs;");
         println!("       every verdict below is measured against a ranking that is still noise.");
+    }
+    println!(
+        "[search] covered {:.4}% of {} index positions ({} subsets sampled + {} climbed), exhaustive: {} | {} screen evals",
+        search["coverage"].as_f64().unwrap_or(0.0) * 100.0,
+        search["space"].as_f64().unwrap_or(0.0),
+        search["subsets"].as_u64().unwrap_or(0) - search["neighbours"].as_u64().unwrap_or(0),
+        search["neighbours"],
+        search["exhaustive"],
+        search["screen_evals"],
+    );
+    if search["unmatched"].as_u64().unwrap_or(0) > 0 {
+        println!(
+            "    !! {} finalists were not in the exhaustive list — the two enumerations disagree",
+            search["unmatched"]
+        );
     }
     println!(
         "[search] rank {} | regret {:.3}% | within noise: {} | top-{} recall {:.0}% | {} sims ({:.1}% of the reference)",
@@ -119,6 +141,6 @@ fn main() {
         }
     };
     show("REFERENCE (flat, every job)", &refr["top"]);
-    show("SEARCH (the production funnel)", &search["top"]);
+    show("SEARCH (search + funnel, the production pipeline)", &search["top"]);
     println!("\n[total] {:.1?}", t0.elapsed());
 }

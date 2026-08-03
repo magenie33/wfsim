@@ -40,7 +40,7 @@ let wasm_bindgen = (function(exports) {
      * and after every funnel round. The returned string is the final result
      * JSON.
      *
-     * `on_board` receives a RESULT-shaped best-so-far during the screen. Cancel
+     * `on_board` receives a RESULT-shaped best-so-far during the search. Cancel
      * in the browser is a worker kill, so a leaderboard that has not already left
      * the worker dies with it (user 2026-07-30: 20 minutes, cancelled, nothing).
      * @param {string} body

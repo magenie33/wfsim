@@ -185,7 +185,12 @@
              run does not model, which is a different kind of claim. -->
         <h3 class="sim-h" data-i18n>3 · Limits <span class="sim-hint">what this run is allowed to assume</span></h3>
         <div id="sim-limits" class="field-grid"></div>
-        <h3 class="sim-h" data-i18n>4 · Buffs <span class="sim-hint">initial stacks + lock (locked = 100% uptime)</span>
+        <!-- What this block sets is the START of the run, not the buff's
+             worth: the fight goes on to grant and decay these on their own
+             triggers. The old hint said "locked = 100% uptime", which reads as
+             "this box decides how much of the buff you get" — the opposite of
+             what the sim does (user, 2026-08-03). -->
+        <h3 class="sim-h" data-i18n>4 · Buffs <span class="sim-hint" data-i18n>the stacks the run STARTS with — the fight still grants and decays them on their own triggers</span>
           <button id="sim-buffs-all" class="ghost-btn small"></button></h3>
         <div id="sim-buffs"></div>
         <h3 class="sim-h" data-i18n>5 · Simulation <span class="sim-hint">how many times to replay it, and what to read off — the optimizer's final round uses the same count</span></h3>

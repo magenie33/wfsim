@@ -19,8 +19,8 @@ use wfsim_engine::loadout::{
 };
 use wfsim_engine::mods::{plan_forma, PlannedMod, Polarity};
 use wfsim_optimizer::{
-    enumerate_candidates_each, enumerate_candidates_observed, run_funnel, schedule_to,
-    stream_screen, Candidate, Constraints, FunnelState, Job, Scenario,
+    enumerate_candidates_observed, run_funnel, schedule_to, Candidate, Constraints, FunnelState,
+    Job, Scenario,
 };
 use wfsim_engine::dummy::Summary;
 
@@ -3020,6 +3020,10 @@ pub struct OptimizePlan {
     untransformed_id: String,
     /// Worker-thread budget; 0 = auto (all cores minus two).
     threads: usize,
+    /// Screen evaluations the SEARCH may spend before it hands its elites to
+    /// the funnel. 0 = uncapped, and then the host's clock is the only bound
+    /// (the browser sets one; a native run has a Cancel button instead).
+    max_evals: u64,
 }
 
 /// Validate an optimize request. `Err` is the ready-to-send error response.
@@ -3437,6 +3441,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             .and_then(|x| x.as_u64())
             .unwrap_or(0)
             .min(256) as usize,
+        max_evals: v.get("max_evals").and_then(|x| x.as_u64()).unwrap_or(0),
     })
 }
 
@@ -3456,16 +3461,6 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
 /// from what the enumerator would produce.
 #[derive(Debug, Clone)]
 pub enum ResumeFrom {
-    /// Mid-SCREEN, on a scope large enough to stream. The screen has no rounds
-    /// in it — it is one pass over the whole scope — so this is the only way a
-    /// reload during it does not cost the whole pass.
-    Screen {
-        /// Candidates the previous session had walked.
-        start_seq: usize,
-        /// The survivors at that cut, `(sequence number, arcane index)`. Not
-        /// builds: the walk is deterministic, so re-walking regenerates them.
-        keepers: Vec<(usize, usize)>,
-    },
     /// After a completed funnel ROUND.
     Round {
         round: usize,
@@ -3488,7 +3483,7 @@ pub type JobIdentity = (Vec<usize>, u32, u32, usize);
 /// killed run leaves open — where to continue, and what it had found.
 pub type CheckpointSink<'a> = dyn Fn(usize, usize, &[JobIdentity], &Value) + 'a;
 
-/// Where the SCREEN publishes its best-so-far. Result-shaped, so a cancel
+/// Where the SEARCH publishes its best-so-far. Result-shaped, so a cancel
 /// renders it through the same path a finished run takes. Display only: the
 /// screen is one pass over the whole scope, so a snapshot of it is NOT a
 /// resume point — continuing from one would silently drop the unwalked part.
@@ -3507,7 +3502,13 @@ pub type BoardSink<'a> = dyn Fn(&Value) + 'a;
 /// It REFUSES a scope it cannot exhaust. A reference that samples is not a
 /// reference; if the scope is too big to enumerate, the honest answer is to
 /// say so and let the caller narrow it, not to grade against a guess.
-pub fn grade_optimize(v: &Value, truth_runs: u32, max_jobs: usize) -> Value {
+pub fn grade_optimize(
+    v: &Value,
+    truth_runs: u32,
+    max_jobs: usize,
+    search_evals: u64,
+    explore_frac: f64,
+) -> Value {
     use wfsim_optimizer::truth::{judge, Truth};
     let plan = match parse_optimize(v) {
         Ok(p) => p,
@@ -3607,11 +3608,72 @@ pub fn grade_optimize(v: &Value, truth_runs: u32, max_jobs: usize) -> Value {
     let settled = answer.contains(&b.best()) && b.indistinguishable(3.0).contains(&a.best());
     let overlap = a.agrees_with(&b, finalists);
 
-    // ---- the production search, on the same scope ----
-    let rounds = schedule_to(jobs.len(), final_runs, finalists);
+    // ---- the PRODUCTION PIPELINE, on the same scope ----
+    //
+    // Search AND funnel, not just the funnel. Grading the funnel alone was
+    // grading the half that was already good: it is handed a job list, and the
+    // half that decides WHAT IS IN that list is the half that could lose the
+    // winner. `search_evals` is the budget under test — 0 runs the search to
+    // the end of the space, which is what a scope small enough to exhaust gets
+    // in production too.
+    let families: Vec<Option<&'static str>> = pool.iter().map(|m| m.family).collect();
+    let usable: Vec<usize> = (0..pool.len()).collect();
+    let required: Vec<usize> = constraints
+        .require
+        .iter()
+        .filter_map(|r| pool.iter().position(|m| m.id == *r))
+        .collect();
+    let space =
+        wfsim_optimizer::space::SubsetSpace::new(&families, &usable, &required, min_slots, build_size);
+    let forms: Vec<(WeaponBase, Option<WeaponBase>)> = evo_sets
+        .iter()
+        .map(|set| {
+            let refs: Vec<&str> = set.iter().map(String::as_str).collect();
+            let unlocked = match unlock_evo.as_deref() {
+                Some(u) => set.iter().any(|e| e == u),
+                None => true,
+            };
+            if unlocked {
+                (deployed(&fire_id, &refs), cycle_from.as_ref().map(|id| deployed(id, &refs)))
+            } else {
+                (deployed(&untransformed_id, &refs), None)
+            }
+        })
+        .collect();
+    let expand = |subset: &[usize]| -> Vec<Candidate> {
+        let mut out = Vec::new();
+        for (vi, (base, base_form)) in forms.iter().enumerate() {
+            wfsim_optimizer::expand_one(
+                &pool, base, base_form.as_ref(), vi as u32, 60, &innate, &exilus_refs,
+                subset, &scenario.arena.tenno, scenario.policy, &mut out,
+            );
+        }
+        out
+    };
+    let cfg = wfsim_optimizer::search::SearchConfig {
+        max_evals: search_evals,
+        explore_frac,
+        keep: 65_536,
+        seed: 0xDEAD_BEEF,
+        ..Default::default()
+    };
+    let (screened, sstats) =
+        wfsim_optimizer::search::search(&space, &expand, &arcanes, &scenario, &cfg, None, None);
+    let mut sc: Vec<Candidate> = Vec::new();
+    let mut by_ptr: std::collections::HashMap<usize, usize> = std::collections::HashMap::new();
+    let mut sjobs: Vec<Job> = Vec::new();
+    for sj in &screened {
+        let key = std::sync::Arc::as_ptr(&sj.cand) as usize;
+        let ci = *by_ptr.entry(key).or_insert_with(|| {
+            sc.push((*sj.cand).clone());
+            sc.len() - 1
+        });
+        sjobs.push((ci, sj.ai));
+    }
+    let rounds = schedule_to(sjobs.len(), final_runs, finalists);
     let planned: u64 = {
-        let mut field = jobs.len() as u64;
-        let mut n = 0;
+        let mut field = sjobs.len() as u64;
+        let mut n = sstats.evals;
         for &(r, keep, _) in &rounds {
             n += field * u64::from(r);
             field = field.min(keep as u64);
@@ -3619,13 +3681,33 @@ pub fn grade_optimize(v: &Value, truth_runs: u32, max_jobs: usize) -> Value {
         n
     };
     let last = run_funnel(
-        &cands, &arcanes, &scenario, jobs.clone(), &rounds, 0xDEAD_BEEF, false,
+        &sc, &arcanes, &scenario, sjobs, &rounds, 0xDEAD_BEEF, false,
         None, None, 0, None, None,
     );
-    let board: Vec<usize> = last
+    // Map each result back to its position in the exhaustive job list. Both
+    // sides build candidates through `expand_one` from an ascending subset, so
+    // the identity is exact rather than a resolved-vector comparison.
+    let ix_of: std::collections::HashMap<(Vec<usize>, u32, u32, usize), usize> = jobs
         .iter()
-        .map(|&(j, _)| jobs.iter().position(|&x| x == j).expect("job in scope"))
+        .enumerate()
+        .map(|(ji, &(ci, ai))| {
+            ((cands[ci].ordered.clone(), cands[ci].variant, cands[ci].exilus, ai), ji)
+        })
         .collect();
+    let mut board: Vec<usize> = Vec::new();
+    let mut unmatched = 0usize;
+    for &((ci, ai), _) in last.iter() {
+        let k = (sc[ci].ordered.clone(), sc[ci].variant, sc[ci].exilus, ai);
+        match ix_of.get(&k) {
+            Some(&ji) => board.push(ji),
+            None => unmatched += 1,
+        }
+    }
+    if board.is_empty() {
+        return err_json(
+            "the search returned nothing the exhaustive enumeration contains —              the two disagree about the scope, which is a bug in one of them",
+        );
+    }
     let verdict = judge(&a, &board, finalists, planned);
 
     let row = |ji: usize| -> Value {
@@ -3652,6 +3734,13 @@ pub fn grade_optimize(v: &Value, truth_runs: u32, max_jobs: usize) -> Value {
             "top": a.order.iter().take(finalists).map(|&j| row(j)).collect::<Vec<_>>(),
         },
         "search": {
+            "unmatched": unmatched,
+            "coverage": sstats.coverage(),
+            "space": sstats.space as f64,
+            "exhaustive": sstats.exhaustive,
+            "subsets": sstats.subsets,
+            "neighbours": sstats.neighbours,
+            "screen_evals": sstats.evals,
             "rank": verdict.rank,
             "regret": verdict.regret,
             "within_noise": verdict.within_noise,
@@ -3668,7 +3757,7 @@ pub fn run_optimize(
     on_enumerated: impl FnOnce(usize, usize),
     on_round: Option<&dyn Fn()>,
 ) -> Value {
-    run_optimize_resumable(plan, state, on_enumerated, on_round, None, None, None, None)
+    run_optimize_resumable(plan, state, on_enumerated, on_round, None, None, None)
 }
 
 /// As [`run_optimize`], plus the two halves of resumability: `resume` skips
@@ -3690,9 +3779,6 @@ pub fn run_optimize_resumable(
     // so a leaderboard that has not already left it is lost (user 2026-07-30:
     // 20 minutes, cancelled, nothing shown).
     on_board: Option<&BoardSink<'_>>,
-    // `(candidates walked, survivors as (seq, arcane))` — a mid-screen resume
-    // point. Only the serial screen produces one; see `ScreenSnapshotFn`.
-    on_screen_snapshot: Option<&wfsim_optimizer::ScreenSnapshotFn<'_>>,
 ) -> Value {
     let OptimizePlan {
         pool,
@@ -3718,23 +3804,15 @@ pub fn run_optimize_resumable(
         unlock_evo,
         untransformed_id,
         threads,
+        max_evals,
     } = plan;
     // Compute budget: 0 = auto (all cores minus two — the machine must stay
     // usable while the search runs). Applies to the screen and every round.
     wfsim_optimizer::set_worker_threads(threads);
     let info = weapon(&weapon_id);
 
-    // ---- enumerate candidates per evo-set × exilus option ----
-    // Two regimes, NO scope cap (user, 2026-07-29: "no enumeration limit —
-    // find the smarter way"):
-    //  - a scope that fits MATERIALIZE_LIMIT is collected into a Vec and
-    //    runs the exact classic funnel (unchanged results);
-    //  - past the limit the partial Vec is discarded and the WHOLE scope is
-    //    re-walked STREAMING: each candidate is screened (1 run × every
-    //    arcane) as it is born and only the best SCREEN_KEEP jobs survive
-    //    into the funnel — memory stays O(SCREEN_KEEP) at any scope size,
-    //    and the walk answers `cancel` at every node.
-    const MATERIALIZE_LIMIT: usize = 2_000_000;
+    // How many screened jobs survive the search into the funnel. The search
+    // holds a heap this size, so memory is O(SCREEN_KEEP) whatever the scope.
     const SCREEN_KEEP: usize = 65_536;
     let innate = wfsim_engine::weapons_data::innate_slots(&info.id);
     let exilus_refs: Vec<Option<&ModDef>> = exilus_defs.iter().map(|o| o.as_ref()).collect();
@@ -3831,106 +3909,83 @@ pub fn run_optimize_resumable(
         })
     };
 
-    let mut cands: Vec<Candidate> = Vec::new();
-    // Decide the regime BEFORE walking, from the scope's own size. Walking
-    // first and waiting for the count to cross MATERIALIZE_LIMIT is what made
-    // a full pool look dead: the legal builds run out early (a 60-capacity cap
-    // rejects most subsets) so the counter freezes, while the walk still has
-    // C(72,8) ~ 1.1e10 nodes of illegal territory to grind before it can say
-    // it is finished. The estimate is exact enough — it is a threshold test,
-    // not a number anyone reads.
-    let n_usable = pool
+    // ---- ONE PATH, at every scope ----
+    //
+    // There used to be two regimes with a 2,000,000-candidate threshold
+    // between them: materialize-then-funnel below it, walk-and-screen above.
+    // Both walked the space depth-first, so both left a lexicographic CORNER
+    // behind when they were cut short — and being cut short is the normal case
+    // (docs/OPTIMIZER.md). Two regimes also meant two sets of bugs; the
+    // tenno/policy leak of 2026-08-03 existed in exactly one of them.
+    //
+    // Now the subset space is an INDEX RANGE and the search walks a
+    // pseudorandom bijection over it: run it to the end and it is an
+    // exhaustive enumeration, stop it early and what it has is a uniform
+    // sample. Same loop, same code, no threshold (user, 2026-08-03: 不要搞
+    // 大小区分 — 严谨性大于便利性).
+    let usable: Vec<usize> = (0..pool.len())
+        .filter(|&i| !constraints.forbid.iter().any(|f| f == pool[i].id))
+        .collect();
+    let required: Vec<usize> = constraints
+        .require
         .iter()
-        .filter(|m| !constraints.forbid.iter().any(|f| f == m.id))
-        .count();
-    let subsets: f64 = (min_slots..=build_size)
-        .map(|k| {
-            // C(n, k), saturating: anything astronomically large only has to
-            // compare greater than the limit.
-            (0..k).fold(1.0f64, |acc, i| acc * (n_usable as f64 - i as f64) / (i as f64 + 1.0))
-        })
-        .sum();
-    let scope_estimate = subsets
-        * evo_sets.len().max(1) as f64
-        * exilus_refs.len().max(1) as f64;
-    let mut overflow = scope_estimate > MATERIALIZE_LIMIT as f64;
-    for (vi, set) in evo_sets.iter().enumerate() {
-        if overflow {
-            break;
-        }
-        let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-        let (base, base_form) = forms_for(set, &refs);
-        let (mut c, _stats, complete) = enumerate_candidates_observed(
-            &pool,
-            &base,
-            base_form.as_ref(),
-            vi as u32,
-            min_slots as u32,
-            build_size as u32,
-            60,
-            &innate,
-            &constraints,
-            &exilus_refs,
-            Some(state),
-            MATERIALIZE_LIMIT - cands.len(),
-            // The FIGHT's player and policy, the same two the streaming walk
-            // takes. A materialized scope used to resolve every panel under a
-            // neutral Tenno and `Emergent` — so a SENTINEL (BaseOnly) was
-            // searched with conditionals the replay refuses it, and any
-            // Warframe the scenario named went unread. Under MATERIALIZE_LIMIT
-            // is the ordinary case, so this was the ordinary search.
-            &scenario.arena.tenno,
-            scenario.policy,
-        );
-        cands.append(&mut c);
-        if !complete {
-            if state.cancel.load(std::sync::atomic::Ordering::Relaxed) {
-                return cancelled_json(cands.len());
-            }
-            // The BUDGET, not the size cap. `stop_enumeration` is a LATCH, so
-            // re-walking this scope through the streaming screen would trip it
-            // at the very first node and come back with nothing — which then
-            // surfaced as "no legal builds in this scope (Forma / family
-            // constraints eliminated all)": a sentence about the pool that was
-            // really about the clock. What was materialized before the clock
-            // ran out IS the answer here, and it goes out marked `truncated`.
-            if state
-                .stop_enumeration
-                .load(std::sync::atomic::Ordering::Relaxed)
-            {
-                break;
-            }
-            overflow = true;
-            break;
-        }
-        // Exactly-full guard: the next iteration would pass max_out = 0,
-        // which the observed walk reads as "no cap".
-        if cands.len() >= MATERIALIZE_LIMIT && vi + 1 < evo_sets.len() {
-            overflow = true;
-            break;
-        }
-    }
+        .filter_map(|r| pool.iter().position(|m| m.id == *r))
+        .collect();
+    let families: Vec<Option<&'static str>> = pool.iter().map(|m| m.family).collect();
+    let space =
+        wfsim_optimizer::space::SubsetSpace::new(&families, &usable, &required, min_slots, build_size);
 
-    // The two resume kinds land in different regimes: a screen cut only ever
-    // comes from the streaming path and goes straight back into it, a round
-    // checkpoint skips the walk entirely.
-    let screen_resume: Option<wfsim_optimizer::ScreenResume> = match &resume {
-        Some(ResumeFrom::Screen { start_seq, keepers }) => {
-            let mut map: std::collections::HashMap<usize, Vec<usize>> =
-                std::collections::HashMap::new();
-            for &(s, a) in keepers {
-                map.entry(s).or_default().push(a);
-            }
-            Some(wfsim_optimizer::ScreenResume { start_seq: *start_seq, keepers: map })
+    // The bases each evolution set resolves to, built ONCE. `forms_for` reads
+    // data and applies the deployment, which is far too expensive to repeat per
+    // proposal.
+    let forms: Vec<(WeaponBase, Option<WeaponBase>)> = evo_sets
+        .iter()
+        .map(|set| {
+            let refs: Vec<&str> = set.iter().map(String::as_str).collect();
+            forms_for(set, &refs)
+        })
+        .collect();
+    // One subset -> every candidate it can produce. The axes INSIDE a subset
+    // (element order, exilus option, evolution set) stay exhaustive: a couple
+    // of dozen cheap combinations, and handing an exact subproblem to a
+    // stochastic search is how an answer gets lost for no reason.
+    let expand = |subset: &[usize]| -> Vec<Candidate> {
+        let mut out = Vec::new();
+        for (vi, (base, base_form)) in forms.iter().enumerate() {
+            wfsim_optimizer::expand_one(
+                &pool,
+                base,
+                base_form.as_ref(),
+                vi as u32,
+                60,
+                &innate,
+                &exilus_refs,
+                subset,
+                &scenario.arena.tenno,
+                scenario.policy,
+                &mut out,
+            );
         }
-        _ => None,
+        out
     };
+
+    // MID-SEARCH RESUME IS GONE, and only the ROUND checkpoint survives. The
+    // old one stored a position in a depth-first walk plus the survivors at
+    // that cut; the search walks a shuffled index range and climbs from an
+    // elite pool, so a position alone no longer describes where it was. It is
+    // also worth much less than it was: the screen it protected could run for
+    // twenty minutes, while the search runs to a stated budget and publishes a
+    // best-so-far the whole way. Restoring it means checkpointing the elite
+    // pool by identity and re-screening it on resume — a follow-up, recorded
+    // here so it reads as a decision and not as an omission.
     let round_resume = match resume {
         Some(ResumeFrom::Round { round, alive, jobs_at_start }) => {
             Some((round, alive, jobs_at_start))
         }
         _ => None,
     };
+    // What the search covered — `None` on a round resume, which does not search.
+    let mut search_stats: Option<wfsim_optimizer::search::SearchStats> = None;
     let (cands, last, cancelled, n_jobs) = if let Some((r_round, r_alive, r_jobs_at_start)) = round_resume {
         // ---- RESUME: no walk at all. The checkpoint holds identities, so the
         // candidates are rebuilt with the same plan_forma / resolve_with the
@@ -3994,114 +4049,37 @@ pub fn run_optimize_resumable(
         );
         let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
         (cands, last, c, n_jobs)
-    } else if !overflow && screen_resume.is_none() {
-        // ---- classic path: materialized candidates, full funnel ----
-        if cands.is_empty() {
-            return err_json(
-                "no legal builds in this scope (Forma / family constraints eliminated all)",
-            );
-        }
-        let jobs: Vec<Job> = (0..cands.len())
-            .flat_map(|i| (0..arcanes.len()).map(move |a| (i, a)))
-            .collect();
-        let n_jobs = jobs.len();
-        on_enumerated(cands.len(), n_jobs);
-        let rounds = schedule_to(n_jobs, final_runs, finalists);
-        let ids_at = |alive: &[(Job, Summary)]| -> Vec<JobIdentity> {
-            alive.iter()
-                .map(|&((ci, ai), _)| (cands[ci].ordered.clone(), cands[ci].variant, cands[ci].exilus, ai))
-                .collect()
-        };
-        let board_of = |alive: &[(Job, Summary)], nc: usize, nj: usize| -> Value {
-            board_json(
-                alive.iter().take(finalists).enumerate()
-                    .map(|(rank, ((ci, ai), s))| entry(rank, &cands[*ci], *ai, s))
-                    .collect(),
-                nc, nj,
-            )
-        };
-        let n_cands = cands.len();
-        let rboard = on_board.map(|b| move |top: &[(Job, Summary)]| {
-            b(&board_of(top, n_cands, n_jobs));
-        });
-        let wrap = on_checkpoint.map(|cp| move |round: usize, alive: &[(Job, Summary)]| {
-            cp(round, n_jobs, &ids_at(alive), &board_of(alive, n_cands, n_jobs));
-        });
-        let last = run_funnel(
-            &cands,
-            &arcanes,
-            &scenario,
-            jobs,
-            &rounds,
-            0xDEAD_BEEF,
-            false,
-            Some(state),
-            on_round,
-            0,
-            wrap.as_ref().map(|f| f as &wfsim_optimizer::CheckpointFn<'_>),
-            rboard.as_ref().map(|f| f as &wfsim_optimizer::RoundBoardFn<'_>),
-        );
-        let c = state.cancel.load(std::sync::atomic::Ordering::Relaxed);
-        (cands, last, c, n_jobs)
     } else {
-        // ---- streaming path: re-walk the whole scope through the screen ----
-        drop(cands); // the partial materialization is dead weight
-        state
-            .enumerated
-            .store(0, std::sync::atomic::Ordering::Relaxed);
-        state
-            .sims_done
-            .store(0, std::sync::atomic::Ordering::Relaxed);
-        // The screen is the long silent phase; publish its running top slice so
-        // a cancel there has numbers instead of an empty page.
-        let screen_board = on_board.map(|b| {
+        // ---- THE SEARCH ----
+        if space.is_empty() {
+            return err_json("no builds in this scope (the size range leaves nothing to search)");
+        }
+        let board = on_board.map(|f| {
             move |top: &[wfsim_optimizer::ScreenedJob]| {
                 let rows: Vec<Value> = top.iter().take(finalists).enumerate()
                     .map(|(rank, sj)| entry(rank, &sj.cand, sj.ai, &sj.summary))
                     .collect();
-                // Report what has been WALKED and SCREENED, not the snapshot's
-                // own length — the screen runs at one run per job, so
-                // `sims_done` is exactly the jobs it has ranked so far.
                 let walked = state.enumerated.load(std::sync::atomic::Ordering::Relaxed) as usize;
                 let screened = state.sims_done.load(std::sync::atomic::Ordering::Relaxed) as usize;
-                b(&board_json(rows, walked, screened));
+                f(&board_json(rows, walked, screened));
             }
         });
-        let (screened, complete) = stream_screen(
-            |emit| {
-                for (vi, set) in evo_sets.iter().enumerate() {
-                    let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-                    let (base, base_form) = forms_for(set, &refs);
-                    if !enumerate_candidates_each(
-                        &pool,
-                        &base,
-                        base_form.as_ref(),
-                        vi as u32,
-                        min_slots as u32,
-                        build_size as u32,
-                        60,
-                        &innate,
-                        &constraints,
-                        &exilus_refs,
-                        Some(state),
-                        &scenario.arena.tenno,
-                        scenario.policy,
-                        emit,
-                    ) {
-                        break;
-                    }
-                }
-            },
+        let cfg = wfsim_optimizer::search::SearchConfig {
+            max_evals,
+            keep: SCREEN_KEEP,
+            seed: 0xDEAD_BEEF,
+            ..Default::default()
+        };
+        let (screened, stats) = wfsim_optimizer::search::search(
+            &space,
+            &expand,
             &arcanes,
             &scenario,
-            1,
-            SCREEN_KEEP,
-            0xDEAD_BEEF,
+            &cfg,
             Some(state),
-            screen_board.as_ref().map(|f| f as &wfsim_optimizer::ScreenBoardFn<'_>),
-            screen_resume.as_ref(),
-            on_screen_snapshot,
+            board.as_ref().map(|f| f as &wfsim_optimizer::ScreenBoardFn<'_>),
         );
+        search_stats = Some(stats);
         if screened.is_empty() {
             if state.cancel.load(std::sync::atomic::Ordering::Relaxed) {
                 return cancelled_json(0);
@@ -4110,8 +4088,8 @@ pub fn run_optimize_resumable(
                 "no legal builds in this scope (Forma / family constraints eliminated all)",
             );
         }
-        // Survivors → a dedup'd candidate table (the same build survives
-        // with several arcanes) + (job, screen summary) pairs, best-first.
+        // Survivors -> a deduplicated candidate table (one build survives under
+        // several arcanes) + (job, screen summary) pairs, best first.
         let mut sc: Vec<Candidate> = Vec::new();
         let mut by_ptr: std::collections::HashMap<usize, usize> = std::collections::HashMap::new();
         let mut slast = Vec::new();
@@ -4123,23 +4101,17 @@ pub fn run_optimize_resumable(
             });
             slast.push(((ci, sj.ai), sj.summary));
         }
-        if !complete {
-            // Cancelled mid-screen: the screen's own ranking (1-run
-            // precision) is the best-so-far leaderboard.
+        if state.cancel.load(std::sync::atomic::Ordering::Relaxed) {
+            // Cancelled mid-search: the screen's own ranking (1-run precision)
+            // is the best-so-far leaderboard.
             let n = slast.len();
             (sc, slast, true, n)
         } else {
             let jobs: Vec<Job> = slast.iter().map(|(j, _)| *j).collect();
             let n = jobs.len();
-            state
-                .sims_done
-                .store(0, std::sync::atomic::Ordering::Relaxed); // fresh % for the funnel
+            state.sims_done.store(0, std::sync::atomic::Ordering::Relaxed); // fresh % for the funnel
             on_enumerated(sc.len(), n);
             let rounds = schedule_to(n, final_runs, finalists);
-            // The screen itself is not resumable — it is a single walk of the
-            // whole scope. Its OUTPUT is: once the survivors are a candidate
-            // table, every funnel round can be checkpointed by identity, and a
-            // resume rebuilds them directly instead of screening again.
             let ids_at = |alive: &[(Job, Summary)]| -> Vec<JobIdentity> {
                 alive.iter()
                     .map(|&((ci, ai), _)| (sc[ci].ordered.clone(), sc[ci].variant, sc[ci].exilus, ai))
@@ -4161,16 +4133,9 @@ pub fn run_optimize_resumable(
                 cp(round, n, &ids_at(alive), &board_of_sc(alive, n_sc, n));
             });
             let last = run_funnel(
-                &sc,
-                &arcanes,
-                &scenario,
-                jobs,
-                &rounds,
-                0xDEAD_BEEF,
-                false,
-                Some(state),
-                on_round,
-                0, // the streaming path always screens first, so it starts fresh
+                &sc, &arcanes, &scenario, jobs, &rounds, 0xDEAD_BEEF, false,
+                Some(state), on_round,
+                0, // the search always screens first, so the funnel starts fresh
                 wrap.as_ref().map(|f| f as &wfsim_optimizer::CheckpointFn<'_>),
                 rboard.as_ref().map(|f| f as &wfsim_optimizer::RoundBoardFn<'_>),
             );
@@ -4188,24 +4153,35 @@ pub fn run_optimize_resumable(
         .map(|(rank, ((ci, ai), s))| entry(rank, &cands[*ci], *ai, s))
         .collect();
 
-    // A run whose WALK was cut short by the host's enumeration budget has not
-    // searched the scope it was given, and it must not render as one that did.
-    // `cancelled` cannot carry this: that means "the user stopped it" and its
-    // answer is the best-so-far. This means "the scope was bigger than the
-    // budget", and what it returns is the best of a PREFIX of the walk — which,
-    // the walk being depth-first, is a corner of the space rather than a sample
-    // of it (OPTIMIZER.md, "Exhaustive enumeration does not survive a real
-    // scope"). Saying so is the minimum until the search stops being a walk.
-    let truncated = state
-        .stop_enumeration
-        .load(std::sync::atomic::Ordering::Relaxed);
+    // WHAT THE SEARCH ACTUALLY COVERED. A run that did not reach the end of
+    // its space has not searched the scope it was given, and it must not read
+    // like one that did. `cancelled` cannot carry this — that means "you
+    // stopped it" — and neither can a bare flag, because the useful question
+    // is HOW MUCH. `exhaustive` says the search reached the end of the index
+    // range, in which case its winner is THE winner and not a best-so-far.
+    let (exhaustive, coverage, space_size, searched) = match search_stats {
+        Some(st) => (
+            st.exhaustive,
+            st.coverage(),
+            // A space can exceed f64's integer range only in absurd scopes; the
+            // UI prints an order of magnitude either way.
+            st.space as f64,
+            st.subsets,
+        ),
+        // A round resume did not search: it continues a funnel over a field
+        // some earlier run already chose, and claiming coverage for it would
+        // be claiming credit for a search this call never ran.
+        None => (false, 0.0, 0.0, 0),
+    };
     json!({
         "ok": true,
         "candidates": cands.len(),
         "jobs": n_jobs,
         "cancelled": cancelled,
-        "truncated": truncated,
-        "walked": state.enumerated.load(std::sync::atomic::Ordering::Relaxed),
+        "exhaustive": exhaustive,
+        "coverage": coverage,
+        "space": space_size,
+        "searched": searched,
         "final_runs": final_runs,
         "finalists": finalists,
         "headshot_pct": headshot_pct,

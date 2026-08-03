@@ -373,11 +373,10 @@ ui:
   "Mods / build": 每套配装 MOD 数
   "the fewest a searched build may carry — set both ends to 8 to search only full builds": 一套配装最少带几个 —— 两端都设成 8 就只搜满配装
   "the most a searched build may carry": 一套配装最多带几个
-  # A search whose WALK ran out of budget. Not the same as cancelled: nobody
-  # stopped it, it simply never reached most of the scope — and what it did
-  # reach is the front of a depth-first walk, so it is a corner of the space
-  # rather than a sample of it.
-  "scope too big for one search — only the first {n} builds were reached, and they are the walk's first, not a sample of the space; pool fewer mods for an answer you can trust": 搜索范围过大 —— 只走到了前 {n} 个配装，而且它们是遍历的开头、不是空间的采样；缩小候选池才能得到可信的结果
+  # What the SEARCH covered. Exhaustive is worth saying out loud: it is the
+  # difference between "a strong build" and "the best build in what you pooled".
+  "every build in this scope was searched": 这个范围内的每一套配装都搜过了
+  "searched {pct}% of this scope ({n} of {total} builds) — a uniform sample, so this is a strong build rather than a proven best; pool fewer mods to search all of it": 搜索覆盖了本范围的 {pct}%（{total} 套中的 {n} 套）—— 是全空间的均匀采样，所以这是一套很强的配装，但不是已证明的最优；缩小候选池就能搜完全部
   # Search boxes.
   "Search a mod…": 搜索 MOD…
   "Search arcane / effect…": 搜索赋能 / 效果…

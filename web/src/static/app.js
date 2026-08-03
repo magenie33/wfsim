@@ -6536,15 +6536,26 @@ function renderOptResults(r) {
       <div class="opt-mods">${mods}</div>
     </div>`;
   }).join("");
-  // TRUNCATED is not CANCELLED. Cancelled means you stopped it and this is the
-  // best it had; truncated means the scope was bigger than the walk budget, so
-  // the builds below are the best of a PREFIX of the space — never a sample of
-  // it. A run that does not say this reads as a finished search.
-  const truncated = r.truncated
-    ? `<span class="warn">${tr("scope too big for one search — only the first {n} builds were reached, and they are the walk's first, not a sample of the space; pool fewer mods for an answer you can trust")
-        .replace("{n}", (r.walked || 0).toLocaleString())}</span> · `
-    : "";
-  $("opt-results").innerHTML = `<div class="opt-meta">${truncated}${r.cancelled ? `<span class="warn">cancelled — best-so-far ranking (lower precision than a full run)</span> · ` : ""}${(r.jobs || 0).toLocaleString()} candidate builds · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${r.headshot_pct ?? "?"}% headshots · ${r.duration ?? "?"} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
+  // WHAT THE SEARCH COVERED, whenever it did not cover everything. This is not
+  // CANCELLED — that means you stopped it and this is the best it had. This
+  // means the scope is bigger than one search's budget, so the ranking below
+  // was chosen from a SAMPLE. The sample is uniform over the whole space (the
+  // search walks a shuffled index range), so the number is a real confidence
+  // statement rather than an apology: at 3% of the space the winner is a good
+  // build, not necessarily THE build.
+  //
+  // `exhaustive` is the other half and it is the one worth saying out loud:
+  // when the search reaches the end of its space, the answer is not a
+  // best-so-far, it is the optimum of everything you pooled.
+  const cov = r.exhaustive
+    ? `<span class="ok">${escHtml(tr("every build in this scope was searched"))}</span> · `
+    : (r.coverage != null && r.coverage < 1
+      ? `<span class="warn">${escHtml(tr("searched {pct}% of this scope ({n} of {total} builds) — a uniform sample, so this is a strong build rather than a proven best; pool fewer mods to search all of it"))
+          .replace("{pct}", (r.coverage * 100).toFixed(r.coverage < 0.01 ? 3 : 1))
+          .replace("{n}", (r.searched || 0).toLocaleString())
+          .replace("{total}", Math.round(r.space || 0).toLocaleString())}</span> · `
+      : "");
+  $("opt-results").innerHTML = `<div class="opt-meta">${cov}${r.cancelled ? `<span class="warn">cancelled — best-so-far ranking (lower precision than a full run)</span> · ` : ""}${(r.jobs || 0).toLocaleString()} candidate builds · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${r.headshot_pct ?? "?"}% headshots · ${r.duration ?? "?"} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
   $("opt-results").querySelectorAll(".opt-add").forEach((el) =>
     el.addEventListener("click", () => addResult(JSON.parse(el.dataset.r), el)));
 }
