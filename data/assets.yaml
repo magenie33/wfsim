@@ -160,11 +160,7 @@ mods:
   magma_chamber: ArchwingEventFireStatusRifleMod.jpg
   magnetic_capacity: MagneticClipRifleMod.jpg
   magnetic_might: MagneticCritDamagePistolMod.jpg
-  # The WFCD export carries no `imageName` for this one — the CDN simply has
-  # no file. `wiki:` says take it from the wiki instead (File:MagneticStrafeMod.png,
-  # confirmed present 2026-08-03); the cached name and the page's URL stay the
-  # bare name either way.
-  magnetic_strafe: "wiki:MagneticStrafeMod.png"
+  magnetic_strafe: MagneticFireRateShotgunMod.jpg
   magnetic_welt: WeaponMagneticOnImpactShotgunMod.jpg
   magnetized_cycle: ArchwingEventMagneticFireRateRifleMod.jpg
   magnum_force: CorruptedDmgForRecoilMod.jpg
