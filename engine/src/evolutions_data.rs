@@ -67,6 +67,24 @@ enum EvoEffect {
     /// Base-stat layer like the crit-chance one above, so crit-damage mods
     /// multiply the new base.
     FlatBaseCritMultiplier(f64),
+    /// Flat BASE damage that an empty reload turns on and nothing turns off —
+    /// Boar's Reified Bane, "On Reload From Empty: Increase Base Damage by
+    /// +14". It is applied UNCONDITIONALLY, i.e. the run is modelled as
+    /// holding it from t = 0 (user, 2026-08-03: "我们也开头是1").
+    ///
+    /// That is the honest reading rather than a shortcut. The wiki states the
+    /// bonus "lasts indefinitely until a manual reload is initiated while the
+    /// magazine is not empty", and a sustained engagement empties the magazine
+    /// every time — so the buff is up for all of a fight worth measuring. It
+    /// is also the only shape this layer can take: base-damage evolutions are
+    /// baked into `WeaponBase` BEFORE mods, while a runtime buff is applied to
+    /// `DummyParams` after, so a configurable version would have to re-derive
+    /// the panel mid-run.
+    ///
+    /// It stays its own variant rather than being folded into
+    /// `FlatBaseDamage` so the card can say what it assumed, and so the day
+    /// the sim can toggle it there is one place to change.
+    FlatBaseDamageOnEmptyReload(f64),
     /// Adds whole rounds to the BASE magazine, before magazine mods (Torid's
     /// Extended Volley: +9 on a base of 5). Explicitly NOT the Incarnon form's
     /// charge-backed magazine — "Does not apply to Incarnon Form's Magazine" —
@@ -269,6 +287,7 @@ impl EvolutionDef {
                 // Static stat changes — nothing to configure at runtime.
                 EvoEffect::FlatBaseStatusChanceByForm { .. }
                 | EvoEffect::FlatBaseCritMultiplier(_)
+                | EvoEffect::FlatBaseDamageOnEmptyReload(_)
                 | EvoEffect::FlatBaseDamage(_)
                 | EvoEffect::FlatBaseCritChance(_)
                 | EvoEffect::FlatBaseStatusChance(_)
@@ -348,6 +367,9 @@ impl EvolutionDef {
                 EvoEffect::FlatBaseCritMultiplier(v) => {
                     format!("+{v:.2}x BASE crit multiplier (crit damage mods multiply it)")
                 }
+                EvoEffect::FlatBaseDamageOnEmptyReload(v) => format!(
+                    "+{v:.0} base damage after an empty reload — held for the whole run"
+                ),
                 EvoEffect::FlatBaseStatusChance(v) => format!(
                     "+{:.0}% BASE status chance (status mods multiply it)",
                     v * 100.0
@@ -439,6 +461,9 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         "flat_base_crit_multiplier" => {
             EvoEffect::FlatBaseCritMultiplier(f(v, "value").unwrap_or(0.0))
         }
+        "flat_base_damage_on_empty_reload" => {
+            EvoEffect::FlatBaseDamageOnEmptyReload(f(v, "value").unwrap_or(0.0))
+        }
         "flat_base_magazine" => EvoEffect::FlatBaseMagazine(f(v, "value").unwrap_or(0.0)),
         "field_duration_on_empty_reload" => {
             EvoEffect::FieldDurationOnEmptyReload(f(v, "value").unwrap_or(1.0))
@@ -509,6 +534,9 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
         for eff in &e.effects {
             match eff {
                 EvoEffect::FlatBaseDamage(v) => flat += v,
+                // Same bucket as the line above: it is base damage, and the
+                // run is modelled holding it (see the variant's note).
+                EvoEffect::FlatBaseDamageOnEmptyReload(v) => flat += v,
                 // A base-stat evolution is a WEAPON stat change, so it lands
                 // on EVERY attack part, not just the direct hit. That is the
                 // same reading `resolve` already applies to Elemental Excess's
@@ -814,6 +842,77 @@ mod tests {
             (inc.magazine_size - 170.0).abs() < 1e-9,
             "the charge pool must stay 170, got {}",
             inc.magazine_size
+        );
+    }
+    /// EVERY evolution effect that loads INERT, pinned.
+    ///
+    /// An inert effect is a legitimate answer — "+50% Accuracy" decides
+    /// nothing in an arena with no geometry — but it is indistinguishable at a
+    /// glance from a MISSPELLED `kind:`, which also lands in `Inert(other)`
+    /// and silently contributes nothing. That is the failure this exists for:
+    /// the Boar's evolutions were written against a loader that had no
+    /// crit-multiplier arm, and only reading the loader by hand caught it.
+    ///
+    /// So the set is written down. Adding an evolution whose effect does not
+    /// load fails here until someone states which it is — a mechanic the arena
+    /// cannot express, or a typo.
+    #[test]
+    fn the_inert_evolution_effects_are_the_ones_we_meant() {
+        let mut found: Vec<String> = Vec::new();
+        for def in pool() {
+            for e in &def.effects {
+                if let EvoEffect::Inert(what) = e {
+                    found.push(format!("{} :: {what}", def.id));
+                }
+            }
+        }
+        found.sort();
+        // Each line is a DECISION, and the reason is beside the effect in its
+        // own yaml. Kept as a flat list so a diff here is readable.
+        let expected: Vec<&str> = vec![
+            // ---- the form is a WEAPON, not perk payload ----------------
+            // Tier 1 unlocks the second weapon entry; there is nothing for
+            // this loader to apply.
+            "boar_prime_evo1_incarnon_form :: unlocks_weapon",
+            "dual_toxocyst_evo1_incarnon_form :: unlocks_weapon",
+            "laetum_evo1_incarnon_form :: unlocks_weapon",
+            "torid_evo1_incarnon_form :: unlocks_weapon",
+            // ---- SPATIAL: the arena has one target and no geometry ------
+            "boar_prime_fortress_salvo :: punch_through_bonus", // +4 punch through
+            "boar_prime_practiced_grip :: accuracy_bonus",      // +50% accuracy
+            "dual_toxocyst_marksmans_hand :: recoil_reduction", // -50% recoil
+            "laetum_marksmans_hand :: indirect",                // -40% recoil
+            "laetum_raptors_chase :: indirect",                 // aim movement speed
+            "torid_swift_deliverance :: unmodeled",             // +50% projectile speed
+            "dual_toxocyst_ripper_rounds :: timed_buff",        // +3 punch through on kill
+            // ---- AMMO ECONOMY: the scenario runs an infinite reserve ----
+            "boar_prime_mercenary_chamber :: ammo_reserve_set", // reserve -> 195
+            "laetum_feather_of_justice :: indirect",            // ammo efficiency
+            "laetum_reapers_plenty :: indirect",                // ammo efficiency on headshot
+            // ---- RELOAD CADENCE: the sim reloads on a fixed schedule ----
+            // (these are also `reload_speed_bonus`, a MODS-loader word this
+            // loader has never had an arm for)
+            "boar_prime_ready_retaliation :: reload_speed_bonus",
+            "dual_toxocyst_ready_retaliation :: reload_speed_bonus",
+            "dual_toxocyst_evolved_autoloader :: holstered_magazine_regen",
+            "laetum_awakened_readiness :: indirect", // holstered magazine regen
+            // ---- A REAL DPS EFFECT, and the one entry here that is a GAP:
+            // Neurotoxin is "On Headshot: +70% Toxin for 3 s" on a weapon
+            // played at 100% headshots. It is inert because the loader has no
+            // `timed_buff` arm — but it is also `currently_broken` in game
+            // (DE's own bug, recorded on the wiki), and `apply` skips broken
+            // evolutions wholesale, so today the two cancel out. Whoever fixes
+            // the arm should check whether DE fixed the perk.
+            "dual_toxocyst_neurotoxin :: timed_buff",
+        ];
+        let expected: Vec<String> = expected.into_iter().map(str::to_string).collect();
+        let missing: Vec<&String> = expected.iter().filter(|e| !found.contains(e)).collect();
+        let extra: Vec<&String> = found.iter().filter(|f| !expected.contains(f)).collect();
+        assert!(
+            missing.is_empty() && extra.is_empty(),
+            "the inert set moved.
+  NEW (implement it, or add it here with a reason): {extra:#?}
+  GONE (drop it from the list): {missing:#?}"
         );
     }
 }

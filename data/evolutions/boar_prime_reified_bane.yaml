@@ -13,12 +13,14 @@ effects:
   # evolution occupies.
   - kind: flat_base_damage
     value: 10.0
-  # NOT LOADED: `condition` is unread by the evolutions loader, so a
-  # conditional flat_base_damage would apply UNCONDITIONALLY — which is why
-  # this is a second entry with an explicit kind the loader turns Inert rather
-  # than a `condition:` on the one above. The wiki also records that the game
-  # MISPRINTS this half as +10 on the card ("Reload From empty bonus is
-  # incorrectly listed as +10 in game"); the effect is +14.
+  # The conditional half, MODELLED AS HELD (user, 2026-08-03: 开头是 1).
+  # The wiki: the bonus "lasts indefinitely until a manual reload is initiated
+  # while the magazine is not empty" — a sustained engagement empties the
+  # magazine every time, so it is up for all of a fight worth measuring.
+  #
+  # The wiki also records that the game MISPRINTS this half as +10 on the card
+  # ("Reload From empty bonus is incorrectly listed as +10 in game"); the
+  # effect is +14, which is what goes in.
   - kind: flat_base_damage_on_empty_reload
     value: 14.0
 
