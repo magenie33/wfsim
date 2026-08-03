@@ -89,8 +89,12 @@ const r = await evaluate(`(async () => {
 if (r.fail) { console.log("FAIL  no replay section — sim-results:", r.resultsHtml); process.exit(1); }
 check("one row per buff, drawn and open by default",
   r.rows.length === 1 && r.rows[0].open && r.rows[0].pts === 600, JSON.stringify(r.rows[0]));
-check("the header states average and uptime",
-  /avg .*40/.test(r.rows[0].stat) && /uptime/.test(r.rows[0].stat), r.rows[0].stat);
+// Language-agnostic: this check runs in whatever locale the browser picks, so
+// it asserts the FIGURES (mean out of max, a percentage, a ramp time) rather
+// than the words around them.
+check("the header states average, uptime and the ramp",
+  /[\d.]+\/40/.test(r.rows[0].stat) && /\d+%/.test(r.rows[0].stat) &&
+  /[\d.]+s/.test(r.rows[0].stat), r.rows[0].stat);
 check("the replay BAR sits above everything it drives",
   r.iBar < r.iMeter && r.iBar < r.iTable, JSON.stringify(r.kids));
 check("...and the buff CURVES stay down with the other chart",

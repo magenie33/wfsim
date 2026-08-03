@@ -4842,7 +4842,13 @@ function renderBuffCards(box, list, cfg, have, opts = {}) {
     const startWhy = b.permanent
       ? tr("permanent — nothing grants or decays it, so it holds all run")
       : tr("stacks the run STARTS with. 0 = earned in-fight on this buff's own trigger, which is what a fight that has not been in contact for a few seconds looks like");
-    const ctl = `<span class="bstep" title="${escHtml(startWhy)}"><input type="number" data-b="${b.id}" data-f="stacks" min="0" max="${b.max_stacks}" value="${c.stacks}"><span class="bmax">/ ${b.max_stacks}</span></span>`;
+    // ZERO IS A STATE, and it gets a name. "0 / 3" is a number a reader has
+    // to interpret; "0 / 3 · inactive" is the state the run actually starts
+    // in, which is what the setting means (user, 2026-08-03: "失活应该也在
+    // buff 配置里"). Consumable buffs — next-shot damage, a one-off crit —
+    // start here by the same rule, whatever their duration says.
+    const ctl = `<span class="bstep" title="${escHtml(startWhy)}"><input type="number" data-b="${b.id}" data-f="stacks" min="0" max="${b.max_stacks}" value="${c.stacks}"><span class="bmax">/ ${b.max_stacks}</span></span>` +
+      `<span class="binact${c.stacks > 0 ? " off" : ""}" data-inact="${b.id}">${escHtml(tr("inactive"))}</span>`;
     // NOT "lock" (user, 2026-08-02): that read as "freeze this buff", so
     // locking one at zero looked like a way to switch it off forever. It only
     // removes the TIMEOUT — the count still starts where it is set and still
@@ -4880,6 +4886,8 @@ function renderBuffCards(box, list, cfg, have, opts = {}) {
       if (f === "locked") c.locked = el.checked;
       else if (el.type === "checkbox") c.stacks = el.checked ? 1 : 0;
       else c.stacks = Math.max(0, Number(el.value));
+      const tag = box.querySelector(`[data-inact="${CSS.escape(id)}"]`);
+      if (tag) tag.classList.toggle("off", c.stacks > 0);
       // A buff belongs to the FIGHT and to nothing else — including settings
       // for mods this build does not carry. It used to dirty the build too,
       // back when a build kept a copy of the scenario (user, 2026-08-02).
@@ -5053,6 +5061,17 @@ function replayMarkup(r) {
     const pts = s.map((v, j) => `${px(j).toFixed(1)},${py(v).toFixed(1)}`).join(" ");
     const mean = s.reduce((a, v) => a + v, 0) / (s.length || 1);
     const up = s.filter((v) => v > 0).length / (s.length || 1);
+    // FLOORED, never rounded. A buff that starts at zero and is up for the
+    // other 99.83% of the fight was printing a flat "100%", which is the one
+    // number a reader will not believe — and should not, because it is not
+    // true (user, 2026-08-03: "我看 buff 覆盖率 100% 觉得不可能").
+    const upPct = up >= 1 ? 100 : Math.min(99, Math.floor(up * 100));
+    // ...and the thing the 100% was hiding: how long the ramp took. This is
+    // the answer to "初始肯定要花时间" as a number rather than a rounding.
+    const iFull = s.findIndex((v) => v >= b.max);
+    const ramp = iFull < 0
+      ? tr("never full")
+      : `${tr("full at")} ${(iFull * rp.dt).toFixed(1)}s`;
     // WHERE IT WAS OFF. A buff at zero is not a low buff, it is an absent one,
     // and a flat line along the axis says that far too quietly — the run that
     // never earned a stack and the run that lost them all draw the same
@@ -5068,7 +5087,7 @@ function replayMarkup(r) {
       <div class="rp-head">
         <span class="rp-caret">▾</span>
         <span class="rp-name">${escHtml(named(b.id))}</span>
-        <span class="rp-stat">${escHtml(tr("avg"))} ${mean.toFixed(1)}/${b.max} · ${escHtml(tr("uptime"))} ${Math.round(up * 100)}%${up < 1 ? ` · <span class="rp-off">${escHtml(tr("inactive"))} ${Math.round((1 - up) * 100)}%</span>` : ""}</span>
+        <span class="rp-stat">${escHtml(tr("avg"))} ${mean.toFixed(1)}/${b.max} · ${escHtml(tr("uptime"))} ${upPct}%${up < 1 ? ` · <span class="rp-off">${escHtml(tr("inactive"))} ${(100 - upPct)}%</span>` : ""} · ${escHtml(ramp)}</span>
         <span class="rp-now" data-now="${i}">${s[s.length - 1]}/${b.max}</span>
       </div>
       <div class="rp-chart">

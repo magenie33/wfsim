@@ -687,3 +687,6 @@ label.check input{width:auto}
    the one that lost them all. */
 .rp-dead{fill:var(--muted);opacity:.10}
 .rp-off{color:var(--muted)}
+/* Zero is a STATE, not just a number: the run starts with this buff off. */
+.binact{margin-left:8px;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 6px}
+.binact.off{visibility:hidden}

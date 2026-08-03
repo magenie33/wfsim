@@ -221,6 +221,24 @@ ui:
   "Overguard": 超宏护盾
   "averaged over {n} runs — this number moves between scans, most of all for status mods": "{n} 次模拟的平均——这个数字每次扫描都会变，触发类 mod 尤其明显"
   "no timeout": 无限持续
+  # The replay: the transport, the buff curves, and the pools table.
+  Replay: 回放
+  play: 播放
+  pause: 暂停
+  "Buff coverage": 增益覆盖
+  "live stacks through the engagement": 整场交战中的实时层数
+  avg: 平均
+  uptime: 在场
+  inactive: 失活
+  "full at": 满层于
+  "never full": 未满层
+  Overguard: 超护盾
+  Shield: 护盾
+  Health: 生命
+  Damage: 伤害
+  Kills: 击杀
+  "stacks the run STARTS with. 0 = earned in-fight on this buff's own trigger, which is what a fight that has not been in contact for a few seconds looks like": 本局开始时的层数。0 = 在战斗中靠这个增益自己的触发条件挣回来，也就是"打了一阵、但刚有几秒没接敌"的状态
+  "permanent — nothing grants or decays it, so it holds all run": 永久 —— 没有触发也不会衰减，整局都保持
   "the stacks never expire — they still start where you set them and still build on every trigger": 层数不会过期——仍然从你设定的层数开始，也仍然会随触发继续叠加
   "permanent stacks — they never decay and cannot build in-sim, so the count holds for the whole run": 永久层数——不会衰减也无法在模拟中叠加，整局保持这个层数
   "Health": 生命

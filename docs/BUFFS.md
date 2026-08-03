@@ -249,9 +249,19 @@ The policy changes results, so it is part of any evaluation cache key.
 
 ### Every timed buff starts EARNED, at zero
 
-**A buff with a duration starts at 0 stacks; a buff with no trigger and no
-decay starts full.** The `permanent` flag on a buff card is exactly this
-distinction, and it is the only input the rule takes.
+**A buff starts full only if it is neither timed NOR consumable. Everything
+else starts at 0.**
+
+- **timed** — it has a duration, so a lull empties it;
+- **consumable** — it is SPENT by being used, whatever its duration says. A
+  "next shot deals X" buff is the clear case, and DEACTIVATION counts as
+  consumption (user, 2026-08-03). An infinite duration does not save it: the
+  question is whether the fight can hand it to you at t = 0, and a buff you
+  have already spent is not one you are holding.
+
+The `permanent` flag on a buff card is exactly this distinction, and it is the
+only input the rule takes. In the whole data set today, exactly one buff
+qualifies: **Fevered Frenzy** (the Dual Toxocyst evolution).
 
 The modelled fight is therefore: *you have been at it a while, but you have not
 been in contact for the last few seconds and are about to be.* Whatever
@@ -279,7 +289,7 @@ it can never earn and then held it there for five minutes. Zero-start is not a
 more pessimistic guess in that case; it is the correct one.
 
 Which buffs stay full, in the whole data set: **Fevered Frenzy** (`on_ability_cast`,
-20 stacks, no duration). That is the list. Everything else — every Galvanized
+20 stacks, no duration, not consumed). That is the list. Everything else — every Galvanized
 mod, every on-kill/on-status arcane, Argon Scope, Sharpened Bullets, and the
 Dual Toxocyst's own **Frenzy** passive — has a 3–30 s timer and is earned.
 
