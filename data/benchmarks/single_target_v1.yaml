@@ -73,6 +73,14 @@ scenario:
   # and not to whoever submits.
   runs: 100
 
+  # PINNED, so the claim is reproducible rather than merely stable. The engine
+  # already defaults to a fixed seed, which is why two runs of one build agree
+  # to the last digit — but a default is not a term of a public claim, and this
+  # number is one. Anyone can re-run a board row on their own machine and get
+  # the same figure, which is the whole difference between a leaderboard and a
+  # rumour. (100 runs averaged makes tuning to the seed pointless.)
+  seed: 12648430
+
   # Kill progress, not DPS. `score` is kills PLUS the depleted fraction of the
   # current target's pool, so it stays continuous all the way down: a weapon
   # that takes 300 s to remove 3% of one Thrax scores 0.03 and still has a

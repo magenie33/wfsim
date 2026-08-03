@@ -182,6 +182,9 @@ mod tests {
         assert_eq!(s("runs").and_then(|v| v.as_u64()), Some(100));
         assert_eq!(s("metric").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("kpm"));
         assert_eq!(s("form").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("default"));
+        // Pinned, not defaulted: a published number has to be reproducible by
+        // whoever doubts it.
+        assert_eq!(s("seed").and_then(|v| v.as_u64()), Some(0xC0FFEE));
 
         // OMITTED ON PURPOSE, and the omission is the policy — see the yaml.
         // Pinning either one here would put a sentinel weapon on the board at a
