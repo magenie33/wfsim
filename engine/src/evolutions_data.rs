@@ -989,12 +989,75 @@ mod tests {
 
     #[test]
     fn broken_evolutions_apply_nothing() {
-use crate::loadout::WeaponBase;
+        use crate::loadout::WeaponBase;
         let with = WeaponBase::from_data("dual_toxocyst", false, &["dual_toxocyst_commodores_fortune", "dual_toxocyst_evolved_autoloader", "dual_toxocyst_fevered_frenzy"]);
         let mut probe = with.clone();
         apply(&mut probe, &[get("dual_toxocyst_ready_retaliation").unwrap()]);
         assert!((probe.base_vector.total() - with.base_vector.total()).abs() < 1e-9);
         assert_eq!(probe.base_crit_chance, with.base_crit_chance);
+    }
+
+    /// A broken evolution changes NOTHING — whatever it grants.
+    ///
+    /// The test above can only be as strong as the data it picks, and no
+    /// SHIPPED broken evolution carries an effect `apply` would act on: both
+    /// of them resolve to something `apply` ignores anyway, so a regression in
+    /// the `currently_broken` filter would not have shown up there. This
+    /// builds a synthetic one carrying ONE OF EVERY effect `apply` writes
+    /// through, so the guard is on the filter itself rather than on today's
+    /// data — including the two write paths added on 2026-08-03
+    /// (`Indirect` and `AmmoMaxSet`), which reach fields the old test never
+    /// looked at (user: "不要让 broken 的起作用").
+    #[test]
+    fn a_broken_evolution_changes_nothing_whatever_it_grants() {
+        use crate::loadout::{IndirectStat, WeaponBase};
+        let everything = |broken: bool| EvolutionDef {
+            id: "synthetic".into(),
+            name: "Synthetic".into(),
+            weapon: "torid".into(),
+            tier: 9,
+            icon: None,
+            description: String::new(),
+            currently_broken: broken,
+            co_base_excludes_this_evolution: false,
+            effects: vec![
+                EvoEffect::FlatBaseDamage(100.0),
+                EvoEffect::FlatBaseDamageOnEmptyReload(50.0),
+                EvoEffect::FlatBaseCritChance(0.5),
+                EvoEffect::FlatBaseCritMultiplier(1.5),
+                EvoEffect::FlatBaseStatusChance(0.5),
+                EvoEffect::FlatBaseStatusChanceByForm { base: 0.4, incarnon: 0.9 },
+                EvoEffect::FlatBaseMagazine(30.0),
+                EvoEffect::Indirect(IndirectStat::Accuracy, 0.5),
+                EvoEffect::AmmoMaxSet(999.0),
+            ],
+        };
+        let base = WeaponBase::from_data("torid", false, &[]);
+
+        let mut broken = base.clone();
+        apply(&mut broken, &[&everything(true)]);
+        assert!(
+            (broken.base_vector.total() - base.base_vector.total()).abs() < 1e-9,
+            "a broken evolution moved base damage"
+        );
+        assert_eq!(broken.base_crit_chance, base.base_crit_chance);
+        assert_eq!(broken.base_crit_damage, base.base_crit_damage);
+        assert_eq!(broken.base_status_chance, base.base_status_chance);
+        assert_eq!(broken.magazine_size, base.magazine_size);
+        assert_eq!(broken.ammo_reserve, base.ammo_reserve, "broken set the reserve");
+        assert!(broken.indirect.is_empty(), "broken wrote an indirect stat: {:?}", broken.indirect);
+
+        // ...and the SAME evolution unbroken must move every one of them, or
+        // this test would pass on an `apply` that does nothing at all.
+        let mut live = base.clone();
+        apply(&mut live, &[&everything(false)]);
+        assert!(live.base_vector.total() > base.base_vector.total());
+        assert!(live.base_crit_chance > base.base_crit_chance);
+        assert!(live.base_crit_damage > base.base_crit_damage);
+        assert!(live.base_status_chance > base.base_status_chance);
+        assert!(live.magazine_size > base.magazine_size);
+        assert_eq!(live.ammo_reserve, 999.0);
+        assert_eq!(live.indirect, vec![(IndirectStat::Accuracy, 0.5)]);
     }
 
     /// Final Fusillade is BASE FORM ONLY (user, 2026-07-30). Both forms load
