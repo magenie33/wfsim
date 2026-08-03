@@ -15,6 +15,7 @@ use std::sync::OnceLock;
 use serde::Deserialize;
 use serde_norway::Value;
 
+use crate::damage::DamageType;
 use crate::loadout::WeaponBase;
 
 #[derive(Debug, Deserialize)]
@@ -92,6 +93,19 @@ enum EvoEffect {
     /// 只是目前完全不影响 dps 而已"). Mods were given this treatment on
     /// 2026-08-01; evolutions were still dropping the number on the floor.
     Indirect(crate::loadout::IndirectStat, f64),
+    /// A buff a TRIGGER turns on for a while — the shape `kind: timed_buff`
+    /// describes. It is PARSED and DESCRIBED here; whether it is also APPLIED
+    /// depends on the payload, and `apply` says which for each.
+    ///
+    /// It used to be an anonymous `Inert("timed_buff")`, which meant the card
+    /// showed nothing at all: the trigger, the window and the number were all
+    /// read past. A perk the player picked has to say what it does even where
+    /// the arena cannot price it.
+    TimedBuff {
+        trigger: TimedTrigger,
+        duration: f64,
+        payload: TimedPayload,
+    },
     /// Sets the ammo RESERVE outright (Mercenary Chamber: "Increase Base Ammo
     /// Capacity to 195") — a set, not an add, so it cannot ride the additive
     /// indirect bucket.
@@ -301,6 +315,10 @@ impl EvolutionDef {
                 | EvoEffect::FlatBaseDamageOnEmptyReload(_)
                 | EvoEffect::Indirect(..)
                 | EvoEffect::AmmoMaxSet(_)
+                // A timed buff IS configurable in principle, but neither of
+                // today's two is APPLIED (see `apply`), and a card for a buff
+                // that changes nothing is worse than no card.
+                | EvoEffect::TimedBuff { .. }
                 | EvoEffect::FlatBaseDamage(_)
                 | EvoEffect::FlatBaseCritChance(_)
                 | EvoEffect::FlatBaseStatusChance(_)
@@ -390,6 +408,15 @@ impl EvolutionDef {
                     }
                 }
                 EvoEffect::AmmoMaxSet(v) => format!("ammo reserve set to {v:.0}"),
+                EvoEffect::TimedBuff { trigger, duration, payload } => {
+                    let what = match payload {
+                        TimedPayload::PunchThrough(m) => format!("+{m:.1} m punch through"),
+                        TimedPayload::TypeDamage(t, v) => {
+                            format!("+{:.0}% {} damage", v * 100.0, t.name())
+                        }
+                    };
+                    format!("{}: {what} for {duration:.0} s", trigger.label())
+                }
                 EvoEffect::FlatBaseDamageOnEmptyReload(v) => format!(
                     "+{v:.0} base damage after an empty reload — held for the whole run"
                 ),
@@ -465,6 +492,48 @@ impl EvolutionDef {
     }
 }
 
+/// What turns a [`EvoEffect::TimedBuff`] on. Closed, so an unknown trigger is
+/// a load error rather than a buff that silently never fires.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum TimedTrigger {
+    OnKill,
+    OnHeadshot,
+    OnReload,
+    OnEquip,
+}
+
+impl TimedTrigger {
+    fn label(self) -> &'static str {
+        match self {
+            TimedTrigger::OnKill => "on kill",
+            TimedTrigger::OnHeadshot => "on headshot",
+            TimedTrigger::OnReload => "on reload",
+            TimedTrigger::OnEquip => "on equip",
+        }
+    }
+    fn parse(s: &str) -> Option<Self> {
+        Some(match s {
+            "on_kill" => TimedTrigger::OnKill,
+            "on_headshot" => TimedTrigger::OnHeadshot,
+            "on_reload" => TimedTrigger::OnReload,
+            "on_equip" => TimedTrigger::OnEquip,
+            _ => return None,
+        })
+    }
+}
+
+/// What a timed buff GRANTS. One arm per `modifiers:` key the data uses —
+/// deliberately not a free-form map, so a misspelled modifier falls through to
+/// `Inert` and the pinned test catches it instead of the buff silently
+/// granting nothing.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum TimedPayload {
+    /// Punch-through depth in metres (Ripper Rounds).
+    PunchThrough(f64),
+    /// A fractional bonus to ONE damage type (Neurotoxin: +70% Toxin).
+    TypeDamage(DamageType, f64),
+}
+
 /// `stat:` names an [`IndirectStat`]. Deliberately EXPLICIT rather than a
 /// fuzzy match: an unknown name falls through to `Inert(...)` and the pinned
 /// inert test then fails, which is how a typo announces itself instead of
@@ -536,6 +605,30 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             f(v, "value").unwrap_or(0.0),
         ),
         "ammo_reserve_set" => EvoEffect::AmmoMaxSet(f(v, "value").unwrap_or(0.0)),
+        "timed_buff" => {
+            let trig = v.get("trigger").and_then(Value::as_str).and_then(TimedTrigger::parse);
+            let dur = f(v, "duration_seconds").unwrap_or(0.0);
+            let mods = v.get("modifiers").and_then(Value::as_mapping);
+            let payload = mods.and_then(|m| {
+                m.iter().find_map(|(k, val)| {
+                    let (k, x) = (k.as_str()?, val.as_f64()?);
+                    Some(match k {
+                        "punch_through_m" => TimedPayload::PunchThrough(x),
+                        other => TimedPayload::TypeDamage(
+                            DamageType::from_name(other.strip_suffix("_damage_bonus")?)?,
+                            x,
+                        ),
+                    })
+                })
+            });
+            match (trig, payload) {
+                (Some(trigger), Some(payload)) => EvoEffect::TimedBuff { trigger, duration: dur, payload },
+                _ => EvoEffect::Inert(format!(
+                    "timed_buff ({})",
+                    v.get("trigger").and_then(Value::as_str).unwrap_or("no trigger")
+                )),
+            }
+        }
         "flat_base_magazine" => EvoEffect::FlatBaseMagazine(f(v, "value").unwrap_or(0.0)),
         "field_duration_on_empty_reload" => {
             EvoEffect::FieldDurationOnEmptyReload(f(v, "value").unwrap_or(1.0))
@@ -618,6 +711,27 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     }
                 }
                 EvoEffect::AmmoMaxSet(v) => base.ammo_reserve = *v,
+                // PARSED AND DESCRIBED, NOT APPLIED — and the reason differs
+                // per payload, which is why they are matched apart rather than
+                // waved through together:
+                //
+                // - PunchThrough: a CONDITIONAL indirect. Adding it to the
+                //   flat bucket would make the panel claim an unconditional
+                //   stat the build does not have, which is the rule the mods
+                //   already follow (see data/mods/rifle/twitch.yaml: "it must
+                //   not read as an unconditional stat change in the builder
+                //   panel"). It is also multi-target only, so nothing is lost.
+                //
+                // - TypeDamage: a live per-type multiplier is a MECHANIC the
+                //   sim does not have — the damage vector is baked at resolve.
+                //   Adding one is a new mechanic, and AGENTS requires an
+                //   in-game measurement for those. Its only user, Dual
+                //   Toxocyst's Neurotoxin, is confirmed still broken in game
+                //   (wiki, re-read 2026-08-03: "Currently does not work"), so
+                //   it CANNOT be measured — an unmeasurable damage path is
+                //   exactly the faithful-looking implementation the repo
+                //   forbids. `apply` skips broken evolutions anyway.
+                EvoEffect::TimedBuff { .. } => {}
                 // A base-stat evolution is a WEAPON stat change, so it lands
                 // on EVERY attack part, not just the direct hit. That is the
                 // same reading `resolve` already applies to Elemental Excess's
@@ -875,7 +989,7 @@ mod tests {
 
     #[test]
     fn broken_evolutions_apply_nothing() {
-        use crate::loadout::WeaponBase;
+use crate::loadout::WeaponBase;
         let with = WeaponBase::from_data("dual_toxocyst", false, &["dual_toxocyst_commodores_fortune", "dual_toxocyst_evolved_autoloader", "dual_toxocyst_fevered_frenzy"]);
         let mut probe = with.clone();
         apply(&mut probe, &[get("dual_toxocyst_ready_retaliation").unwrap()]);
@@ -888,7 +1002,7 @@ mod tests {
     /// pins that the charge-backed form comes out with nothing.
     #[test]
     fn final_fusillades_last_round_multishot_skips_the_incarnon_form() {
-        use crate::loadout::WeaponBase;
+use crate::loadout::WeaponBase;
         let evos = ["torid_final_fusillade"];
         let base = WeaponBase::from_data("torid", false, &evos);
         let inc = WeaponBase::from_data("torid_incarnon", false, &evos);
@@ -914,7 +1028,7 @@ mod tests {
     /// charge pool — an ungated `+=` quietly made it 179 rounds.
     #[test]
     fn extended_volley_leaves_the_charge_pool_alone() {
-        use crate::loadout::WeaponBase;
+use crate::loadout::WeaponBase;
         let evos = ["torid_extended_volley"];
         let base = WeaponBase::from_data("torid", false, &evos);
         let inc = WeaponBase::from_data("torid_incarnon", false, &evos);
@@ -972,15 +1086,8 @@ mod tests {
             // magazine, which is charge-backed and takes no efficiency at all.
             "laetum_feather_of_justice :: indirect (ammo_efficiency_conditional)",
             "laetum_reapers_plenty :: indirect (ammo_efficiency_on_headshot)",
-            // ---- TIMED BUFFS: no `timed_buff` arm in this loader --------
-            // Ripper Rounds is punch through on kill (multi-target only).
-            // Neurotoxin is "+70% Toxin for 3 s on headshot" — REAL DPS on a
-            // weapon played at 100% headshots, and the one genuine gap here.
-            // It is also `currently_broken` in game (DE's own bug), and
-            // `apply` skips broken evolutions wholesale, so the two cancel
-            // out today. Whoever writes the arm should check DE fixed it.
-            "dual_toxocyst_ripper_rounds :: timed_buff",
-            "dual_toxocyst_neurotoxin :: timed_buff",
+            // (`timed_buff` LOADS now — see
+            // `the_parsed_but_unapplied_effects_are_the_ones_we_meant`.)
         ];
         let expected: Vec<String> = expected.into_iter().map(str::to_string).collect();
         let missing: Vec<&String> = expected.iter().filter(|e| !found.contains(e)).collect();
@@ -1032,5 +1139,40 @@ mod tests {
             "boar_prime", true, &["boar_prime_mercenary_chamber"],
         );
         assert_eq!(base.ammo_reserve, 195.0);
+    }
+    /// Effects that LOAD but are deliberately not APPLIED.
+    ///
+    /// A companion to the inert list, and the reason it exists: once
+    /// `timed_buff` got a real arm, its two users stopped being `Inert` and
+    /// would have vanished from every list — parsed, described, contributing
+    /// nothing, and no longer visible anywhere. "Loaded" and "applied" are
+    /// different claims and each needs its own pin.
+    #[test]
+    fn the_parsed_but_unapplied_effects_are_the_ones_we_meant() {
+        let mut found: Vec<String> = Vec::new();
+        for def in pool() {
+            for e in &def.effects {
+                if let EvoEffect::TimedBuff { .. } = e {
+                    found.push(def.id.clone());
+                }
+            }
+        }
+        found.sort();
+        found.dedup();
+        // Sorted, so this list reads alphabetically rather than by argument.
+        let expected = vec![
+            // A live PER-TYPE multiplier is a mechanic the sim does not have
+            // (the damage vector is baked at resolve). New mechanics need an
+            // in-game measurement, and this one cannot be measured: DE's own
+            // wiki still says "Currently does not work" (re-read 2026-08-03),
+            // which is also why the evolution carries `currently_broken` and
+            // `apply` skips it wholesale.
+            "dual_toxocyst_neurotoxin".to_string(),
+            // CONDITIONAL indirect. Flattening it would make the panel claim
+            // an unconditional +3 m punch through; the mods already refuse
+            // that (data/mods/rifle/twitch.yaml). Multi-target only anyway.
+            "dual_toxocyst_ripper_rounds".to_string(),
+        ];
+        assert_eq!(found, expected, "the parsed-but-unapplied set moved");
     }
 }

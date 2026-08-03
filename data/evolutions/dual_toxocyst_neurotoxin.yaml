@@ -8,12 +8,17 @@ selection: choose_one
 currently_broken: true          # wiki: "Currently does not work"
 
 effects:
-  # NOT LOADED: `evolutions_data::effect()` has no `timed_buff` arm — the
-  # modelled shape is `stacking_buff` — so this resolves to `EvoEffect::Inert`
-  # and the engine takes nothing. `trigger`, `duration_seconds` and `modifiers`
-  # are unread with it (data/README.md). Moot today because the evolution is
-  # `currently_broken` and `apply` skips those wholesale, but it would still be
-  # inert once DE fixes it: converting it needs a real `timed_buff` arm.
+  # LOADED AND DESCRIBED, deliberately NOT APPLIED. The loader reads the
+  # trigger, the window and the modifier, so the card states the perk — but a
+  # live PER-TYPE damage multiplier is a mechanic the sim does not have (the
+  # damage vector is baked at resolve time), and adding one is a NEW MECHANIC.
+  #
+  # AGENTS: a new mechanic needs an in-game measurement, and this one CANNOT be
+  # measured — DE's wiki still says "Currently does not work" (re-read
+  # 2026-08-03), which is what `currently_broken` below records. Building an
+  # unmeasurable damage path is exactly the faithful-looking implementation
+  # that rule exists to prevent. When DE fixes the perk, measure it, then wire
+  # `TimedPayload::TypeDamage` into the sim.
   - kind: timed_buff
     trigger: on_headshot
     duration_seconds: 3

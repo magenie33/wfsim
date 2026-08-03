@@ -7,11 +7,16 @@ description: "On Kill: +3 Punch Through for 7s."
 selection: choose_one
 
 effects:
-  # NOT LOADED: `evolutions_data::effect()` has no `timed_buff` arm — the
-  # modelled shape is `stacking_buff` — so this resolves to `EvoEffect::Inert`
-  # and the engine takes nothing; `trigger`, `duration_seconds` and `modifiers`
-  # go unread with it (data/README.md). No DPS consequence single-target:
-  # punch-through moves damage to enemies BEHIND the first, and there are none.
+  # LOADED AND DESCRIBED, deliberately NOT APPLIED. The loader reads the
+  # trigger, the window and the modifier now, so the card says "on kill: +3.0 m
+  # punch through for 7 s" instead of showing nothing at all.
+  #
+  # It does not join the flat indirect bucket, because that bucket is
+  # UNCONDITIONAL: a build that has not killed anything does not have this
+  # punch through, and the panel must not say it does. That is the rule the
+  # mods already follow (data/mods/rifle/twitch.yaml). Nothing is lost either
+  # way — punch-through moves damage to enemies BEHIND the first, and the arena
+  # has none.
   - kind: timed_buff
     trigger: on_kill
     duration_seconds: 7
