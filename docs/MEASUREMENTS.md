@@ -894,6 +894,29 @@ compared them against DE's card and found no disagreement. What the sweep
 cannot see is a rule stated only in the description, which is why the
 condition test from that pass exists.
 
+### The SHOTGUN one was still wrong, a day later (2026-08-03)
+
+"By looking at the one file whose twin was already right" found two of three.
+`semi_shotgun_cannonade` had neither `requires` nor `disables` and still
+carried the bare zero-valued `fire_rate_bonus` — so the card rendered
+"+0% Fire Rate" under a sentence that forbids modifying it, on a mod that Boar
+Prime (full-auto) could equip and the optimizer could return as a winner
+(user: "半自动野猪是装不了的").
+
+The lesson is about the METHOD, not the mod: comparing a file against its twin
+finds a difference between two files and stops there. The family invariant is
+now a test — every Cannonade states its equip rule, its calc gate and its lock,
+and carries no fire-rate EFFECT under a fire-rate LOCK — which is a question
+about all three at once and cannot be answered by reading any one of them.
+
+Two more rules landed with it. `requires_weapon: semi_auto` is an EQUIP rule
+and removes the mod from the pool entirely, which is the layer that matters
+for the optimizer: `requires` only makes an equipped mod inert, and a build
+that cannot be assembled in the arsenal should never be offered at all. And
+the lock is symmetric — verified in both directions, a fire-rate bonus and a
+fire-rate drawback (Critical Delay's -20%) both vanish under it, so the mod is
+worth MORE on a build carrying a negative, not less.
+
 ### Open question, deliberately not changed
 
 `traits_for` gives BOTH forms of a transform group the base entry's trigger,

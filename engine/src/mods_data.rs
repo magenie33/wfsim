@@ -738,6 +738,70 @@ mod tests {
         }
     }
 
+    /// The Cannonade family states TWO rules on one card line, and all three
+    /// members must carry both. The shotgun one carried NEITHER until
+    /// 2026-08-03 — it had a bare zero-valued `fire_rate_bonus` where the lock
+    /// belongs, which is how "Fire Rate cannot be modified" ends up rendering
+    /// as "+0% Fire Rate" while a build stacks fire rate underneath it. Its
+    /// twins had been right since M23, which is exactly why a per-family
+    /// invariant is worth pinning: the outlier is invisible from either file.
+    #[test]
+    fn every_cannonade_states_both_of_its_rules() {
+        let ids = ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
+        for id in ids {
+            let pools: Vec<String> = ["rifle", "pistol", "shotgun"].iter().map(|s| s.to_string()).collect();
+            let m = pool_union(&pools)
+                .into_iter()
+                .find(|m| m.id == id)
+                .unwrap_or_else(|| panic!("{id} is in the data"));
+            assert_eq!(m.requires_weapon, Some("semi_auto"), "{id} states its EQUIP rule");
+            assert_eq!(m.requires, Some("semi_auto"), "{id} states its CALC gate");
+            assert!(m.disables.contains(&"fire_rate"), "{id} locks fire rate: {:?}", m.disables);
+            // ...and states the lock as a lock, not as a zero-valued bonus.
+            assert!(
+                !m.effects.iter().any(|e| matches!(e, ModEffect::FireRate(_))),
+                "{id} carries a fire-rate EFFECT under a fire-rate LOCK"
+            );
+        }
+    }
+
+    /// The lock BITES, on a real weapon with real mods: a fire-rate mod under
+    /// a Cannonade changes nothing, and neither does a fire-rate DRAWBACK —
+    /// "cannot be modified" is symmetric, which is why the mod is worth more
+    /// on a build carrying a negative, not less.
+    #[test]
+    fn a_cannonade_locks_fire_rate_both_ways() {
+        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        let base = WeaponBase::from_data("torid", false, &[]);
+        let pool = pool_for_weapon("torid");
+        let pick = |id: &str| {
+            pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{id} in the torid pool"))
+        };
+        let cannon = pick("semi_rifle_cannonade");
+        let speed = pick("speed_trigger");
+        let slow = pick("critical_delay");          // -20% fire rate at max rank
+
+        let fr = |mods: &[&ModDef]| resolve(&base, mods, StackPolicy::Emergent).fire_rate;
+        let bare = fr(&[]);
+        assert!(fr(&[speed]) > bare * 1.05, "speed trigger moves fire rate on its own");
+        assert!(fr(&[slow]) < bare * 0.95, "critical delay moves it the other way");
+        for (label, mods) in [
+            ("a bonus", vec![cannon, speed]),
+            ("a drawback", vec![cannon, slow]),
+            ("both at once", vec![cannon, speed, slow]),
+        ] {
+            assert!(
+                (fr(&mods) - bare).abs() < 1e-9,
+                "under the lock the weapon keeps its BASE fire rate through {label}: {} vs {bare}",
+                fr(&mods)
+            );
+        }
+        // ...and the damage half still pays, so the lock is a lock and not a
+        // whole-mod veto.
+        let dmg = |mods: &[&ModDef]| resolve(&base, mods, StackPolicy::Emergent).damage.total();
+        assert!(dmg(&[cannon]) > dmg(&[]) * 1.5, "the Cannonade still adds its damage");
+    }
+
     /// "Only compatible with Semi-Auto Trigger" is an EQUIP rule, and the pool
     /// is where an equip rule has to bite: the optimizer searches this list,
     /// so a mod left in it is a mod a winning build can carry to a slot the

@@ -109,6 +109,32 @@ DE's Chinese names are routinely non-literal — Commodore's Fortune is 准将�
 — so a name that cannot be read must be left EMPTY and asked for, never
 derived.
 
+### A card is TWO fields, and we were reading one (2026-08-03)
+
+WFCD's `i18n.json` carries a mod's localized card in two places, and DE decides
+which one a given sentence lands in:
+
+| field | holds | example |
+| --- | --- | --- |
+| `levelStats` | the rank's numbers | `["+40% 伤害", "+0.25 穿透"]` |
+| `description` | the RULE the card opens with | `["仅适用于半自动扳机。射速无法修改。"]` |
+
+`scripts/wfcd_i18n.py descriptions` read only `levelStats`, so the opening line
+was dropped from **35** mods and arcanes — the Cannonades printed their damage
+and punch through and said nothing about the trigger they need or the fire rate
+they lock, and Firestorm/Fulmination lost "提高范围攻击武器的爆炸半径。" that
+their English cards carry.
+
+There is no rule for guessing which field to look in: Primary Acuity's
+"多重射击无法变动。" is inside `levelStats`, the Cannonades' equivalent is in
+`description`. Both are read and joined, prefix first. The one guard is against
+DOUBLE printing — DE writes an augment's whole sentence in both fields with
+`|val|` where the number goes, so a prefix already present in the rank line
+(compared with digits, the placeholder and whitespace removed) is dropped.
+
+The generator is the only writer of `descriptions.yaml`; a gap like this is
+fixed there and regenerated, never patched into the file.
+
 ## Which source wins (revised 2026-07-30)
 
 The rule used to be "the wiki module is authoritative for every mechanical
