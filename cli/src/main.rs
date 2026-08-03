@@ -64,6 +64,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         multishot: 1.0,
         base_multishot: 1.0,
         evo_ms: None,
+        evo_bd: None,
         base_damage_bonus: 0.0,
         co_per_type: 0.0,
         co_behavior: CoBehavior::AdditiveWithBaseDamage,

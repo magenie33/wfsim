@@ -811,6 +811,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
     WeaponBase {
         // Empty until an evolution writes into it (evolutions_data::apply).
         indirect: Vec::new(),
+        reload_damage_buff: 0.0,
         base_vector: vector,
         base_crit_chance: s.attack.crit_chance,
         base_crit_damage: s.attack.crit_multiplier,

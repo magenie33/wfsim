@@ -1198,6 +1198,9 @@ pub struct DummyParams {
     /// machinery — the trigger (ability cast) cannot fire in the sim and the
     /// stacks never decay, so the count is static for the whole run.
     pub evo_ms: Option<crate::loadout::EvoMsBuff>,
+    /// The evolution's PERMANENT flat base damage (Reified Bane): the vector
+    /// already carries it, and `apply_buff_config` scales it back out.
+    pub evo_bd: Option<crate::loadout::EvoBdBuff>,
     /// Live on-kill CO stacks, live per StackSpec (Emergent policy).
     pub co_stack: Option<crate::loadout::StackSpec>,
     /// Live on-kill multishot stacks, earned from zero.
@@ -1360,6 +1363,9 @@ impl DummyParams {
         if let Some(s) = &self.ms_stack {
             out.push(("on_kill_multishot".into(), s.max_stacks));
         }
+        if self.evo_bd.is_some() {
+            out.push(("evo_reload_damage".into(), 1));
+        }
         if let Some(s) = &self.cc_stack {
             out.push(("on_headshot_kill_cc".into(), s.max_stacks));
         }
@@ -1421,6 +1427,27 @@ impl DummyParams {
         if self.arcane.enervate_rank.is_some() {
             if let Some(&(stacks, _)) = cfg.get("arcane:secondary_enervate") {
                 self.enervate_stacks = stacks;
+            }
+        }
+        if let Some(bd) = self.evo_bd {
+            if let Some(&(stacks, _)) = cfg.get("evo_reload_damage") {
+                let stacks = stacks.min(bd.max_stacks);
+                // ONE RATIO on the resolved vector. Flat base damage is added
+                // pro-rata BEFORE mods, so the bonus rides the whole chain
+                // multiplicatively and removing it needs no re-resolve — the
+                // same argument `evo_multishot` makes for its scalar.
+                let frac = f64::from(stacks) / f64::from(bd.max_stacks);
+                let (now, want) = (bd.without + bd.full, bd.without + bd.full * frac);
+                if now > 0.0 && want < now {
+                    let k = want / now;
+                    self.damage = self.damage.scale(k);
+                    if let Some(d) = self.dot_modified_base.as_mut() {
+                        *d *= k;
+                    }
+                }
+                if let Some(b) = self.evo_bd.as_mut() {
+                    b.stacks = stacks;
+                }
             }
         }
         if let Some(ms) = self.evo_ms {
@@ -1622,6 +1649,7 @@ impl DummyParams {
             multishot: panel.multishot,
             base_multishot: panel.base_multishot,
             evo_ms: panel.evo_ms,
+            evo_bd: panel.evo_bd,
             base_damage_bonus: panel.base_damage_bonus,
             co_per_type: panel.co_per_type,
             co_behavior: panel.co_behavior,
@@ -1773,6 +1801,7 @@ impl Default for DummyParams {
             multishot: 1.0,
             base_multishot: 1.0,
             evo_ms: None,
+            evo_bd: None,
             base_damage_bonus: 0.0,
             co_per_type: 0.0,
             co_behavior: crate::loadout::CoBehavior::AdditiveWithBaseDamage,
@@ -2933,6 +2962,8 @@ fn sample_stacks(
             // for the whole run. `multishot` already carries it, so the count
             // is reconstructed from the fraction that survived the config.
             "evo_multishot" => params.evo_ms.map_or(0, |ms| cap(ms.stacks)),
+            // Permanent like the one above: whatever it was configured to.
+            "evo_reload_damage" => params.evo_bd.map_or(0, |bd| cap(bd.stacks)),
             "condition_overload" => cap(gal.co.current(now, dur(&params.co_stack))),
             "on_kill_multishot" => cap(gal.ms.current(now, dur(&params.ms_stack))),
             "on_headshot_kill_cc" => cap(ch_stacks.iter().filter(|&&e| e > now).count() as u32),
@@ -4493,6 +4524,47 @@ mod tests {
             monte_carlo(&bare(true), 1, 5).mean_damage,
         );
         assert!((a - m).abs() < 1e-9, "3 x 1.5 either way: {a} vs {m}");
+    }
+
+    #[test]
+    fn reified_banes_empty_reload_damage_is_a_buff_that_starts_on() {
+        // "On Reload From Empty: +14 Base Damage" is a BUFF, not a silent stat
+        // (user, 2026-08-03): it belongs on the buff bar, it opens at one stack
+        // because the modelled fight always reloads from empty, and it never
+        // times out. What makes it a buff rather than a decoration is that
+        // turning it off has to MOVE the damage.
+        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        let with = WeaponBase::from_data(
+            "boar_prime", true, &["boar_prime_evo1_incarnon_form", "boar_prime_reified_bane"],
+        );
+        let panel = resolve(&with, &[], StackPolicy::Emergent);
+        let bd = panel.evo_bd.expect("reified bane grants the evo bd buff");
+        assert_eq!(bd.max_stacks, 1);
+        assert_eq!(bd.stacks, 1, "it opens ON");
+        assert!((bd.full - 14.0).abs() < 1e-9, "the empty-reload half is +14, got {}", bd.full);
+
+        // It is ANNOUNCED, or no card is drawn for it.
+        let params = DummyParams::from_panel(&panel, &crate::arena::Arena::training(10.0));
+        assert!(
+            params.buff_roster().iter().any(|(id, max)| id == "evo_reload_damage" && *max == 1),
+            "the buff bar never hears about it: {:?}",
+            params.buff_roster()
+        );
+
+        // And turning it off takes the damage back off — down to what the
+        // build would be with only the unconditional +10 half.
+        let off = {
+            let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(10.0));
+            let mut cfg = BuffConfig::new();
+            cfg.insert("evo_reload_damage".into(), (0, false));
+            p.apply_buff_config(&cfg);
+            p
+        };
+        assert!(off.damage.total() < params.damage.total(), "0 stacks changed nothing");
+        let ratio = off.damage.total() / params.damage.total();
+        let want = bd.without / (bd.without + bd.full);
+        assert!((ratio - want).abs() < 1e-9, "scaled by {ratio}, expected {want}");
+        assert_eq!(off.evo_bd.expect("still declared").stacks, 0);
     }
 
     #[test]

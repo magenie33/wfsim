@@ -753,6 +753,12 @@ pub struct WeaponBase {
     pub base_multishot: f64,
     /// Extra additive multishot from non-mod sources at assumed-max
     /// (Fevered Frenzy's 20 stacks = +1.0).
+    /// Flat BASE damage an evolution grants through a PERMANENT buff rather
+    /// than unconditionally — Boar Prime's Reified Bane, "On Reload From
+    /// Empty: +14 Base Damage". `base_vector` already carries it (the buff
+    /// starts full, like Fevered Frenzy's multishot); this records how much of
+    /// it is the buff's, so a buff card can take it back off.
+    pub reload_damage_buff: f64,
     pub buff_multishot_bonus: f64,
     /// Stack count behind `buff_multishot_bonus` (Fevered Frenzy: 20). The
     /// stacks are PERMANENT (no timer, cleared only by death) and their
@@ -1223,6 +1229,24 @@ pub struct ResolvedPanel {
     /// config rescales via this spec (no in-sim trigger, no decay — the
     /// stack count is a static choice, full by default).
     pub evo_ms: Option<EvoMsBuff>,
+    /// The evolution's PERMANENT flat base damage (Reified Bane), if any.
+    pub evo_bd: Option<EvoBdBuff>,
+}
+
+/// A permanent flat-BASE-DAMAGE buff on the resolved panel, sibling to
+/// [`EvoMsBuff`] and rescaled the same way: the panel already carries the full
+/// contribution, and the buff card scales it back out.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct EvoBdBuff {
+    /// The flat base damage the buff contributes at full stacks (+14).
+    pub full: f64,
+    /// The base TOTAL without it — the denominator for scaling back. The
+    /// bonus rides the whole mod chain multiplicatively (flat base damage is
+    /// added pro-rata BEFORE mods), so removing it is one ratio on the
+    /// resolved vector rather than a re-resolve.
+    pub without: f64,
+    pub max_stacks: u32,
+    pub stacks: u32,
 }
 
 /// A permanent stacked multishot buff on the resolved panel.
@@ -1784,6 +1808,14 @@ pub fn resolve_for(
         fr_on_reload,
         bd_on_reload,
         proc_conversion: proc_conv,
+        // Reified Bane: the vector already carries the +14 (evolutions apply
+        // before mods), so the buff opens FULL and the card scales it back.
+        evo_bd: (base.reload_damage_buff > 0.0).then_some(EvoBdBuff {
+            full: base.reload_damage_buff,
+            without: (base.base_vector.total() - base.reload_damage_buff).max(0.0),
+            max_stacks: 1,
+            stacks: 1,
+        }),
         evo_ms: (base.buff_multishot_bonus > 0.0 && base.buff_ms_max_stacks > 0).then_some(
             EvoMsBuff {
                 full: base.base_multishot * base.buff_multishot_bonus,

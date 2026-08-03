@@ -290,6 +290,15 @@ impl EvolutionDef {
                     max_stacks: *max_stacks,
                     permanent: false,
                 }),
+                // A BUFF, not a silent stat: the run holds it from t = 0, but
+                // it is earned by an empty reload and the bar has to say so
+                // (user, 2026-08-03). Permanent — nothing decays it — and one
+                // stack, which is what "on/off" is in this vocabulary.
+                EvoEffect::FlatBaseDamageOnEmptyReload(_) => Some(EvoBuffCard {
+                    id: "evo_reload_damage",
+                    max_stacks: 1,
+                    permanent: true,
+                }),
                 EvoEffect::StackingReloadSpeedOnHeadshot { max_stacks, .. } => Some(EvoBuffCard {
                     id: "on_headshot_reload_speed",
                     max_stacks: *max_stacks,
@@ -298,7 +307,7 @@ impl EvolutionDef {
                 // Static stat changes — nothing to configure at runtime.
                 EvoEffect::FlatBaseStatusChanceByForm { .. }
                 | EvoEffect::FlatBaseCritMultiplier(_)
-                | EvoEffect::FlatBaseDamageOnEmptyReload(_)
+
                 | EvoEffect::Indirect(..)
                 | EvoEffect::AmmoMaxSet(_)
                 | EvoEffect::FlatBaseDamage(_)
@@ -617,7 +626,12 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 EvoEffect::FlatBaseDamage(v) => flat += v,
                 // Same bucket as the line above: it is base damage, and the
                 // run is modelled holding it (see the variant's note).
-                EvoEffect::FlatBaseDamageOnEmptyReload(v) => flat += v,
+                // Into the base like any other flat damage — the buff OPENS
+                // FULL — and recorded so the buff card can take it back off.
+                EvoEffect::FlatBaseDamageOnEmptyReload(v) => {
+                    flat += v;
+                    base.reload_damage_buff += v;
+                }
                 // Into the SAME additive bucket a mod's indirect stat uses;
                 // `resolve` seeds the panel from here.
                 EvoEffect::Indirect(stat, v) => {
