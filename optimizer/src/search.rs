@@ -196,6 +196,41 @@ pub fn search(
             || state.is_some_and(|s| s.stop_explore.load(Ordering::Relaxed));
         let exploring = k < space.len() && !explore_spent;
 
+        // A batch must not overrun the phase it belongs to. Batches are wide
+        // (4 per worker) so every core stays fed, and a small budget was
+        // therefore spent entirely inside the FIRST one: with 120 evaluations
+        // and a batch of 104 subsets, the explore share ended after the budget
+        // did and the climb never ran at all. Trim the batch to what is left of
+        // the current limit, in SUBSETS — a subset costs several evaluations
+        // (its element orders, exilus options and evolution sets), so the
+        // conversion uses the rate this run has actually been paying.
+        let per_subset = if stats.subsets > 0 {
+            (stats.evals as f64 / stats.subsets as f64).max(1.0)
+        } else {
+            1.0
+        };
+        let room = |limit: f64| -> usize {
+            if !limit.is_finite() {
+                return batch_size;
+            }
+            let left = limit - stats.evals as f64;
+            if left <= 0.0 {
+                return 1;
+            }
+            ((left / per_subset).ceil() as usize).clamp(1, batch_size)
+        };
+        let total_limit = if cfg.max_evals > 0 { cfg.max_evals as f64 } else { f64::INFINITY };
+        let batch_size = if exploring {
+            let explore_limit = if cfg.max_evals > 0 {
+                cfg.explore_frac * cfg.max_evals as f64
+            } else {
+                f64::INFINITY
+            };
+            room(explore_limit)
+        } else {
+            room(total_limit)
+        };
+
         let mut batch: Vec<Proposal> = Vec::with_capacity(batch_size);
         if exploring {
             let mut buf = Vec::new();

@@ -395,3 +395,30 @@ funnel's ROUND checkpoint stays. The old one stored a position in a
 depth-first walk plus the survivors at that cut, and a position in a shuffled
 range with an elite pool behind it is not the same thing. Restoring it means
 checkpointing the elites by identity and re-screening them on resume.
+
+### A batch must not overrun its phase (2026-08-03)
+
+Batches are wide — 4 proposals per worker — so every core stays fed. That made
+the explore/exploit split meaningless at small budgets: with 120 evaluations
+and a batch of 104 subsets, the explore share was over before the first batch
+was, and the climb never ran. Graded, that cost rank 5 and **22.5% regret** on
+a scope the same budget now solves outright.
+
+The batch is trimmed to what is left of the current phase's limit, converted
+from evaluations to subsets at the rate the run has actually been paying (a
+subset costs several evaluations — its element orders, exilus options and
+evolution sets). `a_budget_it_cannot_finish_leaves_an_honest_sample` is the
+regression guard; it asserts `neighbours > 0`, which is what failed.
+
+**Where the pipeline stands** (Verglas Prime, 14 pooled mods, 12,910 subsets /
+22,316 jobs, Thrax Centurion Lv 9999 SP, 60 s, reference at 120 runs):
+
+| search budget | coverage | rank | regret | recall |
+|---|---|---|---|---|
+| unbudgeted | 100%, **exhaustive** | 1 | 0.000% | 100% |
+| 800 evals | 2.07% | **1** | **0.000%** | 60% |
+| 300 evals | 0.96% | 8 | 2.280% | 10% |
+
+Two per cent of the space buys the optimum; one per cent does not. The
+depth-first walk had no coverage at which it did — its sample was a corner, not
+a sample.
