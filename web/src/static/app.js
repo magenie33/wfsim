@@ -3091,8 +3091,10 @@ function initPresets() {
     sc = [{ name: "scenario 1", savedAt: Date.now(), state: defaultScenario() }];
     storePresetList(SCENARIOS, sc);
   }
+  // Resolved against the JOINT list, so the official scenario can be the one
+  // you left open — it is a scenario like any other to everything downstream.
   const lastSc = localStorage.getItem(presetActiveKey(SCENARIOS));
-  activeScenario = sc.some((p) => p.name === lastSc) ? lastSc : sc[0].name;
+  activeScenario = (scenarioNamed(lastSc) || {}).name || sc[0].name;
   localStorage.setItem(presetActiveKey(SCENARIOS), activeScenario);
 
   const here = presetWeapon();
@@ -3107,7 +3109,7 @@ function initPresets() {
     // preset, which is exactly why picking a build changed the scenario; it
     // now comes from the active `simulator-scenarios` entry, and this is the
     // only place the live scenario is seeded on load or on a weapon switch.
-    applyScenario(sc.find((p) => p.name === activeScenario).state);
+    applyScenario(scenarioNamed(activeScenario).state);
   });
   renderPresetBar();
 }
@@ -3160,6 +3162,12 @@ function markScenarioDirty() {
   clearTimeout(scenarioSaveTimer);
   scenarioSaveTimer = setTimeout(() => {
     if (!activeScenario || presetApplying) return;
+    // THE OFFICIAL SCENARIO IS NOT WRITTEN. Auto-save is what would otherwise
+    // make "read-only" a lie: every edit debounces into the active preset, so
+    // a disabled control is a suggestion and this line is the rule. It is also
+    // why the official one is not in localStorage at all — there is nothing
+    // here to write into even if this check were removed.
+    if (officialScenarioActive()) return;
     const ps = loadPresetList(SCENARIOS);
     const at = ps.findIndex((p) => p.name === activeScenario);
     if (at < 0) return;
@@ -3206,12 +3214,19 @@ function renderPresetBarIn(bar, cfg) {
   const hint = cfg.hint ? ` (${cfg.hint})` : "";
   const chip = (p) => {
     const sel = p.name === active;
-    const ops = sel
-      ? `<button class="pop dup" title="${escHtml(tr("duplicate"))}">⧉</button>` +
-        `<button class="pop ren" title="rename">✎</button>` +
-        (ps.length > 1 || cfg.optional ? `<button class="pop del" title="delete">✕</button>` : "")
-      : "";
-    return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${escHtml(p.name)}${ops}</span>`;
+    // READ-ONLY entries (the official scenarios) keep ⧉ and lose ✎/✕: copying
+    // is how you get a variant, and the original stays exactly what everyone
+    // else measured against.
+    const ro = cfg.readonly ? cfg.readonly(p) : false;
+    const ops = !sel
+      ? ""
+      : ro
+        ? `<button class="pop dup" title="${escHtml(tr("copy it into a scenario of your own — the official one cannot be edited"))}">⧉</button>`
+        : `<button class="pop dup" title="${escHtml(tr("duplicate"))}">⧉</button>` +
+          `<button class="pop ren" title="rename">✎</button>` +
+          (ps.length > 1 || cfg.optional ? `<button class="pop del" title="delete">✕</button>` : "");
+    const mark = ro ? `<span class="pofficial" title="${escHtml(tr("the official test scenario — the same fight on every weapon, so results compare"))}">◆</span>` : "";
+    return `<span class="pchip ${sel ? "sel" : ""}${ro ? " ro" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${mark}${escHtml(p.name)}${ops}</span>`;
   };
   bar.innerHTML =
     // Every bar says the shortcut: auto-save means a slip is written before
@@ -3444,20 +3459,58 @@ function applyScenario(st) {
 // calls `rerender` after every mutation, switching included.
 function scenariosChanged() {
   renderScenarioBar();
+  // Switching or copying a scenario changes whether the fight is EDITABLE, and
+  // this hook is the only thing every mutation goes through — `renderSim` is
+  // not called here, so without this line a copy of an official scenario kept
+  // the original's inert controls.
+  lockOfficialScenario();
   if ($("opt-buffs")) renderOptBuffs();
   if ($("quick-calc")) renderQuickCalc();
   if ($("opt-target")) renderOptEnemy();
 }
+
+// ---- THE OFFICIAL SCENARIOS -------------------------------------------
+//
+// `data/benchmarks/*.yaml`, served in META. They sit in the scenario bar
+// beside the player's own and behave like presets in every way but three:
+// nothing stores them (so they cannot drift from one machine to another),
+// nothing edits them, and they appear on EVERY weapon — which is the whole
+// point, since a number only means something against a ruler someone else can
+// pick up. Wanting a variant is what ⧉ is for: it copies the official one into
+// an ordinary, editable scenario of your own.
+const builtinScenarios = () => (META.benchmarks || []).map((b) => ({
+  // TRANSLATED for display, like everything else on the page. Its identity is
+  // the `builtin` id below, never this string — see `scenarioNamed`.
+  name: tr(b.name),
+  // The id, not just a flag: a board row records WHICH ruler it was measured
+  // under, and a retired version has to be recognisable as retired.
+  builtin: b.id,
+  savedAt: 0,
+  state: b.scenario,
+}));
+// The list every reader sees: official first, then the player's own.
+const scenarioList = () => builtinScenarios().concat(loadPresetList(SCENARIOS));
+// By NAME or by official ID. A benchmark's display name is translated, so the
+// name alone cannot be its identity: switching language would orphan the
+// pointer that says which scenario is open. The id is what gets stored.
+const scenarioNamed = (n) => scenarioList().find((p) => p.name === n || p.builtin === n);
+const scenarioKey = (n) => (scenarioNamed(n) || {}).builtin || n;
+/// Is the fight on screen the official one? Then nothing may write to it.
+const officialScenarioActive = () => !!(scenarioNamed(activeScenario) || {}).builtin;
 
 function renderScenarioBar() {
   renderPresetBarIn($("preset-bar-" + SCENARIOS), {
     domain: SCENARIOS,
     label: tr("Scenarios"),
     noun: "scenario",
-    load: () => loadPresetList(SCENARIOS),
-    store: (ps) => storePresetList(SCENARIOS, ps),
+    load: scenarioList,
+    // An official scenario is not stored, so it can never be written back —
+    // this is the line that makes "read-only" a property of the DATA rather
+    // than of the buttons drawn over it.
+    store: (ps) => storePresetList(SCENARIOS, ps.filter((p) => !p.builtin)),
+    readonly: (p) => !!p.builtin,
     active: () => activeScenario,
-    setActive: (n) => { activeScenario = n; localStorage.setItem(presetActiveKey(SCENARIOS), n); },
+    setActive: (n) => { activeScenario = n; localStorage.setItem(presetActiveKey(SCENARIOS), scenarioKey(n)); },
     snapshot: snapshotScenario,
     apply: applyScenario,
     blank: snapshotScenario,
@@ -3993,7 +4046,7 @@ let gainScan = { key: null, running: false, base: 0, by: {}, done: 0, total: 0, 
 
 /// The scenario a scan runs under: the chosen preset, else the live one.
 function gainScenario() {
-  const ps = loadPresetList(SCENARIOS);
+  const ps = scenarioList();
   const p = ps.find((x) => x.name === gainPrefs.scenario)
     || ps.find((x) => x.name === activeScenario) || ps[0];
   const st = p ? { ...sim, ...p.state } : { ...sim };
@@ -4279,7 +4332,7 @@ function renderQuickCalc() {
   const box = $("quick-calc");
   if (!box) return;
   const on = gainPrefs.on !== false;
-  const ps = loadPresetList(SCENARIOS);
+  const ps = scenarioList();
   const cur = ps.some((p) => p.name === gainPrefs.scenario) ? gainPrefs.scenario
     : (ps.some((p) => p.name === activeScenario) ? activeScenario : (ps[0] || {}).name);
   const opt = (v, label, sel) => `<option value="${escHtml(v)}"${v === sel ? " selected" : ""}>${escHtml(label)}</option>`;
@@ -4352,7 +4405,7 @@ function ensureGains(axis, repaint) {
   // the scenario library — and a scan with no named scenario is one nobody
   // can reproduce or compare against (it labelled itself "—").
   if (gainPrefs.on === false) return;
-  if (!loadPresetList(SCENARIOS).length) return;
+  if (!scenarioList().length) return;
   gainAxis = axis;                       // so the key describes what we want
   // Is what we are measuring (or have measured) the fight that is on screen
   // NOW? `gainScan.key` is stamped at scan start, so a matching key covers both
@@ -5135,6 +5188,51 @@ function renderSim() {
   setArenaEnemy(en);
   $("sim-sub").textContent = "current build vs the enemy";
   renderSimBuffs();
+  lockOfficialScenario();
+}
+
+// The official scenario, ON SCREEN: every control in the fight goes inert and
+// the note says why and what to do instead.
+//
+// This is the VISIBLE half of read-only, and deliberately only the visible
+// half — the rule is enforced in `markScenarioDirty`, which is where a write
+// would actually happen. A disabled input that auto-save still read would be a
+// lie told twice, so the two are separate on purpose.
+function lockOfficialScenario() {
+  const note = $("sim-official");
+  const on = officialScenarioActive();
+  const boxes = ["sim-target", "sim-technique", "sim-limits", "sim-run", "sim-buffs"]
+    .map((id) => $(id)).filter(Boolean);
+  boxes.forEach((b) => {
+    b.classList.toggle("locked", on);
+    b.querySelectorAll("input,select,button,textarea").forEach((el) => {
+      // ONLY UNLOCK WHAT THIS LOCKED. The first shape remembered each
+      // element's prior state and restored it, which is a bookkeeping problem
+      // that has to survive every re-render and did not: a second lock pass
+      // recorded "was disabled" for an element this had just disabled, so the
+      // unlock left it inert and a COPIED scenario could not be edited — the
+      // one thing copying is for.
+      //
+      // Marking instead is idempotent by construction. An element disabled for
+      // its OWN reason (a sentinel's infinite-ammo box, ticked and disabled
+      // whatever scenario is open) is never marked, so it is never re-enabled
+      // here and the page cannot contradict the mechanic.
+      if (on) {
+        if (!el.disabled) { el.disabled = true; el.dataset.officialLock = "1"; }
+      } else if (el.dataset.officialLock) {
+        el.disabled = false;
+        delete el.dataset.officialLock;
+      }
+    });
+  });
+  if (!note) return;
+  note.hidden = !on;
+  if (on) {
+    note.innerHTML =
+      `<b>${escHtml(tr("Official test scenario"))}</b> — ` +
+      escHtml(tr("the same fight on every weapon, so results can be compared. It cannot be edited: use ⧉ on its chip to copy it into a scenario of your own.")) +
+      ` <span class="official-def">${escHtml((scenarioNamed(activeScenario) || {}).name || "")}</span>`;
+  }
 }
 
 // Section 2 — one card per configurable buff of the current build (from the

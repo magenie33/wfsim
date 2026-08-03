@@ -724,3 +724,13 @@ label.check input{width:auto}
    head while reading the curve; a line at that height is the same fact you
    can see against it (user, 2026-08-03: "我想看看平均几"). */
 .rp-mean{stroke:var(--accent);stroke-width:1;stroke-dasharray:4 3;opacity:.75;vector-effect:non-scaling-stroke}
+
+/* THE OFFICIAL SCENARIO. A ruler, not a preset: marked on its chip, explained
+   above the fight, and visibly inert while it is open. */
+.pchip.ro{border-style:dashed}
+.pofficial{color:var(--gold);margin-right:4px;font-size:11px}
+.official-note{margin:6px 0 2px;padding:7px 10px;border:1px dashed var(--line);
+  border-radius:8px;background:var(--panel2);color:var(--muted);font-size:12px;line-height:1.5}
+.official-note b{color:var(--gold)}
+.official-def{color:var(--text);font-variant-numeric:tabular-nums}
+.locked{opacity:.72}

@@ -811,6 +811,16 @@ pub fn meta_json() -> Value {
         // wiki-flagged non-functional — the engine applies ZERO for those,
         // and the UI must say so in red. `desc` lines are the verbatim
         // effect text (like the mod/arcane cards).
+        // THE OFFICIAL SCENARIOS (data/benchmarks/). They are not presets: no
+        // weapon owns them, nothing stores them, and nobody can edit them —
+        // they exist so a number has a ruler someone else can pick up. The
+        // client shows them on every weapon alongside the player's own.
+        "benchmarks": wfsim_engine::benchmarks_data::all().iter().map(|b| json!({
+            "id": b.id,
+            "name": b.name,
+            "version": b.version,
+            "scenario": b.scenario,
+        })).collect::<Vec<_>>(),
         "defaults": {
             "weapon": default_weapon_id(),
             // Per-weapon, because "the form this is played in" is: the

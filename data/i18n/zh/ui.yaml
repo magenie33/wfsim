@@ -87,6 +87,11 @@ ui:
   "open a slot to rank its mods by effect": 打开任一槽位，按效果排序
   "simulate every mod IN THIS SLOT and show what each would change": 把这个槽换成每一张 mod 各模拟一遍，标出击杀速度会变化多少
   "kill rate": 击杀速度
+  "Official test scenario": 官方测试场景
+  "Single Target · Thrax Centurion Lv 9999 SP · 300 s · KPM": 单体 · 凶魂百夫长 9999 钢铁 · 300 秒 · KPM
+  "the same fight on every weapon, so results can be compared. It cannot be edited: use ⧉ on its chip to copy it into a scenario of your own.": 每把武器都是同一场战斗，所以结果之间可以比较。它不可编辑：点它标签上的 ⧉ 复制成一份你自己的场景。
+  "the official test scenario — the same fight on every weapon, so results compare": 官方测试场景 —— 每把武器都是同一场战斗，结果之间可以比较
+  "copy it into a scenario of your own — the official one cannot be edited": 复制成一份你自己的场景 —— 官方那份不可编辑
   "Measure": 衡量指标
   "Quick calc": 快速计算
   "rank a slot's options by what they would change — off, nothing is simulated": 按「换上去会有多大变化」给槽位的候选排序 —— 关闭后不会进行任何模拟
