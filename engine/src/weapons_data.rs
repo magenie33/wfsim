@@ -716,10 +716,28 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         Vec::new()
     };
 
+    // EVERY spelling is named, and anything else is a LOAD ERROR.
+    //
+    // `_ => Independent` used to swallow both a typo and an omission, and it
+    // swallowed one: Boar Prime shipped `co_behavior: additive` — a spelling
+    // that exists nowhere — and silently became Independent, i.e. the wiki's
+    // "Multiplying", the EXCEPTION class, on a weapon the CO catalog does not
+    // list at all (user, 2026-08-03). `independent` itself was never matched
+    // either; it worked only because it fell through to the same arm.
+    //
+    // The default it implied is also backwards. The catalog "lists only
+    // discrepant attacks. Anything not listed should be assumed to be Additive"
+    // (docs/MECHANICS.md §Condition Overload), so the class an unlisted weapon
+    // takes is ADDITIVE — there is no defensible default that is the exception.
+    // Hence: state it, or fail.
     let co_behavior = match s.co_behavior.as_deref() {
         Some("additive_with_base_damage") => CoBehavior::AdditiveWithBaseDamage,
+        Some("independent") => CoBehavior::Independent,
         Some("inert") => CoBehavior::Inert,
-        _ => CoBehavior::Independent,
+        other => panic!(
+            "weapon {}: co_behavior must be additive_with_base_damage / independent / inert, got {other:?}.              The wiki CO catalog lists only DISCREPANT attacks — a weapon it does not list is              additive_with_base_damage, never independent.",
+            s.id
+        ),
     };
 
     // An Incarnon form's rounds are charge-backed; the locked-gauge
@@ -1076,6 +1094,7 @@ mod tests {
         let with = |e: Vec<ModEffect>| {
             let m = crate::loadout::ModDef {
                 id: "t",
+                name: "t",
                 base_drain: 0,
                 max_rank: 0,
                 polarity: crate::mods::Polarity::Madurai,

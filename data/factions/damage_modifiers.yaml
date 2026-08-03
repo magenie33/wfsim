@@ -73,23 +73,18 @@ factions:
     electricity: 1.5
     radiation: 0.5
   tenno: {}
-  # ---- OURS, not the wiki's ------------------------------------------------
-  # Everything above is a COLUMN of the wiki's Damage/Overview_Table — all 15
-  # of them, verified cell by cell against it (docs/DATA_SOURCES.md, 2026-08-03).
-  # The two below are not in that table: they are faction values the enemy
-  # module uses for which the table publishes no column, i.e. units that take
-  # every damage type as written.
+  # ---- THAT IS ALL OF THEM -------------------------------------------------
+  # These fifteen are every COLUMN of the wiki's Damage/Overview_Table, verified
+  # cell by cell against it (docs/DATA_SOURCES.md, 2026-08-03). The list is
+  # COMPLETE, so a faction not named here is not a gap — it is a faction the
+  # game gives no vulnerability or resistance to, and it takes every damage
+  # type as written (user, 2026-08-03: "就只有15个，其他都理解成中性").
   #
-  # They are written down rather than left to a fallback because a faction key
-  # the engine cannot find is a DATA ERROR, not a neutral enemy — and that
-  # distinction is only enforceable if "neutral" is something the data SAYS.
-  # `unknown` is the Thrax/no-faction column (their Zariman vulnerability
-  # arrives through FactionDamageOverride, not through this key); `stalker`
-  # is the Acolytes, "neutral to every element" as of U36 (wiki Acolytes).
-  # A new enemy whose faction is one the table skips (Duviri, Predator, Prey,
-  # Neutral, Objects) needs its neutral column added here, deliberately.
-  unknown: {}
-  stalker: {}
+  # The enemy modules use 18 distinct `Faction` values against these 15
+  # columns: Stalker (the Acolytes, "neutral to every element" as of U36),
+  # Unknown (Thrax — their Void x1.5 arrives through FactionDamageOverride,
+  # not through this key), Duviri, Neutral, Objects, Predator, Prey and "?"
+  # resolve to no column, which is the right answer for all of them.
 
 # Special pool columns (not factions): used whenever damage lands on these
 # pools, regardless of the enemy's faction column.

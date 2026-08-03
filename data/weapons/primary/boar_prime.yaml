@@ -35,11 +35,16 @@ ammo_pickup: 40
 magazine: 20
 reload_seconds: 2.75
 
-# NO Condition Overload row in the wiki's CO catalog for this weapon, so the
-# default class applies. `additive` is the engine's default and the catalog's
-# most common answer; a row would override it (see the Torid, which the
-# catalog gives "Multiplying" twice).
-co_behavior: additive
+# Condition Overload: NO row in the wiki's CO catalog for this weapon, which
+# is a POSITIVE statement — "listing only discrepant attacks. Anything not
+# listed should be assumed to be Additive with +100% bonus" (the catalog's own
+# header). Additive = joins the base-damage bucket, the class Galvanized Savvy
+# describes as "usually additive with other damage mods like Point Blank".
+#
+# This read `additive`, a spelling that exists nowhere, and the loader's old
+# `_ =>` arm turned it into Independent — the wiki's "Multiplying", i.e. the
+# EXCEPTION class, on a weapon the catalog does not list (user, 2026-08-03).
+co_behavior: additive_with_base_damage
 
 # ONE attack part. The Incarnon form is its own weapon entry
 # (boar_prime_incarnon.yaml), the way the Torid and the Laetum carry theirs.

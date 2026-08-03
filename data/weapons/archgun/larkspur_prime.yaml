@@ -63,8 +63,13 @@ ammo_max: 400
 # the whole engagement.
 finite_reserve: true
 
-# No CO catalog row for this weapon, so the normal class applies.
-co_behavior: independent
+# CO catalog, re-read 2026-08-03: the only Larkspur Prime row is its
+# ALT-FIRE — "Projectile, 100%, Multiplying" — and that is the CHARGED form
+# (larkspur_prime_charged.yaml), not this one. This entry is the normal fire,
+# which the catalog does not list, so it takes the ADDITIVE class. It said
+# "the normal class applies" and then set `independent`, which is the
+# exception the alt-fire earns and this attack does not.
+co_behavior: additive_with_base_damage
 
 # THE NORMAL FIRE — the module's "Normal Attack", hit-scan and held. Innate
 # damage is 89% RADIATION (80 of 90), which puts it in the same shape as the

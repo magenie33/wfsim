@@ -4698,6 +4698,7 @@ mod tests {
         use crate::mods::Polarity;
         let expel = ModDef {
             id: "expel_grineer",
+            name: "expel_grineer",
             base_drain: 9,
             max_rank: 5,
             polarity: Polarity::Madurai,
@@ -6985,8 +6986,7 @@ mod tests {
     /// The infinite dummy, wearing one faction's column.
     fn column_dummy(key: &str, overguard: f64) -> TargetParams {
         TargetParams {
-            type_mods: crate::factions_data::columns_for(key)
-                .unwrap_or_else(|| panic!("no column for {key}")),
+            type_mods: crate::factions_data::columns_for(key),
             ..frail_target(TargetMode::InfiniteHealth, 0.0, overguard)
         }
     }
@@ -7045,7 +7045,7 @@ mod tests {
         let v = DamageVector::new()
             .with(DamageType::Impact, 50.0)
             .with(DamageType::Slash, 50.0);
-        let grineer = crate::factions_data::column("grineer").unwrap();
+        let grineer = crate::factions_data::column("grineer");
         let mut dst = [0.0f64; 15];
         // 125 effective is what 50 Impact ×1.5 + 50 Slash ×1.0 comes to.
         add_by_type(&mut dst, &v, 125.0, &grineer);
@@ -7130,7 +7130,7 @@ mod tests {
                 duration_secs: 0.65,
                 magazine_size: 100.0,
                 target: TargetParams {
-                    type_mods: crate::factions_data::columns_for(key).unwrap(),
+                    type_mods: crate::factions_data::columns_for(key),
                     base_shield: 10_000.0,
                     base_health: 160.0,
                     ..frail_target(TargetMode::InstantRespawn, 0.0, 0.0)

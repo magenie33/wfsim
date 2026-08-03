@@ -563,6 +563,10 @@ impl RivenSpec {
             .collect();
         ModDef {
             id,
+            // A riven's card name is the player's own — it is not a DE item, so
+            // there is nothing to look up. The UI shows the riven's own label
+            // and never wiki-links it (`m.riven` gates that), so the id serves.
+            name: id,
             base_drain: self.drain(),
             max_rank: MAX_RANK,
             polarity: self.polarity,

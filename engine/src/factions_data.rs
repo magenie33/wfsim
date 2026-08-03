@@ -16,9 +16,13 @@
 //! - The column is chosen by the POOL as well as the enemy. Damage landing on
 //!   Overguard reads the Overguard column (neutral but ×1.5 Void), never the
 //!   enemy's own — which is why [`Columns`] carries both and the pool decides.
-//! - A key that is not in the table is a DATA ERROR, not a neutral enemy. The
-//!   file writes neutral columns down (`unknown: {}`, `stalker: {}`, `tenno:
-//!   {}`) precisely so that a typo cannot quietly mean "takes normal damage".
+//! - **The table is COMPLETE at fifteen columns, and everything else is
+//!   neutral** (user, 2026-08-03). The wiki's `Damage/Overview_Table` publishes
+//!   exactly those fifteen; the enemy modules key eighteen faction values
+//!   against them, and the ones with no column (Stalker, Unknown, Duviri,
+//!   Neutral, Objects, Predator, Prey) are units the game gives no
+//!   vulnerability or resistance to. So an unlisted key is not an error to
+//!   report — it is the answer, and [`columns_for`] returns it.
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -128,10 +132,16 @@ fn table() -> &'static Table {
 }
 
 /// The column for a faction key (`FactionDamageOverride ?? Faction`, lowercase
-/// as the data files spell it). `None` = the key is not in the table, which is
-/// an error at the caller — see the module note.
-pub fn column(key: &str) -> Option<Column> {
-    table().factions.get(key).copied()
+/// as the data files spell it). A key the table does not name takes every
+/// damage type as written — see the module note; the fifteen are all there is.
+pub fn column(key: &str) -> Column {
+    table().factions.get(key).copied().unwrap_or(Column::NEUTRAL)
+}
+
+/// Whether the table names this key at all. Only for saying so — a faction
+/// with no column is neutral, not wrong.
+pub fn is_listed(key: &str) -> bool {
+    table().factions.contains_key(key)
 }
 
 /// The Overguard pool's own column. Damage landing on Overguard reads THIS,
@@ -140,12 +150,14 @@ pub fn overguard_column() -> Column {
     table().overguard
 }
 
-/// What one target resolves to. `key` is `FactionDamageOverride ?? Faction`.
-pub fn columns_for(key: &str) -> Option<Columns> {
-    column(key).map(|faction| Columns {
-        faction,
+/// What one target resolves to. `key` is `FactionDamageOverride ?? Faction`;
+/// a key with no column resolves to the neutral one, which is what the game
+/// does with every faction the damage table leaves out.
+pub fn columns_for(key: &str) -> Columns {
+    Columns {
+        faction: column(key),
         overguard: overguard_column(),
-    })
+    }
 }
 
 #[cfg(test)]
@@ -155,30 +167,50 @@ mod tests {
     #[test]
     fn the_published_columns_load() {
         // The two the wiki states most plainly, and the shape of the rest.
-        let g = column("grineer").expect("grineer column");
+        let g = column("grineer");
         assert_eq!(g.get(DamageType::Impact), 1.5);
         assert_eq!(g.get(DamageType::Corrosive), 1.5);
         assert_eq!(g.get(DamageType::Slash), 1.0, "unlisted = normal damage");
 
-        let o = column("orokin").expect("orokin column");
+        let o = column("orokin");
         assert_eq!(o.get(DamageType::Puncture), 1.5);
         assert_eq!(o.get(DamageType::Viral), 1.5);
         assert_eq!(o.get(DamageType::Radiation), 0.5, "a RESISTANCE, not a hole");
 
         // Zariman is an OVERRIDE-only column (no unit has it as its Faction).
-        assert_eq!(column("zariman").unwrap().get(DamageType::Void), 1.5);
+        assert_eq!(column("zariman").get(DamageType::Void), 1.5);
     }
 
-    /// Neutrality is a written-down column, not the absence of one — the whole
-    /// reason `column()` can return None and mean "data error".
+    /// The wiki's Damage/Overview_Table publishes fifteen columns and that is
+    /// the whole system, so this list is not a sample — it is the set. Locked
+    /// here because the rule "everything else is neutral" is only safe while
+    /// the fifteen are actually present.
     #[test]
-    fn neutral_columns_exist_and_are_neutral() {
-        for key in ["unknown", "stalker", "tenno"] {
-            let c = column(key).unwrap_or_else(|| panic!("{key} must be in the table"));
+    fn the_table_is_exactly_the_wikis_fifteen_columns() {
+        let mut have: Vec<&str> = table().factions.keys().map(|k| k.as_str()).collect();
+        have.sort_unstable();
+        let mut want = [
+            "tenno", "grineer", "kuva_grineer", "corpus", "corpus_amalgam", "infested",
+            "infested_deimos", "orokin", "sentient", "narmer", "the_murmur", "zariman",
+            "scaldra", "techrot", "anarchs",
+        ];
+        want.sort_unstable();
+        assert_eq!(have, want);
+    }
+
+    /// A faction the table leaves out is not a gap and not a typo to catch —
+    /// it is a unit the game gives no vulnerability or resistance to (user,
+    /// 2026-08-03). The Acolytes ("Stalker") and the Thrax ("Unknown") are the
+    /// two we ship, and `Tenno` is the one such column the table does print.
+    #[test]
+    fn a_faction_with_no_column_takes_every_type_as_written() {
+        for key in ["stalker", "unknown", "duviri", "predator", "no_such_faction", "tenno"] {
+            let c = column(key);
             assert_eq!(c, Column::NEUTRAL, "{key}");
             assert!(c.listed().is_empty(), "{key}");
         }
-        assert!(column("no_such_faction").is_none());
+        assert!(is_listed("tenno"), "the table does print an empty Tenno column");
+        assert!(!is_listed("stalker"));
     }
 
     #[test]
@@ -188,13 +220,21 @@ mod tests {
         assert_eq!(og.listed(), vec![(DamageType::Void, 1.5)]);
     }
 
-    /// Every faction key any enemy resolves to has to be in the table, or the
-    /// enemy silently takes normal damage from everything.
+    /// What each shipped enemy actually resolves to — the roster's own column
+    /// assignment, asserted rather than assumed. A unit that gained or lost a
+    /// vulnerability is a real finding about the unit, and it should not be
+    /// discoverable only by staring at the target card.
     #[test]
-    fn every_enemy_resolves_to_a_column() {
+    fn the_roster_resolves_to_the_columns_its_data_says() {
         for e in crate::enemy_data::all() {
             let key = e.damage_column_key();
-            assert!(column(key).is_some(), "{}: no column for {key}", e.id);
+            let listed = column(key).listed();
+            match e.id.as_str() {
+                "thrax_centurion" => assert_eq!(listed, vec![(DamageType::Void, 1.5)], "{key}"),
+                "corrupted_heavy_gunner" => assert_eq!(listed.len(), 3, "{key}"),
+                // The six Acolytes: faction "Stalker", which the table skips.
+                _ => assert!(listed.is_empty(), "{}: unexpected column {key}", e.id),
+            }
         }
     }
 }

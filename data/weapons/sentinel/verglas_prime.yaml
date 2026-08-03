@@ -37,8 +37,13 @@ noise: alarming
 magazine: 80
 reload_seconds: 1.6
 
-# No CO catalog row for this weapon, so the normal class applies.
-co_behavior: independent
+# No CO catalog row for this weapon, so the normal class applies — and the
+# normal class is ADDITIVE. This said exactly that and then set `independent`,
+# which is the wiki's "Multiplying" and the opposite (user, 2026-08-03). The
+# catalog "lists only discrepant attacks. Anything not listed should be assumed
+# to be Additive with +100% bonus"; re-checked 2026-08-03, Verglas appears
+# nowhere in it.
+co_behavior: additive_with_base_damage
 
 # Innate damage is pure COLD, which makes this the engine's reference case for
 # an elemental-innate weapon: the innate element enters the hierarchy LAST and

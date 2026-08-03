@@ -43,6 +43,11 @@ ammo_type: archgun
 ammo_max: 400
 finite_reserve: true         # see larkspur_prime.yaml — the ground column
 
+# CO catalog: "Larkspur Prime | Alt-fire | Projectile | 100% | Multiplying".
+# THIS entry IS the alt-fire, so `independent` (= the wiki's "Multiplying") is
+# the listed exception and is correct here — unlike the normal-fire entry
+# (larkspur_prime.yaml), which the catalog does not list and which is therefore
+# additive. Re-verified 2026-08-03.
 co_behavior: independent
 
 # TWO ATTACK PARTS. The directly-hit enemy takes both, as on the Laetum:

@@ -545,7 +545,11 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
         .map(|m| {
             let mut j = json!({
                 "id": m.id,
-                "name": prettify(m.id),
+                // DE's own name, straight from the yaml. This used to be
+                // `prettify(m.id)` — a title-cased id, which is not the same
+                // string: "Semi-Shotgun Cannonade" came back without its
+                // hyphen, so the card's wiki link 404'd (user, 2026-08-03).
+                "name": m.name,
                 "drain": m.base_drain,
                 "max_rank": m.max_rank,
                 "polarity": format!("{:?}", m.polarity),
@@ -711,8 +715,8 @@ pub fn meta_json() -> Value {
                 // Keyed by FactionDamageOverride ?? Faction, so a Thrax shows
                 // Zariman's Void x1.5 while answering to no faction mod.
                 "type_modifiers": wfsim_engine::factions_data::columns_for(e.damage_column_key())
-                    .map(|c| c.faction.listed())
-                    .unwrap_or_default()
+                    .faction
+                    .listed()
                     .into_iter()
                     .map(|(t, m)| json!({ "type": t.name(), "mult": m }))
                     .collect::<Vec<_>>(),
@@ -1092,7 +1096,7 @@ fn enumerate_buffs(
     }
     // Mod-granted buffs.
     for m in refs {
-        let nm = prettify(m.id);
+        let nm = m.name.to_string();
         for e in &m.effects {
             use ModEffect::*;
             // UNWRAP the player condition, and DROP the effect when the
@@ -1519,7 +1523,7 @@ pub fn panel_json(v: &Value) -> Value {
     let mut src: Vec<(&'static str, String, f64, Option<String>)> = Vec::new();
     let mut conditionals: Vec<Value> = Vec::new(); // lines that never merge into a bucket
     for m in &refs {
-        let name = prettify(m.id);
+        let name = m.name.to_string();
         for e in &m.effects {
             use ModEffect::*;
             let before = src.len();

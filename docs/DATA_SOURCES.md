@@ -498,6 +498,13 @@ it to borrow any column in the table.
 
 The enemy modules use 18 distinct `Faction` values; the damage table publishes
 15 columns. `Stalker` (the Acolytes), `Unknown` (Thrax), `Duviri`, `Neutral`,
-`Objects`, `Predator`, `Prey` and `?` have none — they take every type as
-written. We record neutrality explicitly for the ones we ship rather than
-falling back to it, so a typo cannot pass for a neutral enemy.
+`Objects`, `Predator`, `Prey` and `?` have none.
+
+**That is not a gap — it is the answer.** The fifteen are the whole system, so
+a faction the table leaves out is a unit the game gives no vulnerability or
+resistance to, and it takes every damage type as written (user, 2026-08-03:
+"就只有15个，其他都理解成中性"). `factions_data::column()` returns the neutral
+column for an unlisted key rather than reporting an error, and the file holds
+exactly the fifteen — no hand-added neutral rows, with a test locking the set
+so "everything else is neutral" cannot quietly come to mean "we lost a
+column".

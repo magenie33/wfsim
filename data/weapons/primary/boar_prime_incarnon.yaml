@@ -95,10 +95,10 @@ pseudo_reload:
   magazine: 150
   reload_seconds: 3.75
 
-# No CO catalog row for this form (nor for the base one), so the default
-# additive class applies — the same answer boar_prime.yaml records, and for
-# the same reason: absence in the catalog means normal.
-co_behavior: additive
+# No CO catalog row for this form (nor for the base one), so the ADDITIVE
+# class applies — the same answer boar_prime.yaml records, and for the same
+# reason: absence from a table that lists only discrepancies means normal.
+co_behavior: additive_with_base_damage
 
 # ONE attack part, and the three beams are NOT it. The wiki page describes
 # "up to 3 beams that automatically target enemies within 10° of the reticle",

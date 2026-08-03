@@ -372,6 +372,7 @@ fn to_moddef(mf: ModFile) -> ModDef {
     let effects = mf.effects.iter().filter_map(effect).collect();
     ModDef {
         id: Box::leak(mf.id.into_boxed_str()),
+        name: Box::leak(mf.name.into_boxed_str()),
         // ModDef.base_drain is the drain at the EQUIPPED (max) rank: drain
         // rises by 1 per rank from the rank-0 `base_drain`, so max = base + rank.
         base_drain: mf.base_drain + mf.max_rank,

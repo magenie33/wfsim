@@ -566,6 +566,13 @@ impl ModEffect {
 #[derive(Debug, Clone)]
 pub struct ModDef {
     pub id: &'static str,
+    /// DE's own name for the card. The yaml has always carried it and the
+    /// engine used to DROP it, leaving `webapi` to rebuild a display name from
+    /// the id — which is lossy in both directions: "Semi-Shotgun Cannonade"
+    /// came back as "Semi Shotgun Cannonade" (so its wiki link 404'd),
+    /// "Hell's Chamber" lost its apostrophe, and "Bane of Grineer" gained a
+    /// capital O (user, 2026-08-03).
+    pub name: &'static str,
     /// Drain at the EQUIPPED (max) rank.
     pub base_drain: u32,
     /// Max rank (drain rises 1/rank from rank 0, so rank-0 drain = base_drain − max_rank).
@@ -1808,6 +1815,7 @@ mod tests {
     fn m(id: &'static str, effects: Vec<ModEffect>) -> ModDef {
         ModDef {
             id,
+            name: id,
             base_drain: 10,
             max_rank: 10,
             polarity: Polarity::Madurai,

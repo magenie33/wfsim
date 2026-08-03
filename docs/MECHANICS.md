@@ -1526,11 +1526,11 @@ neutral except x1.5 Void, blocks status spillover, and grants CC immunity.
 Faction`) plus the Overguard column onto `TargetParams::type_mods`, and
 `TargetState::apply` scales each component by the column the POOL it lands in
 reads. A hit's per-type shape travels as `TypeShares` — the same value that
-answers Toxin's shield bypass. A faction key with no column in the table is a
-LOAD ERROR, never a silently neutral enemy, which is why the file writes its
-neutral columns down (`unknown`, `stalker`, `tenno`). Cinematic (bleed) is
-exempt everywhere, as the type's own definition says. Not modeled: the Object
-pool (no object target exists yet).*
+answers Toxin's shield bypass. The table's **fifteen columns are the whole
+system** (user, 2026-08-03), so a faction it does not name — Stalker, Unknown,
+the wildlife — resolves to neutral and takes every type as written. Cinematic
+(bleed) is exempt everywhere, as the type's own definition says. Not modeled:
+the Object pool (no object target exists yet).*
 
 **Two independent faction systems — different keys** (wiki `Faction Damage
 Bonus` + enemy-module schema):

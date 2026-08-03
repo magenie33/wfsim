@@ -192,8 +192,9 @@ impl EnemySpec {
 
     /// Which column of `data/factions/damage_modifiers.yaml` this unit's
     /// damage-type vulnerabilities come from: the OVERRIDE if it has one,
-    /// otherwise its faction, otherwise the written-down neutral column.
-    /// Never a fallback to "no column" — see `factions_data`.
+    /// otherwise its faction. A key the table does not name — "stalker",
+    /// "unknown", most of the wildlife — has no column, and that is the
+    /// answer: it takes every damage type as written.
     pub fn damage_column_key(&self) -> &str {
         self.faction_damage_override
             .as_deref()
@@ -202,8 +203,7 @@ impl EnemySpec {
     }
 
     /// Build the simulation target. Fails on combinations that do not exist
-    /// in-game (e.g. `eximus` for a unit with no Eximus variant), or on a
-    /// faction key with no column in the damage-modifier table.
+    /// in-game (e.g. `eximus` for a unit with no Eximus variant).
     pub fn target_params(
         &self,
         level: u32,
@@ -218,15 +218,9 @@ impl EnemySpec {
                 self.name
             ));
         }
-        let key = self.damage_column_key();
-        let Some(type_mods) = crate::factions_data::columns_for(key) else {
-            return Err(format!(
-                "{}: no damage-modifier column for faction '{key}' \
-                 (add it to data/factions/damage_modifiers.yaml — an unlisted \
-                 key must not silently mean neutral)",
-                self.name
-            ));
-        };
+        // The damage table's fifteen columns are the whole system; a faction it
+        // does not name takes every type as written, so this cannot fail.
+        let type_mods = crate::factions_data::columns_for(self.damage_column_key());
         Ok(TargetParams {
             name: self.name.clone(),
             base_level: self.stats.base_level,
