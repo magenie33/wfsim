@@ -4148,6 +4148,14 @@ pub struct Summary {
     /// Mean kill score with partial credit (kills + depleted fraction of
     /// the final target's pool).
     pub mean_kill_progress: f64,
+    /// Per-run σ of THAT number. The optimizer ranks by `mean_kill_progress`,
+    /// so every statistical decision it makes — the amnesty band at a cut
+    /// line, the 3σ racing cull, "is this build actually better" — needs the
+    /// spread of the statistic being ranked. It used to reach for `std_kills`,
+    /// which is a different statistic (whole kills, no partial credit) that
+    /// merely looks like it: a build that never finishes its second kill has
+    /// `std_kills` 0 and a kill progress that moves all run long.
+    pub std_kill_progress: f64,
     pub mean_shots: f64,
     pub mean_pellets: f64,
     pub mean_crit_rate: f64,
@@ -4183,7 +4191,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     let mut field_ticks = 0u64;
     let mut transforms = 0u64;
     let (mut min_kills, mut max_kills) = (u32::MAX, 0u32);
-    let mut kill_progress = 0.0f64;
+    let (mut kill_progress, mut kill_progress_sq) = (0.0f64, 0.0f64);
     let mut sources = SourceDamage::default();
     // Keep every engagement: the MEDIAN one (by effective damage) is
     // what the sim result displays — one real, internally consistent
@@ -4206,6 +4214,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         kills += r.kills as u64;
         kills_sq += (r.kills as u64) * (r.kills as u64);
         kill_progress += r.kill_progress;
+        kill_progress_sq += r.kill_progress * r.kill_progress;
         min_kills = min_kills.min(r.kills);
         max_kills = max_kills.max(r.kills);
         shots += r.shots as u64;
@@ -4261,6 +4270,10 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         min_kills: if min_kills == u32::MAX { 0 } else { min_kills },
         max_kills,
         mean_kill_progress: kill_progress / n,
+        std_kill_progress: {
+            let mean_kp = kill_progress / n;
+            (kill_progress_sq / n - mean_kp * mean_kp).max(0.0).sqrt()
+        },
         mean_shots: shots as f64 / n,
         mean_pellets: pellets as f64 / n,
         mean_crit_rate: crits as f64 / total_pellets,

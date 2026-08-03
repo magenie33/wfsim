@@ -19,6 +19,10 @@
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Mutex;
 
+/// How a search strategy is GRADED — an exhausted scope, flat-evaluated. The
+/// search half of this crate is only as good as what measures it.
+pub mod truth;
+
 use wfsim_engine::damage::DamageType;
 use wfsim_engine::dummy::{
     monte_carlo, BuffConfig, BuffLock, DummyParams, LockMode, Summary,

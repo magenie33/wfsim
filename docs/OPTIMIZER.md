@@ -209,3 +209,70 @@ unlock, no transformation, whoever is asking.
 `Scenario` carries `infinite_ammo` and `policy` now, so a scenario fact the
 simulator applies has a field the optimizer applies it from — the two cannot
 drift by omission again.
+
+## ACCURACY IS MEASURED, NOT ASSERTED (2026-08-03)
+
+A search strategy cannot vouch for itself. "The funnel kept the best build" is
+a claim about an answer nobody computed, and the failure mode it hides has no
+other symptom: a search that quietly loses the winner still returns a
+plausible-looking leaderboard. So the optimizer is now GRADED against an
+answer obtained a different way.
+
+**The reference.** Take a scope small enough to EXHAUST, evaluate **every** job
+in it flat at a high run count, rank by the objective. `optimizer/src/truth.rs`
+(`Truth::measure`). No funnel, no culling — the reference must not share a
+strategy with what it grades.
+
+**The reference is not one build.** The objective is a Monte-Carlo mean, so it
+carries a standard error, and the top of a real scope is usually a CLUSTER no
+run count can separate. Demanding rank 1 would fail a search for being unlucky
+rather than wrong. The target is `Truth::indistinguishable(3.0)`: every job
+whose mean is within 3 combined standard errors of the best. Returning any
+member of it is correct — that is `Verdict::within_noise`, the pass/fail.
+Alongside it: `rank`, `regret` (objective given up, as a fraction of the best),
+`recall` (how much of the reference's top-k the search's own top-k contains — a
+search can find the winner and still be blind to the field), and `sims` against
+the reference's own cost, because accuracy is only interesting next to its price.
+
+**The reference has to earn the name.** One measured at too few runs is just
+another noisy ranking wearing a badge. Every grading run measures the scope
+TWICE under different seeds and reports whether the two agree on the answer set
+(`settled`) and how much of the top-k they share (`cross_seed_overlap`). Not
+settled ⇒ raise the run count; every verdict under it is noise.
+
+**Where it runs.**
+
+- `cargo test -p wfsim-optimizer --test search_accuracy` — the CI guard. A
+  10-mod Verglas Prime scope (129 jobs, exhaustive), 60-run reference. It also
+  asserts the fixture is not degenerate: an answer set that is most of the scope
+  grades nothing, so the test fails if the scope cannot separate builds.
+- `wfsim-truth pool=<ids> [weapon=… level=… duration=… truth_runs=…]` — the
+  same grading at real scale, through `parse_optimize`, i.e. the app's own
+  request path. A grader that assembles its own fight grades a different one
+  (see "The search and the replay must be the SAME fight"). It REFUSES a scope
+  it cannot exhaust: a reference that samples is not a reference.
+
+**Baseline (2026-08-03).** Verglas Prime, 10 pooled rifle mods, Thrax Centurion
+Lv 1000 SP, 60 s, `truth_runs=200`:
+
+| | |
+|---|---|
+| scope | 1,822 jobs, exhaustive |
+| reference | 364,400 sims; answer set **1 build**; settled; top-10 overlap 1.00 |
+| search | rank **1**, regret 0.000%, within noise, top-10 recall 100% |
+| cost | 4,241 sims — **1.2%** of the reference |
+
+The reference's own #1 is Viral+Heat (`cryo_rounds, malignant_force, hellfire`
++ the four damage mods), which is what the weapon's innate Cold makes reachable
+under MECHANICS §3 rule 3 — the innate is pulled forward onto the Cold mod's
+position, leaving Heat unpaired.
+
+## The RANKING statistic needs its own σ (2026-08-03)
+
+The funnel ranks by `mean_kill_progress` but took its spread from `std_kills` —
+a different statistic that merely looks like it. Whole kills have no partial
+credit, so a build that never finishes its second kill has `std_kills` 0 and a
+kill progress that moves all run long; the amnesty band at a cut line and the
+3σ racing cull were both sized from the wrong number. `Summary` now carries
+`std_kill_progress`.
+

@@ -86,6 +86,15 @@ around (decision 2026-07-31).
   bare name either way.
 - Deploy = push to `main`: Cloudflare picks up `site/` automatically
   (takes ~1–2 min). There is no deploy step in CI.
+- **Optimizer verification: `cargo run --release --bin wfsim-truth -- pool=<ids>
+  …`**. A search cannot vouch for itself, so it is GRADED: the tool exhausts the
+  scope, evaluates every job flat, and reports where the production search
+  landed in that reference ranking (rank / regret / recall / cost, and whether
+  the reference reproduces itself under a second seed). It goes through
+  `parse_optimize`, so it grades the app's own fight, and it REFUSES a scope it
+  cannot exhaust. Run it after ANY change to enumeration, scheduling or
+  scoring. The cheap CI form is `optimizer/tests/search_accuracy.rs`. See
+  docs/OPTIMIZER.md §Accuracy.
 - UI verification: drive headless Chrome over CDP (Node ≥22 has a global
   WebSocket; Chrome is at the default install path). Assert real DOM
   state; screenshots for layout review. `node scripts/check_parity.mjs`

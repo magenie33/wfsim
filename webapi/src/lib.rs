@@ -3478,6 +3478,173 @@ pub type CheckpointSink<'a> = dyn Fn(usize, usize, &[JobIdentity], &Value) + 'a;
 pub type BoardSink<'a> = dyn Fn(&Value) + 'a;
 
 /// The uninterrupted entry point — no checkpointing, no resume.
+/// GRADE the search against ground truth — the same request, the same plan,
+/// the same fight, answered twice: once by the production search and once by
+/// exhausting the scope and evaluating every job flat.
+///
+/// This goes through [`parse_optimize`] rather than assembling a scenario of
+/// its own, because a grader that builds its own fight grades a different one
+/// — the exact failure this repo has already been bitten by (OPTIMIZER.md,
+/// "The search and the replay must be the SAME fight").
+///
+/// It REFUSES a scope it cannot exhaust. A reference that samples is not a
+/// reference; if the scope is too big to enumerate, the honest answer is to
+/// say so and let the caller narrow it, not to grade against a guess.
+pub fn grade_optimize(v: &Value, truth_runs: u32, max_jobs: usize) -> Value {
+    use wfsim_optimizer::truth::{judge, Truth};
+    let plan = match parse_optimize(v) {
+        Ok(p) => p,
+        Err(e) => return e,
+    };
+    let OptimizePlan {
+        pool,
+        constraints,
+        min_slots,
+        build_size,
+        evo_sets,
+        exilus_defs,
+        arcanes,
+        scenario,
+        final_runs,
+        finalists,
+        deployment,
+        fire_id,
+        cycle_from,
+        unlock_evo,
+        untransformed_id,
+        weapon_id,
+        threads,
+        ..
+    } = plan;
+    wfsim_optimizer::set_worker_threads(threads);
+    let info = weapon(&weapon_id);
+    let innate = wfsim_engine::weapons_data::innate_slots(&info.id);
+    let exilus_refs: Vec<Option<&ModDef>> = exilus_defs.iter().map(|o| o.as_ref()).collect();
+    let deployed = |id: &str, refs: &[&str]| {
+        let mut b = WeaponBase::from_data(id, true, refs);
+        if !deployment.is_empty() {
+            wfsim_engine::weapons_data::apply_deployment(&mut b, id, &deployment);
+        }
+        b
+    };
+
+    // ---- exhaust the scope (the same walk the search starts from) ----
+    let state = FunnelState::default();
+    let mut cands: Vec<Candidate> = Vec::new();
+    for (vi, set) in evo_sets.iter().enumerate() {
+        let refs: Vec<&str> = set.iter().map(String::as_str).collect();
+        let unlocked = match unlock_evo.as_deref() {
+            Some(u) => set.iter().any(|e| e == u),
+            None => true,
+        };
+        let (base, base_form) = if unlocked {
+            (deployed(&fire_id, &refs), cycle_from.as_ref().map(|id| deployed(id, &refs)))
+        } else {
+            (deployed(&untransformed_id, &refs), None)
+        };
+        let (mut c, _stats, complete) = enumerate_candidates_observed(
+            &pool,
+            &base,
+            base_form.as_ref(),
+            vi as u32,
+            min_slots as u32,
+            build_size as u32,
+            60,
+            &innate,
+            &constraints,
+            &exilus_refs,
+            Some(&state),
+            max_jobs.saturating_sub(cands.len()).max(1),
+            &scenario.arena.tenno,
+            scenario.policy,
+        );
+        cands.append(&mut c);
+        if !complete || cands.len() >= max_jobs {
+            return err_json(format!(
+                "this scope is too big to grade: it does not fit {max_jobs} candidates. \
+                 Ground truth means evaluating EVERY build, so narrow the scope \
+                 (fewer pooled mods, or pin some) and grade that."
+            ));
+        }
+    }
+    if cands.is_empty() {
+        return err_json("no legal builds in this scope");
+    }
+    let jobs: Vec<Job> = (0..cands.len())
+        .flat_map(|i| (0..arcanes.len()).map(move |a| (i, a)))
+        .collect();
+    if jobs.len() > max_jobs {
+        return err_json(format!(
+            "{} jobs ({} builds x {} arcane sets) exceeds the {max_jobs} the grader will exhaust",
+            jobs.len(),
+            cands.len(),
+            arcanes.len()
+        ));
+    }
+
+    // ---- the reference, twice: a reference that cannot reproduce itself
+    // under a second seed has not established anything.
+    let a = Truth::measure(&cands, &jobs, &arcanes, &scenario, truth_runs, 0xA11CE);
+    let b = Truth::measure(&cands, &jobs, &arcanes, &scenario, truth_runs, 0xB0B);
+    let answer = a.indistinguishable(3.0);
+    let settled = answer.contains(&b.best()) && b.indistinguishable(3.0).contains(&a.best());
+    let overlap = a.agrees_with(&b, finalists);
+
+    // ---- the production search, on the same scope ----
+    let rounds = schedule_to(jobs.len(), final_runs, finalists);
+    let planned: u64 = {
+        let mut field = jobs.len() as u64;
+        let mut n = 0;
+        for &(r, keep, _) in &rounds {
+            n += field * u64::from(r);
+            field = field.min(keep as u64);
+        }
+        n
+    };
+    let last = run_funnel(
+        &cands, &arcanes, &scenario, jobs.clone(), &rounds, 0xDEAD_BEEF, false,
+        None, None, 0, None, None,
+    );
+    let board: Vec<usize> = last
+        .iter()
+        .map(|&(j, _)| jobs.iter().position(|&x| x == j).expect("job in scope"))
+        .collect();
+    let verdict = judge(&a, &board, finalists, planned);
+
+    let row = |ji: usize| -> Value {
+        let (ci, ai) = jobs[ji];
+        let c = &cands[ci];
+        json!({
+            "mods": c.ordered.iter().map(|&i| pool[i].id).collect::<Vec<_>>(),
+            "arcane": ai,
+            "vector": c.panel.damage.iter_nonzero()
+                .map(|(t, v)| format!("{t:?} {v:.0}")).collect::<Vec<_>>(),
+            "mean": a.est[ji].mean,
+            "se": a.est[ji].se,
+        })
+    };
+    json!({
+        "ok": true,
+        "scope": { "builds": cands.len(), "jobs": jobs.len(), "exhaustive": true },
+        "reference": {
+            "runs": truth_runs,
+            "sims": verdict.reference_sims,
+            "answer_set": answer.len(),
+            "settled": settled,
+            "cross_seed_overlap": overlap,
+            "top": a.order.iter().take(finalists).map(|&j| row(j)).collect::<Vec<_>>(),
+        },
+        "search": {
+            "rank": verdict.rank,
+            "regret": verdict.regret,
+            "within_noise": verdict.within_noise,
+            "recall": verdict.recall,
+            "sims": verdict.sims,
+            "top": board.iter().take(finalists).map(|&j| row(j)).collect::<Vec<_>>(),
+        },
+    })
+}
+
 pub fn run_optimize(
     plan: OptimizePlan,
     state: &FunnelState,
