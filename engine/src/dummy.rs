@@ -1146,6 +1146,15 @@ pub struct DummyParams {
     /// data/arcanes/secondary (fixed equipment per scenario; the optimizer
     /// compares scenarios per arcane). `ArcaneFx::none()` = empty slot.
     pub arcane: ArcaneFx,
+    /// Secondary Enervate's stack count at t = 0. Its own field because the
+    /// ramp lives in a PERK rather than in `arcane.buffs`, so the ordinary
+    /// per-buff seeding never reached it — the arcane simply always started
+    /// from nothing, with no card to say so (user, 2026-08-03).
+    ///
+    /// UNCAPPED, like the mechanic: a hit adds a stack with no ceiling until a
+    /// big crit wipes the pile. There is no maximum to clamp to and inventing
+    /// one would be the model disagreeing with the card.
+    pub enervate_stacks: u32,
     pub body_parts: Vec<BodyPart>,
     /// The TARGET — one of the fight's two actors.
     pub target: TargetParams,
@@ -1241,6 +1250,11 @@ impl DummyParams {
         if let Some(ms) = self.evo_ms {
             out.push(("evo_multishot".into(), ms.max_stacks));
         }
+        // UNCAPPED — 0 means "no ceiling", which the api and the UI both read
+        // as such rather than as a maximum of zero.
+        if self.arcane.enervate_rank.is_some() {
+            out.push(("arcane:secondary_enervate".into(), 0));
+        }
         if let Some(s) = &self.co_stack {
             out.push(("condition_overload".into(), s.max_stacks));
         }
@@ -1302,6 +1316,14 @@ impl DummyParams {
         // decay — the configured count is a STATIC multishot choice for the
         // whole run. `locked` is meaningless here (the stacks cannot move
         // either way) and is deliberately ignored.
+        // Secondary Enervate: untimed and UNCAPPED, but CONSUMABLE — a big
+        // crit resets the pile — so it starts at 0 by the same rule as every
+        // timed buff (user, 2026-08-03), and the card can say otherwise.
+        if self.arcane.enervate_rank.is_some() {
+            if let Some(&(stacks, _)) = cfg.get("arcane:secondary_enervate") {
+                self.enervate_stacks = stacks;
+            }
+        }
         if let Some(ms) = self.evo_ms {
             if let Some(&(stacks, _)) = cfg.get("evo_multishot") {
                 let stacks = stacks.min(ms.max_stacks);
@@ -1523,6 +1545,7 @@ impl DummyParams {
             bd_on_reload: panel.bd_on_reload,
             proc_conversion: panel.proc_conversion,
             arcane: ArcaneFx::none(),
+            enervate_stacks: 0,
             body_parts,
             target,
             duration_secs,
@@ -1615,6 +1638,7 @@ impl Default for DummyParams {
     /// the engine.
     fn default() -> Self {
         Self {
+            enervate_stacks: 0,
             damage: Self::dual_toxocyst_base_vector(),
             radial: None,
             lingering: None,
@@ -2784,6 +2808,10 @@ fn sample_stacks(
             "on_kill_cd" => live(now < arc.cd_kill_expiry()),
             "on_reload_bd" => live(now < bd_reload_expiry),
             "on_reload_fr" => live(now < fr_reload_expiry),
+            // The perk keeps its stacks on the BAR, not in `arcane.buffs`.
+            "arcane:secondary_enervate" => {
+                cap(bar.get("secondary_enervate").map_or(0, |b| b.stacks))
+            }
             other => match other.strip_prefix("arcane:") {
                 // One card per arcane: every spec it owns shares a count, so
                 // the first one answers for all of them.
@@ -2823,6 +2851,12 @@ pub fn run_once_traced(
         .arcane
         .enervate_rank
         .map(SecondaryEnervate::from_rank);
+    // The configured pile, put on the bar before the first shot. The perk
+    // reads its own stacks back off the bar, so seeding it here is all it
+    // takes for the ramp to continue from that count.
+    if let Some(en) = enervate.as_ref() {
+        en.seed(params.enervate_stacks, &mut bar);
+    }
     let mut frenzy = Frenzy::new();
     let mut target = TargetState::spawn(&params.target);
     let mut debuffs = DebuffState::default();

@@ -1021,6 +1021,10 @@ struct BuffMeta {
     /// count is a static choice, so the lock control is meaningless and the
     /// UI greys it out with a hint.
     permanent: bool,
+    /// NO CEILING. Secondary Enervate gains a stack per hit until a big crit
+    /// wipes the pile, so `max_stacks` has nothing honest to hold — the card
+    /// shows `∞` and the input takes no maximum (user, 2026-08-03).
+    uncapped: bool,
 }
 
 fn grant_label(g: wfsim_engine::arcanes_data::ArcGrant) -> &'static str {
@@ -1067,6 +1071,7 @@ fn enumerate_buffs(
             default_stacks: 0,
             default_locked: false,
             permanent: false,
+            uncapped: false,
         });
     }
     // Mod-granted buffs.
@@ -1098,6 +1103,7 @@ fn enumerate_buffs(
                     default_stacks: 0,
                     default_locked: false,
                     permanent: false,
+                uncapped: false,
                 }),
                 ConditionOverload { max_stacks, .. } => push(BuffMeta {
                     id: "condition_overload".into(),
@@ -1108,6 +1114,7 @@ fn enumerate_buffs(
                     default_stacks: 0,
                     default_locked: false,
                     permanent: false,
+                uncapped: false,
                 }),
                 OnHeadshotCritChance { .. } => push(BuffMeta {
                     id: "on_headshot_cc".into(),
@@ -1118,6 +1125,7 @@ fn enumerate_buffs(
                     default_stacks: 0,
                     default_locked: false,
                     permanent: false,
+                uncapped: false,
                 }),
                 OnHeadshotKillCritChance { max_stacks, .. } => push(BuffMeta {
                     id: "on_headshot_kill_cc".into(),
@@ -1128,6 +1136,7 @@ fn enumerate_buffs(
                     default_stacks: 0,
                     default_locked: false,
                     permanent: false,
+                uncapped: false,
                 }),
                 OnKillCritDamage { .. } => push(BuffMeta {
                     id: "on_kill_cd".into(),
@@ -1138,6 +1147,7 @@ fn enumerate_buffs(
                     default_stacks: 0,
                     default_locked: false,
                     permanent: false,
+                uncapped: false,
                 }),
                 OnReloadDamage { .. } => push(BuffMeta {
                     id: "on_reload_bd".into(),
@@ -1148,6 +1158,7 @@ fn enumerate_buffs(
                     default_stacks: 0,
                     default_locked: false,
                     permanent: false,
+                uncapped: false,
                 }),
                 OnReloadFireRate { .. } => push(BuffMeta {
                     id: "on_reload_fr".into(),
@@ -1158,10 +1169,31 @@ fn enumerate_buffs(
                     default_stacks: 0,
                     default_locked: false,
                     permanent: false,
+                uncapped: false,
                 }),
                 _ => {}
             }
         }
+    }
+    // Secondary Enervate is a PERK, not an `ArcBuffSpec`, so the arcane loop
+    // below never saw it and the one arcane whose whole point is a stack count
+    // had no card. Untimed, UNCAPPED, and consumed by a big crit — which is
+    // why it starts at 0 like everything else that can be spent (user,
+    // 2026-08-03: "失活是独立的buff啊，就像配置这个buff一样配置失活buff").
+    if arcane.enervate_rank.is_some() {
+        push(BuffMeta {
+            id: "arcane:secondary_enervate".into(),
+            name: wfsim_engine::arcanes_data::secondary("secondary_enervate")
+                .map(|d| d.name.clone())
+                .unwrap_or_else(|| prettify("secondary_enervate")),
+            grants: String::new(),
+            max_stacks: 0,
+            kind: "stacking",
+            default_stacks: 0,
+            default_locked: false,
+            permanent: false,
+            uncapped: true,
+        });
     }
     // Arcane buffs — ONE CARD PER ARCANE, not per grant (user, 2026-08-02).
     //
@@ -1226,6 +1258,7 @@ fn enumerate_buffs(
                 default_stacks: 0,
                 default_locked: false,
                 permanent: false,
+                uncapped: false,
             });
         }
     }
@@ -1257,6 +1290,7 @@ fn evo_buffs(evo_ids: &[String]) -> Vec<BuffMeta> {
                 default_stacks: if c.permanent { c.max_stacks } else { 0 },
                 default_locked: false,
                 permanent: c.permanent,
+                uncapped: false,
             })
         })
         .collect()
@@ -1270,6 +1304,7 @@ fn buffs_json(list: &[BuffMeta]) -> Vec<Value> {
                 "kind": b.kind,
                 "default_stacks": b.default_stacks, "default_locked": b.default_locked,
                 "permanent": b.permanent,
+                "uncapped": b.uncapped,
             })
         })
         .collect()

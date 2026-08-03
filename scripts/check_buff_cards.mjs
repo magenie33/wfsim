@@ -47,8 +47,7 @@ const r = await evaluate(`(async () => {
   const cards = [...document.querySelectorAll('#sim-buffs .buff-card')].map(e=>({
     name: e.querySelector('.bn').textContent.trim(),
     stacks: e.querySelector('input[data-f="stacks"]').value,
-    inactive: !e.querySelector('.binact').classList.contains('off'),
-    inactiveText: e.querySelector('.binact').textContent,
+    cap: e.querySelector('.bmax').textContent.trim(),
   }));
   sim.level = 300; sim.steel_path = true; sim.duration = 60; sim.runs = 6;
   markScenarioDirty(); await sleep(600);
@@ -65,7 +64,19 @@ const r = await evaluate(`(async () => {
   const sc = document.getElementById('rp-scrub');
   sc.value = 0; sc.dispatchEvent(new Event('input')); await sleep(400);
   const atZero = [...document.querySelectorAll('.rp-now')].map(e=>e.textContent.trim());
-  return { cards, rows, atZero, lang: LANG };
+  // The UNCAPPED card: Secondary Enervate ramps with no ceiling, so its card
+  // must show an infinity rather than a number somebody invented.
+  history.pushState({},'','/weapons/Dual_Toxocyst'); route(); await sleep(3000);
+  arcanes = ['secondary_enervate']; markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
+  document.querySelectorAll('.tab').forEach(x=>{ if(/Sim|模拟/i.test(x.textContent)) x.click(); });
+  await sleep(1500);
+  const un = [...document.querySelectorAll('#sim-buffs .buff-card')]
+    .map(e=>({ name:e.querySelector('.bn').textContent.trim(),
+               cap:e.querySelector('.bmax').textContent.trim(),
+               stacks:e.querySelector('input[data-f="stacks"]').value,
+               hasMax:e.querySelector('input[data-f="stacks"]').hasAttribute('max') }))
+    .filter(c=>/失活|Enervate/.test(c.name));
+  return { cards, rows, atZero, un, lang: LANG };
 })()`);
 
 console.log("lang:", r.lang);
@@ -74,7 +85,7 @@ console.log("rows :", JSON.stringify(r.rows, null, 1));
 check("both evolution buffs have a card", r.cards.length === 2, JSON.stringify(r.cards.map(c=>c.name)));
 check("their names are Chinese", r.cards.every(c => /[\u4e00-\u9fff]/.test(c.name)), r.cards.map(c=>c.name).join(","));
 check("they open at 0 stacks", r.cards.every(c => c.stacks === "0"), r.cards.map(c=>c.stacks).join(","));
-check("and say so", r.cards.every(c => c.inactive && /[\u4e00-\u9fff]/.test(c.inactiveText)), r.cards.map(c=>c.inactiveText).join(","));
+check("a capped buff shows its own ceiling", r.cards.every(c => /\/ ?\d+/.test(c.cap)), r.cards.map(c=>c.cap).join(","));
 check("the coverage rows are Chinese too", r.rows.every(x => /[\u4e00-\u9fff]/.test(x.name)), r.rows.map(x=>x.name).join(","));
 check("every figure carries two decimals",
   r.rows.every(x => /[\d]+\.\d\d\/\d/.test(x.stat) && /\d+\.\d\d%/.test(x.stat) && /\d+\.\d\ds/.test(x.stat)),
@@ -82,8 +93,11 @@ check("every figure carries two decimals",
 check("uptime is never a flat 100%", r.rows.every(x => !/(^|[^.\d])100%/.test(x.stat)), r.rows.map(x=>x.stat).join(" | "));
 check("the average is drawn on the curve", r.rows.every(x => x.mean));
 check("the inactive stretches are banded", r.rows.every(x => x.dead > 0), r.rows.map(x=>x.dead).join(","));
-check("at t=0 the curve's own readout says inactive",
-  r.atZero.every(x => /失活|inactive/.test(x)), r.atZero.join(" | "));
+check("at t=0 every buff reads zero", r.atZero.every(x => /^0\//.test(x)), r.atZero.join(" | "));
+check("Secondary Enervate has a card of its own", r.un.length === 1, JSON.stringify(r.un));
+check("...uncapped, shown as infinity", r.un[0] && /∞/.test(r.un[0].cap), r.un[0] && r.un[0].cap);
+check("...starting at 0, with no invented maximum",
+  r.un[0] && r.un[0].stacks === "0" && !r.un[0].hasMax, JSON.stringify(r.un[0]));
 ws.close(); proc.kill(); srv.close();
 console.log(fail ? fail + " failed" : "the buff cards read right in Chinese");
 process.exit(fail ? 1 : 0);

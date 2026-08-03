@@ -4794,7 +4794,7 @@ function renderSim() {
 function syncBuffConfig(list, cfg) {
   list.forEach((b) => {
     if (!cfg[b.id]) cfg[b.id] = { stacks: b.default_stacks, locked: b.default_locked };
-    else cfg[b.id].stacks = Math.min(cfg[b.id].stacks, b.max_stacks);
+    else if (!b.uncapped) cfg[b.id].stacks = Math.min(cfg[b.id].stacks, b.max_stacks);
   });
 }
 
@@ -4842,13 +4842,12 @@ function renderBuffCards(box, list, cfg, have, opts = {}) {
     const startWhy = b.permanent
       ? tr("permanent — nothing grants or decays it, so it holds all run")
       : tr("stacks the run STARTS with. 0 = earned in-fight on this buff's own trigger, which is what a fight that has not been in contact for a few seconds looks like");
-    // ZERO IS A STATE, and it gets a name. "0 / 3" is a number a reader has
-    // to interpret; "0 / 3 · inactive" is the state the run actually starts
-    // in, which is what the setting means (user, 2026-08-03: "失活应该也在
-    // buff 配置里"). Consumable buffs — next-shot damage, a one-off crit —
-    // start here by the same rule, whatever their duration says.
-    const ctl = `<span class="bstep" title="${escHtml(startWhy)}"><input type="number" data-b="${b.id}" data-f="stacks" min="0" max="${b.max_stacks}" value="${c.stacks}"><span class="bmax">/ ${b.max_stacks}</span></span>` +
-      `<span class="binact${c.stacks > 0 ? " off" : ""}" data-inact="${b.id}">${escHtml(tr("inactive"))}</span>`;
+    // UNCAPPED buffs exist: Secondary Enervate ramps a stack per hit with no
+    // ceiling until a big crit wipes it. `/ ∞` is the honest maximum, and the
+    // input takes no `max` — clamping it to a number we invented would be the
+    // one place the UI disagreed with the mechanic (user, 2026-08-03).
+    const cap = b.uncapped ? "∞" : b.max_stacks;
+    const ctl = `<span class="bstep" title="${escHtml(startWhy)}"><input type="number" data-b="${b.id}" data-f="stacks" min="0"${b.uncapped ? "" : ` max="${b.max_stacks}"`} value="${c.stacks}"><span class="bmax">/ ${cap}</span></span>`;
     // NOT "lock" (user, 2026-08-02): that read as "freeze this buff", so
     // locking one at zero looked like a way to switch it off forever. It only
     // removes the TIMEOUT — the count still starts where it is set and still
@@ -4886,8 +4885,6 @@ function renderBuffCards(box, list, cfg, have, opts = {}) {
       if (f === "locked") c.locked = el.checked;
       else if (el.type === "checkbox") c.stacks = el.checked ? 1 : 0;
       else c.stacks = Math.max(0, Number(el.value));
-      const tag = box.querySelector(`[data-inact="${CSS.escape(id)}"]`);
-      if (tag) tag.classList.toggle("off", c.stacks > 0);
       // A buff belongs to the FIGHT and to nothing else — including settings
       // for mods this build does not carry. It used to dirty the build too,
       // back when a build kept a copy of the scenario (user, 2026-08-02).
@@ -5041,6 +5038,9 @@ function renderStoredSimResult() {
 // row that has to be clicked to answer it will not be. `mean` and `uptime`
 // sit in the header so the group reads without expanding anything at all.
 const REPLAY_SPEEDS = [1, 2, 5, 20];
+// An UNCAPPED buff has no maximum to draw against, so the curve scales to the
+// highest it actually reached and the readout says so.
+const rpCap = (b) => (b.uncapped ? "∞" : b.max);
 let replayState = null; // { data, i, playing, speed, raf }
 
 function replayMarkup(r) {
@@ -5055,7 +5055,7 @@ function replayMarkup(r) {
   const W = 600, H = 28;
   const rows = rp.buffs.map((b, i) => {
     const s = rp.stacks[i] || [];
-    const max = Math.max(1, b.max);
+    const max = Math.max(1, b.uncapped ? Math.max(...s) : b.max);
     const px = (j) => (j / (s.length - 1)) * W;
     const py = (v) => H - 1 - (v / max) * (H - 2);
     const pts = s.map((v, j) => `${px(j).toFixed(1)},${py(v).toFixed(1)}`).join(" ");
@@ -5070,7 +5070,7 @@ function replayMarkup(r) {
     const offPct = (100 - up * 100).toFixed(2);
     // ...and the thing the 100% was hiding: how long the ramp took. This is
     // the answer to "初始肯定要花时间" as a number rather than a rounding.
-    const iFull = s.findIndex((v) => v >= b.max);
+    const iFull = b.uncapped ? -1 : s.findIndex((v) => v >= b.max);
     const ramp = iFull < 0
       ? tr("never full")
       : `${tr("full at")} ${(iFull * rp.dt).toFixed(2)}s`;
@@ -5089,8 +5089,8 @@ function replayMarkup(r) {
       <div class="rp-head">
         <span class="rp-caret">▾</span>
         <span class="rp-name">${escHtml(named(b.id))}</span>
-        <span class="rp-stat">${escHtml(tr("avg"))} ${mean.toFixed(2)}/${b.max} · ${escHtml(tr("uptime"))} ${upPct}%${up < 1 ? ` · <span class="rp-off">${escHtml(tr("inactive"))} ${offPct}%</span>` : ""} · ${escHtml(ramp)}</span>
-        <span class="rp-now${s[s.length - 1] > 0 ? "" : " rp-off"}" data-now="${i}">${s[s.length - 1] > 0 ? `${s[s.length - 1]}/${b.max}` : `0/${b.max} · ${escHtml(tr("inactive"))}`}</span>
+        <span class="rp-stat">${escHtml(tr("avg"))} ${mean.toFixed(2)}/${rpCap(b)} · ${escHtml(tr("uptime"))} ${upPct}%${up < 1 ? ` · <span class="rp-off">${escHtml(tr("inactive"))} ${offPct}%</span>` : ""} · ${escHtml(ramp)}</span>
+        <span class="rp-now" data-now="${i}">${s[s.length - 1]}/${rpCap(b)}</span>
       </div>
       <div class="rp-chart">
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
@@ -5233,11 +5233,7 @@ function replayApply(rp, i) {
   document.querySelectorAll("[data-now]").forEach((el) => {
     const j = Number(el.dataset.now);
     const v = rp.stacks[j][i];
-    // At zero the count is not the story — the STATE is. Saying it here puts
-    // "inactive" on the chart itself, where the cursor is, and not only in the
-    // summary line (user, 2026-08-03).
-    el.textContent = v > 0 ? `${v}/${rp.buffs[j].max}` : `0/${rp.buffs[j].max} · ${tr("inactive")}`;
-    el.classList.toggle("rp-off", v === 0);
+    el.textContent = `${v}/${rpCap(rp.buffs[j])}`;
   });
 }
 

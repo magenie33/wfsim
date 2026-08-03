@@ -260,7 +260,16 @@ else starts at 0.**
   have already spent is not one you are holding.
 
 The `permanent` flag on a buff card is exactly this distinction, and it is the
-only input the rule takes. In the whole data set today, exactly one buff
+only input the rule takes.
+
+**Secondary Enervate (次要·失活) is the worked example of the consumable half.**
+Untimed and UNCAPPED — a hit adds a stack of +10 flat crit chance with no
+ceiling — but a big crit wipes the pile, so it starts at 0 like everything else
+that can be spent. It lives in a PERK rather than in `arcane.buffs`, which is
+why it had no card at all until 2026-08-03: the arcane whose entire point is a
+stack count was the one you could not set. `BuffMeta.uncapped` says there is no
+maximum, the card shows `/ ∞` and its input takes no `max`, and
+`DummyParams::enervate_stacks` carries the configured pile into the run. In the whole data set today, exactly one buff
 qualifies: **Fevered Frenzy** (the Dual Toxocyst evolution).
 
 The modelled fight is therefore: *you have been at it a while, but you have not

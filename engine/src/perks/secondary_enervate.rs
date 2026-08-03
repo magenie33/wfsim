@@ -69,6 +69,30 @@ impl SecondaryEnervate {
         }
     }
 
+    /// Put `stacks` on the bar before the run starts.
+    ///
+    /// The perk reads its own count back off the [`BuffBar`] on every hit, so
+    /// this is the whole of what a configured starting pile needs — the ramp
+    /// simply continues from it. 0 removes the buff, which is the default: the
+    /// arcane is untimed but CONSUMABLE (a big crit wipes it), so a fight you
+    /// have just walked into has not got it.
+    pub fn seed(&self, stacks: u32, bar: &mut BuffBar) {
+        if stacks == 0 {
+            bar.remove(BUFF_ID);
+            return;
+        }
+        bar.upsert(Buff {
+            id: BUFF_ID.into(),
+            scope: BuffScope::Weapon,
+            stacks,
+            expiry_secs: None,
+            contributions: Contributions {
+                flat_crit_chance: stacks as f64 * self.flat_crit_per_stack,
+                ..Default::default()
+            },
+        });
+    }
+
     /// Whether a trigger is allowed at `t_secs` given the 30/s rate cap.
     fn trigger_allowed(&self, t_secs: f64) -> bool {
         match self.last_trigger_secs {

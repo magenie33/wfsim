@@ -20,6 +20,7 @@ use wfsim_engine::scaling;
 
 fn dual_toxocyst_baseline() -> DummyParams {
     DummyParams {
+        enervate_stacks: 0,
         tenno: wfsim_engine::tenno_data::default_tenno().clone(),
         // Not a charge weapon: inert without charge_seconds.
         charge_cadence: wfsim_engine::weapons_data::ChargeCadence::DrawThenRate,

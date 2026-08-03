@@ -229,7 +229,7 @@ ui:
   "live stacks through the engagement": 整场交战中的实时层数
   avg: 平均
   uptime: 在场
-  inactive: 失活
+  inactive: 未在场
   "full at": 满层于
   "never full": 未满层
   Overguard: 超护盾
