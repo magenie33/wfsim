@@ -3689,11 +3689,32 @@ pub fn run_optimize_resumable(
             &exilus_refs,
             Some(state),
             MATERIALIZE_LIMIT - cands.len(),
+            // The FIGHT's player and policy, the same two the streaming walk
+            // takes. A materialized scope used to resolve every panel under a
+            // neutral Tenno and `Emergent` — so a SENTINEL (BaseOnly) was
+            // searched with conditionals the replay refuses it, and any
+            // Warframe the scenario named went unread. Under MATERIALIZE_LIMIT
+            // is the ordinary case, so this was the ordinary search.
+            &scenario.arena.tenno,
+            scenario.policy,
         );
         cands.append(&mut c);
         if !complete {
             if state.cancel.load(std::sync::atomic::Ordering::Relaxed) {
                 return cancelled_json(cands.len());
+            }
+            // The BUDGET, not the size cap. `stop_enumeration` is a LATCH, so
+            // re-walking this scope through the streaming screen would trip it
+            // at the very first node and come back with nothing — which then
+            // surfaced as "no legal builds in this scope (Forma / family
+            // constraints eliminated all)": a sentence about the pool that was
+            // really about the clock. What was materialized before the clock
+            // ran out IS the answer here, and it goes out marked `truncated`.
+            if state
+                .stop_enumeration
+                .load(std::sync::atomic::Ordering::Relaxed)
+            {
+                break;
             }
             overflow = true;
             break;

@@ -125,6 +125,11 @@ pub fn enumerate_candidates(
         exilus_opts,
         None,
         0,
+        // The NEUTRAL Tenno and the ordinary policy: this front predates the
+        // scenario and is used by the CLI and the tests, which have no fight to
+        // draw either from.
+        wfsim_engine::tenno_data::default_tenno(),
+        StackPolicy::Emergent,
     );
     (out, stats)
 }
@@ -136,6 +141,11 @@ pub fn enumerate_candidates(
 /// funnel even starts). The third return is `true` iff the walk ran to
 /// completion — on `false`, inspect `state.cancel` vs the cap to tell
 /// which stop it was.
+///
+/// `tenno` and `policy` are the FIGHT's, exactly as [`enumerate_candidates_each`]
+/// takes them: a candidate's panel is resolved against them, so hardcoding a
+/// neutral player and `Emergent` here scored every materialized scope under
+/// buffs the replay may refuse — a SENTINEL resolves `BaseOnly` (2026-08-03).
 #[allow(clippy::too_many_arguments)]
 pub fn enumerate_candidates_observed(
     pool: &[ModDef],
@@ -150,6 +160,8 @@ pub fn enumerate_candidates_observed(
     exilus_opts: &[Option<&ModDef>],
     state: Option<&FunnelState>,
     max_out: usize,
+    tenno: &Tenno,
+    policy: StackPolicy,
 ) -> (Vec<Candidate>, EnumStats, bool) {
     let usable: Vec<usize> = (0..pool.len())
         .filter(|&i| !constraints.forbid.iter().any(|f| f == pool[i].id))
@@ -184,12 +196,8 @@ pub fn enumerate_candidates_observed(
         max_slots as usize,
         0,
         &mut subset,
-        // The NEUTRAL Tenno and the ordinary policy here: this front predates
-        // the scenario and is used by the CLI and the tests, which have no
-        // fight to draw either from. The streaming front
-        // (enumerate_candidates_each) takes the real ones.
-        wfsim_engine::tenno_data::default_tenno(),
-        StackPolicy::Emergent,
+        tenno,
+        policy,
         &mut stats,
         &mut scratch,
         &mut |scratch: &mut Vec<Candidate>| {
@@ -1665,6 +1673,7 @@ mod tests {
         let (cands, _stats, _c) = enumerate_candidates_observed(
             &pool, &base, None, 0, 8, 8, 60, &innate,
             &Constraints::default(), &[None], None, 400,
+            wfsim_engine::tenno_data::default_tenno(), StackPolicy::Emergent,
         );
         assert!(cands.len() > 100, "need a walk to cut, got {}", cands.len());
         let arcanes = vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
@@ -1746,6 +1755,7 @@ mod tests {
         let (cands, _stats, _c) = enumerate_candidates_observed(
             &pool, &base, None, 0, 8, 8, 60, &innate,
             &Constraints::default(), &[None], None, 400,
+            wfsim_engine::tenno_data::default_tenno(), StackPolicy::Emergent,
         );
         assert!(cands.len() > 40, "need a field to cut, got {}", cands.len());
         let arcanes = vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
