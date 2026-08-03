@@ -89,16 +89,11 @@ struct ArcState {
 
 impl ArcState {
     /// Apply pending decay per the spec's family and return live stacks.
+    ///
+    /// A LOCKED buff needs no branch here: its duration is
+    /// [`crate::loadout::NO_TIMEOUT`], so every expiry it computes is infinite
+    /// and neither family below can ever fall due.
     fn current(&mut self, spec: &ArcBuffSpec, now: f64) -> u32 {
-        if spec.pinned {
-            // Locked = NO TIMEOUT, not frozen (user, 2026-08-02). The count
-            // still starts where it was configured and still climbs on every
-            // trigger; what "locked" removes is the expiry. Freezing it
-            // instead made one setting mean two things, and read as "this
-            // buff can never fire again" — which is exactly what a visitor
-            // feared when locking a zero-stack buff.
-            return self.stacks.min(spec.max_stacks);
-        }
         if spec.all_drop {
             // On-status family (Cascadia Flare, Conjunction Voltage): one
             // shared timer; on timeout ALL stacks drop at once.
@@ -147,20 +142,13 @@ impl ArcRuntime {
                 })
                 .collect(),
             // Seed active only if configured so (Sharpened Bullets defaults
-            // inactive; a locked/initial-active config starts it running).
-            // A locked toggle gets an INFINITE window rather than a second
-            // condition beside the timer: then "active" is one question with
-            // one answer everywhere, and a locked buff that has not fired yet
-            // is still off — which is what the label now promises.
-            cd_kill_expiry: params.cd_on_kill.map_or(0.0, |b| {
-                if !b.initial_active {
-                    0.0
-                } else if b.locked {
-                    f64::INFINITY
-                } else {
-                    b.duration
-                }
-            }),
+            // inactive). "Active" is ONE question with one answer everywhere —
+            // is `now` before the window's end — and a locked buff simply has
+            // no end, so a locked buff that has not fired yet is still off,
+            // which is what the label promises.
+            cd_kill_expiry: params
+                .cd_on_kill
+                .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 }),
         }
     }
 
@@ -206,7 +194,7 @@ impl ArcRuntime {
     fn on_kill(&mut self, params: &DummyParams, now: f64) {
         self.bump_trigger(&params.arcane.buffs, ArcTrigger::Kill, now);
         if let Some(b) = params.cd_on_kill {
-            self.cd_kill_expiry = if b.locked { f64::INFINITY } else { now + b.duration };
+            self.cd_kill_expiry = now + b.duration;
         }
     }
 
@@ -1401,20 +1389,37 @@ impl DummyParams {
         out
     }
 
-    /// Apply a per-buff configured policy onto the live specs — locked ⇒
-    /// `pinned` (frozen at `initial_stacks`), unlocked ⇒ seed then decay.
+    /// Apply a per-buff configured policy onto the live specs: the card's
+    /// stack count becomes the seed, and a LOCKED card OVERWRITES the buff's
+    /// duration with [`crate::loadout::NO_TIMEOUT`].
+    ///
+    /// This function is the whole implementation of locking (user,
+    /// 2026-08-04). Nothing downstream knows the concept: every clock in the
+    /// sim is `expiry = now + duration`, so an infinite duration is a buff
+    /// that earns normally and never falls off. The flag this replaced had to
+    /// be re-read at every site that touched a stack count, and was missed at
+    /// enough of them that "no timeout" could mean its own opposite.
+    ///
     /// Weapon-scoped: recurses into the incarnon cycle's base form.
     pub fn apply_buff_config(&mut self, cfg: &BuffConfig) {
+        /// The buff's own duration, or none at all when the card is locked.
+        fn clock(duration: f64, locked: bool) -> f64 {
+            if locked {
+                crate::loadout::NO_TIMEOUT
+            } else {
+                duration
+            }
+        }
         fn set_stack(s: &mut crate::loadout::StackSpec, cfg: &BuffConfig, id: &str) {
             if let Some(&(stacks, locked)) = cfg.get(id) {
                 s.initial_stacks = stacks.min(s.max_stacks);
-                s.pinned = locked;
+                s.duration = clock(s.duration, locked);
             }
         }
         fn set_timed(b: &mut crate::loadout::TimedBuff, cfg: &BuffConfig, id: &str) {
             if let Some(&(stacks, locked)) = cfg.get(id) {
                 b.initial_active = stacks > 0;
-                b.locked = locked;
+                b.duration = clock(b.duration, locked);
             }
         }
         // Fevered Frenzy-style permanent stacks: no in-sim trigger, no
@@ -1474,13 +1479,13 @@ impl DummyParams {
         if let Some(b) = self.plain_hit_bonus.as_mut() {
             if let Some(&(stacks, locked)) = cfg.get("on_plain_hit_damage") {
                 b.initial_stacks = stacks.min(b.max_stacks);
-                b.pinned = locked;
+                b.duration = clock(b.duration, locked);
             }
         }
         if let Some(b) = self.reload_on_headshot.as_mut() {
             if let Some(&(stacks, locked)) = cfg.get("on_headshot_reload_speed") {
                 b.initial_stacks = stacks.min(b.max_stacks);
-                b.pinned = locked;
+                b.duration = clock(b.duration, locked);
             }
         }
         if let Some(b) = self.cc_on_headshot.as_mut() {
@@ -1491,6 +1496,12 @@ impl DummyParams {
         }
         if let Some(b) = self.fr_on_reload.as_mut() {
             set_timed(b, cfg, "on_reload_fr");
+        }
+        // Deadly Efficiency. It is in `buff_roster` and it gets a card, so
+        // this arm is what makes that card mean anything — without it both
+        // knobs were read, drawn, and dropped.
+        if let Some(b) = self.bd_on_reload.as_mut() {
+            set_timed(b, cfg, "on_reload_bd");
         }
         // Keyed off the buff's OWN arcane — not the merged set's id, because a
         // weapon may seat two (an Arch-Gun) and every buff would be renamed the
@@ -1503,7 +1514,7 @@ impl DummyParams {
             let owner = if spec.owner.is_empty() { &arcane_id } else { &spec.owner };
             if let Some(&(stacks, locked)) = cfg.get(&format!("arcane:{owner}")) {
                 spec.initial_stacks = stacks.min(spec.max_stacks);
-                spec.pinned = locked;
+                spec.duration = clock(spec.duration, locked);
             }
         }
         if let Some(cy) = self.cycle.as_mut() {
@@ -2115,7 +2126,8 @@ struct LiveStacks {
 }
 
 impl LiveStacks {
-    /// Apply pending decay and return the current stack count.
+    /// Apply pending decay and return the current stack count. An INFINITE
+    /// expiry never falls due, which is the whole of what a locked buff is.
     fn current(&mut self, now: f64, duration: f64) -> u32 {
         while self.stacks > 0 && self.expiry <= now {
             self.stacks -= 1;
@@ -2124,10 +2136,27 @@ impl LiveStacks {
         self.stacks
     }
 
+    /// Seed from a configured buff card: its stacks, on its own clock. A
+    /// LOCKED card arrives here as [`crate::loadout::NO_TIMEOUT`], so nothing
+    /// on this path has to know what locking is.
+    fn seed(initial: u32, max: u32, duration: f64) -> Self {
+        LiveStacks {
+            stacks: initial.min(max),
+            expiry: duration,
+        }
+    }
+
+    /// One trigger: decay what is due, climb by one (capped), restart the
+    /// clock. A locked buff takes this path too — it earns like any other,
+    /// and its restart lands at infinity.
+    fn bump(&mut self, now: f64, duration: f64, max: u32) {
+        self.current(now, duration);
+        self.stacks = (self.stacks + 1).min(max);
+        self.expiry = now + duration;
+    }
+
     fn on_kill(&mut self, now: f64, spec: &crate::loadout::StackSpec) {
-        self.current(now, spec.duration);
-        self.stacks = (self.stacks + 1).min(spec.max_stacks);
-        self.expiry = now + spec.duration;
+        self.bump(now, spec.duration, spec.max_stacks);
     }
 }
 
@@ -2490,14 +2519,10 @@ fn gunco_bucket(
     arc_ratio: f64,
 ) -> f64 {
     let co_rate = ap.co_per_type
-        + params.co_stack.as_ref().map_or(0.0, |s| {
-            let stacks = if s.pinned {
-                s.initial_stacks.min(s.max_stacks)
-            } else {
-                gal.co.current(at, s.duration)
-            };
-            s.per_stack * stacks as f64
-        });
+        + params
+            .co_stack
+            .as_ref()
+            .map_or(0.0, |s| s.per_stack * gal.co.current(at, s.duration) as f64);
     let cold = debuffs
         .cold_status_count(at)
         .min(params.arcane.cold_cap);
@@ -2911,17 +2936,12 @@ fn rescale_reload(secs: f64, bucket: f64, live: f64) -> f64 {
     secs * (1.0 + bucket) / (1.0 + bucket + live)
 }
 
-/// Lethal Rearmament's CURRENT reload-speed bonus. A pinned buff freezes
-/// at its configured stacks; an unpinned one decays a stack per timeout.
+/// Lethal Rearmament's CURRENT reload-speed bonus. Locked or not, the count is
+/// the live one — locking only stops the clock (`LiveStacks::clock`).
 fn live_reload_speed(params: &DummyParams, stacks: &mut LiveStacks, t: f64) -> f64 {
-    params.reload_on_headshot.map_or(0.0, |b| {
-        let n = if b.pinned {
-            b.initial_stacks.min(b.max_stacks)
-        } else {
-            stacks.current(t, b.duration)
-        };
-        b.per_stack * n as f64
-    })
+    params
+        .reload_on_headshot
+        .map_or(0.0, |b| b.per_stack * stacks.current(t, b.duration) as f64)
 }
 
 /// The live stack count of every buff in [`Replay::buffs`], in that order.
@@ -3031,44 +3051,38 @@ pub fn run_once_traced(
     // per the user's setting) with a fresh duration from t = 0.
     let mut gal = GalStacks::default();
     if let Some(s) = &params.co_stack {
-        gal.co = LiveStacks {
-            stacks: s.initial_stacks.min(s.max_stacks),
-            expiry: s.duration,
-        };
+        gal.co = LiveStacks::seed(s.initial_stacks, s.max_stacks, s.duration);
     }
     if let Some(s) = &params.ms_stack {
-        gal.ms = LiveStacks {
-            stacks: s.initial_stacks.min(s.max_stacks),
-            expiry: s.duration,
-        };
+        gal.ms = LiveStacks::seed(s.initial_stacks, s.max_stacks, s.duration);
     }
     // Overwhelming Attrition's stacks are EARNED in the run — the default
     // config seeds 0 so no trigger is invented at t = 0 — but a configured
     // buff card seeds them like any other stacking buff.
-    let mut plain_stacks = params.plain_hit_bonus.map_or_else(LiveStacks::default, |b| LiveStacks {
-        stacks: b.initial_stacks.min(b.max_stacks),
-        expiry: b.duration,
+    let mut plain_stacks = params.plain_hit_bonus.map_or_else(LiveStacks::default, |b| {
+        LiveStacks::seed(b.initial_stacks, b.max_stacks, b.duration)
     });
     // Lethal Rearmament's on-headshot reload-speed stacks.
     let mut rs_stacks = params
         .reload_on_headshot
-        .map_or_else(LiveStacks::default, |b| LiveStacks {
-            stacks: b.initial_stacks.min(b.max_stacks),
-            expiry: b.duration,
+        .map_or_else(LiveStacks::default, |b| {
+            LiveStacks::seed(b.initial_stacks, b.max_stacks, b.duration)
         });
     // Stacking arcanes start FULL (user setting) with a fresh timer; the
     // states run each spec's own decay family from there.
     let mut arc = ArcRuntime::init(params);
     // Pressurized Magazine's on-reload fire-rate buff clock (seeded active
     // only if configured so; defaults inactive).
-    let mut fr_reload_expiry: f64 = params.fr_on_reload.map_or(0.0, |b| {
-        if !b.initial_active { 0.0 } else if b.locked { f64::INFINITY } else { b.duration }
-    });
+    let mut fr_reload_expiry: f64 = params
+        .fr_on_reload
+        .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
     // Crosshairs (per-stack expiry FIFO + one refreshable buff); the on-head
     // buff seeds active per its `initial_active` (default on).
-    let mut ch_buff_expiry: f64 = params.cc_on_headshot.map_or(0.0, |b| {
-        if !b.initial_active { 0.0 } else if b.locked { f64::INFINITY } else { b.duration }
-    });
+    let mut ch_buff_expiry: f64 = params
+        .cc_on_headshot
+        .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
+    // Crosshairs keeps a per-stack expiry rather than one clock — and takes
+    // an infinite duration exactly like the rest.
     let mut ch_stacks: Vec<f64> = params
         .cc_stack
         .as_ref()
@@ -3134,8 +3148,11 @@ pub fn run_once_traced(
     let mut magazine = params.magazine_size;
     let mut reserve = params.reserve_ammo;
     // Deadly Efficiency's window. Opens at reload COMPLETION — `t` is already
-    // past the reload when this is set, the same as `fr_reload_expiry`.
-    let mut bd_reload_expiry = 0.0f64;
+    // past the reload when this is set, the same as `fr_reload_expiry` — and
+    // seeded from its card exactly like its three siblings.
+    let mut bd_reload_expiry: f64 = params
+        .bd_on_reload
+        .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
     // Incarnon cycle state: the run STARTS transformed with a full gauge.
     let mut in_base_form = false;
     let mut charges = 0u32;
@@ -3250,10 +3267,10 @@ pub fn run_once_traced(
                 t += live_reload_time(&cy.base_form, params, &mut arc, rs, t);
                 r.reloads += 1;
                 if let Some(b) = cy.base_form.fr_on_reload {
-                    fr_reload_expiry = if b.locked { f64::INFINITY } else { t + b.duration };
+                    fr_reload_expiry = t + b.duration;
                 }
                 if let Some(b) = cy.base_form.bd_on_reload {
-                    bd_reload_expiry = if b.locked { f64::INFINITY } else { t + b.duration };
+                    bd_reload_expiry = t + b.duration;
                 }
                 // Same whole-rounds rule as the plain reload below (M14); the
                 // cycle assumes infinite reserve, so the draw is never short.
@@ -3273,10 +3290,10 @@ pub fn run_once_traced(
             t += live_reload_time(params, params, &mut arc, rs, t);
             r.reloads += 1;
             if let Some(b) = params.fr_on_reload {
-                fr_reload_expiry = if b.locked { f64::INFINITY } else { t + b.duration };
+                fr_reload_expiry = t + b.duration;
             }
             if let Some(b) = params.bd_on_reload {
-                bd_reload_expiry = if b.locked { f64::INFINITY } else { t + b.duration };
+                bd_reload_expiry = t + b.duration;
             }
             // Whole rounds only, and `+=` not `=` — both measured (M14). The
             // draw covers the overdraw debt for free: the counter is in (−1, 0]
@@ -3403,13 +3420,8 @@ pub fn run_once_traced(
                 0.0
             }
         }) + params.cc_stack.as_ref().map_or(0.0, |s| {
-            s.per_stack
-                * if s.pinned {
-                    s.initial_stacks.min(s.max_stacks) as f64
-                } else {
-                    ch_stacks.retain(|&e| e > t);
-                    ch_stacks.len() as f64
-                }
+            ch_stacks.retain(|&e| e > t);
+            s.per_stack * ch_stacks.len() as f64
         }) + params.arcane.cc_rel;
         let effective_cc =
             ap.base_crit_chance + flat_crit + weakened_cc + ap.unmodded_crit_chance * cc_rel;
@@ -3434,15 +3446,10 @@ pub fn run_once_traced(
         // stacks and arcane multishot stacks (Conjunction Voltage: a
         // RELATIVE bonus × base pellets) add live.
         let ms_eff = ap.multishot
-            + params.ms_stack.as_ref().map_or(0.0, |s| {
-                // Locked → frozen at the configured initial count; else live.
-                let stacks = if s.pinned {
-                    s.initial_stacks.min(s.max_stacks)
-                } else {
-                    gal.ms.current(t, s.duration)
-                };
-                s.per_stack * stacks as f64
-            })
+            + params
+                .ms_stack
+                .as_ref()
+                .map_or(0.0, |s| s.per_stack * gal.ms.current(t, s.duration) as f64)
             + ap.base_multishot * arc.total(&params.arcane.buffs, ArcGrant::Multishot, t)
             // Final Fusillade: a FLAT add on the magazine's last round. It
             // joins `ms_eff` rather than the multishot BUCKET because the
@@ -3942,15 +3949,12 @@ pub fn run_once_traced(
                     // hit (kills only matter for its stacks).
                     if part.is_head {
                         if let Some(b) = params.cc_on_headshot {
-                            ch_buff_expiry =
-                                if b.locked { f64::INFINITY } else { t + b.duration };
+                            ch_buff_expiry = t + b.duration;
                         }
-                        // Lethal Rearmament: every headshot grants a stack.
-                        // A pinned buff ignores the trigger, like the rest.
-                        if let Some(b) = params.reload_on_headshot.filter(|b| !b.pinned) {
-                            rs_stacks.current(t, b.duration);
-                            rs_stacks.stacks = (rs_stacks.stacks + 1).min(b.max_stacks);
-                            rs_stacks.expiry = t + b.duration;
+                        // Lethal Rearmament: every headshot grants a stack —
+                        // a LOCKED buff earns it too, it just never loses it.
+                        if let Some(b) = params.reload_on_headshot {
+                            rs_stacks.bump(t, b.duration, b.max_stacks);
                         }
                         // Primary Crux: a weak-point HIT (not a kill), per
                         // PELLET. Bumped here, AFTER this pellet's status
@@ -4112,11 +4116,9 @@ pub fn run_once_traced(
             // hit and the explosion each arm it). So a shot whose direct hit
             // and whose explosion are both plain arms the buff twice,
             // bounded by the stack cap.
-            if let Some(b) = ap.plain_hit_bonus.filter(|b| !b.pinned) {
+            if let Some(b) = ap.plain_hit_bonus {
                 if tier == 0 && procs.is_empty() {
-                    plain_stacks.current(t, b.duration);
-                    plain_stacks.stacks = (plain_stacks.stacks + 1).min(b.max_stacks);
-                    plain_stacks.expiry = t + b.duration;
+                    plain_stacks.bump(t, b.duration, b.max_stacks);
                 }
             }
             settle_procs(
@@ -5411,7 +5413,6 @@ mod tests {
                     duration: 2.0,
                     all_drop,
                     initial_stacks: 3,
-                    pinned: false,
                 }],
                 ..ArcaneFx::none()
             },
@@ -6683,10 +6684,9 @@ mod tests {
                 trigger: ArcTrigger::ToxinStatus,
                 per_stack: 0.5,
                 max_stacks: 2,
-                duration: 99.0,
+                duration: crate::loadout::NO_TIMEOUT,
                 all_drop: true,
                 initial_stacks: 2,
-                pinned: true,
             }],
             ..ArcaneFx::none()
         };
@@ -6748,7 +6748,6 @@ mod tests {
                     duration: 10.0,
                     // Earn them in the run — that is what is under test.
                     initial_stacks: 0,
-                    pinned: false,
                 }),
                 // Never crits, never procs: every instance is "plain", so
                 // the only variable is HOW MANY instances a shot produces.
@@ -6774,55 +6773,155 @@ mod tests {
         );
     }
 
+    /// EVERY buff the roster offers must be READ by `apply_buff_config`.
+    ///
+    /// A card whose setting reaches nothing is the failure mode this whole
+    /// area keeps producing: `buff_roster` (what exists), `enumerate_buffs`
+    /// (what is drawn) and `apply_buff_config` (what is obeyed) are three
+    /// lists, and Deadly Efficiency was in the first two and missing from the
+    /// third — so its card was drawn, set, and dropped, for as long as it has
+    /// existed. Nothing about the UI could reveal that: a knob that does
+    /// nothing looks exactly like a knob whose buff is not up.
+    ///
+    /// The check is generic on purpose. It does not name the fields a buff
+    /// writes into — it sets one id at a time and asserts the params CHANGED,
+    /// so a buff added later is covered without anyone remembering to come
+    /// back here.
+    #[test]
+    fn every_buff_the_roster_offers_is_actually_read() {
+        use crate::loadout::{PlainHitBuff, StackSpec, TimedBuff};
+        let stack = |per_stack: f64| StackSpec {
+            per_stack,
+            max_stacks: 3,
+            duration: 6.0,
+            initial_stacks: 0,
+        };
+        let timed = |value: f64| TimedBuff {
+            value,
+            duration: 4.0,
+            initial_active: false,
+        };
+        // One params carrying every configurable buff at once.
+        let params = DummyParams {
+            co_stack: Some(stack(0.2)),
+            ms_stack: Some(stack(0.3)),
+            cc_stack: Some(stack(0.1)),
+            plain_hit_bonus: Some(PlainHitBuff {
+                per_stack: 4.0,
+                max_stacks: 3,
+                duration: 10.0,
+                initial_stacks: 0,
+            }),
+            reload_on_headshot: Some(crate::loadout::HeadshotReloadBuff {
+                per_stack: 0.1,
+                max_stacks: 3,
+                duration: 6.0,
+                initial_stacks: 0,
+            }),
+            cc_on_headshot: Some(timed(0.5)),
+            cd_on_kill: Some(timed(0.6)),
+            fr_on_reload: Some(timed(0.7)),
+            bd_on_reload: Some(timed(0.8)),
+            ..DummyParams::default()
+        };
+
+        // Applied OUTSIDE this function, deliberately — the weapon passive is
+        // a `locked_buffs` entry built by the api (`frenzy_apply`), not a
+        // field of these params. It is exempt from the check, not from
+        // being read.
+        const ELSEWHERE: [&str; 1] = ["frenzy"];
+
+        for (id, _max) in params.buff_roster() {
+            if ELSEWHERE.contains(&id.as_str()) {
+                continue;
+            }
+            let mut configured = params.clone();
+            let mut cfg = BuffConfig::new();
+            cfg.insert(id.clone(), (1, true));
+            configured.apply_buff_config(&cfg);
+            assert_ne!(
+                format!("{configured:?}"),
+                format!("{params:?}"),
+                "the card for '{id}' is drawn but nothing reads it"
+            );
+        }
+    }
+
     #[test]
     fn overwhelming_attrition_takes_the_buff_cards_two_knobs() {
         use crate::loadout::PlainHitBuff;
-        // A pinned buff freezes at its configured stacks: no trigger, no
-        // decay, 100% uptime — the same contract the Galvanized family has.
-        let mk = |initial: u32, pinned: bool| {
+        // LOCKED = NO TIMEOUT, not frozen (user, 2026-08-02). This buff was
+        // left on the old reading when the rest moved: its stacks decayed from
+        // the seed and its trigger was skipped while locked, so "no timeout"
+        // meant "decays to zero and can never come back" — the exact opposite
+        // of the label, and a player reported it as the buff not working at
+        // all (2026-08-03: 选无限持续后直接不生效).
+        let mk = |initial: u32, locked: bool, fire_rate: f64, secs: f64| {
             let mut p = DummyParams {
                 plain_hit_bonus: Some(PlainHitBuff {
                     per_stack: 4.0,
                     max_stacks: 3,
-                    duration: 10.0,
+                    // Locking IS this: the card's duration, overwritten.
+                    duration: if locked { crate::loadout::NO_TIMEOUT } else { 10.0 },
                     initial_stacks: initial,
-                    pinned,
                 }),
+                fire_rate,
+                duration_secs: secs,
                 ..DummyParams::default()
             };
-            // No crits and no procs, so an UNPINNED buff earns stacks on
-            // every hit and the two paths are distinguishable.
+            // No crits and no procs, so EVERY hit is a plain hit and the buff
+            // arms on all of them.
             p.base_crit_chance = 0.0;
             p.status_chance = 0.0;
             p.forced_procs = Vec::new();
             run_once(&p, &mut Rng::new(11)).total_damage
         };
-        let earned = mk(0, false);
-        let locked_full = mk(3, true);
-        let locked_none = mk(0, true);
+        let without = |fire_rate: f64, secs: f64| {
+            run_once(
+                &DummyParams {
+                    plain_hit_bonus: None,
+                    base_crit_chance: 0.0,
+                    status_chance: 0.0,
+                    forced_procs: Vec::new(),
+                    fire_rate,
+                    duration_secs: secs,
+                    ..DummyParams::default()
+                },
+                &mut Rng::new(11),
+            )
+            .total_damage
+        };
+
+        // ---- 1 shot/s, 10 s buff: nothing ever expires ---------------------
+        // The clock is what locking removes, so where no stack would have
+        // expired anyway, locking must change NOTHING.
+        let (earned, locked_none) = (mk(0, false, 1.0, 10.0), mk(0, true, 1.0, 10.0));
         assert!(
-            locked_none < earned,
-            "locked at 0 stacks must beat nothing it can earn: {locked_none} vs {earned}"
+            (locked_none - earned).abs() < 1e-9,
+            "locking a buff nothing was expiring changed it: {locked_none} vs {earned}"
+        );
+        // …and above all, it is not a way to switch the buff off.
+        assert!(
+            locked_none > without(1.0, 10.0),
+            "a buff locked at 0 stacks still EARNS: {locked_none} vs {}",
+            without(1.0, 10.0)
+        );
+        // Seeding it full only helps.
+        assert!(mk(3, true, 1.0, 10.0) >= locked_none);
+
+        // ---- one shot every 20 s, 10 s buff: the timeout bites -------------
+        // Unlocked, every stack has expired before the next shot lands (and
+        // the hit that grants a stack does not benefit from it), so the buff
+        // is worth nothing. Locked, it climbs and HOLDS — which is the whole
+        // of what the setting promises.
+        let (slow_open, slow_locked) = (mk(0, false, 0.05, 100.0), mk(0, true, 0.05, 100.0));
+        assert!(
+            (slow_open - without(0.05, 100.0)).abs() < 1e-9,
+            "a 10 s buff cannot survive 20 s between shots: {slow_open}"
         );
         assert!(
-            locked_full > earned,
-            "locked at 3 stacks (100% uptime) must beat stacks earned over the run:              {locked_full} vs {earned}"
-        );
-        // Locked at 0 == the buff absent entirely.
-        let without = run_once(
-            &DummyParams {
-                plain_hit_bonus: None,
-                base_crit_chance: 0.0,
-                status_chance: 0.0,
-                forced_procs: Vec::new(),
-                ..DummyParams::default()
-            },
-            &mut Rng::new(11),
-        )
-        .total_damage;
-        assert!(
-            (locked_none - without).abs() < 1e-6,
-            "a buff locked at 0 contributes nothing: {locked_none} vs {without}"
+            slow_locked > slow_open,
+            "NO TIMEOUT must hold the stacks across the gap: {slow_locked} vs {slow_open}"
         );
     }
 
@@ -7498,7 +7597,6 @@ mod tests {
             max_stacks: 2,
             duration: 100.0,
             initial_stacks: 0,
-            pinned: false,
         };
         let p = DummyParams {
             ms_stack: Some(spec),
@@ -7969,7 +8067,6 @@ mod tests {
                 value: 1.0,
                 duration: 9.0,
                 initial_active: false,
-                locked: false,
             }),
             ..base.clone()
         };
@@ -7997,7 +8094,6 @@ mod tests {
                 value: 1.0,
                 duration: 9.0,
                 initial_active: false,
-                locked: false,
             }),
             ..base.clone()
         };
@@ -8169,7 +8265,6 @@ mod tests {
                 value: 0.12,
                 duration: 12.0,
                 initial_active: true,
-                locked: false,
             }),
             arcane: ArcaneFx::none(),
             body_parts: vec![BodyPart {
@@ -8204,14 +8299,12 @@ mod tests {
                 value: 0.12,
                 duration: 12.0,
                 initial_active: true,
-                locked: false,
             }),
             cc_stack: Some(crate::loadout::StackSpec {
                 per_stack: 0.04,
                 max_stacks: 5,
                 duration: 12.0,
                 initial_stacks: 5,
-                pinned: false,
             }),
             arcane: ArcaneFx::none(),
             body_parts: mono_body(1.0),
@@ -8637,10 +8730,10 @@ mod tests {
                         trigger: ArcTrigger::Kill,
                         per_stack: 1.0,          // +100% of base per stack
                         max_stacks: 3,
-                        duration: 999.0,
+                        // LOCKED — which, since 2026-08-04, IS a duration.
+                        duration: crate::loadout::NO_TIMEOUT,
                         all_drop: false,
                         initial_stacks: initial,
-                        pinned: true,            // LOCKED
                     }],
                     ..ArcaneFx::none()
                 },
@@ -8682,7 +8775,6 @@ mod tests {
             duration: 12.0,
             all_drop: true,
             initial_stacks: 40,
-            pinned: false,
         };
         let mut p = DummyParams {
             arcane: ArcaneFx {
@@ -8696,7 +8788,12 @@ mod tests {
         p.apply_buff_config(&cfg);
         for b in &p.arcane.buffs {
             assert_eq!(b.initial_stacks, 7, "{:?} kept its own count", b.grant);
-            assert!(b.pinned, "{:?} kept its own timeout", b.grant);
+            assert_eq!(
+                b.duration,
+                crate::loadout::NO_TIMEOUT,
+                "{:?} took the config's lock",
+                b.grant
+            );
         }
     }
 

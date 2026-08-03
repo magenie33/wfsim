@@ -247,6 +247,59 @@ A conditional/stacking buff can be evaluated under three policies
 
 The policy changes results, so it is part of any evaluation cache key.
 
+### "No timeout" OVERWRITES the duration
+
+The buff card carries two knobs, and they answer different questions:
+
+- **stacks** — what the count is at t = 0;
+- **no timeout** — whether a stack can ever expire.
+
+Locking removes the **expiry and nothing else** (user, 2026-08-02). The count
+still starts where the card sets it and still climbs on every trigger.
+
+**It is not a flag. It is the duration** (user, 2026-08-04). `apply_buff_config`
+writes `loadout::NO_TIMEOUT` (`f64::INFINITY`) into the buff's own `duration`,
+and that is the entire implementation — every clock in the sim is
+`expiry = now + duration`, so an infinite duration is a buff that earns
+normally and never falls off. Nothing downstream knows the concept exists:
+there is no `pinned`/`locked` field on any buff spec any more, and no read site
+has a branch for it.
+
+That shape is the point. The flag it replaced had to be honoured wherever a
+stack count was read, and it was missed at enough of them that "no timeout"
+came to mean its own opposite — the stacks decayed anyway while the trigger was
+skipped, so a locked buff decayed to zero and could never come back. It was
+wrong in three of the five families at once (Galvanized on-kill stacks, Lethal
+Rearmament, Overwhelming Attrition), and a player reported the worst of them
+(2026-08-03: 选无限持续后直接不生效). A duration cannot be forgotten, because
+it is the thing the clocks already read.
+
+Two consequences worth knowing:
+
+- **`AssumedMax` is `initial_stacks = max` plus `NO_TIMEOUT`** — "full, and
+  nothing can take it away", said once instead of as a second flag.
+- **A buff with no clock states it as `NO_TIMEOUT`, never as `0.0`.** The
+  `tenno_scaled` arcanes (a Warframe stat does not decay mid-fight) carried
+  `duration: 0.0` beside the flag; a zero duration in a decay loop is an
+  infinite loop waiting for a reader.
+
+### A buff card is THREE lists, and they have to agree
+
+- `DummyParams::buff_roster` — what exists in the run;
+- `enumerate_buffs` / `evo_buffs` (webapi) — what is drawn as a card;
+- `DummyParams::apply_buff_config` — what the run actually OBEYS.
+
+Deadly Efficiency was in the first two and missing from the third, so its card
+was drawn, set, and dropped — for as long as it had existed. Nothing in the UI
+could show that: a knob that does nothing looks exactly like a knob whose buff
+is not currently up. Its clock was seeded from a literal `0.0` too, where its
+three siblings seed from their card.
+
+`every_buff_the_roster_offers_is_actually_read` now closes it generically: it
+sets one roster id at a time and asserts the params CHANGED, so a buff added
+later is covered without anyone remembering this note. The one exemption is
+`frenzy`, applied outside these params (the api builds a `locked_buffs` entry).
+
 ### Every timed buff starts EARNED, at zero
 
 **A buff starts full only if it is neither timed NOR consumable. Everything

@@ -1929,11 +1929,10 @@ mod laetum_tests {
                     b.initial_stacks = 0;
                 }
             } else if let Some(b) = d.reload_on_headshot.as_mut() {
-                // Pinned AT FULL. Buffs start earned-from-zero now, so
-                // "pinned" alone would freeze it at nothing — the two knobs
-                // are separate and this test wants both.
+                // Full AND never expiring — the two knobs are separate,
+                // and this test wants both held for the whole run.
                 b.initial_stacks = b.max_stacks;
-                b.pinned = true;
+                b.duration = crate::loadout::NO_TIMEOUT;
             }
             d
         };

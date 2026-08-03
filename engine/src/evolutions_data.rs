@@ -362,7 +362,6 @@ impl EvolutionDef {
                 max_stacks: *max_stacks,
                 duration: *duration,
                 initial_stacks: 0, // EARNED — docs/BUFFS.md §Activation policy
-                pinned: false,
             }),
             _ => None,
         })
@@ -769,7 +768,6 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         // has a duration, so a lull empties it and the fight
                         // has to fill it again (docs/BUFFS.md).
                         initial_stacks: 0,
-                        pinned: false,
                     });
                 }
                 EvoEffect::StackingReloadSpeedOnHeadshot {
@@ -783,7 +781,6 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         duration: *duration,
                         // EARNED from zero, like every other timed buff.
                         initial_stacks: 0,
-                        pinned: false,
                     });
                 }
                 EvoEffect::Inert(_) => {}

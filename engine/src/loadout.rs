@@ -660,6 +660,22 @@ pub enum StackPolicy {
     BaseOnly,
 }
 
+/// "No timeout": the duration a LOCKED buff card runs on.
+///
+/// Locking is not a flag the engine has to remember to consult — it OVERWRITES
+/// the buff's duration (user, 2026-08-04). Every clock in the sim is
+/// `expiry = now + duration`, so an infinite duration gives a buff that starts
+/// where its card says, still climbs on every trigger, and never expires —
+/// which is exactly what the label promises, expressed in the one place that
+/// can express it.
+///
+/// The flag it replaces (`pinned` / `locked`) had to be honoured at every read
+/// site, and was missed at several across three buff families: the stacks
+/// decayed anyway and the trigger was skipped, so "no timeout" came to mean
+/// "decays to zero and can never come back". A duration cannot be forgotten —
+/// there is nothing left to thread.
+pub const NO_TIMEOUT: f64 = f64::INFINITY;
+
 /// A live on-kill stacking buff spec handed to the sim under
 /// [`StackPolicy::Emergent`].
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -669,15 +685,12 @@ pub struct StackSpec {
     pub per_stack: f64,
     pub max_stacks: u32,
     /// Per-refresh duration; decay = lose ONE stack and reset (the
-    /// Galvanized family's graceful decay).
+    /// Galvanized family's graceful decay). [`NO_TIMEOUT`] when the buff card
+    /// is locked — the stacks then climb as usual and never fall off.
     pub duration: f64,
     /// Stacks at t = 0 (user setting: full by default, 0 for a cold
     /// start; afterwards mechanics rule either way).
     pub initial_stacks: u32,
-    /// Configured "locked" buff: freeze at `initial_stacks` forever (100%
-    /// uptime), ignoring natural triggers/decay. Mirrors
-    /// [`crate::arcanes_data::ArcBuffSpec::pinned`]. Default false.
-    pub pinned: bool,
 }
 
 /// A non-stacking timed buff (a single refreshable window) handed to the sim:
@@ -689,12 +702,12 @@ pub struct TimedBuff {
     /// The ABSOLUTE bonus this buff contributes while active.
     pub value: f64,
     /// Window length; each trigger refreshes it to `now + duration`.
+    /// [`NO_TIMEOUT`] when the buff card is locked, so the window a trigger
+    /// opens never closes again.
     pub duration: f64,
     /// Active at t = 0? (per-buff seed — cc_on_headshot starts active, the
     /// on-kill/on-reload buffs start inactive under today's defaults).
     pub initial_active: bool,
-    /// Configured "locked": always active (100% uptime), ignoring the timer.
-    pub locked: bool,
 }
 
 /// How the Condition Overload bonus behaves — PER WEAPON (user,
@@ -856,11 +869,9 @@ pub struct PlainHitBuff {
     pub per_stack: f64,
     pub max_stacks: u32,
     pub duration: f64,
-    /// Stacks at t = 0, and whether the run FREEZES there — the same two
-    /// knobs [`StackSpec`] carries, so the Sim/Optimizer buff cards can
-    /// configure this buff like any other stacking buff.
+    /// Stacks at t = 0 — the buff card's other knob, the first being
+    /// `duration` ([`NO_TIMEOUT`] when it is locked).
     pub initial_stacks: u32,
-    pub pinned: bool,
 }
 
 /// Lethal Rearmament: every HEADSHOT grants a stack of reload speed for
@@ -874,7 +885,6 @@ pub struct HeadshotReloadBuff {
     pub duration: f64,
     /// The same two knobs every other stacking buff carries.
     pub initial_stacks: u32,
-    pub pinned: bool,
 }
 
 /// What happens when a second field lands on a target that already has one.
@@ -1397,7 +1407,6 @@ pub fn resolve_for(
                             max_stacks,
                             duration,
                             initial_stacks: 0, // EARNED — docs/BUFFS.md §Activation policy
-                            pinned: false,
                         })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
@@ -1414,7 +1423,6 @@ pub fn resolve_for(
                             max_stacks,
                             duration,
                             initial_stacks: 0, // EARNED — docs/BUFFS.md §Activation policy
-                            pinned: false,
                         })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
@@ -1431,7 +1439,6 @@ pub fn resolve_for(
                             value: bonus,
                             duration,
                             initial_active: false, // EARNED, like every timed buff
-                            locked: false,
                         })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
@@ -1448,7 +1455,6 @@ pub fn resolve_for(
                             max_stacks,
                             duration,
                             initial_stacks: 0, // EARNED — docs/BUFFS.md §Activation policy
-                            pinned: false,
                         })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
@@ -1492,7 +1498,6 @@ pub fn resolve_for(
                             value: bonus, // RELATIVE — see cc_on_headshot above
                             duration,
                             initial_active: false, // Sharpened Bullets seeds inactive
-                            locked: false,
                         })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
@@ -1507,7 +1512,6 @@ pub fn resolve_for(
                             value: bonus,
                             duration,
                             initial_active: false, // no reload has happened yet
-                            locked: false,
                         })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
@@ -1519,7 +1523,6 @@ pub fn resolve_for(
                             value: base.base_fire_rate * bonus,
                             duration,
                             initial_active: false, // Pressurized Magazine seeds inactive
-                            locked: false,
                         })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires

@@ -151,8 +151,6 @@ pub struct ArcBuffSpec {
     pub all_drop: bool,
     /// Stacks at t = 0 (arcane stacking buffs start FULL — user setting).
     pub initial_stacks: u32,
-    /// AssumedMax: the stack count is pinned at max regardless of events.
-    pub pinned: bool,
 }
 
 /// The flat arcane parameter block the simulator consumes — one arcane,
@@ -574,13 +572,19 @@ impl ArcaneDef {
                         trigger: *trigger,
                         per_stack,
                         max_stacks: *max_stacks,
-                        duration: *duration,
+                        // AssumedMax = 100% uptime, which is a buff with no
+                        // clock. Said as a duration rather than as a flag,
+                        // like every other never-expires in the engine.
+                        duration: if assumed {
+                            crate::loadout::NO_TIMEOUT
+                        } else {
+                            *duration
+                        },
                         all_drop: *all_drop,
                         // EARNED from zero: an arcane's stacks come from kills
                         // and procs, and a fight that cannot produce them must
                         // not be credited with them (docs/BUFFS.md).
                         initial_stacks: 0,
-                        pinned: assumed,
                     });
                 }
                 ArcEffect::TennoScaled { stat, above, per_unit, min_energy_pct, grant, cap } => {
@@ -603,10 +607,12 @@ impl ArcaneDef {
                         trigger: ArcTrigger::Passive,
                         per_stack: bonus,
                         max_stacks: 1,
-                        duration: 0.0,
+                        // A Warframe stat does not decay mid-fight. It was a
+                        // `pinned` flag beside a 0 s duration, which is a
+                        // decay loop that would spin if anything ever read it.
+                        duration: crate::loadout::NO_TIMEOUT,
                         all_drop: false,
                         initial_stacks: 1,
-                        pinned: true, // a Warframe stat does not decay mid-fight
                     });
                 }
                 ArcEffect::CondCritChance(sc) => {
@@ -1007,7 +1013,6 @@ mod tests {
                 duration: 5.0,
                 all_drop: false,
                 initial_stacks: 3,
-                pinned: false,
             }],
             ..ArcaneFx::none()
         };
@@ -1368,7 +1373,8 @@ mod tests {
         let b = &bulwark.fx(5, StackPolicy::Emergent, NO_TRAITS, &frame(1200.0, 0.0, 1.0)).buffs[0];
         assert_eq!(b.grant, ArcGrant::BaseDamage);
         assert_eq!(b.trigger, ArcTrigger::Passive);
-        assert_eq!((b.max_stacks, b.initial_stacks, b.pinned), (1, 1, true));
+        assert_eq!((b.max_stacks, b.initial_stacks), (1, 1));
+        assert_eq!(b.duration, crate::loadout::NO_TIMEOUT, "a stat has no clock");
 
         // Overcharge: 35% of MAX energy, and the gate is on how FULL the pool
         // is — 300 energy at 100% pays +105%, the same frame at 50% pays
