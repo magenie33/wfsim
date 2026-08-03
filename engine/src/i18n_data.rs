@@ -382,10 +382,20 @@ mod tests {
                     for (z, dec) in nums(text) {
                         let step = 10f64.powi(-(dec as i32));
                         let shown = |o: f64| {
+                            // NUDGE BEFORE ROUNDING. `0.35 / 0.1` is
+                            // 3.4999999999999996 in binary floating point, so
+                            // `round()` gives 3 and a card DE prints as "0.4"
+                            // stops matching a value we hold as 0.35 — which
+                            // is exactly what this reported, against data that
+                            // was right (Seeking Force, 2026-08-03). The whole
+                            // job here is to decide what a number LOOKS like
+                            // at a given precision, so the comparison has to
+                            // be done at that precision too.
                             let scaled = o.abs() / step;
+                            let eps = 1e-9;
                             // rounded, or truncated — DE's client does both.
-                            (scaled.round() * step - z.abs()).abs() <= 1e-9
-                                || (scaled.floor() * step - z.abs()).abs() <= 1e-9
+                            ((scaled + eps).round() * step - z.abs()).abs() <= 1e-6
+                                || ((scaled + eps).floor() * step - z.abs()).abs() <= 1e-6
                         };
                         if !mine.iter().any(|(o, _)| shown(*o)) {
                             bad.push(format!(

@@ -20,6 +20,7 @@
 # the suffix says which form — which is why this section is hand-written
 # while `mods`/`arcanes` below are filled by the script.
 weapons:
+  boar_prime: 野猪 Prime
   cernos_prime: 西诺斯 Prime
   cernos_prime_uncharged: 西诺斯 Prime (速射)   # the tapped form, same weapon
   dual_toxocyst: 毒囊双枪
@@ -59,17 +60,25 @@ damage_types:
 # name and its text always come from one place. Hand-edit only to correct a
 # name the community wiki's 对照 table disagrees with, and say so in a comment.
 mods:
+  accelerated_blast: 加速冲击
   accelerated_isotope: 迅发核素
   aerial_ace: 空中制霸
   aero_periphery: 空飞 边际
   agile_aim: 机动瞄准
   amalgam_barrel_diffusion: 并合 弹头扩散
   amalgam_serration: 并合 膛线
+  amalgam_shotgun_barrage: 并合 霰弹弹幕
+  ammo_chain: 弹链
   ammo_drum: 弹鼓
+  ammo_stock: 霰弹扩充
   anemic_agility: 乏能迅敏
+  archgun_ace: 曲翼枪械行家
   argon_scope: 氩晶瞄具
+  atomic_fallout: 原子烟尘
   augur_pact: 预言 契约
   augur_seeker: 预言 探求
+  automatic_trigger: 自动扳机
+  ballista_measure: 弩炮测距
   bane_of_corpus: 灭亡 Corpus
   bane_of_grineer: 灭亡 Grineer
   bane_of_infested: 灭亡 Infested
@@ -77,21 +86,48 @@ mods:
   bane_of_the_murmur: 灭亡低语者
   barrel_diffusion: 弹头扩散
   bladed_rounds: 尖刃弹头
+  blaze: 烈焰
+  blunderbuss: 雷筒
   bore: 枪膛
+  breach_loader: 破裂填装
+  broad_eye: 广域之视
+  burdened_magazine: 过载弹匣
   carnis_stinger: 肉碾虫 针刺
   catalyzer_link: 触媒连动
   cautious_shot: 谨慎射击
+  charged_bullets: 带电子弹
+  charged_shell: 充电弹头
+  chilling_grasp: 急冻控场
+  chilling_reload: 激冷装填
+  cleanse_corpus: 净化 Corpus
+  cleanse_grineer: 净化 Grineer
+  cleanse_infested: 净化 Infested
+  cleanse_orokin: 净化奥罗金
+  cleanse_the_murmur: 净化低语者
   combustion_beam: 灼热光束
+  combustion_rounds: 燃烧弹头
+  comet_blast: 彗星爆发
   concussion_rounds: 震荡弹头
+  contagious_spread: 传染蔓延
+  containment_breach: 核控突破
+  contamination_casing: 毒染套管
   continuous_misery: 无尽苦难
   convulsion: 痉挛
+  counterbalance: 制衡
   crash_course: 连续冲击
   creeping_bullseye: 匍匐靶心
+  critical_deceleration: 降速暴击
   critical_delay: 关键延迟
+  critical_focus: 关键焦点
   cryo_rounds: 低温弹头
+  deadly_efficiency: 致命效率
   deep_freeze: 深层冷冻
+  disruptor: 冲击干扰
+  double_barrel_drift: 游离双管
+  dual_rounds: 双重弹头
   eagle_eye: 鹰眼
   eject_magazine: 弹匣置换
+  electrified_barrel: 带电枪管
   embedded_catalyzer: 内置触媒
   expel_corpus: 驱逐 Corpus
   expel_grineer: 驱逐 Grineer
@@ -100,13 +136,21 @@ mods:
   expel_the_murmur: 驱逐低语者
   fanged_fusillade: 尖牙连射
   fast_hands: 爆发装填
+  fatal_acceleration: 致死加速
   firestorm: 烈焰风暴
+  flechette: 箭型弹头
+  frail_momentum: 虚弱动能
+  frigid_blast: 冰冷疾风
   frostbite: 结霜侵蚀
+  full_contact: 全面接触
   fulmination: 猛烈爆发
+  galvanized_acceleration: 镀层 致死加速
   galvanized_aptitude: 镀层 步枪才能
   galvanized_chamber: 镀层 分裂膛室
   galvanized_crosshairs: 镀层 液压准心
   galvanized_diffusion: 镀层 弹头扩散
+  galvanized_hell: 镀层 地狱弹膛
+  galvanized_savvy: 镀层 通晓霰弹枪
   galvanized_scope: 镀层 氩晶瞄具
   galvanized_shot: 镀层 准确射手
   gunslinger: 神枪手
@@ -115,29 +159,47 @@ mods:
   heated_charge: 火焰装填
   heavy_caliber: 重口径
   hellfire: 地狱火
+  hells_chamber: 地狱弹膛
   hemorrhage: 失血
   high_voltage: 高压电流
   hollow_point: 空尖弹
+  hollowed_bullets: 中空子弹
   hornet_strike: 黄蜂螫刺
   hunter_munitions: 猎人 战备
   hunter_track: 猎人 追踪
   hush: 消音器
   hydraulic_crosshairs: 液压准心
+  hypothermic_shell: 低温外壳
   ice_storm: 冰风暴
+  incendiary_coat: 燃烧外壳
   infected_clip: 污染弹匣
   internal_bleeding: 内部出血
   jolt: 电流震击
   jugulus_spines: 喉骨刃者 脊刺
+  laser_sight: 雷射瞄具
   lethal_momentum: 致命动量
   lethal_torrent: 致命洪流
+  lingering_torment: 恒久折磨
+  lock_and_load: 填弹上膛
+  magazine_extension: 扩充弹匣
   magazine_warp: 弹匣增幅
+  magma_chamber: 熔岩弹膛
   magnetic_capacity: 磁性弹容
   magnetic_might: 磁吸巨力
+  magnetic_strafe: 磁暴洗礼
+  magnetic_welt: 磁化冲击
+  magnetized_cycle: 磁场循环
   magnum_force: 重装火力
   maim: 致残枪弹
   malignant_force: 致命火力
+  marked_target: 标记目标
   merciless_gunfight: 无情枪斗
   metal_auger: 合金钻头
+  modified_munitions: 弹药改良
+  motus_setup: 跃动 设局
+  nano_applicator: 纳米涂覆
+  narrow_barrel: 狭窄枪膛
+  parallax_scope: 视差瞄具
   pathogen_rounds: 病原弹头
   perpetual_agony: 永恒苦痛
   piercing_caliber: 穿甲口径
@@ -147,16 +209,32 @@ mods:
   pistol_elementalist: 手枪元素师
   pistol_gambit: 手枪精通
   pistol_pestilence: 瘟疫手枪
+  point_blank: 抵近射击
   point_strike: 致命一击
+  polar_magazine: 极地弹仓
   pressurized_magazine: 增压弹匣
   primary_acuity: 敏锐主武
+  primed_ammo_chain: 弹链 Prime
+  primed_ammo_stock: 霰弹扩充 Prime
   primed_bane_of_corpus: 灭亡 Corpus Prime
   primed_bane_of_grineer: 灭亡 Grineer Prime
   primed_bane_of_infested: 灭亡 Infested Prime
   primed_bane_of_orokin: 灭亡奥罗金 Prime
   primed_bane_of_the_murmur: 灭亡低语者 Prime
+  primed_charged_shell: 充电弹头 Prime
+  primed_chilling_grasp: 急冻控场 Prime
+  primed_cleanse_corpus: 净化 Corpus Prime
+  primed_cleanse_grineer: 净化 Grineer Prime
+  primed_cleanse_infested: 净化 Infested Prime
+  primed_cleanse_orokin: 净化奥罗金 Prime
+  primed_cleanse_the_murmur: 净化低语者 Prime
+  primed_combustion_rounds: 燃烧弹头 Prime
   primed_convulsion: 痉挛 Prime
+  primed_counterbalance: 制衡 Prime
   primed_cryo_rounds: 低温弹头 Prime
+  primed_deadly_efficiency: 致命效率 Prime
+  primed_dual_rounds: 双重弹头 Prime
+  primed_electrified_barrel: 带电枪管 Prime
   primed_expel_corpus: 驱逐 Corpus Prime
   primed_expel_grineer: 驱逐 Grineer Prime
   primed_expel_infested: 驱逐 Infested Prime
@@ -169,35 +247,64 @@ mods:
   primed_magazine_warp: 弹匣增幅 Prime
   primed_pistol_ammo_mutation: 手枪弹药转换 Prime
   primed_pistol_gambit: 手枪精通 Prime
+  primed_point_blank: 抵近射击 Prime
   primed_quickdraw: 持续火力 Prime
+  primed_ravage: 破灭 Prime
+  primed_rubedo_lined_barrel: 红晶枪管 Prime
+  primed_shotgun_ammo_mutation: 霰弹枪弹药转换 Prime
   primed_shred: 撕裂 Prime
   primed_slip_magazine: 串联弹匣 Prime
   primed_stabilizer: 稳定 Prime
   primed_steady_hands: 稳定枪手 Prime
+  primed_tactical_pump: 战术上膛 Prime
   primed_target_cracker: 弱点专精 Prime
+  primed_venomous_clip: 恶毒弹匣 Prime
   proton_jet: 质子 喷射
   pummel: 强力猛击
+  quasar_drill: 类星钻体
+  quick_reload: 快速装填
   quickdraw: 持续火力
   radiated_reload: 辐能装填
+  ravage: 破灭
   razor_shot: 剃刀射击
   reflex_draw: 反射拔枪
+  repeater_clip: 转轮弹匣
+  resolute_focus: 坚决专注
   rifle_aptitude: 步枪才能
   rifle_elementalist: 步枪元素师
   rime_rounds: 白霜弹头
+  rubedo_lined_barrel: 红晶枪管
   ruinous_extension: 毁灭扩展
   rupture: 破裂
+  sabot_rounds: 覆壳弹药
   sawtooth_clip: 锯齿弹链
   saxum_spittle: 重岩者 唾液
+  scattering_inferno: 炼狱轰击
   scorch: 灼痕焦点
   seeker: 弹头导引
+  seeking_force: 穿透力
+  seeking_fury: 狂暴追猎
   semi_pistol_cannonade: 半自动手枪炮轰
   semi_rifle_cannonade: 半自动步枪炮轰
+  semi_shotgun_cannonade: 半自动霰弹枪炮轰
   serration: 膛线
   sharpened_bullets: 尖锐子弹
+  shell_compression: 压缩弹药
+  shell_rush: 填弹加速
+  shell_shock: 电冲弹药
   shivering_contagion: 冷颤触染
+  shotgun_ammo_mutation: 霰弹枪弹药转换
+  shotgun_barrage: 霰弹弹幕
+  shotgun_elementalist: 霰弹枪元素师
+  shotgun_savvy: 通晓霰弹枪
+  shrapnel_shot: 破片射击
   shred: 撕裂
+  shredder: 粉碎器
+  silent_battery: 寂静炮组
   sinister_reach: 凶恶延伸
   slip_magazine: 串联弹匣
+  snap_shot: 速射
+  soft_hands: 精湛快手
   spectral_serration: 幽灵 膛线
   speed_trigger: 灵敏扳机
   split_chamber: 分裂膛室
@@ -207,13 +314,19 @@ mods:
   stunning_speed: 慑人神速
   suppress: 消音
   sure_shot: 准确射手
+  sweeping_serration: 扫荡锯齿
   synth_charge: 合成 充能
+  tactical_pump: 战术上膛
+  tainted_shell: 污秽弹药
   target_cracker: 弱点专精
   targeting_subsystem: 定位辅助
   terminal_velocity: 极限速度
   thermite_rounds: 铝热焊弹
+  toxic_barrage: 毒素弹幕
   trick_mag: 戏法增幅
   twitch: 迅速抽换
+  venomous_clip: 恶毒弹匣
+  vicious_spread: 恶性扩散
   vigilante_armaments: 私法 军备
   vigilante_fervor: 私法 热诚
   vigilante_offense: 私法 进攻
@@ -222,43 +335,6 @@ mods:
   vile_precision: 极恶精准
   vital_sense: 弱点感应
   wildfire: 野火
-  # Arch-Gun pool (2026-08-01) — DE's own strings, verbatim.
-  ammo_chain: 弹链
-  archgun_ace: 曲翼枪械行家
-  automatic_trigger: 自动扳机
-  ballista_measure: 弩炮测距
-  charged_bullets: 带电子弹
-  combustion_rounds: 燃烧弹头
-  comet_blast: 彗星爆发
-  containment_breach: 核控突破
-  contamination_casing: 毒染套管
-  critical_focus: 关键焦点
-  deadly_efficiency: 致命效率
-  dual_rounds: 双重弹头
-  electrified_barrel: 带电枪管
-  hollowed_bullets: 中空子弹
-  hypothermic_shell: 低温外壳
-  magazine_extension: 扩充弹匣
-  magma_chamber: 熔岩弹膛
-  magnetized_cycle: 磁场循环
-  marked_target: 标记目标
-  modified_munitions: 弹药改良
-  parallax_scope: 视差瞄具
-  polar_magazine: 极地弹仓
-  primed_ammo_chain: 弹链 Prime
-  primed_combustion_rounds: 燃烧弹头 Prime
-  primed_deadly_efficiency: 致命效率 Prime
-  primed_dual_rounds: 双重弹头 Prime
-  primed_electrified_barrel: 带电枪管 Prime
-  primed_rubedo_lined_barrel: 红晶枪管 Prime
-  primed_venomous_clip: 恶毒弹匣 Prime
-  quasar_drill: 类星钻体
-  quick_reload: 快速装填
-  resolute_focus: 坚决专注
-  rubedo_lined_barrel: 红晶枪管
-  sabot_rounds: 覆壳弹药
-  shell_rush: 填弹加速
-  venomous_clip: 恶毒弹匣
   zodiac_shred: 黄道碎裂
 
 arcanes:
