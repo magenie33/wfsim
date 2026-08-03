@@ -15,14 +15,21 @@ by this script and never by hand.
 
 Usage:
   python scripts/wfcd_i18n.py check [--i18n PATH] [--locale zh]
-      Diff data/i18n/<locale>/names.yaml against WFCD: report entries that
-      disagree, and ids WFCD could name that we haven't filled.
+      Two questions, and the second is the one that matters more.
+      (1) Does what we have DISAGREE with WFCD? A non-base FORM is expected
+          to — DE names the weapon, ours names the form — and is reported as
+          a form, not as a mismatch to re-approve every run.
+      (2) COVERAGE: what can the UI name that has NO chinese name at all,
+          across EVERY family — including enemies and Incarnon evolutions,
+          which WFCD cannot supply and which the old check was therefore
+          blind to. It is where a gap is most likely and was least visible.
   python scripts/wfcd_i18n.py fill --section mods --section arcanes
       [--i18n PATH] [--locale zh]
-      Rewrite the given empty-or-existing sections of names.yaml from
-      WFCD names (sorted by id). Existing sections are REPLACED — run
-      check first, and let the engine's i18n integrity tests gate the
-      result.
+      ADD the ids WFCD can name that have no line yet. Existing lines are
+      never touched — not the names, not the comments explaining them — so
+      a deliberate divergence survives (`cernos_prime_uncharged` is
+      西诺斯 Prime (速射) here and plain 西诺斯 Prime in DE's export).
+      Disagreements are `check`'s business, and a human's.
   python scripts/wfcd_i18n.py descriptions [--i18n PATH] [--locale zh]
       Rewrite data/i18n/<locale>/descriptions.yaml from DE's per-rank
       localized card text (`levelStats`) for every mod and arcane.
@@ -204,6 +211,88 @@ def overlay_section(text: str, section: str) -> dict:
     return out
 
 
+# EVERY family the UI can show a Chinese name for, and where a name comes from.
+#
+# `SECTIONS` is only the WFCD-joinable part of this: enemies carry no
+# `internal_name` (DE's export has no entity to join them to) and Incarnon
+# evolutions are not items at all, so neither can ever be filled from the
+# export. They were therefore invisible to `check`, which only ever asked
+# "what could WFCD name that we haven't filled" — a question that cannot
+# report a gap in the two families where a gap is most likely.
+#
+# That is not hypothetical: five Boar Prime evolution names were simply absent,
+# nothing said so, and they got TRANSLATED from the English instead — four of
+# the five wrong (docs/DATA_SOURCES.md, 2026-08-03). A name that cannot be read
+# must be left empty and asked for; being told it is empty is the first half.
+#
+#   family -> (ids glob, overlay file, table, WFCD can name it)
+FAMILIES = {
+    "weapons": ("data/weapons/**/*.yaml", "names.yaml", "weapons", True),
+    "mods": ("data/mods/**/*.yaml", "names.yaml", "mods", True),
+    "arcanes": ("data/arcanes/**/*.yaml", "names.yaml", "arcanes", True),
+    "enemies": ("data/enemies/**/*.yaml", "names.yaml", "enemies", False),
+    "evolutions": ("data/evolutions/**/*.yaml", "evolutions.yaml", "evolutions", False),
+}
+HAND_SOURCE = (
+    "hand-transcribe from the CN wiki's API — never translate "
+    "(docs/DATA_SOURCES.md §The CN wiki is reachable through its API)"
+)
+
+
+def weapon_forms() -> set:
+    """Ids that are a non-base FORM of a transform group.
+
+    DE's export names the WEAPON, so every form of it comes back with the base
+    weapon's name — `boar_prime_incarnon` is 野猪 Prime, not 野猪 Prime (灵化
+    形态). Ours says which form it is, because the UI shows the two side by
+    side and one name for both is not a name. That difference is the RULE for
+    a form, not an exception to be listed, so `check` reports it as a form
+    rather than as a mismatch a human has to re-approve every run.
+    """
+    out = set()
+    for f in ROOT.glob("data/weapons/**/*.yaml"):
+        idv = group = None
+        for line in open(f, encoding="utf-8"):
+            if m := re.match(r"^id: (\S+)", line):
+                idv = m.group(1)
+            if m := re.match(r"^transform_group: (\S+)", line):
+                group = m.group(1)
+        if idv and group and idv != group:
+            out.add(idv)
+    return out
+
+
+def data_ids(pattern: str) -> set:
+    """Every `id:` under a glob, whether or not it has an internal_name."""
+    out = set()
+    for f in ROOT.glob(pattern):
+        for line in open(f, encoding="utf-8"):
+            if m := re.match(r"^id: (\S+)", line):
+                out.add(m.group(1))
+                break
+    return out
+
+
+def coverage(locale_dir: Path) -> int:
+    """Report every id the UI can show that has no localized name."""
+    gaps = 0
+    for family, (glob, fname, table, from_wfcd) in FAMILIES.items():
+        path = locale_dir / fname
+        named = overlay_section(path.read_text(encoding="utf-8"), table) if path.exists() else {}
+        missing = sorted(data_ids(glob) - set(named))
+        if not missing:
+            print(f"  {family}: {len(named)} named, complete")
+            continue
+        gaps += len(missing)
+        how = f"run `fill --section {family}`" if from_wfcd else HAND_SOURCE
+        print(f"  {family}: {len(missing)} UNNAMED — {how}")
+        for idv in missing[:12]:
+            print(f"      {idv}")
+        if len(missing) > 12:
+            print(f"      … and {len(missing) - 12} more")
+    return gaps
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("mode", choices=["check", "fill", "descriptions"])
@@ -235,30 +324,55 @@ def main() -> int:
 
     if args.mode == "check":
         bad = 0
+        forms = weapon_forms()
         for section in SECTIONS:
             ours = overlay_section(text, section)
             theirs, missing = wfcd_names(wfcd, args.locale, section)
             for idv, name in sorted(ours.items()):
-                if idv in theirs and theirs[idv] != name:
-                    print(f"MISMATCH {section}.{idv}: overlay='{name}' wfcd='{theirs[idv]}'")
-                    bad += 1
+                if idv not in theirs or theirs[idv] == name:
+                    continue
+                if idv in forms:
+                    print(f"form     {section}.{idv}: '{name}' (DE names the weapon: '{theirs[idv]}')")
+                    continue
+                print(f"MISMATCH {section}.{idv}: overlay='{name}' wfcd='{theirs[idv]}'")
+                bad += 1
             unfilled = sorted(set(theirs) - set(ours))
             if unfilled:
                 print(f"unfilled {section}: {len(unfilled)} ids WFCD could name: {unfilled[:8]}{' ...' if len(unfilled) > 8 else ''}")
             if missing:
                 print(f"no wfcd name for {section}: {missing}")
-        print("check done" + (f" — {bad} mismatches" if bad else " — no mismatches"))
+        print("\ncoverage — every id the UI can name, in every family:")
+        gaps = coverage(locale_dir)
+        print("\ncheck done" + (f" — {bad} mismatches" if bad else " — no mismatches")
+              + (f", {gaps} unnamed" if gaps else ", nothing unnamed"))
         return 1 if bad else 0
 
+    # FILL IS ADDITIVE. It used to rewrite the whole section from WFCD, which
+    # destroyed two things a generated list cannot carry: the COMMENTS (where
+    # the Acolytes' names came from, "the tapped form, same weapon") and the
+    # DELIBERATE DIVERGENCES they explain — `cernos_prime_uncharged` is
+    # 西诺斯 Prime (速射) here and plain 西诺斯 Prime in DE's export, because a
+    # FORM has no name of its own and ours says which form it is.
+    #
+    # So an existing line is never touched. `check` is where a disagreement
+    # with WFCD gets reported and a human decides; `fill` only ever adds ids
+    # that have no line at all.
     for section in args.section or []:
         theirs, missing = wfcd_names(wfcd, args.locale, section)
-        body = f"{section}:\n" + "".join(f"  {i}: {n}\n" for i, n in theirs.items())
-        pat = re.compile(rf"^{section}:( \{{\}})?\n?(?:^[ \t]+.*\n?|^\n)*", re.M)
-        if pat.search(text):
-            text = pat.sub(body + "\n", text, count=1)
+        pat = re.compile(rf"^{section}:( \{{\}})?\n?((?:^[ \t]+.*\n?|^\n)*)", re.M)
+        m = pat.search(text)
+        kept = overlay_section(text, section) if m else {}
+        fresh = {i: n for i, n in theirs.items() if i not in kept}
+        if m:
+            body = m.group(2).rstrip("\n")
+            lines = ([body] if body else []) + [f"  {i}: {n}" for i, n in sorted(fresh.items())]
+            text = text[: m.start()] + f"{section}:\n" + "\n".join(lines) + "\n\n" + text[m.end():]
         else:
-            text += "\n" + body
-        print(f"filled {section}: {len(theirs)} names" + (f" (no wfcd name: {missing})" if missing else ""))
+            text += f"\n{section}:\n" + "".join(f"  {i}: {n}\n" for i, n in sorted(fresh.items()))
+        differs = sorted(i for i, n in kept.items() if i in theirs and theirs[i] != n)
+        print(f"filled {section}: +{len(fresh)} new, {len(kept)} kept"
+              + (f" ({len(differs)} of them differ from WFCD: {differs[:4]} — see `check`)" if differs else "")
+              + (f" (no wfcd name: {missing})" if missing else ""))
     overlay_path.write_text(text, encoding="utf-8", newline="")
     return 0
 

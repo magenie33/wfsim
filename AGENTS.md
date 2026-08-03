@@ -157,6 +157,14 @@ around (decision 2026-07-31).
   `descriptions.yaml`); ids are never translated. Mod and arcane CARD TEXT
   is DE's own localized sentence per rank, never a phrase-substituted
   English line — substitution is the fallback for what DE never wrote.
+  **A STRING IS TRANSCRIBED, NEVER TRANSLATED** (user, 2026-08-03: "为啥要你
+  自己翻译啊，不是有官方文本吗"). DE's Chinese is routinely non-literal —
+  Commodore's Fortune is 准将沐福 — so a name derived from the English is
+  wrong more often than not (five Boar Prime evolution names were translated
+  this way and four were wrong). If a source cannot be reached, LEAVE IT
+  EMPTY AND SAY SO. `python scripts/wfcd_i18n.py check` reports every
+  unnamed id in every family and where its name comes from; `fill` only ever
+  ADDS, so a deliberate divergence and the comment explaining it survive.
   Wiki URLs are ALWAYS built from the English name (`x.name_en || x.name`)
   — a localized name in a wiki URL lands on garbage.
 - **No native dialogs in the UI** — `prompt`/`alert`/`confirm` are

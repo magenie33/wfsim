@@ -406,7 +406,10 @@ let META = null;
 // only; drain counts toward capacity like any slot; absent on sentinels).
 const EXILUS = 8;
 let slots = [];
-let innate = [];     // 9 × innate polarity name|null (exilus never innate)
+// 9 × innate polarity name|null — index 8 is the EXILUS slot, which HAS one on
+// most weapons (wiki "Exilus Polarity"). It used to be documented here as
+// "exilus never innate", and the loader sliced it off to match.
+let innate = [];
 // ONE ENTRY PER ARCANE POOL the weapon seats, in the weapon's own pool
 // order. Almost always a single entry; an Arch-Gun seats two — one Primary
 // and one Secondary (wiki Arch-Gun) — and a sentinel seats none.
@@ -3523,7 +3526,15 @@ function applyWeaponInner(id, presetMods) {
     Object.values(META.mod_pools || {}).flat().map((m) => [m.id, m]),
   );
   currentPool = (w.mods || []).map((id) => byId.get(id)).filter(Boolean);
-  innate = (w.innate_polarities || []).slice(0, 8);
+  // NINE, not eight. The server sends 8 main slots plus the EXILUS slot's own
+  // innate polarity (`innate_slots_for`, which has appended it since the
+  // 2026-07-28 wiki cross-check), and this line sliced that ninth entry off
+  // and padded a null over it. So every weapon with an exilus polarity — Boar
+  // Prime's Madurai, the Naramon on Torid / Cernos Prime / Dual Toxocyst /
+  // Laetum — showed an unpolarized exilus slot: the mod in it paid full drain
+  // instead of half, and the Forma plan charged for a polarity the weapon
+  // comes with (user, 2026-08-03: "野猪prime的exilus自带M槽位").
+  innate = (w.innate_polarities || []).slice(0, 9);
   while (innate.length < 9) innate.push(null);
 
   // A weapon with no asset yet must show NOTHING, not a broken-image box:

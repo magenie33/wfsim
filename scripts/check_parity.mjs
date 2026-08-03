@@ -125,6 +125,12 @@ const PROBE = `(async () => {
         arcanes: AX.arcanes.map((a) => S(a.options.map((x) => x.id))),
         evolutions: AX.evolutions.map((t) => S(t.options.map((o) => o.id))),
       },
+      // THE EXILUS SLOT'S OWN POLARITY. The server sends nine innate slots —
+      // eight main plus the exilus — and the client used to slice the ninth
+      // off and pad a null over it, so a weapon that comes with an exilus
+      // polarity showed an empty one: full drain for the mod in it, and a
+      // Forma charged for something the weapon already has.
+      innate: { client: innate.slice(), served: (w.innate_polarities || []).slice() },
       // What each module INDEPENDENTLY decides to show.
       shown: {
         builder: { exilus: AX.hasExilus, arcanes: AX.arcanes.length > 0,
@@ -173,7 +179,13 @@ try {
       const has = k === "exilus" ? r.axes.exilus.length > 0 : r.axes[k].length > 0;
       if (has !== shownBuilder[k]) diffs.push(`${k}: has options ${has} but builder shows ${shownBuilder[k]}`);
     }
-    console.log(`${r.weapon.padEnd(20)} ${notes.join("  ").padEnd(52)} ${diffs.length ? "MISMATCH" : "ok"}`);
+    // Nothing the server said about polarities may be lost on the way in.
+    const { client, served } = r.innate;
+    if (JSON.stringify(client) !== JSON.stringify(served)) {
+      diffs.push(`innate polarities: client ${JSON.stringify(client)} vs served ${JSON.stringify(served)}`);
+    }
+    notes.push(`exilus pol ${client[8] || "—"}`);
+    console.log(`${r.weapon.padEnd(20)} ${notes.join("  ").padEnd(66)} ${diffs.length ? "MISMATCH" : "ok"}`);
     diffs.forEach((d) => console.log("    " + d));
     bad += diffs.length;
   }
