@@ -703,6 +703,19 @@ pub fn meta_json() -> Value {
                 "shield": e.stats.shield,
                 "armor": e.stats.armor,
                 "overguard": e.stats.overguard,
+                // Known gaps, stated on the card rather than left implicit.
+                "unmodeled": e.unmodeled,
+                // The post-U36 vulnerability COLUMN (System B), only the
+                // entries that are not 1.0 — what this unit takes more or
+                // less of, which is half of what picks a build's elements.
+                // Keyed by FactionDamageOverride ?? Faction, so a Thrax shows
+                // Zariman's Void x1.5 while answering to no faction mod.
+                "type_modifiers": wfsim_engine::factions_data::columns_for(e.damage_column_key())
+                    .map(|c| c.faction.listed())
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|(t, m)| json!({ "type": t.name(), "mult": m }))
+                    .collect::<Vec<_>>(),
                 "parts": e.body_parts.iter().map(|b| json!({
                     "name": b.name, "multiplier": b.multiplier, "is_head": b.is_head
                 })).collect::<Vec<_>>(),

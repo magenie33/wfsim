@@ -5,9 +5,9 @@
 //! makes arbitrary saved target types cheap — see `data/enemies/custom/`.
 //!
 //! Rigor rule: **impossible combinations are rejected at construction**, not
-//! silently accepted. Examples: an Eximus of a unit that has no Eximus variant
-//! in-game (Thrax units — absent from the wiki `Eximus/Compatibilities`
-//! table), or a shielded enemy (shield pools are not implemented yet).
+//! silently accepted — an Eximus of a unit that has no Eximus variant in-game
+//! (Thrax units, the Acolytes: absent from the wiki `Eximus/Compatibilities`
+//! table) is an error, never a silently-granted overguard pool.
 
 use serde::Deserialize;
 use std::fs;
@@ -107,14 +107,43 @@ pub struct EnemySpec {
     /// True for hand-made test targets that do not exist in-game.
     #[serde(default)]
     pub synthetic: bool,
+    /// Portrait file name, served from our own origin at `/img/<name>`.
+    /// Wiki-hosted (WFCD's export carries no enemy art), so it is declared
+    /// here rather than in `data/assets.yaml` — see the yaml's comment.
+    /// Absent → the UI draws no picture, never a broken one.
+    #[serde(default)]
+    pub image: Option<String>,
     pub scaling_faction: ScalingFaction,
     /// Combat faction for faction-damage mods (Bane/Expel). Optional and
     /// SEPARATE from `scaling_faction`: e.g. Zariman Thrax scale as
     /// Unaffiliated but are combat-faction "Unknown" (no faction mod applies).
     /// Absent → `Faction::Unknown`. Values: grineer/corpus/infested/corrupted
     /// (aka orokin)/murmur/sentient (wiki `Faction_Damage_Bonus`).
-    #[serde(default)]
+    ///
+    /// The yaml key is `faction:`, mirroring the wiki module's own `Faction`
+    /// field. It was only ever `combat_faction:` here, so every existing file's
+    /// `faction:` line was silently discarded — harmless for a unit that
+    /// resolves to Unknown either way, and a wrong answer the moment a
+    /// Corrupted unit needs Bane of Orokin to land.
+    #[serde(default, alias = "faction")]
     pub combat_faction: Option<String>,
+    /// Redirects ONLY the damage-type vulnerability column (System B), never
+    /// the faction a Bane mod matches.
+    ///
+    /// The wiki enemy module's own optional field, not ours, and its schema
+    /// (`Module:Enemies/data/doc`) states the restriction outright: "Override
+    /// for enemies with different **faction resistance value** instead of that
+    /// usually matches their faction." 34 module entries carry one — Zariman
+    /// ×12, Grineer ×5, The Murmur ×2, Corpus ×1. Thrax Centurion is the one
+    /// we ship: `Faction = "Unknown"` (no faction mod ever applies) with
+    /// `FactionDamageOverride = "Zariman"` (Void ×1.5).
+    ///
+    /// It was in our yaml and NOT in this struct until 2026-08-03, so serde
+    /// discarded it. Nothing read the column at all back then, so no fight was
+    /// scored wrong by it — but the field could not have worked the moment one
+    /// did, which is what this is.
+    #[serde(default)]
+    pub faction_damage_override: Option<String>,
     /// Whether an Eximus variant of this unit exists in-game (wiki
     /// `Eximus/Compatibilities`). Defaults to false: unknown units must not
     /// silently allow impossible combinations.
@@ -125,6 +154,12 @@ pub struct EnemySpec {
     #[serde(default)]
     pub mercy_eligible: bool,
     pub stats: StatsSpec,
+    /// What a run against this unit does NOT account for — short phrases, in
+    /// English like every other source string, shown on the target card.
+    /// A known gap the reader cannot see is indistinguishable from a wrong
+    /// number, and the promise this product makes is the opposite of that.
+    #[serde(default)]
+    pub unmodeled: Vec<String>,
     /// Damage attenuation (boss types); absent = none.
     #[serde(default)]
     pub attenuation: Option<AttenuationSpec>,
@@ -155,8 +190,20 @@ impl EnemySpec {
         Self::from_yaml_str(&yaml)
     }
 
+    /// Which column of `data/factions/damage_modifiers.yaml` this unit's
+    /// damage-type vulnerabilities come from: the OVERRIDE if it has one,
+    /// otherwise its faction, otherwise the written-down neutral column.
+    /// Never a fallback to "no column" — see `factions_data`.
+    pub fn damage_column_key(&self) -> &str {
+        self.faction_damage_override
+            .as_deref()
+            .or(self.combat_faction.as_deref())
+            .unwrap_or("unknown")
+    }
+
     /// Build the simulation target. Fails on combinations that do not exist
-    /// in-game (e.g. `eximus` for a unit with no Eximus variant).
+    /// in-game (e.g. `eximus` for a unit with no Eximus variant), or on a
+    /// faction key with no column in the damage-modifier table.
     pub fn target_params(
         &self,
         level: u32,
@@ -171,6 +218,15 @@ impl EnemySpec {
                 self.name
             ));
         }
+        let key = self.damage_column_key();
+        let Some(type_mods) = crate::factions_data::columns_for(key) else {
+            return Err(format!(
+                "{}: no damage-modifier column for faction '{key}' \
+                 (add it to data/factions/damage_modifiers.yaml — an unlisted \
+                 key must not silently mean neutral)",
+                self.name
+            ));
+        };
         Ok(TargetParams {
             name: self.name.clone(),
             base_level: self.stats.base_level,
@@ -192,6 +248,7 @@ impl EnemySpec {
             steel_path,
             eximus,
             can_be_eximus: self.can_be_eximus,
+            type_mods,
             status_immunities: Vec::new(),
             faction: self
                 .combat_faction
@@ -260,6 +317,39 @@ mod tests {
         assert_eq!(head.multiplier, 3.0);
     }
 
+    /// The two faction systems have DIFFERENT keys, and the Thrax is the unit
+    /// that proves it: no faction mod ever matches it, and it still takes Void
+    /// ×1.5. `faction_damage_override:` was in the yaml but not in this struct,
+    /// so the whole column was being dropped on the floor.
+    #[test]
+    fn the_override_redirects_the_column_without_touching_the_faction() {
+        let spec = EnemySpec::load(&data_enemies().join("thrax_centurion.yaml")).unwrap();
+        assert_eq!(spec.damage_column_key(), "zariman");
+        let t = spec
+            .target_params(100, false, false, TargetMode::InstantRespawn)
+            .unwrap();
+        assert_eq!(t.faction, crate::loadout::Faction::Unknown, "no Bane applies");
+        assert_eq!(t.type_mods.faction.get(crate::damage::DamageType::Void), 1.5);
+        // …and nothing else: the override selects ONE column, it does not add
+        // the Zariman column on top of a faction one.
+        assert_eq!(t.type_mods.faction.listed().len(), 1);
+
+        // The plain case: no override, so the column follows the faction.
+        let g = EnemySpec::load(&data_enemies().join("corrupted_heavy_gunner.yaml")).unwrap();
+        assert_eq!(g.damage_column_key(), "orokin");
+        let gt = g
+            .target_params(100, false, false, TargetMode::InstantRespawn)
+            .unwrap();
+        assert_eq!(
+            gt.type_mods.faction.get(crate::damage::DamageType::Puncture),
+            1.5
+        );
+        assert_eq!(
+            gt.type_mods.faction.get(crate::damage::DamageType::Radiation),
+            0.5
+        );
+    }
+
     #[test]
     fn thrax_eximus_is_rejected_as_nonexistent() {
         let spec = EnemySpec::load(&data_enemies().join("thrax_centurion.yaml")).unwrap();
@@ -269,12 +359,64 @@ mod tests {
         assert!(err.contains("cannot be an Eximus"), "err: {err}");
     }
 
+    /// The six Acolytes are ONE unit six times over as far as a build is
+    /// concerned: same pools, same caps, same 1x head. The files are separate
+    /// (each target stands on its own), so the invariant is asserted here
+    /// rather than trusted to six copy-edits.
+    #[test]
+    fn the_six_acolytes_share_one_defensive_statline() {
+        let acolytes: Vec<EnemySpec> = all()
+            .into_iter()
+            .filter(|s| {
+                ["angst", "malice", "mania", "misery", "torment", "violence"].contains(&&*s.id)
+            })
+            .collect();
+        assert_eq!(acolytes.len(), 6, "all six Acolytes must be in the library");
+        for a in &acolytes {
+            assert_eq!(a.stats.health, 2500.0, "{}", a.id);
+            assert_eq!(a.stats.shield, 1500.0, "{}", a.id);
+            assert_eq!(a.stats.armor, 50.0, "{}", a.id);
+            assert_eq!(a.stats.overguard, 0.0, "{}", a.id);
+            assert_eq!(a.stats.base_level, 1, "{}", a.id);
+            // DE U27.3, extended to the Acolytes in U29.5.4.
+            let caps = a.status_stack_caps.unwrap_or_else(|| panic!("{}", a.id));
+            assert_eq!((caps.general, caps.impact), (4, 6), "{}", a.id);
+            // Multis "Head: 1.0x" — no headshot damage, so no crit headshot.
+            let head = a.body_parts.iter().find(|p| p.is_head).unwrap();
+            assert_eq!(head.multiplier, 1.0, "{}", a.id);
+            assert!(!head.crit_bonus, "{}", a.id);
+            assert!(!a.can_be_eximus && !a.mercy_eligible, "{}", a.id);
+            // The attenuation constants are unpublished, so nothing is set —
+            // and the gap is stated on the card instead of left implicit.
+            assert!(a.attenuation.is_none(), "{}", a.id);
+            assert!(!a.unmodeled.is_empty(), "{}", a.id);
+        }
+    }
+
+    /// The benchmark target — and the one enemy so far whose faction has to
+    /// REACH the engine: `faction: orokin` is what makes Bane of Orokin land.
+    #[test]
+    fn corrupted_heavy_gunner_carries_its_faction_into_the_fight() {
+        let spec = EnemySpec::load(&data_enemies().join("corrupted_heavy_gunner.yaml")).unwrap();
+        assert_eq!(spec.stats.health, 700.0);
+        assert_eq!(spec.stats.armor, 500.0);
+        assert_eq!(spec.stats.base_level, 8);
+        assert_eq!(spec.scaling_faction, ScalingFaction::Corrupted);
+        assert!(spec.can_be_eximus && spec.mercy_eligible);
+        let t = spec
+            .target_params(100, false, true, TargetMode::InstantRespawn)
+            .unwrap();
+        assert_eq!(t.faction, crate::loadout::Faction::Corrupted);
+    }
+
     #[test]
     fn loads_the_enemy_library() {
-        // The shipped library is Thrax-only for now; `synthetic: true`
-        // (custom enemies) stays a supported flag, covered inline below.
+        // Thrax, the six Acolytes, the Corrupted Heavy Gunner; `synthetic:
+        // true` (custom enemies) stays a supported flag, covered inline below.
         let specs = all();
         assert!(specs.iter().any(|s| s.id == "thrax_centurion"));
+        assert!(specs.iter().any(|s| s.id == "corrupted_heavy_gunner"));
+        assert!(specs.iter().any(|s| s.id == "angst"));
         let yaml = r#"
 id: test_dummy
 name: Test Dummy

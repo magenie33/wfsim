@@ -25,6 +25,7 @@ pub mod dummy;
 pub mod elements;
 pub mod enemy_data;
 pub mod evolutions_data;
+pub mod factions_data;
 pub mod i18n_data;
 pub mod loadout;
 pub mod mercy;

@@ -4750,11 +4750,28 @@ function renderScenarioFields(ids, opts = {}) {
   // shooting at, under what conditions", so they belong in one place that can
   // grow rather than in a grid that has to be re-cut every time.
   if (ids.target) {
+    // The wiki link sits OUTSIDE the picker button — an <a> inside a <button>
+    // is not valid HTML, and the two are different actions anyway: one
+    // changes the fight, the other reads about the unit. Built from the
+    // ENGLISH name like every other wiki link, and absent for a synthetic
+    // target, which has no page to land on.
+    const wiki = en && !en.synthetic
+      ? `<a class="en-wiki" href="${wikiUrl(en.name_en || en.name)}" target="_blank" rel="noopener"
+            title="${escHtml(tr("open the wiki page"))}">${escHtml(tr("wiki"))} ↗</a>`
+      : "";
     $(ids.target).innerHTML =
-      `<button class="en-card" id="${ids.target}-pick" title="${escHtml(tr("choose the target"))}">
-         <span class="en-name">${escHtml(en ? en.name : tr("Enemy"))}</span>
-         <span class="en-meta">${escHtml(enemyMeta(en))}</span>
-       </button>` +
+      `<div class="en-row">
+         <button class="en-card" id="${ids.target}-pick" title="${escHtml(tr("choose the target"))}">
+           ${enemyImg(en, "en-img")}
+           <span class="en-txt">
+             <span class="en-name">${escHtml(en ? en.name : tr("Enemy"))}</span>
+             <span class="en-meta">${escHtml(enemyMeta(en))}</span>
+             ${enemyVuln(en)}
+             ${enemyCaveat(en)}
+           </span>
+         </button>
+         ${wiki}
+       </div>` +
       `<div class="field-grid">
         <label>${escHtml(tr("Level"))} <input type="number" data-k="level" min="1" max="9999" value="${sim.level}"></label>
         <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
@@ -4824,7 +4841,8 @@ function renderScenarioFields(ids, opts = {}) {
         if (el.type === "checkbox") sim[k] = el.checked;
         else if (el.type === "number") sim[k] = Number(el.value);
         else sim[k] = el.value;
-        if (k === "enemy") $("arena-ename").textContent = (enemies.find((e) => e.id === sim.enemy) || {}).name || "Enemy";
+        // No `enemy` case here: the target is the picker's, not a field's, and
+        // it repaints the arena through renderSim() like everything else.
         // A TENNO field changes what the BUILD is worth, not just what the
         // fight looks like — the panel resolves against the player now, so it
         // has to be asked again. The enemy half changes no panel number.
@@ -4838,6 +4856,44 @@ function renderScenarioFields(ids, opts = {}) {
       });
     }));
 }
+
+// The unit's portrait, or NOTHING — never an empty box holding its place.
+// `imgTag` renders a placeholder span when the src is null, which is right
+// for a mod grid (the slots must stay aligned) and wrong here: an enemy with
+// no art yet should read as a name, not as a name with a hole beside it.
+const enemyImg = (en, cls) => {
+  const src = IMG(en && en.image);
+  return src ? `<img class="${cls}" src="${src}" alt="" onerror="this.style.display='none'"/>` : "";
+};
+
+// What a run against this unit does not account for (`unmodeled` in its data
+// file). An Acolyte carries damage attenuation whose constants DE has never
+// published, so the number this app reports against one is too HIGH — that is
+// a thing to say on the card, not a thing to leave the reader to discover.
+const enemyCaveat = (en) => {
+  const gaps = (en && en.unmodeled) || [];
+  return gaps.length
+    ? `<span class="en-gap" title="${escHtml(tr("the sim does not model this yet, so its number against this target is optimistic"))}">⚠ ${
+        escHtml(tr("not modeled") + ": " + gaps.map((g) => tr(g)).join(", "))}</span>`
+    : "";
+};
+
+// What this unit takes MORE and LESS of — the post-U36 faction column
+// (`FactionDamageOverride ?? Faction`), which is half of what picks a build's
+// elements. Its own line, not another entry in the meta run-on: a reader
+// scanning for "what do I bring" should find it in one place, and up and down
+// have to look different at a glance. A unit with a neutral column shows
+// nothing at all — no line is the honest rendering of "takes damage as
+// written", and an empty "Vulnerabilities:" label would not be.
+const enemyVuln = (en) => {
+  // What to BRING before what to avoid: the server sends them in damage-type
+  // order, which interleaves the two answers.
+  const mods = [...((en && en.type_modifiers) || [])].sort((a, b) => b.mult - a.mult);
+  return mods.length
+    ? `<span class="en-vuln" title="${escHtml(tr("this unit's faction takes more or less of these damage types, whatever its armor and shields do"))}">${
+        mods.map((m) => `<span class="${m.mult > 1 ? "up" : "dn"}">${escHtml(DT(m.type))} ×${escHtml(String(m.mult))}</span>`).join("")}</span>`
+    : "";
+};
 
 // What the target card says under the name. The enemy's own facts, not its
 // stats: the stats depend on the level beside it, and stating them here would
@@ -4858,7 +4914,10 @@ function enemyMeta(en) {
   if (pools.length) bits.push(pools.join(" · "));
   const head = (en.parts || []).find((p) => p.is_head);
   if (head) bits.push(`${tr("Headshot")} ×${head.multiplier}`);
-  if (en.can_be_eximus) bits.push(tr("Eximus"));
+  // A fact about the UNIT, not about this fight: the sim always runs the
+  // ordinary version (the request has no Eximus switch yet), so the bare word
+  // "Eximus" here would read as a claim about what you are shooting.
+  if (en.can_be_eximus) bits.push(tr("has an Eximus variant"));
   return bits.join(" · ");
 }
 
@@ -4885,8 +4944,9 @@ function renderEnemyMenu(query) {
   const hits = (META.enemies || []).filter((e) => !q || blob(e).includes(q));
   menu.innerHTML = hits.length
     ? hits.map((e) => `<div class="opt ${e.id === sim.enemy ? "sel" : ""}" data-e="${escHtml(e.id)}">
+         ${enemyImg(e, "en-thumb")}
          <div class="info"><div class="mn">${escHtml(e.name)}</div>
-         <div class="me">${escHtml(enemyMeta(e))}</div></div>
+         <div class="me">${escHtml(enemyMeta(e))}</div>${enemyVuln(e)}${enemyCaveat(e)}</div>
        </div>`).join("")
     : `<div class="sim-empty">${escHtml(tr("no enemy matches"))}</div>`;
   menu.querySelectorAll("[data-e]").forEach((el) => el.onclick = () => {
@@ -4936,6 +4996,18 @@ function simFormOpts(w) {
   return formOpts;
 }
 
+// The arena's target actor: its name, and its portrait when it has one. The
+// dot stands in for a unit with no art rather than sitting beside it — two
+// markers for one actor is one too many.
+function setArenaEnemy(en) {
+  $("arena-ename").textContent = en ? en.name : "Enemy";
+  const src = IMG(en && en.image);
+  const img = $("arena-eimg");
+  img.hidden = !src;
+  if (src) img.src = src;
+  $("arena-edot").hidden = !!src;
+}
+
 function renderSim() {
   if (!META) return;
   renderSimBuild();
@@ -4944,7 +5016,7 @@ function renderSim() {
   renderScenarioFields({ target: "sim-target", technique: "sim-technique",
     limits: "sim-limits", run: "sim-run" });
   renderScenarioBar();
-  $("arena-ename").textContent = en ? en.name : "Enemy";
+  setArenaEnemy(en);
   $("sim-sub").textContent = "current build vs the enemy";
   renderSimBuffs();
 }

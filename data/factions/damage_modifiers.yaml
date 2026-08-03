@@ -73,6 +73,23 @@ factions:
     electricity: 1.5
     radiation: 0.5
   tenno: {}
+  # ---- OURS, not the wiki's ------------------------------------------------
+  # Everything above is a COLUMN of the wiki's Damage/Overview_Table — all 15
+  # of them, verified cell by cell against it (docs/DATA_SOURCES.md, 2026-08-03).
+  # The two below are not in that table: they are faction values the enemy
+  # module uses for which the table publishes no column, i.e. units that take
+  # every damage type as written.
+  #
+  # They are written down rather than left to a fallback because a faction key
+  # the engine cannot find is a DATA ERROR, not a neutral enemy — and that
+  # distinction is only enforceable if "neutral" is something the data SAYS.
+  # `unknown` is the Thrax/no-faction column (their Zariman vulnerability
+  # arrives through FactionDamageOverride, not through this key); `stalker`
+  # is the Acolytes, "neutral to every element" as of U36 (wiki Acolytes).
+  # A new enemy whose faction is one the table skips (Duviri, Predator, Prey,
+  # Neutral, Objects) needs its neutral column added here, deliberately.
+  unknown: {}
+  stalker: {}
 
 # Special pool columns (not factions): used whenever damage lands on these
 # pools, regardless of the enemy's faction column.

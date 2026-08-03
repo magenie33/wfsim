@@ -1,0 +1,73 @@
+id: angst
+name: Angst
+image: StrikerAcolyte.png
+# One of the Stalker's six Acolytes. Their DEFENSIVE statline and their
+# mechanics are IDENTICAL across all six — only the art, the weapons and the
+# abilities differ. Sourcing, and the three-way conflict over health/shields:
+# docs/DATA_SOURCES.md §Acolytes.
+faction: stalker                   # no faction damage MOD exists for Stalker
+scaling_faction: unaffiliated      # the catch-all row (MECHANICS.md §8)
+# Absent from the wiki Eximus/Compatibilities table and from the Parazon
+# §Mercy heavy-unit list.
+can_be_eximus: false
+mercy_eligible: false
+type: melee
+weapons: [valkyr_talons]
+introduced: "18.4.1"
+
+stats:
+  base_level: 1
+  health: 2500
+  shield: 1500
+  armor: 50
+  overguard: 0
+  affinity: 750
+
+# DE, U27.3 (written for Kuva Liches; U29.5.4 gave the Acolytes "the same
+# Status Effect eligibility treatment"): "No Status Effect will exceed a
+# maximum of 4 stacks, with the exception of Impact which can stack up to 6
+# times." Impact's ordinary cap is 5, so the exception is not a restriction —
+# what bites is the 4 on everything else.
+status_stack_caps:
+  general: 4
+  impact: 6
+
+# Multis "Head: 1.0x": a headshot deals no extra damage, and a 1x location is
+# not crit-headshot eligible either (wiki Critical_Hit §Critical Headshots
+# doubles crit damage only above 1x). `is_head` still holds — a mod that gates
+# on a headshot reads the LOCATION, not its multiplier.
+body_parts:
+  - name: body
+    multiplier: 1.0
+    is_head: false
+    crit_bonus: false
+  - name: head
+    multiplier: 1.0
+    is_head: true
+    crit_bonus: false
+
+# What this target's numbers do NOT account for. Shown on the target card:
+# a caveat the reader never sees is a wrong number, not a known limitation.
+unmodeled: [damage attenuation]
+
+# Raw wiki text, not yet modeled in the engine.
+mechanics:
+  # attenuation: >-
+  # Standardized (Archon-model) Damage Attenuation: caps on damage per
+  # instance and per second, both proportional to Max Health, per player.
+  # Retained in U40.0.2 ("Boss Enemies with Damage Attenuation that can be
+  # One-Shot"), but DE publishes no constants and none are measured here, so
+  # the field is left unset and the sim OVERSTATES damage against an Acolyte.
+  # radiation: >-
+  # A Radiation proc only amplifies the damage the Acolyte takes from its own
+  # allies; it never turns the Acolyte against them.
+  # elements: >-
+  # Neutral to every element as of U36 — no faction vulnerability column.
+  # levels: >-
+  # In Steel Path an Acolyte returns 10 levels higher each time it spawns.
+
+source:
+  url: https://wiki.warframe.com/w/Module:Enemies/data/stalker
+  # note: >-
+  # Stats from the wiki's structured Lua enemy data module (post-U40 revision
+  # 2731762); mechanics from the Acolytes page and DE's U27.3/U40 notes.

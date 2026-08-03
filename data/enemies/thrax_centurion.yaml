@@ -1,5 +1,11 @@
 id: thrax_centurion
 name: Thrax Centurion
+# Portrait, hosted on the WIKI — not in data/assets.yaml, which maps ids to
+# WFCD imageNames and has nothing for enemies (api.warframestat.us 404s this
+# unit; WFCD's Enemy.json has no Thrax entry at all). Same arrangement as an
+# evolution's `icon:`: the file name lives beside the thing it depicts, and
+# scripts/fetch_images.py pulls it through Special:FilePath.
+image: ThraxCenturion.png
 # "Unknown". Two independent faction systems (MECHANICS.md §8):
 # - Faction "unknown" -> NO faction damage mod (Bane etc.) ever applies.
 # - FactionDamageOverride "zariman" -> the x1.5/x0.5 vulnerability column

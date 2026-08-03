@@ -1,0 +1,51 @@
+id: corrupted_heavy_gunner
+name: Corrupted Heavy Gunner
+image: OrokinHeavyFemaleAvatar.png
+# The theorycrafter's benchmark target: an ordinary armoured unit with no boss
+# mechanics at all, which is exactly why builds are compared on it. Two faction
+# systems (MECHANICS.md §8), and here they agree for once:
+# - Faction "Orokin" -> Bane of Orokin and friends DO apply.
+# - The same column supplies the vulnerability table (Puncture/Viral x1.5,
+#   Radiation x0.5) — no FactionDamageOverride on this unit.
+#   NOTE: that column is not modeled by the engine yet, for ANY enemy.
+faction: orokin
+scaling_faction: corrupted         # level-scaling curves (MECHANICS.md §8)
+# Wiki Eximus/Compatibilities lists it; Parazon §Mercy covers "Heavy Gunners
+# and variants".
+can_be_eximus: true
+mercy_eligible: true
+type: heavy_ranged
+weapons: [gorgon, sheev]
+planets: [void]
+tilesets: [orokin_void]
+
+# Base stats at base_level (scale per docs/MECHANICS.md §8 level-scaling;
+# corrupted faction curves). base_level is 8, not 1 — the level difference
+# that drives every curve is measured from it.
+stats:
+  base_level: 8
+  health: 700
+  shield: 0
+  armor: 500
+  overguard: 0
+  affinity: 500
+
+# Module Multis: "Head: 3.0x". Standard humanoid layout; crit_bonus on the head
+# is assumed (no wiki exception listed) — unverified.
+body_parts:
+  - name: body
+    multiplier: 1.0
+    is_head: false
+    crit_bonus: false
+  - name: head
+    multiplier: 3.0
+    is_head: true
+    crit_bonus: true
+
+source:
+  url: https://wiki.warframe.com/w/Module:Enemies/data/orokin
+  # note: >-
+  # Stats and Multis from the wiki's structured Lua enemy data module.
+  # Cross-checked against WFCD's Enemy.json (OrokinHeavyFemaleAvatar:
+  # 700/0/500) — the two agree exactly. Health/Armor/Shield classes do not
+  # exist post-U36; resistances are faction-wide (data/factions).

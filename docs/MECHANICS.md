@@ -1521,6 +1521,17 @@ Full table in `data/factions/damage_modifiers.yaml` (e.g. Grineer: +Impact
 layers: **Object** health takes no crits/status/modifiers; **Overguard** is
 neutral except x1.5 Void, blocks status spillover, and grants CC immunity.
 
+*Engine (2026-08-03): modeled — `engine::factions_data` loads the table,
+`EnemySpec::target_params` resolves the one column (`FactionDamageOverride ??
+Faction`) plus the Overguard column onto `TargetParams::type_mods`, and
+`TargetState::apply` scales each component by the column the POOL it lands in
+reads. A hit's per-type shape travels as `TypeShares` — the same value that
+answers Toxin's shield bypass. A faction key with no column in the table is a
+LOAD ERROR, never a silently neutral enemy, which is why the file writes its
+neutral columns down (`unknown`, `stalker`, `tenno`). Cinematic (bleed) is
+exempt everywhere, as the type's own definition says. Not modeled: the Object
+pool (no object target exists yet).*
+
 **Two independent faction systems — different keys** (wiki `Faction Damage
 Bonus` + enemy-module schema):
 - **System A — faction damage mods** (Bane/Cleanse/Expel/Smite, x1.30 /

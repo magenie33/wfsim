@@ -101,7 +101,16 @@ around (decision 2026-07-31).
   is the committed one — the builder and the optimizer must offer the
   same options and the same visibility on every axis, and it exits
   non-zero when they do not. Run it after adding a weapon or anything a
-  weapon can carry. `node scripts/check_search.mjs` is the TENTH and the
+  weapon can carry. `node scripts/check_enemies.mjs` is the ELEVENTH: every
+  TARGET in the roster shows a picture that loads, a wiki link built from its
+  ENGLISH name (it runs the whole pass twice, in both languages — a localized
+  name in a wiki URL lands on garbage), its VULNERABILITY COLUMN (the Thrax's
+  Void ×1.5 reaches the card only through `faction_damage_override:`, which
+  serde was discarding until the column was implemented), and a statement of
+  what the sim does not model about it. Enemy art is declared in the enemy's own YAML
+  (`image:`, wiki-hosted), NOT in `data/assets.yaml` — WFCD has no usable
+  enemy art — so it reaches `site/img/` by a different path than a mod card
+  and needs its own check. `node scripts/check_search.mjs` is the TENTH and the
   end-to-end one: it runs a real optimize in the shipping wasm build and
   asserts the claims the search makes — a scope it finished reports
   `exhaustive` and says so on screen, a budgeted one reports its COVERAGE and

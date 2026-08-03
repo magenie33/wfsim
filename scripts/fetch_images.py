@@ -41,18 +41,24 @@ def image_names():
 
 
 def wiki_icon_names():
-    """Evolution icons: `icon:` fields in data/evolutions/*.yaml — hosted on
-    the wiki (Special:FilePath), not the WFCD CDN."""
+    """Art declared in a data file rather than in assets.yaml, because the
+    WFCD CDN does not carry it — the wiki does (Special:FilePath):
+
+    - evolution icons: `icon:` in data/evolutions/*.yaml
+    - enemy portraits: `image:` in data/enemies/**.yaml (WFCD's export has no
+      Thrax entry at all, and api.warframestat.us 404s the name)
+    """
     names = set()
-    evdir = os.path.join(ROOT, "data", "evolutions")
-    for fn in os.listdir(evdir):
-        if not fn.endswith(".yaml"):
-            continue
-        with open(os.path.join(evdir, fn), encoding="utf-8") as fh:
-            for line in fh:
-                m = re.match(r"icon:\s*(\S+\.(?:png|jpg))", line)
-                if m:
-                    names.add(m.group(1))
+    for rel, field in (("evolutions", "icon"), ("enemies", "image")):
+        for root, _dirs, files in os.walk(os.path.join(ROOT, "data", rel)):
+            for fn in files:
+                if not fn.endswith(".yaml"):
+                    continue
+                with open(os.path.join(root, fn), encoding="utf-8") as fh:
+                    for line in fh:
+                        m = re.match(rf"{field}:\s*(\S+\.(?:png|jpg))", line)
+                        if m:
+                            names.add(m.group(1))
     return sorted(names)
 
 

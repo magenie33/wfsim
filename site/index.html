@@ -163,7 +163,11 @@
           <div class="arena-actor tenno" id="arena-tenno"><span class="dot"></span><span class="lbl">Tenno</span></div>
           <div class="arena-lane"><div class="tracer" id="arena-tracer"></div></div>
           <div class="arena-actor enemy" id="arena-enemy">
-            <span class="dot"></span>
+            <!-- The portrait when the unit has one, the dot when it does not:
+                 both are the same marker, and `defeated` grays out whichever
+                 is showing. -->
+            <img class="portrait" id="arena-eimg" alt="" hidden />
+            <span class="dot" id="arena-edot"></span>
             <span class="lbl" id="arena-ename">Enemy</span>
             <div class="arena-bars" id="arena-bars"></div>
             <div class="arena-status" id="arena-status"></div>

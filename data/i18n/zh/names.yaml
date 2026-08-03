@@ -38,6 +38,15 @@ weapons:
 
 enemies:
   thrax_centurion: 凶魂百夫长
+  corrupted_heavy_gunner: 堕落重型机枪手
+  # The Stalker's six 追随者 (Acolytes), CN names per the Chinese wiki's
+  # 追随者 page — the same source and the same terminology as 凶魂百夫长.
+  angst: 焦虑
+  malice: 怨恨
+  mania: 躁狂
+  misery: 苦难
+  torment: 折磨
+  violence: 暴力
 
 # Official CN client damage-type names.
 damage_types:
@@ -54,6 +63,10 @@ damage_types:
   magnetic: 磁力
   radiation: 辐射
   viral: 病毒
+  # Not a weapon element anyone mods for — but the faction column prints it
+  # (the Zariman units take Void x1.5), so it needs a name like the rest.
+  void: 虚空
+  true: 真实
 
 # GENERATED SECTIONS. `mods:` and `arcanes:` below are written by
 # `python scripts/wfcd_i18n.py fill --section mods --section arcanes` from

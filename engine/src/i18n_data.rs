@@ -181,10 +181,14 @@ mod tests {
     /// build instead of silently showing English forever.
     #[test]
     fn overlay_keys_reference_real_ids() {
-        let damage_types = [
-            "impact", "puncture", "slash", "cold", "electricity", "heat", "toxin",
-            "blast", "corrosive", "gas", "magnetic", "radiation", "viral", "void", "true",
-        ];
+        // Derived, not re-typed: `DamageType::name()` is the one spelling of
+        // a damage type, the same token the data files and the api use. A
+        // hand-kept copy here rejected `void` as a typo the moment the enemy
+        // card started printing the faction column.
+        let damage_types: Vec<&str> = crate::damage::DamageType::ALL
+            .iter()
+            .map(|t| t.name())
+            .collect();
         for (code, spec) in locales() {
             for id in spec.weapons.keys() {
                 assert!(

@@ -209,7 +209,21 @@ ui:
   "hip-fire": 腰射
   "headshots": 爆头
   "choose the target": 选择目标
+  # The wiki is English-only; the label is translated, the page it opens is
+  # always the unit's English name.
+  wiki: 维基
+  "open the wiki page": 打开维基页面
   "no enemy matches": 没有匹配的目标
+  # The target card's caveat line, and the `unmodeled:` phrases the enemy
+  # data files carry (English is the source there too).
+  "this unit's faction takes more or less of these damage types, whatever its armor and shields do": 这个单位所属阵营对这些伤害类型更脆弱或更抗性，与它的护甲和护盾无关
+  "not modeled": 未建模
+  "has an Eximus variant": 存在精英变体
+  "damage attenuation": 伤害衰减
+  "the sim does not model this yet, so its number against this target is optimistic": 模拟还没有实现这条机制，所以对这个目标算出的数字偏高
+  # Faction names as the target card prints them (cap1 of the data value).
+  Stalker: 追猎者
+  Orokin: 堕落者
   "Search a target…": 搜索目标…
   "1 · The fight": 1 · 这场仗
   "3 · Limits": 3 · 限制

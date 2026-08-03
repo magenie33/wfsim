@@ -58,6 +58,57 @@ impl DamageType {
         DamageType::Cinematic,
     ];
 
+    /// The data-file spelling of a damage type — the lowercase wiki name, the
+    /// same token `data/weapons`, `data/debuffs` and `data/factions` all use.
+    /// `None` for anything unknown: a caller that must not accept a typo says
+    /// so itself (weapon data panics; the faction table refuses to load).
+    pub fn from_name(name: &str) -> Option<DamageType> {
+        Some(match name {
+            "impact" => DamageType::Impact,
+            "puncture" => DamageType::Puncture,
+            "slash" => DamageType::Slash,
+            "cold" => DamageType::Cold,
+            "electricity" => DamageType::Electricity,
+            "heat" => DamageType::Heat,
+            "toxin" => DamageType::Toxin,
+            "blast" => DamageType::Blast,
+            "corrosive" => DamageType::Corrosive,
+            "gas" => DamageType::Gas,
+            "magnetic" => DamageType::Magnetic,
+            "radiation" => DamageType::Radiation,
+            "viral" => DamageType::Viral,
+            "true" => DamageType::True,
+            "void" => DamageType::Void,
+            "tau" => DamageType::Tau,
+            "cinematic" => DamageType::Cinematic,
+            _ => return None,
+        })
+    }
+
+    /// The same token back — what a data file would have to say to name this
+    /// type, and what the api hands the web UI to look up its display name.
+    pub fn name(self) -> &'static str {
+        match self {
+            DamageType::Impact => "impact",
+            DamageType::Puncture => "puncture",
+            DamageType::Slash => "slash",
+            DamageType::Cold => "cold",
+            DamageType::Electricity => "electricity",
+            DamageType::Heat => "heat",
+            DamageType::Toxin => "toxin",
+            DamageType::Blast => "blast",
+            DamageType::Corrosive => "corrosive",
+            DamageType::Gas => "gas",
+            DamageType::Magnetic => "magnetic",
+            DamageType::Radiation => "radiation",
+            DamageType::Viral => "viral",
+            DamageType::True => "true",
+            DamageType::Void => "void",
+            DamageType::Tau => "tau",
+            DamageType::Cinematic => "cinematic",
+        }
+    }
+
     /// A primary element (Cold / Electricity / Heat / Toxin) — the ones that
     /// combine into secondary elements.
     pub fn is_primary_element(self) -> bool {

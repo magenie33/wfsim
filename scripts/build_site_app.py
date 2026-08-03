@@ -163,11 +163,15 @@ def ship_art() -> None:
         for table in assets.values() if isinstance(table, dict)
         for v in table.values()
     }
+    # Art a data file declares itself, because the CDN does not carry it:
+    # evolution icons (`icon:`) and enemy portraits (`image:`), both from the
+    # wiki. Same rule as everything else — it ships, or the build fails.
     want |= {
-        spec["icon"]
-        for f in (ROOT / "data" / "evolutions").glob("*.yaml")
+        spec[field]
+        for rel, field in (("evolutions", "icon"), ("enemies", "image"))
+        for f in (ROOT / "data" / rel).rglob("*.yaml")
         for spec in [yaml.safe_load(f.read_text(encoding="utf-8"))]
-        if spec.get("icon")
+        if spec.get(field)
     }
     missing = sorted(n for n in want if not (cache / n).exists())
     if missing:

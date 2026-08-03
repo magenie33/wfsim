@@ -1,0 +1,41 @@
+id: misery
+name: Misery
+image: AreaCasterAcolyte.png
+# One of the Stalker's six Acolytes. The statline, the stack caps and the
+# 1x head below are the family's, identical across all six — they are written
+# out here rather than shared because a target has to stand on its own, and
+# explained once in angst.yaml. Sourcing: docs/DATA_SOURCES.md §Acolytes.
+faction: stalker                   # no faction damage MOD exists for Stalker
+scaling_faction: unaffiliated      # the catch-all row (MECHANICS.md §8)
+can_be_eximus: false
+mercy_eligible: false
+type: melee
+weapons: [ether_reaper]
+introduced: "18.4.1"
+
+stats:
+  base_level: 1
+  health: 2500
+  shield: 1500
+  armor: 50
+  overguard: 0
+  affinity: 750
+
+status_stack_caps:
+  general: 4
+  impact: 6
+
+body_parts:
+  - name: body
+    multiplier: 1.0
+    is_head: false
+    crit_bonus: false
+  - name: head
+    multiplier: 1.0
+    is_head: true
+    crit_bonus: false
+
+unmodeled: [damage attenuation]
+
+source:
+  url: https://wiki.warframe.com/w/Module:Enemies/data/stalker

@@ -331,7 +331,83 @@ pub struct TargetParams {
     /// `Unknown` (the default for hand-made targets) means no faction mod
     /// applies. Set from the enemy YAML `combat_faction:` field.
     pub faction: crate::loadout::Faction,
+    /// The post-U36 damage-type vulnerability columns (System B): this unit's
+    /// own, keyed by `FactionDamageOverride ?? Faction`, plus the Overguard
+    /// pool's. A per-COMPONENT multiplier, independent of `faction` above —
+    /// the two systems have different keys and stack multiplicatively
+    /// (docs/MECHANICS.md §8).
+    pub type_mods: crate::factions_data::Columns,
     pub mode: TargetMode,
+}
+
+/// The SHAPE of one damage instance — what fraction of it is each type.
+///
+/// The defence side reads the shape twice: Toxin bypasses shields, and the
+/// vulnerability column is per component. Both used to be answered by passing
+/// a bare `toxin_frac` down; a second per-type question makes that a growing
+/// list of scalars, so the shape travels as one value instead.
+#[derive(Debug, Clone, Copy)]
+pub struct TypeShares([f64; DamageType::ALL.len()]);
+
+impl TypeShares {
+    /// An instance that is entirely one type — a DoT tick, a Blast
+    /// detonation, an arcane's flat instance.
+    pub fn single(t: DamageType) -> Self {
+        let mut s = [0.0; DamageType::ALL.len()];
+        s[t as usize] = 1.0;
+        TypeShares(s)
+    }
+
+    /// A hit's shape, from the vector it was quantized to. A zero vector has
+    /// no shape and no damage; its multipliers come out 1.0 either way.
+    pub fn of(v: &DamageVector) -> Self {
+        let total = v.total();
+        let mut s = [0.0; DamageType::ALL.len()];
+        if total > 0.0 {
+            for t in DamageType::ALL {
+                s[t as usize] = v.get(t) / total;
+            }
+        }
+        TypeShares(s)
+    }
+
+    /// The Toxin share — what bypasses shields straight to health.
+    pub fn toxin(&self) -> f64 {
+        self.0[DamageType::Toxin as usize]
+    }
+
+    /// Does this instance have a shape at all? A shapeless one (nothing but
+    /// zeros) is treated as one untyped, neutral lump rather than as damage
+    /// that vanishes — the shares are bookkeeping, never a gate on damage.
+    fn shaped(&self) -> bool {
+        self.0.iter().sum::<f64>() > 0.0
+    }
+
+    /// The whole instance's multiplier under a column. Each component takes
+    /// its own factor, so with shares summing to 1 this is the weighted mean.
+    fn whole(&self, col: &crate::factions_data::Column) -> f64 {
+        if !self.shaped() {
+            return 1.0;
+        }
+        DamageType::ALL
+            .iter()
+            .map(|&t| self.0[t as usize] * col.get(t))
+            .sum()
+    }
+
+    /// The part that does NOT bypass shields, already column-scaled — a
+    /// PORTION of the instance, not a multiplier on it.
+    fn non_toxin_portion(&self, col: &crate::factions_data::Column) -> f64 {
+        if !self.shaped() {
+            return 1.0;
+        }
+        self.whole(col) - self.toxin_portion(col)
+    }
+
+    /// The Toxin part, already column-scaled. Goes straight to health.
+    fn toxin_portion(&self, col: &crate::factions_data::Column) -> f64 {
+        self.toxin() * col.get(DamageType::Toxin)
+    }
 }
 
 impl TargetParams {
@@ -355,6 +431,8 @@ impl TargetParams {
             can_be_eximus: false,
             status_immunities: Vec::new(),
             faction: crate::loadout::Faction::Unknown,
+            // A training dummy has no faction and takes damage as written.
+            type_mods: crate::factions_data::Columns::NEUTRAL,
             mode: TargetMode::InfiniteHealth,
         }
     }
@@ -453,15 +531,32 @@ impl TargetState {
         }
     }
 
+    /// Which vulnerability column an instance landing RIGHT NOW would read.
+    /// Same rule [`apply`](Self::apply) uses — the Overguard layer has its
+    /// own table — exposed so a caller can split the reported damage by type
+    /// the way the target actually took it. Call it BEFORE `apply`: the pool
+    /// it answers for is the one that is still standing.
+    fn incoming_column(&self, p: &TargetParams) -> crate::factions_data::Column {
+        if self.overguard > 0.0 {
+            p.type_mods.overguard
+        } else {
+            p.type_mods.faction
+        }
+    }
+
     /// Apply one damage instance under a live [`Mitigation`] snapshot.
     /// Returns `(effective_damage, killed, broken_pool)`.
     ///
     /// Mitigation model (docs/MECHANICS.md §8, unverified):
     /// - Order: Overguard → Shields → Health, no spill between pools.
-    /// - Overguard takes raw × Disrupt amp (neutral, ignores armor);
+    /// - Every component is first scaled by the vulnerability COLUMN the pool
+    ///   reads (System B, `factions_data`): the Overguard pool's own, or the
+    ///   unit's `FactionDamageOverride ?? Faction` one. This is what `shares`
+    ///   is for — a per-type multiplier needs the instance's per-type shape.
+    /// - Overguard takes raw × its column × Disrupt amp (ignores armor);
     ///   Toxin does NOT bypass it.
     /// - Shields take the non-Toxin portion × Disrupt amp (no armor);
-    ///   the Toxin portion (`toxin_frac`) bypasses straight to health.
+    ///   the Toxin portion bypasses straight to health.
     /// - Health takes × Virus amp × (1 − 0.9·√(armor_eff/2700)) with
     ///   `armor_eff = armor × strip factors`, floored at 1 — unless the
     ///   instance ignores armor (Cinematic ticks).
@@ -474,7 +569,7 @@ impl TargetState {
     fn apply(
         &mut self,
         raw: f64,
-        toxin_frac: f64,
+        shares: TypeShares,
         head_direct: bool,
         now: f64,
         p: &TargetParams,
@@ -488,15 +583,19 @@ impl TargetState {
             raw
         };
 
-        // Route into pools (no spill).
+        // Route into pools (no spill). The vulnerability COLUMN is chosen by
+        // the pool, not only by the enemy: Overguard has its own table (wiki
+        // Overguard — neutral but ×1.5 Void), and it is a layer over the unit
+        // rather than part of it, so the unit's own column never reaches it.
         let mut shield_part = 0.0f64;
         let mut health_part = 0.0f64;
         let mut og_part = 0.0f64;
         if self.overguard > 0.0 {
-            og_part = gated * mit.disrupt_amp;
+            og_part = gated * shares.whole(&p.type_mods.overguard) * mit.disrupt_amp;
         } else {
-            let toxin = gated * toxin_frac.clamp(0.0, 1.0);
-            let rest = gated - toxin;
+            let col = &p.type_mods.faction;
+            let toxin = gated * shares.toxin_portion(col);
+            let rest = gated * shares.non_toxin_portion(col);
             if self.shield > 0.0 {
                 shield_part = rest * mit.disrupt_amp;
             } else {
@@ -1786,13 +1885,25 @@ impl SourceDamage {
 /// Torid build reading Corrosive 164.73 / Magnetic 52.02 (76/24) snaps to
 /// 24/32 and 8/32 of the total, i.e. exactly 75/25. That gap is the wiki's
 /// quantization, not an error in either number.
-fn add_by_type(dst: &mut [f64; 15], v: &DamageVector, effective: f64) {
-    let total = v.total();
-    if total <= 0.0 {
+/// Split one instance's EFFECTIVE damage across the types that made it.
+///
+/// The share is each component's contribution AFTER the vulnerability column
+/// — the same weights that produced `effective`. Splitting by the raw vector
+/// instead would report a 50/50 Impact/Slash hit on a Grineer unit as 50/50
+/// when Impact actually did 60% of the damage, which is exactly the number a
+/// reader consults to decide what to add next.
+fn add_by_type(
+    dst: &mut [f64; 15],
+    v: &DamageVector,
+    effective: f64,
+    col: &crate::factions_data::Column,
+) {
+    let weighted: f64 = v.iter_nonzero().map(|(t, a)| a * col.get(t)).sum();
+    if weighted <= 0.0 {
         return;
     }
     for (t, amount) in v.iter_nonzero() {
-        dst[t as usize] += effective * amount / total;
+        dst[t as usize] += effective * amount * col.get(t) / weighted;
     }
 }
 
@@ -2249,7 +2360,15 @@ fn settle_procs(
                     let total: f64 = debuffs.blast.drain(..).map(|b| b.value).sum();
                     let mit = debuffs.mitigation(at, sd);
                     let (eff, killed, broke) =
-                        target.apply(total, 0.0, false, at, &params.target, false, &mit);
+                        target.apply(
+                            total,
+                            TypeShares::single(DamageType::Blast),
+                            false,
+                            at,
+                            &params.target,
+                            false,
+                            &mit,
+                        );
                     r.total_damage += total;
                     r.effective_damage += eff;
                     r.dot_damage += eff;
@@ -2272,13 +2391,21 @@ fn settle_procs(
         // FLAT damage instance of the proc's type — unaffected by
         // damage/element/crit mods, Galvanized stacks, parts, or
         // falloff; faction bonuses apply ONCE; enemy mitigation
-        // still applies (wiki notes). Toxin instances keep Toxin's
-        // shield bypass.
+        // still applies (wiki notes) — which now includes the
+        // vulnerability column, since the instance IS of that type:
+        // Toxin instances keep Toxin's shield bypass and Toxin's
+        // column factor alike.
         if params.arcane.flat_damage_on_status > 0.0 {
             let amt = params.arcane.flat_damage_on_status * params.faction_mult;
-            let tox = if proc == DamageType::Toxin { 1.0 } else { 0.0 };
-            let (eff, killed, broke) =
-                target.apply(amt, tox, false, at, &params.target, false, mit);
+            let (eff, killed, broke) = target.apply(
+                amt,
+                TypeShares::single(proc),
+                false,
+                at,
+                &params.target,
+                false,
+                mit,
+            );
             r.total_damage += amt;
             r.effective_damage += eff;
             r.sources.arcane_on_status += eff;
@@ -2527,11 +2654,7 @@ fn field_tick(
     let mit = debuffs.mitigation(at, sd);
     let qvec = f.damage.quantized();
     let qtotal = qvec.total();
-    let toxin_share = if qtotal > 0.0 {
-        qvec.get(DamageType::Toxin) / qtotal
-    } else {
-        0.0
-    };
+    let shares = TypeShares::of(&qvec);
 
     // Crit: the field's OWN base stats. Relative bonuses scale its base,
     // absolute ones land flat (MECHANICS §7) — and no `part.crit_bonus`
@@ -2573,12 +2696,13 @@ fn field_tick(
     // the status payloads below are left OUT of it, the same treatment the beam
     // ramp and Devouring Attrition already get.
     let raw = qtotal * crit_mult * bucket * params.faction_mult * dmg_mult;
+    let col = target.incoming_column(&params.target);
     let (effective, killed, broke) =
-        target.apply(raw, toxin_share, false, at, &params.target, false, &mit);
+        target.apply(raw, shares, false, at, &params.target, false, &mit);
     r.total_damage += raw;
     r.effective_damage += effective;
     r.sources.field += effective;
-    add_by_type(&mut r.sources.field_by_type, &qvec, effective);
+    add_by_type(&mut r.sources.field_by_type, &qvec, effective, &col);
     r.timeline.add(at, effective);
     r.field_ticks += 1;
     r.kills += killed as u32;
@@ -2664,35 +2788,47 @@ fn process_ticks(
         let Some((now, ev)) = best else { break };
 
         let mit = debuffs.mitigation(now, sd);
-        let (value, ignores_armor, is_dot_tick, toxin_frac, src) = match &ev {
+        // A tick is one damage type — which is also the type the
+        // vulnerability column reads. Bleed is the exception: it is stored
+        // under Slash (that is the proc that made it) but the damage is
+        // CINEMATIC, which takes no faction modifier anywhere, and
+        // `ignores_armor` is this file's marker for it.
+        let (value, ignores_armor, is_dot_tick, hit_type, src) = match &ev {
             Ev::Dot(i) => {
                 let d = &mut debuffs.dots[*i];
                 d.next_tick += 1.0;
                 d.ticks_left -= 1;
                 let d = &debuffs.dots[*i];
-                let tox = if d.dtype == DamageType::Toxin {
-                    1.0
+                let hit_type = if d.ignores_armor {
+                    DamageType::Cinematic
                 } else {
-                    0.0
+                    d.dtype
                 };
-                (d.value, d.ignores_armor, true, tox, d.dtype)
+                (d.value, d.ignores_armor, true, hit_type, d.dtype)
             }
             Ev::Heat => {
                 let h = debuffs.heat.as_mut().expect("heat event needs entity");
                 h.next_tick += 1.0;
-                (h.value, false, true, 0.0, DamageType::Heat)
+                (h.value, false, true, DamageType::Heat, DamageType::Heat)
             }
             Ev::Blast(i) => (
                 debuffs.blast.remove(*i).value,
                 false,
                 false,
-                0.0,
+                DamageType::Blast,
                 DamageType::Blast,
             ),
         };
 
-        let (effective, killed, broke) =
-            target.apply(value, toxin_frac, false, now, p, ignores_armor, &mit);
+        let (effective, killed, broke) = target.apply(
+            value,
+            TypeShares::single(hit_type),
+            false,
+            now,
+            p,
+            ignores_armor,
+            &mit,
+        );
         r.total_damage += value;
         r.effective_damage += effective;
         r.dot_damage += effective;
@@ -2916,15 +3052,7 @@ pub fn run_once_traced(
         let qvec = p.damage.quantized();
         let qtotal = qvec.total();
         let mb = p.dot_modified_base.unwrap_or_else(|| p.damage.total());
-        // Toxin's share of each hit bypasses shields (user model: "of a
-        // 50-damage hit that is 10 toxin + 40 other, shields absorb the
-        // 40 and health takes the 10 directly").
-        let toxin_share = if qtotal > 0.0 {
-            qvec.get(DamageType::Toxin) / qtotal
-        } else {
-            0.0
-        };
-        (qvec, qtotal, mb, toxin_share)
+        (qvec, qtotal, mb)
     };
     let main_pre = precompute(params);
     let base_pre = params.cycle.as_ref().map(|c| precompute(&c.base_form));
@@ -3145,9 +3273,10 @@ pub fn run_once_traced(
             Some(cy) if in_base_form => &cy.base_form,
             _ => params,
         };
-        // qtotal / toxin_share are derived PER STAGE now (each attack part
-        // has its own vector), so only the vector and ModifiedBase survive
-        // at pellet scope.
+        // The instance total and its SHAPE (Toxin's shield bypass, the
+        // vulnerability column) are derived PER STAGE now — each attack part
+        // has its own vector — so only the vector and ModifiedBase survive at
+        // pellet scope.
         let (qvec, modded_base) = if in_base_form {
             let p = base_pre.as_ref().expect("cycle state needs base pre");
             (&p.0, p.2)
@@ -3639,11 +3768,11 @@ pub fn run_once_traced(
                 // is what the instance deals; the crit CHANCE that produced
                 // `tier` above was deliberately left at one beam's.
                 let qtotal = qvec.total() * beam_merge;
-                let toxin_share = if qtotal > 0.0 {
-                    qvec.get(DamageType::Toxin) / qtotal
-                } else {
-                    0.0
-                };
+                // The SHAPE comes from the vector, never from `qtotal`: a
+                // merged beam tick scales the total by `beam_merge` while the
+                // composition is unchanged, and dividing by the scaled total
+                // understated Toxin's shield bypass by exactly that factor.
+                let shares = TypeShares::of(&qvec);
                 let crit_mult = match &rad {
                     None => crit_mult,
                     Some(r) => {
@@ -3704,9 +3833,10 @@ pub fn run_once_traced(
                     * beam_ramp
                     * pm_mult;
                 let head_direct = direct && part.is_head;
+                let col = target.incoming_column(&params.target);
                 let (effective, killed, broke) = target.apply(
                     raw,
-                    toxin_share,
+                    shares,
                     head_direct,
                     t,
                     &params.target,
@@ -3717,10 +3847,10 @@ pub fn run_once_traced(
                 r.effective_damage += effective;
                 if direct {
                     r.sources.direct += effective;
-                    add_by_type(&mut r.sources.direct_by_type, &qvec, effective);
+                    add_by_type(&mut r.sources.direct_by_type, &qvec, effective, &col);
                 } else {
                     r.sources.radial += effective;
-                    add_by_type(&mut r.sources.radial_by_type, &qvec, effective);
+                    add_by_type(&mut r.sources.radial_by_type, &qvec, effective, &col);
                 }
                 r.timeline.add(t, effective);
                 r.kills += killed as u32;
@@ -6353,6 +6483,7 @@ mod tests {
             can_be_eximus: false,
             status_immunities: Vec::new(),
             faction: crate::loadout::Faction::Unknown,
+            type_mods: crate::factions_data::Columns::NEUTRAL,
             mode,
         }
     }
@@ -6845,6 +6976,171 @@ mod tests {
             "eff {}",
             s.mean_effective_damage
         );
+    }
+
+    // ---- System B: the faction vulnerability column ----------------------
+    // Keyed by `FactionDamageOverride ?? Faction`, per COMPONENT, and chosen
+    // by the POOL the damage lands on (docs/MECHANICS.md §8).
+
+    /// The infinite dummy, wearing one faction's column.
+    fn column_dummy(key: &str, overguard: f64) -> TargetParams {
+        TargetParams {
+            type_mods: crate::factions_data::columns_for(key)
+                .unwrap_or_else(|| panic!("no column for {key}")),
+            ..frail_target(TargetMode::InfiniteHealth, 0.0, overguard)
+        }
+    }
+
+    /// One run's effective damage from a fixed vector against one column.
+    fn eff_vs(key: &str, v: DamageVector) -> f64 {
+        let p = DummyParams {
+            damage: v,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            body_parts: mono_body(1.0),
+            target: column_dummy(key, 0.0),
+            ..no_status()
+        };
+        monte_carlo(&p, 20, 3).mean_effective_damage
+    }
+
+    #[test]
+    fn the_vulnerability_column_scales_each_component_on_its_own() {
+        let impact = DamageVector::new().with(DamageType::Impact, 100.0);
+        let neutral = eff_vs("unknown", impact);
+        assert!(neutral > 0.0);
+
+        // Grineer: Impact ×1.5 (and Corrosive, which this hit has none of).
+        assert!(
+            (eff_vs("grineer", impact) - neutral * 1.5).abs() < 1e-6,
+            "grineer impact {}",
+            eff_vs("grineer", impact)
+        );
+        // A RESISTANCE is the same mechanism pointing down.
+        let rad = DamageVector::new().with(DamageType::Radiation, 100.0);
+        assert!(
+            (eff_vs("orokin", rad) - eff_vs("unknown", rad) * 0.5).abs() < 1e-6,
+            "orokin radiation"
+        );
+        // Per COMPONENT, not per hit: half a vector at ×1.5 is ×1.25 overall.
+        // This is the "dilution" the wiki means — compositional, not a bucket.
+        let mixed = DamageVector::new()
+            .with(DamageType::Impact, 50.0)
+            .with(DamageType::Slash, 50.0);
+        assert!(
+            (eff_vs("grineer", mixed) - eff_vs("unknown", mixed) * 1.25).abs() < 1e-6,
+            "mixed {} vs {}",
+            eff_vs("grineer", mixed),
+            eff_vs("unknown", mixed)
+        );
+        // A faction with nothing to say about this type changes nothing.
+        assert!((eff_vs("stalker", impact) - neutral).abs() < 1e-9);
+    }
+
+    /// The damage-by-type breakdown is what a reader consults to decide what
+    /// to add next, so it splits by what each component actually DID.
+    #[test]
+    fn the_by_type_breakdown_follows_the_column_too() {
+        let v = DamageVector::new()
+            .with(DamageType::Impact, 50.0)
+            .with(DamageType::Slash, 50.0);
+        let grineer = crate::factions_data::column("grineer").unwrap();
+        let mut dst = [0.0f64; 15];
+        // 125 effective is what 50 Impact ×1.5 + 50 Slash ×1.0 comes to.
+        add_by_type(&mut dst, &v, 125.0, &grineer);
+        assert!((dst[DamageType::Impact as usize] - 75.0).abs() < 1e-9, "{dst:?}");
+        assert!((dst[DamageType::Slash as usize] - 50.0).abs() < 1e-9, "{dst:?}");
+        // Neutral: the plain proportional split it always was.
+        let mut flat = [0.0f64; 15];
+        add_by_type(&mut flat, &v, 100.0, &crate::factions_data::Column::NEUTRAL);
+        assert!((flat[DamageType::Impact as usize] - 50.0).abs() < 1e-9);
+    }
+
+    /// Overguard is a LAYER over the unit, with its own table — the unit's
+    /// column must not reach it, and Void must.
+    #[test]
+    fn overguard_reads_its_own_column_not_the_units() {
+        let shot = |key: &str, t: DamageType| {
+            let p = DummyParams {
+                damage: DamageVector::new().with(t, 100.0),
+                crit_multiplier: 1.0,
+                base_crit_chance: 0.0,
+                arcane: ArcaneFx::none(),
+                body_parts: mono_body(1.0),
+                target: column_dummy(key, 1e12),
+                ..no_status()
+            };
+            monte_carlo(&p, 20, 3).mean_effective_damage
+        };
+        let base = shot("unknown", DamageType::Impact);
+        // Grineer's Impact ×1.5 stops at the overguard layer.
+        assert!((shot("grineer", DamageType::Impact) - base).abs() < 1e-9);
+        // Void ×1.5 is the Overguard column's own entry, on any unit.
+        assert!((shot("grineer", DamageType::Void) - base * 1.5).abs() < 1e-6);
+        assert!((shot("unknown", DamageType::Void) - base * 1.5).abs() < 1e-6);
+    }
+
+    /// Bleed is stored under Slash — the proc that made it — but the damage is
+    /// CINEMATIC, which takes no faction modifier anywhere. An Infested target
+    /// (Slash ×1.5) must boost the HIT and not the bleed it leaves.
+    #[test]
+    fn bleed_takes_no_faction_modifier_though_it_is_filed_under_slash() {
+        let run = |key: &str| {
+            let p = DummyParams {
+                damage: DamageVector::new().with(DamageType::Slash, 100.0),
+                target: column_dummy(key, 0.0),
+                ..bare(DamageType::Slash)
+            };
+            let s = monte_carlo(&p, 20, 3);
+            (s.mean_effective_damage - s.mean_dot_damage, s.mean_dot_damage)
+        };
+        let (direct_n, dot_n) = run("unknown");
+        let (direct_i, dot_i) = run("infested");
+        assert!(dot_n > 0.0 && direct_n > 0.0, "the fixture must do both");
+        // The direct Slash hit takes the column…
+        assert!(
+            (direct_i - direct_n * 1.5).abs() < 1e-6,
+            "direct {direct_i} vs {direct_n}"
+        );
+        // …and the bleed it leaves does not.
+        assert!((dot_i - dot_n).abs() < 1e-9, "dot {dot_i} vs {dot_n}");
+    }
+
+    /// The column and Toxin's shield bypass are two readings of ONE shape:
+    /// the Toxin part is scaled by Toxin's factor on its way past the shield,
+    /// the rest by theirs on the way into it.
+    #[test]
+    fn the_column_follows_each_component_into_the_pool_it_lands_in() {
+        // Narmer: Toxin ×1.5, Magnetic ×0.5. Seven shots of 16 Toxin + 16
+        // Magnetic into a shield that never breaks and 160 health:
+        //   neutral  7 × 16       = 112  -> alive
+        //   narmer   7 × 16 × 1.5 = 168  -> dead
+        // The Magnetic half never reaches health under either column.
+        let kills = |key: &str| {
+            let p = DummyParams {
+                damage: DamageVector::new()
+                    .with(DamageType::Toxin, 16.0)
+                    .with(DamageType::Magnetic, 16.0),
+                crit_multiplier: 1.0,
+                base_crit_chance: 0.0,
+                arcane: ArcaneFx::none(),
+                body_parts: mono_body(1.0),
+                fire_rate: 10.0,
+                duration_secs: 0.65,
+                magazine_size: 100.0,
+                target: TargetParams {
+                    type_mods: crate::factions_data::columns_for(key).unwrap(),
+                    base_shield: 10_000.0,
+                    base_health: 160.0,
+                    ..frail_target(TargetMode::InstantRespawn, 0.0, 0.0)
+                },
+                ..no_status()
+            };
+            monte_carlo(&p, 20, 5).mean_kills
+        };
+        assert_eq!(kills("unknown"), 0.0, "112 damage must not kill 160 health");
+        assert_eq!(kills("narmer"), 1.0, "Toxin x1.5 past the shield kills it");
     }
 
     #[test]

@@ -385,3 +385,98 @@ page-summary that read "cannot be equipped on sentinel or companion weapons".
 The page's own wikitext says nothing of the kind and the module gives the mod
 no tags at all. Both structured sources agreed and the sentence was invented.
 Use the module, or the raw `action=raw` wikitext — never a summary of either.
+
+## Enemies: art, and the Acolytes' three-way stat conflict (2026-08-03)
+
+Enemy portraits are **not** in `data/assets.yaml`. That file maps ids to WFCD
+`imageName`s, and WFCD has no enemy art we can use: `api.warframestat.us`
+404s "Thrax Centurion", and its `Enemy.json` entries are keyed to a different
+internal object (below). The file name therefore lives in the enemy's own
+YAML as `image:`, wiki-hosted, exactly like an evolution's `icon:` —
+`scripts/fetch_images.py` pulls both through `Special:FilePath` and
+`build_site_app.py` refuses to build without them.
+
+### The Acolytes
+
+Six units — Angst, Malice, Mania, Misery, Torment, Violence — with ONE
+defensive statline. Three sources, three answers:
+
+| source | health | shield | armor |
+|---|---|---|---|
+| wiki `Module:Enemies/data/stalker` (post-U40) | 2500 | 1500 | 50 |
+| DE's own U40 note ("Base Health: 5,500 (was 550)") | 5500 | 2500 | — |
+| WFCD `Enemy.json` | 350 | 200 | 0 |
+
+We take the **wiki module**, and the other two are explainable:
+
+- WFCD is keyed to `.../Acolytes/StrikerAcolyteAvatar`, the wiki module to
+  `.../Acolytes/StrikerAcolyteAgent` — **different objects**, so the join by
+  `uniqueName` that works for items finds nothing here and the numbers are
+  not comparable. WFCD also gives Misery 4000 where every other source has
+  all six identical, which is the same symptom.
+- DE's note is the patch-note figure; the wiki editor entered 2500/1500 in
+  the same revision that carried the U40 changes (rev 2731762, health
+  550→2500, shield 200→1500), i.e. after seeing both. The CN wiki still
+  carries the pre-U40 350/200/50.
+
+Unresolved until measured in-game. Recorded so a measurement can settle it.
+
+**Impact stacks: 6, not 3.** The EN Acolytes page says any status caps at 4
+"with the exception of Impact which can stack up to 3 times". It is the ONLY
+page on the wiki that says 3 — `insource:"which can stack up to 6 times"`
+hits Bosses, Adversary System, Kuva Lich, Sisters of Parvos, Void Angel,
+Necramech and Technocyte Coda, and DE's own U27.3 note (the origin of the
+rule, extended to the Acolytes in U29.5.4) reads 6. The CN wiki reads 6 too.
+Since the ordinary Impact cap is 5, the exception is inert either way — what
+bites is the 4 on everything else.
+
+**Damage attenuation is NOT set.** The Acolytes keep it after U40.0.2, but DE
+publishes no MDPI/MDPS constants and we have measured none, so inventing a
+fraction would be a faithful-looking guess. The files instead declare
+`unmodeled: [damage attenuation]`, which the target card prints — a gap the
+reader can see is a limitation; a gap they cannot is a wrong number.
+
+## The faction vulnerability column, checked cell by cell (2026-08-03)
+
+`data/factions/damage_modifiers.yaml` was transcribed by hand from the wiki's
+**`Damage/Overview_Table`**. It has now been machine-compared against that
+page's wikitext, every faction × every damage type:
+
+    15 wiki columns, 0 mismatched
+
+The table's 15 columns are Tenno, Grineer, Kuva Grineer, Corpus, Corpus
+Amalgam, Infested, Infested Deimos, Orokin, Sentient, Narmer, The Murmur,
+Zariman, Scaldra, Techrot, Anarchs — and our file holds exactly those, with
+the same values. (Beware the parse: the first data row carries a `rowspan`
+grouping cell, and a reader that mistakes the `|-` separator for a cell drops
+the whole **Impact** row and reports four false mismatches.)
+
+### `FactionDamageOverride` is the wiki's field, not ours
+
+Worth stating because it looks like a wfsim invention. It is in the enemy
+module's published schema (`Module:Enemies/data/doc`):
+
+> `FactionDamageOverride` — optional String — "Override for enemies with
+> different **faction resistance value** instead of that usually matches their
+> faction."
+
+34 module entries carry one (Zariman ×12, Grineer ×5, The Murmur ×2, Corpus
+×1; a further 6 hold a pasted InternalName and are wiki typos). Thrax
+Centurion's entry reads `Faction = "Unknown"` with
+`FactionDamageOverride = "Zariman"` verbatim, which is where our file's pair
+comes from.
+
+The schema's wording is also the RULE: it overrides the *resistance value*,
+nothing else. So the two faction systems key differently on purpose — Bane
+follows `Faction`, the column follows `FactionDamageOverride ?? Faction` — and
+a Thrax matches no faction mod while still taking Void ×1.5. It is equally
+available to a custom enemy: the field is data, and a hand-made target can set
+it to borrow any column in the table.
+
+### Faction values with no column
+
+The enemy modules use 18 distinct `Faction` values; the damage table publishes
+15 columns. `Stalker` (the Acolytes), `Unknown` (Thrax), `Duviri`, `Neutral`,
+`Objects`, `Predator`, `Prey` and `?` have none — they take every type as
+written. We record neutrality explicitly for the ones we ship rather than
+falling back to it, so a typo cannot pass for a neutral enemy.
