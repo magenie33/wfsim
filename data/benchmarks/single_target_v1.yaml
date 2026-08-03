@@ -1,0 +1,103 @@
+# THE OFFICIAL TEST SCENARIO — one ruler, every weapon.
+#
+# A benchmark exists so a number has a meaning. "120k DPS" says nothing on its
+# own; "0.87 KPM on single_target_v1" is a reading anyone can reproduce, on
+# their own machine, with the same engine that produced it.
+#
+# WHY THIS FILE MENTIONS NO WEAPON, AND MAY NOT.
+#
+# It has to hold for the whole roster — seven weapons today, hundreds later —
+# and the only way a definition stays correct across a roster it has never seen
+# is to never speak about a member of it. Everything here is either a property
+# of the FIGHT (which enemy, how long, what is measured) or a POLICY the engine
+# already resolves per weapon:
+#
+#   form: default        -> the Incarnon cycle where a weapon has one, its own
+#                           arsenal default where it does not
+#   headshot_pct         -> OMITTED. Resolved per weapon: 0 for a sentinel
+#                           weapon (it aims itself and never at the head),
+#                           100 otherwise. Writing 100 here would put a
+#                           sentinel on the board at a headshot rate it can
+#                           never achieve.
+#   buffs                -> OMITTED, which is not "no opinion" but the app's
+#                           own rule (docs/BUFFS.md): a buff opens full only if
+#                           it is neither timed nor consumable, everything else
+#                           starts at 0 and is earned in the fight. That rule
+#                           reads the `permanent` flag on each buff CARD, so it
+#                           is per-buff data and identical on every weapon.
+#
+# `benchmarks_data.rs` enforces the rule mechanically: this file may not
+# contain any weapon, mod, arcane or evolution id, nor a named weapon form.
+# Adding weapon 201 therefore cannot require editing this file — it has no
+# place to say anything wrong about it.
+id: single_target_v1
+
+# The name states the whole definition, because a benchmark whose terms are
+# hidden in a tooltip is one nobody can argue with. Order is deliberate: what
+# distinguishes it from a future second ruler comes FIRST (single target, as
+# against a group-clear benchmark), then the target, then the two measurement
+# terms. Truncation therefore eats the least identifying part.
+name: "Single Target · Thrax Centurion Lv 9999 SP · 300 s · KPM"
+
+# VERSIONING, and it is what makes "an updated benchmark voids the old board"
+# mechanical rather than a promise someone has to remember.
+#
+#   reword the name        -> `id` unchanged, the board survives
+#   change ANY parameter   -> new file at `_v2`, the old board is void
+#
+# The parameters are IN the name, so changing one without bumping the version
+# leaves the name and the id disagreeing in a way that is impossible to miss.
+version: 1
+
+scenario:
+  # A single Corrupted-faction target at the top of the level range, Steel
+  # Path. Chosen because it is the fight the roster is already calibrated
+  # against, not because it is the only fight worth having — a second ruler
+  # (group clear) is expected to exist alongside this one rather than replace
+  # it, which is why "single target" is the first thing the name says.
+  enemy: thrax_centurion
+  level: 9999
+  steel_path: true
+
+  # 300 SECONDS, and this is load-bearing rather than a round number. The
+  # mechanics that decide a build are the ones that need TIME: Heat's armour
+  # strip ramps in 0.5 s steps, the Galvanized family earns its stacks from
+  # kills, every timed buff starts at zero and is earned back in-fight. A
+  # shorter engagement does not measure the same build more cheaply, it
+  # measures a different build — and it systematically under-rates exactly the
+  # effects the benchmark exists to price.
+  duration: 300
+
+  # Monte-Carlo runs per build. This is the PRECISION knob and the whole cost
+  # of recomputing the board (builds x runs), so it belongs to the benchmark
+  # and not to whoever submits.
+  runs: 100
+
+  # Kill progress, not DPS. `score` is kills PLUS the depleted fraction of the
+  # current target's pool, so it stays continuous all the way down: a weapon
+  # that takes 300 s to remove 3% of one Thrax scores 0.03 and still has a
+  # rank. That is what lets one ruler cover a roster whose weakest members
+  # cannot finish a single kill — a discrete kill count would collapse the
+  # bottom of the board into an untellable pile of zeros.
+  metric: kpm
+
+  # Reserve ammo out of the picture, so the number compares across weapons.
+  # The MAGAZINE still bites: reload cadence and ammo cost are part of what is
+  # being measured. (A weapon whose reserve is infinite in game cannot be
+  # switched off this anyway.)
+  infinite_ammo: true
+
+  # However the weapon is played — see the header.
+  form: default
+
+  # THE TENNO, pinned rather than defaulted. Two arcanes read Warframe armor
+  # and energy directly (Primary Bulwark, Primary Overcharge) and several mods
+  # are gated on what the player is DOING, so leaving these to a default would
+  # make "the same test" depend on where the defaults happened to sit.
+  # These are the NEUTRAL player of data/tenno/default.yaml: aiming, no frame
+  # chosen, no ability running, feet on the ground.
+  aiming: true
+  invisible: false
+  airborne: false
+  wf_armor: 0
+  wf_energy: 0
