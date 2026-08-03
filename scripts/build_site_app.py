@@ -29,6 +29,10 @@ from pathlib import Path
 
 import yaml
 
+# Same question, one answer: the fetcher decides what counts as an image and
+# this gate refuses anything it would have rejected.
+from fetch_images import is_image
+
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = ROOT / "web" / "src" / "static"
 APP = ROOT / "site"
@@ -173,12 +177,20 @@ def ship_art() -> None:
         for spec in [yaml.safe_load(f.read_text(encoding="utf-8"))]
         if spec.get(field)
     }
+    # EXISTS is not the question — IS AN IMAGE is. `Special:FilePath` answers a
+    # name that does not exist with 200 and an HTML error page, so a mistyped
+    # `icon:` cached as a 31 KB ".png", passed this gate, and shipped a picture
+    # no browser could draw (Boar Prime's Incarnon form, 2026-08-03). A gate
+    # that only ever says yes is not a gate.
     missing = sorted(n for n in want if not (cache / n).exists())
-    if missing:
+    corrupt = sorted(n for n in want if (cache / n).exists() and not is_image(cache / n))
+    if missing or corrupt:
+        bad = missing + corrupt
         sys.exit(
-            f"{len(missing)} images are not in the cache "
-            f"({', '.join(missing[:4])}{' …' if len(missing) > 4 else ''}) — "
-            "run `python scripts/fetch_images.py` first"
+            f"{len(bad)} images are not usable "
+            f"({', '.join(bad[:4])}{' …' if len(bad) > 4 else ''}) — "
+            f"{len(missing)} not cached, {len(corrupt)} cached but not an image; "
+            "run `python scripts/fetch_images.py`"
         )
     out = APP / "img"
     out.mkdir(parents=True, exist_ok=True)

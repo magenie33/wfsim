@@ -34,6 +34,10 @@ effects:
   # The wiki also records that the game MISPRINTS this half as +10 on the card
   # ("Reload From empty bonus is incorrectly listed as +10 in game"); the
   # effect is +14, which is what goes in.
+  # THE EXCEPTION, not a pattern to copy: a reload-triggered effect fires on
+  # reload COMPLETION by default (user, 2026-08-03). This one needs the
+  # magazine EMPTY and fires at the reload's FIRST FRAME. Only this evolution
+  # is known to do it; the next one gets its own kind.
   - kind: flat_base_damage_on_empty_reload
     value: 14.0
 

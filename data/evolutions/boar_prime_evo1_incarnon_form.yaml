@@ -2,7 +2,12 @@ id: boar_prime_evo1_incarnon_form
 name: Incarnon Form
 weapon: boar_prime
 tier: 1
-icon: IncarnonFormShortRangeBeams(xWhite).png
+# The wiki file is the BARE name, not the "IncarnonForm…" pattern the Torid
+# and Dual Toxocyst use — Boar/Boar Prime/Dera all share `ShortRangeBeams`.
+# Guessed by analogy once, and `Special:FilePath` answered 200 with an HTML
+# error page, which cached as a 31 KB ".png" that no browser could draw. The
+# fetcher now checks magic bytes so the next wrong guess is loud.
+icon: ShortRangeBeams(xWhite).png
 description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes.\nFire up to three short-range chaining Heat beams."
 selection: fixed                # tier 1 has no choice
 

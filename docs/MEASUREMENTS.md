@@ -1130,6 +1130,14 @@ then "lasts indefinitely until a manual reload is initiated while the magazine
 is not empty" — which the sim never does, because the sim only ever reloads
 empty.
 
+**It is the EXCEPTION, and that is the part worth writing down** (user,
+2026-08-03). A reload-triggered effect fires on reload COMPLETION by default.
+Reified Bane needs BOTH halves of an unusual trigger — the magazine EMPTY, and
+the reload's first frame rather than its last — and no other evolution is known
+to work this way. So it keeps a narrow variant of its own
+(`FlatBaseDamageOnEmptyReload`) instead of becoming a general "on reload" with
+a flag: the next reload effect should inherit the default, not this.
+
 **What this constrains.** The day the buff becomes earned rather than granted —
 the sim currently cannot express "starts off, turns on at the first reload" —
 its trigger fires at reload START. Anything that waits for the reload to

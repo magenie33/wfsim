@@ -470,6 +470,9 @@ pub fn pool_for_weapon(weapon_id: &str) -> Vec<ModDef> {
     };
     // The BASE form's trigger, which is what `WeaponBase::continuous` reads.
     let continuous = spec.attack.trigger == "held";
+    // Same rule, other trigger: the Cannonades state "Only compatible with
+    // Semi-Auto Trigger" on the card and DE enforces it at the slot.
+    let semi_auto = spec.attack.trigger == "semi_auto";
     // "Mods that affect Ammo Maximum have no effect on Robotic weapon because
     // they already have unlimited ammo reserves" (wiki `Sentinel`). Stated for
     // robotic weapons, true of any weapon with no ammo pool, and read off the
@@ -488,6 +491,7 @@ pub fn pool_for_weapon(weapon_id: &str) -> Vec<ModDef> {
         .filter(|m| match m.requires_weapon {
             None => true,
             Some("continuous") => continuous,
+            Some("semi_auto") => semi_auto,
             // An unknown requirement hides the mod rather than ignoring the
             // restriction — a mod offered where it cannot go is the worse bug.
             Some(_) => false,
@@ -732,6 +736,31 @@ mod tests {
         for id in ["serration", "amalgam_serration", "ammo_drum"] {
             assert!(torid.contains(&id), "the torid keeps {id}");
         }
+    }
+
+    /// "Only compatible with Semi-Auto Trigger" is an EQUIP rule, and the pool
+    /// is where an equip rule has to bite: the optimizer searches this list,
+    /// so a mod left in it is a mod a winning build can carry to a slot the
+    /// game refuses (user, 2026-08-03: "半自动野猪是装不了的").
+    #[test]
+    fn the_cannonades_need_a_semi_auto_trigger() {
+        let has = |w: &str, m: &str| pool_for_weapon(w).iter().any(|x| x.id == m);
+
+        // Boar Prime is full-auto. This is the case that was wrong.
+        assert!(!has("boar_prime", "semi_shotgun_cannonade"), "full-auto takes no Cannonade");
+        // ...and so is its Incarnon form, because modding is decided on the
+        // base form and the form is a held beam either way.
+        assert!(!has("boar_prime", "semi_rifle_cannonade"), "nor the rifle one");
+
+        // The Torid IS semi-auto, and keeps it — the rule excludes, it does
+        // not blanket-hide.
+        assert!(has("torid", "semi_rifle_cannonade"), "a semi-auto rifle keeps it");
+        for w in ["dual_toxocyst", "laetum"] {
+            assert!(has(w, "semi_pistol_cannonade"), "{w} is semi-auto");
+        }
+        // Cernos Prime CHARGES; its uncharged form is semi-auto and does not
+        // decide the pool.
+        assert!(!has("cernos_prime", "semi_rifle_cannonade"), "a charge bow is not semi-auto");
     }
 
     /// PvP-EXCLUSIVE mods must not ship in a PvE pool — they are a separate

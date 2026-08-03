@@ -5,6 +5,14 @@ polarity: vazarin
 base_drain: 4                 # max drain 9 at rank 5
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Pistol/PistolSemiAutoFantasyMod
+# "Only compatible with Semi-Auto Trigger" — the card's own first sentence, and
+# it is an EQUIP rule, not a note. Unstated, this mod sat in every pool: Boar
+# Prime is full-auto (`trigger: auto`) and the optimizer could hand back a
+# winner carrying a mod the game will not let you slot (user, 2026-08-03:
+# "半自动野猪是装不了的"). Resolved on the weapon's OWN trigger, which for a
+# transform group is the base form's — the same line `continuous` falls on.
+requires_weapon: semi_auto
+
 description: "Only compatible with Semi-Auto Trigger. Fire Rate cannot be modified.\n+X% Damage\n+X Punch Through"
 
 requires: semi_auto      # weapon trigger must be Semi-Auto, else the mod is inert

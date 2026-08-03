@@ -82,9 +82,24 @@ enum EvoEffect {
     /// reading the buff would instead be DOWN for one reload every cycle, and
     /// holding it would overstate the build.
     ///
+    /// **THIS IS THE EXCEPTION, AND THE NAME SAYS SO** (user, 2026-08-03).
+    /// The DEFAULT for a reload-triggered effect is that it fires when the
+    /// reload COMPLETES; a new one gets its own variant and that default,
+    /// rather than reusing this. Two conditions have to hold together here
+    /// and neither is the ordinary case:
+    ///
+    ///   1. the magazine must be EMPTY (a manual reload does not count — it
+    ///      is what takes the bonus away);
+    ///   2. it fires when the reload STARTS, not when it ends.
+    ///
+    /// Only Boar Prime's Reified Bane is known to work this way. Whether any
+    /// other evolution ever joins it is open, so the variant stays narrow: a
+    /// general "on reload" effect is not this one with a flag.
+    ///
     /// It stays its own variant rather than being folded into `FlatBaseDamage`
     /// because it is a BUFF: `resolve` turns it into an `EvoBdBuff` so the bar
-    /// can show it and a card can scale it back out.
+    /// can show it and a card can scale it back out — opening at ONE stack,
+    /// which is the state a default test starts in.
     FlatBaseDamageOnEmptyReload(f64),
     /// A handling / mobility / multi-target stat with no single-target damage
     /// payload — recoil, accuracy, punch through, projectile speed, holstered
