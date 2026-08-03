@@ -1279,6 +1279,7 @@ function renderRivenStats() {
              min="${rules.roll_min}" max="${rules.roll_max}" step="0.001" value="${s.roll}">
       <input class="rv-num" type="number" data-slot="${slot}" step="0.1" placeholder="—">
       <span class="rv-pct" data-slot="${slot}" title="${escHtml(tr("where this roll landed in its 0.9-1.1 band"))}"></span>
+      <span class="rv-mult" data-slot="${slot}" title="${escHtml(tr("the roll itself — the random multiplier this stat drew, 0.900 to 1.100"))}"></span>
       <span class="rv-unit" data-slot="${slot}"></span>
     </div>`;
   };
@@ -1430,10 +1431,12 @@ function renderRivenCard() {
   box.querySelectorAll(".rv-num").forEach((el) => { el.value = ""; el.disabled = true; });
   box.querySelectorAll(".rv-unit").forEach((el) => { el.textContent = ""; el.className = "rv-unit"; });
   box.querySelectorAll(".rv-pct").forEach((el) => { el.textContent = ""; el.className = "rv-pct"; });
+  box.querySelectorAll(".rv-mult").forEach((el) => { el.textContent = ""; el.className = "rv-mult"; });
   (r && r.stats || []).forEach((s) => {
     const num = box.querySelector(`.rv-num[data-slot="${s.slot}"]`);
     const unit = box.querySelector(`.rv-unit[data-slot="${s.slot}"]`);
     const pct = box.querySelector(`.rv-pct[data-slot="${s.slot}"]`);
+    const mult = box.querySelector(`.rv-mult[data-slot="${s.slot}"]`);
     // The CARD's precision, which is all anyone can read off a riven they
     // own. The roll behind it stays exact — this is the reading, not the
     // number the sim uses.
@@ -1460,6 +1463,18 @@ function renderRivenCard() {
       pct.textContent = `<${q}>`;
       pct.className = `rv-pct${q >= 90 ? " top" : ""}${q <= 10 ? " low" : ""}`;
       pct.title = tr("where this roll landed in its 0.9-1.1 band");
+    }
+    // ...and the ROLL ITSELF, next to it. The percentile says how good the
+    // draw was, which is the reading you want when comparing two cards; the
+    // multiplier is the number the game actually drew, which is the one you
+    // can check against a riven you own (suggested by a player, 2026-08-03).
+    // Both, because neither substitutes for the other: <100> and 1.100 are
+    // the same fact, <50> and 1.000 are not obviously so, and a MALUS reads
+    // backwards — its best draw is the SMALLEST multiplier.
+    if (mult) {
+      mult.textContent = Number(s.roll).toFixed(3);
+      mult.className = "rv-mult";
+      mult.title = tr("the roll itself — the random multiplier this stat drew, 0.900 to 1.100");
     }
     if (unit) {
       unit.textContent = tf(s.text);

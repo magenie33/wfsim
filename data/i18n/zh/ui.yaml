@@ -374,6 +374,7 @@ ui:
   "one more stat to finish this riven": 还差 1 条词条这张裂罅就完整了
   "pick {n} more stats to finish this riven": 还差 {n} 条词条这张裂罅就完整了
   "where this roll landed in its 0.9-1.1 band": 这条词条的随机值在 0.9-1.1 区间里的位置
+  "the roll itself — the random multiplier this stat drew, 0.900 to 1.100": 这条词条掷出的随机倍率本身，范围 0.900 到 1.100
   "not modeled — it rolls and it names the riven, but it adds no damage": 未建模 —— 它会开出来，也参与命名，但不提供伤害
   "All rivens": 全部裂罅
   "roll everything maximal": 全部拉到最高
