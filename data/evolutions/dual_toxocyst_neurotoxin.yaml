@@ -8,21 +8,23 @@ selection: choose_one
 currently_broken: true          # wiki: "Currently does not work"
 
 effects:
-  # LOADED AND DESCRIBED, deliberately NOT APPLIED. The loader reads the
-  # trigger, the window and the modifier, so the card states the perk — but a
-  # live PER-TYPE damage multiplier is a mechanic the sim does not have (the
-  # damage vector is baked at resolve time), and adding one is a NEW MECHANIC.
+  # A "timed buff" is a STACKING buff with ONE stack (user, 2026-08-03) —
+  # `stacking_buff` already carries trigger + per_stack + max_stacks +
+  # duration, so there is no second vocabulary for it.
   #
-  # AGENTS: a new mechanic needs an in-game measurement, and this one CANNOT be
-  # measured — DE's wiki still says "Currently does not work" (re-read
-  # 2026-08-03), which is what `currently_broken` below records. Building an
-  # unmeasurable damage path is exactly the faithful-looking implementation
-  # that rule exists to prevent. When DE fixes the perk, measure it, then wire
-  # `TimedPayload::TypeDamage` into the sim.
-  - kind: timed_buff
+  # The PAYLOAD is what the engine cannot take: a live per-type damage
+  # multiplier is a mechanic the sim does not have (the damage vector is baked
+  # at resolve time), so the loader records it as inert and names the payload.
+  # Adding the mechanic is a NEW MECHANIC, and AGENTS requires an in-game
+  # measurement for one — which this CANNOT have: DE's wiki still says
+  # "Currently does not work" (re-read 2026-08-03), which `currently_broken`
+  # below records. Measure it after DE fixes it, then model it.
+  # One stack of a stacking buff — see dual_toxocyst_ripper_rounds.yaml.
+  - kind: stacking_buff
     trigger: on_headshot
-    duration_seconds: 3
-    modifiers: { toxin_damage_bonus: 0.70 }
+    per_stack: { toxin_damage_bonus: 0.70 }
+    max_stacks: 1
+    duration: 3
 
 source:
   url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis

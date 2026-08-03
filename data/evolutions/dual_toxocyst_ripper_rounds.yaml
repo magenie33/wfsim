@@ -7,20 +7,21 @@ description: "On Kill: +3 Punch Through for 7s."
 selection: choose_one
 
 effects:
-  # LOADED AND DESCRIBED, deliberately NOT APPLIED. The loader reads the
-  # trigger, the window and the modifier now, so the card says "on kill: +3.0 m
-  # punch through for 7 s" instead of showing nothing at all.
+  # The payload is what the engine does not take: punch through moves damage
+  # to enemies BEHIND the first, and the arena has none. It is also
+  # CONDITIONAL, so it could not join the flat indirect bucket even if it
+  # mattered — that bucket is unconditional, and a build that has not killed
+  # anything does not have this (the rule the mods follow, see
+  # data/mods/rifle/twitch.yaml).
   #
-  # It does not join the flat indirect bucket, because that bucket is
-  # UNCONDITIONAL: a build that has not killed anything does not have this
-  # punch through, and the panel must not say it does. That is the rule the
-  # mods already follow (data/mods/rifle/twitch.yaml). Nothing is lost either
-  # way — punch-through moves damage to enemies BEHIND the first, and the arena
-  # has none.
-  - kind: timed_buff
+  # A "timed buff" is a STACKING buff with ONE stack — same trigger, same
+  # window, same shape (user, 2026-08-03). `stacking_buff` already says all of
+  # it, so there is no second vocabulary for it.
+  - kind: stacking_buff
     trigger: on_kill
-    duration_seconds: 7
-    modifiers: { punch_through_m: 3.0 }
+    per_stack: { punch_through_m: 3.0 }
+    max_stacks: 1
+    duration: 7
 
 source:
   url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis
