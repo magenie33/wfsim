@@ -5061,17 +5061,19 @@ function replayMarkup(r) {
     const pts = s.map((v, j) => `${px(j).toFixed(1)},${py(v).toFixed(1)}`).join(" ");
     const mean = s.reduce((a, v) => a + v, 0) / (s.length || 1);
     const up = s.filter((v) => v > 0).length / (s.length || 1);
-    // FLOORED, never rounded. A buff that starts at zero and is up for the
-    // other 99.83% of the fight was printing a flat "100%", which is the one
-    // number a reader will not believe — and should not, because it is not
-    // true (user, 2026-08-03: "我看 buff 覆盖率 100% 觉得不可能").
-    const upPct = up >= 1 ? 100 : Math.min(99, Math.floor(up * 100));
+    // TWO DECIMALS, which is what made the "impossible 100%" go away for
+    // real: 99.83% is the truth, and rounding it to a whole number was the
+    // only thing that ever made it look like a perfect run. `100.00%` now
+    // means every single frame was up, and nothing else prints it (user,
+    // 2026-08-03).
+    const upPct = (up * 100).toFixed(2);
+    const offPct = (100 - up * 100).toFixed(2);
     // ...and the thing the 100% was hiding: how long the ramp took. This is
     // the answer to "初始肯定要花时间" as a number rather than a rounding.
     const iFull = s.findIndex((v) => v >= b.max);
     const ramp = iFull < 0
       ? tr("never full")
-      : `${tr("full at")} ${(iFull * rp.dt).toFixed(1)}s`;
+      : `${tr("full at")} ${(iFull * rp.dt).toFixed(2)}s`;
     // WHERE IT WAS OFF. A buff at zero is not a low buff, it is an absent one,
     // and a flat line along the axis says that far too quietly — the run that
     // never earned a stack and the run that lost them all draw the same
@@ -5087,13 +5089,14 @@ function replayMarkup(r) {
       <div class="rp-head">
         <span class="rp-caret">▾</span>
         <span class="rp-name">${escHtml(named(b.id))}</span>
-        <span class="rp-stat">${escHtml(tr("avg"))} ${mean.toFixed(1)}/${b.max} · ${escHtml(tr("uptime"))} ${upPct}%${up < 1 ? ` · <span class="rp-off">${escHtml(tr("inactive"))} ${(100 - upPct)}%</span>` : ""} · ${escHtml(ramp)}</span>
-        <span class="rp-now" data-now="${i}">${s[s.length - 1]}/${b.max}</span>
+        <span class="rp-stat">${escHtml(tr("avg"))} ${mean.toFixed(2)}/${b.max} · ${escHtml(tr("uptime"))} ${upPct}%${up < 1 ? ` · <span class="rp-off">${escHtml(tr("inactive"))} ${offPct}%</span>` : ""} · ${escHtml(ramp)}</span>
+        <span class="rp-now${s[s.length - 1] > 0 ? "" : " rp-off"}" data-now="${i}">${s[s.length - 1] > 0 ? `${s[s.length - 1]}/${b.max}` : `0/${b.max} · ${escHtml(tr("inactive"))}`}</span>
       </div>
       <div class="rp-chart">
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
           ${dead.join("")}
           <polygon class="rp-area" points="0,${H} ${pts} ${W},${H}"/>
+          <line class="rp-mean" x1="0" x2="${W}" y1="${py(mean).toFixed(1)}" y2="${py(mean).toFixed(1)}"><title>${escHtml(tr("avg"))} ${mean.toFixed(2)}</title></line>
           <polyline class="rp-line" points="${pts}"/>
           <rect class="rp-ahead" data-ahead="${i}" x="${W}" y="0" width="0" height="${H}"/>
           <line class="rp-cur" data-cur="${i}" y1="0" y2="${H}" x1="${W}" x2="${W}"/>
@@ -5229,7 +5232,12 @@ function replayApply(rp, i) {
   });
   document.querySelectorAll("[data-now]").forEach((el) => {
     const j = Number(el.dataset.now);
-    el.textContent = `${rp.stacks[j][i]}/${rp.buffs[j].max}`;
+    const v = rp.stacks[j][i];
+    // At zero the count is not the story — the STATE is. Saying it here puts
+    // "inactive" on the chart itself, where the cursor is, and not only in the
+    // summary line (user, 2026-08-03).
+    el.textContent = v > 0 ? `${v}/${rp.buffs[j].max}` : `0/${rp.buffs[j].max} · ${tr("inactive")}`;
+    el.classList.toggle("rp-off", v === 0);
   });
 }
 

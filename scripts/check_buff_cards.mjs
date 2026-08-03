@@ -56,9 +56,16 @@ const r = await evaluate(`(async () => {
   for (let k=0;k<40 && !document.querySelector('.rp-row'); k++) await sleep(1000);
   const rows = [...document.querySelectorAll('.rp-row')].map(e=>({
     name: e.querySelector('.rp-name').textContent.trim(),
-    stat: e.querySelector('.rp-stat').textContent.replace(/\\s+/g,' ').trim(),
+    stat: e.querySelector('.rp-stat').textContent.split(/\\s+/).join(' ').trim(),
+    now: e.querySelector('.rp-now').textContent.trim(),
+    mean: !!e.querySelector('.rp-mean'),
+    dead: e.querySelectorAll('.rp-dead').length,
   }));
-  return { cards, rows, lang: LANG };
+  // Rewind to t=0, where every buff is off, and read the live counts.
+  const sc = document.getElementById('rp-scrub');
+  sc.value = 0; sc.dispatchEvent(new Event('input')); await sleep(400);
+  const atZero = [...document.querySelectorAll('.rp-now')].map(e=>e.textContent.trim());
+  return { cards, rows, atZero, lang: LANG };
 })()`);
 
 console.log("lang:", r.lang);
@@ -69,8 +76,14 @@ check("their names are Chinese", r.cards.every(c => /[\u4e00-\u9fff]/.test(c.nam
 check("they open at 0 stacks", r.cards.every(c => c.stacks === "0"), r.cards.map(c=>c.stacks).join(","));
 check("and say so", r.cards.every(c => c.inactive && /[\u4e00-\u9fff]/.test(c.inactiveText)), r.cards.map(c=>c.inactiveText).join(","));
 check("the coverage rows are Chinese too", r.rows.every(x => /[\u4e00-\u9fff]/.test(x.name)), r.rows.map(x=>x.name).join(","));
-check("uptime is never rounded up to 100%", r.rows.every(x => !/100%/.test(x.stat)), r.rows.map(x=>x.stat).join(" | "));
-check("the ramp is stated", r.rows.every(x => /满层于|full at|未满层|never full/.test(x.stat)), r.rows.map(x=>x.stat).join(" | "));
+check("every figure carries two decimals",
+  r.rows.every(x => /[\d]+\.\d\d\/\d/.test(x.stat) && /\d+\.\d\d%/.test(x.stat) && /\d+\.\d\ds/.test(x.stat)),
+  r.rows.map(x=>x.stat).join(" | "));
+check("uptime is never a flat 100%", r.rows.every(x => !/(^|[^.\d])100%/.test(x.stat)), r.rows.map(x=>x.stat).join(" | "));
+check("the average is drawn on the curve", r.rows.every(x => x.mean));
+check("the inactive stretches are banded", r.rows.every(x => x.dead > 0), r.rows.map(x=>x.dead).join(","));
+check("at t=0 the curve's own readout says inactive",
+  r.atZero.every(x => /失活|inactive/.test(x)), r.atZero.join(" | "));
 ws.close(); proc.kill(); srv.close();
 console.log(fail ? fail + " failed" : "the buff cards read right in Chinese");
 process.exit(fail ? 1 : 0);

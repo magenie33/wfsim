@@ -685,8 +685,15 @@ label.check input{width:auto}
 /* A buff at zero is ABSENT, not low — a flat line on the axis says that too
    quietly, and the run that never earned a stack draws the same picture as
    the one that lost them all. */
-.rp-dead{fill:var(--muted);opacity:.10}
+/* Visible on purpose. A 0.2 s ramp out of sixty seconds is two pixels wide,
+   and at a decorative opacity the one thing the band exists to show — that the
+   buff was OFF here — could not be seen at all. */
+.rp-dead{fill:var(--muted);opacity:.28}
 .rp-off{color:var(--muted)}
 /* Zero is a STATE, not just a number: the run starts with this buff off. */
 .binact{margin-left:8px;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 6px}
 .binact.off{visibility:hidden}
+/* THE AVERAGE, drawn. "avg 17.50/40" is a number you have to hold in your
+   head while reading the curve; a line at that height is the same fact you
+   can see against it (user, 2026-08-03: "我想看看平均几"). */
+.rp-mean{stroke:var(--accent);stroke-width:1;stroke-dasharray:4 3;opacity:.75;vector-effect:non-scaling-stroke}
