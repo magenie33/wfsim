@@ -4053,14 +4053,79 @@ function gainCandidates(axis) {
 // pass exists to settle an ORDER, and an order is decided at the top.
 const GAIN_REFINE_TOP = 12;
 
+// ---- the quick calc runs WIDE ------------------------------------------
+//
+// WHY it needed to. A scan is one simulate per candidate, and a mod slot has
+// ~80 candidates once family conflicts are dropped, each measured at `runs`
+// = 10 — so ~810 full engagements. Every one of them went down the SINGLE
+// `rpcWorker`, one after another, while the optimizer next door has run a
+// FLEET since 2026-08-03. That is why it felt like a search rather than a
+// calculation (user, 2026-08-03: "为什么现在的快速计算就很像optimizer呢").
+//
+// It also explains why a nearly-full build is so much worse than a bare one:
+// the candidate COUNT barely moves, but each engagement does. Seven mods means
+// multishot, status and elements all live, so one fight generates several times
+// the procs, DoT stacks and ticks a one-mod fight does — the per-sim cost is a
+// function of how much is HAPPENING, and a good build makes a lot happen.
+//
+// The lever is PARALLELISM, and only that: the run count is 10 by decision
+// (2026-08-02 — below it a status mod's answer flips sign, M24) and the
+// engagement DURATION is never the lever (user, 2026-08-03). So the work is
+// spread over lanes instead of being made smaller or shorter.
+//
+// A lane is "somewhere a simulate can run": a dedicated worker in the wasm
+// build, and plain `api` on the native server, where the fetch already
+// parallelises and there is no worker to own.
+let gainPool = null;
+function gainLanes() {
+  if (gainPool) return gainPool;
+  // Same rule as the optimizer's auto: every core but one, capped at 8. No
+  // setting of its own — the quick calc is not a search and has no preset to
+  // put one in; it takes what the machine has.
+  const n = Math.max(1, Math.min((Number(navigator.hardwareConcurrency) || 4) - 1, 8));
+  if (!WASM) {
+    gainPool = Array.from({ length: n }, () => ({ call: (p, b) => api(p, b) }));
+    return gainPool;
+  }
+  gainPool = Array.from({ length: n }, () => {
+    const w = new Worker("/worker.js");
+    const pending = new Map();
+    let seq = 0;
+    w.onmessage = (e) => {
+      const r = pending.get(e.data.id);
+      if (r) { pending.delete(e.data.id); r(e.data.payload); }
+    };
+    return { call: (path, body) => new Promise((res) => {
+      const id = ++seq;
+      pending.set(id, res);
+      w.postMessage({ id, kind: "api", path, body: body ?? {} });
+    }) };
+  });
+  return gainPool;
+}
+
+// The generation of the scan that is allowed to write `gainScan`. Bumped on
+// every start, so an older scan discovers at its next await that it has been
+// superseded and stands down.
+//
+// WHY it has to be interruptible: a scan is ~90 SERIAL simulate calls, and the
+// old guard was "a scan is running, so ignore this". Editing the fight midway
+// therefore did not queue and did not cancel — it was DROPPED, the whole stale
+// scan ran to the end under the config you had just left, and only then did
+// the refresh notice the key had moved and start again. Every rapid edit paid
+// for a full measurement of a question nobody was asking any more (user,
+// 2026-08-03: "算不过来"). Cancelling at the next await bounds that to one sim.
+let gainGen = 0;
+
 async function scanGains(axis, onTick) {
-  if (gainScan.running) return;
+  const gen = ++gainGen;
+  const live = () => gen === gainGen;
   gainAxis = axis;
   const { name, scenario, refine } = gainScenario();
   // The note is WHICH FIGHT this was measured in. The run counts used to ride
   // along here too and were dropped: each chip's tooltip states its own count,
   // which is the only place the number changes how a reading should be taken.
-  gainScan = { key: gainKey(), running: true, base: 0, by: {}, done: 0, total: 0,
+  gainScan = { key: gainKey(), axis, running: true, base: 0, by: {}, done: 0, total: 0,
     note: name, metric: "" };
   // Kill progress is the optimizer's metric and the one a player is actually
   // buying; DPS is the fallback for a target this build cannot kill at all,
@@ -4072,18 +4137,32 @@ async function scanGains(axis, onTick) {
     return useKills ? (r.score ?? r.kills ?? 0) : (r.dps || 0);
   };
   let base = await run({});
-  if (!base && useKills) { useKills = false; base = await run({}); }
+  if (!live()) return;
+  if (!base && useKills) { useKills = false; base = await run({}); if (!live()) return; }
   if (!base) { gainScan.running = false; if (onTick) onTick(gainScan); return; }
   gainScan.base = base;
   gainScan.metric = useKills ? tr("kill rate") : tr("DPS");
   const cands = gainCandidates(axis);
   gainScan.total = cands.length + (refine ? Math.min(GAIN_REFINE_TOP, cands.length) + 1 : 0);
-  for (const c of cands) {
-    const v = await run(c.payload);
-    gainScan.done++;
-    if (v != null) gainScan.by[c.id] = { pct: (v - base) / base, runs: scenario.runs };
-    if (onTick) onTick(gainScan);
-  }
+  // One shared cursor, every lane pulling the next candidate as it frees up —
+  // so a slow candidate delays itself and nothing else. `live()` is checked
+  // after each await, which is what bounds an interrupted scan to one
+  // outstanding sim per lane rather than the whole queue.
+  let cursor = 0;
+  await Promise.all(gainLanes().map(async (lane) => {
+    for (;;) {
+      if (!live()) return;
+      const c = cands[cursor++];
+      if (!c) return;
+      const r = await lane.call("/api/simulate", { ...buildPayload(), ...scenario, ...c.payload });
+      if (!live()) return;               // the fight moved — this answer is stale
+      const v = !r || !r.ok ? null : (useKills ? (r.score ?? r.kills ?? 0) : (r.dps || 0));
+      gainScan.done++;
+      if (v != null) gainScan.by[c.id] = { pct: (v - base) / base, runs: scenario.runs };
+      if (onTick) onTick(gainScan);
+    }
+  }));
+  if (!live()) return;
   // SECOND PASS. One run ranks the field cheaply but cannot separate its top
   // few — so the leaders are asked again with more, against a baseline
   // measured the same way. Everything below them keeps its first answer,
@@ -4096,6 +4175,7 @@ async function scanGains(axis, onTick) {
       return useKills ? (r.score ?? r.kills ?? 0) : (r.dps || 0);
     };
     const deepBase = await runDeep({});
+    if (!live()) return;
     gainScan.done++;
     if (onTick) onTick(gainScan);
     if (deepBase) {
@@ -4105,6 +4185,7 @@ async function scanGains(axis, onTick) {
         .slice(0, GAIN_REFINE_TOP);
       for (const c of top) {
         const v = await runDeep(c.payload);
+        if (!live()) return;
         gainScan.done++;
         if (v != null) gainScan.by[c.id] = { pct: (v - deepBase) / deepBase, runs: refine };
         if (onTick) onTick(gainScan);
@@ -4247,7 +4328,16 @@ function ensureGains(axis, repaint) {
   if (gainPrefs.on === false) return;
   if (!loadPresetList(SCENARIOS).length) return;
   gainAxis = axis;                       // so the key describes what we want
-  if (gainScan.running || gainScan.key === gainKey()) return;
+  // Is what we are measuring (or have measured) the fight that is on screen
+  // NOW? `gainScan.key` is stamped at scan start, so a matching key covers both
+  // "already ranked" and "already ranking the right thing".
+  if (gainScan.key === gainKey()) return;
+  // A running scan is STALE and gives way — but only to its own axis. The mod
+  // picker and the evolution rows both ask on every refresh (`refreshGains`
+  // ends in `renderEvo`), so "the newest request wins" makes the two cancel
+  // each other on every repaint and neither ever finishes. Which axis is asking
+  // is not a staleness signal; the fight moving is.
+  if (gainScan.running && JSON.stringify(gainScan.axis) !== JSON.stringify(axis)) return;
   let last = 0;
   scanGains(axis, (st) => {
     const now = Date.now();
