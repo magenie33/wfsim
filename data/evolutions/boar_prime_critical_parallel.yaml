@@ -1,0 +1,20 @@
+id: boar_prime_critical_parallel
+name: Critical Parallel
+weapon: boar_prime
+tier: 4
+icon: CritChanceCritDamage(xWhite).png
+description: "Increase Base Critical Chance by +20%.
+Increase Base Critical Damage Multiplier by +0.5x."
+selection: choose_one
+
+effects:
+  # Both are BASE-stat additions, so the crit mods multiply the new base —
+  # "Increase Base Critical Chance" / "Increase Base Critical Damage
+  # Multiplier" is the wiki's own wording.
+  - kind: flat_base_crit_chance
+    value: 0.20
+  - kind: flat_base_crit_multiplier
+    value: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

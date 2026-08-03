@@ -1,0 +1,17 @@
+id: boar_prime_practiced_grip
+name: Practiced Grip
+weapon: boar_prime
+tier: 3
+icon: MoreAccuracy(xWhite).png
+description: "Increase Accuracy by +50%."
+selection: choose_one
+
+effects:
+  # NOT LOADED: accuracy is spatial and the arena has no geometry — every
+  # pellet that the spread would have thrown wide still lands here. Recorded so
+  # the number is present the day a spatial model reads it.
+  - kind: accuracy_bonus
+    value: 0.50
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

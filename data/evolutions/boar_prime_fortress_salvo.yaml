@@ -1,0 +1,22 @@
+id: boar_prime_fortress_salvo
+name: Fortress Salvo
+weapon: boar_prime
+tier: 2
+icon: PunchThroughWithArmorAboveX(xWhite).png
+description: "Increase Base Damage by +16.
+With Armor Over 450: +4 Punch Through"
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 16.0
+  # NOT LOADED: no `punch_through` arm in the evolutions loader, and the
+  # condition is on the TENNO's armour (a Warframe stat the arena carries but
+  # this loader never consults). Punch through decides nothing in a
+  # single-target arena either way.
+  - kind: punch_through_bonus
+    value: 4.0
+    condition: tenno_armor_over_450
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

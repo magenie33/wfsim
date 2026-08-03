@@ -1,0 +1,26 @@
+id: boar_prime_reified_bane
+name: Reified Bane
+weapon: boar_prime
+tier: 2
+icon: ReloadFromEmpty(xWhite).png
+description: "Increase Base Damage by +10.
+On Reload From Empty: Increase Base Damage by +14."
+selection: choose_one
+
+effects:
+  # The UNCONDITIONAL half only. +10 to the base TOTAL, spread pro-rata across
+  # the vector before mods — the same layer every other "+N Base Damage"
+  # evolution occupies.
+  - kind: flat_base_damage
+    value: 10.0
+  # NOT LOADED: `condition` is unread by the evolutions loader, so a
+  # conditional flat_base_damage would apply UNCONDITIONALLY — which is why
+  # this is a second entry with an explicit kind the loader turns Inert rather
+  # than a `condition:` on the one above. The wiki also records that the game
+  # MISPRINTS this half as +10 on the card ("Reload From empty bonus is
+  # incorrectly listed as +10 in game"); the effect is +14.
+  - kind: flat_base_damage_on_empty_reload
+    value: 14.0
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

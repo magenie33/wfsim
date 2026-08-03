@@ -1,0 +1,22 @@
+id: boar_prime_ready_retaliation
+name: Ready Retaliation
+weapon: boar_prime
+tier: 3
+icon: ReloadSpeedOnEmpty(xWhite).png
+description: "On Reload From Empty: +100% Reload Speed."
+selection: choose_one
+
+effects:
+  # NOT LOADED: `evolutions_data::effect()` has no `reload_speed_bonus` arm
+  # (the MODS loader has one — different loader, different vocabulary), so this
+  # resolves to `EvoEffect::Inert`; `condition` is unread there too. Same
+  # encoding as dual_toxocyst_ready_retaliation, minus that weapon's
+  # `currently_broken` flag — the wiki reports no such bug for the Boar, only
+  # the ordinary "the bonus lands at the END of the first empty reload, so the
+  # first reload does not get it".
+  - kind: reload_speed_bonus
+    value: 1.00
+    condition: reload_from_empty
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

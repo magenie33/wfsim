@@ -1,0 +1,19 @@
+id: boar_prime_evo1_incarnon_form
+name: Incarnon Form
+weapon: boar_prime
+tier: 1
+icon: IncarnonFormShortRangeBeams(xWhite).png
+description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes.\nFire up to three short-range chaining Heat beams."
+selection: fixed                # tier 1 has no choice
+
+# Under the two-weapons model this perk IS the unlock of weapon #2: the held
+# trigger, the beams, the pure Heat vector and the higher crit/status are all
+# properties of the boar_prime_incarnon entry, not perk payload.
+effects:
+  # NOT LOADED: `evolutions_data::effect()` has no `unlocks_weapon` arm, so this
+  # resolves to `EvoEffect::Inert` and contributes nothing (data/README.md).
+  - kind: unlocks_weapon
+    weapon: boar_prime_incarnon
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

@@ -1,0 +1,21 @@
+id: boar_prime_survivors_edge
+name: Survivor's Edge
+weapon: boar_prime
+tier: 4
+icon: XCritChanceYStatChance(xWhite).png
+description: "Increase Base Critical Chance by +10%.
+Increase Base Status Chance by +6% per projectile.
+Increase Base Status Chance by +48% for Incarnon Form."
+selection: choose_one
+
+effects:
+  - kind: flat_base_crit_chance
+    value: 0.10
+  # Per-form again, at exactly half of Elemental Balance's numbers — see that
+  # file for why one value cannot serve both forms.
+  - kind: flat_base_status_chance_by_form
+    base: 0.06
+    incarnon: 0.48
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

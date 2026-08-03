@@ -21,6 +21,7 @@
 # while `mods`/`arcanes` below are filled by the script.
 weapons:
   boar_prime: 野猪 Prime
+  boar_prime_incarnon: 野猪 Prime (灵化形态)
   cernos_prime: 西诺斯 Prime
   cernos_prime_uncharged: 西诺斯 Prime (速射)   # the tapped form, same weapon
   dual_toxocyst: 毒囊双枪

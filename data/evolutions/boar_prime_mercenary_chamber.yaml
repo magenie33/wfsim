@@ -1,0 +1,18 @@
+id: boar_prime_mercenary_chamber
+name: Mercenary Chamber
+weapon: boar_prime
+tier: 3
+icon: IncarnonAmmoPool(xWhite).png
+description: "Increase Base Ammo Capacity to 195."
+selection: choose_one
+
+effects:
+  # NOT LOADED, and it would change nothing if it were: this raises the RESERVE
+  # (120 -> 195), and the sim's scenario carries an `infinite_ammo` switch that
+  # is on by default. It is also a SET-TO, not an add — the loader has no arm
+  # for either.
+  - kind: ammo_reserve_set
+    value: 195
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

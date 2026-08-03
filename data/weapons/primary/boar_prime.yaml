@@ -41,10 +41,8 @@ reload_seconds: 2.75
 # catalog gives "Multiplying" twice).
 co_behavior: additive
 
-# ONE attack part. The Incarnon form is NOT modelled: it needs its own
-# evolution set (five tiers) and its own weapon entry, the way the Torid and
-# the Laetum carry theirs. What ships here is the ordinary shotgun, which is
-# what the base form is played as.
+# ONE attack part. The Incarnon form is its own weapon entry
+# (boar_prime_incarnon.yaml), the way the Torid and the Laetum carry theirs.
 attack:
   trigger: auto
   shot_type: hitscan
@@ -82,6 +80,31 @@ attack:
   # NOT READ either: with one target and no geometry, spread decides nothing.
   spread_min_deg: 10.0
   spread_max_deg: 30.0
+
+# TWO WEAPONS MODEL: this is the base form; the Incarnon form is a second
+# weapon entry that this one transforms into.
+transform_group: boar_prime
+transforms_to: boar_prime_incarnon
+
+# incarnon_evolutions (data/evolutions/boar_prime_*.yaml) — FOUR tiers. The
+# challenge listed against a tier is the one that UNLOCKS it; tier 1 comes with
+# the Genesis install.
+# - { tier: 1, unlock: installing the Genesis,
+#     options: [boar_prime_evo1_incarnon_form] }
+# - { tier: 2, unlock: complete a solo mission with this weapon equipped,
+#     options: [boar_prime_reified_bane, boar_prime_fortress_salvo] }
+# - { tier: 3, unlock: kill 100 enemies with this weapon's Incarnon Form,
+#     options: [boar_prime_ready_retaliation, boar_prime_mercenary_chamber,
+#     boar_prime_practiced_grip] }
+# - { tier: 4, unlock: kill 30 enemies without reloading,
+#     options: [boar_prime_elemental_balance, boar_prime_critical_parallel,
+#     boar_prime_survivors_edge] }
+#
+# The Genesis is the BOAR FAMILY's — one item upgrades either the Boar or the
+# Boar Prime — so it is documented at `Boar_Incarnon_Genesis`;
+# `Boar_Prime_Incarnon_Genesis` 404s (DATA_SOURCES.md has that trap written
+# up). Installing it costs 20 Pathos Clamps, 60 Rune Marrow and 60 Tasoma
+# Extract, or 120 platinum from Cavalero, once.
 
 source:
   url: https://wiki.warframe.com/w/Boar_Prime

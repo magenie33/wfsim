@@ -685,6 +685,9 @@ pub fn meta_json() -> Value {
                 "id": e.id,
                 "name": e.name,
                 "synthetic": e.synthetic,
+                // The portrait comes from the enemy's own file, not from
+                // assets.yaml: enemy art is wiki-hosted (see the yaml).
+                "image": e.image,
                 "base_level": e.stats.base_level,
                 "can_be_eximus": e.can_be_eximus,
                 // What the TARGET PICKER searches and shows. A name alone is
@@ -4488,6 +4491,26 @@ mod form_tests {
             assert_eq!(r["transforms"], json!(0), "bow transformed on form {form}");
         }
         assert_eq!(sim("verglas_prime", "incarnon_cycle")["transforms"], json!(0));
+
+        // ...and the POSITIVE case, because "0 transforms" is also what a
+        // weapon that IS supposed to cycle looks like when its base entry was
+        // never wired to its Incarnon entry. Boar Prime shipped that way for
+        // an afternoon: the second weapon file existed, the evolutions
+        // existed, and `transforms_to` did not — so the cycle silently ran the
+        // base form and reported a number that looked fine on its own
+        // (2026-08-03).
+        let cycled = simulate_json(&json!({
+            "weapon": "boar_prime", "form": "incarnon_cycle", "mods": [],
+            "evolutions": ["boar_prime_evo1_incarnon_form"],
+            "enemy": "thrax_centurion", "duration": 120.0, "runs": 4,
+            "headshot_pct": 100.0, "seed": 7,
+        }));
+        assert_eq!(cycled["ok"], json!(true));
+        assert!(
+            cycled["transforms"].as_f64().unwrap_or(0.0) > 0.0,
+            "Boar Prime's Incarnon cycle never transformed — is `transforms_to` wired? got {}",
+            cycled["transforms"]
+        );
 
         // The evolution one: an unstated `evolutions` key falls back to the
         // historical Dual Toxocyst build, which must reduce to nothing here.

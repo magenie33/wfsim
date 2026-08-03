@@ -9,6 +9,7 @@ weapons:
   # "<weapon>_incarnon" to the adapter item (ToridIncarnonAdapter.png) and
   # cannot resolve laetum_incarnon at all.
   boar_prime: BoarPrime.png
+  boar_prime_incarnon: BoarPrime.png
   cernos_prime: CernosPrime.png
   cernos_prime_uncharged: CernosPrime.png
   dual_toxocyst: DualToxocyst.png

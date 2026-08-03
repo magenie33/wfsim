@@ -1,0 +1,21 @@
+id: boar_prime_elemental_balance
+name: Elemental Balance
+weapon: boar_prime
+tier: 4
+icon: HighStatus(xWhite).png
+description: "Increase Base Status Chance by +12% per projectile.
+Increase Base Status Chance by +96% for Incarnon Form."
+selection: choose_one
+
+effects:
+  # TWO NUMBERS, ONE EVOLUTION — the wiki states them as separate lines, not as
+  # a sum: a pellet carries a twelfth of what a beam tick does. The base form
+  # fires 8 pellets at 11.25% each; the Incarnon form is one beam at 24%.
+  # `flat_base_status_chance_by_form` picks by whether the entry carries an
+  # `incarnon:` block, the same gate the magazine evolutions use.
+  - kind: flat_base_status_chance_by_form
+    base: 0.12
+    incarnon: 0.96
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

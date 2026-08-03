@@ -56,6 +56,17 @@ enum EvoEffect {
     /// Balance both say "Increase Base Status Chance"). NOT the post-mod flat
     /// layer that Elemental Excess occupies.
     FlatBaseStatusChance(f64),
+    /// The same layer, but the two FORMS get different numbers. Boar's
+    /// Elemental Balance reads "+12% per projectile" and "+96% for Incarnon
+    /// Form" as two separate statements, not as a sum — a shotgun's pellet
+    /// carries a twelfth of the status a beam tick does, so one number cannot
+    /// serve both. Picked by `base.incarnon.is_some()`, the same gate
+    /// `FlatBaseMagazine` uses.
+    FlatBaseStatusChanceByForm { base: f64, incarnon: f64 },
+    /// Adds into the BASE crit MULTIPLIER (Boar's Critical Parallel: "+0.5x").
+    /// Base-stat layer like the crit-chance one above, so crit-damage mods
+    /// multiply the new base.
+    FlatBaseCritMultiplier(f64),
     /// Adds whole rounds to the BASE magazine, before magazine mods (Torid's
     /// Extended Volley: +9 on a base of 5). Explicitly NOT the Incarnon form's
     /// charge-backed magazine — "Does not apply to Incarnon Form's Magazine" —
@@ -256,7 +267,9 @@ impl EvolutionDef {
                     permanent: false,
                 }),
                 // Static stat changes — nothing to configure at runtime.
-                EvoEffect::FlatBaseDamage(_)
+                EvoEffect::FlatBaseStatusChanceByForm { .. }
+                | EvoEffect::FlatBaseCritMultiplier(_)
+                | EvoEffect::FlatBaseDamage(_)
                 | EvoEffect::FlatBaseCritChance(_)
                 | EvoEffect::FlatBaseStatusChance(_)
                 | EvoEffect::FlatBaseMagazine(_)
@@ -326,6 +339,14 @@ impl EvolutionDef {
                 }
                 EvoEffect::FlatBaseCritChance(v) => {
                     format!("+{:.0}% BASE crit chance (crit mods multiply it)", v * 100.0)
+                }
+                EvoEffect::FlatBaseStatusChanceByForm { base, incarnon } => format!(
+                    "+{:.0}% BASE status chance ({:.0}% in Incarnon Form)",
+                    base * 100.0,
+                    incarnon * 100.0
+                ),
+                EvoEffect::FlatBaseCritMultiplier(v) => {
+                    format!("+{v:.2}x BASE crit multiplier (crit damage mods multiply it)")
                 }
                 EvoEffect::FlatBaseStatusChance(v) => format!(
                     "+{:.0}% BASE status chance (status mods multiply it)",
@@ -410,6 +431,13 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         "flat_base_crit_chance" => EvoEffect::FlatBaseCritChance(f(v, "value").unwrap_or(0.0)),
         "flat_base_status_chance" => {
             EvoEffect::FlatBaseStatusChance(f(v, "value").unwrap_or(0.0))
+        }
+        "flat_base_status_chance_by_form" => EvoEffect::FlatBaseStatusChanceByForm {
+            base: f(v, "base").unwrap_or(0.0),
+            incarnon: f(v, "incarnon").unwrap_or(0.0),
+        },
+        "flat_base_crit_multiplier" => {
+            EvoEffect::FlatBaseCritMultiplier(f(v, "value").unwrap_or(0.0))
         }
         "flat_base_magazine" => EvoEffect::FlatBaseMagazine(f(v, "value").unwrap_or(0.0)),
         "field_duration_on_empty_reload" => {
@@ -511,6 +539,28 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     }
                     if let Some(f) = base.lingering.as_mut() {
                         f.base_status_chance += v;
+                    }
+                }
+                EvoEffect::FlatBaseStatusChanceByForm { base: b, incarnon } => {
+                    // The Incarnon entry is the one carrying the `incarnon:`
+                    // block — the same gate `FlatBaseMagazine` uses to keep a
+                    // magazine evolution off the charge pool.
+                    let v = if base.incarnon.is_some() { *incarnon } else { *b };
+                    base.base_status_chance += v;
+                    if let Some(r) = base.radial.as_mut() {
+                        r.base_status_chance += v;
+                    }
+                    if let Some(f) = base.lingering.as_mut() {
+                        f.base_status_chance += v;
+                    }
+                }
+                EvoEffect::FlatBaseCritMultiplier(v) => {
+                    base.base_crit_damage += v;
+                    if let Some(r) = base.radial.as_mut() {
+                        r.base_crit_damage += v;
+                    }
+                    if let Some(f) = base.lingering.as_mut() {
+                        f.base_crit_damage += v;
                     }
                 }
                 // BASE FORM ONLY, and the gate is load-bearing: an Incarnon
