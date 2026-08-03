@@ -422,3 +422,41 @@ regression guard; it asserts `neighbours > 0`, which is what failed.
 Two per cent of the space buys the optimum; one per cent does not. The
 depth-first walk had no coverage at which it did — its sample was a corner, not
 a sample.
+
+### The browser runs a FLEET (2026-08-03)
+
+The browser is where coverage is scarcest and compute is smallest: one thread
+at ~150 simulated engagements per second, against ~5,100 on a 26-thread
+desktop. Parameters cannot close a 34x gap; workers can.
+
+N Web Workers walk DISJOINT STRIDES of the shuffled index range — worker `w`
+takes `w, w + N, w + 2N, …` (`SearchConfig::shard` / `shards`). The strides are
+a partition, so nothing is evaluated twice and nothing is missed;
+`shards_partition_the_shuffled_order_exactly` pins that, because an overlap
+would waste the budget and a gap would let N shards each report themselves
+exhaustive over a space they had not covered.
+
+Each shard also CLIMBS on its own. That is a feature rather than a compromise:
+N independent hill-climbs from N independent samples is exactly the basin
+diversity one best-first climb lacks.
+
+The count is the search preset's own **CPU threads** — the setting already
+existed and meant this on the native server. Blank = cores − 1, capped at 8
+(past that the strides shorten, each worker costs its own 2.3 MB wasm
+instance, and a phone starts swapping).
+
+**Merging** is a sort: every row was produced by its shard's own funnel at the
+same run count under the same scenario, so the scores are directly comparable.
+Rows are deduplicated by identity first — strides are disjoint but the climb is
+not, so two workers can reach the same build. `exhaustive` is the AND of the
+shards; coverage is the SUM of their walked positions over the space.
+
+**Empty shards are not failures.** With more workers than index positions —
+8 workers over a scope holding one build — every shard but the first owns no
+ground, and each answered "no legal builds in this scope (Forma / family
+constraints eliminated all)", which the fleet then surfaced as the whole run's
+error. Walking nothing differs from walking and finding nothing; only the
+second is that message.
+
+**Resume is unsharded.** A checkpoint is one worker's field, so resuming a run
+starts a single worker rather than a fraction of a fleet.

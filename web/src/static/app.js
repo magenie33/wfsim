@@ -182,7 +182,8 @@ const rpc = (path, body) => new Promise((resolve) => {
   ensureRpcWorker().postMessage({ id, kind: "api", path, body: body ?? {} });
 });
 
-let wopt = null; // the emulated optimize job: { id, worker, status, result, cancelled, t0 }
+let wopt = null; // the emulated optimize job: a FLEET of workers over disjoint
+                 // strides — { id, workers[], statuses[], parts[], result, … }
 let woptNextId = 1;
 // ---- checkpoint / resume -------------------------------------------------
 // A reload KILLS the worker, and there is no browser mechanism that avoids it
@@ -220,35 +221,135 @@ function loadCheckpoint() {
   } catch (_) { return null; }
 }
 
+// HOW MANY WORKERS the browser search runs on. This is the only lever the
+// browser has: it is single-threaded at ~150 simulated engagements per second
+// against ~5,100 on a 26-thread desktop, so coverage is scarcest exactly where
+// there is least compute. N workers walk DISJOINT STRIDES of the shuffled
+// index range (`shard`, `shard + shards`, …), which is a partition — nothing
+// is evaluated twice and nothing is missed (`shards_partition_the_shuffled_
+// order_exactly`). Each also climbs on its own, so N workers are also N
+// independent hill-climbs, which is the diversity one best-first climb lacks.
+//
+// The count is the search preset's own `CPU threads` — the setting already
+// existed and meant this on the native server; it now means it here too.
+// Blank = every core but one, capped at 8: past that the strides get short,
+// the wasm instances get expensive (one 2.3 MB module each) and a phone
+// starts swapping.
+function woptWorkerCount() {
+  if (optRun.threads > 0) return Math.min(optRun.threads, 16);
+  const cores = Number(navigator.hardwareConcurrency) || 4;
+  return Math.max(1, Math.min(cores - 1, 8));
+}
+
+// Merge the fleet's leaderboards into one. Each worker ran its own funnel over
+// its own elites, so every row here is measured at the SAME run count under the
+// SAME scenario and the scores are directly comparable — the merge is a sort.
+//
+// Deduplicate first: strides are disjoint but the CLIMB is not, so two workers
+// can reach the same build from different samples. Counting it twice would
+// push a real alternative off the board.
+function woptMerge(parts) {
+  const bad = parts.find((p) => p && p.ok === false);
+  if (bad) return bad;
+  // A shard that owned no ground returns an empty but complete envelope, so
+  // any part is a valid head — prefer one that actually ranked something.
+  const rows = [];
+  const seen = new Set();
+  for (const p of parts) {
+    for (const r of p.results || []) {
+      const key = JSON.stringify([r.mods, r.arcane, r.evolutions, r.exilus]);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      rows.push(r);
+    }
+  }
+  rows.sort((a, b) => (b.kill_progress ?? b.kills ?? 0) - (a.kill_progress ?? a.kills ?? 0));
+  const head = parts.find((p) => (p.results || []).length) || parts[0] || {};
+  const finalists = head.finalists || rows.length;
+  const space = head.space || 0;
+  const sampled = parts.reduce((n, p) => n + (p.sampled || 0), 0);
+  return {
+    ...head,
+    // EVERY shard must have finished its stride for the union to be the space.
+    exhaustive: parts.length > 0 && parts.every((p) => p.exhaustive),
+    // Coverage of the FLEET, not of one worker: the strides are disjoint, so
+    // the positions add up.
+    coverage: space > 0 ? Math.min(1, sampled / space) : 0,
+    sampled,
+    searched: parts.reduce((n, p) => n + (p.searched || 0), 0),
+    candidates: parts.reduce((n, p) => n + (p.candidates || 0), 0),
+    jobs: parts.reduce((n, p) => n + (p.jobs || 0), 0),
+    cancelled: parts.some((p) => p.cancelled),
+    results: rows.slice(0, finalists).map((r, i) => ({ ...r, rank: i + 1 })),
+  };
+}
+
 function woptStart(body, checkpoint) {
-  if (wopt && wopt.worker) {
+  if (wopt && wopt.workers && wopt.workers.length) {
     return { ok: false, error: "an optimization is already running — cancel it or wait", job_id: wopt.id };
   }
   const { __resume, ...req } = body ?? {}; // the resume marker is transport, not scope
   body = req;
-  const job = { id: woptNextId++, worker: new Worker("/worker.js"), status: null, result: null, board: null, cancelled: false, t0: Date.now() };
-  job.worker.onmessage = (e) => {
-    if (e.data.kind === "progress") job.status = e.data.payload;
-    // The board is what a CANCEL shows. Cancelling terminates the worker, so
-    // nothing can be asked of it afterwards — the newest snapshot it managed
-    // to push out is all there is, and it has to already be here.
-    if (e.data.kind === "board") job.board = e.data.payload;
-    if (e.data.kind === "checkpoint") {
-      const { board, ...cp } = e.data.payload;
-      if (board) job.board = board; // a completed round outranks a screen snapshot
-      saveCheckpoint(body, cp, board || job.board);
-    }
-    if (e.data.kind === "result") {
-      job.result = e.data.payload;
-      clearCheckpoint(); // finished: nothing left to resume
-      job.worker.terminate(); job.worker = null;
-    }
+  // A CHECKPOINT is one worker's field, so it can only resume a run that had
+  // one worker. Rather than resume a fraction of a fleet, a resume runs
+  // unsharded — slower, but it is continuing a search that already exists.
+  const shards = checkpoint ? 1 : woptWorkerCount();
+  const job = {
+    id: woptNextId++, workers: [], status: null, statuses: new Array(shards).fill(null),
+    parts: new Array(shards).fill(null), result: null, board: null, boards: new Array(shards).fill(null),
+    cancelled: false, shards, t0: Date.now(),
   };
-  job.worker.onerror = (e) => {
-    job.result = { ok: false, error: String((e && e.message) || "worker error") };
-    if (job.worker) { job.worker.terminate(); job.worker = null; }
+  // One STATUS out of many: the fleet's progress is the sum of its workers,
+  // and the phase is the least advanced of them — a run is still searching
+  // while any worker still is.
+  const rollup = () => {
+    const live = job.statuses.filter(Boolean);
+    if (!live.length) return null;
+    const sum = (k) => live.reduce((n, s) => n + (Number(s[k]) || 0), 0);
+    const searching = live.some((s) => s.phase === "searching") || live.length < shards;
+    return {
+      ...live[0],
+      phase: searching ? "searching" : "running",
+      sims_done: sum("sims_done"), sims_planned: sum("sims_planned"),
+      enumerated: sum("enumerated"),
+      round_jobs: sum("round_jobs"),
+      workers: shards, workers_done: job.parts.filter(Boolean).length,
+    };
   };
-  job.worker.postMessage({ kind: "optimize", body, checkpoint: checkpoint || null });
+  for (let i = 0; i < shards; i++) {
+    const w = new Worker("/worker.js");
+    job.workers.push(w);
+    w.onmessage = (e) => {
+      if (e.data.kind === "progress") { job.statuses[i] = e.data.payload; job.status = rollup(); }
+      if (e.data.kind === "board") { job.boards[i] = e.data.payload; job.board = woptMerge(job.boards.filter(Boolean)); }
+      if (e.data.kind === "checkpoint") {
+        const { board, ...cp } = e.data.payload;
+        if (board) { job.boards[i] = board; job.board = woptMerge(job.boards.filter(Boolean)); }
+        // Only an UNSHARDED run can be resumed from a checkpoint — see above.
+        if (shards === 1) saveCheckpoint(body, cp, board || job.board);
+      }
+      if (e.data.kind === "result") {
+        job.parts[i] = e.data.payload;
+        w.terminate();
+        job.workers[i] = null;
+        if (job.parts.every(Boolean)) {
+          job.result = woptMerge(job.parts);
+          clearCheckpoint();
+          job.workers = [];
+        }
+      }
+    };
+    w.onerror = (e) => {
+      job.parts[i] = { ok: false, error: String((e && e.message) || "worker error") };
+      if (job.workers[i]) { job.workers[i].terminate(); job.workers[i] = null; }
+      if (job.parts.every(Boolean)) { job.result = woptMerge(job.parts); job.workers = []; }
+    };
+    w.postMessage({
+      kind: "optimize",
+      body: { ...body, shard: i, shards },
+      checkpoint: checkpoint || null,
+    });
+  }
   wopt = job;
   return { ok: true, job_id: job.id };
 }
@@ -275,7 +376,13 @@ function woptStatus() {
 }
 function woptCancel() {
   if (!wopt) return { ok: false, error: "no such optimize job" };
-  if (wopt.worker) { wopt.worker.terminate(); wopt.worker = null; wopt.cancelled = true; }
+  // Cancel kills the WHOLE fleet. Each worker's last pushed board is already
+  // here and merged, which is what a cancel has to show.
+  if (wopt.workers && wopt.workers.length) {
+    wopt.workers.forEach((w) => w && w.terminate());
+    wopt.workers = [];
+    wopt.cancelled = true;
+  }
   return { ok: true, job_id: wopt.id };
 }
 

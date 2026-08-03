@@ -3024,6 +3024,11 @@ pub struct OptimizePlan {
     /// the funnel. 0 = uncapped, and then the host's clock is the only bound
     /// (the browser sets one; a native run has a Cancel button instead).
     max_evals: u64,
+    /// This run's STRIDE of the search space, of `shards` total. The browser
+    /// buys coverage by running several Web Workers over disjoint strides and
+    /// merging their leaderboards; a native run is one shard of one.
+    shard: u32,
+    shards: u32,
 }
 
 /// Validate an optimize request. `Err` is the ready-to-send error response.
@@ -3442,6 +3447,8 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             .unwrap_or(0)
             .min(256) as usize,
         max_evals: v.get("max_evals").and_then(|x| x.as_u64()).unwrap_or(0),
+        shards: v.get("shards").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 64) as u32,
+        shard: v.get("shard").and_then(|x| x.as_u64()).unwrap_or(0).min(63) as u32,
     })
 }
 
@@ -3805,6 +3812,8 @@ pub fn run_optimize_resumable(
         untransformed_id,
         threads,
         max_evals,
+        shard,
+        shards,
     } = plan;
     // Compute budget: 0 = auto (all cores minus two — the machine must stay
     // usable while the search runs). Applies to the screen and every round.
@@ -4068,6 +4077,8 @@ pub fn run_optimize_resumable(
             max_evals,
             keep: SCREEN_KEEP,
             seed: 0xDEAD_BEEF,
+            shard,
+            shards,
             ..Default::default()
         };
         let (screened, stats) = wfsim_optimizer::search::search(
@@ -4084,9 +4095,32 @@ pub fn run_optimize_resumable(
             if state.cancel.load(std::sync::atomic::Ordering::Relaxed) {
                 return cancelled_json(0);
             }
-            return err_json(
-                "no legal builds in this scope (Forma / family constraints eliminated all)",
-            );
+            // AN EMPTY SHARD IS NOT A FAILURE. With more workers than index
+            // positions — 8 workers over a scope holding one build — every
+            // shard but the first owns no ground at all, and each of them used
+            // to answer "no legal builds in this scope (Forma / family
+            // constraints eliminated all)", a sentence about the pool that was
+            // really about the arithmetic. The fleet then surfaced one of those
+            // as the whole run's error.
+            //
+            // Walking nothing is different from walking and finding nothing.
+            // Only the second is the Forma/family case.
+            if stats.sampled > 0 {
+                return err_json(
+                    "no legal builds in this scope (Forma / family constraints eliminated all)",
+                );
+            }
+            return json!({
+                "ok": true, "cancelled": false,
+                "exhaustive": true, "coverage": 0.0,
+                "space": stats.space as f64, "searched": 0, "sampled": 0.0,
+                "shard": shard, "shards": shards,
+                "candidates": 0, "jobs": 0,
+                "final_runs": final_runs, "finalists": finalists,
+                "headshot_pct": headshot_pct, "duration": duration,
+                "results": [],
+                "target": { "name": target_name, "level": level, "steel_path": steel_path },
+            });
         }
         // Survivors -> a deduplicated candidate table (one build survives under
         // several arcanes) + (job, screen summary) pairs, best first.
@@ -4159,7 +4193,7 @@ pub fn run_optimize_resumable(
     // stopped it" — and neither can a bare flag, because the useful question
     // is HOW MUCH. `exhaustive` says the search reached the end of the index
     // range, in which case its winner is THE winner and not a best-so-far.
-    let (exhaustive, coverage, space_size, searched) = match search_stats {
+    let (exhaustive, coverage, space_size, searched, sampled) = match search_stats {
         Some(st) => (
             st.exhaustive,
             st.coverage(),
@@ -4167,11 +4201,12 @@ pub fn run_optimize_resumable(
             // UI prints an order of magnitude either way.
             st.space as f64,
             st.subsets,
+            st.sampled as f64,
         ),
         // A round resume did not search: it continues a funnel over a field
         // some earlier run already chose, and claiming coverage for it would
         // be claiming credit for a search this call never ran.
-        None => (false, 0.0, 0.0, 0),
+        None => (false, 0.0, 0.0, 0, 0.0),
     };
     json!({
         "ok": true,
@@ -4182,6 +4217,12 @@ pub fn run_optimize_resumable(
         "coverage": coverage,
         "space": space_size,
         "searched": searched,
+        // INDEX POSITIONS this shard consumed. Coverage above is this shard's
+        // alone; a sharded run sums these and divides by `space` to get the
+        // coverage of the whole fleet.
+        "sampled": sampled,
+        "shard": shard,
+        "shards": shards,
         "final_runs": final_runs,
         "finalists": finalists,
         "headshot_pct": headshot_pct,

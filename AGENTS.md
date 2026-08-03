@@ -103,9 +103,10 @@ around (decision 2026-07-31).
   non-zero when they do not. Run it after adding a weapon or anything a
   weapon can carry. `node scripts/check_search.mjs` is the TENTH and the
   end-to-end one: it runs a real optimize in the shipping wasm build and
-  asserts the two claims the search makes — a scope it finished reports
+  asserts the claims the search makes — a scope it finished reports
   `exhaustive` and says so on screen, a budgeted one reports its COVERAGE and
-  does not pretend. `node scripts/check_gain_freshness.mjs` is the ninth: a
+  does not pretend, and the WORKER FLEET covers more ground than one worker
+  would (the browser shards the shuffled index range across Web Workers). `node scripts/check_gain_freshness.mjs` is the ninth: a
   scenario edit reaches the quick calc immediately, including a field nobody
   has invented yet — the scan's cache key is DERIVED from the fight it will
   run, never a hand-listed copy of it. `node scripts/check_build_size.mjs` is the eighth: how full

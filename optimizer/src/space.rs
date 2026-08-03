@@ -493,4 +493,31 @@ mod tests {
             }
         }
     }
+    /// SHARDING must PARTITION the space: N workers walking strides
+    /// `w, w+N, w+2N, …` must together visit every index exactly once. If the
+    /// strides overlapped, workers would pay twice for the same build; if they
+    /// left a gap, the union would silently miss builds while N shards all
+    /// reported themselves exhaustive.
+    #[test]
+    fn shards_partition_the_shuffled_order_exactly() {
+        for n in [1u128, 7, 100, 1000] {
+            for shards in [1u128, 2, 3, 8] {
+                let sh = Shuffle::new(n, 0xBEEF);
+                let mut seen = vec![0u32; n as usize];
+                for shard in 0..shards {
+                    let mut k = 0u128;
+                    while shard + k * shards < n {
+                        seen[sh.at(shard + k * shards) as usize] += 1;
+                        k += 1;
+                    }
+                }
+                assert!(
+                    seen.iter().all(|&c| c == 1),
+                    "n={n} shards={shards}: {} indices missed, {} visited twice",
+                    seen.iter().filter(|&&c| c == 0).count(),
+                    seen.iter().filter(|&&c| c > 1).count()
+                );
+            }
+        }
+    }
 }

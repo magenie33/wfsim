@@ -72,17 +72,36 @@ const r = await evaluate(`(async () => {
 
   // ...and the same scope with a budget so small it cannot finish: it must
   // come back with a real ranking and admit what it covered.
-  const big = await runIt({ ...req, build_min: 1, max_evals: 60 });
+  // A fleet finishes a tiny space instantly, so the budgeted case needs a
+  // scope it cannot: twelve mods, any size, a handful of evaluations each.
+  const wide = ['serration','split_chamber','point_strike','vital_sense','cryo_rounds','hellfire',
+                'infected_clip','stormbringer','malignant_force','rime_rounds','thermite_rounds','hammer_shot'];
+  const big = await runIt({ ...req,
+    mods: Object.fromEntries(wide.map(id => [id, 'search'])),
+    build_size: 8, build_min: 1, max_evals: 40 });
+  out.bigWorkers = woptWorkerCount();
   out.bigOk = !!(big && big.ok);
   out.bigExhaustive = big && big.exhaustive;
   out.bigCoverage = big && big.coverage;
   out.bigResults = big && (big.results || []).length;
 
+  // THE POINT OF THE FLEET: N workers over disjoint strides must cover N
+  // times the ground of one. Same scope, same per-worker budget, one worker.
+  optRun.threads = 1;
+  const solo = await runIt({ ...req,
+    mods: Object.fromEntries(wide.map(id => [id, 'search'])),
+    build_size: 8, build_min: 1, max_evals: 40 });
+  out.soloSampled = solo && solo.sampled;
+  out.fleetSampled = big && big.sampled;
+  optRun.threads = 0;
+
   // What the page SAYS about each — the numbers are worth nothing if the
   // difference between "sampled" and "proven" never reaches the screen.
-  renderOptResults(small); await sleep(100);
+  try { renderOptResults(small); } catch (e) { out.renderErr = String(e).slice(0,200); }
+  await sleep(100);
   out.smallText = ($('opt-results').querySelector('.opt-meta') || {}).textContent || '';
-  renderOptResults(big); await sleep(100);
+  try { renderOptResults(big); } catch (e) { out.renderErr2 = String(e).slice(0,200); }
+  await sleep(100);
   out.bigText = ($('opt-results').querySelector('.opt-meta') || {}).textContent || '';
   return out;
 })()`);
@@ -96,6 +115,10 @@ check("the page says every build was searched", /every build|每一套/.test(r.s
 check("a budgeted run still ranks", r.bigOk === true && r.bigResults > 0);
 check("...and does NOT claim to be exhaustive", r.bigExhaustive === false);
 check("...reporting a coverage below 1", r.bigCoverage > 0 && r.bigCoverage < 1, String(r.bigCoverage));
+check(`the fleet ran ${r.bigWorkers} workers`, r.bigWorkers > 1, String(r.bigWorkers));
+check("...and covered more ground than one worker would",
+  r.fleetSampled > r.soloSampled * 1.5,
+  `fleet ${r.fleetSampled} vs solo ${r.soloSampled} index positions`);
 check("the page says it sampled", /searched .*% of this scope|搜索覆盖了/.test(r.bigText), JSON.stringify(r.bigText.slice(0, 160)));
 
 ws.close(); srv.close(); proc.kill();

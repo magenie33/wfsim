@@ -74,6 +74,19 @@ pub struct SearchConfig {
     pub seed: u64,
     /// Monte-Carlo runs per screen evaluation. 1 — see the module note.
     pub runs: u32,
+    /// WHICH SHARD of the space this run walks, of `shards` total. The browser
+    /// is single-threaded, so the only way to buy coverage there is to run
+    /// several Web Workers — each takes one stride of the shuffled order
+    /// (`shard`, `shard + shards`, `shard + 2·shards`, …). The strides are
+    /// disjoint and their union is the whole space, so N workers cover N times
+    /// the ground with no coordination and nothing evaluated twice.
+    ///
+    /// Each shard also CLIMBS on its own, which is a feature rather than a
+    /// compromise: N independent hill-climbs from N independent samples is
+    /// exactly the diversity a single best-first climb lacks, and the risk it
+    /// carries is committing to one basin.
+    pub shard: u32,
+    pub shards: u32,
 }
 
 impl Default for SearchConfig {
@@ -90,7 +103,15 @@ impl Default for SearchConfig {
         // 0.15 and 0.30 both find the optimum where 0.45 does not; 0.30 wins
         // on recall and keeps twice the exploration, which is the safer side
         // of a landscape whose ruggedness has been measured on one scope.
-        SearchConfig { max_evals: 0, explore_frac: 0.3, keep: 65_536, seed: 0xDEAD_BEEF, runs: 1 }
+        SearchConfig {
+            max_evals: 0,
+            explore_frac: 0.3,
+            keep: 65_536,
+            seed: 0xDEAD_BEEF,
+            runs: 1,
+            shard: 0,
+            shards: 1,
+        }
     }
 }
 
@@ -168,7 +189,12 @@ pub fn search(
     let mut tried: HashSet<u64> = HashSet::new();
     let shuffle = Shuffle::new(space.len(), cfg.seed);
     let mut seq = 0usize;
-    let mut k: u128 = 0; // position in the shuffled order
+    // How many of THIS SHARD's positions have been consumed; the position
+    // itself is `shard + k * shards`.
+    let mut k: u128 = 0;
+    let shards = u128::from(cfg.shards.max(1));
+    let shard = u128::from(cfg.shard) % shards;
+    let taken = |k: u128| shard + k * shards;
     // The climb's frontier: elites whose neighbourhood has been generated, and
     // the neighbours still waiting for a slot in a batch.
     let mut expanded: HashSet<u64> = HashSet::new();
@@ -194,7 +220,7 @@ pub fn search(
         let explore_spent = (cfg.max_evals > 0
             && stats.evals as f64 >= cfg.explore_frac * cfg.max_evals as f64)
             || state.is_some_and(|s| s.stop_explore.load(Ordering::Relaxed));
-        let exploring = k < space.len() && !explore_spent;
+        let exploring = taken(k) < space.len() && !explore_spent;
 
         // A batch must not overrun the phase it belongs to. Batches are wide
         // (4 per worker) so every core stays fed, and a small budget was
@@ -234,8 +260,8 @@ pub fn search(
         let mut batch: Vec<Proposal> = Vec::with_capacity(batch_size);
         if exploring {
             let mut buf = Vec::new();
-            while batch.len() < batch_size && k < space.len() {
-                let i = shuffle.at(k);
+            while batch.len() < batch_size && taken(k) < space.len() {
+                let i = shuffle.at(taken(k));
                 k += 1;
                 stats.sampled += 1;
                 if !space.nth(i, &mut buf) {
@@ -284,7 +310,7 @@ pub fn search(
             // the space is exhausted. Fall through to exploitation only if
             // there is budget left AND ground it has not covered; there is
             // not, so the run is over and it is an EXHAUSTIVE one.
-            if k >= space.len() {
+            if taken(k) >= space.len() {
                 break;
             }
             continue;
@@ -321,7 +347,9 @@ pub fn search(
         }
     }
 
-    stats.exhaustive = k >= space.len();
+    // This shard walked every position it owns. With one shard that is the
+    // whole space; with N it is one stride of it, and the caller ANDs them.
+    stats.exhaustive = taken(k) >= space.len();
     let mut out: Vec<Scored> = top.into_iter().map(|r| r.0).collect();
     out.sort_by(|a, b| b.cmp(a));
     (
