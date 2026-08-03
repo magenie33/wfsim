@@ -276,3 +276,63 @@ kill progress that moves all run long; the amnesty band at a cut line and the
 3σ racing cull were both sized from the wrong number. `Summary` now carries
 `std_kill_progress`.
 
+## Exhaustive enumeration does not survive a real scope (2026-08-03)
+
+Measured on Verglas Prime's rifle pool, min 1 / max 8 slots:
+
+| pooled mods | candidates (complete walk) | native single-thread |
+|---|---|---|
+| 22 | 571,569 | 2.3 s |
+| 26 | 2,634,467 | 10.4 s |
+| 30 | 9,241,964 | 128 s |
+| 60 (the whole pool) | ~10⁹–10¹⁰ | days |
+
+It is superexponential, and evaluating one candidate costs a full engagement:
+~200 sims/s per native thread, and the browser is single-threaded. So a search
+in the browser can afford on the order of **10⁴ evaluations** against a space of
+**10⁹**.
+
+The old answer was `ENUM_BUDGET_MS` in `wasm/src/lib.rs`: stop walking after
+20 s. Three things were wrong with it, in increasing order of seriousness.
+
+1. **It bought almost nothing.** On the streaming path the wasm screen runs
+   INLINE in the producer — one full simulation per candidate emitted — so the
+   budget covered walking *and* screening. 20 s ≈ 3,000 candidates.
+2. **The truncation is systematic, not a sample.** `enumerate_rec` is a
+   depth-first descent over pool indices, so what survives a cut is a
+   lexicographic prefix: builds made of the first few mods plus one varying
+   tail. Measured on a 22-mod pool, the complete walk carries Heat in 2.77% of
+   candidates; truncated to 8.7% of it, 1.45%; truncated to 3,000 candidates of
+   the full 60-mod pool, **0%**. Viral+Heat needs `cryo_rounds`(11) +
+   `malignant_force`(26) + `hellfire`(20) together with `serration`(50) and
+   `split_chamber`(54) — a subset that appears astronomically late in DFS order.
+   This is why the optimizer could return a build with no Heat on a weapon where
+   Heat is worth 4.5× (user, 2026-08-03).
+3. **It did not say so.** `stream_screen` treats only `cancel` as "did not
+   finish"; a walk stopped by the budget returns `complete = true` and renders
+   as a completed search.
+
+Raising the budget does not fix (2): at 5 minutes the coverage of a full pool
+goes from one ten-millionth to one millionth, and it is still the same corner.
+The fix is to stop substituting exhaustive enumeration for search — ONE path at
+every scope, graded by the harness above (user, 2026-08-03: rigour over
+convenience; a user who wants less work should pool fewer mods).
+
+## How full a build must be is a RANGE (2026-08-03)
+
+The scope had a ceiling (`build_size`, "max mods / build") and a derived floor:
+`required + 1 if anything is pooled`. So "search only full 8-mod builds" was
+not a thing you could ask for, and every search paid for the sizes below its
+ceiling — on a 14-mod pool that is more than half the space, spent on builds
+that leave slots empty for no reason.
+
+`build_min` is its own request field now, and the UI is one control with two
+ends: **exactly 8** is 8–8, **up to 8** is 1–8, **up to 7** is 1–7 (user,
+2026-08-03). Three settings, not three behaviours.
+
+The derived floor stays a FLOOR rather than being replaced: pooling mods is the
+statement that they should be used, so every searched build carries at least one
+pooled mod and all of the required ones. A `build_min` below that is raised to
+it — it asks for builds the scope has already ruled out — while one above it
+wins. `scripts/check_build_size.mjs` asserts both ends on screen, in the preset
+and in the request.

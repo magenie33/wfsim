@@ -149,7 +149,20 @@ fn optimize_inner(
             // saw. NOT `cancel`: that would return an empty result — this asks
             // for a best-so-far. Native builds have threads and a Cancel
             // button and take no budget.
-            const ENUM_BUDGET_MS: f64 = 20_000.0;
+            //
+            // FIVE MINUTES, not the 20 s it was (user, 2026-08-03: accuracy
+            // over convenience — a search the visitor asked for, with a
+            // progress bar and a Cancel button in front of it, is allowed to
+            // take real time). 20 s was not a budget so much as a silent
+            // truncation: on the streaming path this build screens INLINE, one
+            // full engagement per candidate, so it bought ~3,000 of them —
+            // and, the walk being depth-first, always the same 3,000. What
+            // this number cannot fix is that the truncation is a corner rather
+            // than a sample; that is the search's job, not the budget's
+            // (OPTIMIZER.md). What it can do is stop being the first thing
+            // that goes wrong, and the result now says `truncated` when it
+            // fires.
+            const ENUM_BUDGET_MS: f64 = 300_000.0;
             if counts.get().is_none() && now - budget_t0.get() > ENUM_BUDGET_MS {
                 state
                     .stop_enumeration

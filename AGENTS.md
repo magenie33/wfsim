@@ -101,7 +101,11 @@ around (decision 2026-07-31).
   is the committed one — the builder and the optimizer must offer the
   same options and the same visibility on every axis, and it exits
   non-zero when they do not. Run it after adding a weapon or anything a
-  weapon can carry. `node scripts/check_buff_cards.mjs` is the seventh: buff
+  weapon can carry. `node scripts/check_build_size.mjs` is the eighth: how full
+  a searched build must be is a RANGE (`build_min`–`build_size`), so "exactly 8
+  mods" is a setting rather than something the scope cannot express — both ends
+  push each other, both ride the search preset, and both reach the request.
+  `node scripts/check_buff_cards.mjs` is the seventh: buff
   cards are named in the display language (an EVOLUTION's buff was the last one
   left in English), open at the stack count the rule says, and report a
   coverage that is never rounded up to a flat 100%.

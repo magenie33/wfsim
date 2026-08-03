@@ -28,4 +28,7 @@ web/cache/
 *.swp
 .DS_Store
 Thumbs.db
-target-fix/
+# Scratch cargo target dirs (CARGO_TARGET_DIR=target-<something> for a build
+# that must not disturb the main one). `git add -A` picked one up as 5,500
+# files once; the glob is what stops the next one.
+target-*/

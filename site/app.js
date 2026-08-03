@@ -374,7 +374,7 @@ const simMeterOpen = new Set();
 // empty", "fixed" = pin it (max one). Plus the arcane set and per-tier
 // evolution option sets. Enemy + buffs are shared with the Sim panel
 // (`sim`). Seeded from the current build on weapon change.
-let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8 };
+let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8, min: 1 };
 let optSeeded = false;
 // (The optimizer used to keep its own scope-wide buff list and config here.
 // It reads the SCENARIO's now — see `renderOptBuffs`.)
@@ -539,8 +539,16 @@ async function init() {
   $("run-opt").addEventListener("click", runOptimize);
   $("opt-mod-filter").addEventListener("input", renderOptModList);
   $("opt-arc-filter").addEventListener("input", renderOptArcanes);
+  // How full a build must be, as a RANGE. The two ends are one setting: a
+  // ceiling below the floor is not a scope, so each end pushes the other.
   $("opt-size").addEventListener("input", () => {
     opt.size = Math.max(1, Math.min(8, Number($("opt-size").value) || 8));
+    if (opt.min > opt.size) { opt.min = opt.size; $("opt-min").value = opt.min; }
+    updateOptEstimate();
+  });
+  $("opt-min").addEventListener("input", () => {
+    opt.min = Math.max(1, Math.min(8, Number($("opt-min").value) || 1));
+    if (opt.min > opt.size) { opt.size = opt.min; $("opt-size").value = opt.size; }
     updateOptEstimate();
   });
   // updateOptEstimate is also the scope's auto-save, so finalists lands in the
@@ -5636,6 +5644,7 @@ async function renderOptBuffs() {
 // a "mods per build" size. `optPrefs` mirrors the picker's sort/filter.
 function renderOptMods() {
   $("opt-size").value = opt.size;
+  $("opt-min").value = opt.min;
   renderOptTools();
   renderOptModSel();
   renderOptModList();
@@ -5922,7 +5931,7 @@ function bootstrapOptPresets() {
 
 function snapshotOpt() {
   return {
-    mods: { ...opt.mods }, exilus: { ...opt.exilus }, size: opt.size,
+    mods: { ...opt.mods }, exilus: { ...opt.exilus }, size: opt.size, min: opt.min,
     arcanes: { ...opt.arcanes },
     evos: JSON.parse(JSON.stringify(opt.evos)),
     finalists: optRun.finalists,
@@ -5948,6 +5957,8 @@ function applyOptState(st) {
   Object.entries(st.exilus || {}).forEach(([id, s]) => { const m = modById(id); if (m && m.exilus) opt.exilus[id] = norm(s); });
   delete opt.exilus["none"]; // brief None-row era
   if (st.size) opt.size = st.size;
+  // Presets written before the range existed carry no min; 1 is what they meant.
+  opt.min = Math.min(st.min || 1, opt.size);
   // Arcanes: another SLOT's arcanes are not equippable here, so they drop
   // rather than becoming search dimensions the run cannot use.
   opt.arcanes = {};
@@ -6150,7 +6161,8 @@ function updateOptEstimate() {
   const size = opt.size;
   // The pool group occupies ≥1 slot: with pools marked, every build carries
   // at least one pooled mod (k starts above the required count).
-  const minK = fixed + (search > 0 ? 1 : 0);
+  // ...and `opt.min` raises that floor: "exactly 8 mods" is min 8, max 8.
+  const minK = Math.max(fixed + (search > 0 ? 1 : 0), opt.min);
   let subsets = 0;
   for (let k = minK; k <= size; k++) subsets += nChooseK(search, k - fixed);
   subsets *= evoProduct * exOptions;
@@ -6265,6 +6277,7 @@ async function runOptimize() {
       mods: opt.mods,
       rivens: rivenPayload(),
       build_size: opt.size,
+      build_min: opt.min,
       arcanes: arcs,
       evolutions,
       exilus: opt.exilus,
@@ -6476,7 +6489,15 @@ function renderOptResults(r) {
       <div class="opt-mods">${mods}</div>
     </div>`;
   }).join("");
-  $("opt-results").innerHTML = `<div class="opt-meta">${r.cancelled ? `<span class="warn">cancelled — best-so-far ranking (lower precision than a full run)</span> · ` : ""}${(r.jobs || 0).toLocaleString()} candidate builds · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${r.headshot_pct ?? "?"}% headshots · ${r.duration ?? "?"} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
+  // TRUNCATED is not CANCELLED. Cancelled means you stopped it and this is the
+  // best it had; truncated means the scope was bigger than the walk budget, so
+  // the builds below are the best of a PREFIX of the space — never a sample of
+  // it. A run that does not say this reads as a finished search.
+  const truncated = r.truncated
+    ? `<span class="warn">${tr("scope too big for one search — only the first {n} builds were reached, and they are the walk's first, not a sample of the space; pool fewer mods for an answer you can trust")
+        .replace("{n}", (r.walked || 0).toLocaleString())}</span> · `
+    : "";
+  $("opt-results").innerHTML = `<div class="opt-meta">${truncated}${r.cancelled ? `<span class="warn">cancelled — best-so-far ranking (lower precision than a full run)</span> · ` : ""}${(r.jobs || 0).toLocaleString()} candidate builds · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${r.headshot_pct ?? "?"}% headshots · ${r.duration ?? "?"} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
   $("opt-results").querySelectorAll(".opt-add").forEach((el) =>
     el.addEventListener("click", () => addResult(JSON.parse(el.dataset.r), el)));
 }

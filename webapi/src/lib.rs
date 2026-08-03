@@ -3144,7 +3144,24 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             fixed_ids.len()
         )));
     }
-    let min_slots = fixed_ids.len() + usize::from(!search_ids.is_empty());
+    // How FULL a build must be, as its own axis (user, 2026-08-03: "搜索器可以
+    // 有个设置，例如必须8个，<=8个，<=7个"). `build_size` is the ceiling and
+    // `build_min` the floor, so "exactly 8" is (8, 8), "up to 8" is (1, 8) and
+    // "up to 7" is (1, 7) — three settings rather than three behaviours.
+    //
+    // The DERIVED floor stays a floor: pooling mods is the statement that they
+    // should be used, so at least one pooled mod is in every searched build,
+    // and every required mod is in all of them. A `build_min` below that is
+    // raised to it rather than rejected — it asks for builds the scope itself
+    // has already ruled out.
+    let derived_min = fixed_ids.len() + usize::from(!search_ids.is_empty());
+    let build_min = get_u32(v, "build_min", 1).clamp(1, 8) as usize;
+    if build_min > build_size {
+        return Err(err_json(format!(
+            "a build cannot hold at least {build_min} mods and at most {build_size}"
+        )));
+    }
+    let min_slots = derived_min.max(build_min);
     let pool: Vec<ModDef> = full
         .iter()
         .filter(|m| pool_ids.iter().any(|id| id.as_str() == m.id))
@@ -4171,11 +4188,24 @@ pub fn run_optimize_resumable(
         .map(|(rank, ((ci, ai), s))| entry(rank, &cands[*ci], *ai, s))
         .collect();
 
+    // A run whose WALK was cut short by the host's enumeration budget has not
+    // searched the scope it was given, and it must not render as one that did.
+    // `cancelled` cannot carry this: that means "the user stopped it" and its
+    // answer is the best-so-far. This means "the scope was bigger than the
+    // budget", and what it returns is the best of a PREFIX of the walk — which,
+    // the walk being depth-first, is a corner of the space rather than a sample
+    // of it (OPTIMIZER.md, "Exhaustive enumeration does not survive a real
+    // scope"). Saying so is the minimum until the search stops being a walk.
+    let truncated = state
+        .stop_enumeration
+        .load(std::sync::atomic::Ordering::Relaxed);
     json!({
         "ok": true,
         "candidates": cands.len(),
         "jobs": n_jobs,
         "cancelled": cancelled,
+        "truncated": truncated,
+        "walked": state.enumerated.load(std::sync::atomic::Ordering::Relaxed),
         "final_runs": final_runs,
         "finalists": finalists,
         "headshot_pct": headshot_pct,
