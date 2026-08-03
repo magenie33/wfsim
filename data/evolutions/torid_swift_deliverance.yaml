@@ -26,11 +26,18 @@ effects:
   # the Torid's projectile lifetime (the wiki page and WFCD both stop at
   # shot_speed 40), so the new max range cannot be computed from data.
   #
-  # `note`/`rankMax` used to sit here as YAML fields. The evolution loader reads
-  # NEITHER (`kind: unmodeled` resolves to `Inert`, which contributes nothing) —
-  # they were copied from the ARCANE schema, where `note` really is consumed and
-  # rendered. Prose belongs in comments; only consumed data gets a field.
-  - kind: unmodeled
+  # THE NUMBER NOW COUNTS. It used to be `kind: unmodeled`, which loads as
+  # `Inert` — the evolution was selectable and its +50% vanished. Projectile
+  # speed has had an indirect bucket since the mods got theirs (2026-08-01), so
+  # the value reaches the panel like any handling stat (user, 2026-08-03).
+  #
+  # What is still NOT derived is the RANGE it buys: max range = speed x
+  # lifetime, and neither source gives the Torid's projectile lifetime (both
+  # stop at shot_speed 40). The arena is single-target at a fixed engagement
+  # anyway, so it models neither travel time nor range.
+  - kind: indirect
+    stat: projectile_speed
+    value: 0.50
 
 source:
   url: https://wiki.warframe.com/w/Torid_Incarnon_Genesis

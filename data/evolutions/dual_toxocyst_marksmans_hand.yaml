@@ -11,8 +11,12 @@ effects:
   # MODS loader has one — different loader, different vocabulary), so this
   # resolves to `EvoEffect::Inert` and the engine takes nothing
   # (data/README.md).
-  - kind: recoil_reduction      # not a damage bucket; recorded for parity
-    value: 0.50
+  # NEGATIVE = less recoil, the convention the MODS carry (Primed Stabilizer
+  # ramps -0.15 -> -0.9). This read +0.50 — i.e. FIFTY PERCENT MORE recoil —
+  # for as long as the loader ignored it; wiring the bucket up is what surfaced
+  # it (2026-08-03).
+  - kind: recoil_reduction
+    value: -0.50
 
 source:
   url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis

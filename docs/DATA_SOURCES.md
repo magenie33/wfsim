@@ -88,6 +88,27 @@ Our field names follow the wiki concept words (snake_case + unit suffixes):
   [`../data/README.md`](../data/README.md)): fields are structured data a
   program consumes; human narrative is a `#` comment. No prose in fields.
 
+### The CN wiki is reachable through its API, not its pages (2026-08-03)
+
+`warframe.huijiwiki.com` — the second source `data/README.md` names for display
+names, and the ONLY source for Incarnon evolution strings (DE exports none;
+WFCD has no entity for them) — serves every page URL and every `?action=raw`
+behind a Cloudflare challenge. 403, "Just a moment...", no body.
+
+Its **MediaWiki API answers normally**:
+
+```
+curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0"   "https://warframe.huijiwiki.com/api.php?action=parse&page=<标题>&prop=wikitext&format=json"
+```
+
+Recorded because the wall produced a worse outcome than an empty field: with
+the pages unreachable, five Boar Prime evolution names were TRANSLATED from
+their English instead, and four of the five were wrong (堡垒齐射 / 佣兵膛室 /
+熟练握把 / 暴击并行, against DE's 要塞齐射 / 佣兵枪膛 / 熟练之握 / 临界平行).
+DE's Chinese names are routinely non-literal — Commodore's Fortune is 准将沐福
+— so a name that cannot be read must be left EMPTY and asked for, never
+derived.
+
 ## Which source wins (revised 2026-07-30)
 
 The rule used to be "the wiki module is authoritative for every mechanical

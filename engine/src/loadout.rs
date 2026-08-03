@@ -710,6 +710,12 @@ pub enum CoBehavior {
 /// weapon's BASE stats before mods).
 #[derive(Debug, Clone)]
 pub struct WeaponBase {
+    /// Indirect stats the WEAPON itself brings, before any mod — today only
+    /// EVOLUTIONS write here (Practiced Grip's +50% accuracy, Marksman's
+    /// Hand's recoil, Swift Deliverance's projectile speed). `resolve` seeds
+    /// the panel's `indirect` from this and mods add into the same buckets, so
+    /// an evolution's handling stat lands exactly where a mod's does.
+    pub indirect: Vec<(IndirectStat, f64)>,
     pub base_vector: DamageVector,
     pub base_crit_chance: f64,
     pub base_crit_damage: f64,
@@ -1273,7 +1279,10 @@ pub fn resolve_for(
     let mut bd_on_reload: Option<TimedBuff> = None;
     let mut proc_conv: Option<ProcConv> = None;
     let mut elem_bonus: Vec<(DamageType, f64)> = Vec::new();
-    let mut indirect: Vec<(IndirectStat, f64)> = Vec::new();
+    // SEEDED from the weapon, not empty: an evolution's indirect stat is a
+    // property of the weapon by the time `resolve` runs (evolutions are folded
+    // into `WeaponBase` first), and it shares its bucket with the mods'.
+    let mut indirect: Vec<(IndirectStat, f64)> = base.indirect.clone();
     // Charge-rate bonuses, summed apart from fire rate: both shorten the draw,
     // only fire rate also raises an uncharged form's cadence.
     let mut cr = 0.0f64;

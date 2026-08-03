@@ -85,6 +85,17 @@ enum EvoEffect {
     /// `FlatBaseDamage` so the card can say what it assumed, and so the day
     /// the sim can toggle it there is one place to change.
     FlatBaseDamageOnEmptyReload(f64),
+    /// A handling / mobility / multi-target stat with no single-target damage
+    /// payload — recoil, accuracy, punch through, projectile speed, holstered
+    /// reload. It COUNTS: the value lands in the panel's `indirect` bucket
+    /// beside the mods' (user, 2026-08-03: "什么后坐力，精准度，我们要纳计算，
+    /// 只是目前完全不影响 dps 而已"). Mods were given this treatment on
+    /// 2026-08-01; evolutions were still dropping the number on the floor.
+    Indirect(crate::loadout::IndirectStat, f64),
+    /// Sets the ammo RESERVE outright (Mercenary Chamber: "Increase Base Ammo
+    /// Capacity to 195") — a set, not an add, so it cannot ride the additive
+    /// indirect bucket.
+    AmmoMaxSet(f64),
     /// Adds whole rounds to the BASE magazine, before magazine mods (Torid's
     /// Extended Volley: +9 on a base of 5). Explicitly NOT the Incarnon form's
     /// charge-backed magazine — "Does not apply to Incarnon Form's Magazine" —
@@ -288,6 +299,8 @@ impl EvolutionDef {
                 EvoEffect::FlatBaseStatusChanceByForm { .. }
                 | EvoEffect::FlatBaseCritMultiplier(_)
                 | EvoEffect::FlatBaseDamageOnEmptyReload(_)
+                | EvoEffect::Indirect(..)
+                | EvoEffect::AmmoMaxSet(_)
                 | EvoEffect::FlatBaseDamage(_)
                 | EvoEffect::FlatBaseCritChance(_)
                 | EvoEffect::FlatBaseStatusChance(_)
@@ -367,6 +380,16 @@ impl EvolutionDef {
                 EvoEffect::FlatBaseCritMultiplier(v) => {
                     format!("+{v:.2}x BASE crit multiplier (crit damage mods multiply it)")
                 }
+                EvoEffect::Indirect(stat, v) => {
+                    // Percent for the fractional stats, a bare number for the
+                    // ones measured in their own unit (punch through: metres).
+                    if matches!(stat, crate::loadout::IndirectStat::PunchThrough) {
+                        format!("{:+.1} m {}", v, stat.label())
+                    } else {
+                        format!("{:+.0}% {}", v * 100.0, stat.label())
+                    }
+                }
+                EvoEffect::AmmoMaxSet(v) => format!("ammo reserve set to {v:.0}"),
                 EvoEffect::FlatBaseDamageOnEmptyReload(v) => format!(
                     "+{v:.0} base damage after an empty reload — held for the whole run"
                 ),
@@ -442,6 +465,28 @@ impl EvolutionDef {
     }
 }
 
+/// `stat:` names an [`IndirectStat`]. Deliberately EXPLICIT rather than a
+/// fuzzy match: an unknown name falls through to `Inert(...)` and the pinned
+/// inert test then fails, which is how a typo announces itself instead of
+/// silently contributing nothing.
+fn indirect_stat(name: &str) -> Option<crate::loadout::IndirectStat> {
+    use crate::loadout::IndirectStat as I;
+    Some(match name {
+        "recoil" => I::Recoil,
+        "accuracy" => I::Accuracy,
+        "punch_through" => I::PunchThrough,
+        "projectile_speed" => I::ProjectileSpeed,
+        "holstered_reload_per_second" => I::HolsteredReload,
+        "movement_speed_aiming" => I::MovementSpeed,
+        "ammo_max" => I::AmmoMax,
+        "zoom" => I::Zoom,
+        "range" => I::Range,
+        "beam_range" => I::BeamRange,
+        "noise" => I::Noise,
+        _ => return None,
+    })
+}
+
 fn f(v: &Value, k: &str) -> Option<f64> {
     v.get(k).and_then(Value::as_f64)
 }
@@ -464,6 +509,33 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         "flat_base_damage_on_empty_reload" => {
             EvoEffect::FlatBaseDamageOnEmptyReload(f(v, "value").unwrap_or(0.0))
         }
+        // The handling family. `indirect` names its target in `stat:`; the
+        // rest are named kinds that predate it and keep their spelling so the
+        // yaml still reads like the card.
+        "indirect" => match v.get("stat").and_then(Value::as_str).and_then(indirect_stat) {
+            Some(st) => EvoEffect::Indirect(st, f(v, "value").unwrap_or(0.0)),
+            None => EvoEffect::Inert(format!(
+                "indirect ({})",
+                v.get("stat").and_then(Value::as_str).unwrap_or("no stat")
+            )),
+        },
+        "punch_through_bonus" => {
+            EvoEffect::Indirect(crate::loadout::IndirectStat::PunchThrough, f(v, "value").unwrap_or(0.0))
+        }
+        "accuracy_bonus" => {
+            EvoEffect::Indirect(crate::loadout::IndirectStat::Accuracy, f(v, "value").unwrap_or(0.0))
+        }
+        // NEGATIVE means less recoil, the same convention the MODS carry
+        // (Primed Stabilizer ramps -0.15 -> -0.9). A positive value here would
+        // read as more recoil, which no evolution grants.
+        "recoil_reduction" => {
+            EvoEffect::Indirect(crate::loadout::IndirectStat::Recoil, f(v, "value").unwrap_or(0.0))
+        }
+        "holstered_magazine_regen" => EvoEffect::Indirect(
+            crate::loadout::IndirectStat::HolsteredReload,
+            f(v, "value").unwrap_or(0.0),
+        ),
+        "ammo_reserve_set" => EvoEffect::AmmoMaxSet(f(v, "value").unwrap_or(0.0)),
         "flat_base_magazine" => EvoEffect::FlatBaseMagazine(f(v, "value").unwrap_or(0.0)),
         "field_duration_on_empty_reload" => {
             EvoEffect::FieldDurationOnEmptyReload(f(v, "value").unwrap_or(1.0))
@@ -537,6 +609,15 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // Same bucket as the line above: it is base damage, and the
                 // run is modelled holding it (see the variant's note).
                 EvoEffect::FlatBaseDamageOnEmptyReload(v) => flat += v,
+                // Into the SAME additive bucket a mod's indirect stat uses;
+                // `resolve` seeds the panel from here.
+                EvoEffect::Indirect(stat, v) => {
+                    match base.indirect.iter_mut().find(|(s, _)| s == stat) {
+                        Some(e) => e.1 += v,
+                        None => base.indirect.push((*stat, *v)),
+                    }
+                }
+                EvoEffect::AmmoMaxSet(v) => base.ammo_reserve = *v,
                 // A base-stat evolution is a WEAPON stat change, so it lands
                 // on EVERY attack part, not just the direct hit. That is the
                 // same reading `resolve` already applies to Elemental Excess's
@@ -877,32 +958,28 @@ mod tests {
             "dual_toxocyst_evo1_incarnon_form :: unlocks_weapon",
             "laetum_evo1_incarnon_form :: unlocks_weapon",
             "torid_evo1_incarnon_form :: unlocks_weapon",
-            // ---- SPATIAL: the arena has one target and no geometry ------
-            "boar_prime_fortress_salvo :: punch_through_bonus", // +4 punch through
-            "boar_prime_practiced_grip :: accuracy_bonus",      // +50% accuracy
-            "dual_toxocyst_marksmans_hand :: recoil_reduction", // -50% recoil
-            "laetum_marksmans_hand :: indirect",                // -40% recoil
-            "laetum_raptors_chase :: indirect",                 // aim movement speed
-            "torid_swift_deliverance :: unmodeled",             // +50% projectile speed
-            "dual_toxocyst_ripper_rounds :: timed_buff",        // +3 punch through on kill
-            // ---- AMMO ECONOMY: the scenario runs an infinite reserve ----
-            "boar_prime_mercenary_chamber :: ammo_reserve_set", // reserve -> 195
-            "laetum_feather_of_justice :: indirect",            // ammo efficiency
-            "laetum_reapers_plenty :: indirect",                // ammo efficiency on headshot
-            // ---- RELOAD CADENCE: the sim reloads on a fixed schedule ----
-            // (these are also `reload_speed_bonus`, a MODS-loader word this
-            // loader has never had an arm for)
+            // ---- RELOAD CADENCE ----------------------------------------
+            // `reload_speed_bonus` is a MODS-loader word this loader has no arm
+            // for, and both instances are conditional on an empty reload the
+            // sim does not distinguish.
             "boar_prime_ready_retaliation :: reload_speed_bonus",
             "dual_toxocyst_ready_retaliation :: reload_speed_bonus",
-            "dual_toxocyst_evolved_autoloader :: holstered_magazine_regen",
-            "laetum_awakened_readiness :: indirect", // holstered magazine regen
-            // ---- A REAL DPS EFFECT, and the one entry here that is a GAP:
-            // Neurotoxin is "On Headshot: +70% Toxin for 3 s" on a weapon
-            // played at 100% headshots. It is inert because the loader has no
-            // `timed_buff` arm — but it is also `currently_broken` in game
-            // (DE's own bug, recorded on the wiki), and `apply` skips broken
-            // evolutions wholesale, so today the two cancel out. Whoever fixes
-            // the arm should check whether DE fixed the perk.
+            // ---- AMMO EFFICIENCY, and it is CONDITIONAL -----------------
+            // Not an indirect stat: efficiency is real DPS the moment a
+            // reserve runs dry. But one is gated on a movement state and one
+            // on a headshot window, and applying either unconditionally would
+            // overstate the build. They also land on the Laetum's Incarnon
+            // magazine, which is charge-backed and takes no efficiency at all.
+            "laetum_feather_of_justice :: indirect (ammo_efficiency_conditional)",
+            "laetum_reapers_plenty :: indirect (ammo_efficiency_on_headshot)",
+            // ---- TIMED BUFFS: no `timed_buff` arm in this loader --------
+            // Ripper Rounds is punch through on kill (multi-target only).
+            // Neurotoxin is "+70% Toxin for 3 s on headshot" — REAL DPS on a
+            // weapon played at 100% headshots, and the one genuine gap here.
+            // It is also `currently_broken` in game (DE's own bug), and
+            // `apply` skips broken evolutions wholesale, so the two cancel
+            // out today. Whoever writes the arm should check DE fixed it.
+            "dual_toxocyst_ripper_rounds :: timed_buff",
             "dual_toxocyst_neurotoxin :: timed_buff",
         ];
         let expected: Vec<String> = expected.into_iter().map(str::to_string).collect();
@@ -914,5 +991,46 @@ mod tests {
   NEW (implement it, or add it here with a reason): {extra:#?}
   GONE (drop it from the list): {missing:#?}"
         );
+    }
+    /// An evolution's HANDLING stats reach the resolved panel.
+    ///
+    /// They have no single-target damage payload, which is exactly why they
+    /// used to be dropped — and dropping them meant the evolution equipped and
+    /// its number vanished (user, 2026-08-03: 我们要纳计算). This asserts the
+    /// whole path: yaml -> loader -> `WeaponBase.indirect` -> `resolve`'s
+    /// bucket, in the same place a mod's would land.
+    #[test]
+    fn an_evolutions_handling_stats_reach_the_panel() {
+        use crate::loadout::{resolve, IndirectStat, StackPolicy};
+        let of = |weapon: &str, evo: &str| -> Vec<(IndirectStat, f64)> {
+            let base = crate::loadout::WeaponBase::from_data(weapon, true, &[evo]);
+            resolve(&base, &[], StackPolicy::Emergent).indirect
+        };
+        let find = |v: &[(IndirectStat, f64)], want: IndirectStat| {
+            v.iter().find(|(s, _)| *s == want).map(|(_, x)| *x)
+        };
+
+        // Practiced Grip: "+50% Accuracy".
+        let grip = of("boar_prime", "boar_prime_practiced_grip");
+        assert_eq!(find(&grip, IndirectStat::Accuracy), Some(0.50), "{grip:?}");
+
+        // Fortress Salvo: "+4 Punch Through" (metres), alongside its +16 base
+        // damage — a mixed evolution must deliver BOTH halves.
+        let salvo = of("boar_prime", "boar_prime_fortress_salvo");
+        assert_eq!(find(&salvo, IndirectStat::PunchThrough), Some(4.0), "{salvo:?}");
+
+        // Marksman's Hand: "-50% Recoil". NEGATIVE, like the mods'.
+        let hand = of("dual_toxocyst", "dual_toxocyst_marksmans_hand");
+        assert_eq!(find(&hand, IndirectStat::Recoil), Some(-0.50), "{hand:?}");
+
+        // Swift Deliverance: "+50% Projectile Speed", which was `unmodeled`.
+        let swift = of("torid", "torid_swift_deliverance");
+        assert_eq!(find(&swift, IndirectStat::ProjectileSpeed), Some(0.50), "{swift:?}");
+
+        // Mercenary Chamber SETS the reserve rather than adding to a bucket.
+        let base = crate::loadout::WeaponBase::from_data(
+            "boar_prime", true, &["boar_prime_mercenary_chamber"],
+        );
+        assert_eq!(base.ammo_reserve, 195.0);
     }
 }

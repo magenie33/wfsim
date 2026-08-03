@@ -11,6 +11,19 @@
 #     text. The evolution strings live in the client's localization tables,
 #     which are not exported.
 #
+# HOW TO READ IT (2026-08-03). The wiki's PAGES sit behind a Cloudflare
+# challenge that neither curl nor a fetch tool can pass — every `?action=raw`
+# and every plain page URL answers 403 "Just a moment...". Its MediaWiki API
+# does NOT:
+#
+#   curl -A "Mozilla/5.0 …" #     "https://warframe.huijiwiki.com/api.php?action=parse&page=<标题>&prop=wikitext&format=json"
+#
+# That is the whole trick, and it is written down because the wall cost a round
+# of INVENTED names first: four of five guessed Boar Prime names were wrong
+# (堡垒齐射/佣兵膛室/熟练握把/暴击并行 for the real 要塞齐射/佣兵枪膛/熟练之握/
+# 临界平行). A DE name is never derivable from its English — 准将沐福 for
+# Commodore's Fortune — so "unreachable" must mean ASK, never translate.
+#
 # So the source here is the community wiki's transcription of the CN client —
 # the SAME second source data/README.md already names for display names
 # (https://warframe.huijiwiki.com), read 2026-07-31 from:
@@ -61,22 +74,20 @@ evolutions:
   torid_commodores_fortune: 准将沐福
   torid_survivors_edge: 生还占优
   torid_elemental_balance: 元素平衡
-  # Boar Prime. FOUR of these names are ATTESTED — they are the same DE perk
-  # name another weapon in this file already carries, and the CN client uses
-  # one string per perk (灵化形态, 待命报复, 元素平衡, 生还占优 all appear
-  # above). The other five are OURS, marked below: the CN wiki sits behind a
-  # Cloudflare challenge that no fetch here can pass, so nobody has read them
-  # out of the client yet. They are honest translations, not transcriptions —
-  # DE's CN names are often non-literal (Commodore's Fortune is 准将沐福), so
-  # treat each one as a placeholder until somebody confirms it in game.
+  # Boar Prime — DE's own strings, read from the CN wiki's transcription
+  # (野猪灵化之源, pageid 58773) through `api.php`. Four of these had already
+  # been guessed here from their English names and FOUR OF THE FIVE GUESSES
+  # WERE WRONG (堡垒齐射/佣兵膛室/熟练握把/暴击并行 for 要塞齐射/佣兵枪膛/
+  # 熟练之握/临界平行), which is the whole argument for never translating a
+  # name that DE has already named.
   boar_prime_evo1_incarnon_form: 灵化形态
-  boar_prime_reified_bane: 具象克星            # OURS — unconfirmed
-  boar_prime_fortress_salvo: 堡垒齐射          # OURS — unconfirmed
+  boar_prime_reified_bane: 具象克星
+  boar_prime_fortress_salvo: 要塞齐射
   boar_prime_ready_retaliation: 待命报复
-  boar_prime_mercenary_chamber: 佣兵膛室       # OURS — unconfirmed
-  boar_prime_practiced_grip: 熟练握把          # OURS — unconfirmed
+  boar_prime_mercenary_chamber: 佣兵枪膛
+  boar_prime_practiced_grip: 熟练之握
   boar_prime_elemental_balance: 元素平衡
-  boar_prime_critical_parallel: 暴击并行       # OURS — unconfirmed
+  boar_prime_critical_parallel: 临界平行
   boar_prime_survivors_edge: 生还占优
 
 # The card text. One string per evolution; `\n` where our English description
@@ -117,25 +128,22 @@ evolution_descriptions:
   torid_survivors_edge: "基础暴击几率增加 +15%。\n基础触发几率增加 +15%。"
   torid_elemental_balance: "基础触发几率增加 +34%。"
   # ---- Boar Prime ----
-  # Assembled from the phrases this file already uses, so the cards read like
-  # the rest: 空弹匣装填时 (Torid's Renewed Horror, Dual Toxocyst's Ready
-  # Retaliation), 基础伤害增加, 基础暴击几率增加, 基础触发几率增加. The
-  # per-projectile / per-form split is the Boar's own and has no precedent
-  # here — see data/evolutions/boar_prime_elemental_balance.yaml for why one
-  # number cannot serve both forms.
-  boar_prime_evo1_incarnon_form: "弱点命中为灵化转变充能，次要开火进行转变。
-发射最多三道短距离连锁火焰光束。"
-  boar_prime_reified_bane: "基础伤害增加 +10。
-空弹匣装填时：基础伤害增加 +14。"
-  boar_prime_fortress_salvo: "基础伤害增加 +16。
-护甲高于 450 时：+4 穿透。"
+  # Verbatim from the CN wiki page (野猪灵化之源), markup resolved and the
+  # 原版/Prime duplication dropped — both columns carry the same number and
+  # this entry is the Prime's.
+  #
+  # NOTE on Reified Bane: DE's card says +10 for the empty-reload half in BOTH
+  # languages, and the EN wiki records that as a MISPRINT ("Reload From empty
+  # bonus is incorrectly listed as +10 in game") — the effect is +14, which is
+  # what data/evolutions/boar_prime_reified_bane.yaml models. The card here
+  # stays DE's own sentence, misprint included: this file transcribes what the
+  # client SAYS, and the yaml carries what the game DOES.
+  boar_prime_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。\n灵化形态发射三束能自动锁定准星 10° 范围内敌人的火焰射线，每根射线还能链接攻击 9 米内的 2 名敌人，链接伤害为之前的 80%。"
+  boar_prime_reified_bane: "基础伤害增加 +10。\n空弹匣装填时：基础伤害增加 +10。"
+  boar_prime_fortress_salvo: "基础伤害增加 +16。\n护甲大于 450 时：+4 穿透。"
   boar_prime_ready_retaliation: "空弹匣装填时：+100% 装填速度。"
-  boar_prime_mercenary_chamber: "基础弹药容量提升至 195。"
-  boar_prime_practiced_grip: "精准度增加 +50%。"
-  boar_prime_elemental_balance: "每颗弹丸的基础触发几率增加 +12%。
-灵化形态的基础触发几率增加 +96%。"
-  boar_prime_critical_parallel: "基础暴击几率增加 +20%。
-基础暴击伤害倍率增加 +0.5x。"
-  boar_prime_survivors_edge: "基础暴击几率增加 +10%。
-每颗弹丸的基础触发几率增加 +6%。
-灵化形态的基础触发几率增加 +48%。"
+  boar_prime_mercenary_chamber: "提升弹药上限至 195。"
+  boar_prime_practiced_grip: "精准度提升 +50%。"
+  boar_prime_elemental_balance: "基础触发几率增加 +12%。\n灵化形态的基础触发几率增加 +96%。"
+  boar_prime_critical_parallel: "基础暴击几率增加 +20%。\n基础暴击伤害增加 +0.5x。"
+  boar_prime_survivors_edge: "基础暴击几率增加 +10%。\n每个投射物的基础触发几率增加 +6%。\n灵化形态的基础触发几率增加 +48%。"
