@@ -19,11 +19,24 @@ pub enum Polarity {
     Unairu,
     Penjaga,
     Umbra,
+    /// OMNI FORMA's universal polarity — a SLOT polarity only; no mod has it.
+    /// "Matches any mod except Umbra mods" (wiki `Omni Forma`), which is why
+    /// [`slot_drain`] tests the mod's polarity rather than just comparing.
+    ///
+    /// It existed in the UI's polarity list and NOT in this enum, which was
+    /// harmless only because user-chosen polarities are never sent to the
+    /// engine — the client did its own capacity arithmetic. It stops being
+    /// harmless the moment the planner is asked to spend Omni Forma
+    /// (docs/INVESTMENT.md).
+    Omni,
 }
 
 /// Effective drain of a mod in a slot.
 pub fn slot_drain(base_drain: u32, mod_polarity: Polarity, slot_polarity: Option<Polarity>) -> u32 {
     match slot_polarity {
+        // Omni matches ANY mod except an Umbra one, where it is simply a
+        // mismatch like any other colour.
+        Some(Polarity::Omni) if mod_polarity != Polarity::Umbra => base_drain.div_ceil(2),
         Some(p) if p == mod_polarity => base_drain.div_ceil(2), // −50%, round up
         Some(_) => {
             // +25%, rounded half-up (user-measured: 10 -> 13). f64::round
@@ -35,11 +48,80 @@ pub fn slot_drain(base_drain: u32, mod_polarity: Polarity, slot_polarity: Option
 }
 
 /// Weapon mod capacity: rank, doubled by an Orokin Catalyst/Reactor.
+///
+/// "Items have a limited Mod Capacity, that correlates to their Rank" and a
+/// Catalyst "doubles the available Mod capacity" (wiki `Mod Capacity`).
 pub fn capacity(rank: u32, catalyst: bool) -> u32 {
     if catalyst {
         rank * 2
     } else {
         rank
+    }
+}
+
+/// A weapon's max rank AFTER `forma` polarizations.
+///
+/// Every weapon starts at 30. A rank-40 weapon (Kuva/Tenet/Coda, Paracesis)
+/// gains TWO max rank per Forma and caps out after five: "max rank caps at 40
+/// after 5 polarizations (max rank increases by 2 per Forma added)" (wiki
+/// `Paracesis`). The `.min` says both cases at once — on a rank-30 weapon
+/// Forma adds nothing at all.
+pub fn rank_after(base_max_rank: u32, forma: u32) -> u32 {
+    debug_assert!(base_max_rank >= 30, "a weapon starts at 30");
+    (30 + 2 * forma).min(base_max_rank)
+}
+
+/// Polarizations needed to reach a weapon's own ceiling. FIVE for a rank-40
+/// weapon, none for anyone else.
+///
+/// Worth its own name because it is a MASTERY figure, not a capacity one: a
+/// build may fit in three, and the fifth is still what full affinity requires
+/// (owner, 2026-08-04). It is why `polarize_to_max` is the default and why the
+/// default path never has to solve for its own capacity.
+pub fn forma_to_max_rank(base_max_rank: u32) -> u32 {
+    base_max_rank.saturating_sub(30).div_ceil(2)
+}
+
+/// The three choices that belong to the PLAYER rather than to the build.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Investment {
+    /// Doubles capacity. On by default — a modded weapon has one.
+    pub catalyst: bool,
+    /// Spend the full five polarizations on a rank-40 weapon even when the
+    /// build would fit in fewer, because that is what full mastery affinity
+    /// takes. ON by default.
+    pub polarize_to_max: bool,
+    /// Omni Forma for every polarized slot: it matches any mod except an Umbra
+    /// one, so it removes the colour puzzle — at a higher price.
+    pub use_omni: bool,
+    /// May the planner spend an UMBRA Forma? OFF by default: it is the scarce
+    /// one (owner, 2026-08-04), and without it an Umbra mod pays full drain.
+    pub use_umbra: bool,
+}
+
+impl Default for Investment {
+    fn default() -> Self {
+        Self {
+            catalyst: true,
+            polarize_to_max: true,
+            use_omni: false,
+            use_umbra: false,
+        }
+    }
+}
+
+/// What a plan costs, by Forma TYPE. Three numbers because they are three
+/// different items, and a player who has Forma may still have no Umbra Forma.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct FormaCost {
+    pub regular: u32,
+    pub omni: u32,
+    pub umbra: u32,
+}
+
+impl FormaCost {
+    pub fn total(&self) -> u32 {
+        self.regular + self.omni + self.umbra
     }
 }
 
@@ -81,7 +163,10 @@ pub struct FormaPlan {
     /// Polarity on each slot after planning (index-aligned with mods; the
     /// mod at index i sits in slot i). `None` = blank slot.
     pub slots: Vec<Option<Polarity>>,
+    /// Total polarizations the BUILD needs. `cost.total()`.
     pub forma_used: u32,
+    /// The same figure split by item type — they are not interchangeable.
+    pub cost: FormaCost,
     pub total_drain: u32,
 }
 
@@ -95,8 +180,39 @@ pub fn plan_forma(
     innate_slots: &[Option<Polarity>],
     mods: &[PlannedMod],
 ) -> Result<FormaPlan, String> {
+    plan_forma_with(cap, innate_slots, mods, Investment::default())
+}
+
+/// The planner, told which Forma the player is willing to spend.
+///
+/// Two rules decide what a polarization COSTS, and both come from what the
+/// polarity can match:
+///
+/// - an **Umbra mod** can only be matched by an Umbra Forma. No regular
+///   polarity is Umbra, and Omni explicitly is not either ("matches any mod
+///   except Umbra mods"). So with `use_umbra` off it is never matched, and it
+///   pays full drain rather than blocking the build.
+/// - anything else takes a **regular** Forma, or an **Omni** one when the
+///   player has chosen Omni — the owner's rule is all-or-nothing: "如果使用
+///   omni那就所有适用槽位用omni" (2026-08-04).
+pub fn plan_forma_with(
+    cap: u32,
+    innate_slots: &[Option<Polarity>],
+    mods: &[PlannedMod],
+    inv: Investment,
+) -> Result<FormaPlan, String> {
     assert!(mods.len() <= innate_slots.len(), "more mods than slots");
     let mut matched = vec![false; mods.len()];
+    let mut cost = FormaCost::default();
+    // What polarity a Forma'd slot ends up carrying, which is what the plan
+    // reports back and what the UI draws.
+    let placed = |m: &PlannedMod| {
+        if inv.use_omni && m.polarity != Polarity::Umbra {
+            Polarity::Omni
+        } else {
+            m.polarity
+        }
+    };
 
     // Biggest-drain mods first for every greedy choice.
     let mut order: Vec<usize> = (0..mods.len()).collect();
@@ -124,34 +240,254 @@ pub fn plan_forma(
             .sum()
     };
 
-    // 2. Forma the biggest unmatched mod until the build fits.
-    let mut forma_used = 0u32;
+    // 2. Forma the biggest unmatched mod until the build fits. A mod the
+    //    player will not buy a Forma for is skipped, not refused — it simply
+    //    keeps paying full drain.
+    let affordable = |m: &PlannedMod| m.polarity != Polarity::Umbra || inv.use_umbra;
     while drain(&matched) > cap {
-        let Some(&next) = order.iter().find(|&&i| !matched[i]) else {
+        let Some(&next) = order
+            .iter()
+            .find(|&&i| !matched[i] && affordable(&mods[i]))
+        else {
+            let umbra_blocked = !inv.use_umbra
+                && order
+                    .iter()
+                    .any(|&i| !matched[i] && mods[i].polarity == Polarity::Umbra);
             return Err(format!(
-                "build needs {} capacity even fully forma'd (cap {cap})",
-                drain(&matched)
+                "build needs {} capacity even fully forma'd (cap {cap}){}",
+                drain(&matched),
+                if umbra_blocked {
+                    " — an Umbra mod is unmatched and Umbra Forma is switched off"
+                } else {
+                    ""
+                }
             ));
         };
         matched[next] = true;
-        forma_used += 1;
+        if mods[next].polarity == Polarity::Umbra {
+            cost.umbra += 1;
+        } else if inv.use_omni {
+            cost.omni += 1;
+        } else {
+            cost.regular += 1;
+        }
     }
 
     let slots = mods
         .iter()
         .zip(&matched)
-        .map(|(m, &ok)| if ok { Some(m.polarity) } else { None })
+        .map(|(m, &ok)| if ok { Some(placed(m)) } else { None })
         .collect();
     Ok(FormaPlan {
         slots,
-        forma_used,
+        forma_used: cost.total(),
+        cost,
         total_drain: drain(&matched),
     })
+}
+
+/// What a build costs to OWN: the rank it needs, the capacity that gives it,
+/// and the Forma that gets there.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Fitted {
+    /// Max rank the weapon is at once the Forma below are spent.
+    pub rank: u32,
+    pub capacity: u32,
+    pub drain: u32,
+    pub cost: FormaCost,
+    /// Polarity per slot, index-aligned with the mods handed in.
+    pub slots: Vec<Option<Polarity>>,
+}
+
+/// THE question the builder asks: what would it take to own this build?
+///
+/// Capacity is not a constant, and on a rank-40 weapon it is not even an INPUT:
+/// every Forma both polarizes a slot and adds two max rank, so how much room
+/// there is depends on how much Forma was spent, which depends on how much room
+/// there is. The default settles it by not asking — five polarizations is what
+/// full mastery affinity takes whether or not the build needs them, so capacity
+/// is known before planning starts and there is nothing to solve.
+///
+/// With `polarize_to_max` off the loop is real, and it is solved by SEARCHING
+/// the budget rather than iterating to a fixed point: for each f from 0 up, ask
+/// what the build needs at the capacity f would buy, and take the first f that
+/// covers its own answer. Bounded by five, and every f it rejects is one the
+/// player genuinely could not afford to stop at.
+pub fn fit(
+    base_max_rank: u32,
+    innate_slots: &[Option<Polarity>],
+    mods: &[PlannedMod],
+    inv: Investment,
+) -> Result<Fitted, String> {
+    let max_forma = forma_to_max_rank(base_max_rank);
+    let plan_at = |forma: u32| -> Result<(u32, u32, FormaPlan), String> {
+        let rank = rank_after(base_max_rank, forma);
+        let cap = capacity(rank, inv.catalyst);
+        plan_forma_with(cap, innate_slots, mods, inv).map(|p| (rank, cap, p))
+    };
+
+    // A rank-30 weapon gains nothing from Forma but a polarity, so its capacity
+    // is fixed and one pass answers it.
+    if max_forma == 0 || inv.polarize_to_max {
+        let spend = if inv.polarize_to_max { max_forma } else { 0 };
+        let (rank, capacity, plan) = plan_at(spend)?;
+        let mut cost = plan.cost;
+        // The polarizations mastery wants beyond the ones the build needs are
+        // still spent, and they are ordinary Forma.
+        let short = spend.saturating_sub(cost.total());
+        cost.regular += short;
+        return Ok(Fitted { rank, capacity, drain: plan.total_drain, cost, slots: plan.slots });
+    }
+
+    // FIVE IS A CAP ON RANK, NOT ON FORMA. You may polarize as many slots as
+    // you have; only the first five raise the max rank. So a self-consistent
+    // answer is one where the rank claimed comes from polarizations actually
+    // spent — `min(spent, 5)` of them — and spending MORE than five is fine.
+    //
+    // Try the ceiling first, because it is the common case: a build heavy
+    // enough to care about rank-40 capacity is a build that will spend at
+    // least five.
+    if let Ok((rank, capacity, plan)) = plan_at(max_forma) {
+        if plan.cost.total() >= max_forma {
+            return Ok(Fitted { rank, capacity, drain: plan.total_drain, cost: plan.cost, slots: plan.slots });
+        }
+    }
+    // Otherwise the build stops short of the ceiling, and the answer is the
+    // smallest budget that pays for exactly the rank it assumed.
+    let mut last_err = None;
+    for f in 0..=max_forma {
+        match plan_at(f) {
+            Ok((rank, capacity, plan)) if plan.cost.total() == f => {
+                return Ok(Fitted { rank, capacity, drain: plan.total_drain, cost: plan.cost, slots: plan.slots });
+            }
+            Ok(_) => {}
+            Err(e) => last_err = Some(e),
+        }
+    }
+    let (rank, capacity, plan) = plan_at(max_forma).map_err(|e| last_err.unwrap_or(e))?;
+    Ok(Fitted { rank, capacity, drain: plan.total_drain, cost: plan.cost, slots: plan.slots })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn m(drain: u32, pol: Polarity) -> PlannedMod {
+        PlannedMod { base_drain: drain, polarity: pol }
+    }
+    const SLOTS8: [Option<Polarity>; 8] = [None; 8];
+
+    /// THE WIKI'S OWN NUMBERS, pinned. Each line is a quote:
+    /// "correlates to their Rank... normally 30, but for some items it is 40";
+    /// a Catalyst "doubles the available Mod capacity"; and "max rank caps at
+    /// 40 after 5 polarizations (max rank increases by 2 per Forma added)".
+    #[test]
+    fn capacity_follows_rank_and_forma_moves_rank_only_on_a_rank_40_weapon() {
+        assert_eq!(capacity(30, false), 30);
+        assert_eq!(capacity(30, true), 60, "the constant that was hardcoded");
+        assert_eq!(capacity(40, true), 80);
+
+        // A rank-30 weapon gains a polarity from Forma and nothing else.
+        for f in 0..=8 {
+            assert_eq!(rank_after(30, f), 30, "forma {f}");
+        }
+        // A rank-40 weapon climbs two at a time and stops at its own ceiling.
+        assert_eq!(
+            (0..=6).map(|f| rank_after(40, f)).collect::<Vec<_>>(),
+            vec![30, 32, 34, 36, 38, 40, 40]
+        );
+        assert_eq!(forma_to_max_rank(30), 0);
+        assert_eq!(forma_to_max_rank(40), 5, "five polarizations, per the wiki");
+    }
+
+    /// OMNI matches everything except an Umbra mod — which is the whole reason
+    /// it is a polarity rather than a flag on the slot.
+    #[test]
+    fn omni_matches_anything_but_umbra() {
+        assert_eq!(slot_drain(10, Polarity::Madurai, Some(Polarity::Omni)), 5);
+        assert_eq!(slot_drain(10, Polarity::Zenurik, Some(Polarity::Omni)), 5);
+        // An Umbra mod in an Omni slot is an ordinary MISMATCH, +25%.
+        assert_eq!(slot_drain(10, Polarity::Umbra, Some(Polarity::Omni)), 13);
+        // ...and an Umbra slot still halves its own mod.
+        assert_eq!(slot_drain(10, Polarity::Umbra, Some(Polarity::Umbra)), 5);
+    }
+
+    /// The Forma bill is THREE numbers because they are three different items:
+    /// a player with Forma may still have no Umbra Forma.
+    #[test]
+    fn the_forma_bill_is_split_by_the_item_it_costs() {
+        let mods = [m(16, Polarity::Madurai), m(16, Polarity::Naramon)];
+        let plain = plan_forma_with(20, &SLOTS8, &mods, Investment::default()).unwrap();
+        assert_eq!(plain.cost, FormaCost { regular: 2, omni: 0, umbra: 0 });
+
+        // Choosing Omni is all-or-nothing: every polarized slot becomes one.
+        let omni = Investment { use_omni: true, ..Investment::default() };
+        let p = plan_forma_with(20, &SLOTS8, &mods, omni).unwrap();
+        assert_eq!(p.cost, FormaCost { regular: 0, omni: 2, umbra: 0 });
+        assert_eq!(p.slots, vec![Some(Polarity::Omni), Some(Polarity::Omni)]);
+    }
+
+    /// UMBRA FORMA IS SCARCE, so the default refuses to spend it — and an
+    /// unmatched Umbra mod pays full drain rather than blocking the build.
+    #[test]
+    fn umbra_forma_is_only_spent_when_allowed() {
+        let mods = [m(16, Polarity::Umbra), m(10, Polarity::Madurai)];
+        // 16 full + 10 halved = 21: fits 22 without ever touching Umbra Forma.
+        let off = plan_forma_with(22, &SLOTS8, &mods, Investment::default()).unwrap();
+        assert_eq!(off.cost, FormaCost { regular: 1, omni: 0, umbra: 0 });
+        assert_eq!(off.slots[0], None, "the Umbra mod stays unpolarized");
+
+        // Allowed, it is matched like anything else — and billed as Umbra.
+        let on = Investment { use_umbra: true, ..Investment::default() };
+        let p = plan_forma_with(13, &SLOTS8, &mods, on).unwrap();
+        assert_eq!(p.cost, FormaCost { regular: 1, omni: 0, umbra: 1 });
+
+        // Refused AND needed: the error says which switch is in the way, since
+        // "needs more capacity" alone would send you looking at the mods.
+        let e = plan_forma_with(13, &SLOTS8, &mods, Investment::default()).unwrap_err();
+        assert!(e.contains("Umbra Forma is switched off"), "{e}");
+    }
+
+    /// A rank-40 weapon polarized to max has its capacity BEFORE planning
+    /// starts — which is what makes the default path free of any solving.
+    #[test]
+    fn polarizing_to_max_fixes_the_capacity_first() {
+        let mods = [m(16, Polarity::Madurai), m(16, Polarity::Naramon), m(16, Polarity::Vazarin)];
+        let f = fit(40, &SLOTS8, &mods, Investment::default()).unwrap();
+        assert_eq!((f.rank, f.capacity), (40, 80));
+        // 48 fits 80 with nothing polarized, yet five are still spent: mastery
+        // wants them whether or not the build does.
+        assert_eq!(f.drain, 48);
+        assert_eq!(f.cost.total(), 5, "five polarizations for full affinity");
+        assert_eq!(f.cost, FormaCost { regular: 5, omni: 0, umbra: 0 });
+    }
+
+    /// WITHOUT that default the loop is real, and the answer is the smallest
+    /// budget that covers its own consequences.
+    #[test]
+    fn without_polarizing_to_max_the_budget_has_to_cover_itself() {
+        let thrifty = Investment { polarize_to_max: false, ..Investment::default() };
+        // Comfortably inside rank 30's 60: no Forma, no rank gained.
+        let easy = [m(16, Polarity::Madurai), m(16, Polarity::Naramon), m(16, Polarity::Vazarin)];
+        let f = fit(40, &SLOTS8, &easy, thrifty).unwrap();
+        assert_eq!((f.rank, f.capacity, f.cost.total()), (30, 60, 0));
+
+        // Eight 16-drain mods: 128 full, 64 halved. At rank 30 (60) even eight
+        // Forma cannot fit it; the capacity the Forma THEMSELVES buy is what
+        // makes it possible, which is the loop this test exists for.
+        // Eight 16-drain mods: 128 full, 64 halved. Rank 30's 60 cannot hold
+        // it however many slots are polarized — the capacity the Forma
+        // THEMSELVES buy is what makes it possible, which is the loop this
+        // test exists for.
+        let heavy = [m(16, Polarity::Madurai); 8];
+        let f = fit(40, &SLOTS8, &heavy, thrifty).unwrap();
+        assert_eq!((f.rank, f.capacity), (40, 80), "it had to buy rank to fit");
+        assert!(f.drain <= f.capacity, "drain {} cap {}", f.drain, f.capacity);
+        // SIX polarizations, and six is not a contradiction: five is the cap on
+        // RANK, not on how many slots may be Forma'd. The sixth buys no rank
+        // and is spent anyway, which is exactly what the game does.
+        assert_eq!(f.cost.total(), 6, "{:?}", f.cost);
+    }
 
     #[test]
     fn matched_polarity_halves_rounding_up() {

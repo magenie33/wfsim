@@ -95,9 +95,18 @@ what replaces them is a number the server computed.
 
 Each one is independently shippable and independently verifiable.
 
-1. **Engine only, no UI risk.** `Polarity::Omni`; `capacity_for(weapon,
-   investment)`; `plan_forma` taught the Omni/Umbra switches and the rank-40
-   loop. Unit tests throughout.
+1. ~~**Engine only, no UI risk.**~~ **DONE 2026-08-04** (`engine::mods`):
+   `Polarity::Omni`, `rank_after`, `forma_to_max_rank`, `Investment`,
+   `FormaCost`, `plan_forma_with`, and `fit` — which owns the whole question
+   and is what the UI will call. Thirteen tests, the wiki's own numbers pinned.
+
+   **FIVE IS A CAP ON RANK, NOT ON FORMA** — the one thing this phase got wrong
+   before the tests said so. You may polarize as many slots as you have; only
+   the first five raise the max rank. So eight heavy mods on a rank-40 weapon
+   settle at SIX polarizations: five buy rank 40 (capacity 80) and the sixth
+   buys nothing but a halved slot, which is exactly what the game does. A
+   budget is self-consistent when the rank it claims comes from polarizations
+   actually spent, and spending more than five is never a contradiction.
 2. **The wire.** `/api/panel` returns capacity, used, and the Forma breakdown by
    type (regular / Omni / Umbra). The four JS functions go. Verified against a
    frozen baseline: capacity and Forma counts must not move for any existing
