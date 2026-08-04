@@ -2977,6 +2977,21 @@ function restoreState(st, weapon) {
   // build has no opinion about it. An old preset may still carry `st.sim`;
   // it is ignored rather than migrated, because reading it back is the exact
   // behaviour this removed (user, 2026-08-02).
+  // A BOARD ROW IS A BUILD, NOT A LAYOUT: it carries mods and no polarities,
+  // so restoring it verbatim shows a legal build as an impossible one — full
+  // drain, 91/60 in red. The cheapest legal layout is planned on the spot.
+  //
+  // IT LIVES HERE because TWO callers restore a build — the build bar, and
+  // `initPresets` on boot — and the plan used to live in the bar's `apply()`
+  // only. So landing on a page whose active build was a benchmark build showed
+  // the wrong Forma until you clicked something (owner, 2026-08-04: "第一次的
+  // 基准配装，我刚进去那个forma配置是不对的，刷新了一下才对"). Both callers set
+  // the active preset BEFORE restoring, which is what makes the question
+  // answerable here.
+  //
+  // Nothing of yours is at risk: a benchmark build is read-only and has no
+  // hand-set polarity to overwrite.
+  if (officialBuildActive()) autoForma();
   renderMods(); renderArcanes(); renderEvo(); renderSim(); refreshPanel();
   renderStoredSimResult(); // the simulator shows THIS preset's last test
 }
@@ -3579,15 +3594,9 @@ function renderPresetBar() {
     setActive: (n) => { activePreset = n; localStorage.setItem(presetActiveKey(BUILDS), n); },
     snapshot: snapshotState,
     // Never the payload's weapon — the scope's. See restoreState.
-    apply: (st) => {
-      restoreState(st, presetWeapon());
-      // AN OFFICIAL BUILD ARRIVES WITH NO POLARITIES, because a board row is a
-      // build and not a layout — so it loaded at full drain and showed 91/60 in
-      // red, a legal build presented as an impossible one (user, 2026-08-04).
-      // The plan is applied on the spot: nothing of yours is at risk, since the
-      // row is read-only and has no hand-set polarity to overwrite.
-      if (officialBuildActive()) { autoForma(); renderMods(); }
-    },
+    // The benchmark build's Forma plan is NOT applied here — `restoreState`
+    // owns it, so the boot path gets it too. See the comment there.
+    apply: (st) => restoreState(st, presetWeapon()),
     blank: blankBuildState,
     rerender: () => { renderPresetBar(); lockOfficialBuild(); },
   };
