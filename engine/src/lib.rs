@@ -22,6 +22,7 @@ pub mod damage;
 pub mod data;
 pub mod arena;
 pub mod benchmarks_data;
+pub mod boards_data;
 pub mod builds;
 pub mod dummy;
 pub mod elements;

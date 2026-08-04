@@ -1,4 +1,9 @@
-// THE OFFICIAL SCENARIO IS ON EVERY WEAPON, AND NOTHING CAN WRITE TO IT.
+// THE OFFICIAL THINGS ARE READ-ONLY, AND NOTHING CAN WRITE TO THEM.
+//
+// Two of them, one contract: the official SCENARIO (data/benchmarks/) and the
+// official BUILDS (data/benchmarks/boards/). Neither is a preset — no weapon
+// owns them, nothing stores them, nobody edits them — and both sit in the bar
+// that already holds their kind, marked, selectable, copyable.
 //
 // `data/benchmarks/*.yaml` is a ruler rather than a preset: no weapon owns it,
 // nothing stores it, nobody edits it. Three claims that have to hold ON SCREEN,
@@ -144,6 +149,80 @@ for (const lang of ["en", "zh"]) {
     r.copyIsOwn === true && r.copyStored === true && r.copyEditable === true && r.stillLocked === 0,
     `own ${r.copyIsOwn}, stored ${r.copyStored}, editable ${r.copyEditable}, still locked ${r.stillLocked}`);
 }
+
+// ---- THE OFFICIAL BUILDS ------------------------------------------------
+const BUILDS_PROBE = `(async () => {
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  localStorage.clear();
+  history.pushState({},'','/weapons/Torid'); route(); await sleep(4500);
+  const out = {};
+  const rows = builtinBuilds();
+  out.count = rows.length;
+  out.first = rows[0] ? { name: rows[0].name, id: rows[0].builtin, mods: (rows[0].board||{}).mods } : null;
+
+  // Every weapon on the board carries its rows.
+  out.perWeapon = [];
+  for (const w of META.weapons) {
+    switchWeapon(w.id); await sleep(150);
+    out.perWeapon.push({ id: w.id, n: builtinBuilds().length });
+  }
+  switchWeapon('torid'); await sleep(300);
+
+  const bar = $('preset-bar-builder-builds');
+  const chip = [...bar.querySelectorAll('.pchip')].find((c) => c.dataset.name === '#1');
+  out.chipFound = !!chip;
+  out.chipMarked = !!(chip && chip.classList.contains('ro'));
+  chip.click(); await sleep(700);
+  out.isOfficial = officialBuildActive();
+  // ...and the BUILD on screen is the board's.
+  out.slots = slots.filter((s) => s.mod).map((s) => s.mod).sort();
+
+  // The note says what it scored and what it costs to own.
+  const note = $('build-official');
+  out.noteShown = !!(note && !note.hidden);
+  out.noteText = (note && note.textContent || '').trim();
+
+  // The editor is inert — pointer-events, since a slot is a div.
+  out.locked = ['mod-block','arcane-block','evo-block']
+    .every((id) => $(id) && $(id).classList.contains('locked-hard'));
+
+  // NOTHING WRITES TO IT.
+  const before = JSON.stringify(loadPresetList('builder-builds'));
+  slots[0].mod = null; markPresetDirty();
+  await sleep(900);
+  out.storeUntouched = JSON.stringify(loadPresetList('builder-builds')) === before;
+
+  // ...and ⧉ gives an ordinary editable build.
+  const sel = bar.querySelector('.pchip.sel');
+  out.hasCopy = !!sel.querySelector('.pop.dup');
+  out.hasRename = !!sel.querySelector('.pop.ren');
+  sel.querySelector('.pop.dup').click();
+  await sleep(800);
+  out.copyIsOwn = !officialBuildActive();
+  out.copyStored = loadPresetList('builder-builds').some((p) => p.name === activePreset);
+  out.copyEditable = ['mod-block','arcane-block','evo-block']
+    .every((id) => $(id) && !$(id).classList.contains('locked-hard'));
+  return out;
+})()`;
+
+const b = await evaluate(BUILDS_PROBE);
+console.log("");
+console.log("[board]");
+check("the board ships with rows", b.count > 0, JSON.stringify(b.first));
+const bare = (b.perWeapon || []).filter((w) => w.n === 0).map((w) => w.id);
+check("every weapon has at least one", bare.length === 0, bare.join(","));
+check("its chip is marked read-only", b.chipFound && b.chipMarked);
+check("opening it puts the board's build on screen",
+  b.isOfficial === true && JSON.stringify(b.slots) === JSON.stringify((b.first || {}).mods),
+  JSON.stringify(b.slots));
+check("a note says what it scored and what it costs",
+  b.noteShown && /Forma/.test(b.noteText) && /\d/.test(b.noteText), JSON.stringify(b.noteText.slice(0, 90)));
+check("the editor is inert", b.locked === true);
+check("EDITING THE BUILD WRITES NOTHING", b.storeUntouched === true);
+check("it offers copy and not rename", b.hasCopy === true && b.hasRename === false);
+check("...and the copy is an ordinary editable build",
+  b.copyIsOwn === true && b.copyStored === true && b.copyEditable === true,
+  `own ${b.copyIsOwn}, stored ${b.copyStored}, editable ${b.copyEditable}`);
 
 ws.close(); srv.close(); proc.kill();
 process.exit(fail ? 1 : 0);

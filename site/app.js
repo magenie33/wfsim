@@ -3099,12 +3099,12 @@ function initPresets() {
 
   const here = presetWeapon();
   const last = localStorage.getItem(presetActiveKey(BUILDS));
-  activePreset = ps.some((p) => p.name === last) ? last : ps[0].name;
+  activePreset = (buildNamed(last) || {}).name || ps[0].name;
   localStorage.setItem(presetActiveKey(BUILDS), activePreset);
   // Applied under THIS weapon, never the payload's — a preset filed here
   // belongs here by definition.
   whileApplying(() => {
-    restoreState(ps.find((p) => p.name === activePreset).state, here);
+    restoreState(buildNamed(activePreset).state, here);
     // THE FIGHT, from its own collection. It used to arrive inside the build
     // preset, which is exactly why picking a build changed the scenario; it
     // now comes from the active `simulator-scenarios` entry, and this is the
@@ -3112,6 +3112,7 @@ function initPresets() {
     applyScenario(scenarioNamed(activeScenario).state);
   });
   renderPresetBar();
+  lockOfficialBuild();
 }
 
 // ---- Auto-save (user, 2026-07-29: no manual save click) ---------------
@@ -3144,6 +3145,10 @@ function markPresetDirty() {
   clearTimeout(presetSaveTimer);
   presetSaveTimer = setTimeout(() => {
     if (!activePreset || presetApplying) return;
+    // An official build is not written — same rule as the official scenario,
+    // and enforced in the same place. Auto-save is what would otherwise make
+    // read-only a suggestion.
+    if (officialBuildActive()) return;
     const ps = loadPresetList(BUILDS);
     const at = ps.findIndex((p) => p.name === activePreset);
     if (at < 0) return;
@@ -3401,6 +3406,40 @@ function blankBuildState() {
   };
 }
 
+// ---- THE OFFICIAL BUILDS ----------------------------------------------
+//
+// The board (`data/benchmarks/boards/`), as read-only chips in the BUILD bar.
+// Not a tab (user, 2026-08-04: "不需要多的 tab"): what a board row produces is
+// a BUILD, and the builder is what consumes a build — so it belongs in the
+// collection that already holds builds, marked as something you did not make.
+//
+// Same three properties as the official scenario: nothing stores them, nothing
+// edits them, ⧉ copies one into an ordinary build of your own.
+const builtinBuilds = () => {
+  const w = weaponInfo($("weapon").value) || {};
+  return (w.board || []).map((row, i) => ({
+    // Rank is the name because rank is what a board row IS. The score and what
+    // it costs to own sit in the note, where there is room to explain them.
+    name: `#${i + 1}`,
+    builtin: `${row.benchmark}#${i + 1}`,
+    board: row,
+    savedAt: 0,
+    state: {
+      weapon: w.id,
+      slots: Array.from({ length: 9 }, (_, k) => ({
+        mod: (row.mods || [])[k] || null, pol: null, rank: null,
+      })),
+      evoSel: (row.evolutions || []).reduce((m, id, k) => ({ ...m, [k + 1]: id }), {}),
+      arcane: (row.arcanes || []).length ? row.arcanes : ["none"],
+      arcaneRank: [null],
+    },
+  }));
+};
+const buildList = () => builtinBuilds().concat(loadPresetList(BUILDS));
+const buildNamed = (n) => buildList().find((p) => p.name === n || p.builtin === n);
+/// Is the build on screen one of the official ones? Then nothing may write it.
+const officialBuildActive = () => !!(buildNamed(activePreset) || {}).builtin;
+
 function renderPresetBar() {
   renderPresetBarIn($("preset-bar-" + BUILDS), {
     domain: BUILDS,
@@ -3417,15 +3456,16 @@ function renderPresetBar() {
       const b = bar.querySelector(".share");
       if (b) b.onclick = (e) => { e.stopPropagation(); openSharePanel(bar); };
     },
-    load: () => loadPresetList(BUILDS),
-    store: (ps) => storePresetList(BUILDS, ps),
+    load: buildList,
+    store: (ps) => storePresetList(BUILDS, ps.filter((p) => !p.builtin)),
+    readonly: (p) => !!p.builtin,
     active: () => activePreset,
     setActive: (n) => { activePreset = n; localStorage.setItem(presetActiveKey(BUILDS), n); },
     snapshot: snapshotState,
     // Never the payload's weapon — the scope's. See restoreState.
     apply: (st) => restoreState(st, presetWeapon()),
     blank: blankBuildState,
-    rerender: renderPresetBar,
+    rerender: () => { renderPresetBar(); lockOfficialBuild(); },
   });
 }
 
@@ -5189,6 +5229,40 @@ function renderSim() {
   $("sim-sub").textContent = "current build vs the enemy";
   renderSimBuffs();
   lockOfficialScenario();
+}
+
+// The official BUILD, on screen. Same contract as the scenario's lock, but the
+// build editor is mostly CLICK HANDLERS on divs (a slot, a polarity, an
+// evolution tile) rather than form controls, and `disabled` means nothing to a
+// div. `pointer-events: none` on the whole region is the honest equivalent:
+// it covers everything the region can ever grow, including a control nobody
+// has written yet.
+function lockOfficialBuild() {
+  const on = officialBuildActive();
+  ["mod-block", "arcane-block", "evo-block"].forEach((id) => {
+    const b = $(id);
+    if (b) b.classList.toggle("locked-hard", on);
+  });
+  const note = $("build-official");
+  if (!note) return;
+  note.hidden = !on;
+  if (!on) return;
+  const row = (buildNamed(activePreset) || {}).board || {};
+  const bench = (META.benchmarks || []).find((x) => x.id === row.benchmark);
+  const parts = [
+    `<b>${escHtml(tr("Official build"))}</b>`,
+    escHtml(tr("from the board — read-only. ⧉ copies it into a build of your own.")),
+  ];
+  if (bench) parts.push(`<span class="official-def">${escHtml(tr(bench.name))}</span>`);
+  if (row.score != null) {
+    parts.push(`<span class="official-def">${Number(row.score).toFixed(4)} ${escHtml(tr("kill rate"))}</span>`);
+  }
+  // What it costs to OWN, which is the question anyone copying it has next.
+  parts.push(`<span class="official-def">${row.forma || 0} Forma · ${row.drain || 0}/60</span>`);
+  if (row.source === "seed") {
+    parts.push(`<span class="official-seed">${escHtml(tr("seeded by the optimizer — not yet a player submission"))}</span>`);
+  }
+  note.innerHTML = parts.join(" · ");
 }
 
 // The official scenario, ON SCREEN: every control in the fight goes inert and

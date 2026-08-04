@@ -62,7 +62,10 @@ pub fn all() -> &'static [Benchmark] {
     static B: OnceLock<Vec<Benchmark>> = OnceLock::new();
     B.get_or_init(|| {
         crate::data::files_under("benchmarks/")
-            .filter(|(p, _)| p.ends_with(".yaml"))
+            // THIS level only. `benchmarks/boards/` holds the measured results
+            // and is a different shape entirely — a prefix scan would try to
+            // parse a board as a benchmark and fail on a missing `id`.
+            .filter(|(p, _)| p.ends_with(".yaml") && !p["benchmarks/".len()..].contains('/'))
             .map(|(p, text)| {
                 serde_norway::from_str::<Benchmark>(text).unwrap_or_else(|e| panic!("{p}: {e}"))
             })

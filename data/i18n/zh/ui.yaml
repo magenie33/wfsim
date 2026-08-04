@@ -88,6 +88,9 @@ ui:
   "simulate every mod IN THIS SLOT and show what each would change": 把这个槽换成每一张 mod 各模拟一遍，标出击杀速度会变化多少
   "kill rate": 击杀速度
   "Official test scenario": 官方测试场景
+  "Official build": 官方配装
+  "from the board — read-only. ⧉ copies it into a build of your own.": 来自榜单，只读。点 ⧉ 复制成一份你自己的配装。
+  "seeded by the optimizer — not yet a player submission": 由优化器预填，尚非玩家提交
   "Single Target · Thrax Centurion Lv 9999 SP · 300 s · KPM": 单体 · 凶魂百夫长 9999 钢铁 · 300 秒 · KPM
   "the same fight on every weapon, so results can be compared. It cannot be edited: use ⧉ on its chip to copy it into a scenario of your own.": 每把武器都是同一场战斗，所以结果之间可以比较。它不可编辑：点它标签上的 ⧉ 复制成一份你自己的场景。
   "the official test scenario — the same fight on every weapon, so results compare": 官方测试场景 —— 每把武器都是同一场战斗，结果之间可以比较

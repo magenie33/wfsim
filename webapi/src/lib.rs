@@ -649,6 +649,31 @@ pub fn meta_json() -> Value {
                 // 1 while every weapon in the roster had one.
                 "arcane_slots": w.arcane_pools.len(),
                 "image": assets().weapons.get(&w.id),
+                // THE BOARD for this weapon, best first — the official builds,
+                // which the client shows as read-only chips in the build bar.
+                // `forma`/`drain` are DERIVED here rather than stored: the file
+                // holds the build, and what it costs to own is worked out by
+                // the same planner the builder uses.
+                "board": wfsim_engine::boards_data::all().iter().flat_map(|b| {
+                    wfsim_engine::boards_data::for_weapon(&b.benchmark, &w.id)
+                        .into_iter()
+                        .map(|e| {
+                            let v = wfsim_engine::builds::validate(
+                                &e.weapon, &e.mods, &e.evolutions, &e.arcanes,
+                            );
+                            json!({
+                                "benchmark": b.benchmark,
+                                "source": b.source,
+                                "score": e.score,
+                                "mods": e.mods,
+                                "evolutions": e.evolutions,
+                                "arcanes": e.arcanes,
+                                "forma": v.as_ref().map(|x| x.forma).unwrap_or(0),
+                                "drain": v.as_ref().map(|x| x.drain).unwrap_or(0),
+                            })
+                        })
+                        .collect::<Vec<_>>()
+                }).collect::<Vec<_>>(),
                 "innate_polarities": innate_slots_for(&w.id).iter()
                     .map(|p| p.map(|x| format!("{x:?}")))
                     .collect::<Vec<_>>(),

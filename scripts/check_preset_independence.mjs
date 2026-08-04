@@ -55,8 +55,12 @@ const r = await evaluate(`(async () => {
 
   // Now switch back to the FIRST build. The fight must not move.
   const levelBefore = sim.level;
+  // BY NAME, not by position. The bar also carries the OFFICIAL builds (the
+  // board's read-only rows, which come first), so "the first chip" stopped
+  // meaning "the first build I made" the day those landed — and index was only
+  // ever a proxy for the name anyway.
   const chips = [...bar.querySelectorAll('.pchip[data-name]')];
-  chips[0].click(); await sleep(1600);
+  chips.find((c) => c.dataset.name === 'build 1').click(); await sleep(1600);
   const levelAfter = sim.level;
   const onScreen = ($$('#sim-target [data-k="level"]')||{}).value;
   const modAfter = slots[0].mod;

@@ -734,3 +734,7 @@ label.check input{width:auto}
 .official-note b{color:var(--gold)}
 .official-def{color:var(--text);font-variant-numeric:tabular-nums}
 .locked{opacity:.72}
+/* An official BUILD: the editor is click handlers on divs, so the lock has to
+   be pointer-events rather than `disabled`. */
+.locked-hard{opacity:.72;pointer-events:none}
+.official-seed{color:var(--muted);font-style:italic}
