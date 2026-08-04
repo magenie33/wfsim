@@ -29,7 +29,7 @@
 // pass and no counting.
 
 const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
-const MAX_MODS = 8;            // the exilus slot is out of scope for a benchmark
+const BUILD_MODS = 8;          // EXACTLY, see below. Exilus is out of scope.
 const ID = /^[a-z0-9_]{1,64}$/;
 
 const bad = (msg, status = 400) =>
@@ -70,7 +70,14 @@ async function submit(request, env) {
   // there is simply never scored and never reaches the board.
   const list = (x) => Array.isArray(x) && x.every((s) => typeof s === "string" && ID.test(s));
   if (!ID.test(b.benchmark || "") || !ID.test(b.weapon || "")) return bad("bad ids");
-  if (!list(b.mods) || b.mods.length > MAX_MODS) return bad("bad mods");
+  // EXACTLY EIGHT MODS. A shape check, not a judgement: this is the cheap
+  // pre-filter that keeps a half-built submission out of STORAGE, and
+  // `engine::builds::validate` is the rule it mirrors — that one is binding and
+  // is what the scorer runs. Both say "exactly 8" so a build cannot be stored
+  // that the scorer would then refuse, which is a KV write bought for nothing.
+  if (!list(b.mods) || b.mods.length !== BUILD_MODS) {
+    return bad(`a benchmark build is exactly ${BUILD_MODS} mods`);
+  }
   if (!list(b.evolutions) || b.evolutions.length > 8) return bad("bad evolutions");
   if (!list(b.arcanes) || b.arcanes.length > 4) return bad("bad arcanes");
 

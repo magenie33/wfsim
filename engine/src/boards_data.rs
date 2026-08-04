@@ -124,16 +124,17 @@ mod tests {
                 b.benchmark
             );
             for e in &b.entries {
-                let v = crate::builds::validate(&e.weapon, &e.mods, &e.evolutions, &e.arcanes)
+                let v = crate::builds::validate_for_board(&e.weapon, &e.mods, &e.evolutions, &e.arcanes)
                     .unwrap_or_else(|err| panic!("{} row on {}: {err}", e.weapon, b.benchmark));
                 // `validate` already refused anything over capacity, and the
                 // capacity is the weapon's own — so the assertion is that it
                 // fits, not that it fits some number written here.
                 //
-                // AN EMPTY BUILD IS A LEGAL BUILD. This asserted `drain > 0`
-                // until a genuinely unmodded submission arrived (2026-08-04):
-                // you can equip nothing, and the board's answer to a bad build
-                // is to rank it last, not to refuse it. Nothing here decides
+                // An empty build is a LEGAL build — and not a publishable one.
+                // This asserted `drain > 0`, then nothing, and now the rule is
+                // in `validate_for_board`: the board takes complete builds only
+                // (2026-08-05). Ranking a bad build last only works when there
+                // is something else to rank it against. Nothing here decides
                 // what is worth submitting.
                 assert_eq!(v.mods.len(), e.mods.len(), "{} lost a mod", e.weapon);
                 assert!(e.score > 0.0, "{} scored nothing", e.weapon);

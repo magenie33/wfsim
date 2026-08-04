@@ -88,6 +88,15 @@ for (const lang of ["en", "zh"]) {
   const r = await evaluate(`(async () => {
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     history.pushState({}, '', '/weapons/Torid/simulator'); route(); await sleep(2800);
+    // THE FIGHT IS READ-ONLY ON ARRIVAL (2026-08-05): the official benchmark is
+    // now the default scenario, and its controls are locked — so the enemy
+    // picker's own button is disabled and cannot be opened. Copying it is the
+    // real user flow for changing the target, and it is what this check needs
+    // before it can ask anything about the picker.
+    if (typeof officialScenarioActive === 'function' && officialScenarioActive()) {
+      copyActiveScenario(); await sleep(1200);
+    }
+
 
     // Every portrait in the roster, fetched the way the page asks for it.
     const roster = (META.enemies || []).map(e => ({ id: e.id, name: e.name, name_en: e.name_en,

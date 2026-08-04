@@ -901,6 +901,11 @@ pub fn meta_json() -> Value {
         // weapon owns them, nothing stores them, and nobody can edit them —
         // they exist so a number has a ruler someone else can pick up. The
         // client shows them on every weapon alongside the player's own.
+        // HOW MANY MODS A BOARD BUILD IS. Published so the page can say why an
+        // incomplete build will not be submitted, without a second copy of the
+        // number: `engine::builds::validate_for_board` is the rule, this is it
+        // speaking, and `worker/index.js` mirrors it only as a storage guard.
+        "board_build_mods": wfsim_engine::builds::MAIN_SLOTS,
         "benchmarks": wfsim_engine::benchmarks_data::all().iter().map(|b| json!({
             "id": b.id,
             "name": b.name,

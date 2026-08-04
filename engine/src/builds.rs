@@ -154,6 +154,44 @@ fn normalize(weapon: &str, mods: &[String], evolutions: &[String]) -> (Vec<Strin
     (ms, evos)
 }
 
+/// THE BOARD'S ADMISSION RULE: a legal build, and a COMPLETE one.
+///
+/// `validate` answers whether a build could be equipped. This answers whether
+/// it belongs on a public leaderboard, and those are different questions — four
+/// mods is a perfectly legal build and a meaningless board row.
+///
+/// EXACTLY EIGHT MODS (owner, 2026-08-05: "提交下限是全部配置满吧"). The rule
+/// earns its keep on a weapon whose board is EMPTY: there the single row IS the
+/// board, the builder presents it as "Benchmark build #1" with a ⧉ that copies
+/// it, and an unmodded build in that position is not a weak entry waiting to be
+/// displaced — it is misinformation with nothing to displace it. Two of the
+/// first four rows ever submitted were empty builds, which is what this is for.
+///
+/// ARCANES AND EVOLUTIONS ARE DELIBERATELY NOT PART OF IT. Not every weapon
+/// seats an arcane (a sentinel weapon seats none) and not every weapon has
+/// evolutions, so requiring them would make "full" mean something different per
+/// weapon — and running no arcane is a real build a real player submits. Eight
+/// mods is the one slot count every weapon in the roster shares.
+///
+/// Every path onto the board goes through this: the scorer calls it, and
+/// `worker/index.js` mirrors the count as a cheap pre-filter so a build that
+/// would be refused here is never written to storage in the first place.
+pub fn validate_for_board(
+    weapon: &str,
+    mods: &[String],
+    evolutions: &[String],
+    arcanes: &[String],
+) -> Result<ValidBuild, String> {
+    let b = validate(weapon, mods, evolutions, arcanes)?;
+    if b.mods.len() != MAIN_SLOTS {
+        return Err(format!(
+            "{} mods, and a benchmark build is exactly {MAIN_SLOTS}",
+            b.mods.len()
+        ));
+    }
+    Ok(b)
+}
+
 /// Could a player have this in the arsenal?
 ///
 /// The checks, and each one is a rule the game enforces at the slot:
@@ -211,6 +249,10 @@ pub fn validate(
     //
     // An exilus MOD is still legal here: the game lets one sit in a regular
     // slot, and spending a main slot on it is the submitter's business.
+    //
+    // AT MOST eight. Whether a build must be FULL is a board policy and not a
+    // legality fact — four mods is a legal build in the game — so it lives in
+    // `validate_for_board` rather than here.
     if ms.len() > MAIN_SLOTS {
         return Err(format!("{} mods, and a benchmark build has {MAIN_SLOTS}", ms.len()));
     }

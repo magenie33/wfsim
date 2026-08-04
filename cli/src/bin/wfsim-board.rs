@@ -116,7 +116,10 @@ fn main() {
         // a network with no UI on the path, so "could a player equip this" is
         // asked here rather than assumed — and it NORMALISES first, so what
         // gets scored and what gets published are the same object.
-        let Ok(v) = wfsim_engine::builds::validate(&weapon, &mods, &evos, &arcs) else {
+        // THE BOARD'S door, not the legality one: a row must be a COMPLETE
+        // build (2026-08-05). A submission that is merely legal is refused
+        // here and simply never scored.
+        let Ok(v) = wfsim_engine::builds::validate_for_board(&weapon, &mods, &evos, &arcs) else {
             refused += 1;
             continue;
         };

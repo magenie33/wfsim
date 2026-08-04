@@ -41,6 +41,13 @@ const r = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   localStorage.clear();
   history.pushState({},'','/weapons/Torid'); route(); await sleep(3500);
+  // The default scenario is the official one and it cannot be edited, so this
+  // check — which is entirely about a scenario EDIT reaching the quick calc —
+  // takes an editable copy first. Same flow a player follows (2026-08-05).
+  if (typeof officialScenarioActive === 'function' && officialScenarioActive()) {
+    copyActiveScenario(); await sleep(1200);
+  }
+
   const out = {};
 
   // Every scenario field must reach the key, so walk a representative set of

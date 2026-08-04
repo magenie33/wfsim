@@ -267,31 +267,61 @@ const CONSENT_PROBE = `(async () => {
   const off = bar.querySelector('.pchip.ro');
   out.chipSeen = !!off;
   if (off) off.click();
-  await sleep(800);
+  await sleep(1500);
+  renderBoardConsent();
   out.askedOnOfficial = !$('board-consent').hidden;
   out.asksFirst = /board|榜单/.test($('board-consent').textContent || '');
-  out.saysWhatIsSent = /mods|MOD/.test($('board-consent').textContent || '');
+  out.saysWhatIsSent = /mod/i.test($('board-consent').textContent || '');
+  // THE NOTICE IS UP BEFORE ANY RUN. Submission defaults to ON, so what has to
+  // be true is not that nothing leaves — it is that nothing leaves UNSAID.
+  out.statesDefaultOn = /added to the official board|加入官方榜单/.test(
+    $('board-consent').textContent || '');
+  out.hasOptOut = !!$('board-no') || !!$('board-flip');
 
-  // A RUN, with consent never given: nothing may leave.
+  // AN INCOMPLETE BUILD IS NOT SENT. This is the first visit's actual state —
+  // the default build is empty — so it is also the state the default-on setting
+  // would otherwise fire a pointless request from.
+  out.modCount = slots.filter((s) => s.mod).length;
   await offerBoardSubmit();
   await sleep(600);
-  out.postsBeforeConsent = posts.length;
+  out.postsWhileIncomplete = posts.length;
+  out.incompleteText = ($('board-consent').textContent || '').trim().slice(0, 400);
 
-  out.boxHtml = ($('board-consent').innerHTML || '').slice(0, 160);
-  out.hasYes = !!$('board-yes'); out.hasNo = !!$('board-no');
-  if (!$('board-no')) { window.fetch = real; return out; }
-  // Decline: still nothing, and the line says so.
-  $('board-no').click(); await sleep(300);
+  // Fill the build to the floor, from this weapon's own pool.
+  const pool = (weaponInfo($('weapon').value) || {}).mods || [];
+  const need = (META.board_build_mods || 8);
+  out.floor = need;
+  let k = 0;
+  for (const id of pool) {
+    if (k >= need) break;
+    if (!modById(id)) continue;
+    slots[k].mod = id; slots[k].rank = modById(id).max_rank; k++;
+  }
+  markPresetDirty(); renderMods(); refreshPanel(); await sleep(1200);
+  out.modCountAfter = slots.filter((s) => s.mod).length;
+
+  // A complete build under the default DOES go — that is the change.
+  await offerBoardSubmit(); await sleep(800);
+  out.postsOnDefault = posts.length;
+
+  out.boxHtml = ($('board-consent').innerHTML || '').slice(0, 200);
+  out.hasNo = !!$('board-no') || !!$('board-flip');
+  // Opt OUT: nothing further leaves, and the line says so.
+  const optOut = $('board-no') || $('board-flip');
+  if (!optOut) { window.fetch = real; return out; }
+  optOut.click(); await sleep(300);
+  const before = posts.length;
   await offerBoardSubmit(); await sleep(600);
-  out.postsAfterNo = posts.length;
+  out.postsAfterNo = posts.length - before;
   out.declinedText = ($('board-consent').textContent || '').trim().slice(0, 60);
 
-  // Accept. Flipping the setting is NOT itself a submission — turning a
+  // Back on. Flipping the setting is NOT itself a submission — turning a
   // preference on should not fire a request — so the next RUN is what sends.
+  const back = posts.length;
   $('board-flip').click(); await sleep(400);
-  out.postsOnFlip = posts.length;
+  out.postsOnFlip = posts.length - back;
   await offerBoardSubmit(); await sleep(700);
-  out.postsAfterYes = posts.length;
+  out.postsAfterYes = posts.length - back;
   const sent = posts.length ? JSON.parse(posts[posts.length - 1].body || '{}') : null;
   out.sentKeys = sent ? Object.keys(sent).sort() : null;
   out.sentHasScore = sent ? ('score' in sent || 'dps' in sent) : null;
@@ -305,13 +335,24 @@ const c = await evaluate(CONSENT_PROBE);
 console.log("");
 console.log("[consent]");
 if (!c.hasNo) console.log("      [diag] " + JSON.stringify({ chipSeen: c.chipSeen, asked: c.askedOnOfficial, html: c.boxHtml }));
-check("the question is not asked under an ordinary scenario", c.askedOffOfficial === false);
-check("...and is asked under the official one", c.askedOnOfficial === true);
+check("the notice is absent under an ordinary scenario", c.askedOffOfficial === false);
+check("...and present under the official one", c.askedOnOfficial === true);
 check("it says what would be sent", c.saysWhatIsSent === true);
-check("NOTHING LEAVES before consent", c.postsBeforeConsent === 0, String(c.postsBeforeConsent));
-check("...nor after declining", c.postsAfterNo === 0, String(c.postsAfterNo));
+// THE CONTRACT CHANGED (2026-08-05): submission is default-ON, so the property
+// worth asserting is no longer "nothing leaves" — it is that nothing leaves
+// UNSAID. The notice states the default and carries a working opt-out, both
+// visible before any run.
+check("...states that runs are submitted, BEFORE any run", c.statesDefaultOn === true,
+  c.incompleteText);
+check("...and offers a way out in the same view", c.hasOptOut === true);
+check("an INCOMPLETE build is not sent", c.postsWhileIncomplete === 0,
+  `${c.modCount} mods, ${c.postsWhileIncomplete} posts`);
+check("...and the line says why", /complete|装满/.test(c.incompleteText || ""), c.incompleteText);
+check("a COMPLETE build goes under the default", c.postsOnDefault === 1,
+  `${c.modCountAfter}/${c.floor} mods, ${c.postsOnDefault} posts`);
+check("nothing leaves after opting out", c.postsAfterNo === 0, String(c.postsAfterNo));
 check("...and the line says nothing is sent", /not|nothing|不会/.test(c.declinedText), JSON.stringify(c.declinedText));
-check("turning it on is not itself a submission", c.postsOnFlip === 0, String(c.postsOnFlip));
+check("turning it back on is not itself a submission", c.postsOnFlip === 0, String(c.postsOnFlip));
 check("...and the next run sends exactly one", c.postsAfterYes === 1, String(c.postsAfterYes));
 check("...carrying the BUILD and no score",
   JSON.stringify(c.sentKeys) === JSON.stringify(["arcanes","benchmark","evolutions","mods","weapon"]) && c.sentHasScore === false,

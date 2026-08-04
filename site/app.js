@@ -3147,8 +3147,21 @@ function initPresets() {
   }
   // Resolved against the JOINT list, so the official scenario can be the one
   // you left open — it is a scenario like any other to everything downstream.
+  //
+  // THE OFFICIAL ONE IS THE DEFAULT (owner, 2026-08-05). This costs nothing and
+  // corrects something that was quietly misleading: `defaultScenario()` is
+  // ALREADY the benchmark's fight, field for field — same enemy, level 9999,
+  // Steel Path, 300 s, 100 runs, kpm, aiming, infinite ammo. "scenario 1" was
+  // the ruler wearing a private name, so its number could not be compared with
+  // anyone's and could not reach the board, for no reason a player could see.
+  //
+  // Landing on the official one instead means a first number is a COMPARABLE
+  // number. Nobody's results move — it is the same fight.
   const lastSc = localStorage.getItem(presetActiveKey(SCENARIOS));
-  activeScenario = (scenarioNamed(lastSc) || {}).name || sc[0].name;
+  activeScenario =
+    (scenarioNamed(lastSc) || {}).name
+    || (builtinScenarios()[0] || {}).name
+    || sc[0].name;
   localStorage.setItem(presetActiveKey(SCENARIOS), activeScenario);
 
   const here = presetWeapon();
@@ -3688,8 +3701,12 @@ const scenarioKey = (n) => (scenarioNamed(n) || {}).builtin || n;
 /// Is the fight on screen the official one? Then nothing may write to it.
 const officialScenarioActive = () => !!(scenarioNamed(activeScenario) || {}).builtin;
 
-function renderScenarioBar() {
-  const scenariosCfg = {
+// The scenario bar's config, as a FACTORY rather than a local — two callers
+// need it now: the bar itself, and the "edit a copy of this fight" button in
+// the official note, which performs the identical copy. A second hand-written
+// config there is how the two come to copy different things.
+function scenarioBarCfg() {
+  return {
     domain: SCENARIOS,
     label: tr("Scenarios"),
     noun: "scenario",
@@ -3706,6 +3723,14 @@ function renderScenarioBar() {
     blank: snapshotScenario,
     rerender: scenariosChanged,
   };
+}
+
+/// "Give me an editable copy of the fight I am looking at" — the one
+/// implementation, shared by the chip's ⧉ and the note's button.
+const copyActiveScenario = () => copyActivePreset(scenarioBarCfg());
+
+function renderScenarioBar() {
+  const scenariosCfg = scenarioBarCfg();
   renderBenchmarkBarIn($("bench-bar-simulator-scenarios"), { ...scenariosCfg, benchLabel: tr("Benchmark scenarios"), benchHint: tr("the official rulers — the same fight on every weapon") });
   renderPresetBarIn($("preset-bar-simulator-scenarios"), scenariosCfg);
 }
@@ -5458,8 +5483,26 @@ function renderSim() {
 // the names you gave anything. NO SCORE either — the board scores builds
 // itself, which is what makes a row reproducible and a forged number
 // pointless.
-const BOARD_CONSENT = "wfsim-board-consent";   // "yes" | "no" | absent = not asked
-const boardConsent = () => { try { return localStorage.getItem(BOARD_CONSENT); } catch (_) { return null; } };
+const BOARD_CONSENT = "wfsim-board-consent";   // "yes" | "no" | absent = never chosen
+
+// DEFAULT ON (owner, 2026-08-05) — and the important word is not "on", it is
+// NOT SILENT. Opt-out versus opt-in is a policy choice the owner gets to make;
+// silent versus stated is a trust choice, and the board's whole value is that
+// its numbers are believable. One screenshot captioned "wfsim 偷偷上传你的配装"
+// costs more than every submission it would ever gain.
+//
+// So the default is yes, and the line saying so is on screen from the moment
+// the official scenario is active — before any run, with a one-click opt-out
+// beside it. `check_official.mjs` asserts that pairing rather than asserting
+// nothing leaves: what has to be true is that nothing leaves UNSAID.
+const boardConsent = () => {
+  try { return localStorage.getItem(BOARD_CONSENT) || "yes"; } catch (_) { return "yes"; }
+};
+/// Has the player actually decided, as against inheriting the default? Only
+/// this tells the notice apart from the settled state.
+const boardConsentChosen = () => {
+  try { return localStorage.getItem(BOARD_CONSENT) !== null; } catch (_) { return false; }
+};
 const setBoardConsent = (v) => {
   try { localStorage.setItem(BOARD_CONSENT, v); } catch (_) { /* private mode */ }
   renderBoardConsent();
@@ -5484,10 +5527,23 @@ function boardPayload() {
 }
 
 let boardState = "";   // "" | "sent" | "failed"
+
+/// How many mods a board build is, from the ENGINE via META — never a literal
+/// here. The rule is `builds::validate_for_board`; this is the page repeating
+/// what it was told so it can explain itself before sending nothing.
+const boardBuildMods = () => (META || {}).board_build_mods || 8;
+/// Is the build on screen complete enough to submit?
+const buildIsComplete = () => slots.filter((s) => s.mod).length === boardBuildMods();
+
 async function offerBoardSubmit() {
   if (!officialScenarioActive()) return;      // only the official ruler feeds the board
   if (officialBuildActive()) return;          // a board row does not resubmit itself
   if (boardConsent() !== "yes") { renderBoardConsent(); return; }
+  // INCOMPLETE BUILDS ARE NOT SENT, and the panel says so rather than letting
+  // the server refuse in silence. Without this the default-on setting would
+  // fire a request on every first visit — the default build is empty — and the
+  // player would never learn why nothing appeared on the board.
+  if (!buildIsComplete()) { renderBoardConsent(); return; }
   const body = boardPayload();
   if (!body) return;
   try {
@@ -5521,13 +5577,27 @@ function renderBoardConsent() {
   box.hidden = !on;
   if (!on) return;
   const c = boardConsent();
-  if (c === null) {
+  // THE FLOOR IS A SUFFIX, NOT A REPLACEMENT. While the build is half-built the
+  // standing policy is still the thing a reader most needs to know — replacing
+  // it with "this one is not sent" would state the exception and hide the rule,
+  // which is the same silence the default-on setting exists not to have.
+  const floorNote =
+    c === "yes" && !buildIsComplete()
+      ? ` <span class="board-state">` +
+        escHtml(tr("{n} of {m} mods — the board takes complete builds only, so this one is not sent")
+          .replace("{n}", slots.filter((s) => s.mod).length)
+          .replace("{m}", boardBuildMods())) +
+        `</span>`
+      : "";
+  if (!boardConsentChosen()) {
+    // THE DEFAULT, STATED. Not a question — the answer is already yes — so it
+    // reads as what will happen and what it contains, with the way out next to
+    // it. Asking would be dishonest when the default has already decided.
     box.innerHTML =
-      `<b>${escHtml(tr("Add this build to the official board?"))}</b> ` +
-      escHtml(tr("What would be sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself).")) +
-      ` <button class="ghost-btn small" id="board-yes">${escHtml(tr("Submit"))}</button>` +
-      `<button class="ghost-btn small" id="board-no">${escHtml(tr("Not now"))}</button>`;
-    $("board-yes").onclick = () => { setBoardConsent("yes"); offerBoardSubmit(); };
+      `<b>${escHtml(tr("Runs here are added to the official board."))}</b> ` +
+      escHtml(tr("What is sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself). Only complete 8-mod builds are accepted.")) +
+      floorNote +
+      ` <button class="ghost-btn small" id="board-no">${escHtml(tr("don't submit"))}</button>`;
     $("board-no").onclick = () => setBoardConsent("no");
     return;
   }
@@ -5535,7 +5605,7 @@ function renderBoardConsent() {
     ? (boardState === "failed" ? tr("could not reach the board — nothing was sent") : tr("builds you run here are submitted"))
     : tr("nothing is sent from here");
   box.innerHTML =
-    `<span class="board-state">${escHtml(state)}</span> ` +
+    `<span class="board-state">${escHtml(state)}</span>` + floorNote + ` ` +
     `<button class="ghost-btn small" id="board-flip">${escHtml(c === "yes" ? tr("stop submitting") : tr("start submitting"))}</button>`;
   $("board-flip").onclick = () => setBoardConsent(c === "yes" ? "no" : "yes");
 }
@@ -5631,10 +5701,22 @@ function lockOfficialScenario() {
   if (!note) return;
   note.hidden = !on;
   if (on) {
+    // A DOOR, NOT A WALL. This is now the scenario a first-time visitor lands
+    // on, so the first thing they see is a panel of greyed-out controls — which
+    // reads as broken until you know why. The note has always explained it and
+    // pointed at the ⧉ on the chip; a chip they have not learned to look at yet
+    // is not a route. The button does the same copy, where the locked controls
+    // are (owner, 2026-08-05).
     note.innerHTML =
       `<b>${escHtml(tr("Official test scenario"))}</b> — ` +
-      escHtml(tr("the same fight on every weapon, so results can be compared. It cannot be edited: use ⧉ on its chip to copy it into a scenario of your own.")) +
-      ` <span class="official-def">${escHtml((scenarioNamed(activeScenario) || {}).name || "")}</span>`;
+      escHtml(tr("the same fight on every weapon, so results can be compared. It cannot be edited.")) +
+      ` <span class="official-def">${escHtml((scenarioNamed(activeScenario) || {}).name || "")}</span>` +
+      ` <button class="ghost-btn small" id="sim-official-copy">⧉ ${escHtml(tr("edit a copy of this fight"))}</button>`;
+    const cp = $("sim-official-copy");
+    // The SAME copy the chip's ⧉ performs — `copyActivePreset` with the
+    // scenario bar's own config — so there is one implementation of "make me an
+    // editable copy" and it cannot drift from the bar.
+    if (cp) cp.onclick = () => copyActiveScenario();
   }
 }
 
