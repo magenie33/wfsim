@@ -109,6 +109,34 @@ endpoint SORTED on the way in, so the order those players actually built is
 gone. They re-score as "elements in alphabetical order", which is a legal build
 and probably not theirs. New submissions keep what was placed.
 
+## The pipeline, stated once (owner, 2026-08-04)
+
+Every step below is a rule, not a description — each one is somewhere a wrong
+answer could be published.
+
+1. **One representative per build.** `builds::canonical_mods` — elementals last
+   in the order that pairs them, everything else ahead by biggest drain then by
+   DE's English name. Substantively identical builds are one row.
+2. **We collect builds. We compute the score.** No submission carries a number
+   and none would be believed.
+3. **We validate legality ourselves**, including Forma: pool, families, eight
+   slots, capacity.
+4. **The plan spends as FEW Forma as possible** — biggest-drain mod first, so
+   every polarization buys the most room it could.
+5. **A rank-40 weapon spends at least five**, because that is what full mastery
+   affinity takes. The floor is `polarize_to_max`.
+6. **No Omni Forma.** `BENCHMARK_INVESTMENT` leaves it off: a board build should
+   be one an ordinary player can reach.
+7. **The five are put to WORK.** They are bought either way, so they go on the
+   five biggest mods rather than the two the build strictly needed — same cost,
+   more spare capacity. Three 16-drain mods on a rank-40 weapon: 24 drain and 56
+   spare, not 48 and 32.
+8. **Then it is published.**
+
+The bill still reports what is SPENT, not what earned room: a build with fewer
+mods than mastery has polarizations buys all five, and the last land on empty
+slots.
+
 ## What is not on the board
 
 - **Rivens** (user, 2026-08-04). They are personal random items, so a board

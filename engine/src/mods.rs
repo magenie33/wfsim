@@ -201,6 +201,25 @@ pub fn plan_forma_with(
     mods: &[PlannedMod],
     inv: Investment,
 ) -> Result<FormaPlan, String> {
+    plan_forma_spending(cap, innate_slots, mods, inv, 0)
+}
+
+/// The planner, told a MINIMUM number of polarizations it is going to spend
+/// anyway.
+///
+/// `at_least` is mastery's figure, not the build's: five polarizations is what
+/// full affinity takes on a rank-40 weapon whether or not the build needs them.
+/// Spending them and then not USING them was leaving capacity on the table —
+/// the same five Forma, placed on the five biggest mods instead of the two the
+/// build strictly needed, leave more room for whatever comes next. "在满段位
+/// 经验的前提下，尽可能少 forma，并留出尽可能多的剩余空间" (owner, 2026-08-04).
+fn plan_forma_spending(
+    cap: u32,
+    innate_slots: &[Option<Polarity>],
+    mods: &[PlannedMod],
+    inv: Investment,
+    at_least: u32,
+) -> Result<FormaPlan, String> {
     assert!(mods.len() <= innate_slots.len(), "more mods than slots");
     let mut matched = vec![false; mods.len()];
     let mut cost = FormaCost::default();
@@ -262,6 +281,26 @@ pub fn plan_forma_with(
                     ""
                 }
             ));
+        };
+        matched[next] = true;
+        if mods[next].polarity == Polarity::Umbra {
+            cost.umbra += 1;
+        } else if inv.use_omni {
+            cost.omni += 1;
+        } else {
+            cost.regular += 1;
+        }
+    }
+
+    // 3. Polarizations that are being spent anyway go to work. Biggest first,
+    //    like every other choice here, so the room they buy is the most the
+    //    same Forma could have bought.
+    while cost.total() < at_least {
+        let Some(&next) = order
+            .iter()
+            .find(|&&i| !matched[i] && affordable(&mods[i]))
+        else {
+            break;
         };
         matched[next] = true;
         if mods[next].polarity == Polarity::Umbra {
@@ -379,12 +418,17 @@ pub fn fit(
     // is fixed and one pass answers it.
     if max_forma == 0 || inv.polarize_to_max {
         let spend = if inv.polarize_to_max { max_forma } else { 0 };
-        let (rank, capacity, plan) = plan_at(spend)?;
+        let rank = rank_after(base_max_rank, spend);
+        let capacity = capacity(rank, inv.catalyst);
+        // `spend` is a FLOOR, not a target: the planner takes at least that
+        // many and more if the build needs them, and it puts every one of them
+        // on the biggest mod still unpolarized.
+        let plan = plan_forma_spending(capacity, innate_slots, mods, inv, spend)?;
         let mut cost = plan.cost;
-        // The polarizations mastery wants beyond the ones the build needs are
-        // still spent, and they are ordinary Forma.
-        let short = spend.saturating_sub(cost.total());
-        cost.regular += short;
+        // A build with fewer mods than mastery has polarizations still BUYS
+        // them all — the last ones land on empty slots and buy no capacity, but
+        // they are bought. The bill is what you spend, not what it earned.
+        cost.regular += spend.saturating_sub(cost.total());
         return Ok(Fitted { rank, capacity, drain: plan.total_drain, cost, slots: plan.slots });
     }
 
@@ -550,11 +594,14 @@ mod tests {
         let mods = [m(16, Polarity::Madurai), m(16, Polarity::Naramon), m(16, Polarity::Vazarin)];
         let f = fit(40, &SLOTS8, &mods, Investment::default()).unwrap();
         assert_eq!((f.rank, f.capacity), (40, 80));
-        // 48 fits 80 with nothing polarized, yet five are still spent: mastery
-        // wants them whether or not the build does.
-        assert_eq!(f.drain, 48);
+        // The five are spent for mastery either way, so they are PUT TO WORK:
+        // all three mods halved (48 -> 24) rather than left at full drain
+        // because the build "did not need it". Same Forma, 56 spare instead of
+        // 32 — which is the point of spending them (owner, 2026-08-04).
+        assert_eq!(f.drain, 24, "every polarization that is bought is used");
         assert_eq!(f.cost.total(), 5, "five polarizations for full affinity");
         assert_eq!(f.cost, FormaCost { regular: 5, omni: 0, umbra: 0 });
+        assert_eq!(f.capacity - f.drain, 56, "and the room they buy is the most they could");
     }
 
     /// WITHOUT that default the loop is real, and the answer is the smallest
