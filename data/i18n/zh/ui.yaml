@@ -65,6 +65,17 @@ ui:
   # MOA, not by a Tenno, so naming the section after the commonest case said
   # something false about every companion weapon.
   "2 · The wielder": 2 · 使用者
+  # The board's consent line. Asked once, after the first run under the
+  # official scenario — never on load, and never as a native dialog.
+  "Add this build to the official board?": 把这套配装加入官方榜单？
+  "What would be sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself).": 会发送的内容：武器，以及它的 MOD、进化和赋能。仅此而已 —— 没有账号，没有任何标识，没有你起的任何名字，也不含分数（榜单自己测量配装）。
+  "Submit": 提交
+  "Not now": 暂不
+  "builds you run here are submitted": 你在这里跑的配装会被提交
+  "nothing is sent from here": 这里不会发送任何内容
+  "could not reach the board — nothing was sent": 联系不上榜单 —— 什么都没有发出
+  "stop submitting": 停止提交
+  "start submitting": 开始提交
   # The optimizer tab's section hints. They were plain text until 2026-08-04 —
   # only the `sim-hint` spans that happened to carry `data-i18n` were ever
   # translated, and the flag on the enclosing h3 does not reach a child element.

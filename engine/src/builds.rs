@@ -43,6 +43,10 @@ use crate::mods::{plan_forma, PlannedMod};
 /// forever, but you cannot exceed the pool.
 pub const CAPACITY: u32 = 60;
 
+/// Slots a benchmark build may fill. EIGHT — the exilus slot is out of scope;
+/// see the slot check in [`validate`].
+pub const MAIN_SLOTS: usize = 8;
+
 /// A build that passed, and what it costs to actually own.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidBuild {
@@ -112,6 +116,16 @@ pub fn validate(
 ) -> Result<ValidBuild, String> {
     let spec = crate::weapons_data::spec(weapon)
         .ok_or_else(|| format!("unknown weapon: {weapon}"))?;
+    // DUPLICATES first, and separately: `normalize` collapses them, so a build
+    // listing one mod nine times would otherwise be reported as "eight mods are
+    // not in the pool" — a true count attached to the wrong reason, which is
+    // worse than no reason at all.
+    let mut uniq: Vec<&String> = mods.iter().collect();
+    uniq.sort();
+    uniq.dedup();
+    if uniq.len() != mods.len() {
+        return Err(format!("{} of {} mods are listed twice", mods.len() - uniq.len(), mods.len()));
+    }
     let (ms, evos) = normalize(weapon, mods, evolutions);
     if ms.len() != mods.len() {
         // Loud, because a silently dropped mod is a build the submitter did not
@@ -135,25 +149,27 @@ pub fn validate(
         }
     }
 
-    // SLOTS. Eight take anything; the ninth takes an exilus mod only. So a
-    // ninth mod is legal exactly when one of them is exilus-eligible.
-    let exilus_capable = ms.iter().filter(|id| def(id).exilus).count();
-    let has_exilus_slot = crate::weapons_data::exilus_polarity(weapon).is_some()
-        || !spec.exilus_polarity.as_deref().unwrap_or("").is_empty();
-    match ms.len() {
-        n if n > 9 => return Err(format!("{n} mods, and a weapon has 9 slots")),
-        9 if exilus_capable == 0 => {
-            return Err("9 mods, but none of them can go in the exilus slot".into())
-        }
-        9 if !has_exilus_slot => return Err(format!("{} has no exilus slot", spec.name)),
-        _ => {}
+    // EIGHT SLOTS. The exilus slot is OUT OF SCOPE for a benchmark build
+    // (user, 2026-08-04: "不考虑 exilus 槽位"), and the reason is that it does
+    // not measure anything: exilus mods are handling and mobility, with no
+    // single-target damage model — the optimizer already excludes them from
+    // its pool for exactly that reason. It also costs a separate adapter, so
+    // counting it would price a build against a resource the ranking cannot
+    // see the value of.
+    //
+    // An exilus MOD is still legal here: the game lets one sit in a regular
+    // slot, and spending a main slot on it is the submitter's business.
+    if ms.len() > MAIN_SLOTS {
+        return Err(format!("{} mods, and a benchmark build has {MAIN_SLOTS}", ms.len()));
     }
 
     // CAPACITY, with Forma unlimited. `plan_forma` answers both halves at once:
     // whether ANY layout fits, and how many Forma the cheapest one costs.
-    let mut innate: Vec<Option<crate::mods::Polarity>> =
+    //
+    // The exilus slot's own innate polarity is NOT in the pool: the slot is out
+    // of scope, so its polarity is not a discount this build gets to spend.
+    let innate: Vec<Option<crate::mods::Polarity>> =
         crate::weapons_data::innate_slots(weapon).to_vec();
-    innate.push(crate::weapons_data::exilus_polarity(weapon));
     let planned: Vec<PlannedMod> = ms
         .iter()
         .map(|id| {
@@ -240,33 +256,41 @@ mod tests {
         let e = validate("boar_prime", &v(&["hells_chamber", "galvanized_hell"]), &[], &[])
             .unwrap_err();
         assert!(e.contains("family"), "{e}");
-        // Ten mods.
-        let ten = v(&["primed_point_blank", "hells_chamber", "blunderbuss", "primed_ravage",
-                      "scattering_inferno", "toxic_barrage", "galvanized_savvy", "vicious_spread",
-                      "shell_shock", "ammo_stock"]);
-        let e = validate("boar_prime", &ten, &[], &[]).unwrap_err();
-        assert!(e.contains("9 slots"), "{e}");
+        // NINE mods — refused even though one of them is exilus-eligible,
+        // because a benchmark build has eight slots and the exilus slot is out
+        // of scope (it measures nothing a damage ranking can read).
+        let nine = v(&["primed_point_blank", "hells_chamber", "blunderbuss", "primed_ravage",
+                       "scattering_inferno", "toxic_barrage", "galvanized_savvy", "vicious_spread",
+                       "lock_and_load"]);
+        assert!(crate::mods_data::pool_for_weapon("boar_prime")
+            .iter().any(|m| m.id == "lock_and_load" && m.exilus),
+            "the ninth is exilus-eligible, so this tests the SLOT rule");
+        let e = validate("boar_prime", &nine, &[], &[]).unwrap_err();
+        assert!(e.contains("8"), "{e}");
         // An arcane the weapon cannot seat.
         assert!(validate("boar_prime", &[], &[], &v(&["secondary_enervate"])).is_err());
     }
 
-    /// CAPACITY is the rule the sim does not have, and the reason this module
-    /// exists at all. Built from the pool's OWN numbers rather than a
-    /// hand-picked list: the priciest family-distinct mods, nine of them with
-    /// an exilus-capable one so the slot rule is satisfied and capacity is the
-    /// only thing left to fail on. (Eight of them DO fit — 119 drain halves to
-    /// 60 exactly — which is why this needs the ninth, and why guessing at the
-    /// numbers instead of asking the pool would have written a test that
-    /// asserted the wrong thing.)
+    /// CAPACITY IS A LIVE CONSTRAINT at eight slots — asked of the data rather
+    /// than assumed, and the answer was not the one I expected.
+    ///
+    /// Matching a polarity halves a mod's drain (rounded UP), so eight mods
+    /// cost the sum of their halves and Boar Prime's priciest eight come to
+    /// exactly 60 — which is why an earlier version of this test, built on
+    /// that one weapon, concluded the check was slack. Across the roster the
+    /// worst case is 64, so it refuses real builds. Both directions are
+    /// asserted per weapon: the planner's verdict has to agree with the
+    /// arithmetic, whichever way it falls.
     #[test]
-    fn a_build_that_cannot_fit_is_refused_however_much_forma_you_own() {
-        let mut pool = crate::mods_data::pool_for_weapon("boar_prime");
-        pool.sort_by_key(|m| std::cmp::Reverse(m.base_drain));
-        let mut fams: Vec<&str> = Vec::new();
-        let take = |want_exilus: bool, picked: &mut Vec<String>, fams: &mut Vec<&str>| {
+    fn capacity_is_a_live_constraint_at_eight_slots() {
+        let mut worst = 0u32;
+        for w in crate::weapons_data::all() {
+            let mut pool = crate::mods_data::pool_for_weapon(&w.id);
+            pool.sort_by_key(|m| std::cmp::Reverse(m.base_drain));
+            let (mut fams, mut picked): (Vec<&str>, Vec<String>) = (Vec::new(), Vec::new());
             for m in &pool {
-                if m.exilus != want_exilus || picked.iter().any(|p| p == m.id) {
-                    continue;
+                if picked.len() == MAIN_SLOTS {
+                    break;
                 }
                 if let Some(f) = m.family {
                     if fams.contains(&f) {
@@ -275,23 +299,35 @@ mod tests {
                     fams.push(f);
                 }
                 picked.push(m.id.to_string());
-                return true;
             }
-            false
-        };
-        let mut picked = Vec::new();
-        assert!(take(true, &mut picked, &mut fams), "the pool has an exilus mod");
-        while picked.len() < 9 && take(false, &mut picked, &mut fams) {}
-        assert_eq!(picked.len(), 9);
-
-        let drain: u32 = picked
-            .iter()
-            .map(|id| pool.iter().find(|m| m.id == id.as_str()).unwrap().base_drain)
-            .sum();
-        // Halving is the best any polarity layout can do, so this is the floor.
-        assert!(drain / 2 > CAPACITY, "the priciest nine must be over budget: {drain}");
-        let e = validate("boar_prime", &picked, &[], &[]).unwrap_err();
-        assert!(e.contains("capacity"), "{e}");
+            if picked.len() < MAIN_SLOTS {
+                continue;
+            }
+            let cost: u32 = picked
+                .iter()
+                .map(|id| pool.iter().find(|m| m.id == id.as_str()).unwrap().base_drain.div_ceil(2))
+                .sum();
+            worst = worst.max(cost);
+            // Whatever the number, the VERDICT and the cost must agree: the
+            // planner is the authority, not this arithmetic.
+            let got = validate(&w.id, &picked, &[], &[]);
+            match got {
+                Ok(v) => assert!(
+                    cost <= CAPACITY && v.drain <= CAPACITY,
+                    "{}: accepted at {} but the halves come to {cost}", w.id, v.drain
+                ),
+                Err(e) => assert!(
+                    cost > CAPACITY && e.contains("capacity"),
+                    "{}: refused ({e}) though the halves come to {cost}", w.id
+                ),
+            }
+        }
+        // The rule is not dead code: somewhere in the roster, eight mods do not
+        // fit however much Forma you own.
+        assert!(
+            worst > CAPACITY,
+            "capacity never binds anywhere ({worst}/{CAPACITY}) — this check would be decoration"
+        );
     }
 
     /// The identity is the FIGHT. Order is not part of it — which is not an
@@ -306,6 +342,41 @@ mod tests {
         // ...and a different SET is a different identity.
         let c = validate("boar_prime", &v(&["hells_chamber", "blunderbuss"]), &[], &[]).unwrap();
         assert_ne!(identity(&a), identity(&c));
+    }
+
+    /// ALL THREE AXES REACH THE BUILD — mods, evolutions AND arcanes (user,
+    /// 2026-08-04: "检查确定所有的包括 evo mod arcane 正常进入").
+    ///
+    /// Asserted through the IDENTITY rather than by reading fields back,
+    /// because identity is what a board row is keyed on: if an axis did not
+    /// enter, two builds differing only on that axis would collide into one
+    /// row and the second submitter's build would silently become the first's.
+    /// So each axis is changed alone, and each change must move the key.
+    #[test]
+    fn a_change_on_any_axis_is_a_different_build() {
+        let mods = v(&["hellfire", "serration", "split_chamber"]);
+        // Tier 1 then tier 2 — a LADDER, so the second has to be the rung
+        // above the first or normalisation stops at the gap.
+        let evos = v(&["torid_evo1_incarnon_form", "torid_final_fusillade"]);
+        let arc = v(&["primary_deadhead"]);
+        let base = validate("torid", &mods, &evos, &arc).expect("a legal torid build");
+        // Everything arrived.
+        assert_eq!(base.mods.len(), 3);
+        assert_eq!(base.evolutions, evos, "the whole ladder prefix");
+        assert_eq!(base.arcanes, arc);
+
+        let key = identity(&base);
+        let other_mods = v(&["hellfire", "serration", "point_strike"]);
+        let other_evos = v(&["torid_evo1_incarnon_form", "torid_plentiful_mayhem"]);
+        let other_arc = v(&["primary_merciless"]);
+        for (what, b) in [
+            ("mods", validate("torid", &other_mods, &evos, &arc)),
+            ("evolutions", validate("torid", &mods, &other_evos, &arc)),
+            ("arcanes", validate("torid", &mods, &evos, &other_arc)),
+        ] {
+            let b = b.unwrap_or_else(|e| panic!("{what}: {e}"));
+            assert_ne!(identity(&b), key, "{what} does not reach the identity");
+        }
     }
 
     /// The ladder is applied by TRUNCATION, so normalisation has to happen

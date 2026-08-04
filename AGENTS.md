@@ -38,7 +38,8 @@ around (decision 2026-07-31).
   Join the two by `internal_name` == `uniqueName`, **never by name** (WFCD has
   stale duplicates sharing a display name).
 - `docs/` — CORE (design), MECHANICS (formulas), MEASUREMENTS (protocol +
-  baselines), BUFFS, OPTIMIZER, UI, WASM, GLOSSARY, DEVELOPMENT (setup).
+  baselines), BUFFS, BOARD (the official leaderboard), OPTIMIZER, UI, WASM,
+  GLOSSARY, DEVELOPMENT (setup).
 - `tests/golden/` — golden tests calibrated against in-game measurements.
 - `private/` — gitignored (devlogs, drafts, local assets, the `data/`
   verification scripts). **`git add -A` silently skips it**, so never report a

@@ -11,6 +11,14 @@ repository.workspace = true
 name = "wfsim"
 path = "src/main.rs"
 
+# The board scorer. Its own bin because it is a BUILD step, not a user tool:
+# the scheduled job pipes submissions through it and commits the result.
+[[bin]]
+name = "wfsim-board"
+path = "src/bin/wfsim-board.rs"
+
 [dependencies]
 wfsim-engine = { path = "../engine" }
 wfsim-optimizer = { path = "../optimizer" }
+wfsim-webapi = { path = "../webapi" }
+serde_json = { workspace = true }

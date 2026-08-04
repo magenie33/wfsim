@@ -738,3 +738,7 @@ label.check input{width:auto}
    be pointer-events rather than `disabled`. */
 .locked-hard{opacity:.72;pointer-events:none}
 .official-seed{color:var(--muted);font-style:italic}
+/* The board's consent line: the same quiet card as the official note, with its
+   two choices inline — never a dialog. */
+#board-consent .ghost-btn{margin-left:6px}
+.board-state{color:var(--text)}

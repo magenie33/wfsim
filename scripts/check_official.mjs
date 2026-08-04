@@ -156,17 +156,24 @@ const BUILDS_PROBE = `(async () => {
   localStorage.clear();
   history.pushState({},'','/weapons/Torid'); route(); await sleep(4500);
   const out = {};
+  // AN EMPTY BOARD IS THE SHIPPING STATE until submissions arrive, so there is
+  // nothing to click — and no chips is exactly right, not a bug to work around.
+  out.emptyBoardChips = builtinBuilds().length;
+
+  // The machinery is exercised with a row this check INJECTS. That is the
+  // point: the read-only-build path has to be tested against code, not against
+  // whatever the board happens to hold on the day — a check that only works
+  // while data exists stops testing the moment the data is cleared, which is
+  // exactly what happened when the seed was removed.
+  const inject = { benchmark: 'single_target_v1', source: 'submissions', score: 1.2345,
+                   forma: 3, drain: 58, mods: ['serration','split_chamber','point_strike'],
+                   evolutions: [], arcanes: ['none'] };
+  weaponInfo('torid').board = [inject];
+  renderPresetBar(); await sleep(300);
+
   const rows = builtinBuilds();
   out.count = rows.length;
   out.first = rows[0] ? { name: rows[0].name, id: rows[0].builtin, mods: (rows[0].board||{}).mods } : null;
-
-  // Every weapon on the board carries its rows.
-  out.perWeapon = [];
-  for (const w of META.weapons) {
-    switchWeapon(w.id); await sleep(150);
-    out.perWeapon.push({ id: w.id, n: builtinBuilds().length });
-  }
-  switchWeapon('torid'); await sleep(300);
 
   const bar = $('preset-bar-builder-builds');
   const chip = [...bar.querySelectorAll('.pchip')].find((c) => c.dataset.name === '#1');
@@ -208,12 +215,12 @@ const BUILDS_PROBE = `(async () => {
 const b = await evaluate(BUILDS_PROBE);
 console.log("");
 console.log("[board]");
-check("the board ships with rows", b.count > 0, JSON.stringify(b.first));
-const bare = (b.perWeapon || []).filter((w) => w.n === 0).map((w) => w.id);
-check("every weapon has at least one", bare.length === 0, bare.join(","));
+check("an empty board shows no chips at all", b.emptyBoardChips === 0, String(b.emptyBoardChips));
+check("a board row becomes a chip", b.count === 1, JSON.stringify(b.first));
 check("its chip is marked read-only", b.chipFound && b.chipMarked);
 check("opening it puts the board's build on screen",
-  b.isOfficial === true && JSON.stringify(b.slots) === JSON.stringify((b.first || {}).mods),
+  b.isOfficial === true
+    && JSON.stringify(b.slots) === JSON.stringify(((b.first || {}).mods || []).slice().sort()),
   JSON.stringify(b.slots));
 check("a note says what it scored and what it costs",
   b.noteShown && /Forma/.test(b.noteText) && /\d/.test(b.noteText), JSON.stringify(b.noteText.slice(0, 90)));
@@ -223,6 +230,78 @@ check("it offers copy and not rename", b.hasCopy === true && b.hasRename === fal
 check("...and the copy is an ordinary editable build",
   b.copyIsOwn === true && b.copyStored === true && b.copyEditable === true,
   `own ${b.copyIsOwn}, stored ${b.copyStored}, editable ${b.copyEditable}`);
+
+// ---- CONSENT: nothing leaves before it is given -------------------------
+const CONSENT_PROBE = `(async () => {
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  localStorage.clear();
+  history.pushState({},'','/weapons/Torid'); route(); await sleep(4500);
+  const out = {};
+  // Watch the WIRE, not the function: what matters is whether a request left.
+  const real = window.fetch;
+  let posts = [];
+  window.fetch = (u, o) => { if (String(u).includes('/api/board/')) posts.push({ u: String(u), body: o && o.body }); return real(u, o); };
+
+  // Under an ordinary scenario the question is not even asked.
+  out.askedOffOfficial = !$('board-consent').hidden;
+
+  // Open the official scenario.
+  const bar = $('preset-bar-simulator-scenarios');
+  // By its READ-ONLY mark, not by name: the name is translated and this probe
+  // runs after the language ones, so matching on it couples two checks.
+  const off = bar.querySelector('.pchip.ro');
+  out.chipSeen = !!off;
+  if (off) off.click();
+  await sleep(800);
+  out.askedOnOfficial = !$('board-consent').hidden;
+  out.asksFirst = /board|榜单/.test($('board-consent').textContent || '');
+  out.saysWhatIsSent = /mods|MOD/.test($('board-consent').textContent || '');
+
+  // A RUN, with consent never given: nothing may leave.
+  await offerBoardSubmit();
+  await sleep(600);
+  out.postsBeforeConsent = posts.length;
+
+  out.boxHtml = ($('board-consent').innerHTML || '').slice(0, 160);
+  out.hasYes = !!$('board-yes'); out.hasNo = !!$('board-no');
+  if (!$('board-no')) { window.fetch = real; return out; }
+  // Decline: still nothing, and the line says so.
+  $('board-no').click(); await sleep(300);
+  await offerBoardSubmit(); await sleep(600);
+  out.postsAfterNo = posts.length;
+  out.declinedText = ($('board-consent').textContent || '').trim().slice(0, 60);
+
+  // Accept. Flipping the setting is NOT itself a submission — turning a
+  // preference on should not fire a request — so the next RUN is what sends.
+  $('board-flip').click(); await sleep(400);
+  out.postsOnFlip = posts.length;
+  await offerBoardSubmit(); await sleep(700);
+  out.postsAfterYes = posts.length;
+  const sent = posts.length ? JSON.parse(posts[posts.length - 1].body || '{}') : null;
+  out.sentKeys = sent ? Object.keys(sent).sort() : null;
+  out.sentHasScore = sent ? ('score' in sent || 'dps' in sent) : null;
+  out.sentBenchmark = sent && sent.benchmark;
+
+  window.fetch = real;
+  return out;
+})()`;
+
+const c = await evaluate(CONSENT_PROBE);
+console.log("");
+console.log("[consent]");
+if (!c.hasNo) console.log("      [diag] " + JSON.stringify({ chipSeen: c.chipSeen, asked: c.askedOnOfficial, html: c.boxHtml }));
+check("the question is not asked under an ordinary scenario", c.askedOffOfficial === false);
+check("...and is asked under the official one", c.askedOnOfficial === true);
+check("it says what would be sent", c.saysWhatIsSent === true);
+check("NOTHING LEAVES before consent", c.postsBeforeConsent === 0, String(c.postsBeforeConsent));
+check("...nor after declining", c.postsAfterNo === 0, String(c.postsAfterNo));
+check("...and the line says nothing is sent", /not|nothing|不会/.test(c.declinedText), JSON.stringify(c.declinedText));
+check("turning it on is not itself a submission", c.postsOnFlip === 0, String(c.postsOnFlip));
+check("...and the next run sends exactly one", c.postsAfterYes === 1, String(c.postsAfterYes));
+check("...carrying the BUILD and no score",
+  JSON.stringify(c.sentKeys) === JSON.stringify(["arcanes","benchmark","evolutions","mods","weapon"]) && c.sentHasScore === false,
+  JSON.stringify(c.sentKeys));
+check("...against the official benchmark", c.sentBenchmark === "single_target_v1", String(c.sentBenchmark));
 
 ws.close(); srv.close(); proc.kill();
 process.exit(fail ? 1 : 0);

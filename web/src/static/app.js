@@ -3504,6 +3504,8 @@ function scenariosChanged() {
   // not called here, so without this line a copy of an official scenario kept
   // the original's inert controls.
   lockOfficialScenario();
+  // ...and whether this fight can reach the board at all.
+  renderBoardConsent();
   if ($("opt-buffs")) renderOptBuffs();
   if ($("quick-calc")) renderQuickCalc();
   if ($("opt-target")) renderOptEnemy();
@@ -5236,6 +5238,100 @@ function renderSim() {
   $("sim-sub").textContent = "current build vs the enemy";
   renderSimBuffs();
   lockOfficialScenario();
+  renderBoardConsent();
+}
+
+// ---- THE BOARD: consent, then submission -------------------------------
+//
+// WHEN THE ASK HAPPENS, and why it is here rather than on load: the first time
+// you finish a run under the OFFICIAL scenario. Only then is there any context
+// for the question — a score is on screen and "should this build go on the
+// board" is a sentence that means something. Asking at startup would be a
+// modal before you have done anything, which is a dialog people click away
+// rather than a disclosure. (It is also inline: `prompt`/`alert`/`confirm` are
+// blocked in this project.)
+//
+// WHAT TRAVELS, stated because it is short enough to check: the weapon, its
+// mods, evolutions and arcanes, and which benchmark. No account, no
+// identifier, no riven (they are out of the benchmark entirely), and none of
+// the names you gave anything. NO SCORE either — the board scores builds
+// itself, which is what makes a row reproducible and a forged number
+// pointless.
+const BOARD_CONSENT = "wfsim-board-consent";   // "yes" | "no" | absent = not asked
+const boardConsent = () => { try { return localStorage.getItem(BOARD_CONSENT); } catch (_) { return null; } };
+const setBoardConsent = (v) => {
+  try { localStorage.setItem(BOARD_CONSENT, v); } catch (_) { /* private mode */ }
+  renderBoardConsent();
+};
+
+/// The submission itself: the BUILD, and nothing else about you.
+function boardPayload() {
+  const bench = (scenarioNamed(activeScenario) || {}).builtin;
+  if (!bench) return null;
+  return {
+    benchmark: bench,
+    weapon: $("weapon").value,
+    mods: slots.filter((s) => s.mod).map((s) => s.mod).sort(),
+    evolutions: Object.values(evoSel).filter(Boolean),
+    arcanes: arcanes.slice(),
+  };
+}
+
+let boardState = "";   // "" | "sent" | "failed"
+async function offerBoardSubmit() {
+  if (!officialScenarioActive()) return;      // only the official ruler feeds the board
+  if (officialBuildActive()) return;          // a board row does not resubmit itself
+  if (boardConsent() !== "yes") { renderBoardConsent(); return; }
+  const body = boardPayload();
+  if (!body) return;
+  try {
+    // A REAL fetch, not `api()`. Every other endpoint is answered by the engine
+    // — locally by the dev server, in the browser by the wasm worker — and the
+    // board is the one thing neither of them can answer: it is a service, not a
+    // calculation. Routing it through `api()` would hand the path to a worker
+    // that has never heard of it.
+    //
+    // SAME ORIGIN, deliberately. A separate api domain is a second DNS name and
+    // a second thing that can be blocked, which is the failure the art rule was
+    // written about ("unreliable to blocked from mainland China, i.e. precisely
+    // where the players are"). The board lives under this site's own origin.
+    const res = await fetch("/api/board/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    boardState = res.ok ? "sent" : "failed";
+  } catch (_) {
+    // Never an error dialog: a board that is unreachable is not a failed run.
+    boardState = "failed";
+  }
+  renderBoardConsent();
+}
+
+function renderBoardConsent() {
+  const box = $("board-consent");
+  if (!box) return;
+  const on = officialScenarioActive() && !officialBuildActive();
+  box.hidden = !on;
+  if (!on) return;
+  const c = boardConsent();
+  if (c === null) {
+    box.innerHTML =
+      `<b>${escHtml(tr("Add this build to the official board?"))}</b> ` +
+      escHtml(tr("What would be sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself).")) +
+      ` <button class="ghost-btn small" id="board-yes">${escHtml(tr("Submit"))}</button>` +
+      `<button class="ghost-btn small" id="board-no">${escHtml(tr("Not now"))}</button>`;
+    $("board-yes").onclick = () => { setBoardConsent("yes"); offerBoardSubmit(); };
+    $("board-no").onclick = () => setBoardConsent("no");
+    return;
+  }
+  const state = c === "yes"
+    ? (boardState === "failed" ? tr("could not reach the board — nothing was sent") : tr("builds you run here are submitted"))
+    : tr("nothing is sent from here");
+  box.innerHTML =
+    `<span class="board-state">${escHtml(state)}</span> ` +
+    `<button class="ghost-btn small" id="board-flip">${escHtml(c === "yes" ? tr("stop submitting") : tr("start submitting"))}</button>`;
+  $("board-flip").onclick = () => setBoardConsent(c === "yes" ? "no" : "yes");
 }
 
 // The official BUILD, on screen. Same contract as the scenario's lock, but the
@@ -5495,6 +5591,9 @@ async function runSim() {
     renderResults(r);
     animateArena(r);
     saveSimResult(r);
+    // A run under the OFFICIAL scenario is the only thing that can reach the
+    // board, and only after you have said so. Never blocks the result.
+    offerBoardSubmit();
   } catch (e) {
     $("sim-results").innerHTML = `<div class="error">sim failed: ${e}</div>`;
   } finally {

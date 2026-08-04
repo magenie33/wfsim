@@ -1,35 +1,18 @@
-# GENERATED — the official board for `single_target_v1`.
+# THE OFFICIAL BOARD for `single_target_v1` — GENERATED, never hand-edited.
 #
-# Every score here was measured by running this engine over that build
-# under that benchmark, with the benchmark's pinned seed, so any row can
-# be reproduced exactly — in a browser as well as natively.
+# Rows are BUILDS that players submitted, each scored by running this engine
+# over it under that benchmark with the benchmark's pinned seed. Nobody ever
+# submits a number: a score here was computed here, so anyone with the repo can
+# reproduce any row exactly — in a browser as well as natively (measured
+# 2026-08-04: wasm and native agree to the last digit).
 #
-# `source: seed` says these are NOT player submissions: they were found
-# by greedy forward selection over each weapon's own pool (cheap 10-run
-# passes to choose, one full benchmark run to publish). They exist so the
-# board is not empty before anyone has contributed, and they are meant to
-# be beaten.
+# EMPTY IS THE HONEST STATE until submissions arrive. It was briefly seeded with
+# optimizer-found builds so the feature could be seen working; those are gone
+# (user, 2026-08-04) because a board of our own builds presented as a board is
+# the one thing it must not be.
+#
+# `source` says where the rows came from, and the UI repeats it: `submissions`
+# once real ones land.
 benchmark: single_target_v1
-source: seed
-entries:
-  - weapon: boar_prime
-    score: 9.721159
-    mods: [blaze, critical_deceleration, hells_chamber, magnetic_strafe, primed_point_blank, primed_ravage, scattering_inferno, shotgun_elementalist]
-  - weapon: cernos_prime
-    score: 23.812781
-    mods: [hammer_shot, heavy_caliber, hellfire, primary_acuity, serration, speed_trigger, thermite_rounds, vital_sense]
-  - weapon: dual_toxocyst
-    score: 6.450633
-    mods: [jolt, magnetic_might, pistol_acuity, pistol_pestilence, primed_heated_charge, primed_target_cracker, scorch, semi_pistol_cannonade]
-  - weapon: laetum
-    score: 15.009756
-    mods: [galvanized_shot, hornet_strike, pistol_acuity, pistol_elementalist, primed_heated_charge, primed_target_cracker, scorch, semi_pistol_cannonade]
-  - weapon: larkspur_prime
-    score: 19.913039
-    mods: [critical_focus, magma_chamber, magnetized_cycle, marked_target, primed_combustion_rounds, primed_deadly_efficiency, primed_dual_rounds, primed_rubedo_lined_barrel]
-  - weapon: torid
-    score: 1.883308
-    mods: [critical_delay, heavy_caliber, high_voltage, magnetic_capacity, primary_acuity, semi_rifle_cannonade, split_chamber, vital_sense]
-  - weapon: verglas_prime
-    score: 1.943047
-    mods: [heavy_caliber, primed_cryo_rounds, serration, split_chamber, stormbringer, thermite_rounds, vile_acceleration, wildfire]
+source: submissions
+entries: []

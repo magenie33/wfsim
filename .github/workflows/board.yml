@@ -1,0 +1,122 @@
+# THE BOARD RUNS ITSELF. Nobody commits a leaderboard by hand.
+#
+# The repo owner never touches this: the bot scores, the bot commits, and
+# Cloudflare deploys the push. What triggers a re-score is the owner's ORDINARY
+# WORK — fixing a bug in `engine/`, correcting a number in `data/`, or bumping a
+# benchmark to a new version is itself the trigger, because all three are a push
+# that changes what a score MEANS.
+#
+# Two triggers, two scopes:
+#   schedule  — score what is new. quiet hours produce no commit at all.
+#   push      — engine or data changed, so every stored build is re-scored.
+#
+# The second is not an optimisation of the first, it is the correctness rule:
+# a board whose rows were measured by different engine versions is not a board.
+# Re-scoring everything is cheap enough that no dependency analysis is worth its
+# risk — a full 8-mod build is ~570 ms, so a few thousand rows is minutes on one
+# runner, and "which rows were affected" is a question that can be answered
+# wrong silently.
+name: board
+
+on:
+  schedule:
+    - cron: "17 * * * *"      # hourly, off the hour so it does not queue with everyone else
+  push:
+    branches: [main]
+    paths:
+      - "engine/**"
+      - "data/**"
+      - "webapi/**"
+      - "cli/src/bin/wfsim-board.rs"
+  workflow_dispatch:
+
+# One at a time. Two runs committing the same generated file is a conflict with
+# no meaning — the later run's numbers are simply the current ones.
+concurrency:
+  group: board
+  cancel-in-progress: false
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+
+      - name: build the scorer
+        run: cargo build --release --bin wfsim-board
+
+      # EVERY stored submission, every time. The endpoint keys by build identity
+      # so the list is already deduplicated — a hundred players who arrived at
+      # one build are one key.
+      - name: read submissions
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_NAMESPACE: ${{ secrets.CF_BOARD_NAMESPACE_ID }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          API="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces/$CF_NAMESPACE"
+          AUTH=(-H "Authorization: Bearer $CF_TOKEN")
+          : > keys.txt
+          cursor=""
+          while :; do
+            resp=$(curl -sf "${AUTH[@]}" "$API/keys?limit=1000${cursor:+&cursor=$cursor}")
+            echo "$resp" | jq -r '.result[].name' >> keys.txt
+            cursor=$(echo "$resp" | jq -r '.result_info.cursor // empty')
+            [ -n "$cursor" ] || break
+          done
+          echo "[]" > submissions.json
+          # Values one at a time: KV has no bulk read. A board this size makes
+          # that a few hundred requests, which is nothing next to the scoring.
+          jq -Rs 'split("\n") | map(select(length > 0))' keys.txt > keylist.json
+          jq -c '.[]' keylist.json | while read -r k; do
+            key=$(echo "$k" | jq -r .)
+            curl -sf "${AUTH[@]}" --get --data-urlencode "x=1" \
+              "$API/values/$(jq -rn --arg v "$key" '$v|@uri')" >> values.ndjson || true
+            echo >> values.ndjson
+          done
+          jq -s 'map(select(. != null))' values.ndjson > submissions.json || echo "[]" > submissions.json
+          echo "submissions: $(jq 'length' submissions.json)"
+
+      - name: score every benchmark
+        run: |
+          set -euo pipefail
+          for f in data/benchmarks/*.yaml; do
+            id=$(basename "$f" .yaml)
+            ./target/release/wfsim-board "$id" < submissions.json > "data/benchmarks/boards/$id.yaml"
+          done
+
+      # THE BOARD IS DATA THE APP EMBEDS AT COMPILE TIME, so a new board only
+      # reaches the site through a rebuilt wasm. Regenerating here is what makes
+      # the local build and the deployed one hold the same board.
+      - name: regenerate the site
+        run: |
+          pip install --quiet pyyaml
+          cargo install wasm-bindgen-cli --version "$(grep -A1 'name = "wasm-bindgen"' Cargo.lock | grep version | head -1 | cut -d'"' -f2)" --locked
+          python scripts/build_site_app.py
+
+      # ONLY ON CHANGE. Most hours nobody submits anything new, and a commit per
+      # hour that says nothing is history nobody can read.
+      - name: commit if the board moved
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- data/benchmarks/boards site; then
+            echo "board unchanged — nothing to commit"
+            exit 0
+          fi
+          git add data/benchmarks/boards site
+          git commit -m "board: rescore $(date -u +%Y-%m-%d)"
+          git pull --rebase --autostash
+          git push
