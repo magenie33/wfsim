@@ -145,6 +145,22 @@ around (decision 2026-07-31).
 
 ## Hard rules
 
+- **THE SIMULATOR IS THE TRUTH; THE OPTIMIZER OBEYS IT** (user, 2026-08-04:
+  "我希望 optimizer 执行的，是 simulator 的规矩"). A search's winner is replayed
+  under the simulator's fight, so any rule the optimizer applies that the
+  simulator does not — or omits that the simulator applies — scores builds
+  nobody can reproduce. The two must not be two implementations that agree;
+  the optimizer must CALL the simulator's, and add only its own scope and
+  budget.
+  Measured 2026-08-04: the two parsers read **9 of the same request fields**
+  and call **10 of the same 11 helpers**. The optimizer's extra five are all
+  scope (`build_size`, `build_min`, `finalists`, `final_runs`, `deployment`) —
+  and the ONE helper it did not share, `chosen_evolutions`, is where the
+  divergence bit. Three times, all the same shape: the form-unlock fallback
+  (2026-08-04), a caller that omitted `evolutions` getting the Incarnon cycle
+  free while the optimizer scored the base form (2026-08-03), and the
+  optimizer keeping a buff config of its own (2026-08-02). A shared helper is
+  not enough — the DECISIONS around it have to be shared too.
 - **Golden values only change with an in-game measurement** justifying
   it. New mechanics need golden tests; a faithful-looking implementation
   without a measurement is not correct.
