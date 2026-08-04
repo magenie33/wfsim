@@ -20,6 +20,7 @@ number**. Everything else follows from it:
 | the ruler | `data/benchmarks/*.yaml` | — |
 | the board | `data/benchmarks/boards/*.yaml` | generated, committed |
 | consent + submit | `web/src/static/app.js` (`offerBoardSubmit`) | the player's browser |
+| the submissions | a Cloudflare KV namespace (binding `SUBMISSIONS`) | written by the endpoint |
 | the endpoint | `functions/api/board/submit.js` | Cloudflare Pages, same origin |
 | the scorer | `cli/src/bin/wfsim-board.rs` | the scheduled job |
 | the automation | `.github/workflows/board.yml` | GitHub Actions |
@@ -73,7 +74,13 @@ The endpoint stores no IP, no token and no timestamp finer than the day.
 ## Setup, once (repo owner)
 
 1. **KV namespace** — create one, then bind it to the Pages project as
-   `BOARD` (Settings → Functions → KV namespace bindings).
+   `SUBMISSIONS` (Settings → Bindings → KV namespace).
+
+   Named for what it HOLDS, which is not the board: the board is the generated
+   YAML in `data/benchmarks/boards/`, and this namespace holds the builds people
+   sent, waiting to be scored. The binding was briefly called `BOARD`, which is
+   a debugging trap — "the board is empty but the BOARD binding looks fine" is a
+   sentence that sends you looking in the wrong place.
 2. **Repo secrets** — `CF_ACCOUNT_ID`, `CF_BOARD_NAMESPACE_ID`, `CF_API_TOKEN`
    (a token with *Workers KV Storage: Read* on that namespace only).
 

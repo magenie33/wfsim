@@ -21,8 +21,15 @@
 // pass and no counting.
 //
 // SETUP (once, by the repo owner):
-//   1. Pages project → Settings → Functions → KV namespace bindings:
-//      variable name `BOARD`, bound to a namespace you create.
+//   1. Pages project → Settings → Bindings → KV namespace:
+//      variable name `SUBMISSIONS`, bound to a namespace you create.
+//
+// NAMED FOR WHAT IT HOLDS, which is not the board. The board is the generated
+// YAML in `data/benchmarks/boards/` — this namespace holds the BUILDS people
+// sent, waiting to be scored. An earlier version called the binding `BOARD`
+// and that is a debugging trap: "the board is empty, but the BOARD binding
+// looks fine" is a sentence you can waste an afternoon on (user, 2026-08-04,
+// asking for standard names precisely so this would not happen).
 //   2. Nothing else. The Function is deployed with the site by the same push.
 
 const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
@@ -43,7 +50,7 @@ const identity = (b) =>
    [...b.evolutions].sort().join(","), b.arcanes.join(",")].join("|");
 
 export async function onRequestPost({ request, env }) {
-  if (!env.BOARD) return bad("board storage is not configured", 503);
+  if (!env.SUBMISSIONS) return bad("submission storage is not configured", 503);
 
   // Size first, before parsing: the cheapest rejection there is.
   const raw = await request.text();
@@ -75,7 +82,7 @@ export async function onRequestPost({ request, env }) {
     arcanes: b.arcanes,
     at: new Date().toISOString().slice(0, 10),
   };
-  await env.BOARD.put(identity(rec), JSON.stringify(rec), {
+  await env.SUBMISSIONS.put(identity(rec), JSON.stringify(rec), {
     // A build nobody has submitted in a year is not a live answer any more, and
     // the scoring job re-lists everything each run — so expiry is the only
     // cleanup needed.
