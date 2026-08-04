@@ -81,8 +81,13 @@ The endpoint stores no IP, no token and no timestamp finer than the day.
    sent, waiting to be scored. The binding was briefly called `BOARD`, which is
    a debugging trap — "the board is empty but the BOARD binding looks fine" is a
    sentence that sends you looking in the wrong place.
-2. **Repo secrets** — `CF_ACCOUNT_ID`, `CF_BOARD_NAMESPACE_ID`, `CF_API_TOKEN`
-   (a token with *Workers KV Storage: Read* on that namespace only).
+2. **Repo secrets** — `CF_ACCOUNT_ID`, `CF_SUBMISSIONS_NAMESPACE_ID`,
+   `CF_API_TOKEN` (a token with *Workers KV Storage: Read*).
+
+   The middle one is the SUBMISSIONS namespace's id, and it is named that way
+   for the same reason the binding is: it points at the builds waiting to be
+   scored, not at the board. Every name in this pipeline says what it holds —
+   the board is a file in the repo and nothing in Cloudflare is called after it.
 
 The token only ever READS. What the board says is computed in the repo from
 data in the repo; nothing secret decides a rank.

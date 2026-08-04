@@ -74,7 +74,7 @@ jobs:
         if: steps.wired.outputs.yes == 'true'
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
-          CF_NAMESPACE: ${{ secrets.CF_BOARD_NAMESPACE_ID }}
+          CF_NAMESPACE: ${{ secrets.CF_SUBMISSIONS_NAMESPACE_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: |
           set -euo pipefail
