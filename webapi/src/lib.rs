@@ -2458,7 +2458,59 @@ fn chosen_evolutions(v: &Value, info: &WeaponInfo) -> Result<Vec<String>, String
     ]))
 }
 
-pub fn simulate_json(v: &Value) -> Value {
+/// THE FIGHT — parsed ONCE, for both modules.
+///
+/// `simulate_json` used to parse this and `parse_optimize` parsed it again, and
+/// the two drifted three times in three days: the form-unlock fallback
+/// (2026-08-04), a caller omitting `evolutions` getting the Incarnon cycle free
+/// while the search scored the base form (2026-08-03), and the optimizer
+/// keeping a buff config of its own (2026-08-02). Every one of them scored
+/// builds under a fight the replay would not run.
+///
+/// So this is not a helper both agree to call — it is the ONE parse, and the
+/// simulator is the truth (user, 2026-08-04: "我希望 optimizer 执行的，是
+/// simulator 的规矩"). The optimizer adds only what is its own: the scope to
+/// search and the budget to spend.
+///
+/// Measured when it was written: the two parsers read 9 of the same request
+/// fields and called 10 of the same 11 helpers. The one they did not share was
+/// `chosen_evolutions`, which is exactly where it kept breaking.
+pub(crate) struct Fight {
+    pub(crate) info: &'static WeaponInfo,
+    pub(crate) policy: StackPolicy,
+    /// `None` = the legacy `assume_max`/`frenzy` knobs; `Some` = per-buff
+    /// config, which is what the Sim panel sends.
+    pub(crate) buff_cfg: Option<BuffCfg>,
+    /// Both actors and how long they are at it.
+    pub(crate) arena: wfsim_engine::arena::Arena,
+    /// After the ladder is applied AND the form's own unlock is implied.
+    pub(crate) evos: Vec<String>,
+    /// Is this the two-form CYCLE, or a single form fired throughout?
+    pub(crate) run_cycle: bool,
+    /// The single form to fire (the cycle's Incarnon half when cycling).
+    pub(crate) single_form: &'static str,
+    /// The weapon's own default form — what a cycle returns to.
+    pub(crate) untransformed_id: String,
+    /// The form ASKED FOR, after `default` is resolved. Owned: it comes from
+    /// the request, not from the weapon table.
+    pub(crate) form: String,
+    pub(crate) enemy_id: String,
+    pub(crate) level: u32,
+    pub(crate) steel_path: bool,
+    pub(crate) headshot_pct: f64,
+    pub(crate) tenno: wfsim_engine::tenno_data::Tenno,
+    pub(crate) infinite_ammo: bool,
+    pub(crate) duration: f64,
+    pub(crate) runs: u32,
+    pub(crate) seed: u64,
+    pub(crate) has_frenzy: bool,
+    pub(crate) frenzy_single: bool,
+    /// The single-form frenzy locks, built beside `frenzy_single`.
+    pub(crate) frenzy_locks: Vec<BuffLock>,
+    pub(crate) cycle_frenzy_lock: LockMode,
+}
+
+pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // ---- parse inputs ----
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
     // Per-buff configured policy (Sim panel section 2). Present ⇒ Emergent sim
@@ -2504,7 +2556,7 @@ pub fn simulate_json(v: &Value) -> Value {
     let form = get_str(v, "form", "default");
     let evos = match chosen_evolutions(v, info) {
         Ok(e) => e,
-        Err(e) => return err_json(e),
+        Err(e) => return Err(err_json(e)),
     };
     // ASKING FOR A FORM IMPLIES THE EVOLUTION THAT IS THAT FORM.
     //
@@ -2529,7 +2581,6 @@ pub fn simulate_json(v: &Value) -> Value {
             }
         }
     }
-    let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
     // ---- WHICH FORM (or the two-form CYCLE) this run simulates -------------
     // A cycle is a MODE over two forms, not a form, and it exists only where a
     // form must be TRANSFORMED into. Requiring that is a fix, not a tidy-up:
@@ -2575,6 +2626,73 @@ pub fn simulate_json(v: &Value) -> Value {
     let runs = get_u32(v, "runs", 100).clamp(1, 20_000);
     let seed = v.get("seed").and_then(|x| x.as_u64()).unwrap_or(0xC0FFEE);
 
+    let specs = enemies();
+    let Some(spec) = specs.iter().find(|e| e.id == enemy_id) else {
+        return Err(err_json(format!("unknown enemy: {enemy_id}")));
+    };
+    let target = match spec.target_params(level, steel_path, false, TargetMode::InstantRespawn) {
+        Ok(t) => t,
+        Err(e) => return Err(err_json(e)),
+    };
+    // (The target's pools are read off the ARENA by whoever reports them —
+    // one target, one place it lives.)
+    let body_parts = build_body_parts(spec, headshot_pct);
+    // ---- the ARENA: both actors, and how long they are at it. Assembled
+    // once and handed whole to whichever constructor runs, so the two forms
+    // of a cycle cannot end up fighting two different fights.
+    let arena = wfsim_engine::arena::Arena {
+        tenno: tenno.clone(),
+        target,
+        body_parts,
+        duration_secs: duration,
+    };
+    Ok(Fight {
+        info,
+        policy,
+        buff_cfg,
+        arena,
+        evos,
+        run_cycle,
+        single_form,
+        untransformed_id: registered
+            .iter()
+            .find(|f| f.is_default && !f.kind.is_gauge_switched())
+            .or_else(|| registered.iter().find(|f| !f.kind.is_gauge_switched()))
+            .map(|f| f.weapon_id)
+            .unwrap_or(&info.id)
+            .to_string(),
+        form: form.to_string(),
+        enemy_id: enemy_id.to_string(),
+        level,
+        steel_path,
+        headshot_pct,
+        tenno,
+        infinite_ammo,
+        duration,
+        runs,
+        seed,
+        has_frenzy,
+        frenzy_single,
+        frenzy_locks,
+        cycle_frenzy_lock,
+    })
+}
+
+
+pub fn simulate_json(v: &Value) -> Value {
+    // THE FIGHT, parsed by the ONE function that parses it. The optimizer
+    // calls the same one — see `parse_fight`.
+    let fight = match parse_fight(v) {
+        Ok(f) => f,
+        Err(e) => return e,
+    };
+    let Fight {
+        info, policy, buff_cfg, arena, evos, run_cycle, single_form,
+        enemy_id, level, steel_path, tenno, infinite_ammo, runs, seed,
+        frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
+    } = fight;
+    let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
+
     let mod_ids: Vec<String> = v
         .get("mods")
         .and_then(|x| x.as_array())
@@ -2616,30 +2734,15 @@ pub fn simulate_json(v: &Value) -> Value {
     }
 
     // ---- enemy / target ----
+    // The target's pools, for the report. Read off the arena rather than kept
+    // beside it: one target, one place it lives.
     let specs = enemies();
-    let Some(spec) = specs.iter().find(|e| e.id == enemy_id) else {
-        return err_json(format!("unknown enemy: {enemy_id}"));
-    };
-    let target = match spec.target_params(level, steel_path, false, TargetMode::InstantRespawn) {
-        Ok(t) => t,
-        Err(e) => return err_json(e),
-    };
     let (og, sh, hp, ar) = (
-        target.overguard(),
-        target.max_shield(),
-        target.max_health(),
-        target.armor(),
+        arena.target.overguard(),
+        arena.target.max_shield(),
+        arena.target.max_health(),
+        arena.target.armor(),
     );
-    let body_parts = build_body_parts(spec, headshot_pct);
-    // ---- the ARENA: both actors, and how long they are at it. Assembled
-    // once and handed whole to whichever constructor runs, so the two forms
-    // of a cycle cannot end up fighting two different fights.
-    let arena = wfsim_engine::arena::Arena {
-        tenno: tenno.clone(),
-        target,
-        body_parts,
-        duration_secs: duration,
-    };
 
     // ---- forma legality (order-independent; needs only the mod multiset) ----
     let planned: Vec<PlannedMod> = refs
@@ -2937,7 +3040,7 @@ pub fn simulate_json(v: &Value) -> Value {
         },
         "forma": forma,
         "target": {
-            "name": s_name(&specs, enemy_id),
+            "name": s_name(&specs, &enemy_id),
             "level": level,
             "steel_path": steel_path,
             "overguard": og,
@@ -3383,99 +3486,58 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     let final_runs = get_u32(v, "final_runs", get_u32(v, "runs", 100)).clamp(1, 100_000);
     let finalists = get_u32(v, "finalists", 10).clamp(1, 100) as usize;
 
-    // ---- scenario (reuse the Sim inputs) ----
-    let enemy_id = get_str(v, "enemy", "thrax_centurion");
-    let level = get_u32(v, "level", 9999).clamp(1, 9999);
-    let steel_path = get_bool(v, "steel_path", true);
-    let headshot_pct = get_f64(v, "headshot_pct", default_headshot_pct(info));
-    // The same builder the Sim uses — see `tenno_from`.
-    let tenno = tenno_from(v, info);
-    let duration = get_f64(v, "duration", 300.0).clamp(1.0, 3600.0);
-    let specs = enemies();
-    let Some(spec) = specs.iter().find(|e| e.id == enemy_id) else {
-        return Err(err_json(format!("unknown enemy: {enemy_id}")));
-    };
-    let target = match spec.target_params(level, steel_path, false, TargetMode::InstantRespawn) {
-        Ok(t) => t,
-        Err(e) => return Err(err_json(e)),
-    };
-    let body_parts = build_body_parts(spec, headshot_pct);
-    let buff_cfg = parse_buff_config(v).unwrap_or_default();
-    let frenzy_lock = frenzy_lock_mode(buff_cfg.get("frenzy"));
-    // Frenzy is the weapon's own perk — the optimizer must not hand it to a
-    // weapon that lacks it any more than the sim does.
-    let frenzy = wfsim_engine::weapons_data::has_perk(&info.id, "frenzy")
-        || incarnon_id(info).is_some_and(|i| wfsim_engine::weapons_data::has_perk(i, "frenzy"));
-    // ---- WHICH FORM this search fires — the Sim's rule, not a second one.
+    // ---- THE FIGHT: the simulator's, not a second reading of it ----------
     //
-    // A cycle is a MODE over two forms and exists only where there is a form
-    // to transform INTO. Demanding one of every weapon is what refused the
-    // Verglas outright (user, 2026-07-31): a sentinel beam HAS a form, it
-    // just has one, and a bow has two that are not a cycle. The optimizer now
-    // assembles the same way the builder and the sim do — from the weapon's
-    // own registered forms.
-    let form = get_str(v, "form", "default");
-    let registered = wfsim_engine::weapons_data::forms_of(&info.id);
-    let form = if form == "default" && info.has_cycle { "incarnon_cycle" } else { form };
-    let run_cycle = form == "incarnon_cycle" && info.has_cycle && incarnon_id(info).is_some();
-    let fire_id = if run_cycle {
-        incarnon_id(info).unwrap_or(&info.id).to_string()
-    } else {
-        // The requested kind if this weapon registers it, else its default —
-        // which is what an unknown or stale preset value gets.
-        registered
-            .iter()
-            .find(|f| f.kind.id() == form)
-            .or_else(|| registered.iter().find(|f| f.is_default))
-            .map(|f| f.weapon_id)
-            .unwrap_or(&info.id)
-            .to_string()
-    };
-    let cycle_from = run_cycle.then(|| info.id.clone());
-    // THE SAME RULE THE SIM USES, and it has to be: the optimizer's winner is
-    // replayed under the simulator's fight, so a form gate here that the sim
-    // does not apply would score builds nobody can reproduce.
+    // Every field below used to be parsed again here, and the two readings
+    // drifted three times in three days (see `parse_fight`). The optimizer's
+    // winner is replayed under the simulator's fight, so the only safe number
+    // of places to decide what that fight IS, is one.
     //
-    // Asking for a form implies the evolution that IS that form (see
-    // `parse_simulate`), so there is nothing left to gate on — `None` is
-    // "ungated". The gate stands only for a base-form search, where the unlock
-    // is genuinely irrelevant either way.
-    let unlock_evo = if form == "base" {
-        form_unlock_evo(info).map(String::from)
+    // What stays here is what is genuinely the optimizer's: the scope to
+    // search and the budget to spend.
+    let fight = parse_fight(v)?;
+    let untransformed_id = fight.untransformed_id.clone();
+    let unlock_evo = if fight.form == "base" {
+        form_unlock_evo(fight.info).map(String::from)
     } else {
+        // Asking for a form implies the evolution that IS that form, so there
+        // is nothing left to gate on.
         None
     };
-    let untransformed_id = registered
-        .iter()
-        .find(|f| f.is_default && !f.kind.is_gauge_switched())
-        .or_else(|| registered.iter().find(|f| !f.kind.is_gauge_switched()))
-        .map(|f| f.weapon_id)
-        .unwrap_or(&info.id)
-        .to_string();
+    // WHICH WEAPON ENTRY FIRES. Not `single_form`: for a CYCLE the optimizer
+    // fires the Incarnon half and returns to `untransformed_id` between
+    // transmutes, while `single_form` answers "the one form to fire when there
+    // is no cycle" and resolves `incarnon_cycle` — a mode, not a form — to the
+    // weapon's default. Mapping one onto the other made the search run the
+    // BASE form of every cycling weapon: the Torid lost 9x and the Boar GAINED,
+    // which is exactly the shape of "both ran their base form" (caught by the
+    // optimizer baseline, 2026-08-04).
+    let fire_id = if fight.run_cycle {
+        incarnon_id(fight.info).unwrap_or(&fight.info.id).to_string()
+    } else {
+        fight.single_form.to_string()
+    };
+    let cycle_from = fight.run_cycle.then(|| fight.info.id.clone());
+    // Read off the fight before the arena is moved into the scenario. These
+    // are what the PLAN reports about itself, not decisions it makes.
+    let (headshot_pct, duration, level, steel_path) =
+        (fight.headshot_pct, fight.duration, fight.level, fight.steel_path);
+    let enemy_id = fight.enemy_id.clone();
+    let specs = enemies();
 
+
+    // Assembled ENTIRELY from the fight — no field is re-read from the request
+    // here, which is what makes "the search and the replay run the same fight"
+    // structural rather than a thing to keep checking.
     let scenario = Scenario {
-        arena: wfsim_engine::arena::Arena {
-            tenno,
-            target,
-            body_parts,
-            duration_secs: duration,
-        },
-        frenzy,
-        incarnon_cycle: run_cycle,
-        frenzy_lock,
-        frenzy_locks: frenzy_apply(buff_cfg.get("frenzy")).1,
-        buff_cfg,
-        // The SAME two scenario facts the simulator applies. Both were missing
-        // and both made the search disagree with the replay: a finite-reserve
-        // weapon was searched running dry, and a SENTINEL was searched with
-        // conditional buffs nothing on the field can trigger (user,
-        // 2026-08-03).
-        infinite_ammo: get_bool(v, "infinite_ammo", true),
-        policy: if info.sentinel {
-            StackPolicy::BaseOnly
-        } else {
-            StackPolicy::Emergent
-        },
+        arena: fight.arena,
+        frenzy: fight.has_frenzy,
+        incarnon_cycle: fight.run_cycle,
+        frenzy_lock: fight.cycle_frenzy_lock,
+        frenzy_locks: fight.frenzy_locks,
+        buff_cfg: fight.buff_cfg.unwrap_or_default(),
+        infinite_ammo: fight.infinite_ammo,
+        policy: fight.policy,
     };
 
     Ok(OptimizePlan {
@@ -3494,7 +3556,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         finalists,
         headshot_pct,
         duration,
-        target_name: s_name(&specs, enemy_id),
+        target_name: s_name(&specs, &enemy_id),
         level,
         steel_path,
         fire_id,
