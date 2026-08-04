@@ -1,12 +1,35 @@
 // Cloudflare Workers (static assets) config — deploys site/ to wfsim.app.
-// Assets-only: no worker script, requests are served straight from the CDN.
+//
+// It was assets-ONLY (no script) until the board needed a submission endpoint.
+// The three lines that changed are the three that matter:
+//
+//   main                     there is a script now, and it exists to add ONE
+//                            path. Everything else it forwards untouched.
+//   assets.binding           how the script forwards: `env.ASSETS.fetch(req)`
+//                            serves the file exactly as the CDN did before.
+//   assets.run_worker_first  WITHOUT THIS THE ENDPOINT CANNOT WORK. Assets are
+//                            matched before the script runs, and
+//                            `not_found_handling: single-page-application`
+//                            answers every unmatched path with index.html — so
+//                            /api/board/submit came back as the SPA with a 200,
+//                            which is the quietest failure a client can get.
 {
   "name": "wfsim",
   "compatibility_date": "2026-07-28",
+  "main": "worker/index.js",
   "assets": {
     "directory": "./site",
+    "binding": "ASSETS",
     // Real-path routing: /weapons/<Wiki_Name> is a client-side route — any
     // unmatched path serves index.html and app.js's router resolves it.
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // The api is the one thing that must NOT fall through to the SPA.
+    "run_worker_first": ["/api/*"]
   }
+  // NO `kv_namespaces` YET, deliberately. A wrangler deploy REPLACES the
+  // worker's bindings with what this file declares, so a namespace added in
+  // the dashboard would be removed by the next deploy — the binding has to
+  // live here, and it needs the namespace id. Until it does, the endpoint
+  // answers 503 "submission storage is not configured", which is the honest
+  // state and cannot take the site down with it.
 }

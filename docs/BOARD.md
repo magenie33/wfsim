@@ -21,7 +21,8 @@ number**. Everything else follows from it:
 | the board | `data/benchmarks/boards/*.yaml` | generated, committed |
 | consent + submit | `web/src/static/app.js` (`offerBoardSubmit`) | the player's browser |
 | the submissions | a Cloudflare KV namespace (binding `SUBMISSIONS`) | written by the endpoint |
-| the endpoint | `functions/api/board/submit.js` | Cloudflare Pages, same origin |
+| the deploy | `wrangler.jsonc` | `npx wrangler deploy`, from a git push |
+| the endpoint | `worker/index.js` | the Cloudflare Worker, same origin |
 | the scorer | `cli/src/bin/wfsim-board.rs` | the scheduled job |
 | the automation | `.github/workflows/board.yml` | GitHub Actions |
 
@@ -71,10 +72,36 @@ The endpoint stores no IP, no token and no timestamp finer than the day.
   build against a resource the ranking cannot value. A benchmark build is 8
   slots.
 
+## It is a Worker, not Pages
+
+That distinction is worth stating because it looks like it should not matter and
+it decides everything. `wrangler.jsonc` deploys `site/` as a Worker's static
+assets, and until the board there was no script at all. Two consequences:
+
+- **Pages conventions do nothing here.** A `functions/` directory is ignored;
+  the endpoint is a route inside `worker/index.js`.
+- **`assets.run_worker_first` is not optional.** Assets match before the script
+  runs, and `not_found_handling: single-page-application` answers every
+  unmatched path with index.html — so an api path came back as the SPA with a
+  200. A 200 carrying the wrong content type is the quietest failure a client
+  can get, and the only reason it was caught quickly is that the page reports
+  "could not reach the board" rather than assuming success.
+
 ## Setup, once (repo owner)
 
-1. **KV namespace** — create one, then bind it to the Pages project as
-   `SUBMISSIONS` (Settings → Bindings → KV namespace).
+1. **KV namespace** — create one, then declare it in `wrangler.jsonc` as
+   `SUBMISSIONS`:
+
+   ```jsonc
+   "kv_namespaces": [{ "binding": "SUBMISSIONS", "id": "<namespace id>" }]
+   ```
+
+   **In the file, not in the dashboard.** wfsim.app is a WORKER (static assets),
+   deployed by `npx wrangler deploy`, and a deploy REPLACES the worker's
+   bindings with what the config declares — a namespace added through the
+   dashboard is removed by the next push. The id is an identifier, not a
+   secret; it grants nothing without a token, and Cloudflare's own docs commit
+   it.
 
    Named for what it HOLDS, which is not the board: the board is the generated
    YAML in `data/benchmarks/boards/`, and this namespace holds the builds people
