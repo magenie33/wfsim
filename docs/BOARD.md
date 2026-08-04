@@ -121,17 +121,22 @@ answer could be published.
    and none would be believed.
 3. **We validate legality ourselves**, including Forma: pool, families, eight
    slots, capacity.
-4. **The plan spends as FEW Forma as possible** — biggest-drain mod first, so
-   every polarization buys the most room it could.
-5. **A rank-40 weapon spends at least five**, because that is what full mastery
-   affinity takes. The floor is `polarize_to_max`.
-6. **No Omni Forma.** `BENCHMARK_INVESTMENT` leaves it off: a board build should
+4. **Forma, in priority order** (owner, 2026-08-04). The order is the rule, not
+   a preference — 2 before 3 means the answer is never "spend one more Forma to
+   leave more room":
+
+   1. **reach max rank** — five polarizations on a rank-40 weapon, because that
+      is what full mastery affinity takes. A floor, not a budget.
+   2. **then as few Forma as possible to make it legal.** Umbra Forma only when
+      refusing would invent a rule the game does not have; a weapon born with an
+      Umbra polarity keeps it, and is never billed for it.
+   3. **then as much spare capacity as possible** — every polarization bought
+      anyway goes on the biggest mod still unpolarized. Three 16-drain mods on a
+      rank-40 weapon: 24 drain and 56 spare, not 48 and 32, at the same cost.
+
+5. **No Omni Forma.** `BENCHMARK_INVESTMENT` leaves it off: a board build should
    be one an ordinary player can reach.
-7. **The five are put to WORK.** They are bought either way, so they go on the
-   five biggest mods rather than the two the build strictly needed — same cost,
-   more spare capacity. Three 16-drain mods on a rank-40 weapon: 24 drain and 56
-   spare, not 48 and 32.
-8. **Then it is published.**
+6. **Then it is published.**
 
 The bill still reports what is SPENT, not what earned room: a build with fewer
 mods than mastery has polarizations buys all five, and the last land on empty

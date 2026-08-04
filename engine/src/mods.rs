@@ -94,8 +94,13 @@ pub struct Investment {
     /// Omni Forma for every polarized slot: it matches any mod except an Umbra
     /// one, so it removes the colour puzzle — at a higher price.
     pub use_omni: bool,
-    /// May the planner spend an UMBRA Forma? OFF by default: it is the scarce
-    /// one (owner, 2026-08-04), and without it an Umbra mod pays full drain.
+    /// May the planner spend an UMBRA Forma?
+    ///
+    /// The rule is "as little as possible, but use it rather than fail"
+    /// (owner, 2026-08-04: "尽可能不用，如果不用就非法那一定要用"), and [`fit`]
+    /// implements exactly that: it plans without, and only retries with when
+    /// without is impossible. So this flag is the FIRST attempt's answer, not a
+    /// veto — a build that genuinely needs an Umbra Forma still gets one.
     pub use_umbra: bool,
 }
 
@@ -336,6 +341,10 @@ fn plan_forma_spending(
 ///
 /// Umbra and Omni are counted apart because they are different items and no
 /// weapon is born with either.
+/// `slots` is EVERY slot, not only the filled ones. A slot with an innate
+/// polarity and no mod in it still carries that polarity — passing only the
+/// filled slots reads as "the rest were blanked", and blanking costs a Forma.
+/// Empty slots go in with `base_drain: 0`.
 pub fn cost_of(innate_slots: &[Option<Polarity>], slots: &[Placement]) -> (u32, FormaCost) {
     let drain: u32 = slots
         .iter()
@@ -344,13 +353,25 @@ pub fn cost_of(innate_slots: &[Option<Polarity>], slots: &[Placement]) -> (u32, 
 
     let mut cost = FormaCost::default();
     let mut need: Vec<Polarity> = Vec::new();
+    let (mut umbra_used, mut omni_used) = (0u32, 0u32);
     for p in slots.iter().filter_map(|p| p.slot_polarity) {
         match p {
-            Polarity::Omni => cost.omni += 1,
-            Polarity::Umbra => cost.umbra += 1,
+            Polarity::Omni => omni_used += 1,
+            Polarity::Umbra => umbra_used += 1,
             other => need.push(other),
         }
     }
+    // AN INNATE UMBRA IS NOT A PURCHASE. Some weapons are born with one, and
+    // keeping it costs nothing — billing for it charged the player for a slot
+    // the game gave them (owner, 2026-08-04: "有些装备天生自带这个 umbra
+    // forma，能不覆盖就不要覆盖"). Only what is used BEYOND the innate ones is
+    // bought. Omni is netted the same way for symmetry; no weapon is born with
+    // one today, and if one ever is, this already says the right thing.
+    let innate_of = |want: Polarity| {
+        innate_slots.iter().flatten().filter(|&&p| p == want).count() as u32
+    };
+    cost.umbra = umbra_used.saturating_sub(innate_of(Polarity::Umbra));
+    cost.omni = omni_used.saturating_sub(innate_of(Polarity::Omni));
     let pool: Vec<Polarity> = innate_slots
         .iter()
         .flatten()
@@ -389,6 +410,21 @@ pub struct Fitted {
 
 /// THE question the builder asks: what would it take to own this build?
 ///
+/// # The strategy, in priority order (owner, 2026-08-04)
+///
+/// 1. **Reach max rank first.** Five polarizations on a rank-40 weapon, because
+///    that is what full mastery affinity takes. It is a floor, not a budget.
+/// 2. **Then as FEW Forma as possible to make the build legal** — and Umbra
+///    Forma only when refusing would be inventing a rule the game does not
+///    have. A weapon born with an Umbra polarity keeps it: that slot was never
+///    bought, so it is never billed and never overwritten if it can be used.
+/// 3. **Then as much SPARE CAPACITY as possible.** Every polarization that is
+///    being bought anyway goes on the biggest mod still unpolarized.
+///
+/// The order matters: 2 before 3 means the answer is never "spend one more
+/// Forma to leave more room", and 1 before 2 means the room the mastery Forma
+/// buy is available to 2 before it starts counting.
+///
 /// Capacity is not a constant, and on a rank-40 weapon it is not even an INPUT:
 /// every Forma both polarizes a slot and adds two max rank, so how much room
 /// there is depends on how much Forma was spent, which depends on how much room
@@ -402,6 +438,34 @@ pub struct Fitted {
 /// covers its own answer. Bounded by five, and every f it rejects is one the
 /// player genuinely could not afford to stop at.
 pub fn fit(
+    base_max_rank: u32,
+    innate_slots: &[Option<Polarity>],
+    mods: &[PlannedMod],
+    inv: Investment,
+) -> Result<Fitted, String> {
+    // AS LITTLE UMBRA AS POSSIBLE, BUT NEVER FAIL FOR WANT OF IT. Umbra Forma
+    // is the scarce item, so the first attempt does without — and if the build
+    // is impossible without it, refusing would be inventing a rule the game
+    // does not have (owner, 2026-08-04).
+    //
+    // The two attempts call `fit_exactly`, not each other: a version of this
+    // that recursed into `fit` re-entered the same branch and never bottomed
+    // out.
+    if !inv.use_umbra && mods.iter().any(|m| m.polarity == Polarity::Umbra) {
+        return fit_exactly(base_max_rank, innate_slots, mods, inv).or_else(|_| {
+            fit_exactly(
+                base_max_rank,
+                innate_slots,
+                mods,
+                Investment { use_umbra: true, ..inv },
+            )
+        });
+    }
+    fit_exactly(base_max_rank, innate_slots, mods, inv)
+}
+
+/// [`fit`] with the switches taken literally — no Umbra fallback.
+fn fit_exactly(
     base_max_rank: u32,
     innate_slots: &[Option<Polarity>],
     mods: &[PlannedMod],
@@ -576,7 +640,7 @@ mod tests {
         );
         assert_eq!(cost.regular, 1);
 
-        // Umbra and Omni are billed apart — no weapon is born with either.
+        // Umbra and Omni are billed apart.
         let (_, cost) = cost_of(
             &innate,
             &[at(Some(Polarity::Umbra), Polarity::Umbra),
@@ -585,6 +649,62 @@ mod tests {
               at(Some(Polarity::Naramon), Polarity::Naramon)],
         );
         assert_eq!(cost, FormaCost { regular: 0, omni: 1, umbra: 1 });
+    }
+
+    /// AN INNATE UMBRA IS NOT A PURCHASE. Some weapons are born with one, and
+    /// keeping it costs nothing — the bill charged for it until 2026-08-04.
+    #[test]
+    fn an_innate_umbra_slot_is_kept_not_bought() {
+        let innate = [Some(Polarity::Umbra), Some(Polarity::Madurai), None, None];
+        let at = |pol: Option<Polarity>, mod_pol: Polarity| Placement {
+            base_drain: 10, mod_polarity: mod_pol, slot_polarity: pol,
+        };
+        // EVERY slot, including the ones with no mod — an innate polarity on an
+        // empty slot is still there, and reading the build as "the rest were
+        // blanked" charges a Forma for nothing.
+        let empty = |pol: Option<Polarity>| Placement {
+            base_drain: 0, mod_polarity: Polarity::Madurai, slot_polarity: pol,
+        };
+        // Using the slot the weapon came with: nothing bought.
+        let (_, cost) = cost_of(
+            &innate,
+            &[at(Some(Polarity::Umbra), Polarity::Umbra), empty(Some(Polarity::Madurai))],
+        );
+        assert_eq!(cost, FormaCost::default(), "the weapon came with it");
+
+        // A SECOND Umbra slot is one purchase, not two.
+        let (_, cost) = cost_of(
+            &innate,
+            &[at(Some(Polarity::Umbra), Polarity::Umbra),
+              at(Some(Polarity::Umbra), Polarity::Umbra),
+              empty(Some(Polarity::Madurai))],
+        );
+        assert_eq!(cost.umbra, 1);
+    }
+
+    /// UMBRA IS SPENT ONLY WHEN REFUSING WOULD BE WRONG (owner, 2026-08-04:
+    /// "尽可能不用，如果不用就非法那一定要用"). Not a veto — a first answer.
+    #[test]
+    fn umbra_forma_is_a_last_resort_rather_than_a_refusal() {
+        let innate = [None; 8];
+        // Room to spare: the Umbra mod pays full drain and no Umbra Forma is
+        // bought, which is the thrifty answer and the right one.
+        let easy = [m(16, Polarity::Umbra), m(10, Polarity::Madurai)];
+        let f = fit(30, &innate, &easy, Investment::default()).unwrap();
+        assert_eq!(f.cost.umbra, 0, "it fits without one, so none is spent");
+
+        // Now a build that hangs on exactly this: one Umbra mod at 16 and six
+        // others at 16, on rank 30's cap of 60.
+        //   without Umbra Forma:  16 + 6x8 = 64  -> impossible
+        //   with it:               8 + 6x8 = 56  -> fits
+        // Refusing would invent a rule the game does not have.
+        let mut hard = vec![m(16, Polarity::Umbra)];
+        hard.extend(std::iter::repeat_n(m(16, Polarity::Madurai), 6));
+        let f = fit(30, &innate, &hard, Investment::default())
+            .expect("a build that NEEDS Umbra Forma is still a build");
+        assert_eq!(f.cost.umbra, 1, "exactly one, and only because it had to");
+        assert_eq!(f.drain, 56);
+        assert!(f.drain <= f.capacity);
     }
 
     /// A rank-40 weapon polarized to max has its capacity BEFORE planning
