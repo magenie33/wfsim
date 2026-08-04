@@ -87,11 +87,27 @@ scenario:
   # bottom of the board into an untellable pile of zeros.
   metric: kpm
 
-  # Reserve ammo out of the picture, so the number compares across weapons.
-  # The MAGAZINE still bites: reload cadence and ammo cost are part of what is
-  # being measured. (A weapon whose reserve is infinite in game cannot be
-  # switched off this anyway.)
-  infinite_ammo: true
+  # AMMO IS FINITE HERE (owner, 2026-08-04). The app-wide default is the
+  # opposite, and for a good reason that does not survive contact with a
+  # benchmark: the sim models no ammo PICKUPS, so a finite reserve would dry out
+  # for a reason the game does not have — an ordinary weapon gets resupplied.
+  #
+  # But the flag does not starve those weapons, because the engine reads
+  # `infinite_ammo || !finite_reserve`: a weapon whose reserve is infinite in
+  # game stays infinite whatever this says. In the whole roster exactly one
+  # weapon has a reserve that genuinely cannot be refilled — a ground Arch-Gun,
+  # which is "removed and can only be called down again after a 5-minute
+  # cooldown" once its 400 rounds are gone. So this term costs nothing anywhere
+  # it would be a fiction, and buys the truth in the one place it is not.
+  #
+  # Measured on Larkspur Prime, unmodded, on this fight: 0.0436 with the reserve
+  # ignored against 0.0139 with it, a 3.1x overstatement. Not a rounding
+  # difference — it is scoring 300 seconds of firing for a weapon that has about
+  # a minute of ammo, which is most of what an Arch-Gun's balance IS.
+  #
+  # The MAGAZINE was always modelled either way: reload cadence and `ammo_cost`
+  # bite under both settings. This is the reserve behind it.
+  infinite_ammo: false
 
   # However the weapon is played — see the header.
   form: default

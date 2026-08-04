@@ -187,6 +187,10 @@ mod tests {
         assert_eq!(s("steel_path").and_then(|v| v.as_bool()), Some(true));
         assert_eq!(s("duration").and_then(|v| v.as_u64()), Some(300));
         assert_eq!(s("runs").and_then(|v| v.as_u64()), Some(100));
+        // FINITE RESERVE. Only a weapon that cannot be resupplied feels it, and
+        // for that weapon it is 3x the score — so it is a term of the claim,
+        // not a detail.
+        assert_eq!(s("infinite_ammo").and_then(|v| v.as_bool()), Some(false));
         assert_eq!(s("metric").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("kpm"));
         assert_eq!(s("form").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("default"));
         // Pinned, not defaulted: a published number has to be reproducible by
