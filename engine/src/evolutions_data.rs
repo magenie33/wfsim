@@ -182,6 +182,18 @@ enum EvoEffect {
     },
     /// No damage payload here (holstered regen, recoil, timed utility
     /// buffs, the weapon unlock) — kept so the evolution loads and lists.
+    /// THE TRANSFORMATION ITSELF — tier 1 of every Incarnon ladder, naming the
+    /// form it unlocks. It changes no stat (the form's own entry carries those)
+    /// and it is not a CHOICE: every one of these is `selection: fixed`,
+    /// because installing the Genesis is what grants it.
+    ///
+    /// It was parsed as `Inert("unlocks_weapon")` and the target dropped on the
+    /// floor, which left "which evolution unlocks the form" to be guessed from
+    /// LADDER POSITION ("tier 1's first option"). Reading it is what lets the
+    /// form and the evolution stop being two controls for one fact — asking to
+    /// fire the Incarnon form implies the evolution that IS firing it (user,
+    /// 2026-08-04).
+    UnlocksForm(String),
     Inert(String),
 }
 
@@ -341,7 +353,9 @@ impl EvolutionDef {
                 | EvoEffect::IncarnonChargeRate(_) => None,
                 // Rolled per instance, not a buff with an uptime.
                 EvoEffect::ChanceDamageOnNoncrit { .. } => None,
-                EvoEffect::Inert(_) => None,
+                // The transformation grants no CARD: what it unlocks is a
+                // FORM, whose own weapon entry carries every stat it brings.
+                EvoEffect::UnlocksForm(_) | EvoEffect::Inert(_) => None,
             })
             .collect()
     }
@@ -481,6 +495,9 @@ impl EvolutionDef {
                     "+{:.0}% damage per stack ({max_stacks} max, {duration:.0} s) on a hit that neither crits nor procs",
                     per_stack * 100.0
                 ),
+                EvoEffect::UnlocksForm(w) => {
+                    format!("unlocks the {w} form — its stats are that form's own")
+                }
                 EvoEffect::Inert(what) => {
                     format!("{} (no single-target DPS effect)", what.replace('_', " "))
                 }
@@ -621,6 +638,12 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
             duration: f(v, "duration").unwrap_or(0.0),
         },
+        "unlocks_weapon" => EvoEffect::UnlocksForm(
+            v.get("weapon")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_string(),
+        ),
         other => EvoEffect::Inert(other.to_string()),
     })
 }
@@ -638,6 +661,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
     for e in evos.iter().filter(|e| !e.currently_broken) {
         for eff in &e.effects {
             match eff {
+                // NOTHING TO APPLY. The form it unlocks is a separate weapon
+                // entry with its own stats, so applying anything here would
+                // count them twice.
+                EvoEffect::UnlocksForm(_) => {}
                 EvoEffect::FlatBaseDamage(v) => flat += v,
                 // Same bucket as the line above: it is base damage, and the
                 // run is modelled holding it (see the variant's note).
@@ -857,6 +884,20 @@ pub fn pool() -> &'static Vec<EvolutionDef> {
 }
 
 /// Look up an evolution by id.
+impl EvolutionDef {
+    /// The form this evolution unlocks, if it is the transformation itself.
+    ///
+    /// THE TAG the form resolution reads. It replaces "tier 1's first option",
+    /// which was a guess from ladder position that happened to hold for the
+    /// four Incarnon weapons in the roster and says nothing about the fifth.
+    pub fn unlocks_form(&self) -> Option<&str> {
+        self.effects.iter().find_map(|e| match e {
+            EvoEffect::UnlocksForm(w) => Some(w.as_str()),
+            _ => None,
+        })
+    }
+}
+
 pub fn get(id: &str) -> Option<&'static EvolutionDef> {
     pool().iter().find(|e| e.id == id)
 }
@@ -1050,13 +1091,14 @@ use crate::loadout::WeaponBase;
         // Each line is a DECISION, and the reason is beside the effect in its
         // own yaml. Kept as a flat list so a diff here is readable.
         let expected: Vec<&str> = vec![
-            // ---- the form is a WEAPON, not perk payload ----------------
-            // Tier 1 unlocks the second weapon entry; there is nothing for
-            // this loader to apply.
-            "boar_prime_evo1_incarnon_form :: unlocks_weapon",
-            "dual_toxocyst_evo1_incarnon_form :: unlocks_weapon",
-            "laetum_evo1_incarnon_form :: unlocks_weapon",
-            "torid_evo1_incarnon_form :: unlocks_weapon",
+            // (The four `unlocks_weapon` tier-1 entries used to live here.
+            // They still apply nothing — the form is a separate weapon with
+            // its own stats — but they are no longer INERT: `UnlocksForm`
+            // carries the form's id, and reading it is what lets a form
+            // request imply the evolution that IS that form instead of
+            // silently falling back to base (2026-08-04). Inert meant the
+            // target was dropped at parse time and "which evolution unlocks
+            // the form" had to be guessed from ladder position.)
             // ---- RELOAD CADENCE ----------------------------------------
             // `reload_speed_bonus` is a MODS-loader word this loader has no arm
             // for, and both instances are conditional on an empty reload the

@@ -15,8 +15,10 @@ selection: fixed                # tier 1 has no choice
 # trigger, the beams, the pure Heat vector and the higher crit/status are all
 # properties of the boar_prime_incarnon entry, not perk payload.
 effects:
-  # NOT LOADED: `evolutions_data::effect()` has no `unlocks_weapon` arm, so this
-  # resolves to `EvoEffect::Inert` and contributes nothing (data/README.md).
+  # LOADED as `EvoEffect::UnlocksForm(weapon)`. It applies no stat — the form
+  # below is a separate weapon entry carrying its own — but the ENGINE READS IT:
+  # asking to fire that form implies this evolution, because tier 1 is
+  # `selection: fixed` and the two were one fact behind two controls.
   - kind: unlocks_weapon
     weapon: boar_prime_incarnon
 

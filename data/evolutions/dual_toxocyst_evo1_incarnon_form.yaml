@@ -11,8 +11,10 @@ selection: fixed                # tier 1 has no choice - installing grants it
 # nothing else: the auto trigger, higher stats, and ricochet are inherent
 # properties of the dual_toxocyst_incarnon weapon entry, not perk payload.
 effects:
-  # NOT LOADED: `evolutions_data::effect()` has no `unlocks_weapon` arm, so this
-  # resolves to `EvoEffect::Inert` and contributes nothing (data/README.md).
+  # LOADED as `EvoEffect::UnlocksForm(weapon)`. It applies no stat — the form
+  # below is a separate weapon entry carrying its own — but the ENGINE READS IT:
+  # asking to fire that form implies this evolution, because tier 1 is
+  # `selection: fixed` and the two were one fact behind two controls.
   # Nothing is gated on it: the Incarnon form's availability comes from the
   # weapon data's `transforms_to`, and `weapon` below is unread too. The entry
   # records that this tier is what unlocks the form in game.

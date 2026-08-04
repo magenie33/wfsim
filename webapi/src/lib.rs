@@ -224,8 +224,13 @@ fn evo_group(info: &WeaponInfo) -> &'static str {
 /// The tier-1 evolution that unlocks the second form (deselecting it means
 /// no transformation).
 fn form_unlock_evo(info: &WeaponInfo) -> Option<&'static str> {
-    wfsim_engine::evolutions_data::options(evo_group(info), 1)
-        .first()
+    // BY ITS TAG, not by ladder position. It used to be "tier 1's first
+    // option", which is a guess that happens to hold for the four Incarnon
+    // weapons in the roster and says nothing about the fifth.
+    let group = evo_group(info);
+    wfsim_engine::evolutions_data::pool()
+        .iter()
+        .find(|e| e.weapon == group && e.unlocks_form().is_some())
         .map(|e| e.id.as_str())
 }
 
@@ -2501,21 +2506,30 @@ pub fn simulate_json(v: &Value) -> Value {
         Ok(e) => e,
         Err(e) => return err_json(e),
     };
-    let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
-    // No Incarnon Form unlock (tier 1) = the weapon cannot transform: honest
-    // fallback to the DEFAULT form.
+    // ASKING FOR A FORM IMPLIES THE EVOLUTION THAT IS THAT FORM.
     //
-    // This used to fire only when the request CARRIED an `evolutions` key, so
-    // a caller that omitted it was handed the Incarnon cycle for free — worth
-    // 8x on the Torid — while the optimizer, whose rule has no such guard,
-    // scored the base form. The web always sends the key so nobody saw it;
-    // every other caller did (user, 2026-08-03).
+    // This used to fall back to "base" when the tier-1 unlock was not among the
+    // chosen evolutions, which made the form control lie: with no evolutions
+    // picked — the state the page STARTS in — all three options produced the
+    // base form's number and nothing said why (user, 2026-08-04: "灵化循环和基
+    // 础，纯灵化好像都不起作用").
+    //
+    // Implying it is the honest model, not a shortcut. Tier 1 is
+    // `selection: fixed` on every Incarnon ladder: it is not a choice, it is
+    // what installing the Genesis grants. And it carries no stat of its own —
+    // `UnlocksForm` applies nothing, because the form it unlocks is a separate
+    // weapon entry with its own numbers. So the form and the evolution were two
+    // controls for ONE fact, and this is which of them decides.
     let unlock = form_unlock_evo(info);
-    let form = if unlock.is_some_and(|u| !evos.iter().any(|e| e == u)) {
-        "base"
-    } else {
-        form
-    };
+    let mut evos = evos;
+    if form != "base" {
+        if let Some(u) = unlock {
+            if !evos.iter().any(|e| e == u) {
+                evos.push(u.to_string());
+            }
+        }
+    }
+    let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
     // ---- WHICH FORM (or the two-form CYCLE) this run simulates -------------
     // A cycle is a MODE over two forms, not a form, and it exists only where a
     // form must be TRANSFORMED into. Requiring that is a fix, not a tidy-up:
@@ -3418,9 +3432,19 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             .to_string()
     };
     let cycle_from = run_cycle.then(|| info.id.clone());
-    // Tier 1 is the Incarnon Form unlock; an evolution set without it is a
-    // weapon that cannot transform, exactly as the builder shows it.
-    let unlock_evo = form_unlock_evo(info).map(String::from);
+    // THE SAME RULE THE SIM USES, and it has to be: the optimizer's winner is
+    // replayed under the simulator's fight, so a form gate here that the sim
+    // does not apply would score builds nobody can reproduce.
+    //
+    // Asking for a form implies the evolution that IS that form (see
+    // `parse_simulate`), so there is nothing left to gate on — `None` is
+    // "ungated". The gate stands only for a base-form search, where the unlock
+    // is genuinely irrelevant either way.
+    let unlock_evo = if form == "base" {
+        form_unlock_evo(info).map(String::from)
+    } else {
+        None
+    };
     let untransformed_id = registered
         .iter()
         .find(|f| f.is_default && !f.kind.is_gauge_switched())
@@ -4507,6 +4531,47 @@ mod form_tests {
             "enemy": "thrax_centurion", "duration": 30.0, "runs": 8,
             "headshot_pct": 100.0, "seed": 7,
         }))
+    }
+
+    /// ASKING FOR A FORM IS ENOUGH — the evolution that IS that form is
+    /// implied, not demanded.
+    ///
+    /// This is the state the page STARTS in: no evolutions chosen. It used to
+    /// fall back to the base form for every request, so all three options
+    /// produced one number and the control said otherwise (user, 2026-08-04:
+    /// "灵化循环和基础，纯灵化好像都不起作用"). Three options, one outcome.
+    ///
+    /// Implying it is exact rather than generous: tier 1 is `selection: fixed`
+    /// on every Incarnon ladder — not a choice but what installing the Genesis
+    /// grants — and it applies no stat, so the numbers below are IDENTICAL to
+    /// the same request with the evolution named explicitly. That equality is
+    /// the real assertion; three different numbers alone would not prove the
+    /// implication is free.
+    #[test]
+    fn a_form_request_implies_its_own_unlock() {
+        let dps = |v: &Value| v.get("dps").and_then(Value::as_f64).unwrap_or(0.0);
+        let with_evo = |form: &str| {
+            simulate_json(&json!({
+                "weapon": "boar_prime", "form": form, "mods": [], "arcane": "none",
+                "evolutions": ["boar_prime_evo1_incarnon_form"],
+                "enemy": "thrax_centurion", "duration": 30.0, "runs": 8,
+                "headshot_pct": 100.0, "seed": 7,
+            }))
+        };
+        let (base, inc, cyc) = (sim("boar_prime", "base"), sim("boar_prime", "incarnon"),
+                                sim("boar_prime", "incarnon_cycle"));
+        // Three options, three fights — which is BEST depends on the build, so
+        // no ordering is asserted, only that the choice does something.
+        for (a, b) in [(&base, &inc), (&base, &cyc), (&inc, &cyc)] {
+            assert!((dps(a) - dps(b)).abs() > 1e-6, "{} vs {}", dps(a), dps(b));
+        }
+        // ...and naming the evolution changes nothing, because it carries none.
+        for form in ["base", "incarnon", "incarnon_cycle"] {
+            assert!(
+                (dps(&sim("boar_prime", form)) - dps(&with_evo(form))).abs() < 1e-9,
+                "{form}: implying the unlock is not the same as naming it"
+            );
+        }
     }
 
     /// A weapon is fired in ITS OWN forms, with ITS OWN evolutions. Both used
