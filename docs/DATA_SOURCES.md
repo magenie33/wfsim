@@ -156,6 +156,69 @@ matches exactly one entry, none unmatched. A name-keyed lookup is what made an
 earlier pass "confirm" MaxRank 5 for Hawk Eye and Steady Hands from a
 collision duplicate, and record the wrong conclusion in both files.
 
+## WEAPONS: the wiki module, and never WFCD's `damage` dict (2026-08-04)
+
+The "cross-check both" rule holds, but for a WEAPON the two sources are not
+peers and one WFCD field is simply unusable. Owner's call: **wiki first**.
+
+Measured across every primary the two sources share (158 weapons):
+
+| WFCD's top-level `damage` vs the wiki | count |
+| --- | --- |
+| identical | 18 |
+| **PUNCTURE AND SLASH SWAPPED** | **113** |
+| otherwise wrong | 27 |
+
+Vectis Prime is a swap: the wiki gives 140 Impact / 157.5 Puncture / 52.5 Slash
+— the puncture-heavy profile a sniper should have — and WFCD's dict reports
+52.5 Puncture / 157.5 Slash. The "otherwise wrong" 27 are a different failure:
+the dict BLENDS several attacks into one figure. Acceltra is 35 pure Impact on
+its direct hit, and the dict returns 26 / 8.8 / 35.2 — the shot and its AoE
+averaged together.
+
+**WFCD's own `attacks[]` array is fine** and agrees with the wiki; so does its
+`damagePerShot` array, whose order is `[impact, puncture, slash]`. It is only
+the flat `damage` summary that is wrong — which is the field a casual reader
+reaches for first.
+
+So:
+
+| weapon field | authority |
+| --- | --- |
+| damage split, crit, status, fire rate, multishot, punch-through, per ATTACK | **wiki `Attacks[]`** — an Incarnon weapon has four of them, and only the module distinguishes them |
+| `Zoom`, `SniperComboMin`, `SniperComboReset`, `CompatibilityTags`, `IncarnonCharges`, `Falloff`, `ForcedProcs` | **wiki only** — WFCD carries none of them |
+| `InternalName` | wiki, cross-checked against WFCD's `uniqueName` (the join key) |
+| magazine, reload, mastery, accuracy, disposition | either; cross-check |
+| WFCD top-level `damage` / `damagePerShot` dict | **NEVER.** Wrong for 140 of 158 |
+
+Nothing in `data/` was affected — every weapon file was sourced from the module,
+and Boar Prime (26/6/8), Torid (100 Toxin) and Cernos Prime (165.6/9.2/9.2, the
+charged shot's doubled 82.8/4.6/4.6) all match the wiki exactly. The rule was
+already being followed; this records WHY it has to be, with the number attached.
+
+### `private/scripts/wiki_weapons.py`
+
+Reads the module properly instead of scraping a field at a time. A regex scrape
+reads `Damage` out of whichever Attack comes first, and an Incarnon weapon has
+four — so this parses the Lua table exactly (numbers, strings, booleans, nested
+tables, `math.huge` → `None`). Verified against all five slot modules: 198
+primary + 155 secondary + 249 melee + 50 archwing + 41 companion = **693
+entries, no parse failures**.
+
+```
+python private/scripts/wiki_weapons.py "Vectis Prime"          # the entry, as JSON
+python private/scripts/wiki_weapons.py "Vectis Prime" --check  # disagreements vs WFCD
+python private/scripts/wiki_weapons.py --slot primary --list   # every name + Class
+```
+
+`--check` compares magazine / reload / mastery / accuracy / disposition, the
+first attack's crit / status / fire rate, and `attacks[0].damage` — deliberately
+NOT the flat dict, which would report a false split on most weapons. Vectis
+Prime: 0 disagreements.
+
+The modules are cached under `private/scripts/.cache/` (~330 KB per slot);
+`--refresh` re-fetches.
+
 ### Sources we do NOT use, and what each would be good for (2026-08-01)
 
 Found in wfhub.top's own credits page (Tenno Hub, a Chinese Warframe
