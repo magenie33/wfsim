@@ -105,7 +105,10 @@ mod tests {
             for e in &b.entries {
                 let v = crate::builds::validate(&e.weapon, &e.mods, &e.evolutions, &e.arcanes)
                     .unwrap_or_else(|err| panic!("{} row on {}: {err}", e.weapon, b.benchmark));
-                assert!(v.drain <= crate::builds::CAPACITY);
+                // `validate` already refused anything over capacity, and the
+                // capacity is the weapon's own — so the assertion is that it
+                // fits, not that it fits some number written here.
+                assert!(v.drain > 0, "{} drew nothing", e.weapon);
                 assert!(e.score > 0.0, "{} scored nothing", e.weapon);
             }
         }

@@ -286,6 +286,55 @@ pub fn plan_forma_with(
     })
 }
 
+/// What the layout a player has ACTUALLY SET costs — a different question from
+/// [`fit`], which answers what the cheapest layout would be.
+///
+/// Both are real and the UI asks both: one is "what does this build cost me",
+/// the other is "what should I do". The rule for the bill is that innate
+/// polarities form a free pool a Forma may REPOSITION, so an added slot and a
+/// removed one cancel: `max(added, removed)`. Blanking an innate polarity costs
+/// a Forma on its own, which is why the maximum and not the sum.
+///
+/// Umbra and Omni are counted apart because they are different items and no
+/// weapon is born with either.
+pub fn cost_of(innate_slots: &[Option<Polarity>], slots: &[Placement]) -> (u32, FormaCost) {
+    let drain: u32 = slots
+        .iter()
+        .map(|p| slot_drain(p.base_drain, p.mod_polarity, p.slot_polarity))
+        .sum();
+
+    let mut cost = FormaCost::default();
+    let mut need: Vec<Polarity> = Vec::new();
+    for p in slots.iter().filter_map(|p| p.slot_polarity) {
+        match p {
+            Polarity::Omni => cost.omni += 1,
+            Polarity::Umbra => cost.umbra += 1,
+            other => need.push(other),
+        }
+    }
+    let pool: Vec<Polarity> = innate_slots
+        .iter()
+        .flatten()
+        .copied()
+        .filter(|p| !matches!(p, Polarity::Omni | Polarity::Umbra))
+        .collect();
+    let count = |xs: &[Polarity], p: Polarity| xs.iter().filter(|&&x| x == p).count() as i64;
+    let (mut added, mut removed) = (0i64, 0i64);
+    let mut seen: Vec<Polarity> = need.iter().chain(pool.iter()).copied().collect();
+    seen.sort_by_key(|p| format!("{p:?}"));
+    seen.dedup();
+    for p in seen {
+        let d = count(&need, p) - count(&pool, p);
+        if d > 0 {
+            added += d;
+        } else {
+            removed -= d;
+        }
+    }
+    cost.regular = added.max(removed) as u32;
+    (drain, cost)
+}
+
 /// What a build costs to OWN: the rank it needs, the capacity that gives it,
 /// and the Forma that gets there.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -446,6 +495,52 @@ mod tests {
         // "needs more capacity" alone would send you looking at the mods.
         let e = plan_forma_with(13, &SLOTS8, &mods, Investment::default()).unwrap_err();
         assert!(e.contains("Umbra Forma is switched off"), "{e}");
+    }
+
+    /// THE BILL FOR A LAYOUT YOU SET, which is not the same question as "what
+    /// would the cheapest be". Innate polarities are a pool a Forma may
+    /// REPOSITION, so an add and a remove cancel — but BLANKING one still costs
+    /// a Forma, which is why the bill is `max(added, removed)` and not the sum.
+    #[test]
+    fn the_bill_for_a_layout_repositions_innates_for_free() {
+        let innate = [Some(Polarity::Madurai), Some(Polarity::Naramon), None, None];
+        let at = |pol: Option<Polarity>, mod_pol: Polarity| Placement {
+            base_drain: 10, mod_polarity: mod_pol, slot_polarity: pol,
+        };
+
+        // The build uses exactly what the weapon was born with, in the other
+        // order: repositioning is free.
+        let (drain, cost) = cost_of(
+            &innate,
+            &[at(Some(Polarity::Naramon), Polarity::Naramon),
+              at(Some(Polarity::Madurai), Polarity::Madurai)],
+        );
+        assert_eq!(drain, 10);
+        assert_eq!(cost, FormaCost::default(), "a swap costs nothing");
+
+        // One innate BLANKED and nothing added: still one Forma, because
+        // removing a polarity is itself a polarization.
+        let (_, cost) = cost_of(&innate, &[at(Some(Polarity::Madurai), Polarity::Madurai)]);
+        assert_eq!(cost.regular, 1, "blanking the Naramon costs one");
+
+        // A colour swap is ONE Forma, not two: the add and the remove are the
+        // same act.
+        let (_, cost) = cost_of(
+            &innate,
+            &[at(Some(Polarity::Vazarin), Polarity::Vazarin),
+              at(Some(Polarity::Naramon), Polarity::Naramon)],
+        );
+        assert_eq!(cost.regular, 1);
+
+        // Umbra and Omni are billed apart — no weapon is born with either.
+        let (_, cost) = cost_of(
+            &innate,
+            &[at(Some(Polarity::Umbra), Polarity::Umbra),
+              at(Some(Polarity::Omni), Polarity::Madurai),
+              at(Some(Polarity::Madurai), Polarity::Madurai),
+              at(Some(Polarity::Naramon), Polarity::Naramon)],
+        );
+        assert_eq!(cost, FormaCost { regular: 0, omni: 1, umbra: 1 });
     }
 
     /// A rank-40 weapon polarized to max has its capacity BEFORE planning

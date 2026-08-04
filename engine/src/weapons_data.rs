@@ -446,6 +446,15 @@ pub struct WeaponSpec {
     /// one riven reads differently on two guns.
     #[serde(default)]
     pub disposition: Option<f64>,
+    /// The weapon's own rank ceiling — 30 for almost everything, 40 for the
+    /// Kuva/Tenet/Coda families and the Paracesis. It decides CAPACITY, since
+    /// capacity "correlates to their Rank" (wiki `Mod Capacity`) and a rank-40
+    /// weapon climbs two ranks per Forma to reach it.
+    ///
+    /// The data has carried it since the roster was written and nothing read
+    /// it: capacity was the literal 60 in four places instead.
+    #[serde(default = "rank_30")]
+    pub max_rank: u32,
     #[serde(default)]
     pub polarities: Vec<String>,
     #[serde(default)]
@@ -648,6 +657,10 @@ fn damage_type(name: &str) -> DamageType {
         "void" => DamageType::Void,
         other => panic!("unknown damage type in weapon data: {other}"),
     }
+}
+
+fn rank_30() -> u32 {
+    30
 }
 
 pub fn polarity(name: &str) -> Polarity {

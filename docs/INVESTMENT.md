@@ -107,10 +107,19 @@ Each one is independently shippable and independently verifiable.
    buys nothing but a halved slot, which is exactly what the game does. A
    budget is self-consistent when the rank it claims comes from polarizations
    actually spent, and spending more than five is never a contradiction.
-2. **The wire.** `/api/panel` returns capacity, used, and the Forma breakdown by
-   type (regular / Omni / Umbra). The four JS functions go. Verified against a
-   frozen baseline: capacity and Forma counts must not move for any existing
-   build.
+2. **The wire.** PART DONE 2026-08-04 — the SERVER no longer hardcodes 60.
+   `WeaponSpec.max_rank` is read (the data carried it and nothing looked),
+   `builds::validate` judges a submission at the weapon's own capacity, and
+   `/api/simulate`'s `forma` block reports `rank`, `cap` and the bill split by
+   item. `engine::mods::cost_of` answers the OTHER question — what the layout
+   you actually set costs, as against what the cheapest would be — which until
+   now existed only as `formaCount()` in the client.
+
+   **Still to do:** the four JS functions. They cannot go until the panel
+   carries the slot polarities (it sends mod ids only), because "what does MY
+   layout cost" needs the layout. That is the next commit, and it is the one
+   that needs the frozen baseline: capacity and Forma counts must not move for
+   any existing build.
 3. **The UI.** The icon strip, the three choices, capacity read from the server,
    and the "this build cannot be made" message.
 4. **Travel.** Share codes and presets carry the three choices. **An old link

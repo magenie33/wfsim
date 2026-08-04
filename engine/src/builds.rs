@@ -36,12 +36,21 @@
 
 use std::collections::BTreeSet;
 
-use crate::mods::{plan_forma, PlannedMod};
+use crate::mods::PlannedMod;
 
-/// The arsenal's capacity with an Orokin Catalyst on a rank-30 weapon. Forma
-/// is UNCAPPED against it, which is the real constraint: you may re-polarise
-/// forever, but you cannot exceed the pool.
-pub const CAPACITY: u32 = 60;
+/// A benchmark build is judged with a Catalyst installed and polarized to the
+/// weapon's own ceiling — the state a build worth submitting is in.
+///
+/// It used to be the constant 60, which is only a rank-30 weapon's answer.
+/// Capacity "correlates to their Rank" and a rank-40 weapon reaches 80, so a
+/// board that assumed 60 would have refused builds the game allows the moment
+/// a Kuva weapon joined the roster (`crate::mods::fit`).
+pub const BENCHMARK_INVESTMENT: crate::mods::Investment = crate::mods::Investment {
+    catalyst: true,
+    polarize_to_max: true,
+    use_omni: false,
+    use_umbra: false,
+};
 
 /// Slots a benchmark build may fill. EIGHT — the exilus slot is out of scope;
 /// see the slot check in [`validate`].
@@ -177,8 +186,8 @@ pub fn validate(
             PlannedMod { base_drain: m.base_drain, polarity: m.polarity }
         })
         .collect();
-    let plan = plan_forma(CAPACITY, &innate, &planned)
-        .map_err(|e| format!("does not fit {CAPACITY} capacity even with Forma: {e}"))?;
+    let plan = crate::mods::fit(spec.max_rank, &innate, &planned, BENCHMARK_INVESTMENT)
+        .map_err(|e| format!("does not fit this weapon's capacity even with Forma: {e}"))?;
 
     // ARCANES: one per pool the weapon seats, and each from that pool.
     let slots = crate::arcanes_data::slots();
@@ -204,8 +213,8 @@ pub fn validate(
         mods: ms,
         evolutions: evos,
         arcanes: arcs,
-        forma: plan.forma_used,
-        drain: plan.total_drain,
+        forma: plan.cost.total(),
+        drain: plan.drain,
     })
 }
 
@@ -229,6 +238,17 @@ pub fn identity(b: &ValidBuild) -> String {
 mod tests {
     use super::*;
 
+    /// The capacity a benchmark build is judged against, for THIS weapon —
+    /// derived exactly as `validate` derives it, so a test can never assert a
+    /// number the rule does not use.
+    fn cap_of(weapon: &str) -> u32 {
+        let spec = crate::weapons_data::spec(weapon).expect("weapon");
+        crate::mods::capacity(
+            crate::mods::rank_after(spec.max_rank, crate::mods::forma_to_max_rank(spec.max_rank)),
+            true,
+        )
+    }
+
     fn v(x: &[&str]) -> Vec<String> {
         x.iter().map(|s| s.to_string()).collect()
     }
@@ -243,7 +263,7 @@ mod tests {
         )
         .expect("four ordinary shotgun mods are legal");
         assert_eq!(b.mods.len(), 4);
-        assert!(b.drain <= CAPACITY);
+        assert!(b.drain <= cap_of("boar_prime"));
         // Forma is a COST, not a legality term: it is reported, never rejected.
         assert!(b.forma <= 4, "four mods cannot need more than four Forma");
     }
@@ -303,6 +323,7 @@ mod tests {
             if picked.len() < MAIN_SLOTS {
                 continue;
             }
+            let cap = cap_of(&w.id);
             let cost: u32 = picked
                 .iter()
                 .map(|id| pool.iter().find(|m| m.id == id.as_str()).unwrap().base_drain.div_ceil(2))
@@ -313,11 +334,11 @@ mod tests {
             let got = validate(&w.id, &picked, &[], &[]);
             match got {
                 Ok(v) => assert!(
-                    cost <= CAPACITY && v.drain <= CAPACITY,
+                    cost <= cap && v.drain <= cap,
                     "{}: accepted at {} but the halves come to {cost}", w.id, v.drain
                 ),
                 Err(e) => assert!(
-                    cost > CAPACITY && e.contains("capacity"),
+                    cost > cap && e.contains("capacity"),
                     "{}: refused ({e}) though the halves come to {cost}", w.id
                 ),
             }
@@ -325,8 +346,8 @@ mod tests {
         // The rule is not dead code: somewhere in the roster, eight mods do not
         // fit however much Forma you own.
         assert!(
-            worst > CAPACITY,
-            "capacity never binds anywhere ({worst}/{CAPACITY}) — this check would be decoration"
+            worst > 60,
+            "capacity never binds anywhere ({worst}) — this check would be decoration"
         );
     }
 

@@ -17,7 +17,7 @@ use wfsim_engine::loadout::{
     pct as fpct, resolve, resolve_for, ModDef, ModEffect, ResolvedPanel, StackPolicy,
     WeaponBase,
 };
-use wfsim_engine::mods::{plan_forma, PlannedMod, Polarity};
+use wfsim_engine::mods::{PlannedMod, Polarity};
 use wfsim_optimizer::{
     enumerate_candidates_observed, run_funnel, schedule_to, Candidate, Constraints, FunnelState,
     Job, Scenario,
@@ -2841,14 +2841,28 @@ pub fn simulate_json(v: &Value) -> Value {
             polarity: m.polarity,
         })
         .collect();
-    let forma = match plan_forma(60, &innate_slots_for(&info.id), &planned) {
-        Ok(fp) => json!({
+    // CAPACITY IS NOT A CONSTANT. It follows the weapon's rank, and a rank-40
+    // weapon reaches 80 — the literal 60 here was a rank-30 answer standing in
+    // for the rule (docs/INVESTMENT.md). `fit` owns the whole question: the
+    // rank the Forma buy, the capacity that gives, and the bill by item.
+    let inv = wfsim_engine::mods::Investment::default();
+    let forma = match wfsim_engine::mods::fit(
+        wspec(&info.id).max_rank,
+        &innate_slots_for(&info.id),
+        &planned,
+        inv,
+    ) {
+        Ok(f) => json!({
             "legal": true,
-            "used": fp.forma_used,
-            "total_drain": fp.total_drain,
-            "cap": 60,
+            "used": f.cost.total(),
+            "regular": f.cost.regular,
+            "omni": f.cost.omni,
+            "umbra": f.cost.umbra,
+            "total_drain": f.drain,
+            "rank": f.rank,
+            "cap": f.capacity,
         }),
-        Err(e) => json!({ "legal": false, "error": e, "cap": 60 }),
+        Err(e) => json!({ "legal": false, "error": e }),
     };
 
     // ---- resolve panel(s) and build sim params, per weapon ----
