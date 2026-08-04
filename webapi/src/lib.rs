@@ -3186,7 +3186,12 @@ pub struct OptimizePlan {
 
 /// Validate an optimize request. `Err` is the ready-to-send error response.
 pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
-    let info = weapon(get_str(v, "weapon", default_weapon_id()));
+    // THE FIGHT FIRST, and everything below derives from it. Nothing here reads
+    // the request for anything the simulator already decided — not the weapon,
+    // not the player, not the run count. The optimizer parses its SCOPE and its
+    // BUDGET, and that is the whole of its own business.
+    let fight = parse_fight(v)?;
+    let info = fight.info;
     // ---- mod scope (MAIN 8 slots): fixed ∪ search = pool; fixed = required.
     // Exilus-flagged mods MAY appear here too — all 9 slots accept them
     // (game rule), so putting one in the main scope makes it compete for a
@@ -3395,7 +3400,11 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         })
         .unwrap_or_default();
     let arc_base = WeaponBase::from_data(&info.id, true, &[]);
-    let tenno = tenno_from(v, info);
+    // The FIGHT's player, not a second one built the same way. Identical today
+    // — same function, same request — which is exactly why it was easy to leave
+    // and exactly why it should not be: two constructions of one fact is how
+    // they come to differ (user, 2026-08-04: "真相源要单一").
+    let tenno = &fight.tenno;
     // ONE AXIS PER SLOT, then their CROSS PRODUCT — a weapon that seats two
     // arcanes is searched over pairs, because "the best Primary" and "the
     // best Secondary" are not independent questions: an on-kill Secondary is
@@ -3422,7 +3431,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
                 .collect();
             let fx = |id: &str| {
                 wfsim_engine::arcanes_data::for_slot(pool, id)
-                    .map(|d| d.fx(d.max_rank, StackPolicy::Emergent, arc_base.traits, &tenno))
+                    .map(|d| d.fx(d.max_rank, StackPolicy::Emergent, arc_base.traits, tenno))
                     .unwrap_or_else(wfsim_engine::arcanes_data::ArcaneFx::none)
             };
             // A PIN settles the slot: one option, and no empty choice.
@@ -3483,7 +3492,10 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // answered there — a second default here is how a winner gets crowned at a
     // precision the replay never used. The web client stops sending its own
     // and this is what it lands on.
-    let final_runs = get_u32(v, "final_runs", get_u32(v, "runs", 100)).clamp(1, 100_000);
+    // Falls back to the FIGHT's run count rather than a second reading of
+    // `runs`. The two differed only past 20,000 — where the sim clamps and the
+    // search did not — which is a divergence nobody would have gone looking for.
+    let final_runs = get_u32(v, "final_runs", fight.runs).clamp(1, 100_000);
     let finalists = get_u32(v, "finalists", 10).clamp(1, 100) as usize;
 
     // ---- THE FIGHT: the simulator's, not a second reading of it ----------

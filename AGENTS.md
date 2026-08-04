@@ -152,7 +152,14 @@ around (decision 2026-07-31).
   nobody can reproduce. The two must not be two implementations that agree;
   the optimizer must CALL the simulator's, and add only its own scope and
   budget.
-  Measured 2026-08-04: the two parsers read **9 of the same request fields**
+  DONE 2026-08-04 (`parse_fight`): the fight is parsed once and the optimizer
+  calls it. `simulate_json` reads `replay` and nothing else; `parse_optimize`
+  reads `build_size`, `build_min`, `finalists`, `final_runs`, `deployment` and
+  nothing else. Neither builds a second Tenno. Anything that is a property of
+  the FIGHT goes in `parse_fight` — adding a scenario field to one module and
+  not the other is no longer possible, because there is only one module that
+  reads them.
+  Measured before that: the two parsers read **9 of the same request fields**
   and call **10 of the same 11 helpers**. The optimizer's extra five are all
   scope (`build_size`, `build_min`, `finalists`, `final_runs`, `deployment`) —
   and the ONE helper it did not share, `chosen_evolutions`, is where the
