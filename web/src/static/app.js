@@ -639,6 +639,7 @@ async function init() {
   arcanes = arcanesFor(d.weapon, d.arcane);
   evoSel = { 1: null, 2: null, 3: null, 4: null, ...(d.evolutions || {}) };
   sim = defaultScenario();
+  await loadBoard();          // before presets: the board's rows ARE build presets
   applyWeapon(d.weapon, d.mods);
 
   $("weapon").addEventListener("change", () => {
@@ -3415,9 +3416,27 @@ function blankBuildState() {
 //
 // Same three properties as the official scenario: nothing stores them, nothing
 // edits them, ⧉ copies one into an ordinary build of your own.
+// The board, fetched at RUNTIME rather than compiled in. `data/` is embedded
+// into the wasm at build time, so a board served through META would make every
+// hourly update a full site rebuild. This is one small file on the same origin,
+// written by the scoring job beside the canonical yaml.
+//
+// An absent or unreachable board is an EMPTY board, not an error: before the
+// first submissions there is nothing to show, and that is a state the page has
+// to render anyway.
+let BOARD = {};
+async function loadBoard() {
+  try {
+    const r = await fetch("/board.json", { cache: "no-cache" });
+    BOARD = r.ok ? await r.json() : {};
+  } catch (_) {
+    BOARD = {};
+  }
+}
+
 const builtinBuilds = () => {
   const w = weaponInfo($("weapon").value) || {};
-  return (w.board || []).map((row, i) => ({
+  return (BOARD[w.id] || []).map((row, i) => ({
     // Rank is the name because rank is what a board row IS. The score and what
     // it costs to own sit in the note, where there is room to explain them.
     name: `#${i + 1}`,
@@ -5360,8 +5379,9 @@ function lockOfficialBuild() {
   if (row.score != null) {
     parts.push(`<span class="official-def">${Number(row.score).toFixed(4)} ${escHtml(tr("kill rate"))}</span>`);
   }
-  // What it costs to OWN, which is the question anyone copying it has next.
-  parts.push(`<span class="official-def">${row.forma || 0} Forma · ${row.drain || 0}/60</span>`);
+  // NOT the Forma cost: the builder's own header already states capacity and
+  // Forma for whatever build is loaded, and this build IS loaded. Two places
+  // showing one number is how they come to disagree.
   if (row.source === "seed") {
     parts.push(`<span class="official-seed">${escHtml(tr("seeded by the optimizer — not yet a player submission"))}</span>`);
   }

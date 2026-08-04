@@ -21,6 +21,7 @@ Prereqs: rustup target add wasm32-unknown-unknown;
 """
 
 import html as html_mod
+import json
 import re
 import shutil
 import subprocess
@@ -200,6 +201,30 @@ def ship_art() -> None:
     print(f"art: {len(want)} images -> site/img/ ({size / 1e6:.1f} MB)")
 
 
+def write_board() -> None:
+    """`site/board.json` — the board the PAGE fetches, from the canonical yaml.
+
+    The board is the one piece of data that changes without a release, so it is
+    not compiled into the wasm like the rest of `data/`: an hourly update must
+    not cost a full rebuild. The scoring job writes this file directly beside
+    the yaml; this function is what keeps a LOCAL build in step with it.
+    """
+    out: dict = {}
+    for f in sorted((ROOT / "data" / "benchmarks" / "boards").glob("*.yaml")):
+        b = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+        for e in b.get("entries") or []:
+            out.setdefault(e["weapon"], []).append({
+                "benchmark": b.get("benchmark"),
+                "source": b.get("source", ""),
+                "score": e.get("score"),
+                "mods": e.get("mods", []),
+                "evolutions": e.get("evolutions", []),
+                "arcanes": e.get("arcanes", []),
+            })
+    (APP / "board.json").write_text(json.dumps(out), encoding="utf-8")
+    print(f"board: {sum(len(v) for v in out.values())} rows -> site/board.json")
+
+
 def prerender(flagged: str) -> None:
     """Write a real HTML file per weapon, plus robots.txt and sitemap.xml.
 
@@ -354,6 +379,7 @@ def main() -> None:
         sys.exit("index.html: <script src=\"app.js\"> anchor not found — flag not injected")
     (APP / "index.html").write_text(flagged, encoding="utf-8", newline="\n")
     ship_art()
+    write_board()
     prerender(flagged)
 
     size = (APP / "pkg" / "wfsim_wasm_bg.wasm").stat().st_size

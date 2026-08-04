@@ -166,9 +166,9 @@ const BUILDS_PROBE = `(async () => {
   // while data exists stops testing the moment the data is cleared, which is
   // exactly what happened when the seed was removed.
   const inject = { benchmark: 'single_target_v1', source: 'submissions', score: 1.2345,
-                   forma: 3, drain: 58, mods: ['serration','split_chamber','point_strike'],
+                   mods: ['serration','split_chamber','point_strike'],
                    evolutions: [], arcanes: ['none'] };
-  weaponInfo('torid').board = [inject];
+  BOARD = { torid: [inject] };     // the runtime board, as /board.json would give it
   renderPresetBar(); await sleep(300);
 
   const rows = builtinBuilds();
@@ -222,8 +222,8 @@ check("opening it puts the board's build on screen",
   b.isOfficial === true
     && JSON.stringify(b.slots) === JSON.stringify(((b.first || {}).mods || []).slice().sort()),
   JSON.stringify(b.slots));
-check("a note says what it scored and what it costs",
-  b.noteShown && /Forma/.test(b.noteText) && /\d/.test(b.noteText), JSON.stringify(b.noteText.slice(0, 90)));
+check("a note says what it is and what it scored",
+  b.noteShown && /1\.2345/.test(b.noteText), JSON.stringify(b.noteText.slice(0, 90)));
 check("the editor is inert", b.locked === true);
 check("EDITING THE BUILD WRITES NOTHING", b.storeUntouched === true);
 check("it offers copy and not rename", b.hasCopy === true && b.hasRename === false);

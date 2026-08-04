@@ -101,24 +101,23 @@ jobs:
           jq -s 'map(select(. != null))' values.ndjson > submissions.json || echo "[]" > submissions.json
           echo "submissions: $(jq 'length' submissions.json)"
 
+      # TWO OUTPUTS: the canonical yaml, and the json the PAGE fetches.
+      #
+      # This step used to regenerate the whole site, and it failed on a clean
+      # runner because `web/cache/img/` is gitignored — but the real problem was
+      # not the images. A board that changes hourly should never have needed a
+      # 2.5 MB wasm rebuilt to reach anyone: install wasm-bindgen, fetch 300
+      # images, recompile, to change a few numbers. The board is fetched at
+      # runtime now, so this writes two small files and is done.
       - name: score every benchmark
         if: steps.wired.outputs.yes == 'true'
         run: |
           set -euo pipefail
+          mkdir -p site
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
-            ./target/release/wfsim-board "$id" < submissions.json > "data/benchmarks/boards/$id.yaml"
+            ./target/release/wfsim-board "$id" site/board.json < submissions.json               > "data/benchmarks/boards/$id.yaml"
           done
-
-      # THE BOARD IS DATA THE APP EMBEDS AT COMPILE TIME, so a new board only
-      # reaches the site through a rebuilt wasm. Regenerating here is what makes
-      # the local build and the deployed one hold the same board.
-      - name: regenerate the site
-        if: steps.wired.outputs.yes == 'true'
-        run: |
-          pip install --quiet pyyaml
-          cargo install wasm-bindgen-cli --version "$(grep -A1 'name = "wasm-bindgen"' Cargo.lock | grep version | head -1 | cut -d'"' -f2)" --locked
-          python scripts/build_site_app.py
 
       # ONLY ON CHANGE. Most hours nobody submits anything new, and a commit per
       # hour that says nothing is history nobody can read.
@@ -128,11 +127,11 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- data/benchmarks/boards site; then
+          if git diff --quiet -- data/benchmarks/boards site/board.json; then
             echo "board unchanged — nothing to commit"
             exit 0
           fi
-          git add data/benchmarks/boards site
+          git add data/benchmarks/boards site/board.json
           git commit -m "board: rescore $(date -u +%Y-%m-%d)"
           git pull --rebase --autostash
           git push

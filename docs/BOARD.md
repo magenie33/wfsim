@@ -19,6 +19,7 @@ number**. Everything else follows from it:
 | --- | --- | --- |
 | the ruler | `data/benchmarks/*.yaml` | — |
 | the board | `data/benchmarks/boards/*.yaml` | generated, committed |
+| what the page reads | `site/board.json` | fetched at runtime, not compiled in |
 | consent + submit | `web/src/static/app.js` (`offerBoardSubmit`) | the player's browser |
 | the submissions | a Cloudflare KV namespace (binding `SUBMISSIONS`) | written by the endpoint |
 | the deploy | `wrangler.jsonc` | `npx wrangler deploy`, from a git push |
@@ -34,6 +35,20 @@ submitting needs a network.
 **The endpoint is on the site's own origin** (`wfsim.app/api/board/submit`). A
 separate api domain would be a second DNS name and a second thing that can be
 blocked, which is the failure the same-origin art rule was written about.
+
+### Why the page FETCHES the board
+
+Everything else in `data/` is embedded into the wasm at compile time. The board
+is the one piece that changes without a release — hourly, if people are playing
+— and compiling it in made every update cost a full site rebuild: install
+wasm-bindgen, fetch 300 images, recompile, to change a few numbers. It is a
+small file on the same origin instead, written by the scoring job beside the
+canonical yaml, and `build_site_app.py` regenerates it so a LOCAL build holds
+the same board.
+
+An unreachable or absent `board.json` is an EMPTY board, never an error: before
+the first submissions there is nothing to show, and the page has to render that
+state anyway.
 
 ## When it updates
 
