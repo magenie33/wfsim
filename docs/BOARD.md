@@ -136,7 +136,13 @@ answer could be published.
 
 5. **No Omni Forma.** `BENCHMARK_INVESTMENT` leaves it off: a board build should
    be one an ordinary player can reach.
-6. **Then it is published.**
+6. **Published IN THE BENCHMARK'S OWN METRIC.** `score` off the wire is kill
+   PROGRESS — kills plus the depleted fraction of the current target — over the
+   whole engagement, and the benchmark says `metric: kpm`. Publishing the raw
+   figure under a "kill rate" label overstated every row by the length of the
+   fight: 55.26 on screen for a build that kills 11.05 a minute over 300 s
+   (found 2026-08-04). Ranking never noticed — it is a linear rescale — but a
+   ranking is not what people read.
 
 The bill still reports what is SPENT, not what earned room: a build with fewer
 mods than mastery has polarizations buys all five, and the last land on empty

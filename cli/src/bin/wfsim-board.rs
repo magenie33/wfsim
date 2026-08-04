@@ -62,6 +62,18 @@ fn main() {
     // the SAME map the app sends, which is what stops the board and the page
     // from measuring two different fights.
     let scenario: Value = serde_json::to_value(&bench.scenario).expect("scenario");
+    // The benchmark's own terms, read once — the metric it is measured in and
+    // the length that metric is over.
+    let metric = scenario
+        .get("metric")
+        .and_then(Value::as_str)
+        .unwrap_or("kpm")
+        .to_string();
+    let duration = scenario.get("duration").and_then(Value::as_f64).unwrap_or(300.0);
+    assert!(
+        matches!(metric.as_str(), "kpm" | "dps"),
+        "unknown benchmark metric {metric:?} — a row published in units nobody          named is worse than no row"
+    );
 
     let mut rows: Vec<Row> = Vec::new();
     let (mut seen, mut refused) = (0usize, 0usize);
@@ -98,11 +110,22 @@ fn main() {
         }
         let out = wfsim_engine_webapi_simulate(&req);
         let ok = out.get("ok").and_then(Value::as_bool).unwrap_or(false);
-        let score = out.get("score").and_then(Value::as_f64).unwrap_or(0.0);
-        if !ok || score <= 0.0 {
+        let raw = out.get("score").and_then(Value::as_f64).unwrap_or(0.0);
+        if !ok || raw <= 0.0 {
             refused += 1;
             continue;
         }
+        // IN THE BENCHMARK'S OWN METRIC. `score` off the wire is kill PROGRESS
+        // — kills plus the fraction of the current target depleted — over the
+        // whole engagement. The benchmark says `metric: kpm`, so publishing the
+        // raw figure labelled "kill rate" overstated every row by the length of
+        // the fight: 55.26 on screen for a build that kills 11.05 a minute over
+        // 300 s (user, 2026-08-04). Ranking is unaffected either way — this is
+        // a linear rescale — but the number people read is not a ranking.
+        let score = match metric.as_str() {
+            "dps" => out.get("dps").and_then(Value::as_f64).unwrap_or(0.0),
+            _ => raw * 60.0 / duration,
+        };
         // ONE ROW PER BUILD. The endpoint stores what was submitted, verbatim,
         // because it has no mod pool and cannot tell an elemental mod from any
         // other — so two spellings of one fight arrive as two records and are

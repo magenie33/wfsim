@@ -5466,7 +5466,13 @@ function lockOfficialBuild() {
   ];
   if (bench) parts.push(`<span class="official-def">${escHtml(tr(bench.name))}</span>`);
   if (row.score != null) {
-    parts.push(`<span class="official-def">${Number(row.score).toFixed(4)} ${escHtml(tr("kill rate"))}</span>`);
+    // LABELLED WITH THE BENCHMARK'S OWN METRIC, not a hardcoded one. The
+    // number is published in whatever the benchmark declares — a `dps`
+    // benchmark would have read "kill rate" here, and a kill-progress figure
+    // read as a kill RATE overstated every row by the length of the fight
+    // until 2026-08-04.
+    const unit = ((bench || {}).scenario || {}).metric === "dps" ? tr("DPS") : tr("kill rate");
+    parts.push(`<span class="official-def">${Number(row.score).toFixed(4)} ${escHtml(unit)}</span>`);
   }
   // NOT the Forma cost: the builder's own header already states capacity and
   // Forma for whatever build is loaded, and this build IS loaded. Two places
