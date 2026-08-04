@@ -129,7 +129,13 @@ mod tests {
                 // `validate` already refused anything over capacity, and the
                 // capacity is the weapon's own — so the assertion is that it
                 // fits, not that it fits some number written here.
-                assert!(v.drain > 0, "{} drew nothing", e.weapon);
+                //
+                // AN EMPTY BUILD IS A LEGAL BUILD. This asserted `drain > 0`
+                // until a genuinely unmodded submission arrived (2026-08-04):
+                // you can equip nothing, and the board's answer to a bad build
+                // is to rank it last, not to refuse it. Nothing here decides
+                // what is worth submitting.
+                assert_eq!(v.mods.len(), e.mods.len(), "{} lost a mod", e.weapon);
                 assert!(e.score > 0.0, "{} scored nothing", e.weapon);
             }
         }

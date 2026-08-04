@@ -702,13 +702,13 @@ pub fn evaluate(
             );
             // The cycle reports the form it transforms INTO, so its reserve is
             // that form's — the same line `simulate_json` runs.
-            p.infinite_reserve = s.infinite_ammo || !c.panel.finite_reserve;
+            p.infinite_reserve = c.panel.reserve_is_infinite(s.infinite_ammo);
             p
         }
         _ => {
             let mut d = DummyParams::from_panel(&c.panel, &s.arena);
             // The scenario's ammo rule, exactly as `simulate_json` applies it.
-            d.infinite_reserve = s.infinite_ammo || !c.panel.finite_reserve;
+            d.infinite_reserve = c.panel.reserve_is_infinite(s.infinite_ammo);
             // Frenzy is the WEAPON's passive: it rides whichever form is
             // fired (the Sim's rule). Dropping it here scored a base-form
             // Dual Toxocyst without its own x2.5 fire rate.

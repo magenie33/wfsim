@@ -32,7 +32,7 @@ deployment: atmosphere
 deployments:
   archwing:
     reload_seconds: 4.5
-    finite_reserve: false      # a regenerating magazine, so no reserve to dry
+    no_resupply: false      # a regenerating magazine, so no reserve to dry
 mod_pools: [archgun]
 mastery_rank: 8
 max_rank: 30
@@ -52,16 +52,17 @@ reload_seconds: 2.5
 
 ammo_type: archgun
 ammo_max: 400
-# THE FIRST FINITE RESERVE IN THE ROSTER, and the reason the flag exists.
-# Every other weapon keeps the infinite default because the sim does not model
-# ammo PICKUPS — a weapon that can be resupplied mid-fight would otherwise run
-# dry for a reason the game does not have. A ground Arch-Gun cannot be:
+# THE ONLY WEAPON THAT CANNOT BE RESUPPLIED, and the reason the flag exists.
+# It is NOT "the only one with a reserve" — every weapon here states an
+# `ammo_max` and the sim reads it. What every OTHER weapon also has is a way to
+# refill it, which the sim stands in for with the Infinite-ammo default because
+# it does not model ammo PICKUPS. A ground Arch-Gun cannot be resupplied:
 # "Archguns only have a limited amount of ammo along with using magazines and
 # standard reloading", and "once all of an Archgun's ammunition is used up,
 # the weapon is removed and can only be called down again after a 5-minute
 # cooldown period" (wiki Arch-Gun). 100 in the magazine and 400 behind it is
 # the whole engagement.
-finite_reserve: true
+no_resupply: true
 
 # CO catalog, re-read 2026-08-03: the only Larkspur Prime row is its
 # ALT-FIRE — "Projectile, 100%, Multiplying" — and that is the CHARGED form

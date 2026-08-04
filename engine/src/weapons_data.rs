@@ -26,7 +26,7 @@ pub struct DeploymentSpec {
     #[serde(default)]
     pub ammo_max: Option<f64>,
     #[serde(default)]
-    pub finite_reserve: Option<bool>,
+    pub no_resupply: Option<bool>,
 }
 
 /// Apply a DEPLOYMENT's overrides to a resolved base, in place.
@@ -49,8 +49,8 @@ pub fn apply_deployment(base: &mut WeaponBase, id: &str, deployment: &str) {
     if let Some(v) = d.ammo_max {
         base.ammo_reserve = v;
     }
-    if let Some(v) = d.finite_reserve {
-        base.finite_reserve = v;
+    if let Some(v) = d.no_resupply {
+        base.no_resupply = v;
     }
 }
 
@@ -469,13 +469,20 @@ pub struct WeaponSpec {
     /// fight would otherwise run dry for a reason the game does not have.
     #[serde(default)]
     pub ammo_max: Option<f64>,
-    /// Does this form actually run out? Only where the game gives no way to
-    /// resupply — a ground Arch-Gun is the case this exists for: "Archguns
-    /// only have a limited amount of ammo", and when it is gone the weapon is
-    /// removed for a five-minute cooldown (wiki Arch-Gun). Everything else
-    /// keeps the infinite default, and needs `ammo_max` only for the panel.
+    /// Can this weapon NOT be refilled mid-fight? A ground Arch-Gun is the
+    /// case this exists for: "Archguns only have a limited amount of ammo",
+    /// and when it is gone the weapon is removed for a five-minute cooldown
+    /// (wiki Arch-Gun). Everything else is resupplied from ammo pickups, which
+    /// is what the Infinite-ammo default stands in for.
+    ///
+    /// THIS IS NOT "has a reserve" — that one is DERIVED from `ammo_max`, and
+    /// the two were one flag until 2026-08-04. Conflating them meant the
+    /// Infinite-ammo box was ticked AND DISABLED on every weapon but one,
+    /// because "cannot be resupplied" was being read as "has no reserve at
+    /// all" (owner: "只有 sentinel 是真的无限弹药"). A Torid has 60 rounds
+    /// behind its magazine; what it also has is a way to get more.
     #[serde(default)]
-    pub finite_reserve: bool,
+    pub no_resupply: bool,
     #[serde(default)]
     pub reload_seconds: Option<f64>,
     #[serde(default)]
@@ -900,11 +907,13 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         buff_multishot_bonus: 0.0,
         buff_ms_max_stacks: 0,
         magazine_size,
-        // The reserve the sim may spend. `finite_reserve` is what decides
-        // whether it is spendable at all; the number alone means nothing,
-        // which is why every weapon can carry one.
+        // The reserve the sim may spend, and the two facts about it. HAVING
+        // one is `ammo_max` — derived, because a weapon that states a reserve
+        // has a reserve and there is nothing to declare twice. Being able to
+        // REFILL it is the weapon's own business and is declared.
         ammo_reserve: s.ammo_max.unwrap_or(0.0),
-        finite_reserve: s.finite_reserve,
+        has_reserve: s.ammo_max.is_some_and(|a| a > 0.0),
+        no_resupply: s.no_resupply,
         base_reload,
         innate_co_per_type: 0.0,
         co_behavior,
@@ -1160,7 +1169,8 @@ mod tests {
 
         let base = WeaponBase::from_data("larkspur_prime", true, &[]);
         assert!((base.ammo_reserve - 400.0).abs() < 1e-9, "the Atmosphere column");
-        assert!(base.finite_reserve, "a ground Arch-Gun cannot be resupplied");
+        assert!(base.has_reserve, "400 rounds is a reserve");
+        assert!(base.no_resupply, "a ground Arch-Gun cannot be resupplied");
 
         let panel = resolve(&base, &[], StackPolicy::Emergent);
         let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(120.0));
@@ -1178,7 +1188,7 @@ mod tests {
         // The alt-fire form draws from the SAME pool — one weapon, one supply.
         let alt = WeaponBase::from_data("larkspur_prime_charged", true, &[]);
         assert!((alt.ammo_reserve - 400.0).abs() < 1e-9);
-        assert!(alt.finite_reserve);
+        assert!(alt.has_reserve && alt.no_resupply);
 
         // And a Primary with the same shape does NOT run out: the Torid
         // states a 60-round reserve and keeps firing, because ammo pickups
@@ -1190,27 +1200,77 @@ mod tests {
         assert!(monte_carlo(&q, 1, 3).mean_shots > 60.0, "a Primary is resupplied");
     }
 
-    /// `ammo_max` sat in every weapon's YAML and was read by NOBODY until
-    /// the reserve was wired up (2026-07-31) — it is the wiki's Ammo Max and
-    /// it now reaches the panel. It is still not a LIMIT: that takes
-    /// `finite_reserve`, which nothing in the roster sets, because everything
-    /// in it can be resupplied from an ammo pickup and the sim does not model
-    /// pickups.
+    /// HAVING A RESERVE AND BEING ABLE TO REFILL IT ARE TWO FACTS, and they
+    /// were one field until 2026-08-04 — which is why the Infinite-ammo control
+    /// was disabled on every weapon but the Arch-Gun (owner: "只有 sentinel 是
+    /// 真的无限弹药"). `has_reserve` is derived from `ammo_max` and is what
+    /// "truly infinite" means; `no_resupply` is the Arch-Gun's own problem.
     #[test]
-    fn ammo_max_reaches_the_base_and_is_not_a_limit_on_its_own() {
+    fn a_reserve_and_a_resupply_are_two_different_facts() {
         use crate::loadout::WeaponBase;
+        // A Primary HAS a reserve — 60 rounds, the wiki's Ammo Max — and can
+        // also refill it. So the setting is the player's to make.
         let torid = WeaponBase::from_data("torid", true, &[]);
         assert!((torid.ammo_reserve - 60.0).abs() < 1e-9, "wiki Ammo Max 60");
-        assert!(!torid.finite_reserve, "a Primary can be resupplied");
+        assert!(torid.has_reserve, "60 rounds is a reserve");
+        assert!(!torid.no_resupply, "a Primary is resupplied from pickups");
 
         let laetum = WeaponBase::from_data("laetum", true, &[]);
         assert!((laetum.ammo_reserve - 210.0).abs() < 1e-9);
+        assert!(laetum.has_reserve && !laetum.no_resupply);
 
-        // A sentinel weapon states no reserve at all — it draws from an
-        // infinite one, so there is no number to carry.
+        // A sentinel weapon states no reserve AT ALL — the one case where
+        // infinite is not a stand-in for anything. This is the only shape
+        // that leaves the control with nothing to decide.
         let verglas = WeaponBase::from_data("verglas_prime", true, &[]);
         assert!((verglas.ammo_reserve - 0.0).abs() < 1e-9);
-        assert!(!verglas.finite_reserve);
+        assert!(!verglas.has_reserve);
+    }
+
+    /// The scenario's setting stands in for PICKUPS, so it cannot give ammo to
+    /// a weapon that can receive none. One rule, on the panel, called by both
+    /// the web api and the optimizer.
+    #[test]
+    fn the_infinite_ammo_setting_cannot_resupply_an_arch_gun() {
+        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        let p = |id| resolve(&WeaponBase::from_data(id, true, &[]), &[], StackPolicy::Emergent);
+
+        // Sentinel: infinite either way, nothing to decide.
+        assert!(p("verglas_prime").reserve_is_infinite(true));
+        assert!(p("verglas_prime").reserve_is_infinite(false));
+
+        // Primary: the setting decides, which is the point.
+        assert!(p("torid").reserve_is_infinite(true));
+        assert!(!p("torid").reserve_is_infinite(false));
+
+        // Ground Arch-Gun: finite either way — 400 rounds is the engagement.
+        assert!(!p("larkspur_prime").reserve_is_infinite(true));
+        assert!(!p("larkspur_prime").reserve_is_infinite(false));
+    }
+
+
+    /// THE CYCLE DRAWS FROM THE SAME RESERVE. Both forms are one weapon with
+    /// one supply, but every draw inside the cycle was free until 2026-08-04 —
+    /// so a finite reserve was ignored on every Incarnon weapon, which is most
+    /// of the roster (owner: the Infinite-ammo setting has to be adjustable).
+    #[test]
+    fn an_incarnon_cycle_runs_dry_like_anything_else() {
+        use crate::dummy::{monte_carlo, DummyParams, LockMode};
+        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        let arena = crate::arena::Arena::training(300.0);
+        let panel = |id| resolve(&WeaponBase::from_data(id, true, &[]), &[], StackPolicy::Emergent);
+        let inc = panel("boar_prime_incarnon");
+        let base = panel("boar_prime");
+        let mk = |infinite| {
+            let mut p = DummyParams::incarnon_cycle_from_panels(
+                &inc, &base, false, LockMode::Initial(0), &arena);
+            p.arcane = crate::arcanes_data::ArcaneFx::none();
+            p.infinite_reserve = infinite;
+            p
+        };
+        let free = monte_carlo(&mk(true), 1, 3).mean_shots;
+        let dry = monte_carlo(&mk(false), 1, 3).mean_shots;
+        assert!(dry < free, "a finite reserve must stop the cycle: {dry} vs {free}");
     }
 
     use super::*;

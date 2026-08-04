@@ -1714,7 +1714,11 @@ impl DummyParams {
             // (a ground Arch-Gun). Everywhere else the reserve is a panel
             // figure and the sim keeps firing — we do not model pickups, so
             // stopping would be an artefact of the model, not the game.
-            infinite_reserve: !panel.finite_reserve,
+            // THE WEAPON-ONLY ANSWER: no reserve at all, or one the game
+            // refills. A scenario's Infinite-ammo setting is applied on top of
+            // this by the caller — see `parse_fight` — and cannot give ammo
+            // back to a weapon that has no way to get any.
+            infinite_reserve: !panel.has_reserve || !panel.no_resupply,
             ammo_cost: panel.ammo_cost,
             reserve_ammo: panel.ammo_reserve,
             tenno,
@@ -2088,6 +2092,22 @@ fn pick_part<'a>(parts: &'a [BodyPart], rng: &mut Rng) -> &'a BodyPart {
 /// (owner). The Larkspur Prime's alt-fire costs TEN.
 fn can_fire(magazine: f64, cost: f64) -> bool {
     cost <= (magazine - 1e-9).max(0.0).ceil() + 1e-9
+}
+
+/// Take `want` rounds out of `reserve`, or all that is left of it.
+///
+/// The reserve is ONE pool for the whole weapon — both forms of an Incarnon
+/// cycle, and an Arch-Gun's alt fire, draw from the same supply. Written once
+/// because it was written zero times inside the cycle: every draw there was
+/// free until 2026-08-04, which made the Infinite-ammo setting a no-op on every
+/// Incarnon weapon (owner: the setting has to be adjustable).
+fn draw_from(reserve: &mut f64, infinite: bool, want: f64) -> f64 {
+    if infinite {
+        return want;
+    }
+    let take = want.min(*reserve);
+    *reserve -= take;
+    take
 }
 
 /// How many WHOLE rounds a reload moves out of reserve.
@@ -3279,11 +3299,23 @@ pub fn run_once_traced(
                 // (user, 2026-07-30), so it draws whole rounds rather than
                 // filling to capacity: a base magazine sitting on 4.25 comes
                 // back on 4.25, not 5.
-                base_mag += reload_draw(cy.base_form.magazine_size, base_mag);
+                //
+                // ...and it draws from the SAME RESERVE, because one weapon has
+                // one supply. Until 2026-08-04 every draw inside the cycle was
+                // free, so a finite reserve was silently ignored on every
+                // Incarnon weapon — the Infinite-ammo setting did nothing on
+                // five of the seven weapons in the roster.
+                base_mag += draw_from(&mut reserve, params.infinite_reserve,
+                    reload_draw(cy.base_form.magazine_size, base_mag));
                 continue;
             }
             if in_base_form && !can_fire(base_mag, next_cost) {
-                // Base-form reload (infinite reserve assumed in the cycle).
+                // Base-form reload. A dry finite reserve stops the gun here
+                // exactly as it does outside the cycle — the weapon is out of
+                // ammo, not out of one of its two forms.
+                if !params.infinite_reserve && reserve < 1e-9 {
+                    break;
+                }
                 let rs = live_reload_speed(params, &mut rs_stacks, t);
                 t += live_reload_time(&cy.base_form, params, &mut arc, rs, t);
                 r.reloads += 1;
@@ -3293,9 +3325,10 @@ pub fn run_once_traced(
                 if let Some(b) = cy.base_form.bd_on_reload {
                     bd_reload_expiry = t + b.duration;
                 }
-                // Same whole-rounds rule as the plain reload below (M14); the
-                // cycle assumes infinite reserve, so the draw is never short.
-                base_mag += reload_draw(cy.base_form.magazine_size, base_mag);
+                // Same whole-rounds rule as the plain reload below (M14), and
+                // the same shared reserve: a short draw is a short magazine.
+                base_mag += draw_from(&mut reserve, params.infinite_reserve,
+                    reload_draw(cy.base_form.magazine_size, base_mag));
                 // Renewed Horror: "On Reload from Empty". This branch IS the
                 // reload-from-empty path.
                 field_duration_boost = true;
@@ -3321,14 +3354,7 @@ pub fn run_once_traced(
             // here, so `floor(capacity − current)` is a full magazine, and a
             // −0.75 counter comes back at 4.25 rather than 5.00.
             let want = reload_draw(params.magazine_size, magazine);
-            let take = if params.infinite_reserve {
-                want
-            } else {
-                let take = want.min(reserve);
-                reserve -= take;
-                take
-            };
-            magazine += take;
+            magazine += draw_from(&mut reserve, params.infinite_reserve, want);
             field_duration_boost = true; // reloaded from empty (Renewed Horror)
             if t >= params.duration_secs {
                 break;
@@ -4213,8 +4239,13 @@ pub fn run_once_traced(
                     // efficiency, and so is always whole anyway.
                     magazine = params.magazine_size;
                     // The base magazine's refill IS a reload (user,
-                    // 2026-07-30): whole rounds off whatever is already in it.
-                    base_mag += reload_draw(cy.base_form.magazine_size, base_mag);
+                    // 2026-07-30): whole rounds off whatever is already in it,
+                    // and out of the same reserve as every other reload. This
+                    // was the site that kept the base magazine topped up for
+                    // free — with all three draws inside the cycle unbilled, a
+                    // finite reserve never moved off its starting value.
+                    base_mag += draw_from(&mut reserve, params.infinite_reserve,
+                        reload_draw(cy.base_form.magazine_size, base_mag));
                                                            // Frenzy persists across the transform (user-confirmed
                                                            // 2026-07-24: it exists in both forms).
                     continue;

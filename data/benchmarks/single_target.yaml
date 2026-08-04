@@ -87,27 +87,26 @@ scenario:
   # bottom of the board into an untellable pile of zeros.
   metric: kpm
 
-  # AMMO IS FINITE HERE (owner, 2026-08-04). The app-wide default is the
-  # opposite, and for a good reason that does not survive contact with a
-  # benchmark: the sim models no ammo PICKUPS, so a finite reserve would dry out
-  # for a reason the game does not have — an ordinary weapon gets resupplied.
+  # AMMO PICKUPS ARE MODELLED, which is what this setting means. The sim has no
+  # pickup entities, so ignoring the reserve is how it stands in for them — and
+  # on a 300-second engagement with kills happening, a real player IS being
+  # resupplied. Starving every weapon would measure who brought the biggest
+  # magazine rather than who kills fastest.
   #
-  # But the flag does not starve those weapons, because the engine reads
-  # `infinite_ammo || !finite_reserve`: a weapon whose reserve is infinite in
-  # game stays infinite whatever this says. In the whole roster exactly one
-  # weapon has a reserve that genuinely cannot be refilled — a ground Arch-Gun,
-  # which is "removed and can only be called down again after a 5-minute
-  # cooldown" once its 400 rounds are gone. So this term costs nothing anywhere
-  # it would be a fiction, and buys the truth in the one place it is not.
+  # It does NOT hand ammo to a weapon that cannot receive any. A ground Arch-Gun
+  # is "removed and can only be called down again after a 5-minute cooldown"
+  # once its 400 rounds are gone, and `reserve_is_infinite` reads the weapon's
+  # `no_resupply` before this setting — so its 400 rounds are the whole
+  # engagement whatever this says (owner, 2026-08-04: "翠雀 Prime archgun 的
+  # benchmark 测试，全部都是要求 ammo 有限的情况的").
   #
-  # Measured on Larkspur Prime, unmodded, on this fight: 0.0436 with the reserve
-  # ignored against 0.0139 with it, a 3.1x overstatement. Not a rounding
-  # difference — it is scoring 300 seconds of firing for a weapon that has about
-  # a minute of ammo, which is most of what an Arch-Gun's balance IS.
+  # Measured, unmodded, on this fight: 0.0436 with the reserve ignored against
+  # 0.0139 with it — a 3.1x overstatement, which is most of what an Arch-Gun's
+  # balance IS. Boar Prime scores identically either way, because it resupplies.
   #
-  # The MAGAZINE was always modelled either way: reload cadence and `ammo_cost`
-  # bite under both settings. This is the reserve behind it.
-  infinite_ammo: false
+  # The MAGAZINE is modelled under both: reload cadence and `ammo_cost` bite
+  # regardless. This is the reserve behind it.
+  infinite_ammo: true
 
   # However the weapon is played — see the header.
   form: default

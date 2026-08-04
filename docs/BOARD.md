@@ -151,20 +151,31 @@ answer could be published.
    puts the formatted one beside it as `shown` — so the page prints a string it
    did not compute and rows that tie on screen still rank underneath.
 
-## Ammo is finite on the board
+## Ammo on the board
 
-The app-wide default is infinite reserve ammo, because the sim models no ammo
-PICKUPS and an ordinary weapon gets resupplied — a finite reserve would dry out
-for a reason the game does not have. The benchmark sets the opposite, and it
-costs nothing where the default was right: the engine reads `infinite_ammo ||
-!finite_reserve`, so a weapon whose reserve is infinite in game is untouched.
+The benchmark sets `infinite_ammo: true`, and that setting means **ammo pickups
+are modelled** — the sim has no pickup entities, so ignoring the reserve is how
+it stands in for them. Over 300 s with kills happening, a real player is being
+resupplied; starving every weapon would measure who brought the biggest magazine
+rather than who kills fastest.
 
-Exactly one weapon in the roster has a reserve that genuinely cannot be
-refilled — a ground Arch-Gun, removed for five minutes once its 400 rounds are
-gone. Ignoring that scored it as though it fired for the full 300 s when it has
-about a minute of ammo: 0.0436 against 0.0139 unmodded, a 3.1x overstatement
-(owner, 2026-08-04). A ruler that cannot be wrong about one weapon by 3x is
-worth more than one that is simpler to describe.
+It does not hand ammo to a weapon that cannot receive any. `reserve_is_infinite`
+reads three facts, and two of them were one field until 2026-08-04:
+
+| fact | where from | false for |
+| --- | --- | --- |
+| `has_reserve` | derived from `ammo_max` | sentinel weapons — no pool at all |
+| `no_resupply` | the weapon's own YAML | *true* only for a ground Arch-Gun |
+| `infinite_ammo` | the scenario | whatever the player set |
+
+`!has_reserve \|\| (infinite_ammo && !no_resupply)`. So a ground Arch-Gun runs
+on its real 400 rounds whatever the scenario says — it is "removed and can only
+be called down again after a 5-minute cooldown" once they are gone. Ignoring
+that scored it as though it fired for the full 300 s when it has about a minute
+of ammo: 0.0436 against 0.0139 unmodded, a 3.1x overstatement (owner,
+2026-08-04). Boar Prime scores identically either way, because it resupplies.
+
+One term, no weapon named, right for the whole roster.
 
 ## No version numbers
 

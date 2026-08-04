@@ -781,8 +781,14 @@ pub struct WeaponBase {
     pub magazine_size: f64,
     /// Base reserve rounds (wiki "Ammo Max"), before mods.
     pub ammo_reserve: f64,
-    /// Can this weapon actually run dry? See `WeaponSpec::finite_reserve`.
-    pub finite_reserve: bool,
+    /// Has this weapon a reserve behind its magazine at all? Derived from
+    /// `ammo_max`: false only where the weapon states none, which today is
+    /// every sentinel weapon ("Ammo Max: ∞ / Ammo Type: None").
+    pub has_reserve: bool,
+    /// ...and can it NOT be refilled mid-fight? See `WeaponSpec::no_resupply`.
+    /// Separate from the above on purpose — most weapons have a reserve AND a
+    /// way to top it up.
+    pub no_resupply: bool,
     pub base_reload: f64,
     /// Unconditional CO rate baked into the weapon config (Carnage
     /// Reign's +33% per status type) — additive with mod CO sources.
@@ -1169,7 +1175,8 @@ pub struct ResolvedPanel {
     /// whether the sim is allowed to spend them. Both travel together: a
     /// number without the flag is a panel figure, not a limit.
     pub ammo_reserve: f64,
-    pub finite_reserve: bool,
+    pub has_reserve: bool,
+    pub no_resupply: bool,
     pub reload_seconds: f64,
     /// Σ reload-speed bonuses — transitions (Incarnon transmute/revert)
     /// scale by the same formula: time = base / (1 + this).
@@ -1251,6 +1258,36 @@ pub struct ResolvedPanel {
     /// Frenzy passive. They read this rather than each re-deriving it.
     pub locked: Vec<&'static str>,
 }
+
+impl ResolvedPanel {
+    /// Is the reserve effectively bottomless for this weapon, under this
+    /// scenario's Infinite-ammo setting?
+    ///
+    /// THE ONE PLACE THE RULE IS WRITTEN. It lives on the panel rather than in
+    /// a caller because there were TWO callers writing it — the web api and the
+    /// optimizer — and they wrote the same wrong version of it
+    /// (`infinite_ammo || !finite_reserve`). The simulator is the truth and the
+    /// optimizer obeys it, so the optimizer must CALL this, not restate it.
+    ///
+    /// Three facts meet here, and two of them were one field until 2026-08-04:
+    ///
+    /// - `has_reserve` — is there a pool behind the magazine at all? A sentinel
+    ///   weapon has none, so nothing can make it run out.
+    /// - `no_resupply` — can the game refill it mid-fight? False for everything
+    ///   but a ground Arch-Gun, which is REMOVED when empty and cannot be
+    ///   called back down for five minutes.
+    /// - `infinite_ammo` — the scenario's setting, which is how the sim stands
+    ///   in for ammo PICKUPS, since it models none of them.
+    ///
+    /// The setting is therefore about PICKUPS, and a weapon that cannot receive
+    /// one is not covered by it. That is what lets a single benchmark term be
+    /// right for the whole roster: reserves ignored where the game would refill
+    /// them, real where it cannot (owner, 2026-08-04).
+    pub fn reserve_is_infinite(&self, infinite_ammo: bool) -> bool {
+        !self.has_reserve || (infinite_ammo && !self.no_resupply)
+    }
+}
+
 
 /// A permanent flat-BASE-DAMAGE buff on the resolved panel, sibling to
 /// [`EvoMsBuff`] and rescaled the same way: the panel already carries the full
@@ -1815,7 +1852,8 @@ pub fn resolve_for(
                     .find(|(s, _)| *s == IndirectStat::AmmoMax)
                     .map_or(0.0, |(_, v)| *v)))
         .floor(),
-        finite_reserve: base.finite_reserve,
+        has_reserve: base.has_reserve,
+        no_resupply: base.no_resupply,
         reload_seconds: base.base_reload / (1.0 + rl),
         reload_bonus: rl,
         base_damage_bonus: bd,

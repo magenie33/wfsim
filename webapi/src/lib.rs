@@ -657,12 +657,22 @@ pub fn meta_json() -> Value {
                 // two means the axis does not exist for it and nothing should
                 // offer a choice - the same rule every other axis follows.
                 "deployments": wfsim_engine::weapons_data::deployments_of(&w.id),
-                // Has this weapon a reserve that can RUN OUT? False for every
-                // sentinel weapon ("Ammo Max: infinity / Ammo Type: None") and
-                // for anything else the data leaves infinite, which is what
-                // makes the Infinite-ammo box ticked-and-disabled there.
-                "finite_reserve": wfsim_engine::weapons_data::spec(&w.id)
-                    .is_some_and(|s| s.finite_reserve),
+                // TWO FACTS ABOUT AMMO, and they were one until 2026-08-04.
+                // `has_reserve` is whether there is a pool behind the magazine
+                // at all — false only for a sentinel weapon ("Ammo Max: ∞ /
+                // Ammo Type: None"), which is what makes the Infinite-ammo box
+                // ticked-and-disabled there. `no_resupply` is whether the game
+                // gives any way to refill it — false for everything but a
+                // ground Arch-Gun, which is removed when empty.
+                //
+                // Reading one as the other disabled the box on the whole
+                // roster, so the only weapon whose ammo you could adjust was
+                // the one weapon whose ammo the game does not let you adjust.
+                "has_reserve": wfsim_engine::weapons_data::spec(&w.id)
+                    .and_then(|s| s.ammo_max)
+                    .is_some_and(|a| a > 0.0),
+                "no_resupply": wfsim_engine::weapons_data::spec(&w.id)
+                    .is_some_and(|s| s.no_resupply),
                 // The mods this weapon can actually EQUIP, by id. The client
                 // used to union the class tables and re-apply the rules in JS,
                 // which is one fact stated twice — and the copy went stale the
@@ -2881,12 +2891,12 @@ pub fn simulate_json(v: &Value) -> Value {
             );
             // The cycle reports the form it transforms INTO, as it always has.
             let mut params = params;
-            params.infinite_reserve = infinite_ammo || !incarnon_panel.finite_reserve;
+            params.infinite_reserve = incarnon_panel.reserve_is_infinite(infinite_ammo);
             (incarnon_panel, params)
         } else {
             let panel = panel_of(single_form);
             let mut d = DummyParams::from_panel(&panel, &arena);
-            d.infinite_reserve = infinite_ammo || !panel.finite_reserve;
+            d.infinite_reserve = panel.reserve_is_infinite(infinite_ammo);
             // Frenzy is the WEAPON's passive: it persists across its forms
             // (user-confirmed 2026-07-24), so it rides whichever one is fired.
             d.frenzy = frenzy_single;

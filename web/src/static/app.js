@@ -1004,7 +1004,18 @@ const deployField = (w, state) => {
   }</select></label>`;
 };
 
-const ammoForced = (w) => !w.finite_reserve;
+// FORCED EITHER WAY, and for opposite reasons — so the control has THREE
+// states, not two (owner, 2026-08-04). It had one flag and read it as the
+// wrong one of the two facts, which ticked-and-disabled the box on every
+// weapon but the single Arch-Gun: the only weapon whose ammo you could adjust
+// was the one weapon the game gives no way to adjust.
+//
+//   no reserve at all (sentinel)      -> ticked, disabled: nothing to run out
+//   a reserve it cannot refill (AG)   -> UNticked, disabled: pickups it cannot get
+//   a reserve it can refill (the rest) -> yours, defaulting to on
+const ammoForcedOn = (w) => !w.has_reserve;
+const ammoForcedOff = (w) => !!w.no_resupply;
+const ammoForced = (w) => ammoForcedOn(w) || ammoForcedOff(w);
 // A SENTINEL WEAPON IS ALWAYS AIMING (user, 2026-08-01) — it just never aims
 // at the HEAD, which is why its headshot default is 0 and every on-headshot
 // trigger stays dead anyway. Ticked and disabled, the same shape as infinite
@@ -1019,10 +1030,12 @@ const aimField = (w, state) => {
 };
 const ammoField = (w, state) => {
   const forced = ammoForced(w);
-  const on = forced || state.infinite_ammo !== false;
-  const why = forced
+  const on = ammoForcedOn(w) || (!ammoForcedOff(w) && state.infinite_ammo !== false);
+  const why = ammoForcedOn(w)
     ? tr("this weapon has no ammo reserve to run out of")
-    : tr("off = the reserve is finite and the weapon can run dry; the magazine and its reloads apply either way");
+    : ammoForcedOff(w)
+      ? tr("this weapon cannot be resupplied — once its reserve is gone it is removed for five minutes, so the setting has nothing to stand in for")
+      : tr("on = ammo pickups keep the reserve topped up, which the sim has no entities for; off = it runs dry. The magazine and its reloads apply either way");
   return `<label class="check" title="${escHtml(why)}"><input type="checkbox" data-k="infinite_ammo"${on ? " checked" : ""}${forced ? " disabled" : ""}> ${escHtml(tr("Infinite ammo"))}</label>`;
 };
 

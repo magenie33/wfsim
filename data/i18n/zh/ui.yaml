@@ -149,8 +149,9 @@ ui:
   "Archwing": 空战
   "where the weapon is fired — it changes reload and ammo, nothing else": 武器在哪里开火 —— 它只影响装填和弹药，其余不变
   "a sentinel weapon is always aiming — it just never aims at the head, so on-headshot effects never fire": 守护武器永远处于瞄准状态 —— 它只是从不瞄准头部，所以爆头触发类效果不会生效
+  "this weapon cannot be resupplied — once its reserve is gone it is removed for five minutes, so the setting has nothing to stand in for": 这把武器无法补给——储备打光后会被收回，五分钟后才能再次召唤，所以这个选项没有可代表的东西
+  "on = ammo pickups keep the reserve topped up, which the sim has no entities for; off = it runs dry. The magazine and its reloads apply either way": 开 = 用弹药拾取补满储备（模拟器没有拾取实体，用这个代替）；关 = 会打光。弹匣和换弹两种情况下都照常生效
   "this weapon has no ammo reserve to run out of": 这把武器没有会耗尽的备弹
-  "off = the reserve is finite and the weapon can run dry; the magazine and its reloads apply either way": 关闭 = 备弹有限，武器会打空；弹匣和换弹无论开关都照常计算
   "import": 导入
   "copy one from another weapon": 从其他武器复制一个
   "Direct hit": 直击

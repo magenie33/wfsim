@@ -23,7 +23,7 @@ deployment: atmosphere
 deployments:
   archwing:
     reload_seconds: 4.5
-    finite_reserve: false
+    no_resupply: false
 
 mod_pools: [archgun]
 mastery_rank: 8
@@ -41,7 +41,7 @@ reload_seconds: 2.5
 
 ammo_type: archgun
 ammo_max: 400
-finite_reserve: true         # see larkspur_prime.yaml — the ground column
+no_resupply: true         # see larkspur_prime.yaml — the ground column
 
 # CO catalog: "Larkspur Prime | Alt-fire | Projectile | 100% | Multiplying".
 # THIS entry IS the alt-fire, so `independent` (= the wiki's "Multiplying") is
