@@ -102,7 +102,22 @@ around (decision 2026-07-31).
   is the committed one — the builder and the optimizer must offer the
   same options and the same visibility on every axis, and it exits
   non-zero when they do not. Run it after adding a weapon or anything a
-  weapon can carry. `node scripts/check_enemies.mjs` is the ELEVENTH: every
+  weapon can carry. `node scripts/check_equip_rules.mjs` is the TWELFTH — what a
+  mod's CARD says the weapon may do, in both directions. An
+  equip rule is asked of EVERY firing mode, and installing a form ADDS one — so
+  Dual Toxocyst wears Semi-Pistol Cannonade until tier 1 goes in and not after
+  (wiki: "must have Semi-Auto trigger type for both firing modes"). The engine
+  decides (`pool_for_build`) and `/api/meta` states the CONSEQUENCE per
+  evolution (`evo_forbids`); the check asserts the page acts on it — the picker
+  stops offering it, installing the form UNEQUIPS it and says so, the Form
+  control greys the Incarnon options with the reason on screen without moving
+  the scenario's own selection, and the sim refuses the pair. It also covers the
+  LOCK the same families carry ("set to its default ignoring other bonuses, even
+  negative effects"): the panel pins the stat and NAMES what pinned it, and a
+  buff whose only grant is that stat is not offered — a lock reaches the
+  evolution, arcane and passive layers too, not just the mod bucket
+  (MEASUREMENTS M30).
+  `node scripts/check_enemies.mjs` is the ELEVENTH: every
   TARGET in the roster shows a picture that loads, a wiki link built from its
   ENGLISH name (it runs the whole pass twice, in both languages — a localized
   name in a wiki URL lands on garbage), its VULNERABILITY COLUMN (the Thrax's

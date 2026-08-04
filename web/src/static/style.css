@@ -448,6 +448,9 @@ label.check input{width:auto}
 .opt-tier .rk{font-size:11px;color:var(--muted);min-width:22px;font-weight:700}
 .opt-est{font-size:12px;color:var(--text-2);margin:12px 0 4px}
 .opt-est .warn{color:var(--critical)}
+/* A control that is on screen but not available to THIS build says why beside
+   itself (the Form select under a mod that rules the Incarnon form out). */
+span.warn{color:var(--critical);font-size:11px;align-self:center}
 .opt-meta{font-size:12px;color:var(--muted);margin:12px 0 8px}
 .opt-scn{font-size:11px;color:var(--muted);margin-top:4px}
 .preset-bar .pname{font:inherit;font-size:12px;padding:2px 8px;border:1px solid var(--accent);border-radius:999px;background:var(--panel2);color:var(--text);width:150px}

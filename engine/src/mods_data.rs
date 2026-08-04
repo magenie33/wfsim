@@ -455,24 +455,85 @@ pub fn pool_union(pools: &[String]) -> Vec<ModDef> {
     out
 }
 
-/// The pool a weapon can actually EQUIP: its pools unioned, minus mods whose
-/// equip requirement the weapon does not meet.
+/// The pool a weapon can EQUIP WITH NOTHING INSTALLED: its pools unioned, minus
+/// mods whose equip requirement the weapon does not meet. [`pool_for_build`] is
+/// the same rule once evolutions are chosen.
 ///
 /// The compat tag is not the whole rule. Sinister Reach and Combustion Beam
 /// are tagged PRIMARY and still cannot go on the Torid (user, 2026-07-31):
 /// they need a CONTINUOUS weapon. The Torid is the case that shows where the
 /// line falls — its Incarnon form IS a continuous beam and it still cannot
-/// take them, because modding is decided on the BASE form, a semi-auto
-/// grenade launcher.
+/// take them, because its OTHER firing mode is a semi-auto grenade launcher
+/// and an equip rule is asked of every mode a weapon has.
 pub fn pool_for_weapon(weapon_id: &str) -> Vec<ModDef> {
+    pool_for_build(weapon_id, &[])
+}
+
+/// Every trigger a BUILD can FIRE: the weapon's own, plus that of any form an
+/// installed evolution UNLOCKS.
+///
+/// A firing MODE is what an equip rule is asked about, and an Incarnon weapon
+/// has two of them: "Weapons with an Incarnon mode must have Semi-Auto trigger
+/// type for both firing modes in order to equip this mod" (wiki,
+/// Semi-Pistol_Cannonade). So Dual Toxocyst — semi-auto, with a full-auto
+/// Incarnon form — takes a Cannonade while the Genesis is not installed and
+/// refuses it the moment tier 1 is (user, 2026-08-04).
+///
+/// A CHARGED form is NOT a second firing mode: charged vs uncharged is chosen
+/// freely on every trigger pull and the weapon comparison lists ONE trigger for
+/// such a weapon (Cernos Prime is "Charge", Larkspur Prime "Held"). That is
+/// exactly the line [`FormKind::is_gauge_switched`] already draws, and it is why
+/// only a form an EVOLUTION unlocks joins this list — the arsenal gains a second
+/// trigger when the Genesis goes in, not when you hold the button down.
+fn triggers_of(weapon_id: &str, evolutions: &[&str]) -> Vec<&'static str> {
+    let mut out: Vec<&'static str> = Vec::new();
+    // THE WEAPON'S OWN trigger is its DEFAULT form's — `default_form: true` is
+    // "the arsenal's form (module _TooltipAttackDisplay)", i.e. the one the
+    // weapon comparison lists a trigger for. Asking the entry directly would
+    // make `cernos_prime_uncharged` (semi-auto) a semi-auto WEAPON, when the
+    // bow it is a form of is listed "Charge" — a form is not a weapon, and only
+    // an Incarnon mode gets a second trigger of its own.
+    if let Some(s) = crate::weapons_data::spec(weapon_id) {
+        let group = s.transform_group.as_deref().unwrap_or(&s.id);
+        let default = crate::weapons_data::all()
+            .iter()
+            .find(|x| x.transform_group.as_deref().unwrap_or(&x.id) == group && x.default_form)
+            .unwrap_or(s);
+        out.push(default.attack.trigger.as_str());
+    }
+    for id in evolutions {
+        let Some(form) = crate::evolutions_data::get(id).and_then(|e| e.unlocks_form()) else {
+            continue;
+        };
+        if let Some(s) = crate::weapons_data::spec(form) {
+            if !out.contains(&s.attack.trigger.as_str()) {
+                out.push(s.attack.trigger.as_str());
+            }
+        }
+    }
+    out
+}
+
+/// The pool a BUILD can equip: [`pool_for_weapon`]'s rules, resolved against
+/// every firing mode the chosen `evolutions` give the weapon.
+///
+/// `evolutions` empty is the weapon as it comes out of the box — which is what
+/// [`pool_for_weapon`] means and why it is this function with nothing installed.
+pub fn pool_for_build(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
     let Some(spec) = crate::weapons_data::spec(weapon_id) else {
         return Vec::new();
     };
-    // The BASE form's trigger, which is what `WeaponBase::continuous` reads.
-    let continuous = spec.attack.trigger == "held";
+    // EVERY firing mode must meet the requirement, not just the one you happen
+    // to be in. The Torid is the case that shows where the line falls for
+    // `continuous`: its Incarnon form IS a beam and it still cannot take
+    // Sinister Reach, because its other firing mode is a grenade launcher.
+    let triggers = triggers_of(weapon_id, evolutions);
+    let all = |t: &str| !triggers.is_empty() && triggers.iter().all(|x| *x == t);
+    // What `WeaponBase::continuous` reads, asked of every mode.
+    let continuous = all("held");
     // Same rule, other trigger: the Cannonades state "Only compatible with
     // Semi-Auto Trigger" on the card and DE enforces it at the slot.
-    let semi_auto = spec.attack.trigger == "semi_auto";
+    let semi_auto = all("semi_auto");
     // "Mods that affect Ammo Maximum have no effect on Robotic weapon because
     // they already have unlimited ammo reserves" (wiki `Sentinel`). Stated for
     // robotic weapons, true of any weapon with no ammo pool, and read off the
@@ -812,8 +873,7 @@ mod tests {
 
         // Boar Prime is full-auto. This is the case that was wrong.
         assert!(!has("boar_prime", "semi_shotgun_cannonade"), "full-auto takes no Cannonade");
-        // ...and so is its Incarnon form, because modding is decided on the
-        // base form and the form is a held beam either way.
+        // ...and so is its Incarnon form, a held beam — both firing modes fail.
         assert!(!has("boar_prime", "semi_rifle_cannonade"), "nor the rifle one");
 
         // The Torid IS semi-auto, and keeps it — the rule excludes, it does
@@ -825,6 +885,131 @@ mod tests {
         // Cernos Prime CHARGES; its uncharged form is semi-auto and does not
         // decide the pool.
         assert!(!has("cernos_prime", "semi_rifle_cannonade"), "a charge bow is not semi-auto");
+    }
+
+    /// THE WHOLE ROSTER, SPELLED OUT — which weapon is offered which Cannonade
+    /// (user, 2026-08-04: "semi 系列是检查是否不对的武器也可以装").
+    ///
+    /// Written as an explicit table rather than re-derived from the trigger,
+    /// because a check that recomputes the rule agrees with a wrong rule. Every
+    /// entry is the wiki's own answer: the mod is a Rifle / Pistol / Shotgun mod
+    /// AND the weapon's listed trigger is Semi-Auto. A new weapon fails this
+    /// until someone writes down which of the three it takes.
+    #[test]
+    fn every_weapon_in_the_roster_gets_the_right_cannonade() {
+        const CANNONADES: [&str; 3] =
+            ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
+        // (weapon, listed trigger, the Cannonades it may equip bare)
+        const EXPECTED: [(&str, &str, &[&str]); 7] = [
+            // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
+            // Arch-Gun draws neither pool, so the trigger never comes up.
+            ("larkspur_prime", "held", &[]),
+            ("boar_prime", "auto", &[]),                       // full-auto shotgun
+            ("cernos_prime", "charge", &[]),                   // a bow is not semi-auto
+            ("torid", "semi_auto", &["semi_rifle_cannonade"]), // semi-auto launcher, rifle pool
+            ("dual_toxocyst", "semi_auto", &["semi_pistol_cannonade"]),
+            ("laetum", "semi_auto", &["semi_pistol_cannonade"]),
+            ("verglas_prime", "held", &[]),                    // continuous sentinel weapon
+        ];
+        let roster: Vec<&str> =
+            crate::weapons_data::roster().map(|s| s.id.as_str()).collect();
+        assert_eq!(
+            roster.len(),
+            EXPECTED.len(),
+            "a weapon joined the roster and nobody said which Cannonade it takes: {roster:?}"
+        );
+        for (id, trigger, want) in EXPECTED {
+            assert!(roster.contains(&id), "{id} is in the roster");
+            // The trigger is half the claim, so it is pinned too — the table
+            // would otherwise pass by agreeing with changed data.
+            assert_eq!(
+                crate::weapons_data::spec(id).unwrap().attack.trigger,
+                trigger,
+                "{id}'s listed trigger"
+            );
+            let got: Vec<&str> = pool_for_weapon(id)
+                .iter()
+                .map(|m| m.id)
+                .filter(|m| CANNONADES.contains(m))
+                .collect();
+            assert_eq!(got, want, "{id}");
+        }
+    }
+
+    /// A FORM IS NOT A WEAPON. `cernos_prime_uncharged` fires semi-auto, and
+    /// the bow it belongs to is listed "Charge" — asking the form entry its own
+    /// trigger would hand a Cannonade to a weapon that cannot hold one. The
+    /// weapon's trigger is its DEFAULT form's, which is what the arsenal and
+    /// the weapon-comparison table show.
+    #[test]
+    fn a_form_entry_answers_with_its_weapons_trigger() {
+        let has = |w: &str, m: &str| pool_for_build(w, &[]).iter().any(|x| x.id == m);
+        assert_eq!(
+            crate::weapons_data::spec("cernos_prime_uncharged").unwrap().attack.trigger,
+            "semi_auto",
+            "the tapped shot really is semi-auto — that is the trap"
+        );
+        assert!(!has("cernos_prime_uncharged", "semi_rifle_cannonade"), "...but the bow is not");
+        // It is the only form entry that can show this: `mod_pools` is declared
+        // on the WEAPON, so every other form resolves to an empty pool and has
+        // no answer to give either way.
+        assert!(
+            pool_for_build("dual_toxocyst_incarnon", &[]).is_empty(),
+            "a form declares no pool of its own — modding is the weapon's"
+        );
+    }
+
+    /// INSTALLING THE GENESIS IS WHAT TAKES THE CANNONADE OFF (user,
+    /// 2026-08-04). "Weapons with an Incarnon mode must have Semi-Auto trigger
+    /// type for both firing modes in order to equip this mod" (wiki,
+    /// Semi-Pistol_Cannonade), and the roster's three semi-auto Incarnon
+    /// weapons all transform into something that is not: Dual Toxocyst and
+    /// Laetum into full-auto, the Torid into a held beam.
+    ///
+    /// So the pool is a question about the BUILD, not about the weapon: with
+    /// tier 1 unpicked the weapon has one firing mode and the mod fits, and the
+    /// moment tier 1 goes in it has two and the mod is gone.
+    #[test]
+    fn an_unlocked_incarnon_form_is_a_second_firing_mode() {
+        let has = |w: &str, evos: &[&str], m: &str| {
+            pool_for_build(w, evos).iter().any(|x| x.id == m)
+        };
+        for (w, evo, m) in [
+            ("dual_toxocyst", "dual_toxocyst_evo1_incarnon_form", "semi_pistol_cannonade"),
+            ("laetum", "laetum_evo1_incarnon_form", "semi_pistol_cannonade"),
+            ("torid", "torid_evo1_incarnon_form", "semi_rifle_cannonade"),
+        ] {
+            assert!(has(w, &[], m), "{w} with nothing installed is pure semi-auto");
+            assert!(!has(w, &[evo], m), "{w} with the Incarnon form installed is not");
+            // The rest of the pool is untouched — this excludes one mod, it is
+            // not a second pool for the transformed weapon.
+            assert!(
+                has(w, &[evo], "serration") || has(w, &[evo], "hornet_strike"),
+                "{w} keeps its ordinary mods with the form unlocked"
+            );
+        }
+        // An evolution that unlocks NOTHING changes nothing: only a form the
+        // weapon gains can be a second trigger.
+        assert!(
+            has("dual_toxocyst", &["dual_toxocyst_carnage_reign"], "semi_pistol_cannonade"),
+            "a stat evolution is not a firing mode"
+        );
+        // ...and a weapon whose Incarnon form is ALSO semi-auto would keep it.
+        // The roster has none yet (the wiki names Bronco / Lato / Lex), so the
+        // claim is pinned on the data instead: every entry here transforms into
+        // a trigger that is not semi-auto, which is why all three drop it.
+        for (w, evo) in [
+            ("dual_toxocyst", "dual_toxocyst_evo1_incarnon_form"),
+            ("laetum", "laetum_evo1_incarnon_form"),
+            ("torid", "torid_evo1_incarnon_form"),
+        ] {
+            let form = crate::evolutions_data::get(evo).and_then(|e| e.unlocks_form()).unwrap();
+            assert_ne!(
+                crate::weapons_data::spec(form).unwrap().attack.trigger,
+                "semi_auto",
+                "{w}: the test above only proves the rule while this holds"
+            );
+        }
     }
 
     /// PvP-EXCLUSIVE mods must not ship in a PvE pool — they are a separate

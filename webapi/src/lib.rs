@@ -223,6 +223,32 @@ fn evo_group(info: &WeaponInfo) -> &'static str {
 
 /// The tier-1 evolution that unlocks the second form (deselecting it means
 /// no transformation).
+/// Per evolution of this weapon's group, the mods installing it takes OFF the
+/// weapon — `{ "<evo id>": ["<mod id>", …] }`, entries with nothing to say
+/// omitted.
+///
+/// Only a form-unlocking evolution can say anything today (it is the one that
+/// gives the weapon a second firing mode), but it is computed by ASKING the
+/// pool, not by assuming that: a stat evolution that ever changed a trigger
+/// would be answered correctly without a line changing here.
+fn evo_forbids(info: &WeaponInfo) -> serde_json::Map<String, Value> {
+    let bare = wfsim_engine::mods_data::pool_for_weapon(&info.id);
+    let group = evo_group(info);
+    let mut out = serde_json::Map::new();
+    for e in wfsim_engine::evolutions_data::pool().iter().filter(|e| e.weapon == group) {
+        let with = wfsim_engine::mods_data::pool_for_build(&info.id, &[e.id.as_str()]);
+        let lost: Vec<&str> = bare
+            .iter()
+            .map(|m| m.id)
+            .filter(|id| !with.iter().any(|m| m.id == *id))
+            .collect();
+        if !lost.is_empty() {
+            out.insert(e.id.clone(), json!(lost));
+        }
+    }
+    out
+}
+
 fn form_unlock_evo(info: &WeaponInfo) -> Option<&'static str> {
     // BY ITS TAG, not by ladder position. It used to be "tier 1's first
     // option", which is a guess that happens to hold for the four Incarnon
@@ -298,10 +324,14 @@ fn default_weapon_id() -> &'static str {
 // The FULL pool (exilus included) of a weapon's mod class — the picker and
 // every id lookup go through here, so a weapon whose `mod_eligibility` names
 // a class with no data yet gets an empty pool rather than another weapon's.
-/// The pool a weapon actually sees: its pools unioned, minus mods it cannot
-/// equip (the beam-only mods need a continuous weapon).
-fn mod_pool_for(weapon_id: &str) -> Vec<ModDef> {
-    wfsim_engine::mods_data::pool_for_weapon(weapon_id)
+/// The pool a BUILD actually sees: the weapon's pools unioned, minus mods it
+/// cannot equip (the beam-only mods need a continuous weapon; a Cannonade needs
+/// semi-auto on every firing mode, so an unlocked Incarnon form takes it off).
+///
+/// `evos` is the build's chosen evolutions — the pool is a question about the
+/// weapon AS CONFIGURED, not about the weapon.
+fn mod_pool_for(weapon_id: &str, evos: &[&str]) -> Vec<ModDef> {
+    wfsim_engine::mods_data::pool_for_build(weapon_id, evos)
 }
 
 /// A mod id that must outlive the request. Riven ids are made from a name the
@@ -343,15 +373,29 @@ fn intern(s: String) -> &'static str {
 /// world, and it is what a saved build got the moment the pool learned a rule
 /// (Amalgam mods off sentinel weapons, ammo mods off an infinite reserve).
 /// A mod that exists but does not fit says so.
-fn mod_not_here(id: &str, weapon: &WeaponInfo) -> String {
+///
+/// It is also what a saved build gets the moment an EVOLUTION takes a mod off
+/// the weapon (a Cannonade under an unlocked Incarnon form): the mod is in the
+/// weapon's own pool and out of this build's, and saying "not in this weapon's
+/// pool" there would be flatly untrue. Which of the two it is, is decided by
+/// asking the pool twice.
+fn mod_not_here(id: &str, weapon: &WeaponInfo, evos: &[&str]) -> String {
     let known = wfsim_engine::mods_data::classes()
         .into_iter()
         .any(|c| wfsim_engine::mods_data::class_pool(c).iter().any(|m| m.id == id));
-    if known {
-        format!("{id} cannot be equipped on {} — it is not in this weapon's pool", weapon.name)
-    } else {
-        format!("unknown mod id: {id}")
+    if !known {
+        return format!("unknown mod id: {id}");
     }
+    let bare = wfsim_engine::mods_data::pool_for_weapon(&weapon.id);
+    if !evos.is_empty() && bare.iter().any(|m| m.id == id) {
+        let name = bare.iter().find(|m| m.id == id).map(|m| m.name).unwrap_or(id);
+        return format!(
+            "{name} cannot be equipped on {} with these evolutions installed — \
+             it needs the same trigger on every firing mode",
+            weapon.name
+        );
+    }
+    format!("{id} cannot be equipped on {} — it is not in this weapon's pool", weapon.name)
 }
 
 /// A weapon's base for THIS request, with the chosen DEPLOYMENT applied.
@@ -459,9 +503,9 @@ fn riven_class(info: &WeaponInfo) -> String {
         .unwrap_or_default()
 }
 
-/// The weapon's pool PLUS the request's own rivens.
-fn mod_pool_with_rivens(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
-    let mut p = mod_pool_for(&info.id);
+/// The build's pool PLUS the request's own rivens.
+fn mod_pool_with_rivens(v: &Value, info: &WeaponInfo, evos: &[&str]) -> Vec<ModDef> {
+    let mut p = mod_pool_for(&info.id, evos);
     p.extend(rivens_from(v, info));
     p
 }
@@ -630,6 +674,17 @@ pub fn meta_json() -> Value {
                     .iter()
                     .map(|m| m.id)
                     .collect::<Vec<_>>(),
+                // ...and which of them each EVOLUTION takes away. An equip rule
+                // is asked of every firing mode a weapon has, and installing the
+                // Incarnon form adds one — so Dual Toxocyst wears a Cannonade
+                // until tier 1 goes in (wiki, Semi-Pistol_Cannonade: "must have
+                // Semi-Auto trigger type for both firing modes").
+                //
+                // The CONSEQUENCE, not the rule: the client used to re-implement
+                // pool rules in JS and every one of them went stale (see `mods`
+                // above). The engine answers "what does picking this cost you",
+                // and the picker just subtracts.
+                "evo_forbids": evo_forbids(w),
                 "mod_class": w.mod_pools.last().cloned().unwrap_or_default(),
                 "subtype": w.subtype,
                 "sentinel": w.sentinel,
@@ -664,7 +719,17 @@ pub fn meta_json() -> Value {
                     .map(|p| p.map(|x| format!("{x:?}")))
                     .collect::<Vec<_>>(),
                 "forms": w.forms.iter()
-                    .map(|(id, name, def)| json!({"id": id, "name": name, "is_default": def}))
+                    .map(|(id, name, def)| json!({
+                        "id": id, "name": name, "is_default": def,
+                        // Is this the form the GAUGE switches into? Then it
+                        // exists only while its unlock is installed — and a mod
+                        // that cannot be worn beside that unlock (`evo_forbids`)
+                        // says the weapon does not have one, so the option goes
+                        // with it rather than the sim refusing the build later.
+                        "gauge_switched": wfsim_engine::weapons_data::forms_of(&w.id)
+                            .iter()
+                            .any(|f| f.kind.id() == *id && f.kind.is_gauge_switched()),
+                    }))
                     .collect::<Vec<_>>(),
                 // Is there a form to TRANSFORM into? Then the sim can run the
                 // real two-form loop as a MODE over the forms above; without
@@ -1091,6 +1156,11 @@ fn enumerate_buffs(
     if info.sentinel {
         return Vec::new();
     }
+    // A stat an equipped mod has LOCKED has nothing to configure. `resolve` has
+    // already emptied every bucket feeding it — "set to its default ignoring
+    // other bonuses" — so a card for one would be a control that moves no
+    // number: Frenzy under a Cannonade, Galvanized Diffusion under an Acuity.
+    let locked = |s: &'static str| refs.iter().any(|m| m.disables.contains(&s));
     let mut out: Vec<BuffMeta> = Vec::new();
     let mut push = |b: BuffMeta| {
         if !out.iter().any(|x| x.id == b.id) {
@@ -1102,7 +1172,7 @@ fn enumerate_buffs(
     // a headshot, so a fight that has not started has not got it. Cheap to
     // earn — the first headshot turns it on — which is exactly why seeding it
     // bought nothing and cost the truth.
-    if has_frenzy(info) {
+    if has_frenzy(info) && !locked("fire_rate") {
         push(BuffMeta {
             id: "frenzy".into(),
             name: "Frenzy".into(),
@@ -1135,7 +1205,7 @@ fn enumerate_buffs(
                 other => other,
             };
             match *e {
-                OnKillMultishot { max_stacks, .. } => push(BuffMeta {
+                OnKillMultishot { max_stacks, .. } if !locked("multishot") => push(BuffMeta {
                     id: "on_kill_multishot".into(),
                     name: nm.clone(),
                     grants: String::new(),
@@ -1201,7 +1271,7 @@ fn enumerate_buffs(
                     permanent: false,
                 uncapped: false,
                 }),
-                OnReloadFireRate { .. } => push(BuffMeta {
+                OnReloadFireRate { .. } if !locked("fire_rate") => push(BuffMeta {
                     id: "on_reload_fr".into(),
                     name: nm.clone(),
                     grants: String::new(),
@@ -1508,12 +1578,12 @@ pub fn panel_json(v: &Value) -> Value {
     if let Err(e) = riven_stat_ids_ok(v, info) {
         return err_json(e);
     }
-    let p = mod_pool_with_rivens(v, info);
+    let p = mod_pool_with_rivens(v, info, &evo_refs);
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
     for id in &mod_ids {
         match p.iter().find(|m| m.id == id) {
             Some(m) => refs.push(m),
-            None => return err_json(mod_not_here(id, info)),
+            None => return err_json(mod_not_here(id, info, &evo_refs)),
         }
     }
 
@@ -1884,11 +1954,25 @@ pub fn panel_json(v: &Value) -> Value {
         // Every base stat is ALWAYS listed (user: the panel must state the whole
         // base panel, not just what changed) — the UI drops the arrow when
         // base == final.
+        // A LOCKED row says so. Base == final and an empty source list is what
+        // a stat nothing touched looks like too, and the difference matters: one
+        // is a build that bought nothing, the other is a build whose mods are
+        // being ignored on purpose ("Fire Rate cannot be modified"). Named after
+        // the mod that did it, because that is the thing to take off.
+        let lock_by = |key: &str| -> Option<String> {
+            panel.locked.contains(&key).then(|| {
+                refs.iter()
+                    .find(|m| m.disables.contains(&key))
+                    .map_or_else(String::new, |m| m.name.to_string())
+            })
+        };
         let mut row = |key: &'static str, label: &str, base_s: String, final_s: String| {
-            stats.push(
-                json!({ "key": key, "label": label, "base": base_s, "final": final_s,
-            "sources": sources(key, None) }),
-            );
+            let mut j = json!({ "key": key, "label": label, "base": base_s, "final": final_s,
+            "sources": sources(key, None) });
+            if let Some(by) = lock_by(key) {
+                j["locked_by"] = json!(by);
+            }
+            stats.push(j);
         };
         // Base columns show the RAW weapon base (pre-evolution): the evolution
         // flat deltas are attributed as named source rows, not hidden in "base".
@@ -2711,12 +2795,17 @@ pub fn simulate_json(v: &Value) -> Value {
     if let Err(e) = riven_stat_ids_ok(v, info) {
         return err_json(e);
     }
-    let p = mod_pool_with_rivens(v, info);
+    // THE FIGHT'S evolutions, which is what decides the pool: asking to fire the
+    // Incarnon form implies its unlock (see `parse_fight`), and a weapon with
+    // that form installed has a second firing mode — so a Cannonade equipped
+    // beside it is a build the game refuses, and the sim must say so rather than
+    // report a number nobody can reproduce.
+    let p = mod_pool_with_rivens(v, info, &evo_refs);
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
     for id in &mod_ids {
         match p.iter().find(|m| m.id == id) {
             Some(m) => refs.push(m),
-            None => return err_json(mod_not_here(id, info)),
+            None => return err_json(mod_not_here(id, info, &evo_refs)),
         }
     }
     // Reject family collisions (wiki Incompatible mods).
@@ -3085,7 +3174,10 @@ pub fn opt_buffs_json(v: &Value) -> Value {
     if let Err(e) = riven_stat_ids_ok(v, info) {
         return err_json(e);
     }
-    let full = mod_pool_with_rivens(v, info);
+    // The WIDEST pool (nothing installed): this lists the buffs a scope could
+    // produce, and a mod only some evolution variants can equip still produces
+    // its buff in the variants that can.
+    let full = mod_pool_with_rivens(v, info, &[]);
     let refs: Vec<&ModDef> = full
         .iter()
         .filter(|m| ids.iter().any(|id| id.as_str() == m.id))
@@ -3142,6 +3234,12 @@ pub struct OptimizePlan {
     min_slots: usize,
     build_size: usize,
     evo_sets: Vec<Vec<String>>,
+    /// Per evolution set, which `pool` indices that set cannot EQUIP. An equip
+    /// rule is asked of every firing mode a weapon has, and installing the
+    /// Incarnon form adds one — so a Cannonade belongs to the variants that
+    /// leave tier 1 out and to no others. Same length as `evo_sets`, each entry
+    /// as long as `pool`.
+    variant_forbids: Vec<Vec<bool>>,
     exilus_defs: Vec<Option<ModDef>>,
     arcanes: Vec<wfsim_engine::arcanes_data::ArcaneFx>,
     /// What each entry of `arcanes` IS, in pool order — one id per slot,
@@ -3214,10 +3312,13 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     if let Err(e) = riven_stat_ids_ok(v, info) {
         return Err(err_json(e));
     }
-    let full = mod_pool_with_rivens(v, info);
+    // The WIDEST pool (nothing installed). Evolutions are a search DIMENSION, so
+    // a mod can be legal in one variant and not in the next — which variant is
+    // decided per candidate, below, not by narrowing the scope here.
+    let full = mod_pool_with_rivens(v, info, &[]);
     for id in fixed_ids.iter().chain(search_ids.iter()) {
         if !full.iter().any(|m| m.id == id.as_str()) {
-            return Err(err_json(mod_not_here(id, info)));
+            return Err(err_json(mod_not_here(id, info, &[])));
         }
     }
 
@@ -3384,6 +3485,64 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             if wfsim_engine::evolutions_data::get(id).is_none() {
                 return Err(err_json(format!("unknown evolution id: {id}")));
             }
+        }
+    }
+
+    // ---- what each variant may not EQUIP -----------------------------------
+    //
+    // An equip rule is asked of every firing mode a weapon has, and a variant
+    // that installs the Incarnon form has two — so a Cannonade is legal in the
+    // variants that leave tier 1 out and illegal in the ones that do not. That
+    // is a per-CANDIDATE fact, not a per-scope one: narrowing the pool to what
+    // every variant can equip would throw away the builds where the mod is the
+    // point, and leaving it alone would crown a build the game refuses.
+    //
+    // Same rule the simulator applies, from the same engine call — the pool the
+    // sim resolves a build against IS `pool_for_build` (hard rule: the optimizer
+    // obeys the simulator).
+    let variant_pools: Vec<Vec<ModDef>> = evo_sets
+        .iter()
+        .map(|set| {
+            let refs: Vec<&str> = set.iter().map(String::as_str).collect();
+            mod_pool_with_rivens(v, info, &refs)
+        })
+        .collect();
+    // Per variant, which SCOPE indices it cannot equip — the shape the walk
+    // wants, resolved once instead of per subset.
+    let variant_forbids: Vec<Vec<bool>> = variant_pools
+        .iter()
+        .map(|legal| {
+            pool.iter().map(|m| !legal.iter().any(|x| x.id == m.id)).collect()
+        })
+        .collect();
+    // A REQUIRED mod no variant can equip is a contradiction the search cannot
+    // resolve by choosing differently — say it now rather than answer with an
+    // empty leaderboard.
+    for (i, m) in pool.iter().enumerate() {
+        if constraints.require.iter().any(|r| r == m.id) && variant_forbids.iter().all(|f| f[i]) {
+            return Err(err_json(format!(
+                "{} is required, and no evolution set in this scope can equip it — \
+                 it needs the same trigger on every firing mode",
+                m.name
+            )));
+        }
+    }
+    // The EXILUS table is shared across variants (a candidate stores its option
+    // by INDEX, and the index has to name the same option in every one), so an
+    // exilus option must be equippable under all of them. Vacuous today — no
+    // exilus mod carries an equip rule — and stated so it stays a rule rather
+    // than an accident if one ever does.
+    for d in exilus_defs.iter().flatten() {
+        if let Some(legal) = variant_pools
+            .iter()
+            .find(|legal| !legal.iter().any(|x| x.id == d.id))
+        {
+            let _ = legal;
+            return Err(err_json(format!(
+                "{} cannot be equipped under every evolution set in this scope, so it \
+                 cannot be an exilus option — pin the evolutions, or drop it",
+                d.name
+            )));
         }
     }
 
@@ -3559,6 +3718,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         min_slots,
         build_size,
         evo_sets,
+        variant_forbids,
         exilus_defs,
         arcanes,
         arcane_sets,
@@ -3661,6 +3821,7 @@ pub fn grade_optimize(
         min_slots,
         build_size,
         evo_sets,
+        variant_forbids,
         exilus_defs,
         arcanes,
         scenario,
@@ -3701,6 +3862,31 @@ pub fn grade_optimize(
         } else {
             (deployed(&untransformed_id, &refs), None)
         };
+        // What THIS variant cannot equip is a forbid like any other: a mod that
+        // needs the same trigger on every firing mode is out of the sets that
+        // install a second one. The grader must walk exactly the space the
+        // search walks, so it applies the same list.
+        let vc = Constraints {
+            require: constraints.require.clone(),
+            forbid: constraints
+                .forbid
+                .iter()
+                .cloned()
+                .chain(
+                    variant_forbids[vi]
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, &f)| f)
+                        .map(|(i, _)| pool[i].id.to_string()),
+                )
+                .collect(),
+        };
+        // A required mod this variant cannot equip empties it — `parse_optimize`
+        // has already refused a scope where NO variant can, so this is the
+        // ordinary "this set is not the one" case.
+        if vc.require.iter().any(|r| vc.forbid.iter().any(|f| f == r)) {
+            continue;
+        }
         let (mut c, _stats, complete) = enumerate_candidates_observed(
             &pool,
             &base,
@@ -3710,7 +3896,7 @@ pub fn grade_optimize(
             build_size as u32,
             60,
             &innate,
-            &constraints,
+            &vc,
             &exilus_refs,
             Some(&state),
             max_jobs.saturating_sub(cands.len()).max(1),
@@ -3784,6 +3970,12 @@ pub fn grade_optimize(
     let expand = |subset: &[usize]| -> Vec<Candidate> {
         let mut out = Vec::new();
         for (vi, (base, base_form)) in forms.iter().enumerate() {
+            // A mod this variant cannot equip vetoes the (subset, variant)
+            // PAIR, not the subset: the same eight mods are a legal build under
+            // an evolution set that leaves the Incarnon form out.
+            if subset.iter().any(|&i| variant_forbids[vi][i]) {
+                continue;
+            }
             wfsim_optimizer::expand_one(
                 &pool, base, base_form.as_ref(), vi as u32, 60, &innate, &exilus_refs,
                 subset, &scenario.arena.tenno, scenario.policy, &mut out,
@@ -3927,6 +4119,7 @@ pub fn run_optimize_resumable(
         min_slots,
         build_size,
         evo_sets,
+        variant_forbids,
         exilus_defs,
         arcanes,
         arcane_sets,
@@ -4095,6 +4288,12 @@ pub fn run_optimize_resumable(
     let expand = |subset: &[usize]| -> Vec<Candidate> {
         let mut out = Vec::new();
         for (vi, (base, base_form)) in forms.iter().enumerate() {
+            // A mod this variant cannot equip vetoes the (subset, variant)
+            // PAIR, not the subset: the same eight mods are a legal build under
+            // an evolution set that leaves the Incarnon form out.
+            if subset.iter().any(|&i| variant_forbids[vi][i]) {
+                continue;
+            }
             wfsim_optimizer::expand_one(
                 &pool,
                 base,
@@ -4138,6 +4337,13 @@ pub fn run_optimize_resumable(
         let mut jobs: Vec<Job> = Vec::new();
         for (ordered, variant, exilus, ai) in &r_alive {
             let Some(set) = evo_sets.get(*variant as usize) else { continue };
+            // A checkpoint predating an equip rule can name a build this variant
+            // can no longer wear. Dropping it is the same answer the walk would
+            // give now; if that empties the list, the error below says so.
+            let Some(forbid) = variant_forbids.get(*variant as usize) else { continue };
+            if ordered.iter().any(|&i| forbid.get(i).copied().unwrap_or(false)) {
+                continue;
+            }
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
             let (base, base_form) = forms_for(set, &refs);
             let Some(c) = wfsim_optimizer::rebuild_candidate(
@@ -4809,5 +5015,129 @@ mod optimizer_evolution_tests {
             "3": ["torid_extended_volley"],
         }));
         assert_eq!(gapped, vec![vec!["torid_evo1_incarnon_form".to_string()]]);
+    }
+}
+
+/// INSTALLING THE INCARNON FORM TAKES THE CANNONADE OFF THE WEAPON.
+///
+/// "Weapons with an Incarnon mode must have Semi-Auto trigger type for both
+/// firing modes in order to equip this mod" (wiki, Semi-Pistol_Cannonade), and
+/// Dual Toxocyst transforms into a full-auto one. So the pool is a question
+/// about the BUILD: with tier 1 unpicked the weapon is still pure semi-auto and
+/// the mod fits; with it picked the weapon has two firing modes and it does not
+/// (user, 2026-08-04).
+///
+/// Both modules are pinned here, and that is the point — the optimizer obeys
+/// the simulator's rule by CALLING it (`pool_for_build`), so the two cannot
+/// answer differently about the same build.
+#[cfg(test)]
+mod equip_rule_tests {
+    use super::*;
+
+    const EVO1: &str = "dual_toxocyst_evo1_incarnon_form";
+    const CANNON: &str = "semi_pistol_cannonade";
+
+    fn sim(form: &str, evos: Value) -> Value {
+        simulate_json(&json!({
+            "weapon": "dual_toxocyst", "form": form, "mods": [CANNON], "arcane": "none",
+            "evolutions": evos,
+            "enemy": "thrax_centurion", "duration": 10.0, "runs": 2,
+            "headshot_pct": 100.0, "seed": 7,
+        }))
+    }
+
+    #[test]
+    fn the_simulator_refuses_a_cannonade_beside_an_unlocked_incarnon_form() {
+        // Nothing installed, base form: an ordinary build.
+        let ok = sim("base", json!([]));
+        assert_eq!(ok["ok"], json!(true), "{ok}");
+
+        // Tier 1 installed: the weapon gained a full-auto firing mode.
+        let bad = sim("base", json!([EVO1]));
+        assert_eq!(bad["ok"], json!(false), "{bad}");
+        let msg = bad["error"].as_str().unwrap_or_default();
+        assert!(msg.contains("firing mode"), "the error says WHY: {msg}");
+
+        // ...and ASKING FOR THE FORM is installing it (`parse_fight` implies the
+        // unlock), so the cycle refuses it with no evolution named at all. This
+        // is the case the page starts in on this weapon, and the alternative —
+        // scoring the mod while firing a form it cannot be worn beside — is a
+        // number nobody can reproduce.
+        for form in ["incarnon", "incarnon_cycle"] {
+            assert_eq!(sim(form, json!([]))["ok"], json!(false), "form {form}");
+        }
+    }
+
+    /// Evolutions are a search DIMENSION, so the scope holds sets that can wear
+    /// the mod and sets that cannot. Narrowing the pool to their intersection
+    /// would throw away the builds the mod is FOR; leaving it alone would crown
+    /// one the game refuses. It is decided per candidate instead.
+    #[test]
+    fn the_optimizer_forbids_the_pair_and_not_the_mod() {
+        let plan = |evolutions: Value| {
+            parse_optimize(&json!({
+                "weapon": "dual_toxocyst",
+                "build_size": 1,
+                "mods": { CANNON: "search", "hornet_strike": "search" },
+                "evolutions": evolutions,
+            }))
+            .expect("a plan")
+        };
+        let forbids = |p: &OptimizePlan, m: &str| -> Vec<bool> {
+            let i = p.pool.iter().position(|x| x.id == m).expect("in scope");
+            p.variant_forbids.iter().map(|f| f[i]).collect()
+        };
+
+        // Tier 1 unmarked: one variant, nothing installed, both mods legal.
+        let bare = plan(json!({}));
+        assert_eq!(bare.evo_sets.len(), 1);
+        assert_eq!(forbids(&bare, CANNON), vec![false]);
+
+        // Tier 1 marked: every set installs the form, so the Cannonade is out of
+        // all of them — and `hornet_strike` is out of none, because this rule
+        // excludes one mod and does not narrow the pool.
+        let inc = plan(json!({ "1": [EVO1] }));
+        assert!(inc.evo_sets.iter().all(|s| s.iter().any(|e| e == EVO1)));
+        assert!(forbids(&inc, CANNON).iter().all(|&f| f), "the pair is illegal");
+        assert!(forbids(&inc, "hornet_strike").iter().all(|&f| !f), "the pool is not");
+    }
+
+    /// A mod the scope REQUIRES and no variant can equip is a contradiction: the
+    /// search cannot answer it by choosing differently, so it is refused up
+    /// front rather than answered with an empty leaderboard.
+    #[test]
+    fn a_required_mod_no_variant_can_wear_is_refused() {
+        let r = parse_optimize(&json!({
+            "weapon": "dual_toxocyst",
+            "build_size": 2,
+            "mods": { CANNON: "fixed", "hornet_strike": "search" },
+            "evolutions": { "1": [EVO1] },
+        }));
+        let e = match r {
+            Err(e) => e,
+            Ok(_) => panic!("a required mod no variant can wear is a contradiction"),
+        };
+        let msg = e["error"].as_str().unwrap_or_default();
+        assert!(msg.contains("firing mode"), "{msg}");
+    }
+
+    /// The client is told the CONSEQUENCE, not the rule — the last time it
+    /// re-derived a pool rule in JS the copy went stale within the week.
+    #[test]
+    fn meta_states_what_each_evolution_costs() {
+        let meta = meta_json();
+        let w = meta["weapons"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|w| w["id"] == json!("dual_toxocyst"))
+            .expect("dual toxocyst");
+        assert_eq!(w["evo_forbids"][EVO1], json!([CANNON]));
+        // A stat evolution costs nothing, and says so by being absent.
+        assert!(w["evo_forbids"]["dual_toxocyst_carnage_reign"].is_null());
+        // The form the cost belongs to is flagged, so the Form control can grey
+        // it out instead of letting the run be refused after the fact.
+        let forms = w["forms"].as_array().unwrap();
+        assert_eq!(forms.iter().filter(|f| f["gauge_switched"] == json!(true)).count(), 1);
     }
 }

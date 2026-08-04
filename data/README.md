@@ -127,14 +127,16 @@ The pool tag is not the whole rule, and every part of the rule is DATA:
 | key | on | means |
 |---|---|---|
 | `mod_pools` | weapon | the class tables it draws (`primary` + `rifle`, …) |
-| `requires_weapon` | mod | a weapon PROPERTY the mod needs (`continuous`) |
+| `requires_weapon` | mod | a weapon PROPERTY the mod needs (`continuous`, `semi_auto`), asked of EVERY firing mode |
 | `excludes_weapon` | mod | DE's INCOMPATIBILITY tags (`sentinel_weapon`, `power_weapon`) |
 | `family` | mod | mutually exclusive with its family-mates |
 | `requires` | mod | a calc-layer gate: it equips and sits inert |
 
-`engine::mods_data::pool_for_weapon` is the only place that combines them, and
-`/api/meta` sends each weapon the resulting **id list** — the client never
-re-derives it. Two rules there are read off the weapon rather than declared: a
+`engine::mods_data::pool_for_build` is the only place that combines them
+(`pool_for_weapon` is it with nothing installed), and `/api/meta` sends each
+weapon the resulting **id list** — plus `evo_forbids`, what each evolution
+takes OFF that list, because installing a form gives the weapon a second firing
+mode. The client never re-derives either. Two rules there are read off the weapon rather than declared: a
 weapon with no `ammo_max` is offered no ammo-maximum mod ("Mods that affect
 Ammo Maximum have no effect on Robotic weapon because they already have
 unlimited ammo reserves", wiki `Sentinel`), and a sentinel weapon is offered no

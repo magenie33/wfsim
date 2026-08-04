@@ -285,10 +285,16 @@ and Combustion Beam are both tagged `PRIMARY` and neither can go on the Torid
 names say plainly (`WeaponBeamDistanceMod`, `WeaponBeamExplodeOnDeath`).
 
 The Torid is the case that shows where the line falls: **its Incarnon form IS
-a continuous beam and it still cannot take them.** Modding is decided on the
-BASE form, a semi-auto grenade launcher. So `requires_weapon: continuous` is
-an EQUIP gate — the mod is never offered — as distinct from `requires`, which
-lets a mod equip and sit inert.
+a continuous beam and it still cannot take them.** The rule is asked of EVERY
+firing mode the build has, and the Torid's other one is a semi-auto grenade
+launcher. So `requires_weapon: continuous` is an EQUIP gate — the mod is never
+offered — as distinct from `requires`, which lets a mod equip and sit inert.
+
+The same sentence runs the other way and is why the pool depends on the BUILD:
+a mod needing `semi_auto` is off the weapon once an evolution unlocks a form
+that is not (Dual Toxocyst + Semi-Pistol Cannonade — see MEASUREMENTS M23).
+`pool_for_build(weapon, evolutions)` is the one function; a CHARGED form does
+not count, because such a weapon lists one trigger.
 
 ### Images: a map in the repo, the pictures on a CDN
 

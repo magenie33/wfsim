@@ -1241,6 +1241,15 @@ pub struct ResolvedPanel {
     pub evo_ms: Option<EvoMsBuff>,
     /// The evolution's PERMANENT flat base damage (Reified Bane), if any.
     pub evo_bd: Option<EvoBdBuff>,
+    /// Stats an equipped mod has LOCKED at the weapon's default (`disables`):
+    /// `multishot` for the Acuity pair, `fire_rate` for the Cannonades.
+    ///
+    /// Stated on the panel because the panel is not the last word on either.
+    /// A lock is absolute — "set to its default ignoring other bonuses, even
+    /// negative effects" — and the sim owns the live sources that never reach
+    /// this struct's arithmetic: an arcane's multishot stacks, the weapon's
+    /// Frenzy passive. They read this rather than each re-deriving it.
+    pub locked: Vec<&'static str>,
 }
 
 /// A permanent flat-BASE-DAMAGE buff on the resolved panel, sibling to
@@ -1554,6 +1563,24 @@ pub fn resolve_for(
 
     // Apply `disables`: a locked stat cannot be modified — zero its mod bucket
     // (and any conditional stacks feeding it); the weapon's base value stays.
+    //
+    // A LOCK IS ABSOLUTE, AND THE MOD BUCKET IS NOT THE WHOLE OF IT. Both
+    // families that carry one say the same sentence: "Equipping this mod will
+    // set weapon's Fire Rate to its default ignoring other bonuses, EVEN
+    // NEGATIVE EFFECTS" (wiki, Semi-Rifle/Shotgun/Pistol Cannonade) and
+    // "...will set weapon's Multishot to its default ignoring other bonuses,
+    // even negative effects" (Primary/Pistol Acuity). "Its default" is the
+    // WEAPON'S value, so a source that never passed through the mod bucket —
+    // an evolution's permanent bonus, an arcane's live stacks, the weapon's own
+    // Frenzy passive — is not exempt just because the loop above cannot see it
+    // (user, 2026-08-04: "应该要锁定的，好像没锁"). The out-of-bucket layers are
+    // shadowed here, and `locked` carries the fact to the SIM, which owns the
+    // live ones.
+    let locked_stat = |s: &str| disabled.contains(&s);
+    let evo_ms_bonus = if locked_stat("multishot") { 0.0 } else { base.buff_multishot_bonus };
+    let evo_ms_stacks = if locked_stat("multishot") { 0 } else { base.buff_ms_max_stacks };
+    let ms_last_round = if locked_stat("multishot") { 0.0 } else { base.multishot_on_last_round };
+    let evo_fr_bonus = if locked_stat("fire_rate") { 0.0 } else { base.evo_fire_rate_bonus };
     for &d in &disabled {
         match d {
             "multishot" => {
@@ -1723,7 +1750,7 @@ pub fn resolve_for(
         crit_tier_upgrade_chance,
         continuous: base.continuous,
         field_duration_on_empty_reload: base.field_duration_on_empty_reload,
-        multishot_on_last_round: base.multishot_on_last_round,
+        multishot_on_last_round: ms_last_round,
         multishot_ammo_bonus: base.multishot_ammo_bonus,
         incarnon: base.incarnon,
         // Blast Range reaches the beam's sphere too — wiki: "The 2.3 meter
@@ -1745,7 +1772,7 @@ pub fn resolve_for(
         base_crit_chance: base.base_crit_chance,
         base_crit_damage: base.base_crit_damage,
         base_status_chance: base.base_status_chance,
-        fire_rate: base.base_fire_rate * (1.0 + fr + base.evo_fire_rate_bonus),
+        fire_rate: base.base_fire_rate * (1.0 + fr + evo_fr_bonus),
         // A charged weapon's fire-rate bonuses DIVIDE the draw instead of
         // multiplying a rate (wiki Fire Rate: on charge weapons the bonus
         // "decreases the charge time"). Same bucket, reciprocal application —
@@ -1754,7 +1781,7 @@ pub fn resolve_for(
         // ones count only where the weapon lets them (an Arch-Gun does not).
         charge_seconds: base.charge_seconds.map(|c| {
             let from_rate = if base.fire_rate_shortens_draw {
-                fr + base.evo_fire_rate_bonus
+                fr + evo_fr_bonus
             } else {
                 0.0
             };
@@ -1767,7 +1794,7 @@ pub fn resolve_for(
         noncrit_bonus: base.noncrit_bonus,
         plain_hit_bonus: base.plain_hit_bonus,
         reload_on_headshot: base.reload_on_headshot,
-        multishot: base.base_multishot * (1.0 + base.buff_multishot_bonus + ms),
+        multishot: base.base_multishot * (1.0 + evo_ms_bonus + ms),
         base_multishot: base.base_multishot,
         // Magazine capacity: +% of base, floored to whole rounds (in-game).
         // A charge-backed Incarnon magazine is a fixed resource OUTSIDE the
@@ -1819,15 +1846,16 @@ pub fn resolve_for(
             max_stacks: 1,
             stacks: 1,
         }),
-        evo_ms: (base.buff_multishot_bonus > 0.0 && base.buff_ms_max_stacks > 0).then_some(
+        evo_ms: (evo_ms_bonus > 0.0 && evo_ms_stacks > 0).then_some(
             EvoMsBuff {
-                full: base.base_multishot * base.buff_multishot_bonus,
-                max_stacks: base.buff_ms_max_stacks,
+                full: base.base_multishot * evo_ms_bonus,
+                max_stacks: evo_ms_stacks,
                 // Full until a buff card says otherwise — it is permanent, so
                 // "the count in play" starts at the count the panel resolved.
-                stacks: base.buff_ms_max_stacks,
+                stacks: evo_ms_stacks,
             },
         ),
+        locked: disabled.to_vec(),
     }
 }
 
@@ -1979,11 +2007,23 @@ mod tests {
         assert!((resolve(&base, &[&beam_mod], StackPolicy::AssumedMax).modified_base - p0.modified_base).abs() < 1e-9);
         let semi = m_req("semi", Some("semi_auto"), vec![], vec![ModEffect::BaseDamage(3.0)]);
         assert!(resolve(&base, &[&semi], StackPolicy::AssumedMax).modified_base > p0.modified_base);
-        // disables: a mod locking `multishot` voids other multishot mods.
+        // disables: a mod locking `multishot` sets it to the weapon's DEFAULT.
+        //
+        // Not "voids other multishot MODS" — the card says "set weapon's
+        // Multishot to its default ignoring other bonuses, even negative
+        // effects" (wiki, Primary/Pistol Acuity), and this base carries Fevered
+        // Frenzy, whose permanent stacked multishot never passed through the mod
+        // bucket. It used to survive the lock, so an Acuity build on Dual
+        // Toxocyst kept the evolution's pellets (user, 2026-08-04).
         let lock = m_req("acuity", None, vec!["multishot"], vec![]);
         let ms_mod = m("ms", vec![ModEffect::Multishot(1.0)]);
         let locked = resolve(&base, &[&ms_mod, &lock], StackPolicy::AssumedMax);
-        assert!((locked.multishot - p0.multishot).abs() < 1e-9); // multishot mod voided
+        assert!((locked.multishot - base.base_multishot).abs() < 1e-9, "the weapon's default");
+        assert!(locked.evo_ms.is_none(), "and the evolution's buff card goes with it");
+        // ...and the evolution IS worth something without the lock, so the line
+        // above is not passing because it contributes nothing.
+        assert!(p0.multishot > base.base_multishot + 1e-9, "Fevered Frenzy pays unlocked");
+        assert_eq!(locked.locked, vec!["multishot"], "the panel states the lock");
         // CondBuff: contributes under AssumedMax, nothing under Emergent.
         let cb = m("cond", vec![ModEffect::CondBuff(CondBucket::StatusChance, 0.90)]);
         let amax = resolve(&base, &[&cb], StackPolicy::AssumedMax);

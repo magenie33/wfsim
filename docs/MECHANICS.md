@@ -132,9 +132,15 @@ Energized Munitions, multiplicative); `e = 1.0` → infinite ammo.
   effects/locks are skipped. Calc-layer, NOT an equip gate. Declared only when a
   general effect would otherwise be misapplied (Semi-Pistol Cannonade needs
   `semi_auto`); self-gating effects (beam range) declare nothing.
-- **`disables: [stat]`**: a mod that LOCKS a stat from modding (Pistol Acuity →
-  multishot, Semi-Pistol Cannonade → fire_rate) zeroes that stat's mod bucket
-  (and any conditional stacks feeding it); the weapon's base value stays.
+- **`disables: [stat]`**: a mod that LOCKS a stat (Pistol/Primary Acuity →
+  multishot, the Cannonades → fire_rate) pins it at the WEAPON'S DEFAULT.
+  "Equipping this mod will set weapon's `<stat>` to its default ignoring other
+  bonuses, **even negative effects**" (wiki, both families) — so it is not a
+  mod-bucket cleanup: the mod bucket, the conditional stacks, an evolution's
+  permanent bonus, an arcane's live stacks and the weapon's own Frenzy passive
+  all go. `resolve` handles what it can see and states the lock on
+  `ResolvedPanel::locked`; the sim reads it back through `DummyParams::locks()`
+  for the live sources it owns. See MEASUREMENTS M30.
 - **Conditional buffs** (`ModEffect::CondBuff`): triggered-buff mods whose
   trigger isn't event-modeled (on_ability_cast / on_reload / on_hit / …)
   contribute their assumed-max total (per_stack × max_stacks) ONLY under

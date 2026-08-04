@@ -1086,6 +1086,17 @@ pub struct DummyParams {
     /// NOT yet wired: +100% Toxin injection (needs the element layer) and
     /// ammo efficiency (ammo is infinite here anyway).
     pub frenzy: bool,
+    /// Stats an equipped mod has LOCKED at the weapon's default — the panel's
+    /// [`crate::loadout::ResolvedPanel::locked`], carried in because the panel's
+    /// arithmetic is not the whole of the stat.
+    ///
+    /// "Equipping this mod will set weapon's Fire Rate to its default ignoring
+    /// other bonuses, even negative effects" (wiki, the Cannonades); the Acuity
+    /// pair says it of Multishot. `resolve` handles what it can see; the live
+    /// sources are HERE — an arcane's multishot stacks and the Frenzy passive's
+    /// x2.5 — and a lock that stopped at the mod bucket left them paying
+    /// (user, 2026-08-04: "应该要锁定的，好像没锁").
+    pub locked_stats: Vec<&'static str>,
     /// Buff-lock settings (see [`LockMode`]).
     pub locked_buffs: Vec<BuffLock>,
     /// The real Incarnon two-form cycle; `None` = single-phase run.
@@ -1325,6 +1336,14 @@ pub const REPLAY_FRAMES: usize = 600;
 pub type BuffConfig = std::collections::HashMap<String, (u32, bool)>;
 
 impl DummyParams {
+    /// Is this stat LOCKED at the weapon's default by an equipped mod?
+    ///
+    /// One reader for every live source, so "even negative effects" cannot end
+    /// up meaning "every source the resolver happened to see".
+    pub fn locks(&self, stat: &str) -> bool {
+        self.locked_stats.contains(&stat)
+    }
+
     /// EVERY configurable buff this build carries, as `(id, max_stacks)`.
     ///
     /// Deliberately adjacent to [`Self::apply_buff_config`] and written in the
@@ -1688,6 +1707,7 @@ impl DummyParams {
             target,
             duration_secs,
             forced_procs: Vec::new(),
+            locked_stats: panel.locked.clone(),
             locked_buffs: Vec::new(),
             cycle: None,
             // A weapon runs dry only where the game gives no way to resupply
@@ -1813,6 +1833,7 @@ impl Default for DummyParams {
             base_multishot: 1.0,
             evo_ms: None,
             evo_bd: None,
+            locked_stats: Vec::new(),
             base_damage_bonus: 0.0,
             co_per_type: 0.0,
             co_behavior: crate::loadout::CoBehavior::AdditiveWithBaseDamage,
@@ -3433,7 +3454,13 @@ pub fn run_once_traced(
             Some(b) if t < fr_reload_expiry => b.value,
             _ => 0.0,
         };
-        let live_rate = (ap.fire_rate + fr_reload_add) * contribs.fire_rate_multiplier;
+        // A LOCKED fire rate is the weapon's default and nothing else: not
+        // Pressurized Magazine's on-reload add, not Frenzy's x2.5 in the bar.
+        let live_rate = if params.locks("fire_rate") {
+            ap.fire_rate
+        } else {
+            (ap.fire_rate + fr_reload_add) * contribs.fire_rate_multiplier
+        };
         // Deadly Efficiency's live share of the BASE-DAMAGE bucket. Zero until
         // a reload has finished, and zero again when the window closes.
         let bd_reload_add = match ap.bd_on_reload {
@@ -3445,12 +3472,22 @@ pub fn run_once_traced(
         // pellet is an independent damage instance. Earned Galvanized
         // stacks and arcane multishot stacks (Conjunction Voltage: a
         // RELATIVE bonus × base pellets) add live.
+        // ...unless MULTISHOT IS LOCKED, in which case the weapon fires its
+        // default pellet count and nothing adds to it — an Acuity's sentence is
+        // "set to its default ignoring other bonuses", and an arcane's stacks
+        // are other bonuses. `resolve` has already emptied the panel's own
+        // buckets; this is the live half it cannot reach.
+        let ms_locked = params.locks("multishot");
         let ms_eff = ap.multishot
             + params
                 .ms_stack
                 .as_ref()
                 .map_or(0.0, |s| s.per_stack * gal.ms.current(t, s.duration) as f64)
-            + ap.base_multishot * arc.total(&params.arcane.buffs, ArcGrant::Multishot, t)
+            + if ms_locked {
+                0.0
+            } else {
+                ap.base_multishot * arc.total(&params.arcane.buffs, ArcGrant::Multishot, t)
+            }
             // Final Fusillade: a FLAT add on the magazine's last round. It
             // joins `ms_eff` rather than the multishot BUCKET because the
             // evolution grants multishot outright ("+3 Multishot"), not a
@@ -4193,7 +4230,11 @@ pub fn run_once_traced(
             Some(b) if t < fr_reload_expiry => b.value,
             _ => 0.0,
         };
-        let rate = (ap.fire_rate + fr_add) * bar.total_contributions().fire_rate_multiplier;
+        let rate = if params.locks("fire_rate") {
+            ap.fire_rate
+        } else {
+            (ap.fire_rate + fr_add) * bar.total_contributions().fire_rate_multiplier
+        };
         // On a CHARGE weapon the pull costs a draw, not a rate: divide the
         // modded charge time by whatever the live buffs did to the rate
         // (`rate / ap.fire_rate` is exactly that factor, and it is 1.0 when no
@@ -5070,6 +5111,98 @@ mod tests {
              reload wiped it. got {}",
             s.mean_shots
         );
+    }
+
+    /// A LOCK IS ABSOLUTE, AND THE SIM OWNS HALF OF IT (user, 2026-08-04:
+    /// "应该要锁定的，好像没锁").
+    ///
+    /// "Equipping this mod will set weapon's Fire Rate to its default ignoring
+    /// other bonuses, EVEN NEGATIVE EFFECTS" (wiki, Semi-Rifle/Shotgun/Pistol
+    /// Cannonade); Primary and Pistol Acuity say the same of Multishot.
+    /// `resolve` empties the mod bucket, but the weapon's own Frenzy passive is
+    /// a x2.5 in the BUFF BAR and an arcane's multishot is added per shot — both
+    /// past the resolver, both surviving a lock that stopped at the bucket.
+    ///
+    /// The measurable consequence, and why it is worth a test rather than a
+    /// comment: on Dual Toxocyst a Cannonade build kept Frenzy's x2.5 cadence,
+    /// so the sim reported roughly two and a half times the shots the game can
+    /// fire.
+    #[test]
+    fn a_locked_stat_ignores_the_live_sources_too() {
+        let head = vec![BodyPart {
+            name: "head".into(),
+            aim_weight: 1.0,
+            multiplier: 3.0,
+            is_head: true,
+            crit_bonus: true,
+        }];
+        // ---- FIRE RATE: the buff bar's Frenzy multiplier.
+        let fr = |frenzy: bool, locked: bool| {
+            let p = DummyParams {
+                frenzy,
+                locked_stats: if locked { vec!["fire_rate"] } else { Vec::new() },
+                fire_rate: 4.0,
+                magazine_size: 1e9, // no reload to blur the cadence
+                body_parts: head.clone(),
+                duration_secs: 60.0,
+                ..no_status()
+            };
+            monte_carlo(&p, 6, 5).mean_shots
+        };
+        let bare = fr(false, false);
+        assert!(fr(true, false) > bare * 1.5, "Frenzy pays when nothing locks it");
+        assert!(
+            (fr(true, true) - bare).abs() < 1e-9,
+            "under the lock the weapon fires at its DEFAULT cadence: {} vs {bare}",
+            fr(true, true)
+        );
+        // ...and locking it changes nothing on a build that had no buff to lose,
+        // so the assertion above is about the lock and not about the flag.
+        assert!((fr(false, true) - bare).abs() < 1e-9);
+
+        // ---- MULTISHOT: an arcane's live stacks (Primary Overcharge, a
+        // `Passive` trigger — simply ON, so it needs no event to arm).
+        let mut tenno = crate::tenno_data::default_tenno().clone();
+        tenno.energy = 1000.0;
+        tenno.state.energy_pct = 1.0;
+        let over = crate::arcanes_data::for_slot("primary", "primary_overcharge")
+            .expect("primary_overcharge");
+        let fx = over.fx(5, crate::loadout::StackPolicy::Emergent, &[], &tenno);
+        assert!(!fx.buffs.is_empty(), "a 1,000-energy frame arms it");
+        let ms = |locked: bool| {
+            let p = DummyParams {
+                arcane: fx.clone(),
+                locked_stats: if locked { vec!["multishot"] } else { Vec::new() },
+                multishot: 1.0,
+                base_multishot: 1.0,
+                magazine_size: 1e9,
+                body_parts: head.clone(),
+                duration_secs: 30.0,
+                ..no_status()
+            };
+            // Damage stands in for the pellet count: the cadence is untouched,
+            // so a run's damage is proportional to the pellets each pull rolls.
+            monte_carlo(&p, 6, 9).mean_damage
+        };
+        let (open, locked) = (ms(false), ms(true));
+        assert!(open > locked * 2.0, "+350% multishot is 4.5 pellets a pull: {open} vs {locked}");
+        // The locked run is the weapon's DEFAULT pellet count — the same number a
+        // build with no arcane at all fires.
+        let none = {
+            let p = DummyParams {
+                // NO arcane at all — the fixture's own would otherwise be the
+                // difference being measured.
+                arcane: crate::arcanes_data::ArcaneFx::none(),
+                multishot: 1.0,
+                base_multishot: 1.0,
+                magazine_size: 1e9,
+                body_parts: head.clone(),
+                duration_secs: 30.0,
+                ..no_status()
+            };
+            monte_carlo(&p, 6, 9).mean_damage
+        };
+        assert!((locked - none).abs() < 1e-6, "{locked} vs {none}");
     }
 
     /// A FREE shot needs no round in the magazine (user, 2026-07-30). At 100%

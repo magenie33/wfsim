@@ -936,6 +936,31 @@ let rivenPickerSlot = null;
 
 /// Everything equippable on this weapon: the pool, plus this weapon's rivens.
 const poolWithRivens = () => currentPool.concat(rivenMods());
+
+/// The mod ids a set of EVOLUTIONS takes off the weapon.
+///
+/// An equip rule is asked of every firing mode a weapon has, and installing the
+/// Incarnon form adds one — so Dual Toxocyst wears Semi-Pistol Cannonade until
+/// tier 1 goes in and cannot after ("Weapons with an Incarnon mode must have
+/// Semi-Auto trigger type for both firing modes in order to equip this mod",
+/// wiki Semi-Pistol_Cannonade; user, 2026-08-04). The RULE is the engine's
+/// (`pool_for_build`); `evo_forbids` is its answer per evolution, so this is a
+/// lookup rather than a second implementation of it — the last time the client
+/// re-derived a pool rule it went stale the same week (see `applyWeaponInner`).
+const forbiddenByEvos = (sel) => {
+  const map = (weaponInfo($("weapon").value) || {}).evo_forbids || {};
+  const out = new Set();
+  for (const id of Object.values(sel || evoSel)) for (const m of map[id] || []) out.add(m);
+  return out;
+};
+/// What THIS BUILD can equip: the weapon's pool minus what its evolutions cost
+/// it. The optimizer keeps asking `poolWithRivens()` — evolutions are a search
+/// DIMENSION there, so a mod one variant refuses is still in scope for the ones
+/// that do not, and which is which is decided per candidate by the engine.
+const buildPool = () => {
+  const no = forbiddenByEvos();
+  return poolWithRivens().filter((m) => !no.has(m.id));
+};
 /// What may go in the EXILUS slot. Both modules ask this one function: the
 /// builder used `poolWithRivens()` and the optimizer `currentPool`, which
 /// agreed only because no riven is exilus-eligible — a coincidence, not a
@@ -3881,6 +3906,7 @@ function renderPanel(r) {
       <div class="shead"><span class="sk">${tr(row.label)}</span>
         <span class="sv">${row.base !== "—" && row.base !== row.final ? `<span class="sbase">${row.base}</span> → ` : ""}<b>${row.final}</b></span></div>
       ${row.note ? `<div class="srownote">⚙ ${row.note}</div>` : ""}
+      ${row.locked_by ? `<div class="srownote">🔒 ${escHtml(tr("locked at the weapon's default by"))} ${escHtml(row.locked_by)}</div>` : ""}
       ${(row.sources || []).map(srcLine).join("")}
     </div>`;
   const dmgHtml = (p) => (p.damage && p.damage.length)
@@ -4171,18 +4197,27 @@ function gainCandidates(axis) {
     // the build as it stands, and each candidate swaps ONE tier's choice and
     // leaves the rest alone.
     const openTo = evoOpenTo();
+    const equipped = slots.map((s) => s.mod).filter(Boolean);
     const out = [];
     weaponEvos().filter((tier) => tier.tier <= openTo).forEach((tier) => {
       tier.options.forEach((o) => {
         if (evoSel[tier.tier] === o.id) return;
         const next = { ...evoSel, [tier.tier]: o.id };
+        // An evolution that would take an EQUIPPED mod off the weapon is not a
+        // one-step swap — it is that swap plus an eviction, and scoring it
+        // against this build would price a build the game refuses. It is still
+        // choosable; it just has no gain to report until the mod comes out.
+        const no = forbiddenByEvos(next);
+        if (equipped.some((m) => no.has(m))) return;
         out.push({ id: o.id, payload: { evolutions: Object.values(next).filter(Boolean) } });
       });
     });
     return out;
   }
   const cur = slots.map((s) => s.mod);
-  return poolWithRivens()
+  // `buildPool()`, not the weapon's: a scan that ranks a mod this build's
+  // evolutions forbid recommends something the picker will not offer.
+  return buildPool()
     .filter((m) => !cur.includes(m.id))
     .filter((m) => axis.idx !== EXILUS || m.exilus)
     .map((m) => { const next = cur.slice(); next[axis.idx] = m.id; return { id: m.id, payload: { mods: next.filter(Boolean) } }; })
@@ -4527,7 +4562,7 @@ function renderMenu(slotIdx, query) {
   // was never load-bearing: every placed mod already carries a "slot N" chip
   // that says where it is (user, 2026-08-01: the sort follows one rule).
   const group = (m) => (slots[slotIdx].mod === m.id ? 0 : 1);
-  const hits = poolWithRivens()
+  const hits = buildPool()
     // The exilus slot takes what `exilusPool()` says, which is the same
     // question the optimizer's exilus scope asks.
     .filter((m) => slotIdx !== EXILUS || m.exilus)
@@ -4871,6 +4906,20 @@ function renderEvo() {
     // selected-but-void would show a build the game cannot make, and the
     // engine would price perks the weapon never reached.
     if (!evoSel[tier]) tiers.forEach((x) => { if (x.tier > tier) evoSel[x.tier] = null; });
+    // ...and an installed form takes with it every mod that needed the weapon
+    // not to have it (a Cannonade under the Incarnon form). Said out loud, never
+    // silently: the slot emptying under you is exactly the kind of change a
+    // build must not make without telling you (user, 2026-08-04).
+    const no = forbiddenByEvos();
+    const evicted = slots
+      .filter((s) => s.mod && no.has(s.mod))
+      .map((s) => (modById(s.mod) || {}).name || s.mod);
+    if (evicted.length) {
+      slots = slots.map((s) => (s.mod && no.has(s.mod) ? { ...s, mod: null, rank: null } : s));
+      presetToast(`${tr("unequipped")}: ${evicted.join(", ")} — ${
+        tr("it needs the same trigger on every firing mode")}`);
+      renderMods();
+    }
     // Redraw the whole ladder, not just this row: a pick opens (or a removal
     // shuts) every tier below it.
     renderEvo(); refreshPanel();
@@ -4935,14 +4984,21 @@ const defaultHeadshotPct = (w) => ((w || {}).sentinel ? 0 : META.defaults.headsh
 // The Form control, ALWAYS drawn: several forms is a dropdown, one form is
 // still stated rather than left silent — a weapon with a single form is being
 // fired in it, and the panel should say so (user, 2026-07-31).
+// A third element is the REASON this form is unavailable to the build in front
+// of you (`simFormOpts`) — the option stays listed and greyed, because "the
+// weapon has no Incarnon form while that mod is on it" is information, and a
+// vanished option is not.
 const formField = (formOpts, current) => {
   if (!formOpts.length) return "";
   const body = formOpts.length > 1
-    ? `<select data-k="form">${formOpts.map(([id, label]) =>
-        `<option value="${id}" ${current === id ? "selected" : ""}>${escHtml(label)}</option>`).join("")}
+    ? `<select data-k="form">${formOpts.map(([id, label, off]) =>
+        `<option value="${id}" ${current === id ? "selected" : ""}${off ? " disabled" : ""}${
+          off ? ` title="${escHtml(off)}"` : ""}>${escHtml(label)}${off ? " ⊘" : ""}</option>`).join("")}
        </select>`
     : `<span class="fixed-val">${escHtml(formOpts[0][1])}</span>`;
-  return `<label>${escHtml(tr("Form"))} ${body}</label>`;
+  const why = (formOpts.find(([id]) => id === current) || [])[2];
+  return `<label>${escHtml(tr("Form"))} ${body}</label>${
+    why ? `<span class="warn">⊘ ${escHtml(why)}</span>` : ""}`;
 };
 
 const defaultFormId = (w, formOpts) =>
@@ -5210,9 +5266,29 @@ function renderEnemyMenu(query) {
 // STABLE, which is the point: re-seeding the choice every time tier 1 is
 // touched would move the selection under someone who had already made it.
 function simFormOpts(w) {
+  // ...but a form the BUILD rules out is offered DISABLED, not silently
+  // dropped. Asking for a form implies its unlock (see `parse_fight`), and
+  // installing that unlock takes a Cannonade off the weapon — so a build
+  // wearing one has no Incarnon form to fire, and the sim will refuse the run
+  // (user, 2026-08-04). Shown greyed with the reason, and NOT reseeded: the
+  // simulator owns `sim.form`, and a build quietly moving it is exactly the
+  // cross-collection write the presets rule forbids. The build says what it
+  // costs; changing the fight stays the visitor's.
+  const cost = (w.unlock_evo && (w.evo_forbids || {})[w.unlock_evo]) || [];
+  const blocker = slots
+    .map((s) => s.mod)
+    .filter((m) => m && cost.includes(m))
+    .map((m) => (modById(m) || {}).name || m)[0];
+  const off = blocker
+    ? `${blocker} ${tr("needs the same trigger on every firing mode, so this build has no Incarnon form")}`
+    : null;
   const formOpts = [
-    ...(w.has_cycle ? [["incarnon_cycle", tr("Incarnon cycle")]] : []),
-    ...(w.forms || []).map((f) => [f.id, w.has_cycle ? `${tr(f.name)} ${tr("only")}` : tr(f.name)]),
+    ...(w.has_cycle ? [["incarnon_cycle", tr("Incarnon cycle"), off]] : []),
+    ...(w.forms || []).map((f) => [
+      f.id,
+      w.has_cycle ? `${tr(f.name)} ${tr("only")}` : tr(f.name),
+      f.gauge_switched ? off : null,
+    ]),
   ];
   // A stale preset (or another weapon's choice, or the "default" seed) names
   // a form this weapon does not list — fall back to how this weapon is

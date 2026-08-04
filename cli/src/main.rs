@@ -51,6 +51,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         fire_rate: 1.0,
         charge_seconds: None, // not a charge weapon (that is a bow's cadence)
         frenzy: false,
+        locked_stats: Vec::new(),
         locked_buffs: Vec::new(),
         cycle: None,
         magazine_size: 12.0,
