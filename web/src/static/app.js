@@ -4992,22 +4992,29 @@ function renderScenarioFields(ids, opts = {}) {
     if (pick && opts.readonly) pick.disabled = true;
   }
 
-  // ---- 2. THE TENNO: who is holding the weapon, and what they are doing --
-  // Block 1 is the other actor; this is you. It grew from "technique" when
-  // the engine got a Tenno (user, 2026-08-02): the form you fire, how you
-  // fire it, the states a mod card gates on, and the Warframe behind it are
-  // all one answer to "who is shooting". A neutral frame wears nothing and is
-  // doing nothing, which is why the states are off and the stats are 0 —
-  // and why the mods and arcanes that read them contribute nothing until you
-  // say otherwise, on the panel, in the sim and in the search alike.
+  // ---- 2. THE WIELDER: whoever is holding the weapon, and what they do ---
+  // Block 1 is the other actor; this is your side of the fight. It grew from
+  // "technique" when the engine got a second actor (user, 2026-08-02): the
+  // form you fire, how you fire it, the states a mod card gates on, and the
+  // Warframe behind it are all one answer to "who is shooting". A neutral
+  // frame wears nothing and is doing nothing, which is why the states are off
+  // and the stats are 0 — and why the mods and arcanes that read them
+  // contribute nothing until you say otherwise, on the panel, in the sim and
+  // in the search alike.
+  //
+  // NOT "the Tenno" (user, 2026-08-04). A ROBOTIC weapon is not held by one:
+  // the wiki is explicit that MOAs "share Robotic weapons with Sentinels and
+  // equip their weapons", so the wielder of Verglas Prime is a Sentinel or a
+  // MOA. Naming the section after the commonest case made the model say
+  // something false about every companion weapon.
   const formOpts = simFormOpts(w);
   if (ids.technique) {
     $(ids.technique).innerHTML = `
       ${formField(formOpts, sim.form)}
       ${aimField(w, sim)}
       <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>
-      <label class="check" title="${escHtml(tr("Warframe state: mods that only pay while Invisible (Spectral Serration) grant nothing when this is off"))}"><input type="checkbox" data-k="invisible"${sim.invisible ? " checked" : ""}> ${escHtml(tr("Invisible"))}</label>
-      <label class="check" title="${escHtml(tr("Warframe state: what a card means by \"while Airborne\""))}"><input type="checkbox" data-k="airborne"${sim.airborne ? " checked" : ""}> ${escHtml(tr("Airborne"))}</label>
+      <label class="check" title="${escHtml(tr("the wielder's state: mods that only pay while Invisible (Spectral Serration) grant nothing when this is off"))}"><input type="checkbox" data-k="invisible"${sim.invisible ? " checked" : ""}> ${escHtml(tr("Invisible"))}</label>
+      <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"while Airborne\""))}"><input type="checkbox" data-k="airborne"${sim.airborne ? " checked" : ""}> ${escHtml(tr("Airborne"))}</label>
       <label title="${escHtml(tr("your Warframe's armor, buffs included — Primary Bulwark pays +1% damage per point past 1,000. 0 = no frame"))}">${escHtml(tr("WF Armor"))} <input type="number" data-k="wf_armor" min="0" max="100000" step="1" value="${sim.wf_armor || 0}"></label>
       <label title="${escHtml(tr("your Warframe's MAX energy — Primary Overcharge turns 35% of it into multishot. 0 = no frame"))}">${escHtml(tr("WF Energy"))} <input type="number" data-k="wf_energy" min="0" max="100000" step="1" value="${sim.wf_energy || 0}"></label>`;
   }

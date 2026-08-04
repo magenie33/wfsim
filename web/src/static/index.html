@@ -183,17 +183,17 @@
         <!-- Shown only while an OFFICIAL scenario is open: it says why the
              controls below are inert and where the editable copy comes from. -->
         <div id="sim-official" class="official-note" hidden></div>
-        <h3 class="sim-h" data-i18n>1 · The fight <span class="sim-hint">who you are shooting at, where, and for how long</span></h3>
+        <h3 class="sim-h" data-i18n>1 · The fight <span class="sim-hint" data-i18n>who you are shooting at, where, and for how long</span></h3>
         <div id="sim-target" class="sub-block"></div>
 <!-- Block 1 is the other actor; this is YOU. What the player is doing
              and what frame is behind the gun, which is one answer to "who is
              shooting". It comes before Buffs because it GATES them: aiming
              decides whether the while-aiming mods pay out at all. -->
-        <h3 class="sim-h" data-i18n>2 · The Tenno <span class="sim-hint">who is holding the weapon and what they are doing — this gates the buffs below</span></h3>
+        <h3 class="sim-h" data-i18n>2 · The wielder <span class="sim-hint" data-i18n>whoever is holding the weapon and what they are doing — this gates the buffs below</span></h3>
         <div id="sim-technique" class="field-grid"></div>
         <!-- NOT a technique: nobody plays "infinite ammo". These say what the
              run does not model, which is a different kind of claim. -->
-        <h3 class="sim-h" data-i18n>3 · Limits <span class="sim-hint">what this run is allowed to assume</span></h3>
+        <h3 class="sim-h" data-i18n>3 · Limits <span class="sim-hint" data-i18n>what this run is allowed to assume</span></h3>
         <div id="sim-limits" class="field-grid"></div>
         <!-- What this block sets is the START of the run, not the buff's
              worth: the fight goes on to grant and decay these on their own
@@ -203,7 +203,7 @@
         <h3 class="sim-h" data-i18n>4 · Buffs <span class="sim-hint" data-i18n>the stacks the run STARTS with — the fight still grants and decays them on their own triggers</span>
           <button id="sim-buffs-all" class="ghost-btn small"></button></h3>
         <div id="sim-buffs"></div>
-        <h3 class="sim-h" data-i18n>5 · Simulation <span class="sim-hint">how many times to replay it, and what to read off — the optimizer's final round uses the same count</span></h3>
+        <h3 class="sim-h" data-i18n>5 · Simulation <span class="sim-hint" data-i18n>how many times to replay it, and what to read off — the optimizer's final round uses the same count</span></h3>
         <div id="sim-run" class="field-grid"></div>
         <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
       </div>
@@ -243,7 +243,7 @@
         <!-- ONE preset per weapon: the whole search (scope + final round).
              Not the scenario — the optimizer runs the simulator's. -->
         <div class="preset-bar" id="preset-bar-optimizer"></div>
-        <h3 class="sim-h" data-i18n>Mods <span class="sim-hint">search by name or effect; mark each as pool (search) or required</span></h3>
+        <h3 class="sim-h" data-i18n>Mods <span class="sim-hint" data-i18n>search by name or effect; mark each as pool (search) or required</span></h3>
         <div class="opt-mods-head">
           <input id="opt-mod-filter" type="text" placeholder="search mods by name or effect…" data-i18n-ph autocomplete="off">
           <label class="opt-size" data-i18n>Mods / build <input id="opt-min" type="number" min="1" max="8" value="1" title="the fewest a searched build may carry — set both ends to 8 to search only full builds" data-i18n-title> – <input id="opt-size" type="number" min="1" max="8" value="8" title="the most a searched build may carry" data-i18n-title></label>
@@ -256,16 +256,16 @@
              already hid the three matching BLOCKS; these are the same three
              facts, asked in the module that searches them. -->
         <div id="opt-exilus-sect">
-          <h3 class="sim-h" data-i18n>Exilus slot <span class="sim-hint">the +1 slot — pool = slot options, req = pin one; nothing marked = the slot stays empty</span></h3>
+          <h3 class="sim-h" data-i18n>Exilus slot <span class="sim-hint" data-i18n>the +1 slot — pool = slot options, req = pin one; nothing marked = the slot stays empty</span></h3>
           <div id="opt-exilus" class="combo-menu opt-modlist"></div>
         </div>
         <div id="opt-arcanes-sect">
-          <h3 class="sim-h" data-i18n>Arcanes <span class="sim-hint">pool = searched options, req = pin the slot</span></h3>
+          <h3 class="sim-h" data-i18n>Arcanes <span class="sim-hint" data-i18n>pool = searched options, req = pin the slot</span></h3>
           <input id="opt-arc-filter" type="text" placeholder="search arcanes by name or effect…" data-i18n-ph autocomplete="off">
           <div id="opt-arcanes" class="combo-menu opt-modlist"></div>
         </div>
         <div id="opt-evos-sect">
-          <h3 class="sim-h" data-i18n>Evolutions <span class="sim-hint">per tier: pool = searched options, req = pin</span></h3>
+          <h3 class="sim-h" data-i18n>Evolutions <span class="sim-hint" data-i18n>per tier: pool = searched options, req = pin</span></h3>
           <div id="opt-evos"></div>
         </div>
         <!-- HOW to search, closing the scope. The page is two halves and this
@@ -275,7 +275,7 @@
              SIMULATOR and is shown read-only (user, 2026-08-02).
              Runs are deliberately not here — the last round uses the fight's
              own count, so there is one answer to "how hard do we measure". -->
-        <h3 class="sim-h" data-i18n>Search <span class="sim-hint">how many winners to keep, and how much of the machine to spend — the final round runs each of them at the fight's own run count</span></h3>
+        <h3 class="sim-h" data-i18n>Search <span class="sim-hint" data-i18n>how many winners to keep, and how much of the machine to spend — the final round runs each of them at the fight's own run count</span></h3>
         <div id="opt-search" class="field-grid">
           <label data-i18n>Finalists <input id="opt-finalists" type="number" min="1" max="100" value="10"></label>
           <label data-i18n>CPU threads <input id="opt-threads" type="number" min="0" max="128" placeholder="auto"></label>
@@ -283,14 +283,14 @@
         <!-- The SCENARIO is the simulator's; the optimizer points at it
              rather than keeping a second one, so the winner is scored under
              the fight the replay will run. -->
-        <h3 class="sim-h" data-i18n>The fight <span class="sim-hint">read-only — it belongs to the simulator, which is where it is edited</span></h3>
+        <h3 class="sim-h" data-i18n>The fight <span class="sim-hint" data-i18n>read-only — it belongs to the simulator, which is where it is edited</span></h3>
         <div class="preset-bar" id="opt-scenario-ref"></div>
         <div id="opt-target" class="sub-block"></div>
-        <h3 class="sim-h" data-i18n>The Tenno <span class="sim-hint">must match how you intend to play it — the winner is scored under this player</span></h3>
+        <h3 class="sim-h" data-i18n>The Tenno <span class="sim-hint" data-i18n>must match how you intend to play it — the winner is scored under this player</span></h3>
         <div id="opt-technique" class="field-grid"></div>
-        <h3 class="sim-h" data-i18n>Limits <span class="sim-hint">what the search is allowed to assume</span></h3>
+        <h3 class="sim-h" data-i18n>Limits <span class="sim-hint" data-i18n>what the search is allowed to assume</span></h3>
         <div id="opt-limits" class="field-grid"></div>
-        <h3 class="sim-h" data-i18n>Buffs <span class="sim-hint">read-only — the fight's own, applied to every candidate; a buff nobody set starts where it would in a fight</span></h3>
+        <h3 class="sim-h" data-i18n>Buffs <span class="sim-hint" data-i18n>read-only — the fight's own, applied to every candidate; a buff nobody set starts where it would in a fight</span></h3>
         <div id="opt-buffs"></div>
         <div id="opt-estimate" class="opt-est"></div>
         <button id="run-opt" class="run-btn" data-i18n>Run Optimizer</button>

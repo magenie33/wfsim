@@ -1,3 +1,17 @@
+# THE WIELDER, not necessarily a Tenno (2026-08-04). This file is named for the
+# commonest case and the UI is not: a ROBOTIC weapon is carried by a companion,
+# and the wiki is explicit — MOAs "share Robotic weapons with Sentinels and
+# equip their weapons" (MOA (Companion)), so Verglas Prime's wielder is a
+# Sentinel or a MOA. What this entry describes is whoever is holding the gun:
+# their state (aiming, invisible, airborne) and, where there IS a Warframe
+# behind them, its armor and energy.
+#
+# The file and the engine type still say `tenno`. Renaming them is a real
+# refactor rather than a rename — `tenno` is also DE's own word for the FACTION
+# and appears in every `internal_name` (/Lotus/Weapons/Tenno/...), and the wire
+# fields `wf_armor`/`wf_energy` sit inside stored presets, so a rename needs a
+# migration. Recorded here so the two vocabularies are at least reconciled in
+# writing until then.
 # The TENNO — the player side of a fight.
 #
 # The sim has always modelled exactly one actor: the target. Everything that

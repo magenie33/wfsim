@@ -60,7 +60,31 @@ ui:
   "Arch-Guns": 空战武器
   "Sentinel Weapons": 守护武器
   "Other": 其他
-  "2 · Technique": 2 · 手法
+  # The section was renamed from "2 · Technique" to "2 · The Tenno" and then to
+  # "2 · The wielder" (2026-08-04): a ROBOTIC weapon is held by a Sentinel or a
+  # MOA, not by a Tenno, so naming the section after the commonest case said
+  # something false about every companion weapon.
+  "2 · The wielder": 2 · 使用者
+  # The optimizer tab's section hints. They were plain text until 2026-08-04 —
+  # only the `sim-hint` spans that happened to carry `data-i18n` were ever
+  # translated, and the flag on the enclosing h3 does not reach a child element.
+  "search by name or effect; mark each as pool (search) or required": 按名称或效果搜索；把每张标成候选池（搜索）或必带
+  "the +1 slot — pool = slot options, req = pin one; nothing marked = the slot stays empty": 专用槽 —— 候选池 = 该槽的可选项，必带 = 钉死一张；一张都不标 = 该槽留空
+  "pool = searched options, req = pin the slot": 候选池 = 参与搜索的选项，必带 = 钉死这个槽
+  "per tier: pool = searched options, req = pin": 逐层：候选池 = 参与搜索的选项，必带 = 钉死
+  "how many winners to keep, and how much of the machine to spend — the final round runs each of them at the fight's own run count": 保留多少个优胜者，以及占用多少机器 —— 最终轮按这场仗自己的次数逐个跑
+  "read-only — it belongs to the simulator, which is where it is edited": 只读 —— 它属于模拟器，只在那里编辑
+  "must match how you intend to play it — the winner is scored under this player": 必须和你打算怎么玩一致 —— 优胜者是在这个使用者之下评分的
+  "what the search is allowed to assume": 这次搜索被允许做哪些假设
+  "read-only — the fight's own, applied to every candidate; a buff nobody set starts where it would in a fight": 只读 —— 用这场仗自己的设置，套到每个候选上；没人设过的 buff 就从它在战斗中该有的位置开始
+  "who you are shooting at, where, and for how long": 你在打谁、在什么条件下、打多久
+  "what this run is allowed to assume": 这次模拟被允许做哪些假设
+  "how many times to replay it, and what to read off — the optimizer's final round uses the same count": 重放多少次、读哪个数 —— 优化器的最终轮用的是同一个次数
+  "your Warframe's armor, buffs included — Primary Bulwark pays +1% damage per point past 1,000. 0 = no frame": 你战甲的护甲值，含增益 —— 主要壁垒每超出 1,000 点给 +1% 伤害。填 0 表示没有战甲
+  "your Warframe's MAX energy — Primary Overcharge turns 35% of it into multishot. 0 = no frame": 你战甲的能量上限 —— 主要过载把其中 35% 转成多重射击。填 0 表示没有战甲
+  "whoever is holding the weapon and what they are doing — this gates the buffs below": 握着这把武器的那一方，以及他在做什么 —— 下面的 buff 由此决定是否生效
+  "the wielder's state: mods that only pay while Invisible (Spectral Serration) grant nothing when this is off": 使用者状态：只在隐身时生效的 MOD（幽魂锯齿）关掉这个就什么都不给
+  "the wielder's state: what a card means by \"while Airborne\"": 使用者状态：卡面上说的「滞空时」指的就是这个
   "3 · Buffs": 3 · 增益
   "4 · Simulation": 4 · 模拟
   "Technique": 手法
