@@ -1,0 +1,22 @@
+# CONCLAVE-ORIGIN BUT PvE-LEGAL — named in Rifle_Mods' "Assault rifle-only"
+# list and not tagged "Exclusive to PvP" (checked 2026-08-05).
+id: overview
+name: Overview
+rarity: uncommon
+polarity: naramon
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/HigherAirAimFoVRifleMod
+description: "X% Zoom while Aim Gliding"
+
+effects:
+  # NEGATIVE zoom, which is the point: less magnification is a wider field of
+  # view. Zoom carries no damage on an assault rifle (a sniper's zoom TIERS do,
+  # and that is a different mechanic on a different weapon class).
+  - kind: zoom_bonus
+    rank0: -0.1
+    rankMax: -0.6
+
+source:
+  url: https://wiki.warframe.com/w/Overview

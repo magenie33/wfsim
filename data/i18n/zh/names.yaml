@@ -35,6 +35,9 @@ weapons:
   # named separately in the UI, so neither gets an invented suffix.
   larkspur_prime: 翠雀 Prime
   larkspur_prime_charged: 翠雀 Prime
+  gotva_prime: 骨葬 Prime
+  karak_wraith: 卡拉克·亡魂
+  prisma_grinlok: 棱晶·葛恩火枪
 
 enemies:
   thrax_centurion: 凶魂百夫长
@@ -350,6 +353,14 @@ mods:
   vital_sense: 弱点感应
   wildfire: 野火
   zodiac_shred: 黄道碎裂
+  guided_ordnance: 制导弹药
+  gun_glide: 恒稳枪杆
+  overview: 纵观全局
+  primed_rifle_ammo_mutation: 步枪弹药转换 Prime
+  rifle_ammo_mutation: 步枪弹药转换
+  spring_loaded_chamber: 簧压膛室
+  tactical_reload: 机动装填
+  tainted_mag: 腐败弹匣
 
 arcanes:
   akimbo_slip_shot: 双枪·滑射

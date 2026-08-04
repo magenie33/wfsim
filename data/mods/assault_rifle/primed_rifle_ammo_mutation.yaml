@@ -1,0 +1,22 @@
+id: primed_rifle_ammo_mutation
+name: Primed Rifle Ammo Mutation
+rarity: legendary
+polarity: naramon
+# ZERO base drain, and that is the wiki's number and WFCD's alike — a Primed
+# mutation costs nothing to fit at any rank.
+base_drain: 0
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponRifleConvertAmmoModExpert
+description: "Converts Secondary ammo pickups to X% of Ammo Pick Up."
+
+effects:
+  - kind: ammo_conversion
+    from: secondary
+    rank0: 0.08
+    rankMax: 0.92
+
+family: rifle_ammo_mutation
+incompatible_with: [rifle_ammo_mutation]
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Rifle_Ammo_Mutation

@@ -12,6 +12,12 @@ weapons:
   boar_prime_incarnon: BoarPrime.png
   cernos_prime: CernosPrime.png
   cernos_prime_uncharged: CernosPrime.png
+  # The three assault rifles (2026-08-05). Gotva Prime's file is named after
+  # its internal path (GrnOrokinRifle), not its display name — the CDN keys on
+  # DE's own asset name.
+  gotva_prime: GrnOrokinRifle.png
+  karak_wraith: KarakWraith.png
+  prisma_grinlok: PrismaGrinlok.png
   dual_toxocyst: DualToxocyst.png
   dual_toxocyst_incarnon: DualToxocyst.png
   laetum: ZarimanHeavyPistol.png
@@ -32,6 +38,16 @@ mods:
   # has the card. `wiki:` says so explicitly — the old rule was "the name
   # contains a parenthesis", which is a property of some filenames and not a
   # statement about where the file lives.
+  # Assault-rifle-only pool (2026-08-05). Rifle Ammo Mutation and its Primed
+  # version share one card art, which is DE's own doing.
+  guided_ordnance: AccuracyWhileAimingMods.jpg
+  gun_glide: LessRecoilMoreAccuracyRifleMod.jpg
+  overview: HigherAirAimFoVRifleMod.jpg
+  primed_rifle_ammo_mutation: RifleAmmoMutatorMod.jpg
+  rifle_ammo_mutation: RifleAmmoMutatorMod.jpg
+  spring_loaded_chamber: FireRateWhileAimingMods.jpg
+  tactical_reload: PassiveReloadRifleMod.jpg
+  tainted_mag: CorruptedMaxClipForReloadSpeedMod.jpg
   accelerated_blast: ShotgunAcceleratedBlast.jpg
   accelerated_isotope: RadiationFireratePistolMod.jpg
   aerial_ace: JumpRefreshOnKillRifleMod.jpg

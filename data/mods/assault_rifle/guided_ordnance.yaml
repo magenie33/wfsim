@@ -1,0 +1,28 @@
+id: guided_ordnance
+name: Guided Ordnance
+rarity: uncommon
+polarity: madurai
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Rifle/Event/AccuracyWhileAimingRifleMod
+# DE's card reads "On Hit:\n+30% Accuracy when Aiming for 9s" — TWO numbers,
+# and the duration is not an effect value, so `fill_x` has nothing to put in
+# its place. An unfilled X is a rendering failure the pool asserts against, and
+# hardcoding "9s" would be wrong at every rank below max (it ramps 2s -> 9s).
+# The duration clause is therefore left OFF this card rather than shown wrong.
+description: "On Hit:\n+X% Accuracy when Aiming"
+
+effects:
+  # Accuracy is a real stat with no SINGLE-TARGET damage payload — the arena
+  # has no spread model, and a shot that lands is a shot that lands. Recorded
+  # rather than thrown away, the same treatment Agile Aim gets.
+  #
+  # The card's TRIGGER (on hit, 9 s) is not modelled: an indirect stat has no
+  # uptime to compute against, so recording the max value is recording the mod.
+  - kind: accuracy_bonus
+    rank0: 0.05
+    rankMax: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Guided_Ordnance

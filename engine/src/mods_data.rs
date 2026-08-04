@@ -900,13 +900,20 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 7] = [
+        const EXPECTED: [(&str, &str, &[&str]); 10] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
             ("boar_prime", "auto", &[]),                       // full-auto shotgun
             ("cernos_prime", "charge", &[]),                   // a bow is not semi-auto
             ("torid", "semi_auto", &["semi_rifle_cannonade"]), // semi-auto launcher, rifle pool
+            // THE ASSAULT RIFLES (2026-08-05). Semi-Pistol/Shotgun Cannonade
+            // are pistol and shotgun mods, so a rifle never sees them; the
+            // RIFLE one turns on the listed trigger, which is the whole point
+            // of having both an auto and a semi-auto rifle in the batch.
+            ("gotva_prime", "auto", &[]),                      // full-auto rifle
+            ("karak_wraith", "auto", &[]),                     // full-auto rifle
+            ("prisma_grinlok", "semi_auto", &["semi_rifle_cannonade"]),
             ("dual_toxocyst", "semi_auto", &["semi_pistol_cannonade"]),
             ("laetum", "semi_auto", &["semi_pistol_cannonade"]),
             ("verglas_prime", "held", &[]),                    // continuous sentinel weapon
@@ -1036,10 +1043,19 @@ mod tests {
     /// five below are the ones the table leaves unmarked.
     #[test]
     fn only_pve_legal_conclave_mods_are_in_the_pools() {
-        const PVE_LEGAL: [&str; 9] = [
+        const PVE_LEGAL: [&str; 12] = [
             "agile_aim", "twitch", "eject_magazine", "reflex_draw",
             // Shotgun, from `Shotgun_Mods` (2026-08-03).
             "broad_eye", "double_barrel_drift", "lock_and_load", "snap_shot", "soft_hands",
+            // ASSAULT RIFLE, from `Rifle_Mods` (2026-08-05). The RENDERED page
+            // is what carries the tags — the raw wikitext is template
+            // transclusions and names none of these mods, so a check against
+            // `?action=raw` would have found nothing and concluded nothing.
+            // Seven mods on that page are tagged "Exclusive to PvP" and two of
+            // them are assault-rifle-only (Recover, Vanquished Prey); those
+            // were NOT imported. The page's own "Assault rifle-only" list is
+            // the positive statement, and it names these three.
+            "gun_glide", "overview", "tactical_reload",
         ];
         let mut found: Vec<String> = crate::data::files_under("mods/")
             .filter(|(p, _)| p.ends_with(".yaml"))

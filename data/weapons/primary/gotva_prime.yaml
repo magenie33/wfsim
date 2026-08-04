@@ -1,0 +1,62 @@
+id: gotva_prime
+name: Gotva Prime
+slot: primary
+# THE FIRST ASSAULT RIFLE IN THE ROSTER. Class "Rifle" on the wiki, which is
+# what carries `CompatibilityTags = { "ASSAULT_AMMO" }` — the tag gating the 15
+# mods no weapon here could reach before (Tactical Reload, Spring-Loaded
+# Chamber, Maximum Capacity, …). Our other two rifle-pool weapons are a
+# launcher and a bow, so the tag had never applied to anything.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+# Rifle mods, plus the assault-rifle-only pool. `primary` is the class-wide
+# pool every primary draws from.
+mod_pools: [primary, rifle, assault_rifle]
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100
+disposition: 0.85            # riven disposition
+polarities: [madurai, madurai, naramon]
+exilus_polarity: naramon
+riven_family: Gotva
+traits: [prime]
+introduced: "33.6.6"
+internal_name: /Lotus/Weapons/Grineer/LongGuns/GrnOrokinRifle/GrnOrokinRifleWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 840
+ammo_pickup: 80
+magazine: 84
+reload_seconds: 2.0
+
+# Condition Overload: NO row in the wiki's CO catalog (`Condition Overload
+# (Mechanic)`, re-read 2026-08-05), and absence there is a POSITIVE statement —
+# the table enumerates the exceptions, so "not listed" means the ordinary
+# Additive behaviour at the full +100% on the full base. See docs/MECHANICS.md.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 13.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.23
+  crit_multiplier: 2.5
+  status_chance: 0.27
+  # Innate punch-through, and the roster's first fractional one. NOT read by
+  # the sim (there is no spatial model), recorded because the shot combo and
+  # multi-hit mechanics that would read it are coming with the sniper.
+  punch_through_m: 0.5
+  damage: { puncture: 25.0 }   # pure Puncture, total 25
+
+source:
+  url: https://wiki.warframe.com/w/Gotva_Prime
+  # Stats from the wiki Lua module via private/scripts/wiki_weapons.py, then
+  # `--check` against WFCD: magazine, reload, mastery, accuracy, disposition,
+  # crit, status, fire rate and the per-attack damage all agree. WFCD's flat
+  # `damage` dict is NOT consulted — it is wrong for 140 of 158 primaries
+  # (docs/DATA_SOURCES.md).

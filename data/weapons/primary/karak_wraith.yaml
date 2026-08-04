@@ -1,0 +1,49 @@
+id: karak_wraith
+name: Karak Wraith
+slot: primary
+# The plain auto-rifle baseline: MR7, no gimmick, the shape most players learn
+# the game on. Worth having precisely because it is unremarkable — a roster of
+# only outliers cannot show what a mod is worth on an ordinary gun.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]
+mastery_rank: 7
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 28.6
+disposition: 1.28            # riven disposition
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Karak
+traits: [wraith, invasion_reward, grineer]
+introduced: "16.5"
+internal_name: /Lotus/Weapons/Grineer/LongGuns/GrineerM16Homage/KarakWraith
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 60
+reload_seconds: 2.0
+
+# Condition Overload: NO row in the wiki's CO catalog (`Condition Overload
+# (Mechanic)`, re-read 2026-08-05) — ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 11.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.13
+  crit_multiplier: 2.0
+  status_chance: 0.25
+  punch_through_m: 0.0
+  # An even three-way IPS split, which no other roster weapon has.
+  damage: { impact: 13.95, puncture: 9.3, slash: 7.75 }   # total 31
+
+source:
+  url: https://wiki.warframe.com/w/Karak_Wraith

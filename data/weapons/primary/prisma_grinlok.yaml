@@ -1,0 +1,50 @@
+id: prisma_grinlok
+name: Prisma Grinlok
+slot: primary
+# A SEMI-AUTO rifle. The roster's rifles are otherwise full-auto, and the
+# trigger is what decides cadence, so this is the entry that proves the axis is
+# not shotgun-only.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]
+mastery_rank: 11
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 32
+disposition: 1.25            # riven disposition
+polarities: [madurai]
+exilus_polarity: madurai
+riven_family: Grinlok
+traits: [prisma, baro]
+introduced: "24.4"
+internal_name: /Lotus/Weapons/Grineer/LongGuns/GrineerLeverActionRifle/PrismaGrinlokWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 21
+reload_seconds: 1.7
+
+# Condition Overload: NO row in the wiki's CO catalog (`Condition Overload
+# (Mechanic)`, re-read 2026-08-05) — ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 1.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.21
+  # 2.9x, the highest crit multiplier in the roster — the reason this one is
+  # worth having beside the two autos rather than a third of the same shape.
+  crit_multiplier: 2.9
+  status_chance: 0.37
+  punch_through_m: 0.0
+  damage: { impact: 74.8, puncture: 18.7, slash: 93.5 }   # total 187
+
+source:
+  url: https://wiki.warframe.com/w/Prisma_Grinlok

@@ -1,0 +1,23 @@
+id: tainted_mag
+name: Tainted Mag
+rarity: rare
+polarity: naramon
+base_drain: 4                 # max drain 14 at rank 10
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/CorruptedMaxClipReloadSpeedRifle
+description: "+X% Magazine Capacity\nX% Reload Speed"
+
+effects:
+  # A CORRUPTED mod: the upside and the downside are one card and both are
+  # real. A bigger magazine is more shots between reloads; a slower reload is
+  # more dead time when one comes. Which wins depends on the weapon, which is
+  # exactly the question the optimizer exists to answer.
+  - kind: magazine_capacity_bonus
+    rank0: 0.06
+    rankMax: 0.66
+  - kind: reload_speed_bonus
+    rank0: -0.03
+    rankMax: -0.33
+
+source:
+  url: https://wiki.warframe.com/w/Tainted_Mag

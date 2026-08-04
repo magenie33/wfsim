@@ -1,0 +1,24 @@
+id: rifle_ammo_mutation
+name: Rifle Ammo Mutation
+rarity: rare
+polarity: naramon
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponRifleConvertAmmoMod
+description: "Converts Secondary ammo pickups to X% of Ammo Pick Up."
+
+effects:
+  # The sim models no ammo PICKUPS, so a conversion has nothing to convert.
+  # Recorded because it is real and because the day pickups exist this is the
+  # mod that reads them.
+  - kind: ammo_conversion
+    from: secondary
+    rank0: 0.08
+    rankMax: 0.5
+
+family: rifle_ammo_mutation
+incompatible_with: [primed_rifle_ammo_mutation]
+
+source:
+  url: https://wiki.warframe.com/w/Rifle_Ammo_Mutation

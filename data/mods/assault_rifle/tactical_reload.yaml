@@ -1,0 +1,23 @@
+# CONCLAVE-ORIGIN BUT PvE-LEGAL — named in Rifle_Mods' "Assault rifle-only"
+# list (and again under Exilus) and not tagged "Exclusive to PvP"
+# (checked 2026-08-05).
+id: tactical_reload
+name: Tactical Reload
+rarity: rare
+polarity: naramon
+base_drain: 6                 # max drain 9 at rank 3
+max_rank: 3
+exilus: true
+internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/PassiveReloadMod
+description: "+X% Magazine Reloaded/s when Holstered"
+
+effects:
+  # HOLSTERED reload. The sim fires one weapon for the whole engagement and
+  # never holsters it, so this grants nothing here — `holstered_reload` is the
+  # stat that says so rather than a value silently folded into reload speed.
+  - kind: holstered_reload
+    rank0: 0.05
+    rankMax: 0.2
+
+source:
+  url: https://wiki.warframe.com/w/Tactical_Reload
