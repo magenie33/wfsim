@@ -35,3 +35,6 @@ entries:
     mods: [amalgam_serration, critical_delay, galvanized_chamber, hellfire, magnetic_capacity, malignant_force, primed_firestorm, rime_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_deadhead]
+  - weapon: torid
+    score: 0.762187
+    mods: [point_strike, serration, split_chamber, vital_sense]
