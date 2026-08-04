@@ -52,13 +52,26 @@ jobs:
             target
           key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
 
+      # NOT CONFIGURED YET IS NOT A FAILURE. Without the KV binding there is
+      # nothing to read, and a job that fails hourly for a reason nobody is
+      # acting on trains you to ignore the one that matters.
+      - name: is the board wired up?
+        id: wired
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          if [ -n "$CF_ACCOUNT" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
+          else echo "yes=false" >> "$GITHUB_OUTPUT"; echo "::notice::board storage not configured — see docs/BOARD.md"; fi
+
       - name: build the scorer
+        if: steps.wired.outputs.yes == 'true'
         run: cargo build --release --bin wfsim-board
 
       # EVERY stored submission, every time. The endpoint keys by build identity
       # so the list is already deduplicated — a hundred players who arrived at
       # one build are one key.
       - name: read submissions
+        if: steps.wired.outputs.yes == 'true'
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_NAMESPACE: ${{ secrets.CF_BOARD_NAMESPACE_ID }}
@@ -89,6 +102,7 @@ jobs:
           echo "submissions: $(jq 'length' submissions.json)"
 
       - name: score every benchmark
+        if: steps.wired.outputs.yes == 'true'
         run: |
           set -euo pipefail
           for f in data/benchmarks/*.yaml; do
@@ -100,6 +114,7 @@ jobs:
       # reaches the site through a rebuilt wasm. Regenerating here is what makes
       # the local build and the deployed one hold the same board.
       - name: regenerate the site
+        if: steps.wired.outputs.yes == 'true'
         run: |
           pip install --quiet pyyaml
           cargo install wasm-bindgen-cli --version "$(grep -A1 'name = "wasm-bindgen"' Cargo.lock | grep version | head -1 | cut -d'"' -f2)" --locked
@@ -108,6 +123,7 @@ jobs:
       # ONLY ON CHANGE. Most hours nobody submits anything new, and a commit per
       # hour that says nothing is history nobody can read.
       - name: commit if the board moved
+        if: steps.wired.outputs.yes == 'true'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
