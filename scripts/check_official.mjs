@@ -300,9 +300,20 @@ const CONSENT_PROBE = `(async () => {
   markPresetDirty(); renderMods(); refreshPanel(); await sleep(1200);
   out.modCountAfter = slots.filter((s) => s.mod).length;
 
+  // AN EXILUS MOD ON TOP. The build is complete at 8 main slots; filling the
+  // exilus slot must not make it "9 mods" and must not be sent — the most
+  // thoroughly built players were the ones this refused (2026-08-05).
+  const exi = pool.find((id) => modById(id) && modById(id).exilus && !slots.some((s) => s.mod === id));
+  if (exi) { slots[8].mod = exi; slots[8].rank = modById(exi).max_rank; markPresetDirty(); renderMods(); await sleep(900); }
+  out.exilusEquipped = !!exi && !!slots[8].mod;
+  out.stillComplete = buildIsComplete();
+
   // A complete build under the default DOES go — that is the change.
   await offerBoardSubmit(); await sleep(800);
   out.postsOnDefault = posts.length;
+  const first = posts.length ? JSON.parse(posts[posts.length - 1].body || '{}') : null;
+  out.sentModCount = first ? first.mods.length : null;
+  out.sentHasExilus = first ? first.mods.includes(exi) : null;
 
   out.boxHtml = ($('board-consent').innerHTML || '').slice(0, 200);
   out.hasNo = !!$('board-no') || !!$('board-flip');
@@ -347,9 +358,13 @@ check("...states that runs are submitted, BEFORE any run", c.statesDefaultOn ===
 check("...and offers a way out in the same view", c.hasOptOut === true);
 check("an INCOMPLETE build is not sent", c.postsWhileIncomplete === 0,
   `${c.modCount} mods, ${c.postsWhileIncomplete} posts`);
-check("...and the line says why", /complete|装满/.test(c.incompleteText || ""), c.incompleteText);
+check("...and the line says why", /as far as it goes|最努力/.test(c.incompleteText || ""), c.incompleteText);
 check("a COMPLETE build goes under the default", c.postsOnDefault === 1,
   `${c.modCountAfter}/${c.floor} mods, ${c.postsOnDefault} posts`);
+check("an EXILUS mod does not make it incomplete", c.exilusEquipped === true && c.stillComplete === true,
+  `equipped ${c.exilusEquipped}, complete ${c.stillComplete}`);
+check("...and never travels", c.sentModCount === c.floor && c.sentHasExilus === false,
+  `sent ${c.sentModCount} mods, exilus among them: ${c.sentHasExilus}`);
 check("nothing leaves after opting out", c.postsAfterNo === 0, String(c.postsAfterNo));
 check("...and the line says nothing is sent", /not|nothing|不会/.test(c.declinedText), JSON.stringify(c.declinedText));
 check("turning it back on is not itself a submission", c.postsOnFlip === 0, String(c.postsOnFlip));

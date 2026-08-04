@@ -5515,12 +5515,23 @@ function boardPayload() {
   return {
     benchmark: bench,
     weapon: $("weapon").value,
+    // THE EIGHT MAIN SLOTS, and the exilus one is DROPPED here (owner,
+    // 2026-08-05: "如果带着exilus测试，我们会收入然后去掉exilus"). It has to
+    // happen on this side: the payload is a flat list with no slot positions,
+    // and an exilus-eligible mod is legal in a MAIN slot, so nothing
+    // downstream can tell which entry came out of the exilus slot. Only the
+    // page knows, because only the page has the slots.
+    //
+    // Sending all nine is what this did until now, which refused exactly the
+    // wrong people: a player who fills their exilus slot sent 9 mods and was
+    // turned away for not being a complete build.
+    //
     // AS PLACED, not sorted. Mods combine elements in the order they sit in,
     // so sorting here submitted a build the player never made — and on the
     // Torid that is 12,424 DPS against 46,583 (measured 2026-08-04). The
     // scorer canonicalises with the pool in front of it, which is the only
     // place that can tell an elemental mod from any other.
-    mods: slots.filter((s) => s.mod).map((s) => s.mod),
+    mods: mainSlots().filter((s) => s.mod).map((s) => s.mod),
     evolutions: Object.values(evoSel).filter(Boolean),
     arcanes: arcanes.slice(),
   };
@@ -5532,8 +5543,18 @@ let boardState = "";   // "" | "sent" | "failed"
 /// here. The rule is `builds::validate_for_board`; this is the page repeating
 /// what it was told so it can explain itself before sending nothing.
 const boardBuildMods = () => (META || {}).board_build_mods || 8;
-/// Is the build on screen complete enough to submit?
-const buildIsComplete = () => slots.filter((s) => s.mod).length === boardBuildMods();
+/// The slots a benchmark build is made of: the main ones. `slots` holds nine —
+/// the exilus slot is the last — and the benchmark does not count it.
+const mainSlots = () => slots.slice(0, boardBuildMods());
+/// Filled main slots. The exilus slot is not part of the answer either way.
+const buildMods = () => mainSlots().filter((s) => s.mod).length;
+/// THE WEAPON AS FAR AS THE BENCHMARK COUNTS IT: every main slot filled.
+/// Whether the exilus slot is filled is irrelevant — a build with one is not
+/// more complete, and a build without one is not less.
+const buildIsComplete = () => buildMods() === boardBuildMods();
+/// ...and is there an exilus mod that will be left behind? Worth saying, since
+/// the number the board reports will not be the number on screen.
+const hasExilusMod = () => slots.length > boardBuildMods() && !!slots[boardBuildMods()].mod;
 
 async function offerBoardSubmit() {
   if (!officialScenarioActive()) return;      // only the official ruler feeds the board
@@ -5584,18 +5605,22 @@ function renderBoardConsent() {
   const floorNote =
     c === "yes" && !buildIsComplete()
       ? ` <span class="board-state">` +
-        escHtml(tr("{n} of {m} mods — the board takes complete builds only, so this one is not sent")
-          .replace("{n}", slots.filter((s) => s.mod).length)
+        escHtml(tr("{n} of {m} mods — the board takes a weapon built as far as it goes, so this one is not sent")
+          .replace("{n}", buildMods())
           .replace("{m}", boardBuildMods())) +
         `</span>`
-      : "";
+      : c === "yes" && hasExilusMod()
+        ? ` <span class="board-state">` +
+          escHtml(tr("your exilus mod is not part of a benchmark build — it is left out of what is sent, so the board's number will differ from this one")) +
+          `</span>`
+        : "";
   if (!boardConsentChosen()) {
     // THE DEFAULT, STATED. Not a question — the answer is already yes — so it
     // reads as what will happen and what it contains, with the way out next to
     // it. Asking would be dishonest when the default has already decided.
     box.innerHTML =
       `<b>${escHtml(tr("Runs here are added to the official board."))}</b> ` +
-      escHtml(tr("What is sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself). Only complete 8-mod builds are accepted.")) +
+      escHtml(tr("What is sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself). The board takes a weapon built as far as it goes: every main slot filled, exilus not counted.")) +
       floorNote +
       ` <button class="ghost-btn small" id="board-no">${escHtml(tr("don't submit"))}</button>`;
     $("board-no").onclick = () => setBoardConsent("no");

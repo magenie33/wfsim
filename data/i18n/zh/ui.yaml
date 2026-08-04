@@ -137,9 +137,10 @@ ui:
   "the same fight on every weapon, so results can be compared. It cannot be edited.": 每把武器都是同一场战斗，所以结果之间可以比较。它不可编辑。
   "edit a copy of this fight": 复制一份来编辑
   "Runs here are added to the official board.": 在这里运行的配装会被加入官方榜单。
-  "What is sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself). Only complete 8-mod builds are accepted.": 发送的内容：武器及其 mod、进化、赋能。仅此而已——没有账号、没有标识符、没有你起的任何名字，也没有分数（榜单自己跑分）。只接受装满 8 个 mod 的完整配装。
+  "What is sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself). The board takes a weapon built as far as it goes: every main slot filled, exilus not counted.": 发送的内容：武器及其 mod、进化、赋能。仅此而已——没有账号、没有标识符、没有你起的任何名字，也没有分数（榜单自己跑分）。榜单收的是这把武器的最努力配置：8 个主槽位全部装满，exilus 不计。
   "don't submit": 不要提交
-  "{n} of {m} mods — the board takes complete builds only, so this one is not sent": "{n}/{m} 个 mod —— 榜单只收装满的配装，所以这一份不会提交"
+  "{n} of {m} mods — the board takes a weapon built as far as it goes, so this one is not sent": "{n}/{m} 个 mod —— 榜单收的是这把武器的最努力配置，所以这一份不会提交"
+  "your exilus mod is not part of a benchmark build — it is left out of what is sent, so the board's number will differ from this one": 你的 exilus mod 不属于基准配装 —— 它不会被提交，所以榜单上的数字会和这里不同
   "the official test scenario — the same fight on every weapon, so results compare": 官方测试场景 —— 每把武器都是同一场战斗，结果之间可以比较
   "copy it into a {thing} of your own — the official one cannot be edited": 复制成一份你自己的{thing} —— 官方那份不可编辑
   "Measure": 衡量指标

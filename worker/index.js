@@ -70,13 +70,17 @@ async function submit(request, env) {
   // there is simply never scored and never reaches the board.
   const list = (x) => Array.isArray(x) && x.every((s) => typeof s === "string" && ID.test(s));
   if (!ID.test(b.benchmark || "") || !ID.test(b.weapon || "")) return bad("bad ids");
-  // EXACTLY EIGHT MODS. A shape check, not a judgement: this is the cheap
+  // ALL EIGHT MAIN SLOTS. A shape check, not a judgement: this is the cheap
   // pre-filter that keeps a half-built submission out of STORAGE, and
-  // `engine::builds::validate` is the rule it mirrors — that one is binding and
-  // is what the scorer runs. Both say "exactly 8" so a build cannot be stored
-  // that the scorer would then refuse, which is a KV write bought for nothing.
+  // `engine::builds::validate_for_board` is the rule it mirrors — that one is
+  // binding and is what the scorer runs. Both say eight, so a build cannot be
+  // stored that the scorer would then refuse, which is a KV write for nothing.
+  //
+  // The EXILUS slot is dropped by the page before it gets here, because only
+  // the page knows which slot a mod sat in — see `boardPayload`. Nine arriving
+  // is therefore a malformed submission rather than a generous one.
   if (!list(b.mods) || b.mods.length !== BUILD_MODS) {
-    return bad(`a benchmark build is exactly ${BUILD_MODS} mods`);
+    return bad(`a benchmark build fills all ${BUILD_MODS} main slots`);
   }
   if (!list(b.evolutions) || b.evolutions.length > 8) return bad("bad evolutions");
   if (!list(b.arcanes) || b.arcanes.length > 4) return bad("bad arcanes");

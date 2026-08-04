@@ -154,13 +154,28 @@ fn normalize(weapon: &str, mods: &[String], evolutions: &[String]) -> (Vec<Strin
     (ms, evos)
 }
 
-/// THE BOARD'S ADMISSION RULE: a legal build, and a COMPLETE one.
+/// THE BOARD'S ADMISSION RULE: a legal build, and THE WEAPON BUILT AS FAR AS
+/// IT GOES.
 ///
 /// `validate` answers whether a build could be equipped. This answers whether
 /// it belongs on a public leaderboard, and those are different questions — four
 /// mods is a perfectly legal build and a meaningless board row.
 ///
-/// EXACTLY EIGHT MODS (owner, 2026-08-05: "提交下限是全部配置满吧"). The rule
+/// The idea is the weapon at its best effort (owner, 2026-08-05: "这个武器的最
+/// 努力配置"), and in mod terms that is every MAIN slot filled: eight.
+///
+/// THE EXILUS SLOT IS NOT PART OF IT, in either direction. It is out of the
+/// benchmark's scope, so a build is not more complete for having one and not
+/// less for lacking one — and a submission that arrives with one is ACCEPTED
+/// with the exilus dropped rather than refused ("如果带着exilus测试，我们会收
+/// 入然后去掉exilus"). The DROPPING happens in the client, and it has to: this
+/// payload is a flat list with no slot positions, and an exilus-eligible mod is
+/// legal in a main slot, so nothing here could tell which entry came out of the
+/// exilus slot. Sending all nine is what the page did until 2026-08-05, and it
+/// refused exactly the wrong people — a player who fills their exilus slot sent
+/// nine mods and was turned away for not having a complete build.
+///
+/// EXACTLY EIGHT MODS. The rule
 /// earns its keep on a weapon whose board is EMPTY: there the single row IS the
 /// board, the builder presents it as "Benchmark build #1" with a ⧉ that copies
 /// it, and an unmodded build in that position is not a weak entry waiting to be
@@ -185,7 +200,7 @@ pub fn validate_for_board(
     let b = validate(weapon, mods, evolutions, arcanes)?;
     if b.mods.len() != MAIN_SLOTS {
         return Err(format!(
-            "{} mods, and a benchmark build is exactly {MAIN_SLOTS}",
+            "{} mods, and a benchmark build fills all {MAIN_SLOTS} main slots",
             b.mods.len()
         ));
     }
