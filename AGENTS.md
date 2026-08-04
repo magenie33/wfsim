@@ -39,7 +39,8 @@ around (decision 2026-07-31).
   stale duplicates sharing a display name).
 - `docs/` — CORE (design), MECHANICS (formulas), MEASUREMENTS (protocol +
   baselines), BUFFS, BOARD (the official leaderboard), OPTIMIZER, UI, WASM,
-  GLOSSARY, DEVELOPMENT (setup).
+  GLOSSARY, DEVELOPMENT (setup), INVESTMENT (capacity/Forma), WEAPON_INTAKE
+  (which weapons next, and what each costs).
 - `tests/golden/` — golden tests calibrated against in-game measurements.
 - `private/` — gitignored (devlogs, drafts, local assets, the `data/`
   verification scripts). **`git add -A` silently skips it**, so never report a
