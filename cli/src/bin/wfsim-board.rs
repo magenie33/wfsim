@@ -24,14 +24,14 @@
 //! Compiling it in made every board update a full site rebuild: install
 //! wasm-bindgen, fetch 300 images, recompile — to change a few numbers.
 //!
-//!   cat submissions.json | wfsim-board single_target_v1 site/board.json > board.yaml
+//!   cat submissions.json | wfsim-board single_target site/board.json > board.yaml
 
 use std::io::Read;
 
 use serde_json::{json, Value};
 
 /// A benchmark id without its `_v<n>` suffix — `single_target_v2` and
-/// `single_target_v1` are the same ruler at two versions, and a build aimed at
+/// `single_target_v1` are the same ruler, and a build aimed at
 /// either belongs on the current one's board.
 fn family(id: &str) -> &str {
     match id.rsplit_once("_v") {
@@ -89,15 +89,16 @@ fn main() {
     let (mut seen, mut refused) = (0usize, 0usize);
     let mut seen_ids: std::collections::HashSet<String> = Default::default();
     for s in &subs {
-        // MATCHED BY FAMILY, not by exact id. A build submitted against
-        // `single_target_v1` is still a build when the ruler becomes
-        // `single_target_v2` — the standard changed, the build did not, and the
-        // whole point of storing builds rather than scores is that a changed
-        // standard means RE-SCORING rather than asking anyone to resubmit
-        // (owner, 2026-08-04: "留在榜里，如果有其他后来居上的，就可以自然淘汰").
+        // MATCHED BY FAMILY, which today is a MIGRATION SHIM and nothing more.
+        // Benchmarks carry no version (owner, 2026-08-04) — but records already
+        // in the store were submitted against `single_target_v1`, and those are
+        // builds like any other. Stripping the suffix is what lets them keep
+        // competing under the id that replaced it, which is the same rule as
+        // everywhere else here: a changed standard RE-SCORES rather than asking
+        // anyone to resubmit ("留在榜里，如果有其他后来居上的，就可以自然淘汰").
         //
-        // The version still means something: it marks that the numbers changed
-        // meaning. It just no longer throws the builds away with them.
+        // A different ruler entirely — `group_clear` — is a different family and
+        // keeps its own board.
         if family(s.get("benchmark").and_then(Value::as_str).unwrap_or("")) != family(&bench_id) {
             continue;
         }
@@ -191,6 +192,11 @@ fn main() {
                 "benchmark": bench_id,
                 "source": "submissions",
                 "score": r.score,
+                // The number stays EXACT and the string beside it is what the
+                // page prints. Formatting lives in `boards_data::format_score`,
+                // so "four significant figures, four decimals" is one rule in
+                // one language rather than a Rust copy and a JS copy that drift.
+                "shown": wfsim_engine::boards_data::format_score(r.score),
                 "mods": r.mods,
                 "evolutions": r.evolutions,
                 "arcanes": r.arcanes,
@@ -214,7 +220,11 @@ fn main() {
     println!("entries:");
     for r in kept {
         println!("  - weapon: {}", r.weapon);
-        println!("    score: {:.6}", r.score);
+        // FULL PRECISION in the record. `{}` on an f64 is the shortest string
+        // that reads back as the same number, so the yaml is the measurement
+        // rather than a rounding of it — the published figure is rounded at the
+        // point it is SHOWN, and two rows that tie on screen still rank.
+        println!("    score: {}", r.score);
         println!("    mods: [{}]", r.mods.join(", "));
         if !r.evolutions.is_empty() {
             println!("    evolutions: [{}]", r.evolutions.join(", "));

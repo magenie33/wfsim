@@ -26,21 +26,21 @@
 //! the start state docs/BUFFS.md gives it, which is a per-BUFF property and so
 //! identical on every weapon.
 //!
-//! # Versioning
+//! # No version numbers
 //!
-//! `id` is stable across rewordings and `version` moves with the DEFINITION, so
-//! A NEW VERSION RE-SCORES; it does not discard. A build submitted against
-//! `single_target_v1` is still a build when the ruler becomes `_v2` — the
-//! standard changed and the build did not, so it carries over and competes,
-//! and whatever beats it displaces it (owner, 2026-08-04). That is the whole
-//! reason a submission stores the BUILD and never a score: a changed standard
-//! means re-scoring rather than asking anyone to resubmit.
+//! There is one board per benchmark, it is regenerated WHOLE whenever this file
+//! or the engine changes, and what is deployed is always the current answer —
+//! so a version number would mark a distinction nobody could act on (owner,
+//! 2026-08-04). What this file said last week is git's business.
 //!
-//! What the version still marks is that the NUMBERS changed meaning — it is
-//! how a reader knows a row from last week is not comparable with one from
-//! today. `wfsim-board` matches records by benchmark FAMILY (the id without
-//! its `_v<n>` suffix), so a different ruler entirely — `group_clear_v1` —
-//! keeps its own board.
+//! CHANGING A TERM HERE RE-SCORES; it does not discard. A build submitted when
+//! the fight was 300 s is still a build when it becomes 400 s — the standard
+//! changed and the build did not, so it carries over and competes, and whatever
+//! beats it displaces it. That is the whole reason a submission stores the
+//! BUILD and never a score.
+//!
+//! `id` is the identity, and it is stable across rewordings. A genuinely
+//! different ruler — `group_clear` — is a different id and keeps its own board.
 
 use std::sync::OnceLock;
 
@@ -55,10 +55,6 @@ pub struct Benchmark {
     /// The display name, which states the whole definition — see the yaml.
     /// Localized through the ordinary i18n overlay, never in this file.
     pub name: String,
-    /// Bumped when any scenario field changes — it marks that the numbers
-    /// changed meaning. Builds submitted under an older version carry over and
-    /// are re-scored; they are not discarded with the numbers.
-    pub version: u32,
     /// The fight, as the wire scenario the web api already parses. Kept as a
     /// free-form map ON PURPOSE: a benchmark is defined in the SAME vocabulary
     /// a scenario preset uses, so a field added to scenarios needs no second
@@ -178,13 +174,12 @@ mod tests {
     }
 
     /// The official ruler, pinned. Every field here is a term of a public
-    /// claim, so a change to one is a change to what every published number
-    /// MEANS — it belongs in a new version, and this test is where that gets
-    /// noticed.
+    /// claim, so a change to one changes what every published number MEANS.
+    /// This test is where that gets noticed — not to forbid the change, but so
+    /// it is made deliberately and the board is re-scored with it.
     #[test]
     fn the_official_single_target_benchmark_is_what_we_published() {
-        let b = get("single_target_v1").expect("data/benchmarks/single_target_v1.yaml");
-        assert_eq!(b.version, 1);
+        let b = get("single_target").expect("data/benchmarks/single_target.yaml");
         assert_eq!(b.name, "Single Target · Thrax Centurion Lv 9999 SP · 300 s · KPM");
         let s = |k: &str| b.scenario.get(k).cloned();
         assert_eq!(s("enemy").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("thrax_centurion"));

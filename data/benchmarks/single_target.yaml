@@ -1,7 +1,7 @@
 # THE OFFICIAL TEST SCENARIO — one ruler, every weapon.
 #
 # A benchmark exists so a number has a meaning. "120k DPS" says nothing on its
-# own; "0.87 KPM on single_target_v1" is a reading anyone can reproduce, on
+# own; "0.87 KPM on single_target" is a reading anyone can reproduce, on
 # their own machine, with the same engine that produced it.
 #
 # WHY THIS FILE MENTIONS NO WEAPON, AND MAY NOT.
@@ -30,7 +30,7 @@
 # contain any weapon, mod, arcane or evolution id, nor a named weapon form.
 # Adding weapon 201 therefore cannot require editing this file — it has no
 # place to say anything wrong about it.
-id: single_target_v1
+id: single_target
 
 # The name states the whole definition, because a benchmark whose terms are
 # hidden in a tooltip is one nobody can argue with. Order is deliberate: what
@@ -39,17 +39,14 @@ id: single_target_v1
 # terms. Truncation therefore eats the least identifying part.
 name: "Single Target · Thrax Centurion Lv 9999 SP · 300 s · KPM"
 
-# VERSIONING. It marks that the numbers changed MEANING — not that the builds
-# stopped being builds.
+# NO VERSION NUMBER (owner, 2026-08-04). There is one board, it is regenerated
+# whole whenever this file or the engine changes, and what is deployed is always
+# the current answer — so a version marks a distinction nobody can act on. The
+# history of what this file said is git's, which is where a history belongs.
 #
-#   reword the name        -> `id` unchanged, nothing else moves
-#   change ANY parameter   -> new file at `_v2`. The BUILDS carry over and are
-#                             re-scored under it; only the numbers are void.
-#
-# The parameters are IN the name, so changing one without bumping the version
-# leaves the name and the id disagreeing in a way that is impossible to miss.
-version: 1
-
+# Changing a parameter here therefore does not retire anything: every stored
+# build is re-scored under the new terms and keeps competing. That is what
+# storing BUILDS rather than scores was for.
 scenario:
   # A single Corrupted-faction target at the top of the level range, Steel
   # Path. Chosen because it is the fight the roster is already calibrated

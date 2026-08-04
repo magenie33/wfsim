@@ -96,6 +96,10 @@
     <!-- Preset bar: click a chip to load; the active chip carries save /
          rename / delete; "+ new" stores the current build. Unlimited —
          past 10 the bar grows a name filter. -->
+    <!-- BENCHMARK BUILDS: the board's rows, in a bar of their own. Read-only
+         and not yours, which is why they are not chips in the bar below —
+         see renderBenchmarkBarIn. Hidden when the weapon has no rows. -->
+    <div class="preset-bar bench-bar" id="bench-bar-builder-builds" hidden></div>
     <div class="preset-bar" id="preset-bar-builder-builds"></div>
 
     <!-- QUICK CALC settings: what every "what would this slot be worth as X"
@@ -187,6 +191,8 @@
         <!-- The SCENARIO as a saved thing: enemy, technique and measurement
              together, because "the fight I test against" is one decision and
              a build is compared across several of them. -->
+        <!-- BENCHMARK SCENARIOS: the official rulers, same treatment. -->
+        <div class="preset-bar bench-bar" id="bench-bar-simulator-scenarios"></div>
         <div class="preset-bar" id="preset-bar-simulator-scenarios"></div>
         <!-- Shown only while an OFFICIAL scenario is open: it says why the
              controls below are inert and where the editable copy comes from. -->

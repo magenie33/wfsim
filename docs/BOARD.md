@@ -56,7 +56,7 @@ state anyway.
 | --- | --- | --- |
 | hourly | score what is new | sub-second per build; no commit when nothing changed |
 | a push touching `engine/` or `data/` | **everything** | ~570 ms per build, minutes for a few thousand |
-| a new benchmark version | everything, under the new ruler | the builds carry over; only the numbers change |
+| a change to a benchmark's terms | everything, under the new ruler | the builds carry over; only the numbers change |
 
 The second row is the point: the maintainer's ordinary work — fixing a bug,
 correcting a number, changing the benchmark to 480 s — IS the trigger. There is
@@ -143,6 +143,29 @@ answer could be published.
    fight: 55.26 on screen for a build that kills 11.05 a minute over 300 s
    (found 2026-08-04). Ranking never noticed — it is a linear rescale — but a
    ranking is not what people read.
+7. **Shown at four significant figures AND four decimals** (owner, 2026-08-04),
+   by `boards_data::format_score`. Four decimals is where two builds a player is
+   choosing between stop tying; four significant figures is what keeps a small
+   metric from publishing as `0.0001`. The RECORD keeps full precision — the
+   yaml writes the shortest string that reads back identical, and the scorer
+   puts the formatted one beside it as `shown` — so the page prints a string it
+   did not compute and rows that tie on screen still rank underneath.
+
+## No version numbers
+
+A benchmark has an `id` and no `version` (owner, 2026-08-04). There is one board
+per benchmark, it is regenerated whole whenever anything upstream of it changes,
+and what is deployed is always the current answer — so a version would mark a
+distinction nobody could act on. Git holds the history of what the file said.
+
+Changing a term therefore retires nothing. Every stored build is re-scored under
+the new terms and keeps competing; whatever beats it displaces it. That is what
+storing BUILDS rather than scores was always for — if a changed standard threw
+the builds away, storing builds would have bought nothing.
+
+`wfsim-board` still strips a trailing `_v<n>` when matching a record to a
+benchmark. That is a MIGRATION SHIM and nothing else: records already in the
+store name `single_target_v1`, and they are builds like any other.
 
 The bill still reports what is SPENT, not what earned room: a build with fewer
 mods than mastery has polarizations buys all five, and the last land on empty

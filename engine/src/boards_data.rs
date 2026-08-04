@@ -61,6 +61,27 @@ pub struct Board {
     pub entries: Vec<BoardEntry>,
 }
 
+/// A score as it is PUBLISHED: at least four significant figures and at least
+/// four decimal places (owner, 2026-08-04).
+///
+/// One rule for both, because a board figure is read two ways. `11.0522` is
+/// the KPM case — four decimals already carry six significant figures, and the
+/// fourth decimal is the digit that separates two builds a player is choosing
+/// between. `0.0001234` is the other end: four decimals there would publish
+/// `0.0001`, which is one significant figure and cannot rank anything.
+///
+/// It lives HERE and not in the client because the client does not do this
+/// arithmetic — `wfsim-board` writes the formatted string beside the number and
+/// the page prints it. The number stays exact in the record; only what is shown
+/// is rounded, so two rows that tie on screen are still ordered underneath.
+pub fn format_score(v: f64) -> String {
+    let mag = if v.is_normal() { v.abs().log10().floor() as i32 } else { 0 };
+    // Four significant figures need `3 - mag` decimals; four decimals is the
+    // floor, and 12 the stop so a denormal cannot ask for hundreds.
+    let dp = (3 - mag).clamp(4, 12) as usize;
+    format!("{v:.dp$}")
+}
+
 /// Every board, parsed once.
 pub fn all() -> &'static [Board] {
     static B: OnceLock<Vec<Board>> = OnceLock::new();
@@ -111,6 +132,24 @@ mod tests {
                 assert!(v.drain > 0, "{} drew nothing", e.weapon);
                 assert!(e.score > 0.0, "{} scored nothing", e.weapon);
             }
+        }
+    }
+
+    /// AT LEAST FOUR SIGNIFICANT FIGURES AND AT LEAST FOUR DECIMALS — pinned,
+    /// because it is what every published figure is read at.
+    #[test]
+    fn a_published_score_carries_four_of_each() {
+        assert_eq!(format_score(11.052231199820268), "11.0522");
+        assert_eq!(format_score(0.9647804061510868), "0.9648");
+        assert_eq!(format_score(0.000123456), "0.0001235");
+        assert_eq!(format_score(1234.56789), "1234.5679");
+        assert_eq!(format_score(0.0), "0.0000");
+        for v in [11.05, 0.964, 0.000123, 1234.5, 7.0] {
+            let s = format_score(v);
+            let dec = s.split_once('.').map(|(_, d)| d.len()).unwrap_or(0);
+            assert!(dec >= 4, "{v} shown as {s}: fewer than four decimals");
+            let sig = s.replace(['.', '-'], "").trim_start_matches('0').len();
+            assert!(sig >= 4, "{v} shown as {s}: fewer than four significant figures");
         }
     }
 

@@ -123,13 +123,19 @@ ui:
   "simulate every mod IN THIS SLOT and show what each would change": 把这个槽换成每一张 mod 各模拟一遍，标出击杀速度会变化多少
   "kill rate": 击杀速度
   "Official test scenario": 官方测试场景
-  "Official build": 官方配装
-  "from the board — read-only. ⧉ copies it into a build of your own.": 来自榜单，只读。点 ⧉ 复制成一份你自己的配装。
+  "Benchmark build": 基准配装
+  "Benchmark builds": 基准配装
+  "Benchmark scenarios": 基准场景
+  "submitted by players, scored here — read-only": 玩家提交，由我们自己跑分 —— 只读
+  "the official rulers — the same fight on every weapon": 官方标尺 —— 每把武器都是同一场战斗
+  "read-only. ⧉ copies it into a build of your own.": 只读。点 ⧉ 复制成一份你自己的配装。
+  "measured under": 测试标准
+  "a benchmark build — measured under": 基准配装 —— 测试标准
   "seeded by the optimizer — not yet a player submission": 由优化器预填，尚非玩家提交
   "Single Target · Thrax Centurion Lv 9999 SP · 300 s · KPM": 单体 · 凶魂百夫长 9999 钢铁 · 300 秒 · KPM
   "the same fight on every weapon, so results can be compared. It cannot be edited: use ⧉ on its chip to copy it into a scenario of your own.": 每把武器都是同一场战斗，所以结果之间可以比较。它不可编辑：点它标签上的 ⧉ 复制成一份你自己的场景。
   "the official test scenario — the same fight on every weapon, so results compare": 官方测试场景 —— 每把武器都是同一场战斗，结果之间可以比较
-  "copy it into a scenario of your own — the official one cannot be edited": 复制成一份你自己的场景 —— 官方那份不可编辑
+  "copy it into a {thing} of your own — the official one cannot be edited": 复制成一份你自己的{thing} —— 官方那份不可编辑
   "Measure": 衡量指标
   "Quick calc": 快速计算
   "rank a slot's options by what they would change — off, nothing is simulated": 按「换上去会有多大变化」给槽位的候选排序 —— 关闭后不会进行任何模拟

@@ -894,7 +894,6 @@ pub fn meta_json() -> Value {
         "benchmarks": wfsim_engine::benchmarks_data::all().iter().map(|b| json!({
             "id": b.id,
             "name": b.name,
-            "version": b.version,
             "scenario": b.scenario,
         })).collect::<Vec<_>>(),
         "defaults": {

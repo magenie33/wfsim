@@ -72,7 +72,14 @@ const PROBE = (lang) => `(async () => {
   switchWeapon('boar_prime'); await sleep(250);
 
   // 3. OPEN IT — by id, which is what a stored pointer holds.
-  const bar = $('preset-bar-simulator-scenarios');
+  // THE BENCHMARK BAR, not the player's. Official entries were split out of
+  // the preset bar into a bar of their own (owner, 2026-08-04) — so this also
+  // asserts the split: finding the official chip in the preset bar would mean
+  // it leaked back into the collection that is supposed to be yours.
+  const bar = $('bench-bar-simulator-scenarios');
+  const own = $('preset-bar-simulator-scenarios');
+  out.barVisible = !bar.hidden;
+  out.notInOwnBar = ![...own.querySelectorAll('.pchip')].some((c) => c.dataset.name === out.name);
   const chip = [...bar.querySelectorAll('.pchip')].find((c) => c.dataset.name === out.name);
   out.chipFound = !!chip;
   out.chipMarked = !!(chip && chip.classList.contains('ro'));
@@ -119,6 +126,9 @@ const PROBE = (lang) => `(async () => {
   await sleep(700);
   out.copyIsOwn = !officialScenarioActive();
   out.copyStored = loadPresetList('simulator-scenarios').some((p) => p.name === activeScenario);
+  // ...and it lands in YOUR bar, which is the point of copying it.
+  out.copyInOwnBar = [...$('preset-bar-simulator-scenarios').querySelectorAll('.pchip')]
+    .some((c) => c.dataset.name === activeScenario);
   // Everything this locked is released, and nothing it did not touch moved.
   out.stillLocked = document.querySelectorAll('[data-official-lock]').length;
   const lvl = document.querySelector('#sim-target input[data-k="level"], #sim-target input');
@@ -134,6 +144,7 @@ for (const lang of ["en", "zh"]) {
   const missing = (r.everyWeapon || []).filter((w) => !w.has).map((w) => w.id);
   check(`it is on all ${r.everyWeapon.length} weapons`, missing.length === 0, missing.join(","));
   check("its chip is marked read-only", r.chipFound && r.chipMarked);
+  check("...in the BENCHMARK bar, not yours", r.barVisible && r.notInOwnBar);
   check("opening it makes it the active fight", r.isOfficial === true, r.active);
   check("...and that fight is the benchmark's", r.level === 9999 && r.duration === 300 && r.metric === "kpm" && r.enemy === "thrax_centurion",
     `lv ${r.level}, ${r.duration}s, ${r.metric}, ${r.enemy}`);
@@ -165,7 +176,7 @@ const BUILDS_PROBE = `(async () => {
   // whatever the board happens to hold on the day — a check that only works
   // while data exists stops testing the moment the data is cleared, which is
   // exactly what happened when the seed was removed.
-  const inject = { benchmark: 'single_target_v1', source: 'submissions', score: 1.2345,
+  const inject = { benchmark: 'single_target', source: 'submissions', score: 1.2345,
                    mods: ['serration','split_chamber','point_strike'],
                    evolutions: [], arcanes: ['none'] };
   BOARD = { torid: [inject] };     // the runtime board, as /board.json would give it
@@ -175,7 +186,10 @@ const BUILDS_PROBE = `(async () => {
   out.count = rows.length;
   out.first = rows[0] ? { name: rows[0].name, id: rows[0].builtin, mods: (rows[0].board||{}).mods } : null;
 
-  const bar = $('preset-bar-builder-builds');
+  const bar = $('bench-bar-builder-builds');
+  const own = $('preset-bar-builder-builds');
+  out.barVisible = !bar.hidden;
+  out.notInOwnBar = ![...own.querySelectorAll('.pchip')].some((c) => c.dataset.name === '#1');
   const chip = [...bar.querySelectorAll('.pchip')].find((c) => c.dataset.name === '#1');
   out.chipFound = !!chip;
   out.chipMarked = !!(chip && chip.classList.contains('ro'));
@@ -218,6 +232,7 @@ console.log("[board]");
 check("an empty board shows no chips at all", b.emptyBoardChips === 0, String(b.emptyBoardChips));
 check("a board row becomes a chip", b.count === 1, JSON.stringify(b.first));
 check("its chip is marked read-only", b.chipFound && b.chipMarked);
+check("...in the BENCHMARK bar, not yours", b.barVisible && b.notInOwnBar);
 check("opening it puts the board's build on screen",
   b.isOfficial === true
     && JSON.stringify(b.slots) === JSON.stringify(((b.first || {}).mods || []).slice().sort()),
@@ -246,7 +261,7 @@ const CONSENT_PROBE = `(async () => {
   out.askedOffOfficial = !$('board-consent').hidden;
 
   // Open the official scenario.
-  const bar = $('preset-bar-simulator-scenarios');
+  const bar = $('bench-bar-simulator-scenarios');
   // By its READ-ONLY mark, not by name: the name is translated and this probe
   // runs after the language ones, so matching on it couples two checks.
   const off = bar.querySelector('.pchip.ro');
@@ -301,7 +316,7 @@ check("...and the next run sends exactly one", c.postsAfterYes === 1, String(c.p
 check("...carrying the BUILD and no score",
   JSON.stringify(c.sentKeys) === JSON.stringify(["arcanes","benchmark","evolutions","mods","weapon"]) && c.sentHasScore === false,
   JSON.stringify(c.sentKeys));
-check("...against the official benchmark", c.sentBenchmark === "single_target_v1", String(c.sentBenchmark));
+check("...against the official benchmark", c.sentBenchmark === "single_target", String(c.sentBenchmark));
 
 ws.close(); srv.close(); proc.kill();
 process.exit(fail ? 1 : 0);

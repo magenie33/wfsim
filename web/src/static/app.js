@@ -3230,6 +3230,79 @@ function markScenarioDirty() {
 const PRESET_FILTER_AT = 10;
 const presetFilters = {}; // per-bar filter text — survives re-renders, not persisted
 
+// SELECT and COPY, lifted out of the bar so the BENCHMARK bar performs the
+// same two actions rather than its own versions of them (owner, 2026-08-04).
+// They are the only two a read-only entry has, and "the copy is an ordinary
+// editable preset" has to stay one behaviour — a second implementation is how
+// one bar's copy comes to capture something the other's does not.
+const pickPreset = (cfg, name) => {
+  const p = cfg.load().find((x) => x.name === name);
+  if (!p || p.name === cfg.active()) return;
+  cfg.setActive(p.name);
+  whileApplying(() => cfg.apply(p.state)); // a load is not an edit
+  cfg.rerender();
+};
+
+// The copy captures the LIVE editor state and becomes the active document; the
+// original keeps what auto-save last wrote into it. For a read-only entry the
+// live state IS that entry, because selecting it is what put it there.
+const copyActivePreset = (cfg) => {
+  const ps = cfg.load();
+  const base = cfg.active();
+  const name = freeName(ps, (n) => base + " copy" + (n > 1 ? " " + n : ""));
+  ps.push({ name, savedAt: Date.now(), state: cfg.snapshot() });
+  cfg.store(ps);
+  cfg.setActive(name);
+  cfg.rerender();
+};
+
+// THE BENCHMARK BAR — official entries, in a bar of their own above the
+// player's (owner, 2026-08-04). Same chip styling, deliberately: it is the same
+// kind of thing to pick. A different component, also deliberately: what you can
+// DO differs on every count — no new, no rename, no delete, no import, no
+// filter, no undo, because none of it is yours.  What is left is select and ⧉.
+//
+// Splitting them also removes the special-casing that had accumulated inside
+// one bar (a `readonly(p)` branch in three places) and the ambiguity it caused:
+// a count reading "Builds 4" when three were yours and the fourth was not.
+//
+// Absent when empty, and empty is ORDINARY — a weapon nobody has submitted a
+// build for has no benchmark builds, and a bar with a label and no chips
+// invites the question of what is missing.
+function renderBenchmarkBarIn(bar, cfg) {
+  if (!bar) return;
+  const ps = cfg.load().filter((p) => p.builtin);
+  const active = cfg.active();
+  bar.hidden = !ps.length;
+  if (!ps.length) { bar.innerHTML = ""; return; }
+  const noun = cfg.noun || "preset";
+  const chip = (p) => {
+    const sel = p.name === active;
+    const ops = sel
+      ? `<button class="pop dup" title="${escHtml(
+          tr("copy it into a {thing} of your own — the official one cannot be edited")
+            .replace("{thing}", tr(noun)),
+        )}">⧉</button>`
+      : "";
+    // WHAT THE ◆ MEANS DEPENDS ON THE BAR. On the scenario bar it is the ruler
+    // itself; on the build bar it is a build MEASURED under one, and which one
+    // is the part a reader needs.
+    const mark = `<span class="pofficial" title="${escHtml(
+      cfg.roTitle
+        ? cfg.roTitle(p)
+        : tr("the official test scenario — the same fight on every weapon, so results compare"),
+    )}">◆</span>`;
+    return `<span class="pchip ro ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}">${mark}${escHtml(p.name)}${ops}</span>`;
+  };
+  bar.innerHTML =
+    `<span class="plabel bench" title="${escHtml(cfg.benchHint || "")}">${escHtml(cfg.benchLabel)} <b>${ps.length}</b></span>` +
+    ps.map(chip).join("");
+  bar.querySelectorAll(".pchip").forEach((c) =>
+    c.addEventListener("click", () => pickPreset(cfg, c.dataset.name)));
+  const dup = bar.querySelector(".pop.dup");
+  if (dup) dup.addEventListener("click", (e) => { e.stopPropagation(); copyActivePreset(cfg); });
+}
+
 function renderPresetBarIn(bar, cfg) {
   // WHAT ONE OF THESE IS CALLED. "Preset" is the CATEGORY — a saved state of
   // a module, as opposed to a custom — and no collection is named after its
@@ -3237,7 +3310,11 @@ function renderPresetBarIn(bar, cfg) {
   // search a search; the noun names new ones and every tooltip that has to
   // refer to one.
   const noun = cfg.noun || "preset";
-  const ps = cfg.load();
+  // YOURS ONLY. The official entries are drawn by `renderBenchmarkBarIn` in the
+  // bar above; keeping them out of `ps` here is what makes the count, the
+  // filter threshold and the "the last one cannot be deleted" rule all count
+  // the same thing — the presets you own.
+  const ps = cfg.load().filter((p) => !p.builtin);
   const active = cfg.active();
   const ftext = presetFilters[bar.id] || "";
   const f = ftext.trim().toLowerCase();
@@ -3245,19 +3322,12 @@ function renderPresetBarIn(bar, cfg) {
   const hint = cfg.hint ? ` (${cfg.hint})` : "";
   const chip = (p) => {
     const sel = p.name === active;
-    // READ-ONLY entries (the official scenarios) keep ⧉ and lose ✎/✕: copying
-    // is how you get a variant, and the original stays exactly what everyone
-    // else measured against.
-    const ro = cfg.readonly ? cfg.readonly(p) : false;
     const ops = !sel
       ? ""
-      : ro
-        ? `<button class="pop dup" title="${escHtml(tr("copy it into a scenario of your own — the official one cannot be edited"))}">⧉</button>`
-        : `<button class="pop dup" title="${escHtml(tr("duplicate"))}">⧉</button>` +
-          `<button class="pop ren" title="rename">✎</button>` +
-          (ps.length > 1 || cfg.optional ? `<button class="pop del" title="delete">✕</button>` : "");
-    const mark = ro ? `<span class="pofficial" title="${escHtml(tr("the official test scenario — the same fight on every weapon, so results compare"))}">◆</span>` : "";
-    return `<span class="pchip ${sel ? "sel" : ""}${ro ? " ro" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${mark}${escHtml(p.name)}${ops}</span>`;
+      : `<button class="pop dup" title="${escHtml(tr("duplicate"))}">⧉</button>` +
+        `<button class="pop ren" title="rename">✎</button>` +
+        (ps.length > 1 || cfg.optional ? `<button class="pop del" title="delete">✕</button>` : "");
+    return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${escHtml(p.name)}${ops}</span>`;
   };
   bar.innerHTML =
     // Every bar says the shortcut: auto-save means a slip is written before
@@ -3290,14 +3360,8 @@ function renderPresetBarIn(bar, cfg) {
     const nf = bar.querySelector(".pfilter");
     if (nf) { nf.focus(); nf.setSelectionRange(nf.value.length, nf.value.length); }
   });
-  bar.querySelectorAll(".pchip:not(.add)").forEach((c) => c.addEventListener("click", () => {
-    const p = cfg.load().find((x) => x.name === c.dataset.name);
-    if (p && p.name !== cfg.active()) {
-      cfg.setActive(p.name);
-      whileApplying(() => cfg.apply(p.state)); // a load is not an edit
-      cfg.rerender();
-    }
-  }));
+  bar.querySelectorAll(".pchip:not(.add)").forEach((c) =>
+    c.addEventListener("click", () => pickPreset(cfg, c.dataset.name)));
   // No prompt()/alert()/confirm() anywhere — the browser can block those
   // dialogs, which made saving silently fail (user, 2026-07-28). Naming
   // happens in an INLINE input: Enter commits, Esc cancels.
@@ -3338,17 +3402,7 @@ function renderPresetBarIn(bar, cfg) {
     cfg.rerender();
   });
   const on = (sel, fn) => { const b = bar.querySelector(sel); if (b) b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); };
-  on(".pop.dup", () => {
-    const ps2 = cfg.load();
-    const base = cfg.active();
-    const name = freeName(ps2, (n) => base + " copy" + (n > 1 ? " " + n : ""));
-    // The copy captures the live editor state and becomes the active
-    // document; the original keeps what auto-save last wrote into it.
-    ps2.push({ name, savedAt: Date.now(), state: cfg.snapshot() });
-    cfg.store(ps2);
-    cfg.setActive(name);
-    cfg.rerender();
-  });
+  on(".pop.dup", () => copyActivePreset(cfg));
   on(".pop.ren", () => {
     const chipEl = bar.querySelector(".pchip.sel");
     if (!chipEl) return;
@@ -3462,10 +3516,13 @@ async function loadBoard() {
 const builtinBuilds = () => {
   const w = weaponInfo($("weapon").value) || {};
   return (BOARD[w.id] || []).map((row, i) => ({
-    // Rank is the name because rank is what a board row IS. The score and what
-    // it costs to own sit in the note, where there is room to explain them.
+    // Rank is the name because rank is what a board row IS — but a rank is
+    // only a rank ON something, so the chip's tooltip names the benchmark and
+    // the note states it in full. `#1` under two different rulers is two
+    // different claims, and the bar has room for one of them.
     name: `#${i + 1}`,
     builtin: `${row.benchmark}#${i + 1}`,
+    benchmark: row.benchmark,
     board: row,
     savedAt: 0,
     state: {
@@ -3484,8 +3541,21 @@ const buildNamed = (n) => buildList().find((p) => p.name === n || p.builtin === 
 /// Is the build on screen one of the official ones? Then nothing may write it.
 const officialBuildActive = () => !!(buildNamed(activePreset) || {}).builtin;
 
+// A benchmark's display name from its id, localized. Falls back to the raw id
+// rather than to nothing: a board row naming a benchmark this build of the site
+// does not carry is still a row, and hiding which ruler it used would make it
+// look like it had none.
+const benchmarkName = (id) => {
+  const b = (META.benchmarks || []).find((x) => x.id === id);
+  return b ? tr(b.name) : id || "—";
+};
+
 function renderPresetBar() {
-  renderPresetBarIn($("preset-bar-" + BUILDS), {
+  // TWO BARS, ONE CONFIG. The benchmark bar and the player's bar are handed
+  // the same `cfg` — same load, same active, same apply — so a chip in either
+  // one selects the same way and a ⧉ copies the same way. What differs is only
+  // which entries each draws and which operations it offers.
+  const buildsCfg = {
     domain: BUILDS,
     // An imported build keeps its mods/arcane/sim scenario but belongs to
     // the weapon it lands on; restoreState prunes whatever that weapon
@@ -3503,6 +3573,8 @@ function renderPresetBar() {
     load: buildList,
     store: (ps) => storePresetList(BUILDS, ps.filter((p) => !p.builtin)),
     readonly: (p) => !!p.builtin,
+    roTitle: (p) =>
+      tr("a benchmark build — measured under") + " " + benchmarkName(p.benchmark),
     active: () => activePreset,
     setActive: (n) => { activePreset = n; localStorage.setItem(presetActiveKey(BUILDS), n); },
     snapshot: snapshotState,
@@ -3518,7 +3590,9 @@ function renderPresetBar() {
     },
     blank: blankBuildState,
     rerender: () => { renderPresetBar(); lockOfficialBuild(); },
-  });
+  };
+  renderBenchmarkBarIn($("bench-bar-builder-builds"), { ...buildsCfg, benchLabel: tr("Benchmark builds"), benchHint: tr("submitted by players, scored here — read-only") });
+  renderPresetBarIn($("preset-bar-builder-builds"), buildsCfg);
 }
 
 // A scenario is the `sim` object, BUFF CONFIG INCLUDED (user, 2026-08-01:
@@ -3593,7 +3667,7 @@ const scenarioKey = (n) => (scenarioNamed(n) || {}).builtin || n;
 const officialScenarioActive = () => !!(scenarioNamed(activeScenario) || {}).builtin;
 
 function renderScenarioBar() {
-  renderPresetBarIn($("preset-bar-" + SCENARIOS), {
+  const scenariosCfg = {
     domain: SCENARIOS,
     label: tr("Scenarios"),
     noun: "scenario",
@@ -3609,7 +3683,9 @@ function renderScenarioBar() {
     apply: applyScenario,
     blank: snapshotScenario,
     rerender: scenariosChanged,
-  });
+  };
+  renderBenchmarkBarIn($("bench-bar-simulator-scenarios"), { ...scenariosCfg, benchLabel: tr("Benchmark scenarios"), benchHint: tr("the official rulers — the same fight on every weapon") });
+  renderPresetBarIn($("preset-bar-simulator-scenarios"), scenariosCfg);
 }
 
 function fillSelect(id, items) {
@@ -5461,10 +5537,17 @@ function lockOfficialBuild() {
   const row = (buildNamed(activePreset) || {}).board || {};
   const bench = (META.benchmarks || []).find((x) => x.id === row.benchmark);
   const parts = [
-    `<b>${escHtml(tr("Official build"))}</b>`,
-    escHtml(tr("from the board — read-only. ⧉ copies it into a build of your own.")),
+    `<b>${escHtml(tr("Benchmark build"))}</b>`,
+    escHtml(tr("read-only. ⧉ copies it into a build of your own.")),
   ];
-  if (bench) parts.push(`<span class="official-def">${escHtml(tr(bench.name))}</span>`);
+  // WHICH BENCHMARK, stated rather than implied (owner, 2026-08-04). A board
+  // figure means nothing without the ruler that produced it, and "#1" says
+  // even less — so the name of the scenario is part of the build, not a
+  // caption on the bar it happens to sit in.
+  parts.push(
+    escHtml(tr("measured under")) +
+      ` <span class="official-def">${escHtml(benchmarkName(row.benchmark))}</span>`,
+  );
   if (row.score != null) {
     // LABELLED WITH THE BENCHMARK'S OWN METRIC, not a hardcoded one. The
     // number is published in whatever the benchmark declares — a `dps`
@@ -5472,7 +5555,13 @@ function lockOfficialBuild() {
     // read as a kill RATE overstated every row by the length of the fight
     // until 2026-08-04.
     const unit = ((bench || {}).scenario || {}).metric === "dps" ? tr("DPS") : tr("kill rate");
-    parts.push(`<span class="official-def">${Number(row.score).toFixed(4)} ${escHtml(unit)}</span>`);
+    // `shown` is FORMATTED BY THE SCORER (`boards_data::format_score`): at
+    // least four significant figures and at least four decimals. The rule is
+    // not reimplemented here — the page prints what the record says, so a
+    // change to it cannot show one thing in the yaml and another on screen.
+    // `score` is the fallback for a board written before the field existed.
+    const shown = row.shown || Number(row.score).toFixed(4);
+    parts.push(`<span class="official-def">${escHtml(shown)} ${escHtml(unit)}</span>`);
   }
   // NOT the Forma cost: the builder's own header already states capacity and
   // Forma for whatever build is loaded, and this build IS loaded. Two places
