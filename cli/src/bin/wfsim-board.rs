@@ -30,6 +30,16 @@ use std::io::Read;
 
 use serde_json::{json, Value};
 
+/// A benchmark id without its `_v<n>` suffix — `single_target_v2` and
+/// `single_target_v1` are the same ruler at two versions, and a build aimed at
+/// either belongs on the current one's board.
+fn family(id: &str) -> &str {
+    match id.rsplit_once("_v") {
+        Some((head, tail)) if !tail.is_empty() && tail.chars().all(|c| c.is_ascii_digit()) => head,
+        _ => id,
+    }
+}
+
 /// One scored row, before it is trimmed to the top N.
 struct Row {
     weapon: String,
@@ -79,7 +89,16 @@ fn main() {
     let (mut seen, mut refused) = (0usize, 0usize);
     let mut seen_ids: std::collections::HashSet<String> = Default::default();
     for s in &subs {
-        if s.get("benchmark").and_then(Value::as_str) != Some(bench_id.as_str()) {
+        // MATCHED BY FAMILY, not by exact id. A build submitted against
+        // `single_target_v1` is still a build when the ruler becomes
+        // `single_target_v2` — the standard changed, the build did not, and the
+        // whole point of storing builds rather than scores is that a changed
+        // standard means RE-SCORING rather than asking anyone to resubmit
+        // (owner, 2026-08-04: "留在榜里，如果有其他后来居上的，就可以自然淘汰").
+        //
+        // The version still means something: it marks that the numbers changed
+        // meaning. It just no longer throws the builds away with them.
+        if family(s.get("benchmark").and_then(Value::as_str).unwrap_or("")) != family(&bench_id) {
             continue;
         }
         seen += 1;

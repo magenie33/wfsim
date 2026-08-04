@@ -39,11 +39,12 @@ id: single_target_v1
 # terms. Truncation therefore eats the least identifying part.
 name: "Single Target · Thrax Centurion Lv 9999 SP · 300 s · KPM"
 
-# VERSIONING, and it is what makes "an updated benchmark voids the old board"
-# mechanical rather than a promise someone has to remember.
+# VERSIONING. It marks that the numbers changed MEANING — not that the builds
+# stopped being builds.
 #
-#   reword the name        -> `id` unchanged, the board survives
-#   change ANY parameter   -> new file at `_v2`, the old board is void
+#   reword the name        -> `id` unchanged, nothing else moves
+#   change ANY parameter   -> new file at `_v2`. The BUILDS carry over and are
+#                             re-scored under it; only the numbers are void.
 #
 # The parameters are IN the name, so changing one without bumping the version
 # leaves the name and the id disagreeing in a way that is impossible to miss.

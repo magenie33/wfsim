@@ -29,10 +29,18 @@
 //! # Versioning
 //!
 //! `id` is stable across rewordings and `version` moves with the DEFINITION, so
-//! "an updated benchmark voids the old board" is mechanical: a board row stores
-//! the benchmark id it was measured under, and rows under a retired id are
-//! void. Because a submission stores the BUILD and never a score, a new version
-//! does not ask anyone to resubmit — every stored build is simply re-scored.
+//! A NEW VERSION RE-SCORES; it does not discard. A build submitted against
+//! `single_target_v1` is still a build when the ruler becomes `_v2` — the
+//! standard changed and the build did not, so it carries over and competes,
+//! and whatever beats it displaces it (owner, 2026-08-04). That is the whole
+//! reason a submission stores the BUILD and never a score: a changed standard
+//! means re-scoring rather than asking anyone to resubmit.
+//!
+//! What the version still marks is that the NUMBERS changed meaning — it is
+//! how a reader knows a row from last week is not comparable with one from
+//! today. `wfsim-board` matches records by benchmark FAMILY (the id without
+//! its `_v<n>` suffix), so a different ruler entirely — `group_clear_v1` —
+//! keeps its own board.
 
 use std::sync::OnceLock;
 
@@ -47,8 +55,9 @@ pub struct Benchmark {
     /// The display name, which states the whole definition — see the yaml.
     /// Localized through the ordinary i18n overlay, never in this file.
     pub name: String,
-    /// Bumped when any scenario field changes. Boards measured under an older
-    /// version are void.
+    /// Bumped when any scenario field changes — it marks that the numbers
+    /// changed meaning. Builds submitted under an older version carry over and
+    /// are re-scored; they are not discarded with the numbers.
     pub version: u32,
     /// The fight, as the wire scenario the web api already parses. Kept as a
     /// free-form map ON PURPOSE: a benchmark is defined in the SAME vocabulary

@@ -56,7 +56,7 @@ state anyway.
 | --- | --- | --- |
 | hourly | score what is new | sub-second per build; no commit when nothing changed |
 | a push touching `engine/` or `data/` | **everything** | ~570 ms per build, minutes for a few thousand |
-| a new benchmark version | everything, under the new ruler | the old board is void by id |
+| a new benchmark version | everything, under the new ruler | the builds carry over; only the numbers change |
 
 The second row is the point: the maintainer's ordinary work — fixing a bug,
 correcting a number, changing the benchmark to 480 s — IS the trigger. There is
