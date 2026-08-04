@@ -23,11 +23,19 @@
 //! # What identity means here
 //!
 //! Two builds are the SAME FIGHT when they produce the same number, and the
-//! wire payload already says exactly that much: it carries no polarities, no
-//! Forma, no slot positions and no mod ranks (every mod simulates at max
-//! rank). Order does not count either — measured, not assumed: the same eight
-//! mods reversed score 0.96478 both ways. So the identity is the weapon, the
-//! SORTED mod ids, the evolution set, and the arcanes.
+//! wire payload already says most of that: it carries no polarities, no Forma,
+//! no slot positions and no mod ranks (every mod simulates at max rank).
+//!
+//! ORDER DOES COUNT, and this said the opposite for a day on the strength of
+//! ONE measurement — eight mods reversed scored 0.96478 both ways, which was
+//! true of that build and not of builds. Mods combine ELEMENTS in listed order:
+//! Heat, Cold, Toxin, Electric is Blast + Corrosive; Heat, Toxin, Cold,
+//! Electric is Gas + Magnetic, and on the Torid that is 12,424 DPS against
+//! 46,583 (measured 2026-08-04). A sorted identity collapsed those into one row
+//! and scored whichever the sort happened to produce.
+//!
+//! So the identity is the weapon, the mod SEQUENCE, the evolution set, and the
+//! arcanes.
 //!
 //! Rivens are absent on purpose (user, 2026-08-04): they are personal random
 //! items, so a board that counted them would rank luck. That also removes the
@@ -61,7 +69,8 @@ pub const MAIN_SLOTS: usize = 8;
 pub struct ValidBuild {
     /// Weapon id.
     pub weapon: String,
-    /// Mod ids, SORTED — the canonical form. Hash this, not what arrived.
+    /// Mod ids IN ORDER. The order is the build — it pairs the elements — so
+    /// this is what arrived, minus anything the weapon cannot hold.
     pub mods: Vec<String>,
     /// Evolution ids after the ladder is applied, in tier order.
     pub evolutions: Vec<String>,
@@ -75,6 +84,38 @@ pub struct ValidBuild {
     pub drain: u32,
 }
 
+/// ONE REPRESENTATIVE PER BUILD: elements last, in the order that pairs them;
+/// everything else ahead of them, ordered by a rule rather than by chance.
+///
+/// Raw order is too fine and sorted order is too coarse, and both were wrong
+/// here in the same day. What actually matters is measured (2026-08-04, Torid,
+/// six mods): moving three elementals from slots 1-3 to 4-6, interleaving them
+/// with the rest, and reshuffling the non-elementals all give the IDENTICAL
+/// 146,707.582 DPS — while swapping two elementals with each other gives
+/// 12,424 against 46,583, because it pairs Blast + Corrosive instead of Gas +
+/// Magnetic.
+///
+/// So: the RELATIVE order of the elemental mods is the build, and nothing else
+/// about position is. `primary_element` is the same predicate `resolve` uses to
+/// walk the hierarchy, so this cannot drift from what the sim does.
+///
+/// The rest are ordered biggest-drain first, then by DE's own English name
+/// (owner, 2026-08-04) — a rule chosen so the representative is stable and
+/// readable, not because the engine cares.
+pub fn canonical_mods(weapon: &str, mods: &[String]) -> Vec<String> {
+    let pool = crate::mods_data::pool_for_weapon(weapon);
+    let def = |id: &String| pool.iter().find(|m| m.id == id.as_str());
+    let (mut plain, elemental): (Vec<&String>, Vec<&String>) = mods
+        .iter()
+        .partition(|id| def(id).is_none_or(|m| m.primary_element().is_none()));
+    plain.sort_by(|a, b| {
+        let (da, db) = (def(a).map_or(0, |m| m.base_drain), def(b).map_or(0, |m| m.base_drain));
+        db.cmp(&da)
+            .then_with(|| def(a).map_or("", |m| m.name).cmp(def(b).map_or("", |m| m.name)))
+    });
+    plain.into_iter().chain(elemental).cloned().collect()
+}
+
 /// Trim a submitted build to what the game would actually give it.
 ///
 /// Never fails: unknown or foreign ids are DROPPED rather than rejected, since
@@ -82,13 +123,15 @@ pub struct ValidBuild {
 /// is what [`validate`] then judges.
 fn normalize(weapon: &str, mods: &[String], evolutions: &[String]) -> (Vec<String>, Vec<String>) {
     let pool = crate::mods_data::pool_for_weapon(weapon);
-    let mut ms: Vec<String> = mods
+    // CANONICALISED, not sorted and not left raw — see `canonical_mods`. A
+    // plain sort scored a pairing nobody submitted; raw order made two spellings
+    // of one fight into two rows.
+    let kept: Vec<String> = mods
         .iter()
         .filter(|id| pool.iter().any(|m| m.id == id.as_str()))
         .cloned()
         .collect();
-    ms.sort();
-    ms.dedup();
+    let ms = canonical_mods(weapon, &kept);
 
     // The ladder: tier N is only open when the tiers below it are filled, so a
     // set is trimmed to its longest legal prefix. One option per tier.
@@ -351,17 +394,64 @@ mod tests {
         );
     }
 
-    /// The identity is the FIGHT. Order is not part of it — which is not an
-    /// assumption: the same eight mods reversed score 0.96478 either way
-    /// (measured 2026-08-04, benchmark parameters).
+    /// THE REPRESENTATIVE: what differs is kept, what does not is not.
+    ///
+    /// Measured on the Torid (2026-08-04, six mods): three elementals in slots
+    /// 1-3, the same three in 4-6, and the same three interleaved with the
+    /// non-elementals all score an IDENTICAL 146,707.582 DPS, as does
+    /// reshuffling the non-elementals among themselves. So position is not the
+    /// build — only the elementals' order relative to EACH OTHER is.
     #[test]
-    fn the_same_fight_written_differently_is_one_identity() {
-        let a = validate("boar_prime", &v(&["hells_chamber", "blunderbuss", "primed_ravage"]), &[], &[]).unwrap();
-        let b = validate("boar_prime", &v(&["primed_ravage", "hells_chamber", "blunderbuss"]), &[], &[]).unwrap();
-        assert_eq!(identity(&a), identity(&b), "order is not part of the fight");
+    fn one_representative_per_build_elements_last_in_their_own_order() {
+        let mods = |x: &[&str]| canonical_mods("torid", &v(x));
+        let want = mods(&["split_chamber", "serration", "point_strike", "hellfire", "cryo_rounds", "infected_clip"]);
 
-        // ...and a different SET is a different identity.
-        let c = validate("boar_prime", &v(&["hells_chamber", "blunderbuss"]), &[], &[]).unwrap();
+        // Elements moved, interleaved, and the rest reshuffled: one answer.
+        for spelling in [
+            &["hellfire", "cryo_rounds", "infected_clip", "serration", "split_chamber", "point_strike"][..],
+            &["serration", "hellfire", "split_chamber", "cryo_rounds", "point_strike", "infected_clip"][..],
+            &["point_strike", "split_chamber", "serration", "hellfire", "cryo_rounds", "infected_clip"][..],
+        ] {
+            assert_eq!(mods(spelling), want, "{spelling:?}");
+        }
+        // The elementals keep the order they arrived in, and they are last.
+        assert_eq!(&want[3..], &v(&["hellfire", "cryo_rounds", "infected_clip"])[..]);
+        // Ahead of them, biggest MAX-RANK drain first: Split Chamber 15,
+        // Serration 14, Point Strike 9. (Asserted against the pool rather than
+        // from memory — I had Serration first and the pool says otherwise.)
+        assert_eq!(&want[..3], &v(&["split_chamber", "serration", "point_strike"])[..]);
+        let pool = crate::mods_data::pool_for_weapon("torid");
+        let drain = |id: &str| pool.iter().find(|m| m.id == id).unwrap().base_drain;
+        assert!(drain("split_chamber") > drain("serration"));
+        assert!(drain("serration") > drain("point_strike"));
+
+        // ...and swapping two ELEMENTS is a different build, because it pairs
+        // differently: Gas + Magnetic against Blast + Corrosive.
+        assert_ne!(
+            mods(&["hellfire", "infected_clip", "cryo_rounds", "serration"]),
+            mods(&["hellfire", "cryo_rounds", "infected_clip", "serration"])
+        );
+    }
+
+    /// ORDER IS PART OF THE FIGHT, because mods combine ELEMENTS in the order
+    /// they are listed. This test asserted the opposite for a day, on one
+    /// measurement that happened to reorder mods whose pairing did not change.
+    ///
+    /// The Torid says it plainly: Heat, Cold, Toxin, Electric pairs to Blast +
+    /// Corrosive and scores 12,424 DPS; the same four as Heat, Toxin, Cold,
+    /// Electric pairs to Gas + Magnetic and scores 46,583 (measured
+    /// 2026-08-04). One row for both would have published a number belonging
+    /// to neither.
+    #[test]
+    fn the_order_of_the_mods_is_part_of_the_identity() {
+        let a = validate("torid", &v(&["hellfire", "cryo_rounds", "infected_clip", "stormbringer"]), &[], &[]).unwrap();
+        let b = validate("torid", &v(&["hellfire", "infected_clip", "cryo_rounds", "stormbringer"]), &[], &[]).unwrap();
+        assert_eq!(a.mods, v(&["hellfire", "cryo_rounds", "infected_clip", "stormbringer"]),
+                   "normalisation must not reorder");
+        assert_ne!(identity(&a), identity(&b), "two pairings, two rows");
+
+        // ...and a different SET is still a different identity.
+        let c = validate("torid", &v(&["hellfire", "cryo_rounds"]), &[], &[]).unwrap();
         assert_ne!(identity(&a), identity(&c));
     }
 

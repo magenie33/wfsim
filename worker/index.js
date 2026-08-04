@@ -38,11 +38,19 @@ const bad = (msg, status = 400) =>
   });
 
 /// The FIGHT this build is, as one stable key — the same shape
-/// `engine::builds::identity` produces. Mods are sorted because order does not
-/// change the number (measured: the same eight reversed score 0.96478 both
-/// ways), so two spellings of one build must not become two rows.
+/// `engine::builds::identity` produces.
+///
+/// MODS ARE NOT SORTED. They combine ELEMENTS in the order they are listed, so
+/// the same four elementals in two orders are two different weapons: on the
+/// Torid, Heat/Cold/Toxin/Electric pairs to Blast + Corrosive and Heat/Toxin/
+/// Cold/Electric to Gas + Magnetic — 12,424 DPS against 46,583 (measured
+/// 2026-08-04). This sorted for a day on the strength of one measurement that
+/// happened to reorder mods whose pairing did not change, and the board scored
+/// whichever pairing the sort produced.
+///
+/// Evolutions ARE a set: one per tier, and the tier decides where each sits.
 const identity = (b) =>
-  [b.benchmark, b.weapon, [...b.mods].sort().join(","),
+  [b.benchmark, b.weapon, b.mods.join(","),
    [...b.evolutions].sort().join(","), b.arcanes.join(",")].join("|");
 
 async function submit(request, env) {
@@ -73,7 +81,8 @@ async function submit(request, env) {
   const rec = {
     benchmark: b.benchmark,
     weapon: b.weapon,
-    mods: [...b.mods].sort(),
+    // As submitted. The order IS the build (see `identity`).
+    mods: b.mods,
     evolutions: b.evolutions,
     arcanes: b.arcanes,
     at: new Date().toISOString().slice(0, 10),

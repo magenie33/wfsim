@@ -3507,7 +3507,15 @@ function renderPresetBar() {
     setActive: (n) => { activePreset = n; localStorage.setItem(presetActiveKey(BUILDS), n); },
     snapshot: snapshotState,
     // Never the payload's weapon — the scope's. See restoreState.
-    apply: (st) => restoreState(st, presetWeapon()),
+    apply: (st) => {
+      restoreState(st, presetWeapon());
+      // AN OFFICIAL BUILD ARRIVES WITH NO POLARITIES, because a board row is a
+      // build and not a layout — so it loaded at full drain and showed 91/60 in
+      // red, a legal build presented as an impossible one (user, 2026-08-04).
+      // The plan is applied on the spot: nothing of yours is at risk, since the
+      // row is read-only and has no hand-set polarity to overwrite.
+      if (officialBuildActive()) { autoForma(); renderMods(); }
+    },
     blank: blankBuildState,
     rerender: () => { renderPresetBar(); lockOfficialBuild(); },
   });
@@ -5366,7 +5374,12 @@ function boardPayload() {
   return {
     benchmark: bench,
     weapon: $("weapon").value,
-    mods: slots.filter((s) => s.mod).map((s) => s.mod).sort(),
+    // AS PLACED, not sorted. Mods combine elements in the order they sit in,
+    // so sorting here submitted a build the player never made — and on the
+    // Torid that is 12,424 DPS against 46,583 (measured 2026-08-04). The
+    // scorer canonicalises with the pool in front of it, which is the only
+    // place that can tell an elemental mod from any other.
+    mods: slots.filter((s) => s.mod).map((s) => s.mod),
     evolutions: Object.values(evoSel).filter(Boolean),
     arcanes: arcanes.slice(),
   };

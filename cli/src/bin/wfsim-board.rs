@@ -65,6 +65,7 @@ fn main() {
 
     let mut rows: Vec<Row> = Vec::new();
     let (mut seen, mut refused) = (0usize, 0usize);
+    let mut seen_ids: std::collections::HashSet<String> = Default::default();
     for s in &subs {
         if s.get("benchmark").and_then(Value::as_str) != Some(bench_id.as_str()) {
             continue;
@@ -100,6 +101,15 @@ fn main() {
         let score = out.get("score").and_then(Value::as_f64).unwrap_or(0.0);
         if !ok || score <= 0.0 {
             refused += 1;
+            continue;
+        }
+        // ONE ROW PER BUILD. The endpoint stores what was submitted, verbatim,
+        // because it has no mod pool and cannot tell an elemental mod from any
+        // other — so two spellings of one fight arrive as two records and are
+        // collapsed HERE, where `validate` has already put both into the same
+        // canonical form.
+        let key = wfsim_engine::builds::identity(&v);
+        if !seen_ids.insert(key) {
             continue;
         }
         rows.push(Row {

@@ -76,6 +76,39 @@ leaves before consent and nothing leaves after declining.
 
 The endpoint stores no IP, no token and no timestamp finer than the day.
 
+## One representative per build (2026-08-04)
+
+A board row is keyed by what makes it a different FIGHT, and mod ORDER is part
+of that — mods combine ELEMENTS in the order they are listed. Measured on the
+Torid, six mods:
+
+| spelling | pairs to | DPS |
+| --- | --- | --- |
+| Heat, Cold, Toxin, Electric | Blast + Corrosive | **12,424** |
+| Heat, Toxin, Cold, Electric | Gas + Magnetic | **46,583** |
+
+The identity SORTED the mods for a day, on the strength of one measurement that
+happened to reorder mods whose pairing did not change. Two different fights
+collapsed into one row, and the score published was whichever pairing the sort
+produced — belonging to neither submitter.
+
+Raw order is not the answer either: three elementals in slots 1-3, the same
+three in 4-6, the same three interleaved with the rest, and the non-elementals
+reshuffled all score an identical 146,707.582. Only the elementals' order
+**relative to each other** is the build.
+
+So `builds::canonical_mods` gives every build ONE representative: elementals
+LAST in the order they arrived, everything else ahead of them by biggest drain
+then by DE's own English name (owner, 2026-08-04). The endpoint stores what was
+submitted verbatim — it has no mod pool and cannot tell an elemental mod from
+any other — and the scorer collapses spellings after `validate` has canonicalised
+them.
+
+**The rows scored before this are wrong**, and worse, unrecoverable: the
+endpoint SORTED on the way in, so the order those players actually built is
+gone. They re-score as "elements in alphabetical order", which is a legal build
+and probably not theirs. New submissions keep what was placed.
+
 ## What is not on the board
 
 - **Rivens** (user, 2026-08-04). They are personal random items, so a board
