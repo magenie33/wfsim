@@ -76,11 +76,11 @@ entries:
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_deadhead]
   - weapon: gotva_prime
-    score: 4.089754785543692
+    score: 4.575560349076233
     mods: [heavy_caliber, primary_acuity, serration, hammer_shot, vital_sense, magnetic_capacity, thermite_rounds, hellfire]
     arcanes: [primary_crux]
   - weapon: gotva_prime
-    score: 1.2260075135719815
+    score: 1.4309735035604663
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, malignant_force, primed_cryo_rounds, thermite_rounds]
     arcanes: [primary_deadhead]
   - weapon: laetum
