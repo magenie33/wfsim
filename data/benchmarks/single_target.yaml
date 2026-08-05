@@ -47,6 +47,27 @@ name: "Single Target · Thrax Centurion Lv 9999 SP · 300 s · KPM"
 # Changing a parameter here therefore does not retire anything: every stored
 # build is re-scored under the new terms and keeps competing. That is what
 # storing BUILDS rather than scores was for.
+# WHAT COUNTS AS AN ENTRANT (owner, 2026-08-05). A benchmark owns the fight;
+# it owns its admission rule for the same reason — both are terms of the claim
+# a published number makes, and a reader should find the whole standard in one
+# file rather than half of it in the validator.
+#
+# The idea is the weapon at its best effort ("这个武器的最努力配置"), and
+# "full" is computed PER WEAPON: eight main slots for everything, but the
+# evolution tiers this weapon actually has (Laetum 5, Boar Prime 4, an ordinary
+# rifle 0) and the arcane seats it actually has (an Arch-Gun 2, a sentinel
+# weapon 0). So a weapon with nothing to fill is complete by having filled it.
+#
+# DELIBERATELY SMALL. A second benchmark may want a weapon class, or a required
+# mod, or an element ban — and every one of those is a field to add WHEN that
+# benchmark exists. Inventing a constraint language for a set of one is how the
+# vocabulary comes out wrong at exactly the moment it first matters.
+build:
+  mods: full          # every main slot
+  evolutions: full    # every tier this weapon has
+  arcanes: full       # every seat this weapon has
+  exilus: excluded    # never counted, and stripped before it travels
+
 scenario:
   # A single Corrupted-faction target at the top of the level range, Steel
   # Path. Chosen because it is the fight the roster is already calibrated

@@ -29,7 +29,7 @@
 // pass and no counting.
 
 const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
-const BUILD_MODS = 8;          // EXACTLY, see below. Exilus is out of scope.
+const MAX_MODS = 9;            // an OUTER BOUND, not the rule — see below
 const ID = /^[a-z0-9_]{1,64}$/;
 
 const bad = (msg, status = 400) =>
@@ -70,18 +70,17 @@ async function submit(request, env) {
   // there is simply never scored and never reaches the board.
   const list = (x) => Array.isArray(x) && x.every((s) => typeof s === "string" && ID.test(s));
   if (!ID.test(b.benchmark || "") || !ID.test(b.weapon || "")) return bad("bad ids");
-  // ALL EIGHT MAIN SLOTS. A shape check, not a judgement: this is the cheap
-  // pre-filter that keeps a half-built submission out of STORAGE, and
-  // `engine::builds::validate_for_board` is the rule it mirrors — that one is
-  // binding and is what the scorer runs. Both say eight, so a build cannot be
-  // stored that the scorer would then refuse, which is a KV write for nothing.
+  // AN OUTER BOUND, NOT THE RULE. Admission became the BENCHMARK's business on
+  // 2026-08-05 — "full" now means every evolution tier and arcane seat THIS
+  // WEAPON has, and this worker has no game data: it cannot know that a Laetum
+  // has five tiers and a rifle none. It briefly hardcoded "exactly 8", which
+  // was right for one benchmark and would silently be wrong for the second.
   //
-  // The EXILUS slot is dropped by the page before it gets here, because only
-  // the page knows which slot a mod sat in — see `boardPayload`. Nine arriving
-  // is therefore a malformed submission rather than a generous one.
-  if (!list(b.mods) || b.mods.length !== BUILD_MODS) {
-    return bad(`a benchmark build fills all ${BUILD_MODS} main slots`);
-  }
+  // So the engine is the only place that decides, and this only keeps the
+  // obviously malformed out of storage. The cost is a little junk in KV that
+  // the scorer then refuses; the alternative is two rules that drift, and a
+  // worker confidently rejecting builds a benchmark would have accepted.
+  if (!list(b.mods) || b.mods.length > MAX_MODS) return bad("bad mods");
   if (!list(b.evolutions) || b.evolutions.length > 8) return bad("bad evolutions");
   if (!list(b.arcanes) || b.arcanes.length > 4) return bad("bad arcanes");
 

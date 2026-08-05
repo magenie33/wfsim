@@ -680,6 +680,31 @@ pub fn polarity(name: &str) -> Polarity {
     }
 }
 
+/// The arcane pools this weapon SEATS, in slot order.
+///
+/// Keyed on the equipment slot, which is what the game keys it on — an Arch-Gun
+/// seats a primary AND a secondary arcane, a sentinel weapon seats none, and
+/// everything else seats one of its own slot. A category rule, not per-weapon
+/// data, which is why it is computed rather than declared.
+///
+/// It lived in `webapi` until 2026-08-05, when `builds` needed it too: "every
+/// arcane seat filled" is part of what a complete build means, and a second
+/// copy of this rule in the validator is how the page and the board come to
+/// disagree about how many seats a weapon has.
+pub fn arcane_pools(weapon: &str) -> Vec<&'static str> {
+    let Some(s) = spec(weapon) else { return Vec::new() };
+    if s.class.contains("sentinel") {
+        return Vec::new();
+    }
+    match s.slot.as_str() {
+        "archgun" => vec!["primary", "secondary"],
+        "primary" => vec!["primary"],
+        "secondary" => vec!["secondary"],
+        "melee" => vec!["melee"],
+        _ => Vec::new(),
+    }
+}
+
 /// Innate MAIN-slot polarities as an 8-slot layout (exilus excluded — the
 /// UI/optimizer model treats the exilus slot separately).
 pub fn innate_slots(id: &str) -> [Option<Polarity>; 8] {

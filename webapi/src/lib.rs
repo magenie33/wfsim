@@ -183,14 +183,13 @@ fn weapons() -> &'static [WeaponInfo] {
                     has_cycle: wfsim_engine::weapons_data::has_gauge_switched_form(&s.id),
                     slot: s.slot.clone(),
                     uses_arcane: !sentinel,
-                    // Keyed on the equipment SLOT, which is what the game
-                    // keys it on — a category rule, like `sentinel` above,
-                    // not per-weapon data.
-                    arcane_pools: match s.slot.as_str() {
-                        _ if sentinel => Vec::new(),
-                        "archgun" => vec!["primary".to_string(), "secondary".to_string()],
-                        other => vec![other.to_string()],
-                    },
+                    // THE ENGINE'S ANSWER, not a second copy of the rule:
+                    // `builds::validate_for_board` needs the same seat count to
+                    // decide whether every arcane seat is filled.
+                    arcane_pools: wfsim_engine::weapons_data::arcane_pools(&s.id)
+                        .into_iter()
+                        .map(String::from)
+                        .collect(),
                     uses_evo2: incarnon,
                 }
             })
@@ -708,6 +707,14 @@ pub fn meta_json() -> Value {
                 // The POOLS, in slot order — the page draws one picker per
                 // entry and sends one arcane per entry.
                 "arcane_pools": w.arcane_pools,
+                // Evolution tiers THIS weapon has, keyed on its transform group
+                // — the page needs it to tell a complete ladder from a partial
+                // one, and the count differs per weapon (Laetum 5, a rifle 0).
+                "evo_tiers": wfsim_engine::evolutions_data::tier_count(
+                    wfsim_engine::weapons_data::spec(&w.id)
+                        .and_then(|s| s.transform_group.as_deref())
+                        .unwrap_or(&w.id),
+                ),
                 "uses_evo2": w.uses_evo2,
                 // The tier-1 evolution that UNLOCKS the second form. Without
                 // it there is nothing to transform into, and the sim already
@@ -901,14 +908,23 @@ pub fn meta_json() -> Value {
         // weapon owns them, nothing stores them, and nobody can edit them —
         // they exist so a number has a ruler someone else can pick up. The
         // client shows them on every weapon alongside the player's own.
-        // HOW MANY MODS A BOARD BUILD IS. Published so the page can say why an
-        // incomplete build will not be submitted, without a second copy of the
-        // number: `engine::builds::validate_for_board` is the rule, this is it
-        // speaking, and `worker/index.js` mirrors it only as a storage guard.
+        // HOW MANY MAIN SLOTS A BUILD HAS. Not the admission rule — that is the
+        // benchmark's, and travels with it below — just the one number the page
+        // needs to count filled slots against.
         "board_build_mods": wfsim_engine::builds::MAIN_SLOTS,
         "benchmarks": wfsim_engine::benchmarks_data::all().iter().map(|b| json!({
             "id": b.id,
             "name": b.name,
+            // WHAT THIS RULER ADMITS, so the page can say what a build is still
+            // missing instead of letting the server refuse in silence. It rides
+            // with the benchmark because it IS the benchmark's — a second ruler
+            // will answer differently and the page must not assume otherwise.
+            "build": {
+                "mods": b.build.mods,
+                "evolutions": b.build.evolutions,
+                "arcanes": b.build.arcanes,
+                "exilus": b.build.exilus,
+            },
             "scenario": b.scenario,
         })).collect::<Vec<_>>(),
         "defaults": {

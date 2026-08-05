@@ -124,7 +124,9 @@ mod tests {
                 b.benchmark
             );
             for e in &b.entries {
-                let v = crate::builds::validate_for_board(&e.weapon, &e.mods, &e.evolutions, &e.arcanes)
+                let v = crate::builds::validate_for_board(
+                    &b.benchmark, &e.weapon, &e.mods, &e.evolutions, &e.arcanes,
+                )
                     .unwrap_or_else(|err| panic!("{} row on {}: {err}", e.weapon, b.benchmark));
                 // `validate` already refused anything over capacity, and the
                 // capacity is the weapon's own — so the assertion is that it

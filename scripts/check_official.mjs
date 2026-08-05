@@ -297,8 +297,26 @@ const CONSENT_PROBE = `(async () => {
     if (!modById(id)) continue;
     slots[k].mod = id; slots[k].rank = modById(id).max_rank; k++;
   }
-  markPresetDirty(); renderMods(); refreshPanel(); await sleep(1200);
+  // ...and the rest of what THIS benchmark asks for. "Full" is per weapon, so
+  // the probe reads the requirement rather than assuming eight mods is it:
+  // Torid has four evolution tiers and one arcane seat.
+  const w = weaponInfo($('weapon').value) || {};
+  for (let t = 1; t <= (w.evo_tiers || 0); t++) {
+    const opts = (weaponAxes(w.id).evolutions[t - 1] || {}).options || [];
+    if (opts.length) evoSel[t] = opts[0].id;
+  }
+  const seats = (w.arcane_pools || []).length;
+  if (seats) {
+    const ax = weaponAxes(w.id).arcanes;
+    arcanes = arcanes.slice();
+    for (let i = 0; i < seats; i++) {
+      const o = ((ax[i] || {}).options || []).filter((x) => x.id !== 'none');
+      if (o.length) arcanes[i] = o[0].id;
+    }
+  }
+  markPresetDirty(); renderMods(); renderEvo(); renderArcanes(); refreshPanel(); await sleep(1500);
   out.modCountAfter = slots.filter((s) => s.mod).length;
+  out.shortfalls = buildShortfalls();
 
   // AN EXILUS MOD ON TOP. The build is complete at 8 main slots; filling the
   // exilus slot must not make it "9 mods" and must not be sent — the most
@@ -360,7 +378,7 @@ check("an INCOMPLETE build is not sent", c.postsWhileIncomplete === 0,
   `${c.modCount} mods, ${c.postsWhileIncomplete} posts`);
 check("...and the line says why", /as far as it goes|最努力/.test(c.incompleteText || ""), c.incompleteText);
 check("a COMPLETE build goes under the default", c.postsOnDefault === 1,
-  `${c.modCountAfter}/${c.floor} mods, ${c.postsOnDefault} posts`);
+  `${c.modCountAfter}/${c.floor} mods, missing ${JSON.stringify(c.shortfalls)}, ${c.postsOnDefault} posts`);
 check("an EXILUS mod does not make it incomplete", c.exilusEquipped === true && c.stillComplete === true,
   `equipped ${c.exilusEquipped}, complete ${c.stillComplete}`);
 check("...and never travels", c.sentModCount === c.floor && c.sentHasExilus === false,

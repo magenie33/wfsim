@@ -46,6 +46,39 @@ use std::sync::OnceLock;
 
 use serde::Deserialize;
 
+/// What a benchmark ADMITS: the shape a build must have to be scored on it.
+///
+/// Separate from the fight on purpose, and separate from IDENTITY on purpose.
+/// Canonicalisation (`builds::canonical_mods`) is universal — two boards must
+/// agree about whether two builds are the same build, or dedup and displacement
+/// stop working. Admission is per-benchmark, and that split is exactly what
+/// lets a future ruler demand a weapon class or a required mod without touching
+/// how any build is identified (owner, 2026-08-05).
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq, Default)]
+pub struct BuildRequirement {
+    /// `full` = every main slot. Absent = no requirement.
+    #[serde(default)]
+    pub mods: Option<String>,
+    /// `full` = every tier THIS weapon has, which is often none.
+    #[serde(default)]
+    pub evolutions: Option<String>,
+    /// `full` = every arcane seat THIS weapon has, which for a sentinel is none.
+    #[serde(default)]
+    pub arcanes: Option<String>,
+    /// `excluded` is the only value that means anything today: the exilus slot
+    /// is not counted and never travels. Recorded so the file states it rather
+    /// than leaving it to be inferred from silence.
+    #[serde(default)]
+    pub exilus: Option<String>,
+}
+
+impl BuildRequirement {
+    /// Does this axis demand a full house?
+    pub fn requires_full(v: &Option<String>) -> bool {
+        v.as_deref() == Some("full")
+    }
+}
+
 /// One official scenario, as `data/benchmarks/*.yaml` states it.
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct Benchmark {
@@ -55,6 +88,10 @@ pub struct Benchmark {
     /// The display name, which states the whole definition — see the yaml.
     /// Localized through the ordinary i18n overlay, never in this file.
     pub name: String,
+    /// What a build must look like to be admitted. Absent = admit anything
+    /// legal, which is a real answer for a benchmark that wants one.
+    #[serde(default)]
+    pub build: BuildRequirement,
     /// The fight, as the wire scenario the web api already parses. Kept as a
     /// free-form map ON PURPOSE: a benchmark is defined in the SAME vocabulary
     /// a scenario preset uses, so a field added to scenarios needs no second

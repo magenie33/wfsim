@@ -154,56 +154,90 @@ fn normalize(weapon: &str, mods: &[String], evolutions: &[String]) -> (Vec<Strin
     (ms, evos)
 }
 
-/// THE BOARD'S ADMISSION RULE: a legal build, and THE WEAPON BUILT AS FAR AS
-/// IT GOES.
+/// THE BOARD'S ADMISSION RULE: a legal build, and the shape THIS BENCHMARK asks
+/// for.
 ///
-/// `validate` answers whether a build could be equipped. This answers whether
-/// it belongs on a public leaderboard, and those are different questions — four
+/// `validate` answers whether a build could be equipped. This answers whether it
+/// belongs on a particular leaderboard, and those are different questions — four
 /// mods is a perfectly legal build and a meaningless board row.
 ///
-/// The idea is the weapon at its best effort (owner, 2026-08-05: "这个武器的最
-/// 努力配置"), and in mod terms that is every MAIN slot filled: eight.
+/// THE RULE IS THE BENCHMARK'S, not a global constant (owner, 2026-08-05). A
+/// benchmark owns its fight; it owns what it admits for the same reason, and a
+/// second ruler may reasonably want something else entirely. What it must NOT
+/// own is identity — `canonical_mods` is universal, because two boards that
+/// disagreed about whether two builds are the same build would break dedup and
+/// displacement on both.
 ///
-/// THE EXILUS SLOT IS NOT PART OF IT, in either direction. It is out of the
-/// benchmark's scope, so a build is not more complete for having one and not
-/// less for lacking one — and a submission that arrives with one is ACCEPTED
-/// with the exilus dropped rather than refused ("如果带着exilus测试，我们会收
-/// 入然后去掉exilus"). The DROPPING happens in the client, and it has to: this
-/// payload is a flat list with no slot positions, and an exilus-eligible mod is
-/// legal in a main slot, so nothing here could tell which entry came out of the
-/// exilus slot. Sending all nine is what the page did until 2026-08-05, and it
-/// refused exactly the wrong people — a player who fills their exilus slot sent
-/// nine mods and was turned away for not having a complete build.
+/// "FULL" IS COMPUTED PER WEAPON. Eight main slots for everything, but the
+/// evolution tiers this weapon actually has (Laetum 5, Boar Prime 4, an ordinary
+/// rifle 0) and the arcane seats it actually has (an Arch-Gun 2, a sentinel
+/// weapon 0). A weapon with nothing to fill is complete by having filled it,
+/// which is what lets one rule cover a roster of different shapes.
 ///
-/// EXACTLY EIGHT MODS. The rule
-/// earns its keep on a weapon whose board is EMPTY: there the single row IS the
-/// board, the builder presents it as "Benchmark build #1" with a ⧉ that copies
-/// it, and an unmodded build in that position is not a weak entry waiting to be
-/// displaced — it is misinformation with nothing to displace it. Two of the
-/// first four rows ever submitted were empty builds, which is what this is for.
-///
-/// ARCANES AND EVOLUTIONS ARE DELIBERATELY NOT PART OF IT. Not every weapon
-/// seats an arcane (a sentinel weapon seats none) and not every weapon has
-/// evolutions, so requiring them would make "full" mean something different per
-/// weapon — and running no arcane is a real build a real player submits. Eight
-/// mods is the one slot count every weapon in the roster shares.
-///
-/// Every path onto the board goes through this: the scorer calls it, and
-/// `worker/index.js` mirrors the count as a cheap pre-filter so a build that
-/// would be refused here is never written to storage in the first place.
+/// THE EXILUS SLOT IS OUTSIDE IT, in both directions: a build is not more
+/// complete for having one and not less for lacking one, and a submission that
+/// arrives with one is accepted with the exilus dropped rather than refused
+/// ("如果带着exilus测试，我们会收入然后去掉exilus"). The DROPPING happens in the
+/// client and has to: this payload is a flat list with no slot positions, and an
+/// exilus-eligible mod is legal in a main slot, so nothing here could tell which
+/// entry came out of the exilus slot.
 pub fn validate_for_board(
+    benchmark: &str,
     weapon: &str,
     mods: &[String],
     evolutions: &[String],
     arcanes: &[String],
 ) -> Result<ValidBuild, String> {
     let b = validate(weapon, mods, evolutions, arcanes)?;
-    if b.mods.len() != MAIN_SLOTS {
+    let req = match crate::benchmarks_data::get(benchmark) {
+        Some(bm) => bm.build.clone(),
+        // An unknown benchmark admits nothing: scoring a build against a ruler
+        // that does not exist would publish a number with no standard behind it.
+        None => return Err(format!("unknown benchmark: {benchmark}")),
+    };
+    use crate::benchmarks_data::BuildRequirement as R;
+
+    // MODS. The floor that stops an empty build being a weapon's only row —
+    // there the single row IS the board, the builder presents it as "Benchmark
+    // build #1" with a ⧉ that copies it, and an unmodded build in that position
+    // is misinformation with nothing to displace it.
+    if R::requires_full(&req.mods) && b.mods.len() != MAIN_SLOTS {
         return Err(format!(
-            "{} mods, and a benchmark build fills all {MAIN_SLOTS} main slots",
+            "{} mods, and this benchmark wants all {MAIN_SLOTS} main slots",
             b.mods.len()
         ));
     }
+
+    // EVOLUTIONS. The same argument, and stronger: an Incarnon weapon with no
+    // evolutions is not a weaker build of that weapon, it is the BASE FORM — a
+    // different gun. `tier_count` is keyed on the TRANSFORM GROUP, since the two
+    // entries of a two-weapon pair share one ladder.
+    if R::requires_full(&req.evolutions) {
+        let group = crate::weapons_data::spec(weapon)
+            .and_then(|s| s.transform_group.clone())
+            .unwrap_or_else(|| weapon.to_string());
+        let want = crate::evolutions_data::tier_count(&group) as usize;
+        if b.evolutions.len() != want {
+            return Err(format!(
+                "{} of {want} evolution tiers, and this benchmark wants every one",
+                b.evolutions.len()
+            ));
+        }
+    }
+
+    // ARCANES. Seats come from the engine's own rule so the page and the board
+    // cannot disagree about how many a weapon has. `none` is a filled slot only
+    // in the sense that it holds a position — it is not an arcane.
+    if R::requires_full(&req.arcanes) {
+        let want = crate::weapons_data::arcane_pools(weapon).len();
+        let have = b.arcanes.iter().filter(|a| a.as_str() != "none").count();
+        if have != want {
+            return Err(format!(
+                "{have} of {want} arcane seats filled, and this benchmark wants every one"
+            ));
+        }
+    }
+
     Ok(b)
 }
 
@@ -570,4 +604,65 @@ mod tests {
         .unwrap();
         assert_eq!(full.evolutions.len(), 2, "{:?}", full.evolutions);
     }
+    /// "FULL" IS PER WEAPON, and that is the whole point of computing it rather
+    /// than writing a number down: a sentinel weapon seats no arcane and has no
+    /// evolutions, so it is complete with eight mods and nothing else, while a
+    /// Laetum needs five tiers and an Arch-Gun needs two arcanes.
+    #[test]
+    fn complete_means_something_different_on_every_weapon() {
+        use crate::weapons_data::arcane_pools;
+        // The shapes the rule has to cover, straight from the data.
+        assert_eq!(arcane_pools("larkspur_prime").len(), 2, "an Arch-Gun seats two");
+        assert_eq!(arcane_pools("boar_prime").len(), 1);
+        assert_eq!(arcane_pools("verglas_prime").len(), 0, "a sentinel weapon seats none");
+        assert_eq!(crate::evolutions_data::tier_count("laetum"), 5);
+        assert_eq!(crate::evolutions_data::tier_count("boar_prime"), 4);
+        assert_eq!(crate::evolutions_data::tier_count("gotva_prime"), 0, "no evolutions");
+
+        // A full Gotva Prime: eight mods, no tiers to fill, one arcane seat.
+        let mods: Vec<String> = crate::mods_data::pool_for_weapon("gotva_prime")
+            .iter()
+            .filter(|m| !m.exilus)
+            .take(MAIN_SLOTS)
+            .map(|m| m.id.to_string())
+            .collect();
+        assert_eq!(mods.len(), MAIN_SLOTS, "the pool can fill a build");
+        let arc = vec!["primary_merciless".to_string()];
+        let ok = validate_for_board("single_target", "gotva_prime", &mods, &[], &arc);
+        assert!(ok.is_ok(), "a full rifle build is admitted: {ok:?}");
+
+        // ...and the same build with the arcane seat empty is not.
+        let none = vec!["none".to_string()];
+        let err = validate_for_board("single_target", "gotva_prime", &mods, &[], &none)
+            .unwrap_err();
+        assert!(err.contains("arcane"), "the reason names the axis: {err}");
+
+        // One mod short is refused on the MOD axis, not the arcane one.
+        let short = &mods[..MAIN_SLOTS - 1];
+        let err = validate_for_board("single_target", "gotva_prime", short, &[], &arc)
+            .unwrap_err();
+        assert!(err.contains("main slots"), "{err}");
+
+        // An INCARNON weapon with no evolutions is the base form, not a weak
+        // build of the same gun — refused on the evolution axis.
+        let bp: Vec<String> = crate::mods_data::pool_for_weapon("boar_prime")
+            .iter()
+            .filter(|m| !m.exilus)
+            .take(MAIN_SLOTS)
+            .map(|m| m.id.to_string())
+            .collect();
+        let err = validate_for_board("single_target", "boar_prime", &bp, &[],
+                                     &["primary_crux".to_string()])
+            .unwrap_err();
+        assert!(err.contains("evolution"), "{err}");
+    }
+
+    /// An unknown benchmark admits nothing: a number published against a ruler
+    /// that does not exist has no standard behind it.
+    #[test]
+    fn an_unknown_benchmark_admits_nothing() {
+        let e = validate_for_board("no_such_ruler", "gotva_prime", &[], &[], &[]).unwrap_err();
+        assert!(e.contains("unknown benchmark"), "{e}");
+    }
+
 }

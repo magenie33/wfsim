@@ -5548,10 +5548,51 @@ const boardBuildMods = () => (META || {}).board_build_mods || 8;
 const mainSlots = () => slots.slice(0, boardBuildMods());
 /// Filled main slots. The exilus slot is not part of the answer either way.
 const buildMods = () => mainSlots().filter((s) => s.mod).length;
-/// THE WEAPON AS FAR AS THE BENCHMARK COUNTS IT: every main slot filled.
-/// Whether the exilus slot is filled is irrelevant — a build with one is not
-/// more complete, and a build without one is not less.
-const buildIsComplete = () => buildMods() === boardBuildMods();
+
+/// WHAT THE ACTIVE BENCHMARK ADMITS — its own `build` block, from META. Not a
+/// constant here: admission is the benchmark's, so a second ruler answers
+/// differently and this page must not assume otherwise (2026-08-05).
+const boardRequirement = () => {
+  const id = (scenarioNamed(activeScenario) || {}).builtin;
+  const b = (META.benchmarks || []).find((x) => x.id === id);
+  return (b && b.build) || {};
+};
+
+/// EVERYTHING THIS BENCHMARK ASKS FOR THAT THIS BUILD LACKS, as sentences.
+///
+/// "Full" is PER WEAPON: eight main slots for everything, but the evolution
+/// tiers and arcane seats THIS weapon actually has. A weapon with nothing to
+/// fill is complete by having filled it — a sentinel weapon seats no arcane, an
+/// ordinary rifle has no evolutions — which is what lets one rule cover a
+/// roster of different shapes.
+function buildShortfalls() {
+  const req = boardRequirement();
+  const w = weaponInfo($("weapon").value) || {};
+  const out = [];
+  if (req.mods === "full" && buildMods() !== boardBuildMods()) {
+    out.push(tr("{n} of {m} mods").replace("{n}", buildMods()).replace("{m}", boardBuildMods()));
+  }
+  if (req.evolutions === "full") {
+    const want = w.evo_tiers || 0;
+    const have = Object.values(evoSel).filter(Boolean).length;
+    if (have !== want) {
+      out.push(tr("{n} of {m} evolutions").replace("{n}", have).replace("{m}", want));
+    }
+  }
+  if (req.arcanes === "full") {
+    const want = (w.arcane_pools || []).length;
+    const have = arcanes.filter((a) => a && a !== "none").length;
+    if (have !== want) {
+      out.push(tr("{n} of {m} arcanes").replace("{n}", have).replace("{m}", want));
+    }
+  }
+  return out;
+}
+
+/// THE WEAPON AS FAR AS THIS BENCHMARK COUNTS IT. Whether the exilus slot is
+/// filled is irrelevant — a build with one is not more complete, and a build
+/// without one is not less.
+const buildIsComplete = () => buildShortfalls().length === 0;
 /// ...and is there an exilus mod that will be left behind? Worth saying, since
 /// the number the board reports will not be the number on screen.
 const hasExilusMod = () => slots.length > boardBuildMods() && !!slots[boardBuildMods()].mod;
@@ -5602,12 +5643,12 @@ function renderBoardConsent() {
   // standing policy is still the thing a reader most needs to know — replacing
   // it with "this one is not sent" would state the exception and hide the rule,
   // which is the same silence the default-on setting exists not to have.
+  const short = c === "yes" ? buildShortfalls() : [];
   const floorNote =
-    c === "yes" && !buildIsComplete()
+    short.length
       ? ` <span class="board-state">` +
-        escHtml(tr("{n} of {m} mods — the board takes a weapon built as far as it goes, so this one is not sent")
-          .replace("{n}", buildMods())
-          .replace("{m}", boardBuildMods())) +
+        escHtml(tr("{what} — the board takes a weapon built as far as it goes, so this one is not sent")
+          .replace("{what}", short.join(tr(", ")))) +
         `</span>`
       : c === "yes" && hasExilusMod()
         ? ` <span class="board-state">` +

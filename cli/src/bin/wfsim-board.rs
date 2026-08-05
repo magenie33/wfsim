@@ -119,7 +119,8 @@ fn main() {
         // THE BOARD'S door, not the legality one: a row must be a COMPLETE
         // build (2026-08-05). A submission that is merely legal is refused
         // here and simply never scored.
-        let Ok(v) = wfsim_engine::builds::validate_for_board(&weapon, &mods, &evos, &arcs) else {
+        let Ok(v) = wfsim_engine::builds::validate_for_board(&bench_id, &weapon, &mods, &evos, &arcs)
+        else {
             refused += 1;
             continue;
         };
