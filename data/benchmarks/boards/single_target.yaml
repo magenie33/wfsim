@@ -31,25 +31,10 @@ entries:
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_crux]
   - weapon: boar_prime
-    score: 10.066861738459057
-    mods: [galvanized_hell, primed_point_blank, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat, blaze]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_practiced_grip, boar_prime_elemental_balance]
-    arcanes: [primary_crux]
-  - weapon: boar_prime
-    score: 9.134489250291436
-    mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat, blaze]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_practiced_grip, boar_prime_elemental_balance]
-    arcanes: [primary_crux]
-  - weapon: boar_prime
     score: 8.90613334158191
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, frigid_blast, toxic_barrage, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_merciless]
-  - weapon: boar_prime
-    score: 7.8001825057645995
-    mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat, blaze]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_practiced_grip, boar_prime_elemental_balance]
-    arcanes: [primary_debilitate]
   - weapon: boar_prime
     score: 7.17681527497008
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, frigid_blast, toxic_barrage, blaze]
@@ -60,6 +45,21 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, frigid_blast, toxic_barrage, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    score: 4.132810208532117
+    mods: [primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, frigid_blast, toxic_barrage, blaze]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [primary_merciless]
+  - weapon: boar_prime
+    score: 0.33604005971977824
+    mods: [galvanized_hell, primed_point_blank, shotgun_elementalist, magnetic_strafe, incendiary_coat, blaze, frigid_blast, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_practiced_grip, boar_prime_elemental_balance]
+    arcanes: [primary_crux]
+  - weapon: boar_prime
+    score: 0.1830158318409608
+    mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, magnetic_strafe, incendiary_coat, blaze, frigid_blast, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_practiced_grip, boar_prime_elemental_balance]
+    arcanes: [primary_crux]
   - weapon: burston_prime
     score: 59.98755197832018
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
@@ -191,10 +191,6 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_venomous_clip, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
-    score: 11.135524872030114
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, contamination_casing, hypothermic_shell, primed_combustion_rounds, magma_chamber]
-    arcanes: [primary_crux, cascadia_flare]
-  - weapon: larkspur_prime
     score: 10.457894748685483
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, magnetized_cycle, contamination_casing, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
@@ -207,16 +203,20 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, magnetized_cycle, contamination_casing, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: larkspur_prime
-    score: 9.65668491785406
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, primed_venomous_clip, polar_magazine, primed_combustion_rounds, magma_chamber]
-    arcanes: [primary_crux, cascadia_flare]
-  - weapon: larkspur_prime
     score: 9.34142175870689
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     score: 8.967345236219494
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    score: 8
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, containment_breach, hollowed_bullets, magnetized_cycle, contamination_casing, hypothermic_shell, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    score: 8
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, hollowed_bullets, magnetized_cycle, contamination_casing, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: ocucor
     score: 6.884211511074565
@@ -227,8 +227,8 @@ entries:
     mods: [galvanized_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
   - weapon: ocucor
-    score: 4.751056529125182
-    mods: [galvanized_diffusion, lethal_torrent, magnetic_might, sentient_surge, ice_storm, pistol_pestilence, primed_heated_charge, scorch]
+    score: 0.12931936325761093
+    mods: [galvanized_diffusion, lethal_torrent, magnetic_might, sentient_surge, primed_heated_charge, scorch, ice_storm, pistol_pestilence]
     arcanes: [cascadia_flare]
   - weapon: torid
     score: 26.769089843746144
@@ -281,9 +281,6 @@ entries:
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: verglas_prime
-    score: 1.0538345647343734
-    mods: [heavy_caliber, split_chamber, vile_acceleration, magnetic_capacity, malignant_force, rime_rounds, hellfire, thermite_rounds]
-  - weapon: verglas_prime
     score: 0.9914504231687964
     mods: [heavy_caliber, split_chamber, serration, vile_acceleration, magnetic_capacity, malignant_force, rime_rounds, hellfire]
   - weapon: verglas_prime
@@ -310,3 +307,6 @@ entries:
   - weapon: verglas_prime
     score: 0.4512540100204895
     mods: [heavy_caliber, split_chamber, serration, rifle_elementalist, vile_acceleration, malignant_force, rime_rounds, hellfire]
+  - weapon: verglas_prime
+    score: 0.433841176287645
+    mods: [galvanized_chamber, heavy_caliber, serration, rifle_elementalist, vile_acceleration, malignant_force, rime_rounds, hellfire]
