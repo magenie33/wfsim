@@ -36,6 +36,11 @@ entries:
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_ready_retaliation, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_deadhead]
   - weapon: dual_toxocyst
+    score: 34.47880533285604
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, pistol_pestilence, primed_convulsion, primed_heated_charge]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [cascadia_flare]
+  - weapon: dual_toxocyst
     score: 32.82581361882817
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, anemic_agility, creeping_bullseye, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -57,6 +62,11 @@ entries:
     score: 35.04640840014543
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, accelerated_isotope, magnetic_might, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
+    arcanes: [secondary_encumber]
+  - weapon: laetum
+    score: 25.746402636391412
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, pathogen_rounds, primed_heated_charge, frostbite]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_feather_of_justice, laetum_caput_mortuum, laetum_devouring_attrition]
     arcanes: [secondary_encumber]
   - weapon: larkspur_prime
     score: 12.340506006188994
@@ -117,6 +127,11 @@ entries:
     score: 22.49436390389867
     mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, malignant_force, rime_rounds, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_deadhead]
+  - weapon: torid
+    score: 22.49436390389867
+    mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, malignant_force, rime_rounds, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_renewed_horror, torid_survivors_edge]
     arcanes: [primary_deadhead]
   - weapon: torid
     score: 20.46245926564153
