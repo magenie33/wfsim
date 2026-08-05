@@ -9485,6 +9485,32 @@ mod tests {
             (on - 0.15).abs() < 0.03,
             "armed share {on}, want ~0.15 (15% of pellets arm the next)"
         );
+
+        // ...AND IT DOES NOT CARE WHERE THE PELLET LANDS. The card says "the
+        // next hit", not "the next weak-point hit", so an armed body shot is
+        // 300% exactly as an armed headshot is — and a weak-point crit bonus
+        // (Pistol/Primary Acuity) contributes NOTHING to an armed pellet,
+        // because the value is SET and not added to.
+        //
+        // Built with a weak-point crit bonus present and a 0% base, so the only
+        // way a head pellet could out-crit a body pellet is if the bonus
+        // survived the set. It does not.
+        let aimed = |head: bool| DummyParams {
+            weakpoint_cc_rel: 3.5, // Acuity rank 10
+            body_parts: vec![BodyPart {
+                name: if head { "head".into() } else { "body".into() },
+                aim_weight: 1.0,
+                multiplier: 1.0,
+                is_head: head,
+                crit_bonus: false,
+            }],
+            ..build(1.0, true)
+        };
+        let (h, b) = (crit_share(&aimed(true)), crit_share(&aimed(false)));
+        assert!(
+            (h - b).abs() < 0.02,
+            "armed crit share differs by body part: head {h}, body {b} — the SET is              supposed to replace the weak-point bonus, not stack with it"
+        );
     }
 
 }
