@@ -9322,4 +9322,67 @@ mod tests {
         assert!((p.elem_bracket(DamageType::Corrosive) - 1.0).abs() < 1e-9);
     }
 
+    /// PRIMARY DEBILITATE, END TO END — and the test MEASURES the faction
+    /// exponent rather than asserting the constant the code was written from.
+    ///
+    /// The split procs are the only difference between the arcane on and off,
+    /// so the damage they ADD is isolated by subtraction. If those procs sit at
+    /// depth 3, that added damage scales by f³ when the faction bonus changes —
+    /// while everything else in the fight scales by f or f². Dividing the added
+    /// damage at two faction values therefore reads the exponent straight out
+    /// of the simulation:
+    ///
+    ///     added(f) / added(1) == f³
+    ///
+    /// This is the assertion the wiki's "three separate times" earns. It also
+    /// proves the WIRING, not just the arithmetic — `faction_at` was already
+    /// tested on its own, and a recursion that never fired would pass that and
+    /// fail this.
+    #[test]
+    fn a_debilitate_split_lands_at_the_third_faction_layer() {
+        // A pure-Corrosive weapon that procs constantly: every proc is the same
+        // combined type, so the target saturates and stays saturated.
+        let base = |faction: f64, chance: f64| DummyParams {
+            damage: DamageVector::new().with(DamageType::Corrosive, 100.0),
+            status_chance: 1.0,
+            base_status_chance: 1.0,
+            fire_rate: 10.0,
+            magazine_size: 1e9,
+            infinite_reserve: true,
+            faction_mult: faction,
+            // The component bracket is what a split tick scales by; give Toxin
+            // and Electricity real mod bonuses so the split has something to
+            // read and the two branches are not both 1.0.
+            elem_dot_bonus: vec![(DamageType::Toxin, 1.5), (DamageType::Electricity, 1.5)],
+            arcane: crate::arcanes_data::ArcaneFx {
+                debilitate_chance: chance,
+                ..crate::arcanes_data::ArcaneFx::none()
+            },
+            ..DummyParams::default()
+        };
+
+        const RUNS: u32 = 400;
+        const SEED: u64 = 0xDEB1;
+        let dmg = |faction: f64, chance: f64| {
+            monte_carlo(&base(faction, chance), RUNS, SEED).mean_damage
+        };
+
+        let f = 1.55;
+        let added_plain = dmg(1.0, 1.0) - dmg(1.0, 0.0);
+        let added_faction = dmg(f, 1.0) - dmg(f, 0.0);
+
+        assert!(
+            added_plain > 0.0,
+            "the arcane must add damage at all — the split never fired"
+        );
+        let exponent_ratio = added_faction / added_plain;
+        let want = f * f * f;
+        assert!(
+            (exponent_ratio / want - 1.0).abs() < 0.02,
+            "split damage scaled by {exponent_ratio} across a {f} faction bonus; \
+             f³ is {want}, f² would be {}",
+            f * f
+        );
+    }
+
 }

@@ -26,9 +26,13 @@ effects:
   # instance" is the status APPLICATION; what it buys is the extra faction
   # layer, and that layer is the only observable it predicts.
   #
-  # WHAT AN IN-GAME NUMBER WOULD SETTLE: whether the split DoT really lands at
-  # faction^3 rather than ^2. Everything else about it follows the paths the sim
-  # already measures.
+  # NOTHING HERE IS WAITING ON A MEASUREMENT. The ^3 is the wiki's own stated
+  # value, not a guess to confirm, and the sim MEASURES its own exponent: with
+  # the arcane the only difference between two runs, the damage it adds scales
+  # by exactly f^3 across a faction change (`dummy::
+  # a_debilitate_split_lands_at_the_third_faction_layer`). Set the depth to 2
+  # and that test reads 2.399 against f^2 = 2.4025 and fails, which is how it is
+  # known to have teeth.
   - kind: debilitate
     rank0: 0.5
     rankMax: 1.0
