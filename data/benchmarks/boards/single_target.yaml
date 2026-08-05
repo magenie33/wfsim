@@ -236,5 +236,17 @@ entries:
     score: 0.7891770000964088
     mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, malignant_force, rime_rounds, thermite_rounds]
   - weapon: verglas_prime
+    score: 0.4512540100204895
+    mods: [heavy_caliber, split_chamber, serration, rifle_elementalist, vile_acceleration, malignant_force, rime_rounds, hellfire]
+  - weapon: verglas_prime
     score: 0.4306664593968792
     mods: [galvanized_chamber, heavy_caliber, serration, vile_acceleration, stormbringer, primed_cryo_rounds, thermite_rounds, hellfire]
+  - weapon: verglas_prime
+    score: 0.4210350361982287
+    mods: [heavy_caliber, split_chamber, serration, rifle_elementalist, vile_acceleration, malignant_force, rime_rounds, thermite_rounds]
+  - weapon: verglas_prime
+    score: 0.31972705500163284
+    mods: [heavy_caliber, split_chamber, serration, rifle_elementalist, vile_acceleration, malignant_force, primed_cryo_rounds, thermite_rounds]
+  - weapon: verglas_prime
+    score: 0.25903076359267824
+    mods: [heavy_caliber, split_chamber, serration, rifle_elementalist, vile_acceleration, infected_clip, primed_cryo_rounds, hellfire]
