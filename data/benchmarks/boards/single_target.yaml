@@ -27,3 +27,8 @@ entries:
     score: 2.079261215087232
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, hollowed_bullets, magnetized_cycle, primed_venomous_clip, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_overcharge, secondary_enervate]
+  - weapon: torid
+    score: 24.075691297500633
+    mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, malignant_force, primed_cryo_rounds, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_deadhead]
