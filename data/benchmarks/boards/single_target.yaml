@@ -46,6 +46,16 @@ entries:
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_practiced_grip, boar_prime_elemental_balance]
     arcanes: [primary_debilitate]
   - weapon: boar_prime
+    score: 7.17681527497008
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, toxic_barrage, frigid_blast, blaze]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [shotgun_vendetta]
+  - weapon: boar_prime
+    score: 6.208027177077124
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, toxic_barrage, frigid_blast, blaze]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
     score: 4.132810208532117
     mods: [primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, toxic_barrage, frigid_blast, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
