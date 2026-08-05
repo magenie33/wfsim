@@ -26,6 +26,11 @@ entries:
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_crux]
   - weapon: boar_prime
+    score: 10.066861738459057
+    mods: [galvanized_hell, primed_point_blank, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, blaze, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_practiced_grip, boar_prime_elemental_balance]
+    arcanes: [primary_crux]
+  - weapon: boar_prime
     score: 9.134489250291436
     mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, blaze, incendiary_coat]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_practiced_grip, boar_prime_elemental_balance]
@@ -36,6 +41,11 @@ entries:
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_merciless]
   - weapon: boar_prime
+    score: 7.8001825057645995
+    mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, blaze, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_practiced_grip, boar_prime_elemental_balance]
+    arcanes: [primary_debilitate]
+  - weapon: boar_prime
     score: 4.132810208532117
     mods: [primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, toxic_barrage, frigid_blast, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
@@ -44,6 +54,11 @@ entries:
     score: 49.670883136150096
     mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_ready_retaliation, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+  - weapon: dual_toxocyst
+    score: 48.73871467675587
+    mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_ready_retaliation, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_deadhead]
   - weapon: dual_toxocyst
     score: 34.47880533285604
@@ -154,20 +169,20 @@ entries:
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_deadhead]
   - weapon: torid
+    score: 10.96054012411231
+    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, hammer_shot, vital_sense, malignant_force, infected_clip]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_blight]
+  - weapon: torid
+    score: 8.537806415234012
+    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, rifle_elementalist, vital_sense, malignant_force, infected_clip]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_blight]
+  - weapon: torid
     score: 8.203390765037659
     mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, malignant_force, primed_cryo_rounds, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_debilitate]
-  - weapon: torid
-    score: 7.000112976389168
-    mods: [amalgam_serration, galvanized_chamber, galvanized_aptitude, critical_delay, hammer_shot, rifle_elementalist, vital_sense, infected_clip]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
-    arcanes: [primary_blight]
-  - weapon: torid
-    score: 0.4772567683134517
-    mods: [heavy_caliber, serration, galvanized_aptitude, hammer_shot, rifle_elementalist, malignant_force, high_voltage, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
-    arcanes: [primary_merciless]
   - weapon: verglas_prime
     score: 0.8296629874448342
     mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, malignant_force, rime_rounds, hellfire]
