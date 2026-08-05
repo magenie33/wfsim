@@ -103,7 +103,16 @@ around (decision 2026-07-31).
   is the committed one — the builder and the optimizer must offer the
   same options and the same visibility on every axis, and it exits
   non-zero when they do not. Run it after adding a weapon or anything a
-  weapon can carry. `node scripts/check_equip_rules.mjs` is the TWELFTH — what a
+  weapon can carry. `node scripts/check_mobile.mjs` is the FIFTEENTH and the only
+  one that looks at GEOMETRY rather than at what the DOM says: the page must fit
+  the screen it is on, at 360-1280px, with nothing past the viewport and no
+  sideways scroll. It exists because horizontal overflow is invisible on the
+  machine it is written on — the mod grid was `repeat(2,1fr)` at every width, a
+  bare `1fr` floors its track at MIN-CONTENT (198px a slot), and on a phone the
+  right-hand slots hung 55px off-screen with their ⋯ button unreachable (owner,
+  2026-08-05). It also asserts a mod NAME keeps room to be one, because the
+  cheapest way to stop an overflow is to squeeze a column to nothing.
+  `node scripts/check_equip_rules.mjs` is the TWELFTH — what a
   mod's CARD says the weapon may do, in both directions. An
   equip rule is asked of EVERY firing mode, and installing a form ADDS one — so
   Dual Toxocyst wears Semi-Pistol Cannonade until tier 1 goes in and not after

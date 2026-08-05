@@ -182,9 +182,24 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 :root[data-theme="dark"] .rar-rare{--rar:#e8c34c}
 :root[data-theme="dark"] .rar-legendary{--rar:#eef0f7}
 
-/* mod slots */
-.slots{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+/* mod slots.
+
+   `minmax(0,1fr)` and NOT `1fr`: a bare `1fr` floors the track at its
+   MIN-CONTENT, and a slot's min-content is 198px (a 26px polarity button, a
+   34px card, a 24px menu button and the gaps). Two of those plus the gap is
+   404px inside a 326px column, so on a phone the right-hand slots — 2, 4, 6,
+   8 — hung ~55px past the screen and you had to pan sideways to reach their
+   ⋯ button (owner, 2026-08-05). `minmax(0,1fr)` lets the track shrink below
+   its content and the ellipsis do its job. */
+.slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .slots.one{grid-template-columns:1fr}
+/* ...and on a PHONE, one column. The line above stops the overflow but not
+   much else: two columns inside 326px leaves each card 159px, of which the
+   mod NAME gets 31px — about three characters before the ellipsis, which is
+   not a name. One column gives the card the full 326px and the name 198px,
+   and costs only vertical scrolling, which is the one thing a phone is good
+   at. Measured, not guessed; see scripts/check_mobile.mjs. */
+@media(max-width:520px){.slots{grid-template-columns:1fr}}
 .slot{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 8px;min-height:48px}
 .slot .pol{width:16px;height:16px}
 .pol-btn{flex:none;width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--plane);border:1px solid var(--line);border-radius:6px;cursor:pointer;padding:0}
