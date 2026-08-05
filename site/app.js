@@ -5148,6 +5148,22 @@ function renderEvo() {
       const warn = o.broken && o.id === sel
         ? `<span class="ed warn">⚠ does not work in-game (wiki) — the simulation computes it as NO EFFECT</span>`
         : "";
+      // THE CONDITION OVERLOAD CAVEAT, on the tile you choose from.
+      //
+      // A perk flagged here raises base damage WITHOUT feeding the CO term, so
+      // the card reads strictly better than the tier's other option and is not
+      // — every status is worth less, and past a couple of statuses the other
+      // one overtakes it. That was reported as a bug (2026-08-05) precisely
+      // because the only place saying so was the CO row in the stats panel,
+      // which is not where the comparison happens.
+      //
+      // Shown on EVERY option, not just the selected one: the whole point is to
+      // be readable while deciding.
+      const coNote = o.co_excluded
+        ? `<span class="ed caveat" title="${escHtml(
+            tr("Condition Overload computes on this weapon's ORIGINAL base damage — this perk's added base is excluded, so every status type is worth less than the card implies"),
+          )}">◈ ${escHtml(tr("its added base does not feed Condition Overload"))}</span>`
+        : "";
       // Evolutions have no standalone wiki pages, so they link to the
       // WEAPON's — which carries the same evolution tables and is where you
       // wanted to end up anyway (user, 2026-08-01). It used to point at the
@@ -5156,7 +5172,7 @@ function renderEvo() {
       const genesis = wikiUrl(wikiWeaponName(weaponInfo($("weapon").value)));
       return `<span class="${cls}" data-tier="${t.tier}" data-id="${o.id}" title="${title}">
         ${icon}<span class="einfo"><b class="en">${wl(o.name, genesis)}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}${
-          gainChipFor(o.id, `EVO ${ROMAN(t.tier)}`)}</b><span class="ed">${lines}</span>${warn}</span></span>`;
+          gainChipFor(o.id, `EVO ${ROMAN(t.tier)}`)}</b><span class="ed">${lines}</span>${coNote}${warn}</span></span>`;
     };
     const empty = `<span class="evopick empty ${sel === null ? "sel" : ""} ${locked ? "tlocked" : ""}" data-tier="${t.tier}" data-id="">
       <span class="einfo"><b class="en">None</b><span class="ed"><div>nothing installed at this tier</div></span></span></span>`;

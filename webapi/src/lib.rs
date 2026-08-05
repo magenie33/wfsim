@@ -777,6 +777,16 @@ pub fn meta_json() -> Value {
                                 "name": e.name,
                                 "icon": e.icon,
                                 "broken": e.currently_broken,
+                                // THE CAVEAT BELONGS WHERE THE CHOICE IS MADE.
+                                // This perk's flat base damage does not feed
+                                // the Condition Overload term, so a reader
+                                // comparing it against the tier's other option
+                                // sees "+60 base and +33% per status" and
+                                // concludes it is strictly better. The stats
+                                // panel said so on the CO row; the tile you
+                                // pick from did not, and that is where the
+                                // question gets asked (reported 2026-08-05).
+                                "co_excluded": e.co_base_excludes_this_evolution,
                                 "desc": e.description.split('\n').collect::<Vec<_>>(),
                                 "effects": e.describe(),
                             }))

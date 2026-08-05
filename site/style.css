@@ -755,6 +755,10 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 /* "Outside the sim" is not a defect — dotted rather than dashed, and no
    warning colour, because the mod is fine and so are we. */
 .unmodeled.oos{border-style:dotted}
+/* A CAVEAT, not a warning. The perk works exactly as written — it is the
+   interaction that surprises — so it reads as information, in the muted text
+   colour, rather than in the ⚠ red the broken-evolution notice uses. */
+.ed.caveat{display:block;margin-top:2px;color:var(--text-2);font-size:10px;cursor:help}
 .pchip.ro{border-style:dashed}
 .pofficial{color:var(--gold);margin-right:4px;font-size:11px}
 .official-note{margin:6px 0 2px;padding:7px 10px;border:1px dashed var(--line);
