@@ -483,6 +483,19 @@ pub struct WeaponSpec {
     /// behind its magazine; what it also has is a way to get more.
     #[serde(default)]
     pub no_resupply: bool,
+    /// Does this weapon have a PASSIVE the sim does not model?
+    ///
+    /// Gotva Prime is the first: "Status Effects have a 15% chance to set the
+    /// next hit's Critical Chance to 300%" — a probabilistic, status-triggered
+    /// crit-chance LOCK, and the engine has no crit-chance lock at all. The
+    /// weapon simulates without it, which makes its number a FLOOR, and saying
+    /// so is the difference between an honest gap and a wrong answer nobody can
+    /// see (2026-08-05).
+    ///
+    /// A bool and not a sentence: the explanation belongs in the weapon file's
+    /// comments where a maintainer reads it, and the page needs the fact.
+    #[serde(default)]
+    pub passive_unmodeled: bool,
     #[serde(default)]
     pub reload_seconds: Option<f64>,
     #[serde(default)]

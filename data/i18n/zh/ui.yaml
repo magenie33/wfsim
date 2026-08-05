@@ -140,6 +140,7 @@ ui:
   "What is sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself). The board takes a weapon built as far as it goes: every main slot filled, exilus not counted.": 发送的内容：武器及其 mod、进化、赋能。仅此而已——没有账号、没有标识符、没有你起的任何名字，也没有分数（榜单自己跑分）。榜单收的是这把武器的最努力配置：8 个主槽位全部装满，exilus 不计。
   "don't submit": 不要提交
   "not modelled yet": 尚未建模
+  "this weapon's passive is not modelled yet — the numbers below are a floor, not its full output": 这把武器的被动尚未建模——下面的数字是下限，不是它的完整输出
   "its added base does not feed Condition Overload": 它增加的基础伤害不计入异况超载
   "Condition Overload computes on this weapon's ORIGINAL base damage — this perk's added base is excluded, so every status type is worth less than the card implies": 异况超载按这把武器的原始基础伤害计算——这个进化增加的基础伤害不计入，所以每一种异常的价值都低于卡面看起来的样子
   "real damage the simulator does not compute yet": 这是真实的伤害，只是模拟器还没有实现

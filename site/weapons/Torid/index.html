@@ -154,6 +154,10 @@
     <section class="block" id="stats-block">
       <div class="bh"><span class="n">Σ</span><h2 data-i18n>Stats</h2><span class="sub" id="stats-sub"></span></div>
       <div class="bb">
+        <!-- Shown only for a weapon whose PASSIVE the sim does not model: the
+             numbers below are then a floor, which nothing else on the page
+             could tell you. -->
+        <div id="stats-passive" class="unmodeled-banner" hidden></div>
         <div id="stats-rows"></div>
         <div id="stats-damage"></div>
         <div id="stats-conditionals"></div>

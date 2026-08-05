@@ -678,6 +678,10 @@ pub fn meta_json() -> Value {
                     .is_some_and(|a| a > 0.0),
                 "no_resupply": wfsim_engine::weapons_data::spec(&w.id)
                     .is_some_and(|s| s.no_resupply),
+                // A PASSIVE WE DO NOT MODEL, so the page can say the number is
+                // a floor rather than let it read as the weapon's real output.
+                "passive_unmodeled": wfsim_engine::weapons_data::spec(&w.id)
+                    .is_some_and(|s| s.passive_unmodeled),
                 // The mods this weapon can actually EQUIP, by id. The client
                 // used to union the class tables and re-apply the rules in JS,
                 // which is one fact stated twice — and the copy went stale the

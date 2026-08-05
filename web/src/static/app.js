@@ -4073,6 +4073,19 @@ function renderPanel(r) {
     return;
   }
   $("stats-sub").textContent = `max-rank values · ${r.policy}`;
+  // A PASSIVE WE DO NOT MODEL makes every number below a FLOOR, and the reader
+  // has no way to know that from the numbers themselves. Gotva Prime is the
+  // first: its "15% chance to set the next hit's crit chance to 300%" is absent
+  // (2026-08-05), so it scores like a weapon without a passive and looks simply
+  // weaker rather than partly unmodelled.
+  const wInfo = weaponInfo($("weapon").value) || {};
+  const passiveNote = $("stats-passive");
+  if (passiveNote) {
+    passiveNote.hidden = !wInfo.passive_unmodeled;
+    passiveNote.innerHTML = wInfo.passive_unmodeled
+      ? `◈ ${escHtml(tr("this weapon's passive is not modelled yet — the numbers below are a floor, not its full output"))}`
+      : "";
+  }
   const srcLine = (s) =>
     `<div class="ssrc">${s.value} — ${s.mod}${s.note ? ` <span class="snote">(${s.note})</span>` : ""}</div>`;
 
