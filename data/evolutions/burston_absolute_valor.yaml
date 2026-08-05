@@ -1,0 +1,23 @@
+id: burston_absolute_valor
+name: Absolute Valor
+weapon: burston
+tier: 4
+icon: HighCrit(xWhite).png
+description: "Increase Base Critical Chance by +22%."
+# THE GENESIS IS THE FAMILY'S. One Burston Incarnon Genesis upgrades either the
+# Burston or the Burston Prime, and the wiki's evolution table proves the two
+# get the SAME evolutions: every row spans both weapon columns with a dash
+# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+# difference".
+selection: choose_one
+
+effects:
+  # A BASE-stat addition, so the crit mods multiply the new base — "Increase
+  # Base Critical Chance" is the wiki's own wording. On the Prime 18% -> 40%,
+  # which Point Strike alone then carries past 100%; on the Burston 6% -> 28%,
+  # turning a weapon with essentially no crit into one worth building for.
+  - kind: flat_base_crit_chance
+    value: 0.22
+
+source:
+  url: https://wiki.warframe.com/w/Burston_Incarnon_Genesis

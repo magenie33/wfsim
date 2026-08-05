@@ -1,0 +1,28 @@
+id: burston_ready_retaliation
+name: Ready Retaliation
+weapon: burston
+tier: 3
+icon: IncarnonReloadSpeed(xWhite).png
+description: "On Reload From Empty: +100% Reload Speed."
+# THE GENESIS IS THE FAMILY'S. One Burston Incarnon Genesis upgrades either the
+# Burston or the Burston Prime, and the wiki's evolution table proves the two
+# get the SAME evolutions: every row spans both weapon columns with a dash
+# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+# difference".
+selection: choose_one
+
+effects:
+  # NOT LOADED: `evolutions_data::effect()` has no `reload_speed_bonus` arm
+  # (the MODS loader has one — different loader, different vocabulary), so this
+  # resolves to `EvoEffect::Inert`; `condition` is unread there too.
+  #
+  # DE has fixed this perk twice on this weapon specifically — 37.0.9 ("applying
+  # its buff on Burston anytime you reload, instead of only when reloading from
+  # empty") and 38.5.3 ("not functioning consistently") — so whoever models it
+  # should MEASURE the current behaviour rather than trust the card.
+  - kind: reload_speed_bonus
+    value: 1.00
+    condition: reload_from_empty
+
+source:
+  url: https://wiki.warframe.com/w/Burston_Incarnon_Genesis

@@ -1,0 +1,34 @@
+id: burston_fatal_affliction
+name: Fatal Affliction
+weapon: burston
+tier: 4
+icon: DamagePerActiveStatus(xWhite).png
+description: "+40% Direct Damage per Status Type affecting the target."
+# THE GENESIS IS THE FAMILY'S. One Burston Incarnon Genesis upgrades either the
+# Burston or the Burston Prime, and the wiki's evolution table proves the two
+# get the SAME evolutions: every row spans both weapon columns with a dash
+# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+# difference".
+selection: choose_one
+
+effects:
+  # CONDITION OVERLOAD, granted by an evolution — it joins the same per-type
+  # rate the Galvanized mods and the innate sources feed, so it is diluted and
+  # combined by the weapon's own `co_behavior` (Additive here) rather than
+  # forming a bucket of its own.
+  #
+  # At 40% a type it is the largest single CO source on the weapon, and it is
+  # why this tier is not simply "take Absolute Valor": against a target
+  # carrying four status types it is +160% into the base-damage bucket.
+  #
+  # "DIRECT Damage" is DE's wording and it is worth a caveat. This weapon's
+  # Incarnon RADIAL does take CO — the catalog says so explicitly, "on target
+  # directly hit by bullet", which the sim's single target always is — so the
+  # engine lets this reach the explosion. If DE means "direct hit only" in the
+  # ATTACK-PART sense instead, the explosion's share is overstated; the
+  # catalog row is the more specific statement and it is the one followed.
+  - kind: condition_overload
+    value: 0.40
+
+source:
+  url: https://wiki.warframe.com/w/Burston_Incarnon_Genesis

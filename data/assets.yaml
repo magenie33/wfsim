@@ -13,6 +13,14 @@ weapons:
   boar: Boar.png
   boar_incarnon: Boar.png
   boar_prime: BoarPrime.png
+  # The Burston family (2026-08-05). Both variants ship an Incarnon art of
+  # their own — `IncarnonImage` in the module — but a form is not a separate
+  # ITEM on the page, so each form points at its weapon's picture the way
+  # every other transform group here does.
+  burston: Burston.png
+  burston_incarnon: Burston.png
+  burston_prime: BurstonPrime.png
+  burston_prime_incarnon: BurstonPrime.png
   boar_prime_incarnon: BoarPrime.png
   cernos_prime: CernosPrime.png
   cernos_prime_uncharged: CernosPrime.png

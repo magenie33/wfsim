@@ -1081,6 +1081,8 @@ pub struct DummyParams {
     pub charge_seconds: Option<f64>,
     /// Which charge formula paces the shot — see `ChargeCadence`.
     pub charge_cadence: crate::weapons_data::ChargeCadence,
+    /// A BURST trigger's modded shape — see [`crate::weapons_data::BurstSpec`].
+    pub burst: Option<crate::weapons_data::BurstSpec>,
     /// Whether the weapon's Frenzy passive is equipped (Dual Toxocyst base
     /// form). Wired: fire-rate x2.5 on true headshots (3 s, refreshable).
     /// NOT yet wired: +100% Toxin injection (needs the element layer) and
@@ -1667,6 +1669,7 @@ impl DummyParams {
             fire_rate: panel.fire_rate,
             charge_seconds: panel.charge_seconds,
             charge_cadence: panel.charge_cadence,
+            burst: panel.burst,
             frenzy: false,
             magazine_size: panel.magazine_size,
             reload_seconds: panel.reload_seconds,
@@ -1830,6 +1833,7 @@ impl Default for DummyParams {
             fire_rate: 1.0,
             charge_seconds: None,
             charge_cadence: crate::weapons_data::ChargeCadence::DrawThenRate,
+            burst: None,
             frenzy: false,
             locked_buffs: Vec::new(),
             cycle: None,
@@ -2716,6 +2720,10 @@ fn gunco_bucket(
     bd: f64,
     arc_bd: f64,
     arc_ratio: f64,
+    // Which fraction of the EVOLVED base CO multiplies. The direct hit's lives
+    // on `ap`; an explosion carries its own, because an evolution can raise
+    // what the explosion deals without raising what CO reads.
+    co_base_fraction: f64,
 ) -> f64 {
     let co_rate = ap.co_per_type
         + params
@@ -2732,7 +2740,7 @@ fn gunco_bucket(
     .iter()
     .map(|(rate, count)| rate * *count as f64)
     .sum::<f64>()
-        * ap.co_base_fraction;
+        * co_base_fraction;
     match ap.co_behavior {
         // Joins the base-damage bucket: diluted by Hornet Strike, sharing the
         // bracket with the arcane's bonus.
@@ -2933,7 +2941,9 @@ fn field_tick(
     // the field takes CO only where the weapon declares it; otherwise it gets
     // the same bracket the radial does.
     let bucket = if f.takes_condition_overload {
-        gunco_bucket(params, ap, debuffs, gal, at, bd, arc_bd, arc_ratio)
+        // A FIELD keeps the direct hit's base fraction: the CO catalog puts
+        // the Torid's cloud on the same base as its main fire.
+        gunco_bucket(params, ap, debuffs, gal, at, bd, arc_bd, arc_ratio, ap.co_base_fraction)
     } else {
         arc_ratio
     };
@@ -3606,8 +3616,16 @@ pub fn run_once_traced(
         // the magazine's last round if there is at most one left to fire. On a
         // charge-backed form `multishot_on_last_round` is 0.0 anyway (the
         // evolution loader dropped it), so the flag costs nothing there.
+        //
+        // On a BURST weapon the window is the last BURST, not the last round —
+        // Forceful Finality reads "+5 Base Multishot on final magazine burst",
+        // and a Burston's final burst is three rounds. Taking the wiki
+        // literally as one round would have understated a full magazine's
+        // pellets by a fifth (42 + 3x6 = 60 real, against 44 + 6 = 50), which
+        // is far too big to wave through as a rounding difference.
+        let last_n = ap.burst.map_or(1.0, |b| f64::from(b.count));
         let last_round = if in_base_form {
-            base_mag <= 1.0 + 1e-9
+            base_mag <= last_n + 1e-9
         } else {
             magazine <= 1.0 + 1e-9
         };
@@ -3893,8 +3911,22 @@ pub fn run_once_traced(
             //   Condition Overload (Galvanized Shot + innate, one merged
             //     rate since they share it) → distinct status TYPES;
             //   Secondary Shiver → live Cold STACKS (Frozen counts as 10).
-            let co_mult =
-                gunco_bucket(params, ap, &mut debuffs, &mut gal, t, bd, arc_bd, arc_ratio);
+            let co_mult = gunco_bucket(
+                params, ap, &mut debuffs, &mut gal, t, bd, arc_bd, arc_ratio,
+                ap.co_base_fraction,
+            );
+            // The explosion's own, and only when it differs — an evolution
+            // that raises the radial's damage without raising its CO base
+            // (the Burston's +42) makes these two numbers diverge. Computed
+            // beside the direct hit's so both read the SAME counters at the
+            // same instant.
+            let co_mult_radial = match &params.radial {
+                Some(r) if r.takes_condition_overload => gunco_bucket(
+                    params, ap, &mut debuffs, &mut gal, t, bd, arc_bd, arc_ratio,
+                    r.co_base_fraction,
+                ),
+                _ => arc_ratio,
+            };
 
             // Part FIRST, crit roll second: weak-point crit chance (Pistol
             // Acuity; Cascadia Accuracy under assumed-max) exists only on
@@ -4011,7 +4043,16 @@ pub fn run_once_traced(
             //     not);
             //   · falloff is 1.0 here: the projectile detonates ON the
             //     target, so the epicentre distance is zero.
-            let radial_stage = params.radial;
+            // ...and ONCE PER PULL rather than per pellet where the weapon
+            // says so. A radial normally rides its projectile, so two
+            // projectiles detonate twice; the Burston's Incarnon is the
+            // exception the wiki states outright ("The Radial Attack does not
+            // benefit from Multishot bonuses"), and firing it on the first
+            // pellet only is exactly that.
+            let radial_stage = match params.radial {
+                Some(r) if !r.takes_multishot && pellet_idx > 0 => None,
+                other => other,
+            };
             for stage in 0..(1 + radial_stage.is_some() as usize) {
                 let rad = if stage == 1 { radial_stage } else { None };
                 let direct = rad.is_none();
@@ -4085,7 +4126,7 @@ pub fn run_once_traced(
                 // no roster weapon is affected until one declares it.
                 let bucket = match &rad {
                     None => co_mult,
-                    Some(r) if r.takes_condition_overload => co_mult,
+                    Some(r) if r.takes_condition_overload => co_mult_radial,
                     Some(_) => arc_ratio,
                 };
                 // Primary Crux's stacks join the status-chance BUCKET (wiki:
@@ -4480,7 +4521,28 @@ pub fn run_once_traced(
                     crate::weapons_data::ChargeCadence::DrawThenRate => draw + 1.0 / rate,
                 }
             }
-            None => 1.0 / rate,
+            // A BURST pull fires `count` rounds and then waits. The listed
+            // rate is BURSTS per second, so the cycle is the wait plus the
+            // rounds' own spacing, and one round costs a `count`-th of it:
+            //
+            //   Effective Fire Rate = Burst Count / [1/Fire Rate + (Burst
+            //   Count−1)·Burst Delay]                       (wiki, verbatim)
+            //
+            // `b.delay_seconds` arrives already shortened by the mod layer
+            // (loadout::resolve), which is where the wiki's net-negative
+            // exception lives. The LIVE buff factor is applied here, the same
+            // reciprocal trick the draw above uses: `rate / ap.fire_rate` is
+            // exactly what the live buffs did, 1.0 when none are up. It is
+            // clamped the same way, so a live fire-rate PENALTY does not
+            // stretch the burst either.
+            None => match ap.burst {
+                Some(b) if b.count > 1 => {
+                    let live = (rate / ap.fire_rate.max(1e-9)).max(1.0);
+                    let cycle = 1.0 / rate + f64::from(b.count - 1) * b.delay_seconds / live;
+                    cycle / f64::from(b.count)
+                }
+                _ => 1.0 / rate,
+            },
         };
     }
 
@@ -4946,6 +5008,45 @@ mod tests {
             ..base
         };
         assert_eq!(run_once(&bow, &mut Rng::new(1)).shots, 20);
+    }
+
+    /// A BURST weapon's listed fire rate is BURSTS per second, so its real
+    /// cadence is the wiki's formula and not `1 / fire_rate`:
+    ///
+    ///   Effective Fire Rate = Burst Count / [1/Fire Rate + (Burst Count−1)⋅
+    ///   Burst Delay]
+    ///
+    /// Burston Prime's numbers — 3 rounds, 5 bursts/s, 0.04 s apart — give
+    /// 3 / (0.2 + 0.08) = 10.714 rounds/s, better than DOUBLE what the listed
+    /// 5 would suggest. Reading the stat as a plain rate is not a rounding
+    /// error on a burst weapon; it is wrong by the burst count.
+    #[test]
+    fn a_burst_weapon_fires_its_whole_burst_inside_the_listed_interval() {
+        let burston = DummyParams {
+            fire_rate: 5.0,
+            burst: Some(crate::weapons_data::BurstSpec { count: 3, delay_seconds: 0.04 }),
+            magazine_size: 100_000.0, // no reload inside the window
+            duration_secs: 10.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        // 0.28 s a burst / 3 = 0.0933… s a round: 107 rounds in 10 s, +1 for
+        // the shot at t=0.
+        let r = run_once(&burston, &mut Rng::new(1));
+        assert_eq!(r.shots, 108, "3 / (1/5 + 2 x 0.04) = 10.714 rounds/s");
+
+        // The SAME two numbers read as an ordinary auto weapon: 5 rounds/s,
+        // 51 shots. That is the mistake this field exists to prevent.
+        let as_rate = DummyParams { burst: None, ..burston.clone() };
+        assert_eq!(run_once(&as_rate, &mut Rng::new(1)).shots, 51);
+
+        // A one-round "burst" IS an ordinary weapon — no delay is ever paid,
+        // so the two readings must agree exactly.
+        let single = DummyParams {
+            burst: Some(crate::weapons_data::BurstSpec { count: 1, delay_seconds: 0.04 }),
+            ..burston.clone()
+        };
+        assert_eq!(run_once(&single, &mut Rng::new(1)).shots, 51);
     }
 
     fn single_part(part: BodyPart) -> DummyParams {
@@ -5695,6 +5796,8 @@ mod tests {
             falloff_start_m: 0.0,
             falloff_reduction: 0.0,
             takes_condition_overload: takes,
+            takes_multishot: true,
+            co_base_fraction: 1.0,
         };
         // Zero-damage direct hit that still forces an Impact proc, so the only
         // damage reported is the explosion's and the target carries one status
@@ -6679,6 +6782,8 @@ mod tests {
             falloff_start_m: 0.0,
             falloff_reduction: 0.0,
             takes_condition_overload: false,
+            takes_multishot: true,
+            co_base_fraction: 1.0,
         };
         // A zero-damage direct hit, so everything reported is the explosion's.
         let p = |promote: f64| DummyParams {
@@ -6960,7 +7065,9 @@ mod tests {
             radius_m: 2.0,
             falloff_start_m: 0.0,
             falloff_reduction: 0.2,
-            takes_condition_overload: false, // the default: an explosion gets no CO
+            takes_condition_overload: false,
+            takes_multishot: true,
+            co_base_fraction: 1.0, // the default: an explosion gets no CO
         }
     }
 
@@ -7037,7 +7144,9 @@ mod tests {
                 radius_m: 2.0,
                 falloff_start_m: 0.0,
                 falloff_reduction: 0.0,
-                takes_condition_overload: false, // the default: an explosion gets no CO
+                takes_condition_overload: false,
+                takes_multishot: true,
+                co_base_fraction: 1.0, // the default: an explosion gets no CO
             }
         };
         // +50% x 2 pinned stacks = +100% of the part's base crit damage.
@@ -7102,7 +7211,9 @@ mod tests {
                 radius_m: 2.0,
                 falloff_start_m: 0.0,
                 falloff_reduction: 0.0,
-                takes_condition_overload: false, // the default: an explosion gets no CO
+                takes_condition_overload: false,
+                takes_multishot: true,
+                co_base_fraction: 1.0, // the default: an explosion gets no CO
             });
             let p = DummyParams {
                 radial,

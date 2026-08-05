@@ -817,6 +817,37 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
     if flat > 0.0 && original_total > 0.0 {
         let evolved = original_total + flat;
         base.base_vector = base.base_vector.scale(evolved / original_total);
+        // ...AND THE EXPLOSION, which is not what this did until 2026-08-05.
+        //
+        // It was the inconsistency two lines of this function already
+        // contradicted: `FlatBaseCritChance` and `FlatBaseStatusChance` reach
+        // every attack part because "a base-stat evolution is a WEAPON stat
+        // change", and flat base DAMAGE is the same kind of statement. It was
+        // marked "INFERENCE, not a citation" because nothing said so outright.
+        //
+        // The CO catalog now does, for the Burston: its Incarnon radial reads
+        // "Attack Damage 55 | CO Damage Bonus at +100% 13 | 24%". The radial's
+        // own base is 13 Heat and the ONLY +42 in that Genesis is Evolution
+        // II's, so 55 is 13 + 42 — the explosion takes the evolution's flat
+        // damage — while 13 is what CO still multiplies, and 13/55 is the 24%
+        // the third column prints. One row, and it settles both halves.
+        //
+        // Isolated when written: the only entries with a radial are the Laetum
+        // Incarnon and the Larkspur Prime's charged shot, and neither weapon
+        // has a flat-damage evolution at all. So nothing already measured
+        // moves.
+        if let Some(r) = base.radial.as_mut() {
+            let rad_original = r.base_vector.total();
+            if rad_original > 0.0 {
+                let rad_evolved = rad_original + flat;
+                r.base_vector = r.base_vector.scale(rad_evolved / rad_original);
+                // The explosion's CO keeps multiplying its UNEVOLVED base. The
+                // direct hit's exclusion below is opt-in per perk; this one is
+                // not, because the catalog's single radial row is a statement
+                // about the radial, and no radial row anywhere says otherwise.
+                r.co_base_fraction = rad_original / rad_evolved;
+            }
+        }
         // The CO term keeps using the FULL evolved base — including a perk's
         // flat damage is the normal behaviour (user, 2026-07-30), and the Torid
         // counts its Incarnon perks in full.
@@ -1104,6 +1135,10 @@ use crate::loadout::WeaponBase;
             // for, and both instances are conditional on an empty reload the
             // sim does not distinguish.
             "boar_ready_retaliation :: reload_speed_bonus",
+            // The Burston's copy has been fixed by DE twice on this weapon
+            // (37.0.9, 38.5.3), so it wants a measurement and not a reading.
+            "burston_ready_retaliation :: reload_speed_bonus",
+            "burston_prime_ready_retaliation :: reload_speed_bonus",
             "boar_prime_ready_retaliation :: reload_speed_bonus",
             "dual_toxocyst_ready_retaliation :: reload_speed_bonus",
             // ---- AMMO EFFICIENCY, and it is CONDITIONAL -----------------
@@ -1128,6 +1163,17 @@ use crate::loadout::WeaponBase;
             // wholesale, so the two cancel out today. Whoever models a
             // per-type buff payload should check DE fixed the perk first —
             // a mechanic that cannot be measured cannot be verified.
+            // REAVER'S RAPTURE — the largest gap in this list, and the only
+            // one whose trigger the sim can already see. +20% base damage per
+            // COMPLETED BURST to a cap of 5, reset by a reload rather than by
+            // a timeout, so a stacking buff with a duration is the wrong
+            // shape for it. Holding it at max would overstate a full magazine
+            // by 13 points of the base-damage bucket (15 bursts, the first
+            // four spent climbing), which is why it is inert instead of
+            // approximated. `BurstSpec::count` is carried for whoever fixes
+            // this; the weapon yaml has the rest of the rules.
+            "burston_reavers_rapture :: stacking_buff base_damage_bonus",
+            "burston_prime_reavers_rapture :: stacking_buff base_damage_bonus",
             "dual_toxocyst_neurotoxin :: stacking_buff toxin_damage_bonus",
             "dual_toxocyst_ripper_rounds :: stacking_buff punch_through_m",
         ];

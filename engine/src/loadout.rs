@@ -771,6 +771,8 @@ pub struct WeaponBase {
     pub fire_rate_shortens_draw: bool,
     /// Which charge formula paces it — see [`crate::weapons_data::ChargeCadence`].
     pub charge_cadence: crate::weapons_data::ChargeCadence,
+    /// A BURST trigger's shape, unmodded — see [`crate::weapons_data::BurstSpec`].
+    pub burst: Option<crate::weapons_data::BurstSpec>,
     /// What a fire-rate MOD's bonus is multiplied by on this weapon — 2.0 for
     /// bows, whose cards all print "(x2 for Bows)". It reaches the mod bucket
     /// only: a mod-granted BUFF (Pressurized Magazine's on-reload fire rate)
@@ -1003,6 +1005,13 @@ pub struct RadialBase {
     /// single-target arena always is. Declared per weapon because it is a
     /// per-entry quirk, never a rule (MECHANICS §6).
     pub takes_condition_overload: bool,
+    /// See [`crate::weapons_data::RadialSpec::takes_multishot`].
+    pub takes_multishot: bool,
+    /// What fraction of this explosion's evolved base feeds its CO term — the
+    /// radial's own copy of `co_base_fraction`, and it needs one because an
+    /// evolution can raise the explosion's DAMAGE without raising the base CO
+    /// multiplies. See `evolutions_data::apply`, where it is set.
+    pub co_base_fraction: f64,
 }
 
 /// The radial part after mod resolution.
@@ -1034,6 +1043,10 @@ pub struct ResolvedRadial {
     /// See [`RadialBase::takes_condition_overload`] — CO on an explosion is the
     /// exception, not the default.
     pub takes_condition_overload: bool,
+    /// See [`RadialBase::takes_multishot`].
+    pub takes_multishot: bool,
+    /// See [`RadialBase::co_base_fraction`].
+    pub co_base_fraction: f64,
 }
 
 /// A continuous beam's GEOMETRY — shape, not a damage part. Carried so
@@ -1184,6 +1197,10 @@ pub struct ResolvedPanel {
     /// See `weapons_data::WeaponSpec::headshot_bonus_multiplicative`.
     pub headshot_bonus_multiplicative: bool,
     pub charge_cadence: crate::weapons_data::ChargeCadence,
+    /// The burst shape with its DELAY already modded — the same treatment
+    /// `charge_seconds` gets, and for the same reason: a fire-rate bonus is
+    /// spent here rather than re-derived in the sim.
+    pub burst: Option<crate::weapons_data::BurstSpec>,
     pub multishot: f64,
     /// The weapon's UNMODDED pellet count — the base a relative multishot
     /// buff (Conjunction Voltage) multiplies when it joins the bucket live.
@@ -1755,6 +1772,8 @@ pub fn resolve_for(
             falloff_start_m: r.falloff_start_m * (1.0 + br),
             falloff_reduction: r.falloff_reduction,
             takes_condition_overload: r.takes_condition_overload,
+            takes_multishot: r.takes_multishot,
+            co_base_fraction: r.co_base_fraction,
         }
     });
 
@@ -1847,6 +1866,20 @@ pub fn resolve_for(
         ammo_cost: base.ammo_cost,
         headshot_bonus_multiplicative: base.headshot_bonus_multiplicative,
         charge_cadence: base.charge_cadence,
+        // A fire-rate bonus shortens the gap WITHIN a burst as well as the gap
+        // between bursts (wiki: it "affect[s] both the speed of the burst as
+        // well as the time between bursts"), which is what makes a burst
+        // weapon scale linearly like every other gun.
+        //
+        // The `.max(1.0)` is the wiki's one exception, stated outright: "Burst
+        // Delay is not affected by net negative Fire Rate bonuses." So Critical
+        // Delay stretches the gap between bursts and leaves the burst itself
+        // alone — the weapon keeps more of its rate than the card's number
+        // suggests, and only a burst weapon does that.
+        burst: base.burst.map(|b| crate::weapons_data::BurstSpec {
+            count: b.count,
+            delay_seconds: b.delay_seconds / (1.0 + fr + evo_fr_bonus).max(1.0),
+        }),
         headshot_damage_bonus: base.headshot_damage_bonus,
         noncrit_bonus: base.noncrit_bonus,
         plain_hit_bonus: base.plain_hit_bonus,
@@ -2091,6 +2124,43 @@ mod tests {
         let emerg = resolve(&base, &[&cb], StackPolicy::Emergent);
         assert!((amax.status_chance - base.base_status_chance * 1.90).abs() < 1e-9);
         assert!((emerg.status_chance - base.base_status_chance).abs() < 1e-9);
+    }
+
+    /// A FIRE-RATE PENALTY DOES NOT STRETCH THE BURST ITSELF — the wiki's one
+    /// exception, stated outright: *"Burst Delay is not affected by net
+    /// negative Fire Rate bonuses."*
+    ///
+    /// So Critical Delay costs a Burston Prime less than its card says. The
+    /// gap between bursts stretches in full, the two 0.04 s gaps inside the
+    /// burst do not, and the weapon keeps rate the number does not account
+    /// for. This is the ONLY place a burst weapon is more than an auto weapon
+    /// relabelled at its effective rate, which is why it gets its own test.
+    #[test]
+    fn a_fire_rate_penalty_leaves_a_burst_weapon_s_own_delay_alone() {
+        let base = WeaponBase::from_data("burston_prime", false, &[]);
+        let listed = base.burst.expect("burston prime declares a burst").delay_seconds;
+        assert!((listed - 0.04).abs() < 1e-9, "the module's BurstDelay");
+
+        // Critical Delay: -36% fire rate, and nothing else that matters here.
+        let slow = [m("critical_delay", vec![ModEffect::FireRate(-0.36)])];
+        let refs: Vec<&ModDef> = slow.iter().collect();
+        let p = resolve(&base, &refs, StackPolicy::AssumedMax);
+        assert!(
+            (p.burst.unwrap().delay_seconds - listed).abs() < 1e-9,
+            "a NET NEGATIVE fire-rate bonus must leave the burst delay alone"
+        );
+        // ...while the rate itself takes the penalty in full.
+        assert!((p.fire_rate - 5.0 * 0.64).abs() < 1e-9);
+
+        // A POSITIVE bonus shortens BOTH — "Fire Rate bonuses affect both the
+        // speed of the burst as well as the time between bursts" — which is
+        // what makes a burst weapon scale linearly like every other gun. Shred
+        // is +30%.
+        let fast = [m("shred", vec![ModEffect::FireRate(0.30)])];
+        let refs: Vec<&ModDef> = fast.iter().collect();
+        let q = resolve(&base, &refs, StackPolicy::AssumedMax);
+        assert!((q.burst.unwrap().delay_seconds - 0.04 / 1.30).abs() < 1e-9);
+        assert!((q.fire_rate - 5.0 * 1.30).abs() < 1e-9);
     }
 
     #[test]

@@ -1,0 +1,100 @@
+id: burston_prime
+name: Burston Prime
+slot: primary
+# THE ROSTER'S FIRST BURST WEAPON, and the reason `attack.burst` exists. A
+# burst trigger is not a slower auto: the listed fire rate counts BURSTS, so
+# reading it as rounds per second understates this weapon by its burst count.
+# See `weapons_data::BurstSpec` for the wiki formula and what it costs.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+# `CompatibilityTags = { "ASSAULT_AMMO" }`, the same tag Gotva Prime carries —
+# so the assault-rifle-only pool (Tactical Reload, Spring-Loaded Chamber, …)
+# applies here too.
+mod_pools: [primary, rifle, assault_rifle]
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki `Module:Weapons/data/primary`, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 25
+disposition: 1.35            # riven disposition (●●●●●)
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Burston        # module `Family` — SHARED with the Burston
+traits: [prime, never_vaulted]
+introduced: "11.5"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeBurston/PrimeBurston
+noise: alarming              # IsSilent false
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 45
+reload_seconds: 2.0
+
+# Condition Overload: NO row in the wiki's CO catalog for this attack, which
+# the catalog's own header makes a POSITIVE statement — it lists "only
+# discrepant attacks". The family DOES have a row, but it is for the Incarnon
+# form's RADIAL and nothing else; see burston_prime_incarnon.yaml, where it
+# turned out to say something about the evolutions as well.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: burst
+  # THE BURST, and the whole reason this weapon needed engine work.
+  #
+  # The listed `fire_rate` is BURSTS per second (wiki Fire Rate: "the
+  # reciprocal of this value is the delay before being able to fire another
+  # burst after completing a burst"), so one pull is 3 rounds 0.04 s apart and
+  # then a wait:
+  #
+  #   Effective Fire Rate = 3 / (1/5 + 2 x 0.04) = 3 / 0.28 = 10.714 rounds/s
+  #
+  # More than DOUBLE the 5 the stat prints. Reading `fire_rate` as rounds per
+  # second here is not a rounding error, it is wrong by the burst count.
+  burst:
+    count: 3
+    delay_seconds: 0.04      # module BurstDelay (the Burston's own is 0.061)
+  shot_type: hit_scan
+  fire_rate: 5.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.18
+  crit_multiplier: 1.8
+  status_chance: 0.30
+  punch_through_m: 0.0
+  # 13.8 / 13.8 / 18.4 — 46 total, Slash-biased, which is what the page's one
+  # Characteristics line says ("This weapon deals primarily Slash damage").
+  damage: { impact: 13.8, puncture: 13.8, slash: 18.4 }
+  # The cone one round spreads over, in degrees (module MinSpread/MaxSpread).
+  # NOT READ: with one target and no geometry, spread decides nothing.
+  spread_min_deg: 0.0
+  spread_max_deg: 8.0
+
+# TWO WEAPONS MODEL: this is the base form; the Incarnon form is a second
+# weapon entry that this one transforms into.
+transform_group: burston_prime
+transforms_to: burston_prime_incarnon
+
+# incarnon_evolutions (data/evolutions/burston_prime_*.yaml) — FOUR tiers, and
+# the SAME four the Burston gets: one Burston Incarnon Genesis upgrades either
+# weapon, and every row of the wiki's evolution table carries a dash spanning
+# both weapon columns, which is how that table says the two do not differ.
+# - { tier: 1, unlock: installing the Genesis,
+#     options: [burston_prime_evo1_incarnon_form] }
+# - { tier: 2, unlock: complete a solo mission with this weapon equipped,
+#     options: [burston_prime_forceful_finality, burston_prime_fortress_salvo] }
+# - { tier: 3, unlock: kill 100 enemies with this weapon's Incarnon Form,
+#     options: [burston_prime_extended_volley, burston_prime_ready_retaliation,
+#     burston_prime_kinetic_battle] }
+# - { tier: 4, unlock: get 40 weakpoint hits with this weapon in Incarnon form
+#     in a single mission,
+#     options: [burston_prime_reavers_rapture, burston_prime_absolute_valor,
+#     burston_prime_fatal_affliction] }
+#
+# Installing it costs 20 Pathos Clamps, 60 Rune Marrow and 20 Maw Fang, or 120
+# platinum from Cavalero, once. (The Boar's third resource is 60 Tasoma
+# Extract — the Geneses are not priced alike.)
+
+source:
+  url: https://wiki.warframe.com/w/Burston_Prime

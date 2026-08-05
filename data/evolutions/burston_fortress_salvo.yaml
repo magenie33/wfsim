@@ -1,0 +1,31 @@
+id: burston_fortress_salvo
+name: Fortress Salvo
+weapon: burston
+tier: 2
+icon: PunchThroughWithArmorAboveX(xWhite).png
+description: "Increase Base Damage by +42.\nWith Armor Over 450: +2 Punch Through."
+# THE GENESIS IS THE FAMILY'S. One Burston Incarnon Genesis upgrades either the
+# Burston or the Burston Prime, and the wiki's evolution table proves the two
+# get the SAME evolutions: every row spans both weapon columns with a dash
+# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+# difference".
+selection: choose_one
+
+effects:
+  # The same +42 its tier-mate gives, so this pair is decided entirely by the
+  # second line — and in a single-target arena neither second line does
+  # anything, which makes the two evolutions genuinely equal here. Worth
+  # stating rather than leaving a reader to wonder why the optimizer is
+  # indifferent between them.
+  - kind: flat_base_damage
+    value: 42.0
+  # NOT LOADED: no `punch_through` arm in the evolutions loader, and the
+  # condition is on the TENNO's armour. Punch through decides nothing in a
+  # single-target arena either way. (The Boar's copy of this evolution grants
+  # +4; this one grants +2.)
+  - kind: punch_through_bonus
+    value: 2.0
+    condition: tenno_armor_over_450
+
+source:
+  url: https://wiki.warframe.com/w/Burston_Incarnon_Genesis

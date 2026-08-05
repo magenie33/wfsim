@@ -1,0 +1,38 @@
+id: burston_forceful_finality
+name: Forceful Finality
+weapon: burston
+tier: 2
+icon: MultishotOnLastBurstInMag(xWhite).png
+description: "Increase Base Damage by +42.\n+5 Base Multishot on final magazine burst."
+# THE GENESIS IS THE FAMILY'S. One Burston Incarnon Genesis upgrades either the
+# Burston or the Burston Prime, and the wiki's evolution table proves the two
+# get the SAME evolutions: every row spans both weapon columns with a dash
+# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+# difference".
+selection: choose_one
+
+effects:
+  # +42 to the base TOTAL, spread pro-rata across the vector before mods. On
+  # the Prime that is 46 -> 88; on the Burston 30 -> 72, which is the larger
+  # RELATIVE gain of the two — the same flat number is worth more to the
+  # weaker weapon, and it is why this tier matters more here than there.
+  #
+  # It reaches the INCARNON form's explosion as well, which is not obvious and
+  # is sourced: see burston_prime_incarnon.yaml, where the CO catalog's radial
+  # row (55 = 13 + 42) is what says so.
+  - kind: flat_base_damage
+    value: 42.0
+  # "+5 BASE Multishot", so mods multiply it — "Multishot bonus is added before
+  # mods, and is thus multiplied by multishot bonuses" (wiki). The window is
+  # the final BURST, three rounds on this weapon, which is what
+  # `multishot_on_last_round` now means on a weapon that declares a burst:
+  # taking it as ONE round would have understated a magazine's pellets by a
+  # fifth.
+  - kind: multishot_on_last_round
+    value: 5.0
+    # "Multishot bonus does not affect the Incarnon form" (wiki) — and it does
+    # not reach it here either, because the loader drops this effect on a
+    # charge-backed form.
+
+source:
+  url: https://wiki.warframe.com/w/Burston_Incarnon_Genesis

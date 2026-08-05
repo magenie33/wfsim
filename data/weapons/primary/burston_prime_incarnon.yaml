@@ -1,0 +1,162 @@
+id: burston_prime_incarnon
+name: Burston Prime (Incarnon Form)
+slot: primary
+class: rifle
+# Gauge-switched: entering it costs a charge meter and a transmute animation,
+# which is what gives the sim a two-form CYCLE to run.
+form: incarnon
+
+# TWO WEAPONS MODEL: second entry of the transform group — see
+# data/weapons/primary/burston_prime.yaml for the base form.
+transform_group: burston_prime
+transforms_from: burston_prime
+
+mod_pools: [primary, rifle, assault_rifle]
+mastery_rank: 12
+max_rank: 30
+accuracy: 28.57              # module Accuracy for attack 2 (the base form's is 25)
+disposition: 1.35
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Burston
+traits: [prime, never_vaulted]
+internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeBurston/PrimeBurston
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 45
+reload_seconds: 2.0
+
+# The Incarnon transformation economy (wiki Burston Incarnon Genesis).
+#
+# EVERY NUMBER IN THIS BLOCK IS THE BURSTON'S TOO — one Genesis, one economy.
+# It is a far RICHER one than the Boar's: 20 weakpoint hits fill the gauge
+# against 50, and each charge is worth 30 rounds against 3. A Burston player
+# spends a fifth of the weakpoints for four times the form.
+incarnon:
+  gauge:
+    # VERBATIM: "Incarnon Form is charged by filling the Incarnon Transmutation
+    # gauge that appears under the reticle by achieving weakpoint hits and then
+    # pressing the Alternate Fire button. 20 weakpoints hits will completely
+    # fill the gauge."
+    charge_on: weakpoint_hits
+    charges_to_fill: 20
+    # "each charge producing 30 rounds to a maximum of 600" — and 20 x 30 =
+    # 600, so the gauge and the pool are the same statement twice. The module
+    # carries both halves independently (IncarnonChargeGain 30, attack 2's
+    # IncarnonCharges 600), which is the cross-check.
+    rounds_per_charge: 30
+    max_rounds: 600
+    # charge_rules:
+    # - "A full gauge is not required to activate Incarnon Form."
+    # - "Individual Multishot bullets can build charges."
+    # - Charges do NOT generate on most MOA backpacks, nor on vulnerability
+    #   spots made by Sonar / Detect Vulnerability away from real weakpoints.
+    # - "Weakpoints on corpses or Invulnerable targets do not build charges."
+    # - Charges and the form survive holstering, bleedout and disarms; DEATH
+    #   removes both.
+  transmute:
+    activation: alt_fire
+    # VERBATIM: "Mode switching is not instantaneous and has an animation equal
+    # to the weapon's reload speed."
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+    # "Swapping to and from Incarnon Form will fully reload the normal form's
+    # magazine." NOT READ by the engine — the cycle already returns to the base
+    # form through a reload-length animation.
+    refills_base_magazine: true
+  incarnon_magazine:
+    resource: incarnon_charges
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 2.0      # = the base form's reload time, unmodded
+  # 1 s is MEASURED on Dual Toxocyst (MEASUREMENTS M9) and applied uniformly
+  # until some weapon is measured to differ.
+  transmute_out_seconds: 1.0
+
+# SIM CONVENIENCE: with the gauge LOCKED full, the cycle reduces to a
+# magazine/reload model — 600 rounds, then 2.0 + 1.0 s of transitions.
+pseudo_reload:
+  magazine: 600
+  reload_seconds: 3.0
+
+# CONDITION OVERLOAD — the direct hit is ordinary; the RADIAL is not, and its
+# catalog row turned out to say something about the evolutions too.
+#
+# The DIRECT hit has no row, so it is Additive at the full base. The radial
+# has one, and it is the family's only entry in the whole table:
+#
+#   Burston/Burston Prime | Incarnon Form Radial Attack | AoE |
+#     Attack Damage 55 | CO Damage Bonus at +100% 13 | 24% | Adding
+#     "Listed values for Burston Prime. Radial hit only receives CO bonus on
+#      target directly hit by bullet. AoE does not scale off multishot."
+#
+# THREE facts, and the arithmetic is what ties them together. The radial's own
+# base is 13 Heat, and the only +42 anywhere in this Genesis is Evolution II's
+# flat damage — so the "55" is 13 + 42, i.e. the explosion DOES take the
+# evolution's flat base damage. The "13" is what CO still multiplies, so the
+# explosion does NOT take it into its CO base, and 13/55 is the 24% the third
+# column prints. One row settles both halves of a question the engine had
+# marked "INFERENCE, not a citation" (evolutions_data::apply).
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: auto                 # "Incarnon Form becomes fully automatic"
+  shot_type: hit_scan
+  fire_rate: 20.0               # against the base form's effective 10.714
+  multishot: 1.0
+  ammo_cost: 1                  # of the separate 600-round charge pool
+  crit_chance: 0.28
+  crit_multiplier: 3.0
+  status_chance: 0.30
+  punch_through_m: 0.0
+  # PURE HEAT, and much less of it — "it deals much less base damage" is the
+  # page's own summary. 13 against the base form's 46, bought back with double
+  # the rate, a 10-point crit chance, a 1.2x bigger multiplier, and the
+  # explosion below, which doubles what one round puts on a single target.
+  damage: { heat: 13.0 }
+  # THE RADIAL (AoE) part — "shots exploding in a 2 meter area of effect".
+  # Rules in MECHANICS §7, plus the two this entry declares for itself.
+  radial:
+    damage: { heat: 13.0 }
+    radius_m: 2.0
+    falloff_start_m: 0.0
+    # "the explosion possesses Damage Falloff from 100% to 0% from central
+    # impact" — a full reduction, unlike the Laetum radial's 0.2 floor. NOT
+    # READ single-target: the round detonates ON the target, so the epicentre
+    # distance is zero and the falloff never bites.
+    #
+    # (The module gives the BURSTON's copy of this attack Reduction 0 rather
+    # than 1, which contradicts the Genesis page's prose for a weapon the same
+    # sentence covers. Recorded as 1.0 on both, because the prose is explicit
+    # and the field decides nothing here — but it is a real disagreement, and
+    # a spatial model should re-check it rather than trust this line.)
+    falloff_reduction: 1.0
+    crit_chance: 0.28
+    crit_multiplier: 3.0
+    status_chance: 0.30
+    # CO ON AN EXPLOSION — the exception, and this weapon is the roster's
+    # first. "Radial hit only receives CO bonus on target directly hit by
+    # bullet", which the single-target arena always is.
+    takes_condition_overload: true
+    # ...and it fires ONCE PER PULL, not once per pellet: "AoE does not scale
+    # off multishot" / "The Radial Attack does not benefit from Multishot
+    # bonuses". A radial normally rides its projectile, so this is declared
+    # rather than assumed.
+    takes_multishot: false
+  # Also stated and NOT read, recorded so nobody looks for them:
+  #  - the radial has a HEADSHOT multiplier of 1x (which is the rule for every
+  #    radial in this engine already — an explosion never headshots);
+  #  - "On Punch Through Radial Attack will hit only first enemy or be stopped
+  #    if fired through an obstacle" — multi-target geometry.
+  spread_min_deg: 2.0
+  spread_max_deg: 5.0
+
+# incarnon_evolutions: see data/weapons/primary/burston_prime.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Burston_Incarnon_Genesis
+  # Attack stats cross-checked wiki Module:Weapons/data/primary ("Burston
+  # Prime", attack 2 "Incarnon Form" and attack 3 "Incarnon Form Radial
+  # Attack") == WFCD warframe-items, joined on internal name.

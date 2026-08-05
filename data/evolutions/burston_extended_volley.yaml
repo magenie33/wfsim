@@ -1,0 +1,24 @@
+id: burston_extended_volley
+name: Extended Volley
+weapon: burston
+tier: 3
+icon: IncarnonClipSize(xWhite).png
+description: "Increase Base Magazine Capacity by +21."
+# THE GENESIS IS THE FAMILY'S. One Burston Incarnon Genesis upgrades either the
+# Burston or the Burston Prime, and the wiki's evolution table proves the two
+# get the SAME evolutions: every row spans both weapon columns with a dash
+# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+# difference".
+selection: choose_one
+
+effects:
+  # 45 -> 66 rounds. It is the BASE, so magazine mods multiply the new value.
+  # Against a 2 s reload at 10.714 rounds/s that turns 4.2 s of firing into
+  # 6.2 s, i.e. the reload's share of the cycle falls from 32% to 24%.
+  - kind: flat_base_magazine
+    value: 21
+    # The loader drops this on a charge-backed form, so the Incarnon form's
+    # 600-round pool is untouched — that pool is charges, not a magazine.
+
+source:
+  url: https://wiki.warframe.com/w/Burston_Incarnon_Genesis

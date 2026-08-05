@@ -1,0 +1,43 @@
+id: burston_reavers_rapture
+name: Reaver's Rapture
+weapon: burston
+tier: 4
+icon: DamageIncreaseOnFullBurstHitResetOnReload(xWhite).png
+description: "On Full Burst Hit: +20% Damage, resets on Reload."
+# THE GENESIS IS THE FAMILY'S. One Burston Incarnon Genesis upgrades either the
+# Burston or the Burston Prime, and the wiki's evolution table proves the two
+# get the SAME evolutions: every row spans both weapon columns with a dash
+# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+# difference".
+selection: choose_one
+
+effects:
+  # NOT MODELLED, and this is the one real gap in the Burston's ladder — a
+  # stacking +20% that caps at "5x for +100% damage, additive with base damage
+  # mods such as Serration" (wiki), i.e. it joins the base-damage bucket that
+  # Serration and the +42 above share.
+  #
+  # WHAT IT NEEDS, so the next person does not re-derive it:
+  #  - the trigger is a COMPLETED BURST, which the sim can see (`burst.count`
+  #    is carried for exactly this reason) but does not yet raise as an event;
+  #  - it "activates even if the first hit of a burst kills the target" and is
+  #    "not affected by multishot or punch through", so it is one count per
+  #    burst regardless of what the burst hit;
+  #  - it "resets on Reload" — NOT a duration, so a stacking buff with a
+  #    timeout is the wrong shape for it;
+  #  - it "resets when activating incarnon, and cannot be stacked in Incarnon
+  #    form", so the Incarnon entry must never see it.
+  #
+  # Holding it at max would OVERSTATE the build: a 45-round magazine is 15
+  # bursts and the first four are spent climbing, so a full magazine averages
+  # about +87% rather than +100%. That is why it is inert rather than
+  # approximated — an assumed-max here is 13 points of a damage bucket.
+  - kind: stacking_buff
+    per_stack:
+      base_damage_bonus: 0.20
+    max_stacks: 5
+    trigger: full_burst_hit
+    reset: reload
+
+source:
+  url: https://wiki.warframe.com/w/Burston_Incarnon_Genesis

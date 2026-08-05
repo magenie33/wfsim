@@ -1,0 +1,72 @@
+id: burston
+name: Burston
+slot: primary
+# The Burston Prime's base variant, and the second half of the roster's first
+# burst FAMILY. Everything structural is the Prime's — see
+# data/weapons/primary/burston_prime.yaml for what a burst trigger costs.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 0             # a starter-tier weapon: the module says Mastery 0
+max_rank: 30
+
+# Weapon-level metadata (wiki `Module:Weapons/data/primary`, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 25
+disposition: 1.45            # riven disposition — HIGHER than the Prime's 1.35,
+                             # the usual shape, and the same 1.45 the Boar has
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Burston        # module `Family` — SHARED with the Burston Prime
+traits: [tenno]
+introduced: "Vanilla"        # in the game at launch
+internal_name: /Lotus/Weapons/Tenno/Rifle/BurstRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 45
+reload_seconds: 2.0
+
+# Condition Overload: no row for this attack in the wiki's CO catalog, and the
+# catalog lists only discrepancies — so Additive at the full base. The family's
+# ONE row is for the Incarnon form's radial (burston_incarnon.yaml).
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: burst
+  # THE BURST. The listed `fire_rate` counts BURSTS, so one pull is 3 rounds
+  # 0.061 s apart and then a wait:
+  #
+  #   Effective Fire Rate = 3 / (1/5 + 2 x 0.061) = 3 / 0.322 = 9.317 rounds/s
+  #
+  # The Prime reaches 10.714 off the SAME listed 5, purely on a tighter burst
+  # delay — 0.04 against 0.061. That is a stat the arsenal never prints and
+  # the one place these two weapons differ in cadence rather than damage.
+  burst:
+    count: 3
+    delay_seconds: 0.061     # module BurstDelay
+  shot_type: hit_scan
+  fire_rate: 5.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.06
+  crit_multiplier: 1.6
+  status_chance: 0.18
+  punch_through_m: 0.0
+  # 10 / 10 / 10 — an even 30, against the Prime's Slash-biased 46.
+  damage: { impact: 10.0, puncture: 10.0, slash: 10.0 }
+  spread_min_deg: 0.0
+  spread_max_deg: 8.0
+
+transform_group: burston
+transforms_to: burston_incarnon
+
+# incarnon_evolutions (data/evolutions/burston_*.yaml) — the SAME four tiers
+# the Burston Prime gets; see that file for the ladder and the challenges. One
+# Genesis covers either weapon and the wiki's table gives every row a dash
+# spanning both weapon columns.
+
+source:
+  url: https://wiki.warframe.com/w/Burston

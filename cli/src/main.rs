@@ -25,6 +25,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         tenno: wfsim_engine::tenno_data::default_tenno().clone(),
         // Not a charge weapon: inert without charge_seconds.
         charge_cadence: wfsim_engine::weapons_data::ChargeCadence::DrawThenRate,
+        burst: None,
         radial: None,
         lingering: None,
         continuous: false,

@@ -1,0 +1,26 @@
+id: burston_evo1_incarnon_form
+name: Incarnon Form
+weapon: burston
+tier: 1
+icon: AutomaticKillsExplode(xWhite).png
+description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes.\nGain an Auto Fire mode and deal Radial Heat Damage."
+# THE GENESIS IS THE FAMILY'S. One Burston Incarnon Genesis upgrades either the
+# Burston or the Burston Prime, and the wiki's evolution table proves the two
+# get the SAME evolutions: every row spans both weapon columns with a dash
+# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+# difference".
+selection: fixed                # tier 1 has no choice
+
+# Under the two-weapons model this perk IS the unlock of weapon #2: the auto
+# trigger, the pure Heat vector, the doubled fire rate and the 2 m explosion
+# are all properties of the burston_incarnon entry, not perk payload.
+effects:
+  # LOADED as `EvoEffect::UnlocksForm(weapon)`. It applies no stat — the form
+  # is a separate weapon entry carrying its own — but the ENGINE READS IT:
+  # asking to fire that form implies this evolution, because tier 1 is
+  # `selection: fixed`.
+  - kind: unlocks_weapon
+    weapon: burston_incarnon
+
+source:
+  url: https://wiki.warframe.com/w/Burston_Incarnon_Genesis

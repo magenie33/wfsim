@@ -99,6 +99,10 @@ pub struct AttackSpec {
     /// second cadence rule, not a tweak to this one.
     #[serde(default)]
     pub charge_seconds: Option<f64>,
+    /// A BURST trigger's shape — the Burston's three-round pull. See
+    /// [`BurstSpec`] for the cadence formula and why it is exact here.
+    #[serde(default)]
+    pub burst: Option<BurstSpec>,
     #[serde(default = "one")]
     pub multishot: f64,
     pub crit_chance: f64,
@@ -215,6 +219,14 @@ pub struct RadialSpec {
     /// the CO catalog lists (the Zylok's Incarnon radial has such a row).
     #[serde(default)]
     pub takes_condition_overload: bool,
+    /// Does the explosion fire once PER PELLET, or once per trigger pull?
+    ///
+    /// Default YES (per pellet) — a radial rides its projectile, so a weapon
+    /// that throws two projectiles detonates twice. The Burston's Incarnon is
+    /// the exception the wiki states outright: "The Radial Attack does not
+    /// benefit from Multishot bonuses". Declared per entry, never inferred.
+    #[serde(default = "yes")]
+    pub takes_multishot: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -522,6 +534,10 @@ pub struct WeaponSpec {
     pub perks: Vec<PerkRef>,
 }
 
+fn yes() -> bool {
+    true
+}
+
 fn one() -> f64 {
     1.0
 }
@@ -778,6 +794,47 @@ fn pretty_id(id: &str) -> String {
         .join(" ")
 }
 
+/// A BURST trigger: one pull fires `count` rounds `delay_seconds` apart, and
+/// the weapon's listed `fire_rate` is BURSTS per second, not rounds.
+///
+/// VERBATIM (wiki Fire Rate), and the reason a burst weapon is not just a
+/// slower auto:
+///
+/// - *"Effective Fire Rate = Burst Count / [1/Fire Rate + [(Burst Count−1)⋅
+///   Burst Delay]]"*
+/// - *"Fire Rate bonuses affect both the speed of the burst as well as the
+///   time between bursts"*
+/// - *"Burst Delay is not affected by net negative Fire Rate bonuses."*
+///
+/// The middle line is what makes this cheap: because a bonus scales BOTH
+/// terms, the effective rate is exactly linear in the fire-rate multiplier, so
+/// a positive-bonus build is indistinguishable from an auto weapon listed at
+/// the effective rate. The THIRD line is the only place burst stops being a
+/// relabelling — a net-negative bonus (Critical Delay, Vile Precision) stops
+/// stretching the intra-burst delay while it keeps stretching the gap between
+/// bursts, so the weapon loses less rate than the number on the card says.
+/// That asymmetry is modelled; see the `.max(1.0)` in `loadout::resolve`.
+///
+/// WHAT IS NOT MODELLED, stated because it is a real difference: the sim
+/// spaces rounds EVENLY at the effective rate instead of clumping them into
+/// bursts. Nothing the single-target arena reads can tell the difference —
+/// total rounds, ammo, status rolls and reload cadence are all identical over
+/// any whole number of bursts — but a buff whose window is shorter than one
+/// burst cycle (0.28 s on a Burston Prime) would see a different pattern, and
+/// so would a per-burst TRIGGER. The Burston has exactly one of those, Reaver's
+/// Rapture ("On Full Burst Hit: +20% Damage"), and it is the reason `count`
+/// is carried rather than folded away into an effective rate: whoever models
+/// that perk needs "every `count`-th round completes a burst", which this
+/// field is, and which an effective rate would have thrown away.
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+pub struct BurstSpec {
+    /// Rounds per pull. Each is a full instance — its own multishot, crit and
+    /// status rolls — so this is NOT multishot.
+    pub count: u32,
+    /// Seconds between rounds WITHIN a burst (the module's `BurstDelay`).
+    pub delay_seconds: f64,
+}
+
 /// The arcane pools this weapon SEATS, in slot order.
 ///
 /// Keyed on the equipment slot, which is what the game keys it on — an Arch-Gun
@@ -853,6 +910,12 @@ fn traits_for(s: &WeaponSpec) -> &'static [&'static str] {
     match base.attack.trigger.as_str() {
         "semi_auto" => out.push("semi_auto"),
         "auto" => out.push("auto"),
+        // A burst trigger is its OWN family, not a semi-auto that fires three
+        // times: the wiki lists the Burston's trigger as "Burst", and the
+        // Semi-* mods gate on the listed trigger. So a Burston takes no
+        // Semi-Rifle Cannonade, which is exactly what the roster's Cannonade
+        // table asserts weapon by weapon.
+        "burst" => out.push("burst"),
         _ => {}
     }
     // Leaked because the class is data-driven and the caller wants a 'static
@@ -948,6 +1011,10 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
             falloff_start_m: r.falloff_start_m.unwrap_or(0.0),
             falloff_reduction: r.falloff_reduction.unwrap_or(0.0),
             takes_condition_overload: r.takes_condition_overload,
+            takes_multishot: r.takes_multishot,
+            // 1.0 until an evolution raises the explosion's base without
+            // raising what CO multiplies — see `evolutions_data::apply`.
+            co_base_fraction: 1.0,
         }
     });
 
@@ -1024,6 +1091,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // listed rate's interval. Carried as a fact about the weapon rather
         // than re-derived from the class in the sim, which has no business
         // knowing what a bow is.
+        burst: s.attack.burst,
         charge_cadence: if s.class == "bow" {
             ChargeCadence::DrawOnly
         } else {

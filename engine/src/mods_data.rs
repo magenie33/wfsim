@@ -915,7 +915,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 11] = [
+        const EXPECTED: [(&str, &str, &[&str]); 13] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
@@ -930,6 +930,13 @@ mod tests {
             ("gotva_prime", "auto", &[]),                      // full-auto rifle
             ("karak_wraith", "auto", &[]),                     // full-auto rifle
             ("prisma_grinlok", "semi_auto", &["semi_rifle_cannonade"]),
+            // BURST is its own trigger family, and this is where that claim
+            // is cashed: the Semi-* mods gate on the LISTED trigger, the wiki
+            // lists the Burston as "Burst", so it takes no Cannonade at all —
+            // not even the rifle one, which every other rifle here argues
+            // about. Firing three rounds a pull is not being semi-auto.
+            ("burston", "burst", &[]),
+            ("burston_prime", "burst", &[]),
             ("dual_toxocyst", "semi_auto", &["semi_pistol_cannonade"]),
             ("laetum", "semi_auto", &["semi_pistol_cannonade"]),
             ("verglas_prime", "held", &[]),                    // continuous sentinel weapon
