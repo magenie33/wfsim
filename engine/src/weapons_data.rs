@@ -734,12 +734,14 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
         );
     }
 
-    if s.no_resupply {
-        out.push(
-            "It cannot be resupplied: once the reserve is gone the weapon is removed for five minutes, so its ammo is the whole engagement."
-                .to_string(),
-        );
-    }
+    // NOT `no_resupply`. It was listed here and taken out (owner, 2026-08-05:
+    // "这个不是被动...是archgun一类的特性"): every ground Arch-Gun is removed
+    // when its reserve runs out, so it says nothing about THIS weapon. A line
+    // that is true of a whole class does not belong on the entry for one member
+    // of it — it reads as a distinguishing feature and distinguishes nothing.
+    //
+    // The rule still reaches the player where it is a decision: the scenario's
+    // Infinite-ammo control is forced off for such a weapon, and says why.
 
     // A PERK NAMES ITSELF AND STOPS THERE. `weapons_data::PerkSpec` carries the
     // reference and its element injection; the NUMBERS live in the perk's own
