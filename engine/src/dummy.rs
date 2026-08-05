@@ -1241,6 +1241,11 @@ pub struct DummyParams {
     /// Deadly Efficiency: a RELATIVE base-damage bonus whose window opens when
     /// the reload COMPLETES (owner, 2026-08-01), not when the magazine empties.
     pub bd_on_reload: Option<crate::loadout::TimedBuff>,
+    /// GOTVA PRIME'S PASSIVE: a pellet that lands a status has `chance` to arm
+    /// the NEXT landing pellet's crit chance to `crit_chance`, exactly — the
+    /// modded value and every crit bonus are ignored, because the card says
+    /// "Set Critical Chance ignores all other modifiers".
+    pub super_crit_on_status: Option<crate::weapons_data::SuperCritSpec>,
     /// Hemorrhage's status-conversion roll (per damage instance, max one).
     pub proc_conversion: Option<crate::loadout::ProcConv>,
     /// The equipped secondary arcane, resolved at its rank from
@@ -1700,6 +1705,7 @@ impl DummyParams {
             cd_on_kill: panel.cd_on_kill,
             fr_on_reload: panel.fr_on_reload,
             bd_on_reload: panel.bd_on_reload,
+            super_crit_on_status: panel.super_crit_on_status,
             proc_conversion: panel.proc_conversion,
             arcane: ArcaneFx::none(),
             enervate_stacks: 0,
@@ -1858,6 +1864,7 @@ impl Default for DummyParams {
             cd_on_kill: None,
             fr_on_reload: None,
             bd_on_reload: None,
+            super_crit_on_status: None,
             proc_conversion: None,
             // Secondary Enervate at max rank — the historical calibration
             // profile's arcane (the ramp/reset mechanic is the perk).
@@ -3345,6 +3352,11 @@ pub fn run_once_traced(
     let mut t = 0.0f64;
     let mut magazine = params.magazine_size;
     let mut reserve = params.reserve_ammo;
+    // GOTVA PRIME'S PASSIVE, armed. Set by a pellet that landed a status, spent
+    // by the next pellet that lands. It survives across shots and reloads: the
+    // card says the chance "remains until landing another successful shot", and
+    // nothing but a landing shot spends it.
+    let mut super_crit_armed = false;
     // Deadly Efficiency's window. Opens at reload COMPLETION — `t` is already
     // past the reload when this is set, the same as `fr_reload_expiry` — and
     // seeded from its card exactly like its three siblings.
@@ -3906,6 +3918,19 @@ pub fn run_once_traced(
                 } else {
                     0.0
                 };
+            // GOTVA PRIME: an armed pellet's crit chance is SET, replacing the
+            // modded value and the weak-point bonus alike — "Set Critical
+            // Chance ignores all other modifiers, whether from mods or Warframe
+            // abilities". The tier UPGRADE still runs on the result, which is
+            // how Vigilante reaches a Tier-4 hit off it, so the lock binds the
+            // chance and not the ceiling.
+            let cc_pellet = match params.super_crit_on_status {
+                Some(sc) if super_crit_armed => {
+                    super_crit_armed = false;
+                    sc.crit_chance
+                }
+                _ => cc_pellet,
+            };
             let tier =
                 upgrade_crit_tier(roll_crit_tier(cc_pellet, rng), ap.crit_tier_upgrade_chance, rng);
             // Headshot bonuses form an additive bracket that MULTIPLIES
@@ -4339,6 +4364,20 @@ pub fn run_once_traced(
             if let Some(b) = ap.plain_hit_bonus {
                 if tier == 0 && procs.is_empty() {
                     plain_stacks.bump(t, b.duration, b.max_stacks);
+                }
+            }
+            // ...and ARM it for the next pellet. ONE roll per pellet that
+            // landed at least one status — "Applying multiple status effects in
+            // a single hit does not increase the chance for the effect" — and
+            // per PELLET rather than per trigger pull, since the card says it
+            // triggers "separately for each bullet when using Multishot".
+            //
+            // Rolled BEFORE `settle_procs` consumes `procs`, and after the spend
+            // above: a pellet that spends the buff can re-arm it with its own
+            // status, which is what makes a high-status weapon hold it up.
+            if let Some(sc) = params.super_crit_on_status {
+                if !procs.is_empty() && rng.chance(sc.chance) {
+                    super_crit_armed = true;
                 }
             }
             settle_procs(
@@ -9382,6 +9421,69 @@ mod tests {
             "split damage scaled by {exponent_ratio} across a {f} faction bonus; \
              f³ is {want}, f² would be {}",
             f * f
+        );
+    }
+
+    /// GOTVA PRIME'S PASSIVE — a status-triggered crit-chance SET, and the
+    /// first crit LOCK in the engine.
+    ///
+    /// Measured out of the sim rather than asserted: with the passive on, the
+    /// share of pellets that crit rises toward the armed rate, and it does so
+    /// ONLY when statuses are landing. A weapon that procs nothing can never
+    /// arm it, which is the cleanest proof that the trigger is the status and
+    /// not the shot.
+    #[test]
+    fn gotva_super_crit_arms_on_status_and_only_on_status() {
+        let sc = crate::weapons_data::SuperCritSpec { chance: 0.15, crit_chance: 3.0 };
+        let build = |status: f64, passive: bool| DummyParams {
+            // TOXIN, not Gotva Prime's own Puncture: a Puncture proc applies
+            // Weakened, which grants crit chance of its own — the control would
+            // then crit for a reason that is not the passive. (In play the two
+            // do stack, and that is part of why this weapon likes statuses.)
+            damage: DamageVector::new().with(DamageType::Toxin, 100.0),
+            // `base_crit_chance` is the RESOLVED one despite the name, so zero
+            // here means every crit observed came from the passive.
+            base_crit_chance: 0.0,
+            unmodded_crit_chance: 0.0,
+            status_chance: status,
+            base_status_chance: status,
+            fire_rate: 10.0,
+            magazine_size: 1e9,
+            infinite_reserve: true,
+            super_crit_on_status: passive.then_some(sc),
+            // A CLEAN baseline. `DummyParams::default()` is the Dual Toxocyst
+            // fixture WITH Secondary Enervate, whose arcane contributes crit —
+            // so without these the "0% crit weapon never crits" control fails
+            // for a reason that has nothing to do with the passive.
+            arcane: crate::arcanes_data::ArcaneFx::none(),
+            crit_tier_upgrade_chance: 0.0,
+            weakpoint_cc_rel: 0.0,
+            body_parts: vec![BodyPart {
+                name: "body".into(),
+                aim_weight: 1.0,
+                multiplier: 1.0,
+                is_head: false,
+                crit_bonus: false,
+            }],
+            ..DummyParams::default()
+        };
+        let crit_share = |p: &DummyParams| monte_carlo(p, 300, 0x607A).mean_crit_rate;
+
+        // No passive: a 0% crit weapon never crits, whatever it procs.
+        let ctl = crit_share(&build(1.0, false));
+        assert!(ctl < 1e-9, "0% crit and no passive, got {ctl}");
+        // Passive, but NOTHING to trigger it: still never.
+        assert!(
+            crit_share(&build(0.0, true)) < 1e-9,
+            "a weapon that applies no status can never arm it"
+        );
+        // Passive AND statuses landing: it crits, and at roughly the armed rate.
+        // Every pellet procs, so ~15% of them arm the NEXT one, and an armed
+        // pellet crits with certainty (300% is three guaranteed tiers).
+        let on = crit_share(&build(1.0, true));
+        assert!(
+            (on - 0.15).abs() < 0.03,
+            "armed share {on}, want ~0.15 (15% of pellets arm the next)"
         );
     }
 

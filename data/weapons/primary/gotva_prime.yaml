@@ -38,8 +38,7 @@ reload_seconds: 2.0
 # Additive behaviour at the full +100% on the full base. See docs/MECHANICS.md.
 co_behavior: additive_with_base_damage
 
-# THE PASSIVE — NOT MODELLED YET, and recorded here so the gap is stated rather
-# than silent (reported 2026-08-05, the day after this weapon was added).
+# THE PASSIVE.
 #
 #   "Status Effects have a 15% chance to set the next hit's Critical Chance
 #    to 300%."
@@ -69,11 +68,14 @@ co_behavior: additive_with_base_damage
 # CONSEQUENCE while it is missing: this weapon is simulated WITHOUT it, so its
 # board row is a floor rather than its real output.
 #
-# The flag below is CONSUMED — it reaches `/api/meta` and the page prints it, so
-# a player is told rather than left to wonder why a weapon with a famous passive
-# scores like one without. It was briefly written and removed as dead data; it
-# is a field again because something reads it now.
-passive_unmodeled: true
+# MODELLED 2026-08-05. `engine::dummy` arms a flag when a pellet lands a status
+# and spends it on the next pellet, whose crit chance becomes exactly
+# `crit_chance` — a SET, so the modded value and every crit bonus are ignored.
+# The tier upgrade still applies on top, which is what lets Vigilante reach
+# Tier 4 (wiki).
+super_crit_on_status:
+  chance: 0.15
+  crit_chance: 3.0
 
 attack:
   trigger: auto

@@ -680,8 +680,10 @@ pub fn meta_json() -> Value {
                     .is_some_and(|s| s.no_resupply),
                 // A PASSIVE WE DO NOT MODEL, so the page can say the number is
                 // a floor rather than let it read as the weapon's real output.
-                "passive_unmodeled": wfsim_engine::weapons_data::spec(&w.id)
-                    .is_some_and(|s| s.passive_unmodeled),
+                // Empty today — Gotva Prime's was the only one and it is
+                // modelled now — and kept because the NEXT weapon with a prose
+                // passive should have somewhere honest to sit while it waits.
+                "passive_unmodeled": false,
                 // The mods this weapon can actually EQUIP, by id. The client
                 // used to union the class tables and re-apply the rules in JS,
                 // which is one fact stated twice — and the copy went stale the

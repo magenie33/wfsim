@@ -800,6 +800,9 @@ pub struct WeaponBase {
     /// `ammo_max`: false only where the weapon states none, which today is
     /// every sentinel weapon ("Ammo Max: ∞ / Ammo Type: None").
     pub has_reserve: bool,
+    /// Gotva Prime's passive: a status-triggered crit-chance SET. See
+    /// `weapons_data::SuperCritSpec`.
+    pub super_crit_on_status: Option<crate::weapons_data::SuperCritSpec>,
     /// ...and can it NOT be refilled mid-fight? See `WeaponSpec::no_resupply`.
     /// Separate from the above on purpose — most weapons have a reserve AND a
     /// way to top it up.
@@ -1192,6 +1195,8 @@ pub struct ResolvedPanel {
     pub ammo_reserve: f64,
     pub has_reserve: bool,
     pub no_resupply: bool,
+    /// Untouched by mods — the passive's numbers are the weapon's own.
+    pub super_crit_on_status: Option<crate::weapons_data::SuperCritSpec>,
     pub reload_seconds: f64,
     /// Σ reload-speed bonuses — transitions (Incarnon transmute/revert)
     /// scale by the same formula: time = base / (1 + this).
@@ -1869,6 +1874,7 @@ pub fn resolve_for(
         .floor(),
         has_reserve: base.has_reserve,
         no_resupply: base.no_resupply,
+        super_crit_on_status: base.super_crit_on_status,
         reload_seconds: base.base_reload / (1.0 + rl),
         reload_bonus: rl,
         base_damage_bonus: bd,

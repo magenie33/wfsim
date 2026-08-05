@@ -483,19 +483,10 @@ pub struct WeaponSpec {
     /// behind its magazine; what it also has is a way to get more.
     #[serde(default)]
     pub no_resupply: bool,
-    /// Does this weapon have a PASSIVE the sim does not model?
-    ///
-    /// Gotva Prime is the first: "Status Effects have a 15% chance to set the
-    /// next hit's Critical Chance to 300%" — a probabilistic, status-triggered
-    /// crit-chance LOCK, and the engine has no crit-chance lock at all. The
-    /// weapon simulates without it, which makes its number a FLOOR, and saying
-    /// so is the difference between an honest gap and a wrong answer nobody can
-    /// see (2026-08-05).
-    ///
-    /// A bool and not a sentence: the explanation belongs in the weapon file's
-    /// comments where a maintainer reads it, and the page needs the fact.
+    /// A status-triggered crit-chance LOCK — Gotva Prime's passive, and the
+    /// first of its kind in the roster.
     #[serde(default)]
-    pub passive_unmodeled: bool,
+    pub super_crit_on_status: Option<SuperCritSpec>,
     #[serde(default)]
     pub reload_seconds: Option<f64>,
     #[serde(default)]
@@ -691,6 +682,22 @@ pub fn polarity(name: &str) -> Polarity {
         "umbra" => Polarity::Umbra,
         other => panic!("unknown polarity in weapon data: {other}"),
     }
+}
+
+/// "Status Effects have a X% chance to set the next hit's Critical Chance to
+/// Y" — Gotva Prime's passive (wiki, Characteristics).
+///
+/// A SET and not a bonus: "Set Critical Chance ignores all other modifiers,
+/// whether from mods or Warframe abilities". The tier UPGRADE still applies
+/// afterwards, which is how Vigilante can carry it to a Tier-4 hit — so the
+/// lock binds the chance, not the ceiling.
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+pub struct SuperCritSpec {
+    /// Per pellet that applied at least one status. Several statuses on one
+    /// hit do not raise it (wiki).
+    pub chance: f64,
+    /// The chance the next landing pellet uses, verbatim. 3.0 = 300%.
+    pub crit_chance: f64,
 }
 
 /// The arcane pools this weapon SEATS, in slot order.
@@ -977,6 +984,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // REFILL it is the weapon's own business and is declared.
         ammo_reserve: s.ammo_max.unwrap_or(0.0),
         has_reserve: s.ammo_max.is_some_and(|a| a > 0.0),
+        super_crit_on_status: s.super_crit_on_status,
         no_resupply: s.no_resupply,
         base_reload,
         innate_co_per_type: 0.0,
