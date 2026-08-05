@@ -30,6 +30,10 @@ weapons:
   gotva_prime: GrnOrokinRifle.png
   karak_wraith: KarakWraith.png
   prisma_grinlok: PrismaGrinlok.png
+  # The roster's first beam pistol (2026-08-05).
+  # CDN has no file for it, so the FETCHER takes it from the wiki; the cached
+  # name and the page URL stay the bare name either way.
+  ocucor: wiki:Ocucor.png
   dual_toxocyst: DualToxocyst.png
   dual_toxocyst_incarnon: DualToxocyst.png
   laetum: ZarimanHeavyPistol.png
@@ -52,14 +56,6 @@ mods:
   # statement about where the file lives.
   # Assault-rifle-only pool (2026-08-05). Rifle Ammo Mutation and its Primed
   # version share one card art, which is DE's own doing.
-  guided_ordnance: AccuracyWhileAimingMods.jpg
-  gun_glide: LessRecoilMoreAccuracyRifleMod.jpg
-  overview: HigherAirAimFoVRifleMod.jpg
-  primed_rifle_ammo_mutation: RifleAmmoMutatorMod.jpg
-  rifle_ammo_mutation: RifleAmmoMutatorMod.jpg
-  spring_loaded_chamber: FireRateWhileAimingMods.jpg
-  tactical_reload: PassiveReloadRifleMod.jpg
-  tainted_mag: CorruptedMaxClipForReloadSpeedMod.jpg
   accelerated_blast: ShotgunAcceleratedBlast.jpg
   accelerated_isotope: RadiationFireratePistolMod.jpg
   aerial_ace: JumpRefreshOnKillRifleMod.jpg
@@ -155,6 +151,8 @@ mods:
   galvanized_savvy: WeaponStatusChanceSPMod.jpg
   galvanized_scope: CritChanceWhileAimingRifleSPMod.jpg
   galvanized_shot: WeaponStatusChanceSPModMods.jpg
+  guided_ordnance: AccuracyWhileAimingMods.jpg
+  gun_glide: LessRecoilMoreAccuracyRifleMod.jpg
   gunslinger: PistolFireRateMod.jpg
   hammer_shot: RifleHammerSHotMod.jpg
   hawk_eye: PistolZoomMod.jpg
@@ -202,6 +200,7 @@ mods:
   motus_setup: RaptorsAmbush.jpg
   nano_applicator: StatusChanceWhileAiming.jpg
   narrow_barrel: AccuracyWhileAiming.jpg
+  overview: HigherAirAimFoVRifleMod.jpg
   parallax_scope: ArchwingRifleCritChanceMod.jpg
   pathogen_rounds: PoisonDamagePistolMod.jpg
   perpetual_agony: WeaponProcTimePistolMod.jpg
@@ -253,6 +252,7 @@ mods:
   primed_point_blank: ShotgunDamageAmountMod.jpg
   primed_quickdraw: PistolReloadSpeedMod.jpg
   primed_ravage: ShotgunCritDamageMod.jpg
+  primed_rifle_ammo_mutation: RifleAmmoMutatorMod.jpg
   primed_rubedo_lined_barrel: ArchwingRifleDamageAmountMod.jpg
   primed_shotgun_ammo_mutation: ShotgunAmmoMutatorMod.jpg
   primed_shred: Shred.jpg
@@ -273,6 +273,7 @@ mods:
   reflex_draw: PvPWeaponSwapSpeedPistol.jpg
   repeater_clip: FireRateWhileAiming.jpg
   resolute_focus: ArchwingCCImmunityIfAimingMod.jpg
+  rifle_ammo_mutation: RifleAmmoMutatorMod.jpg
   rifle_aptitude: StatusChanceRifleMod.jpg
   rifle_elementalist: RifleStatusDamageDuoMod.jpg
   rime_rounds: IceEventRifleMod.jpg
@@ -292,6 +293,7 @@ mods:
   semi_pistol_cannonade: PistolSemiAutoFantasyMod.jpg
   semi_rifle_cannonade: RifleSemiAutoFantasyMod.jpg
   semi_shotgun_cannonade: ShotgunSemiAutoFantasyMod.jpg
+  sentient_surge: NightwaveOcucorAugmentMod.jpg
   serrated_rounds: DamageBiasSlashRifleMod.jpg
   serration: RifleDamageAmountMod.jpg
   sharpened_bullets: CritDamageWhileAimingMods.jpg
@@ -314,6 +316,7 @@ mods:
   spectral_serration: WeaponDamageAmountInvisibleMod.jpg
   speed_trigger: RifleFireRateMod.jpg
   split_chamber: RifleFireIterationsMod.jpg
+  spring_loaded_chamber: FireRateWhileAimingMods.jpg
   stabilizer: RifleRecoilReductionMod.jpg
   steady_hands: PistolRecoilReductionMod.jpg
   stormbringer: RifleElectricityDamageMod.jpg
@@ -323,6 +326,8 @@ mods:
   sweeping_serration: EventSlashDamageShotgunMod.jpg
   synth_charge: PystolSynthChargeMod.jpg
   tactical_pump: ShotgunReloadSpeedMod.jpg
+  tactical_reload: PassiveReloadRifleMod.jpg
+  tainted_mag: CorruptedMaxClipForReloadSpeedMod.jpg
   tainted_shell: CorruptedSpreadForFireRateShotgunMod.jpg
   target_cracker: PistolCritDamageMod.jpg
   targeting_subsystem: AccuracyWhileAimingMods.jpg

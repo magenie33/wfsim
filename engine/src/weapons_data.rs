@@ -499,6 +499,9 @@ pub struct WeaponSpec {
     /// first of its kind in the roster.
     #[serde(default)]
     pub super_crit_on_status: Option<SuperCritSpec>,
+    /// The Ocucor's tendrils — see [`TendrilSpec`].
+    #[serde(default)]
+    pub tendrils: Option<TendrilSpec>,
     #[serde(default)]
     pub reload_seconds: Option<f64>,
     #[serde(default)]
@@ -750,6 +753,17 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
         );
     }
 
+    // THE OCUCOR'S TENDRILS. Says what it is AND what it is worth HERE, because
+    // the second half is the surprising one: this is the weapon's whole
+    // identity and its damage against a lone enemy is zero. A line that only
+    // described the passive would read as a promise the number does not keep.
+    if let Some(t) = s.tendrils {
+        out.push(format!(
+            "Every kill spawns an energy tendril that reaches for ANOTHER enemy, up to {}; a reload or an empty magazine clears them all. Their damage is NOT counted here — a tendril homing on the target you are already shooting is cosmetic (wiki) and this sim fights one enemy — but the count is, because Sentient Surge pays crit chance and status chance per active tendril.",
+            t.max
+        ));
+    }
+
     // NOT `no_resupply`. It was listed here and taken out (owner, 2026-08-05:
     // "这个不是被动...是archgun一类的特性"): every ground Arch-Gun is removed
     // when its reserve runs out, so it says nothing about THIS weapon. A line
@@ -833,6 +847,27 @@ pub struct BurstSpec {
     pub count: u32,
     /// Seconds between rounds WITHIN a burst (the module's `BurstDelay`).
     pub delay_seconds: f64,
+}
+
+/// THE OCUCOR'S TENDRILS: a kill spawns an energy tendril, up to `max`, and
+/// any magazine event clears them all.
+///
+/// WHAT IS DELIBERATELY ABSENT: damage. A tendril reaches for a DIFFERENT
+/// enemy, and the wiki is explicit about the one that reaches this fight's
+/// target — *"Tendrils homing in on the main beam's target are only cosmetic,
+/// and don't deal any additional damage or status effects."* So in a
+/// single-target arena a tendril's own damage is zero, and modelling it would
+/// inflate the weapon by up to four beams that the source says are not there.
+///
+/// The COUNT still matters, which is why this type exists at all: Sentient
+/// Surge scales crit chance and status chance with how many tendrils are up,
+/// and those land on the MAIN beam, which is real damage against this target.
+/// The passive therefore reaches the fight through the mod and not through
+/// itself.
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+pub struct TendrilSpec {
+    /// The cap. Four on the Ocucor.
+    pub max: u32,
 }
 
 /// The arcane pools this weapon SEATS, in slot order.
@@ -1131,6 +1166,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         ammo_reserve: s.ammo_max.unwrap_or(0.0),
         has_reserve: s.ammo_max.is_some_and(|a| a > 0.0),
         super_crit_on_status: s.super_crit_on_status,
+        tendril_max: s.tendrils.map_or(0, |t| t.max),
         no_resupply: s.no_resupply,
         base_reload,
         innate_co_per_type: 0.0,
@@ -1334,6 +1370,7 @@ mod tests {
 
         let with = |e: Vec<ModEffect>| {
             let m = crate::loadout::ModDef {
+                exclusive_to: &[],
                 unmodeled: false,
             out_of_scope: false,
                 id: "t",

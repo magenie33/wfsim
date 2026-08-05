@@ -252,6 +252,16 @@ pub enum ModEffect {
     /// Sharpened Bullets: on ANY kill, +bonus relative crit damage (while
     /// aiming — the sim assumes constant aiming) for `duration` seconds.
     OnKillCritDamage { bonus: f64, duration: f64 },
+    /// SENTIENT SURGE: crit chance and status chance per ACTIVE TENDRIL.
+    ///
+    /// The two travel together because they ARE one number — "Status Chance /
+    /// Crit Chance Increase" is a single column on the wiki's rank table, and
+    /// no rank of this mod raises one without the other. The magazine refill
+    /// is its own column there and its own effect here.
+    PerTendril { crit_chance: f64, status_chance: f64 },
+    /// ...and that refill: a fraction of the magazine back on every kill,
+    /// drawn from the reserve ("This mod does not generate ammo").
+    MagazineRefillOnKill(f64),
     /// Pressurized Magazine: on reload, +bonus relative fire rate (while
     /// aiming) for `duration` seconds.
     OnReloadFireRate { bonus: f64, duration: f64 },
@@ -505,6 +515,13 @@ impl ModEffect {
             BaseDamage(v) => format!("{} Base Damage", pct(v)),
             Multishot(v) => format!("{} Multishot", pct(v)),
             CritChance(v) => format!("{} Crit Chance", pct(v)),
+            // Both halves in one line, because they are one column on the card
+            // and always equal; the refill is a separate sentence because it
+            // answers a different question.
+            PerTendril { crit_chance, .. } => {
+                format!("{} Crit Chance and Status Chance per active tendril", pct(crit_chance))
+            }
+            MagazineRefillOnKill(v) => format!("on kill, {} of the magazine back", pct(v)),
             CritDamage(v) => format!("{} Crit Damage", pct(v)),
             StatusChance(v) => format!("{} Status Chance", pct(v)),
             FireRate(v) => format!("{} Fire Rate", pct(v)),
@@ -590,6 +607,9 @@ pub struct ModDef {
     /// the beam-only mods. Distinct from `requires`, which is a calc-layer
     /// gate: that one equips and sits inert, this one is never offered.
     pub requires_weapon: Option<&'static str>,
+    /// The weapons this mod may be equipped on, and nothing else. Empty means
+    /// "any weapon whose pool carries it" — see `mods_data`.
+    pub exclusive_to: &'static [&'static str],
     /// DE's INCOMPATIBILITY tags for this mod, lowercased — the mirror of
     /// `requires_weapon`, and the reason Amalgam Serration is not offered on
     /// a sentinel weapon while plain Serration is (wiki: "This mod cannot be
@@ -805,6 +825,10 @@ pub struct WeaponBase {
     /// Gotva Prime's passive: a status-triggered crit-chance SET. See
     /// `weapons_data::SuperCritSpec`.
     pub super_crit_on_status: Option<crate::weapons_data::SuperCritSpec>,
+    /// How many tendrils this weapon can hold up (0 = it has none). See
+    /// `weapons_data::TendrilSpec` for why the COUNT is modelled and the
+    /// tendrils' own damage is not.
+    pub tendril_max: u32,
     /// ...and can it NOT be refilled mid-fight? See `WeaponSpec::no_resupply`.
     /// Separate from the above on purpose — most weapons have a reserve AND a
     /// way to top it up.
@@ -1214,6 +1238,17 @@ pub struct ResolvedPanel {
     pub no_resupply: bool,
     /// Untouched by mods — the passive's numbers are the weapon's own.
     pub super_crit_on_status: Option<crate::weapons_data::SuperCritSpec>,
+    /// Untouched by mods: the tendril cap is the weapon's.
+    pub tendril_max: u32,
+    /// Sentient Surge: crit chance added PER ACTIVE TENDRIL, relative to the
+    /// unmodded base — "Additive to other crit chance and status chance mods"
+    /// (wiki), so it joins the same bucket Pistol Gambit does rather than
+    /// forming one of its own.
+    pub cc_per_tendril: f64,
+    /// Its status half, same bucket rule.
+    pub sc_per_tendril: f64,
+    /// Fraction of the magazine returned on each kill, from the reserve.
+    pub mag_refill_on_kill: f64,
     pub reload_seconds: f64,
     /// Σ reload-speed bonuses — transitions (Incarnon transmute/revert)
     /// scale by the same formula: time = base / (1 + this).
@@ -1388,6 +1423,10 @@ pub fn resolve_for(
         (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     // Magazine-capacity and status-duration additive buckets.
     let (mut mag, mut sdur) = (0.0, 0.0);
+    // Sentient Surge's three, carried to the sim rather than spent here: all
+    // three depend on fight state (how many tendrils are up, whether anything
+    // died) that the panel cannot know.
+    let (mut per_tendril_cc, mut per_tendril_sc, mut mag_refill) = (0.0, 0.0, 0.0);
     // Blast RANGE bucket (Firestorm / Fulmination): + the sum, of base radius.
     let mut br = 0.0;
     // Hunter Munitions: its own bucket, because its roll is its own.
@@ -1447,6 +1486,16 @@ pub fn resolve_for(
                 ModEffect::BaseDamage(v) => bd += v,
                 ModEffect::Multishot(v) => ms += v,
                 ModEffect::CritChance(v) => cc += v,
+                // The per-tendril halves do NOT join `cc`/`sc` here: their
+                // size depends on how many tendrils are up, which is a fact
+                // about the fight and not about the build. They travel to the
+                // sim as rates and are spent there, the same way an on-reload
+                // buff is.
+                ModEffect::PerTendril { crit_chance, status_chance } => {
+                    per_tendril_cc += crit_chance;
+                    per_tendril_sc += status_chance;
+                }
+                ModEffect::MagazineRefillOnKill(v) => mag_refill += v,
                 ModEffect::CritDamage(v) => cd += v,
                 ModEffect::StatusChance(v) => sc += v,
                 // "(x2 for Bows)" is on the CARD of every fire-rate mod, so it
@@ -1908,6 +1957,10 @@ pub fn resolve_for(
         has_reserve: base.has_reserve,
         no_resupply: base.no_resupply,
         super_crit_on_status: base.super_crit_on_status,
+        tendril_max: base.tendril_max,
+        cc_per_tendril: per_tendril_cc,
+        sc_per_tendril: per_tendril_sc,
+        mag_refill_on_kill: mag_refill,
         reload_seconds: base.base_reload / (1.0 + rl),
         reload_bonus: rl,
         base_damage_bonus: bd,
@@ -1969,6 +2022,7 @@ mod tests {
 
     fn m(id: &'static str, effects: Vec<ModEffect>) -> ModDef {
         ModDef {
+            exclusive_to: &[],
             unmodeled: false,
             out_of_scope: false,   // a hand-built test mod discloses nothing
             id,

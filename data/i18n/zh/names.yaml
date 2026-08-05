@@ -28,6 +28,8 @@ weapons:
   # 野猪, PrimeBoar -> 野猪 Prime). Checked rather than recalled: the CN wiki
   # was unreachable the day these went in, and a remembered name is a
   # translated one wearing a disguise.
+  # DE's own string (WFCD i18n.json, CrpSentExperimentPistol).
+  ocucor: 视使之触
   burston: 伯斯顿
   burston_incarnon: 伯斯顿 (灵化形态)
   burston_prime: 伯斯顿 Prime
@@ -372,6 +374,7 @@ mods:
   spring_loaded_chamber: 簧压膛室
   tactical_reload: 机动装填
   tainted_mag: 腐败弹匣
+  sentient_surge: Sentient 涌现
 
 arcanes:
   akimbo_slip_shot: 双枪·滑射

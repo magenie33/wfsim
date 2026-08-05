@@ -1,0 +1,116 @@
+id: ocucor
+name: Ocucor
+slot: secondary
+# THE ROSTER'S FIRST BEAM PISTOL. Verglas Prime is the only other continuous
+# weapon here and it is a sentinel weapon drawing rifle mods, so this is the
+# first time `continuous` and the PISTOL pool meet — which is what makes
+# Ruinous Extension (a pistol beam-range mod that has sat inert since it was
+# entered) finally describe something.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+grip_type: GUN_ONE_HAND
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki `Module:Weapons/data/secondary`, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100                # "Pinpoint accuracy" — the page's own advantage
+disposition: 1.2             # riven disposition
+polarities: []               # no innate main polarities in either source
+exilus_polarity: madurai
+riven_family: Ocucor
+traits: [corpus, sentient]   # a Corpus weapon built around Sentient tech
+introduced: "24"
+internal_name: /Lotus/Weapons/Corpus/Pistols/CrpSentExperimentPistol/CrpSentExperimentPistol
+noise: alarming              # IsSilent false
+ammo_type: secondary
+ammo_max: 300
+ammo_pickup: 40
+magazine: 60
+reload_seconds: 1.6
+
+# Condition Overload: no discrepant row in the wiki's CO catalog, so the
+# ordinary Additive class at the full base. This weapon IS named on that page,
+# but in the PROSE rather than the table — "Multi-beam — (e.g., Ocucor)" sits
+# under "forms that apply CO", which is a statement that CO reaches it at all,
+# not that it reaches it differently. Absence from the TABLE is what decides
+# the class, and it is absent.
+co_behavior: additive_with_base_damage
+
+# THE PASSIVE — TENDRILS, and they are worth NOTHING in this arena.
+#
+#   "Kills with this weapon releases an energy tendril that can home-in on
+#    enemies close to the targeting reticle, up to a maximum of 4 tendrils."
+#
+# The line that decides it, verbatim from the same page:
+#
+#   "Tendrils homing in on the main beam's target are only COSMETIC, and
+#    don't deal any additional damage or status effects."
+#
+# So a tendril is worth something only when there is a SECOND enemy for it to
+# reach. This sim has one target, and the tendrils that reach it are explicitly
+# nothing — which makes "not modelled as damage" the CORRECT answer here rather
+# than a gap being confessed. Modelling them would inflate the weapon by up to
+# five beams' worth of damage that the wiki says do not exist on this target.
+#
+# The COUNT is a different matter and is modelled (`tendrils` below), because
+# Sentient Surge reads it: that mod's crit and status bonuses scale with how
+# many tendrils are up, and those bonuses land on the main beam, which is
+# real single-target damage. So the passive contributes to this fight through
+# the MOD and not through its own damage.
+#
+# The rules, transcribed:
+#  - a kill by the primary beam, or by a status effect from any source
+#    (including one a tendril applied), spawns a tendril;
+#  - a DIRECT kill by a tendril does NOT spawn another;
+#  - the cap is 4;
+#  - tendrils vanish on reload or when the magazine empties — even a CANCELLED
+#    reload clears them, and so does holstering;
+#  - they lock enemies within 40 degrees of the reticle and hold until 60;
+#  - their base damage equals the primary beam's, and they roll their own crits
+#    and status;
+#  - their range is 20 m and Ruinous Extension extends it.
+tendrils:
+  max: 4
+  # WHAT CLEARS THEM. Both are magazine events, which is why this weapon wants
+  # its magazine kept full — see Sentient Surge, whose on-kill refill exists to
+  # postpone exactly this.
+  cleared_by: [reload, empty_magazine]
+
+attack:
+  trigger: held                # continuous: `fire_rate` is TICKS per second
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  # HALF an ammo per tick — the wiki's continuous-weapon rule ("consume 0.5
+  # ammo per trace"), and this weapon states it in its own data rather than
+  # inheriting it. It is also the whole of the page's "very inefficient ammo
+  # economy" disadvantage: 60 rounds at 12 ticks a second is 10 seconds of
+  # fire, and the reserve behind it is only 300.
+  ammo_cost: 0.5
+  crit_chance: 0.16
+  crit_multiplier: 1.8
+  status_chance: 0.24
+  punch_through_m: 0.0
+  # 11 total, and almost all of it Radiation — "This weapon deals primarily
+  # Radiation damage". A weapon whose innate element is already combined is
+  # the case MECHANICS §3 rule 2 is about: the innate takes what the elemental
+  # mods leave, rather than combining with them.
+  damage: { puncture: 1.0, radiation: 10.0 }
+  # NO `beam:` BLOCK, deliberately — the same call boar_prime_incarnon.yaml
+  # makes, and for the same reason. That block requires `damage_radius_m` and
+  # `chain`, and this weapon has NEITHER: it does not splash and it does not
+  # chain. It is a "Multi-beam" in the CO catalog's taxonomy — several beams,
+  # each hitting its own target — and the tendrils above ARE that multi-beam.
+  # Writing a zero radius and an empty chain to satisfy a schema would be
+  # inventing two facts to record none.
+  #
+  # What is lost by omitting it is the RANGE, so it is stated here: 20 m for
+  # both the main beam and the tendrils, which the page lists as a
+  # disadvantage, and which Ruinous Extension is the mod that moves. The engine
+  # reads no range single-target either way.
+
+source:
+  url: https://wiki.warframe.com/w/Ocucor

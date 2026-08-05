@@ -1243,6 +1243,17 @@ pub struct DummyParams {
     /// Deadly Efficiency: a RELATIVE base-damage bonus whose window opens when
     /// the reload COMPLETES (owner, 2026-08-01), not when the magazine empties.
     pub bd_on_reload: Option<crate::loadout::TimedBuff>,
+    /// The Ocucor's tendril cap (0 = no tendrils). Their own damage is not
+    /// modelled and should not be — see `weapons_data::TendrilSpec`; the COUNT
+    /// is what Sentient Surge reads.
+    pub tendril_max: u32,
+    /// Sentient Surge's crit chance per ACTIVE tendril, relative to the
+    /// unmodded base (it joins the crit-chance bucket).
+    pub cc_per_tendril: f64,
+    /// ...and its status half, same bucket.
+    pub sc_per_tendril: f64,
+    /// ...and the fraction of the magazine a kill puts back.
+    pub mag_refill_on_kill: f64,
     /// GOTVA PRIME'S PASSIVE: a pellet that lands a status has `chance` to arm
     /// the NEXT landing pellet's crit chance to `crit_chance`, exactly — the
     /// modded value and every crit bonus are ignored, because the card says
@@ -1709,6 +1720,10 @@ impl DummyParams {
             fr_on_reload: panel.fr_on_reload,
             bd_on_reload: panel.bd_on_reload,
             super_crit_on_status: panel.super_crit_on_status,
+            tendril_max: panel.tendril_max,
+            cc_per_tendril: panel.cc_per_tendril,
+            sc_per_tendril: panel.sc_per_tendril,
+            mag_refill_on_kill: panel.mag_refill_on_kill,
             proc_conversion: panel.proc_conversion,
             arcane: ArcaneFx::none(),
             enervate_stacks: 0,
@@ -1869,6 +1884,10 @@ impl Default for DummyParams {
             fr_on_reload: None,
             bd_on_reload: None,
             super_crit_on_status: None,
+            tendril_max: 0,
+            cc_per_tendril: 0.0,
+            sc_per_tendril: 0.0,
+            mag_refill_on_kill: 0.0,
             proc_conversion: None,
             // Secondary Enervate at max rank — the historical calibration
             // profile's arcane (the ramp/reset mechanic is the perk).
@@ -3380,6 +3399,24 @@ pub fn run_once_traced(
         .cycle
         .as_ref()
         .map_or(0.0, |c| c.base_form.magazine_size);
+    // THE OCUCOR'S TENDRILS, tracked as two watermarks rather than as a
+    // counter incremented at every kill.
+    //
+    // DERIVED, and deliberately: `r.kills` is already maintained by SIX
+    // different sites (beam kills, status-proc kills, field-tick kills, the
+    // cycle's own…), and a seventh will exist one day. Hooking each of them is
+    // how one gets missed; reading the total they all feed cannot miss any.
+    // Same for the clear, which keys off `r.reloads` — every reload path in
+    // this loop increments it, including the cycle's.
+    //
+    // It also happens to be exactly right about WHICH kills count. The wiki
+    // excludes one case — "Direct kills with tendrils will not generate an
+    // additional tendril" — and a tendril deals no damage in a single-target
+    // arena (its damage on the beam's own target is cosmetic), so a tendril
+    // kills nothing here and `r.kills` is precisely the qualifying set.
+    let mut tendril_kill_mark = 0u32;
+    let mut tendril_reload_mark = 0u32;
+    let mut tendrils = 0u32;
     loop {
         // SAMPLE first, so a frame shows the fight as it stood BEFORE the
         // shot at `t` — the same convention the timeline buckets use.
@@ -3461,6 +3498,34 @@ pub fn run_once_traced(
                 ap.ammo_cost * (1.0 - eff)
             }
         };
+
+        // TENDRILS and the magazine they keep alive, both re-derived from the
+        // counters above before anything decides to reload.
+        if params.tendril_max > 0 || params.mag_refill_on_kill > 0.0 {
+            // A reload — or an empty magazine, which in this sim always leads
+            // to one — clears every tendril. "Tendrils disappear upon
+            // reloading or emptying the magazine."
+            if r.reloads != tendril_reload_mark {
+                tendril_reload_mark = r.reloads;
+                tendril_kill_mark = r.kills;
+            }
+            // SENTIENT SURGE's refill, spent before the reload check below so
+            // that a kill can genuinely save a reload — which is the whole
+            // point of the mod. "Reloaded ammo is taken from the Ocucor's ammo
+            // reserves. This mod does not generate ammo", so it draws like any
+            // other reload and a dry reserve gives nothing.
+            if params.mag_refill_on_kill > 0.0 && r.kills > tendril_kill_mark {
+                let earned = f64::from(r.kills - tendril_kill_mark)
+                    * params.mag_refill_on_kill
+                    * params.magazine_size;
+                let room = (params.magazine_size - magazine).max(0.0);
+                let want = earned.min(room);
+                if want > 0.0 {
+                    magazine += draw_from(&mut reserve, params.infinite_reserve, want);
+                }
+            }
+            tendrils = (r.kills - tendril_kill_mark).min(params.tendril_max);
+        }
 
         // Phase transitions and reloads.
         if let Some(cy) = &params.cycle {
@@ -3656,7 +3721,11 @@ pub fn run_once_traced(
         }) + params.cc_stack.as_ref().map_or(0.0, |s| {
             ch_stacks.retain(|&e| e > t);
             s.per_stack * ch_stacks.len() as f64
-        }) + params.arcane.cc_rel;
+        }) + params.arcane.cc_rel
+            // SENTIENT SURGE: "Additive to other crit chance and status chance
+            // mods", so it belongs in the RELATIVE bucket beside Pistol
+            // Gambit's — multiplying the unmodded base, not the modded one.
+            + params.cc_per_tendril * f64::from(tendrils);
         let effective_cc =
             ap.base_crit_chance + flat_crit + weakened_cc + ap.unmodded_crit_chance * cc_rel;
 
@@ -4133,7 +4202,12 @@ pub fn run_once_traced(
                 // "additive to mods like Rifle Aptitude"), so the relative
                 // bonus multiplies THIS part's own unmodded base — the
                 // explosion's differs from the direct hit's.
-                let sc_arc = arc.total(&params.arcane.buffs, ArcGrant::StatusChance, t);
+                // ...and SENTIENT SURGE's status half rides the same bucket
+                // for the same reason ("Additive to other ... status chance
+                // mods"). Summed with the arcane's before either is spent, so
+                // the two cannot end up multiplying each other.
+                let sc_arc = arc.total(&params.arcane.buffs, ArcGrant::StatusChance, t)
+                    + params.sc_per_tendril * f64::from(tendrils);
                 let status_chance = beam_merge
                     * match &rad {
                         None => ap.status_chance + ap.base_status_chance * sc_arc,
@@ -5142,6 +5216,7 @@ mod tests {
         };
         use crate::mods::Polarity;
         let expel = ModDef {
+            exclusive_to: &[],
             unmodeled: false,
             out_of_scope: false,
             id: "expel_grineer",
@@ -7005,6 +7080,64 @@ mod tests {
             (s.mean_damage - 1125.0).abs() / 1125.0 < 0.02,
             "mean damage was {}",
             s.mean_damage
+        );
+    }
+
+    /// THE OCUCOR'S TENDRILS, through Sentient Surge: every kill is worth
+    /// crit chance and status chance, and a RELOAD takes all of it away.
+    ///
+    /// The reload half is the one worth pinning. "Tendrils disappear upon
+    /// reloading or emptying the magazine", and the mod's own page repeats it
+    /// — "Reloading the weapon will reset the bonuses, as they are directly
+    /// tied to its tendril effect which resets on reload." A model that let
+    /// the stacks ride through a reload would look right in every reading that
+    /// never reloads, which is exactly the reading a short test does.
+    ///
+    /// The tendrils' own DAMAGE is deliberately absent and is not tested here,
+    /// because there is nothing to test: on the beam's own target a tendril is
+    /// cosmetic (wiki), and this arena has no second target.
+    #[test]
+    fn tendrils_buy_crit_chance_and_a_reload_takes_it_back() {
+        // Base crit 0, so EVERY crit in the result came from a tendril: the
+        // measurement cannot be diluted by a base the weapon already had.
+        let build = |mag: f64, per_tendril: f64| DummyParams {
+            base_crit_chance: 0.0,
+            unmodded_crit_chance: 1.0, // the base a relative bonus multiplies
+            crit_multiplier: 2.0,
+            tendril_max: 4,
+            cc_per_tendril: per_tendril,
+            magazine_size: mag,
+            reload_seconds: 0.5,
+            fire_rate: 10.0,
+            duration_secs: 60.0,
+            body_parts: mono_body(1.0),
+            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            // flat_base(), not no_status(): the default fixture carries an
+            // arcane that crits on its own, which would supply the very thing
+            // this test is trying to attribute to tendrils.
+            ..flat_base()
+        };
+        let crit_rate = |p: &DummyParams| {
+            let r = run_once(p, &mut Rng::new(7));
+            assert!(r.kills > 0, "the fixture must actually kill something");
+            r.crits as f64 / r.pellets.max(1) as f64
+        };
+
+        // A magazine that never runs out: kills accumulate tendrils and the
+        // crit chance climbs to the cap.
+        let deep = crit_rate(&build(100_000.0, 0.25));
+        assert!(deep > 0.5, "tendrils should be carrying the crit rate, got {deep}");
+
+        // OFF, same fixture: nothing but the zero base is left.
+        let none = crit_rate(&build(100_000.0, 0.0));
+        assert!(none < 1e-9, "no tendril bonus means no crits at all, got {none}");
+
+        // A ONE-ROUND magazine reloads after every shot, so no tendril ever
+        // survives to the next pull. Same kills, same bonus, no benefit.
+        let shallow = crit_rate(&build(1.0, 0.25));
+        assert!(
+            shallow < deep / 2.0,
+            "a reload must clear the tendrils: deep magazine {deep}, one-round {shallow}"
         );
     }
 

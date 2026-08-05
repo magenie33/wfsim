@@ -45,6 +45,12 @@ struct ModFile {
     /// Weapon property required to EQUIP this mod ("continuous").
     #[serde(default)]
     requires_weapon: Option<String>,
+    /// WEAPON IDS this mod may be equipped on, and nothing else. Distinct from
+    /// `requires_weapon`, which names a PROPERTY several weapons can share:
+    /// this names the weapons themselves, because some mods are written for
+    /// exactly one ("Can equip the Ocucor-exclusive Sentient Surge mod").
+    #[serde(default)]
+    exclusive_to: Vec<String>,
     /// DE's own INCOMPATIBILITY tags, lowercased ("sentinel_weapon",
     /// "power_weapon") — the mirror of `requires_weapon`. NOT the existing
     /// `incompatible_with:` key, which names other MODS and duplicates
@@ -248,6 +254,16 @@ fn effect(v: &Value) -> Option<ModEffect> {
                 // Sharpened Bullets / Pressurized Magazine: the sim has kill
                 // and reload events, so these run emergently (the while_aiming
                 // condition is satisfied — the sim assumes constant aiming).
+                // SENTIENT SURGE — one card, three numbers, so one effect.
+                // The trigger word is `per_tendril` because that is what the
+                // bonus scales with; it is not an EVENT like the others in
+                // this table, and calling it `on_kill` would have been the
+                // easy lie (kills spawn tendrils, but a reload takes them all
+                // away without a kill anywhere).
+                ("per_tendril", "crit_and_status") => {
+                    ModEffect::PerTendril { crit_chance: per, status_chance: per }
+                }
+                ("on_kill", "magazine_refill") => ModEffect::MagazineRefillOnKill(per),
                 ("on_kill", "crit_damage") => {
                     ModEffect::OnKillCritDamage { bonus: per, duration: dur }
                 }
@@ -398,6 +414,13 @@ fn to_moddef(mf: ModFile) -> ModDef {
         family: mf.family.map(|s| &*Box::leak(s.into_boxed_str())),
         set: mf.set.map(|s| &*Box::leak(s.into_boxed_str())),
         requires_weapon: mf.requires_weapon.map(|s| &*Box::leak(s.into_boxed_str())),
+        exclusive_to: Box::leak(
+            mf.exclusive_to
+                .into_iter()
+                .map(|s| &*Box::leak(s.into_boxed_str()))
+                .collect::<Vec<&'static str>>()
+                .into_boxed_slice(),
+        ),
         excludes_weapon: mf
             .excludes_weapon
             .into_iter()
@@ -571,6 +594,17 @@ pub fn pool_for_build(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
             // An unknown requirement hides the mod rather than ignoring the
             // restriction — a mod offered where it cannot go is the worse bug.
             Some(_) => false,
+        })
+        // A mod written for ONE weapon goes nowhere else. Matched against the
+        // transform GROUP as well as the id, so an Incarnon form counts as the
+        // weapon its mod was written for rather than as a stranger.
+        .filter(|m| {
+            m.exclusive_to.is_empty()
+                || m.exclusive_to.contains(&weapon_id)
+                || spec
+                    .transform_group
+                    .as_deref()
+                    .is_some_and(|g| m.exclusive_to.contains(&g))
         })
         .filter(|m| !(no_ammo_pool && only_ammo_max(m)))
         // DE's INCOMPATIBILITY tags — the mirror of `requires_weapon`, and the
@@ -902,6 +936,33 @@ mod tests {
         assert!(!has("cernos_prime", "semi_rifle_cannonade"), "a charge bow is not semi-auto");
     }
 
+    /// A MOD WRITTEN FOR ONE WEAPON GOES NOWHERE ELSE.
+    ///
+    /// "Can equip the Ocucor-exclusive Sentient Surge mod" (wiki, Ocucor), and
+    /// exclusivity is an EQUIP rule: the mod is never offered elsewhere rather
+    /// than equipping and sitting inert. Asserted in BOTH directions, because
+    /// only one of them is the interesting failure — a gate that hides the mod
+    /// everywhere passes any test that only checks it is absent from the
+    /// wrong weapons.
+    #[test]
+    fn an_exclusive_mod_reaches_its_weapon_and_no_other() {
+        let has = |w: &str| pool_for_weapon(w).iter().any(|m| m.id == "sentient_surge");
+        assert!(has("ocucor"), "the weapon it was written for must be offered it");
+        for other in crate::weapons_data::roster().map(|s| s.id.clone()) {
+            if other == "ocucor" {
+                continue;
+            }
+            assert!(!has(&other), "{other} was offered an Ocucor-only mod");
+        }
+        // ...and it is a PISTOL mod, so it is in the pool it would otherwise
+        // reach every pistol through. Without this the test above would pass
+        // for a mod that simply failed to load.
+        assert!(
+            pool_union(&["pistol".to_string()]).iter().any(|m| m.id == "sentient_surge"),
+            "it should be a pistol mod that exclusivity narrows, not a mod nobody has"
+        );
+    }
+
     /// THE WHOLE ROSTER, SPELLED OUT — which weapon is offered which Cannonade
     /// (user, 2026-08-04: "semi 系列是检查是否不对的武器也可以装").
     ///
@@ -915,7 +976,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 13] = [
+        const EXPECTED: [(&str, &str, &[&str]); 14] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
@@ -939,6 +1000,9 @@ mod tests {
             ("burston_prime", "burst", &[]),
             ("dual_toxocyst", "semi_auto", &["semi_pistol_cannonade"]),
             ("laetum", "semi_auto", &["semi_pistol_cannonade"]),
+            // A BEAM pistol: held, so no Cannonade — the roster's first
+            // weapon to make `continuous` and the PISTOL pool meet.
+            ("ocucor", "held", &[]),
             ("verglas_prime", "held", &[]),                    // continuous sentinel weapon
         ];
         let roster: Vec<&str> =

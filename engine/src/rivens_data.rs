@@ -562,6 +562,9 @@ impl RivenSpec {
             .filter_map(|(def, v)| effect_of(def, v))
             .collect();
         ModDef {
+            // A riven fits whatever its family fits; it is never written for
+            // one weapon the way an augment is.
+            exclusive_to: &[],
             // A riven is generated from stats we model; nothing about it is out
             // of scope, so there is nothing to disclose.
             unmodeled: false,

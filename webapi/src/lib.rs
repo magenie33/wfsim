@@ -1781,6 +1781,38 @@ pub fn panel_json(v: &Value) -> Value {
                 Physical(t, x) => {
                     src.push(("physical", name.clone(), x, Some(format!("{t:?}"))));
                 }
+                // SENTIENT SURGE: the bonuses scale with ACTIVE TENDRILS, and
+                // a tendril costs a kill — so the panel cannot state a number
+                // without assuming a fight. It states the CAP under
+                // assumed-max (4 tendrils, the Ocucor's own limit, which is
+                // where the wiki's "up to 240%" comes from) and lists it as a
+                // conditional otherwise, the same shape every other on-kill
+                // mod here takes.
+                //
+                // `tendril_max` is read off the WEAPON rather than written
+                // into the mod, so the cap cannot disagree with the passive
+                // that produces it.
+                // The refill buys uptime, not damage, so it has no bucket to
+                // join — it is the reason the bonuses above survive, and it is
+                // listed on the card rather than attributed to a stat.
+                MagazineRefillOnKill(..) => {}
+                PerTendril { crit_chance, status_chance } => {
+                    let cap = f64::from(
+                        wfsim_engine::weapons_data::spec(&info.id)
+                            .and_then(|w| w.tendrils)
+                            .map_or(0, |t| t.max),
+                    );
+                    match policy {
+                        StackPolicy::BaseOnly => conditionals.push(json!({
+                            "mod": name, "desc": e.describe(), "active": false,
+                            "why": "the bonus scales with active tendrils, and a tendril costs a kill — none are up at the start of a fight, and a reload clears every one"})),
+                        _ => {
+                            let note = Some(format!("{cap} tendrils assumed (the cap)"));
+                            push("crit_chance", crit_chance * cap, note.clone());
+                            push("status_chance", status_chance * cap, note);
+                        }
+                    }
+                }
                 OnKillMultishot {
                     per_stack,
                     max_stacks,

@@ -1,0 +1,59 @@
+id: sentient_surge
+name: Sentient Surge
+rarity: rare
+polarity: madurai
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Pistol/Event/Nightwave/NightwaveOcucorAugmentMod
+description: "On Kill: Refill X% of the Magazine.\n+X% Status Chance and Critical Chance for each Tendril active."
+
+# A WEAPON AUGMENT, and the roster's first mod written for ONE weapon: "Can
+# equip the Ocucor-exclusive Sentient Surge mod" (wiki, Ocucor). That is an
+# EQUIP rule and not a calc-layer one — the mod is never offered elsewhere
+# rather than equipping and sitting inert — so it goes here rather than in
+# `requires:`, which is the inert-if-unmet gate the Cannonades use.
+exclusive_to: [ocucor]
+
+effects:
+  # TWO ENTRIES, THREE NUMBERS — and the split follows DE's own rank table,
+  # which has a column for "Magazine Refill" and a SINGLE column for "Status
+  # Chance / Crit Chance Increase". So the two chances stay one entry (no rank
+  # raises one without the other) and the refill is its own.
+  #
+  # 60% PER TENDRIL at max rank, and the wiki states the ceiling outright:
+  # "Critical Chance and Status Chance bonus increases up to 240% each" — which
+  # is 4 x 60, i.e. the Ocucor's tendril cap. The cap therefore lives on the
+  # WEAPON (data/weapons/secondary/ocucor.yaml `tendrils.max`), and this mod
+  # states only the rate; a mod that carried its own 240% would be a second
+  # copy of the weapon's cap, free to disagree with it.
+  #
+  # "Additive to other crit chance and status chance mods", so both halves join
+  # the same relative buckets Pistol Gambit and Hornet Strike's stat-mates use
+  # — they multiply the UNMODDED base, and dilute alongside everything else in
+  # those buckets rather than forming their own.
+  #
+  # IN CARD ORDER, because the description's X placeholders are filled from
+  # these in sequence — the refill line comes first on DE's card.
+  - kind: buff
+    trigger: on_kill
+    grants: magazine_refill
+    rank0: 0.03
+    rankMax: 0.20
+    # From the RESERVE, not from nothing: "Reloaded ammo is taken from the
+    # Ocucor's ammo reserves. This mod does not generate ammo." It is the half
+    # that keeps the other half alive — tendrils die on a reload, so a mod that
+    # postpones reloads is what lets the bonus below ever reach its cap.
+  - kind: buff
+    trigger: per_tendril
+    grants: crit_and_status
+    rank0: 0.10
+    rankMax: 0.60
+    # NOT a `max_stacks`/`duration` buff, and the vocabulary matters. Tendrils
+    # have no timer at all: they are cleared by a magazine event
+    # ("Reloading the weapon will reset the bonuses, as they are directly tied
+    # to its tendril effect which resets on reload"), which is why this is not
+    # written as `on_kill` with a duration. The count lives in the sim, keyed
+    # off kills and reloads.
+
+source:
+  url: https://wiki.warframe.com/w/Sentient_Surge
