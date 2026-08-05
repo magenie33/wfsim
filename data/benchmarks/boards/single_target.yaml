@@ -15,7 +15,15 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, toxic_barrage, chilling_reload, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_crux]
+  - weapon: gotva_prime
+    score: 1.2260075135719815
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, malignant_force, primed_cryo_rounds, thermite_rounds]
+    arcanes: [primary_deadhead]
   - weapon: larkspur_prime
     score: 12.340506006188994
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, contamination_casing, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    score: 2.079261215087232
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, hollowed_bullets, magnetized_cycle, primed_venomous_clip, hypothermic_shell, primed_combustion_rounds]
+    arcanes: [primary_overcharge, secondary_enervate]
