@@ -23,6 +23,11 @@ weapons:
   boar: 野猪
   boar_incarnon: 野猪 (灵化形态)
   boar_prime: 野猪 Prime
+  # DE's own strings, from WFCD i18n.json joined on internal name
+  # (BurstRifle -> 伯斯顿, PrimeBurston -> 伯斯顿 Prime, FullAutoShotgun ->
+  # 野猪, PrimeBoar -> 野猪 Prime). Checked rather than recalled: the CN wiki
+  # was unreachable the day these went in, and a remembered name is a
+  # translated one wearing a disguise.
   burston: 伯斯顿
   burston_incarnon: 伯斯顿 (灵化形态)
   burston_prime: 伯斯顿 Prime

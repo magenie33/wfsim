@@ -109,6 +109,22 @@ DE's Chinese names are routinely non-literal — Commodore's Fortune is 准将�
 — so a name that cannot be read must be left EMPTY and asked for, never
 derived.
 
+#### …and on 2026-08-05 the API was walled too
+
+The `api.php` call above now answers **403 Forbidden** for every action,
+`list=search` included — the same Cloudflare challenge that already covered the
+pages. So the Burston family's 18 evolution names went in EMPTY, which is the
+rule ("if a source cannot be reached, LEAVE IT EMPTY AND SAY SO") and which
+`python scripts/wfcd_i18n.py check` reports as 18 unnamed.
+
+WEAPON names survived it, because they have a second source: **WFCD's
+`i18n.json` carries `zh.name` per `uniqueName`**, so 伯斯顿 / 伯斯顿 Prime /
+野猪 / 野猪 Prime are DE's own strings joined on internal name rather than
+anyone's reading of the English. Evolution strings have no such fallback —
+"DE exports none; WFCD has no entity for them" — which is exactly why the CN
+wiki is the only source for them and why losing it costs those 18 and nothing
+else.
+
 ### A card is TWO fields, and we were reading one (2026-08-03)
 
 WFCD's `i18n.json` carries a mod's localized card in two places, and DE decides
