@@ -620,6 +620,12 @@ pub struct ModDef {
     /// Primary Debilitate). The reason lives in the YAML comment beside the
     /// effect, where a maintainer reads it — not in a field the app renders.
     pub unmodeled: bool,
+    /// ...and does it act on something this simulator does not HAVE — Warframe
+    /// energy, enemy behaviour, traversal, reviving? Never a todo: building it
+    /// would not move a damage figure. Told apart from `unmodeled` because
+    /// saying "not modelled" for both makes the model's own edge look like
+    /// unfinished work (2026-08-05).
+    pub out_of_scope: bool,
 }
 
 /// Mod card rarity — determines the in-game frame colour (bronze / silver /
@@ -1924,7 +1930,8 @@ mod tests {
 
     fn m(id: &'static str, effects: Vec<ModEffect>) -> ModDef {
         ModDef {
-            unmodeled: false,   // a hand-built test mod discloses nothing
+            unmodeled: false,
+            out_of_scope: false,   // a hand-built test mod discloses nothing
             id,
             name: id,
             base_drain: 10,

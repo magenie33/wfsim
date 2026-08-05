@@ -6,10 +6,10 @@ internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/PrimaryJamEnemyWeapon
 description: "On Weapon Magnetic Status Effect: Enemy weapons jam within 15m of target. Cooldown Xs."
 
 effects:
-  # UNMODELED: acts on enemy behaviour, and the arena's target never shoots
-  # back - there is nothing to jam. Note the rank scaling INVERTS (a shorter
-  # cooldown is the better value).
-  - kind: unmodeled
+  # OUT OF SCOPE, not pending. It jams ENEMY WEAPONS, and the arena's target
+  # never shoots back — there is nothing to jam. Note the rank scaling INVERTS
+  # (a shorter cooldown is the better value).
+  - kind: out_of_scope
     # on Magnetic status: jams enemy weapons within 15 m; cooldown 60s -> 10s with rank
     rank0: 60
     rankMax: 10

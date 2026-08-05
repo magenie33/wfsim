@@ -376,12 +376,16 @@ fn to_moddef(mf: ModFile) -> ModDef {
     // how it looks to a player who equips it and sees no change (reported
     // 2026-08-05 about Primary Debilitate; 12 mods and 5 arcanes are in this
     // state). The note travels so the card can admit it.
-    let unmodeled = mf
-        .effects
-        .iter()
-        .any(|e| e.get("kind").and_then(Value::as_str) == Some("unmodeled"));
+    let has = |k: &str| {
+        mf.effects
+            .iter()
+            .any(|e| e.get("kind").and_then(Value::as_str) == Some(k))
+    };
+    let unmodeled = has("unmodeled");
+    let out_of_scope = has("out_of_scope");
     ModDef {
         unmodeled,
+        out_of_scope,
         id: Box::leak(mf.id.into_boxed_str()),
         name: Box::leak(mf.name.into_boxed_str()),
         // ModDef.base_drain is the drain at the EQUIPPED (max) rank: drain

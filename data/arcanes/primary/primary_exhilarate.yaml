@@ -6,8 +6,11 @@ internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/PrimaryEnergyRegenOnI
 description: "On Weapon Impact Status Effect:\n+X Energy Regen/s for 10s. Stacks up to 3x."
 
 effects:
-  # UNMODELED: grants Warframe energy, which has no damage consequence here.
-  - kind: unmodeled
+  # OUT OF SCOPE, not pending. It grants WARFRAME ENERGY, and this simulator
+  # has no energy economy and no abilities to spend it on — there is nothing for
+  # the number to do. Modelling it would mean inventing an ability system, which
+  # would not change a single damage figure.
+  - kind: out_of_scope
     # on Impact status: energy regen per second, 3 stacks, 10s
     rank0: 0.2
     rankMax: 1.2

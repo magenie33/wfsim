@@ -15,9 +15,10 @@ excludes_weapon: [power_weapon]
 
 effects:
   # The trigger SENTENCE, which the description filler walks past. It carries
-  # no value, so it stays unmodeled - there is nothing to keep.
+  # no value, so there is nothing to keep — and a double jump is OUT OF SCOPE
+  # regardless: this arena has no traversal.
   # "On Kill:"
-  - kind: unmodeled
+  - kind: out_of_scope
   # "Refresh Double Jump up to 6x while Airborne." Mobility: no damage payload
   # on any target count, but the number is real and now survives (2026-08-01).
   # `audit_mod_effects` flags this CONDITIONAL-AS-FLAT, correctly: the refresh

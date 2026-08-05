@@ -4168,12 +4168,23 @@ const evoLines = (o) => {
 // needed it (reported 2026-08-05: Primary Debilitate "doesn't work". It does
 // not: 5 arcanes and 12 mods carry an effect the sim knowingly skips, and none
 // of them said so anywhere a player looks).
-const notModeledLines = (o) =>
-  o.not_modeled
-    ? [`<span class="unmodeled" title="${escHtml(
-        tr("this part of the card is outside what the simulator models"),
-      )}">⊘ ${escHtml(tr("not modelled"))}</span>`]
-    : [];
+// TWO DIFFERENT ADMISSIONS, and saying "not modelled" for both is what made the
+// whole app look unfinished (2026-08-05). One is a todo; the other is the edge
+// of what a single-target damage simulator IS.
+const notModeledLines = (o) => {
+  const out = [];
+  if (o.not_modeled) {
+    out.push(`<span class="unmodeled" title="${escHtml(
+      tr("real damage the simulator does not compute yet"),
+    )}">⊘ ${escHtml(tr("not modelled yet"))}</span>`);
+  }
+  if (o.out_of_scope) {
+    out.push(`<span class="unmodeled oos" title="${escHtml(
+      tr("this acts on something a weapon-damage simulator has none of — Warframe energy, enemy behaviour, movement — so it would change no number here"),
+    )}">◇ ${escHtml(tr("outside the sim"))}</span>`);
+  }
+  return out;
+};
 
 const cardLines = (o, r, fallback) =>
   (officialDesc(o, r) || (descAt(o, r) || fallback || o.effects || []).map(tf))

@@ -618,6 +618,7 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 // model description was never rendered — the mod looked like
                 // it worked and did nothing.
                 "not_modeled": m.unmodeled,
+                "out_of_scope": m.out_of_scope,
             });
             // The verbatim in-game DESCRIPTION per rank (X filled) — what
             // the picker and the configured slot display. Absent for pools
@@ -848,6 +849,7 @@ pub fn meta_json() -> Value {
             "max_rank": a.max_rank,
             "rarity": format!("{:?}", a.rarity).to_lowercase(),
             "not_modeled": a.has_unmodeled(),
+            "out_of_scope": a.has_out_of_scope(),
             "slot": slot,
         }));
     }

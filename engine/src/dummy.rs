@@ -4843,7 +4843,8 @@ mod tests {
         };
         use crate::mods::Polarity;
         let expel = ModDef {
-            unmodeled: false,   // a hand-built test mod discloses nothing
+            unmodeled: false,
+            out_of_scope: false,
             id: "expel_grineer",
             name: "expel_grineer",
             base_drain: 9,

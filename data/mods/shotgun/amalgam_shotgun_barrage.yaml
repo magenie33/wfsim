@@ -12,11 +12,11 @@ effects:
     rank0: 0.1417
     rankMax: 0.85
   # "+45% Revive Speed" — a WARFRAME utility stat, and the reason an Amalgam
-  # mod cannot go on a companion's weapon (see `excludes_weapon`). Left
-  # unmodeled DELIBERATELY, unlike the sprint speed on Amalgam Serration:
-  # sprint has an `IndirectStat` because the 2D world will read it, and there
-  # is nothing to revive in a one-weapon damage arena and no plan for one.
-  - kind: unmodeled
+  # mod cannot go on a companion's weapon (see `excludes_weapon`). OUT OF SCOPE
+  # rather than pending, unlike the sprint speed on Amalgam Serration: sprint
+  # has an `IndirectStat` because the 2D world will read it, and there is
+  # nothing to revive in a one-weapon damage arena and no plan for one.
+  - kind: out_of_scope
     rank0: 0.075
     rankMax: 0.45
     desc: "+45% Revive Speed"

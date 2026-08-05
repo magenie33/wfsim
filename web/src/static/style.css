@@ -752,6 +752,9 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    is real and equippable, it is our model that stops short — but not styled as
    ordinary card text either, or it reads as one more thing the mod does. */
 .unmodeled{display:inline-block;margin-top:2px;padding:0 5px;border:1px dashed var(--line);border-radius:6px;color:var(--text-2);font-size:10px;cursor:help}
+/* "Outside the sim" is not a defect — dotted rather than dashed, and no
+   warning colour, because the mod is fine and so are we. */
+.unmodeled.oos{border-style:dotted}
 .pchip.ro{border-style:dashed}
 .pofficial{color:var(--gold);margin-right:4px;font-size:11px}
 .official-note{margin:6px 0 2px;padding:7px 10px;border:1px dashed var(--line);

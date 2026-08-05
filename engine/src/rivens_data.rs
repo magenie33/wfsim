@@ -565,6 +565,7 @@ impl RivenSpec {
             // A riven is generated from stats we model; nothing about it is out
             // of scope, so there is nothing to disclose.
             unmodeled: false,
+            out_of_scope: false,
             id,
             // A riven's card name is the player's own — it is not a DE item, so
             // there is nothing to look up. The UI shows the riven's own label

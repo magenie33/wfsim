@@ -382,11 +382,22 @@ enum ArcEffect {
     /// No sim payload, but it OWNS a description `X`: its per-rank value still
     /// has to render, or the config page shows a literal "X". The yaml `note`
     /// is what the panel says instead of a computed line.
-    /// An effect the sim knowingly does not model. It carries NO text: the
-    /// explanation belongs in a YAML comment, where a maintainer reads it, not
-    /// in a field the app would render (owner, 2026-08-05: "不要有note字段，
-    /// 所有的说明全是备注"). What the CARD needs is the fact, not the essay.
+    /// An effect the sim does not compute, and WHY IT DOES NOT is two very
+    /// different answers (2026-08-05):
+    ///
+    /// - `Unmodeled` — real damage we have not built yet. A todo.
+    /// - `OutOfScope` — it acts on something this simulator does not have:
+    ///   Warframe energy, enemy behaviour, traversal, reviving. Never a todo,
+    ///   because building it would not move a single damage figure.
+    ///
+    /// Telling a player "not modelled" for both is what makes the whole app
+    /// look unfinished when four of the seven cases are the model's own edge.
+    ///
+    /// Neither carries text: the explanation belongs in a YAML comment, where a
+    /// maintainer reads it, not in a field the app renders (owner: "不要有note
+    /// 字段，所有的说明全是备注").
     Unmodeled { scale: Scale },
+    OutOfScope { scale: Scale },
     /// No single-target sim payload and NO description number of its own
     /// (recoil, combo duration, overguard-on-damage: the description states
     /// those literally). Kept so the arcane loads.
@@ -523,6 +534,7 @@ fn effect(v: &Value) -> Option<ArcEffect> {
             cap: scale(v),
         },
         "unmodeled" => ArcEffect::Unmodeled { scale: scale(v) },
+        "out_of_scope" => ArcEffect::OutOfScope { scale: scale(v) },
         other => return inert(other),
     })
 }
@@ -539,6 +551,13 @@ impl ArcaneDef {
         self.effects
             .iter()
             .any(|e| matches!(e, ArcEffect::Unmodeled { .. }))
+    }
+
+    /// Does it act on something this simulator does not have at all?
+    pub fn has_out_of_scope(&self) -> bool {
+        self.effects
+            .iter()
+            .any(|e| matches!(e, ArcEffect::OutOfScope { .. }))
     }
 
     /// Resolve this arcane at `rank` into the sim parameter block.
@@ -685,7 +704,8 @@ impl ArcaneDef {
                 // Team-context / AoE / out-of-scope — no sim payload.
                 ArcEffect::PerAllyCritChance(_)
                 | ArcEffect::AoeEcho { .. }
-                | ArcEffect::Unmodeled { .. } => {}
+                | ArcEffect::Unmodeled { .. }
+                | ArcEffect::OutOfScope { .. } => {}
                 ArcEffect::OverguardDamage(sc) => {
                     fx.overguard_mult = 1.0 + sc.at(rank, self.max_rank);
                 }
@@ -731,6 +751,7 @@ impl ArcaneDef {
                 | ArcEffect::CondReloadSpeed(scale)
                 // Out of the sim's world, but it still owns its `X`.
                 | ArcEffect::Unmodeled { scale, .. }
+                | ArcEffect::OutOfScope { scale, .. }
                 // Multiplier kinds ("xX"): stored as the bonus — fill_x's
                 // xX rule renders the +1.
                 | ArcEffect::FinalDamageCap(scale)
@@ -899,6 +920,9 @@ impl ArcaneDef {
                 // job is to state what the model does, and "this one is out of
                 // scope" is part of that.
                 ArcEffect::Unmodeled { .. } => out.push("not modeled".to_string()),
+                ArcEffect::OutOfScope { .. } => {
+                    out.push("outside this simulator".to_string())
+                }
                 ArcEffect::Inert(_) => {}
             }
         }
