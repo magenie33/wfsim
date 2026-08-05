@@ -372,9 +372,29 @@ mod tests {
             flush(&mut cur);
             out
         }
+        /// Cards where OUR English text deliberately omits a clause DE's card
+        /// carries, so its numbers are absent rather than wrong.
+        ///
+        /// A NARROW list, keyed by id, because the whole point of this check is
+        /// that a number we state must be a number DE states. "Absent" is the
+        /// only tolerated difference and it has to be a decision someone wrote
+        /// down, not a gap nobody noticed.
+        ///
+        /// `guided_ordnance`: "On Hit: +30% Accuracy when Aiming for 9s". The
+        /// duration is not an effect value — accuracy is an indirect stat with
+        /// no uptime to compute — so `fill_x` has nothing to put in its place,
+        /// and an unfilled X is itself a rendering failure the pool asserts
+        /// against. Hardcoding "9s" would be wrong at every rank below max (it
+        /// ramps 2 → 9). The clause is therefore off our card, and DE's 2 and 9
+        /// have nowhere to match. See data/mods/assault_rifle/guided_ordnance.yaml.
+        const OMITS_A_CLAUSE: [&str; 1] = ["guided_ordnance"];
+
         let mut bad: Vec<String> = Vec::new();
         for (code, spec) in locales() {
             for (id, ranks) in &spec.mod_descriptions {
+                if OMITS_A_CLAUSE.contains(&id.as_str()) {
+                    continue;
+                }
                 let Some(info) = crate::mods_data::desc_info(id) else { continue };
                 for (rank, text) in ranks.iter().enumerate() {
                     let rank = rank as u32;

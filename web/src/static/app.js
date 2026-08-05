@@ -4937,7 +4937,30 @@ const arcanePickPool = arcanePool;
 let arcaneSlotIdx = 0;
 const arcaneById = (id) => META.arcanes.find((x) => x.id === id);
 // new arcane → max rank, in the slot the picker was opened from
-function setArcane(id, i = arcaneSlotIdx) { arcanes[i] = id; arcaneRanks[i] = null; }
+// EVERY ARCANE MUTATION REFRESHES, because the mutation owns the consequence.
+//
+// Changing an arcane used to redraw the arcane slots and nothing else — the
+// panel, its stat rows and the SIM'S BUFF BAR all kept showing the previous
+// arcane until some unrelated edit happened to call `refreshPanel`. Toggling a
+// mod was the usual accident, which is exactly how it was reported (2026-08-05:
+// "切换赋能不会刷新缓存，需要切换一下mod才能刷新").
+//
+// `refreshPanel` is the funnel — its own comment says "every build change
+// funnels through here" — so the fix is not to add the call at each picker but
+// to make it impossible to mutate an arcane without it. A future control that
+// sets an arcane gets the refresh for free; one that assigns `arcanes[i]`
+// directly is the thing to look for in review.
+function setArcane(id, i = arcaneSlotIdx) {
+  arcanes[i] = id;
+  arcaneRanks[i] = null;
+  refreshPanel();
+}
+/// An arcane's RANK is a build change too: its numbers scale per rank, so the
+/// panel and the buff bar are wrong until they are re-asked.
+function setArcaneRank(i, rank) {
+  arcaneRanks[i] = rank;
+  refreshPanel();
+}
 // Effect lines for a specific rank (clamped). Arcane strengths scale per rank
 // (wiki), so the slot shows the SELECTED rank; the picker shows max rank.
 const effectsAt = (a, r) => {
@@ -4984,7 +5007,7 @@ function arcaneSlotEl(pool, i) {
     el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openArcaneMenu(el, i); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
       e.stopPropagation();
-      arcaneRanks[i] = Math.max(0, Math.min(maxr, r + Number(b.dataset.d)));
+      setArcaneRank(i, Math.max(0, Math.min(maxr, r + Number(b.dataset.d))));
       renderArcanes();
     }));
   }
