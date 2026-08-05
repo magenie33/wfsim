@@ -79,6 +79,10 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, magnetized_cycle, contamination_casing, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: larkspur_prime
+    score: 10
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, magnetized_cycle, venomous_clip, hypothermic_shell, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
     score: 9.671748269856778
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, magnetized_cycle, contamination_casing, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
@@ -91,13 +95,9 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, primed_ammo_chain, hollowed_bullets, primed_venomous_clip, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
-    score: 3.6
-    mods: [primed_rubedo_lined_barrel, automatic_trigger, magazine_extension, ammo_chain, magnetized_cycle, primed_venomous_clip, polar_magazine, combustion_rounds]
+    score: 6.087763633684644
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, hollowed_bullets, venomous_clip, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
-  - weapon: larkspur_prime
-    score: 2.079261215087232
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, hollowed_bullets, magnetized_cycle, primed_venomous_clip, hypothermic_shell, primed_combustion_rounds]
-    arcanes: [primary_overcharge, secondary_enervate]
   - weapon: torid
     score: 26.769089843746144
     mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, malignant_force, primed_cryo_rounds, hellfire]
