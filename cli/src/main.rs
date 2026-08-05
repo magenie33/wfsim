@@ -26,6 +26,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         // Not a charge weapon: inert without charge_seconds.
         charge_cadence: wfsim_engine::weapons_data::ChargeCadence::DrawThenRate,
         burst: None,
+        beam_ramp_floor: 0.20,
         tendril_max: 0,
         cc_per_tendril: 0.0,
         sc_per_tendril: 0.0,

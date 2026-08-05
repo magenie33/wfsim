@@ -1243,6 +1243,9 @@ pub struct DummyParams {
     /// Deadly Efficiency: a RELATIVE base-damage bonus whose window opens when
     /// the reload COMPLETES (owner, 2026-08-01), not when the magazine empties.
     pub bd_on_reload: Option<crate::loadout::TimedBuff>,
+    /// Where a continuous weapon's damage ramp STARTS, as a fraction of full.
+    /// 0.20 "for most weapons" (wiki); Phantasma Prime is 0.15.
+    pub beam_ramp_floor: f64,
     /// The Ocucor's tendril cap (0 = no tendrils). Their own damage is not
     /// modelled and should not be — see `weapons_data::TendrilSpec`; the COUNT
     /// is what Sentient Surge reads.
@@ -1720,6 +1723,7 @@ impl DummyParams {
             fr_on_reload: panel.fr_on_reload,
             bd_on_reload: panel.bd_on_reload,
             super_crit_on_status: panel.super_crit_on_status,
+            beam_ramp_floor: panel.beam_ramp_floor,
             tendril_max: panel.tendril_max,
             cc_per_tendril: panel.cc_per_tendril,
             sc_per_tendril: panel.sc_per_tendril,
@@ -1884,6 +1888,7 @@ impl Default for DummyParams {
             fr_on_reload: None,
             bd_on_reload: None,
             super_crit_on_status: None,
+            beam_ramp_floor: BEAM_RAMP_FLOOR,
             tendril_max: 0,
             cc_per_tendril: 0.0,
             sc_per_tendril: 0.0,
@@ -2777,9 +2782,12 @@ fn gunco_bucket(
 /// stops hitting a target, the damage decays back to its initial point over 2
 /// seconds. For most weapons, this lower percentage is 20%."
 ///
-/// The per-weapon exceptions the same page lists (Convectrix 60/80%, Phage 70%,
-/// Embolist 30%) would be weapon data; nothing in the roster needs one yet.
-const BEAM_RAMP_FLOOR: f64 = 0.20;
+/// The floor is PER WEAPON — the same page lists exceptions (Convectrix 60/80%,
+/// Phage 70%, Embolist 30%), and the roster now has one: Phantasma Prime ramps
+/// "from 15% to 100%", not from 20%. So this constant is the DEFAULT the
+/// sentence gives ("for most weapons"), and a weapon that disagrees says so in
+/// its own file (`beam_ramp_floor`).
+pub(crate) const BEAM_RAMP_FLOOR: f64 = 0.20;
 const BEAM_RAMP_SECONDS: f64 = 0.6;
 const BEAM_DECAY_DELAY: f64 = 0.8;
 const BEAM_DECAY_SECONDS: f64 = 2.0;
@@ -2796,7 +2804,7 @@ impl BeamRamp {
     /// The multiplier for a tick at `now`, then advance the ramp by one tick's
     /// worth of held fire. The tick landing NOW is scaled by the progress it
     /// arrives with, so the first tick of a burst deals the floor.
-    fn tick(&mut self, now: f64, tick_seconds: f64) -> f64 {
+    fn tick(&mut self, now: f64, tick_seconds: f64, floor: f64) -> f64 {
         if let Some(prev) = self.last_tick {
             let idle = now - prev - tick_seconds;
             if idle > BEAM_DECAY_DELAY {
@@ -2804,7 +2812,7 @@ impl BeamRamp {
                     (self.progress - (idle - BEAM_DECAY_DELAY) / BEAM_DECAY_SECONDS).max(0.0);
             }
         }
-        let mult = BEAM_RAMP_FLOOR + (1.0 - BEAM_RAMP_FLOOR) * self.progress;
+        let mult = floor + (1.0 - floor) * self.progress;
         self.progress = (self.progress + tick_seconds / BEAM_RAMP_SECONDS).min(1.0);
         self.last_tick = Some(now);
         mult
@@ -3908,7 +3916,7 @@ pub fn run_once_traced(
         // MECHANICS — but it is a sub-2% question on sustained fire, unlike the
         // merge above.
         let beam_ramp = if ap.continuous {
-            beam.tick(t, 1.0 / live_rate.max(1e-9))
+            beam.tick(t, 1.0 / live_rate.max(1e-9), ap.beam_ramp_floor)
         } else {
             1.0
         };
@@ -6542,7 +6550,7 @@ mod tests {
     fn a_beam_ramps_from_a_fifth_to_full_over_point_six_seconds() {
         let mut ramp = BeamRamp::default();
         let dt = 0.1; // 10 ticks/s
-        let mults: Vec<f64> = (0..8).map(|i| ramp.tick(i as f64 * dt, dt)).collect();
+        let mults: Vec<f64> = (0..8).map(|i| ramp.tick(i as f64 * dt, dt, BEAM_RAMP_FLOOR)).collect();
         assert!((mults[0] - 0.20).abs() < 1e-9, "first tick {}", mults[0]);
         // Each held tick adds 0.1/0.6 of the way from 20% to 100%.
         assert!((mults[1] - (0.2 + 0.8 / 6.0)).abs() < 1e-9, "second {}", mults[1]);
@@ -6555,16 +6563,16 @@ mod tests {
         // 1.9 s gap is 1.8 s idle, 1.0 s of it past the delay = half the ramp.
         let mut r2 = BeamRamp::default();
         for i in 0..8 {
-            r2.tick(i as f64 * dt, dt);
+            r2.tick(i as f64 * dt, dt, BEAM_RAMP_FLOOR);
         }
-        let after = r2.tick(0.7 + 1.9, dt);
+        let after = r2.tick(0.7 + 1.9, dt, BEAM_RAMP_FLOOR);
         assert!((after - (0.2 + 0.8 * 0.5)).abs() < 1e-9, "after a gap {after}");
         // And a long enough gap returns it all the way to the floor.
         let mut r3 = BeamRamp::default();
         for i in 0..8 {
-            r3.tick(i as f64 * dt, dt);
+            r3.tick(i as f64 * dt, dt, BEAM_RAMP_FLOOR);
         }
-        assert!((r3.tick(0.7 + 3.0, dt) - 0.20).abs() < 1e-9);
+        assert!((r3.tick(0.7 + 3.0, dt, BEAM_RAMP_FLOOR) - 0.20).abs() < 1e-9);
     }
 
     #[test]

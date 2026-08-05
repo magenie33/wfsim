@@ -502,6 +502,11 @@ pub struct WeaponSpec {
     /// The Ocucor's tendrils — see [`TendrilSpec`].
     #[serde(default)]
     pub tendrils: Option<TendrilSpec>,
+    /// Where this CONTINUOUS weapon's damage ramp starts, as a fraction of
+    /// full damage. Omitted means the wiki's "for most weapons" 20%; state it
+    /// only for a weapon whose page gives a different number.
+    #[serde(default)]
+    pub beam_ramp_floor: Option<f64>,
     #[serde(default)]
     pub reload_seconds: Option<f64>,
     #[serde(default)]
@@ -1167,6 +1172,10 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         has_reserve: s.ammo_max.is_some_and(|a| a > 0.0),
         super_crit_on_status: s.super_crit_on_status,
         tendril_max: s.tendrils.map_or(0, |t| t.max),
+        // The DEFAULT lives with the ramp it belongs to, so "most weapons"
+        // is stated once rather than copied into a second file that is free
+        // to drift from it.
+        beam_ramp_floor: s.beam_ramp_floor.unwrap_or(crate::dummy::BEAM_RAMP_FLOOR),
         no_resupply: s.no_resupply,
         base_reload,
         innate_co_per_type: 0.0,

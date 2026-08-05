@@ -28,6 +28,8 @@ weapons:
   # 野猪, PrimeBoar -> 野猪 Prime). Checked rather than recalled: the CN wiki
   # was unreachable the day these went in, and a remembered name is a
   # translated one wearing a disguise.
+  # DE own strings (WFCD i18n.json, joined on internal name).
+  phantasma_prime: 幻离子 Prime
   # DE's own string (WFCD i18n.json, CrpSentExperimentPistol).
   ocucor: 视使之触
   burston: 伯斯顿

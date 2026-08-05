@@ -10,36 +10,37 @@ weapons:
   # cannot resolve laetum_incarnon at all.
   # The base variant, whose art is its own file (the two weapons look
   # different; only the Genesis is shared).
-  boar: Boar.png
-  boar_incarnon: Boar.png
-  boar_prime: BoarPrime.png
   # The Burston family (2026-08-05). Both variants ship an Incarnon art of
   # their own — `IncarnonImage` in the module — but a form is not a separate
   # ITEM on the page, so each form points at its weapon's picture the way
   # every other transform group here does.
+  # The three assault rifles (2026-08-05). Gotva Prime's file is named after
+  # its internal path (GrnOrokinRifle), not its display name — the CDN keys on
+  # DE's own asset name.
+  # The roster's first beam pistol (2026-08-05).
+  # CDN has no file for it, so the FETCHER takes it from the wiki; the cached
+  # name and the page URL stay the bare name either way.
+  boar: Boar.png
+  boar_incarnon: Boar.png
+  boar_prime: BoarPrime.png
+  boar_prime_incarnon: BoarPrime.png
   burston: Burston.png
   burston_incarnon: Burston.png
   burston_prime: BurstonPrime.png
   burston_prime_incarnon: BurstonPrime.png
-  boar_prime_incarnon: BoarPrime.png
   cernos_prime: CernosPrime.png
   cernos_prime_uncharged: CernosPrime.png
-  # The three assault rifles (2026-08-05). Gotva Prime's file is named after
-  # its internal path (GrnOrokinRifle), not its display name — the CDN keys on
-  # DE's own asset name.
-  gotva_prime: GrnOrokinRifle.png
-  karak_wraith: KarakWraith.png
-  prisma_grinlok: PrismaGrinlok.png
-  # The roster's first beam pistol (2026-08-05).
-  # CDN has no file for it, so the FETCHER takes it from the wiki; the cached
-  # name and the page URL stay the bare name either way.
-  ocucor: wiki:Ocucor.png
   dual_toxocyst: DualToxocyst.png
   dual_toxocyst_incarnon: DualToxocyst.png
+  gotva_prime: GrnOrokinRifle.png
+  karak_wraith: KarakWraith.png
   laetum: ZarimanHeavyPistol.png
   laetum_incarnon: ZarimanHeavyPistol.png
   larkspur_prime: LarkspurPrime.png
   larkspur_prime_charged: LarkspurPrime.png
+  ocucor: wiki:Ocucor.png
+  phantasma_prime: PhantasmaPrime.png
+  prisma_grinlok: PrismaGrinlok.png
   torid: Torid.png
   torid_incarnon: Torid.png
   verglas_prime: VerglasPrime.png
