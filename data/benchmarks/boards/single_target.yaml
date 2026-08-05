@@ -70,6 +70,10 @@ entries:
     arcanes: [secondary_encumber]
   - weapon: larkspur_prime
     score: 12.340506006188994
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    score: 12.340506006188994
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, contamination_casing, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
@@ -85,6 +89,10 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
+    score: 11.135524872030114
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, contamination_casing, hypothermic_shell, magma_chamber, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
     score: 10.457894748685483
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, magnetized_cycle, contamination_casing, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
@@ -97,16 +105,8 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, magnetized_cycle, contamination_casing, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: larkspur_prime
-    score: 8.967345236219494
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, primed_ammo_chain, hollowed_bullets, magnetized_cycle, magma_chamber, primed_combustion_rounds]
-    arcanes: [primary_crux, secondary_enervate]
-  - weapon: larkspur_prime
-    score: 6.246063588033008
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, primed_ammo_chain, hollowed_bullets, primed_venomous_clip, hypothermic_shell, primed_combustion_rounds]
-    arcanes: [primary_crux, secondary_enervate]
-  - weapon: larkspur_prime
-    score: 6.087763633684644
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, hollowed_bullets, venomous_clip, hypothermic_shell, primed_combustion_rounds]
+    score: 9.65668491785406
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, primed_venomous_clip, polar_magazine, magma_chamber, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: torid
     score: 26.769089843746144
@@ -156,3 +156,6 @@ entries:
   - weapon: verglas_prime
     score: 0.8000167753060479
     mods: [primed_shred, split_chamber, serration, rifle_elementalist, magnetic_capacity, malignant_force, rime_rounds, hellfire]
+  - weapon: verglas_prime
+    score: 0.4306664593968792
+    mods: [galvanized_chamber, heavy_caliber, serration, vile_acceleration, stormbringer, primed_cryo_rounds, thermite_rounds, hellfire]
