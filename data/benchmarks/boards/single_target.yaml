@@ -232,9 +232,17 @@ entries:
     mods: [galvanized_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
   - weapon: ocucor
+    score: 5.242627219161278
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge, scorch]
+    arcanes: [secondary_enervate]
+  - weapon: ocucor
     score: 4.751056529125182
     mods: [galvanized_diffusion, lethal_torrent, magnetic_might, sentient_surge, ice_storm, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [cascadia_flare]
+  - weapon: ocucor
+    score: 2.1805896345429554
+    mods: [hornet_strike, primed_target_cracker, barrel_diffusion, lethal_torrent, magnetic_might, sentient_surge, primed_heated_charge, scorch]
+    arcanes: [secondary_enervate]
   - weapon: ocucor
     score: 1.2231910498852494
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, magnetic_might, sentient_surge, deep_freeze, pathogen_rounds, primed_heated_charge]
@@ -254,10 +262,6 @@ entries:
   - weapon: ocucor
     score: 0.6595304867928181
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, sentient_surge, deep_freeze, pathogen_rounds, primed_heated_charge]
-    arcanes: [secondary_enervate]
-  - weapon: ocucor
-    score: 0.4826478331028941
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, sentient_surge, deep_freeze, pathogen_rounds, primed_heated_charge]
     arcanes: [secondary_enervate]
   - weapon: phantasma_prime
     score: 6.864484573399173
