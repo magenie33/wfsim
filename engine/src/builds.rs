@@ -323,12 +323,27 @@ pub fn validate(
     let plan = crate::mods::fit(spec.max_rank, &innate, &planned, BENCHMARK_INVESTMENT)
         .map_err(|e| format!("does not fit this weapon's capacity even with Forma: {e}"))?;
 
-    // ARCANES: one per pool the weapon seats, and each from that pool.
-    let slots = crate::arcanes_data::slots();
-    let seats: Vec<&str> = slots
-        .into_iter()
-        .filter(|s| !crate::arcanes_data::slot_pool(s).is_empty())
-        .collect();
+    // ARCANES: one per pool THIS WEAPON seats, and each from that pool.
+    //
+    // The seats used to come from `arcanes_data::slots()` — every arcane
+    // DIRECTORY that exists, sorted — so seat 0 was "primary" on every weapon
+    // in the roster. A secondary weapon's arcane was therefore checked against
+    // the primary pool and refused: `secondary_deadhead is not an arcane Dual
+    // Toxocyst can seat`. Two real Dual Toxocyst submissions were thrown away
+    // by it before anyone noticed (2026-08-05), and nothing noticed because the
+    // scorer counted refusals without printing them.
+    //
+    // `weapons_data::arcane_pools` is the same answer the page shows, which is
+    // the point of having moved it into the engine.
+    let seats: Vec<&str> = crate::weapons_data::arcane_pools(weapon);
+    if arcanes.iter().filter(|a| a.as_str() != "none" && !a.is_empty()).count() > seats.len() {
+        return Err(format!(
+            "{} arcanes, and {} seats {}",
+            arcanes.len(),
+            spec.name,
+            seats.len()
+        ));
+    }
     let mut arcs = Vec::new();
     for (i, a) in arcanes.iter().enumerate() {
         if a == "none" || a.is_empty() {
@@ -663,6 +678,63 @@ mod tests {
     fn an_unknown_benchmark_admits_nothing() {
         let e = validate_for_board("no_such_ruler", "gotva_prime", &[], &[], &[]).unwrap_err();
         assert!(e.contains("unknown benchmark"), "{e}");
+    }
+
+    /// A SECONDARY WEAPON'S ARCANE IS A SECONDARY ARCANE. The seats used to be
+    /// every arcane DIRECTORY that exists, sorted, so seat 0 was "primary" on
+    /// every weapon and a Dual Toxocyst build carrying `secondary_deadhead` was
+    /// refused for seating an arcane it seats. Two real submissions were thrown
+    /// away by it (2026-08-05).
+    #[test]
+    fn a_weapon_seats_its_own_slots_arcanes() {
+        // Eight mods from EIGHT DIFFERENT FAMILIES — two of one family is its
+        // own refusal, and this test is not about that one.
+        let mods = |w: &str| -> Vec<String> {
+            let mut fams: Vec<&str> = Vec::new();
+            let mut out = Vec::new();
+            for m in crate::mods_data::pool_for_weapon(w).iter().filter(|m| !m.exilus) {
+                if out.len() == MAIN_SLOTS {
+                    break;
+                }
+                if let Some(f) = m.family {
+                    if fams.contains(&f) {
+                        continue;
+                    }
+                    fams.push(f);
+                }
+                out.push(m.id.to_string());
+            }
+            out
+        };
+        // A SECONDARY, with a secondary arcane and its full evolution ladder.
+        let evos: Vec<String> = (1..=crate::evolutions_data::tier_count("dual_toxocyst"))
+            .filter_map(|t| {
+                crate::evolutions_data::options("dual_toxocyst", t)
+                    .first()
+                    .map(|e| e.id.to_string())
+            })
+            .collect();
+        let ok = validate_for_board(
+            "single_target", "dual_toxocyst", &mods("dual_toxocyst"), &evos,
+            &["secondary_deadhead".to_string()],
+        );
+        assert!(ok.is_ok(), "a secondary seats a secondary arcane: {ok:?}");
+
+        // ...and it does NOT seat a primary one.
+        let e = validate_for_board(
+            "single_target", "dual_toxocyst", &mods("dual_toxocyst"), &evos,
+            &["primary_deadhead".to_string()],
+        )
+        .unwrap_err();
+        assert!(e.contains("not an arcane"), "{e}");
+
+        // A sentinel weapon seats none, so any arcane at all is refused.
+        let e = validate_for_board(
+            "single_target", "verglas_prime", &mods("verglas_prime"), &[],
+            &["primary_crux".to_string()],
+        )
+        .unwrap_err();
+        assert!(e.contains("seats 0") || e.contains("not an arcane"), "{e}");
     }
 
 }

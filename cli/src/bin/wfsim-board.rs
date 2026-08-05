@@ -119,10 +119,20 @@ fn main() {
         // THE BOARD'S door, not the legality one: a row must be a COMPLETE
         // build (2026-08-05). A submission that is merely legal is refused
         // here and simply never scored.
-        let Ok(v) = wfsim_engine::builds::validate_for_board(&bench_id, &weapon, &mods, &evos, &arcs)
-        else {
-            refused += 1;
-            continue;
+        // THE REASON IS PRINTED, not counted. "2 refused" is a number that
+        // tells nobody anything — including me, on the day two complete-looking
+        // Dual Toxocyst builds were turned away and the log said only that they
+        // were (2026-08-05). A board that refuses in silence cannot be debugged
+        // by the person whose build it refused, either.
+        let v = match wfsim_engine::builds::validate_for_board(
+            &bench_id, &weapon, &mods, &evos, &arcs,
+        ) {
+            Ok(v) => v,
+            Err(e) => {
+                eprintln!("refused {weapon}: {e}");
+                refused += 1;
+                continue;
+            }
         };
 
         let mut req = scenario.clone();
@@ -136,6 +146,10 @@ fn main() {
         let ok = out.get("ok").and_then(Value::as_bool).unwrap_or(false);
         let raw = out.get("score").and_then(Value::as_f64).unwrap_or(0.0);
         if !ok || raw <= 0.0 {
+            eprintln!(
+                "refused {weapon}: did not simulate ({})",
+                out.get("error").and_then(Value::as_str).unwrap_or("scored zero")
+            );
             refused += 1;
             continue;
         }
