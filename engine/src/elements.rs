@@ -91,6 +91,26 @@ fn hcet(t: DamageType) -> u8 {
     }
 }
 
+/// THE WIKI'S OWN ORDER for a damage type — the column order of its damage
+/// table, which is also `DamageType`'s declaration order ("Names follow the
+/// wiki", damage.rs): the three physicals, the four primaries alphabetically,
+/// then the six secondaries alphabetically.
+///
+/// It decides nothing about damage. It exists so that a build which produces
+/// the same elements always PRINTS the same way — `builds::canonical_mods`
+/// orders its elemental pairs by the element each one makes, so Viral before
+/// Radiation is a fact about the table rather than about who submitted first
+/// (owner, 2026-08-06: "我们参考wiki的排序").
+///
+/// NOT `hcet`, which is a different question with a different answer: that one
+/// is rule 2's ordering for INNATE elements and changes what the weapon does.
+pub fn wiki_order(t: DamageType) -> usize {
+    // DERIVED from the declaration order rather than restated as a match, so a
+    // type added to the table cannot be forgotten here — and a hand-written
+    // arm cannot disagree with the list it is copying.
+    DamageType::ALL.iter().position(|&x| x == t).unwrap_or(usize::MAX)
+}
+
 /// Combine the physical vector with the elemental hierarchy.
 ///
 /// Adjacent uncombined primaries merge pairwise into secondaries (rule 1);
