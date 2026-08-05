@@ -178,6 +178,10 @@ entries:
     score: 9.65668491785406
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, primed_venomous_clip, polar_magazine, magma_chamber, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
+  - weapon: ocucor
+    score: 6.07785184766234
+    mods: [galvanized_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, sentient_surge, pistol_pestilence, frostbite, primed_heated_charge]
+    arcanes: [cascadia_flare]
   - weapon: torid
     score: 26.769089843746144
     mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, malignant_force, primed_cryo_rounds, hellfire]
