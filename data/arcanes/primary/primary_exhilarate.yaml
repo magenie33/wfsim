@@ -8,7 +8,7 @@ description: "On Weapon Impact Status Effect:\n+X Energy Regen/s for 10s. Stacks
 effects:
   # UNMODELED: grants Warframe energy, which has no damage consequence here.
   - kind: unmodeled
-    note: "on Impact status: energy regen per second, 3 stacks, 10s"
+    # on Impact status: energy regen per second, 3 stacks, 10s
     rank0: 0.2
     rankMax: 1.2
 

@@ -382,7 +382,11 @@ enum ArcEffect {
     /// No sim payload, but it OWNS a description `X`: its per-rank value still
     /// has to render, or the config page shows a literal "X". The yaml `note`
     /// is what the panel says instead of a computed line.
-    Unmodeled { note: String, scale: Scale },
+    /// An effect the sim knowingly does not model. It carries NO text: the
+    /// explanation belongs in a YAML comment, where a maintainer reads it, not
+    /// in a field the app would render (owner, 2026-08-05: "不要有note字段，
+    /// 所有的说明全是备注"). What the CARD needs is the fact, not the essay.
+    Unmodeled { scale: Scale },
     /// No single-target sim payload and NO description number of its own
     /// (recoil, combo duration, overguard-on-damage: the description states
     /// those literally). Kept so the arcane loads.
@@ -518,15 +522,25 @@ fn effect(v: &Value) -> Option<ArcEffect> {
             },
             cap: scale(v),
         },
-        "unmodeled" => ArcEffect::Unmodeled {
-            note: s(v, "note").unwrap_or_default().to_string(),
-            scale: scale(v),
-        },
+        "unmodeled" => ArcEffect::Unmodeled { scale: scale(v) },
         other => return inert(other),
     })
 }
 
 impl ArcaneDef {
+    /// Does this arcane have an effect the sim knowingly does NOT model?
+    ///
+    /// `describe_at` already emitted "not modeled", but the card prefers DE's
+    /// own text when there is one — and there always is — so the admission sat
+    /// in the payload and never reached the screen. This gives the page a fact
+    /// it can show ALONGSIDE the official text rather than instead of it
+    /// (reported 2026-08-05: Primary Debilitate "doesn't work", and it does not).
+    pub fn has_unmodeled(&self) -> bool {
+        self.effects
+            .iter()
+            .any(|e| matches!(e, ArcEffect::Unmodeled { .. }))
+    }
+
     /// Resolve this arcane at `rank` into the sim parameter block.
     ///
     /// Relative crit bonuses stay RELATIVE here (they join the mod buckets):
@@ -884,9 +898,7 @@ impl ArcaneDef {
                 // Say so, rather than silently listing nothing: the panel's
                 // job is to state what the model does, and "this one is out of
                 // scope" is part of that.
-                ArcEffect::Unmodeled { note, .. } => {
-                    out.push(format!("not modeled: {note}"));
-                }
+                ArcEffect::Unmodeled { .. } => out.push("not modeled".to_string()),
                 ArcEffect::Inert(_) => {}
             }
         }

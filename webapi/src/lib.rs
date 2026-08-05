@@ -613,6 +613,11 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 // beam-only mods. The picker filters on it, the same way the
                 // engine's `pool_for_weapon` does.
                 "requires_weapon": m.requires_weapon,
+                // WHAT WE DO NOT MODEL, said out loud. The card prefers DE's
+                // own text, so an "out of scope" line that only lived in the
+                // model description was never rendered — the mod looked like
+                // it worked and did nothing.
+                "not_modeled": m.unmodeled,
             });
             // The verbatim in-game DESCRIPTION per rank (X filled) — what
             // the picker and the configured slot display. Absent for pools
@@ -842,6 +847,7 @@ pub fn meta_json() -> Value {
             "desc_ranks": desc_ranks,
             "max_rank": a.max_rank,
             "rarity": format!("{:?}", a.rarity).to_lowercase(),
+            "not_modeled": a.has_unmodeled(),
             "slot": slot,
         }));
     }

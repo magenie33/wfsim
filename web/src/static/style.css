@@ -748,6 +748,10 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .sbucket b{color:var(--text)}
 .bterm{color:var(--gold);cursor:help}
 .bhint{margin-left:6px;padding:0 4px;border:1px solid var(--line);border-radius:6px;cursor:help;font-size:10px}
+/* "This part is out of scope." Deliberately not styled as an error — the mod
+   is real and equippable, it is our model that stops short — but not styled as
+   ordinary card text either, or it reads as one more thing the mod does. */
+.unmodeled{display:inline-block;margin-top:2px;padding:0 5px;border:1px dashed var(--line);border-radius:6px;color:var(--text-2);font-size:10px;cursor:help}
 .pchip.ro{border-style:dashed}
 .pofficial{color:var(--gold);margin-right:4px;font-size:11px}
 .official-note{margin:6px 0 2px;padding:7px 10px;border:1px dashed var(--line);

@@ -4159,8 +4159,25 @@ const evoLines = (o) => {
   return (o.effects || []).map(tf);
 };
 
+// WHAT WE DO NOT MODEL, appended to whatever the card already says.
+//
+// Not a replacement: DE's own text is exactly what makes a player expect the
+// thing to work, so hiding our gap behind it is the worst of both. `cardLines`
+// prefers `officialDesc`, which every one of these has — so the "not modeled"
+// line the model already produced was suppressed on precisely the items that
+// needed it (reported 2026-08-05: Primary Debilitate "doesn't work". It does
+// not: 5 arcanes and 12 mods carry an effect the sim knowingly skips, and none
+// of them said so anywhere a player looks).
+const notModeledLines = (o) =>
+  o.not_modeled
+    ? [`<span class="unmodeled" title="${escHtml(
+        tr("this part of the card is outside what the simulator models"),
+      )}">⊘ ${escHtml(tr("not modelled"))}</span>`]
+    : [];
+
 const cardLines = (o, r, fallback) =>
-  officialDesc(o, r) || (descAt(o, r) || fallback || o.effects || []).map(tf);
+  (officialDesc(o, r) || (descAt(o, r) || fallback || o.effects || []).map(tf))
+    .concat(notModeledLines(o));
 
 // One slot card (regular or exilus) with its polarity / rank / menu wiring.
 function buildSlot(i) {

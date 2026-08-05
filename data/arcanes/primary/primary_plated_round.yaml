@@ -20,7 +20,7 @@ effects:
   # the full value.
   # Only the DURATION scales with rank: 3 / 4 / 5 / 6 / 8 / 10 s.
   - kind: unmodeled
-    note: "on reload: +0.15*sqrt(5*magazine) damage (additive) for 10s at max rank"
+    # on reload: +0.15*sqrt(5*magazine) damage (additive) for 10s at max rank
     rank0: 3
     rankMax: 10
 

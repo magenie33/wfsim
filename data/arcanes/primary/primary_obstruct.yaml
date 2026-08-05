@@ -10,7 +10,7 @@ effects:
   # back - there is nothing to jam. Note the rank scaling INVERTS (a shorter
   # cooldown is the better value).
   - kind: unmodeled
-    note: "on Magnetic status: jams enemy weapons within 15 m; cooldown 60s -> 10s with rank"
+    # on Magnetic status: jams enemy weapons within 15 m; cooldown 60s -> 10s with rank
     rank0: 60
     rankMax: 10
 

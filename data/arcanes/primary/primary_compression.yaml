@@ -51,11 +51,11 @@ effects:
   # WFCD levelStats: +50% damage / +3.0% ammo efficiency at rank 0 -> +100% /
   # +5.5% at rank 5; both linear, so rank 3 is 0.8 and 0.045).
   - kind: unmodeled
-    note: "while aiming: radius x0.2, then +100% damage per metre of radius lost (multiplicative on most weapons; nothing on continuous/beam AoE, Torid Incarnon included)"
+    # while aiming: radius x0.2, then +100% damage per metre of radius lost (multiplicative on most weapons; nothing on continuous/beam AoE, Torid Incarnon included)
     rank0: 0.5
     rankMax: 1.0
   - kind: unmodeled
-    note: "while aiming: +5.5% ammo efficiency per metre of radius lost"
+    # while aiming: +5.5% ammo efficiency per metre of radius lost
     rank0: 0.03
     rankMax: 0.055
 

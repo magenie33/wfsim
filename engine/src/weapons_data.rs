@@ -1167,6 +1167,7 @@ mod tests {
 
         let with = |e: Vec<ModEffect>| {
             let m = crate::loadout::ModDef {
+                unmodeled: false,   // a hand-built test mod discloses nothing
                 id: "t",
                 name: "t",
                 base_drain: 0,

@@ -370,7 +370,18 @@ fn effect(v: &Value) -> Option<ModEffect> {
 
 fn to_moddef(mf: ModFile) -> ModDef {
     let effects = mf.effects.iter().filter_map(effect).collect();
+    // WHAT WE KNOWINGLY DO NOT MODEL, kept rather than dropped. An `unmodeled`
+    // effect returns None from `effect` and vanishes, so a mod carrying only
+    // one loads as a mod that does nothing and says nothing — which is exactly
+    // how it looks to a player who equips it and sees no change (reported
+    // 2026-08-05 about Primary Debilitate; 12 mods and 5 arcanes are in this
+    // state). The note travels so the card can admit it.
+    let unmodeled = mf
+        .effects
+        .iter()
+        .any(|e| e.get("kind").and_then(Value::as_str) == Some("unmodeled"));
     ModDef {
+        unmodeled,
         id: Box::leak(mf.id.into_boxed_str()),
         name: Box::leak(mf.name.into_boxed_str()),
         // ModDef.base_drain is the drain at the EQUIPPED (max) rank: drain

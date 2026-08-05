@@ -11,7 +11,7 @@ effects:
   # already tracks per-type stacks, so this needs a new effect kind, not new
   # data.
   - kind: unmodeled
-    note: "at 10 stacks of a combined status, reapplying it can also inflict one component status"
+    # at 10 stacks of a combined status, reapplying it can also inflict one component status
     rank0: 0.5
     rankMax: 1.0
 

@@ -611,6 +611,15 @@ pub struct ModDef {
     /// that bucket is zeroed in `resolve`.
     pub disables: Vec<&'static str>,
     pub effects: Vec<ModEffect>,
+    /// Does this mod have an effect the sim knowingly does NOT model?
+    ///
+    /// False for almost every mod. True means the CARD must say so — an
+    /// `unmodeled` effect is DROPPED at load, so a mod carrying one loads as a
+    /// mod that does nothing and says nothing, which is exactly how it looks to
+    /// a player who equips it and sees no change (reported 2026-08-05 about
+    /// Primary Debilitate). The reason lives in the YAML comment beside the
+    /// effect, where a maintainer reads it — not in a field the app renders.
+    pub unmodeled: bool,
 }
 
 /// Mod card rarity — determines the in-game frame colour (bronze / silver /
@@ -1915,6 +1924,7 @@ mod tests {
 
     fn m(id: &'static str, effects: Vec<ModEffect>) -> ModDef {
         ModDef {
+            unmodeled: false,   // a hand-built test mod discloses nothing
             id,
             name: id,
             base_drain: 10,
