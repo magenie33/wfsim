@@ -16,7 +16,7 @@ use wasm_bindgen::prelude::*;
 use wfsim_optimizer::FunnelState;
 
 /// Dispatch a quick endpoint call: `endpoint` is the API path as the
-/// frontend knows it ("/api/meta", "/api/panel", "/api/simulate",
+/// frontend knows it ("/api/meta", "/api/panel", "/api/simulate", "/api/targets",
 /// "/api/opt-buffs"), `body` the request JSON ("" or "{}" for /api/meta).
 /// Returns the response JSON as a string.
 #[wasm_bindgen]
@@ -29,6 +29,7 @@ pub fn api(endpoint: &str, body: &str) -> String {
         "/api/simulate" => wfsim_webapi::simulate_json(&v),
         "/api/opt-buffs" => wfsim_webapi::opt_buffs_json(&v),
         "/api/riven" => wfsim_webapi::riven_json(&v),
+        "/api/targets" => wfsim_webapi::targets_json(&v),
         other => wfsim_webapi::err_json(format!("unknown endpoint: {other}")),
     };
     out.to_string()

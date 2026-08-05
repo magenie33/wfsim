@@ -982,6 +982,14 @@ pub fn meta_json() -> Value {
             "enemy": "thrax_centurion",
             "level": 9999,
             "steel_path": true,
+            // NULL, not a boolean — "whatever this unit is by default", which
+            // `parse_fight` resolves to `can_be_eximus`. A fixed `true` would
+            // be a lie about the default target (a Thrax has no Eximus
+            // variant) and a fixed `false` would contradict the rule that the
+            // elite unit is the one you meet. The page renders the effective
+            // answer per enemy and only stores a boolean once you say
+            // otherwise.
+            "eximus": Value::Null,
             "headshot_pct": 100.0,
             // ---- the TENNO, the fight's other actor. Every field here is
             // `data/tenno/default.yaml`'s: the NEUTRAL player, aiming, no
@@ -1025,6 +1033,55 @@ pub fn meta_json() -> Value {
 ///
 /// The page owns the knobs and this owns the arithmetic — one implementation
 /// of the formula, so a slider cannot drift from what the sim would build.
+/// EVERY TARGET'S POOLS AT THE FIGHT'S LEVEL — what the picker shows.
+///
+/// The picker used to print each unit's stats at its OWN base level (a
+/// Corrupted Heavy Gunner as 700 health, 500 armor), which is the number
+/// nobody fights: the scenario runs at level 9999 Steel Path, where the same
+/// unit is four orders of magnitude bigger and its armor has stopped mattering
+/// the way the raw figure suggests. Choosing between two units on their base
+/// stats is choosing on the wrong axis (owner, 2026-08-05).
+///
+/// It is an ENDPOINT and not a formula in the page, because the level curves
+/// are the engine's and a second implementation in JavaScript is a second
+/// answer waiting to drift. The same `target_params` the fight uses builds
+/// these, so what the picker promises is what the sim delivers.
+///
+/// Takes the fight's `level`, `steel_path` and — per unit — the same Eximus
+/// default `parse_fight` applies, so the row reads as what you would get by
+/// picking it.
+pub fn targets_json(v: &Value) -> Value {
+    let level = get_u32(v, "level", 9999).clamp(1, 9999);
+    let steel_path = get_bool(v, "steel_path", true);
+    let rows: Vec<Value> = enemies()
+        .iter()
+        .map(|e| {
+            // The unit's own default, the one `parse_fight` would pick.
+            let eximus = e.can_be_eximus;
+            match e.target_params(level, steel_path, eximus, TargetMode::InstantRespawn) {
+                Ok(t) => {
+                    let armor = t.armor();
+                    json!({
+                        "id": e.id,
+                        "eximus": eximus,
+                        "health": t.max_health(),
+                        "shield": t.max_shield(),
+                        "armor": armor,
+                        "overguard": t.overguard(),
+                        // The armour figure alone says little at this level —
+                        // what a build feels is the reduction it buys.
+                        "armor_dr": wfsim_engine::scaling::armor_damage_reduction(armor),
+                    })
+                }
+                // Unreachable with the unit's own flag, and reported rather
+                // than unwrapped: a panic here would take the picker down.
+                Err(msg) => json!({ "id": e.id, "error": msg }),
+            }
+        })
+        .collect();
+    json!({ "level": level, "steel_path": steel_path, "targets": rows })
+}
+
 pub fn riven_json(v: &Value) -> Value {
     use wfsim_engine::rivens_data::{RivenSpec, RolledStat};
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
@@ -2662,6 +2719,10 @@ pub(crate) struct Fight {
     pub(crate) enemy_id: String,
     pub(crate) level: u32,
     pub(crate) steel_path: bool,
+    /// Is the target its ELITE variant? A property of the fight, like the
+    /// level and the Steel Path switch, so it lives here and both modules
+    /// read it from one place.
+    pub(crate) eximus: bool,
     pub(crate) headshot_pct: f64,
     pub(crate) tenno: wfsim_engine::tenno_data::Tenno,
     pub(crate) infinite_ammo: bool,
@@ -2795,7 +2856,19 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     let Some(spec) = specs.iter().find(|e| e.id == enemy_id) else {
         return Err(err_json(format!("unknown enemy: {enemy_id}")));
     };
-    let target = match spec.target_params(level, steel_path, false, TargetMode::InstantRespawn) {
+    // ELITE VARIANT, and it DEFAULTS ON wherever the unit has one (owner,
+    // 2026-08-05: "默认我们就选上"). The Eximus is what a Steel Path player
+    // actually meets — extra health and a pool of Overguard in front of it —
+    // so the ordinary unit is the special case to ask for, not the elite one.
+    //
+    // The default is the UNIT's answer rather than a flat `true`, because the
+    // engine REJECTS a combination that does not exist in game (a Thrax has no
+    // Eximus variant; its overguard is innate). A blanket default would turn
+    // every Thrax fight into an error, so the fallback is what this unit can
+    // be — and an explicit `true` on a unit that cannot still fails, which is
+    // the rigor being kept rather than worked around.
+    let eximus = get_bool(v, "eximus", spec.can_be_eximus);
+    let target = match spec.target_params(level, steel_path, eximus, TargetMode::InstantRespawn) {
         Ok(t) => t,
         Err(e) => return Err(err_json(e)),
     };
@@ -2830,6 +2903,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         enemy_id: enemy_id.to_string(),
         level,
         steel_path,
+        eximus,
         headshot_pct,
         tenno,
         infinite_ammo,
@@ -2853,7 +2927,7 @@ pub fn simulate_json(v: &Value) -> Value {
     };
     let Fight {
         info, policy, buff_cfg, arena, evos, run_cycle, single_form,
-        enemy_id, level, steel_path, tenno, infinite_ammo, runs, seed,
+        enemy_id, level, steel_path, eximus, tenno, infinite_ammo, runs, seed,
         frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
     } = fight;
     let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
@@ -3227,6 +3301,10 @@ pub fn simulate_json(v: &Value) -> Value {
             "name": s_name(&specs, &enemy_id),
             "level": level,
             "steel_path": steel_path,
+            // What was actually fought, not what was asked for — the default
+            // is the unit's own answer, so a caller that said nothing still
+            // needs telling which variant it got.
+            "eximus": eximus,
             "overguard": og,
             "shield": sh,
             "health": hp,

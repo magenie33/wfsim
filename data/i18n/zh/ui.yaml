@@ -304,6 +304,8 @@ ui:
   "The fight": 这场仗
   "Limits": 限制
   "Eximus": 精英
+  "the elite variant: more health, and a pool of Overguard in front of it": 精英变体：更高生命，且生命前面还有一层超宏护盾
+  "damage reduction": 伤害减免
   "Overguard": 超宏护盾
   "averaged over {n} runs — this number moves between scans, most of all for status mods": "{n} 次模拟的平均——这个数字每次扫描都会变，触发类 mod 尤其明显"
   "no timeout": 无限持续

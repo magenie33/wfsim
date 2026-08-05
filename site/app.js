@@ -450,6 +450,11 @@ function defaultScenario() {
   const d = META.defaults || {};
   return {
     enemy: d.enemy, level: d.level, steel_path: d.steel_path,
+    // NULL means "whatever this unit is by default", which the server resolves
+    // to its `can_be_eximus`. Only an explicit choice is stored, so switching
+    // targets keeps giving you the elite unit wherever one exists rather than
+    // carrying a decision made about a different enemy.
+    eximus: d.eximus ?? null,
     headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
     invisible: !!d.invisible, airborne: !!d.airborne,
     wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
@@ -469,7 +474,7 @@ function defaultScenario() {
 // where they become a Tenno (`data/tenno/default.yaml` + these overrides).
 // `aiming` defaults TRUE because that is what the sim silently assumed before
 // the knob existed, so no stored preset changes meaning.
-let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, headshot_pct: 100, aiming: true,
+let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: null, headshot_pct: 100, aiming: true,
   invisible: false, airborne: false, wf_armor: 0, wf_energy: 0,
   infinite_ammo: true, metric: "kpm", duration: 300, runs: 100, form: "default", buffs: {} };
 // The current build's configurable buffs (from the last /api/panel response).
@@ -1002,6 +1007,26 @@ const deployField = (w, state) => {
     // The data keys are lowercase; the LABEL is the wiki's own column head.
     opts.map((o) => `<option value="${o}"${o === cur ? " selected" : ""}>${escHtml(tr(o[0].toUpperCase() + o.slice(1)))}</option>`).join("")
   }</select></label>`;
+};
+
+// IS THE TARGET ITS ELITE VARIANT? Offered only where one EXISTS, because
+// there is no such unit otherwise — the engine rejects the combination rather
+// than quietly simulating an ordinary enemy under an elite label (a Thrax's
+// overguard is innate, not Eximus-granted), so a control here would be a
+// promise the fight cannot keep.
+//
+// DEFAULT ON wherever it exists (owner, 2026-08-05: "默认我们就选上"). The
+// Eximus is what a Steel Path player actually meets, and it is not a cosmetic
+// difference: it adds health and puts a pool of Overguard in front of it, so a
+// build measured on the ordinary unit is measured on a fight nobody has.
+//
+// `sim.eximus` is NULL until you say otherwise, and null means "this unit's
+// answer" — which is what makes the default follow the TARGET rather than
+// stick to whatever the last target happened to be.
+const eximusOn = (en) => sim.eximus ?? !!(en && en.can_be_eximus);
+const eximusField = (en) => {
+  if (!en || !en.can_be_eximus) return "";
+  return `<label class="check" title="${escHtml(tr("the elite variant: more health, and a pool of Overguard in front of it"))}"><input type="checkbox" data-k="eximus" ${eximusOn(en) ? "checked" : ""}> ${escHtml(tr("Eximus"))}</label>`;
 };
 
 // FORCED EITHER WAY, and for opposite reasons — so the control has THREE
@@ -5376,6 +5401,7 @@ function renderScenarioFields(ids, opts = {}) {
       `<div class="field-grid">
         <label>${escHtml(tr("Level"))} <input type="number" data-k="level" min="1" max="9999" value="${sim.level}"></label>
         <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
+        ${eximusField(en)}
         ${deployField(w, sim)}
         <label>${escHtml(tr("Duration (s)"))} <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>
       </div>`;
@@ -5442,6 +5468,10 @@ function renderScenarioFields(ids, opts = {}) {
     }));
     return;
   }
+  // The pools at THIS fight's level, fetched once per (level, Steel Path) and
+  // painted in when they arrive. Fired from here because this is the one
+  // function that draws the target card, on either tab.
+  loadTargetStats().then((changed) => { if (changed) paintTargetMeta(); });
   boxes.forEach((box) =>
     box.querySelectorAll("[data-k]").forEach((el) => {
       el.addEventListener("change", () => {
@@ -5503,29 +5533,88 @@ const enemyVuln = (en) => {
     : "";
 };
 
-// What the target card says under the name. The enemy's own facts, not its
-// stats: the stats depend on the level beside it, and stating them here would
-// be a second answer to a question the field grid already asks.
+// THE POOLS AT THE FIGHT'S LEVEL, from the engine.
+//
+// The card and the picker used to print each unit's stats at its OWN base
+// level — a Corrupted Heavy Gunner as "700 Health · 500 Armor" — which is a
+// number nobody fights: the scenario runs at 9999 Steel Path, where the same
+// unit is millions of health and the armour figure has stopped meaning what
+// the raw number suggests. Choosing a target on those is choosing on the wrong
+// axis (owner, 2026-08-05).
+//
+// Fetched, not computed here: the level curves belong to the engine and a
+// second implementation in JavaScript is a second answer waiting to drift.
+// Keyed on the two inputs, so it costs one call per level change and nothing
+// per repaint.
+let targetStats = { key: null, by: {} };
+async function loadTargetStats() {
+  const key = `${sim.level}|${sim.steel_path ? 1 : 0}`;
+  if (targetStats.key === key) return false;
+  const r = await api("/api/targets", { level: sim.level, steel_path: sim.steel_path });
+  if (!r || !r.targets) return false;
+  const by = {};
+  r.targets.forEach((t) => { by[t.id] = t; });
+  // Written together with the key: a half-applied cache would serve one
+  // level's numbers under another's label.
+  targetStats = { key, by };
+  return true;
+}
+
+// Repaint the target cards' meta line IN PLACE when the numbers land.
+//
+// Not a re-render: the renderer is what asked for them, so calling it back
+// would recurse. One line of text is the whole difference the answer makes,
+// and both tabs draw the same card from the same state, so both are patched
+// by one selector.
+function paintTargetMeta() {
+  const en = (META.enemies || []).find((e) => e.id === sim.enemy);
+  if (!en) return;
+  document
+    .querySelectorAll("#sim-target .en-meta, #opt-target .en-meta")
+    .forEach((el) => { el.textContent = enemyMeta(en); });
+}
+
+// What the target card says under the name. The enemy's own facts, plus what
+// it is MADE OF at the level this fight runs at.
 function enemyMeta(en) {
   if (!en) return "";
   const bits = [];
   if (en.faction && en.faction !== "unknown") bits.push(tr(cap1(en.faction)));
-  // What it is MADE OF, at its own base level — the pools a build has to get
-  // through. The numbers at the CHOSEN level belong to the field beside the
-  // card, not here: two answers to one question is how they drift apart.
+  // The pools a build has to get through. AT THE FIGHT'S LEVEL when the engine
+  // has told us (`loadTargetStats`), falling back to the unit's base numbers
+  // before that answer arrives — never a mix of the two, because a row reading
+  // "4.9M Health · 500 Armor" would be a lie about both.
+  const at = targetStats.by[en.id];
+  const src = at && !at.error ? at : en;
   const pools = [
-    en.health ? `${Math.round(en.health)} ${tr("Health")}` : null,
-    en.shield ? `${Math.round(en.shield)} ${tr("Shield")}` : null,
-    en.armor ? `${Math.round(en.armor)} ${tr("Armor")}` : null,
-    en.overguard ? `${Math.round(en.overguard)} ${tr("Overguard")}` : null,
+    src.health ? `${Math.round(src.health).toLocaleString()} ${tr("Health")}` : null,
+    src.shield ? `${Math.round(src.shield).toLocaleString()} ${tr("Shield")}` : null,
+    src.armor ? `${Math.round(src.armor).toLocaleString()} ${tr("Armor")}` : null,
+    src.overguard ? `${Math.round(src.overguard).toLocaleString()} ${tr("Overguard")}` : null,
   ].filter(Boolean);
-  if (pools.length) bits.push(pools.join(" · "));
+  if (pools.length) {
+    // SAY WHICH LEVEL, always. The same list of numbers means something
+    // completely different at 9999 than at the unit's base level, and the
+    // fallback above can serve either — so the label is not decoration, it is
+    // what makes the row readable.
+    // "Lv" stays untranslated, the way every other level label in the app is.
+    const lv = src === en
+      ? `Lv ${en.base_level ?? 1}`
+      : `Lv ${sim.level}${sim.steel_path ? " SP" : ""}${at.eximus ? ` ${tr("Eximus")}` : ""}`;
+    bits.push(`${lv}: ${pools.join(" · ")}`);
+    // What the armour is WORTH — at these levels the raw figure says little
+    // and the reduction it buys says everything.
+    if (src !== en && at.armor_dr > 0) {
+      bits.push(`${Math.round(at.armor_dr * 1000) / 10}% ${tr("damage reduction")}`);
+    }
+  }
   const head = (en.parts || []).find((p) => p.is_head);
   if (head) bits.push(`${tr("Headshot")} ×${head.multiplier}`);
-  // A fact about the UNIT, not about this fight: the sim always runs the
-  // ordinary version (the request has no Eximus switch yet), so the bare word
-  // "Eximus" here would read as a claim about what you are shooting.
-  if (en.can_be_eximus) bits.push(tr("has an Eximus variant"));
+  // The bare word "Eximus" is now a claim about WHAT YOU ARE SHOOTING and is
+  // made above, beside that variant's own pools — there is a switch for it and
+  // it defaults on. This line stays only for the case the numbers have not
+  // arrived yet, where nothing else would mention the variant at all.
+  if (en.can_be_eximus && !targetStats.by[en.id]) bits.push(tr("has an Eximus variant"));
   return bits.join(" · ");
 }
 
@@ -5542,6 +5631,15 @@ function openEnemyPicker(anchor) {
   search.oninput = () => renderEnemyMenu(search.value);
   renderEnemyMenu("");
   search.focus();
+  // Then again with the real numbers. Drawn twice rather than awaited, so the
+  // menu opens at once on a cold cache instead of after a round trip — and the
+  // first pass is honest either way, because it labels the base level it is
+  // actually showing.
+  loadTargetStats().then(() => {
+    if (pop.classList.contains("open") || pop.style.display !== "none") {
+      renderEnemyMenu(search.value);
+    }
+  });
 }
 
 function renderEnemyMenu(query) {
@@ -5559,6 +5657,12 @@ function renderEnemyMenu(query) {
     : `<div class="sim-empty">${escHtml(tr("no enemy matches"))}</div>`;
   menu.querySelectorAll("[data-e]").forEach((el) => el.onclick = () => {
     sim.enemy = el.dataset.e;
+    // An explicit "yes, Eximus" cannot follow you onto a unit that has no
+    // Eximus variant — the fight would be refused. Dropping it back to null
+    // hands the new target its OWN default, which is the elite one wherever
+    // there is one. An explicit "no" is legal everywhere and is kept.
+    const picked = (META.enemies || []).find((e) => e.id === sim.enemy);
+    if (sim.eximus === true && !(picked && picked.can_be_eximus)) sim.eximus = null;
     closePopovers();
     markPresetDirty(); markScenarioDirty();
     renderSim();
@@ -7459,15 +7563,18 @@ async function runOptimize() {
       arcanes: arcs,
       evolutions,
       exilus: opt.exilus,
-      enemy: sim.enemy, level: sim.level, steel_path: sim.steel_path,
-      // The TENNO travels whole. The optimizer scores builds under the same
-      // player the simulator will replay them as — a field left behind here
-      // crowns a build under a fight the replay never runs.
-      headshot_pct: sim.headshot_pct, aiming: sim.aiming,
-      invisible: sim.invisible, airborne: sim.airborne,
-      wf_armor: sim.wf_armor, wf_energy: sim.wf_energy,
-      infinite_ammo: sim.infinite_ammo, duration: sim.duration,
-      form: sim.form,
+      // THE FIGHT, WHOLE AND DERIVED — never a hand-written list of its
+      // fields. This was twelve of them copied out one by one, under a comment
+      // claiming "the TENNO travels whole", which was true only by inspection:
+      // every scenario field added since had to be remembered here, and the
+      // one nobody remembered would score builds under a fight the replay
+      // never runs. That is the divergence AGENTS.md's hard rule is about, and
+      // a spread cannot forget (`eximus` was the field that found it).
+      //
+      // Safe to send everything: `parse_fight` reads the fight's fields and
+      // `parse_optimize` reads only its own five, so a scenario field the
+      // optimizer has no opinion about simply arrives and is used.
+      ...snapshotScenario(),
       final_runs: finalRuns(), finalists: optRun.finalists,
       threads: optRun.threads || 0, // 0 = auto (cores − 2)
       buffs,

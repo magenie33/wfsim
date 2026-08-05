@@ -130,10 +130,29 @@ for (const lang of ["en", "zh"]) {
         arenaImg: document.getElementById('arena-eimg').hidden
           ? null : document.getElementById('arena-eimg').getAttribute('src'),
         arenaDot: document.getElementById('arena-edot').hidden,
+        // WHAT IT IS MADE OF, and the Eximus switch beside it.
+        meta: (host.querySelector('.en-meta') || {}).textContent || '',
+        eximusBox: !!host.querySelector('[data-k=eximus]'),
+        eximusOn: !!(host.querySelector('[data-k=eximus]') || {}).checked,
       };
     };
     const acolyte = await cardFor('angst');
     const gunner = await cardFor('corrupted_heavy_gunner');
+    // The pools are fetched, so the card is repainted a beat after it is
+    // drawn. Re-read rather than re-render: this is the state a player sees.
+    await sleep(1400);
+    const gunnerHost = document.getElementById('sim-target');
+    const gunnerLate = {
+      meta: (gunnerHost.querySelector('.en-meta') || {}).textContent || '',
+      eximusBox: !!gunnerHost.querySelector('[data-k=eximus]'),
+      eximusOn: !!(gunnerHost.querySelector('[data-k=eximus]') || {}).checked,
+    };
+    const thraxCard = await cardFor('thrax_centurion');
+    await sleep(1400);
+    const thraxLate = {
+      meta: (document.querySelector('#sim-target .en-meta') || {}).textContent || '',
+      eximusBox: !!document.querySelector('#sim-target [data-k=eximus]'),
+    };
 
     // The picker lists them all, with their pictures.
     document.getElementById('sim-target-pick').click(); await sleep(500);
@@ -141,7 +160,8 @@ for (const lang of ["en", "zh"]) {
     const menu = { rows: rows.length, thumbs: rows.filter(o => o.querySelector('.en-thumb')).length };
     closePopovers();
 
-    return { roster, art, acolyte, gunner, menu, lang: LANG };
+    return { roster, art, acolyte, gunner, menu, gunnerLate, thraxLate, lang: LANG,
+             baseHealth: (META.enemies.find(e => e.id === 'corrupted_heavy_gunner') || {}).health };
   })()`);
 
   const tag = `[${lang}]`;
@@ -176,6 +196,35 @@ for (const lang of ["en", "zh"]) {
   check(`${tag} the gunner claims no caveat it does not have`, r.gunner.gap === "", r.gunner.gap);
   check(`${tag} the picker lists every target, each with its picture`,
     r.menu.rows === r.roster.length && r.menu.thumbs === r.menu.rows, JSON.stringify(r.menu));
+  // THE POOLS ARE THE FIGHT'S, NOT THE UNIT'S BASE (owner, 2026-08-05).
+  // A Corrupted Heavy Gunner is 700 health in the data module and tens of
+  // millions at the level this scenario runs at; printing the former is
+  // answering a question nobody asked. The level has to be ON the line too —
+  // the same digits mean different things at 9999 and at base level 8.
+  check(`${tag} the gunner's pools are stated AT THE FIGHT'S LEVEL`,
+    // Asserted on the LEVEL LABEL, not on the base health: the fallback line
+    // is "Lv 8: 700 Health · 500 Armor", and a scaled line legitimately
+    // contains "700" inside "2,700 Armor" — so matching the number caught the
+    // right answer as if it were the wrong one.
+    /Lv 9999/.test(r.gunnerLate.meta) && !/Lv 8\b/.test(r.gunnerLate.meta),
+    r.gunnerLate.meta);
+  // Millions, not hundreds — a scaled number is unmistakable, so this cannot
+  // pass on a label alone.
+  const biggest = Math.max(...(r.gunnerLate.meta.match(/[\d,]{4,}/g) || ["0"])
+    .map((x) => Number(x.replace(/,/g, ""))));
+  check(`${tag} and they are the SCALED numbers`, biggest > 1e6, `largest figure ${biggest}`);
+
+  // THE ELITE VARIANT, offered where it exists and DEFAULTED ON.
+  check(`${tag} the gunner offers the Eximus switch, ticked by default`,
+    r.gunnerLate.eximusBox && r.gunnerLate.eximusOn,
+    `box ${r.gunnerLate.eximusBox} / on ${r.gunnerLate.eximusOn}`);
+  check(`${tag} its pools are the EXIMUS ones`, /Eximus|精英/.test(r.gunnerLate.meta),
+    r.gunnerLate.meta);
+  // ...and NOT offered where no such unit exists: the engine refuses the
+  // combination, so a control would be a promise the fight cannot keep.
+  check(`${tag} the Thrax offers no Eximus switch (no such unit)`,
+    !r.thraxLate.eximusBox, r.thraxLate.meta);
+
   // Localized names must actually arrive — otherwise "the link is English" is
   // passing for the boring reason that everything is.
   if (lang === "zh") {
