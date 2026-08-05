@@ -60,6 +60,16 @@ entries:
     mods: [primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, toxic_barrage, frigid_blast, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_merciless]
+  - weapon: burston_prime
+    score: 23.17502526553001
+    mods: [primary_acuity, serration, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, thermite_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    score: 11.66780766848749
+    mods: [galvanized_chamber, galvanized_scope, critical_delay, rifle_elementalist, vital_sense, high_voltage, malignant_force, thermite_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_kinetic_battle, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
   - weapon: dual_toxocyst
     score: 56.11840594102401
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, anemic_agility, primed_convulsion]
@@ -247,6 +257,15 @@ entries:
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_blight]
   - weapon: verglas_prime
+    score: 1.0538345647343734
+    mods: [heavy_caliber, split_chamber, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds]
+  - weapon: verglas_prime
+    score: 0.9914504231687964
+    mods: [heavy_caliber, split_chamber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire]
+  - weapon: verglas_prime
+    score: 0.8937952884425383
+    mods: [galvanized_chamber, heavy_caliber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire]
+  - weapon: verglas_prime
     score: 0.8296629874448342
     mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, malignant_force, rime_rounds, hellfire]
   - weapon: verglas_prime
@@ -267,12 +286,3 @@ entries:
   - weapon: verglas_prime
     score: 0.4512540100204895
     mods: [heavy_caliber, split_chamber, serration, rifle_elementalist, vile_acceleration, malignant_force, rime_rounds, hellfire]
-  - weapon: verglas_prime
-    score: 0.4306664593968792
-    mods: [galvanized_chamber, heavy_caliber, serration, vile_acceleration, stormbringer, primed_cryo_rounds, thermite_rounds, hellfire]
-  - weapon: verglas_prime
-    score: 0.4210350361982287
-    mods: [heavy_caliber, split_chamber, serration, rifle_elementalist, vile_acceleration, malignant_force, rime_rounds, thermite_rounds]
-  - weapon: verglas_prime
-    score: 0.31972705500163284
-    mods: [heavy_caliber, split_chamber, serration, rifle_elementalist, vile_acceleration, malignant_force, primed_cryo_rounds, thermite_rounds]
