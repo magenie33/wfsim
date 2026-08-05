@@ -1,0 +1,143 @@
+id: boar_incarnon
+name: Boar (Incarnon Form)
+slot: primary
+class: shotgun
+# Gauge-switched: entering it costs a charge meter and a transmute animation,
+# which is what gives the sim a two-form CYCLE to run.
+form: incarnon
+
+# TWO WEAPONS MODEL: second entry of the transform group — see
+# data/weapons/primary/boar.yaml for the base form.
+transform_group: boar
+transforms_from: boar
+
+# The same mod pools as the base form: the Genesis changes what the weapon
+# does, not what it is. (Sinister Reach is the one real exclusion and it is a
+# rifle mod this shotgun never had — wiki: "While Sinister Reach cannot be
+# equipped on Boar or its variants, Galvanized Acceleration can be used to
+# increase the maximum range of the main beams." Note "or its variants": that
+# sentence is written about the FAMILY, which is why it reads the same here as
+# on the Prime.)
+mod_pools: [primary, shotgun]
+mastery_rank: 2
+max_rank: 30
+accuracy: 100                # module Accuracy for attack 2 (the base form's is 5)
+disposition: 1.45
+polarities: []
+exilus_polarity: madurai
+riven_family: Boar
+traits: [tenno]
+internal_name: /Lotus/Weapons/Tenno/Shotgun/FullAutoShotgun
+noise: alarming
+ammo_type: primary
+ammo_max: 120
+ammo_pickup: 40
+magazine: 20
+reload_seconds: 2.7
+
+# The Incarnon transformation economy (wiki Boar Incarnon Genesis).
+#
+# EVERY NUMBER IN THIS BLOCK IS THE PRIME'S TOO. The Genesis is one item for
+# both weapons and the page describes one economy, so the gauge, the round
+# pool and the transmute costs do not vary by variant — only the attack stats
+# below do. That is the whole difference between the two entries.
+incarnon:
+  gauge:
+    # WEAKPOINT hits — the ordinary rule. (The Torid is the exception that
+    # charges on direct hits, which is why this field exists at all.)
+    # VERBATIM: "Incarnon Form is charged by filling the Incarnon Transmutation
+    # gauge that appears under the reticle by achieving weakpoint hits and then
+    # pressing the Alternate Fire button. 50 weakpoints hits will completely
+    # fill the gauge."
+    charge_on: weakpoint_hits
+    charges_to_fill: 50
+    # "each charge producing 3 rounds to a maximum of 150" — and 50 x 3 = 150,
+    # so the gauge and the pool are the same statement twice. The wiki module
+    # carries both halves independently (IncarnonChargeGain 3, attack 2's
+    # IncarnonCharges 150), which is the cross-check.
+    rounds_per_charge: 3
+    max_rounds: 150
+    # charge_rules:
+    # - "A full gauge is not required to activate Incarnon Form."
+    # - "Individual Multishot bullets can build charges" — this is an 8-pellet
+    #   shotgun, so a single pull can move the gauge by up to 8.
+    # - Charges do NOT generate on most MOA backpacks, nor on vulnerability
+    #   spots made by Sonar / Detect Vulnerability away from real weakpoints.
+    # - "Weakpoints on corpses or Invulnerable targets do not build charges."
+    # - Charges and the form survive holstering, bleedout and disarms; DEATH
+    #   removes both.
+  transmute:
+    activation: alt_fire
+    # VERBATIM: "Mode switching is not instantaneous and has an animation equal
+    # to the weapon's reload speed."
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+    # "Swapping to and from Incarnon Form will fully reload the normal form's
+    # magazine." NOT READ by the engine — the cycle already returns to the base
+    # form through a reload-length animation, so a free magazine on top would
+    # need the sim to track the base form's rounds ACROSS the switch.
+    refills_base_magazine: true
+  incarnon_magazine:
+    resource: incarnon_charges
+    # Both stated outright: "Incarnon Form's magazine is not affected by mods"
+    # and "Incarnon Form is not affected by Ammo Efficiency (such as Energized
+    # Munitions)".
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 2.7      # = the base form's reload time, unmodded
+  # 1 s is MEASURED on Dual Toxocyst (MEASUREMENTS M9) and applied uniformly
+  # until some weapon is measured to differ — no weapon is special-cased.
+  transmute_out_seconds: 1.0
+
+# SIM CONVENIENCE: with the gauge LOCKED full, the cycle reduces to a
+# magazine/reload model — 150 rounds, then 2.7 + 1.0 s of transitions.
+pseudo_reload:
+  magazine: 150
+  reload_seconds: 3.7
+
+# No CO catalog row for this form (nor for the base one, nor for either of the
+# Prime's), so the ADDITIVE class applies — absence from a table that lists
+# only discrepancies means normal.
+co_behavior: additive_with_base_damage
+
+# ONE attack part, and the three beams are NOT it. The wiki describes "up to 3
+# beams that automatically target enemies within 10° of the reticle", but the
+# data module gives this attack `Multishot = 1` — so the extra beams are
+# ACQUISITION of extra TARGETS, not extra instances on one target.
+#
+# Also inert in a single-target arena, recorded so nobody looks for them:
+#  - each beam chains to 2 more enemies within 10 m, each chain at 80% of the
+#    previous one's damage, chaining onward through punch-through targets;
+#  - beams stay locked while the target is within 50° of the reticle;
+#  - 20 m maximum range on the main beam, extendable with Galvanized
+#    Acceleration (Sinister Reach cannot be equipped on this weapon).
+attack:
+  trigger: held                 # continuous: `fire_rate` is TICKS per second
+  shot_type: hitscan            # module ShotType "Hit-Scan" for attack 2
+  fire_rate: 7.5
+  # ONE, not the base form's eight. The Genesis replaces a pellet spread with
+  # a beam; see the note above for why the page's "3 beams" is not this number.
+  multishot: 1.0
+  ammo_cost: 1                  # of the separate 150-round charge magazine
+  crit_chance: 0.18
+  crit_multiplier: 1.8
+  status_chance: 0.2
+  punch_through_m: 0.0
+  # PURE HEAT — the form drops the base weapon's IPS entirely. 20 against the
+  # Prime's 30, at 7.5 ticks per second against 8.0.
+  damage: { heat: 20.0 }
+  # NO `beam:` BLOCK, deliberately — the same call the Prime's entry makes and
+  # for the same reason: that block's `damage_radius_m` is what Firestorm
+  # scales, and nothing states a damage radius for the Boar's beams. They
+  # CHAIN rather than splash, so writing a radius — even a zero — would be
+  # inventing a fact to satisfy a schema.
+
+# incarnon_evolutions: see data/weapons/primary/boar.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis
+  # Attack stats cross-checked wiki Module:Weapons/data/primary ("Boar",
+  # attack 2 "Incarnon Form", Trigger "Held") == WFCD warframe-items, joined on
+  # internal name. Both give 20 Heat / 18% / 1.8x / 20% at 7.5 ticks per
+  # second, Hit-Scan. The module additionally carries Multishot 1, Range 20,
+  # Accuracy 100 and IncarnonCharges 150.

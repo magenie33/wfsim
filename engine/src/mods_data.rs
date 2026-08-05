@@ -915,11 +915,12 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 10] = [
+        const EXPECTED: [(&str, &str, &[&str]); 11] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
-            ("boar_prime", "auto", &[]),                       // full-auto shotgun
+            ("boar", "auto", &[]),                             // full-auto shotgun
+            ("boar_prime", "auto", &[]),                       // ...and its Prime
             ("cernos_prime", "charge", &[]),                   // a bow is not semi-auto
             ("torid", "semi_auto", &["semi_rifle_cannonade"]), // semi-auto launcher, rifle pool
             // THE ASSAULT RIFLES (2026-08-05). Semi-Pistol/Shotgun Cannonade

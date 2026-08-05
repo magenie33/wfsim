@@ -1,0 +1,28 @@
+id: boar_survivors_edge
+name: Survivor's Edge
+weapon: boar
+tier: 4
+icon: XCritChanceYStatChance(xWhite).png
+description: "Increase Base Critical Chance by +10%.
+Increase Base Status Chance by +6% per projectile.
+Increase Base Status Chance by +48% for Incarnon Form."
+# THE GENESIS IS THE FAMILY'S. One Boar Incarnon Genesis upgrades either the
+# Boar or the Boar Prime, and the wiki's evolution table proves the two get the
+# SAME evolutions: every row spans both weapon columns with a dash
+# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+# difference". So this file's values are its Prime twin's, transcribed rather
+# than re-derived — and if DE ever splits them, the table grows a real cell and
+# the two files diverge there.
+selection: choose_one
+
+effects:
+  - kind: flat_base_crit_chance
+    value: 0.10
+  # Per-form again, at exactly half of Elemental Balance's numbers — see that
+  # file for why one value cannot serve both forms.
+  - kind: flat_base_status_chance_by_form
+    base: 0.06
+    incarnon: 0.48
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

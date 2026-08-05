@@ -1,0 +1,27 @@
+id: boar_critical_parallel
+name: Critical Parallel
+weapon: boar
+tier: 4
+icon: CritChanceCritDamage(xWhite).png
+description: "Increase Base Critical Chance by +20%.
+Increase Base Critical Damage Multiplier by +0.5x."
+# THE GENESIS IS THE FAMILY'S. One Boar Incarnon Genesis upgrades either the
+# Boar or the Boar Prime, and the wiki's evolution table proves the two get the
+# SAME evolutions: every row spans both weapon columns with a dash
+# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+# difference". So this file's values are its Prime twin's, transcribed rather
+# than re-derived — and if DE ever splits them, the table grows a real cell and
+# the two files diverge there.
+selection: choose_one
+
+effects:
+  # Both are BASE-stat additions, so the crit mods multiply the new base —
+  # "Increase Base Critical Chance" / "Increase Base Critical Damage
+  # Multiplier" is the wiki's own wording.
+  - kind: flat_base_crit_chance
+    value: 0.20
+  - kind: flat_base_crit_multiplier
+    value: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

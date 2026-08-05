@@ -20,6 +20,8 @@
 # the suffix says which form — which is why this section is hand-written
 # while `mods`/`arcanes` below are filled by the script.
 weapons:
+  boar: 野猪
+  boar_incarnon: 野猪 (灵化形态)
   boar_prime: 野猪 Prime
   boar_prime_incarnon: 野猪 Prime (灵化形态)
   cernos_prime: 西诺斯 Prime

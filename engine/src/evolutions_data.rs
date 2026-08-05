@@ -1103,6 +1103,7 @@ use crate::loadout::WeaponBase;
             // `reload_speed_bonus` is a MODS-loader word this loader has no arm
             // for, and both instances are conditional on an empty reload the
             // sim does not distinguish.
+            "boar_ready_retaliation :: reload_speed_bonus",
             "boar_prime_ready_retaliation :: reload_speed_bonus",
             "dual_toxocyst_ready_retaliation :: reload_speed_bonus",
             // ---- AMMO EFFICIENCY, and it is CONDITIONAL -----------------

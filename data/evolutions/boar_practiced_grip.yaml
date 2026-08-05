@@ -1,0 +1,24 @@
+id: boar_practiced_grip
+name: Practiced Grip
+weapon: boar
+tier: 3
+icon: MoreAccuracy(xWhite).png
+description: "Increase Accuracy by +50%."
+# THE GENESIS IS THE FAMILY'S. One Boar Incarnon Genesis upgrades either the
+# Boar or the Boar Prime, and the wiki's evolution table proves the two get the
+# SAME evolutions: every row spans both weapon columns with a dash
+# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+# difference". So this file's values are its Prime twin's, transcribed rather
+# than re-derived — and if DE ever splits them, the table grows a real cell and
+# the two files diverge there.
+selection: choose_one
+
+effects:
+  # NOT LOADED: accuracy is spatial and the arena has no geometry — every
+  # pellet that the spread would have thrown wide still lands here. Recorded so
+  # the number is present the day a spatial model reads it.
+  - kind: accuracy_bonus
+    value: 0.50
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

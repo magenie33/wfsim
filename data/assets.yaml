@@ -8,6 +8,10 @@ weapons:
   # icon — the form is the same gun. Hand-set, because the generator resolves
   # "<weapon>_incarnon" to the adapter item (ToridIncarnonAdapter.png) and
   # cannot resolve laetum_incarnon at all.
+  # The base variant, whose art is its own file (the two weapons look
+  # different; only the Genesis is shared).
+  boar: Boar.png
+  boar_incarnon: Boar.png
   boar_prime: BoarPrime.png
   boar_prime_incarnon: BoarPrime.png
   cernos_prime: CernosPrime.png

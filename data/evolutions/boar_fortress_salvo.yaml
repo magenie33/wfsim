@@ -1,0 +1,29 @@
+id: boar_fortress_salvo
+name: Fortress Salvo
+weapon: boar
+tier: 2
+icon: PunchThroughWithArmorAboveX(xWhite).png
+description: "Increase Base Damage by +16.
+With Armor Over 450: +4 Punch Through"
+# THE GENESIS IS THE FAMILY'S. One Boar Incarnon Genesis upgrades either the
+# Boar or the Boar Prime, and the wiki's evolution table proves the two get the
+# SAME evolutions: every row spans both weapon columns with a dash
+# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+# difference". So this file's values are its Prime twin's, transcribed rather
+# than re-derived — and if DE ever splits them, the table grows a real cell and
+# the two files diverge there.
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 16.0
+  # NOT LOADED: no `punch_through` arm in the evolutions loader, and the
+  # condition is on the TENNO's armour (a Warframe stat the arena carries but
+  # this loader never consults). Punch through decides nothing in a
+  # single-target arena either way.
+  - kind: punch_through_bonus
+    value: 4.0
+    condition: tenno_armor_over_450
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

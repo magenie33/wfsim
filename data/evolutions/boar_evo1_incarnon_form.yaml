@@ -1,0 +1,34 @@
+id: boar_evo1_incarnon_form
+name: Incarnon Form
+weapon: boar
+tier: 1
+# The wiki file is the BARE name, not the "IncarnonForm…" pattern the Torid
+# and Dual Toxocyst use — Boar/Boar Prime/Dera all share `ShortRangeBeams`,
+# which is why this weapon needs no icon of its own.
+# Guessed by analogy once, and `Special:FilePath` answered 200 with an HTML
+# error page, which cached as a 31 KB ".png" that no browser could draw. The
+# fetcher now checks magic bytes so the next wrong guess is loud.
+icon: ShortRangeBeams(xWhite).png
+description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes.\nFire up to three short-range chaining Heat beams."
+# THE GENESIS IS THE FAMILY'S. One Boar Incarnon Genesis upgrades either the
+# Boar or the Boar Prime, and the wiki's evolution table proves the two get the
+# SAME evolutions: every row spans both weapon columns with a dash
+# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+# difference". So this file's values are its Prime twin's, transcribed rather
+# than re-derived — and if DE ever splits them, the table grows a real cell and
+# the two files diverge there.
+selection: fixed                # tier 1 has no choice
+
+# Under the two-weapons model this perk IS the unlock of weapon #2: the held
+# trigger, the beams, the pure Heat vector and the higher crit/status are all
+# properties of the boar_incarnon entry, not perk payload.
+effects:
+  # LOADED as `EvoEffect::UnlocksForm(weapon)`. It applies no stat — the form
+  # below is a separate weapon entry carrying its own — but the ENGINE READS IT:
+  # asking to fire that form implies this evolution, because tier 1 is
+  # `selection: fixed` and the two were one fact behind two controls.
+  - kind: unlocks_weapon
+    weapon: boar_incarnon
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

@@ -80,15 +80,28 @@ evolutions:
   # WERE WRONG (堡垒齐射/佣兵膛室/熟练握把/暴击并行 for 要塞齐射/佣兵枪膛/
   # 熟练之握/临界平行), which is the whole argument for never translating a
   # name that DE has already named.
+  # BOAR AND BOAR PRIME SHARE ONE GENESIS, so these are the same nine cards
+  # and DE wrote each string once. The duplication below is a TRANSCRIPTION
+  # of that one string under a second id, not a second translation of it —
+  # if the two ever diverge in game, they diverge here as separate lines.
   boar_prime_evo1_incarnon_form: 灵化形态
+  boar_evo1_incarnon_form: 灵化形态
   boar_prime_reified_bane: 具象克星
+  boar_reified_bane: 具象克星
   boar_prime_fortress_salvo: 要塞齐射
+  boar_fortress_salvo: 要塞齐射
   boar_prime_ready_retaliation: 待命报复
+  boar_ready_retaliation: 待命报复
   boar_prime_mercenary_chamber: 佣兵枪膛
+  boar_mercenary_chamber: 佣兵枪膛
   boar_prime_practiced_grip: 熟练之握
+  boar_practiced_grip: 熟练之握
   boar_prime_elemental_balance: 元素平衡
+  boar_elemental_balance: 元素平衡
   boar_prime_critical_parallel: 临界平行
+  boar_critical_parallel: 临界平行
   boar_prime_survivors_edge: 生还占优
+  boar_survivors_edge: 生还占优
 
 # The card text. One string per evolution; `\n` where our English description
 # breaks a line.
@@ -139,11 +152,20 @@ evolution_descriptions:
   # stays DE's own sentence, misprint included: this file transcribes what the
   # client SAYS, and the yaml carries what the game DOES.
   boar_prime_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。\n灵化形态发射三束能自动锁定准星 10° 范围内敌人的火焰射线，每根射线还能链接攻击 9 米内的 2 名敌人，链接伤害为之前的 80%。"
+  boar_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。\n灵化形态发射三束能自动锁定准星 10° 范围内敌人的火焰射线，每根射线还能链接攻击 9 米内的 2 名敌人，链接伤害为之前的 80%。"
   boar_prime_reified_bane: "基础伤害增加 +10。\n空弹匣装填时：基础伤害增加 +10。"
+  boar_reified_bane: "基础伤害增加 +10。\n空弹匣装填时：基础伤害增加 +10。"
   boar_prime_fortress_salvo: "基础伤害增加 +16。\n护甲大于 450 时：+4 穿透。"
+  boar_fortress_salvo: "基础伤害增加 +16。\n护甲大于 450 时：+4 穿透。"
   boar_prime_ready_retaliation: "空弹匣装填时：+100% 装填速度。"
+  boar_ready_retaliation: "空弹匣装填时：+100% 装填速度。"
   boar_prime_mercenary_chamber: "提升弹药上限至 195。"
+  boar_mercenary_chamber: "提升弹药上限至 195。"
   boar_prime_practiced_grip: "精准度提升 +50%。"
+  boar_practiced_grip: "精准度提升 +50%。"
   boar_prime_elemental_balance: "基础触发几率增加 +12%。\n灵化形态的基础触发几率增加 +96%。"
+  boar_elemental_balance: "基础触发几率增加 +12%。\n灵化形态的基础触发几率增加 +96%。"
   boar_prime_critical_parallel: "基础暴击几率增加 +20%。\n基础暴击伤害增加 +0.5x。"
+  boar_critical_parallel: "基础暴击几率增加 +20%。\n基础暴击伤害增加 +0.5x。"
   boar_prime_survivors_edge: "基础暴击几率增加 +10%。\n每个投射物的基础触发几率增加 +6%。\n灵化形态的基础触发几率增加 +48%。"
+  boar_survivors_edge: "基础暴击几率增加 +10%。\n每个投射物的基础触发几率增加 +6%。\n灵化形态的基础触发几率增加 +48%。"

@@ -1,0 +1,30 @@
+id: boar_elemental_balance
+name: Elemental Balance
+weapon: boar
+tier: 4
+icon: HighStatus(xWhite).png
+description: "Increase Base Status Chance by +12% per projectile.
+Increase Base Status Chance by +96% for Incarnon Form."
+# THE GENESIS IS THE FAMILY'S. One Boar Incarnon Genesis upgrades either the
+# Boar or the Boar Prime, and the wiki's evolution table proves the two get the
+# SAME evolutions: every row spans both weapon columns with a dash
+# (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
+# difference". So this file's values are its Prime twin's, transcribed rather
+# than re-derived — and if DE ever splits them, the table grows a real cell and
+# the two files diverge there.
+selection: choose_one
+
+effects:
+  # TWO NUMBERS, ONE EVOLUTION — the wiki states them as separate lines, not as
+  # a sum: a pellet carries a twelfth of what a beam tick does. The base form
+  # fires 8 pellets at 7.5% each; the Incarnon form is one beam at 20%. (Those
+  # are the BOAR's numbers — the Prime's are 11.25% and 24%, and the ratio
+  # between the two lines is what stays constant, not the totals.)
+  # `flat_base_status_chance_by_form` picks by whether the entry carries an
+  # `incarnon:` block, the same gate the magazine evolutions use.
+  - kind: flat_base_status_chance_by_form
+    base: 0.12
+    incarnon: 0.96
+
+source:
+  url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis
