@@ -84,6 +84,11 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, malignant_force, primed_cryo_rounds, thermite_rounds]
     arcanes: [primary_deadhead]
   - weapon: laetum
+    score: 48.86067520862884
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, anemic_agility, magnetic_might, pistol_pestilence, frostbite, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_incarnon_efficiency, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+  - weapon: laetum
     score: 35.04640840014543
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, accelerated_isotope, magnetic_might, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
