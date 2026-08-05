@@ -336,6 +336,15 @@ pub enum IndirectStat {
     /// Chance for a status to spread to enemies within 6 m (Shivering
     /// Contagion). Also multi-target only.
     StatusSpread,
+    /// A SYNDICATE RADIAL's scale — "+1 Truth" on Gilded Truth, and the same
+    /// number every syndicate augment carries under its own faction's name.
+    ///
+    /// Real damage (Truth is 1,000 Gas and a guaranteed status in 25 m) and a
+    /// real heal, but the TRIGGER is 1,000 affinity earned with the weapon on a
+    /// 30 s cooldown, and this sim accumulates no affinity. So the number is
+    /// carried rather than modelled — the same call `KillExplosion` makes, and
+    /// for the same reason: `kind: unmodeled` would throw it away.
+    SyndicateRadial,
 }
 
 impl IndirectStat {
@@ -358,6 +367,7 @@ impl IndirectStat {
             IndirectStat::AmmoConversion => "Ammo Pickup Conversion",
             IndirectStat::StaggerResist => "Stagger Resist (aiming)",
             IndirectStat::SelfStagger => "Self-Stagger Reduction",
+            IndirectStat::SyndicateRadial => "Syndicate Radial",
             IndirectStat::DoubleJump => "Double Jumps",
             IndirectStat::KillExplosion => "Explosion on Kill",
             IndirectStat::StatusSpread => "Status Spread Chance",

@@ -362,6 +362,9 @@ fn effect(v: &Value) -> Option<ModEffect> {
         "self_stagger_reduction" => ModEffect::Indirect(IndirectStat::SelfStagger, max("rankMax")),
         "double_jump_refresh" => ModEffect::Indirect(IndirectStat::DoubleJump, max("rankMax")),
         "explosion_on_kill" => ModEffect::Indirect(IndirectStat::KillExplosion, max("rankMax")),
+        // A syndicate augment's radial scale ("+1 Truth"). Its damage is
+        // real; its TRIGGER counts affinity, which the sim does not track.
+        "syndicate_radial" => ModEffect::Indirect(IndirectStat::SyndicateRadial, max("rankMax")),
         "status_spread_chance" => ModEffect::Indirect(IndirectStat::StatusSpread, max("rankMax")),
         // NOT indirect: a CHARGE-rate bonus shortens the draw, and a charged
         // form's cadence IS its draw (`ChargeCadence`), so this is DPS. It is
@@ -961,6 +964,15 @@ mod tests {
             pool_union(&["pistol".to_string()]).iter().any(|m| m.id == "sentient_surge"),
             "it should be a pistol mod that exclusivity narrows, not a mod nobody has"
         );
+
+        // GILDED TRUTH SPLITS A FAMILY, which is the harder case: the wiki says
+        // it is "exclusive to the Burston Prime" AND "cannot be equipped on the
+        // Burston", so one variant takes it and its twin does not — a
+        // distinction a rule keyed on class, trigger or riven family could not
+        // draw, since the two share all three.
+        let gilded = |w: &str| pool_for_weapon(w).iter().any(|m| m.id == "gilded_truth");
+        assert!(gilded("burston_prime"), "the Prime is what it was written for");
+        assert!(!gilded("burston"), "and the wiki says the base variant cannot take it");
     }
 
     /// THE WHOLE ROSTER, SPELLED OUT — which weapon is offered which Cannonade

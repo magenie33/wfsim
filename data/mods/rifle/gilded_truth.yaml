@@ -1,0 +1,73 @@
+id: gilded_truth
+name: Gilded Truth
+rarity: rare
+polarity: madurai
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Syndicate/BurstonPrimeMod
+description: "+X% Fire Rate\n+X Truth"
+
+# A SYNDICATE AUGMENT (Arbiters of Hexis, rank Crusader, 25,000 standing), and
+# the roster's first. Exclusive to the BURSTON PRIME and the wiki says so in
+# both directions: "exclusive to the Burston Prime" and "cannot be equipped on
+# the Burston". So the base variant is NOT listed here — the same equip gate
+# Sentient Surge uses, and the first time it separates two members of one
+# family rather than one weapon from the rest of the pool.
+exclusive_to: [burston_prime]
+
+effects:
+  # THE REASON IT IS EQUIPPED. +80% at max, a plain relative fire-rate bonus in
+  # the same bucket as Shred and Speed Trigger — and the biggest single one a
+  # rifle can take, which is what makes this a fire-rate card that happens to be
+  # an augment rather than the other way round.
+  #
+  # The wiki's patch history is the cross-check, twice: 15.2 "will now provide a
+  # multiplier of 1.2 instead of a multiplier of 0.2" and 15.2.1 "Fixed Gilded
+  # Truth Mod giving higher fire rate than intended, now gives up to 80% when
+  # fully maxed". The rank table's 20/40/60/80 is the settled answer.
+  - kind: fire_rate_bonus
+    rank0: 0.20
+    rankMax: 0.80
+
+  # THE SYNDICATE RADIAL — "+1 Truth" at max rank, and NOT MODELLED.
+  #
+  # What it is, transcribed from the Truth page so the next person does not
+  # have to find it: 1,000 affinity earned with this weapon arms it, on a 30
+  # second cooldown between activations. When it fires, every enemy within 25 m
+  # takes 1,000 Gas damage AND a guaranteed status effect; the player heals 25%
+  # of max health and gains +25% wall latch, aim glide and parkour velocity for
+  # 30 seconds.
+  #
+  # WHY IT IS NOT MODELLED, and it is the TRIGGER rather than the payload. The
+  # damage would be easy — a radial this arena's single target is always inside.
+  # The arming is not: it counts AFFINITY, which this sim does not accumulate.
+  # The pieces exist (`scaling::affinity_multiplier`, and every enemy file
+  # carries an `affinity:`) but nothing adds them up, and the weapon's SHARE of
+  # a kill's affinity is a rule this repo has never had to source.
+  #
+  # WHAT IT WOULD BE WORTH, so the gap is a size and not a shrug: at best one
+  # trigger per 30 s, so ten in a 300-second benchmark, for 10,000 Gas total.
+  # Against the benchmark's Thrax — 9.6M health behind 15.5M overguard — that
+  # is 0.04%. The GUARANTEED STATUS is worth more than the damage, because a
+  # Gas proc is a status TYPE and feeds Condition Overload.
+  #
+  # And on the board it would never fire at all: 1,000 affinity needs kills, and
+  # nothing dies to a lone weapon on that fight. So this mod's benchmark number
+  # is exactly its fire rate, which is also why it is honest to ship it now.
+  #
+  # CARRIED, NOT DISCARDED. `kind: unmodeled` would drop the 0.25-to-1 scale on
+  # the floor and leave the card printing a bare X — the mistake Combustion
+  # Beam's file records having made. It rides as an indirect stat instead, so
+  # the number reaches the panel, the API and a saved build, and whoever adds
+  # affinity later finds it already there.
+  - kind: syndicate_radial
+    rank0: 0.25
+    rankMax: 1.0
+
+family: gilded_truth
+
+source:
+  url: https://wiki.warframe.com/w/Gilded_Truth
+  # Rank table (fire rate 20/40/60/80, Truth 0.25/0.5/0.75/1, drain 4-7) and
+  # the exclusivity note from the wiki page; the Truth effect's own numbers
+  # from https://wiki.warframe.com/w/Truth.
