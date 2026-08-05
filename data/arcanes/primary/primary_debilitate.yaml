@@ -18,13 +18,17 @@ effects:
   # 2026-08-05: "吃3次派系只有一个情况，那必然有个元素实例造成才有可能出现这个
   # 情况").
   #
-  # STILL PENDING A MEASUREMENT: the instance's own damage. Its shape is the
-  # Melee Influence one — "damage equal to that element's damage from the
-  # original attack", i.e. modded base x the COMPONENT's own mod share, and
-  # note that share comes from MODS: an innately-Corrosive weapon with no Toxin
-  # mod contributes nothing to that term. What the sim applies today is the
-  # component STATUS and its DoT at the right depth; the extra instance is
-  # marked in `dummy::settle_procs` and waits on an in-game number.
+  # THE SPLIT PROC IS AN ORDINARY PROC, not a Melee-Influence-style spread
+  # (owner, 2026-08-05). It runs the normal DoT/debuff path and picks up its own
+  # element bracket, so a Corrosive splitting into Toxin scales by the TOXIN mod
+  # bonus — and by 1.0 where the build carries no Toxin mod, which is what
+  # "otherwise you only get the base portion" means. The wiki's "separate damage
+  # instance" is the status APPLICATION; what it buys is the extra faction
+  # layer, and that layer is the only observable it predicts.
+  #
+  # WHAT AN IN-GAME NUMBER WOULD SETTLE: whether the split DoT really lands at
+  # faction^3 rather than ^2. Everything else about it follows the paths the sim
+  # already measures.
   - kind: debilitate
     rank0: 0.5
     rankMax: 1.0

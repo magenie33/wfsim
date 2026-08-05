@@ -2607,13 +2607,19 @@ fn settle_procs(
             if let Some(part) =
                 debilitate_split(proc, stacks_before, params.arcane.debilitate_chance, rng)
             {
-                // MEASUREMENT PENDING: the extra DAMAGE INSTANCE this implies
-                // is not dealt yet — only the status it leaves. Its existence
-                // is settled (a DoT at faction³ can only come from a source
-                // already at faction², and a hit is faction¹), but its
-                // magnitude — "that element's damage from the original attack",
-                // i.e. mb_live × the component's own mod share — needs an
-                // in-game number before it becomes a golden value.
+                // THE SPLIT PROC IS AN ORDINARY PROC (owner, 2026-08-05: "我
+                // 倾向于类似正常触发dot的算法，而不是实例算法"). Nothing about
+                // it is special-cased: it enters the same match below, takes
+                // the same `push_dot`, and picks up its OWN element bracket —
+                // a Corrosive that splits into Toxin is scaled by the TOXIN
+                // mod bonus, and by 1.0 when the build carries no Toxin mod,
+                // which is what "otherwise you only get the base portion"
+                // means. The one thing that differs is the depth.
+                //
+                // So the "separate damage instance" the wiki names is the
+                // status APPLICATION, not a second damage number to add: what
+                // it buys is the extra faction layer, which is exactly the
+                // ×f³ the page reports and the only observable it predicts.
                 settle_procs(
                     vec![part],
                     at,
@@ -9291,6 +9297,26 @@ mod tests {
         }
         let share = tox as f64 / N as f64;
         assert!((share - 0.5).abs() < 0.05, "toxin share {share}, want ~0.5");
+    }
+
+    /// A SPLIT PROC TAKES ITS OWN ELEMENT'S BRACKET, which is the whole reason
+    /// the split is implemented as an ordinary proc one depth down rather than
+    /// as a bespoke damage formula. Corrosive is Electricity + Toxin: a build
+    /// carrying a Toxin mod and no Electricity mod scales a split TOXIN tick by
+    /// the Toxin bonus and a split ELECTRICITY tick by 1.0 — "otherwise you
+    /// only get the base portion" (owner, 2026-08-05).
+    #[test]
+    fn a_split_proc_scales_by_its_own_elements_mods() {
+        let mut p = DummyParams::default();
+        p.elem_dot_bonus = vec![(DamageType::Toxin, 1.9)]; // +90% Toxin, no Electricity mod
+        assert!((p.elem_bracket(DamageType::Toxin) - 1.9).abs() < 1e-9);
+        assert!(
+            (p.elem_bracket(DamageType::Electricity) - 1.0).abs() < 1e-9,
+            "an element with no mod contributes nothing to the bracket"
+        );
+        // ...and the combined element's own bracket is neither of them, so
+        // reusing it for the split would be wrong in both directions.
+        assert!((p.elem_bracket(DamageType::Corrosive) - 1.0).abs() < 1e-9);
     }
 
 }
