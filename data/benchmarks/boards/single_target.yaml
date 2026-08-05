@@ -174,15 +174,15 @@ entries:
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_blight]
   - weapon: torid
+    score: 10.953269716715782
+    mods: [galvanized_chamber, heavy_caliber, primary_acuity, hunter_munitions, vital_sense, magnetic_capacity, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_deadhead]
+  - weapon: torid
     score: 8.537806415234012
     mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, rifle_elementalist, vital_sense, malignant_force, infected_clip]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_blight]
-  - weapon: torid
-    score: 8.203390765037659
-    mods: [galvanized_chamber, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, malignant_force, primed_cryo_rounds, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
-    arcanes: [primary_debilitate]
   - weapon: verglas_prime
     score: 0.8296629874448342
     mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, malignant_force, rime_rounds, hellfire]
