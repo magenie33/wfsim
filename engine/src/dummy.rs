@@ -9307,8 +9307,11 @@ mod tests {
     /// only get the base portion" (owner, 2026-08-05).
     #[test]
     fn a_split_proc_scales_by_its_own_elements_mods() {
-        let mut p = DummyParams::default();
-        p.elem_dot_bonus = vec![(DamageType::Toxin, 1.9)]; // +90% Toxin, no Electricity mod
+        // +90% Toxin and no Electricity mod at all.
+        let p = DummyParams {
+            elem_dot_bonus: vec![(DamageType::Toxin, 1.9)],
+            ..Default::default()
+        };
         assert!((p.elem_bracket(DamageType::Toxin) - 1.9).abs() < 1e-9);
         assert!(
             (p.elem_bracket(DamageType::Electricity) - 1.0).abs() < 1e-9,
