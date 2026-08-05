@@ -32,6 +32,8 @@ struct ArcaneFile {
     /// `dual_pistols`); calc-layer gate like a mod's `requires`.
     #[serde(default)]
     requires: Option<String>,
+    #[serde(default)]
+    equip_classes: Vec<String>,
     /// Custom perk implementation id (Secondary Enervate's ramp/reset lives
     /// in `engine::perks`, not in the declarative effect vocabulary).
     #[serde(default)]
@@ -295,6 +297,15 @@ pub struct ArcaneDef {
     pub rarity: Rarity,
     pub max_rank: u32,
     pub requires: Option<String>,
+    /// Weapon CLASSES that may equip this arcane at all. Empty = any weapon
+    /// whose slot seats the arcane, which is almost all of them.
+    ///
+    /// An EQUIP rule, not a calc-layer gate (owner, 2026-08-05: "只能那个武器
+    /// 装上的，其他的不可以"). `requires` is the other thing — it lets the
+    /// arcane equip and go inert, which is right for Akimbo Slip Shot and WRONG
+    /// for these two: the game does not offer them at all. A picker that offers
+    /// what the arsenal refuses is a worse way to say the same thing.
+    pub equip_classes: Vec<&'static str>,
     /// Verbatim in-game text with rank-varying numbers as `X`.
     pub description: String,
     perk: Option<String>,
@@ -441,6 +452,14 @@ fn effect(v: &Value) -> Option<ArcEffect> {
                 "on_electricity_status" => ArcTrigger::ElectricityStatus,
                 "on_toxin_status" => ArcTrigger::ToxinStatus,
                 "on_cold_status" => ArcTrigger::ColdStatus,
+                // Longbow Sharpshot: armed by a headshot, spent on the next
+                // shot, and MULTIPLICATIVE — "Damage bonus is multiplicative to
+                // mods like Serration". It reaches the same final-damage
+                // multiplier as the ability-cast one because that is the
+                // bucket, not because the trigger is alike.
+                "on_weakpoint_hit" if grants == "final_damage" => {
+                    return Some(ArcEffect::FinalDamageCap(scale(v)))
+                }
                 "on_weakpoint_hit" => ArcTrigger::WeakpointHit,
                 // Non-simmed triggers with modeled grants:
                 "on_swap_consume_combo" => {
@@ -958,6 +977,11 @@ pub fn load_pool(prefix: &str) -> Vec<ArcaneDef> {
             rarity: rarity(&af.rarity),
             max_rank: af.max_rank,
             requires: af.requires,
+            equip_classes: af
+                .equip_classes
+                .into_iter()
+                .map(|s| &*Box::leak(s.into_boxed_str()))
+                .collect(),
             description: af.description.unwrap_or_default(),
             perk: af.perk,
             effects,
@@ -988,6 +1012,26 @@ pub fn slot_pool(slot: &str) -> &'static [ArcaneDef] {
         .or_insert_with(|| {
             Box::leak(load_pool(&format!("arcanes/{slot}/")).into_boxed_slice())
         })
+}
+
+/// The arcanes THIS WEAPON may equip in this slot.
+///
+/// `slot_pool` is every arcane filed under the slot; this is the subset the
+/// arsenal would actually offer. Two arcanes narrow it — Shotgun Vendetta and
+/// Longbow Sharpshot, the only two the wiki types by weapon CLASS rather than
+/// by slot — and a crossbow is not a bow (`Class = "Crossbow"`), which is why
+/// "cannot be equipped on Attica, Nagantaka or Zhuge" needs no special case.
+///
+/// The engine decides, once, for the page and the sim alike — the same rule
+/// `mods_data::pool_for_weapon` follows.
+pub fn pool_for_weapon(weapon: &str, slot: &str) -> Vec<&'static ArcaneDef> {
+    let class = crate::weapons_data::spec(weapon).map(|s| s.class.as_str());
+    slot_pool(slot)
+        .iter()
+        .filter(|a| {
+            a.equip_classes.is_empty() || class.is_some_and(|c| a.equip_classes.contains(&c))
+        })
+        .collect()
 }
 
 /// Which slot an arcane id belongs to, if any.
@@ -1103,10 +1147,25 @@ mod tests {
     fn loads_all_16_primary_arcanes() {
         let pool = slot_pool("primary");
         assert_eq!(pool.len(), 16, "expected the full 16-arcane primary pool");
-        for id in ["shotgun_vendetta", "longbow_sharpshot"] {
+        // The two class-typed ones are an EQUIP rule, so they are gated by
+        // `equip_classes` and not offered elsewhere at all (2026-08-05).
+        for (id, class) in [("shotgun_vendetta", "shotgun"), ("longbow_sharpshot", "bow")] {
             let a = pool.iter().find(|a| a.id == id).expect(id);
-            assert!(a.requires.is_some(), "{id} is gated on a weapon class");
+            assert_eq!(a.equip_classes, vec![class], "{id} states which class equips it");
         }
+        // ...and the pool a weapon is OFFERED narrows accordingly.
+        let on = |w: &str| {
+            pool_for_weapon(w, "primary")
+                .iter()
+                .map(|a| a.id.as_str())
+                .collect::<Vec<_>>()
+        };
+        assert!(on("boar_prime").contains(&"shotgun_vendetta"), "a shotgun takes it");
+        assert!(!on("boar_prime").contains(&"longbow_sharpshot"), "a shotgun is not a bow");
+        assert!(on("cernos_prime").contains(&"longbow_sharpshot"), "a bow takes it");
+        assert!(!on("cernos_prime").contains(&"shotgun_vendetta"), "a bow is not a shotgun");
+        assert!(!on("torid").contains(&"shotgun_vendetta"), "a launcher takes neither");
+        assert!(!on("torid").contains(&"longbow_sharpshot"));
         // The slot registry discovers directories, so primary must show up
         // next to secondary with no code change.
         assert!(slots().contains(&"primary"), "slots(): {:?}", slots());

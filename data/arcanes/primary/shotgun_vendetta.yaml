@@ -3,15 +3,22 @@
 # (reported 2026-08-05): a filter on Type == "Primary" skips it. It and Longbow
 # Sharpshot are the only two class-typed arcanes in the game.
 #
-# Modelled with `requires:` — the same trait gate Akimbo Slip Shot uses — so it
-# EQUIPS anywhere the slot allows and goes inert off a shotgun. That is the
-# conservative reading: it never wrongly refuses an equip, and the damage is
-# right either way.
+# SHOTGUNS ONLY, and that is an EQUIP rule rather than a calc-layer one (owner,
+# 2026-08-05: "只能那个武器装上的，其他的不可以"). It first shipped here with
+# `requires:`, which lets the arcane equip and sit inert — right for Akimbo Slip
+# Shot, wrong for this: the arsenal does not offer it on a non-shotgun at all.
+#
+# NOT ONLY SHOTGUNS, strictly. Update 40.0.3: "Shotgun Vendetta Arcane can now
+# be equipped on the Corvas (Prime) and Mandonel Archguns" — three Arch-Guns by
+# NAME, not the archgun class (Larkspur Prime does not take it). None of the
+# three is in the roster, so `equip_classes: [shotgun]` is complete today; when
+# one is added, this file gains the exception rather than the weapon gaining a
+# quirk.
 id: shotgun_vendetta
 name: Shotgun Vendetta
 rarity: rare
 max_rank: 5
-requires: shotgun            # inert on a non-shotgun primary (calc layer)
+equip_classes: [shotgun]     # + Corvas / Corvas Prime / Mandonel, none in the roster
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/ShotgunMultishotAndReloadSpeedOnCloseKill
 description: "On shotgun kill within 5m of target:\n+X% Multishot and +X% Reload Speed for 15s."
 

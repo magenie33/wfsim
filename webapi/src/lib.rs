@@ -702,6 +702,13 @@ pub fn meta_json() -> Value {
                 "evo_forbids": evo_forbids(w),
                 "mod_class": w.mod_pools.last().cloned().unwrap_or_default(),
                 "subtype": w.subtype,
+                // The RAW class, beside the display one. An arcane's
+                // `equip_classes` is keyed on it, and title-casing for display
+                // is exactly the kind of transform that makes a comparison
+                // silently fail.
+                "class": wfsim_engine::weapons_data::spec(&w.id)
+                    .map(|s| s.class.clone())
+                    .unwrap_or_default(),
                 "sentinel": w.sentinel,
                 // The EQUIPMENT slot ("primary" / "secondary"), which is what
                 // the home grid groups by. `arcane_slot` happens to hold the
@@ -849,6 +856,11 @@ pub fn meta_json() -> Value {
             "max_rank": a.max_rank,
             "rarity": format!("{:?}", a.rarity).to_lowercase(),
             "not_modeled": a.has_unmodeled(),
+            // WHICH WEAPON CLASSES MAY EQUIP IT. Empty = any weapon whose slot
+            // seats it. The page filters its picker on this so the arsenal and
+            // the app offer the same set — `arcanes_data::pool_for_weapon` is
+            // the engine's own answer and this is it speaking.
+            "equip_classes": a.equip_classes,
             "out_of_scope": a.has_out_of_scope(),
             "slot": slot,
         }));

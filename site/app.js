@@ -4879,7 +4879,18 @@ const arcanePools = (weaponId) =>
 // same thing.
 const arcanePool = (i = 0) => {
   const pool = arcanePools()[i];
-  return (META.arcanes || []).filter((a) => a.id !== "none" && a.slot === pool);
+  // ...and the weapon's CLASS, for the two arcanes typed by class rather than
+  // by slot (Shotgun Vendetta, Longbow Sharpshot). An EQUIP rule: the arsenal
+  // does not offer them elsewhere, so neither does the picker (owner,
+  // 2026-08-05). `equip_classes` is the engine's answer, not a rule restated
+  // here — empty means any weapon the slot seats.
+  const cls = (weaponInfo($("weapon").value) || {}).class;
+  return (META.arcanes || []).filter(
+    (a) =>
+      a.id !== "none" &&
+      a.slot === pool &&
+      (!(a.equip_classes || []).length || a.equip_classes.includes(cls)),
+  );
 };
 // An arcane belongs to ONE slot, so another slot's arcane is not a
 // questionable choice on this weapon — it cannot be equipped at all. Ids reach
