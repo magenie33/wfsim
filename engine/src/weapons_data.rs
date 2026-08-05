@@ -109,6 +109,15 @@ pub struct AttackSpec {
     pub crit_multiplier: f64,
     pub status_chance: f64,
     pub damage: BTreeMap<String, f64>,
+    /// Damage types this attack applies on EVERY hit regardless of status
+    /// chance — "Plasma bomb and seeking projectiles have a guaranteed Impact
+    /// proc" (Phantasma Prime). Rolled status is unaffected and lands on top.
+    ///
+    /// DIRECT hits only, which is the engine's existing rule
+    /// (`if direct { &ap.forced_procs }`) and is the wiki's too: the Astilla's
+    /// direct hit forces Impact and its radial does not.
+    #[serde(default)]
+    pub forced_procs: Vec<String>,
     #[serde(default)]
     pub ricochet: Option<RicochetSpec>,
     /// A radial (AoE) part fired with every projectile of this attack.
@@ -1176,6 +1185,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // is stated once rather than copied into a second file that is free
         // to drift from it.
         beam_ramp_floor: s.beam_ramp_floor.unwrap_or(crate::dummy::BEAM_RAMP_FLOOR),
+        forced_procs: s.attack.forced_procs.iter().map(|t| damage_type(t)).collect(),
         no_resupply: s.no_resupply,
         base_reload,
         innate_co_per_type: 0.0,
@@ -1714,6 +1724,37 @@ mod tests {
         assert_eq!(FormKind::Base.id(), "base");
         assert_eq!(FormKind::Incarnon.id(), "incarnon");
         assert_eq!(FormKind::Charged.id(), "charged");
+    }
+
+    /// A WEAPON'S FORCED PROCS REACH THE SIM.
+    ///
+    /// `DummyParams::forced_procs` has existed since the Astilla was written up
+    /// in MECHANICS §6, and the panel filled it with an empty vector — so the
+    /// field was real, the sim read it, and no weapon could ever put anything
+    /// in it. Phantasma Prime's charged form is the first that needs to:
+    /// "Plasma bomb and seeking projectiles have a guaranteed Impact proc."
+    ///
+    /// Asserted at BOTH ends, because either alone passes on a broken path: the
+    /// weapon file says Impact, and the RESOLVED panel still says Impact after
+    /// the mod layer has been through it.
+    #[test]
+    fn a_weapons_forced_procs_survive_resolution() {
+        let base = WeaponBase::from_data("phantasma_prime_charged", false, &[]);
+        assert_eq!(base.forced_procs, vec![crate::damage::DamageType::Impact]);
+
+        let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::AssumedMax);
+        assert_eq!(
+            panel.forced_procs,
+            vec![crate::damage::DamageType::Impact],
+            "a forced proc is the weapon's, so no mod bucket may drop it"
+        );
+
+        // ...and the BEAM form forces nothing, so this is not a weapon-wide
+        // flag wearing an attack's name.
+        assert!(
+            WeaponBase::from_data("phantasma_prime", false, &[]).forced_procs.is_empty(),
+            "the beam has no guaranteed proc; only the charged bomb does"
+        );
     }
 
     /// The Cernos Prime is the first CHARGE-trigger weapon, so this pins the

@@ -827,6 +827,9 @@ pub struct WeaponBase {
     pub super_crit_on_status: Option<crate::weapons_data::SuperCritSpec>,
     /// Where this weapon's beam ramp starts (0.20 unless it says otherwise).
     pub beam_ramp_floor: f64,
+    /// Damage types forced on every DIRECT hit — see
+    /// `weapons_data::AttackSpec::forced_procs`.
+    pub forced_procs: Vec<DamageType>,
     /// How many tendrils this weapon can hold up (0 = it has none). See
     /// `weapons_data::TendrilSpec` for why the COUNT is modelled and the
     /// tendrils' own damage is not.
@@ -1242,6 +1245,8 @@ pub struct ResolvedPanel {
     pub super_crit_on_status: Option<crate::weapons_data::SuperCritSpec>,
     /// See `weapons_data::WeaponSpec::beam_ramp_floor`. No mod moves it.
     pub beam_ramp_floor: f64,
+    /// Forced procs, carried through unmodded — no mod grants or removes one.
+    pub forced_procs: Vec<DamageType>,
     /// Untouched by mods: the tendril cap is the weapon's.
     pub tendril_max: u32,
     /// Sentient Surge: crit chance added PER ACTIVE TENDRIL, relative to the
@@ -1962,6 +1967,7 @@ pub fn resolve_for(
         no_resupply: base.no_resupply,
         super_crit_on_status: base.super_crit_on_status,
         beam_ramp_floor: base.beam_ramp_floor,
+        forced_procs: base.forced_procs.clone(),
         tendril_max: base.tendril_max,
         cc_per_tendril: per_tendril_cc,
         sc_per_tendril: per_tendril_sc,

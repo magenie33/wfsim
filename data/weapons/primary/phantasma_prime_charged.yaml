@@ -1,0 +1,125 @@
+id: phantasma_prime_charged
+name: Phantasma Prime
+slot: primary
+class: shotgun
+# THE ALT-FIRE — a one-second charge that throws a plasma bomb instead of the
+# six beams. `charged` is the kind for a shot whose DRAW replaces the fire-rate
+# cadence (docs/GLOSSARY.md "FORMS"), and it is reached from the beam for FREE:
+# no gauge, no transmute animation, just the other button. That is why this
+# entry carries no `transforms_from` — a form of the same weapon, not a
+# transformation of it. Same shape as larkspur_prime_charged.yaml.
+form: charged
+transform_group: phantasma_prime
+
+# Same weapon, so everything below the attack profile matches
+# phantasma_prime.yaml.
+mod_pools: [primary, shotgun]
+grip_type: ""
+mastery_rank: 14
+max_rank: 30
+accuracy: 100
+disposition: 0.8
+polarities: [madurai, madurai, naramon]
+exilus_polarity: madurai
+riven_family: Phantasma
+traits: [prime, sentient]
+internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimePhantasma/PhantasmaPrimeShotgun
+noise: alarming
+ammo_type: primary
+ammo_max: 330
+ammo_pickup: 15
+magazine: 11
+reload_seconds: 0.5
+
+# CONDITION OVERLOAD — the bomb is ordinary, and the wiki's catalog row is
+# about the part this entry does NOT model:
+#
+#   Phantasma Prime | Alt-fire Child Bomb | Projectile | 3 | 3 | 100% |
+#   Multiplying
+#
+# Neither the plasma bomb's impact nor its explosion has a row, so both take
+# the ordinary Additive class at the full base. The CHILD BOMBS are the
+# exception — the catalog's "Multiplying" is the discrepant class — and they
+# are recorded rather than modelled; see the note under `radial:`.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: charge
+  # The charge IS this form's cadence, not `fire_rate`. The listed 2.00
+  # attacks/sec is kept as the STAT (it is what the panel prints and what
+  # fire-rate gates read); the sim paces on `charge_seconds` plus that rate,
+  # which is the wiki's general charge formula for everything but a bow —
+  # 1 / (1 + 1/2) = 0.67 shots a second.
+  charge_seconds: 1.0
+  shot_type: projectile
+  projectile_speed_mps: 25
+  fire_rate: 2.0
+  multishot: 1.0
+  # TWO ammo a shot against the beam's 0.5, out of the same 11-round magazine:
+  # five charged shots and it is empty.
+  #
+  # The wiki records a BUG that this does not model, because a bug is not a
+  # rule: "Ammo cost of charge increases as magazine depletes ... it may consume
+  # 2/2/2/3/3/4/6 ammo throughout a magazine", and "Charged damage is reduced by
+  # -1 for each additional ammo consumed". Listed here so nobody re-derives the
+  # discrepancy from a measurement and files it as a modelling error.
+  ammo_cost: 2
+  crit_chance: 0.03
+  crit_multiplier: 1.5
+  status_chance: 0.37
+  punch_through_m: 0.0
+  damage: { impact: 15.0 }
+  # GUARANTEED IMPACT, on the bomb and on the seeking projectiles: "Plasma bomb
+  # and seeking projectiles have a guaranteed Impact proc." It lands on top of
+  # the rolled status, and it matters here beyond the stagger — a status TYPE
+  # that is always present is a permanent +1 to Condition Overload's count.
+  #
+  # This is the first weapon in the roster to state one. `forced_procs` has
+  # existed on the sim's side since the Astilla was written up in MECHANICS §6;
+  # the panel filled it with an empty vector, so no weapon could ever reach it.
+  forced_procs: [impact]
+  # THE EXPLOSION — "explodes in a 4.8 meter radius". Rules in MECHANICS §7:
+  # its own crit and status stats, a 1x body-part multiplier ("Explosion has a
+  # headshot multiplier of 1x and cannot trigger headshot conditions"), and
+  # "Initial hit and explosion apply status separately", which is exactly why
+  # it is a second instance rather than added damage.
+  radial:
+    damage: { radiation: 73.0 }
+    radius_m: 4.8
+    falloff_start_m: 0.0
+    # "linear Damage Falloff from 100% to 50% from central impact" — half, not
+    # to zero. Inert single-target: the bomb detonates ON the target, so the
+    # epicentre distance is zero.
+    falloff_reduction: 0.5
+    crit_chance: 0.03
+    crit_multiplier: 1.5
+    status_chance: 0.37
+  #
+  # ── THE FIVE CLUSTER BOMBLETS ARE NOT MODELLED ──────────────────────────
+  #
+  # "which then releases 5 seeking projectiles", each doing 3 Impact on contact
+  # (forced Stagger) and then its own 18 Radiation explosion in a 2 m radius
+  # (forced Impact). Module attacks 4 and 5.
+  #
+  # WHY NOT: the engine gives an attack ONE `radial:`, and these are a THIRD
+  # layer under it — a radial's radial, five times over. Writing them into the
+  # existing radial would merge two explosions with different damage, different
+  # radii and, per the CO catalog, DIFFERENT BEHAVIOUR CLASSES: the child bomb
+  # is "Multiplying" where everything else on this weapon is Additive. Merging
+  # them would not be an approximation, it would be a category error.
+  #
+  # AND THE ANSWER IS NOT KNOWN ANYWAY. They are SEEKING projectiles that
+  # spread to find targets; against one enemy it is unstated whether all five
+  # home onto it, some miss, or they scatter. A number here would be a guess
+  # dressed as data, and the guess spans a factor of five.
+  #
+  # CONSEQUENCE, stated plainly: this form's damage is a FLOOR. It is the bomb
+  # plus its explosion and nothing else, and in game a solo target eats some
+  # part of 5 x (3 + 18) on top.
+
+source:
+  url: https://wiki.warframe.com/w/Phantasma_Prime
+  # Attack stats from the wiki `Module:Weapons/data/primary` ("Phantasma
+  # Prime", attacks 2 "Plasma Bomb Impact" and 3 "Plasma Bomb Explosion"),
+  # cross-checked against WFCD warframe-items joined on internal name — 0
+  # disagreements. Attacks 4 and 5 are the bomblets, recorded above.
