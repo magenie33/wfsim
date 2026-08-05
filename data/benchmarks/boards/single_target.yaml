@@ -15,6 +15,16 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, toxic_barrage, chilling_reload, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_crux]
+  - weapon: dual_toxocyst
+    score: 32.82581361882817
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, anemic_agility, creeping_bullseye, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+  - weapon: dual_toxocyst
+    score: 11.755289890671122
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, anemic_agility, creeping_bullseye, primed_convulsion, primed_heated_charge]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
   - weapon: gotva_prime
     score: 1.2260075135719815
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, malignant_force, primed_cryo_rounds, thermite_rounds]
