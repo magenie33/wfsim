@@ -91,6 +91,25 @@ fn hcet(t: DamageType) -> u8 {
     }
 }
 
+/// THE WIKI'S OWN ORDER for a damage type — the column order of its damage
+/// table, which is also `DamageType`'s declaration order ("Names follow the
+/// wiki", damage.rs).
+///
+/// It decides nothing about damage. It exists so a build that produces the same
+/// elements always PRINTS the same way: `builds::canonical_mods` orders its
+/// element pairs by what each one makes, so Blast comes before Corrosive
+/// because the table says so and not because of who submitted first (owner,
+/// 2026-08-06: "我们参考wiki的排序").
+///
+/// NOT `hcet`, which looks like the same question and is not: that one orders
+/// INNATE elements under rule 2 and changes what the weapon does.
+pub fn wiki_order(t: DamageType) -> usize {
+    // DERIVED from the declaration list rather than restated as a match, so a
+    // type added to the table cannot be forgotten here and a hand-written arm
+    // cannot disagree with the list it is copying.
+    DamageType::ALL.iter().position(|&x| x == t).unwrap_or(usize::MAX)
+}
+
 /// Combine the physical vector with the elemental hierarchy.
 ///
 /// Adjacent uncombined primaries merge pairwise into secondaries (rule 1);

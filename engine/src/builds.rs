@@ -34,16 +34,26 @@
 //! 46,583 (measured 2026-08-04). A sorted identity collapsed those into one row
 //! and scored whichever the sort happened to produce.
 //!
-//! ...but only BETWEEN pairs. `elements::combine` walks the sequence in
-//! `chunks_exact(2)` and combines each chunk with `combined_of`, which is
-//! symmetric and pools both amounts — so swapping two elementals INSIDE one
-//! pair is the same damage by construction. Treating that as a second build put
-//! the Ocucor on the board twice at the same score, differing only in Frostbite
-//! and Pistol Pestilence trading places (owner, 2026-08-06). The rule was right
-//! and one notch too fine.
+//! ...but what counts is the PAIRING, not the positions. `elements::combine`
+//! chunks the POOLED element list and combines each chunk with `combined_of`,
+//! which is symmetric and pools both amounts; the secondaries are then ADDED
+//! into a vector. So neither the order inside a pair nor the order of the pairs
+//! among themselves is part of the fight — only which elements share a chunk,
+//! and which one trails.
+//!
+//! Both of those were treated as significant, and it put the Ocucor on the
+//! board twice at the same score with Frostbite and Pistol Pestilence swapped
+//! (owner, 2026-08-06). The rule was right and one notch too fine.
+//!
+//! CANONICALISE ON THE POOLED SEQUENCE, never on mod slots. Two mods of one
+//! element are ONE entry to the engine, so every position after them shifts —
+//! a canonicaliser that chunks the MOD list agrees with the engine until a
+//! build carries a duplicate element and then quietly scores a different
+//! fight. That shipped and was reverted (5669040): Primed Heated Charge and
+//! Scorch pooled, and Viral + Heat was published as Blast + Toxin.
 //!
 //! So the identity is the weapon, the mod sequence CANONICALISED to one
-//! representative per pairing, the evolution set, and the arcanes.
+//! representative per PAIRING, the evolution set, and the arcanes.
 //!
 //! Rivens are absent on purpose (user, 2026-08-04): they are personal random
 //! items, so a board that counted them would rank luck. That also removes the
@@ -114,7 +124,7 @@ pub struct ValidBuild {
 pub fn canonical_mods(weapon: &str, mods: &[String]) -> Vec<String> {
     let pool = crate::mods_data::pool_for_weapon(weapon);
     let def = |id: &String| pool.iter().find(|m| m.id == id.as_str());
-    let (mut plain, mut elemental): (Vec<&String>, Vec<&String>) = mods
+    let (mut plain, elemental): (Vec<&String>, Vec<&String>) = mods
         .iter()
         .partition(|id| def(id).is_none_or(|m| m.primary_element().is_none()));
     // Biggest drain first, then DE's own English name — stable and readable.
@@ -124,24 +134,72 @@ pub fn canonical_mods(weapon: &str, mods: &[String]) -> Vec<String> {
             .then_with(|| def(a).map_or("", |m| m.name).cmp(def(b).map_or("", |m| m.name)))
     };
     plain.sort_by(rank);
-    // ...AND WITHIN EACH PAIR, because a pair's internal order decides nothing.
+
+    // THE ELEMENTALS ARE CANONICALISED ON THE **POOLED ELEMENT** SEQUENCE, not
+    // on their own positions — and that distinction is the whole of it.
     //
-    // `elements::combine` walks the elemental sequence with `chunks_exact(2)`
-    // and calls `combined_of(a, b)`, which is SYMMETRIC, pooling both amounts
-    // into the one secondary. So [Cold, Toxin] and [Toxin, Cold] are the same
-    // Viral by construction, not by coincidence — and leaving them as two
-    // representatives put the same build on the board twice, at the same score
-    // to four decimals (owner, 2026-08-06: Ocucor, Frostbite and Pistol
-    // Pestilence swapped).
+    // `elements::combine` does not chunk the mod list. It chunks the list of
+    // ELEMENTS after `ElementalInput::push` has merged duplicates, so two Heat
+    // mods are ONE Heat entry and everything after them shifts up by one. A
+    // rule written in terms of mod positions agrees with the engine right up
+    // until a build carries the same element twice, and then silently scores a
+    // different fight (that bug shipped: 5669040, reverted — Primed Heated
+    // Charge and Scorch pooled, and Viral + Heat was published as Blast +
+    // Toxin, 4.7511 down to 0.1293).
     //
-    // What is NOT sorted is the order of the PAIRS, and that is the whole
-    // point: moving an elemental ACROSS a chunk boundary re-pairs everything
-    // after it, which is the 12,424-against-46,583 measurement this function
-    // was written for. The rule was right and one notch too fine — order
-    // matters BETWEEN pairs, never inside one.
-    for pair in elemental.chunks_mut(2) {
-        pair.sort_by(rank);
+    // So: pool first, decide the canonical ELEMENT order, then lay the mods
+    // out to match it.
+    let element_of = |x: &&String| def(x).and_then(|m| m.primary_element());
+    // Distinct elements in first-appearance order — exactly what `push` builds.
+    let mut seq: Vec<crate::damage::DamageType> = Vec::new();
+    for e in elemental.iter().filter_map(element_of) {
+        if !seq.contains(&e) {
+            seq.push(e);
+        }
     }
+    // Two freedoms, both provably free, and one hard constraint.
+    //
+    // FREE: the order inside a pair (`combined_of` is symmetric and pools both
+    // amounts) and the order of the pairs among themselves (`combine` ADDS each
+    // secondary into a vector). Measured on the Torid: the same four mods with
+    // their two pairs swapped give 12,773.473 DPS either way.
+    //
+    // FIXED: which elements share a pair, and which one trails. Moving an
+    // element across a boundary re-pairs everything after it — 12,424 against
+    // 46,583 on the same weapon — so the PARTITION is never touched.
+    let odd = seq.len() % 2;
+    let tail: Vec<crate::damage::DamageType> = seq.split_off(seq.len() - odd);
+    let mut pairs: Vec<[crate::damage::DamageType; 2]> =
+        seq.chunks(2).map(|c| [c[0], c[1]]).collect();
+    for p in &mut pairs {
+        p.sort_by_key(|&t| crate::elements::wiki_order(t));
+    }
+    // By the element each pair MAKES, in the wiki's own table order (owner,
+    // 2026-08-06). Pooling guarantees the two are distinct, so `combined_of`
+    // always answers here — unlike the reverted version, which asked it about
+    // two mods rather than two elements and had to invent a fallback.
+    pairs.sort_by_key(|p| {
+        crate::elements::wiki_order(
+            crate::elements::combined_of(p[0], p[1]).expect("pooled elements are distinct"),
+        )
+    });
+    let canonical_elements: Vec<crate::damage::DamageType> =
+        pairs.into_iter().flatten().chain(tail).collect();
+    // Lay the mods out in that element order, same-element mods together (they
+    // pool anyway, so their order among themselves changes nothing) and ranked
+    // by the usual rule so the representative is stable.
+    let elemental: Vec<&String> = canonical_elements
+        .iter()
+        .flat_map(|&want| {
+            let mut group: Vec<&String> = elemental
+                .iter()
+                .copied()
+                .filter(|m| element_of(m) == Some(want))
+                .collect();
+            group.sort_by(rank);
+            group
+        })
+        .collect();
     plain.into_iter().chain(elemental).cloned().collect()
 }
 
@@ -549,11 +607,9 @@ mod tests {
         ] {
             assert_eq!(mods(spelling), want, "{spelling:?}");
         }
-        // The elementals are LAST and keep the order of their PAIRS. Inside a
-        // pair they are sorted, because `combined_of` is symmetric and pooling
-        // makes the two spellings one fight — Hellfire and Cryo Rounds are one
-        // pair (Blast either way) and come back name-ordered, while Infected
-        // Clip is the odd one out and stays where its pairing put it.
+        // The elementals are LAST, in canonical element order: Cold before
+        // Heat inside the Blast pair, and Infected Clip is the odd one out so
+        // it stays where its pairing put it — trailing.
         assert_eq!(&want[3..], &v(&["cryo_rounds", "hellfire", "infected_clip"])[..]);
         // Ahead of them, biggest MAX-RANK drain first: Split Chamber 15,
         // Serration 14, Point Strike 9. (Asserted against the pool rather than
@@ -585,10 +641,12 @@ mod tests {
     fn the_order_of_the_mods_is_part_of_the_identity() {
         let a = validate("torid", &v(&["hellfire", "cryo_rounds", "infected_clip", "stormbringer"]), &[], &[]).unwrap();
         let b = validate("torid", &v(&["hellfire", "infected_clip", "cryo_rounds", "stormbringer"]), &[], &[]).unwrap();
-        // Normalisation may reorder INSIDE a pair and never across one: both
-        // pairs come back name-ordered, and the PAIRING is untouched.
-        assert_eq!(a.mods, v(&["cryo_rounds", "hellfire", "infected_clip", "stormbringer"]),
-                   "sorted within each pair, pairs left alone");
+        // Normalisation orders the ELEMENTS and never re-pairs them: Cold
+        // before Heat and Electricity before Toxin inside their pairs, Blast
+        // before Corrosive between them — all table order — while the pairing
+        // itself (Blast + Corrosive) is exactly what arrived.
+        assert_eq!(a.mods, v(&["cryo_rounds", "hellfire", "stormbringer", "infected_clip"]),
+                   "canonical element order, same pairing");
         assert_ne!(identity(&a), identity(&b), "two pairings, two rows");
 
         // ...and a different SET is still a different identity.
@@ -623,6 +681,57 @@ mod tests {
             split(&["frostbite", "heated_charge", "pistol_pestilence", "convulsion"]),
             "moving an elemental across a pair boundary is a different fight"
         );
+    }
+
+    /// THE INVARIANT THAT MATTERS: canonicalising must never change the FIGHT.
+    ///
+    /// Every other test here compares strings, and a string test cannot tell a
+    /// tidier spelling from a different build. This one resolves both orders
+    /// and compares the DAMAGE VECTOR, which is the thing the board is really
+    /// promising is unchanged.
+    ///
+    /// It exists because the string tests all passed while the board published
+    /// a wrong number (5669040, reverted): the canonical order was tidy, valid,
+    /// and a different fight.
+    ///
+    /// THE DUPLICATE-ELEMENT CASE IS THE POINT. Primed Heated Charge and Scorch
+    /// are both Heat, so `ElementalInput::push` pools them and the engine sees
+    /// THREE elements where the mod list has four — every position after the
+    /// duplicate shifts. A canonicaliser reasoning about mod slots gets this
+    /// wrong and nothing but a damage comparison says so.
+    #[test]
+    fn canonicalising_never_changes_the_damage() {
+        let base = crate::loadout::WeaponBase::from_data("ocucor", false, &[]);
+        let pool = crate::mods_data::pool_for_weapon("ocucor");
+        let resolve_in_order = |ids: &[String]| {
+            let refs: Vec<&crate::loadout::ModDef> = ids
+                .iter()
+                .filter_map(|id| pool.iter().find(|m| m.id == id.as_str()))
+                .collect();
+            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::BaseOnly).damage
+        };
+        for spelling in [
+            // The build that broke: two Heat mods pooling behind a Cold/Toxin
+            // pair. Viral + Heat, and it must stay Viral + Heat.
+            &["ice_storm", "pistol_pestilence", "primed_heated_charge", "scorch"][..],
+            // ...and the same four submitted every other way round. Each is
+            // whatever fight it is; canonicalising must not turn it into
+            // another one.
+            &["scorch", "primed_heated_charge", "ice_storm", "pistol_pestilence"][..],
+            &["ice_storm", "scorch", "pistol_pestilence", "primed_heated_charge"][..],
+            // Two clean pairs, no duplicates.
+            &["frostbite", "pistol_pestilence", "heated_charge", "convulsion"][..],
+            // An odd one out, which must stay the odd one out.
+            &["frostbite", "pistol_pestilence", "heated_charge"][..],
+        ] {
+            let submitted = v(spelling);
+            let canon = canonical_mods("ocucor", &submitted);
+            assert_eq!(
+                resolve_in_order(&canon),
+                resolve_in_order(&submitted),
+                "canonicalising {spelling:?} changed the damage: {canon:?}"
+            );
+        }
     }
 
     /// ALL THREE AXES REACH THE BUILD — mods, evolutions AND arcanes (user,
