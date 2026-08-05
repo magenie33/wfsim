@@ -3415,6 +3415,9 @@ pub fn run_once_traced(
     // arena (its damage on the beam's own target is cosmetic), so a tendril
     // kills nothing here and `r.kills` is precisely the qualifying set.
     let mut tendril_kill_mark = 0u32;
+    // Which kills the magazine refill has already paid out — see the spend
+    // below for why this cannot be the same watermark.
+    let mut refill_kill_mark = 0u32;
     let mut tendril_reload_mark = 0u32;
     let mut tendrils = 0u32;
     loop {
@@ -3514,10 +3517,29 @@ pub fn run_once_traced(
             // point of the mod. "Reloaded ammo is taken from the Ocucor's ammo
             // reserves. This mod does not generate ammo", so it draws like any
             // other reload and a dry reserve gives nothing.
-            if params.mag_refill_on_kill > 0.0 && r.kills > tendril_kill_mark {
-                let earned = f64::from(r.kills - tendril_kill_mark)
+            //
+            // ITS OWN WATERMARK, and NOT the tendril one. The two answer
+            // different questions: a tendril asks "how many kills since the
+            // last reload" (so its mark moves when the magazine event clears
+            // them), while a refill asks "which kills have I already been paid
+            // for" (so its mark moves when it is SPENT). Sharing the tendril
+            // mark made every loop iteration re-earn the same kills, which
+            // topped the magazine up on every shot and handed the weapon an
+            // effectively infinite one.
+            //
+            // And a REFILL IS NOT A RELOAD: it never touches `r.reloads`, so
+            // the tendrils live through it. That is the whole reason this mod
+            // pairs with this passive — the wiki says it from the other side,
+            // "Magazine refill effects such as ... kills with Sentient Surge
+            // ... will PREVENT the tendrils from disappearing."
+            if params.mag_refill_on_kill > 0.0 && r.kills > refill_kill_mark {
+                let earned = f64::from(r.kills - refill_kill_mark)
                     * params.mag_refill_on_kill
                     * params.magazine_size;
+                refill_kill_mark = r.kills;
+                // Capped at the magazine: a refill tops up, it does not bank.
+                // Overflow is simply lost, which is what "Refill X% of the
+                // Magazine" means on a magazine already near full.
                 let room = (params.magazine_size - magazine).max(0.0);
                 let want = earned.min(room);
                 if want > 0.0 {
@@ -7138,6 +7160,77 @@ mod tests {
         assert!(
             shallow < deep / 2.0,
             "a reload must clear the tendrils: deep magazine {deep}, one-round {shallow}"
+        );
+    }
+
+    /// SENTIENT SURGE'S REFILL PAYS EACH KILL ONCE — and is not a reload.
+    ///
+    /// "On Kill: Refill X% of the Magazine", drawn from the reserve, so a kill
+    /// is worth a FIXED number of rounds and then it is spent. On the Ocucor
+    /// that is 20% of 60 = 12 rounds against 6 ammo a second, i.e. one kill
+    /// every two seconds and the weapon never reloads again — which is the
+    /// mod's whole reputation, and is a property of the KILL RATE rather than
+    /// of the refill being generous.
+    ///
+    /// The bug this pins re-earned every kill on every loop iteration, which
+    /// topped the magazine up on every shot and quietly handed the weapon an
+    /// infinite one. It showed up nowhere except the reload count, and the
+    /// tendril test never looked at reloads.
+    #[test]
+    fn the_magazine_refill_pays_each_kill_once() {
+        // 10 rounds, 1 ammo a shot, 1 shot a second, and a target that dies to
+        // every shot: 10 kills a magazine, each worth 20% of 10 = 2 rounds.
+        let build = |refill: f64| DummyParams {
+            magazine_size: 10.0,
+            ammo_cost: 1.0,
+            fire_rate: 1.0,
+            reload_seconds: 1.0,
+            duration_secs: 120.0,
+            mag_refill_on_kill: refill,
+            body_parts: mono_body(1.0),
+            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            ..flat_base()
+        };
+        let run = |refill: f64| {
+            let r = run_once(&build(refill), &mut Rng::new(3));
+            (r.shots, r.reloads)
+        };
+
+        let (bare_shots, bare_reloads) = run(0.0);
+        assert!(bare_reloads > 5, "the fixture must reload a lot, got {bare_reloads}");
+
+        // Every shot kills, so every shot returns 2 rounds while spending 1:
+        // the magazine fills faster than it drains and the reloads stop.
+        let (surge_shots, surge_reloads) = run(0.20);
+        assert!(surge_reloads < bare_reloads, "the refill must save reloads");
+        assert!(surge_shots > bare_shots, "and buy shots with the time saved");
+
+        // THE ARITHMETIC, on a refill too small to outrun the drain. 5% of 10
+        // is 0.5 rounds a kill against 1 spent, so the magazine still empties —
+        // just half as often. NEVER near zero, which is where the bug put it.
+        let (_, slow_reloads) = run(0.05);
+        assert!(
+            slow_reloads > bare_reloads / 3 && slow_reloads < bare_reloads,
+            "a 5% refill halves the drain, it does not remove it: bare {bare_reloads}, \
+             with refill {slow_reloads}"
+        );
+
+        // AND A REFILL IS NOT A RELOAD, which is the entire point of pairing it
+        // with a passive that a reload destroys. Measured as tendrils SURVIVING:
+        // a per-tendril crit bonus off a zero base, so every crit counted here
+        // belongs to a tendril that lived through a magazine being topped up.
+        let surging = DummyParams {
+            base_crit_chance: 0.0,
+            unmodded_crit_chance: 1.0,
+            tendril_max: 4,
+            cc_per_tendril: 0.25,
+            ..build(0.20)
+        };
+        let r = run_once(&surging, &mut Rng::new(3));
+        assert!(
+            r.crits as f64 / r.pellets.max(1) as f64 > 0.5,
+            "tendrils must survive a refill — if the refill cleared them like a \
+             reload does, the crit rate would sit near zero"
         );
     }
 
