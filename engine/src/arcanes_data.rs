@@ -1058,10 +1058,19 @@ mod tests {
         assert_eq!(pool.len(), 18, "expected the full 18-arcane pool");
     }
 
+    /// SIXTEEN, and the last two are the reason this count is worth asserting.
+    /// The wiki types Shotgun Vendetta as `Shotgun` and Longbow Sharpshot as
+    /// `Bow` rather than `Primary` — the only two class-typed arcanes in the
+    /// game — so an import filtering on Type == "Primary" skips exactly them,
+    /// which is what happened until a player noticed (2026-08-05).
     #[test]
-    fn loads_all_14_primary_arcanes() {
+    fn loads_all_16_primary_arcanes() {
         let pool = slot_pool("primary");
-        assert_eq!(pool.len(), 14, "expected the full 14-arcane primary pool");
+        assert_eq!(pool.len(), 16, "expected the full 16-arcane primary pool");
+        for id in ["shotgun_vendetta", "longbow_sharpshot"] {
+            let a = pool.iter().find(|a| a.id == id).expect(id);
+            assert!(a.requires.is_some(), "{id} is gated on a weapon class");
+        }
         // The slot registry discovers directories, so primary must show up
         // next to secondary with no code change.
         assert!(slots().contains(&"primary"), "slots(): {:?}", slots());

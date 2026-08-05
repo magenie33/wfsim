@@ -1,0 +1,45 @@
+# A PRIMARY arcane RESTRICTED TO SHOTGUNS. The wiki module types it `Shotgun`,
+# not `Primary`, which is exactly why it was missed on the primary import
+# (reported 2026-08-05): a filter on Type == "Primary" skips it. It and Longbow
+# Sharpshot are the only two class-typed arcanes in the game.
+#
+# Modelled with `requires:` — the same trait gate Akimbo Slip Shot uses — so it
+# EQUIPS anywhere the slot allows and goes inert off a shotgun. That is the
+# conservative reading: it never wrongly refuses an equip, and the damage is
+# right either way.
+id: shotgun_vendetta
+name: Shotgun Vendetta
+rarity: rare
+max_rank: 5
+requires: shotgun            # inert on a non-shotgun primary (calc layer)
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/ShotgunMultishotAndReloadSpeedOnCloseKill
+description: "On shotgun kill within 5m of target:\n+X% Multishot and +X% Reload Speed for 15s."
+
+effects:
+  # WITHIN 5m IS NOT MODELLED. The arena has no range, and the sim's engagement
+  # is a duel at one distance — so this fires on every kill, which OVERSTATES
+  # uptime for a player fighting at range and is exact for the shotgun range
+  # this arcane is built for. Recorded here rather than silently assumed.
+  - kind: buff
+    trigger: on_kill
+    grants: multishot
+    rank0: 0.3
+    rankMax: 1.8
+    max_stacks: 1
+    duration: 15
+  # The reload half rides the same trigger. `reload_speed_bonus` is the flat
+  # form the loader knows; the buff's own duration is what the card states, and
+  # a 15 s window on a shotgun's reload cadence is most of the fight.
+  - kind: buff
+    trigger: on_kill
+    grants: reload_speed
+    rank0: 0.125
+    rankMax: 0.75
+    max_stacks: 1
+    duration: 15
+
+source:
+  url: https://wiki.warframe.com/w/Shotgun_Vendetta
+  # Wiki module (Type Shotgun, Rarity Rare, MaxRank 5) cross-checked against
+  # WFCD levelStats: rank 0 "+30% Multishot and +12.5% Reload Speed for 15s",
+  # rank 5 "+180% Multishot and +75% Reload Speed for 15s". Both agree.

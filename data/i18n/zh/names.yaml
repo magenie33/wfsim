@@ -395,6 +395,8 @@ arcanes:
   secondary_outburst: 次要·爆发
   secondary_shiver: 次要·冷颤
   secondary_surge: 次要·激涌
+  longbow_sharpshot: 弓箭·利矢
+  shotgun_vendetta: 霰弹·仇杀
 
 # Incarnon evolution names live in evolutions.yaml, beside their card text:
 # both come from the same hand transcription, and neither has an export.

@@ -5,7 +5,7 @@
 //! tags, polarities and form descriptors from the same specs.
 
 use std::collections::BTreeMap;
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 
 use serde::Deserialize;
 
@@ -726,17 +726,43 @@ pub fn exilus_polarity(id: &str) -> Option<Polarity> {
 /// Weapon behavior traits consumed by arcane/mod `requires` gates. Traits
 /// describe the WEAPON (its base form's trigger family), so both forms of a
 /// transform group report the base entry's trigger.
+/// What a `requires:` gate on a mod or arcane is checked against.
+///
+/// TWO KINDS, and only one of them existed until 2026-08-05: the firing
+/// TRIGGER (`semi_auto`, `auto`), and the weapon CLASS (`shotgun`, `bow`,
+/// `dual_pistols`, …). The class was missing, so `requires: dual_pistols` could
+/// never be satisfied and Akimbo Slip Shot was silently inert on every dual
+/// pistol in the game — the arcane equipped, contributed nothing, and said
+/// nothing. Its unit test passed `&["dual_pistols"]` by hand, so it proved the
+/// gate worked and never asked whether anything produced the trait.
+///
+/// The trigger comes from the BASE entry of a transform group (an Incarnon form
+/// does not get its own), while the class is the weapon's own — the two halves
+/// of one weapon share a class by construction.
 fn traits_for(s: &WeaponSpec) -> &'static [&'static str] {
+    static CACHE: OnceLock<Mutex<BTreeMap<String, &'static [&'static str]>>> = OnceLock::new();
+    let cache = CACHE.get_or_init(|| Mutex::new(BTreeMap::new()));
+    let mut g = cache.lock().expect("weapon traits cache");
+    if let Some(t) = g.get(&s.id) {
+        return t;
+    }
     let base = s
         .transforms_from
         .as_deref()
         .and_then(spec)
         .unwrap_or(s);
+    let mut out: Vec<&'static str> = Vec::new();
     match base.attack.trigger.as_str() {
-        "semi_auto" => &["semi_auto"],
-        "auto" => &["auto"],
-        _ => &[],
+        "semi_auto" => out.push("semi_auto"),
+        "auto" => out.push("auto"),
+        _ => {}
     }
+    // Leaked because the class is data-driven and the caller wants a 'static
+    // slice; the set is one entry per weapon and never grows at runtime.
+    out.push(Box::leak(s.class.clone().into_boxed_str()));
+    let leaked: &'static [&'static str] = Box::leak(out.into_boxed_slice());
+    g.insert(s.id.clone(), leaked);
+    leaked
 }
 
 /// Build the RAW (no evolutions, no mods) [`WeaponBase`] panel for a weapon
@@ -1512,8 +1538,9 @@ mod tests {
         assert!(!b.continuous);
         assert!(b.radial.is_none() && b.lingering.is_none() && b.beam.is_none());
         // Charge is its own trigger family: a mod gated on `semi_auto`
-        // (Semi-Rifle Cannonade) is inert on it, which is the in-game rule.
-        assert!(b.traits.is_empty());
+        // (Semi-Rifle Cannonade) is inert on it, which is the in-game rule. The
+        // CLASS is still there, and it is what Longbow Sharpshot needs.
+        assert_eq!(b.traits, &["bow"]);
     }
 
     /// The TAPPED shot: same weapon, half the damage per arrow, and a cadence
@@ -1735,7 +1762,10 @@ mod tests {
         assert!((b.base_crit_chance - 0.05).abs() < 1e-9);
         assert!((b.magazine_size - 12.0).abs() < 1e-9);
         assert_eq!(b.injected_elements, vec![(DamageType::Toxin, 1.0)]);
-        assert_eq!(b.traits, &["semi_auto"]);
+        // TRIGGER *AND* CLASS (2026-08-05). The class half is what makes a
+        // `requires: dual_pistols` gate satisfiable at all — without it Akimbo
+        // Slip Shot equipped and did nothing, on every dual pistol.
+        assert_eq!(b.traits, &["semi_auto", "dual_pistols"]);
         assert!(b.incarnon.is_none());
 
         let i = base_panel("dual_toxocyst_incarnon", false);
@@ -1747,8 +1777,9 @@ mod tests {
         assert!((inc.transmute_in - 2.35).abs() < 1e-9);
         assert!((inc.transmute_out - 1.0).abs() < 1e-9);
         assert!(i.injected_elements.is_empty());
-        // Traits come from the transform group's BASE entry.
-        assert_eq!(i.traits, &["semi_auto"]);
+        // The TRIGGER comes from the transform group's BASE entry; the CLASS
+        // is the form's own, and both halves of a pair share it anyway.
+        assert_eq!(i.traits, &["semi_auto", "dual_pistols"]);
     }
 
     /// data/README.md's promotion rule, enforced: perk ids are GLOBALLY

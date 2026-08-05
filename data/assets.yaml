@@ -333,6 +333,7 @@ mods:
   zodiac_shred: ArchwingDualStatSlashStatusRifleMod.jpg
 
 arcanes:
+
   akimbo_slip_shot: ArcaneProjectionCT.png
   cascadia_accuracy: ArcaneProjectionBU.png
   cascadia_empowered: ArcaneProjectionBT.png
@@ -340,6 +341,7 @@ arcanes:
   cascadia_overcharge: ArcaneProjectionBL.png
   conjunction_voltage: ArcaneProjectionCD.png
   fractalized_reset: ArcaneProjectionBO.png
+  longbow_sharpshot: ArcaneProjectionCL.png
   primary_blight: ArcaneProjectionCS.png
   primary_bulwark: ArcaneProjectionDU.png
   primary_compression: PrimaryRadialAttack.png
@@ -365,3 +367,4 @@ arcanes:
   secondary_outburst: ArcaneProjectionCU.png
   secondary_shiver: ArcaneProjectionCP.png
   secondary_surge: ArcaneProjectionDE.png
+  shotgun_vendetta: ArcaneProjectionCO.png

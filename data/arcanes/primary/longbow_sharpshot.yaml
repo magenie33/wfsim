@@ -1,0 +1,33 @@
+# A PRIMARY arcane RESTRICTED TO BOWS — wiki module Type `Bow`, which is why the
+# primary import skipped it (reported 2026-08-05). See shotgun_vendetta.yaml for
+# the pair.
+id: longbow_sharpshot
+name: Longbow Sharpshot
+rarity: legendary
+max_rank: 5
+requires: bow                # inert on a non-bow primary (calc layer)
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/LongbowDamageOnHeadshot
+description: "On Headshot: Gain +X% damage on your next shot."
+
+effects:
+  # "YOUR NEXT SHOT" — a one-shot charge, not a timed window, and the loader has
+  # no next-shot trigger. `on_weakpoint_hit` with ONE stack and no duration is
+  # the nearest honest shape: it arms on a headshot and is spent, which is what
+  # the card describes. What it does NOT model is the consumption being tied to
+  # the following shot specifically rather than to time — on a bow, where every
+  # shot is deliberate and slow, those are close to the same thing.
+  #
+  # NOT `on_precision_headshot_kill`: this arms on a HIT, not a kill, which is
+  # the whole reason it is worth having on a weapon that one-shots little.
+  - kind: buff
+    trigger: on_weakpoint_hit
+    grants: base_damage
+    rank0: 0.5
+    rankMax: 3.0
+    max_stacks: 1
+    duration: 0
+
+source:
+  url: https://wiki.warframe.com/w/Longbow_Sharpshot
+  # Wiki module (Type Bow, Rarity Legendary, MaxRank 5) cross-checked against
+  # WFCD levelStats: rank 0 "+50% damage on your next shot", rank 5 "+300%".
