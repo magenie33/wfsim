@@ -38,6 +38,44 @@ reload_seconds: 2.0
 # Additive behaviour at the full +100% on the full base. See docs/MECHANICS.md.
 co_behavior: additive_with_base_damage
 
+# THE PASSIVE — NOT MODELLED YET, and recorded here so the gap is stated rather
+# than silent (reported 2026-08-05, the day after this weapon was added).
+#
+#   "Status Effects have a 15% chance to set the next hit's Critical Chance
+#    to 300%."
+#
+# HOW IT SLIPPED. The intake filter that called this weapon "simple" read the
+# STRUCTURED fields of the wiki's data module — Attacks, Trigger, Class, Zoom,
+# SniperCombo — and a passive is not one of them. It lives in the PAGE's prose,
+# under ==Characteristics==. So the weapon looked mechanically ordinary and its
+# commit claimed "every mechanic these weapons use is already pinned", which was
+# true of Karak Wraith and Prisma Grinlok and false of this one. See
+# docs/WEAPON_INTAKE.md, which now says to read the page.
+#
+# THE RULES, transcribed so implementing it is a code-only change:
+#   - 15% per STATUS EFFECT applied; applying several in one hit does NOT raise
+#     the chance
+#   - rolled separately PER BULLET under Multishot, and per enemy under Punch
+#     Through — and for punch-through it asks whether the PREVIOUS ENEMY was
+#     statused, not whether the previous shot was
+#   - the armed state persists until the next LANDING shot; a miss does not
+#     spend it
+#   - "Set Critical Chance ignores all other modifiers, whether from mods or
+#     Warframe abilities" — a LOCK, the same shape as the stat locks in
+#     MEASUREMENTS M30, and the engine has no crit-chance lock today
+#   - Vigilante set mods can still raise the result to a Tier-4 critical hit,
+#     so the lock binds the CHANCE and not the tier ceiling
+#
+# CONSEQUENCE while it is missing: this weapon is simulated WITHOUT it, so its
+# board row is a floor rather than its real output.
+#
+# NO FIELD FOR IT. `passive_unmodeled: true` was written here first and removed:
+# nothing reads it, and a YAML key nobody consumes is prose wearing a field's
+# clothes — the same rule that took the `note:` fields out of the arcanes
+# (owner, 2026-08-05). The maintainer's record is this comment. Making the gap
+# visible to a PLAYER needs the real thing: weapons have no `not_modeled`
+# channel the way mods and arcanes now do.
+
 attack:
   trigger: auto
   shot_type: hit_scan

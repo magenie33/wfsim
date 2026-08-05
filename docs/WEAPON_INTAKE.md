@@ -24,6 +24,25 @@ mechanics already pinned by an existing measurement needs no new one.
 `#[test]`s inside the engine modules, each citing an `M<n>` from
 docs/MEASUREMENTS.md — 30 of them so far.)
 
+## READ THE PAGE, NOT ONLY THE MODULE
+
+The filter that picks "simple" weapons reads the data module's STRUCTURED
+fields — `Attacks`, `Trigger`, `Class`, `Zoom`, `SniperComboMin`. A weapon's
+PASSIVE is not one of them. It lives in the page's prose under
+`==Characteristics==`, and the module says nothing about it at all.
+
+Gotva Prime went in on 2026-08-05 as a "no new mechanics" rifle. It has one:
+"Status Effects have a 15% chance to set the next hit's Critical Chance to
+300%" — a probabilistic, status-triggered crit-chance LOCK, which the engine
+has no machinery for. The commit claimed the batch needed nothing new; that was
+true of the other two and false of this one, and nothing caught it because
+nothing was reading the page.
+
+So the intake check is: `?action=raw` on the WEAPON PAGE, and read
+`==Characteristics==` before calling anything simple. Karak Wraith has no such
+line; Prisma Grinlok's only one is "Innate Madurai polarity", which is data we
+already carry.
+
 ## What one weapon costs
 
 | item | where | notes |
