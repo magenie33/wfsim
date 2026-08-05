@@ -42,13 +42,8 @@
 //! and Pistol Pestilence trading places (owner, 2026-08-06). The rule was right
 //! and one notch too fine.
 //!
-//! The same goes for the order of the PAIRS among themselves — `combine` adds
-//! each chunk's secondary into a vector, so Blast-then-Corrosive and
-//! Corrosive-then-Blast are one fight (12,773.473 DPS either way, Torid). They
-//! are ordered by the element each pair MAKES, in the wiki's own table order.
-//!
 //! So the identity is the weapon, the mod sequence CANONICALISED to one
-//! representative per PAIRING, the evolution set, and the arcanes.
+//! representative per pairing, the evolution set, and the arcanes.
 //!
 //! Rivens are absent on purpose (user, 2026-08-04): they are personal random
 //! items, so a board that counted them would rank luck. That also removes the
@@ -108,13 +103,10 @@ pub struct ValidBuild {
 /// 12,424 against 46,583, because it pairs Blast + Corrosive instead of Gas +
 /// Magnetic.
 ///
-/// So: the PAIRING of the elemental mods is the build — WHICH of them share a
-/// chunk, and which one trails — and nothing else about position is. Neither
-/// the order inside a pair nor the order of the pairs among themselves changes
-/// the damage vector, so both are normalised away below (measured: the same
-/// four Torid mods with their two pairs swapped give 12,773.473 DPS either
-/// way). `primary_element` is the same predicate `resolve` uses to walk the
-/// hierarchy, so this cannot drift from what the sim does.
+/// So: the PAIRING of the elemental mods is the build, and nothing else about
+/// position is — which is their relative order between pairs, but not inside
+/// one (see the loop below). `primary_element` is the same predicate `resolve` uses to
+/// walk the hierarchy, so this cannot drift from what the sim does.
 ///
 /// The rest are ordered biggest-drain first, then by DE's own English name
 /// (owner, 2026-08-04) — a rule chosen so the representative is stable and
@@ -142,42 +134,14 @@ pub fn canonical_mods(weapon: &str, mods: &[String]) -> Vec<String> {
     // to four decimals (owner, 2026-08-06: Ocucor, Frostbite and Pistol
     // Pestilence swapped).
     //
-    // What is never touched is the PARTITION — which elements share a chunk,
-    // and which one trails. Moving an elemental ACROSS a chunk boundary
-    // re-pairs everything after it, which is the 12,424-against-46,583
-    // measurement this function was written for. The rule was right and one
-    // notch too fine: the PAIRING is the build, and position is not.
+    // What is NOT sorted is the order of the PAIRS, and that is the whole
+    // point: moving an elemental ACROSS a chunk boundary re-pairs everything
+    // after it, which is the 12,424-against-46,583 measurement this function
+    // was written for. The rule was right and one notch too fine — order
+    // matters BETWEEN pairs, never inside one.
     for pair in elemental.chunks_mut(2) {
         pair.sort_by(rank);
     }
-    // ...AND THE PAIRS AMONG THEMSELVES, by the element each one MAKES, in the
-    // wiki's own table order (owner, 2026-08-06: "我们参考wiki的排序").
-    //
-    // A pair's position among other pairs decides nothing either: `combine`
-    // walks the chunks and ADDS each secondary into a damage vector, so
-    // Viral-then-Radiation and Radiation-then-Viral are the same vector. That
-    // makes chunk order the last freedom left in this representation, and
-    // pinning it is what turns "one fight" into "one string".
-    //
-    // THE ODD ONE OUT IS NOT SORTED WITH THEM. It is the remainder BY
-    // POSITION — `chunks_exact(2)` leaves whatever trails — so moving it to
-    // the front would re-pair every element after it, which is the one thing
-    // this function must never do. It stays last.
-    let odd = elemental.len() % 2;
-    let split = elemental.len() - odd;
-    let tail: Vec<&String> = elemental.split_off(split);
-    let mut pairs: Vec<Vec<&String>> = elemental.chunks(2).map(<[&String]>::to_vec).collect();
-    pairs.sort_by_key(|p| {
-        let el = |x: &&String| def(x).and_then(|m| m.primary_element());
-        // The secondary the pair makes; two mods of one element combine into
-        // nothing, so those fall back to the element itself and still sort.
-        match (el(&p[0]), el(&p[1])) {
-            (Some(a), Some(b)) => crate::elements::combined_of(a, b)
-                .map_or_else(|| crate::elements::wiki_order(a), crate::elements::wiki_order),
-            _ => usize::MAX,
-        }
-    });
-    let elemental: Vec<&String> = pairs.into_iter().flatten().chain(tail).collect();
     plain.into_iter().chain(elemental).cloned().collect()
 }
 
@@ -658,48 +622,6 @@ mod tests {
             split(&["frostbite", "pistol_pestilence", "heated_charge", "convulsion"]),
             split(&["frostbite", "heated_charge", "pistol_pestilence", "convulsion"]),
             "moving an elemental across a pair boundary is a different fight"
-        );
-    }
-
-    /// THE PAIRS THEMSELVES HAVE A FIXED ORDER — the wiki's table order, by the
-    /// element each pair MAKES (owner, 2026-08-06: "我们参考wiki的排序").
-    ///
-    /// Safe for the same reason the within-pair sort is: `combine` walks the
-    /// chunks and ADDS each secondary into a damage vector, so the pairs'
-    /// order is not part of the fight. MEASURED on the Torid rather than
-    /// argued — the same four mods with the two pairs swapped give 12,773.473
-    /// DPS both ways, while moving one element ACROSS a pair boundary gives
-    /// 49,681.947 because it re-pairs everything.
-    #[test]
-    fn the_pairs_are_ordered_by_the_element_they_make() {
-        let id = |x: &[&str]| identity(&validate("torid", &v(x), &[], &[]).unwrap());
-        // Blast (Heat+Cold) and Corrosive (Toxin+Electric), submitted both ways
-        // round. One fight, so one row.
-        assert_eq!(
-            id(&["hellfire", "cryo_rounds", "infected_clip", "stormbringer"]),
-            id(&["infected_clip", "stormbringer", "hellfire", "cryo_rounds"]),
-            "the same two pairs in either order are the same damage vector"
-        );
-        // ...and the guard, which is the measurement above: crossing a pair
-        // boundary re-pairs and must stay a different build.
-        assert_ne!(
-            id(&["hellfire", "cryo_rounds", "infected_clip", "stormbringer"]),
-            id(&["hellfire", "infected_clip", "cryo_rounds", "stormbringer"]),
-        );
-
-        // The ORDER is the table's, not whoever submitted first: Blast (index
-        // 7) before Corrosive (8), whichever way round it arrived.
-        let want = v(&["cryo_rounds", "hellfire", "infected_clip", "stormbringer"]);
-        for spelling in [
-            &["hellfire", "cryo_rounds", "infected_clip", "stormbringer"][..],
-            &["infected_clip", "stormbringer", "hellfire", "cryo_rounds"][..],
-        ] {
-            assert_eq!(canonical_mods("torid", &v(spelling)), want, "{spelling:?}");
-        }
-        assert!(
-            crate::elements::wiki_order(crate::damage::DamageType::Blast)
-                < crate::elements::wiki_order(crate::damage::DamageType::Corrosive),
-            "the order comes from the wiki's table, so this is what it says"
         );
     }
 
