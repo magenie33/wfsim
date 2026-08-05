@@ -22,6 +22,27 @@ pub fn combined_of(a: DamageType, b: DamageType) -> Option<DamageType> {
     }
 }
 
+/// The two primaries a SECONDARY element is made of — the inverse of
+/// [`combined_of`], and the pair Primary Debilitate picks between.
+///
+/// Written as its own table rather than derived by searching `combined_of`,
+/// because the two must agree and a search that silently found nothing would
+/// read as "this element has no components" rather than as a bug.
+pub fn components_of(combined: DamageType) -> Option<(DamageType, DamageType)> {
+    use DamageType::*;
+    let pair = match combined {
+        Magnetic => (Cold, Electricity),
+        Blast => (Cold, Heat),
+        Viral => (Cold, Toxin),
+        Radiation => (Electricity, Heat),
+        Corrosive => (Electricity, Toxin),
+        Gas => (Heat, Toxin),
+        _ => return None,
+    };
+    debug_assert_eq!(combined_of(pair.0, pair.1), Some(combined));
+    Some(pair)
+}
+
 /// Elemental contributions entering the hierarchy.
 #[derive(Debug, Clone, Default)]
 pub struct ElementalInput {
@@ -250,4 +271,22 @@ mod tests {
         assert_eq!(out.get(Heat), 100.0);
         assert_eq!(out.get(Magnetic), 75.0);
     }
+    /// THE TWO TABLES MUST AGREE. `components_of` is the inverse of
+    /// `combined_of`, and an inverse that drifted would split Corrosive into
+    /// the wrong pair — a bug with no symptom until someone reads the proc.
+    #[test]
+    fn components_invert_combinations() {
+        use DamageType::*;
+        for c in [Magnetic, Blast, Viral, Radiation, Corrosive, Gas] {
+            let (a, b) = components_of(c).expect("a secondary has components");
+            assert_eq!(combined_of(a, b), Some(c), "{c:?}");
+            assert_eq!(combined_of(b, a), Some(c), "order-free");
+        }
+        // A PRIMARY has none, and neither has a physical type — the arcane
+        // splits only what was combined.
+        for t in [Heat, Cold, Electricity, Toxin, Impact, Puncture, Slash] {
+            assert!(components_of(t).is_none(), "{t:?} is not a combination");
+        }
+    }
+
 }

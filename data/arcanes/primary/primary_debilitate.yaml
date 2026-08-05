@@ -6,12 +6,26 @@ internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SplitStatusProcsOnSta
 description: "If an enemy has 10 stacks of a combined Status Effect, inflicting the same Status Effect again has a X% chance to inflict one of the base Status Effects it is composed of."
 
 effects:
-  # UNMODELED: splits a COMBINED element's proc into one of its components
-  # (Blast -> Heat or Cold, say) once the target holds 10 stacks. The sim
-  # already tracks per-type stacks, so this needs a new effect kind, not new
-  # data.
-  - kind: unmodeled
-    # at 10 stacks of a combined status, reapplying it can also inflict one component status
+  # Splits a COMBINED element's proc into ONE of its two components (Corrosive
+  # -> Toxin or Electricity) once the target already holds 10 stacks of it.
+  # Rolled per DAMAGE INSTANCE, 50/50 between the two components.
+  #
+  # IT DEALS AN INSTANCE, and that is a deduction rather than a reading. The
+  # wiki says the status it leaves carries the faction bonus THREE times — and a
+  # status always carries it one time more than whatever caused it, while a hit
+  # carries it once. Three is therefore only reachable through an intermediate
+  # damage instance, so one exists even though no page says so outright (owner,
+  # 2026-08-05: "吃3次派系只有一个情况，那必然有个元素实例造成才有可能出现这个
+  # 情况").
+  #
+  # STILL PENDING A MEASUREMENT: the instance's own damage. Its shape is the
+  # Melee Influence one — "damage equal to that element's damage from the
+  # original attack", i.e. modded base x the COMPONENT's own mod share, and
+  # note that share comes from MODS: an innately-Corrosive weapon with no Toxin
+  # mod contributes nothing to that term. What the sim applies today is the
+  # component STATUS and its DoT at the right depth; the extra instance is
+  # marked in `dummy::settle_procs` and waits on an in-game number.
+  - kind: debilitate
     rank0: 0.5
     rankMax: 1.0
 

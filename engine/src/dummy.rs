@@ -2257,6 +2257,104 @@ fn push_break_proc(debuffs: &mut DebuffState, params: &DummyParams, now: f64, po
 /// (ModifiedBase × crit × body part), `params` is the engagement and `ap` the
 /// ACTIVE form (element brackets differ per form).
 #[allow(clippy::too_many_arguments)]
+/// How many times a FACTION bonus has been applied by the time a payload lands.
+///
+/// Faction damage is re-applied at every DERIVATION step, and that is the whole
+/// rule — there is no special case anywhere, only a count of how far a number
+/// is from the hit that started it:
+///
+/// | payload | depth | faction |
+/// | --- | --- | --- |
+/// | a direct hit | 1 | ×f |
+/// | a status/DoT the hit applied | 2 | ×f² |
+/// | a status/DoT applied by a DERIVED damage instance | 3 | ×f³ |
+///
+/// Depth 3 is not a quirk to hardcode. It is arithmetic: a DoT is always one
+/// step past its source, so a DoT at ×f³ PROVES its source was already at ×f²,
+/// i.e. that an intermediate damage instance exists (owner, 2026-08-05: "吃3次
+/// 派系只有一个情况，那必然有个元素实例造成才有可能出现这个情况"). That is how
+/// Primary Debilitate's extra status is known to deal an instance and not
+/// merely add a stack — the wiki states ×f³ for it and never mentions the
+/// instance.
+///
+/// Writing it as a depth rather than as `fm2` and a future `fm3` is what keeps
+/// the next spreading mechanic (melee Influence, Secondary Encumber) from
+/// inventing its own multiplier.
+const DEPTH_HIT: u32 = 1;
+const DEPTH_PROC: u32 = 2;
+/// A status applied by a damage instance that was itself derived from a hit.
+const DEPTH_DERIVED_PROC: u32 = 3;
+
+/// The faction multiplier a payload at `depth` carries.
+fn faction_at(faction_mult: f64, depth: u32) -> f64 {
+    faction_mult.powi(depth as i32)
+}
+
+/// How many stacks of a COMBINED status the target currently holds.
+///
+/// Only the six combinations answer — a primary or a physical proc has no
+/// components, so nothing else can be split and nothing else is counted.
+fn combined_stacks(debuffs: &DebuffState, t: DamageType) -> usize {
+    match t {
+        DamageType::Viral => debuffs.virus.len(),
+        DamageType::Corrosive => debuffs.corrosion.len(),
+        DamageType::Magnetic => debuffs.disrupt.len(),
+        DamageType::Radiation => debuffs.confusion.len(),
+        DamageType::Blast => debuffs.blast.len(),
+        // Gas lives in the DoT list rather than a stack vector.
+        DamageType::Gas => debuffs
+            .dots
+            .iter()
+            .filter(|d| d.dtype == DamageType::Gas && d.ticks_left > 0)
+            .count(),
+        _ => 0,
+    }
+}
+
+/// Stacks of a combined status a target must already hold before Primary
+/// Debilitate can split it. The wiki states 10 and states no scaling.
+pub const DEBILITATE_STACKS: usize = 10;
+
+/// PRIMARY DEBILITATE, decided: does this damage instance also inflict one of
+/// the combined status's components, and which one?
+///
+/// A pure function on purpose — the whole mechanic's DECISION is here, where it
+/// can be tested without a fight. Only its damage PAYLOAD needs a measurement.
+///
+/// The rules, from the wiki and settled with the owner (2026-08-05):
+///
+/// - the status just applied must be a COMBINED element — a primary or a
+///   physical proc has no components to split into
+/// - the target must already hold [`DEBILITATE_STACKS`] of it. "Already" is
+///   the point: the stack this instance just applied does not count toward its
+///   own threshold, or the tenth shot would split as well as the eleventh
+/// - roll `chance` (0.5 at rank 0 → 1.0 at rank 5)
+/// - pick between the two components 50/50
+///
+/// Once per DAMAGE INSTANCE, which is what the wiki's own note about beams
+/// describes: "only activate once per damage instance, making it less
+/// effective than it 'should' be when used on a Beam weapon, due to how
+/// Multishot affects such weapons."
+fn debilitate_split(
+    landed: DamageType,
+    stacks_before: usize,
+    chance: f64,
+    rng: &mut Rng,
+) -> Option<DamageType> {
+    if chance <= 0.0 || stacks_before < DEBILITATE_STACKS {
+        return None;
+    }
+    let (a, b) = crate::elements::components_of(landed)?;
+    if rng.next_f64() >= chance {
+        return None;
+    }
+    // 50/50, and drawn AFTER the chance roll so a failed roll consumes exactly
+    // one number — a reader comparing two seeds should not have to reason about
+    // how many draws a miss cost.
+    Some(if rng.next_f64() < 0.5 { a } else { b })
+}
+
+#[allow(clippy::too_many_arguments)]
 fn settle_procs(
     procs: Vec<DamageType>,
     at: f64,
@@ -2269,6 +2367,12 @@ fn settle_procs(
     ap: &DummyParams,
     mit: &Mitigation,
     r: &mut RunResult,
+    rng: &mut Rng,
+    // How far this batch of procs is from the hit that started it — see
+    // `faction_at`. A hit's own procs are DEPTH_PROC; a proc that Primary
+    // Debilitate split out of one is DEPTH_DERIVED_PROC, because it came
+    // through an extra damage instance.
+    depth: u32,
 ) {
     let InstanceScale { mb_live, crit_mult, part_factor } = scale;
     let sd = params.status_duration_mult;
@@ -2284,10 +2388,11 @@ fn settle_procs(
     // Gas) at 0..+5 s (the +6 s event is a dud).
     let delayed_ticks = ((BLEED_TICKS as f64 * sd - BLEED_DELAY).floor() as u32) + 1;
     let immediate_ticks = ((BLEED_TICKS as f64 * sd).floor() as u32).max(1);
-    // Faction DOUBLE-DIP: status/DoT payloads carry the faction bonus a
-    // SECOND time (the direct hit already applied it once), so ticks
-    // scale by faction_mult² (wiki Faction_Damage_Bonus; MECHANICS §8).
-    let fm2 = params.faction_mult * params.faction_mult;
+    // Faction is re-applied at every DERIVATION step — see `faction_at`. A
+    // status the hit applied is one step past it, so depth 2 (wiki
+    // Faction_Damage_Bonus; MECHANICS §8). This was written `faction_mult *
+    // faction_mult`, which is the same number and says nothing about why.
+    let fm2 = faction_at(params.faction_mult, depth);
     let push_dot = |debuffs: &mut DebuffState,
                     dtype: DamageType,
                     coeff: f64,
@@ -2308,6 +2413,8 @@ fn settle_procs(
     };
     for proc in procs {
         r.procs += 1;
+        // Read before the match applies it — see the Debilitate hook below.
+        let stacks_before = combined_stacks(debuffs, proc);
         match proc {
             DamageType::Impact => DebuffState::push_capped(
                 &mut debuffs.stagger,
@@ -2485,6 +2592,44 @@ fn settle_procs(
                 }
             }
             _ => {}
+        }
+        // PRIMARY DEBILITATE: a saturated combined status splits into one of
+        // its components. `stacks_before` is read BEFORE the match applied this
+        // proc, so the stack that just landed does not count toward its own
+        // threshold.
+        //
+        // RECURSION is how the faction ladder stays compositional: the split
+        // proc is settled by this same function one DEPTH deeper, so its DoT
+        // carries the bonus a third time without anyone writing a 3. It cannot
+        // recurse further — a component is a primary, and `components_of`
+        // answers None for those — so the ladder ends where the game's does.
+        if params.arcane.debilitate_chance > 0.0 {
+            if let Some(part) =
+                debilitate_split(proc, stacks_before, params.arcane.debilitate_chance, rng)
+            {
+                // MEASUREMENT PENDING: the extra DAMAGE INSTANCE this implies
+                // is not dealt yet — only the status it leaves. Its existence
+                // is settled (a DoT at faction³ can only come from a source
+                // already at faction², and a hit is faction¹), but its
+                // magnitude — "that element's damage from the original attack",
+                // i.e. mb_live × the component's own mod share — needs an
+                // in-game number before it becomes a golden value.
+                settle_procs(
+                    vec![part],
+                    at,
+                    InstanceScale { mb_live, crit_mult, part_factor },
+                    debuffs,
+                    gal,
+                    arc,
+                    target,
+                    params,
+                    ap,
+                    mit,
+                    r,
+                    rng,
+                    DEPTH_DERIVED_PROC,
+                );
+            }
         }
         // Cascadia Empowered: each applied status adds an EXTRA
         // FLAT damage instance of the proc's type — unaffected by
@@ -2790,7 +2935,11 @@ fn field_tick(
     // i.e. its own bracket. Consequence, recorded because nothing sources it:
     // the status payloads below are left OUT of it, the same treatment the beam
     // ramp and Devouring Attrition already get.
-    let raw = qtotal * crit_mult * bucket * params.faction_mult * dmg_mult;
+    // Depth 1: a direct hit carries the faction bonus once. Written through
+    // `faction_at` like the other two rungs so the ladder is visible at every
+    // level rather than only where it compounds.
+    let raw =
+        qtotal * crit_mult * bucket * faction_at(params.faction_mult, DEPTH_HIT) * dmg_mult;
     let col = target.incoming_column(&params.target);
     let (effective, killed, broke) =
         target.apply(raw, shares, false, at, &params.target, false, &mit);
@@ -2831,6 +2980,8 @@ fn field_tick(
         ap,
         &mit,
         r,
+        rng,
+        DEPTH_PROC,
     );
     false
 }
@@ -4196,6 +4347,8 @@ pub fn run_once_traced(
                 ap,
                 &mit,
                 &mut r,
+                rng,
+                DEPTH_PROC,
             );
             }
         }
@@ -9073,6 +9226,71 @@ mod tests {
         // than at the zero an unknown id would produce.
         let at = roster.iter().position(|(id, _)| id.starts_with("arcane:")).expect("an arcane");
         assert_eq!(u32::from(rep.frames[0].stacks[at]), roster[at].1);
+    }
+
+    /// THE FACTION LADDER, which is the whole reason Primary Debilitate is
+    /// worth more than its card reads. Each derivation step re-applies the
+    /// bonus, and 3 is never written down — it falls out of the depth.
+    #[test]
+    fn faction_compounds_once_per_derivation_step() {
+        let f = 1.55; // +55% faction, the wiki's worked example
+        assert!((faction_at(f, DEPTH_HIT) - 1.55).abs() < 1e-9);
+        assert!((faction_at(f, DEPTH_PROC) - 2.4025).abs() < 1e-9);
+        assert!((faction_at(f, DEPTH_DERIVED_PROC) - 3.723875).abs() < 1e-6);
+
+        // The wiki's own numbers for a 100-base melee with +90% Electricity:
+        // hit 294, its Electricity proc 228, a SPREAD Electricity proc 353.
+        let hit = (100.0 + 90.0) * faction_at(f, DEPTH_HIT);
+        let proc = 0.5 * (100.0 + 90.0) * faction_at(f, DEPTH_PROC);
+        let spread = 0.5 * (100.0 + 90.0) * faction_at(f, DEPTH_DERIVED_PROC);
+        assert!((hit - 294.5).abs() < 0.5, "{hit}");
+        assert!((proc - 228.2).abs() < 0.5, "{proc}");
+        assert!((spread - 353.8).abs() < 0.5, "{spread}");
+    }
+
+    /// PRIMARY DEBILITATE'S DECISION, pinned without a fight.
+    #[test]
+    fn debilitate_splits_only_a_saturated_combination() {
+        let mut rng = Rng::new(0xD0D0);
+        // Below the threshold: never, whatever the roll would have been.
+        for stacks in 0..DEBILITATE_STACKS {
+            assert_eq!(
+                debilitate_split(DamageType::Corrosive, stacks, 1.0, &mut rng),
+                None,
+                "{stacks} stacks is under the bar"
+            );
+        }
+        // At it, with certainty, it always splits — and only into a COMPONENT.
+        for _ in 0..64 {
+            let got = debilitate_split(DamageType::Corrosive, DEBILITATE_STACKS, 1.0, &mut rng)
+                .expect("certain at rank 5");
+            assert!(
+                matches!(got, DamageType::Electricity | DamageType::Toxin),
+                "Corrosive splits into its own parts, got {got:?}"
+            );
+        }
+        // A PRIMARY has nothing to split into, saturated or not.
+        assert_eq!(debilitate_split(DamageType::Heat, 99, 1.0, &mut rng), None);
+        assert_eq!(debilitate_split(DamageType::Slash, 99, 1.0, &mut rng), None);
+        // No arcane, no split.
+        assert_eq!(debilitate_split(DamageType::Viral, 99, 0.0, &mut rng), None);
+    }
+
+    /// ...and the two components come up about evenly (50/50, per the owner).
+    #[test]
+    fn debilitate_picks_either_component_evenly() {
+        let mut rng = Rng::new(0x5EED);
+        let mut tox = 0;
+        const N: usize = 4000;
+        for _ in 0..N {
+            match debilitate_split(DamageType::Corrosive, DEBILITATE_STACKS, 1.0, &mut rng) {
+                Some(DamageType::Toxin) => tox += 1,
+                Some(DamageType::Electricity) => {}
+                other => panic!("unexpected {other:?}"),
+            }
+        }
+        let share = tox as f64 / N as f64;
+        assert!((share - 0.5).abs() < 0.05, "toxin share {share}, want ~0.5");
     }
 
 }

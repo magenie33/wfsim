@@ -185,6 +185,9 @@ pub struct ArcaneFx {
     /// Final damage multiplier on direct hits (Secondary Surge assumed-max:
     /// the cap, multiplicative with Hornet Strike). 1.0 = none.
     pub final_mult: f64,
+    /// Primary Debilitate's per-instance chance to split a saturated combined
+    /// status into one of its components. 0.0 = the arcane is not equipped.
+    pub debilitate_chance: f64,
     /// Secondary Shiver: +per per ACTIVE Cold status on the target (cap
     /// `cold_cap`), a GunCO-family source — applied per the weapon's
     /// CoBehavior bracket alongside Condition Overload.
@@ -222,6 +225,7 @@ impl Default for ArcaneFx {
             cd_rel: 0.0,
             weakpoint_cc_rel: 0.0,
             final_mult: 1.0,
+            debilitate_chance: 0.0,
             per_cold_bd: 0.0,
             cold_cap: 0,
             flat_damage_on_status: 0.0,
@@ -281,6 +285,10 @@ impl ArcaneFx {
                     out.cold_burst_on_puncture += a.cold_burst_on_puncture;
                     out.ammo_efficiency += a.ammo_efficiency;
                     out.final_mult *= a.final_mult;
+                    // One arcane grants it and a weapon seats at most one of
+                    // any arcane, so this is a max rather than a sum — summing
+                    // would invent a stacking rule nothing states.
+                    out.debilitate_chance = out.debilitate_chance.max(a.debilitate_chance);
                     out.overguard_mult *= a.overguard_mult;
                 }
                 out
@@ -407,6 +415,12 @@ enum ArcEffect {
     /// Neither carries text: the explanation belongs in a YAML comment, where a
     /// maintainer reads it, not in a field the app renders (owner: "不要有note
     /// 字段，所有的说明全是备注").
+    /// Primary Debilitate: on a damage instance that lands a COMBINED status
+    /// on a target already holding [`DEBILITATE_STACKS`] of it, a chance to
+    /// also inflict one of its two component statuses — chosen 50/50, one
+    /// stack, and dealt as its own damage INSTANCE (which is why the status it
+    /// leaves carries the faction bonus a third time; see `dummy::faction_at`).
+    Debilitate(Scale),
     Unmodeled { scale: Scale },
     OutOfScope { scale: Scale },
     /// No single-target sim payload and NO description number of its own
@@ -552,6 +566,7 @@ fn effect(v: &Value) -> Option<ArcEffect> {
             },
             cap: scale(v),
         },
+        "debilitate" => ArcEffect::Debilitate(scale(v)),
         "unmodeled" => ArcEffect::Unmodeled { scale: scale(v) },
         "out_of_scope" => ArcEffect::OutOfScope { scale: scale(v) },
         other => return inert(other),
@@ -687,6 +702,11 @@ impl ArcaneDef {
                         fx.weakpoint_cc_rel += sc.at(rank, self.max_rank);
                     }
                 }
+                ArcEffect::Debilitate(sc) => {
+                    // NOT gated on `assumed`: the roll is per damage instance
+                    // and the sim rolls it, so this is emergent either way.
+                    fx.debilitate_chance = sc.at(rank, self.max_rank);
+                }
                 ArcEffect::FinalDamageCap(sc) => {
                     if assumed {
                         fx.final_mult = 1.0 + sc.at(rank, self.max_rank);
@@ -773,6 +793,7 @@ impl ArcaneDef {
                 | ArcEffect::OutOfScope { scale, .. }
                 // Multiplier kinds ("xX"): stored as the bonus — fill_x's
                 // xX rule renders the +1.
+                | ArcEffect::Debilitate(scale)
                 | ArcEffect::FinalDamageCap(scale)
                 | ArcEffect::OverguardDamage(scale) => vals.push(at(scale)),
                 ArcEffect::ColdBurst { scale, radius0, radius1 }
@@ -938,6 +959,10 @@ impl ArcaneDef {
                 // Say so, rather than silently listing nothing: the panel's
                 // job is to state what the model does, and "this one is out of
                 // scope" is part of that.
+                ArcEffect::Debilitate(sc) => out.push(format!(
+                    "{} chance to split a 10-stack combined status into one of its parts",
+                    pct(at(sc))
+                )),
                 ArcEffect::Unmodeled { .. } => out.push("not modeled".to_string()),
                 ArcEffect::OutOfScope { .. } => {
                     out.push("outside this simulator".to_string())
