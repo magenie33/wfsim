@@ -4009,12 +4009,55 @@ function buildPayload() {
 }
 
 // ---- Stats panel: merged buckets, each explained by source ----
+
+/// WHAT THE PANEL ON SCREEN WAS BUILT FROM. Null until the first one lands.
+let panelKey = null;
+
+/// The build, as a value. Same idea as `simKey`: a key DERIVED from the state,
+/// never a hand-listed set of things that ought to trigger a refresh.
+const buildKey = () =>
+  JSON.stringify([$("weapon").value, slots, arcanes, arcaneRanks, evoSel, rivenPayload()]);
+
+/// THE PANEL REFRESHES BECAUSE THE BUILD CHANGED, not because a control
+/// remembered to say so.
+///
+/// Every mutation used to be responsible for calling `refreshPanel`, which is N
+/// places to get right and one of them was wrong for as long as arcanes have
+/// existed: the picker redrew its own slots and the panel — and the sim's buff
+/// bar — kept showing the previous arcane until an unrelated edit happened to
+/// refresh them (reported 2026-08-05). Fixing that one site would have left the
+/// same trap for the next control someone adds.
+///
+/// So the trigger is derived instead. After any interaction anywhere, if the
+/// build no longer matches what the panel was built from, the panel is rebuilt.
+/// A control cannot forget, because it is never asked: this is the same rule
+/// `check_gain_freshness` already asserts for the gain scan — the cache key is
+/// DERIVED from the thing it describes, never a copy of it maintained by hand.
+///
+/// The explicit calls that remain are not redundant belt-and-braces; they make
+/// the refresh IMMEDIATE rather than waiting for the next event. This is what
+/// makes it CORRECT.
+function panelWatchdog() {
+  // After the handler that caused it, not during — a click that mutates state
+  // runs its own listener first.
+  setTimeout(() => {
+    if (panelKey !== null && buildKey() !== panelKey) refreshPanel();
+  }, 0);
+}
+for (const ev of ["click", "change", "input", "keyup"]) {
+  document.addEventListener(ev, panelWatchdog, true);
+}
+
 let panelTimer = null;
 function refreshPanel() {
   markPresetDirty(); // every build change funnels through here
   clearTimeout(panelTimer);
   panelTimer = setTimeout(async () => {
     const body = buildPayload();
+    // Recorded where the payload is actually BUILT, so the key always
+    // describes what was sent — recording it at call time would go stale
+    // inside the debounce window.
+    panelKey = buildKey();
     try {
       const r = await api("/api/panel", body);
       renderPanel(r);

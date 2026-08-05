@@ -62,6 +62,19 @@ for (const lang of ["en", "zh"]) {
     await sleep(1800);
     out.after = ids();
     out.appeared = out.after.filter(n => !out.before.includes(n));
+    // THE GENERAL MECHANISM, proved by BYPASSING the fix. Assign the state
+    // directly — no setArcane, no render call, nothing that could have been
+    // taught to refresh — and then do the one thing a user always does: click.
+    // The panel must catch up on its own, because the trigger is derived from
+    // the build rather than fired by whoever changed it.
+    arcanes[0] = 'none';
+    document.body.click();
+    await sleep(1600);
+    out.afterRawEdit = ids();
+    out.watchdogCaughtIt = !out.afterRawEdit.includes('arcane:shotgun_vendetta');
+    // Put it back for the language assertion below.
+    setArcane('shotgun_vendetta', 0); renderArcanes(); await sleep(1500);
+
     // ...and what that card actually READS on screen, for the language check.
     const el = document.querySelector('#sim-buffs [data-b="arcane:shotgun_vendetta"]');
     out.shown = el ? (el.closest('.buff-card') || el).textContent.replace(/\s+/g,' ').trim() : '';
@@ -82,6 +95,8 @@ for (const lang of ["en", "zh"]) {
     check("...as a single toggle", r.buff.max === 1, String(r.buff.max));
   }
   // The NAME is DE's, in the display language — 霰弹·仇杀 in Chinese.
+  check("a RAW state edit is caught too — the trigger is derived, not fired",
+    r.watchdogCaughtIt === true, JSON.stringify(r.afterRawEdit));
   check("its card is named in the display language",
     lang === "zh" ? /霰弹|仇杀/.test(r.shown) : /Vendetta/i.test(r.shown), r.shown);
 }
