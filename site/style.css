@@ -762,6 +762,12 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 /* Not an error — the weapon is fine and the numbers are real, they are just
    incomplete. Muted, dashed, and above the rows it qualifies. */
 .unmodeled-banner{margin:0 0 8px;padding:5px 9px;border:1px dashed var(--line);border-radius:8px;color:var(--text-2);font-size:11px}
+/* A weapon's passives, in its own strip. Gold bullet because it is a property
+   of the WEAPON — the same colour the wordmark and the ◆ official mark use for
+   "this is the real thing" — and small, because it is context and not a stat. */
+.wpassives{margin-top:5px;display:flex;flex-direction:column;gap:3px}
+.wpassives div{font-size:11px;color:var(--text-2);line-height:1.45}
+.wpassives div::before{content:"◆ ";color:var(--gold)}
 .pchip.ro{border-style:dashed}
 .pofficial{color:var(--gold);margin-right:4px;font-size:11px}
 .official-note{margin:6px 0 2px;padding:7px 10px;border:1px dashed var(--line);

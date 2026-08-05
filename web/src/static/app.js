@@ -3842,6 +3842,20 @@ function applyWeaponInner(id, presetMods) {
     .map((p) => (POOL_NAME[p] || p).replace(/ Mods$/, "")).join(" + ") + " Mods";
   $("mod-block-h").textContent = tr(poolName || "Mods");
 
+  // WHAT THIS WEAPON DOES BEYOND ITS STATS. Generated engine-side from the data
+  // that implements each passive, so the line and the simulation cannot say
+  // different things. Empty for most weapons; the strip hides itself then.
+  //
+  // It lives here, in the weapon strip, because a passive is part of the
+  // WEAPON — not of the build, not of the fight. Gotva Prime's crit set and
+  // Dual Toxocyst's Frenzy are most of what those weapons are, and until
+  // 2026-08-05 the page never mentioned either, so both read as ordinary guns.
+  const wp = $("w-passives");
+  if (wp) {
+    const lines = w.passives || [];
+    wp.hidden = !lines.length;
+    wp.innerHTML = lines.map((x) => `<div>${escHtml(tr(x))}</div>`).join("");
+  }
   $("w-tags").innerHTML = [w.subtype, w.uses_evo2 ? "Incarnon" : null, w.sentinel ? "Sentinel" : null]
     .filter(Boolean).map((t) => `<span class="tag">${t}</span>`).join("");
 

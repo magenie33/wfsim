@@ -700,6 +700,82 @@ pub struct SuperCritSpec {
     pub crit_chance: f64,
 }
 
+/// WHAT THIS WEAPON DOES THAT ITS STATS DO NOT SAY — its passives, as
+/// sentences GENERATED from the data that implements them.
+///
+/// Generated and not written down, for the same reason a mod's effect lines
+/// are: a sentence in the YAML would be prose in a data field, and worse, a
+/// second copy of a number that could drift from the one the sim uses. Every
+/// line here is built from the values the engine actually reads, so a passive
+/// cannot be described as something it is not.
+///
+/// This exists because a weapon whose passive is invisible reads as an ordinary
+/// weapon (owner, 2026-08-05): Gotva Prime's crit set and Dual Toxocyst's
+/// Frenzy are most of what those weapons ARE, and nothing on the page said so.
+pub fn passive_lines(weapon: &str) -> Vec<String> {
+    let Some(s) = spec(weapon) else { return Vec::new() };
+    let mut out = Vec::new();
+
+    if let Some(sc) = s.super_crit_on_status {
+        out.push(format!(
+            "A Status Effect has a {:.0}% chance to SET the next hit's crit chance to {:.0}% — ignoring every other crit bonus. Rolled per pellet.",
+            sc.chance * 100.0,
+            sc.crit_chance * 100.0
+        ));
+    }
+
+    // An innate headshot bonus normally joins the additive bracket; this flag
+    // marks the weapon whose does not (Cernos Prime, wiki: "unique and stacks
+    // MULTIPLICATIVELY with Primary Deadhead's").
+    if s.headshot_bonus_multiplicative {
+        out.push(
+            "Its innate headshot bonus MULTIPLIES the headshot bracket instead of joining it, so it compounds with Deadhead and Target Acquired rather than adding to them."
+                .to_string(),
+        );
+    }
+
+    if s.no_resupply {
+        out.push(
+            "It cannot be resupplied: once the reserve is gone the weapon is removed for five minutes, so its ammo is the whole engagement."
+                .to_string(),
+        );
+    }
+
+    // A PERK NAMES ITSELF AND STOPS THERE. `weapons_data::PerkSpec` carries the
+    // reference and its element injection; the NUMBERS live in the perk's own
+    // module (`perks::frenzy`) and reach the player through its buff card,
+    // which already shows the stacks, the duration and what it grants.
+    //
+    // So this line's job is to tell you the weapon HAS one — which is the whole
+    // complaint: nothing on the page said Dual Toxocyst had Frenzy at all, and
+    // a passive you do not know to look for is a passive you do not have. The
+    // buff card is where its numbers belong and where they already are; a
+    // second copy here is a second thing to keep true.
+    for p in &s.perks {
+        let r = p.resolve();
+        let mut line = format!("Weapon passive: {} — see its buff card", pretty_id(&r.id));
+        if let Some(inj) = r.grants.as_ref().and_then(|g| g.injected_element.as_ref()) {
+            line.push_str(&format!(" (grants +{} {} while active)", inj.amount, inj.element));
+        }
+        out.push(format!("{line}."));
+    }
+    out
+}
+
+/// `dual_toxocyst_fevered_frenzy` -> "Fevered Frenzy". Display only.
+fn pretty_id(id: &str) -> String {
+    id.split('_')
+        .map(|w| {
+            let mut c = w.chars();
+            match c.next() {
+                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 /// The arcane pools this weapon SEATS, in slot order.
 ///
 /// Keyed on the equipment slot, which is what the game keys it on — an Arch-Gun
