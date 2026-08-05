@@ -34,8 +34,16 @@
 //! 46,583 (measured 2026-08-04). A sorted identity collapsed those into one row
 //! and scored whichever the sort happened to produce.
 //!
-//! So the identity is the weapon, the mod SEQUENCE, the evolution set, and the
-//! arcanes.
+//! ...but only BETWEEN pairs. `elements::combine` walks the sequence in
+//! `chunks_exact(2)` and combines each chunk with `combined_of`, which is
+//! symmetric and pools both amounts — so swapping two elementals INSIDE one
+//! pair is the same damage by construction. Treating that as a second build put
+//! the Ocucor on the board twice at the same score, differing only in Frostbite
+//! and Pistol Pestilence trading places (owner, 2026-08-06). The rule was right
+//! and one notch too fine.
+//!
+//! So the identity is the weapon, the mod sequence CANONICALISED to one
+//! representative per pairing, the evolution set, and the arcanes.
 //!
 //! Rivens are absent on purpose (user, 2026-08-04): they are personal random
 //! items, so a board that counted them would rank luck. That also removes the
@@ -95,8 +103,9 @@ pub struct ValidBuild {
 /// 12,424 against 46,583, because it pairs Blast + Corrosive instead of Gas +
 /// Magnetic.
 ///
-/// So: the RELATIVE order of the elemental mods is the build, and nothing else
-/// about position is. `primary_element` is the same predicate `resolve` uses to
+/// So: the PAIRING of the elemental mods is the build, and nothing else about
+/// position is — which is their relative order between pairs, but not inside
+/// one (see the loop below). `primary_element` is the same predicate `resolve` uses to
 /// walk the hierarchy, so this cannot drift from what the sim does.
 ///
 /// The rest are ordered biggest-drain first, then by DE's own English name
@@ -105,14 +114,34 @@ pub struct ValidBuild {
 pub fn canonical_mods(weapon: &str, mods: &[String]) -> Vec<String> {
     let pool = crate::mods_data::pool_for_weapon(weapon);
     let def = |id: &String| pool.iter().find(|m| m.id == id.as_str());
-    let (mut plain, elemental): (Vec<&String>, Vec<&String>) = mods
+    let (mut plain, mut elemental): (Vec<&String>, Vec<&String>) = mods
         .iter()
         .partition(|id| def(id).is_none_or(|m| m.primary_element().is_none()));
-    plain.sort_by(|a, b| {
+    // Biggest drain first, then DE's own English name — stable and readable.
+    let rank = |a: &&String, b: &&String| {
         let (da, db) = (def(a).map_or(0, |m| m.base_drain), def(b).map_or(0, |m| m.base_drain));
         db.cmp(&da)
             .then_with(|| def(a).map_or("", |m| m.name).cmp(def(b).map_or("", |m| m.name)))
-    });
+    };
+    plain.sort_by(rank);
+    // ...AND WITHIN EACH PAIR, because a pair's internal order decides nothing.
+    //
+    // `elements::combine` walks the elemental sequence with `chunks_exact(2)`
+    // and calls `combined_of(a, b)`, which is SYMMETRIC, pooling both amounts
+    // into the one secondary. So [Cold, Toxin] and [Toxin, Cold] are the same
+    // Viral by construction, not by coincidence — and leaving them as two
+    // representatives put the same build on the board twice, at the same score
+    // to four decimals (owner, 2026-08-06: Ocucor, Frostbite and Pistol
+    // Pestilence swapped).
+    //
+    // What is NOT sorted is the order of the PAIRS, and that is the whole
+    // point: moving an elemental ACROSS a chunk boundary re-pairs everything
+    // after it, which is the 12,424-against-46,583 measurement this function
+    // was written for. The rule was right and one notch too fine — order
+    // matters BETWEEN pairs, never inside one.
+    for pair in elemental.chunks_mut(2) {
+        pair.sort_by(rank);
+    }
     plain.into_iter().chain(elemental).cloned().collect()
 }
 
@@ -520,8 +549,12 @@ mod tests {
         ] {
             assert_eq!(mods(spelling), want, "{spelling:?}");
         }
-        // The elementals keep the order they arrived in, and they are last.
-        assert_eq!(&want[3..], &v(&["hellfire", "cryo_rounds", "infected_clip"])[..]);
+        // The elementals are LAST and keep the order of their PAIRS. Inside a
+        // pair they are sorted, because `combined_of` is symmetric and pooling
+        // makes the two spellings one fight — Hellfire and Cryo Rounds are one
+        // pair (Blast either way) and come back name-ordered, while Infected
+        // Clip is the odd one out and stays where its pairing put it.
+        assert_eq!(&want[3..], &v(&["cryo_rounds", "hellfire", "infected_clip"])[..]);
         // Ahead of them, biggest MAX-RANK drain first: Split Chamber 15,
         // Serration 14, Point Strike 9. (Asserted against the pool rather than
         // from memory — I had Serration first and the pool says otherwise.)
@@ -552,13 +585,44 @@ mod tests {
     fn the_order_of_the_mods_is_part_of_the_identity() {
         let a = validate("torid", &v(&["hellfire", "cryo_rounds", "infected_clip", "stormbringer"]), &[], &[]).unwrap();
         let b = validate("torid", &v(&["hellfire", "infected_clip", "cryo_rounds", "stormbringer"]), &[], &[]).unwrap();
-        assert_eq!(a.mods, v(&["hellfire", "cryo_rounds", "infected_clip", "stormbringer"]),
-                   "normalisation must not reorder");
+        // Normalisation may reorder INSIDE a pair and never across one: both
+        // pairs come back name-ordered, and the PAIRING is untouched.
+        assert_eq!(a.mods, v(&["cryo_rounds", "hellfire", "infected_clip", "stormbringer"]),
+                   "sorted within each pair, pairs left alone");
         assert_ne!(identity(&a), identity(&b), "two pairings, two rows");
 
         // ...and a different SET is still a different identity.
         let c = validate("torid", &v(&["hellfire", "cryo_rounds"]), &[], &[]).unwrap();
         assert_ne!(identity(&a), identity(&c));
+    }
+
+    /// ...BUT SWAPPING TWO ELEMENTALS INSIDE ONE PAIR IS THE SAME BUILD.
+    ///
+    /// The rule above ("order is part of the fight") was right and one notch
+    /// too fine. `elements::combine` pairs the sequence with `chunks_exact(2)`
+    /// and combines each pair with `combined_of`, which is SYMMETRIC and pools
+    /// both amounts — so the two spellings of a pair are the same damage by
+    /// construction.
+    ///
+    /// It reached the board: the Ocucor carried two rows differing only in
+    /// Frostbite and Pistol Pestilence being swapped, both scoring 6.0779
+    /// (owner, 2026-08-06 — "这在我们这里应该是实质相同的build").
+    #[test]
+    fn swapping_two_elementals_inside_a_pair_is_one_build() {
+        let one = validate("ocucor", &v(&["frostbite", "pistol_pestilence"]), &[], &[]).unwrap();
+        let two = validate("ocucor", &v(&["pistol_pestilence", "frostbite"]), &[], &[]).unwrap();
+        assert_eq!(identity(&one), identity(&two), "Cold + Toxin is Viral either way");
+
+        // ...and the guard against over-collapsing: with FOUR elementals, the
+        // same swap ACROSS a pair boundary re-pairs everything and must stay
+        // two builds. Cold+Toxin / Heat+Electricity against Cold+Heat /
+        // Toxin+Electricity — Viral+Radiation against Blast+Corrosive.
+        let split = |x: &[&str]| identity(&validate("ocucor", &v(x), &[], &[]).unwrap());
+        assert_ne!(
+            split(&["frostbite", "pistol_pestilence", "heated_charge", "convulsion"]),
+            split(&["frostbite", "heated_charge", "pistol_pestilence", "convulsion"]),
+            "moving an elemental across a pair boundary is a different fight"
+        );
     }
 
     /// ALL THREE AXES REACH THE BUILD — mods, evolutions AND arcanes (user,
