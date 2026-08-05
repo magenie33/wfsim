@@ -167,8 +167,14 @@ const BUILDS_PROBE = `(async () => {
   localStorage.clear();
   history.pushState({},'','/weapons/Torid'); route(); await sleep(4500);
   const out = {};
-  // AN EMPTY BOARD IS THE SHIPPING STATE until submissions arrive, so there is
-  // nothing to click — and no chips is exactly right, not a bug to work around.
+  // AN EMPTY BOARD IS A REAL STATE — a weapon nobody has submitted for shows no
+  // chips, which is right rather than a bug to work around.
+  //
+  // CONSTRUCTED, not borrowed. This used to read the live board and rely on
+  // Torid having no rows; players submitted some (2026-08-05) and the check
+  // started failing on the board WORKING. What it means to assert is "empty
+  // board -> no chips", so it empties the board and asks.
+  BOARD = {};
   out.emptyBoardChips = builtinBuilds().length;
 
   // The machinery is exercised with a row this check INJECTS. That is the

@@ -1965,7 +1965,18 @@ pub fn panel_json(v: &Value) -> Value {
                         *k == key && tag.is_none_or(|t| note.as_deref() == Some(t))
                     })
                     .map(|(_, name, v, note)| {
-                        json!({ "mod": name, "value": fpct(*v),
+                        // `frac` is the RAW fraction beside the formatted text,
+                        // so the panel can show the arithmetic — `40 × (1 +
+                        // 1.65 + 0.60)` — instead of only its answer. Everything
+                        // in one bracket is one multiplicative bucket, and that
+                        // shape teaches the bucket better than any sentence.
+                        //
+                        // Evolution sources carry no `frac` on purpose: several
+                        // are FLAT additions rather than percentages, so an
+                        // expression built from them would assert arithmetic
+                        // that is not what the engine did. The page draws the
+                        // line only when every term in the row is a fraction.
+                        json!({ "mod": name, "value": fpct(*v), "frac": v,
                             "note": if tag.is_some() { Value::Null } else { json!(note) } })
                     }),
             )

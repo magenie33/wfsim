@@ -139,6 +139,7 @@ ui:
   "Runs here are added to the official board.": 在这里运行的配装会被加入官方榜单。
   "What is sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself). The board takes a weapon built as far as it goes: every main slot filled, exilus not counted.": 发送的内容：武器及其 mod、进化、赋能。仅此而已——没有账号、没有标识符、没有你起的任何名字，也没有分数（榜单自己跑分）。榜单收的是这把武器的最努力配置：8 个主槽位全部装满，exilus 不计。
   "don't submit": 不要提交
+  "everything inside the bracket is ONE multiplicative bucket: these add together, and the bucket multiplies against the others": 括号里的东西属于同一个乘区：它们彼此相加，而这个乘区与其他乘区相乘
   "{what} — the board takes a weapon built as far as it goes, so this one is not sent": "{what} —— 榜单收的是这把武器的最努力配置，所以这一份不会提交"
   "{n} of {m} mods": "{n}/{m} 个 mod"
   "{n} of {m} evolutions": "{n}/{m} 层进化"

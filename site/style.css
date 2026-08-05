@@ -740,6 +740,14 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 
 /* THE OFFICIAL SCENARIO. A ruler, not a preset: marked on its chip, explained
    above the fight, and visibly inert while it is open. */
+/* THE MULTIPLICATIVE BUCKET line under a stat row. Monospace so the terms
+   line up and the bracket reads as arithmetic rather than prose; dimmer than
+   the answer above it, because it explains that answer rather than competing
+   with it. */
+.sbucket{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;color:var(--text-2);margin:2px 0 3px;padding-left:2px}
+.sbucket b{color:var(--text)}
+.bterm{color:var(--gold);cursor:help}
+.bhint{margin-left:6px;padding:0 4px;border:1px solid var(--line);border-radius:6px;cursor:help;font-size:10px}
 .pchip.ro{border-style:dashed}
 .pofficial{color:var(--gold);margin-right:4px;font-size:11px}
 .official-note{margin:6px 0 2px;padding:7px 10px;border:1px dashed var(--line);

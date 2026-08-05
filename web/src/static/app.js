@@ -4032,12 +4032,48 @@ function renderPanel(r) {
   $("stats-sub").textContent = `max-rank values · ${r.policy}`;
   const srcLine = (s) =>
     `<div class="ssrc">${s.value} — ${s.mod}${s.note ? ` <span class="snote">(${s.note})</span>` : ""}</div>`;
+
+  // THE MULTIPLICATIVE BUCKET, DRAWN (community request, 2026-08-05: the app
+  // does the hard arithmetic and then shows only its answer, so the mechanics
+  // stay as murky as they were).
+  //
+  // Warframe damage is a product of buckets: bonuses inside one bucket ADD,
+  // buckets MULTIPLY. Which bucket a mod lands in is the single most useful
+  // thing to know about it — adding to a bucket already at +200% is worth far
+  // less than opening a new one — and the panel already had every number
+  // needed to show it, arranged so you could only infer it.
+  //
+  // So draw the expression: `40.0 × (1 + 1.65 + 0.60) = 130`. Everything inside
+  // one bracket is one bucket, and that shape needs no sentence to explain it.
+  // It is the reader's OWN build's arithmetic, which is the thing a wiki cannot
+  // give them.
+  //
+  // ONLY WHEN EVERY TERM IS A FRACTION. Evolution sources send no `frac`
+  // because several are flat additions rather than percentages, and a line that
+  // rendered them as `+ 0.5` would be asserting arithmetic the engine did not
+  // do. Fewer than two terms is left alone as well — `40 × (1 + 1.65)` teaches
+  // nothing that `40 → 106` did not.
+  const bucketLine = (row) => {
+    const src = row.sources || [];
+    if (src.length < 2 || !src.every((x) => typeof x.frac === "number")) return "";
+    const base = String(row.base || "").replace(/[^0-9.\-]/g, "");
+    if (!base || row.base === "—") return "";
+    const terms = src
+      .map((x) => `<span class="bterm" title="${escHtml(x.mod)}">${x.frac.toFixed(2)}</span>`)
+      .join(" + ");
+    return `<div class="sbucket">${escHtml(base)} × ( 1 + ${terms} ) = <b>${escHtml(row.final)}</b>` +
+      ` <span class="bhint" title="${escHtml(
+        tr("everything inside the bracket is ONE multiplicative bucket: these add together, and the bucket multiplies against the others"),
+      )}">?</span></div>`;
+  };
+
   const rowHtml = (row) => `
     <div class="srow">
       <div class="shead"><span class="sk">${tr(row.label)}</span>
         <span class="sv">${row.base !== "—" && row.base !== row.final ? `<span class="sbase">${row.base}</span> → ` : ""}<b>${row.final}</b></span></div>
       ${row.note ? `<div class="srownote">⚙ ${row.note}</div>` : ""}
       ${row.locked_by ? `<div class="srownote">🔒 ${escHtml(tr("locked at the weapon's default by"))} ${escHtml(row.locked_by)}</div>` : ""}
+      ${bucketLine(row)}
       ${(row.sources || []).map(srcLine).join("")}
     </div>`;
   const dmgHtml = (p) => (p.damage && p.damage.length)
