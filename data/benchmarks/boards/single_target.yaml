@@ -179,6 +179,10 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, primed_venomous_clip, polar_magazine, magma_chamber, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: ocucor
+    score: 6.884211511074565
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, pistol_pestilence, frostbite, primed_heated_charge]
+    arcanes: [cascadia_flare]
+  - weapon: ocucor
     score: 6.07785184766234
     mods: [galvanized_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, sentient_surge, pistol_pestilence, frostbite, primed_heated_charge]
     arcanes: [cascadia_flare]
@@ -245,6 +249,12 @@ entries:
     score: 0.7891770000964088
     mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, malignant_force, rime_rounds, thermite_rounds]
   - weapon: verglas_prime
+    score: 0.6137251666041527
+    mods: [heavy_caliber, split_chamber, rifle_elementalist, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
+  - weapon: verglas_prime
+    score: 0.5848616740959276
+    mods: [heavy_caliber, split_chamber, rifle_elementalist, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, thermite_rounds]
+  - weapon: verglas_prime
     score: 0.4512540100204895
     mods: [heavy_caliber, split_chamber, serration, rifle_elementalist, vile_acceleration, malignant_force, rime_rounds, hellfire]
   - weapon: verglas_prime
@@ -256,6 +266,3 @@ entries:
   - weapon: verglas_prime
     score: 0.31972705500163284
     mods: [heavy_caliber, split_chamber, serration, rifle_elementalist, vile_acceleration, malignant_force, primed_cryo_rounds, thermite_rounds]
-  - weapon: verglas_prime
-    score: 0.25903076359267824
-    mods: [heavy_caliber, split_chamber, serration, rifle_elementalist, vile_acceleration, infected_clip, primed_cryo_rounds, hellfire]
