@@ -85,6 +85,10 @@ impl BuffLock {
 struct ArcState {
     stacks: u32,
     expiry: f64,
+    /// The damage instance that last granted this buff a stack, for the specs
+    /// capped at one per instance. 0 = none yet; `ArcRuntime::pull` counts from
+    /// 1, so a fresh state can never collide with it.
+    last_instance: u64,
 }
 
 impl ArcState {
@@ -127,6 +131,12 @@ struct ArcRuntime {
     states: Vec<ArcState>,
     /// Sharpened Bullets' single refreshable on-kill buff expiry.
     cd_kill_expiry: f64,
+    /// The current DAMAGE INSTANCE, counted from 1. A trigger pull is ONE
+    /// instance however many pellets it puts out — which is the whole point,
+    /// since Cascadia Flare's rule names multishot as the case that must not
+    /// multiply its stacks. A field tick and a syndicate blast each open their
+    /// own, because they are their own instances at their own times.
+    instance: u64,
 }
 
 impl ArcRuntime {
@@ -139,6 +149,7 @@ impl ArcRuntime {
                 .map(|s| ArcState {
                     stacks: s.initial_stacks.min(s.max_stacks),
                     expiry: s.duration,
+                    last_instance: 0,
                 })
                 .collect(),
             // Seed active only if configured so (Sharpened Bullets defaults
@@ -149,6 +160,7 @@ impl ArcRuntime {
             cd_kill_expiry: params
                 .cd_on_kill
                 .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 }),
+            instance: 0,
         }
     }
 
@@ -181,12 +193,35 @@ impl ArcRuntime {
             .sum()
     }
 
+    /// Open the next damage instance. Called once per trigger pull, and once
+    /// per off-pull instance (a field tick, a syndicate blast) — never per
+    /// pellet and never per proc, which is exactly what the cap below means.
+    fn next_instance(&mut self) {
+        self.instance += 1;
+    }
+
     /// Fire `trigger`: every matching buff gains a stack.
+    ///
+    /// A spec marked `one_per_instance` gains AT MOST ONE per damage instance,
+    /// however many procs of that type this instance applied and however many
+    /// pellets applied them — wiki (Cascadia Flare): *"Only one stack can be
+    /// added per damage instance; applying multiple Heat status effects, such
+    /// as via Multishot or Archon Vitality in a single hit will not generate
+    /// multiple stacks."* Every other spec still bumps per proc, because
+    /// nothing says otherwise about it.
     fn bump_trigger(&mut self, specs: &[ArcBuffSpec], trigger: ArcTrigger, now: f64) {
+        let instance = self.instance;
         for (s, st) in specs.iter().zip(self.states.iter_mut()) {
-            if s.trigger == trigger {
-                st.bump(s, now);
+            if s.trigger != trigger {
+                continue;
             }
+            if s.one_per_instance {
+                if st.last_instance == instance {
+                    continue;
+                }
+                st.last_instance = instance;
+            }
+            st.bump(s, now);
         }
     }
 
@@ -2842,6 +2877,8 @@ fn fire_syndicate_radial(
     // The five whose procs are multipliers rather than DoTs (Viral, Corrosive,
     // Magnetic, Radiation) do not read that number at all.
     if sy.guaranteed_status {
+        // Its own instance, like the field tick above.
+        arc.next_instance();
         settle_procs(
             vec![sy.element],
             at,
@@ -3104,6 +3141,10 @@ fn field_tick(
     // Status per TICK, from the field's own vector and its own status chance.
     // No forced procs: those are declared per attack part, and the cloud
     // declares none.
+    //
+    // A tick is its OWN damage instance, at its own time — so a per-instance
+    // arcane cap resets here rather than sharing the shot's allowance.
+    arc.next_instance();
     let procs = status::procs_for_hit(
         &[],
         f.status_chance,
@@ -4079,6 +4120,9 @@ pub fn run_once_traced(
         // of one pull land simultaneously, so one roll per pull.
         let mut encumber_done = false;
         r.shots += 1;
+        // ...and the same boundary for a per-instance arcane cap: the whole
+        // pull is ONE damage instance, pellets and radial included.
+        arc.next_instance();
 
         for pellet_idx in 0..n_pellets {
             // PLENTIFUL MAYHEM, discrete branch: "Damage bonus from multishot
@@ -6115,6 +6159,7 @@ mod tests {
                     max_stacks: 3,
                     duration: 2.0,
                     all_drop,
+                    one_per_instance: false,
                     initial_stacks: 3,
                 }],
                 ..ArcaneFx::none()
@@ -6146,6 +6191,62 @@ mod tests {
             "expected 20 pellets (4 4 3 3 2 2 1 1), got {}",
             graceful.mean_pellets
         );
+    }
+
+    /// ONE STACK PER DAMAGE INSTANCE, and the instance is the TRIGGER PULL.
+    /// Wiki (Cascadia Flare), verbatim: *"Only one stack can be added per
+    /// damage instance; applying multiple Heat status effects, such as via
+    /// Multishot or Archon Vitality in a single hit will not generate multiple
+    /// stacks."* The sim bumped once per PROC — inside `settle_procs`, which
+    /// runs per pellet — so five pellets each proccing Heat granted five.
+    ///
+    /// Measured through the REPLAY rather than through damage: the claim is
+    /// about the stack count, and reading anything else would let a wrong
+    /// count pass by cancelling against a right multiplier.
+    #[test]
+    fn a_per_instance_arcane_gains_one_stack_a_pull_not_one_a_pellet() {
+        let p = |one_per_instance: bool| DummyParams {
+            arcane: ArcaneFx {
+                id: "test".into(),
+                buffs: vec![ArcBuffSpec {
+                    owner: "test".into(),
+                    grant: ArcGrant::CritDamage,
+                    trigger: ArcTrigger::HeatStatus,
+                    per_stack: 0.0, // observed, never applied: no feedback
+                    max_stacks: 40,
+                    duration: 1000.0, // no decay inside the window
+                    all_drop: true,
+                    one_per_instance,
+                    initial_stacks: 0,
+                }],
+                ..ArcaneFx::none()
+            },
+            // FIVE pellets, every one of them forcing a Heat proc: the exact
+            // case the wiki names.
+            multishot: 5.0,
+            base_multishot: 5.0,
+            forced_procs: vec![DamageType::Heat],
+            fire_rate: 1.0,
+            magazine_size: 100.0,
+            duration_secs: 10.0, // pulls at t = 0..9
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let stacks_at_end = |one: bool| {
+            let params = p(one);
+            let s = monte_carlo(&params, 1, 3);
+            // 20 frames over 10 s, so the LAST frame sits at t = 9.5 — after
+            // the t = 9 pull rather than on top of it.
+            let rep = replay(&params, s.median_run.rng_state, 20);
+            let i = rep.buffs.iter().position(|(id, _)| id == "arcane:test").expect("buff in roster");
+            *rep.frames.last().expect("frames").stacks.get(i).expect("stack series")
+        };
+        // 10 pulls, 5 pellets each. Capped: one a pull -> 10. Uncapped: one a
+        // pellet -> 40, the ceiling, reached in the first two pulls.
+        assert_eq!(stacks_at_end(true), 10, "one stack per trigger pull");
+        assert_eq!(stacks_at_end(false), 40, "and per pellet without the cap");
     }
 
     /// Plentiful Mayhem STARVES: the projectiles are produced in order, each
@@ -7583,6 +7684,7 @@ mod tests {
                 max_stacks: 2,
                 duration: crate::loadout::NO_TIMEOUT,
                 all_drop: true,
+                one_per_instance: false,
                 initial_stacks: 2,
             }],
             ..ArcaneFx::none()
@@ -9632,6 +9734,7 @@ mod tests {
                         // LOCKED — which, since 2026-08-04, IS a duration.
                         duration: crate::loadout::NO_TIMEOUT,
                         all_drop: false,
+                        one_per_instance: false,
                         initial_stacks: initial,
                     }],
                     ..ArcaneFx::none()
@@ -9673,6 +9776,7 @@ mod tests {
             max_stacks: 40,
             duration: 12.0,
             all_drop: true,
+            one_per_instance: false,
             initial_stacks: 40,
         };
         let mut p = DummyParams {

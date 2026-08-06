@@ -178,7 +178,32 @@ bucket effect **and** a `kind: buff` effect.
   max_stacks: 4           # 1 for a non-stacking triggered buff
   duration: 20            # seconds; omit = until reset
   decay: lose_one_and_reset   # lose_one_and_reset | per_stack_expiry | all_drop
+  one_stack_per_instance: true  # optional, arcanes: cap the GRANT (see below)
 ```
+
+### `one_stack_per_instance:` — capping the grant, not the decay
+
+`decay:` says how stacks LEAVE; this says how fast they ARRIVE. Default false =
+one stack per trigger event, so a status-triggered buff gains one per PROC, and
+a multishot volley that procs on five pellets grants five.
+
+Cascadia Flare states otherwise and is the only entry in its family that does —
+verbatim: *"Only one stack can be added per damage instance; applying multiple
+Heat status effects, such as via Multishot or Archon Vitality in a single hit
+will not generate multiple stacks."* So the instance is the **trigger pull**,
+not the pellet and not the proc: `ArcRuntime::next_instance` opens one per pull,
+and separately one per lingering-field tick and per syndicate blast, because
+those are their own instances at their own times.
+
+Measured on a 2.8x-multishot Laetum Incarnon: 40 stacks in **3.0 s** per proc
+against **4.8 s** per pull. Over a 120 s benchmark the DPS barely moves — the
+ceiling is reached either way and then held — so this is a RAMP correction, and
+it is worth having exactly where a fight is short or a build is thin.
+
+The three other 40-stack on-status arcanes (Primary Blight, Primary Frostbite,
+Conjunction Voltage) do NOT carry the flag: their pages do not state the rule,
+and absence is not evidence of it. `arcanes_data` asserts them false so a
+copy-paste cannot spread it quietly.
 
 ### `condition:` — the state that has to hold
 

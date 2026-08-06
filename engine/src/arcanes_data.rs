@@ -151,6 +151,16 @@ pub struct ArcBuffSpec {
     /// Flare, Conjunction Voltage); false = lose ONE stack and reset the
     /// timer (the kill family: Merciless/Deadhead/Dexterity).
     pub all_drop: bool,
+    /// true = at most ONE stack per damage instance, where the instance is the
+    /// TRIGGER PULL and not the pellet. Cascadia Flare states it and names
+    /// multishot as the case: *"Only one stack can be added per damage
+    /// instance; applying multiple Heat status effects, such as via Multishot
+    /// or Archon Vitality in a single hit will not generate multiple stacks."*
+    /// Default false, and per ENTRY: the pages for Primary Blight, Primary
+    /// Frostbite and Conjunction Voltage — the rest of the same 40-stack
+    /// on-status family — do not state the rule, and absence is not evidence
+    /// of it (the CO catalog taught this).
+    pub one_per_instance: bool,
     /// Stacks at t = 0 (arcane stacking buffs start FULL — user setting).
     pub initial_stacks: u32,
 }
@@ -351,6 +361,7 @@ enum ArcEffect {
         max_stacks: u32,
         duration: f64,
         all_drop: bool,
+        one_per_instance: bool,
     },
     /// Scales off a WARFRAME STAT rather than off anything the weapon does:
     /// `per_unit x (stat - above)`, capped at the rank's value, gated on the
@@ -518,6 +529,10 @@ fn effect(v: &Value) -> Option<ArcEffect> {
                 max_stacks: u(v, "max_stacks"),
                 duration: f(v, "duration").unwrap_or(0.0),
                 all_drop,
+                one_per_instance: v
+                    .get("one_stack_per_instance")
+                    .and_then(serde_norway::Value::as_bool)
+                    .unwrap_or(false),
             }
         }
         // Kinship carries `per: ally_buff` — team-context, uncapped: inert
@@ -625,7 +640,7 @@ impl ArcaneDef {
         let assumed = policy == StackPolicy::AssumedMax;
         for e in &self.effects {
             match e {
-                ArcEffect::Buff { trigger, grant, scale, max_stacks, duration, all_drop } => {
+                ArcEffect::Buff { trigger, grant, scale, max_stacks, duration, all_drop, one_per_instance } => {
                     if policy == StackPolicy::BaseOnly {
                         continue; // sentinel: conditional never fires
                     }
@@ -648,6 +663,7 @@ impl ArcaneDef {
                             *duration
                         },
                         all_drop: *all_drop,
+                        one_per_instance: *one_per_instance,
                         // EARNED from zero: an arcane's stacks come from kills
                         // and procs, and a fight that cannot produce them must
                         // not be credited with them (docs/BUFFS.md).
@@ -679,6 +695,8 @@ impl ArcaneDef {
                         // decay loop that would spin if anything ever read it.
                         duration: crate::loadout::NO_TIMEOUT,
                         all_drop: false,
+                        // A passive has no instance to be one-per.
+                        one_per_instance: false,
                         initial_stacks: 1,
                     });
                 }
@@ -844,7 +862,7 @@ impl ArcaneDef {
         for e in &self.effects {
             let at = |sc: &Scale| sc.at(rank, self.max_rank);
             match e {
-                ArcEffect::Buff { trigger, grant, scale, max_stacks, duration, all_drop } => {
+                ArcEffect::Buff { trigger, grant, scale, max_stacks, duration, all_drop, one_per_instance } => {
                     let what = match grant {
                         ArcGrant::BaseDamage => "Base Damage",
                         ArcGrant::Multishot => "Multishot",
@@ -865,8 +883,12 @@ impl ArcaneDef {
                         ArcTrigger::Passive => "Always",
                     };
                     let decay = if *all_drop { "all drop on timeout" } else { "lose one on timeout" };
+                    // The per-instance cap belongs on the CARD: it is the
+                    // difference between a shotgun gaining one stack a shot and
+                    // gaining twelve, and nothing else on screen says which.
+                    let rate = if *one_per_instance { ", one per shot" } else { "" };
                     out.push(format!(
-                        "{when}: {} {what} per stack ×{max_stacks}, {duration}s ({decay})",
+                        "{when}: {} {what} per stack ×{max_stacks}{rate}, {duration}s ({decay})",
                         pct(at(scale))
                     ));
                 }
@@ -1117,6 +1139,7 @@ mod tests {
                 max_stacks: 3,
                 duration: 5.0,
                 all_drop: false,
+                one_per_instance: false,
                 initial_stacks: 3,
             }],
             ..ArcaneFx::none()
@@ -1337,6 +1360,24 @@ mod tests {
         assert_eq!(b.trigger, ArcTrigger::HeatStatus);
         assert!((b.per_stack - 0.12).abs() < 1e-9);
         assert_eq!((b.max_stacks, b.all_drop), (40, true));
+        // Flare is the one page in this family that states the per-instance
+        // cap, so it is the one entry that carries it. The other three are
+        // asserted FALSE rather than left unsaid: absence of the rule on their
+        // pages is not evidence of it, and a later copy-paste that spread the
+        // flag would otherwise pass unnoticed.
+        assert!(b.one_per_instance, "wiki: one stack per damage instance");
+        for (pool, id) in [
+            ("primary", "primary_blight"),
+            ("primary", "primary_frostbite"),
+            ("secondary", "conjunction_voltage"),
+        ] {
+            let a = for_slot(pool, id).unwrap_or_else(|| panic!("{id} exists"));
+            let fx = a.fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
+            assert!(
+                fx.buffs.iter().all(|b| !b.one_per_instance),
+                "{id}: its page does not state the rule"
+            );
+        }
     }
 
     #[test]

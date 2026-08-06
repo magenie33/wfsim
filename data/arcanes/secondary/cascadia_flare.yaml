@@ -6,8 +6,7 @@ internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SecondaryDamageOnHeat
 description: "On Heat Status Effect:\n+X% Damage for 10s. Stacks up to X%."
 
 effects:
-  # Any source counts, even while holstered. One stack per damage INSTANCE
-  # (multiple procs in one hit still grant one). Shared 10 s timer refreshed by
+  # Any source counts, even while holstered. Shared 10 s timer refreshed by
   # each new Heat proc; on timeout ALL stacks drop at once (on-status family,
   # unlike the kill-family one-by-one decay). Additive with base-damage mods
   # (Hornet Strike bucket) - scales ModifiedBase too.
@@ -19,6 +18,17 @@ effects:
     max_stacks: 40
     duration: 10
     decay: all_drop_on_timeout
+    # VERBATIM: "Only one stack can be added per damage instance; applying
+    # multiple Heat status effects, such as via Multishot or Archon Vitality in
+    # a single hit will not generate multiple stacks." So the instance is the
+    # TRIGGER PULL, not the pellet - which is what makes this a real key rather
+    # than a comment: the engine bumped once per PROC, so a multishot weapon
+    # reached 40 stacks several times faster than it can.
+    #
+    # NOT copied to the other three of this 40-stack on-status family (Primary
+    # Blight, Primary Frostbite, Conjunction Voltage): their pages do not state
+    # the rule, and absence is not evidence of it.
+    one_stack_per_instance: true
 
 source:
   url: https://wiki.warframe.com/w/Cascadia_Flare
