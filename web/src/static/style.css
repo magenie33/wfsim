@@ -38,6 +38,17 @@
   --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#e66767;
 }
 *{box-sizing:border-box}
+/* `hidden` MUST ACTUALLY HIDE.
+   The browser's own `[hidden]{display:none}` lives in the UA stylesheet, and
+   ANY author rule beats it regardless of specificity — so every element here
+   with a `display:` of its own ignored the attribute completely. The damage
+   meter's rows are `display:grid`, so a collapsed source stayed on screen with
+   only its caret flipped: the control looked like it worked and never did
+   (owner, 2026-08-06). 31 places in app.js set `.hidden`; nothing in this
+   sheet made any of them mean anything.
+   `!important` is the HTML spec's own recommendation for exactly this, and is
+   what keeps the fix from being one `display:` rule behind forever. */
+[hidden]{display:none !important}
 html,body{margin:0}
 body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",sans-serif;font-size:14px;line-height:1.45}
 

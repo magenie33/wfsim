@@ -83,6 +83,23 @@ const r = await evaluate(`(async () => {
   document.getElementById('rp-play').click(); await sleep(1500);
   const movedTo = Number(document.getElementById('rp-scrub').value);
   document.getElementById('rp-play').click();
+  // COLLAPSE, then expand, then collapse.
+  //
+  // Measured as the RESOLVED display, not as the hidden attribute and not as a
+  // height. The attribute is what hid this bug for so long: it was set
+  // correctly the whole time and changed nothing, because .mrow is
+  // display:grid and an author rule beats the UA's [hidden] rule.
+  // Height would be the most honest measure and cannot be used here — this
+  // check ends with the results block un-laid-out (the on-simulator body class
+  // is off), so everything inside it measures zero whatever it is doing.
+  // (No backticks in this comment: it lives inside a template literal.)
+  const head0 = document.querySelector('.mrow.exp');
+  const sub0 = document.querySelector('.mrow.sub');
+  const disp = () => getComputedStyle(sub0).display;
+  const collapse = { start: disp() };
+  head0.click(); await sleep(350); collapse.toggled = disp();
+  head0.click(); await sleep(350); collapse.back = disp();
+
   // THE DAMAGE METER'S COLOURS, gathered with every expandable source open so
   // the same damage TYPE appears under more than one of them.
   document.querySelectorAll('.mrow.exp').forEach(e => e.click());
@@ -117,7 +134,7 @@ const r = await evaluate(`(async () => {
     meterByType[ty] = (meterByType[ty] || 0) + v;
   }
   return { rows, atEnd, atZero, restored, nowAtEnd, movedTo, iBar, iMeter, iTable, iRow, kids,
-           meterRows, segs, legend, meterTypes: Object.keys(meterByType).sort(),
+           meterRows, segs, legend, collapse, meterTypes: Object.keys(meterByType).sort(),
            clock: document.getElementById('rp-clock').textContent };
 })()`);
 if (r.fail) { console.log("FAIL  no replay section — sim-results:", r.resultsHtml); process.exit(1); }
@@ -159,6 +176,19 @@ check("the header states average, uptime and the ramp",
     Object.values(byType).flat().every((x) => x.icon),
     JSON.stringify(Object.entries(byType).map(([k, v]) => [k, v.every((x) => x.icon)])));
 }
+
+// EXPANDING A SOURCE ACTUALLY SHOWS AND HIDES IT (owner, 2026-08-06: "直接命中
+// 和其他的收起是无效的"). The handler was always correct — it toggled the
+// attribute and flipped the caret — and nothing happened, because `.mrow` is
+// `display:grid` and an author rule beats the UA's `[hidden]{display:none}`.
+// So the rows were permanently expanded and the caret lied about it.
+//
+// Asserted on the rendered HEIGHT, not on the attribute: reading `.hidden`
+// back is what made this invisible for so long, since the attribute was right
+// the whole time.
+check("a meter source expands and collapses for real",
+  r.collapse.start === "none" && r.collapse.toggled === "grid" && r.collapse.back === "none",
+  JSON.stringify(r.collapse));
 
 // THE COMPOSITION BAR — the same damage counted a second way (owner,
 // 2026-08-06: "类型可以搞成百分比合成吗"). The meter answers where damage came
