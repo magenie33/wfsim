@@ -36,6 +36,8 @@ weapons:
   # DE 的中文是意译：Latin "furis" 的贼盗之意，不是音译。
   furis: 盗贼
   mk1_furis: MK1-盗贼
+  furis_incarnon: 盗贼 (灵化形态)
+  mk1_furis_incarnon: MK1-盗贼 (灵化形态)
   burston: 伯斯顿
   burston_incarnon: 伯斯顿 (灵化形态)
   burston_prime: 伯斯顿 Prime

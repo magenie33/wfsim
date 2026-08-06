@@ -1176,6 +1176,42 @@ use crate::loadout::WeaponBase;
             "burston_prime_reavers_rapture :: stacking_buff base_damage_bonus",
             "dual_toxocyst_neurotoxin :: stacking_buff toxin_damage_bonus",
             "dual_toxocyst_ripper_rounds :: stacking_buff punch_through_m",
+            // ---- THE FURIS GENESIS ---------------------------------------
+            // Five of its eight perks, and every one is written under a kind
+            // this loader does NOT know — deliberately, because the kinds that
+            // would have fit all pay out unconditionally:
+            //
+            //   `flat_base_damage` ignores `condition:`, so Haven Foray's
+            //   overshield clause would have loaded a silent +30 on every
+            //   build. `flat_base_crit_multiplier` ignores it too, so Prelude
+            //   of Might would have granted +3x to everyone. And a
+            //   `stacking_buff` carrying a multishot payload becomes
+            //   AssumedMaxMultishot whatever trigger sits beside it, so
+            //   Stormburst would have handed +1.2 multishot to builds with no
+            //   Electricity in them.
+            //
+            // An unknown kind is the only spelling that means "nothing models
+            // this yet" and stays true. What each needs, cheapest first:
+            // Headcracker mirrors `on_headshot_reload_speed` exactly with a
+            // fire-rate payload (worth up to +50% here); Executioner's Fortune
+            // needs a reload the sim can END rather than scale; Stormburst
+            // needs a stacking buff that can state a target condition; Prelude
+            // of Might needs a condition read off the RESOLVED panel, which
+            // nothing in this engine does; Haven Foray needs a Tenno with
+            // overshields, which `TennoCondition` has no room for.
+            //
+            // Tier 4 is the one that stings: two of its three options are here,
+            // so the tier currently decides itself.
+            "furis_executioners_fortune :: instant_reload_on_headshot",
+            "furis_haven_foray :: flat_base_damage_with_overshields",
+            "furis_headcracker :: on_headshot_fire_rate",
+            "furis_prelude_of_might :: crit_multiplier_below_crit_chance",
+            "furis_stormburst :: stacking_multishot_on_electricity_status",
+            "mk1_furis_executioners_fortune :: instant_reload_on_headshot",
+            "mk1_furis_haven_foray :: flat_base_damage_with_overshields",
+            "mk1_furis_headcracker :: on_headshot_fire_rate",
+            "mk1_furis_prelude_of_might :: crit_multiplier_below_crit_chance",
+            "mk1_furis_stormburst :: stacking_multishot_on_electricity_status",
         ];
         let expected: Vec<String> = expected.into_iter().map(str::to_string).collect();
         let missing: Vec<&String> = expected.iter().filter(|e| !found.contains(e)).collect();

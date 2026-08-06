@@ -1,0 +1,136 @@
+id: furis_incarnon
+name: Furis (Incarnon Form)
+slot: secondary
+class: pistol
+# Gauge-switched: entering it costs a charge meter and a transmute animation,
+# which is what gives the sim a two-form CYCLE to run.
+form: incarnon
+
+# TWO WEAPONS MODEL: second entry of the transform group — see
+# data/weapons/secondary/furis.yaml for the base form.
+transform_group: furis
+transforms_from: furis
+
+mod_pools: [pistol]
+mastery_rank: 2
+max_rank: 30
+accuracy: 22.22
+disposition: 1.35
+polarities: [naramon]
+exilus_polarity: madurai
+riven_family: Furis
+traits: [tenno]
+internal_name: /Lotus/Weapons/Tenno/Pistol/AutoPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 35
+reload_seconds: 1.4
+
+# The Incarnon transformation economy (wiki Furis Incarnon Genesis).
+#
+# EVERY NUMBER HERE IS THE MK1's TOO — one Genesis, one economy. It is the
+# THINNEST of the three this roster carries: 20 weakpoint hits fill the gauge
+# (the Burston's count) but each charge is worth only 14 rounds against 30, so
+# the pool is 280 against 600.
+incarnon:
+  gauge:
+    charge_on: weakpoint_hits
+    # VERBATIM: "20 weakpoints hits will completely fill the gauge."
+    charges_to_fill: 20
+    # "each charge producing 14 rounds to a maximum of 280" — and 20 x 14 =
+    # 280, so the gauge and the pool are the same statement twice.
+    rounds_per_charge: 14
+    max_rounds: 280
+    # charge_rules:
+    # - Charges do NOT generate on most MOA backpacks, nor on vulnerability
+    #   spots made artificially (Sonar / Detect Vulnerability).
+    # - Charges survive holstering and bleedout; DEATH removes them.
+  transmute:
+    activation: alt_fire
+    # VERBATIM: "Mode switching is not instantaneous and has an animation equal
+    # to the weapon's reload speed."
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+  incarnon_magazine:
+    resource: incarnon_charges
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 1.4      # = the base form's reload time, unmodded
+  # 1 s is MEASURED on Dual Toxocyst (MEASUREMENTS M9) and applied uniformly
+  # until some weapon is measured to differ.
+  transmute_out_seconds: 1.0
+
+# SIM CONVENIENCE: with the gauge LOCKED full, the cycle reduces to a
+# magazine/reload model — 280 rounds, then 1.4 + 1.0 s of transitions.
+pseudo_reload:
+  magazine: 280
+  reload_seconds: 2.4
+
+# CONDITION OVERLOAD — and THIS is the entry the catalog's Furis row is about.
+# Verbatim:
+#
+#   Furis | Incarnon Mode | Projectile | 100 or 128 (with Evolution II) | 100 |
+#     100% or 78% | Adding | "CO-bonus does not use base damage increase
+#     Evolution"
+#
+# Two facts. The class is Adding, which is this engine's
+# `additive_with_base_damage`. And the CO base EXCLUDES Evolution II's flat
+# damage — 100 of the evolved 128 — which is `co_base_excludes_this_evolution`
+# on the tier-2 perks rather than a field here, because the catalog names the
+# PERK and not the weapon (the Dual Toxocyst row taught that: keying it off the
+# weapon would dock a tier-mate that is not discrepant).
+#
+# NOT SET on the tier-2 perks yet: both of this weapon's tier-2 options grant
+# the same +28, so the row is silent about which one it means, and "Evolution
+# II" names the tier. Reading it as covering both is the natural reading, and
+# it is left unwritten rather than guessed — the difference is 100/128 = 78% of
+# the CO term, which the row itself prints.
+co_behavior: additive_with_base_damage
+
+attack:
+  # A CONTINUOUS BEAM, and the page does not say so in those words — it says
+  # "fire a wide Heat Damage beam" and gives it a 16 m maximum range, while
+  # WFCD gives the attack `speed: 12` and shot type Hit-Scan. That is exactly
+  # the Ocucor's shape (held, hit_scan, 12 ticks/s), which is why it is read
+  # the same way here. If it turns out to be per-trigger-pull, the cadence
+  # model changes and this line is where to change it.
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0              # TICKS per second while held
+  multishot: 1.0
+  # ONE ROUND PER TICK, from the separate 280-round pool: 23 s of fire on a
+  # full gauge. The wiki's continuous-weapon rule is 0.5 ammo per trace, but
+  # this form does not draw from ammo at all — it draws "rounds" from a charge
+  # pool the page counts in whole numbers, so a round is a round. Recorded
+  # because the alternative reading doubles the form's uptime.
+  ammo_cost: 1
+  crit_chance: 0.26
+  crit_multiplier: 3.4
+  status_chance: 0.24
+  punch_through_m: 0.0
+  # PURE HEAT — five times the base form's 20, and it arrives as one element
+  # rather than an IPS split, so elemental mods combine with it (MECHANICS §3
+  # rule 2: the innate takes what the mods leave).
+  damage: { heat: 100.0 }
+  # RANGE FALLOFF, and the two sources disagree. The wiki: "linear Damage
+  # Falloff from 100% to 80% from 10m to 16m", i.e. a 0.2 reduction. WFCD's
+  # attack entry says 0.48 for this weapon and 0.2167 for the MK1 — which
+  # cannot both be a rounding of one rule. The English wiki takes it (owner,
+  # 2026-08-06), and NOTHING READS IT: this arena has no distance, so the
+  # target is inside 10 m and takes 100% either way. Recorded so a spatial
+  # model finds the disagreement rather than the winner.
+  falloff_start_m: 10.0
+  falloff_end_m: 16.0
+  falloff_reduction: 0.2
+  spread_min_deg: 1.0
+  spread_max_deg: 8.0
+
+# incarnon_evolutions: see data/evolutions/furis_*.yaml (four tiers)
+
+source:
+  url: https://wiki.warframe.com/w/Furis_Incarnon_Genesis
+  # Attack stats cross-checked against WFCD warframe-items (attack "Incarnon
+  # Form", joined on internal name): speed 12, crit 26%, 3.4x, status 24%,
+  # Heat 100 — all agree. The falloff is the one field that does not.

@@ -1,0 +1,29 @@
+id: mk1_furis_prelude_of_might
+name: Prelude of Might
+weapon: mk1_furis
+tier: 4
+icon: CritDamageWhenCritChanceIsBelowX(xWhite).png
+description: "With Critical Chance below 40%: Increase Critical Damage Multiplier by +3x."
+# THE GENESIS IS THE FAMILY'S. One Furis Incarnon Genesis upgrades either the
+# Furis or the MK1-Furis, so both weapons carry the same ladder. Where a value
+# DIFFERS between them the wiki prints it as a pair, and the number below is
+# this weapon's.
+selection: choose_one
+
+effects:
+  # NOT LOADED: the condition is on the build's OWN RESOLVED crit chance, which
+  # no effect kind here can read — every `condition:` in this engine asks about
+  # the Tenno or the target, never about the panel the mods just produced. The
+  # payload is large (+3x on a 3.4x base) and so is its cost, since taking it
+  # means holding crit chance under 40%; the form's own 26% base already sits
+  # close to that line, so the two interact rather than stack.
+  #
+  # Under a kind the loader does NOT know, on purpose: the
+  # `flat_base_crit_multiplier` arm ignores `condition:`, so spelling it that
+  # way would have loaded +3x on EVERY build instead of nothing.
+  - kind: crit_multiplier_below_crit_chance
+    value: 3.0
+    below_crit_chance: 0.40
+
+source:
+  url: https://wiki.warframe.com/w/Furis_Incarnon_Genesis

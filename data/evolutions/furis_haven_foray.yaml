@@ -1,0 +1,31 @@
+id: furis_haven_foray
+name: Haven Foray
+weapon: furis
+tier: 2
+icon: DamageAndIncreasedDamageWithOvershields(xWhite).png
+description: "Increase Base Damage by +28.\nWith Overshields: Increase Base Damage by +30."
+# THE GENESIS IS THE FAMILY'S. One Furis Incarnon Genesis upgrades either the
+# Furis or the MK1-Furis, so both weapons carry the same ladder. Where a value
+# DIFFERS between them the wiki prints it as a pair, and the number below is
+# this weapon's.
+selection: choose_one
+
+effects:
+  # The unconditional half, and the one a SECOND source cross-checks on the
+  # Furis: the CO catalog's row reads "100 or 128 (with Evolution II)", which
+  # is this +28 on a 100-Heat form. The MK1's +34 rests on the wiki alone.
+  - kind: flat_base_damage
+    value: 28.0
+  # NOT LOADED, and the reason is a missing STATE rather than a missing effect
+  # kind. `TennoCondition` knows Aiming, Invisible and Airborne; it has no
+  # overshields, so there is nothing for this clause to be true OF. Granting it
+  # unconditionally would hand +30 to a Tenno at base shields, which is most of
+  # them. Written under a kind the loader does NOT know, on purpose: the
+  # `flat_base_damage` arm ignores `condition:`, so spelling it that way would
+  # have loaded a silent, unconditional +30 rather than nothing. It is worth 30
+  # on top of 28, so a sim that ever models overshields starts here.
+  - kind: flat_base_damage_with_overshields
+    value: 30.0
+
+source:
+  url: https://wiki.warframe.com/w/Furis_Incarnon_Genesis

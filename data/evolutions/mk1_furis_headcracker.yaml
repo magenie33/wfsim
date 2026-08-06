@@ -1,0 +1,26 @@
+id: mk1_furis_headcracker
+name: Headcracker
+weapon: mk1_furis
+tier: 4
+icon: OnHeadshotFireRateForXSecs(xWhite).png
+description: "On Headshot: +5% Fire Rate for 2s. Stacks up to 10x."
+# THE GENESIS IS THE FAMILY'S. One Furis Incarnon Genesis upgrades either the
+# Furis or the MK1-Furis, so both weapons carry the same ladder. Where a value
+# DIFFERS between them the wiki prints it as a pair, and the number below is
+# this weapon's.
+selection: choose_one
+
+effects:
+  # NOT LOADED, and the closest of the three to being loadable: the engine
+  # already runs `on_headshot_reload_speed` as a live stacking buff off this
+  # very trigger (`StackingReloadSpeedOnHeadshot`, with its own LiveStacks in
+  # the shot loop). This is that shape with a FIRE RATE payload. Worth up to
+  # +50% fire rate at a 100% headshot rate, which makes it the tier's real
+  # competitor and the first thing to implement here.
+  - kind: on_headshot_fire_rate
+    per_stack: 0.05
+    max_stacks: 10
+    duration: 2
+
+source:
+  url: https://wiki.warframe.com/w/Furis_Incarnon_Genesis

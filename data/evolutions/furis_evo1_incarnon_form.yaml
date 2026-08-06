@@ -1,0 +1,21 @@
+id: furis_evo1_incarnon_form
+name: Incarnon Form
+weapon: furis
+tier: 1
+icon: IncarnonFormFatBeamOfFire(xWhite).png
+description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes.\nFire a wide Heat Damage beam."
+# THE GENESIS IS THE FAMILY'S. One Furis Incarnon Genesis upgrades either the
+# Furis or the MK1-Furis, so both weapons carry the same ladder. Where a value
+# DIFFERS between them the wiki prints it as a pair, and the number below is
+# this weapon's.
+selection: fixed                # tier 1 has no choice
+
+# Under the two-weapons model this perk IS the unlock of weapon #2: the beam,
+# the pure Heat vector and the separate charge pool are all properties of the
+# furis_incarnon entry, not perk payload.
+effects:
+  - kind: unlocks_weapon
+    weapon: furis_incarnon
+
+source:
+  url: https://wiki.warframe.com/w/Furis_Incarnon_Genesis

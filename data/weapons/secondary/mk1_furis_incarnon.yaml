@@ -1,0 +1,97 @@
+id: mk1_furis_incarnon
+name: MK1-Furis (Incarnon Form)
+slot: secondary
+class: pistol
+form: incarnon
+
+# TWO WEAPONS MODEL: second entry of the transform group — see
+# data/weapons/secondary/mk1_furis.yaml for the base form.
+transform_group: mk1_furis
+transforms_from: mk1_furis
+
+mod_pools: [pistol]
+mastery_rank: 0
+max_rank: 30
+accuracy: 22.22
+disposition: 1.40
+polarities: [naramon]
+exilus_polarity: naramon
+riven_family: Furis
+traits: [tenno]
+internal_name: /Lotus/Weapons/MK1Series/MK1Furis
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 35
+reload_seconds: 1.4
+
+# THE SAME ECONOMY AS THE FURIS — one Genesis, one gauge. Every number in this
+# block is copied from that page rather than from a second one, because there
+# is no second one: the adapter upgrades either weapon.
+incarnon:
+  gauge:
+    charge_on: weakpoint_hits
+    charges_to_fill: 20
+    rounds_per_charge: 14
+    max_rounds: 280
+  transmute:
+    activation: alt_fire
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+  incarnon_magazine:
+    resource: incarnon_charges
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 1.4
+  transmute_out_seconds: 1.0
+
+pseudo_reload:
+  magazine: 280
+  reload_seconds: 2.4
+
+# CONDITION OVERLOAD: the catalog's Furis row is written about the FURIS —
+# "Listed values" of 100 and 128 are that weapon's Heat and its evolved Heat,
+# and this form's are 60 and 94. So the row's NUMBERS are not this entry's.
+# Its CLASS (Adding) is the default anyway, and its qualifier ("CO-bonus does
+# not use base damage increase Evolution") is a statement about the Genesis
+# both weapons share — but the catalog lists discrepant ATTACKS one at a time,
+# and there is no MK1-Furis row. Absence means normal, so this is the ordinary
+# Additive class at the full base, and the exclusion is NOT copied across on
+# the strength of a row that names the other weapon.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Read the same way as the Furis's — see that file for why `held` rather
+  # than per-pull, and for what changes if that is wrong.
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.20
+  crit_multiplier: 3.0
+  status_chance: 0.08
+  punch_through_m: 0.0
+  # 60 Heat against the Furis's 100. Note what the Incarnon form does to the
+  # gap between these two weapons: in base form the MK1 has a TWELFTH of the
+  # Furis's status chance (1% against 12%), and in Incarnon form it has a
+  # third (8% against 24%). The transformation is worth far more to the
+  # weaker weapon, which is the same shape the Boar family shows.
+  damage: { heat: 60.0 }
+  # The wiki states one falloff rule for the Genesis (100% to 80%, 10-16 m);
+  # WFCD gives this attack 0.2167 and the Furis's 0.48. The wiki takes it, and
+  # nothing reads it single-target. See furis_incarnon.yaml.
+  falloff_start_m: 10.0
+  falloff_end_m: 16.0
+  falloff_reduction: 0.2
+  spread_min_deg: 1.0
+  spread_max_deg: 8.0
+
+# incarnon_evolutions: see data/evolutions/mk1_furis_*.yaml (four tiers)
+
+source:
+  url: https://wiki.warframe.com/w/Furis_Incarnon_Genesis
+  # Attack stats cross-checked against WFCD warframe-items (attack "Incarnon
+  # Form" on /Lotus/Weapons/MK1Series/MK1Furis): speed 12, crit 20%, 3.0x,
+  # status 8%, Heat 60 — all agree except the falloff.

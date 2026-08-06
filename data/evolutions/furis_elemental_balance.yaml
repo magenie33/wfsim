@@ -1,0 +1,22 @@
+id: furis_elemental_balance
+name: Elemental Balance
+weapon: furis
+tier: 4
+icon: HighStatus(xWhite).png
+description: "Increase Base Status Chance by +28%."
+# THE GENESIS IS THE FAMILY'S. One Furis Incarnon Genesis upgrades either the
+# Furis or the MK1-Furis, so both weapons carry the same ladder. Where a value
+# DIFFERS between them the wiki prints it as a pair, and the number below is
+# this weapon's.
+selection: choose_one
+
+effects:
+  # A BASE-stat addition, so status mods multiply the new base. On the Furis's
+  # Incarnon form that is 28 points on top of its own — and it is the only
+  # option in this tier the engine currently pays out. See its two tier-mates
+  # for why, and for what each would take.
+  - kind: flat_base_status_chance
+    value: 0.28
+
+source:
+  url: https://wiki.warframe.com/w/Furis_Incarnon_Genesis

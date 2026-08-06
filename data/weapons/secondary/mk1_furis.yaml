@@ -4,6 +4,15 @@ slot: secondary
 class: pistol
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+# TWO WEAPONS MODEL: this entry is form #1 and mk1_furis_incarnon is form #2. The
+# link has to be declared HERE as well as there — `incarnon_id` reads
+# `transforms_to` off the BASE entry, so an Incarnon form that only points
+# backwards registers as a form, reports `has_cycle`, and then never runs: the
+# fight resolves `run_cycle` to false and fires this form for the whole
+# engagement, silently.
+transform_group: mk1_furis
+transforms_to: mk1_furis_incarnon
+
 mod_pools: [pistol]
 grip_type: PISTOL
 mastery_rank: 0             # a starter-tier weapon: the module says Mastery 0

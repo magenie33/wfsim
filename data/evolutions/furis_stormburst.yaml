@@ -1,0 +1,38 @@
+id: furis_stormburst
+name: Stormburst
+weapon: furis
+tier: 2
+icon: DamageAndOnHittingEnemyAffectedByElectricity(xWhite).png
+description: "Increase Base Damage by +28.\nOn hitting an enemy affected by Electricity: +0.4 Multishot for 2s. Stacks up to 3x."
+# THE GENESIS IS THE FAMILY'S. One Furis Incarnon Genesis upgrades either the
+# Furis or the MK1-Furis, so both weapons carry the same ladder. Where a value
+# DIFFERS between them the wiki prints it as a pair, and the number below is
+# this weapon's.
+selection: choose_one
+
+effects:
+  # THE SAME +28 its tier-mate gives, so this pair is decided entirely by the
+  # second line — the same shape the Burston's tier 2 has.
+  - kind: flat_base_damage
+    value: 28.0
+  # NOT LOADED, and this one is a JUDGEMENT rather than a gap. A `stacking_buff`
+  # carrying a `multishot_bonus` loads as `AssumedMaxMultishot` — the total at
+  # max stacks, permanently, with no trigger — which is right for Fevered
+  # Frenzy (cast an ability and it is yours) and WRONG here: this one needs an
+  # ELECTRICITY STATUS ON THE TARGET, so loading it that way would grant +1.2
+  # multishot to a build carrying no Electricity at all. Left inert until a
+  # stacking buff can state its condition. Worth up to +1.2 multishot to a
+  # build that does run Electricity.
+  #
+  # NOT written as `stacking_buff`, and that is the whole point: that kind maps
+  # a multishot payload to AssumedMaxMultishot NO MATTER what trigger is
+  # written beside it, so the trigger would have been decoration and the +1.2
+  # would have been granted. A kind the loader does not know is the only way to
+  # say "modelled by nothing yet" and have it stay true.
+  - kind: stacking_multishot_on_electricity_status
+    per_stack: 0.4
+    max_stacks: 3
+    duration: 2
+
+source:
+  url: https://wiki.warframe.com/w/Furis_Incarnon_Genesis
