@@ -125,6 +125,30 @@ anyone's reading of the English. Evolution strings have no such fallback —
 wiki is the only source for them and why losing it costs those 18 and nothing
 else.
 
+#### …and on 2026-08-07 it opened again — for curl, not for the language
+
+Both `api.php` and the plain pages answer **200** now. The interesting part is
+that they answer 200 to **curl** and **403 to Python's `urllib`**, from the same
+machine, in the same minute, carrying the same browser User-Agent. So the
+challenge is reading the **TLS fingerprint**, not the header: a fetch written in
+the obvious way ("it's just an HTTP GET, do it in the script") will conclude the
+wall is still up and leave names empty that could have been read.
+
+    curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36       (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"       --get --data-urlencode "page=盗贼灵化之源"       "https://warframe.huijiwiki.com/api.php?action=parse&prop=wikitext&format=json"
+
+The evolution pages are `<武器>灵化之源` (伯斯顿灵化之源, 盗贼灵化之源,
+野猪灵化之源); a weapon page transcludes them with `{{#lst:…|Incarnon}}`, so
+reading the weapon page finds the section EMPTY and the names one hop away.
+
+With that, the Burston and Furis families' 36 evolution strings went in and
+`wfcd_i18n.py check` reports **nothing unnamed in any family** for the first
+time. Two of them also corroborated engine fixes made the day before from the
+English wiki alone — 力量前奏 reads "暴击几率低于 40% 时，**基础**暴击伤害增加
++3x" (Prelude of Might applies before mods, not after), and 风雷骤起 reads
+"+40% 多重射击，持续 2s，最高叠加至 3 层" (Stormburst's three 2-second stacks).
+A second source agreeing is not a measurement, but it is the cheapest check
+there is.
+
 ### A card is TWO fields, and we were reading one (2026-08-03)
 
 WFCD's `i18n.json` carries a mod's localized card in two places, and DE decides

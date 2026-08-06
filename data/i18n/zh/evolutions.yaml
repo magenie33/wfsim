@@ -103,6 +103,53 @@ evolutions:
   boar_prime_survivors_edge: 生还占优
   boar_survivors_edge: 生还占优
 
+  # Burston / Burston Prime — DE's own strings, read 2026-08-07 from the CN
+  # wiki's transcription (伯斯顿灵化之源) through `api.php`. The wall recorded
+  # in docs/DATA_SOURCES.md on 2026-08-05 is DOWN again: both `api.php` and the
+  # plain pages answer 200 to curl (urllib still gets 403 — Cloudflare reads the
+  # TLS fingerprint, not the User-Agent, so the fetch must be curl's).
+  # THE TWO WEAPONS SHARE ONE GENESIS and DE wrote each string once; the second
+  # id is a transcription of the same string, not a second reading of it.
+  burston_prime_evo1_incarnon_form: 灵化形态
+  burston_evo1_incarnon_form: 灵化形态
+  burston_prime_forceful_finality: 强制终结
+  burston_forceful_finality: 强制终结
+  burston_prime_fortress_salvo: 要塞齐射
+  burston_fortress_salvo: 要塞齐射
+  burston_prime_extended_volley: 扩充齐发
+  burston_extended_volley: 扩充齐发
+  burston_prime_ready_retaliation: 待命报复
+  burston_ready_retaliation: 待命报复
+  burston_prime_kinetic_battle: 动能战斗
+  burston_kinetic_battle: 动能战斗
+  burston_prime_reavers_rapture: 掠夺者的狂喜
+  burston_reavers_rapture: 掠夺者的狂喜
+  burston_prime_absolute_valor: 绝对勇气
+  burston_absolute_valor: 绝对勇气
+  burston_prime_fatal_affliction: 致命苦痛
+  burston_fatal_affliction: 致命苦痛
+  # Furis / MK1-Furis — same source and same day (盗贼灵化之源), same shared
+  # genesis. Not one of these nine is derivable from its English: Headcracker
+  # is 碎颅破脑, Prelude of Might is 力量前奏, Haven Foray is 安逸冒险.
+  furis_evo1_incarnon_form: 灵化形态
+  mk1_furis_evo1_incarnon_form: 灵化形态
+  furis_haven_foray: 安逸冒险
+  mk1_furis_haven_foray: 安逸冒险
+  furis_stormburst: 风雷骤起
+  mk1_furis_stormburst: 风雷骤起
+  furis_practiced_grip: 熟练之握
+  mk1_furis_practiced_grip: 熟练之握
+  furis_extended_volley: 扩充齐发
+  mk1_furis_extended_volley: 扩充齐发
+  furis_executioners_fortune: 行刑者财富
+  mk1_furis_executioners_fortune: 行刑者财富
+  furis_headcracker: 碎颅破脑
+  mk1_furis_headcracker: 碎颅破脑
+  furis_prelude_of_might: 力量前奏
+  mk1_furis_prelude_of_might: 力量前奏
+  furis_elemental_balance: 元素平衡
+  mk1_furis_elemental_balance: 元素平衡
+
 # The card text. One string per evolution; `\n` where our English description
 # breaks a line.
 evolution_descriptions:
@@ -169,3 +216,62 @@ evolution_descriptions:
   boar_critical_parallel: "基础暴击几率增加 +20%。\n基础暴击伤害增加 +0.5x。"
   boar_prime_survivors_edge: "基础暴击几率增加 +10%。\n每个投射物的基础触发几率增加 +6%。\n灵化形态的基础触发几率增加 +48%。"
   boar_survivors_edge: "基础暴击几率增加 +10%。\n每个投射物的基础触发几率增加 +6%。\n灵化形态的基础触发几率增加 +48%。"
+  # ---- Burston / Burston Prime ----
+  # Verbatim from 伯斯顿灵化之源, markup resolved. The CN page prints ONE number
+  # per card where it prints two for the Furis below, and our English carries
+  # the same number under both ids — the two weapons' cards really are equal.
+  # The Incarnon Form's second line is trimmed where our English trims it: the
+  # wiki continues "拥有更高的射速，暴击几率，暴击倍率与触发几率，但基础伤害更低",
+  # which is the wiki describing the form, not DE's card.
+  burston_prime_evo1_incarnon_form: "命中弱点为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。
+变为全自动射击模式，并造成范围火焰伤害。"
+  burston_evo1_incarnon_form: "命中弱点为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。
+变为全自动射击模式，并造成范围火焰伤害。"
+  burston_prime_forceful_finality: "基础伤害增加 +42。
+每个弹匣最后一轮射击的每一发获得 +5 多重射击。"
+  burston_forceful_finality: "基础伤害增加 +42。
+每个弹匣最后一轮射击的每一发获得 +5 多重射击。"
+  burston_prime_fortress_salvo: "基础伤害增加 +42。
+护甲超过 450 时：+2 穿透。"
+  burston_fortress_salvo: "基础伤害增加 +42。
+护甲超过 450 时：+2 穿透。"
+  burston_prime_extended_volley: "提升 +21 弹匣容量。"
+  burston_extended_volley: "提升 +21 弹匣容量。"
+  burston_prime_ready_retaliation: "空弹匣装填时：+100% 装填速度。"
+  burston_ready_retaliation: "空弹匣装填时：+100% 装填速度。"
+  burston_prime_kinetic_battle: "-50% 武器后坐力。"
+  burston_kinetic_battle: "-50% 武器后坐力。"
+  burston_prime_reavers_rapture: "多发点射全部命中时：+20% 伤害，重新装填后重置。"
+  burston_reavers_rapture: "多发点射全部命中时：+20% 伤害，重新装填后重置。"
+  burston_prime_absolute_valor: "基础暴击几率增加 +22%。"
+  burston_absolute_valor: "基础暴击几率增加 +22%。"
+  burston_prime_fatal_affliction: "目标身上的每种异常状态可增加 +40% 直接伤害。"
+  burston_fatal_affliction: "目标身上的每种异常状态可增加 +40% 直接伤害。"
+  # ---- Furis / MK1-Furis ----
+  # Verbatim from 盗贼灵化之源. This page DOES print two numbers per card
+  # ("+28（原版）/ +34（MK1）"), so each id takes its own — the same split our
+  # English data already carries.
+  furis_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。
+发射短射程粗光束，造成火焰伤害。"
+  mk1_furis_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。
+发射短射程粗光束，造成火焰伤害。"
+  furis_haven_foray: "基础伤害增加 +28。
+过载护盾激活时：基础伤害增加 +30。"
+  mk1_furis_haven_foray: "基础伤害增加 +34。
+过载护盾激活时：基础伤害增加 +30。"
+  furis_stormburst: "基础伤害增加 +28。
+命中受电击异常影响的目标时：+40% 多重射击，持续 2 秒。最多叠加到 3 层。"
+  mk1_furis_stormburst: "基础伤害增加 +34。
+命中受电击异常影响的目标时：+40% 多重射击，持续 2 秒。最多叠加到 3 层。"
+  furis_practiced_grip: "精准度提升 +50%。"
+  mk1_furis_practiced_grip: "精准度提升 +50%。"
+  furis_extended_volley: "提升 +25 弹匣容量。"
+  mk1_furis_extended_volley: "提升 +25 弹匣容量。"
+  furis_executioners_fortune: "爆头时：10% 几率立即装填。"
+  mk1_furis_executioners_fortune: "爆头时：10% 几率立即装填。"
+  furis_headcracker: "爆头时：+5% 射速，持续 2 秒。最多叠加到 10 层。"
+  mk1_furis_headcracker: "爆头时：+5% 射速，持续 2 秒。最多叠加到 10 层。"
+  furis_prelude_of_might: "暴击几率低于 40% 时，基础暴击伤害增加 +3x。"
+  mk1_furis_prelude_of_might: "暴击几率低于 40% 时，基础暴击伤害增加 +3x。"
+  furis_elemental_balance: "基础触发几率增加 +28%。"
+  mk1_furis_elemental_balance: "基础触发几率增加 +39%。"
