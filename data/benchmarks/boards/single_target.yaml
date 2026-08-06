@@ -10,6 +10,11 @@
 benchmark: single_target
 source: submissions
 entries:
+  - weapon: boar
+    score: 6.733121417828529
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, magnetic_strafe, primed_chilling_grasp, toxic_barrage, incendiary_coat, scattering_inferno]
+    evolutions: [boar_evo1_incarnon_form, boar_reified_bane, boar_mercenary_chamber, boar_elemental_balance]
+    arcanes: [primary_crux]
   - weapon: boar_prime
     score: 12.136013499543905
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, frigid_blast, toxic_barrage, blaze]
