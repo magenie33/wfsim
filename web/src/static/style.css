@@ -65,6 +65,7 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 body:not(.on-optimizer) #opt-block{display:none}
 body:not(.on-rivens) #riven-block{display:none}
 body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body:not(.on-simulator) #sim-results-block{display:none}
+body:not(.on-custommods) #custommods-block{display:none}
 /* The simulator's read-only build summary */
 .sb-h{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 4px}
 .sb-chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -105,6 +106,9 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 /* The RIVENS tab is its own bench: the builder's blocks step aside, the same
    way they do for the other two modules. */
 .on-rivens #bench-bar-builder-builds,.on-rivens #build-official,.on-rivens #preset-bar-builder-builds,.on-rivens #quick-calc,.on-rivens #mod-block,.on-rivens #arcane-block,.on-rivens #evo-block,.on-rivens #element-block,.on-rivens #stats-block{display:none}
+/* The CUSTOM MODS tab is a bench too: the builder's editing blocks step
+   aside exactly as they do for the other modules. */
+.on-custommods #bench-bar-builder-builds,.on-custommods #build-official,.on-custommods #preset-bar-builder-builds,.on-custommods #quick-calc,.on-custommods #mod-block,.on-custommods #arcane-block,.on-custommods #evo-block,.on-custommods #element-block,.on-custommods #stats-block{display:none}
 /* The simulator tab keeps the build preset bar (sim settings are preset
    content — the auto-saving preset bar must stay reachable) but hides
    builder's editing blocks. */
@@ -774,3 +778,38 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    two choices inline — never a dialog. */
 #board-consent .ghost-btn{margin-left:6px}
 .board-state{color:var(--text)}
+
+/* ---- Custom mods / custom weapon editors ------------------------------- */
+.cm-grid,.cw-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:8px 0}
+.cu-param{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted)}
+.cu-param input,.cu-param select,.cm-f,.cw-f{width:100%;box-sizing:border-box;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:4px;padding:3px 6px;font-size:13px}
+.cm-row{display:flex;gap:6px;align-items:center;margin:4px 0;flex-wrap:wrap}
+.cm-kind{min-width:170px}
+.cm-effects{margin:8px 0}
+.cm-actions,.cm-toolbar,.rv-head{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:6px 0}
+.rv-row{cursor:pointer;padding:6px 8px;border-radius:4px;border:1px solid transparent}
+.rv-row:hover{background:var(--panel)}
+.rv-row.sel{border-color:var(--accent);background:var(--panel)}
+.rv-name{font-weight:600}
+.rv-meta{color:var(--muted);font-size:12px;margin-left:8px}
+.rv-empty{color:var(--muted);font-style:italic;padding:8px 0}
+.cm-up,.cm-dn,.cm-del{min-width:28px;padding:2px 6px}
+.cw-slot-row{cursor:pointer;padding:8px 10px;border-radius:4px;border:1px solid transparent;display:flex;justify-content:space-between;align-items:baseline}
+.cw-slot-row:hover{background:var(--panel)}
+.cw-slot-row.sel{border-color:var(--accent);background:var(--panel)}
+.cw-slot-name{font-weight:600}
+.cw-slot-meta{color:var(--muted);font-size:12px}
+.cw-head{display:flex;gap:10px;align-items:baseline;margin:8px 0}
+.cw-hint{color:var(--muted);font-size:12px;font-style:italic}
+.cw-note{color:var(--muted);font-size:12px;margin-top:8px}
+
+/* ---- Custom-mod card list (Custom Mods tab) -----------------------------
+   A card shows its name, polarity/drain meta and EVERY effect line — like a
+   mod card in game, not a bare row. Effect-heavy cards grow taller; the card
+   body is the tag, so nothing truncates. */
+#cm-list .cm-card{display:block;padding:8px 10px;margin:3px 0;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--panel2)}
+#cm-list .cm-card:hover{border-color:var(--accent)}
+#cm-list .cm-card.sel{border-color:var(--accent);background:var(--panel)}
+#cm-list .cm-card-name{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13.5px;font-weight:600}
+#cm-list .cm-card-meta{font-size:11px;color:var(--muted);font-weight:400}
+#cm-list .cm-card-me{font-size:11px;color:var(--text-2);line-height:1.45;margin-top:3px}

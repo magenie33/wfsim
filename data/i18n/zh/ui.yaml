@@ -473,6 +473,113 @@ ui:
   "Search arcane / effect…": 搜索赋能 / 效果…
   "search mods by name or effect…": 按名称或效果搜索 MOD…
   "search arcanes by name or effect…": 按名称或效果搜索赋能…
+  # ---- Custom mods / custom weapon editors (transcribed from the official
+  # CN client terms; damage types use the damage_types table in names.yaml).
+  "Custom mods": 自定义 MOD
+  "Custom Mods": 自定义 MOD
+  "drain": 消耗
+  "exilus": Exilus 槽
+  "+ new custom mod": 新建自定义 MOD
+  "No custom mods yet — make one to equip it like any other mod.": 还没有自定义 MOD —— 做一张就能像其他 MOD 一样装上
+  "+ effect": 添加词条
+  "Delete": 删除
+  "Polarity": 极性
+  "Exilus": Exilus 槽
+  "yes": 是
+  "no": 否
+  # Custom weapon panel fields.
+  "Type": 类型
+  "Trigger": 扳机
+  "Name": 名称
+  "Disposition": 倾向性
+  "Ammo Reserve": 备弹量
+  "Ammo / shot": 每发弹药
+  "Custom weapon panel": 自定义武器面板
+  "your own numbers — no hidden passives, no evolutions; carried with the request": 你填的数字 —— 没有隐藏被动，没有进化；随请求一并提交
+  "Slots are fixed 8 + 1 exilus. Mod it like any weapon — the numbers above ARE the card.": 槽位固定 8 + 1 个 Exilus 槽。像普通武器一样配 MOD —— 上面的数字就是这张卡的属性
+  # Custom mod effect kinds (full names; the short forms above are shared).
+  "Critical Chance": 暴击几率
+  "Critical Damage": 暴击伤害
+  "Charge Rate": 蓄力速度
+  "Reload Speed": 装填速度
+  "Magazine Capacity": 弹匣容量
+  "Slash on Critical": 暴击切割
+  "Weak Point Damage": 弱点伤害
+  "Weak Point Critical Chance": 弱点暴击几率
+  "Physical Damage": 物理伤害
+  "Elemental Damage": 元素伤害
+  "Combined Element": 复合元素
+  "Faction Damage": 派系伤害
+  "Conditional Buff": 条件增益
+  "Handling Stat": 操控属性
+  "On Kill: Multishot": 击杀时：多重射击
+  "Condition Overload": 条件超载
+  "On Headshot: Crit Chance": 爆头时：暴击几率
+  "On Headshot Kill: Crit Chance": 爆头击杀时：暴击几率
+  "On Kill: Crit Damage": 击杀时：暴击伤害
+  "On Reload: Fire Rate": 换弹时：射速
+  "On Reload: Damage": 换弹时：伤害
+  "Proc Conversion": 异常转换
+  "On Equip: Handling": 装备时：操控
+  "While Tenno…": 随战甲时…
+  # Custom mod parameter labels.
+  "value": 数值
+  "type": 类型
+  "faction": 派系
+  "bucket": 条件
+  "stat": 属性
+  "per_stack": 每层
+  "max_stacks": 最大层数
+  "duration": 持续时间
+  "bonus": 加成
+  "from": 来源
+  "to": 转为
+  "chance": 几率
+  "low_rate_threshold": 低射速阈值
+  "low_rate_mult": 低射速倍率
+  "recoil": 后坐力
+  "accuracy": 精准度
+  "condition": 条件
+  "inner": 词条
+  # Custom weapon type / trigger options and indirect-stat names.
+  "Primary": 主武器
+  "Secondary": 副武器
+  "Shotgun": 霰弹枪
+  "Archgun": 空战武器
+  "Sentinel": 守护武器
+  "auto": 自动
+  "semi_auto": 半自动
+  "held": 按住
+  "aiming": 瞄准
+  "invisible": 隐形
+  "airborne": 空中
+  "base_damage": 基础伤害
+  "multishot": 多重射击
+  "crit_chance": 暴击几率
+  "crit_damage": 暴击伤害
+  "status_chance": 触发几率
+  "status_damage": 触发伤害
+  "fire_rate": 射速
+  "reload_speed": 装填速度
+  "Recoil": 后坐力
+  "Noise": 噪音
+  "Ammo Max": 备弹上限
+  "Projectile Speed": 弹速
+  "Holstered Reload": 收枪装填
+  "Dodge Speed": 闪避速度
+  "Acrobatic Speed": 杂技速度
+  "Accuracy": 精准度
+  "Punch Through": 穿透
+  "Zoom": 变焦
+  "Range": 范围
+  "Beam Range": 光束范围
+  "Movement Speed": 移动速度
+  "Sprint Speed": 冲刺速度
+  "Ammo Conversion": 弹药转换
+  "Stagger Resist": 失衡抗性
+  "Self Stagger": 自身失衡
+  "Double Jump": 二段跳
+  "Kill Explosion": 击杀爆炸
 
 effect_phrases:
   - ['Ammo Pickup Conversion', '弹药拾取转换']
@@ -524,4 +631,5 @@ effect_phrases:
   - ['\bMagnetic\b', '磁力', 'g']
   - ['\bRadiation\b', '辐射', 'g']
   - ['\bViral\b', '病毒', 'g']
+  - ['\bBase Damage\b', '基础伤害']
   - ['\bDamage\b', '伤害']

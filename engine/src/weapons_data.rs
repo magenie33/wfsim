@@ -256,9 +256,10 @@ fn weakpoint_hits() -> String {
 ///
 /// Fire-rate bonuses shorten the charge in both ("Charge Time = Base Charge
 /// Time / (1 + Mod Bonus)").
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ChargeCadence {
     DrawOnly,
+    #[default]
     DrawThenRate,
 }
 

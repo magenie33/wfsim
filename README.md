@@ -32,7 +32,7 @@ cargo run -p wfsim-web   # web UI → http://localhost:8787
 ## Docs
 
 [Design](docs/CORE.md) · [Mechanics](docs/MECHANICS.md) ·
-[Measurements](docs/MEASUREMENTS.md) · [Data](data/README.md) ·
+[Measurements](docs/MEASUREMENTS.md) · [Custom weapons & mods](docs/CUSTOM.md) · [Data](data/README.md) ·
 [Contributing](CONTRIBUTING.md)
 
 ## License

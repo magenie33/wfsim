@@ -729,10 +729,11 @@ pub struct TimedBuff {
 /// 2026-07-24: "some weapons take it as an independent multiplier, some
 /// fold it into base damage, and some don't benefit at all"; the wiki
 /// CO-mechanic catalog classifies weapons):
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum CoBehavior {
     /// Joins the base-damage bucket (additive with Hornet Strike):
     /// direct hit × (1 + bd + co × types) / (1 + bd).
+    #[default]
     AdditiveWithBaseDamage,
     /// A free-standing final multiplier on direct hits:
     /// direct hit × (1 + co × types).
@@ -743,7 +744,7 @@ pub enum CoBehavior {
 
 /// A weapon's unmodded panel (fixed evolutions folded in — they alter the
 /// weapon's BASE stats before mods).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct WeaponBase {
     /// Indirect stats the WEAPON itself brings, before any mod — today only
     /// EVOLUTIONS write here (Practiced Grip's +50% accuracy, Marksman's
@@ -1910,6 +1911,31 @@ pub fn resolve_for(
         ),
         locked: disabled.to_vec(),
     }
+}
+
+/// Simulation-safety caps on a resolved panel, applied AFTER `resolve` —
+/// the only place the sim reads the numbers. A visitor-authored custom
+/// weapon or mod can drive fire rate / multishot arbitrarily high, and the
+/// engagement loop is pellet-count × fire-rate bound, so an unbounded panel
+/// turns a 10-second fight into minutes of sim. Returns the warnings to
+/// show, one per cap hit.
+pub fn clamp_sim_sensitive(p: &mut ResolvedPanel) -> Vec<String> {
+    const SIM_MAX_FIRE_RATE: f64 = 65536.0;
+    const SIM_MAX_MULTISHOT: f64 = 65536.0;
+    let mut warnings = Vec::new();
+    if p.fire_rate > SIM_MAX_FIRE_RATE {
+        p.fire_rate = SIM_MAX_FIRE_RATE;
+        warnings.push(format!(
+            "fire rate capped at {SIM_MAX_FIRE_RATE}/s for simulation safety"
+        ));
+    }
+    if p.multishot > SIM_MAX_MULTISHOT {
+        p.multishot = SIM_MAX_MULTISHOT;
+        warnings.push(format!(
+            "multishot capped at {SIM_MAX_MULTISHOT} pellets for simulation safety"
+        ));
+    }
+    warnings
 }
 
 #[cfg(test)]

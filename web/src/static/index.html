@@ -114,6 +114,9 @@
         </span>
       </div>
       <div class="bb">
+        <!-- A custom weapon's panel editor lives above its mod slots: the
+             numbers ARE the card, so the form is part of the build page. -->
+        <div id="custom-weapon-form" hidden></div>
         <div id="mod-slots" class="slots"></div>
         <!-- One block, label included: a weapon that has no exilus slot shows
              NOTHING here, rather than a slot-shaped apology. -->
@@ -241,6 +244,16 @@
         <div id="riven-card" class="rv-card"></div>
         <h3 class="sim-h" id="riven-all-h" data-i18n>All rivens <span class="sim-hint" data-i18n>every riven you have made for this weapon, with what it actually rolls</span></h3>
         <div id="riven-all"></div>
+      </div>
+    </section>
+
+    <!-- Block: Custom mods — a card YOU make, consumed by the builder, the
+         simulator and the optimizer exactly like any other mod. -->
+    <section class="block" id="custommods-block">
+      <div class="bh"><span class="n">✦</span><h2 data-i18n>Custom Mods</h2><span class="sub" id="custommods-sub">a card you define by hand — effects combine in the order you list them</span></div>
+      <div class="bb">
+        <div class="cu-tools" id="cm-list"></div>
+        <div id="cm-edit"></div>
       </div>
     </section>
 

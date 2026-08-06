@@ -733,7 +733,11 @@ async function init() {
 // stat columns, and we ship the ground one — so it never reaches a URL.
 // `build_site_app.py`'s `wiki_name` splits on the same " (".
 const wikiWeaponName = (w) => (w.name_en || w.name).split(" (")[0];
-const wikiSlug = (w) => wikiWeaponName(w).replace(/ /g, "_");
+const wikiSlug = (w) => (w.id && isCustomWeaponId(w.id)
+  // A custom weapon's slug IS its slot: five entries, five stable URLs,
+  // immune to the visitor renaming the card.
+  ? w.id.slice("custom:".length)
+  : wikiWeaponName(w).replace(/ /g, "_"));
 const weaponPath = (id) => {
   const w = (META.weapons || []).find((x) => x.id === id);
   return "/weapons/" + (w ? wikiSlug(w) : id);
@@ -758,7 +762,7 @@ function route() {
     importShare(shared);
     return;
   }
-  const m = location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens)?\/?$/);
+  const m = location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/custommods)?\/?$/);
   // A hand-typed URL is not the canonical slug. Fold case and treat spaces
   // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
   // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
@@ -773,14 +777,18 @@ function route() {
   document.body.classList.toggle("on-simulator", mod === "simulator");
   document.body.classList.toggle("on-optimizer", mod === "optimizer");
   document.body.classList.toggle("on-rivens", mod === "rivens");
+  document.body.classList.toggle("on-custommods", mod === "custommods");
   $("home-page").hidden = !!w;
   document.querySelector(".config-page").hidden = !w;
-  const modTitle = { simulator: " · Simulator", optimizer: " · Optimizer", rivens: " · Rivens" }[mod] || "";
+  const modTitle = { simulator: " · Simulator", optimizer: " · Optimizer", rivens: " · Rivens", custommods: " · Custom Mods" }[mod] || "";
+  // The page title and the topbar show the visitor's OWN name for a custom
+  // weapon when they have saved one.
+  const shown = w ? (isCustomWeaponId(w.id) ? (loadCustomWeaponFor(w.id.slice("custom:".length))?.name || w.name) : w.name) : "";
   // The home title carries the SEARCH TERMS, not the headline: nobody looks
   // for "Simulacrum Prime", and the tab/result/share-card is the one place
   // that has to be found rather than enjoyed (user, 2026-07-31). The joke
   // stays on the page, which is where a player meets it.
-  document.title = w ? `${w.name}${modTitle} — WFSim` : "WFSim — Ultimate Warframe Calculator";
+  document.title = w ? `${shown}${modTitle} — WFSim` : "WFSim — Ultimate Warframe Calculator";
   if (w) {
     if ($("weapon").value !== w.id) {
       switchWeapon(w.id);
@@ -789,7 +797,8 @@ function route() {
       `<a class="mtab ${mod === "" ? "sel" : ""}" href="${weaponPath(w.id)}">${tr("Builder")}</a>` +
       `<a class="mtab ${mod === "simulator" ? "sel" : ""}" href="${weaponPath(w.id)}/simulator">${tr("Simulator")}</a>` +
       `<a class="mtab ${mod === "optimizer" ? "sel" : ""}" href="${weaponPath(w.id)}/optimizer">${tr("Optimizer")}</a>` +
-      `<a class="mtab ${mod === "rivens" ? "sel" : ""}" href="${weaponPath(w.id)}/rivens">${tr("Rivens")}</a>`;
+      `<a class="mtab ${mod === "rivens" ? "sel" : ""}" href="${weaponPath(w.id)}/rivens">${tr("Rivens")}</a>` +
+      `<a class="mtab ${mod === "custommods" ? "sel" : ""}" href="${weaponPath(w.id)}/custommods">${tr("Custom Mods")}</a>`;
     // Arriving on the simulator: refresh its build summary (builder edits
     // don't re-render sim views while they are hidden). The SCENARIO is one
     // state shared with the optimizer, so each tab redraws its own copy of
@@ -798,6 +807,7 @@ function route() {
     if (mod === "simulator") renderSim();
     if (mod === "optimizer") { renderOptEnemy(); updateOptEstimate(); }
     if (mod === "rivens") renderRivens();
+    if (mod === "custommods") renderCustomMods();
   } else {
     renderHome();
   }
@@ -805,7 +815,7 @@ function route() {
 
 // The current module's path suffix — weapon switches (search, select,
 // preset load) keep the visitor on the tab they are on.
-const modSuffix = () => (location.pathname.match(/\/(simulator|optimizer|rivens)\/?$/) || [null, ""])[1];
+const modSuffix = () => (location.pathname.match(/\/(simulator|optimizer|rivens|custommods)\/?$/) || [null, ""])[1];
 const weaponModPath = (id) => weaponPath(id) + (modSuffix() ? "/" + modSuffix() : "");
 
 // The home grid groups by EQUIPMENT SLOT in loadout order (user, 2026-07-30):
@@ -822,6 +832,9 @@ const SLOT_LABEL = { primary: "Primary", secondary: "Secondary", melee: "Melee",
 function renderHome() {
   const grid = $("weapon-grid");
   if (!grid) return;
+  // A custom weapon's card shows the visitor's own NAME for it — the meta
+  // entry carries the neutral default, the editor's saved name overrides it.
+  const displayName = (w) => (isCustomWeaponId(w.id) ? (loadCustomWeaponFor(w.id.slice("custom:".length))?.name || w.name) : w.name);
   const card = (w) => {
     const tags = [
       `<span class="tag">${w.subtype || w.mod_class}</span>`,
@@ -831,7 +844,7 @@ function renderHome() {
     return `<a class="wcard" href="/weapons/${wikiSlug(w)}">
       ${imgTag(IMG(w.image), "wc-img")}
       <div class="wc-info">
-        <div class="wc-name">${w.name}</div>
+        <div class="wc-name">${displayName(w)}</div>
         <div class="wc-tags">${tags}</div>
       </div>
     </a>`;
@@ -918,7 +931,7 @@ async function refreshRivenNames() {
   const out = {};
   for (const p of ps) {
     try {
-      const r = await api("/api/riven", { weapon: $("weapon").value, ...(p.state || {}) });
+      const r = await api("/api/riven", { weapon: $("weapon").value, custom_weapon: customWeaponPayload(), ...(p.state || {}) });
       out[p.name] = { name: r.name || "", lines: (r.stats || []).map((s) => s.text) };
     } catch (_) { /* a name is a nicety; the riven still equips */ }
   }
@@ -936,6 +949,187 @@ let rivenPickerSlot = null;
 
 /// Everything equippable on this weapon: the pool, plus this weapon's rivens.
 const poolWithRivens = () => currentPool.concat(rivenMods());
+
+// ---- Custom mods / custom weapon (visitor-authored) -----------------------
+//
+// Two independent editors, each producing what the three modules consume:
+// custom MODS ride the pool like rivens do; a custom WEAPON is a panel the
+// visitor types by hand, carried inline with every request. Both follow the
+// customs rules (AGENTS.md): the card exists only on the machine that made
+// it, so it travels with the request; nothing is sent anywhere else.
+const CUSTOM_PREFIX = "custom:";
+const isCustomId = (id) => typeof id === "string" && id.startsWith(CUSTOM_PREFIX);
+const isCustomWeaponId = (id) => typeof id === "string" && id.startsWith("custom:");
+const CUSTOMMODS = "custommods";   // preset domain, per weapon like the rivens
+
+/// The 31 effect kinds a custom mod card may carry, each with the fields it
+/// reads. `singleton` kinds resolve by overwriting, so the editors allow at
+/// most one of each per card. Ratios are × factors (1.65 = +165%) and the
+/// engine caps the band at ±100 (= ±10000%); more is written by repeating.
+const CUSTOM_KINDS = [
+  { kind: "base_damage", fields: ["value"], label: "Base Damage" },
+  { kind: "multishot", fields: ["value"], label: "Multishot" },
+  { kind: "crit_chance", fields: ["value"], label: "Critical Chance" },
+  { kind: "crit_damage", fields: ["value"], label: "Critical Damage" },
+  { kind: "status_chance", fields: ["value"], label: "Status Chance" },
+  { kind: "fire_rate", fields: ["value"], label: "Fire Rate" },
+  { kind: "charge_rate", fields: ["value"], label: "Charge Rate" },
+  { kind: "reload_speed", fields: ["value"], label: "Reload Speed" },
+  { kind: "status_damage", fields: ["value"], label: "Status Damage" },
+  { kind: "status_duration", fields: ["value"], label: "Status Duration" },
+  { kind: "magazine_capacity", fields: ["value"], label: "Magazine Capacity" },
+  { kind: "slash_on_crit", fields: ["value"], label: "Slash on Critical" },
+  { kind: "blast_radius", fields: ["value"], label: "Blast Radius" },
+  { kind: "weakpoint_damage", fields: ["value"], label: "Weak Point Damage" },
+  { kind: "weakpoint_crit_chance", fields: ["value"], label: "Weak Point Critical Chance" },
+  { kind: "physical", fields: ["type", "value"], label: "Physical Damage" },
+  { kind: "element", fields: ["type", "value"], label: "Elemental Damage" },
+  { kind: "combined_element", fields: ["type", "value"], label: "Combined Element" },
+  { kind: "faction_damage", fields: ["faction", "value"], label: "Faction Damage" },
+  { kind: "cond_buff", fields: ["bucket", "value"], label: "Conditional Buff" },
+  { kind: "indirect", fields: ["stat", "value"], label: "Handling Stat" },
+  { kind: "on_kill_multishot", fields: ["per_stack", "max_stacks", "duration"], label: "On Kill: Multishot", singleton: true },
+  { kind: "condition_overload", fields: ["per_stack", "max_stacks", "duration"], label: "Condition Overload", singleton: true },
+  { kind: "on_headshot_crit_chance", fields: ["bonus", "duration"], label: "On Headshot: Crit Chance", singleton: true },
+  { kind: "on_headshot_kill_crit_chance", fields: ["per_stack", "max_stacks", "duration"], label: "On Headshot Kill: Crit Chance", singleton: true },
+  { kind: "on_kill_crit_damage", fields: ["bonus", "duration"], label: "On Kill: Crit Damage", singleton: true },
+  { kind: "on_reload_fire_rate", fields: ["bonus", "duration"], label: "On Reload: Fire Rate", singleton: true },
+  { kind: "on_reload_damage", fields: ["bonus", "duration"], label: "On Reload: Damage", singleton: true },
+  { kind: "proc_conversion", fields: ["from", "to", "chance", "low_rate_threshold", "low_rate_mult"], label: "Proc Conversion", singleton: true },
+  { kind: "on_equip_handling", fields: ["recoil", "accuracy", "duration"], label: "On Equip: Handling" },
+  { kind: "while_tenno", fields: ["condition", "inner"], label: "While Tenno…", singleton: true },
+];
+const CUSTOM_KIND_BY_ID = Object.fromEntries(CUSTOM_KINDS.map((k) => [k.kind, k]));
+const CUSTOM_DMG_TYPES = ["Impact", "Puncture", "Slash", "Heat", "Cold", "Electricity", "Toxin"];
+const CUSTOM_IPS_TYPES = ["Impact", "Puncture", "Slash"];
+const CUSTOM_ELEMENT_TYPES = ["Heat", "Cold", "Electricity", "Toxin"];
+const CUSTOM_COMBINED_TYPES = ["Blast", "Corrosive", "Gas", "Magnetic", "Radiation", "Viral"];
+const CUSTOM_FACTIONS = ["Grineer", "Corpus", "Infested", "Corrupted", "Murmur", "Sentient"];
+const CUSTOM_COND_BUCKETS = ["base_damage", "multishot", "crit_chance", "crit_damage", "status_chance", "status_damage", "fire_rate", "reload_speed"];
+const CUSTOM_INDIRECT_STATS = { recoil: "Recoil", noise: "Noise", ammo_max: "Ammo Max", projectile_speed: "Projectile Speed", holstered_reload: "Holstered Reload", dodge_speed: "Dodge Speed", acrobatic_speed: "Acrobatic Speed", accuracy: "Accuracy", punch_through: "Punch Through", zoom: "Zoom", range: "Range", beam_range: "Beam Range", movement_speed: "Movement Speed", sprint_speed: "Sprint Speed", ammo_conversion: "Ammo Conversion", stagger_resist: "Stagger Resist", self_stagger: "Self Stagger", double_jump: "Double Jump", kill_explosion: "Kill Explosion" };
+const CUSTOM_CAP = (s) => s ? s[0].toUpperCase() + s.slice(1) : "";
+
+let customModCache = { key: null, list: [] };
+/// The saved custom mods of the CURRENT weapon, shaped like mods so every
+/// list, picker and slot that already understands a mod understands these.
+function customMods() {
+  const w = $("weapon").value;
+  const raw = normalizeCustomModKinds(loadPresetList(CUSTOMMODS));
+  const key = w + "|" + JSON.stringify(raw);
+  if (customModCache.key === key) return customModCache.list;
+  const list = raw.map((p) => {
+    const st = p.state || {};
+    return {
+      id: CUSTOM_PREFIX + p.name,
+      name: p.name,
+      name_en: p.name,
+      subtype: "Custom",
+      image: null,
+      rarity: "legendary",
+      polarity: st.polarity || "madurai",
+      drain: st.base_drain ?? 10,
+      max_rank: 0,
+      exilus: !!st.exilus,
+      family: null,
+      // Every printed value is searchable: names and effect lines alike.
+      effects: (st.effects || []).map((e) => customEffectLine(e)),
+      __spec: st,
+      riven: false,
+      custom: true,
+    };
+  });
+  customModCache = { key, list };
+  return list;
+}
+
+/// One effect's human line, e.g. "Base Damage ×1.65". Fed into searchBlob,
+/// so a card is found by its values as well as its name.
+function customEffectLine(e) {
+  const def = CUSTOM_KIND_BY_ID[e.kind];
+  if (!def) return e.kind;
+  const num = (k) => (e[k] != null ? `×${+e[k].toFixed(2)}` : "");
+  const pct = (k) => (e[k] != null ? `${Math.round(e[k] * 100)}%` : "");
+  const base = def.label;
+  const parts = [];
+  if (e.type) parts.push(DT(e.type));
+  if (e.faction) parts.push(tr(CUSTOM_CAP(e.faction)));
+  if (e.bucket) parts.push(tr(e.bucket));
+  if (e.stat) parts.push(CUSTOM_INDIRECT_STATS[e.stat] || tr(e.stat));
+  if (e.condition) parts.push(tr(e.condition));
+  // The While-Tenno inner effect renders as its own line, parenthesised.
+  if (e.inner && e.inner.kind) parts.push(`(${customEffectLine(e.inner)})`);
+  if (e.chance != null) parts.push(`${Math.round(e.chance * 100)}%`);
+  if (e.max_stacks != null) parts.push(`${e.max_stacks} stacks`);
+  if (e.duration != null) parts.push(`${+e.duration.toFixed(1)}s`);
+  if (e.low_rate_threshold != null) parts.push(`low rate <${Math.round(e.low_rate_threshold * 100)}%`);
+  if (e.low_rate_mult != null) parts.push(`×${+e.low_rate_mult.toFixed(2)}`);
+  // Ratio fields print like a roster mod card: 1.65 reads as +165%.
+  if (e.value != null) parts.push(`+${Math.round(e.value * 100)}%`);
+  if (e.bonus != null) parts.push(`+${Math.round(e.bonus * 100)}%`);
+  if (e.per_stack != null) parts.push(`+${Math.round(e.per_stack * 100)}%/stack`);
+  if (e.recoil != null) parts.push(`recoil ×${+e.recoil.toFixed(2)}`);
+  if (e.accuracy != null) parts.push(`accuracy ×${+e.accuracy.toFixed(2)}`);
+  if (e.from) parts.push(`→ ${CUSTOM_CAP(e.from)}`);
+  if (e.to) parts.push(`→ ${CUSTOM_CAP(e.to)}`);
+  return [base, ...parts].join(" ");
+}
+
+const poolWithCustom = () => poolWithRivens().concat(customMods());
+
+// One-time migration for cards saved BEFORE the effect-kind <select> carried
+// an explicit value: the option's value was then the translated label
+// (触发几率 instead of status_chance), which the server cannot resolve. The
+// label→id map is the CUSTOM_KINDS table run through the active language, so
+// this also repairs any hand-typed zh label. Writes back so the bad value
+// stops travelling.
+function normalizeCustomModKinds(list) {
+  let changed = false;
+  for (const p of list) {
+    for (const e of (p.state && p.state.effects) || []) {
+      if (typeof e.kind === "string" && !CUSTOM_KIND_BY_ID[e.kind]) {
+        // The label may be stored in EITHER language — the saved option was
+        // the translated text when the i18n pass ran, the english label in
+        // older builds. Match both before giving up.
+        const hit = CUSTOM_KINDS.find((d) => tr(d.label) === e.kind || d.label === e.kind);
+        if (hit) { e.kind = hit.kind; changed = true; }
+      }
+      // Pre-value-fix cards also stored parameter ids in their pretty form
+      // ("Toxin", "Recoil"); the server resolves lowercase ids only.
+      ["type", "from", "to", "stat"].forEach((k) => {
+        if (typeof e[k] === "string" && e[k] !== e[k].toLowerCase()) { e[k] = e[k].toLowerCase(); changed = true; }
+      });
+    }
+  }
+  if (changed) storePresetList(CUSTOMMODS, list);
+  return list;
+}
+
+// ---- Custom weapon state (request-local) ----------------------------------
+const CUSTOM_SLOTS_UI = ["primary", "secondary", "shotgun", "archgun", "sentinel"];
+const customWeaponSlot = () => String($("weapon").value).slice("custom:".length);
+const customWeaponKey = (slot) => "wfsim-customs-" + slot + "-customweapon";
+function loadCustomWeapon() {
+  const slot = customWeaponSlot();
+  try { return JSON.parse(localStorage.getItem(customWeaponKey(slot)) || "null"); } catch { return null; }
+}
+function saveCustomWeapon(cw) {
+  localStorage.setItem(customWeaponKey(customWeaponSlot()), JSON.stringify(cw));
+  renderCustomWeaponForm();
+  refreshPanel();
+}
+const blankCustomWeapon = (slot) => ({
+  type: slot, name: "Custom " + CUSTOM_CAP(slot), trigger: "auto", disposition: 1.0,
+  panel: { impact: 10, puncture: 50, slash: 40, heat: 0, cold: 0, electricity: 0, toxin: 0,
+    blast: 0, corrosive: 0, gas: 0, magnetic: 0, radiation: 0, viral: 0,
+    crit_chance: 0.25, crit_damage: 2.0, status_chance: 0.2, fire_rate: 8.0, multishot: 1.0,
+    magazine: 50, reload: 2.0, ammo_reserve: 500, ammo_cost: 1 },
+});
+const isCustomWeapon = () => isCustomWeaponId($("weapon").value);
+const customWeapon = () => (isCustomWeapon() ? (loadCustomWeapon() || blankCustomWeapon(customWeaponSlot())) : null);
+/// The custom weapon definition riding the request, if the current weapon is
+/// one. Everything the backend needs — panel, disposition, trigger, name.
+const customWeaponPayload = () => (isCustomWeapon() ? customWeapon() : null);
+
 
 /// The mod ids a set of EVOLUTIONS takes off the weapon.
 ///
@@ -959,13 +1153,13 @@ const forbiddenByEvos = (sel) => {
 /// that do not, and which is which is decided per candidate by the engine.
 const buildPool = () => {
   const no = forbiddenByEvos();
-  return poolWithRivens().filter((m) => !no.has(m.id));
+  return poolWithCustom().filter((m) => !no.has(m.id));
 };
 /// What may go in the EXILUS slot. Both modules ask this one function: the
 /// builder used `poolWithRivens()` and the optimizer `currentPool`, which
 /// agreed only because no riven is exilus-eligible — a coincidence, not a
 /// rule, and the sort that stops being true without anyone noticing.
-const exilusPool = () => poolWithRivens().filter((m) => m.exilus);
+const exilusPool = () => poolWithCustom().filter((m) => m.exilus);
 
 /// THE WEAPON'S BUILD AXES — one description, read by BOTH modules.
 ///
@@ -1043,7 +1237,7 @@ function weaponAxes(weaponId) {
   const w = weaponInfo(weaponId || $("weapon").value) || {};
   const exilus = w.sentinel ? [] : exilusPool();
   return {
-    mods: poolWithRivens(),
+    mods: poolWithCustom(),
     exilus,
     hasExilus: exilus.length > 0,
     // One entry per arcane pool, in the weapon's own pool order.
@@ -1197,7 +1391,7 @@ async function resolveRiven(pending) {
   try {
     // `pending` carries a typed VALUE for one slot; the server turns it into
     // the roll it implies, clamped, so the formula stays in one place.
-    const body = { weapon: $("weapon").value, ...riven };
+    const body = { weapon: $("weapon").value, custom_weapon: customWeaponPayload(), ...riven };
     if (pending) {
       const clone = JSON.parse(JSON.stringify(body));
       if (pending.slot === "malus") clone.malus.value = pending.value;
@@ -1716,6 +1910,290 @@ function renderRivenTools() {
   });
 }
 
+// ---- Custom mods editor ------------------------------------------------
+//
+// List + editor, following the Rivens precedent: the list is the per-weapon
+// collection, the editor writes one card at a time through `storePresetList`
+// (auto-save, undo, import all come from that one call).
+const cmList = () => $("cm-list");
+const cmEdit = () => $("cm-edit");
+const cmActive = () => { const e = cmEdit(); return e && e.dataset.name; };
+
+function renderCustomMods() {
+  const list = normalizeCustomModKinds(loadPresetList(CUSTOMMODS));
+  const box = cmList();
+  if (!box) return;
+  box.innerHTML =
+    `<div class="rv-head"><b>${tr("Custom mods")}</b>` +
+    `<button class="btn" onclick="customNewCard()">${tr("+ new custom mod")}</button></div>` +
+    (list.length ? list.map((p) =>
+      `<div class="cm-card ${cmActive() === p.name ? "sel" : ""}" onclick="customOpenCard('${escAttr(p.name)}')">` +
+      `<div class="cm-card-name">${escHtml(p.name)}` +
+      `<span class="cm-card-meta">${POL_LETTER[((p.state && p.state.polarity) || "madurai")[0].toUpperCase()] || "M"} · ${(p.state && (p.state.base_drain ?? 10))} ${tr("drain")}${p.state && p.state.exilus ? " · " + tr("exilus") : ""}</span></div>` +
+      `<div class="cm-card-me">${((p.state && p.state.effects) || []).map((e) => `<div>${escHtml(tf(customEffectLine(e)))}</div>`).join("")}</div>` +
+      `</div>`).join("") :
+      `<div class="rv-empty">${tr("No custom mods yet — make one to equip it like any other mod.")}</div>`);
+}
+
+function customNewCard() {
+  const list = loadPresetList(CUSTOMMODS);
+  const name = freeName(list, (n) => "Custom Mod " + n);
+  const card = { name, state: { polarity: "madurai", base_drain: 10, exilus: false, effects: [{ kind: "base_damage", value: 1.65 }] } };
+  storePresetList(CUSTOMMODS, list.concat(card));
+  renderCustomMods();
+  customOpenCard(name);
+}
+
+function customDeleteCard() {
+  const name = cmActive();
+  if (!name) return;
+  const list = loadPresetList(CUSTOMMODS).filter((p) => p.name !== name);
+  storePresetList(CUSTOMMODS, list);
+  customModCache = { key: null, list: [] };
+  renderCustomMods();
+  renderMods();
+  refreshPanel();
+}
+
+function customOpenCard(name) {
+  const list = loadPresetList(CUSTOMMODS);
+  const card = list.find((p) => p.name === name);
+  const box = cmEdit();
+  if (!card || !box) return;
+  box.dataset.name = name;
+  const st = card.state;
+  const fieldInput = (e, k, type, step) => {
+    const v = e[k] != null ? e[k] : "";
+    if (type === "select") {
+      return `<select class="cm-f" data-f="${k}">${(step).map((o) => `<option ${v === o ? "selected" : ""}>${o}</option>`).join("")}</select>`;
+    }
+    return `<input class="cm-f" type="number" step="${step || "any"}" value="${v}" data-f="${k}">`;
+  };
+  box.innerHTML =
+    `<div class="cm-toolbar"><b>${escHtml(name)}</b>` +
+    `<button class="btn" onclick="customDeleteCard()">${tr("Delete")}</button></div>` +
+    `<div class="cm-grid">` +
+    `<label class="cu-param"><span>${tr("Name")}</span><input class="cm-f" value="${escAttr(name)}" data-k="name"></label>` +
+    `<label class="cu-param"><span>${tr("Polarity")}</span><select class="cm-f" data-k="polarity">` +
+    ["madurai", "vazarin", "naramon", "umbra"].map((p) => `<option ${st.polarity === p ? "selected" : ""}>${p}</option>`).join("") + `</select></label>` +
+    `<label class="cu-param"><span>${tr("Drain")}</span><input class="cm-f" type="number" min="0" max="100" value="${st.base_drain ?? 10}" data-k="base_drain"></label>` +
+    `<label class="cu-param"><span>${tr("Exilus")}</span><select class="cm-f" data-k="exilus">` +
+    `<option ${st.exilus ? "selected" : ""} value="true">${tr("yes")}</option><option ${!st.exilus ? "selected" : ""} value="false">${tr("no")}</option></select></label>` +
+    `</div><div class="cm-effects">${customEffectRows(st.effects)}</div>` +
+    `<div class="cm-actions"><button class="btn" onclick="customAddEffect()">${tr("+ effect")}</button></div>`;
+  // bind
+  box.querySelectorAll("[data-k]").forEach((el) => el.onchange = () => {
+    const k = el.dataset.k;
+    if (k === "name") {
+      // A card's name IS its id — renaming onto an existing card would put
+      // two definitions under one id. Revert the field instead.
+      if (loadPresetList(CUSTOMMODS).some((p) => p.name === el.value && p.name !== name)) {
+        el.value = name;
+      } else {
+        card.name = el.value;
+        box.dataset.name = el.value;
+      }
+    }
+    else if (k === "base_drain") st.base_drain = Math.max(0, Math.min(100, Number(el.value) || 0));
+    else if (k === "exilus") st.exilus = el.value === "true";
+    else st[k] = el.value;
+    customSaveCard(card);
+  });
+}
+
+function customEffectRows(effects) {
+  const usedSingletons = new Set(effects.filter((e) => CUSTOM_KIND_BY_ID[e.kind] && CUSTOM_KIND_BY_ID[e.kind].singleton).map((e) => e.kind));
+  return effects.map((e, i) => {
+    const def = CUSTOM_KIND_BY_ID[e.kind];
+    const fields = def ? def.fields : ["value"];
+    const num = (k, min, max, step) => `<input class="cm-f" type="number" ${min != null ? `min="${min}"` : ""} ${max != null ? `max="${max}"` : ""} step="${step || "any"}" value="${e[k] ?? ""}" data-e="${i}" data-f="${k}">`;
+    // Option VALUES are the lowercase engine ids the server resolves
+    // ("toxin", "recoil"); the label stays the pretty/translated name.
+    const sel = (k, opts, disp) => `<select class="cm-f" data-e="${i}" data-f="${k}">${opts.map((o) => {
+      const val = String(o).toLowerCase();
+      const cur = String(e[k] ?? "").toLowerCase();
+      return `<option value="${escAttr(val)}" ${cur === val ? "selected" : ""}>${escHtml((disp || tr)(String(o)))}</option>`;
+    }).join("")}</select>`;
+    const statDisp = (k) => CUSTOM_INDIRECT_STATS[k] || tr(k);
+    const fieldOf = (k) => {
+      switch (k) {
+        case "type": return e.kind === "physical" ? sel("type", CUSTOM_IPS_TYPES, DT)
+          : e.kind === "combined_element" ? sel("type", CUSTOM_COMBINED_TYPES, DT)
+          : sel("type", CUSTOM_ELEMENT_TYPES, DT);
+        case "from": return sel("from", CUSTOM_ELEMENT_TYPES, DT);
+        case "to": return sel("to", CUSTOM_ELEMENT_TYPES, DT);
+        case "faction": return sel("faction", CUSTOM_FACTIONS);
+        case "bucket": return sel("bucket", CUSTOM_COND_BUCKETS);
+        case "stat": return sel("stat", Object.keys(CUSTOM_INDIRECT_STATS), statDisp);
+        case "condition": return sel("condition", ["aiming", "invisible", "airborne"]);
+        case "inner": {
+          // The While-Tenno inner is a whole (simple ratio) effect. Nest one
+          // row of kind+value; the change handler writes e.inner.{kind,value}.
+          const inn = e.inner && e.inner.kind;
+          return `<span class="cm-inner">` +
+            `<select class="cm-f" data-e="${i}" data-f="inner.kind">` +
+            CUSTOM_KINDS.filter((d) => d.fields.length === 1 && d.fields[0] === "value").map((d) =>
+              `<option value="${d.kind}" ${inn === d.kind ? "selected" : ""}>${escHtml(tr(d.label))}</option>`).join("") +
+            `</select>` +
+            `<input class="cm-f" type="number" step="any" value="${e.inner && e.inner.value != null ? e.inner.value : ""}" data-e="${i}" data-f="inner.value">` +
+            `</span>`;
+        }
+        case "chance": return num("chance", 0, 1, 0.01);
+        case "max_stacks": return num("max_stacks", 0, 1000000, 1);
+        case "duration": return num("duration", 0, 1000000, 0.1);
+        default:
+          // Ratio fields share the ±100 (±10000%) band; the low-rate
+          // threshold is a fraction 0..1 like chance.
+          if (k === "value" || k === "bonus" || k === "per_stack" || k === "low_rate_mult") return num(k, -100, 100, 0.01);
+          if (k === "low_rate_threshold") return num(k, 0, 1, 0.01);
+          return num(k);
+      }
+    };
+    return `<div class="cm-row"><select class="cm-f cm-kind" data-e="${i}" data-f="kind">` +
+      CUSTOM_KINDS.map((k) => `<option value="${k.kind}" ${k.kind === e.kind ? "selected" : ""} ${k.singleton && usedSingletons.has(k.kind) && k.kind !== e.kind ? "disabled" : ""}>${escHtml(tr(k.label))}</option>`).join("") +
+      `</select>${fields.map((f) => fieldOf(f)).join("")}` +
+      `<button class="btn cm-up" ${i === 0 ? "disabled" : ""} onclick="customMoveEffect(${i}, -1)">↑</button>` +
+      `<button class="btn cm-dn" ${i === effects.length - 1 ? "disabled" : ""} onclick="customMoveEffect(${i}, 1)">↓</button>` +
+      `<button class="btn cm-del" onclick="customRemoveEffect(${i})">✕</button></div>`;
+  }).join("");
+}
+
+function customAddEffect() {
+  const name = cmActive();
+  if (!name) return;
+  const card = loadPresetList(CUSTOMMODS).find((p) => p.name === name);
+  if (!card) return;
+  card.state.effects.push({ kind: "multishot", value: 0.9 });
+  customSaveCard(card);
+  customOpenCard(name);
+}
+
+function customMoveEffect(i, d) {
+  const name = cmActive();
+  if (!name) return;
+  const card = loadPresetList(CUSTOMMODS).find((p) => p.name === name);
+  if (!card) return;
+  const j = i + d;
+  if (j < 0 || j >= card.state.effects.length) return;
+  const es = card.state.effects;
+  [es[i], es[j]] = [es[j], es[i]];
+  customSaveCard(card);
+  customOpenCard(name);
+}
+
+function customRemoveEffect(i) {
+  const name = cmActive();
+  if (!name) return;
+  const card = loadPresetList(CUSTOMMODS).find((p) => p.name === name);
+  if (!card) return;
+  card.state.effects.splice(i, 1);
+  if (!card.state.effects.length) card.state.effects = [{ kind: "base_damage", value: 1.0 }];
+  customSaveCard(card);
+  customOpenCard(name);
+}
+
+// Effect-field edits land here; the row's kind switch is a select, so it
+// delegates too. Save + redraw keeps the singletons' disabled state honest.
+function customSaveCard(card) {
+  const list = loadPresetList(CUSTOMMODS);
+  const i = list.findIndex((p) => p.name === card.name);
+  if (i < 0) list.push(card); else list[i] = card;
+  storePresetList(CUSTOMMODS, list);
+  customModCache = { key: null, list: [] };
+  renderCustomMods();
+  renderMods();
+  refreshPanel();
+}
+// Effect-row edits (kind/field) — delegated, since rows are re-rendered.
+document.addEventListener("change", (ev) => {
+  const el = ev.target;
+  if (!el.classList || !el.classList.contains("cm-f") || el.dataset.e == null) return;
+  const name = cmActive();
+  if (!name) return;
+  const card = loadPresetList(CUSTOMMODS).find((p) => p.name === name);
+  if (!card) return;
+  const e = card.state.effects[+el.dataset.e];
+  if (!e) return;
+  const k = el.dataset.f, v = el.value;
+  if (k === "kind") e.kind = v;
+  else if (k.startsWith("inner.")) {
+    const sub = k.slice("inner.".length);
+    e.inner = e.inner || {};
+    e.inner[sub] = el.type === "number" ? Number(v) : v;
+  }
+  else if (el.type === "number") e[k] = Number(v);
+  else e[k] = v;
+  customSaveCard(card);
+  if (k === "kind" || k === "inner.kind") customOpenCard(name);
+});
+
+// ---- Custom weapon editor (embedded in the builder) ---------------------
+//
+// One custom weapon per equipment slot; the panel is typed by hand and
+// travels inline with every request. The editor lives ON the build page —
+// above the mod slots, where the numbers they feed are right there — not in
+// its own tab. The weapon's NAME is the visitor's own; the id stays the
+// stable slug.
+function renderCustomWeaponForm() {
+  const box = $("custom-weapon-form");
+  if (!box) return;
+  if (!isCustomWeapon()) { box.hidden = true; box.innerHTML = ""; return; }
+  box.hidden = false;
+  const slot = customWeaponSlot();
+  const cw = loadCustomWeaponFor(slot) || blankCustomWeapon(slot);
+  const p = cw.panel;
+  const f = (k, label, v, step, min, max) => `<label class="cu-param"><span>${escHtml(tr(label))}</span><input class="cw-f" type="number" ${min != null ? `min="${min}"` : ""} ${max != null ? `max="${max}"` : ""} step="${step || "any"}" value="${escAttr(v)}" data-slot="${slot}" data-k="${k}"></label>`;
+  const sel = (k, label, opts, v, disp) => `<label class="cu-param"><span>${escHtml(tr(label))}</span><select class="cw-f" data-slot="${slot}" data-k="${k}">${opts.map((o) => `<option value="${escAttr(String(o))}" ${v === o ? "selected" : ""}>${escHtml((disp || tr)(o))}</option>`).join("")}</select></label>`;
+  box.innerHTML =
+    `<div class="cw-head"><b>${escHtml(tr("Custom weapon panel"))}</b>` +
+    `<span class="cw-hint">${escHtml(tr("your own numbers — no hidden passives, no evolutions; carried with the request"))}</span></div>` +
+    `<div class="cw-grid">` +
+    sel("type", "Type", CUSTOM_SLOTS_UI, cw.type, (o) => tr(CUSTOM_CAP(o))) +
+    sel("trigger", "Trigger", ["auto", "semi_auto", "held"], cw.trigger) +
+    f("name", "Name", cw.name) +
+    f("disposition", "Disposition", cw.disposition, 0.05, 0.5, 1.55) +
+    `</div><div class="cw-grid">` +
+    f("impact", DT("Impact"), p.impact) + f("puncture", DT("Puncture"), p.puncture) + f("slash", DT("Slash"), p.slash) +
+    f("heat", DT("Heat"), p.heat) + f("cold", DT("Cold"), p.cold) + f("electricity", DT("Electricity"), p.electricity) + f("toxin", DT("Toxin"), p.toxin) +
+    `</div><div class="cw-grid">` +
+    f("blast", DT("Blast"), p.blast) + f("corrosive", DT("Corrosive"), p.corrosive) + f("gas", DT("Gas"), p.gas) +
+    f("magnetic", DT("Magnetic"), p.magnetic) + f("radiation", DT("Radiation"), p.radiation) + f("viral", DT("Viral"), p.viral) +
+    `</div><div class="cw-grid">` +
+    f("crit_chance", "Crit Chance", p.crit_chance, 0.01, 0, 1) + f("crit_damage", "Crit Damage", p.crit_damage, 0.01, 0, 100) +
+    f("status_chance", "Status Chance", p.status_chance, 0.01, 0, 1) + f("fire_rate", "Fire Rate", p.fire_rate, 0.1, 0.001, 1000) +
+    f("multishot", "Multishot", p.multishot, 0.1, 0.001, 100) + f("magazine", "Magazine", p.magazine, 1, 1) +
+    f("reload", "Reload", p.reload, 0.1, 0.001) + f("ammo_reserve", "Ammo Reserve", p.ammo_reserve) + f("ammo_cost", "Ammo / shot", p.ammo_cost, 0.1, 0) +
+    `</div><div class="cw-note">${escHtml(tr("Slots are fixed 8 + 1 exilus. Mod it like any weapon — the numbers above ARE the card."))}</div>`;
+}
+
+function loadCustomWeaponFor(slot) {
+  try { return JSON.parse(localStorage.getItem(customWeaponKey(slot)) || "null"); } catch { return null; }
+}
+
+function customWeaponOpen(slot) {
+  // Retained for the shared change-handler; the form is the embedded one.
+  renderCustomWeaponForm();
+}
+
+document.addEventListener("change", (ev) => {
+  const el = ev.target;
+  if (!el.classList || !el.classList.contains("cw-f")) return;
+  const slot = el.dataset.slot;
+  if (!slot) return;
+  const cw = loadCustomWeaponFor(slot) || blankCustomWeapon(slot);
+  const k = el.dataset.k;
+  if (k === "name") cw.name = el.value;
+  else if (k === "disposition") cw.disposition = Math.max(0.5, Math.min(1.55, Number(el.value) || 0.5));
+  else if (k === "type" || k === "trigger") cw[k] = el.value;
+  else cw.panel[k] = Number(el.value) || 0;
+  localStorage.setItem(customWeaponKey(slot), JSON.stringify(cw));
+  renderCustomWeaponForm();
+  // The open form re-renders from the just-saved value, so the field the
+  // visitor is typing into keeps focus-free behaviour (values persist).
+  customWeaponOpen(slot);
+  refreshPanel();
+});
+
 // ---- SHARING — a link that reproduces the whole thing ------------------
 //
 // The principle (user, 2026-08-02): everything travels, and nothing has to be
@@ -1876,7 +2354,12 @@ function sharePayload() {
   const r = p && p.lastResult && p.lastResult.r;
   const m = r ? [r3(r.score), r.duration, Math.round(r.dps || 0)] : 0;
 
-  return [2, st.weapon, activePreset, slots9, arcs, evos, rivens, sc, m];
+  return [2, st.weapon, activePreset, slots9, arcs, evos, rivens, sc, m,
+    // field 10: the custom mod cards of this weapon, definitions whole;
+    // field 11: the custom weapon panel, if this IS one.
+    loadPresetList(CUSTOMMODS).map((p) => ({ name: p.name, state: p.state })),
+    customWeaponPayload(),
+  ];
 }
 
 const r3 = (x) => Math.round((Number(x) || 0) * 1000) / 1000;
@@ -1898,7 +2381,7 @@ async function decodeShare(code) {
   const json = code[0] === SHARE_V_DEFLATE ? await inflate(bytes) : bytes;
   const data = JSON.parse(new TextDecoder().decode(json));
   if (!Array.isArray(data)) return v1Share(data);      // links posted before v2
-  const [, weapon, name, slots9, arcs, evos, rivens, sc, m] = data;
+  const [, weapon, name, slots9, arcs, evos, rivens, sc, m, customs, custom_weapon] = data;
   return {
     w: weapon,
     n: name,
@@ -1920,6 +2403,8 @@ async function decodeShare(code) {
     })),
     sc: expandScenario(sc || {}),
     m: m ? { score: m[0], duration: m[1], dps: m[2] } : null,
+    customs: (customs || []).map((x) => ({ name: x.name, state: x.state || {} })),
+    custom_weapon: custom_weapon || null,
   };
 }
 
@@ -1975,6 +2460,28 @@ async function importShare(code) {
     refreshRivenNames();
   }
 
+  // 1b. CUSTOM MODS: the cards travel whole (field 10); import them into
+  //     THIS weapon's domain, renaming on collision so the slot ids below
+  //     can be repointed. Same rule as the rivens: a shared card lands here
+  //     as a copy, never as a reference to someone else's machine.
+  const renamedCustom = {};
+  if ((data.customs || []).length) {
+    const cur = loadPresetList(CUSTOMMODS);
+    data.customs.forEach((x) => {
+      let nm = x.name;
+      if (cur.some((p) => p.name === nm)) nm = freeName(cur, (n) => x.name + " " + n);
+      renamedCustom[x.name] = nm;
+      cur.push({ name: nm, state: x.state || {} });
+    });
+    storePresetList(CUSTOMMODS, cur);
+    customModCache = { key: null, list: [] };
+  }
+  // 1c. CUSTOM WEAPON: a shared custom-weapon page carries its panel whole
+  //     (field 11) — land it in that slot's domain before the build lands.
+  if (data.custom_weapon && isCustomWeaponId(w.id)) {
+    localStorage.setItem(customWeaponKey(w.id.slice("custom:".length)), JSON.stringify(data.custom_weapon));
+  }
+
   // 2. The SCENARIO, as its own new entry — the fight the number was measured
   //    in is half of what makes the number checkable. Only the differences
   //    travelled, so the defaults fill the rest back in.
@@ -2004,6 +2511,10 @@ async function importShare(code) {
     if (isRivenId(s.mod)) {                       // v1 links
       const was = String(s.mod).slice(RIVEN_PREFIX.length);
       return { ...s, mod: RIVEN_PREFIX + (renamed[was] || was) };
+    }
+    if (isCustomId(s.mod)) {                      // a custom card imported above
+      const was = String(s.mod).slice(CUSTOM_PREFIX.length);
+      return { ...s, mod: CUSTOM_PREFIX + (renamedCustom[was] || was) };
     }
     if (!modById(s.mod)) { dropped.push(s.mod); return { mod: null, pol: s.pol, rank: null }; }
     return s;
@@ -3016,6 +3527,7 @@ function restoreState(st, weapon) {
 const kpm = (score, duration) => (duration > 0 ? ((score || 0) * 60) / duration : 0);
 
 const escHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const escAttr = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 // Decimal formatting with a SIGNIFICANCE floor (user, 2026-07-29): two
 // decimals normally, but a very small number grows decimals until it
@@ -3754,7 +4266,7 @@ const evoOpenTo = () => {
   for (const t of weaponEvos()) { if (!evoSel[t.tier]) break; n = t.tier; }
   return n + 1; // the deepest tier that may be chosen
 };
-const modById = (id) => poolWithRivens().find((m) => m.id === id);
+const modById = (id) => poolWithCustom().find((m) => m.id === id);
 const show = (id, on) => { const el = $(id); if (on) el.removeAttribute("hidden"); else el.setAttribute("hidden", ""); };
 // Where (other than exceptIdx) this mod is currently slotted, or -1.
 const placedAt = (id, exceptIdx) => slots.findIndex((s, i) => i !== exceptIdx && s.mod === id);
@@ -3863,6 +4375,9 @@ function applyWeaponInner(id, presetMods) {
   autoForma(); // sensible default: minimum-Forma polarities for the preset
 
   renderMods(); renderArcanes(); renderEvo(); renderSim(); renderOpt();
+  // A custom weapon shows its panel editor above the mod slots; any other
+  // weapon hides it (renderCustomWeaponForm flips the container).
+  renderCustomWeaponForm();
 }
 
 // ---- forma / capacity plan (mirrors engine::mods::plan_forma) ----
@@ -4005,6 +4520,10 @@ function buildPayload() {
     // A `riven:` id means nothing without the riven itself — it is the
     // visitor's item, not a pool entry, so it rides along with the request.
     rivens: rivenPayload(),
+    // Same rule for custom content: the card's DEFINITION travels (the mods
+    // array above names it), and a custom weapon's panel travels whole.
+    custom_mods: normalizeCustomModKinds(loadPresetList(CUSTOMMODS)).map((p) => ({ name: p.name, ...(p.state || {}) })),
+    custom_weapon: customWeaponPayload(),
   };
 }
 
@@ -4016,7 +4535,7 @@ let panelKey = null;
 /// The build, as a value. Same idea as `simKey`: a key DERIVED from the state,
 /// never a hand-listed set of things that ought to trigger a refresh.
 const buildKey = () =>
-  JSON.stringify([$("weapon").value, slots, arcanes, arcaneRanks, evoSel, rivenPayload()]);
+  JSON.stringify([$("weapon").value, slots, arcanes, arcaneRanks, evoSel, rivenPayload(), customWeaponPayload(), loadPresetList(CUSTOMMODS)]);
 
 /// THE PANEL REFRESHES BECAUSE THE BUILD CHANGED, not because a control
 /// remembered to say so.
@@ -4249,7 +4768,7 @@ function buildSlot(i) {
       : "";
     // The configured mod shows its CURRENT description (values at the
     // slot's rank), exactly like the in-game card.
-    const desc = m.desc_ranks || officialDesc(m, r) ? cardLines(m, r) : null;
+    const desc = m.desc_ranks || officialDesc(m, r) || (m.effects && m.effects.length) ? cardLines(m, r) : null;
     el.innerHTML = polBtn(s.pol, i) + imgTag(IMG(m.image), "mod") +
       `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div>${desc ? `<div class="me">${desc.map((x) => `<div>${x}</div>`).join("")}</div>` : ""}<div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div>` +
       `<button class="dots" title="options">⋯</button>`;
@@ -6074,10 +6593,12 @@ async function fetchAllBuffs() {
   const AX = weaponAxes(w);
   const r = await api("/api/opt-buffs", {
     weapon: w,
+    custom_weapon: customWeaponPayload(),
     mods: mark([...AX.mods.map((m) => m.id), ...AX.exilus.map((m) => m.id)]),
     arcanes: mark(AX.arcanes.flatMap((a) => a.options.map((x) => x.id))),
     evolutions: Object.fromEntries(AX.evolutions.map((t, i) => [i, t.options.map((o) => o.id)])),
     rivens: rivenPayload(),
+    custom_mods: normalizeCustomModKinds(loadPresetList(CUSTOMMODS)).map((p) => ({ name: p.name, ...(p.state || {}) })),
   });
   allBuffList = r && r.ok ? r.buffs || [] : [];
   allBuffWeapon = w;
@@ -7233,7 +7754,7 @@ function renderOptModList() {
   // Exilus mods are IN this list too — all 9 slots accept them (game rule),
   // so marking one here makes it compete for a MAIN slot; the exilus SLOT
   // has its own block below.
-  const hits = poolWithRivens()
+  const hits = poolWithCustom()
     .filter((m) => !optPrefs.pol || m.polarity === optPrefs.pol)
     .filter((m) => !q || searchBlob(m).includes(q))
     .sort((a, b) => {
@@ -7425,8 +7946,10 @@ async function runOptimize() {
     });
     const body = {
       weapon: $("weapon").value,
+      custom_weapon: customWeaponPayload(),
       mods: opt.mods,
       rivens: rivenPayload(),
+      custom_mods: normalizeCustomModKinds(loadPresetList(CUSTOMMODS)).map((p) => ({ name: p.name, ...(p.state || {}) })),
       build_size: opt.size,
       build_min: opt.min,
       arcanes: arcs,

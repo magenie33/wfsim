@@ -24,6 +24,8 @@ use wfsim_optimizer::{
 };
 use wfsim_engine::dummy::Summary;
 
+mod custom;
+
 // ---- Enemy library (the engine's embedded data/enemies/**) -------------
 // Single source of truth: the same data/ files the CLI and optimizer read,
 // embedded by the engine's build script. The UI lists the classics first;
@@ -67,6 +69,7 @@ fn assets() -> &'static Assets {
 // forms, and whether it is a sentinel (BaseOnly resolution — Galvanized
 // conditionals never fire).
 
+#[derive(Clone)]
 struct WeaponInfo {
     id: String,
     name: String,
@@ -154,7 +157,7 @@ fn weapons() -> &'static [WeaponInfo] {
     use std::sync::OnceLock;
     static W: OnceLock<Vec<WeaponInfo>> = OnceLock::new();
     W.get_or_init(|| {
-        wfsim_engine::weapons_data::roster()
+        let mut v: Vec<WeaponInfo> = wfsim_engine::weapons_data::roster()
             .map(|s| {
                 let sentinel = s.class.contains("sentinel");
                 let incarnon = s.transforms_to.is_some();
@@ -193,7 +196,12 @@ fn weapons() -> &'static [WeaponInfo] {
                     uses_evo2: incarnon,
                 }
             })
-            .collect()
+            .collect();
+    // The five visitor-authored weapons are weapons like any other: the
+    // roster's ids, then the custom ones — so `weapon()` and `meta_json`
+    // answer for `custom:*` with no branch of their own.
+    v.extend(custom::custom_weapon_infos().iter().cloned());
+    v
     })
 }
 
@@ -211,11 +219,17 @@ fn wspec(id: &str) -> &'static wfsim_engine::weapons_data::WeaponSpec {
 
 /// The transform group's second-form entry (the Incarnon form), if any.
 fn incarnon_id(info: &WeaponInfo) -> Option<&'static str> {
+    if custom::is_custom_id(&info.id) {
+        return None; // a custom weapon has no Incarnon form
+    }
     wspec(&info.id).transforms_to.as_deref()
 }
 
 /// Evolutions-data key for this weapon: the transform group name.
 fn evo_group(info: &WeaponInfo) -> &'static str {
+    if custom::is_custom_id(&info.id) {
+        return ""; // no evolutions data; an empty key answers nothing
+    }
     let s = wspec(&info.id);
     s.transform_group.as_deref().unwrap_or(&s.id)
 }
@@ -231,6 +245,9 @@ fn evo_group(info: &WeaponInfo) -> &'static str {
 /// pool, not by assuming that: a stat evolution that ever changed a trigger
 /// would be answered correctly without a line changing here.
 fn evo_forbids(info: &WeaponInfo) -> serde_json::Map<String, Value> {
+    if custom::is_custom_id(&info.id) {
+        return serde_json::Map::new(); // no evolutions, so nothing forbids anything
+    }
     let bare = wfsim_engine::mods_data::pool_for_weapon(&info.id);
     let group = evo_group(info);
     let mut out = serde_json::Map::new();
@@ -313,6 +330,9 @@ fn default_headshot_pct(info: &WeaponInfo) -> f64 {
 
 /// Whether the weapon's data declares the Frenzy perk (data/perks/).
 fn has_frenzy(info: &WeaponInfo) -> bool {
+    if custom::is_custom_id(&info.id) {
+        return false; // a custom weapon has no hidden passives
+    }
     wspec(&info.id).perks.iter().any(|p| p.id() == "frenzy")
 }
 
@@ -329,14 +349,19 @@ fn default_weapon_id() -> &'static str {
 ///
 /// `evos` is the build's chosen evolutions — the pool is a question about the
 /// weapon AS CONFIGURED, not about the weapon.
-fn mod_pool_for(weapon_id: &str, evos: &[&str]) -> Vec<ModDef> {
+fn mod_pool_for(weapon_id: &str, evos: &[&str], trigger: &str) -> Vec<ModDef> {
+    // A custom weapon has no data entry — its pool is the slot's union,
+    // filtered by the visitor's chosen trigger (held/semi_auto families).
+    if let Some(slot) = custom::custom_slot_of(weapon_id) {
+        return custom::custom_pool_for(slot, trigger);
+    }
     wfsim_engine::mods_data::pool_for_build(weapon_id, evos)
 }
 
 /// A mod id that must outlive the request. Riven ids are made from a name the
 /// visitor typed, so they cannot be `&'static` on their own — interning keeps
 /// one copy per distinct id instead of leaking a fresh one per keystroke.
-fn intern(s: String) -> &'static str {
+pub(crate) fn intern(s: String) -> &'static str {
     use std::sync::{Mutex, OnceLock};
     static POOL: OnceLock<Mutex<std::collections::HashSet<&'static str>>> = OnceLock::new();
     let set = POOL.get_or_init(|| Mutex::new(std::collections::HashSet::new()));
@@ -404,6 +429,10 @@ fn mod_not_here(id: &str, weapon: &WeaponInfo, evos: &[&str]) -> String {
 /// not a second weapon (user, 2026-08-01). Absent or unknown leaves the
 /// weapon on its own column, which is the one its fields state.
 fn base_for(v: &Value, id: &str, evos: &[&str]) -> WeaponBase {
+    if custom::is_custom_id(id) {
+        // A custom weapon's panel IS the base; every entry validated it.
+        return custom::custom_weapon_from(v).expect("custom weapon validated at every entry");
+    }
     let mut b = WeaponBase::from_data(id, true, evos);
     let dep = get_str(v, "deployment", "");
     if !dep.is_empty() {
@@ -477,7 +506,7 @@ fn rivens_from(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
                             _ => wfsim_engine::mods::Polarity::Madurai,
                         },
                     };
-                    Some(spec.to_mod_def(intern(format!("riven:{name}")), info.disposition))
+                    Some(spec.to_mod_def(intern(format!("riven:{name}")), custom::disposition_of(v, info)))
                 })
                 .collect()
         })
@@ -503,10 +532,33 @@ fn riven_class(info: &WeaponInfo) -> String {
 }
 
 /// The build's pool PLUS the request's own rivens.
-fn mod_pool_with_rivens(v: &Value, info: &WeaponInfo, evos: &[&str]) -> Vec<ModDef> {
-    let mut p = mod_pool_for(&info.id, evos);
+fn mod_pool_with_rivens(v: &Value, info: &WeaponInfo, evos: &[&str]) -> Result<Vec<ModDef>, String> {
+    let mut p = mod_pool_for(&info.id, evos, &custom::custom_trigger(v)?);
     p.extend(rivens_from(v, info));
-    p
+    Ok(p)
+}
+
+/// The build's pool PLUS the request's own rivens AND its custom cards.
+/// The one pool every entry resolves mods against, so a custom card equips,
+/// searches and optimizes exactly like a roster mod.
+fn mod_pool_with_custom(
+    v: &Value,
+    info: &WeaponInfo,
+    evos: &[&str],
+) -> Result<Vec<ModDef>, String> {
+    let mut p = mod_pool_with_rivens(v, info, evos)?;
+    // A custom weapon with no ammo reserve has no ammo pool — the AmmoMax-
+    // only mods (their whole card is capacity) drop out, same rule the roster
+    // applies. `custom_weapon_from` was validated at the entry, so this is a
+    // cheap re-read for the one fact the pool needs.
+    if custom::custom_slot_of(&info.id).is_some() {
+        let cw = custom::custom_weapon_from(v)?;
+        if cw.ammo_reserve <= 0.0 {
+            p.retain(|m| !custom::only_ammo_max(m));
+        }
+    }
+    p.extend(custom::custom_mods_from(v)?);
+    Ok(p)
 }
 
 // 8 main slots (innate polarities from the weapon yaml) + the exilus slot
@@ -685,10 +737,19 @@ pub fn meta_json() -> Value {
                 // sentinel weapons, ammo mods off an infinite reserve: neither
                 // reached the builder or the optimizer). `pool_for_weapon` is
                 // now the only place that decides, and this is it speaking.
-                "mods": wfsim_engine::mods_data::pool_for_weapon(&w.id)
-                    .iter()
-                    .map(|m| m.id)
-                    .collect::<Vec<_>>(),
+                // A custom weapon has no data entry — its pool is the slot's
+                // union, and meta must say so or the picker opens empty.
+                "mods": if let Some(slot) = custom::custom_slot_of(&w.id) {
+                    custom::custom_pool_for(slot, "auto")
+                        .iter()
+                        .map(|m| m.id)
+                        .collect::<Vec<_>>()
+                } else {
+                    wfsim_engine::mods_data::pool_for_weapon(&w.id)
+                        .iter()
+                        .map(|m| m.id)
+                        .collect::<Vec<_>>()
+                },
                 // ...and which of them each EVOLUTION takes away. An equip rule
                 // is asked of every firing mode a weapon has, and installing the
                 // Incarnon form adds one — so Dual Toxocyst wears a Cannonade
@@ -1018,6 +1079,12 @@ pub fn meta_json() -> Value {
 pub fn riven_json(v: &Value) -> Value {
     use wfsim_engine::rivens_data::{RivenSpec, RolledStat};
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
+    // A custom weapon's panel IS the request — refuse an invalid one early.
+    if custom::is_custom_id(&info.id) {
+        if let Err(e) = custom::custom_weapon_from(v) {
+            return err_json(e);
+        }
+    }
     let class = riven_class(info);
     // A slot may carry a `roll` OR a `value`. `value` is what you type off a
     // riven you already own; it is turned into the roll it implies and
@@ -1053,8 +1120,13 @@ pub fn riven_json(v: &Value) -> Value {
         },
     };
     let evo_refs: Vec<&str> = Vec::new();
-    let base = WeaponBase::from_data(&info.id, true, &evo_refs);
-    let disposition = info.disposition;
+    let base = if custom::is_custom_id(&info.id) {
+        // The entry validated the panel; the riven arithmetic needs its base.
+        custom::custom_weapon_from(v).expect("custom weapon validated at every entry")
+    } else {
+        WeaponBase::from_data(&info.id, true, &evo_refs)
+    };
+    let disposition = custom::disposition_of(v, info);
     let n_pos = spec.bonuses.len();
     // A typed VALUE overrides the roll, once the stat is known.
     let mut spec = spec;
@@ -1611,6 +1683,12 @@ fn frenzy_lock_mode(cfg: Option<&(u32, bool)>) -> LockMode {
 
 pub fn panel_json(v: &Value) -> Value {
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
+    // A custom weapon's panel IS the request — refuse an invalid one early.
+    if custom::is_custom_id(&info.id) {
+        if let Err(e) = custom::custom_weapon_from(v) {
+            return err_json(e);
+        }
+    }
     let policy = if info.sentinel {
         StackPolicy::BaseOnly
     } else {
@@ -1638,7 +1716,10 @@ pub fn panel_json(v: &Value) -> Value {
     if let Err(e) = riven_stat_ids_ok(v, info) {
         return err_json(e);
     }
-    let p = mod_pool_with_rivens(v, info, &evo_refs);
+    let p = match mod_pool_with_custom(v, info, &evo_refs) {
+        Ok(p) => p,
+        Err(e) => return err_json(e),
+    };
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
     for id in &mod_ids {
         match p.iter().find(|m| m.id == id) {
@@ -1655,18 +1736,29 @@ pub fn panel_json(v: &Value) -> Value {
     // so a bow's section says "Charged Shot" instead of the "Base Form" every
     // weapon's first section used to be called.
     let mut forms_list: Vec<(&'static str, String, WeaponBase)> = Vec::new();
-    for f in wfsim_engine::weapons_data::forms_of(&info.id) {
-        // A gauge-switched form exists only while its tier-1 unlock is chosen.
-        if f.kind.is_gauge_switched()
-            && !form_unlock_evo(info).is_some_and(|u| evo_refs.contains(&u))
-        {
-            continue;
-        }
+    if custom::is_custom_id(&info.id) {
+        // A custom weapon has no data entry and no evolutions — exactly one
+        // form, the visitor's own panel. `forms_of` would return an empty
+        // list and the `forms_list[0]` reads below would panic.
         forms_list.push((
-            f.kind.label(),
-            attack_desc(wspec(f.weapon_id)),
-            base_for(v, f.weapon_id, &evo_refs),
+            "Custom",
+            "Custom".to_string(),
+            custom::custom_weapon_from(v).expect("custom weapon validated at every entry"),
         ));
+    } else {
+        for f in wfsim_engine::weapons_data::forms_of(&info.id) {
+            // A gauge-switched form exists only while its tier-1 unlock is chosen.
+            if f.kind.is_gauge_switched()
+                && !form_unlock_evo(info).is_some_and(|u| evo_refs.contains(&u))
+            {
+                continue;
+            }
+            forms_list.push((
+                f.kind.label(),
+                attack_desc(wspec(f.weapon_id)),
+                base_for(v, f.weapon_id, &evo_refs),
+            ));
+        }
     }
 
     // ---- per-bucket source attribution (mirrors resolve()'s buckets) ----
@@ -2668,6 +2760,12 @@ pub(crate) struct Fight {
 pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // ---- parse inputs ----
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
+    // A custom weapon's panel IS the request — refuse an invalid one early.
+    if custom::is_custom_id(&info.id) {
+        if let Err(e) = custom::custom_weapon_from(v) {
+            return Err(err_json(e));
+        }
+    }
     // Per-buff configured policy (Sim panel section 2). Present ⇒ Emergent sim
     // with each buff carrying its own initial stacks + lock. Absent ⇒ the
     // legacy `assume_max`/`frenzy` knobs (byte-for-byte with the old path).
@@ -2871,7 +2969,10 @@ pub fn simulate_json(v: &Value) -> Value {
     // that form installed has a second firing mode — so a Cannonade equipped
     // beside it is a build the game refuses, and the sim must say so rather than
     // report a number nobody can reproduce.
-    let p = mod_pool_with_rivens(v, info, &evo_refs);
+    let p = match mod_pool_with_custom(v, info, &evo_refs) {
+        Ok(p) => p,
+        Err(e) => return err_json(e),
+    };
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
     for id in &mod_ids {
         match p.iter().find(|m| m.id == id) {
@@ -2917,8 +3018,15 @@ pub fn simulate_json(v: &Value) -> Value {
     // for the rule (docs/INVESTMENT.md). `fit` owns the whole question: the
     // rank the Forma buy, the capacity that gives, and the bill by item.
     let inv = wfsim_engine::mods::Investment::default();
+    // A custom weapon has no rank ladder; it gets the rank-30 answer the
+    // old fixed 60-capacity used to be (docs/INVESTMENT.md).
+    let max_rank = if custom::is_custom_id(&info.id) {
+        30
+    } else {
+        wspec(&info.id).max_rank
+    };
     let forma = match wfsim_engine::mods::fit(
-        wspec(&info.id).max_rank,
+        max_rank,
         &innate_slots_for(&info.id),
         &planned,
         inv,
@@ -2940,7 +3048,14 @@ pub fn simulate_json(v: &Value) -> Value {
     // Either ONE registered form, or the real two-form cycle (which needs the
     // gauge form and the form it transforms out of, so it resolves both).
     let (report_panel, mut params): (ResolvedPanel, DummyParams) = {
-        let panel_of = |id: &str| resolve_for(&base_for(v, id, &evo_refs), &refs, policy, &tenno);
+        let panel_of = |id: &str| {
+            let mut b = resolve_for(&base_for(v, id, &evo_refs), &refs, policy, &tenno);
+            // Sim defence: fire_rate/multishot beyond what the sim can walk
+            // in reasonable time are capped with a warning, never let through
+            // to a multi-billion-iteration main loop (docs/CUSTOM.md "Safety").
+            wfsim_engine::loadout::clamp_sim_sensitive(&mut b);
+            b
+        };
         if run_cycle {
             let incarnon_panel = panel_of(incarnon_id(info).unwrap_or(&info.id));
             let base_panel = panel_of(&info.id);
@@ -2984,7 +3099,11 @@ pub fn simulate_json(v: &Value) -> Value {
     // stats; `requires` gates on the weapon traits (Akimbo Slip Shot). Under
     // the sim's Emergent policy the non-simmable conditionals are honest
     // no-ops (same rule as mods' CondBuff).
-    let ab = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &evo_refs);
+    let ab = if custom::is_custom_id(&info.id) {
+        custom::custom_weapon_from(v).expect("custom weapon validated at every entry")
+    } else {
+        WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &evo_refs)
+    };
     params.arcane = arcane_fx_for(v, info, &ab, policy);
     // ---- apply the per-buff configured policy onto the live specs ----
     // (weapon-scoped: recurses into the incarnon cycle's base form). Frenzy is
@@ -3238,6 +3357,12 @@ fn s_name(specs: &[EnemySpec], id: &str) -> String {
 // candidate where present.
 pub fn opt_buffs_json(v: &Value) -> Value {
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
+    // A custom weapon's panel IS the request — refuse an invalid one early.
+    if custom::is_custom_id(&info.id) {
+        if let Err(e) = custom::custom_weapon_from(v) {
+            return err_json(e);
+        }
+    }
     fn merge(out: &mut Vec<BuffMeta>, list: Vec<BuffMeta>) {
         for b in list {
             if !out.iter().any(|x| x.id == b.id) {
@@ -3262,14 +3387,21 @@ pub fn opt_buffs_json(v: &Value) -> Value {
     // The WIDEST pool (nothing installed): this lists the buffs a scope could
     // produce, and a mod only some evolution variants can equip still produces
     // its buff in the variants that can.
-    let full = mod_pool_with_rivens(v, info, &[]);
+    let full = match mod_pool_with_custom(v, info, &[]) {
+        Ok(full) => full,
+        Err(e) => return err_json(e),
+    };
     let refs: Vec<&ModDef> = full
         .iter()
         .filter(|m| ids.iter().any(|id| id.as_str() == m.id))
         .collect();
     let mut out: Vec<BuffMeta> = Vec::new();
     let none = wfsim_engine::arcanes_data::ArcaneFx::none();
-    let arc_base = WeaponBase::from_data(&info.id, true, &[]);
+    let arc_base = if custom::is_custom_id(&info.id) {
+        custom::custom_weapon_from(v).expect("custom weapon validated at every entry")
+    } else {
+        WeaponBase::from_data(&info.id, true, &[])
+    };
     let tenno = tenno_from(v, info);
     merge(&mut out, enumerate_buffs(&refs, &none, info, &tenno));
     // The scope is a MARK MAP (id -> "search" | "fixed"), the same shape as
@@ -3314,6 +3446,10 @@ pub fn opt_buffs_json(v: &Value) -> Value {
 /// Everything the heavy phase needs, validated up front.
 pub struct OptimizePlan {
     weapon_id: String,
+    /// A custom weapon's panel, materialized once at parse time so the
+    /// enumeration and the replay use the SAME base. The roster weapons
+    /// rebuild theirs from data on every deploy.
+    custom_base: Option<WeaponBase>,
     pool: Vec<ModDef>,
     constraints: Constraints,
     min_slots: usize,
@@ -3400,7 +3536,10 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // The WIDEST pool (nothing installed). Evolutions are a search DIMENSION, so
     // a mod can be legal in one variant and not in the next — which variant is
     // decided per candidate, below, not by narrowing the scope here.
-    let full = mod_pool_with_rivens(v, info, &[]);
+    let full = match mod_pool_with_custom(v, info, &[]) {
+        Ok(full) => full,
+        Err(e) => return Err(err_json(e)),
+    };
     for id in fixed_ids.iter().chain(search_ids.iter()) {
         if !full.iter().any(|m| m.id == id.as_str()) {
             return Err(err_json(mod_not_here(id, info, &[])));
@@ -3529,9 +3668,14 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // The tier COUNT is per weapon (DT 4, Laetum 5) — read it from the data.
     let evo_req = v.get("evolutions").and_then(|x| x.as_object());
     let mut evo_sets: Vec<Vec<String>> = vec![Vec::new()];
-    let evo_tiers = wfsim_engine::evolutions_data::tier_count(
-        wspec(&info.id).transform_group.as_deref().unwrap_or(&info.id),
-    );
+    // A custom weapon has no evolutions; a 0-tier group is the empty set.
+    let evo_tiers = if custom::is_custom_id(&info.id) {
+        0
+    } else {
+        wfsim_engine::evolutions_data::tier_count(
+            wspec(&info.id).transform_group.as_deref().unwrap_or(&info.id),
+        )
+    };
     for tier in 1u32..=evo_tiers {
         let opts: Vec<Option<String>> = evo_req
             .and_then(|o| o.get(&tier.to_string()))
@@ -3589,7 +3733,9 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         .iter()
         .map(|set| {
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-            mod_pool_with_rivens(v, info, &refs)
+            // The request's custom cards were validated by the `full` pass
+            // above; re-parsing here cannot fail.
+            mod_pool_with_custom(v, info, &refs).unwrap_or_default()
         })
         .collect();
     // Per variant, which SCOPE indices it cannot equip — the shape the walk
@@ -3643,7 +3789,11 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
                 .collect()
         })
         .unwrap_or_default();
-    let arc_base = WeaponBase::from_data(&info.id, true, &[]);
+    let arc_base = if custom::is_custom_id(&info.id) {
+        custom::custom_weapon_from(v).expect("custom weapon validated at every entry")
+    } else {
+        WeaponBase::from_data(&info.id, true, &[])
+    };
     // The FIGHT's player, not a second one built the same way. Identical today
     // — same function, same request — which is exactly why it was easy to leave
     // and exactly why it should not be: two constructions of one fact is how
@@ -3798,6 +3948,12 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
 
     Ok(OptimizePlan {
         weapon_id: info.id.clone(),
+        custom_base: if custom::is_custom_id(&info.id) {
+            // parse_fight validated the panel; pin it once for every deploy.
+            Some(custom::custom_weapon_from(v).expect("custom weapon validated in parse_fight"))
+        } else {
+            None
+        },
         pool,
         constraints,
         min_slots,
@@ -3901,6 +4057,7 @@ pub fn grade_optimize(
         Err(e) => return e,
     };
     let OptimizePlan {
+        custom_base,
         pool,
         constraints,
         min_slots,
@@ -3926,7 +4083,11 @@ pub fn grade_optimize(
     let innate = wfsim_engine::weapons_data::innate_slots(&info.id);
     let exilus_refs: Vec<Option<&ModDef>> = exilus_defs.iter().map(|o| o.as_ref()).collect();
     let deployed = |id: &str, refs: &[&str]| {
-        let mut b = WeaponBase::from_data(id, true, refs);
+        let mut b = if let Some(cb) = &custom_base {
+            cb.clone() // a custom weapon's base is the pinned panel, not roster data
+        } else {
+            WeaponBase::from_data(id, true, refs)
+        };
         if !deployment.is_empty() {
             wfsim_engine::weapons_data::apply_deployment(&mut b, id, &deployment);
         }
@@ -4199,6 +4360,7 @@ pub fn run_optimize_resumable(
     on_board: Option<&BoardSink<'_>>,
 ) -> Value {
     let OptimizePlan {
+        custom_base,
         pool,
         constraints,
         min_slots,
@@ -4244,7 +4406,11 @@ pub fn run_optimize_resumable(
     // Every base the worker builds sits in the run's DEPLOYMENT, so a search
     // scores the same environment the sim would replay it in.
     let deployed = |id: &str, refs: &[&str]| {
-        let mut b = WeaponBase::from_data(id, true, refs);
+        let mut b = if let Some(cb) = &custom_base {
+            cb.clone() // a custom weapon's base is the pinned panel, not roster data
+        } else {
+            WeaponBase::from_data(id, true, refs)
+        };
         if !deployment.is_empty() {
             wfsim_engine::weapons_data::apply_deployment(&mut b, id, &deployment);
         }
@@ -4698,6 +4864,11 @@ mod asset_tests {
         let a = assets();
         let mut missing: Vec<String> = Vec::new();
         for w in weapons() {
+            // A visitor-authored weapon has no DE art — the UI shows a
+            // neutral placeholder for it, so the asset-coverage rule skips it.
+            if custom::is_custom_id(&w.id) {
+                continue;
+            }
             if !a.weapons.contains_key(&w.id) {
                 missing.push(format!("weapon {}", w.id));
             }
@@ -5224,5 +5395,84 @@ mod equip_rule_tests {
         // it out instead of letting the run be refused after the fact.
         let forms = w["forms"].as_array().unwrap();
         assert_eq!(forms.iter().filter(|f| f["gauge_switched"] == json!(true)).count(), 1);
+    }
+}
+
+// ---- custom feature tests -------------------------------------------------
+
+#[cfg(test)]
+mod custom_tests {
+    use super::*;
+    use serde_json::json;
+
+    fn custom_weapon_req() -> Value {
+        json!({"custom_weapon": {
+            "type": "primary",
+            "panel": {"impact": 100, "viral": 100, "fire_rate": 8, "multishot": 1},
+        }})
+    }
+
+    #[test]
+    fn custom_weapon_panel_resolves_and_simulates() {
+        let v = custom_weapon_req();
+        let base = custom::custom_weapon_from(&v).expect("valid panel");
+        assert_eq!(base.base_vector.total(), 200.0);
+        assert_eq!(base.base_fire_rate, 8.0);
+        assert_eq!(base.base_multishot, 1.0);
+        // A custom weapon is a single form, no cycle, no hidden perks.
+        let info = weapon("custom:primary");
+        assert!(custom::is_custom_id(&info.id));
+        assert!(incarnon_id(info).is_none());
+        assert!(!has_frenzy(info));
+    }
+
+    #[test]
+    fn custom_panel_rejects_bad_input() {
+        assert!(custom::custom_weapon_from(&json!({"custom_weapon": {"panel": {"impact": -1}}})).is_err());
+        assert!(custom::custom_weapon_from(&json!({"custom_weapon": {"panel": {"impact": 1e20}}})).is_err());
+        assert!(custom::custom_weapon_from(&json!({"custom_weapon": {"panel": {"impact": 1, "fire_rate": 0}}})).is_err());
+        assert!(custom::custom_weapon_from(&json!({"custom_weapon": {"panel": {"impact": 1, "fire_rate": 1}, "disposition": 9}})).is_err());
+    }
+
+    #[test]
+    fn custom_mod_effects_parse_and_combine_in_order() {
+        // Toxin then Electricity on one card → Viral (the combine pairs the
+        // mod-order elements two at a time).
+        let v = json!({"custom_mods": [{
+            "name": "seq", "polarity": "madurai", "base_drain": 10, "exilus": false,
+            "effects": [{"kind": "element", "type": "toxin", "value": 1.0}, {"kind": "element", "type": "electricity", "value": 1.0}]
+        }]});
+        let mods = custom::custom_mods_from(&v).expect("card parses");
+        assert_eq!(mods.len(), 1);
+        assert!(matches!(mods[0].effects[0], ModEffect::Element(wfsim_engine::damage::DamageType::Toxin, _)));
+        // Repeatable: two cards of the same kind are allowed (no family).
+        assert_eq!(mods[0].family, None);
+    }
+
+    #[test]
+    fn custom_mod_rejects_unknown_kind_and_singletons() {
+        let bad_kind = json!({"custom_mods": [{
+            "name": "x", "polarity": "madurai", "base_drain": 10, "exilus": false,
+            "effects": [{"kind": "does_not_exist", "value": 1.0}]
+        }]});
+        assert!(custom::custom_mods_from(&bad_kind).is_err());
+        // Two trigger singletons of the same kind are refused.
+        let dup = json!({"custom_mods": [{
+            "name": "x", "polarity": "madurai", "base_drain": 10, "exilus": false,
+            "effects": [{"kind": "condition_overload", "per_stack": 0.4, "max_stacks": 10, "duration": 10},
+                         {"kind": "condition_overload", "per_stack": 0.4, "max_stacks": 10, "duration": 10}]
+        }]});
+        assert!(custom::custom_mods_from(&dup).is_err());
+    }
+
+    #[test]
+    fn clamp_sim_sensitive_caps_extremes() {
+        let mut p = resolve(&WeaponBase::default(), &[], StackPolicy::AssumedMax);
+        p.fire_rate = 1e9;
+        p.multishot = 1e9;
+        let w = wfsim_engine::loadout::clamp_sim_sensitive(&mut p);
+        assert_eq!(p.fire_rate, 65536.0);
+        assert_eq!(p.multishot, 65536.0);
+        assert_eq!(w.len(), 2);
     }
 }
