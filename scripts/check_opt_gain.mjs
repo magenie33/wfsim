@@ -85,11 +85,19 @@ const script = [
   "    const row = el && el.closest('.opt');",
   "    return row ? { gain: (row.querySelector('.gainchip')||{}).innerText || null,",
   "                   note: (row.querySelector('.pairnote')||{}).innerText || null } : null; };",
+  // The other two axes are marked the same way and asked the same question,
+  // so they have to answer it too (user, 2026-08-06: "mod/arcane/evo").
+  "  const anyChip = (sel, name) => [...document.querySelectorAll(sel + ' .opt')]",
+  "    .filter(r => (r.querySelector('.mn')||{}).innerText.includes(name))",
+  "    .map(r => (r.querySelector('.gainchip')||{}).innerText || null)[0] || null;",
   "  return { done: optGain.done, total: optGain.total, base: optGain.base,",
   "           orders: optGain.orders.length, rows,",
   "           hellfire: chip('hellfire'), infected: chip('infected_clip'),",
   "           storm: chip('stormbringer'), serration: chip('serration'),",
-  "           wildfire: chip('wildfire') };",
+  "           wildfire: chip('wildfire'),",
+  "           arcaneScanned: [...document.querySelectorAll('#opt-arcanes .gainchip')].length,",
+  "           evoOpen: anyChip('#opt-evos', 'Forceful Finality'),",
+  "           evoLocked: anyChip('#opt-evos', 'Extended Volley') };",
   "})()",
 ].join("\n");
 const r = await send("Runtime.evaluate", { expression: script, awaitPromise: true, returnByValue: true });
@@ -141,6 +149,19 @@ check("a second mod of an element the build already has POOLS, and says nothing"
 // is unchanged and that row is silent too — the innate is the reason.
 check("dropping a mod whose element the WEAPON also carries changes no pairing",
   v.hellfire.note === null, JSON.stringify(v.hellfire));
+
+// ALL THREE AXES, because all three are marked the same way and the question
+// asked of them is the same one. Arcanes and evolutions carry no element, so
+// they never move a pairing — what they need is simply to be scanned at all.
+check("the arcane axis is scanned too",
+  v.arcaneScanned > 0, `${v.arcaneScanned} arcane chips`);
+check("an evolution the LADDER has opened carries a number",
+  !!v.evoOpen, JSON.stringify(v.evoOpen));
+// ...and one it has not is left alone. Scanning a locked tier would rank a
+// perk the builder will not let you click, measured on a build that cannot
+// exist — the rule `check_gain_axes` asserts of the builder's own scan.
+check("a tier the ladder has NOT opened is not ranked",
+  v.evoLocked === null, JSON.stringify(v.evoLocked));
 
 ws.close(); proc.kill(); srv.close();
 console.log(bad ? `\n${bad} failed` : "\nthe optimizer's quick calc names its pairings");

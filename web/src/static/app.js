@@ -4771,23 +4771,71 @@ function optWinnerMods() {
 const optGainKey = () => JSON.stringify([$("weapon").value, opt.mods, optRefEvos(),
   optGain.mode, optWinnerMods(), gainScenario().scenario]);
 
-/// Every mod the optimizer's list can show a chip for, as the ONE set that
-/// differs from the reference: a required mod drops itself, everything else
-/// adds itself.
-function optGainCandidates(ref) {
+/// The reference build's ARCANES: what the scope pins in each pool, and
+/// nothing where it pins nothing — "no arcane" is a real state, not a gap.
+function optRefArcanes() {
+  return weaponAxes().arcanes.map((ax) => arcanePinnedIn(ax.pool) || "none");
+}
+
+/// Every option the optimizer can show a chip for — mods, ARCANES and
+/// EVOLUTIONS alike, because all three are marked the same way and the
+/// question asked of them is the same one (user, 2026-08-06: "mod/arcane/evo").
+///
+/// Each candidate is the ONE set that differs from the reference: a required
+/// option drops itself, everything else adds itself. Only mods carry an
+/// element, so only they can move the pairing — but an EVOLUTION can too,
+/// indirectly, since tier 1 installs the form whose innate element the whole
+/// partition then includes. Arcanes cannot, so they reuse the reference's
+/// orders and cost one engagement each.
+function optGainCandidates(ref, refEvos, refArc) {
   const inRef = new Set(ref);
-  return poolWithRivens()
+  const out = poolWithRivens()
     .filter((m) => !famReqBy(m))
     .map((m) => ({
       id: m.id,
+      kind: "mod",
       // Family exclusivity applies to the SET BEING MEASURED, not only to the
       // scope: adding a mod whose family is already in the reference would
       // price a build the arsenal refuses.
-      set: inRef.has(m.id)
+      mods: inRef.has(m.id)
         ? ref.filter((x) => x !== m.id)
         : ref.filter((x) => !m.family || (modById(x) || {}).family !== m.family).concat([m.id]),
+      evolutions: refEvos,
       drops: inRef.has(m.id),
     }));
+
+  // ARCANES. One seat per pool, so this is a REPLACEMENT rather than an
+  // addition — the same shape the builder's arcane axis has. An arcane already
+  // pinned is measured by emptying its seat, which is what "what is it
+  // contributing" means when the alternative is nothing.
+  weaponAxes().arcanes.forEach((ax, i) => {
+    (ax.options || []).forEach((a) => {
+      const drops = refArc[i] === a.id;
+      const next = refArc.slice();
+      next[i] = drops ? "none" : a.id;
+      out.push({ id: a.id, kind: "arcane", mods: ref, evolutions: refEvos, drops,
+        override: { arcane: next } });
+    });
+  });
+
+  // EVOLUTIONS. The LADDER decides which tiers are askable: a tier is open
+  // only once the one below it is filled, so the candidate set is the
+  // reference's prefix with this tier's option substituted and everything
+  // above it dropped. Asking about a locked tier would price a build the
+  // builder will not let you assemble (the rule `check_gain_axes` asserts of
+  // the builder's own scan).
+  weaponEvos().forEach((t) => {
+    if (t.tier > refEvos.length + 1) return;
+    t.options.forEach((o) => {
+      const drops = refEvos[t.tier - 1] === o.id;
+      const next = drops
+        ? refEvos.slice(0, t.tier - 1)
+        : refEvos.slice(0, t.tier - 1).concat([o.id]);
+      out.push({ id: o.id, kind: "evo", mods: ref, evolutions: next, drops,
+        override: { evolutions: next } });
+    });
+  });
+  return out;
 }
 
 async function scanOptGains(onTick) {
@@ -4796,9 +4844,10 @@ async function scanOptGains(onTick) {
   const { name, scenario } = gainScenario();
   const ref = optRefMods();
   const evolutions = optRefEvos();
+  const refArc = optRefArcanes();
   optGain = { ...optGain, key: optGainKey(), running: true, base: 0, by: {}, orders: [],
     done: 0, total: 0, note: name, metric: "", ref };
-  const cands = optGainCandidates(ref);
+  const cands = optGainCandidates(ref, evolutions, refArc);
 
   // ONE call for every set the scan will measure, the reference first. The
   // browser is never taught to pair elements: that would be a second copy of
@@ -4806,9 +4855,10 @@ async function scanOptGains(onTick) {
   // weapon carried an innate element — the Burston's Incarnon form carries
   // Heat, so Cold + Toxin is already Viral + Heat with no Heat mod equipped.
   const base = { ...tennoPayload(), weapon: $("weapon").value, evolutions,
-    rivens: rivenPayload() };
+    arcane: refArc, rivens: rivenPayload() };
   const pr = await api("/api/pairings", { ...base, ...scenario,
-    sets: [ref].concat(cands.map((c) => c.set)) });
+    sets: [{ mods: ref, evolutions }]
+      .concat(cands.map((c) => ({ mods: c.mods, evolutions: c.evolutions }))) });
   if (!live()) return;
   if (!pr || !pr.ok) { optGain.running = false; if (onTick) onTick(optGain); return; }
   const orders = pr.sets.map((x) => x.orders);
@@ -4819,7 +4869,12 @@ async function scanOptGains(onTick) {
   // three pairings does not hold a lane while another waits — the same shared
   // cursor the builder's scan uses, for the same reason.
   const jobs = [];
-  orders.forEach((os, si) => os.forEach((o, oi) => jobs.push({ si, oi, mods: o.mods })));
+  orders.forEach((os, si) => os.forEach((o, oi) => jobs.push({
+    si, oi, mods: o.mods,
+    // The reference is set 0; every other set is a candidate and carries
+    // whatever it changes ABOUT the build that is not a mod.
+    override: si === 0 ? {} : (cands[si - 1].override || {}),
+  })));
   optGain.total = jobs.length;
   const got = orders.map((os) => os.map(() => null));
   let cursor = 0;
@@ -4828,7 +4883,7 @@ async function scanOptGains(onTick) {
       if (!live()) return;
       const j = jobs[cursor++];
       if (!j) return;
-      const r = await lane.call("/api/simulate", { ...base, ...scenario, mods: j.mods });
+      const r = await lane.call("/api/simulate", { ...base, ...scenario, mods: j.mods, ...j.override });
       if (!live()) return;
       got[j.si][j.oi] = read(r);
       optGain.done++;
@@ -7282,7 +7337,7 @@ function renderOptArcanes() {
     const eff = effLines(cardLines(a, a.max_rank, effectsAt(a, a.max_rank)));
     return `<div class="opt ${a.rarity ? "rar-" + a.rarity : ""} ${st === "off" ? "" : st}">
       ${imgTag(IMG(a.image), "mod")}
-      <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}</div>${eff}</div>
+      <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${optGainChipFor(a.id)}</div>${eff}</div>
       <div class="oseg">
         <span class="seg ${st === "search" ? "on" : ""}" data-a="${a.id}" data-s="search" ${pinned && pinned !== a.id ? `title="${escHtml(tr("pooling opens the slot — the pin gives way"))}"` : ""}>${tr("pool")}</span>
         <span class="seg ${st === "fixed" ? "on" : ""}" data-a="${a.id}" data-s="fixed" ${hasPool ? `title="${escHtml(tr("req pins the slot — the pool marks give way"))}"` : ""}>${tr("req")}</span>
@@ -7357,7 +7412,7 @@ function renderOptEvos() {
       // Neither mark blocks the other — clicking one rewrites the tier.
       const desc = evoLines(o).map((x) => `<div>${escHtml(x)}</div>`).join("");
       return `<div class="opt ${st === "off" ? "" : st} ${o.broken ? "dis-soft" : ""}">
-        <div class="info"><div class="mn">${o.name}${o.broken ? ' <span class="exchip brk">BROKEN</span>' : ""}</div><div class="me">${desc}</div></div>
+        <div class="info"><div class="mn">${o.name}${o.broken ? ' <span class="exchip brk">BROKEN</span>' : ""}${optGainChipFor(o.id)}</div><div class="me">${desc}</div>${optPairingNoteFor(o.id)}</div>
         <div class="oseg">
           <span class="seg ${st === "search" ? "on" : ""} ${locked ? "tlocked" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="search" ${pinned && pinned !== o.id ? `title="${escHtml(tr("pooling opens the tier — the pin gives way"))}"` : ""}>${tr("pool")}</span>
           <span class="seg ${st === "fixed" ? "on" : ""} ${locked ? "tlocked" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="fixed" ${hasPool ? `title="${escHtml(tr("req pins the tier — the pool marks give way"))}"` : ""}>${tr("req")}</span>
@@ -7597,7 +7652,13 @@ function renderOptTools() {
   $("opk-sort").onchange = () => { optPrefs.sort = $("opk-sort").value; renderOptModList(); };
   $("opk-dir").onclick = () => { optPrefs.dir = optPrefs.dir === "asc" ? "desc" : "asc"; renderOptTools(); renderOptModList(); };
   t.querySelectorAll(".pk-pol").forEach((o) => o.onclick = () => { optPrefs.pol = o.dataset.p || null; renderOptTools(); renderOptModList(); });
-  const paint = () => { renderOptTools(); renderOptPairings(); renderOptModList(); };
+  // All three axes are on screen at once and all three now carry numbers, so
+  // a tick repaints all three — a chip that appeared on one list and not the
+  // others would read as "this axis was not scanned".
+  const paint = () => {
+    renderOptTools(); renderOptPairings(); renderOptModList();
+    renderOptArcanes(); renderOptEvos();
+  };
   $("opk-gain").onclick = () => scanOptGains(() => paint());
   if ($("opk-gain-ref")) {
     $("opk-gain-ref").onchange = () => { optGain.mode = $("opk-gain-ref").value; paint(); };

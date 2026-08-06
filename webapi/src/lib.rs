@@ -2937,7 +2937,18 @@ pub fn pairings_json(v: &Value) -> Value {
     let sets = v.get("sets").and_then(|x| x.as_array()).cloned().unwrap_or_default();
     let out: Vec<Value> = sets
         .iter()
-        .map(|set| {
+        .map(|entry| {
+            // A set is either a bare mod list or `{mods, evolutions}`. It needs
+            // its own evolutions because an EVOLUTION can move the pairings:
+            // tier 1 on the Burston unlocks the Incarnon form, whose base
+            // damage is Heat, so installing it gives the build an innate
+            // element the base form does not have.
+            let set = entry.get("mods").unwrap_or(entry);
+            let evos: Vec<String> = entry
+                .get("evolutions")
+                .and_then(|x| x.as_array())
+                .map(|a| a.iter().filter_map(|x| x.as_str()).map(String::from).collect())
+                .unwrap_or_else(|| fight.evos.clone());
             // Unknown ids are DROPPED, not rejected: the client's scope can
             // name a mod this form cannot equip (an evolution forbids it), and
             // the honest answer there is the set without it — the same rule
@@ -2952,7 +2963,7 @@ pub fn pairings_json(v: &Value) -> Value {
                         .collect()
                 })
                 .unwrap_or_default();
-            let orders: Vec<Value> = wfsim_engine::builds::element_orders(&fire, &ids, &fight.evos)
+            let orders: Vec<Value> = wfsim_engine::builds::element_orders(&fire, &ids, &evos)
                 .into_iter()
                 .map(|o| {
                     let name = |t: wfsim_engine::damage::DamageType| format!("{t:?}");
