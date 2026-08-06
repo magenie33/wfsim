@@ -142,19 +142,35 @@ attack:
       # Does each chain NODE also carry a damage_radius_m sphere, or is there
       # only the one at the beam's contact point?
       #
-      # DECIDED true (user, 2026-07-30) on in-game experience: a clump lights
-      # up in a way that reads as overlapping spheres. The wiki does NOT say
-      # either way — it never mentions a sphere at a chain node, calls the
-      # first one "the INITIAL damage radius", defines the sphere as "from the
-      # point of impact against a surface" while a chain lands on an ENEMY, and
-      # the datamined attack table carries no radius for this attack at all.
-      # Those are four pieces of circumstantial evidence for `false` and ZERO
-      # citations for either value, so they do not outweigh someone who has the
-      # game open.
+      # FLIPPED to false 2026-08-06 (user), retracting the `true` this line
+      # carried since 2026-07-30. The reason is FALLOFF, and it is structural
+      # rather than circumstantial: an explosion in this engine is a separate
+      # damage instance with linear falloff from epicentre to edge (MECHANICS
+      # §Area of Effect), and every `radial:` in data/ carries one — Torid base
+      # 1.0, Burston Incarnon 1.0, Phantasma charged 0.5, Laetum Incarnon 0.2,
+      # and Detonate has to say `falloff: none` out loud to be the exception.
+      # This sphere carries none, because the wiki says it is not eligible for
+      # one: "The damage radius is not a separate damage instance from the
+      # beam." So it is not an explosion at all — it is the beam's HIT-DETECTION
+      # volume, widening what the one instance touches, which is also why a
+      # directly struck target "is still only hit once".
       #
-      # Recorded as a data switch precisely so it costs one line to flip.
-      # MEASUREMENTS M15 has the discriminating test.
-      nodes_have_radius: true
+      # That kills the node sphere. A sphere at a chain node could not belong to
+      # the beam (whose contact point is elsewhere), so it would have to be the
+      # node's OWN damage instance — an explosion, requiring a falloff the game
+      # documents nowhere. `true` invented five undocumented explosions.
+      #
+      # It also upgrades the third circumstantial signal into a mechanism: the
+      # datamined attack table carries no radius for the Incarnon attack while
+      # the Poison Cloud (a real AoE part) carries its falloff — because only
+      # one of the two is a damage instance.
+      #
+      # STILL NOT A MEASUREMENT. An argument cannot close MEASUREMENTS M15; it
+      # only changes which value the default rests on. M15 stays open and its
+      # Y=1 protocol still settles it. Third-party agreement, not a citation:
+      # malurth.github.io/AoE-simulator (the author of the Torid/Firestorm
+      # mechanics video) chains without a sphere at any node.
+      nodes_have_radius: false
 
 # incarnon_evolutions: see data/weapons/primary/torid.yaml (shared group)
 

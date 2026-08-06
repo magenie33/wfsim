@@ -524,14 +524,37 @@ It decides how the weapon scales into a crowd, and therefore what Firestorm is
 worth: with one sphere, Firestorm buys more *chain origins*; with a sphere per
 node, it multiplies the whole cascade.
 
-**Current model: every node spheres** (`beam.chain.nodes_have_radius: true`).
-That is a **decision, not a citation** — the user's in-game read of a clump
-lighting up (2026-07-30). It is one line of weapon data precisely so a
-measurement can flip it.
+**Current model: ONE sphere, at the beam's contact point**
+(`beam.chain.nodes_have_radius: false`). Flipped 2026-08-06 from the `true` this
+carried since 2026-07-30 — the earlier value was the user's in-game read of a
+clump lighting up, and the user retracted it on the falloff argument below.
+**Still not a citation, and this protocol still stands**: an argument narrows
+which default is defensible, it does not measure anything.
 
-**The evidence pointing the OTHER way**, recorded so the decision is not
-mistaken for a sourced fact. All four are circumstantial and none is a
-statement about chain nodes:
+**The falloff argument** (user, 2026-08-06), the one that moved it. Unlike the
+four signals below it is structural, not circumstantial:
+
+- An explosion in this engine is *a separate damage instance with linear falloff
+  from epicentre to edge* (MECHANICS §Area of Effect). Every `radial:` in `data/`
+  carries a falloff — Torid base 1.0, Burston Incarnon 1.0, Phantasma charged
+  0.5, Laetum Incarnon 0.2 — and Detonate has to declare `falloff: none` out loud
+  to be the exception. **This sphere carries none**, because the wiki denies it
+  what falloff attaches to: *"The damage radius is not a separate damage instance
+  from the beam."*
+- So the sphere is not an explosion at all — it is the beam's **hit-detection
+  volume**, widening what the single instance touches. Which is exactly why a
+  directly struck target *"is still only hit once."*
+- A sphere at a chain node could not belong to the beam, whose contact point is
+  elsewhere. It would have to be the node's **own** damage instance — an
+  explosion, needing a falloff nothing in the wiki or the datamine documents.
+  `true` implied five undocumented explosions per attack.
+
+Third-party agreement, not a citation: `malurth.github.io/AoE-simulator` — the
+author of the Torid/Primed Firestorm mechanics video — chains node to node with
+no sphere at any node.
+
+**The four circumstantial signals**, recorded when the value was `true` and now
+pointing the same way as it. None is a statement about chain nodes:
 1. the wiki calls the first one *"the **initial** damage radius"* — a qualifier
    that only earns its place if there is exactly one;
 2. the sphere is defined *"from the point of impact **against a surface**"*,
@@ -541,9 +564,10 @@ statement about chain nodes:
 4. the chain sentence is boilerplate shared with Atomos and Amprex, neither of
    which spheres at a chain node.
 
-Against that: nobody who has played it says otherwise, and the wiki never
-addresses the question. Four inferences do not outrank someone with the game
-open — hence the decision, and hence this protocol.
+What held `true` in place for a week was that four inferences do not outrank
+someone with the game open. What moved it was not a fifth inference but the
+player retracting the read — so the count never decided this, and it should not
+decide it now either. The wiki still never addresses the question.
 
 **Method — the trap is that a clump cannot tell the two apart.** With several
 enemies inside the initial sphere, BOTH models produce a wall of numbers: the
@@ -574,11 +598,12 @@ the sphere is exactly what you are trying to keep out of the test. Watch enemy
 COUNT damaged, not damage numbers: the beam ticks 8×/s and the numbers pile up
 under either model.
 
-**Outcome mapping.** `true` (current) is already implemented; `false` flips one
+**Outcome mapping.** `false` (current) is what is implemented; `true` flips one
 line in `data/weapons/primary/torid_incarnon.yaml` and its pinned assertion in
 `weapons_data`. Neither value changes a single-target result — the sphere adds
-no damage to a target the beam already struck — so this is a multi-target
-question and can wait for the 2D model without blocking anything.
+no damage to a target the beam already struck — so nothing is blocked today.
+It stops being free the moment the 2D model reads this line, which is why the
+default was corrected before that model exists rather than after.
 
 ---
 

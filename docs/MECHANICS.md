@@ -1217,12 +1217,25 @@ sphere, and not chains that start from a sphere-only target. Chains starting
 from the directly struck target are not excluded by the wiki's wording and so do
 take it.
 
-**`chain.nodes_have_radius` is a DECISION, not a citation.** Whether a chain hop
-also drops a sphere where it lands is set `true` on the user's in-game read
-(2026-07-30); the wiki never addresses it, and four circumstantial signals point
-the other way. It is one line of weapon data, and MEASUREMENTS **M15** carries a
-protocol that settles it — including why counting damage numbers in a clump
-cannot.
+**`chain.nodes_have_radius` is `false`, on an argument rather than a citation.**
+The sphere is **not an explosion** — it is the beam's hit-detection volume. An
+explosion here is a separate damage instance with linear falloff (§Area of
+Effect above), and every `radial:` in `data/` carries one; this sphere carries
+none, because the wiki denies it the thing falloff attaches to: *"The damage
+radius is not a separate damage instance from the beam."* That is also why a
+directly struck target *"is still only hit once"* — one instance, and the sphere
+only widens who receives it.
+
+A sphere at a chain node could not belong to the beam, whose contact point is
+elsewhere, so it would have to be the node's own damage instance — an explosion
+needing a falloff nothing documents. Hence `false`, flipped 2026-08-06 from the
+`true` the line carried since 2026-07-30 (user, on this argument). It also
+explains the datamined asymmetry: no radius on the Incarnon attack, a falloff on
+the Poison Cloud, because only one of the two is a damage instance.
+
+**An argument is not a measurement.** MEASUREMENTS **M15** stays open; its Y=1
+protocol is what settles this, and it also explains why counting damage numbers
+in a clump cannot.
 
 **Single-target impact: none.** Nothing in this block feeds a damage number
 today; the arena has one enemy and the sphere cannot hit it twice. The panel

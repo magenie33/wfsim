@@ -1625,10 +1625,13 @@ mod tests {
         assert!((bm.chain_range_m - 7.0).abs() < 1e-9);
         assert!((bm.chain_damage_per_hop - 0.75).abs() < 1e-9);
         assert!(!bm.chain_takes_multishot);
-        // UNVERIFIED (MEASUREMENTS M15) — a user call on in-game experience,
-        // against four pieces of circumstantial evidence and no citation
-        // either way. One data line flips it.
-        assert!(bm.chain_nodes_have_radius, "user, 2026-07-30: every node spheres");
+        // STILL UNVERIFIED (MEASUREMENTS M15), but no longer a coin flip:
+        // an explosion is a damage instance WITH FALLOFF, and the wiki denies
+        // this sphere both ("not a separate damage instance from the beam").
+        // A node sphere would need a falloff nothing documents. Flipped from
+        // the 2026-07-30 `true` on that argument (user, 2026-08-06); the Y=1
+        // protocol in M15 is what would actually close it.
+        assert!(!bm.chain_nodes_have_radius, "one sphere, at the beam's contact point");
         // The base form is not a beam.
         assert!(b.beam.is_none());
     }
