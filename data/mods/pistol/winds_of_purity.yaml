@@ -1,0 +1,58 @@
+id: winds_of_purity
+name: Winds of Purity
+rarity: rare
+polarity: vazarin
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Syndicate/FurisMod
+description: "+X% Life Steal\n+X Purity"
+
+# A SYNDICATE AUGMENT (New Loka, rank Pure, 25,000 standing) and the roster's
+# second. The equip gate is the wiki's own sentence in both directions: it is
+# "exclusive to the Furis and Mk1-Furis" and "cannot be equipped on the Afuris
+# or Dex Furis" — so a family member is named IN, not assumed in. WFCD's
+# `compatName` says only "Furis", which is the trap `exclusive_to` exists to
+# avoid: that field names a compatibility CLASS, and taking it literally would
+# have offered this on every weapon in the family.
+exclusive_to: [furis, mk1_furis]
+
+effects:
+  # THE SYNDICATE RADIAL — "+1 Purity" at max rank, and MODELLED.
+  #
+  # The payload is not written here: Purity is one of SIX effects shared by
+  # dozens of augments and by the Syndicate weapons themselves, so it lives in
+  # data/syndicates/purity.yaml and this card names it. 1,000 damage of its own
+  # element in a 25 m radius with a guaranteed proc, on a 30-second cooldown,
+  # armed by 1,000 affinity.
+  - kind: syndicate_radial
+    syndicate: purity         # data/syndicates/purity.yaml carries the payload
+    rank0: 0.25
+    rankMax: 1.0
+
+  # LIFE STEAL — NOT MODELLED, and it is not a gap in this fight.
+  #
+  # It heals the TENNO, and this arena scores damage dealt to one target: a
+  # sim with no player health has nothing for a heal to change. Recorded rather
+  # than dropped because it is the reason the mod is worn outside a
+  # single-target benchmark, and because the wiki states a limit worth keeping:
+  # the steal "only applies to damage dealt by the Furis itself. It does not
+  # apply to Purity explosions" — so the blast above heals nothing, which a
+  # future Warframe-side model must not assume.
+  #
+  # Under a kind the loader does not know, on purpose. `unmodeled: true` would
+  # have said "this mod does nothing" of a card whose OTHER half is modelled
+  # and lands 1,000 damage a blast.
+  - kind: life_steal_on_own_damage
+    rank0: 0.05
+    rankMax: 0.20
+
+family: winds_of_purity
+
+source:
+  url: https://wiki.warframe.com/w/Winds_of_Purity
+  # Rank table (life steal 5/10/15/20%, Purity 0.25/0.5/0.75/1) from the wiki;
+  # `base_drain` 4 and `max_rank` 3 from WFCD, which is authoritative for those
+  # two (AGENTS.md: the wiki is wrong for ~20 mods there). The two agree here.
+  # WFCD's own rank table prints Purity 0.3 and 0.8 where the wiki prints 0.25
+  # and 0.75 — display rounding of the same ladder, and neither is read: the
+  # sim runs the mod at max rank, where both say 1.
