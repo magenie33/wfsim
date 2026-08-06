@@ -5549,6 +5549,41 @@ mod weakpoint_panel_tests {
 
     /// Equipping it must still CHANGE something, or the fix would have been
     /// "delete the mod's effect" and the test above would pass anyway.
+    /// PISTOL ACUITY IS THE SAME EFFECT, so it must not need its own fix —
+    /// the bucket is chosen by `ModEffect`, never per mod. Asserted on a
+    /// secondary because a rifle-only test would pass just as happily if the
+    /// arm were duplicated per mod class.
+    #[test]
+    fn the_pistol_twin_behaves_identically() {
+        let p = panel_json(&json!({
+            "weapon": "laetum",
+            "mods": ["pistol_acuity"],
+            "evolutions": ["laetum_evo1_incarnon_form"],
+        }));
+        let f = form(&p, "Incarnon Form");
+        let direct = part(f, "direct");
+        assert_eq!(
+            row(direct, "crit_chance").expect("crit row")["final"],
+            json!("22.0%"),
+            "the plain crit chance stays the weapon's"
+        );
+        assert_eq!(
+            row(direct, "weakpoint_cc").expect("weak-point crit row")["final"],
+            json!("99.0% on a weak point")
+        );
+        // 1.5 x the listed +350%, printed to two decimals so it matches the
+        // wiki's own worked example (3 + 5.25 = 8.25x).
+        assert_eq!(
+            row(direct, "weakpoint_damage").expect("weak-point damage row")["final"],
+            json!("+5.25 to the weak-point multiplier")
+        );
+        // And the Laetum's explosion is the ORDINARY case: no weak-point
+        // bonus, and no CO either (it declares neither).
+        let radial = part(f, "radial");
+        assert_eq!(row(radial, "crit_chance").expect("crit row")["final"], json!("22.0%"));
+        assert!(row(radial, "weakpoint_cc").is_none());
+    }
+
     #[test]
     fn without_the_mod_there_are_no_weak_point_rows() {
         let bare = incarnon_panel(json!([]));
