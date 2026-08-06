@@ -262,6 +262,14 @@ pub enum ModEffect {
     /// ...and that refill: a fraction of the magazine back on every kill,
     /// drawn from the reserve ("This mod does not generate ammo").
     MagazineRefillOnKill(f64),
+    /// A SYNDICATE AUGMENT's radial (Gilded Truth grants Truth). The payload
+    /// belongs to the SYNDICATE and is looked up by id — six effects shared by
+    /// dozens of cards, so the card names one rather than restating it.
+    ///
+    /// `amount` is the card's own number ("+1 Truth"). The sim does not read
+    /// it: the points a gauge needs depend on the mod's RANK and are 1000 at
+    /// max, and every mod here simulates at max rank.
+    SyndicateRadial { syndicate: &'static str, amount: f64 },
     /// Pressurized Magazine: on reload, +bonus relative fire rate (while
     /// aiming) for `duration` seconds.
     OnReloadFireRate { bonus: f64, duration: f64 },
@@ -336,14 +344,9 @@ pub enum IndirectStat {
     /// Chance for a status to spread to enemies within 6 m (Shivering
     /// Contagion). Also multi-target only.
     StatusSpread,
-    /// A SYNDICATE RADIAL's scale — "+1 Truth" on Gilded Truth, and the same
-    /// number every syndicate augment carries under its own faction's name.
-    ///
-    /// Real damage (Truth is 1,000 Gas and a guaranteed status in 25 m) and a
-    /// real heal, but the TRIGGER is 1,000 affinity earned with the weapon on a
-    /// 30 s cooldown, and this sim accumulates no affinity. So the number is
-    /// carried rather than modelled — the same call `KillExplosion` makes, and
-    /// for the same reason: `kind: unmodeled` would throw it away.
+    /// A SYNDICATE RADIAL's scale — "+1 Truth" on Gilded Truth. The EFFECT is
+    /// `ModEffect::SyndicateRadial`, which names the syndicate; this bucket
+    /// only exists so the card's number has somewhere to print.
     SyndicateRadial,
 }
 
@@ -532,6 +535,16 @@ impl ModEffect {
                 format!("{} Crit Chance and Status Chance per active tendril", pct(crit_chance))
             }
             MagazineRefillOnKill(v) => format!("on kill, {} of the magazine back", pct(v)),
+            SyndicateRadial { syndicate, amount } => {
+                let d = crate::syndicates_data::get(syndicate);
+                match d {
+                    Some(d) => format!(
+                        "+{amount} {} — {:.0} {:?} in {:.0} m once the weapon earns {:.0} affinity, every {:.0}s",
+                        d.name, d.damage, d.element, d.radius_m, d.affinity_to_fill, d.cooldown_seconds
+                    ),
+                    None => format!("+{amount} {syndicate}"),
+                }
+            }
             CritDamage(v) => format!("{} Crit Damage", pct(v)),
             StatusChance(v) => format!("{} Status Chance", pct(v)),
             FireRate(v) => format!("{} Fire Rate", pct(v)),
@@ -1268,6 +1281,8 @@ pub struct ResolvedPanel {
     pub sc_per_tendril: f64,
     /// Fraction of the magazine returned on each kill, from the reserve.
     pub mag_refill_on_kill: f64,
+    /// The syndicate radial this build's augment grants, if any.
+    pub syndicate_radial: Option<crate::syndicates_data::SyndicateDef>,
     pub reload_seconds: f64,
     /// Σ reload-speed bonuses — transitions (Incarnon transmute/revert)
     /// scale by the same formula: time = base / (1 + this).
@@ -1446,6 +1461,8 @@ pub fn resolve_for(
     // three depend on fight state (how many tendrils are up, whether anything
     // died) that the panel cannot know.
     let (mut per_tendril_cc, mut per_tendril_sc, mut mag_refill) = (0.0, 0.0, 0.0);
+    // A syndicate augment's radial, resolved from the six-effect table.
+    let mut syndicate_radial: Option<crate::syndicates_data::SyndicateDef> = None;
     // Blast RANGE bucket (Firestorm / Fulmination): + the sum, of base radius.
     let mut br = 0.0;
     // Hunter Munitions: its own bucket, because its roll is its own.
@@ -1515,6 +1532,10 @@ pub fn resolve_for(
                     per_tendril_sc += status_chance;
                 }
                 ModEffect::MagazineRefillOnKill(v) => mag_refill += v,
+                // The card names one of six; the payload is the syndicate's.
+                ModEffect::SyndicateRadial { syndicate, .. } => {
+                    syndicate_radial = crate::syndicates_data::get(syndicate).copied();
+                }
                 ModEffect::CritDamage(v) => cd += v,
                 ModEffect::StatusChance(v) => sc += v,
                 // "(x2 for Bows)" is on the CARD of every fire-rate mod, so it
@@ -1982,6 +2003,7 @@ pub fn resolve_for(
         cc_per_tendril: per_tendril_cc,
         sc_per_tendril: per_tendril_sc,
         mag_refill_on_kill: mag_refill,
+        syndicate_radial,
         reload_seconds: base.base_reload / (1.0 + rl),
         reload_bonus: rl,
         base_damage_bonus: bd,

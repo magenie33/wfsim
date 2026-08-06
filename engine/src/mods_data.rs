@@ -364,7 +364,18 @@ fn effect(v: &Value) -> Option<ModEffect> {
         "explosion_on_kill" => ModEffect::Indirect(IndirectStat::KillExplosion, max("rankMax")),
         // A syndicate augment's radial scale ("+1 Truth"). Its damage is
         // real; its TRIGGER counts affinity, which the sim does not track.
-        "syndicate_radial" => ModEffect::Indirect(IndirectStat::SyndicateRadial, max("rankMax")),
+        // A syndicate augment names one of the six effects; its payload lives
+        // in data/syndicates/ and is looked up there.
+        "syndicate_radial" => ModEffect::SyndicateRadial {
+            syndicate: Box::leak(
+                v.get("syndicate")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_string()
+                    .into_boxed_str(),
+            ),
+            amount: max("rankMax"),
+        },
         "status_spread_chance" => ModEffect::Indirect(IndirectStat::StatusSpread, max("rankMax")),
         // NOT indirect: a CHARGE-rate bonus shortens the draw, and a charged
         // form's cadence IS its draw (`ChargeCadence`), so this is DPS. It is

@@ -1,0 +1,59 @@
+# ONE OF THE SIX SYNDICATE RADIAL EFFECTS (wiki Syndicate_Radial_Effects).
+#
+# Defined once and referenced by id, because six effects are shared by dozens
+# of augment mods and by the Syndicate weapons themselves — a payload copied
+# onto each card would be the same six facts written many times, free to
+# disagree. A mod names its syndicate; the numbers live here.
+#
+# WHAT EVERY ONE OF THEM DOES, identically (the page states it once for all):
+#   - 1000 damage of its own element in a 25 m radius, with a guaranteed
+#     status proc;
+#   - restores 25% of one Warframe attribute;
+#   - a 30 s buff, additive to mods of its type;
+#   - a 30 s cooldown after detonation, during which the weapon converts NO
+#     affinity and the collected points reset to zero.
+#
+# Only the ELEMENT, the restore and the buff differ, which is why those three
+# are the only fields that vary below.
+id: blight
+name: Blight
+# The syndicate it belongs to, and the prefix its weapons carry (Rakta Boltor,
+# Rakta Hek, …). Recorded because it is how a player finds the mod, not
+# because the sim reads it.
+syndicate: Red Veil
+weapon_prefix: Rakta
+
+# THE EXPLOSION. Single-target relevant in full: a 25 m radius is one the
+# arena's only enemy is always inside, so this lands whole.
+damage: 1000.0
+element: viral
+radius_m: 25.0
+guaranteed_status: true
+
+# ARMING. "All affinity earned by the weapon during a mission fills a gauge",
+# and a weapon kill gives the weapon HALF the enemy's affinity (wiki Affinity:
+# "Kill with weapons: Half Affinity goes to the Warframe and half to the killing
+# weapon"). 1000 points at a maxed augment; a lower rank needs MORE.
+affinity_to_fill: 1000.0
+# After it fires: reset to zero AND no conversion at all until the cooldown is
+# out — "the cooldown is tied only to that weapon, during which the weapon will
+# not convert any affinity into points, and all collected points are reset to
+# zero". Two rules, not one, and the second is why a fast-killing build cannot
+# bank points through the downtime.
+cooldown_seconds: 30.0
+
+# THE WARFRAME HALF — NOT READ by a weapon-damage sim, and recorded because it
+# is real and because these two lines are what tell the six effects apart for a
+# player choosing between them. The restore scales off maximum MODDED health or
+# shield (rank-0 values for energy), and the buff is additive to mods of its
+# own type and lasts 30 s.
+restore:
+  stat: energy
+  fraction: 0.25
+buff:
+  stat: movement_speed
+  amount: 0.1
+  duration_seconds: 30.0
+
+source:
+  url: https://wiki.warframe.com/w/Syndicate_Radial_Effects

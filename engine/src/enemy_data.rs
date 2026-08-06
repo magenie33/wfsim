@@ -84,6 +84,12 @@ pub struct StatsSpec {
     pub armor: f64,
     #[serde(default)]
     pub overguard: f64,
+    /// Base affinity this unit is worth. Every enemy file has carried one
+    /// since they were written and nothing read it — serde dropped the key, so
+    /// it was prose in a data field, which data/README.md forbids. A syndicate
+    /// radial arms on affinity, so it is consumed now.
+    #[serde(default)]
+    pub affinity: f64,
 }
 
 /// One body part as stored in enemy data (aim weights are *scenario* state,
@@ -228,6 +234,7 @@ impl EnemySpec {
             base_health: self.stats.health,
             base_armor: self.stats.armor,
             base_overguard: self.stats.overguard,
+            base_affinity: self.stats.affinity,
             base_shield: self.stats.shield,
             health_curve: self.scaling_faction.health_curve(),
             shield_curve: self.scaling_faction.shield_curve(),

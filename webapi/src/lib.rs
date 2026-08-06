@@ -1796,6 +1796,12 @@ pub fn panel_json(v: &Value) -> Value {
                 // join — it is the reason the bonuses above survive, and it is
                 // listed on the card rather than attributed to a stat.
                 MagazineRefillOnKill(..) => {}
+                // A SYNDICATE RADIAL is not a stat bucket — it is a flat
+                // explosion on its own clock, so there is no percentage to
+                // attribute to a damage source. The card states it in full
+                // (`describe`) and the sim reports what it dealt under its own
+                // heading.
+                SyndicateRadial { .. } => {}
                 PerTendril { crit_chance, status_chance } => {
                     let cap = f64::from(
                         wfsim_engine::weapons_data::spec(&info.id)
@@ -3171,6 +3177,11 @@ pub fn simulate_json(v: &Value) -> Value {
         // expands like the weapon-damage ones (user's rule for the direct row,
         // 2026-08-01: the damage has elements, so the meter should say which).
         ("arcane".to_string(), sd.arcane_on_status, by_type(&sd.arcane_by_type)),
+        // A SYNDICATE RADIAL is its own row for the same reason the field is:
+        // it is neither the weapon's hit nor a status tick, it lands on its own
+        // clock, and folding it into "direct" would credit the build for damage
+        // no mod on it scaled.
+        ("syndicate".to_string(), sd.syndicate, by_type(&sd.syndicate_by_type)),
     ];
     sources.extend(
         sd.status
@@ -3224,6 +3235,7 @@ pub fn simulate_json(v: &Value) -> Value {
                 "radial" => (f.sources.radial, f.sources.radial_by_type),
                 "field" => (f.sources.field, f.sources.field_by_type),
                 "arcane" => (f.sources.arcane_on_status, f.sources.arcane_by_type),
+                "syndicate" => (f.sources.syndicate, f.sources.syndicate_by_type),
                 other => {
                     let i = TYPE_NAMES.iter().position(|n| *n == other).unwrap_or(0);
                     (f.sources.status[i], [0.0; 15])

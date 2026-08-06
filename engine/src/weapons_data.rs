@@ -678,7 +678,7 @@ pub fn has_gauge_switched_form(weapon_id: &str) -> bool {
     forms_of(weapon_id).iter().any(|f| f.kind.is_gauge_switched())
 }
 
-fn damage_type(name: &str) -> DamageType {
+pub(crate) fn damage_type(name: &str) -> DamageType {
     match name {
         "impact" => DamageType::Impact,
         "puncture" => DamageType::Puncture,

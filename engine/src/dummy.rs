@@ -292,6 +292,9 @@ pub struct TargetParams {
     pub base_health: f64,
     pub base_armor: f64,
     pub base_overguard: f64,
+    /// What this unit is worth in affinity BEFORE level scaling — the enemy
+    /// file's own number. Scaled by `scaling::affinity_multiplier` at the kill.
+    pub base_affinity: f64,
     /// Base shields (mitigation order: Overguard → Shield → Health;
     /// Toxin bypasses shields but NOT overguard).
     pub base_shield: f64,
@@ -409,6 +412,7 @@ impl TargetParams {
             base_health: 1.0,
             base_armor: 0.0,
             base_overguard: 0.0,
+            base_affinity: 0.0,
             base_shield: 0.0,
             health_curve: scaling::health::UNAFFILIATED,
             shield_curve: scaling::shield::GRINEER, // unused at 0 shields
@@ -1243,6 +1247,9 @@ pub struct DummyParams {
     /// Deadly Efficiency: a RELATIVE base-damage bonus whose window opens when
     /// the reload COMPLETES (owner, 2026-08-01), not when the magazine empties.
     pub bd_on_reload: Option<crate::loadout::TimedBuff>,
+    /// A syndicate augment's radial (Gilded Truth grants Truth) — armed by
+    /// AFFINITY this weapon earns, fired on its own cooldown.
+    pub syndicate_radial: Option<crate::syndicates_data::SyndicateDef>,
     /// Where a continuous weapon's damage ramp STARTS, as a fraction of full.
     /// 0.20 "for most weapons" (wiki); Phantasma Prime is 0.15.
     pub beam_ramp_floor: f64,
@@ -1724,6 +1731,7 @@ impl DummyParams {
             bd_on_reload: panel.bd_on_reload,
             super_crit_on_status: panel.super_crit_on_status,
             beam_ramp_floor: panel.beam_ramp_floor,
+            syndicate_radial: panel.syndicate_radial,
             forced_procs: panel.forced_procs.clone(),
             tendril_max: panel.tendril_max,
             cc_per_tendril: panel.cc_per_tendril,
@@ -1889,6 +1897,7 @@ impl Default for DummyParams {
             bd_on_reload: None,
             super_crit_on_status: None,
             beam_ramp_floor: BEAM_RAMP_FLOOR,
+            syndicate_radial: None,
             tendril_max: 0,
             cc_per_tendril: 0.0,
             sc_per_tendril: 0.0,
@@ -1946,6 +1955,13 @@ pub struct SourceDamage {
     /// damage on its own clock, and on that weapon it is most of the output.
     pub field: f64,
     pub arcane_on_status: f64,
+    /// A SYNDICATE RADIAL's explosion (Truth, Justice, …) — its own bucket
+    /// because it is neither weapon damage nor a status tick: a flat 1000 of
+    /// the syndicate's element, unscaled by anything the build does.
+    pub syndicate: f64,
+    /// The syndicate blast split by type — one entry in practice, since a
+    /// blast is a single element, kept parallel to the other buckets.
+    pub syndicate_by_type: [f64; 15],
     /// Indexed by `DamageType as usize` (15 variants).
     pub status: [f64; 15],
     /// The three WEAPON-damage buckets above, each split across the damage
@@ -2776,6 +2792,74 @@ fn gunco_bucket(
     }
 }
 
+/// FIRE A SYNDICATE RADIAL — 1000 of its element in 25 m, with a guaranteed
+/// proc for five of the six.
+///
+/// A FLAT INSTANCE, like Cascadia Empowered's: the build does not scale it. No
+/// damage mods, no crit, no multishot, no body part — the explosion is the
+/// SYNDICATE's, not the weapon's, and nothing on the card changes its size.
+/// Faction bonuses and the target's own mitigation still apply, because those
+/// are properties of what is being hit rather than of what is hitting it.
+///
+/// The 25 m radius is why this lands whole: the arena's only enemy is always
+/// inside it.
+#[allow(clippy::too_many_arguments)]
+fn fire_syndicate_radial(
+    sy: &crate::syndicates_data::SyndicateDef,
+    r: &mut RunResult,
+    target: &mut TargetState,
+    debuffs: &mut DebuffState,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    params: &DummyParams,
+    rng: &mut Rng,
+    at: f64,
+) {
+    let sd = params.status_duration_mult;
+    let mit = debuffs.mitigation(at, sd);
+    let amt = sy.damage * params.faction_mult;
+    let (eff, killed, _broke) = target.apply(
+        amt,
+        TypeShares::single(sy.element),
+        false,
+        at,
+        &params.target,
+        false,
+        &mit,
+    );
+    r.total_damage += amt;
+    r.effective_damage += eff;
+    r.sources.syndicate += eff;
+    r.sources.syndicate_by_type[sy.element as usize] += eff;
+    r.timeline.add(at, eff);
+    r.kills += u32::from(killed);
+    // GUARANTEED, for five of the six — Justice stuns instead of applying
+    // Blast, the one place these effects differ in kind rather than in element.
+    //
+    // Through `settle_procs` like any other proc, with THIS instance as the
+    // scale: a Gas cloud from a syndicate blast burns off the blast's own 1000,
+    // not off the weapon's modified base, because the blast is what applied it.
+    // The five whose procs are multipliers rather than DoTs (Viral, Corrosive,
+    // Magnetic, Radiation) do not read that number at all.
+    if sy.guaranteed_status {
+        settle_procs(
+            vec![sy.element],
+            at,
+            InstanceScale { mb_live: sy.damage, crit_mult: 1.0, part_factor: 1.0 },
+            debuffs,
+            gal,
+            arc,
+            target,
+            params,
+            params,
+            &mit,
+            r,
+            rng,
+            DEPTH_PROC,
+        );
+    }
+}
+
 /// A continuous weapon's damage RAMP — wiki Continuous_Weapon, verbatim:
 /// "Initial damage starts at a lower percentage, and ramps up to 100% of its
 /// damage over 0.6 seconds of hitting a target. 0.8 seconds after the weapon
@@ -2788,6 +2872,15 @@ fn gunco_bucket(
 /// sentence gives ("for most weapons"), and a weapon that disagrees says so in
 /// its own file (`beam_ramp_floor`).
 pub(crate) const BEAM_RAMP_FLOOR: f64 = 0.20;
+
+/// What a KILL gives the weapon that made it, as a fraction of the enemy's
+/// affinity. VERBATIM (wiki Affinity): "Kill with weapons: Half Affinity goes
+/// to the Warframe and half to the killing weapon."
+///
+/// The general 25/75 split on that page is for SHARED affinity — orbs, ally
+/// kills, ability casts — and is not this. A weapon that killed something takes
+/// half, whatever else is equipped.
+const WEAPON_AFFINITY_SHARE: f64 = 0.5;
 const BEAM_RAMP_SECONDS: f64 = 0.6;
 const BEAM_DECAY_DELAY: f64 = 0.8;
 const BEAM_DECAY_SECONDS: f64 = 2.0;
@@ -3426,6 +3519,15 @@ pub fn run_once_traced(
     // Which kills the magazine refill has already paid out — see the spend
     // below for why this cannot be the same watermark.
     let mut refill_kill_mark = 0u32;
+    // A SYNDICATE RADIAL's gauge, in affinity, and the same derived-from-kills
+    // trick the tendrils use: `r.kills` is maintained at six sites already.
+    let mut syndicate_kill_mark = 0u32;
+    let mut syndicate_points = 0.0f64;
+    // When the weapon may convert affinity again. During the cooldown it
+    // converts NOTHING — "the weapon will not convert any affinity into
+    // points, and all collected points are reset to zero" — so this gates the
+    // accumulation, not just the firing.
+    let mut syndicate_ready_at = 0.0f64;
     let mut tendril_reload_mark = 0u32;
     let mut tendrils = 0u32;
     loop {
@@ -3555,6 +3657,34 @@ pub fn run_once_traced(
                 }
             }
             tendrils = (r.kills - tendril_kill_mark).min(params.tendril_max);
+        }
+
+        // THE SYNDICATE GAUGE. Affinity the WEAPON earned, which is half of
+        // each kill's — "Kill with weapons: Half Affinity goes to the Warframe
+        // and half to the killing weapon" (wiki Affinity).
+        if let Some(sy) = params.syndicate_radial {
+            let fresh = r.kills - syndicate_kill_mark;
+            syndicate_kill_mark = r.kills;
+            if fresh > 0 && t >= syndicate_ready_at {
+                // Per kill: base affinity x the level multiplier, FLOORED to a
+                // whole number ("the base affinity multiplied by the Affinity
+                // Multiplier value is also rounded down"), then halved.
+                let per_kill = (params.target.base_affinity
+                    * scaling::affinity_multiplier(params.target.level, params.target.eximus))
+                .floor()
+                    * WEAPON_AFFINITY_SHARE;
+                syndicate_points += f64::from(fresh) * per_kill;
+            }
+            if syndicate_points >= sy.affinity_to_fill && t >= syndicate_ready_at {
+                // Fires, then BOTH rules: points to zero and no conversion at
+                // all until the cooldown is out.
+                syndicate_points = 0.0;
+                syndicate_ready_at = t + sy.cooldown_seconds;
+                fire_syndicate_radial(
+                    &sy, &mut r, &mut target, &mut debuffs, &mut gal, &mut arc, params,
+                    rng, t,
+                );
+            }
         }
 
         // Phase transitions and reloads.
@@ -4826,6 +4956,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         sources.radial += r.sources.radial;
         sources.field += r.sources.field;
         sources.arcane_on_status += r.sources.arcane_on_status;
+        sources.syndicate += r.sources.syndicate;
         for (acc, v) in sources.status.iter_mut().zip(r.sources.status) {
             *acc += v;
         }
@@ -7242,6 +7373,64 @@ mod tests {
         );
     }
 
+    /// A SYNDICATE RADIAL IS ARMED BY AFFINITY AND CAPPED BY ITS COOLDOWN.
+    ///
+    /// "All affinity earned by the weapon during a mission fills a gauge",
+    /// 1000 points at a maxed augment, and a weapon kill gives the weapon HALF
+    /// the enemy's affinity — "Kill with weapons: Half Affinity goes to the
+    /// Warframe and half to the killing weapon".
+    ///
+    /// Two things worth pinning separately, because a model can get either one
+    /// right alone: that kills ARM it at the rate the wiki gives, and that the
+    /// 30 s cooldown BOUNDS it however fast you kill.
+    #[test]
+    fn a_syndicate_radial_arms_on_affinity_and_is_capped_by_its_cooldown() {
+        let truth = *crate::syndicates_data::get("truth").expect("truth");
+        // A target worth 200 affinity at level 1: the multiplier is
+        // 1 + 0.1425 = 1.1425, so 228 floored, and the weapon's half is 114.
+        // Nine kills fill the 1000-point gauge.
+        let mut t = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
+        t.base_affinity = 200.0;
+        let build = |secs: f64, radial: Option<crate::syndicates_data::SyndicateDef>| DummyParams {
+            syndicate_radial: radial,
+            magazine_size: 100_000.0,
+            fire_rate: 10.0,
+            duration_secs: secs,
+            body_parts: mono_body(1.0),
+            target: t.clone(),
+            ..flat_base()
+        };
+        let blasts = |p: &DummyParams| {
+            let r = run_once(p, &mut Rng::new(11));
+            (r.sources.syndicate / truth.damage).round() as u32
+        };
+
+        // OFF: no augment, no explosions, however much dies.
+        assert_eq!(blasts(&build(300.0, None)), 0, "no augment, no radial");
+
+        // ON, and every shot kills, so the gauge refills far faster than the
+        // cooldown allows: 300 s / 30 s = 10 detonations and not one more.
+        assert_eq!(
+            blasts(&build(300.0, Some(truth))),
+            10,
+            "the cooldown bounds it however fast the gauge fills"
+        );
+        // ...and the bound is the COOLDOWN, not the clock: half the time, half
+        // the blasts.
+        assert_eq!(blasts(&build(150.0, Some(truth))), 5);
+
+        // THE ARMING IS REAL, not a timer wearing a gauge's name. A target
+        // worth a tenth as much affinity takes ten times the kills to fill it,
+        // and at this fire rate that is slow enough to miss cooldowns.
+        let mut poor = t.clone();
+        poor.base_affinity = 2.0;
+        let starved = blasts(&DummyParams { target: poor, ..build(300.0, Some(truth)) });
+        assert!(
+            starved < 10,
+            "a low-affinity target must fill the gauge more slowly, got {starved} blasts"
+        );
+    }
+
     fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> TargetParams {
         TargetParams {
             name: "test target".into(),
@@ -7250,6 +7439,7 @@ mod tests {
             base_health: 50.0, // below the weakest possible shot (75)
             base_armor: armor,
             base_overguard: overguard,
+            base_affinity: 0.0,
             base_shield: 0.0,
             health_curve: crate::scaling::health::UNAFFILIATED,
             shield_curve: crate::scaling::shield::GRINEER,
