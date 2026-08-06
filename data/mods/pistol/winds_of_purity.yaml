@@ -17,19 +17,13 @@ description: "+X% Life Steal\n+X Purity"
 exclusive_to: [furis, mk1_furis]
 
 effects:
-  # THE SYNDICATE RADIAL — "+1 Purity" at max rank, and MODELLED.
-  #
-  # The payload is not written here: Purity is one of SIX effects shared by
-  # dozens of augments and by the Syndicate weapons themselves, so it lives in
-  # data/syndicates/purity.yaml and this card names it. 1,000 damage of its own
-  # element in a 25 m radius with a guaranteed proc, on a 30-second cooldown,
-  # armed by 1,000 affinity.
-  - kind: syndicate_radial
-    syndicate: purity         # data/syndicates/purity.yaml carries the payload
-    rank0: 0.25
-    rankMax: 1.0
-
   # LIFE STEAL — NOT MODELLED, and it is not a gap in this fight.
+  #
+  # FIRST because the CARD says it first. A description's X placeholders are
+  # filled by walking the effects in order, so the two lists have to agree:
+  # written radial-first, this card read "+100% Life Steal / +0.2 Purity" —
+  # the Purity ladder in the life-steal slot and the life-steal ladder in
+  # Purity's, both wrong, both plausible enough to survive a read.
   #
   # It heals the TENNO, and this arena scores damage dealt to one target: a
   # sim with no player health has nothing for a heal to change. Recorded rather
@@ -46,6 +40,17 @@ effects:
     rank0: 0.05
     rankMax: 0.20
 
+  # THE SYNDICATE RADIAL — "+1 Purity" at max rank, and MODELLED.
+  #
+  # The payload is not written here: Purity is one of SIX effects shared by
+  # dozens of augments and by the Syndicate weapons themselves, so it lives in
+  # data/syndicates/purity.yaml and this card names it. 1,000 damage of its own
+  # element in a 25 m radius with a guaranteed proc, on a 30-second cooldown,
+  # armed by 1,000 affinity.
+  - kind: syndicate_radial
+    syndicate: purity         # data/syndicates/purity.yaml carries the payload
+    rank0: 0.25
+    rankMax: 1.0
 family: winds_of_purity
 
 source:

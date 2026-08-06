@@ -629,6 +629,12 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 // it worked and did nothing.
                 "not_modeled": m.unmodeled,
                 "out_of_scope": m.out_of_scope,
+                // ...and the PARTLY modelled case, which neither flag above can
+                // say: Winds of Purity lands its Purity radial and does not
+                // model its life steal, so calling the whole card unmodelled
+                // would be a second untruth. Derived from what the loader
+                // actually dropped.
+                "unmodeled_effects": wfsim_engine::mods_data::unmodeled_effects(m.id),
             });
             // The verbatim in-game DESCRIPTION per rank (X filled) — what
             // the picker and the configured slot display. Absent for pools

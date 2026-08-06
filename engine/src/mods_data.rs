@@ -676,6 +676,51 @@ impl ModDescInfo {
 ///
 /// None means the file genuinely has no `description`, and the caller falls
 /// back to the effect lines.
+/// The effect kinds on this mod that the loader DROPPED — what the card must
+/// admit it does not do.
+///
+/// `effect()` is a `filter_map`, so an effect it cannot build simply vanishes
+/// and the mod loads as one that silently does less than its card says. Two
+/// kinds say so on purpose (`unmodeled`, `out_of_scope`) and the ModDef carries
+/// a flag for each; this covers the third case, a mod that is PARTLY modelled.
+///
+/// Winds of Purity is the one today: its Purity radial lands 1,000 damage a
+/// blast and its life steal heals a Tenno this arena does not have. Flagging
+/// the whole mod `unmodeled` would say the card does nothing, which is worse
+/// than saying nothing — so the disclosure has to be per effect.
+///
+/// DERIVED, never listed: it re-asks `effect()` the same question the loader
+/// asked, so a mod that starts dropping an effect discloses it without anyone
+/// noticing they should come back here (memory: derive triggers, don't list
+/// them).
+pub fn unmodeled_effects(id: &str) -> &'static [String] {
+    static MAP: OnceLock<std::collections::HashMap<String, Vec<String>>> = OnceLock::new();
+    MAP.get_or_init(|| {
+        let mut map = std::collections::HashMap::new();
+        for (_, text) in crate::data::files_under("mods/") {
+            let Ok(mf) = serde_norway::from_str::<ModFile>(text) else { continue };
+            let dropped: Vec<String> = mf
+                .effects
+                .iter()
+                .filter(|e| effect(e).is_none())
+                .filter_map(|e| e.get("kind").and_then(Value::as_str))
+                // The two that already have their own flag and their own line
+                // on the card.
+                .filter(|k| *k != "unmodeled" && *k != "out_of_scope")
+                // `life_steal_on_own_damage` -> "life steal on own damage": the
+                // kind IS the description, in the vocabulary the yaml chose.
+                .map(|k| k.replace('_', " "))
+                .collect();
+            if !dropped.is_empty() {
+                map.insert(mf.id.clone(), dropped);
+            }
+        }
+        map
+    })
+    .get(id)
+    .map_or(&[], |v| v.as_slice())
+}
+
 pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
     static INFO: OnceLock<std::collections::HashMap<String, ModDescInfo>> = OnceLock::new();
     INFO.get_or_init(|| {
@@ -1464,5 +1509,83 @@ mod class_tests {
             }
         }
         assert!(bad.is_empty(), "{} mod(s):\n  {}", bad.len(), bad.join("\n  "));
+    }
+}
+
+
+/// A CARD'S SENTENCES AND ITS EFFECTS ARE ONE ORDER.
+///
+/// `desc_info` fills the X placeholders by walking the effects forward, so the
+/// yaml's effect order IS the card's sentence order. That contract was real,
+/// undocumented and unchecked, and Winds of Purity broke it the day it was
+/// written: its radial was listed first while its card says "+X% Life Steal"
+/// first, so the card read "+100% Life Steal / +0.2 Purity" — the Purity ladder
+/// in the life-steal slot and the life-steal ladder in Purity's. Both numbers
+/// are wrong and both look like numbers a mod could have, which is why reading
+/// the card cannot catch it.
+///
+/// The check is derived: it does not know what any mod does. For each effect
+/// whose KIND names something the description actually says ("status chance",
+/// "fire rate", "life steal", or a syndicate's own word), it takes where that
+/// phrase sits in the sentence — and those positions must climb with the
+/// effects. An effect whose kind is not spoken in the description is skipped,
+/// so this only ever fires on a mismatch it can prove.
+#[cfg(test)]
+mod card_order_tests {
+    use super::*;
+
+    /// Where in the description this effect is spoken about, if it is.
+    ///
+    /// A kind reads `<what>_<qualifiers>`, and a card names the `<what>`:
+    /// `life_steal_on_own_damage` is written "Life Steal", `status_chance_bonus`
+    /// is written "Status Chance". So the longest form is tried first and
+    /// trailing words are dropped until one is found — never below two words,
+    /// because a lone word matches too easily to be evidence of anything.
+    fn spoken_at(e: &Value, hay: &str) -> Option<(usize, String)> {
+        let kind = e.get("kind").and_then(Value::as_str)?;
+        // A syndicate radial is named by its SYNDICATE (Purity, Truth), never
+        // by its kind — "syndicate radial" appears on no card.
+        if kind == "syndicate_radial" {
+            let s = e.get("syndicate").and_then(Value::as_str)?.to_lowercase();
+            return hay.find(&s).map(|at| (at, s));
+        }
+        let words: Vec<&str> = kind
+            .trim_end_matches("_bonus")
+            .trim_end_matches("_reduction")
+            .split('_')
+            .collect();
+        let floor = if words.len() <= 1 { 1 } else { 2 };
+        for take in (floor..=words.len()).rev() {
+            let p = words[..take].join(" ");
+            if let Some(at) = hay.find(&p) {
+                return Some((at, p));
+            }
+        }
+        None
+    }
+
+    #[test]
+    fn effects_are_listed_in_the_order_the_card_says_them() {
+        for (path, text) in crate::data::files_under("mods/") {
+            let Ok(mf) = serde_norway::from_str::<ModFile>(text) else { continue };
+            let Some(desc) = mf.description.as_ref() else { continue };
+            let hay = desc.to_lowercase();
+            let mut seen: Vec<(usize, String, usize)> = Vec::new(); // (position, phrase, effect index)
+            for (i, e) in mf.effects.iter().enumerate() {
+                if let Some((at, p)) = spoken_at(e, &hay) {
+                    seen.push((at, p, i));
+                }
+            }
+            for w in seen.windows(2) {
+                let (a, b) = (&w[0], &w[1]);
+                assert!(
+                    a.0 <= b.0,
+                    "{path}: the card says `{}` before `{}`, but the effects are listed \
+                     the other way round — `desc_info` fills the X's in effect order, so \
+                     the two ladders land in each other's slots",
+                    b.1, a.1
+                );
+            }
+        }
     }
 }

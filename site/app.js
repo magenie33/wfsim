@@ -4369,6 +4369,15 @@ const notModeledLines = (o) => {
       tr("real damage the simulator does not compute yet"),
     )}">⊘ ${escHtml(tr("not modelled yet"))}</span>`);
   }
+  // PARTLY modelled: the mod works, and one named effect on it does not. A
+  // third line rather than a third flag, because "not modelled yet" over a card
+  // that lands 1,000 damage a blast is as wrong as saying nothing.
+  const partial = o.unmodeled_effects || [];
+  if (partial.length && !o.not_modeled) {
+    out.push(`<span class="unmodeled part" title="${escHtml(
+      tr("everything else on this card is modelled; this is not:") + " " + partial.join(", "),
+    )}">⊘ ${escHtml(tr("partly modelled"))}</span>`);
+  }
   if (o.out_of_scope) {
     out.push(`<span class="unmodeled oos" title="${escHtml(
       tr("this acts on something a weapon-damage simulator has none of — Warframe energy, enemy behaviour, movement — so it would change no number here"),

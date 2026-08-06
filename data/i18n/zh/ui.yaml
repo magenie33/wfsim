@@ -140,6 +140,10 @@ ui:
   "What is sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself). The board takes a weapon built as far as it goes: every main slot filled, exilus not counted.": 发送的内容：武器及其 mod、进化、赋能。仅此而已——没有账号、没有标识符、没有你起的任何名字，也没有分数（榜单自己跑分）。榜单收的是这把武器的最努力配置：8 个主槽位全部装满，exilus 不计。
   "don't submit": 不要提交
   "not modelled yet": 尚未建模
+  # The card WORKS and one named effect on it does not — never "尚未建模",
+  # which would disown a mod that lands 1,000 damage a blast.
+  "partly modelled": 部分建模
+  "everything else on this card is modelled; this is not:": 这张卡上的其余部分都已建模，唯独以下没有：
   "A Status Effect has a 15% chance to SET the next hit's crit chance to 300% — ignoring every other crit bonus. Rolled per pellet.": 异常状态有 15% 几率把下一次命中的暴击率设定为 300%——无视其他一切暴击加成。逐弹丸判定。
   "Its innate headshot bonus MULTIPLIES the headshot bracket instead of joining it, so it compounds with Deadhead and Target Acquired rather than adding to them.": 它自带的爆头加成是乘在爆头加算区上，而不是并入其中——所以它与首领终结、锁定目标是相乘而非相加。
   "Weapon passive: Frenzy — see its buff card (grants +1 toxin while active).": 武器被动：狂乱 —— 详见它的增益卡（生效期间提供 +1 毒素）。
