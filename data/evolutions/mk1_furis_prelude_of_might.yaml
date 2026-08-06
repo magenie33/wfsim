@@ -11,16 +11,18 @@ description: "With Critical Chance below 40%: Increase Critical Damage Multiplie
 selection: choose_one
 
 effects:
-  # NOT LOADED: the condition is on the build's OWN RESOLVED crit chance, which
-  # no effect kind here can read — every `condition:` in this engine asks about
-  # the Tenno or the target, never about the panel the mods just produced. The
+  # MODELLED (2026-08-06). The condition is on the build's OWN RESOLVED crit
+  # chance, which no `condition:` here can express — every one of those asks
+  # about the Tenno or the target, never about the panel the mods just
+  # produced — so it is its own effect kind, resolved late in `resolve` against
+  # the same expression the panel publishes. The
   # payload is large (+3x on a 3.4x base) and so is its cost, since taking it
   # means holding crit chance under 40%; the form's own 26% base already sits
   # close to that line, so the two interact rather than stack.
   #
-  # Under a kind the loader does NOT know, on purpose: the
-  # `flat_base_crit_multiplier` arm ignores `condition:`, so spelling it that
-  # way would have loaded +3x on EVERY build instead of nothing.
+  # NOT `flat_base_crit_multiplier`: that arm ignores `condition:`, so spelling
+  # it that way would grant +3x to every build — which is exactly what it did
+  # before this kind existed.
   - kind: crit_multiplier_below_crit_chance
     value: 3.0
     below_crit_chance: 0.40

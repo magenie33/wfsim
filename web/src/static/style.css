@@ -955,3 +955,10 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .picker-tools .dd,.quick-calc .dd{padding:3px 8px;font-size:12px}
 .quick-calc .dd{max-width:150px}
 .topbar .dd{height:28px;padding:0 8px;font-size:12px;margin-left:auto}
+
+/* WHAT IS NOT MODELLED YET, wherever a perk is chosen. Amber rather than red:
+   it is not broken and not an error — the game has it and the sim cannot price
+   it yet, which is a different thing from the BROKEN badge beside it. */
+.caveat.unmod{color:var(--gold)}
+.exchip.unmod{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold);
+  border:1px solid color-mix(in srgb,var(--gold) 40%,transparent)}

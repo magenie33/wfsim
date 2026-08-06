@@ -1,3 +1,9 @@
+// The weapon entry in `meta_json` is one `json!` literal deep enough to hit
+// the macro's default expansion limit — reached when the evolution tile
+// gained its "what this does not do yet" fields. A limit, not a smell:
+// splitting the literal to please a counter would scatter one payload
+// across helpers that exist for no other reason.
+#![recursion_limit = "512"]
 //! wfsim-webapi: the JSON API layer, independent of any transport.
 //!
 //! Every endpoint the frontend talks to lives here as a plain
@@ -801,6 +807,19 @@ pub fn meta_json() -> Value {
                                 // pick from did not, and that is where the
                                 // question gets asked (reported 2026-08-05).
                                 "co_excluded": e.co_base_excludes_this_evolution,
+                                // WHAT IT DOES NOT DO YET, on the tile where
+                                // the choice is made. An evolution with an
+                                // inert effect used to look exactly like a
+                                // working one: same card, same tier, and a
+                                // number that never moved. Naming the gap is
+                                // the whole point — a tier where two of three
+                                // options do nothing is not a choice, and the
+                                // player is the last person who should have to
+                                // discover that by measuring.
+                                // DERIVED from the loaded effects, so it can
+                                // never drift from what is actually modelled.
+                                "unmodeled": e.unmodeled_effects(),
+                                "fully_unmodeled": e.fully_unmodeled(),
                                 "desc": e.description.split('\n').collect::<Vec<_>>(),
                                 "effects": e.describe(),
                             }))

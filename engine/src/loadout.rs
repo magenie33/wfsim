@@ -897,6 +897,11 @@ pub struct WeaponBase {
     /// Evolution-granted additive fire rate (Rapid Wrath) — joins the
     /// fire-rate-mod bucket.
     pub evo_fire_rate_bonus: f64,
+    /// Prelude of Might: `(bonus, threshold)` — add `bonus` to the crit damage
+    /// MULTIPLIER while the resolved crit chance stays under `threshold`.
+    /// Resolved late for that reason: it is the only evolution whose condition
+    /// reads the panel rather than the fight.
+    pub crit_mult_below_cc: Option<(f64, f64)>,
     /// FLAT crit/status chance added AFTER mods (Elemental Excess) — a
     /// different layer from the base-stat one `base_crit_chance` carries.
     pub post_mod_crit_chance: f64,
@@ -1752,6 +1757,18 @@ pub fn resolve_for(
     let evo_ms_stacks = if locked_stat("multishot") { 0 } else { base.buff_ms_max_stacks };
     let ms_last_round = if locked_stat("multishot") { 0.0 } else { base.multishot_on_last_round };
     let evo_fr_bonus = if locked_stat("fire_rate") { 0.0 } else { base.evo_fire_rate_bonus };
+    // PRELUDE OF MIGHT, resolved here because it is the one evolution whose
+    // condition is the BUILD's own output: "with Critical Chance below 40%".
+    // Computed against the same expression the panel publishes, so the tile and
+    // the number can never disagree about whether it is on — and it is a FLAT
+    // addition to the multiplier, not a bonus in the crit-damage bucket, which
+    // is what "+3x Critical Damage Multiplier" says.
+    let resolved_cc =
+        (base.base_crit_chance * (1.0 + cc) + base.post_mod_crit_chance).max(0.0);
+    let prelude_cd = match base.crit_mult_below_cc {
+        Some((bonus, below)) if resolved_cc < below => bonus,
+        _ => 0.0,
+    };
     for &d in &disabled {
         match d {
             "multishot" => {
@@ -1936,8 +1953,8 @@ pub fn resolve_for(
         modified_base,
         // Elemental Excess adds its crit/status FLAT, after the mod
         // multiply (wiki) — a different layer from the base-stat one.
-        crit_chance: (base.base_crit_chance * (1.0 + cc) + base.post_mod_crit_chance).max(0.0),
-        crit_damage: base.base_crit_damage * (1.0 + cd),
+        crit_chance: resolved_cc,
+        crit_damage: base.base_crit_damage * (1.0 + cd) + prelude_cd,
         // No upper clamp: status chance ABOVE 100% is meaningful (a
         // guaranteed proc plus an extra roll) — DT resolves to 129%.
         status_chance: (base.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)

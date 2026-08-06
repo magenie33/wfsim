@@ -7611,7 +7611,10 @@ function renderOptEvos() {
       // Neither mark blocks the other — clicking one rewrites the tier.
       const desc = evoLines(o).map((x) => `<div>${escHtml(x)}</div>`).join("");
       return `<div class="opt ${st === "off" ? "" : st} ${o.broken ? "dis-soft" : ""}">
-        <div class="info"><div class="mn">${o.name}${o.broken ? ' <span class="exchip brk">BROKEN</span>' : ""}${optGainChipFor(o.id)}</div><div class="me">${desc}</div>${optPairingNoteFor(o.id)}</div>
+        <div class="info"><div class="mn">${o.name}${o.broken ? ' <span class="exchip brk">BROKEN</span>' : ""}${
+          (o.unmodeled || []).length ? ` <span class="exchip unmod" title="${escHtml((o.unmodeled || []).join(", "))}">${
+            escHtml(o.fully_unmodeled ? tr("not modelled yet") : tr("partly modelled"))}</span>` : ""
+        }${optGainChipFor(o.id)}</div><div class="me">${desc}</div>${optPairingNoteFor(o.id)}</div>
         <div class="oseg">
           <span class="seg ${st === "search" ? "on" : ""} ${locked ? "tlocked" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="search" ${pinned && pinned !== o.id ? `title="${escHtml(tr("pooling opens the tier — the pin gives way"))}"` : ""}>${tr("pool")}</span>
           <span class="seg ${st === "fixed" ? "on" : ""} ${locked ? "tlocked" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="fixed" ${hasPool ? `title="${escHtml(tr("req pins the tier — the pool marks give way"))}"` : ""}>${tr("req")}</span>

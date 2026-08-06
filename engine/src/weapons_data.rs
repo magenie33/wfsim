@@ -1219,6 +1219,8 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         multishot_ammo_bonus: 0.0,           // raised by Plentiful Mayhem
         // Raised by evolutions, never by the raw weapon data.
         evo_fire_rate_bonus: 0.0,
+        // Set by Prelude of Might at `evolutions_data::apply`, read in `resolve`.
+        crit_mult_below_cc: None,
         post_mod_crit_chance: 0.0,
         post_mod_status_chance: 0.0,
         // Evolutions ADD to this (Caput Mortuum); a weapon's innate share is

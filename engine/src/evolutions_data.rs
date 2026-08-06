@@ -142,6 +142,12 @@ enum EvoEffect {
     /// Fire-rate bonus in the ORDINARY additive bucket — the same one the
     /// fire-rate mods feed, so it SUMS with them (Rapid Wrath).
     FireRateBonus(f64),
+    /// Prelude of Might: "With Critical Chance below 40%: Increase Critical
+    /// Damage Multiplier by +3x". The condition is on the build's OWN RESOLVED
+    /// crit chance, so unlike every other `condition:` in this engine it asks
+    /// about the panel the mods just produced rather than about the Tenno or
+    /// the target — which is why it is a variant and not a gate.
+    CritMultiplierBelowCritChance { value: f64, below: f64 },
     /// FLAT crit chance added AFTER mods (Elemental Excess: "Bonuses are
     /// added after mods as a flat value") — NOT the base-stat layer that
     /// Commodore's Fortune occupies.
@@ -347,6 +353,7 @@ impl EvolutionDef {
                 | EvoEffect::MultishotConsumesAmmo(_)
                 | EvoEffect::ConditionOverload { .. }
                 | EvoEffect::FireRateBonus(_)
+                | EvoEffect::CritMultiplierBelowCritChance { .. }
                 | EvoEffect::PostModCritChance(_)
                 | EvoEffect::PostModStatusChance(_)
                 | EvoEffect::HeadshotDamage(_)
@@ -396,6 +403,35 @@ impl EvolutionDef {
         self.effects
             .iter()
             .filter(move |_| !self.currently_broken)
+    }
+
+    /// WHAT THIS PERK DOES NOT DO YET — the effects that loaded as `Inert`,
+    /// named.
+    ///
+    /// DERIVED, never declared. An `unmodeled: true` field beside the effects
+    /// would be a second copy of the truth, free to disagree with the loader
+    /// the moment somebody implements one and forgets the flag. This asks the
+    /// loaded effects, so a perk stops confessing the instant it is modelled
+    /// and starts the instant a new unknown kind is written.
+    ///
+    /// Empty means every effect is modelled. It is the honest thing for the
+    /// UI to show and the honest thing to grep for (user, 2026-08-06: 如果有
+    /// 的东西没做完，得说这个东西未完成 …… 不要隐瞒欺骗自己).
+    pub fn unmodeled_effects(&self) -> Vec<&str> {
+        self.effects
+            .iter()
+            .filter_map(|e| match e {
+                EvoEffect::Inert(name) => Some(name.as_str()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// Does this perk do NOTHING the sim can see? A perk whose every effect is
+    /// inert is not a weaker choice, it is not a choice — and the tile you pick
+    /// from should say so rather than look like its working tier-mates.
+    pub fn fully_unmodeled(&self) -> bool {
+        !self.effects.is_empty() && self.unmodeled_effects().len() == self.effects.len()
     }
 
     /// One display line per effect — what the model computes (broken
@@ -457,6 +493,10 @@ impl EvolutionDef {
                     per_type * 100.0
                 ),
                 EvoEffect::FireRateBonus(v) => format!("+{:.0}% fire rate", v * 100.0),
+                EvoEffect::CritMultiplierBelowCritChance { value, below } => format!(
+                    "+{value:.1}x crit damage while crit chance stays under {:.0}%",
+                    below * 100.0
+                ),
                 EvoEffect::PostModCritChance(v) => format!(
                     "{}{:.0}% crit chance, flat AFTER mods",
                     if *v >= 0.0 { "+" } else { "" },
@@ -616,6 +656,10 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             per_type: f(v, "value").unwrap_or(0.0),
         },
         "fire_rate_bonus" => EvoEffect::FireRateBonus(f(v, "value").unwrap_or(0.0)),
+        "crit_multiplier_below_crit_chance" => EvoEffect::CritMultiplierBelowCritChance {
+            value: f(v, "value").unwrap_or(0.0),
+            below: f(v, "below_crit_chance").unwrap_or(0.0),
+        },
         "flat_crit_chance_after_mods" => {
             EvoEffect::PostModCritChance(f(v, "value").unwrap_or(0.0))
         }
@@ -771,6 +815,12 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     base.innate_co_per_type += per_type;
                 }
                 EvoEffect::FireRateBonus(v) => base.evo_fire_rate_bonus += v,
+                // Carried, not applied: `apply` works on the RAW base panel and
+                // the condition needs the crit chance the mods produce, which
+                // does not exist until `resolve` runs.
+                EvoEffect::CritMultiplierBelowCritChance { value, below } => {
+                    base.crit_mult_below_cc = Some((*value, *below));
+                }
                 EvoEffect::PostModCritChance(v) => base.post_mod_crit_chance += v,
                 EvoEffect::PostModStatusChance(v) => base.post_mod_status_chance += v,
                 EvoEffect::HeadshotDamage(v) => base.headshot_damage_bonus += v,
@@ -1191,26 +1241,32 @@ use crate::loadout::WeaponBase;
             //   Electricity in them.
             //
             // An unknown kind is the only spelling that means "nothing models
-            // this yet" and stays true. What each needs, cheapest first:
-            // Headcracker mirrors `on_headshot_reload_speed` exactly with a
-            // fire-rate payload (worth up to +50% here); Executioner's Fortune
-            // needs a reload the sim can END rather than scale; Stormburst
-            // needs a stacking buff that can state a target condition; Prelude
-            // of Might needs a condition read off the RESOLVED panel, which
-            // nothing in this engine does; Haven Foray needs a Tenno with
-            // overshields, which `TennoCondition` has no room for.
+            // this yet" and stays true.
             //
-            // Tier 4 is the one that stings: two of its three options are here,
-            // so the tier currently decides itself.
+            // PRELUDE OF MIGHT LEFT THIS LIST on 2026-08-06: it needed a
+            // condition read off the RESOLVED panel, which nothing here did, so
+            // it got `CritMultiplierBelowCritChance` and a late hook in
+            // `resolve`. What the remaining four still need, cheapest first:
+            // HEADCRACKER mirrors `on_headshot_reload_speed` with a fire-rate
+            // payload, but a relative bonus has to join the additive bucket on
+            // the BASE rate and the sim carries only the modded one, so it
+            // wants an `unmodded_fire_rate` threaded through first (worth up to
+            // +50% at a 100% headshot rate — the largest gap left);
+            // EXECUTIONER'S FORTUNE needs a reload the sim can END rather than
+            // scale; STORMBURST needs a stacking buff that can state a TARGET
+            // condition, which `AssumedMaxMultishot` cannot; HAVEN FORAY needs
+            // a Tenno with overshields, which `TennoCondition` has no room for.
+            //
+            // Every one of them now says so on its own tile — `unmodeled_effects`
+            // is derived from these same variants, so this list and the UI
+            // cannot disagree.
             "furis_executioners_fortune :: instant_reload_on_headshot",
             "furis_haven_foray :: flat_base_damage_with_overshields",
             "furis_headcracker :: on_headshot_fire_rate",
-            "furis_prelude_of_might :: crit_multiplier_below_crit_chance",
             "furis_stormburst :: stacking_multishot_on_electricity_status",
             "mk1_furis_executioners_fortune :: instant_reload_on_headshot",
             "mk1_furis_haven_foray :: flat_base_damage_with_overshields",
             "mk1_furis_headcracker :: on_headshot_fire_rate",
-            "mk1_furis_prelude_of_might :: crit_multiplier_below_crit_chance",
             "mk1_furis_stormburst :: stacking_multishot_on_electricity_status",
         ];
         let expected: Vec<String> = expected.into_iter().map(str::to_string).collect();
