@@ -5923,3 +5923,63 @@ mod card_and_sim_agree {
         assert!(seen > 50, "the walk collapsed: only {seen} weapon-arcane pairs");
     }
 }
+
+/// TWO WEAPONS MUST NOT WEAR ONE PICTURE.
+///
+/// `data/assets.yaml` is filled from WFCD's `imageName`, and for some weapons
+/// that field is a SIBLING'S file: the export gives MK1-Furis `Furis.png` and
+/// Ocucor `CrpSentExperimentPistol.png` (which the CDN does not serve at all).
+/// Both are hand-overridden to `wiki:` entries, and both were silently
+/// re-derived — wrongly — the one time `scripts/gen_assets.py --write` ran with
+/// them absent. Nothing downstream notices: the file exists, the fetcher caches
+/// it, the build's missing-art guard passes, and the page shows a Furis where
+/// an MK1-Furis should be.
+///
+/// The one legitimate collision is two FORMS of one weapon — an Incarnon form
+/// shows its base weapon's image on purpose ("not the Genesis adapter icon"),
+/// and an uncharged bow is the same bow. That is what a TRANSFORM GROUP already
+/// means, so the exemption is read off the weapon data rather than written as a
+/// list of pairs or guessed from the id's suffix.
+#[cfg(test)]
+mod one_picture_one_weapon {
+    use super::*;
+
+    /// The weapon an id draws its art from — its transform group, so every
+    /// form of one weapon is one subject.
+    fn subject(id: &str) -> &str {
+        wfsim_engine::weapons_data::spec(id).map_or(id, |s| s.group())
+    }
+
+    #[test]
+    fn no_two_weapons_share_an_image() {
+        let mut by_image: std::collections::HashMap<&str, Vec<&str>> = Default::default();
+        for (id, image) in &assets().weapons {
+            by_image.entry(image.as_str()).or_default().push(id.as_str());
+        }
+        for (image, mut ids) in by_image {
+            ids.sort_unstable();
+            let subjects: std::collections::BTreeSet<&str> =
+                ids.iter().map(|i| subject(i)).collect();
+            assert!(
+                subjects.len() <= 1,
+                "`{image}` is worn by {ids:?}, which are different weapons — one of \
+                 them has a sibling's picture. WFCD's `imageName` is wrong for these; \
+                 set the right file by hand (a `wiki:` prefix if the CDN lacks it)."
+            );
+        }
+    }
+
+    /// ...and every weapon in the roster HAS one. The build fails on a missing
+    /// file; this fails on a missing ENTRY, which is the earlier and clearer
+    /// error.
+    #[test]
+    fn every_weapon_has_an_image() {
+        for w in wfsim_engine::weapons_data::roster() {
+            assert!(
+                assets().weapons.contains_key(&w.id),
+                "{} has no entry in data/assets.yaml",
+                w.id
+            );
+        }
+    }
+}
