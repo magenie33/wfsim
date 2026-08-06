@@ -738,8 +738,10 @@ of one weapon.
 **So AoE parts carry their own CO eligibility, defaulting to NO.** Both the
 explosion and the lingering field take a `takes_condition_overload` flag from
 weapon data. The engine deliberately supports what the mods forbid, because the
-game does it: the Torid's cloud declares it (its own catalog row), the Zylok's
-Incarnon radial would, and every unlisted AoE part gets nothing. Note the
+game does it: the Torid's cloud declares it (its own catalog row), the
+Burston/Burston Prime Incarnon radial declares it (its own catalog row, and the
+roster's first explosion to take CO), the Zylok's Incarnon radial would, and
+every unlisted AoE part gets nothing. Note the
 Zylok's qualifier — CO reaches the radial only *on the target directly hit* —
 which a single-target arena always satisfies; a multi-target model would have to
 gate it per enemy.
@@ -796,6 +798,19 @@ Weapon-side exceptions: some weapons always hit at 1x (beams like Ignis,
 launchers like Kuva Bramma); the **radial** part of AoE damage is always 1x
 and **cannot trigger headshot conditions** (the direct projectile can).
 Headshot-damage bonuses (e.g. sniper zoom) stack additively with each other.
+
+**A weak-point bonus is conditional on WHERE THE BULLET LANDS, and no stack
+policy can change that** — `AssumedMax` is about a buff's stack COUNT, not
+about aim. Both halves of Acuity (Primary / Pistol) live in their own buckets
+(`weakpoint_damage`, `weakpoint_cc_rel`), which the sim gates on `is_head` per
+pellet, and Cascadia Accuracy's weak-point crit joins them there. The crit half
+used to fold into the plain crit bucket under `AssumedMax`, splitting one mod
+down the middle: its Weak Point Damage stayed conditional while its Weak Point
+Crit Chance became unconditional. On the panel — always `AssumedMax` — that
+read the Burston Prime Incarnon's 28% as **126% on every shot**, and handed the
+same 126% to the RADIAL, which can never weak-point-hit at all. Both halves now
+state themselves as their own rows next to the plain ones, on the direct part
+only. Sim results never moved: the sim runs `Emergent`.
 
 **Aiming is a SCENARIO input, not an assumption.** A pile of mods only pay out
 `while aiming` — Galvanized Crosshairs and Galvanized Scope, Hydraulic
@@ -1045,12 +1060,26 @@ Rules the radial part follows, each differing from the direct part:
   Impact/Slash off the direct hit and Radiation off the blast in the same
   instant. Those radial procs then feed Condition Overload on subsequent
   direct hits, even though the radial itself gets no CO bonus.
-- **No Condition Overload.** CO is direct-damage only; radial/AoE components
-  and non-directly-hit targets are excluded (§2). CO also ignores falloff as a
-  final multiplier. Careful: CO is the *only* thing the radial loses here —
-  weapon-wide damage buckets still reach it. The arcane base-damage stacks
-  (Merciless & co) share a bracket with CO in the direct-hit formula, so the
-  radial takes that ratio **without** the CO term.
+- **No Condition Overload — unless the entry says otherwise.** CO is
+  direct-damage only; radial/AoE components and non-directly-hit targets are
+  excluded (§2). CO also ignores falloff as a final multiplier. Careful: CO is
+  the *only* thing the radial loses here — weapon-wide damage buckets still
+  reach it. The arcane base-damage stacks (Merciless & co) share a bracket with
+  CO in the direct-hit formula, so the radial takes that ratio **without** the
+  CO term.
+
+  The exclusion is the RULE and not a law: an AoE part carries its own
+  `takes_condition_overload`, defaulting to no, and the CO catalog names the
+  entries that have it one at a time (§6). The roster's live example is the
+  **Burston / Burston Prime Incarnon radial**, whose row reads *"55 | 13 | 24%
+  | Adding — Radial hit only receives CO bonus on target directly hit by
+  bullet. AoE does not scale off multishot."* Three separate facts: the
+  explosion takes CO (on the directly-hit enemy, which a single-target arena
+  always is), it computes on its own **unevolved** 13 base while the tier-2
+  evolution's +42 raises its damage to 55 — 13/55 is the printed 24% — and it
+  fires once per trigger pull rather than once per pellet. Because "direct hits
+  only" is false on such a weapon, the panel builds that phrase from the entry
+  instead of asserting it, and the explosion states its own CO row.
 - **Self-stagger, never self-damage** (post-U29): "The explosion inflicts
   self-stagger to the user."
 - Only mods that increase the **explosion radius** change how far the falloff

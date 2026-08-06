@@ -1655,14 +1655,22 @@ pub fn resolve_for(
                 ModEffect::BlastRadius(v) => br += v,
                 ModEffect::StatusDuration(v) => sdur += v,
                 // Weak-point effects: conditional on the PART HIT, not on an
-                // uptime — active under every policy (the sim gates on
-                // `is_head`); AssumedMax folds the CC into the plain bucket
-                // (its optimistic view assumes weak-point aim).
+                // uptime — so they are active under EVERY policy and the sim
+                // gates them on `is_head`. AssumedMax is about a buff's stack
+                // count, not about where a bullet lands: no policy can make a
+                // body shot into a head shot.
+                //
+                // The CC half used to fold into the plain bucket under
+                // AssumedMax, which split ONE mod down the middle — Acuity's
+                // Weak Point Damage stayed conditional while its Weak Point
+                // Crit Chance became unconditional. On the panel (always
+                // AssumedMax) that read the Burston Incarnon's 28% as 126%,
+                // and handed the same 126% to the RADIAL, which can never
+                // weak-point-hit at all. The arcane source of the same effect
+                // (Cascadia Accuracy) was already in this bucket, so the mod
+                // was the only thing in the engine claiming otherwise.
                 ModEffect::WeakpointDamage(v) => wp_dmg += v,
-                ModEffect::WeakpointCritChance(v) => match policy {
-                    StackPolicy::AssumedMax => cc += v,
-                    _ => wp_cc += v,
-                },
+                ModEffect::WeakpointCritChance(v) => wp_cc += v,
                 ModEffect::OnKillCritDamage { bonus, duration } => match policy {
                     StackPolicy::AssumedMax => cd += bonus,
                     StackPolicy::Emergent => {

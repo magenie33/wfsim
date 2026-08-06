@@ -2298,13 +2298,34 @@ pub fn panel_json(v: &Value) -> Value {
         // Secondary Shiver) combine differently per weapon class, and their base
         // EXCLUDES evolution flat damage — this note states what the model
         // actually computes on THIS weapon, and is shared by every GunCO row.
+        // WHICH PARTS take it. "Direct hits only" is the rule the mod cards
+        // state and it is what every unlisted weapon does — but an AoE part
+        // carries its own eligibility and a few entries have it (MECHANICS
+        // §6), so the note has to be built from the weapon rather than
+        // asserted. It was a hardcoded "direct hits only", which the Burston
+        // Incarnon makes false: its explosion takes CO.
+        let radial_co = base.radial.as_ref().is_some_and(|r| r.takes_condition_overload);
+        let field_co = base.lingering.as_ref().is_some_and(|f| f.takes_condition_overload);
+        let co_parts = match (radial_co, field_co) {
+            (false, false) => "direct hits only".to_string(),
+            _ => {
+                let extra = if radial_co && field_co {
+                    "the radial explosion and the lingering field"
+                } else if radial_co {
+                    "the radial explosion"
+                } else {
+                    "the lingering field"
+                };
+                format!("direct hits AND {extra} — an AoE part taking CO is a per-entry exception, declared by this weapon")
+            }
+        };
         let behavior = match panel.co_behavior {
         wfsim_engine::loadout::CoBehavior::AdditiveWithBaseDamage =>
-            "joins the base-damage bracket on this weapon (additive with Hornet Strike), direct hits only",
+            format!("joins the base-damage bracket on this weapon (additive with Hornet Strike), {co_parts}"),
         wfsim_engine::loadout::CoBehavior::Independent =>
-            "an independent multiplier on this weapon, direct hits only",
+            format!("an independent multiplier on this weapon, {co_parts}"),
         wfsim_engine::loadout::CoBehavior::Inert =>
-            "INERT on this weapon — the bonus does not apply",
+            "INERT on this weapon — the bonus does not apply".to_string(),
     };
         let gunco_note = if (panel.co_base_fraction - 1.0).abs() > 1e-9 {
             format!(
@@ -2313,7 +2334,7 @@ pub fn panel_json(v: &Value) -> Value {
             panel.co_base_fraction * 100.0
         )
         } else {
-            behavior.to_string()
+            behavior.clone()
         };
         if panel.co_per_type > 0.0 {
             stats.push(json!({ "key": "co", "label": "Condition Overload",
@@ -2325,10 +2346,15 @@ pub fn panel_json(v: &Value) -> Value {
         // The equipped arcane on the panel: Secondary Shiver is a GunCO-family
         // source, so its row carries the SAME per-weapon caveat as the CO row.
         let tenno = tenno_from(v, info);
+        // Cascadia Accuracy's weak-point crit joins Acuity's in the sim
+        // (`ap.weakpoint_cc_rel + params.arcane.weakpoint_cc_rel`), so the row
+        // below has to add it or it would state less than the sim applies.
+        let mut arcane_wp_cc = 0.0;
         for (pool, aid, want_rank) in arcane_choices(v, info) {
             if let Some(def) = wfsim_engine::arcanes_data::for_slot(&pool, &aid) {
                 let rank = want_rank.unwrap_or(def.max_rank).min(def.max_rank);
                 let fx = def.fx(rank, policy, base.traits, &tenno);
+                arcane_wp_cc += fx.weakpoint_cc_rel;
                 if fx.per_cold_bd > 0.0 {
                     stats.push(json!({ "key": "shiver", "label": "Per Cold Status (Shiver)",
                     "base": "—",
@@ -2339,6 +2365,41 @@ pub fn panel_json(v: &Value) -> Value {
                         "value": fpct(fx.per_cold_bd), "note": "per Cold stack; Frozen counts as the full 10" })] }));
                 }
             }
+        }
+
+        // WEAK-POINT bonuses (Acuity, Cascadia Accuracy). They had NO rows at
+        // all: the damage half was invisible and the crit half was folded into
+        // the flat Crit Chance row, so a mod worth +350% on heads read as
+        // either nothing or as an unconditional 126%. Both halves are
+        // conditional on where the bullet lands, and the number a reader can
+        // act on is the one that holds THERE — stated next to the plain one,
+        // never in place of it.
+        let wp_cc_total = panel.weakpoint_cc_rel + arcane_wp_cc;
+        if wp_cc_total > 0.0 {
+            stats.push(json!({ "key": "weakpoint_cc", "label": "Weak Point Crit Chance",
+            "base": pc(panel.crit_chance),
+            "final": format!("{} on a weak point", pc(panel.crit_chance + panel.base_crit_chance * wp_cc_total)),
+            "note": format!(
+                "{} relative to the {} base, additive with Point Strike — on WEAK-POINT hits only. \
+                 Everywhere else the crit chance above stands, and the radial explosion never gets \
+                 it at all (an explosion has no hit location)",
+                fpct(wp_cc_total), pc(panel.base_crit_chance)),
+            "sources": sources("crit_chance", None) }));
+        }
+        if panel.weakpoint_damage > 0.0 {
+            stats.push(json!({ "key": "weakpoint_damage", "label": "Weak Point Damage",
+            "base": "—",
+            // Two decimals, not the panel's usual one: the wiki's worked
+            // example is "3 + 3.5 x 1.5 = 8.25x" and a row printing 8.2 no
+            // longer matches the source it cites.
+            "final": format!("+{:.2} to the weak-point multiplier", 1.5 * panel.weakpoint_damage),
+            "note": format!(
+                "the listed {} is ADDED to the enemy's own weak-point multiplier at 1.5x on a true \
+                 weak point (wiki: a 3x head becomes 3 + {:.2} = {:.2}x), and headshot-multiplier \
+                 bonuses multiply the sum. Weak-point hits only",
+                fpct(panel.weakpoint_damage), 1.5 * panel.weakpoint_damage,
+                3.0 + 1.5 * panel.weakpoint_damage),
+            "sources": Vec::<Value>::new() }));
         }
 
         // Elements: one row per contributed element (position/order matters for
@@ -2393,6 +2454,12 @@ pub fn panel_json(v: &Value) -> Value {
             "status_duration",
             "co",
             "shiver",
+            // Weak-point bonuses belong to the PROJECTILE that lands on the
+            // weak point, and to that one only: the explosion has no hit
+            // location, so leaving them among the weapon-wide rows would read
+            // as a claim over both parts.
+            "weakpoint_cc",
+            "weakpoint_damage",
         ];
         let key_of = |r: &Value| r["key"].as_str().unwrap_or("").to_string();
         let (direct_rows, weapon_rows): (Vec<Value>, Vec<Value>) = stats
@@ -2469,6 +2536,50 @@ pub fn panel_json(v: &Value) -> Value {
                     "linear from the epicentre; a directly-hit enemy takes 100%".to_string()
                 },
                 "sources": json!([]) }));
+            // CONDITION OVERLOAD, stated on the explosion ITSELF — because the
+            // answer is normally "no" and this reader is looking at one of the
+            // entries where it is "yes". The direct hit's row cannot carry it:
+            // it names one bonus, and the two parts do not get the same one.
+            // Shown only when a CO source is equipped, like the direct row.
+            if panel.co_per_type > 0.0 {
+                let (value, note) = if rr.takes_condition_overload {
+                    // The Burston Incarnon's own base fraction is 13/55: the
+                    // explosion takes the evolution's flat damage but not into
+                    // the base CO multiplies. Its catalog row prints the 24%.
+                    let orig = rb.base_vector.total() * rr.co_base_fraction;
+                    let cut = (rr.co_base_fraction - 1.0).abs() > 1e-9;
+                    (
+                        format!("{} per status type on target", fpct(panel.co_per_type)),
+                        if cut {
+                            format!(
+                                "THE EXCEPTION: CO normally reaches direct hits only, and this \
+                                 explosion is declared to take it — on the enemy the bullet \
+                                 directly hit, which a single target always is. Computed on the \
+                                 ORIGINAL {} base only ({:.0}% effectiveness): evolution flat \
+                                 damage raises the explosion's damage but not its CO base",
+                                num(orig),
+                                rr.co_base_fraction * 100.0
+                            )
+                        } else {
+                            "THE EXCEPTION: CO normally reaches direct hits only, and this \
+                             explosion is declared to take it — on the enemy the bullet directly \
+                             hit, which a single target always is"
+                                .to_string()
+                        },
+                    )
+                } else {
+                    (
+                        "excluded".to_string(),
+                        "the rule: Condition Overload reaches DIRECT hits only, so this \
+                         explosion takes none of it. Weapon-wide damage buckets still reach it — \
+                         CO is the one thing an AoE part loses"
+                            .to_string(),
+                    )
+                };
+                rows.push(json!({ "key": "co", "label": "Condition Overload",
+                    "base": "—", "final": value, "note": note,
+                    "sources": if rr.takes_condition_overload { sources("co", None) } else { vec![] } }));
+            }
             parts.push(json!({
                 "id": "radial",
                 "label": "Radial explosion",
@@ -5364,5 +5475,85 @@ mod equip_rule_tests {
         // it out instead of letting the run be refused after the fact.
         let forms = w["forms"].as_array().unwrap();
         assert_eq!(forms.iter().filter(|f| f["gauge_switched"] == json!(true)).count(), 1);
+    }
+}
+
+/// A weak-point bonus is conditional on WHERE THE BULLET LANDS, and no policy
+/// can turn a body shot into a head shot. The panel used to fold Acuity's crit
+/// half into the flat Crit Chance row (AssumedMax) while leaving its damage
+/// half conditional — one mod, two treatments — so the Burston Incarnon read
+/// 126% crit chance on every shot AND handed the same 126% to its explosion,
+/// which has no hit location at all.
+#[cfg(test)]
+mod weakpoint_panel_tests {
+    use super::*;
+
+    fn incarnon_panel(mods: Value) -> Value {
+        panel_json(&json!({
+            "weapon": "burston_prime",
+            "mods": mods,
+            "evolutions": ["burston_prime_evo1_incarnon_form",
+                           "burston_prime_forceful_finality"],
+        }))
+    }
+
+    fn form<'a>(p: &'a Value, label: &str) -> &'a Value {
+        p["forms"]
+            .as_array()
+            .expect("forms")
+            .iter()
+            .find(|f| f["label"] == json!(label))
+            .unwrap_or_else(|| panic!("no {label}"))
+    }
+
+    fn part<'a>(f: &'a Value, id: &str) -> &'a Value {
+        f["parts"]
+            .as_array()
+            .expect("parts")
+            .iter()
+            .find(|p| p["id"] == json!(id))
+            .unwrap_or_else(|| panic!("no {id} part"))
+    }
+
+    fn row<'a>(p: &'a Value, key: &str) -> Option<&'a Value> {
+        p["stats"].as_array()?.iter().find(|r| r["key"] == json!(key))
+    }
+
+    #[test]
+    fn acuity_does_not_inflate_the_unconditional_crit_chance() {
+        let inc = incarnon_panel(json!(["primary_acuity"]));
+        let f = form(&inc, "Incarnon Form");
+        let direct = part(f, "direct");
+        assert_eq!(
+            row(direct, "crit_chance").expect("crit row")["final"],
+            json!("28.0%"),
+            "the plain crit chance is the weapon's, not the weak-point one"
+        );
+        let wp = row(direct, "weakpoint_cc").expect("a weak-point crit row exists");
+        assert_eq!(wp["final"], json!("126.0% on a weak point"));
+        assert!(row(direct, "weakpoint_damage").is_some(), "and the damage half is stated");
+    }
+
+    #[test]
+    fn the_explosion_gets_neither_half() {
+        let inc = incarnon_panel(json!(["primary_acuity"]));
+        let radial = part(form(&inc, "Incarnon Form"), "radial");
+        assert_eq!(
+            row(radial, "crit_chance").expect("crit row")["final"],
+            json!("28.0%"),
+            "an explosion has no hit location, so a weak-point bonus cannot reach it"
+        );
+        assert!(row(radial, "weakpoint_cc").is_none());
+        assert!(row(radial, "weakpoint_damage").is_none());
+    }
+
+    /// Equipping it must still CHANGE something, or the fix would have been
+    /// "delete the mod's effect" and the test above would pass anyway.
+    #[test]
+    fn without_the_mod_there_are_no_weak_point_rows() {
+        let bare = incarnon_panel(json!([]));
+        let direct = part(form(&bare, "Incarnon Form"), "direct");
+        assert!(row(direct, "weakpoint_cc").is_none());
+        assert!(row(direct, "weakpoint_damage").is_none());
     }
 }
