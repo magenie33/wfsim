@@ -294,6 +294,10 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, sentient_surge, deep_freeze, pathogen_rounds, primed_heated_charge]
     arcanes: [secondary_enervate]
   - weapon: phantasma_prime
+    score: 14.667342682046801
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
+    arcanes: [primary_debilitate]
+  - weapon: phantasma_prime
     score: 10.274855442928299
     mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, vigilante_armaments, magnetic_strafe, primed_chilling_grasp, toxic_barrage, scattering_inferno]
     arcanes: [primary_debilitate]
