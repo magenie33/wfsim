@@ -878,3 +878,24 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
   --dt-void: #15c8ab;
   --dt-tau: #f06666;
 }
+
+/* ---- the optimizer's quick calc ------------------------------------- */
+/* The pairing ladder. It sits above the mod list because the spread between
+   pairings is larger than any one mod's — 3.3x on the Burston Prime — so a
+   number in the list below is only readable once this has been read. */
+.pairbox{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:8px 0;background:var(--panel-2)}
+.pairhead{font-size:12px;color:var(--muted);margin-bottom:6px}
+.pairrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:baseline;padding:3px 0}
+.pairrow.best .pl{font-weight:600}
+.pairrow .pv{font-variant-numeric:tabular-nums;color:var(--muted)}
+.pairrow .pd{font-variant-numeric:tabular-nums;min-width:4.5em;text-align:right}
+.pairrow.best .pd{color:var(--ok)}
+/* What a pairing MAKES, and — dimmed — what it could not pair. The leftover
+   is not a choice: it is the odd element out, the weapon's innate included. */
+.pw{white-space:nowrap}
+.pw.dim{opacity:.55}
+/* Where a candidate LANDS, when that is not where the reference landed. This
+   is the line that explains a negative number on a mod that only adds damage:
+   a fourth element re-pairs the other three. */
+.pairnote{font-size:12px;color:var(--muted);margin-top:2px}
+.pk-gain{display:inline-flex;gap:6px;align-items:center;margin-left:auto}

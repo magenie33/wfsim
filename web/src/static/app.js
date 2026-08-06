@@ -3835,6 +3835,7 @@ function applyWeaponInner(id, presetMods) {
   const w = weaponInfo(id);
   buffList = []; // rebuilt from the next /api/panel response for this build
   opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8 }; optSeeded = false; // reset scope
+  optLast = null;                 // and the winner the quick calc could measure against
   // ...and how it RUNS, for the same reason the scenario resets: a weapon that
   // has never been searched must not inherit the last weapon's finalists or
   // thread count into the "search 1" it is about to be given.
@@ -4707,6 +4708,209 @@ const gainChipFor = (id, where) => {
     .replace("{n}", g.runs);
   return `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}" title="${escHtml(
     `${where} · ${gainScan.metric} · ${gainScan.note} · ${why}`)}">≈${gainPct(g.pct)}</span>`;
+};
+
+// ---- the OPTIMIZER's quick calc ----------------------------------------
+//
+// SAME QUESTION, NO SLOTS. The builder asks "what if this mod went in THIS
+// slot"; the optimizer has no slots, so the reference is the REQUIRED set and
+// every mod is measured with-against-without it:
+//
+//     gain(X) = best(reference ∪ {X}) / best(reference ∖ {X}) − 1
+//
+// One formula, both directions. A pooled mod's numerator carries it (what it
+// would add); a REQUIRED mod's denominator drops it (what it is contributing).
+//
+// `best` is a MAXIMUM OVER PAIRINGS, not a value — with three distinct
+// elements a mod set is three builds, and on the Burston Prime the best is
+// 3.3x the worst (2.074 against 0.627 kills/min, measured). Canonicalising
+// instead would have frozen whichever pairing the insertion order produced:
+// `builds::canonical_mods` normalises only the freedoms that are provably free
+// and never moves the PARTITION. Taking the max is also the optimizer's own
+// rule — it searches this dimension — so a chip cannot rank a mod under a
+// build the search would never return.
+let optGain = { key: null, running: false, base: 0, by: {}, orders: [], mode: "require",
+  done: 0, total: 0, note: "", metric: "", ref: [] };
+let optGainGen = 0;
+
+/// The reference build's EVOLUTIONS: what the scope pins, tier by tier, and
+/// the ladder stops at the first tier it does not. A tier carrying exactly one
+/// option counts as pinned — a scope with one choice has made it.
+function optRefEvos() {
+  const out = [];
+  for (const t of weaponEvos()) {
+    const m = opt.evos[t.tier] || {};
+    const ids = Object.keys(m);
+    const pick = evoPinned(t.tier) || (ids.length === 1 ? ids[0] : null);
+    if (!pick) break;
+    out.push(pick);
+  }
+  return out;
+}
+
+/// The reference build's MODS. Either the required set, or — once a search has
+/// produced one — the winner, which is the same question asked on a build that
+/// is actually full. The required set is usually two or three cards, and a mod
+/// measured there meets no diminishing returns at all, so flat base damage
+/// reads high and everything conditional reads low. Which one is in use is on
+/// screen, never inferred.
+function optRefMods() {
+  if (optGain.mode === "winner") {
+    const w = optWinnerMods();
+    if (w && w.length) return w.slice();
+  }
+  return Object.keys(opt.mods).filter((id) => opt.mods[id] === "fixed");
+}
+
+/// The winner of the ranking on screen, if there is one.
+function optWinnerMods() {
+  const r = (typeof optLast !== "undefined" && optLast && optLast.results) || [];
+  return r.length && r[0].mods ? r[0].mods.slice() : null;
+}
+
+const optGainKey = () => JSON.stringify([$("weapon").value, opt.mods, optRefEvos(),
+  optGain.mode, optWinnerMods(), gainScenario().scenario]);
+
+/// Every mod the optimizer's list can show a chip for, as the ONE set that
+/// differs from the reference: a required mod drops itself, everything else
+/// adds itself.
+function optGainCandidates(ref) {
+  const inRef = new Set(ref);
+  return poolWithRivens()
+    .filter((m) => !famReqBy(m))
+    .map((m) => ({
+      id: m.id,
+      // Family exclusivity applies to the SET BEING MEASURED, not only to the
+      // scope: adding a mod whose family is already in the reference would
+      // price a build the arsenal refuses.
+      set: inRef.has(m.id)
+        ? ref.filter((x) => x !== m.id)
+        : ref.filter((x) => !m.family || (modById(x) || {}).family !== m.family).concat([m.id]),
+      drops: inRef.has(m.id),
+    }));
+}
+
+async function scanOptGains(onTick) {
+  const gen = ++optGainGen;
+  const live = () => gen === optGainGen;
+  const { name, scenario } = gainScenario();
+  const ref = optRefMods();
+  const evolutions = optRefEvos();
+  optGain = { ...optGain, key: optGainKey(), running: true, base: 0, by: {}, orders: [],
+    done: 0, total: 0, note: name, metric: "", ref };
+  const cands = optGainCandidates(ref);
+
+  // ONE call for every set the scan will measure, the reference first. The
+  // browser is never taught to pair elements: that would be a second copy of
+  // `elements::combine`'s innate rules, and it would be wrong the first time a
+  // weapon carried an innate element — the Burston's Incarnon form carries
+  // Heat, so Cold + Toxin is already Viral + Heat with no Heat mod equipped.
+  const base = { ...tennoPayload(), weapon: $("weapon").value, evolutions,
+    rivens: rivenPayload() };
+  const pr = await api("/api/pairings", { ...base, ...scenario,
+    sets: [ref].concat(cands.map((c) => c.set)) });
+  if (!live()) return;
+  if (!pr || !pr.ok) { optGain.running = false; if (onTick) onTick(optGain); return; }
+  const orders = pr.sets.map((x) => x.orders);
+
+  const useKills = (scenario.metric || "kpm") !== "dps";
+  const read = (r) => (!r || !r.ok ? null : (useKills ? (r.score ?? r.kills ?? 0) : (r.dps || 0)));
+  // Every (set, pairing) is ONE job, flattened into one queue so a set with
+  // three pairings does not hold a lane while another waits — the same shared
+  // cursor the builder's scan uses, for the same reason.
+  const jobs = [];
+  orders.forEach((os, si) => os.forEach((o, oi) => jobs.push({ si, oi, mods: o.mods })));
+  optGain.total = jobs.length;
+  const got = orders.map((os) => os.map(() => null));
+  let cursor = 0;
+  await Promise.all(gainLanes().map(async (lane) => {
+    for (;;) {
+      if (!live()) return;
+      const j = jobs[cursor++];
+      if (!j) return;
+      const r = await lane.call("/api/simulate", { ...base, ...scenario, mods: j.mods });
+      if (!live()) return;
+      got[j.si][j.oi] = read(r);
+      optGain.done++;
+      if (onTick) onTick(optGain);
+    }
+  }));
+  if (!live()) return;
+
+  const best = (si) => {
+    const vs = got[si].filter((x) => x != null);
+    return vs.length ? Math.max(...vs) : null;
+  };
+  const b = best(0);
+  optGain.base = b || 0;
+  optGain.metric = useKills ? tr("kill rate") : tr("DPS");
+  // THE PAIRING LADDER — the reference's own orders, ranked. It goes first on
+  // screen because the swing between pairings is larger than any single mod's.
+  optGain.orders = orders[0].map((o, i) => ({
+    combined: o.combined, leftover: o.leftover, mods: o.mods, value: got[0][i],
+    pct: b && got[0][i] != null ? got[0][i] / b - 1 : null,
+  })).sort((x, y) => (y.value || 0) - (x.value || 0));
+  if (b) {
+    cands.forEach((c, i) => {
+      const v = best(i + 1);
+      if (v == null) return;
+      // `drops` decides which side of the ratio the reference sits on, which
+      // is what lets one formula answer both questions.
+      const [withX, without] = c.drops ? [b, v] : [v, b];
+      if (!without) return;
+      const o = orders[i + 1][got[i + 1].indexOf(v)] || {};
+      optGain.by[c.id] = { pct: withX / without - 1, runs: scenario.runs,
+        combined: o.combined || [], leftover: o.leftover || [], drops: c.drops };
+    });
+  }
+  optGain.running = false;
+  if (onTick) onTick(optGain);
+}
+
+/// The gain for `id` in the optimizer, or null when the scan does not cover
+/// the scope on screen.
+const optGainOf = (id) => (optGain.key === optGainKey() ? optGain.by[id] || null : null);
+
+/// A pairing, as the elements a player reads: what it MAKES, then whatever is
+/// left over uncombined. The leftover is dimmed because it is not a choice —
+/// it is what the partition could not pair, innate elements included.
+const pairingLabel = (combined, leftover) =>
+  (combined || []).map((t) => `<span class="pw">${DT(t)}</span>`).join(" + ")
+  + (leftover || []).map((t) => `<span class="pw dim">${DT(t)}</span>`).join(" + ")
+    .replace(/^(?=.)/, (combined || []).length ? " + " : "");
+
+/// The optimizer's gain chip. One number per row, NEVER a range — the pairing
+/// is one decision shared by the whole scope and is stated once, above.
+///
+/// ...except where a candidate LANDS somewhere else. Adding a fourth element
+/// re-pairs everything: Stormbringer on a Viral + Heat build measures −65%
+/// despite reading "+90% Electricity", because the best it can reach is Blast
+/// + Corrosive (0.728 against 2.074, measured). Without that label the number
+/// looks like a bug — which is exactly what happened the last time a chip went
+/// negative for a reason the row did not state (user, 2026-08-02: "why does
+/// adding status chance LOWER the damage?").
+const optGainChipFor = (id) => {
+  const g = optGainOf(id);
+  if (!g) return "";
+  const why = tr("averaged over {n} runs — this number moves between scans, most of all for status mods")
+    .replace("{n}", g.runs);
+  const how = g.drops ? tr("what it contributes: this scope with it, against without")
+    : tr("what it would add: this scope plus it, against the scope as it stands");
+  return `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}" title="${escHtml(
+    `${how} · ${optGain.metric} · ${optGain.note} · ${why}`)}">≈${gainPct(g.pct)}</span>`;
+};
+
+/// The pairing a candidate lands on, shown only when it DIFFERS from the
+/// reference's — which also silences it for a second mod of an element the
+/// build already has, since those pool and change no partition at all.
+const optPairingNoteFor = (id) => {
+  const g = optGainOf(id);
+  if (!g || !optGain.orders.length) return "";
+  const best = optGain.orders[0];
+  const same = JSON.stringify([g.combined, g.leftover])
+    === JSON.stringify([best.combined, best.leftover]);
+  if (same) return "";
+  return `<div class="pairnote">${g.drops ? "⇠" : "⇢"} ${pairingLabel(g.combined, g.leftover)}</div>`;
 };
 
 /// The picker's ONE ordering rule, over whatever keys an axis has.
@@ -7375,11 +7579,29 @@ function renderOptTools() {
     `<button id="opk-dir" class="ghost-btn small" title="direction">${optPrefs.dir === "asc" ? "▲" : "▼"}</button>` +
     `<span class="pk-pols"><span class="pk-pol ${!optPrefs.pol ? "sel" : ""}" data-p="">all</span>` +
     pols.map((p) => `<span class="pk-pol ${optPrefs.pol === p ? "sel" : ""}" data-p="${p}" title="${p}">${imgTag(POL(p), "pol")}</span>`).join("") +
+    `</span>` +
+    // QUICK CALC, on a button rather than on every edit. The builder's scan
+    // follows an opened slot because opening one IS the question; here every
+    // click on a pool/req control would restart ~250 engagements, and the
+    // scope is edited many clicks in a row.
+    `<span class="pk-gain"><button id="opk-gain" class="ghost-btn small"${optGain.running ? " disabled" : ""}>${
+      optGain.running ? `${optGain.done}/${optGain.total}` : escHtml(tr("quick calc"))}</button>` +
+    (optWinnerMods()
+      ? `<select id="opk-gain-ref" title="${escHtml(tr("the build every number is measured on"))}">
+           <option value="require"${optGain.mode === "require" ? " selected" : ""}>${escHtml(tr("vs required"))}</option>
+           <option value="winner"${optGain.mode === "winner" ? " selected" : ""}>${escHtml(tr("vs winner"))}</option>
+         </select>`
+      : "") +
     `</span>`;
   $("opk-sort").value = optPrefs.sort;
   $("opk-sort").onchange = () => { optPrefs.sort = $("opk-sort").value; renderOptModList(); };
   $("opk-dir").onclick = () => { optPrefs.dir = optPrefs.dir === "asc" ? "desc" : "asc"; renderOptTools(); renderOptModList(); };
   t.querySelectorAll(".pk-pol").forEach((o) => o.onclick = () => { optPrefs.pol = o.dataset.p || null; renderOptTools(); renderOptModList(); });
+  const paint = () => { renderOptTools(); renderOptPairings(); renderOptModList(); };
+  $("opk-gain").onclick = () => scanOptGains(() => paint());
+  if ($("opk-gain-ref")) {
+    $("opk-gain-ref").onchange = () => { optGain.mode = $("opk-gain-ref").value; paint(); };
+  }
 }
 
 // A chip's ✕ removes; the chip itself REVEALS the mod in the list below.
@@ -7426,6 +7648,26 @@ function renderOptModSel() {
     el.addEventListener("click", () => revealOptMod(el.dataset.m)));
 }
 
+/// THE PAIRING LADDER — the quick calc's first statement, above the mods.
+///
+/// Absent until there is a choice to make: one pairing is not a ladder, and a
+/// scope with no elemental mod has nothing to say. What it reports is the
+/// reference build measured every way its elements can pair, best first.
+function renderOptPairings() {
+  const box = $("opt-pairings");
+  if (!box) return;
+  const fresh = optGain.key === optGainKey();
+  const rows = fresh ? optGain.orders : [];
+  if (rows.length < 2) { box.innerHTML = ""; return; }
+  const head = `${tr("element pairings")} · ${rows.length} · ${escHtml(optGain.metric)} · ${escHtml(optGain.note)}`;
+  box.innerHTML = `<div class="pairbox"><div class="pairhead">${head}</div>${rows.map((o, i) => `
+    <div class="pairrow${i === 0 ? " best" : ""}">
+      <span class="pl">${pairingLabel(o.combined, o.leftover)}</span>
+      <span class="pv">${o.value == null ? "—" : sig2(o.value)}</span>
+      <span class="pd">${i === 0 ? tr("best") : gainPct(o.pct)}</span>
+    </div>`).join("")}</div>`;
+}
+
 function renderOptModList() {
   const q = ($("opt-mod-filter").value || "").trim().toLowerCase();
   // Exilus mods are IN this list too — all 9 slots accept them (game rule),
@@ -7462,7 +7704,7 @@ function renderOptModList() {
     const eff = cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("");
     return `<div class="opt ${st === "off" ? "" : st} ${dead ? "dis-soft" : ""} ${m.rarity ? "rar-" + m.rarity : ""}" title="${why || (m.effects || []).join(" · ")}">
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
-      <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}</div><div class="me">${eff}</div></div>
+      <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""}${optGainChipFor(m.id)}</div><div class="me">${eff}</div>${optPairingNoteFor(m.id)}</div>
       <div class="oseg">
         <span class="seg ${st === "search" ? "on" : ""} ${dead ? "dis" : ""}" data-m="${m.id}" data-s="search">${tr("pool")}</span>
         <span class="seg ${st === "fixed" ? "on" : ""} ${dead || reqBlocked ? "dis" : ""}" data-m="${m.id}" data-s="fixed" ${!dead && reqBlocked ? `title="${escHtml(tr("pooled mods reserve ≥1 open slot — raise max mods or clear pools"))}"` : ""}>${tr("req")}</span>
@@ -7815,7 +8057,14 @@ const evoName = (id) => {
   return prettify(id);
 };
 
+/// The ranking on screen. Kept so the quick calc can offer the WINNER as its
+/// reference build — a mod measured on two required cards meets no diminishing
+/// returns, and the winner is the same question asked on a build that is full.
+/// Cleared with the results themselves when the weapon changes.
+let optLast = null;
+
 function renderOptResults(r) {
+  optLast = r;
   const modName = (id) => (modById(id) || { name: null }).name || prettify(id);
   const rows = (r.results || []).map((res) => {
     const ex = res.exilus && res.exilus !== "none" ? `, ${modName(res.exilus)} (exilus)` : "";
