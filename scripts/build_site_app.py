@@ -225,6 +225,49 @@ def write_board() -> None:
     print(f"board: {sum(len(v) for v in out.values())} rows -> site/board.json")
 
 
+def shell(flagged: str, title: str, desc: str, url: str, og_img: str, seo: str) -> str:
+    """The app shell carrying ONE page's head and its crawler-visible body.
+
+    Shared by every prerendered page so a new one cannot get half the
+    treatment: a per-page <title> with the site-wide OG block still saying
+    "WFSim" previews as the site, which is the bug this whole pass exists to
+    fix. `seo` is the block removed the moment the app boots.
+    """
+    page = flagged.replace(
+        "<title>WFSim — Ultimate Warframe Calculator</title>",
+        f"<title>{html_mod.escape(title)}</title>",
+    )
+    page = re.sub(
+        r'<meta name="description" content="[^"]*" />',
+        f'<meta name="description" content="{html_mod.escape(desc, quote=True)}" />',
+        page,
+        count=1,
+    )
+    for prop, value in (
+        ("og:title", title),
+        ("og:description", desc),
+        ("og:url", url),
+        ("og:image", og_img),
+    ):
+        page = re.sub(
+            rf'<meta property="{prop}" content="[^"]*" />',
+            f'<meta property="{prop}" content="{html_mod.escape(value, quote=True)}" />',
+            page,
+            count=1,
+        )
+    page = page.replace(
+        '<meta property="og:type" content="website" />',
+        '<meta property="og:type" content="website" />\n'
+        f'  <link rel="canonical" href="{url}" />',
+        1,
+    )
+    body = (
+        '<div id="seo-fallback">\n' + seo + "  </div>\n"
+        "  <script>document.getElementById('seo-fallback').remove()</script>\n  "
+    )
+    return page.replace("<body>\n  ", "<body>\n  " + body, 1)
+
+
 def prerender(flagged: str) -> None:
     """Write a real HTML file per weapon, plus robots.txt and sitemap.xml.
 
@@ -280,54 +323,48 @@ def prerender(flagged: str) -> None:
         og_img = SITE + card if drew else f"{SITE}/logo.svg"
         url = SITE + wiki_path(name)
 
-        page = flagged
-        page = page.replace(
-            "<title>WFSim — Ultimate Warframe Calculator</title>",
-            f"<title>{html_mod.escape(title)}</title>",
-        )
-        page = re.sub(
-            r'<meta name="description" content="[^"]*" />',
-            f'<meta name="description" content="{html_mod.escape(desc, quote=True)}" />',
-            page,
-            count=1,
-        )
-        for prop, value in (
-            ("og:title", title),
-            ("og:description", desc),
-            ("og:url", url),
-            ("og:image", og_img),
-        ):
-            page = re.sub(
-                rf'<meta property="{prop}" content="[^"]*" />',
-                f'<meta property="{prop}" content="{html_mod.escape(value, quote=True)}" />',
-                page,
-                count=1,
-            )
-        page = page.replace(
-            '<meta property="og:type" content="website" />',
-            '<meta property="og:type" content="website" />\n'
-            f'  <link rel="canonical" href="{url}" />',
-            1,
-        )
         # The crawler-visible body, removed as soon as the app takes over.
         seo = (
-            '<div id="seo-fallback">\n'
             f"    <h1>{html_mod.escape(name)}"
             f"{f' / {html_mod.escape(cn)}' if cn else ''} — Warframe</h1>\n"
             f"    <p>{html_mod.escape(facts)}</p>\n"
             f"    <p>{html_mod.escape(stats)}.</p>\n"
             "    <p>Build, simulate and optimize this weapon at "
             f'<a href="{SITE}/">wfsim.app</a>.</p>\n'
-            "  </div>\n"
-            "  <script>document.getElementById('seo-fallback').remove()</script>\n  "
         )
-        page = page.replace("<body>\n  ", "<body>\n  " + seo, 1)
-
         out = APP / wiki_path(name).lstrip("/") / "index.html"
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(page, encoding="utf-8", newline="\n")
+        out.write_text(
+            shell(flagged, title, desc, url, og_img, seo), encoding="utf-8", newline="\n"
+        )
 
-    urls = [SITE + "/"] + [SITE + wiki_path(s["name"]) for s in roster()]
+    # /support — a URL people paste, so it gets the same treatment. Its OG
+    # description says what the page IS (running costs, nothing sold); a link
+    # that previews as "Ultimate Warframe Calculator" and opens on a donation
+    # page is the kind of mismatch that reads as a scam.
+    sup_desc = (
+        "What it costs to run WFSim, and where to chip in. WFSim is a free, "
+        "open-source Warframe calculator: no ads, and no feature locked behind "
+        "a payment. A donation covers the domain, the CDN and the measurement "
+        "work — it buys no feature and no perk, and nothing here is for sale."
+    )
+    (APP / "support").mkdir(parents=True, exist_ok=True)
+    (APP / "support" / "index.html").write_text(
+        shell(
+            flagged,
+            "Support WFSim — running costs",
+            sup_desc,
+            SITE + "/support",
+            f"{SITE}/logo.svg",
+            "    <h1>Support WFSim</h1>\n"
+            f"    <p>{html_mod.escape(sup_desc)}</p>\n"
+            f'    <p><a href="{SITE}/">wfsim.app</a></p>\n',
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+
+    urls = [SITE + "/", SITE + "/support"] + [SITE + wiki_path(s["name"]) for s in roster()]
     (APP / "sitemap.xml").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -343,7 +380,7 @@ def prerender(flagged: str) -> None:
         encoding="utf-8",
         newline="\n",
     )
-    print(f"prerendered {len(urls) - 1} weapon pages + sitemap.xml + robots.txt")
+    print(f"prerendered {len(urls) - 2} weapon pages + /support + sitemap.xml + robots.txt")
 
 
 def run(*cmd: str) -> None:

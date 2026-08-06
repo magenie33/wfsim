@@ -524,6 +524,27 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .wc-tags{display:flex;flex-wrap:wrap;gap:5px}
 .wc-tags .tag{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
 .topbar .brand{text-decoration:none;color:var(--text)}
+
+/* ---- support: the running costs and where to chip in ----
+   Same page shell as home (one content width, the same hero type), so the
+   footer link does not land somewhere that looks like a different site. */
+.support-page{max-width:1060px;margin:0 auto;padding:28px 18px}
+.support-page .block{max-width:760px}
+/* auto-fit, not a fixed track count: with one channel the card must not
+   stretch to the full 1060px, and with three it must still wrap on a phone. */
+.sup-channels{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),300px));gap:14px;margin-bottom:26px}
+.sup-card{display:block;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel2);text-decoration:none;color:var(--text);transition:border-color .15s}
+.sup-card:hover{border-color:var(--accent)}
+.sup-name{font-size:17px;font-weight:700}
+.sup-what{font-size:12px;color:var(--text-2);margin-top:4px}
+.sup-card .run-btn{display:block;text-align:center;font-size:13px;padding:8px}
+.sup-costs{list-style:none;margin:0;padding:0;font-size:13px}
+.sup-costs li{padding:7px 0;color:var(--text-2)}
+.sup-costs li+li{border-top:1px solid var(--line)}
+.sup-costs a{color:var(--accent)}
+.sup-note{font-size:11px;color:var(--muted);margin:10px 0 0}
+.sup-fine{font-size:11px;color:var(--muted);max-width:760px;margin:18px 0 0;line-height:1.7}
+
 .block-lock.dis{opacity:.45}
 .opt-meta .warn{color:var(--critical)}
 .opt-progress{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:12px}

@@ -205,7 +205,7 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
         // SPA fallback: /weapons/<Wiki_Name> is a client-side route — serve
         // the shell and let app.js's router resolve it (mirrors the static
         // deployment's not_found_handling = single-page-application).
-        ("GET", p) if p.starts_with("/weapons/") => {
+        ("GET", p) if p.starts_with("/weapons/") || p == "/support" || p == "/support/" => {
             respond(&mut stream, "200 OK", "text/html; charset=utf-8", INDEX_HTML.as_bytes())
         }
         ("GET", "/app.js") => respond(

@@ -811,7 +811,11 @@ function route() {
     importShare(shared);
     return;
   }
-  const m = location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens)?\/?$/);
+  // `/support` is a page of the SHELL, not a fourth module and not a weapon's
+  // tab: it belongs to no weapon, so it sits beside the home grid rather than
+  // under /weapons/<name>.
+  const support = /^\/support\/?$/.test(location.pathname);
+  const m = support ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens)?\/?$/);
   // A hand-typed URL is not the canonical slug. Fold case and treat spaces
   // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
   // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
@@ -822,19 +826,24 @@ function route() {
   );
   // The active module: "" = builder, "simulator", "optimizer".
   const mod = (w && m[2]) ? m[2].slice(1) : "";
-  document.body.classList.toggle("on-home", !w);
+  document.body.classList.toggle("on-home", !w && !support);
+  document.body.classList.toggle("on-support", support);
   document.body.classList.toggle("on-simulator", mod === "simulator");
   document.body.classList.toggle("on-optimizer", mod === "optimizer");
   document.body.classList.toggle("on-rivens", mod === "rivens");
-  $("home-page").hidden = !!w;
+  $("home-page").hidden = !!w || support;
+  $("support-page").hidden = !support;
   document.querySelector(".config-page").hidden = !w;
   const modTitle = { simulator: " · Simulator", optimizer: " · Optimizer", rivens: " · Rivens" }[mod] || "";
   // The home title carries the SEARCH TERMS, not the headline: nobody looks
   // for "Simulacrum Prime", and the tab/result/share-card is the one place
   // that has to be found rather than enjoyed (user, 2026-07-31). The joke
   // stays on the page, which is where a player meets it.
-  document.title = w ? `${w.name}${modTitle} — WFSim` : "WFSim — Ultimate Warframe Calculator";
-  if (w) {
+  document.title = support ? `${tr("Support")} — WFSim`
+    : w ? `${w.name}${modTitle} — WFSim` : "WFSim — Ultimate Warframe Calculator";
+  if (support) {
+    renderSupport();
+  } else if (w) {
     if ($("weapon").value !== w.id) {
       switchWeapon(w.id);
     }
@@ -900,6 +909,41 @@ function renderHome() {
       <h3 class="wgroup-h">${tr(SLOT_LABEL[slot] || slot)}</h3>
       <div class="wgrid">${ws.map(card).join("")}</div>
     </section>`).join("");
+}
+
+// ---- support: the donation channels -------------------------------------
+// A channel is drawn only when it HAS a working link. An option that does not
+// work yet is worse than one that is not offered, so an entry with an empty
+// `url` renders nothing — and filling that url in is the whole of adding one.
+//
+// ONE channel serves every locale (owner, 2026-08-06). There is deliberately
+// no per-locale ordering and no QR path here: both would be machinery for a
+// second channel that does not exist, and the shape a domestic one wants is
+// not knowable until there is one to look at.
+const SUPPORT_CHANNELS = [
+  {
+    id: "kofi",
+    name: "Ko-fi",
+    url: "https://ko-fi.com/magenie33",
+    // ONE-OFF ONLY. Ko-fi's memberships are a subscription with perks, which
+    // is the one shape DE's non-commercial rule does not allow — they stay
+    // switched off in the account, and so do its shop and commissions.
+    // $5 is Ko-fi's price per coffee, which is where the floor comes from;
+    // its own x1/x3/x5 and free field are the rest, so nothing here repeats
+    // them (owner, 2026-08-06).
+    what: "One-off, in USD, from $5. Card or PayPal, no account needed.",
+  },
+];
+
+function renderSupport() {
+  const box = $("support-channels");
+  if (!box) return;
+  box.innerHTML = SUPPORT_CHANNELS.filter((c) => c.url).map((c) => `
+    <a class="sup-card" href="${escHtml(c.url)}" target="_blank" rel="noopener">
+      <div class="sup-name">${escHtml(c.name)}</div>
+      <div class="sup-what">${escHtml(tr(c.what))}</div>
+      <span class="run-btn">${escHtml(tr("Open"))} ↗</span>
+    </a>`).join("");
 }
 
 // ---- Rivens as MODS ----------------------------------------------------

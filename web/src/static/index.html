@@ -68,6 +68,74 @@
     <div id="weapon-grid"></div>
   </main>
 
+  <!-- Support: what WFSim costs to run, and where to chip in. NOT a module and
+       not an editor — a page of the SHELL, like the home grid, reached from the
+       footer and from nowhere else. It never interrupts a calculation: no
+       modal, no banner, no thank-you box after a run. A calculator that
+       interrupts the calculation has stopped being a tool.
+
+       NOTHING HERE IS SOLD, and the page says so where a visitor reads it
+       rather than in a footnote. DE's Content Policy permits fan use of
+       Warframe assets only NON-COMMERCIALLY and forbids charging for access to
+       what you make with them — so a donation buys no feature, no tier and no
+       badge, and every promise below is a constraint on the product, not copy.
+
+       There is NO SUGGESTED-AMOUNT LADDER here, and that is a decision rather
+       than an omission (owner, 2026-08-06): $5 to start, anything after that.
+       The cost list below states what the bill IS, which is the same
+       information without ever reading as a price list — the one shape DE's
+       rule does not allow. Ko-fi carries the amounts itself: a $5 price per
+       coffee gives its own x1/x3/x5 plus a free field, so a ladder on this page
+       would only be a second, staler copy of one. -->
+  <main id="support-page" class="support-page" hidden>
+    <h1 class="hero-h" data-i18n>Support WFSim</h1>
+    <!-- What this promise does NOT say is anything about accounts: one may yet
+         exist (owner, 2026-08-06). The promise is about the PAYWALL, which is
+         the part that has to hold whatever else the site grows. -->
+    <p class="hero-sub" data-i18n>WFSim is free and open source. No ads, and no feature will ever be locked behind a payment — that part is not going to change. It does cost money and time to run, so if it saved you a Forma, you can chip in.</p>
+
+    <div id="support-channels" class="sup-channels"></div>
+
+    <section class="block">
+      <div class="bh"><h2 data-i18n>Where it goes</h2></div>
+      <div class="bb">
+        <ul class="sup-costs">
+          <li data-i18n>The wfsim.app domain, and its renewal.</li>
+          <li data-i18n>Cloudflare — the bandwidth and build minutes that serve the app and its art from one origin.</li>
+          <li data-i18n>Time: new weapons, new mechanics, and the in-game measurements every golden test is calibrated against.</li>
+        </ul>
+        <p class="sup-note" data-i18n>$5 to start, and after that whatever you think it is worth. There is no tier and no target — this is what the bill is, not a price list.</p>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2 data-i18n>What a donation never buys</h2></div>
+      <div class="bb">
+        <ul class="sup-costs">
+          <li data-i18n>No paid features and no paywall. Every build, simulation and search stays the same for everyone.</li>
+          <li data-i18n>No tiers, no perks, no supporter badge. A donation is a thank-you, not a purchase.</li>
+          <li data-i18n>No ads, and no tracking beyond what Cloudflare counts to serve the page.</li>
+          <li data-i18n>No influence on the numbers. An in-game measurement is the only thing that changes what the engine does.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2 data-i18n>Free, and worth more</h2></div>
+      <div class="bb">
+        <ul class="sup-costs">
+          <li><span data-i18n>Report a number that disagrees with your own in-game measurement. That is the one contribution nothing else can replace — every formula here is calibrated against a real run, and a discrepancy is a bug report on reality.</span> <a href="https://github.com/magenie33/wfsim/issues" target="_blank" rel="noopener">GitHub Issues</a> · <a href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" data-i18n>QQ group</a> · <a href="https://discord.gg/5GXgbtmxY" target="_blank" rel="noopener">Discord</a></li>
+          <li><span data-i18n>Star the repository, or send a build link to someone who is still doing this by hand.</span> <a href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener">github.com/magenie33/wfsim</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Only the DONATION-specific clause: the shell's footer sits directly
+         below with the unofficial-fan-project disclaimer, and printing it
+         twice on one screen reads as boilerplate rather than as a statement. -->
+    <p class="sup-fine" data-i18n>A donation supports this site's running costs and nothing else — it is not a purchase, and nothing on this site is for sale.</p>
+  </main>
+
   <main class="config-page" hidden>
     <div class="wstrip">
       <img id="w-img" alt="" />
@@ -357,7 +425,11 @@
     <a href="https://wiki.warframe.com/" target="_blank" rel="noopener">Warframe Wiki</a> (CC BY-SA) ·
     <a href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener">github.com/magenie33/wfsim</a> · AGPL-3.0 ·
     <a href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" title="join via QQ" data-i18n-title><span data-i18n>QQ group</span> 995078378</a><button id="qq-copy-foot" class="qq-copy-btn" title="copy the group number" data-i18n-title>⧉</button> ·
-    <a href="https://discord.gg/5GXgbtmxY" target="_blank" rel="noopener" title="join the Discord" data-i18n-title>Discord</a>
+    <a href="https://discord.gg/5GXgbtmxY" target="_blank" rel="noopener" title="join the Discord" data-i18n-title>Discord</a> ·
+    <!-- The ONLY entry to /support. It stays a footer link at footer weight:
+         the ask belongs where someone who already wants to give will look for
+         it, not in the path of someone doing a calculation. -->
+    <a href="/support" title="what WFSim costs to run" data-i18n-title data-i18n>Support</a>
     </div>
   </footer>
 

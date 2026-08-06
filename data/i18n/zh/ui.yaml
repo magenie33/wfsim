@@ -186,6 +186,44 @@ ui:
   "QQ group": QQ官方交流群
   "Join the Discord": 加入官方 Discord
   "join the Discord": 加入官方 Discord
+  # ---- /support: running costs, and where to chip in. -------------------
+  # WF模拟 in prose, WFSim as the mark (the page's own <h1> keeps the
+  # wordmark, so the heading below is the verb plus the mark).
+  #
+  # The money sentences stay CONCRETE on purpose: what the bill is and what
+  # a donation cannot buy. "支持一下" with nothing behind it is the version
+  # that reads as begging.
+  "Support": 支持
+  "what WFSim costs to run": WF模拟的运营成本
+  "Support WFSim": 支持 WFSim
+  "WFSim is free and open source. No ads, and no feature will ever be locked behind a payment — that part is not going to change. It does cost money and time to run, so if it saved you a Forma, you can chip in.":
+    WF模拟免费、开源。没有广告，也永远不会有任何功能要付费才能用——这一条不会变。它确实要花钱和时间维持，所以如果它替你省下过一根 Forma，可以来添一点。
+  "One-off, in USD, from $5. Card or PayPal, no account needed.": 一次性，按美元结算，5 美元起。信用卡或 PayPal，无需注册账号。
+  "Open": 前往
+  "Where it goes": 钱花在哪
+  "The wfsim.app domain, and its renewal.": wfsim.app 的域名与续费。
+  "Cloudflare — the bandwidth and build minutes that serve the app and its art from one origin.":
+    Cloudflare：让应用和它的全部素材从同一个源站发出所需的带宽与构建时长。
+  "Time: new weapons, new mechanics, and the in-game measurements every golden test is calibrated against.":
+    时间：新武器、新机制，以及校准每一条 golden test 所需的游戏内实测。
+  "$5 to start, and after that whatever you think it is worth. There is no tier and no target — this is what the bill is, not a price list.":
+    5 美元起，之后给多少由你说了算。没有档位，也没有目标——上面是账单本身，不是价目表。
+  "What a donation never buys": 捐助永远买不到什么
+  "No paid features and no paywall. Every build, simulation and search stays the same for everyone.":
+    没有付费功能，没有付费墙。配装、模拟、搜索，对所有人完全一致。
+  "No tiers, no perks, no supporter badge. A donation is a thank-you, not a purchase.":
+    没有档位，没有特权，没有赞助者标识。捐助是一句谢谢，不是一次购买。
+  "No ads, and no tracking beyond what Cloudflare counts to serve the page.":
+    没有广告；除了 Cloudflare 为发送页面而记的那点数，不做任何追踪。
+  "No influence on the numbers. An in-game measurement is the only thing that changes what the engine does.":
+    左右不了数字。能改变引擎行为的只有游戏内实测，没有第二样东西。
+  "Free, and worth more": 不花钱，但更值钱
+  "Report a number that disagrees with your own in-game measurement. That is the one contribution nothing else can replace — every formula here is calibrated against a real run, and a discrepancy is a bug report on reality.":
+    报告一个和你自己游戏内实测对不上的数字。这是唯一无可替代的贡献——这里每一条公式都以真实实测校准，一处对不上就是一份来自现实的 bug 报告。
+  "Star the repository, or send a build link to someone who is still doing this by hand.":
+    给仓库点个 Star，或者把一个配装链接发给还在手算的人。
+  "A donation supports this site's running costs and nothing else — it is not a purchase, and nothing on this site is for sale.":
+    捐助仅用于本站的运营成本，除此以外没有别的用途——它不是一次购买，本站也没有任何东西在出售。
   "copied": 已复制
   "Weapons": 武器
   "Presets": 预设
