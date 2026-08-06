@@ -1420,3 +1420,38 @@ mod furis_tier4_tests {
         );
     }
 }
+
+/// THE FURIS FAMILY SPLITS ON CONDITION OVERLOAD, and the split is the point.
+///
+/// One Incarnon Genesis upgrades either weapon, so the tempting move is to give
+/// them the same CO treatment. The catalog says otherwise by saying nothing:
+/// its row names "Furis" and carries that weapon's numbers, there is no
+/// MK1-Furis row, and absence from that table is a positive statement that the
+/// attack behaves normally (owner confirmed 2026-08-06 — the MK1 does not have
+/// the restriction). Lato Vandal has a row and Lato Prime does not, same family
+/// and same Genesis, which is what a per-entry slip in DE's code looks like.
+///
+/// Pinned in BOTH directions so a later tidy-up cannot quietly align them.
+#[cfg(test)]
+mod furis_co_split_tests {
+    use super::*;
+
+    fn excludes(id: &str) -> bool {
+        get(id).unwrap_or_else(|| panic!("{id}")).co_base_excludes_this_evolution
+    }
+
+    #[test]
+    fn the_furis_tier2_pair_excludes_its_own_base_from_condition_overload() {
+        // "100 or 128 (with Evolution II) | 100 | 100% or 78%" — the CO term
+        // keeps multiplying the unevolved 100. On the TIER, because the row
+        // names "Evolution II" with no perk number and both options grant +28.
+        assert!(excludes("furis_haven_foray"));
+        assert!(excludes("furis_stormburst"));
+    }
+
+    #[test]
+    fn the_mk1_tier2_pair_does_not() {
+        assert!(!excludes("mk1_furis_haven_foray"));
+        assert!(!excludes("mk1_furis_stormburst"));
+    }
+}
