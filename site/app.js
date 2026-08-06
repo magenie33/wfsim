@@ -4487,8 +4487,14 @@ function ddRender(id, query) {
   const hits = cfg.items.filter((i) => !q
     || String(i.label).toLowerCase().includes(q)
     || String(i.hint || "").toLowerCase().includes(q));
+  // A DISABLED item stays LISTED and greyed: "the weapon has no Incarnon form
+  // while that mod is on it" is information, and a vanished option is not. It
+  // is `.dis` and carries no `data-v`, which is what takes the click handler
+  // away — the one native `<select>` behaviour this component has to reproduce
+  // by hand, and the one it silently dropped when the selects were replaced.
   $("dd-menu").innerHTML = hits.length
-    ? hits.map((i) => `<div class="opt${String(i.value) === String(cfg.value) ? " cur" : ""}" data-v="${escHtml(String(i.value))}">
+    ? hits.map((i) => `<div class="opt${String(i.value) === String(cfg.value) ? " cur" : ""}${
+        i.disabled ? " dis" : ""}"${i.disabled ? "" : ` data-v="${escHtml(String(i.value))}"`}>
         <div class="info"><div class="mn">${escHtml(i.label)}</div>${
           i.hint ? `<div class="me"><div>${escHtml(i.hint)}</div></div>` : ""}</div>
       </div>`).join("")
