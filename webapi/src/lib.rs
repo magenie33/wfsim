@@ -2222,6 +2222,30 @@ pub fn panel_json(v: &Value) -> Value {
             stats.push(json!({ "key": "magazine", "label": "Max Charges",
             "base": num(inc.max_charges), "final": num(inc.max_charges),
             "sources": json!([]) }));
+            // HOW THE GAUGE FILLS, which the panel never said. The engine has
+            // always read it — `charge_on` is weapon data and the shot loop
+            // counts headshots or pellets accordingly — but a player could not
+            // SEE it, and the two rules do not merely differ in speed: at a 0%
+            // headshot rate a weakpoint-charged weapon never transforms at all
+            // (measured: Burston Prime 0 transforms, Torid 4, same fight).
+            // That is the largest thing an Incarnon weapon can do, decided by a
+            // field with no row.
+            let (what, why) = match inc.charge_on {
+                wfsim_engine::loadout::ChargeOn::WeakpointHits => (
+                    "weakpoint hits",
+                    "weakpoint hits only — at a 0% headshot rate this weapon never reaches its Incarnon form. A radial or field instance can never contribute: it has no hit location",
+                ),
+                wfsim_engine::loadout::ChargeOn::DirectHits => (
+                    "direct hits",
+                    "ANY direct hit, so the form does not depend on the headshot rate (wiki Incarnon: \"Angstrum Incarnon Genesis and Torid Incarnon Genesis are instead charged through direct hits\"). A lingering field is not a direct hit and does not charge it",
+                ),
+            };
+            stats.push(json!({ "key": "gauge", "label": "Gauge Fills On",
+            "base": "—",
+            // A COUNT, so no decimal: "5 direct hits", not "5.0".
+            "final": format!("{:.0} {what}", inc.charges_to_fill),
+            "note": why,
+            "sources": sources("incarnon_charge_rate", None) }));
             stats.push(json!({ "key": "transmute_in", "label": "Transmute In",
             "base": format!("{}s", num(inc.transmute_in)),
             "final": format!("{}s", num(inc.transmute_in / (1.0 + rl))),
