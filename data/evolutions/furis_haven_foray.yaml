@@ -10,6 +10,23 @@ description: "Increase Base Damage by +28.\nWith Overshields: Increase Base Dama
 # this weapon's.
 selection: choose_one
 
+# CONDITION OVERLOAD — this perk's added base is EXCLUDED from the CO term.
+# The catalog's Furis row, verbatim:
+#
+#   Furis | Incarnon Mode | Projectile | 100 or 128 (with Evolution II) | 100 |
+#     100% or 78% | Adding | "CO-bonus does not use base damage increase
+#     Evolution"
+#
+# The arithmetic ties it down: the Incarnon form is 100 Heat, Evolution II adds
+# 28, and 100/128 = 78% is the third column exactly. So CO keeps multiplying
+# the UNEVOLVED 100 while the hit itself lands 128.
+#
+# On the TIER rather than on one option, unlike the Dual Toxocyst's row: that
+# one names "Evolution II Perk 1" and its tier-mate is absent, so the flag had
+# to be per perk. This row names "Evolution II" with no perk number, and BOTH
+# of this tier's options grant the same +28 — there is no second reading.
+co_base_excludes_this_evolution: true
+
 effects:
   # The unconditional half, and the one a SECOND source cross-checks on the
   # Furis: the CO catalog's row reads "100 or 128 (with Evolution II)", which

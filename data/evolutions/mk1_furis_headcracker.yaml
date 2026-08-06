@@ -11,16 +11,26 @@ description: "On Headshot: +5% Fire Rate for 2s. Stacks up to 10x."
 selection: choose_one
 
 effects:
-  # NOT LOADED, and the closest of the three to being loadable: the engine
-  # already runs `on_headshot_reload_speed` as a live stacking buff off this
-  # very trigger (`StackingReloadSpeedOnHeadshot`, with its own LiveStacks in
-  # the shot loop). This is that shape with a FIRE RATE payload. Worth up to
-  # +50% fire rate at a 100% headshot rate, which makes it the tier's real
-  # competitor and the first thing to implement here.
+  # MODELLED (2026-08-06), as a live stacking buff off the same trigger the
+  # engine already runs `on_headshot_reload_speed` from.
+  #
+  # THE 50% ROLL IS IN THE RAW WIKITEXT AND NOT IN THE RENDERED SUMMARY. The
+  # effect column says only "On Headshot: +5% Fire Rate for 2s. Stacks up to
+  # 10x"; the sentence that halves it — "This effect has a 50% chance of
+  # activating" — sits in a separate notes cell. Reading the effect column
+  # alone gives a perk twice as strong as the game's, which is why every number
+  # in this file now comes from ?action=raw.
+  #
+  # ADDITIVE WITH FIRE-RATE MODS, on the BASE rate: this engine puts a static
+  # `fire_rate_bonus` evolution in `base_fire_rate * (1 + fr + evo)`, so a live
+  # one joins that same bracket. `resolve` converts the +5% into the absolute
+  # rate it is worth, because the sim carries only the modded rate — which is
+  # what makes it additive with mods rather than multiplicative with them.
   - kind: on_headshot_fire_rate
     per_stack: 0.05
     max_stacks: 10
     duration: 2
+    chance: 0.50
 
 source:
   url: https://wiki.warframe.com/w/Furis_Incarnon_Genesis

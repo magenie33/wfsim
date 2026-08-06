@@ -917,6 +917,9 @@ pub struct WeaponBase {
     pub plain_hit_bonus: Option<PlainHitBuff>,
     /// Lethal Rearmament's stacking on-headshot reload speed.
     pub reload_on_headshot: Option<HeadshotReloadBuff>,
+    /// Headcracker's on-headshot fire-rate stacks (a FRACTION of the base rate
+    /// here; `resolve` converts it — see [`HeadshotFireRateBuff`]).
+    pub fire_rate_on_headshot: Option<HeadshotFireRateBuff>,
     /// A RADIAL (AoE) attack part fired alongside the direct hit — the
     /// Laetum Incarnon's 300 Radiation explosion. Separate damage vector,
     /// crit and status stats; the directly-hit enemy takes both parts.
@@ -962,6 +965,22 @@ pub struct PlainHitBuff {
 /// Galvanized decay). Reload speed also shortens the Incarnon transmute
 /// animations, so the buff reaches the whole cycle, not just reloads.
 #[derive(Debug, Clone, Copy)]
+pub struct HeadshotFireRateBuff {
+    /// On [`WeaponBase`] a FRACTION of the base rate (+5% = 0.05); on
+    /// [`ResolvedPanel`] the ABSOLUTE rate that fraction is worth, because the
+    /// sim adds it beside `ap.fire_rate` inside the same bracket that
+    /// fire-rate mods live in — `base * (1 + fr + evo)` — and it carries no
+    /// unmodded rate of its own to re-derive it from.
+    pub per_stack: f64,
+    pub max_stacks: u32,
+    pub duration: f64,
+    /// "This effect has a 50% chance of activating" (raw wikitext). Rolled per
+    /// headshot, so it halves the stacks a given headshot rate buys.
+    pub chance: f64,
+    pub initial_stacks: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct HeadshotReloadBuff {
     pub per_stack: f64,
     pub max_stacks: u32,
@@ -1232,6 +1251,8 @@ pub struct ResolvedPanel {
     pub plain_hit_bonus: Option<PlainHitBuff>,
     /// Lethal Rearmament's stacking on-headshot reload speed.
     pub reload_on_headshot: Option<HeadshotReloadBuff>,
+    /// Headcracker, with `per_stack` already converted to an ABSOLUTE rate.
+    pub fire_rate_on_headshot: Option<HeadshotFireRateBuff>,
     /// ModifiedBase = unmodded total × (1 + Σ base damage) — the base of
     /// every status-payload formula (elemental portions excluded).
     pub modified_base: f64,
@@ -1760,9 +1781,16 @@ pub fn resolve_for(
     // PRELUDE OF MIGHT, resolved here because it is the one evolution whose
     // condition is the BUILD's own output: "with Critical Chance below 40%".
     // Computed against the same expression the panel publishes, so the tile and
-    // the number can never disagree about whether it is on — and it is a FLAT
-    // addition to the multiplier, not a bonus in the crit-damage bucket, which
-    // is what "+3x Critical Damage Multiplier" says.
+    // the number can never disagree about whether it is on.
+    //
+    // It joins the BASE multiplier, so crit-damage mods multiply it — the raw
+    // wikitext says "Increase Base Critical Damage Multiplier by +3x", the same
+    // wording `flat_base_crit_multiplier` already models for Critical Parallel.
+    // It shipped for one commit added AFTER the mods instead, which on a
+    // Primed Target Cracker build is 10.14x against the correct 13.44x. The
+    // difference only appears once a crit-damage mod is on, which is why
+    // reading the rendered page rather than the wikitext missed it: the word
+    // that decides it is "Base".
     let resolved_cc =
         (base.base_crit_chance * (1.0 + cc) + base.post_mod_crit_chance).max(0.0);
     let prelude_cd = match base.crit_mult_below_cc {
@@ -1954,7 +1982,7 @@ pub fn resolve_for(
         // Elemental Excess adds its crit/status FLAT, after the mod
         // multiply (wiki) — a different layer from the base-stat one.
         crit_chance: resolved_cc,
-        crit_damage: base.base_crit_damage * (1.0 + cd) + prelude_cd,
+        crit_damage: (base.base_crit_damage + prelude_cd) * (1.0 + cd),
         // No upper clamp: status chance ABOVE 100% is meaningful (a
         // guaranteed proc plus an extra roll) — DT resolves to 129%.
         status_chance: (base.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)
@@ -1998,6 +2026,14 @@ pub fn resolve_for(
         noncrit_bonus: base.noncrit_bonus,
         plain_hit_bonus: base.plain_hit_bonus,
         reload_on_headshot: base.reload_on_headshot,
+        // FRACTION -> ABSOLUTE, against the BASE rate: the live stacks join
+        // `base * (1 + fr + evo + 0.05n)`, the same additive bucket a static
+        // `fire_rate_bonus` evolution joins. A fire-rate LOCK removes it with
+        // everything else in that bucket.
+        fire_rate_on_headshot: base.fire_rate_on_headshot.map(|b| HeadshotFireRateBuff {
+            per_stack: if locked_stat("fire_rate") { 0.0 } else { base.base_fire_rate * b.per_stack },
+            ..b
+        }),
         multishot: base.base_multishot * (1.0 + evo_ms_bonus + ms),
         base_multishot: base.base_multishot,
         // Magazine capacity: +% of base, floored to whole rounds (in-game).

@@ -10,6 +10,19 @@ description: "Increase Base Damage by +34.\nOn hitting an enemy affected by Elec
 # this weapon's.
 selection: choose_one
 
+# CONDITION OVERLOAD — NOT excluded here, and that is a decision rather than an
+# oversight. The catalog's row names "Furis" and nothing else; there is no
+# MK1-Furis row, and its numbers are that weapon's (100 and 128 against this
+# form's 60 and 94). The catalog lists discrepant ATTACKS one at a time, and
+# absence from it is a positive statement that the attack behaves normally —
+# Lato Vandal has a row and Lato Prime does not, same family and same Genesis.
+# Copying the exclusion across on the strength of a shared adapter is exactly
+# the generalisation that rule forbids.
+#
+# It is a genuine open question rather than a settled one: the two weapons take
+# the same adapter, so DE plausibly applies the same code. If a measurement ever
+# says so, this is the line to change — 60/94 = 64% would be the fraction.
+
 effects:
   # THE SAME +34 its tier-mate gives, so this pair is decided entirely by the
   # second line — the same shape the Burston's tier 2 has.

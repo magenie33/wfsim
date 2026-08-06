@@ -148,6 +148,10 @@ enum EvoEffect {
     /// about the panel the mods just produced rather than about the Tenno or
     /// the target — which is why it is a variant and not a gate.
     CritMultiplierBelowCritChance { value: f64, below: f64 },
+    /// Headcracker: "On Headshot: +5% Fire Rate for 2s. Stacks up to 10x",
+    /// and — from the raw wikitext, which the rendered page's summary drops —
+    /// "This effect has a 50% chance of activating."
+    StackingFireRateOnHeadshot { per_stack: f64, max_stacks: u32, duration: f64, chance: f64 },
     /// FLAT crit chance added AFTER mods (Elemental Excess: "Bonuses are
     /// added after mods as a flat value") — NOT the base-stat layer that
     /// Commodore's Fortune occupies.
@@ -338,6 +342,11 @@ impl EvolutionDef {
                     max_stacks: *max_stacks,
                     permanent: false,
                 }),
+                EvoEffect::StackingFireRateOnHeadshot { max_stacks, .. } => Some(EvoBuffCard {
+                    id: "on_headshot_fire_rate",
+                    max_stacks: *max_stacks,
+                    permanent: false,
+                }),
                 // Static stat changes — nothing to configure at runtime.
                 EvoEffect::FlatBaseStatusChanceByForm { .. }
                 | EvoEffect::FlatBaseCritMultiplier(_)
@@ -493,8 +502,14 @@ impl EvolutionDef {
                     per_type * 100.0
                 ),
                 EvoEffect::FireRateBonus(v) => format!("+{:.0}% fire rate", v * 100.0),
+                EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance } => format!(
+                    "+{:.0}% fire rate per stack x{max_stacks} for {duration:.0}s on headshot, \
+                     {:.0}% chance each (additive with fire-rate mods)",
+                    per_stack * 100.0,
+                    chance * 100.0
+                ),
                 EvoEffect::CritMultiplierBelowCritChance { value, below } => format!(
-                    "+{value:.1}x crit damage while crit chance stays under {:.0}%",
+                    "+{value:.1}x BASE crit multiplier while crit chance stays under {:.0}%                      (crit damage mods multiply it; the check reads the BUILD's crit chance,                      not a live Puncture buff)",
                     below * 100.0
                 ),
                 EvoEffect::PostModCritChance(v) => format!(
@@ -656,6 +671,14 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             per_type: f(v, "value").unwrap_or(0.0),
         },
         "fire_rate_bonus" => EvoEffect::FireRateBonus(f(v, "value").unwrap_or(0.0)),
+        "on_headshot_fire_rate" => EvoEffect::StackingFireRateOnHeadshot {
+            per_stack: f(v, "per_stack").unwrap_or(0.0),
+            max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
+            duration: f(v, "duration").unwrap_or(0.0),
+            // Default 1.0 so a perk that does NOT roll reads as certain rather
+            // than as never firing.
+            chance: f(v, "chance").unwrap_or(1.0),
+        },
         "crit_multiplier_below_crit_chance" => EvoEffect::CritMultiplierBelowCritChance {
             value: f(v, "value").unwrap_or(0.0),
             below: f(v, "below_crit_chance").unwrap_or(0.0),
@@ -820,6 +843,18 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // does not exist until `resolve` runs.
                 EvoEffect::CritMultiplierBelowCritChance { value, below } => {
                     base.crit_mult_below_cc = Some((*value, *below));
+                }
+                EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance } => {
+                    base.fire_rate_on_headshot = Some(crate::loadout::HeadshotFireRateBuff {
+                        // A FRACTION here; `resolve` turns it into an absolute
+                        // rate against the base, which is the bucket it joins.
+                        per_stack: *per_stack,
+                        max_stacks: *max_stacks,
+                        duration: *duration,
+                        chance: *chance,
+                        // EARNED from zero, like every other timed buff.
+                        initial_stacks: 0,
+                    });
                 }
                 EvoEffect::PostModCritChance(v) => base.post_mod_crit_chance += v,
                 EvoEffect::PostModStatusChance(v) => base.post_mod_status_chance += v,
@@ -1243,15 +1278,13 @@ use crate::loadout::WeaponBase;
             // An unknown kind is the only spelling that means "nothing models
             // this yet" and stays true.
             //
-            // PRELUDE OF MIGHT LEFT THIS LIST on 2026-08-06: it needed a
+            // TWO LEFT THIS LIST on 2026-08-06. Prelude of Might needed a
             // condition read off the RESOLVED panel, which nothing here did, so
             // it got `CritMultiplierBelowCritChance` and a late hook in
-            // `resolve`. What the remaining four still need, cheapest first:
-            // HEADCRACKER mirrors `on_headshot_reload_speed` with a fire-rate
-            // payload, but a relative bonus has to join the additive bucket on
-            // the BASE rate and the sim carries only the modded one, so it
-            // wants an `unmodded_fire_rate` threaded through first (worth up to
-            // +50% at a 100% headshot rate — the largest gap left);
+            // `resolve`. Headcracker needed a live stacking buff in the
+            // additive fire-rate bucket; `resolve` converts its +5% into the
+            // absolute rate that fraction is worth, so the sim never needed an
+            // unmodded rate of its own. What the remaining three need:
             // EXECUTIONER'S FORTUNE needs a reload the sim can END rather than
             // scale; STORMBURST needs a stacking buff that can state a TARGET
             // condition, which `AssumedMaxMultishot` cannot; HAVEN FORAY needs
@@ -1262,11 +1295,9 @@ use crate::loadout::WeaponBase;
             // cannot disagree.
             "furis_executioners_fortune :: instant_reload_on_headshot",
             "furis_haven_foray :: flat_base_damage_with_overshields",
-            "furis_headcracker :: on_headshot_fire_rate",
             "furis_stormburst :: stacking_multishot_on_electricity_status",
             "mk1_furis_executioners_fortune :: instant_reload_on_headshot",
             "mk1_furis_haven_foray :: flat_base_damage_with_overshields",
-            "mk1_furis_headcracker :: on_headshot_fire_rate",
             "mk1_furis_stormburst :: stacking_multishot_on_electricity_status",
         ];
         let expected: Vec<String> = expected.into_iter().map(str::to_string).collect();
@@ -1319,5 +1350,73 @@ use crate::loadout::WeaponBase;
             "boar_prime", true, &["boar_prime_mercenary_chamber"],
         );
         assert_eq!(base.ammo_reserve, 195.0);
+    }
+}
+
+/// The two Furis tier-4 perks, both added 2026-08-06, and both from the RAW
+/// wikitext rather than the rendered page — which is the point of the pair.
+/// Reading the effect column alone gave Headcracker no 50% roll and Prelude of
+/// Might no "Base", and each omission makes the perk stronger than the game's.
+#[cfg(test)]
+mod furis_tier4_tests {
+    use super::*;
+    use crate::loadout::{resolve, StackPolicy, WeaponBase};
+
+    fn cd_with(mods: &[&str], evos: &[&str]) -> f64 {
+        let owned: Vec<String> = evos.iter().map(|s| (*s).to_string()).collect();
+        let refs: Vec<&str> = owned.iter().map(String::as_str).collect();
+        let base = WeaponBase::from_data("furis_incarnon", true, &refs);
+        let pool = crate::mods_data::pool_for_weapon("furis_incarnon");
+        let picked: Vec<&crate::loadout::ModDef> = mods
+            .iter()
+            .map(|id| pool.iter().find(|m| m.id == *id).unwrap_or_else(|| panic!("{id}")))
+            .collect();
+        resolve(&base, &picked, StackPolicy::AssumedMax).crit_damage
+    }
+
+    /// "Increase BASE Critical Damage Multiplier by +3x" — so crit-damage mods
+    /// multiply the raised base. Added AFTER the mods instead, a Primed Target
+    /// Cracker build reads 10.14x where the game gives 13.44x, and the two only
+    /// diverge once a crit-damage mod is on — which is why the word "Base",
+    /// present in the wikitext and absent from the summary, decides it.
+    #[test]
+    fn prelude_of_might_raises_the_base_multiplier_not_the_final_one() {
+        let evo = ["furis_evo1_incarnon_form", "furis_prelude_of_might"];
+        let bare = ["furis_evo1_incarnon_form"];
+        // 3.4 base, +3 = 6.4 with no crit-damage mod either way.
+        assert!((cd_with(&[], &evo) - 6.4).abs() < 1e-9, "{}", cd_with(&[], &evo));
+        // With +110%: (3.4 + 3.0) x 2.1 = 13.44, NOT 3.4 x 2.1 + 3.0 = 10.14.
+        let modded = cd_with(&["primed_target_cracker"], &evo);
+        assert!((modded - 13.44).abs() < 1e-6, "expected 13.44x, got {modded}");
+        assert!((cd_with(&["primed_target_cracker"], &bare) - 7.14).abs() < 1e-6);
+    }
+
+    /// ...and it is CONDITIONAL: the perk pays only while the build's own crit
+    /// chance stays under 40%, so taking it means not building crit chance.
+    #[test]
+    fn prelude_of_might_switches_off_above_the_threshold() {
+        let evo = ["furis_evo1_incarnon_form", "furis_prelude_of_might"];
+        // The form's own 26% is under the line; Primed Pistol Gambit clears it.
+        assert!((cd_with(&[], &evo) - 6.4).abs() < 1e-9);
+        let over = cd_with(&["primed_pistol_gambit"], &evo);
+        assert!((over - 3.4).abs() < 1e-9, "over 40% crit it must pay nothing, got {over}");
+    }
+
+    /// Headcracker is a LIVE buff, so it is asserted on the loaded spec rather
+    /// than on a panel: the 50% roll is the half that a summary drops.
+    #[test]
+    fn headcracker_carries_its_fifty_percent_roll() {
+        let e = get("furis_headcracker").expect("furis_headcracker");
+        let hit = e.effects.iter().find_map(|x| match x {
+            EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance } => {
+                Some((*per_stack, *max_stacks, *duration, *chance))
+            }
+            _ => None,
+        });
+        assert_eq!(
+            hit,
+            Some((0.05, 10, 2.0, 0.50)),
+            "raw wikitext: +5% for 2s, x10, \"This effect has a 50% chance of activating\""
+        );
     }
 }

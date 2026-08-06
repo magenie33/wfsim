@@ -1193,6 +1193,10 @@ pub struct DummyParams {
     /// reload-speed bucket, so it shortens magazine reloads AND both
     /// Incarnon transmute animations (which scale by the same formula).
     pub reload_on_headshot: Option<crate::loadout::HeadshotReloadBuff>,
+    /// Headcracker: on headshot, a `chance` roll grants +`per_stack` ABSOLUTE
+    /// fire rate for `duration`, up to `max_stacks`. Absolute because it joins
+    /// the additive bucket beside `fire_rate` — `resolve` did the conversion.
+    pub fire_rate_on_headshot: Option<crate::loadout::HeadshotFireRateBuff>,
     /// Magazine size; when it runs dry a reload (below) blocks firing.
     pub magazine_size: f64,
     pub reload_seconds: f64,
@@ -1716,6 +1720,7 @@ impl DummyParams {
             noncrit_bonus: panel.noncrit_bonus,
             plain_hit_bonus: panel.plain_hit_bonus,
             reload_on_headshot: panel.reload_on_headshot,
+            fire_rate_on_headshot: panel.fire_rate_on_headshot,
             base_crit_chance: panel.crit_chance,
             crit_multiplier: panel.crit_damage,
             unmodded_crit_chance: panel.base_crit_chance,
@@ -1884,6 +1889,7 @@ impl Default for DummyParams {
             noncrit_bonus: None,
             plain_hit_bonus: None,
             reload_on_headshot: None,
+            fire_rate_on_headshot: None,
             base_crit_chance: 0.05,
             crit_multiplier: 2.0,
             unmodded_crit_chance: 0.05,
@@ -3444,6 +3450,12 @@ pub fn run_once_traced(
         .map_or_else(LiveStacks::default, |b| {
             LiveStacks::seed(b.initial_stacks, b.max_stacks, b.duration)
         });
+    // Headcracker's on-headshot fire-rate stacks — same family, same shape.
+    let mut hc_stacks = params
+        .fire_rate_on_headshot
+        .map_or_else(LiveStacks::default, |b| {
+            LiveStacks::seed(b.initial_stacks, b.max_stacks, b.duration)
+        });
     // Stacking arcanes start FULL (user setting) with a fresh timer; the
     // states run each spec's own decay family from there.
     let mut arc = ArcRuntime::init(params);
@@ -4520,6 +4532,15 @@ pub fn run_once_traced(
                         if let Some(b) = params.reload_on_headshot {
                             rs_stacks.bump(t, b.duration, b.max_stacks);
                         }
+                        // Headcracker, and it ROLLS: "This effect has a 50%
+                        // chance of activating" is in the raw wikitext and not
+                        // in the rendered page's summary, so a headshot buys
+                        // half a stack on average rather than one.
+                        if let Some(b) = params.fire_rate_on_headshot {
+                            if rng.chance(b.chance) {
+                                hc_stacks.bump(t, b.duration, b.max_stacks);
+                            }
+                        }
                         // Primary Crux: a weak-point HIT (not a kill), per
                         // PELLET. Bumped here, AFTER this pellet's status
                         // chance was read above — the hit that grants a stack
@@ -4774,10 +4795,18 @@ pub fn run_once_traced(
         // granted/refreshed counts immediately), plus Pressurized
         // Magazine's live on-reload fire-rate buff.
         bar.expire(t);
-        let fr_add = match ap.fr_on_reload {
+        let mut fr_add = match ap.fr_on_reload {
             Some(b) if t < fr_reload_expiry => b.value,
             _ => 0.0,
         };
+        // THE SAME BUCKET fire-rate mods and a static `fire_rate_bonus`
+        // evolution live in — `base * (1 + fr + evo + 0.05n)`. `per_stack` is
+        // already the absolute rate that fraction is worth, so adding it here,
+        // inside the bracket rather than outside it, is what keeps it additive
+        // with mods instead of multiplicative with them.
+        if let Some(b) = ap.fire_rate_on_headshot {
+            fr_add += b.per_stack * hc_stacks.current(t, b.duration) as f64;
+        }
         let rate = if params.locks("fire_rate") {
             ap.fire_rate
         } else {
