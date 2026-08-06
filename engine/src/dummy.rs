@@ -1449,6 +1449,9 @@ impl DummyParams {
         if let Some(b) = &self.reload_on_headshot {
             out.push(("on_headshot_reload_speed".into(), b.max_stacks));
         }
+        if let Some(b) = &self.fire_rate_on_headshot {
+            out.push(("on_headshot_fire_rate".into(), b.max_stacks));
+        }
         if self.cc_on_headshot.is_some() {
             out.push(("on_headshot_cc".into(), 1));
         }
@@ -1570,6 +1573,12 @@ impl DummyParams {
         }
         if let Some(b) = self.reload_on_headshot.as_mut() {
             if let Some(&(stacks, locked)) = cfg.get("on_headshot_reload_speed") {
+                b.initial_stacks = stacks.min(b.max_stacks);
+                b.duration = clock(b.duration, locked);
+            }
+        }
+        if let Some(b) = self.fire_rate_on_headshot.as_mut() {
+            if let Some(&(stacks, locked)) = cfg.get("on_headshot_fire_rate") {
                 b.initial_stacks = stacks.min(b.max_stacks);
                 b.duration = clock(b.duration, locked);
             }
@@ -3347,6 +3356,7 @@ fn sample_stacks(
     gal: &mut GalStacks,
     plain: &mut LiveStacks,
     reload_hs: &mut LiveStacks,
+    headshot_fr: &mut LiveStacks,
     ch_stacks: &[f64],
     ch_buff_expiry: f64,
     fr_reload_expiry: f64,
@@ -3372,6 +3382,9 @@ fn sample_stacks(
             "on_plain_hit_damage" => cap(plain.current(now, params.plain_hit_bonus.map_or(0.0, |b| b.duration))),
             "on_headshot_reload_speed" => {
                 cap(reload_hs.current(now, params.reload_on_headshot.map_or(0.0, |b| b.duration)))
+            }
+            "on_headshot_fire_rate" => {
+                cap(headshot_fr.current(now, params.fire_rate_on_headshot.map_or(0.0, |b| b.duration)))
             }
             "on_headshot_cc" => live(now < ch_buff_expiry),
             "on_kill_cd" => live(now < arc.cd_kill_expiry()),
@@ -3595,8 +3608,8 @@ pub fn run_once_traced(
             while next_frame <= t && next_frame < params.duration_secs {
                 let stacks = sample_stacks(
                     params, rep, next_frame, &mut arc, &mut gal, &mut plain_stacks,
-                    &mut rs_stacks, &ch_stacks, ch_buff_expiry, fr_reload_expiry,
-                    bd_reload_expiry, &bar,
+                    &mut rs_stacks, &mut hc_stacks, &ch_stacks, ch_buff_expiry,
+                    fr_reload_expiry, bd_reload_expiry, &bar,
                 );
                 rep.frames.push(Frame {
                     t: next_frame,
@@ -10181,4 +10194,75 @@ mod tests {
         );
     }
 
+}
+
+/// A BUFF IS THREE PLACES, and a card that appears without them lies.
+///
+/// `EvolutionDef::buff_cards` decides what the UI OFFERS. The sim decides what
+/// it DOES, and that takes three separate arms in this file: the roster (what
+/// the replay draws), the sampler (what its curve reads), and the config (what
+/// a locked/seeded stack count means). Headcracker shipped with the card and
+/// none of the three for one commit, which is the worst shape available — the
+/// panel offered a control, the control did nothing, and nothing said so.
+///
+/// Asserted for BOTH on-headshot buffs, because the failure is silent: a buff
+/// missing from the roster simply never appears, and no test that looks only at
+/// damage would notice.
+#[cfg(test)]
+mod headshot_buff_wiring_tests {
+    use super::*;
+
+    fn roster_of(evo: &str) -> Vec<String> {
+        let base = crate::loadout::WeaponBase::from_data(
+            "furis_incarnon",
+            true,
+            &["furis_evo1_incarnon_form", evo],
+        );
+        let p = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+        let params = DummyParams::from_panel(&p, &crate::arena::Arena::training(30.0));
+        params.buff_roster().into_iter().map(|(id, _)| id).collect()
+    }
+
+    #[test]
+    fn headcracker_is_on_the_replay_roster() {
+        let r = roster_of("furis_headcracker");
+        assert!(
+            r.iter().any(|id| id == "on_headshot_fire_rate"),
+            "the card is offered, so the curve must exist too: {r:?}"
+        );
+    }
+
+    /// ...and it is NOT there when the perk is not taken — a roster that always
+    /// lists it would draw a flat zero line and read as a finding.
+    #[test]
+    fn and_only_when_the_perk_is_taken() {
+        let r = roster_of("furis_elemental_balance");
+        assert!(!r.iter().any(|id| id == "on_headshot_fire_rate"), "{r:?}");
+    }
+
+    /// EVERY card the evolution loader offers must have a sim arm behind it.
+    /// This is the general form of the bug rather than the instance: it walks
+    /// the whole evolution pool, so the next perk to gain a card fails here
+    /// until the three arms exist.
+    #[test]
+    fn every_evolution_buff_card_is_backed_by_the_sim() {
+        for e in crate::evolutions_data::pool() {
+            for card in e.buff_cards() {
+                let base = crate::loadout::WeaponBase::from_data(
+                    &e.weapon,
+                    true,
+                    &[e.id.as_str()],
+                );
+                let p = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+                let params = DummyParams::from_panel(&p, &crate::arena::Arena::training(30.0));
+                let listed = params.buff_roster().into_iter().any(|(id, _)| id == card.id);
+                assert!(
+                    listed,
+                    "{} offers a buff card `{}` the sim never rosters — the panel would \
+                     show a control that does nothing",
+                    e.id, card.id
+                );
+            }
+        }
+    }
 }
