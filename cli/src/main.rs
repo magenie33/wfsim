@@ -40,9 +40,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         multishot_ammo_bonus: 0.0,
         headshot_damage_bonus: 0.0,
         noncrit_bonus: None,
-        plain_hit_bonus: None,
-        reload_on_headshot: None,
-        fire_rate_on_headshot: None,
+        stacking_buffs: Vec::new(),
         damage: DamageVector::new()
             .with(DamageType::Impact, 7.5)
             .with(DamageType::Puncture, 60.0)

@@ -914,12 +914,10 @@ pub struct WeaponBase {
     /// multiplier, applied to the direct hit and the radial alike.
     pub noncrit_bonus: Option<(f64, f64)>,
     /// Overwhelming Attrition's stacking damage buff.
-    pub plain_hit_bonus: Option<PlainHitBuff>,
-    /// Lethal Rearmament's stacking on-headshot reload speed.
-    pub reload_on_headshot: Option<HeadshotReloadBuff>,
-    /// Headcracker's on-headshot fire-rate stacks (a FRACTION of the base rate
-    /// here; `resolve` converts it — see [`HeadshotFireRateBuff`]).
-    pub fire_rate_on_headshot: Option<HeadshotFireRateBuff>,
+/// Every stacking buff this weapon grants — see [`StackingBuff`]. A Vec
+    /// rather than one field per buff, so the roster, the config reader and the
+    /// stack sampler can each walk it instead of naming buffs one at a time.
+    pub stacking_buffs: Vec<StackingBuff>,
     /// A RADIAL (AoE) attack part fired alongside the direct hit — the
     /// Laetum Incarnon's 300 Radiation explosion. Separate damage vector,
     /// crit and status stats; the directly-hit enemy takes both parts.
@@ -948,44 +946,62 @@ pub struct WeaponBase {
     pub multishot_ammo_bonus: f64,
 }
 
-/// Overwhelming Attrition: a hit that neither crits nor applies a status
-/// grants a stack; on timeout ONE stack drops and the timer resets.
-#[derive(Debug, Clone, Copy)]
-pub struct PlainHitBuff {
+/// WHAT TRIGGERS A STACKING BUFF. One arm per trigger, forever — a new buff
+/// that fires on an event already listed here costs no engine code at all.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BuffTrigger {
+    /// Overwhelming Attrition: a hit that neither crits nor applies a status.
+    PlainHit,
+    /// Lethal Rearmament, Headcracker: any weak-point hit.
+    Headshot,
+}
+
+/// WHAT A STACKING BUFF FEEDS. One arm per grant, and each keeps its own
+/// bracket — that is the part which cannot be generalised and must not be:
+/// fire rate is additive on the BASE rate, reload speed scales the reload, and
+/// base damage joins the damage bucket.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BuffGrant {
+    BaseDamage,
+    ReloadSpeed,
+    FireRate,
+}
+
+/// ONE STACKING BUFF, and one place its identity is written.
+///
+/// It replaced three structs with identical fields — `PlainHitBuff`,
+/// `HeadshotReloadBuff`, `HeadshotFireRateBuff` — that differed only in what
+/// triggered them and what they fed. The duplication was not the real cost:
+/// each buff's IDENTITY had to be repeated in four places (the evolution's
+/// buff card, the sim's replay roster, the config reader, the stack sampler),
+/// those four could disagree, and one of them is a control the player sees.
+/// Headcracker shipped with the card and none of the other three, so the panel
+/// offered a stacks/lock control that did nothing.
+///
+/// The shape is not invented: `ArcBuffSpec` already carries exactly this
+/// (owner + trigger + grant + the four numbers) in a `Vec`, and `ArcRuntime`
+/// already bumps by trigger and totals by grant. This is that pattern, applied
+/// to the buffs a WEAPON grants.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct StackingBuff {
+    /// The buff-card id — the SINGLE source of this buff's identity. The
+    /// roster, the config and the sampler all key on it, so they cannot drift.
+    pub id: &'static str,
+    pub trigger: BuffTrigger,
+    pub grant: BuffGrant,
+    /// Per stack. For [`BuffGrant::FireRate`] this is a FRACTION of the base
+    /// rate on [`WeaponBase`] and the ABSOLUTE rate it is worth on
+    /// [`ResolvedPanel`] — `resolve` converts it, because the sim adds it
+    /// beside `fire_rate` inside the bracket fire-rate mods live in and
+    /// carries no unmodded rate to re-derive it from.
     pub per_stack: f64,
     pub max_stacks: u32,
     pub duration: f64,
+    /// Rolled per trigger. 1.0 unless the perk says otherwise — Headcracker's
+    /// "This effect has a 50% chance of activating" is the only 0.5 so far.
+    pub chance: f64,
     /// Stacks at t = 0 — the buff card's other knob, the first being
     /// `duration` ([`NO_TIMEOUT`] when it is locked).
-    pub initial_stacks: u32,
-}
-
-/// Lethal Rearmament: every HEADSHOT grants a stack of reload speed for
-/// `duration`; on timeout ONE stack drops and the timer resets (the
-/// Galvanized decay). Reload speed also shortens the Incarnon transmute
-/// animations, so the buff reaches the whole cycle, not just reloads.
-#[derive(Debug, Clone, Copy)]
-pub struct HeadshotFireRateBuff {
-    /// On [`WeaponBase`] a FRACTION of the base rate (+5% = 0.05); on
-    /// [`ResolvedPanel`] the ABSOLUTE rate that fraction is worth, because the
-    /// sim adds it beside `ap.fire_rate` inside the same bracket that
-    /// fire-rate mods live in — `base * (1 + fr + evo)` — and it carries no
-    /// unmodded rate of its own to re-derive it from.
-    pub per_stack: f64,
-    pub max_stacks: u32,
-    pub duration: f64,
-    /// "This effect has a 50% chance of activating" (raw wikitext). Rolled per
-    /// headshot, so it halves the stacks a given headshot rate buys.
-    pub chance: f64,
-    pub initial_stacks: u32,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct HeadshotReloadBuff {
-    pub per_stack: f64,
-    pub max_stacks: u32,
-    pub duration: f64,
-    /// The same two knobs every other stacking buff carries.
     pub initial_stacks: u32,
 }
 
@@ -1248,11 +1264,9 @@ pub struct ResolvedPanel {
     /// Devouring Attrition's (chance, bonus) on non-crit instances.
     pub noncrit_bonus: Option<(f64, f64)>,
     /// Overwhelming Attrition's stacking damage buff.
-    pub plain_hit_bonus: Option<PlainHitBuff>,
-    /// Lethal Rearmament's stacking on-headshot reload speed.
-    pub reload_on_headshot: Option<HeadshotReloadBuff>,
-    /// Headcracker, with `per_stack` already converted to an ABSOLUTE rate.
-    pub fire_rate_on_headshot: Option<HeadshotFireRateBuff>,
+/// Every stacking buff, with [`BuffGrant::FireRate`] already converted from
+    /// a fraction to an absolute rate. See [`StackingBuff`].
+    pub stacking_buffs: Vec<StackingBuff>,
     /// ModifiedBase = unmodded total × (1 + Σ base damage) — the base of
     /// every status-payload formula (elemental portions excluded).
     pub modified_base: f64,
@@ -2024,16 +2038,23 @@ pub fn resolve_for(
         }),
         headshot_damage_bonus: base.headshot_damage_bonus,
         noncrit_bonus: base.noncrit_bonus,
-        plain_hit_bonus: base.plain_hit_bonus,
-        reload_on_headshot: base.reload_on_headshot,
-        // FRACTION -> ABSOLUTE, against the BASE rate: the live stacks join
-        // `base * (1 + fr + evo + 0.05n)`, the same additive bucket a static
-        // `fire_rate_bonus` evolution joins. A fire-rate LOCK removes it with
-        // everything else in that bucket.
-        fire_rate_on_headshot: base.fire_rate_on_headshot.map(|b| HeadshotFireRateBuff {
-            per_stack: if locked_stat("fire_rate") { 0.0 } else { base.base_fire_rate * b.per_stack },
-            ..b
-        }),
+        // ONE conversion, in one place: a FireRate buff arrives as a fraction of
+        // the base rate and leaves as the absolute rate it is worth, because
+        // the sim adds it inside the bracket fire-rate mods live in. A lock on
+        // the stat removes it with everything else in that bucket.
+        stacking_buffs: base
+            .stacking_buffs
+            .iter()
+            .map(|b| StackingBuff {
+                per_stack: match b.grant {
+                    BuffGrant::FireRate => {
+                        if locked_stat("fire_rate") { 0.0 } else { base.base_fire_rate * b.per_stack }
+                    }
+                    _ => b.per_stack,
+                },
+                ..*b
+            })
+            .collect(),
         multishot: base.base_multishot * (1.0 + evo_ms_bonus + ms),
         base_multishot: base.base_multishot,
         // Magazine capacity: +% of base, floored to whole rounds (in-game).

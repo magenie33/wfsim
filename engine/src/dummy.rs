@@ -1188,15 +1188,11 @@ pub struct DummyParams {
     /// status grants a stack worth `+per_stack` damage; on timeout ONE
     /// stack drops and the timer resets. The buff multiplies subsequent
     /// instances, the radial part included.
-    pub plain_hit_bonus: Option<crate::loadout::PlainHitBuff>,
-    /// Lethal Rearmament: stacking on-HEADSHOT reload speed. It joins the
-    /// reload-speed bucket, so it shortens magazine reloads AND both
-    /// Incarnon transmute animations (which scale by the same formula).
-    pub reload_on_headshot: Option<crate::loadout::HeadshotReloadBuff>,
-    /// Headcracker: on headshot, a `chance` roll grants +`per_stack` ABSOLUTE
-    /// fire rate for `duration`, up to `max_stacks`. Absolute because it joins
-    /// the additive bucket beside `fire_rate` — `resolve` did the conversion.
-    pub fire_rate_on_headshot: Option<crate::loadout::HeadshotFireRateBuff>,
+    /// Every stacking buff this build grants, keyed by its own id — see
+    /// [`crate::loadout::StackingBuff`]. The roster, the config reader and the
+    /// sampler all walk THIS, which is what stops a buff from existing in one
+    /// of them and not the others.
+    pub stacking_buffs: Vec<crate::loadout::StackingBuff>,
     /// Magazine size; when it runs dry a reload (below) blocks firing.
     pub magazine_size: f64,
     pub reload_seconds: f64,
@@ -1443,14 +1439,10 @@ impl DummyParams {
         if let Some(s) = &self.cc_stack {
             out.push(("on_headshot_kill_cc".into(), s.max_stacks));
         }
-        if let Some(b) = &self.plain_hit_bonus {
-            out.push(("on_plain_hit_damage".into(), b.max_stacks));
-        }
-        if let Some(b) = &self.reload_on_headshot {
-            out.push(("on_headshot_reload_speed".into(), b.max_stacks));
-        }
-        if let Some(b) = &self.fire_rate_on_headshot {
-            out.push(("on_headshot_fire_rate".into(), b.max_stacks));
+        // EVERY stacking buff, by construction. A new one appears on the
+        // replay the moment the data declares it — there is no arm to add.
+        for b in &self.stacking_buffs {
+            out.push((b.id.into(), b.max_stacks));
         }
         if self.cc_on_headshot.is_some() {
             out.push(("on_headshot_cc".into(), 1));
@@ -1563,22 +1555,11 @@ impl DummyParams {
         if let Some(s) = self.cc_stack.as_mut() {
             set_stack(s, cfg, "on_headshot_kill_cc");
         }
-        // Overwhelming Attrition: a stacking conditional like the
-        // Galvanized family, so it takes the same two knobs.
-        if let Some(b) = self.plain_hit_bonus.as_mut() {
-            if let Some(&(stacks, locked)) = cfg.get("on_plain_hit_damage") {
-                b.initial_stacks = stacks.min(b.max_stacks);
-                b.duration = clock(b.duration, locked);
-            }
-        }
-        if let Some(b) = self.reload_on_headshot.as_mut() {
-            if let Some(&(stacks, locked)) = cfg.get("on_headshot_reload_speed") {
-                b.initial_stacks = stacks.min(b.max_stacks);
-                b.duration = clock(b.duration, locked);
-            }
-        }
-        if let Some(b) = self.fire_rate_on_headshot.as_mut() {
-            if let Some(&(stacks, locked)) = cfg.get("on_headshot_fire_rate") {
+        // Every stacking buff takes the same two knobs the Galvanized family
+        // does, and takes them by ID — so a buff the data adds is configurable
+        // without a line here.
+        for b in self.stacking_buffs.iter_mut() {
+            if let Some(&(stacks, locked)) = cfg.get(b.id) {
                 b.initial_stacks = stacks.min(b.max_stacks);
                 b.duration = clock(b.duration, locked);
             }
@@ -1727,9 +1708,7 @@ impl DummyParams {
             headshot_damage_bonus: panel.headshot_damage_bonus,
             headshot_bonus_multiplicative: panel.headshot_bonus_multiplicative,
             noncrit_bonus: panel.noncrit_bonus,
-            plain_hit_bonus: panel.plain_hit_bonus,
-            reload_on_headshot: panel.reload_on_headshot,
-            fire_rate_on_headshot: panel.fire_rate_on_headshot,
+            stacking_buffs: panel.stacking_buffs.clone(),
             base_crit_chance: panel.crit_chance,
             crit_multiplier: panel.crit_damage,
             unmodded_crit_chance: panel.base_crit_chance,
@@ -1896,9 +1875,7 @@ impl Default for DummyParams {
             headshot_damage_bonus: 0.0,
             headshot_bonus_multiplicative: false,
             noncrit_bonus: None,
-            plain_hit_bonus: None,
-            reload_on_headshot: None,
-            fire_rate_on_headshot: None,
+            stacking_buffs: Vec::new(),
             base_crit_chance: 0.05,
             crit_multiplier: 2.0,
             unmodded_crit_chance: 0.05,
@@ -3329,10 +3306,18 @@ fn rescale_reload(secs: f64, bucket: f64, live: f64) -> f64 {
 
 /// Lethal Rearmament's CURRENT reload-speed bonus. Locked or not, the count is
 /// the live one — locking only stops the clock (`LiveStacks::clock`).
-fn live_reload_speed(params: &DummyParams, stacks: &mut LiveStacks, t: f64) -> f64 {
+fn live_reload_speed(
+    params: &DummyParams,
+    stacks: &mut [LiveStacks],
+    t: f64,
+) -> f64 {
     params
-        .reload_on_headshot
-        .map_or(0.0, |b| b.per_stack * stacks.current(t, b.duration) as f64)
+        .stacking_buffs
+        .iter()
+        .enumerate()
+        .filter(|(_, b)| b.grant == crate::loadout::BuffGrant::ReloadSpeed)
+        .map(|(i, b)| b.per_stack * stacks[i].current(t, b.duration) as f64)
+        .sum()
 }
 
 /// The live stack count of every buff in [`Replay::buffs`], in that order.
@@ -3354,9 +3339,7 @@ fn sample_stacks(
     now: f64,
     arc: &mut ArcRuntime,
     gal: &mut GalStacks,
-    plain: &mut LiveStacks,
-    reload_hs: &mut LiveStacks,
-    headshot_fr: &mut LiveStacks,
+    buff_stacks: &mut [LiveStacks],
     ch_stacks: &[f64],
     ch_buff_expiry: f64,
     fr_reload_expiry: f64,
@@ -3379,12 +3362,14 @@ fn sample_stacks(
             "condition_overload" => cap(gal.co.current(now, dur(&params.co_stack))),
             "on_kill_multishot" => cap(gal.ms.current(now, dur(&params.ms_stack))),
             "on_headshot_kill_cc" => cap(ch_stacks.iter().filter(|&&e| e > now).count() as u32),
-            "on_plain_hit_damage" => cap(plain.current(now, params.plain_hit_bonus.map_or(0.0, |b| b.duration))),
-            "on_headshot_reload_speed" => {
-                cap(reload_hs.current(now, params.reload_on_headshot.map_or(0.0, |b| b.duration)))
-            }
-            "on_headshot_fire_rate" => {
-                cap(headshot_fr.current(now, params.fire_rate_on_headshot.map_or(0.0, |b| b.duration)))
+
+            // THE WHOLE STACKING FAMILY, by id. The roster pushed these ids
+            // from the same Vec this reads, so a rostered buff can never fall
+            // through to a zero it did not earn.
+            other if params.stacking_buffs.iter().any(|b| b.id == other) => {
+                let i = params.stacking_buffs.iter().position(|b| b.id == other).unwrap_or(0);
+                let d = params.stacking_buffs[i].duration;
+                cap(buff_stacks[i].current(now, d))
             }
             "on_headshot_cc" => live(now < ch_buff_expiry),
             "on_kill_cd" => live(now < arc.cd_kill_expiry()),
@@ -3454,21 +3439,44 @@ pub fn run_once_traced(
     // Overwhelming Attrition's stacks are EARNED in the run — the default
     // config seeds 0 so no trigger is invented at t = 0 — but a configured
     // buff card seeds them like any other stacking buff.
-    let mut plain_stacks = params.plain_hit_bonus.map_or_else(LiveStacks::default, |b| {
-        LiveStacks::seed(b.initial_stacks, b.max_stacks, b.duration)
-    });
-    // Lethal Rearmament's on-headshot reload-speed stacks.
-    let mut rs_stacks = params
-        .reload_on_headshot
-        .map_or_else(LiveStacks::default, |b| {
-            LiveStacks::seed(b.initial_stacks, b.max_stacks, b.duration)
-        });
-    // Headcracker's on-headshot fire-rate stacks — same family, same shape.
-    let mut hc_stacks = params
-        .fire_rate_on_headshot
-        .map_or_else(LiveStacks::default, |b| {
-            LiveStacks::seed(b.initial_stacks, b.max_stacks, b.duration)
-        });
+    // ONE LiveStacks per declared buff, in the same order — index i is buff i.
+    // The parallel Vec is what lets the sampler answer by ID without a match.
+    let mut buff_stacks: Vec<LiveStacks> = params
+        .stacking_buffs
+        .iter()
+        .map(|b| LiveStacks::seed(b.initial_stacks, b.max_stacks, b.duration))
+        .collect();
+    // BUMP BY TRIGGER, TOTAL BY GRANT — the two operations the whole family
+    // needs, and the only two. `ArcRuntime` has had exactly this pair since the
+    // arcanes were written; these are its weapon-side twins.
+    macro_rules! bump_buffs {
+        ($trigger:expr, $t:expr, $rng:expr) => {
+            for (i, b) in params.stacking_buffs.iter().enumerate() {
+                if b.trigger == $trigger && (b.chance >= 1.0 || $rng.chance(b.chance)) {
+                    buff_stacks[i].bump($t, b.duration, b.max_stacks);
+                }
+            }
+        };
+    }
+    // TAKES THE PANEL EXPLICITLY, and that is not a style choice: in a CYCLE
+    // the two forms resolve the same buff against different base rates (the
+    // Furis Incarnon's 12 ticks/s against the base form's 10), so a FireRate
+    // buff's absolute `per_stack` differs per form. The old code read `ap` —
+    // the ACTIVE form — and reading the outer `params` instead handed the base
+    // form the Incarnon form's rate. The STACKS stay shared (one buff, one
+    // count, across the whole engagement); only the conversion is per form.
+    macro_rules! buff_total {
+        ($from:expr, $grant:expr, $t:expr) => {
+            $from
+                .stacking_buffs
+                .iter()
+                .enumerate()
+                .filter(|(_, b)| b.grant == $grant)
+                .map(|(i, b)| b.per_stack * buff_stacks[i].current($t, b.duration) as f64)
+                .sum::<f64>()
+        };
+    }
+
     // Stacking arcanes start FULL (user setting) with a fresh timer; the
     // states run each spec's own decay family from there.
     let mut arc = ArcRuntime::init(params);
@@ -3607,9 +3615,8 @@ pub fn run_once_traced(
         if let Some(rep) = trace.as_deref_mut() {
             while next_frame <= t && next_frame < params.duration_secs {
                 let stacks = sample_stacks(
-                    params, rep, next_frame, &mut arc, &mut gal, &mut plain_stacks,
-                    &mut rs_stacks, &mut hc_stacks, &ch_stacks, ch_buff_expiry,
-                    fr_reload_expiry, bd_reload_expiry, &bar,
+                    params, rep, next_frame, &mut arc, &mut gal, &mut buff_stacks,
+                    &ch_stacks, ch_buff_expiry, fr_reload_expiry, bd_reload_expiry, &bar,
                 );
                 rep.frames.push(Frame {
                     t: next_frame,
@@ -3762,7 +3769,7 @@ pub fn run_once_traced(
                 // TRANSMUTES INTO the Incarnon form only (user, 2026-07-29:
                 // both-directions counting read as doubled).
                 t += rescale_reload(cy.transmute_out_seconds, cy.reload_bucket,
-                    live_reload_speed(params, &mut rs_stacks, t));
+                    live_reload_speed(params, &mut buff_stacks, t));
                 in_base_form = true;
                 charges = 0;
                 // The swap's auto-reload is the SAME mechanism as a normal one
@@ -3786,7 +3793,7 @@ pub fn run_once_traced(
                 if !params.infinite_reserve && reserve < 1e-9 {
                     break;
                 }
-                let rs = live_reload_speed(params, &mut rs_stacks, t);
+                let rs = live_reload_speed(params, &mut buff_stacks, t);
                 t += live_reload_time(&cy.base_form, params, &mut arc, rs, t);
                 r.reloads += 1;
                 if let Some(b) = cy.base_form.fr_on_reload {
@@ -3810,7 +3817,7 @@ pub fn run_once_traced(
             if !params.infinite_reserve && reserve < 1e-9 {
                 break;
             }
-            let rs = live_reload_speed(params, &mut rs_stacks, t);
+            let rs = live_reload_speed(params, &mut buff_stacks, t);
             t += live_reload_time(params, params, &mut arc, rs, t);
             r.reloads += 1;
             if let Some(b) = params.fr_on_reload {
@@ -4124,9 +4131,7 @@ pub fn run_once_traced(
             flat_crit,
             cc_rel_mods: cc_rel - params.arcane.cc_rel,
             bd_add_mods: bd_reload_add
-                + ap.plain_hit_bonus.map_or(0.0, |b| {
-                b.per_stack * plain_stacks.current(t, b.duration) as f64
-            }),
+                + buff_total!(ap, crate::loadout::BuffGrant::BaseDamage, t),
         };
         process_field_ticks(
             &mut fields,
@@ -4194,9 +4199,7 @@ pub fn run_once_traced(
             // after the status roll below).
             let arc_bd = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t)
                 + bd_reload_add
-                + ap.plain_hit_bonus.map_or(0.0, |b| {
-                    b.per_stack * plain_stacks.current(t, b.duration) as f64
-                });
+                + buff_total!(ap, crate::loadout::BuffGrant::BaseDamage, t);
             let bd = ap.base_damage_bonus;
             let arc_ratio = (1.0 + bd + arc_bd) / (1.0 + bd);
             let mb_live = modded_base * arc_ratio;
@@ -4542,18 +4545,9 @@ pub fn run_once_traced(
                         }
                         // Lethal Rearmament: every headshot grants a stack —
                         // a LOCKED buff earns it too, it just never loses it.
-                        if let Some(b) = params.reload_on_headshot {
-                            rs_stacks.bump(t, b.duration, b.max_stacks);
-                        }
-                        // Headcracker, and it ROLLS: "This effect has a 50%
-                        // chance of activating" is in the raw wikitext and not
-                        // in the rendered page's summary, so a headshot buys
-                        // half a stack on average rather than one.
-                        if let Some(b) = params.fire_rate_on_headshot {
-                            if rng.chance(b.chance) {
-                                hc_stacks.bump(t, b.duration, b.max_stacks);
-                            }
-                        }
+                        // EVERY buff that triggers on a headshot, including
+                        // its own chance roll. One line for the family.
+                        bump_buffs!(crate::loadout::BuffTrigger::Headshot, t, rng);
                         // Primary Crux: a weak-point HIT (not a kill), per
                         // PELLET. Bumped here, AFTER this pellet's status
                         // chance was read above — the hit that grants a stack
@@ -4714,10 +4708,8 @@ pub fn run_once_traced(
             // hit and the explosion each arm it). So a shot whose direct hit
             // and whose explosion are both plain arms the buff twice,
             // bounded by the stack cap.
-            if let Some(b) = ap.plain_hit_bonus {
-                if tier == 0 && procs.is_empty() {
-                    plain_stacks.bump(t, b.duration, b.max_stacks);
-                }
+            if tier == 0 && procs.is_empty() {
+                bump_buffs!(crate::loadout::BuffTrigger::PlainHit, t, rng);
             }
             // ...and ARM it for the next pellet. ONE roll per pellet that
             // landed at least one status — "Applying multiple status effects in
@@ -4782,7 +4774,7 @@ pub fn run_once_traced(
                 };
                 if charges >= cy.charges_to_fill {
                     t += rescale_reload(cy.transmute_seconds, cy.reload_bucket,
-                        live_reload_speed(params, &mut rs_stacks, t));
+                        live_reload_speed(params, &mut buff_stacks, t));
                     r.transforms += 1;
                     in_base_form = false;
                     // The CHARGE magazine is filled by the gauge, not reloaded
@@ -4817,9 +4809,7 @@ pub fn run_once_traced(
         // already the absolute rate that fraction is worth, so adding it here,
         // inside the bracket rather than outside it, is what keeps it additive
         // with mods instead of multiplicative with them.
-        if let Some(b) = ap.fire_rate_on_headshot {
-            fr_add += b.per_stack * hc_stacks.current(t, b.duration) as f64;
-        }
+        fr_add += buff_total!(ap, crate::loadout::BuffGrant::FireRate, t);
         let rate = if params.locks("fire_rate") {
             ap.fire_rate
         } else {
@@ -7765,7 +7755,6 @@ mod tests {
     /// can only come from the buff having been armed a second time.
     #[test]
     fn the_explosion_arms_an_on_hit_buff_of_its_own() {
-        use crate::loadout::PlainHitBuff;
         let mk = |with_radial: bool| {
             let radial = with_radial.then(|| crate::loadout::ResolvedRadial {
                 damage: DamageVector::default(), // 0 damage: a pure extra INSTANCE
@@ -7785,13 +7774,17 @@ mod tests {
             });
             let p = DummyParams {
                 radial,
-                plain_hit_bonus: Some(PlainHitBuff {
+                stacking_buffs: vec![crate::loadout::StackingBuff {
+                id: "on_plain_hit_damage",
+                trigger: crate::loadout::BuffTrigger::PlainHit,
+                grant: crate::loadout::BuffGrant::BaseDamage,
+                chance: 1.0,
                     per_stack: 4.0,
                     max_stacks: 3,
                     duration: 10.0,
                     // Earn them in the run — that is what is under test.
                     initial_stacks: 0,
-                }),
+                }],
                 // Never crits, never procs: every instance is "plain", so
                 // the only variable is HOW MANY instances a shot produces.
                 base_crit_chance: 0.0,
@@ -7832,7 +7825,7 @@ mod tests {
     /// back here.
     #[test]
     fn every_buff_the_roster_offers_is_actually_read() {
-        use crate::loadout::{PlainHitBuff, StackSpec, TimedBuff};
+        use crate::loadout::{StackSpec, TimedBuff};
         let stack = |per_stack: f64| StackSpec {
             per_stack,
             max_stacks: 3,
@@ -7849,18 +7842,25 @@ mod tests {
             co_stack: Some(stack(0.2)),
             ms_stack: Some(stack(0.3)),
             cc_stack: Some(stack(0.1)),
-            plain_hit_bonus: Some(PlainHitBuff {
+            stacking_buffs: vec![crate::loadout::StackingBuff {
+                id: "on_plain_hit_damage",
+                trigger: crate::loadout::BuffTrigger::PlainHit,
+                grant: crate::loadout::BuffGrant::BaseDamage,
+                chance: 1.0,
                 per_stack: 4.0,
                 max_stacks: 3,
                 duration: 10.0,
                 initial_stacks: 0,
-            }),
-            reload_on_headshot: Some(crate::loadout::HeadshotReloadBuff {
+            }, crate::loadout::StackingBuff {
+                id: "on_headshot_reload_speed",
+                trigger: crate::loadout::BuffTrigger::Headshot,
+                grant: crate::loadout::BuffGrant::ReloadSpeed,
+                chance: 1.0,
                 per_stack: 0.1,
                 max_stacks: 3,
                 duration: 6.0,
                 initial_stacks: 0,
-            }),
+            }],
             cc_on_headshot: Some(timed(0.5)),
             cd_on_kill: Some(timed(0.6)),
             fr_on_reload: Some(timed(0.7)),
@@ -7892,7 +7892,6 @@ mod tests {
 
     #[test]
     fn overwhelming_attrition_takes_the_buff_cards_two_knobs() {
-        use crate::loadout::PlainHitBuff;
         // LOCKED = NO TIMEOUT, not frozen (user, 2026-08-02). This buff was
         // left on the old reading when the rest moved: its stacks decayed from
         // the seed and its trigger was skipped while locked, so "no timeout"
@@ -7901,13 +7900,17 @@ mod tests {
         // all (2026-08-03: 选无限持续后直接不生效).
         let mk = |initial: u32, locked: bool, fire_rate: f64, secs: f64| {
             let mut p = DummyParams {
-                plain_hit_bonus: Some(PlainHitBuff {
+                stacking_buffs: vec![crate::loadout::StackingBuff {
+                id: "on_plain_hit_damage",
+                trigger: crate::loadout::BuffTrigger::PlainHit,
+                grant: crate::loadout::BuffGrant::BaseDamage,
+                chance: 1.0,
                     per_stack: 4.0,
                     max_stacks: 3,
                     // Locking IS this: the card's duration, overwritten.
                     duration: if locked { crate::loadout::NO_TIMEOUT } else { 10.0 },
                     initial_stacks: initial,
-                }),
+                }],
                 fire_rate,
                 duration_secs: secs,
                 ..DummyParams::default()
@@ -7922,7 +7925,6 @@ mod tests {
         let without = |fire_rate: f64, secs: f64| {
             run_once(
                 &DummyParams {
-                    plain_hit_bonus: None,
                     base_crit_chance: 0.0,
                     status_chance: 0.0,
                     forced_procs: Vec::new(),
@@ -10264,5 +10266,54 @@ mod headshot_buff_wiring_tests {
                 );
             }
         }
+    }
+}
+
+/// A CYCLE RESOLVES ONE BUFF TWICE, once per form, and the two answers differ.
+///
+/// `BuffGrant::FireRate` carries an ABSOLUTE rate that `resolve` derives from
+/// that form's own base — the Furis Incarnon's 12 ticks/s against the base
+/// form's 10 — so the same perk is worth a different number in each half of the
+/// engagement. The stacks are shared (one buff, one count, one fight); only the
+/// conversion is per form.
+///
+/// This is the bug the stacking-buff refactor introduced and the baseline
+/// caught: reading the outer params instead of the ACTIVE form handed the base
+/// form the Incarnon form's rate, which showed up as more shots per engagement
+/// and moved nothing else. A diff against a hand-captured baseline will not
+/// exist next time, so it is asserted here.
+#[cfg(test)]
+mod cycle_buff_conversion_tests {
+    use super::*;
+
+    #[test]
+    fn a_fire_rate_buff_converts_against_each_forms_own_base() {
+        let evos = [
+            "furis_evo1_incarnon_form",
+            "furis_haven_foray",
+            "furis_extended_volley",
+            "furis_headcracker",
+        ];
+        let inc = crate::loadout::WeaponBase::from_data("furis_incarnon", true, &evos);
+        let base = crate::loadout::WeaponBase::from_data("furis", true, &evos);
+        let pol = crate::loadout::StackPolicy::Emergent;
+        let pi = crate::loadout::resolve(&inc, &[], pol);
+        let pb = crate::loadout::resolve(&base, &[], pol);
+
+        let rate_of = |p: &crate::loadout::ResolvedPanel| {
+            p.stacking_buffs
+                .iter()
+                .find(|b| b.grant == crate::loadout::BuffGrant::FireRate)
+                .map(|b| b.per_stack)
+                .expect("Headcracker resolves a fire-rate buff on both forms")
+        };
+        // +5% of each form's own base: 12 x 0.05 = 0.6, and 10 x 0.05 = 0.5.
+        assert!((rate_of(&pi) - 0.6).abs() < 1e-9, "incarnon {}", rate_of(&pi));
+        assert!((rate_of(&pb) - 0.5).abs() < 1e-9, "base {}", rate_of(&pb));
+        assert!(
+            rate_of(&pi) > rate_of(&pb),
+            "the faster form must be worth more per stack, or the sim is reading one form's \
+             rate while firing the other"
+        );
     }
 }

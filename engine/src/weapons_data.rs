@@ -1222,15 +1222,14 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // Set by Prelude of Might at `evolutions_data::apply`, read in `resolve`.
         crit_mult_below_cc: None,
         // Set by Headcracker at `evolutions_data::apply`.
-        fire_rate_on_headshot: None,
+        // Filled by `evolutions_data::apply`; see `StackingBuff`.
+        stacking_buffs: Vec::new(),
         post_mod_crit_chance: 0.0,
         post_mod_status_chance: 0.0,
         // Evolutions ADD to this (Caput Mortuum); a weapon's innate share is
         // the module's `ExtraHeadshotDmg`.
         headshot_damage_bonus: s.headshot_damage_bonus.unwrap_or(0.0),
         noncrit_bonus: None,
-        plain_hit_bonus: None,
-        reload_on_headshot: None,
     }
 }
 
@@ -2244,7 +2243,7 @@ mod laetum_tests {
             let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::AssumedMax);
             let params =
                 DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) });
-            (params.plain_hit_bonus.is_some(), monte_carlo(&params, 40, 11).mean_effective_damage)
+            (!params.stacking_buffs.is_empty(), monte_carlo(&params, 40, 11).mean_effective_damage)
         };
         let (has_none, without) = run(&[]);
         let (has_buff, with) = run(&["laetum_overwhelming_attrition"]);
@@ -2276,7 +2275,7 @@ mod laetum_tests {
             let params =
                 DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(60.0) });
             let m = monte_carlo(&params, 24, 7);
-            (params.reload_on_headshot.is_some(), m.mean_effective_damage)
+            (!params.stacking_buffs.is_empty(), m.mean_effective_damage)
         };
         let (has_none, without) = run(&["laetum_evo1_incarnon_form"]);
         let (has_buff, with) = run(&["laetum_evo1_incarnon_form", "laetum_lethal_rearmament"]);
@@ -2316,15 +2315,18 @@ mod laetum_tests {
                 crate::dummy::LockMode::Initial(0),
                 &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(300.0) },
             );
-            if !pin {
-                if let Some(b) = d.reload_on_headshot.as_mut() {
+            for b in d.stacking_buffs.iter_mut() {
+                if b.grant != crate::loadout::BuffGrant::ReloadSpeed {
+                    continue;
+                }
+                if pin {
+                    // Full AND never expiring — the two knobs are separate,
+                    // and this test wants both held for the whole run.
+                    b.initial_stacks = b.max_stacks;
+                    b.duration = crate::loadout::NO_TIMEOUT;
+                } else {
                     b.initial_stacks = 0;
                 }
-            } else if let Some(b) = d.reload_on_headshot.as_mut() {
-                // Full AND never expiring — the two knobs are separate,
-                // and this test wants both held for the whole run.
-                b.initial_stacks = b.max_stacks;
-                b.duration = crate::loadout::NO_TIMEOUT;
             }
             d
         };

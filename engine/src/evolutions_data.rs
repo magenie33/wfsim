@@ -379,24 +379,6 @@ impl EvolutionDef {
 
 impl EvolutionDef {
 
-    /// The stacking on-plain-hit damage buff (Overwhelming Attrition), if
-    /// this evolution grants one. Drives its configurable buff card.
-    pub fn plain_hit_buff(&self) -> Option<crate::loadout::PlainHitBuff> {
-        self.active_effects().find_map(|e| match e {
-            EvoEffect::StackingDamageOnPlainHit {
-                per_stack,
-                max_stacks,
-                duration,
-            } => Some(crate::loadout::PlainHitBuff {
-                per_stack: *per_stack,
-                max_stacks: *max_stacks,
-                duration: *duration,
-                initial_stacks: 0, // EARNED — docs/BUFFS.md §Activation policy
-            }),
-            _ => None,
-        })
-    }
-
     /// Σ unconditional CO rate per status type (Carnage Reign).
     pub fn co_per_type(&self) -> f64 {
         self.active_effects()
@@ -845,7 +827,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     base.crit_mult_below_cc = Some((*value, *below));
                 }
                 EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance } => {
-                    base.fire_rate_on_headshot = Some(crate::loadout::HeadshotFireRateBuff {
+                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                        id: "on_headshot_fire_rate",
+                        trigger: crate::loadout::BuffTrigger::Headshot,
+                        grant: crate::loadout::BuffGrant::FireRate,
                         // A FRACTION here; `resolve` turns it into an absolute
                         // rate against the base, which is the bucket it joins.
                         per_stack: *per_stack,
@@ -872,10 +857,14 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     max_stacks,
                     duration,
                 } => {
-                    base.plain_hit_bonus = Some(crate::loadout::PlainHitBuff {
+                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                        id: "on_plain_hit_damage",
+                        trigger: crate::loadout::BuffTrigger::PlainHit,
+                        grant: crate::loadout::BuffGrant::BaseDamage,
                         per_stack: *per_stack,
                         max_stacks: *max_stacks,
                         duration: *duration,
+                        chance: 1.0,
                         // EARNED from zero, like every other TIMED buff: it
                         // has a duration, so a lull empties it and the fight
                         // has to fill it again (docs/BUFFS.md).
@@ -887,10 +876,14 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     max_stacks,
                     duration,
                 } => {
-                    base.reload_on_headshot = Some(crate::loadout::HeadshotReloadBuff {
+                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                        id: "on_headshot_reload_speed",
+                        trigger: crate::loadout::BuffTrigger::Headshot,
+                        grant: crate::loadout::BuffGrant::ReloadSpeed,
                         per_stack: *per_stack,
                         max_stacks: *max_stacks,
                         duration: *duration,
+                        chance: 1.0,
                         // EARNED from zero, like every other timed buff.
                         initial_stacks: 0,
                     });
