@@ -81,29 +81,34 @@ entries:
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
+    score: 43.99538087437287
+    mods: [primary_acuity, primed_firestorm, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    score: 43.28654643677159
+    mods: [primary_acuity, primed_firestorm, galvanized_aptitude, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    score: 42.54918635461174
+    mods: [primary_acuity, primed_firestorm, galvanized_aptitude, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    score: 40.5174000346578
+    mods: [amalgam_serration, primary_acuity, primed_firestorm, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
     score: 38.48389034055495
     mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
-    score: 35.114360386158744
-    mods: [galvanized_chamber, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, rime_rounds, malignant_force, hellfire]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    score: 24.54349954054297
-    mods: [heavy_caliber, primary_acuity, bladed_rounds, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, hellfire]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_kinetic_battle, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    score: 23.17502526553001
-    mods: [primary_acuity, serration, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, thermite_rounds]
+    score: 38.00983798636426
+    mods: [primary_acuity, primed_firestorm, galvanized_aptitude, vital_sense, gilded_truth, magnetic_capacity, rime_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    score: 11.66780766848749
-    mods: [galvanized_chamber, galvanized_scope, critical_delay, rifle_elementalist, vital_sense, high_voltage, malignant_force, thermite_rounds]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: dual_toxocyst
     score: 104.58012608040094
@@ -260,9 +265,17 @@ entries:
     mods: [galvanized_diffusion, lethal_torrent, magnetic_might, sentient_surge, ice_storm, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [cascadia_flare]
   - weapon: ocucor
+    score: 4.086868171440826
+    mods: [amalgam_barrel_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+  - weapon: ocucor
     score: 2.1805896345429554
     mods: [hornet_strike, primed_target_cracker, barrel_diffusion, lethal_torrent, magnetic_might, sentient_surge, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
+  - weapon: ocucor
+    score: 1.8351030379919056
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, sentient_surge, ice_storm, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
   - weapon: ocucor
     score: 1.2231910498852494
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, magnetic_might, sentient_surge, deep_freeze, pathogen_rounds, primed_heated_charge]
@@ -275,14 +288,18 @@ entries:
     score: 0.8745808123222377
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, sentient_surge, deep_freeze, pathogen_rounds, primed_heated_charge]
     arcanes: [secondary_enervate]
-  - weapon: ocucor
-    score: 0.8619807228155802
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, sentient_surge, primed_convulsion, pathogen_rounds, primed_heated_charge]
-    arcanes: [secondary_enervate]
-  - weapon: ocucor
-    score: 0.6595304867928181
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, sentient_surge, deep_freeze, pathogen_rounds, primed_heated_charge]
-    arcanes: [secondary_enervate]
+  - weapon: phantasma_prime
+    score: 10.274855442928299
+    mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, vigilante_armaments, magnetic_strafe, primed_chilling_grasp, toxic_barrage, scattering_inferno]
+    arcanes: [primary_debilitate]
+  - weapon: phantasma_prime
+    score: 10.111374347916996
+    mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, vigilante_armaments, magnetic_strafe, chilling_reload, toxic_barrage, incendiary_coat]
+    arcanes: [primary_debilitate]
+  - weapon: phantasma_prime
+    score: 9.310834188114592
+    mods: [galvanized_hell, primed_point_blank, shotgun_elementalist, vigilante_armaments, magnetic_strafe, chilling_reload, toxic_barrage, incendiary_coat]
+    arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     score: 6.864484573399173
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_barrage, shotgun_elementalist, frigid_blast, toxic_barrage, incendiary_coat]
