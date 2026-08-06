@@ -2242,12 +2242,23 @@ fn ammo_efficiency(applies: bool, bar: f64, arcane_static: f64, arcane_live: f64
 struct LiveStacks {
     stacks: u32,
     expiry: f64,
+    /// [`BuffDecay::PerStackExpiry`] only: one expiry per live stack, oldest
+    /// first. Empty for the Galvanized family, which shares a single clock.
+    each: Vec<f64>,
+    per_stack: bool,
 }
 
 impl LiveStacks {
     /// Apply pending decay and return the current stack count. An INFINITE
     /// expiry never falls due, which is the whole of what a locked buff is.
     fn current(&mut self, now: f64, duration: f64) -> u32 {
+        if self.per_stack {
+            // Each stack on its own clock: drop every one that has fallen due,
+            // which is FIFO because they were pushed in time order.
+            self.each.retain(|&e| e > now);
+            self.stacks = self.each.len() as u32;
+            return self.stacks;
+        }
         while self.stacks > 0 && self.expiry <= now {
             self.stacks -= 1;
             self.expiry += duration;
@@ -2262,6 +2273,19 @@ impl LiveStacks {
         LiveStacks {
             stacks: initial.min(max),
             expiry: duration,
+            each: Vec::new(),
+            per_stack: false,
+        }
+    }
+
+    /// Seed a per-stack-expiry buff. A seeded stack starts its own clock at
+    /// `duration`, the same instant the shared-clock family starts its one.
+    fn seed_per_stack(initial: u32, max: u32, duration: f64) -> Self {
+        LiveStacks {
+            stacks: initial.min(max),
+            expiry: duration,
+            each: vec![duration; initial.min(max) as usize],
+            per_stack: true,
         }
     }
 
@@ -2270,6 +2294,16 @@ impl LiveStacks {
     /// and its restart lands at infinity.
     fn bump(&mut self, now: f64, duration: f64, max: u32) {
         self.current(now, duration);
+        if self.per_stack {
+            // At the cap the OLDEST goes — that is what FIFO means here, and
+            // it is why a capped pile still rolls forward rather than freezing.
+            if self.each.len() >= max as usize {
+                self.each.remove(0);
+            }
+            self.each.push(now + duration);
+            self.stacks = self.each.len() as u32;
+            return;
+        }
         self.stacks = (self.stacks + 1).min(max);
         self.expiry = now + duration;
     }
@@ -3458,7 +3492,14 @@ pub fn run_once_traced(
     let mut buff_stacks: Vec<LiveStacks> = params
         .stacking_buffs
         .iter()
-        .map(|b| LiveStacks::seed(b.initial_stacks, b.max_stacks, b.duration))
+        .map(|b| match b.decay {
+            crate::loadout::BuffDecay::PerStackExpiry => {
+                LiveStacks::seed_per_stack(b.initial_stacks, b.max_stacks, b.duration)
+            }
+            crate::loadout::BuffDecay::LoseOneAndReset => {
+                LiveStacks::seed(b.initial_stacks, b.max_stacks, b.duration)
+            }
+        })
         .collect();
     // BUMP BY TRIGGER, TOTAL BY GRANT — the two operations the whole family
     // needs, and the only two. `ArcRuntime` has had exactly this pair since the
@@ -7814,6 +7855,7 @@ mod tests {
                 trigger: crate::loadout::BuffTrigger::PlainHit,
                 grant: crate::loadout::BuffGrant::BaseDamage,
                 chance: 1.0,
+                decay: crate::loadout::BuffDecay::LoseOneAndReset,
                     per_stack: 4.0,
                     max_stacks: 3,
                     duration: 10.0,
@@ -7882,6 +7924,7 @@ mod tests {
                 trigger: crate::loadout::BuffTrigger::PlainHit,
                 grant: crate::loadout::BuffGrant::BaseDamage,
                 chance: 1.0,
+                decay: crate::loadout::BuffDecay::LoseOneAndReset,
                 per_stack: 4.0,
                 max_stacks: 3,
                 duration: 10.0,
@@ -7891,6 +7934,7 @@ mod tests {
                 trigger: crate::loadout::BuffTrigger::Headshot,
                 grant: crate::loadout::BuffGrant::ReloadSpeed,
                 chance: 1.0,
+                decay: crate::loadout::BuffDecay::LoseOneAndReset,
                 per_stack: 0.1,
                 max_stacks: 3,
                 duration: 6.0,
@@ -7940,6 +7984,7 @@ mod tests {
                 trigger: crate::loadout::BuffTrigger::PlainHit,
                 grant: crate::loadout::BuffGrant::BaseDamage,
                 chance: 1.0,
+                decay: crate::loadout::BuffDecay::LoseOneAndReset,
                     per_stack: 4.0,
                     max_stacks: 3,
                     // Locking IS this: the card's duration, overwritten.
@@ -8658,6 +8703,8 @@ mod tests {
         let mut s = LiveStacks {
             stacks: 3,
             expiry: 5.0,
+            each: Vec::new(),
+            per_stack: false,
         };
         assert_eq!(s.current(4.9, 10.0), 3);
         assert_eq!(s.current(5.1, 10.0), 2); // lost one, next decay at 15
@@ -10410,5 +10457,58 @@ mod stormburst_tests {
     fn it_pays_out_once_the_target_is_shocked() {
         let extra = extra_pellets(&["primed_convulsion"]);
         assert!(extra > 0.0, "expected extra pellets once Electricity lands, got {extra}");
+    }
+}
+
+/// THE TWO DECAY FAMILIES, told apart on the clock.
+///
+/// `docs/BUFFS.md` has named three since the buff vocabulary was written and
+/// only one of the timed ones was implemented; every stacking buff therefore
+/// decayed the Galvanized way whether or not that was its rule. Stormburst is
+/// the first that is not (owner, in game 2026-08-07: each stack keeps its own
+/// 2 s clock, FIFO, cap 3), and the difference is not cosmetic — under the
+/// Galvanized rule ONE hit per window holds the whole pile, under this one it
+/// holds exactly one stack.
+#[cfg(test)]
+mod buff_decay_family_tests {
+    use super::*;
+
+    #[test]
+    fn a_shared_clock_lets_one_hit_hold_every_stack() {
+        let mut s = LiveStacks::seed(0, 3, 2.0);
+        s.bump(0.0, 2.0, 3);
+        s.bump(0.1, 2.0, 3);
+        s.bump(0.2, 2.0, 3);
+        assert_eq!(s.current(0.3, 2.0), 3);
+        // One more hit just before the shared clock falls due, and NOTHING is
+        // lost — the bump restarted the timer for all three.
+        s.bump(2.0, 2.0, 3);
+        assert_eq!(s.current(3.9, 2.0), 3);
+    }
+
+    #[test]
+    fn a_per_stack_clock_makes_one_hit_hold_exactly_one() {
+        let mut s = LiveStacks::seed_per_stack(0, 3, 2.0);
+        s.bump(0.0, 2.0, 3);
+        s.bump(0.1, 2.0, 3);
+        s.bump(0.2, 2.0, 3);
+        assert_eq!(s.current(0.3, 2.0), 3);
+        // The same single hit at t=2.0. The first three expire on their own
+        // clocks at 2.0/2.1/2.2 regardless, so by 3.9 only the new one is left.
+        s.bump(2.0, 2.0, 3);
+        assert_eq!(s.current(3.9, 2.0), 1, "each stack expires on its own clock");
+    }
+
+    /// FIFO at the cap: a fourth stack pushes the OLDEST out rather than being
+    /// dropped, so a capped pile still rolls forward.
+    #[test]
+    fn at_the_cap_the_oldest_stack_leaves_first() {
+        let mut s = LiveStacks::seed_per_stack(0, 3, 2.0);
+        for i in 0..4 {
+            s.bump(i as f64 * 0.1, 2.0, 3);
+        }
+        assert_eq!(s.current(0.4, 2.0), 3, "still capped at 3");
+        // The oldest (expiring at 2.0) is gone; the youngest survives past it.
+        assert_eq!(s.current(2.05, 2.0), 3, "the evicted one took no live stack with it");
     }
 }

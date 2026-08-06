@@ -48,10 +48,21 @@ effects:
   # Electricity stays raw — it is the half that puts the status on the target,
   # and the Incarnon half then finds it there. Measured: 657 pellets / 657
   # shots with no Electricity, 668 / 659 with Primed Convulsion.
+  #
+  # FIFO, EACH STACK ON ITS OWN 2 s CLOCK — owner observed it in game
+  # (2026-08-07). Not the Galvanized rule every other stacking buff here uses,
+  # and the difference is not cosmetic: under that rule ONE hit inside the
+  # window holds all three stacks, under this one it holds exactly one. At the
+  # cap a new stack evicts the oldest rather than being dropped.
+  # `docs/BUFFS.md` has listed `per_stack_expiry` as a decay family since the
+  # buff vocabulary was written; this is the first perk that needed it, and
+  # until it existed every stacking buff decayed the Galvanized way whether or
+  # not that was its rule.
   - kind: stacking_multishot_on_electricity_status
     per_stack: 0.4
     max_stacks: 3
     duration: 2
+    decay: per_stack_expiry
 
 source:
   url: https://wiki.warframe.com/w/Furis_Incarnon_Genesis

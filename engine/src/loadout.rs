@@ -978,6 +978,21 @@ pub enum BuffGrant {
     Multishot,
 }
 
+/// HOW A STACK LEAVES. `docs/BUFFS.md` has named these three since the buff
+/// vocabulary was written; two were implemented.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BuffDecay {
+    /// The Galvanized family: on timeout ONE stack drops and the timer
+    /// RESTARTS, so any new stack refreshes the whole pile. One hit per
+    /// window holds every stack.
+    LoseOneAndReset,
+    /// Each stack carries its OWN clock and expires on it, oldest first —
+    /// FIFO. Strictly harsher: holding N stacks needs N hits per window, not
+    /// one. Stormburst is the roster's first (owner, 2026-08-07: "3个层走
+    /// FIFO，每个2s，上限就3层").
+    PerStackExpiry,
+}
+
 /// ONE STACKING BUFF, and one place its identity is written.
 ///
 /// It replaced three structs with identical fields — `PlainHitBuff`,
@@ -1011,6 +1026,9 @@ pub struct StackingBuff {
     /// Rolled per trigger. 1.0 unless the perk says otherwise — Headcracker's
     /// "This effect has a 50% chance of activating" is the only 0.5 so far.
     pub chance: f64,
+    /// See [`BuffDecay`]. Defaults to the Galvanized family because that is
+    /// what every buff here did before the third one was implemented.
+    pub decay: BuffDecay,
     /// Stacks at t = 0 — the buff card's other knob, the first being
     /// `duration` ([`NO_TIMEOUT`] when it is locked).
     pub initial_stacks: u32,

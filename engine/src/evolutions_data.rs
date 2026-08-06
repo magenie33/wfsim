@@ -853,6 +853,11 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         id: "on_status_multishot",
                         trigger: crate::loadout::BuffTrigger::HitEnemyWithStatus(*status),
                         grant: crate::loadout::BuffGrant::Multishot,
+                        // FIFO, each stack on its own 2 s clock — owner
+                        // observed in game (2026-08-07). Harsher than the
+                        // Galvanized family: holding 3 needs 3 hits per
+                        // window, not one.
+                        decay: crate::loadout::BuffDecay::PerStackExpiry,
                         per_stack: *per_stack,
                         max_stacks: *max_stacks,
                         duration: *duration,
@@ -863,6 +868,8 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance } => {
                     base.stacking_buffs.push(crate::loadout::StackingBuff {
                         id: "on_headshot_fire_rate",
+                        // The Galvanized family, as each perk's own wiki text says.
+                        decay: crate::loadout::BuffDecay::LoseOneAndReset,
                         trigger: crate::loadout::BuffTrigger::Headshot,
                         grant: crate::loadout::BuffGrant::FireRate,
                         // A FRACTION here; `resolve` turns it into an absolute
@@ -893,6 +900,8 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 } => {
                     base.stacking_buffs.push(crate::loadout::StackingBuff {
                         id: "on_plain_hit_damage",
+                        // The Galvanized family, as each perk's own wiki text says.
+                        decay: crate::loadout::BuffDecay::LoseOneAndReset,
                         trigger: crate::loadout::BuffTrigger::PlainHit,
                         grant: crate::loadout::BuffGrant::BaseDamage,
                         per_stack: *per_stack,
@@ -912,6 +921,8 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 } => {
                     base.stacking_buffs.push(crate::loadout::StackingBuff {
                         id: "on_headshot_reload_speed",
+                        // The Galvanized family, as each perk's own wiki text says.
+                        decay: crate::loadout::BuffDecay::LoseOneAndReset,
                         trigger: crate::loadout::BuffTrigger::Headshot,
                         grant: crate::loadout::BuffGrant::ReloadSpeed,
                         per_stack: *per_stack,

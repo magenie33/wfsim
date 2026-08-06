@@ -178,6 +178,23 @@ bucket effect **and** a `kind: buff` effect.
   max_stacks: 4           # 1 for a non-stacking triggered buff
   duration: 20            # seconds; omit = until reset
   decay: lose_one_and_reset   # lose_one_and_reset | per_stack_expiry | all_drop
+
+### The decay families, and which are real
+
+`lose_one_and_reset` is the Galvanized rule and was for a long time the only
+TIMED one implemented — so every stacking buff decayed that way whether or not
+it was its rule. `all_drop` is the on-status arcane family (Cascadia Flare).
+
+`per_stack_expiry` became real on 2026-08-07: each stack keeps its OWN clock and
+expires on it, oldest first. Stormburst is the first perk that needed it (owner,
+observed in game: "3个层走FIFO，每个2s，上限就3层"), and at the cap a new stack
+evicts the oldest rather than being dropped.
+
+**The difference is not cosmetic.** Under `lose_one_and_reset` a single hit
+inside the window refreshes the whole pile, so one hit every 2 s holds three
+stacks. Under `per_stack_expiry` that same hit holds exactly one — sustaining
+three needs three hits per window. On the Furis that moved Stormburst's extra
+pellets from 11 to 7 over the same engagement.
   one_stack_per_instance: true  # optional, arcanes: cap the GRANT (see below)
 ```
 
