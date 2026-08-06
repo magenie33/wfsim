@@ -61,7 +61,12 @@ around (decision 2026-07-31).
 - **`data/` (weapons, mods, i18n, …) is embedded at COMPILE TIME too**
   (`engine::data::files_under`): a YAML edit — including
   `data/i18n/zh/` translations — needs the same rebuild + restart,
-  and a site regeneration to reach wfsim.app.
+  and a site regeneration to reach wfsim.app. **This catches TESTS too**: cargo
+  does not treat a yaml as a source dependency, so a test run right after a
+  yaml edit reads the data compiled into the previous binary. It matters most
+  when PROVING a check bites — revert the data, `touch` any `.rs` in that
+  crate, then run. Without the touch the test passes and the check looks
+  useless when it is fine (2026-08-07).
 - After frontend or engine changes, regenerate the static site:
   `python scripts/build_site_app.py` (wasm-bindgen-cli version must match
   Cargo.lock). Commit the regenerated `site/`. It also PRERENDERS one
