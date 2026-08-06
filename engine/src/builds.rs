@@ -203,6 +203,137 @@ pub fn canonical_mods(weapon: &str, mods: &[String]) -> Vec<String> {
     plain.into_iter().chain(elemental).cloned().collect()
 }
 
+/// One way a build's elements can PAIR, and what it makes.
+///
+/// The optimizer searches this dimension (`subset_candidates` permutes the
+/// distinct primary elements and dedups on the resulting vector); the quick
+/// calc has to report it, because a mod's marginal value is measured under a
+/// pairing and a chip that named none would be unattributable.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ElementOrder {
+    /// A representative mod order that produces this pairing — what a caller
+    /// hands to `simulate` to measure it.
+    pub mods: Vec<String>,
+    /// The COMBINED elements it makes, in the wiki's table order.
+    pub combined: Vec<crate::damage::DamageType>,
+    /// Primary elements left uncombined (the trailing odd one, and any the
+    /// weapon carries that nothing paired with).
+    pub leftover: Vec<crate::damage::DamageType>,
+}
+
+/// The permutation cap. 6 distinct elements is 720 resolves — already more
+/// than any real build (there are only six primaries), and the guard is here
+/// so a future element cannot turn this into a hang.
+const MAX_ELEMENT_PERMUTATIONS: usize = 720;
+
+/// Every DISTINCT pairing this mod set can produce on this weapon ENTRY.
+///
+/// `weapon` is the entry that FIRES — for a cycling weapon that is the
+/// Incarnon half, which is what `parse_fight` resolves and what the optimizer
+/// dedups on. Passing the base entry of a transform weapon would label the
+/// wrong form's elements: the Burston Prime's base damage is IPS and its
+/// Incarnon form's is Heat, so the two do not even have the same innate.
+///
+/// It RESOLVES rather than reasoning about positions, which is the whole point:
+/// the innate rules (an innate element trails, unless a mod already placed that
+/// element and it pools FORWARD onto the mod's position — `elements::combine`
+/// rules 2 and 3) live in one place and this is not a second copy of them. On
+/// the Burston Prime's Incarnon form the base damage is Heat, so a build of
+/// Cold + Toxin is already Viral + Heat before a Heat mod is equipped — no
+/// rule written over mod ids could have known that.
+///
+/// Deduped on the resolved damage VECTOR, the same key the optimizer uses.
+/// Orders that resolve alike are one build, and a set with fewer than two
+/// distinct elements yields exactly one entry — never zero, so a caller always
+/// has something to measure.
+pub fn element_orders(weapon: &str, mods: &[String], evolutions: &[String]) -> Vec<ElementOrder> {
+    let pool = crate::mods_data::pool_for_weapon(weapon);
+    let def = |id: &String| pool.iter().find(|m| m.id == id.as_str());
+    let evo_refs: Vec<&str> = evolutions.iter().map(String::as_str).collect();
+    let base = crate::loadout::WeaponBase::from_data(weapon, true, &evo_refs);
+
+    // Distinct MOD elements in first-appearance order. Same-element mods pool
+    // (`ElementalInput::push` merges them), so they are one entry and move
+    // together — the distinction that broke 5669040.
+    let mut seq: Vec<crate::damage::DamageType> = Vec::new();
+    for e in mods.iter().filter_map(|m| def(m).and_then(|d| d.primary_element())) {
+        if !seq.contains(&e) {
+            seq.push(e);
+        }
+    }
+    let mut orders = Vec::new();
+    if seq.len() <= 1 || (1..=seq.len()).product::<usize>() > MAX_ELEMENT_PERMUTATIONS {
+        orders.push(seq.clone());
+    } else {
+        permutations(&seq, &mut Vec::new(), &mut orders);
+    }
+
+    let mut out: Vec<ElementOrder> = Vec::new();
+    let mut seen: Vec<Vec<(crate::damage::DamageType, i64)>> = Vec::new();
+    for order in &orders {
+        // Lay the mods out in this element order: elementals grouped by the
+        // chosen element, then everything order-free after.
+        let mut laid: Vec<String> = Vec::new();
+        for &t in order {
+            laid.extend(
+                mods.iter()
+                    .filter(|m| def(m).and_then(|d| d.primary_element()) == Some(t))
+                    .cloned(),
+            );
+        }
+        laid.extend(
+            mods.iter()
+                .filter(|m| def(m).is_none_or(|d| d.primary_element().is_none()))
+                .cloned(),
+        );
+        let refs: Vec<&crate::loadout::ModDef> = laid.iter().filter_map(&def).collect();
+        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::AssumedMax);
+        let key: Vec<(crate::damage::DamageType, i64)> = panel
+            .damage
+            .iter_nonzero()
+            .map(|(t, v)| (t, (v * 1e6).round() as i64))
+            .collect();
+        if seen.contains(&key) {
+            continue;
+        }
+        seen.push(key);
+        // The LABEL is read off the resolved vector rather than off the order,
+        // so it states what the fight actually contains — innate included.
+        let mut combined: Vec<crate::damage::DamageType> = Vec::new();
+        let mut leftover: Vec<crate::damage::DamageType> = Vec::new();
+        for (t, _) in panel.damage.iter_nonzero() {
+            if t.is_secondary_element() {
+                combined.push(t);
+            } else if t.is_primary_element() {
+                leftover.push(t);
+            }
+        }
+        combined.sort_by_key(|&t| crate::elements::wiki_order(t));
+        leftover.sort_by_key(|&t| crate::elements::wiki_order(t));
+        out.push(ElementOrder { mods: laid, combined, leftover });
+    }
+    out
+}
+
+/// All orderings of `rest`, appended to `acc`. Mirrors the optimizer's own.
+fn permutations(
+    rest: &[crate::damage::DamageType],
+    acc: &mut Vec<crate::damage::DamageType>,
+    out: &mut Vec<Vec<crate::damage::DamageType>>,
+) {
+    if rest.is_empty() {
+        out.push(acc.clone());
+        return;
+    }
+    for (i, &t) in rest.iter().enumerate() {
+        let mut r = rest.to_vec();
+        r.remove(i);
+        acc.push(t);
+        permutations(&r, acc, out);
+        acc.pop();
+    }
+}
+
 /// Trim a submitted build to what the game would actually give it.
 ///
 /// Never fails: unknown or foreign ids are DROPPED rather than rejected, since
@@ -910,4 +1041,95 @@ mod tests {
         assert!(e.contains("seats 0") || e.contains("not an arcane"), "{e}");
     }
 
+}
+
+/// The pairing dimension the optimizer searches and the quick calc reports.
+/// Every number quoted here was measured through `/api/simulate` on the
+/// Burston Prime at Thrax Lv 9999 SP, 300 s, 10 runs (kill rate).
+#[cfg(test)]
+mod element_order_tests {
+    use super::*;
+    use crate::damage::DamageType;
+    use crate::damage::DamageType::*;
+
+    fn ids(v: &[&str]) -> Vec<String> {
+        v.iter().map(|s| (*s).to_string()).collect()
+    }
+
+    /// THREE elemental mods are not one build — they are three, and on this
+    /// weapon the best is 3.3x the worst (2.074 against 0.627). That spread is
+    /// the whole reason the chip has to name its pairing.
+    #[test]
+    fn three_elements_make_three_pairings() {
+        let orders = element_orders(
+            "burston_prime_incarnon",
+            &ids(&["primed_cryo_rounds", "infected_clip", "hellfire"]),
+            &ids(&["burston_prime_evo1_incarnon_form"]),
+        );
+        assert_eq!(orders.len(), 3, "3 distinct elements pair 3 ways");
+        let mut made: Vec<Vec<DamageType>> = orders.iter().map(|o| o.combined.clone()).collect();
+        made.sort_by_key(|c| c.iter().map(|&t| crate::elements::wiki_order(t)).collect::<Vec<_>>());
+        assert_eq!(made, vec![vec![Blast], vec![Gas], vec![Viral]]);
+    }
+
+    /// ...and the leftover is read off the RESOLVED vector, not off the mod
+    /// order — which is what catches the innate. The Incarnon form's base
+    /// damage is Heat, so Cold + Toxin alone is already Viral + Heat with no
+    /// Heat mod equipped at all.
+    #[test]
+    fn an_innate_element_shows_up_in_the_leftover() {
+        let orders = element_orders(
+            "burston_prime_incarnon",
+            &ids(&["primed_cryo_rounds", "infected_clip"]),
+            &ids(&["burston_prime_evo1_incarnon_form"]),
+        );
+        assert_eq!(orders.len(), 1, "two elements pair one way");
+        assert_eq!(orders[0].combined, vec![Viral]);
+        assert!(
+            orders[0].leftover.contains(&Heat),
+            "the Incarnon form's own Heat is still there: {:?}",
+            orders[0].leftover
+        );
+    }
+
+    /// Same element twice POOLS — it is one entry in the sequence, so it adds
+    /// no pairing. Getting this wrong is what shipped 5669040 (Viral + Heat
+    /// published as Blast + Toxin, 4.7511 down to 0.1293).
+    #[test]
+    fn two_mods_of_one_element_do_not_multiply_the_pairings() {
+        let one = element_orders("burston_prime_incarnon", &ids(&["hellfire", "primed_cryo_rounds"]), &[]);
+        let two = element_orders(
+            "burston_prime_incarnon",
+            &ids(&["hellfire", "wildfire", "primed_cryo_rounds"]),
+            &[],
+        );
+        assert_eq!(one.len(), 1);
+        assert_eq!(two.len(), 1, "a second Heat mod pools; still one pairing");
+        assert_eq!(two[0].combined, vec![Blast]);
+    }
+
+    /// A set with no elemental mod still answers — one entry, so a caller
+    /// always has something to measure rather than a special case to write.
+    #[test]
+    fn a_set_with_no_elements_still_yields_one_order() {
+        let o = element_orders("burston_prime_incarnon", &ids(&["serration", "split_chamber"]), &[]);
+        assert_eq!(o.len(), 1);
+        assert_eq!(o[0].mods.len(), 2);
+        assert!(o[0].combined.is_empty());
+    }
+
+    /// The order handed back is one that PRODUCES the pairing — a caller
+    /// simulates it verbatim, so it has to carry every mod it was given,
+    /// elemental or not.
+    #[test]
+    fn every_order_carries_the_whole_set() {
+        let set = ids(&["primed_cryo_rounds", "infected_clip", "hellfire", "serration"]);
+        for o in element_orders("burston_prime_incarnon", &set, &ids(&["burston_prime_evo1_incarnon_form"])) {
+            let mut got = o.mods.clone();
+            got.sort();
+            let mut want = set.clone();
+            want.sort();
+            assert_eq!(got, want, "an order dropped a mod");
+        }
+    }
 }

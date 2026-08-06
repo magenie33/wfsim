@@ -2893,6 +2893,82 @@ pub(crate) struct Fight {
     pub(crate) cycle_frenzy_lock: LockMode,
 }
 
+/// WHICH WEAPON ENTRY FIRES, in ONE place.
+///
+/// Not `single_form`: for a CYCLE the Incarnon half is what fires and
+/// `untransformed_id` is what it returns to between transmutes, while
+/// `single_form` answers "the one form to fire when there is no cycle" and
+/// resolves `incarnon_cycle` — a mode, not a form — to the weapon's default.
+/// Mapping one onto the other made the search run the BASE form of every
+/// cycling weapon (the Torid lost 9x, the Boar GAINED; caught by the optimizer
+/// baseline, 2026-08-04). It is a function of the FIGHT, so it is written here
+/// rather than at each caller: `parse_optimize` had the only copy, and the
+/// pairing endpoint needs the same answer or it would label the wrong form's
+/// elements.
+pub(crate) fn firing_entry(fight: &Fight) -> String {
+    if fight.run_cycle {
+        incarnon_id(fight.info).unwrap_or(&fight.info.id).to_string()
+    } else {
+        fight.single_form.to_string()
+    }
+}
+
+/// ELEMENT PAIRINGS for a list of mod sets — the quick calc's enabling call.
+///
+/// A mod set with three distinct elements is not one build but THREE, and on
+/// the Burston Prime the best of them is 3.3x the worst (2.074 against 0.627
+/// kills/min at Thrax Lv 9999 SP). So a marginal-gain number has to be
+/// measured at the BEST pairing, against a baseline measured the same way, and
+/// the caller needs to know which orders to run.
+///
+/// One call for the whole scan rather than one per candidate: the client sends
+/// every set it means to measure (the reference, and the reference plus each
+/// candidate) and gets back the orders to simulate. The alternative — teaching
+/// the browser to pair elements — would be a second copy of `elements::combine`
+/// rules 2 and 3, and it would be wrong about innate elements the first time a
+/// weapon carried one.
+pub fn pairings_json(v: &Value) -> Value {
+    let fight = match parse_fight(v) {
+        Ok(f) => f,
+        Err(e) => return e,
+    };
+    let fire = firing_entry(&fight);
+    let pool = wfsim_engine::mods_data::pool_for_weapon(&fire);
+    let sets = v.get("sets").and_then(|x| x.as_array()).cloned().unwrap_or_default();
+    let out: Vec<Value> = sets
+        .iter()
+        .map(|set| {
+            // Unknown ids are DROPPED, not rejected: the client's scope can
+            // name a mod this form cannot equip (an evolution forbids it), and
+            // the honest answer there is the set without it — the same rule
+            // `builds::normalize` applies to a submission.
+            let ids: Vec<String> = set
+                .as_array()
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|x| x.as_str())
+                        .filter(|id| pool.iter().any(|m| m.id == *id))
+                        .map(String::from)
+                        .collect()
+                })
+                .unwrap_or_default();
+            let orders: Vec<Value> = wfsim_engine::builds::element_orders(&fire, &ids, &fight.evos)
+                .into_iter()
+                .map(|o| {
+                    let name = |t: wfsim_engine::damage::DamageType| format!("{t:?}");
+                    json!({
+                        "mods": o.mods,
+                        "combined": o.combined.iter().copied().map(name).collect::<Vec<_>>(),
+                        "leftover": o.leftover.iter().copied().map(name).collect::<Vec<_>>(),
+                    })
+                })
+                .collect();
+            json!({ "orders": orders })
+        })
+        .collect();
+    json!({ "ok": true, "form": fire, "sets": out })
+}
+
 pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // ---- parse inputs ----
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
@@ -4019,11 +4095,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // BASE form of every cycling weapon: the Torid lost 9x and the Boar GAINED,
     // which is exactly the shape of "both ran their base form" (caught by the
     // optimizer baseline, 2026-08-04).
-    let fire_id = if fight.run_cycle {
-        incarnon_id(fight.info).unwrap_or(&fight.info.id).to_string()
-    } else {
-        fight.single_form.to_string()
-    };
+    let fire_id = firing_entry(&fight);
     let cycle_from = fight.run_cycle.then(|| fight.info.id.clone());
     // Read off the fight before the arena is moved into the scenario. These
     // are what the PLAN reports about itself, not decisions it makes.

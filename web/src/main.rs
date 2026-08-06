@@ -18,7 +18,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 use serde_json::{json, Value};
 use wfsim_optimizer::FunnelState;
 use wfsim_webapi::{
-    err_json, i18n_json, meta_json, opt_buffs_json, panel_json, parse_optimize, riven_json, run_optimize,
+    err_json, i18n_json, meta_json, opt_buffs_json, pairings_json, panel_json, parse_optimize, riven_json,
+    run_optimize,
     targets_json,
     simulate_json,
 };
@@ -248,6 +249,10 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
         ("POST", "/api/panel") => {
             let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
             respond_json(&mut stream, &panel_json(&value))
+        }
+        ("POST", "/api/pairings") => {
+            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
+            respond_json(&mut stream, &pairings_json(&value))
         }
         ("GET", p) if p.starts_with("/pol/") => match pol_icon(&p[5..]) {
             Some((bytes, ct)) => respond_asset(&mut stream, ct, bytes),

@@ -117,6 +117,21 @@ impl DamageType {
             DamageType::Cold | DamageType::Electricity | DamageType::Heat | DamageType::Toxin
         )
     }
+
+    /// A COMBINED element — one two primaries make. Stated as its own
+    /// predicate rather than as "elemental and not primary", because IPS is
+    /// neither and the negation would have swept it in.
+    pub fn is_secondary_element(self) -> bool {
+        matches!(
+            self,
+            DamageType::Blast
+                | DamageType::Corrosive
+                | DamageType::Gas
+                | DamageType::Magnetic
+                | DamageType::Radiation
+                | DamageType::Viral
+        )
+    }
 }
 
 /// A hit's damage as a vector over damage types (docs/MECHANICS.md §1).

@@ -26,6 +26,7 @@ pub fn api(endpoint: &str, body: &str) -> String {
         "/api/meta" => wfsim_webapi::meta_json(),
         "/api/i18n" => wfsim_webapi::i18n_json(),
         "/api/panel" => wfsim_webapi::panel_json(&v),
+        "/api/pairings" => wfsim_webapi::pairings_json(&v),
         "/api/simulate" => wfsim_webapi::simulate_json(&v),
         "/api/opt-buffs" => wfsim_webapi::opt_buffs_json(&v),
         "/api/riven" => wfsim_webapi::riven_json(&v),
