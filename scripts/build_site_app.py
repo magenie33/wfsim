@@ -209,19 +209,65 @@ def write_board() -> None:
     not cost a full rebuild. The scoring job writes this file directly beside
     the yaml; this function is what keeps a LOCAL build in step with it.
     """
+    # `shown` IS NOT RECOMPUTED HERE, it is CARRIED. The scorer writes it with
+    # `boards_data::format_score`, which is four SIGNIFICANT figures rather than
+    # four decimals — so for a score under 1 it is not the same string the
+    # page's `toFixed(4)` fallback would produce, and dropping it loses real
+    # precision. Recomputing it in Python would be a second copy of a rounding
+    # rule that already exists twice; carrying it keeps the scorer the only
+    # thing that decides.
+    #
+    # It also ends a churn: every local site build used to rewrite board.json
+    # WITHOUT this field, so the file came back dirty after each run and a
+    # careless commit could ship it over a fresh rescore.
+    # A whole score is `10` in the yaml and `10.0` in the json, so the key has
+    # to be the NUMBER rather than its spelling.
+    def _score_key(v):
+        try:
+            return repr(float(v))
+        except (TypeError, ValueError):
+            return repr(v)
+
+    prior: dict = {}
+    board_path = APP / "board.json"
+    if board_path.exists():
+        try:
+            for weapon, rows in json.loads(board_path.read_text(encoding="utf-8")).items():
+                for r in rows:
+                    if r.get("shown") is not None:
+                        prior[(weapon, _score_key(r.get("score")))] = r["shown"]
+        except (ValueError, AttributeError):
+            pass  # unreadable or an older shape: fall through and omit `shown`
+
     out: dict = {}
     for f in sorted((ROOT / "data" / "benchmarks" / "boards").glob("*.yaml")):
         b = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
         for e in b.get("entries") or []:
-            out.setdefault(e["weapon"], []).append({
+            row = {
                 "benchmark": b.get("benchmark"),
                 "source": b.get("source", ""),
-                "score": e.get("score"),
+                # FLOAT, always: the yaml writes a whole score as `10` and the
+                # scorer emits `10.0` from an f64. Two spellings of one number
+                # is a diff on every build.
+                "score": float(e["score"]) if e.get("score") is not None else None,
                 "mods": e.get("mods", []),
                 "evolutions": e.get("evolutions", []),
                 "arcanes": e.get("arcanes", []),
-            })
-    (APP / "board.json").write_text(json.dumps(out), encoding="utf-8")
+            }
+            # Only when the SCORE still matches: a moved score's old display
+            # string is wrong, and the page's fallback is right for it.
+            keep = prior.get((e["weapon"], _score_key(e.get("score"))))
+            if keep is not None:
+                row["shown"] = keep
+            out.setdefault(e["weapon"], []).append(row)
+    # BYTE-FOR-BYTE with the scorer's own writer: `serde_json::to_string` over a
+    # BTreeMap is compact and key-sorted. Matching it is what makes this
+    # function a no-op when the board is already current — otherwise every local
+    # build leaves the file dirty, which is a papercut on its own and a real
+    # hazard when the next commit sweeps it up over a fresh rescore.
+    (APP / "board.json").write_text(
+        json.dumps(out, separators=(",", ":"), sort_keys=True), encoding="utf-8"
+    )
     print(f"board: {sum(len(v) for v in out.values())} rows -> site/board.json")
 
 
