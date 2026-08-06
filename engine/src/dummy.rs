@@ -10284,8 +10284,6 @@ mod headshot_buff_wiring_tests {
 /// exist next time, so it is asserted here.
 #[cfg(test)]
 mod cycle_buff_conversion_tests {
-    use super::*;
-
     #[test]
     fn a_fire_rate_buff_converts_against_each_forms_own_base() {
         let evos = [
