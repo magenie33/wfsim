@@ -152,6 +152,14 @@ enum EvoEffect {
     /// and — from the raw wikitext, which the rendered page's summary drops —
     /// "This effect has a 50% chance of activating."
     StackingFireRateOnHeadshot { per_stack: f64, max_stacks: u32, duration: f64, chance: f64 },
+    /// Stormburst: "On hitting an enemy affected by Electricity: +0.4
+    /// Multishot for 2s. Stacks up to 3x."
+    StackingMultishotOnStatus {
+        status: crate::damage::DamageType,
+        per_stack: f64,
+        max_stacks: u32,
+        duration: f64,
+    },
     /// FLAT crit chance added AFTER mods (Elemental Excess: "Bonuses are
     /// added after mods as a flat value") — NOT the base-stat layer that
     /// Commodore's Fortune occupies.
@@ -342,6 +350,11 @@ impl EvolutionDef {
                     max_stacks: *max_stacks,
                     permanent: false,
                 }),
+                EvoEffect::StackingMultishotOnStatus { max_stacks, .. } => Some(EvoBuffCard {
+                    id: "on_status_multishot",
+                    max_stacks: *max_stacks,
+                    permanent: false,
+                }),
                 EvoEffect::StackingFireRateOnHeadshot { max_stacks, .. } => Some(EvoBuffCard {
                     id: "on_headshot_fire_rate",
                     max_stacks: *max_stacks,
@@ -484,6 +497,9 @@ impl EvolutionDef {
                     per_type * 100.0
                 ),
                 EvoEffect::FireRateBonus(v) => format!("+{:.0}% fire rate", v * 100.0),
+                EvoEffect::StackingMultishotOnStatus { status, per_stack, max_stacks, duration } => format!(
+                    "+{per_stack} multishot per stack x{max_stacks} for {duration:.0}s while the                      target carries {status:?} (flat, like Final Fusillade's)"
+                ),
                 EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance } => format!(
                     "+{:.0}% fire rate per stack x{max_stacks} for {duration:.0}s on headshot, \
                      {:.0}% chance each (additive with fire-rate mods)",
@@ -653,6 +669,12 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             per_type: f(v, "value").unwrap_or(0.0),
         },
         "fire_rate_bonus" => EvoEffect::FireRateBonus(f(v, "value").unwrap_or(0.0)),
+        "stacking_multishot_on_electricity_status" => EvoEffect::StackingMultishotOnStatus {
+            status: crate::damage::DamageType::Electricity,
+            per_stack: f(v, "per_stack").unwrap_or(0.0),
+            max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
+            duration: f(v, "duration").unwrap_or(0.0),
+        },
         "on_headshot_fire_rate" => EvoEffect::StackingFireRateOnHeadshot {
             per_stack: f(v, "per_stack").unwrap_or(0.0),
             max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
@@ -825,6 +847,18 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // does not exist until `resolve` runs.
                 EvoEffect::CritMultiplierBelowCritChance { value, below } => {
                     base.crit_mult_below_cc = Some((*value, *below));
+                }
+                EvoEffect::StackingMultishotOnStatus { status, per_stack, max_stacks, duration } => {
+                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                        id: "on_status_multishot",
+                        trigger: crate::loadout::BuffTrigger::HitEnemyWithStatus(*status),
+                        grant: crate::loadout::BuffGrant::Multishot,
+                        per_stack: *per_stack,
+                        max_stacks: *max_stacks,
+                        duration: *duration,
+                        chance: 1.0,
+                        initial_stacks: 0,
+                    });
                 }
                 EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance } => {
                     base.stacking_buffs.push(crate::loadout::StackingBuff {
@@ -1271,27 +1305,31 @@ use crate::loadout::WeaponBase;
             // An unknown kind is the only spelling that means "nothing models
             // this yet" and stays true.
             //
-            // TWO LEFT THIS LIST on 2026-08-06. Prelude of Might needed a
+            // THREE HAVE LEFT THIS LIST. Prelude of Might needed a
             // condition read off the RESOLVED panel, which nothing here did, so
             // it got `CritMultiplierBelowCritChance` and a late hook in
             // `resolve`. Headcracker needed a live stacking buff in the
             // additive fire-rate bucket; `resolve` converts its +5% into the
             // absolute rate that fraction is worth, so the sim never needed an
-            // unmodded rate of its own. What the remaining three need:
-            // EXECUTIONER'S FORTUNE needs a reload the sim can END rather than
-            // scale; STORMBURST needs a stacking buff that can state a TARGET
-            // condition, which `AssumedMaxMultishot` cannot; HAVEN FORAY needs
-            // a Tenno with overshields, which `TennoCondition` has no room for.
+            // unmodded rate of its own. And STORMBURST needed a stacking buff
+            // that could state a TARGET condition — which the static
+            // `AssumedMaxMultishot` path cannot, but a LIVE buff can, because
+            // it is bumped inside the fight where the target's debuffs are in
+            // hand. That was the first buff added AFTER the StackingBuff
+            // refactor, and it cost exactly what the design promised: one
+            // trigger arm, one grant arm, no bookkeeping.
+            //
+            // What the remaining two need: EXECUTIONER'S FORTUNE needs a reload
+            // the sim can END rather than scale; HAVEN FORAY needs a Tenno with
+            // overshields, which `TennoCondition` has no room for.
             //
             // Every one of them now says so on its own tile — `unmodeled_effects`
             // is derived from these same variants, so this list and the UI
             // cannot disagree.
             "furis_executioners_fortune :: instant_reload_on_headshot",
             "furis_haven_foray :: flat_base_damage_with_overshields",
-            "furis_stormburst :: stacking_multishot_on_electricity_status",
             "mk1_furis_executioners_fortune :: instant_reload_on_headshot",
             "mk1_furis_haven_foray :: flat_base_damage_with_overshields",
-            "mk1_furis_stormburst :: stacking_multishot_on_electricity_status",
         ];
         let expected: Vec<String> = expected.into_iter().map(str::to_string).collect();
         let missing: Vec<&String> = expected.iter().filter(|e| !found.contains(e)).collect();

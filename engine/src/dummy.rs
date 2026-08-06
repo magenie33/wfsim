@@ -2389,6 +2389,20 @@ fn combined_stacks(debuffs: &DebuffState, t: DamageType) -> usize {
     }
 }
 
+/// IS THIS STATUS ON THE TARGET RIGHT NOW?
+///
+/// A status lives in one of two places depending on what it is: the combined
+/// ones keep their own stack vectors, while the damaging primaries are DoT
+/// entries. `combined_stacks` answers the first group; this answers both, which
+/// is what a target-conditional buff needs (Stormburst asks about Electricity,
+/// a DoT).
+fn has_status(debuffs: &DebuffState, t: DamageType) -> bool {
+    if combined_stacks(debuffs, t) > 0 {
+        return true;
+    }
+    debuffs.dots.iter().any(|d| d.dtype == t && d.ticks_left > 0)
+}
+
 /// Stacks of a combined status a target must already hold before Primary
 /// Debilitate can split it. The wiki states 10 and states no scaling.
 pub const DEBILITATE_STACKS: usize = 10;
@@ -3465,6 +3479,19 @@ pub fn run_once_traced(
     // the ACTIVE form — and reading the outer `params` instead handed the base
     // form the Incarnon form's rate. The STACKS stay shared (one buff, one
     // count, across the whole engagement); only the conversion is per form.
+    // ...and the target-conditional family, which needs the fight's debuff
+    // state as well as the clock. One arm, however many buffs use it.
+    macro_rules! bump_status_buffs {
+        ($debuffs:expr, $t:expr, $rng:expr) => {
+            for (i, b) in params.stacking_buffs.iter().enumerate() {
+                if let crate::loadout::BuffTrigger::HitEnemyWithStatus(s) = b.trigger {
+                    if has_status($debuffs, s) && (b.chance >= 1.0 || $rng.chance(b.chance)) {
+                        buff_stacks[i].bump($t, b.duration, b.max_stacks);
+                    }
+                }
+            }
+        };
+    }
     macro_rules! buff_total {
         ($from:expr, $grant:expr, $t:expr) => {
             $from
@@ -4007,7 +4034,10 @@ pub fn run_once_traced(
             // joins `ms_eff` rather than the multishot BUCKET because the
             // evolution grants multishot outright ("+3 Multishot"), not a
             // percentage of the weapon's base.
-            + if last_round { ap.multishot_on_last_round } else { 0.0 };
+            + if last_round { ap.multishot_on_last_round } else { 0.0 }
+            // Stormburst: "+0.4 Multishot", flat — same reason Final Fusillade
+            // sits here rather than in the bucket above.
+            + buff_total!(ap, crate::loadout::BuffGrant::Multishot, t);
         let rolled = ms_eff.floor() as u32 + rng.chance(ms_eff.fract()) as u32;
         // CONTINUOUS weapons MERGE. VERBATIM (wiki Multishot §Continuous
         // Weapons): "additional beams that hit the same target instead merge
@@ -4711,6 +4741,11 @@ pub fn run_once_traced(
             if tier == 0 && procs.is_empty() {
                 bump_buffs!(crate::loadout::BuffTrigger::PlainHit, t, rng);
             }
+            // STORMBURST: the condition is on the TARGET, read here where the
+            // debuffs are in hand. Bumped AFTER this pull's multishot was
+            // rolled, so the hit that earns a stack does not fire it — the same
+            // rule every other stacking buff in this loop follows.
+            bump_status_buffs!(&debuffs, t, rng);
             // ...and ARM it for the next pellet. ONE roll per pellet that
             // landed at least one status — "Applying multiple status effects in
             // a single hit does not increase the chance for the effect" — and
@@ -10313,5 +10348,67 @@ mod cycle_buff_conversion_tests {
             "the faster form must be worth more per stack, or the sim is reading one form's \
              rate while firing the other"
         );
+    }
+}
+
+/// STORMBURST: a buff whose condition is on the TARGET, not on the shot.
+///
+/// It was inert until the StackingBuff refactor, and the reason is worth
+/// keeping: the static path (`AssumedMaxMultishot`) carries a total and a cap
+/// and NO trigger, so declaring it there would have granted +1.2 multishot to
+/// a build with no Electricity in it at all. A LIVE buff is bumped inside the
+/// fight, where the target's debuffs are in hand — so the condition it could
+/// not state statically is simply readable.
+///
+/// ON THIS WEAPON IT ONLY WORKS AS A CYCLE, which the sim found rather than
+/// anyone predicting it. The Incarnon form's base damage is Heat, so a
+/// Convulsion's Electricity COMBINES with it: that form deals Radiation 339 and
+/// no Electricity whatever. The BASE form has no innate element, so its
+/// Electricity stays raw — it is the half of the cycle that puts the status on
+/// the target, and the Incarnon half then finds it there. Fire the Incarnon
+/// form alone and this perk can never trigger off its own procs.
+#[cfg(test)]
+mod stormburst_tests {
+    use super::*;
+
+    /// Extra pellets beyond one per shot — what a flat multishot bonus looks
+    /// like. Run as the CYCLE, because that is the only way this weapon ever
+    /// has Electricity on the target (see the note above).
+    fn extra_pellets(mods: &[&str]) -> f64 {
+        let evos = ["furis_evo1_incarnon_form", "furis_stormburst", "furis_extended_volley"];
+        let inc = crate::loadout::WeaponBase::from_data("furis_incarnon", true, &evos);
+        let base = crate::loadout::WeaponBase::from_data("furis", true, &evos);
+        let pool = crate::mods_data::pool_for_weapon("furis_incarnon");
+        let picked: Vec<&crate::loadout::ModDef> = mods
+            .iter()
+            .map(|id| pool.iter().find(|m| m.id == *id).unwrap_or_else(|| panic!("{id}")))
+            .collect();
+        let pol = crate::loadout::StackPolicy::Emergent;
+        let pi = crate::loadout::resolve(&inc, &picked, pol);
+        let pb = crate::loadout::resolve(&base, &picked, pol);
+        let params = DummyParams::incarnon_cycle_from_panels(
+            &pi,
+            &pb,
+            false,
+            LockMode::Initial(0),
+            &crate::arena::Arena::training(60.0),
+        );
+        let s = monte_carlo(&params, 6, 777);
+        s.mean_pellets - s.mean_shots
+    }
+
+    /// With no Electricity anywhere the perk grants nothing: one pellet a shot.
+    /// This is the assertion that fails if it is ever modelled the static way.
+    #[test]
+    fn it_grants_nothing_without_electricity() {
+        let extra = extra_pellets(&[]);
+        assert!(extra.abs() < 1e-9, "extra pellets with no Electricity: {extra}");
+    }
+
+    /// ...and pays out once the target is shocked.
+    #[test]
+    fn it_pays_out_once_the_target_is_shocked() {
+        let extra = extra_pellets(&["primed_convulsion"]);
+        assert!(extra > 0.0, "expected extra pellets once Electricity lands, got {extra}");
     }
 }

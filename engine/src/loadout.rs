@@ -954,6 +954,13 @@ pub enum BuffTrigger {
     PlainHit,
     /// Lethal Rearmament, Headcracker: any weak-point hit.
     Headshot,
+    /// Stormburst: a hit on a target that ALREADY carries this status. The
+    /// condition is on the TARGET, not on the shot — which is why it could not
+    /// be expressed as a static `AssumedMaxMultishot` (that would grant the
+    /// buff to a build with no Electricity in it at all) and can be expressed
+    /// here: a live buff is bumped inside the fight, where the target's
+    /// debuffs are in hand.
+    HitEnemyWithStatus(crate::damage::DamageType),
 }
 
 /// WHAT A STACKING BUFF FEEDS. One arm per grant, and each keeps its own
@@ -965,6 +972,10 @@ pub enum BuffGrant {
     BaseDamage,
     ReloadSpeed,
     FireRate,
+    /// Stormburst: "+0.4 Multishot", a FLAT add rather than a percentage of
+    /// the weapon's base — so it joins `ms_eff` beside Final Fusillade's, not
+    /// the multishot BUCKET.
+    Multishot,
 }
 
 /// ONE STACKING BUFF, and one place its identity is written.

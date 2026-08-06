@@ -32,20 +32,23 @@ effects:
   # second line — the same shape the Burston's tier 2 has.
   - kind: flat_base_damage
     value: 28.0
-  # NOT LOADED, and this one is a JUDGEMENT rather than a gap. A `stacking_buff`
-  # carrying a `multishot_bonus` loads as `AssumedMaxMultishot` — the total at
-  # max stacks, permanently, with no trigger — which is right for Fevered
-  # Frenzy (cast an ability and it is yours) and WRONG here: this one needs an
-  # ELECTRICITY STATUS ON THE TARGET, so loading it that way would grant +1.2
-  # multishot to a build carrying no Electricity at all. Left inert until a
-  # stacking buff can state its condition. Worth up to +1.2 multishot to a
-  # build that does run Electricity.
+  # MODELLED (2026-08-07), as a LIVE stacking buff. It could not be a
+  # `stacking_buff` with a multishot payload: that loads as
+  # `AssumedMaxMultishot` — a total and a cap and NO trigger — so it would have
+  # granted +1.2 multishot to a build carrying no Electricity at all. A live
+  # buff is bumped inside the fight, where the target's debuffs are in hand, so
+  # the condition it could not state statically is simply readable.
   #
-  # NOT written as `stacking_buff`, and that is the whole point: that kind maps
-  # a multishot payload to AssumedMaxMultishot NO MATTER what trigger is
-  # written beside it, so the trigger would have been decoration and the +1.2
-  # would have been granted. A kind the loader does not know is the only way to
-  # say "modelled by nothing yet" and have it stay true.
+  # A FLAT +0.4, not a percentage of base multishot — "+0.4 Multishot" — so it
+  # joins `ms_eff` beside Final Fusillade's rather than the multishot bucket.
+  #
+  # ON THIS WEAPON IT ONLY PAYS AS A CYCLE, which the sim found rather than
+  # anyone predicting it: the Incarnon form's base damage is Heat, so a
+  # Convulsion's Electricity COMBINES with it and that form deals Radiation and
+  # no Electricity whatever. The BASE form has no innate element, so its
+  # Electricity stays raw — it is the half that puts the status on the target,
+  # and the Incarnon half then finds it there. Measured: 657 pellets / 657
+  # shots with no Electricity, 668 / 659 with Primed Convulsion.
   - kind: stacking_multishot_on_electricity_status
     per_stack: 0.4
     max_stacks: 3
