@@ -247,7 +247,20 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 .popover .mi.sel{color:var(--accent)}
 .popover .mi.danger{color:var(--critical)}
 .popover .mi .pol{width:15px;height:15px}
+/* The search affordance is DRAWN, not typed. It was an emoji magnifier, and an
+   emoji is the one thing on the page the platform renders in its own colour and
+   its own shape — the only colour glyph in a monochrome UI, different on every
+   OS. This is a stroked silhouette in the same 1.6 / round-cap line style as the
+   select caret, tinted through `mask` so it takes a theme colour like text does.
+   ONE definition for all five search bars: it is a rule, not five spans. */
+:root{--ic-search:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='6.8' cy='6.8' r='4.6' fill='none' stroke='%23000' stroke-width='1.6'/%3E%3Cpath d='M10.4 10.4L14 14' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E")}
 .addbar{display:flex;align-items:center;gap:8px;padding:9px 11px;border-bottom:1px solid var(--line)}
+.addbar::before{content:"";width:14px;height:14px;flex:none;background-color:var(--muted);
+  -webkit-mask:var(--ic-search) center/contain no-repeat;mask:var(--ic-search) center/contain no-repeat}
+/* NO focus accent. Every search bar on the site focuses its input the moment it
+   opens, so the "focused" tint would be the only state anyone ever sees — a
+   permanently accent-coloured icon, which is the loudness the emoji was
+   replaced for. Muted is the whole point. */
 .addbar input{background:transparent;border:0;color:var(--text);font:inherit;flex:1;outline:none}
 .combo-menu{max-height:320px;overflow-y:auto}
 

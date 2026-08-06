@@ -74,6 +74,18 @@ const script = String.raw`(async () => {
     out.nativeSelects = [...document.querySelectorAll('select')]
       .map(x => ({ id: x.id || '(anon)', hidden: !x.offsetParent }));
 
+    // The search affordance is DRAWN, not typed. An emoji is the one glyph the
+    // platform renders in its own colour and its own shape, so it was the only
+    // colour thing in a monochrome UI and looked different on every OS.
+    out.addbars = [...document.querySelectorAll('.addbar')].map(b => {
+      const st = getComputedStyle(b, '::before');
+      return {
+        text: b.innerText.trim(),
+        drawn: (st.maskImage || st.webkitMaskImage || 'none') !== 'none',
+        tinted: st.backgroundColor,
+      };
+    });
+
     // the topbar language control — two options, so NO search bar
     const lang = document.getElementById('lang-select');
     out.langIsDD = !!(lang && lang.dataset.dd);
@@ -148,6 +160,12 @@ const check = (name, ok, detail) => {
 const visibleSelects = v.nativeSelects.filter((x) => !x.hidden || x.id !== "weapon");
 check("no native <select> is left on the page",
   visibleSelects.length === 0, JSON.stringify(v.nativeSelects));
+check("every search bar draws its icon rather than typing one",
+  v.addbars.length > 0 && v.addbars.every((b) => b.drawn),
+  JSON.stringify(v.addbars.map((b) => b.drawn)));
+check("...and none of them contains an emoji",
+  v.addbars.every((b) => !/\p{Extended_Pictographic}/u.test(b.text)),
+  JSON.stringify(v.addbars.map((b) => b.text)));
 check("the topbar language control is the shared dropdown",
   v.langIsDD && v.langOpen && JSON.stringify(v.langRows) === JSON.stringify(["en", "zh"]),
   JSON.stringify({ isDD: v.langIsDD, open: v.langOpen, rows: v.langRows }));
