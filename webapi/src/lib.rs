@@ -5794,3 +5794,132 @@ mod scope_lock_tests {
         );
     }
 }
+
+/// EVERY BUFF CARD MUST HAVE A SIM ARM, AND EVERY SIM BUFF MUST HAVE A CARD.
+///
+/// `enumerate_buffs` (what is drawn) and `DummyParams::buff_roster` (what the
+/// fight runs) are two independent enumerations over the same data — one
+/// matches `ModEffect` arms, the other reads resolved fields — so nothing but
+/// a check makes them the same list. Both failure directions are silent on
+/// screen: a card with no arm is a control that moves no number, and an armed
+/// buff with no card cannot be configured or seen on the replay.
+///
+/// Written derived rather than listed (memory: derive triggers, don't list
+/// them). It walks the whole roster and the whole mod pool, so a weapon, mod
+/// or effect added later is covered without anyone remembering to come back.
+#[cfg(test)]
+mod card_and_sim_agree {
+    use super::*;
+    use wfsim_engine::dummy::DummyParams;
+    use wfsim_engine::loadout::{resolve, StackPolicy, WeaponBase};
+
+    /// Buffs the params do not own. `frenzy` is a weapon passive the api
+    /// applies (`frenzy_apply`) rather than a field of the build; `arcane:*`
+    /// ids come from the arcane and are checked by their own test below.
+    fn theirs(id: &str) -> bool {
+        id == "frenzy" || id.starts_with("arcane:")
+    }
+
+    fn roster_of(weapon: &str, refs: &[&ModDef]) -> Vec<String> {
+        let base = WeaponBase::from_data(weapon, false, &[]);
+        // EMERGENT, because that is the policy the fight runs under: a buff
+        // rostered only at AssumedMax would be a card for a number the sim
+        // never earns.
+        let p = resolve(&base, refs, StackPolicy::Emergent);
+        let params = DummyParams::from_panel(&p, &wfsim_engine::arena::Arena::training(30.0));
+        params.buff_roster().into_iter().map(|(i, _)| i).collect()
+    }
+
+    #[test]
+    fn every_mod_that_draws_a_card_arms_the_sim() {
+        let tenno = wfsim_engine::tenno_data::default_tenno().clone();
+        let none = wfsim_engine::arcanes_data::ArcaneFx::none();
+        let mut pairs = 0;
+        for w in wfsim_engine::weapons_data::roster() {
+            let info = weapon(&w.id);
+            // A sentinel resolves BaseOnly: no conditional ever fires, so
+            // `enumerate_buffs` returns nothing by design.
+            if info.sentinel {
+                continue;
+            }
+            for m in wfsim_engine::mods_data::pool_for_build(&w.id, &[]) {
+                let refs = vec![&m];
+                let cards: Vec<String> = enumerate_buffs(&refs, &refs, &none, info, &tenno)
+                    .into_iter()
+                    .map(|b| b.id)
+                    .collect();
+                let roster = roster_of(&w.id, &refs);
+                pairs += 1;
+                for c in cards.iter().filter(|c| !theirs(c)) {
+                    assert!(
+                        roster.contains(c),
+                        "{}+{} draws a card `{c}` the sim never rosters: a control that moves no number",
+                        w.id, m.id
+                    );
+                }
+                for r in roster.iter().filter(|r| !theirs(r)) {
+                    assert!(
+                        cards.contains(r),
+                        "{}+{} arms `{r}` in the sim with no card: unconfigurable, and absent from the replay",
+                        w.id, m.id
+                    );
+                }
+            }
+        }
+        assert!(pairs > 500, "the walk collapsed: only {pairs} weapon-mod pairs");
+    }
+
+    /// The same rule for ARCANES, whose cards come from a third enumeration.
+    #[test]
+    fn every_arcane_that_draws_a_card_arms_the_sim() {
+        let tenno = wfsim_engine::tenno_data::default_tenno().clone();
+        let mut seen = 0;
+        for w in wfsim_engine::weapons_data::roster() {
+            let info = weapon(&w.id);
+            if info.sentinel {
+                continue;
+            }
+            let base = WeaponBase::from_data(&info.id, true, &[]);
+            for a in info
+                .arcane_pools
+                .iter()
+                .flat_map(|p| wfsim_engine::arcanes_data::pool_for_weapon(&info.id, p))
+            {
+                let fx = a.fx(a.max_rank, StackPolicy::Emergent, base.traits, &tenno);
+                let cards: Vec<String> = enumerate_buffs(&[], &[], &fx, info, &tenno)
+                    .into_iter()
+                    .map(|b| b.id)
+                    .filter(|id| id.starts_with("arcane:"))
+                    .collect();
+                let mut params =
+                    DummyParams::from_panel(
+                        &resolve(&base, &[], StackPolicy::Emergent),
+                        &wfsim_engine::arena::Arena::training(30.0),
+                    );
+                params.arcane = fx.clone();
+                let roster: Vec<String> = params
+                    .buff_roster()
+                    .into_iter()
+                    .map(|(i, _)| i)
+                    .filter(|id| id.starts_with("arcane:"))
+                    .collect();
+                seen += 1;
+                for c in &cards {
+                    assert!(
+                        roster.contains(c),
+                        "{} on {} draws `{c}` with no sim arm",
+                        a.id, w.id
+                    );
+                }
+                for r in &roster {
+                    assert!(
+                        cards.contains(r),
+                        "{} on {} arms `{r}` with no card",
+                        a.id, w.id
+                    );
+                }
+            }
+        }
+        assert!(seen > 50, "the walk collapsed: only {seen} weapon-arcane pairs");
+    }
+}
