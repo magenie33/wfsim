@@ -3,6 +3,12 @@
 // official polarity icons from the wiki, art from WFCD.
 
 const $ = (id) => document.getElementById(id);
+// THE dropdown's registry. Declared here rather than beside the rest of the
+// component because the topbar's language control is drawn by an IIFE that
+// runs at load — a `const` further down the file is in its temporal dead zone
+// at that moment, which is a ReferenceError rather than an ordering nit.
+const DD_SEARCH_MIN = 6;
+const ddReg = new Map();
 // Transport mode (docs/WASM.md phase 4): the static wasm deployment's
 // index.html sets window.WFSIM_WASM = true — then a Web Worker owns the
 // wasm engine and api() below is worker RPC. Unset (the native server),
@@ -561,10 +567,11 @@ function initWeaponSearch() {
   tools.innerHTML =
     `<span class="pchip sel" data-f="all">${tr("All")}</span>` +
     cats.map((c) => `<span class="pchip" data-f="${c}">${c}</span>`).join("") +
-    `<select id="wsearch-sort">
-       <option value="az">${tr("Name A→Z")}</option>
-       <option value="za">${tr("Name Z→A")}</option>
-     </select>`;
+    ddButton("wsearch-sort", {
+      value: srt,
+      items: [{ value: "az", label: tr("Name A→Z") }, { value: "za", label: tr("Name Z→A") }],
+      onPick: (v) => { srt = v; renderList(); },
+    });
   const renderList = () => {
     const q = input.value.trim().toLowerCase();
     const list = (META.weapons || [])
@@ -588,7 +595,7 @@ function initWeaponSearch() {
     renderList();
   });
   tools.addEventListener("change", (e) => {
-    if (e.target.id === "wsearch-sort") { srt = e.target.value; renderList(); }
+
   });
   listEl.addEventListener("click", (e) => {
     const row = e.target.closest(".opt");
@@ -611,13 +618,31 @@ function initWeaponSearch() {
   // and a crawler indexes the page under the language it is actually in.
   // The tag ships as `en` and the page may be zh from the first paint.
   document.documentElement.lang = LANG;
-  const sel = $("lang-select");
-  if (!sel) return;
-  sel.value = LANG;
-  sel.addEventListener("change", () => {
-    localStorage.setItem("wfsim-lang", sel.value);
-    try { sessionStorage.setItem("wfsim-lang-stash", JSON.stringify(snapshotState())); } catch (_) {}
-    location.reload();
+  const host = $("lang-select");
+  if (!host) return;
+  // The topbar's language control is a dropdown like every other, so it is
+  // drawn by the same component — the LAST native select on the page, and the
+  // most visible one (owner, 2026-08-06: "只要是下拉就一个样子").
+  //
+  // DEFERRED by a microtask, because this block runs DURING script evaluation
+  // and the component it calls is declared further down: `const` and `function
+  // expression` bindings are in their temporal dead zone until the line that
+  // creates them runs, so drawing here directly threw. A microtask runs after
+  // the whole script has evaluated, which is the first moment any part of the
+  // file may call any other part.
+  queueMicrotask(() => {
+    const el = $("lang-select");
+    if (!el) return;
+    el.outerHTML = ddButton("lang-select", {
+      value: LANG,
+      title: "Language / 语言",
+      items: [{ value: "en", label: "English" }, { value: "zh", label: "中文" }],
+      onPick: (v) => {
+        localStorage.setItem("wfsim-lang", v);
+        try { sessionStorage.setItem("wfsim-lang-stash", JSON.stringify(snapshotState())); } catch (_) {}
+        location.reload();
+      },
+    });
   });
 })();
 
@@ -1026,10 +1051,13 @@ const deployField = (w, state) => {
   const opts = w.deployments || [];
   if (opts.length < 2) return "";
   const cur = opts.includes(state.deployment) ? state.deployment : opts[0];
-  return `<label title="${escHtml(tr("where the weapon is fired — it changes reload and ammo, nothing else"))}">${escHtml(tr("Environment"))} <select data-k="deployment">${
-    // The data keys are lowercase; the LABEL is the wiki's own column head.
-    opts.map((o) => `<option value="${o}"${o === cur ? " selected" : ""}>${escHtml(tr(o[0].toUpperCase() + o.slice(1)))}</option>`).join("")
-  }</select></label>`;
+  return `<label title="${escHtml(tr("where the weapon is fired — it changes reload and ammo, nothing else"))}">${escHtml(tr("Environment"))} ` +
+    ddButton("dd-deployment", {
+      value: cur,
+      dataK: "deployment",
+      // The data keys are lowercase; the LABEL is the wiki's own column head.
+      items: opts.map((o) => ({ value: o, label: tr(o[0].toUpperCase() + o.slice(1)) })),
+    }) + `</label>`;
 };
 
 // IS THE TARGET ITS ELITE VARIANT? Offered only where one EXISTS, because
@@ -4353,9 +4381,119 @@ const slotEl = (i) => i === EXILUS ? $("exilus").firstElementChild : $("mod-slot
 // EVERY popover, found by class rather than by a list that a new one has to
 // remember to join — the enemy picker opened and would not close, because it
 // was not on the list.
-function closePopovers() {
-  document.querySelectorAll(".popover").forEach((p) => { p.hidden = true; });
+//
+// `keep` is the node the new panel is anchored to: a popover that CONTAINS it
+// stays open, which is what lets a dropdown live inside a picker (the mod
+// picker's Sort control is inside `#mod-popover`) without the act of opening
+// it closing the thing it belongs to.
+function closePopovers(keep) {
+  document.querySelectorAll(".popover").forEach((p) => {
+    if (keep && p.contains(keep)) return;
+    p.hidden = true;
+  });
 }
+
+// ---- THE dropdown -------------------------------------------------------
+//
+// ONE choose-one control for the whole site (owner, 2026-08-06: "只要是下拉就
+// 一个样子"). It was seven native `<select>`s and one rich picker, so the
+// quick calc's scenario — a list that GROWS, since a scenario is a preset you
+// make — was the plainest control on the page while a mod list two blocks away
+// searched and sorted.
+//
+// It is not a new component: the panel is `.popover`, the search bar is
+// `.addbar`, the rows are `.combo-menu .opt` — the same three the pickers have
+// always used, which is the whole point. A dropdown cannot drift from the
+// pickers because it IS them.
+//
+// The SEARCH BAR appears on its own rule rather than always: a list of two is
+// read at a glance, and a search box over it is furniture. Six is where
+// scanning stops being instant, so that is the line; `search: true` forces it
+// for a list that will grow past it later.
+/// The trigger. Emits a button that LOOKS like the select it replaces, and
+/// registers what opening it should show. Callers re-render by innerHTML, so
+/// registration happens on every draw rather than once.
+function ddButton(id, cfg) {
+  ddReg.set(id, cfg);
+  const cur = cfg.items.find((i) => String(i.value) === String(cfg.value));
+  // `value=` is not decoration: `HTMLButtonElement.value` REFLECTS it, so the
+  // scenario panel's generic `[data-k]` binding — which reads `el.value` and
+  // listens for `change` — keeps working unchanged across the swap. That is
+  // also what keeps `el.disabled = true` meaningful on the optimizer tab,
+  // where the whole fight is drawn read-only.
+  return `<button type="button" class="dd" id="${id}" data-dd="${id}" value="${
+    escHtml(String(cfg.value ?? ""))}"${cfg.dataK ? ` data-k="${escHtml(cfg.dataK)}"` : ""}${
+    cfg.title ? ` title="${escHtml(cfg.title)}"` : ""}><span class="dd-v">${
+    escHtml(cur ? cur.label : (cfg.placeholder || "—"))}</span><span class="dd-c">▾</span></button>`;
+}
+
+function ddRender(id, query) {
+  const cfg = ddReg.get(id);
+  if (!cfg) return;
+  const q = (query || "").trim().toLowerCase();
+  const hits = cfg.items.filter((i) => !q
+    || String(i.label).toLowerCase().includes(q)
+    || String(i.hint || "").toLowerCase().includes(q));
+  $("dd-menu").innerHTML = hits.length
+    ? hits.map((i) => `<div class="opt${String(i.value) === String(cfg.value) ? " cur" : ""}" data-v="${escHtml(String(i.value))}">
+        <div class="info"><div class="mn">${escHtml(i.label)}</div>${
+          i.hint ? `<div class="me"><div>${escHtml(i.hint)}</div></div>` : ""}</div>
+      </div>`).join("")
+    : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
+  $("dd-menu").querySelectorAll(".opt[data-v]").forEach((el) => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      $("dd-popover").hidden = true;   // only THIS panel — a parent picker stays
+      // The TRIGGER THAT OPENED THIS, not `$(id)`: the scenario's fields are
+      // drawn twice — once by the simulator, once read-only by the optimizer —
+      // so an id resolves to whichever copy is earlier in the document, which
+      // is not necessarily the one being used. The anchor is never ambiguous.
+      const btn = $("dd-popover")._anchor;
+      if (btn) btn.value = el.dataset.v;
+      // A `data-k` dropdown belongs to the scenario's generic binding, so it
+      // announces itself the way that binding expects rather than carrying a
+      // second, private path to the same state.
+      if (cfg.dataK && btn) btn.dispatchEvent(new Event("change", { bubbles: true }));
+      if (cfg.onPick) cfg.onPick(el.dataset.v);
+    };
+  });
+}
+
+function ddOpen(id, anchor) {
+  const cfg = ddReg.get(id);
+  if (!cfg) return;
+  closePopovers(anchor);
+  const pop = $("dd-popover");
+  pop._anchor = anchor;
+  place(pop, anchor);
+  // Match the trigger's width where it is wider than the panel's default, so
+  // the panel reads as belonging to the control rather than floating near it.
+  pop.style.minWidth = `${Math.max(anchor.getBoundingClientRect().width, 180)}px`;
+  const wantSearch = cfg.search === true || cfg.items.length >= DD_SEARCH_MIN;
+  $("dd-addbar").hidden = !wantSearch;
+  const s = $("dd-search");
+  s.value = "";
+  s.oninput = () => ddRender(id, s.value);
+  ddRender(id, "");
+  if (wantSearch) s.focus();
+}
+
+// Delegated, because every caller re-renders its trigger by innerHTML — a
+// listener bound to the node would be thrown away with it, and rebinding after
+// each draw is the kind of thing that gets forgotten on the eighth dropdown.
+// CAPTURE, not bubble: several containers call `stopPropagation` on click to
+// survive their own innerHTML redraws (`#quick-calc` and `.picker-tools` both
+// do), and a bubbling listener would never see a trigger inside one of them.
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-dd]");
+  if (!t || t.disabled) return;
+  e.stopPropagation();
+  if (!$("dd-popover").hidden && $("dd-popover")._anchor === t) {
+    $("dd-popover").hidden = true;    // clicking the open trigger closes it
+    return;
+  }
+  ddOpen(t.id, t);
+}, true);
 function place(pop, anchor) {
   const r = anchor.getBoundingClientRect();
   pop.hidden = false;
@@ -4383,7 +4521,12 @@ function renderTools() {
   const t = $("picker-tools");
   const pols = ["Madurai", "Naramon", "Vazarin", "Umbra"].filter((p) => currentPool.some((m) => m.polarity === p));
   t.innerHTML =
-    `<label>${escHtml(tr("Sort"))} <select id="pk-sort"><option value="name">${escHtml(tr("Name"))}</option><option value="drain">${escHtml(tr("Drain"))}</option>${gainPrefs.on === false ? "" : `<option value="gain">${escHtml(tr("Gain"))}</option>`}</select></label>` +
+    `<label>${escHtml(tr("Sort"))} ` + ddButton("pk-sort", {
+      value: pickerPrefs.sort,
+      items: [{ value: "name", label: tr("Name") }, { value: "drain", label: tr("Drain") }]
+        .concat(gainPrefs.on === false ? [] : [{ value: "gain", label: tr("Gain") }]),
+      onPick: (v) => { pickerPrefs.sort = v; savePickerPrefs(); renderTools(); renderMenu(pickerSlot, $("mod-search").value); },
+    }) + `</label>` +
     `<button id="pk-dir" class="ghost-btn small" title="direction">${pickerPrefs.dir === "asc" ? "▲" : "▼"}</button>` +
     `<span class="pk-pols"><span class="pk-pol ${!pickerPrefs.pol ? "sel" : ""}" data-p="">all</span>` +
     pols.map((p) => `<span class="pk-pol ${pickerPrefs.pol === p ? "sel" : ""}" data-p="${p}" title="${p}">${imgTag(POL(p), "pol")}</span>`).join("") +
@@ -4393,9 +4536,6 @@ function renderTools() {
   // outside-click handler, whose closest(".popover") now fails on the detached
   // target → the picker would wrongly close. Keep every tool click inside.
   const redraw = () => { savePickerPrefs(); renderTools(); renderMenu(pickerSlot, $("mod-search").value); };
-  $("pk-sort").value = pickerPrefs.sort;
-  $("pk-sort").onclick = (e) => e.stopPropagation();
-  $("pk-sort").onchange = (e) => { e.stopPropagation(); pickerPrefs.sort = $("pk-sort").value; redraw(); };
   $("pk-dir").onclick = (e) => { e.stopPropagation(); pickerPrefs.dir = pickerPrefs.dir === "asc" ? "desc" : "asc"; redraw(); };
   t.querySelectorAll(".pk-pol").forEach((o) => o.onclick = (e) => { e.stopPropagation(); pickerPrefs.pol = o.dataset.p || null; redraw(); });
 }
@@ -5008,8 +5148,16 @@ function renderQuickCalc() {
     `<label class="pc-h" title="${escHtml(tr("rank a slot's options by what they would change — off, nothing is simulated"))}">` +
     `<input type="checkbox" id="gp-on"${on ? " checked" : ""}> ⚡ ${escHtml(tr("Quick calc"))}</label>` +
     (!on ? "" :
-    `<select id="gp-scen" title="${escHtml(tr("the saved scenario to measure under — it decides the enemy, the technique and whether the ranking is KPM or DPS"))}">${
-      ps.map((p) => opt(p.name, p.name, cur)).join("")}</select>` +
+    ddButton("gp-scen", {
+      value: cur,
+      // A SCENARIO IS A PRESET, so this list grows with use — which is why it
+      // was the worst one to leave as a bare select, and why its search is
+      // forced rather than left to the item count.
+      search: true,
+      title: tr("the saved scenario to measure under — it decides the enemy, the technique and whether the ranking is KPM or DPS"),
+      items: ps.map((p) => ({ value: p.name, label: p.name })),
+      onPick: (v) => { gainPrefs = { ...gainPrefs, scenario: v }; saveGainPrefs(); renderQuickCalc(); refreshGains(); },
+    }) +
 
     // PROGRESS while it runs, and an invitation before it has. The run counts
     // ("1x -> 10x") are gone from here (user, 2026-08-02): they are a property
@@ -5035,15 +5183,9 @@ function renderQuickCalc() {
     if (!$("mod-popover").hidden) { renderTools(); renderMenu(pickerSlot, $("mod-search").value); }
     renderEvo();
   };
-  if (!$("gp-scen")) return;
-  $("gp-scen").onchange = (e) => {
-    e.stopPropagation();
-    gainPrefs = { scenario: $("gp-scen").value };
-    saveGainPrefs();
-    // Measuring under a different fight is a different question — answer it
-    // now rather than at the next time a picker happens to open.
-    refreshGains();
-  };
+  // (Picking a scenario is handled by the dropdown's own `onPick`, which does
+  // the same thing it always did: save, then answer the new question NOW
+  // rather than at the next time a picker happens to open.)
 }
 
 /// Re-run whatever quick-calc surface is on screen. Called after ANY scenario
@@ -5613,10 +5755,17 @@ const defaultHeadshotPct = (w) => ((w || {}).sentinel ? 0 : META.defaults.headsh
 const formField = (formOpts, current) => {
   if (!formOpts.length) return "";
   const body = formOpts.length > 1
-    ? `<select data-k="form">${formOpts.map(([id, label, off]) =>
-        `<option value="${id}" ${current === id ? "selected" : ""}${off ? " disabled" : ""}${
-          off ? ` title="${escHtml(off)}"` : ""}>${escHtml(label)}${off ? " ⊘" : ""}</option>`).join("")}
-       </select>`
+    ? ddButton("dd-form", {
+      value: current,
+      dataK: "form",
+      // An unavailable form stays LISTED and greyed with its reason, because
+      // "the weapon has no Incarnon form while that mod is on it" is
+      // information and a vanished option is not — the rule
+      // `check_equip_rules` asserts of this control.
+      items: formOpts.map(([id, label, off]) => ({
+        value: id, label: label + (off ? " ⊘" : ""), hint: off || "", disabled: !!off,
+      })),
+    })
     : `<span class="fixed-val">${escHtml(formOpts[0][1])}</span>`;
   const why = (formOpts.find(([id]) => id === current) || [])[2];
   return `<label>${escHtml(tr("Form"))} ${body}</label>${
@@ -5731,10 +5880,13 @@ function renderScenarioFields(ids, opts = {}) {
   if (ids.run) {
     $(ids.run).innerHTML = `
       <label>Runs <input type="number" data-k="runs" min="1" max="20000" value="${sim.runs}"></label>
-      <label title="${escHtml(tr("what the run is judged by — the headline number and the picker's gain scan both follow it"))}">${escHtml(tr("Measure"))} <select data-k="metric">${
-        [["kpm", tr("KPM")], ["dps", tr("DPS")]].map(([v, l]) =>
-          `<option value="${v}"${sim.metric === v ? " selected" : ""}>${escHtml(l)}</option>`).join("")
-      }</select></label>`;
+      <label title="${escHtml(tr("what the run is judged by — the headline number and the picker's gain scan both follow it"))}">${escHtml(tr("Measure"))} ${
+        ddButton("dd-metric", {
+          value: sim.metric,
+          dataK: "metric",
+          items: [{ value: "kpm", label: tr("KPM"), hint: tr("kills per minute") },
+                  { value: "dps", label: tr("DPS"), hint: tr("damage per second") }],
+        })}</label>`;
   }
 
   const boxes = [ids.target, ids.technique, ids.limits, ids.run].filter(Boolean).map($);
@@ -6684,7 +6836,10 @@ function replayMarkup(r) {
       <h3>${escHtml(tr("Replay"))}</h3>
       <div class="rp-bar">
         <button id="rp-play" class="ghost-btn small rp-play">▶ ${escHtml(tr("play"))}</button>
-        <select id="rp-speed">${REPLAY_SPEEDS.map((s) => `<option value="${s}"${s === 5 ? " selected" : ""}>${s}x</option>`).join("")}</select>
+        ${ddButton("rp-speed", {
+          value: 5,
+          items: REPLAY_SPEEDS.map((sp) => ({ value: sp, label: `${sp}x` })),
+        })}
         <input id="rp-scrub" class="rp-scrub" type="range" min="0" max="${rp.t.length - 1}" value="${rp.t.length - 1}">
         <span id="rp-clock" class="rp-clock">${rp.t[rp.t.length - 1].toFixed(0)}s / ${rp.t[rp.t.length - 1].toFixed(0)}s</span>
       </div>
@@ -6849,7 +7004,7 @@ function wireReplay(r) {
     $("rp-play").textContent = `❚❚ ${tr("pause")}`;
     st.raf = requestAnimationFrame(tick);
   };
-  $("rp-speed").onchange = () => { st.speed = Number($("rp-speed").value) || 1; };
+  ddReg.get("rp-speed").onPick = (v) => { st.speed = Number(v) || 1; };
   $("rp-scrub").oninput = () => { stop(); st.pos = Number($("rp-scrub").value); draw(); };
   // Collapse one row without losing its place in the group.
   document.querySelectorAll(".rp-row .rp-head").forEach((h) => {
@@ -7630,7 +7785,11 @@ function renderOptTools() {
   const t = $("opt-picker-tools");
   const pols = ["Madurai", "Naramon", "Vazarin", "Umbra"].filter((p) => currentPool.some((m) => m.polarity === p));
   t.innerHTML =
-    `<label>Sort <select id="opk-sort"><option value="name">Name</option><option value="drain">Drain</option></select></label>` +
+    `<label>${escHtml(tr("Sort"))} ` + ddButton("opk-sort", {
+      value: optPrefs.sort,
+      items: [{ value: "name", label: tr("Name") }, { value: "drain", label: tr("Drain") }],
+      onPick: (v) => { optPrefs.sort = v; renderOptTools(); renderOptModList(); },
+    }) + `</label>` +
     `<button id="opk-dir" class="ghost-btn small" title="direction">${optPrefs.dir === "asc" ? "▲" : "▼"}</button>` +
     `<span class="pk-pols"><span class="pk-pol ${!optPrefs.pol ? "sel" : ""}" data-p="">all</span>` +
     pols.map((p) => `<span class="pk-pol ${optPrefs.pol === p ? "sel" : ""}" data-p="${p}" title="${p}">${imgTag(POL(p), "pol")}</span>`).join("") +
@@ -7642,14 +7801,17 @@ function renderOptTools() {
     `<span class="pk-gain"><button id="opk-gain" class="ghost-btn small"${optGain.running ? " disabled" : ""}>${
       optGain.running ? `${optGain.done}/${optGain.total}` : escHtml(tr("quick calc"))}</button>` +
     (optWinnerMods()
-      ? `<select id="opk-gain-ref" title="${escHtml(tr("the build every number is measured on"))}">
-           <option value="require"${optGain.mode === "require" ? " selected" : ""}>${escHtml(tr("vs required"))}</option>
-           <option value="winner"${optGain.mode === "winner" ? " selected" : ""}>${escHtml(tr("vs winner"))}</option>
-         </select>`
+      ? ddButton("opk-gain-ref", {
+        value: optGain.mode,
+        title: tr("the build every number is measured on"),
+        items: [
+          { value: "require", label: tr("vs required"), hint: tr("the mods you have pinned") },
+          { value: "winner", label: tr("vs winner"), hint: tr("the build the search returned") },
+        ],
+        onPick: (v) => { optGain.mode = v; renderOptTools(); renderOptPairings(); renderOptModList(); renderOptArcanes(); renderOptEvos(); },
+      })
       : "") +
     `</span>`;
-  $("opk-sort").value = optPrefs.sort;
-  $("opk-sort").onchange = () => { optPrefs.sort = $("opk-sort").value; renderOptModList(); };
   $("opk-dir").onclick = () => { optPrefs.dir = optPrefs.dir === "asc" ? "desc" : "asc"; renderOptTools(); renderOptModList(); };
   t.querySelectorAll(".pk-pol").forEach((o) => o.onclick = () => { optPrefs.pol = o.dataset.p || null; renderOptTools(); renderOptModList(); });
   // All three axes are on screen at once and all three now carry numbers, so
@@ -7660,9 +7822,6 @@ function renderOptTools() {
     renderOptArcanes(); renderOptEvos();
   };
   $("opk-gain").onclick = () => scanOptGains(() => paint());
-  if ($("opk-gain-ref")) {
-    $("opk-gain-ref").onchange = () => { optGain.mode = $("opk-gain-ref").value; paint(); };
-  }
 }
 
 // A chip's ✕ removes; the chip itself REVEALS the mod in the list below.
