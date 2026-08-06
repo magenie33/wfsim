@@ -1,0 +1,102 @@
+id: furis
+name: Furis
+slot: secondary
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+grip_type: PISTOL
+mastery_rank: 2
+max_rank: 30
+
+# Weapon-level metadata (wiki `Module:Weapons/data/secondary`, cross-checked
+# against WFCD warframe-items — TWO disagreements, both resolved to the wiki
+# (owner, 2026-08-06: "英语wiki是第一优先级，如没有明显的错误，一律以英语wiki
+# 为主"):
+#
+#  1. MASTERY. The wiki says 2, WFCD's `masteryReq` says 1. No obvious error on
+#     either side, so the wiki takes it.
+#  2. THE DAMAGE SPLIT, and this one IS an obvious error. WFCD's roll-up
+#     `damage` block reads Puncture 3 / Slash 14, while WFCD's OWN `attacks[0]`
+#     entry for the same weapon reads Puncture 14 / Slash 3 — agreeing with the
+#     wiki. A source that contradicts itself is not a second opinion, so the
+#     roll-up is discarded rather than weighed.
+accuracy: 22.22              # "Very High"; WFCD 22.222221
+disposition: 1.35            # riven disposition (●●●●●) — LOWER than the
+                             # MK1's 1.40, which is the usual direction: the
+                             # weaker variant is the better riven platform.
+polarities: [naramon]
+exilus_polarity: madurai     # the MK1's is Naramon — they differ, so it is
+                             # read per weapon rather than shared.
+riven_family: Furis          # module `Family` — SHARED with the MK1-Furis,
+                             # which is why the two dispositions above can
+                             # differ while one riven fits both.
+traits: [tenno]
+introduced: "Vanilla"        # in the game at launch (2012-10-25)
+internal_name: /Lotus/Weapons/Tenno/Pistol/AutoPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 35
+reload_seconds: 1.4
+
+# CONDITION OVERLOAD — the catalog HAS a Furis row, and it is not about this
+# entry. Verbatim:
+#
+#   Furis | Incarnon Mode | Projectile | 100 or 128 (with Evolution II) | 100 |
+#     100% or 78% | Adding | "CO-bonus does not use base damage increase
+#     Evolution"
+#
+# That row is the INCARNON FORM's, which this roster does not carry yet (see
+# the note at the bottom). The base form has no row, and absence in that
+# catalog means normal — the ordinary Additive class at the full base. Reading
+# the family's one row as though it covered every entry is exactly the
+# generalisation the catalog forbids: it lists discrepant ATTACKS, one at a
+# time.
+#
+# Recorded for whoever builds the Genesis: that row is `co_base_fraction`
+# 100/128, i.e. Evolution II's flat damage is excluded from the CO base, which
+# in this engine is `co_base_excludes_this_evolution` on that perk — the same
+# shape as Dual Toxocyst's Carnage Reign.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 10.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.05
+  crit_multiplier: 2.0
+  status_chance: 0.12
+  punch_through_m: 0.0
+  # PRIMARILY PUNCTURE — 70% of a 20-damage hit, which the page states as the
+  # weapon's own characteristic. Puncture is the armour-facing physical type,
+  # so the split is doing real work against the Grineer this sim points at.
+  damage: { impact: 3.0, puncture: 14.0, slash: 3.0 }
+  spread_min_deg: 1.0
+  spread_max_deg: 8.0
+
+# NOT MODELLED, and neither is a gap in the fight:
+#  - "low recoil and very high accuracy, even at medium-far ranges" is the
+#    page's advantage line. Recoil and accuracy decide where a shot LANDS, and
+#    this arena hits what it aims at by construction (`headshot_pct`), so a
+#    weapon that is easy to aim is not paid for it here. It is real, and it is
+#    why the accuracy figure above is recorded rather than dropped.
+#
+# NOT BUILT YET, deliberately:
+#  - the FURIS INCARNON GENESIS. WFCD carries the form's attack (Heat 100, 26%
+#    crit, 3.4x, 24% status, falloff 10–16 m at 0.48) and the wiki carries its
+#    five evolution tiers; both are a second weapon entry plus an evolution
+#    ladder, which is its own piece of work rather than a field on this one.
+#    The Genesis covers the Furis, the MK1-Furis and the Afuris.
+#  - WINDS OF PURITY, the family's exclusive augment (New Loka, rank Pure,
+#    25,000 standing): +20% Life Steal and +1 Purity at rank 3, equippable on
+#    the Furis and the MK1-Furis and nothing else. Its syndicate half is
+#    already modelled (`data/syndicates/purity.yaml`) and the equip gate is the
+#    `exclusive_to:` one Gilded Truth uses, so it is one file — the LIFE STEAL
+#    half heals the Tenno and changes no damage number in this arena.
+
+source:
+  url: https://wiki.warframe.com/w/Furis

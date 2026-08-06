@@ -33,6 +33,9 @@ weapons:
   phantasma_prime_charged: 幻离子 Prime
   # DE's own string (WFCD i18n.json, CrpSentExperimentPistol).
   ocucor: 视使之触
+  # DE 的中文是意译：Latin "furis" 的贼盗之意，不是音译。
+  furis: 盗贼
+  mk1_furis: MK1-盗贼
   burston: 伯斯顿
   burston_incarnon: 伯斯顿 (灵化形态)
   burston_prime: 伯斯顿 Prime

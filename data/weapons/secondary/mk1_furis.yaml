@@ -1,0 +1,75 @@
+id: mk1_furis
+name: MK1-Furis
+slot: secondary
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+grip_type: PISTOL
+mastery_rank: 0             # a starter-tier weapon: the module says Mastery 0
+max_rank: 30
+
+# Weapon-level metadata (wiki `Module:Weapons/data/secondary`, cross-checked
+# against WFCD warframe-items — one disagreement, the same shape as the
+# Furis's and resolved the same way. WFCD's roll-up `damage` block reads
+# Puncture 1.95 / Slash 9.1 while its OWN `attacks[0]` reads Puncture 9.1 /
+# Slash 1.95, agreeing with the wiki. A source that contradicts itself is not
+# a second opinion (owner, 2026-08-06: the English wiki is first priority
+# absent an obvious error — and self-contradiction is one).
+accuracy: 22.22              # identical to the Furis: the MK1 is not less
+                             # accurate, it is weaker.
+disposition: 1.40            # riven disposition (●●●●●) — HIGHER than the
+                             # Furis's 1.35, the usual compensation.
+polarities: [naramon]
+exilus_polarity: naramon     # NOT the Furis's Madurai — the one metadata field
+                             # where the two variants genuinely differ.
+riven_family: Furis          # module `Family` — SHARED with the Furis, so one
+                             # riven fits both despite the split dispositions.
+traits: [tenno]
+introduced: "14.0"           # Update 14.0 (2014-07-18) — the MK1 line arrived
+                             # long after the weapon it downgrades.
+internal_name: /Lotus/Weapons/MK1Series/MK1Furis
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 35
+reload_seconds: 1.4
+
+# CONDITION OVERLOAD: no row of its own in the wiki's catalog, and the Furis
+# row that does exist is the INCARNON FORM's — a different attack on a
+# different entry. Absence means normal: the ordinary Additive class at the
+# full base. (The MK1 can take the Furis Incarnon Genesis too, so a future
+# MK1-Furis Incarnon entry would need its own reading of that row rather than
+# this one.)
+co_behavior: additive_with_base_damage
+
+# WHAT THE MK1 ACTUALLY COSTS, since "weaker" is three separate cuts and only
+# one of them is the damage:
+#   damage   20 -> 13     (-35%)
+#   fire rate 10 -> 8.33  (-17%)
+#   status   12% -> 1%    (-92%)
+# Magazine, reserve, reload, accuracy and crit are IDENTICAL. So the status
+# chance is the real gulf: at 1% this weapon cannot run a status build at all,
+# which is what makes it a different weapon rather than a smaller one.
+attack:
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 8.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.05
+  crit_multiplier: 2.0
+  status_chance: 0.01
+  punch_through_m: 0.0
+  # The same 15/70/15 split as the Furis, scaled down — primarily Puncture.
+  damage: { impact: 1.95, puncture: 9.1, slash: 1.95 }
+  spread_min_deg: 1.0
+  spread_max_deg: 8.0
+
+# NOT BUILT YET, and the same two as the Furis: the Incarnon Genesis (which
+# covers this weapon as well) and Winds of Purity, whose `exclusive_to:` names
+# both entries. See data/weapons/secondary/furis.yaml for what each would take.
+
+source:
+  url: https://wiki.warframe.com/w/MK1-Furis
