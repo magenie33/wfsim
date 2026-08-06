@@ -83,7 +83,23 @@ const r = await evaluate(`(async () => {
   document.getElementById('rp-play').click(); await sleep(1500);
   const movedTo = Number(document.getElementById('rp-scrub').value);
   document.getElementById('rp-play').click();
+  // THE DAMAGE METER'S COLOURS, gathered with every expandable source open so
+  // the same damage TYPE appears under more than one of them.
+  document.querySelectorAll('.mrow.exp').forEach(e => e.click());
+  await sleep(700);
+  const meterRows = [...document.querySelectorAll('.mrow')].map(el => {
+    const bar = el.querySelector('.mbar i');
+    return {
+      key: el.getAttribute('data-mk') || '',
+      // The RESOLVED colour, not the var() name — a variable that resolves to
+      // nothing would still compare equal to itself.
+      color: bar ? getComputedStyle(bar).backgroundColor : '',
+      icon: !!el.querySelector('.dt-ico'),
+      sub: el.classList.contains('sub'),
+    };
+  });
   return { rows, atEnd, atZero, restored, nowAtEnd, movedTo, iBar, iMeter, iTable, iRow, kids,
+           meterRows,
            clock: document.getElementById('rp-clock').textContent };
 })()`);
 if (r.fail) { console.log("FAIL  no replay section — sim-results:", r.resultsHtml); process.exit(1); }
@@ -95,6 +111,37 @@ check("one row per buff, drawn and open by default",
 check("the header states average, uptime and the ramp",
   /[\d.]+\/40/.test(r.rows[0].stat) && /\d+%/.test(r.rows[0].stat) &&
   /[\d.]+s/.test(r.rows[0].stat), r.rows[0].stat);
+// THE METER IS COLOURED BY DAMAGE TYPE, NOT BY ROW POSITION (owner,
+// 2026-08-06: "我们颜色也用官方"). It used to take its colour from `(i % 8) + 1`,
+// so the same element was one colour under a direct hit and another under a
+// lingering field — and neither was the element's. DE publishes a colour per
+// type (`Module:DamageTypes/data`), and the point of using it is that it is
+// the SAME everywhere.
+//
+// Asserted on the RESOLVED colour: a `var()` that resolved to nothing would
+// still equal itself, so comparing the declarations would pass on a missing
+// palette.
+{
+  const byType = {};
+  for (const row of r.meterRows) {
+    const ty = (row.key.split("::")[1] || row.key).toLowerCase();
+    if (!row.sub && !row.key.includes("::") && ["direct","radial","field","arcane","syndicate"].includes(ty)) continue;
+    (byType[ty] ||= []).push(row);
+  }
+  const shared = Object.entries(byType).filter(([, v]) => v.length > 1);
+  check("a damage type has ONE colour wherever it appears",
+    shared.length > 0 && shared.every(([, v]) => new Set(v.map((x) => x.color)).size === 1),
+    JSON.stringify(shared.map(([k, v]) => [k, v.map((x) => x.color)])));
+  // ...and it is a real colour, not an unresolved variable falling back to
+  // transparent.
+  check("...and that colour actually resolves",
+    Object.values(byType).flat().every((x) => /^rgba?\(/.test(x.color) && x.color !== "rgba(0, 0, 0, 0)"),
+    JSON.stringify(Object.values(byType).flat().map((x) => x.color).slice(0, 6)));
+  check("every damage-type row carries DE's own glyph",
+    Object.values(byType).flat().every((x) => x.icon),
+    JSON.stringify(Object.entries(byType).map(([k, v]) => [k, v.every((x) => x.icon)])));
+}
+
 check("the replay BAR sits above everything it drives",
   r.iBar < r.iMeter && r.iBar < r.iTable, JSON.stringify(r.kids));
 check("...and the buff CURVES stay down with the other chart",

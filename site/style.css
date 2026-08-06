@@ -78,6 +78,10 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 .meter{display:flex;flex-direction:column;gap:4px}
 .mrow{display:grid;grid-template-columns:140px 1fr auto;gap:8px;align-items:center;font-size:12px}
 .mrow .mname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* DE's own damage-type glyph, inline with the label. A 64px source drawn at
+   14 so it stays crisp on a 2x screen, and vertical-align rather than flex so
+   it does not disturb the grid the row already is. */
+.dt-ico{width:14px;height:14px;vertical-align:-2px;margin-right:5px;flex:none;opacity:.95}
 .mrow .mbar{height:12px;background:var(--panel2);border-radius:6px;overflow:hidden}
 .mrow .mbar i{display:block;height:100%;border-radius:6px}
 .mrow .mval{color:var(--text-2);font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -798,3 +802,68 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    two choices inline — never a dialog. */
 #board-consent .ghost-btn{margin-left:6px}
 .board-state{color:var(--text)}
+
+/* DAMAGE TYPE COLOURS — DE's own, transcribed from the wiki's
+   `Module:DamageTypes/data` (`Color` for light, `DarkModeColor` for dark).
+   The wiki names its own variables `--dt-<type>-text-color`; the same names
+   are used here so the two can be compared without a translation step.
+
+   THEY BELONG TO THE TYPE, NOT TO THE ROW. The damage meter used to colour by
+   POSITION (`(i % 8) + 1`), so Heat was one colour under a direct hit and
+   another under a field, and two runs of the same build could disagree about
+   what colour Heat was (owner, 2026-08-06). A colour keyed on the type cannot
+   do that, and it is the same colour the wiki and the game use. */
+:root{
+  --dt-impact: #3d5e5e;
+  --dt-puncture: #5c5247;
+  --dt-slash: #7a5254;
+  --dt-cold: #17658c;
+  --dt-electricity: #610fb3;
+  --dt-heat: #994d00;
+  --dt-toxin: #006611;
+  --dt-blast: #b32a00;
+  --dt-corrosive: #4d6600;
+  --dt-gas: #006633;
+  --dt-magnetic: #4747d1;
+  --dt-radiation: #806000;
+  --dt-viral: #b71658;
+  --dt-true: #664d00;
+  --dt-void: #085e50;
+  --dt-tau: #b30000;
+}
+@media (prefers-color-scheme: dark){:root:where(:not([data-theme="light"])){
+  --dt-impact: #80c4c4;
+  --dt-puncture: #c6b098;
+  --dt-slash: #e69ca0;
+  --dt-cold: #5bbcec;
+  --dt-electricity: #b37fe7;
+  --dt-heat: #fb9733;
+  --dt-toxin: #00cc22;
+  --dt-blast: #dd704e;
+  --dt-corrosive: #93c203;
+  --dt-gas: #00cc66;
+  --dt-magnetic: #9797e6;
+  --dt-radiation: #ceac49;
+  --dt-viral: #f093b9;
+  --dt-true: #dda700;
+  --dt-void: #15c8ab;
+  --dt-tau: #f06666;
+}}
+:root[data-theme="dark"]{
+  --dt-impact: #80c4c4;
+  --dt-puncture: #c6b098;
+  --dt-slash: #e69ca0;
+  --dt-cold: #5bbcec;
+  --dt-electricity: #b37fe7;
+  --dt-heat: #fb9733;
+  --dt-toxin: #00cc22;
+  --dt-blast: #dd704e;
+  --dt-corrosive: #93c203;
+  --dt-gas: #00cc66;
+  --dt-magnetic: #9797e6;
+  --dt-radiation: #ceac49;
+  --dt-viral: #f093b9;
+  --dt-true: #dda700;
+  --dt-void: #15c8ab;
+  --dt-tau: #f06666;
+}

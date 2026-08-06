@@ -388,3 +388,28 @@ arcanes:
   secondary_shiver: ArcaneProjectionCP.png
   secondary_surge: ArcaneProjectionDE.png
   shotgun_vendetta: ArcaneProjectionCO.png
+
+# DAMAGE TYPE ICONS — DE's own, via the wiki.
+#
+# `Module:DamageTypes/data` names the file for each type (`Icon`), and every
+# one of them 404s on the WFCD CDN, so they all carry the `wiki:` prefix. They
+# are declared here rather than beside the colours in style.css because they
+# are FILES: this is the one list the fetcher, the site copy and the
+# missing-asset build failure all read.
+damage_types:
+  impact:      "wiki:DmgImpactSmall64.png"
+  puncture:    "wiki:DmgPunctureSmall64.png"
+  slash:       "wiki:DmgSlashSmall64.png"
+  cold:        "wiki:DmgColdSmall64.png"
+  electricity: "wiki:DmgElectricitySmall64.png"
+  heat:        "wiki:DmgFireSmall64.png"
+  toxin:       "wiki:DmgToxinSmall64.png"
+  blast:       "wiki:DmgBlastSmall64.png"
+  corrosive:   "wiki:DmgCorrosiveSmall64.png"
+  gas:         "wiki:DmgGasSmall64.png"
+  magnetic:    "wiki:DmgMagneticSmall64.png"
+  radiation:   "wiki:DmgRadiationSmall64.png"
+  viral:       "wiki:DmgViralSmall64.png"
+  true:        "wiki:DmgTrueSmall64.png"
+  void:        "wiki:DmgVoidSmall64.png"
+  tau:         "wiki:DmgTauSmall64.png"

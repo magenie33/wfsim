@@ -48,6 +48,10 @@ struct Assets {
     mods: std::collections::HashMap<String, String>,
     #[serde(default)]
     arcanes: std::collections::HashMap<String, String>,
+    /// DE's own icon per damage type, keyed by the lowercase type name. Wiki-
+    /// hosted (the CDN 404s every one), so each carries the `wiki:` prefix.
+    #[serde(default)]
+    damage_types: std::collections::HashMap<String, String>,
 }
 
 // ---- Image asset map (data/assets.yaml, embedded by the engine) --------
@@ -967,6 +971,10 @@ pub fn meta_json() -> Value {
             },
             "scenario": b.scenario,
         })).collect::<Vec<_>>(),
+        // DE's own icon per damage type — the meter and the charts colour and
+        // label by TYPE, so both halves of that (colour in style.css, file
+        // here) come from the same wiki module.
+        "damage_type_icons": assets().damage_types,
         "defaults": {
             "weapon": default_weapon_id(),
             // Per-weapon, because "the form this is played in" is: the

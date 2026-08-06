@@ -68,6 +68,29 @@ let I18N = null; // active locale's name overlay, fetched in init()
 const tr = (s) => (I18N && I18N.ui && I18N.ui[s]) || s;
 const LN = (table, id, en) => (I18N && I18N[table] && I18N[table][id]) || en;
 const DT = (ty) => LN("damage_types", String(ty).toLowerCase(), ty);
+// A damage type's OFFICIAL colour and icon — DE's own, transcribed from the
+// wiki's `Module:DamageTypes/data` (see style.css for the palette and
+// data/assets.yaml for the files).
+//
+// Keyed on the TYPE and never on a row's position: the meter used to colour by
+// index, so Heat was one colour under a direct hit and another under a field
+// (owner, 2026-08-06). `null` for anything that is not a damage type — a
+// source row like "Direct hits" is not one, and asking for its colour should
+// return nothing rather than a wrong one.
+const DT_TYPES = new Set(["impact", "puncture", "slash", "cold", "electricity",
+  "heat", "toxin", "blast", "corrosive", "gas", "magnetic", "radiation",
+  "viral", "true", "void", "tau"]);
+const dtKey = (ty) => {
+  const k = String(ty || "").toLowerCase();
+  return DT_TYPES.has(k) ? k : null;
+};
+const dtColor = (ty) => (dtKey(ty) ? `var(--dt-${dtKey(ty)})` : null);
+const dtIcon = (ty) => {
+  const k = dtKey(ty);
+  if (!k) return "";
+  const file = (META.damage_type_icons || {})[k];
+  return file ? `<img class="dt-ico" src="${IMG(file)}" alt="" loading="lazy">` : "";
+};
 // Effect-line phrase substitution ("+X% Critical Chance" → "+X% 暴击几率"):
 // the ORDERED [regex, replacement(, flags)] table comes from the locale's
 // effect_phrases (data/i18n). Compiled once on first use.
@@ -6639,7 +6662,8 @@ function renderResults(r, testedAt) {
   // and `radial` fell through to `DT()`, which knows damage types only, so
   // they printed their raw wire key in every language.
   const SRC_LABEL = { direct: "Direct hits", radial: "Radial (AoE)",
-    field: "Lingering field", arcane: "Arcane (on status)" };
+    field: "Lingering field", arcane: "Arcane (on status)",
+    syndicate: "Syndicate radial" };
   const srcLabel = (k) => (SRC_LABEL[k] ? tr(SRC_LABEL[k]) : DT(k));
   // A WEAPON-damage row EXPANDS into the damage types it was dealt as — a
   // status row already IS one type, which is what a proc is. Both levels use
@@ -6650,8 +6674,18 @@ function renderResults(r, testedAt) {
   // they will not match the Builder's panel exactly — the Torid's 164.73
   // Corrosive / 52.02 Magnetic reads 76/24 there and 75/25 here, because
   // quantization snaps each component to a multiple of total/32.
-  const mbar = (w, c, dim) =>
-    `<div class="mbar"><i style="width:${w.toFixed(1)}%;background:var(--s${c})${dim ? ";opacity:.5" : ""}"></i></div>`;
+  // A BAR IS COLOURED BY WHAT IT IS, not by where it sits.
+  //
+  // A damage TYPE gets DE's own colour (style.css, from the wiki's
+  // `Module:DamageTypes/data`); a SOURCE — "Direct hits", "Radial (AoE)" — is
+  // not a damage type and has no official colour, so it keeps a positional one
+  // from the `--s1..8` ramp. That is the split the meter was missing: it
+  // coloured everything positionally, so Heat was one colour under a direct hit
+  // and another under a field, and neither was Heat's.
+  const mbar = (w, ty, c, dim) => {
+    const col = dtColor(ty) || `var(--s${c})`;
+    return `<div class="mbar"><i style="width:${w.toFixed(1)}%;background:${col}${dim ? ";opacity:.65" : ""}"></i></div>`;
+  };
   // The meter is re-read per frame too, so every row carries the key of the
   // series that feeds it — top-level by source, sub-rows by source+type.
   const mkey = (s, ty) => ` data-mk="${escHtml(ty ? `${s}::${ty}` : s)}"`;
@@ -6660,14 +6694,14 @@ function renderResults(r, testedAt) {
     const parts = x.by_type && x.by_type.length > 1 ? x.by_type : null;
     const open = !!parts && simMeterOpen.has(x.source);
     const head = `<div class="mrow${parts ? " exp" : ""}" data-src="${escHtml(x.source)}"${mkey(x.source)} data-c="${c}">
-      <span class="mname">${parts ? `<span class="mcaret">${open ? "▾" : "▸"}</span>` : ""}${srcLabel(x.source)}</span>
-      ${mbar(x.dmg / srcMax * 100, c, false)}
+      <span class="mname">${parts ? `<span class="mcaret">${open ? "▾" : "▸"}</span>` : ""}${dtIcon(x.source)}${srcLabel(x.source)}</span>
+      ${mbar(x.dmg / srcMax * 100, x.source, c, false)}
       <span class="mval">${n0(x.dmg)} · ${pct2(x.dmg / srcTotal)}</span>
     </div>`;
     if (!parts) return head;
     return head + parts.map((p) => `<div class="mrow sub" data-of="${escHtml(x.source)}"${mkey(x.source, p.type)} data-c="${c}"${open ? "" : " hidden"}>
-      <span class="mname">${DT(p.type)}</span>
-      ${mbar(p.dmg / srcMax * 100, c, true)}
+      <span class="mname">${dtIcon(p.type)}${DT(p.type)}</span>
+      ${mbar(p.dmg / srcMax * 100, p.type, c, true)}
       <span class="mval">${n0(p.dmg)} · ${pct2(p.dmg / srcTotal)}</span>
     </div>`).join("");
   }).join("");
