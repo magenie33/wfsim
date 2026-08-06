@@ -2481,3 +2481,100 @@ mod passive_tests {
         assert!(!has_perk("dual_toxocyst", "no_such_perk"));
     }
 }
+
+/// The Burston Incarnon's radial — the roster's only entry in the CO catalog
+/// whose row constrains an EVOLUTION, so it is pinned here rather than left to
+/// `evolutions_data::apply`'s comment. The row:
+///
+///   Burston/Burston Prime | Incarnon Form Radial Attack | AoE |
+///     Attack Damage 55 | CO Damage Bonus at +100% 13 | 24% | Adding
+///     "Radial hit only receives CO bonus on target directly hit by bullet.
+///      AoE does not scale off multishot."
+#[cfg(test)]
+mod burston_incarnon_radial_tests {
+    use super::*;
+
+    #[test]
+    fn the_incarnon_form_is_two_damage_instances() {
+        let b = WeaponBase::from_data("burston_prime_incarnon", true, &[]);
+        assert_eq!(b.base_vector.total(), 13.0, "direct hit is 13 Heat");
+        let r = b.radial.as_ref().expect("the Incarnon form declares a radial");
+        assert_eq!(r.base_vector.total(), 13.0, "the explosion is 13 Heat too");
+        assert_eq!(r.radius_m, 2.0);
+        assert!(r.takes_condition_overload, "the catalog row grants it");
+        assert!(!r.takes_multishot, "\"AoE does not scale off multishot\"");
+    }
+
+    /// 55 = 13 + 42, and 13/55 = the 24% the catalog's third column prints:
+    /// the explosion TAKES the tier-2 evolution's flat damage but does not
+    /// take it into the base its CO term multiplies. Both tier-2 options give
+    /// the same +42, so both must land the same radial.
+    #[test]
+    fn a_flat_damage_evolution_raises_the_explosion_but_not_its_co_base() {
+        for evo in ["burston_prime_forceful_finality", "burston_prime_fortress_salvo"] {
+            let b = WeaponBase::from_data("burston_prime_incarnon", true, &[evo]);
+            let r = b.radial.as_ref().expect("the radial survives an evolution");
+            assert!(
+                (r.base_vector.total() - 55.0).abs() < 1e-9,
+                "{evo}: radial should evolve to 55, got {}",
+                r.base_vector.total()
+            );
+            assert!(
+                (r.co_base_fraction - 13.0 / 55.0).abs() < 1e-9,
+                "{evo}: the explosion's CO base stays 13/55, got {}",
+                r.co_base_fraction
+            );
+            // The DIRECT hit has no catalog row, so it is not discrepant: its
+            // CO computes on the full evolved base, which is the normal rule.
+            assert!((b.base_vector.total() - 55.0).abs() < 1e-9);
+            assert!((b.co_base_fraction - 1.0).abs() < 1e-9);
+        }
+    }
+
+    /// Both instances land on the SAME enemy, and multishot moves only one of
+    /// them: `takes_multishot: false` means the explosion fires once per pull
+    /// while the direct hit fires once per pellet.
+    #[test]
+    fn multishot_multiplies_the_direct_hit_and_not_the_explosion() {
+        use crate::dummy::{monte_carlo, DummyParams};
+        let b = WeaponBase::from_data("burston_prime_incarnon", true, &[]);
+        let body = || {
+            vec![crate::dummy::BodyPart {
+                name: "body".into(),
+                aim_weight: 1.0,
+                multiplier: 1.0,
+                is_head: false,
+                crit_bonus: false,
+            }]
+        };
+        let pool = crate::mods_data::pool_for_weapon("burston_prime_incarnon");
+        let sim = |mods: &[&crate::loadout::ModDef]| {
+            let p = crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::AssumedMax);
+            let params = DummyParams::from_panel(
+                &p,
+                &crate::arena::Arena {
+                    body_parts: body(),
+                    ..crate::arena::Arena::training(30.0)
+                },
+            );
+            monte_carlo(&params, 30, 11).source_damage
+        };
+        let bare = sim(&[]);
+        assert!(bare.direct > 0.0 && bare.radial > 0.0, "both instances land: {bare:?}");
+
+        let split = pool.iter().find(|m| m.id == "split_chamber").expect("split_chamber");
+        let ms = sim(&[split]);
+        assert!(
+            ms.direct > bare.direct * 1.5,
+            "+90% multishot must grow the direct hit: {} -> {}",
+            bare.direct,
+            ms.direct
+        );
+        assert!(
+            (ms.radial / bare.radial - 1.0).abs() < 0.1,
+            "the explosion must not follow it: {} -> {}",
+            bare.radial,
+            ms.radial
+        );
+    }
+}
