@@ -227,6 +227,10 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
+    score: 11.541099157692189
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, primed_ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
     score: 11.403990560696391
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
@@ -254,10 +258,6 @@ entries:
     score: 9.34142175870689
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
-  - weapon: larkspur_prime
-    score: 8.967345236219494
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_combustion_rounds, magma_chamber]
-    arcanes: [primary_crux, secondary_enervate]
   - weapon: ocucor
     score: 6.957620490537853
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -283,6 +283,10 @@ entries:
     mods: [hornet_strike, primed_target_cracker, barrel_diffusion, lethal_torrent, magnetic_might, sentient_surge, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
   - weapon: ocucor
+    score: 1.842677855809811
+    mods: [galvanized_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_encumber]
+  - weapon: ocucor
     score: 1.8351030379919056
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, sentient_surge, ice_storm, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
@@ -293,10 +297,6 @@ entries:
   - weapon: ocucor
     score: 1.0836273649870178
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, sentient_surge, deep_freeze, pathogen_rounds, primed_heated_charge]
-    arcanes: [secondary_enervate]
-  - weapon: ocucor
-    score: 0.8745808123222377
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, sentient_surge, deep_freeze, pathogen_rounds, primed_heated_charge]
     arcanes: [secondary_enervate]
   - weapon: phantasma_prime
     score: 14.667342682046801
