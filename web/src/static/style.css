@@ -153,9 +153,14 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
    `padding:0 8px` for the TEXT buttons and outranks a single class, so
    it was eating 16 of the 28 and squeezing every mark to a third of its
    size — the override has to match that specificity to win. */
-.topbar-inner .qq-link,.topbar-inner .dc-link,.topbar-inner .gh-link{
+.topbar-inner .qq-link,.topbar-inner .dc-link,.topbar-inner .gh-link,.topbar-inner .sup-link{
   width:28px;padding:0;text-decoration:none;
   display:inline-flex;align-items:center;justify-content:center}
+.sup-link svg{display:block}
+/* MEASURED, not guessed: at 360px the bar already wraps to two rows and the
+   weapon search — the site's navigation — is down to 29px wide. An eighth icon
+   would come out of that. Phones reach /support from the footer instead. */
+@media(max-width:700px){.topbar-inner .sup-link{display:none}}
 .dc-link svg{display:block}
 .qq-link svg{display:block}
 .qq-copy-btn{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;padding:0 3px}

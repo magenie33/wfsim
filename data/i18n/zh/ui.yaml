@@ -195,6 +195,10 @@ ui:
   # that reads as begging.
   "Support": 支持
   "what WFSim costs to run": WF模拟的运营成本
+  # The topbar icon's tooltip. It names the COST rather than the ask,
+  # for the same reason the page does: what the bill is reads as a fact,
+  # "支持一下" reads as a request.
+  "Support WFSim — what it costs to run": 支持 WF模拟 —— 它的运营成本
   "Support WFSim": 支持 WFSim
   "WFSim is free and open source. No ads, and no feature will ever be locked behind a payment — that part is not going to change. It does cost money and time to run, so if it saved you a Forma, you can chip in.":
     WF模拟免费、开源。没有广告，也永远不会有任何功能要付费才能用——这一条不会变。它确实要花钱和时间维持，所以如果它替你省下过一根 Forma，可以来添一点。

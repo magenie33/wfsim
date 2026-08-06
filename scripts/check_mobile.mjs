@@ -119,6 +119,21 @@ for (const [label, w, h, mobile] of SCREENS) {
       barsRight: Math.round(widest('.preset-bar, .pbar, #build-bar, #scenario-bar')),
       cols: getComputedStyle(document.getElementById('mod-slots')).gridTemplateColumns,
       narrowestName: names.length ? Math.min(...names) : 0,
+      // THE TOPBAR'S BUDGET. It is the one strip where a new icon is taken
+      // from something else rather than added: at 360px it already wraps to
+      // two rows and the weapon SEARCH — the site's own navigation — is down
+      // to 29px. So the support link is desktop-only, and that is geometry,
+      // which makes it this check's business rather than a style opinion.
+      // RESOLVED display, not offsetParent. The rule under test IS a display
+      // rule, and offsetParent is a layout-dependent proxy for it — it read
+      // null once on a freshly navigated tablet and passed on the next run,
+      // which is a check that teaches people to ignore it. Same lesson as the
+      // meter's collapse: measure the property, not a symptom.
+      // (No backticks in here: this comment lives inside a template literal.)
+      supDisplay: document.querySelector('.sup-link')
+        ? getComputedStyle(document.querySelector('.sup-link')).display : 'absent',
+      searchW: Math.round((document.querySelector('.wsearch') || { getBoundingClientRect: () => ({ width: 0 }) })
+        .getBoundingClientRect().width),
     };
   })()`);
 
@@ -131,6 +146,14 @@ for (const [label, w, h, mobile] of SCREENS) {
     `scrollWidth ${r.scrollW} vs clientWidth ${r.vw}`);
   // A column squeezed to nothing is not a fixed layout. 90px is about a dozen
   // characters — enough to tell two mods apart, which is the job.
+  // A phone must not spend its bar on the ask; a desktop has room and shows it.
+  check(`${tag} the support link is ${w <= 700 ? "kept off" : "on"} this bar`,
+    (r.supDisplay !== 'none') === (w > 700), `display ${r.supDisplay}, vw ${r.vw}`);
+  // ...and the weapon search must still be reachable, which is what the budget
+  // is FOR. Below 400px the bar is genuinely tight, so this only asserts the
+  // search did not vanish outright.
+  check(`${tag} the weapon search keeps its place in the bar`, r.searchW >= 20,
+    `${r.searchW}px`);
   check(`${tag} a mod name still has room to be a name`, r.narrowestName >= 90,
     `narrowest name column ${r.narrowestName}px (grid: ${r.cols})`);
 }
