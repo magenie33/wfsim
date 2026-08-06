@@ -727,6 +727,30 @@ per-entry slip in DE's code looks like — careless or deliberate, attached to o
 entry rather than derived from a rule. No general mechanical law could produce
 it, which is exactly why none of this may be modelled as one.
 
+**The decisive tell: the table HAS a vocabulary for "these variants are alike",
+and uses it.** A row names every entry it covers, so sameness is written down
+rather than assumed:
+
+- *"Braton / Mk1-Braton / Prime / Vandal"* — one row, four variants.
+- *"Burston/Burston Prime"* — one row, two.
+- *"Paris / Paris Prime / Mk1-Paris"* — one row, three, for the charged attack.
+
+And the SAME Paris family splits two rows later: its **Incarnon** row reads
+*"Paris / Paris Prime"* and the Mk1-Paris is not on it — the same weapons, the
+same table, spanned in one row and separated in the next. So a row naming ONE
+variant is naming one variant on purpose; it is not shorthand for the family.
+
+That is what settles the Furis. Its row reads *"Furis"* alone where the
+Burston's reads *"Burston/Burston Prime"*, so the MK1-Furis is absent by the
+table's own grammar, not by an oversight — and the owner confirms it
+(2026-08-06: DE treats the two as separate weapons internally, and the table has
+already shown Prime-vs-base splits). The Furis excludes Evolution II's flat
+damage from its CO base (100 of 128, the row's own 78%); the MK1-Furis does not,
+and its +34 feeds CO in full. `furis_haven_foray` / `furis_stormburst` carry
+`co_base_excludes_this_evolution`; the `mk1_furis_*` pair must not, and
+`furis_co_split_tests` pins BOTH halves — the failure mode here is a tidy-up
+that aligns them, which a test checking only one half would let through.
+
 The Zylok's second row is worth reading for a different reason: *"Zylok / Zylok
 Prime | Incarnon Form Radial Attack | AoE | 776 | 700 | 90% | Adding — Radial
 hit only receives CO bonus on target directly hit by bullet. AoE does not scale
