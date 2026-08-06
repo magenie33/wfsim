@@ -1301,6 +1301,17 @@ fn grant_label(g: wfsim_engine::arcanes_data::ArcGrant) -> &'static str {
 
 fn enumerate_buffs(
     refs: &[&ModDef],
+    // `always`: the mods in EVERY build this call describes, and therefore the
+    // only ones whose `disables:` may suppress a buff card. For a real build
+    // that is all of them; for a SCOPE it is the REQUIRED ones only.
+    //
+    // `fetchAllBuffs` marks the whole pool "search" to ask what buffs a weapon
+    // could ever produce, and one candidate's lock is not a fact about the
+    // others. Primary Acuity disables multishot, so under the old rule its mere
+    // presence in a rifle's pool deleted Galvanized Chamber's on-kill multishot
+    // from the list — a build nobody would ever assemble (eighty mods at once)
+    // silently removing a card from a build they would.
+    always: &[&ModDef],
     arcane: &wfsim_engine::arcanes_data::ArcaneFx,
     info: &WeaponInfo,
     tenno: &wfsim_engine::tenno_data::Tenno,
@@ -1314,7 +1325,7 @@ fn enumerate_buffs(
     // already emptied every bucket feeding it — "set to its default ignoring
     // other bonuses" — so a card for one would be a control that moves no
     // number: Frenzy under a Cannonade, Galvanized Diffusion under an Acuity.
-    let locked = |s: &'static str| refs.iter().any(|m| m.disables.contains(&s));
+    let locked = |s: &'static str| always.iter().any(|m| m.disables.contains(&s));
     let mut out: Vec<BuffMeta> = Vec::new();
     let mut push = |b: BuffMeta| {
         if !out.iter().any(|x| x.id == b.id) {
@@ -2746,7 +2757,8 @@ pub fn panel_json(v: &Value) -> Value {
     // mods + arcane + the weapon passive, plus evolution-granted buffs
     // (Fevered Frenzy's permanent stacks).
     let arcane_fx = arcane_fx_for(v, info, &forms_list[0].2, policy);
-    let mut buffs = enumerate_buffs(&refs, &arcane_fx, info, &tenno_from(v, info));
+    // A real build: every mod on it is on it, so every lock is real.
+    let mut buffs = enumerate_buffs(&refs, &refs, &arcane_fx, info, &tenno_from(v, info));
     for b in evo_buffs(&evos) {
         if !buffs.iter().any(|x| x.id == b.id) {
             buffs.push(b);
@@ -3627,15 +3639,24 @@ pub fn opt_buffs_json(v: &Value) -> Value {
         }
     }
     let mut ids: Vec<String> = Vec::new();
+    // REQUIRED mods, kept apart: only a mod in every build may lock a stat and
+    // suppress another mod's buff card. A "search" mark is a candidate, and one
+    // candidate's `disables:` says nothing about the builds without it.
+    let mut required: Vec<String> = Vec::new();
     if let Some(obj) = v.get("mods").and_then(|x| x.as_object()) {
         for (id, st) in obj {
             if matches!(st.as_str(), Some("fixed") | Some("search")) {
                 ids.push(id.clone());
             }
+            if st.as_str() == Some("fixed") {
+                required.push(id.clone());
+            }
         }
     }
     ids.sort();
     ids.dedup();
+    required.sort();
+    required.dedup();
     // Rivens the request carries join the searchable pool like any mod.
     if let Err(e) = riven_stat_ids_ok(v, info) {
         return err_json(e);
@@ -3652,14 +3673,18 @@ pub fn opt_buffs_json(v: &Value) -> Value {
     let none = wfsim_engine::arcanes_data::ArcaneFx::none();
     let arc_base = WeaponBase::from_data(&info.id, true, &[]);
     let tenno = tenno_from(v, info);
-    merge(&mut out, enumerate_buffs(&refs, &none, info, &tenno));
+    let always: Vec<&ModDef> = full
+        .iter()
+        .filter(|m| required.iter().any(|id| id.as_str() == m.id))
+        .collect();
+    merge(&mut out, enumerate_buffs(&refs, &always, &none, info, &tenno));
     // The scope is a MARK MAP (id -> "search" | "fixed"), the same shape as
     // `mods`; every marked arcane's buffs are configurable, pins included.
     if let Some(obj) = v.get("arcanes").and_then(|x| x.as_object()) {
         for a in obj.keys().filter(|k| k.as_str() != "none") {
             if let Some(def) = arcane_in_pools(info, a) {
                 let fx = def.fx(def.max_rank, StackPolicy::Emergent, arc_base.traits, &tenno);
-                merge(&mut out, enumerate_buffs(&[], &fx, info, &tenno));
+                merge(&mut out, enumerate_buffs(&[], &[], &fx, info, &tenno));
             }
         }
     }
@@ -5716,5 +5741,56 @@ mod weakpoint_panel_tests {
         let direct = part(form(&bare, "Incarnon Form"), "direct");
         assert!(row(direct, "weakpoint_cc").is_none());
         assert!(row(direct, "weakpoint_damage").is_none());
+    }
+}
+
+/// A CANDIDATE'S LOCK IS NOT A FACT ABOUT THE OTHER CANDIDATES.
+///
+/// `fetchAllBuffs` asks "what buffs could this weapon ever produce" by marking
+/// the whole pool `search`. Under the old rule the enumeration then applied
+/// every marked mod's `disables:` at once — a build of eighty mods, which
+/// nobody assembles — so Primary Acuity's `disables: [multishot]` deleted
+/// Galvanized Chamber's on-kill multishot from the list of every rifle whose
+/// pool contains Acuity. The simulator showed that buff and the optimizer's
+/// read-only copy of the same fight did not; `check_preset_independence` had
+/// been failing on it.
+///
+/// Only a REQUIRED mod is in every build, so only a required mod may lock.
+#[cfg(test)]
+mod scope_lock_tests {
+    use super::*;
+
+    fn buff_ids(mods: Value) -> Vec<String> {
+        let out = opt_buffs_json(&json!({ "weapon": "torid", "mods": mods }));
+        out["buffs"]
+            .as_array()
+            .expect("buffs")
+            .iter()
+            .map(|b| b["id"].as_str().unwrap_or("").to_string())
+            .collect()
+    }
+
+    #[test]
+    fn a_searched_mod_does_not_lock_another_mods_buff() {
+        let alone = buff_ids(json!({ "galvanized_chamber": "search" }));
+        assert!(alone.iter().any(|i| i == "on_kill_multishot"), "{alone:?}");
+        // Acuity disables multishot, but as a CANDIDATE it is only in the
+        // builds that take it — and those are not the builds this card is for.
+        let with = buff_ids(json!({ "galvanized_chamber": "search", "primary_acuity": "search" }));
+        assert!(
+            with.iter().any(|i| i == "on_kill_multishot"),
+            "a candidate's lock deleted another candidate's buff: {with:?}"
+        );
+    }
+
+    #[test]
+    fn a_required_mod_still_locks() {
+        // Required means every searched build carries it, so the buff genuinely
+        // cannot arm and the card would be a lie.
+        let with = buff_ids(json!({ "galvanized_chamber": "search", "primary_acuity": "fixed" }));
+        assert!(
+            !with.iter().any(|i| i == "on_kill_multishot"),
+            "a required lock must still suppress: {with:?}"
+        );
     }
 }
