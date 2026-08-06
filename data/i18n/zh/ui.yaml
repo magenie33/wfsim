@@ -210,6 +210,8 @@ ui:
   "testing build": 测试配装
   "last tested": 上次测试于
   "Damage by source": 伤害构成
+  "Damage by type": 伤害类型占比
+  "share of the engagement": 整场交战的占比
   "Direct hits": 直接命中
   "Arcane (on status)": 赋能附加伤害
   "Radial (AoE)": 范围伤害

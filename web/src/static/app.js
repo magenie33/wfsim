@@ -6705,6 +6705,39 @@ function renderResults(r, testedAt) {
       <span class="mval">${n0(p.dmg)} · ${pct2(p.dmg / srcTotal)}</span>
     </div>`).join("");
   }).join("");
+  // WHAT THE DAMAGE WAS MADE OF — one stacked bar over the whole engagement,
+  // in DE's own colours (owner, 2026-08-06: "类型可以搞成百分比合成吗").
+  //
+  // The meter above answers "where did it come from" — direct hits, a cloud, a
+  // proc. This answers a different question a build actually turns on: what
+  // ELEMENTS is that, added up. They are the same damage counted two ways, so
+  // both read against the same total and both come to 100%.
+  //
+  // Aggregated from the meter's own rows rather than from a second field, so
+  // the bar cannot disagree with the list under it: a source that splits by
+  // type contributes its split, and a source that IS a type (a status row)
+  // contributes itself.
+  const typeTotals = {};
+  for (const x of srcs) {
+    const parts = x.by_type && x.by_type.length ? x.by_type : [{ type: x.source, dmg: x.dmg }];
+    for (const p of parts) {
+      if (!dtKey(p.type)) continue;   // a source name is not a damage type
+      typeTotals[dtKey(p.type)] = (typeTotals[dtKey(p.type)] || 0) + p.dmg;
+    }
+  }
+  const typeRows = Object.entries(typeTotals)
+    .filter(([, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1]);
+  const typeSum = typeRows.reduce((a, [, v]) => a + v, 0);
+  // Biggest first, so the bar reads left to right in the order the legend
+  // does and the eye can match a segment to a line without hunting.
+  const composition = typeRows.length ? `
+      <h3>${tr("Damage by type")} <span class="sim-hint">${tr("share of the engagement")}</span></h3>
+      <div class="dmg-bar">${typeRows.map(([ty, v]) =>
+        `<i class="dmg-seg" style="flex:${(v / typeSum).toFixed(5)};background:${dtColor(ty)}" title="${escHtml(DT(ty))} ${pct2(v / typeSum)}"></i>`).join("")}</div>
+      <div class="legend">${typeRows.map(([ty, v]) =>
+        `<span class="li">${dtIcon(ty)}${escHtml(DT(ty))} <span class="lv">${pct2(v / typeSum)}</span></span>`).join("")}</div>` : "";
+
   // DPS-over-time curve (user, 2026-07-29): the MEDIAN run's per-bucket
   // EFFECTIVE dps. One series — the accent line, recessive grid, hover
   // crosshair + tooltip; no legend needed.
@@ -6748,7 +6781,7 @@ function renderResults(r, testedAt) {
       ${replayBar}
       <div class="kpi-row">${kpis}</div>
       <h3>${tr("Damage by source")}</h3>
-      <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${chart}${replayCurves}
+      <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}${chart}${replayCurves}
       <h3>Detail</h3>
       <div class="stat-table">${detail}</div>
     </div>`;

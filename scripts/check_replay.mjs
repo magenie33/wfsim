@@ -98,8 +98,26 @@ const r = await evaluate(`(async () => {
       sub: el.classList.contains('sub'),
     };
   });
+  // THE COMPOSITION BAR, and the meter it has to agree with. Read as SHARES
+  // (flex-grow), because that is what the bar is drawn from — measuring pixel
+  // widths would test the layout engine instead.
+  const segs = [...document.querySelectorAll('.dmg-bar .dmg-seg')]
+    .map(e => ({ share: parseFloat(getComputedStyle(e).flexGrow),
+                 color: getComputedStyle(e).backgroundColor }));
+  const legend = [...document.querySelectorAll('.legend .li')]
+    .map(e => ({ text: e.textContent.trim(), icon: !!e.querySelector('.dt-ico') }));
+  // What the METER says each type totalled, to reconcile against.
+  const meterByType = {};
+  for (const el of document.querySelectorAll('.mrow')) {
+    const k = el.getAttribute('data-mk') || '';
+    const ty = (k.split('::')[1] || k).toLowerCase();
+    if (['direct','radial','field','arcane','syndicate'].includes(ty)) continue;
+    if (!k.includes('::') && el.classList.contains('sub')) continue;
+    const v = parseFloat((el.querySelector('.mval')||{}).textContent?.replace(/[^\d.]/g,'') || '0');
+    meterByType[ty] = (meterByType[ty] || 0) + v;
+  }
   return { rows, atEnd, atZero, restored, nowAtEnd, movedTo, iBar, iMeter, iTable, iRow, kids,
-           meterRows,
+           meterRows, segs, legend, meterTypes: Object.keys(meterByType).sort(),
            clock: document.getElementById('rp-clock').textContent };
 })()`);
 if (r.fail) { console.log("FAIL  no replay section — sim-results:", r.resultsHtml); process.exit(1); }
@@ -140,6 +158,27 @@ check("the header states average, uptime and the ramp",
   check("every damage-type row carries DE's own glyph",
     Object.values(byType).flat().every((x) => x.icon),
     JSON.stringify(Object.entries(byType).map(([k, v]) => [k, v.every((x) => x.icon)])));
+}
+
+// THE COMPOSITION BAR — the same damage counted a second way (owner,
+// 2026-08-06: "类型可以搞成百分比合成吗"). The meter answers where damage came
+// FROM; this answers what it was MADE OF, and the two are the same total, so
+// the shares must come to one and cover the same types the meter listed.
+//
+// Aggregated in the page from the meter's own rows precisely so it cannot
+// drift; this asserts that it did not.
+{
+  const sum = r.segs.reduce((a, x) => a + x.share, 0);
+  check("the type composition covers the whole engagement",
+    r.segs.length > 1 && Math.abs(sum - 1) < 0.01, `${r.segs.length} segments summing to ${sum}`);
+  check("...one legend entry per segment, each with its glyph",
+    r.legend.length === r.segs.length && r.legend.every((l) => l.icon),
+    JSON.stringify(r.legend));
+  // Same colours as the meter: one palette, keyed on the type, used twice.
+  const meterColors = new Set(r.meterRows.filter((x) => x.sub).map((x) => x.color));
+  check("...and its colours are the meter's",
+    r.segs.every((x) => meterColors.has(x.color)),
+    JSON.stringify([r.segs.map((x) => x.color), [...meterColors]]));
 }
 
 check("the replay BAR sits above everything it drives",
