@@ -195,6 +195,26 @@ fn main() {
             refused += 1;
             continue;
         }
+        // A `cycle` ROW ON THE NO-AIM BOARD IS NOT A BASE ROW, and it was
+        // nearly recorded as one here. Eight of the nine Incarnon forms charge
+        // on WEAKPOINT hits, so at a 0% headshot rate they never transform —
+        // that benchmark says so in its own rules — which reads like an
+        // argument for filing those rows under `base` instead, since a form
+        // nobody reached cannot be what the weapon was played in.
+        //
+        // MEASURED FIRST, and the measurement refused it: Burston Prime,
+        // Serration only, 4 s, 400 runs, zero headshots, ZERO transforms on
+        // both sides — `incarnon_cycle` 2470 DPS against a pinned base form's
+        // 1738, +42%. Same shot count, near-identical direct damage, and three
+        // times the status procs, one of them HEAT when the base form has no
+        // Heat in its vector at all. So the two are not the same fight even
+        // with the gauge never full, and relabelling would have silently
+        // RE-SCORED every such row — it moved the published Burston Prime from
+        // 0.9572 to 0.5858 before this was caught.
+        //
+        // That gap is a bug in the SIMULATOR, not in the board's bookkeeping
+        // (MEASUREMENTS M32). The board records the mode that was DECLARED,
+        // and will keep doing so until the engine and the fight agree.
         // IN THE BENCHMARK'S OWN METRIC. `score` off the wire is kill PROGRESS
         // — kills plus the fraction of the current target depleted — over the
         // whole engagement. The benchmark says `metric: kpm`, so publishing the

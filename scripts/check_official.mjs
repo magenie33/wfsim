@@ -362,6 +362,11 @@ const CONSENT_PROBE = `(async () => {
   out.sentKeys = sent ? Object.keys(sent).sort() : null;
   out.sentHasScore = sent ? ('score' in sent || 'dps' in sent) : null;
   out.sentBenchmark = sent && sent.benchmark;
+  // The MODE, against the page's own live value rather than against a literal
+  // — the check asserts that what left is what was played, and a hard-coded
+  // "cycle" here would agree with the very fallback this field exists to end.
+  out.sentMode = sent && sent.mode;
+  out.modeOnScreen = mode;
 
   window.fetch = real;
   return out;
@@ -394,9 +399,19 @@ check("nothing leaves after opting out", c.postsAfterNo === 0, String(c.postsAft
 check("...and the line says nothing is sent", /not|nothing|不会/.test(c.declinedText), JSON.stringify(c.declinedText));
 check("turning it back on is not itself a submission", c.postsOnFlip === 0, String(c.postsOnFlip));
 check("...and the next run sends exactly one", c.postsAfterYes === 1, String(c.postsAfterYes));
+// AN EXACT LIST, so a field added to the payload has to be argued for here
+// rather than noticed later. `mode` joined it because it is half of what a
+// board row IS — a Torid through its cycle and a Torid that never transmutes
+// are two entrants — and while it was missing the scorer fell back to "the
+// cycle where there is one" for every submission, so no board could hold a
+// base-form Incarnon weapon. It says nothing about the person: it is a
+// property of the build, like the mods beside it.
 check("...carrying the BUILD and no score",
-  JSON.stringify(c.sentKeys) === JSON.stringify(["arcanes","benchmark","evolutions","mods","weapon"]) && c.sentHasScore === false,
+  JSON.stringify(c.sentKeys) === JSON.stringify(["arcanes","benchmark","evolutions","mode","mods","weapon"]) && c.sentHasScore === false,
   JSON.stringify(c.sentKeys));
 check("...against the official benchmark", c.sentBenchmark === "single_target", String(c.sentBenchmark));
+// ...and the mode is the one on screen, not a default the scorer guessed.
+check("...and the mode it was played in", !!c.sentMode && c.sentMode === c.modeOnScreen,
+  `sent ${JSON.stringify(c.sentMode)}, on screen ${JSON.stringify(c.modeOnScreen)}`);
 
 await app.finish("the official benchmark is the fight, and it is locked");

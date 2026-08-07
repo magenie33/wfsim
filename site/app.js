@@ -6766,6 +6766,16 @@ function boardPayload() {
   return {
     benchmark: bench,
     weapon: $("weapon").value,
+    // HOW IT IS PLAYED, and it has to travel or the dimension is fed by
+    // nothing. The scorer's fallback for a mode-less submission is "the cycle
+    // where there is one", which is a MIGRATION rule for rows submitted before
+    // the dimension existed — and while this field was missing it was the only
+    // rule in play, so every Incarnon weapon's row said `cycle` and no board
+    // could ever hold a base-form Torid. Measured on the published boards:
+    // 62 cycle rows and 41 base ones, and not one weapon with both — every
+    // Incarnon weapon cycle, every other one base, which is the fallback's
+    // signature rather than anybody's choice.
+    mode,
     // THE EIGHT MAIN SLOTS, and the exilus one is DROPPED here (owner,
     // 2026-08-05: "如果带着exilus测试，我们会收入然后去掉exilus"). It has to
     // happen on this side: the payload is a flat list with no slot positions,
