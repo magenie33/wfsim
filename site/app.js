@@ -4466,7 +4466,33 @@ function closePopovers(keep) {
 /// The trigger. Emits a button that LOOKS like the select it replaces, and
 /// registers what opening it should show. Callers re-render by innerHTML, so
 /// registration happens on every draw rather than once.
+// EVERYTHING THIS COMPONENT IMPLEMENTS, named once.
+//
+// A native `<select>` gave `option.disabled` away for free, and when every
+// dropdown moved onto this component `ddRender` simply ignored the field —
+// `ddButton` kept passing it, the Form control kept greying its ⊘ options, and
+// they stayed clickable for as long as nobody looked. An extra key cost the
+// author nothing, which is what made the loss silent.
+//
+// So an unknown key is an ERROR, not a no-op: it means the author expected a
+// behaviour this component does not have. Loud here is cheap — the roster sweep
+// loads every weapon on every tab in both languages, and the check scripts do
+// the rest — while silent here costs a shipped feature nobody can see missing.
+const DD_CFG_KEYS = ["value", "items", "dataK", "title", "placeholder", "onPick", "search"];
+const DD_ITEM_KEYS = ["value", "label", "hint", "disabled"];
+
+function ddCheck(id, cfg) {
+  const stray = (obj, known) => Object.keys(obj).filter((k) => !known.includes(k));
+  const bad = stray(cfg, DD_CFG_KEYS);
+  if (bad.length) throw new Error(`dd "${id}": unknown config ${bad.join(", ")}`);
+  (cfg.items || []).forEach((i, n) => {
+    const b = stray(i, DD_ITEM_KEYS);
+    if (b.length) throw new Error(`dd "${id}" item ${n}: unknown field ${b.join(", ")} — the component does not implement it`);
+  });
+}
+
 function ddButton(id, cfg) {
+  ddCheck(id, cfg);
   ddReg.set(id, cfg);
   const cur = cfg.items.find((i) => String(i.value) === String(cfg.value));
   // `value=` is not decoration: `HTMLButtonElement.value` REFLECTS it, so the

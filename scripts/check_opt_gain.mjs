@@ -87,17 +87,24 @@ const script = [
   "                   note: (row.querySelector('.pairnote')||{}).innerText || null } : null; };",
   // The other two axes are marked the same way and asked the same question,
   // so they have to answer it too (user, 2026-08-06: "mod/arcane/evo").
-  "  const anyChip = (sel, name) => [...document.querySelectorAll(sel + ' .opt')]",
-  "    .filter(r => (r.querySelector('.mn')||{}).innerText.includes(name))",
-  "    .map(r => (r.querySelector('.gainchip')||{}).innerText || null)[0] || null;",
+  //
+  // BY ID, never by the name on screen. This matched `.mn` text against
+  // "Forceful Finality" and passed only because that evolution had no Chinese
+  // name yet — the page runs in the machine's own language, so the day the
+  // string was transcribed (强制终结) the row stopped being found and the check
+  // reported the SCAN broken. Same lesson `check_enemies` records about wiki
+  // URLs: a display name is not an identifier.
+  "  const anyChip = (sel, id) => { const el = document.querySelector(sel + ` .seg[data-e='${id}']`);",
+  "    const row = el && el.closest('.opt');",
+  "    return row ? ((row.querySelector('.gainchip')||{}).innerText || null) : null; };",
   "  return { done: optGain.done, total: optGain.total, base: optGain.base,",
   "           orders: optGain.orders.length, rows,",
   "           hellfire: chip('hellfire'), infected: chip('infected_clip'),",
   "           storm: chip('stormbringer'), serration: chip('serration'),",
   "           wildfire: chip('wildfire'),",
   "           arcaneScanned: [...document.querySelectorAll('#opt-arcanes .gainchip')].length,",
-  "           evoOpen: anyChip('#opt-evos', 'Forceful Finality'),",
-  "           evoLocked: anyChip('#opt-evos', 'Extended Volley') };",
+  "           evoOpen: anyChip('#opt-evos', 'burston_prime_forceful_finality'),",
+  "           evoLocked: anyChip('#opt-evos', 'burston_prime_extended_volley') };",
   "})()",
 ].join("\n");
 const r = await send("Runtime.evaluate", { expression: script, awaitPromise: true, returnByValue: true });
