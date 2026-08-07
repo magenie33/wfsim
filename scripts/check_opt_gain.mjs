@@ -19,50 +19,9 @@
 //      element the build already has POOLS (`ElementalInput::push` merges
 //      them), so it adds no pairing and must not claim one. Getting that
 //      distinction wrong is what shipped 5669040.
-import { spawn } from "node:child_process";
-import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
-import { extname, join, resolve } from "node:path";
-
-const ROOT = resolve("site");
-const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
-  ".json": "application/json", ".wasm": "application/wasm", ".svg": "image/svg+xml",
-  ".png": "image/png", ".jpg": "image/jpeg", ".ico": "image/x-icon" };
-const srv = createServer(async (q, s) => {
-  const p = decodeURIComponent(q.url.split("?")[0]);
-  try {
-    const b = await readFile(join(ROOT, p));
-    s.writeHead(200, { "content-type": MIME[extname(p)] || "application/octet-stream", "cache-control": "no-store" });
-    s.end(b);
-  } catch {
-    s.writeHead(200, { "content-type": "text/html" });
-    s.end(await readFile(join(ROOT, "index.html")));
-  }
-});
-await new Promise((r) => srv.listen(0, "127.0.0.1", r));
-const BASE = `http://127.0.0.1:${srv.address().port}`;
-const PORT = 9512;
-const proc = spawn("C:/Program Files/Google/Chrome/Application/chrome.exe",
-  [`--remote-debugging-port=${PORT}`, "--headless=new", "--disable-gpu", "--no-first-run",
-    `--user-data-dir=${process.env.TEMP}/wfsim-optgain-check`, "about:blank"], { stdio: "ignore" });
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function cdp(p) {
-  for (let i = 0; i < 60; i++) {
-    try { const r = await fetch(`http://127.0.0.1:${PORT}${p}`); if (r.ok) return r.json(); } catch {}
-    await sleep(250);
-  }
-  throw new Error("no CDP");
-}
-const page = (await cdp("/json/list")).find((t) => t.type === "page");
-const ws = new WebSocket(page.webSocketDebuggerUrl);
-let id = 0; const pend = new Map();
-ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.id && pend.has(m.id)) { pend.get(m.id)(m); pend.delete(m.id); } };
-await new Promise((r) => (ws.onopen = r));
-const send = (method, params = {}) => new Promise((res) => { const i = ++id; pend.set(i, res); ws.send(JSON.stringify({ id: i, method, params })); });
-await send("Page.enable"); await send("Runtime.enable");
-await send("Page.navigate", { url: BASE });
-await sleep(11000);
-
+import { openApp } from "./cdp.mjs";
+const app = await openApp({ boot: 11000 });
+const { evaluate, check, sleep, send, BASE } = app;
 // Burston Prime, because its Incarnon form carries INNATE Heat — so the
 // leftover column has something to be right about that no rule written over
 // mod ids could have known.
@@ -111,15 +70,9 @@ const r = await send("Runtime.evaluate", { expression: script, awaitPromise: tru
 const v = r.result?.result?.value;
 if (!v) {
   console.log("FAIL  the scan threw:", r.result?.exceptionDetails?.exception?.description?.slice(0, 500));
-  ws.close(); proc.kill(); srv.close(); process.exit(1);
+  check("the page did not throw", false);
+  await app.finish("");   // unreachable: the check above already failed
 }
-
-let bad = 0;
-const check = (name, ok, detail) => {
-  console.log(`${ok ? "ok  " : "FAIL"}  ${name}${ok || detail === undefined ? "" : `  — ${detail}`}`);
-  if (!ok) bad++;
-};
-
 check("the scan finished every job it planned",
   v.total > 0 && v.done === v.total, `${v.done}/${v.total}`);
 check("three distinct elements produce three pairings",
@@ -137,7 +90,6 @@ check("the baseline is the best pairing, not just some pairing",
 check("every mod on screen carries a number",
   ["hellfire", "infected", "storm", "serration", "wildfire"].every((k) => v[k] && v[k].gain),
   JSON.stringify(v));
-
 // A REQUIRED mod is measured by DROPPING it: Toxin out of Cold+Toxin+Heat
 // leaves Blast, which is not the reference's pairing, so its row says so.
 check("a required mod whose removal re-pairs the build says where it lands",
@@ -156,7 +108,6 @@ check("a second mod of an element the build already has POOLS, and says nothing"
 // is unchanged and that row is silent too — the innate is the reason.
 check("dropping a mod whose element the WEAPON also carries changes no pairing",
   v.hellfire.note === null, JSON.stringify(v.hellfire));
-
 // ALL THREE AXES, because all three are marked the same way and the question
 // asked of them is the same one. Arcanes and evolutions carry no element, so
 // they never move a pairing — what they need is simply to be scanned at all.
@@ -170,6 +121,4 @@ check("an evolution the LADDER has opened carries a number",
 check("a tier the ladder has NOT opened is not ranked",
   v.evoLocked === null, JSON.stringify(v.evoLocked));
 
-ws.close(); proc.kill(); srv.close();
-console.log(bad ? `\n${bad} failed` : "\nthe optimizer's quick calc names its pairings");
-process.exit(bad ? 1 : 0);
+await app.finish("the optimizer's quick calc names its pairings");

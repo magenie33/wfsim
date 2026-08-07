@@ -24,28 +24,10 @@
 //   node scripts/check_official_scenario.mjs
 //
 // Exits non-zero on the first failure.
-import { spawn } from "node:child_process";
-import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
-import { extname, join, resolve } from "node:path";
-const ROOT = resolve("site");
-const MIME = { ".html":"text/html",".js":"text/javascript",".css":"text/css",".json":"application/json",".wasm":"application/wasm",".svg":"image/svg+xml",".png":"image/png",".jpg":"image/jpeg",".ico":"image/x-icon" };
-const srv = createServer(async (q,s)=>{const p=decodeURIComponent(q.url.split("?")[0]);try{const b=await readFile(join(ROOT,p));s.writeHead(200,{"content-type":MIME[extname(p)]||"application/octet-stream","cache-control":"no-store"});s.end(b);}catch{s.writeHead(200,{"content-type":"text/html"});s.end(await readFile(join(ROOT,"index.html")));}});
-await new Promise(r=>srv.listen(0,"127.0.0.1",r));
-const BASE=`http://127.0.0.1:${srv.address().port}`, PORT=9501;
-const proc=spawn("C:/Program Files/Google/Chrome/Application/chrome.exe",[`--remote-debugging-port=${PORT}`,"--headless=new","--disable-gpu","--no-first-run",`--user-data-dir=${process.env.TEMP}/wfsim-official`,"about:blank"],{stdio:"ignore"});
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function cdp(path){for(let i=0;i<60;i++){try{const r=await fetch(`http://127.0.0.1:${PORT}${path}`);if(r.ok)return r.json();}catch{}await sleep(250);}throw new Error("no CDP");}
-const page=(await cdp("/json/list")).find(t=>t.type==="page");
-const ws=new WebSocket(page.webSocketDebuggerUrl);
-let id=0;const pending=new Map();
-ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.id&&pending.has(m.id)){pending.get(m.id)(m);pending.delete(m.id);}};
-await new Promise(r=>ws.onopen=r);
-const send=(method,params={})=>new Promise(res=>{const i=++id;pending.set(i,res);ws.send(JSON.stringify({id:i,method,params}));});
-const evaluate=async expr=>{const r=await send("Runtime.evaluate",{expression:expr,awaitPromise:true,returnByValue:true});if(r.result?.exceptionDetails)throw new Error(String(r.result.exceptionDetails.exception?.description||"").slice(0,700));return r.result?.result?.value;};
-await send("Page.enable");await send("Runtime.enable");
-await send("Page.navigate",{url:BASE});await sleep(12000);
-let fail=0;const check=(n,ok,d)=>{console.log(`${ok?"  ok  ":"FAIL  "}${n}${ok||d===undefined?"":`  — ${d}`}`);if(!ok)fail++;};
+import { openApp } from "./cdp.mjs";
+
+const app = await openApp({ boot: 12000 });
+const { evaluate, check, sleep, send } = app;
 
 const PROBE = (lang) => `(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -398,5 +380,4 @@ check("...carrying the BUILD and no score",
   JSON.stringify(c.sentKeys));
 check("...against the official benchmark", c.sentBenchmark === "single_target", String(c.sentBenchmark));
 
-ws.close(); srv.close(); proc.kill();
-process.exit(fail ? 1 : 0);
+await app.finish("the official benchmark is the fight, and it is locked");

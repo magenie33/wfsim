@@ -17,95 +17,7 @@
 //   node scripts/check_parity.mjs http://host:port  against a running server
 //
 // Exits non-zero on any mismatch, so it can gate a push.
-import { spawn } from "node:child_process";
-import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { extname, join, resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-
-// Where Chrome lives differs per platform and per CI image, so try the known
-// places rather than betting on one. `CHROME=` overrides all of it.
-const CHROME_CANDIDATES = process.platform === "win32"
-  ? ["C:/Program Files/Google/Chrome/Application/chrome.exe",
-     "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"]
-  : process.platform === "darwin"
-    ? ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"]
-    : ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable",
-       "/usr/bin/chromium-browser", "/usr/bin/chromium", "/snap/bin/chromium"];
-const CHROME = process.env.CHROME
-  || CHROME_CANDIDATES.find((p) => existsSync(p))
-  || CHROME_CANDIDATES[0];
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "site");
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-// ---- a static server for site/, with the SPA fallback the app needs -------
-const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
-  ".json": "application/json", ".wasm": "application/wasm", ".svg": "image/svg+xml",
-  ".png": "image/png", ".jpg": "image/jpeg", ".ico": "image/x-icon" };
-async function serve() {
-  const srv = createServer(async (req, res) => {
-    const p = decodeURIComponent(req.url.split("?")[0]);
-    let file = join(ROOT, p);
-    try {
-      const body = await readFile(file);
-      res.writeHead(200, { "content-type": MIME[extname(file)] || "application/octet-stream",
-        "cache-control": "no-store" });
-      res.end(body);
-    } catch {
-      // Unknown path with no extension = an SPA route.
-      try {
-        res.writeHead(200, { "content-type": "text/html", "cache-control": "no-store" });
-        res.end(await readFile(join(ROOT, "index.html")));
-      } catch { res.writeHead(404).end(); }
-    }
-  });
-  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
-  return { url: `http://127.0.0.1:${srv.address().port}`, close: () => srv.close() };
-}
-
-// ---- headless Chrome over CDP --------------------------------------------
-async function browser(port) {
-  const proc = spawn(CHROME, [`--remote-debugging-port=${port}`, "--headless=new",
-    "--disable-gpu", "--no-first-run", "--no-default-browser-check",
-    // A CI runner has no usable user namespace for Chrome's sandbox. The page
-    // is local content we generated, so this costs nothing there and is not
-    // enabled anywhere else.
-    ...(process.env.CI ? ["--no-sandbox", "--disable-dev-shm-usage"] : []),
-    `--user-data-dir=${process.env.TEMP || "/tmp"}/wfsim-parity-${port}`, "about:blank"],
-    { stdio: "ignore" });
-  let page = null;
-  for (let i = 0; i < 80 && !page; i++) {
-    try {
-      const r = await fetch(`http://127.0.0.1:${port}/json/list`);
-      if (r.ok) page = (await r.json()).find((t) => t.type === "page");
-    } catch { /* not up yet */ }
-    if (!page) await sleep(250);
-  }
-  if (!page) {
-    throw new Error(`chrome did not start (tried ${CHROME}) — set CHROME to its path`);
-  }
-  const ws = new WebSocket(page.webSocketDebuggerUrl);
-  let id = 0;
-  const pending = new Map();
-  ws.onmessage = (e) => {
-    const m = JSON.parse(e.data);
-    if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
-  };
-  await new Promise((r) => (ws.onopen = r));
-  const send = (method, params = {}) =>
-    new Promise((res) => { const i = ++id; pending.set(i, res); ws.send(JSON.stringify({ id: i, method, params })); });
-  await send("Page.enable");
-  await send("Runtime.enable");
-  const evaluate = async (expression) => {
-    const r = await send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
-    if (r.result?.exceptionDetails) {
-      throw new Error(String(r.result.exceptionDetails.exception?.description || "").slice(0, 300));
-    }
-    return r.result?.result?.value;
-  };
-  return { send, evaluate, close: () => { ws.close(); proc.kill(); } };
-}
+import { openApp } from "./cdp.mjs";
 
 // ---- the comparison ------------------------------------------------------
 // Both sides are read from the SAME page by calling the functions each module
@@ -149,15 +61,14 @@ const VISIBLE_OPT = `(() => {
   return { exilus: v("opt-exilus-sect"), arcanes: v("opt-arcanes-sect"), evolutions: v("opt-evos-sect") };
 })()`;
 
-const base = process.argv[2];
-const server = base ? null : await serve();
-const url = base || server.url;
-const b = await browser(9333);
+// `node scripts/check_parity.mjs http://host:port` points it at a running
+// server instead of the built `site/`.
+const app = await openApp({ base: process.argv[2] });
+const { send, evaluate, sleep } = app;
+const url = app.BASE;
 let bad = 0;
-try {
-  await b.send("Page.navigate", { url: url + "/" });
-  await sleep(13000);
-  const rows = await b.evaluate(PROBE);
+{
+  const rows = await evaluate(PROBE);
   for (const r of rows) {
     const notes = [];
     for (const [k, v] of Object.entries(r.axes)) {
@@ -165,12 +76,12 @@ try {
       notes.push(`${k} ${n}`);
     }
     // The two modules render their own visibility; read BOTH pages for real.
-    await b.send("Page.navigate", { url: `${url}/weapons/${r.weapon}` });
+    await send("Page.navigate", { url: `${url}/weapons/${r.weapon}` });
     await sleep(1500);
-    const shownBuilder = await b.evaluate(VISIBLE);
-    await b.send("Page.navigate", { url: `${url}/weapons/${r.weapon}/optimizer` });
+    const shownBuilder = await evaluate(VISIBLE);
+    await send("Page.navigate", { url: `${url}/weapons/${r.weapon}/optimizer` });
     await sleep(1500);
-    const shownOpt = await b.evaluate(VISIBLE_OPT);
+    const shownOpt = await evaluate(VISIBLE_OPT);
     const diffs = Object.keys(shownBuilder)
       .filter((k) => shownBuilder[k] !== shownOpt[k])
       .map((k) => `${k}: builder ${shownBuilder[k]} vs optimizer ${shownOpt[k]}`);
@@ -189,9 +100,8 @@ try {
     diffs.forEach((d) => console.log("    " + d));
     bad += diffs.length;
   }
-} finally {
-  b.close();
-  server?.close();
 }
-console.log(bad ? `\n${bad} mismatch(es)` : "\nbuilder and optimizer agree on every axis");
-process.exit(bad ? 1 : 0);
+// The table above already names each mismatch; `finish` only has to carry the
+// verdict and the exit code.
+app.failures = bad;
+await app.finish("builder and optimizer agree on every axis");

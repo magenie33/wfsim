@@ -17,30 +17,9 @@
 //   node scripts/check_benchmark_build.mjs
 //
 // Exits non-zero on the first failure.
-import { spawn } from "node:child_process";
-import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
-import { extname, join, resolve } from "node:path";
-const ROOT = resolve("site");
-const MIME = { ".html":"text/html",".js":"text/javascript",".css":"text/css",".json":"application/json",".wasm":"application/wasm",".svg":"image/svg+xml",".png":"image/png",".jpg":"image/jpeg",".ico":"image/x-icon" };
-const srv = createServer(async (q,s)=>{const p=decodeURIComponent(q.url.split("?")[0]);try{const b=await readFile(join(ROOT,p));s.writeHead(200,{"content-type":MIME[extname(p)]||"application/octet-stream","cache-control":"no-store"});s.end(b);}catch{s.writeHead(200,{"content-type":"text/html"});s.end(await readFile(join(ROOT,"index.html")));}});
-await new Promise(r=>srv.listen(0,"127.0.0.1",r));
-const BASE=`http://127.0.0.1:${srv.address().port}`, PORT=9519;
-const proc=spawn("C:/Program Files/Google/Chrome/Application/chrome.exe",[`--remote-debugging-port=${PORT}`,"--headless=new","--disable-gpu","--no-first-run",`--user-data-dir=${process.env.TEMP}/wfsim-benchbuild`,"about:blank"],{stdio:"ignore"});
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function cdp(path){for(let i=0;i<60;i++){try{const r=await fetch(`http://127.0.0.1:${PORT}${path}`);if(r.ok)return r.json();}catch{}await sleep(250);}throw new Error("no CDP");}
-const t=(await cdp("/json/list")).find(x=>x.type==="page");
-const ws=new WebSocket(t.webSocketDebuggerUrl);
-await new Promise(r=>ws.onopen=r);
-let id=0;const waits=new Map();
-ws.onmessage=e=>{const m=JSON.parse(e.data);if(waits.has(m.id)){waits.get(m.id)(m);waits.delete(m.id);}};
-const send=(method,params={})=>new Promise(r=>{const i=++id;waits.set(i,r);ws.send(JSON.stringify({id:i,method,params}));});
-const evaluate=async expr=>{const r=await send("Runtime.evaluate",{expression:expr,awaitPromise:true,returnByValue:true});if(r.result?.exceptionDetails)throw new Error(String(r.result.exceptionDetails.exception?.description||"").slice(0,900));return r.result?.result?.value;};
-let bad=0;
-const check=(what,ok,detail="")=>{console.log(`${ok?"  ok":"FAIL"}  ${what}${ok||!detail?"":"  — "+detail}`);if(!ok)bad++;};
-await send("Page.enable");
-await send("Page.navigate",{url:BASE});await sleep(12000);
-
+import { openApp } from "./cdp.mjs";
+const app = await openApp({ boot: 12000 });
+const { evaluate, check, sleep, send, BASE } = app;
 // THE REAL BOARD, not an injected one: the point of the cold path is that the
 // page RELOADS, and an in-memory injection does not survive that — `BOARD` is
 // fetched from /board.json on boot. So the check finds the weapon that actually
@@ -54,9 +33,8 @@ const WEAPON = await evaluate(`(async () => {
   const w = (META.weapons || []).find(x => x.id === id);
   return w ? { id, path: (w.name_en || w.name).replace(/ /g, '_') } : null;
 })()`);
-if (!WEAPON) { console.log("board is empty — nothing to check"); ws.close(); proc.kill(); srv.close(); process.exit(0); }
+if (!WEAPON) { await app.finish("board is empty — nothing to check"); }
 console.log(`[${WEAPON.id}]`);
-
 const SETUP = `(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   localStorage.clear();
@@ -72,7 +50,6 @@ const SETUP = `(async () => {
 })()`;
 const warm = await evaluate(SETUP);
 check("selecting a benchmark build plans its Forma", warm.pols > 0, `polarities ${warm.pols}, ${warm.cap}`);
-
 // THE COLD PATH: reload with that build already active. `initPresets` restores
 // it without the bar ever being clicked — which is the case that was broken.
 await send("Page.navigate",{url:BASE+"/weapons/"+WEAPON.path});await sleep(12000);
@@ -102,7 +79,6 @@ check("...so the build FITS", cold.used !== null && cold.total !== null && cold.
 check("...and the note names its benchmark", !!cold.noteShown && /Single Target|单体/.test(cold.noteText||""),
       cold.noteText);
 check("the cold and warm plans agree", cold.pols === warm.pols, `cold ${cold.pols} vs warm ${warm.pols}`);
-
 // ---- and it belongs to the BUILDER, not to every module ----
 const views = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -131,6 +107,4 @@ check("...and is ABSENT from the optimizer, which owns no build",
       views.optimizer.bar === false && views.optimizer.note === false && views.optimizer.own === false,
       JSON.stringify(views.optimizer));
 
-ws.close(); proc.kill(); srv.close();
-console.log(bad ? `\n${bad} failed` : "\nall good");
-process.exit(bad ? 1 : 0);
+await app.finish("all good");

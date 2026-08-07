@@ -17,64 +17,11 @@
 //      a FactionDamageOverride, which spent this whole project being parsed
 //      and dropped; the column is now what decides which elements a build
 //      wants, so the card has to say it and the api has to send it.
-import { spawn } from "node:child_process";
-import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
-import { extname, join, resolve } from "node:path";
+import { openApp } from "./cdp.mjs";
 
-const ROOT = resolve("site");
-const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
-  ".json": "application/json", ".wasm": "application/wasm", ".svg": "image/svg+xml",
-  ".png": "image/png", ".jpg": "image/jpeg", ".ico": "image/x-icon" };
-const srv = createServer(async (q, s) => {
-  const p = decodeURIComponent(q.url.split("?")[0]);
-  try {
-    const b = await readFile(join(ROOT, p));
-    s.writeHead(200, { "content-type": MIME[extname(p)] || "application/octet-stream", "cache-control": "no-store" });
-    s.end(b);
-  } catch {
-    s.writeHead(200, { "content-type": "text/html" });
-    s.end(await readFile(join(ROOT, "index.html")));
-  }
-});
-await new Promise((r) => srv.listen(0, "127.0.0.1", r));
-const BASE = `http://127.0.0.1:${srv.address().port}`;
-const PORT = 9491;
-const proc = spawn("C:/Program Files/Google/Chrome/Application/chrome.exe",
-  [`--remote-debugging-port=${PORT}`, "--headless=new", "--disable-gpu", "--no-first-run",
-    `--user-data-dir=${process.env.TEMP}/wfsim-enemies-check`, "about:blank"], { stdio: "ignore" });
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function cdp(path) {
-  for (let i = 0; i < 60; i++) {
-    try { const r = await fetch(`http://127.0.0.1:${PORT}${path}`); if (r.ok) return r.json(); } catch {}
-    await sleep(250);
-  }
-  throw new Error("no CDP");
-}
-const page = (await cdp("/json/list")).find((t) => t.type === "page");
-const ws = new WebSocket(page.webSocketDebuggerUrl);
-let id = 0; const pending = new Map();
-ws.onmessage = (e) => {
-  const m = JSON.parse(e.data);
-  if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
-};
-await new Promise((r) => (ws.onopen = r));
-const send = (method, params = {}) => new Promise((res) => {
-  const i = ++id; pending.set(i, res);
-  ws.send(JSON.stringify({ id: i, method, params }));
-});
-const evaluate = async (expr) => {
-  const r = await send("Runtime.evaluate", { expression: expr, awaitPromise: true, returnByValue: true });
-  if (r.result?.exceptionDetails) throw new Error(String(r.result.exceptionDetails.exception?.description || "").slice(0, 500));
-  return r.result?.result?.value;
-};
-await send("Page.enable"); await send("Runtime.enable");
-
-let failures = 0;
-const check = (name, ok, detail) => {
-  console.log(`${ok ? "  ok  " : "FAIL  "}${name}${ok || detail === undefined ? "" : `  — ${detail}`}`);
-  if (!ok) failures++;
-};
+// boot: 0 — this check boots once per LANGUAGE in its own loop below.
+const app = await openApp({ boot: 0 });
+const { evaluate, check, sleep, send, BASE } = app;
 
 // One pass per language. Everything asserted here has to hold in both: the
 // art is language-independent, and the wiki link must be.
@@ -233,6 +180,4 @@ for (const lang of ["en", "zh"]) {
   }
 }
 
-ws.close(); proc.kill(); srv.close();
-console.log(failures ? `\n${failures} FAILED` : "\nall good");
-process.exit(failures ? 1 : 0);
+await app.finish("all good");

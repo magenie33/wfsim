@@ -22,50 +22,9 @@
 //   4. NESTING. The mod picker's Sort control lives INSIDE `#mod-popover`, so
 //      opening it must not close the picker it belongs to. `closePopovers`
 //      takes the anchor and spares any popover containing it.
-import { spawn } from "node:child_process";
-import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
-import { extname, join, resolve } from "node:path";
-
-const ROOT = resolve("site");
-const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
-  ".json": "application/json", ".wasm": "application/wasm", ".svg": "image/svg+xml",
-  ".png": "image/png", ".jpg": "image/jpeg", ".ico": "image/x-icon" };
-const srv = createServer(async (q, s) => {
-  const p = decodeURIComponent(q.url.split("?")[0]);
-  try {
-    const b = await readFile(join(ROOT, p));
-    s.writeHead(200, { "content-type": MIME[extname(p)] || "application/octet-stream", "cache-control": "no-store" });
-    s.end(b);
-  } catch {
-    s.writeHead(200, { "content-type": "text/html" });
-    s.end(await readFile(join(ROOT, "index.html")));
-  }
-});
-await new Promise((r) => srv.listen(0, "127.0.0.1", r));
-const BASE = `http://127.0.0.1:${srv.address().port}`;
-const PORT = 9519;
-const proc = spawn("C:/Program Files/Google/Chrome/Application/chrome.exe",
-  [`--remote-debugging-port=${PORT}`, "--headless=new", "--disable-gpu", "--no-first-run",
-    `--user-data-dir=${process.env.TEMP}/wfsim-dd-check`, "about:blank"], { stdio: "ignore" });
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function cdp(p) {
-  for (let i = 0; i < 60; i++) {
-    try { const r = await fetch(`http://127.0.0.1:${PORT}${p}`); if (r.ok) return r.json(); } catch {}
-    await sleep(250);
-  }
-  throw new Error("no CDP");
-}
-const page = (await cdp("/json/list")).find((t) => t.type === "page");
-const ws = new WebSocket(page.webSocketDebuggerUrl);
-let id = 0; const pend = new Map();
-ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.id && pend.has(m.id)) { pend.get(m.id)(m); pend.delete(m.id); } };
-await new Promise((r) => (ws.onopen = r));
-const send = (m, p = {}) => new Promise((res) => { const i = ++id; pend.set(i, res); ws.send(JSON.stringify({ id: i, method: m, params: p })); });
-await send("Page.enable"); await send("Runtime.enable");
-await send("Page.navigate", { url: BASE });
-await sleep(11000);
-
+import { openApp } from "./cdp.mjs";
+const app = await openApp({ boot: 11000 });
+const { evaluate, check, sleep, send, BASE } = app;
 const script = String.raw`(async () => {
   const s = (ms) => new Promise(r => setTimeout(r, ms));
   const out = {};
@@ -73,7 +32,6 @@ const script = String.raw`(async () => {
   try {
     out.nativeSelects = [...document.querySelectorAll('select')]
       .map(x => ({ id: x.id || '(anon)', hidden: !x.offsetParent }));
-
     // The search affordance is DRAWN, not typed. An emoji is the one glyph the
     // platform renders in its own colour and its own shape, so it was the only
     // colour thing in a monochrome UI and looked different on every OS.
@@ -85,7 +43,6 @@ const script = String.raw`(async () => {
         tinted: st.backgroundColor,
       };
     });
-
     // the topbar language control — two options, so NO search bar
     const lang = document.getElementById('lang-select');
     out.langIsDD = !!(lang && lang.dataset.dd);
@@ -94,7 +51,6 @@ const script = String.raw`(async () => {
     out.langRows = [...pop().querySelectorAll('.opt')].map(r => r.dataset.v);
     out.langSearchShown = !document.getElementById('dd-addbar').hidden;
     document.body.click(); await s(200);
-
     // a data-k scenario field — the generic binding must still fire
     history.pushState({}, '', '/weapons/Burston_Prime/simulator'); route(); await s(3500);
     const dk = [...document.querySelectorAll('[data-dd][data-k]')][0];
@@ -118,7 +74,6 @@ const script = String.raw`(async () => {
       }
     }
     document.body.click(); await s(200);
-
     // the quick calc scenario — search FORCED, because the list grows
     history.pushState({}, '', '/weapons/Burston_Prime'); route(); await s(2500);
     const scen = document.getElementById('gp-scen');
@@ -129,7 +84,6 @@ const script = String.raw`(async () => {
       out.scenSearchShown = !document.getElementById('dd-addbar').hidden;
     }
     document.body.click(); await s(200);
-
     // NESTED — the mod picker's Sort is inside #mod-popover
     const slot = document.querySelector('#mod-slots .slot');
     slot.click(); await s(1500);
@@ -148,15 +102,9 @@ const r = await send("Runtime.evaluate", { expression: script, awaitPromise: tru
 const v = r.result?.result?.value;
 if (!v || v.threw) {
   console.log("FAIL  the page threw:", (v && v.threw) || r.result?.exceptionDetails?.exception?.description?.slice(0, 400));
-  ws.close(); proc.kill(); srv.close(); process.exit(1);
+  check("the page did not throw", false);
+  await app.finish("");   // unreachable: the check above already failed
 }
-
-let bad = 0;
-const check = (name, ok, detail) => {
-  console.log(`${ok ? "ok  " : "FAIL"}  ${name}${ok || detail === undefined ? "" : `  — ${detail}`}`);
-  if (!ok) bad++;
-};
-
 const visibleSelects = v.nativeSelects.filter((x) => !x.hidden || x.id !== "weapon");
 check("no native <select> is left on the page",
   visibleSelects.length === 0, JSON.stringify(v.nativeSelects));
@@ -188,6 +136,4 @@ check("a dropdown INSIDE the mod picker opens",
 check("...without closing the picker it belongs to",
   v.pickerStillOpen === true, `picker still open: ${v.pickerStillOpen}`);
 
-ws.close(); proc.kill(); srv.close();
-console.log(bad ? `\n${bad} failed` : "\nevery dropdown on the site is the same dropdown");
-process.exit(bad ? 1 : 0);
+await app.finish("every dropdown on the site is the same dropdown");
