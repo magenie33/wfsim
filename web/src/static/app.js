@@ -3765,7 +3765,23 @@ function snapshotScenario() {
   return JSON.parse(JSON.stringify(rest));
 }
 function applyScenario(st) {
-  sim = { ...sim, ...st, buffs: JSON.parse(JSON.stringify(st.buffs || {})) };
+  // ONTO THE DEFAULTS, NEVER ONTO THE FIGHT YOU ARE LEAVING.
+  //
+  // This used to spread over the live `sim`, so any field the incoming
+  // scenario does not mention kept the outgoing one's value — and a benchmark
+  // yaml mentions only what it has an opinion about. Tick Eximus on a copy of
+  // the official ruler, switch back to the official, and the official fight was
+  // now against an Eximus, because `single_target.yaml` never says `eximus:`
+  // (owner, 2026-08-07: 不是完美独立的吗). `invisible` did not leak in the same
+  // test only because that yaml happens to state it.
+  //
+  // A scenario is therefore applied onto a COMPLETE fight — the server's
+  // defaults — which makes every preset self-contained whatever it omits. It is
+  // the same rule AGENTS.md already states for weapons ("the live `sim` at that
+  // moment still belongs to the weapon you just left"), and the same reason: a
+  // collection's state may not be written from outside it, and reading the
+  // outgoing state is how it gets written from outside it.
+  sim = { ...defaultScenario(), ...st, buffs: JSON.parse(JSON.stringify(st.buffs || {})) };
   // A scenario preset is stored per weapon, so its weapon-scoped fields
   // (headshot %, form) are already right — stamp the marker so the re-seed in
   // `simFormOpts` does not overwrite a saved choice with a default.

@@ -203,10 +203,41 @@ fn main() {
     eprintln!("{seen} submissions, {refused} refused, {} rows", kept.len());
 
     // The runtime copy, keyed by weapon because that is how the page asks.
+    //
+    // MERGED, NOT OVERWRITTEN. One file holds every benchmark's rows (each row
+    // says which ruler it was measured under), and the scoring job runs this
+    // binary ONCE PER BENCHMARK — so writing the whole file each time meant the
+    // last benchmark in the loop erased the others. That was invisible while
+    // there was one, and became wrong the hour a second one landed.
+    //
+    // This benchmark's own rows are dropped first, so a re-run replaces rather
+    // than duplicates; every other benchmark's are carried through untouched,
+    // which is what lets one benchmark be re-scored on its own.
     if let Some(path) = std::env::args().nth(2) {
-        let mut by_weapon: std::collections::BTreeMap<&str, Vec<Value>> = Default::default();
+        let mut by_weapon: std::collections::BTreeMap<String, Vec<Value>> = Default::default();
+        if let Ok(prior) = std::fs::read_to_string(&path) {
+            if let Ok(Value::Object(map)) = serde_json::from_str::<Value>(&prior) {
+                for (weapon, rows) in map {
+                    let keep: Vec<Value> = rows
+                        .as_array()
+                        .map(|a| {
+                            a.iter()
+                                .filter(|r| {
+                                    let b = r.get("benchmark").and_then(Value::as_str).unwrap_or("");
+                                    family(b) != family(&bench_id)
+                                })
+                                .cloned()
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    if !keep.is_empty() {
+                        by_weapon.insert(weapon, keep);
+                    }
+                }
+            }
+        }
         for r in &kept {
-            by_weapon.entry(&r.weapon).or_default().push(json!({
+            by_weapon.entry(r.weapon.clone()).or_default().push(json!({
                 "benchmark": bench_id,
                 "source": "submissions",
                 "score": r.score,

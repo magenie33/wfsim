@@ -131,4 +131,36 @@ check("switching weapon clears the last one's optimizer ranking", !r.staleResult
 check("coming back restores THIS weapon's fight",
   r.backFight.level === r.aFight.level && r.backFight.dur === r.aFight.dur,
   JSON.stringify(r.backFight));
+// A SCENARIO IS APPLIED ONTO THE DEFAULTS, NOT ONTO THE ONE YOU ARE LEAVING.
+//
+// The checks above compare fields both scenarios declare, and that is what let
+// this through: a benchmark yaml states only what it has an opinion about, so a
+// field it OMITS used to keep the outgoing scenario's value. Ticking Eximus on
+// a copy of the official ruler and switching back left the official fight
+// against an Eximus — `single_target.yaml` never says `eximus:` (owner,
+// 2026-08-07). `invisible` survived the same test only because that yaml
+// happens to state it, which is why one field is checked and the other is the
+// control.
+const leak = await evaluate(`(async () => {
+  const s = (ms) => new Promise(r => setTimeout(r, ms));
+  localStorage.clear();
+  history.pushState({}, '', '/weapons/Torid/simulator'); route(); await s(3200);
+  const official = () => scenarioList().find((p) => p.builtin);
+  const yamlSays = (k) => Object.prototype.hasOwnProperty.call(official().state, k);
+  copyActiveScenario(); await s(1000);
+  sim.eximus = true; sim.invisible = true; markScenarioDirty(); await s(800);
+  const off = official();
+  activeScenario = off.name; applyScenario(off.state); await s(800);
+  return { onCopy: true, eximus: sim.eximus, invisible: sim.invisible,
+           yamlStatesEximus: yamlSays('eximus'), yamlStatesInvisible: yamlSays('invisible') };
+})()`);
+
+check("the ruler does not state Eximus — so it is the field that can leak",
+  leak.yamlStatesEximus === false, String(leak.yamlStatesEximus));
+check("an edit to a COPY does not follow you back to the official fight",
+  leak.eximus !== true, `eximus = ${JSON.stringify(leak.eximus)}`);
+check("...and the field the ruler DOES state was never at risk",
+  leak.invisible === false && leak.yamlStatesInvisible === true,
+  `invisible = ${JSON.stringify(leak.invisible)}`);
+
 await app.finish("every collection owns its own state");

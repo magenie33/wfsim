@@ -269,6 +269,23 @@ pub struct IncarnonCycle {
     /// LIVE bonus (Lethal Rearmament) rescales them by
     /// `(1 + bucket) / (1 + bucket + live)`.
     pub reload_bucket: f64,
+    /// Does the engagement OPEN already transformed, with a full charge
+    /// magazine?
+    ///
+    /// False, and that is the fight the benchmark runs. A full gauge is a
+    /// CONSUMABLE resource, and this project's own rule for those is that they
+    /// start at zero and are earned in the fight (docs/BUFFS.md) — the cycle
+    /// opening transformed was an exception to a rule already written down, and
+    /// it handed every Incarnon weapon a magazine it had not paid for.
+    ///
+    /// It matters most where the gauge cannot be refilled: on a board with no
+    /// weak-point hits, eight of the nine Incarnon forms can never charge, so
+    /// a free opening magazine was the only Incarnon damage they would ever
+    /// deal and it was pure gift (owner, 2026-08-07: 初始打完就歇菜).
+    ///
+    /// True is still a real way to play — you walk into the room having charged
+    /// on the last one — which is why it is a field rather than a deletion.
+    pub starts_primed: bool,
 }
 
 /// What happens when the target's health reaches zero.
@@ -1826,6 +1843,9 @@ impl DummyParams {
                 mode: frenzy_lock,
             }],
             cycle: Some(IncarnonCycle {
+                // The standard reading: earn the first transmute like every
+                // other consumable in this sim.
+                starts_primed: false,
                 base_form: Box::new(base_form),
                 // The gauge economy is DATA (the engine knows no weapon
                 // names): Dual Toxocyst 9 charges / 1.0 s revert / 2.35 s
@@ -3644,8 +3664,10 @@ pub fn run_once_traced(
     let mut bd_reload_expiry: f64 = params
         .bd_on_reload
         .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
-    // Incarnon cycle state: the run STARTS transformed with a full gauge.
-    let mut in_base_form = false;
+    // Incarnon cycle state. The engagement opens in the BASE form and earns
+    // its way in — see `IncarnonCycle::starts_primed` for why, and for the
+    // reading that opens transformed.
+    let mut in_base_form = params.cycle.as_ref().is_some_and(|c| !c.starts_primed);
     let mut charges = 0u32;
     let mut base_mag = params
         .cycle
@@ -8663,15 +8685,28 @@ mod tests {
         );
     }
 
+    /// THE CYCLE, EARNED — and the same fixture opening primed, for contrast.
+    ///
+    /// The engagement starts in the BASE form and pays for its first transmute
+    /// like everything else consumable in this sim. It used to open transformed
+    /// with a full charge magazine, which is a gift a fight should not make;
+    /// `starts_primed` keeps that reading available and this test pins both, so
+    /// the difference between them is a number rather than a memory.
     #[test]
     fn incarnon_cycle_alternates_forms_deterministically() {
         // Incarnon: 100 dmg, mag 2, 1/s. Base: 50 dmg, aim 100% head
         // (each pellet charges), 2 charges to fill, revert 0.5 s,
-        // transmute 1.0 s. Timeline over 10 s:
-        //   inc @0,1 | revert 2->2.5 | base @2.5,3.5 -> transmute ->4.5
-        //   inc @4.5,5.5 | revert 6.5->7 | base @7,8 -> transmute ->9
-        //   inc @9. Totals: 5x100 + 4x50 = 700; 9 shots; 2 transforms
-        //   (transmutes INTO the form only — the 2 reverts don't count).
+        // transmute 1.0 s.
+        //
+        // EARNED, over 10 s:
+        //   base @0,1 -> transmute -> inc @2,3 | revert 4->4.5
+        //   base @4.5,5.5 -> transmute -> inc @6.5,7.5 | revert 8.5->9
+        //   base @9. Totals: 4x100 + 5x50 = 650; 9 shots; 2 transforms
+        //   (transmutes INTO the form only — the reverts do not count).
+        //
+        // PRIMED is the old opening and the old total: 5x100 + 4x50 = 700, one
+        // more Incarnon shot and one fewer base shot, for a magazine nobody
+        // charged.
         let head = vec![BodyPart {
             name: "head".into(),
             aim_weight: 1.0,
@@ -8693,6 +8728,8 @@ mod tests {
             arcane: ArcaneFx::none(),
             body_parts: head,
             cycle: Some(IncarnonCycle {
+                // These fixtures test the EARNED cycle, which is the standard one.
+                starts_primed: false,
                 base_form: Box::new(base_form),
                 charge_on: crate::loadout::ChargeOn::WeakpointHits,
                 charges_to_fill: 2,
@@ -8703,14 +8740,23 @@ mod tests {
             ..no_status()
         };
         let s = monte_carlo(&p, 5, 9);
-        assert!(
-            (s.mean_damage - 700.0).abs() < 1e-9,
-            "dmg {}",
-            s.mean_damage
-        );
+        assert!((s.mean_damage - 650.0).abs() < 1e-9, "earned dmg {}", s.mean_damage);
         assert!((s.mean_shots - 9.0).abs() < 1e-9, "shots {}", s.mean_shots);
         assert!((s.mean_transforms - 2.0).abs() < 1e-9);
         assert_eq!(s.mean_reloads, 0.0);
+
+        // ...and the reading that walks in already charged.
+        let mut primed = p.clone();
+        if let Some(c) = primed.cycle.as_mut() {
+            c.starts_primed = true;
+        }
+        let q = monte_carlo(&primed, 5, 9);
+        assert!((q.mean_damage - 700.0).abs() < 1e-9, "primed dmg {}", q.mean_damage);
+        // The FREE MAGAZINE, priced: one Incarnon shot traded for one base
+        // shot, over an engagement this short. On a real weapon at a headshot
+        // rate that can never refill the gauge it is the whole of its Incarnon
+        // damage.
+        assert!(q.mean_damage > s.mean_damage, "the gift is worth something");
     }
 
     /// `charge_on` is WEAPON DATA, not a constant. It used to be documented in
@@ -8738,6 +8784,8 @@ mod tests {
             arcane: ArcaneFx::none(),
             body_parts: mono_body(1.0),
             cycle: Some(IncarnonCycle {
+                // These fixtures test the EARNED cycle, which is the standard one.
+                starts_primed: false,
                 base_form: Box::new(base_form.clone()),
                 charge_on,
                 charges_to_fill: 2,

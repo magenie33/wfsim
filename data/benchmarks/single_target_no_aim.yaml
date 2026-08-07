@@ -1,0 +1,86 @@
+# THE SECOND RULER — the same fight, played without aiming.
+#
+# `single_target.yaml` is the full definition and the reasoning behind every
+# term; this file is that fight with ONE term changed, and it says only what is
+# different. Read them together, not this one alone.
+#
+# WHY THIS ONE EXISTS. The first board resolves the headshot rate per weapon,
+# which comes out at 100% for anything a player holds — every shot into the
+# weak point, for three hundred seconds. That is a real skill ceiling and it is
+# the right thing to rank, but it is not how most of a weapon's damage gets
+# dealt, and it flatters exactly the weapons whose whole case is a weak-point
+# multiplier. A ranking that only exists at the ceiling cannot tell you which
+# gun to take when you are not playing at it.
+#
+# So this is the floor: nothing is aimed, no shot finds a head, and what is
+# left is the weapon (owner, 2026-08-07: 用来模拟无脑的情况).
+#
+# The two together are the interesting reading. A weapon that ranks high on
+# both is strong; one that ranks high here and low there is being carried by
+# something other than precision; the gap between a weapon's two positions is
+# how much of it is aim.
+#
+# A THIRD AT 50% WAS CONSIDERED AND DROPPED (owner, same day): a middle number
+# is not a way anyone plays, and a board whose terms nobody recognises is one
+# nobody can argue with. Two boards that each mean something beat three where
+# the middle one means "some of the time".
+id: single_target_no_aim
+
+name: "Single Target · No Aim · Thrax Centurion Lv 9999 SP · 300 s · KPM"
+
+# Identical to the first board's, and deliberately so — the whole point is that
+# only the aim differs, so a weapon's two rows are comparable.
+build:
+  mods: full
+  evolutions: full
+  arcanes: full
+  exilus: excluded
+
+scenario:
+  enemy: thrax_centurion
+  level: 9999
+  steel_path: true
+  duration: 300
+  runs: 100
+  seed: 12648430
+  metric: kpm
+  infinite_ammo: true
+
+  # THE TWO CHANGED TERMS, and they are two because "not aiming" and "hitting
+  # no heads" are different claims that both have to hold (owner, 2026-08-07).
+  #
+  # `headshot_pct` — `single_target.yaml` OMITS it and lets it resolve per
+  # weapon; here it is pinned to zero for everyone.
+  #
+  # A SENTINEL WEAPON SCORES IDENTICALLY ON BOTH BOARDS, and that is correct
+  # rather than a gap. Its companion picks its own targets and never aims for a
+  # head, so the first board already resolves it to 0 — this term describes the
+  # PLAYER's aim, and a sentinel does not have one. Two identical rows are the
+  # honest answer to "how much of this weapon is your aim": none of it.
+  headshot_pct: 0
+
+  # AND NO INCARNON, for every weapon but one — which falls out of the term
+  # above rather than being written here. Eight of the nine Incarnon forms
+  # charge their gauge on WEAK-POINT hits (`charge_on: weakpoint_hits`), so at
+  # zero they never fill it and the weapon is fired in its base form for the
+  # whole engagement. The Torid charges on DIRECT hits and keeps cycling. That
+  # is the game's own rule and the sim already obeys it — measured here:
+  # transforms 0 for the Laetum and Boar Prime at this headshot rate, 4 for the
+  # Torid.
+
+  # NOT AIMING. The stance, which is a separate fact from where the shots land:
+  # a player can hip-fire into a head and can aim down sights at a body. This
+  # board is the one where neither is happening, so the mods that read the
+  # stance — Argon Scope, Galvanized Crosshairs, Hydraulic Crosshairs, the
+  # Scope family's "while Aiming" crit — are all switched off with it.
+  #
+  # A SENTINEL IS EXEMPT and stays aiming: `tenno_from` forces it true for a
+  # companion weapon, because the stance is the player's and the companion does
+  # not share it. Its two rows therefore stay identical, for the same reason
+  # they do above.
+  aiming: false
+  invisible: false
+  airborne: false
+  wf_armor: 0
+  wf_energy: 0
+  wf_energy_pct: 0
