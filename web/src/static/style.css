@@ -123,7 +123,15 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 /* The simulator tab keeps the build preset bar (sim settings are preset
    content — the auto-saving preset bar must stay reachable) but hides
    builder's editing blocks. */
-.on-simulator #quick-calc,.on-simulator #mod-block,.on-simulator #arcane-block,.on-simulator #evo-block,.on-simulator #element-block,.on-simulator #stats-block{display:none}
+/* `#mode-block` is on this list because the MODE is part of the build, and the
+   simulator does not edit builds — it picks one and measures it (owner,
+   2026-08-07: "simulater那里只可以选preset，mode要进入下面的预览"). It was the
+   one editing control left on this tab, sitting above a read-only Build card
+   that already stated the same fact; two places to read one field, one of them
+   writable, is how a build gets edited somewhere that is not the builder.
+   NOT hidden on the optimizer, which still reads `mode` off this control and
+   has no scope axis of its own for it yet. */
+.on-simulator #quick-calc,.on-simulator #mode-block,.on-simulator #mod-block,.on-simulator #arcane-block,.on-simulator #evo-block,.on-simulator #element-block,.on-simulator #stats-block{display:none}
 
 /* Preset bar above the Mods block: chips CRUD in place. */
 .preset-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 12px;padding:8px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}

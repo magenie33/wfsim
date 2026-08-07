@@ -6308,14 +6308,18 @@ function renderSimBuild() {
   }).filter(Boolean);
   // HOW IT IS PLAYED, first, and READ-ONLY. It is part of the build, so the
   // simulator shows it and does not offer to change it — the fight owns the
-  // fight and the build owns this. Drawn only where the weapon has a choice to
-  // make; with one firing mode there is nothing here a reader did not know.
-  const wModes = (weaponInfo($("weapon").value) || {}).modes || [];
-  if (wModes.length > 1) {
-    parts.push(`<div class="sb-h">${tr("Mode")}</div>`);
-    parts.push(`<div class="sb-chips"><span class="sb-chip">${
-      escHtml(modeLabel(weaponInfo($("weapon").value), mode))}</span></div>`);
-  }
+  // fight and the build owns this. This card is now the ONLY place the mode
+  // appears on this tab: the builder's own control is hidden here, because two
+  // places to read one field with one of them writable is how a build gets
+  // edited somewhere that is not the builder.
+  //
+  // ALWAYS, including a weapon with one way to be fired — the same rule the
+  // builder's block carries ("one mode is stated, not offered"). It used to be
+  // drawn only where there was a choice, which made a summary of the build
+  // silently drop a field the build has.
+  parts.push(`<div class="sb-h">${tr("Mode")}</div>`);
+  parts.push(`<div class="sb-chips"><span class="sb-chip">${
+    escHtml(modeLabel(weaponInfo($("weapon").value), mode))}</span></div>`);
   parts.push(`<div class="sb-h">${tr("Mods")} · ${modChips.length}</div>`);
   parts.push(`<div class="sb-chips">${modChips.join("") || `<span class="sb-empty">${tr("no mods equipped")}</span>`}</div>`);
   if ((w.arcane_slots || 0) >= 1) {

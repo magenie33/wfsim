@@ -257,4 +257,43 @@ check("...while everything else about that fight still applies", clean.tookTheRe
   String(clean.tookTheRest));
 check("...and nothing writes one back out", clean.snapshotHasForm === false);
 
+// THE SIMULATOR PICKS A BUILD; IT DOES NOT EDIT ONE (owner, 2026-08-07:
+// "simulater那里只可以选preset，mode要进入下面的预览"). The mode is part of the
+// build, so the builder's control for it must not be on this tab — and the
+// read-only Build card must state it instead, or the tab has simply lost a
+// field. Both halves, because hiding the control alone would lose it.
+const tabs = await evaluate(`(async () => {
+  const s = (ms) => new Promise(r => setTimeout(r, ms));
+  const shown = (sel) => {
+    const el = document.querySelector(sel);
+    return el ? getComputedStyle(el).display !== 'none' : null;
+  };
+  const out = {};
+  // A weapon with a CHOICE of modes, so the control has something to offer.
+  history.pushState({}, '', '/weapons/Torid'); route(); await s(2200);
+  out.builderOffersIt = shown('#mode-block');
+  history.pushState({}, '', '/weapons/Torid/simulator'); route(); await s(2200);
+  out.simOffersIt = shown('#mode-block');
+  out.simPresetBar = shown('#preset-bar-' + 'builder-builds');
+  const card = document.querySelector('#sim-build-info');
+  out.cardText = card ? card.textContent : '';
+  out.cardSaysMode = out.cardText.indexOf(modeLabel(weaponInfo(document.getElementById('weapon').value), mode)) >= 0;
+  // ...and a weapon with ONE way to be fired still has that stated: a summary
+  // of the build may not silently drop a field the build has.
+  history.pushState({}, '', '/weapons/Ocucor/simulator'); route(); await s(2400);
+  const one = document.querySelector('#sim-build-info');
+  out.oneModeCard = one ? one.textContent : '';
+  out.oneModeStated = out.oneModeCard.indexOf(modeLabel(weaponInfo('ocucor'), mode)) >= 0;
+  return out;
+})()`);
+
+check("the builder offers the mode", tabs.builderOffersIt === true);
+check("...and the simulator does not", tabs.simOffersIt === false,
+  `#mode-block display on the simulator: ${tabs.simOffersIt}`);
+check("...it picks a build instead", tabs.simPresetBar === true);
+check("...and its read-only card states the mode", tabs.cardSaysMode === true,
+  JSON.stringify(tabs.cardText.slice(0, 120)));
+check("...including a weapon with only one", tabs.oneModeStated === true,
+  JSON.stringify(tabs.oneModeCard.slice(0, 120)));
+
 await app.finish("every collection owns its own state");
