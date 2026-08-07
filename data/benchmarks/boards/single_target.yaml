@@ -1938,11 +1938,11 @@ entries:
   - weapon: verglas_prime
     mode: base
     score: 1.0508239284930228
-    mods: [split_chamber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds]
+    mods: [heavy_caliber, split_chamber, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds]
   - weapon: verglas_prime
     mode: base
     score: 1.0508239284930228
-    mods: [heavy_caliber, split_chamber, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds]
+    mods: [split_chamber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds]
   - weapon: verglas_prime
     mode: base
     score: 0.9884859832488957
