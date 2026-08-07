@@ -21,6 +21,64 @@
        /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
   <link rel="stylesheet" href="/style.css" />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  <!-- A BLANK PAGE MUST NEVER BE SILENT.
+       Everything below the topbar is hidden until `init()` finishes, so until
+       the wasm has loaded and answered there is nothing on screen — and if
+       anything at all goes wrong, there is nothing on screen FOREVER: the only
+       error handler wrote into `.config-page`, which is hidden on the home
+       page. Two people reported "opening the link is blank" on 2026-08-07 and
+       neither could be reproduced here, which is exactly what a silent failure
+       looks like from the outside.
+       This script runs BEFORE app.js, so it also catches an app.js that fails
+       to PARSE — a browser too old for something in it never reaches any
+       handler that app.js installs, and that is the likeliest way a page is
+       blank on a device we do not have. -->
+  <script>
+    // NO BACKSLASH ESCAPES IN HERE, deliberately. This block is written and
+    // rewritten by tooling that passes it through several quoting layers, and a
+    // newline escape that does not survive one of them lands inside a string
+    // literal and stops the whole guard from parsing — which is exactly what
+    // happened the first time it was added, leaving the silent blank page it
+    // exists to prevent. NL is built from its code point instead.
+    (function () {
+      var NL = String.fromCharCode(10);
+      var shown = false;
+      function say(kind, detail) {
+        if (shown) return;
+        shown = true;
+        var el = document.createElement("div");
+        el.id = "boot-note";
+        el.setAttribute("style",
+          "position:fixed;left:0;right:0;top:0;z-index:9999;padding:14px 16px;" +
+          "font:14px/1.6 system-ui,sans-serif;background:#2a1416;color:#f3d9d9;" +
+          "border-bottom:1px solid #6b2b2b;white-space:pre-wrap;word-break:break-word");
+        el.textContent = kind + NL + NL + detail + NL + NL + navigator.userAgent;
+        function put() { document.body.appendChild(el); }
+        if (document.body) put();
+        else document.addEventListener("DOMContentLoaded", put);
+      }
+      window.__wfsimBootFailed = say;
+      window.addEventListener("error", function (e) {
+        var where = (e && e.filename) ? NL + e.filename + ":" + e.lineno : "";
+        say("WFSim could not start on this browser. / 这个浏览器打不开 WFSim。",
+            String((e && (e.message || (e.error && e.error.message))) || "script error") + where);
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        var r = e && e.reason;
+        say("WFSim failed while loading. / WFSim 加载时出错。",
+            String((r && (r.stack || r.message)) || r || "unknown"));
+      });
+      // ...and the case with no error at all: the app never finishes starting.
+      // Silence for twenty seconds is a failure whatever caused it, and a
+      // reader who can see this line can tell us what their network did.
+      setTimeout(function () {
+        if (window.__wfsimReady) return;
+        say("WFSim is still loading. / WFSim 还在加载。",
+            "It has not finished starting after 20 seconds — usually a slow or blocked network." +
+            NL + "启动超过 20 秒还没完成，通常是网络慢或被拦截。");
+      }, 20000);
+    })();
+  </script>
 </head>
 <body>
   <div id="seo-fallback">
@@ -30,6 +88,9 @@
     <p>Build, simulate and optimize this weapon at <a href="https://wfsim.app/">wfsim.app</a>.</p>
   </div>
   <script>document.getElementById('seo-fallback').remove()</script>
+  <!-- The first paint. Removed by `init()`; if it is still here, the app never
+       started and the banner above says why. -->
+  <div id="booting" class="booting">WFSim<span class="bdot">·</span><span class="bdot">·</span><span class="bdot">·</span></div>
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="/">WF<span>Sim</span></a>

@@ -812,7 +812,15 @@ function route() {
   // A SHARED LINK is answered before anything else on the page is drawn for
   // it, and the query is stripped afterwards so a refresh does not import the
   // same build a second time. `?b=` only ever ADDS — see importShare.
-  const shared = new URLSearchParams(location.search).get(SHARE_PARAM);
+  const shared = SHARE_ENABLED && new URLSearchParams(location.search).get(SHARE_PARAM);
+  // A LINK POSTED WHILE SHARING WAS ON still has to open something. The query
+  // is stripped either way, so a refresh cannot retry it; with sharing off the
+  // visitor gets the weapon's own page and a line saying why, which is a page
+  // rather than a blank.
+  if (!SHARE_ENABLED && new URLSearchParams(location.search).get(SHARE_PARAM)) {
+    history.replaceState(null, "", location.pathname);
+    setTimeout(() => presetToast(tr("sharing is off for now — this link opened the weapon instead")), 900);
+  }
   if (shared) {
     history.replaceState(null, "", location.pathname);
     // DRAW THE PAGE FIRST, then land the payload into it. Returning here
@@ -2010,6 +2018,26 @@ function renderRivenTools() {
 // table: the table would have to be append-only forever, and one reordering
 // would silently reinterpret every link ever posted.
 const SHARE_PARAM = "b";
+/// SHARING IS OFF (owner, 2026-08-07: 那个分享先关了，现在不可靠).
+///
+/// Two people reported a shared link opening blank on the same day and neither
+/// case could be reproduced here — the live site produced a link and read it
+/// back correctly under every condition tried. An unreproducible failure in the
+/// one feature whose whole job is to be pasted somewhere public is not a
+/// feature to leave running while it is investigated.
+///
+/// BOTH HALVES ARE OFF, and the import half matters more: a link already posted
+/// must not open blank. With this false an incoming `?b=` is dropped, the query
+/// is stripped, and the visitor lands on the weapon's own page with a line
+/// saying why — which is the worst case a posted link should ever reach.
+///
+/// Nothing about the codec is deleted. `sharePayload`/`decodeShare` and their
+/// tests stand, so turning this back to true is the whole of turning it back
+/// on. What it still needs before that: the payload does not carry the build's
+/// MODE, so a shared build is reproduced played the wrong way — the share rule
+/// is that a link reproduces the whole thing, and it stopped being true the day
+/// mode became part of a build.
+const SHARE_ENABLED = false;
 const SHARE_V_DEFLATE = "1";
 const SHARE_V_PLAIN = "0";
 
@@ -3924,7 +3952,7 @@ function renderPresetBar() {
     noun: "build",
     // Sharing belongs to the BUILD bar: what travels is the open build, plus
     // everything needed to reproduce its number.
-    extra: `<button class="pchip share">${escHtml(tr("share"))}</button>`,
+    extra: SHARE_ENABLED ? `<button class="pchip share">${escHtml(tr("share"))}</button>` : "",
     onExtra: (bar) => {
       const b = bar.querySelector(".share");
       if (b) b.onclick = (e) => { e.stopPropagation(); openSharePanel(bar); };
@@ -8773,4 +8801,24 @@ function addResult(res, btn) {
   if (btn) { btn.textContent = "✓ " + name; btn.disabled = true; }
 }
 
-init().catch((e) => { document.querySelector(".config-page").insertAdjacentHTML("afterbegin", `<div class="error">failed to load: ${e}</div>`); });
+// THE BOOT IS OVER, one way or the other, and the page must say which.
+//
+// This used to write a failure into `.config-page`, which is hidden on the home
+// page — so a boot that failed there left a blank screen and no reason, which
+// is what two people reported on 2026-08-07. The banner installed in the
+// document head is visible on every page and outlives an app.js that never
+// parsed; this hands it the reason and clears the placeholder on success.
+init()
+  .then(() => {
+    window.__wfsimReady = true;
+    const b = document.getElementById("booting");
+    if (b) b.remove();
+  })
+  .catch((e) => {
+    if (window.__wfsimBootFailed) {
+      window.__wfsimBootFailed(
+        "WFSim could not start. / WFSim 启动失败。",
+        String((e && (e.stack || e.message)) || e),
+      );
+    }
+  });

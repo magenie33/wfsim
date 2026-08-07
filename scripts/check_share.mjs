@@ -13,6 +13,39 @@
 import { openApp } from "./cdp.mjs";
 const app = await openApp({ boot: 12000 });
 const { evaluate, check, sleep, send, BASE } = app;
+
+// SHARING CAN BE SWITCHED OFF, and while it is, THIS is what has to hold: no
+// way to make a new link, and every link already posted still opens a page.
+// A blank is the one outcome a posted URL must never reach — it is what got the
+// feature switched off (owner, 2026-08-07).
+//
+// The round trip below runs again the moment the flag goes back to true, so
+// this file is the check for both states rather than a file to remember to
+// restore.
+const on = await evaluate("typeof SHARE_ENABLED === 'undefined' ? true : SHARE_ENABLED");
+if (!on) {
+  const off = await evaluate(`(async () => {
+    const s = (ms) => new Promise(r => setTimeout(r, ms));
+    localStorage.clear();
+    history.pushState({}, '', '/weapons/Torid'); route(); await s(2500);
+    const out = { button: !!document.querySelector('.pchip.share') };
+    // A link from when it was on: the query goes, a page arrives, and it says why.
+    history.pushState({}, '', '/weapons/Torid?b=1abcNOTAREALCODE'); route(); await s(2500);
+    out.query = location.search;
+    out.drew = document.body.innerText.trim().length;
+    out.onWeapon = !document.querySelector('.config-page').hidden;
+    await s(1200);
+    out.said = (document.getElementById('toast') || {}).textContent || '';
+    return out;
+  })()`);
+  check("no way to make a new link while sharing is off", off.button === false);
+  check("a link already posted still opens a page", off.drew > 400 && off.onWeapon === true,
+    `${off.drew} chars, weapon page ${off.onWeapon}`);
+  check("...the query is stripped, so a refresh cannot retry it", off.query === "");
+  check("...and it says why", /sharing is off|分享功能暂时关闭/.test(off.said), JSON.stringify(off.said));
+  await app.finish("sharing is off, and every posted link still opens a page");
+}
+
 // ---- the SENDER: a build with a riven and a non-default scenario ---------
 const sent = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
