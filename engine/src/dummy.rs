@@ -3050,7 +3050,9 @@ fn process_field_ticks(
     ap: &DummyParams,
     ctx: &FieldCtx,
     r: &mut RunResult,
-    rng: &mut Rng,
+    // A field tick decides BOTH a crit and its procs, so it takes the whole
+    // set of streams rather than one of them.
+    d: &mut crate::rng::Draws,
 ) {
     // Oldest due tick first, re-scanned each time: a tick's own procs change
     // what the NEXT tick sees, so the order has to be resolved live.
@@ -3068,7 +3070,7 @@ fn process_field_ticks(
         fields[i].next_tick += 1.0 / part.tick_rate;
         fields[i].ticks_left -= 1;
         let killed = field_tick(
-            &part, dmg_mult, at, ctx, debuffs, gal, arc, target, params, ap, r, rng,
+            &part, dmg_mult, at, ctx, debuffs, gal, arc, target, params, ap, r, d,
         );
         if killed {
             // Fresh individual: the clouds were stuck to the one that died, and
@@ -3106,7 +3108,7 @@ fn field_tick(
     params: &DummyParams,
     ap: &DummyParams,
     r: &mut RunResult,
-    rng: &mut Rng,
+    d: &mut crate::rng::Draws,
 ) -> bool {
     let sd = params.status_duration_mult;
     let mit = debuffs.mitigation(at, sd);
@@ -3119,7 +3121,7 @@ fn field_tick(
     // doubling, which is the crit-HEADSHOT rule.
     let cc_rel = ctx.cc_rel_mods + params.arcane.cc_rel;
     let cc = f.crit_chance + ctx.flat_crit + f.base_crit_chance * cc_rel;
-    let tier = upgrade_crit_tier(roll_crit_tier(cc, rng), ap.crit_tier_upgrade_chance, rng);
+    let tier = upgrade_crit_tier(roll_crit_tier(cc, &mut d.spine), ap.crit_tier_upgrade_chance, &mut d.spine);
     let cd_rel = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, at)
         + arc.cd_bonus(ap, at)
         + params.arcane.cd_rel;
@@ -3190,7 +3192,7 @@ fn field_tick(
         f.status_chance,
         &qvec,
         &params.target.status_immunities,
-        rng,
+        &mut d.status,
     );
     settle_procs(
         procs,
@@ -3204,7 +3206,7 @@ fn field_tick(
         ap,
         &mit,
         r,
-        rng,
+        &mut d.status,
         DEPTH_PROC,
     );
     false
@@ -3458,7 +3460,14 @@ pub fn run_once_traced(
     rng: &mut Rng,
     mut trace: Option<&mut Replay>,
 ) -> RunResult {
+    // THE ENGAGEMENT'S SEED, and the three streams derived from it. The master
+    // `rng` is only a seed source from here on: it is advanced once so the next
+    // run in a `monte_carlo` differs, and every roll below comes off `d`. See
+    // [`Draws`] for why the streams are split — in short, a build that changes
+    // only its status chance must not re-roll this engagement's crits.
     let started_at = rng.state();
+    let _ = rng.next_f64();
+    let d = &mut crate::rng::Draws::new(started_at);
     let mut next_frame = 0.0f64;
     let frame_dt = trace.as_ref().map_or(f64::INFINITY, |r| r.dt);
     let mut bar = BuffBar::new();
@@ -3823,7 +3832,7 @@ pub fn run_once_traced(
                 syndicate_ready_at = t + sy.cooldown_seconds;
                 fire_syndicate_radial(
                     &sy, &mut r, &mut target, &mut debuffs, &mut gal, &mut arc, params,
-                    rng, t,
+                    &mut d.status, t,
                 );
             }
         }
@@ -4079,7 +4088,7 @@ pub fn run_once_traced(
             // Stormburst: "+0.4 Multishot", flat — same reason Final Fusillade
             // sits here rather than in the bucket above.
             + buff_total!(ap, crate::loadout::BuffGrant::Multishot, t);
-        let rolled = ms_eff.floor() as u32 + rng.chance(ms_eff.fract()) as u32;
+        let rolled = ms_eff.floor() as u32 + d.spine.chance(ms_eff.fract()) as u32;
         // CONTINUOUS weapons MERGE. VERBATIM (wiki Multishot §Continuous
         // Weapons): "additional beams that hit the same target instead merge
         // into a singular damage tick. This combined tick has damage AND Status
@@ -4215,7 +4224,7 @@ pub fn run_once_traced(
             field_ap,
             &field_ctx,
             &mut r,
-            rng,
+            d,
         );
         // Secondary Encumber: at most ONE extra proc per instant — pellets
         // of one pull land simultaneously, so one roll per pull.
@@ -4312,7 +4321,7 @@ pub fn run_once_traced(
             // (multishot fills it faster), on-headshot buffs trigger from
             // any one pellet, and the reported headshot rate is
             // pellets/pellets. Do NOT "fix" this into a per-pull roll.
-            let part = pick_part(&params.body_parts, rng);
+            let part = pick_part(&params.body_parts, &mut d.spine);
             let cc_pellet = effective_cc
                 + if part.is_head {
                     // Weak-point-only crit chance is relative too, and it is
@@ -4336,7 +4345,7 @@ pub fn run_once_traced(
                 _ => cc_pellet,
             };
             let tier =
-                upgrade_crit_tier(roll_crit_tier(cc_pellet, rng), ap.crit_tier_upgrade_chance, rng);
+                upgrade_crit_tier(roll_crit_tier(cc_pellet, &mut d.spine), ap.crit_tier_upgrade_chance, &mut d.spine);
             // Headshot bonuses form an additive bracket that MULTIPLIES
             // the base multiplier (Enemy_Body_Parts, verbatim template:
             // 3 × (1 + Deadhead 30% + Target Acquired 75%) = 6.15x). A 1x
@@ -4453,9 +4462,9 @@ pub fn run_once_traced(
                         // both get it — an explosion left out would be an
                         // artifact of where the code was edited, not a rule.
                         let t2 = upgrade_crit_tier(
-                            roll_crit_tier(rcc, rng),
+                            roll_crit_tier(rcc, &mut d.spine),
                             ap.crit_tier_upgrade_chance,
-                            rng,
+                            &mut d.spine,
                         );
                         (r.damage.quantized(), t2)
                     }
@@ -4523,7 +4532,7 @@ pub fn run_once_traced(
                 // INSTANCE that did not crit (wiki: "multiplicative to base
                 // damage bonuses such as Hornet Strike"; "affects both
                 // forms", the explosions included).
-                let attrition = noncrit_mult(ap.noncrit_bonus, tier, rng);
+                let attrition = noncrit_mult(ap.noncrit_bonus, tier, &mut d.spine);
                 let raw = qtotal
                     * part_factor
                     * crit_mult
@@ -4618,7 +4627,7 @@ pub fn run_once_traced(
                         // a LOCKED buff earns it too, it just never loses it.
                         // EVERY buff that triggers on a headshot, including
                         // its own chance roll. One line for the family.
-                        bump_buffs!(crate::loadout::BuffTrigger::Headshot, t, rng);
+                        bump_buffs!(crate::loadout::BuffTrigger::Headshot, t, d.extra);
                         // Primary Crux: a weak-point HIT (not a kill), per
                         // PELLET. Bumped here, AFTER this pellet's status
                         // chance was read above — the hit that grants a stack
@@ -4664,7 +4673,7 @@ pub fn run_once_traced(
                     status_chance,
                     &qvec,
                     &params.target.status_immunities,
-                    rng,
+                    &mut d.status,
                 );
                 // HUNTER MUNITIONS: a critical hit rolls its OWN Slash status,
                 // per pellet, "not affected by the weapon's Status Chance, or
@@ -4702,7 +4711,7 @@ pub fn run_once_traced(
                         .target
                         .status_immunities
                         .contains(&DamageType::Slash)
-                    && rng.chance(ap.slash_on_crit)
+                    && d.extra.chance(ap.slash_on_crit)
                 {
                     procs.push(DamageType::Slash);
                 }
@@ -4724,7 +4733,7 @@ pub fn run_once_traced(
             if params.arcane.encumber_chance > 0.0
                 && !encumber_done
                 && !procs.is_empty()
-                && rng.chance(params.arcane.encumber_chance)
+                && d.extra.chance(params.arcane.encumber_chance)
             {
                 const POOL: [DamageType; 13] = [
                     DamageType::Impact,
@@ -4741,7 +4750,7 @@ pub fn run_once_traced(
                     DamageType::Gas,
                     DamageType::Radiation,
                 ];
-                let idx = (rng.next_f64() * POOL.len() as f64) as usize % POOL.len();
+                let idx = (d.extra.next_f64() * POOL.len() as f64) as usize % POOL.len();
                 procs.push(POOL[idx]);
                 encumber_done = true;
             }
@@ -4766,7 +4775,7 @@ pub fn run_once_traced(
                         } else {
                             1.0
                         };
-                    if rng.chance(chance) {
+                    if d.status.chance(chance) {
                         procs.push(pc.to);
                     }
                 }
@@ -4780,13 +4789,13 @@ pub fn run_once_traced(
             // and whose explosion are both plain arms the buff twice,
             // bounded by the stack cap.
             if tier == 0 && procs.is_empty() {
-                bump_buffs!(crate::loadout::BuffTrigger::PlainHit, t, rng);
+                bump_buffs!(crate::loadout::BuffTrigger::PlainHit, t, d.extra);
             }
             // STORMBURST: the condition is on the TARGET, read here where the
             // debuffs are in hand. Bumped AFTER this pull's multishot was
             // rolled, so the hit that earns a stack does not fire it — the same
             // rule every other stacking buff in this loop follows.
-            bump_status_buffs!(&debuffs, t, rng);
+            bump_status_buffs!(&debuffs, t, d.extra);
             // ...and ARM it for the next pellet. ONE roll per pellet that
             // landed at least one status — "Applying multiple status effects in
             // a single hit does not increase the chance for the effect" — and
@@ -4797,7 +4806,7 @@ pub fn run_once_traced(
             // above: a pellet that spends the buff can re-arm it with its own
             // status, which is what makes a high-status weapon hold it up.
             if let Some(sc) = params.super_crit_on_status {
-                if !procs.is_empty() && rng.chance(sc.chance) {
+                if !procs.is_empty() && d.extra.chance(sc.chance) {
                     super_crit_armed = true;
                 }
             }
@@ -4813,7 +4822,7 @@ pub fn run_once_traced(
                 ap,
                 &mit,
                 &mut r,
-                rng,
+                &mut d.status,
                 DEPTH_PROC,
             );
             }
@@ -4946,7 +4955,7 @@ pub fn run_once_traced(
         field_ap,
         &field_ctx,
         &mut r,
-        rng,
+        d,
     );
     // …then drain what is left up to the end of the engagement.
     process_ticks(
@@ -7260,6 +7269,7 @@ mod tests {
     /// about which part made the hit, so a direct hit, a lingering field tick
     /// and an EXPLOSION all take it — the explosion was left out at first,
     /// which was an artifact of where the code was edited and nothing else.
+
     #[test]
     fn the_vigilante_promotion_reaches_an_explosion_too() {
         let radial = crate::loadout::ResolvedRadial {
@@ -7299,12 +7309,21 @@ mod tests {
         // BIG crit, which is the exact statement — the damage ratio is not,
         // because this fixture's total is not all crit-scaled.
         assert!(off.mean_big_crit_rate < 1e-9, "no promotion, no big crits");
-        // ~0.5, not 1.0: the rate divides by ALL instances, and the
-        // zero-damage direct hit is one of them and never crits.
+        // EVERY crit is a big crit — an identity, not a threshold. This used to
+        // read `> 0.44` against a rate that is ~0.445 because the denominator
+        // counts all instances and the zero-damage direct hit never crits; the
+        // margin was 0.002 and the seed that produced it was the only evidence
+        // for it. Splitting the RNG streams moved this sample to 0.430 and the
+        // test failed on a fixture nothing was wrong with (old spread over ten
+        // seeds 0.438-0.457, new 0.430-0.453 — the same distribution).
+        //
+        // The claim was never about the rate. Promotion is certain here, so
+        // every crit is promoted, and that is exact at any seed.
+        assert!(on.mean_big_crit_rate > 0.0, "nothing crit at all");
         assert!(
-            on.mean_big_crit_rate > 0.44,
-            "every explosion crit promoted: {:.3}",
-            on.mean_big_crit_rate
+            (on.mean_big_crit_rate - on.mean_crit_rate).abs() < 1e-12,
+            "every explosion crit promoted: big {:.4} of crit {:.4}",
+            on.mean_big_crit_rate, on.mean_crit_rate
         );
         assert!(
             on.mean_damage > off.mean_damage * 1.3,
@@ -7919,14 +7938,20 @@ mod tests {
                 base_crit_chance: 0.0,
                 status_chance: 0.0,
                 forced_procs: Vec::new(),
-                // ONE body part at 1x: the radial stage consumes RNG draws,
-                // so a multi-part fixture would shift which part each shot
-                // lands on and drown the effect under aim variance.
+                // ONE body part at 1x, so no aim variance rides on top of the
+                // effect being measured.
                 body_parts: mono_body(1.0),
                 ..DummyParams::default()
             };
-            let r = run_once(&p, &mut Rng::new(4));
-            (r.sources.direct, r.sources.radial)
+            // AVERAGED, not one engagement. Adding the radial adds a real
+            // extra instance that makes its own crit decision, so the two
+            // builds do not share a sample path and one run of each is a coin
+            // flip — it used to be read as evidence, and it landed the right
+            // way up only because of the order the old single RNG stream
+            // happened to serve its numbers in. Over 200 engagements the
+            // mechanism is plain: 11867 -> 12842.
+            let s = monte_carlo(&p, 200, 4);
+            (s.source_damage.direct, s.source_damage.radial)
         };
         let (solo, no_blast) = mk(false);
         let (paired, blast) = mk(true);
@@ -10562,5 +10587,83 @@ mod buff_decay_family_tests {
         assert_eq!(s.current(0.4, 2.0), 3, "still capped at 3");
         // The oldest (expiring at 2.0) is gone; the youngest survives past it.
         assert_eq!(s.current(2.05, 2.0), 3, "the evicted one took no live stack with it");
+    }
+}
+
+/// A CHANGE THAT PAYS NOTHING MUST READ AS NOTHING.
+///
+/// The simulator is a sampler, so two builds are compared by running both and
+/// subtracting — and that only means anything if the seed means the same thing
+/// in both. It did not: every roll came off one stream, so a status chance high
+/// enough to land one more proc drew one more number to pick its element, and
+/// every crit and body part after it was a different draw. Two builds that
+/// differ in nothing that pays came back differing by noise, and the page
+/// printed that noise as a recommendation (owner, 2026-08-07).
+///
+/// IMPACT is the clean case. It pushes a stagger stack and nothing else — a
+/// single-target damage sim has no notion of an enemy being interrupted — so
+/// more Impact procs must be worth EXACTLY nothing.
+///
+/// COLD IS NOT that case, which is worth writing down because it was the one
+/// reported. A Cold status raises the crit damage the target TAKES (+10% on the
+/// first stack, +5% on each further, +100% while Frozen), so more Cold procs
+/// really are more damage. That is the buff-shaped effect the owner expected to
+/// be the only way status can pay — it is simply that Cold has one.
+#[cfg(test)]
+mod stream_independence_tests {
+    use super::*;
+
+    /// Pure Impact, ordinary crit, nothing on the build that reads status.
+    fn inert(status_chance: f64) -> DummyParams {
+        DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 100.0),
+            status_chance,
+            base_status_chance: status_chance,
+            base_crit_chance: 0.3,
+            crit_multiplier: 2.0,
+            multishot: 1.6,
+            base_multishot: 1.6,
+            duration_secs: 60.0,
+            ..DummyParams::default()
+        }
+    }
+
+    #[test]
+    fn more_status_that_pays_nothing_reads_as_nothing() {
+        let low = monte_carlo(&inert(0.1), 40, 12345);
+        let high = monte_carlo(&inert(0.9), 40, 12345);
+        // It really did change the fight...
+        assert!(
+            high.mean_procs > low.mean_procs * 2.0,
+            "the premise is wrong — procs {} vs {}",
+            low.mean_procs, high.mean_procs
+        );
+        // ...and none of it was worth a point of damage.
+        assert!(
+            (high.mean_damage - low.mean_damage).abs() < 1e-9,
+            "an Impact-only build paid {} for status it cannot spend (low {} high {})",
+            high.mean_damage - low.mean_damage, low.mean_damage, high.mean_damage
+        );
+        // The crits are the same crits, not merely the same average.
+        assert!(
+            (high.mean_crit_rate - low.mean_crit_rate).abs() < 1e-12,
+            "the crit stream moved: {} vs {}", low.mean_crit_rate, high.mean_crit_rate
+        );
+        assert!(
+            (high.mean_headshot_rate - low.mean_headshot_rate).abs() < 1e-12,
+            "the body-part stream moved: {} vs {}", low.mean_headshot_rate, high.mean_headshot_rate
+        );
+    }
+
+    /// ...and the split did not cost the sampler its randomness: the spine
+    /// still answers to the seed.
+    #[test]
+    fn the_spine_still_varies_with_the_seed() {
+        let a = monte_carlo(&inert(0.5), 20, 1);
+        let b = monte_carlo(&inert(0.5), 20, 2);
+        assert!(
+            (a.mean_damage - b.mean_damage).abs() > 1e-9,
+            "two seeds produced one fight"
+        );
     }
 }

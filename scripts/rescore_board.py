@@ -52,6 +52,17 @@ SUBMISSION_FIELDS = ("weapon", "mods", "arcanes", "evolutions", "exilus", "arcan
 
 
 def build_scorer() -> None:
+    """ALWAYS, not only when the binary is missing.
+
+    This tool exists to answer "is the board still what this engine scores",
+    and it used to skip the build whenever `wfsim-board.exe` already existed —
+    so it answered with whatever engine was compiled last time. On 2026-08-07 it
+    reported a clean board immediately after a change that moved every row,
+    because the binary predated the change. A tool that can be stale about
+    staleness is worse than no tool: it produces a confident "no drift".
+
+    `cargo build` is a no-op when nothing changed, so this costs a second.
+    """
     print("building the scorer…", flush=True)
     subprocess.run(
         ["cargo", "build", "--release", "--bin", "wfsim-board"],
@@ -80,8 +91,7 @@ def main() -> int:
     ap.add_argument("--write", action="store_true", help="rescore in place instead of only reporting")
     args = ap.parse_args()
 
-    if not SCORER.exists():
-        build_scorer()
+    build_scorer()
 
     drifted_total = 0
     for path in sorted(BOARDS.glob("*.yaml")):
