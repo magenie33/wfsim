@@ -30,6 +30,13 @@ name: "Single Target · No Aim · Thrax Centurion Lv 9999 SP · 300 s · KPM"
 
 # Identical to the first board's, and deliberately so — the whole point is that
 # only the aim differs, so a weapon's two rows are comparable.
+rules:
+  - "The same fight as the aimed board: one Thrax Centurion at level 9999 on Steel Path, for 300 seconds, scored in kills per minute."
+  - "Not aiming, and no shot finds a head. Two terms, because the stance and where the shots land are different facts — the stance is what gates mods like Argon Scope."
+  - "Which means no Incarnon, for all but one weapon: eight of the nine Incarnon forms charge their gauge on weak-point hits, so at this rate they never fill it. The Torid charges on direct hits and still cycles."
+  - "Read it against the aimed board rather than alone. A weapon high on both is strong; one high there and low here is being carried by precision, and the gap between its two positions is how much of it is your aim."
+  - "A sentinel weapon scores the same on both boards. Its companion picks its own targets and never aims for a head, so neither term is the player's to set — and none of that weapon is your aim."
+
 build:
   mods: full
   evolutions: full

@@ -88,6 +88,17 @@ pub struct Benchmark {
     /// The display name, which states the whole definition — see the yaml.
     /// Localized through the ordinary i18n overlay, never in this file.
     pub name: String,
+    /// THE RULES, in prose, for the page that publishes them.
+    ///
+    /// The `name` states the terms in one line so a rank is quotable; this is
+    /// the same standard at length, for a reader deciding whether the ranking
+    /// answers their question. Consumed data rather than narrative — it is
+    /// rendered — which is why it is a field and not the comments around it.
+    ///
+    /// A LIST, one claim per entry: it translates as sentences rather than as
+    /// a wall, and the page can lay it out.
+    #[serde(default)]
+    pub rules: Vec<String>,
     /// What a build must look like to be admitted. Absent = admit anything
     /// legal, which is a real answer for a benchmark that wants one.
     #[serde(default)]
@@ -229,16 +240,34 @@ mod tests {
         // term of the claim, not a detail.
         assert_eq!(s("infinite_ammo").and_then(|v| v.as_bool()), Some(true));
         assert_eq!(s("metric").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("kpm"));
-        assert_eq!(s("form").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("default"));
+        // AND NO FORM. How a weapon is played belongs to the ENTRANT, not to
+        // the ruler: a Torid through its Incarnon cycle and a Torid that never
+        // transmutes are two rows here, and a benchmark that pinned one could
+        // rank only that one. `form: default` used to sit in the yaml and read
+        // as neutral — it resolved to the cycle on a weapon that has one, so
+        // the board ranked every Incarnon weapon at its ceiling and could not
+        // be asked for anything else.
+        assert_eq!(s("form"), None, "a ruler may not say how a weapon is played");
         // Pinned, not defaulted: a published number has to be reproducible by
         // whoever doubts it.
         assert_eq!(s("seed").and_then(|v| v.as_u64()), Some(0xC0FFEE));
 
-        // OMITTED ON PURPOSE, and the omission is the policy — see the yaml.
-        // Pinning either one here would put a sentinel weapon on the board at a
-        // headshot rate it cannot reach, or assert buff stacks the fight never
-        // handed out.
-        assert!(s("headshot_pct").is_none(), "resolved per weapon, not pinned");
+        // AIMED, AND EVERY SHOT ON THE WEAK POINT — both pinned, because they
+        // are terms of this board's claim and a reader should find them in the
+        // ruler rather than in a default. They are two different facts: the
+        // stance gates mods like Argon Scope, the rate is where the shots land.
+        //
+        // This was omitted for a long time on the argument that pinning it
+        // would rank a SENTINEL at a headshot rate it cannot reach. That is
+        // still true and it is now handled where it belongs: `parse_fight`
+        // pins a sentinel's rate at 0 whatever the request says, the same way
+        // `tenno_from` pins its stance. A weapon fact is not a benchmark's to
+        // state, and a benchmark's terms are not a default's to hide.
+        assert_eq!(s("headshot_pct").and_then(|v| v.as_f64()), Some(100.0));
+        assert_eq!(s("aiming").and_then(|v| v.as_bool()), Some(true));
+        // ...and buffs stay omitted, which IS the policy: each opens where
+        // docs/BUFFS.md says, and pinning them would assert stacks the fight
+        // never handed out.
         assert!(s("buffs").is_none(), "each buff opens where docs/BUFFS.md says");
     }
 }

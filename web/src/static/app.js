@@ -942,16 +942,25 @@ const benchList = () => META.benchmarks || [];
 const benchCurrent = () =>
   benchList().find((b) => b.id === benchPick) || benchList()[0] || null;
 
-/// Every weapon's BEST score under `id`, or null where nobody has submitted.
-/// Read off the rows the page already has; a weapon with no row is not an
-/// error, it is the invitation.
-const benchBest = (id) => {
-  const out = {};
+/// HOW A WEAPON WAS PLAYED, in words. The ids are the vocabulary a submission
+/// and a board row use; these are what a reader sees.
+const MODE_LABEL = { base: "Base form", cycle: "Incarnon cycle", alternate: "Alt fire" };
+const modeLabel = (id) => tr(MODE_LABEL[id] || id);
+
+/// One entry per WEAPON AND MODE: its best row under `id`, or null where nobody
+/// has submitted. A weapon with no row is not an error, it is the invitation —
+/// and a weapon with a row for one mode and none for the other is the sharpest
+/// version of it, because the missing one is a question somebody can answer
+/// this afternoon.
+const benchEntries = (id) => {
+  const out = [];
   for (const w of META.weapons || []) {
-    const rows = (BOARD[w.id] || []).filter((r) => r.benchmark === id);
-    out[w.id] = rows.length
-      ? rows.reduce((a, r) => (r.score > a.score ? r : a), rows[0])
-      : null;
+    for (const mode of w.modes || ["base"]) {
+      const rows = (BOARD[w.id] || [])
+        .filter((r) => r.benchmark === id && (r.mode || "base") === mode);
+      out.push({ w, mode,
+        row: rows.length ? rows.reduce((a, r) => (r.score > a.score ? r : a), rows[0]) : null });
+    }
   }
   return out;
 };
@@ -974,25 +983,39 @@ function renderBenchBoard() {
     });
   }
   if (!cur) { box.innerHTML = ""; return; }
-  const best = benchBest(cur.id);
+  // THE RULES, under the ruler that makes them. Collapsed by default: a reader
+  // who wants the ranking should not have to scroll a standard to reach it, and
+  // one who doubts a row should not have to leave the page to check the terms.
+  const rules = $("bench-rules");
+  if (rules) {
+    const rs = cur.rules || [];
+    rules.innerHTML = !rs.length ? "" : `<details class="brules">
+      <summary>${escHtml(tr("What this benchmark measures"))}</summary>
+      <ul>${rs.map((x) => `<li>${escHtml(tr(x))}</li>`).join("")}</ul>
+    </details>`;
+  }
+  const entries = benchEntries(cur.id);
   // SORTED BY THE BENCHMARK'S OWN METRIC — it says which one it is measured in
   // (`scenario.metric`), and a second ruler may answer differently. Unmeasured
   // weapons sort last whatever the metric: a zero is not a low score, it is no
   // score, and putting it among the low ones would read as one.
   const metric = ((cur.scenario || {}).metric || "kpm").toUpperCase();
-  const rows = (META.weapons || [])
-    .map((w) => ({ w, row: best[w.id] }))
+  const rows = entries
+    .slice()
     .sort((a, b) => (b.row ? b.row.score : -1) - (a.row ? a.row.score : -1));
   const measured = rows.filter((r) => r.row).length;
   box.innerHTML = `
     <div class="bench-meta">${escHtml(
-      tr("{n} of {t} weapons measured · ranked by {m}")
+      tr("{n} of {t} entries measured · ranked by {m}")
         .replace("{n}", measured).replace("{t}", rows.length).replace("{m}", metric))}</div>
-    <div class="bench-rows">${rows.map(({ w, row }, i) => `
+    <div class="bench-rows">${rows.map(({ w, mode, row }, i) => `
       <a class="brow${row ? "" : " none"}" href="/weapons/${wikiSlug(w)}">
         <span class="brank">${row ? `#${i + 1}` : "—"}</span>
         ${imgTag(IMG(w.image), "bimg")}
-        <span class="bname">${escHtml(w.name)}</span>
+        <span class="bname">${escHtml(w.name)}${
+          (w.modes || []).length > 1
+            ? ` <span class="bmode">${escHtml(modeLabel(mode))}</span>`
+            : ""}</span>
         <span class="bscore">${row
           ? escHtml(row.shown != null ? String(row.shown) : row.score.toFixed(4))
           : `<span class="bnone">${escHtml(tr("not measured"))}</span>`}</span>

@@ -148,7 +148,26 @@ ui:
   "One ruler, every weapon. A score is a build measured by this engine under the benchmark's own pinned terms — nobody submits a number. An empty row is a weapon nobody has measured yet.": 一把尺子，量全部武器。榜上的分数是由本引擎在该基准自己钉死的条件下跑出来的——没有人提交数字。空着的一行，就是还没有人测过的武器。
   # QUOTED: the value opens with a placeholder, and an unquoted `{` is a
   # flow mapping to YAML — it made this whole file unparseable.
-  "{n} of {t} weapons measured · ranked by {m}": "{t} 把武器中已测 {n} 把 · 按 {m} 排名"
+  "{n} of {t} entries measured · ranked by {m}": "{t} 个参赛位中已测 {n} 个 · 按 {m} 排名"
+  # How a weapon is PLAYED — the entrant's other half.
+  "Base form": 基础形态
+  "What this benchmark measures": 这个基准到底在量什么
+  # THE RULES, one claim per line. Ours, not DE's — so these are translated
+  # rather than transcribed.
+  "One Thrax Centurion at level 9999 on Steel Path, for 300 seconds. A single target, so nothing here rewards clearing a room.": 一只凶魂百夫长，9999 级，钢铁之路，打 300 秒。单体目标，所以清场能力在这里换不到任何分数。
+  "Aimed, with every shot on the weak point. This is the ceiling a weapon reaches in skilled hands — the companion board removes the aim and measures the floor.": 全程瞄准，每一枪都打在弱点上。这是一把武器在熟练玩家手里的上限——另一个榜把瞄准拿掉，量的是下限。
+  "Scored in kills per minute, counting the fraction of the current target already gone. A weapon that removes 3% of one Thrax in 300 seconds scores 0.03 and still has a rank.": 以每分钟击杀计分，并计入当前目标已被打掉的那一部分。一把 300 秒只能削掉一只凶魂 3% 的武器得 0.03 分，它仍然有名次。
+  "Every main slot filled, every evolution tier the weapon has, every arcane seat it has. Exilus is never counted.": 主槽位全部装满，武器有几层进化就点几层，有几个赋能位就装几个。Exilus 一律不计。
+  "Ammo pickups are modelled, because a real player is being resupplied over five minutes. A weapon that cannot be resupplied runs on its real reserve.": 弹药拾取是计入的，因为五分钟里真实玩家一直在补给。而无法补给的武器，用的就是它真实的备弹。
+  "How the weapon is PLAYED belongs to the entry, not to this ruler: a weapon with an Incarnon form is ranked twice, once through its cycle and once never transmuting.": 武器怎么打属于参赛条目，而不属于这把尺子：有灵化形态的武器会上榜两次，一次走灵化循环，一次全程不转变。
+  "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above — so any row can be reproduced exactly by anyone with the repo.": 没有人提交数字。提交的是一套配装，分数由本引擎在上面钉死的随机种子下算出——所以任何一行，任何拿到仓库的人都能一模一样地复现。
+  "The same fight as the aimed board: one Thrax Centurion at level 9999 on Steel Path, for 300 seconds, scored in kills per minute.": 和瞄准榜是同一场仗：一只凶魂百夫长，9999 级，钢铁之路，300 秒，按每分钟击杀计分。
+  "Not aiming, and no shot finds a head. Two terms, because the stance and where the shots land are different facts — the stance is what gates mods like Argon Scope.": 不瞄准，且没有一枪打中头部。这是两个条件，因为“姿势”和“子弹落点”是两件不同的事——像氩晶瞄具这类 mod 卡的是姿势。
+  "Which means no Incarnon, for all but one weapon: eight of the nine Incarnon forms charge their gauge on weak-point hits, so at this rate they never fill it. The Torid charges on direct hits and still cycles.": 这也意味着除一把之外都进不了灵化：九个灵化形态里有八个靠弱点命中充能，在这个爆头率下永远填不满。托里德靠直接命中充能，照常循环。
+  "Read it against the aimed board rather than alone. A weapon high on both is strong; one high there and low here is being carried by precision, and the gap between its two positions is how much of it is your aim.": 请和瞄准榜对照着看，不要单独看。两个榜都靠前的是真强；那边高、这边低的，是被你的准头抬着的——两个名次之间的差距，就是这把武器有多少是你的瞄准。
+  "A sentinel weapon scores the same on both boards. Its companion picks its own targets and never aims for a head, so neither term is the player's to set — and none of that weapon is your aim.": 守护型武器在两个榜上分数完全相同。它的守护自己选目标、从不瞄头，所以这两个条件都不归玩家管——这把武器里没有一分是你的瞄准。
+  "Incarnon cycle": 灵化循环
+  "Alt fire": 次要开火
   "not measured": 尚未测量
   "not modelled yet": 尚未建模
   # The card WORKS and one named effect on it does not — never "尚未建模",

@@ -740,6 +740,8 @@ impl PlayMode {
 /// One way this weapon can be played, and whether a ruler may rank it.
 #[derive(Debug, Clone, Copy)]
 pub struct WeaponPlayMode {
+    /// The mode's own id, and the only name a submission or a board row uses.
+    pub id: &'static str,
     pub mode: PlayMode,
     /// The form entry this mode fires — for a cycle, the one it returns to.
     pub weapon_id: &'static str,
@@ -763,12 +765,33 @@ pub struct WeaponPlayMode {
 /// gauge-switched weapon that is not an Incarnon — Mausolon's alt-fire is
 /// charged by kills, and it will get its cycle from declaring a gauge and
 /// nothing else (owner, 2026-08-07).
+impl WeaponPlayMode {
+    /// The `form` a fight request must carry to be played this way.
+    ///
+    /// The fight parser's vocabulary is form KINDS plus the one policy word:
+    /// `incarnon_cycle` runs the cycle, and anything else names a single form
+    /// to fire. So a mode is translated at that boundary and nowhere else —
+    /// which is what lets "played without ever transmuting" be ASKED FOR at
+    /// all, where `form: default` could only ever mean "however it is normally
+    /// played" and resolved to the cycle behind your back.
+    pub fn form(&self) -> &'static str {
+        match self.mode {
+            PlayMode::Cycle => "incarnon_cycle",
+            // The single form this mode fires, named by its KIND — the Cernos
+            // Prime's `base` mode is its CHARGED form, because that is the one
+            // the arsenal gives you.
+            _ => spec(self.weapon_id).map_or("default", |s| s.form_kind().id()),
+        }
+    }
+}
+
 pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
     let forms = forms_of(weapon_id);
     let Some(default) = forms.iter().find(|f| f.is_default).or(forms.first()) else {
         return Vec::new();
     };
     let mut out = vec![WeaponPlayMode {
+        id: PlayMode::Base.id(),
         mode: PlayMode::Base,
         weapon_id: default.weapon_id,
         other_id: None,
@@ -780,6 +803,7 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
         let gauged = spec(alt.weapon_id).is_some_and(|s| s.incarnon.is_some());
         if gauged {
             out.push(WeaponPlayMode {
+                id: PlayMode::Cycle.id(),
                 mode: PlayMode::Cycle,
                 weapon_id: default.weapon_id,
                 other_id: Some(alt.weapon_id),
@@ -787,6 +811,7 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
             });
         }
         out.push(WeaponPlayMode {
+            id: PlayMode::Alternate.id(),
             mode: PlayMode::Alternate,
             weapon_id: alt.weapon_id,
             other_id: None,
@@ -2837,6 +2862,25 @@ mod play_mode_tests {
                 w.id
             );
         }
+    }
+
+    /// A MODE IS TRANSLATED AT ONE BOUNDARY, into the fight parser's own
+    /// vocabulary — form KINDS, plus the single policy word for the cycle.
+    #[test]
+    fn each_mode_names_the_form_a_fight_would_have_to_run() {
+        let f = |w: &str, m: PlayMode| {
+            play_modes(w).into_iter().find(|x| x.mode == m).map(|x| x.form())
+        };
+        // The gauge weapon: never transmute, or run the cycle.
+        assert_eq!(f("torid", PlayMode::Base), Some("base"));
+        assert_eq!(f("torid", PlayMode::Cycle), Some("incarnon_cycle"));
+        assert_eq!(f("torid", PlayMode::Alternate), Some("incarnon"));
+        // The free one, where `base` mode is the CHARGED form because that is
+        // what the arsenal hands you — the mode is named for its role, not for
+        // the form's own name.
+        assert_eq!(f("cernos_prime", PlayMode::Base), Some("charged"));
+        assert_eq!(f("cernos_prime", PlayMode::Alternate), Some("base"));
+        assert_eq!(f("cernos_prime", PlayMode::Cycle), None);
     }
 
     /// The two weapons the owner named, spelled out — a derivation is worth

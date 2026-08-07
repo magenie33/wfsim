@@ -985,6 +985,13 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
   color:var(--text-2);font-size:12px;cursor:pointer;font-family:inherit}
 .bchip:hover{color:var(--text)}
 .bchip.sel{background:var(--line);color:var(--text);font-weight:600}
+.brules{margin:0 0 12px;border:1px solid var(--line);border-radius:9px;padding:8px 12px}
+.brules summary{cursor:pointer;color:var(--text-2);font-size:12px;list-style:none}
+.brules summary::-webkit-details-marker{display:none}
+.brules summary::before{content:"▸ ";color:var(--text-2)}
+.brules[open] summary::before{content:"▾ "}
+.brules ul{margin:8px 0 2px;padding-left:18px}
+.brules li{margin:5px 0;color:var(--text-2);font-size:12.5px;line-height:1.6;max-width:78ch}
 .bench-meta{margin-bottom:8px;color:var(--text-2);font-size:12px}
 .bench-rows{display:flex;flex-direction:column;gap:2px}
 .brow{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:8px;
@@ -993,6 +1000,10 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .brow .brank{flex:0 0 44px;color:var(--text-2);font-size:12px;font-variant-numeric:tabular-nums}
 .brow .bimg{flex:0 0 auto;width:34px;height:34px;object-fit:contain}
 .brow .bname{flex:1 1 auto;font-size:13px}
+/* Only drawn where the weapon HAS a second way to be played — a lone "base"
+   tag on a weapon with one form is noise about a choice nobody has. */
+.brow .bmode{margin-left:6px;padding:1px 6px;border:1px solid var(--line);border-radius:6px;
+  color:var(--text-2);font-size:11px;white-space:nowrap}
 .brow .bscore{flex:0 0 auto;font-size:13px;font-variant-numeric:tabular-nums}
 /* An unmeasured weapon is not a low score — it is the invitation, and it reads
    as one rather than as a zero at the bottom of a ranking. */

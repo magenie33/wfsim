@@ -245,6 +245,11 @@ def write_board() -> None:
         for e in b.get("entries") or []:
             row = {
                 "benchmark": b.get("benchmark"),
+                # HOW the weapon was played. Part of the entrant's identity, so
+                # a row that loses it is filed under the wrong one — dropping it
+                # here put every Torid row under `base` and left the cycle it
+                # was actually measured in showing as unmeasured.
+                "mode": e.get("mode"),
                 "source": b.get("source", ""),
                 # FLOAT, always: the yaml writes a whole score as `10` and the
                 # scorer emits `10.0` from an f64. Two spellings of one number

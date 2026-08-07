@@ -678,6 +678,16 @@ pub fn meta_json() -> Value {
                 // two means the axis does not exist for it and nothing should
                 // offer a choice - the same rule every other axis follows.
                 "deployments": wfsim_engine::weapons_data::deployments_of(&w.id),
+                // HOW THIS WEAPON CAN BE PLAYED, and which of those a ruler may
+                // rank. Derived from its forms and one question about the second
+                // one — does entering it cost a gauge you have to earn — so a
+                // weapon added later needs no entry anywhere for the board to
+                // hold it twice. See `weapons_data::play_modes`.
+                "modes": wfsim_engine::weapons_data::play_modes(&w.id)
+                    .iter()
+                    .filter(|m| m.sustainable)
+                    .map(|m| m.id)
+                    .collect::<Vec<_>>(),
                 // TWO FACTS ABOUT AMMO, and they were one until 2026-08-04.
                 // `has_reserve` is whether there is a pool behind the magazine
                 // at all — false only for a sentinel weapon ("Ammo Max: ∞ /
@@ -984,6 +994,11 @@ pub fn meta_json() -> Value {
         "benchmarks": wfsim_engine::benchmarks_data::all().iter().map(|b| json!({
             "id": b.id,
             "name": b.name,
+            // The standard AT LENGTH — the name is the same thing in one line.
+            // A reader deciding whether a ranking answers their question needs
+            // the terms, and a term that only exists in a yaml comment is one
+            // nobody can check the board against.
+            "rules": b.rules,
             // WHAT THIS RULER ADMITS, so the page can say what a build is still
             // missing instead of letting the server refuse in silence. It rides
             // with the benchmark because it IS the benchmark's — a second ruler
@@ -3140,7 +3155,21 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     let enemy_id = get_str(v, "enemy", "thrax_centurion");
     let level = get_u32(v, "level", 9999).clamp(1, 9999);
     let steel_path = get_bool(v, "steel_path", true);
-    let headshot_pct = get_f64(v, "headshot_pct", default_headshot_pct(info));
+    // A SENTINEL'S HEADSHOT RATE IS NOT THE PLAYER'S TO SET. Its companion
+    // picks its own targets and never aims for a head, so this is 0 whatever
+    // the request says — the same shape as `tenno_from` forcing its stance.
+    //
+    // It used to be only a DEFAULT, which was enough while no benchmark pinned
+    // the field; the aimed board pins 100 now, and without this a sentinel
+    // would be ranked at a headshot rate it cannot reach. Two boards that
+    // differ only in the player's aim therefore give a sentinel the same score
+    // twice, which is the honest answer to "how much of this weapon is your
+    // aim": none of it.
+    let headshot_pct = if info.sentinel {
+        0.0
+    } else {
+        get_f64(v, "headshot_pct", default_headshot_pct(info))
+    };
     let tenno = tenno_from(v, info);
     // INFINITE AMMO, and it is the DEFAULT for every weapon (user, 2026-08-01).
     // The sim models no ammo PICKUPS, so a finite reserve is the pessimistic

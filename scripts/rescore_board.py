@@ -48,7 +48,8 @@ SCORER = ROOT / "target" / "release" / ("wfsim-board.exe" if sys.platform == "wi
 # the whole point of the board (`wfsim-board`'s own header: "nobody's number is
 # trusted because nobody's number is asked for"), so rebuilding submissions
 # from published rows means dropping exactly the field we are re-deriving.
-SUBMISSION_FIELDS = ("weapon", "mods", "arcanes", "evolutions", "exilus", "arcane_rank", "rivens")
+SUBMISSION_FIELDS = ("weapon", "mode", "mods", "arcanes", "evolutions", "exilus",
+                     "arcane_rank", "rivens")
 
 
 def build_scorer() -> None:
@@ -80,6 +81,9 @@ def key(entry: dict) -> tuple:
     """
     return (
         entry["weapon"],
+        # HOW it was played, part of the entrant rather than of the fight — two
+        # modes of one build are two rows and must not pair with each other.
+        entry.get("mode") or "",
         tuple(sorted(entry.get("mods") or [])),
         tuple(entry.get("evolutions") or []),
         tuple(entry.get("arcanes") or []),

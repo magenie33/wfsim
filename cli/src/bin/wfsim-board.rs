@@ -43,6 +43,12 @@ fn family(id: &str) -> &str {
 /// One scored row, before it is trimmed to the top N.
 struct Row {
     weapon: String,
+    /// HOW the weapon was played — `base`, `cycle`, `alternate`. Part of the
+    /// entrant's identity, not of the fight: a Torid through its Incarnon
+    /// cycle and a Torid that never transmutes are two things to hold, and a
+    /// board that keeps one row for both can only ever show whichever the
+    /// benchmark happened to pin.
+    mode: String,
     score: f64,
     mods: Vec<String>,
     evolutions: Vec<String>,
@@ -135,12 +141,48 @@ fn main() {
             }
         };
 
+        // THE MODE THIS ENTRY WAS SUBMITTED FOR, and the fight it implies.
+        //
+        // A submission with no mode is played the way the arsenal plays it,
+        // which is exactly what the benchmarks used to pin as `form: default`.
+        // So every row already on a board keeps its score to the last digit
+        // while gaining the dimension.
+        let modes = wfsim_engine::weapons_data::play_modes(&v.weapon);
+        let want = s.get("mode").and_then(Value::as_str);
+        let played = match want {
+            Some(id) => match modes.iter().find(|m| m.id == id) {
+                Some(m) => *m,
+                None => {
+                    eprintln!("refused {weapon}: it has no `{id}` mode");
+                    refused += 1;
+                    continue;
+                }
+            },
+            // No mode named: however this weapon is normally played — the cycle
+            // where there is one, its arsenal form where there is not.
+            None => *modes
+                .iter()
+                .find(|m| m.mode == wfsim_engine::weapons_data::PlayMode::Cycle)
+                .or_else(|| modes.first())
+                .expect("every weapon has a base mode"),
+        };
+        if !played.sustainable {
+            // "Always Incarnon" is not a way to play for three hundred seconds,
+            // and a board may not rank a fight nobody can hold. Derived, so no
+            // benchmark has to carry a list of what it will not take.
+            eprintln!("refused {weapon}: `{}` cannot be sustained for an engagement", played.id);
+            refused += 1;
+            continue;
+        }
+
         let mut req = scenario.clone();
         if let Some(o) = req.as_object_mut() {
             o.insert("weapon".into(), json!(v.weapon));
             o.insert("mods".into(), json!(v.mods));
             o.insert("evolutions".into(), json!(v.evolutions));
             o.insert("arcane".into(), json!(v.arcanes));
+            // The one place a MODE becomes a FORM.
+            o.insert("form".into(), json!(played.form()));
         }
         let out = wfsim_engine_webapi_simulate(&req);
         let ok = out.get("ok").and_then(Value::as_bool).unwrap_or(false);
@@ -169,12 +211,16 @@ fn main() {
         // other — so two spellings of one fight arrive as two records and are
         // collapsed HERE, where `validate` has already put both into the same
         // canonical form.
-        let key = wfsim_engine::builds::identity(&v);
+        // ...and the MODE is part of that identity: one build played two ways
+        // is two entrants, and collapsing them would keep whichever arrived
+        // first and silently drop the other's row.
+        let key = format!("{}#{}", wfsim_engine::builds::identity(&v), played.id);
         if !seen_ids.insert(key) {
             continue;
         }
         rows.push(Row {
             weapon: v.weapon,
+            mode: played.id.to_string(),
             score,
             mods: v.mods,
             evolutions: v.evolutions,
@@ -182,13 +228,18 @@ fn main() {
         });
     }
 
-    // Best first, then the top KEEP per weapon. Ties keep the FEWER-Forma build
-    // — same fight, cheaper to own.
+    // Best first, then the top KEEP per WEAPON AND MODE. Ties keep the
+    // FEWER-Forma build — same fight, cheaper to own.
+    //
+    // Per mode, not per weapon: the two ways to play a Torid compete with each
+    // other for nothing, and a shared quota would let the stronger mode fill
+    // the board and hide the other entirely — which is the opposite of what
+    // the dimension is for.
     rows.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
-    let mut per: std::collections::BTreeMap<String, usize> = Default::default();
+    let mut per: std::collections::BTreeMap<(String, String), usize> = Default::default();
     let mut kept = Vec::new();
     for r in rows {
-        let n = per.entry(r.weapon.clone()).or_insert(0);
+        let n = per.entry((r.weapon.clone(), r.mode.clone())).or_insert(0);
         if *n < KEEP {
             *n += 1;
             kept.push(r);
@@ -239,6 +290,7 @@ fn main() {
         for r in &kept {
             by_weapon.entry(r.weapon.clone()).or_default().push(json!({
                 "benchmark": bench_id,
+                "mode": r.mode,
                 "source": "submissions",
                 "score": r.score,
                 // The number stays EXACT and the string beside it is what the
@@ -269,6 +321,7 @@ fn main() {
     println!("entries:");
     for r in kept {
         println!("  - weapon: {}", r.weapon);
+        println!("    mode: {}", r.mode);
         // FULL PRECISION in the record. `{}` on an f64 is the shortest string
         // that reads back as the same number, so the yaml is the measurement
         // rather than a rounding of it — the published figure is rounded at the

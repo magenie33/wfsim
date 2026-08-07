@@ -62,6 +62,17 @@ name: "Single Target · Thrax Centurion Lv 9999 SP · 300 s · KPM"
 # mod, or an element ban — and every one of those is a field to add WHEN that
 # benchmark exists. Inventing a constraint language for a set of one is how the
 # vocabulary comes out wrong at exactly the moment it first matters.
+# THE RULES IN PROSE, for the page that publishes them. The name above states
+# the same standard in one line so a rank stays quotable; this is it at length.
+rules:
+  - "One Thrax Centurion at level 9999 on Steel Path, for 300 seconds. A single target, so nothing here rewards clearing a room."
+  - "Aimed, with every shot on the weak point. This is the ceiling a weapon reaches in skilled hands — the companion board removes the aim and measures the floor."
+  - "Scored in kills per minute, counting the fraction of the current target already gone. A weapon that removes 3% of one Thrax in 300 seconds scores 0.03 and still has a rank."
+  - "Every main slot filled, every evolution tier the weapon has, every arcane seat it has. Exilus is never counted."
+  - "Ammo pickups are modelled, because a real player is being resupplied over five minutes. A weapon that cannot be resupplied runs on its real reserve."
+  - "How the weapon is PLAYED belongs to the entry, not to this ruler: a weapon with an Incarnon form is ranked twice, once through its cycle and once never transmuting."
+  - "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above — so any row can be reproduced exactly by anyone with the repo."
+
 build:
   mods: full          # every main slot
   evolutions: full    # every tier this weapon has
@@ -129,8 +140,30 @@ scenario:
   # regardless. This is the reserve behind it.
   infinite_ammo: true
 
-  # However the weapon is played — see the header.
-  form: default
+  # AIMED, AND EVERY SHOT ON THE WEAK POINT. Both pinned rather than left to
+  # resolve, because they are terms of the claim this board makes and a reader
+  # should find them here rather than in a default (owner, 2026-08-07).
+  #
+  # `aiming` is the STANCE, which gates mods like Argon Scope; `headshot_pct`
+  # is where the shots land. They are different facts and a board that means
+  # "played at the ceiling" has to say both.
+  #
+  # A SENTINEL WEAPON IS EXEMPT from both and scores the same here as on the
+  # no-aim board: its companion picks its own targets and never aims for a
+  # head, so `parse_fight` pins its rate at 0 and `tenno_from` its stance —
+  # neither is the player's to set. Two identical rows are the honest answer.
+  headshot_pct: 100
+
+  # NO FORM, AND NO MODE. How a weapon is played is part of the ENTRANT, not
+  # of the fight — a Torid through its Incarnon cycle and a Torid that never
+  # transmutes are two rows on this board, and a ruler that pinned one of them
+  # could only ever rank that one. Each submission names its own mode and the
+  # scorer translates it at the boundary (`WeaponPlayMode::form`).
+  #
+  # `form: default` used to sit here and it read as neutral. It was not: it
+  # resolved to the cycle on a weapon that has one and to the arsenal form on a
+  # weapon that does not, so the board silently ranked Incarnon weapons at their
+  # ceiling and had no way to ask for anything else (owner, 2026-08-07).
 
   # THE TENNO, pinned rather than defaulted. Two arcanes read Warframe armor
   # and energy directly (Primary Bulwark, Primary Overcharge) and several mods
