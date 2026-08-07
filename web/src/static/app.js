@@ -682,6 +682,37 @@ const QQ_GROUP = "995078378";
   });
 })();
 
+// The phone's topbar menu. It opens ONE container that holds the real
+// controls — see index.html — so there is nothing here to keep in sync with a
+// second copy; this only decides when the container is a box.
+(function () {
+  const bar = document.querySelector(".topbar"), btn = $("menu-toggle");
+  if (!bar || !btn) return;
+  const set = (open) => {
+    bar.classList.toggle("menu-open", open);
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    set(!bar.classList.contains("menu-open"));
+  });
+  // `#dd-popover` counts as INSIDE: the language dropdown draws into the
+  // shared popover, which is a sibling of the menu in the DOM, so a click on
+  // "中文" would otherwise close the panel out from under the control.
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#topmenu, #menu-toggle, #dd-popover")) set(false);
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") set(false); });
+  // A DESTINATION closes it — the page moves and the menu would be left open
+  // over the new one. A CONTROL does not: after switching the theme you can
+  // still want the language, and neither moves the page.
+  document.querySelector("#topmenu .topnav")
+    .addEventListener("click", () => set(false));
+  // Above the breakpoint the panel is `display:contents` again and the class
+  // means nothing — but it would still be there on the way back down.
+  addEventListener("resize", () => { if (innerWidth > 700) set(false); });
+})();
+
 // theme
 (function () {
   const saved = localStorage.getItem("wfsim-theme");

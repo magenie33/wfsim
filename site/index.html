@@ -86,16 +86,6 @@
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="/">WF<span>Sim</span></a>
-      <!-- WHERE THE SITE GOES, as against what it links to. The row after this
-           one is "this project, elsewhere" (GitHub, QQ, Discord, Support); these
-           two are the site's own pages, so they sit against the wordmark and are
-           styled as navigation rather than as ghost buttons. The brand used to
-           be the only way back to the roster, which is a thing you have to know
-           rather than see. -->
-      <nav class="topnav">
-        <a class="tnav" data-nav="home" href="/" data-i18n>Weapons</a>
-        <a class="tnav" data-nav="benchmark" href="/benchmark" data-i18n>Benchmark</a>
-      </nav>
       <!-- Global weapon search (filter + sort). The hidden #weapon select
            stays as the router's internal source of truth. -->
       <div class="wsearch">
@@ -106,6 +96,35 @@
         </div>
       </div>
       <select id="weapon" hidden></select>
+      <!-- THE PHONE'S MENU. Everything after this line is ONE element on a
+           phone and eight on a desktop, and it is the same eight either way:
+           `.topmenu`/`.tblinks` are `display:contents` above 700px, so their
+           children are direct flex items of the bar and the desktop row is
+           byte-for-byte the row that was here before. Below it they become a
+           real box and this button opens it.
+           ONE COPY OF EACH CONTROL, never a phone list beside a desktop list:
+           the language dropdown is drawn by JS into `#lang-select` and the
+           theme button carries its own handler, so a second copy would be a
+           control that looks live and is not. That is why this is a container
+           swap rather than a mobile menu built from a list of links.
+           WHAT IT MUST NOT LOSE (owner, 2026-08-07: "我想不要丢失信息"): the
+           site's two destinations AND the right-hand row. Before this, a phone
+           saw neither the nav (display:none under 700px) nor the support link,
+           and the footer was the only way to either. -->
+      <button id="menu-toggle" class="ghost-btn menu-toggle" aria-expanded="false"
+              aria-controls="topmenu" aria-label="Menu" title="Menu" data-i18n-title>☰</button>
+      <div id="topmenu" class="topmenu">
+        <!-- WHERE THE SITE GOES, as against what it links to. The row after
+             this one is "this project, elsewhere" (GitHub, QQ, Discord,
+             Support); these two are the site's own pages, so on a desktop they
+             sit against the wordmark and are styled as navigation rather than
+             as ghost buttons. The brand used to be the only way back to the
+             roster, which is a thing you have to know rather than see. -->
+        <nav class="topnav">
+          <a class="tnav" data-nav="home" href="/" data-i18n>Weapons</a>
+          <a class="tnav" data-nav="benchmark" href="/benchmark" data-i18n>Benchmark</a>
+        </nav>
+        <div class="tblinks">
       <span id="lang-select"></span>
       <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" data-i18n-title aria-label="Toggle theme">◐</button>
       <a class="gh-link ghost-btn" href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub">
@@ -133,11 +152,14 @@
            chrome, never the path of a calculation. No modal, no banner, no
            thank-you box after a run.
            LAST in the row, after the community links, because it is the ask.
-           HIDDEN under 700px: the bar already wraps to two rows on a phone and
-           squeezes the weapon search — the site's own navigation — to 29px at
-           360px. An eighth item there would be taken from the search. Phones
-           reach it from the footer, which every page carries. -->
+           It used to be HIDDEN under 700px, because the bar wrapped to two rows
+           on a phone and squeezed the weapon search — the site's own navigation
+           — to 29px at 360px. The menu is what bought that room back: the bar
+           now carries the wordmark, the search and one button at every width,
+           and this link is in the menu with everything else. -->
       <a class="sup-link ghost-btn" href="/support" title="Support WFSim — what it costs to run" data-i18n-title aria-label="Support"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 20.35l-1.32-1.2C6.03 14.92 3 12.17 3 8.79 3 6.03 5.16 3.87 7.92 3.87c1.56 0 3.06.72 4.04 1.86l.04.05.04-.05c.98-1.14 2.48-1.86 4.04-1.86C18.84 3.87 21 6.03 21 8.79c0 3.38-3.03 6.13-7.68 10.37l-1.32 1.19z"/></svg></a>
+        </div>
+      </div>
     </div>
   </header>
 

@@ -145,6 +145,9 @@ ui:
   # The board page and the topbar navigation.
   "Weapons": 武器
   "Benchmark": 基准榜
+  # The phone's topbar menu — the title on the ☰ button. The glyph is the
+  # control; this is what a screen reader and a tooltip say.
+  "Menu": 菜单
   "One ruler, every weapon. A score is a build measured by this engine under the benchmark's own pinned terms — nobody submits a number. An empty row is a weapon nobody has measured yet.": 一把尺子，量全部武器。榜上的分数是由本引擎在该基准自己钉死的条件下跑出来的——没有人提交数字。空着的一行，就是还没有人测过的武器。
   # QUOTED: the value opens with a placeholder, and an unquoted `{` is a
   # flow mapping to YAML — it made this whole file unparseable.

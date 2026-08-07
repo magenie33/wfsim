@@ -161,10 +161,11 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
   width:28px;padding:0;text-decoration:none;
   display:inline-flex;align-items:center;justify-content:center}
 .sup-link svg{display:block}
-/* MEASURED, not guessed: at 360px the bar already wraps to two rows and the
-   weapon search — the site's navigation — is down to 29px wide. An eighth icon
-   would come out of that. Phones reach /support from the footer instead. */
-@media(max-width:700px){.topbar-inner .sup-link{display:none}}
+/* MEASURED, not guessed: at 360px the bar used to wrap to two rows and the
+   weapon search — the site's navigation — was down to 29px wide, so the
+   support link was cut on phones and the nav with it. The MENU is what fixed
+   the geometry instead of deleting the content: below 700px the bar is three
+   items (wordmark, search, ☰) and everything else is one tap away. */
 .dc-link svg{display:block}
 .qq-link svg{display:block}
 .qq-copy-btn{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;padding:0 3px}
@@ -983,10 +984,55 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .tnav{padding:4px 9px;border-radius:7px;color:var(--text-2);font-size:12px;text-decoration:none;white-space:nowrap}
 .tnav:hover{background:var(--line);color:var(--text)}
 .tnav.sel{background:var(--line);color:var(--text);font-weight:600}
-/* The bar already wraps to two rows on a phone and squeezes the weapon
-   search; the nav is the first thing that can go, because the footer carries
-   both destinations and the wordmark still reaches the roster. */
-@media (max-width:700px){ .topnav{display:none} }
+
+/* ---- the topbar menu: one set of controls, two shapes ------------------
+   `display:contents` is the whole trick. Above 700px `.topmenu` and
+   `.tblinks` are not boxes at all — their children ARE the bar's flex items,
+   so the desktop row is the row that existed before the wrapper was added and
+   nothing is duplicated. Which means `order:` has to be spelled out, because
+   promoted children default to 0 and would otherwise jump the wordmark. */
+.topmenu,.topmenu .tblinks{display:contents}
+.topbar-inner .brand{order:1}
+.topbar-inner .topnav{order:2}
+.topbar-inner .wsearch{order:3}
+.topbar-inner .tblinks>*{order:4}
+/* `.topbar-inner .ghost-btn` sets `display:inline-flex` for every button in
+   the bar and outranks a single class, so hiding this one has to match that
+   specificity — the same trap the icon links' width fell into above. */
+.menu-toggle{order:5;font-size:15px;line-height:1}
+.topbar-inner .menu-toggle{display:none}
+
+@media (max-width:700px){
+  /* Below here the wrapper becomes a real box, hanging off the bar. The
+     anchor is the bar itself so the panel tracks the sticky header. */
+  .topbar-inner{position:relative}
+  .topbar-inner .menu-toggle{display:inline-flex}
+  /* `right:18px` is the bar's own side padding, so the panel's right edge
+     lines up with the button that opened it instead of with the screen. */
+  .topmenu{display:none;position:absolute;top:calc(100% + 8px);right:18px;z-index:60;
+    min-width:196px;max-width:calc(100vw - 36px);flex-direction:column;gap:8px;padding:8px;
+    background:var(--surface);border:1px solid var(--line);border-radius:10px;
+    box-shadow:0 8px 28px rgba(0,0,0,.35)}
+  .topbar.menu-open .topmenu{display:flex}
+  /* The panel's own order. Inside it the two children are `.topnav` and
+     `.tblinks`, and the desktop `order:` values were written for the BAR —
+     `.tblinks` itself has none there, so it sorted to 0 and the icons came out
+     above the destinations with the divider stranded at the top. */
+  .topmenu .topnav{order:1}
+  .topmenu .tblinks{order:2}
+  /* Destinations read as a list — full-width rows with a tap target, not the
+     4px-tall chips they are when they sit against the wordmark. */
+  .topmenu .topnav{flex-direction:column;gap:2px}
+  .topmenu .tnav{padding:9px 10px;font-size:13px}
+  /* ...and "this project, elsewhere" stays a ROW of marks. Six labels down a
+     phone menu would be six lines of chrome above nothing; the icons are
+     already the vocabulary the desktop bar uses. */
+  .topmenu .tblinks{display:flex;flex-wrap:wrap;align-items:center;gap:6px;
+    border-top:1px solid var(--line);padding-top:8px}
+  /* The language dropdown's `margin-left:auto` is what pushes the right-hand
+     group over on a desktop; inside the panel there is nothing to push. */
+  .topbar .topmenu .dd{margin-left:0}
+}
 
 /* ---- the board -------------------------------------------------------- */
 .bench-sub{max-width:70ch;margin:0 0 14px;color:var(--text-2);font-size:13px;line-height:1.55}

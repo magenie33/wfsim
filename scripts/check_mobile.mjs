@@ -65,19 +65,38 @@ for (const [label, w, h, mobile] of SCREENS) {
       barsRight: Math.round(widest('.preset-bar, .pbar, #build-bar, #scenario-bar')),
       cols: getComputedStyle(document.getElementById('mod-slots')).gridTemplateColumns,
       narrowestName: names.length ? Math.min(...names) : 0,
-      // THE TOPBAR'S BUDGET. It is the one strip where a new icon is taken
-      // from something else rather than added: at 360px it already wraps to
-      // two rows and the weapon SEARCH — the site's own navigation — is down
-      // to 29px. So the support link is desktop-only, and that is geometry,
-      // which makes it this check's business rather than a style opinion.
-      // RESOLVED display, not offsetParent. The rule under test IS a display
-      // rule, and offsetParent is a layout-dependent proxy for it — it read
-      // null once on a freshly navigated tablet and passed on the next run,
-      // which is a check that teaches people to ignore it. Same lesson as the
-      // meter's collapse: measure the property, not a symptom.
+      // THE TOPBAR'S BUDGET, and it is geometry rather than a style opinion:
+      // at 360px the bar used to wrap to two rows and squeeze the weapon
+      // SEARCH — the site's own navigation — to 29px, which is what the phone
+      // menu exists to fix. So this measures the two halves of that claim.
+      //
+      // ONE: nothing was DELETED to make the bar fit (owner, 2026-08-07:
+      // "我想不要丢失信息"). Every destination and every control is REACHABLE
+      // at every width — on a desktop straight off the bar, on a phone after
+      // one tap on the hamburger. Reachable is measured, not asserted from a
+      // display rule: a real box on screen, inside the viewport on both sides.
       // (No backticks in here: this comment lives inside a template literal.)
-      supDisplay: document.querySelector('.sup-link')
-        ? getComputedStyle(document.querySelector('.sup-link')).display : 'absent',
+      ...(() => {
+        const SEL = ['.topnav .tnav[data-nav="home"]', '.topnav .tnav[data-nav="benchmark"]',
+                     '#lang-select', '#theme-toggle', '.gh-link', '.qq-link', '.dc-link', '.sup-link'];
+        const missing = () => SEL.filter((s) => {
+          const el = document.querySelector(s);
+          if (!el) return true;
+          const b = el.getBoundingClientRect();
+          return b.width < 1 || b.height < 1 || b.right > vw + 0.5 || b.left < -0.5;
+        });
+        const tog = document.querySelector('.menu-toggle');
+        const closed = missing();
+        if (tog) tog.click();
+        const opened = missing();
+        if (tog) tog.click();
+        return {
+          missingClosed: closed, missingOpen: opened,
+          toggleDisplay: tog ? getComputedStyle(tog).display : 'absent',
+        };
+      })(),
+      // TWO: what the room bought. The search is the thing the old bar was
+      // taking from, so it is the thing that has to be measurably better.
       searchW: Math.round((document.querySelector('.wsearch') || { getBoundingClientRect: () => ({ width: 0 }) })
         .getBoundingClientRect().width),
     };
@@ -90,16 +109,25 @@ for (const [label, w, h, mobile] of SCREENS) {
     `rightmost bar edge ${r.barsRight} vs viewport ${r.vw}`);
   check(`${tag} the page does not scroll sideways`, r.scrollW <= r.vw + 0.5,
     `scrollWidth ${r.scrollW} vs clientWidth ${r.vw}`);
+  // NOTHING IS LOST AT ANY WIDTH — the two destinations and the six controls
+  // are all on screen and inside it, once the menu is open.
+  check(`${tag} every topbar destination and control is reachable`,
+    r.missingOpen.length === 0, `unreachable: ${r.missingOpen.join(", ") || "none"}`);
+  // The hamburger is the phone's, and only the phone's: above the breakpoint
+  // the same eight sit on the bar itself with nothing to open.
+  check(`${tag} the menu is ${w <= 700 ? "how a phone reaches them" : "not in the way"}`,
+    (r.toggleDisplay !== "none") === (w <= 700), `toggle display ${r.toggleDisplay}`);
+  if (w > 700) {
+    check(`${tag} ...and the bar shows them without one`,
+      r.missingClosed.length === 0, `hidden until opened: ${r.missingClosed.join(", ")}`);
+  }
+  // What the room bought. The old bar wrapped to two rows and left the search
+  // at 29px on a 360px screen; one button in place of eight is what fixes it,
+  // so the search has to come back with real width rather than merely exist.
+  check(`${tag} the weapon search gets the room back`, r.searchW >= 120,
+    `${r.searchW}px`);
   // A column squeezed to nothing is not a fixed layout. 90px is about a dozen
   // characters — enough to tell two mods apart, which is the job.
-  // A phone must not spend its bar on the ask; a desktop has room and shows it.
-  check(`${tag} the support link is ${w <= 700 ? "kept off" : "on"} this bar`,
-    (r.supDisplay !== 'none') === (w > 700), `display ${r.supDisplay}, vw ${r.vw}`);
-  // ...and the weapon search must still be reachable, which is what the budget
-  // is FOR. Below 400px the bar is genuinely tight, so this only asserts the
-  // search did not vanish outright.
-  check(`${tag} the weapon search keeps its place in the bar`, r.searchW >= 20,
-    `${r.searchW}px`);
   check(`${tag} a mod name still has room to be a name`, r.narrowestName >= 90,
     `narrowest name column ${r.narrowestName}px (grid: ${r.cols})`);
 }
