@@ -1,0 +1,21 @@
+id: telos_boltor_extended_volley
+name: Extended Volley
+weapon: telos_boltor
+tier: 3
+icon: IncarnonClipSize(xWhite).png
+description: "Increase Base Magazine Capacity by +20."
+# THE GENESIS IS THE FAMILY'S. One Boltor Incarnon Genesis upgrades any of the
+# three Boltors, so all three carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: choose_one
+
+effects:
+  # 90 -> 110 rounds. It is the BASE, so magazine mods multiply the
+  # new value. The loader drops it on a charge-backed form, so the Incarnon
+  # form's 160-round pool is untouched — that pool is charges, not a magazine.
+  - kind: flat_base_magazine
+    value: 20
+
+source:
+  url: https://wiki.warframe.com/w/Boltor_Incarnon_Genesis

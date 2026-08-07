@@ -46,8 +46,15 @@ carries that name.
 | **Phenmor (natural)** | `phenmor` (+ `_incarnon`) — 2026-08-08 |
 | **Braton Genesis** | `braton`, `mk1_braton`, `braton_vandal`, `braton_prime` (+ `_incarnon`) — 2026-08-08 |
 | **Latron Genesis** | `latron`, `latron_wraith`, `latron_prime` (+ `_incarnon`) — 2026-08-08 |
+| **Boltor Genesis** | `boltor`, `telos_boltor`, `boltor_prime` (+ `_incarnon`) — 2026-08-08 |
 
-Remaining: **24 adapters (49 weapons) + 2 naturals**.
+Remaining: **23 adapters (46 weapons) + 2 naturals**.
+
+**Eleven weapons in one night**, which is the number to plan the rest against:
+one natural and three adapters, 22 weapon entries and 112 evolution files, and
+NO ENGINE WORK — every perk either mapped onto a kind the engine already had or
+loaded as a named inert one. The cost was never the weapon file; it was reading
+two wikis carefully enough to catch the three places they disagree.
 
 ### What the Phenmor cost, against what this file predicted
 
@@ -126,6 +133,37 @@ game too.
 **Zero source disagreements** across all 27 values, against the Braton's two.
 That is the argument for reading both wikis every time rather than only when
 something looks odd.
+
+### What the Boltor family cost
+
+Three inert kinds, no engine work, and one of them is the one that matters most
+to everything still on this list:
+
+- **Rapid Reinforcement** is the MOST COMMON PERK IN THE SET — 14 guns by the
+  count above, more than any other name — and this is its first appearance in
+  the repo. It is a reload-speed bonus, which `evolutions_data` has no arm for
+  even though the MODS loader does. Implementing that one arm removes a slot
+  from half the remaining program, which is exactly what the ordering section
+  predicted.
+- **Crimson Overture** would be the first on-kill stacking buff to move the
+  BASE damage; the engine's existing ones (Galvanized Chamber, Bladed Rounds)
+  all multiply it.
+- **Hunter's Mantra**'s second half needs a channeled ability, like the
+  Braton's Daring Reverie — and both its payloads are spatial anyway.
+
+**THE INCARNON IS A PSEUDO-SHOTGUN**: 3 base multishot, a per-projectile damage
+a fraction of the base form's, and a 10/30/60 Impact/Puncture/Slash split on
+every variant. It is the first RIFLE here that fires like one, and the shape was
+already pinned by the Boar. The per-projectile status chance reads lower than
+the base form's for the same reason it does on a shotgun — three rolls instead
+of one.
+
+**One source disagreement**, on Crimson Overture's stack cap: EN reads 4x for
+the Boltor and 3x for the other two, CN reads 3x for all three. The EN number
+ships and the disagreement is recorded at the site. The EN table also renders
+Hunter's Mantra's base-damage number onto the Incarnon Form row above it; the CN
+page and its own summary table both give it to Hunter's Mantra alone, and that
+is the reading followed.
 
 **Icons are not free.** Five of the thirteen had no verified wiki `File:` name
 and were dropped rather than guessed — the site build FAILS on an icon that
@@ -209,7 +247,7 @@ Torid, Angstrum, Stug** (wiki, Incarnon — verbatim in `torid_incarnon.yaml`).
 | Burston | Burston (MR0)\*, Burston Prime (MR12)\* | Burst/Auto | auto hit-scan + radial | 30 → 600 | 0 | **done** |
 | Torid | Torid (MR4)\* | Semi-Auto | held beam | 34 → 170 | 0 | **done** |
 | Miter | Miter (MR6) | Charge | auto projectile + radial | 5 → 20 | 2 | — |
-| Boltor | Boltor (MR2), Telos (MR12), Prime (MR13) | Auto | auto projectile | 8 → 160 | 3 | — |
+| Boltor\* | Boltor (MR2)\*, Telos (MR12)\*, Prime (MR13)\* | Auto | auto projectile | 8 → 160 | 3 | **done 2026-08-08** |
 | Sybaris | Sybaris (MR5), Dex (MR7), Prime (MR12) | Burst | hit-scan | 8 → 200 | 3 | — |
 | Braton\* | Braton (MR0)\*, Mk1 (MR0)\*, Prime (MR8)\*, Vandal (MR4)\* | Auto | auto hit-scan + AoE | 10 → 200 | 4 | **done 2026-08-08** |
 | Dera | Dera (MR4), Vandal (MR7) | Auto | hit-scan | 2 → 50 | 4 | — |
@@ -264,7 +302,7 @@ is intrinsic — but they still model as a transform group here, and they carry
    Rapid Reinforcement alone appears on 14 guns; doing it once removes a slot
    from half the remaining program.
 3. **The zero-mechanic adapters, widest family first**: ~~Braton (4)~~,
-   ~~Latron (3)~~ **both done 2026-08-08**, then Boltor (3), Sybaris (3), Lato (3),
+   ~~Latron (3)~~, ~~Boltor (3)~~ **all done 2026-08-08**, then Sybaris (3), Lato (3),
    Ballistica (3), then the pairs (Dera, Vasto, Lex, Bronco, Kunai, Sicarus,
    Gammacor, Angstrum) and the singles (Miter, Despair, Cestra, Atomos).
 4. **Paris + Dread** together — one bow session covers both, and Cernos Prime

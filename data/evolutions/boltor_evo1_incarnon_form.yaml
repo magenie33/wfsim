@@ -1,0 +1,25 @@
+id: boltor_evo1_incarnon_form
+name: Incarnon Form
+weapon: boltor
+tier: 1
+description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Prioritize Slash Damage and gain Multishot."
+# THE GENESIS IS THE FAMILY'S. One Boltor Incarnon Genesis upgrades any of the
+# three Boltors, so all three carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: fixed
+
+effects:
+  # LOADED as `EvoEffect::UnlocksForm(weapon)`. The 3x multishot, the reshaped
+  # 10/30/60 damage split and the faster rate are properties of the
+  # boltor_incarnon entry, not perk payload.
+  #
+  # NO BASE-DAMAGE ADD HERE. The EN table renders this row with Hunter's
+  # Mantra's "+18" attached to it; the CN page gives that number to Hunter's
+  # Mantra alone, and its own summary table agrees (base + 18 under 猎者密咒,
+  # nothing under 灵化形态). The CN reading is the one followed.
+  - kind: unlocks_weapon
+    weapon: boltor_incarnon
+
+source:
+  url: https://wiki.warframe.com/w/Boltor_Incarnon_Genesis

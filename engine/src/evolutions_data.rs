@@ -1423,6 +1423,32 @@ use crate::loadout::WeaponBase;
             "latron_riddled_target :: stacking_multishot_on_puncture_status",
             "latron_wraith_flensing_spikes :: armor_strip_per_puncture_status",
             "latron_wraith_riddled_target :: stacking_multishot_on_puncture_status",
+            // THE BOLTOR FAMILY (2026-08-08) — three weapons, three kinds.
+            //
+            // CRIMSON OVERTURE is an on-kill stacking buff on the BASE damage,
+            // and it would be the first: the engine's on-kill stacks (Galvanized
+            // Chamber's multishot, Bladed Rounds' crit damage) all multiply the
+            // base rather than move it.
+            //
+            // HUNTER'S MANTRA's second half needs a CHANNELED ABILITY, and both
+            // of its payloads are spatial anyway — punch-through needs a second
+            // body and accuracy needs a miss to prevent.
+            //
+            // RAPID REINFORCEMENT is the most common perk in the entire Incarnon
+            // set (14 guns by docs/INCARNON.md's count) and this is its first
+            // appearance here. It is a reload-speed bonus, which this loader has
+            // no arm for — the MODS loader does, which is why the same words
+            // work on a mod and not on an evolution. It would be real: a 2.4 s
+            // reload is a large share of a 60-round magazine's cycle.
+            "boltor_crimson_overture :: stacking_base_damage_on_kill",
+            "boltor_hunters_mantra :: punch_through_while_channeling",
+            "boltor_prime_crimson_overture :: stacking_base_damage_on_kill",
+            "boltor_prime_hunters_mantra :: punch_through_while_channeling",
+            "boltor_prime_rapid_reinforcement :: reload_speed_bonus",
+            "boltor_rapid_reinforcement :: reload_speed_bonus",
+            "telos_boltor_crimson_overture :: stacking_base_damage_on_kill",
+            "telos_boltor_hunters_mantra :: punch_through_while_channeling",
+            "telos_boltor_rapid_reinforcement :: reload_speed_bonus",
         ];
         let expected: Vec<String> = expected.into_iter().map(str::to_string).collect();
         let missing: Vec<&String> = expected.iter().filter(|e| !found.contains(e)).collect();

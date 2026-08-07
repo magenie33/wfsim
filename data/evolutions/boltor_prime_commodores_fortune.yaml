@@ -1,0 +1,20 @@
+id: boltor_prime_commodores_fortune
+name: Commodore's Fortune
+weapon: boltor_prime
+tier: 4
+icon: HighCrit(xWhite).png
+description: "Increase Base Critical Chance by +14%."
+# THE GENESIS IS THE FAMILY'S. One Boltor Incarnon Genesis upgrades any of the
+# three Boltors, so all three carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: choose_one
+
+effects:
+  # 准将沐福 in DE's Chinese — the name AGENTS.md cites as the proof that a DE
+  # name is never derivable from its English.
+  - kind: flat_base_crit_chance
+    value: 0.14
+
+source:
+  url: https://wiki.warframe.com/w/Boltor_Incarnon_Genesis

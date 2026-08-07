@@ -4,6 +4,8 @@
   <url><loc>https://wfsim.app/support</loc></url>
   <url><loc>https://wfsim.app/weapons/Boar</loc></url>
   <url><loc>https://wfsim.app/weapons/Boar_Prime</loc></url>
+  <url><loc>https://wfsim.app/weapons/Boltor</loc></url>
+  <url><loc>https://wfsim.app/weapons/Boltor_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Braton</loc></url>
   <url><loc>https://wfsim.app/weapons/Braton_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Braton_Vandal</loc></url>
@@ -25,6 +27,7 @@
   <url><loc>https://wfsim.app/weapons/Phantasma_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Phenmor</loc></url>
   <url><loc>https://wfsim.app/weapons/Prisma_Grinlok</loc></url>
+  <url><loc>https://wfsim.app/weapons/Telos_Boltor</loc></url>
   <url><loc>https://wfsim.app/weapons/Torid</loc></url>
   <url><loc>https://wfsim.app/weapons/Verglas_Prime</loc></url>
 </urlset>

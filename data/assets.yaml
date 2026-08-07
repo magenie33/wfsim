@@ -20,6 +20,10 @@ weapons:
   # The roster's first beam pistol (2026-08-05).
   # CDN has no file for it, so the FETCHER takes it from the wiki; the cached
   # name and the page URL stay the bare name either way.
+  boltor: Boltor.png
+  boltor_incarnon: Boltor.png
+  boltor_prime: BoltorPrime.png
+  boltor_prime_incarnon: BoltorPrime.png
   braton: Braton.png
   braton_incarnon: Braton.png
   braton_prime: BratonPrime.png
@@ -64,6 +68,8 @@ weapons:
   phenmor: ZarimanSemiAutoRifle.png
   phenmor_incarnon: ZarimanSemiAutoRifle.png
   prisma_grinlok: PrismaGrinlok.png
+  telos_boltor: TelosBoltor.png
+  telos_boltor_incarnon: TelosBoltor.png
   torid: Torid.png
   torid_incarnon: Torid.png
   verglas_prime: VerglasPrime.png

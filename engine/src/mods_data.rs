@@ -1097,7 +1097,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 25] = [
+        const EXPECTED: [(&str, &str, &[&str]); 28] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
@@ -1114,6 +1114,12 @@ mod tests {
             // Cannonade fits any of the four — and that is the point of listing
             // them: one adapter, four weapons, and the trigger answer is the
             // weapon's rather than the adapter's.
+            // THE BOLTOR FAMILY (2026-08-08). Full-auto nail guns, so no Cannonade
+            // — and the Incarnon form is a pseudo-shotgun, which changes the
+            // multishot and not the trigger.
+            ("boltor", "auto", &[]),
+            ("telos_boltor", "auto", &[]),
+            ("boltor_prime", "auto", &[]),
             ("braton", "auto", &[]),
             ("mk1_braton", "auto", &[]),
             ("braton_vandal", "auto", &[]),

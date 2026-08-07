@@ -242,6 +242,38 @@ evolutions:
   latron_prime_flensing_spikes: 剥肤利钉
   latron_prime_deadhead: 死亡头颅
   latron_prime_critical_parallel: 临界平行
+  # The Boltor family (2026-08-08), read through the API from 螺钉步枪灵化之源.
+  # 准将沐福 is the name AGENTS.md cites as the proof that a DE name is never
+  # derivable from its English (Commodore's Fortune), and it comes back the
+  # same here as on the Dual Toxocyst — which is the check that this is a
+  # transcription and not a second translation.
+  boltor_evo1_incarnon_form: 灵化形态
+  boltor_hunters_mantra: 猎者密咒
+  boltor_crimson_overture: 猩红序曲
+  boltor_swift_deliverance: 迅速判决
+  boltor_extended_volley: 扩充齐发
+  boltor_rapid_reinforcement: 急速强化
+  boltor_elemental_balance: 元素平衡
+  boltor_survivors_edge: 生还占优
+  boltor_commodores_fortune: 准将沐福
+  telos_boltor_evo1_incarnon_form: 灵化形态
+  telos_boltor_hunters_mantra: 猎者密咒
+  telos_boltor_crimson_overture: 猩红序曲
+  telos_boltor_swift_deliverance: 迅速判决
+  telos_boltor_extended_volley: 扩充齐发
+  telos_boltor_rapid_reinforcement: 急速强化
+  telos_boltor_elemental_balance: 元素平衡
+  telos_boltor_survivors_edge: 生还占优
+  telos_boltor_commodores_fortune: 准将沐福
+  boltor_prime_evo1_incarnon_form: 灵化形态
+  boltor_prime_hunters_mantra: 猎者密咒
+  boltor_prime_crimson_overture: 猩红序曲
+  boltor_prime_swift_deliverance: 迅速判决
+  boltor_prime_extended_volley: 扩充齐发
+  boltor_prime_rapid_reinforcement: 急速强化
+  boltor_prime_elemental_balance: 元素平衡
+  boltor_prime_survivors_edge: 生还占优
+  boltor_prime_commodores_fortune: 准将沐福
 
 # The card text. One string per evolution; `\n` where our English description
 # breaks a line.
@@ -550,3 +582,71 @@ evolution_descriptions:
     +100%爆头倍率
   latron_prime_critical_parallel: |-
     基础暴击几率增加+24%，基础暴击伤害增加+0.2x
+  # The Boltor family (2026-08-08), read through the API from 螺钉步枪灵化之源.
+  # 准将沐福 is the name AGENTS.md cites as the proof that a DE name is never
+  # derivable from its English (Commodore's Fortune), and it comes back the
+  # same here as on the Dual Toxocyst — which is the check that this is a
+  # transcription and not a second translation.
+  boltor_evo1_incarnon_form: |-
+    爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。
+    灵化形态下武器相较普通模式具有3基础多重射击，提升了射速以及暴击几率和倍率，伤害组成为10%冲击30%穿刺60%切割，但降低了精准度以及单个投射物的基础伤害。
+    需要20次爆头才能完成充能。多重射击造成的爆头也会被计入充能中。
+    每个投射物造成的爆头能为灵化形态提供8发弹药，最高至160。充能耗尽后武器会自动转变为普通模式。
+  boltor_hunters_mantra: |-
+    基础伤害增加+18。 持续消耗能量类技能激活时：+4穿透 +40% 精准度。
+  boltor_crimson_overture: |-
+    击杀时：基础伤害增加+12和+20% 弹药效率，持续5秒。 最多叠加到3x。
+  boltor_swift_deliverance: |-
+    +60%投射物速度。
+  boltor_extended_volley: |-
+    +20弹匣容量。
+  boltor_rapid_reinforcement: |-
+    +60%装填速度。
+  boltor_elemental_balance: |-
+    基础触发几率增加+20%。
+  boltor_survivors_edge: |-
+    基础暴击几率增加+8%，基础触发几率增加+8%。
+  boltor_commodores_fortune: |-
+    基础暴击几率增加+12%。
+  telos_boltor_evo1_incarnon_form: |-
+    爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。
+    灵化形态下武器相较普通模式具有3基础多重射击，提升了射速以及暴击几率和倍率，伤害组成为10%冲击30%穿刺60%切割，但降低了精准度以及单个投射物的基础伤害。
+    需要20次爆头才能完成充能。多重射击造成的爆头也会被计入充能中。
+    每个投射物造成的爆头能为灵化形态提供8发弹药，最高至160。充能耗尽后武器会自动转变为普通模式。
+  telos_boltor_hunters_mantra: |-
+    基础伤害增加+4。 持续消耗能量类技能激活时：+4穿透 +40% 精准度。
+  telos_boltor_crimson_overture: |-
+    击杀时：基础伤害增加+2和+20% 弹药效率，持续5秒。 最多叠加到3x。
+  telos_boltor_swift_deliverance: |-
+    +60%投射物速度。
+  telos_boltor_extended_volley: |-
+    +20弹匣容量。
+  telos_boltor_rapid_reinforcement: |-
+    +60%装填速度。
+  telos_boltor_elemental_balance: |-
+    基础触发几率增加+20%。
+  telos_boltor_survivors_edge: |-
+    基础暴击几率增加+4%，基础触发几率增加+4%。
+  telos_boltor_commodores_fortune: |-
+    基础暴击几率增加+6%。
+  boltor_prime_evo1_incarnon_form: |-
+    爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。
+    灵化形态下武器相较普通模式具有3基础多重射击，提升了射速以及暴击几率和倍率，伤害组成为10%冲击30%穿刺60%切割，但降低了精准度以及单个投射物的基础伤害。
+    需要20次爆头才能完成充能。多重射击造成的爆头也会被计入充能中。
+    每个投射物造成的爆头能为灵化形态提供8发弹药，最高至160。充能耗尽后武器会自动转变为普通模式。
+  boltor_prime_hunters_mantra: |-
+    基础伤害增加+4。 持续消耗能量类技能激活时：+4穿透 +40% 精准度。
+  boltor_prime_crimson_overture: |-
+    击杀时：基础伤害增加+2和+20% 弹药效率，持续5秒。 最多叠加到3x。
+  boltor_prime_swift_deliverance: |-
+    +60%投射物速度。
+  boltor_prime_extended_volley: |-
+    +20弹匣容量。
+  boltor_prime_rapid_reinforcement: |-
+    +60%装填速度。
+  boltor_prime_elemental_balance: |-
+    基础触发几率增加+18%。
+  boltor_prime_survivors_edge: |-
+    基础暴击几率增加+10%，基础触发几率增加+10%。
+  boltor_prime_commodores_fortune: |-
+    基础暴击几率增加+14%。

@@ -1,0 +1,68 @@
+id: boltor
+name: Boltor
+slot: primary
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]
+grip_type: RIFLE
+mastery_rank: 2
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are separate
+# entries linked by a transform group.
+transform_group: boltor
+transforms_to: boltor_incarnon
+
+# Weapon-level metadata (wiki infobox, cross-checked against WFCD
+# warframe-items — 0 disagreements).
+accuracy: 25.0
+disposition: 1.3
+polarities: [vazarin]
+exilus_polarity: madurai
+riven_family: Boltor
+traits: [incarnon]
+introduced: "6.0"
+internal_name: /Lotus/Weapons/Tenno/Rifle/BoltoRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80              # rifle pickup, as every other rifle here
+magazine: 60
+reload_seconds: 2.6
+
+# Condition Overload behavior class. No Boltor row exists in the wiki's CO
+# catalog, and absence there means ORDINARY rather than unknown.
+co_behavior: additive_with_base_damage
+
+# A NAIL GUN: a full-auto PROJECTILE rifle, overwhelmingly Puncture. Bolts
+# travel, which is why `projectile_speed_mps` is set and matters to a perk in
+# tier 3 (Swift Deliverance) that has nothing to do on a hit-scan weapon.
+attack:
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 85
+  fire_rate: 8.75
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.1
+  crit_multiplier: 1.8
+  status_chance: 0.14
+  punch_through_m: 0.0
+  damage: { impact: 2.5, puncture: 20.0, slash: 2.5 }   # total 25
+
+# incarnon_evolutions: nine perks shared by the transform group; definitions
+# live in data/evolutions/boltor_*.yaml.
+# - { tier: 1, unlock: complete a solo mission with this weapon equipped,
+# options: [boltor_evo1_incarnon_form] }
+# - { tier: 2, unlock: kill 100 enemies with the Incarnon Form,
+# options: [boltor_hunters_mantra, boltor_crimson_overture] }
+# - { tier: 3, unlock: kill 40 enemies while sliding,
+# options: [boltor_swift_deliverance, boltor_extended_volley,
+# boltor_rapid_reinforcement] }
+# - { tier: 4,
+# options: [boltor_elemental_balance, boltor_survivors_edge,
+# boltor_commodores_fortune] }
+
+source:
+  url: https://wiki.warframe.com/w/Boltor

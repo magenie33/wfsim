@@ -1,0 +1,24 @@
+id: boltor_prime_swift_deliverance
+name: Swift Deliverance
+weapon: boltor_prime
+tier: 3
+icon: IncarnonProjectileSpeed(xWhite).png
+description: "+60% Projectile Speed."
+# THE GENESIS IS THE FAMILY'S. One Boltor Incarnon Genesis upgrades any of the
+# three Boltors, so all three carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: choose_one
+
+effects:
+  # THIS ONE ACTUALLY HAS SOMETHING TO SPEED UP. The Boltor fires bolts at
+  # 120 m/s, so unlike a hit-scan weapon's copy of this perk the number
+  # describes a real travel time — the arena still models none, being
+  # single-target at a fixed engagement, so it reaches the panel through the
+  # indirect bucket and changes no shot.
+  - kind: indirect
+    stat: projectile_speed
+    value: 0.60
+
+source:
+  url: https://wiki.warframe.com/w/Boltor_Incarnon_Genesis

@@ -1,0 +1,72 @@
+id: telos_boltor_incarnon
+name: Telos Boltor (Incarnon Form)
+slot: primary
+class: rifle
+form: incarnon
+
+# TWO WEAPONS MODEL: second entry of the transform group — see
+# data/weapons/primary/telos_boltor.yaml for the base form and the decision.
+transform_group: telos_boltor
+transforms_from: telos_boltor
+
+incarnon:
+  gauge:
+    charge_on: weakpoint_hits
+    charges_to_fill: 20
+    rounds_per_charge: 8
+    max_rounds: 160
+    # charge_rules:
+    # - 20 weakpoint hits fill the gauge; each charge produces 8 rounds to a
+    # 160-round cap.
+    # - Individual multishot projectiles each build charge.
+  transmute:
+    activation: alt_fire
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+  incarnon_magazine:
+    resource: incarnon_charges
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 2.4      # = base reload time, unmodded
+  transmute_out_seconds: 1.0     # MEASURED on Dual Toxocyst (MEASUREMENTS M9)
+
+pseudo_reload:
+  magazine: 160
+  reload_seconds: 3.4   # transmute out (1.0) + in (2.4), unmodded
+
+co_behavior: additive_with_base_damage
+
+# A PSEUDO-SHOTGUN, and this is the whole of the transformation. VERBATIM
+# (wiki): "Turns weapon into rapid-fire pseudo-shotgun with 3 base multishot,
+# increased overall damage stats, added Slash damage, and slightly faster fire
+# rate, but with lower accuracy resulting in shotgun-like spread pattern."
+#
+# The damage below is PER PROJECTILE and there are three of them — the same
+# convention the Boar uses, and the reason a per-projectile figure that looks
+# small next to the base form is not a downgrade. The CN page states the split
+# outright and every variant obeys it: 10% Impact, 30% Puncture, 60% Slash.
+#
+# STATUS CHANCE IS PER PROJECTILE TOO, which is why it reads lower than the base
+# form's: three chances at 0.1067 against one at 0.16.
+attack:
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 85
+  fire_rate: 10.33
+  multishot: 3.0
+  ammo_cost: 1                  # of the separate 160-round charge pool
+  crit_chance: 0.36
+  crit_multiplier: 3.2
+  status_chance: 0.1067
+  punch_through_m: 0.0
+  damage: { impact: 2.0, puncture: 6.0, slash: 12.0 }   # total 20 per projectile
+  # NO RADIAL. This form is a spread of bolts, not an explosion — the only
+  # Incarnon in this batch without one.
+
+# incarnon_evolutions: see data/weapons/primary/telos_boltor.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Boltor_Incarnon_Genesis
+  # Attack stats from the wiki infobox and WFCD's `attacks` array, which agree
+  # on every field; the 3x multishot is the page's own sentence, since WFCD's
+  # summary `multishot` reports the BASE form's 1 for both.
