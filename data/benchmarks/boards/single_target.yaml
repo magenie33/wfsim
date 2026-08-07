@@ -437,6 +437,9 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: verglas_prime
     score: 1.0538345647343734
+    mods: [split_chamber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds]
+  - weapon: verglas_prime
+    score: 1.0538345647343734
     mods: [heavy_caliber, split_chamber, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds]
   - weapon: verglas_prime
     score: 0.9914504231687964
@@ -462,6 +465,3 @@ entries:
   - weapon: verglas_prime
     score: 0.7891770000964088
     mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
-  - weapon: verglas_prime
-    score: 0.6137251666041527
-    mods: [heavy_caliber, split_chamber, rifle_elementalist, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
