@@ -294,6 +294,12 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 .combo-menu .opt .dr{margin-top:2px}
 .combo-menu .opt:hover{background:var(--panel2)}
 .combo-menu .opt.dis{opacity:.4;cursor:not-allowed}
+/* A GROUP HEADER inside the one dropdown. Sticky, because the whole point is to
+   know which group you are in while scrolling a list long enough to need one. */
+.combo-menu .ddgroup{position:sticky;top:0;z-index:1;margin:6px 0 2px;padding:3px 8px;
+  background:var(--panel2);color:var(--gold);font-size:11px;letter-spacing:.03em;
+  border-bottom:1px solid var(--line)}
+.combo-menu .ddgroup:first-child{margin-top:0}
 .combo-menu .opt .pol{width:14px;height:14px;flex:none}
 .combo-menu .opt .mod{width:28px;height:28px;border-radius:5px;object-fit:cover;border:1px solid var(--rar,var(--line));flex:none}
 .combo-menu .opt .mod.none{display:flex;align-items:center;justify-content:center;color:var(--muted);background:var(--panel2)}

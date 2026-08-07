@@ -163,4 +163,98 @@ check("...and the field the ruler DOES state was never at risk",
   leak.invisible === false && leak.yamlStatesInvisible === true,
   `invisible = ${JSON.stringify(leak.invisible)}`);
 
+// HOW A WEAPON IS PLAYED IS PART OF THE BUILD, and of nothing else.
+//
+// It was a scenario field, which let the FIGHT decide how the weapon was fired
+// — so a ruler could pin an Incarnon weapon at its cycle and "never
+// transmuting" was unaskable. It saves with the build now, and the simulator
+// shows it without offering to move it: the fight owns the fight.
+const md = await evaluate(`(async () => {
+  const s = (ms) => new Promise(r => setTimeout(r, ms));
+  localStorage.clear();
+  history.pushState({}, '', '/weapons/Torid'); route(); await s(3000);
+  // ON ONE OF YOUR OWN. An official build is read-only by construction — its
+  // mode is the one it was MEASURED in and nothing may write it — so testing
+  // "a mode change is saved" against one would be testing the opposite rule.
+  if (officialBuildActive()) {
+    const own = [...document.querySelectorAll('#preset-bar-builder-builds .pchip')][0];
+    if (own) own.click();
+    await s(1500);
+  }
+  const out = { start: mode, official: officialBuildActive() };
+  // ...and one that EXISTS in storage. Auto-save writes into the stored list
+  // and does nothing when the active preset is not in it — which is the state
+  // right after a localStorage.clear(), where the default build is in memory
+  // only. Saving it once is the setup, not the thing under test.
+  const ps0 = loadPresetList('builder-builds');
+  if (!ps0.some((x) => x.name === activePreset)) {
+    storePresetList('builder-builds',
+      ps0.concat([{ name: activePreset, savedAt: Date.now(), state: snapshotState() }]));
+  }
+  document.querySelector('#mode-row [data-dd]').click(); await s(800);
+  const base = [...document.querySelectorAll('#dd-menu .opt[data-v]')].find((o) => o.dataset.v === 'base');
+  if (base) base.click();
+  await s(1600);
+  out.after = mode;
+  const p = loadPresetList('builder-builds').find((x) => x.name === activePreset);
+  out.stored = p && p.state ? p.state.mode : null;
+  history.pushState({}, '', '/weapons/Torid/simulator'); route(); await s(2200);
+  // NO REGEX HERE. A backslash in page-side code passes through the quoting
+  // between this file and the browser, and /\s+/ arriving as /s+/ replaces every
+  // letter s — which turned "Base Form" into "Ba e Form" and failed a check
+  // about something that was working.
+  out.simText = (document.getElementById('sim-build-info').textContent || '')
+    .split(String.fromCharCode(10)).map((x) => x.trim()).filter(Boolean).join(' | ').slice(0, 160);
+  out.simMode = mode;
+  // AGAINST THE APP'S OWN LABEL, not against an English word. This check runs
+  // in the machine's language, so 'Base Form' is 基础形态 here — the same trap
+  // that broke check_opt_gain when an evolution got a Chinese name. Comparing
+  // to what the app would print for this mode is true in every language.
+  out.simShows = out.simText.includes(modeLabel(weaponInfo($('weapon').value), mode));
+  out.simCanEdit = !!document.querySelector('#sim-build-info [data-dd]')
+    || !!document.querySelector('#sim-technique [data-dd]');
+  return out;
+})()`);
+
+check("the check is standing on a build of your own", md.official === false, String(md.official));
+check("changing the mode is a change to the BUILD",
+  md.after === "base" && md.stored === "base", `state ${md.after}, stored ${md.stored}`);
+check("...which the simulator shows", md.simShows === true, md.simText);
+check("...and does not offer to change", md.simCanEdit === false);
+
+// ...AND NO SCENARIO CARRIES ONE — official or your own, saved before or after.
+//
+// A scenario written while the mode lived in the fight still holds a `form`,
+// and applying it would put that back on the live fight, where the next
+// auto-save would write it out again and keep writing it forever. A fight has
+// no opinion about how the weapon is fired (owner, 2026-08-07).
+const clean = await evaluate(`(async () => {
+  const s = (ms) => new Promise(r => setTimeout(r, ms));
+  history.pushState({}, '', '/weapons/Torid/simulator'); route(); await s(2200);
+  const out = {};
+  // Every ruler, and every scenario of your own.
+  out.official = scenarioList().filter((p) => p.builtin)
+    .filter((p) => 'form' in (p.state || {}) || 'mode' in (p.state || {})).map((p) => p.name);
+  // A stored one written the OLD way, planted and then opened.
+  const ps = loadPresetList('simulator-scenarios');
+  storePresetList('simulator-scenarios',
+    ps.concat([{ name: 'legacy fight', savedAt: Date.now(),
+                 state: { ...snapshotScenario(), form: 'incarnon_cycle', level: 55 } }]));
+  renderScenarioBar();
+  await s(600);
+  pickPreset(scenarioBarCfg(), 'legacy fight');
+  await s(1200);
+  out.appliedForm = sim.form === undefined ? null : sim.form;
+  out.tookTheRest = sim.level;
+  out.snapshotHasForm = 'form' in snapshotScenario();
+  return out;
+})()`);
+
+check("no official ruler carries a mode", clean.official.length === 0, clean.official.join(","));
+check("opening a scenario written the old way drops its form",
+  clean.appliedForm === null, String(clean.appliedForm));
+check("...while everything else about that fight still applies", clean.tookTheRest === 55,
+  String(clean.tookTheRest));
+check("...and nothing writes one back out", clean.snapshotHasForm === false);
+
 await app.finish("every collection owns its own state");

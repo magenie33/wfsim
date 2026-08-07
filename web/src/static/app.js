@@ -518,7 +518,11 @@ function defaultScenario() {
 // the knob existed, so no stored preset changes meaning.
 let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: null, headshot_pct: 100, aiming: true,
   invisible: false, airborne: false, wf_armor: 0, wf_energy: 0,
-  infinite_ammo: true, metric: "kpm", duration: 300, runs: 100, form: "default", buffs: {} };
+  // NO `form`, AND NO `mode`. How the weapon is played is part of the BUILD;
+  // a fight that carried it could decide how the weapon was fired, which is
+  // what let a ruler pin an Incarnon weapon at its cycle (owner, 2026-08-07:
+  // 官方的 scenario 是不带 mode 了，我们自定义的场景也不应该有).
+  infinite_ammo: true, metric: "kpm", duration: 300, runs: 100, buffs: {} };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
 // Damage-meter rows the player has expanded into their per-type split, kept
@@ -877,8 +881,36 @@ function route() {
   } else if (bench) {
     renderBenchBoard();
   } else if (w) {
+    // `?mode=` — HOW the linked build is played, carried by the link that made
+    // it. A board row is a weapon AND a mode ("Burston Prime, base form"), so a
+    // link that dropped the second half landed on a page measuring something
+    // else (owner, 2026-08-07).
+    //
+    // The QUERY, not a path segment: the path mirrors the wiki's page name and
+    // its next segment is already the module (`/simulator`), so a mode there
+    // would be a third meaning for one slot.
+    //
+    // READ BEFORE THE SWITCH. Loading a weapon restores its preset, and that
+    // rewrites the address to the weapon's plain path — so by the time the
+    // weapon is on screen the query is already gone, and the mode with it.
+    const wantMode = new URLSearchParams(location.search).get("mode");
     if ($("weapon").value !== w.id) {
       switchWeapon(w.id);
+    }
+    if (wantMode && (w.modes || []).includes(wantMode)) {
+      if (wantMode !== mode) {
+        mode = wantMode;
+        renderMode();
+        renderMods();
+        refreshPanel();
+      }
+      // ...and put it back on the address bar, which the restore just cleared.
+      // Kept rather than stripped: the link has to survive a refresh and a
+      // bookmark, and `renderMode` rewrites it when the visitor changes mode so
+      // it never says something the page is not doing.
+      if (new URLSearchParams(location.search).get("mode") !== wantMode) {
+        history.replaceState(null, "", `${location.pathname}?mode=${encodeURIComponent(wantMode)}`);
+      }
     }
     $("module-tabs").innerHTML =
       `<a class="mtab ${mod === "" ? "sel" : ""}" href="${weaponPath(w.id)}">${tr("Builder")}</a>` +
@@ -1039,7 +1071,8 @@ function renderBenchBoard() {
       tr("{n} of {t} entries measured · ranked by {m}")
         .replace("{n}", measured).replace("{t}", rows.length).replace("{m}", metric))}</div>
     <div class="bench-rows">${rows.map(({ w, mode, row }, i) => `
-      <a class="brow${row ? "" : " none"}" href="/weapons/${wikiSlug(w)}">
+      <a class="brow${row ? "" : " none"}" href="/weapons/${wikiSlug(w)}${
+        (w.modes || []).length > 1 ? `?mode=${encodeURIComponent(mode)}` : ""}">
         <span class="brank">${row ? `#${i + 1}` : "—"}</span>
         ${imgTag(IMG(w.image), "bimg")}
         <span class="bname">${escHtml(w.name)}${
@@ -3648,10 +3681,14 @@ function renderBenchmarkBarIn(bar, cfg) {
       // a bar that searched only sometimes is a bar you cannot learn.
       search: true,
       title: cfg.benchHint || "",
+      // GROUPED BY RULER. A rank is a rank ON something, and with the ruler in
+      // a header the row itself is free to say the part that varies within it —
+      // the mode and the score — instead of repeating the ruler on every line.
       items: ps.map((p) => ({
         value: p.name,
         label: p.name,
-        hint: p.hint || (cfg.roTitle ? cfg.roTitle(p) : ""),
+        hint: p.rowHint || p.hint || (cfg.roTitle ? cfg.roTitle(p) : ""),
+        group: p.group || "",
       })),
       onPick: (v) => pickPreset(cfg, v),
     }) +
@@ -3906,8 +3943,11 @@ const builtinBuilds = () => {
       benchmark: row.benchmark,
       mode,
       board: row,
-      // What a reader needs to know a rank is a rank ON something.
-      hint: `${bench ? tr(bench.name) : row.benchmark} · ${
+      // The RULER is the group header; the row says what varies inside it.
+      group: bench ? tr(bench.name) : row.benchmark,
+      hint: String(row.shown != null ? row.shown : (row.score || 0).toFixed(4)),
+      // ...and the flat form, for anywhere that shows no headers.
+      hint_flat: `${bench ? tr(bench.name) : row.benchmark} · ${
         row.shown != null ? row.shown : (row.score || 0).toFixed(4)}`,
       savedAt: 0,
       state: {
@@ -3986,11 +4026,23 @@ function renderPresetBar() {
 // added later, or when the marginal-gain scan tries it as a candidate.
 // Anything the map does not mention takes the buff's own default, which is
 // full stacks and unlocked.
+/// Fields a scenario may no longer hold. A stored preset written before the
+/// mode moved into the build still carries `form`, and applying it would put
+/// it back on `sim` — where the next auto-save would write it out again, and
+/// keep writing it forever. Dropped on the way in, so a custom scenario is
+/// clean the first time it is opened and stays clean.
+const DEAD_SCENARIO_FIELDS = ["form", "mode"];
+
 function snapshotScenario() {
   const { __weapon, ...rest } = sim;
+  // Belt and braces with the strip on the way IN: a fight has no opinion about
+  // how the weapon is fired, so one can never leave here carrying one either.
+  DEAD_SCENARIO_FIELDS.forEach((k) => { delete rest[k]; });
   return JSON.parse(JSON.stringify(rest));
 }
 function applyScenario(st) {
+  st = { ...(st || {}) };
+  DEAD_SCENARIO_FIELDS.forEach((k) => { delete st[k]; });
   // ONTO THE DEFAULTS, NEVER ONTO THE FIGHT YOU ARE LEAVING.
   //
   // This used to spread over the live `sim`, so any field the incoming
@@ -4741,7 +4793,7 @@ function closePopovers(keep) {
 // loads every weapon on every tab in both languages, and the check scripts do
 // the rest — while silent here costs a shipped feature nobody can see missing.
 const DD_CFG_KEYS = ["value", "items", "dataK", "title", "placeholder", "onPick", "search"];
-const DD_ITEM_KEYS = ["value", "label", "hint", "disabled"];
+const DD_ITEM_KEYS = ["value", "label", "hint", "disabled", "group"];
 
 function ddCheck(id, cfg) {
   const stray = (obj, known) => Object.keys(obj).filter((k) => !known.includes(k));
@@ -4772,9 +4824,15 @@ function ddRender(id, query) {
   const cfg = ddReg.get(id);
   if (!cfg) return;
   const q = (query || "").trim().toLowerCase();
+  // SEARCH SPANS EVERYTHING THE ROW SHOWS — its label, its hint and its group.
+  // A list of official builds is `#3 · Incarnon cycle` under a ruler whose name
+  // carries the enemy, the level and the metric, so "no aim", "thrax" and
+  // "cycle" all have to find rows or the search only works for people who
+  // already know where things are.
   const hits = cfg.items.filter((i) => !q
     || String(i.label).toLowerCase().includes(q)
-    || String(i.hint || "").toLowerCase().includes(q));
+    || String(i.hint || "").toLowerCase().includes(q)
+    || String(i.group || "").toLowerCase().includes(q));
   // A DISABLED item stays LISTED and greyed: "the weapon has no Incarnon form
   // while that mod is on it" is information, and a vanished option is not. It
   // is `.dis`, and `.dis` is what the click binding below skips — the one
@@ -4786,12 +4844,24 @@ function ddRender(id, query) {
   // which is the thing that broke `check_opt_gain` the day an evolution got a
   // Chinese name. An option carries its identity whether or not it can be
   // clicked; being clickable is a separate fact and lives in the class.
+  // GROUPED, where the data has a grouping. A flat list is right up to about a
+  // screenful; the official builds are rulers x modes x ten and the rulers are
+  // meant to reach dozens, and past that a reader cannot SCAN even a list they
+  // can search. The header is emitted when the group CHANGES, so grouping costs
+  // nothing when no item carries one, and it survives filtering — a search that
+  // leaves two rulers standing still says which is which.
+  let group = null;
   $("dd-menu").innerHTML = hits.length
-    ? hits.map((i) => `<div class="opt${String(i.value) === String(cfg.value) ? " cur" : ""}${
+    ? hits.map((i) => {
+      const head = (i.group && i.group !== group)
+        ? `<div class="ddgroup">${escHtml(i.group)}</div>` : "";
+      group = i.group || group;
+      return head + `<div class="opt${String(i.value) === String(cfg.value) ? " cur" : ""}${
         i.disabled ? " dis" : ""}" data-v="${escHtml(String(i.value))}">
         <div class="info"><div class="mn">${escHtml(i.label)}</div>${
           i.hint ? `<div class="me"><div>${escHtml(i.hint)}</div></div>` : ""}</div>
-      </div>`).join("")
+      </div>`;
+    }).join("")
     : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
   $("dd-menu").querySelectorAll(".opt[data-v]:not(.dis)").forEach((el) => {
     el.onclick = (e) => {
@@ -6080,7 +6150,17 @@ function renderMode() {
       value: id, label: label + (offReason ? " ⊘" : ""), hint: offReason || "",
       disabled: !!offReason,
     })),
-    onPick: (v) => { mode = v; markPresetDirty(); renderMode(); refreshPanel(); },
+    onPick: (v) => {
+      mode = v;
+      // Keep the address bar honest: it may have said a mode, and it is not
+      // saying this one any more.
+      const q = new URLSearchParams(location.search);
+      if (q.get("mode") && q.get("mode") !== v) {
+        q.set("mode", v);
+        history.replaceState(null, "", `${location.pathname}?${q}`);
+      }
+      markPresetDirty(); renderMode(); refreshPanel();
+    },
   })}</label>${why ? `<span class="warn">⊘ ${escHtml(why)}</span>` : ""}`;
 }
 
@@ -6195,6 +6275,16 @@ function renderSimBuild() {
     if (!m) return "";
     return chip(IMG(m.image), m.name, s.rank == null ? m.max_rank : s.rank);
   }).filter(Boolean);
+  // HOW IT IS PLAYED, first, and READ-ONLY. It is part of the build, so the
+  // simulator shows it and does not offer to change it — the fight owns the
+  // fight and the build owns this. Drawn only where the weapon has a choice to
+  // make; with one firing mode there is nothing here a reader did not know.
+  const wModes = (weaponInfo($("weapon").value) || {}).modes || [];
+  if (wModes.length > 1) {
+    parts.push(`<div class="sb-h">${tr("Mode")}</div>`);
+    parts.push(`<div class="sb-chips"><span class="sb-chip">${
+      escHtml(modeLabel(weaponInfo($("weapon").value), mode))}</span></div>`);
+  }
   parts.push(`<div class="sb-h">${tr("Mods")} · ${modChips.length}</div>`);
   parts.push(`<div class="sb-chips">${modChips.join("") || `<span class="sb-empty">${tr("no mods equipped")}</span>`}</div>`);
   if ((w.arcane_slots || 0) >= 1) {
