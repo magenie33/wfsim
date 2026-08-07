@@ -1925,14 +1925,43 @@ pub fn resolve_for(
         // placement establishes an element's position; later same-element mods
         // merge there).
         for m in mods {
+            // ONE MOD, TWO ELEMENTS: THE LAST ONE LISTED GOES FIRST.
+            //
+            // Wiki, Damage §combining: "the hierarchy priority will be given to
+            // the LAST elemental stat listed on the Riven mod" — its worked
+            // example is a riven with "+100% Electricity first and +90% Toxin
+            // last", where the TOXIN combines with a mod higher up and the
+            // Electricity with one lower down. So a mod's own elements enter
+            // the hierarchy in REVERSE of how the card prints them.
+            //
+            // Only a riven can carry two (no mod in `data/mods/` has more than
+            // one elemental bonus), so this reverses nothing else — a single
+            // element reversed is itself. It is written for MODS rather than
+            // for rivens because the rule is about a mod's stat list, and a
+            // riven is a mod here by construction.
+            //
+            // Reported as wrong output (owner, 2026-08-07): a Phantasma Prime
+            // with Magnetic / Cold / riven(Toxin, Electricity) / Electricity
+            // reads Magnetic + Toxin in game; listed-order pairing gave
+            // Viral + Electricity instead, because Cold met the riven's Toxin
+            // where the game has it meet the riven's Electricity.
+            //
+            // The wiki's other half needs no code: "if no other elemental
+            // damage mods are present, the elements on the Riven mod will
+            // combine with itself" — reversed or not they stay adjacent, so
+            // they pair with each other exactly as they did.
+            let mut own: Vec<(DamageType, f64)> = Vec::new();
             for e in &m.effects {
                 match *e {
-                    ModEffect::Element(t, v) => input.push(t, modified_base * v),
+                    ModEffect::Element(t, v) => own.push((t, modified_base * v)),
                     ModEffect::CombinedElement(t, v) => {
                         input.direct_secondary.push((t, modified_base * v))
                     }
                     _ => {}
                 }
+            }
+            for (t, v) in own.into_iter().rev() {
+                input.push(t, v);
             }
         }
         let mut elem_bonus = elem_bonus;

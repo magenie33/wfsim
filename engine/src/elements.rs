@@ -309,3 +309,50 @@ mod tests {
     }
 
 }
+
+/// A RIVEN'S TWO ELEMENTS ENTER THE HIERARCHY BACKWARDS.
+///
+/// Wiki, Damage §combining elemental damage: "the hierarchy priority will be
+/// given to the LAST elemental stat listed on the Riven mod", with the worked
+/// example of a riven carrying "+100% Electricity damage first and +90% Toxin
+/// damage last" — there the TOXIN combines with a mod higher up the hierarchy
+/// and the Electricity with one lower down.
+///
+/// Reported as a wrong reading (owner, 2026-08-07) on a Phantasma Prime: the
+/// pairing came out one element off, because the riven's FIRST-listed stat was
+/// meeting the mod above it where the game gives that meeting to its last.
+///
+/// The pairing itself is exercised here rather than through a weapon, so what
+/// is pinned is the rule and not one loadout.
+#[cfg(test)]
+mod riven_order_tests {
+    use super::*;
+    use DamageType::*;
+
+    #[test]
+    fn the_last_listed_element_meets_the_mod_above_it() {
+        // Cold in the slot above; a riven listing Toxin then Electricity.
+        // The LAST listed (Electricity) is the one Cold meets.
+        let mut input = ElementalInput::default();
+        input.push(Cold, 100.0);
+        for (t, v) in [(Toxin, 71.0), (Electricity, 73.0)].into_iter().rev() {
+            input.push(t, v);
+        }
+        let out = combine(&DamageVector::new(), &input);
+        assert_eq!(out.get(Magnetic), 173.0, "Cold met Electricity");
+        assert_eq!(out.get(Toxin), 71.0, "...and the Toxin was left over, pure");
+        assert_eq!(out.get(Viral), 0.0, "Cold must NOT have met the Toxin");
+    }
+
+    /// ...and with nothing else to pair with, the two combine with each other —
+    /// the wiki's own next sentence, and true whichever way round they sit.
+    #[test]
+    fn alone_a_rivens_elements_combine_with_each_other() {
+        let mut input = ElementalInput::default();
+        for (t, v) in [(Toxin, 71.0), (Electricity, 73.0)].into_iter().rev() {
+            input.push(t, v);
+        }
+        let out = combine(&DamageVector::new(), &input);
+        assert_eq!(out.get(Corrosive), 144.0);
+    }
+}
