@@ -1,0 +1,30 @@
+id: latron_riddled_target
+name: Riddled Target
+weapon: latron
+tier: 2
+description: "Increase Base Damage by +48. On Puncture Status Effect: +25% Multishot for 8s. Stacks up to 4x."
+# THE GENESIS IS THE FAMILY'S. One Latron Incarnon Genesis upgrades any of the
+# three Latrons, so all three carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: choose_one
+
+effects:
+  # THE SAME +48 its tier-mate gives, so this pair is decided entirely by the
+  # second line — the same shape the Burston's and the Furis's tier 2 have.
+  - kind: flat_base_damage
+    value: 48.0
+  # NOT LOADED: the engine has a live stacking-multishot buff, but its trigger
+  # is an ELECTRICITY status (Stormburst's), and this one is PUNCTURE. The
+  # machinery is there and the trigger arm is not, which is the whole gap.
+  #
+  # It would be large on this family: the base form is 60-80% Puncture, so the
+  # trigger is the weapon's own main damage type and four stacks is +100%
+  # multishot held up indefinitely.
+  - kind: stacking_multishot_on_puncture_status
+    per_stack: 0.25
+    max_stacks: 4
+    duration_seconds: 8.0
+
+source:
+  url: https://wiki.warframe.com/w/Latron_Incarnon_Genesis

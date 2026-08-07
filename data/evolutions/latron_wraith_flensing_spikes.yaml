@@ -1,0 +1,25 @@
+id: latron_wraith_flensing_spikes
+name: Flensing Spikes
+weapon: latron_wraith
+tier: 4
+description: "Remove 20% of enemy Armor per Puncture Status."
+# THE GENESIS IS THE FAMILY'S. One Latron Incarnon Genesis upgrades any of the
+# three Latrons, so all three carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: choose_one
+
+effects:
+  # NOT LOADED: armour stripping exists in this engine for Corrosive and Heat
+  # statuses, which are the two the game strips with; a per-PUNCTURE-status
+  # strip is a third rule and has no arm.
+  #
+  # It would be worth a great deal against the official ruler's Thrax Centurion
+  # at level 9999, where armour is most of the effective health — and it pairs
+  # with Riddled Target in the tier above, since both read the same Puncture
+  # status this family produces more of than anything else.
+  - kind: armor_strip_per_puncture_status
+    value: 0.20
+
+source:
+  url: https://wiki.warframe.com/w/Latron_Incarnon_Genesis

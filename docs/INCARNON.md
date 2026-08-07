@@ -45,8 +45,9 @@ carries that name.
 | Laetum (natural) | `laetum` (+ `_incarnon`) |
 | **Phenmor (natural)** | `phenmor` (+ `_incarnon`) — 2026-08-08 |
 | **Braton Genesis** | `braton`, `mk1_braton`, `braton_vandal`, `braton_prime` (+ `_incarnon`) — 2026-08-08 |
+| **Latron Genesis** | `latron`, `latron_wraith`, `latron_prime` (+ `_incarnon`) — 2026-08-08 |
 
-Remaining: **25 adapters (52 weapons) + 2 naturals**.
+Remaining: **24 adapters (49 weapons) + 2 naturals**.
 
 ### What the Phenmor cost, against what this file predicted
 
@@ -98,6 +99,33 @@ Mercenary Chamber's Vandal capacity as 750 against 755. The EN numbers ship,
 because the EN page is where the effect text was transcribed from. A swap is
 the one kind of disagreement that looks like agreement if you only check the
 multiset, which is why it is written down.
+
+### What the Latron family cost
+
+Four inert kinds, no engine work, and the two that matter are NEAR-MISSES
+rather than absences — which is the useful kind of gap to find, because each
+one is a trigger arm away from working:
+
+- **Riddled Target** wants the live stacking-multishot buff the engine already
+  has. That one's trigger is an ELECTRICITY status (Stormburst's); this one is
+  PUNCTURE. Large here: the base form is 60-80% Puncture, so four stacks of
+  +25% would ride on the weapon's own main damage type and never lapse.
+- **Flensing Spikes** strips armour per PUNCTURE status. Armour stripping exists
+  for Corrosive and Heat — the two the game strips with — and a third rule has
+  no arm. Against the official ruler's Thrax at level 9999 it would be worth a
+  great deal.
+
+**A THIRD THING THE ARENA CANNOT HOLD**, and it is the weapon rather than a
+perk: the Incarnon form is a RICOCHET projectile that explodes "up to 6 times".
+The first collision and its explosion land on the target in front of you and the
+other five bounces have nowhere to go — the same treatment punch-through and
+beam chaining already get here. So a Latron's number is its SINGLE-TARGET
+number, and the weapon is worth more against a crowd, which is true of it in
+game too.
+
+**Zero source disagreements** across all 27 values, against the Braton's two.
+That is the argument for reading both wikis every time rather than only when
+something looks odd.
 
 **Icons are not free.** Five of the thirteen had no verified wiki `File:` name
 and were dropped rather than guessed — the site build FAILS on an icon that
@@ -187,7 +215,7 @@ Torid, Angstrum, Stug** (wiki, Incarnon — verbatim in `torid_incarnon.yaml`).
 | Dera | Dera (MR4), Vandal (MR7) | Auto | hit-scan | 2 → 50 | 4 | — |
 | Soma | Soma (MR6), Prime (MR7) | Auto-Spool | hit-scan | 10 → 200 | 4 | **spool** |
 | Dread | Dread (MR5) | Charge (bow) | charged projectile, 0.6 s | 5 → 20 | 5 | — |
-| Latron | Latron (MR0), Prime (MR10), Wraith (MR7) | Semi-Auto | semi projectile + AoE | 5 → 40 | 5 | — |
+| Latron\* | Latron (MR0)\*, Prime (MR10)\*, Wraith (MR7)\* | Semi-Auto | semi projectile + AoE | 5 → 40 | 5 | **done 2026-08-08** |
 | Strun | Strun (MR1), Mk1 (MR0), Prime (MR14), Wraith (MR10) | Semi-Auto | projectile + AoE | 1 → 40 | 5 | **by-round reload** |
 | Gorgon | Gorgon (MR3), Wraith (MR7), Prisma (MR11) | Auto-Spool | auto-charge projectile + AoE | 0.66 → — | 5 | **spool**, auto-charge |
 | Vectis | Vectis (MR2), Prime (MR14) | Semi-Auto | projectile + headshot AoE + embed AoE | 10 → 45 | 5 | **sniper combo, zoom tiers** |
@@ -235,8 +263,8 @@ is intrinsic — but they still model as a transform group here, and they carry
 2. **The 19 shared perk kinds**, driven by whichever adapter needs them first.
    Rapid Reinforcement alone appears on 14 guns; doing it once removes a slot
    from half the remaining program.
-3. **The zero-mechanic adapters, widest family first**: ~~Braton (4)~~
-   **done 2026-08-08**, then Latron (3), Boltor (3), Sybaris (3), Lato (3),
+3. **The zero-mechanic adapters, widest family first**: ~~Braton (4)~~,
+   ~~Latron (3)~~ **both done 2026-08-08**, then Boltor (3), Sybaris (3), Lato (3),
    Ballistica (3), then the pairs (Dera, Vasto, Lex, Bronco, Kunai, Sicarus,
    Gammacor, Angstrum) and the singles (Miter, Despair, Cestra, Atomos).
 4. **Paris + Dread** together — one bow session covers both, and Cernos Prime

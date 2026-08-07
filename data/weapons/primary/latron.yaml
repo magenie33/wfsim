@@ -1,0 +1,66 @@
+id: latron
+name: Latron
+slot: primary
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]
+grip_type: RIFLE
+mastery_rank: 0
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are separate
+# entries linked by a transform group.
+transform_group: latron
+transforms_to: latron_incarnon
+
+# Weapon-level metadata (wiki infobox, cross-checked against WFCD
+# warframe-items — 0 disagreements).
+accuracy: 28.57
+disposition: 1.4
+polarities: [madurai]
+# NO EXILUS POLARITY — the page shows an empty slot rather than a symbol.
+riven_family: Latron
+traits: [incarnon]
+introduced: "Vanilla"
+internal_name: /Lotus/Weapons/Tenno/Rifle/SemiAutoRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80              # rifle pickup, as every other rifle here
+magazine: 15
+reload_seconds: 2.4
+
+# Condition Overload behavior class. No Latron row exists in the wiki's CO
+# catalog, and absence there means ORDINARY rather than unknown.
+co_behavior: additive_with_base_damage
+
+# ONE ATTACK PART: a semi-auto hit-scan marksman rifle, mostly Puncture. The
+# projectile, the ricochet and the explosion all belong to the Incarnon form.
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 4.17
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.12
+  crit_multiplier: 2.0
+  status_chance: 0.12
+  punch_through_m: 0.0
+  damage: { impact: 8.25, puncture: 38.5, slash: 8.25 }   # total 55
+
+# incarnon_evolutions: nine perks shared by the transform group; definitions
+# live in data/evolutions/latron_*.yaml.
+# - { tier: 1, unlock: complete a solo mission with this weapon equipped,
+# options: [latron_evo1_incarnon_form] }
+# - { tier: 2, unlock: kill 100 enemies with the Incarnon Form,
+# options: [latron_riddled_target, latron_swift_punishment] }
+# - { tier: 3, unlock: kill 30 enemies at least 40 m away,
+# options: [latron_marksmans_hand, latron_extended_volley,
+# latron_marksmans_focus] }
+# - { tier: 4,
+# options: [latron_flensing_spikes, latron_deadhead,
+# latron_critical_parallel] }
+
+source:
+  url: https://wiki.warframe.com/w/Latron

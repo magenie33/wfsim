@@ -1396,6 +1396,33 @@ use crate::loadout::WeaponBase;
             "mk1_braton_daring_reverie :: flat_base_damage_while_channeling",
             "mk1_braton_gunsmoke_pick_up :: ammo_restore_on_punch_through",
             "mk1_braton_munitions_grit :: flat_base_multishot",
+            // THE LATRON FAMILY (2026-08-08) — three weapons, four kinds, and
+            // two of them are near-misses rather than absences.
+            //
+            // RIDDLED TARGET wants the live stacking-multishot buff the engine
+            // already has; that one's trigger is an ELECTRICITY status
+            // (Stormburst's) and this one is PUNCTURE. The machinery exists and
+            // the trigger arm does not, which is the whole gap — and it is a
+            // large one here, since the base form is 60-80% Puncture, so four
+            // stacks of +25% would be held up indefinitely off the weapon's own
+            // main damage type.
+            //
+            // FLENSING SPIKES strips armour per PUNCTURE status. Armour
+            // stripping exists for Corrosive and Heat, the two the game strips
+            // with; a third rule has no arm. Against the official ruler's Thrax
+            // at level 9999 it would be worth a great deal.
+            //
+            // MARKSMAN'S FOCUS is zoom, which is NOT merely cosmetic in
+            // general — a zoom level carries its own damage or crit bonus on
+            // many weapons — but carries none on this one. Marksman's Hand is
+            // recoil and IS loaded, into the indirect bucket, like every other
+            // handling stat here.
+            "latron_flensing_spikes :: armor_strip_per_puncture_status",
+            "latron_prime_flensing_spikes :: armor_strip_per_puncture_status",
+            "latron_prime_riddled_target :: stacking_multishot_on_puncture_status",
+            "latron_riddled_target :: stacking_multishot_on_puncture_status",
+            "latron_wraith_flensing_spikes :: armor_strip_per_puncture_status",
+            "latron_wraith_riddled_target :: stacking_multishot_on_puncture_status",
         ];
         let expected: Vec<String> = expected.into_iter().map(str::to_string).collect();
         let missing: Vec<&String> = expected.iter().filter(|e| !found.contains(e)).collect();

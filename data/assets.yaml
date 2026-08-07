@@ -45,6 +45,12 @@ weapons:
   laetum: ZarimanHeavyPistol.png
   laetum_incarnon: ZarimanHeavyPistol.png
   larkspur_prime: LarkspurPrime.png
+  latron: Latron.png
+  latron_incarnon: Latron.png
+  latron_prime: LatronPrime.png
+  latron_prime_incarnon: LatronPrime.png
+  latron_wraith: LatronWraith.png
+  latron_wraith_incarnon: LatronWraith.png
   larkspur_prime_charged: LarkspurPrime.png
   # WFCD gives the MK1-Braton the plain Braton's `imageName`; the wiki has a
   # file of its own, and the two guns do not look alike.

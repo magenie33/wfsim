@@ -1,0 +1,25 @@
+id: latron_extended_volley
+name: Extended Volley
+weapon: latron
+tier: 3
+icon: IncarnonClipSize(xWhite).png
+description: "Increase Base Magazine Capacity by +15."
+# THE GENESIS IS THE FAMILY'S. One Latron Incarnon Genesis upgrades any of the
+# three Latrons, so all three carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: choose_one
+
+effects:
+  # 15 -> 30 rounds, a DOUBLING on this family — the largest
+  # relative magazine perk in the set, because the Latron's 15 is the smallest
+  # magazine any of these weapons has. It is the BASE, so magazine mods
+  # multiply the new value.
+  #
+  # The loader drops it on a charge-backed form, so the Incarnon form's
+  # 40-round pool is untouched — that pool is charges, not a magazine.
+  - kind: flat_base_magazine
+    value: 15
+
+source:
+  url: https://wiki.warframe.com/w/Latron_Incarnon_Genesis

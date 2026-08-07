@@ -212,6 +212,36 @@ evolutions:
   braton_prime_critical_parallel: 临界平行
   braton_prime_prelude_of_might: 力量前奏
   braton_prime_survivors_edge: 生还占优
+  # The Latron family (2026-08-08), read through the API from 拉特昂灵化之源.
+  # ZERO disagreements with the EN table on all 27 values, unlike the Braton's
+  # two — which is the point of checking both rather than one.
+  latron_evo1_incarnon_form: 灵化形态
+  latron_riddled_target: 百孔千疮
+  latron_swift_punishment: 迅捷惩罚
+  latron_marksmans_hand: 善射之手
+  latron_extended_volley: 扩充齐发
+  latron_marksmans_focus: 善射之焦
+  latron_flensing_spikes: 剥肤利钉
+  latron_deadhead: 死亡头颅
+  latron_critical_parallel: 临界平行
+  latron_wraith_evo1_incarnon_form: 灵化形态
+  latron_wraith_riddled_target: 百孔千疮
+  latron_wraith_swift_punishment: 迅捷惩罚
+  latron_wraith_marksmans_hand: 善射之手
+  latron_wraith_extended_volley: 扩充齐发
+  latron_wraith_marksmans_focus: 善射之焦
+  latron_wraith_flensing_spikes: 剥肤利钉
+  latron_wraith_deadhead: 死亡头颅
+  latron_wraith_critical_parallel: 临界平行
+  latron_prime_evo1_incarnon_form: 灵化形态
+  latron_prime_riddled_target: 百孔千疮
+  latron_prime_swift_punishment: 迅捷惩罚
+  latron_prime_marksmans_hand: 善射之手
+  latron_prime_extended_volley: 扩充齐发
+  latron_prime_marksmans_focus: 善射之焦
+  latron_prime_flensing_spikes: 剥肤利钉
+  latron_prime_deadhead: 死亡头颅
+  latron_prime_critical_parallel: 临界平行
 
 # The card text. One string per evolution; `\n` where our English description
 # breaks a line.
@@ -451,3 +481,72 @@ evolution_descriptions:
     暴击几率低于50%时：基础暴击伤害增加+3x
   braton_prime_survivors_edge: |-
     基础暴击几率增加+10%，基础触发几率增加+14%
+  # The Latron family (2026-08-08), read through the API from 拉特昂灵化之源.
+  # ZERO disagreements with the EN table on all 27 values, unlike the Braton's
+  # two — which is the point of checking both rather than one.
+  latron_evo1_incarnon_form: |-
+    爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。
+    灵化形态下武器发射能够在命中后弹跳的投射物，至多弹跳6次并在弹跳时造成4米范围伤害。
+    每次弹跳都会使投射物飞行速度降低。
+    需要8次爆头才能完成充能。多重射击造成的爆头也会被计入充能中。
+    每个投射物造成的爆头能为灵化形态提供5发弹药，最高至40。充能耗尽后武器会自动转变为普通模式。
+  latron_riddled_target: |-
+    基础伤害增加+48 触发穿刺异常时：+25%多重射击，持续8秒，最高叠加至4层
+  latron_swift_punishment: |-
+    基础伤害增加+48  冲刺速度不低于1.2时：对每个受到的异常状态增加+30%直接伤害
+  latron_marksmans_hand: |-
+    -60%武器后坐力
+  latron_extended_volley: |-
+    弹匣容量增加+15
+  latron_marksmans_focus: |-
+    -30%变焦
+  latron_flensing_spikes: |-
+    每层穿刺异常移除20%敌人护甲
+  latron_deadhead: |-
+    +100%爆头倍率
+  latron_critical_parallel: |-
+    基础暴击几率增加+30%，基础暴击伤害增加+0.6x
+  latron_wraith_evo1_incarnon_form: |-
+    爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。
+    灵化形态下武器发射能够在命中后弹跳的投射物，至多弹跳6次并在弹跳时造成4米范围伤害。
+    每次弹跳都会使投射物飞行速度降低。
+    需要8次爆头才能完成充能。多重射击造成的爆头也会被计入充能中。
+    每个投射物造成的爆头能为灵化形态提供5发弹药，最高至40。充能耗尽后武器会自动转变为普通模式。
+  latron_wraith_riddled_target: |-
+    基础伤害增加+12 触发穿刺异常时：+25%多重射击，持续8秒，最高叠加至4层
+  latron_wraith_swift_punishment: |-
+    基础伤害增加+12  冲刺速度不低于1.2时：对每个受到的异常状态增加+30%直接伤害
+  latron_wraith_marksmans_hand: |-
+    -60%武器后坐力
+  latron_wraith_extended_volley: |-
+    弹匣容量增加+15
+  latron_wraith_marksmans_focus: |-
+    -30%变焦
+  latron_wraith_flensing_spikes: |-
+    每层穿刺异常移除20%敌人护甲
+  latron_wraith_deadhead: |-
+    +100%爆头倍率
+  latron_wraith_critical_parallel: |-
+    基础暴击几率增加+24%，基础暴击伤害增加+0.2x
+  latron_prime_evo1_incarnon_form: |-
+    爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。
+    灵化形态下武器发射能够在命中后弹跳的投射物，至多弹跳6次并在弹跳时造成4米范围伤害。
+    每次弹跳都会使投射物飞行速度降低。
+    需要8次爆头才能完成充能。多重射击造成的爆头也会被计入充能中。
+    每个投射物造成的爆头能为灵化形态提供5发弹药，最高至40。充能耗尽后武器会自动转变为普通模式。
+  latron_prime_riddled_target: |-
+    基础伤害增加+6 触发穿刺异常时：+25%多重射击，持续8秒，最高叠加至4层
+  latron_prime_swift_punishment: |-
+    基础伤害增加+6  冲刺速度不低于1.2时：对每个受到的异常状态增加+30%直接伤害
+  latron_prime_marksmans_hand: |-
+    -60%武器后坐力
+  latron_prime_extended_volley: |-
+    弹匣容量增加+15
+  latron_prime_marksmans_focus: |-
+    -30%变焦
+  latron_prime_flensing_spikes: |-
+    每层穿刺异常移除20%敌人护甲
+  latron_prime_deadhead: |-
+    +100%爆头倍率
+  latron_prime_critical_parallel: |-
+    基础暴击几率增加+24%，基础暴击伤害增加+0.2x

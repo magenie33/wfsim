@@ -1,0 +1,22 @@
+id: latron_marksmans_focus
+name: Marksman's Focus
+weapon: latron
+tier: 3
+description: "-30% Zoom"
+# THE GENESIS IS THE FAMILY'S. One Latron Incarnon Genesis upgrades any of the
+# three Latrons, so all three carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: choose_one
+
+effects:
+  # ZOOM IS NOT MODELLED, and unlike recoil it is not merely spatial: a zoom
+  # level carries its own damage or crit bonus on many weapons, so a change to
+  # it can be a change to damage. On this weapon the wiki states no such bonus,
+  # so there is nothing to lose here beyond the sight picture.
+  - kind: indirect
+    stat: zoom
+    value: -0.30
+
+source:
+  url: https://wiki.warframe.com/w/Latron_Incarnon_Genesis

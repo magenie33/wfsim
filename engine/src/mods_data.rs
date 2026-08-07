@@ -1097,7 +1097,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 22] = [
+        const EXPECTED: [(&str, &str, &[&str]); 25] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
@@ -1120,6 +1120,15 @@ mod tests {
             ("braton_prime", "auto", &[]),
             ("karak_wraith", "auto", &[]),                     // full-auto rifle
             ("prisma_grinlok", "semi_auto", &["semi_rifle_cannonade"]),
+            // THE LATRON FAMILY (2026-08-08). Semi-auto marksman rifles, and
+            // they STAY semi-auto through the transformation — the Incarnon
+            // form trades hit-scan for a ricochet projectile at a lower rate,
+            // not for a different trigger. So the mod fits and keeps fitting,
+            // which is the opposite of the Phenmor's answer and the reason both
+            // are listed.
+            ("latron", "semi_auto", &["semi_rifle_cannonade"]),
+            ("latron_wraith", "semi_auto", &["semi_rifle_cannonade"]),
+            ("latron_prime", "semi_auto", &["semi_rifle_cannonade"]),
             // A BEAM shotgun, and its alt-fire does not change the answer: a
             // CHARGED form is not a second firing mode (`is_gauge_switched`
             // draws that line), so the weapon's listed trigger is Held and no

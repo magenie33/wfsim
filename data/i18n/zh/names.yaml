@@ -71,6 +71,12 @@ weapons:
   braton_vandal_incarnon: 布莱顿·破坏者 (灵化形态)
   mk1_braton: MK1-布莱顿
   mk1_braton_incarnon: MK1-布莱顿 (灵化形态)
+  latron: 拉特昂
+  latron_incarnon: 拉特昂 (灵化形态)
+  latron_prime: 拉特昂 Prime
+  latron_prime_incarnon: 拉特昂 Prime (灵化形态)
+  latron_wraith: 拉特昂·亡魂
+  latron_wraith_incarnon: 拉特昂·亡魂 (灵化形态)
 
 enemies:
   thrax_centurion: 凶魂百夫长

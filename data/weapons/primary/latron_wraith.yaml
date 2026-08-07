@@ -1,0 +1,66 @@
+id: latron_wraith
+name: Latron Wraith
+slot: primary
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]
+grip_type: RIFLE
+mastery_rank: 7
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are separate
+# entries linked by a transform group.
+transform_group: latron_wraith
+transforms_to: latron_wraith_incarnon
+
+# Weapon-level metadata (wiki infobox, cross-checked against WFCD
+# warframe-items — 0 disagreements).
+accuracy: 28.57
+disposition: 1.35
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Latron
+traits: [incarnon, wraith]
+introduced: "14.5"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/WraithLatron/WraithLatron
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80              # rifle pickup, as every other rifle here
+magazine: 15
+reload_seconds: 2.4
+
+# Condition Overload behavior class. No Latron row exists in the wiki's CO
+# catalog, and absence there means ORDINARY rather than unknown.
+co_behavior: additive_with_base_damage
+
+# ONE ATTACK PART: a semi-auto hit-scan marksman rifle, mostly Puncture. The
+# projectile, the ricochet and the explosion all belong to the Incarnon form.
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 5.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.26
+  crit_multiplier: 2.8
+  status_chance: 0.14
+  punch_through_m: 0.0
+  damage: { impact: 15.5, puncture: 43.4, slash: 3.1 }   # total 62
+
+# incarnon_evolutions: nine perks shared by the transform group; definitions
+# live in data/evolutions/latron_wraith_*.yaml.
+# - { tier: 1, unlock: complete a solo mission with this weapon equipped,
+# options: [latron_wraith_evo1_incarnon_form] }
+# - { tier: 2, unlock: kill 100 enemies with the Incarnon Form,
+# options: [latron_wraith_riddled_target, latron_wraith_swift_punishment] }
+# - { tier: 3, unlock: kill 30 enemies at least 40 m away,
+# options: [latron_wraith_marksmans_hand, latron_wraith_extended_volley,
+# latron_wraith_marksmans_focus] }
+# - { tier: 4,
+# options: [latron_wraith_flensing_spikes, latron_wraith_deadhead,
+# latron_wraith_critical_parallel] }
+
+source:
+  url: https://wiki.warframe.com/w/Latron_Wraith

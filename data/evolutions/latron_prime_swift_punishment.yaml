@@ -1,0 +1,30 @@
+id: latron_prime_swift_punishment
+name: Swift Punishment
+weapon: latron_prime
+tier: 2
+description: "Increase Base Damage by +6. With Sprint Speed 1.2 or Higher: +30% Direct Damage per Status Type affecting the target."
+# THE GENESIS IS THE FAMILY'S. One Latron Incarnon Genesis upgrades any of the
+# three Latrons, so all three carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: choose_one
+
+effects:
+  - kind: flat_base_damage
+    value: 6.0
+  # CONDITION OVERLOAD, granted by an evolution — it joins the same per-type
+  # rate the Galvanized mods feed, diluted and combined by the weapon's own
+  # `co_behavior` (Additive here) rather than forming a bucket of its own.
+  #
+  # THE SPRINT-SPEED CONDITION IS NOT READ, and it is a Tenno fact rather than a
+  # weapon one: `evolutions_data` reads only `kind` and `value` from a
+  # `condition_overload` entry (see dual_toxocyst_carnage_reign, whose own
+  # `condition:` is unread for the same reason). 1.2 sprint speed is the
+  # ordinary value for most Warframes, so the engine's reading — always on — is
+  # right for most builds and generous for the slow ones.
+  - kind: condition_overload
+    value: 0.30
+    condition: sprint_speed >= 1.2
+
+source:
+  url: https://wiki.warframe.com/w/Latron_Incarnon_Genesis
