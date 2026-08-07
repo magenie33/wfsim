@@ -1517,6 +1517,21 @@ says are things this engine can check against itself:
 > and then the DoT will be buffed by the corresponding Elemental Bonus once
 > more.
 
+**THE TOXIC LASH ANALOGY IS LOAD-BEARING, and its page carries the worked
+example that settles what "base damage" means.** Saryn's ability adds a Toxin
+attack that scales off the weapon, and the wiki spells the proc out:
+
+> "with an unmodded weapon whose damage sheet says it hits for 200 damage, a
+> Rank 3 Toxic Lash, and a Rank 5 Intensify, Toxic Lash will deal:
+> 200 x 0.3 x 1.3 = **78** direct Toxin damage, and always trigger a Toxin proc
+> that ticks for **78 x 0.5 = 39** Toxin damage per second"
+
+39 is half of **78**, the ABILITY's own damage — not half of the weapon's 200.
+So "base damage" is not a fixed property of the weapon: it is whatever applied
+the status. A weapon's own hit applies statuses off `ModifiedBase` (which
+excludes the elemental portions); anything else applies them off ITS OWN damage
+number, elements included. That is one rule with two readings, not two rules.
+
 The first half was already true here. The second is the change: the split's DoT
 now burns off the INSTANCE that applied it — the whole modded hit, elements and
 IPS included — instead of the weapon's `ModifiedBase`, which by the wiki's own
