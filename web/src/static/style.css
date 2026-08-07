@@ -127,10 +127,14 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 
 /* Preset bar above the Mods block: chips CRUD in place. */
 .preset-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 12px;padding:8px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
-/* The BENCHMARK bar. Same chips, because it is the same kind of thing to
-   pick; a gold left edge and a tighter box so it reads as a header over the
-   bar below rather than a second collection of your own. */
+/* The BENCHMARK bar. A gold left edge and a tighter box, so it reads as a
+   header over the bar below rather than as a second collection of your own.
+   ONE DROPDOWN rather than chips: the board is rulers x modes now, and a row
+   of forty chips is neither readable nor searchable. */
 .bench-bar{margin-bottom:6px;padding:6px 12px;border-left:2px solid var(--gold)}
+/* Sized to its content, not to the bar: it sits beside a label and a copy
+   button, and a full-width control there would read as the bar itself. */
+.bench-bar .dd{height:26px;min-width:150px;max-width:min(360px,60vw)}
 .preset-bar .plabel{font-size:12px;color:var(--text-2)}
 .preset-bar .plabel.bench{color:var(--gold)}
 .preset-bar .plabel b{color:var(--gold)}

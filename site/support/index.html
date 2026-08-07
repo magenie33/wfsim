@@ -219,8 +219,20 @@
     <!-- Shown only while an OFFICIAL build is open: what it scored, what it
          costs to own, and how to get an editable copy. -->
     <div id="build-official" class="official-note" hidden></div>
+    <!-- Block: Mode — HOW this build is played. Its own block, above the mods,
+         because it is the first thing true about a build: "Torid, played
+         through its cycle" is what a board ranks, and the mods hang off that.
+         ALWAYS DRAWN. A weapon with one way to be fired is still being fired
+         in it, and the panel should say so rather than stay silent — the same
+         rule the Form control carried before this replaced it (user,
+         2026-07-31, restated 2026-08-07). One mode is stated, not offered. -->
+    <section class="block" id="mode-block">
+      <div class="bh"><span class="n">1</span><h2 data-i18n>Mode</h2><span class="sub" id="mode-sub"></span></div>
+      <div class="bb"><div id="mode-row" class="field-grid"></div></div>
+    </section>
+
     <section class="block" id="mod-block">
-      <div class="bh"><span class="n">1</span><h2 id="mod-block-h" data-i18n>Mods</h2>
+      <div class="bh"><span class="n">2</span><h2 id="mod-block-h" data-i18n>Mods</h2>
         <span class="sub">
           <span class="cap" id="capacity">0 / 60</span>
           <span class="forma" id="forma">0 Forma</span>
@@ -241,26 +253,19 @@
 
     <!-- Block: Arcane -->
     <section class="block" id="arcane-block">
-      <div class="bh"><span class="n">2</span><h2 data-i18n>Arcane</h2><span class="sub" id="arcane-sub"></span></div>
+      <div class="bh"><span class="n">3</span><h2 data-i18n>Arcane</h2><span class="sub" id="arcane-sub"></span></div>
       <div class="bb"><div id="arcane-slots" class="slots one"></div></div>
     </section>
 
     <!-- Block: Evolution (Incarnon weapons) -->
     <section class="block" id="evo-block">
-      <div class="bh"><span class="n">3</span><h2 data-i18n>Evolution</h2><span class="sub" data-i18n>Incarnon Genesis</span></div>
-      <div class="bb"><div id="evo-rows"></div>
-        <!-- HOW THIS BUILD IS PLAYED. It sits under the evolutions because
-             that is what decides whether there is a cycle to run at all — and
-             it is part of the BUILD, not of the fight: "Torid, played through
-             its cycle" is the thing a board ranks. Absent where the weapon has
-             one way to be fired, by the same rule every axis follows. -->
-        <div id="mode-row" class="field-grid" hidden></div>
-      </div>
+      <div class="bh"><span class="n">4</span><h2 data-i18n>Evolution</h2><span class="sub" data-i18n>Incarnon Genesis</span></div>
+      <div class="bb"><div id="evo-rows"></div></div>
     </section>
 
     <!-- Block: Element (Kuva / Tenet / element-configurable weapons) -->
     <section class="block" id="element-block" hidden>
-      <div class="bh"><span class="n">4</span><h2 data-i18n>Element</h2><span class="sub">configurable element</span></div>
+      <div class="bh"><span class="n">5</span><h2 data-i18n>Element</h2><span class="sub">configurable element</span></div>
       <div class="bb"><div id="element-cfg"></div></div>
     </section>
 

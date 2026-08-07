@@ -62,10 +62,21 @@ const PROBE = (lang) => `(async () => {
   const own = $('preset-bar-simulator-scenarios');
   out.barVisible = !bar.hidden;
   out.notInOwnBar = ![...own.querySelectorAll('.pchip')].some((c) => c.dataset.name === out.name);
-  const chip = [...bar.querySelectorAll('.pchip')].find((c) => c.dataset.name === out.name);
+  // THE OFFICIAL BAR IS ONE DROPDOWN now — a benchmark is picked from a list
+  // rather than scanned along a row, because there are rulers now and will be
+  // dozens. Read-only is still a property of the DATA (the bar's store filters
+  // builtins), which the later steps here assert.
+  bar.querySelector('[data-dd]').click(); await sleep(800);
+  const chip = [...document.querySelectorAll('#dd-menu .opt[data-v]')]
+    .find((c) => c.dataset.v === out.name);
   out.chipFound = !!chip;
-  out.chipMarked = !!(chip && chip.classList.contains('ro'));
-  chip.click(); await sleep(600);
+  // READ-ONLY IS NOT A CLASS ANY MORE. The bar offers a COPY and nothing else
+  // — no new, no rename, no delete — and the collection's store refuses to
+  // write a builtin at all. Both are asserted here and below; a marking on a
+  // dropdown row would only have been decoration over them.
+  out.chipMarked = !!bar.querySelector('.pop.dup')
+    && !bar.querySelector('.pop.ren') && !bar.querySelector('.pop.del');
+  chip.click(); await sleep(700);
   out.active = activeScenario;
   out.isOfficial = officialScenarioActive();
 
@@ -100,11 +111,12 @@ const PROBE = (lang) => `(async () => {
   out.officialStateIntact = scenarioNamed(out.id).state.level === wasLevel;
 
   // 7. AND IT CAN BE COPIED into an ordinary, editable scenario.
-  const chip2 = bar.querySelector('.pchip.sel');
-  out.hasCopy = !!chip2.querySelector('.pop.dup');
-  out.hasRename = !!chip2.querySelector('.pop.ren');
-  out.hasDelete = !!chip2.querySelector('.pop.del');
-  chip2.querySelector('.pop.dup').click();
+  // Copy is offered BESIDE the dropdown, and nothing else is: no rename, no
+  // delete, because none of it is yours.
+  out.hasCopy = !!bar.querySelector('.pop.dup');
+  out.hasRename = !!bar.querySelector('.pop.ren');
+  out.hasDelete = !!bar.querySelector('.pop.del');
+  bar.querySelector('.pop.dup').click();
   await sleep(700);
   out.copyIsOwn = !officialScenarioActive();
   out.copyStored = loadPresetList('simulator-scenarios').some((p) => p.name === activeScenario);
@@ -125,7 +137,7 @@ for (const lang of ["en", "zh"]) {
   check("the official scenario is served", r.count > 0 && !!r.id, JSON.stringify(r.id));
   const missing = (r.everyWeapon || []).filter((w) => !w.has).map((w) => w.id);
   check(`it is on all ${r.everyWeapon.length} weapons`, missing.length === 0, missing.join(","));
-  check("its chip is marked read-only", r.chipFound && r.chipMarked);
+  check("it offers a copy and nothing that would edit it", r.chipFound && r.chipMarked);
   check("...in the BENCHMARK bar, not yours", r.barVisible && r.notInOwnBar);
   check("opening it makes it the active fight", r.isOfficial === true, r.active);
   check("...and that fight is the benchmark's", r.level === 9999 && r.duration === 300 && r.metric === "kpm" && r.enemy === "thrax_centurion",
@@ -177,11 +189,17 @@ const BUILDS_PROBE = `(async () => {
   const bar = $('bench-bar-builder-builds');
   const own = $('preset-bar-builder-builds');
   out.barVisible = !bar.hidden;
-  out.notInOwnBar = ![...own.querySelectorAll('.pchip')].some((c) => c.dataset.name === '#1');
-  const chip = [...bar.querySelectorAll('.pchip')].find((c) => c.dataset.name === '#1');
+  out.notInOwnBar = ![...own.querySelectorAll('.pchip')].some((c) => /^#1/.test(c.dataset.name || ''));
+  bar.querySelector('[data-dd]').click(); await sleep(800);
+  // The FIRST row of the list — its name carries the mode now, so it is picked
+  // by position rather than by a rank that no longer names it alone.
+  const chip = document.querySelector('#dd-menu .opt[data-v]');
   out.chipFound = !!chip;
-  out.chipMarked = !!(chip && chip.classList.contains('ro'));
   chip.click(); await sleep(700);
+  // AFTER picking: the copy is offered for the one you are ON, which is the
+  // only build a copy could mean.
+  out.chipMarked = !!bar.querySelector('.pop.dup')
+    && !bar.querySelector('.pop.ren') && !bar.querySelector('.pop.del');
   out.isOfficial = officialBuildActive();
   // ...and the BUILD on screen is the board's.
   out.slots = slots.filter((s) => s.mod).map((s) => s.mod).sort();
@@ -201,8 +219,8 @@ const BUILDS_PROBE = `(async () => {
   await sleep(900);
   out.storeUntouched = JSON.stringify(loadPresetList('builder-builds')) === before;
 
-  // ...and ⧉ gives an ordinary editable build.
-  const sel = bar.querySelector('.pchip.sel');
+  // ...and the copy button beside the dropdown gives an ordinary editable build.
+  const sel = bar;
   out.hasCopy = !!sel.querySelector('.pop.dup');
   out.hasRename = !!sel.querySelector('.pop.ren');
   sel.querySelector('.pop.dup').click();
@@ -219,7 +237,7 @@ console.log("");
 console.log("[board]");
 check("an empty board shows no chips at all", b.emptyBoardChips === 0, String(b.emptyBoardChips));
 check("a board row becomes a chip", b.count === 1, JSON.stringify(b.first));
-check("its chip is marked read-only", b.chipFound && b.chipMarked);
+check("it offers a copy and nothing that would edit it", b.chipFound && b.chipMarked);
 check("...in the BENCHMARK bar, not yours", b.barVisible && b.notInOwnBar);
 check("opening it puts the board's build on screen",
   b.isOfficial === true
@@ -252,7 +270,8 @@ const CONSENT_PROBE = `(async () => {
   const bar = $('bench-bar-simulator-scenarios');
   // By its READ-ONLY mark, not by name: the name is translated and this probe
   // runs after the language ones, so matching on it couples two checks.
-  const off = bar.querySelector('.pchip.ro');
+  bar.querySelector('[data-dd]').click(); await sleep(800);
+  const off = document.querySelector('#dd-menu .opt[data-v]');
   out.chipSeen = !!off;
   if (off) off.click();
   await sleep(1500);

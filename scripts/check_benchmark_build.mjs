@@ -39,9 +39,13 @@ const SETUP = `(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   localStorage.clear();
   history.pushState({},'','/weapons/${WEAPON.path}'); route(); await sleep(4500);
+  // THE OFFICIAL BAR IS ONE DROPDOWN. It was a row of chips while a weapon had
+  // ten board rows under one ruler; the board is rulers x modes now, so the
+  // rank alone is not a name and the list is picked from rather than scanned.
   const bar = document.getElementById('bench-bar-builder-builds');
-  const chip = [...bar.querySelectorAll('.pchip')].find(c => c.dataset.name === '#1');
-  chip.click(); await sleep(1500);
+  bar.querySelector('[data-dd]').click(); await sleep(900);
+  const first = document.querySelector('#dd-menu .opt[data-v]');
+  first.click(); await sleep(1800);
   // What it looks like when SELECTED — the path that already worked.
   return { cap: (document.getElementById('capacity')||{}).textContent,
            over: !!document.querySelector('#capacity.over, #capacity.bad'),

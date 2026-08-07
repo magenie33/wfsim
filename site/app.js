@@ -3602,29 +3602,36 @@ function renderBenchmarkBarIn(bar, cfg) {
   bar.hidden = !ps.length;
   if (!ps.length) { bar.innerHTML = ""; return; }
   const noun = cfg.noun || "preset";
-  const chip = (p) => {
-    const sel = p.name === active;
-    const ops = sel
-      ? `<button class="pop dup" title="${escHtml(
-          tr("copy it into a {thing} of your own — the official one cannot be edited")
-            .replace("{thing}", tr(noun)),
-        )}">⧉</button>`
-      : "";
-    // WHAT THE ◆ MEANS DEPENDS ON THE BAR. On the scenario bar it is the ruler
-    // itself; on the build bar it is a build MEASURED under one, and which one
-    // is the part a reader needs.
-    const mark = `<span class="pofficial" title="${escHtml(
-      cfg.roTitle
-        ? cfg.roTitle(p)
-        : tr("the official test scenario — the same fight on every weapon, so results compare"),
-    )}">◆</span>`;
-    return `<span class="pchip ro ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}">${mark}${escHtml(p.name)}${ops}</span>`;
-  };
+  const sel = ps.find((p) => p.name === active);
+  // ONE DROPDOWN, NOT A ROW OF CHIPS. A chip row was right while a weapon had
+  // ten official builds; it holds one benchmark times one way of playing, and
+  // the board is now rulers x modes — forty chips on a line nobody can read,
+  // each labelled with a rank that does not say what it is a rank ON.
+  //
+  // It is the site's ONE dropdown, so it searches, sorts and looks like every
+  // other dropdown here; the hint line carries the ruler and the score, which
+  // is what makes a rank mean something.
   bar.innerHTML =
     `<span class="plabel bench" title="${escHtml(cfg.benchHint || "")}">${escHtml(cfg.benchLabel)} <b>${ps.length}</b></span>` +
-    ps.map(chip).join("");
-  bar.querySelectorAll(".pchip").forEach((c) =>
-    c.addEventListener("click", () => pickPreset(cfg, c.dataset.name)));
+    ddButton(`dd-bench-${cfg.domain}`, {
+      value: sel ? sel.name : "",
+      placeholder: tr("pick one"),
+      // FORCED, not left to the item count: this list grows with the board and
+      // a bar that searched only sometimes is a bar you cannot learn.
+      search: true,
+      title: cfg.benchHint || "",
+      items: ps.map((p) => ({
+        value: p.name,
+        label: p.name,
+        hint: p.hint || (cfg.roTitle ? cfg.roTitle(p) : ""),
+      })),
+      onPick: (v) => pickPreset(cfg, v),
+    }) +
+    (sel
+      ? `<button class="pop dup" title="${escHtml(
+          tr("copy it into a {thing} of your own — the official one cannot be edited")
+            .replace("{thing}", tr(noun)))}">⧉</button>`
+      : "");
   const dup = bar.querySelector(".pop.dup");
   if (dup) dup.addEventListener("click", (e) => { e.stopPropagation(); copyActivePreset(cfg); });
 }
@@ -3839,28 +3846,54 @@ async function loadBoard() {
   }
 }
 
+/// THE BOARD'S ROWS, as read-only builds you can open.
+///
+/// RANKED WITHIN A RULER AND A MODE, because that is the only thing a rank is.
+/// `#1` used to be the first row for the weapon across everything the board
+/// held, which was unambiguous exactly while there was one benchmark and one
+/// way to play — two of each turn it into a number that names nothing. So the
+/// grouping is (benchmark, mode) and the chip says which.
+///
+/// The mode travels IN THE STATE, so opening a board build plays it the way it
+/// was measured. Without that, picking "#1" would show its mods in whatever
+/// mode you happened to be in and quietly report a different number than the
+/// board does — the same shape as the scenario leak, and worse, because this
+/// one has a published figure sitting next to it.
 const builtinBuilds = () => {
   const w = weaponInfo($("weapon").value) || {};
-  return (BOARD[w.id] || []).map((row, i) => ({
-    // Rank is the name because rank is what a board row IS — but a rank is
-    // only a rank ON something, so the chip's tooltip names the benchmark and
-    // the note states it in full. `#1` under two different rulers is two
-    // different claims, and the bar has room for one of them.
-    name: `#${i + 1}`,
-    builtin: `${row.benchmark}#${i + 1}`,
-    benchmark: row.benchmark,
-    board: row,
-    savedAt: 0,
-    state: {
-      weapon: w.id,
-      slots: Array.from({ length: 9 }, (_, k) => ({
-        mod: (row.mods || [])[k] || null, pol: null, rank: null,
-      })),
-      evoSel: (row.evolutions || []).reduce((m, id, k) => ({ ...m, [k + 1]: id }), {}),
-      arcane: (row.arcanes || []).length ? row.arcanes : ["none"],
-      arcaneRank: [null],
-    },
-  }));
+  const rows = BOARD[w.id] || [];
+  const many = ((w.modes || []).length > 1);
+  const rank = {};
+  return rows.map((row) => {
+    const mode = row.mode || "base";
+    const key = `${row.benchmark}#${mode}`;
+    rank[key] = (rank[key] || 0) + 1;
+    const n = rank[key];
+    const bench = (META.benchmarks || []).find((b) => b.id === row.benchmark);
+    return {
+      name: many ? `#${n} · ${modeLabel(w, mode)}` : `#${n}`,
+      // Unique per ruler AND mode: the id is what the active pointer stores,
+      // and two rulers' first rows are two different builds.
+      builtin: `${row.benchmark}#${mode}#${n}`,
+      benchmark: row.benchmark,
+      mode,
+      board: row,
+      // What a reader needs to know a rank is a rank ON something.
+      hint: `${bench ? tr(bench.name) : row.benchmark} · ${
+        row.shown != null ? row.shown : (row.score || 0).toFixed(4)}`,
+      savedAt: 0,
+      state: {
+        weapon: w.id,
+        mode,
+        slots: Array.from({ length: 9 }, (_, k) => ({
+          mod: (row.mods || [])[k] || null, pol: null, rank: null,
+        })),
+        evoSel: (row.evolutions || []).reduce((m, id, k) => ({ ...m, [k + 1]: id }), {}),
+        arcane: (row.arcanes || []).length ? row.arcanes : ["none"],
+        arcaneRank: [null],
+      },
+    };
+  });
 };
 const buildList = () => builtinBuilds().concat(loadPresetList(BUILDS));
 const buildNamed = (n) => buildList().find((p) => p.name === n || p.builtin === n);
@@ -5986,20 +6019,33 @@ function modeOpts(w) {
   return ids.map((id) => [id, modeLabel(w, id), id === "cycle" ? off : null]);
 }
 
-/// The mode control, in the BUILDER. Absent where the weapon offers one way to
-/// be fired — an axis is shown iff it has options, the rule every other axis
-/// on this page follows.
+/// The mode control, in the BUILDER, in a block of its own above the mods.
+///
+/// ALWAYS DRAWN. A weapon with one way to be fired is still being fired in it,
+/// and a panel that says nothing leaves the reader to assume — which is the
+/// same rule the Form control carried, and the reason a single form was stated
+/// rather than hidden (user, 2026-07-31, restated 2026-08-07). Several modes
+/// is a dropdown; one is a value.
 function renderMode() {
   const box = $("mode-row");
   if (!box || !META) return;
   const w = weaponInfo($("weapon").value) || {};
   const opts = modeOpts(w);
-  box.hidden = !opts.length;
-  if (!opts.length) return;
+  const sub = $("mode-sub");
+  if (!opts.length) {
+    // ONE WAY TO FIRE IT. Named from the weapon's own form, so it reads as a
+    // fact about the weapon rather than as a control somebody disabled.
+    const only = (w.modes || ["base"])[0];
+    box.innerHTML = `<label>${escHtml(tr("Mode"))} <span class="fixed-val">${
+      escHtml(modeLabel(w, only))}</span></label>`;
+    if (sub) sub.textContent = tr("one firing mode");
+    return;
+  }
   // A build naming a mode this weapon does not offer falls back to how the
   // weapon is played — a stale preset, or one copied from another weapon.
   if (!opts.some(([id]) => id === mode)) mode = defaultMode(w.id, null);
   const why = (opts.find(([id]) => id === mode) || [])[2];
+  if (sub) sub.textContent = tr("how this build is played");
   box.innerHTML = `<label>${escHtml(tr("Mode"))} ${ddButton("dd-mode", {
     value: mode,
     items: opts.map(([id, label, offReason]) => ({

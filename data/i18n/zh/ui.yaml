@@ -151,6 +151,10 @@ ui:
   "{n} of {t} entries measured · ranked by {m}": "{t} 个参赛位中已测 {n} 个 · 按 {m} 排名"
   # How a weapon is PLAYED — the entrant's other half.
   "Base form": 基础形态
+  "pick one": 选一个
+  "Mode": 模式
+  "one firing mode": 只有一种开火方式
+  "how this build is played": 这套配装怎么打
   "What this benchmark measures": 这个基准到底在量什么
   # THE RULES, one claim per line. Ours, not DE's — so these are translated
   # rather than transcribed.
