@@ -67,8 +67,11 @@ const PROBE = (lang) => `(async () => {
   // dozens. Read-only is still a property of the DATA (the bar's store filters
   // builtins), which the later steps here assert.
   bar.querySelector('[data-dd]').click(); await sleep(800);
+  // BY ID. A dropdown row's value is the ruler's id, not the translated
+  // sentence it shows — which is the same distinction the active pointer draws,
+  // and the one that used to send the quick calc to the wrong fight.
   const chip = [...document.querySelectorAll('#dd-menu .opt[data-v]')]
-    .find((c) => c.dataset.v === out.name);
+    .find((c) => c.dataset.v === out.id);
   out.chipFound = !!chip;
   // READ-ONLY IS NOT A CLASS ANY MORE. The bar offers a COPY and nothing else
   // — no new, no rename, no delete — and the collection's store refuses to
@@ -413,5 +416,36 @@ check("...against the official benchmark", c.sentBenchmark === "single_target", 
 // ...and the mode is the one on screen, not a default the scorer guessed.
 check("...and the mode it was played in", !!c.sentMode && c.sentMode === c.modeOnScreen,
   `sent ${JSON.stringify(c.sentMode)}, on screen ${JSON.stringify(c.modeOnScreen)}`);
+
+// ...and the QUICK CALC ranks under the fight on screen. It resolves the
+// selected scenario by IDENTITY, and an official ruler's identity is its id
+// while its name is a translated sentence — comparing the two fell through to
+// the first ruler, so every slot was ranked under a fight nobody had chosen.
+const qc = await evaluate(`(async () => {
+  const s = (ms) => new Promise(r => setTimeout(r, ms));
+  const out = {};
+  const ids = builtinScenarios().map(x => x.builtin);
+  out.ids = ids;
+  for (const id of ids) {
+    pickPreset(scenarioBarCfg(), id);
+    await s(700);
+    const g = gainScenario();
+    out[id] = { active: activeScenario, name: g.name,
+                headshot: g.scenario.headshot_pct, aiming: g.scenario.aiming };
+  }
+  return out;
+})()`);
+for (const id of qc.ids || []) {
+  check(`the quick calc measures under ${id}`, qc[id].active === id,
+    JSON.stringify(qc[id]));
+}
+// The two rulers differ in the terms that matter, so "it followed" is a claim
+// with teeth rather than two readings of one fight.
+if ((qc.ids || []).length > 1) {
+  const [a, b] = qc.ids;
+  check("...and the two rulers really are different fights",
+    qc[a].headshot !== qc[b].headshot || qc[a].aiming !== qc[b].aiming,
+    `${JSON.stringify(qc[a])} vs ${JSON.stringify(qc[b])}`);
+}
 
 await app.finish("the official benchmark is the fight, and it is locked");

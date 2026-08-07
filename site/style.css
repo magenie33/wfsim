@@ -143,6 +143,10 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 /* Sized to its content, not to the bar: it sits beside a label and a copy
    button, and a full-width control there would read as the bar itself. */
 .bench-bar .dd{height:26px;min-width:150px;max-width:min(360px,60vw)}
+/* TWO CONTROLS, TWO SIZES. The first holds a ruler's whole sentence; the
+   second holds "#7". Giving them the same 150px floor made a rank read as a
+   control with something missing from it. */
+.bench-bar .dd[id*="-row-"]{min-width:76px;flex:0 0 auto}
 .preset-bar .plabel{font-size:12px;color:var(--text-2)}
 .preset-bar .plabel.bench{color:var(--gold)}
 .preset-bar .plabel b{color:var(--gold)}

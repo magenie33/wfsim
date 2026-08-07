@@ -132,6 +132,14 @@ around (decision 2026-07-31).
   buff whose only grant is that stat is not offered — a lock reaches the
   evolution, arcane and passive layers too, not just the mod bucket
   (MEASUREMENTS M30).
+  `node scripts/check_board_link.mjs` is the SIXTEENTH: a board
+  row opens THAT row — the build it names AND the ruler it is on. The link
+  carried the weapon and the mode and not the ruler, and both boards call their
+  leader "#1 · Incarnon cycle", so the no-aim leader opened the aimed board's
+  leader under the aimed board's fight and re-running it matched no line on
+  either board (owner, 2026-08-08). It walks every ruler, because the bug was
+  that one of them was reachable and the rest resolved to it, and asserts
+  against `BOARD` itself so it keeps holding as the board moves.
   `node scripts/check_enemies.mjs` is the ELEVENTH: every
   TARGET in the roster shows a picture that loads, a wiki link built from its
   ENGLISH name (it runs the whole pass twice, in both languages — a localized

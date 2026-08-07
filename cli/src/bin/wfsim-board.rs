@@ -55,10 +55,23 @@ struct Row {
     arcanes: Vec<String>,
 }
 
-/// How many rows a weapon keeps. Ten so a board can hold real ALTERNATIVES —
-/// a build without the arcane you lack, one that costs fewer Forma — rather
-/// than ten spellings of one answer.
-const KEEP: usize = 10;
+/// How many rows a weapon keeps per RULER and MODE. A hundred, raised from ten
+/// (owner, 2026-08-08: "我觉得10个有点少… 我们的ui也可以支撑100个benchmark每个里面
+/// 100个build容量").
+///
+/// Ten was chosen to hold real ALTERNATIVES — a build without the arcane you
+/// lack, one that costs fewer Forma — rather than ten spellings of one answer.
+/// That reasoning does not change with depth; it just runs out sooner than the
+/// board does. What made ten a CEILING was the picker: a chip row, then one
+/// dropdown holding rulers x modes x ranks, both of which stop being readable
+/// somewhere around forty entries. The bar is two dropdowns now — a ruler, then
+/// a rank inside it — so a hundred rows cost one list of a hundred and nothing
+/// else, and that list is searched and scored.
+///
+/// The COST is per weapon per mode, and it is paid by the scoring job rather
+/// than by the page: `site/board.json` grows with what is actually submitted,
+/// not with this number.
+const KEEP: usize = 100;
 
 fn main() {
     let bench_id = std::env::args().nth(1).unwrap_or_else(|| {

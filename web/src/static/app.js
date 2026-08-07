@@ -925,9 +925,15 @@ function route() {
     // rewrites the address to the weapon's plain path — so by the time the
     // weapon is on screen the query is already gone, and the mode with it.
     const wantMode = new URLSearchParams(location.search).get("mode");
+    // WHICH RULER, from a board row. A row is a build AND the ruler it was
+    // measured under; arriving with only the build gives you a number you
+    // cannot reproduce, and arriving with neither gave you the FIRST ruler's
+    // leader whichever board you clicked (owner, 2026-08-08).
+    const wantBench = new URLSearchParams(location.search).get("bench");
     if ($("weapon").value !== w.id) {
       switchWeapon(w.id);
     }
+    if (wantBench) applyBenchLink(w, wantBench, wantMode);
     if (wantMode && (w.modes || []).includes(wantMode)) {
       if (wantMode !== mode) {
         mode = wantMode;
@@ -940,7 +946,10 @@ function route() {
       // bookmark, and `renderMode` rewrites it when the visitor changes mode so
       // it never says something the page is not doing.
       if (new URLSearchParams(location.search).get("mode") !== wantMode) {
-        history.replaceState(null, "", `${location.pathname}?mode=${encodeURIComponent(wantMode)}`);
+        const q = new URLSearchParams();
+        if (wantBench) q.set("bench", wantBench);
+        q.set("mode", wantMode);
+        history.replaceState(null, "", `${location.pathname}?${q}`);
       }
     }
     $("module-tabs").innerHTML =
@@ -1103,7 +1112,18 @@ function renderBenchBoard() {
         .replace("{n}", measured).replace("{t}", rows.length).replace("{m}", metric))}</div>
     <div class="bench-rows">${rows.map(({ w, mode, row }, i) => `
       <a class="brow${row ? "" : " none"}" href="/weapons/${wikiSlug(w)}${
-        (w.modes || []).length > 1 ? `?mode=${encodeURIComponent(mode)}` : ""}">
+        // WHICH RULER YOU CAME FROM, not just how the weapon is played. Without
+        // it the link landed on whatever official build happened to be first —
+        // the AIMED board's leader, even when you clicked a row on the no-aim
+        // board (owner, 2026-08-08). The two rows are both called "#1" and both
+        // say "Incarnon cycle"; the ruler is the only thing that tells them
+        // apart, and it was the one thing the link did not carry.
+        //
+        // It selects the FIGHT as well as the build. A board row is a build AND
+        // the ruler it was measured under, so arriving with only the build is
+        // arriving with a number you cannot reproduce.
+        `?bench=${encodeURIComponent(cur.id)}${
+          (w.modes || []).length > 1 ? `&mode=${encodeURIComponent(mode)}` : ""}`}">
         <span class="brank">${row ? `#${i + 1}` : "—"}</span>
         ${imgTag(IMG(w.image), "bimg")}
         <span class="bname">${escHtml(w.name)}${
@@ -2459,7 +2479,7 @@ async function openSharePanel(bar) {
   panel.querySelector(".sh-dl").onclick = () => {
     const a = document.createElement("a");
     a.href = canvas.toDataURL("image/png");
-    a.download = `wfsim-${$("weapon").value}-${activePreset}.png`.replace(/\s+/g, "-");
+    a.download = `wfsim-${$("weapon").value}-${presetLabel(buildNamed(activePreset))}.png`.replace(/[\s#]+/g, "-");
     a.click();
   };
 }
@@ -2793,7 +2813,7 @@ async function drawShareCard(canvas, url) {
   if (art) drawFit(g, art, 40 + g.measureText(w.name).width, 26, 60, 34);
   g.fillStyle = dim; g.font = F(15);
   const evos = Object.values(evoSel).filter(Boolean).length;
-  g.fillText([activePreset, tr(w.subtype || w.mod_class || "")]
+  g.fillText([presetLabel(buildNamed(activePreset)), tr(w.subtype || w.mod_class || "")]
     .concat(evos ? [`${evos} ${tr("Evolutions")}`] : []).join(" · "), 36, 82);
 
   // Capacity and Forma, right-aligned — the price of the build, which is half
@@ -3535,15 +3555,20 @@ function initPresets() {
   // Landing on the official one instead means a first number is a COMPARABLE
   // number. Nobody's results move — it is the same fight.
   const lastSc = localStorage.getItem(presetActiveKey(SCENARIOS));
+  // THE ID, like every other write to this pointer. Storing a builtin's NAME
+  // here left the boot state spelled differently from every later selection —
+  // and `presetId(p) === activeScenario` is false against a name, so readers
+  // that resolve by id fell through to the first ruler until you touched the
+  // bar once.
   activeScenario =
-    (scenarioNamed(lastSc) || {}).name
-    || (builtinScenarios()[0] || {}).name
-    || sc[0].name;
+    presetId(scenarioNamed(lastSc))
+    || presetId(builtinScenarios()[0])
+    || presetId(sc[0]);
   localStorage.setItem(presetActiveKey(SCENARIOS), activeScenario);
 
   const here = presetWeapon();
   const last = localStorage.getItem(presetActiveKey(BUILDS));
-  activePreset = (buildNamed(last) || {}).name || ps[0].name;
+  activePreset = presetId(buildNamed(last)) || presetId(ps[0]);
   localStorage.setItem(presetActiveKey(BUILDS), activePreset);
   // Applied under THIS weapon, never the payload's — a preset filed here
   // belongs here by definition.
@@ -3618,7 +3643,7 @@ function markScenarioDirty() {
     // here to write into even if this check were removed.
     if (officialScenarioActive()) return;
     const ps = loadPresetList(SCENARIOS);
-    const at = ps.findIndex((p) => p.name === activeScenario);
+    const at = ps.findIndex((p) => presetId(p) === activeScenario);
     if (at < 0) return;
     ps[at] = { ...ps[at], savedAt: Date.now(), state: snapshotScenario() };
     storePresetList(SCENARIOS, ps);
@@ -3653,10 +3678,25 @@ const presetFilters = {}; // per-bar filter text — survives re-renders, not pe
 // They are the only two a read-only entry has, and "the copy is an ordinary
 // editable preset" has to stay one behaviour — a second implementation is how
 // one bar's copy comes to capture something the other's does not.
-const pickPreset = (cfg, name) => {
-  const p = cfg.load().find((x) => x.name === name);
-  if (!p || p.name === cfg.active()) return;
-  cfg.setActive(p.name);
+/// WHAT THE ACTIVE POINTER STORES, and it is not the label. An official entry's
+/// NAME is a rank inside one ruler — "#1 · Incarnon cycle" — so the aimed board
+/// and the no-aim board each have one, and `find(x => x.name === n)` returned
+/// whichever came first. That is the whole of the bug where the no-aim board's
+/// leader opened the AIMED board's leader instead (owner, 2026-08-08).
+///
+/// `builtin` is already unique per ruler, mode and rank; a preset of your own
+/// has none and is its own name. So this is the id, and `presetLabel` is what a
+/// reader sees — the two were the same string until the board grew a second
+/// ruler.
+const presetId = (p) => (p || {}).builtin || (p || {}).name || "";
+const presetLabel = (p) => (p || {}).name || "";
+
+const pickPreset = (cfg, key) => {
+  const ps = cfg.load();
+  // By ID first: a name may now be shared by two rulers' rows.
+  const p = ps.find((x) => presetId(x) === key) || ps.find((x) => x.name === key);
+  if (!p || presetId(p) === cfg.active()) return;
+  cfg.setActive(presetId(p));
   whileApplying(() => cfg.apply(p.state)); // a load is not an edit
   cfg.rerender();
 };
@@ -3694,35 +3734,60 @@ function renderBenchmarkBarIn(bar, cfg) {
   bar.hidden = !ps.length;
   if (!ps.length) { bar.innerHTML = ""; return; }
   const noun = cfg.noun || "preset";
-  const sel = ps.find((p) => p.name === active);
-  // ONE DROPDOWN, NOT A ROW OF CHIPS. A chip row was right while a weapon had
-  // ten official builds; it holds one benchmark times one way of playing, and
-  // the board is now rulers x modes — forty chips on a line nobody can read,
-  // each labelled with a rank that does not say what it is a rank ON.
+  // TWO PICKS, BECAUSE THERE ARE TWO QUESTIONS (owner, 2026-08-08: "应该有个
+  // 地方选benchmark，另外一个地方选里面的build"). A chip row was right while a
+  // weapon had ten official builds under one ruler; one dropdown holding
+  // rulers x modes x ranks was right while that was forty rows. The board is
+  // designed for a hundred rulers with a hundred rows each, and at that size a
+  // single list is not a list — you cannot scan it, and searching it means
+  // knowing what a rank is a rank ON before you can ask.
   //
-  // It is the site's ONE dropdown, so it searches, sorts and looks like every
-  // other dropdown here; the hint line carries the ruler and the score, which
-  // is what makes a rank mean something.
+  // So: WHICH RULER, then WHICH ROW INSIDE IT. Each list stays the size of one
+  // question. The second one appears only where the first leaves a choice —
+  // the official SCENARIOS are one per ruler, so picking the ruler IS picking
+  // the scenario and a second control would be a control with one item.
+  const ruler = (p) => p.benchmark || p.builtin;
+  const sel = ps.find((p) => presetId(p) === active) || null;
+  const rulers = [];
+  for (const p of ps) {
+    if (!rulers.some((r) => r.id === ruler(p))) rulers.push({ id: ruler(p), label: p.group || p.name });
+  }
+  const curRuler = sel ? ruler(sel) : rulers[0].id;
+  const inRuler = ps.filter((p) => ruler(p) === curRuler);
+  const grouped = inRuler.some((p) => p.subgroup);
   bar.innerHTML =
     `<span class="plabel bench" title="${escHtml(cfg.benchHint || "")}">${escHtml(cfg.benchLabel)} <b>${ps.length}</b></span>` +
+    // THE RULER. Searched, because this list is the one designed to reach a
+    // hundred, and every row of the board hangs off which one you are reading.
     ddButton(`dd-bench-${cfg.domain}`, {
-      value: sel ? sel.name : "",
-      placeholder: tr("pick one"),
-      // FORCED, not left to the item count: this list grows with the board and
-      // a bar that searched only sometimes is a bar you cannot learn.
+      value: curRuler,
       search: true,
       title: cfg.benchHint || "",
-      // GROUPED BY RULER. A rank is a rank ON something, and with the ruler in
-      // a header the row itself is free to say the part that varies within it —
-      // the mode and the score — instead of repeating the ruler on every line.
-      items: ps.map((p) => ({
-        value: p.name,
-        label: p.name,
-        hint: p.rowHint || p.hint || (cfg.roTitle ? cfg.roTitle(p) : ""),
-        group: p.group || "",
-      })),
-      onPick: (v) => pickPreset(cfg, v),
+      items: rulers.map((r) => ({ value: r.id, label: r.label })),
+      // Picking a ruler lands on its FIRST row, which is its leader — the same
+      // thing clicking that weapon on the board page gives you.
+      onPick: (v) => {
+        const first = ps.find((p) => ruler(p) === v);
+        if (first) pickPreset(cfg, presetId(first));
+      },
     }) +
+    (inRuler.length > 1
+      ? ddButton(`dd-bench-row-${cfg.domain}`, {
+        value: presetId(sel || inRuler[0]),
+        search: true,
+        title: cfg.rowHintTitle || "",
+        // GROUPED BY MODE inside the ruler where the weapon has more than one:
+        // a hundred rows split into "base" and "cycle" is two readable lists,
+        // and a rank only means something within one way of playing.
+        items: inRuler.map((p) => ({
+          value: presetId(p),
+          label: grouped && p.rank != null ? `#${p.rank}` : p.name,
+          hint: p.rowHint || p.hint || (cfg.roTitle ? cfg.roTitle(p) : ""),
+          group: p.subgroup || "",
+        })),
+        onPick: (v) => pickPreset(cfg, v),
+      })
+      : "") +
     (sel
       ? `<button class="pop dup" title="${escHtml(
           tr("copy it into a {thing} of your own — the official one cannot be edited")
@@ -3968,6 +4033,10 @@ const builtinBuilds = () => {
     const bench = (META.benchmarks || []).find((b) => b.id === row.benchmark);
     return {
       name: many ? `#${n} · ${modeLabel(w, mode)}` : `#${n}`,
+      // The two halves of that name, for a picker that puts the MODE in a
+      // group header and leaves the row to say the rank.
+      rank: n,
+      subgroup: many ? modeLabel(w, mode) : "",
       // Unique per ruler AND mode: the id is what the active pointer stores,
       // and two rulers' first rows are two different builds.
       builtin: `${row.benchmark}#${mode}#${n}`,
@@ -3994,6 +4063,31 @@ const builtinBuilds = () => {
     };
   });
 };
+/// A BOARD ROW, OPENED. `?bench=<id>` names the ruler the row was read under,
+/// `?mode=` how the weapon was played; together they identify exactly one
+/// official build, and the row is not reproducible without both halves — so
+/// this selects the ruler's own SCENARIO as well as the build.
+///
+/// Selecting the fight here is not a build writing the fight: it is the LINK
+/// carrying both, which is what a board row is. Everything after this point
+/// still obeys the rule — picking a build in the bar moves nothing else.
+///
+/// Silent where it cannot help: a link naming a ruler this build of the site
+/// has never heard of, or a weapon with no row under it, leaves the page as it
+/// found it rather than clearing what is on screen.
+function applyBenchLink(w, benchId, wantMode) {
+  const sc = builtinScenarios().find((s) => s.builtin === benchId);
+  if (sc) pickPreset(scenarioBarCfg(), presetId(sc));
+  const rows = builtinBuilds().filter((p) => p.benchmark === benchId);
+  if (!rows.length) return;
+  // The mode the link asked for, else however this weapon is played — the
+  // board's own row order inside a ruler is best-first, so `find` is the
+  // leader either way.
+  const want = wantMode && (w.modes || []).includes(wantMode) ? wantMode : null;
+  const row = (want && rows.find((p) => p.mode === want)) || rows[0];
+  pickPreset(buildBarCfg(), presetId(row));
+}
+
 const buildList = () => builtinBuilds().concat(loadPresetList(BUILDS));
 const buildNamed = (n) => buildList().find((p) => p.name === n || p.builtin === n);
 /// Is the build on screen one of the official ones? Then nothing may write it.
@@ -4008,12 +4102,12 @@ const benchmarkName = (id) => {
   return b ? tr(b.name) : id || "—";
 };
 
-function renderPresetBar() {
-  // TWO BARS, ONE CONFIG. The benchmark bar and the player's bar are handed
-  // the same `cfg` — same load, same active, same apply — so a chip in either
-  // one selects the same way and a ⧉ copies the same way. What differs is only
-  // which entries each draws and which operations it offers.
-  const buildsCfg = {
+/// The build collection's config, as a FACTORY like `scenarioBarCfg` — it used
+/// to be a local inside the renderer, which meant the only way to select a
+/// build was to be a bar. The router selects one too, when a board row names
+/// the ruler it came from.
+function buildBarCfg() {
+  return {
     domain: BUILDS,
     // An imported build keeps its mods/arcane/sim scenario but belongs to
     // the weapon it lands on; restoreState prunes whatever that weapon
@@ -4043,6 +4137,14 @@ function renderPresetBar() {
     blank: blankBuildState,
     rerender: () => { renderPresetBar(); lockOfficialBuild(); },
   };
+}
+
+function renderPresetBar() {
+  // TWO BARS, ONE CONFIG. The benchmark bar and the player's bar are handed
+  // the same `cfg` — same load, same active, same apply — so a chip in either
+  // one selects the same way and a ⧉ copies the same way. What differs is only
+  // which entries each draws and which operations it offers.
+  const buildsCfg = buildBarCfg();
   renderBenchmarkBarIn($("bench-bar-builder-builds"), { ...buildsCfg, benchLabel: tr("Benchmark builds"), benchHint: tr("submitted by players, scored here — read-only") });
   renderPresetBarIn($("preset-bar-builder-builds"), buildsCfg);
 }
@@ -5053,8 +5155,13 @@ let gainScan = { key: null, running: false, base: 0, floor: 0, by: {}, done: 0, 
 /// The scenario a scan runs under: the chosen preset, else the live one.
 function gainScenario() {
   const ps = scenarioList();
-  const p = ps.find((x) => x.name === gainPrefs.scenario)
-    || ps.find((x) => x.name === activeScenario) || ps[0];
+  // BY ID, not by label. The active pointer stores an official ruler's ID
+  // (`single_target_no_aim`) while its NAME is a translated sentence, so a
+  // name comparison silently fell through to `ps[0]` — the quick calc then
+  // ranked every slot under the FIRST ruler no matter which fight was on
+  // screen.
+  const p = ps.find((x) => presetId(x) === gainPrefs.scenario)
+    || ps.find((x) => presetId(x) === activeScenario) || ps[0];
   const st = p ? { ...sim, ...p.state } : { ...sim };
   // TEN RUNS FOR EVERYTHING, one pass (user, 2026-08-02). It was one run over
   // the field and then the leaders again — two numbers with two precisions,
@@ -5666,8 +5773,11 @@ function renderQuickCalc() {
   if (!box) return;
   const on = gainPrefs.on !== false;
   const ps = scenarioList();
-  const cur = ps.some((p) => p.name === gainPrefs.scenario) ? gainPrefs.scenario
-    : (ps.some((p) => p.name === activeScenario) ? activeScenario : (ps[0] || {}).name);
+  // The same identity `gainScenario` resolves with — this control and that
+  // reader must agree on which fight is selected, or the label says one thing
+  // and the numbers are another's.
+  const cur = ps.some((p) => presetId(p) === gainPrefs.scenario) ? gainPrefs.scenario
+    : (ps.some((p) => presetId(p) === activeScenario) ? activeScenario : presetId(ps[0]));
   const opt = (v, label, sel) => `<option value="${escHtml(v)}"${v === sel ? " selected" : ""}>${escHtml(label)}</option>`;
   box.innerHTML =
     `<label class="pc-h" title="${escHtml(tr("rank a slot's options by what they would change — off, nothing is simulated"))}">` +
@@ -5680,7 +5790,7 @@ function renderQuickCalc() {
       // forced rather than left to the item count.
       search: true,
       title: tr("the saved scenario to measure under — it decides the enemy, the technique and whether the ranking is KPM or DPS"),
-      items: ps.map((p) => ({ value: p.name, label: p.name })),
+      items: ps.map((p) => ({ value: presetId(p), label: p.name })),
       onPick: (v) => { gainPrefs = { ...gainPrefs, scenario: v }; saveGainPrefs(); renderQuickCalc(); refreshGains(); },
     }) +
 
@@ -6296,7 +6406,10 @@ function renderSimBuild() {
   const box = $("sim-build-info");
   if (!box || !META) return;
   const sub = $("sim-build-sub");
-  if (sub) sub.textContent = activePreset ? `${tr("testing build")}: ${activePreset}` : "";
+  // The LABEL, never the id: an official build's id carries its ruler and rank
+  // (`single_target#cycle#1`) and is not a thing to show anyone.
+  const activeLabel = presetLabel(buildNamed(activePreset));
+  if (sub) sub.textContent = activeLabel ? `${tr("testing build")}: ${activeLabel}` : "";
   const chip = (img, label, rk) =>
     `<span class="sb-chip">${imgTag(img, "sb-img")}<span>${escHtml(label)}</span>${rk != null ? `<span class="rk">R${rk}</span>` : ""}</span>`;
   const w = weaponInfo($("weapon").value);
@@ -7979,7 +8092,7 @@ function renderOptEnemy() {
     const w = weaponInfo($("weapon").value) || {};
     ref.innerHTML =
       `<span class="plabel">${escHtml(tr("Scenario"))}</span>` +
-      `<span class="pchip sel" title="${escHtml(tr("the scenario the simulator is set to"))}">${escHtml(activeScenario || tr("current"))}</span>` +
+      `<span class="pchip sel" title="${escHtml(tr("the scenario the simulator is set to"))}">${escHtml(presetLabel(scenarioNamed(activeScenario)) || tr("current"))}</span>` +
       `<a class="pchip" href="${weaponPath(w.id)}/simulator">${escHtml(tr("edit in the Simulator"))} →</a>`;
   }
 }
