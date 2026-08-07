@@ -10,3 +10,12 @@
 benchmark: single_target_no_aim
 source: submissions
 entries:
+  - weapon: ocucor
+    score: 0.001707227710289394
+    mods: [pistol_acuity, galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, accelerated_isotope, sentient_surge, frostbite]
+    arcanes: [cascadia_flare]
+  - weapon: torid
+    score: 1.5188052502036478
+    mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_debilitate]
