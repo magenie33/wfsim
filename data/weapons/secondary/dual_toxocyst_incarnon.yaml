@@ -75,7 +75,7 @@ attack:
   # (ricochet = hitscan-only, DT listed) imply hitscan, but the CO
   # mechanic catalog classifies DT Incarnon Mode as Projectile. Needs
   # an in-game check (travel time / falloff observation).
-  shot_type: hitscan
+  shot_type: hit_scan
   ricochet:
     targets: 1                  # per hit, within 5 m of the struck enemy
     range_m: 5.0

@@ -64,6 +64,42 @@ pub fn deployments_of(id: &str) -> Vec<String> {
     out
 }
 
+/// How a shot ARRIVES — the module's per-attack `ShotType`.
+///
+/// PARSED, not kept as a string, because the one rule that reads it is an
+/// EXCLUSION: a riven rolls Projectile Flight Speed only on a weapon that
+/// fires something. A spelling the rule does not recognise therefore reads as
+/// "it flies" and silently hands the stat to a weapon DE never rolls it on —
+/// which is what `hitscan` (8 files) and `hit_scan` (13) did between them
+/// until 2026-08-07. An unknown value is now a parse error at load, so the
+/// vocabulary cannot drift again.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ShotType {
+    /// The trace lands the instant the trigger does.
+    HitScan,
+    /// A continuous trace — instant in the same way, and never a projectile.
+    Beam,
+    /// Something with a flight speed, which is the stat's whole subject.
+    Projectile,
+}
+
+impl ShotType {
+    /// English display name (the i18n overlay translates from this).
+    pub fn label(self) -> &'static str {
+        match self {
+            ShotType::HitScan => "Hit-Scan",
+            ShotType::Beam => "Beam",
+            ShotType::Projectile => "Projectile",
+        }
+    }
+
+    /// Does a shot of this kind take TIME to reach the target?
+    pub fn flies(self) -> bool {
+        matches!(self, ShotType::Projectile)
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct AttackSpec {
     pub trigger: String,
@@ -76,7 +112,7 @@ pub struct AttackSpec {
     #[serde(default = "one")]
     pub ammo_cost: f64,
     #[serde(default)]
-    pub shot_type: Option<String>,
+    pub shot_type: Option<ShotType>,
     pub fire_rate: f64,
     /// The DRAW before the shot (the module's per-attack `ChargeTime`), and
     /// with it the weapon's real cadence. VERBATIM (wiki Fire Rate), the bow

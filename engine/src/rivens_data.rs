@@ -268,21 +268,43 @@ struct PoolFile {
 ///    and no Recoil row (a SENTINEL weapon is never aimed by the player), says
 ///    "Ammo Max: ∞ / Ammo Type: None", and says "Projectile Type: Hit-Scan".
 ///
-/// Takes the weapon as the arsenal shows it — a riven belongs to the WEAPON,
-/// so an Incarnon form's own vector never decides this. The Torid's grenade is
-/// pure Toxin, so it loses the three physical stats as well.
+/// Both rules read the weapon as ONE THING WITH FORMS, and the union of the
+/// forms you can fire for free is what it has. A riven belongs to the weapon,
+/// not to a mode of it: Larkspur Prime's beam is 11% Impact and its alt-fire —
+/// one held button away, no gauge, no animation — is 33%, and a player's real
+/// card rolls negative Impact (through the owner, 2026-08-07). Phantasma
+/// Prime is the same weapon shape on the other rule: a hit-scan beam whose
+/// plasma bomb flies, so it keeps Projectile Speed.
+///
+/// A GAUGE-SWITCHED form is the exception and stays out: an Incarnon form is
+/// paid for with evolutions, and a riven's stat pool is fixed when it drops,
+/// whether or not those are installed. The Torid's grenade is pure Toxin, so
+/// it loses the three physical stats as well.
 pub fn excluded_for(weapon_id: &str) -> Vec<&'static str> {
+    // `s` is the entry the caller named — what the rules that read the WEAPON
+    // (its ammo pool, its class) go to. `forms` is what the rules that read a
+    // SHOT go to, and there can be more than one of those.
     let Some(s) = crate::weapons_data::spec(weapon_id) else { return Vec::new() };
+    let forms: Vec<_> = crate::weapons_data::forms_of(weapon_id)
+        .into_iter()
+        .filter(|f| !f.kind.is_gauge_switched())
+        .filter_map(|f| crate::weapons_data::spec(f.weapon_id))
+        .collect();
     let mut out: Vec<&'static str> = Vec::new();
 
-    let total: f64 = s.attack.damage.values().sum();
     for (stat, key) in [("impact", "impact"), ("puncture", "puncture"), ("slash", "slash")] {
-        let share = if total > 0.0 {
-            s.attack.damage.get(key).copied().unwrap_or(0.0) / total
-        } else {
-            0.0
-        };
-        if share <= 0.25 {
+        let best = forms
+            .iter()
+            .map(|f| {
+                let total: f64 = f.attack.damage.values().sum();
+                if total > 0.0 {
+                    f.attack.damage.get(key).copied().unwrap_or(0.0) / total
+                } else {
+                    0.0
+                }
+            })
+            .fold(0.0_f64, f64::max);
+        if best <= 0.25 {
             out.push(stat);
         }
     }
@@ -296,8 +318,10 @@ pub fn excluded_for(weapon_id: &str) -> Vec<&'static str> {
     if s.ammo_max.is_none() {
         out.push("ammo_maximum");
     }
-    // Nothing flies: a hit-scan trace and a beam both arrive instantly.
-    if matches!(s.attack.shot_type.as_deref(), Some("hitscan") | Some("beam")) {
+    // Nothing flies: a hit-scan trace and a beam both arrive instantly, and
+    // the weapon has to have no form that fires something for the stat to
+    // have nothing to act on.
+    if forms.iter().all(|f| f.attack.shot_type.is_some_and(|t| !t.flies())) {
         out.push("projectile_speed");
     }
     out
@@ -924,6 +948,34 @@ mod tests {
         // A projectile weapon keeps its flight speed, and one with a real ammo
         // pool keeps Ammo Maximum.
         assert!(!c.contains(&"projectile_speed") && !c.contains(&"ammo_maximum"), "{c:?}");
+    }
+
+    /// The share is read on EVERY form the weapon fires for free, not on the
+    /// one the arsenal happens to show.
+    ///
+    /// Larkspur Prime, reported by a player through the owner (2026-08-07):
+    /// his riven is Fire Rate / Heat with a NEGATIVE Impact, and the editor
+    /// would not offer Impact at all. Its beam is 10 of 90 Impact — 11%, under
+    /// the 25% line — but its alt-fire, one held button away and no gauge to
+    /// fill, is 140 of 420, which is 33%. One riven covers both, so the pool
+    /// is the union.
+    #[test]
+    fn a_free_alt_fire_counts_toward_the_physical_share() {
+        let l = excluded_for("larkspur_prime");
+        assert!(!l.contains(&"impact"), "the alt-fire is 33% Impact: {l:?}");
+        // Nothing else is invented: neither form deals Puncture or Slash.
+        assert!(l.contains(&"puncture") && l.contains(&"slash"), "{l:?}");
+
+        // Phantasma Prime is the same shape on the OTHER rule: its beam is
+        // hit-scan and its plasma bomb flies, so the riven keeps Projectile
+        // Speed. The two spellings of `hit_scan` in data/ used to make this
+        // true for the wrong reason — every hit-scan weapon kept it.
+        let p = excluded_for("phantasma_prime");
+        assert!(!p.contains(&"projectile_speed"), "the bomb flies at 25 m/s: {p:?}");
+        for id in ["burston_prime", "gotva_prime", "karak_wraith", "prisma_grinlok", "furis"] {
+            let e = excluded_for(id);
+            assert!(e.contains(&"projectile_speed"), "{id} is hit-scan in every form: {e:?}");
+        }
     }
 
     /// Faction damage prints as a MULTIPLIER, because that is what the card

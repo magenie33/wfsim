@@ -79,7 +79,7 @@ co_behavior: additive_with_base_damage
 # COMBINED element, so it cannot be consumed by a mod pairing at all.
 attack:
   trigger: held
-  shot_type: hitscan
+  shot_type: hit_scan
   fire_rate: 12.0
   multishot: 1.0
   # 0.5 PER TICK, and this weapon is why the field is read at last: the wiki

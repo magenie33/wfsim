@@ -50,7 +50,7 @@ co_behavior: additive_with_base_damage
 # (boar_prime_incarnon.yaml), the way the Torid and the Laetum carry theirs.
 attack:
   trigger: auto
-  shot_type: hitscan
+  shot_type: hit_scan
   fire_rate: 4.67
   # INNATE MULTISHOT — 8 pellets, and the damage below is PER PELLET, not the
   # shot's total. That is the convention both sources use and the one this

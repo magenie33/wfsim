@@ -53,7 +53,7 @@ co_behavior: additive_with_base_damage
 
 attack:
   trigger: semi_auto
-  shot_type: hitscan
+  shot_type: hit_scan
   fire_rate: 1.0
   multishot: 1.0
   # NOT READ by the engine (2026-07-31): nothing in engine/ references

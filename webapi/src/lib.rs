@@ -144,8 +144,8 @@ fn title_case(snake: &str) -> String {
 /// One line stating a form's trigger/shot mechanics, from the weapon data.
 fn attack_desc(s: &wfsim_engine::weapons_data::WeaponSpec) -> String {
     let mut parts = vec![title_case(&s.attack.trigger).replace(' ', "-")];
-    if let Some(st) = &s.attack.shot_type {
-        parts.push(st.clone());
+    if let Some(st) = s.attack.shot_type {
+        parts.push(st.label().to_string());
     }
     if let Some(r) = &s.attack.ricochet {
         parts.push(format!(

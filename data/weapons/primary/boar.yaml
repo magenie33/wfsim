@@ -46,7 +46,7 @@ co_behavior: additive_with_base_damage
 # the way the Prime's is.
 attack:
   trigger: auto
-  shot_type: hitscan
+  shot_type: hit_scan
   fire_rate: 4.17
   # INNATE MULTISHOT — 8 pellets, and the damage below is PER PELLET. Same
   # convention as the Prime; see data/weapons/primary/boar_prime.yaml for why

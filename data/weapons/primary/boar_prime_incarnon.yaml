@@ -115,7 +115,7 @@ co_behavior: additive_with_base_damage
 #    Acceleration (Sinister Reach cannot be equipped on this weapon).
 attack:
   trigger: held                 # continuous: `fire_rate` is TICKS per second
-  shot_type: hitscan            # module ShotType "Hit-Scan" for attack 2
+  shot_type: hit_scan            # module ShotType "Hit-Scan" for attack 2
   fire_rate: 8.0
   # ONE, not the base form's eight. The Genesis replaces a pellet spread with
   # a beam; see the note above for why the page's "3 beams" is not this number.

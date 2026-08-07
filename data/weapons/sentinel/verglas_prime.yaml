@@ -50,7 +50,7 @@ co_behavior: additive_with_base_damage
 # takes whatever the mod elements leave (MECHANICS §3 rule 2).
 attack:
   trigger: held
-  shot_type: hitscan
+  shot_type: hit_scan
   fire_rate: 12.0
   multishot: 1.0
   # 0.5 PER TICK: "Beam Weapons consume 0.5 ammo per trace — unless they are
