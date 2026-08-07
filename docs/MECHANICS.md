@@ -229,11 +229,20 @@ authoritative rules; supersedes the earlier draft):
 6. **Rivens with two elements**: the LAST-listed stat gets hierarchy
    priority (combines with mods higher up); the first-listed combines
    lower; with no other elemental mods the two combine with each other.
+   Implemented by pushing a mod's own elements in REVERSE of its card
+   order; only a riven carries two, so it reaches nothing else. Verified
+   against an in-game reading — MEASUREMENTS **M31**.
 7. **Innate secondary elements** (Ogris Blast, Nukor Radiation, ...) are
    permanent and never combine; mod primaries combine independently
    alongside; a Kuva/Tenet progenitor element does NOT fold into an
    innate secondary. Likewise combined-element MODS (Magnetic Might
-   family) add their secondary directly, outside the primary hierarchy.
+   family) add their secondary directly, outside the primary hierarchy —
+   so their SLOT decides nothing. **That last half is contradicted by one
+   in-game reading** (M31): moving a Magnetic Strafe past a Cold mod
+   changed which elements paired, which nothing here allows. The rival
+   model is that a combined element sits in the hierarchy and FLUSHES the
+   pending primary above it. Unverified, not implemented; M31 states the
+   three-mod experiment that decides it.
 8. Elements **injected by a buff** enter at their defined position —
    Frenzy's "+100% Toxin" appends at the END of the mod order, additive
    with Toxin mods, joining an existing Toxin-bearing combination if one
