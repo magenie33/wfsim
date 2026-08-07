@@ -1097,7 +1097,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 17] = [
+        const EXPECTED: [(&str, &str, &[&str]); 18] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
@@ -1117,6 +1117,13 @@ mod tests {
             // draws that line), so the weapon's listed trigger is Held and no
             // Cannonade fits.
             ("phantasma_prime", "held", &[]),
+            // A NATURAL Incarnon whose two forms disagree about the trigger:
+            // Semi in the hand, Auto once transmuted. The listed trigger is
+            // the base form's, so the mod FITS — and installing tier 1 takes
+            // it off again, because the rule is asked of every firing mode and
+            // the Incarnon form is one. Exactly the Dual Toxocyst's shape, on
+            // the rifle side of the pool for the first time.
+            ("phenmor", "semi_auto", &["semi_rifle_cannonade"]),
             // BURST is its own trigger family, and this is where that claim
             // is cashed: the Semi-* mods gate on the LISTED trigger, the wiki
             // lists the Burston as "Burst", so it takes no Cannonade at all —

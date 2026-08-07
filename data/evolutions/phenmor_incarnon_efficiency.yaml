@@ -1,0 +1,25 @@
+id: phenmor_incarnon_efficiency
+name: Incarnon Efficiency
+weapon: phenmor
+tier: 4
+description: "Headshots Build +50% more Incarnon Transmutation charge."
+# A NATURAL Incarnon: the Phenmor carries its Genesis innately, so this perk
+# belongs to the weapon rather than to an adapter shared by a family. Five
+# tiers, thirteen perks - see docs/INCARNON.md for why the naturals are shaped
+# differently from the 31 adapters.
+# NO `icon:`. The field is optional and the build FAILS on one that does not
+# resolve to a real image, so a guessed wiki file name is worse than none —
+# these five had no verified `File:` name and the Laetum's thirteen ship
+# without icons for the same reason.
+selection: choose_one
+
+effects:
+  # Divides the hits needed rather than raising the cap: 12 weakpoint hits
+  # become 8 (`charges_to_fill / (1 + rate)`, rounded up), and the 408-round
+  # pool is unchanged. The wiki states the same thing from the other side -
+  # 34 charge per hit becomes 51.
+  - kind: incarnon_charge_rate
+    value: 0.50
+
+source:
+  url: https://wiki.warframe.com/w/Phenmor

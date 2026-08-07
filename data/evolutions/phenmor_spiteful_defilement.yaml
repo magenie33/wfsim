@@ -1,0 +1,32 @@
+id: phenmor_spiteful_defilement
+name: Spiteful Defilement
+weapon: phenmor
+tier: 5
+description: "Enemies suffering from fewer than 3 Status Effects will receive: +100% Critical Damage"
+# A NATURAL Incarnon: the Phenmor carries its Genesis innately, so this perk
+# belongs to the weapon rather than to an adapter shared by a family. Five
+# tiers, thirteen perks - see docs/INCARNON.md for why the naturals are shaped
+# differently from the 31 adapters.
+# NO `icon:`. The field is optional and the build FAILS on one that does not
+# resolve to a real image, so a guessed wiki file name is worse than none —
+# these five had no verified `File:` name and the Laetum's thirteen ship
+# without icons for the same reason.
+selection: choose_one
+
+effects:
+  # NOT LOADED: no effect kind exists for a crit multiplier gated on the
+  # TARGET's status count. The engine counts status TYPES already - Condition
+  # Overload's bucket is exactly that number - so the counter is there and the
+  # conditional bracket is not; this resolves to `EvoEffect::Inert` and the UI
+  # says so.
+  #
+  # It is the ANTI-Condition-Overload perk, which is why it matters here: it
+  # pays on a target with 0-2 statuses and stops the moment CO starts paying,
+  # so a build cannot want both. Modelling it needs the count read at the
+  # instant of the hit, which is where CO already reads it.
+  - kind: crit_multiplier_below_status_count
+    threshold: 3
+    value: 1.00
+
+source:
+  url: https://wiki.warframe.com/w/Phenmor

@@ -1341,6 +1341,32 @@ use crate::loadout::WeaponBase;
             "furis_haven_foray :: flat_base_damage_with_overshields",
             "mk1_furis_executioners_fortune :: instant_reload_on_headshot",
             "mk1_furis_haven_foray :: flat_base_damage_with_overshields",
+            // THE PHENMOR (2026-08-08), the first natural Incarnon after the
+            // Laetum and the first weapon to bring FOUR inert perks at once.
+            // Two are the family's and already argued above — an instant reload
+            // the sim cannot end, and Ready Retaliation's reload-speed kind
+            // that this loader has no arm for.
+            //
+            // The other two are new shapes, and both would be worth real damage
+            // here rather than being handling stats:
+            //
+            // SPITEFUL DEFILEMENT is the ANTI-Condition-Overload perk — a crit
+            // multiplier that pays while the TARGET carries fewer than three
+            // statuses and stops the moment CO starts paying. The counter it
+            // needs already exists (CO's bucket IS the status-type count); what
+            // does not is a crit bracket that reads it.
+            //
+            // LINGERING JUDGEMENT is a buff armed by a headshot STREAK — two
+            // inside two seconds, held for eight. The engine has per-headshot
+            // triggers for fire rate and reload and a flat headshot-damage
+            // bonus, but nothing that counts N hits inside a window. On the
+            // official ruler, which puts every shot into a head, it would arm
+            // on the second shot and never lapse: a flat +50% headshot damage
+            // for the whole engagement, and the largest thing on this list.
+            "phenmor_executioners_fortune :: instant_reload_on_headshot",
+            "phenmor_lingering_judgement :: headshot_damage_on_headshot_streak",
+            "phenmor_ready_retaliation :: reload_speed_bonus",
+            "phenmor_spiteful_defilement :: crit_multiplier_below_status_count",
         ];
         let expected: Vec<String> = expected.into_iter().map(str::to_string).collect();
         let missing: Vec<&String> = expected.iter().filter(|e| !found.contains(e)).collect();

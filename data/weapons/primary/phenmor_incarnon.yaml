@@ -1,0 +1,91 @@
+id: phenmor_incarnon
+name: Phenmor (Incarnon Form)
+slot: primary
+class: rifle
+form: incarnon
+
+# TWO WEAPONS MODEL: second entry of the transform group — see
+# data/weapons/primary/phenmor.yaml for the base form and the decision.
+transform_group: phenmor
+transforms_from: phenmor
+
+# The Incarnon transformation economy (wiki Phenmor). Zariman weapons carry the
+# Genesis innately, so there is no install cost and no adapter.
+incarnon:
+  gauge:
+    charge_on: weakpoint_hits
+    charges_to_fill: 12
+    rounds_per_charge: 34
+    max_rounds: 408
+    # charge_rules:
+    # - Each weakpoint hit grants 34 Incarnon rounds; 12 hits fill the gauge to
+    # the 408-round cap (12 x 34 = 408, and the page states both ends).
+    # - Individual multishot projectiles each build charge.
+    # - A full gauge is NOT required to transmute.
+  transmute:
+    activation: alt_fire
+    # VERBATIM (wiki Phenmor): mode switching "has an animation equal to the
+    # weapon's reload speed", and "Switching back will expend any remaining
+    # charge" — the revert throws away the pool rather than banking it, which
+    # is why the cycle is modelled as running the pool dry.
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+  incarnon_magazine:
+    # CHARGE-BACKED, like every other Incarnon pool here: converted from
+    # weakpoint charges and entirely outside the ammo system, which is WHY
+    # magazine mods and ammo efficiency are inert on it.
+    resource: incarnon_charges
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 2.8      # = base reload time, unmodded (wiki)
+  # 1 s is MEASURED on Dual Toxocyst (docs/MEASUREMENTS.md M9: the revert has
+  # its own 1.0 s base, and both directions scale with reload speed). Applying
+  # it to every weapon is the assumption, and it is deliberately uniform — no
+  # weapon is special-cased until one is measured.
+  transmute_out_seconds: 1.0
+
+# SIM CONVENIENCE: with the gauge LOCKED full the Incarnon cycle reduces to a
+# magazine/reload model the plain sim consumes directly.
+pseudo_reload:
+  magazine: 408
+  reload_seconds: 3.8   # transmute out (1.0) + in (2.8), unmodded
+  # note: excludes charge-rebuilding time (assumed locked); both components
+  # scale with reload-speed bonuses
+
+# Same class as the base entry: no Phenmor row exists in the wiki's CO catalog,
+# and absence there means ordinary. CO boosts the DIRECT hit, which is all this
+# form has — there is no radial part to exclude.
+co_behavior: additive_with_base_damage
+
+# ONE ATTACK PART, and the differences from the base form are all here: Auto
+# instead of Semi, 13.33 rounds/s instead of 3, a slower projectile, 3 m of
+# punch-through, and a vector that trades most of the Puncture for Radiation.
+# Crit and status are UNCHANGED across the transformation (20% / 2.0x / 20%),
+# which is unusual — most Incarnon forms buy crit — and is why this weapon's
+# case is its fire rate rather than its per-shot numbers.
+attack:
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 80
+  fire_rate: 13.33
+  multishot: 1.0
+  ammo_cost: 1                  # of the separate incarnon magazine (408)
+  crit_chance: 0.20
+  crit_multiplier: 2.0
+  status_chance: 0.20
+  # INNATE, and the form's only defensive-geometry perk: "3 meter Punch
+  # Through" (wiki). The single-target arena has no second body for it to
+  # reach, so it is recorded and changes nothing here.
+  punch_through_m: 3.0
+  # 80 Slash + 60 Radiation = 140, the same total the base form deals. The
+  # Radiation is already COMBINED, so MECHANICS §3 rule 2 applies: it takes
+  # what the elemental mods leave rather than combining with them.
+  damage: { slash: 80.0, radiation: 60.0 }
+
+# incarnon_evolutions: see data/weapons/primary/phenmor.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Phenmor
+  # note: Both forms' stats come from the wiki infobox and the WFCD
+  # warframe-items `attacks` array ("Normal Attack" / "Incarnon Form"), which
+  # agree on every field.

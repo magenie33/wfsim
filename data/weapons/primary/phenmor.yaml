@@ -1,0 +1,88 @@
+id: phenmor
+name: Phenmor
+slot: primary
+# WFCD `type: Rifle`, same as the Burston Prime and the Karak Wraith, so the
+# same three pools: primary-wide, Rifle, and the Assault Rifle sub-pool.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]
+grip_type: RIFLE
+mastery_rank: 14
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are separate
+# entries linked by a transform group. Zariman weapons carry the Incarnon
+# Genesis innately — there is no separate Genesis item to install, which is why
+# this file names its own form rather than an adapter's.
+transform_group: phenmor
+transforms_to: phenmor_incarnon
+
+# Weapon-level metadata (wiki infobox, cross-checked against WFCD
+# warframe-items — 0 disagreements on anything below).
+accuracy: 28.57              # WFCD 28.571428; the page says "High"
+disposition: 0.6             # riven disposition (●○○○○), WFCD omegaAttenuation
+                             # 0.6 — its `disposition: 1` field is the stale one
+polarities: [madurai, naramon]
+exilus_polarity: madurai
+riven_family: Phenmor
+traits: [zariman, incarnon]
+introduced: "31.5"           # Update 31.5 "Angels of the Zariman" (2022-04-27)
+internal_name: /Lotus/Weapons/Tenno/Zariman/LongGuns/SemiAutoRifle/ZarimanSemiAutoRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80              # rifle pickup, as Burston Prime / Karak Wraith
+magazine: 30
+reload_seconds: 2.8
+
+# Condition Overload behavior class. The wiki's CO catalog has NO Phenmor row,
+# and absence there means ORDINARY rather than unknown (the catalog lists the
+# anomalies) — so the Additive class on the full base, which is the loader
+# default for `co_base_fraction`. This weapon has no base-damage-increase
+# evolution to exclude from that base.
+co_behavior: additive_with_base_damage
+
+# ONE ATTACK PART. The base form is a plain semi-auto projectile — the radial
+# and the punch-through belong to the Incarnon form (phenmor_incarnon.yaml).
+attack:
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 120
+  fire_rate: 3.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.20
+  crit_multiplier: 2.0
+  status_chance: 0.20
+  punch_through_m: 0.0
+  # WFCD's summary `damage` object SWAPS these two — it reads Puncture 98 /
+  # Slash 42 while its own `attacks[].damage` and the wiki infobox both read
+  # Puncture 42 / Slash 98. The same mislabel is recorded on the Laetum; the
+  # per-attack table is the one to trust.
+  damage: { puncture: 42.0, slash: 98.0 }   # total 140
+
+# Incarnon evolutions are perks shared by the transform group; definitions live
+# in data/evolutions/phenmor_*.yaml. THIRTEEN of them, not nine: a natural
+# Incarnon carries five tiers (1 + 3 + 3 + 3 + 3), where an adapter carries
+# four (docs/INCARNON.md).
+# incarnon_evolutions:
+# - { tier: 1, unlock: kill 100 enemies,
+# options: [phenmor_evo1_incarnon_form] }
+# - { tier: 2, unlock: kill 8 Eximus with the Incarnon Transmutation,
+# options: [phenmor_voids_guidance, phenmor_rapid_wrath,
+# phenmor_swift_deliverance] }
+# - { tier: 3, unlock: land 20 headshots on Void Angels with Primary fire
+# without reloading,
+# options: [phenmor_retributions_vessel, phenmor_ready_retaliation,
+# phenmor_executioners_fortune] }
+# - { tier: 4, unlock: close 12 Ruptures in Void Flood,
+# options: [phenmor_survivors_edge, phenmor_incarnon_efficiency,
+# phenmor_elemental_excess] }
+# - { tier: 5, unlock: complete a solo mission with an Incarnon weapon in
+# every slot,
+# options: [phenmor_devouring_attrition, phenmor_spiteful_defilement,
+# phenmor_lingering_judgement] }
+
+source:
+  url: https://wiki.warframe.com/w/Phenmor

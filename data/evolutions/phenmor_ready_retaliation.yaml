@@ -1,0 +1,24 @@
+id: phenmor_ready_retaliation
+name: Ready Retaliation
+weapon: phenmor
+tier: 3
+icon: IncarnonReloadSpeed(xWhite).png
+description: "On Reload from Empty: +100% Reload Speed for 6 seconds."
+# A NATURAL Incarnon: the Phenmor carries its Genesis innately, so this perk
+# belongs to the weapon rather than to an adapter shared by a family. Five
+# tiers, thirteen perks - see docs/INCARNON.md for why the naturals are shaped
+# differently from the 31 adapters.
+selection: choose_one
+
+effects:
+  # NOT LOADED: `evolutions_data::effect()` has no `reload_speed_bonus` arm
+  # (the MODS loader has one - different loader, different vocabulary), so this
+  # resolves to `EvoEffect::Inert` and `condition` is unread there too. The
+  # ordinary caveat applies in game as well: the bonus lands at the END of the
+  # first empty reload, so the first reload does not get it.
+  - kind: reload_speed_bonus
+    value: 1.00
+    condition: reload_from_empty
+
+source:
+  url: https://wiki.warframe.com/w/Phenmor

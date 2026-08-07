@@ -33,7 +33,7 @@ carries that name.
   variants) and **Lato** (secondary, 3 variants). Conversely **Torid** and
   **Dual Toxocyst** are on neither list and are already done.
 
-## Done today — 9 weapons, 5 adapters, 1 natural
+## Done — 10 weapons, 5 adapters, 2 naturals
 
 | adapter / weapon | weapons in the repo |
 | --- | --- |
@@ -43,8 +43,38 @@ carries that name.
 | Torid Genesis | `torid` (+ `_incarnon`) |
 | Dual Toxocyst Genesis | `dual_toxocyst` (+ `_incarnon`) |
 | Laetum (natural) | `laetum` (+ `_incarnon`) |
+| **Phenmor (natural)** | `phenmor` (+ `_incarnon`) — 2026-08-08 |
 
-Remaining: **26 adapters (56 weapons) + 3 naturals**.
+Remaining: **26 adapters (56 weapons) + 2 naturals**.
+
+### What the Phenmor cost, against what this file predicted
+
+Predicted "4 new perks, no new mechanic". Actual: **no engine work at all**, and
+four perks that load as INERT rather than as new kinds — two of them already
+inert on the Furis (an instant reload the sim cannot end; Ready Retaliation's
+reload-speed kind, which this loader has no arm for) and two genuinely new
+shapes, both of which would be worth real damage here:
+
+- **Spiteful Defilement** — a crit multiplier while the TARGET carries fewer
+  than three statuses. The counter exists (Condition Overload's bucket IS the
+  status-type count); the conditional bracket does not. It is the
+  anti-CO perk, so no build wants both.
+- **Lingering Judgement** — a buff armed by a headshot STREAK (2 in 2 s, held
+  8 s). On the official ruler, which puts every shot into a head, it would arm
+  on the second shot and never lapse: a flat +50% headshot damage for the whole
+  engagement, and the largest unmodelled thing in the set so far.
+
+Everything else mapped onto kinds already in the engine. Two guard tests caught
+the weapon on the way in and are the reason nothing shipped silently: the
+Cannonade roster (a semi-auto base form whose Incarnon form is Auto — the Dual
+Toxocyst's shape, on the rifle side for the first time) and the inert-effects
+pin.
+
+**Icons are not free.** Five of the thirteen had no verified wiki `File:` name
+and were dropped rather than guessed — the site build FAILS on an icon that
+does not resolve, and a guessed name caches as a 31 KB HTML error page that
+passes a naive existence check. The Laetum's thirteen ship without icons for
+the same reason.
 
 ## The cost is PERKS, not weapon files
 
@@ -164,14 +194,15 @@ is intrinsic — but they still model as a transform group here, and they carry
 | weapon | slot | attacks | new perks | note |
 | --- | --- | --- | --- | --- |
 | Laetum\* | secondary | semi projectile → auto projectile + radial | 0 | **done** |
-| Phenmor | primary | semi projectile → auto projectile | 4 | cheapest gun left in the whole program — 9 of its 13 perk names are already carried, most of them by the Laetum |
+| Phenmor\* | primary | semi projectile → auto projectile | 4 | **done 2026-08-08** — the prediction held: no engine work, and the four "new" perks load inert rather than needing kinds |
 | Onos | secondary | auto projectile → held projectile **and** charged hit-scan + radial | 6 | TWO Incarnon attacks in one form — the only gun here that does that |
 | Felarx | primary | auto projectile → semi projectile | 11 | almost nothing shared; also `ReloadStyle = ByRound` |
 
 ## Order, and why
 
-1. **Phenmor** — 4 new perks, no new mechanic, and 9 of its 13 perk names are
-   already carried. Highest ratio in the set.
+1. ~~**Phenmor**~~ — **done 2026-08-08**. 4 new perks, no new mechanic, and 9 of
+   its 13 perk names already carried; the highest ratio in the set, and it cost
+   no engine work at all.
 2. **The 19 shared perk kinds**, driven by whichever adapter needs them first.
    Rapid Reinforcement alone appears on 14 guns; doing it once removes a slot
    from half the remaining program.

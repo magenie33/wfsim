@@ -1,0 +1,27 @@
+id: phenmor_executioners_fortune
+name: Executioner's Fortune
+weapon: phenmor
+tier: 3
+icon: ChanceToReplenishMagOnHeadshot(xWhite).png
+description: "On Headshot kill: 20% chance to instant Reload."
+# A NATURAL Incarnon: the Phenmor carries its Genesis innately, so this perk
+# belongs to the weapon rather than to an adapter shared by a family. Five
+# tiers, thirteen perks - see docs/INCARNON.md for why the naturals are shaped
+# differently from the 31 adapters.
+selection: choose_one
+
+effects:
+  # NOT LOADED: there is no instant-reload effect kind. The nearest thing the
+  # engine has is `on_headshot_reload_speed`, which SCALES a reload rather than
+  # skipping one, and a 20% chance to skip is not a reload-speed bonus. It would
+  # be real here - this arena reloads.
+  #
+  # The Phenmor's trigger is a headshot KILL where the Furis's is a headshot;
+  # recorded because the two ids share a name and would otherwise read as the
+  # same perk at a different number.
+  - kind: instant_reload_on_headshot
+    chance: 0.20
+    condition: headshot_kill
+
+source:
+  url: https://wiki.warframe.com/w/Phenmor

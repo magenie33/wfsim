@@ -1,0 +1,33 @@
+id: phenmor_lingering_judgement
+name: Lingering Judgement
+weapon: phenmor
+tier: 5
+description: "On 2 headshots within 2 seconds: +50% Headshot damage for 8 seconds."
+# A NATURAL Incarnon: the Phenmor carries its Genesis innately, so this perk
+# belongs to the weapon rather than to an adapter shared by a family. Five
+# tiers, thirteen perks - see docs/INCARNON.md for why the naturals are shaped
+# differently from the 31 adapters.
+# NO `icon:`. The field is optional and the build FAILS on one that does not
+# resolve to a real image, so a guessed wiki file name is worse than none —
+# these five had no verified `File:` name and the Laetum's thirteen ship
+# without icons for the same reason.
+selection: choose_one
+
+effects:
+  # NOT LOADED: no effect kind exists for a buff armed by a headshot STREAK.
+  # The engine has `headshot_damage` (a flat bonus) and per-headshot triggers
+  # for fire rate and reload, but nothing that counts N hits inside a window and
+  # then holds a bonus for a duration. Resolves to `EvoEffect::Inert`.
+  #
+  # It would be worth a great deal in this arena, which is why the gap is worth
+  # naming rather than burying: the official ruler fires every shot into a head,
+  # so the streak arms on the second shot and never lapses - the perk would be
+  # a flat +50% headshot damage for the whole engagement.
+  - kind: headshot_damage_on_headshot_streak
+    hits: 2
+    within_seconds: 2.0
+    value: 0.50
+    duration_seconds: 8.0
+
+source:
+  url: https://wiki.warframe.com/w/Phenmor

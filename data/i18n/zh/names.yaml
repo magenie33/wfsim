@@ -59,6 +59,10 @@ weapons:
   gotva_prime: 骨葬 Prime
   karak_wraith: 卡拉克·亡魂
   prisma_grinlok: 棱晶·葛恩火枪
+  phenmor: 凤殁
+  # The FORM, named the way every other Incarnon form here is: DE's own
+  # weapon name plus our own bracket. DE ships no separate name for a form.
+  phenmor_incarnon: 凤殁 (灵化形态)
 
 enemies:
   thrax_centurion: 凶魂百夫长

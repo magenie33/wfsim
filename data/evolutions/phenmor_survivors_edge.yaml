@@ -1,0 +1,23 @@
+id: phenmor_survivors_edge
+name: Survivor's Edge
+weapon: phenmor
+tier: 4
+icon: XCritChanceYStatChance(xWhite).png
+description: "Increase Base Critical Chance by +10%. Increase Base Status Chance by +10%."
+# A NATURAL Incarnon: the Phenmor carries its Genesis innately, so this perk
+# belongs to the weapon rather than to an adapter shared by a family. Five
+# tiers, thirteen perks - see docs/INCARNON.md for why the naturals are shaped
+# differently from the 31 adapters.
+selection: choose_one
+
+effects:
+  # PERCENTAGE POINTS on the BASE, which is the layer mods multiply - the same
+  # reading as the Boar's Survivor's Edge. 20% -> 30% on both stats, and on both
+  # forms, since this weapon's two forms share their crit and status numbers.
+  - kind: flat_base_crit_chance
+    value: 0.10
+  - kind: flat_base_status_chance
+    value: 0.10
+
+source:
+  url: https://wiki.warframe.com/w/Phenmor

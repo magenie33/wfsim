@@ -1,0 +1,24 @@
+id: phenmor_voids_guidance
+name: Void's Guidance
+weapon: phenmor
+tier: 2
+icon: MoreAccuracy(xWhite).png
+description: "+50% Accuracy and +50% less Recoil while Aiming."
+# A NATURAL Incarnon: the Phenmor carries its Genesis innately, so this perk
+# belongs to the weapon rather than to an adapter shared by a family. Five
+# tiers, thirteen perks - see docs/INCARNON.md for why the naturals are shaped
+# differently from the 31 adapters.
+selection: choose_one
+
+effects:
+  # BOTH INDIRECT: the arena hits what it aims at by construction
+  # (`headshot_pct`) and has no geometry for recoil to disturb. Loaded so the
+  # panel states them rather than dropping them - and the aiming CONDITION is
+  # not encoded, because neither number reaches a shot either way.
+  - kind: accuracy_bonus
+    value: 0.50
+  - kind: recoil_reduction
+    value: 0.50
+
+source:
+  url: https://wiki.warframe.com/w/Phenmor

@@ -1,0 +1,21 @@
+id: phenmor_rapid_wrath
+name: Rapid Wrath
+weapon: phenmor
+tier: 2
+icon: IncarnonFireRate(xWhite).png
+description: "+20% Fire Rate"
+# A NATURAL Incarnon: the Phenmor carries its Genesis innately, so this perk
+# belongs to the weapon rather than to an adapter shared by a family. Five
+# tiers, thirteen perks - see docs/INCARNON.md for why the naturals are shaped
+# differently from the 31 adapters.
+selection: choose_one
+
+effects:
+  # BRACKET (user, 2026-07-29): the ordinary fire-rate bucket - the same
+  # additive one the mods feed, so it sums with Vile Acceleration rather than
+  # multiplying after it.
+  - kind: fire_rate_bonus
+    value: 0.20
+
+source:
+  url: https://wiki.warframe.com/w/Phenmor

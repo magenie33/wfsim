@@ -152,6 +152,26 @@ evolutions:
 
 # The card text. One string per evolution; `\n` where our English description
 # breaks a line.
+  # Phenmor (2026-08-08), read through the API from 凤殁. THE CN CLIENT WORDS
+  # ONE OF THESE DIFFERENTLY: Lingering Judgement is "On 2 headshots within 2
+  # seconds" in English and 在2秒内爆头击杀两次 — two headshot KILLS — in
+  # Chinese. Transcribed as each client says it rather than reconciled: a card
+  # shows the player's own client's sentence, and the ENGINE reads neither
+  # (the perk is inert — see data/evolutions/phenmor_lingering_judgement.yaml).
+  phenmor_evo1_incarnon_form: 灵化形态
+  phenmor_voids_guidance: 虚空指引
+  phenmor_rapid_wrath: 极速之怒
+  phenmor_swift_deliverance: 迅速判决
+  phenmor_retributions_vessel: 报应之舟
+  phenmor_ready_retaliation: 待命报复
+  phenmor_executioners_fortune: 行刑者财富
+  phenmor_survivors_edge: 生还占优
+  phenmor_incarnon_efficiency: 灵化效率
+  phenmor_elemental_excess: 元素超量
+  phenmor_devouring_attrition: 压制损耗
+  phenmor_spiteful_defilement: 怨之亵渎
+  phenmor_lingering_judgement: 恒久审判
+
 evolution_descriptions:
   # ---- Dual Toxocyst ----
   dual_toxocyst_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
@@ -275,3 +295,32 @@ evolution_descriptions:
   mk1_furis_prelude_of_might: "暴击几率低于 40% 时，基础暴击伤害增加 +3x。"
   furis_elemental_balance: "基础触发几率增加 +28%。"
   mk1_furis_elemental_balance: "基础触发几率增加 +39%。"
+  # Phenmor
+  phenmor_evo1_incarnon_form: |-
+    爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。
+  phenmor_voids_guidance: |-
+    +50%精准度和在瞄准时武器后坐力减少+50%
+  phenmor_rapid_wrath: |-
+    +20%射速
+  phenmor_swift_deliverance: |-
+    +80%投射物速度
+  phenmor_retributions_vessel: |-
+    +50%弹匣容量
+  phenmor_ready_retaliation: |-
+    空弹匣装填完后：+100%装填速度，持续6秒
+  phenmor_executioners_fortune: |-
+    爆头击杀时：20%几率立即重新装填
+  phenmor_survivors_edge: |-
+    +10%暴击几率
+    +10%触发几率
+  phenmor_incarnon_efficiency: |-
+    爆头增加50%灵化转变充能
+  phenmor_elemental_excess: |-
+    +20%触发几率
+    -10%暴击几率
+  phenmor_devouring_attrition: |-
+    有50%的几率在非暴击时造成+2000%伤害
+  phenmor_spiteful_defilement: |-
+    身上受到少于3个异常状态的敌人将遭受：+100%暴击伤害
+  phenmor_lingering_judgement: |-
+    在2秒内爆头击杀两次：+50%爆头伤害，持续8秒

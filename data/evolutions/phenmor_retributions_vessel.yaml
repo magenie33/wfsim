@@ -1,0 +1,25 @@
+id: phenmor_retributions_vessel
+name: Retribution's Vessel
+weapon: phenmor
+tier: 3
+icon: IncarnonClipSize(xWhite).png
+description: "+50% Magazine Capacity"
+# A NATURAL Incarnon: the Phenmor carries its Genesis innately, so this perk
+# belongs to the weapon rather than to an adapter shared by a family. Five
+# tiers, thirteen perks - see docs/INCARNON.md for why the naturals are shaped
+# differently from the 31 adapters.
+selection: choose_one
+
+effects:
+  # 30 -> 45 rounds. It is the BASE, so magazine mods multiply the new value.
+  # The wiki states this one as a PERCENTAGE where the adapters state theirs as
+  # a flat count (Extended Volley's "+21"); 50% of the base 30 is 15, and the
+  # flat form is what the loader takes.
+  #
+  # The loader drops it on a charge-backed form, so the Incarnon form's
+  # 408-round pool is untouched - that pool is charges, not a magazine.
+  - kind: flat_base_magazine
+    value: 15
+
+source:
+  url: https://wiki.warframe.com/w/Phenmor

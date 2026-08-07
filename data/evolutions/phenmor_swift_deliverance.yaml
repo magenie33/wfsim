@@ -1,0 +1,24 @@
+id: phenmor_swift_deliverance
+name: Swift Deliverance
+weapon: phenmor
+tier: 2
+icon: IncarnonProjectileSpeed(xWhite).png
+description: "+80% Projectile Speed"
+# A NATURAL Incarnon: the Phenmor carries its Genesis innately, so this perk
+# belongs to the weapon rather than to an adapter shared by a family. Five
+# tiers, thirteen perks - see docs/INCARNON.md for why the naturals are shaped
+# differently from the 31 adapters.
+selection: choose_one
+
+effects:
+  # Projectile speed BUYS RANGE on a weapon whose reach is a lifetime rather
+  # than a stat (wiki Range), but this arena is single-target at a fixed
+  # engagement and models neither travel time nor range. The number reaches the
+  # panel through the indirect bucket the mods use, so it is stated rather than
+  # silently dropped.
+  - kind: indirect
+    stat: projectile_speed
+    value: 0.80
+
+source:
+  url: https://wiki.warframe.com/w/Phenmor
