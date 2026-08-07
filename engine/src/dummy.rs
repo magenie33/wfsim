@@ -6844,42 +6844,94 @@ mod tests {
         );
     }
 
-    /// The merge is why damaging status effects are "affected TWICE by
-    /// multishot": the summed status chance produces the same expected number of
-    /// procs, but each proc's payload is built from the merged instance, so the
-    /// DoT damage doubles where a gun's would not.
+    /// THE EXPONENT. A beam's DoT goes as multishot **squared**, and it is the
+    /// one number about beams that everybody gets wrong (asked again 2026-08-07,
+    /// with the reasonable guess that a beam trades proc COUNT for proc SIZE and
+    /// comes out even).
+    ///
+    /// It does not trade. The merge sums BOTH halves, so nothing is given up:
+    ///
+    /// | | procs per tick | payload each | DoT |
+    /// | --- | --- | --- | --- |
+    /// | gun | `M x SC` | 1x | `M` |
+    /// | beam, rolled status | `M x SC` | `Mx` | `M²` |
+    /// | beam, FORCED proc | 1 | `Mx` | `M` |
+    ///
+    /// Wiki (Multishot §Continuous Weapons), verbatim: *"The total output of
+    /// damaging status effects … is affected **twice** by multishot on all
+    /// continuous weapons"*, and the exception that proves the mechanism —
+    /// forced procs *"are applied after the damage instances are merged. Because
+    /// of this their damage output is not affected twice by multishot, instead
+    /// being equivalent to use on standard weapons."*
+    ///
+    /// Deterministic on purpose: status chance is 1.0 at M=1, so the merged
+    /// chance is exactly `M` procs a tick and no ratio here is a sample mean.
+    /// Three ticks x M=3 is 9 Toxin stacks, one under the cap that would
+    /// flatten the very effect being measured.
     #[test]
-    fn merging_doubles_the_status_payload_not_the_proc_count() {
-        let mk = |continuous, ms: f64| DummyParams {
-            damage: DamageVector::new().with(DamageType::Toxin, 50.0),
-            continuous,
-            multishot: ms,
-            base_multishot: 1.0,
-            status_chance: 0.5,
-            base_status_chance: 0.5,
-            crit_multiplier: 1.0,
-            base_crit_chance: 0.0,
-            duration_secs: 8.0,
-            ..DummyParams::default()
+    fn a_beams_dot_scales_with_multishot_squared() {
+        let mk = |continuous, ms: f64, forced: bool| {
+            let mut p = DummyParams {
+                damage: DamageVector::new().with(DamageType::Toxin, 50.0),
+                continuous,
+                multishot: ms,
+                base_multishot: 1.0,
+                status_chance: if forced { 0.0 } else { 1.0 },
+                base_status_chance: if forced { 0.0 } else { 1.0 },
+                forced_procs: if forced { vec![DamageType::Toxin] } else { Vec::new() },
+                crit_multiplier: 1.0,
+                base_crit_chance: 0.0,
+                fire_rate: 1.0,
+                duration_secs: 2.5,
+                ..DummyParams::default()
+            };
+            // NOTHING MAY DIE and nothing may ramp: a target that dies truncates
+            // the run, and the fixture's default arcane is Secondary Enervate,
+            // whose crit ramps with the number of instances a shot makes — which
+            // is the very thing multishot changes.
+            p.target.base_health = 1e12;
+            p.target.base_armor = 0.0;
+            p.target.base_shield = 0.0;
+            p.target.base_overguard = 0.0;
+            p.arcane = ArcaneFx::none();
+            // ONE body part at 1x. A proc's payload carries the procing hit's
+            // part multiplier, so the fixture's 50/50 body/3x-head draw is
+            // noise sitting on top of the very ratio being measured.
+            p.body_parts = vec![BodyPart {
+                name: "body".into(),
+                aim_weight: 1.0,
+                multiplier: 1.0,
+                is_head: false,
+                crit_bonus: false,
+            }];
+            p
         };
-        let one = monte_carlo(&mk(true, 1.0), 400, 11);
-        let two = monte_carlo(&mk(true, 2.0), 400, 11);
-        // 50% -> 100% status chance: procs roughly double (they cannot more than
-        // double, since one instance can only be guaranteed once here).
-        let ratio = two.mean_procs / one.mean_procs;
-        assert!(
-            (1.7..=2.3).contains(&ratio),
-            "proc ratio {ratio} (procs {} vs {})",
-            two.mean_procs,
-            one.mean_procs
-        );
-        // The DoT damage grows by MORE than the proc count: ~2x the procs, each
-        // carrying ~2x the payload.
-        let dot_ratio = two.mean_dot_damage / one.mean_dot_damage;
-        assert!(
-            dot_ratio > 1.5 * ratio,
-            "dot ratio {dot_ratio} should exceed the proc ratio {ratio} times the payload growth"
-        );
+        let run = |c, ms, f| monte_carlo(&mk(c, ms, f), 8, 11);
+        let close = |a: f64, b: f64| (a - b).abs() < 0.02 * b;
+
+        for m in [2.0_f64, 3.0] {
+            let (one, many) = (run(true, 1.0, false), run(true, m, false));
+            // Procs are NOT traded away: the summed status chance still lands M
+            // of them a tick, exactly as a gun's M pellets would.
+            let procs = many.mean_procs / one.mean_procs;
+            assert!(close(procs, m), "beam procs x{procs} at M={m}");
+            // …and each is built from the merged instance, so the total squares.
+            let dot = many.mean_dot_damage / one.mean_dot_damage;
+            assert!(close(dot, m * m), "beam dot x{dot} at M={m}, want x{}", m * m);
+
+            // A GUN is linear in both halves — same proc count, payload untouched.
+            let (g1, gm) = (run(false, 1.0, false), run(false, m, false));
+            let gdot = gm.mean_dot_damage / g1.mean_dot_damage;
+            assert!(close(gdot, m), "gun dot x{gdot} at M={m}");
+
+            // FORCED procs: merged first, so ONE a tick whatever M is — and the
+            // linear payload puts the beam back level with the gun.
+            let (f1, fm) = (run(true, 1.0, true), run(true, m, true));
+            let fprocs = fm.mean_procs / f1.mean_procs;
+            assert!(close(fprocs, 1.0), "forced procs x{fprocs} at M={m} — merged, so one a tick");
+            let fdot = fm.mean_dot_damage / f1.mean_dot_damage;
+            assert!(close(fdot, m), "forced dot x{fdot} at M={m}, want x{m}");
+        }
     }
 
     /// The damage RAMP: "Initial damage starts at a lower percentage, and ramps

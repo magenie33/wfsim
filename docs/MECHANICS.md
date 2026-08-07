@@ -1194,6 +1194,32 @@ and all three fall out of merging rather than needing their own code:
 - Crit chance is unchanged, so a beam gains nothing from multishot on the crit
   roll — only one roll happens.
 
+**THE EXPONENT.** "Affected twice" means the DoT goes as multishot **squared**,
+and it is the one number about beams that is routinely misremembered (asked
+again 2026-08-07). The usual guess is that a beam trades proc COUNT for proc
+SIZE and comes out even — a fair reading of "multishot cannot add a beam", and
+the reason it is worth writing the table out. It does not trade: the merge sums
+BOTH halves, so nothing is given up.
+
+| at multishot `M` | procs per tick | payload each | DoT total |
+| --- | --- | --- | --- |
+| gun | `M × SC` | 1× | `M` |
+| beam, ROLLED status | `M × SC` | `M×` | **`M²`** |
+| beam, FORCED proc | 1 | `M×` | `M` |
+
+The forced row is the exception the wiki states in the same breath, and it is
+what the "even trade" intuition actually describes: *"their damage output is
+not affected twice by multishot, instead being equivalent to use on standard
+weapons."* One proc a tick carrying `M×` = the gun's `M` procs carrying 1×.
+Hunter Munitions on a beam is therefore linear; the weapon's own status chance
+is not. DIRECT damage is linear either way — `M` instances of 1× on a gun, one
+instance of `M×` on a beam — which is the half the intuition gets right.
+
+What a beam pays for all this is the crit roll: one per tick, not `M`.
+
+`a_beams_dot_scales_with_multishot_squared` asserts every row of that table
+exactly (status chance pinned at 1.0 so the proc counts are not sample means).
+
 **Damage RAMP.** *"Initial damage starts at a lower percentage, and ramps up to
 100% of its damage over 0.6 seconds of hitting a target. 0.8 seconds after the
 weapon stops hitting a target, the damage decays back to its initial point over
