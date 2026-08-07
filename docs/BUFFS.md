@@ -421,10 +421,68 @@ one perk. Correctness comes from tests at two levels:
 
 Supporting rules:
 
-- **Determinism** — one seeded RNG threaded through the whole sim, fixed tick
-  rate; no ambient randomness. Makes Monte Carlo reproducible and golden tests
-  stable. (Critical here because random big crits can *feed back* into a buff's
-  own reset.)
+- **Determinism** — one seed per engagement, fixed tick rate, no ambient
+  randomness. Makes Monte Carlo reproducible and golden tests stable. (Critical
+  here because random big crits can *feed back* into a buff's own reset.)
+
+  The seed drives THREE streams rather than one (`rng::Draws`, 2026-08-07):
+  `spine` (multishot, crit tier, promotion, body part), `status` (whether a hit
+  procs and with what), `extra` (buff triggers, arcane rolls). One stream made
+  the sim answer "what does this mod change?" much more loudly than the mod: a
+  status chance high enough to land one more proc drew one more number to pick
+  its element, and every crit after it was a different draw, so two builds that
+  differed in nothing that pays came back differing anyway. Splitting them is
+  what makes a paired comparison mean something — a status-only change now
+  leaves the damage decisions bit-identical.
 - **Trace output** — the sim can emit a per-event log (buff bar over time, crit
   tiers, per-bucket contributions) to diff against an in-game trace and localize
   any mismatch. You cannot align what you cannot inspect.
+
+## Three questions about a buff are not three copies of it
+
+A buff is asked three things, in three places, and it is tempting to read that
+as duplication to be collapsed:
+
+| where | question |
+| --- | --- |
+| `DummyParams::buff_roster` | does this build have it, and how big does it get? |
+| `DummyParams::apply_buff_config` | what does the card's setting do to it? |
+| `sample_stacks` | what is its live count at this instant? |
+
+Plus `enumerate_buffs` in `webapi`, which asks what card to draw for it.
+
+**The evolution-granted family really is one shape** and is derived: a
+`StackingBuff` declares its trigger, grant, decay, cap and duration, and all
+four sites loop over the vector. A perk added to `data/evolutions/` needs no
+line in any of them.
+
+**The mod-granted ones are not, and folding them in was tried and rejected
+(2026-08-07).** They do not share a scaling rule, and the differences are the
+mechanics rather than an accident of where the code was written:
+
+- `cc_on_headshot` and `cc_stack` feed the RELATIVE crit bucket — a fraction of
+  the UNMODDED base (`ap.unmodded_crit_chance * cc_rel`), beside Pistol Gambit;
+- `fr_on_reload` adds to the live fire rate and is then multiplied by the buff
+  bar, and a LOCKED fire rate bypasses it entirely;
+- `bd_on_reload` is a live share of the BASE-DAMAGE bucket;
+- `StackingBuff`'s own `FireRate` grant is an ABSOLUTE rate, converted per form
+  at resolve time.
+
+Giving `StackingBuff` a "which bucket, at what scaling, and how does a lock see
+it" field would put every one of those differences back inside the type, and a
+type that is a union of unlike things is worse than three honest lists.
+
+What DOES have to be guaranteed is that the lists agree, and that is done by
+check rather than by construction — three derived tests, each of which walks
+the roster instead of naming buffs:
+
+- `every_buff_the_roster_offers_is_actually_read` — roster ↔ config;
+- `no_rostered_buff_draws_a_flat_zero_it_did_not_earn` — roster ↔ replay
+  (`sample_stacks` ends in `_ => 0`, so a missing arm draws a flat line rather
+  than failing);
+- `card_and_sim_agree` in `webapi` — card ↔ roster, over every weapon-mod and
+  weapon-arcane pair.
+
+Each was verified to FAIL when its arm is deleted. Adding a buff to one place
+and forgetting another is therefore a red test, not a silent wrong number —
+which is the property the collapse was wanted for.
