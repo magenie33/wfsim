@@ -12,7 +12,7 @@ source: submissions
 entries:
   - weapon: burston_prime
     mode: cycle
-    score: 0.9571819621785739
+    score: 0.5857685220047055
     mods: [heavy_caliber, primary_acuity, hammer_shot, vital_sense, gilded_truth, magnetic_capacity, hellfire, thermite_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]

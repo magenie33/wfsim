@@ -4323,7 +4323,10 @@ pub fn run_once_traced(
             // (the Burston's +42) makes these two numbers diverge. Computed
             // beside the direct hit's so both read the SAME counters at the
             // same instant.
-            let co_mult_radial = match &params.radial {
+            // ...off the ACTIVE form. `ap`, not `params`: in a cycle the two
+            // differ for the whole base phase, and this line reading the outer
+            // params gave a base-form shot the Incarnon's explosion (M32).
+            let co_mult_radial = match &ap.radial {
                 Some(r) if r.takes_condition_overload => gunco_bucket(
                     params, ap, &mut debuffs, &mut gal, t, bd, arc_bd, arc_ratio,
                     r.co_base_fraction,
@@ -4452,7 +4455,9 @@ pub fn run_once_traced(
             // exception the wiki states outright ("The Radial Attack does not
             // benefit from Multishot bonuses"), and firing it on the first
             // pellet only is exactly that.
-            let radial_stage = match params.radial {
+            // FROM THE ACTIVE FORM, for the same reason as `co_mult_radial`
+            // above — this is the line that fired it (M32).
+            let radial_stage = match ap.radial {
                 Some(r) if !r.takes_multishot && pellet_idx > 0 => None,
                 other => other,
             };
@@ -8805,6 +8810,63 @@ mod tests {
             direct.mean_transforms > 0.0,
             "plain direct hits must fill a direct-hit gauge (transforms {})",
             direct.mean_transforms
+        );
+    }
+
+    /// THE EXPLOSION BELONGS TO THE FORM THAT HAS ONE. A cycle fires two
+    /// different weapons in turn, and the radial stage was read off the OUTER
+    /// params — which are the Incarnon form's — for every shot, base phase
+    /// included. So a weapon whose Incarnon detonates threw that explosion on
+    /// every base-form shot as well, for free and forever.
+    ///
+    /// Where it showed: a board pinned to a 0% headshot rate, where eight of
+    /// the nine Incarnon forms never charge at all. Measured on the real
+    /// Burston Prime (Serration only, 4 s, 400 runs, zero headshots, ZERO
+    /// transforms on both sides): `incarnon_cycle` 2470 DPS against a pinned
+    /// base form's 1738, +42%, the whole gap in a `radial` source dealing Heat
+    /// — an element the base form has nowhere in its vector. See MEASUREMENTS
+    /// M32.
+    ///
+    /// Body-only aim is the discriminator again, for the same reason as the
+    /// test above: no weak-point hits, so the gauge never fills and the
+    /// engagement is base form from end to end. What it must equal is the SAME
+    /// base form fired on its own.
+    #[test]
+    fn a_cycle_that_never_transforms_is_its_base_form() {
+        let base_form = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 50.0),
+            crit_multiplier: 1.0,
+            body_parts: mono_body(1.0), // NO heads: the gauge can never fill
+            ..no_status()
+        };
+        let cycling = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 100.0),
+            crit_multiplier: 1.0,
+            magazine_size: 2.0,
+            ammo_efficiency_applies: false,
+            arcane: ArcaneFx::none(),
+            body_parts: mono_body(1.0),
+            // The Incarnon form's, and ONLY the Incarnon form's — `base_form`
+            // above declares none.
+            radial: Some(radial_of(0.0, 0.0)),
+            cycle: Some(IncarnonCycle {
+                starts_primed: false,
+                base_form: Box::new(base_form.clone()),
+                charge_on: crate::loadout::ChargeOn::WeakpointHits,
+                charges_to_fill: 2,
+                transmute_out_seconds: 0.5,
+                transmute_seconds: 1.0,
+                reload_bucket: 0.0,
+            }),
+            ..no_status()
+        };
+        let cyc = monte_carlo(&cycling, 5, 9);
+        let alone = monte_carlo(&base_form, 5, 9);
+        assert_eq!(cyc.mean_transforms, 0.0, "the fixture must never transform");
+        assert_eq!(
+            cyc.mean_damage, alone.mean_damage,
+            "a cycle stuck in its base form must deal exactly what that form deals              ({} vs {}) — the difference is the other form's explosion",
+            cyc.mean_damage, alone.mean_damage
         );
     }
 

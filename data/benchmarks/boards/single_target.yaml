@@ -84,61 +84,61 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
-    score: 59.20043296065633
+    score: 58.18175952332537
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 58.53545999146114
+    score: 56.957884622739755
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 54.1235709297433
+    score: 53.00676653195803
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, speed_trigger, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 53.199720659872696
+    score: 52.230496664241876
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, speed_trigger, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 50.72381646958468
+    score: 49.748256411455095
     mods: [primary_acuity, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 44.769174878276374
+    score: 43.629803031037824
     mods: [primary_acuity, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, rime_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 43.53290952715592
+    score: 42.46461899396877
     mods: [primary_acuity, primed_firestorm, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 42.90279242345516
+    score: 42.16116957781653
     mods: [primary_acuity, primed_firestorm, galvanized_aptitude, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 42.247945985187336
+    score: 41.34321954707509
     mods: [primary_acuity, primed_firestorm, galvanized_aptitude, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 40.141862988033864
+    score: 39.600113470064095
     mods: [amalgam_serration, primary_acuity, primed_firestorm, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
@@ -279,61 +279,61 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: laetum
     mode: cycle
-    score: 65.32773306222664
+    score: 65.21512397336824
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
-    score: 62.69726097776829
+    score: 62.41128215444261
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
-    score: 60.963596581429215
+    score: 60.62171033903025
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
-    score: 59.225660731373075
+    score: 59.130772726507686
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_awakened_readiness, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
-    score: 57.35996420361116
+    score: 57.124322452875845
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
-    score: 56.72632503934199
+    score: 56.41817234711423
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
-    score: 54.39247818986891
+    score: 53.95629160506595
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_awakened_readiness, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
-    score: 51.75942858095581
+    score: 51.5962046293095
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_incarnon_efficiency, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
-    score: 50.77050921516831
+    score: 50.562057851469014
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, anemic_agility, pistol_elementalist, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
-    score: 50.64252214345847
+    score: 50.37399401137226
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]

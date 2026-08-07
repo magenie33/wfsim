@@ -804,6 +804,14 @@ weighting and multishot interaction are top calibration targets (CORE.md §3).
 
 **Definition.** How shots actually land — the "hardcore" differentiator.
 
+**A RADIAL BELONGS TO THE FORM THAT DECLARES ONE.** An Incarnon cycle fires two
+weapons in turn, and every per-shot property is read off the ACTIVE form — the
+explosion included. A weapon whose Incarnon detonates does NOT detonate in its
+base form, and the two lines that read the outer params instead gave it that
+explosion on every base-form shot: +42% on a Burston Prime that never
+transformed, all of it Heat the base form does not have. See MEASUREMENTS
+**M32**.
+
 **Mechanics.** Multishot pellet count and its probabilistic split;
 range/damage falloff; ballistics/projectile travel; hit chance; AoE radius and
 falloff; headshot multiplier; punch-through. AoE self-damage/falloff and whether
