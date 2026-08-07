@@ -461,6 +461,18 @@ const asArcaneList = (v, n) => {
 // means no transformation, so the panel falls back to the base form.
 // Overwritten by META.defaults on init.
 let evoSel = { 1: null, 2: null, 3: null, 4: null };
+// HOW THIS BUILD IS PLAYED — part of the BUILD, not of the fight.
+//
+// "Torid, played through its cycle" is the thing a board ranks, and the entry
+// it ranks is `weapon + mode + mods + evolutions + arcanes` — mode is inside
+// that list, not beside it. A build preset is exactly what gets submitted and
+// shared, so a mode kept anywhere else would have to be fetched from the fight
+// at submission time, which is the coupling the board just shed.
+//
+// It is NOT "installed" like a mod — you own one Torid and play it both ways,
+// switching mid-engagement for free. What it is part of is the SUBJECT of a
+// measurement, which is what a build is (owner, 2026-08-07).
+let mode = "base";
 // A FRESH scenario, built from the server's defaults and from nothing else.
 //
 // This is what a weapon that has never been opened gets. It used to be
@@ -488,7 +500,8 @@ function defaultScenario() {
     invisible: !!d.invisible, airborne: !!d.airborne,
     wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
     infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
-    duration: d.duration, runs: d.runs, form: d.form, buffs: {},
+    // NO `form`: how the weapon is played belongs to the build.
+    duration: d.duration, runs: d.runs, buffs: {},
   };
 }
 
@@ -943,9 +956,18 @@ const benchCurrent = () =>
   benchList().find((b) => b.id === benchPick) || benchList()[0] || null;
 
 /// HOW A WEAPON WAS PLAYED, in words. The ids are the vocabulary a submission
-/// and a board row use; these are what a reader sees.
-const MODE_LABEL = { base: "Base form", cycle: "Incarnon cycle", alternate: "Alt fire" };
-const modeLabel = (id) => tr(MODE_LABEL[id] || id);
+/// and a board row use; this is what a reader sees.
+///
+/// NAMED FOR THE FORM IT FIRES, not for the mode's own id: a Cernos Prime's
+/// `base` mode is its CHARGED shot, because that is what the arsenal hands
+/// you, and calling it "base form" would be true of the id and false of the
+/// weapon. The mode ids are roles; the labels are the weapon's own words.
+const modeLabel = (w, id) => {
+  const forms = (w || {}).forms || [];
+  if (id === "cycle") return tr("Incarnon cycle");
+  const f = id === "alternate" ? forms.find((x) => !x.is_default) : forms.find((x) => x.is_default);
+  return f ? tr(f.name) : tr(id);
+};
 
 /// One entry per WEAPON AND MODE: its best row under `id`, or null where nobody
 /// has submitted. A weapon with no row is not an error, it is the invitation —
@@ -955,10 +977,10 @@ const modeLabel = (id) => tr(MODE_LABEL[id] || id);
 const benchEntries = (id) => {
   const out = [];
   for (const w of META.weapons || []) {
-    for (const mode of w.modes || ["base"]) {
+    for (const m of w.modes || ["base"]) {
       const rows = (BOARD[w.id] || [])
-        .filter((r) => r.benchmark === id && (r.mode || "base") === mode);
-      out.push({ w, mode,
+        .filter((r) => r.benchmark === id && (r.mode || "base") === m);
+      out.push({ w, mode: m,
         row: rows.length ? rows.reduce((a, r) => (r.score > a.score ? r : a), rows[0]) : null });
     }
   }
@@ -1014,7 +1036,7 @@ function renderBenchBoard() {
         ${imgTag(IMG(w.image), "bimg")}
         <span class="bname">${escHtml(w.name)}${
           (w.modes || []).length > 1
-            ? ` <span class="bmode">${escHtml(modeLabel(mode))}</span>`
+            ? ` <span class="bmode">${escHtml(modeLabel(w, mode))}</span>`
             : ""}</span>
         <span class="bscore">${row
           ? escHtml(row.shown != null ? String(row.shown) : row.score.toFixed(4))
@@ -1281,7 +1303,29 @@ function weaponAxes(weaponId) {
     arcanes: (w.arcane_pools || []).map((pool, i) => ({ pool, options: arcanePool(i) })),
     // One entry per evolution tier.
     evolutions: weaponEvos(),
+    // HOW THE WEAPON IS PLAYED — an axis like the rest, because it is one: the
+    // builder picks a value and the optimizer searches the set, and the board
+    // ranks weapon x mode. Only the modes a fight can HOLD are offered; the
+    // engine derives that from whether entering the form costs a gauge you
+    // have to earn ("always Incarnon" is not a playstyle, it is a few seconds
+    // at a time), so nothing here is a list anyone maintains.
+    //
+    // A ONE-MODE WEAPON GETS AN EMPTY AXIS, by the same rule every other axis
+    // follows: an axis is shown iff it has options, and "base" alone is not a
+    // choice anybody has.
+    modes: (w.modes || []).length > 1 ? w.modes : [],
   };
+}
+
+/// The mode a build plays in: the asked-for one where this weapon offers it,
+/// else however the arsenal plays it — the cycle where there is one to run.
+///
+/// One resolver, so "no mode named" means the same thing in the builder, in a
+/// share link and in a board submission.
+function defaultMode(weaponId, want) {
+  const ms = (weaponInfo(weaponId) || {}).modes || ["base"];
+  if (want && ms.includes(want)) return want;
+  return ms.includes("cycle") ? "cycle" : (ms[0] || "base");
 }
 
 /// The rivens a request must carry for its `riven:` ids to mean anything.
@@ -2747,7 +2791,10 @@ async function drawShareCard(canvas, url) {
     // the head is hit and whether aim is held change the number as much as the
     // enemy does. Buffs are deliberately absent: they follow from the build,
     // and a card listing eleven of them would say nothing.
-    const formLabel = (simFormOpts(w).find(([id]) => id === sim.form) || [])[1];
+    // The mode is the BUILD's now, so the card reads it there. Still on the
+    // card: it changes the number as much as the enemy does, and a share that
+    // omitted it would be a claim nobody could reproduce.
+    const formLabel = (w.modes || []).length > 1 ? modeLabel(w, mode) : "";
     g.fillText([
       en.name || sim.enemy,
       `Lv ${sim.level}${sim.steel_path ? " SP" : ""}`,
@@ -3174,6 +3221,7 @@ function snapshotState() {
     arcane: arcanes,
     arcaneRank: arcaneRanks,
     slots: slots.map((s) => ({ mod: s.mod, pol: s.pol, rank: s.rank })),
+    mode,
     // NO `sim` FIELD. A build used to carry a snapshot of the fight, which
     // `restoreState` then applied — so picking a build silently rewrote the
     // scenario you were working in. The scenario is INDEPENDENT (user,
@@ -3215,6 +3263,12 @@ function restoreState(st, weapon) {
     slots[i].rank = s.rank ?? null;
   });
   evoSel = { 1: null, 2: null, 3: null, 4: null, ...(st.evoSel || {}) };
+  // ONTO A DEFAULT, never onto whatever the last build was playing. A preset
+  // written before this field existed is played the way the arsenal plays it,
+  // which is exactly what the board's own migration does with a mode-less
+  // submission — and what keeps a builtin board build showing the mode it was
+  // MEASURED in rather than the one you happened to be in.
+  mode = defaultMode(w, st.mode);
   arcanes = arcanesFor(w, st.arcane);
   arcaneRanks = asArcaneList(st.arcaneRank, arcanes.length).map((x) => x ?? null);
   // The scenario is NOT restored: it belongs to `simulator-scenarios` and a
@@ -3236,7 +3290,7 @@ function restoreState(st, weapon) {
   // Nothing of yours is at risk: a benchmark build is read-only and has no
   // hand-set polarity to overwrite.
   if (officialBuildActive()) autoForma();
-  renderMods(); renderArcanes(); renderEvo(); renderSim(); refreshPanel();
+  renderMods(); renderArcanes(); renderEvo(); renderMode(); renderSim(); refreshPanel();
   renderStoredSimResult(); // the simulator shows THIS preset's last test
 }
 
@@ -3893,9 +3947,9 @@ function applyScenario(st) {
   // collection's state may not be written from outside it, and reading the
   // outgoing state is how it gets written from outside it.
   sim = { ...defaultScenario(), ...st, buffs: JSON.parse(JSON.stringify(st.buffs || {})) };
-  // A scenario preset is stored per weapon, so its weapon-scoped fields
-  // (headshot %, form) are already right — stamp the marker so the re-seed in
-  // `simFormOpts` does not overwrite a saved choice with a default.
+  // A scenario preset is stored per weapon, so its weapon-scoped field
+  // (headshot %) is already right — stamp the marker so the re-seed does not
+  // overwrite a saved choice with a default.
   sim.__weapon = $("weapon").value;
   renderSim();      // redraws every knob, and the bar with them
   refreshPanel();   // the Tenno half of a scenario changes what the build is worth
@@ -4033,6 +4087,18 @@ function switchWeapon(id) {
 function applyWeaponInner(id, presetMods) {
   const w = weaponInfo(id);
   buffList = []; // rebuilt from the next /api/panel response for this build
+  // HOW THIS WEAPON IS PLAYED, reset to its own default. "base" is a legal id
+  // on almost every weapon, so without this an Incarnon weapon opened after a
+  // plain one would keep the plain one's mode and quietly skip the cycle that
+  // is supposed to be its default — the same rule that makes a new weapon get
+  // `defaultScenario()` rather than the last one's fight. `restoreState`
+  // overwrites this immediately when a preset is being applied.
+  mode = defaultMode(id, null);
+  // ...and the scenario's own weapon-scoped knob, for the same reason.
+  if (sim.__weapon !== id) {
+    sim.__weapon = id;
+    sim.headshot_pct = defaultHeadshotPct(w);
+  }
   opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8 }; optSeeded = false; // reset scope
   optLast = null;                 // and the winner the quick calc could measure against
   // ...and how it RUNS, for the same reason the scenario resets: a weapon that
@@ -4124,7 +4190,7 @@ function applyWeaponInner(id, presetMods) {
   (presetMods || []).filter((m) => modById(m)).slice(0, 8).forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });
   autoForma(); // sensible default: minimum-Forma polarities for the preset
 
-  renderMods(); renderArcanes(); renderEvo(); renderSim(); renderOpt();
+  renderMods(); renderArcanes(); renderEvo(); renderMode(); renderSim(); renderOpt();
 }
 
 // ---- forma / capacity plan (mirrors engine::mods::plan_forma) ----
@@ -4207,6 +4273,9 @@ function renderMods() {
   // The quick-calc bar sits above this block and is measured against the same
   // build, so it redraws with it.
   if (typeof renderQuickCalc === "function") renderQuickCalc();
+  // ...and so does the mode control: equipping a Cannonade is what takes the
+  // cycle away, so the reason it is greyed changes with the slots.
+  if (typeof renderMode === "function") renderMode();
   const used = capacityUsed();
   const capEl = $("capacity");
   capEl.textContent = `${used} / ${CAP}`;
@@ -4264,6 +4333,11 @@ function buildPayload() {
     arcane: arcanes,
     arcane_rank: arcaneRanks,
     mods: slots.filter((s) => s.mod).map((s) => s.mod),
+    // HOW IT IS PLAYED, from the BUILD. It used to ride in the scenario as
+    // `form`, which let the fight decide how a weapon was fired — so the
+    // official ruler silently played every Incarnon weapon through its cycle
+    // and "never transmuting" could not be asked for.
+    mode,
     // A `riven:` id means nothing without the riven itself — it is the
     // visitor's item, not a pool entry, so it rides along with the request.
     rivens: rivenPayload(),
@@ -5470,7 +5544,7 @@ function renderQuickCalc() {
     saveGainPrefs();
     renderQuickCalc();
     if (!$("mod-popover").hidden) { renderTools(); renderMenu(pickerSlot, $("mod-search").value); }
-    renderEvo();
+    renderEvo(); renderMode();
   };
   // (Picking a scenario is handled by the dropdown's own `onPick`, which does
   // the same thing it always did: save, then answer the new question NOW
@@ -5492,7 +5566,7 @@ function refreshGains() {
     renderMenu(pickerSlot, $("mod-search").value);
   }
   if ($("arcane-popover") && !$("arcane-popover").hidden) renderArcaneMenu($("arcane-search").value);
-  renderEvo();
+  renderEvo(); renderMode();
 }
 
 /// Compute this axis position's ranking, unless it is already on screen.
@@ -5890,6 +5964,52 @@ const ROMAN = (n) => {
   for (const [v, sym] of T) while (n >= v) { out += sym; n -= v; }
   return out;
 };
+/// The modes this build may be played in, each with the reason it cannot be —
+/// `[id, label, offReason]`, the same shape the Form control always took.
+///
+/// A mode a BUILD rules out is offered DISABLED, not dropped: "the weapon has
+/// no Incarnon form while that mod is on it" is information, and a vanished
+/// option is not. Asking for a cycle implies its unlock, and installing that
+/// unlock takes a Cannonade off the weapon — so a build wearing one has no
+/// cycle to run and the sim refuses it.
+function modeOpts(w) {
+  const ids = (w.modes || []);
+  if (ids.length < 2) return [];
+  const cost = (w.unlock_evo && (w.evo_forbids || {})[w.unlock_evo]) || [];
+  const blocker = slots
+    .map((s) => s.mod)
+    .filter((m) => m && cost.includes(m))
+    .map((m) => (modById(m) || {}).name || m)[0];
+  const off = blocker
+    ? `${blocker} ${tr("needs the same trigger on every firing mode, so this build has no Incarnon form")}`
+    : null;
+  return ids.map((id) => [id, modeLabel(w, id), id === "cycle" ? off : null]);
+}
+
+/// The mode control, in the BUILDER. Absent where the weapon offers one way to
+/// be fired — an axis is shown iff it has options, the rule every other axis
+/// on this page follows.
+function renderMode() {
+  const box = $("mode-row");
+  if (!box || !META) return;
+  const w = weaponInfo($("weapon").value) || {};
+  const opts = modeOpts(w);
+  box.hidden = !opts.length;
+  if (!opts.length) return;
+  // A build naming a mode this weapon does not offer falls back to how the
+  // weapon is played — a stale preset, or one copied from another weapon.
+  if (!opts.some(([id]) => id === mode)) mode = defaultMode(w.id, null);
+  const why = (opts.find(([id]) => id === mode) || [])[2];
+  box.innerHTML = `<label>${escHtml(tr("Mode"))} ${ddButton("dd-mode", {
+    value: mode,
+    items: opts.map(([id, label, offReason]) => ({
+      value: id, label: label + (offReason ? " ⊘" : ""), hint: offReason || "",
+      disabled: !!offReason,
+    })),
+    onPick: (v) => { mode = v; markPresetDirty(); renderMode(); refreshPanel(); },
+  })}</label>${why ? `<span class="warn">⊘ ${escHtml(why)}</span>` : ""}`;
+}
+
 function renderEvo() {
   const tiers = weaponEvos();
   const rows = [];
@@ -5975,7 +6095,7 @@ function renderEvo() {
     }
     // Redraw the whole ladder, not just this row: a pick opens (or a removal
     // shuts) every tier below it.
-    renderEvo(); refreshPanel();
+    renderEvo(); renderMode(); refreshPanel();
   }));
 }
 
@@ -6027,44 +6147,10 @@ function renderSimBuild() {
 
 // The headshot rate a weapon is played at. A SENTINEL is fired by the
 // companion, which picks its own targets and does not aim for the head, so it
-// starts at 0 rather than the player's 100 (user, 2026-07-31). Still a knob —
-// this seeds it, it does not cap it.
+// starts at 0 rather than the player's 100 (user, 2026-07-31). Still a knob
+// here — the engine is what PINS a sentinel at 0 whatever a request says, so
+// this only decides where the control opens.
 const defaultHeadshotPct = (w) => ((w || {}).sentinel ? 0 : META.defaults.headshot_pct);
-
-// How THIS weapon is played: the Incarnon cycle where there is one to run,
-// and the weapon's own default form (`default_form` in data/weapons — the
-// arsenal's form) where there is not.
-// The Form control, ALWAYS drawn: several forms is a dropdown, one form is
-// still stated rather than left silent — a weapon with a single form is being
-// fired in it, and the panel should say so (user, 2026-07-31).
-// A third element is the REASON this form is unavailable to the build in front
-// of you (`simFormOpts`) — the option stays listed and greyed, because "the
-// weapon has no Incarnon form while that mod is on it" is information, and a
-// vanished option is not.
-const formField = (formOpts, current) => {
-  if (!formOpts.length) return "";
-  const body = formOpts.length > 1
-    ? ddButton("dd-form", {
-      value: current,
-      dataK: "form",
-      // An unavailable form stays LISTED and greyed with its reason, because
-      // "the weapon has no Incarnon form while that mod is on it" is
-      // information and a vanished option is not — the rule
-      // `check_equip_rules` asserts of this control.
-      items: formOpts.map(([id, label, off]) => ({
-        value: id, label: label + (off ? " ⊘" : ""), hint: off || "", disabled: !!off,
-      })),
-    })
-    : `<span class="fixed-val">${escHtml(formOpts[0][1])}</span>`;
-  const why = (formOpts.find(([id]) => id === current) || [])[2];
-  return `<label>${escHtml(tr("Form"))} ${body}</label>${
-    why ? `<span class="warn">⊘ ${escHtml(why)}</span>` : ""}`;
-};
-
-const defaultFormId = (w, formOpts) =>
-  ((w || {}).has_cycle && "incarnon_cycle") ||
-  (((w || {}).forms || []).find((f) => f.is_default) || {}).id ||
-  (formOpts[0] || [])[0] || "base";
 
 // The SCENARIO — enemy, technique, measurement — is the SIMULATOR's, and the
 // optimizer borrows it instead of keeping a lookalike of its own (user,
@@ -6145,10 +6231,12 @@ function renderScenarioFields(ids, opts = {}) {
   // equip their weapons", so the wielder of Verglas Prime is a Sentinel or a
   // MOA. Naming the section after the commonest case made the model say
   // something false about every companion weapon.
-  const formOpts = simFormOpts(w);
+  // NO FORM CONTROL HERE. How the weapon is played is part of the BUILD and
+  // lives in the builder — a fight that decided it could only ever measure
+  // whichever way the ruler happened to pin, which is what kept "the Torid
+  // that never transmutes" unaskable (owner, 2026-08-07).
   if (ids.technique) {
     $(ids.technique).innerHTML = `
-      ${formField(formOpts, sim.form)}
       ${aimField(w, sim)}
       <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>
       <label class="check" title="${escHtml(tr("the wielder's state: mods that only pay while Invisible (Spectral Serration) grant nothing when this is off"))}"><input type="checkbox" data-k="invisible"${sim.invisible ? " checked" : ""}> ${escHtml(tr("Invisible"))}</label>
@@ -6407,49 +6495,6 @@ function renderEnemyMenu(query) {
 // falls back to the base form when the unlock is missing, and it stays
 // STABLE, which is the point: re-seeding the choice every time tier 1 is
 // touched would move the selection under someone who had already made it.
-function simFormOpts(w) {
-  // ...but a form the BUILD rules out is offered DISABLED, not silently
-  // dropped. Asking for a form implies its unlock (see `parse_fight`), and
-  // installing that unlock takes a Cannonade off the weapon — so a build
-  // wearing one has no Incarnon form to fire, and the sim will refuse the run
-  // (user, 2026-08-04). Shown greyed with the reason, and NOT reseeded: the
-  // simulator owns `sim.form`, and a build quietly moving it is exactly the
-  // cross-collection write the presets rule forbids. The build says what it
-  // costs; changing the fight stays the visitor's.
-  const cost = (w.unlock_evo && (w.evo_forbids || {})[w.unlock_evo]) || [];
-  const blocker = slots
-    .map((s) => s.mod)
-    .filter((m) => m && cost.includes(m))
-    .map((m) => (modById(m) || {}).name || m)[0];
-  const off = blocker
-    ? `${blocker} ${tr("needs the same trigger on every firing mode, so this build has no Incarnon form")}`
-    : null;
-  const formOpts = [
-    ...(w.has_cycle ? [["incarnon_cycle", tr("Incarnon cycle"), off]] : []),
-    ...(w.forms || []).map((f) => [
-      f.id,
-      w.has_cycle ? `${tr(f.name)} ${tr("only")}` : tr(f.name),
-      f.gauge_switched ? off : null,
-    ]),
-  ];
-  // A stale preset (or another weapon's choice, or the "default" seed) names
-  // a form this weapon does not list — fall back to how this weapon is
-  // played, which is a question about the weapon and not about list order.
-  if (formOpts.length && !formOpts.some(([id]) => id === sim.form)) sim.form = defaultFormId(w, formOpts);
-  // Scenario knobs that are a property of the WEAPON rather than of the
-  // fight: re-seeded when the weapon changes, kept when a preset set them
-  // (restoreState stamps the marker itself, so a saved value stands).
-  if (sim.__weapon !== w.id) {
-    sim.__weapon = w.id;
-    sim.headshot_pct = defaultHeadshotPct(w);
-    // The form is weapon-scoped for the same reason: "base" is a legal id on
-    // almost every weapon, so without this an Incarnon weapon opened after a
-    // plain one would keep the plain one's form and quietly skip the cycle
-    // that is supposed to be its default.
-    sim.form = defaultFormId(w, formOpts);
-  }
-  return formOpts;
-}
 
 // The arena's target actor: its name, and its portrait when it has one. The
 // dot stands in for a unit with no art rather than sitting beside it — two

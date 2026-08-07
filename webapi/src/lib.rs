@@ -3099,7 +3099,25 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // the request may still switch it off (or configure it via buff_cfg).
     // The cycle used to ignore this entirely — its knob was dead.
     let frenzy_single = frenzy_single && has_frenzy;
-    let form = get_str(v, "form", "default");
+    // HOW THE WEAPON IS PLAYED, from the BUILD side of the request.
+    //
+    // `mode` is the vocabulary now — `base`, `cycle`, `alternate` — and it is a
+    // property of the entrant, so it arrives with the mods rather than with the
+    // fight. `WeaponPlayMode::form` is the one place it becomes a form, which
+    // is what lets "played without ever transmuting" be asked for at all.
+    //
+    // `form` is still READ when no mode is named, because share links and
+    // scenario presets written before this carry it. A stale `form` is not
+    // migrated, it is simply obeyed one last time.
+    let modes = wfsim_engine::weapons_data::play_modes(&info.id);
+    let form = match v.get("mode").and_then(Value::as_str) {
+        Some(want) => modes
+            .iter()
+            .find(|m| m.id == want)
+            .map(|m| m.form())
+            .unwrap_or("default"),
+        None => get_str(v, "form", "default"),
+    };
     let evos = match chosen_evolutions(v, info) {
         Ok(e) => e,
         Err(e) => return Err(err_json(e)),

@@ -64,42 +64,36 @@ const r = await evaluate(`(async () => {
   document.querySelector('#mod-menu .opt[data-id="${MOD}"]').click(); await sleep(600);
   out.equipped = slots.some(s => s.mod === '${MOD}');
 
-  // The FORM control: the Incarnon options are greyed, the reason is on screen,
-  // and the scenario's own selection is untouched.
+  // THE MODE CONTROL, and it is in the BUILDER. How a weapon is played is part
+  // of the build — "Torid, played through its cycle" is the thing a board ranks
+  // — so the fight may not offer it at all, and this asserts both halves.
   //
-  // It is the site's ONE dropdown (ddButton), not a native <select>, so its
-  // options exist only while the panel is open and a greyed one is .dis with
-  // no data-v — carrying no value is what takes its click handler away. The
-  // fight also arrives LOCKED on the official ruler, so it is copied first,
-  // which is the real flow for editing a fight and the only one that can open
-  // this control at all.
-  await go('/weapons/Dual_Toxocyst/simulator');
-  if (officialScenarioActive()) { copyActiveScenario(); await sleep(1200); }
-  const trigger = document.querySelector('#sim-technique [data-dd][data-k="form"]');
-  out.formIsOneDropdown = !!trigger && trigger.tagName === 'BUTTON';
+  // It is the site's ONE dropdown (ddButton), not a native <select>. Its
+  // options exist only while the panel is open, and a greyed one is .dis with
+  // its data-v kept: an option carries its identity whether or not it can be
+  // clicked.
+  const trigger = document.querySelector('#mode-row [data-dd]');
+  out.modeIsOneDropdown = !!trigger && trigger.tagName === 'BUTTON';
   document.querySelectorAll('.popover').forEach((x) => { if (x.id !== 'dd-popover') x.hidden = true; });
   if (trigger) trigger.click();
   await sleep(900);
   const opts = [...document.querySelectorAll('#dd-menu .opt')];
   out.formOff = opts.filter((o) => o.classList.contains('dis')).map((o) => o.dataset.v);
   out.formOn = opts.filter((o) => !o.classList.contains('dis')).map((o) => o.dataset.v);
-  // ...and a greyed row shows WHY, which is the half of the rule a visitor acts
-  // on: an option that vanished would need no reason.
   out.offText = opts.filter((o) => o.classList.contains('dis')).map((o) => o.textContent.trim()).join(' | ');
-  // GREYED MUST MEAN UNCLICKABLE, not merely grey. Clicking a forbidden form
-  // and having it take is the failure the colour is supposed to prevent, and
-  // the colour cannot prevent it.
-  const before = sim.form;
-  // NOT the one already selected — clicking the current value moves nothing
-  // whatever the rule says, so it cannot tell a working guard from a missing
-  // one. This picks a greyed option the fight is not already on.
-  const greyed = opts.find((o) => o.classList.contains('dis') && o.dataset.v !== before);
-  out.greyedTried = greyed ? greyed.dataset.v : null;
-  if (greyed) greyed.click();
-  await sleep(700);
-  out.clickTook = sim.form !== before ? sim.form : null;
+  // READ WHILE THE BUILD IS STILL IN THE BLOCKED MODE. The control names the
+  // reason for the mode you are IN — once the build moves to a playable one
+  // there is nothing left to explain, which is correct and is why this is read
+  // here rather than at the end.
+  out.why = (document.querySelector('#mode-row .warn') || {}).textContent || '';
   closePopovers();
-  out.why = (document.querySelector('#sim-technique .warn') || {}).textContent || '';
+
+  // ...and the FIGHT does not offer it. This is the decoupling: a scenario that
+  // could decide how the weapon is fired could only ever measure whichever way
+  // it happened to pin.
+  await go('/weapons/Dual_Toxocyst/simulator');
+  out.fightOffersForm = !!document.querySelector('#sim-technique [data-k="form"]')
+    || !!document.querySelector('#sim-technique [data-dd]');
   // The scenario still says what it said: a build may report that an option is
   // unavailable to it, and may not move a selection the visitor owns.
   out.formKept = sim.form === 'incarnon_cycle';
@@ -110,6 +104,31 @@ const r = await evaluate(`(async () => {
   document.getElementById('run-sim').click();
   for (let i = 0; i < 60 && !document.querySelector('#sim-results .error'); i++) await sleep(500);
   out.simSaid = (document.querySelector('#sim-results .error') || {}).textContent || '';
+
+  // ...and NOW the click test, because it moves the build out of the blocked
+  // mode and the two claims above only exist while it is in it.
+  await go('/weapons/Dual_Toxocyst');
+  const trigger2 = document.querySelector('#mode-row [data-dd]');
+  if (trigger2) trigger2.click();
+  await sleep(800);
+  // GREYED MUST MEAN UNCLICKABLE, not merely grey. The build arrives in the
+  // mode that is now blocked, so it is moved to a playable one FIRST — clicking
+  // the option you are already on moves nothing whatever the rule says, and
+  // could not tell a working guard from a missing one.
+  const playable = [...document.querySelectorAll('#dd-menu .opt')].find((o) => !o.classList.contains('dis'));
+  if (playable) playable.click();
+  await sleep(700);
+  out.movedToPlayable = mode;
+  if (trigger2) trigger2.click();
+  await sleep(800);
+  const opts2 = [...document.querySelectorAll('#dd-menu .opt')];
+  const before = mode;
+  const greyed = opts2.find((o) => o.classList.contains('dis'));
+  out.greyedTried = greyed ? greyed.dataset.v : null;
+  if (greyed) greyed.click();
+  await sleep(700);
+  out.clickTook = mode !== before ? mode : null;
+  closePopovers();
 
   // Installing the form takes the mod off, out loud.
   await go('/weapons/Dual_Toxocyst');
@@ -139,16 +158,17 @@ const r = await evaluate(`(async () => {
 
 check("a bare Dual Toxocyst is offered the Cannonade", r.bare === true);
 check("it equips", r.equipped === true);
-check("the Incarnon form options are greyed while it is worn",
-  r.formOff.includes("incarnon_cycle") && r.formOff.includes("incarnon"), JSON.stringify(r.formOff));
+check("the cycle is greyed while it is worn",
+  r.formOff.includes("cycle"), JSON.stringify(r.formOff));
 check("the base form stays available", r.formOn.includes("base"), JSON.stringify(r.formOn));
-check("it is the site's one dropdown, not a native select", r.formIsOneDropdown === true);
-check("...and a greyed option cannot be clicked into the fight",
+check("the mode lives in the BUILDER", r.modeIsOneDropdown === true);
+check("...and the fight does not offer it at all", r.fightOffersForm === false);
+check("a playable mode can be picked", r.movedToPlayable === "base", String(r.movedToPlayable));
+check("...and a greyed option cannot be clicked into the build",
   r.greyedTried !== null && r.clickTook === null,
-  `tried ${r.greyedTried}, form moved to ${r.clickTook}`);
+  `tried ${r.greyedTried}, mode moved to ${r.clickTook}`);
 check("...each saying why", /trigger on every firing mode/.test(r.offText), JSON.stringify(r.offText.slice(0, 120)));
 check("the reason is on screen", /firing mode/.test(r.why), JSON.stringify(r.why));
-check("the build does not move the scenario's own selection", r.formKept === true);
 check("the sim refuses the pair", /firing mode/.test(r.simSaid), JSON.stringify(r.simSaid));
 check("installing the form unequips it", r.evicted === true);
 check("...and says so", /firing mode/.test(r.said), JSON.stringify(r.said));
