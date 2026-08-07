@@ -2750,8 +2750,22 @@ fn settle_procs(
         // recurse further — a component is a primary, and `components_of`
         // answers None for those — so the ladder ends where the game's does.
         if params.arcane.debilitate_chance > 0.0 {
+            // BLAST COUNTS THE STACK IT IS APPLYING, because ten is the only
+            // count it ever has. Every other combination sits at ten and waits
+            // for an eleventh application, which is what "if an enemy HAS 10
+            // stacks, inflicting the same Status Effect AGAIN" describes. Blast
+            // does not sit anywhere: reaching ten DETONATES and drains every
+            // stack (detonate.yaml), so `stacks_before` is 0..=9 forever and
+            // the arcane could never fire on it at all.
+            //
+            // The owner plays it and it does (2026-08-08: "blast是可触发冰和火
+            // 的"), so the tenth APPLICATION is the moment the condition is met
+            // — the only instant a Blast target has ten, and therefore the only
+            // reading of that sentence under which Blast is eligible at all.
+            // MEASUREMENTS M34 records what would falsify it.
+            let counted = if proc == DamageType::Blast { stacks_before + 1 } else { stacks_before };
             if let Some(part) =
-                debilitate_split(proc, stacks_before, params.arcane.debilitate_chance, rng)
+                debilitate_split(proc, counted, params.arcane.debilitate_chance, rng)
             {
                 // THE SPLIT PROC IS AN ORDINARY PROC (owner, 2026-08-05: "我
                 // 倾向于类似正常触发dot的算法，而不是实例算法"). Nothing about
@@ -10295,19 +10309,70 @@ mod tests {
             );
         }
         // At it, with certainty, it always splits — and only into a COMPONENT.
-        for _ in 0..64 {
-            let got = debilitate_split(DamageType::Corrosive, DEBILITATE_STACKS, 1.0, &mut rng)
-                .expect("certain at rank 5");
-            assert!(
-                matches!(got, DamageType::Electricity | DamageType::Toxin),
-                "Corrosive splits into its own parts, got {got:?}"
-            );
+        // ALL SIX combinations, not just the one the reports come in about:
+        // Blast is Cold and Heat (owner, 2026-08-08: "blast是可触发冰和火的"),
+        // and a table that answered for five of six would be wrong in exactly
+        // the way nobody checks.
+        for combined in [
+            DamageType::Corrosive,
+            DamageType::Blast,
+            DamageType::Viral,
+            DamageType::Magnetic,
+            DamageType::Radiation,
+            DamageType::Gas,
+        ] {
+            let (a, b) = crate::elements::components_of(combined).expect("a combination");
+            for _ in 0..64 {
+                let got = debilitate_split(combined, DEBILITATE_STACKS, 1.0, &mut rng)
+                    .expect("certain at rank 5");
+                assert!(
+                    got == a || got == b,
+                    "{combined:?} splits into {a:?}/{b:?}, got {got:?}"
+                );
+            }
         }
         // A PRIMARY has nothing to split into, saturated or not.
         assert_eq!(debilitate_split(DamageType::Heat, 99, 1.0, &mut rng), None);
         assert_eq!(debilitate_split(DamageType::Slash, 99, 1.0, &mut rng), None);
         // No arcane, no split.
         assert_eq!(debilitate_split(DamageType::Viral, 99, 0.0, &mut rng), None);
+    }
+
+    /// BLAST REACHES THE THRESHOLD, END TO END — the table above says it may
+    /// split, and this says the sim ever gets it there.
+    ///
+    /// It nearly cannot. Every other combination sits at ten stacks and waits
+    /// for an eleventh application; Blast DETONATES at ten and drains every
+    /// stack, so the count a later application reads is 0..=9 forever. Reading
+    /// the pre-application count — right for the other five — made the arcane
+    /// dead on Blast, silently, with a passing unit test on the split function
+    /// itself. Only a run finds that.
+    #[test]
+    fn a_blast_build_actually_reaches_the_debilitate_threshold() {
+        let build = |chance: f64| DummyParams {
+            damage: DamageVector::new().with(DamageType::Blast, 100.0),
+            status_chance: 1.0,
+            base_status_chance: 1.0,
+            fire_rate: 10.0,
+            magazine_size: 1e9,
+            infinite_reserve: true,
+            // Heat is the half of Blast that ticks, so a split that lands is
+            // visible as damage; Cold's half is a slow and adds none.
+            elem_dot_bonus: vec![(DamageType::Heat, 2.0), (DamageType::Cold, 2.0)],
+            arcane: crate::arcanes_data::ArcaneFx {
+                debilitate_chance: chance,
+                ..crate::arcanes_data::ArcaneFx::none()
+            },
+            ..DummyParams::default()
+        };
+        const RUNS: u32 = 200;
+        const SEED: u64 = 0xB1A5;
+        let added = monte_carlo(&build(1.0), RUNS, SEED).mean_damage
+            - monte_carlo(&build(0.0), RUNS, SEED).mean_damage;
+        assert!(
+            added > 0.0,
+            "a saturating Blast build must split at least once; added {added}"
+        );
     }
 
     /// ...and the two components come up about evenly (50/50, per the owner).

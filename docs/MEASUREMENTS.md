@@ -1695,3 +1695,55 @@ Electricity tick that lands immediately is the DoT's own first tick (delay-0),
 not a hit. `primary_debilitate.yaml` opened with "IT DEALS AN INSTANCE", which
 reads as a damage number even though the paragraph below it says the opposite;
 that is now stated once, in the direction the code goes.
+
+---
+
+## M34 — Primary Debilitate was dead on Blast, and only a run could tell (2026-08-08)
+
+From "还有blast是可触发冰和火的" (owner, 2026-08-08). It is a one-line statement
+of fact about a combination the arcane is supposed to cover, and the engine did
+not cover it — not by omitting Blast from a table, but by making it unreachable.
+
+`components_of(Blast)` has always answered `(Cold, Heat)`, and
+`combined_stacks(Blast)` has always counted `debuffs.blast`. The unit test on
+the split function passed for Blast the day it was written. What never happened
+is the split.
+
+**The reason is Blast's own cap.** Every other combination sits at ten stacks
+and waits for an eleventh application — which is what "if an enemy HAS 10
+stacks, inflicting the same Status Effect AGAIN" describes, and why the check
+reads the count BEFORE this application. Blast does not sit anywhere: reaching
+ten DETONATES and drains every stack (`detonate.yaml`: "reaching 10 detonates
+everything early"). So the count a later application reads is 0..=9 forever,
+and the condition can never be true.
+
+**The tenth APPLICATION is therefore the moment the condition is met** — the
+only instant a Blast target has ten, and so the only reading of that sentence
+under which Blast is eligible at all. Implemented for Blast and for nothing
+else: the other five are unchanged, because for them the pre-application count
+is exactly right and counting the new stack would fire the arcane one
+application early.
+
+### What would falsify it
+
+A Blast build with a saturating status chance, a Bane, and the arcane at rank 5,
+against a target that survives detonation. If Cold and Heat statuses never
+appear, DE evaluates the arcane strictly before the stack lands and Blast is
+genuinely exempt — in which case this reverts and the exemption gets written
+down instead. The owner's report is the only reason to believe otherwise, and it
+is a report from play rather than a page: no wiki text covers the interaction.
+
+### Why it needed an end-to-end test
+
+`debilitate_splits_only_a_saturated_combination` asks the split FUNCTION what it
+does at ten stacks. It answered correctly for Blast the whole time. The gap was
+that nothing ever handed it ten, which is invisible to any test that calls the
+function directly — so `a_blast_build_actually_reaches_the_debilitate_threshold`
+runs a saturating Blast build and asserts the arcane adds damage at all. It
+bites: with the pre-application count it reports "added 0". The lesson
+generalises past this arcane — a threshold and the thing that produces the
+threshold are two different claims, and a unit test on the first says nothing
+about the second.
+
+The table test now walks all six combinations rather than Corrosive alone. Five
+of six passing is exactly the shape of failure nobody checks for.
