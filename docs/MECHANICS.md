@@ -804,14 +804,15 @@ weighting and multishot interaction are top calibration targets (CORE.md §3).
 
 **Definition.** How shots actually land — the "hardcore" differentiator.
 
-**A DERIVED STATUS BURNS OFF THE INSTANCE THAT APPLIED IT.** A DoT's nominal
-base is `ModifiedBase` — "unmodded x (1 + BaseDamageBonuses)", which EXCLUDES
-the elemental portions (wiki, Toxin_Damage). That is right for a status the
-weapon's own hit applied and wrong for one applied by an INSTANCE, whose damage
-is the whole modded hit: a syndicate blast's Gas cloud burns off the blast, and
-Primary Debilitate's split burns off the instance the arcane creates. So every
-elemental and IPS mod raises such a DoT twice — once through the hit it derives
-from, once through its own element's bracket. See MEASUREMENTS **M33**.
+**A DoT's BASE IS WHATEVER APPLIED IT.** Two rules, and which one you are under
+depends on the applier. A WEAPON's own hit applies statuses off `ModifiedBase` —
+"unmodded x (1 + BaseDamageBonuses)", which EXCLUDES the elemental portions
+(wiki, Toxin_Damage). An ABILITY or a damage INSTANCE applies them off its own
+damage number, elements included: Toxic Lash on a 200-damage weapon deals 78 and
+its proc ticks for 39, half of 78; a syndicate blast's Gas cloud burns off the
+blast's own damage, not the weapon's. Which of the two Primary Debilitate's
+split falls under is OPEN and is the whole of MEASUREMENTS **M33** — it reads
+`ModifiedBase` here.
 
 **A RADIAL BELONGS TO THE FORM THAT DECLARES ONE.** An Incarnon cycle fires two
 weapons in turn, and every per-shot property is read off the ACTIVE form — the

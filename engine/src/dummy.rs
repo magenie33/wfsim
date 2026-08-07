@@ -2767,39 +2767,32 @@ fn settle_procs(
                 // it buys is the extra faction layer, which is exactly the
                 // ×f³ the page reports and the only observable it predicts.
                 //
-                // AND IT READS ITS PARENT, NOT THE WEAPON. A DoT's nominal base
-                // is `ModifiedBase` — "unmodded x (1 + BaseDamageBonuses)",
-                // which EXCLUDES the elemental portions (poison.yaml, quoting
-                // the wiki's Toxin page) — and that is right for a status the
-                // weapon's own hit applied. This one was applied by an
-                // INSTANCE, and an instance's damage is the whole modded hit,
-                // elements and IPS included. "Similar to Toxic Lash, the final
-                // DoT will no longer use the original weapon's stats for its
-                // DoT calculation, but instead uses the initial hit of the
-                // ability damage as its base damage… ALL element/IPS mods will
-                // indirectly increase the final DoT by increasing the ability
-                // hit damage, and then the DoT will be buffed by the
-                // corresponding Elemental Bonus once more" (owner, 2026-08-08,
-                // relaying the source that decodes M33's formula).
+                // WHAT BASE IT BURNS OFF IS OPEN — see MEASUREMENTS M33, and
+                // it is the whole of what is left to decide about this arcane.
                 //
-                // The engine already believed this one instance down: a
-                // syndicate blast's Gas cloud "burns off the blast's own 1000,
-                // not off the weapon's modified base, because the blast is what
-                // applied it". The split had simply never been given its
-                // parent's number to burn off.
+                // `mb_live` is `ModifiedBase`, "unmodded x (1 +
+                // BaseDamageBonuses)", which EXCLUDES the elemental portions
+                // (poison.yaml, quoting the wiki's Toxin page) — DE's rule for
+                // a status a WEAPON's own hit applied. A status an ABILITY
+                // applied reads that ability's own damage instead: Toxic Lash
+                // on a 200-damage weapon deals 78 and its proc ticks for 39,
+                // half of 78 and not half of 200.
                 //
-                // The factor is the ACTIVE FORM's, taken nominally so live
-                // base-damage buffs (already in `mb_live`) are not counted
-                // twice. A radial-caused split reads the direct part's ratio,
-                // which is the one approximation here.
-                let parent_mult = {
-                    let nominal = ap.dot_modified_base.unwrap_or_else(|| ap.damage.total());
-                    if nominal > 0.0 { ap.damage.total() / nominal } else { 1.0 }
-                };
+                // The community formula that decodes M33's 29551 is the
+                // ABILITY case — its parent is Cyte-09's Extra Hit — so it
+                // shows a Toxic-Lash-shaped chain and says nothing about a
+                // plain weapon shot (owner, 2026-08-08: "那个resupply的例子就是
+                // 说明，类似toxic lash的例子啊，不是常规武器的"). Reading the
+                // full modded hit here was shipped for one commit on that
+                // generalisation and reverted: it moved published board rows by
+                // up to +112% on an inference.
+                //
+                // So the weapon's own rule stands until measured. M33 states
+                // the one mod that decides it.
                 settle_procs(
                     vec![part],
                     at,
-                    InstanceScale { mb_live: mb_live * parent_mult, crit_mult, part_factor },
+                    InstanceScale { mb_live, crit_mult, part_factor },
                     debuffs,
                     gal,
                     arc,
@@ -10406,15 +10399,21 @@ mod tests {
         );
     }
 
-    /// ...AND IT BURNS OFF THE INSTANCE ABOVE IT, not off the weapon.
+    /// ...AND IT BURNS OFF `ModifiedBase`, WHICH MAY BE WRONG (M33).
     ///
-    /// A DoT's nominal base is `ModifiedBase`, which excludes the elemental
-    /// portions of the hit — right for a status the weapon applied, wrong for
-    /// one an INSTANCE applied, because an instance's damage is the whole
-    /// modded hit. The community formula that reproduces an in-game 29551 to
-    /// 0.14% carries BOTH brackets for exactly this reason (MEASUREMENTS M33),
-    /// and the engine already believed it one instance down — a syndicate
-    /// blast's Gas cloud burns off the blast's own damage.
+    /// This pins TODAY'S reading so the open question cannot be resolved by
+    /// accident. A DoT's nominal base excludes the elemental portions of the
+    /// hit — DE's rule for a status a WEAPON applied — and this says the split
+    /// follows it: doubling how much ELEMENT the hit carries, with
+    /// `ModifiedBase` held fixed, changes nothing.
+    ///
+    /// The rival reading is that the split reads the INSTANCE that applied it,
+    /// the whole modded hit, the way an ability-applied status does (Toxic
+    /// Lash: 78 direct, a tick of 39 — half of 78, not half of the weapon's
+    /// 200). Under it this ratio is 2.0. The formula that decodes M33's in-game
+    /// 29551 has that shape, but its parent is an ABILITY's hit, so it
+    /// demonstrates the ability case and not this one. Flipping the assertion
+    /// below to 2.0 is the whole of the change.
     ///
     /// The fixture holds `ModifiedBase` at 100 and varies how much ELEMENT the
     /// hit carries on top of it — 100 of Corrosive against 200 — which is what
@@ -10428,7 +10427,7 @@ mod tests {
     /// damage — is invariant. Which is the property being claimed, so a test
     /// written that way passes at ratio 1.000 whichever reading is in force.
     #[test]
-    fn a_debilitate_split_burns_off_the_instance_that_applied_it() {
+    fn a_debilitate_split_burns_off_modified_base_not_the_hit() {
         // Corrosive only: it has no DoT of its own, so every point of damage
         // the arcane adds is the split's, and nothing else moves with the base.
         let build = |hit: f64, chance: f64| DummyParams {
@@ -10457,8 +10456,8 @@ mod tests {
         assert!(plain > 0.0, "the arcane must add damage at all");
         let ratio = doubled / plain;
         assert!(
-            (ratio - 2.0).abs() < 0.02,
-            "a split off an instance worth 2x the nominal base must deal 2x; got {ratio}"
+            (ratio - 1.0).abs() < 0.02,
+            "the split reads ModifiedBase today, so doubling the hit's ELEMENT must              not move it; got {ratio} (the rival reading is 2.0 — see M33)"
         );
     }
 

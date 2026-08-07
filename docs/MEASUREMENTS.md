@@ -1418,7 +1418,7 @@ aim, so the gauge can never fill. It bites: 3500 against 500 before the fix.
 
 ---
 
-## M33 — Primary Debilitate's split reads its PARENT, not the weapon (2026-08-08, OPEN)
+## M33 — what base a Primary Debilitate split burns off (2026-08-08, OPEN)
 
 The owner brought a community formula for a Primary Debilitate build, with an
 in-game number beside it, and asked whether the case it describes generalises
@@ -1473,7 +1473,7 @@ WeaponInitialHit -> split instance -> split DoT, three links. The `^4` is the
 asked — the exponent is a COUNT, and `faction_at(f, depth)` already is that
 count.
 
-### Two laws, and we have one of them
+### Two laws, and only one of them generalises
 
 **FACTION IS ALREADY GENERAL HERE.** `faction_at(f, depth)` is `f^depth` and the
 depth composes by recursion, so nothing is hardcoded: a hit is 1, a status is
@@ -1483,109 +1483,100 @@ one more producer in the chain. So the answer to "can we generalise from the 4x
 case" is that the 4x case IS the general case; the wiki's 3 and this 4 are the
 same law counted over different chains.
 
-**THE ELEMENTAL BRACKET IS NOT.** The formula carries BOTH brackets — the
-parent's 8.2 and the child's 7.6 — and the engine carries only the child's:
+**THE BASE IS NOT.** The formula carries BOTH brackets — the parent's 8.2 and
+the child's 7.6 — and the engine carries only the child's:
 
 ```
-ours:  0.5 x ModifiedBase x (1 + child bracket) x f^3
-video: 0.5 x ModifiedBase x (1 + PARENT bracket) x (1 + child bracket) x f^3
+ours:  0.5 x ModifiedBase       x (1 + child bracket) x f^3
+video: 0.5 x [the parent's hit] x (1 + child bracket) x f^4
+       where the parent's hit already includes its own 8.2
 ```
 
-Because the split's damage is derived from the instance above it rather than
-from the weapon's ModifiedBase. That is the same compositional idea the faction
-ladder already encodes, applied to the other multiplier — and it is what the
-wiki's "applied as a separate damage instance" would mean if the instance is a
-real Corrosive instance rather than a bookkeeping device.
-
-The gap is the parent's whole bracket: **x8.2 on this build**, and ~x2.8 on an
+The gap is a whole elemental bracket: **x8.2 on that build**, ~x2.8 on an
 ordinary two-mod Corrosive one. It is not a correction, it is a different
-weapon.
+weapon — which is exactly why the next section is careful about what the
+formula does and does not demonstrate.
 
-### IMPLEMENTED (2026-08-08), and what still deserves a run
+### THE CRUX — and it is narrower than it looked (2026-08-08)
 
-The source states the mechanic as well as the number, and both halves of what it
-says are things this engine can check against itself:
+Shipped for one commit, then reverted, because the owner put his finger on what
+the evidence actually covers: **"那个resupply的例子就是说明，类似toxic lash的例子
+啊，不是常规武器的"**.
 
-> The arcane would first create an extra damage instance of one of the composing
-> element (**it has no damage**) and then afflicts one stack of status effect of
-> the composing element.
-
-> Similar to Toxic Lash, the final DoT created will no longer use the original
-> weapon's stats for its DoT calculation, but instead **uses the initial hit of
-> the ability damage as its "base damage"** … ALL element/IPS mods will
-> indirectly increase the final DoT damage by increasing the ability hit damage,
-> and then the DoT will be buffed by the corresponding Elemental Bonus once
-> more.
-
-**THE TOXIC LASH ANALOGY IS LOAD-BEARING, and its page carries the worked
-example that settles what "base damage" means.** Saryn's ability adds a Toxin
-attack that scales off the weapon, and the wiki spells the proc out:
+The source's own analogy is the reason. Toxic Lash's page carries the worked
+example:
 
 > "with an unmodded weapon whose damage sheet says it hits for 200 damage, a
 > Rank 3 Toxic Lash, and a Rank 5 Intensify, Toxic Lash will deal:
 > 200 x 0.3 x 1.3 = **78** direct Toxin damage, and always trigger a Toxin proc
 > that ticks for **78 x 0.5 = 39** Toxin damage per second"
 
-39 is half of **78**, the ABILITY's own damage — not half of the weapon's 200.
-So "base damage" is not a fixed property of the weapon: it is whatever applied
-the status. A weapon's own hit applies statuses off `ModifiedBase` (which
-excludes the elemental portions); anything else applies them off ITS OWN damage
-number, elements included. That is one rule with two readings, not two rules.
+39 is half of **78** — the ABILITY's own damage — not half of the weapon's 200.
+So "base damage" is not a property of the weapon. It is whatever applied the
+status, and DE has two rules for it:
 
-The first half was already true here. The second is the change: the split's DoT
-now burns off the INSTANCE that applied it — the whole modded hit, elements and
-IPS included — instead of the weapon's `ModifiedBase`, which by the wiki's own
-Toxin formula excludes the elemental portions. That distinction is right for a
-status the weapon's hit applied and wrong for one an instance applied, and the
-engine already believed it one instance down: a syndicate blast's Gas cloud
-"burns off the blast's own 1000, not off the weapon's modified base, because the
-blast is what applied it".
+| who applied the status | its base |
+|---|---|
+| the WEAPON's own hit | `ModifiedBase` = unmodded x (1 + BaseDamageBonuses) — **elements excluded** |
+| an ABILITY / an instance | that thing's own damage number — **elements included** |
 
-Pinned by `a_debilitate_split_burns_off_the_instance_that_applied_it`: hold
-`ModifiedBase` at 100 and double how much ELEMENT the hit carries on top of it;
-the split's DoT doubles with the hit. It bites — ratio 1.000 before the change.
-Writing that test by varying `dot_modified_base` instead proves nothing and is
-worth knowing: `mb_live` derives FROM it, so the product is invariant, which is
-the very property being claimed.
+**The formula that decodes the 29551 is entirely in the second row.** Its chain
+is `WeaponInitialHit -> ResupplyInitialHit -> DeliberateInitialHit ->
+DeliberateDoT`, and the number the DoT burns off is Resupply's Extra Hit —
+`350 x 0.5 x 8.2`, an ABILITY's damage. That is Toxic Lash's rule, demonstrated
+on Toxic Lash's case. It says nothing about a plain weapon shot.
 
-### What it moved
+So the open question is exactly one thing, and only one:
 
-Rescored, and it reaches exactly the builds that carry the arcane — four
-weapons, nobody else:
+> With no ability in the chain, does Debilitate's split DoT read the weapon's
+> `ModifiedBase` (elements excluded, DE's weapon-status rule), or the weapon's
+> whole modded hit (elements included, the instance rule)?
 
-| board | weapon | rows moved | range |
-|---|---|---|---|
-| aimed | Torid | 8 | +32% … **+48%** |
-| aimed | Phantasma Prime | 4 | +30% … +36% |
-| aimed | Boar Prime | 1 | +16% |
-| aimed | Burston Prime | 2 | +2% … +6% |
-| **no aim** | Torid | 12 | +19% … **+112%** |
+Both readings survive everything known. For `ModifiedBase`: the parent is still
+a weapon shot, and DE's weapon-status rule is exactly the special case that
+exists to keep a DoT scaling with its OWN element rather than with all of them.
+For the hit: the arcane's intermediate instance "has no damage", so the DoT
+reads THROUGH it to whatever is above — which in the video is an ability hit
+including elements, and in the plain case would be a weapon hit including
+elements. The `x f^3` proves the intermediate link exists either way.
 
-The spread within one weapon is the mechanic showing through: the correction is
-the parent hit's elemental multiplier, so a build with more element on top of
-its base gains more, and a no-aim build — no headshots, no Incarnon, a smaller
-hit to start from — gains most of all where the split is carrying it.
+**The engine keeps the `ModifiedBase` reading** — the one it has always had —
+and `a_debilitate_split_burns_off_modified_base_not_the_hit` pins it so the
+question cannot be settled by accident. Flipping that assertion from 1.0 to 2.0
+and passing the hit's damage into the recursion is the whole of the change.
 
-### What still deserves a run
+What the reverted commit cost is the argument for not shipping it: it moved
+published board rows by up to **+112%** (Torid, no-aim) on an inference.
 
-Nothing here is measured on a build this repo can reproduce: the frame, the
-shards and the exalted rifle are all outside the model, so the 29551 cannot be
-run against anything. The 0.14% residual is unexplained too — small enough to be
-the video's rounding, large enough that it is not a proof.
+### What decides it, in one mod
 
-**One mod swap confirms it in game**, on any weapon, with a Bane equipped and
-enough Corrosive stacks to saturate — worth doing because nothing above runs on
-a build this repo can reproduce (the frame, the shards and the exalted rifle are
-all outside the model) and the 0.14% residual is still unexplained:
+On any weapon, in the Simulacrum, with a Corrosive build saturated to 10 stacks.
+It needs no frame, no shard and no exalted weapon, and it reads as a RATIO, so
+every mitigation, faction column, crit and body-part factor cancels out of it.
 
-- build A: an Electricity 60/60 alone
-- build B: the same, plus a **Toxin** 60/60
+A pure Corrosive build cannot proc plain Toxin or Electricity at all — both are
+combined into Corrosive — so **any Toxin or Electricity DoT on screen is the
+split**. That is a clean signal, and it is what makes this cheap.
 
-The engine NOW says the Toxin mod raises a split that lands on **Electricity**,
-by its share of the parent hit — +60% on a hit that was otherwise 1.6x its base,
-a **37%** jump from a mod the split's own element never reads. Before the change
-it said nothing moves. Either way the reading is unambiguous, and it needs no
-frame, no shard and no exalted weapon.
+- **A**: Serration + Toxin 60/60 + Electricity 60/60. Note the split's tick.
+- **B**: the same, plus ONE Heat mod in the LAST slot. Heat is the odd element
+  out, so Corrosive still forms and neither the Toxin nor the Electricity
+  bracket moves — the only thing that changed is how much element the HIT
+  carries.
+
+| reading | B against A |
+|---|---|
+| `ModifiedBase` (what ships) | **no change at all** |
+| the hit (the reverted one) | (1+0.6+0.6+0.9)/(1+0.6+0.6) = **+41%** |
+
+An IPS mod does the same job with a smaller swing and no second DoT colour on
+screen, which may read more cleanly.
+
+A single absolute reading works too, for a base-100 weapon with Serration:
+`ModifiedBase` = 265, the hit = 265 x 2.2 = 583, a Toxin split's bracket 1.6 —
+so 0.5 x 265 x 1.6 = **212** against 0.5 x 583 x 1.6 = **466**. Against an
+unarmoured target, with no Bane, no crit and no status-damage mods, those are
+far enough apart to tell by eye.
 
 ### Also settled by this: the split deals no damage of its own
 
