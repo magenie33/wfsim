@@ -707,6 +707,97 @@ pub fn forms_of(weapon_id: &str) -> Vec<FormRef> {
     out
 }
 
+/// HOW A WEAPON IS PLAYED FOR A WHOLE ENGAGEMENT — a policy over its forms.
+///
+/// A FORM is what the weapon is at an instant (base, charged, Incarnon); a MODE
+/// is what you do with those forms for three hundred seconds. They were one
+/// field for a long time and it could not express the questions worth asking:
+/// `form: incarnon_cycle` is a mode wearing a form's name, and `form: default`
+/// resolves to one or the other depending on a weapon flag, so a benchmark that
+/// may not name a form could only ever ask for "however it is normally played".
+/// "The Torid without ever transmuting" was unaskable (owner, 2026-08-07).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PlayMode {
+    /// The arsenal's form, all engagement. Every weapon has this one.
+    Base,
+    /// The other form, all engagement — a bow that never charges, an Arch-Gun
+    /// fired on its alt.
+    Alternate,
+    /// Fill the gauge in the base form, spend it in the other, come back.
+    Cycle,
+}
+
+impl PlayMode {
+    pub fn id(self) -> &'static str {
+        match self {
+            PlayMode::Base => "base",
+            PlayMode::Alternate => "alternate",
+            PlayMode::Cycle => "cycle",
+        }
+    }
+}
+
+/// One way this weapon can be played, and whether a ruler may rank it.
+#[derive(Debug, Clone, Copy)]
+pub struct WeaponPlayMode {
+    pub mode: PlayMode,
+    /// The form entry this mode fires — for a cycle, the one it returns to.
+    pub weapon_id: &'static str,
+    /// The other form, for a cycle.
+    pub other_id: Option<&'static str>,
+    /// May a standard benchmark rank this? See [`play_modes`].
+    pub sustainable: bool,
+}
+
+/// Every way this weapon can be played, derived from the forms it registers.
+///
+/// SUSTAINABILITY IS DERIVED, NOT DECLARED. A form entered by filling a gauge
+/// that then empties (`auto_transmute_out: on_incarnon_ammo_empty`) cannot be
+/// held for a whole engagement — "always Incarnon" is not a playstyle, it is a
+/// thing that happens for a few seconds at a time. A form with no gauge is just
+/// a trigger pull and can be used forever, which is why a Cernos Prime that
+/// never charges IS a way to play it and belongs on a board.
+///
+/// So nothing has to be marked. The gauge is read off the FORM ENTRY rather
+/// than off the form's NAME, which is what keeps this true for the next
+/// gauge-switched weapon that is not an Incarnon — Mausolon's alt-fire is
+/// charged by kills, and it will get its cycle from declaring a gauge and
+/// nothing else (owner, 2026-08-07).
+pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
+    let forms = forms_of(weapon_id);
+    let Some(default) = forms.iter().find(|f| f.is_default).or(forms.first()) else {
+        return Vec::new();
+    };
+    let mut out = vec![WeaponPlayMode {
+        mode: PlayMode::Base,
+        weapon_id: default.weapon_id,
+        other_id: None,
+        sustainable: true,
+    }];
+    for alt in forms.iter().filter(|f| f.weapon_id != default.weapon_id) {
+        // The GAUGE, not the kind: "does entering this cost a meter you must
+        // earn" is the question, and the answer lives on the entry.
+        let gauged = spec(alt.weapon_id).is_some_and(|s| s.incarnon.is_some());
+        if gauged {
+            out.push(WeaponPlayMode {
+                mode: PlayMode::Cycle,
+                weapon_id: default.weapon_id,
+                other_id: Some(alt.weapon_id),
+                sustainable: true,
+            });
+        }
+        out.push(WeaponPlayMode {
+            mode: PlayMode::Alternate,
+            weapon_id: alt.weapon_id,
+            other_id: None,
+            // A gauge you must fill and then run dry is exactly what cannot be
+            // sustained; anything else can.
+            sustainable: !gauged,
+        });
+    }
+    out
+}
+
 /// Does this weapon have a form you TRANSFORM into (a gauge and two transmute
 /// animations)? Only such a weapon has a cycle to simulate — anything else is
 /// fired in one form at a time, whatever forms it registers.
@@ -2686,5 +2777,96 @@ mod incarnon_gauge_tests {
         let all = transforms("burston_prime", "burston_prime_evo1_incarnon_form", 100.0);
         assert_eq!(none, 0, "no headshots, no Incarnon form");
         assert!(all > 0, "and with headshots it gets there, got {all}");
+    }
+}
+
+/// THE MODE TABLE, DERIVED — and it must stay derived.
+///
+/// One row per weapon on a board is not enough: a Torid played through its
+/// Incarnon cycle and a Torid that never transmutes are two different weapons
+/// to hold, and only one of them was ever measurable. What each weapon offers
+/// falls out of the forms it registers plus one question about the second one —
+/// does entering it cost a meter you have to earn?
+#[cfg(test)]
+mod play_mode_tests {
+    use super::*;
+
+    /// Every weapon can be played in its arsenal form, and that always counts.
+    #[test]
+    fn every_weapon_has_a_base_mode_and_it_is_always_rankable() {
+        for w in roster() {
+            let ms = play_modes(&w.id);
+            let base = ms.iter().find(|m| m.mode == PlayMode::Base);
+            let base = base.unwrap_or_else(|| panic!("{}: no base mode", w.id));
+            assert!(base.sustainable, "{}: its own arsenal form is not rankable", w.id);
+            assert_eq!(
+                ms.iter().filter(|m| m.mode == PlayMode::Base).count(),
+                1,
+                "{}: more than one base mode", w.id
+            );
+        }
+    }
+
+    /// A GAUGE IS WHAT DECIDES IT, and the two shapes are exactly these.
+    ///
+    /// A second form you pay a meter for gives a CYCLE that a board can rank
+    /// and an always-in-it mode that it cannot — "always Incarnon" is not a
+    /// playstyle, it is a few seconds at a time. A second form that is only a
+    /// different trigger pull can be held forever, so it is rankable and there
+    /// is no cycle to run.
+    #[test]
+    fn a_gauge_gives_a_cycle_and_costs_the_alternate_its_rank() {
+        for w in roster() {
+            let forms = forms_of(&w.id);
+            let ms = play_modes(&w.id);
+            let alt = forms.iter().find(|f| !f.is_default);
+            let Some(alt) = alt else {
+                assert_eq!(ms.len(), 1, "{}: one form, so one mode", w.id);
+                continue;
+            };
+            let gauged = spec(alt.weapon_id).is_some_and(|s| s.incarnon.is_some());
+            let has = |m: PlayMode| ms.iter().any(|x| x.mode == m);
+            let rankable = |m: PlayMode| {
+                ms.iter().any(|x| x.mode == m && x.sustainable)
+            };
+            assert!(has(PlayMode::Alternate), "{}: a second form and no alternate mode", w.id);
+            assert_eq!(has(PlayMode::Cycle), gauged, "{}: cycle iff gauge", w.id);
+            assert_eq!(
+                rankable(PlayMode::Alternate), !gauged,
+                "{}: a gauge-fed form cannot be held for an engagement, and a free one can",
+                w.id
+            );
+        }
+    }
+
+    /// The two weapons the owner named, spelled out — a derivation is worth
+    /// nothing if it derives the wrong table.
+    #[test]
+    fn torid_and_cernos_prime_each_offer_two() {
+        let on = |id: &str| -> Vec<&'static str> {
+            play_modes(id).into_iter().filter(|m| m.sustainable).map(|m| m.mode.id()).collect()
+        };
+        // The gauge one: fill it and spend it, or never transmute at all.
+        assert_eq!(on("torid"), vec!["base", "cycle"]);
+        // The free one: charge every arrow, or none of them.
+        assert_eq!(on("cernos_prime"), vec!["base", "alternate"]);
+        // ...and a weapon with one form offers one.
+        assert_eq!(on("ocucor"), vec!["base"]);
+    }
+
+    /// A cycle names BOTH ends, because it is the only mode that is about two
+    /// forms rather than one.
+    #[test]
+    fn a_cycle_carries_the_form_it_returns_to_and_the_one_it_spends() {
+        let c = play_modes("torid")
+            .into_iter()
+            .find(|m| m.mode == PlayMode::Cycle)
+            .expect("the Torid has a cycle");
+        assert_eq!(c.weapon_id, "torid");
+        assert_eq!(c.other_id, Some("torid_incarnon"));
+        // Every other mode is about one form and says so.
+        for m in play_modes("cernos_prime") {
+            assert_eq!(m.other_id, None, "{} names a second form", m.mode.id());
+        }
     }
 }
