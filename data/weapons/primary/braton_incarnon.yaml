@@ -1,0 +1,83 @@
+id: braton_incarnon
+name: Braton (Incarnon Form)
+slot: primary
+class: rifle
+form: incarnon
+
+# TWO WEAPONS MODEL: second entry of the transform group — see
+# data/weapons/primary/braton.yaml for the base form and the decision.
+transform_group: braton
+transforms_from: braton
+
+# The Incarnon transformation economy (wiki Braton Incarnon Genesis), and it is
+# the FAMILY's: all four Bratons share this gauge.
+incarnon:
+  gauge:
+    charge_on: weakpoint_hits
+    charges_to_fill: 20
+    rounds_per_charge: 10
+    max_rounds: 200
+    # charge_rules:
+    # - Each weakpoint hit grants 10 Incarnon rounds; 20 hits fill the gauge to
+    # the 200-round cap.
+    # - "Charges build individually on multishot bullets."
+    # - A full gauge is NOT required to transmute.
+  transmute:
+    activation: alt_fire
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+  incarnon_magazine:
+    resource: incarnon_charges
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 2.0      # = base reload time, unmodded
+  # 1 s is MEASURED on Dual Toxocyst (MEASUREMENTS M9); applied uniformly until
+  # a weapon is measured otherwise.
+  transmute_out_seconds: 1.0
+
+# SIM CONVENIENCE: with the gauge LOCKED full the cycle reduces to a
+# magazine/reload model the plain sim consumes directly.
+pseudo_reload:
+  magazine: 200
+  reload_seconds: 3.0   # transmute out (1.0) + in (2.0), unmodded
+
+co_behavior: additive_with_base_damage
+
+# TWO ATTACK PARTS. "Incarnon Form has a 3 meter area of effect that deals pure
+# Heat damage, with much higher Critical Chance, Critical Multiplier, and Status
+# Chance. Fire Rate is reduced, and the explosion possesses Damage Falloff from
+# 100% to 90% from central impact."
+attack:
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 5.0
+  multishot: 1.0
+  ammo_cost: 1                  # of the separate 200-round charge pool
+  crit_chance: 0.3
+  crit_multiplier: 3.0
+  status_chance: 0.12
+  punch_through_m: 0.0
+  damage: { impact: 20.0, puncture: 2.0, slash: 28.0 }   # total 50
+  # The radial (AoE) part — rules in MECHANICS §7, plus the two this entry
+  # declares for itself, both from the CO catalog's Braton row.
+  radial:
+    damage: { heat: 50.0 }
+    radius_m: 3.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.1      # "100% to 90% from central impact"
+    crit_chance: 0.3
+    crit_multiplier: 3.0
+    status_chance: 0.12
+    # CO ON AN EXPLOSION — the second family in the roster to do it, after the
+    # Burston. "Radial hit only receives CO bonus on target directly hit by
+    # bullet", which the single-target arena always is.
+    takes_condition_overload: true
+    # ...and it fires ONCE PER PULL: "AoE does not scale off multishot".
+    takes_multishot: false
+
+# incarnon_evolutions: see data/weapons/primary/braton.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Braton_Incarnon_Genesis
+  # Attack stats from the wiki infobox and WFCD's `attacks` array ("Incarnon
+  # Form" and "Incarnon Form AoE"), which agree on every field.

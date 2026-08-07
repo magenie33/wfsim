@@ -1,0 +1,21 @@
+id: braton_vandal_survivors_edge
+name: Survivor's Edge
+weapon: braton_vandal
+tier: 4
+icon: XCritChanceYStatChance(xWhite).png
+description: "Increase Base Critical Chance by +10%. Increase Base Status Chance by +12%."
+# THE GENESIS IS THE FAMILY'S. One Braton Incarnon Genesis upgrades any of the
+# four Bratons, so all four carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: choose_one
+
+effects:
+  # PERCENTAGE POINTS on the BASE, the layer mods multiply.
+  - kind: flat_base_crit_chance
+    value: 0.1
+  - kind: flat_base_status_chance
+    value: 0.12
+
+source:
+  url: https://wiki.warframe.com/w/Braton_Incarnon_Genesis

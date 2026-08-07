@@ -1367,6 +1367,35 @@ use crate::loadout::WeaponBase;
             "phenmor_lingering_judgement :: headshot_damage_on_headshot_streak",
             "phenmor_ready_retaliation :: reload_speed_bonus",
             "phenmor_spiteful_defilement :: crit_multiplier_below_status_count",
+            // THE BRATON FAMILY (2026-08-08) — one adapter, four weapons, so
+            // every gap below is four rows of the same fact. THREE kinds:
+            //
+            // DARING REVERIE's larger half needs a CHANNELED ABILITY, a
+            // Warframe state this arena has no concept of — it fires one weapon
+            // and casts nothing. Worth naming because on three of the four
+            // variants the conditional half is the BIGGER number, so a Braton's
+            // figure here is not its ceiling.
+            //
+            // MUNITIONS GRIT's +20% multishot has no flat-multishot arm in this
+            // loader. Its surcharge (`multishot_consumes_ammo`) IS modelled, and
+            // the pair is circular: the surcharge only pays on projectiles
+            // multishot generated, so the perk's own multishot is what makes its
+            // own multiplier worth anything.
+            //
+            // GUNSMOKE PICK UP is out of reach twice — no ammo-restore kind, and
+            // a PUNCH THROUGH trigger needs a second body behind the first.
+            "braton_daring_reverie :: flat_base_damage_while_channeling",
+            "braton_gunsmoke_pick_up :: ammo_restore_on_punch_through",
+            "braton_munitions_grit :: flat_base_multishot",
+            "braton_prime_daring_reverie :: flat_base_damage_while_channeling",
+            "braton_prime_gunsmoke_pick_up :: ammo_restore_on_punch_through",
+            "braton_prime_munitions_grit :: flat_base_multishot",
+            "braton_vandal_daring_reverie :: flat_base_damage_while_channeling",
+            "braton_vandal_gunsmoke_pick_up :: ammo_restore_on_punch_through",
+            "braton_vandal_munitions_grit :: flat_base_multishot",
+            "mk1_braton_daring_reverie :: flat_base_damage_while_channeling",
+            "mk1_braton_gunsmoke_pick_up :: ammo_restore_on_punch_through",
+            "mk1_braton_munitions_grit :: flat_base_multishot",
         ];
         let expected: Vec<String> = expected.into_iter().map(str::to_string).collect();
         let missing: Vec<&String> = expected.iter().filter(|e| !found.contains(e)).collect();

@@ -1,0 +1,27 @@
+id: braton_prime_daring_reverie
+name: Daring Reverie
+weapon: braton_prime
+tier: 2
+description: "Increase Base Damage by +4. With Channeled Ability active: Increase Base Damage by +38. +50% Ammo Efficiency"
+# THE GENESIS IS THE FAMILY'S. One Braton Incarnon Genesis upgrades any of the
+# four Bratons, so all four carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: choose_one
+
+effects:
+  # THE UNCONDITIONAL HALF, which is the only half this sim can see.
+  - kind: flat_base_damage
+    value: 4.0
+  # NOT LOADED, and it is a gap in the SIM rather than in the data: a CHANNELED
+  # ABILITY is a Warframe state the arena has no concept of — it fires one
+  # weapon and casts nothing — so neither the +38 nor the ammo efficiency can
+  # ever arm. On this family the conditional half is the LARGER one for three
+  # of the four variants, which is worth knowing before reading a Braton's
+  # number here as its ceiling.
+  - kind: flat_base_damage_while_channeling
+    value: 38.0
+    ammo_efficiency: 0.50
+
+source:
+  url: https://wiki.warframe.com/w/Braton_Incarnon_Genesis

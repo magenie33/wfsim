@@ -1,0 +1,26 @@
+id: braton_prime_prelude_of_might
+name: Prelude of Might
+weapon: braton_prime
+tier: 4
+description: "With Critical Chance Below 50%: Increase Base Critical Damage Multiplier by +3.0x"
+# THE GENESIS IS THE FAMILY'S. One Braton Incarnon Genesis upgrades any of the
+# four Bratons, so all four carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: choose_one
+
+effects:
+  # The condition is on the build's OWN RESOLVED crit chance, which no
+  # `condition:` here can express — every one of those asks about the Tenno or
+  # the target. Its own kind, resolved late in `resolve` against the same
+  # expression the panel publishes (see furis_prelude_of_might for the argument).
+  #
+  # The threshold is 50% on this family against the Furis's 40%, and it bites
+  # harder here: taking it means holding crit chance under half, which Critical
+  # Parallel and Survivor's Edge in the same tier both push against.
+  - kind: crit_multiplier_below_crit_chance
+    value: 3.0
+    below_crit_chance: 0.50
+
+source:
+  url: https://wiki.warframe.com/w/Braton_Incarnon_Genesis

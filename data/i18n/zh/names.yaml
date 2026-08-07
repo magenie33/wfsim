@@ -63,6 +63,14 @@ weapons:
   # The FORM, named the way every other Incarnon form here is: DE's own
   # weapon name plus our own bracket. DE ships no separate name for a form.
   phenmor_incarnon: 凤殁 (灵化形态)
+  braton: 布莱顿
+  braton_incarnon: 布莱顿 (灵化形态)
+  braton_prime: 布莱顿 Prime
+  braton_prime_incarnon: 布莱顿 Prime (灵化形态)
+  braton_vandal: 布莱顿·破坏者
+  braton_vandal_incarnon: 布莱顿·破坏者 (灵化形态)
+  mk1_braton: MK1-布莱顿
+  mk1_braton_incarnon: MK1-布莱顿 (灵化形态)
 
 enemies:
   thrax_centurion: 凶魂百夫长

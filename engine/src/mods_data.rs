@@ -1097,7 +1097,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 18] = [
+        const EXPECTED: [(&str, &str, &[&str]); 22] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
@@ -1110,6 +1110,14 @@ mod tests {
             // RIFLE one turns on the listed trigger, which is the whole point
             // of having both an auto and a semi-auto rifle in the batch.
             ("gotva_prime", "auto", &[]),                      // full-auto rifle
+            // THE BRATON FAMILY (2026-08-08). Full-auto in both forms, so no
+            // Cannonade fits any of the four — and that is the point of listing
+            // them: one adapter, four weapons, and the trigger answer is the
+            // weapon's rather than the adapter's.
+            ("braton", "auto", &[]),
+            ("mk1_braton", "auto", &[]),
+            ("braton_vandal", "auto", &[]),
+            ("braton_prime", "auto", &[]),
             ("karak_wraith", "auto", &[]),                     // full-auto rifle
             ("prisma_grinlok", "semi_auto", &["semi_rifle_cannonade"]),
             // A BEAM shotgun, and its alt-fire does not change the answer: a

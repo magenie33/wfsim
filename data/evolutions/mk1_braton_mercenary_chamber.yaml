@@ -1,0 +1,21 @@
+id: mk1_braton_mercenary_chamber
+name: Mercenary Chamber
+weapon: mk1_braton
+tier: 3
+description: "Increase Base Ammo Capacity to 600."
+# THE GENESIS IS THE FAMILY'S. One Braton Incarnon Genesis upgrades any of the
+# four Bratons, so all four carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: choose_one
+
+effects:
+  # LOADED — and it changes nothing here anyway: this raises the RESERVE,
+  # and the sim's scenario carries an `infinite_ammo` switch that is on by
+  # default. It is a SET-TO rather than an add, which is why the value is the
+  # new capacity rather than the difference.
+  - kind: ammo_reserve_set
+    value: 600
+
+source:
+  url: https://wiki.warframe.com/w/Braton_Incarnon_Genesis

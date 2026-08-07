@@ -1,0 +1,72 @@
+id: braton
+name: Braton
+slot: primary
+# WFCD `type: Rifle`, so the same three pools every assault rifle here draws.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]
+grip_type: RIFLE
+mastery_rank: 0
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are separate
+# entries linked by a transform group. The Incarnon form exists only once the
+# Braton Incarnon Genesis is installed and its tier-1 evolution taken.
+transform_group: braton
+transforms_to: braton_incarnon
+
+# Weapon-level metadata (wiki infobox, cross-checked against WFCD
+# warframe-items — 0 disagreements).
+accuracy: 28.57
+disposition: 1.35
+polarities: []
+exilus_polarity: naramon
+riven_family: Braton
+traits: [incarnon]
+introduced: "Vanilla"
+internal_name: /Lotus/Weapons/Tenno/Rifle/Rifle
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80              # rifle pickup, as every other rifle here
+magazine: 45
+reload_seconds: 2.0
+
+# Condition Overload behavior class. The wiki's CO catalog carries ONE Braton
+# row and it is the Incarnon form's RADIAL (see the incarnon entry); this
+# attack has none, and absence there means ORDINARY rather than unknown. The
+# CO base excludes an evolution's flat damage automatically (`co_base_fraction`
+# stays at the loader's 1.0), which is what the catalog's 95% column is saying
+# from the other side: 70 of the radial's 74 feed the bonus, and the missing 4
+# is Daring Reverie's.
+co_behavior: additive_with_base_damage
+
+# ONE ATTACK PART. The radial belongs to the Incarnon form (braton_incarnon).
+attack:
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 8.75
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.12
+  crit_multiplier: 1.6
+  status_chance: 0.06
+  punch_through_m: 0.0
+  damage: { impact: 7.92, puncture: 7.92, slash: 8.16 }   # total 24
+
+# incarnon_evolutions: nine perks shared by the transform group; definitions
+# live in data/evolutions/braton_*.yaml.
+# - { tier: 1, unlock: complete a solo mission with this weapon equipped,
+# options: [braton_evo1_incarnon_form] }
+# - { tier: 2, unlock: kill 100 enemies with this weapon's Incarnon Form,
+# options: [braton_daring_reverie, braton_munitions_grit] }
+# - { tier: 3, unlock: kill 30 enemies without reloading,
+# options: [braton_mercenary_chamber, braton_voids_guidance,
+# braton_gunsmoke_pick_up] }
+# - { tier: 4,
+# options: [braton_critical_parallel, braton_prelude_of_might,
+# braton_survivors_edge] }
+
+source:
+  url: https://wiki.warframe.com/w/Braton

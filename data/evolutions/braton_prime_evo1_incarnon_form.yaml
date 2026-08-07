@@ -1,0 +1,20 @@
+id: braton_prime_evo1_incarnon_form
+name: Incarnon Form
+weapon: braton_prime
+tier: 1
+description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Switching back will expend any remaining charge. Gain Radial Heat damage."
+# THE GENESIS IS THE FAMILY'S. One Braton Incarnon Genesis upgrades any of the
+# four Bratons, so all four carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: fixed
+
+effects:
+  # LOADED as `EvoEffect::UnlocksForm(weapon)`. The form's stats — the Auto
+  # trigger, the reduced fire rate, the higher crit and the 3 m Heat explosion —
+  # are properties of the braton_prime_incarnon entry, not perk payload.
+  - kind: unlocks_weapon
+    weapon: braton_prime_incarnon
+
+source:
+  url: https://wiki.warframe.com/w/Braton_Incarnon_Genesis

@@ -150,8 +150,6 @@ evolutions:
   furis_elemental_balance: 元素平衡
   mk1_furis_elemental_balance: 元素平衡
 
-# The card text. One string per evolution; `\n` where our English description
-# breaks a line.
   # Phenmor (2026-08-08), read through the API from 凤殁. THE CN CLIENT WORDS
   # ONE OF THESE DIFFERENTLY: Lingering Judgement is "On 2 headshots within 2
   # seconds" in English and 在2秒内爆头击杀两次 — two headshot KILLS — in
@@ -171,6 +169,52 @@ evolutions:
   phenmor_devouring_attrition: 压制损耗
   phenmor_spiteful_defilement: 怨之亵渎
   phenmor_lingering_judgement: 恒久审判
+  # The Braton family (2026-08-08), read through the API from 布莱顿灵化之源.
+  # One page, four variants: every per-variant value is printed inline as
+  # '''X''' （原版）/ '''Y''' （MK1） / … and is resolved down to the weapon
+  # being written, the way our English `description` fields already are.
+  # 佣兵枪膛 / 临界平行 match the names this file already carries from the
+  # Boar, which is the check that the transcription is DE's string and not a
+  # second translation of the same English.
+  braton_evo1_incarnon_form: 灵化形态
+  braton_daring_reverie: 勇敢梦想
+  braton_munitions_grit: 实弹胆魄
+  braton_mercenary_chamber: 佣兵枪膛
+  braton_voids_guidance: 虚空指引
+  braton_gunsmoke_pick_up: 硝烟拾起
+  braton_critical_parallel: 临界平行
+  braton_prelude_of_might: 力量前奏
+  braton_survivors_edge: 生还占优
+  mk1_braton_evo1_incarnon_form: 灵化形态
+  mk1_braton_daring_reverie: 勇敢梦想
+  mk1_braton_munitions_grit: 实弹胆魄
+  mk1_braton_mercenary_chamber: 佣兵枪膛
+  mk1_braton_voids_guidance: 虚空指引
+  mk1_braton_gunsmoke_pick_up: 硝烟拾起
+  mk1_braton_critical_parallel: 临界平行
+  mk1_braton_prelude_of_might: 力量前奏
+  mk1_braton_survivors_edge: 生还占优
+  braton_vandal_evo1_incarnon_form: 灵化形态
+  braton_vandal_daring_reverie: 勇敢梦想
+  braton_vandal_munitions_grit: 实弹胆魄
+  braton_vandal_mercenary_chamber: 佣兵枪膛
+  braton_vandal_voids_guidance: 虚空指引
+  braton_vandal_gunsmoke_pick_up: 硝烟拾起
+  braton_vandal_critical_parallel: 临界平行
+  braton_vandal_prelude_of_might: 力量前奏
+  braton_vandal_survivors_edge: 生还占优
+  braton_prime_evo1_incarnon_form: 灵化形态
+  braton_prime_daring_reverie: 勇敢梦想
+  braton_prime_munitions_grit: 实弹胆魄
+  braton_prime_mercenary_chamber: 佣兵枪膛
+  braton_prime_voids_guidance: 虚空指引
+  braton_prime_gunsmoke_pick_up: 硝烟拾起
+  braton_prime_critical_parallel: 临界平行
+  braton_prime_prelude_of_might: 力量前奏
+  braton_prime_survivors_edge: 生还占优
+
+# The card text. One string per evolution; `\n` where our English description
+# breaks a line.
 
 evolution_descriptions:
   # ---- Dual Toxocyst ----
@@ -324,3 +368,86 @@ evolution_descriptions:
     身上受到少于3个异常状态的敌人将遭受：+100%暴击伤害
   phenmor_lingering_judgement: |-
     在2秒内爆头击杀两次：+50%爆头伤害，持续8秒
+  # The Braton family (2026-08-08), read through the API from 布莱顿灵化之源.
+  # One page, four variants: every per-variant value is printed inline as
+  # '''X''' （原版）/ '''Y''' （MK1） / … and is resolved down to the weapon
+  # being written, the way our English `description` fields already are.
+  # 佣兵枪膛 / 临界平行 match the names this file already carries from the
+  # Boar, which is the check that the transcription is DE's string and not a
+  # second translation of the same English.
+  braton_evo1_incarnon_form: |-
+    爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。
+    灵化形态额外造成3米的范围伤害，拥有更高的基础伤害，暴击几率，暴击倍率和触发几率，但射速显著降低。
+  braton_daring_reverie: |-
+    基础伤害增加+24 持续消耗型技能激活时：基础伤害增加+30，+50% 弹药效率
+  braton_munitions_grit: |-
+    基础伤害增加+14 多重射击直接消耗弹匣中的弹药并将伤害提升+60%，+20% 多重射击（非灵化形态下消耗备弹增加伤害）
+  braton_mercenary_chamber: |-
+    弹药上限提升至675
+  braton_voids_guidance: |-
+    提升精准度并减少60%武器后坐力
+  braton_gunsmoke_pick_up: |-
+    穿透命中时：20%几率回复10%弹药
+  braton_critical_parallel: |-
+    基础暴击几率增加+16%，基础暴击伤害增加+0.4x
+  braton_prelude_of_might: |-
+    暴击几率低于50%时：基础暴击伤害增加+3.4x
+  braton_survivors_edge: |-
+    基础暴击几率增加+12%，基础触发几率增加+12%
+  mk1_braton_evo1_incarnon_form: |-
+    爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。
+    灵化形态额外造成3米的范围伤害，拥有更高的基础伤害，暴击几率，暴击倍率和触发几率，但射速显著降低。
+  mk1_braton_daring_reverie: |-
+    基础伤害增加+28 持续消耗型技能激活时：基础伤害增加+22，+50% 弹药效率
+  mk1_braton_munitions_grit: |-
+    基础伤害增加+20 多重射击直接消耗弹匣中的弹药并将伤害提升+48%，+20% 多重射击（非灵化形态下消耗备弹增加伤害）
+  mk1_braton_mercenary_chamber: |-
+    弹药上限提升至600
+  mk1_braton_voids_guidance: |-
+    提升精准度并减少60%武器后坐力
+  mk1_braton_gunsmoke_pick_up: |-
+    穿透命中时：20%几率回复10%弹药
+  mk1_braton_critical_parallel: |-
+    基础暴击几率增加+18%，基础暴击伤害增加+0.5x
+  mk1_braton_prelude_of_might: |-
+    暴击几率低于50%时：基础暴击伤害增加+3.3x
+  mk1_braton_survivors_edge: |-
+    基础暴击几率增加+10%，基础触发几率增加+12%
+  braton_vandal_evo1_incarnon_form: |-
+    爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。
+    灵化形态额外造成3米的范围伤害，拥有更高的基础伤害，暴击几率，暴击倍率和触发几率，但射速显著降低。
+  braton_vandal_daring_reverie: |-
+    基础伤害增加+12 持续消耗型技能激活时：基础伤害增加+34，+50% 弹药效率
+  braton_vandal_munitions_grit: |-
+    基础伤害增加+8 多重射击直接消耗弹匣中的弹药并将伤害提升+58%，+20% 多重射击（非灵化形态下消耗备弹增加伤害）
+  braton_vandal_mercenary_chamber: |-
+    弹药上限提升至755
+  braton_vandal_voids_guidance: |-
+    提升精准度并减少60%武器后坐力
+  braton_vandal_gunsmoke_pick_up: |-
+    穿透命中时：20%几率回复10%弹药
+  braton_vandal_critical_parallel: |-
+    基础暴击几率增加+16%，基础暴击伤害增加+0.4x
+  braton_vandal_prelude_of_might: |-
+    暴击几率低于50%时：基础暴击伤害增加+3
+  braton_vandal_survivors_edge: |-
+    基础暴击几率增加+10%，基础触发几率增加+12%
+  braton_prime_evo1_incarnon_form: |-
+    爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。
+    灵化形态额外造成3米的范围伤害，拥有更高的基础伤害，暴击几率，暴击倍率和触发几率，但射速显著降低。
+  braton_prime_daring_reverie: |-
+    基础伤害增加+4 持续消耗型技能激活时：基础伤害增加+38，+50% 弹药效率
+  braton_prime_munitions_grit: |-
+    基础伤害增加+2 多重射击直接消耗弹匣中的弹药并将伤害提升+54%，+20% 多重射击（非灵化形态下消耗备弹增加伤害）
+  braton_prime_mercenary_chamber: |-
+    弹药上限提升至1125
+  braton_prime_voids_guidance: |-
+    提升精准度并减少60%武器后坐力
+  braton_prime_gunsmoke_pick_up: |-
+    穿透命中时：20%几率回复10%弹药
+  braton_prime_critical_parallel: |-
+    基础暴击几率增加+18%，基础暴击伤害增加+0.2x
+  braton_prime_prelude_of_might: |-
+    暴击几率低于50%时：基础暴击伤害增加+3x
+  braton_prime_survivors_edge: |-
+    基础暴击几率增加+10%，基础触发几率增加+14%

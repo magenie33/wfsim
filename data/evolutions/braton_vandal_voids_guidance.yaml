@@ -1,0 +1,23 @@
+id: braton_vandal_voids_guidance
+name: Void's Guidance
+weapon: braton_vandal
+tier: 3
+icon: MoreAccuracy(xWhite).png
+description: "+60% Accuracy, -60% Recoil"
+# THE GENESIS IS THE FAMILY'S. One Braton Incarnon Genesis upgrades any of the
+# four Bratons, so all four carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: choose_one
+
+effects:
+  # BOTH INDIRECT: the arena hits what it aims at by construction
+  # (`headshot_pct`) and has no geometry for recoil to disturb. Loaded so the
+  # panel states them rather than dropping them.
+  - kind: accuracy_bonus
+    value: 0.60
+  - kind: recoil_reduction
+    value: 0.60
+
+source:
+  url: https://wiki.warframe.com/w/Braton_Incarnon_Genesis

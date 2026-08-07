@@ -44,8 +44,9 @@ carries that name.
 | Dual Toxocyst Genesis | `dual_toxocyst` (+ `_incarnon`) |
 | Laetum (natural) | `laetum` (+ `_incarnon`) |
 | **Phenmor (natural)** | `phenmor` (+ `_incarnon`) — 2026-08-08 |
+| **Braton Genesis** | `braton`, `mk1_braton`, `braton_vandal`, `braton_prime` (+ `_incarnon`) — 2026-08-08 |
 
-Remaining: **26 adapters (56 weapons) + 2 naturals**.
+Remaining: **25 adapters (52 weapons) + 2 naturals**.
 
 ### What the Phenmor cost, against what this file predicted
 
@@ -69,6 +70,34 @@ the weapon on the way in and are the reason nothing shipped silently: the
 Cannonade roster (a semi-auto base form whose Incarnon form is Auto — the Dual
 Toxocyst's shape, on the rifle side for the first time) and the inert-effects
 pin.
+
+### What the Braton family cost — 8 weapons in one pass
+
+Predicted "4 new perks". Actual: **three** new inert kinds and no engine work,
+which is what a four-variant adapter is supposed to look like — one wiki table,
+36 evolution files, and the numbers are the only thing that varies.
+
+- **Daring Reverie** — the larger half needs a CHANNELED ABILITY, a Warframe
+  state this arena has no concept of. Worth naming because on three of the four
+  variants the conditional half is the BIGGER number.
+- **Munitions Grit** — the +20% multishot has no flat-multishot arm for an
+  evolution. Its surcharge IS modelled, and the pair is circular: the surcharge
+  only pays on projectiles multishot generated.
+- **Gunsmoke Pick Up** — out of reach twice over: no ammo-restore kind, and a
+  PUNCH THROUGH trigger needs a second body behind the first.
+
+The Incarnon form is the roster's **second explosion to take Condition
+Overload**, after the Burston — its own catalog row, with "Radial hit only
+receives CO bonus on target directly hit by bullet" and "AoE does not scale off
+multishot", both declared on the radial.
+
+**TWO SOURCE DISAGREEMENTS**, out of 36 values, both recorded in the yaml
+rather than reconciled: the EN and CN wikis SWAP Survivor's Edge's crit chance
+between the Braton and the MK1-Braton (10/12 against 12/10), and they read
+Mercenary Chamber's Vandal capacity as 750 against 755. The EN numbers ship,
+because the EN page is where the effect text was transcribed from. A swap is
+the one kind of disagreement that looks like agreement if you only check the
+multiset, which is why it is written down.
 
 **Icons are not free.** Five of the thirteen had no verified wiki `File:` name
 and were dropped rather than guessed — the site build FAILS on an icon that
@@ -154,7 +183,7 @@ Torid, Angstrum, Stug** (wiki, Incarnon — verbatim in `torid_incarnon.yaml`).
 | Miter | Miter (MR6) | Charge | auto projectile + radial | 5 → 20 | 2 | — |
 | Boltor | Boltor (MR2), Telos (MR12), Prime (MR13) | Auto | auto projectile | 8 → 160 | 3 | — |
 | Sybaris | Sybaris (MR5), Dex (MR7), Prime (MR12) | Burst | hit-scan | 8 → 200 | 3 | — |
-| Braton | Braton (MR0), Mk1 (MR0), Prime (MR8), Vandal (MR4) | Auto | auto hit-scan + AoE | 10 → 200 | 4 | — |
+| Braton\* | Braton (MR0)\*, Mk1 (MR0)\*, Prime (MR8)\*, Vandal (MR4)\* | Auto | auto hit-scan + AoE | 10 → 200 | 4 | **done 2026-08-08** |
 | Dera | Dera (MR4), Vandal (MR7) | Auto | hit-scan | 2 → 50 | 4 | — |
 | Soma | Soma (MR6), Prime (MR7) | Auto-Spool | hit-scan | 10 → 200 | 4 | **spool** |
 | Dread | Dread (MR5) | Charge (bow) | charged projectile, 0.6 s | 5 → 20 | 5 | — |
@@ -206,10 +235,10 @@ is intrinsic — but they still model as a transform group here, and they carry
 2. **The 19 shared perk kinds**, driven by whichever adapter needs them first.
    Rapid Reinforcement alone appears on 14 guns; doing it once removes a slot
    from half the remaining program.
-3. **The zero-mechanic adapters, widest family first**: Braton (4), Latron (3),
-   Boltor (3), Sybaris (3), Lato (3), Ballistica (3), then the pairs (Dera,
-   Vasto, Lex, Bronco, Kunai, Sicarus, Gammacor, Angstrum) and the singles
-   (Miter, Despair, Cestra, Atomos).
+3. **The zero-mechanic adapters, widest family first**: ~~Braton (4)~~
+   **done 2026-08-08**, then Latron (3), Boltor (3), Sybaris (3), Lato (3),
+   Ballistica (3), then the pairs (Dera, Vasto, Lex, Bronco, Kunai, Sicarus,
+   Gammacor, Angstrum) and the singles (Miter, Despair, Cestra, Atomos).
 4. **Paris + Dread** together — one bow session covers both, and Cernos Prime
    already pins the charge/uncharge shape.
 5. **The mechanic-gated ones, one mechanic per batch**: Soma+Gorgon (spool),

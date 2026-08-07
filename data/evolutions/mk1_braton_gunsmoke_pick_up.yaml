@@ -1,0 +1,22 @@
+id: mk1_braton_gunsmoke_pick_up
+name: Gunsmoke Pick Up
+weapon: mk1_braton
+tier: 3
+description: "On Punch Through Hit: 20% chance for 10% Ammo restored."
+# THE GENESIS IS THE FAMILY'S. One Braton Incarnon Genesis upgrades any of the
+# four Bratons, so all four carry the same ladder of nine perks. Where a value
+# DIFFERS between them the wiki's table prints a per-variant column, and the
+# number below is this weapon's.
+selection: choose_one
+
+effects:
+  # NOT LOADED, twice over. There is no ammo-restore effect kind, and the
+  # trigger is a PUNCH THROUGH hit — which needs a second body behind the first,
+  # and the arena has one target. Both halves are out of reach of this model
+  # rather than unimplemented.
+  - kind: ammo_restore_on_punch_through
+    chance: 0.20
+    fraction: 0.10
+
+source:
+  url: https://wiki.warframe.com/w/Braton_Incarnon_Genesis

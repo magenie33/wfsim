@@ -1,0 +1,72 @@
+id: braton_vandal
+name: Braton Vandal
+slot: primary
+# WFCD `type: Rifle`, so the same three pools every assault rifle here draws.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]
+grip_type: RIFLE
+mastery_rank: 4
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are separate
+# entries linked by a transform group. The Incarnon form exists only once the
+# Braton Incarnon Genesis is installed and its tier-1 evolution taken.
+transform_group: braton_vandal
+transforms_to: braton_vandal_incarnon
+
+# Weapon-level metadata (wiki infobox, cross-checked against WFCD
+# warframe-items — 0 disagreements).
+accuracy: 33.33
+disposition: 1.3
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Braton
+traits: [incarnon, vandal]
+introduced: "6.3.1"
+internal_name: /Lotus/Weapons/Tenno/Rifle/VIPRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 550
+ammo_pickup: 80              # rifle pickup, as every other rifle here
+magazine: 50
+reload_seconds: 1.75
+
+# Condition Overload behavior class. The wiki's CO catalog carries ONE Braton
+# row and it is the Incarnon form's RADIAL (see the incarnon entry); this
+# attack has none, and absence there means ORDINARY rather than unknown. The
+# CO base excludes an evolution's flat damage automatically (`co_base_fraction`
+# stays at the loader's 1.0), which is what the catalog's 95% column is saying
+# from the other side: 70 of the radial's 74 feed the bonus, and the missing 4
+# is Daring Reverie's.
+co_behavior: additive_with_base_damage
+
+# ONE ATTACK PART. The radial belongs to the Incarnon form (braton_vandal_incarnon).
+attack:
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 7.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.16
+  crit_multiplier: 2.0
+  status_chance: 0.16
+  punch_through_m: 0.0
+  damage: { impact: 12.25, puncture: 1.75, slash: 21.0 }   # total 35
+
+# incarnon_evolutions: nine perks shared by the transform group; definitions
+# live in data/evolutions/braton_vandal_*.yaml.
+# - { tier: 1, unlock: complete a solo mission with this weapon equipped,
+# options: [braton_vandal_evo1_incarnon_form] }
+# - { tier: 2, unlock: kill 100 enemies with this weapon's Incarnon Form,
+# options: [braton_vandal_daring_reverie, braton_vandal_munitions_grit] }
+# - { tier: 3, unlock: kill 30 enemies without reloading,
+# options: [braton_vandal_mercenary_chamber, braton_vandal_voids_guidance,
+# braton_vandal_gunsmoke_pick_up] }
+# - { tier: 4,
+# options: [braton_vandal_critical_parallel, braton_vandal_prelude_of_might,
+# braton_vandal_survivors_edge] }
+
+source:
+  url: https://wiki.warframe.com/w/Braton_Vandal
