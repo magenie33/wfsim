@@ -18,6 +18,11 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: ocucor
     mode: base
+    score: 0.8004812669283611
+    mods: [hornet_strike, primed_target_cracker, barrel_diffusion, lethal_torrent, magnetic_might, sentient_surge, primed_heated_charge, scorch]
+    arcanes: [secondary_enervate]
+  - weapon: ocucor
+    mode: base
     score: 0.001707227710289394
     mods: [pistol_acuity, galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, accelerated_isotope, sentient_surge, frostbite]
     arcanes: [cascadia_flare]
