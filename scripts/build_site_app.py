@@ -220,13 +220,34 @@ def write_board() -> None:
     # It also ends a churn: every local site build used to rewrite board.json
     # WITHOUT this field, so the file came back dirty after each run and a
     # careless commit could ship it over a fresh rescore.
-    # A whole score is `10` in the yaml and `10.0` in the json, so the key has
-    # to be the NUMBER rather than its spelling.
-    def _score_key(v):
+    # A ROW IS FOUND BY ITS BUILD, not by its score. Keying on the number was a
+    # proxy for identity and it broke on the thing a proxy always breaks on:
+    # 10 of 118 rows had a score one ULP apart between the yaml and the json
+    # (11.980987537508963 against ...64), so those rows matched nothing, lost
+    # their `shown` string, and came back rewritten on every local build.
+    #
+    # The gap is real and not a formatting bug — Rust prints an f64 the same
+    # shortest-round-trip way through `{}` and through serde_json, so one run
+    # cannot spell one number two ways. It means the two files were written by
+    # two RUNS, and a board score is not bit-reproducible across runs: a
+    # hundred engagements are summed, and summation order decides the last bit.
+    # Which is exactly why an identity key is the right one — the build is what
+    # a row IS, and the score is a measurement of it.
+    def _ident(benchmark, mode, mods, evos, arcs):
+        return (benchmark or "", mode or "",
+                tuple(mods or []), tuple(evos or []), tuple(arcs or []))
+
+    # ...and then the score decides only whether the CARRIED figures still
+    # describe this row. Equal to a part in 1e-12 is the same measurement (a
+    # rescore that moves a number moves it in the fourth digit, not the
+    # sixteenth); anything further apart is a new one, so both the number and
+    # the string it prints come from the yaml and the page's own rounding.
+    def _same_measurement(a, b):
         try:
-            return repr(float(v))
+            a, b = float(a), float(b)
         except (TypeError, ValueError):
-            return repr(v)
+            return False
+        return abs(a - b) <= 1e-12 * max(abs(a), abs(b), 1.0)
 
     prior: dict = {}
     board_path = APP / "board.json"
@@ -234,8 +255,8 @@ def write_board() -> None:
         try:
             for weapon, rows in json.loads(board_path.read_text(encoding="utf-8")).items():
                 for r in rows:
-                    if r.get("shown") is not None:
-                        prior[(weapon, _score_key(r.get("score")))] = r["shown"]
+                    prior[(weapon, _ident(r.get("benchmark"), r.get("mode"), r.get("mods"),
+                                          r.get("evolutions"), r.get("arcanes")))] = r
         except (ValueError, AttributeError):
             pass  # unreadable or an older shape: fall through and omit `shown`
 
@@ -259,11 +280,20 @@ def write_board() -> None:
                 "evolutions": e.get("evolutions", []),
                 "arcanes": e.get("arcanes", []),
             }
-            # Only when the SCORE still matches: a moved score's old display
-            # string is wrong, and the page's fallback is right for it.
-            keep = prior.get((e["weapon"], _score_key(e.get("score"))))
-            if keep is not None:
-                row["shown"] = keep
+            # THE PRIOR ROW WINS ON BOTH FIGURES OR ON NEITHER. Carrying the
+            # string while re-deriving the number from the yaml would leave the
+            # file dirty after every build for the ULP alone — and the two
+            # spellings are the same measurement, so there is nothing to
+            # prefer between them. A score that actually MOVED takes the
+            # yaml's number and drops the string, which is what sends the page
+            # to its own rounding.
+            keep = prior.get((e["weapon"], _ident(row["benchmark"], row["mode"], row["mods"],
+                                                  row["evolutions"], row["arcanes"])))
+            if keep is not None and _same_measurement(keep.get("score"), row["score"]):
+                if keep.get("score") is not None:
+                    row["score"] = float(keep["score"])
+                if keep.get("shown") is not None:
+                    row["shown"] = keep["shown"]
             out.setdefault(e["weapon"], []).append(row)
     # BYTE-FOR-BYTE with the scorer's own writer: `serde_json::to_string` over a
     # BTreeMap is compact and key-sorted. Matching it is what makes this
