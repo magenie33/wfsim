@@ -1418,7 +1418,7 @@ aim, so the gauge can never fill. It bites: 3500 against 500 before the fix.
 
 ---
 
-## M33 — what base a Primary Debilitate split burns off (2026-08-08, OPEN)
+## M33 — what base a Primary Debilitate split burns off (2026-08-08; base DECIDED, exponent OPEN)
 
 The owner brought a community formula for a Primary Debilitate build, with an
 in-game number beside it, and asked whether the case it describes generalises
@@ -1548,7 +1548,7 @@ and passing the hit's damage into the recursion is the whole of the change.
 What the reverted commit cost is the argument for not shipping it: it moved
 published board rows by up to **+112%** (Torid, no-aim) on an inference.
 
-### The reading that is now most likely, and it is a THIRD one (2026-08-08)
+### More material, and what it changed (2026-08-08)
 
 Asked to collect more (owner: "你再多搜集点资料"), and the sources changed the
 shape of the question rather than answering it.
@@ -1565,10 +1565,12 @@ damage bonuses**". Its worked example — 100 Puncture, Serration, Infected Clip
 Rifle Elementalist, Bane of Infested — comes out at `0.5 x 344.5 x 4.693 =
 808.37`, which is this engine's arithmetic exactly.
 
-**MELEE INFLUENCE IS THE CLOSEST DOCUMENTED ANALOGUE, and it says neither of
-the two readings above.** It is the same shape of thing — an arcane that
-produces a derived elemental instance off a status — and its page states the
-base outright:
+**MELEE INFLUENCE SAYS A THIRD THING — AND IT IS FILED SEPARATELY** (owner,
+2026-08-08: "melee influence是传染比较特别，你单记"). It is a SPREAD: the damage
+it names is dealt to OTHER enemies, as the price of contagion, and a mechanic
+that moves an effect sideways is not the same kind of thing as one that splits a
+status on the target in front of you. Recorded here as a data point about how DE
+scales derived elemental damage, NOT as the precedent for Debilitate. Its page:
 
 > "When an elemental Status Effect is spread by Melee Influence, affected
 > enemies are also dealt damage equal to **that element's damage from the
@@ -1578,14 +1580,21 @@ base outright:
 > by Melee Influence"
 
 Not `ModifiedBase`, and not the whole hit either — **that element's own damage
-on that hit**. Applied to Debilitate that reads: the arcane's instance is worth
-the COMBINED element's damage value, re-typed as the component. A player thread
-on the arcane says the same thing from the other end ("It scales based on the
-damage value of the element not the mods. So if you have 100 gas damage the heat
-and toxin procs would be calculated against that"), though nobody there measured
-anything.
+on that hit**. A player thread on Debilitate says the same thing from the other
+end ("It scales based on the damage value of the element not the mods. So if you
+have 100 gas damage the heat and toxin procs would be calculated against that"),
+though nobody there measured anything — and a thread is not a page.
 
-So there are three candidates for the plain weapon case, not two:
+### DECIDED: (a), the weapon's own algorithm (owner, 2026-08-08)
+
+"a版本吧，我觉得是对的，先按照a来设计". The weapon is the SOURCE, so the base is
+computed the weapon's way — which is also the only one of the three that is
+documented for a weapon-applied status, matched to the digit on the Toxin page's
+own worked example, and already what ships. Nothing changes; what changes is
+that the question is now closed by decision rather than left open, and the two
+rivals below are what a measurement would have to overturn it with.
+
+The three candidates for the plain weapon case were:
 
 | | the split's base | on the M33 build |
 |---|---|---|
@@ -1598,7 +1607,36 @@ decodes under both: Resupply's Extra Hit is entirely of the selected element, so
 "the whole hit" and "that element's damage" are the same number there. The
 video therefore rules out (a) for the ABILITY case and separates nothing else.
 
-### What decides it — two mods, in this order
+### THE EXPONENT IS NOW THE OPEN ONE — 3 or 2 (2026-08-08)
+
+Choosing (a) puts a second question in relief, and the owner raised it in the
+same breath: "我们已经多吃一次bane加成了，理论应该是只有2的，而不是3". If the
+split's base is the WEAPON's `ModifiedBase` — the same base an ordinary weapon
+status uses — then the arcane's instance is not acting as a damage layer, and
+an ordinary weapon status double-dips faction, `f^2`. Charging `f^3` while
+reading the weapon's base looks like having it both ways.
+
+**The counter-argument, and it is the sources', not mine.** The wiki states the
+three outright: "applied as a separate damage instance, causing Faction Damage
+Bonuses to multiply the Damage over Time effect of Heat, Electricity, and Toxin
+status **three separate times**". And the video's own description says the
+instance "**has no damage**". Those two together are consistent in exactly one
+way: the instance is real enough to add a faction layer and carries no damage of
+its own, so the DoT's MAGNITUDE has to come from somewhere else — the weapon —
+while the extra layer is the only trace the instance leaves. Which is also the
+only thing it predicts that anyone can see, and is what this file has said since
+M-notes were first written for this arcane.
+
+**We are not double-counting it.** `ModifiedBase` here carries no faction at all
+(`base_vector.total() x (1 + bd)`), and `fm2 = faction_at(f, depth)` supplies
+every layer: `f^2` for an ordinary weapon DoT — which is the wiki's double dip,
+exactly two — and `f^3` for the split. Three is a deliberate one-more, not a
+stray multiply.
+
+It is also the cheapest thing on this page to measure: the exponent is a RATIO,
+so it needs no absolute numbers and no theory about the base at all.
+
+### What decides it — three tests, in this order
 
 On any weapon, in the Simulacrum, with a Corrosive build saturated to 10 stacks.
 It needs no frame, no shard and no exalted weapon, and it reads as a RATIO, so
@@ -1607,6 +1645,18 @@ every mitigation, faction column, crit and body-part factor cancels out of it.
 A pure Corrosive build cannot proc plain Toxin or Electricity at all — both are
 combined into Corrosive — so **any Toxin or Electricity DoT on screen is the
 split**. That is a clean signal, and it is what makes this cheap.
+
+**TEST 0 — the exponent, and it settles `f^3` vs `f^2` on its own.** Take one
+build, saturate Corrosive, read the split's tick with a Bane mod OFF, then with
+it ON. Nothing else changes, so the ratio IS the exponent:
+
+| reading | tick with Bane / tick without, for a +30% Bane |
+|---|---|
+| `f^2` (an ordinary weapon status) | 1.3^2 = **1.69** |
+| **`f^3`** (what ships, and the wiki's number) | 1.3^3 = **2.197** |
+
+30% apart, and it needs no absolute number, no unarmoured target and no view on
+the base question. Do this one first.
 
 **TEST 1 — does the base include the element at all?** Watch the **Electricity**
 split's tick while adding a **Toxin** 60/60. Toxin is not in the Electricity

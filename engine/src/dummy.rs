@@ -2787,8 +2787,22 @@ fn settle_procs(
                 // generalisation and reverted: it moved published board rows by
                 // up to +112% on an inference.
                 //
-                // So the weapon's own rule stands until measured. M33 states
-                // the one mod that decides it.
+                // DECIDED (owner, 2026-08-08: "a版本吧，我觉得是对的"): the
+                // weapon is the SOURCE, so the base is computed the weapon's
+                // way. That is also the only one of the three readings that is
+                // documented for a weapon-applied status, and this engine
+                // matches the Toxin page's worked example to the digit.
+                //
+                // WHAT IS STILL OPEN IS THE EXPONENT, not the base — see M33.
+                // If the base is the weapon's, an ordinary weapon status
+                // double-dips faction and `f^3` looks like one layer too many
+                // (owner: "理论应该是只有2的，而不是3"). The wiki states the
+                // three outright and the source says the instance "has no
+                // damage"; those are consistent in exactly one way — the
+                // instance is real enough to add a layer and carries no damage,
+                // so the magnitude comes from the weapon and the layer is the
+                // only trace it leaves. Held at 3 because that is the stated
+                // number; M33 has the Bane on/off ratio that settles it.
                 settle_procs(
                     vec![part],
                     at,
