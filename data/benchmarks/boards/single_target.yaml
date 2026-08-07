@@ -1865,6 +1865,12 @@ entries:
     arcanes: [primary_frostbite]
   - weapon: torid
     mode: cycle
+    score: 6.0092927834062815
+    mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, thermite_rounds, high_voltage]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
     score: 5.990491040059838
     mods: [amalgam_serration, galvanized_chamber, heavy_caliber, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
@@ -1928,12 +1934,6 @@ entries:
     score: 5.67496651817889
     mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
-    arcanes: [primary_merciless]
-  - weapon: torid
-    mode: cycle
-    score: 5.570857048984306
-    mods: [amalgam_serration, galvanized_chamber, heavy_caliber, point_strike, speed_trigger, vital_sense, magnetic_capacity, stormbringer]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: verglas_prime
     mode: base
