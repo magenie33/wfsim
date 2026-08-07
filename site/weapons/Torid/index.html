@@ -33,6 +33,16 @@
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="/">WF<span>Sim</span></a>
+      <!-- WHERE THE SITE GOES, as against what it links to. The row after this
+           one is "this project, elsewhere" (GitHub, QQ, Discord, Support); these
+           two are the site's own pages, so they sit against the wordmark and are
+           styled as navigation rather than as ghost buttons. The brand used to
+           be the only way back to the roster, which is a thing you have to know
+           rather than see. -->
+      <nav class="topnav">
+        <a class="tnav" data-nav="home" href="/" data-i18n>Weapons</a>
+        <a class="tnav" data-nav="benchmark" href="/benchmark" data-i18n>Benchmark</a>
+      </nav>
       <!-- Global weapon search (filter + sort). The hidden #weapon select
            stays as the router's internal source of truth. -->
       <div class="wsearch">
@@ -86,13 +96,21 @@
          old "The Simulacrum. / The Primed One." pair awkward to translate. -->
     <h1 class="hero-h" data-i18n-gold="Prime">The real Simulacrum Prime.</h1>
     <p class="hero-sub" data-i18n>WFSim is the ultimate Warframe calculator — builder, simulator, optimizer. True to in-game numbers, down to the last proc. Theorycrafting, solved.</p>
-    <!-- THE BOARD, before the roster: what is strong, and what nobody has
-         measured yet. One row per weapon showing its BEST build under the
-         selected ruler; the rest of that weapon's rows live on its own page. -->
-    <h2 class="home-h" data-i18n>Benchmark</h2>
-    <div id="bench-board"></div>
     <h2 class="home-h" data-i18n>Weapons</h2>
     <div id="weapon-grid"></div>
+  </main>
+
+  <!-- THE BOARD — what is strong under a given ruler, and what nobody has
+       measured yet. A page of the SHELL like /support: it belongs to no weapon,
+       so it sits beside the home grid rather than under /weapons/<name>.
+       One row per weapon showing its BEST build; the rest of a weapon's rows
+       live on that weapon's own page, which is also where the deeper ranks are
+       computed on demand. -->
+  <main id="bench-page" class="home-page" hidden>
+    <h1 class="home-h" data-i18n>Benchmark</h1>
+    <p class="bench-sub" data-i18n>One ruler, every weapon. A score is a build measured by this engine under the benchmark's own pinned terms — nobody submits a number. An empty row is a weapon nobody has measured yet.</p>
+    <div id="bench-picker"></div>
+    <div id="bench-board"></div>
   </main>
 
   <!-- Support: what WFSim costs to run, and where to chip in. NOT a module and

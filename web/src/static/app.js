@@ -815,7 +815,8 @@ function route() {
   // tab: it belongs to no weapon, so it sits beside the home grid rather than
   // under /weapons/<name>.
   const support = /^\/support\/?$/.test(location.pathname);
-  const m = support ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens)?\/?$/);
+  const bench = /^\/benchmark\/?$/.test(location.pathname);
+  const m = (support || bench) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens)?\/?$/);
   // A hand-typed URL is not the canonical slug. Fold case and treat spaces
   // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
   // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
@@ -826,13 +827,21 @@ function route() {
   );
   // The active module: "" = builder, "simulator", "optimizer".
   const mod = (w && m[2]) ? m[2].slice(1) : "";
-  document.body.classList.toggle("on-home", !w && !support);
+  document.body.classList.toggle("on-home", !w && !support && !bench);
   document.body.classList.toggle("on-support", support);
+  document.body.classList.toggle("on-benchmark", bench);
   document.body.classList.toggle("on-simulator", mod === "simulator");
   document.body.classList.toggle("on-optimizer", mod === "optimizer");
   document.body.classList.toggle("on-rivens", mod === "rivens");
-  $("home-page").hidden = !!w || support;
+  $("home-page").hidden = !!w || support || bench;
   $("support-page").hidden = !support;
+  $("bench-page").hidden = !bench;
+  // The nav says where you are. `data-nav` rather than a path compare: the
+  // roster lives at "/" and a path compare there matches every page.
+  const here = bench ? "benchmark" : (!w && !support) ? "home" : "";
+  document.querySelectorAll(".tnav").forEach((a) => {
+    a.classList.toggle("sel", a.dataset.nav === here);
+  });
   document.querySelector(".config-page").hidden = !w;
   const modTitle = { simulator: " · Simulator", optimizer: " · Optimizer", rivens: " · Rivens" }[mod] || "";
   // The home title carries the SEARCH TERMS, not the headline: nobody looks
@@ -840,9 +849,12 @@ function route() {
   // that has to be found rather than enjoyed (user, 2026-07-31). The joke
   // stays on the page, which is where a player meets it.
   document.title = support ? `${tr("Support")} — WFSim`
+    : bench ? `${tr("Benchmark")} — WFSim`
     : w ? `${w.name}${modTitle} — WFSim` : "WFSim — Ultimate Warframe Calculator";
   if (support) {
     renderSupport();
+  } else if (bench) {
+    renderBenchBoard();
   } else if (w) {
     if ($("weapon").value !== w.id) {
       switchWeapon(w.id);
@@ -909,6 +921,82 @@ function renderHome() {
       <h3 class="wgroup-h">${tr(SLOT_LABEL[slot] || slot)}</h3>
       <div class="wgrid">${ws.map(card).join("")}</div>
     </section>`).join("");
+}
+
+// ---- THE BOARD: one ruler, every weapon ---------------------------------
+//
+// WHAT IT IS FOR (owner, 2026-08-07): the fastest way to see which weapons are
+// strong, and which nobody has measured yet — so the empty rows are as much the
+// point as the full ones. A visitor who fills one is finding an optimum for
+// everybody, and a row that looks impossible is how a bug in this engine gets
+// found from outside it.
+//
+// ONE NUMBER PER WEAPON, its best. Everything else about that weapon — the
+// other builds, the deeper ranks — lives on the weapon's own page, which is
+// where a click goes. That is what keeps this page O(weapons) whatever the
+// board grows to, and what will let a benchmark hold a hundred builds per
+// weapon without any of them being fetched to draw this.
+let benchPick = null;
+
+const benchList = () => META.benchmarks || [];
+const benchCurrent = () =>
+  benchList().find((b) => b.id === benchPick) || benchList()[0] || null;
+
+/// Every weapon's BEST score under `id`, or null where nobody has submitted.
+/// Read off the rows the page already has; a weapon with no row is not an
+/// error, it is the invitation.
+const benchBest = (id) => {
+  const out = {};
+  for (const w of META.weapons || []) {
+    const rows = (BOARD[w.id] || []).filter((r) => r.benchmark === id);
+    out[w.id] = rows.length
+      ? rows.reduce((a, r) => (r.score > a.score ? r : a), rows[0])
+      : null;
+  }
+  return out;
+};
+
+function renderBenchBoard() {
+  const box = $("bench-board");
+  if (!box || !META) return;
+  const picker = $("bench-picker");
+  const bs = benchList();
+  const cur = benchCurrent();
+  if (picker) {
+    // A RULER IS PICKED, not scrolled past. Two today and dozens later, so it
+    // is a list of chips rather than a stack of tables — the page shows one
+    // ranking at a time because two rankings side by side is a comparison
+    // nobody asked for yet.
+    picker.innerHTML = bs.map((b) => `<button type="button" class="bchip${
+      cur && b.id === cur.id ? " sel" : ""}" data-bench="${escHtml(b.id)}">${escHtml(tr(b.name))}</button>`).join("");
+    picker.querySelectorAll("[data-bench]").forEach((el) => {
+      el.onclick = () => { benchPick = el.dataset.bench; renderBenchBoard(); };
+    });
+  }
+  if (!cur) { box.innerHTML = ""; return; }
+  const best = benchBest(cur.id);
+  // SORTED BY THE BENCHMARK'S OWN METRIC — it says which one it is measured in
+  // (`scenario.metric`), and a second ruler may answer differently. Unmeasured
+  // weapons sort last whatever the metric: a zero is not a low score, it is no
+  // score, and putting it among the low ones would read as one.
+  const metric = ((cur.scenario || {}).metric || "kpm").toUpperCase();
+  const rows = (META.weapons || [])
+    .map((w) => ({ w, row: best[w.id] }))
+    .sort((a, b) => (b.row ? b.row.score : -1) - (a.row ? a.row.score : -1));
+  const measured = rows.filter((r) => r.row).length;
+  box.innerHTML = `
+    <div class="bench-meta">${escHtml(
+      tr("{n} of {t} weapons measured · ranked by {m}")
+        .replace("{n}", measured).replace("{t}", rows.length).replace("{m}", metric))}</div>
+    <div class="bench-rows">${rows.map(({ w, row }, i) => `
+      <a class="brow${row ? "" : " none"}" href="/weapons/${wikiSlug(w)}">
+        <span class="brank">${row ? `#${i + 1}` : "—"}</span>
+        ${imgTag(IMG(w.image), "bimg")}
+        <span class="bname">${escHtml(w.name)}</span>
+        <span class="bscore">${row
+          ? escHtml(row.shown != null ? String(row.shown) : row.score.toFixed(4))
+          : `<span class="bnone">${escHtml(tr("not measured"))}</span>`}</span>
+      </a>`).join("")}</div>`;
 }
 
 // ---- support: the donation channels -------------------------------------

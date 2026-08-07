@@ -965,3 +965,36 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .caveat.unmod{color:var(--gold)}
 .exchip.unmod{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold);
   border:1px solid color-mix(in srgb,var(--gold) 40%,transparent)}
+
+/* ---- topbar navigation: the site's OWN pages ---------------------------
+   Against the wordmark, before the search — these are destinations, not the
+   "this project, elsewhere" links that follow. */
+.topnav{display:flex;gap:2px;flex:0 0 auto}
+.tnav{padding:4px 9px;border-radius:7px;color:var(--text-2);font-size:12px;text-decoration:none;white-space:nowrap}
+.tnav:hover{background:var(--line);color:var(--text)}
+.tnav.sel{background:var(--line);color:var(--text);font-weight:600}
+/* The bar already wraps to two rows on a phone and squeezes the weapon
+   search; the nav is the first thing that can go, because the footer carries
+   both destinations and the wordmark still reaches the roster. */
+@media (max-width:700px){ .topnav{display:none} }
+
+/* ---- the board -------------------------------------------------------- */
+.bench-sub{max-width:70ch;margin:0 0 14px;color:var(--text-2);font-size:13px;line-height:1.55}
+#bench-picker{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.bchip{padding:5px 11px;border:1px solid var(--line);border-radius:8px;background:transparent;
+  color:var(--text-2);font-size:12px;cursor:pointer;font-family:inherit}
+.bchip:hover{color:var(--text)}
+.bchip.sel{background:var(--line);color:var(--text);font-weight:600}
+.bench-meta{margin-bottom:8px;color:var(--text-2);font-size:12px}
+.bench-rows{display:flex;flex-direction:column;gap:2px}
+.brow{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:8px;
+  color:var(--text);text-decoration:none}
+.brow:hover{background:var(--line)}
+.brow .brank{flex:0 0 44px;color:var(--text-2);font-size:12px;font-variant-numeric:tabular-nums}
+.brow .bimg{flex:0 0 auto;width:34px;height:34px;object-fit:contain}
+.brow .bname{flex:1 1 auto;font-size:13px}
+.brow .bscore{flex:0 0 auto;font-size:13px;font-variant-numeric:tabular-nums}
+/* An unmeasured weapon is not a low score — it is the invitation, and it reads
+   as one rather than as a zero at the bottom of a ranking. */
+.brow.none{opacity:.62}
+.brow .bnone{color:var(--text-2);font-size:12px}

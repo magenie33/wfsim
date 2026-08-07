@@ -133,12 +133,23 @@ ui:
   "a benchmark build — measured under": 基准配装 —— 测试标准
   "seeded by the optimizer — not yet a player submission": 由优化器预填，尚非玩家提交
   "Single Target · Thrax Centurion Lv 9999 SP · 300 s · KPM": 单体 · 凶魂百夫长 9999 钢铁 · 300 秒 · KPM
+  # The second ruler. 无瞄准 is the STANCE and 不爆头 is where the shots land —
+  # two terms, because the board pins both.
+  "Single Target · No Aim · Thrax Centurion Lv 9999 SP · 300 s · KPM": 单体 · 无瞄准不爆头 · 凶魂百夫长 9999 钢铁 · 300 秒 · KPM
   "the same fight on every weapon, so results can be compared. It cannot be edited: use ⧉ on its chip to copy it into a scenario of your own.": 每把武器都是同一场战斗，所以结果之间可以比较。它不可编辑：点它标签上的 ⧉ 复制成一份你自己的场景。
   "the same fight on every weapon, so results can be compared. It cannot be edited.": 每把武器都是同一场战斗，所以结果之间可以比较。它不可编辑。
   "edit a copy of this fight": 复制一份来编辑
   "Runs here are added to the official board.": 在这里运行的配装会被加入官方榜单。
   "What is sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself). The board takes a weapon built as far as it goes: every main slot filled, exilus not counted.": 发送的内容：武器及其 mod、进化、赋能。仅此而已——没有账号、没有标识符、没有你起的任何名字，也没有分数（榜单自己跑分）。榜单收的是这把武器的最努力配置：8 个主槽位全部装满，exilus 不计。
   "don't submit": 不要提交
+  # The board page and the topbar navigation.
+  "Weapons": 武器
+  "Benchmark": 基准榜
+  "One ruler, every weapon. A score is a build measured by this engine under the benchmark's own pinned terms — nobody submits a number. An empty row is a weapon nobody has measured yet.": 一把尺子，量全部武器。榜上的分数是由本引擎在该基准自己钉死的条件下跑出来的——没有人提交数字。空着的一行，就是还没有人测过的武器。
+  # QUOTED: the value opens with a placeholder, and an unquoted `{` is a
+  # flow mapping to YAML — it made this whole file unparseable.
+  "{n} of {t} weapons measured · ranked by {m}": "{t} 把武器中已测 {n} 把 · 按 {m} 排名"
+  "not measured": 尚未测量
   "not modelled yet": 尚未建模
   # The card WORKS and one named effect on it does not — never "尚未建模",
   # which would disown a mod that lands 1,000 damage a blast.
