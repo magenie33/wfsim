@@ -676,6 +676,33 @@ impl ModDescInfo {
 ///
 /// None means the file genuinely has no `description`, and the caller falls
 /// back to the effect lines.
+/// Where in `hay` this effect is SPOKEN ABOUT, if it is at all.
+///
+/// A kind reads `<what>_<qualifiers>` and a card names the `<what>`:
+/// `life_steal_on_own_damage` is written "Life Steal", `status_chance_bonus` is
+/// written "Status Chance". So the longest form is tried first and trailing
+/// words are dropped until one is found — never below two words, because a lone
+/// word matches too easily to be evidence of anything.
+///
+/// A syndicate radial is named by its SYNDICATE (Purity, Truth); "syndicate
+/// radial" appears on no card.
+pub(crate) fn effect_spoken_at(e: &Value, hay: &str) -> Option<usize> {
+    let kind = e.get("kind").and_then(Value::as_str)?;
+    if kind == "syndicate_radial" {
+        let sy = e.get("syndicate").and_then(Value::as_str)?.to_lowercase();
+        return hay.find(&sy);
+    }
+    let words: Vec<&str> = kind
+        .trim_end_matches("_bonus")
+        .trim_end_matches("_reduction")
+        .split('_')
+        .collect();
+    let floor = if words.len() <= 1 { 1 } else { 2 };
+    (floor..=words.len())
+        .rev()
+        .find_map(|take| hay.find(&words[..take].join(" ")))
+}
+
 /// The effect kinds on this mod that the loader DROPPED — what the card must
 /// admit it does not do.
 ///
@@ -775,9 +802,15 @@ pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
                 let d = n(e, "duration").or_else(|| n(e, "duration_seconds"))?;
                 Some((n(e, "duration_rank0").unwrap_or(d), d))
             };
+            // The card's own lines, lowercased once: a `Value` placeholder asks
+            // about the effect its LINE names, and only falls back to position
+            // when the line names nothing.
+            let lines: Vec<String> = desc.lines().map(str::to_lowercase).collect();
+            let x_line = crate::loadout::x_lines(&desc);
             let mut xvals: Vec<(f64, f64)> = Vec::new();
             let mut ei: Option<usize> = None; // the effect the sentence is on
-            for kind in crate::loadout::x_kinds(&desc) {
+            let mut used: Vec<usize> = Vec::new();
+            for (xi, kind) in crate::loadout::x_kinds(&desc).into_iter().enumerate() {
                 use crate::loadout::XKind;
                 // Seek forward to an effect that can answer this placeholder;
                 // a `Value` always moves on, the others stay put once the
@@ -787,7 +820,27 @@ pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
                 };
                 let next = match kind {
                     XKind::Value => {
-                        ei = seek(ei.map_or(0, |i| i + 1), &|e| varying(e).is_some());
+                        // BY NAME FIRST. Position alone made the yaml's effect
+                        // ORDER an unwritten part of the card's meaning, and
+                        // Winds of Purity broke it the day it was written: its
+                        // radial was listed first while the card says "+X% Life
+                        // Steal" first, so the two ladders landed in each
+                        // other's slots and it printed "+100% Life Steal /
+                        // +0.2 Purity" for the wiki's "+20% / +1". Both wrong,
+                        // both the kind of number a mod could have.
+                        let named = x_line.get(xi).and_then(|&l| lines.get(l)).and_then(|line| {
+                            (0..mf.effects.len()).find(|i| {
+                                !used.contains(i)
+                                    && varying(&mf.effects[*i]).is_some()
+                                    && effect_spoken_at(&mf.effects[*i], line).is_some()
+                            })
+                        });
+                        ei = named.or_else(|| {
+                            seek(ei.map_or(0, |i| i + 1), &|e| varying(e).is_some())
+                        });
+                        if let Some(i) = ei {
+                            used.push(i);
+                        }
                         ei.and_then(|i| varying(&mf.effects[i]))
                     }
                     XKind::Duration => {
@@ -1515,14 +1568,17 @@ mod class_tests {
 
 /// A CARD'S SENTENCES AND ITS EFFECTS ARE ONE ORDER.
 ///
-/// `desc_info` fills the X placeholders by walking the effects forward, so the
-/// yaml's effect order IS the card's sentence order. That contract was real,
-/// undocumented and unchecked, and Winds of Purity broke it the day it was
-/// written: its radial was listed first while its card says "+X% Life Steal"
-/// first, so the card read "+100% Life Steal / +0.2 Purity" — the Purity ladder
-/// in the life-steal slot and the life-steal ladder in Purity's. Both numbers
-/// are wrong and both look like numbers a mod could have, which is why reading
-/// the card cannot catch it.
+/// `desc_info` used to fill the X placeholders by walking the effects forward
+/// and nothing else, which made the yaml's effect ORDER an unwritten part of
+/// the card's meaning — a contract that was real, undocumented and unchecked,
+/// and that Winds of Purity broke the day it was written.
+///
+/// The filler now asks the LINE first (`effect_spoken_at`), so an effect the
+/// card names is found wherever it sits. This rule therefore no longer guards
+/// the numbers for a named effect — it guards the two things left: the
+/// FALLBACK, which is still positional and is what an unnamed effect gets, and
+/// a reader, for whom a yaml listed in a different order than the card it
+/// prints is a puzzle with no answer in it.
 ///
 /// The check is derived: it does not know what any mod does. For each effect
 /// whose KIND names something the description actually says ("status chance",
@@ -1587,5 +1643,38 @@ mod card_order_tests {
                 );
             }
         }
+    }
+}
+
+
+/// THE CARD IS RIGHT WHICHEVER ORDER THE EFFECTS ARE IN.
+///
+/// The Winds of Purity failure, pinned by its outcome rather than by its cause:
+/// the wiki's ladder is life steal 5/10/15/20% and Purity 0.25/0.5/0.75/1, and
+/// the card printed "+100% Life Steal / +0.2 Purity" — the two ladders in each
+/// other's slots. Both numbers are the kind a mod could have, which is why
+/// reading the card could not catch it and why the value is pinned here.
+#[cfg(test)]
+mod card_values_tests {
+    use super::*;
+
+    #[test]
+    fn winds_of_purity_prints_the_wikis_ladder() {
+        let info = desc_info("winds_of_purity").expect("the mod has a description");
+        assert_eq!(info.at(0), "+5% Life Steal\n+0.25 Purity");
+        assert_eq!(info.at(info.max_rank), "+20% Life Steal\n+1 Purity");
+    }
+
+    /// The filler finds an effect by the words the card uses for it, so a
+    /// two-word kind is matched and a lone word is not evidence.
+    #[test]
+    fn an_effect_is_found_by_the_words_its_card_uses() {
+        let steal = serde_norway::from_str::<Value>("kind: life_steal_on_own_damage").unwrap();
+        assert!(effect_spoken_at(&steal, "+x% life steal").is_some());
+        assert!(effect_spoken_at(&steal, "+x purity").is_none());
+        // A syndicate radial answers to its SYNDICATE, never to its kind.
+        let radial = serde_norway::from_str::<Value>("kind: syndicate_radial\nsyndicate: purity").unwrap();
+        assert!(effect_spoken_at(&radial, "+x purity").is_some());
+        assert!(effect_spoken_at(&radial, "+x% life steal").is_none());
     }
 }

@@ -465,6 +465,26 @@ pub fn x_kinds(template: &str) -> Vec<XKind> {
         .collect()
 }
 
+/// The LINE each `X` sits on, in the same order as [`x_kinds`].
+///
+/// A card breaks its lines where DE breaks them, and a line is one sentence
+/// about one effect — "+X% Life Steal" then "+X Purity". That makes the line
+/// the unit that says WHICH effect a placeholder is asking about, which is the
+/// only thing position cannot say.
+pub fn x_lines(template: &str) -> Vec<usize> {
+    let mut out = Vec::new();
+    let b: Vec<char> = template.chars().collect();
+    let mut line = 0usize;
+    for i in 0..b.len() {
+        if b[i] == '\n' {
+            line += 1;
+        } else if is_x_at(&b, i) {
+            out.push(line);
+        }
+    }
+    out
+}
+
 /// Number of rank-varying `X` placeholders in a description template.
 pub fn count_x(template: &str) -> usize {
     let b: Vec<char> = template.chars().collect();
