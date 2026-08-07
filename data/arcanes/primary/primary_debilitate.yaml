@@ -24,14 +24,17 @@ effects:
   # 才有可能出现这个情况"). That instance is a SCALE, not a damage number. The
   # two sentences used to be one, and it read as if the arcane hit you twice.
   #
-  # WHAT BASE THE SPLIT'S DoT BURNS OFF IS THE ONE OPEN QUESTION — M33. It reads
-  # `ModifiedBase` (elements excluded), DE's rule for a status a WEAPON applied.
-  # The rival reading is the whole modded hit, the way an ABILITY-applied status
-  # works (Toxic Lash: 78 direct, a tick of 39 — half of 78, not half of the
-  # weapon's 200), which would be x8.2 on the build M33 decodes. That formula's
-  # parent IS an ability's hit, so it demonstrates the ability case and not this
-  # one; shipped once on the generalisation and reverted, because it moved
-  # published board rows by up to +112%. M33 has the one-mod experiment.
+  # WHAT BASE THE SPLIT'S DoT BURNS OFF IS THE ONE OPEN QUESTION — M33, where
+  # three candidates are laid out. It reads `ModifiedBase` here (elements
+  # excluded), which is DE's documented rule for a status a WEAPON applied and
+  # which this engine matches to the digit on the Toxin page's own worked
+  # example. The likeliest rival is MELEE INFLUENCE's rule, the closest
+  # documented analogue: a derived elemental instance is worth "that element's
+  # damage from the original attack" — here, the COMBINED element's value on the
+  # hit. A third reading, the whole modded hit, shipped for one commit on a
+  # generalisation from an ABILITY chain and was reverted; it moved published
+  # board rows by up to +112%. M33 has the two-mod experiment that separates all
+  # three.
   #
   # THE SPLIT PROC IS AN ORDINARY PROC, not a Melee-Influence-style spread
   # (owner, 2026-08-05). It runs the normal DoT/debuff path and picks up its own

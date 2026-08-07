@@ -1548,7 +1548,57 @@ and passing the hit's damage into the recursion is the whole of the change.
 What the reverted commit cost is the argument for not shipping it: it moved
 published board rows by up to **+112%** (Torid, no-aim) on an inference.
 
-### What decides it, in one mod
+### The reading that is now most likely, and it is a THIRD one (2026-08-08)
+
+Asked to collect more (owner: "你再多搜集点资料"), and the sources changed the
+shape of the question rather than answering it.
+
+**The weapon-status rule is documented to the digit, and we match it.** The
+Toxin page: `Toxin Proc Damage per Tick = 0.5 x Modified Base Damage x (1 +
+Toxin Damage Bonuses) x (1 + Status Damage Bonuses) x (1 + Faction Damage
+Bonuses)`, with `Modified Base Damage = Un-modded Weapon Damage x (1 + Base
+Damage Bonuses) x (1 + Faction Damage Bonuses) x Additional Multipliers` and
+the note "**Note the lack of elemental bonuses in the Modified Base Damage
+formula**". The Electricity page says it twice as plainly: "Modded Base Damage
+is not the same as normal damage calculations, **ignoring physical and elemental
+damage bonuses**". Its worked example — 100 Puncture, Serration, Infected Clip,
+Rifle Elementalist, Bane of Infested — comes out at `0.5 x 344.5 x 4.693 =
+808.37`, which is this engine's arithmetic exactly.
+
+**MELEE INFLUENCE IS THE CLOSEST DOCUMENTED ANALOGUE, and it says neither of
+the two readings above.** It is the same shape of thing — an arcane that
+produces a derived elemental instance off a status — and its page states the
+base outright:
+
+> "When an elemental Status Effect is spread by Melee Influence, affected
+> enemies are also dealt damage equal to **that element's damage from the
+> original attack**" … "based on the amount of matching elemental damage after
+> quantization, including effects such as Condition Overload and critical
+> multiplier" … "Faction Damage Bonuses … are applied **twice** on damage done
+> by Melee Influence"
+
+Not `ModifiedBase`, and not the whole hit either — **that element's own damage
+on that hit**. Applied to Debilitate that reads: the arcane's instance is worth
+the COMBINED element's damage value, re-typed as the component. A player thread
+on the arcane says the same thing from the other end ("It scales based on the
+damage value of the element not the mods. So if you have 100 gas damage the heat
+and toxin procs would be calculated against that"), though nobody there measured
+anything.
+
+So there are three candidates for the plain weapon case, not two:
+
+| | the split's base | on the M33 build |
+|---|---|---|
+| **(a)** what ships | `ModifiedBase`, elements excluded | 350 |
+| **(b)** the reverted attempt | the whole modded hit | 350 x 8.2 = 2870 |
+| **(c)** the Melee Influence rule | the COMBINED element's damage on the hit | 350 x 7.2 = 2520 |
+
+**(b) and (c) are indistinguishable in the video's chain**, which is why it
+decodes under both: Resupply's Extra Hit is entirely of the selected element, so
+"the whole hit" and "that element's damage" are the same number there. The
+video therefore rules out (a) for the ABILITY case and separates nothing else.
+
+### What decides it — two mods, in this order
 
 On any weapon, in the Simulacrum, with a Corrosive build saturated to 10 stacks.
 It needs no frame, no shard and no exalted weapon, and it reads as a RATIO, so
@@ -1558,25 +1608,33 @@ A pure Corrosive build cannot proc plain Toxin or Electricity at all — both ar
 combined into Corrosive — so **any Toxin or Electricity DoT on screen is the
 split**. That is a clean signal, and it is what makes this cheap.
 
-- **A**: Serration + Toxin 60/60 + Electricity 60/60. Note the split's tick.
-- **B**: the same, plus ONE Heat mod in the LAST slot. Heat is the odd element
-  out, so Corrosive still forms and neither the Toxin nor the Electricity
-  bracket moves — the only thing that changed is how much element the HIT
-  carries.
+**TEST 1 — does the base include the element at all?** Watch the **Electricity**
+split's tick while adding a **Toxin** 60/60. Toxin is not in the Electricity
+bracket, so under (a) nothing can move; under (b) and (c) the Corrosive the hit
+carries grew, and the split grew with it.
 
-| reading | B against A |
+| reading | with the Toxin mod added |
 |---|---|
-| `ModifiedBase` (what ships) | **no change at all** |
-| the hit (the reverted one) | (1+0.6+0.6+0.9)/(1+0.6+0.6) = **+41%** |
+| **(a)** what ships | **no change** |
+| (b) / (c) | up, by the Toxin mod's share of the Corrosive |
 
-An IPS mod does the same job with a smaller swing and no second DoT colour on
+**TEST 2 — the whole hit, or just the element?** Only if test 1 moved. Add ONE
+**Heat** mod in the LAST slot. Heat is the odd element out, so Corrosive still
+forms and its value does not change — only the hit's total does.
+
+| reading | with the Heat mod added |
+|---|---|
+| (a) / **(c)** | **no change** |
+| (b) | (1+0.6+0.6+0.9)/(1+0.6+0.6) = **+41%** |
+
+An IPS mod does test 2's job with a smaller swing and no second DoT colour on
 screen, which may read more cleanly.
 
 A single absolute reading works too, for a base-100 weapon with Serration:
-`ModifiedBase` = 265, the hit = 265 x 2.2 = 583, a Toxin split's bracket 1.6 —
-so 0.5 x 265 x 1.6 = **212** against 0.5 x 583 x 1.6 = **466**. Against an
-unarmoured target, with no Bane, no crit and no status-damage mods, those are
-far enough apart to tell by eye.
+`ModifiedBase` = 265, the Corrosive on the hit = 265 x 1.2 = 318, the whole hit
+= 583, a Toxin split's bracket 1.6 — so **212** (a) against **254** (c) against
+**466** (b). Against an unarmoured target, with no Bane, no crit and no
+status-damage mods, those are far enough apart to tell by eye.
 
 ### Also settled by this: the split deals no damage of its own
 
