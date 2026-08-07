@@ -804,6 +804,15 @@ weighting and multishot interaction are top calibration targets (CORE.md §3).
 
 **Definition.** How shots actually land — the "hardcore" differentiator.
 
+**A DERIVED STATUS BURNS OFF THE INSTANCE THAT APPLIED IT.** A DoT's nominal
+base is `ModifiedBase` — "unmodded x (1 + BaseDamageBonuses)", which EXCLUDES
+the elemental portions (wiki, Toxin_Damage). That is right for a status the
+weapon's own hit applied and wrong for one applied by an INSTANCE, whose damage
+is the whole modded hit: a syndicate blast's Gas cloud burns off the blast, and
+Primary Debilitate's split burns off the instance the arcane creates. So every
+elemental and IPS mod raises such a DoT twice — once through the hit it derives
+from, once through its own element's bracket. See MEASUREMENTS **M33**.
+
 **A RADIAL BELONGS TO THE FORM THAT DECLARES ONE.** An Incarnon cycle fires two
 weapons in turn, and every per-shot property is read off the ACTIVE form — the
 explosion included. A weapon whose Incarnon detonates does NOT detonate in its

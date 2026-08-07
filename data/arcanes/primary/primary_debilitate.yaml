@@ -24,12 +24,12 @@ effects:
   # 才有可能出现这个情况"). That instance is a SCALE, not a damage number. The
   # two sentences used to be one, and it read as if the arcane hit you twice.
   #
-  # WHAT THAT INSTANCE IS MADE OF IS OPEN — see MEASUREMENTS M33. A community
-  # formula that reproduces an in-game 29551 to 0.14% has the split's DoT
-  # carrying the PARENT status's elemental bracket as well as its own, which
-  # would be x8.2 on that build and ~x2.8 on an ordinary one. Not implemented:
-  # it is not measured on anything this repo can run, and M33 states the one
-  # mod swap that would settle it.
+  # AND THE SPLIT'S DoT BURNS OFF THAT INSTANCE, not off the weapon (M33). A
+  # DoT's nominal base excludes the elemental portions of the hit — right for a
+  # status the weapon applied, wrong for one an instance applied, because an
+  # instance's damage is the whole modded hit. So every elemental and IPS mod
+  # raises the split twice over: once through the hit it derives from, and once
+  # through its own element's bracket. x8.2 on the build M33 decodes.
   #
   # THE SPLIT PROC IS AN ORDINARY PROC, not a Melee-Influence-style spread
   # (owner, 2026-08-05). It runs the normal DoT/debuff path and picks up its own

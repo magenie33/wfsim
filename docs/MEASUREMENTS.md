@@ -1461,14 +1461,17 @@ split DoT      = (that) x 0.5 x 7.6        <- the number on screen
                                      x Bane^4 x Elementalist
 ```
 
-**WHERE THE FOURTH BANE LAYER SITS IS THE ONE THING THAT DOES NOT DECODE.** The
-wiki gives Debilitate's split DoT `f^3` off an ordinary shot, and this chain has
-exactly one thing an ordinary shot does not — Resupply's Extra Hit — so `f^4`
-follows if that hit is itself a derived instance (a percentage of the weapon's
-damage, spawned by an ability) rather than a shot. Every other assignment tried
-here either gives the wiki 4 or gives this build 3. It does not change the
-finding below: the exponent is a count of links either way, and the bracket
-question is independent of it.
+**THE FOURTH BANE LAYER IS RESUPPLY'S OWN HIT**, and the source says so
+outright (owner, 2026-08-08, relaying it):
+
+> WeaponInitialHit -> ResupplyInitialHit -> DeliberateInitialHit -> DeliberateDoT
+> (Bane/Roar reapplies itself every other layer of damage)
+
+Which reconciles with the wiki's `f^3` exactly: drop Resupply and the chain is
+WeaponInitialHit -> split instance -> split DoT, three links. The `^4` is the
+`^3` with one more producer in it, which is the answer to the question as
+asked — the exponent is a COUNT, and `faction_at(f, depth)` already is that
+count.
 
 ### Two laws, and we have one of them
 
@@ -1498,27 +1501,76 @@ The gap is the parent's whole bracket: **x8.2 on this build**, and ~x2.8 on an
 ordinary two-mod Corrosive one. It is not a correction, it is a different
 weapon.
 
-### Not implemented, and what would settle it
+### IMPLEMENTED (2026-08-08), and what still deserves a run
+
+The source states the mechanic as well as the number, and both halves of what it
+says are things this engine can check against itself:
+
+> The arcane would first create an extra damage instance of one of the composing
+> element (**it has no damage**) and then afflicts one stack of status effect of
+> the composing element.
+
+> Similar to Toxic Lash, the final DoT created will no longer use the original
+> weapon's stats for its DoT calculation, but instead **uses the initial hit of
+> the ability damage as its "base damage"** … ALL element/IPS mods will
+> indirectly increase the final DoT damage by increasing the ability hit damage,
+> and then the DoT will be buffed by the corresponding Elemental Bonus once
+> more.
+
+The first half was already true here. The second is the change: the split's DoT
+now burns off the INSTANCE that applied it — the whole modded hit, elements and
+IPS included — instead of the weapon's `ModifiedBase`, which by the wiki's own
+Toxin formula excludes the elemental portions. That distinction is right for a
+status the weapon's hit applied and wrong for one an instance applied, and the
+engine already believed it one instance down: a syndicate blast's Gas cloud
+"burns off the blast's own 1000, not off the weapon's modified base, because the
+blast is what applied it".
+
+Pinned by `a_debilitate_split_burns_off_the_instance_that_applied_it`: hold
+`ModifiedBase` at 100 and double how much ELEMENT the hit carries on top of it;
+the split's DoT doubles with the hit. It bites — ratio 1.000 before the change.
+Writing that test by varying `dot_modified_base` instead proves nothing and is
+worth knowing: `mb_live` derives FROM it, so the product is invariant, which is
+the very property being claimed.
+
+### What it moved
+
+Rescored, and it reaches exactly the builds that carry the arcane — four
+weapons, nobody else:
+
+| board | weapon | rows moved | range |
+|---|---|---|---|
+| aimed | Torid | 8 | +32% … **+48%** |
+| aimed | Phantasma Prime | 4 | +30% … +36% |
+| aimed | Boar Prime | 1 | +16% |
+| aimed | Burston Prime | 2 | +2% … +6% |
+| **no aim** | Torid | 12 | +19% … **+112%** |
+
+The spread within one weapon is the mechanic showing through: the correction is
+the parent hit's elemental multiplier, so a build with more element on top of
+its base gains more, and a no-aim build — no headshots, no Incarnon, a smaller
+hit to start from — gains most of all where the split is carrying it.
+
+### What still deserves a run
 
 Nothing here is measured on a build this repo can reproduce: the frame, the
 shards and the exalted rifle are all outside the model, so the 29551 cannot be
 run against anything. The 0.14% residual is unexplained too — small enough to be
 the video's rounding, large enough that it is not a proof.
 
-**The experiment costs one mod swap**, on any weapon, with a Bane equipped and
-enough Corrosive stacks to saturate:
+**One mod swap confirms it in game**, on any weapon, with a Bane equipped and
+enough Corrosive stacks to saturate — worth doing because nothing above runs on
+a build this repo can reproduce (the frame, the shards and the exalted rifle are
+all outside the model) and the 0.14% residual is still unexplained:
 
 - build A: an Electricity 60/60 alone
 - build B: the same, plus a **Toxin** 60/60
 
-Under the engine, adding the Toxin mod does not change the damage of a split
-that lands on **Electricity** — Toxin is not in the Electricity bracket. Under
-the formula it raises it by the Toxin mod's share of the PARENT bracket, which
-is +60% of a bracket that would otherwise be 1.6 — a **37%** jump on the split's
-DoT, from one mod that the split's own element never reads.
-
-That is a difference nobody can round away, and it needs no frame, no shard and
-no exalted weapon.
+The engine NOW says the Toxin mod raises a split that lands on **Electricity**,
+by its share of the parent hit — +60% on a hit that was otherwise 1.6x its base,
+a **37%** jump from a mod the split's own element never reads. Before the change
+it said nothing moves. Either way the reading is unambiguous, and it needs no
+frame, no shard and no exalted weapon.
 
 ### Also settled by this: the split deals no damage of its own
 

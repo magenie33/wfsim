@@ -2766,10 +2766,40 @@ fn settle_procs(
                 // status APPLICATION, not a second damage number to add: what
                 // it buys is the extra faction layer, which is exactly the
                 // ×f³ the page reports and the only observable it predicts.
+                //
+                // AND IT READS ITS PARENT, NOT THE WEAPON. A DoT's nominal base
+                // is `ModifiedBase` — "unmodded x (1 + BaseDamageBonuses)",
+                // which EXCLUDES the elemental portions (poison.yaml, quoting
+                // the wiki's Toxin page) — and that is right for a status the
+                // weapon's own hit applied. This one was applied by an
+                // INSTANCE, and an instance's damage is the whole modded hit,
+                // elements and IPS included. "Similar to Toxic Lash, the final
+                // DoT will no longer use the original weapon's stats for its
+                // DoT calculation, but instead uses the initial hit of the
+                // ability damage as its base damage… ALL element/IPS mods will
+                // indirectly increase the final DoT by increasing the ability
+                // hit damage, and then the DoT will be buffed by the
+                // corresponding Elemental Bonus once more" (owner, 2026-08-08,
+                // relaying the source that decodes M33's formula).
+                //
+                // The engine already believed this one instance down: a
+                // syndicate blast's Gas cloud "burns off the blast's own 1000,
+                // not off the weapon's modified base, because the blast is what
+                // applied it". The split had simply never been given its
+                // parent's number to burn off.
+                //
+                // The factor is the ACTIVE FORM's, taken nominally so live
+                // base-damage buffs (already in `mb_live`) are not counted
+                // twice. A radial-caused split reads the direct part's ratio,
+                // which is the one approximation here.
+                let parent_mult = {
+                    let nominal = ap.dot_modified_base.unwrap_or_else(|| ap.damage.total());
+                    if nominal > 0.0 { ap.damage.total() / nominal } else { 1.0 }
+                };
                 settle_procs(
                     vec![part],
                     at,
-                    InstanceScale { mb_live, crit_mult, part_factor },
+                    InstanceScale { mb_live: mb_live * parent_mult, crit_mult, part_factor },
                     debuffs,
                     gal,
                     arc,
@@ -10373,6 +10403,62 @@ mod tests {
             "split damage scaled by {exponent_ratio} across a {f} faction bonus; \
              f³ is {want}, f² would be {}",
             f * f
+        );
+    }
+
+    /// ...AND IT BURNS OFF THE INSTANCE ABOVE IT, not off the weapon.
+    ///
+    /// A DoT's nominal base is `ModifiedBase`, which excludes the elemental
+    /// portions of the hit — right for a status the weapon applied, wrong for
+    /// one an INSTANCE applied, because an instance's damage is the whole
+    /// modded hit. The community formula that reproduces an in-game 29551 to
+    /// 0.14% carries BOTH brackets for exactly this reason (MEASUREMENTS M33),
+    /// and the engine already believed it one instance down — a syndicate
+    /// blast's Gas cloud burns off the blast's own damage.
+    ///
+    /// The fixture holds `ModifiedBase` at 100 and varies how much ELEMENT the
+    /// hit carries on top of it — 100 of Corrosive against 200 — which is what
+    /// an elemental mod does. Under the old reading the split's DoT is `0.5 x
+    /// ModifiedBase x child bracket` and does not move at all; under this one
+    /// it doubles with the hit that applied it.
+    ///
+    /// Varying `dot_modified_base` instead proves nothing, and finding that out
+    /// is worth the line: `mb_live` is derived FROM it, so halving it halves
+    /// `mb_live` and doubles the ratio, and the product — the instance's own
+    /// damage — is invariant. Which is the property being claimed, so a test
+    /// written that way passes at ratio 1.000 whichever reading is in force.
+    #[test]
+    fn a_debilitate_split_burns_off_the_instance_that_applied_it() {
+        // Corrosive only: it has no DoT of its own, so every point of damage
+        // the arcane adds is the split's, and nothing else moves with the base.
+        let build = |hit: f64, chance: f64| DummyParams {
+            damage: DamageVector::new().with(DamageType::Corrosive, hit),
+            dot_modified_base: Some(100.0),
+            status_chance: 1.0,
+            base_status_chance: 1.0,
+            fire_rate: 10.0,
+            magazine_size: 1e9,
+            infinite_reserve: true,
+            elem_dot_bonus: vec![(DamageType::Toxin, 1.5), (DamageType::Electricity, 1.5)],
+            arcane: crate::arcanes_data::ArcaneFx {
+                debilitate_chance: chance,
+                ..crate::arcanes_data::ArcaneFx::none()
+            },
+            ..DummyParams::default()
+        };
+        const RUNS: u32 = 400;
+        const SEED: u64 = 0xDEB2;
+        let added = |hit: f64| {
+            monte_carlo(&build(hit, 1.0), RUNS, SEED).mean_damage
+                - monte_carlo(&build(hit, 0.0), RUNS, SEED).mean_damage
+        };
+        let plain = added(100.0); // hit == ModifiedBase: no element on top
+        let doubled = added(200.0); // twice the hit, same ModifiedBase
+        assert!(plain > 0.0, "the arcane must add damage at all");
+        let ratio = doubled / plain;
+        assert!(
+            (ratio - 2.0).abs() < 0.02,
+            "a split off an instance worth 2x the nominal base must deal 2x; got {ratio}"
         );
     }
 
