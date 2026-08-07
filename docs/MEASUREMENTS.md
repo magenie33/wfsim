@@ -1415,3 +1415,117 @@ wrong but that **the two fights should have been equal and were not**.
 Pinned as `a_cycle_that_never_transforms_is_its_base_form`, over a fixture whose
 Incarnon declares a radial and whose base form declares none — with body-only
 aim, so the gauge can never fill. It bites: 3500 against 500 before the fix.
+
+---
+
+## M33 — Primary Debilitate's split reads its PARENT, not the weapon (2026-08-08, OPEN)
+
+The owner brought a community formula for a Primary Debilitate build, with an
+in-game number beside it, and asked whether the case it describes generalises
+(2026-08-08: "我们是否可以反推到一般情况呢").
+
+```
+Damage x Cyte% x Dot% x (1+Elemental) x (1+DotElemental) x Bane^4 x Elementalist
+
+350 * 0.5 * 0.5 * (1+6+0.6+0.6) * (1+6+0.6) * (1+0.3)^4 * (1+0.9)
+= 29591.20        in game: 29551   (-0.14%)
+```
+
+### It decodes exactly, which is why it is worth taking seriously
+
+Every term is identifiable, and the one that pins it is the shard bracket. The
+Violet Archon Shard reads "+30% (+45%) Primary Electricity Damage. Gain an
+additional +10% (+15%) per Crimson, Azure, or Violet Archon Shard equipped."
+Five Tauforged Violet: `5 x (45% + 15% x 5)` = **600%** — the bare `6` in both
+brackets, and the count includes the shard itself (owner, 2026-08-08).
+
+| term | what it is |
+|---|---|
+| `350` | Vectis Prime base |
+| `Cyte%` `0.5` | Cyte-09's **Resupply** — "triggering an Extra Hit of … 50% for Sniper Rifles … that procs a guaranteed status effect from the selected element", at 100% Strength, on a sniper, with **Corrosive** selected |
+| `Dot%` `0.5` | the elemental DoT coefficient |
+| `(1+6+0.6+0.6)` = 8.2 | the **CORROSIVE** bracket — shards + the Toxin 60/60 + the Electricity 60/60, i.e. both components |
+| `(1+6+0.6)` = 7.6 | the **ELECTRICITY** bracket — the component the split landed on |
+| `(1+0.3)^4` | a normal faction Bane, four layers |
+| `(1+0.9)` | Rifle Elementalist |
+
+Read as a chain it is not two rules but one, applied at each link — the Extra
+Hit is a damage instance that guarantees a Corrosive status, the target is
+saturated so Debilitate splits that status into Electricity, and the split's DoT
+is what the 29551 is:
+
+```
+Extra Hit      = 350 x 0.5 x 8.2          <- Resupply, sniper, Corrosive
+Debilitate split instance                  <- guaranteed status, saturated -> Electricity
+split DoT      = (that) x 0.5 x 7.6        <- the number on screen
+                                     x Bane^4 x Elementalist
+```
+
+**WHERE THE FOURTH BANE LAYER SITS IS THE ONE THING THAT DOES NOT DECODE.** The
+wiki gives Debilitate's split DoT `f^3` off an ordinary shot, and this chain has
+exactly one thing an ordinary shot does not — Resupply's Extra Hit — so `f^4`
+follows if that hit is itself a derived instance (a percentage of the weapon's
+damage, spawned by an ability) rather than a shot. Every other assignment tried
+here either gives the wiki 4 or gives this build 3. It does not change the
+finding below: the exponent is a count of links either way, and the bracket
+question is independent of it.
+
+### Two laws, and we have one of them
+
+**FACTION IS ALREADY GENERAL HERE.** `faction_at(f, depth)` is `f^depth` and the
+depth composes by recursion, so nothing is hardcoded: a hit is 1, a status is
+its parent + 1, and Debilitate's split reaches 3 because it goes through an
+extra instance. The video's **4** is not a different rule — it is this rule with
+one more producer in the chain. So the answer to "can we generalise from the 4x
+case" is that the 4x case IS the general case; the wiki's 3 and this 4 are the
+same law counted over different chains.
+
+**THE ELEMENTAL BRACKET IS NOT.** The formula carries BOTH brackets — the
+parent's 8.2 and the child's 7.6 — and the engine carries only the child's:
+
+```
+ours:  0.5 x ModifiedBase x (1 + child bracket) x f^3
+video: 0.5 x ModifiedBase x (1 + PARENT bracket) x (1 + child bracket) x f^3
+```
+
+Because the split's damage is derived from the instance above it rather than
+from the weapon's ModifiedBase. That is the same compositional idea the faction
+ladder already encodes, applied to the other multiplier — and it is what the
+wiki's "applied as a separate damage instance" would mean if the instance is a
+real Corrosive instance rather than a bookkeeping device.
+
+The gap is the parent's whole bracket: **x8.2 on this build**, and ~x2.8 on an
+ordinary two-mod Corrosive one. It is not a correction, it is a different
+weapon.
+
+### Not implemented, and what would settle it
+
+Nothing here is measured on a build this repo can reproduce: the frame, the
+shards and the exalted rifle are all outside the model, so the 29551 cannot be
+run against anything. The 0.14% residual is unexplained too — small enough to be
+the video's rounding, large enough that it is not a proof.
+
+**The experiment costs one mod swap**, on any weapon, with a Bane equipped and
+enough Corrosive stacks to saturate:
+
+- build A: an Electricity 60/60 alone
+- build B: the same, plus a **Toxin** 60/60
+
+Under the engine, adding the Toxin mod does not change the damage of a split
+that lands on **Electricity** — Toxin is not in the Electricity bracket. Under
+the formula it raises it by the Toxin mod's share of the PARENT bracket, which
+is +60% of a bracket that would otherwise be 1.6 — a **37%** jump on the split's
+DoT, from one mod that the split's own element never reads.
+
+That is a difference nobody can round away, and it needs no frame, no shard and
+no exalted weapon.
+
+### Also settled by this: the split deals no damage of its own
+
+The owner's other half — "殴打的那一下，是没有伤害的…就是直接上dot（电还是会立刻
+电一下）" — is what the engine already does, and only the DATA said otherwise.
+`settle_procs` applies the split as a status and never calls `target.apply`; the
+Electricity tick that lands immediately is the DoT's own first tick (delay-0),
+not a hit. `primary_debilitate.yaml` opened with "IT DEALS AN INSTANCE", which
+reads as a damage number even though the paragraph below it says the opposite;
+that is now stated once, in the direction the code goes.
