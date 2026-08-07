@@ -656,6 +656,9 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .gainchip{margin-left:6px;padding:0 6px;border-radius:8px;font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .gainchip.up{background:rgba(90,190,120,.16);color:#7fd39a}
 .gainchip.down{background:rgba(200,90,90,.14);color:#d98c8c}
+/* Below the scan's own resolution: neither green nor red, because the colour is
+   the claim people react to and there is no claim to make here. */
+.gainchip.flat{background:var(--line);color:var(--text-2);opacity:.85}
 .gainchip small{opacity:.7;font-size:10px}
 .picker-tools .pk-note{color:var(--muted);font-size:11px;margin-left:auto}
 .picker-tools #pk-gain-scen,.picker-tools #pk-gain-prec{font:inherit;font-size:11px;max-width:120px}

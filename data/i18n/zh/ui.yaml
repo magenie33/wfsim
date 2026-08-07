@@ -356,6 +356,9 @@ ui:
   "damage reduction": 伤害减免
   "Overguard": 超宏护盾
   "averaged over {n} runs — this number moves between scans, most of all for status mods": "{n} 次模拟的平均——这个数字每次扫描都会变，触发类 mod 尤其明显"
+  # The scan measured its OWN resolution (the reference build run again on a
+  # second seed); anything smaller than that gap gets no sign and no colour.
+  "the same build run again with different luck moved by {x} — this is smaller than that, so the scan cannot tell it from no change at all": 同一套配装换个运气再跑一遍，差了 {x} —— 这个收益比它还小，所以这次扫描分不出它和「毫无变化」的区别
   "no timeout": 无限持续
   # The replay: the transport, the buff curves, and the pools table.
   Replay: 回放

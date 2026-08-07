@@ -4649,6 +4649,17 @@ function renderTools() {
 // baseline and every candidate take the same seed, so they walk the same
 // random stream and the difference between them is the mod, not the dice.
 const GAIN_SEED = 0x5EED;
+// THE SAME FIGHT, DIFFERENT LUCK. One extra run of the REFERENCE build at a
+// second seed, once per scan — not per candidate — and the gap between the two
+// is this scan's own resolution: how far the number can move with nothing
+// changed at all. A gain smaller than that is not a reading, and printing it
+// with a sign is how a scan gets accused of saying a mod is bad (user,
+// 2026-08-02 and again 2026-08-07 — the sign is what people react to).
+//
+// MEASURED, not assumed: a status mod perturbs the fight and a damage mod
+// barely does, so the resolution is a property of THIS scope in THIS fight and
+// there is no constant that could stand in for it.
+const GAIN_SEED_B = 0x5EED ^ 0x9E37;
 // A gain READS with its sign — "12.3%" and "+12.3%" are different claims.
 const gainPct = (x) => (x >= 0 ? "+" : "−") + sig2(Math.abs(x) * 100) + "%";
 
@@ -4668,7 +4679,7 @@ let gainPrefs = { on: true, scenario: null };
 try { const s = JSON.parse(localStorage.getItem("wfsim-gain")); if (s) gainPrefs = { ...gainPrefs, ...s }; } catch (_) {}
 const saveGainPrefs = () => localStorage.setItem("wfsim-gain", JSON.stringify(gainPrefs));
 
-let gainScan = { key: null, running: false, base: 0, by: {}, done: 0, total: 0, note: "", metric: "" };
+let gainScan = { key: null, running: false, base: 0, floor: 0, by: {}, done: 0, total: 0, note: "", metric: "" };
 
 /// The scenario a scan runs under: the chosen preset, else the live one.
 function gainScenario() {
@@ -4839,15 +4850,19 @@ async function scanGains(axis, onTick) {
   // The note is WHICH FIGHT this was measured in. The run counts used to ride
   // along here too and were dropped: each chip's tooltip states its own count,
   // which is the only place the number changes how a reading should be taken.
-  gainScan = { key: gainKey(), axis, running: true, base: 0, by: {}, done: 0, total: 0,
+  gainScan = { key: gainKey(), axis, running: true, base: 0, floor: 0, by: {}, done: 0, total: 0,
     note: name, metric: "" };
   // Kill progress is the optimizer's metric and the one a player is actually
   // buying; DPS is the fallback for a target this build cannot kill at all,
   // where the ratio has no denominator. The SCENARIO decides which.
   let useKills = (scenario.metric || "kpm") !== "dps";
+  // `procs` rides along so a candidate can be asked whether it moved the fight
+  // or only the numbers — see `belowFloor`.
+  let baseProcs = null;
   const run = async (override) => {
     const r = await api("/api/simulate", { ...buildPayload(), ...scenario, ...override });
     if (!r || !r.ok) return null;
+    if (!override.seed && baseProcs === null) baseProcs = r.procs ?? null;
     return useKills ? (r.score ?? r.kills ?? 0) : (r.dps || 0);
   };
   let base = await run({});
@@ -4856,6 +4871,10 @@ async function scanGains(axis, onTick) {
   if (!base) { gainScan.running = false; if (onTick) onTick(gainScan); return; }
   gainScan.base = base;
   gainScan.metric = useKills ? tr("kill rate") : tr("DPS");
+  // ...and how far this same build moves on luck alone.
+  const baseB = await run({ seed: GAIN_SEED_B });
+  if (!live()) return;
+  if (baseB) gainScan.floor = Math.abs(baseB - base) / base;
   const cands = gainCandidates(axis);
   gainScan.total = cands.length + (refine ? Math.min(GAIN_REFINE_TOP, cands.length) + 1 : 0);
   // One shared cursor, every lane pulling the next candidate as it frees up —
@@ -4872,7 +4891,10 @@ async function scanGains(axis, onTick) {
       if (!live()) return;               // the fight moved — this answer is stale
       const v = !r || !r.ok ? null : (useKills ? (r.score ?? r.kills ?? 0) : (r.dps || 0));
       gainScan.done++;
-      if (v != null) gainScan.by[c.id] = { pct: (v - base) / base, runs: scenario.runs };
+      if (v != null) {
+        gainScan.by[c.id] = { pct: (v - base) / base, runs: scenario.runs,
+          diverged: baseProcs === null || (r.procs ?? null) !== baseProcs };
+      }
       if (onTick) onTick(gainScan);
     }
   }));
@@ -4913,6 +4935,34 @@ async function scanGains(axis, onTick) {
 /// The gain chip: what this option is worth, once scanned. Shared by all
 /// three lists — a mod, an arcane and an evolution are the same question
 /// asked of different axes, so they say it the same way.
+/// Is this gain bigger than the scan could tell apart from nothing?
+///
+/// TWO CONDITIONS, and the second is the one that keeps this honest.
+///
+/// The streams are split (`rng::Draws`), so a candidate that changes only
+/// damage numbers does not re-roll the fight at all: its comparison is exact,
+/// and a +3% from it is a fact however small. A candidate that changes how many
+/// STATUSES land does re-roll — the status and buff streams diverge — and its
+/// comparison carries the whole spread of a different fight.
+///
+/// PROC COUNT tells the two apart for free, because it is already in the
+/// response: same procs as the reference means nothing diverged. So the floor
+/// is applied only where the fight actually moved, and a small exact gain is
+/// still printed.
+///
+/// `floor` is 0 until the second reference run lands, so an early chip is never
+/// suppressed on a resolution nobody has measured yet.
+const belowFloor = (g, floor) =>
+  floor > 0 && g.diverged && Math.abs(g.pct) < floor;
+
+/// The chip for a gain the scan cannot resolve. Deliberately NOT a zero with a
+/// sign in front of it: "+0.00%" and "−0.00%" are the same claim, and only one
+/// of them starts an argument.
+const flatChip = (floor, why) =>
+  `<span class="gainchip flat" title="${escHtml(
+    `${tr("the same build run again with different luck moved by {x} — this is smaller than that, so the scan cannot tell it from no change at all")
+      .replace("{x}", gainPct(floor).replace("+", ""))} · ${why}`)}">≈0%</span>`;
+
 const gainChipFor = (id, where) => {
   const g = gainOf(id);
   if (!g) return "";
@@ -4931,6 +4981,9 @@ const gainChipFor = (id, where) => {
   // which procs land, and ten runs narrows that without settling it.
   const why = tr("averaged over {n} runs — this number moves between scans, most of all for status mods")
     .replace("{n}", g.runs);
+  if (belowFloor(g, gainScan.floor)) {
+    return flatChip(gainScan.floor, `${where} · ${gainScan.metric} · ${gainScan.note} · ${why}`);
+  }
   return `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}" title="${escHtml(
     `${where} · ${gainScan.metric} · ${gainScan.note} · ${why}`)}">≈${gainPct(g.pct)}</span>`;
 };
@@ -5070,7 +5123,7 @@ async function scanOptGains(onTick) {
   const ref = optRefMods();
   const evolutions = optRefEvos();
   const refArc = optRefArcanes();
-  optGain = { ...optGain, key: optGainKey(), running: true, base: 0, by: {}, orders: [],
+  optGain = { ...optGain, key: optGainKey(), running: true, base: 0, floor: 0, by: {}, orders: [],
     done: 0, total: 0, note: name, metric: "", ref };
   const cands = optGainCandidates(ref, evolutions, refArc);
 
@@ -5090,6 +5143,7 @@ async function scanOptGains(onTick) {
 
   const useKills = (scenario.metric || "kpm") !== "dps";
   const read = (r) => (!r || !r.ok ? null : (useKills ? (r.score ?? r.kills ?? 0) : (r.dps || 0)));
+  const procsOf = (r) => (!r || !r.ok ? null : (r.procs ?? null));
   // Every (set, pairing) is ONE job, flattened into one queue so a set with
   // three pairings does not hold a lane while another waits — the same shared
   // cursor the builder's scan uses, for the same reason.
@@ -5102,6 +5156,7 @@ async function scanOptGains(onTick) {
   })));
   optGain.total = jobs.length;
   const got = orders.map((os) => os.map(() => null));
+  const procs = orders.map((os) => os.map(() => null));
   let cursor = 0;
   await Promise.all(gainLanes().map(async (lane) => {
     for (;;) {
@@ -5111,6 +5166,7 @@ async function scanOptGains(onTick) {
       const r = await lane.call("/api/simulate", { ...base, ...scenario, mods: j.mods, ...j.override });
       if (!live()) return;
       got[j.si][j.oi] = read(r);
+      procs[j.si][j.oi] = procsOf(r);
       optGain.done++;
       if (onTick) onTick(optGain);
     }
@@ -5124,6 +5180,15 @@ async function scanOptGains(onTick) {
   const b = best(0);
   optGain.base = b || 0;
   optGain.metric = useKills ? tr("kill rate") : tr("DPS");
+  // The reference again on a second seed — the scan's own resolution. Its best
+  // PAIRING is already known, so this is one more run and not another ladder.
+  if (b) {
+    const bestOrder = orders[0][got[0].indexOf(b)];
+    const again = read(await gainLanes()[0].call("/api/simulate",
+      { ...base, ...scenario, mods: bestOrder.mods, seed: GAIN_SEED_B }));
+    if (!live()) return;
+    if (again) optGain.floor = Math.abs(again - b) / b;
+  }
   // THE PAIRING LADDER — the reference's own orders, ranked. It goes first on
   // screen because the swing between pairings is larger than any single mod's.
   optGain.orders = orders[0].map((o, i) => ({
@@ -5139,7 +5204,10 @@ async function scanOptGains(onTick) {
       const [withX, without] = c.drops ? [b, v] : [v, b];
       if (!without) return;
       const o = orders[i + 1][got[i + 1].indexOf(v)] || {};
+      const refProcs = procs[0][got[0].indexOf(b)];
+      const candProcs = procs[i + 1][got[i + 1].indexOf(v)];
       optGain.by[c.id] = { pct: withX / without - 1, runs: scenario.runs,
+        diverged: refProcs === null || candProcs !== refProcs,
         combined: o.combined || [], leftover: o.leftover || [], drops: c.drops };
     });
   }
@@ -5176,6 +5244,9 @@ const optGainChipFor = (id) => {
     .replace("{n}", g.runs);
   const how = g.drops ? tr("what it contributes: this scope with it, against without")
     : tr("what it would add: this scope plus it, against the scope as it stands");
+  if (belowFloor(g, optGain.floor)) {
+    return flatChip(optGain.floor, `${how} · ${optGain.metric} · ${optGain.note} · ${why}`);
+  }
   return `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}" title="${escHtml(
     `${how} · ${optGain.metric} · ${optGain.note} · ${why}`)}">≈${gainPct(g.pct)}</span>`;
 };
@@ -5260,7 +5331,7 @@ function renderQuickCalc() {
     // A stale ranking must not outlive the switch, and "提升" must not stay
     // selected with nothing behind it.
     if (!gainPrefs.on) {
-      gainScan = { key: null, running: false, base: 0, by: {}, done: 0, total: 0, note: "", metric: "" };
+      gainScan = { key: null, running: false, base: 0, floor: 0, by: {}, done: 0, total: 0, note: "", metric: "" };
       if (pickerPrefs.sort === "gain") { pickerPrefs.sort = "drain"; savePickerPrefs(); }
     }
     saveGainPrefs();
