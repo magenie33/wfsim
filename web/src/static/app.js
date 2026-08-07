@@ -4531,17 +4531,23 @@ function ddRender(id, query) {
     || String(i.hint || "").toLowerCase().includes(q));
   // A DISABLED item stays LISTED and greyed: "the weapon has no Incarnon form
   // while that mod is on it" is information, and a vanished option is not. It
-  // is `.dis` and carries no `data-v`, which is what takes the click handler
-  // away — the one native `<select>` behaviour this component has to reproduce
-  // by hand, and the one it silently dropped when the selects were replaced.
+  // is `.dis`, and `.dis` is what the click binding below skips — the one
+  // native `<select>` behaviour this component has to reproduce by hand, and
+  // the one it silently dropped when the selects were replaced.
+  //
+  // IT KEEPS ITS `data-v`. Dropping the value was the first way this was
+  // written, and it left a greyed row identifiable only by the words on it —
+  // which is the thing that broke `check_opt_gain` the day an evolution got a
+  // Chinese name. An option carries its identity whether or not it can be
+  // clicked; being clickable is a separate fact and lives in the class.
   $("dd-menu").innerHTML = hits.length
     ? hits.map((i) => `<div class="opt${String(i.value) === String(cfg.value) ? " cur" : ""}${
-        i.disabled ? " dis" : ""}"${i.disabled ? "" : ` data-v="${escHtml(String(i.value))}"`}>
+        i.disabled ? " dis" : ""}" data-v="${escHtml(String(i.value))}">
         <div class="info"><div class="mn">${escHtml(i.label)}</div>${
           i.hint ? `<div class="me"><div>${escHtml(i.hint)}</div></div>` : ""}</div>
       </div>`).join("")
     : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
-  $("dd-menu").querySelectorAll(".opt[data-v]").forEach((el) => {
+  $("dd-menu").querySelectorAll(".opt[data-v]:not(.dis)").forEach((el) => {
     el.onclick = (e) => {
       e.stopPropagation();
       $("dd-popover").hidden = true;   // only THIS panel — a parent picker stays
