@@ -550,6 +550,11 @@ entries:
     arcanes: [primary_crux]
   - weapon: gotva_prime
     mode: base
+    score: 3.4146332105514317
+    mods: [heavy_caliber, primary_acuity, serration, hammer_shot, rifle_elementalist, vile_acceleration, vital_sense, thermite_rounds]
+    arcanes: [primary_crux]
+  - weapon: gotva_prime
+    mode: base
     score: 1.4173988712805894
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     arcanes: [primary_deadhead]
