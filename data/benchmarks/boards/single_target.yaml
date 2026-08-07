@@ -555,14 +555,49 @@ entries:
     arcanes: [primary_crux]
   - weapon: gotva_prime
     mode: base
+    score: 3.3710558034986815
+    mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, thermite_rounds]
+    arcanes: [primary_crux]
+  - weapon: gotva_prime
+    mode: base
     score: 1.4173988712805894
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    arcanes: [primary_deadhead]
+  - weapon: gotva_prime
+    mode: base
+    score: 0.7551048233241726
+    mods: [heavy_caliber, primary_acuity, serration, hammer_shot, vile_acceleration, vital_sense, primed_cryo_rounds, thermite_rounds]
+    arcanes: [primary_crux]
+  - weapon: karak_wraith
+    mode: base
+    score: 5.005287804391379
+    mods: [primary_acuity, serration, galvanized_aptitude, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
+    arcanes: [primary_crux]
+  - weapon: karak_wraith
+    mode: base
+    score: 3.0141950567782785
+    mods: [heavy_caliber, primary_acuity, serration, hammer_shot, vile_acceleration, vital_sense, hellfire, thermite_rounds]
+    arcanes: [primary_crux]
+  - weapon: karak_wraith
+    mode: base
+    score: 2.1343211977090504
+    mods: [heavy_caliber, primary_acuity, serration, hammer_shot, vile_acceleration, vital_sense, hellfire, thermite_rounds]
     arcanes: [primary_deadhead]
   - weapon: karak_wraith
     mode: base
     score: 1.1257416025028586
     mods: [heavy_caliber, split_chamber, serration, hammer_shot, vile_acceleration, magnetic_capacity, hellfire, thermite_rounds]
     arcanes: [primary_merciless]
+  - weapon: karak_wraith
+    mode: base
+    score: 0.6383834120085228
+    mods: [galvanized_chamber, serration, galvanized_aptitude, point_strike, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    arcanes: [primary_deadhead]
+  - weapon: karak_wraith
+    mode: base
+    score: 0.6123861732936329
+    mods: [galvanized_chamber, serration, galvanized_aptitude, point_strike, vital_sense, high_voltage, malignant_force, thermite_rounds]
+    arcanes: [primary_deadhead]
   - weapon: laetum
     mode: cycle
     score: 65.21512397336824
