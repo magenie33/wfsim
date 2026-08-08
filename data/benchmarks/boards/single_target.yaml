@@ -1256,6 +1256,11 @@ entries:
     arcanes: [primary_merciless, cascadia_flare]
   - weapon: larkspur_prime
     mode: base
+    score: 4.000041654357736
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, hollowed_bullets, hypothermic_shell, contamination_casing, magma_chamber]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
     score: 4
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, parallax_scope, primed_electrified_barrel, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
@@ -1291,6 +1296,11 @@ entries:
     arcanes: [primary_overcharge, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
+    score: 3.4699318350293984
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, critical_focus, hollowed_bullets, hypothermic_shell, contamination_casing, magma_chamber]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
     score: 3.4
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
@@ -1324,6 +1334,11 @@ entries:
     score: 2.6
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, magazine_extension, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_merciless, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 2.5122313592609506
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, hollowed_bullets, hypothermic_shell, contamination_casing, magma_chamber]
+    arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
     score: 2.2
@@ -1374,6 +1389,11 @@ entries:
     score: 0.9425962483258007
     mods: [primed_rubedo_lined_barrel, primed_deadly_efficiency, dual_rounds, hollowed_bullets, parallax_scope, charged_bullets, venomous_clip, polar_magazine]
     arcanes: [primary_frostbite, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 0.7690939268464668
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, hollowed_bullets, hypothermic_shell, magma_chamber, contamination_casing]
+    arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
     score: 0.754763393572815
