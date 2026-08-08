@@ -99,7 +99,7 @@ mined for its numbers, because reading "On Kill: +30 damage" as an unconditional
   | Braton family | Incarnon Form Radial, Adding, 95% | already applied. |
   | Burston family | Incarnon Form Radial, Adding, **24%** | applied as Adding; the **24%** is NOT expressible — `co_base_fraction` is a WEAPON-level field and this is a RADIAL-level discount. Recorded, not faked. |
   | Zylok family | Incarnon Form Radial, Adding, 90% | for the Zylok batch, same radial-fraction limit. |
-  | Torid, Felarx, Angstrum, Ballistica Prime, Dread, Paris, Miter | Multiplying on the named attack | to apply as each lands. |
+  | Torid, Felarx, Angstrum, Ballistica Prime, Dread, Paris, Miter | Multiplying on the named attack | applied as each lands. **Felarx is Multiplying on BOTH modes** — asked directly (owner, 2026-08-08), so for that weapon the row is not about one attack. The Angstrum's other form is left ordinary with the question written at the site: one weapon is not a rule. |
   | Cestra, Despair, Atomos, Bronco Prime, Vasto Prime, Lato Vandal, Lex Prime, Dual Toxocyst, Furis | Adding + "CO-bonus does not use base damage increase Evolution" | the engine already excludes an evolution's flat damage, so these are correct as generated. |
   | **Kunai** | "CO-bonus **DOES** use base damage increase Evolution" | the one weapon where the engine's blanket exclusion is WRONG. No way to express it today; noted at the site. |
   | Stug | Blob Impact, **0%, "Does not apply"** | `co_behavior: inert` when the Stug lands. |

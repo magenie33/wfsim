@@ -39,6 +39,13 @@ effects:
   #
   # This sim transmutes on a gauge rather than on a plan, so it earns the reload
   # route only.
+  #
+  # AND THE 99-STACK CAP IS NOT CHASED. Reaching it needs a magazine that never
+  # empties, which is a play PATTERN — a firing-and-reloading policy, not a
+  # property of this perk — and inventing a special path to it would be putting
+  # a thumb on the scale for one card. DECIDED against (owner, 2026-08-08:
+  # "不要特殊化处理 99 层那个了，不现实，我们流程还是正常的"). The ordinary loop
+  # earns a magazine's worth, and that is what the number reports.
   - kind: unmodelled_incarnon_form_grants_stacks_on_entry_and_exit
 
 source:

@@ -55,9 +55,15 @@ reload_start_s: 0.8
 reload_per_shell_s: 0.4
 reload_end_s: 0.5
 
-# No CO catalog row for this attack, so the ordinary class — absence in that
-# catalog means ORDINARY rather than unknown, since it lists the anomalies.
-co_behavior: additive_with_base_damage
+# CONDITION OVERLOAD IS MULTIPLYING ON BOTH OF THIS WEAPON'S MODES (owner,
+# 2026-08-08: "felarx 两个模式都是 multi 计算的"). The wiki's CO catalog lists
+# the Felarx among the Multiplying entries and names one attack; the answer is
+# the same for the other, so this is not read off a form — it is the weapon's.
+#
+# It is not a rounding difference: a free-standing final multiplier against a
+# member of the base-damage bucket is a different number on any build carrying
+# Serration, and this weapon's whole shape is high base damage.
+co_behavior: independent
 
 attack:
   trigger: auto
