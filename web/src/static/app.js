@@ -3531,7 +3531,22 @@ function initPresets() {
   // BUILD presets — a field nothing reads any more, because a build no longer
   // carries a copy of the fight.)
   if (!ps.length) {
-    ps = [{ name: "build 1", savedAt: Date.now(), state: snapshotState() }];
+    // BLANK, NEVER THE LIVE STATE. A weapon opened for the first time is a bare
+    // weapon — the same rule the scenario has carried since 2026-08-02
+    // ("绝对不能串"), applied to the build, where it was missing.
+    //
+    // `snapshotState()` here is the state of the weapon you just LEFT, and this
+    // runs during the switch. Mods survived it only because `restoreState`
+    // prunes them against the new weapon's pool; an ARCANE has no such prune
+    // when it fits, so a Primary Crux picked up from a board build followed you
+    // onto every primary you opened afterwards, and was WRITTEN into that
+    // weapon's own "build 1" (owner, 2026-08-08: "为什么会默认装备主要准星赋能
+    // 啊，好多武器都是这样的"). Reproduced: open the Boar through a board row,
+    // switch to the Sybaris, and the Sybaris's first build has the arcane.
+    //
+    // Every axis a future build gains is covered by this, because the answer is
+    // "the blank one" rather than "the live one minus what does not fit".
+    ps = [{ name: "build 1", savedAt: Date.now(), state: blankBuildState() }];
     storePresetList(BUILDS, ps);
   }
   let sc = loadPresetList(SCENARIOS);

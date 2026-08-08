@@ -257,6 +257,46 @@ check("...while everything else about that fight still applies", clean.tookTheRe
   String(clean.tookTheRest));
 check("...and nothing writes one back out", clean.snapshotHasForm === false);
 
+// A WEAPON OPENED FOR THE FIRST TIME IS A BARE WEAPON — the cross-weapon rule
+// ("绝对不能串"), which the SCENARIO has obeyed since 2026-08-02 and the BUILD
+// did not. Its first build was seeded from `snapshotState()`, i.e. from the
+// weapon you just left; mods survived that only because `restoreState` prunes
+// them against the new pool, and an arcane has no such prune when it fits. So a
+// Primary Crux picked up from a board build followed you onto every primary you
+// opened afterwards (owner, 2026-08-08).
+//
+// Driven through a BOARD ROW because that is where a loaded arcane comes from
+// without anyone choosing one, and it is how the report was produced.
+const cross = await evaluate(`(async () => {
+  const s = (ms) => new Promise(r => setTimeout(r, ms));
+  localStorage.clear();
+  const out = {};
+  // A weapon whose board leader carries an arcane, opened the way the board
+  // page links to it.
+  const row = (BOARD['boar'] || []).find(r => (r.arcanes || []).length);
+  out.seeded = row ? row.arcanes[0] : null;
+  history.pushState({}, '', '/weapons/Boar?bench=' + (row || {}).benchmark + '&mode=' + ((row || {}).mode || 'base'));
+  route(); await s(2600);
+  out.fromBoard = arcanes.slice();
+  // ...then a weapon never visited, reached the way the search bar reaches one.
+  switchWeapon('sybaris'); await s(2000);
+  out.next = { arcanes: arcanes.slice(), mods: slots.filter(x => x.mod).length,
+               evos: Object.values(evoSel).filter(Boolean).length };
+  const stored = JSON.parse(localStorage.getItem('wfsim-presets-sybaris-builder-builds') || '[]')[0];
+  out.stored = (stored || {}).state || null;
+  return out;
+})()`);
+
+check("a board build loads its own arcane", (cross.fromBoard || [])[0] === cross.seeded,
+  `${JSON.stringify(cross.fromBoard)} vs ${cross.seeded}`);
+check("...and NOTHING of it crosses to the next weapon",
+  (cross.next.arcanes || []).every((a) => a === "none")
+    && cross.next.mods === 0 && cross.next.evos === 0,
+  JSON.stringify(cross.next));
+check("...not even into what gets written as that weapon's first build",
+  ((cross.stored || {}).arcane || ["none"]).every((a) => a === "none"),
+  JSON.stringify((cross.stored || {}).arcane));
+
 // THE SIMULATOR PICKS A BUILD; IT DOES NOT EDIT ONE (owner, 2026-08-07:
 // "simulater那里只可以选preset，mode要进入下面的预览"). The mode is part of the
 // build, so the builder's control for it must not be on this tab — and the
