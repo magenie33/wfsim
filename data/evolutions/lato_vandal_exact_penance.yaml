@@ -1,0 +1,18 @@
+id: lato_vandal_exact_penance
+name: Exact Penance
+weapon: lato_vandal
+tier: 3
+description: "On Kill: 50% chance for Instant Reload."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "On Kill: 50% chance for Instant Reload"
+  - kind: unmodelled_on_kill_chance_for_instant_reload
+
+source:
+  url: https://wiki.warframe.com/w/Lato_Incarnon_Genesis

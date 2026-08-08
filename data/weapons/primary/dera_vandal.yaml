@@ -1,0 +1,58 @@
+id: dera_vandal
+name: Dera Vandal
+slot: primary
+class: rifle
+form: base
+default_form: true
+mod_pools: [primary, rifle, assault_rifle]
+mastery_rank: 7
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group.
+transform_group: dera_vandal
+transforms_to: dera_vandal_incarnon
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+accuracy: 100
+disposition: 1.35
+polarities: []
+exilus_polarity: naramon
+riven_family: Dera
+traits: [incarnon, vandal]
+introduced: "Update 16.5"
+internal_name: /Lotus/Weapons/ClanTech/Energy/DeraVandal
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 60
+reload_seconds: 1.8
+
+# No CO catalog row for this weapon, so the ordinary class.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 11.25
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.08
+  crit_multiplier: 2
+  status_chance: 0.3
+  punch_through_m: 0.0
+  damage: { impact: 6.4, slash: 1.6, puncture: 24 }   # total 32.0
+
+# incarnon_evolutions: definitions live in data/evolutions/dera_vandal_*.yaml.
+
+source:
+  url: https://wiki.warframe.com/w/Dera_Vandal

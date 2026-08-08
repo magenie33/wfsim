@@ -1,0 +1,17 @@
+id: lex_prime_elemental_balance
+name: Elemental Balance
+weapon: lex_prime
+tier: 4
+description: "Increase Base Status Chance by +30%."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Status Chance by +30%"
+  - kind: flat_base_status_chance
+    value: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Lex_Incarnon_Genesis

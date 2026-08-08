@@ -1,0 +1,21 @@
+id: dera_vandal_high_ground
+name: High Ground
+weapon: dera_vandal
+tier: 4
+description: "Increase Base Critical Chance by +25% of current Status Chance, up to +35%."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Critical Chance by +25%"
+  - kind: flat_base_crit_chance
+    value: 0.25
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "of current Status Chance, up to +35%"
+  - kind: unmodelled_of_current_status_chance_up_to
+
+source:
+  url: https://wiki.warframe.com/w/Dera_Incarnon_Genesis

@@ -1,0 +1,57 @@
+id: lato_vandal
+name: Lato Vandal
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 7
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group.
+transform_group: lato_vandal
+transforms_to: lato_vandal_incarnon
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+accuracy: 22.99
+disposition: 1.35
+polarities: [madurai]
+exilus_polarity: madurai
+riven_family: Lato
+traits: [incarnon, vandal]
+introduced: "Update 7.0"
+internal_name: /Lotus/Weapons/Tenno/Pistol/LatoVandal
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 15
+reload_seconds: 1
+
+# No CO catalog row for this weapon, so the ordinary class.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.26
+  crit_multiplier: 2.4
+  status_chance: 0.1
+  punch_through_m: 0.0
+  damage: { impact: 6.9, slash: 27.6, puncture: 11.5 }   # total 46.0
+
+# incarnon_evolutions: definitions live in data/evolutions/lato_vandal_*.yaml.
+
+source:
+  url: https://wiki.warframe.com/w/Lato_Vandal

@@ -1097,13 +1097,27 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 28] = [
+        const EXPECTED: [(&str, &str, &[&str]); 38] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
             ("boar", "auto", &[]),                             // full-auto shotgun
             ("boar_prime", "auto", &[]),                       // ...and its Prime
             ("cernos_prime", "charge", &[]),                   // a bow is not semi-auto
+            // THE BULK INTAKE (2026-08-08), batch 1. Every answer here is the
+            // weapon's LISTED trigger and nothing subtler: Burst and Auto take
+            // no Cannonade, Semi-Auto rifles take the rifle one and semi-auto
+            // pistols the pistol one.
+            ("sybaris", "burst", &[]),
+            ("dex_sybaris", "burst", &[]),
+            ("sybaris_prime", "burst", &[]),
+            ("dera", "auto", &[]),
+            ("dera_vandal", "auto", &[]),
+            ("lato", "semi_auto", &["semi_pistol_cannonade"]),
+            ("lato_vandal", "semi_auto", &["semi_pistol_cannonade"]),
+            ("lato_prime", "semi_auto", &["semi_pistol_cannonade"]),
+            ("lex", "semi_auto", &["semi_pistol_cannonade"]),
+            ("lex_prime", "semi_auto", &["semi_pistol_cannonade"]),
             ("torid", "semi_auto", &["semi_rifle_cannonade"]), // semi-auto launcher, rifle pool
             // THE ASSAULT RIFLES (2026-08-05). Semi-Pistol/Shotgun Cannonade
             // are pistol and shotgun mods, so a rifle never sees them; the

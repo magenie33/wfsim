@@ -1450,13 +1450,39 @@ use crate::loadout::WeaponBase;
             "telos_boltor_hunters_mantra :: punch_through_while_channeling",
             "telos_boltor_rapid_reinforcement :: reload_speed_bonus",
         ];
+        // TWO POPULATIONS, AND THE PREFIX IS WHICH. The list above is the ARGUED
+        // one: a hand-written perk whose effect the engine cannot express, where
+        // an inert entry is a decision somebody made and wrote a reason for, and
+        // where a NEW one appearing is a mistake until argued.
+        //
+        // The bulk Incarnon intake (2026-08-08) produces the other population.
+        // Its rule engine turns a clause it does not recognise into a kind NAMED
+        // `unmodelled_<the clause's own words>` — self-declaring by construction,
+        // and there are hundreds of them, one per unrecognised clause per weapon.
+        // Listing those individually would be a list nobody reads that grows by
+        // 30 lines per adapter; the NAME is the declaration, and both the builder
+        // and the optimizer print them as "not modelled yet".
+        //
+        // The invariant that still bites: the two populations may not mix. A
+        // hand-written perk may not hide behind the prefix (its kind would have
+        // to be renamed to do so, which is not something you do by accident), and
+        // the argued list may not contain a prefixed kind.
+        const BULK: &str = "unmodelled_";
+        assert!(
+            !expected.iter().any(|e| e.contains(&format!(":: {BULK}"))),
+            "the argued list must not contain a bulk-intake kind — those declare              themselves by name"
+        );
         let expected: Vec<String> = expected.into_iter().map(str::to_string).collect();
         let missing: Vec<&String> = expected.iter().filter(|e| !found.contains(e)).collect();
-        let extra: Vec<&String> = found.iter().filter(|f| !expected.contains(f)).collect();
+        let extra: Vec<&String> = found
+            .iter()
+            .filter(|f| !expected.contains(f))
+            .filter(|f| !f.contains(&format!(":: {BULK}")))
+            .collect();
         assert!(
             missing.is_empty() && extra.is_empty(),
             "the inert set moved.
-  NEW (implement it, or add it here with a reason): {extra:#?}
+  NEW (implement it, or add it here with a reason, or let the intake name it   `unmodelled_*`): {extra:#?}
   GONE (drop it from the list): {missing:#?}"
         );
     }

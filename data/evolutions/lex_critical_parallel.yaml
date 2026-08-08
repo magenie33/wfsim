@@ -1,0 +1,20 @@
+id: lex_critical_parallel
+name: Critical Parallel
+weapon: lex
+tier: 4
+description: "Increase Base Critical Chance by +20%. Increase Base Critical Damage Multiplier by +0.4x."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Critical Chance by +20%"
+  - kind: flat_base_crit_chance
+    value: 0.2
+  # from: "Increase Base Critical Damage Multiplier by +0.4x"
+  - kind: flat_base_crit_multiplier
+    value: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Lex_Incarnon_Genesis

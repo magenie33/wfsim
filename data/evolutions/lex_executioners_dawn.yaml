@@ -1,0 +1,18 @@
+id: lex_executioners_dawn
+name: Executioner's Dawn
+weapon: lex
+tier: 4
+description: "On Equip: +100% Headshot Damage for 4 seconds."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "On Equip: +100% Headshot Damage for 4 seconds"
+  - kind: unmodelled_on_equip_headshot_damage_for_seconds
+
+source:
+  url: https://wiki.warframe.com/w/Lex_Incarnon_Genesis

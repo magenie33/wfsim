@@ -1,0 +1,18 @@
+id: lato_vandal_deathtrap_trigger
+name: Deathtrap Trigger
+weapon: lato_vandal
+tier: 4
+description: "On Equip from Primary: +38% Critical Chance for 4 seconds; +2.6x Critical Damage for 4 seconds."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "On Equip from Primary: +38% Critical Chance for 4 seconds; +2.6x Critical Damage for 4 seconds"
+  - kind: unmodelled_on_equip_from_primary_critical_chance_for_seconds_x_c
+
+source:
+  url: https://wiki.warframe.com/w/Lato_Incarnon_Genesis

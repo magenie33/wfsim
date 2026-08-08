@@ -1,0 +1,58 @@
+id: lato_prime_incarnon
+name: Lato Prime (Incarnon Form)
+slot: secondary
+class: pistol
+form: incarnon
+
+transform_group: lato_prime
+transforms_from: lato_prime
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+
+incarnon:
+  gauge:
+    charge_on: weakpoint_hits
+    charges_to_fill: 6
+    rounds_per_charge: 4
+    max_rounds: 24
+  transmute:
+    activation: alt_fire
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+  incarnon_magazine:
+    resource: incarnon_charges
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 1      # = base reload time, unmodded
+  transmute_out_seconds: 1.0     # MEASURED on Dual Toxocyst (M9)
+
+pseudo_reload:
+  magazine: 24
+  reload_seconds: 2.0
+
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 4
+  multishot: 2.0
+  ammo_cost: 1                  # of the 24-round charge pool
+  crit_chance: 0.36
+  crit_multiplier: 3.2
+  status_chance: 0.15
+  punch_through_m: 0.0
+  damage: { impact: 19.5, slash: 39, puncture: 19.5 }   # total 78.0
+
+# incarnon_evolutions: see data/weapons/secondary/lato_prime.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Lato_Incarnon_Genesis
+  # WFCD `attacks`: "Incarnon Form"

@@ -1,0 +1,22 @@
+id: lex_prime_lex_talionis
+name: Lex Talionis
+weapon: lex_prime
+tier: 3
+description: "On Headshot: -20% Weapon Recoil and +20% Accuracy for 4 seconds. Stacks up to 4x."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "On Headshot: -20% Weapon Recoil and +20% Accuracy for 4 seconds"
+  - kind: unmodelled_on_headshot_weapon_recoil_and_accuracy_for_seconds
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Stacks up to 4x"
+  - kind: unmodelled_stacks_up_to_x
+
+source:
+  url: https://wiki.warframe.com/w/Lex_Incarnon_Genesis

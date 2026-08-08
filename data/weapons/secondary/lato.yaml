@@ -1,0 +1,57 @@
+id: lato
+name: Lato
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 0
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group.
+transform_group: lato
+transforms_to: lato_incarnon
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+accuracy: 18.18
+disposition: 1.4
+polarities: []
+exilus_polarity: madurai
+riven_family: Lato
+traits: [incarnon]
+introduced: "Vanilla"
+internal_name: /Lotus/Weapons/Tenno/Pistol/Pistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 15
+reload_seconds: 1
+
+# No CO catalog row for this weapon, so the ordinary class.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 4.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.1
+  crit_multiplier: 1.8
+  status_chance: 0.06
+  punch_through_m: 0.0
+  damage: { impact: 10, slash: 20, puncture: 10 }   # total 40
+
+# incarnon_evolutions: definitions live in data/evolutions/lato_*.yaml.
+
+source:
+  url: https://wiki.warframe.com/w/Lato

@@ -47,8 +47,49 @@ carries that name.
 | **Braton Genesis** | `braton`, `mk1_braton`, `braton_vandal`, `braton_prime` (+ `_incarnon`) — 2026-08-08 |
 | **Latron Genesis** | `latron`, `latron_wraith`, `latron_prime` (+ `_incarnon`) — 2026-08-08 |
 | **Boltor Genesis** | `boltor`, `telos_boltor`, `boltor_prime` (+ `_incarnon`) — 2026-08-08 |
+| **Sybaris Genesis** | `sybaris`, `dex_sybaris`, `sybaris_prime` — BULK, 2026-08-08 |
+| **Dera Genesis** | `dera`, `dera_vandal` — BULK, 2026-08-08 |
+| **Lato Genesis** | `lato`, `lato_vandal`, `lato_prime` — BULK, 2026-08-08 |
+| **Lex Genesis** | `lex`, `lex_prime` — BULK, 2026-08-08 |
 
-Remaining: **23 adapters (46 weapons) + 2 naturals**.
+Remaining: **19 adapters (36 weapons) + 2 naturals**.
+
+## BULK vs HAND — what "rough" means, precisely
+
+Owner, 2026-08-08: "我想先一口气把那个列表里的武器都加进去，灵化部分可以粗略，然后
+我一把枪一把枪地核实." So from the Sybaris onward the intake runs a pipeline, and
+the two halves of a weapon are held to different standards ON PURPOSE:
+
+| | source | standard |
+| --- | --- | --- |
+| **stats** (both forms, damage, crit, status, rate, magazine, reload, gauge) | WFCD `attacks` = DE's own export | EXACT. On all eleven hand-checked guns it agreed with the wiki infobox field for field. |
+| **evolutions** | the wiki's evolution table, transcribed | ROUGH. A clause the intake's rule engine recognises becomes a real effect; one it does not becomes a kind NAMED `unmodelled_<its own words>`. |
+
+**"Rough" never means silent.** An `unmodelled_*` kind loads as
+`EvoEffect::Inert`, and since 2026-08-08 BOTH the builder tile and the optimizer
+row print it as "not modelled yet" / "partly modelled" with the clause in the
+tooltip. A perk that does nothing says so where you pick it.
+
+**What the rule engine reads today**: base damage, base crit chance, base crit
+multiplier, base status chance, base magazine, ammo capacity, fire rate, reload
+speed, projectile speed, accuracy, recoil, headshot damage, zoom, punch-through,
+Incarnon charge rate, and the non-crit damage chance. Everything else — every
+CONDITIONAL clause especially — is inert by construction: a conditional is never
+mined for its numbers, because reading "On Kill: +30 damage" as an unconditional
++30 is the one failure mode worse than not parsing at all.
+
+**Still pending on a bulk weapon, and worth knowing before trusting one:**
+
+- **zh perk names and card text.** The weapon names come from DE's export; the
+  EVOLUTION strings need the CN wiki one adapter at a time, and the bulk pass
+  does not do it. A Chinese session shows English perk names on a bulk weapon
+  until its family is transcribed.
+- **CO catalog rows.** The intake assumes no row (the ordinary class). Two
+  families in the roster have one — Burston and Braton, both for their Incarnon
+  RADIAL — so a bulk weapon with an explosion should be checked against the
+  catalog during the per-gun pass.
+- **anything the wiki says in prose rather than in the table**: innate multishot
+  on a form, guaranteed procs, ricochet counts, per-form status splits.
 
 **Eleven weapons in one night**, which is the number to plan the rest against:
 one natural and three adapters, 22 weapon entries and 112 evolution files, and

@@ -1,0 +1,18 @@
+id: dera_evo1_incarnon_form
+name: Incarnon Form
+weapon: dera
+tier: 1
+description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Fires lasers inflicting Magnetic damage with 3 Punch Through."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: fixed
+
+effects:
+  # LOADED as `EvoEffect::UnlocksForm(weapon)` — the form's stats are the
+  # dera_incarnon entry's own, not perk payload.
+  - kind: unlocks_weapon
+    weapon: dera_incarnon
+
+source:
+  url: https://wiki.warframe.com/w/Dera_Incarnon_Genesis

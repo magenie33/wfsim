@@ -83,6 +83,26 @@ weapons:
   boltor_prime_incarnon: 螺钉步枪 Prime (灵化形态)
   telos_boltor: 终极·螺钉步枪
   telos_boltor_incarnon: 终极·螺钉步枪 (灵化形态)
+  dera: 德拉
+  dera_incarnon: 德拉 (灵化形态)
+  dera_vandal: 德拉·破坏者
+  dera_vandal_incarnon: 德拉·破坏者 (灵化形态)
+  dex_sybaris: Dex 席芭莉丝
+  dex_sybaris_incarnon: Dex 席芭莉丝 (灵化形态)
+  lato: 拉托
+  lato_incarnon: 拉托 (灵化形态)
+  lato_prime: 拉托 Prime
+  lato_prime_incarnon: 拉托 Prime (灵化形态)
+  lato_vandal: 拉托·破坏者
+  lato_vandal_incarnon: 拉托·破坏者 (灵化形态)
+  lex: 雷克斯
+  lex_incarnon: 雷克斯 (灵化形态)
+  lex_prime: 雷克斯 Prime
+  lex_prime_incarnon: 雷克斯 Prime (灵化形态)
+  sybaris: 席芭莉丝
+  sybaris_incarnon: 席芭莉丝 (灵化形态)
+  sybaris_prime: 席芭莉丝 Prime
+  sybaris_prime_incarnon: 席芭莉丝 Prime (灵化形态)
 
 enemies:
   thrax_centurion: 凶魂百夫长
