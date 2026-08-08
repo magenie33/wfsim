@@ -504,6 +504,18 @@ entries:
     arcanes: [primary_overcharge]
   - weapon: cestra
     mode: cycle
+    score: 22.15938525314763
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, deep_freeze, pistol_pestilence, primed_heated_charge]
+    evolutions: [cestra_evo1_incarnon_form, cestra_fortress_salvo, cestra_rapid_reinforcement, cestra_deathtrap_trigger]
+    arcanes: [secondary_deadhead]
+  - weapon: cestra
+    mode: cycle
+    score: 16.51780347469324
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
+    evolutions: [cestra_evo1_incarnon_form, cestra_fortress_salvo, cestra_rapid_reinforcement, cestra_deathtrap_trigger]
+    arcanes: [secondary_deadhead]
+  - weapon: cestra
+    mode: cycle
     score: 13.612240090613376
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [cestra_evo1_incarnon_form, cestra_fortress_salvo, cestra_rapid_reinforcement, cestra_deathtrap_trigger]
