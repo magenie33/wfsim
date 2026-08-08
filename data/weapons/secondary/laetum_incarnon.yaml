@@ -42,7 +42,6 @@ incarnon:
   # has its own 1.0 s base, and both directions scale with reload speed).
   # Applying it to every weapon is the assumption, and it is deliberately
   # uniform - no weapon is special-cased until one is measured.
-  transmute_out_seconds: 1.0
 
 # SIM CONVENIENCE: with the gauge LOCKED full the Incarnon cycle reduces to
 # a magazine/reload model the plain sim consumes directly.

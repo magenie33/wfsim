@@ -320,9 +320,27 @@ pub struct RicochetSpec {
 #[derive(Debug, Clone, Deserialize)]
 pub struct IncarnonSpec {
     pub gauge: GaugeSpec,
-    /// Transition animations, unmodded; both scale by the reload formula.
+    /// The transition INTO the form, unmodded. Per weapon: it is that
+    /// weapon's reload time, which the page states outright ("an animation
+    /// equal to the weapon's reload speed"). Scales by the reload formula.
     pub transmute_in_seconds: f64,
+    /// The transition OUT, unmodded — and this one is OUR STANDARD rather
+    /// than anyone's published number.
+    ///
+    /// One second, measured once on the Dual Toxocyst (MEASUREMENTS M9) and
+    /// applied to every form since. DE publishes nothing for it and no second
+    /// weapon has been measured, so restating it in sixty-nine weapon files
+    /// dressed a house convention as sixty-nine facts. It lives here, once,
+    /// and a weapon that is ever measured to differ says so by writing the
+    /// field (owner, 2026-08-08: "要标准不是官方数据").
+    #[serde(default = "standard_transmute_out")]
     pub transmute_out_seconds: f64,
+}
+
+/// See [`IncarnonSpec::transmute_out_seconds`]. Changing this changes every
+/// Incarnon cycle in the roster, which is the point of it being one number.
+fn standard_transmute_out() -> f64 {
+    1.0
 }
 
 #[derive(Debug, Clone, Deserialize)]

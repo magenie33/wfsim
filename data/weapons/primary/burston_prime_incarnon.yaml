@@ -71,9 +71,6 @@ incarnon:
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
   transmute_in_seconds: 2.0      # = the base form's reload time, unmodded
-  # 1 s is MEASURED on Dual Toxocyst (MEASUREMENTS M9) and applied uniformly
-  # until some weapon is measured to differ.
-  transmute_out_seconds: 1.0
 
 # SIM CONVENIENCE: with the gauge LOCKED full, the cycle reduces to a
 # magazine/reload model — 600 rounds, then 2.0 + 1.0 s of transitions.

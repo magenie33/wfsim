@@ -50,7 +50,6 @@ incarnon:
   #                   -30% reload speed; the formula strictly implies
   #                   0.91 s; precise re-measurement deferred)
   transmute_in_seconds: 2.35     # = base reload time, unmodded
-  transmute_out_seconds: 1.0     # estimate, unmodded
 
 # SIM CONVENIENCE (user, 2026-07-24): with the gauge LOCKED full (analogous
 # to buff locks), the Incarnon combat cycle reduces to a standard

@@ -910,6 +910,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         // 0 = ONE PER SHELL. `resolve` reads the modded
                         // magazine and turns it into a number.
                         stacks_per_trigger: 0,
+                        cleared_by: crate::loadout::ClearedBy::EmptyMagazine,
                     });
                 }
                 EvoEffect::FlatBaseStatusChance(v) => {
@@ -1000,6 +1001,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         chance: 1.0,
                         initial_stacks: 0,
                         stacks_per_trigger: 1,
+                        cleared_by: crate::loadout::ClearedBy::Nothing,
                     });
                 }
                 EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance } => {
@@ -1018,6 +1020,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         // EARNED from zero, like every other timed buff.
                         initial_stacks: 0,
                         stacks_per_trigger: 1,
+                        cleared_by: crate::loadout::ClearedBy::Nothing,
                     });
                 }
                 EvoEffect::PostModCritChance(v) => base.post_mod_crit_chance += v,
@@ -1051,6 +1054,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         // has to fill it again (docs/BUFFS.md).
                         initial_stacks: 0,
                         stacks_per_trigger: 1,
+                        cleared_by: crate::loadout::ClearedBy::Nothing,
                     });
                 }
                 EvoEffect::StackingReloadSpeedOnHeadshot {
@@ -1071,6 +1075,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         // EARNED from zero, like every other timed buff.
                         initial_stacks: 0,
                         stacks_per_trigger: 1,
+                        cleared_by: crate::loadout::ClearedBy::Nothing,
                     });
                 }
                 EvoEffect::Inert(_) | EvoEffect::Qualifier(_) => {}

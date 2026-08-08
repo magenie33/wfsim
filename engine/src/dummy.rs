@@ -4007,6 +4007,14 @@ pub fn run_once_traced(
                 if !params.infinite_reserve && reserve < 1e-9 {
                     break;
                 }
+                // THE SAME CLEAR as the plain path below: an empty magazine
+                // takes the pile whichever branch notices it, and a CYCLE
+                // reloads the base form here.
+                for (i, b) in params.stacking_buffs.iter().enumerate() {
+                    if b.cleared_by == crate::loadout::ClearedBy::EmptyMagazine {
+                        buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
+                    }
+                }
                 let rs = live_reload_speed(params, &mut buff_stacks, t);
                 t += live_reload_time(&cy.base_form, params, &mut arc, rs, t);
                 r.reloads += 1;
@@ -4026,6 +4034,17 @@ pub fn run_once_traced(
                 continue;
             }
         } else if !can_fire(magazine, next_cost) {
+            // AN EMPTY MAGAZINE TAKES THE WHOLE PILE, before the reload that
+            // rebuilds it. Mounting Momentum is cleared the instant the count
+            // reaches zero — not by the reload, and not by a clock — so firing
+            // a magazine dry earns one magazine's worth and never more. The
+            // 99-stack cap belongs to a player who tops up a magazine that
+            // never empties, which is not what this loop does.
+            for (i, b) in params.stacking_buffs.iter().enumerate() {
+                if b.cleared_by == crate::loadout::ClearedBy::EmptyMagazine {
+                    buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
+                }
+            }
             // Cannot fire: reload (blocking) or, with dry finite reserves,
             // stop firing altogether (DoTs still drain below).
             if !params.infinite_reserve && reserve < 1e-9 {
@@ -8132,6 +8151,7 @@ mod tests {
                     // Earn them in the run — that is what is under test.
                     initial_stacks: 0,
                     stacks_per_trigger: 1,
+                    cleared_by: crate::loadout::ClearedBy::Nothing,
                 }],
                 // Never crits, never procs: every instance is "plain", so
                 // the only variable is HOW MANY instances a shot produces.
@@ -8207,6 +8227,7 @@ mod tests {
                 duration: 10.0,
                 initial_stacks: 0,
                 stacks_per_trigger: 1,
+                cleared_by: crate::loadout::ClearedBy::Nothing,
             }, crate::loadout::StackingBuff {
                 id: "on_headshot_reload_speed",
                 trigger: crate::loadout::BuffTrigger::Headshot,
@@ -8218,6 +8239,7 @@ mod tests {
                 duration: 6.0,
                 initial_stacks: 0,
                 stacks_per_trigger: 1,
+                cleared_by: crate::loadout::ClearedBy::Nothing,
             }],
             cc_on_headshot: Some(timed(0.5)),
             cd_on_kill: Some(timed(0.6)),
@@ -8274,6 +8296,7 @@ mod tests {
                     duration: if locked { crate::loadout::NO_TIMEOUT } else { 10.0 },
                     initial_stacks: initial,
                     stacks_per_trigger: 1,
+                    cleared_by: crate::loadout::ClearedBy::Nothing,
                 }],
                 fire_rate,
                 duration_secs: secs,
@@ -11109,6 +11132,7 @@ mod replay_reads_every_buff_tests {
             duration: 10.0,
             initial_stacks: 0,
             stacks_per_trigger: 1,
+            cleared_by: crate::loadout::ClearedBy::Nothing,
         };
         let mut params = DummyParams {
             co_stack: Some(stack(0.2)),

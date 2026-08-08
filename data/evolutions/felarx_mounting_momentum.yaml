@@ -14,8 +14,14 @@ effects:
   # DE's card says "Resets on reload" and its own notes say holstering resets
   # them while RELOADING BUILDS them, with a worked example (+4 stacks for four
   # spent shells). The notes win: they describe a counter you can only build by
-  # reloading, which the card's reading would make unbuildable. Confirmed by
-  # the owner, 2026-08-08.
+  # reloading, which the card's reading would make unbuildable.
+  #
+  # WHAT ENDS IT is an EMPTY MAGAZINE, immediately — not the reload that follows
+  # (owner, 2026-08-08: "不可能 0/13，这时候会立刻清除增益（而不是换弹）"). That
+  # is what the perk IS: firing a magazine dry and reloading it earns one
+  # magazine's worth and loses it again on the last shot, so the 99-stack cap
+  # belongs to a player who tops up a magazine that never empties. This sim
+  # fires dry, so it earns a magazine's worth.
   #
   # The count is one per SHELL, so it follows the magazine — and a magazine mod
   # therefore buys stacks and pays for them in the by-round reload it lengthens
@@ -23,12 +29,16 @@ effects:
   - kind: stacking_fire_rate_per_shell_reloaded
     per_stack: 0.10
     max_stacks: 99
-  # NOT MODELLED — the INCARNON route to stacks. Activating the form grants 1,
-  # and deactivating grants one per shell that was missing when it was
-  # activated, on top of a free magazine refill. Played to the edge that is
-  # 2 x magazine - 1 stacks in a single cycle (owner, 2026-08-08) against the
-  # magazine's worth an ordinary reload gives. This sim transmutes on a gauge,
-  # not on a plan, so it earns the reload route only.
+  # NOT MODELLED — THE INCARNON ROUTE, spelled out by the owner (2026-08-08).
+  # A cycle grants exactly the shells that were MISSING when the form was
+  # entered, split 1 on the way in and the rest on the way out: enter a 13-round
+  # magazine at 10/13 and it is +1 then +2. Enter it FULL and it is nothing at
+  # all — the +1 is the first of the missing, not a fee for transforming. And
+  # the magazine comes back full without a reload, which is what makes the route
+  # worth taking: it is the only way to gain stacks without ever emptying.
+  #
+  # This sim transmutes on a gauge rather than on a plan, so it earns the reload
+  # route only.
   - kind: unmodelled_incarnon_form_grants_stacks_on_entry_and_exit
 
 source:

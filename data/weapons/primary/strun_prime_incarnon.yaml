@@ -31,7 +31,6 @@ incarnon:
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
   transmute_in_seconds: 4.6      # = base reload time, unmodded
-  transmute_out_seconds: 1.0     # MEASURED on Dual Toxocyst (M9)
 
 pseudo_reload:
   magazine: 40

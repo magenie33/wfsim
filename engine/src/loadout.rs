@@ -1075,6 +1075,26 @@ pub struct StackingBuff {
     /// is also what makes the trade-off real — a magazine mod buys stacks and
     /// pays for them in reload time (`by_round_reload`).
     pub stacks_per_trigger: u32,
+    /// AN EVENT THAT TAKES THE WHOLE PILE, for a buff that has no clock.
+    ///
+    /// Mounting Momentum is cleared the instant the magazine reaches zero —
+    /// not when the reload finishes, and not on a timer (owner, 2026-08-08:
+    /// "不可能 0/13，这时候会立刻清除增益（而不是换弹）"). It changes what the
+    /// perk IS: firing a magazine dry and reloading it earns one magazine's
+    /// worth and no more, and the only way to the 99-stack cap is to keep
+    /// topping up a magazine that never empties.
+    pub cleared_by: ClearedBy,
+}
+
+/// See [`StackingBuff::cleared_by`]. A buff with a duration needs none of
+/// this — its clock is what ends it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ClearedBy {
+    /// Only its own clock, which is every buff written before this one.
+    #[default]
+    Nothing,
+    /// The magazine reaching zero.
+    EmptyMagazine,
 }
 
 /// What happens when a second field lands on a target that already has one.
@@ -2178,17 +2198,14 @@ pub fn resolve_for(
                 } else {
                     b.stacks_per_trigger
                 },
-                // …AND IT OPENS THERE. A per-shell counter that starts at zero
-                // describes a fight begun on a weapon just holstered, which is
-                // not the fight anyone measures: you arrive having reloaded.
-                // So the default opening state is one reload's worth, and the
-                // buff card overrides it like any other (owner, 2026-08-08:
-                // "初始就是根据 shell 的层数有这个 buff").
-                initial_stacks: if b.stacks_per_trigger == 0 {
-                    (mag_size.max(1.0) as u32).min(b.max_stacks)
-                } else {
-                    b.initial_stacks
-                },
+                // NO OPENING STACKS. It briefly seeded one reload's worth,
+                // which was wrong for the same reason Secondary Enervate opens
+                // at zero: this is a pile you can be caught without, and the
+                // fight is what earns it. An empty magazine takes the whole
+                // thing, so "how many you walk in with" is not a state the
+                // weapon has — it is a state the last few seconds decided
+                // (owner, 2026-08-08: "还是不用给初始层").
+                initial_stacks: b.initial_stacks,
                 ..*b
             })
             .collect(),
@@ -2807,10 +2824,12 @@ mod tests {
             .find(|b| b.id == "per_shell_fire_rate")
             .expect("the perk grants a buff");
         assert_eq!(b.trigger, BuffTrigger::ReloadComplete);
-        // Six shells: six stacks a reload, and six on the clock at t = 0.
+        // Six shells: six stacks a reload, and NOTHING at t = 0 — the pile
+        // is earned, and an empty magazine takes all of it.
         assert_eq!(b.stacks_per_trigger, 6, "one per shell in the magazine");
-        assert_eq!(b.initial_stacks, 6, "it opens at one reload's worth");
-        assert!(b.duration.is_infinite(), "nothing decays it: {}", b.duration);
+        assert_eq!(b.initial_stacks, 0, "it is earned, not granted");
+        assert!(b.duration.is_infinite(), "no clock ends it");
+        assert_eq!(b.cleared_by, ClearedBy::EmptyMagazine, "an empty magazine does");
 
         // …and it FOLLOWS the magazine, which is the whole trade.
         let mag_mod = crate::mods_data::class_pool("shotgun")
@@ -2831,6 +2850,46 @@ mod tests {
             bigger.reload_seconds > plain.reload_seconds,
             "and the reload pays for them"
         );
+    }
+
+    /// FIRING A MAGAZINE DRY EARNS ONE MAGAZINE'S WORTH, AND NEVER MORE.
+    ///
+    /// This test asserted the opposite for an hour — a ramp to the 99-stack
+    /// cap — because the buff was first implemented as "a reload grants stacks
+    /// and nothing takes them". The mechanic is stricter: the pile is cleared
+    /// the INSTANT the magazine reaches zero, not by the reload and not by a
+    /// clock (owner, 2026-08-08). So the loop this sim runs — fire dry,
+    /// reload, fire dry — holds a magazine's worth through each magazine and
+    /// loses every stack on its last shot.
+    ///
+    /// The 99 cap therefore belongs to a play pattern this sim does not have:
+    /// topping up a magazine that never empties. Asserted as a SHAPE so it
+    /// cannot drift back — a longer fight must not pay more, which is what a
+    /// buff reset every magazine looks like from outside.
+    #[test]
+    fn mounting_momentum_is_reset_by_an_empty_magazine_so_it_does_not_ramp() {
+        let evo = ["felarx_mounting_momentum".to_string()];
+        let ids: Vec<&str> = evo.iter().map(|s| s.as_str()).collect();
+        let base = WeaponBase::from_data("felarx", true, &ids);
+        let panel = resolve(&base, &[], StackPolicy::AssumedMax);
+        let dps = |secs: f64| {
+            let arena = crate::arena::Arena::training(secs);
+            let p = crate::dummy::DummyParams::from_panel(&panel, &arena);
+            let mut rng = crate::rng::Rng::new(7);
+            crate::dummy::run_once(&p, &mut rng).total_damage / secs
+        };
+        let (d30, d300, d600) = (dps(30.0), dps(300.0), dps(600.0));
+        // PAST THE FIRST MAGAZINE the rate is flat: every magazine after it
+        // earns the same stacks and loses them the same way. A buff that
+        // accumulated would still be climbing at ten minutes.
+        assert!(
+            (d600 - d300).abs() < d300 * 0.03,
+            "a magazine-reset buff pays the same however long the fight:              {d300:.0} vs {d600:.0} dps"
+        );
+        // …and the FIRST magazine is cheaper, because there is nothing to
+        // spend yet. That is the honest cost of a buff you have to earn, and
+        // it is also the proof the stacks are not being seeded.
+        assert!(d30 < d300 * 0.95, "the opening magazine is unbuffed: {d30:.0} vs {d300:.0}");
     }
 
 }
