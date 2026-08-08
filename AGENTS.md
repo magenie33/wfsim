@@ -184,11 +184,15 @@ around (decision 2026-07-31).
   `node scripts/check_riven_pool.mjs` is the SEVENTEENTH: the riven editor
   offers the stats that weapon's rivens actually roll, in BOTH slots. What a
   riven can roll is DE's per-weapon table, published nowhere, and the wiki's
-  25%-of-a-physical-type rule disclaims itself — a count over ~12 000 live cards
-  found the derivation wrong in both directions on six of 26 families, so the
-  engine reads a real card first (`data/rivens/observed.yaml`), the survey
-  second (`data/rivens/pools.yaml`, from `scripts/survey_riven_pools.py`) and
-  its own rules last (MEASUREMENTS M35). It walks the NEGATIVE slot too, because
+  25%-of-a-physical-type rule disclaims itself. THE RULES DECIDE AND THE SURVEY
+  CHECKS (owner, 2026-08-08: "紫卡不应该是按照规则自动生成的吗？抓取只是来当验证
+  才对"): `rivens_data::derived_for` is the model, `data/rivens/exceptions.yaml`
+  overrides it per riven FAMILY with the evidence written into each entry, and
+  `data/rivens/pools.yaml` (from `scripts/survey_riven_pools.py`) is read by a
+  TEST and by nothing else. It was the other way round for a day and a re-run of
+  the scrape came back "nothing rolls anything" for all 26 families, wrote itself
+  to disk, and was caught by two unrelated tests — see DATA_SOURCES §"Riven
+  pools" (MEASUREMENTS M35). It walks the NEGATIVE slot too, because
   that is where the report came from — a player's Furis riven carries Projectile
   Speed and the editor would not offer it (owner, 2026-08-08).
   `node scripts/check_enemies.mjs` is the ELEVENTH: every

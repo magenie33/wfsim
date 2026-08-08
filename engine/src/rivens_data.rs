@@ -262,12 +262,16 @@ struct PoolFile {
 /// and rolls all three physical stats, while the Phenmor is 30% Puncture and
 /// rolls none of it. So:
 ///
-/// 1. `data/rivens/observed.yaml` — someone has the card. Hand-written.
-/// 2. `data/rivens/pools.yaml` — a COUNT over live listings per riven family,
-///    written by `scripts/survey_riven_pools.py`. Three-way: rollable, never,
-///    or unclear, and unclear falls through to the rules below.
-/// 3. the rules below, which read facts the weapon already states, so a new
-///    weapon arrives approximately right before anyone surveys it.
+/// 1. THE RULES BELOW, which read facts the weapon already states, so a new
+///    weapon arrives approximately right before anybody looks at a card.
+/// 2. `data/rivens/exceptions.yaml` — hand-written, per riven FAMILY, every
+///    entry naming what was looked at. The wiki's own "exceptions exist on a
+///    case by case basis", as data.
+///
+/// `data/rivens/pools.yaml` is NOT in that list. It is a count over live
+/// listings and it is EVIDENCE — read by `the_survey_still_agrees_with_the_
+/// rules` and by nothing in the calculation (owner, 2026-08-08: "抓取只是来当
+/// 验证才对").
 ///
 /// 1. **Physical damage** — wiki (`Riven_Mods`, attributes-table legend),
 ///    verbatim: *"Weapons without more than 25% of a physical damage type
@@ -294,10 +298,10 @@ struct PoolFile {
 /// 4 and 0 Projectile Speed listings out of 500. Counting those forms would
 /// have offered a stat no card in the sample carries.
 ///
-/// The MIRROR of that is why `observed.yaml` sits above all of it: the Furis
-/// is hit-scan in both forms and a player's card carries Projectile Speed
-/// anyway (owner, 2026-08-08).
-pub fn excluded_for(weapon_id: &str) -> Vec<&'static str> {
+/// The MIRROR of that is why the exception list exists at all: the Furis is
+/// hit-scan in both forms and a player's card carries Projectile Speed anyway
+/// (owner, 2026-08-08).
+pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
     // `s` is the entry the caller named — what the rules that read the WEAPON
     // (its ammo pool, its class) go to. `forms` is what the rules that read a
     // SHOT go to, and there can be more than one of those.
@@ -354,20 +358,39 @@ pub fn excluded_for(weapon_id: &str) -> Vec<&'static str> {
         out.push("projectile_speed");
     }
 
-    // …and now the two DATA sources, which outrank everything above. The
-    // survey speaks per riven FAMILY, because that is the unit DE rolls: one
-    // Boar riven fits the Boar and the Boar Prime, so one pool covers both.
+    out
+}
+
+/// What this weapon's rivens can NOT roll: the derivation, with the
+/// hand-written per-family EXCEPTIONS applied over it.
+///
+/// TWO LAYERS AND NOT THREE, and which two is the point (owner, 2026-08-08:
+/// "紫卡不应该是按照规则自动生成的吗？抓取只是来当验证才对"). The rules
+/// generate the pool; `data/rivens/exceptions.yaml` overrides them where
+/// somebody has looked; the SURVEY is neither of those and no longer appears
+/// here at all.
+///
+/// It used to. `pools.yaml` outranked the derivation, which made a scrape a
+/// silent authority over 26 weapon families — and a re-run of it came back
+/// "nothing rolls anything" for every one of them. Nothing in the pipeline
+/// would have caught that: the file parsed, the pools emptied, and the two
+/// tests that failed were both about something else. Evidence belongs in a
+/// check (`the_survey_still_agrees_with_the_rules`), where a broken scrape is
+/// loud.
+///
+/// The exception list speaks per riven FAMILY, because that is the unit DE
+/// rolls: one Boar riven fits the Boar and the Boar Prime, so one entry covers
+/// both.
+pub fn excluded_for(weapon_id: &str) -> Vec<&'static str> {
+    let Some(s) = crate::weapons_data::spec(weapon_id) else { return Vec::new() };
+    let mut out = derived_for(weapon_id);
     let Some(fam) = s.riven_family.as_deref() else { return out };
-    if let Some(sv) = survey(fam) {
-        out.retain(|id| !sv.rollable.iter().any(|r| r == id));
-        for id in &sv.never {
-            if !out.contains(id) {
-                out.push(id);
-            }
+    let ex = exceptions(fam);
+    out.retain(|id| !ex.rolls.contains(id));
+    for id in &ex.never {
+        if !out.contains(id) {
+            out.push(*id);
         }
-    }
-    for id in observed(fam) {
-        out.retain(|x| *x != id);
     }
     out
 }
@@ -398,16 +421,34 @@ struct RawSurvey {
     never: Vec<String>,
 }
 
-#[derive(Deserialize)]
-struct ObservedFile {
-    seen: Vec<ObservedCard>,
+/// One family's hand-written exceptions to the derivation.
+#[derive(Default)]
+pub struct Exceptions {
+    /// The rules refuse it and it is real.
+    pub rolls: Vec<&'static str>,
+    /// The rules allow it and it is not.
+    pub never: Vec<&'static str>,
 }
 
 #[derive(Deserialize)]
-struct ObservedCard {
+struct ExceptionsFile {
+    families: Vec<RawExceptions>,
+}
+
+#[derive(Deserialize)]
+struct RawExceptions {
     family: String,
+    #[serde(default)]
+    rolls: Vec<ExceptionStat>,
+    #[serde(default)]
+    never: Vec<ExceptionStat>,
+}
+
+#[derive(Deserialize)]
+struct ExceptionStat {
     stat: String,
-    /// Who saw the card, and when. REQUIRED — the note IS the evidence.
+    /// What was looked at. REQUIRED — the note IS the evidence, and serde
+    /// refuses the entry without one.
     #[allow(dead_code)]
     note: String,
 }
@@ -434,22 +475,36 @@ pub fn surveys() -> &'static [SurveyedPool] {
     })
 }
 
-fn survey(family: &str) -> Option<&'static SurveyedPool> {
+/// One family's surveyed pool. VERIFICATION ONLY — nothing in the calculation
+/// reads this; `the_survey_still_agrees_with_the_rules` does.
+pub fn survey(family: &str) -> Option<&'static SurveyedPool> {
     surveys().iter().find(|s| s.family == family)
 }
 
-/// Stats a real card is known to carry — `data/rivens/observed.yaml`.
-pub fn observed(family: &str) -> Vec<&'static str> {
-    static S: OnceLock<Vec<(String, &'static str)>> = OnceLock::new();
+/// One family's exceptions — `data/rivens/exceptions.yaml`.
+pub fn exceptions(family: &str) -> &'static Exceptions {
+    static S: OnceLock<std::collections::BTreeMap<String, Exceptions>> = OnceLock::new();
+    static EMPTY: OnceLock<Exceptions> = OnceLock::new();
     let all = S.get_or_init(|| {
         crate::data::files_under("rivens/")
-            .filter(|(p, _)| *p == "rivens/observed.yaml")
-            .filter_map(|(_, t)| serde_norway::from_str::<ObservedFile>(t).ok())
-            .flat_map(|f| f.seen)
-            .map(|c| (c.family, leak(c.stat)))
+            .filter(|(p, _)| *p == "rivens/exceptions.yaml")
+            .map(|(p, t)| {
+                serde_norway::from_str::<ExceptionsFile>(t)
+                    .unwrap_or_else(|e| panic!("{p}: {e}"))
+            })
+            .flat_map(|f| f.families)
+            .map(|r| {
+                (
+                    r.family,
+                    Exceptions {
+                        rolls: r.rolls.into_iter().map(|s| leak(s.stat)).collect(),
+                        never: r.never.into_iter().map(|s| leak(s.stat)).collect(),
+                    },
+                )
+            })
             .collect()
     });
-    all.iter().filter(|(f, _)| f == family).map(|(_, s)| *s).collect()
+    all.get(family).unwrap_or_else(|| EMPTY.get_or_init(Exceptions::default))
 }
 
 /// The stat pool of one mod class — `data/rivens/<class>.yaml`.
@@ -1106,50 +1161,107 @@ mod tests {
         }
     }
 
-    /// The three sources rank, and each one is visible in the answer.
+    /// AN EXCEPTION OVERRIDES THE RULES, and only an exception does.
     ///
-    /// This is the survey's whole point: what a weapon can roll is DE's table,
-    /// it is published nowhere, and the derivation gets it wrong in BOTH
-    /// directions on the same roster. Every case below is a family where the
-    /// rules alone would have answered differently.
+    /// The survey used to sit in this path and does not any more (owner,
+    /// 2026-08-08: "紫卡不应该是按照规则自动生成的吗？抓取只是来当验证才对").
+    /// What survived the move is every answer it was giving — because each one
+    /// became an entry in `exceptions.yaml` carrying the count it came from —
+    /// so this asserts the ANSWERS, which is what a player sees, rather than
+    /// which file produced them.
     #[test]
-    fn a_surveyed_pool_outranks_the_derivation_and_a_real_card_outranks_both() {
-        // 1. A CARD. The Furis is hit-scan in both forms, so the rules refuse
-        //    Projectile Speed and the survey's 13-of-500 is inside the unclear
-        //    band — but a player has the card (owner, 2026-08-08).
+    fn an_exception_overrides_the_derivation_and_nothing_else_does() {
+        // 1. A REAL CARD. The Furis is hit-scan in both forms, so the rules
+        //    refuse Projectile Speed; a player has the card.
         let f = excluded_for("furis");
         assert!(!f.contains(&"projectile_speed"), "a real Furis card carries it: {f:?}");
-        assert_eq!(observed("Furis"), vec!["projectile_speed"]);
         // The MK1 is the same riven, because it is the same family.
         assert!(!excluded_for("mk1_furis").contains(&"projectile_speed"));
 
-        // 2. THE SURVEY, adding what the rules refused. The Ocucor is 9%
-        //    Puncture and 91% Radiation — the 25% rule strikes all three
-        //    physical stats, and all three roll on real cards.
+        // 2. ADDING what the rules refused. The Ocucor is 9% Puncture and 91%
+        //    Radiation — the 25% rule strikes all three physical stats, and all
+        //    three roll on real cards.
         let o = excluded_for("ocucor");
         for id in ["impact", "puncture", "slash", "projectile_speed"] {
             assert!(!o.contains(&id), "the Ocucor rolls {id}: {o:?}");
         }
-        // …and taking away what they allowed. The Phenmor is 30% Puncture,
-        // over the line, and 0 of 500 cards carry it.
+        // …and TAKING AWAY what they allowed. The Phenmor is 30% Puncture, over
+        // the line, and no live listing carries it.
         assert!(excluded_for("phenmor").contains(&"puncture"));
         // Zoom is not derived at all — nothing in the weapon data says a Boar
-        // has no scope, and 1 of 500 cards says it.
+        // has no scope, so only an exception can say it.
         assert!(excluded_for("boar").contains(&"zoom"));
-        // A share that lands EXACTLY on 25% is decided by neither of us:
-        // Karak Wraith's Slash is 7.75 of 31, the rule reads "more than 25%"
-        // and refuses it, and 45 of 424 cards carry it.
+        // A share landing EXACTLY on 25% is decided by neither of us: Karak
+        // Wraith's Slash is 7.75 of 31 and the rule reads "more than 25%".
         assert!(!excluded_for("karak_wraith").contains(&"slash"));
 
-        // 3. THE DERIVATION still answers for anything unsurveyed — a weapon
-        //    added tomorrow is approximately right before anyone counts cards.
+        // 3. THE DERIVATION answers for everything unexcepted — 15 of the 26
+        //    families have no entry at all, and a weapon added tomorrow is
+        //    approximately right before anyone looks at a card.
         let v = excluded_for("verglas_prime");
-        assert!(v.contains(&"zoom") && v.contains(&"ammo_maximum"), "{v:?}");
-        assert!(surveys().iter().all(|s| s.family != "Verglas"), "not surveyed");
+        assert!(v.contains(&"zoom") && v.contains(&"impact"));
+        assert!(exceptions("Verglas").rolls.is_empty() && exceptions("Verglas").never.is_empty());
+    }
 
-        // Every survey states its sample size, because a count is not a proof.
-        assert!(surveys().iter().all(|s| s.n > 100), "a thin sample proves nothing");
-        assert!(surveys().len() > 20, "{} families surveyed", surveys().len());
+    /// THE SURVEY IS A CHECK, NOT A SOURCE — this is the check.
+    ///
+    /// It exists because the opposite arrangement failed silently. `pools.yaml`
+    /// used to outrank the derivation, so a re-run of the scrape that came back
+    /// "nothing rolls anything" for all 26 families would have emptied every
+    /// pool in the app, and the only thing that noticed was two tests about
+    /// something else (2026-08-08).
+    ///
+    /// Now a disagreement is a FAILURE that names the family and the stat, and
+    /// the fix is a human one: promote it into `exceptions.yaml` with its count,
+    /// or fix the rule. A broken scrape fails this immediately and loudly,
+    /// because a broken scrape disagrees with everything at once.
+    #[test]
+    fn the_survey_still_agrees_with_the_rules() {
+        let mut checked = 0;
+        let mut bad: Vec<String> = Vec::new();
+        for w in crate::weapons_data::all() {
+            let Some(fam) = w.riven_family.as_deref() else { continue };
+            let Some(sv) = survey(fam) else { continue };
+            let ours = excluded_for(&w.id);
+            checked += 1;
+            for r in &sv.rollable {
+                if ours.contains(r) {
+                    bad.push(format!("{fam}/{r}: {} listings carry it, we refuse it", sv.n));
+                }
+            }
+            for n in &sv.never {
+                if !ours.contains(n) {
+                    bad.push(format!("{fam}/{n}: no listing carries it, we offer it"));
+                }
+            }
+        }
+        assert!(checked > 0, "no surveyed family was reached");
+        assert!(
+            bad.is_empty(),
+            "the survey and the rules disagree — promote each into \
+             data/rivens/exceptions.yaml with its count, or fix the rule:\n  {}",
+            bad.join("\n  ")
+        );
+    }
+
+    /// A SURVEY THAT SAYS NOTHING ROLLS ANYTHING IS A BROKEN SCRAPE.
+    ///
+    /// The literal failure of 2026-08-08: the per-stat queries started coming
+    /// back empty, so every family was written with an empty `rollable` and a
+    /// `never` listing the entire stat table. That is not a discovery about
+    /// Warframe, it is a discovery about the endpoint — and it has to be named
+    /// as one before anybody reads the numbers.
+    #[test]
+    fn a_survey_that_refuses_everything_is_a_broken_scrape() {
+        for s in surveys() {
+            assert!(
+                !s.rollable.is_empty(),
+                "{}: the survey says nothing rolls — that is the scrape failing, \
+                 not the game (n={})",
+                s.family,
+                s.n
+            );
+        }
     }
 
     /// Faction damage prints as a MULTIPLIER, because that is what the card

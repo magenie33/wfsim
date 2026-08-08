@@ -6968,18 +6968,30 @@ function wfRunning() {
   return new Set([...best.values()].map((a) => a.id));
 }
 
-// What one buff is worth, said in the units a player reads it in.
+// WHAT IT IS WORTH, at the strength you set — the number, on its own, big
+// enough to read (owner, 2026-08-08: "要显示数值，就是当前的强度对应的数值").
+// A catalogue that showed only the ability's name would make you do the
+// multiply the sim is doing.
+function wfValueLabel(a) {
+  const pct = Math.round(wfValue(a) * 1000) / 10;
+  if (a.kind === "add_element") {
+    const el = (META.damage_types || {})[a.element];
+    return `+${pct}% ${(el && (el.name || el.id)) || a.element}`;
+  }
+  return `+${pct}%`;
+}
+
+// …and WHERE it lands, which is the half a number cannot say. Two buffs both
+// reading "+50%" are worth different amounts on a DoT weapon, and this line is
+// the difference.
 function wfEffectLine(a) {
-  const pct = Math.round(wfValue(a) * 100);
   if (a.kind === "faction_damage") {
-    return `+${pct}% ` + tr("faction damage — the bracket a Bane mod is in, so a status tick takes it twice");
+    return tr("faction damage — the bracket a Bane mod is in, so a status tick takes it twice");
   }
   if (a.kind === "final_damage") {
-    return `+${pct}% ` + tr("damage on its own multiplier — applied once, to the hit and to the status alike");
+    return tr("damage on its own multiplier — applied once, to the hit and to the status alike");
   }
-  const el = (META.damage_types || {})[a.element];
-  return `+${pct}% ` + (el ? el.name || a.element : a.element) + " — "
-    + tr("added on top and NOT combined with the weapon's own elements");
+  return tr("added on top and NOT combined with the weapon's own elements");
 }
 
 function renderWfBuffs(host, readonly) {
@@ -6995,30 +7007,27 @@ function renderWfBuffs(host, readonly) {
     // SUPERSEDED, not off: you ticked it and something stronger is running.
     // Saying nothing here is how a player ends up believing they have +80%.
     const dead = on && !running.has(a.id);
-    const secs = pick && pick.secs != null ? pick.secs : "";
-    const whole = on && (!pick || pick.secs == null);
     return `<div class="wfb${on ? " on" : ""}${dead ? " dead" : ""}">
       <label class="check wfb-pick"><input type="checkbox" data-wf="${escHtml(a.id)}"${on ? " checked" : ""}${readonly ? " disabled" : ""}>
         <span class="wfb-n">${escHtml(wfName(a))}</span>
         <span class="wfb-f">${escHtml(tr(a.frame))}</span></label>
+      <div class="wfb-v">${escHtml(wfValueLabel(a))}</div>
       <div class="wfb-e">${escHtml(wfEffectLine(a))}</div>
       ${dead ? `<div class="wfb-dead">${escHtml(tr("a stronger buff of the same kind is running — this one adds nothing"))}</div>` : ""}
-      <div class="wfb-d">
-        <label title="${escHtml(tr("seconds from the first shot; the wiki's max-rank value is the placeholder"))}">${escHtml(tr("for"))}
-          <input type="number" min="0.1" max="3600" step="0.1" data-wfsecs="${escHtml(a.id)}"
-            placeholder="${a.duration_s}" value="${secs}"${(!on || whole || readonly) ? " disabled" : ""}></label>
-        <label class="check" title="${escHtml(tr("run it for the whole engagement — the honest way to ask what this weapon is worth UNDER the buff rather than around it"))}">
-          <input type="checkbox" data-wfwhole="${escHtml(a.id)}"${whole ? " checked" : ""}${(!on || readonly) ? " disabled" : ""}>
-          ${escHtml(tr("whole fight"))}</label>
-        ${a.url ? `<a class="wfb-w" href="${escHtml(a.url)}" target="_blank" rel="noopener">${escHtml(tr("wiki"))} ↗</a>` : ""}
-      </div>
+      ${a.url ? `<a class="wfb-w" href="${escHtml(a.url)}" target="_blank" rel="noopener">${escHtml(tr("wiki"))} ↗</a>` : ""}
     </div>`;
   }).join("");
+  const sub = $(host === "sim-wfbuffs" ? "wfbuff-sub" : "");
+  if (sub) {
+    sub.textContent = running.size
+      ? `${running.size} ${tr("running")}`
+      : tr("none — the weapon on its own");
+  }
   box.innerHTML =
     `<div class="wfb-head">
        <label title="${escHtml(tr("your Warframe's Ability Strength, as the arsenal shows it — every value below is this times the wiki's max-rank number"))}">${escHtml(tr("Ability Strength %"))}
          <input type="number" id="${host}-str" min="0" max="1000" step="1" value="${strength}"${readonly ? " disabled" : ""}></label>
-       <span class="wfb-early">${escHtml(tr("early access — this moves onto the Warframe itself once frames land, and these numbers do not change when it does"))}</span>
+       <span class="wfb-early">${escHtml(tr("early access — every buff runs the whole engagement for now, and this block moves onto the Warframe itself once frames land"))}</span>
      </div>
      <div class="wfb-grid">${rows}</div>`;
   if (readonly) {
@@ -7036,23 +7045,14 @@ function renderWfBuffs(host, readonly) {
   });
   box.querySelectorAll("[data-wf]").forEach((el) => el.addEventListener("change", () => {
     const id = el.dataset.wf;
-    const def = wfAbilities().find((a) => a.id === id);
     sim.abilities = (sim.abilities || []).filter((a) => a.id !== id);
     // TICKING IT OPENS IT AT THE WIKI'S OWN DURATION, not at "whole fight":
     // the honest default for "I cast Roar" is one Roar, and the whole-fight
     // box is the deliberate other question.
-    if (el.checked) sim.abilities.push({ id, secs: def ? def.duration_s : null });
-    touched();
-  }));
-  box.querySelectorAll("[data-wfsecs]").forEach((el) => el.addEventListener("change", () => {
-    const p = wfPick(el.dataset.wfsecs);
-    if (p) p.secs = Math.max(0.1, Number(el.value) || 0);
-    touched();
-  }));
-  box.querySelectorAll("[data-wfwhole]").forEach((el) => el.addEventListener("change", () => {
-    const p = wfPick(el.dataset.wfwhole);
-    const def = wfAbilities().find((a) => a.id === el.dataset.wfwhole);
-    if (p) p.secs = el.checked ? null : (def ? def.duration_s : 30);
+    // `secs: null` = the whole engagement. The only thing the page offers
+    // today, and the honest question to ask of a build: what is this weapon
+    // worth UNDER the buff, rather than around it.
+    if (el.checked) sim.abilities.push({ id, secs: null });
     touched();
   }));
 }

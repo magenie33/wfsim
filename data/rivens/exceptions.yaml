@@ -1,0 +1,107 @@
+# PER-FAMILY EXCEPTIONS to the derivation — the only riven data that decides
+# anything.
+#
+# THE RULES GENERATE THE POOL. `engine/src/rivens_data.rs::derived_for` reads
+# the weapon — its physical shares, its ammo pool, whether anything it fires
+# travels — and that is the model. This file is the "exceptions exist on a case
+# by case basis" half of the wiki's own sentence, and it is hand-written,
+# because an exception is a thing somebody looked at.
+#
+# WHY IT IS NOT THE SURVEY (owner, 2026-08-08: "紫卡不应该是按照规则自动生成的
+# 吗？抓取只是来当验证才对"). `pools.yaml` used to outrank the derivation, which
+# means a bad scrape rewrote every weapon's pool without failing anything — and
+# one did: a re-run of the survey came back "nothing rolls anything" for all 26
+# families and the only reason it did not ship is that two unrelated tests
+# happened to notice. A count is EVIDENCE, and evidence belongs in a check.
+# `pools.yaml` is now read by `the_survey_still_agrees_with_the_rules` and by
+# nothing else.
+#
+# Every entry needs a `note:` naming what was looked at — a real card, or the
+# count that made the case. "The survey said so" with no number is not a note.
+#
+#   rolls:  the derivation refuses it and it is real
+#   never:  the derivation allows it and it is not
+
+families:
+  - family: Boar
+    # A FAMILY IS ONE POOL AND THE RULES ARE PER WEAPON, which is where these
+    # three came from: the Boar Prime's Slash share clears 25% and the plain
+    # Boar's does not, so the derivation refused the stat for half a family that
+    # rolls it on 51 of 500 cards. The exception is stated once, for the family,
+    # because that is the unit DE rolls.
+    rolls:
+      - stat: slash
+        note: "survey 2026-08-08: 51 of 500 live listings"
+    never:
+      - stat: projectile_speed
+        note: "survey 2026-08-08: 2 of 500 live listings"
+      - stat: zoom
+        note: "survey 2026-08-08: 1 of 500 live listings"
+  - family: Braton
+    # Same shape as the Boar's: the family spans weapons whose physical shares
+    # straddle the 25% line, and the pool does not.
+    rolls:
+      - stat: impact
+        note: "survey 2026-08-08: 61 of 500 live listings"
+      - stat: puncture
+        note: "survey 2026-08-08: 35 of 500 live listings"
+  - family: Bronco
+    never:
+      - stat: projectile_speed
+        note: "survey 2026-08-08: 0 of 309 live listings"
+  - family: Furis
+    rolls:
+      - stat: projectile_speed
+        # A REAL CARD, which is the strongest evidence there is and the reason
+        # this file is not just the survey's disagreements. The Furis is
+        # hit-scan in both forms, so the rules refuse it, and the survey's 13 of
+        # 500 sits in the band where a count says nothing either way.
+        #
+        # Why it rolls: DE's Incarnon form is a PROJECTILE internally whatever
+        # the beam looks like — the wiki's Condition Overload catalog row reads
+        # "Furis | Incarnon Mode | Projectile", and the Ocucor, the same held
+        # beam shape and hit_scan in our data, carries it on 47 of 500 cards.
+        # NOT a general rule that an Incarnon form widens the pool: the Latron,
+        # Lex and Atomos forms all fire a literal travelling projectile and
+        # their families show 0, 4 and 0 listings out of 500.
+        note: "owner 2026-08-08, relaying a player's Furis riven"
+  - family: Karak
+    rolls:
+      - stat: slash
+        note: "survey 2026-08-08: 45 of 424 live listings"
+  - family: Ocucor
+    rolls:
+      - stat: impact
+        note: "survey 2026-08-08: 49 of 500 live listings"
+      - stat: projectile_speed
+        note: "survey 2026-08-08: 47 of 500 live listings"
+      - stat: puncture
+        note: "survey 2026-08-08: 46 of 500 live listings"
+      - stat: slash
+        note: "survey 2026-08-08: 40 of 500 live listings"
+  - family: Phantasma
+    rolls:
+      - stat: puncture
+        note: "survey 2026-08-08: 45 of 500 live listings"
+      - stat: slash
+        note: "survey 2026-08-08: 39 of 500 live listings"
+    never:
+      - stat: projectile_speed
+        note: "survey 2026-08-08: 0 of 500 live listings"
+      - stat: zoom
+        note: "survey 2026-08-08: 0 of 500 live listings"
+  - family: Phenmor
+    never:
+      - stat: puncture
+        note: "survey 2026-08-08: 0 of 500 live listings"
+  - family: Sicarus
+    # The other direction: a share over the line that no live card carries.
+    never:
+      - stat: puncture
+        note: "survey 2026-08-08: 0 of 500 live listings"
+      - stat: slash
+        note: "survey 2026-08-08: 0 of 500 live listings"
+  - family: Sybaris
+    rolls:
+      - stat: puncture
+        note: "survey 2026-08-08: 59 of 500 live listings"

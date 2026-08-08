@@ -1132,9 +1132,11 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .wfb.dead{opacity:.62;border-color:var(--line)}
 .wfb-n{font-weight:600}
 .wfb-f{color:var(--text-2);font-size:11px;margin-left:5px}
-.wfb-e{margin-top:3px;color:var(--text-2);font-size:11px;line-height:1.45}
+/* THE NUMBER, on its own line and big enough to read: it is what the block is
+   for, and a card that only named the ability would leave the strength multiply
+   to the reader. */
+.wfb-v{margin-top:4px;font-size:16px;font-weight:650;color:var(--gold);font-variant-numeric:tabular-nums}
+.wfb-e{margin-top:2px;color:var(--text-2);font-size:11px;line-height:1.45}
 .wfb-dead{margin-top:3px;color:var(--gold);font-size:11px}
-.wfb-d{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px;font-size:11px}
-.wfb-d input[type=number]{width:66px}
-.wfb-w{color:var(--text-2);font-size:11px;text-decoration:none}
+.wfb-w{display:inline-block;margin-top:6px;color:var(--text-2);font-size:11px;text-decoration:none}
 .wfb-w:hover{color:var(--accent)}

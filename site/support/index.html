@@ -377,6 +377,17 @@
     <!-- Block: Sim — the SIMULATOR tab's view (2D arena + scenario/buff
          settings); Run simulates the current build against the enemy and
          shows a summary + scene replay. -->
+    <!-- WARFRAME ABILITY BUFFS — its own block, not a section of the fight
+         (owner, 2026-08-08: 战甲增益应该是一个单独的div). It sits between the
+         build it acts on and the fight it acts in, which is what it is: a thing
+         another actor does to this weapon.
+         EARLY ACCESS — the strength is typed in here today and comes from the
+         frame once frames land. Said on screen, not only in a comment. -->
+    <section class="block" id="wfbuff-block">
+      <div class="bh"><span class="n">✦</span><h2 data-i18n>Warframe buffs</h2><span class="sub" id="wfbuff-sub"></span></div>
+      <div class="bb"><div id="sim-wfbuffs"></div></div>
+    </section>
+
     <section class="block" id="sim-block">
       <div class="bh"><span class="n">▶</span><h2 data-i18n>Sim</h2><span class="sub" id="sim-sub"></span></div>
       <div class="bb">
@@ -416,26 +427,17 @@
         <div id="sim-technique" class="field-grid"></div>
         <!-- NOT a technique: nobody plays "infinite ammo". These say what the
              run does not model, which is a different kind of claim. -->
-        <!-- WARFRAME ABILITY BUFFS. Its own block, and deliberately between
-             the wielder and the limits: it is the rest of the answer to "who
-             is shooting" — the part another player, or your own frame, is
-             doing to this weapon for a while.
-             EARLY ACCESS: the strength is typed in here today and will come
-             from the frame when frames land (owner, 2026-08-08). The block
-             says so on screen rather than only in a comment. -->
-        <h3 class="sim-h" data-i18n>3 · Warframe buffs <span class="sim-hint" data-i18n>abilities cast on this weapon — set your Ability Strength and the values follow</span></h3>
-        <div id="sim-wfbuffs"></div>
-        <h3 class="sim-h" data-i18n>4 · Limits <span class="sim-hint" data-i18n>what this run is allowed to assume</span></h3>
+        <h3 class="sim-h" data-i18n>3 · Limits <span class="sim-hint" data-i18n>what this run is allowed to assume</span></h3>
         <div id="sim-limits" class="field-grid"></div>
         <!-- What this block sets is the START of the run, not the buff's
              worth: the fight goes on to grant and decay these on their own
              triggers. The old hint said "locked = 100% uptime", which reads as
              "this box decides how much of the buff you get" — the opposite of
              what the sim does (user, 2026-08-03). -->
-        <h3 class="sim-h" data-i18n>5 · Buffs <span class="sim-hint" data-i18n>the stacks the run STARTS with — the fight still grants and decays them on their own triggers</span>
+        <h3 class="sim-h" data-i18n>4 · Buffs <span class="sim-hint" data-i18n>the stacks the run STARTS with — the fight still grants and decays them on their own triggers</span>
           <button id="sim-buffs-all" class="ghost-btn small"></button></h3>
         <div id="sim-buffs"></div>
-        <h3 class="sim-h" data-i18n>6 · Simulation <span class="sim-hint" data-i18n>how many times to replay it, and what to read off — the optimizer's final round uses the same count</span></h3>
+        <h3 class="sim-h" data-i18n>5 · Simulation <span class="sim-hint" data-i18n>how many times to replay it, and what to read off — the optimizer's final round uses the same count</span></h3>
         <div id="sim-run" class="field-grid"></div>
         <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
       </div>

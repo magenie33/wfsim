@@ -4,8 +4,9 @@
 // published nowhere, the wiki's 25%-of-a-physical-type rule disclaims itself
 // ("exceptions exist on a case by case basis"), and a count over ~12 000 live
 // cards found the derivation wrong in BOTH directions on six of 26 families.
-// So the engine reads a card first (`data/rivens/observed.yaml`), a survey
-// second (`data/rivens/pools.yaml`) and its own rules last — and this asserts
+// So the engine derives the pool from the weapon and lets
+// `data/rivens/exceptions.yaml` override it per family (the survey is a test's
+// business, not the calculation's) — and this asserts
 // the PICKER acts on that, because the failure a player sees is a stat their
 // real riven carries not being in the list.
 //

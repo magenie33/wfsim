@@ -327,11 +327,12 @@ Three properties make it usable as a source rather than as a rumour:
 - **It admits a middle.** Listings are typed by players and a few are wrong (one
   Latron card claims Slash). Anything between the two bands is UNCLEAR and the
   engine keeps its own derivation, rather than guessing from a count of nine.
-- **A real card outranks it.** `data/rivens/observed.yaml` is hand-written, sits
-  above the survey, and requires a note saying who saw the card. The Furis is
-  why: 13 of 500 is inside the unclear band and a player has the riven.
+- **A real card is the strongest evidence there is.** The Furis is why: 13 of
+  500 is inside the unclear band and a player has the riven.
 
-Full reasoning and the six corrections: `docs/MEASUREMENTS.md` M35.
+None of that makes the count an AUTHORITY — see §"Riven pools: the rules decide,
+the survey checks" below, which is where the counts go now. Full reasoning and
+the corrections: `docs/MEASUREMENTS.md` M35.
 
 ### Open SOURCE-SPLIT: the Torid Incarnon's beam geometry
 
@@ -699,3 +700,33 @@ column for an unlisted key rather than reporting an error, and the file holds
 exactly the fifteen — no hand-added neutral rows, with a test locking the set
 so "everything else is neutral" cannot quietly come to mean "we lost a
 column".
+
+## Riven pools: the rules decide, the survey checks
+
+Three files, and which one DECIDES is the whole design (owner, 2026-08-08:
+"紫卡不应该是按照规则自动生成的吗？抓取只是来当验证才对"):
+
+| file | role |
+|---|---|
+| `engine/src/rivens_data.rs::derived_for` | **the model** — the weapon's physical shares, its ammo pool, whether anything it fires travels |
+| `data/rivens/exceptions.yaml` | **the overrides** — hand-written, per riven FAMILY, every entry carrying the evidence it came from |
+| `data/rivens/pools.yaml` | **the check** — a count over live warframe.market listings, read by a test and by nothing else |
+
+**THE SURVEY IS A CHECK, NOT A SOURCE**, and it was the other way round for a
+day. `pools.yaml` outranked the derivation, so a scrape was a silent authority
+over 26 weapon families — and a re-run of it came back *"nothing rolls
+anything"* for every one of them, wrote itself to disk, and was caught only
+because two unrelated tests happened to fail. Nothing in the pipeline was
+looking: the file parsed, the pools emptied, and no assertion was about that.
+
+Now `the_survey_still_agrees_with_the_rules` fails, naming the family and the
+stat, and the fix is a human one — promote the disagreement into
+`exceptions.yaml` with its count, or fix the rule.
+`a_survey_that_refuses_everything_is_a_broken_scrape` catches the specific
+failure above before anyone reads a number off it.
+
+The exception list is small on purpose: 11 families of 26 have an entry, 15 run
+on the rules alone, and a weapon added tomorrow is approximately right before
+anybody counts cards. The wiki's own sentence is the licence for it —
+*"exceptions exist on a case by case basis"* — and a case-by-case exception is
+data, not a formula.

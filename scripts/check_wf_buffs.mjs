@@ -58,13 +58,17 @@ for (const lang of ["en", "zh"]) {
     out.catalogue = (META.abilities || []).length;
     out.cards = cards().length;
     out.names = cards().map(c => (c.querySelector('.wfb-n') || {}).textContent || '');
+    out.values = cards().map(c => (c.querySelector('.wfb-v') || {}).textContent || '');
     out.effects = cards().map(c => (c.querySelector('.wfb-e') || {}).textContent || '');
+    // ITS OWN BLOCK, not a section of the fight (owner, 2026-08-08).
+    out.ownBlock = !!document.querySelector('#wfbuff-block #sim-wfbuffs');
+    out.insideFight = !!document.querySelector('#sim-block #sim-wfbuffs');
     out.early = ((document.querySelector('#sim-wfbuffs .wfb-early') || {}).textContent || '').trim();
 
     // 2. THE VALUE FOLLOWS STRENGTH. Roar is +50% at 100% and +100% at 200%.
     const roarText = () => {
       const i = (META.abilities || []).findIndex(a => a.id === 'roar');
-      return (cards()[i].querySelector('.wfb-e') || {}).textContent || '';
+      return (cards()[i].querySelector('.wfb-v') || {}).textContent || '';
     };
     out.roarAt100 = roarText();
     const str = document.getElementById('sim-wfbuffs-str');
@@ -87,13 +91,6 @@ for (const lang of ["en", "zh"]) {
       if (box.checked !== on) { box.click(); await sleep(250); }
     };
     await tick('roar', true);
-    // …for the WHOLE fight, so the comparison is not about where the shots
-    // fell inside a 30 s window.
-    const whole = () => {
-      const i = (META.abilities || []).findIndex(a => a.id === 'roar');
-      return cards()[i].querySelector('[data-wfwhole]');
-    };
-    if (!whole().checked) { whole().click(); await sleep(250); }
     out.sent = JSON.parse(JSON.stringify(sim.abilities || []));
     out.dpsRoar = await dpsOf();
 
@@ -133,9 +130,19 @@ for (const lang of ["en", "zh"]) {
   check(`[${lang}] …named the way DE names them`,
     r.names.every((n) => n.length > 1 && cjk.test(n) === (lang === "zh")),
     JSON.stringify(r.names.slice(0, 3)));
-  check(`[${lang}] …each saying what it is worth, in the display language`,
-    r.effects.every((e) => e.includes("%") && cjk.test(e) === (lang === "zh")),
+  // THE NUMBER IS ON THE CARD, at the strength you set — and separately, the
+  // BUCKET it lands in, because two buffs both reading "+50%" are worth
+  // different amounts on a DoT weapon.
+  check(`[${lang}] …each showing the value at the current strength`,
+    r.values.every((v) => /^\+\d/.test(v)), JSON.stringify(r.values.slice(0, 3)));
+  check(`[${lang}] …and where it lands, in the display language`,
+    r.effects.every((e) => e.length > 8 && cjk.test(e) === (lang === "zh")),
     JSON.stringify(r.effects[0] || "").slice(0, 100));
+  // ITS OWN BLOCK. It is not a step of the fight — nothing about it is the
+  // enemy, the measurement or the run.
+  check(`[${lang}] the buffs are their own block, not a section of the fight`,
+    r.ownBlock === true && r.insideFight === false,
+    `own=${r.ownBlock} insideFight=${r.insideFight}`);
   // EARLY ACCESS IS ON THE PAGE, not only in a yaml comment: this block moves
   // onto the Warframe later and a player is entitled to know that now.
   check(`[${lang}] …and the block admits it is early access`,
@@ -148,7 +155,10 @@ for (const lang of ["en", "zh"]) {
   check(`[${lang}] ticking a buff moves the SIM`,
     r.dpsPlain > 0 && r.dpsRoar > r.dpsPlain * 1.2,
     `${r.dpsPlain} -> ${r.dpsRoar}`);
-  check(`[${lang}] …and it is sent as the fight's own field`,
+  // WHOLE FIGHT, ALWAYS, for now (owner, 2026-08-08: "目前就只能全程吧") —
+  // `secs: null` is that, and the engine's per-buff end time is still there
+  // under it for the day Ability Duration supplies one.
+  check(`[${lang}] …sent as the fight's own field, running the whole fight`,
     Array.isArray(r.sent) && r.sent.length === 1 && r.sent[0].id === "roar"
       && r.sent[0].secs === null,
     JSON.stringify(r.sent));

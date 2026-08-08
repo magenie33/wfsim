@@ -1793,10 +1793,19 @@ that fits both, which is the point — DE's table is not a formula.
 
 ### What was decided
 
-Three sources, in order: **a real card** (`data/rivens/observed.yaml`,
-hand-written, a note naming who saw it) → **the survey** (`data/rivens/pools.yaml`,
-generated) → **the derivation** (unchanged, and still what answers for a weapon
-nobody has surveyed).
+Three sources, in order: **a real card** → **a count over live listings** →
+**the derivation**.
+
+**SUPERSEDED 2026-08-08 in one respect — WHICH FILE DECIDES.** The first two
+used to be data the engine read at calculation time, the survey outranking the
+rules. It does not any more: the rules decide, `data/rivens/exceptions.yaml`
+overrides them per family with each entry naming its evidence, and
+`data/rivens/pools.yaml` is read by a test. Everything below about WHAT was
+found still stands — every finding became an exception entry carrying its count
+— and the reason for the move is in DATA_SOURCES §"Riven pools" (owner: "抓取只
+是来当验证才对"). A re-run of the scrape came back "nothing rolls anything" for
+all 26 families, which under the old order would have emptied every pool in the
+app without failing anything.
 
 ### On the Incarnon question specifically
 
@@ -1806,7 +1815,7 @@ Incarnon forms each fire a literal travelling projectile, and their families sho
 out of the derivation — but now because it was counted, not because of an
 argument about when rivens drop.
 
-The Furis is the mirror case and is why `observed.yaml` exists: hit-scan in BOTH
+The Furis is the mirror case and is why the exception list exists: hit-scan in BOTH
 forms, 13 of 500 in the survey's unclear band, and a player's card carries it.
 The likely reason is that DE's Incarnon form is a projectile internally whatever
 the beam looks like — the wiki's Condition Overload catalog row for it reads
@@ -1827,7 +1836,7 @@ entirely.
 
 Any in-game card carrying a stat this file marks `never`. Absence in 500 listings
 is strong evidence and not a proof — one card beats the count, which is exactly
-what `observed.yaml` is for.
+what `exceptions.yaml` is for.
 
 ## M36 — the Felarx's +2000% and Gun CO multiply ✅ (owner, 2026-08-08)
 
