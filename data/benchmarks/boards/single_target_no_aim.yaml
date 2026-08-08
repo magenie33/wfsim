@@ -12,10 +12,22 @@ source: submissions
 entries:
   - weapon: burston_prime
     mode: cycle
+    score: 1.0043788773331703
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_merciless]
+  - weapon: burston_prime
+    mode: cycle
     score: 0.5857685220047055
     mods: [heavy_caliber, primary_acuity, hammer_shot, vital_sense, gilded_truth, magnetic_capacity, hellfire, thermite_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 0.3870722170797132
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_debilitate]
   - weapon: dual_toxocyst
     mode: cycle
     score: 0.8103067836462756

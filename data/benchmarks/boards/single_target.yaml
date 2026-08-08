@@ -648,6 +648,18 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: dual_toxocyst
     mode: cycle
+    score: 28.935514279370302
+    mods: [merciless_gunfight, galvanized_diffusion, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, target_cracker, jolt]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_fortifier]
+  - weapon: dual_toxocyst
+    mode: cycle
+    score: 15.946899811868583
+    mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, primed_pistol_gambit, lethal_torrent, target_cracker, magnetic_might, jolt]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_fortifier]
+  - weapon: dual_toxocyst
+    mode: cycle
     score: 11.541096484013405
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, anemic_agility, creeping_bullseye, primed_convulsion, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -756,6 +768,18 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: furis
     mode: cycle
+    score: 46.84003158886449
+    mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
+    score: 46.52766760777697
+    mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_deadhead]
+  - weapon: furis
+    mode: cycle
     score: 45.66969404798146
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
@@ -778,6 +802,12 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_prelude_of_might]
     arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
+    score: 43.01719157143407
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
     score: 39.095281489957635
