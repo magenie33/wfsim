@@ -882,6 +882,11 @@ pub struct WeaponBase {
     /// way to top it up.
     pub no_resupply: bool,
     pub base_reload: f64,
+    /// A BY-ROUND reload, as `(start, per shell, end)` seconds. `None` = the
+    /// ordinary one-block reload. See `WeaponSpec::reload_style`: the whole
+    /// point is that the magazine size is IN the reload time, so a magazine
+    /// mod on a Strun or a Felarx costs what the game charges for it.
+    pub by_round_reload: Option<(f64, f64, f64)>,
     /// Unconditional CO rate baked into the weapon config (Carnage
     /// Reign's +33% per status type) — additive with mod CO sources.
     pub innate_co_per_type: f64,
@@ -2059,6 +2064,16 @@ pub fn resolve_for(
         .map(|s| s.per_mod)
         .sum();
 
+    // THE MODDED MAGAZINE, computed once because two fields need the same
+    // number: the capacity itself and — on a by-round reloader — the reload
+    // time it is paid for in. A charge-backed Incarnon magazine is a fixed
+    // resource OUTSIDE the ammo system, so magazine mods never scale it.
+    let mag_size = if base.incarnon.is_some() {
+        base.magazine_size
+    } else {
+        (base.magazine_size * (1.0 + mag)).floor()
+    };
+
     ResolvedPanel {
         damage,
         radial,
@@ -2145,11 +2160,7 @@ pub fn resolve_for(
         // Magazine capacity: +% of base, floored to whole rounds (in-game).
         // A charge-backed Incarnon magazine is a fixed resource OUTSIDE the
         // ammo system — magazine mods are inert, so it never scales.
-        magazine_size: if base.incarnon.is_some() {
-            base.magazine_size
-        } else {
-            (base.magazine_size * (1.0 + mag)).floor()
-        },
+        magazine_size: mag_size,
         // Reserve: +% of base, the same shape as the magazine, and floored
         // for the same reason — a fraction of a round is not a round. The
         // bonus is the Ammo Reserve bucket the panel already shows, which is
@@ -2171,7 +2182,13 @@ pub fn resolve_for(
         sc_per_tendril: per_tendril_sc,
         mag_refill_on_kill: mag_refill,
         syndicate_radial,
-        reload_seconds: base.base_reload / (1.0 + rl),
+        // A BY-ROUND RELOAD IS PAID PER SHELL, so it grows with the modded
+        // magazine. `mag_size` is the same number the magazine field above
+        // reports, which is what keeps the two from disagreeing.
+        reload_seconds: match base.by_round_reload {
+            Some((start, per, end)) => (start + per * mag_size + end) / (1.0 + rl),
+            None => base.base_reload / (1.0 + rl),
+        },
         reload_bonus: rl,
         base_damage_bonus: bd,
         co_behavior: base.co_behavior,
@@ -2683,4 +2700,49 @@ mod tests {
         assert!((p.multishot - 1.55).abs() < 1e-9);
         assert!(p.ms_stack.is_none());
     }
+    /// A BIGGER MAGAZINE COSTS RELOAD TIME on a by-round reloader, and it is
+    /// free on everything else.
+    ///
+    /// The Felarx loads a shell at a time — 0.8 s to start, 0.4 s a shell,
+    /// 0.5 s to end — so Ammo Stock buys capacity and pays for it in downtime.
+    /// Modelled as one flat block, the mod read as pure profit on exactly the
+    /// weapons the game charges for it (owner, 2026-08-08). The other half of
+    /// the claim matters as much: an ordinary reloader must NOT pay, or the
+    /// fix would have made every magazine mod worse.
+    #[test]
+    fn a_magazine_mod_lengthens_a_by_round_reload_and_only_that() {
+        let mag_mod = crate::mods_data::class_pool("shotgun")
+            .into_iter()
+            .find(|m| m.id == "ammo_stock")
+            .expect("ammo stock");
+
+        let felarx = WeaponBase::from_data("felarx", true, &[]);
+        let plain = resolve(&felarx, &[], StackPolicy::AssumedMax);
+        let bigger = resolve(&felarx, &[&mag_mod], StackPolicy::AssumedMax);
+        assert!(bigger.magazine_size > plain.magazine_size, "the mod does work");
+        assert!(
+            bigger.reload_seconds > plain.reload_seconds,
+            "a by-round reload must grow with the magazine: {} -> {} rounds,              {:.2} -> {:.2} s",
+            plain.magazine_size, bigger.magazine_size,
+            plain.reload_seconds, bigger.reload_seconds
+        );
+        // …by EXACTLY the shells added, not by some proportion of the total.
+        let added = bigger.magazine_size - plain.magazine_size;
+        assert!(
+            ((bigger.reload_seconds - plain.reload_seconds) - added * 0.4).abs() < 1e-6,
+            "{added} more shells at 0.4 s each"
+        );
+        // The unmodded number is still the published one.
+        assert!((plain.reload_seconds - 3.7).abs() < 1e-9, "{}", plain.reload_seconds);
+
+        // AND THE CONTROL. The Boar is an ordinary shotgun: same mod, same
+        // bigger magazine, same reload.
+        let boar = WeaponBase::from_data("boar", true, &[]);
+        let a = resolve(&boar, &[], StackPolicy::AssumedMax);
+        let b = resolve(&boar, &[&mag_mod], StackPolicy::AssumedMax);
+        assert!(b.magazine_size > a.magazine_size);
+        assert!((b.reload_seconds - a.reload_seconds).abs() < 1e-9,
+            "an ordinary reload is one block: {} vs {}", a.reload_seconds, b.reload_seconds);
+    }
+
 }

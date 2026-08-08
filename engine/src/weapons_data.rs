@@ -562,6 +562,29 @@ pub struct WeaponSpec {
     /// pool per family, so a Boar riven and a Boar Prime riven are one thing.
     #[serde(default)]
     pub riven_family: Option<String>,
+    /// `by_round` — the magazine refills a SHELL AT A TIME (Strun, Felarx,
+    /// Onos). It is the wiki module's `ReloadStyle`, and it is not cosmetic:
+    /// a bigger magazine makes the reload LONGER, so a magazine mod buys
+    /// capacity and pays for it in downtime. Modelled as one flat block until
+    /// 2026-08-08, which made Ammo Stock read as free capacity on exactly the
+    /// weapons the game charges for it (owner, calibrating the Felarx).
+    #[serde(default)]
+    pub reload_style: Option<String>,
+    /// The three parts of a by-round reload, where the weapon's page states
+    /// them — the Felarx's are 0.8 s to start, 0.4 s a shell, 0.5 s to end.
+    ///
+    /// Where they are NOT stated, the engine derives a per-shell time from the
+    /// published total and the base magazine and leaves the fixed parts at
+    /// zero. That reproduces the published number exactly at a full magazine
+    /// and scales correctly with capacity, which is the behaviour that was
+    /// missing; it only understates a PARTIAL reload, and this sim reloads
+    /// from empty.
+    #[serde(default)]
+    pub reload_start_s: Option<f64>,
+    #[serde(default)]
+    pub reload_per_shell_s: Option<f64>,
+    #[serde(default)]
+    pub reload_end_s: Option<f64>,
     /// The weapon's own rank ceiling — 30 for almost everything, 40 for the
     /// Kuva/Tenet/Coda families and the Paracesis. It decides CAPACITY, since
     /// capacity "correlates to their Rank" (wiki `Mod Capacity`) and a rank-40
@@ -1259,6 +1282,28 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         ),
     };
 
+    // A BY-ROUND RELOAD, resolved into (start, per shell, end).
+    //
+    // Where the weapon's page states the three parts, they are used. Where it
+    // does not, the per-shell time is DERIVED from the published total and the
+    // base magazine with the fixed parts at zero: that reproduces the
+    // published number exactly at a full magazine and scales correctly with
+    // capacity, which is the behaviour that was missing. It understates a
+    // PARTIAL reload by the fixed part, and this sim reloads from empty.
+    //
+    // A pseudo-reload (an Incarnon form's charge pool) is never by-round: it
+    // is not a magazine, it is a resource that runs out.
+    let by_round_reload = (s.reload_style.as_deref() == Some("by_round")
+        && s.pseudo_reload.is_none())
+        .then(|| {
+            let start = s.reload_start_s.unwrap_or(0.0);
+            let end = s.reload_end_s.unwrap_or(0.0);
+            let per = s.reload_per_shell_s.unwrap_or_else(|| {
+                ((base_reload - start - end) / magazine_size.max(1.0)).max(0.0)
+            });
+            (start, per, end)
+        });
+
     let incarnon = s.incarnon.as_ref().map(|inc| IncarnonForm {
         max_charges: inc.gauge.max_rounds,
         charge_on: match inc.gauge.charge_on.as_str() {
@@ -1416,6 +1461,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         forced_procs: s.attack.forced_procs.iter().map(|t| damage_type(t)).collect(),
         no_resupply: s.no_resupply,
         base_reload,
+        by_round_reload,
         innate_co_per_type: 0.0,
         co_behavior,
         // 1.0 = the CO term uses the FULL base, evolution damage included,

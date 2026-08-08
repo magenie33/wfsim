@@ -1314,6 +1314,18 @@ pub struct DummyParams {
     pub cc_per_tendril: f64,
     /// ...and its status half, same bucket.
     pub sc_per_tendril: f64,
+    /// The tendrils the run OPENS with — Sentient Surge's buff card, seeded
+    /// exactly like every other buff's stack count. Without it the mod is
+    /// unmeasurable in the fights it is played in: a tendril costs a kill and
+    /// a reload takes every one back, so at a level where kills are slow the
+    /// weapon's only augment contributes nothing and there was no way to say
+    /// otherwise (player report, 2026-08-08).
+    pub tendrils_initial: u32,
+    /// ...and the card's "no timeout". A tendril has no clock — what ENDS it
+    /// is the magazine event — so locking it means that event no longer
+    /// clears them. Same reading as everywhere else: the count still starts
+    /// where the card sets it and still climbs on every kill.
+    pub tendrils_held: bool,
     /// ...and the fraction of the magazine a kill puts back.
     pub mag_refill_on_kill: f64,
     /// GOTVA PRIME'S PASSIVE: a pellet that lands a status has `chance` to arm
@@ -1456,6 +1468,15 @@ impl DummyParams {
         if let Some(s) = &self.cc_stack {
             out.push(("on_headshot_kill_cc".into(), s.max_stacks));
         }
+        // TENDRILS — the Ocucor's passive, and a buff by every test that
+        // matters: it is gained on a trigger (a kill), it is lost on one (a
+        // magazine event), and it has a cap. It is rostered only when a mod
+        // READS it, because the count buys nothing on its own (the tendrils'
+        // own damage is cosmetic on the beam's target) — a card for it with
+        // no Sentient Surge equipped would move no number.
+        if self.tendril_max > 0 && (self.cc_per_tendril > 0.0 || self.sc_per_tendril > 0.0) {
+            out.push(("tendrils".into(), self.tendril_max));
+        }
         // EVERY stacking buff, by construction. A new one appears on the
         // replay the moment the data declares it — there is no arm to add.
         for b in &self.stacking_buffs {
@@ -1571,6 +1592,14 @@ impl DummyParams {
         }
         if let Some(s) = self.cc_stack.as_mut() {
             set_stack(s, cfg, "on_headshot_kill_cc");
+        }
+        // The tendril count, seeded like any stack count. `locked` cannot be a
+        // duration here — a tendril has no clock, it is cleared by a magazine
+        // event — so it lands on the thing that ENDS this buff instead, which
+        // is the same statement everywhere else makes: nothing takes it away.
+        if let Some(&(stacks, locked)) = cfg.get("tendrils") {
+            self.tendrils_initial = stacks.min(self.tendril_max);
+            self.tendrils_held = locked;
         }
         // Every stacking buff takes the same two knobs the Galvanized family
         // does, and takes them by ID — so a buff the data adds is configurable
@@ -1781,6 +1810,10 @@ impl DummyParams {
             tendril_max: panel.tendril_max,
             cc_per_tendril: panel.cc_per_tendril,
             sc_per_tendril: panel.sc_per_tendril,
+            // EARNED, like every other timed buff: a fight that has not been
+            // in contact has no tendrils up. The card moves it.
+            tendrils_initial: 0,
+            tendrils_held: false,
             mag_refill_on_kill: panel.mag_refill_on_kill,
             proc_conversion: panel.proc_conversion,
             arcane: ArcaneFx::none(),
@@ -1948,6 +1981,8 @@ impl Default for DummyParams {
             tendril_max: 0,
             cc_per_tendril: 0.0,
             sc_per_tendril: 0.0,
+            tendrils_initial: 0,
+            tendrils_held: false,
             mag_refill_on_kill: 0.0,
             proc_conversion: None,
             // Secondary Enervate at max rank — the historical calibration

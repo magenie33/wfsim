@@ -22,7 +22,7 @@ transforms_to: strun_prime_incarnon
 # as "not modelled yet". Nothing is dropped in silence — some perks do nothing
 # yet and say so on their own tile.
 unmodeled:
-  - "the by-round reload is not modelled — this weapon refills a shell at a time and the reload can be interrupted, and the sim reloads the whole magazine"
+  - "the by-round reload is now modelled — what is NOT is the INTERRUPTION: in game you can fire mid-reload and keep the shells you have loaded, and here a reload runs to the end"
   - "damage falloff from 26 m to 52 m (down to 78% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
 accuracy: 9.09
 disposition: 1.2
@@ -38,6 +38,22 @@ ammo_max: 120
 ammo_pickup: 15
 magazine: 10
 reload_seconds: 4.6
+
+# BY-ROUND RELOAD — a shell at a time, interruptible, and the magazine size
+# is IN the reload time. That is the part that was missing: a magazine mod
+# on this weapon buys capacity and PAYS for it in downtime, and modelling
+# the reload as one flat block made Ammo Stock read as free (owner,
+# 2026-08-08, calibrating the Felarx).
+#
+# the weapon's own page: 0.4 s a shell and a total 0.6 s of start-and-end
+# delay; the split between the two ends is not published and only their sum
+# reaches the number.
+# They add up to the published total at a full magazine, which is the
+# cross-check: 0.6 + 0.4 x 10 + 0 = 4.6.
+reload_style: by_round
+reload_start_s: 0.6
+reload_per_shell_s: 0.4
+reload_end_s: 0
 
 # No CO catalog row for this attack, so the ordinary class — absence in that
 # catalog means ORDINARY rather than unknown, since it lists the anomalies.
