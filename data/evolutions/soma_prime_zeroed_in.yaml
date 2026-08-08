@@ -1,0 +1,17 @@
+id: soma_prime_zeroed_in
+name: Zeroed In
+weapon: soma_prime
+tier: 4
+description: "Increase Base Critical Damage Multiplier by +0.6x."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Critical Damage Multiplier by +0.6x"
+  - kind: flat_base_crit_multiplier
+    value: 0.6
+
+source:
+  url: https://wiki.warframe.com/w/Soma_Incarnon_Genesis

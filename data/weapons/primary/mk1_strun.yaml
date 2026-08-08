@@ -1,0 +1,69 @@
+id: mk1_strun
+name: MK1-Strun
+slot: primary
+class: shotgun
+form: base
+default_form: true
+mod_pools: [primary, shotgun]
+mastery_rank: 0
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group.
+transform_group: mk1_strun
+transforms_to: mk1_strun_incarnon
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+unmodeled:
+  - "the by-round reload is not modelled — this weapon refills a shell at a time and the reload can be interrupted, and the sim reloads the whole magazine"
+  - "damage falloff from 15 m to 25 m (down to 50% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+accuracy: 4
+disposition: 1.45
+polarities: [naramon]
+exilus_polarity: naramon
+riven_family: Strun
+traits: [incarnon]
+introduced: "Update 14.0"
+internal_name: /Lotus/Weapons/MK1Series/MK1Strun
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 6
+reload_seconds: 3.75
+
+# No CO catalog row for this attack, so the ordinary class — absence in that
+# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 2.08
+  # NOT MODELLED — the arena has no distance, so this weapon is
+  # simulated at point blank. Recorded because the RIVEN pool reads
+  # it: a hitscan weapon that lists a falloff still rolls Projectile
+  # Speed, which scales the whole range (wiki `Projectile Speed`).
+  falloff:
+    start_m: 15
+    end_m: 25
+    reduction: 0.5   # fraction KEPT past end_m
+  multishot: 10.0
+  ammo_cost: 1
+  crit_chance: 0.075
+  crit_multiplier: 2
+  status_chance: 0.06
+  punch_through_m: 0.0
+  damage: { impact: 9.9, slash: 5.4, puncture: 2.7 }   # total 18.0
+
+# incarnon_evolutions: definitions live in data/evolutions/mk1_strun_*.yaml.
+
+source:
+  url: https://wiki.warframe.com/w/MK1-Strun

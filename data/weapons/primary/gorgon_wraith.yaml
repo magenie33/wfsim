@@ -1,0 +1,60 @@
+id: gorgon_wraith
+name: Gorgon Wraith
+slot: primary
+class: rifle
+form: base
+default_form: true
+mod_pools: [primary, rifle, assault_rifle]
+mastery_rank: 7
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group.
+transform_group: gorgon_wraith
+transforms_to: gorgon_wraith_incarnon
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+unmodeled:
+  - "the spool-up is not modelled — this entry fires at the fully spooled rate from the first round"
+accuracy: 16.67
+disposition: 1.35
+polarities: []
+exilus_polarity: madurai
+riven_family: Gorgon
+traits: [incarnon, wraith]
+introduced: "Update 12.4"
+internal_name: /Lotus/Weapons/Grineer/LongGuns/WraithGorgon/WraithGorgon
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 90
+reload_seconds: 3
+
+# No CO catalog row for this attack, so the ordinary class — absence in that
+# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 13.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.15
+  crit_multiplier: 1.9
+  status_chance: 0.21
+  punch_through_m: 0.0
+  damage: { impact: 22.95, slash: 1.35, puncture: 2.7 }   # total 27.0
+
+# incarnon_evolutions: definitions live in data/evolutions/gorgon_wraith_*.yaml.
+
+source:
+  url: https://wiki.warframe.com/w/Gorgon_Wraith

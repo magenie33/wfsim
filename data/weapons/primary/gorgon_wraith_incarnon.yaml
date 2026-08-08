@@ -1,0 +1,72 @@
+id: gorgon_wraith_incarnon
+name: Gorgon Wraith (Incarnon Form)
+slot: primary
+class: rifle
+form: incarnon
+
+transform_group: gorgon_wraith
+transforms_from: gorgon_wraith
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+
+incarnon:
+  gauge:
+    charge_on: weakpoint_hits
+    charges_to_fill: 30
+    rounds_per_charge: 0.66
+    max_rounds: 20
+  transmute:
+    activation: alt_fire
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+  incarnon_magazine:
+    resource: incarnon_charges
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 3      # = base reload time, unmodded
+  transmute_out_seconds: 1.0     # MEASURED on Dual Toxocyst (M9)
+
+pseudo_reload:
+  magazine: 20
+  reload_seconds: 4.0
+
+# No CO catalog row for this attack, so the ordinary class — absence in that
+# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 120
+  fire_rate: 1
+  multishot: 1.0
+  ammo_cost: 1                  # of the 20-round charge pool
+  crit_chance: 0.19
+  crit_multiplier: 2.1
+  status_chance: 0.27
+  punch_through_m: 0.0
+  damage: { impact: 25, slash: 25, puncture: 75 }   # total 125
+  # The radial part — rules in MECHANICS §7.
+  radial:
+    damage: { heat: 750 }   # total 750
+    radius_m: 5
+    falloff_start_m: 0
+    falloff_reduction: 0.1
+    crit_chance: 0.19
+    crit_multiplier: 2.1
+    status_chance: 0.27
+    # NOT DECLARED: no CO catalog row for this weapon, so the radial
+    # takes the engine's default — no Condition Overload on an explosion.
+
+# incarnon_evolutions: see data/weapons/primary/gorgon_wraith.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Gorgon_Incarnon_Genesis
+  # WFCD `attacks`: "Incarnon Form" and "Incarnon Form AoE"

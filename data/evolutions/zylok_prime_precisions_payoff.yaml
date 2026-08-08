@@ -1,0 +1,25 @@
+id: zylok_prime_precisions_payoff
+name: Precision's Payoff
+weapon: zylok_prime
+tier: 2
+description: "Increase Base Damage by +30. On Burst Headshots: Increase Base Damage by +20. Stacks up to 3x."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Damage by +30"
+  - kind: flat_base_damage
+    value: 30.0
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "On Burst Headshots: Increase Base Damage by +20"
+  - kind: unmodelled_on_burst_headshots_increase_base_damage_by
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Stacks up to 3x"
+  - kind: unmodelled_stacks_up_to_x
+
+source:
+  url: https://wiki.warframe.com/w/Zylok_Incarnon_Genesis

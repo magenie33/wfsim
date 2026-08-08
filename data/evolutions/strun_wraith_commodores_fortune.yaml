@@ -1,0 +1,17 @@
+id: strun_wraith_commodores_fortune
+name: Commodore's Fortune
+weapon: strun_wraith
+tier: 4
+description: "Increase Base Critical Chance by +12%."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Critical Chance by +12%"
+  - kind: flat_base_crit_chance
+    value: 0.12
+
+source:
+  url: https://wiki.warframe.com/w/Strun_Incarnon_Genesis

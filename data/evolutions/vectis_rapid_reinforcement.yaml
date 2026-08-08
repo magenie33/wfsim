@@ -1,0 +1,17 @@
+id: vectis_rapid_reinforcement
+name: Rapid Reinforcement
+weapon: vectis
+tier: 3
+description: "+60% Reload Speed."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "+60% Reload Speed"
+  - kind: reload_speed_bonus
+    value: 0.6
+
+source:
+  url: https://wiki.warframe.com/w/Vectis_Incarnon_Genesis

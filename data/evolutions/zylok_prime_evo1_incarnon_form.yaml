@@ -1,0 +1,18 @@
+id: zylok_prime_evo1_incarnon_form
+name: Incarnon Form
+weapon: zylok_prime
+tier: 1
+description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Charge a large single shot that deals Radial Heat Damage."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: fixed
+
+effects:
+  # LOADED as `EvoEffect::UnlocksForm(weapon)` — the form's stats are the
+  # zylok_prime_incarnon entry's own, not perk payload.
+  - kind: unlocks_weapon
+    weapon: zylok_prime_incarnon
+
+source:
+  url: https://wiki.warframe.com/w/Zylok_Incarnon_Genesis

@@ -1,0 +1,21 @@
+id: gorgon_wraith_hunters_mantra
+name: Hunter's Mantra
+weapon: gorgon_wraith
+tier: 2
+description: "Increase Base Damage by +5. With Channeled Ability Active: +3 Punch Through, +40% Accuracy."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Damage by +5"
+  - kind: flat_base_damage
+    value: 5.0
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "With Channeled Ability Active: +3 Punch Through, +40% Accuracy"
+  - kind: unmodelled_with_channeled_ability_active_punch_through_accuracy
+
+source:
+  url: https://wiki.warframe.com/w/Gorgon_Incarnon_Genesis

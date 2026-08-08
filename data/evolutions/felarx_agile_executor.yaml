@@ -1,0 +1,18 @@
+id: felarx_agile_executor
+name: Agile Executor
+weapon: felarx
+tier: 5
+description: "Gain 50% Ammo Efficiency while Aim Gliding and Sliding."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Gain 50% Ammo Efficiency while Aim Gliding and Sliding"
+  - kind: unmodelled_gain_ammo_efficiency_while_aim_gliding_and_sliding
+
+source:
+  url: https://wiki.warframe.com/w/Felarx

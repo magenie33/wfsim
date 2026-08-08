@@ -65,9 +65,12 @@ weapons:
   dread_uncharged: Dread.png
   dual_toxocyst: DualToxocyst.png
   dual_toxocyst_incarnon: DualToxocyst.png
+  felarx: ZarimanPumpShotgun.png
   furis: Furis.png
   furis_incarnon: Furis.png
   gammacor: Gammacor.png
+  gorgon: Gorgon.png
+  gorgon_wraith: GorgonWraith.png
   gotva_prime: GrnOrokinRifle.png
   karak_wraith: KarakWraith.png
   kunai: Kunai.png
@@ -100,23 +103,32 @@ weapons:
   mk1_kunai: wiki:MK1-Kunai.png
   mk1_kunai_incarnon: wiki:MK1-Kunai.png
   mk1_paris: wiki:MK1-Paris.png
-  paris: Paris.png
-  paris_uncharged: Paris.png
   mk1_paris_uncharged: wiki:MK1-Paris.png
+  mk1_strun: MK1-Strun.png
   ocucor: wiki:Ocucor.png
+  onos: EntratiWristGun.png
+  paris: Paris.png
   paris_prime: ParisPrime.png
   paris_prime_uncharged: ParisPrime.png
+  paris_uncharged: Paris.png
   phantasma_prime: PhantasmaPrime.png
   phantasma_prime_charged: PhantasmaPrime.png
   phenmor: ZarimanSemiAutoRifle.png
   phenmor_incarnon: ZarimanSemiAutoRifle.png
   prisma_angstrum: PrismaAngstrum.png
+  prisma_gorgon: PrismaGorgon.png
   prisma_grinlok: PrismaGrinlok.png
   rakta_ballistica: RaktaBallistica.png
   sicarus: Sicarus.png
   sicarus_incarnon: Sicarus.png
   sicarus_prime: SicarusPrime.png
   sicarus_prime_incarnon: SicarusPrime.png
+  soma: Soma.png
+  soma_prime: SomaPrime.png
+  strun: Strun.png
+  strun_prime: StrunPrime.png
+  strun_wraith: StrunWraith.png
+  stug: Stug.png
   sybaris: Sybaris.png
   sybaris_incarnon: Sybaris.png
   sybaris_prime: SybarisPrime.png
@@ -130,7 +142,11 @@ weapons:
   vasto_incarnon: Vasto.png
   vasto_prime: VastoPrime.png
   vasto_prime_incarnon: VastoPrime.png
+  vectis: Vectis.png
+  vectis_prime: VectisPrime.png
   verglas_prime: VerglasPrime.png
+  zylok: ConclaveLeverPistol.png
+  zylok_prime: ZylokPrime.png
 
 mods:
   # A RIVEN's card, DE's own: every riven shares one image because the game

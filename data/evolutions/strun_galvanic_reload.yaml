@@ -1,0 +1,18 @@
+id: strun_galvanic_reload
+name: Galvanic Reload
+weapon: strun
+tier: 3
+description: "On hitting a target affected by an Electricity status, 40% chance to restore 1 round in the magazine from ammo pool."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "On hitting a target affected by an Electricity status, 40% chance to restore 1 round in the magazine from ammo pool"
+  - kind: unmodelled_on_hitting_a_target_affected_by_an_electricity_status
+
+source:
+  url: https://wiki.warframe.com/w/Strun_Incarnon_Genesis

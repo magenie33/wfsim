@@ -1,0 +1,70 @@
+id: stug
+name: Stug
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 2
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group.
+transform_group: stug
+transforms_to: stug_incarnon
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+# NOT MODELLED — THIS ENTRY CARRIES ONE PART OF THE BASE ATTACK. A
+# multi-part base needs a SECOND weapon entry to be right; the Cernos
+# Prime is the pattern (uncharged and charged are two entries in one
+# transform group). Until that exists, this weapon's number is the number
+# for the part named in `attack:` below and NOT for the whole weapon.
+unmodeled:
+  - "the blob economy is not modelled — a shot EMBEDS and only explodes after a delay or at max stacks, and the sim fires the embed as an ordinary hit"
+  - "the Incarnon form's bouncing secondary projectiles are not modelled — a stacked shot releases 2 to 5 of them, each exploding on up to 3 bounces"
+  - "the Blob Explosion is not modelled — this entry carries only the Blob Embed"
+accuracy: 100
+disposition: 1.48
+polarities: [vazarin]
+exilus_polarity: madurai
+riven_family: Stug
+traits: [incarnon]
+introduced: "Update 11.5"
+internal_name: /Lotus/Weapons/Grineer/Pistols/GrineerCrossbow/GrineerGooGun
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 20
+reload_seconds: 2
+
+# CONDITION OVERLOAD DOES NOT APPLY TO THIS WEAPON. The wiki's CO catalog,
+# verbatim: "Stug | Blob Impact | 0% | Does not apply". It is the only
+# entry in the roster that takes `inert` — a blob has no direct hit for a
+# per-status bonus to attach to.
+co_behavior: inert
+
+attack:
+  trigger: auto
+  shot_type: hit_scan
+  projectile_speed_mps: 35
+  fire_rate: 4
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.05
+  crit_multiplier: 1.5
+  status_chance: 0.1
+  punch_through_m: 0.0
+  damage: { corrosive: 4 }   # total 4
+
+# incarnon_evolutions: definitions live in data/evolutions/stug_*.yaml.
+
+source:
+  url: https://wiki.warframe.com/w/Stug

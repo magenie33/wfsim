@@ -1,0 +1,18 @@
+id: felarx_devastating_attrition
+name: Devastating Attrition
+weapon: felarx
+tier: 5
+description: "50% chance to deal +2000% damage on non-critical hits."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "50% chance to deal +2000% damage on non-critical"
+  - kind: chance_damage_on_noncrit
+    chance: 0.5
+    value: 20.0
+
+source:
+  url: https://wiki.warframe.com/w/Felarx

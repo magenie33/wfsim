@@ -375,9 +375,22 @@ is intrinsic — but they still model as a transform group here, and they carry
    four bows deal exactly twice their tapped total when drawn, so the charge
    multiplier is 2 and the fraction is 0.5, the same number the Cernos Prime
    carries for the same reason.
-5. **The mechanic-gated ones, one mechanic per batch**: Soma+Gorgon (spool),
-   Strun+Felarx (by-round reload), Zylok (duplex), Vectis (sniper combo).
-6. **Onos**, then **Stug** last — the two shapes nothing else shares.
+5. ~~**The mechanic-gated ones**~~ — **all done 2026-08-08** (batches 6-8):
+   Soma+Gorgon (spool), Strun+Felarx (by-round reload), Zylok (duplex),
+   Vectis (sniper combo). None of the mechanics is SIMULATED; each is declared
+   on the entry that has it, in `unmodeled:`, which the stats panel prints. The
+   measurements below are what would turn a declaration into a model.
+6. ~~**Onos**, then **Stug**~~ — **done 2026-08-08**. The Onos's Incarnon
+   form has TWO attacks and an entry carries one, so this one carries the held
+   beam and NAMES the charged shot and its explosion; pairing the beam with the
+   charge's explosion would have been a wrong number rather than a missing one.
+   The Stug is the first weapon in the roster to take `co_behavior: inert` — the
+   catalog gives it "0%, does not apply", and a blob has no direct hit for a
+   per-status bonus to attach to.
+
+**THE ROSTER IS COMPLETE.** Every Incarnon adapter and every natural Incarnon
+in this document has entries, evolutions, art and names. What is left is
+per-gun VERIFICATION and the mechanics below.
 
 ## What has to be measured
 

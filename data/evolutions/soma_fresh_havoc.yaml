@@ -1,0 +1,22 @@
+id: soma_fresh_havoc
+name: Fresh Havoc
+weapon: soma
+tier: 4
+description: "On Reload From Empty: Increase Base Damage by +6. Stacks up to 2x."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "On Reload From Empty: Increase Base Damage by +6"
+  - kind: unmodelled_on_reload_from_empty_increase_base_damage_by
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Stacks up to 2x"
+  - kind: unmodelled_stacks_up_to_x
+
+source:
+  url: https://wiki.warframe.com/w/Soma_Incarnon_Genesis

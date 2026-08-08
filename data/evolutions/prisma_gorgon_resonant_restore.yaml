@@ -1,0 +1,22 @@
+id: prisma_gorgon_resonant_restore
+name: Resonant Restore
+weapon: prisma_gorgon
+tier: 3
+description: "On Reload From Empty: Increase Base Magazine Capacity by +15. Stacks up to 3x."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "On Reload From Empty: Increase Base Magazine Capacity by +15"
+  - kind: unmodelled_on_reload_from_empty_increase_base_magazine_capacity
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Stacks up to 3x"
+  - kind: unmodelled_stacks_up_to_x
+
+source:
+  url: https://wiki.warframe.com/w/Gorgon_Incarnon_Genesis

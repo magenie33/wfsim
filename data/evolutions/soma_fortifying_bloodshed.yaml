@@ -1,0 +1,21 @@
+id: soma_fortifying_bloodshed
+name: Fortifying Bloodshed
+weapon: soma
+tier: 2
+description: "Increase Base Damage by +10. On Slash Status Kill: +100 Overshield."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Damage by +10"
+  - kind: flat_base_damage
+    value: 10.0
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "On Slash Status Kill: +100 Overshield"
+  - kind: unmodelled_on_slash_status_kill_overshield
+
+source:
+  url: https://wiki.warframe.com/w/Soma_Incarnon_Genesis

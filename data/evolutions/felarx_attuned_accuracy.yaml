@@ -1,0 +1,17 @@
+id: felarx_attuned_accuracy
+name: Attuned Accuracy
+weapon: felarx
+tier: 2
+description: "+40% Accuracy when Aiming."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "+40% Accuracy"
+  - kind: accuracy_bonus
+    value: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Felarx

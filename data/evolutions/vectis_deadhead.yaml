@@ -1,0 +1,17 @@
+id: vectis_deadhead
+name: Deadhead
+weapon: vectis
+tier: 4
+description: "+25% Headshot Damage."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "+25% Headshot Damage"
+  - kind: headshot_damage
+    value: 0.25
+
+source:
+  url: https://wiki.warframe.com/w/Vectis_Incarnon_Genesis

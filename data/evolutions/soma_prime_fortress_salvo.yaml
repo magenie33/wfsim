@@ -1,0 +1,21 @@
+id: soma_prime_fortress_salvo
+name: Fortress Salvo
+weapon: soma_prime
+tier: 2
+description: "Increase Base Damage by +12. With Armor Over 450: +4 Punch Through."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Damage by +12"
+  - kind: flat_base_damage
+    value: 12.0
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "With Armor Over 450: +4 Punch Through"
+  - kind: unmodelled_with_armor_over_punch_through
+
+source:
+  url: https://wiki.warframe.com/w/Soma_Incarnon_Genesis

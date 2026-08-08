@@ -25,8 +25,11 @@
   <url><loc>https://wfsim.app/weapons/Dex_Sybaris</loc></url>
   <url><loc>https://wfsim.app/weapons/Dread</loc></url>
   <url><loc>https://wfsim.app/weapons/Dual_Toxocyst</loc></url>
+  <url><loc>https://wfsim.app/weapons/Felarx</loc></url>
   <url><loc>https://wfsim.app/weapons/Furis</loc></url>
   <url><loc>https://wfsim.app/weapons/Gammacor</loc></url>
+  <url><loc>https://wfsim.app/weapons/Gorgon</loc></url>
+  <url><loc>https://wfsim.app/weapons/Gorgon_Wraith</loc></url>
   <url><loc>https://wfsim.app/weapons/Gotva_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Karak_Wraith</loc></url>
   <url><loc>https://wfsim.app/weapons/Kunai</loc></url>
@@ -44,17 +47,26 @@
   <url><loc>https://wfsim.app/weapons/MK1-Furis</loc></url>
   <url><loc>https://wfsim.app/weapons/MK1-Kunai</loc></url>
   <url><loc>https://wfsim.app/weapons/MK1-Paris</loc></url>
+  <url><loc>https://wfsim.app/weapons/MK1-Strun</loc></url>
   <url><loc>https://wfsim.app/weapons/Miter</loc></url>
   <url><loc>https://wfsim.app/weapons/Ocucor</loc></url>
+  <url><loc>https://wfsim.app/weapons/Onos</loc></url>
   <url><loc>https://wfsim.app/weapons/Paris</loc></url>
   <url><loc>https://wfsim.app/weapons/Paris_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Phantasma_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Phenmor</loc></url>
   <url><loc>https://wfsim.app/weapons/Prisma_Angstrum</loc></url>
+  <url><loc>https://wfsim.app/weapons/Prisma_Gorgon</loc></url>
   <url><loc>https://wfsim.app/weapons/Prisma_Grinlok</loc></url>
   <url><loc>https://wfsim.app/weapons/Rakta_Ballistica</loc></url>
   <url><loc>https://wfsim.app/weapons/Sicarus</loc></url>
   <url><loc>https://wfsim.app/weapons/Sicarus_Prime</loc></url>
+  <url><loc>https://wfsim.app/weapons/Soma</loc></url>
+  <url><loc>https://wfsim.app/weapons/Soma_Prime</loc></url>
+  <url><loc>https://wfsim.app/weapons/Strun</loc></url>
+  <url><loc>https://wfsim.app/weapons/Strun_Prime</loc></url>
+  <url><loc>https://wfsim.app/weapons/Strun_Wraith</loc></url>
+  <url><loc>https://wfsim.app/weapons/Stug</loc></url>
   <url><loc>https://wfsim.app/weapons/Sybaris</loc></url>
   <url><loc>https://wfsim.app/weapons/Sybaris_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Synoid_Gammacor</loc></url>
@@ -62,5 +74,9 @@
   <url><loc>https://wfsim.app/weapons/Torid</loc></url>
   <url><loc>https://wfsim.app/weapons/Vasto</loc></url>
   <url><loc>https://wfsim.app/weapons/Vasto_Prime</loc></url>
+  <url><loc>https://wfsim.app/weapons/Vectis</loc></url>
+  <url><loc>https://wfsim.app/weapons/Vectis_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Verglas_Prime</loc></url>
+  <url><loc>https://wfsim.app/weapons/Zylok</loc></url>
+  <url><loc>https://wfsim.app/weapons/Zylok_Prime</loc></url>
 </urlset>

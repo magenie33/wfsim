@@ -1,0 +1,17 @@
+id: onos_marksmans_hand
+name: Marksman's Hand
+weapon: onos
+tier: 2
+description: "-30% Weapon Recoil."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "-30% Weapon Recoil"
+  - kind: recoil_reduction
+    value: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Onos

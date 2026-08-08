@@ -1,0 +1,76 @@
+id: stug_incarnon
+name: Stug (Incarnon Form)
+slot: secondary
+class: pistol
+form: incarnon
+
+transform_group: stug
+transforms_from: stug
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+unmodeled:
+  - "the Incarnon Form Bounce Explosion is not modelled — this form has more parts than this entry carries"
+
+incarnon:
+  gauge:
+    charge_on: direct_hits
+    charges_to_fill: 30
+    rounds_per_charge: 4
+    max_rounds: 120
+  transmute:
+    activation: alt_fire
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+  incarnon_magazine:
+    resource: incarnon_charges
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 2      # = base reload time, unmodded
+  transmute_out_seconds: 1.0     # MEASURED on Dual Toxocyst (M9)
+
+pseudo_reload:
+  magazine: 120
+  reload_seconds: 3.0
+
+# CONDITION OVERLOAD DOES NOT APPLY TO THIS WEAPON. The wiki's CO catalog,
+# verbatim: "Stug | Blob Impact | 0% | Does not apply". It is the only
+# entry in the roster that takes `inert` — a blob has no direct hit for a
+# per-status bonus to attach to.
+co_behavior: inert
+
+attack:
+  trigger: auto
+  shot_type: hit_scan
+  projectile_speed_mps: 35
+  fire_rate: 4
+  multishot: 1.0
+  ammo_cost: 1                  # of the 120-round charge pool
+  crit_chance: 0.15
+  crit_multiplier: 2
+  status_chance: 0.2
+  punch_through_m: 0.0
+  damage: { corrosive: 50 }   # total 50
+  # The radial part — rules in MECHANICS §7.
+  radial:
+    damage: { corrosive: 200 }   # total 200
+    radius_m: 0.3
+    falloff_start_m: 0
+    falloff_reduction: 0.3
+    crit_chance: 0.15
+    crit_multiplier: 2
+    status_chance: 0.2
+    # NOT DECLARED: no CO catalog row for this weapon, so the radial
+    # takes the engine's default — no Condition Overload on an explosion.
+
+# incarnon_evolutions: see data/weapons/secondary/stug.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Stug_Incarnon_Genesis
+  # WFCD `attacks`: "Incarnon Form Blob Embed" and "Incarnon Form Blob Explosion"

@@ -1097,7 +1097,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 61] = [
+        const EXPECTED: [(&str, &str, &[&str]); 77] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
@@ -1126,6 +1126,31 @@ mod tests {
             ("vasto_prime", "semi_auto", &["semi_pistol_cannonade"]),
             ("bronco", "semi_auto", &["semi_pistol_cannonade"]),
             ("bronco_prime", "semi_auto", &["semi_pistol_cannonade"]),
+            // Batch 8 — the last three. All auto, so no Semi-* Cannonade:
+            // the Felarx is an auto shotgun and the other two auto pistols.
+            ("felarx", "auto", &[]),
+            ("onos", "auto", &[]),
+            ("stug", "auto", &[]),
+            // Batch 7. The Strun family is a semi-auto SHOTGUN, so it takes
+            // the shotgun Cannonade; the Vectis is a semi-auto rifle-pool
+            // sniper and takes the rifle one. DUPLEX is its own trigger family
+            // like burst — one pull, two rounds — so the Zylok takes neither.
+            ("strun", "semi_auto", &["semi_shotgun_cannonade"]),
+            ("mk1_strun", "semi_auto", &["semi_shotgun_cannonade"]),
+            ("strun_wraith", "semi_auto", &["semi_shotgun_cannonade"]),
+            ("strun_prime", "semi_auto", &["semi_shotgun_cannonade"]),
+            ("zylok", "duplex", &[]),
+            ("zylok_prime", "duplex", &[]),
+            ("vectis", "semi_auto", &["semi_rifle_cannonade"]),
+            ("vectis_prime", "semi_auto", &["semi_rifle_cannonade"]),
+            // Batch 6 — the SPOOL weapons. Both families are ordinary autos
+            // as far as the trigger vocabulary is concerned; the spool is a
+            // ramp on the rate, not a trigger family.
+            ("soma", "auto", &[]),
+            ("soma_prime", "auto", &[]),
+            ("gorgon", "auto", &[]),
+            ("gorgon_wraith", "auto", &[]),
+            ("prisma_gorgon", "auto", &[]),
             // Batch 5 — the bows. A drawn shot takes no Cannonade either;
             // the tapped entries are not roster rows, so they are not listed.
             ("paris", "charge", &[]),

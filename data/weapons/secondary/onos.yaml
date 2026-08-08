@@ -1,0 +1,62 @@
+id: onos
+name: Onos
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 14
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group.
+transform_group: onos
+transforms_to: onos_incarnon
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+unmodeled:
+  - "the Incarnon form's CHARGED arm-cannon shot is not modelled — this entry carries its held beam, and the charged shot is a second attack with its own explosion"
+  - "the held beam's charge ramp is not modelled — in game its damage climbs to 2.5x the longer the trigger is held"
+accuracy: 40
+disposition: 0.8
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Onos
+traits: [incarnon, hex]
+introduced: "Update 35.5"
+internal_name: /Lotus/Weapons/Thanotech/EntratiWristGun/EntratiWristGunWeapon
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 20
+reload_seconds: 2
+
+# No CO catalog row for this attack, so the ordinary class — absence in that
+# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 1.4
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.26
+  crit_multiplier: 2.4
+  status_chance: 0.22
+  punch_through_m: 0.0
+  damage: { puncture: 220 }   # total 220
+
+# incarnon_evolutions: definitions live in data/evolutions/onos_*.yaml.
+
+source:
+  url: https://wiki.warframe.com/w/Onos

@@ -1,0 +1,18 @@
+id: stug_evo1_incarnon_form
+name: Incarnon Form
+weapon: stug
+tier: 1
+description: "Direct hits charge Incarnon Transmutation; Alt Fire transmutes. Unleash a chaotic maelstrom of bouncing corrosive blobs."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: fixed
+
+effects:
+  # LOADED as `EvoEffect::UnlocksForm(weapon)` — the form's stats are the
+  # stug_incarnon entry's own, not perk payload.
+  - kind: unlocks_weapon
+    weapon: stug_incarnon
+
+source:
+  url: https://wiki.warframe.com/w/Stug_Incarnon_Genesis

@@ -1,0 +1,70 @@
+id: vectis
+name: Vectis
+slot: primary
+class: sniper
+form: base
+default_form: true
+mod_pools: [primary, rifle]
+mastery_rank: 2
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group.
+transform_group: vectis
+transforms_to: vectis_incarnon
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+unmodeled:
+  - "the sniper combo counter is not modelled — a scoped sniper's damage climbs with consecutive hits in game and stays flat here"
+  - "the stepped zoom is not modelled, and neither is the scope's own headshot bonus"
+  - "damage falloff from 400 m to 600 m (down to 50% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+accuracy: 13.33
+disposition: 1.15
+polarities: [madurai]
+exilus_polarity: madurai
+riven_family: Vectis
+traits: [incarnon]
+introduced: "Update 10.6"
+internal_name: /Lotus/Weapons/Tenno/Rifle/TennoSniperRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 1
+reload_seconds: 1
+
+# No CO catalog row for this attack, so the ordinary class — absence in that
+# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 1.5
+  # NOT MODELLED — the arena has no distance, so this weapon is
+  # simulated at point blank. Recorded because the RIVEN pool reads
+  # it: a hitscan weapon that lists a falloff still rolls Projectile
+  # Speed, which scales the whole range (wiki `Projectile Speed`).
+  falloff:
+    start_m: 400
+    end_m: 600
+    reduction: 0.5   # fraction KEPT past end_m
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.25
+  crit_multiplier: 2
+  status_chance: 0.3
+  punch_through_m: 0.0
+  damage: { impact: 90, slash: 56.25, puncture: 78.75 }   # total 225.0
+
+# incarnon_evolutions: definitions live in data/evolutions/vectis_*.yaml.
+
+source:
+  url: https://wiki.warframe.com/w/Vectis

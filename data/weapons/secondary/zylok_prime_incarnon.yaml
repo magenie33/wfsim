@@ -1,0 +1,76 @@
+id: zylok_prime_incarnon
+name: Zylok Prime (Incarnon Form)
+slot: secondary
+class: pistol
+form: incarnon
+
+transform_group: zylok_prime
+transforms_from: zylok_prime
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+
+incarnon:
+  gauge:
+    charge_on: weakpoint_hits
+    charges_to_fill: 12
+    rounds_per_charge: 1
+    max_rounds: 12
+  transmute:
+    activation: alt_fire
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+  incarnon_magazine:
+    resource: incarnon_charges
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 1.2      # = base reload time, unmodded
+  transmute_out_seconds: 1.0     # MEASURED on Dual Toxocyst (M9)
+
+pseudo_reload:
+  magazine: 12
+  reload_seconds: 2.2
+
+# THE CO CATALOG'S ROW IS ABOUT THIS FORM'S RADIAL: "Zylok family |
+# Incarnon Form Radial | Adding | 90%". The class is what the loader
+# already does; the 90% is NOT expressible — `co_base_fraction` is a
+# WEAPON-level field and this is a RADIAL-level discount. Recorded rather
+# than faked, the same way the Burston's 24% is.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: charge
+  shot_type: hit_scan
+  fire_rate: 1
+  charge_seconds: 0.6
+  charge_cadence: draw_then_rate
+  multishot: 1.0
+  ammo_cost: 1                  # of the 12-round charge pool
+  crit_chance: 0.26
+  crit_multiplier: 2.4
+  status_chance: 0.4
+  punch_through_m: 0.0
+  damage: { impact: 200, puncture: 300 }   # total 500
+  # The radial part — rules in MECHANICS §7.
+  radial:
+    damage: { heat: 700 }   # total 700
+    radius_m: 6
+    falloff_start_m: 0
+    falloff_reduction: 0.6
+    crit_chance: 0.26
+    crit_multiplier: 2.4
+    status_chance: 0.4
+    # NOT DECLARED: no CO catalog row for this weapon, so the radial
+    # takes the engine's default — no Condition Overload on an explosion.
+
+# incarnon_evolutions: see data/weapons/secondary/zylok_prime.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Zylok_Incarnon_Genesis
+  # WFCD `attacks`: "Incarnon Form" and "Incarnon Form Radial Attack"

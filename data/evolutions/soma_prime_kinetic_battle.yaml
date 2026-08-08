@@ -1,0 +1,17 @@
+id: soma_prime_kinetic_battle
+name: Kinetic Battle
+weapon: soma_prime
+tier: 3
+description: "-50% Weapon Recoil."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "-50% Weapon Recoil"
+  - kind: recoil_reduction
+    value: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Soma_Incarnon_Genesis

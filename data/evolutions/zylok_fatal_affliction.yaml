@@ -1,0 +1,18 @@
+id: zylok_fatal_affliction
+name: Fatal Affliction
+weapon: zylok
+tier: 4
+description: "+40% Direct Damage per Status Type affecting the target."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "+40% Direct Damage per Status Type affecting the target"
+  - kind: unmodelled_direct_damage_per_status_type_affecting_the_target
+
+source:
+  url: https://wiki.warframe.com/w/Zylok_Incarnon_Genesis

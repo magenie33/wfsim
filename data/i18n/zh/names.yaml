@@ -153,6 +153,38 @@ weapons:
   paris_prime_incarnon: 帕里斯 Prime (灵化形态)
   paris_prime_uncharged: 帕里斯 Prime
   paris_uncharged: 帕里斯
+  gorgon: 蛇发女妖
+  gorgon_incarnon: 蛇发女妖 (灵化形态)
+  gorgon_wraith: 蛇发女妖·亡魂
+  gorgon_wraith_incarnon: 蛇发女妖·亡魂 (灵化形态)
+  prisma_gorgon: 棱晶·蛇发女妖
+  prisma_gorgon_incarnon: 棱晶·蛇发女妖 (灵化形态)
+  soma: 月神
+  soma_incarnon: 月神 (灵化形态)
+  soma_prime: 月神 Prime
+  soma_prime_incarnon: 月神 Prime (灵化形态)
+  mk1_strun: MK1-斯特朗
+  mk1_strun_incarnon: MK1-斯特朗 (灵化形态)
+  strun: 斯特朗
+  strun_incarnon: 斯特朗 (灵化形态)
+  strun_prime: 斯特朗 Prime
+  strun_prime_incarnon: 斯特朗 Prime (灵化形态)
+  strun_wraith: 斯特朗·亡魂
+  strun_wraith_incarnon: 斯特朗·亡魂 (灵化形态)
+  vectis: 守望者
+  vectis_incarnon: 守望者 (灵化形态)
+  vectis_prime: 守望者 Prime
+  vectis_prime_incarnon: 守望者 Prime (灵化形态)
+  zylok: 席尔火枪
+  zylok_incarnon: 席尔火枪 (灵化形态)
+  zylok_prime: 席尔火枪 Prime
+  zylok_prime_incarnon: 席尔火枪 Prime (灵化形态)
+  felarx: 逐枭
+  felarx_incarnon: 逐枭 (灵化形态)
+  onos: 赘骨
+  onos_incarnon: 赘骨 (灵化形态)
+  stug: 史特克
+  stug_incarnon: 史特克 (灵化形态)
 
 enemies:
   thrax_centurion: 凶魂百夫长

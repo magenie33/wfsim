@@ -1,0 +1,20 @@
+id: stug_deathtrap_trigger
+name: Deathtrap Trigger
+weapon: stug
+tier: 4
+description: "Increase Base Critical Chance by +25%. Increase Base Critical Damage Multiplier by +1.5x."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Critical Chance by +25%"
+  - kind: flat_base_crit_chance
+    value: 0.25
+  # from: "Increase Base Critical Damage Multiplier by +1.5x"
+  - kind: flat_base_crit_multiplier
+    value: 1.5
+
+source:
+  url: https://wiki.warframe.com/w/Stug_Incarnon_Genesis

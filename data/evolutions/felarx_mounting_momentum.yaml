@@ -1,0 +1,26 @@
+id: felarx_mounting_momentum
+name: Mounting Momentum
+weapon: felarx
+tier: 3
+description: "Reload increases Fire Rate by +10% per shell. Stacks up to 99x. Resets on reload."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Reload increases Fire Rate by +10% per shell"
+  - kind: unmodelled_reload_increases_fire_rate_by_per_shell
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Stacks up to 99x"
+  - kind: unmodelled_stacks_up_to_x
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Resets on reload"
+  - kind: unmodelled_resets_on_reload
+
+source:
+  url: https://wiki.warframe.com/w/Felarx

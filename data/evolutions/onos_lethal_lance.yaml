@@ -1,0 +1,18 @@
+id: onos_lethal_lance
+name: Lethal Lance
+weapon: onos
+tier: 4
+description: "On Kill: +2.5 Punch Through for 20 seconds."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "On Kill: +2.5 Punch Through for 20 seconds"
+  - kind: unmodelled_on_kill_punch_through_for_seconds
+
+source:
+  url: https://wiki.warframe.com/w/Onos

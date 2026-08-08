@@ -1,0 +1,21 @@
+id: onos_incarnon_efficiency
+name: Incarnon Efficiency
+weapon: onos
+tier: 4
+description: "Headshots build +50% more Incarnon Transmutation charge."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Headshots build +50% more Incarnon"
+  - kind: incarnon_charge_rate
+    value: 0.5
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Transmutation charge"
+  - kind: unmodelled_transmutation_charge
+
+source:
+  url: https://wiki.warframe.com/w/Onos

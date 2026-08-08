@@ -1,0 +1,21 @@
+id: mk1_strun_tenno_targeting
+name: Tenno Targeting
+weapon: mk1_strun
+tier: 2
+description: "Increase Base Damage by +68. With Channeled Ability Active: +4 Punch Through."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Damage by +68"
+  - kind: flat_base_damage
+    value: 68.0
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "With Channeled Ability Active: +4 Punch Through"
+  - kind: unmodelled_with_channeled_ability_active_punch_through
+
+source:
+  url: https://wiki.warframe.com/w/Strun_Incarnon_Genesis
