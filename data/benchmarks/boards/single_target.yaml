@@ -232,6 +232,24 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, frigid_blast, scattering_inferno, shell_shock]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_crux]
+  - weapon: boltor_prime
+    mode: cycle
+    score: 17.172316758873645
+    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, stormbringer, infected_clip, primed_cryo_rounds]
+    evolutions: [boltor_prime_evo1_incarnon_form, boltor_prime_hunters_mantra, boltor_prime_rapid_reinforcement, boltor_prime_commodores_fortune]
+    arcanes: [primary_deadhead]
+  - weapon: boltor_prime
+    mode: cycle
+    score: 5.530716439662103
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, rifle_elementalist, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [boltor_prime_evo1_incarnon_form, boltor_prime_hunters_mantra, boltor_prime_rapid_reinforcement, boltor_prime_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: boltor_prime
+    mode: cycle
+    score: 1.1958973220347213
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, rifle_elementalist, vital_sense, primed_cryo_rounds, high_voltage]
+    evolutions: [boltor_prime_evo1_incarnon_form, boltor_prime_hunters_mantra, boltor_prime_rapid_reinforcement, boltor_prime_survivors_edge]
+    arcanes: [primary_debilitate]
   - weapon: burston
     mode: cycle
     score: 42.52625051209297
