@@ -932,6 +932,11 @@ pub fn meta_json() -> Value {
             "max_rank": a.max_rank,
             "rarity": format!("{:?}", a.rarity).to_lowercase(),
             "not_modeled": a.has_unmodeled(),
+            // …and the PARTLY-modelled case, which was silent until 2026-08-08.
+            // Same field name and same meaning as a mod's, so the card renders
+            // both with one function: everything else on this arcane works and
+            // these do not.
+            "unmodeled_effects": a.unmodeled_effects(),
             // WHICH WEAPON CLASSES MAY EQUIP IT. Empty = any weapon whose slot
             // seats it. The page filters its picker on this so the arsenal and
             // the app offer the same set — `arcanes_data::pool_for_weapon` is

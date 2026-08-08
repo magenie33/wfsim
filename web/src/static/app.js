@@ -4705,7 +4705,13 @@ function renderPanel(r) {
     passiveNote.hidden = !gaps.length;
     passiveNote.innerHTML = gaps.length
       ? `<div class="unmod-h">◈ ${escHtml(tr("not modelled on this weapon — the numbers below are a floor, not its full output"))}</div>`
-        + gaps.map((g) => `<div class="unmod-l">${escHtml(g)}</div>`).join("")
+        // THROUGH `tr`, like the enemy card's gaps. These are OUR sentences,
+        // not DE's, so they translate rather than being transcribed — and a
+        // line with no entry falls through to the English it was written in,
+        // which is the overlay's whole contract. Rendering them raw left a
+        // Chinese page with the one paragraph that matters in English
+        // (2026-08-08).
+        + gaps.map((g) => `<div class="unmod-l">${escHtml(tr(g))}</div>`).join("")
       : "";
   }
   const srcLine = (s) =>

@@ -438,6 +438,12 @@ enum ArcEffect {
     /// (recoil, combo duration, overguard-on-damage: the description states
     /// those literally). Kept so the arcane loads.
     Inert(String),
+    /// An effect this loader deliberately does NOT build, because something
+    /// else already does. Secondary Enervate's on-hit trigger is implemented
+    /// in the perk layer, so filing it with the effects that do nothing would
+    /// put "partly modelled" on a card that is fully modelled — a lie in the
+    /// other direction, and the more expensive one.
+    Elsewhere(String),
 }
 
 fn f(v: &Value, k: &str) -> Option<f64> {
@@ -510,7 +516,7 @@ fn effect(v: &Value) -> Option<ArcEffect> {
                     return Some(ArcEffect::CondReloadSpeed(scale(v)))
                 }
                 // Enervate's on_hit buff is implemented by its perk.
-                "on_hit" => return inert("perk-implemented (on_hit)"),
+                "on_hit" => return Some(ArcEffect::Elsewhere("on_hit".into())),
                 other => return inert(&format!("trigger {other}")),
             };
             let grant = match grants {
@@ -600,6 +606,32 @@ impl ArcaneDef {
         self.effects
             .iter()
             .any(|e| matches!(e, ArcEffect::Unmodeled { .. }))
+    }
+
+    /// The effects on this arcane that load but do NOTHING — what the card
+    /// must admit it does not do.
+    ///
+    /// `ArcEffect::Inert` is where an effect goes when the loader has no arm
+    /// for its kind, or has one and cannot use the shape it was given. That
+    /// was invisible: `describe_at` prints nothing for it, `has_unmodeled`
+    /// does not count it, and so Primary Deadhead's recoil reduction, Primary
+    /// Dexterity's combo duration and Secondary Fortifier's overguard were
+    /// silently doing zero on a card that promised them (2026-08-08).
+    ///
+    /// DERIVED, never listed — the same rule the mod side follows
+    /// (`mods_data::unmodeled_effects`): it reads the effects the loader
+    /// actually built, so an arcane that starts dropping one discloses it
+    /// without anyone remembering to come back here.
+    pub fn unmodeled_effects(&self) -> Vec<String> {
+        self.effects
+            .iter()
+            .filter_map(|e| match e {
+                // `combo_duration_bonus` -> "combo duration bonus": the kind
+                // IS the description, in the vocabulary the yaml chose.
+                ArcEffect::Inert(why) => Some(why.replace('_', " ")),
+                _ => None,
+            })
+            .collect()
     }
 
     /// Does it act on something this simulator does not have at all?
@@ -771,7 +803,7 @@ impl ArcaneDef {
                         fx.ammo_efficiency += sc.at(rank, self.max_rank);
                     }
                 }
-                ArcEffect::Inert(_) => {}
+                ArcEffect::Inert(_) | ArcEffect::Elsewhere(_) => {}
             }
         }
         fx
@@ -821,7 +853,7 @@ impl ArcaneDef {
                 }
                 ArcEffect::HeadshotMultiplier { .. }
                 | ArcEffect::ReloadSpeed { .. }
-                | ArcEffect::Inert(_) => {}
+                | ArcEffect::Inert(_) | ArcEffect::Elsewhere(_) => {}
             }
         }
         let xs = count_x(&self.description);
@@ -989,7 +1021,7 @@ impl ArcaneDef {
                 ArcEffect::OutOfScope { .. } => {
                     out.push("outside this simulator".to_string())
                 }
-                ArcEffect::Inert(_) => {}
+                ArcEffect::Inert(_) | ArcEffect::Elsewhere(_) => {}
             }
         }
         out
@@ -1588,5 +1620,45 @@ mod slot_tests {
         ids.sort_unstable();
         ids.dedup();
         assert_eq!(ids.len(), n, "arcane ids collide across slots");
+    }
+
+    /// EVERY EFFECT AN ARCANE DOES NOTHING WITH IS ON ITS CARD.
+    ///
+    /// `ArcEffect::Inert` is where an effect goes when the loader has no arm
+    /// for its kind. Nothing printed it — `describe_at` skips it and
+    /// `has_unmodeled` does not count it — so three arcanes promised a stat
+    /// they silently did not apply. This pins the list: a NEW inert effect
+    /// fails here and has to be argued for, and an implemented one has to be
+    /// deleted from it.
+    #[test]
+    fn an_arcane_that_does_nothing_with_an_effect_says_so() {
+        let mut found: Vec<String> = Vec::new();
+        for s in slots() {
+            for a in slot_pool(s) {
+                for why in a.unmodeled_effects() {
+                    found.push(format!("{} :: {why}", a.id));
+                }
+            }
+        }
+        found.sort();
+        let expected = [
+            // Recoil is a stat this arena has no shot placement to spend, and
+            // both Deadheads carry a reduction.
+            "primary_deadhead :: recoil reduction",
+            "secondary_deadhead :: recoil reduction",
+            // A MELEE combo counter, on a gun arcane: the bonus is real and it
+            // acts on something no weapon in this roster has.
+            "primary_dexterity :: combo duration bonus",
+            "secondary_dexterity :: combo duration bonus",
+            // Overguard is Tenno survivability, not weapon damage.
+            "secondary_fortifier :: overguard on damage",
+        ];
+        let mut expected: Vec<String> = expected.iter().map(|s| s.to_string()).collect();
+        expected.sort();
+        assert_eq!(found, expected, "the inert-arcane list moved");
+
+        // …and the disclosure is what a card would show, not an internal name.
+        let dh = secondary("secondary_deadhead").expect("secondary deadhead");
+        assert!(dh.unmodeled_effects().iter().all(|w| !w.contains('_')));
     }
 }

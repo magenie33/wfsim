@@ -6,6 +6,47 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+
+  # WHAT A WEAPON DOES NOT MODEL — the banner on its stats panel. These
+  # are OUR sentences, not DE's, so they translate; the ATTACK NAMES inside
+  # them stay English, the same rule wiki URLs follow, because those are
+  # DE's own names for the parts and a localized one names nothing.
+  "damage falloff from 10 m to 16 m (down to 22% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 10 m 到 16 m 的伤害衰减尚未建模（最远处降至满伤的 22%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "damage falloff from 10 m to 16 m (down to 48% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 10 m 到 16 m 的伤害衰减尚未建模（最远处降至满伤的 48%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "damage falloff from 10 m to 18 m (down to 33% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 10 m 到 18 m 的伤害衰减尚未建模（最远处降至满伤的 33%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "damage falloff from 12 m to 25 m (down to 40% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 12 m 到 25 m 的伤害衰减尚未建模（最远处降至满伤的 40%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "damage falloff from 14 m to 28 m (down to 55% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 14 m 到 28 m 的伤害衰减尚未建模（最远处降至满伤的 55%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "damage falloff from 14 m to 28 m (down to 99% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 14 m 到 28 m 的伤害衰减尚未建模（最远处降至满伤的 99%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "damage falloff from 15 m to 25 m (down to 50% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 15 m 到 25 m 的伤害衰减尚未建模（最远处降至满伤的 50%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "damage falloff from 15 m to 30 m (down to 50% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 15 m 到 30 m 的伤害衰减尚未建模（最远处降至满伤的 50%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "damage falloff from 16 m to 32 m (down to 97% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 16 m 到 32 m 的伤害衰减尚未建模（最远处降至满伤的 97%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "damage falloff from 16 m to 32 m (down to 99% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 16 m 到 32 m 的伤害衰减尚未建模（最远处降至满伤的 99%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "damage falloff from 18 m to 25 m (down to 70% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 18 m 到 25 m 的伤害衰减尚未建模（最远处降至满伤的 70%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "damage falloff from 18 m to 36 m (down to 56% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 18 m 到 36 m 的伤害衰减尚未建模（最远处降至满伤的 56%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "damage falloff from 26 m to 52 m (down to 78% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 26 m 到 52 m 的伤害衰减尚未建模（最远处降至满伤的 78%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "damage falloff from 400 m to 600 m (down to 50% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 400 m 到 600 m 的伤害衰减尚未建模（最远处降至满伤的 50%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "damage falloff from 7 m to 14 m (down to 75% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 7 m 到 14 m 的伤害衰减尚未建模（最远处降至满伤的 75%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "damage falloff from 9 m to 18 m (down to 74% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank": 9 m 到 18 m 的伤害衰减尚未建模（最远处降至满伤的 74%） —— 这个战场没有距离概念，每一发都按贴脸计算
+  "not modelled on this weapon — the numbers below are a floor, not its full output": 这把武器有尚未建模的部分 —— 下面的数字是下限，不是它的完整输出
+  "the Blob Explosion is not modelled — this entry carries only the Blob Embed": Blob Explosion 尚未建模 —— 这个条目只装了 Blob Embed
+  "the Burst Shot is not modelled — this entry carries only the Charged Shot": Burst Shot 尚未建模 —— 这个条目只装了 Charged Shot
+  "the Incarnon Form Bounce Explosion is not modelled — this form has more parts than this entry carries": Incarnon Form Bounce Explosion 尚未建模 —— 这个形态的部件比一个条目装得下的多
+  "the Incarnon Form Charge Attack is not modelled — this form has more parts than this entry carries": Incarnon Form Charge Attack 尚未建模 —— 这个形态的部件比一个条目装得下的多
+  "the Incarnon Form Charge Radial Attack is not modelled — this form has more parts than this entry carries": Incarnon Form Charge Radial Attack 尚未建模 —— 这个形态的部件比一个条目装得下的多
+  "the Incarnon Form Embed AoE is not modelled — this form has more parts than this entry carries": Incarnon Form Embed AoE 尚未建模 —— 这个形态的部件比一个条目装得下的多
+  "the Incarnon form's CHARGED arm-cannon shot is not modelled — this entry carries its held beam, and the charged shot is a second attack with its own explosion": 灵化形态的蓄力臂炮射击尚未建模 —— 这个条目装的是它的持续光束，蓄力射击是另一个攻击，还带自己的爆炸
+  "the Incarnon form's bouncing secondary projectiles are not modelled — a stacked shot releases 2 to 5 of them, each exploding on up to 3 bounces": 灵化形态的弹跳次级投射物尚未建模 —— 叠层越高的一发放出 2 到 5 个，每个最多弹 3 次并各自爆炸
+  "the Normal Shot is not modelled — this entry carries only the Charged Shot": Normal Shot 尚未建模 —— 这个条目只装了 Charged Shot
+  "the Single Rocket Explosion is not modelled — this entry carries only the Single Rocket Impact": Single Rocket Explosion 尚未建模 —— 这个条目只装了 Single Rocket Impact
+  "the Uncharged Shot is not modelled — this entry carries only the Charged Shot": Uncharged Shot 尚未建模 —— 这个条目只装了 Charged Shot
+  "the blob economy is not modelled — a shot EMBEDS and only explodes after a delay or at max stacks, and the sim fires the embed as an ordinary hit": 粘液机制尚未建模 —— 射出的粘液会先附着，延迟后或叠满层数才爆炸，而模拟把附着当成一次普通命中
+  "the by-round reload is not modelled — this weapon refills a shell at a time and the reload can be interrupted, and the sim reloads the whole magazine": 逐发装填尚未建模 —— 这把枪一次装一发、装填过程可被打断，而模拟一次装满整个弹匣
+  "the duplex trigger is not modelled — one pull fires TWO rounds in game and this entry paces one per pull": 双发扳机尚未建模 —— 游戏里扣一次扳机打出两发，这个条目按一次一发计算射速
+  "the held beam's charge ramp is not modelled — in game its damage climbs to 2.5x the longer the trigger is held": 持续光束的蓄力爬升尚未建模 —— 游戏里按住越久伤害越高，最高 2.5 倍
+  "the sniper combo counter is not modelled — a scoped sniper's damage climbs with consecutive hits in game and stays flat here": 狙击连击计数尚未建模 —— 游戏里连续命中会让伤害逐级提升，这里始终是平的
+  "the spool-up is not modelled — this entry fires at the fully spooled rate from the first round": 预热尚未建模 —— 这个条目从第一发就按预热完成后的射速开火
+  "the stepped zoom is not modelled, and neither is the scope's own headshot bonus": 分级瞄准镜尚未建模，瞄准镜自带的爆头加成也没有
+  "this weapon's passive is not modelled yet": 这把武器的被动尚未建模
   # THE PRODUCT NAME. The wordmark stays WFSim everywhere (logo, <title>, the
   # topbar) — it is a mark, not a word. Chinese PROSE calls it WF模拟
   # (user, 2026-07-31), which is why the disclaimer below reads WF模拟 while

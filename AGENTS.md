@@ -141,6 +141,19 @@ around (decision 2026-07-31).
   either board (owner, 2026-08-08). It walks every ruler, because the bug was
   that one of them was reachable and the rest resolved to it, and asserts
   against `BOARD` itself so it keeps holding as the board moves.
+  `node scripts/check_disclosure.mjs` is the EIGHTEENTH: what the app does NOT
+  model is ON THE PAGE, in every family that has one — a weapon banner, an
+  evolution chip, a mod line, an arcane line, an enemy caveat. The owner debugs
+  by reading the card, so a gap that lives only in a yaml comment or a report
+  script is a gap nobody can act on (2026-08-08: "我需要用户也能看见，因为我也是
+  这样排查的"). Each surface has gone silent at least once: an arcane effect the
+  loader had no arm for went to `Inert`, which printed NOTHING, so both
+  Deadheads promised a recoil reduction they did not apply. It carries a
+  NEGATIVE CONTROL — a weapon with nothing to admit shows no banner — because a
+  check that only asserts presence passes just as well on a page that shouts
+  "not modelled" at everything, and it runs the whole pass in BOTH languages,
+  since the banner's lines were rendered raw for a day and a Chinese page
+  carried its one important paragraph in English.
   `node scripts/check_riven_pool.mjs` is the SEVENTEENTH: the riven editor
   offers the stats that weapon's rivens actually roll, in BOTH slots. What a
   riven can roll is DE's per-weapon table, published nowhere, and the wiki's

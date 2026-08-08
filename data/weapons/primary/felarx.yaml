@@ -22,7 +22,7 @@ transforms_to: felarx_incarnon
 # as "not modelled yet". Nothing is dropped in silence — some perks do nothing
 # yet and say so on their own tile.
 unmodeled:
-  - "the by-round reload is not modelled — this weapon loads a shell at a time and the reload can be interrupted, and the sim reloads the whole magazine"
+  - "the by-round reload is not modelled — this weapon refills a shell at a time and the reload can be interrupted, and the sim reloads the whole magazine"
   - "damage falloff from 14 m to 28 m (down to 99% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
 accuracy: 7.69
 disposition: 0.6
