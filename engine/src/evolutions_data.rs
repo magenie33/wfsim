@@ -349,11 +349,16 @@ pub struct EvoBuffCard {
     /// PERMANENT stacks (no in-sim trigger, no decay): the count is a
     /// static choice for the run, so the card defaults locked.
     pub permanent: bool,
-    /// WHERE THE CARD OPENS. Two rules covered every card until Mounting
-    /// Momentum: a permanent buff starts full, a timed one starts at zero.
-    /// That perk needs a third — it opens at ONE RELOAD'S WORTH, because a
-    /// per-shell counter at zero describes a weapon just holstered and not a
-    /// fight anyone measures (owner, 2026-08-08).
+    /// WHERE THE CARD OPENS, and there are only two rules: a permanent buff
+    /// starts full, an earned one starts at zero.
+    ///
+    /// A third briefly existed — "one reload's worth", for Mounting Momentum —
+    /// and it was wrong twice over. Nothing a player sets should depend on the
+    /// weapon's stats when the ceiling is the same 99 for every weapon (owner,
+    /// 2026-08-08: "那个 buff 也不根据武器性能决定了，因为都可以 99 层的"), and
+    /// it contradicted the sim, which opens that buff at zero because an empty
+    /// magazine takes the pile. A card that defaults to six while the fight
+    /// starts at none is the plainest kind of lie a panel can tell.
     pub opens_at: CardOpens,
 }
 
@@ -364,9 +369,6 @@ pub enum CardOpens {
     Zero,
     /// Nothing decays it, so a lull does not cost it.
     Full,
-    /// One reload's worth — the weapon's MODDED magazine, which only the
-    /// caller knows.
-    Magazine,
 }
 
 impl EvolutionDef {
@@ -422,7 +424,7 @@ impl EvolutionDef {
                         id: "per_shell_fire_rate",
                         max_stacks: *max_stacks,
                         permanent: false,
-                        opens_at: CardOpens::Magazine,
+                        opens_at: CardOpens::Zero,
                     })
                 }
                 EvoEffect::StackingFireRateOnHeadshot { max_stacks, .. } => Some(EvoBuffCard {

@@ -1624,15 +1624,7 @@ fn enumerate_buffs(
 /// multishot): one card per evolution with an `ms_buff`. PERMANENT — no
 /// in-sim trigger and no decay, so the stack count is a static choice (full
 /// by default) and the lock is display-only.
-/// The weapon's own magazine, unmodded — what a card opens at when the
-/// endpoint has no build to resolve.
-fn base_magazine(info: &WeaponInfo) -> u32 {
-    wfsim_engine::weapons_data::spec(&info.id)
-        .and_then(|s| s.magazine)
-        .unwrap_or(1.0) as u32
-}
-
-fn evo_buffs(evo_ids: &[String], magazine: u32) -> Vec<BuffMeta> {
+fn evo_buffs(evo_ids: &[String]) -> Vec<BuffMeta> {
     // NO per-effect knowledge here: the engine decides what is a
     // configurable buff (`EvolutionDef::buff_cards`, an exhaustive match),
     // so a new evolution mechanic surfaces on the cards the moment it is
@@ -1647,18 +1639,14 @@ fn evo_buffs(evo_ids: &[String], magazine: u32) -> Vec<BuffMeta> {
                 grants: String::new(),
                 max_stacks: c.max_stacks,
                 kind: "stacking",
-                // WHERE THE CARD OPENS, and the engine says which of the
-                // three rules applies. A permanent buff (no trigger, no decay)
-                // survives a lull so it starts full; a timed one is earned
-                // from zero; and a per-shell counter opens at one reload's
-                // worth, which is the only one the engine cannot compute for
-                // itself — the modded magazine lives out here.
+                // WHERE THE CARD OPENS, and the engine says which rule
+                // applies. A permanent buff (no trigger, no decay) survives a
+                // lull so it starts full; an earned one starts at zero. No
+                // card's default depends on the weapon — the ceiling is the
+                // same for every weapon that has the perk.
                 default_stacks: match c.opens_at {
                     wfsim_engine::evolutions_data::CardOpens::Full => c.max_stacks,
                     wfsim_engine::evolutions_data::CardOpens::Zero => 0,
-                    wfsim_engine::evolutions_data::CardOpens::Magazine => {
-                        magazine.min(c.max_stacks)
-                    }
                 },
                 default_locked: false,
                 permanent: c.permanent,
@@ -2855,11 +2843,7 @@ pub fn panel_json(v: &Value) -> Value {
     let arcane_fx = arcane_fx_for(v, info, &forms_list[0].2, policy);
     // A real build: every mod on it is on it, so every lock is real.
     let mut buffs = enumerate_buffs(&refs, &refs, &arcane_fx, info, &tenno_from(v, info));
-    // The MODDED magazine — the card opens at one reload's worth, and this
-    // build's reload is this build's magazine.
-    let card_mag = wfsim_engine::loadout::resolve(&forms_list[0].2, &refs, policy)
-        .magazine_size as u32;
-    for b in evo_buffs(&evos, card_mag) {
+    for b in evo_buffs(&evos) {
         if !buffs.iter().any(|x| x.id == b.id) {
             buffs.push(b);
         }
@@ -3829,9 +3813,7 @@ pub fn opt_buffs_json(v: &Value) -> Value {
             .flatten()
             .filter_map(|x| x.as_str().map(String::from))
             .collect();
-        // No build here — this endpoint answers for the WEAPON — so the
-        // card opens at its unmodded magazine.
-        merge(&mut out, evo_buffs(&evo_ids, base_magazine(info)));
+        merge(&mut out, evo_buffs(&evo_ids));
     }
     json!({ "ok": true, "buffs": buffs_json(&out) })
 }
