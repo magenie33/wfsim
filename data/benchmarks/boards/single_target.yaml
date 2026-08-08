@@ -24,8 +24,26 @@ entries:
     arcanes: [primary_merciless]
   - weapon: boar_prime
     mode: cycle
+    score: 15.8
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
     score: 15.542447123798633
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, frail_momentum, magnetic_strafe, primed_chilling_grasp, contagious_spread]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    score: 14.429048977066717
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, frail_momentum, magnetic_strafe, frigid_blast, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    score: 13.450993570819213
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, frail_momentum, laser_sight, magnetic_strafe, primed_chilling_grasp, contagious_spread]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
     arcanes: [primary_deadhead]
   - weapon: boar_prime
@@ -64,6 +82,12 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, chilling_reload, toxic_barrage, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_crux]
+  - weapon: boar_prime
+    mode: cycle
+    score: 10.366326754650393
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, frail_momentum, magnetic_strafe, primed_chilling_grasp, contagious_spread]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: boar_prime
     mode: cycle
     score: 9.981194562902044
@@ -116,6 +140,12 @@ entries:
     mode: cycle
     score: 7.247230565067607
     mods: [primed_ravage, critical_deceleration, frail_momentum, hells_chamber, magnetic_strafe, primed_chilling_grasp, contagious_spread, scattering_inferno]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    score: 6.507483249859204
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, frail_momentum, shrapnel_shot, primed_chilling_grasp, contagious_spread]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
     arcanes: [primary_deadhead]
   - weapon: boar_prime
@@ -858,6 +888,12 @@ entries:
     arcanes: [secondary_encumber]
   - weapon: laetum
     mode: cycle
+    score: 24.363705329214458
+    mods: [amalgam_barrel_diffusion, hornet_strike, galvanized_shot, lethal_torrent, accelerated_isotope, deep_freeze, pathogen_rounds, heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [secondary_deadhead]
+  - weapon: laetum
+    mode: cycle
     score: 22.32422576818413
     mods: [amalgam_barrel_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
@@ -1410,6 +1446,12 @@ entries:
     score: 6.869771291166935
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_barrage, shotgun_elementalist, frigid_blast, toxic_barrage, incendiary_coat]
     arcanes: [primary_crux]
+  - weapon: phenmor
+    mode: cycle
+    score: 36.526943476858406
+    mods: [galvanized_chamber, serration, galvanized_aptitude, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, stormbringer]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
+    arcanes: [primary_deadhead]
   - weapon: torid
     mode: cycle
     score: 30.345791247630345
