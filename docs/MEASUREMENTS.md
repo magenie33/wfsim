@@ -1866,3 +1866,61 @@ from it is Adding. On a weapon where CO is Adding, its share of the damage joins
 the base-damage bucket and this multiplication does not arise — the Attrition
 term still multiplies, but there is no second free-standing factor for it to
 multiply with.
+
+## M37 — a Debilitate DoT eats Attrition TWICE ✅ (owner, 2026-08-08)
+
+**Reported, then measured in game.** A player asked the owner whether the
+elemental hit that triggers Primary Debilitate can also trigger the Felarx's
+20x, and the calculator said no:
+
+> 大佬游戏里衰弱触发的dot可以再次触发逐枭凤歿的外围20倍但是网站里的计算器
+> 显示不出来
+
+He tried it:
+
+> 刚刚试了一下，确实是可以触发的！直伤一次，附加伤害一次，dot一次一共3次牛吼，
+> 强袭损耗在吃两次，最终的触发的dot会吃到三次方牛吼和441倍强袭损耗的伤害加成
+
+and, on a second pass:
+
+> 大概测一下三次牛吼，两次强袭损耗，元素师，元素mod都能吃到。用凤殁测了一下，
+> 只有牛吼增伤的情况下，dot跳一下，爆破使就没了
+
+So the chain is **直伤 → 附加伤害 → dot** with a Roar layer at each step (the
+`f^3` this engine already applies as `DEPTH_DERIVED_PROC`, see M33), and
+**Devouring/Devastating Attrition applies twice**: 21 x 21 = **441**.
+
+### What it pins
+
+Two rulings, and the second only follows because of the first:
+
+1. **A hit's Attrition roll travels with the statuses it applied.** A proc's
+   magnitude is the applying instance's — that is why `crit_mult` was already
+   carried into `settle_procs` — and Attrition is a per-instance multiplier of
+   exactly that shape. This engine was passing 1.0.
+2. **The split rolls a second one of its own**, because the split is a damage
+   INSTANCE (the wiki's own word, and the reason it takes the third faction
+   layer at all).
+
+Two rolls for three faction layers is the whole content of the measurement: the
+DoT itself never rolls, because a DoT is not a hit and "did not crit" is a
+statement about a hit. Had the DoT rolled too the number would have been 21³ =
+9261, and had only the split rolled it would have been 21.
+
+`the_debilitate_dot_carries_two_attrition_layers` asserts both halves, and each
+half fails on its own when removed: an ordinary Slash DoT must come out at
+**x21.0** and a split's Toxin DoT at **x441** (±25 over 200 runs). The perk's
+own 50% is forced to 1.0 for the same reason as M36 — the question is which
+layers apply, not the odds. Two details the test has to work around: turning the
+perk on consumes an extra RNG draw per instance, so a single pair of runs
+compares two different fights and only an average means anything; and Puncture
+is made immune, because Weakened is a flat crit-chance buff on the victim and a
+critical instance is not eligible for Attrition at all.
+
+### What is still open
+
+- **The lingering FIELD's ticks** (Torid's cloud) roll their own crit tier, so by
+  the same argument they are instances and should roll Attrition. Left at 1.0:
+  no weapon in the roster carries both, and this measurement does not reach it.
+- **Whether an ordinary status DoT double-dips faction** is still M33's
+  question, not this one. This changes the Attrition term only.

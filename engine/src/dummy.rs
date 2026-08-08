@@ -2555,7 +2555,7 @@ fn settle_procs(
     // through an extra damage instance.
     depth: u32,
 ) {
-    let InstanceScale { mb_live, crit_mult, part_factor } = scale;
+    let InstanceScale { mb_live, crit_mult, part_factor, attrition } = scale;
     let sd = params.status_duration_mult;
     let sdm = params.status_damage_mult;
     let caps = params.target.stack_caps;
@@ -2585,7 +2585,8 @@ fn settle_procs(
             Dot {
                 next_tick: at + delay,
                 ticks_left: ticks,
-                value: coeff * mb_live * bracket * sdm * crit_mult * part_factor * fm2,
+                value: coeff * mb_live * bracket * sdm * crit_mult * part_factor
+                    * fm2 * attrition,
                 dtype,
                 ignores_armor,
             },
@@ -2855,7 +2856,36 @@ fn settle_procs(
                 settle_procs(
                     vec![part],
                     at,
-                    InstanceScale { mb_live, crit_mult, part_factor },
+                    InstanceScale {
+                        mb_live,
+                        crit_mult,
+                        part_factor,
+                        // A SECOND ATTRITION ROLL, ON TOP OF THE HIT'S. The
+                        // split is a damage INSTANCE — the wiki's own words for
+                        // it, and the reason it takes a third faction layer —
+                        // so it rolls the per-instance multipliers a hit rolls,
+                        // and Devouring/Devastating Attrition is one of them.
+                        //
+                        // MEASURED (owner, 2026-08-08): the DoT at the end of
+                        // this chain eats three faction layers and "441倍强袭损
+                        // 耗" = 21x21. So the chain is 直伤 -> 附加伤害 -> dot
+                        // with a faction layer per step, and TWO attrition rolls
+                        // — the hit's (carried in `attrition`) and this one. The
+                        // DoT itself never rolls: it is not a hit.
+                        // MEASUREMENTS M37.
+                        //
+                        // ONLY WHEN IT DID NOT CRIT, which is the perk's own
+                        // condition and is already in hand: a proc inherits the
+                        // applying hit's crit, so `crit_mult > 1` IS a critical
+                        // instance and no roll is due. Tier 0 is passed for the
+                        // same reason `noncrit_mult` takes a tier at all.
+                        attrition: attrition
+                            * if crit_mult > 1.0 {
+                                1.0
+                            } else {
+                                noncrit_mult(ap.noncrit_bonus, 0, rng)
+                            },
+                    },
                     debuffs,
                     gal,
                     arc,
@@ -2915,6 +2945,15 @@ struct InstanceScale {
     crit_mult: f64,
     /// Body-part multiplier — always 1.0 for a radial or a field.
     part_factor: f64,
+    /// DEVOURING/DEVASTATING ATTRITION on THIS instance, or 1.0.
+    ///
+    /// 1.0 everywhere but the Primary Debilitate split, and that is the whole
+    /// claim: an ordinary status DoT is a tick of an effect, while the arcane's
+    /// split is a damage INSTANCE the wiki names as one — so it rolls the
+    /// per-instance multipliers a hit rolls, this one included. Reported from
+    /// play through the owner (2026-08-08): "衰弱触发的 dot 可以再次触发……外围
+    /// 20 倍但是网站里的计算器显示不出来". MEASUREMENTS M37.
+    attrition: f64,
 }
 
 /// The GunCO-family bracket for one damage instance — MECHANICS §6. Every
@@ -3028,7 +3067,7 @@ fn fire_syndicate_radial(
         settle_procs(
             vec![sy.element],
             at,
-            InstanceScale { mb_live: sy.damage, crit_mult: 1.0, part_factor: 1.0 },
+            InstanceScale { mb_live: sy.damage, crit_mult: 1.0, part_factor: 1.0, attrition: 1.0 },
             debuffs,
             gal,
             arc,
@@ -3303,7 +3342,7 @@ fn field_tick(
     settle_procs(
         procs,
         at,
-        InstanceScale { mb_live, crit_mult, part_factor: 1.0 },
+        InstanceScale { mb_live, crit_mult, part_factor: 1.0, attrition: 1.0 },
         debuffs,
         gal,
         arc,
@@ -4974,7 +5013,18 @@ pub fn run_once_traced(
             settle_procs(
                 procs,
                 t,
-                InstanceScale { mb_live, crit_mult, part_factor },
+                // THE HIT'S ATTRITION ROLL TRAVELS WITH ITS STATUSES. A proc's
+                // magnitude is the applying instance's — which is why
+                // `crit_mult` is already here — and Devouring/Devastating
+                // Attrition is a per-instance multiplier of exactly that shape,
+                // so a DoT applied by a 21x hit ticks for 21x.
+                //
+                // Measured through the Debilitate chain (owner, 2026-08-08): the
+                // final DoT eats "441倍强袭损耗", i.e. 21x21. Two layers for
+                // three faction layers — the split instance rolls one, and the
+                // other can only be the applying hit's, carried here. A DoT is
+                // not a hit, so it never rolls one of its own. MEASUREMENTS M37.
+                InstanceScale { mb_live, crit_mult, part_factor, attrition },
                 &mut debuffs,
                 &mut gal,
                 &mut arc,
@@ -11248,4 +11298,89 @@ mod attrition_times_co_tests {
         );
     }
 }
+#[cfg(test)]
+mod debilitate_attrition_tests {
+    use super::*;
+
+    /// TWO ATTRITION LAYERS REACH THE DEBILITATE DoT, and the calculator showed
+    /// zero (player report through the owner, 2026-08-08: "衰弱触发的 dot 可以
+    /// 再次触发……外围 20 倍但是网站里的计算器显示不出来", then measured: the
+    /// final DoT eats three faction layers and "441倍强袭损耗" = 21x21).
+    ///
+    /// Two claims, asserted in that order:
+    ///   1. an ORDINARY status DoT carries the applying hit's roll — exactly
+    ///      21x, since the chance is forced and nothing crits;
+    ///   2. the Debilitate SPLIT's DoT carries a second one, so mixing splits
+    ///      into the same fight pushes the ratio ABOVE one layer.
+    ///
+    /// The roll is forced to 1.0: the perk's own 50% would need thousands of
+    /// runs to separate 21 from 22, and the question is which layers apply.
+    /// Crit chance is 0 so every instance is eligible and the crit path is not
+    /// what is being measured. Health is enormous so nothing dies — otherwise a
+    /// 21x direct hit ends the fight and the DoT totals fall while every tick
+    /// grows.
+    #[test]
+    fn the_debilitate_dot_carries_two_attrition_layers() {
+        let base = crate::loadout::WeaponBase::from_data("felarx", true, &[]);
+        let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::AssumedMax);
+        let arena = crate::arena::Arena::training(30.0);
+        // AVERAGED OVER 200 RUNS. Turning the perk on consumes an extra RNG
+        // draw per instance, so the two fights diverge shot for shot and a
+        // single pair of runs compares two different fights — the ratio is only
+        // a statement about the multiplier in the aggregate.
+        let dots = |attrition: bool, debilitate: f64| {
+            (0..200u64)
+                .map(|seed| {
+                    let mut p = DummyParams::from_panel(&panel, &arena);
+                    p.target.base_health = 1e15;
+                    p.base_crit_chance = 0.0;
+                    p.crit_tier_upgrade_chance = 0.0;
+                    p.unmodded_crit_chance = 0.0;
+                    p.super_crit_on_status = None;
+                    // PUNCTURE IS IMMUNE HERE, so nothing crits. Weakened is a
+                    // flat crit-chance buff on the victim and a saturating
+                    // status build keeps it up — a critical instance is not
+                    // eligible for Attrition, so leaving it in would mix
+                    // untouched instances into a ratio whose whole point is
+                    // that every instance took the roll.
+                    p.target.status_immunities = vec![DamageType::Puncture];
+                    p.status_chance = 4.0;
+                    p.arcane.debilitate_chance = debilitate;
+                    if debilitate > 0.0 {
+                        // PURE CORROSIVE, so every DoT in the run is a SPLIT's.
+                        // The arcane splits a COMBINED element into a component,
+                        // and the Felarx's own vector is IPS — nothing to split,
+                        // which is why claim 1's fight sees no splits at all.
+                        // With no Toxin of its own the weapon cannot apply a
+                        // Toxin DoT by any other route, so the whole of
+                        // `dot_damage` here went through the split.
+                        let total = p.damage.total();
+                        p.damage = crate::damage::DamageVector::new()
+                            .with(DamageType::Corrosive, total);
+                    }
+                    p.noncrit_bonus = attrition.then_some((1.0, 20.0));
+                    let mut rng = crate::rng::Rng::new(seed);
+                    run_once(&p, &mut rng).dot_damage
+                })
+                .sum::<f64>()
+        };
+        // 1. ordinary DoTs: one layer, and the whole of it.
+        let plain = dots(false, 0.0);
+        assert!(plain > 0.0);
+        let one_layer = dots(true, 0.0) / plain;
+        assert!(
+            (one_layer - 21.0).abs() < 1.0,
+            "an ordinary DoT takes the hit's roll and nothing else: x{one_layer:.2}"
+        );
+        // 2. a split's DoT: two layers, 21x21 = 441x — the owner's own number.
+        let plain_split = dots(false, 1.0);
+        assert!(plain_split > 0.0, "the Corrosive fight has to produce split DoTs");
+        let two_layers = dots(true, 1.0) / plain_split;
+        assert!(
+            (two_layers - 441.0).abs() < 25.0,
+            "the split's DoT takes the hit's roll AND its own: x{two_layers:.1},              measured 441 (one layer is x{one_layer:.2})"
+        );
+    }
+}
+
 
