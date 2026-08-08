@@ -9,6 +9,14 @@ description: "Increase Base Damage by +50. +40% Direct Damage per Status Type af
 selection: choose_one
 
 effects:
+  # THE PAGE SAYS "Increase Damage", NOT "Increase Base Damage", and it is page
+  # style rather than a layer: that wording appears twice on the Despair's
+  # Genesis page and "Increase Base Damage" appears zero times, so there is no
+  # in-page contrast to read. Nor is there an "added after mods as a flat value"
+  # note, which is the clause that actually distinguishes the two brackets (see
+  # `felarx_brutal_edge`). Base, like every sibling perk in the set. Checked
+  # 2026-08-08 while sweeping for that error class; recorded so it is not
+  # re-opened from the wording alone.
   # from: "Increase Base Damage by +50"
   - kind: flat_base_damage
     value: 50.0
