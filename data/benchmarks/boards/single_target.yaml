@@ -474,6 +474,18 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: dual_toxocyst
     mode: cycle
+    score: 94.1854432103445
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+  - weapon: dual_toxocyst
+    mode: cycle
+    score: 93.23401452292998
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+  - weapon: dual_toxocyst
+    mode: cycle
     score: 89.54773395952174
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -556,6 +568,30 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, anemic_agility, creeping_bullseye, primed_convulsion, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_deadhead]
+  - weapon: felarx
+    mode: cycle
+    score: 28.587716858117606
+    mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, toxic_barrage, scattering_inferno]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: felarx
+    mode: cycle
+    score: 27.17300113185874
+    mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, contagious_spread, scattering_inferno]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: felarx
+    mode: cycle
+    score: 22.38435961037228
+    mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, contagious_spread, primed_charged_shell]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: felarx
+    mode: cycle
+    score: 12.723413527879602
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_brutal_edge, felarx_ruptured_plentitude]
+    arcanes: [primary_deadhead]
   - weapon: furis
     mode: cycle
     score: 57.54050312237646
@@ -1672,6 +1708,42 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, stormbringer]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_deadhead]
+  - weapon: phenmor
+    mode: cycle
+    score: 15.062134316922375
+    mods: [galvanized_chamber, serration, galvanized_aptitude, rifle_elementalist, vile_acceleration, stormbringer, high_voltage, infected_clip]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_ready_retaliation, phenmor_elemental_excess, phenmor_devouring_attrition]
+    arcanes: [primary_debilitate]
+  - weapon: phenmor
+    mode: cycle
+    score: 10.876120837901327
+    mods: [galvanized_chamber, serration, galvanized_aptitude, rifle_elementalist, stormbringer, high_voltage, infected_clip, malignant_force]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_ready_retaliation, phenmor_elemental_excess, phenmor_devouring_attrition]
+    arcanes: [primary_debilitate]
+  - weapon: sicarus_prime
+    mode: cycle
+    score: 16.492005328741527
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_rapid_reinforcement, sicarus_prime_commodores_fortune]
+    arcanes: [secondary_deadhead]
+  - weapon: sicarus_prime
+    mode: cycle
+    score: 13.351791804845893
+    mods: [pistol_acuity, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, jolt, pistol_pestilence, primed_heated_charge]
+    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_rapid_reinforcement, sicarus_prime_commodores_fortune]
+    arcanes: [secondary_deadhead]
+  - weapon: sicarus_prime
+    mode: cycle
+    score: 12.568667040528727
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, jolt, pistol_pestilence, primed_heated_charge]
+    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_rapid_reinforcement, sicarus_prime_commodores_fortune]
+    arcanes: [secondary_deadhead]
+  - weapon: sicarus_prime
+    mode: cycle
+    score: 9.05906048032599
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, jolt, pistol_pestilence, primed_heated_charge]
+    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_rapid_reinforcement, sicarus_prime_commodores_fortune]
+    arcanes: [secondary_deadhead]
   - weapon: torid
     mode: cycle
     score: 30.345791247630345
