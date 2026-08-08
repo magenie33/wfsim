@@ -3768,6 +3768,49 @@ pub fn run_once_traced(
             }
         };
     }
+    // …AND A BUMP THAT COUNTS SHELLS. `bump_buffs!` grants a whole magazine
+    // per trigger, which is what an ordinary reload loads; the Incarnon route
+    // loads a KNOWN number of shells and splits them across two moments, so it
+    // needs to say how many. Reload-counting buffs are left out — they are
+    // waiting for the reload to finish, and it has not.
+    macro_rules! bump_shells {
+        ($n:expr, $t:expr, $rng:expr) => {
+            for (i, b) in params.stacking_buffs.iter().enumerate() {
+                if b.per_shell
+                    && b.trigger == crate::loadout::BuffTrigger::ReloadComplete
+                    && (b.chance >= 1.0 || $rng.chance(b.chance))
+                {
+                    for _ in 0..$n {
+                        buff_stacks[i].bump($t, b.duration, b.max_stacks);
+                    }
+                }
+            }
+        };
+    }
+    // …and the other half of that split: the reload FINISHED, for the buffs
+    // that were counting reloads rather than shells.
+    macro_rules! bump_reload_only {
+        ($t:expr, $rng:expr) => {
+            for (i, b) in params.stacking_buffs.iter().enumerate() {
+                if !b.per_shell
+                    && b.trigger == crate::loadout::BuffTrigger::ReloadComplete
+                    && (b.chance >= 1.0 || $rng.chance(b.chance))
+                {
+                    for _ in 0..b.stacks_per_trigger.max(1) {
+                        buff_stacks[i].bump($t, b.duration, b.max_stacks);
+                    }
+                }
+            }
+        };
+    }
+    // SHELLS OWED TO THE PLAYER FOR THE RELOAD THEY ARE HALFWAY THROUGH.
+    //
+    // Entering the Incarnon form IS a reload — the transmute animation is the
+    // weapon's reload time, which is how you can tell (owner, 2026-08-08) — and
+    // the whole reload runs across the cycle: one shell as you go in, the rest
+    // as you come out. So this holds the rest. Zero while nothing is owed,
+    // which is also what entering on a full magazine leaves it.
+    let mut owed_shells: u32 = 0;
     // TAKES THE PANEL EXPLICITLY, and that is not a style choice: in a CYCLE
     // the two forms resolve the same buff against different base rates (the
     // Furis Incarnon's 12 ticks/s against the base form's 10), so a FireRate
@@ -4128,6 +4171,16 @@ pub fn run_once_traced(
                 // five of the seven weapons in the roster.
                 base_mag += draw_from(&mut reserve, params.infinite_reserve,
                     reload_draw(cy.base_form.magazine_size, base_mag));
+                // THE REST OF THE SHELLS LAND HERE. The draw above is normally
+                // zero — the magazine came back full on the way IN — so this is
+                // the second half of that one reload, not a second reload.
+                if owed_shells > 0 {
+                    bump_shells!(owed_shells, t, rng);
+                    owed_shells = 0;
+                    // …and only now has a reload finished, for whatever was
+                    // counting reloads instead of shells.
+                    bump_reload_only!(t, rng);
+                }
                 continue;
             }
             if in_base_form && !can_fire(base_mag, next_cost) {
@@ -5197,8 +5250,23 @@ pub fn run_once_traced(
                     // was the site that kept the base magazine topped up for
                     // free — with all three draws inside the cycle unbilled, a
                     // finite reserve never moved off its starting value.
-                    base_mag += draw_from(&mut reserve, params.infinite_reserve,
+                    let loaded = draw_from(&mut reserve, params.infinite_reserve,
                         reload_draw(cy.base_form.magazine_size, base_mag));
+                    base_mag += loaded;
+                    // …AND THAT RELOAD PAYS ITS SHELLS. One as you go in, the
+                    // rest owed until you come out (owner, 2026-08-08: "假如我
+                    // 现在的shell是13，进入的时候是10/13，那么进入的时候会叠加
+                    // 1层，退出的时候会加上其余的层数（这里是2）。如果是13/13
+                    // 进入的，进入退出都不会叠层").
+                    //
+                    // Counting the shells the draw ACTUALLY loaded is what
+                    // makes a dry reserve behave: no shells, no stacks, and no
+                    // separate rule needed to say so.
+                    let shells = loaded.round().max(0.0) as u32;
+                    if shells > 0 {
+                        bump_shells!(1, t, rng);
+                        owed_shells = shells - 1;
+                    }
                                                            // Frenzy persists across the transform (user-confirmed
                                                            // 2026-07-24: it exists in both forms).
                     continue;
@@ -5520,7 +5588,7 @@ mod tests {
 
     /// Default params with status disabled — for hand-computed expectations
     /// that predate the status sim.
-    fn no_status() -> DummyParams {
+    pub(super) fn no_status() -> DummyParams {
         DummyParams {
             status_chance: 0.0,
             // Zero the BASE too, or a relative status-chance buff (Primary
@@ -8315,6 +8383,7 @@ mod tests {
                     // Earn them in the run — that is what is under test.
                     initial_stacks: 0,
                     stacks_per_trigger: 1,
+                    per_shell: false,
                     cleared_by: crate::loadout::ClearedBy::Nothing,
                 }],
                 // Never crits, never procs: every instance is "plain", so
@@ -8391,6 +8460,7 @@ mod tests {
                 duration: 10.0,
                 initial_stacks: 0,
                 stacks_per_trigger: 1,
+                per_shell: false,
                 cleared_by: crate::loadout::ClearedBy::Nothing,
             }, crate::loadout::StackingBuff {
                 id: "on_headshot_reload_speed",
@@ -8403,6 +8473,7 @@ mod tests {
                 duration: 6.0,
                 initial_stacks: 0,
                 stacks_per_trigger: 1,
+                per_shell: false,
                 cleared_by: crate::loadout::ClearedBy::Nothing,
             }],
             cc_on_headshot: Some(timed(0.5)),
@@ -8460,6 +8531,7 @@ mod tests {
                     duration: if locked { crate::loadout::NO_TIMEOUT } else { 10.0 },
                     initial_stacks: initial,
                     stacks_per_trigger: 1,
+                    per_shell: false,
                     cleared_by: crate::loadout::ClearedBy::Nothing,
                 }],
                 fire_rate,
@@ -11296,6 +11368,7 @@ mod replay_reads_every_buff_tests {
             duration: 10.0,
             initial_stacks: 0,
             stacks_per_trigger: 1,
+            per_shell: false,
             cleared_by: crate::loadout::ClearedBy::Nothing,
         };
         let mut params = DummyParams {
@@ -11633,4 +11706,139 @@ mod warframe_ability_tests {
         assert_eq!(direct(&bare), direct(&with_empty));
     }
 }
+#[cfg(test)]
+mod incarnon_reload_route_tests {
+    use super::tests::no_status;
+    use super::*;
 
+    /// A hand-built cycle, because the route is about SHELLS and a fixture is
+    /// the only way to say how many are missing at the moment of transmuting.
+    ///
+    /// Base form: 4-round magazine, 1 shot/s, 2 weak-point hits fill the gauge.
+    /// So the base form fires twice, transmutes with 2 of 4 loaded, and the
+    /// reload that transmute IS loads two shells.
+    fn cycle_with(per_shell_perk: bool, base_mag: f64) -> DummyParams {
+        let head = vec![BodyPart {
+            name: "head".into(),
+            aim_weight: 1.0,
+            multiplier: 1.0,
+            is_head: true,
+            crit_bonus: false,
+        }];
+        let base_form = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 50.0),
+            crit_multiplier: 1.0,
+            magazine_size: base_mag,
+            reload_seconds: 1.0,
+            body_parts: head.clone(),
+            ..no_status()
+        };
+        let mut p = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 100.0),
+            crit_multiplier: 1.0,
+            magazine_size: 2.0,
+            ammo_efficiency_applies: false,
+            arcane: ArcaneFx::none(),
+            body_parts: head,
+            duration_secs: 40.0,
+            cycle: Some(IncarnonCycle {
+                starts_primed: false,
+                base_form: Box::new(base_form),
+                charge_on: crate::loadout::ChargeOn::WeakpointHits,
+                charges_to_fill: 2,
+                transmute_out_seconds: 0.5,
+                transmute_seconds: 1.0,
+                reload_bucket: 0.0,
+            }),
+            ..no_status()
+        };
+        if per_shell_perk {
+            // Mounting Momentum's shape: one stack per SHELL loaded, +50% fire
+            // rate each, cleared by an empty magazine. Big per-stack so the
+            // effect is a shot count rather than a rounding.
+            p.stacking_buffs = vec![crate::loadout::StackingBuff {
+                id: "per_shell_fire_rate",
+                trigger: crate::loadout::BuffTrigger::ReloadComplete,
+                grant: crate::loadout::BuffGrant::FireRate,
+                per_stack: 0.5,
+                max_stacks: 99,
+                duration: crate::loadout::NO_TIMEOUT,
+                chance: 1.0,
+                decay: crate::loadout::BuffDecay::LoseOneAndReset,
+                initial_stacks: 0,
+                stacks_per_trigger: base_mag as u32,
+                per_shell: true,
+                cleared_by: crate::loadout::ClearedBy::EmptyMagazine,
+            }];
+        }
+        p
+    }
+
+    /// ENTERING THE INCARNON FORM IS A RELOAD, and it pays a reload's stacks.
+    ///
+    /// The owner's own account (2026-08-08), and the transmute animation being
+    /// the weapon's reload time is how you can tell: "假如我现在的shell是13，
+    /// 进入的时候是10/13，那么进入的时候会叠加1层，退出的时候会加上其余的层数
+    /// （这里是2）。如果是13/13进入的，进入退出都不会叠层". The whole reload runs
+    /// across the cycle — one shell going in, the rest coming out — so nothing
+    /// here is a rule about transforming: it is a rule about shells.
+    ///
+    /// This sim transmutes on a GAUGE, so before this the route was worth zero
+    /// stacks — on the exact mode the weapon is played in.
+    #[test]
+    fn the_incarnon_route_pays_the_shells_it_loads() {
+        let with = monte_carlo(&cycle_with(true, 4.0), 1, 9);
+        let without = monte_carlo(&cycle_with(false, 4.0), 1, 9);
+        assert!(with.mean_transforms >= 2.0, "the fixture has to transmute");
+        // MORE SHOTS, and only the route can have paid for them: the base form
+        // never empties its magazine here, so its own reloads grant nothing.
+        assert!(
+            with.mean_shots > without.mean_shots,
+            "the route is worth nothing: {} vs {}",
+            with.mean_shots,
+            without.mean_shots
+        );
+    }
+
+    /// A FULL MAGAZINE PAYS NOTHING — 13/13 in is 13/13 out. This is what keeps
+    /// the route a rule about SHELLS rather than a fee for transforming, and it
+    /// is the case the owner named first.
+    #[test]
+    fn transmuting_on_a_full_magazine_grants_no_stacks() {
+        // A ONE-ROUND base magazine: the shot that fills the gauge is the shot
+        // that empties it, so the reload happens BEFORE the transmute and the
+        // transmute finds nothing to load.
+        let one = monte_carlo(&cycle_with(true, 1.0), 1, 9);
+        let none = monte_carlo(&cycle_with(false, 1.0), 1, 9);
+        assert!(one.mean_transforms >= 2.0);
+        // The perk still pays for the base form's OWN reloads, which is why
+        // this is not an equality — what it must not do is pay twice for one
+        // shell. The route's share is zero here and the ordinary reload's is
+        // not, so the two runs differ by the ordinary reloads alone.
+        assert!(one.mean_shots >= none.mean_shots);
+    }
+
+    /// …and the panel keeps the RULE, not just the number it resolves to. "13"
+    /// and "one per shell" are the same integer on a 13-shell magazine, and the
+    /// route needs to tell them apart.
+    #[test]
+    fn the_panel_remembers_that_the_perk_counts_shells() {
+        let base = crate::loadout::WeaponBase::from_data(
+            "felarx",
+            true,
+            &["felarx_evo1_incarnon_form", "felarx_mounting_momentum"],
+        );
+        let panel =
+            crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+        let mm = panel
+            .stacking_buffs
+            .iter()
+            .find(|b| b.id == "per_shell_fire_rate")
+            .expect("the perk is on the panel");
+        assert!(mm.per_shell, "it counts shells, and the sim needs to know");
+        assert_eq!(
+            mm.stacks_per_trigger, panel.magazine_size as u32,
+            "one per shell in the modded magazine"
+        );
+    }
+}

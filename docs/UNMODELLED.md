@@ -1,0 +1,162 @@
+# What is not modelled, and what would have to exist first
+
+A catalogue of the EDGES, so that "why is this perk worth nothing" is a lookup
+rather than an investigation (owner, 2026-08-09: "其他地方就先记录下来，等需要时候
+可以快速找到").
+
+It is deliberately not a list of perks — `python scripts/intake_report.py --full`
+prints that, per weapon, derived from the data and therefore never stale. This
+is the other half: the half-dozen REASONS behind every entry on that list, and
+what each one is waiting for. A gap with no class here is a gap nobody has
+thought about yet, which is itself worth knowing.
+
+Everything here is also on the PAGE — a weapon banner, an evolution chip, a mod
+line (`scripts/check_disclosure.mjs`). This file is for deciding what to build;
+the page is for a player deciding whether to trust a number.
+
+---
+
+## The classes
+
+### 1. ONE TARGET
+
+The arena has a single enemy. Anything whose payoff is a second body is worth
+exactly zero and always will be, until the sim is spatial.
+
+- punch through (innate, mod-granted, or perk-granted) — the Felarx's infinite
+  body punch-through, Dual-Mode Chamber's +4 m;
+- "on punch through N enemies" triggers — Ruptured Plentitude;
+- chaining, radial spread onto others, corpse effects.
+
+**What would have to exist first:** more than one body. That is the same change
+AoE geometry needs (see `docs/CORE.md` and the AoE reference in memory), and it
+is the single biggest structural gap in the model.
+
+### 2. NO DISTANCE
+
+Every shot lands at point blank.
+
+- damage falloff (the Felarx's 14→28 m to 99%, and every shotgun's real one);
+- Projectile Speed as a DPS stat — it is modelled where it changes a *pool*
+  (riven rolls) but it moves no damage number here;
+- range-gated perks.
+
+**What would have to exist first:** a distance on the scenario. Cheap to add and
+expensive to be right about — falloff is per weapon and the data is only
+partly transcribed (`FalloffSpec` exists; most weapons do not carry one).
+
+### 3. NO MOVEMENT, NO STANCE
+
+The wielder aims and fires. They do not slide, aim-glide, bullet-jump, or get
+knocked down.
+
+- Agile Executor (ammo efficiency while aim gliding and sliding);
+- "with sprint speed or higher" perks;
+- self-stagger from one's own explosions (Cautious Shot);
+- Stagger as a proc — it is deliberately dropped when transcribing
+  `ForcedProcs`, because a knockdown has nothing to act on here.
+
+**What would have to exist first:** a wielder with a position and a state
+machine. `data/tenno/` is the seam; `TennoState` already carries `aiming`,
+`invisible`, `airborne` and every `condition:` reads them, so a fourth state is
+cheap — the mechanics behind them are not.
+
+### 4. NO HOLSTER, NO SECOND WEAPON
+
+One weapon fires for the whole engagement.
+
+- Evolved Autoloader (+50% magazine per second while holstered);
+- swap-speed perks, "on swap" buffs;
+- anything that assumes a loadout rather than a gun.
+
+**What would have to exist first:** a loadout and a swap policy. The policy is
+the hard half — see §"Open decisions" below, it is the same problem.
+
+### 5. AMMO IS INFINITE BY DEFAULT
+
+`infinite_ammo` defaults on (user, 2026-08-01) because the sim models no
+pickups, so a finite reserve is the pessimistic half of a mechanic we only half
+have. Ammo economy perks are therefore worth ~0 in the headline number even
+though the machinery for them exists and works when the setting is off.
+
+- ammo efficiency perks and arcanes;
+- ammo mutation, reserve size.
+
+**What would have to exist first:** ammo pickups, or a scenario that means to
+run the reserve dry. The reserve itself IS modelled — every draw inside the
+Incarnon cycle was made to bill it (2026-08-04).
+
+### 6. NOBODY SHOOTS BACK
+
+The target has no attack, so the player has no incoming damage, no shields to
+break, no overguard to gain.
+
+- Secondary Fortifier (overguard per damage dealt);
+- health/shield/overguard gating on the wielder;
+- `data/tenno/default.yaml`'s `health`/`shield` are placeholders at 1 for
+  exactly this reason.
+
+**What would have to exist first:** the target as an attacker. The `Arena`
+already has two actors, which is the seam.
+
+### 7. WARFRAME ABILITIES, BEYOND THE BUFFS
+
+`data/abilities/` covers seven damage buffs (Roar, Eclipse, Nourish and the four
+elemental augments) as an EARLY-ACCESS block on the scenario. What it does not
+cover is everything else a frame does — armor strip, ability damage, energy
+economy, the GunCO "Adding" omission list (Vex Armor, Furious Javelin,
+Parasitic Link — MECHANICS §6).
+
+**What would have to exist first:** a Warframe, with stats and mods of its own.
+When it lands, `abilities_data::resolve`'s two inputs (strength, duration) come
+from the frame and nothing about the buff definitions changes — that is why they
+are arguments.
+
+---
+
+## Open decisions, not missing machinery
+
+These are things the engine COULD do today and deliberately does not, because
+doing them means inventing a play pattern. The repo's rule is that a policy is
+the owner's call, not the model's (the 99-stack decision, 2026-08-08: "不要特殊化
+处理99层那个了，不现实").
+
+### Reload interruption
+
+**The Felarx, and every by-round reloader.** In game you can fire mid-reload and
+keep the shells already loaded; here a reload runs to the end. The machinery is
+all present — the sim owns the shot schedule and the by-round reload is per
+shell — but *when* to interrupt is a POLICY, and the two obvious ones disagree:
+
+- never interrupt (today) — every reload is a full magazine, and on the Felarx
+  every reload is also a full magazine of Mounting Momentum stacks;
+- interrupt as soon as one shell is in — fastest back to firing, and worst for
+  any per-shell buff.
+
+A real player picks per situation, and neither extreme is "the truth". **Waiting
+on a decision**: which policy, or whether it becomes a scenario setting beside
+`infinite_ammo` — which is where the other "what is this run allowed to assume"
+knobs live.
+
+### The 99-stack Mounting Momentum edge
+
+Reaching the cap needs a magazine that never empties, which is a firing pattern
+rather than a property of the perk. DECIDED against, twice (2026-08-08). Written
+here so it is not re-proposed.
+
+---
+
+## What is NOT on this list, and why that matters
+
+A perk absent from every class above and still marked "not modelled" is a TODO,
+not an edge — it is real damage the sim does not compute yet. Those are the ones
+worth building, and `cargo test -p wfsim-engine the_number_of_unmodelled` is the
+ratchet that keeps their number going one way. Two of them were retired the day
+this file was written:
+
+- **Mounting Momentum's Incarnon route** — entering the form is a reload, so it
+  pays a reload's stacks (one shell in, the rest out). Modelled 2026-08-09.
+- **Incarnon Catalyst / Incarnon Efficiency's "transmutation charge"** — never a
+  gap at all: the intake's clause splitter cut one sentence in half and filed
+  the tail as unmodelled, so a fully-modelled perk printed "partly modelled"
+  about its own second clause.

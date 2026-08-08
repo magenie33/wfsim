@@ -1075,6 +1075,15 @@ pub struct StackingBuff {
     /// is also what makes the trade-off real — a magazine mod buys stacks and
     /// pays for them in reload time (`by_round_reload`).
     pub stacks_per_trigger: u32,
+    /// Does this buff count SHELLS rather than reloads?
+    ///
+    /// The same fact `stacks_per_trigger: 0` states on [`WeaponBase`], kept
+    /// after `resolve` has turned it into a number — because by then "13" and
+    /// "one per shell" are indistinguishable, and the Incarnon route needs the
+    /// difference. Entering the form is one reload that loads several shells,
+    /// so a shell-counting buff gets one per shell and a reload-counting buff
+    /// gets one, and nothing else can tell them apart.
+    pub per_shell: bool,
     /// AN EVENT THAT TAKES THE WHOLE PILE, for a buff that has no clock.
     ///
     /// Mounting Momentum is cleared the instant the magazine reaches zero —
@@ -2198,6 +2207,7 @@ pub fn resolve_for(
                 } else {
                     b.stacks_per_trigger
                 },
+                per_shell: b.stacks_per_trigger == 0,
                 // NO OPENING STACKS. It briefly seeded one reload's worth,
                 // which was wrong for the same reason Secondary Enervate opens
                 // at zero: this is a pile you can be caught without, and the

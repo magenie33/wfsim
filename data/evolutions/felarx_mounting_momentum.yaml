@@ -29,7 +29,8 @@ effects:
   - kind: stacking_fire_rate_per_shell_reloaded
     per_stack: 0.10
     max_stacks: 99
-  # NOT MODELLED — THE INCARNON ROUTE, and it is not a second rule. Entering the
+  # THE INCARNON ROUTE, MODELLED 2026-08-09 — and it was never a second rule.
+  # Entering the
   # form IS A RELOAD: the transmute animation is the weapon's reload time, which
   # is how you can tell (owner, 2026-08-08), and the whole reload runs — one
   # shell as you go in, the rest as you come out. So the only thing that ever
@@ -44,8 +45,11 @@ effects:
   # The +1 was never a fee for transforming — it is the first shell of the
   # reload, and it looked like a rule of its own until the reload was named.
   #
-  # This sim transmutes on a gauge rather than on a plan, so it earns the reload
-  # route only.
+  # This sim transmutes on a gauge rather than on a plan, so it earns the route
+  # the same way: at the transmute the base magazine is refilled from reserve,
+  # the shells that draw ACTUALLY loads are counted, one is granted going in and
+  # the rest coming out. A dry reserve loads nothing and grants nothing, with no
+  # rule of its own to say so.
   #
   # AND THE 99-STACK CAP IS NOT CHASED. Reaching it needs a magazine that never
   # empties, which is a play PATTERN — a firing-and-reloading policy, not a
@@ -54,7 +58,6 @@ effects:
   # 2026-08-08: "不要特殊化处理 99 层那个了，不现实，我们流程还是正常的", then
   # "2 弹夹-1 那个完全不需要了"). The ordinary loop earns a magazine's worth and
   # that is what the number reports; the edge case is not a target.
-  - kind: unmodelled_incarnon_form_grants_stacks_on_entry_and_exit
 
 source:
   url: https://wiki.warframe.com/w/Felarx

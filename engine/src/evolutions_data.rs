@@ -910,8 +910,12 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         chance: 1.0,
                         initial_stacks: 0,
                         // 0 = ONE PER SHELL. `resolve` reads the modded
-                        // magazine and turns it into a number.
+                        // magazine and turns it into a number, and `per_shell`
+                        // keeps the RULE after the number replaces it — the
+                        // Incarnon route loads a known count of shells and has
+                        // to know which buffs are counting them.
                         stacks_per_trigger: 0,
+                        per_shell: true,
                         cleared_by: crate::loadout::ClearedBy::EmptyMagazine,
                     });
                 }
@@ -1003,6 +1007,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         chance: 1.0,
                         initial_stacks: 0,
                         stacks_per_trigger: 1,
+                        per_shell: false,
                         cleared_by: crate::loadout::ClearedBy::Nothing,
                     });
                 }
@@ -1022,6 +1027,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         // EARNED from zero, like every other timed buff.
                         initial_stacks: 0,
                         stacks_per_trigger: 1,
+                        per_shell: false,
                         cleared_by: crate::loadout::ClearedBy::Nothing,
                     });
                 }
@@ -1056,6 +1062,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         // has to fill it again (docs/BUFFS.md).
                         initial_stacks: 0,
                         stacks_per_trigger: 1,
+                        per_shell: false,
                         cleared_by: crate::loadout::ClearedBy::Nothing,
                     });
                 }
@@ -1077,6 +1084,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         // EARNED from zero, like every other timed buff.
                         initial_stacks: 0,
                         stacks_per_trigger: 1,
+                        per_shell: false,
                         cleared_by: crate::loadout::ClearedBy::Nothing,
                     });
                 }

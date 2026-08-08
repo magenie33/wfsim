@@ -9,13 +9,14 @@ description: "Headshots build +50% more Incarnon Transmutation charge."
 selection: choose_one
 
 effects:
-  # from: "Headshots build +50% more Incarnon"
+  # THE WHOLE SENTENCE. "Headshots build +50% more Incarnon Transmutation
+  # charge" is one clause, and the intake's splitter cut it after "Incarnon" —
+  # the head became this effect and the tail, two words with no verb in them,
+  # became an `unmodelled_transmutation_charge` sitting underneath. So a perk
+  # that is fully modelled printed "partly modelled" on its own card, about the
+  # second half of the sentence the first half already implements (2026-08-09).
   - kind: incarnon_charge_rate
     value: 0.5
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Transmutation charge"
-  - kind: unmodelled_transmutation_charge
 
 source:
   url: https://wiki.warframe.com/w/Felarx

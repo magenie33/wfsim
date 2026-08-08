@@ -44,6 +44,14 @@ around (decision 2026-07-31).
   the owner's own framing (2026-08-08) — the strength and duration are typed in
   today and come from the frame later, which is why `resolve` takes both as
   arguments. See BUFFS.md §"A WARFRAME ABILITY".
+- `docs/UNMODELLED.md` — the EDGES, by reason rather than by perk: one target,
+  no distance, no movement, no holster, infinite ammo, nobody shoots back, and
+  the Warframe layer. Written so "why is this perk worth nothing" is a lookup
+  (owner, 2026-08-09). It also holds the OPEN DECISIONS — things the engine
+  could do today and does not because doing them means inventing a play pattern,
+  which is the owner's call and not the model's (reload interruption is the live
+  one). `python scripts/intake_report.py --full` prints the per-weapon list; this
+  is the six reasons behind it.
 - `docs/` — CORE (design), MECHANICS (formulas), MEASUREMENTS (protocol +
   baselines), BUFFS, BOARD (the official leaderboard), OPTIMIZER, UI, WASM,
   GLOSSARY, DEVELOPMENT (setup), INVESTMENT (capacity/Forma), WEAPON_INTAKE
