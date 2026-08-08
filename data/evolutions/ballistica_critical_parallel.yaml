@@ -1,0 +1,20 @@
+id: ballistica_critical_parallel
+name: Critical Parallel
+weapon: ballistica
+tier: 4
+description: "Increase Base Critical Chance by +15%. Increase Base Critical Damage Multiplier by +1x."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Critical Chance by +15%"
+  - kind: flat_base_crit_chance
+    value: 0.15
+  # from: "Increase Base Critical Damage Multiplier by +1x"
+  - kind: flat_base_crit_multiplier
+    value: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Ballistica_Incarnon_Genesis

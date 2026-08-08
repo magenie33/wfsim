@@ -1,0 +1,21 @@
+id: prisma_angstrum_paladin_virtue
+name: Paladin Virtue
+weapon: prisma_angstrum
+tier: 2
+description: "Increase Base Damage by +75. With Energy Max Over 700: Increase Base Critical Damage Multiplier by +0.5x."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Damage by +75"
+  - kind: flat_base_damage
+    value: 75.0
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "With Energy Max Over 700: Increase Base Critical Damage Multiplier by +0.5x"
+  - kind: unmodelled_with_energy_max_over_increase_base_critical_damage_mu
+
+source:
+  url: https://wiki.warframe.com/w/Angstrum_Incarnon_Genesis

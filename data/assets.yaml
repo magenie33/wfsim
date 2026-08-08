@@ -22,8 +22,11 @@ weapons:
   # name and the page URL stay the bare name either way.
   # WFCD gives the MK1-Braton the plain Braton's `imageName`; the wiki has a
   # file of its own, and the two guns do not look alike.
+  angstrum: Angstrum.png
   atomos: Atomos.png
   atomos_incarnon: Atomos.png
+  ballistica: Ballistica.png
+  ballistica_prime: BallisticaPrime.png
   boar: Boar.png
   boar_incarnon: Boar.png
   boar_prime: BoarPrime.png
@@ -62,6 +65,7 @@ weapons:
   dual_toxocyst_incarnon: DualToxocyst.png
   furis: Furis.png
   furis_incarnon: Furis.png
+  gammacor: Gammacor.png
   gotva_prime: GrnOrokinRifle.png
   karak_wraith: KarakWraith.png
   kunai: Kunai.png
@@ -86,6 +90,7 @@ weapons:
   lex_incarnon: Lex.png
   lex_prime: LexPrime.png
   lex_prime_incarnon: LexPrime.png
+  miter: Miter.png
   mk1_braton: wiki:MK1-Braton.png
   mk1_braton_incarnon: wiki:MK1-Braton.png
   mk1_furis: wiki:MK1-Furis.png
@@ -97,7 +102,9 @@ weapons:
   phantasma_prime_charged: PhantasmaPrime.png
   phenmor: ZarimanSemiAutoRifle.png
   phenmor_incarnon: ZarimanSemiAutoRifle.png
+  prisma_angstrum: PrismaAngstrum.png
   prisma_grinlok: PrismaGrinlok.png
+  rakta_ballistica: RaktaBallistica.png
   sicarus: Sicarus.png
   sicarus_incarnon: Sicarus.png
   sicarus_prime: SicarusPrime.png
@@ -106,6 +113,7 @@ weapons:
   sybaris_incarnon: Sybaris.png
   sybaris_prime: SybarisPrime.png
   sybaris_prime_incarnon: SybarisPrime.png
+  synoid_gammacor: SynoidGammacor.png
   telos_boltor: TelosBoltor.png
   telos_boltor_incarnon: TelosBoltor.png
   torid: Torid.png

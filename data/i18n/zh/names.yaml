@@ -125,6 +125,22 @@ weapons:
   sicarus_incarnon: 暗杀者 (灵化形态)
   sicarus_prime: 暗杀者 Prime
   sicarus_prime_incarnon: 暗杀者 Prime (灵化形态)
+  angstrum: 安格斯壮
+  angstrum_incarnon: 安格斯壮 (灵化形态)
+  ballistica: 布里斯提卡
+  ballistica_incarnon: 布里斯提卡 (灵化形态)
+  ballistica_prime: 布里斯提卡 Prime
+  ballistica_prime_incarnon: 布里斯提卡 Prime (灵化形态)
+  gammacor: 咖玛腕甲枪
+  gammacor_incarnon: 咖玛腕甲枪 (灵化形态)
+  miter: 米特尔
+  miter_incarnon: 米特尔 (灵化形态)
+  prisma_angstrum: 棱晶·安格斯壮
+  prisma_angstrum_incarnon: 棱晶·安格斯壮 (灵化形态)
+  rakta_ballistica: 绯红·布里斯提卡
+  rakta_ballistica_incarnon: 绯红·布里斯提卡 (灵化形态)
+  synoid_gammacor: 枢议·咖玛腕甲枪
+  synoid_gammacor_incarnon: 枢议·咖玛腕甲枪 (灵化形态)
 
 enemies:
   thrax_centurion: 凶魂百夫长

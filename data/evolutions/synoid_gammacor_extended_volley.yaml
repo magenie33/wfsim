@@ -1,0 +1,17 @@
+id: synoid_gammacor_extended_volley
+name: Extended Volley
+weapon: synoid_gammacor
+tier: 3
+description: "Increase Base Magazine Capacity by +40."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Magazine Capacity by +40"
+  - kind: flat_base_magazine
+    value: 40
+
+source:
+  url: https://wiki.warframe.com/w/Gammacor_Incarnon_Genesis

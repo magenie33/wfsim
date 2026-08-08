@@ -1,0 +1,70 @@
+id: angstrum
+name: Angstrum
+slot: secondary
+class: pistol
+form: charged
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 4
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group.
+transform_group: angstrum
+transforms_to: angstrum_incarnon
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+# NOT MODELLED — THIS ENTRY CARRIES ONE PART OF THE BASE ATTACK. A
+# multi-part base needs a SECOND weapon entry to be right; the Cernos
+# Prime is the pattern (uncharged and charged are two entries in one
+# transform group). Until that exists, this weapon's number is the number
+# for the part named in `attack:` below and NOT for the whole weapon.
+unmodeled:
+  - "the Single Rocket Explosion is not modelled — this entry carries only the Single Rocket Impact"
+accuracy: 26.67
+disposition: 1.35
+polarities: [vazarin]
+# no exilus polarity slot
+riven_family: Angstrum
+traits: [incarnon]
+introduced: "Update 13.3"
+internal_name: /Lotus/Weapons/Corpus/Pistols/CrpHandRL/CorpusHandRocketLauncher
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 1
+reload_seconds: 2.5
+
+# CONDITION OVERLOAD IS INDEPENDENT ON THIS FORM. The wiki's CO catalog
+# lists this weapon's named attack as "Multiplying", so the bonus is a
+# free-standing final multiplier rather than a member of the base-damage
+# bucket.
+co_behavior: independent
+
+attack:
+  trigger: charge
+  shot_type: projectile
+  projectile_speed_mps: 150
+  fire_rate: 2
+  charge_seconds: 0.5
+  charge_cadence: draw_then_rate
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.16
+  crit_multiplier: 2
+  status_chance: 0.22
+  punch_through_m: 0.0
+  damage: { blast: 200 }   # total 200
+
+# incarnon_evolutions: definitions live in data/evolutions/angstrum_*.yaml.
+
+source:
+  url: https://wiki.warframe.com/w/Angstrum

@@ -1,0 +1,74 @@
+id: miter_incarnon
+name: Miter (Incarnon Form)
+slot: primary
+class: rifle
+form: incarnon
+
+transform_group: miter
+transforms_from: miter
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+
+incarnon:
+  gauge:
+    charge_on: weakpoint_hits
+    charges_to_fill: 4
+    rounds_per_charge: 5
+    max_rounds: 20
+  transmute:
+    activation: alt_fire
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+  incarnon_magazine:
+    resource: incarnon_charges
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 2      # = base reload time, unmodded
+  transmute_out_seconds: 1.0     # MEASURED on Dual Toxocyst (M9)
+
+pseudo_reload:
+  magazine: 20
+  reload_seconds: 3.0
+
+# CONDITION OVERLOAD IS INDEPENDENT ON THIS FORM. The wiki's CO catalog
+# lists this weapon's named attack as "Multiplying", so the bonus is a
+# free-standing final multiplier rather than a member of the base-damage
+# bucket.
+co_behavior: independent
+
+attack:
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 48
+  fire_rate: 3.33
+  multishot: 1.0
+  ammo_cost: 1                  # of the 20-round charge pool
+  crit_chance: 0.2
+  crit_multiplier: 3.3
+  status_chance: 0.56
+  punch_through_m: 0.0
+  damage: { impact: 12, slash: 42, puncture: 6 }   # total 60
+  # The radial part — rules in MECHANICS §7.
+  radial:
+    damage: { heat: 80 }   # total 80
+    radius_m: 3
+    falloff_start_m: 0
+    falloff_reduction: 0.2
+    crit_chance: 0.2
+    crit_multiplier: 3.3
+    status_chance: 0.56
+    # NOT DECLARED: no CO catalog row for this weapon, so the radial
+    # takes the engine's default — no Condition Overload on an explosion.
+
+# incarnon_evolutions: see data/weapons/primary/miter.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Miter_Incarnon_Genesis
+  # WFCD `attacks`: "Incarnon Form" and "Incarnon Form Radial Attack"

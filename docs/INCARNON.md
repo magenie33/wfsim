@@ -356,12 +356,16 @@ is intrinsic — but they still model as a transform group here, and they carry
    its 13 perk names already carried; the highest ratio in the set, and it cost
    no engine work at all.
 2. **The 19 shared perk kinds**, driven by whichever adapter needs them first.
-   Rapid Reinforcement alone appears on 14 guns; doing it once removes a slot
-   from half the remaining program.
+   ~~Rapid Reinforcement alone appears on 14 guns~~ — **done 2026-08-08**
+   (`EvoEffect::ReloadSpeedBonus`, into the same additive bucket the mods
+   feed). Its conditional sibling Ready Retaliation is still inert: granting a
+   conditional bonus unconditionally is worse than not granting it.
 3. **The zero-mechanic adapters, widest family first**: ~~Braton (4)~~,
-   ~~Latron (3)~~, ~~Boltor (3)~~ **all done 2026-08-08**, then Sybaris (3), Lato (3),
-   Ballistica (3), then the pairs (Dera, Vasto, Lex, Bronco, Kunai, Sicarus,
-   Gammacor, Angstrum) and the singles (Miter, Despair, Cestra, Atomos).
+   ~~Latron (3)~~, ~~Boltor (3)~~, ~~Sybaris (3)~~, ~~Lato (3)~~, ~~Dera~~,
+   ~~Vasto~~, ~~Lex~~, ~~Bronco~~, ~~Kunai~~, ~~Sicarus~~, ~~Despair~~,
+   ~~Cestra~~, ~~Atomos~~, ~~Ballistica (3)~~, ~~Gammacor~~, ~~Angstrum~~,
+   ~~Miter~~ — **all done 2026-08-08** (batches 1-4, 40 entries). None left in
+   this class.
 4. **Paris + Dread** together — one bow session covers both, and Cernos Prime
    already pins the charge/uncharge shape.
 5. **The mechanic-gated ones, one mechanic per batch**: Soma+Gorgon (spool),

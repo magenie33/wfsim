@@ -2,7 +2,10 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://wfsim.app/</loc></url>
   <url><loc>https://wfsim.app/support</loc></url>
+  <url><loc>https://wfsim.app/weapons/Angstrum</loc></url>
   <url><loc>https://wfsim.app/weapons/Atomos</loc></url>
+  <url><loc>https://wfsim.app/weapons/Ballistica</loc></url>
+  <url><loc>https://wfsim.app/weapons/Ballistica_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Boar</loc></url>
   <url><loc>https://wfsim.app/weapons/Boar_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Boltor</loc></url>
@@ -22,6 +25,7 @@
   <url><loc>https://wfsim.app/weapons/Dex_Sybaris</loc></url>
   <url><loc>https://wfsim.app/weapons/Dual_Toxocyst</loc></url>
   <url><loc>https://wfsim.app/weapons/Furis</loc></url>
+  <url><loc>https://wfsim.app/weapons/Gammacor</loc></url>
   <url><loc>https://wfsim.app/weapons/Gotva_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Karak_Wraith</loc></url>
   <url><loc>https://wfsim.app/weapons/Kunai</loc></url>
@@ -38,14 +42,18 @@
   <url><loc>https://wfsim.app/weapons/MK1-Braton</loc></url>
   <url><loc>https://wfsim.app/weapons/MK1-Furis</loc></url>
   <url><loc>https://wfsim.app/weapons/MK1-Kunai</loc></url>
+  <url><loc>https://wfsim.app/weapons/Miter</loc></url>
   <url><loc>https://wfsim.app/weapons/Ocucor</loc></url>
   <url><loc>https://wfsim.app/weapons/Phantasma_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Phenmor</loc></url>
+  <url><loc>https://wfsim.app/weapons/Prisma_Angstrum</loc></url>
   <url><loc>https://wfsim.app/weapons/Prisma_Grinlok</loc></url>
+  <url><loc>https://wfsim.app/weapons/Rakta_Ballistica</loc></url>
   <url><loc>https://wfsim.app/weapons/Sicarus</loc></url>
   <url><loc>https://wfsim.app/weapons/Sicarus_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Sybaris</loc></url>
   <url><loc>https://wfsim.app/weapons/Sybaris_Prime</loc></url>
+  <url><loc>https://wfsim.app/weapons/Synoid_Gammacor</loc></url>
   <url><loc>https://wfsim.app/weapons/Telos_Boltor</loc></url>
   <url><loc>https://wfsim.app/weapons/Torid</loc></url>
   <url><loc>https://wfsim.app/weapons/Vasto</loc></url>

@@ -1,0 +1,17 @@
+id: synoid_gammacor_elemental_balance
+name: Elemental Balance
+weapon: synoid_gammacor
+tier: 4
+description: "Increase Base Status Chance by +10%."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Status Chance by +10%"
+  - kind: flat_base_status_chance
+    value: 0.1
+
+source:
+  url: https://wiki.warframe.com/w/Gammacor_Incarnon_Genesis

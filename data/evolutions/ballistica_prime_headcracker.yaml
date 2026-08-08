@@ -1,0 +1,25 @@
+id: ballistica_prime_headcracker
+name: Headcracker
+weapon: ballistica_prime
+tier: 2
+description: "Increase Base Damage by +3. On Headshot: +7.5% Fire Rate for 4 seconds. Stacks up to 10x."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Damage by +3"
+  - kind: flat_base_damage
+    value: 3.0
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "On Headshot: +7.5% Fire Rate for 4 seconds"
+  - kind: unmodelled_on_headshot_fire_rate_for_seconds
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Stacks up to 10x"
+  - kind: unmodelled_stacks_up_to_x
+
+source:
+  url: https://wiki.warframe.com/w/Ballistica_Incarnon_Genesis

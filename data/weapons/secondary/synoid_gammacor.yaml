@@ -1,0 +1,58 @@
+id: synoid_gammacor
+name: Synoid Gammacor
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 7
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group.
+transform_group: synoid_gammacor
+transforms_to: synoid_gammacor_incarnon
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+accuracy: 100
+disposition: 1.1
+polarities: [vazarin, naramon]
+exilus_polarity: madurai
+riven_family: Gammacor
+traits: [incarnon, syndicate]
+introduced: "Update 15.5"
+internal_name: /Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSSynoidGammacor
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 80
+reload_seconds: 1.8
+
+# No CO catalog row for this attack, so the ordinary class — absence in that
+# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.2
+  crit_multiplier: 2
+  status_chance: 0.28
+  punch_through_m: 0.0
+  damage: { magnetic: 21 }   # total 21
+
+# incarnon_evolutions: definitions live in data/evolutions/synoid_gammacor_*.yaml.
+
+source:
+  url: https://wiki.warframe.com/w/Synoid_Gammacor

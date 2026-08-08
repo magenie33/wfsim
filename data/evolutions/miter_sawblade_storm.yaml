@@ -1,0 +1,22 @@
+id: miter_sawblade_storm
+name: Sawblade Storm
+weapon: miter
+tier: 4
+description: "Hold charged shot for 1 second to increase area of effect. Does not affect Incarnon Form."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Hold charged shot for 1 second to increase area of effect"
+  - kind: unmodelled_hold_charged_shot_for_second_to_increase_area_of_effe
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Does not affect Incarnon Form"
+  - kind: unmodelled_does_not_affect_incarnon_form
+
+source:
+  url: https://wiki.warframe.com/w/Miter_Incarnon_Genesis

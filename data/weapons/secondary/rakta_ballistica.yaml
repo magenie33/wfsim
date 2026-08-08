@@ -1,0 +1,68 @@
+id: rakta_ballistica
+name: Rakta Ballistica
+slot: secondary
+class: pistol
+form: charged
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 6
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group.
+transform_group: rakta_ballistica
+transforms_to: rakta_ballistica_incarnon
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+# NOT MODELLED — THIS ENTRY CARRIES ONE PART OF THE BASE ATTACK. A
+# multi-part base needs a SECOND weapon entry to be right; the Cernos
+# Prime is the pattern (uncharged and charged are two entries in one
+# transform group). Until that exists, this weapon's number is the number
+# for the part named in `attack:` below and NOT for the whole weapon.
+unmodeled:
+  - "the Burst Shot is not modelled — this entry carries only the Charged Shot"
+accuracy: 4
+disposition: 1.2
+polarities: [vazarin, madurai]
+exilus_polarity: naramon
+riven_family: Ballistica
+traits: [incarnon, syndicate]
+introduced: "Update 15.5"
+internal_name: /Lotus/Weapons/Syndicates/RedVeil/Pistols/RVBallistica
+noise: silent
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 20
+reload_seconds: 2
+
+# No CO catalog row for this attack, so the ordinary class — absence in that
+# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: charge
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 3.33
+  charge_seconds: 1
+  charge_cadence: draw_then_rate
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.2
+  crit_multiplier: 1.5
+  status_chance: 0.1
+  punch_through_m: 0.0
+  damage: { impact: 15, slash: 15, puncture: 270 }   # total 300
+
+# incarnon_evolutions: definitions live in data/evolutions/rakta_ballistica_*.yaml.
+
+source:
+  url: https://wiki.warframe.com/w/Rakta_Ballistica

@@ -1,0 +1,25 @@
+id: rakta_ballistica_prolific_perforation
+name: Prolific Perforation
+weapon: rakta_ballistica
+tier: 2
+description: "Increase Base Damage by +10. On Punch Through Hit: +10% Critical Chance for 3 seconds. Stacks up to 8x."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Damage by +10"
+  - kind: flat_base_damage
+    value: 10.0
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "On Punch Through Hit: +10% Critical Chance for 3 seconds"
+  - kind: unmodelled_on_punch_through_hit_critical_chance_for_seconds
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Stacks up to 8x"
+  - kind: unmodelled_stacks_up_to_x
+
+source:
+  url: https://wiki.warframe.com/w/Ballistica_Incarnon_Genesis
