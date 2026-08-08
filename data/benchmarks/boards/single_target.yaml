@@ -1399,6 +1399,11 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
+    score: 4
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, hypothermic_shell, venomous_clip, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: base
     score: 3.828169631069714
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_electrified_barrel, primed_venomous_clip, hypothermic_shell]
     arcanes: [primary_frostbite, secondary_enervate]
@@ -1447,6 +1452,11 @@ entries:
     score: 3.2
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, ammo_chain, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_overcharge, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: base
+    score: 3.2
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, ammo_chain, magnetized_cycle, hypothermic_shell, venomous_clip, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, cascadia_flare]
   - weapon: larkspur_prime
     mode: base
     score: 3
@@ -1722,13 +1732,13 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: phenmor
     mode: cycle
-    score: 24.96283007182718
+    score: 25.078300089061962
     mods: [galvanized_chamber, serration, galvanized_aptitude, rifle_elementalist, vile_acceleration, stormbringer, high_voltage, infected_clip]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_ready_retaliation, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_debilitate]
   - weapon: phenmor
     mode: cycle
-    score: 20.754202067080602
+    score: 21.012910450070763
     mods: [galvanized_chamber, serration, galvanized_aptitude, rifle_elementalist, stormbringer, high_voltage, infected_clip, malignant_force]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_ready_retaliation, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_debilitate]
