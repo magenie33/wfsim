@@ -1,0 +1,18 @@
+id: bronco_prime_rain_of_lead
+name: Rain of Lead
+weapon: bronco_prime
+tier: 4
+description: "+2 Base Multishot."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "+2 Base Multishot"
+  - kind: unmodelled_base_multishot
+
+source:
+  url: https://wiki.warframe.com/w/Bronco_Incarnon_Genesis

@@ -1,0 +1,17 @@
+id: mk1_kunai_extended_volley
+name: Extended Volley
+weapon: mk1_kunai
+tier: 3
+description: "Increase Base Magazine Capacity by +10."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Magazine Capacity by +10"
+  - kind: flat_base_magazine
+    value: 10
+
+source:
+  url: https://wiki.warframe.com/w/Kunai_Incarnon_Genesis

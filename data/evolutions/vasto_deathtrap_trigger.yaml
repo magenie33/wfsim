@@ -1,0 +1,21 @@
+id: vasto_deathtrap_trigger
+name: Deathtrap Trigger
+weapon: vasto
+tier: 2
+description: "Increase Base Damage by +66. On Equip From Primary: Increase Base Critical Chance by +30% for 3 seconds, Increase Base Critical Damage Multiplier by +2.2x for 3 seconds."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Damage by +66"
+  - kind: flat_base_damage
+    value: 66.0
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "On Equip From Primary: Increase Base Critical Chance by +30% for 3 seconds, Increase Base Critical Damage Multiplier by +2.2x for 3 seconds"
+  - kind: unmodelled_on_equip_from_primary_increase_base_critical_chance_b
+
+source:
+  url: https://wiki.warframe.com/w/Vasto_Incarnon_Genesis

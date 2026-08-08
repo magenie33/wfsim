@@ -37,7 +37,13 @@ pseudo_reload:
   magazine: 40
   reload_seconds: 3.4   # transmute out (1.0) + in (2.4), unmodded
 
-co_behavior: additive_with_base_damage
+# CONDITION OVERLOAD IS INDEPENDENT ON THIS FORM, not additive. The wiki's CO
+# catalog gives it its own row — "Incarnon Mode | Projectile | 50 | 50 | 100% |
+# Multiplying" — so the bonus is a free-standing final multiplier rather than a
+# member of the base-damage bucket, which is a different number on any build
+# carrying Serration. The same row adds "CO does not apply for Latron's AoE in
+# any way", which the radial below obeys by declaring nothing.
+co_behavior: independent
 
 # TWO ATTACK PARTS, and a THIRD thing this arena cannot hold. VERBATIM (wiki):
 # "Incarnon Form changes the weapon's fire mode from hitscan to a traveling

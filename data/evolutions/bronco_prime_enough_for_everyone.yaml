@@ -1,0 +1,18 @@
+id: bronco_prime_enough_for_everyone
+name: Enough for Everyone
+weapon: bronco_prime
+tier: 4
+description: "+80% Ammo Efficiency when 6 enemies are within 6 m."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "+80% Ammo Efficiency when 6 enemies are within 6 m"
+  - kind: unmodelled_ammo_efficiency_when_enemies_are_within_m
+
+source:
+  url: https://wiki.warframe.com/w/Bronco_Incarnon_Genesis

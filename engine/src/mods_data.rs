@@ -1097,7 +1097,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 38] = [
+        const EXPECTED: [(&str, &str, &[&str]); 44] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
@@ -1118,6 +1118,16 @@ mod tests {
             ("lato_prime", "semi_auto", &["semi_pistol_cannonade"]),
             ("lex", "semi_auto", &["semi_pistol_cannonade"]),
             ("lex_prime", "semi_auto", &["semi_pistol_cannonade"]),
+            // Batch 2. The Bronco is a shotgun SIDEARM and still draws the
+            // pistol pool, so Semi-Pistol Cannonade is the one it sees — the
+            // trigger decides, not the shot pattern. The Kunai is thrown and
+            // listed Auto, so no Cannonade at all.
+            ("vasto", "semi_auto", &["semi_pistol_cannonade"]),
+            ("vasto_prime", "semi_auto", &["semi_pistol_cannonade"]),
+            ("bronco", "semi_auto", &["semi_pistol_cannonade"]),
+            ("bronco_prime", "semi_auto", &["semi_pistol_cannonade"]),
+            ("kunai", "auto", &[]),
+            ("mk1_kunai", "auto", &[]),
             ("torid", "semi_auto", &["semi_rifle_cannonade"]), // semi-auto launcher, rifle pool
             // THE ASSAULT RIFLES (2026-08-05). Semi-Pistol/Shotgun Cannonade
             // are pistol and shotgun mods, so a rifle never sees them; the

@@ -1,0 +1,21 @@
+id: kunai_sages_resolve
+name: Sage's Resolve
+weapon: kunai
+tier: 2
+description: "Increase Base Damage by +80. With Channeled Ability active: +100% Multishot."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Damage by +80"
+  - kind: flat_base_damage
+    value: 80.0
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "With Channeled Ability active: +100% Multishot"
+  - kind: unmodelled_with_channeled_ability_active_multishot
+
+source:
+  url: https://wiki.warframe.com/w/Kunai_Incarnon_Genesis

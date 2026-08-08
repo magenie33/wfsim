@@ -36,7 +36,8 @@ ammo_pickup: 40
 magazine: 15
 reload_seconds: 1
 
-# No CO catalog row for this weapon, so the ordinary class.
+# No CO catalog row for this attack, so the ordinary class — absence in that
+# catalog means ORDINARY rather than unknown, since it lists the anomalies.
 co_behavior: additive_with_base_damage
 
 attack:

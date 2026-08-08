@@ -37,6 +37,8 @@ pseudo_reload:
   magazine: 20
   reload_seconds: 3.35
 
+# No CO catalog row for this attack, so the ordinary class — absence in that
+# catalog means ORDINARY rather than unknown, since it lists the anomalies.
 co_behavior: additive_with_base_damage
 
 attack:

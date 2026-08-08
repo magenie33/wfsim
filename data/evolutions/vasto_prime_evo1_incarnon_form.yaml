@@ -1,0 +1,18 @@
+id: vasto_prime_evo1_incarnon_form
+name: Incarnon Form
+weapon: vasto_prime
+tier: 1
+description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Transforms into a 6-round burst with 6 base multishot."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: fixed
+
+effects:
+  # LOADED as `EvoEffect::UnlocksForm(weapon)` — the form's stats are the
+  # vasto_prime_incarnon entry's own, not perk payload.
+  - kind: unlocks_weapon
+    weapon: vasto_prime_incarnon
+
+source:
+  url: https://wiki.warframe.com/w/Vasto_Incarnon_Genesis

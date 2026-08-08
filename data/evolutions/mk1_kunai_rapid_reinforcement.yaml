@@ -1,0 +1,17 @@
+id: mk1_kunai_rapid_reinforcement
+name: Rapid Reinforcement
+weapon: mk1_kunai
+tier: 3
+description: "+50% Reload Speed."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "+50% Reload Speed"
+  - kind: reload_speed_bonus
+    value: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Kunai_Incarnon_Genesis

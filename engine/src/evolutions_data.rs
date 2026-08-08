@@ -1449,6 +1449,14 @@ use crate::loadout::WeaponBase;
             "telos_boltor_crimson_overture :: stacking_base_damage_on_kill",
             "telos_boltor_hunters_mantra :: punch_through_while_channeling",
             "telos_boltor_rapid_reinforcement :: reload_speed_bonus",
+            // The Kunai family carries the same Rapid Reinforcement, and it is
+            // the same gap: `evolutions_data::effect()` has no reload-speed arm.
+            // It stays on the ARGUED list rather than being renamed into the
+            // bulk one, because the kind is a real vocabulary word this loader
+            // could implement — the bulk prefix is for clauses nobody has a word
+            // for at all.
+            "kunai_rapid_reinforcement :: reload_speed_bonus",
+            "mk1_kunai_rapid_reinforcement :: reload_speed_bonus",
         ];
         // TWO POPULATIONS, AND THE PREFIX IS WHICH. The list above is the ARGUED
         // one: a hand-written perk whose effect the engine cannot express, where

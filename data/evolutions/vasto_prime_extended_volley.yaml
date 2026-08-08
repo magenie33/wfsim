@@ -1,0 +1,17 @@
+id: vasto_prime_extended_volley
+name: Extended Volley
+weapon: vasto_prime
+tier: 3
+description: "Increase Base Magazine Capacity by +6."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Magazine Capacity by +6"
+  - kind: flat_base_magazine
+    value: 6
+
+source:
+  url: https://wiki.warframe.com/w/Vasto_Incarnon_Genesis

@@ -1,0 +1,58 @@
+id: bronco_prime
+name: Bronco Prime
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 4
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group.
+transform_group: bronco_prime
+transforms_to: bronco_prime_incarnon
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+accuracy: 3.7
+disposition: 1.4
+polarities: []
+exilus_polarity: madurai
+riven_family: Bronco
+traits: [incarnon, prime]
+introduced: "Update 9.0"
+internal_name: /Lotus/Weapons/Tenno/Pistol/BroncoPrime
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 4
+reload_seconds: 2
+
+# No CO catalog row for this attack, so the ordinary class — absence in that
+# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 4.17
+  multishot: 7.0
+  ammo_cost: 1
+  crit_chance: 0.06
+  crit_multiplier: 2
+  status_chance: 0.1286
+  punch_through_m: 0.0
+  damage: { impact: 40, slash: 5, puncture: 5 }   # total 50
+
+# incarnon_evolutions: definitions live in data/evolutions/bronco_prime_*.yaml.
+
+source:
+  url: https://wiki.warframe.com/w/Bronco_Prime

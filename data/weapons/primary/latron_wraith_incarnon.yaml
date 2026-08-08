@@ -37,6 +37,13 @@ pseudo_reload:
   magazine: 40
   reload_seconds: 3.4   # transmute out (1.0) + in (2.4), unmodded
 
+# THE CATALOG'S LATRON ROW NAMES "Latron/Latron Prime" AND NOT THE WRAITH, so
+# this entry keeps the ordinary class while its two twins take `independent`.
+# That is the recorded rule rather than an oversight: a CO anomaly is per-ENTRY,
+# absence means ordinary, and a discrepancy is never generalised to a weapon, a
+# form or a behaviour class. Worth a look during the per-gun pass — the form is
+# the adapter's, so one of the two readings is wrong and the catalog is the only
+# thing that can say which.
 co_behavior: additive_with_base_damage
 
 # TWO ATTACK PARTS, and a THIRD thing this arena cannot hold. VERBATIM (wiki):

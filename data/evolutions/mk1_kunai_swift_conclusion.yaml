@@ -1,0 +1,22 @@
+id: mk1_kunai_swift_conclusion
+name: Swift Conclusion
+weapon: mk1_kunai
+tier: 2
+description: "Increase Damage by +80. Increase Damage by +200% if enemy has less than half health."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Increase Damage by +80"
+  - kind: unmodelled_increase_damage_by
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Increase Damage by +200% if enemy has less than half health"
+  - kind: unmodelled_increase_damage_by_if_enemy_has_less_than_half_health
+
+source:
+  url: https://wiki.warframe.com/w/Kunai_Incarnon_Genesis

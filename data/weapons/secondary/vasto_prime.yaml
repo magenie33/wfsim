@@ -1,0 +1,58 @@
+id: vasto_prime
+name: Vasto Prime
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 10
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group.
+transform_group: vasto_prime
+transforms_to: vasto_prime_incarnon
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+accuracy: 16
+disposition: 1.35
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Vasto
+traits: [incarnon, prime]
+introduced: "Update 15.7"
+internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeVasto/PrimeVastoPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 6
+reload_seconds: 1
+
+# No CO catalog row for this attack, so the ordinary class — absence in that
+# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 2.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.22
+  crit_multiplier: 2.4
+  status_chance: 0.22
+  punch_through_m: 0.0
+  damage: { impact: 16.5, slash: 77, puncture: 16.5 }   # total 110.0
+
+# incarnon_evolutions: definitions live in data/evolutions/vasto_prime_*.yaml.
+
+source:
+  url: https://wiki.warframe.com/w/Vasto_Prime

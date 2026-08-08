@@ -103,6 +103,18 @@ weapons:
   sybaris_incarnon: 席芭莉丝 (灵化形态)
   sybaris_prime: 席芭莉丝 Prime
   sybaris_prime_incarnon: 席芭莉丝 Prime (灵化形态)
+  bronco: 野马
+  bronco_incarnon: 野马 (灵化形态)
+  bronco_prime: 野马 Prime
+  bronco_prime_incarnon: 野马 Prime (灵化形态)
+  kunai: 苦无
+  kunai_incarnon: 苦无 (灵化形态)
+  mk1_kunai: MK1-苦无
+  mk1_kunai_incarnon: MK1-苦无 (灵化形态)
+  vasto: 瓦斯托
+  vasto_incarnon: 瓦斯托 (灵化形态)
+  vasto_prime: 瓦斯托 Prime
+  vasto_prime_incarnon: 瓦斯托 Prime (灵化形态)
 
 enemies:
   thrax_centurion: 凶魂百夫长

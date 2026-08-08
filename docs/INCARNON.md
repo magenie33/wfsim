@@ -51,8 +51,11 @@ carries that name.
 | **Dera Genesis** | `dera`, `dera_vandal` — BULK, 2026-08-08 |
 | **Lato Genesis** | `lato`, `lato_vandal`, `lato_prime` — BULK, 2026-08-08 |
 | **Lex Genesis** | `lex`, `lex_prime` — BULK, 2026-08-08 |
+| **Vasto Genesis** | `vasto`, `vasto_prime` — BULK, 2026-08-08 |
+| **Bronco Genesis** | `bronco`, `bronco_prime` — BULK, 2026-08-08 |
+| **Kunai Genesis** | `kunai`, `mk1_kunai` — BULK, 2026-08-08 |
 
-Remaining: **19 adapters (36 weapons) + 2 naturals**.
+Remaining: **16 adapters (30 weapons) + 2 naturals**.
 
 ## BULK vs HAND — what "rough" means, precisely
 
@@ -84,10 +87,23 @@ mined for its numbers, because reading "On Kill: +30 damage" as an unconditional
   EVOLUTION strings need the CN wiki one adapter at a time, and the bulk pass
   does not do it. A Chinese session shows English perk names on a bulk weapon
   until its family is transcribed.
-- **CO catalog rows.** The intake assumes no row (the ordinary class). Two
-  families in the roster have one — Burston and Braton, both for their Incarnon
-  RADIAL — so a bulk weapon with an explosion should be checked against the
-  catalog during the per-gun pass.
+- ~~**CO catalog rows.**~~ **READ AND APPLIED, 2026-08-08.** The whole catalog
+  was pulled for every weapon in the program (owner: "那个CO表，武器也进去").
+  What it changed and what it exposed:
+
+  | weapon | row | what it means here |
+  | --- | --- | --- |
+  | **Latron / Latron Prime** | Incarnon Mode, **Multiplying** | was shipped as Additive — FIXED. A free-standing final multiplier is a different number on any build carrying Serration. |
+  | Latron **Wraith** | *no row* | left Additive. A CO anomaly is per-ENTRY and is never generalised to a form (recorded rule) — but the form is the ADAPTER's, so one of the two readings is wrong and only the catalog can say which. Flagged in the yaml. |
+  | **Kunai / MK1-Kunai** | Incarnon Mode, **Multiplying** | applied at intake. |
+  | Braton family | Incarnon Form Radial, Adding, 95% | already applied. |
+  | Burston family | Incarnon Form Radial, Adding, **24%** | applied as Adding; the **24%** is NOT expressible — `co_base_fraction` is a WEAPON-level field and this is a RADIAL-level discount. Recorded, not faked. |
+  | Zylok family | Incarnon Form Radial, Adding, 90% | for the Zylok batch, same radial-fraction limit. |
+  | Torid, Felarx, Angstrum, Ballistica Prime, Dread, Paris, Miter | Multiplying on the named attack | to apply as each lands. |
+  | Cestra, Despair, Atomos, Bronco Prime, Vasto Prime, Lato Vandal, Lex Prime, Dual Toxocyst, Furis | Adding + "CO-bonus does not use base damage increase Evolution" | the engine already excludes an evolution's flat damage, so these are correct as generated. |
+  | **Kunai** | "CO-bonus **DOES** use base damage increase Evolution" | the one weapon where the engine's blanket exclusion is WRONG. No way to express it today; noted at the site. |
+  | Stug | Blob Impact, **0%, "Does not apply"** | `co_behavior: inert` when the Stug lands. |
+  | Ballistica / Ballistica Prime / Dread / Paris / Miter | Charged Attack, Adding, **25–50%** | these DO fit `co_base_fraction`, which is per weapon ENTRY and a charged shot is its own entry (the Cernos Prime already does exactly this at 0.5). |
 - **anything the wiki says in prose rather than in the table**: innate multishot
   on a form, guaranteed procs, ricochet counts, per-form status splits.
 

@@ -1,0 +1,66 @@
+id: kunai_incarnon
+name: Kunai (Incarnon Form)
+slot: secondary
+class: pistol
+form: incarnon
+
+transform_group: kunai
+transforms_from: kunai
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+
+incarnon:
+  gauge:
+    charge_on: weakpoint_hits
+    charges_to_fill: 4
+    rounds_per_charge: 5
+    max_rounds: 20
+  transmute:
+    activation: alt_fire
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+  incarnon_magazine:
+    resource: incarnon_charges
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 0.75      # = base reload time, unmodded
+  transmute_out_seconds: 1.0     # MEASURED on Dual Toxocyst (M9)
+
+pseudo_reload:
+  magazine: 20
+  reload_seconds: 1.75
+
+# CONDITION OVERLOAD IS INDEPENDENT ON THIS FORM. The wiki's CO catalog:
+# "Incarnon Mode | Projectile | Multiplying", so the bonus is a free-standing
+# final multiplier rather than a member of the base-damage bucket. The same
+# row carries the family's other two rules, neither of which this engine can
+# express yet: "CO-bonus DOES use base damage increase Evolution" (the loader
+# excludes it for every other weapon) and "does not factor +200% (3x) bonus
+# vs <50% hp targets, effectively additive with it".
+co_behavior: independent
+
+attack:
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 70
+  fire_rate: 3.33
+  multishot: 1.0
+  ammo_cost: 1                  # of the 20-round charge pool
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.16
+  punch_through_m: 0.0
+  damage: { impact: 8, slash: 18, puncture: 14 }   # total 40
+
+# incarnon_evolutions: see data/weapons/secondary/kunai.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Kunai_Incarnon_Genesis
+  # WFCD `attacks`: "Incarnon Form"
