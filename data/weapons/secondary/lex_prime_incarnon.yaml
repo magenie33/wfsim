@@ -41,6 +41,9 @@ pseudo_reload:
 # catalog means ORDINARY rather than unknown, since it lists the anomalies.
 co_behavior: additive_with_base_damage
 
+unmodeled:
+  - "damage falloff from 10 m to 18 m (down to 33% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+
 attack:
   trigger: semi_auto
   shot_type: projectile
@@ -52,6 +55,14 @@ attack:
   crit_multiplier: 3
   status_chance: 0.44
   punch_through_m: 0.0
+  # NOT MODELLED — the arena has no distance, so this weapon is
+  # simulated at point blank. Recorded because the RIVEN pool reads
+  # it: a hitscan weapon that lists a falloff still rolls Projectile
+  # Speed, which scales the whole range (wiki `Projectile Speed`).
+  falloff:
+    start_m: 10
+    end_m: 18
+    reduction: 0.3333   # fraction KEPT past end_m
   damage: { impact: 400, radiation: 800 }   # total 1200
 
 # incarnon_evolutions: see data/weapons/secondary/lex_prime.yaml (shared group)

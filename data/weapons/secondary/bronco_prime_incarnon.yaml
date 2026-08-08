@@ -41,6 +41,9 @@ pseudo_reload:
 # catalog means ORDINARY rather than unknown, since it lists the anomalies.
 co_behavior: additive_with_base_damage
 
+unmodeled:
+  - "damage falloff from 18 m to 36 m (down to 56% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+
 attack:
   trigger: semi_auto
   shot_type: hit_scan
@@ -51,6 +54,14 @@ attack:
   crit_multiplier: 3.2
   status_chance: 0.2571
   punch_through_m: 0.0
+  # NOT MODELLED — the arena has no distance, so this weapon is
+  # simulated at point blank. Recorded because the RIVEN pool reads
+  # it: a hitscan weapon that lists a falloff still rolls Projectile
+  # Speed, which scales the whole range (wiki `Projectile Speed`).
+  falloff:
+    start_m: 18
+    end_m: 36
+    reduction: 0.5588   # fraction KEPT past end_m
   damage: { impact: 27.2, slash: 3.4, puncture: 3.4 }   # total 34.0
 
 # incarnon_evolutions: see data/weapons/secondary/bronco_prime.yaml (shared group)

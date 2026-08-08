@@ -335,10 +335,22 @@ pub fn excluded_for(weapon_id: &str) -> Vec<&'static str> {
     if s.ammo_max.is_none() {
         out.push("ammo_maximum");
     }
-    // Nothing flies: a hit-scan trace and a beam both arrive instantly, and
-    // the weapon has to have no form that fires something for the stat to
-    // have nothing to act on.
-    if forms.iter().all(|f| f.attack.shot_type.is_some_and(|t| !t.flies())) {
+    // NOTHING FOR FLIGHT SPEED TO ACT ON — and there are TWO ways to give it
+    // something. Wiki (`Projectile Speed`), verbatim: *"Mods including Rivens
+    // that have positive or negative Projectile speeds will affect a weapon's
+    // entire Damage Falloff range accordingly"*, and *"Hitscan weapons that do
+    // **not** list Damage Falloff values in their UI are completely unaffected
+    // by Projectile Speed modifications"*.
+    //
+    // So a falloff counts even with nothing in the air, which is why a shotgun
+    // rolls the stat: the Boar keeps 50% past 25 m and the riven moves that
+    // whole range. Reading only `shot_type` said no to every shotgun in the
+    // roster (owner, 2026-08-08, relaying a player's Furis card: "会间接影响射
+    // 程。很多霰弹有这个特性").
+    let flies = |f: &&'static crate::weapons_data::WeaponSpec| {
+        f.attack.shot_type.is_some_and(|t| t.flies()) || f.attack.falloff.is_some()
+    };
+    if !forms.iter().any(flies) {
         out.push("projectile_speed");
     }
 

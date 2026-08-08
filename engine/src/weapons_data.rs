@@ -156,6 +156,25 @@ pub struct AttackSpec {
     pub forced_procs: Vec<String>,
     #[serde(default)]
     pub ricochet: Option<RicochetSpec>,
+    /// DAMAGE FALLOFF on the direct hit — the shotgun's, and the one the
+    /// Arsenal lists as a range in metres.
+    ///
+    /// **NOT MODELLED IN THE FIGHT**, and recorded anyway. This arena has no
+    /// distance: every shot lands at point blank, so a weapon with falloff is
+    /// simulated at its best case and says so in `unmodeled:`.
+    ///
+    /// What reads it today is the RIVEN pool. Wiki (`Projectile Speed`),
+    /// verbatim: *"Mods including Rivens that have positive or negative
+    /// Projectile speeds will affect a weapon's entire Damage Falloff range
+    /// accordingly"* and *"Hitscan weapons that do **not** list Damage Falloff
+    /// values in their UI are completely unaffected by Projectile Speed
+    /// modifications"*. So listing a falloff is precisely what gives the
+    /// Projectile Speed stat something to act on when nothing flies — it is
+    /// why a shotgun rolls it, and why the Furis does (its Incarnon form
+    /// falls off from 10 m to 16 m) while the Latron does not (owner,
+    /// 2026-08-08: "会间接影响射程。很多霰弹有这个特性").
+    #[serde(default)]
+    pub falloff: Option<FalloffSpec>,
     /// A radial (AoE) part fired with every projectile of this attack.
     #[serde(default)]
     pub radial: Option<RadialSpec>,
@@ -165,6 +184,24 @@ pub struct AttackSpec {
     /// Continuous-beam geometry (Torid Incarnon). Shape, not a damage part.
     #[serde(default)]
     pub beam: Option<BeamSpec>,
+}
+
+/// Direct-hit damage falloff: full damage inside `start_m`, decreasing
+/// linearly to `reduction` of it at `end_m` and beyond.
+///
+/// `reduction` is DE's own field and it is the fraction KEPT, not the fraction
+/// lost — the Boar keeps 0.5 past 25 m. It reads the opposite way to
+/// [`RadialSpec::falloff_reduction`], which is the amount REMOVED, and the two
+/// are kept as their sources state them rather than being normalised into a
+/// shared spelling that would make one of them a lie about its source.
+#[derive(Debug, Clone, Deserialize)]
+pub struct FalloffSpec {
+    /// Metres out to which damage is full.
+    pub start_m: f64,
+    /// Metres past which damage stops dropping.
+    pub end_m: f64,
+    /// Fraction of damage KEPT at `end_m` and beyond.
+    pub reduction: f64,
 }
 
 /// A lingering damage FIELD — MECHANICS §7 "Lingering damage FIELDS". Unlike
@@ -2935,5 +2972,36 @@ mod play_mode_tests {
         for m in play_modes("cernos_prime") {
             assert_eq!(m.other_id, None, "{} names a second form", m.mode.id());
         }
+    }
+
+    /// A weapon that falls off with range is simulated at point blank, and it
+    /// has to SAY so — on the page, not only in the file.
+    ///
+    /// The arena has no distance, so `falloff:` is data nothing in the fight
+    /// reads: a Boar's number is its 0-15 m number and a player comparing it
+    /// to a rifle is comparing a best case to a flat one. The line is derived
+    /// from the field rather than remembered per weapon, so a weapon that
+    /// gains a falloff tomorrow cannot gain it quietly.
+    #[test]
+    fn a_weapon_with_damage_falloff_says_it_is_not_modelled() {
+        let mut with = 0;
+        for w in all() {
+            let Some(f) = &w.attack.falloff else { continue };
+            with += 1;
+            assert!(f.end_m > f.start_m, "{}: falloff {f:?} does not span", w.id);
+            // `reduction` is the fraction KEPT, so a weapon that keeps all of
+            // its damage has no falloff and should not be carrying the field.
+            assert!(f.reduction < 1.0 && f.reduction > 0.0, "{}: keeps {}", w.id, f.reduction);
+            assert!(
+                w.unmodeled.iter().any(|u| u.contains("falloff")),
+                "{} falls off from {} m and its `unmodeled:` never mentions it",
+                w.id, f.start_m
+            );
+        }
+        // The Boar is the shape this exists for: hit-scan, and its damage is
+        // halved past 25 m.
+        let boar = spec("boar").unwrap().attack.falloff.as_ref().unwrap();
+        assert_eq!((boar.start_m, boar.end_m, boar.reduction), (15.0, 25.0, 0.5));
+        assert!(with >= 10, "only {with} weapons carry a falloff");
     }
 }

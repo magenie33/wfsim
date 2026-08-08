@@ -21,6 +21,9 @@ transforms_to: bronco_incarnon
 # loaded as a NAMED INERT effect that the builder and the optimizer both print
 # as "not modelled yet". Nothing is dropped in silence — some perks do nothing
 # yet and say so on their own tile.
+unmodeled:
+  - "damage falloff from 7 m to 14 m (down to 75% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+
 accuracy: 3.7
 disposition: 1.45
 polarities: []
@@ -50,6 +53,14 @@ attack:
   crit_multiplier: 2
   status_chance: 0.0943
   punch_through_m: 0.0
+  # NOT MODELLED — the arena has no distance, so this weapon is
+  # simulated at point blank. Recorded because the RIVEN pool reads
+  # it: a hitscan weapon that lists a falloff still rolls Projectile
+  # Speed, which scales the whole range (wiki `Projectile Speed`).
+  falloff:
+    start_m: 7
+    end_m: 14
+    reduction: 0.75   # fraction KEPT past end_m
   damage: { impact: 33.6, slash: 4.2, puncture: 4.2 }   # total 42.0
 
 # incarnon_evolutions: definitions live in data/evolutions/bronco_*.yaml.

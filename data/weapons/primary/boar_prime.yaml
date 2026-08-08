@@ -18,6 +18,9 @@ max_rank: 30
 
 # Weapon-level metadata (wiki `Module:Weapons/data/primary` cross-checked
 # against the committed WFCD export, joined on internal name).
+unmodeled:
+  - "damage falloff from 18 m to 25 m (down to 70% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+
 accuracy: 5                  # the page prints "Very Low" for this number
 disposition: 1.34            # riven disposition (●●●●●) — both sources agree
 polarities: []               # NO innate main polarities: the module's block
@@ -74,6 +77,14 @@ attack:
   # array says Puncture 6 / Slash 8 — and the wiki module agrees with the
   # `attacks` array. Two of the three say 6/8, and the one that dissents is
   # the derived summary rather than the per-attack record, so 6/8 it is.
+  # NOT MODELLED — the arena has no distance, so this weapon is
+  # simulated at point blank. Recorded because the RIVEN pool reads
+  # it: a hitscan weapon that lists a falloff still rolls Projectile
+  # Speed, which scales the whole range (wiki `Projectile Speed`).
+  falloff:
+    start_m: 18
+    end_m: 25
+    reduction: 0.7   # fraction KEPT past end_m
   damage: { impact: 26.0, puncture: 6.0, slash: 8.0 }
   # Damage FALLOFF, hitscan: full damage to 18 m, decaying to 30% of it at
   # 25 m and beyond (module `Falloff`, Reduction 0.7). NOT READ by the engine —

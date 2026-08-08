@@ -12,6 +12,9 @@ transforms_from: mk1_furis
 mod_pools: [pistol]
 mastery_rank: 0
 max_rank: 30
+unmodeled:
+  - "damage falloff from 10 m to 16 m (down to 22% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+
 accuracy: 22.22
 disposition: 1.40
 polarities: [naramon]
@@ -78,6 +81,14 @@ attack:
   # Furis's status chance (1% against 12%), and in Incarnon form it has a
   # third (8% against 24%). The transformation is worth far more to the
   # weaker weapon, which is the same shape the Boar family shows.
+  # NOT MODELLED — the arena has no distance, so this weapon is
+  # simulated at point blank. Recorded because the RIVEN pool reads
+  # it: a hitscan weapon that lists a falloff still rolls Projectile
+  # Speed, which scales the whole range (wiki `Projectile Speed`).
+  falloff:
+    start_m: 10
+    end_m: 16
+    reduction: 0.2167   # fraction KEPT past end_m
   damage: { heat: 60.0 }
   # The wiki states one falloff rule for the Genesis (100% to 80%, 10-16 m);
   # WFCD gives this attack 0.2167 and the Furis's 0.48. The wiki takes it, and
