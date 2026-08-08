@@ -33,6 +33,19 @@ pub struct Arena {
     /// which is why the optimizer needs it while needing neither run count nor
     /// metric.
     pub duration_secs: f64,
+    /// WARFRAME ABILITY BUFFS the player brought — Roar, Eclipse, Nourish and
+    /// the four elemental augments (`data/abilities/`).
+    ///
+    /// HERE and not on the build, because that is what they are: a thing done
+    /// TO this weapon for a while, by a frame the sim does not otherwise model
+    /// yet. Two builds compared under the same Roar is a comparison; one of
+    /// them getting it is not — so it rides with the fight, the optimizer gets
+    /// it by construction, and the BOARD sends none.
+    ///
+    /// Already RESOLVED (`abilities_data::resolve`): Ability Strength applied
+    /// and the same-family conflicts settled, so nothing downstream can forget
+    /// that two Roars do not stack.
+    pub abilities: Vec<crate::abilities_data::ActiveAbility>,
 }
 
 impl Arena {
@@ -46,6 +59,9 @@ impl Arena {
             target: TargetParams::training_dummy(),
             body_parts: crate::dummy::DummyParams::humanoid_parts(),
             duration_secs,
+            // The fixture is the NEUTRAL player, and no frame is running
+            // anything for them.
+            abilities: Vec::new(),
         }
     }
 }

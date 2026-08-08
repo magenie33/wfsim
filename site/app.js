@@ -502,6 +502,13 @@ function defaultScenario() {
     infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
     // NO `form`: how the weapon is played belongs to the build.
     duration: d.duration, runs: d.runs, buffs: {},
+    // WARFRAME ABILITY BUFFS. A fraction, not a percent — 1 is 100% Ability
+    // Strength — because that is what the server multiplies by, and a scenario
+    // that stored a percent would need a converter nobody would remember.
+    // `abilities` is what is ticked: `{id, secs}`, and `secs: null` is the
+    // whole fight. Empty by default, which is what makes the untouched
+    // scenario the same fight it has always been.
+    ability_strength: 1, abilities: [],
   };
 }
 
@@ -522,7 +529,8 @@ let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: nul
   // a fight that carried it could decide how the weapon was fired, which is
   // what let a ruler pin an Incarnon weapon at its cycle (owner, 2026-08-07:
   // 官方的 scenario 是不带 mode 了，我们自定义的场景也不应该有).
-  infinite_ammo: true, metric: "kpm", duration: 300, runs: 100, buffs: {} };
+  infinite_ammo: true, metric: "kpm", duration: 300, runs: 100, buffs: {},
+  ability_strength: 1, abilities: [] };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
 // Damage-meter rows the player has expanded into their per-type split, kept
@@ -4250,6 +4258,10 @@ function scenariosChanged() {
   // ...and whether this fight can reach the board at all.
   renderBoardConsent();
   if ($("opt-buffs")) renderOptBuffs();
+  // …and the Warframe buffs, which are the SCENARIO's: switching fights
+  // switches which abilities are running, so the cards have to be repainted
+  // from the incoming state rather than left showing the outgoing one's.
+  if ($("sim-wfbuffs")) renderWfBuffs("sim-wfbuffs", false);
   if ($("quick-calc")) renderQuickCalc();
   if ($("opt-target")) renderOptEnemy();
 }
@@ -6909,6 +6921,134 @@ function setArenaEnemy(en) {
   $("arena-edot").hidden = !!src;
 }
 
+
+// ---- WARFRAME ABILITY BUFFS (scenario section 3) ------------------------
+//
+// EARLY ACCESS, and the block says so on screen (owner, 2026-08-08: "注意这个部
+// 分未来会迁移，目前相当于抢先开放"). Today you type an Ability Strength; when
+// frames land it comes from the frame and the duration from Ability Duration.
+// Nothing else about these buffs changes then, which is why the definitions
+// live in `data/abilities/` and only their two INPUTS are here.
+//
+// It is the SCENARIO's, not the build's: a thing done TO this weapon for a
+// while. That is what puts it in section 3 beside the wielder, what carries it
+// into the optimizer read-only, and what keeps it off the board — a board row
+// is a statement about the weapon, and no ruler casts Roar.
+const wfAbilities = () => (META && META.abilities) || [];
+// DE'S OWN NAME for the ability, never a translation of ours (the house rule).
+// The FRAME keeps its English name because DE's Chinese client does too.
+const wfName = (a) => ((I18N && I18N.abilities) || {})[a.id] || a.name;
+const wfPick = (id) => (sim.abilities || []).find((a) => a.id === id);
+// The strength-scaled value, which is the number the card shows. Linear, and
+// the engine agrees by construction: `abilities_data::at_strength` is the same
+// multiply, and `check_wf_buffs.mjs` asserts the screen and the sim match.
+const wfValue = (a) => a.value * (Number(sim.ability_strength) || 0);
+
+// WHICH PICKS ARE ACTUALLY RUNNING. Same family, only the strongest — the
+// wiki's own rule ("Multiple Freeze Forces do not stack; the buff with the
+// highest Ability Strength will take effect") and the owner's ask for Roar vs
+// Roar (Helminth). Computed here TOO, rather than only in the engine, because
+// a page that showed both as active would be lying about a number it printed.
+function wfRunning() {
+  const best = new Map();
+  for (const p of sim.abilities || []) {
+    const def = wfAbilities().find((a) => a.id === p.id);
+    if (!def) continue;
+    const cur = best.get(def.family);
+    if (!cur || wfValue(def) > wfValue(cur)) best.set(def.family, def);
+  }
+  return new Set([...best.values()].map((a) => a.id));
+}
+
+// What one buff is worth, said in the units a player reads it in.
+function wfEffectLine(a) {
+  const pct = Math.round(wfValue(a) * 100);
+  if (a.kind === "faction_damage") {
+    return `+${pct}% ` + tr("faction damage — the bracket a Bane mod is in, so a status tick takes it twice");
+  }
+  if (a.kind === "final_damage") {
+    return `+${pct}% ` + tr("damage on its own multiplier — applied once, to the hit and to the status alike");
+  }
+  const el = (META.damage_types || {})[a.element];
+  return `+${pct}% ` + (el ? el.name || a.element : a.element) + " — "
+    + tr("added on top and NOT combined with the weapon's own elements");
+}
+
+function renderWfBuffs(host, readonly) {
+  const box = $(host);
+  if (!box) return;
+  const list = wfAbilities();
+  if (!list.length) { box.innerHTML = ""; return; }
+  const running = wfRunning();
+  const strength = Math.round((Number(sim.ability_strength) || 0) * 100);
+  const rows = list.map((a) => {
+    const pick = wfPick(a.id);
+    const on = !!pick;
+    // SUPERSEDED, not off: you ticked it and something stronger is running.
+    // Saying nothing here is how a player ends up believing they have +80%.
+    const dead = on && !running.has(a.id);
+    const secs = pick && pick.secs != null ? pick.secs : "";
+    const whole = on && (!pick || pick.secs == null);
+    return `<div class="wfb${on ? " on" : ""}${dead ? " dead" : ""}">
+      <label class="check wfb-pick"><input type="checkbox" data-wf="${escHtml(a.id)}"${on ? " checked" : ""}${readonly ? " disabled" : ""}>
+        <span class="wfb-n">${escHtml(wfName(a))}</span>
+        <span class="wfb-f">${escHtml(tr(a.frame))}</span></label>
+      <div class="wfb-e">${escHtml(wfEffectLine(a))}</div>
+      ${dead ? `<div class="wfb-dead">${escHtml(tr("a stronger buff of the same kind is running — this one adds nothing"))}</div>` : ""}
+      <div class="wfb-d">
+        <label title="${escHtml(tr("seconds from the first shot; the wiki's max-rank value is the placeholder"))}">${escHtml(tr("for"))}
+          <input type="number" min="0.1" max="3600" step="0.1" data-wfsecs="${escHtml(a.id)}"
+            placeholder="${a.duration_s}" value="${secs}"${(!on || whole || readonly) ? " disabled" : ""}></label>
+        <label class="check" title="${escHtml(tr("run it for the whole engagement — the honest way to ask what this weapon is worth UNDER the buff rather than around it"))}">
+          <input type="checkbox" data-wfwhole="${escHtml(a.id)}"${whole ? " checked" : ""}${(!on || readonly) ? " disabled" : ""}>
+          ${escHtml(tr("whole fight"))}</label>
+        ${a.url ? `<a class="wfb-w" href="${escHtml(a.url)}" target="_blank" rel="noopener">${escHtml(tr("wiki"))} ↗</a>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+  box.innerHTML =
+    `<div class="wfb-head">
+       <label title="${escHtml(tr("your Warframe's Ability Strength, as the arsenal shows it — every value below is this times the wiki's max-rank number"))}">${escHtml(tr("Ability Strength %"))}
+         <input type="number" id="${host}-str" min="0" max="1000" step="1" value="${strength}"${readonly ? " disabled" : ""}></label>
+       <span class="wfb-early">${escHtml(tr("early access — this moves onto the Warframe itself once frames land, and these numbers do not change when it does"))}</span>
+     </div>
+     <div class="wfb-grid">${rows}</div>`;
+  if (readonly) {
+    box.querySelectorAll("input").forEach((el) => {
+      el.disabled = true;
+      el.title = tr("edit this in the Simulator");
+    });
+    return;
+  }
+  const touched = () => { markScenarioDirty(); renderSim(); };
+  const str = $(`${host}-str`);
+  if (str) str.addEventListener("change", () => {
+    sim.ability_strength = Math.max(0, Number(str.value) || 0) / 100;
+    touched();
+  });
+  box.querySelectorAll("[data-wf]").forEach((el) => el.addEventListener("change", () => {
+    const id = el.dataset.wf;
+    const def = wfAbilities().find((a) => a.id === id);
+    sim.abilities = (sim.abilities || []).filter((a) => a.id !== id);
+    // TICKING IT OPENS IT AT THE WIKI'S OWN DURATION, not at "whole fight":
+    // the honest default for "I cast Roar" is one Roar, and the whole-fight
+    // box is the deliberate other question.
+    if (el.checked) sim.abilities.push({ id, secs: def ? def.duration_s : null });
+    touched();
+  }));
+  box.querySelectorAll("[data-wfsecs]").forEach((el) => el.addEventListener("change", () => {
+    const p = wfPick(el.dataset.wfsecs);
+    if (p) p.secs = Math.max(0.1, Number(el.value) || 0);
+    touched();
+  }));
+  box.querySelectorAll("[data-wfwhole]").forEach((el) => el.addEventListener("change", () => {
+    const p = wfPick(el.dataset.wfwhole);
+    const def = wfAbilities().find((a) => a.id === el.dataset.wfwhole);
+    if (p) p.secs = el.checked ? null : (def ? def.duration_s : 30);
+    touched();
+  }));
+}
+
 function renderSim() {
   if (!META) return;
   renderSimBuild();
@@ -6916,6 +7056,12 @@ function renderSim() {
   const en = enemies.find((e) => e.id === sim.enemy) || enemies[0];
   renderScenarioFields({ target: "sim-target", technique: "sim-technique",
     limits: "sim-limits", run: "sim-run" });
+  renderWfBuffs("sim-wfbuffs", false);
+  // …AND THE OPTIMIZER'S COPY, from the same call. It shows the SIMULATOR's
+  // fight, so it is repainted whenever that fight is redrawn rather than when
+  // its own tab happens to be entered — a tab that repaints only on arrival
+  // shows the buffs you had when you last arrived.
+  renderWfBuffs("opt-wfbuffs", true);
   renderScenarioBar();
   setArenaEnemy(en);
   $("sim-sub").textContent = "current build vs the enemy";
@@ -7207,7 +7353,7 @@ function lockOfficialBuild() {
 function lockOfficialScenario() {
   const note = $("sim-official");
   const on = officialScenarioActive();
-  const boxes = ["sim-target", "sim-technique", "sim-limits", "sim-run", "sim-buffs"]
+  const boxes = ["sim-target", "sim-technique", "sim-wfbuffs", "sim-limits", "sim-run", "sim-buffs"]
     .map((id) => $(id)).filter(Boolean);
   boxes.forEach((b) => {
     b.classList.toggle("locked", on);
@@ -8095,6 +8241,10 @@ function renderOpt() {
   // three facts the builder hides its blocks on (user, 2026-08-01).
   const w = weaponInfo($("weapon").value) || {};
   const AX = weaponAxes(w.id);
+  // The fight's Warframe buffs, read-only. Painted here as well as from
+  // `renderOptEnemy`, because arriving on this tab is its own moment: the
+  // scenario may have gained a buff while you were in the simulator.
+  renderWfBuffs("opt-wfbuffs", true);
   show("opt-exilus-sect", AX.hasExilus);
   show("opt-arcanes-sect", AX.arcanes.length > 0);
   show("opt-evos-sect", AX.evolutions.length > 0);
@@ -8169,6 +8319,7 @@ function renderOptMods() {
 // and it sits beside the enemy.
 function renderOptEnemy() {
   if (!$("opt-target")) return;
+  renderWfBuffs("opt-wfbuffs", true);
   renderScenarioFields(
     { target: "opt-target", technique: "opt-technique", limits: "opt-limits" },
     { readonly: true },

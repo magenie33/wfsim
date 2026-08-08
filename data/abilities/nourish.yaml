@@ -1,0 +1,45 @@
+# A WARFRAME ABILITY BUFF — the fight's PLAYER, not the build.
+#
+# Not a mod, not an arcane, not a weapon perk: a thing another actor (or the
+# player's own frame) does to this weapon for a while. It belongs to the
+# SCENARIO — two builds compared under the same Roar is a comparison, one of
+# them getting it is not — and the BOARD carries none of these, which is what
+# keeps a board row a statement about the weapon (2026-08-08).
+#
+# EARLY ACCESS, AND SAID SO ON THE PAGE. The owner asked for it ahead of the
+# frame layer it will eventually live in ("注意这个部分未来会迁移，目前相当于抢先
+# 开放"), so the section is deliberately small: pick the buff, set the strength,
+# set how long it lasts. When frames land, the strength comes from the frame and
+# the duration from Ability Duration, and these files stay as they are.
+
+# "Think of it like adding a +75% Viral mod to your weapons (which is buffed by
+# Ability Strength)" — the wiki's own instruction, and "additive with existing
+# elemental and IPS mods".
+#
+# Viral is already a COMBINED element, so "does not combine" costs it nothing:
+# there is no pair left for it to enter. It lands on the finished vector like
+# the four augments below and takes the same path.
+
+id: nourish
+name: Nourish
+frame: Grendel
+# Which buffs REPLACE each other rather than adding. Same family =
+# only the strongest is running (wiki, Freeze Force).
+family: nourish
+helminth: false
+
+# At MAX RANK and 100% Ability Strength. The page multiplies by the
+# strength you set; there is no per-rank table, because a calculator
+# is asked what a maxed ability does.
+value: 0.75
+# Max rank at 100% Ability Duration, in seconds. The page lets you
+# override it — or run the whole fight, which is the honest way to
+# ask what a weapon is worth UNDER Roar rather than around it.
+duration_s: 25
+
+effect:
+  kind: add_element
+  element: viral
+
+source:
+  url: https://wiki.warframe.com/w/Nourish

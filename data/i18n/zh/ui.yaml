@@ -242,6 +242,24 @@ ui:
   "Condition Overload computes on this weapon's ORIGINAL base damage — this perk's added base is excluded, so every status type is worth less than the card implies": 异况超载按这把武器的原始基础伤害计算——这个进化增加的基础伤害不计入，所以每一种异常的价值都低于卡面看起来的样子
   "real damage the simulator does not compute yet": 这是真实的伤害，只是模拟器还没有实现
   "outside the sim": 不在模拟范围
+  "3 · Warframe buffs": 3 · 战甲增益
+  "abilities cast on this weapon — set your Ability Strength and the values follow": 施加在这把武器上的战甲技能——填入技能强度，下面的数值随之变化
+  "4 · Limits": 4 · 限制
+  "5 · Buffs": 5 · 增益
+  "6 · Simulation": 6 · 模拟
+  "Warframe buffs": 战甲增益
+  "read-only — the fight's own, and every candidate is scored under them": 只读——这是战斗自己的设定，每一个候选配装都在它下面评分
+  "Ability Strength %": 技能强度 %
+  "your Warframe's Ability Strength, as the arsenal shows it — every value below is this times the wiki's max-rank number": 你战甲的技能强度，就是军械库里显示的那个数——下面每一个数值都是它乘以 wiki 的满级数值
+  "early access — this moves onto the Warframe itself once frames land, and these numbers do not change when it does": 抢先开放——等战甲本体做进来以后这一块会搬到战甲上，届时这些数值本身不会变
+  "for": 持续
+  "whole fight": 全程
+  "seconds from the first shot; the wiki's max-rank value is the placeholder": 从第一发开始计的秒数；灰字是 wiki 的满级时长
+  "run it for the whole engagement — the honest way to ask what this weapon is worth UNDER the buff rather than around it": 整场战斗都开着——想问「这把武器在这个增益下值多少」时，这才是老实的问法
+  "a stronger buff of the same kind is running — this one adds nothing": 同类里有更强的一个正在生效——这一个不产生任何加成
+  "faction damage — the bracket a Bane mod is in, so a status tick takes it twice": 派系伤害——和克制 mod 同一个乘区，所以异常跳伤会吃到两次
+  "damage on its own multiplier — applied once, to the hit and to the status alike": 独立乘区的伤害加成——只吃一次，直伤和异常都是一次
+  "added on top and NOT combined with the weapon's own elements": 直接加在最终属性之上，不与武器自身的元素合成
   "unintended, modelled as it plays": 非本意，按实际表现建模
   "this matches the live game and is a bug — DE may patch it, and the number here changes when they do": 这与现在的游戏一致，但它是个 bug——DE 随时可能修，修了这里的数字就会变
   "the split fires a damage instance of ZERO, and the zero still takes that instance's own multipliers — when the DoT replaces it with the parent hit's damage, they stay behind. Faction bonuses were meant to carry down the chain and do; a per-instance bonus like Devouring Attrition's +2000% was not, and does anyway (x21 twice = x441). Modelled as it behaves today; a fix removes it": 分裂打出的是一次伤害为 0 的实例，而这个 0 照样被那一次实例自己的乘区乘过——等算 dot 时 0 被换成上一级那一发的伤害，那些乘区却留了下来。派系类加成本来就是设计成沿着链条传下去的；而像强袭损耗 +2000% 这样的单次实例加成不是，却也跟着传了（21 倍吃两次 = 441 倍）。这里按它现在的实际表现建模；DE 修了就没了
@@ -442,9 +460,6 @@ ui:
   Orokin: 堕落者
   "Search a target…": 搜索目标…
   "1 · The fight": 1 · 这场仗
-  "3 · Limits": 3 · 限制
-  "4 · Buffs": 4 · 增益
-  "5 · Simulation": 5 · 模拟
   "The fight": 这场仗
   "Limits": 限制
   "Eximus": 精英

@@ -1107,3 +1107,30 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 @keyframes bootdot{0%,60%,100%{opacity:.25}30%{opacity:1}}
 /* Motion is decoration here; the word alone says the same thing. */
 @media (prefers-reduced-motion:reduce){ .booting .bdot{animation:none} }
+
+/* WARFRAME ABILITY BUFFS (scenario section 3). A grid of cards rather than a
+   field row: each one carries a name, what it is worth at YOUR strength, how
+   long it runs, and a link to the page the number came off — five facts, which
+   is more than a label and an input can hold. */
+.wfb-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:8px}
+/* EARLY ACCESS, on screen. The block is honest about being ahead of the frame
+   layer it will move into, in the muted voice the other caveats use — this is
+   information, not a warning. */
+.wfb-early{color:var(--text-2);font-size:11px;flex:1 1 240px}
+.wfb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+.wfb{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2)}
+/* A TICKED buff is the one that changes a number, so it is the one that gets
+   the accent — the rest of the grid is a catalogue. */
+.wfb.on{border-color:var(--accent)}
+/* SUPERSEDED: ticked, and something stronger of the same family is running.
+   Dimmed rather than hidden, because it is still YOUR selection — the line
+   below says why it pays nothing. */
+.wfb.dead{opacity:.62;border-color:var(--line)}
+.wfb-n{font-weight:600}
+.wfb-f{color:var(--text-2);font-size:11px;margin-left:5px}
+.wfb-e{margin-top:3px;color:var(--text-2);font-size:11px;line-height:1.45}
+.wfb-dead{margin-top:3px;color:var(--gold);font-size:11px}
+.wfb-d{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px;font-size:11px}
+.wfb-d input[type=number]{width:66px}
+.wfb-w{color:var(--text-2);font-size:11px;text-decoration:none}
+.wfb-w:hover{color:var(--accent)}

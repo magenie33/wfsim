@@ -560,6 +560,7 @@ pub fn i18n_json() -> Value {
                 "mods": l.mods,
                 "arcanes": l.arcanes,
                 "evolutions": l.evolutions,
+                "abilities": l.abilities,
                 "ui": l.ui,
                 "effect_phrases": l.effect_phrases,
                 // DE's OWN card text, per rank — what the UI shows instead of
@@ -963,6 +964,38 @@ pub fn meta_json() -> Value {
             .map(|c| (c.to_string(), json!(mods_json(&wfsim_engine::mods_data::class_pool(c)))))
             .collect::<serde_json::Map<String, Value>>(),
         "enemies": enemies,
+        // WARFRAME ABILITY BUFFS, the catalogue the scenario's own section
+        // draws from (`data/abilities/`). `value` and `duration_s` are the
+        // wiki's max-rank figures at 100% strength; the page multiplies by the
+        // strength you set, so the numbers it SHOWS are computed on screen from
+        // exactly these two fields and nothing hidden.
+        //
+        // `family` travels because the "only the strongest runs" rule has to be
+        // visible while you tick the boxes, not just enforced afterwards — the
+        // engine settles it either way (`abilities_data::resolve`), and a page
+        // that showed both as active would be lying about a number it printed.
+        "abilities": wfsim_engine::abilities_data::all().iter().map(|a| {
+            let (kind, element) = match a.effect {
+                wfsim_engine::abilities_data::AbilityEffect::FactionDamage(_) =>
+                    ("faction_damage", None),
+                wfsim_engine::abilities_data::AbilityEffect::FinalDamage(_) =>
+                    ("final_damage", None),
+                wfsim_engine::abilities_data::AbilityEffect::AddElement(t, _) =>
+                    ("add_element", Some(t.name())),
+            };
+            json!({
+                "id": a.id,
+                "name": a.name,
+                "frame": a.frame,
+                "family": a.family,
+                "helminth": a.helminth,
+                "value": a.value,
+                "duration_s": a.duration_s,
+                "kind": kind,
+                "element": element,
+                "url": a.url,
+            })
+        }).collect::<Vec<_>>(),
         // A RIVEN's card image, once. Rivens are made by the visitor, so no
         // per-riven entry could exist in data/assets.yaml — the game draws
         // every riven with the same card and so does this.
@@ -3272,6 +3305,36 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     let runs = get_u32(v, "runs", 100).clamp(1, 20_000);
     let seed = v.get("seed").and_then(|x| x.as_u64()).unwrap_or(0xC0FFEE);
 
+    // ---- WARFRAME ABILITY BUFFS (`data/abilities/`) -----------------------
+    // `ability_strength` is a FRACTION (1.0 = 100%), because that is what it
+    // multiplies. `abilities` is what the player ticked, each with its own
+    // seconds — omit `secs` (or send null) for the whole fight.
+    //
+    // Resolved right here rather than carried raw: `abilities_data::resolve`
+    // applies the strength AND settles the same-family conflicts, so nothing
+    // downstream — not the sim, not the optimizer, not the replay — can end up
+    // adding two Roars together.
+    let strength = get_f64(v, "ability_strength", 1.0).clamp(0.0, 10.0);
+    let picks: Vec<wfsim_engine::abilities_data::AbilityPick<'_>> = v
+        .get("abilities")
+        .and_then(Value::as_array)
+        .map(|seq| {
+            seq.iter()
+                .filter_map(|e| {
+                    let id = e.get("id").and_then(Value::as_str)?;
+                    Some(wfsim_engine::abilities_data::AbilityPick {
+                        id,
+                        duration_s: e
+                            .get("secs")
+                            .and_then(Value::as_f64)
+                            .filter(|s| *s > 0.0),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let abilities = wfsim_engine::abilities_data::resolve(&picks, strength);
+
     let specs = enemies();
     let Some(spec) = specs.iter().find(|e| e.id == enemy_id) else {
         return Err(err_json(format!("unknown enemy: {enemy_id}")));
@@ -3303,6 +3366,11 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         target,
         body_parts,
         duration_secs: duration,
+        // WARFRAME ABILITY BUFFS — parsed HERE, in `parse_fight`, which is what
+        // makes the optimizer score under them without a line of optimizer code
+        // (the house rule: anything that is a property of the fight goes in the
+        // one module both read).
+        abilities,
     };
     Ok(Fight {
         info,

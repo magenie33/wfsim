@@ -1277,6 +1277,18 @@ pub struct DummyParams {
     /// (the wiki "double dip"). Computed in `from_panel` from the panel bucket
     /// + the target's faction.
     pub faction_mult: f64,
+    /// WARFRAME ABILITY BUFFS running in this fight (`data/abilities/`).
+    ///
+    /// A property of the FIGHT, not of the build: it arrives on the Arena and
+    /// is copied here, so the optimizer scores its candidates under the same
+    /// Roar the replay will run (the house rule — the simulator is the truth).
+    ///
+    /// Each carries its own end time, so they are read AT `t` rather than
+    /// folded into a scalar: [`DummyParams::faction_at_time`],
+    /// [`DummyParams::ability_final_at`] and
+    /// [`DummyParams::ability_element_at`] are the three reads, one per effect
+    /// kind, and there is no fourth.
+    pub abilities: Vec<crate::abilities_data::ActiveAbility>,
     /// ModifiedBase for status-payload formulas (base × (1 + damage mods),
     /// elemental portions excluded). `None` = the vector total (correct
     /// for purely physical vectors).
@@ -1728,11 +1740,66 @@ impl DummyParams {
         }
     }
 
+    /// THE FACTION BRACKET AT `t`, Roar included.
+    ///
+    /// `faction_mult` is `1 + Σ bonuses`, and Roar is a bonus in that same
+    /// bucket ("considered Faction Damage Bonus, additive with other sources of
+    /// Faction Damage" — wiki), so it ADDS to the sum rather than multiplying
+    /// the result. Everything the bracket already does then happens to it for
+    /// free, the status double-dip included.
+    pub fn faction_at_time(&self, t: f64) -> f64 {
+        self.faction_mult + crate::abilities_data::faction_bonus_at(&self.abilities, t)
+    }
+
+    /// ECLIPSE'S OWN MULTIPLIER at `t`, or 1.0. Applied ONCE wherever it is
+    /// applied — the wiki draws the contrast itself: "Unlike faction damage,
+    /// which double dips for status effects, the one from Eclipse is applied
+    /// once."
+    pub fn ability_final_at(&self, t: f64) -> f64 {
+        crate::abilities_data::final_mult_at(&self.abilities, t)
+    }
+
+    /// The ability-added share of ONE element's bonus bracket at `t`.
+    ///
+    /// "Additive with elemental mods" (every one of the four augment pages),
+    /// so it lands in the same `1 + Σ` a Stormbringer does — which means it
+    /// raises that element's DoT tick as well as adding damage. The repo has
+    /// the precedent: `injected_elements` takes the identical line from
+    /// frenzy.yaml for the identical reason.
+    pub fn ability_element_at(&self, ty: DamageType, t: f64) -> f64 {
+        crate::abilities_data::added_elements_at(&self.abilities, t)
+            .iter()
+            .filter(|(e, _)| *e == ty)
+            .map(|(_, v)| v)
+            .sum()
+    }
+
+    /// The finished vector with the ability elements ON TOP — never through
+    /// [`crate::elements::combine`], because they do not combine (owner,
+    /// 2026-08-08: "注意不合成"). A weapon whose mods make Radiation and whose
+    /// squad has Volt deals Radiation AND pure Electricity.
+    ///
+    /// `stage_mb` is THAT attack part's ModifiedBase: an explosion's elemental
+    /// mods are a percentage of the explosion's own base (MECHANICS §7), and
+    /// an ability sized "additive with elemental mods" is sized the same way.
+    fn with_ability_elements(&self, qvec: DamageVector, stage_mb: f64, t: f64) -> DamageVector {
+        let added = crate::abilities_data::added_elements_at(&self.abilities, t);
+        if added.is_empty() {
+            return qvec;
+        }
+        let mut out = qvec;
+        for (ty, frac) in added {
+            out.add(ty, stage_mb * frac);
+        }
+        out.quantized()
+    }
+
     /// Build engagement params from a resolved mod loadout (pipeline
     /// [1]+[2] output). Bare-frame scenario: no arcanes, no Frenzy passive
     /// (Incarnon Form), infinite reserve.
     pub fn from_panel(panel: &crate::loadout::ResolvedPanel, arena: &crate::arena::Arena) -> Self {
-        let crate::arena::Arena { tenno, target, body_parts, duration_secs } = arena.clone();
+        let crate::arena::Arena { tenno, target, body_parts, duration_secs, abilities } =
+            arena.clone();
         // Resolve the faction bucket against THIS target's faction (additive
         // within the matching faction; 1.0 vs a non-match / Unknown).
         let faction_mult = 1.0
@@ -1744,6 +1811,8 @@ impl DummyParams {
                 .sum::<f64>();
         Self {
             faction_mult,
+            // Straight off the ARENA — the one place a fight is described.
+            abilities: abilities.clone(),
             damage: panel.damage,
             radial: panel.radial,
             lingering: panel.lingering,
@@ -1966,6 +2035,7 @@ impl Default for DummyParams {
             status_damage_mult: 1.0,
             elem_dot_bonus: Vec::new(),
             faction_mult: 1.0,
+            abilities: Vec::new(),
             dot_modified_base: None,
             reload_bonus: 0.0,
             weakpoint_damage: 0.0,
@@ -2573,7 +2643,14 @@ fn settle_procs(
     // status the hit applied is one step past it, so depth 2 (wiki
     // Faction_Damage_Bonus; MECHANICS §8). This was written `faction_mult *
     // faction_mult`, which is the same number and says nothing about why.
-    let fm2 = faction_at(params.faction_mult, depth);
+    // AT `at`, because Roar is in this bracket and Roar ends. A status takes
+    // the faction bonus that was running when it was APPLIED — the proc is a
+    // snapshot of its instance, which is why `crit_mult` is snapshotted here
+    // too.
+    let fm2 = faction_at(params.faction_at_time(at), depth);
+    // ECLIPSE, ONCE. Not `faction_at`-style repetition: the wiki draws the
+    // contrast in so many words.
+    let ecl = params.ability_final_at(at);
     let push_dot = |debuffs: &mut DebuffState,
                     dtype: DamageType,
                     coeff: f64,
@@ -2585,8 +2662,14 @@ fn settle_procs(
             Dot {
                 next_tick: at + delay,
                 ticks_left: ticks,
-                value: coeff * mb_live * bracket * sdm * crit_mult * part_factor
-                    * fm2 * attrition,
+                // `bracket` is `1 + Σ this element's bonuses`, and an ability
+                // that adds this element is "additive with elemental mods" —
+                // so its share belongs in the same sum, which is what makes
+                // Fireball Frenzy "contribute to DoT" rather than only to the
+                // hit.
+                value: coeff * mb_live
+                    * (bracket + params.ability_element_at(dtype, at))
+                    * sdm * crit_mult * part_factor * fm2 * attrition * ecl,
                 dtype,
                 ignores_armor,
             },
@@ -2912,7 +2995,7 @@ fn settle_procs(
         // Toxin instances keep Toxin's shield bypass and Toxin's
         // column factor alike.
         if params.arcane.flat_damage_on_status > 0.0 {
-            let amt = params.arcane.flat_damage_on_status * params.faction_mult;
+            let amt = params.arcane.flat_damage_on_status * params.faction_at_time(at);
             let (eff, killed, broke) = target.apply(
                 amt,
                 TypeShares::single(proc),
@@ -3041,7 +3124,7 @@ fn fire_syndicate_radial(
 ) {
     let sd = params.status_duration_mult;
     let mit = debuffs.mitigation(at, sd);
-    let amt = sy.damage * params.faction_mult;
+    let amt = sy.damage * params.faction_at_time(at);
     let (eff, killed, _broke) = target.apply(
         amt,
         TypeShares::single(sy.element),
@@ -3261,7 +3344,9 @@ fn field_tick(
 ) -> bool {
     let sd = params.status_duration_mult;
     let mit = debuffs.mitigation(at, sd);
-    let qvec = f.damage.quantized();
+    // The field is its own attack part, so the ability elements are sized off
+    // ITS ModifiedBase — same rule as the explosion's.
+    let qvec = params.with_ability_elements(f.damage.quantized(), f.modified_base, at);
     let qtotal = qvec.total();
     let shares = TypeShares::of(&qvec);
 
@@ -3310,7 +3395,9 @@ fn field_tick(
     // `faction_at` like the other two rungs so the ladder is visible at every
     // level rather than only where it compounds.
     let raw =
-        qtotal * crit_mult * bucket * faction_at(params.faction_mult, DEPTH_HIT) * dmg_mult;
+        qtotal * crit_mult * bucket * faction_at(params.faction_at_time(at), DEPTH_HIT)
+            * dmg_mult
+            * params.ability_final_at(at);
     let col = target.incoming_column(&params.target);
     let (effective, killed, broke) =
         target.apply(raw, shares, false, at, &params.target, false, &mit);
@@ -4673,6 +4760,26 @@ pub fn run_once_traced(
                         (r.damage.quantized(), t2)
                     }
                 };
+                // WARFRAME ABILITY ELEMENTS, added to the FINISHED vector.
+                //
+                // Not through the elemental hierarchy — "does not combine with
+                // other elements" is stated on every one of the four augment
+                // pages, and it is the whole reason they are worth having
+                // separately from a mod (owner, 2026-08-08: "注意不合成"). Sized
+                // off THIS stage's own ModifiedBase, because "additive with
+                // elemental mods" makes them a percentage of the part's base
+                // the same way an elemental mod is (MECHANICS §7).
+                //
+                // Read at `t`: they expire, and after they do the weapon is
+                // simply the weapon again.
+                let qvec = params.with_ability_elements(
+                    qvec,
+                    match &rad {
+                        None => modded_base,
+                        Some(r) => r.modified_base,
+                    },
+                    t,
+                );
                 // A merged beam tick carries the SUM of its beams. `qtotal`
                 // is what the instance deals; the crit CHANCE that produced
                 // `tier` above was deliberately left at one beam's.
@@ -4741,9 +4848,12 @@ pub fn run_once_traced(
                     * part_factor
                     * crit_mult
                     * bucket
-                    * params.faction_mult
+                    * params.faction_at_time(t)
                     * arc_final
                     * attrition
+                    // ECLIPSE: "an unique multiplier", so it stands beside the
+                    // others rather than joining any of them.
+                    * params.ability_final_at(t)
                     * beam_ramp
                     * pm_mult;
                 let head_direct = direct && part.is_head;
@@ -11399,3 +11509,128 @@ mod debilitate_attrition_tests {
         );
     }
 }
+#[cfg(test)]
+mod warframe_ability_tests {
+    use super::*;
+    use crate::abilities_data::{resolve, AbilityPick};
+    use crate::damage::DamageVector;
+
+    /// A fixed weapon and a fixed fight, so the only thing moving is the buff.
+    fn params(abilities: &[(&'static str, Option<f64>)], strength: f64) -> DummyParams {
+        let picks: Vec<AbilityPick<'static>> = abilities
+            .iter()
+            .map(|(id, secs)| AbilityPick { id, duration_s: *secs })
+            .collect();
+        DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 100.0),
+            dot_modified_base: Some(100.0),
+            fire_rate: 1.0,
+            magazine_size: 1e9,
+            duration_secs: 10.0,
+            base_crit_chance: 0.0,
+            unmodded_crit_chance: 0.0,
+            body_parts: vec![BodyPart {
+                name: "body".into(),
+                aim_weight: 1.0,
+                multiplier: 1.0,
+                is_head: false,
+                crit_bonus: false,
+            }],
+            abilities: resolve(&picks, strength),
+            ..DummyParams::default()
+        }
+    }
+
+    fn direct(p: &DummyParams) -> f64 {
+        run_once(p, &mut crate::rng::Rng::new(3)).sources.direct
+    }
+
+    /// ROAR IS A BANE MOD, and this asserts exactly that and nothing more: it
+    /// lands in the bracket `faction_mult` already is, so a +50% Roar is x1.5
+    /// on the hit — and the bracket's own squaring on status follows without a
+    /// line of code, which the DoT test below is for.
+    #[test]
+    fn roar_multiplies_the_hit_by_its_faction_bracket() {
+        let none = direct(&params(&[], 1.0));
+        let roar = direct(&params(&[("roar", None)], 1.0));
+        assert!(none > 0.0);
+        assert!((roar / none - 1.5).abs() < 1e-9, "x{:.4}", roar / none);
+
+        // …and STRENGTH is linear, so 200% strength is +100%.
+        let strong = direct(&params(&[("roar", None)], 2.0));
+        assert!((strong / none - 2.0).abs() < 1e-9, "x{:.4}", strong / none);
+    }
+
+    /// AND IT DOUBLE-DIPS ON STATUS, which is the difference from Eclipse.
+    /// A Slash DoT applied under +50% Roar ticks for 1.5^2 = 2.25x — the wiki's
+    /// "the bonus is used twice in the calculation of status damage".
+    #[test]
+    fn roar_is_used_twice_on_a_status_tick_and_eclipse_once() {
+        let bleed = |abilities: &[(&'static str, Option<f64>)]| {
+            let mut p = params(abilities, 1.0);
+            p.damage = DamageVector::new().with(DamageType::Slash, 100.0);
+            p.status_chance = 1.0;
+            p.base_status_chance = 1.0;
+            p.target.base_health = 1e15;
+            run_once(&p, &mut crate::rng::Rng::new(3)).dot_damage
+        };
+        let plain = bleed(&[]);
+        assert!(plain > 0.0);
+        let roar = bleed(&[("roar", None)]) / plain;
+        assert!((roar - 2.25).abs() < 1e-6, "roar on a DoT: x{roar:.4}");
+        // Eclipse (+200%) is x3 on the hit and x3 on the tick — "Unlike faction
+        // damage, which double dips for status effects, the one from Eclipse is
+        // applied once". Nine would be the wrong answer.
+        let ecl = bleed(&[("eclipse", None)]) / plain;
+        assert!((ecl - 3.0).abs() < 1e-6, "eclipse on a DoT: x{ecl:.4}");
+    }
+
+    /// THE ADDED ELEMENT DOES NOT COMBINE (owner, 2026-08-08: "注意不合成").
+    /// A weapon whose vector is pure Heat, under Shock Trooper, deals Heat AND
+    /// Electricity — never Radiation, which is what an elemental MOD would have
+    /// made of the same two.
+    #[test]
+    fn an_ability_element_lands_beside_the_weapons_own_instead_of_combining() {
+        let mut p = params(&[("shock_trooper", None)], 1.0);
+        p.damage = DamageVector::new().with(DamageType::Heat, 100.0);
+        p.dot_modified_base = Some(100.0);
+        let r = run_once(&p, &mut crate::rng::Rng::new(3));
+        let by = &r.sources.direct_by_type;
+        let at = |t: DamageType| by[t as usize];
+        assert!(at(DamageType::Heat) > 0.0, "the weapon keeps its own element");
+        assert!(at(DamageType::Electricity) > 0.0, "the ability adds its own");
+        assert_eq!(at(DamageType::Radiation), 0.0, "and they DO NOT combine");
+        // +100% of ModifiedBase, so the two halves are equal.
+        let ratio = at(DamageType::Electricity) / at(DamageType::Heat);
+        assert!((ratio - 1.0).abs() < 1e-6, "x{ratio:.4}");
+    }
+
+    /// A DURATION ENDS IT. Half a fight of Roar is worth less than all of it
+    /// and more than none — asserted as an ORDERING rather than a number,
+    /// because where the shots fall inside the window is the sim's business.
+    #[test]
+    fn a_duration_ends_the_buff_mid_fight() {
+        let none = direct(&params(&[], 1.0));
+        let half = direct(&params(&[("roar", Some(5.0))], 1.0));
+        let all = direct(&params(&[("roar", None)], 1.0));
+        assert!(none < half && half < all, "{none:.0} / {half:.0} / {all:.0}");
+        // The whole-fight run is exactly the 1.5x of the test above, so the
+        // partial one is a real fraction of it rather than a rounding.
+        assert!((all / none - 1.5).abs() < 1e-9);
+    }
+
+    /// AND A FIGHT WITH NO ABILITIES IS THE FIGHT WE ALWAYS HAD. The board
+    /// sends none of these, so this is the assertion that the feature costs a
+    /// board row nothing.
+    #[test]
+    fn no_ability_changes_no_number() {
+        let bare = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 100.0),
+            ..params(&[], 1.0)
+        };
+        let mut with_empty = bare.clone();
+        with_empty.abilities = resolve(&[], 3.0);
+        assert_eq!(direct(&bare), direct(&with_empty));
+    }
+}
+

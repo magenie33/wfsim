@@ -513,3 +513,67 @@ the roster instead of naming buffs:
 Each was verified to FAIL when its arm is deleted. Adding a buff to one place
 and forgetting another is therefore a red test, not a silent wrong number —
 which is the property the collapse was wanted for.
+
+## A WARFRAME ABILITY is a buff nobody in this repo grants
+
+Roar, Eclipse, Nourish and the four elemental augments (`data/abilities/`) are
+buffs in the ordinary English sense and **not** `Buff`s in the sense the rest of
+this document uses. Nothing here grants them: there is no perk holding them, no
+trigger that fires them, no bar they appear in. They are a property of the
+FIGHT — a thing another actor, or your own frame, is doing to this weapon for a
+while — and they arrive on [`Arena`] beside the target and the duration.
+
+That is the whole design, and everything else follows from it:
+
+- **The optimizer gets them for free.** `parse_fight` is the one module both the
+  simulator and the search read, so a candidate is scored under the same Roar
+  the replay will run. No optimizer code mentions abilities.
+- **A build never carries one.** Two builds compared under the same Roar is a
+  comparison; one of them getting it is not.
+- **The board sends none.** A ruler that cast Roar would make its board a
+  statement about Rhino. `check_wf_buffs.mjs` asserts it as a negative control.
+- **They are not in the buff bar**, and should not be: the bar shows what this
+  build gained during the run. An ability you cast is an input to the run.
+
+### Three effect kinds, and why there are exactly three
+
+Each is a different BUCKET, and the differences are quoted rather than assumed
+(`data/abilities/*.yaml` carries the sentence and the page it came off):
+
+| kind | example | where it lands | on a status tick |
+|---|---|---|---|
+| `faction_damage` | Roar +50% | the bracket a Bane mod is in | **twice** — the bracket double-dips |
+| `final_damage` | Eclipse +200% | its own multiplier | once |
+| `add_element` | Shock Trooper +100% Electricity | the FINISHED vector | its own element's DoT |
+
+The first two differ by one wiki sentence and it is worth stating twice:
+*"Unlike faction damage, which double dips for status effects, the one from
+Eclipse is applied once."* Getting that wrong is a factor of three on a DoT
+weapon, and `roar_is_used_twice_on_a_status_tick_and_eclipse_once` is the test.
+
+`add_element` is the one with a shape of its own. **It does not combine** (owner,
+2026-08-08: "注意不合成") — every one of the four augment pages says so — so it
+is added AFTER `elements::combine` has run: a weapon whose mods make Radiation,
+under Volt, deals Radiation *and* pure Electricity. It is still **sized** like an
+elemental mod ("additive with elemental mods"): a percentage of that attack
+part's own ModifiedBase, which is why an explosion's share differs from the
+direct hit's, and why it also raises that element's DoT bracket.
+
+### Strength, duration, and what moves when frames land
+
+Two inputs, both supplied by the caller rather than read from anywhere:
+`abilities_data::resolve(picks, strength)`. Today the page asks for an Ability
+Strength and a per-buff duration; when Warframes are modelled, the strength comes
+from the frame and the duration from its Ability Duration. **The definitions do
+not change then** — that is the point of taking both as arguments, and the reason
+the section says "early access" on screen rather than only in a comment.
+
+### The one rule a page cannot be trusted with
+
+Same `family:` → only the strongest runs. The wiki states it on Freeze Force —
+*"Multiple Freeze Forces do not stack; the buff with the highest Ability Strength
+will take effect"* — and the owner asked for it by name for Roar vs Roar
+(Helminth). `resolve` settles it once, comparing by RESOLVED value so a
+200%-strength Helminth Roar beats an unbuffed Rhino's, and the page draws the
+loser dimmed with a line saying why. Adding two Roars would be +80% against +50%,
+which is a 20% error nobody spots in a DPS figure.

@@ -37,6 +37,13 @@ around (decision 2026-07-31).
   is NOT authoritative for `base_drain`/`max_rank` — it is wrong for ~20 mods.
   Join the two by `internal_name` == `uniqueName`, **never by name** (WFCD has
   stale duplicates sharing a display name).
+- `data/abilities/` — WARFRAME ABILITY BUFFS, and the one data family that
+  describes neither a weapon nor a build: a thing done TO this weapon for a
+  while. It rides on the `Arena`, so `parse_fight` alone carries it into both
+  the simulator and the search, and no board ruler sends one. Early access by
+  the owner's own framing (2026-08-08) — the strength and duration are typed in
+  today and come from the frame later, which is why `resolve` takes both as
+  arguments. See BUFFS.md §"A WARFRAME ABILITY".
 - `docs/` — CORE (design), MECHANICS (formulas), MEASUREMENTS (protocol +
   baselines), BUFFS, BOARD (the official leaderboard), OPTIMIZER, UI, WASM,
   GLOSSARY, DEVELOPMENT (setup), INVESTMENT (capacity/Forma), WEAPON_INTAKE
@@ -162,6 +169,18 @@ around (decision 2026-07-31).
   carried its one important paragraph in English. It also walks the BOARD,
   which is where weapons are compared and therefore the one place a weapon
   with unmodelled parts must not look like one without them.
+  `node scripts/check_wf_buffs.mjs` is the NINETEENTH: a WARFRAME ABILITY buff
+  is the FIGHT's, and it reaches the number. Roar, Eclipse, Nourish and the four
+  elemental augments (`data/abilities/`) belong to neither the build nor the
+  weapon — they ride on the Arena, which is what gives the optimizer them for
+  free and keeps them off the board. It asserts the section draws in both
+  languages under DE's OWN names (战吼, 黯然失色 — transcribed, never
+  translated), that the card's value follows Ability Strength, that ticking one
+  moves a real `/api/simulate` in the shipping wasm build, that two of a FAMILY
+  do not stack AND the page says which one lost (owner, 2026-08-08: "同时选了
+  roar 和 roar（helminth），那就选择生效当前最强的" — the difference between
+  +50% and +80% is a number you have to be told), that the optimizer shows the
+  same buffs read-only, and — the negative control — that no RULER carries one.
   `node scripts/check_riven_pool.mjs` is the SEVENTEENTH: the riven editor
   offers the stats that weapon's rivens actually roll, in BOTH slots. What a
   riven can roll is DE's per-weapon table, published nowhere, and the wiki's

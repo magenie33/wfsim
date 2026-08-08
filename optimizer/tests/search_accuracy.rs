@@ -47,6 +47,7 @@ fn scenario(duration: f64, level: u32) -> Scenario {
     let w = 1.0 / bodies.len().max(1) as f64;
     Scenario {
         arena: Arena {
+            abilities: Vec::new(),
             tenno: wfsim_engine::tenno_data::default_tenno().clone(),
             target: spec
                 .target_params(level, true, false, TargetMode::InstantRespawn)

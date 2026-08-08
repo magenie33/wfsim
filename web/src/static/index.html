@@ -409,17 +409,26 @@
         <div id="sim-technique" class="field-grid"></div>
         <!-- NOT a technique: nobody plays "infinite ammo". These say what the
              run does not model, which is a different kind of claim. -->
-        <h3 class="sim-h" data-i18n>3 · Limits <span class="sim-hint" data-i18n>what this run is allowed to assume</span></h3>
+        <!-- WARFRAME ABILITY BUFFS. Its own block, and deliberately between
+             the wielder and the limits: it is the rest of the answer to "who
+             is shooting" — the part another player, or your own frame, is
+             doing to this weapon for a while.
+             EARLY ACCESS: the strength is typed in here today and will come
+             from the frame when frames land (owner, 2026-08-08). The block
+             says so on screen rather than only in a comment. -->
+        <h3 class="sim-h" data-i18n>3 · Warframe buffs <span class="sim-hint" data-i18n>abilities cast on this weapon — set your Ability Strength and the values follow</span></h3>
+        <div id="sim-wfbuffs"></div>
+        <h3 class="sim-h" data-i18n>4 · Limits <span class="sim-hint" data-i18n>what this run is allowed to assume</span></h3>
         <div id="sim-limits" class="field-grid"></div>
         <!-- What this block sets is the START of the run, not the buff's
              worth: the fight goes on to grant and decay these on their own
              triggers. The old hint said "locked = 100% uptime", which reads as
              "this box decides how much of the buff you get" — the opposite of
              what the sim does (user, 2026-08-03). -->
-        <h3 class="sim-h" data-i18n>4 · Buffs <span class="sim-hint" data-i18n>the stacks the run STARTS with — the fight still grants and decays them on their own triggers</span>
+        <h3 class="sim-h" data-i18n>5 · Buffs <span class="sim-hint" data-i18n>the stacks the run STARTS with — the fight still grants and decays them on their own triggers</span>
           <button id="sim-buffs-all" class="ghost-btn small"></button></h3>
         <div id="sim-buffs"></div>
-        <h3 class="sim-h" data-i18n>5 · Simulation <span class="sim-hint" data-i18n>how many times to replay it, and what to read off — the optimizer's final round uses the same count</span></h3>
+        <h3 class="sim-h" data-i18n>6 · Simulation <span class="sim-hint" data-i18n>how many times to replay it, and what to read off — the optimizer's final round uses the same count</span></h3>
         <div id="sim-run" class="field-grid"></div>
         <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
       </div>
@@ -509,6 +518,8 @@
         <div id="opt-target" class="sub-block"></div>
         <h3 class="sim-h" data-i18n>The Tenno <span class="sim-hint" data-i18n>must match how you intend to play it — the winner is scored under this player</span></h3>
         <div id="opt-technique" class="field-grid"></div>
+        <h3 class="sim-h" data-i18n>Warframe buffs <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored under them</span></h3>
+        <div id="opt-wfbuffs"></div>
         <h3 class="sim-h" data-i18n>Limits <span class="sim-hint" data-i18n>what the search is allowed to assume</span></h3>
         <div id="opt-limits" class="field-grid"></div>
         <h3 class="sim-h" data-i18n>Buffs <span class="sim-hint" data-i18n>read-only — the fight's own, applied to every candidate; a buff nobody set starts where it would in a fight</span></h3>

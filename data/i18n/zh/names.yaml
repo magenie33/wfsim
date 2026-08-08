@@ -553,3 +553,25 @@ arcanes:
 
 # UI strings, keyed by the English source string (English itself never needs
 # an entry — the source string IS the fallback).
+
+abilities:
+  # TRANSCRIBED FROM DE, not translated (house rule). Every one of these is
+  # lifted out of WFCD's `i18n.json` — the three abilities off their frame's
+  # own ability list, the four augments off their mod cards — so they are the
+  # strings the Chinese client shows and nothing here is our phrasing.
+  #
+  # NO FRAME NAMES. DE's Chinese client leaves them in English ("Rhino 重拳以
+  # 待"), so a translated one would be a word DE did not write.
+  #
+  # "（Helminth）" marks the subsumed variant, and Helminth itself stays in
+  # English for the same reason — DE writes "Helminth 退化样式".
+  roar: 战吼
+  roar_helminth: 战吼（Helminth）
+  eclipse: 黯然失色
+  eclipse_helminth: 黯然失色（Helminth）
+  nourish: 消化滋养
+  nourish_helminth: 消化滋养（Helminth）
+  shock_trooper: 电击奇兵
+  fireball_frenzy: 狂热火球
+  freeze_force: 寒冰之力
+  venom_dose: 猛毒附加

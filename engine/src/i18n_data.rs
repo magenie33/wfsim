@@ -41,6 +41,17 @@ pub struct LocaleSpec {
     pub arcanes: BTreeMap<String, String>,
     #[serde(default)]
     pub evolutions: BTreeMap<String, String>,
+    /// WARFRAME ABILITY BUFFS (`data/abilities/`), keyed by id.
+    ///
+    /// TRANSCRIBED FROM DE, never translated — the house rule, and this family
+    /// is where it bites hardest: Roar is 战吼 and Eclipse is 黯然失色, neither
+    /// of which anyone derives from the English. They come from the export's
+    /// own `i18n.json`, off the frame's ability list and the augment mods'
+    /// cards. The FRAME names are deliberately absent: DE's Chinese client
+    /// leaves them in English ("Rhino"), so translating them would be adding a
+    /// word DE did not write.
+    #[serde(default)]
+    pub abilities: BTreeMap<String, String>,
     /// UI strings keyed by the English source string.
     #[serde(default)]
     pub ui: BTreeMap<String, String>,
@@ -112,6 +123,7 @@ impl LocaleSpec {
         maps(&mut self.mods, other.mods, path, "mods");
         maps(&mut self.arcanes, other.arcanes, path, "arcanes");
         maps(&mut self.evolutions, other.evolutions, path, "evolutions");
+        maps(&mut self.abilities, other.abilities, path, "abilities");
         maps(&mut self.ui, other.ui, path, "ui");
         maps(&mut self.evolution_descriptions, other.evolution_descriptions, path, "evolution_descriptions");
         lists(&mut self.mod_descriptions, other.mod_descriptions, path, "mod_descriptions");
@@ -456,3 +468,32 @@ mod tests {
         }
     }
 }
+    /// EVERY TABLE ON THE SPEC IS MERGED. Adding one is two edits — the field
+    /// and the fold — and the second is easy to forget: `abilities` was
+    /// declared, filled with DE's own names, served by the api, read by the
+    /// page, and dropped on the floor by `merge`, so the section rendered in
+    /// English on a Chinese page and nothing anywhere said why (2026-08-08).
+    ///
+    /// This asserts it the only way that survives the next table: every
+    /// non-empty map in the file is non-empty after the merge that produced
+    /// the locale.
+    #[test]
+    fn a_declared_table_is_actually_folded_in() {
+        let zh = locales()
+            .iter()
+            .find(|(c, _)| c == "zh")
+            .map(|(_, s)| s)
+            .expect("zh locale");
+        for (name, n) in [
+            ("weapons", zh.weapons.len()),
+            ("enemies", zh.enemies.len()),
+            ("mods", zh.mods.len()),
+            ("arcanes", zh.arcanes.len()),
+            ("evolutions", zh.evolutions.len()),
+            ("abilities", zh.abilities.len()),
+            ("ui", zh.ui.len()),
+        ] {
+            assert!(n > 0, "the zh locale's `{name}` table came out empty");
+        }
+    }
+
