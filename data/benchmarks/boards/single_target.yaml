@@ -594,6 +594,12 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: furis
     mode: cycle
+    score: 43.600383255913044
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_prelude_of_might]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
     score: 39.095281489957635
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_practiced_grip, furis_elemental_balance]
@@ -1160,6 +1166,11 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
+    score: 7.958753316304826
+    mods: [primed_rubedo_lined_barrel, dual_rounds, ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
     score: 7.6
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, marked_target, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
@@ -1188,6 +1199,11 @@ entries:
     score: 6.217732880912393
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, primed_ammo_chain, hollowed_bullets, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 6.182789132213034
+    mods: [primed_rubedo_lined_barrel, dual_rounds, magazine_extension, ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
   - weapon: larkspur_prime
     mode: base
     score: 6.07346545209446
@@ -2236,6 +2252,10 @@ entries:
     mode: base
     score: 0.8003278490054541
     mods: [primed_shred, split_chamber, serration, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, hellfire]
+  - weapon: verglas_prime
+    mode: base
+    score: 0.795857242649671
+    mods: [split_chamber, serration, hammer_shot, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
   - weapon: verglas_prime
     mode: base
     score: 0.7905278514719025
