@@ -57,6 +57,15 @@ enum EvoEffect {
     /// ("with no multishot source the +60% applies to nothing"), which is the
     /// disclosure working and not a reason to leave it.
     FlatBaseMultishot(f64),
+    /// Mounting Momentum: every SHELL loaded is +10% fire rate, and nothing
+    /// takes the stacks away short of holstering.
+    ///
+    /// The first buff in the roster whose per-trigger gain is a weapon stat.
+    /// It is what makes the perk a real choice: a magazine mod buys stacks and
+    /// pays for them in reload time, and the two only trade off because the
+    /// by-round reload is modelled (`WeaponSpec::reload_style`). Implementing
+    /// one without the other would have handed the optimizer free fire rate.
+    StackingFireRatePerShellReloaded { per_stack: f64, max_stacks: u32 },
     /// Adds into the BASE status chance — the same base-stat layer, so status
     /// mods multiply the new base (Torid's Survivor's Edge and Elemental
     /// Balance both say "Increase Base Status Chance"). NOT the post-mod flat
@@ -340,6 +349,24 @@ pub struct EvoBuffCard {
     /// PERMANENT stacks (no in-sim trigger, no decay): the count is a
     /// static choice for the run, so the card defaults locked.
     pub permanent: bool,
+    /// WHERE THE CARD OPENS. Two rules covered every card until Mounting
+    /// Momentum: a permanent buff starts full, a timed one starts at zero.
+    /// That perk needs a third — it opens at ONE RELOAD'S WORTH, because a
+    /// per-shell counter at zero describes a weapon just holstered and not a
+    /// fight anyone measures (owner, 2026-08-08).
+    pub opens_at: CardOpens,
+}
+
+/// See [`EvoBuffCard::opens_at`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CardOpens {
+    /// Earned in the run.
+    Zero,
+    /// Nothing decays it, so a lull does not cost it.
+    Full,
+    /// One reload's worth — the weapon's MODDED magazine, which only the
+    /// caller knows.
+    Magazine,
 }
 
 impl EvolutionDef {
@@ -360,11 +387,13 @@ impl EvolutionDef {
                     id: "evo_multishot",
                     max_stacks: *max_stacks,
                     permanent: true,
+                    opens_at: CardOpens::Full,
                 }),
                 EvoEffect::StackingDamageOnPlainHit { max_stacks, .. } => Some(EvoBuffCard {
                     id: "on_plain_hit_damage",
                     max_stacks: *max_stacks,
                     permanent: false,
+                    opens_at: CardOpens::Zero,
                 }),
                 // A BUFF, not a silent stat: the run holds it from t = 0, but
                 // it is earned by an empty reload and the bar has to say so
@@ -374,21 +403,33 @@ impl EvolutionDef {
                     id: "evo_reload_damage",
                     max_stacks: 1,
                     permanent: true,
+                    opens_at: CardOpens::Full,
                 }),
                 EvoEffect::StackingReloadSpeedOnHeadshot { max_stacks, .. } => Some(EvoBuffCard {
                     id: "on_headshot_reload_speed",
                     max_stacks: *max_stacks,
                     permanent: false,
+                    opens_at: CardOpens::Zero,
                 }),
                 EvoEffect::StackingMultishotOnStatus { max_stacks, .. } => Some(EvoBuffCard {
                     id: "on_status_multishot",
                     max_stacks: *max_stacks,
                     permanent: false,
+                    opens_at: CardOpens::Zero,
                 }),
+                EvoEffect::StackingFireRatePerShellReloaded { max_stacks, .. } => {
+                    Some(EvoBuffCard {
+                        id: "per_shell_fire_rate",
+                        max_stacks: *max_stacks,
+                        permanent: false,
+                        opens_at: CardOpens::Magazine,
+                    })
+                }
                 EvoEffect::StackingFireRateOnHeadshot { max_stacks, .. } => Some(EvoBuffCard {
                     id: "on_headshot_fire_rate",
                     max_stacks: *max_stacks,
                     permanent: false,
+                    opens_at: CardOpens::Zero,
                 }),
                 // Static stat changes — nothing to configure at runtime.
                 EvoEffect::FlatBaseStatusChanceByForm { .. }
@@ -486,6 +527,13 @@ impl EvolutionDef {
                 }
                 EvoEffect::FlatBaseMultishot(v) => {
                     format!("+{v:.2} BASE multishot (multishot mods multiply it)")
+                }
+                EvoEffect::StackingFireRatePerShellReloaded { per_stack, max_stacks } => {
+                    format!(
+                        "+{:.0}% fire rate per shell reloaded, up to {max_stacks} stacks                          (+{:.0}% at the cap) — a full magazine is one reload's worth",
+                        per_stack * 100.0,
+                        per_stack * *max_stacks as f64 * 100.0
+                    )
                 }
                 EvoEffect::FlatBaseStatusChanceByForm { base, incarnon } => format!(
                     "+{:.0}% BASE status chance ({:.0}% in Incarnon Form)",
@@ -635,6 +683,12 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         "flat_base_damage" => EvoEffect::FlatBaseDamage(f(v, "value").unwrap_or(0.0)),
         "flat_base_crit_chance" => EvoEffect::FlatBaseCritChance(f(v, "value").unwrap_or(0.0)),
         "flat_base_multishot" => EvoEffect::FlatBaseMultishot(f(v, "value").unwrap_or(0.0)),
+        "stacking_fire_rate_per_shell_reloaded" => {
+            EvoEffect::StackingFireRatePerShellReloaded {
+                per_stack: f(v, "per_stack").unwrap_or(0.0),
+                max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(0) as u32,
+            }
+        }
         "flat_base_status_chance" => {
             EvoEffect::FlatBaseStatusChance(f(v, "value").unwrap_or(0.0))
         }
@@ -839,6 +893,25 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // projectile already (`radius_takes_multishot`), so adding it
                 // there would count the same pellets twice.
                 EvoEffect::FlatBaseMultishot(v) => base.base_multishot += v,
+                EvoEffect::StackingFireRatePerShellReloaded { per_stack, max_stacks } => {
+                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                        id: "per_shell_fire_rate",
+                        trigger: crate::loadout::BuffTrigger::ReloadComplete,
+                        grant: crate::loadout::BuffGrant::FireRate,
+                        // NOTHING TAKES THEM but holstering, and a holster is
+                        // not something this arena does — so no clock, and the
+                        // decay mode never runs.
+                        decay: crate::loadout::BuffDecay::LoseOneAndReset,
+                        duration: crate::loadout::NO_TIMEOUT,
+                        per_stack: *per_stack,
+                        max_stacks: *max_stacks,
+                        chance: 1.0,
+                        initial_stacks: 0,
+                        // 0 = ONE PER SHELL. `resolve` reads the modded
+                        // magazine and turns it into a number.
+                        stacks_per_trigger: 0,
+                    });
+                }
                 EvoEffect::FlatBaseStatusChance(v) => {
                     base.base_status_chance += v;
                     if let Some(r) = base.radial.as_mut() {
@@ -926,6 +999,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         duration: *duration,
                         chance: 1.0,
                         initial_stacks: 0,
+                        stacks_per_trigger: 1,
                     });
                 }
                 EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance } => {
@@ -943,6 +1017,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         chance: *chance,
                         // EARNED from zero, like every other timed buff.
                         initial_stacks: 0,
+                        stacks_per_trigger: 1,
                     });
                 }
                 EvoEffect::PostModCritChance(v) => base.post_mod_crit_chance += v,
@@ -975,6 +1050,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         // has a duration, so a lull empties it and the fight
                         // has to fill it again (docs/BUFFS.md).
                         initial_stacks: 0,
+                        stacks_per_trigger: 1,
                     });
                 }
                 EvoEffect::StackingReloadSpeedOnHeadshot {
@@ -994,6 +1070,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         chance: 1.0,
                         // EARNED from zero, like every other timed buff.
                         initial_stacks: 0,
+                        stacks_per_trigger: 1,
                     });
                 }
                 EvoEffect::Inert(_) | EvoEffect::Qualifier(_) => {}

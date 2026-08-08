@@ -988,6 +988,11 @@ pub enum BuffTrigger {
     /// here: a live buff is bumped inside the fight, where the target's
     /// debuffs are in hand.
     HitEnemyWithStatus(crate::damage::DamageType),
+    /// Mounting Momentum: a completed RELOAD, not a shot. The first trigger in
+    /// this vocabulary that is not something the weapon does to a target — and
+    /// the first that grants more than one stack at a time, because what it
+    /// grants is one per SHELL loaded (see [`StackingBuff::stacks_per_trigger`]).
+    ReloadComplete,
 }
 
 /// WHAT A STACKING BUFF FEEDS. One arm per grant, and each keeps its own
@@ -1059,6 +1064,17 @@ pub struct StackingBuff {
     /// Stacks at t = 0 — the buff card's other knob, the first being
     /// `duration` ([`NO_TIMEOUT`] when it is locked).
     pub initial_stacks: u32,
+    /// HOW MANY STACKS ONE TRIGGER GRANTS. One, for every buff written before
+    /// Mounting Momentum — and that perk grants one per SHELL LOADED, so the
+    /// count is a property of the weapon (its modded magazine) rather than of
+    /// the card.
+    ///
+    /// It is resolved the same way `per_stack` is: `WeaponBase` carries the
+    /// RULE (0 = "one per shell") and `resolve` turns it into the number,
+    /// because the modded magazine does not exist until the mods are in. That
+    /// is also what makes the trade-off real — a magazine mod buys stacks and
+    /// pays for them in reload time (`by_round_reload`).
+    pub stacks_per_trigger: u32,
 }
 
 /// What happens when a second field lands on a target that already has one.
@@ -2152,6 +2168,27 @@ pub fn resolve_for(
                     }
                     _ => b.per_stack,
                 },
+                // …and the same conversion for HOW MANY a trigger grants: 0
+                // means "one per shell loaded", which is the modded magazine.
+                // It cannot be resolved earlier — the magazine does not exist
+                // until the mods are in — and it is what makes a magazine mod
+                // a trade rather than a free stat on a by-round reloader.
+                stacks_per_trigger: if b.stacks_per_trigger == 0 {
+                    mag_size.max(1.0) as u32
+                } else {
+                    b.stacks_per_trigger
+                },
+                // …AND IT OPENS THERE. A per-shell counter that starts at zero
+                // describes a fight begun on a weapon just holstered, which is
+                // not the fight anyone measures: you arrive having reloaded.
+                // So the default opening state is one reload's worth, and the
+                // buff card overrides it like any other (owner, 2026-08-08:
+                // "初始就是根据 shell 的层数有这个 buff").
+                initial_stacks: if b.stacks_per_trigger == 0 {
+                    (mag_size.max(1.0) as u32).min(b.max_stacks)
+                } else {
+                    b.initial_stacks
+                },
                 ..*b
             })
             .collect(),
@@ -2743,6 +2780,57 @@ mod tests {
         assert!(b.magazine_size > a.magazine_size);
         assert!((b.reload_seconds - a.reload_seconds).abs() < 1e-9,
             "an ordinary reload is one block: {} vs {}", a.reload_seconds, b.reload_seconds);
+    }
+
+    /// MOUNTING MOMENTUM IS PAID IN SHELLS, so it is worth what the magazine
+    /// is — and the magazine is not free.
+    ///
+    /// The perk grants +10% fire rate per shell LOADED, which makes its value
+    /// a weapon stat rather than a card constant: a magazine mod buys stacks
+    /// and pays for them in the by-round reload it lengthens. Implementing
+    /// either half alone would have been worse than neither — stacks without
+    /// the reload cost is free fire rate for the optimizer to farm, and the
+    /// reload cost without the stacks is a mod that only ever hurts.
+    ///
+    /// It also OPENS at one reload's worth: a per-shell counter at zero
+    /// describes a weapon just holstered, which is not a fight anyone measures
+    /// (owner, 2026-08-08).
+    #[test]
+    fn mounting_momentum_is_worth_a_magazine_and_grows_with_it() {
+        let evo = ["felarx_mounting_momentum".to_string()];
+        let ids: Vec<&str> = evo.iter().map(|s| s.as_str()).collect();
+        let base = WeaponBase::from_data("felarx", true, &ids);
+        let plain = resolve(&base, &[], StackPolicy::AssumedMax);
+        let b = plain
+            .stacking_buffs
+            .iter()
+            .find(|b| b.id == "per_shell_fire_rate")
+            .expect("the perk grants a buff");
+        assert_eq!(b.trigger, BuffTrigger::ReloadComplete);
+        // Six shells: six stacks a reload, and six on the clock at t = 0.
+        assert_eq!(b.stacks_per_trigger, 6, "one per shell in the magazine");
+        assert_eq!(b.initial_stacks, 6, "it opens at one reload's worth");
+        assert!(b.duration.is_infinite(), "nothing decays it: {}", b.duration);
+
+        // …and it FOLLOWS the magazine, which is the whole trade.
+        let mag_mod = crate::mods_data::class_pool("shotgun")
+            .into_iter()
+            .find(|m| m.id == "ammo_stock")
+            .expect("ammo stock");
+        let bigger = resolve(&base, &[&mag_mod], StackPolicy::AssumedMax);
+        let bb = bigger
+            .stacking_buffs
+            .iter()
+            .find(|b| b.id == "per_shell_fire_rate")
+            .unwrap();
+        assert_eq!(bb.stacks_per_trigger, bigger.magazine_size as u32);
+        assert!(bb.stacks_per_trigger > b.stacks_per_trigger, "more shells, more stacks");
+        // The other side of the trade, so this test fails if the reload ever
+        // stops charging for it.
+        assert!(
+            bigger.reload_seconds > plain.reload_seconds,
+            "and the reload pays for them"
+        );
     }
 
 }

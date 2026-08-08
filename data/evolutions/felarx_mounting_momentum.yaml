@@ -9,18 +9,27 @@ description: "Reload increases Fire Rate by +10% per shell. Stacks up to 99x. Re
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Reload increases Fire Rate by +10% per shell"
-  - kind: unmodelled_reload_increases_fire_rate_by_per_shell
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Stacks up to 99x"
-  - kind: unmodelled_stacks_up_to_x
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Resets on reload"
-  - kind: unmodelled_resets_on_reload
+  # +10% FIRE RATE PER SHELL LOADED, and the stacks are not on a clock.
+  #
+  # DE's card says "Resets on reload" and its own notes say holstering resets
+  # them while RELOADING BUILDS them, with a worked example (+4 stacks for four
+  # spent shells). The notes win: they describe a counter you can only build by
+  # reloading, which the card's reading would make unbuildable. Confirmed by
+  # the owner, 2026-08-08.
+  #
+  # The count is one per SHELL, so it follows the magazine — and a magazine mod
+  # therefore buys stacks and pays for them in the by-round reload it lengthens
+  # (`reload_style: by_round` on the weapon). That trade is the perk.
+  - kind: stacking_fire_rate_per_shell_reloaded
+    per_stack: 0.10
+    max_stacks: 99
+  # NOT MODELLED — the INCARNON route to stacks. Activating the form grants 1,
+  # and deactivating grants one per shell that was missing when it was
+  # activated, on top of a free magazine refill. Played to the edge that is
+  # 2 x magazine - 1 stacks in a single cycle (owner, 2026-08-08) against the
+  # magazine's worth an ordinary reload gives. This sim transmutes on a gauge,
+  # not on a plan, so it earns the reload route only.
+  - kind: unmodelled_incarnon_form_grants_stacks_on_entry_and_exit
 
 source:
   url: https://wiki.warframe.com/w/Felarx

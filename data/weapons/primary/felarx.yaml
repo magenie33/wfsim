@@ -24,7 +24,7 @@ transforms_to: felarx_incarnon
 unmodeled:
   - "the by-round reload is now modelled — what is NOT is the INTERRUPTION: in game you can fire mid-reload and keep the shells you have loaded, and here a reload runs to the end"
   - "the innate infinite body punch-through is not modelled — this arena has one target, so it changes no number, and it is why Dual-Mode Chamber's +4 m adds nothing either"
-  - "switching into or out of the Incarnon form fully reloads the normal magazine, which is a free reload the sim does not give you"
+  - "the Incarnon form's route to stacks is not modelled — entering grants 1 and leaving grants one per shell that was missing, on top of a free magazine refill, and played to the edge that is 2 x magazine - 1 stacks in one cycle"
   - "damage falloff from 14 m to 28 m (down to 99% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
 accuracy: 7.69
 disposition: 0.6

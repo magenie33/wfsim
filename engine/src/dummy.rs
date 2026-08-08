@@ -3627,7 +3627,13 @@ pub fn run_once_traced(
         ($trigger:expr, $t:expr, $rng:expr) => {
             for (i, b) in params.stacking_buffs.iter().enumerate() {
                 if b.trigger == $trigger && (b.chance >= 1.0 || $rng.chance(b.chance)) {
-                    buff_stacks[i].bump($t, b.duration, b.max_stacks);
+                    // ONE TRIGGER, `stacks_per_trigger` STACKS. Every buff
+                    // written before Mounting Momentum grants one, and that
+                    // one grants a shell's worth each — so the bump repeats
+                    // rather than the cap being bypassed.
+                    for _ in 0..b.stacks_per_trigger.max(1) {
+                        buff_stacks[i].bump($t, b.duration, b.max_stacks);
+                    }
                 }
             }
         };
@@ -3792,6 +3798,7 @@ pub fn run_once_traced(
     // accumulation, not just the firing.
     let mut syndicate_ready_at = 0.0f64;
     let mut tendril_reload_mark = 0u32;
+    let mut reload_buff_mark = 0u32;
     // The card's opening count, which the fight then treats exactly like an
     // earned one: it is spent by the magazine event that clears the rest.
     let mut tendril_seed = params.tendrils_initial.min(params.tendril_max);
@@ -3889,6 +3896,14 @@ pub fn run_once_traced(
             // which is what "no timeout" means for a buff whose end is an
             // event rather than a clock. The seed dies with the earned ones:
             // it is the same buff.
+            // A COMPLETED RELOAD is a trigger like a hit is. Mounting
+            // Momentum grants one stack per shell loaded, so a full magazine
+            // is a magazine's worth — and a bigger magazine is more of them,
+            // paid for in the by-round reload it lengthens.
+            if r.reloads != reload_buff_mark {
+                reload_buff_mark = r.reloads;
+                bump_buffs!(crate::loadout::BuffTrigger::ReloadComplete, t, rng);
+            }
             if r.reloads != tendril_reload_mark && !params.tendrils_held {
                 tendril_reload_mark = r.reloads;
                 tendril_kill_mark = r.kills;
@@ -8116,6 +8131,7 @@ mod tests {
                     duration: 10.0,
                     // Earn them in the run — that is what is under test.
                     initial_stacks: 0,
+                    stacks_per_trigger: 1,
                 }],
                 // Never crits, never procs: every instance is "plain", so
                 // the only variable is HOW MANY instances a shot produces.
@@ -8190,6 +8206,7 @@ mod tests {
                 max_stacks: 3,
                 duration: 10.0,
                 initial_stacks: 0,
+                stacks_per_trigger: 1,
             }, crate::loadout::StackingBuff {
                 id: "on_headshot_reload_speed",
                 trigger: crate::loadout::BuffTrigger::Headshot,
@@ -8200,6 +8217,7 @@ mod tests {
                 max_stacks: 3,
                 duration: 6.0,
                 initial_stacks: 0,
+                stacks_per_trigger: 1,
             }],
             cc_on_headshot: Some(timed(0.5)),
             cd_on_kill: Some(timed(0.6)),
@@ -8255,6 +8273,7 @@ mod tests {
                     // Locking IS this: the card's duration, overwritten.
                     duration: if locked { crate::loadout::NO_TIMEOUT } else { 10.0 },
                     initial_stacks: initial,
+                    stacks_per_trigger: 1,
                 }],
                 fire_rate,
                 duration_secs: secs,
@@ -11089,6 +11108,7 @@ mod replay_reads_every_buff_tests {
             max_stacks: 3,
             duration: 10.0,
             initial_stacks: 0,
+            stacks_per_trigger: 1,
         };
         let mut params = DummyParams {
             co_stack: Some(stack(0.2)),
