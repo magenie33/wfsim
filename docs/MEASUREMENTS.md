@@ -1867,9 +1867,9 @@ the base-damage bucket and this multiplication does not arise — the Attrition
 term still multiplies, but there is no second free-standing factor for it to
 multiply with.
 
-## M37 — a Debilitate DoT eats Attrition TWICE ✅ (owner, 2026-08-08)
+## M37 — a Debilitate DoT eats Attrition TWICE, and it is a BUG ✅ (owner, 2026-08-08)
 
-**Reported, then measured in game.** A player asked the owner whether the
+**Reported, measured, then explained.** A player asked the owner whether the
 elemental hit that triggers Primary Debilitate can also trigger the Felarx's
 20x, and the calculator said no:
 
@@ -1881,46 +1881,75 @@ He tried it:
 > 刚刚试了一下，确实是可以触发的！直伤一次，附加伤害一次，dot一次一共3次牛吼，
 > 强袭损耗在吃两次，最终的触发的dot会吃到三次方牛吼和441倍强袭损耗的伤害加成
 
-and, on a second pass:
-
 > 大概测一下三次牛吼，两次强袭损耗，元素师，元素mod都能吃到。用凤殁测了一下，
 > 只有牛吼增伤的情况下，dot跳一下，爆破使就没了
 
 So the chain is **直伤 → 附加伤害 → dot** with a Roar layer at each step (the
-`f^3` this engine already applies as `DEPTH_DERIVED_PROC`, see M33), and
+`f³` this engine already applied as `DEPTH_DERIVED_PROC`, see M33), and
 **Devouring/Devastating Attrition applies twice**: 21 x 21 = **441**.
 
-### What it pins
+### It is not a design — it is a leak, and the leak names the rule
 
-Two rulings, and the second only follows because of the first:
+The owner's reading, and the reason this is filed as DE's bug rather than as an
+interaction (2026-08-08: "有bug，你理解吗，这个+21好像还会作用在由衰弱产生的dot
+上面（非本意）"):
+
+> 衰弱触发成功后，会进行一次伤害为0的伤害，但是是 0×bane乘区×以及概率的21倍乘区
+> （50%概率触发，因为这个也没暴击），但是在算这个伤害产生的dot的伤害的时候，0的
+> 部分被替换为上一级，但是又把这2个乘区也带进来了
+
+The split fires a damage instance whose damage is **zero** — which is why the
+wiki can call it a separate instance and say it "has no damage" in the same
+breath. Zero still gets multiplied, by that instance's own faction bracket and
+its own Attrition roll. Then the DoT is computed off it, the zero is **replaced
+by the parent hit's value**, and the two multipliers already applied to the zero
+are left in. One instance's multipliers on another instance's magnitude.
+
+Being able to name the mechanism is what makes the third ruling below
+predictable rather than a second measurement.
+
+### What it pins
 
 1. **A hit's Attrition roll travels with the statuses it applied.** A proc's
    magnitude is the applying instance's — that is why `crit_mult` was already
    carried into `settle_procs` — and Attrition is a per-instance multiplier of
-   exactly that shape. This engine was passing 1.0.
-2. **The split rolls a second one of its own**, because the split is a damage
-   INSTANCE (the wiki's own word, and the reason it takes the third faction
-   layer at all).
+   the same shape. This engine was passing 1.0.
+2. **The split rolls a second one of its own**, on the zero.
+3. **The split's roll lands even when the parent hit CRIT.** The zero instance
+   has no crit of its own — there is nothing to crit — so "on a hit that is
+   neither Critical nor…" is satisfied whatever the parent did ("50%概率触发，因
+   为这个也没暴击"). A critting build therefore gets 1 x 21 here, never 1. This is
+   the ruling that matters in practice, since the parent hit on a real Felarx
+   build usually crits and its own roll is then worth nothing.
 
-Two rolls for three faction layers is the whole content of the measurement: the
-DoT itself never rolls, because a DoT is not a hit and "did not crit" is a
-statement about a hit. Had the DoT rolled too the number would have been 21³ =
-9261, and had only the split rolled it would have been 21.
+Two rolls and not three: the DoT itself never rolls, because a DoT is not a hit.
+Had it rolled the number would have been 21³ = 9261, and had only the split
+rolled it would have been 21.
 
-`the_debilitate_dot_carries_two_attrition_layers` asserts both halves, and each
-half fails on its own when removed: an ordinary Slash DoT must come out at
-**x21.0** and a split's Toxin DoT at **x441** (±25 over 200 runs). The perk's
-own 50% is forced to 1.0 for the same reason as M36 — the question is which
-layers apply, not the odds. Two details the test has to work around: turning the
-perk on consumes an extra RNG draw per instance, so a single pair of runs
-compares two different fights and only an average means anything; and Puncture
-is made immune, because Weakened is a flat crit-chance buff on the victim and a
-critical instance is not eligible for Attrition at all.
+`the_debilitate_dot_carries_two_attrition_layers` asserts all three, and each
+fails on its own when removed: an ordinary Slash DoT must come out at **x21.0**,
+a split's Toxin DoT at **x441** (±25 over 200 runs), and a fight that crits every
+shot must still show **x21** on the split's DoT. The perk's own 50% is forced to
+1.0 for the same reason as M36 — the question is which layers apply, not the
+odds. Two details the test has to work around: turning the perk on consumes an
+extra RNG draw per instance, so a single pair of runs compares two different
+fights and only an average means anything; and Puncture is made immune, because
+Weakened is a flat crit-chance buff on the victim that would otherwise set the
+crit rate the test is trying to control.
 
 ### What is still open
 
+- **This is a bug, so it can be patched.** Nothing here is a designed
+  interaction, and a DE hotfix that stops the zero from carrying its multipliers
+  removes both extra layers at once. That is a reason to keep it in one place
+  (the split's `InstanceScale`) rather than to generalise it.
 - **The lingering FIELD's ticks** (Torid's cloud) roll their own crit tier, so by
-  the same argument they are instances and should roll Attrition. Left at 1.0:
-  no weapon in the roster carries both, and this measurement does not reach it.
-- **Whether an ordinary status DoT double-dips faction** is still M33's
-  question, not this one. This changes the Attrition term only.
+  the ordinary argument they are instances and should roll Attrition. Left at
+  1.0: no weapon in the roster carries both, and this measurement does not reach
+  it.
+- **元素师** — the owner lists it among what the final DoT eats, alongside
+  elemental mods. Elemental mods already reach it (the split picks up its own
+  element's bracket); which arcane or mod 元素师 is has not been pinned, so
+  nothing was changed for it.
+- **Whether an ordinary status DoT double-dips faction** remains M33's question.
+  This entry changes the Attrition term only.

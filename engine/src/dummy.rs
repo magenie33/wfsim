@@ -2860,31 +2860,35 @@ fn settle_procs(
                         mb_live,
                         crit_mult,
                         part_factor,
-                        // A SECOND ATTRITION ROLL, ON TOP OF THE HIT'S. The
-                        // split is a damage INSTANCE — the wiki's own words for
-                        // it, and the reason it takes a third faction layer —
-                        // so it rolls the per-instance multipliers a hit rolls,
-                        // and Devouring/Devastating Attrition is one of them.
+                        // A SECOND ATTRITION ROLL, ON TOP OF THE HIT'S — and it
+                        // is a BUG of DE's, not a design (owner, 2026-08-08:
+                        // "有bug……这个+21好像还会作用在由衰弱产生的dot上面（非
+                        // 本意）").
                         //
-                        // MEASURED (owner, 2026-08-08): the DoT at the end of
-                        // this chain eats three faction layers and "441倍强袭损
-                        // 耗" = 21x21. So the chain is 直伤 -> 附加伤害 -> dot
-                        // with a faction layer per step, and TWO attrition rolls
-                        // — the hit's (carried in `attrition`) and this one. The
-                        // DoT itself never rolls: it is not a hit.
-                        // MEASUREMENTS M37.
+                        // MEASURED first: the DoT at the end of 直伤 -> 附加伤害
+                        // -> dot eats three faction layers and "441倍强袭损耗" =
+                        // 21x21. Then EXPLAINED, and the explanation is what
+                        // this line follows: the split fires a damage instance
+                        // whose damage is ZERO, and zero still gets multiplied
+                        // by that instance's own faction bracket and its own
+                        // Attrition roll. When the DoT is then computed, the
+                        // zero is replaced by the parent hit's value — but the
+                        // two multipliers already applied to it are left in.
+                        // That is the whole leak: one instance's multipliers on
+                        // another instance's magnitude.
                         //
-                        // ONLY WHEN IT DID NOT CRIT, which is the perk's own
-                        // condition and is already in hand: a proc inherits the
-                        // applying hit's crit, so `crit_mult > 1` IS a critical
-                        // instance and no roll is due. Tier 0 is passed for the
-                        // same reason `noncrit_mult` takes a tier at all.
-                        attrition: attrition
-                            * if crit_mult > 1.0 {
-                                1.0
-                            } else {
-                                noncrit_mult(ap.noncrit_bonus, 0, rng)
-                            },
+                        // IT ROLLS EVEN WHEN THE HIT CRIT, which is the part of
+                        // the story that is NOT the intuitive one. The zero
+                        // instance carries no crit of its own — there is nothing
+                        // to crit — so "on a hit that is not critical" is
+                        // satisfied whatever the parent did (owner: "50%概率触
+                        // 发，因为这个也没暴击"). A critting build therefore
+                        // takes 1 x 21 here rather than 441, and never 1.
+                        //
+                        // `crit_mult` is still carried, in `InstanceScale` above:
+                        // the parent's value is what the zero is replaced BY, and
+                        // that value critted. MEASUREMENTS M37.
+                        attrition: attrition * noncrit_mult(ap.noncrit_bonus, 0, rng),
                     },
                     debuffs,
                     gal,
@@ -11302,23 +11306,28 @@ mod attrition_times_co_tests {
 mod debilitate_attrition_tests {
     use super::*;
 
-    /// TWO ATTRITION LAYERS REACH THE DEBILITATE DoT, and the calculator showed
-    /// zero (player report through the owner, 2026-08-08: "衰弱触发的 dot 可以
-    /// 再次触发……外围 20 倍但是网站里的计算器显示不出来", then measured: the
-    /// final DoT eats three faction layers and "441倍强袭损耗" = 21x21).
+    /// A DEBILITATE DoT EATS ATTRITION TWICE, and the calculator gave it zero
+    /// (player report through the owner, 2026-08-08: "衰弱触发的 dot 可以再次触
+    /// 发……外围 20 倍但是网站里的计算器显示不出来", then measured: the final DoT
+    /// eats three faction layers and "441倍强袭损耗" = 21x21). It is a BUG of
+    /// DE's — the split fires a ZERO-damage instance that still takes its own
+    /// faction bracket and its own Attrition roll, and when the DoT replaces the
+    /// zero with the parent hit's value those two multipliers stay behind.
     ///
-    /// Two claims, asserted in that order:
-    ///   1. an ORDINARY status DoT carries the applying hit's roll — exactly
-    ///      21x, since the chance is forced and nothing crits;
-    ///   2. the Debilitate SPLIT's DoT carries a second one, so mixing splits
-    ///      into the same fight pushes the ratio ABOVE one layer.
+    /// Three claims:
+    ///   1. an ORDINARY status DoT carries the applying hit's roll, and only
+    ///      that — exactly 21x;
+    ///   2. a SPLIT's DoT carries a second one — 21x21 = 441x;
+    ///   3. and the second one lands EVEN ON A CRITTING HIT, where the parent's
+    ///      own roll is worth nothing. This is the counter-intuitive half: the
+    ///      zero instance has no crit of its own, so the perk's condition holds
+    ///      whatever the parent did.
     ///
-    /// The roll is forced to 1.0: the perk's own 50% would need thousands of
-    /// runs to separate 21 from 22, and the question is which layers apply.
-    /// Crit chance is 0 so every instance is eligible and the crit path is not
-    /// what is being measured. Health is enormous so nothing dies — otherwise a
-    /// 21x direct hit ends the fight and the DoT totals fall while every tick
-    /// grows.
+    /// The roll is forced to 1.0 throughout: the perk's own 50% would need
+    /// thousands of runs to separate 21 from 22, and the question is which
+    /// layers apply rather than the odds. Health is enormous so nothing dies —
+    /// otherwise a 21x direct hit ends the fight and the DoT totals fall while
+    /// every tick grows.
     #[test]
     fn the_debilitate_dot_carries_two_attrition_layers() {
         let base = crate::loadout::WeaponBase::from_data("felarx", true, &[]);
@@ -11328,21 +11337,20 @@ mod debilitate_attrition_tests {
         // draw per instance, so the two fights diverge shot for shot and a
         // single pair of runs compares two different fights — the ratio is only
         // a statement about the multiplier in the aggregate.
-        let dots = |attrition: bool, debilitate: f64| {
+        let dots = |attrition: bool, debilitate: f64, crit: bool| {
             (0..200u64)
                 .map(|seed| {
                     let mut p = DummyParams::from_panel(&panel, &arena);
                     p.target.base_health = 1e15;
-                    p.base_crit_chance = 0.0;
                     p.crit_tier_upgrade_chance = 0.0;
-                    p.unmodded_crit_chance = 0.0;
                     p.super_crit_on_status = None;
-                    // PUNCTURE IS IMMUNE HERE, so nothing crits. Weakened is a
-                    // flat crit-chance buff on the victim and a saturating
-                    // status build keeps it up — a critical instance is not
-                    // eligible for Attrition, so leaving it in would mix
-                    // untouched instances into a ratio whose whole point is
-                    // that every instance took the roll.
+                    p.base_crit_chance = if crit { 1.0 } else { 0.0 };
+                    p.unmodded_crit_chance = 0.0;
+                    // PUNCTURE IS IMMUNE, so the crit rate is the one this test
+                    // sets. Weakened is a flat crit-chance buff on the victim and
+                    // a saturating status build keeps it up — a critical instance
+                    // is not eligible for Attrition, so leaving it in would mix
+                    // untouched instances into every ratio below.
                     p.target.status_immunities = vec![DamageType::Puncture];
                     p.status_chance = 4.0;
                     p.arcane.debilitate_chance = debilitate;
@@ -11365,22 +11373,29 @@ mod debilitate_attrition_tests {
                 .sum::<f64>()
         };
         // 1. ordinary DoTs: one layer, and the whole of it.
-        let plain = dots(false, 0.0);
+        let plain = dots(false, 0.0, false);
         assert!(plain > 0.0);
-        let one_layer = dots(true, 0.0) / plain;
+        let one_layer = dots(true, 0.0, false) / plain;
         assert!(
             (one_layer - 21.0).abs() < 1.0,
             "an ordinary DoT takes the hit's roll and nothing else: x{one_layer:.2}"
         );
         // 2. a split's DoT: two layers, 21x21 = 441x — the owner's own number.
-        let plain_split = dots(false, 1.0);
+        let plain_split = dots(false, 1.0, false);
         assert!(plain_split > 0.0, "the Corrosive fight has to produce split DoTs");
-        let two_layers = dots(true, 1.0) / plain_split;
+        let two_layers = dots(true, 1.0, false) / plain_split;
         assert!(
             (two_layers - 441.0).abs() < 25.0,
             "the split's DoT takes the hit's roll AND its own: x{two_layers:.1},              measured 441 (one layer is x{one_layer:.2})"
         );
+        // 3. every hit crits, so the HIT's roll is worth nothing — and the
+        //    split's is worth its full 21x anyway.
+        let crit_split = dots(false, 1.0, true);
+        assert!(crit_split > 0.0);
+        let on_crit = dots(true, 1.0, true) / crit_split;
+        assert!(
+            (on_crit - 21.0).abs() < 1.0,
+            "the zero instance has no crit to disqualify it: x{on_crit:.2} on a              fight that crits every shot (x441 when nothing crits)"
+        );
     }
 }
-
-
