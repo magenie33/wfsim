@@ -30,6 +30,11 @@ incarnon:
     resource: incarnon_charges
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
+  # "Mode switching is not instantaneous and has an animation equal to the
+  # weapon's reload speed" (wiki). For a BY-ROUND reloader that stat is the
+  # whole magazine — 0.8 + 6 x 0.4 + 0.5 — so a bigger magazine lengthens
+  # the transmute too. Worth a measurement: the animation may be the fixed
+  # 1.3 s of start+end rather than the full 3.7.
   transmute_in_seconds: 3.7      # = base reload time, unmodded
   transmute_out_seconds: 1.0     # MEASURED on Dual Toxocyst (M9)
 
@@ -51,6 +56,11 @@ attack:
   crit_chance: 0.2
   crit_multiplier: 3
   status_chance: 0.2
+  # GUARANTEED IMPACT, every shot — the wiki module's `ForcedProcs` for this
+  # attack. WFCD's export carries no such field, so the bulk intake had no
+  # source for it and this weapon under-reported its status. A type that is
+  # always present is also a permanent +1 to Condition Overload's count.
+  forced_procs: [impact]
   punch_through_m: 0.0
   damage: { impact: 200, radiation: 400 }   # total 600
 

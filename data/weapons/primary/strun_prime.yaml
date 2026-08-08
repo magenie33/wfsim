@@ -34,8 +34,8 @@ introduced: "Update 30.7"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeStrun/PrimeStrunWeapon
 noise: alarming
 ammo_type: primary
-ammo_max: 540
-ammo_pickup: 80
+ammo_max: 120
+ammo_pickup: 15
 magazine: 10
 reload_seconds: 4.6
 

@@ -22,7 +22,10 @@ transforms_to: felarx_incarnon
 # as "not modelled yet". Nothing is dropped in silence — some perks do nothing
 # yet and say so on their own tile.
 unmodeled:
-  - "the by-round reload is not modelled — this weapon refills a shell at a time and the reload can be interrupted, and the sim reloads the whole magazine"
+  - "the by-round reload is not modelled — 0.8 s to start, 0.4 s a shell, 0.5 s to finish, interruptible at any point, and the sim reloads the whole magazine in one 3.7 s block"
+  - "a bigger magazine makes the reload LONGER here and the sim does not know it — shells are loaded one at a time, so Ammo Stock buys capacity and pays for it in reload"
+  - "the innate infinite body punch-through is not modelled — this arena has one target, so it changes no number, and it is why Dual-Mode Chamber's +4 m adds nothing either"
+  - "switching into or out of the Incarnon form fully reloads the normal magazine, which is a free reload the sim does not give you"
   - "damage falloff from 14 m to 28 m (down to 99% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
 accuracy: 7.69
 disposition: 0.6
@@ -34,8 +37,8 @@ introduced: "Update 31.6"
 internal_name: /Lotus/Weapons/Tenno/Zariman/LongGuns/PumpShotgun/ZarimanPumpShotgun
 noise: alarming
 ammo_type: primary
-ammo_max: 540
-ammo_pickup: 80
+ammo_max: 60
+ammo_pickup: 15
 magazine: 6
 reload_seconds: 3.7
 

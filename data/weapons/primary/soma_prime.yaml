@@ -33,7 +33,7 @@ introduced: "Update 15.7"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeSoma/PrimeSomaRifle
 noise: alarming
 ammo_type: primary
-ammo_max: 540
+ammo_max: 800
 ammo_pickup: 80
 magazine: 200
 reload_seconds: 3

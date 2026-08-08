@@ -33,7 +33,7 @@ introduced: "Hotfix 15.11.1"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/VoidTraderGorgon/VTGorgon
 noise: alarming
 ammo_type: primary
-ammo_max: 540
+ammo_max: 840
 ammo_pickup: 80
 magazine: 120
 reload_seconds: 3

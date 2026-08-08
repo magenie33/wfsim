@@ -59,6 +59,8 @@ attack:
     radius_m: 5
     falloff_start_m: 0
     falloff_reduction: 0.1
+    # Guaranteed HEAT on the explosion (wiki module).
+    forced_procs: [heat]
     crit_chance: 0.27
     crit_multiplier: 2.3
     status_chance: 0.21

@@ -6,6 +6,15 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  "the by-round reload is not modelled — 0.8 s to start, 0.4 s a shell, 0.5 s to finish, interruptible at any point, and the sim reloads the whole magazine in one 3.7 s block": 逐发装填尚未建模 —— 起手 0.8 秒、每发 0.4 秒、收尾 0.5 秒，中途随时可打断，而模拟把整个弹匣算成一次 3.7 秒的装填
+  "a bigger magazine makes the reload LONGER here and the sim does not know it — shells are loaded one at a time, so Ammo Stock buys capacity and pays for it in reload": 弹匣越大装填越慢，模拟不知道这件事 —— 子弹是一发一发上的，所以弹药储存换来的容量要拿装填时间去付
+  "the innate infinite body punch-through is not modelled — this arena has one target, so it changes no number, and it is why Dual-Mode Chamber's +4 m adds nothing either": 自带的无限躯干穿透尚未建模 —— 这个战场只有一个目标，所以它不改变任何数字，双模式弹膛的 +4 米穿透同样如此
+  "switching into or out of the Incarnon form fully reloads the normal magazine, which is a free reload the sim does not give you": 进出灵化形态都会把普通形态的弹匣装满 —— 这是一次白送的装填，模拟没有给你
+
+  # WHAT A WEAPON DOES NOT MODEL — the banner on its stats panel. These
+  # are OUR sentences, not DE's, so they translate; the ATTACK NAMES inside
+  # them stay English, the same rule wiki URLs follow, because those are
+  # DE's own names for the parts and a localized one names nothing.
 
   # WHAT A WEAPON DOES NOT MODEL — the banner on its stats panel. These
   # are OUR sentences, not DE's, so they translate; the ATTACK NAMES inside

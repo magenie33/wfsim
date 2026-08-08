@@ -34,8 +34,8 @@ introduced: "Update 14.0"
 internal_name: /Lotus/Weapons/MK1Series/MK1Strun
 noise: alarming
 ammo_type: primary
-ammo_max: 540
-ammo_pickup: 80
+ammo_max: 120
+ammo_pickup: 15
 magazine: 6
 reload_seconds: 3.75
 

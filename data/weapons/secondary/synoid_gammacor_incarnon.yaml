@@ -50,6 +50,11 @@ attack:
   crit_chance: 0.2
   crit_multiplier: 2
   status_chance: 0.28
+  # GUARANTEED IMPACT, every shot — the wiki module's `ForcedProcs` for this
+  # attack. WFCD's export carries no such field, so the bulk intake had no
+  # source for it and this weapon under-reported its status. A type that is
+  # always present is also a permanent +1 to Condition Overload's count.
+  forced_procs: [impact]
   punch_through_m: 0.0
   damage: { impact: 100 }   # total 100
   # The radial part — rules in MECHANICS §7.
@@ -58,6 +63,8 @@ attack:
     radius_m: 5
     falloff_start_m: 0
     falloff_reduction: 0.3
+    # Guaranteed COLD on the explosion (wiki module).
+    forced_procs: [cold]
     crit_chance: 0.2
     crit_multiplier: 2
     status_chance: 0.28

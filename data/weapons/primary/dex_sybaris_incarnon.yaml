@@ -50,6 +50,11 @@ attack:
   crit_chance: 0.3
   crit_multiplier: 3
   status_chance: 0.2
+  # GUARANTEED BLAST, every shot — the wiki module's `ForcedProcs` for this
+  # attack. WFCD's export carries no such field, so the bulk intake had no
+  # source for it and this weapon under-reported its status. A type that is
+  # always present is also a permanent +1 to Condition Overload's count.
+  forced_procs: [blast]
   punch_through_m: 0.0
   damage: { impact: 28.8, slash: 43.2, puncture: 24 }   # total 96.0
 

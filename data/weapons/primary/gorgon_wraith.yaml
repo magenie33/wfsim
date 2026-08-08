@@ -33,7 +33,7 @@ introduced: "Update 12.4"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/WraithGorgon/WraithGorgon
 noise: alarming
 ammo_type: primary
-ammo_max: 540
+ammo_max: 900
 ammo_pickup: 80
 magazine: 90
 reload_seconds: 3
