@@ -164,6 +164,23 @@ const r = await evaluate(`(async () => {
         text: e.textContent.replace(/\\s+/g, ' ').trim(), dead: e.classList.contains('sdead') }))
     : [];
   out.frBucket = !!(withSlow && withSlow.querySelector('.sbucket'));
+  // THE OTHER HALF OF THE FAMILY. Pistol Acuity locks MULTISHOT with the same
+  // sentence, and two multishot mods under it is the case where the bucket
+  // line would print a visibly false equation — 1.0 x (1 + 1.20 + 0.60) =
+  // x1.0 — rather than merely an unmarked row. (No backticks in here: this
+  // whole block is inside a template literal.)
+  for (const id of ['pistol_acuity', 'barrel_diffusion', 'lethal_torrent']) {
+    const s = document.querySelector('#mod-slots .slot.empty');
+    s.click(); await sleep(600);
+    document.querySelector(\`#mod-menu .opt[data-id="\${id}"]\`).click(); await sleep(1800);
+  }
+  await sleep(1500);
+  const msRow = [...document.querySelectorAll('#stats-rows .srow')]
+    .find((r) => /Multishot/i.test(r.querySelector('.sk')?.textContent || ''));
+  out.msLocked = msRow ? msRow.textContent.replace(/\\s+/g, ' ').trim() : '';
+  out.msDead = msRow
+    ? [...msRow.querySelectorAll('.ssrc')].map(e => e.classList.contains('sdead')) : [];
+  out.msBucket = !!(msRow && msRow.querySelector('.sbucket'));
   // Frenzy is Dual Toxocyst's fire-rate passive, so under the lock it has
   // nothing to grant and no card to configure.
   await go('/weapons/Dual_Toxocyst/simulator');
@@ -206,6 +223,17 @@ check("...and its line is marked ignored, not listed as a contribution",
   JSON.stringify(r.frDead));
 check("...and no bucket arithmetic is drawn for a stat with an empty bucket",
   r.frBucket === false);
+// The Acuity twins lock Multishot with the same sentence, so they answer to
+// the same three claims — and two multishot mods under one is where a drawn
+// bucket would be a false equation rather than just a confusing row.
+console.log("locked multishot:", JSON.stringify(r.msLocked), JSON.stringify(r.msDead));
+check("Multishot locks the same way, naming what pinned it",
+  /locked at the weapon's default by/.test(r.msLocked) && /Pistol Acuity/.test(r.msLocked)
+    && !/→/.test(r.msLocked),
+  JSON.stringify(r.msLocked));
+check("...with both ignored mods marked, and no arithmetic drawn",
+  r.msDead.length === 2 && r.msDead.every(Boolean) && r.msBucket === false,
+  `${JSON.stringify(r.msDead)} bucket ${r.msBucket}`);
 check("...and Frenzy is not offered as a buff to configure",
   !/Frenzy/i.test(r.buffs), JSON.stringify(r.buffs.slice(0, 200)));
 

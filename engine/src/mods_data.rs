@@ -1268,6 +1268,72 @@ mod tests {
         }
     }
 
+    /// ...AND THE LOCK BITES, on every weapon that can equip one and in every
+    /// FORM of it.
+    ///
+    /// The table above says who may wear a Cannonade; this says what wearing it
+    /// does. "Equipping this mod will set weapon's Fire Rate to its default
+    /// ignoring other bonuses, EVEN NEGATIVE EFFECTS" — the case that made the
+    /// question worth asking is the negative one, since a build pairs a
+    /// Cannonade with a fire-rate-for-crit trade precisely to be handed the
+    /// trade for free (owner, 2026-08-08). Same sentence, same test, for the
+    /// Acuity twins' Multishot.
+    ///
+    /// DERIVED: it finds the locking mods by their `disables`, the offending
+    /// mods by resolving each one alone and seeing which move that stat, and
+    /// the forms from the weapon. A fourth locking mod, or a fifth weapon that
+    /// can wear one, is covered without a line here.
+    #[test]
+    fn a_locking_mod_pins_its_stat_in_every_form_that_can_wear_it() {
+        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        let read = |p: &crate::loadout::ResolvedPanel, key: &str| match key {
+            "fire_rate" => p.fire_rate,
+            "multishot" => p.multishot,
+            other => panic!("no reader for the locked stat `{other}`"),
+        };
+        let mut proven = 0;
+        for w in crate::weapons_data::roster() {
+            let pool = pool_for_build(&w.id, &[]);
+            let lockers: Vec<&ModDef> = pool.iter().filter(|m| !m.disables.is_empty()).collect();
+            if lockers.is_empty() {
+                continue;
+            }
+            for f in crate::weapons_data::forms_of(&w.id) {
+                let base = WeaponBase::from_data(f.weapon_id, true, &[]);
+                let bare = resolve(&base, &[], StackPolicy::Emergent);
+                for lock in &lockers {
+                    for key in &lock.disables {
+                        // Everything in this pool that MOVES the stat on its
+                        // own — which is what the lock has to be tested
+                        // against, in both directions of movement.
+                        for other in pool.iter().filter(|m| m.id != lock.id) {
+                            let alone = resolve(&base, &[other], StackPolicy::Emergent);
+                            if (read(&alone, key) - read(&bare, key)).abs() < 1e-9 {
+                                continue;
+                            }
+                            let both = resolve(&base, &[other, lock], StackPolicy::Emergent);
+                            assert!(
+                                (read(&both, key) - read(&bare, key)).abs() < 1e-9,
+                                "{} ({}): {} moved {key} from {} to {} under {} — \
+                                 a lock that lets a bonus through",
+                                w.id,
+                                f.weapon_id,
+                                other.id,
+                                read(&bare, key),
+                                read(&both, key),
+                                lock.id
+                            );
+                            proven += 1;
+                        }
+                    }
+                }
+            }
+        }
+        // The three Cannonades and the two Acuities, across their weapons and
+        // forms: a collapse here means the walk stopped finding the pairs.
+        assert!(proven > 100, "the walk collapsed: only {proven} lock/bonus pairs");
+    }
+
     /// A FORM IS NOT A WEAPON. `cernos_prime_uncharged` fires semi-auto, and
     /// the bow it belongs to is listed "Charge" — asking the form entry its own
     /// trigger would hand a Cannonade to a weapon that cannot hold one. The
