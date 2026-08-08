@@ -84,6 +84,12 @@ entries:
     arcanes: [primary_crux]
   - weapon: boar_prime
     mode: cycle
+    score: 10.423079381412379
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, magnetic_strafe, blaze, scattering_inferno]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [primary_crux]
+  - weapon: boar_prime
+    mode: cycle
     score: 10.366326754650393
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, frail_momentum, magnetic_strafe, primed_chilling_grasp, contagious_spread]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
@@ -105,6 +111,12 @@ entries:
     score: 9.000215838743856
     mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_practiced_grip, boar_prime_elemental_balance]
+    arcanes: [primary_crux]
+  - weapon: boar_prime
+    mode: cycle
+    score: 8.845463967261223
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, shell_shock, toxic_barrage, blaze]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_crux]
   - weapon: boar_prime
     mode: cycle
@@ -180,10 +192,28 @@ entries:
     arcanes: [primary_merciless]
   - weapon: boar_prime
     mode: cycle
+    score: 1.3676955654162128
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, scattering_inferno, toxic_barrage, shell_shock]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [primary_crux]
+  - weapon: boar_prime
+    mode: cycle
     score: 1.3437085406073812
     mods: [galvanized_hell, magnetic_welt, primed_point_blank, primed_ravage, galvanized_savvy, primed_ammo_stock, primed_chilling_grasp, primed_charged_shell]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_elemental_balance]
     arcanes: [shotgun_vendetta]
+  - weapon: boar_prime
+    mode: cycle
+    score: 0.7344690258704718
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, hunter_munitions, shotgun_barrage, vicious_spread, primed_charged_shell]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_fortress_salvo, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_crux]
+  - weapon: boar_prime
+    mode: cycle
+    score: 0.5831018620827718
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, frigid_blast, scattering_inferno, shell_shock]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [primary_crux]
   - weapon: burston_prime
     mode: cycle
     score: 58.18175952332537
@@ -465,6 +495,12 @@ entries:
     score: 57.54050312237646
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_prelude_of_might]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
+    score: 57.54050312237646
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_prelude_of_might]
     arcanes: [cascadia_flare]
   - weapon: furis
     mode: cycle
