@@ -89,6 +89,26 @@ for (const lang of ["en", "zh"]) {
         .filter(m => m.not_modeled || m.out_of_scope || (m.unmodeled_effects || []).length).length;
     closePopovers();
 
+    // 6b. THE LIVE-BUG MARK, which is the one admission that is NOT a
+    //     shortfall: the number is right, the game is wrong, and a hotfix
+    //     changes it. Asserted on a PRIMARY weapon because the arcane that
+    //     carries it is a primary one — the Stug above seats secondaries and
+    //     would have made this pass on an empty set.
+    const parcs = arcanePool(0) || [];
+    out.bugArcanes = parcs.filter(a => (a.live_bugs || []).length).map(a => a.id);
+    out.bugClean = parcs.filter(a => !(a.live_bugs || []).length).length;
+    try {
+      openArcanePicker(document.querySelector('#arcane-slots .aslot, #arcane-slots *')
+        || document.body, 0);
+      await sleep(400);
+      const bugs = [...document.querySelectorAll('#arcane-menu .livebug')];
+      out.bugChips = bugs.map(e => e.textContent.trim());
+      out.bugWhy = bugs.length ? bugs[0].title : '';
+      // The mark means something only if MOST cards do not carry it.
+      out.bugCards = document.querySelectorAll('#arcane-menu .unmodeled, #arcane-menu .livebug').length;
+      closePopovers();
+    } catch (e) { out.bugErr = String(e).slice(0, 90); }
+
     // 7. THE BOARD — where weapons are COMPARED, and so the one place a
     //    weapon with unmodelled parts must not look like one without them.
     history.pushState({}, '', '/benchmark'); route(); await sleep(3200);
@@ -145,6 +165,24 @@ for (const lang of ["en", "zh"]) {
     r.arcPartly.length >= 2, r.arcPartly.join(","));
   check(`[${lang}] …and the flag reaches its card`,
     (r.arcChips || []).length >= 1, r.arcErr || (r.arcChips || []).join(" / "));
+  // THE FOURTH KIND. Every other admission on this page says the number is
+  // lower than the card promises; this one says the number is right and rests
+  // on a bug. A player building around 441x is entitled to know which.
+  check(`[${lang}] an arcane that rides a live bug is flagged in the data`,
+    (r.bugArcanes || []).length >= 1, (r.bugArcanes || []).join(","));
+  check(`[${lang}] …and the mark reaches its card`,
+    (r.bugChips || []).length === (r.bugArcanes || []).length,
+    r.bugErr || `${(r.bugChips || []).length} chips for ${(r.bugArcanes || []).length} arcanes`);
+  check(`[${lang}] …in the display language`,
+    (r.bugChips || []).every((l) => cjk.test(l) === (lang === "zh")),
+    JSON.stringify((r.bugChips || [])[0] || "").slice(0, 90));
+  check(`[${lang}] …carrying WHAT the bug is, not just that there is one`,
+    (r.bugWhy || "").length > 60 && cjk.test(r.bugWhy || "") === (lang === "zh"),
+    (r.bugWhy || "").slice(0, 70));
+  // The control: the mark is rare, so it reads as a statement about ONE arcane.
+  check(`[${lang}] …and the arcanes with nothing to admit carry no mark`,
+    (r.bugClean || 0) > (r.bugChips || []).length * 5,
+    `${r.bugClean} clean arcanes`);
   check(`[${lang}] the target card admits what it does not model`,
     r.enemyGap.length >= 0, r.enemyGap.join(" / "));
   check(`[${lang}] the board marks the weapons it does not fully model`,

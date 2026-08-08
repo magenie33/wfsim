@@ -850,6 +850,12 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 /* "Outside the sim" is not a defect — dotted rather than dashed, and no
    warning colour, because the mod is fine and so are we. */
 .unmodeled.oos{border-style:dotted}
+/* A LIVE BUG reads the other way round from the three above: nothing is missing,
+   the number is right, and it is right because the game is wrong. SOLID border
+   — this is a statement about the game, not an apology about the model — and
+   the gold the app reserves for things that are a property of the subject
+   rather than of us. */
+.livebug{display:inline-block;margin-top:2px;padding:0 5px;border:1px solid var(--gold);border-radius:6px;color:var(--gold);font-size:10px;cursor:help}
 /* A CAVEAT, not a warning. The perk works exactly as written — it is the
    interaction that surprises — so it reads as information, in the muted text
    colour, rather than in the ⚠ red the broken-evolution notice uses. */

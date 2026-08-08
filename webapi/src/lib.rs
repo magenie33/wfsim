@@ -943,6 +943,11 @@ pub fn meta_json() -> Value {
             // the engine's own answer and this is it speaking.
             "equip_classes": a.equip_classes,
             "out_of_scope": a.has_out_of_scope(),
+            // …and the FOURTH admission, which is not a shortfall: this is
+            // modelled, it matches the live game, and it is a bug (M37). A
+            // player is reading a number a hotfix can take away, and only the
+            // card can tell them which kind of number it is.
+            "live_bugs": a.live_bugs,
             "slot": slot,
         }));
     }

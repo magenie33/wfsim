@@ -148,7 +148,13 @@ around (decision 2026-07-31).
   script is a gap nobody can act on (2026-08-08: "我需要用户也能看见，因为我也是
   这样排查的"). Each surface has gone silent at least once: an arcane effect the
   loader had no arm for went to `Inert`, which printed NOTHING, so both
-  Deadheads promised a recoil reduction they did not apply. It carries a
+  Deadheads promised a recoil reduction they did not apply. It also covers the FOURTH kind of admission, which is the only one
+  that is not a shortfall: a LIVE BUG (`live_bugs:` on an arcane) says the
+  number is RIGHT, the game is wrong, and a hotfix changes it — Primary
+  Debilitate's split leaks its zero-damage instance's multipliers into the DoT
+  it leaves (MEASUREMENTS M37), so a player building around x441 is told what it
+  rests on (owner, 2026-08-08: "我要建立啊，但是标记可能非本意，我要忠实原本游
+  戏，如果修了那我就改"). It carries a
   NEGATIVE CONTROL — a weapon with nothing to admit shows no banner — because a
   check that only asserts presence passes just as well on a page that shouts
   "not modelled" at everything, and it runs the whole pass in BOTH languages,

@@ -4886,6 +4886,17 @@ const notModeledLines = (o) => {
       tr("this acts on something a weapon-damage simulator has none of — Warframe energy, enemy behaviour, movement — so it would change no number here"),
     )}">◇ ${escHtml(tr("outside the sim"))}</span>`);
   }
+  // A FOURTH ADMISSION, and the only one that is not a shortfall: this IS
+  // modelled, it matches the live game, and DE did not mean it to work this way
+  // (owner, 2026-08-08: "我要建立啊，但是标记可能非本意，我要忠实原本游戏，如果
+  // 修了那我就改"). The other three say the number is lower than the card; this
+  // one says the number is right today and a hotfix takes it away, which is a
+  // different thing for a player to know before building around it.
+  for (const why of o.live_bugs || []) {
+    out.push(`<span class="livebug" title="${escHtml(
+      tr("this matches the live game and is a bug — DE may patch it, and the number here changes when they do") + ": " + tr(why),
+    )}">⚑ ${escHtml(tr("unintended, modelled as it plays"))}</span>`);
+  }
   return out;
 };
 

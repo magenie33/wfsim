@@ -1937,12 +1937,56 @@ fights and only an average means anything; and Puncture is made immune, because
 Weakened is a flat crit-chance buff on the victim that would otherwise set the
 crit rate the test is trying to control.
 
+### Why the explanation is believed, and what it does not settle
+
+It is not a fit to 441 — it PREDICTS things that were not measured, and they
+hold:
+
+- **It predicts the 3-vs-2 asymmetry.** Faction lands at every step of the chain
+  because a status always carries it one layer more than what caused it;
+  Attrition lands only where an instance ROLLS, and the DoT does not roll
+  because it is not a hit. Three and two fall out of one story. Any account
+  where the split "just gets a bonus layer of everything" has to explain why
+  Attrition is not also three.
+- **It predicts the crit ruling**, which is the counter-intuitive one, and it
+  was implemented from the prediction rather than from a measurement.
+- **It is consistent about Cold** (owner, 2026-08-08): the roll picks one of the
+  two components, and "万一roll到是冰，那就是一个带441倍率的冰（没有效果），要是
+  是其他的毒/火/电，那就是个441的dot". A 441x multiplier on a status that has no
+  damage payload is worth nothing — which is what this engine does anyway, since
+  only a DoT type reaches `push_dot`. A theory that has to special-case Cold
+  would be a worse theory.
+- **It explains the wiki's two sentences at once** — "separate damage instance"
+  and "has no damage" are contradictory until the instance's damage is a literal
+  zero.
+
+What it does NOT settle, and what makes this a frame rather than a finished
+rule: **which multipliers ride the carrier**. The owner's reading is that DE
+meant only the bane class to propagate and the per-instance ones leak in by
+accident — and if the carrier is generic, then every free-standing final
+multiplier on the parent instance should double-dip, not just Attrition. On the
+Felarx the next candidate is **Condition Overload**, which M36 established is
+its own free multiplier on this weapon: if a Debilitate DoT scales with CO²
+rather than CO¹, the carrier is generic and this entry is one instance of a
+larger rule. That is one measurement — hold status count fixed, compare the DoT
+with and without CO — and it is the most valuable thing left here.
+
+The same shape showed up in M33's Cyte-09 chain (owner: "昨天的cyte-09的resupply
+好像也有类似的情况，感觉有个东西被层层传递了"). That is what makes "a carrier
+passed down the chain" worth treating as the model rather than as a story about
+one arcane.
+
 ### What is still open
 
 - **This is a bug, so it can be patched.** Nothing here is a designed
   interaction, and a DE hotfix that stops the zero from carrying its multipliers
   removes both extra layers at once. That is a reason to keep it in one place
-  (the split's `InstanceScale`) rather than to generalise it.
+  (the split's `InstanceScale`) rather than to generalise it — and the reason
+  the arcane's card SAYS SO: `live_bugs:` on `primary_debilitate.yaml` is a
+  fourth kind of admission, the only one that is not a shortfall (owner: "我要建
+  立啊，但是标记可能非本意，我要忠实原本游戏，如果修了那我就改"). The other
+  three tell a player the number is lower than the card promises; this one tells
+  them it is right today and rests on something DE can take away.
 - **The lingering FIELD's ticks** (Torid's cloud) roll their own crit tier, so by
   the ordinary argument they are instances and should roll Attrition. Left at
   1.0: no weapon in the roster carries both, and this measurement does not reach

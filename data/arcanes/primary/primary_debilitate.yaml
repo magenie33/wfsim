@@ -5,6 +5,14 @@ max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SplitStatusProcsOnStackedStatusHit
 description: "If an enemy has 10 stacks of a combined Status Effect, inflicting the same Status Effect again has a X% chance to inflict one of the base Status Effects it is composed of."
 
+# WHAT THIS DOES IN THE LIVE GAME THAT DE DID NOT MEAN IT TO. Rendered on the
+# card: the sim computes it, it matches the game, and a hotfix takes it away —
+# so a player reading the number is entitled to know which of those it is
+# (owner, 2026-08-08: "我要建立啊，但是标记可能非本意，我要忠实原本游戏，如果修
+# 了那我就改"). The mechanism is in MEASUREMENTS M37; this is the sentence.
+live_bugs:
+  - "the split fires a damage instance of ZERO, and the zero still takes that instance's own multipliers — when the DoT replaces it with the parent hit's damage, they stay behind. Faction bonuses were meant to carry down the chain and do; a per-instance bonus like Devouring Attrition's +2000% was not, and does anyway (x21 twice = x441). Modelled as it behaves today; a fix removes it"
+
 effects:
   # Splits a COMBINED element's proc into ONE of its two components (Corrosive
   # -> Toxin or Electricity) once the target already holds 10 stacks of it.
