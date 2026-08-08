@@ -1960,21 +1960,43 @@ hold:
   and "has no damage" are contradictory until the instance's damage is a literal
   zero.
 
-What it does NOT settle, and what makes this a frame rather than a finished
-rule: **which multipliers ride the carrier**. The owner's reading is that DE
-meant only the bane class to propagate and the per-instance ones leak in by
-accident — and if the carrier is generic, then every free-standing final
-multiplier on the parent instance should double-dip, not just Attrition. On the
-Felarx the next candidate is **Condition Overload**, which M36 established is
-its own free multiplier on this weapon: if a Debilitate DoT scales with CO²
-rather than CO¹, the carrier is generic and this entry is one instance of a
-larger rule. That is one measurement — hold status count fixed, compare the DoT
-with and without CO — and it is the most valuable thing left here.
+**THE CARRIER IS NOT GENERALISED, and that is a decision rather than an
+omission** (owner, 2026-08-08: "我确信目前就这个21是非本意的，其他的还是按照之前
+的建模来做"). The obvious next question was whether every free-standing final
+multiplier double-dips — **Condition Overload** being the candidate M36 already
+established is its own bracket on this weapon. It is not asked, and CO stays
+CO¹: the owner plays this weapon and the 21 is the only term he has seen behave
+this way. Should that change, the measurement is one run — hold the status count
+fixed, compare the DoT with and without CO — and the term to add sits next to
+`attrition` in the same struct.
 
 The same shape showed up in M33's Cyte-09 chain (owner: "昨天的cyte-09的resupply
 好像也有类似的情况，感觉有个东西被层层传递了"). That is what makes "a carrier
 passed down the chain" worth treating as the model rather than as a story about
 one arcane.
+
+### Reproduced on the shipping site
+
+A Felarx Incarnon cycle, eight shotgun mods making Corrosive
+(`primed_charged_shell` + `shell_shock` + `toxic_barrage` + `contagious_spread`,
+with `shotgun_elementalist` alongside), Primary Debilitate at rank 5, against a
+level-9999 Steel Path eximus Corrupted Heavy Gunner, 60 runs of 30s through
+`/api/simulate` in the shipping wasm build:
+
+| build | direct | split DoT (Toxin+Electricity) |
+|---|---|---|
+| Debilitate, no Attrition | 1.28 M | 0.18 M |
+| Debilitate + Devastating Attrition | 7.48 M | **7.86 M** |
+
+The split's DoT grows **44x** while the direct damage grows 6.2x — the gap is
+the second layer — and it ends up **larger than every direct hit in the fight
+combined**, which is the shape of the owner's "dot 跳一下，爆破使就没了".
+
+THE TARGET HAS TO SURVIVE TO 10 STACKS. On a level-150 gunner the same build
+shows NO split at all with Attrition equipped and a healthy one without it: the
+21x kills it before the tenth Corrosive stack lands, and the arcane's condition
+is never met. That is the model working, not failing, but it means the
+interaction is invisible in any scenario where the weapon simply wins.
 
 ### What is still open
 
@@ -1991,9 +2013,9 @@ one arcane.
   the ordinary argument they are instances and should roll Attrition. Left at
   1.0: no weapon in the roster carries both, and this measurement does not reach
   it.
-- **元素师** — the owner lists it among what the final DoT eats, alongside
-  elemental mods. Elemental mods already reach it (the split picks up its own
-  element's bracket); which arcane or mod 元素师 is has not been pinned, so
-  nothing was changed for it.
+- ~~**元素师**~~ — CLOSED. It is `shotgun_elementalist` (霰弹枪元素师), an
+  ordinary elemental-damage mod, and it already reaches the split's DoT the way
+  every elemental mod does: the split runs the normal proc path and picks up its
+  own element's bracket. Nothing to change.
 - **Whether an ordinary status DoT double-dips faction** remains M33's question.
   This entry changes the Attrition term only.
