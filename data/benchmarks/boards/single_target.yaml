@@ -876,12 +876,6 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: laetum
     mode: cycle
-    score: 27.620123367232967
-    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, pistol_elementalist, magnetic_might, scorch]
-    evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
-    arcanes: [secondary_encumber]
-  - weapon: laetum
-    mode: cycle
     score: 25.502063016518267
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, primed_heated_charge, pathogen_rounds, frostbite]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_feather_of_justice, laetum_caput_mortuum, laetum_devouring_attrition]
