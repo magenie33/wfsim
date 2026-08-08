@@ -11,12 +11,25 @@ description: "Increase Base Critical Chance by +10%. Increase Base Status Chance
 selection: choose_one
 
 effects:
-  # PERCENTAGE POINTS on the BASE, which is the layer mods multiply - the same
-  # reading as the Boar's Survivor's Edge. 20% -> 30% on both stats, and on both
-  # forms, since this weapon's two forms share their crit and status numbers.
-  - kind: flat_base_crit_chance
+  # AFTER MODS, as a flat value. VERBATIM (wiki): "Bonuses are added after mods
+  # as a flat value" — so NOT the base layer mods multiply.
+  #
+  # This file argued the opposite for weeks, and the argument named its own
+  # mistake: "the same reading as the Boar's Survivor's Edge". It is the same
+  # PERK NAME and a different LAYER. The Boar's card reads "Increase Base
+  # Critical Chance by +10%" and this one reads "+10% Critical Chance" with the
+  # after-mods note under it. THE WORD `Base` ON THE CARD IS THE LAYER, and a
+  # shared name is not evidence of a shared bracket (fixed 2026-08-08, found
+  # while calibrating the Felarx, whose two tier-4 perks had the same error).
+  #
+  # It matters most exactly where this perk is wanted: on a status build the
+  # base reading pays several times what the game pays.
+  - kind: flat_crit_chance_after_mods
     value: 0.10
-  - kind: flat_base_status_chance
+  # NO multishot division here — the Felarx divides its status half by a base
+  # multishot of 4, and the Phenmor fires one projectile, so the listed number
+  # IS the per-pellet number.
+  - kind: flat_status_chance_after_mods
     value: 0.10
 
 source:

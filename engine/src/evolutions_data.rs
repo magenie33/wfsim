@@ -1836,3 +1836,82 @@ mod furis_co_split_tests {
         );
     }
 }
+#[cfg(test)]
+mod after_mods_layer_tests {
+    use super::*;
+
+    /// WHICH PERKS LAND AFTER THE MODS, pinned — because the wording that
+    /// distinguishes them is one word long and it has been lost twice.
+    ///
+    /// A card that reads "Increase BASE Critical Chance by +10%" is a base-stat
+    /// bonus and the crit mods multiply it. A card that reads "+10% Critical
+    /// Chance", with "Bonuses are added after mods as a flat value" under it, is
+    /// not — it lands on the final number and is worth several times less on a
+    /// modded build. Same stat, same size, same perk NAME sometimes, different
+    /// bracket.
+    ///
+    /// It has been got wrong in both directions of authorship: the bulk intake
+    /// normalised the Felarx's two tier-4 cards into the "Increase Base…"
+    /// phrasing that DE does not use for them, and a HAND-WRITTEN file argued
+    /// the Phenmor's Survivor's Edge onto the base layer because the Boar's
+    /// perk of the same name lives there. So this is a list, and a new member
+    /// has to be argued for.
+    #[test]
+    fn the_after_mods_perks_are_the_ones_we_meant() {
+        let mut found: Vec<String> = Vec::new();
+        for def in pool() {
+            for e in &def.effects {
+                let what = match e {
+                    EvoEffect::PostModCritChance(v) => format!("crit {v:+}"),
+                    EvoEffect::PostModStatusChance(v) => format!("status {v:+}"),
+                    _ => continue,
+                };
+                found.push(format!("{} :: {what}", def.id));
+            }
+        }
+        found.sort();
+        let expected = [
+            // Its status half is DIVIDED by the base multishot of 4 — verbatim
+            // on the page, and right for a per-pellet model: 10% / 4.
+            "felarx_brutal_edge :: crit +0.1",
+            "felarx_brutal_edge :: status +0.025",
+            "felarx_racking_wrath :: crit -0.1",
+            "felarx_racking_wrath :: status +0.05",
+            // The Laetum's, already on the right layer when it was written by
+            // hand — the perk that gave the engine these two kinds.
+            "laetum_elemental_excess :: crit -0.1",
+            "laetum_elemental_excess :: status +0.2",
+            // One projectile, so no division: the listed number is per pellet.
+            "onos_elemental_excess :: crit -0.1",
+            "onos_elemental_excess :: status +0.2",
+            "phenmor_elemental_excess :: crit -0.1",
+            "phenmor_elemental_excess :: status +0.2",
+            "phenmor_survivors_edge :: crit +0.1",
+            "phenmor_survivors_edge :: status +0.1",
+        ];
+        assert_eq!(found, expected, "the after-mods list moved");
+    }
+
+    /// A POST-MOD BONUS IS WORTH LESS THAN THE SAME NUMBER OF BASE POINTS, and
+    /// the gap is the whole reason the layer matters.
+    #[test]
+    fn the_two_layers_are_not_worth_the_same() {
+        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        let after = ["felarx_brutal_edge".to_string()];
+        let a: Vec<&str> = after.iter().map(|s| s.as_str()).collect();
+        // A crit mod, so the base layer has something to be multiplied by.
+        let pool = crate::mods_data::class_pool("shotgun");
+        let crit = pool.iter().find(|m| m.id == "blunderbuss").or_else(
+            || pool.iter().find(|m| m.id == "primed_ravage")).expect("a crit mod");
+        let plain = resolve(&WeaponBase::from_data("felarx", true, &[]), &[crit],
+                            StackPolicy::AssumedMax);
+        let post = resolve(&WeaponBase::from_data("felarx", true, &a), &[crit],
+                           StackPolicy::AssumedMax);
+        // +10 points, flat, whatever the mod did.
+        assert!(
+            ((post.crit_chance - plain.crit_chance) - 0.10).abs() < 1e-9,
+            "flat after mods: {} -> {}", plain.crit_chance, post.crit_chance
+        );
+    }
+}
+

@@ -2,19 +2,28 @@ id: felarx_brutal_edge
 name: Brutal Edge
 weapon: felarx
 tier: 4
-description: "Increase Base Critical Chance by +10%. Increase Base Status Chance by +10%."
+description: "+10% Critical Chance +10% Status Chance"
 # THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
 # of them carry the same ladder; a value that differs between them is
 # printed per variant by the wiki and transcribed per variant here.
 selection: choose_one
 
 effects:
-  # from: "Increase Base Critical Chance by +10%"
-  - kind: flat_base_crit_chance
-    value: 0.1
-  # from: "Increase Base Status Chance by +10%"
-  - kind: flat_base_status_chance
-    value: 0.1
+  # VERBATIM (wiki): "Bonuses are added after mods as a flat value." So NOT the
+  # base-stat layer Commodore's Fortune occupies — these land on the FINAL
+  # modded numbers, which is worth far less on a modded build and is what the
+  # card's wording says: it reads "+10% Critical Chance", not "Increase BASE
+  # Critical Chance". The word `Base` is the layer, and this file said it where
+  # the card does not (fixed 2026-08-08).
+  - kind: flat_crit_chance_after_mods
+    value: 0.10
+  # …AND THE STATUS HALF IS DIVIDED BY BASE MULTISHOT, which the crit half is
+  # not. VERBATIM: "Status Chance bonus is divided by the base multishot of 4,
+  # for only +2.5% Status Chance per pellet." Our status chance IS per pellet
+  # (MECHANICS "Per-projectile roll"), so the per-pellet number is the one that
+  # belongs here — 10% / 4.
+  - kind: flat_status_chance_after_mods
+    value: 0.025
 
 source:
   url: https://wiki.warframe.com/w/Felarx

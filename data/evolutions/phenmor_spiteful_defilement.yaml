@@ -15,7 +15,10 @@ selection: choose_one
 
 effects:
   # NOT LOADED: no effect kind exists for a crit multiplier gated on the
-  # TARGET's status count. The engine counts status TYPES already - Condition
+  # TARGET's status count. WHEN ONE IS WRITTEN, the layer is already known —
+  # "Bonus is added after mods as a flat value" — so it belongs beside
+  # `flat_crit_chance_after_mods`, not in the base-stat layer. Recorded here so
+  # that is not re-derived from the card's wording later. The engine counts status TYPES already - Condition
   # Overload's bucket is exactly that number - so the counter is there and the
   # conditional bracket is not; this resolves to `EvoEffect::Inert` and the UI
   # says so.

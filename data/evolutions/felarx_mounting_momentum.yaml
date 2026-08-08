@@ -29,13 +29,20 @@ effects:
   - kind: stacking_fire_rate_per_shell_reloaded
     per_stack: 0.10
     max_stacks: 99
-  # NOT MODELLED — THE INCARNON ROUTE, spelled out by the owner (2026-08-08).
-  # A cycle grants exactly the shells that were MISSING when the form was
-  # entered, split 1 on the way in and the rest on the way out: enter a 13-round
-  # magazine at 10/13 and it is +1 then +2. Enter it FULL and it is nothing at
-  # all — the +1 is the first of the missing, not a fee for transforming. The
-  # magazine also comes back full without a reload, so the route gains stacks
-  # without ever emptying.
+  # NOT MODELLED — THE INCARNON ROUTE, and it is not a second rule. Entering the
+  # form IS A RELOAD: the transmute animation is the weapon's reload time, which
+  # is how you can tell (owner, 2026-08-08), and the whole reload runs — one
+  # shell as you go in, the rest as you come out. So the only thing that ever
+  # grants a stack is a shell being loaded, and every "special case" falls out
+  # of that:
+  #
+  #   · at 10/13 the cycle is +1 then +2, because three shells were missing;
+  #   · at 13/13 it is nothing at all, because none were;
+  #   · the magazine comes back full without a separate reload, which is why the
+  #     route gains stacks without ever emptying.
+  #
+  # The +1 was never a fee for transforming — it is the first shell of the
+  # reload, and it looked like a rule of its own until the reload was named.
   #
   # This sim transmutes on a gauge rather than on a plan, so it earns the reload
   # route only.
