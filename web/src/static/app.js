@@ -5249,7 +5249,25 @@ function gainScenario() {
   // screen.
   const p = ps.find((x) => presetId(x) === gainPrefs.scenario)
     || ps.find((x) => presetId(x) === activeScenario) || ps[0];
-  const st = p ? { ...sim, ...p.state } : { ...sim };
+  // THE ACTIVE FIGHT IS THE ONE ON SCREEN; ANY OTHER IS A STORED DOCUMENT.
+  //
+  // The picker can aim this scan at a scenario you are not in, and a benchmark
+  // yaml names only what it has an opinion about — so spreading one over the
+  // live `sim` handed it every field it does not mention. Pick "single_target"
+  // here while your own fight has Roar running and the quick calc ranked every
+  // slot under the ruler's enemy AND your Roar. A ruler is the same fight for
+  // everyone or it is not a ruler. Same rule `applyScenario` already states,
+  // and the same failure the Eximus box had (owner, 2026-08-07: 不是完美独立的吗).
+  //
+  // The ACTIVE one still reads BOTH — `sim` for the knob you just turned, which
+  // has to reach this scan before the auto-save round-trips, and its stored
+  // state over the top, which is what a write straight into the preset means.
+  // That pair is what `check_gain_freshness` is about, and it is untouched: the
+  // change here is only that a scenario you are NOT in stops inheriting the one
+  // you are.
+  const st = p && presetId(p) === activeScenario
+    ? { ...sim, ...p.state }
+    : { ...defaultScenario(), ...(p ? p.state : {}) };
   // TEN RUNS FOR EVERYTHING, one pass (user, 2026-08-02). It was one run over
   // the field and then the leaders again — two numbers with two precisions,
   // and the cheap one printed a minus sign in front of mods worth +40%

@@ -105,6 +105,33 @@ for (const lang of ["en", "zh"]) {
     out.deadIsHelminth = cards().some((c, i) =>
       c.classList.contains('dead') && (META.abilities || [])[i].id === 'roar_helminth');
 
+    // 4b. THE QUICK CALC MEASURES UNDER THEM. It reads the scenario, and a
+    //     Warframe buff is part of the scenario (owner, 2026-08-08) — so this
+    //     needs no plumbing of its own and that is exactly why it is asserted:
+    //     gainKey is DERIVED from the fight the scan will run, so a field
+    //     nobody had invented when it was written still reaches it.
+    // …after the scenario's own auto-save, which is what the quick calc
+    // resolves for the ACTIVE preset. Waiting for it here is not papering over
+    // a lag: the scan is keyed on the fight it will run, and the fight is not
+    // saved yet at the instant a checkbox changes.
+    await sleep(1500);
+    out.gainScenario = JSON.parse(JSON.stringify(gainScenario().scenario.abilities || []));
+    out.gainStrength = gainScenario().scenario.ability_strength;
+    const keyWith = gainKey();
+    await tick('roar', false); await tick('roar_helminth', false);
+    await sleep(1500);
+    out.gainKeyMoved = gainKey() !== keyWith;
+    out.gainScenarioOff = (gainScenario().scenario.abilities || []).length;
+    await tick('roar', true);
+    // …and a RULER does not inherit them. A benchmark yaml names only what it
+    // has an opinion about, so a ruler spread over the live fight would rank
+    // every slot under the ruler's enemy AND your Roar.
+    const ruler = (scenarioList().find(x => x.builtin) || {});
+    const prev = gainPrefs.scenario;
+    gainPrefs.scenario = presetId(ruler);
+    out.rulerGain = (gainScenario().scenario.abilities || []).length;
+    gainPrefs.scenario = prev;
+
     // 5. THE OPTIMIZER SHOWS THE SAME FIGHT, read-only.
     history.pushState({}, '', '/weapons/Torid/optimize'); route(); await sleep(3000);
     const oc = [...document.querySelectorAll('#opt-wfbuffs .wfb')];
@@ -171,8 +198,25 @@ for (const lang of ["en", "zh"]) {
     r.deadCards === 1 && r.deadIsHelminth === true && r.deadWhy.length > 6
       && cjk.test(r.deadWhy) === (lang === "zh"),
     `${r.deadCards} superseded · ${r.deadWhy.slice(0, 50)}`);
+  // THE QUICK CALC READS THE SCENARIO, and this is part of the scenario.
+  // BOTH PICKS TRAVEL, and that is right: settling a family is the ENGINE's job
+  // (`abilities_data::resolve`), so the payload carries what you ticked and the
+  // sim carries what runs. A page that filtered here would be a second
+  // implementation of the rule.
+  check(`[${lang}] the quick calc measures under the buffs`,
+    r.gainScenario.length === 2
+      && r.gainScenario.every((a) => a.id.startsWith("roar") && a.secs === null)
+      && r.gainStrength === 1,
+    JSON.stringify(r.gainScenario));
+  check(`[${lang}] …and its cache key follows them`,
+    r.gainKeyMoved === true && r.gainScenarioOff === 0,
+    `moved=${r.gainKeyMoved}, off=${r.gainScenarioOff}`);
+  // A RULER IS THE SAME FIGHT FOR EVERYONE OR IT IS NOT A RULER.
+  check(`[${lang}] …but an official ruler inherits none of them`,
+    r.rulerGain === 0, `${r.rulerGain} on the ruler`);
+  // ONE ticked: the quick-calc pass above unticked the pair and put Roar back.
   check(`[${lang}] the optimizer shows the same buffs`,
-    r.optCards === r.catalogue && r.optChecked === 2,
+    r.optCards === r.catalogue && r.optChecked === 1,
     `${r.optCards} cards, ${r.optChecked} ticked`);
   check(`[${lang}] …and cannot edit them`, r.optEditable === 0,
     `${r.optEditable} editable`);
