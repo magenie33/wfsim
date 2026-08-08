@@ -9,16 +9,12 @@ description: "Increase Base Status Chance by +11%. Increase Base Status Chance b
 selection: choose_one
 
 effects:
-  # from: "Increase Base Status Chance by +11%"
-  - kind: flat_base_status_chance
-    value: 0.11
-  # from: "Increase Base Status Chance by +110%"
-  - kind: flat_base_status_chance
-    value: 1.1
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "for Incarnon Form"
-  - kind: unmodelled_for_incarnon_form
+  # BOTH FORMS, one clause each. The wiki prints the base form's number and
+  # the Incarnon form's as two sentences, and reading them as two separate
+  # bonuses gave the base form both (fixed 2026-08-08).
+  - kind: flat_base_status_chance_by_form
+    base: 0.11
+    incarnon: 1.1
 
 source:
   url: https://wiki.warframe.com/w/Strun_Incarnon_Genesis

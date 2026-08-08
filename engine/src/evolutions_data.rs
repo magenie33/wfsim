@@ -51,6 +51,12 @@ enum EvoEffect {
     FlatBaseDamage(f64),
     /// Adds into the BASE crit chance (crit mods multiply the new base).
     FlatBaseCritChance(f64),
+    /// A flat addition to BASE multishot — the Braton family's Munitions Grit
+    /// is +0.20, and its tier-mate's +60% multishot has nothing to act on
+    /// without it. The yaml said so in a comment while loading inert
+    /// ("with no multishot source the +60% applies to nothing"), which is the
+    /// disclosure working and not a reason to leave it.
+    FlatBaseMultishot(f64),
     /// Adds into the BASE status chance — the same base-stat layer, so status
     /// mods multiply the new base (Torid's Survivor's Edge and Elemental
     /// Balance both say "Increase Base Status Chance"). NOT the post-mod flat
@@ -226,6 +232,17 @@ enum EvoEffect {
     /// 2026-08-04).
     UnlocksForm(String),
     Inert(String),
+    /// A clause that QUALIFIES a neighbouring effect rather than being one —
+    /// "Stacks up to 4x" on a card whose stacking bonus is the effect above it.
+    ///
+    /// It is not a gap and it must not be counted as one. All 51 of these sit
+    /// in a perk that ALREADY declares a real gap (the conditional bonus they
+    /// cap is itself inert), so counting them said "partly modelled" twice for
+    /// one thing and put a third of the roster's inert total on a fragment of
+    /// a sentence. `a_qualifier_never_stands_alone` is what keeps that true:
+    /// the day one appears beside a working effect, it IS a gap — the cap goes
+    /// unenforced — and the test fails so somebody looks.
+    Qualifier(String),
 }
 
 /// A parsed Incarnon evolution.
@@ -381,6 +398,7 @@ impl EvolutionDef {
                 | EvoEffect::AmmoMaxSet(_)
                 | EvoEffect::FlatBaseDamage(_)
                 | EvoEffect::FlatBaseCritChance(_)
+                | EvoEffect::FlatBaseMultishot(_)
                 | EvoEffect::FlatBaseStatusChance(_)
                 | EvoEffect::FlatBaseMagazine(_)
                 | EvoEffect::FieldDurationOnEmptyReload(_)
@@ -398,7 +416,9 @@ impl EvolutionDef {
                 EvoEffect::ChanceDamageOnNoncrit { .. } => None,
                 // The transformation grants no CARD: what it unlocks is a
                 // FORM, whose own weapon entry carries every stat it brings.
-                EvoEffect::UnlocksForm(_) | EvoEffect::Inert(_) => None,
+                EvoEffect::UnlocksForm(_)
+                | EvoEffect::Inert(_)
+                | EvoEffect::Qualifier(_) => None,
             })
             .collect()
     }
@@ -463,6 +483,9 @@ impl EvolutionDef {
                 }
                 EvoEffect::FlatBaseCritChance(v) => {
                     format!("+{:.0}% BASE crit chance (crit mods multiply it)", v * 100.0)
+                }
+                EvoEffect::FlatBaseMultishot(v) => {
+                    format!("+{v:.2} BASE multishot (multishot mods multiply it)")
                 }
                 EvoEffect::FlatBaseStatusChanceByForm { base, incarnon } => format!(
                     "+{:.0}% BASE status chance ({:.0}% in Incarnon Form)",
@@ -569,6 +592,12 @@ impl EvolutionDef {
                 EvoEffect::Inert(what) => {
                     format!("{} (no single-target DPS effect)", what.replace('_', " "))
                 }
+                // Said as what it is — a cap on the line above, not a line of
+                // its own claiming the perk does less than it does.
+                EvoEffect::Qualifier(what) => {
+                    format!("{} (a cap on the bonus above)", what
+                        .trim_start_matches("unmodelled_").replace('_', " "))
+                }
             })
             .collect()
     }
@@ -605,6 +634,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
     Some(match kind {
         "flat_base_damage" => EvoEffect::FlatBaseDamage(f(v, "value").unwrap_or(0.0)),
         "flat_base_crit_chance" => EvoEffect::FlatBaseCritChance(f(v, "value").unwrap_or(0.0)),
+        "flat_base_multishot" => EvoEffect::FlatBaseMultishot(f(v, "value").unwrap_or(0.0)),
         "flat_base_status_chance" => {
             EvoEffect::FlatBaseStatusChance(f(v, "value").unwrap_or(0.0))
         }
@@ -736,6 +766,11 @@ fn effect(v: &Value) -> Option<EvoEffect> {
                 .unwrap_or_default()
                 .to_string(),
         ),
+        // A QUALIFIER, not an effect: "Stacks up to 4x" caps the bonus above
+        // it. See `EvoEffect::Qualifier`.
+        other if other.starts_with("unmodelled_stacks_up_to") => {
+            EvoEffect::Qualifier(other.to_string())
+        }
         other => EvoEffect::Inert(other.to_string()),
     })
 }
@@ -798,6 +833,12 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         f.base_crit_chance += v;
                     }
                 }
+                // BASE multishot, so the multishot MODS multiply it — the
+                // same bracket a weapon's own innate multishot sits in. Not
+                // pushed into the radial or the field: an explosion fires per
+                // projectile already (`radius_takes_multishot`), so adding it
+                // there would count the same pellets twice.
+                EvoEffect::FlatBaseMultishot(v) => base.base_multishot += v,
                 EvoEffect::FlatBaseStatusChance(v) => {
                     base.base_status_chance += v;
                     if let Some(r) = base.radial.as_mut() {
@@ -955,7 +996,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         initial_stacks: 0,
                     });
                 }
-                EvoEffect::Inert(_) => {}
+                EvoEffect::Inert(_) | EvoEffect::Qualifier(_) => {}
             }
         }
     }
@@ -1408,16 +1449,12 @@ use crate::loadout::WeaponBase;
             // a PUNCH THROUGH trigger needs a second body behind the first.
             "braton_daring_reverie :: flat_base_damage_while_channeling",
             "braton_gunsmoke_pick_up :: ammo_restore_on_punch_through",
-            "braton_munitions_grit :: flat_base_multishot",
             "braton_prime_daring_reverie :: flat_base_damage_while_channeling",
             "braton_prime_gunsmoke_pick_up :: ammo_restore_on_punch_through",
-            "braton_prime_munitions_grit :: flat_base_multishot",
             "braton_vandal_daring_reverie :: flat_base_damage_while_channeling",
             "braton_vandal_gunsmoke_pick_up :: ammo_restore_on_punch_through",
-            "braton_vandal_munitions_grit :: flat_base_multishot",
             "mk1_braton_daring_reverie :: flat_base_damage_while_channeling",
             "mk1_braton_gunsmoke_pick_up :: ammo_restore_on_punch_through",
-            "mk1_braton_munitions_grit :: flat_base_multishot",
             // THE LATRON FAMILY (2026-08-08) — three weapons, four kinds, and
             // two of them are near-misses rather than absences.
             //
@@ -1650,5 +1687,68 @@ mod furis_co_split_tests {
         assert!(!excludes("mk1_furis_haven_foray"));
         assert!(!excludes("mk1_furis_stormburst"));
     }
-}
 
+    /// A QUALIFIER NEVER STANDS ALONE, which is the whole reason it is not
+    /// counted as a gap.
+    ///
+    /// "Stacks up to 4x" is a cap on the bonus above it, and in every perk
+    /// that carries one, that bonus is ITSELF inert — so counting the cap said
+    /// "partly modelled" twice for one thing, and put a third of the roster's
+    /// inert total on a fragment of a sentence.
+    ///
+    /// The day one appears beside a WORKING effect the argument stops holding:
+    /// the bonus applies and its cap does not, which is a real gap and has to
+    /// be counted again. That is what this fails on.
+    #[test]
+    fn a_qualifier_never_stands_alone() {
+        let mut alone = Vec::new();
+        let mut seen = 0;
+        for def in pool() {
+            let quals = def
+                .effects
+                .iter()
+                .filter(|e| matches!(e, EvoEffect::Qualifier(_)))
+                .count();
+            if quals == 0 {
+                continue;
+            }
+            seen += quals;
+            let gaps = def.unmodeled_effects().len();
+            if gaps == 0 {
+                alone.push(def.id.clone());
+            }
+        }
+        assert!(seen > 20, "only {seen} qualifiers — did the loader stop reading them?");
+        assert!(
+            alone.is_empty(),
+            "a qualifier with nothing to qualify — the cap is real and uncounted: {alone:?}"
+        );
+    }
+
+    /// THE RATCHET. What the app does not model may go DOWN and not up.
+    ///
+    /// The disclosure is derived, so the count is honest without anyone
+    /// maintaining it — and honest is not the same as improving. A tag that
+    /// nobody is obliged to remove becomes a way of feeling finished
+    /// (owner, 2026-08-08, asking whether this transparency is good for the
+    /// work as well as for the reader).
+    ///
+    /// Lower this number when a kind gets implemented; that is the only edit
+    /// this line should ever see.
+    #[test]
+    fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
+        const CEILING: usize = 254;
+        let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
+        assert!(
+            n <= CEILING,
+            "{n} inert evolution effects, ceiling {CEILING} — a new gap needs \
+             either an implementation or a deliberate raise of this line"
+        );
+        // …and it is not allowed to drift far BELOW without the ceiling
+        // following it down, or the ratchet stops ratcheting.
+        assert!(
+            n + 25 >= CEILING,
+            "{n} inert effects against a ceiling of {CEILING}: lower the ceiling"
+        );
+    }
+}

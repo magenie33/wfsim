@@ -72,7 +72,15 @@ def evolutions():
         # An effect the engine has no arm for is written as `kind:
         # unmodelled_<the clause's own words>` by the intake, or as a kind the
         # loader files as Inert. Both print "not modelled yet" on the tile.
-        inert = re.findall(r"^\s*- kind: (unmodeled_\w+|unmodelled_\w+)", t, re.M)
+        #
+        # A QUALIFIER IS NOT A GAP. "Stacks up to 4x" caps the bonus above it,
+        # and in every perk carrying one that bonus is itself inert — so
+        # counting the cap said "partly modelled" twice for one thing and put a
+        # fifth of the total on a fragment of a sentence. The engine draws the
+        # same line (`EvoEffect::Qualifier`); this keeps the report's number
+        # and the engine's the same number.
+        inert = [k for k in re.findall(r"^\s*- kind: (unmodeled_\w+|unmodelled_\w+)", t, re.M)
+                 if not k.startswith("unmodelled_stacks_up_to")]
         out.setdefault(w.group(1), []).append(
             (p.stem, tier.group(1) if tier else "?", inert))
     return out
@@ -163,8 +171,18 @@ def main():
     print("  %d bulk-intake, %d hand-written"
           % (sum(1 for r in rows if r["bulk"] == "bulk"),
              sum(1 for r in rows if r["bulk"] == "hand")))
-    print("  %d evolution effects load INERT (the perk shows, and adds nothing)"
+    # THE RATCHET. This number is derived, so it is honest without anyone
+    # maintaining it — and honest is not the same as improving. The engine's
+    # `the_number_of_unmodelled_evolution_effects_only_goes_down` is what
+    # enforces it; this prints it so a session can see where it stands.
+    #
+    # It counts what the YAML declares. The ENGINE's count is higher, because
+    # an effect can also go inert with a kind the loader knows and a shape it
+    # cannot use — 39 of those today, and they are the cheap ones to fix.
+    print("  %d evolution effects load INERT by declaration (the perk shows, and adds nothing)"
           % sum(r["inert"] for r in rows))
+    print("     …plus the ones the loader drops for a shape it cannot use — see"
+          " `cargo test -p wfsim-engine the_number_of_unmodelled`, ceiling 254")
     print("  %d weapons carry at least one `unmodeled:` line"
           % sum(1 for r in rows if r["gaps"]))
     named = sum(int(r["zh_perks"].split("/")[0]) for r in rows)

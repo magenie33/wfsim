@@ -9,23 +9,15 @@ description: "Increase Base Critical Chance by +8%. Increase Base Status Chance 
 selection: choose_one
 
 effects:
+  # BOTH FORMS, one clause each. The wiki prints the base form's number and
+  # the Incarnon form's as two sentences, and reading them as two separate
+  # bonuses gave the base form both (fixed 2026-08-08).
+  - kind: flat_base_status_chance_by_form
+    base: 0.08
+    incarnon: 0.08
   # from: "Increase Base Critical Chance by +8%"
   - kind: flat_base_crit_chance
     value: 0.08
-  # from: "Increase Base Status Chance by +8%"
-  - kind: flat_base_status_chance
-    value: 0.08
-  # from: "Increase Base Status Chance by +8%"
-  - kind: flat_base_status_chance
-    value: 0.08
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "per projectile"
-  - kind: unmodelled_per_projectile
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "for Incarnon Form"
-  - kind: unmodelled_for_incarnon_form
 
 source:
   url: https://wiki.warframe.com/w/Ballistica_Incarnon_Genesis
