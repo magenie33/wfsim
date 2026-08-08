@@ -10,6 +10,18 @@
 benchmark: single_target
 source: submissions
 entries:
+  - weapon: ballistica
+    mode: cycle
+    score: 11.429492559020014
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_evo1_incarnon_form, ballistica_headcracker, ballistica_rapid_reinforcement, ballistica_critical_parallel]
+    arcanes: [secondary_enervate]
+  - weapon: ballistica
+    mode: cycle
+    score: 5.005767160755129
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, frostbite, pistol_pestilence, heated_charge]
+    evolutions: [ballistica_evo1_incarnon_form, ballistica_headcracker, ballistica_rapid_reinforcement, ballistica_critical_parallel]
+    arcanes: [secondary_enervate]
   - weapon: boar
     mode: cycle
     score: 6.613811403808729
@@ -1487,6 +1499,12 @@ entries:
     score: 0.1855962681283809
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, containment_breach, hollowed_bullets, parallax_scope, primed_combustion_rounds, primed_venomous_clip]
     arcanes: [primary_bulwark, secondary_enervate]
+  - weapon: lex_prime
+    mode: cycle
+    score: 7.660370854864761
+    mods: [hemorrhage, galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence]
+    evolutions: [lex_prime_evo1_incarnon_form, lex_prime_hoplite_virtue, lex_prime_extended_volley, lex_prime_critical_parallel]
+    arcanes: [secondary_merciless]
   - weapon: ocucor
     mode: base
     score: 6.882827891662094
