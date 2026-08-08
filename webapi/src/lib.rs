@@ -1479,6 +1479,42 @@ fn enumerate_buffs(
                     permanent: false,
                 uncapped: false,
                 }),
+                // SENTIENT SURGE reads the Ocucor's TENDRILS, and the count is
+                // a buff like any other: gained on a kill, cleared by a
+                // magazine event, capped by the weapon. Its cap comes from the
+                // WEAPON (`tendrils.max`) — the mod states only the rate, so a
+                // card that carried its own maximum would be free to disagree
+                // with the passive that produces it.
+                //
+                // The card is the whole point of the report: a tendril costs a
+                // kill, so at a level where kills are slow — or against a
+                // target that never dies — the weapon's own augment measures
+                // as nothing and there was no knob to say otherwise (player
+                // report, 2026-08-08). One count buys two stats by
+                // construction, so it is ONE card that names both, the same
+                // rule Frostbite's follows.
+                PerTendril { .. } => {
+                    let cap = wfsim_engine::weapons_data::spec(&info.id)
+                        .and_then(|w| w.tendrils)
+                        .map_or(0, |t| t.max);
+                    if cap > 0 {
+                        push(BuffMeta {
+                            // Named for the mod (the client localizes it off
+                            // META) with what the stacks ARE in the tail —
+                            // "Sentient Surge" alone would leave the reader
+                            // guessing what a stack of it is.
+                            id: "tendrils".into(),
+                            name: format!("{nm} (Tendrils)"),
+                            grants: "Critical Chance + Status Chance".into(),
+                            max_stacks: cap,
+                            kind: "stacking",
+                            default_stacks: 0,
+                            default_locked: false,
+                            permanent: false,
+                            uncapped: false,
+                        });
+                    }
+                }
                 OnReloadFireRate { .. } if !locked("fire_rate") => push(BuffMeta {
                     id: "on_reload_fr".into(),
                     name: nm.clone(),

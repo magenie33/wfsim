@@ -325,6 +325,33 @@ Two consequences worth knowing:
   `duration: 0.0` beside the flag; a zero duration in a decay loop is an
   infinite loop waiting for a reader.
 
+### A buff whose end is an EVENT, not a clock
+
+`NO_TIMEOUT` is the implementation of locking because every buff in the pool
+ends on a timer — except one. The **Ocucor's tendrils** (`tendrils`) are gained
+on a kill and cleared by a MAGAZINE EVENT: "Tendrils disappear upon reloading
+or emptying the magazine." There is no duration to overwrite, so the card's two
+knobs land where the same sentences point:
+
+- **stacks** → `DummyParams::tendrils_initial`, the count the run opens with,
+  spent by the same event that clears an earned one;
+- **no timeout** → `tendrils_held`, i.e. that event no longer clears them.
+  Same statement as everywhere else — *nothing takes it away* — pointed at the
+  thing that actually ends this buff.
+
+It is a buff by every test that matters (a trigger grants it, a trigger takes
+it, it has a cap), and it had no card until 2026-08-08. That was not cosmetic:
+a tendril costs a kill, so at a level where kills are slow — and against a
+target that does not die at all — **the Ocucor's only augment measured as
+nothing**, which is what a player reported (视使之触的专属卡无法选择层数，测不了
+视使的伤害). The count is rostered only when a mod READS it: the tendrils' own
+damage is cosmetic on the beam's target and is deliberately not modelled, so
+without Sentient Surge a card for them would move no number.
+
+The cap is the WEAPON's (`data/weapons/.../ocucor.yaml` `tendrils.max`), never
+the mod's — the mod states only the rate, and a card carrying its own maximum
+would be free to disagree with the passive that produces it.
+
 ### A buff card is THREE lists, and they have to agree
 
 - `DummyParams::buff_roster` — what exists in the run;

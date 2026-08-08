@@ -190,7 +190,12 @@ around (decision 2026-07-31).
   `node scripts/check_buff_cards.mjs` is the seventh: buff
   cards are named in the display language (an EVOLUTION's buff was the last one
   left in English), open at the stack count the rule says, and report a
-  coverage that is never rounded up to a flat 100%.
+  coverage that is never rounded up to a flat 100%. It also walks the one buff
+  that is a WEAPON PASSIVE — the Ocucor's tendrils, which its only augment
+  scales with — because a stack count nobody can set is a mod nobody can
+  measure: a tendril costs a kill, so against a target that dies slowly the
+  card is the whole measurement (player report, 2026-08-08). See BUFFS.md
+  §"A buff whose end is an EVENT".
   `node scripts/check_gain_axes.mjs` is the sixth: the
   quick-calc gain scan obeys the evolution TIER LADDER, so it never ranks a
   perk the builder will not let you click. `node scripts/check_replay.mjs` is the fifth: the

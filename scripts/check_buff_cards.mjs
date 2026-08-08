@@ -1,12 +1,16 @@
 // BUFF CARDS: named in the display language, opened at the right stack count,
 // and honest about coverage.
 //
-// Three things this guards, each of which has been wrong:
+// Four things this guards, each of which has been wrong:
 //   · a buff granted by an EVOLUTION was the only card left in English,
 //     because the name lookup knew about mods and arcanes and nothing else;
 //   · the earned-from-zero default has to REACH the card, not just the server;
 //   · uptime was rounding 99.83% up to a flat "100%", which is the one number
-//     a reader will not believe (user, 2026-08-03).
+//     a reader will not believe (user, 2026-08-03);
+//   · a buff with no card at all: the Ocucor's TENDRILS, which are what its
+//     only augment scales with. A tendril costs a kill, so against a target
+//     that dies slowly the mod measured as nothing and there was no knob to
+//     say otherwise (player report, 2026-08-08).
 //
 //   node scripts/check_buff_cards.mjs
 //
@@ -56,7 +60,41 @@ const r = await evaluate(`(async () => {
                stacks:e.querySelector('input[data-f="stacks"]').value,
                hasMax:e.querySelector('input[data-f="stacks"]').hasAttribute('max') }))
     .filter(c=>/失活|Enervate/.test(c.name));
-  return { cards, rows, atZero, un, lang: LANG };
+  // THE WEAPON-PASSIVE CARD. The Ocucor's tendrils are a buff by every test
+  // that matters — gained on a kill, cleared by a magazine event, capped by
+  // the weapon — and Sentient Surge is the mod that reads the count. The card
+  // has to exist, cap at the WEAPON's 4, and REACH the fight: set it and the
+  // replay must show the count it was set to.
+  history.pushState({},'','/weapons/Ocucor'); route(); await sleep(3000);
+  slots[0] = { mod:'sentient_surge', pol:slots[0].pol, rank:null };
+  markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
+  document.querySelectorAll('.tab').forEach(x=>{ if(/Sim|模拟/i.test(x.textContent)) x.click(); });
+  await sleep(1500);
+  const tend = [...document.querySelectorAll('#sim-buffs .buff-card')].map(e=>({
+    name: e.querySelector('.bn').textContent.trim(),
+    id: e.querySelector('input[data-f="stacks"]').dataset.b,
+    stacks: e.querySelector('input[data-f="stacks"]').value,
+    cap: e.querySelector('.bmax').textContent.trim(),
+  }));
+  sim.level = 300; sim.steel_path = true; sim.duration = 30; sim.runs = 4;
+  markScenarioDirty(); await sleep(600);
+  const set = (f, v) => {
+    const el = document.querySelector('#sim-buffs input[data-b="tendrils"][data-f="'+f+'"]');
+    if (el.type === 'checkbox') el.checked = v; else el.value = v;
+    el.dispatchEvent(new Event('change'));
+  };
+  set('stacks', 4);
+  // A tendril has no clock — what ends it is the magazine event — so "no
+  // timeout" is what stops a reload from taking them.
+  set('locked', true);
+  await sleep(800);
+  document.getElementById('run-sim').click();
+  for (let k=0;k<40 && !document.querySelector('.rp-row'); k++) await sleep(1000);
+  const tendRows = [...document.querySelectorAll('.rp-row')].map(e=>({
+    name: e.querySelector('.rp-name').textContent.trim(),
+    now: e.querySelector('.rp-now').textContent.trim(),
+  }));
+  return { cards, rows, atZero, un, tend, tendRows, lang: LANG };
 })()`);
 
 console.log("lang:", r.lang);
@@ -78,4 +116,13 @@ check("Secondary Enervate has a card of its own", r.un.length === 1, JSON.string
 check("...uncapped, shown as infinity", r.un[0] && /∞/.test(r.un[0].cap), r.un[0] && r.un[0].cap);
 check("...starting at 0, with no invented maximum",
   r.un[0] && r.un[0].stacks === "0" && !r.un[0].hasMax, JSON.stringify(r.un[0]));
+console.log("tendrils:", JSON.stringify(r.tend), JSON.stringify(r.tendRows));
+const td = (r.tend || []).find((c) => c.id === "tendrils");
+check("the Ocucor's tendrils have a card", !!td, JSON.stringify(r.tend));
+check("...named in Chinese, saying what a stack IS",
+  td && /卷须/.test(td.name), td && td.name);
+check("...capped at the WEAPON's tendril limit, and earned from zero",
+  td && td.cap === "/ 4" && td.stacks === "0", JSON.stringify(td));
+check("...and the count reaches the fight",
+  (r.tendRows || []).some((x) => x.now === "4/4"), JSON.stringify(r.tendRows));
 await app.finish("the buff cards read right in Chinese");

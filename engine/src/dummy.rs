@@ -3500,6 +3500,7 @@ fn sample_stacks(
     ch_buff_expiry: f64,
     fr_reload_expiry: f64,
     bd_reload_expiry: f64,
+    tendrils: u32,
     bar: &BuffBar,
 ) -> Vec<u8> {
     let cap = |n: u32| n.min(u8::MAX as u32) as u8;
@@ -3527,6 +3528,9 @@ fn sample_stacks(
                 let d = params.stacking_buffs[i].duration;
                 cap(buff_stacks[i].current(now, d))
             }
+            // Read off the loop's own counter rather than re-derived: the
+            // fight is the only thing that knows how many are up.
+            "tendrils" => cap(tendrils),
             "on_headshot_cc" => live(now < ch_buff_expiry),
             "on_kill_cd" => live(now < arc.cd_kill_expiry()),
             "on_reload_bd" => live(now < bd_reload_expiry),
@@ -3788,7 +3792,10 @@ pub fn run_once_traced(
     // accumulation, not just the firing.
     let mut syndicate_ready_at = 0.0f64;
     let mut tendril_reload_mark = 0u32;
-    let mut tendrils = 0u32;
+    // The card's opening count, which the fight then treats exactly like an
+    // earned one: it is spent by the magazine event that clears the rest.
+    let mut tendril_seed = params.tendrils_initial.min(params.tendril_max);
+    let mut tendrils = tendril_seed;
     loop {
         // SAMPLE first, so a frame shows the fight as it stood BEFORE the
         // shot at `t` — the same convention the timeline buckets use.
@@ -3801,7 +3808,8 @@ pub fn run_once_traced(
             while next_frame <= t && next_frame < params.duration_secs {
                 let stacks = sample_stacks(
                     params, rep, next_frame, &mut arc, &mut gal, &mut buff_stacks,
-                    &ch_stacks, ch_buff_expiry, fr_reload_expiry, bd_reload_expiry, &bar,
+                    &ch_stacks, ch_buff_expiry, fr_reload_expiry, bd_reload_expiry,
+                    tendrils, &bar,
                 );
                 rep.frames.push(Frame {
                     t: next_frame,
@@ -3876,9 +3884,15 @@ pub fn run_once_traced(
             // A reload — or an empty magazine, which in this sim always leads
             // to one — clears every tendril. "Tendrils disappear upon
             // reloading or emptying the magazine."
-            if r.reloads != tendril_reload_mark {
+            //
+            // ...unless the card says no event takes them (`tendrils_held`),
+            // which is what "no timeout" means for a buff whose end is an
+            // event rather than a clock. The seed dies with the earned ones:
+            // it is the same buff.
+            if r.reloads != tendril_reload_mark && !params.tendrils_held {
                 tendril_reload_mark = r.reloads;
                 tendril_kill_mark = r.kills;
+                tendril_seed = 0;
             }
             // SENTIENT SURGE's refill, spent before the reload check below so
             // that a kill can genuinely save a reload — which is the whole
@@ -3914,7 +3928,7 @@ pub fn run_once_traced(
                     magazine += draw_from(&mut reserve, params.infinite_reserve, want);
                 }
             }
-            tendrils = (r.kills - tendril_kill_mark).min(params.tendril_max);
+            tendrils = (tendril_seed + (r.kills - tendril_kill_mark)).min(params.tendril_max);
         }
 
         // THE SYNDICATE GAUGE. Affinity the WEAPON earned, which is half of
@@ -7695,6 +7709,63 @@ mod tests {
         );
     }
 
+    /// THE TENDRIL CARD: the one way to measure this mod in the fight it is
+    /// actually played in.
+    ///
+    /// A tendril costs a KILL, so against a target that does not die the
+    /// Ocucor's only augment is worth exactly nothing and the weapon reads as
+    /// if it were unmodded — which is what a player reported (2026-08-08:
+    /// 视使之触的专属卡无法选择层数，测不了视使的伤害). The count is a buff by
+    /// every test that matters, so it takes a buff card's two knobs, and this
+    /// pins both: the seed is worth its stacks, and the LOCK is what carries
+    /// them past a reload.
+    #[test]
+    fn the_tendril_card_seeds_the_count_and_the_lock_holds_it() {
+        // No kills at all: the target never dies, so the sim can never grant a
+        // tendril and every crit below came from the card.
+        let build = |stacks: u32, held: bool, mag: f64| DummyParams {
+            base_crit_chance: 0.0,
+            unmodded_crit_chance: 1.0,
+            crit_multiplier: 2.0,
+            tendril_max: 4,
+            cc_per_tendril: 0.25,
+            tendrils_initial: stacks,
+            tendrils_held: held,
+            magazine_size: mag,
+            reload_seconds: 0.5,
+            fire_rate: 10.0,
+            duration_secs: 60.0,
+            body_parts: mono_body(1.0),
+            target: frail_target(TargetMode::InfiniteHealth, 0.0, 1e12),
+            ..flat_base()
+        };
+        let crit_rate = |p: &DummyParams| {
+            let r = run_once(p, &mut Rng::new(7));
+            assert_eq!(r.kills, 0, "this fixture must never kill: the card is the only source");
+            r.crits as f64 / r.pellets.max(1) as f64
+        };
+
+        // Unset, the mod is unmeasurable — the state the report describes.
+        assert!(crit_rate(&build(0, false, 100_000.0)) < 1e-9);
+        // Four tendrils at +25% each, off a base of 1.0: every shot crits.
+        assert!(
+            crit_rate(&build(4, false, 100_000.0)) > 0.99,
+            "the card must reach the fight"
+        );
+        // ...and it is the COUNT, not a switch: two tendrils buy half of it.
+        let two = crit_rate(&build(2, false, 100_000.0));
+        assert!((0.45..0.55).contains(&two), "two tendrils should be worth ~50%, got {two}");
+
+        // A ONE-ROUND magazine reloads after every shot, and a reload clears
+        // tendrils — the seed included, because the seed is the same buff.
+        let unheld = crit_rate(&build(4, false, 1.0));
+        assert!(unheld < 0.2, "a reload must spend the seed too, got {unheld}");
+        // LOCKED ("no timeout"): for a buff whose end is an event rather than
+        // a clock, that event is what stops happening.
+        let held = crit_rate(&build(4, true, 1.0));
+        assert!(held > 0.99, "a locked card must survive every reload, got {held}");
+    }
+
     /// SENTIENT SURGE'S REFILL PAYS EACH KILL ONCE — and is not a reload.
     ///
     /// "On Kill: Refill X% of the Magazine", drawn from the reserve, so a kill
@@ -8134,6 +8205,10 @@ mod tests {
             cd_on_kill: Some(timed(0.6)),
             fr_on_reload: Some(timed(0.7)),
             bd_on_reload: Some(timed(0.8)),
+            // Both halves, for the same reason the replay fixture carries
+            // them: the tendril card exists only where a mod reads the count.
+            tendril_max: 4,
+            cc_per_tendril: 0.1,
             ..DummyParams::default()
         };
 
@@ -11029,6 +11104,10 @@ mod replay_reads_every_buff_tests {
             cd_on_kill: Some(timed(0.6)),
             fr_on_reload: Some(timed(0.7)),
             bd_on_reload: Some(timed(0.8)),
+            // Rostered only where a mod reads the count, so the fixture
+            // carries both halves — the passive and the mod that pays for it.
+            tendril_max: 4,
+            cc_per_tendril: 0.1,
             ..DummyParams::default()
         };
 

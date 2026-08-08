@@ -334,6 +334,9 @@ ui:
   "in this build": 仅当前配装
   "not equipped": 未装备
   # Buff-card grant suffixes: "Primary Crux (Status Chance)".
+  # ...and what a stack IS, where the mod's name does not say it: a stack of
+  # Sentient Surge is a TENDRIL, DE's own word for it (视使之触's card).
+  "Tendrils": 卷须
   "Ammo Efficiency": 弹药效率
   "Critical Damage": 暴击伤害
   "Critical Chance": 暴击几率
