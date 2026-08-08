@@ -22,6 +22,8 @@ weapons:
   # name and the page URL stay the bare name either way.
   # WFCD gives the MK1-Braton the plain Braton's `imageName`; the wiki has a
   # file of its own, and the two guns do not look alike.
+  atomos: Atomos.png
+  atomos_incarnon: Atomos.png
   boar: Boar.png
   boar_incarnon: Boar.png
   boar_prime: BoarPrime.png
@@ -46,10 +48,14 @@ weapons:
   burston_prime_incarnon: BurstonPrime.png
   cernos_prime: CernosPrime.png
   cernos_prime_uncharged: CernosPrime.png
+  cestra: Cestra.png
+  cestra_incarnon: Cestra.png
   dera: Dera.png
   dera_incarnon: Dera.png
   dera_vandal: DeraVandal.png
   dera_vandal_incarnon: DeraVandal.png
+  despair: Despair.png
+  despair_incarnon: Despair.png
   dex_sybaris: DexSybaris.png
   dex_sybaris_incarnon: DexSybaris.png
   dual_toxocyst: DualToxocyst.png
@@ -84,14 +90,18 @@ weapons:
   mk1_braton_incarnon: wiki:MK1-Braton.png
   mk1_furis: wiki:MK1-Furis.png
   mk1_furis_incarnon: wiki:MK1-Furis.png
-  mk1_kunai: Kunai.png
-  mk1_kunai_incarnon: Kunai.png
+  mk1_kunai: wiki:MK1-Kunai.png
+  mk1_kunai_incarnon: wiki:MK1-Kunai.png
   ocucor: wiki:Ocucor.png
   phantasma_prime: PhantasmaPrime.png
   phantasma_prime_charged: PhantasmaPrime.png
   phenmor: ZarimanSemiAutoRifle.png
   phenmor_incarnon: ZarimanSemiAutoRifle.png
   prisma_grinlok: PrismaGrinlok.png
+  sicarus: Sicarus.png
+  sicarus_incarnon: Sicarus.png
+  sicarus_prime: SicarusPrime.png
+  sicarus_prime_incarnon: SicarusPrime.png
   sybaris: Sybaris.png
   sybaris_incarnon: Sybaris.png
   sybaris_prime: SybarisPrime.png

@@ -989,6 +989,11 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 /* The builder's evolution tiles use <i> for their marks (`.bx` BROKEN does),
    so the unmodelled chip has to lose the italic it would otherwise inherit. */
 .evopick .exchip{font-style:normal}
+/* The weapon's own "what this does not model" banner: a heading and one line
+   per gap, so several gaps read as a list rather than as one long sentence. */
+.unmod-h{font-weight:600}
+.unmod-l{margin-left:1.1em;opacity:.9}
+.unmod-l::before{content:"· "}
 .exchip.unmod{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold);
   border:1px solid color-mix(in srgb,var(--gold) 40%,transparent)}
 

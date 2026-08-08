@@ -4678,9 +4678,24 @@ function renderPanel(r) {
   const wInfo = weaponInfo($("weapon").value) || {};
   const passiveNote = $("stats-passive");
   if (passiveNote) {
-    passiveNote.hidden = !wInfo.passive_unmodeled;
-    passiveNote.innerHTML = wInfo.passive_unmodeled
-      ? `◈ ${escHtml(tr("this weapon's passive is not modelled yet — the numbers below are a floor, not its full output"))}`
+    // WHAT THIS WEAPON'S ENTRY DOES NOT MODEL, said in words, above the numbers
+    // that omit it (owner, 2026-08-08: "没建模的要如实说，因为我自己要看，也给用
+    // 户看"). Two sources, one banner:
+    //   · the PASSIVE flag, for a weapon whose prose passive has no rule yet;
+    //   · `unmodeled`, the weapon file's own list — the bulk Incarnon intake
+    //     writes one line here per base attack part it could not carry, and a
+    //     bow's uncharged shot or the Angstrum's explosion is exactly the kind
+    //     of gap that makes a complete-looking number wrong.
+    // A yaml comment is honest to whoever opens the file and invisible to
+    // everyone else, which is not the same as honest.
+    const gaps = (wInfo.unmodeled || []).slice();
+    if (wInfo.passive_unmodeled) {
+      gaps.unshift(tr("this weapon's passive is not modelled yet"));
+    }
+    passiveNote.hidden = !gaps.length;
+    passiveNote.innerHTML = gaps.length
+      ? `<div class="unmod-h">◈ ${escHtml(tr("not modelled on this weapon — the numbers below are a floor, not its full output"))}</div>`
+        + gaps.map((g) => `<div class="unmod-l">${escHtml(g)}</div>`).join("")
       : "";
   }
   const srcLine = (s) =>

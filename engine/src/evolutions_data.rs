@@ -142,6 +142,19 @@ enum EvoEffect {
     /// Fire-rate bonus in the ORDINARY additive bucket — the same one the
     /// fire-rate mods feed, so it SUMS with them (Rapid Wrath).
     FireRateBonus(f64),
+    /// A RELOAD-SPEED bonus, into the same bucket the mods feed.
+    ///
+    /// The most common perk in the whole Incarnon set — Rapid Reinforcement is
+    /// on 14 guns by docs/INCARNON.md's count, more than any other name — and it
+    /// sat inert for all of them because this loader had no arm while the MODS
+    /// loader did. One arm removes a slot from half the remaining program, which
+    /// is what the intake kept demonstrating four rows at a time.
+    ///
+    /// UNCONDITIONAL ONLY. Ready Retaliation's "On Reload from Empty: +100%
+    /// Reload Speed" is a different perk and stays inert: `condition:` is not
+    /// read here, and granting a conditional bonus unconditionally is the one
+    /// mistake worse than not granting it.
+    ReloadSpeedBonus(f64),
     /// Prelude of Might: "With Critical Chance below 40%: Increase Critical
     /// Damage Multiplier by +3x". The condition is on the build's OWN RESOLVED
     /// crit chance, so unlike every other `condition:` in this engine it asks
@@ -375,6 +388,7 @@ impl EvolutionDef {
                 | EvoEffect::MultishotConsumesAmmo(_)
                 | EvoEffect::ConditionOverload { .. }
                 | EvoEffect::FireRateBonus(_)
+                | EvoEffect::ReloadSpeedBonus(_)
                 | EvoEffect::CritMultiplierBelowCritChance { .. }
                 | EvoEffect::PostModCritChance(_)
                 | EvoEffect::PostModStatusChance(_)
@@ -497,6 +511,7 @@ impl EvolutionDef {
                     per_type * 100.0
                 ),
                 EvoEffect::FireRateBonus(v) => format!("+{:.0}% fire rate", v * 100.0),
+                EvoEffect::ReloadSpeedBonus(v) => format!("+{:.0}% reload speed", v * 100.0),
                 EvoEffect::StackingMultishotOnStatus { status, per_stack, max_stacks, duration } => format!(
                     "+{per_stack} multishot per stack x{max_stacks} for {duration:.0}s while the                      target carries {status:?} (flat, like Final Fusillade's)"
                 ),
@@ -669,6 +684,12 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             per_type: f(v, "value").unwrap_or(0.0),
         },
         "fire_rate_bonus" => EvoEffect::FireRateBonus(f(v, "value").unwrap_or(0.0)),
+        // CONDITIONAL ONES STAY INERT. Ready Retaliation spells the same kind
+        // with a `condition:`, which nothing here reads — so it falls through to
+        // `Inert` and keeps saying so on its tile.
+        "reload_speed_bonus" if v.get("condition").is_none() => {
+            EvoEffect::ReloadSpeedBonus(f(v, "value").unwrap_or(0.0))
+        }
         "stacking_multishot_on_electricity_status" => EvoEffect::StackingMultishotOnStatus {
             status: crate::damage::DamageType::Electricity,
             per_stack: f(v, "per_stack").unwrap_or(0.0),
@@ -842,6 +863,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     base.innate_co_per_type += per_type;
                 }
                 EvoEffect::FireRateBonus(v) => base.evo_fire_rate_bonus += v,
+                EvoEffect::ReloadSpeedBonus(v) => base.evo_reload_bonus += v,
                 // Carried, not applied: `apply` works on the RAW base panel and
                 // the condition needs the crit chance the mods produce, which
                 // does not exist until `resolve` runs.
@@ -1434,29 +1456,19 @@ use crate::loadout::WeaponBase;
             // of its payloads are spatial anyway — punch-through needs a second
             // body and accuracy needs a miss to prevent.
             //
-            // RAPID REINFORCEMENT is the most common perk in the entire Incarnon
-            // set (14 guns by docs/INCARNON.md's count) and this is its first
-            // appearance here. It is a reload-speed bonus, which this loader has
-            // no arm for — the MODS loader does, which is why the same words
-            // work on a mod and not on an evolution. It would be real: a 2.4 s
-            // reload is a large share of a 60-round magazine's cycle.
+            // (RAPID REINFORCEMENT used to sit here, four rows at a time. It is
+            // IMPLEMENTED now — `EvoEffect::ReloadSpeedBonus`, into the same
+            // additive bucket the mods feed — because the intake kept adding it
+            // and docs/INCARNON.md counts it on 14 guns. The CONDITIONAL member
+            // of the family, Ready Retaliation, is still inert below: its
+            // `condition:` is unread, and granting a conditional bonus
+            // unconditionally is worse than not granting it.)
             "boltor_crimson_overture :: stacking_base_damage_on_kill",
             "boltor_hunters_mantra :: punch_through_while_channeling",
             "boltor_prime_crimson_overture :: stacking_base_damage_on_kill",
             "boltor_prime_hunters_mantra :: punch_through_while_channeling",
-            "boltor_prime_rapid_reinforcement :: reload_speed_bonus",
-            "boltor_rapid_reinforcement :: reload_speed_bonus",
             "telos_boltor_crimson_overture :: stacking_base_damage_on_kill",
             "telos_boltor_hunters_mantra :: punch_through_while_channeling",
-            "telos_boltor_rapid_reinforcement :: reload_speed_bonus",
-            // The Kunai family carries the same Rapid Reinforcement, and it is
-            // the same gap: `evolutions_data::effect()` has no reload-speed arm.
-            // It stays on the ARGUED list rather than being renamed into the
-            // bulk one, because the kind is a real vocabulary word this loader
-            // could implement — the bulk prefix is for clauses nobody has a word
-            // for at all.
-            "kunai_rapid_reinforcement :: reload_speed_bonus",
-            "mk1_kunai_rapid_reinforcement :: reload_speed_bonus",
         ];
         // TWO POPULATIONS, AND THE PREFIX IS WHICH. The list above is the ARGUED
         // one: a hand-written perk whose effect the engine cannot express, where

@@ -1,0 +1,60 @@
+id: sicarus_incarnon
+name: Sicarus (Incarnon Form)
+slot: secondary
+class: pistol
+form: incarnon
+
+transform_group: sicarus
+transforms_from: sicarus
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+
+incarnon:
+  gauge:
+    charge_on: weakpoint_hits
+    charges_to_fill: 12
+    rounds_per_charge: 10
+    max_rounds: 120
+  transmute:
+    activation: alt_fire
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+  incarnon_magazine:
+    resource: incarnon_charges
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 2      # = base reload time, unmodded
+  transmute_out_seconds: 1.0     # MEASURED on Dual Toxocyst (M9)
+
+pseudo_reload:
+  magazine: 120
+  reload_seconds: 3.0
+
+# No CO catalog row for this attack, so the ordinary class — absence in that
+# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: burst
+  shot_type: hit_scan
+  fire_rate: 3.5
+  multishot: 1.0
+  ammo_cost: 1                  # of the 120-round charge pool
+  crit_chance: 0.2
+  crit_multiplier: 3
+  status_chance: 0.2
+  punch_through_m: 0.0
+  damage: { impact: 28, slash: 6, puncture: 6 }   # total 40
+
+# incarnon_evolutions: see data/weapons/secondary/sicarus.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Sicarus_Incarnon_Genesis
+  # WFCD `attacks`: "Incarnon Form"

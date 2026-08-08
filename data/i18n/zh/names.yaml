@@ -115,6 +115,16 @@ weapons:
   vasto_incarnon: 瓦斯托 (灵化形态)
   vasto_prime: 瓦斯托 Prime
   vasto_prime_incarnon: 瓦斯托 Prime (灵化形态)
+  atomos: 原子矿融炮
+  atomos_incarnon: 原子矿融炮 (灵化形态)
+  cestra: 锡斯特
+  cestra_incarnon: 锡斯特 (灵化形态)
+  despair: 绝望
+  despair_incarnon: 绝望 (灵化形态)
+  sicarus: 暗杀者
+  sicarus_incarnon: 暗杀者 (灵化形态)
+  sicarus_prime: 暗杀者 Prime
+  sicarus_prime_incarnon: 暗杀者 Prime (灵化形态)
 
 enemies:
   thrax_centurion: 凶魂百夫长

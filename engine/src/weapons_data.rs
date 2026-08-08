@@ -461,6 +461,22 @@ pub struct FormRef {
 pub struct WeaponSpec {
     pub id: String,
     pub name: String,
+    /// WHAT THIS ENTRY DOES NOT MODEL, in the reader's own language, one
+    /// sentence per gap.
+    ///
+    /// The enemy files have carried this since the target card was written, and
+    /// weapons had nowhere to put it: a yaml COMMENT is honest to whoever opens
+    /// the file and invisible to everyone else. The bulk Incarnon intake made
+    /// that expensive — a weapon whose base attack has parts this entry does not
+    /// carry (a bow's uncharged shot, the Angstrum's explosion, the Stug's
+    /// blobs) reads as a complete weapon, and its number is not the weapon's
+    /// number (owner, 2026-08-08: "没建模的要如实说，因为我自己要看，也给用户看").
+    ///
+    /// Prose, deliberately, and the ONE place in a weapon file where prose is a
+    /// value rather than a comment — the same exception `enemies/` already
+    /// carries, for the same reason: it is shown to a reader verbatim.
+    #[serde(default)]
+    pub unmodeled: Vec<String>,
     pub slot: String,
     pub class: String,
     /// Which DEPLOYMENT the fields on this entry describe (Arch-Guns:
@@ -1371,6 +1387,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         multishot_ammo_bonus: 0.0,           // raised by Plentiful Mayhem
         // Raised by evolutions, never by the raw weapon data.
         evo_fire_rate_bonus: 0.0,
+        evo_reload_bonus: 0.0,
         // Set by Prelude of Might at `evolutions_data::apply`, read in `resolve`.
         crit_mult_below_cc: None,
         // Set by Headcracker at `evolutions_data::apply`.

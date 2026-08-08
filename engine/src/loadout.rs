@@ -917,6 +917,8 @@ pub struct WeaponBase {
     /// Evolution-granted additive fire rate (Rapid Wrath) — joins the
     /// fire-rate-mod bucket.
     pub evo_fire_rate_bonus: f64,
+    /// Reload-speed bonus from evolutions, into the same bucket the mods feed.
+    pub evo_reload_bonus: f64,
     /// Prelude of Might: `(bonus, threshold)` — add `bonus` to the crit damage
     /// MULTIPLIER while the resolved crit chance stays under `threshold`.
     /// Resolved late for that reason: it is the only evolution whose condition
@@ -1542,8 +1544,13 @@ pub fn resolve_for(
     policy: StackPolicy,
     tenno: &crate::tenno_data::Tenno,
 ) -> ResolvedPanel {
-    let (mut bd, mut ms, mut cc, mut cd, mut sc, mut fr, mut rl, mut sd) =
-        (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    let (mut bd, mut ms, mut cc, mut cd, mut sc, mut fr, mut sd) =
+        (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    // RELOAD STARTS AT THE EVOLUTION'S BONUS, not at zero. Rapid Reinforcement
+    // and its family feed the SAME additive bucket the mods do — one bucket, so
+    // an evolution's +60% and Primed Fast Hands' +55% sum rather than
+    // multiplying, which is the shape every other shared stat here has.
+    let mut rl = base.evo_reload_bonus;
     // Magazine-capacity and status-duration additive buckets.
     let (mut mag, mut sdur) = (0.0, 0.0);
     // Sentient Surge's three, carried to the sim rather than spent here: all

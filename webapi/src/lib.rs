@@ -95,6 +95,10 @@ struct WeaponInfo {
     /// Riven disposition. 1.0 when the data does not say, so a weapon with no
     /// disposition yet reads as neutral rather than as zero.
     disposition: f64,
+    /// WHAT THIS WEAPON'S ENTRY DOES NOT MODEL, one sentence per gap, straight
+    /// from the weapon file. Shown to the reader — a number that omits
+    /// something owes them the sentence, not just the omission.
+    unmodeled: Vec<String>,
     // Precise weapon type within that group (Dual Toxocyst = Dual Pistols).
     subtype: String,
     sentinel: bool,
@@ -187,6 +191,14 @@ fn weapons() -> &'static [WeaponInfo] {
                     },
                     continuous: s.attack.trigger == "held",
                     disposition: s.disposition.unwrap_or(1.0),
+                    // The BASE entry's gaps and its Incarnon form's, together:
+                    // a reader is looking at one weapon and both halves are
+                    // theirs to know about.
+                    unmodeled: wfsim_engine::weapons_data::forms_of(&s.id)
+                        .iter()
+                        .filter_map(|f| wfsim_engine::weapons_data::spec(f.weapon_id))
+                        .flat_map(|x| x.unmodeled.iter().cloned())
+                        .collect(),
                     subtype: title_case(&s.class),
                     sentinel,
                     forms,
@@ -714,6 +726,11 @@ pub fn meta_json() -> Value {
                 // engine from the data that implements it — never a sentence
                 // stored in the weapon file.
                 "passives": wfsim_engine::weapons_data::passive_lines(&w.id),
+                // WHAT THIS ENTRY DOES NOT MODEL, verbatim from the weapon file
+                // — the one place a weapon yaml carries prose as a value, the
+                // way the enemy files already do. A reader is owed the gap in
+                // words, not only the number that omits it.
+                "unmodeled": w.unmodeled.clone(),
                 // The mods this weapon can actually EQUIP, by id. The client
                 // used to union the class tables and re-apply the rules in JS,
                 // which is one fact stated twice — and the copy went stale the

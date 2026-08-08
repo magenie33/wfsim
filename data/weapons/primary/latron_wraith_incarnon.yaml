@@ -37,14 +37,15 @@ pseudo_reload:
   magazine: 40
   reload_seconds: 3.4   # transmute out (1.0) + in (2.4), unmodded
 
-# THE CATALOG'S LATRON ROW NAMES "Latron/Latron Prime" AND NOT THE WRAITH, so
-# this entry keeps the ordinary class while its two twins take `independent`.
-# That is the recorded rule rather than an oversight: a CO anomaly is per-ENTRY,
-# absence means ordinary, and a discrepancy is never generalised to a weapon, a
-# form or a behaviour class. Worth a look during the per-gun pass — the form is
-# the adapter's, so one of the two readings is wrong and the catalog is the only
-# thing that can say which.
-co_behavior: additive_with_base_damage
+# CONDITION OVERLOAD IS INDEPENDENT ON THIS FORM. The catalog's row names
+# "Latron/Latron Prime" and not the Wraith, and the earlier reading here left it
+# ordinary on the rule that a CO anomaly is per-ENTRY. The owner settled it
+# (2026-08-08): "你可以推广到灵化形态，没在那个表上的，就视为正常逻辑，包括灵化，
+# 灵化有异常会上表" — an anomaly on an Incarnon FORM reaches the table, and the
+# form belongs to the ADAPTER rather than to a variant, so one row covers every
+# weapon that installs it. Absence still means ordinary; it just cannot mean
+# "ordinary for one variant of a form that is listed as anomalous".
+co_behavior: independent
 
 # TWO ATTACK PARTS, and a THIRD thing this arena cannot hold. VERBATIM (wiki):
 # "Incarnon Form changes the weapon's fire mode from hitscan to a traveling

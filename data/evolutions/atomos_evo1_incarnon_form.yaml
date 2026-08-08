@@ -1,0 +1,18 @@
+id: atomos_evo1_incarnon_form
+name: Incarnon Form
+weapon: atomos
+tier: 1
+description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes. Fire high-powered grenades that explode in a 7.9 m radius."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: fixed
+
+effects:
+  # LOADED as `EvoEffect::UnlocksForm(weapon)` — the form's stats are the
+  # atomos_incarnon entry's own, not perk payload.
+  - kind: unlocks_weapon
+    weapon: atomos_incarnon
+
+source:
+  url: https://wiki.warframe.com/w/Atomos_Incarnon_Genesis

@@ -1,0 +1,59 @@
+id: despair
+name: Despair
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 4
+max_rank: 30
+
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group.
+transform_group: despair
+transforms_to: despair_incarnon
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+accuracy: 100
+disposition: 1.3
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Despair
+traits: [incarnon]
+introduced: "Update 8.0"
+internal_name: /Lotus/Weapons/Tenno/ThrowingWeapons/StalkerKunai
+noise: silent
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 10
+reload_seconds: 0.75
+
+# No CO catalog row for this attack, so the ordinary class — absence in that
+# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 70
+  fire_rate: 3.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.16
+  crit_multiplier: 1.6
+  status_chance: 0.16
+  punch_through_m: 0.0
+  damage: { impact: 2.9, slash: 8.7, puncture: 46.4 }   # total 58.0
+
+# incarnon_evolutions: definitions live in data/evolutions/despair_*.yaml.
+
+source:
+  url: https://wiki.warframe.com/w/Despair
