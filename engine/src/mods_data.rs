@@ -1782,4 +1782,37 @@ mod card_values_tests {
         assert!(effect_spoken_at(&radial, "+x purity").is_some());
         assert!(effect_spoken_at(&radial, "+x% life steal").is_none());
     }
+
+    /// EVERY MOD EFFECT THE LOADER DROPS IS ON THE CARD, and the list of them
+    /// is short enough to argue about.
+    ///
+    /// `unmodeled_effects` derives the disclosure, so a mod that starts
+    /// dropping one says so without anyone remembering to come back here —
+    /// this pins WHICH ones, so a new gap arrives in review rather than only
+    /// on a card nobody happens to open. The arcane side carries the same pin
+    /// (`an_arcane_that_does_nothing_with_an_effect_says_so`), added after
+    /// three of them promised a stat they silently never applied.
+    #[test]
+    fn a_mod_that_drops_an_effect_says_so_and_the_list_is_argued() {
+        let mut found: Vec<String> = Vec::new();
+        for (_, text) in crate::data::files_under("mods/") {
+            let Ok(mf) = serde_norway::from_str::<ModFile>(text) else { continue };
+            for why in unmodeled_effects(&mf.id) {
+                found.push(format!("{} :: {why}", mf.id));
+            }
+        }
+        found.sort();
+        assert_eq!(
+            found,
+            [
+                // Its Purity radial lands 1,000 damage a blast and its life
+                // steal heals a Tenno this arena does not have — so the
+                // disclosure has to be per effect. Flagging the whole mod
+                // would say the card does nothing, which is worse than saying
+                // nothing at all.
+                "winds_of_purity :: life steal on own damage",
+            ],
+            "the partly-modelled mod list moved"
+        );
+    }
 }

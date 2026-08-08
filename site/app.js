@@ -1136,6 +1136,16 @@ function renderBenchBoard() {
         <span class="bname">${escHtml(w.name)}${
           (w.modes || []).length > 1
             ? ` <span class="bmode">${escHtml(modeLabel(w, mode))}</span>`
+            : ""}${
+          // THE BOARD IS WHERE WEAPONS ARE COMPARED, so it is the one place a
+          // weapon with unmodelled parts must not look like one without them.
+          // A Stug row is four admissions deep and a Torid row is exact; side
+          // by side and unmarked they read as the same kind of number.
+          // The mark is the banner's own ◈ and carries the same sentences.
+          (w.unmodeled || []).length
+            ? ` <span class="bgap" title="${escHtml(
+                tr("not modelled on this weapon — the numbers below are a floor, not its full output")
+                + ": " + (w.unmodeled || []).map((g) => tr(g)).join(" · "))}">◈</span>`
             : ""}</span>
         <span class="bscore">${row
           ? escHtml(row.shown != null ? String(row.shown) : row.score.toFixed(4))

@@ -89,7 +89,26 @@ for (const lang of ["en", "zh"]) {
         .filter(m => m.not_modeled || m.out_of_scope || (m.unmodeled_effects || []).length).length;
     closePopovers();
 
-    // 7. NEGATIVE CONTROL. The Torid is hand-written: no gaps, no inert perks.
+    // 7. THE BOARD — where weapons are COMPARED, and so the one place a
+    //    weapon with unmodelled parts must not look like one without them.
+    history.pushState({}, '', '/benchmark'); route(); await sleep(3200);
+    const rows = [...document.querySelectorAll('.brow')];
+    out.boardRows = rows.length;
+    out.boardMarks = rows.filter(r => r.querySelector('.bgap')).length;
+    out.boardMarkTitle = (rows.find(r => r.querySelector('.bgap')) || document.body)
+        .querySelector('.bgap') ? rows.find(r => r.querySelector('.bgap'))
+        .querySelector('.bgap').title.slice(0, 60) : '';
+    // …and the mark means something: the weapons with gaps are exactly the
+    // weapons marked.
+    const gapNames = (META.weapons || []).filter(w => (w.unmodeled || []).length)
+        .map(w => w.name);
+    out.markedRight = rows.every(r => {
+        const name = (r.querySelector('.bname') || {}).textContent || '';
+        const marked = !!r.querySelector('.bgap');
+        return marked === gapNames.some(n => name.startsWith(n));
+      });
+
+    // 8. NEGATIVE CONTROL. The Torid is hand-written: no gaps, no inert perks.
     out.cleanBanner = document.querySelector('.unmod-h') ? 'shown' : 'absent';
     out.cleanEvoChips = document.querySelectorAll('.evopick .exchip.unmod').length;
     return out;
@@ -128,6 +147,12 @@ for (const lang of ["en", "zh"]) {
     (r.arcChips || []).length >= 1, r.arcErr || (r.arcChips || []).join(" / "));
   check(`[${lang}] the target card admits what it does not model`,
     r.enemyGap.length >= 0, r.enemyGap.join(" / "));
+  check(`[${lang}] the board marks the weapons it does not fully model`,
+    r.boardMarks >= 3 && r.boardMarks < r.boardRows,
+    `${r.boardMarks} of ${r.boardRows} rows`);
+  check(`[${lang}] …exactly those weapons, and no others`, r.markedRight === true);
+  check(`[${lang}] …and the mark carries the reason`,
+    r.boardMarkTitle.length > 20, r.boardMarkTitle);
   // The control.
   check(`[${lang}] a weapon with nothing to admit shows NO banner`,
     r.cleanBanner === "absent", r.cleanBanner);

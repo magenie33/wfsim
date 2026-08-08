@@ -153,7 +153,9 @@ around (decision 2026-07-31).
   check that only asserts presence passes just as well on a page that shouts
   "not modelled" at everything, and it runs the whole pass in BOTH languages,
   since the banner's lines were rendered raw for a day and a Chinese page
-  carried its one important paragraph in English.
+  carried its one important paragraph in English. It also walks the BOARD,
+  which is where weapons are compared and therefore the one place a weapon
+  with unmodelled parts must not look like one without them.
   `node scripts/check_riven_pool.mjs` is the SEVENTEENTH: the riven editor
   offers the stats that weapon's rivens actually roll, in BOTH slots. What a
   riven can roll is DE's per-weapon table, published nowhere, and the wiki's

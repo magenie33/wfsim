@@ -1080,6 +1080,10 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    tag on a weapon with one form is noise about a choice nobody has. */
 .brow .bmode{margin-left:6px;padding:1px 6px;border:1px solid var(--line);border-radius:6px;
   color:var(--text-2);font-size:11px;white-space:nowrap}
+/* A weapon the sim knows it does not fully model, marked where weapons are
+   COMPARED. Quiet on purpose — it is a footnote on the number, not a warning
+   about the row — and it carries the whole list in its title. */
+.brow .bgap{margin-left:5px;color:var(--warn,#c8a24a);font-size:11px;cursor:help}
 .brow .bscore{flex:0 0 auto;font-size:13px;font-variant-numeric:tabular-nums}
 /* An unmeasured weapon is not a low score — it is the invitation, and it reads
    as one rather than as a zero at the bottom of a ranking. */
