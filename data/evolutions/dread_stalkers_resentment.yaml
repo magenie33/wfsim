@@ -1,0 +1,29 @@
+id: dread_stalkers_resentment
+name: Stalker's Resentment
+weapon: dread
+tier: 2
+description: "Increase Base Damage by +50. With Hate and Despair Equipped: Hits increase Base Damage by +10 and Fire Rate by +10%. Stacks up to 5x. Resets on missed shot."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Damage by +50"
+  - kind: flat_base_damage
+    value: 50.0
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "With Hate and Despair Equipped: Hits increase Base Damage by +10 and Fire Rate by +10%"
+  - kind: unmodelled_with_hate_and_despair_equipped_hits_increase_base_dam
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Stacks up to 5x"
+  - kind: unmodelled_stacks_up_to_x
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "Resets on missed shot"
+  - kind: unmodelled_resets_on_missed_shot
+
+source:
+  url: https://wiki.warframe.com/w/Dread_Incarnon_Genesis

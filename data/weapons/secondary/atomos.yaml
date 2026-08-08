@@ -31,8 +31,8 @@ introduced: "Update 16.5"
 internal_name: /Lotus/Weapons/Grineer/Pistols/HeatGun/GrnHeatGun
 noise: alarming
 ammo_type: secondary
-ammo_max: 210
-ammo_pickup: 40
+ammo_max: 350
+ammo_pickup: 20
 magazine: 70
 reload_seconds: 2
 

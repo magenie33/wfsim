@@ -1045,7 +1045,14 @@ const benchCurrent = () =>
 const modeLabel = (w, id) => {
   const forms = (w || {}).forms || [];
   if (id === "cycle") return tr("Incarnon cycle");
-  const f = id === "alternate" ? forms.find((x) => !x.is_default) : forms.find((x) => x.is_default);
+  // A WEAPON CAN HAVE MORE THAN ONE ALTERNATE, so "the non-default form" is
+  // not an answer: a bow with an adapter has a tapped shot AND an Incarnon
+  // form, and picking whichever came first labelled one of them with the
+  // other's name. The two modes are told apart by the gauge, the same
+  // question the engine splits them on.
+  const f = id === "alternate" ? forms.find((x) => !x.is_default && !x.gauge_switched)
+    : id === "transformed" ? forms.find((x) => !x.is_default && x.gauge_switched)
+    : forms.find((x) => x.is_default);
   return f ? tr(f.name) : tr(id);
 };
 

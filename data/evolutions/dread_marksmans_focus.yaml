@@ -1,0 +1,18 @@
+id: dread_marksmans_focus
+name: Marksman's Focus
+weapon: dread
+tier: 3
+description: "-30% Zoom."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "-30% Zoom"
+  - kind: indirect
+    stat: zoom
+    value: -0.3
+
+source:
+  url: https://wiki.warframe.com/w/Dread_Incarnon_Genesis

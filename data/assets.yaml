@@ -61,6 +61,8 @@ weapons:
   despair_incarnon: Despair.png
   dex_sybaris: DexSybaris.png
   dex_sybaris_incarnon: DexSybaris.png
+  dread: Dread.png
+  dread_uncharged: Dread.png
   dual_toxocyst: DualToxocyst.png
   dual_toxocyst_incarnon: DualToxocyst.png
   furis: Furis.png
@@ -97,7 +99,13 @@ weapons:
   mk1_furis_incarnon: wiki:MK1-Furis.png
   mk1_kunai: wiki:MK1-Kunai.png
   mk1_kunai_incarnon: wiki:MK1-Kunai.png
+  mk1_paris: wiki:MK1-Paris.png
+  paris: Paris.png
+  paris_uncharged: Paris.png
+  mk1_paris_uncharged: wiki:MK1-Paris.png
   ocucor: wiki:Ocucor.png
+  paris_prime: ParisPrime.png
+  paris_prime_uncharged: ParisPrime.png
   phantasma_prime: PhantasmaPrime.png
   phantasma_prime_charged: PhantasmaPrime.png
   phenmor: ZarimanSemiAutoRifle.png

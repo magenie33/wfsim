@@ -38,8 +38,8 @@ introduced: "Update 21.7"
 internal_name: /Lotus/Weapons/Corpus/Pistols/CrpHandRL/PrismaAngstrum
 noise: alarming
 ammo_type: secondary
-ammo_max: 210
-ammo_pickup: 40
+ammo_max: 18
+ammo_pickup: 3
 magazine: 1
 reload_seconds: 1.8
 

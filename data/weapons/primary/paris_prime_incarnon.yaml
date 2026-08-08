@@ -1,0 +1,66 @@
+id: paris_prime_incarnon
+name: Paris Prime (Incarnon Form)
+slot: primary
+class: bow
+form: incarnon
+
+transform_group: paris_prime
+transforms_from: paris_prime
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+
+incarnon:
+  gauge:
+    charge_on: weakpoint_hits
+    charges_to_fill: 4
+    rounds_per_charge: 5
+    max_rounds: 20
+  transmute:
+    activation: alt_fire
+    animation_seconds: reload_speed
+    auto_transmute_out: on_incarnon_ammo_empty
+  incarnon_magazine:
+    resource: incarnon_charges
+    unaffected_by_mods: true
+    unaffected_by_ammo_efficiency: true
+  transmute_in_seconds: 0.7      # = base reload time, unmodded
+  transmute_out_seconds: 1.0     # MEASURED on Dual Toxocyst (M9)
+
+pseudo_reload:
+  magazine: 20
+  reload_seconds: 1.7
+
+# CONDITION OVERLOAD IS INDEPENDENT ON THIS FORM. The wiki's CO catalog
+# lists this weapon's named attack as "Multiplying", so the bonus is a
+# free-standing final multiplier rather than a member of the base-damage
+# bucket. Applied to every variant: the form belongs to the ADAPTER
+# (owner, 2026-08-08).
+co_behavior: independent
+
+attack:
+  trigger: charge
+  shot_type: projectile
+  projectile_speed_mps: 85
+  fire_rate: 1
+  charge_seconds: 0.8
+  charge_cadence: draw_only
+  multishot: 1.0
+  ammo_cost: 1                  # of the 20-round charge pool
+  crit_chance: 0.5
+  crit_multiplier: 3.4
+  status_chance: 0.2
+  punch_through_m: 0.0
+  damage: { impact: 100, heat: 420 }   # total 520
+
+# incarnon_evolutions: see data/weapons/primary/paris_prime.yaml (shared group)
+
+source:
+  url: https://wiki.warframe.com/w/Paris_Incarnon_Genesis
+  # WFCD `attacks`: "Incarnon Form Charged Shot"

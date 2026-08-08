@@ -31,7 +31,7 @@ introduced: "Update 15.5"
 internal_name: /Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSDroidArray
 noise: alarming
 ammo_type: secondary
-ammo_max: 210
+ammo_max: 240
 ammo_pickup: 40
 magazine: 60
 reload_seconds: 1.4

@@ -779,9 +779,20 @@ pub fn forms_of(weapon_id: &str) -> Vec<FormRef> {
 pub enum PlayMode {
     /// The arsenal's form, all engagement. Every weapon has this one.
     Base,
-    /// The other form, all engagement — a bow that never charges, an Arch-Gun
-    /// fired on its alt.
+    /// A FREE other form, all engagement — a bow that never charges, an
+    /// Arch-Gun fired on its alt. Nothing is spent to be in it, so it can be
+    /// held for a whole engagement and a ruler may rank it.
     Alternate,
+    /// A GAUGE-FED other form, all engagement. Same shape as [`Self::Alternate`]
+    /// and a different claim: you cannot be in it for a whole engagement, so no
+    /// ruler ranks it, and it exists as a mode only so the builder can show the
+    /// form's own numbers.
+    ///
+    /// Split off from `Alternate` in 2026-08-08, when the Paris arrived. A bow
+    /// with an adapter has THREE forms — drawn, tapped, Incarnon — and the two
+    /// alternates were both emitting `id: "alternate"`, so a build naming a
+    /// mode named two of them. A weapon with one alternate never noticed.
+    Transformed,
     /// Fill the gauge in the base form, spend it in the other, come back.
     Cycle,
 }
@@ -791,6 +802,7 @@ impl PlayMode {
         match self {
             PlayMode::Base => "base",
             PlayMode::Alternate => "alternate",
+            PlayMode::Transformed => "transformed",
             PlayMode::Cycle => "cycle",
         }
     }
@@ -869,9 +881,14 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
                 sustainable: true,
             });
         }
+        // ONE MODE PER ALTERNATE FORM, and the two kinds have DIFFERENT IDS —
+        // a weapon may have more than one alternate (a bow with an adapter has
+        // a tapped shot and an Incarnon form), and a mode id is what a build
+        // names, so two of them sharing one id names neither.
+        let mode = if gauged { PlayMode::Transformed } else { PlayMode::Alternate };
         out.push(WeaponPlayMode {
-            id: PlayMode::Alternate.id(),
-            mode: PlayMode::Alternate,
+            id: mode.id(),
+            mode,
             weapon_id: alt.weapon_id,
             other_id: None,
             // A gauge you must fill and then run dry is exactly what cannot be
@@ -1861,8 +1878,15 @@ mod tests {
         for s in all() {
             let kind = s.form_kind(); // panics on a name outside the vocabulary
             let charge_trigger = s.attack.trigger == "charge";
+            // A GAUGE-SWITCHED FORM IS EXEMPT, and only that. It carries its
+            // own kind — the form vocabulary answers "which form of this
+            // weapon", and `incarnon` already answers it — so a form that
+            // happens to draw is not thereby the charged form. The Dread's
+            // Incarnon form draws for 0.6 s and is not what the arsenal means
+            // by "charged Dread". Everything else still has to agree: a
+            // `charge` trigger filed as `base` is a data error.
             assert_eq!(
-                charge_trigger,
+                charge_trigger && !kind.is_gauge_switched(),
                 kind == FormKind::Charged,
                 "{}: a charge trigger IS the charged form, and nothing else is",
                 s.id
@@ -2909,18 +2933,39 @@ mod play_mode_tests {
                 assert_eq!(ms.len(), 1, "{}: one form, so one mode", w.id);
                 continue;
             };
-            let gauged = spec(alt.weapon_id).is_some_and(|s| s.incarnon.is_some());
+            let _ = alt;
+            // EVERY alternate form gets its own mode, and a weapon may have
+            // more than one: a bow with an adapter has a tapped shot and an
+            // Incarnon form.
+            let alts: Vec<_> = forms.iter().filter(|f| !f.is_default).collect();
+            let gauged = |f: &FormRef| spec(f.weapon_id).is_some_and(|s| s.incarnon.is_some());
+            let any_gauged = alts.iter().any(|f| gauged(f));
             let has = |m: PlayMode| ms.iter().any(|x| x.mode == m);
-            let rankable = |m: PlayMode| {
-                ms.iter().any(|x| x.mode == m && x.sustainable)
-            };
-            assert!(has(PlayMode::Alternate), "{}: a second form and no alternate mode", w.id);
-            assert_eq!(has(PlayMode::Cycle), gauged, "{}: cycle iff gauge", w.id);
+            let rankable = |m: PlayMode| ms.iter().any(|x| x.mode == m && x.sustainable);
+
             assert_eq!(
-                rankable(PlayMode::Alternate), !gauged,
-                "{}: a gauge-fed form cannot be held for an engagement, and a free one can",
-                w.id
+                ms.len(), 1 + alts.len() + usize::from(any_gauged),
+                "{}: {} forms should give base + one mode each + a cycle: {:?}",
+                w.id, forms.len(), ms.iter().map(|m| m.id).collect::<Vec<_>>()
             );
+            assert_eq!(has(PlayMode::Cycle), any_gauged, "{}: cycle iff gauge", w.id);
+            assert_eq!(has(PlayMode::Transformed), any_gauged, "{}: gauge-fed mode iff gauge", w.id);
+            assert_eq!(
+                has(PlayMode::Alternate), alts.iter().any(|f| !gauged(f)),
+                "{}: a free second form is an alternate", w.id
+            );
+            // …and the ids are DISTINCT, which is the whole reason the gauged
+            // one is its own mode: a build names a mode by id.
+            let mut ids: Vec<&str> = ms.iter().map(|m| m.id).collect();
+            let n = ids.len();
+            ids.sort_unstable();
+            ids.dedup();
+            assert_eq!(ids.len(), n, "{}: two modes share an id: {ids:?}", w.id);
+
+            assert!(!rankable(PlayMode::Transformed),
+                "{}: a gauge-fed form cannot be held for an engagement", w.id);
+            assert_eq!(rankable(PlayMode::Alternate), has(PlayMode::Alternate),
+                "{}: a free form can be held for one", w.id);
         }
     }
 
@@ -2934,7 +2979,16 @@ mod play_mode_tests {
         // The gauge weapon: never transmute, or run the cycle.
         assert_eq!(f("torid", PlayMode::Base), Some("base"));
         assert_eq!(f("torid", PlayMode::Cycle), Some("incarnon_cycle"));
-        assert_eq!(f("torid", PlayMode::Alternate), Some("incarnon"));
+        // TRANSFORMED, not Alternate: being in the Incarnon form for a
+        // whole engagement is a thing the builder can show and not a
+        // thing a ruler ranks.
+        assert_eq!(f("torid", PlayMode::Transformed), Some("incarnon"));
+        assert_eq!(f("torid", PlayMode::Alternate), None, "the Torid has no free second form");
+        // A bow with an adapter has BOTH, which is why they are two modes.
+        assert_eq!(f("paris", PlayMode::Base), Some("charged"));
+        assert_eq!(f("paris", PlayMode::Alternate), Some("base"), "the tapped shot");
+        assert_eq!(f("paris", PlayMode::Transformed), Some("incarnon"));
+        assert_eq!(f("paris", PlayMode::Cycle), Some("incarnon_cycle"));
         // The free one, where `base` mode is the CHARGED form because that is
         // what the arsenal hands you — the mode is named for its role, not for
         // the form's own name.

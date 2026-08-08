@@ -38,8 +38,8 @@ introduced: "Update 9.5"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/GrineerSawbladeGun/SawBladeGun
 noise: alarming
 ammo_type: primary
-ammo_max: 540
-ammo_pickup: 80
+ammo_max: 80
+ammo_pickup: 40
 magazine: 20
 reload_seconds: 2
 

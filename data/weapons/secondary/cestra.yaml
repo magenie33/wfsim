@@ -31,7 +31,7 @@ introduced: "Update 11.0"
 internal_name: /Lotus/Weapons/Corpus/Pistols/CorpusMinigun/CorpusMinigun
 noise: alarming
 ammo_type: secondary
-ammo_max: 210
+ammo_max: 420
 ammo_pickup: 40
 magazine: 60
 reload_seconds: 2

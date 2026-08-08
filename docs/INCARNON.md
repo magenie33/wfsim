@@ -366,8 +366,15 @@ is intrinsic — but they still model as a transform group here, and they carry
    ~~Cestra~~, ~~Atomos~~, ~~Ballistica (3)~~, ~~Gammacor~~, ~~Angstrum~~,
    ~~Miter~~ — **all done 2026-08-08** (batches 1-4, 40 entries). None left in
    this class.
-4. **Paris + Dread** together — one bow session covers both, and Cernos Prime
-   already pins the charge/uncharge shape.
+4. ~~**Paris + Dread** together~~ — **done 2026-08-08** (batch 5). Twelve
+   entries: each bow is THREE — drawn (the arsenal's), tapped (free, no gauge)
+   and Incarnon. That third form is what split `PlayMode::Alternate` into
+   Alternate (free, rankable) and Transformed (gauge-fed, not): with two
+   alternate forms both emitting `id: "alternate"`, a build naming a mode named
+   neither. The CO base fraction came out DERIVABLE rather than guessed — all
+   four bows deal exactly twice their tapped total when drawn, so the charge
+   multiplier is 2 and the fraction is 0.5, the same number the Cernos Prime
+   carries for the same reason.
 5. **The mechanic-gated ones, one mechanic per batch**: Soma+Gorgon (spool),
    Strun+Felarx (by-round reload), Zylok (duplex), Vectis (sniper combo).
 6. **Onos**, then **Stug** last — the two shapes nothing else shares.

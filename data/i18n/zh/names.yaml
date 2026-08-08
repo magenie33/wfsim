@@ -141,6 +141,18 @@ weapons:
   rakta_ballistica_incarnon: 绯红·布里斯提卡 (灵化形态)
   synoid_gammacor: 枢议·咖玛腕甲枪
   synoid_gammacor_incarnon: 枢议·咖玛腕甲枪 (灵化形态)
+  dread: 恐惧
+  dread_incarnon: 恐惧 (灵化形态)
+  dread_uncharged: 恐惧
+  mk1_paris: MK1-帕里斯
+  mk1_paris_incarnon: MK1-帕里斯 (灵化形态)
+  mk1_paris_uncharged: MK1-帕里斯
+  paris: 帕里斯
+  paris_incarnon: 帕里斯 (灵化形态)
+  paris_prime: 帕里斯 Prime
+  paris_prime_incarnon: 帕里斯 Prime (灵化形态)
+  paris_prime_uncharged: 帕里斯 Prime
+  paris_uncharged: 帕里斯
 
 enemies:
   thrax_centurion: 凶魂百夫长

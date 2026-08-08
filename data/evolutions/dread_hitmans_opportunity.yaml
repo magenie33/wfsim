@@ -1,0 +1,21 @@
+id: dread_hitmans_opportunity
+name: Hitman's Opportunity
+weapon: dread
+tier: 2
+description: "Increase Base Damage by +70. +100% Damage to enemies below half Health."
+# THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
+# of them carry the same ladder; a value that differs between them is
+# printed per variant by the wiki and transcribed per variant here.
+selection: choose_one
+
+effects:
+  # from: "Increase Base Damage by +70"
+  - kind: flat_base_damage
+    value: 70.0
+  # NOT MODELLED — no rule for this clause, so it loads as
+  # `EvoEffect::Inert` and both the builder and the optimizer print it
+  # as such. VERBATIM: "+100% Damage to enemies below half Health"
+  - kind: unmodelled_damage_to_enemies_below_half_health
+
+source:
+  url: https://wiki.warframe.com/w/Dread_Incarnon_Genesis

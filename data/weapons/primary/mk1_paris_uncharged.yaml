@@ -1,0 +1,66 @@
+id: mk1_paris_uncharged
+name: MK1-Paris
+slot: primary
+class: bow
+form: base
+mod_pools: [primary, rifle, bow]
+mastery_rank: 0
+max_rank: 30
+
+# A FORM, NOT A TRANSFORMATION: releasing early costs nothing — no gauge,
+# no transmute animation, just a shorter press — which is why this entry
+# carries no `transforms_from`. See docs/GLOSSARY.md "FORMS".
+# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# separate entries linked by a transform group.
+transform_group: mk1_paris
+
+# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# array, which is DE's own export and which agreed with the wiki infobox field
+# for field on every one of the eleven guns checked by hand first. The
+# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
+# wiki's table, with every clause the intake's rule engine did not recognise
+# loaded as a NAMED INERT effect that the builder and the optimizer both print
+# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# yet and say so on their own tile.
+accuracy: 16.67
+disposition: 1.45
+polarities: [naramon]
+exilus_polarity: naramon
+riven_family: Paris
+traits: [incarnon]
+introduced: "Update 14.0"
+internal_name: /Lotus/Weapons/MK1Series/MK1Paris
+noise: silent
+ammo_type: primary
+ammo_max: 72
+ammo_pickup: 15
+magazine: 1
+reload_seconds: 0.55
+
+# CO ON THE FULL BASE. The charged entry computes it on HALF, and
+# that 0.5 is the charge multiplier sitting outside the additive
+# bracket. There is no charge multiplier here, so the fraction stays
+# at the loader default of 1.0 — the same split the Cernos Prime's
+# two entries carry.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Releasing early is a semi-auto press, not a draw.
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 70
+  fire_rate: 1
+  # ZERO, and it is a statement rather than an absence: the nock alone
+  # paces a tapped bow.
+  charge_seconds: 0.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.3
+  crit_multiplier: 2
+  status_chance: 0.15
+  punch_through_m: 0.0
+  damage: { impact: 5.75, slash: 23, puncture: 86.25 }   # total 115.0
+
+source:
+  url: https://wiki.warframe.com/w/MK1-Paris
+  # WFCD `attacks`: "Uncharged Shot"

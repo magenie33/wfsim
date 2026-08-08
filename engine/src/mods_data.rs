@@ -1097,7 +1097,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 57] = [
+        const EXPECTED: [(&str, &str, &[&str]); 61] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
@@ -1126,6 +1126,12 @@ mod tests {
             ("vasto_prime", "semi_auto", &["semi_pistol_cannonade"]),
             ("bronco", "semi_auto", &["semi_pistol_cannonade"]),
             ("bronco_prime", "semi_auto", &["semi_pistol_cannonade"]),
+            // Batch 5 — the bows. A drawn shot takes no Cannonade either;
+            // the tapped entries are not roster rows, so they are not listed.
+            ("paris", "charge", &[]),
+            ("mk1_paris", "charge", &[]),
+            ("paris_prime", "charge", &[]),
+            ("dread", "charge", &[]),
             // Batch 4 — the first CHARGE weapons in the intake. A drawn shot
             // is its own trigger family and takes no Cannonade, the same
             // answer the Cernos Prime gets. The Gammacor is a beam and reads
