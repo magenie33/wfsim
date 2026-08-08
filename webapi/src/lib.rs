@@ -2303,11 +2303,25 @@ pub fn panel_json(v: &Value) -> Value {
             })
         };
         let mut row = |key: &'static str, label: &str, base_s: String, final_s: String| {
-            let mut j = json!({ "key": key, "label": label, "base": base_s, "final": final_s,
-            "sources": sources(key, None) });
+            let mut srcs = sources(key, None);
+            let mut j = json!({ "key": key, "label": label, "base": base_s, "final": final_s });
             if let Some(by) = lock_by(key) {
+                // ...AND WHAT THE LOCK IS THROWING AWAY. The row kept listing
+                // every bonus feeding a stat it had already zeroed, so a build
+                // with Critical Deceleration under a Cannonade read "3.3/s ·
+                // locked · −20% Critical Deceleration" — a pinned number and a
+                // contribution to it, on the same row, with nothing saying
+                // which one won (owner, 2026-08-08). The number was always
+                // right; the row argued with itself about it. Marking them is
+                // better than dropping them: "this mod does nothing here" is
+                // exactly what the reader came for, and a missing line says it
+                // to nobody.
+                for s in srcs.iter_mut() {
+                    s["ignored"] = json!(true);
+                }
                 j["locked_by"] = json!(by);
             }
+            j["sources"] = json!(srcs);
             stats.push(j);
         };
         // Base columns show the RAW weapon base (pre-evolution): the evolution

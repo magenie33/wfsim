@@ -4736,8 +4736,12 @@ function renderPanel(r) {
         + gaps.map((g) => `<div class="unmod-l">${escHtml(tr(g))}</div>`).join("")
       : "";
   }
+  // A source the row's LOCK is ignoring still lists, struck through and said
+  // out loud: "Fire Rate cannot be modified" means this mod's bonus is not in
+  // the number above, and a line that looks like every other line claims the
+  // opposite (owner, 2026-08-08).
   const srcLine = (s) =>
-    `<div class="ssrc">${s.value} — ${s.mod}${s.note ? ` <span class="snote">(${s.note})</span>` : ""}</div>`;
+    `<div class="ssrc${s.ignored ? " sdead" : ""}"${s.ignored ? ` title="${escHtml(tr("ignored — this stat is locked at the weapon's default"))}"` : ""}>${s.value} — ${s.mod}${s.note ? ` <span class="snote">(${s.note})</span>` : ""}${s.ignored ? ` <span class="snote">(${escHtml(tr("ignored"))})</span>` : ""}</div>`;
 
   // THE MULTIPLICATIVE BUCKET, DRAWN (community request, 2026-08-05: the app
   // does the hard arithmetic and then shows only its answer, so the mechanics
@@ -4761,6 +4765,10 @@ function renderPanel(r) {
   // nothing that `40 → 106` did not.
   const bucketLine = (row) => {
     const src = row.sources || [];
+    // A LOCKED row has no arithmetic to draw: its bucket was emptied, so
+    // `3.3 × (1 - 0.20) = 3.3` would be a false equation printed in the one
+    // place that exists to show the real one.
+    if (row.locked_by) return "";
     if (src.length < 2 || !src.every((x) => typeof x.frac === "number")) return "";
     const base = String(row.base || "").replace(/[^0-9.\-]/g, "");
     if (!base || row.base === "—") return "";

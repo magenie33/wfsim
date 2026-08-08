@@ -146,9 +146,24 @@ const r = await evaluate(`(async () => {
   const slot2 = document.querySelector('#mod-slots .slot.empty');
   slot2.click(); await sleep(600);
   document.querySelector('#mod-menu .opt[data-id="${MOD}"]').click(); await sleep(2500);
-  const frRow = [...document.querySelectorAll('#stats-rows .srow')]
+  const frRowEl = () => [...document.querySelectorAll('#stats-rows .srow')]
     .find((r) => /Fire Rate/i.test(r.querySelector('.sk')?.textContent || ''));
+  const frRow = frRowEl();
   out.frRow = frRow ? frRow.textContent.replace(/\\s+/g, ' ').trim() : '';
+  // ...AND WHAT THE LOCK IGNORES. Creeping Bullseye is the pistol's
+  // fire-rate-for-crit trade, so this is the build the question came from:
+  // under a Cannonade its -20% must not be in the number, and the row must
+  // not list it as though it were.
+  const slot3 = document.querySelector('#mod-slots .slot.empty');
+  slot3.click(); await sleep(600);
+  document.querySelector('#mod-menu .opt[data-id="creeping_bullseye"]').click(); await sleep(2500);
+  const withSlow = frRowEl();
+  out.frLocked = withSlow ? withSlow.textContent.replace(/\\s+/g, ' ').trim() : '';
+  out.frDead = withSlow
+    ? [...withSlow.querySelectorAll('.ssrc')].map(e => ({
+        text: e.textContent.replace(/\\s+/g, ' ').trim(), dead: e.classList.contains('sdead') }))
+    : [];
+  out.frBucket = !!(withSlow && withSlow.querySelector('.sbucket'));
   // Frenzy is Dual Toxocyst's fire-rate passive, so under the lock it has
   // nothing to grant and no card to configure.
   await go('/weapons/Dual_Toxocyst/simulator');
@@ -177,6 +192,20 @@ check("removing the form offers it again", r.backOffered === true);
 check("the panel pins Fire Rate at the weapon's default",
   /locked at the weapon's default by/.test(r.frRow) && /Semi-Pistol Cannonade/.test(r.frRow),
   JSON.stringify(r.frRow));
+// The row must not argue with itself: the number stays the weapon's, and the
+// bonus it is ignoring is struck through and SAID, not silently listed as a
+// contribution (owner, 2026-08-08 — the question was whether the lock works at
+// all, asked of a panel that showed both answers at once).
+console.log("locked row:", JSON.stringify(r.frLocked), JSON.stringify(r.frDead));
+const frOf = (s) => (String(s).match(/([\d.]+)\/s/) || [])[1];
+check("a -20% fire-rate mod under the lock does not move the number",
+  frOf(r.frLocked) && frOf(r.frLocked) === frOf(r.frRow) && !/→/.test(r.frLocked),
+  `${JSON.stringify(r.frRow)} vs ${JSON.stringify(r.frLocked)}`);
+check("...and its line is marked ignored, not listed as a contribution",
+  r.frDead.length > 0 && r.frDead.every((x) => x.dead) && /ignored/i.test(r.frLocked),
+  JSON.stringify(r.frDead));
+check("...and no bucket arithmetic is drawn for a stat with an empty bucket",
+  r.frBucket === false);
 check("...and Frenzy is not offered as a buff to configure",
   !/Frenzy/i.test(r.buffs), JSON.stringify(r.buffs.slice(0, 200)));
 

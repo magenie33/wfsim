@@ -383,6 +383,10 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 .shead .sv{font-variant-numeric:tabular-nums;font-size:13px}
 .shead .sbase{color:var(--muted)}
 .ssrc{font-size:12px;color:var(--text-2);padding:1px 0 0 14px;font-variant-numeric:tabular-nums}
+/* A bonus a LOCK is ignoring: struck through, so the row cannot be read as
+   "3.3/s, and also -20%". The word is beside it too — a strikethrough alone
+   is a style, not a statement. */
+.ssrc.sdead{text-decoration:line-through;opacity:.55}
 .snote{color:var(--muted);font-size:11px}
 /* Projectile blocks inside a form: the gun's rows sit flush, each
    projectile it launches is boxed off with its own heading. */

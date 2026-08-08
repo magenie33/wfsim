@@ -512,6 +512,9 @@ ui:
   # "set to its default ignoring other bonuses, even negative effects" — the
   # Cannonades say it of Fire Rate, the Acuity pair of Multishot.
   "locked at the weapon's default by": 已锁定为武器默认值，来自
+  # ...and the bonuses that lock is throwing away, still listed and marked.
+  "ignored": 未生效
+  "ignored — this stat is locked at the weapon's default": 未生效 —— 这项属性已被锁定为武器默认值
   "needs the same trigger on every firing mode, so this build has no Incarnon form": 要求每种开火模式都是同一种扳机，因此这套配装没有灵化形态
   "build": 配装
   "riven": 裂罅
