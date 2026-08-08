@@ -140,6 +140,34 @@ The evolution pages are `<武器>灵化之源` (伯斯顿灵化之源, 盗贼灵
 野猪灵化之源); a weapon page transcludes them with `{{#lst:…|Incarnon}}`, so
 reading the weapon page finds the section EMPTY and the names one hop away.
 
+#### …and on 2026-08-08 the whole roster went through it
+
+`scripts/cn_evolution_names.py` reads every family's page and transcribes both
+the perk NAME and its CARD TEXT — 447 of the 449 that were still empty. Two
+things about it are worth keeping:
+
+**The join is by NUMBERS, never by position.** Both pages list a tier's perks
+in the same order, so position would usually work, and "usually" is how a tier
+ends up silently shifted by one. It was tried: our perks are read in FILENAME
+order, and a positional pass swapped Evolved Autoloader with Swift Deliverance
+on the Dera, Kinetic Baffle with Frictionless Flight on the Felarx, and
+Marksman's Hand with Ready Retaliation on the Dex Sybaris. Every one of those
+looked right in the output.
+
+**A page can be wrong about its own weapon, and the other pages say so.** The
+Dera's has 迅速判决 against a magazine-capacity line and 扩充齐发 against a
+projectile-speed one — the opposite of what those two names carry on sixteen
+other pages, so number-matching faithfully reproduced its swap. The script now
+runs until it stops moving: each round counts what each English perk name was
+called, and a name read on two or more pages beats a one-off. It reported three
+such disagreements (Deathtrap Trigger 死陷触发 8:3, Extended Volley 扩充齐发
+18:2, Survivor's Edge 生还占优 29:2).
+
+Two names are still empty and say why in the file: the Felarx's Kinetic Baffle
+and Frictionless Flight are listed together in one table cell away from their
+values, both carry the number 50, and nothing on the page ties either name to
+either effect.
+
 With that, the Burston and Furis families' 36 evolution strings went in and
 `wfcd_i18n.py check` reports **nothing unnamed in any family** for the first
 time. Two of them also corroborated engine fixes made the day before from the

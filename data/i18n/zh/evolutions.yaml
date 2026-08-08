@@ -40,6 +40,465 @@
 # that is a wiki page rather than a data file.
 
 evolutions:
+
+  # Transcribed by scripts/cn_evolution_names.py from the CN wiki.
+  #
+  # TWO NAMES ARE MISSING FROM THIS BLOCK, on purpose. The Felarx's tier 2 has
+  # Kinetic Baffle (-50% recoil) and Frictionless Flight (+50% projectile
+  # speed); the CN page lists that tier's three names together in one table
+  # cell, away from their values, so nothing on the page ties a name to an
+  # effect and both perks carry the number 50. They are 动能隔档 and 顺滑飞行
+  # in one order or the other, and which is which is a question for someone
+  # with the game open:
+  #   felarx_kinetic_baffle:
+  #   felarx_frictionless_flight:
+  angstrum_critical_parallel: 临界平行
+  angstrum_evo1_incarnon_form: 灵化形态
+  angstrum_fatal_affliction: 致命苦痛
+  angstrum_haven_foray: 安逸冒险
+  angstrum_hitmans_hoard: 杀意贮藏
+  angstrum_paladin_virtue: 骑士圣德
+  angstrum_rapid_reinforcement: 急速强化
+  angstrum_survivors_edge: 生还占优
+  angstrum_swift_deliverance: 迅速判决
+  atomos_commodores_fortune: 准将沐福
+  atomos_elemental_balance: 元素平衡
+  atomos_evo1_incarnon_form: 灵化形态
+  atomos_hoplite_virtue: 重兵圣德
+  atomos_mercenary_chamber: 佣兵枪膛
+  atomos_moonrise_velocity: 皎月速升
+  atomos_paladin_virtue: 骑士圣德
+  atomos_resonant_restore: 共鸣恢复
+  atomos_survivors_edge: 生还占优
+  ballistica_critical_parallel: 临界平行
+  ballistica_elemental_balance: 元素平衡
+  ballistica_evo1_incarnon_form: 灵化形态
+  ballistica_headcracker: 碎颅破脑
+  ballistica_prime_critical_parallel: 临界平行
+  ballistica_prime_elemental_balance: 元素平衡
+  ballistica_prime_evo1_incarnon_form: 灵化形态
+  ballistica_prime_headcracker: 碎颅破脑
+  ballistica_prime_prolific_perforation: 连环贯穿
+  ballistica_prime_rapid_reinforcement: 急速强化
+  ballistica_prime_survivors_edge: 生还占优
+  ballistica_prime_swift_deliverance: 迅速判决
+  ballistica_prime_voids_guidance: 虚空指引
+  ballistica_prolific_perforation: 连环贯穿
+  ballistica_rapid_reinforcement: 急速强化
+  ballistica_survivors_edge: 生还占优
+  ballistica_swift_deliverance: 迅速判决
+  ballistica_voids_guidance: 虚空指引
+  bronco_commodores_fortune: 准将沐福
+  bronco_enough_for_everyone: 人人有份
+  bronco_evo1_incarnon_form: 灵化形态
+  bronco_extended_volley: 扩容齐发
+  bronco_infused_shots: 注能射击
+  bronco_kinetic_battle: 动能战斗
+  bronco_practiced_grip: 熟练之握
+  bronco_prime_commodores_fortune: 准将沐福
+  bronco_prime_enough_for_everyone: 人人有份
+  bronco_prime_evo1_incarnon_form: 灵化形态
+  bronco_prime_extended_volley: 扩容齐发
+  bronco_prime_infused_shots: 注能射击
+  bronco_prime_kinetic_battle: 动能战斗
+  bronco_prime_practiced_grip: 熟练之握
+  bronco_prime_rain_of_lead: 铅雨纷飞
+  bronco_prime_speeding_bullet: 超速子弹
+  bronco_rain_of_lead: 铅雨纷飞
+  bronco_speeding_bullet: 超速子弹
+  cestra_deathtrap_trigger: 死险触发
+  cestra_evo1_incarnon_form: 灵化形态
+  cestra_fortress_salvo: 要塞齐射
+  cestra_rapid_reinforcement: 急速强化
+  cestra_slayers_nerve: 杀手的胆识
+  cestra_steadfast_grit: 坚定不移
+  cestra_survivors_edge: 生还占优
+  cestra_swift_deliverance: 迅速判决
+  cestra_wisemans_regard: 智者慧眼
+  dera_crimson_overture: 猩红序曲
+  dera_deathtrap_trigger: 死险触发
+  dera_elemental_balance: 元素平衡
+  dera_evo1_incarnon_form: 灵化形态
+  dera_evolved_autoloader: 进化自填器
+  dera_extended_volley: 扩充齐发
+  dera_high_ground: 高地优势
+  dera_paragon_essence: 英豪本源
+  dera_swift_deliverance: 迅速判决
+  dera_vandal_crimson_overture: 猩红序曲
+  dera_vandal_deathtrap_trigger: 死险触发
+  dera_vandal_elemental_balance: 元素平衡
+  dera_vandal_evo1_incarnon_form: 灵化形态
+  dera_vandal_evolved_autoloader: 进化自填器
+  dera_vandal_extended_volley: 扩充齐发
+  dera_vandal_high_ground: 高地优势
+  dera_vandal_paragon_essence: 英豪本源
+  dera_vandal_swift_deliverance: 迅速判决
+  despair_critical_parallel: 临界平行
+  despair_elemental_balance: 元素平衡
+  despair_evo1_incarnon_form: 灵化形态
+  despair_fatal_affliction: 致命苦痛
+  despair_marksmans_focus: 善射之焦
+  despair_rapid_reinforcement: 急速强化
+  despair_stalkers_vendetta: Stalker 仇杀
+  despair_survivors_edge: 生还占优
+  despair_swift_deliverance: 迅速判决
+  dex_sybaris_blazing_barrel: 炽热枪管
+  dex_sybaris_elemental_dominance: 元素主宰
+  dex_sybaris_evo1_incarnon_form: 灵化形态
+  dex_sybaris_extended_volley: 扩充齐发
+  dex_sybaris_marksmans_hand: 善射之手
+  dex_sybaris_ready_retaliation: 待命报复
+  dex_sybaris_reavers_rapture: 掠夺者的狂喜
+  dex_sybaris_survivors_edge: 生还占优
+  dex_sybaris_well_rehearsed: 久经锤炼
+  dread_elemental_balance: 元素平衡
+  dread_evo1_incarnon_form: 灵化形态
+  dread_hitmans_hoard: 杀意贮藏
+  dread_hitmans_opportunity: 杀意乘势
+  dread_marksmans_focus: 善射之焦
+  dread_stalkers_resentment: Stalker 怨恨
+  dread_survivors_edge: 生还占优
+  dread_swift_deliverance: 迅速判决
+  dread_zeroed_in: 归零
+  felarx_agile_executor: 矫捷行刑者
+  felarx_attuned_accuracy: 调和精准
+  felarx_brutal_edge: 残暴锋缘
+  felarx_devastating_attrition: 毁灭损耗
+  felarx_dual_mode_chamber: 双型膛室
+  felarx_evo1_incarnon_form: 灵化形态
+  felarx_evolved_autoloader: 进化自填器
+  felarx_incarnon_catalyst: 灵化触媒
+  felarx_mounting_momentum: 装载动能
+  felarx_racking_wrath: 毁灭之怒
+  felarx_ruptured_plentitude: 破裂满盈
+  gammacor_critical_parallel: 临界平行
+  gammacor_elemental_balance: 元素平衡
+  gammacor_evo1_incarnon_form: 灵化形态
+  gammacor_evolved_autoloader: 进化自填器
+  gammacor_extended_volley: 扩充齐发
+  gammacor_infused_shots: 注能射击
+  gammacor_moonrise_velocity: 皎月速升
+  gammacor_sages_resolve: 贤者的决心
+  gammacor_survivors_edge: 生还占优
+  gorgon_absolute_valor: 绝对勇气
+  gorgon_elemental_balance: 元素平衡
+  gorgon_evo1_incarnon_form: 灵化形态
+  gorgon_hoplite_virtue: 重兵圣德
+  gorgon_hunters_mantra: 猎者密咒
+  gorgon_rapid_reinforcement: 急速强化
+  gorgon_resonant_restore: 共鸣恢复
+  gorgon_survivors_edge: 生还占优
+  gorgon_voids_guidance: 虚空指引
+  gorgon_wraith_absolute_valor: 绝对勇气
+  gorgon_wraith_elemental_balance: 元素平衡
+  gorgon_wraith_evo1_incarnon_form: 灵化形态
+  gorgon_wraith_hoplite_virtue: 重兵圣德
+  gorgon_wraith_hunters_mantra: 猎者密咒
+  gorgon_wraith_rapid_reinforcement: 急速强化
+  gorgon_wraith_resonant_restore: 共鸣恢复
+  gorgon_wraith_survivors_edge: 生还占优
+  gorgon_wraith_voids_guidance: 虚空指引
+  kunai_accelerating_volley: 加速齐发
+  kunai_deathtrap_trigger: 死陷触发
+  kunai_evo1_incarnon_form: 灵化形态
+  kunai_extended_volley: 扩充齐发
+  kunai_rapid_reinforcement: 急速强化
+  kunai_sages_resolve: 贤者的决心
+  kunai_survivors_edge: 生还占优
+  kunai_swift_conclusion: 迅速结果
+  kunai_swift_deliverance: 迅速判决
+  lato_carnage_reign: 屠杀统治
+  lato_deathtrap_trigger: 死陷触发
+  lato_evo1_incarnon_form: 灵化形态
+  lato_exact_penance: 精确忏悔
+  lato_haven_foray: 安逸冒险
+  lato_marksmans_gain: 善射之获
+  lato_prime_carnage_reign: 屠杀统治
+  lato_prime_deathtrap_trigger: 死陷触发
+  lato_prime_evo1_incarnon_form: 灵化形态
+  lato_prime_exact_penance: 精确忏悔
+  lato_prime_haven_foray: 安逸冒险
+  lato_prime_marksmans_gain: 善射之获
+  lato_prime_reified_bane: 具象克星
+  lato_prime_survivors_edge: 生还占优
+  lato_prime_voids_guidance: 虚空指引
+  lato_reified_bane: 具象克星
+  lato_survivors_edge: 生还占优
+  lato_vandal_carnage_reign: 屠杀统治
+  lato_vandal_deathtrap_trigger: 死陷触发
+  lato_vandal_evo1_incarnon_form: 灵化形态
+  lato_vandal_exact_penance: 精确忏悔
+  lato_vandal_haven_foray: 安逸冒险
+  lato_vandal_marksmans_gain: 善射之获
+  lato_vandal_reified_bane: 具象克星
+  lato_vandal_survivors_edge: 生还占优
+  lato_vandal_voids_guidance: 虚空指引
+  lato_voids_guidance: 虚空指引
+  lex_critical_parallel: 临界平行
+  lex_elemental_balance: 元素平衡
+  lex_evo1_incarnon_form: 灵化形态
+  lex_executioners_dawn: 行刑者黎明
+  lex_extended_volley: 扩充齐发
+  lex_hoplite_virtue: 重兵圣德
+  lex_lex_talionis: 以牙还牙
+  lex_prime_critical_parallel: 临界平行
+  lex_prime_elemental_balance: 元素平衡
+  lex_prime_evo1_incarnon_form: 灵化形态
+  lex_prime_executioners_dawn: 行刑者黎明
+  lex_prime_extended_volley: 扩充齐发
+  lex_prime_hoplite_virtue: 重兵圣德
+  lex_prime_lex_talionis: 以牙还牙
+  lex_prime_ready_retaliation: 待命报复
+  lex_prime_trusty_sidearm: 可信赖的副武
+  lex_ready_retaliation: 待命报复
+  lex_trusty_sidearm: 可信赖的副武
+  miter_commodores_fortune: 准将沐福
+  miter_critical_parallel: 临界平行
+  miter_evo1_incarnon_form: 灵化形态
+  miter_mercenary_chamber: 佣兵枪膛
+  miter_plentiful_mayhem: 丰饶混乱
+  miter_ready_retaliation: 待命报复
+  miter_sawblade_storm: 锯刃风暴
+  miter_swift_deliverance: 迅速判决
+  miter_swift_sawblades: 迅捷锯片
+  mk1_kunai_accelerating_volley: 加速齐发
+  mk1_kunai_deathtrap_trigger: 死陷触发
+  mk1_kunai_evo1_incarnon_form: 灵化形态
+  mk1_kunai_extended_volley: 扩充齐发
+  mk1_kunai_rapid_reinforcement: 急速强化
+  mk1_kunai_sages_resolve: 贤者的决心
+  mk1_kunai_survivors_edge: 生还占优
+  mk1_kunai_swift_conclusion: 迅速结果
+  mk1_kunai_swift_deliverance: 迅速判决
+  mk1_paris_ardent_trigger: 炽热先机
+  mk1_paris_deadly_pace: 致命步伐
+  mk1_paris_elemental_balance: 元素平衡
+  mk1_paris_evo1_incarnon_form: 灵化形态
+  mk1_paris_guardians_might: 守护者之力
+  mk1_paris_marksmans_focus: 善射之焦
+  mk1_paris_striking_succession: 连续猛攻
+  mk1_paris_swift_deliverance: 迅速判决
+  mk1_paris_vicious_promise: 恶毒之诺
+  mk1_strun_blazing_barrel: 炽热枪管
+  mk1_strun_brutal_edge: 残暴锋缘
+  mk1_strun_commodores_fortune: 准将沐福
+  mk1_strun_elemental_balance: 元素平衡
+  mk1_strun_evo1_incarnon_form: 灵化形态
+  mk1_strun_galvanic_reload: 电流重载
+  mk1_strun_rapid_reinforcement: 急速强化
+  mk1_strun_swift_deliverance: 迅速判决
+  mk1_strun_tenno_targeting: Tenno之瞄
+  onos_devastation_cascade: 毁灭连锁
+  onos_elemental_excess: 元素超量
+  onos_evo1_incarnon_form: 灵化形态
+  onos_extended_volley: 扩充齐发
+  onos_hunters_rearmament: 猎人重装
+  onos_impalers_ferocity: 穿刺者的凶猛
+  onos_incarnon_efficiency: 灵化效率
+  onos_lethal_lance: 致命穿刺
+  onos_marksmans_hand: 善射之手
+  onos_rapid_reinforcement: 急速强化
+  onos_rapid_wrath: 疾速之怒
+  onos_sequential_skullbuster: 连续爆颅
+  onos_swift_deliverance: 迅速判决
+  paris_ardent_trigger: 炽热先机
+  paris_deadly_pace: 致命步伐
+  paris_elemental_balance: 元素平衡
+  paris_evo1_incarnon_form: 灵化形态
+  paris_guardians_might: 守护者之力
+  paris_marksmans_focus: 善射之焦
+  paris_prime_ardent_trigger: 炽热先机
+  paris_prime_deadly_pace: 致命步伐
+  paris_prime_elemental_balance: 元素平衡
+  paris_prime_evo1_incarnon_form: 灵化形态
+  paris_prime_guardians_might: 守护者之力
+  paris_prime_marksmans_focus: 善射之焦
+  paris_prime_striking_succession: 连续猛攻
+  paris_prime_swift_deliverance: 迅速判决
+  paris_prime_vicious_promise: 恶毒之诺
+  paris_striking_succession: 连续猛攻
+  paris_swift_deliverance: 迅速判决
+  paris_vicious_promise: 恶毒之诺
+  prisma_angstrum_critical_parallel: 临界平行
+  prisma_angstrum_evo1_incarnon_form: 灵化形态
+  prisma_angstrum_fatal_affliction: 致命苦痛
+  prisma_angstrum_haven_foray: 安逸冒险
+  prisma_angstrum_hitmans_hoard: 杀意贮藏
+  prisma_angstrum_paladin_virtue: 骑士圣德
+  prisma_angstrum_rapid_reinforcement: 急速强化
+  prisma_angstrum_survivors_edge: 生还占优
+  prisma_angstrum_swift_deliverance: 迅速判决
+  prisma_gorgon_absolute_valor: 绝对勇气
+  prisma_gorgon_elemental_balance: 元素平衡
+  prisma_gorgon_evo1_incarnon_form: 灵化形态
+  prisma_gorgon_hoplite_virtue: 重兵圣德
+  prisma_gorgon_hunters_mantra: 猎者密咒
+  prisma_gorgon_rapid_reinforcement: 急速强化
+  prisma_gorgon_resonant_restore: 共鸣恢复
+  prisma_gorgon_survivors_edge: 生还占优
+  prisma_gorgon_voids_guidance: 虚空指引
+  rakta_ballistica_critical_parallel: 临界平行
+  rakta_ballistica_elemental_balance: 元素平衡
+  rakta_ballistica_evo1_incarnon_form: 灵化形态
+  rakta_ballistica_headcracker: 碎颅破脑
+  rakta_ballistica_prolific_perforation: 连环贯穿
+  rakta_ballistica_rapid_reinforcement: 急速强化
+  rakta_ballistica_survivors_edge: 生还占优
+  rakta_ballistica_swift_deliverance: 迅速判决
+  rakta_ballistica_voids_guidance: 虚空指引
+  sicarus_commodores_fortune: 准将沐福
+  sicarus_evo1_incarnon_form: 灵化形态
+  sicarus_extended_volley: 扩充齐发
+  sicarus_feigned_retreat: 假意撤退
+  sicarus_kings_gambit: 帝王棋局
+  sicarus_prime_commodores_fortune: 准将沐福
+  sicarus_prime_evo1_incarnon_form: 灵化形态
+  sicarus_prime_extended_volley: 扩充齐发
+  sicarus_prime_feigned_retreat: 假意撤退
+  sicarus_prime_kings_gambit: 帝王棋局
+  sicarus_prime_rapid_reinforcement: 急速强化
+  sicarus_prime_survivors_edge: 生还占优
+  sicarus_prime_voids_guidance: 虚空指引
+  sicarus_prime_wisemans_regard: 智者慧眼
+  sicarus_rapid_reinforcement: 急速强化
+  sicarus_survivors_edge: 生还占优
+  sicarus_voids_guidance: 虚空指引
+  sicarus_wisemans_regard: 智者慧眼
+  soma_evo1_incarnon_form: 灵化形态
+  soma_fatal_affliction: 致命苦痛
+  soma_fortifying_bloodshed: 固盾血光
+  soma_fortress_salvo: 要塞齐射
+  soma_fresh_havoc: 新生浩劫
+  soma_kinetic_battle: 动能战斗
+  soma_practiced_grip: 熟练之握
+  soma_prime_evo1_incarnon_form: 灵化形态
+  soma_prime_fatal_affliction: 致命苦痛
+  soma_prime_fortifying_bloodshed: 固盾血光
+  soma_prime_fortress_salvo: 要塞齐射
+  soma_prime_fresh_havoc: 新生浩劫
+  soma_prime_kinetic_battle: 动能战斗
+  soma_prime_practiced_grip: 熟练之握
+  soma_prime_rapid_reinforcement: 急速强化
+  soma_prime_zeroed_in: 归零
+  soma_rapid_reinforcement: 急速强化
+  soma_zeroed_in: 归零
+  strun_blazing_barrel: 炽热枪管
+  strun_brutal_edge: 残暴锋缘
+  strun_commodores_fortune: 准将沐福
+  strun_elemental_balance: 元素平衡
+  strun_evo1_incarnon_form: 灵化形态
+  strun_galvanic_reload: 电流重载
+  strun_prime_blazing_barrel: 炽热枪管
+  strun_prime_brutal_edge: 残暴锋缘
+  strun_prime_commodores_fortune: 准将沐福
+  strun_prime_elemental_balance: 元素平衡
+  strun_prime_evo1_incarnon_form: 灵化形态
+  strun_prime_galvanic_reload: 电流重载
+  strun_prime_rapid_reinforcement: 急速强化
+  strun_prime_swift_deliverance: 迅速判决
+  strun_prime_tenno_targeting: Tenno之瞄
+  strun_rapid_reinforcement: 急速强化
+  strun_swift_deliverance: 迅速判决
+  strun_tenno_targeting: Tenno之瞄
+  strun_wraith_blazing_barrel: 炽热枪管
+  strun_wraith_brutal_edge: 残暴锋缘
+  strun_wraith_commodores_fortune: 准将沐福
+  strun_wraith_elemental_balance: 元素平衡
+  strun_wraith_evo1_incarnon_form: 灵化形态
+  strun_wraith_galvanic_reload: 电流重载
+  strun_wraith_rapid_reinforcement: 急速强化
+  strun_wraith_swift_deliverance: 迅速判决
+  strun_wraith_tenno_targeting: Tenno之瞄
+  stug_blazing_barrel: 炽热枪管
+  stug_deathtrap_trigger: 死陷触发
+  stug_elemental_dominance: 元素主宰
+  stug_evo1_incarnon_form: 灵化形态
+  stug_overcharge_blast: 过载爆炸
+  stug_rapid_reinforcement: 急速强化
+  stug_resonant_restore: 共鸣恢复
+  stug_survivors_edge: 生还占优
+  stug_swift_deliverance: 迅速判决
+  sybaris_blazing_barrel: 炽热枪管
+  sybaris_elemental_dominance: 元素主宰
+  sybaris_evo1_incarnon_form: 灵化形态
+  sybaris_extended_volley: 扩充齐发
+  sybaris_marksmans_hand: 善射之手
+  sybaris_prime_blazing_barrel: 炽热枪管
+  sybaris_prime_elemental_dominance: 元素主宰
+  sybaris_prime_evo1_incarnon_form: 灵化形态
+  sybaris_prime_extended_volley: 扩充齐发
+  sybaris_prime_marksmans_hand: 善射之手
+  sybaris_prime_ready_retaliation: 待命报复
+  sybaris_prime_reavers_rapture: 掠夺者的狂喜
+  sybaris_prime_survivors_edge: 生还占优
+  sybaris_prime_well_rehearsed: 久经锤炼
+  sybaris_ready_retaliation: 待命报复
+  sybaris_reavers_rapture: 掠夺者的狂喜
+  sybaris_survivors_edge: 生还占优
+  sybaris_well_rehearsed: 久经锤炼
+  synoid_gammacor_critical_parallel: 临界平行
+  synoid_gammacor_elemental_balance: 元素平衡
+  synoid_gammacor_evo1_incarnon_form: 灵化形态
+  synoid_gammacor_evolved_autoloader: 进化自填器
+  synoid_gammacor_extended_volley: 扩充齐发
+  synoid_gammacor_infused_shots: 注能射击
+  synoid_gammacor_moonrise_velocity: 皎月速升
+  synoid_gammacor_sages_resolve: 贤者的决心
+  synoid_gammacor_survivors_edge: 生还占优
+  vasto_awakened_readiness: 觉醒备战
+  vasto_commodores_fortune: 准将沐福
+  vasto_deathtrap_trigger: 死陷触发
+  vasto_evo1_incarnon_form: 灵化形态
+  vasto_extended_volley: 扩充齐发
+  vasto_lone_gun: 孤枪
+  vasto_marksmans_hand: 善射之手
+  vasto_prime_awakened_readiness: 觉醒备战
+  vasto_prime_commodores_fortune: 准将沐福
+  vasto_prime_deathtrap_trigger: 死陷触发
+  vasto_prime_evo1_incarnon_form: 灵化形态
+  vasto_prime_extended_volley: 扩充齐发
+  vasto_prime_lone_gun: 孤枪
+  vasto_prime_marksmans_hand: 善射之手
+  vasto_prime_reapers_plenty: 死神之裕
+  vasto_prime_survivors_edge: 生还占优
+  vasto_reapers_plenty: 死神之裕
+  vasto_survivors_edge: 生还占优
+  vectis_critical_parallel: 临界平行
+  vectis_deadhead: 死亡头颅
+  vectis_evo1_incarnon_form: 灵化形态
+  vectis_inciting_incident: 导火索
+  vectis_lone_enforcer: 孤胆执法者
+  vectis_marksmans_hand: 善射之手
+  vectis_prime_critical_parallel: 临界平行
+  vectis_prime_deadhead: 死亡头颅
+  vectis_prime_evo1_incarnon_form: 灵化形态
+  vectis_prime_inciting_incident: 导火索
+  vectis_prime_lone_enforcer: 孤胆执法者
+  vectis_prime_marksmans_hand: 善射之手
+  vectis_prime_rapid_reinforcement: 急速强化
+  vectis_prime_silent_running: 静步无声
+  vectis_prime_survivors_edge: 智者慧眼
+  vectis_rapid_reinforcement: 急速强化
+  vectis_silent_running: 静步无声
+  vectis_survivors_edge: 智者慧眼
+  zylok_commodores_fortune: 准将沐福
+  zylok_evo1_incarnon_form: 灵化形态
+  zylok_extended_volley: 扩充齐发
+  zylok_fatal_affliction: 致命苦痛
+  zylok_maulers_magazine: 击手的弹匣
+  zylok_precisions_payoff: 精准回报
+  zylok_prime_commodores_fortune: 准将沐福
+  zylok_prime_evo1_incarnon_form: 灵化形态
+  zylok_prime_extended_volley: 扩充齐发
+  zylok_prime_fatal_affliction: 致命苦痛
+  zylok_prime_maulers_magazine: 击手的弹匣
+  zylok_prime_precisions_payoff: 精准回报
+  zylok_prime_rapid_reinforcement: 急速强化
+  zylok_prime_survivors_edge: 生还占优
+  zylok_prime_voids_guidance: 虚空指引
+  zylok_rapid_reinforcement: 急速强化
+  zylok_survivors_edge: 生还占优
+  zylok_voids_guidance: 虚空指引
   # Dual Toxocyst
   dual_toxocyst_evo1_incarnon_form: 灵化形态
   dual_toxocyst_carnage_reign: 屠杀统治
@@ -279,6 +738,455 @@ evolutions:
 # breaks a line.
 
 evolution_descriptions:
+
+  # Transcribed by scripts/cn_evolution_names.py.
+  angstrum_critical_parallel: "基础暴击几率增加+14% （原版） 基础暴击倍率增加+0.2x"
+  angstrum_evo1_incarnon_form: "直接命中为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  angstrum_fatal_affliction: "目标身上的每种异常状态可增加+40%的直接伤害"
+  angstrum_haven_foray: "基础伤害增加+50 拥有过载护盾时：基础伤害增加+50"
+  angstrum_hitmans_hoard: "增加+9弹药上限"
+  angstrum_paladin_virtue: "基础伤害增加+75 最大能量值大于700时：基础暴击倍率增加+0.5x"
+  angstrum_rapid_reinforcement: "+50%装填速度"
+  angstrum_survivors_edge: "基础暴击几率增加+9% （原版） 基础触发几率增加+9% （原版）"
+  angstrum_swift_deliverance: "+30%投射物速度"
+  atomos_commodores_fortune: "基础暴击几率增加+19%"
+  atomos_elemental_balance: "基础触发几率增加+20%"
+  atomos_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  atomos_hoplite_virtue: "基础伤害增加+24 打破护盾时：基础伤害增加+30，持续8s"
+  atomos_mercenary_chamber: "弹药容量提升至560"
+  atomos_moonrise_velocity: "+7攻击范围"
+  atomos_paladin_virtue: "基础伤害增加+24 能量最大值达到700以上：基础暴击伤害增加+1x"
+  atomos_resonant_restore: "空弹匣装填时：弹匣容量增加+5 最高叠加至7层"
+  atomos_survivors_edge: "基础暴击几率增加+10% 触发几率增加+10%"
+  ballistica_critical_parallel: "基础暴击几率增加+15%（原版） 基础暴击伤害倍率增加+1.0（原版）/+1.0（绯红）/+1.0（Prime）"
+  ballistica_elemental_balance: "每个投射物的基础触发几率增加+20%（原版）/+20%（绯红）/+18%（Prime） 灵化形态的基础触发几率增加+20%（原版）/+20%（绯红）/+72%（Prime）"
+  ballistica_evo1_incarnon_form: "命中弱点为灵化转变充能，次要射击进行转变。切换回原有模式将消耗剩余的充能。"
+  ballistica_headcracker: "基础伤害增加+30（原版）/ +10（绯红）/+3（Prime） 造成爆头后：+7.5%射速，持续4秒。最多叠加到10层。"
+  ballistica_prime_critical_parallel: "基础暴击几率增加+12%（Prime） 基础暴击伤害倍率增加+1.0（原版）/+1.0（绯红）/+1.0（Prime）"
+  ballistica_prime_elemental_balance: "每个投射物的基础触发几率增加+18%（Prime） 灵化形态的基础触发几率增加+72%（Prime）"
+  ballistica_prime_evo1_incarnon_form: "命中弱点为灵化转变充能，次要射击进行转变。切换回原有模式将消耗剩余的充能。"
+  ballistica_prime_headcracker: "基础伤害增加+30（原版）/ +10（绯红）/+3（Prime） 造成爆头后：+7.5%射速，持续4秒。最多叠加到10层。"
+  ballistica_prime_prolific_perforation: "基础伤害增加+30（原版）/ +10（绯红）/+3（Prime） 穿透命中时：+10%暴击几率，持续3秒。最多叠加到8层。"
+  ballistica_prime_rapid_reinforcement: "+50%装填速度"
+  ballistica_prime_survivors_edge: "基础暴击几率增加+7%（Prime） 每个投射物的基础触发几率增加+7%（Prime） 灵化形态的基础触发几率增加+28%（Prime）"
+  ballistica_prime_swift_deliverance: "+50%投射物速度"
+  ballistica_prime_voids_guidance: "+40%精确度 -40%武器后坐力"
+  ballistica_prolific_perforation: "基础伤害增加+30（原版）/ +10（绯红）/+3（Prime） 穿透命中时：+10%暴击几率，持续3秒。最多叠加到8层。"
+  ballistica_rapid_reinforcement: "+50%装填速度"
+  ballistica_survivors_edge: "基础暴击几率增加+10%（原版） 每个投射物的基础触发几率增加+10%（原版） 灵化形态的基础触发几率增加+10%（原版）"
+  ballistica_swift_deliverance: "+50%投射物速度"
+  ballistica_voids_guidance: "+40%精确度 -40%武器后坐力"
+  bronco_commodores_fortune: "+20%基础暴击几率"
+  bronco_enough_for_everyone: "6米内至少有6名敌人时+80%弹药效率。"
+  bronco_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  bronco_extended_volley: "+2弹匣容量"
+  bronco_infused_shots: "基础伤害增加 +20 （原版）。每消耗50能量: 基础伤害增加 +10 （原版），持续10秒，最高可叠加至4x"
+  bronco_kinetic_battle: "-50%后坐力"
+  bronco_practiced_grip: "+30%精准度"
+  bronco_prime_commodores_fortune: "+20%基础暴击几率"
+  bronco_prime_enough_for_everyone: "6米内至少有6名敌人时+80%弹药效率。"
+  bronco_prime_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  bronco_prime_extended_volley: "+2弹匣容量"
+  bronco_prime_infused_shots: "基础伤害增加 +16 （Prime）。每消耗50能量: 基础伤害增加 +10 （原版） / +9（Prime），持续10秒，最高可叠加至4x"
+  bronco_prime_kinetic_battle: "-50%后坐力"
+  bronco_prime_practiced_grip: "+30%精准度"
+  bronco_prime_rain_of_lead: "+2基础多重射击"
+  bronco_prime_speeding_bullet: "基础伤害增加 +30 （Prime）。冲刺速度在1.2或更高时: +60%投射物速度"
+  bronco_rain_of_lead: "+2基础多重射击"
+  bronco_speeding_bullet: "基础伤害增加 +36 （原版）。冲刺速度在1.2或更高时: +60%投射物速度"
+  cestra_deathtrap_trigger: "基础暴击伤害倍率增加+2x"
+  cestra_evo1_incarnon_form: "命中弱点时为灵化充能，按下次要开火键来激活。切换回原有模式将消耗剩余的充能。"
+  cestra_fortress_salvo: "基础伤害增加+10 护甲超过450时：+80%多重射击"
+  cestra_rapid_reinforcement: "+50%装填速度"
+  cestra_slayers_nerve: "击中后：+6%精准度 和 -6%武器后坐力持续6秒。最多叠加到10层。"
+  cestra_steadfast_grit: "基础伤害增加+10 护盾/超宏防护破裂时：x3暴击伤害，持续6秒"
+  cestra_survivors_edge: "基础暴击几率增加+18%"
+  cestra_swift_deliverance: "+50%投射物速度"
+  cestra_wisemans_regard: "将当前暴击几率的30%增加到基础触发几率，最高可达40%"
+  dera_crimson_overture: "基础伤害增加+8（原版） 击杀时：+20%弹药效率，持续5秒。最多叠加到4层。"
+  dera_deathtrap_trigger: "基础暴击几率增加+14% 基础暴击伤害倍率增加+0.6x（原版）"
+  dera_elemental_balance: "基础触发几率增加 by +18%（原版）"
+  dera_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  dera_evolved_autoloader: "收起武器时弹匣每秒自动装填+50%"
+  dera_extended_volley: "+50%投射物速度"
+  dera_high_ground: "将当前触发几率的25%增加到基础暴击几率，最高可达35%"
+  dera_paragon_essence: "基础伤害增加+6（原版） 触发异常状态时：+5%射速，持续5秒。最多叠加到6层。"
+  dera_swift_deliverance: "基础弹匣容量增加+22（原版）/ +30（破坏者）"
+  dera_vandal_crimson_overture: "基础伤害增加+6（破坏者） 击杀时：+20%弹药效率，持续5秒。最多叠加到4层。"
+  dera_vandal_deathtrap_trigger: "基础暴击几率增加+14% 基础暴击伤害倍率增加+0.4x（破坏者）"
+  dera_vandal_elemental_balance: "基础触发几率增加 by +14%（破坏者）"
+  dera_vandal_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  dera_vandal_evolved_autoloader: "收起武器时弹匣每秒自动装填+50%"
+  dera_vandal_extended_volley: "+50%投射物速度"
+  dera_vandal_high_ground: "将当前触发几率的25%增加到基础暴击几率，最高可达35%"
+  dera_vandal_paragon_essence: "基础伤害增加+6（原版）/ +4（破坏者） 触发异常状态时：+5%射速，持续5秒。最多叠加到6层。"
+  dera_vandal_swift_deliverance: "基础弹匣容量增加+22（原版）/ +30（破坏者）"
+  despair_critical_parallel: "基础暴击几率增加+18%，基础暴击倍率增加+0.4x"
+  despair_elemental_balance: "基础触发几率增加+24%"
+  despair_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  despair_fatal_affliction: "基础伤害增加+50 目标身上的每种异常状态增加+40%直接伤害"
+  despair_marksmans_focus: "-30%变焦"
+  despair_rapid_reinforcement: "+100%装填速度"
+  despair_stalkers_vendetta: "基础伤害增加+60 装备和时：多重射击将直接消耗弹药并使伤害增加+100%，+30%多重射击（非灵化姿态下消耗备弹增加伤害）"
+  despair_survivors_edge: "基础暴击几率增加+12%，基础触发几率增加+12%"
+  despair_swift_deliverance: "+50%投射物速度"
+  dex_sybaris_blazing_barrel: "基础伤害增加+20（原版）/ +15（Dex）/ +15（Prime） 开火时：+5%多重射击。最多增加到10层。"
+  dex_sybaris_elemental_dominance: "基础触发几率增加+15%（原版）/ +15%（Dex） +8%（Prime） 灵化形态下翻倍"
+  dex_sybaris_evo1_incarnon_form: "命中弱点时为灵化充能，按下次要开火键来激活。切换回原有模式将消耗剩余的充能。"
+  dex_sybaris_extended_volley: "基础弹匣增加+10（Dex）"
+  dex_sybaris_marksmans_hand: "-60%武器后坐力"
+  dex_sybaris_ready_retaliation: "空弹匣装填时：+60%装填速度"
+  dex_sybaris_reavers_rapture: "多发点射全部命中时：+20%伤害，重新装填后重置"
+  dex_sybaris_survivors_edge: "基础暴击几率增加+5% 基础触发几率增加+10%"
+  dex_sybaris_well_rehearsed: "基础伤害增加+20（原版）/ +15（Dex）/ +15（Prime） 连续击中弱点时：基础伤害增加+5。最多增加到3层。"
+  dread_elemental_balance: "基础触发几率增加+24%"
+  dread_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  dread_hitmans_hoard: "弹药上限提升至144"
+  dread_hitmans_opportunity: "基础伤害增加+70 若敌人生命值低于一半，伤害增加+100%"
+  dread_marksmans_focus: "-30%变焦"
+  dread_stalkers_resentment: "基础伤害增加+50 装备绝望和憎恨后命中时：基础伤害增加+10，射速+10%，最高叠加至5层。未命中时重置。"
+  dread_survivors_edge: "基础暴击几率增加+10%，基础触发几率增加+10%"
+  dread_swift_deliverance: "+30%投射物速度"
+  dread_zeroed_in: "基础暴击伤害增加+1x"
+  felarx_agile_executor: "飞身瞄准和滑行时获得50%弹药效率"
+  felarx_attuned_accuracy: "瞄准时+40%精准度"
+  felarx_brutal_edge: "+10%暴击几率 +10%触发几率"
+  felarx_devastating_attrition: "有50%的几率在非暴击时造成+2000%伤害"
+  felarx_dual_mode_chamber: "装填时使武器在100%投射物速度和4米穿透效果之间切换。"
+  felarx_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。 |-"
+  felarx_evolved_autoloader: "收起武器时弹匣每秒自动装填+50%"
+  felarx_incarnon_catalyst: "爆头增加50%灵化转变充能"
+  felarx_mounting_momentum: "重新装填的每发弹药可使射速提高+10%。再一次使用装填按键时重置。 |-"
+  felarx_racking_wrath: "+20%触发几率 -10%暴击几率 |-"
+  felarx_ruptured_plentitude: "开火穿透3名敌人时:+70%弹药效率，持续20秒"
+  gammacor_critical_parallel: "基础暴击几率增加+20%（原版） 基础暴击倍率增加+0.2x"
+  gammacor_elemental_balance: "基础触发几率增加+20%（原版）"
+  gammacor_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  gammacor_evolved_autoloader: "收起武器时弹匣每秒自动装填+50%"
+  gammacor_extended_volley: "弹匣容量增加+40"
+  gammacor_infused_shots: "基础伤害增加+6（原版）/ +6（枢议） 每消耗50能量：基础伤害增加+5，持续10s，至多叠加至4x"
+  gammacor_moonrise_velocity: "+8射程"
+  gammacor_sages_resolve: "基础伤害增加+10（原版）/ +10（枢议） 持续消耗型技能激活时：+25%多重射击"
+  gammacor_survivors_edge: "基础暴击几率增加+12%（原版） 基础触发几率增加+10%（原版）"
+  gorgon_absolute_valor: "基础暴击几率增加+14% （原版） / +14% （亡魂） / +6% （棱晶）"
+  gorgon_elemental_balance: "基础触发几率增加+16% （原版）"
+  gorgon_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  gorgon_hoplite_virtue: "基础伤害增加+10 （原版） 护盾被打破时：基础伤害增加+13 （原版） / +8 （亡魂） / +8 （棱晶），持续8s。"
+  gorgon_hunters_mantra: "基础伤害增加+10 （原版） 持续消耗型技能激活时：+3穿透，+40%精准度"
+  gorgon_rapid_reinforcement: "+50%装填速度"
+  gorgon_resonant_restore: "空弹匣装填时，弹匣容量增加+15，至多叠加至3x。"
+  gorgon_survivors_edge: "基础暴击几率增加+8% （原版） / +8% （亡魂） / +2% （棱晶） 基础触发几率增加+9% （原版）"
+  gorgon_voids_guidance: "-50%后坐力"
+  gorgon_wraith_absolute_valor: "基础暴击几率增加+14% （原版） / +14% （亡魂） / +6% （棱晶）"
+  gorgon_wraith_elemental_balance: "基础触发几率增加+14% （亡魂）"
+  gorgon_wraith_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  gorgon_wraith_hoplite_virtue: "基础伤害增加+10 （原版） / +5 （亡魂） / +5 （棱晶） 护盾被打破时：基础伤害增加+13 （原版） / +8 （亡魂） / +8 （棱晶），持续8s。"
+  gorgon_wraith_hunters_mantra: "基础伤害增加+10 （原版） / +5 （亡魂） / +5 （棱晶） 持续消耗型技能激活时：+3穿透，+40%精准度"
+  gorgon_wraith_rapid_reinforcement: "+50%装填速度"
+  gorgon_wraith_resonant_restore: "空弹匣装填时，弹匣容量增加+15，至多叠加至3x。"
+  gorgon_wraith_survivors_edge: "基础暴击几率增加+8% （原版） / +8% （亡魂） / +2% （棱晶） 基础触发几率增加+9% （原版） / +6% （亡魂） / +6% （棱晶）"
+  gorgon_wraith_voids_guidance: "-50%后坐力"
+  kunai_accelerating_volley: "开火时：+20%射速，持续0.5s 最高叠加至5层"
+  kunai_deathtrap_trigger: "从主要武器切换后：基础暴击几率增加+40% （原版），基础暴击伤害增加+1.4x （原版） 持续4秒。"
+  kunai_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  kunai_extended_volley: "弹匣容量增加+10"
+  kunai_rapid_reinforcement: "+50%装填速度"
+  kunai_sages_resolve: "基础伤害增加+80 （原版） 持续消耗型技能激活时：+100%多重射击"
+  kunai_survivors_edge: "基础暴击几率增加+12%，基础触发几率增加+12%"
+  kunai_swift_conclusion: "基础伤害增加+70 （原版） 对生命值低于一半的敌人增加+200%伤害"
+  kunai_swift_deliverance: "+50%投射物速度"
+  lato_carnage_reign: "对每个受到的异常状态增加+40%直接伤害"
+  lato_deathtrap_trigger: "从主要武器切换后：基础暴击几率增加+50% （原版），基础暴击伤害增加+3.2x （原版），持续4s"
+  lato_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  lato_exact_penance: "击杀时：50%几率立即装填"
+  lato_haven_foray: "基础伤害增加+40 （原版） 拥有过载护盾时：基础伤害增加+40 （原版） / +40 （破坏者） / +34 （Prime）"
+  lato_marksmans_gain: "爆头命中时：20%几率获得+50%弹药效率，持续6s"
+  lato_prime_carnage_reign: "对每个受到的异常状态增加+40%直接伤害"
+  lato_prime_deathtrap_trigger: "从主要武器切换后：基础暴击几率增加+30% （Prime），基础暴击伤害增加+2.3x （Prime），持续4s"
+  lato_prime_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  lato_prime_exact_penance: "击杀时：50%几率立即装填"
+  lato_prime_haven_foray: "基础伤害增加+2 （Prime） 拥有过载护盾时：基础伤害增加+34 （Prime）"
+  lato_prime_marksmans_gain: "爆头命中时：20%几率获得+50%弹药效率，持续6s"
+  lato_prime_reified_bane: "基础伤害增加+2 （Prime） 空弹匣装填时：基础伤害增加+24 （Prime）"
+  lato_prime_survivors_edge: "基础暴击几率增加+4% （Prime），基础触发几率增加+10% （Prime）"
+  lato_prime_voids_guidance: "提升精准度并-50%武器后坐力"
+  lato_reified_bane: "基础伤害增加+30 （原版） 空弹匣装填时：基础伤害增加+30 （原版） / +30 （破坏者） / +24 （Prime）"
+  lato_survivors_edge: "基础暴击几率增加+20% （原版），基础触发几率增加+12% （原版） / +12% （破坏者） / +10% （Prime）"
+  lato_vandal_carnage_reign: "对每个受到的异常状态增加+40%直接伤害"
+  lato_vandal_deathtrap_trigger: "从主要武器切换后：基础暴击几率增加+38% （破坏者），基础暴击伤害增加+2.6x （破坏者），持续4s"
+  lato_vandal_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  lato_vandal_exact_penance: "击杀时：50%几率立即装填"
+  lato_vandal_haven_foray: "基础伤害增加+40 （原版） / +22 （破坏者）/ +2 （Prime） 拥有过载护盾时：基础伤害增加+40 （原版） / +40 （破坏者） / +34 （Prime）"
+  lato_vandal_marksmans_gain: "爆头命中时：20%几率获得+50%弹药效率，持续6s"
+  lato_vandal_reified_bane: "基础伤害增加+30 （原版） / +12 （破坏者） / +2 （Prime） 空弹匣装填时：基础伤害增加+30 （原版） / +30 （破坏者） / +24 （Prime）"
+  lato_vandal_survivors_edge: "基础暴击几率增加+6% （破坏者），基础触发几率增加+12% （原版） / +12% （破坏者） / +10% （Prime）"
+  lato_vandal_voids_guidance: "提升精准度并-50%武器后坐力"
+  lato_voids_guidance: "提升精准度并-50%武器后坐力"
+  lex_critical_parallel: "基础暴击几率+20% （原版），基础暴击伤害+0.4x。"
+  lex_elemental_balance: "基础触发几率+40% （原版）。"
+  lex_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  lex_executioners_dawn: "装备时：+100%爆头伤害，持续4秒。"
+  lex_extended_volley: "+10弹匣容量。"
+  lex_hoplite_virtue: "基础伤害增加+80 （原版） 战甲护盾被耗尽时，基础伤害增加+80，持续8秒。"
+  lex_lex_talionis: "造成爆头后：-20%后坐力和+20%精准度，持续4秒。最多可叠加至4x。"
+  lex_prime_critical_parallel: "基础暴击几率+19%（Prime），基础暴击伤害+0.4x。"
+  lex_prime_elemental_balance: "基础触发几率+30% （Prime）。"
+  lex_prime_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  lex_prime_executioners_dawn: "装备时：+100%爆头伤害，持续4秒。"
+  lex_prime_extended_volley: "+10弹匣容量。"
+  lex_prime_hoplite_virtue: "基础伤害增加+80 （原版） / +20 （Prime） 战甲护盾被耗尽时，基础伤害增加+80，持续8秒。"
+  lex_prime_lex_talionis: "造成爆头后：-20%后坐力和+20%精准度，持续4秒。最多可叠加至4x。"
+  lex_prime_ready_retaliation: "空弹匣装填时：+100%装填速度。"
+  lex_prime_trusty_sidearm: "基础伤害增加+20 （Prime）持续能量消耗类技能激活时+60%弹药效率。"
+  lex_ready_retaliation: "空弹匣装填时：+100%装填速度。"
+  lex_trusty_sidearm: "基础伤害增加+80 （原版）持续能量消耗类技能激活时+60%弹药效率。"
+  miter_commodores_fortune: "基础暴击几率增加+22%"
+  miter_critical_parallel: "基础暴击几率增加+12%，基础触发几率增加+12%"
+  miter_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  miter_mercenary_chamber: "弹药容量提升至160"
+  miter_plentiful_mayhem: "基础伤害增加+57 多重射击直接消耗弹匣中的弹药并将伤害增加+20%"
+  miter_ready_retaliation: "空弹匣装填时：+100%装填速度"
+  miter_sawblade_storm: "蓄力1秒以提升爆炸范围"
+  miter_swift_deliverance: "+50%投射物速度"
+  miter_swift_sawblades: "基础伤害增加+77 持续消耗型技能激活时：+70%射速"
+  mk1_kunai_accelerating_volley: "开火时：+20%射速，持续0.5s 最高叠加至5层"
+  mk1_kunai_deathtrap_trigger: "从主要武器切换后：基础暴击几率增加+42% （MK1），基础暴击伤害增加+1x （MK1） 持续4秒。"
+  mk1_kunai_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  mk1_kunai_extended_volley: "弹匣容量增加+10"
+  mk1_kunai_rapid_reinforcement: "+50%装填速度"
+  mk1_kunai_sages_resolve: "基础伤害增加+70 （MK1） 持续消耗型技能激活时：+100%多重射击"
+  mk1_kunai_survivors_edge: "基础暴击几率增加+12%，基础触发几率增加+12%"
+  mk1_kunai_swift_conclusion: "基础伤害增加+80 （MK1） 对生命值低于一半的敌人增加+200%伤害"
+  mk1_kunai_swift_deliverance: "+50%投射物速度"
+  mk1_paris_ardent_trigger: "穿透命中时：+40%射速，持续6s"
+  mk1_paris_deadly_pace: "基础伤害增加+50 （MK1） 拥有1.2或更高冲刺速度时： +80% 射速"
+  mk1_paris_elemental_balance: "基础触发几率增加+60%"
+  mk1_paris_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  mk1_paris_guardians_might: "基础伤害增加+40 （原版） / +50 （MK1） / +20 （Prime） 拥有过载护盾时：基础伤害增加+52 原版 / +40 （MK1）"
+  mk1_paris_marksmans_focus: "-30%变焦"
+  mk1_paris_striking_succession: "命中后：基础伤害增加+15，持续3s，最多叠加至4层"
+  mk1_paris_swift_deliverance: "+60%投射物速度"
+  mk1_paris_vicious_promise: "对未受伤害的敌人增加+40%基础暴击几率，+2x基础暴击伤害"
+  mk1_strun_blazing_barrel: "基础伤害增加+68 （MK1） 开火时：+5%多重射击，最多叠加至5层"
+  mk1_strun_brutal_edge: "基础暴击几率增加+2% （MK1），基础触发几率增加+2% （MK1）"
+  mk1_strun_commodores_fortune: "基础暴击几率增加+10% （MK1）"
+  mk1_strun_elemental_balance: "基础触发几率增加+11% （原版） / +11% （MK1） / +10% （亡魂） / +11.3% （Prime）；"
+  mk1_strun_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  mk1_strun_galvanic_reload: "命中受Electricity异常影响的目标时，有40%从弹药中恢复一发子弹至弹匣"
+  mk1_strun_rapid_reinforcement: "+60%装填速度"
+  mk1_strun_swift_deliverance: "+30%投射物速度"
+  mk1_strun_tenno_targeting: "基础伤害增加+68 （MK1） 持续消耗型技能激活时：+4穿透"
+  onos_devastation_cascade: "以灵化形态命中敌人会使完全充能爆炸的暴击几率和暴击伤害提升+5%。最多叠加至50x"
+  onos_elemental_excess: "+20% 触发几率 -10% 暴击几率 |-"
+  onos_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。 |-"
+  onos_extended_volley: "+10弹匣容量"
+  onos_hunters_rearmament: "击杀时：10%回复10弹药 |-"
+  onos_impalers_ferocity: "穿透命中时：+200%伤害，持续10s。"
+  onos_incarnon_efficiency: "爆头增加50%灵化转变充能"
+  onos_lethal_lance: "击杀时： +2.5 穿透，持续20s"
+  onos_marksmans_hand: "-30% 后坐力"
+  onos_rapid_reinforcement: "+30% 装填速度"
+  onos_rapid_wrath: "+25% 射速"
+  onos_sequential_skullbuster: "连续爆头时：+30%爆头伤害。最多叠加至4x"
+  onos_swift_deliverance: "+50% 投射物速度 |-"
+  paris_ardent_trigger: "穿透命中时：+40%射速，持续6s"
+  paris_deadly_pace: "基础伤害增加+40 （原版） 拥有1.2或更高冲刺速度时： +80% 射速"
+  paris_elemental_balance: "基础触发几率增加+60%"
+  paris_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  paris_guardians_might: "基础伤害增加+40 （原版） 拥有过载护盾时：基础伤害增加+52 原版 / +40 （MK1）"
+  paris_marksmans_focus: "-30%变焦"
+  paris_prime_ardent_trigger: "穿透命中时：+40%射速，持续6s"
+  paris_prime_deadly_pace: "基础伤害增加+20 （Prime） 拥有1.2或更高冲刺速度时： +80% 射速"
+  paris_prime_elemental_balance: "基础触发几率增加+60%"
+  paris_prime_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  paris_prime_guardians_might: "基础伤害增加+20 （Prime） 拥有过载护盾时：基础伤害增加+52 原版 / +74 （Prime）"
+  paris_prime_marksmans_focus: "-30%变焦"
+  paris_prime_striking_succession: "命中后：基础伤害增加+15，持续3s，最多叠加至4层"
+  paris_prime_swift_deliverance: "+60%投射物速度"
+  paris_prime_vicious_promise: "对未受伤害的敌人增加+40%基础暴击几率，+2x基础暴击伤害"
+  paris_striking_succession: "命中后：基础伤害增加+15，持续3s，最多叠加至4层"
+  paris_swift_deliverance: "+60%投射物速度"
+  paris_vicious_promise: "对未受伤害的敌人增加+40%基础暴击几率，+2x基础暴击伤害"
+  prisma_angstrum_critical_parallel: "基础暴击几率增加+10% （棱晶） 基础暴击倍率增加+0.2x"
+  prisma_angstrum_evo1_incarnon_form: "直接命中为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  prisma_angstrum_fatal_affliction: "目标身上的每种异常状态可增加+40%的直接伤害"
+  prisma_angstrum_haven_foray: "基础伤害增加+50 拥有过载护盾时：基础伤害增加+50"
+  prisma_angstrum_hitmans_hoard: "增加+9弹药上限"
+  prisma_angstrum_paladin_virtue: "基础伤害增加+75 最大能量值大于700时：基础暴击倍率增加+0.5x"
+  prisma_angstrum_rapid_reinforcement: "+50%装填速度"
+  prisma_angstrum_survivors_edge: "基础暴击几率增加+6% （棱晶） 基础触发几率增加+6% （棱晶）"
+  prisma_angstrum_swift_deliverance: "+30%投射物速度"
+  prisma_gorgon_absolute_valor: "基础暴击几率增加+6% （棱晶）"
+  prisma_gorgon_elemental_balance: "基础触发几率增加+12% （棱晶）"
+  prisma_gorgon_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  prisma_gorgon_hoplite_virtue: "基础伤害增加+10 （原版） / +5 （亡魂） / +5 （棱晶） 护盾被打破时：基础伤害增加+13 （原版） / +8 （亡魂） / +8 （棱晶），持续8s。"
+  prisma_gorgon_hunters_mantra: "基础伤害增加+10 （原版） / +5 （亡魂） / +5 （棱晶） 持续消耗型技能激活时：+3穿透，+40%精准度"
+  prisma_gorgon_rapid_reinforcement: "+50%装填速度"
+  prisma_gorgon_resonant_restore: "空弹匣装填时，弹匣容量增加+15，至多叠加至3x。"
+  prisma_gorgon_survivors_edge: "基础暴击几率增加+2% （棱晶） 基础触发几率增加+9% （原版） / +6% （亡魂） / +6% （棱晶）"
+  prisma_gorgon_voids_guidance: "-50%后坐力"
+  rakta_ballistica_critical_parallel: "基础暴击几率增加+14%（绯红） 基础暴击伤害倍率增加+1.0（原版）/+1.0（绯红）/+1.0（Prime）"
+  rakta_ballistica_elemental_balance: "每个投射物的基础触发几率增加+20%（原版）/+20%（绯红）/+18%（Prime） 灵化形态的基础触发几率增加+20%（原版）/+20%（绯红）/+72%（Prime）"
+  rakta_ballistica_evo1_incarnon_form: "命中弱点为灵化转变充能，次要射击进行转变。切换回原有模式将消耗剩余的充能。"
+  rakta_ballistica_headcracker: "基础伤害增加+10（绯红） 造成爆头后：+7.5%射速，持续4秒。最多叠加到10层。"
+  rakta_ballistica_prolific_perforation: "基础伤害增加+30（原版）/ +10（绯红）/+3（Prime） 穿透命中时：+10%暴击几率，持续3秒。最多叠加到8层。"
+  rakta_ballistica_rapid_reinforcement: "+50%装填速度"
+  rakta_ballistica_survivors_edge: "基础暴击几率增加+8%（绯红） 每个投射物的基础触发几率增加+8%（绯红） 灵化形态的基础触发几率增加+8%（绯红）"
+  rakta_ballistica_swift_deliverance: "+50%投射物速度"
+  rakta_ballistica_voids_guidance: "+40%精确度 -40%武器后坐力"
+  sicarus_commodores_fortune: "基础暴击几率增加+18%（原版）"
+  sicarus_evo1_incarnon_form: "命中弱点时为灵化充能，按下次要开火键来激活。 切换回原有模式将消耗剩余的充能。"
+  sicarus_extended_volley: "基础弹匣容量增加+9（原版）"
+  sicarus_feigned_retreat: "基础伤害增加+50（原版）/ +40（Prime） 对生命值低于一半的敌人造成+40%伤害"
+  sicarus_kings_gambit: "基础伤害增加+50（原版） x0 击身暴击几率，+150%命中弱点暴击几率"
+  sicarus_prime_commodores_fortune: "基础暴击几率增加14%（Prime）"
+  sicarus_prime_evo1_incarnon_form: "命中弱点时为灵化充能，按下次要开火键来激活。 切换回原有模式将消耗剩余的充能。"
+  sicarus_prime_extended_volley: "基础弹匣容量增加+12（Prime）"
+  sicarus_prime_feigned_retreat: "基础伤害增加+40（Prime） 对生命值低于一半的敌人造成+40%伤害"
+  sicarus_prime_kings_gambit: "基础伤害增加+40 （Prime） x0 击身暴击几率，+150%命中弱点暴击几率"
+  sicarus_prime_rapid_reinforcement: "+50%装填速度"
+  sicarus_prime_survivors_edge: "基础暴击几率增加+9%（Prime） 基础触发几率增加至+9%（Prime）"
+  sicarus_prime_voids_guidance: "+40%精准度 -40%武器后坐力"
+  sicarus_prime_wisemans_regard: "将当前暴击几率的30%增加到基础触发几率，最高可达40%"
+  sicarus_rapid_reinforcement: "+50%装填速度"
+  sicarus_survivors_edge: "基础暴击几率增加12%（原版） 基础触发几率增加至12%（原版）"
+  sicarus_voids_guidance: "+40%精准度 -40%武器后坐力"
+  sicarus_wisemans_regard: "将当前暴击几率的30%增加到基础触发几率，最高可达40%"
+  soma_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  soma_fatal_affliction: "目标身上的每种异常状态可增加+40%的直接伤害"
+  soma_fortifying_bloodshed: "基础伤害增加+10，触发切割异常击杀时：+100过载护盾"
+  soma_fortress_salvo: "基础伤害增加+12，护甲超过450时：+4穿透"
+  soma_fresh_havoc: "空弹匣装填时：基础伤害增加+6。最多叠加到2层。"
+  soma_kinetic_battle: "-50%武器后坐力"
+  soma_practiced_grip: "精准度提高+50%"
+  soma_prime_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  soma_prime_fatal_affliction: "目标身上的每种异常状态可增加+40%的直接伤害"
+  soma_prime_fortifying_bloodshed: "基础伤害增加+10，触发切割异常击杀时：+100过载护盾"
+  soma_prime_fortress_salvo: "基础伤害增加+12，护甲超过450时：+4穿透"
+  soma_prime_fresh_havoc: "空弹匣装填时：基础伤害增加+6。最多叠加到2层。"
+  soma_prime_kinetic_battle: "-50%武器后坐力"
+  soma_prime_practiced_grip: "精准度提高+50%"
+  soma_prime_rapid_reinforcement: "+50%装填速度"
+  soma_prime_zeroed_in: "基础暴击伤害增加+0.6x"
+  soma_rapid_reinforcement: "+50%装填速度"
+  soma_zeroed_in: "基础暴击伤害增加+0.6x"
+  strun_blazing_barrel: "基础伤害增加+54 （原版） 开火时：+5%多重射击，最多叠加至5层"
+  strun_brutal_edge: "基础暴击几率增加+4% （原版） / +2% （MK1） / +4 （亡魂） / +4% （Prime），基础触发几率增加+4% （原版） / +2% （MK1） / +4.8% （亡魂） / +4% （Prime）"
+  strun_commodores_fortune: "基础暴击几率增加+16% （原版）"
+  strun_elemental_balance: "基础触发几率增加+11% （原版） / +11% （MK1） / +10% （亡魂） / +11.3% （Prime）；"
+  strun_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  strun_galvanic_reload: "命中受Electricity异常影响的目标时，有40%从弹药中恢复一发子弹至弹匣"
+  strun_prime_blazing_barrel: "基础伤害增加+2 （Prime） 开火时：+5%多重射击，最多叠加至5层"
+  strun_prime_brutal_edge: "基础暴击几率增加+4% （原版） / +2% （MK1） / +4 （亡魂） / +4% （Prime），基础触发几率增加+4% （原版） / +2% （MK1） / +4.8% （亡魂） / +4% （Prime）"
+  strun_prime_commodores_fortune: "基础暴击几率增加+16% （原版） / +10% （MK1） / +12% （亡魂） / +12% （Prime）"
+  strun_prime_elemental_balance: "基础触发几率增加+11.3% （Prime）；"
+  strun_prime_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  strun_prime_galvanic_reload: "命中受Electricity异常影响的目标时，有40%从弹药中恢复一发子弹至弹匣"
+  strun_prime_rapid_reinforcement: "+60%装填速度"
+  strun_prime_swift_deliverance: "+30%投射物速度"
+  strun_prime_tenno_targeting: "基础伤害增加+2 （Prime） 持续消耗型技能激活时：+4穿透"
+  strun_rapid_reinforcement: "+60%装填速度"
+  strun_swift_deliverance: "+30%投射物速度"
+  strun_tenno_targeting: "基础伤害增加+54 （原版） 持续消耗型技能激活时：+4穿透"
+  strun_wraith_blazing_barrel: "基础伤害增加+24 （亡魂） 开火时：+5%多重射击，最多叠加至5层"
+  strun_wraith_brutal_edge: "基础暴击几率增加+4% （原版） / +2% （MK1） / +4 （亡魂） / +4% （Prime），基础触发几率增加+4% （原版） / +2% （MK1） / +4.8% （亡魂） / +4% （Prime）"
+  strun_wraith_commodores_fortune: "基础暴击几率增加+16% （原版） / +10% （MK1） / +12% （亡魂） / +12% （Prime）"
+  strun_wraith_elemental_balance: "基础触发几率增加+10% （亡魂）；"
+  strun_wraith_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  strun_wraith_galvanic_reload: "命中受Electricity异常影响的目标时，有40%从弹药中恢复一发子弹至弹匣"
+  strun_wraith_rapid_reinforcement: "+60%装填速度"
+  strun_wraith_swift_deliverance: "+30%投射物速度"
+  strun_wraith_tenno_targeting: "基础伤害增加+24 （亡魂） 持续消耗型技能激活时：+4穿透"
+  stug_blazing_barrel: "基础伤害增加+175 开火时：+5%多重射击，装填时充值。最多叠加到10层"
+  stug_deathtrap_trigger: "基础暴击几率增加+25% 基础暴击伤害倍率增加+1.5x"
+  stug_elemental_dominance: "基础触发几率增加+20% 灵化形态下效果加倍"
+  stug_evo1_incarnon_form: "直接命中为灵化转变充能，次要射击进行转变。切换回原有模式将消耗剩余的充能。"
+  stug_overcharge_blast: "基础伤害增加+300 能量最大值超过700时：+50%爆炸范围"
+  stug_rapid_reinforcement: "+50%装填速度"
+  stug_resonant_restore: "空弹匣装填时：基础弹匣容量+10。最多叠加到3层"
+  stug_survivors_edge: "基础暴击几率增加+15% 基础触发几率增加至+15%"
+  stug_swift_deliverance: "+50%投射物速度"
+  sybaris_blazing_barrel: "基础伤害增加+20（原版） 开火时：+5%多重射击。最多增加到10层。"
+  sybaris_elemental_dominance: "基础触发几率增加+15%（原版）/ +15%（Dex） +8%（Prime） 灵化形态下翻倍"
+  sybaris_evo1_incarnon_form: "命中弱点时为灵化充能，按下次要开火键来激活。切换回原有模式将消耗剩余的充能。"
+  sybaris_extended_volley: "基础弹匣增加+8（原版）"
+  sybaris_marksmans_hand: "-60%武器后坐力"
+  sybaris_prime_blazing_barrel: "基础伤害增加+20（原版）/ +15（Dex）/ +15（Prime） 开火时：+5%多重射击。最多增加到10层。"
+  sybaris_prime_elemental_dominance: "基础触发几率增加+15%（原版）/ +15%（Dex） +8%（Prime） 灵化形态下翻倍"
+  sybaris_prime_evo1_incarnon_form: "命中弱点时为灵化充能，按下次要开火键来激活。切换回原有模式将消耗剩余的充能。"
+  sybaris_prime_extended_volley: "基础弹匣增加+12（Prime）"
+  sybaris_prime_marksmans_hand: "-60%武器后坐力"
+  sybaris_prime_ready_retaliation: "空弹匣装填时：+60%装填速度"
+  sybaris_prime_reavers_rapture: "多发点射全部命中时：+20%伤害，重新装填后重置"
+  sybaris_prime_survivors_edge: "基础暴击几率增加+5% 基础触发几率增加+10%"
+  sybaris_prime_well_rehearsed: "基础伤害增加+20（原版）/ +15（Dex）/ +15（Prime） 连续击中弱点时：基础伤害增加+5。最多增加到3层。"
+  sybaris_ready_retaliation: "空弹匣装填时：+60%装填速度"
+  sybaris_reavers_rapture: "多发点射全部命中时：+20%伤害，重新装填后重置"
+  sybaris_survivors_edge: "基础暴击几率增加+5% 基础触发几率增加+10%"
+  sybaris_well_rehearsed: "基础伤害增加+20（原版） 连续击中弱点时：基础伤害增加+5。最多增加到3层。"
+  synoid_gammacor_critical_parallel: "基础暴击几率增加+10%（枢议） 基础暴击倍率增加+0.2x"
+  synoid_gammacor_elemental_balance: "基础触发几率增加+10%（枢议）"
+  synoid_gammacor_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  synoid_gammacor_evolved_autoloader: "收起武器时弹匣每秒自动装填+50%"
+  synoid_gammacor_extended_volley: "弹匣容量增加+40"
+  synoid_gammacor_infused_shots: "基础伤害增加+6（原版）/ +6（枢议） 每消耗50能量：基础伤害增加+5，持续10s，至多叠加至4x"
+  synoid_gammacor_moonrise_velocity: "+8射程"
+  synoid_gammacor_sages_resolve: "基础伤害增加+10（原版）/ +10（枢议） 持续消耗型技能激活时：+25%多重射击"
+  synoid_gammacor_survivors_edge: "基础暴击几率增加+6%（枢议） 基础触发几率增加+6%（枢议）"
+  vasto_awakened_readiness: "收起武器时弹匣每秒自动装填+20%"
+  vasto_commodores_fortune: "基础暴击几率增加+16%（原版）"
+  vasto_deathtrap_trigger: "基础伤害增加+66（原版），从主要武器切换时：基础暴击几率增加+30%，基础暴击伤害增加+2.2x（原版），持续3秒"
+  vasto_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  vasto_extended_volley: "提升+6弹夹容量"
+  vasto_lone_gun: "基础伤害增加+66（原版），没有装备主要武器时：基础伤害增加+40，提升+14弹夹容量"
+  vasto_marksmans_hand: "-50%武器后坐力"
+  vasto_prime_awakened_readiness: "收起武器时弹匣每秒自动装填+20%"
+  vasto_prime_commodores_fortune: "基础暴击几率增加+18%（Prime）"
+  vasto_prime_deathtrap_trigger: "基础伤害增加+24（Prime），从主要武器切换时：基础暴击几率增加+30%，基础暴击伤害增加+0.8x（Prime），持续3秒"
+  vasto_prime_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  vasto_prime_extended_volley: "提升+6弹夹容量"
+  vasto_prime_lone_gun: "基础伤害增加+24（Prime），没有装备主要武器时：基础伤害增加+40，提升+14弹夹容量"
+  vasto_prime_marksmans_hand: "-50%武器后坐力"
+  vasto_prime_reapers_plenty: "造成爆头后：+100%弹药效率，持续2秒"
+  vasto_prime_survivors_edge: "基础暴击几率增加+10%，基础触发几率增加+10%"
+  vasto_reapers_plenty: "造成爆头后：+100%弹药效率，持续2秒"
+  vasto_survivors_edge: "基础暴击几率增加+10%，基础触发几率增加+10%"
+  vectis_critical_parallel: "基础暴击几率增加+10%（原版）+8%（Prime） 基础暴击伤害倍率增加+0.5x"
+  vectis_deadhead: "+25%爆头伤害"
+  vectis_evo1_incarnon_form: "命中弱点为灵化转变充能，次要射击进行转变。切换回原有模式将消耗剩余的充能。"
+  vectis_inciting_incident: "基础伤害增加+100（原版）+200（Prime） 导引技能激活时：+2穿透"
+  vectis_lone_enforcer: "基础伤害增加+75（原版）150（Prime） 如果附近5米内没有敌人，+25%多重射击"
+  vectis_marksmans_hand: "-60%武器后坐力"
+  vectis_prime_critical_parallel: "基础暴击几率增加+10%（原版）+8%（Prime） 基础暴击伤害倍率增加+0.5x"
+  vectis_prime_deadhead: "+25%爆头伤害"
+  vectis_prime_evo1_incarnon_form: "命中弱点为灵化转变充能，次要射击进行转变。切换回原有模式将消耗剩余的充能。"
+  vectis_prime_inciting_incident: "基础伤害增加+100（原版）+200（Prime） 导引技能激活时：+2穿透"
+  vectis_prime_lone_enforcer: "基础伤害增加+75（原版）150（Prime） 如果附近5米内没有敌人，+25%多重射击"
+  vectis_prime_marksmans_hand: "-60%武器后坐力"
+  vectis_prime_rapid_reinforcement: "+60%装填速度"
+  vectis_prime_silent_running: "降低100%敌人听见枪声的几率"
+  vectis_prime_survivors_edge: "将当前暴击几率的30%增加到基础触发几率，最高可达40%"
+  vectis_rapid_reinforcement: "+60%装填速度"
+  vectis_silent_running: "降低100%敌人听见枪声的几率"
+  vectis_survivors_edge: "将当前暴击几率的30%增加到基础触发几率，最高可达40%"
+  zylok_commodores_fortune: "基础暴击几率增加+32%（原版）"
+  zylok_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  zylok_extended_volley: "+12（原版） 弹匣容量"
+  zylok_fatal_affliction: "目标每种不同的异常状态增加+40% 直接伤害"
+  zylok_maulers_magazine: "基础伤害增加+76（原版） 空弹匣装填时: 基础暴击伤害增加+1x。最多叠加到2层。"
+  zylok_precisions_payoff: "基础伤害增加+76（原版） 多发点射爆头时: 基础伤害增加+20。最多叠加到3层。"
+  zylok_prime_commodores_fortune: "基础暴击几率增加+30%（Prime）"
+  zylok_prime_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
+  zylok_prime_extended_volley: "+18（Prime） 弹匣容量"
+  zylok_prime_fatal_affliction: "目标每种不同的异常状态增加+40% 直接伤害"
+  zylok_prime_maulers_magazine: "基础伤害增加+30（Prime） 空弹匣装填时: 基础暴击伤害增加+1x。最多叠加到2层。"
+  zylok_prime_precisions_payoff: "基础伤害增加+30（Prime） 多发点射爆头时: 基础伤害增加+20。最多叠加到3层。"
+  zylok_prime_rapid_reinforcement: "+50%装填速度"
+  zylok_prime_survivors_edge: "基础暴击几率和触发几率增加+20% （原版）/+22%暴击几率，+16%触发几率（Prime）"
+  zylok_prime_voids_guidance: "+60%精准度以及后座降低"
+  zylok_rapid_reinforcement: "+50%装填速度"
+  zylok_survivors_edge: "基础暴击几率和触发几率增加+20% （原版）/+22%暴击几率，+16%触发几率（Prime）"
+  zylok_voids_guidance: "+60%精准度以及后座降低"
   # ---- Dual Toxocyst ----
   dual_toxocyst_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
   dual_toxocyst_carnage_reign: "基础伤害增加 +60。\n目标身上的每种异常状态可增加 +33% 直接伤害。"
