@@ -986,6 +986,9 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    it is not broken and not an error — the game has it and the sim cannot price
    it yet, which is a different thing from the BROKEN badge beside it. */
 .caveat.unmod{color:var(--gold)}
+/* The builder's evolution tiles use <i> for their marks (`.bx` BROKEN does),
+   so the unmodelled chip has to lose the italic it would otherwise inherit. */
+.evopick .exchip{font-style:normal}
 .exchip.unmod{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold);
   border:1px solid color-mix(in srgb,var(--gold) 40%,transparent)}
 

@@ -6350,8 +6350,30 @@ function renderEvo() {
       // "<Weapon> Incarnon Genesis" page: correct, and one hop further from
       // everything else you would look up while reading the card.
       const genesis = wikiUrl(wikiWeaponName(weaponInfo($("weapon").value)));
+      // WHAT THE SIM DOES NOT MODEL, on the tile you choose from — the same
+      // chip the optimizer's list has carried all along.
+      //
+      // It was missing here, and the asymmetry only became expensive when the
+      // roster grew: eleven Incarnon weapons landed on 2026-08-08 carrying 31
+      // perks with an unmodelled effect, and in the BUILDER every one of them
+      // read exactly like its working tier-mates. The data knew
+      // (`fully_unmodeled`), the optimizer said so, and the surface where the
+      // choice is actually made did not (owner, 2026-08-08: "没有实现的部分我们
+      // 就老实做好备注").
+      //
+      // TWO STATES, because they are different facts: a perk whose EVERY effect
+      // is inert is not a weaker choice, it is not a choice; one with a live
+      // half is a real pick that is being under-counted.
+      const unmod = (o.unmodeled || []).length
+        ? ` <i class="exchip unmod" title="${escHtml(
+            (o.fully_unmodeled
+              ? tr("this perk does nothing in the simulation — the model has no rule for it yet")
+              : tr("part of this perk is not modelled — what it does here is less than the card says")
+            ) + ": " + (o.unmodeled || []).join(", "))}">${
+            escHtml(o.fully_unmodeled ? tr("not modelled yet") : tr("partly modelled"))}</i>`
+        : "";
       return `<span class="${cls}" data-tier="${t.tier}" data-id="${o.id}" title="${title}">
-        ${icon}<span class="einfo"><b class="en">${wl(o.name, genesis)}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}${
+        ${icon}<span class="einfo"><b class="en">${wl(o.name, genesis)}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}${unmod}${
           gainChipFor(o.id, `EVO ${ROMAN(t.tier)}`)}</b><span class="ed">${lines}</span>${coNote}${warn}</span></span>`;
     };
     const empty = `<span class="evopick empty ${sel === null ? "sel" : ""} ${locked ? "tlocked" : ""}" data-tier="${t.tier}" data-id="">

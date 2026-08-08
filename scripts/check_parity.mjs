@@ -101,7 +101,42 @@ let bad = 0;
     bad += diffs.length;
   }
 }
+// ---- ...AND THE SAME VISIBILITY, which is the other half of the charter ----
+//
+// An axis can offer the same options on both sides and still say different
+// things about them. The one that mattered: `fully_unmodeled` — a perk whose
+// every effect the engine has no rule for — was marked in the OPTIMIZER's
+// evolution list and not on the BUILDER's tile, so the surface where the choice
+// is actually made showed it as an ordinary pick. Invisible until the roster
+// grew: eleven Incarnon weapons landed on 2026-08-08 carrying 31 such perks
+// (owner: "没有实现的部分我们就老实做好备注").
+//
+// Asserted on the SCREEN rather than on the data, because the data was right
+// the whole time — both modules read the same `unmodeled` array off `/api/meta`
+// and only one of them drew it.
+const VIS = await app.evaluate(`(async () => {
+  const s = (ms) => new Promise(r => setTimeout(r, ms));
+  const out = { checked: 0, missing: [] };
+  for (const w of META.weapons) {
+    const info = META.weapons.find(x => x.id === w.id);
+    const flagged = [];
+    for (const t of (info.evolutions || [])) {
+      for (const o of t.options) if ((o.unmodeled || []).length) flagged.push(o.id);
+    }
+    if (!flagged.length) continue;
+    history.pushState({}, '', weaponPath(w.id)); route(); await s(900);
+    for (const id of flagged) {
+      const card = document.querySelector('#evo-rows .evopick[data-id="' + id + '"]');
+      out.checked++;
+      if (!card || !card.querySelector('.exchip.unmod')) out.missing.push(w.id + ' / ' + id);
+    }
+  }
+  return out;
+})()`);
+app.check(`every unmodelled evolution is marked on the BUILDER's tile too (${VIS.checked} of them)`,
+  VIS.missing.length === 0, VIS.missing.slice(0, 8).join(", "));
+
 // The table above already names each mismatch; `finish` only has to carry the
 // verdict and the exit code.
-app.failures = bad;
+app.failures += bad;
 await app.finish("builder and optimizer agree on every axis");
