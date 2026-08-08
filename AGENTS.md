@@ -141,6 +141,16 @@ around (decision 2026-07-31).
   either board (owner, 2026-08-08). It walks every ruler, because the bug was
   that one of them was reachable and the rest resolved to it, and asserts
   against `BOARD` itself so it keeps holding as the board moves.
+  `node scripts/check_riven_pool.mjs` is the SEVENTEENTH: the riven editor
+  offers the stats that weapon's rivens actually roll, in BOTH slots. What a
+  riven can roll is DE's per-weapon table, published nowhere, and the wiki's
+  25%-of-a-physical-type rule disclaims itself — a count over ~12 000 live cards
+  found the derivation wrong in both directions on six of 26 families, so the
+  engine reads a real card first (`data/rivens/observed.yaml`), the survey
+  second (`data/rivens/pools.yaml`, from `scripts/survey_riven_pools.py`) and
+  its own rules last (MEASUREMENTS M35). It walks the NEGATIVE slot too, because
+  that is where the report came from — a player's Furis riven carries Projectile
+  Speed and the editor would not offer it (owner, 2026-08-08).
   `node scripts/check_enemies.mjs` is the ELEVENTH: every
   TARGET in the roster shows a picture that loads, a wiki link built from its
   ENGLISH name (it runs the whole pass twice, in both languages — a localized

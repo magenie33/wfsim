@@ -1,0 +1,188 @@
+# SURVEYED FROM LIVE RIVEN LISTINGS by scripts/survey_riven_pools.py.
+# Do not hand-edit: re-run the script.
+#
+# What a weapon's riven CAN roll is not published anywhere and is not
+# reliably derivable — the wiki's 25%-of-a-physical-type rule says
+# "usually" and "exceptions exist on a case by case basis", and the
+# exceptions are real: the Ocucor is 9% Puncture and 91% Radiation and
+# rolls all three physical stats; the Phenmor is 30% Puncture and rolls
+# none of it. So this file is EVIDENCE rather than a formula — every
+# entry is a count of how often a stat appeared on real cards.
+#
+# `never` = the stat was essentially absent from the sample.
+# `rollable` = it appeared at or above the rate a rolling stat should.
+# Anything in neither is UNCLEAR and the engine keeps its own
+# derivation for it (engine/src/rivens_data.rs `excluded_for`).
+#
+# A count is a sample, not a proof: absence in 500 listings is strong
+# evidence and not a guarantee. An in-game card that contradicts a
+# `never` here beats the file.
+surveyed: "2026-08-08"
+source: warframe.market public auction search (type=riven), newest 500 per family
+families:
+  - family: Atomos
+    weapons: [atomos]
+    n: 500
+    # counts: ammo_maximum 46, cold 49, critical_chance 158, critical_damage 174, damage 144, damage_to_corpus 50, damage_to_grineer 68, damage_to_infested 51, electricity 48, fire_rate 91, heat 65, impact 1, magazine_capacity 51, multishot 181, punch_through 34, puncture 1, reload_speed 63, status_chance 63, status_duration 57, toxin 73, weapon_recoil 57, zoom 62
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, magazine_capacity, multishot, punch_through, reload_speed, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [impact, projectile_speed, puncture, slash]
+  - family: Boar
+    weapons: [boar, boar_incarnon, boar_prime, boar_prime_incarnon]
+    n: 500
+    # counts: ammo_maximum 37, cold 43, critical_chance 161, critical_damage 166, damage 114, damage_to_corpus 39, damage_to_grineer 55, damage_to_infested 48, electricity 57, fire_rate 78, heat 68, impact 56, magazine_capacity 56, multishot 169, projectile_speed 2, punch_through 37, reload_speed 43, slash 51, status_chance 83, status_duration 47, toxin 62, weapon_recoil 55, zoom 1
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, impact, magazine_capacity, multishot, punch_through, reload_speed, slash, status_chance, status_duration, toxin, weapon_recoil]
+    never: [projectile_speed, puncture, zoom]
+  - family: Boltor
+    weapons: [boltor, boltor_prime, telos_boltor]
+    n: 500
+    # counts: ammo_maximum 38, cold 60, critical_chance 144, critical_damage 139, damage 109, damage_to_corpus 50, damage_to_grineer 64, damage_to_infested 41, electricity 58, fire_rate 78, heat 48, magazine_capacity 53, multishot 118, projectile_speed 60, punch_through 56, puncture 64, reload_speed 46, status_chance 74, status_duration 48, toxin 68, weapon_recoil 53, zoom 43
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, magazine_capacity, multishot, projectile_speed, punch_through, puncture, reload_speed, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [impact, slash]
+  - family: Braton
+    weapons: [braton, braton_prime, braton_vandal, mk1_braton]
+    n: 500
+    # counts: ammo_maximum 59, cold 59, critical_chance 136, critical_damage 143, damage 140, damage_to_corpus 43, damage_to_grineer 39, damage_to_infested 39, electricity 41, fire_rate 87, heat 47, impact 61, magazine_capacity 51, multishot 118, punch_through 44, puncture 35, reload_speed 52, slash 59, status_chance 74, status_duration 52, toxin 72, weapon_recoil 48, zoom 47
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, impact, magazine_capacity, multishot, punch_through, puncture, reload_speed, slash, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [projectile_speed]
+  - family: Bronco
+    weapons: [bronco, bronco_prime]
+    n: 309
+    # counts: ammo_maximum 22, cold 35, critical_chance 98, critical_damage 99, damage 83, damage_to_corpus 38, damage_to_grineer 29, damage_to_infested 31, electricity 31, fire_rate 55, heat 31, impact 49, magazine_capacity 22, multishot 111, punch_through 24, reload_speed 33, status_chance 45, status_duration 32, toxin 42, weapon_recoil 39, zoom 40
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, impact, magazine_capacity, multishot, punch_through, reload_speed, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [projectile_speed, puncture, slash]
+  - family: Burston
+    weapons: [burston, burston_incarnon, burston_prime, burston_prime_incarnon]
+    n: 499
+    # counts: ammo_maximum 34, cold 36, critical_chance 200, critical_damage 222, damage 141, damage_to_corpus 37, damage_to_grineer 52, damage_to_infested 38, electricity 50, fire_rate 85, heat 43, impact 39, magazine_capacity 41, multishot 214, punch_through 21, puncture 44, reload_speed 43, slash 33, status_chance 69, status_duration 47, toxin 60, weapon_recoil 47, zoom 52
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, impact, magazine_capacity, multishot, puncture, reload_speed, slash, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [projectile_speed]
+    unclear: [punch_through]
+  - family: Cernos
+    weapons: [cernos_prime, cernos_prime_uncharged]
+    n: 497
+    # counts: ammo_maximum 47, cold 46, critical_chance 150, critical_damage 172, damage 114, damage_to_corpus 44, damage_to_grineer 50, damage_to_infested 41, electricity 60, fire_rate 71, heat 65, impact 59, magazine_capacity 55, multishot 159, projectile_speed 52, punch_through 37, reload_speed 54, status_chance 66, status_duration 40, toxin 72, weapon_recoil 43, zoom 69
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, impact, magazine_capacity, multishot, projectile_speed, punch_through, reload_speed, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [puncture, slash]
+  - family: Cestra
+    weapons: [cestra]
+    n: 338
+    # counts: ammo_maximum 26, cold 29, critical_chance 121, critical_damage 129, damage 81, damage_to_corpus 29, damage_to_grineer 38, damage_to_infested 27, electricity 34, fire_rate 53, heat 31, magazine_capacity 35, multishot 136, projectile_speed 30, punch_through 31, puncture 38, reload_speed 38, status_chance 55, status_duration 24, toxin 44, weapon_recoil 34, zoom 42
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, magazine_capacity, multishot, projectile_speed, punch_through, puncture, reload_speed, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [impact, slash]
+  - family: Dera
+    weapons: [dera, dera_vandal]
+    n: 499
+    # counts: ammo_maximum 47, cold 49, critical_chance 166, critical_damage 182, damage 105, damage_to_corpus 42, damage_to_grineer 46, damage_to_infested 42, electricity 53, fire_rate 61, heat 36, magazine_capacity 56, multishot 179, projectile_speed 43, punch_through 32, puncture 54, reload_speed 56, status_chance 85, status_duration 61, toxin 77, weapon_recoil 57, zoom 54
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, magazine_capacity, multishot, projectile_speed, punch_through, puncture, reload_speed, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [impact, slash]
+  - family: Despair
+    weapons: [despair]
+    n: 500
+    # counts: ammo_maximum 35, cold 47, critical_chance 190, critical_damage 189, damage 148, damage_to_corpus 44, damage_to_grineer 62, damage_to_infested 40, electricity 44, fire_rate 80, heat 44, magazine_capacity 62, multishot 144, projectile_speed 42, punch_through 30, puncture 67, reload_speed 47, status_chance 54, status_duration 43, toxin 64, weapon_recoil 48, zoom 67
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, magazine_capacity, multishot, projectile_speed, punch_through, puncture, reload_speed, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [impact, slash]
+  - family: Dual Toxocyst
+    weapons: [dual_toxocyst]
+    n: 500
+    # counts: ammo_maximum 41, cold 37, critical_chance 164, critical_damage 226, damage 144, damage_to_corpus 46, damage_to_grineer 54, damage_to_infested 48, electricity 29, fire_rate 90, heat 41, magazine_capacity 45, multishot 199, projectile_speed 9, punch_through 53, puncture 45, reload_speed 44, status_chance 72, status_duration 46, toxin 67, weapon_recoil 44, zoom 48
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, magazine_capacity, multishot, punch_through, puncture, reload_speed, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [impact, slash]
+    unclear: [projectile_speed]
+  - family: Furis
+    weapons: [furis, furis_incarnon, mk1_furis, mk1_furis_incarnon]
+    n: 500
+    # counts: ammo_maximum 43, cold 39, critical_chance 172, critical_damage 188, damage 133, damage_to_corpus 36, damage_to_grineer 39, damage_to_infested 54, electricity 40, fire_rate 92, heat 76, impact 1, magazine_capacity 54, multishot 159, projectile_speed 13, punch_through 45, puncture 54, reload_speed 53, status_chance 74, status_duration 49, toxin 77, weapon_recoil 49, zoom 49
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, magazine_capacity, multishot, punch_through, puncture, reload_speed, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [impact, slash]
+    unclear: [projectile_speed]
+  # Gotva: NOT SURVEYED (the API refused); the engine derives it.
+  - family: Grinlok
+    weapons: [prisma_grinlok]
+    n: 315
+    # counts: ammo_maximum 40, cold 31, critical_chance 100, critical_damage 85, damage 80, damage_to_corpus 32, damage_to_grineer 26, damage_to_infested 36, electricity 26, fire_rate 62, heat 42, impact 30, magazine_capacity 38, multishot 94, punch_through 33, reload_speed 39, slash 42, status_chance 54, status_duration 27, toxin 37, weapon_recoil 29, zoom 35
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, impact, magazine_capacity, multishot, punch_through, reload_speed, slash, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [projectile_speed, puncture]
+  - family: Karak
+    weapons: [karak_wraith]
+    n: 424
+    # counts: ammo_maximum 37, cold 53, critical_chance 139, critical_damage 179, damage 109, damage_to_corpus 39, damage_to_grineer 25, damage_to_infested 41, electricity 44, fire_rate 68, heat 30, impact 52, magazine_capacity 32, multishot 113, punch_through 30, puncture 60, reload_speed 48, slash 45, status_chance 54, status_duration 35, toxin 54, weapon_recoil 43, zoom 45
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, impact, magazine_capacity, multishot, punch_through, puncture, reload_speed, slash, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [projectile_speed]
+  - family: Kunai
+    weapons: [kunai, mk1_kunai]
+    n: 430
+    # counts: ammo_maximum 46, cold 58, critical_chance 144, critical_damage 164, damage 114, damage_to_corpus 37, damage_to_grineer 38, damage_to_infested 41, electricity 48, fire_rate 62, heat 43, magazine_capacity 38, multishot 144, projectile_speed 44, punch_through 30, puncture 60, reload_speed 44, status_chance 50, status_duration 41, toxin 61, weapon_recoil 43, zoom 48
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, magazine_capacity, multishot, projectile_speed, punch_through, puncture, reload_speed, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [impact, slash]
+  - family: Laetum
+    weapons: [laetum]
+    n: 500
+    # counts: ammo_maximum 54, cold 46, critical_chance 181, critical_damage 116, damage 154, damage_to_corpus 47, damage_to_grineer 59, damage_to_infested 35, electricity 57, fire_rate 95, heat 58, impact 56, magazine_capacity 49, multishot 173, projectile_speed 47, punch_through 28, reload_speed 52, slash 54, status_chance 61, status_duration 45, toxin 76, weapon_recoil 48, zoom 53
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, impact, magazine_capacity, multishot, projectile_speed, reload_speed, slash, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [puncture]
+    unclear: [punch_through]
+  - family: Lato
+    weapons: [lato, lato_prime, lato_vandal]
+    n: 500
+    # counts: ammo_maximum 59, cold 63, critical_chance 171, critical_damage 168, damage 142, damage_to_corpus 48, damage_to_grineer 37, damage_to_infested 46, electricity 51, fire_rate 93, heat 47, magazine_capacity 50, multishot 163, projectile_speed 3, punch_through 45, puncture 1, reload_speed 44, slash 42, status_chance 68, status_duration 67, toxin 69, weapon_recoil 51, zoom 66
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, magazine_capacity, multishot, punch_through, reload_speed, slash, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [impact, projectile_speed, puncture]
+  - family: Latron
+    weapons: [latron, latron_prime, latron_wraith]
+    n: 500
+    # counts: ammo_maximum 54, cold 47, critical_chance 163, critical_damage 159, damage 125, damage_to_corpus 53, damage_to_grineer 47, damage_to_infested 55, electricity 60, fire_rate 82, heat 60, magazine_capacity 54, multishot 136, punch_through 53, puncture 63, reload_speed 47, slash 1, status_chance 56, status_duration 59, toxin 77, weapon_recoil 59, zoom 43
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, magazine_capacity, multishot, punch_through, puncture, reload_speed, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [impact, projectile_speed, slash]
+  - family: Lex
+    weapons: [lex, lex_prime]
+    n: 500
+    # counts: ammo_maximum 41, cold 40, critical_chance 180, critical_damage 185, damage 145, damage_to_corpus 52, damage_to_grineer 47, damage_to_infested 43, electricity 62, fire_rate 74, heat 38, impact 1, magazine_capacity 52, multishot 167, projectile_speed 4, punch_through 47, puncture 58, reload_speed 52, status_chance 74, status_duration 48, toxin 77, weapon_recoil 45, zoom 54
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, magazine_capacity, multishot, punch_through, puncture, reload_speed, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [impact, projectile_speed, slash]
+  - family: Ocucor
+    weapons: [ocucor]
+    n: 500
+    # counts: ammo_maximum 50, cold 33, critical_chance 192, critical_damage 191, damage 123, damage_to_corpus 42, damage_to_grineer 31, damage_to_infested 47, electricity 58, fire_rate 92, heat 50, impact 49, magazine_capacity 40, multishot 198, projectile_speed 47, punch_through 16, puncture 46, reload_speed 50, slash 40, status_chance 71, status_duration 41, toxin 68, weapon_recoil 31, zoom 35
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, impact, magazine_capacity, multishot, projectile_speed, puncture, reload_speed, slash, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: []
+    unclear: [punch_through]
+  - family: Phantasma
+    weapons: [phantasma_prime, phantasma_prime_charged]
+    n: 500
+    # counts: ammo_maximum 54, cold 54, critical_chance 90, critical_damage 90, damage 106, damage_to_corpus 44, damage_to_grineer 44, damage_to_infested 50, electricity 64, fire_rate 91, heat 83, impact 50, magazine_capacity 62, multishot 158, punch_through 39, puncture 45, reload_speed 71, slash 39, status_chance 91, status_duration 74, toxin 78, weapon_recoil 44
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, impact, magazine_capacity, multishot, punch_through, puncture, reload_speed, slash, status_chance, status_duration, toxin, weapon_recoil]
+    never: [projectile_speed, zoom]
+  - family: Phenmor
+    weapons: [phenmor]
+    n: 500
+    # counts: ammo_maximum 47, cold 58, critical_chance 156, critical_damage 99, damage 116, damage_to_corpus 54, damage_to_grineer 50, damage_to_infested 46, electricity 60, fire_rate 104, heat 54, magazine_capacity 59, multishot 165, projectile_speed 61, punch_through 26, reload_speed 46, slash 47, status_chance 90, status_duration 67, toxin 110, weapon_recoil 41, zoom 55
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, magazine_capacity, multishot, projectile_speed, reload_speed, slash, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [impact, puncture]
+    unclear: [punch_through]
+  - family: Sicarus
+    weapons: [sicarus, sicarus_prime]
+    n: 500
+    # counts: ammo_maximum 45, cold 46, critical_chance 170, critical_damage 167, damage 158, damage_to_corpus 65, damage_to_grineer 49, damage_to_infested 37, electricity 58, fire_rate 77, heat 47, impact 54, magazine_capacity 48, multishot 153, projectile_speed 15, punch_through 44, reload_speed 56, status_chance 62, status_duration 44, toxin 67, weapon_recoil 34, zoom 58
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, impact, magazine_capacity, multishot, punch_through, reload_speed, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [puncture, slash]
+    unclear: [projectile_speed]
+  - family: Sybaris
+    weapons: [dex_sybaris, sybaris, sybaris_prime]
+    n: 500
+    # counts: ammo_maximum 47, cold 37, critical_chance 157, critical_damage 151, damage 112, damage_to_corpus 41, damage_to_grineer 42, damage_to_infested 44, electricity 57, fire_rate 75, heat 51, impact 48, magazine_capacity 45, multishot 145, punch_through 44, puncture 59, reload_speed 38, slash 55, status_chance 67, status_duration 48, toxin 63, weapon_recoil 45, zoom 56
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, impact, magazine_capacity, multishot, punch_through, puncture, reload_speed, slash, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [projectile_speed]
+  - family: Torid
+    weapons: [torid]
+    n: 500
+    # counts: ammo_maximum 57, cold 34, critical_chance 197, critical_damage 213, damage 152, damage_to_corpus 46, damage_to_grineer 47, damage_to_infested 48, electricity 45, fire_rate 92, heat 42, magazine_capacity 52, multishot 191, projectile_speed 37, punch_through 28, reload_speed 52, status_chance 72, status_duration 44, toxin 84, weapon_recoil 46, zoom 49
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, magazine_capacity, multishot, projectile_speed, reload_speed, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [impact, puncture, slash]
+    unclear: [punch_through]
+  - family: Vasto
+    weapons: [vasto, vasto_prime]
+    n: 462
+    # counts: ammo_maximum 55, cold 44, critical_chance 171, critical_damage 181, damage 123, damage_to_corpus 43, damage_to_grineer 34, damage_to_infested 34, electricity 43, fire_rate 87, heat 36, magazine_capacity 42, multishot 192, projectile_speed 13, punch_through 35, reload_speed 51, slash 53, status_chance 54, status_duration 39, toxin 68, weapon_recoil 55, zoom 61
+    rollable: [ammo_maximum, cold, critical_chance, critical_damage, damage, damage_to_corpus, damage_to_grineer, damage_to_infested, electricity, fire_rate, heat, magazine_capacity, multishot, punch_through, reload_speed, slash, status_chance, status_duration, toxin, weapon_recoil, zoom]
+    never: [impact, puncture]
+    unclear: [projectile_speed]

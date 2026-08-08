@@ -1440,11 +1440,14 @@ const RIVENS = "rivens";   // its preset domain, per weapon like the builds
 // The stat pool this weapon's rivens draw from. NOT its mod class: a bow's
 // mods are `bow` and its rivens are `rifle`, so the server derives which pool
 // applies and says so.
-// `riven_excludes` takes out what THIS weapon cannot roll: a sentinel weapon
-// has no Zoom and no Recoil, a hit-scan one no flight speed, an infinite-ammo
-// one no Ammo Maximum, and a weapon with no physical damage rolls no physical
-// attribute (the wiki's 25% rule). The class table stays shared; only the
-// weapon's view of it narrows.
+// `riven_excludes` takes out what THIS weapon cannot roll, and the server
+// answers from three sources in order (MEASUREMENTS M35): a real card someone
+// has, a COUNT over ~12 000 live riven listings per family, and only then the
+// derivation — a sentinel weapon has no Zoom and no Recoil, a hit-scan one no
+// flight speed, an infinite-ammo one no Ammo Maximum, and a weapon with no
+// physical damage rolls no physical attribute (the wiki's 25% rule, which is
+// wrong on six of 26 families in both directions). The class table stays
+// shared; only the weapon's view of it narrows.
 const rivenPoolAll = () => {
   const w = weaponInfo($("weapon").value);
   return (META.riven_stats || {})[w.riven_class || w.mod_class] || [];

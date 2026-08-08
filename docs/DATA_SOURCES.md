@@ -275,7 +275,35 @@ source belongs as a third CHECK, not as a replacement for either.
 
 The rest of Tenno Hub's list is worldstate and market data (`api.warframestat.us`,
 `api.warframe.market`, `oracle.browse.wf/worldState.json`, `browse.wf/arbys.txt`),
-which is live-service state — nothing this project models.
+which is live-service state — nothing this project models. **One exception since
+2026-08-08**, and it is not price data: see below.
+
+### RIVEN POOLS: the only source is other people's cards (2026-08-08)
+
+Which stats a weapon's riven can roll is DE's own per-weapon table. It is in no
+export, the wiki states a rule and immediately disclaims it (*"usually…
+Exceptions exist on a case by case basis"*), and the exceptions are not rare —
+six of 26 families in this roster.
+
+So the source is **live riven listings**: `api.warframe.market`'s auction search
+returns the stats each card rolled. `scripts/survey_riven_pools.py` counts them
+per riven family (the unit DE rolls: one Boar riven fits the Boar and the Boar
+Prime) and writes `data/rivens/pools.yaml`. This is the one place market data
+enters the repo, and what is taken from it is the ATTRIBUTE LIST, never a price.
+
+Three properties make it usable as a source rather than as a rumour:
+
+- **It is counted, not read.** A riven carries 2-3 of ~24 class stats, so a stat
+  that can roll appears in ~55 of 500 listings. Measured: rollable stats landed
+  at 30-70, impossible ones at 0-4.
+- **It admits a middle.** Listings are typed by players and a few are wrong (one
+  Latron card claims Slash). Anything between the two bands is UNCLEAR and the
+  engine keeps its own derivation, rather than guessing from a count of nine.
+- **A real card outranks it.** `data/rivens/observed.yaml` is hand-written, sits
+  above the survey, and requires a note saying who saw the card. The Furis is
+  why: 13 of 500 is inside the unclear band and a player has the riven.
+
+Full reasoning and the six corrections: `docs/MEASUREMENTS.md` M35.
 
 ### Open SOURCE-SPLIT: the Torid Incarnon's beam geometry
 

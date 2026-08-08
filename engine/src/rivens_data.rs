@@ -253,9 +253,21 @@ struct PoolFile {
 /// Riven stats THIS WEAPON cannot roll, out of its class pool.
 ///
 /// The pool is per CLASS, but two rifles do not roll the same stats: DE does
-/// not hand a weapon an attribute for a stat the weapon does not have. Two
-/// rules cover the roster, and both read facts the weapon already states, so
-/// a new weapon arrives correct without anyone remembering this list exists.
+/// not hand a weapon an attribute for a stat the weapon does not have.
+///
+/// THREE SOURCES, IN THIS ORDER, and the derivation is the LAST of them
+/// (2026-08-08). What a weapon can roll is DE's own per-weapon table, it is
+/// published nowhere, and a survey of ~12 000 live riven listings says it is
+/// not reliably derivable either: the Ocucor is 9% Puncture and 91% Radiation
+/// and rolls all three physical stats, while the Phenmor is 30% Puncture and
+/// rolls none of it. So:
+///
+/// 1. `data/rivens/observed.yaml` — someone has the card. Hand-written.
+/// 2. `data/rivens/pools.yaml` — a COUNT over live listings per riven family,
+///    written by `scripts/survey_riven_pools.py`. Three-way: rollable, never,
+///    or unclear, and unclear falls through to the rules below.
+/// 3. the rules below, which read facts the weapon already states, so a new
+///    weapon arrives approximately right before anyone surveys it.
 ///
 /// 1. **Physical damage** — wiki (`Riven_Mods`, attributes-table legend),
 ///    verbatim: *"Weapons without more than 25% of a physical damage type
@@ -272,14 +284,19 @@ struct PoolFile {
 /// forms you can fire for free is what it has. A riven belongs to the weapon,
 /// not to a mode of it: Larkspur Prime's beam is 11% Impact and its alt-fire —
 /// one held button away, no gauge, no animation — is 33%, and a player's real
-/// card rolls negative Impact (through the owner, 2026-08-07). Phantasma
-/// Prime is the same weapon shape on the other rule: a hit-scan beam whose
-/// plasma bomb flies, so it keeps Projectile Speed.
+/// card rolls negative Impact (through the owner, 2026-08-07).
 ///
-/// A GAUGE-SWITCHED form is the exception and stays out: an Incarnon form is
-/// paid for with evolutions, and a riven's stat pool is fixed when it drops,
-/// whether or not those are installed. The Torid's grenade is pure Toxin, so
-/// it loses the three physical stats as well.
+/// A GAUGE-SWITCHED form stays out, and the survey is what settles it rather
+/// than the argument that used to stand here. An Incarnon form is paid for
+/// with evolutions and a riven's pool is fixed when it drops — but the
+/// evidence is better than the argument: the Latron, Lex and Atomos Incarnon
+/// forms all fire a literal travelling projectile, and their families show 0,
+/// 4 and 0 Projectile Speed listings out of 500. Counting those forms would
+/// have offered a stat no card in the sample carries.
+///
+/// The MIRROR of that is why `observed.yaml` sits above all of it: the Furis
+/// is hit-scan in both forms and a player's card carries Projectile Speed
+/// anyway (owner, 2026-08-08).
 pub fn excluded_for(weapon_id: &str) -> Vec<&'static str> {
     // `s` is the entry the caller named — what the rules that read the WEAPON
     // (its ammo pool, its class) go to. `forms` is what the rules that read a
@@ -324,7 +341,103 @@ pub fn excluded_for(weapon_id: &str) -> Vec<&'static str> {
     if forms.iter().all(|f| f.attack.shot_type.is_some_and(|t| !t.flies())) {
         out.push("projectile_speed");
     }
+
+    // …and now the two DATA sources, which outrank everything above. The
+    // survey speaks per riven FAMILY, because that is the unit DE rolls: one
+    // Boar riven fits the Boar and the Boar Prime, so one pool covers both.
+    let Some(fam) = s.riven_family.as_deref() else { return out };
+    if let Some(sv) = survey(fam) {
+        out.retain(|id| !sv.rollable.iter().any(|r| r == id));
+        for id in &sv.never {
+            if !out.contains(id) {
+                out.push(id);
+            }
+        }
+    }
+    for id in observed(fam) {
+        out.retain(|x| *x != id);
+    }
     out
+}
+
+/// One riven family's surveyed pool — `data/rivens/pools.yaml`.
+pub struct SurveyedPool {
+    pub family: String,
+    /// How many listings the count is over.
+    pub n: u32,
+    pub rollable: Vec<&'static str>,
+    pub never: Vec<&'static str>,
+}
+
+#[derive(Deserialize)]
+struct PoolsFile {
+    #[allow(dead_code)]
+    surveyed: String,
+    families: Vec<RawSurvey>,
+}
+
+#[derive(Deserialize)]
+struct RawSurvey {
+    family: String,
+    n: u32,
+    #[serde(default)]
+    rollable: Vec<String>,
+    #[serde(default)]
+    never: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct ObservedFile {
+    seen: Vec<ObservedCard>,
+}
+
+#[derive(Deserialize)]
+struct ObservedCard {
+    family: String,
+    stat: String,
+    /// Who saw the card, and when. REQUIRED — the note IS the evidence.
+    #[allow(dead_code)]
+    note: String,
+}
+
+fn leak(s: String) -> &'static str {
+    Box::leak(s.into_boxed_str())
+}
+
+/// Every surveyed family, loaded once.
+pub fn surveys() -> &'static [SurveyedPool] {
+    static S: OnceLock<Vec<SurveyedPool>> = OnceLock::new();
+    S.get_or_init(|| {
+        crate::data::files_under("rivens/")
+            .filter(|(p, _)| *p == "rivens/pools.yaml")
+            .filter_map(|(_, t)| serde_norway::from_str::<PoolsFile>(t).ok())
+            .flat_map(|f| f.families)
+            .map(|r| SurveyedPool {
+                family: r.family,
+                n: r.n,
+                rollable: r.rollable.into_iter().map(leak).collect(),
+                never: r.never.into_iter().map(leak).collect(),
+            })
+            .collect()
+    })
+}
+
+fn survey(family: &str) -> Option<&'static SurveyedPool> {
+    surveys().iter().find(|s| s.family == family)
+}
+
+/// Stats a real card is known to carry — `data/rivens/observed.yaml`.
+pub fn observed(family: &str) -> Vec<&'static str> {
+    static S: OnceLock<Vec<(String, &'static str)>> = OnceLock::new();
+    let all = S.get_or_init(|| {
+        crate::data::files_under("rivens/")
+            .filter(|(p, _)| *p == "rivens/observed.yaml")
+            .filter_map(|(_, t)| serde_norway::from_str::<ObservedFile>(t).ok())
+            .flat_map(|f| f.seen)
+            .map(|c| (c.family, leak(c.stat)))
+            .collect()
+    });
+    all.iter().filter(|(f, _)| f == family).map(|(_, s)| *s).collect()
 }
 
 /// The stat pool of one mod class — `data/rivens/<class>.yaml`.
@@ -966,16 +1079,65 @@ mod tests {
         // Nothing else is invented: neither form deals Puncture or Slash.
         assert!(l.contains(&"puncture") && l.contains(&"slash"), "{l:?}");
 
-        // Phantasma Prime is the same shape on the OTHER rule: its beam is
-        // hit-scan and its plasma bomb flies, so the riven keeps Projectile
-        // Speed. The two spellings of `hit_scan` in data/ used to make this
-        // true for the wrong reason — every hit-scan weapon kept it.
+        // The OTHER rule is the flight one, and here the derivation is only
+        // the fallback. Phantasma Prime's plasma bomb genuinely flies at
+        // 25 m/s, which is why this test used to assert it keeps Projectile
+        // Speed — and 500 real Phantasma rivens carry it zero times, so the
+        // survey overrules the reasoning. Gotva Prime is the same claim with
+        // no survey behind it: its family is the one warframe.market refused,
+        // so the derivation still answers for it.
         let p = excluded_for("phantasma_prime");
-        assert!(!p.contains(&"projectile_speed"), "the bomb flies at 25 m/s: {p:?}");
-        for id in ["burston_prime", "gotva_prime", "karak_wraith", "prisma_grinlok", "furis"] {
+        assert!(p.contains(&"projectile_speed"), "0 of 500 Phantasma cards: {p:?}");
+        for id in ["burston_prime", "gotva_prime", "karak_wraith", "prisma_grinlok"] {
             let e = excluded_for(id);
             assert!(e.contains(&"projectile_speed"), "{id} is hit-scan in every form: {e:?}");
         }
+    }
+
+    /// The three sources rank, and each one is visible in the answer.
+    ///
+    /// This is the survey's whole point: what a weapon can roll is DE's table,
+    /// it is published nowhere, and the derivation gets it wrong in BOTH
+    /// directions on the same roster. Every case below is a family where the
+    /// rules alone would have answered differently.
+    #[test]
+    fn a_surveyed_pool_outranks_the_derivation_and_a_real_card_outranks_both() {
+        // 1. A CARD. The Furis is hit-scan in both forms, so the rules refuse
+        //    Projectile Speed and the survey's 13-of-500 is inside the unclear
+        //    band — but a player has the card (owner, 2026-08-08).
+        let f = excluded_for("furis");
+        assert!(!f.contains(&"projectile_speed"), "a real Furis card carries it: {f:?}");
+        assert_eq!(observed("Furis"), vec!["projectile_speed"]);
+        // The MK1 is the same riven, because it is the same family.
+        assert!(!excluded_for("mk1_furis").contains(&"projectile_speed"));
+
+        // 2. THE SURVEY, adding what the rules refused. The Ocucor is 9%
+        //    Puncture and 91% Radiation — the 25% rule strikes all three
+        //    physical stats, and all three roll on real cards.
+        let o = excluded_for("ocucor");
+        for id in ["impact", "puncture", "slash", "projectile_speed"] {
+            assert!(!o.contains(&id), "the Ocucor rolls {id}: {o:?}");
+        }
+        // …and taking away what they allowed. The Phenmor is 30% Puncture,
+        // over the line, and 0 of 500 cards carry it.
+        assert!(excluded_for("phenmor").contains(&"puncture"));
+        // Zoom is not derived at all — nothing in the weapon data says a Boar
+        // has no scope, and 1 of 500 cards says it.
+        assert!(excluded_for("boar").contains(&"zoom"));
+        // A share that lands EXACTLY on 25% is decided by neither of us:
+        // Karak Wraith's Slash is 7.75 of 31, the rule reads "more than 25%"
+        // and refuses it, and 45 of 424 cards carry it.
+        assert!(!excluded_for("karak_wraith").contains(&"slash"));
+
+        // 3. THE DERIVATION still answers for anything unsurveyed — a weapon
+        //    added tomorrow is approximately right before anyone counts cards.
+        let v = excluded_for("verglas_prime");
+        assert!(v.contains(&"zoom") && v.contains(&"ammo_maximum"), "{v:?}");
+        assert!(surveys().iter().all(|s| s.family != "Verglas"), "not surveyed");
+
+        // Every survey states its sample size, because a count is not a proof.
+        assert!(surveys().iter().all(|s| s.n > 100), "a thin sample proves nothing");
+        assert!(surveys().len() > 20, "{} families surveyed", surveys().len());
     }
 
     /// Faction damage prints as a MULTIPLIER, because that is what the card

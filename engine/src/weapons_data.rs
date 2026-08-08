@@ -519,6 +519,12 @@ pub struct WeaponSpec {
     /// one riven reads differently on two guns.
     #[serde(default)]
     pub disposition: Option<f64>,
+    /// Which RIVEN this weapon takes, by the family's English name — one
+    /// riven fits every variant in it, which is why it is a name and not an
+    /// id. It is the key `data/rivens/pools.yaml` is surveyed by: DE rolls a
+    /// pool per family, so a Boar riven and a Boar Prime riven are one thing.
+    #[serde(default)]
+    pub riven_family: Option<String>,
     /// The weapon's own rank ceiling — 30 for almost everything, 40 for the
     /// Kuva/Tenet/Coda families and the Paracesis. It decides CAPACITY, since
     /// capacity "correlates to their Rank" (wiki `Mod Capacity`) and a rank-40
