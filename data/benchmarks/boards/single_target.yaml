@@ -1665,6 +1665,11 @@ entries:
   - weapon: larkspur_prime
     mode: base
     score: 2.6
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 2.6
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, magazine_extension, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_merciless, secondary_enervate]
   - weapon: larkspur_prime
@@ -1672,6 +1677,11 @@ entries:
     score: 2.5122313592609506
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, hollowed_bullets, hypothermic_shell, contamination_casing, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 2.4641848747715334
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_bulwark, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
     score: 2.2
@@ -1687,6 +1697,11 @@ entries:
     score: 2.085087436881629
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_overcharge, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 2
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, cascadia_flare]
   - weapon: larkspur_prime
     mode: base
     score: 1.4816974442306794
