@@ -751,6 +751,11 @@ struct HeatEntity {
 struct BlastStack {
     fuse: f64,
     value: f64,
+    /// The applying weapon's [`InstanceScale::xh_bracket`], carried so that the
+    /// EXTRA HIT this detonation triggers can be scaled by an elemental bracket
+    /// the detonation itself never gets. The one thing a Blast stack has to
+    /// remember about the gun that made it.
+    xh_bracket: f64,
 }
 
 /// Target-side debuff state — the payloads of all proc types a combined
@@ -781,6 +786,16 @@ struct DebuffState {
     /// Confusion (Radiation): no single-target combat payload; tracked for
     /// CO type counting.
     confusion: Vec<f64>,
+    /// The Bullet Attractor (Void), same treatment as Confusion and for the
+    /// same reason: no single-target combat payload — it redirects fire in a
+    /// 2.5 m field and nobody shoots back here — but Void IS on Condition
+    /// Overload's list of counting procs, so an extra hit that lands one is
+    /// worth a CO stack and that is the whole of what it is worth.
+    ///
+    /// ONE ENTRY. The wiki describes a field on the target, not a stack count,
+    /// and a re-proc moves it to where the new hit landed rather than adding a
+    /// second one.
+    attractor: Vec<f64>,
     blast: Vec<BlastStack>,
     dots: Vec<Dot>,
     heat: Option<HeatEntity>,
@@ -800,6 +815,10 @@ const BLEED_TICKS: u32 = 6;
 const DOT_COEFFICIENT: f64 = 0.5; // Toxin/Electricity/Heat/Gas ticks
 const STATUS_DURATION: f64 = 6.0; // the standard proc duration
 const CORROSION_DURATION: f64 = 8.0;
+/// Bullet Attractor (Void): "a small 2.5 metre radius field ... for 3 seconds"
+/// (wiki Damage/Void_Damage). Shorter than the standard 6 s, which is why it is
+/// its own constant rather than `STATUS_DURATION`.
+const ATTRACTOR_DURATION: f64 = 3.0;
 const TEN_STACK_CAP: usize = 10;
 const BLAST_COEFFICIENT: f64 = 0.3;
 const BLAST_FUSE: f64 = 1.5;
@@ -906,6 +925,7 @@ impl DebuffState {
         self.virus.retain(|&e| e > now);
         self.corrosion.retain(|&e| e > now);
         self.confusion.retain(|&e| e > now);
+        self.attractor.retain(|&e| e > now);
         if let Some(f) = self.frozen_until {
             if f <= now {
                 // Thaw: Freeze is SET to exactly 3 stacks with FRESH 6 s
@@ -1064,6 +1084,12 @@ impl DebuffState {
         n += usize::from(!self.virus.is_empty());
         n += usize::from(!self.corrosion.is_empty());
         n += usize::from(!self.confusion.is_empty());
+        // Void counts. The mod's own list says so in full — "Impact, Puncture,
+        // Slash, Cold, Electricity, Heat, Toxin, Blast, Corrosive, Gas,
+        // Magnetic, Radiation, Viral, Void and Tau procs all count for the
+        // damage bonus" — and it is the only damage a Bullet Attractor is worth
+        // in this arena.
+        n += usize::from(!self.attractor.is_empty());
         n += usize::from(!self.blast.is_empty());
         n += usize::from(self.heat.is_some());
         n += usize::from(self.frozen_until.is_some());
@@ -1969,6 +1995,36 @@ impl DummyParams {
         }
     }
 
+    /// The EXTRA HIT bracket of this form's BASE ATTACK:
+    /// `1 + Σ elemental bonuses + Σ (unmodded IPS share × that IPS bonus)`.
+    ///
+    /// The wiki's `Weapon Hit Damage` formula names it in full, and the term it
+    /// spells `Unmodded Impact Distribution × Impact Bonuses` is why this is
+    /// read off the BASE ATTACK rather than off whichever instance triggered
+    /// the extra hit. DE's CN card states the consequence outright: a slam
+    /// whose own damage is 100% Blast still scales its extra hit by the gun's
+    /// Impact and Puncture mods, weighted by the shares of the ordinary
+    /// attack ("即使该武器的其它攻击方式的初始伤害不包含该物理伤害……依然会根据
+    /// 基本攻击方式的初始伤害受到物理伤害MOD加成"), with the Heliocor worked out
+    /// line by line.
+    ///
+    /// This is a RATIO, so it needs no special handling for the base-damage
+    /// bucket: `damage` is already `base × (1 + damage mods)` expanded by the
+    /// element hierarchy, and `dot_modified_base` is the same number before the
+    /// expansion. Dividing cancels everything but the bracket.
+    ///
+    /// AND IT IS READ AT `t`, because an ability-granted element is additive
+    /// with elemental mods and therefore inside this bracket — a Nourish that
+    /// has run out stops paying an extra hit at the moment it stops paying a
+    /// mod.
+    fn extra_hit_bracket(&self, t: f64) -> f64 {
+        let mb = self.dot_modified_base.unwrap_or_else(|| self.damage.total());
+        if mb <= 0.0 {
+            return 1.0;
+        }
+        self.with_ability_elements(self.damage.quantized(), mb, t).total() / mb
+    }
+
     /// The (1 + element bonuses) bracket for an elemental DoT's ticks.
     fn elem_bracket(&self, t: DamageType) -> f64 {
         self.elem_dot_bonus
@@ -2107,6 +2163,15 @@ pub struct SourceDamage {
     /// damage on its own clock, and on that weapon it is most of the output.
     pub field: f64,
     pub arcane_on_status: f64,
+    /// EXTRA HITS (Xata's Whisper's Void instance) — wiki `Extra_Hit`. Its own
+    /// bucket for the same reason the field has one: it is neither the weapon's
+    /// hit nor a status tick, and on a build running the ability it is a fifth
+    /// of the output. It is also the only bucket the BUILD cannot move directly
+    /// — it moves everything else and this follows.
+    pub extra_hit: f64,
+    /// …split by type, kept parallel to the others. One type per instance
+    /// today (Void), because one ability grants extra hits here.
+    pub extra_hit_by_type: [f64; 15],
     /// A SYNDICATE RADIAL's explosion (Truth, Justice, …) — its own bucket
     /// because it is neither weapon damage nor a status tick: a flat 1000 of
     /// the syndicate's element, unscaled by anything the build does.
@@ -2605,6 +2670,183 @@ fn debilitate_split(
     Some(if rng.next_f64() < 0.5 { a } else { b })
 }
 
+/// EXTRA HIT — the second damage instance an ability grants, fired off the one
+/// that triggered it (wiki `Extra_Hit`; MECHANICS §7 §"Extra Hit"). Returns
+/// whether it killed the target.
+///
+/// The wiki's formula is one line —
+///
+/// > Extra Hit Damage = Weapon Hit Damage × Extra Hit Percentage
+/// >                    × (1 + Faction Damage Bonuses)
+///
+/// — and every oddity people report about Xata's Whisper falls out of `Weapon
+/// Hit Damage` ALREADY containing a faction layer, a crit multiplier and a
+/// body-part multiplier. So this function takes the triggering instance's
+/// finished `trigger_raw` and multiplies rather than rebuilding anything:
+///
+/// - **faction, again.** One `faction_at_time` here, on top of however many the
+///   trigger already carried. A direct hit is at depth 1, so its extra hit is
+///   at 2; a Blast detonation is at depth 2, so ITS extra hit is at 3 — which
+///   is the "triple dip" both wikis name and neither has to be hardcoded.
+/// - **the body part, again** — `part_again`, and it is the caller that knows.
+///   A direct headshot passes its `part_factor`; a radial, a field tick and a
+///   Blast detonation pass 1.0, since none of them struck a body part in the
+///   first place. DE's CN card states both halves: "同理，弱点倍率也会被计算两
+///   次" for a hit, and "弱点倍率只会被计算一次" off a Blast detonation.
+/// - **crit, once and inherited.** The extra hit rolls no crit of its own (the
+///   EN wiki files "Xata's Whisper's Extra Hits cannot crit" under Bugs) but
+///   `trigger_raw` critted, so the number behind an orange hit is orange-sized
+///   — which is what "affected by ... critical ... damage mods (e.g. Vital
+///   Sense)" on the ability's own page means.
+/// - **`bracket`** is the trigger's elemental correction, and it is 1.0
+///   everywhere except where the trigger's own bracket differs from the base
+///   attack's — see [`DummyParams::extra_hit_bracket`]. The Blast detonation is
+///   the loud case: it takes NO elemental bonus, and the extra hit off it takes
+///   the whole one.
+///
+/// It is a real instance, so it lands through [`TargetState::apply`] like any
+/// other: Void's ×1.5 against Overguard is the vulnerability column doing its
+/// job, not a rule written here.
+///
+/// AND IT ROLLS ITS OWN STATUS, at the weapon's own chance ("附加的虚空伤害具有
+/// 基于武器本身触发几率的独立触发几率"). Its vector is one type, so the proc is
+/// always that type — a Void proc, worth a Condition Overload stack and no
+/// damage.
+///
+/// THE CALLER DECIDES WHETHER IT FIRES, and the rule is short: a WEAPON damage
+/// instance triggers one, a status payload does not — except a Blast
+/// detonation, which does and is filed under Bugs. Nothing here checks; a
+/// function that guessed from its arguments which kind of instance it was
+/// handed would be the third place that knowledge lives.
+/// WHAT A STATUS LEFT BY AN EXTRA HIT BURNS OFF — the one place the rule lives,
+/// because the category has two members and they answer it differently for the
+/// same reason (docs/EXTRA_HIT.md).
+///
+/// The wiki states it for an Extra Hit that deals damage: *"Damage over Time
+/// status effects created by an Extra Hit will use the Extra Hit Damage as
+/// Modded Base Damage"* — which is why such a status takes the ELEMENTAL
+/// bonuses an ordinary weapon status is denied: they are already inside that
+/// number.
+///
+/// Read literally it gives ZERO for Primary Debilitate, which the same page
+/// calls "a 0-damage Extra Hit", and that status plainly does damage. The rule
+/// that covers both (owner, 2026-08-09: "如果为0，那么就找上一级去找base"):
+///
+/// > an Extra Hit REPLACES the base its status would have used. A 0% one
+/// > replaces nothing, so the level above stands.
+///
+/// The owner's phrasing for the other direction is the clearest statement of
+/// it there is — 上一级被 resupply 替换了.
+fn extra_hit_status_base(extra_hit_damage: f64, level_above: f64) -> f64 {
+    if extra_hit_damage > 0.0 {
+        extra_hit_damage
+    } else {
+        level_above
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn fire_extra_hits(
+    trigger_raw: f64,
+    bracket: f64,
+    part_again: f64,
+    head_direct: bool,
+    status_chance: f64,
+    at: f64,
+    debuffs: &mut DebuffState,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    target: &mut TargetState,
+    params: &DummyParams,
+    ap: &DummyParams,
+    mit: &Mitigation,
+    r: &mut RunResult,
+    rng: &mut Rng,
+) -> bool {
+    let hits = crate::abilities_data::extra_hits_at(&params.abilities, at);
+    if hits.is_empty() || trigger_raw <= 0.0 {
+        return false;
+    }
+    let f = params.faction_at_time(at);
+    for (ty, frac) in hits {
+        let raw = trigger_raw * frac * bracket * part_again * f;
+        let (eff, killed, broke) = target.apply(
+            raw,
+            TypeShares::single(ty),
+            head_direct,
+            at,
+            &params.target,
+            false,
+            mit,
+        );
+        r.total_damage += raw;
+        r.effective_damage += eff;
+        r.sources.extra_hit += eff;
+        r.sources.extra_hit_by_type[ty as usize] += eff;
+        r.timeline.add(at, eff);
+        r.kills += u32::from(killed);
+        if let Some(pool) = broke {
+            push_break_proc(debuffs, params, at, pool);
+        }
+        if killed {
+            gal.bump_on_kill(params, at);
+            arc.on_kill(params, at);
+            *debuffs = DebuffState::default();
+            // A fresh individual, so the remaining extra hits of this trigger
+            // are gone with the one that earned them — the same rule the wiki
+            // states for the trigger itself ("If a hit that would trigger an
+            // Extra Hit kills the enemy, the Extra Hit will not be triggered").
+            return true;
+        }
+        // ITS OWN STATUS ROLL, from its own one-type vector. Through
+        // `settle_procs` like everything else, so if an extra hit ever grants a
+        // DAMAGING element the payload rules are already right: the wiki's
+        // "Damage over Time status effects created by an Extra Hit will use the
+        // Extra Hit Damage as Modded Base Damage" is exactly `mb_live: raw`.
+        let procs = status::procs_for_hit(
+            &[],
+            status_chance,
+            &DamageVector::new().with(ty, raw),
+            &params.target.status_immunities,
+            rng,
+        );
+        settle_procs(
+            procs,
+            at,
+            InstanceScale {
+                // THE CATEGORY'S RULE, not this function's: an extra hit that
+                // deals damage replaces the base its status burns off, and one
+                // that deals none leaves the level above standing. `raw` is
+                // always positive here (the caller returns early at 0), so this
+                // reads as `raw` — it is written through the rule so the two
+                // members of the category cannot drift apart.
+                mb_live: extra_hit_status_base(raw, trigger_raw),
+                // Both already inside `raw`. Passing them again would square
+                // what the trigger's own procs took once.
+                crit_mult: 1.0,
+                part_factor: 1.0,
+                attrition: 1.0,
+                xh_bracket: bracket,
+            },
+            debuffs,
+            gal,
+            arc,
+            target,
+            params,
+            ap,
+            mit,
+            r,
+            rng,
+            // The extra hit is one derivation past the hit, so a status IT
+            // applies is one past that. Void applies none that pay damage, so
+            // this is a claim nothing collects on yet — written as the ladder
+            // rather than as a number so the first one that does is right.
+            DEPTH_DERIVED_PROC,
+        );
+    }
+    false
+}
+
 #[allow(clippy::too_many_arguments)]
 fn settle_procs(
     procs: Vec<DamageType>,
@@ -2625,7 +2867,7 @@ fn settle_procs(
     // through an extra damage instance.
     depth: u32,
 ) {
-    let InstanceScale { mb_live, crit_mult, part_factor, attrition } = scale;
+    let InstanceScale { mb_live, crit_mult, part_factor, attrition, xh_bracket } = scale;
     let sd = params.status_duration_mult;
     let sdm = params.status_damage_mult;
     let caps = params.target.stack_caps;
@@ -2809,6 +3051,16 @@ fn settle_procs(
                 gcap(TEN_STACK_CAP),
                 at,
             ),
+            // The Bullet Attractor, which only ever arrives from an EXTRA HIT
+            // here: no weapon in the roster deals Void, and Xata's Whisper's
+            // second instance is entirely Void. Worth one line in the CO
+            // counter and nothing else — see `DebuffState::attractor`.
+            DamageType::Void => DebuffState::push_capped(
+                &mut debuffs.attractor,
+                at + ATTRACTOR_DURATION * sd,
+                1,
+                at,
+            ),
             DamageType::Blast => {
                 if let Some(c) = caps {
                     if debuffs.blast.len() >= c.general {
@@ -2823,12 +3075,20 @@ fn settle_procs(
                         * crit_mult
                         * part_factor
                         * fm2,
+                    xh_bracket,
                 });
                 if debuffs.blast.len() >= TEN_STACK_CAP {
                     // Early detonation: every stack's single-target
                     // hit at once, all stacks consumed (radial
                     // excluded — it never hits the host).
-                    let total: f64 = debuffs.blast.drain(..).map(|b| b.value).sum();
+                    let fired: Vec<BlastStack> = debuffs.blast.drain(..).collect();
+                    let total: f64 = fired.iter().map(|b| b.value).sum();
+                    // …and each stack's OWN extra-hit contribution, pre-scaled
+                    // by the bracket the gun that applied it had. Ten stacks
+                    // land as one number here, but they are ten detonations and
+                    // an expiring Nourish between the first and the tenth would
+                    // make their brackets differ.
+                    let xh_total: f64 = fired.iter().map(|b| b.value * b.xh_bracket).sum();
                     let mit = debuffs.mitigation(at, sd);
                     let (eff, killed, broke) =
                         target.apply(
@@ -2853,6 +3113,27 @@ fn settle_procs(
                         gal.bump_on_kill(params, at);
                         arc.on_kill(params, at);
                         *debuffs = DebuffState::default();
+                    } else {
+                        // THE ONE STATUS PAYLOAD THAT TRIGGERS AN EXTRA HIT.
+                        // The bracket is already folded into `xh_total`, and no
+                        // body part is re-applied — a detonation struck none.
+                        fire_extra_hits(
+                            xh_total,
+                            1.0,
+                            1.0,
+                            false,
+                            ap.status_chance,
+                            at,
+                            debuffs,
+                            gal,
+                            arc,
+                            target,
+                            params,
+                            ap,
+                            &mit,
+                            r,
+                            rng,
+                        );
                     }
                 }
             }
@@ -2940,7 +3221,14 @@ fn settle_procs(
                     vec![part],
                     at,
                     InstanceScale {
-                        mb_live,
+                        // THE 0% MEMBER OF THE EXTRA HIT CATEGORY. This arcane
+                        // "adds a 0-damage Extra Hit that applies a guaranteed
+                        // status effect" (wiki, Extra_Hit), so the base its
+                        // status burns off is the one nothing replaced — the
+                        // level above, which is this instance's own
+                        // ModifiedBase. Same rule the ability members read from
+                        // the other direction; docs/EXTRA_HIT.md.
+                        mb_live: extra_hit_status_base(0.0, mb_live),
                         crit_mult,
                         part_factor,
                         // A SECOND ATTRITION ROLL, ON TOP OF THE HIT'S — and it
@@ -2972,6 +3260,10 @@ fn settle_procs(
                         // the parent's value is what the zero is replaced BY, and
                         // that value critted. MEASUREMENTS M37.
                         attrition: attrition * noncrit_mult(ap.noncrit_bonus, 0, rng),
+                        // Inherited unchanged: the split is the same weapon's,
+                        // so a Blast it splits out detonates behind the same
+                        // bracket the parent's would have.
+                        xh_bracket,
                     },
                     debuffs,
                     gal,
@@ -3041,6 +3333,19 @@ struct InstanceScale {
     /// play through the owner (2026-08-08): "衰弱触发的 dot 可以再次触发……外围
     /// 20 倍但是网站里的计算器显示不出来". MEASUREMENTS M37.
     attrition: f64,
+    /// The EXTRA HIT bracket of the weapon that fired this instance —
+    /// `1 + Σ elemental bonuses + Σ (base-attack IPS share × that IPS bonus)`,
+    /// read off the ACTIVE FORM's base attack (`DummyParams::extra_hit_bracket`).
+    ///
+    /// It travels with the instance for ONE reason: a Blast stack detonates
+    /// 1.5 s later, in `process_ticks`, where nothing about the weapon is in
+    /// scope any more — and the extra hit that fires off that detonation is
+    /// multiplied by this bracket even though the detonation itself takes no
+    /// elemental bonus at all. Snapshotting it at application time is also what
+    /// makes an ability-granted element (Nourish) that has since EXPIRED still
+    /// count for a stack applied while it was up, the same rule `value`
+    /// already follows.
+    xh_bracket: f64,
 }
 
 /// The GunCO-family bracket for one damage instance — MECHANICS §6. Every
@@ -3154,7 +3459,16 @@ fn fire_syndicate_radial(
         settle_procs(
             vec![sy.element],
             at,
-            InstanceScale { mb_live: sy.damage, crit_mult: 1.0, part_factor: 1.0, attrition: 1.0 },
+            InstanceScale {
+                mb_live: sy.damage,
+                crit_mult: 1.0,
+                part_factor: 1.0,
+                attrition: 1.0,
+                // A syndicate blast is 1000 of one element and "the build does
+                // not scale it", so a Blast stack it applies detonates with no
+                // elemental bracket behind it either.
+                xh_bracket: 1.0,
+            },
             debuffs,
             gal,
             arc,
@@ -3296,7 +3610,7 @@ fn process_field_ticks(
         .map(|(i, f)| (i, f.next_tick))
     {
         // Status events strictly before this tick land first.
-        process_ticks(debuffs, gal, arc, at + 1e-9, target, params, r);
+        process_ticks(debuffs, gal, arc, at + 1e-9, target, params, ap, r, &mut d.status);
         let part = fields[i].part;
         let dmg_mult = fields[i].damage_mult;
         fields[i].next_tick += 1.0 / part.tick_rate;
@@ -3433,7 +3747,16 @@ fn field_tick(
     settle_procs(
         procs,
         at,
-        InstanceScale { mb_live, crit_mult, part_factor: 1.0, attrition: 1.0 },
+        InstanceScale {
+            mb_live,
+            crit_mult,
+            part_factor: 1.0,
+            attrition: 1.0,
+            // The BASE ATTACK's, not the cloud's: a Blast stack the cloud
+            // applies still detonates off a gun, and the bracket its extra hit
+            // takes is that gun's.
+            xh_bracket: ap.extra_hit_bracket(at),
+        },
         debuffs,
         gal,
         arc,
@@ -3457,6 +3780,10 @@ fn field_tick(
 /// Lingering-FIELD ticks are NOT here — they are weapon damage that rolls its
 /// own crit and its own status, so they get their own pass
 /// ([`process_field_ticks`]).
+/// `rng` is the STATUS stream, and it is here for exactly one payload: a Blast
+/// detonation triggers an EXTRA HIT, which rolls a status of its own. Every
+/// other event this function settles is a payload already decided.
+#[allow(clippy::too_many_arguments)]
 fn process_ticks(
     debuffs: &mut DebuffState,
     gal: &mut GalStacks,
@@ -3464,7 +3791,9 @@ fn process_ticks(
     until: f64,
     target: &mut TargetState,
     params: &DummyParams,
+    ap: &DummyParams,
     r: &mut RunResult,
+    rng: &mut Rng,
 ) {
     enum Ev {
         Dot(usize),
@@ -3501,7 +3830,12 @@ fn process_ticks(
         // under Slash (that is the proc that made it) but the damage is
         // CINEMATIC, which takes no faction modifier anywhere, and
         // `ignores_armor` is this file's marker for it.
-        let (value, ignores_armor, is_dot_tick, hit_type, src) = match &ev {
+        // `xh` is the EXTRA HIT bracket, and `Some` is what says this payload
+        // triggers one at all. A DoT tick and a Heat tick are `None` — no extra
+        // hit fires off a status — and the Blast detonation is the documented
+        // exception (wiki `Extra_Hit`, Bugs: "Only Xata's Whisper will be
+        // triggered by blast Detonations, no other extra hit will").
+        let (value, ignores_armor, is_dot_tick, hit_type, src, xh) = match &ev {
             Ev::Dot(i) => {
                 let d = &mut debuffs.dots[*i];
                 d.next_tick += 1.0;
@@ -3512,20 +3846,24 @@ fn process_ticks(
                 } else {
                     d.dtype
                 };
-                (d.value, d.ignores_armor, true, hit_type, d.dtype)
+                (d.value, d.ignores_armor, true, hit_type, d.dtype, None)
             }
             Ev::Heat => {
                 let h = debuffs.heat.as_mut().expect("heat event needs entity");
                 h.next_tick += 1.0;
-                (h.value, false, true, DamageType::Heat, DamageType::Heat)
+                (h.value, false, true, DamageType::Heat, DamageType::Heat, None)
             }
-            Ev::Blast(i) => (
-                debuffs.blast.remove(*i).value,
-                false,
-                false,
-                DamageType::Blast,
-                DamageType::Blast,
-            ),
+            Ev::Blast(i) => {
+                let b = debuffs.blast.remove(*i);
+                (
+                    b.value,
+                    false,
+                    false,
+                    DamageType::Blast,
+                    DamageType::Blast,
+                    Some(b.xh_bracket),
+                )
+            }
         };
 
         // SECONDARY FORTIFIER REACHES A TICK TOO, and only while the Overguard
@@ -3585,6 +3923,17 @@ fn process_ticks(
             // Fresh individual: clean DebuffBar (decision 2026-07-24).
             *debuffs = DebuffState::default();
             break;
+        }
+        // …and the detonation's EXTRA HIT, off the value that actually landed —
+        // Fortifier's multiplier included, since it multiplied the instance this
+        // is a percentage of. No body part: a detonation struck none.
+        if let Some(bracket) = xh {
+            if fire_extra_hits(
+                value, bracket, 1.0, false, ap.status_chance, now, debuffs, gal, arc, target,
+                params, ap, &mit, r, rng,
+            ) {
+                break;
+            }
         }
     }
     debuffs.dots.retain(|d| d.ticks_left > 0);
@@ -4309,7 +4658,9 @@ pub fn run_once_traced(
             t + 1e-9,
             &mut target,
             params,
+            ap,
             &mut r,
+            &mut d.status,
         );
 
         // Timed buffs (Frenzy) lapse before this shot reads the bar;
@@ -4854,14 +5205,11 @@ pub fn run_once_traced(
                 //
                 // Read at `t`: they expire, and after they do the weapon is
                 // simply the weapon again.
-                let qvec = params.with_ability_elements(
-                    qvec,
-                    match &rad {
-                        None => modded_base,
-                        Some(r) => r.modified_base,
-                    },
-                    t,
-                );
+                let stage_mb = match &rad {
+                    None => modded_base,
+                    Some(r) => r.modified_base,
+                };
+                let qvec = params.with_ability_elements(qvec, stage_mb, t);
                 // A merged beam tick carries the SUM of its beams. `qtotal`
                 // is what the instance deals; the crit CHANCE that produced
                 // `tier` above was deliberately left at one beam's.
@@ -5061,6 +5409,47 @@ pub fn run_once_traced(
                     fields.clear();
                     continue;
                 }
+                // THE EXTRA HIT, off a WEAPON damage instance — the direct
+                // pellet and the explosion alike, since both are hits the gun
+                // dealt ("Most non-standard weapon hits will trigger an Extra
+                // Hit, including Acid Shells and Concealed Explosives").
+                //
+                // AFTER the kill check, which is the wiki's rule and costs one
+                // line here rather than a condition: "If a hit that would
+                // trigger an Extra Hit kills the enemy, the Extra Hit will not
+                // be triggered."
+                //
+                // `stage_bracket` is the correction: the extra hit is scaled by
+                // the BASE ATTACK's elemental/IPS bracket, and `raw` already
+                // carries THIS stage's. They are the same number on the direct
+                // hit — the ratio is exactly 1 and nothing moves — and differ on
+                // an explosion whose damage type is not the gun's.
+                let stage_bracket = if stage_mb > 0.0 { qvec.total() / stage_mb } else { 1.0 };
+                let xh_bracket = ap.extra_hit_bracket(t) / stage_bracket.max(1e-12);
+                // …and the BODY PART, a second time, on a direct hit only. DE's
+                // CN card, in the same breath as the faction double-dip: "同理，
+                // 弱点倍率也会被计算两次". A radial struck no body part, so
+                // `part_factor` is already 1.0 there and this reads as it should.
+                if fire_extra_hits(
+                    raw,
+                    xh_bracket,
+                    part_factor,
+                    head_direct,
+                    status_chance,
+                    t,
+                    &mut debuffs,
+                    &mut gal,
+                    &mut arc,
+                    &mut target,
+                    params,
+                    ap,
+                    &mit,
+                    &mut r,
+                    &mut d.status,
+                ) {
+                    fields.clear();
+                    continue;
+                }
                 // Per-INSTANCE proc roll (wiki Multishot/Status_Effect):
                 // forced ++ SC draws weighted by the QUANTIZED vector, unit
                 // immunities renormalized.
@@ -5220,7 +5609,16 @@ pub fn run_once_traced(
                 // three faction layers — the split instance rolls one, and the
                 // other can only be the applying hit's, carried here. A DoT is
                 // not a hit, so it never rolls one of its own. MEASUREMENTS M37.
-                InstanceScale { mb_live, crit_mult, part_factor, attrition },
+                InstanceScale {
+                    mb_live,
+                    crit_mult,
+                    part_factor,
+                    attrition,
+                    // The BASE ATTACK's, so a Blast stack this instance applies
+                    // remembers the bracket its detonation's extra hit takes —
+                    // not this stage's, which the detonation itself never gets.
+                    xh_bracket: ap.extra_hit_bracket(t),
+                },
                 &mut debuffs,
                 &mut gal,
                 &mut arc,
@@ -5387,7 +5785,9 @@ pub fn run_once_traced(
         params.duration_secs,
         &mut target,
         params,
+        field_ap,
         &mut r,
+        &mut d.status,
     );
 
     // Partial credit: the fraction of the current individual's TOTAL bar
@@ -11720,6 +12120,167 @@ mod warframe_ability_tests {
         // The whole-fight run is exactly the 1.5x of the test above, so the
         // partial one is a real fraction of it rather than a rounding.
         assert!((all / none - 1.5).abs() < 1e-9);
+    }
+
+    /// THE MEASURED FIGHT (MEASUREMENTS M40) — a Magnus at 98 base with two
+    /// 60/60s making Blast (+120%) and a Primed Bane of Grineer (+55%), which
+    /// is the capture the owner supplied on 2026-08-09. Every extra-hit test
+    /// below runs on it, so the numbers in them are the numbers on the video.
+    fn measured() -> DummyParams {
+        let mut p = params(&[("xatas_whisper", None)], 1.0);
+        // 98 IPS + 98 x 1.2 as Blast, and ModifiedBase is the 98: an elemental
+        // mod's damage is not part of the base a status burns off.
+        p.damage = DamageVector::new()
+            .with(DamageType::Impact, 98.0)
+            .with(DamageType::Blast, 98.0 * 1.2);
+        p.dot_modified_base = Some(98.0);
+        p.faction_mult = 1.55;
+        // NO STATUS unless a test asks for it. The fixture behind `params` is a
+        // real weapon and procs; a stray Blast would fold a detonation's extra
+        // hit into the ratio the first two tests are about, which is exactly
+        // the confusion the last two exist to tell apart.
+        p.status_chance = 0.0;
+        p.base_status_chance = 0.0;
+        p.forced_procs = Vec::new();
+        // Nothing may die: these are per-instance numbers, and a respawn would
+        // put a fresh bar under half of them.
+        p.target.base_health = 1e15;
+        p
+    }
+
+    /// FACTION, TWICE — the whole of the ordinary case. The extra hit is 26% of
+    /// a hit that already carried the bonus, and it carries it again:
+    /// `0.26 x 1.55 = 0.403` of the hit, against the 0.26 a reading of the card
+    /// would predict.
+    #[test]
+    fn the_extra_hit_takes_the_faction_bonus_a_second_time() {
+        let r = run_once(&measured(), &mut crate::rng::Rng::new(3));
+        let ratio = r.sources.extra_hit / r.sources.direct;
+        assert!(
+            (ratio - 0.26 * 1.55).abs() < 1e-9,
+            "extra/direct = {ratio:.6}, wanted {:.6}",
+            0.26 * 1.55
+        );
+        // …and it is VOID, whatever the weapon deals: a separate instance, not
+        // a share of the vector ("does not dilute weapon elements").
+        let by = &r.sources.extra_hit_by_type;
+        assert!(by[DamageType::Void as usize] > 0.0);
+        assert_eq!(by[DamageType::Impact as usize], 0.0);
+        assert_eq!(by[DamageType::Blast as usize], 0.0);
+    }
+
+    /// …AND THE BODY PART, TWICE, for the same reason and stated in the same
+    /// breath (DE's CN card: "同理，弱点倍率也会被计算两次"). On a 3x head the
+    /// hit is tripled once and the extra hit off it is tripled again, so the
+    /// RATIO between them moves — which is the only way to see a double dip
+    /// without trusting an absolute number.
+    #[test]
+    fn the_extra_hit_takes_the_body_part_multiplier_a_second_time() {
+        let head = |mult: f64| {
+            let mut p = measured();
+            p.body_parts = vec![BodyPart {
+                name: "head".into(),
+                aim_weight: 1.0,
+                multiplier: mult,
+                is_head: true,
+                crit_bonus: false,
+            }];
+            let r = run_once(&p, &mut crate::rng::Rng::new(3));
+            r.sources.extra_hit / r.sources.direct
+        };
+        let body = head(1.0);
+        let three_x = head(3.0);
+        assert!((three_x / body - 3.0).abs() < 1e-9, "x{:.4}", three_x / body);
+    }
+
+    /// THE BLAST CHAIN, decoded number by number against the capture.
+    ///
+    /// One shot, one forced Blast stack, and 1.5 s later the fuse fires. Three
+    /// numbers come out of it and all three are on the video:
+    ///
+    /// | payload | formula | measured |
+    /// | --- | --- | --- |
+    /// | the hit | `98 x 2.2 x 1.55` | 334.18 (read as 323 through the target) |
+    /// | its extra hit | `x 0.26 x 1.55` | 135 |
+    /// | the detonation | `0.3 x 98 x 1.55^2` | 71 |
+    /// | ITS extra hit | `x 0.26 x 1.55 x 2.2` | 63 |
+    ///
+    /// The last row is the one worth having a test for: the faction bonus lands
+    /// a THIRD time, and the elemental bracket lands on a payload that is
+    /// explicitly denied elemental bonuses.
+    #[test]
+    fn an_extra_hit_fires_off_a_blast_detonation_at_the_third_faction_layer() {
+        let mut p = measured();
+        // Exactly one shot, and long enough after it for the 1.5 s fuse.
+        p.fire_rate = 0.5;
+        p.duration_secs = 1.9;
+        p.status_chance = 0.0;
+        p.forced_procs = vec![DamageType::Blast];
+        let r = run_once(&p, &mut crate::rng::Rng::new(3));
+
+        let hit = 98.0 * 2.2 * 1.55;
+        let deto = BLAST_COEFFICIENT * 98.0 * 1.55 * 1.55;
+        assert!((r.sources.direct - hit).abs() < 1e-6, "hit {:.3}", r.sources.direct);
+        assert!(
+            (r.sources.status[DamageType::Blast as usize] - deto).abs() < 1e-6,
+            "detonation {:.3} vs {deto:.3}",
+            r.sources.status[DamageType::Blast as usize]
+        );
+        // The hit's own extra hit, plus the detonation's.
+        let from_hit = hit * 0.26 * 1.55;
+        let from_deto = deto * 0.26 * 1.55 * 2.2;
+        assert!(
+            (r.sources.extra_hit - (from_hit + from_deto)).abs() < 1e-6,
+            "extra {:.3} vs {:.3} + {:.3}",
+            r.sources.extra_hit,
+            from_hit,
+            from_deto
+        );
+        // 62.6 on a 70.6 detonation: the extra hit off a Blast proc is worth
+        // 89% of the proc, which is only possible with both of the layers above.
+        assert!((from_deto / deto - 0.887).abs() < 0.002, "{:.4}", from_deto / deto);
+    }
+
+    /// NO OTHER STATUS PAYLOAD TRIGGERS ONE — the negative control, and the
+    /// reason the Blast case is filed as a bug rather than as a rule. A Slash
+    /// bleed ticks six times under the same buff and pays no extra hit at all.
+    #[test]
+    fn a_dot_tick_triggers_no_extra_hit() {
+        let mut p = measured();
+        p.damage = DamageVector::new().with(DamageType::Slash, 98.0);
+        p.status_chance = 0.0;
+        p.forced_procs = vec![DamageType::Slash];
+        let r = run_once(&p, &mut crate::rng::Rng::new(3));
+        assert!(r.dot_damage > 0.0, "the bleed has to be ticking for this to mean anything");
+        // Only the hits paid one, so the ratio is the plain 0.26 x faction —
+        // exactly as if the DoT were not there.
+        let ratio = r.sources.extra_hit / r.sources.direct;
+        assert!((ratio - 0.26 * 1.55).abs() < 1e-9, "{ratio:.6}");
+    }
+
+    /// THE VOID PROC IS WORTH A CONDITION OVERLOAD STACK AND NOTHING ELSE. It
+    /// deals no damage — a Bullet Attractor is a field, not a payload — so the
+    /// only way to see it at all is to put a CO weapon behind it and watch the
+    /// counter move.
+    #[test]
+    fn the_void_proc_pays_condition_overload_and_no_damage() {
+        let co = |on: bool| {
+            let mut p = measured();
+            p.status_chance = if on { 4.0 } else { 0.0 };
+            p.base_status_chance = p.status_chance;
+            p.co_per_type = 0.8;
+            p.co_behavior = crate::loadout::CoBehavior::Independent;
+            // Pure Impact: its own proc is a Stagger, which pays no damage
+            // either, so any movement in the hit is the CO counter and not a
+            // second damage source.
+            p.damage = DamageVector::new().with(DamageType::Impact, 98.0);
+            let r = run_once(&p, &mut crate::rng::Rng::new(7));
+            (r.sources.direct, r.sources.status[DamageType::Void as usize])
+        };
+        let (quiet, _) = co(false);
+        let (loud, void_damage) = co(true);
+        assert!(loud > quiet, "CO never moved: {quiet:.0} -> {loud:.0}");
+        assert_eq!(void_damage, 0.0, "a Bullet Attractor deals no damage");
     }
 
     /// AND A FIGHT WITH NO ABILITIES IS THE FIGHT WE ALWAYS HAD. The board

@@ -571,6 +571,14 @@ abilities:
   eclipse_helminth: 黯然失色（Helminth）
   nourish: 消化滋养
   nourish_helminth: 消化滋养（Helminth）
+  # 真理密语, off the CN wiki's own ability page (`?action=raw` via the API —
+  # DATA_SOURCES §"The CN wiki is reachable through its API, not its pages").
+  # WFCD carries no zh ability NAMES at all — its `abilities` entries have a
+  # description and a null name for every frame — so this is the same path the
+  # seven above came down, and the same reason a derived name was not an option:
+  # nothing about "Xata's Whisper" would have produced 真理密语.
+  xatas_whisper: 真理密语
+  xatas_whisper_helminth: 真理密语（Helminth）
   shock_trooper: 电击奇兵
   fireball_frenzy: 狂热火球
   freeze_force: 寒冰之力

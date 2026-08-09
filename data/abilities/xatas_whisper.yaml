@@ -1,0 +1,104 @@
+# A WARFRAME ABILITY BUFF — the fight's PLAYER, not the build.
+#
+# Not a mod, not an arcane, not a weapon perk: a thing another actor (or the
+# player's own frame) does to this weapon for a while. It belongs to the
+# SCENARIO — two builds compared under the same Roar is a comparison, one of
+# them getting it is not — and the BOARD carries none of these, which is what
+# keeps a board row a statement about the weapon (2026-08-08).
+#
+# EARLY ACCESS, AND SAID SO ON THE PAGE. The owner asked for it ahead of the
+# frame layer it will eventually live in ("注意这个部分未来会迁移，目前相当于抢先
+# 开放"), so the section is deliberately small: pick the buff, set the strength,
+# set how long it lasts. When frames land, the strength comes from the frame and
+# the duration from Ability Duration, and these files stay as they are.
+
+# THE FOURTH KIND, and the first that is not a multiplier on the weapon's own
+# number: an EXTRA HIT (wiki `Extra_Hit`). The weapon deals what it deals, and
+# then a SECOND damage instance lands worth 26% of it, entirely Void, rolling
+# its own status. Two numbers pop, not one — DE's own words for it, from the CN
+# card: "武器每一次攻击命中都会显示出武器本身命中和附加的虚空伤害命中两方的伤害
+# 数字".
+#
+# That structure is where every one of its oddities comes from, so MECHANICS §7
+# §"Extra Hit" states the formula once and this file only names the numbers:
+#
+# - FACTION TWICE. The instance it copies already carried the bonus, and being
+#   a damage instance it takes it again — the wiki's formula puts
+#   `(1 + Faction)` outside `Weapon Hit Damage`, which has it inside.
+# - BODY PART TWICE, for the same reason and stated in the same breath (CN
+#   card: "同理，弱点倍率也会被计算两次"). A headshot is therefore worth more to
+#   this ability than to any multiplier that merely scales the hit.
+# - IT NEVER CRITS OF ITS OWN, but it inherits the crit of the hit it copied,
+#   which is why Vital Sense is listed as affecting it and why the number is
+#   still orange-sized behind an orange hit.
+# - AND IT FIRES OFF A BLAST DETONATION, which nothing else does — see below.
+#
+# The percentage is of the TOTAL weapon damage, not of base: "Xata's Whisper
+# Void damage is based on a percentage of the total weapon damage."
+
+# THE BLAST INTERACTION, which is the reason this ability is worth implementing
+# rather than approximating (owner, 2026-08-09: "注意这个和blast的联动").
+#
+# A Blast status detonation is a STATUS payload, and no extra hit fires off one
+# — the EN wiki files the exception under Bugs, in one line: "Only Xata's
+# Whisper will be triggered by blast Detonations, no other extra hit will."
+#
+# Two things then happen that nothing else in the engine does:
+#
+#   · the faction bonus lands a THIRD time. The detonation already carries it
+#     twice (it is a status payload, `faction_at(f, DEPTH_PROC)`), and the extra
+#     hit off it takes it once more.
+#   · the ELEMENTAL bracket applies to the extra hit even though the detonation
+#     itself takes no elemental bonus at all. A Blast detonation is 30% of
+#     ModifiedBase and nothing else; the extra hit copied from it is that number
+#     times `1 + Σ elemental bonuses`, out of nowhere.
+#
+# MEASURED, not read: MEASUREMENTS M40 has the owner's supplied player capture
+# (Magnus, 98 base, two 60/60s and a Primed Bane) landing 71 for the detonation
+# and 63 for the extra hit off it, which decodes exactly as
+# `0.26 × 70.63 × 1.55 × 2.2`. Both the third faction layer and the elemental
+# bracket are visible in that one number, and the poster confirms the second by
+# adding an Electricity mod on camera and watching it move.
+
+id: xatas_whisper
+name: Xata's Whisper
+frame: Xaku
+# Which buffs REPLACE each other rather than adding. Same family =
+# only the strongest is running (wiki, Freeze Force).
+family: xatas_whisper
+helminth: false
+
+# At MAX RANK and 100% Ability Strength. The page multiplies by the
+# strength you set; there is no per-rank table, because a calculator
+# is asked what a maxed ability does.
+#
+# 26%. The two wikis disagree about the ladder BELOW max — EN reads
+# 17/23/23/26, CN reads 17/20/23/26, and CN's is the one that is monotone — and
+# agree about the only rank this file has.
+value: 0.26
+# Max rank at 100% Ability Duration, in seconds. The page lets you
+# override it — or run the whole fight, which is the honest way to
+# ask what a weapon is worth UNDER Roar rather than around it.
+duration_s: 35
+
+effect:
+  kind: extra_hit
+  element: void
+
+# WHAT THE VOID PROC IS WORTH HERE, which is a stack of Condition Overload and
+# nothing else. The extra hit rolls the weapon's own status chance ("附加的虚空
+# 伤害具有基于武器本身触发几率的独立触发几率") and a Void status is a Bullet
+# Attractor: a 2.5 m field for 3 s that redirects fire. It deals no damage, so
+# in a one-target arena where nobody shoots back it is worth exactly its line in
+# the CO counter — and Void IS on Condition Overload's list of counting procs.
+unmodelled:
+  - "the Bullet Attractor itself — it deals no damage, and what it is actually worth (redirecting enemy fire, letting one punch-through round hit twice) needs enemies that shoot back and a second target"
+  - "the Sentient / Shadow Stalker damage-adaptation reset the Void proc performs"
+  - "The Vast Untime's +50% Void vulnerability and its pause on this buff's timer — that is a second Xaku ability, and no frame layer exists yet"
+  - "the extra hit off a lingering FIELD tick (Torid's cloud): neither wiki says whether a cloud tick triggers one, so it does not here — MEASUREMENTS M40"
+
+live_bugs:
+  - "an extra hit fires off a Blast DETONATION, which is a status payload no other extra hit reacts to, and it takes the faction bonus a third time AND the full elemental bracket the detonation itself is denied. The wiki files it under Bugs; modelled as it plays, and a hotfix changes this number"
+
+source:
+  url: https://wiki.warframe.com/w/Xata%27s_Whisper

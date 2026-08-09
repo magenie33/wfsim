@@ -203,6 +203,68 @@ DOUBLE printing — DE writes an augment's whole sentence in both fields with
 The generator is the only writer of `descriptions.yaml`; a gap like this is
 fixed there and regenerated, never patched into the file.
 
+## The wiki's own METHOD page, and where the mechanics pages are (2026-08-09)
+
+Two links worth having in one place, because the answer to "where does this
+number come from" for a MECHANIC is not the same as for a data field, and this
+document was only about the second (owner, 2026-08-09).
+
+### [`WARFRAME_Wiki:Research`](https://wiki.warframe.com/w/WARFRAME_Wiki:Research)
+
+The wiki's statement of how it establishes anything — its source hierarchy and
+its testing toolbox. Both are useful here for different reasons.
+
+**The hierarchy is the same shape as ours**, which is why a wiki page is worth
+what it is worth: community research with a stated method > first-party data
+(game files, Codex, Arsenal) > developer communications > third-party content >
+anecdote. A page carrying a worked example with numbers sits near the top of
+that; a page carrying an adjective sits near the bottom, and both look the same
+in a quote. When two wiki pages disagree — the EN and CN cards for Xata's
+Whisper disagree about its rank ladder and about the body-part double dip
+(M40) — this is the tiebreak to apply: prefer the one that shows its arithmetic.
+
+**The toolbox is the protocol library `docs/MEASUREMENTS.md` keeps reaching
+for**, and several entries are things worth knowing exist before designing an
+experiment:
+
+| tool | what it establishes |
+| --- | --- |
+| Simulacrum (Relays, 50,000 standing) | the arena every M-number uses; enemies to level 5×MR+30 |
+| Synthesis Scanner + Data-Parse Widget (25,000 standing) | an enemy's health class and damage modifiers, in game — the vulnerability COLUMN read off the target rather than off a table |
+| Codex | first-party enemy stats and health classes |
+| % -damage abilities (Smite, Reave, Mend & Maim) | total health/shields = damage dealt ÷ percent, so a pool can be measured without a table |
+| armor strip at exact strength (Seeking Shuriken @143%, Pillage @400%, Abating Link @168%) | a pure-damage test with the armor curve taken out |
+| Shattering Impact | the same, and it works on invulnerable enemies |
+| Adaptation | which damage TYPE an enemy deals, by watching what it adapts to |
+| weak-point revealers (Cyte-09's Seek, Zenith/Scourge alt-fire, Vesper 77 ADS, Thurible, Laetum/Phenmor) | where the multipliers actually are on a model |
+| Public Export / drop tables / World State API / EE.log | first-party data, and the export is the one this repo already consumes second-hand through WFCD |
+
+None of that is adopted as a data SOURCE — the two-source rule above is
+unchanged. It is a list of instruments, and its place in this repo is that
+`docs/MEASUREMENTS.md` designs protocols and this is what they can be built out
+of.
+
+### The MECHANICS pages, which are not the same as the item pages
+
+An item page states what a thing does; a MECHANIC page states the formula every
+item of that kind obeys, and it is usually the only place the general rule is
+written down. `Extra_Hit` is the case that prompted this note: Xata's Whisper's
+own page describes its behaviour in prose, and the one line that makes the
+prose add up ("Faction Damage Bonuses appear twice in the equation") is on the
+mechanic page and nowhere else. MECHANICS §7 §"Extra Hit" quotes it in full.
+
+**So when a card says something odd, look for a mechanic page before recording
+it as an anomaly of that card.** `Extra_Hit`, `Faction_Damage_Bonus`,
+`Damage_over_Time`, `Enemy_Body_Parts`, `Critical_Hit`, `Status_Effect`,
+`Multishot`, `Condition_Overload_(Mechanic)` and the per-type
+`Damage/<Type>_Damage` pages are the ones this engine has needed so far, and
+each is cited at its formula in MECHANICS.
+
+**And the CN wiki is a second opinion on mechanics, not only on names.** Its
+真理密语 page carries three worked examples, an IPS-distribution rule and a Blast
+clause that the EN page has none of — see §"The CN wiki is reachable through its
+API, not its pages" for how to read it, and M40 for what it settled.
+
 ## Which source wins (revised 2026-07-30)
 
 The rule used to be "the wiki module is authoritative for every mechanical

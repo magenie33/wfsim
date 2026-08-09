@@ -260,6 +260,15 @@ ui:
   "faction damage — the bracket a Bane mod is in, so a status tick takes it twice": 派系伤害——和克制 mod 同一个乘区，所以异常跳伤会吃到两次
   "damage on its own multiplier — applied once, to the hit and to the status alike": 独立乘区的伤害加成——只吃一次，直伤和异常都是一次
   "added on top and NOT combined with the weapon's own elements": 直接加在最终属性之上，不与武器自身的元素合成
+  "a second damage instance, not a multiplier — it takes faction damage and the headshot multiplier one more time than the hit it copies": 附加的一次独立伤害实例，不是乘区——派系伤害和弱点倍率都会比它复制的那一下多吃一次
+  "Extra hit (ability)": 技能附加伤害
+  # 真理密语 admits four gaps and one live bug. Long sentences, so they are here
+  # rather than derived — the card renders each line through `tr`.
+  "the Bullet Attractor itself — it deals no damage, and what it is actually worth (redirecting enemy fire, letting one punch-through round hit twice) needs enemies that shoot back and a second target": 虚空异常的子弹吸引力场本身——它不造成伤害，它真正的价值（把敌人的子弹引开、让一发穿透弹命中同一个敌人两次）需要会还击的敌人和第二个目标才能体现
+  "the Sentient / Shadow Stalker damage-adaptation reset the Void proc performs": 虚空异常对 Sentient 与暗影 Stalker 伤害适应的重置
+  "The Vast Untime's +50% Void vulnerability and its pause on this buff's timer — that is a second Xaku ability, and no frame layer exists yet": 超维炼狱带来的 +50% 虚空易伤，以及它对本技能计时的暂停——那是 Xaku 的另一个技能，而战甲这一层还没做
+  "the extra hit off a lingering FIELD tick (Torid's cloud): neither wiki says whether a cloud tick triggers one, so it does not here — MEASUREMENTS M40": 持续伤害力场每一跳（如 Torid 的毒云）是否也会触发附加伤害：两个 wiki 都没有说，所以这里不触发——见 MEASUREMENTS M40
+  "an extra hit fires off a Blast DETONATION, which is a status payload no other extra hit reacts to, and it takes the faction bonus a third time AND the full elemental bracket the detonation itself is denied. The wiki files it under Bugs; modelled as it plays, and a hotfix changes this number": 爆炸异常引爆时也会触发一次附加伤害——引爆是异常的伤害，别的附加伤害都不吃这一下——而且这一次派系伤害会被算第三遍，还会吃到引爆本身拿不到的全部元素加成。wiki 把它列在 Bug 里；这里按它现在的实际表现建模，DE 一修这个数字就会变
   "unintended, modelled as it plays": 非本意，按实际表现建模
   "this matches the live game and is a bug — DE may patch it, and the number here changes when they do": 这与现在的游戏一致，但它是个 bug——DE 随时可能修，修了这里的数字就会变
   "the split fires a damage instance of ZERO, and the zero still takes that instance's own multipliers — when the DoT replaces it with the parent hit's damage, they stay behind. Faction bonuses were meant to carry down the chain and do; a per-instance bonus like Devouring Attrition's +2000% was not, and does anyway (x21 twice = x441). Modelled as it behaves today; a fix removes it": 分裂打出的是一次伤害为 0 的实例，而这个 0 照样被那一次实例自己的乘区乘过——等算 dot 时 0 被换成上一级那一发的伤害，那些乘区却留了下来。派系类加成本来就是设计成沿着链条传下去的；而像强袭损耗 +2000% 这样的单次实例加成不是，却也跟着传了（21 倍吃两次 = 441 倍）。这里按它现在的实际表现建模；DE 修了就没了

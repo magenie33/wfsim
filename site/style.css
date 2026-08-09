@@ -1157,6 +1157,12 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    to the reader. */
 .wfb-v{margin-top:4px;font-size:16px;font-weight:650;color:var(--gold);font-variant-numeric:tabular-nums}
 .wfb-e{margin-top:2px;color:var(--text-2);font-size:11px;line-height:1.45}
+/* The card's ADMISSIONS — the same `⊘ partly modelled` / `⚑ unintended` chips a
+   mod and an arcane carry, so an ability that leaves something out looks the
+   way every other family does. Empty on every buff that has nothing to admit,
+   and the margin comes with the chips rather than with the box. */
+.wfb-u{display:flex;flex-wrap:wrap;gap:4px}
+.wfb-u:not(:empty){margin-top:5px}
 .wfb-dead{margin-top:3px;color:var(--gold);font-size:11px}
 .wfb-w{display:inline-block;margin-top:6px;color:var(--text-2);font-size:11px;text-decoration:none}
 .wfb-w:hover{color:var(--accent)}

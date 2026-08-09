@@ -1698,6 +1698,29 @@ that is now stated once, in the direction the code goes.
 
 ---
 
+### CLOSED 2026-08-09 — it was an EXTRA HIT all along
+
+The wiki's `Extra_Hit` page names this arcane outright — *"a 0-damage Extra Hit
+that applies a guaranteed status effect"* — and states the general rule its
+status follows: *"Damage over Time status effects created by an Extra Hit will
+use the Extra Hit Damage as Modded Base Damage"*, which is also why such a
+status takes the ELEMENTAL bonuses an ordinary one is denied.
+
+Read literally that gives ZERO here. The rule that covers both members (owner,
+2026-08-09: "如果为0，那么就找上一级去找base") is that an Extra Hit **replaces**
+the base its status would have used — so a 0% one replaces nothing and the level
+above stands, which is the `ModifiedBase` this engine already used.
+
+It also explains why the third reading — the full modded hit — decoded the 29551
+above and still moved published board rows by +112% when shipped: that reading
+is CORRECT, for an Extra Hit with damage. The Cyte-09 chain it came from is a
+10–25% Extra Hit, and *上一级被 resupply 替换了*. Debilitate is the one member
+with nothing to replace. See docs/EXTRA_HIT.md.
+
+The exponent is closed with it: the same page derives `f³` rather than asserting
+it, so the "理论应该是只有2的" doubt is answered — the missing rung is the Extra
+Hit itself, which carries the bonus twice before its status carries it again.
+
 ## M34 — Primary Debilitate was dead on Blast, and only a run could tell (2026-08-08)
 
 From "还有blast是可触发冰和火的" (owner, 2026-08-08). It is a one-line statement
@@ -2205,3 +2228,112 @@ that M39 flips with it.
 Checked by removing it: the level-60 loss reads −6.5% / −6.7% / −6.2% across
 three seeds with the tick multiplier in, and −6.6% / −6.7% / −6.5% with it out.
 The behaviour predates 2026-08-09.
+
+---
+
+## M40 — Xata's Whisper decodes exactly, and two of its clauses are still open (2026-08-09)
+
+**Question.** What is an EXTRA HIT worth, and specifically what happens when one
+fires off a Blast detonation — the interaction the owner named as the reason to
+implement the ability at all ("注意这个和blast的联动").
+
+**Answer: measured, and the model reproduces every number.** The owner supplied
+a player's capture with video (2026-08-09). Per
+[owner-supplied numbers are measurements](../AGENTS.md), it is used as one.
+
+### The capture
+
+A Magnus (98 base) with two 60/60 mods making Blast (+120% elemental) and a
+Primed Bane of Grineer (+55%), Xata's Whisper at 100% strength, body shot:
+
+| what popped | on screen | formula |
+| --- | --- | --- |
+| the hit | 323 | `98 × 2.2 × 1.55` = 334.18 |
+| its extra hit | 135 | `× 0.26 × 1.55` = 134.68 |
+| the Blast detonation | 71 | `0.3 × 98 × 1.55²` = 70.63 |
+| the extra hit off the detonation | 63 | `× 0.26 × 1.55 × 2.2` = 62.62 |
+
+Three of the four are exact. The hit reads 323 rather than 334 through the
+Anatomizer's own modifiers, and its extra hit — which is Void and neutral
+there — reads the full 135, which is itself a small confirmation that the extra
+hit is a SEPARATE instance taking its own vulnerability column rather than a
+share of the weapon's.
+
+**The poster then adds an Electricity mod on camera and the extra hit moves.**
+That is the direct demonstration of the strangest clause: a Blast detonation
+takes no elemental bonus at all, and the extra hit copied from it takes the
+whole bracket.
+
+### What it settles
+
+1. **Faction twice on an ordinary hit.** `0.26 × 1.55`, not `0.26`.
+2. **Faction three times off a detonation.** The detonation is a status payload
+   already at `faction_at(f, 2)`; its extra hit is at 3. Nothing in the engine
+   hardcodes a 3 — `fire_extra_hits` applies one layer and the depth of the
+   thing that triggered it supplies the rest.
+3. **The elemental bracket applies to the detonation's extra hit.** ×2.2 here,
+   out of a payload that has none.
+4. **No second body-part factor off a detonation.** Stated by the CN card
+   ("弱点倍率只会被计算一次") and consistent with the capture, which is a body
+   shot and so cannot distinguish it — taken from the card.
+
+`an_extra_hit_fires_off_a_blast_detonation_at_the_third_faction_layer` asserts
+all four against these numbers.
+
+### The EN and CN pages disagree, and CN wins on both counts
+
+| | EN `Xata's Whisper` / `Extra_Hit` | CN 真理密语 | taken |
+| --- | --- | --- | --- |
+| rank ladder | 17 / 23 / 23 / 26 % | 17 / 20 / 23 / 26 % | irrelevant — max rank is 26% either way, and only max rank is modelled |
+| duration ladder | 20 / 30 / 30 / 35 s | 20 / 25 / 30 / 35 s | same; 35 s |
+| body part | the `Extra_Hit` formula shows it ONCE, inside `Weapon Hit Damage` | "同理，弱点倍率也会被计算两次" | **CN: twice** |
+
+The body-part row is the one that matters, and it is not really a
+contradiction — the EN ability page says "The ability double dips on faction
+damage, **and body part weaknesses**" in the same sentence the formula page
+elides. Two EN statements and one CN statement against one EN formula that does
+not mention it either way. Modelled as TWICE.
+
+### Two clauses still OPEN
+
+**(a) Does a lingering FIELD tick trigger an extra hit?** Neither page says. The
+EN mechanic page's rule is "most non-standard weapon hits", with an explicit
+exclusion list (Bursting Mass's absorbed damage, Pathocyst's maggots) that a
+cloud tick is not on; against that, a cloud tick is on its own clock long after
+the shot. **Modelled as NO**, which is the reading that does not invent a
+trigger, and it is the conservative direction for exactly one weapon in the
+roster — the Torid, where the cloud is most of the output.
+
+*What settles it:* Simulacrum, Torid + Xata's Whisper, one grenade into a
+stationary target. Count the numbers per tick. Two numbers a tick = yes.
+
+**(b) Does the extra hit's status roll read the weapon's LIVE status chance or
+its modded listing?** The card says "based on the weapon's total status chance".
+The direct-hit path passes the live per-instance chance (arcane stacks
+included); the Blast-detonation path has no instance in scope and passes
+`ap.status_chance`, the modded listing. The two differ only on a build carrying
+Primary Crux or Sentient Surge, and only for the detonation's own Void proc,
+which is worth one CO stack.
+
+*What settles it:* a Primary Crux build at full stacks, counting Void procs off
+detonations against Void procs off hits over a long engagement.
+
+### Why the Void proc is worth anything at all
+
+It deals no damage — a Bullet Attractor is a 2.5 m field for 3 s that redirects
+fire, and this arena has one target and nobody shooting back. But Condition
+Overload's own page lists the procs that count and **Void is on it**, so an
+extra hit that procs buys a CO stack. That is the whole of its value here, it is
+tracked exactly like Radiation's Confusion, and
+`the_void_proc_pays_condition_overload_and_no_damage` pins both halves.
+
+### Sources
+
+- [`Extra_Hit`](https://wiki.warframe.com/w/Extra_Hit) — the general formula
+- [`Xata's Whisper`](https://wiki.warframe.com/w/Xata%27s_Whisper) — EN card, and
+  the Blast clause under Bugs
+- 真理密语 (CN wiki, via the API) — three worked examples, the IPS-distribution
+  rule and the body-part clause
+- [`Damage/Void_Damage`](https://wiki.warframe.com/w/Damage/Void_Damage) — the
+  Bullet Attractor's radius and duration
+- the supplied capture above

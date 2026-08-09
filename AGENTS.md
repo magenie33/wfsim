@@ -43,7 +43,18 @@ around (decision 2026-07-31).
   the simulator and the search, and no board ruler sends one. Early access by
   the owner's own framing (2026-08-08) — the strength and duration are typed in
   today and come from the frame later, which is why `resolve` takes both as
-  arguments. See BUFFS.md §"A WARFRAME ABILITY".
+  arguments. Four effect kinds, and the split is THREE MULTIPLIERS AND ONE
+  INSTANCE: Roar/Eclipse/Nourish scale a number someone else computes, while
+  `extra_hit` (Xata's Whisper) FIRES a second damage instance and therefore has
+  to be told what triggered it — MECHANICS §7 §"Extra Hit" is the formula and
+  MEASUREMENTS M40 the capture it decodes. See BUFFS.md §"A WARFRAME ABILITY".
+- `docs/EXTRA_HIT.md` — ONE LAW behind four things built separately: a second
+  damage instance beside a hit, worth a percentage of it, rolling its own
+  status. Primary Debilitate's split, Cyte-09's Resupply, Xata's Whisper and
+  Toxic Lash are members, and each supplies only a percentage and an element.
+  It is where the `f³` triple dip comes from, and where the 0% rule lives —
+  an Extra Hit REPLACES the base its status burns off, so one that deals
+  nothing leaves the level above standing (owner, 2026-08-09).
 - `docs/UNMODELLED.md` — the EDGES, by reason rather than by perk: one target,
   no distance, no movement, no holster, infinite ammo, nobody shoots back, and
   the Warframe layer. Written so "why is this perk worth nothing" is a lookup

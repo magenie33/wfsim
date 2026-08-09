@@ -176,6 +176,43 @@ for (const lang of ["en", "zh"]) {
     out.rulerAbilities = rulers.reduce(
       (n, s) => n + ((s.abilities || []).length) + (s.ability_strength ? 1 : 0), 0);
     out.rulers = rulers.length;
+
+    // 7. AN EXTRA HIT IS NOT A MULTIPLIER, and the page has to survive that.
+    //    Xata's Whisper is the first buff that adds a damage INSTANCE rather
+    //    than scaling one, so it has two surfaces the other seven do not: a
+    //    row of its own in the damage meter, and a card that admits what it
+    //    leaves out. Both are asserted here rather than in the engine, because
+    //    the engine already proves the arithmetic and neither of these is
+    //    arithmetic.
+    history.pushState({}, '', '/weapons/Torid/simulator'); route(); await sleep(3000);
+    await tick('roar', false);
+    await tick('xatas_whisper', true);
+    await sleep(400);
+    const xi = (META.abilities || []).findIndex(a => a.id === 'xatas_whisper');
+    const xcard = cards()[xi];
+    out.xhValue = (xcard.querySelector('.wfb-v') || {}).textContent || '';
+    // THE ADMISSIONS, in the chips every other family uses: ⊘ for the Bullet
+    // Attractor it cannot value, ⚑ for the Blast interaction that is DE's
+    // bug — and the TITLE is where the sentence lives, so that is what is read.
+    out.xhChips = [...xcard.querySelectorAll('.wfb-u > span')]
+      .map(s => (s.className || '') + '|' + (s.getAttribute('title') || ''));
+    // …AND THE NEGATIVE CONTROL. A buff with nothing to admit shows no chips;
+    // a check that only asserts presence passes on a page that shouts "not
+    // modelled" at everything.
+    const ri = (META.abilities || []).findIndex(a => a.id === 'roar');
+    out.roarChips = cards()[ri].querySelectorAll('.wfb-u > span').length;
+
+    // IT REACHES THE NUMBER, and it arrives as its OWN source. A second damage
+    // instance folded into "direct" would credit the build for damage no mod on
+    // it scaled — the same reason the field and the syndicate radial have rows.
+    out.dpsWhisper = await dpsOf();
+    const sim1 = await api('/api/simulate', body());
+    const rows = (sim1 && sim1.damage_sources) || [];
+    const xh = rows.find(x => x.source === 'extra hit');
+    out.xhDamage = xh ? xh.dmg : 0;
+    out.xhTypes = xh && xh.by_type ? xh.by_type.map(t => t.type) : [];
+    out.xhLabel = tr('Extra hit (ability)');
+    await tick('xatas_whisper', false);
     return out;
   })()`);
 
@@ -265,6 +302,35 @@ for (const lang of ["en", "zh"]) {
   check(`[${lang}] no ruler carries a Warframe buff`,
     r.rulers >= 1 && r.rulerAbilities === 0,
     `${r.rulerAbilities} across ${r.rulers} rulers`);
+
+  // THE EXTRA HIT — the fourth effect kind, and the first that is an INSTANCE.
+  // Its value label names the element it lands as, because "+26%" alone says
+  // nothing about a payload that is entirely Void.
+  check(`[${lang}] an extra hit names the element it lands as`,
+    /^\+26/.test(r.xhValue) && r.xhValue.length > 4,
+    r.xhValue);
+  check(`[${lang}] …and it reaches the sim`,
+    r.dpsWhisper > r.dpsPlain * 1.05, `${r.dpsPlain} -> ${r.dpsWhisper}`);
+  // ITS OWN ROW IN THE METER. Folded into "direct" it would look like the build
+  // got better; it is an ability, and it goes when the ability does.
+  check(`[${lang}] …reported as its own damage source, as Void`,
+    r.xhDamage > 0 && r.xhTypes.map((t) => t.toLowerCase()).includes("void"),
+    `${Math.round(r.xhDamage)} as ${JSON.stringify(r.xhTypes)}`);
+  check(`[${lang}] …under a label in the display language`,
+    r.xhLabel.length > 4 && cjk.test(r.xhLabel) === (lang === "zh"), r.xhLabel);
+  // WHAT IT DOES NOT DO IS ON THE CARD, in both families of admission: the
+  // Bullet Attractor this sim has nothing to point at, and the Blast
+  // interaction that is DE's own bug and can be hotfixed away.
+  check(`[${lang}] …and the card admits its gaps and its live bug`,
+    r.xhChips.some((c) => c.startsWith("unmodeled")) &&
+      r.xhChips.some((c) => c.includes("livebug")),
+    JSON.stringify(r.xhChips.map((c) => c.split("|")[0])));
+  check(`[${lang}] …in the display language, sentences included`,
+    r.xhChips.every((c) => cjk.test(c.split("|")[1] || "") === (lang === "zh")),
+    (r.xhChips[0] || "").slice(0, 90));
+  // THE CONTROL: a buff with nothing to admit admits nothing.
+  check(`[${lang}] …while a buff with nothing to admit shows no chips`,
+    r.roarChips === 0, `${r.roarChips} on Roar`);
 }
 
 await app.finish("a Warframe buff is the fight's, and it reaches the number");

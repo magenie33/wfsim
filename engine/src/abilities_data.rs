@@ -13,7 +13,7 @@
 //! `strength` and a duration override as arguments rather than reading them
 //! from anywhere: the caller that supplies them is the part that will move.
 //!
-//! Three effect kinds, and the differences between them are all measured or
+//! Four effect kinds, and the differences between them are all measured or
 //! quoted rather than assumed:
 //!
 //! - [`AbilityEffect::FactionDamage`] (Roar) joins the bracket a Bane mod is
@@ -27,6 +27,16 @@
 //!   Freeze Force, Venom Dose) adds a percentage of ModifiedBase as its
 //!   element, and DOES NOT COMBINE (owner: "注意不合成") — it lands on the
 //!   finished vector, after the elemental hierarchy has run.
+//! - [`AbilityEffect::ExtraHit`] (Xata's Whisper) is the odd one out: it does
+//!   not scale the weapon's number at all, it fires a SECOND damage instance
+//!   worth a percentage of the first (wiki `Extra_Hit`). The engine's rules
+//!   for it are in `dummy::fire_extra_hit`; what lives here is only which
+//!   element and how much.
+//!
+//! THE FIRST THREE ARE MULTIPLIERS AND THE FOURTH IS AN INSTANCE, which is the
+//! split worth keeping in mind when a fifth arrives: a multiplier can be read
+//! at any point in the pipeline by whoever needs it, and an instance has to be
+//! FIRED by something that knows what triggered it.
 
 use std::sync::OnceLock;
 
@@ -48,6 +58,10 @@ pub enum AbilityEffect {
     /// hierarchy. Additive with elemental mods in SIZE, separate from them in
     /// PLACEMENT.
     AddElement(DamageType, f64),
+    /// An EXTRA HIT: a whole second damage instance, entirely of this element,
+    /// worth this fraction of the instance that triggered it. Not a multiplier
+    /// on anything — see `dummy::fire_extra_hit` and MECHANICS §7 §"Extra Hit".
+    ExtraHit(DamageType, f64),
 }
 
 /// One selectable buff, as the data declares it.
@@ -67,6 +81,16 @@ pub struct AbilityDef {
     /// At max rank and 100% Ability Duration, in seconds.
     pub duration_s: f64,
     pub effect: AbilityEffect,
+    /// What this ability does that the sim does NOT compute, in the player's
+    /// own words on the card. Same field name and same meaning as a mod's and
+    /// an arcane's, so `/api/meta` publishes it under the same key and the page
+    /// renders all three with one function — a gap that lives only in a yaml
+    /// comment is a gap nobody can act on (owner, 2026-08-08).
+    pub unmodelled: Vec<&'static str>,
+    /// …and the admission that is not a shortfall: this IS modelled, it matches
+    /// the live game, and DE did not mean it to work this way. Xata's Whisper
+    /// firing off a Blast detonation is the wiki's own Bugs entry.
+    pub live_bugs: Vec<&'static str>,
     pub url: Option<&'static str>,
 }
 
@@ -112,6 +136,10 @@ struct AbilityFile {
     duration_s: f64,
     effect: EffectFile,
     #[serde(default)]
+    unmodelled: Vec<String>,
+    #[serde(default)]
+    live_bugs: Vec<String>,
+    #[serde(default)]
     source: Option<SourceFile>,
 }
 
@@ -127,17 +155,23 @@ pub fn all() -> &'static [AbilityDef] {
         for (path, text) in crate::data::files_under("abilities/") {
             let f: AbilityFile = serde_norway::from_str(text)
                 .unwrap_or_else(|e| panic!("{path}: {e}"));
+            // The two element-carrying kinds read the same field the same way,
+            // so it is parsed once — a second copy of these four lines is how
+            // one of them ends up accepting a typo the other rejects.
+            let element = |kind: &str| {
+                let e = f
+                    .effect
+                    .element
+                    .as_deref()
+                    .unwrap_or_else(|| panic!("{path}: {kind} needs an element"));
+                DamageType::from_name(e)
+                    .unwrap_or_else(|| panic!("{path}: unknown element {e}"))
+            };
             let effect = match f.effect.kind.as_str() {
                 "faction_damage" => AbilityEffect::FactionDamage(f.value),
                 "final_damage" => AbilityEffect::FinalDamage(f.value),
-                "add_element" => {
-                    let e = f.effect.element.as_deref().unwrap_or_else(|| {
-                        panic!("{path}: add_element needs an element")
-                    });
-                    let t = DamageType::from_name(e)
-                        .unwrap_or_else(|| panic!("{path}: unknown element {e}"));
-                    AbilityEffect::AddElement(t, f.value)
-                }
+                "add_element" => AbilityEffect::AddElement(element("add_element"), f.value),
+                "extra_hit" => AbilityEffect::ExtraHit(element("extra_hit"), f.value),
                 other => panic!("{path}: unknown ability effect kind {other}"),
             };
             out.push(AbilityDef {
@@ -149,6 +183,8 @@ pub fn all() -> &'static [AbilityDef] {
                 value: f.value,
                 duration_s: f.duration_s,
                 effect,
+                unmodelled: f.unmodelled.into_iter().map(leak).collect(),
+                live_bugs: f.live_bugs.into_iter().map(leak).collect(),
                 url: f.source.and_then(|s| s.url).map(leak),
             });
         }
@@ -202,6 +238,7 @@ pub fn resolve(picks: &[AbilityPick<'_>], strength: f64) -> Vec<ActiveAbility> {
             AbilityEffect::FactionDamage(_) => AbilityEffect::FactionDamage(value),
             AbilityEffect::FinalDamage(_) => AbilityEffect::FinalDamage(value),
             AbilityEffect::AddElement(t, _) => AbilityEffect::AddElement(t, value),
+            AbilityEffect::ExtraHit(t, _) => AbilityEffect::ExtraHit(t, value),
         };
         let live = ActiveAbility {
             id: def.id,
@@ -258,6 +295,25 @@ pub fn added_elements_at(list: &[ActiveAbility], t: f64) -> Vec<(DamageType, f64
     out
 }
 
+/// The EXTRA HITS running at `t`, as (element, fraction of the triggering
+/// instance).
+///
+/// A LIST, and they do not merge the way [`added_elements_at`] merges two
+/// grants of one element: each source is its own second damage instance with
+/// its own status roll, so Toxic Lash and Xata's Whisper on one weapon are two
+/// extra hits and not one bigger one (wiki `Extra_Hit`, which counts them
+/// per source). Only one per FAMILY can be in this list — [`resolve`] settled
+/// that before anything got here.
+pub fn extra_hits_at(list: &[ActiveAbility], t: f64) -> Vec<(DamageType, f64)> {
+    list.iter()
+        .filter(|a| a.live_at(t))
+        .filter_map(|a| match a.effect {
+            AbilityEffect::ExtraHit(ty, v) => Some((ty, v)),
+            _ => None,
+        })
+        .collect()
+}
+
 /// Every distinct moment the ACTIVE SET changes, `0.0` first and each expiry
 /// after it, deduplicated and sorted.
 ///
@@ -282,7 +338,7 @@ mod tests {
     #[test]
     fn every_ability_loads_and_says_where_it_came_from() {
         let a = all();
-        assert!(a.len() >= 10, "{} abilities", a.len());
+        assert!(a.len() >= 12, "{} abilities", a.len());
         for d in a {
             assert!(!d.name.is_empty());
             assert!(d.value > 0.0, "{}", d.id);
@@ -329,14 +385,71 @@ mod tests {
             AbilityPick { id: "eclipse", duration_s: None },
             AbilityPick { id: "shock_trooper", duration_s: None },
             AbilityPick { id: "freeze_force", duration_s: None },
+            AbilityPick { id: "xatas_whisper", duration_s: None },
         ];
         let live = resolve(&picks, 1.0);
-        assert_eq!(live.len(), 4);
+        assert_eq!(live.len(), 5);
         assert_eq!(faction_bonus_at(&live, 0.0), 0.5);
         assert!((final_mult_at(&live, 0.0) - 3.0).abs() < 1e-9);
         let els = added_elements_at(&live, 0.0);
         assert_eq!(els.len(), 2);
         assert!(els.iter().all(|(_, v)| (*v - 1.0).abs() < 1e-9));
+        // …and the extra hit is in NEITHER of those two lists, which is the
+        // whole point of it being a fourth kind: it is not an element added to
+        // the vector and not a multiplier on it.
+        assert_eq!(extra_hits_at(&live, 0.0), vec![(DamageType::Void, 0.26)]);
+    }
+
+    /// THE SUBSUMED COPY IS THE WHOLE ABILITY, which is true of no other pair
+    /// here — Roar loses 40 points and Eclipse 170. Asserted because the
+    /// tempting thing to do while writing the file was to shave it "like the
+    /// others", and the Helminth table says otherwise: Xaku's row carries no
+    /// ALTERED note where Valkyr's, Wukong's and Uriel's all do.
+    #[test]
+    fn the_subsumed_whisper_is_not_cut_the_way_roar_and_eclipse_are() {
+        let own = get("xatas_whisper").expect("xatas_whisper");
+        let sub = get("xatas_whisper_helminth").expect("xatas_whisper_helminth");
+        assert_eq!(own.value, sub.value);
+        assert_eq!(own.duration_s, sub.duration_s);
+        assert_eq!(own.family, sub.family);
+        for (full, cut) in [("roar", "roar_helminth"), ("eclipse", "eclipse_helminth")] {
+            assert!(get(cut).unwrap().value < get(full).unwrap().value, "{cut}");
+        }
+        // Equal values mean the family tie-break decides on something, so it
+        // must still resolve to exactly one — `resolve` keeps the FIRST at an
+        // equal value, and either answer is the same 26%.
+        let live = resolve(
+            &[
+                AbilityPick { id: "xatas_whisper_helminth", duration_s: None },
+                AbilityPick { id: "xatas_whisper", duration_s: None },
+            ],
+            1.0,
+        );
+        assert_eq!(live.len(), 1);
+        assert_eq!(extra_hits_at(&live, 0.0), vec![(DamageType::Void, 0.26)]);
+    }
+
+    /// AN EXTRA HIT ADMITS WHAT IT DOES NOT DO. Both copies carry the Bullet
+    /// Attractor line and the Blast live-bug line, because a card renders its
+    /// own text and a player who ticks the Helminth one never sees the other.
+    #[test]
+    fn the_whisper_states_its_gaps_and_its_bug_on_both_copies() {
+        for id in ["xatas_whisper", "xatas_whisper_helminth"] {
+            let d = get(id).unwrap_or_else(|| panic!("{id} missing"));
+            assert!(
+                d.unmodelled.iter().any(|u| u.contains("Bullet Attractor")),
+                "{id} says nothing about the Void proc"
+            );
+            assert!(
+                d.live_bugs.iter().any(|b| b.contains("Blast")),
+                "{id} does not admit the Blast interaction is a bug"
+            );
+        }
+        // NEGATIVE CONTROL: an ability with nothing to admit admits nothing. A
+        // check that only asserts presence passes just as well on a data set
+        // that shouts "not modelled" at everything.
+        let roar = get("roar").expect("roar");
+        assert!(roar.unmodelled.is_empty() && roar.live_bugs.is_empty());
     }
 
     /// A DURATION IS A DURATION. The buff bar is not consulted; these start at

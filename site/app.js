@@ -4977,7 +4977,13 @@ const notModeledLines = (o) => {
   const partial = o.unmodeled_effects || [];
   if (partial.length && !o.not_modeled) {
     out.push(`<span class="unmodeled part" title="${escHtml(
-      tr("everything else on this card is modelled; this is not:") + " " + partial.join(", "),
+      // Each line TRANSLATED, not the label only. An arcane's are short derived
+      // tokens with no zh entry and `tr` hands those straight back, so this
+      // costs them nothing — but an ABILITY writes whole sentences here, and
+      // one of them went out raw the first time (the same way the disclosure
+      // banner's paragraph did).
+      tr("everything else on this card is modelled; this is not:") + " " +
+        partial.map((x) => tr(x)).join(", "),
     )}">⊘ ${escHtml(tr("partly modelled"))}</span>`);
   }
   if (o.out_of_scope) {
@@ -7071,7 +7077,7 @@ function wfRunning() {
 // multiply the sim is doing.
 function wfValueLabel(a) {
   const pct = Math.round(wfValue(a) * 1000) / 10;
-  if (a.kind === "add_element") {
+  if (a.kind === "add_element" || a.kind === "extra_hit") {
     const el = (META.damage_types || {})[a.element];
     return `+${pct}% ${(el && (el.name || el.id)) || a.element}`;
   }
@@ -7087,6 +7093,13 @@ function wfEffectLine(a) {
   }
   if (a.kind === "final_damage") {
     return tr("damage on its own multiplier — applied once, to the hit and to the status alike");
+  }
+  // AN EXTRA HIT IS NOT A MULTIPLIER, and the line has to say so or the card
+  // reads as "+26% damage" — which is not what it is worth. It is a second
+  // damage instance, so it takes the faction bonus and the headshot multiplier
+  // a SECOND time, and 26% on the card is more like 40% on the number.
+  if (a.kind === "extra_hit") {
+    return tr("a second damage instance, not a multiplier — it takes faction damage and the headshot multiplier one more time than the hit it copies");
   }
   return tr("added on top and NOT combined with the weapon's own elements");
 }
@@ -7110,6 +7123,12 @@ function renderWfBuffs(host, readonly) {
         <span class="wfb-f">${escHtml(tr(a.frame))}</span></label>
       <div class="wfb-v">${escHtml(wfValueLabel(a))}</div>
       <div class="wfb-e">${escHtml(wfEffectLine(a))}</div>
+      ${/* WHAT IT DOES NOT DO, in the same chips a mod and an arcane card use —
+            `notModeledLines` reads `unmodeled_effects` and `live_bugs` off any
+            object, and an ability publishes both under those names. The owner
+            debugs by reading the card, so a Bullet Attractor this sim has
+            nothing to point at has to say so HERE (2026-08-08). */ ""}
+      <div class="wfb-u">${notModeledLines(a).join("")}</div>
       ${dead ? `<div class="wfb-dead">${escHtml(tr("a stronger buff of the same kind is running — this one adds nothing"))}</div>` : ""}
       ${a.url ? `<a class="wfb-w" href="${escHtml(a.url)}" target="_blank" rel="noopener">${escHtml(tr("wiki"))} ↗</a>` : ""}
     </div>`;
@@ -8101,7 +8120,7 @@ function renderResults(r, testedAt) {
   // they printed their raw wire key in every language.
   const SRC_LABEL = { direct: "Direct hits", radial: "Radial (AoE)",
     field: "Lingering field", arcane: "Arcane (on status)",
-    syndicate: "Syndicate radial" };
+    syndicate: "Syndicate radial", "extra hit": "Extra hit (ability)" };
   const srcLabel = (k) => (SRC_LABEL[k] ? tr(SRC_LABEL[k]) : DT(k));
   // A WEAPON-damage row EXPANDS into the damage types it was dealt as — a
   // status row already IS one type, which is what a proc is. Both levels use

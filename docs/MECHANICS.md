@@ -1404,6 +1404,101 @@ the page does not state (the base-form gate, and the cloud inheriting the
 bonus). **Status:** implemented and unit-tested; the ammo-surcharge basis and
 the status-payload exclusion are recorded modeling choices.
 
+### EXTRA HITS — a second instance, not a multiplier
+
+**Reference:** [`Extra_Hit`](https://wiki.warframe.com/w/Extra_Hit). Read that
+page before touching anything in this section; it is the only place the rule is
+written down in general form, and every ability and arcane that grants one
+inherits from it.
+
+> **Extra Hit** is a unique buff that adds an additional hit to the target,
+> dealing a percentage of the original damage value and independently rolling
+> Status Effects. An Extra Hit may have different damage type distribution than
+> the original hit; this is unlike Multishot, which always inherits the original
+> hit's stats.
+
+```
+Extra Hit Damage = Weapon Hit Damage × Extra Hit Percentage
+                   × (1 + Faction Damage Bonuses)
+
+Weapon Hit Damage = Base Damage
+                    × [ 1 + Elemental Bonuses
+                        + Unmodded Impact Distribution   × Impact Bonuses
+                        + Unmodded Puncture Distribution × Puncture Bonuses
+                        + Unmodded Slash Distribution    × Slash Bonuses ]
+                    × (1 + Damage Bonuses)
+                    × (1 + Faction Damage Bonuses)
+                    × Additional Multipliers
+```
+
+`Additional Multipliers` are the crit multiplier on a critical hit, the enemy
+body-part multiplier, and "external weapon buffs that do not fit into other
+bonus categories".
+
+**Everything surprising about it falls out of `Weapon Hit Damage` already
+containing a faction layer.** The bonus appears twice in the pair of formulas,
+so an extra hit is worth `pct × (1 + faction)` of the hit rather than `pct` —
+26% on the card is ×0.40 of the hit at a Primed Bane's +55%. The engine never
+writes a 2: it multiplies the finished instance and applies
+`faction_at_time` once more, and the layer count follows from what triggered it.
+
+**And the body part twice, which the EN formula does not show and DE's own CN
+card states outright** — 同理，弱点倍率也会被计算两次. A 3× headshot is 3× on the
+hit and 3× again on the extra hit off it, so an extra-hit ability is worth
+strictly more to a headshot build than any multiplier that merely scales the
+hit. `dummy::fire_extra_hits` takes that as `part_again` from the caller,
+because only the caller knows whether its instance struck a body part at all.
+
+**The percentage's bracket is the BASE ATTACK's, not the triggering
+instance's.** `Unmodded Impact Distribution` is the phrase that says so, and the
+CN card works it out for the Heliocor: a slam whose own damage is 100% Impact
+still scales its extra hit by `1 + 0.6 + 1.2×0.85 + 1.2×0.1`, the IPS shares of
+the ORDINARY attack. `DummyParams::extra_hit_bracket` is that number, and each
+call site passes the ratio between it and its own instance's bracket — exactly
+1 on a direct hit, and the whole correction on an explosion or a detonation.
+
+**What triggers one, and what does not.** A WEAPON damage instance does: the
+direct hit, each multishot pellet separately, the explosion, "most non-standard
+weapon hits ... including Acid Shells and Concealed Explosives". A status
+payload does NOT — with one exception, filed by the wiki under Bugs:
+
+> Only Xata's Whisper will be triggered by blast Detonations, no other extra hit
+> will.
+
+That detonation case is where three layers of faction stack up (the detonation
+is already at `faction_at(f, DEPTH_PROC)`) and where the extra hit takes a full
+elemental bracket the detonation itself is denied. **Measured** — MEASUREMENTS
+**M40** decodes a supplied capture line by line.
+
+Two more rules the engine follows from the same page:
+
+- *"If a hit that would trigger an Extra Hit kills the enemy, the Extra Hit will
+  not be triggered."* The call sits after the kill check, so this costs a line
+  of placement rather than a condition.
+- *"Damage over Time status effects created by an Extra Hit will use the Extra
+  Hit Damage as Modded Base Damage"*, and they take faction a third time. No
+  extra hit in the roster grants a DAMAGING element yet (Xata's is Void, whose
+  proc is a Bullet Attractor), so this is a claim nothing collects on — it is
+  written as `InstanceScale { mb_live: raw, .. }` and `DEPTH_DERIVED_PROC` so
+  that the first one that does is right without an edit.
+
+**Void's status is worth exactly one Condition Overload stack.** The Bullet
+Attractor deals no damage and the arena has nobody to redirect fire from — but
+Void is on Condition Overload's own list of counting procs, so it is tracked
+like Radiation's Confusion: a presence with no payload. `DebuffState::attractor`.
+
+**Sources of extra hits, from the wiki's table** (none but Xata's Whisper is
+implemented; the ability layer is what would carry the rest): Toxic Lash
+20–30% Toxin, Xata's Whisper 17–26% Void, Silken Stride 10–40% Toxin, Resupply
+10–25% selectable, Uriel's Demonium Rune 30% Heat; Reconifex's Active Reload
+25% Heat; Melee Duplicate 100%; Primary Debilitate's 0-damage status application
+— which this engine already models, from the other end, as MEASUREMENTS M33/M37.
+
+**Source:** wiki `Extra_Hit` + `Xata's Whisper` (EN and CN, which disagree in
+detail and are reconciled in M40) + a supplied player capture. **Status:**
+implemented and unit-tested; the Blast chain is measured, the lingering-field
+trigger is an open question stated in M40.
+
 ### Lingering damage FIELDS (zones)
 
 A third kind of attack part: an area that **persists and ticks**, rather than

@@ -516,7 +516,8 @@ which is the property the collapse was wanted for.
 
 ## A WARFRAME ABILITY is a buff nobody in this repo grants
 
-Roar, Eclipse, Nourish and the four elemental augments (`data/abilities/`) are
+Roar, Eclipse, Nourish, Xata's Whisper and the four elemental augments
+(`data/abilities/`) are
 buffs in the ordinary English sense and **not** `Buff`s in the sense the rest of
 this document uses. Nothing here grants them: there is no perk holding them, no
 trigger that fires them, no bar they appear in. They are a property of the
@@ -535,7 +536,7 @@ That is the whole design, and everything else follows from it:
 - **They are not in the buff bar**, and should not be: the bar shows what this
   build gained during the run. An ability you cast is an input to the run.
 
-### Three effect kinds, and why there are exactly three
+### Four effect kinds — three multipliers and one INSTANCE
 
 Each is a different BUCKET, and the differences are quoted rather than assumed
 (`data/abilities/*.yaml` carries the sentence and the page it came off):
@@ -545,6 +546,17 @@ Each is a different BUCKET, and the differences are quoted rather than assumed
 | `faction_damage` | Roar +50% | the bracket a Bane mod is in | **twice** — the bracket double-dips |
 | `final_damage` | Eclipse +200% | its own multiplier | once |
 | `add_element` | Shock Trooper +100% Electricity | the FINISHED vector | its own element's DoT |
+| `extra_hit` | Xata's Whisper +26% Void | **nowhere — it fires a second instance** | rolls its own, independently |
+
+**The split that matters is three-and-one, not four.** The first three are
+multipliers: whoever needs one reads it at the point in the pipeline where it
+belongs, and no caller has to know the ability exists. An `extra_hit` is a
+damage INSTANCE, so something has to FIRE it, and that something has to know
+what triggered it — which body part was struck, how many faction layers the
+trigger already carried, whether it was a weapon hit at all. `fire_extra_hits`
+takes those as arguments for exactly that reason, and MECHANICS §7 §"Extra Hit"
+is where the rules live. Expect the next `extra_hit` (Toxic Lash, Silken Stride,
+Resupply) to be a data file and nothing else.
 
 The first two differ by one wiki sentence and it is worth stating twice:
 *"Unlike faction damage, which double dips for status effects, the one from

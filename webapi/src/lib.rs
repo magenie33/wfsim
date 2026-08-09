@@ -982,6 +982,8 @@ pub fn meta_json() -> Value {
                     ("final_damage", None),
                 wfsim_engine::abilities_data::AbilityEffect::AddElement(t, _) =>
                     ("add_element", Some(t.name())),
+                wfsim_engine::abilities_data::AbilityEffect::ExtraHit(t, _) =>
+                    ("extra_hit", Some(t.name())),
             };
             json!({
                 "id": a.id,
@@ -993,6 +995,13 @@ pub fn meta_json() -> Value {
                 "duration_s": a.duration_s,
                 "kind": kind,
                 "element": element,
+                // THE SAME TWO ADMISSIONS A MOD AND AN ARCANE CARD CARRY, under
+                // the same keys, so the page renders all three with one
+                // function. Xata's Whisper is the first ability with either:
+                // its Void proc is a Bullet Attractor this sim has nothing to
+                // point at, and its Blast interaction is DE's own bug.
+                "unmodeled_effects": a.unmodelled,
+                "live_bugs": a.live_bugs,
                 "url": a.url,
             })
         }).collect::<Vec<_>>(),
@@ -3646,6 +3655,12 @@ pub fn simulate_json(v: &Value) -> Value {
         // clock, and folding it into "direct" would credit the build for damage
         // no mod on it scaled.
         ("syndicate".to_string(), sd.syndicate, by_type(&sd.syndicate_by_type)),
+        // AN EXTRA HIT is its own row too, and it is the one row the build
+        // cannot move directly: Xata's Whisper takes a percentage of everything
+        // else on this list, so a player tuning mods watches it follow. Folding
+        // it into "direct" would hide that a fifth of the output is an ability's
+        // and vanishes when the buff does.
+        ("extra hit".to_string(), sd.extra_hit, by_type(&sd.extra_hit_by_type)),
     ];
     sources.extend(
         sd.status
@@ -3700,6 +3715,7 @@ pub fn simulate_json(v: &Value) -> Value {
                 "field" => (f.sources.field, f.sources.field_by_type),
                 "arcane" => (f.sources.arcane_on_status, f.sources.arcane_by_type),
                 "syndicate" => (f.sources.syndicate, f.sources.syndicate_by_type),
+                "extra hit" => (f.sources.extra_hit, f.sources.extra_hit_by_type),
                 other => {
                     let i = TYPE_NAMES.iter().position(|n| *n == other).unwrap_or(0);
                     (f.sources.status[i], [0.0; 15])

@@ -14,6 +14,12 @@ live_bugs:
   - "the split fires a damage instance of ZERO, and the zero still takes that instance's own multipliers — when the DoT replaces it with the parent hit's damage, they stay behind. Faction bonuses were meant to carry down the chain and do; a per-instance bonus like Devouring Attrition's +2000% was not, and does anyway (x21 twice = x441). Modelled as it behaves today; a fix removes it"
 
 effects:
+  # THE 0% MEMBER OF THE EXTRA HIT CATEGORY (wiki `Extra_Hit`, which names this
+  # arcane outright: "adds a 0-damage Extra Hit that applies a guaranteed status
+  # effect based on the triggering 'combined' elemental status"). Everything
+  # below was deduced before that page was read, and the page agrees with all of
+  # it — see docs/EXTRA_HIT.md for the law and the other members.
+  #
   # Splits a COMBINED element's proc into ONE of its two components (Corrosive
   # -> Toxin or Electricity) once the target already holds 10 stacks of it.
   # Rolled per DAMAGE INSTANCE, 50/50 between the two components.
