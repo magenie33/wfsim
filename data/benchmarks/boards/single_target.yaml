@@ -11,6 +11,12 @@ benchmark: single_target
 source: submissions
 entries:
   - weapon: atomos
+    mode: base
+    score: 9.261858453502368
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, pistol_elementalist, magnetic_might, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
+    arcanes: [cascadia_flare]
+  - weapon: atomos
     mode: cycle
     score: 6.666900518105678
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, creeping_bullseye, pistol_elementalist, magnetic_might, primed_heated_charge]
