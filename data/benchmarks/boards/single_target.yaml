@@ -718,6 +718,12 @@ entries:
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_ammo_stock, magnetic_strafe, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
     evolutions: [felarx_evo1_incarnon_form, felarx_kinetic_baffle, felarx_evolved_autoloader, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
+  - weapon: felarx
+    mode: base
+    score: 16.93735351999887
+    mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, toxic_barrage, scattering_inferno]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
   - weapon: furis
     mode: cycle
     score: 57.54050312237646
@@ -1743,6 +1749,16 @@ entries:
     arcanes: [secondary_fortifier]
   - weapon: ocucor
     mode: base
+    score: 9.221119281693037
+    mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, sentient_surge, ice_storm, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_fortifier]
+  - weapon: ocucor
+    mode: base
+    score: 8.818508621369268
+    mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_fortifier]
+  - weapon: ocucor
+    mode: base
     score: 6.882827891662094
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
@@ -1756,6 +1772,11 @@ entries:
     score: 5.280312315088025
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
+  - weapon: ocucor
+    mode: base
+    score: 4.826783820086319
+    mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
   - weapon: ocucor
     mode: base
     score: 4.77180030305913
@@ -1773,9 +1794,19 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: ocucor
     mode: base
+    score: 3.10891761175762
+    mods: [pistol_acuity, hornet_strike, primed_target_cracker, anemic_agility, pistol_elementalist, magnetic_might, primed_heated_charge, scorch]
+    arcanes: [cascadia_flare]
+  - weapon: ocucor
+    mode: base
     score: 3.0169434275210096
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
+  - weapon: ocucor
+    mode: base
+    score: 2.5610684257792826
+    mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, primed_heated_charge, scorch]
+    arcanes: [cascadia_flare]
   - weapon: ocucor
     mode: base
     score: 2.4230099652473998
@@ -1840,6 +1871,11 @@ entries:
     mode: base
     score: 0.8639340423144904
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, sentient_surge, primed_convulsion, pathogen_rounds, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: ocucor
+    mode: base
+    score: 0.765844983759716
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, sentient_surge, deep_freeze, pathogen_rounds, primed_heated_charge]
     arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
@@ -2588,6 +2624,18 @@ entries:
     mods: [amalgam_serration, galvanized_chamber, heavy_caliber, critical_delay, vile_acceleration, stormbringer, infected_clip, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_frostbite]
+  - weapon: vectis_prime
+    mode: cycle
+    score: 10.668754590812318
+    mods: [primary_acuity, serration, hunter_munitions, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, infected_clip, thermite_rounds]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: vectis_prime
+    mode: base
+    score: 9.768076827708194
+    mods: [primary_acuity, serration, hunter_munitions, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, infected_clip, thermite_rounds]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: verglas_prime
     mode: base
     score: 1.0508239284930228
