@@ -240,6 +240,8 @@ ui:
   "Condition Overload computes on this weapon's ORIGINAL base damage — this perk's added base is excluded, so every status type is worth less than the card implies": 异况超载按这把武器的原始基础伤害计算——这个进化增加的基础伤害不计入，所以每一种异常的价值都低于卡面看起来的样子
   "real damage the simulator does not compute yet": 这是真实的伤害，只是模拟器还没有实现
   "outside the sim": 不在模拟范围
+  "element": 元素
+  "this ability lets you pick the element — the gear wheel in game": 这个技能可以自选元素——游戏里那个装备轮盘
   "5 · Warframe buffs": 5 · 战甲增益
   "abilities cast on this weapon — set your Ability Strength and the values follow": 施加在这把武器上的战甲技能——填入技能强度，下面的数值随之变化
   "6 · Simulation": 6 · 模拟

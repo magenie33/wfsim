@@ -87,21 +87,39 @@ has none.
 
 ## The members
 
-| source | % | element | where |
-| --- | --- | --- | --- |
-| Xata's Whisper (Xaku) | 26% | Void | `data/abilities/xatas_whisper.yaml` ✅ |
-| Primary Debilitate | **0%** | the split component | `data/arcanes/primary/primary_debilitate.yaml` ✅ |
-| Toxic Lash (Saryn) | 20–30% | Toxin (×2 melee) | — |
-| Resupply (Cyte-09) | 10–25% | selectable (×2 snipers) | — |
-| Silken Stride | 10–40% | Toxin | — |
-| Uriel's Demonium Rune | 30% | Heat | — |
-| Reconifex Active Reload | 25% | Heat | — |
-| Melee Duplicate | 100% | — | out of scope (melee) |
+| source | % (max) | element | status | where |
+| --- | --- | --- | --- | --- |
+| Xata's Whisper (Xaku) | 26% | Void | weapon's roll | `data/abilities/xatas_whisper.yaml` ✅ |
+| **Toxic Lash** (Saryn) | 30% | Toxin | **guaranteed** | `data/abilities/toxic_lash.yaml` ✅ |
+| **Resupply** (Cyte-09) | 25% (**50% sniper**) | **chosen, 10** | **guaranteed** | `data/abilities/resupply.yaml` ✅ |
+| Primary Debilitate | **0%** | the split component | guaranteed | `data/arcanes/primary/primary_debilitate.yaml` ✅ |
+| Silken Stride | 40% | Toxin | ? | — |
+| Uriel's Demonium Rune | 30% | Heat | ? | — |
+| Reconifex Active Reload | 25% | Heat | ? | — |
+| Melee Duplicate | 100% | — | — | out of scope (melee) |
 
-The four unimplemented ability sources are `kind: extra_hit` entries in
-`data/abilities/` and nothing else — the machinery is
-`dummy::fire_extra_hits`, and it reads the list rather than any weapon or
-ability name.
+### The three things a member may differ in, and nothing else
+
+Adding Toxic Lash and Resupply is what proved the category, because between them
+they needed exactly three fields and no new mechanism:
+
+- **`forced_status`** — Xata's extra hit rolls the weapon's own chance
+  ("附加的虚空伤害具有基于武器本身触发几率的独立触发几率"); Toxic Lash is
+  "100% (Toxin status chance)" and Resupply grants "the selected Elemental
+  Damage **and Status Effect**". A forced one goes down the same `forced`
+  channel a weapon's own guaranteed proc uses, so caps, immunities and
+  Condition Overload all see it identically.
+- **`element: selectable` + `elements:`** — Resupply's gear wheel. The choice
+  rides on the PICK, so one definition serves all ten and the page draws its
+  dropdown from the data's own list in the game's own order.
+- **`class_bonus_for` / `class_bonus`** — Resupply is 20/30/40/50% on Sniper
+  Rifles against 10/15/20/25%. Applied in `abilities_data::resolve`, the one
+  function handed both the ability and the weapon it is cast on, so the sim
+  never learns what a sniper is.
+
+The three unimplemented ability sources are `kind: extra_hit` entries in
+`data/abilities/` and nothing else — the machinery is `dummy::fire_extra_hits`,
+and it reads the list rather than any weapon or ability name.
 
 ## Rules the page states that we do and do not model
 

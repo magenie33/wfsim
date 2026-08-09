@@ -1,0 +1,64 @@
+# A WARFRAME ABILITY BUFF — the fight's PLAYER, not the build.
+#
+# Not a mod, not an arcane, not a weapon perk: a thing another actor (or the
+# player's own frame) does to this weapon for a while. It belongs to the
+# SCENARIO, and the BOARD carries none of these.
+
+# THE MEMBER THAT NAMED THE CATEGORY. Cyte-09's Resupply is the Extra Hit whose
+# community formula decoded MEASUREMENTS M33's 29551 — the number that made
+# Primary Debilitate's split legible — and M33 could only file it as "the
+# ABILITY case", because nothing yet said the two were one mechanic. The wiki's
+# `Extra_Hit` page is what said it (2026-08-09), and the owner's reading of the
+# 0% case is what closed the gap between them:
+#
+#   an Extra Hit REPLACES the base its status burns off — 上一级被 resupply 替
+#   换了 — so a 0% one replaces nothing and the level above stands.
+#
+# Resupply is the direction where the replacement happens; Debilitate is the
+# direction where it does not. docs/EXTRA_HIT.md holds both.
+#
+# Wiki, verbatim: "Throw two Elemental Ammo Packs that instantly refill the
+# active weapon's magazine, while granting the weapon an additional instance of
+# the selected Elemental Damage and Status Effect", "triggering an Extra Hit of
+# 10% / 15% / 20% / 25% damage (20% / 30% / 40% / 50% for Sniper Rifles)".
+
+# TWO THINGS NO OTHER MEMBER HAS, and both are fields rather than code:
+#
+# - THE ELEMENT IS CHOSEN, from a gear wheel of ten. `element: selectable` plus
+#   `elements:` is the whole of it — the page draws a picker, the pick travels
+#   with the buff, and `resolve` substitutes it. The order below is the wheel's.
+# - IT DOUBLES ON SNIPER RIFLES. `class_bonus_for: sniper` — applied in
+#   `abilities_data::resolve`, the one place handed both the ability and the
+#   weapon, so the sim never has to know what a sniper is.
+#
+# ITS STATUS IS A CERTAINTY: "the selected Elemental Damage AND Status Effect".
+
+# DURATION: THE ABILITY HAS NONE. It is an ammo pack — the buff rides the
+# magazine it filled, not a clock, so the wiki's duration row reads "not
+# applicable". 300 s is the engagement, which is this page's "whole fight" and
+# the honest reading of "for as long as you keep shooting the ammo it gave you".
+# What is NOT modelled is running out of it — see below.
+
+id: resupply
+name: Resupply
+frame: Cyte-09
+family: resupply
+helminth: false
+
+value: 0.25
+duration_s: 300
+
+effect:
+  kind: extra_hit
+  element: selectable
+  elements: [heat, cold, electricity, toxin, blast, radiation, gas, magnetic, viral, corrosive]
+  forced_status: true
+  class_bonus_for: sniper
+  class_bonus: 2.0
+
+unmodelled:
+  - "the ammo pack itself — it refills the magazine instantly, and this run already assumes infinite reserve by default, so the refill is worth nothing here and running the pack dry is not simulated"
+  - "Archguns and battery weapons (Kitguns with Pax Charge included) do not benefit at all, and nothing here refuses them"
+
+source:
+  url: https://wiki.warframe.com/w/Resupply

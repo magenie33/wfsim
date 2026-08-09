@@ -1166,3 +1166,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .wfb-dead{margin-top:3px;color:var(--gold);font-size:11px}
 .wfb-w{display:inline-block;margin-top:6px;color:var(--text-2);font-size:11px;text-decoration:none}
 .wfb-w:hover{color:var(--accent)}
+/* A CHOSEN element (Resupply's gear wheel). Small and inline: it is a property
+   of the buff you already ticked, not a second decision. */
+.wfb-el{display:block;margin-top:4px;color:var(--text-2);font-size:11px}
+.wfb-el select{margin-left:5px;font-size:11px}

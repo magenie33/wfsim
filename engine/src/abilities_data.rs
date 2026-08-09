@@ -60,8 +60,28 @@ pub enum AbilityEffect {
     AddElement(DamageType, f64),
     /// An EXTRA HIT: a whole second damage instance, entirely of this element,
     /// worth this fraction of the instance that triggered it. Not a multiplier
-    /// on anything — see `dummy::fire_extra_hit` and MECHANICS §7 §"Extra Hit".
-    ExtraHit(DamageType, f64),
+    /// on anything — `dummy::fire_extra_hits`, MECHANICS §7 §"Extra Hit", and
+    /// docs/EXTRA_HIT.md for the law its members share.
+    ///
+    /// THREE THINGS DIFFER BETWEEN MEMBERS and nothing else does, which is what
+    /// makes this a category rather than four special cases:
+    ///
+    /// - the ELEMENT, fixed for most and CHOSEN for Resupply, whose gear wheel
+    ///   offers ten. A chosen one arrives on the pick, so one definition serves
+    ///   every choice;
+    /// - whether its status is GUARANTEED or rolls the weapon's own chance.
+    ///   Xata's rolls ("附加的虚空伤害具有基于武器本身触发几率的独立触发几率");
+    ///   Toxic Lash is 100% Toxin, and Resupply grants "the selected Elemental
+    ///   Damage and Status Effect";
+    /// - a WEAPON CLASS that doubles it — Resupply is 20/30/40/50% on Sniper
+    ///   Rifles against 10/15/20/25%. Applied in [`resolve`], the one function
+    ///   handed both the ability and the weapon it is cast on, so nothing
+    ///   downstream has to know what a sniper is.
+    ExtraHit {
+        element: DamageType,
+        frac: f64,
+        forced_status: bool,
+    },
 }
 
 /// One selectable buff, as the data declares it.
@@ -81,6 +101,13 @@ pub struct AbilityDef {
     /// At max rank and 100% Ability Duration, in seconds.
     pub duration_s: f64,
     pub effect: AbilityEffect,
+    /// The elements this ability lets you CHOOSE between, empty when it fixes
+    /// one. The page draws a picker from this; `resolve` reads the choice off
+    /// the pick.
+    pub elements: Vec<&'static str>,
+    /// (class, multiplier) — a weapon class this is worth more on. See
+    /// [`AbilityEffect::ExtraHit`].
+    pub class_bonus: Option<(&'static str, f64)>,
     /// What this ability does that the sim does NOT compute, in the player's
     /// own words on the card. Same field name and same meaning as a mod's and
     /// an arcane's, so `/api/meta` publishes it under the same key and the page
@@ -116,6 +143,18 @@ struct EffectFile {
     kind: String,
     #[serde(default)]
     element: Option<String>,
+    /// `element: selectable` — the choices, in the order the game offers them.
+    #[serde(default)]
+    elements: Vec<String>,
+    /// Does its status always land, or does it roll the weapon's chance?
+    #[serde(default)]
+    forced_status: bool,
+    /// A weapon CLASS this is worth more on, and by how much (Resupply doubles
+    /// on `sniper`). Two fields rather than a map: there is one such rule.
+    #[serde(default)]
+    class_bonus_for: Option<String>,
+    #[serde(default)]
+    class_bonus: Option<f64>,
 }
 
 #[derive(Deserialize)]
@@ -171,7 +210,21 @@ pub fn all() -> &'static [AbilityDef] {
                 "faction_damage" => AbilityEffect::FactionDamage(f.value),
                 "final_damage" => AbilityEffect::FinalDamage(f.value),
                 "add_element" => AbilityEffect::AddElement(element("add_element"), f.value),
-                "extra_hit" => AbilityEffect::ExtraHit(element("extra_hit"), f.value),
+                "extra_hit" => AbilityEffect::ExtraHit {
+                    // A SELECTABLE element defaults to the first choice and is
+                    // replaced by the pick; a fixed one is itself.
+                    element: if f.effect.element.as_deref() == Some("selectable") {
+                        let first = f.effect.elements.first().unwrap_or_else(|| {
+                            panic!("{path}: `element: selectable` needs `elements:`")
+                        });
+                        DamageType::from_name(first)
+                            .unwrap_or_else(|| panic!("{path}: unknown element {first}"))
+                    } else {
+                        element("extra_hit")
+                    },
+                    frac: f.value,
+                    forced_status: f.effect.forced_status,
+                },
                 other => panic!("{path}: unknown ability effect kind {other}"),
             };
             out.push(AbilityDef {
@@ -183,6 +236,11 @@ pub fn all() -> &'static [AbilityDef] {
                 value: f.value,
                 duration_s: f.duration_s,
                 effect,
+                elements: f.effect.elements.iter().cloned().map(leak).collect(),
+                class_bonus: match (f.effect.class_bonus_for, f.effect.class_bonus) {
+                    (Some(c), Some(x)) => Some((leak(c), x)),
+                    _ => None,
+                },
                 unmodelled: f.unmodelled.into_iter().map(leak).collect(),
                 live_bugs: f.live_bugs.into_iter().map(leak).collect(),
                 url: f.source.and_then(|s| s.url).map(leak),
@@ -203,6 +261,10 @@ pub struct AbilityPick<'a> {
     pub id: &'a str,
     /// Seconds, or `None` for "the whole fight".
     pub duration_s: Option<f64>,
+    /// Which element, where the ability offers a choice (Resupply's gear
+    /// wheel). `None` everywhere else, and on a stored pick that predates the
+    /// picker — the definition's own first choice stands in.
+    pub element: Option<&'a str>,
 }
 
 /// Scale an ability's value by Ability Strength.
@@ -229,7 +291,11 @@ pub fn at_strength(v: f64, strength: f64) -> f64 {
 /// Unknown ids are dropped rather than erroring: a stored scenario outlives the
 /// data, and a fight that refuses to run because a buff was renamed is worse
 /// than one that runs without it. The page reports what it dropped.
-pub fn resolve(picks: &[AbilityPick<'_>], strength: f64) -> Vec<ActiveAbility> {
+pub fn resolve(
+    picks: &[AbilityPick<'_>],
+    strength: f64,
+    weapon_class: &str,
+) -> Vec<ActiveAbility> {
     let mut best: Vec<(&'static str, f64, ActiveAbility)> = Vec::new();
     for p in picks {
         let Some(def) = get(p.id) else { continue };
@@ -238,7 +304,19 @@ pub fn resolve(picks: &[AbilityPick<'_>], strength: f64) -> Vec<ActiveAbility> {
             AbilityEffect::FactionDamage(_) => AbilityEffect::FactionDamage(value),
             AbilityEffect::FinalDamage(_) => AbilityEffect::FinalDamage(value),
             AbilityEffect::AddElement(t, _) => AbilityEffect::AddElement(t, value),
-            AbilityEffect::ExtraHit(t, _) => AbilityEffect::ExtraHit(t, value),
+            AbilityEffect::ExtraHit { element, forced_status, .. } => AbilityEffect::ExtraHit {
+                // THE PICK'S element wins where the ability offers a choice.
+                element: p
+                    .element
+                    .and_then(DamageType::from_name)
+                    .filter(|_| !def.elements.is_empty())
+                    .unwrap_or(element),
+                frac: value
+                    * def
+                        .class_bonus
+                        .map_or(1.0, |(c, x)| if c == weapon_class { x } else { 1.0 }),
+                forced_status,
+            },
         };
         let live = ActiveAbility {
             id: def.id,
@@ -304,14 +382,28 @@ pub fn added_elements_at(list: &[ActiveAbility], t: f64) -> Vec<(DamageType, f64
 /// extra hits and not one bigger one (wiki `Extra_Hit`, which counts them
 /// per source). Only one per FAMILY can be in this list — [`resolve`] settled
 /// that before anything got here.
-pub fn extra_hits_at(list: &[ActiveAbility], t: f64) -> Vec<(DamageType, f64)> {
+pub fn extra_hits_at(list: &[ActiveAbility], t: f64) -> Vec<ExtraHitLive> {
     list.iter()
         .filter(|a| a.live_at(t))
         .filter_map(|a| match a.effect {
-            AbilityEffect::ExtraHit(ty, v) => Some((ty, v)),
+            AbilityEffect::ExtraHit { element, frac, forced_status } => {
+                Some(ExtraHitLive { element, frac, forced_status })
+            }
             _ => None,
         })
         .collect()
+}
+
+/// One extra hit as the sim needs it: what element, what share of the instance
+/// that triggered it, and whether its status is a roll or a certainty.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ExtraHitLive {
+    pub element: DamageType,
+    pub frac: f64,
+    /// Toxic Lash is "100% (Toxin status chance)" and Resupply grants "the
+    /// selected Elemental Damage and Status Effect"; Xata's rolls the weapon's
+    /// own. The difference is per member, so it travels with the member.
+    pub forced_status: bool,
 }
 
 /// Every distinct moment the ACTIVE SET changes, `0.0` first and each expiry
@@ -359,10 +451,10 @@ mod tests {
     #[test]
     fn two_buffs_of_a_family_do_not_stack_and_the_stronger_wins() {
         let picks = [
-            AbilityPick { id: "roar_helminth", duration_s: None },
-            AbilityPick { id: "roar", duration_s: None },
+            AbilityPick { id: "roar_helminth", duration_s: None, element: None },
+            AbilityPick { id: "roar", duration_s: None, element: None },
         ];
-        let live = resolve(&picks, 1.0);
+        let live = resolve(&picks, 1.0, "");
         assert_eq!(live.len(), 1);
         assert_eq!(live[0].id, "roar");
         assert_eq!(faction_bonus_at(&live, 0.0), 0.5);
@@ -372,7 +464,7 @@ mod tests {
         // a 200%-strength Helminth Roar (0.60) beats a 100% Rhino's (0.50).
         // Same call, different strengths, is the closest this can get to two
         // players — and it is what the field means.
-        let solo = resolve(&[AbilityPick { id: "roar_helminth", duration_s: None }], 2.0);
+        let solo = resolve(&[AbilityPick { id: "roar_helminth", duration_s: None, element: None }], 2.0, "");
         assert!(faction_bonus_at(&solo, 0.0) > 0.5);
     }
 
@@ -381,13 +473,13 @@ mod tests {
     #[test]
     fn different_families_all_run_at_once() {
         let picks = [
-            AbilityPick { id: "roar", duration_s: None },
-            AbilityPick { id: "eclipse", duration_s: None },
-            AbilityPick { id: "shock_trooper", duration_s: None },
-            AbilityPick { id: "freeze_force", duration_s: None },
-            AbilityPick { id: "xatas_whisper", duration_s: None },
+            AbilityPick { id: "roar", duration_s: None, element: None },
+            AbilityPick { id: "eclipse", duration_s: None, element: None },
+            AbilityPick { id: "shock_trooper", duration_s: None, element: None },
+            AbilityPick { id: "freeze_force", duration_s: None, element: None },
+            AbilityPick { id: "xatas_whisper", duration_s: None, element: None },
         ];
-        let live = resolve(&picks, 1.0);
+        let live = resolve(&picks, 1.0, "");
         assert_eq!(live.len(), 5);
         assert_eq!(faction_bonus_at(&live, 0.0), 0.5);
         assert!((final_mult_at(&live, 0.0) - 3.0).abs() < 1e-9);
@@ -397,7 +489,10 @@ mod tests {
         // …and the extra hit is in NEITHER of those two lists, which is the
         // whole point of it being a fourth kind: it is not an element added to
         // the vector and not a multiplier on it.
-        assert_eq!(extra_hits_at(&live, 0.0), vec![(DamageType::Void, 0.26)]);
+        let xh = extra_hits_at(&live, 0.0);
+        assert_eq!(xh.len(), 1);
+        assert_eq!(xh[0].element, DamageType::Void);
+        assert!((xh[0].frac - 0.26).abs() < 1e-9);
     }
 
     /// THE SUBSUMED COPY IS THE WHOLE ABILITY, which is true of no other pair
@@ -420,13 +515,17 @@ mod tests {
         // equal value, and either answer is the same 26%.
         let live = resolve(
             &[
-                AbilityPick { id: "xatas_whisper_helminth", duration_s: None },
-                AbilityPick { id: "xatas_whisper", duration_s: None },
+                AbilityPick { id: "xatas_whisper_helminth", duration_s: None, element: None },
+                AbilityPick { id: "xatas_whisper", duration_s: None, element: None },
             ],
             1.0,
+            "",
         );
         assert_eq!(live.len(), 1);
-        assert_eq!(extra_hits_at(&live, 0.0), vec![(DamageType::Void, 0.26)]);
+        let xh = extra_hits_at(&live, 0.0);
+        assert_eq!(xh.len(), 1);
+        assert_eq!(xh[0].element, DamageType::Void);
+        assert!((xh[0].frac - 0.26).abs() < 1e-9);
     }
 
     /// AN EXTRA HIT ADMITS WHAT IT DOES NOT DO. Both copies carry the Bullet
@@ -458,10 +557,11 @@ mod tests {
     fn a_duration_ends_the_buff_and_whole_fight_never_does() {
         let live = resolve(
             &[
-                AbilityPick { id: "roar", duration_s: Some(30.0) },
-                AbilityPick { id: "eclipse", duration_s: None },
+                AbilityPick { id: "roar", duration_s: Some(30.0), element: None },
+                AbilityPick { id: "eclipse", duration_s: None, element: None },
             ],
             1.0,
+            "",
         );
         assert_eq!(faction_bonus_at(&live, 29.9), 0.5);
         assert_eq!(faction_bonus_at(&live, 30.0), 0.0);
@@ -491,3 +591,54 @@ mod tests {
         }
     }
 }
+    /// THE CATEGORY'S THREE PER-MEMBER FACTS, asserted on the members that
+    /// have them — because each one is a field, and a field nobody reads is a
+    /// field that quietly stops working.
+    #[test]
+    fn the_extra_hit_members_differ_only_in_what_the_data_says() {
+        // 1. A CHOSEN element. Resupply's gear wheel offers ten; the pick
+        //    decides, and the definition's first choice stands in for a pick
+        //    that predates the picker.
+        let def = get("resupply").expect("resupply");
+        assert_eq!(def.elements.len(), 10, "the gear wheel");
+        let dflt = resolve(&[AbilityPick { id: "resupply", duration_s: None, element: None }], 1.0, "rifle");
+        assert_eq!(extra_hits_at(&dflt, 0.0)[0].element, DamageType::Heat, "the first choice");
+        let cold = resolve(
+            &[AbilityPick { id: "resupply", duration_s: None, element: Some("cold") }],
+            1.0,
+            "rifle",
+        );
+        assert_eq!(extra_hits_at(&cold, 0.0)[0].element, DamageType::Cold);
+        // …and a chosen element is ignored where the ability fixes one.
+        let fixed = resolve(
+            &[AbilityPick { id: "xatas_whisper", duration_s: None, element: Some("cold") }],
+            1.0,
+            "rifle",
+        );
+        assert_eq!(extra_hits_at(&fixed, 0.0)[0].element, DamageType::Void);
+
+        // 2. A WEAPON CLASS that doubles it: 25% on a rifle, 50% on a sniper.
+        let rifle = extra_hits_at(&dflt, 0.0)[0].frac;
+        let sniper = extra_hits_at(
+            &resolve(&[AbilityPick { id: "resupply", duration_s: None, element: None }], 1.0, "sniper"),
+            0.0,
+        )[0]
+        .frac;
+        assert!((rifle - 0.25).abs() < 1e-9, "{rifle}");
+        assert!((sniper - 0.50).abs() < 1e-9, "{sniper}");
+
+        // 3. A FORCED status, or the weapon's own roll. Toxic Lash is "100%
+        //    (Toxin status chance)" and Resupply grants "the selected Elemental
+        //    Damage and Status Effect"; Xata's rolls.
+        for (id, forced) in [("toxic_lash", true), ("resupply", true), ("xatas_whisper", false)] {
+            let live = resolve(&[AbilityPick { id, duration_s: None, element: None }], 1.0, "rifle");
+            assert_eq!(extra_hits_at(&live, 0.0)[0].forced_status, forced, "{id}");
+        }
+
+        // …and Toxic Lash's own number, for guns: 30% Toxin, 45 s.
+        let tl = get("toxic_lash").expect("toxic_lash");
+        assert!((tl.value - 0.30).abs() < 1e-9);
+        assert!((tl.duration_s - 45.0).abs() < 1e-9);
+        assert!(matches!(tl.effect, AbilityEffect::ExtraHit { element: DamageType::Toxin, .. }));
+    }
+

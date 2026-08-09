@@ -7075,11 +7075,20 @@ function wfRunning() {
 // enough to read (owner, 2026-08-08: "要显示数值，就是当前的强度对应的数值").
 // A catalogue that showed only the ability's name would make you do the
 // multiply the sim is doing.
+// THE ELEMENT THIS BUFF IS ACTUALLY SET TO — the picked one where the ability
+// offers a choice (Resupply's gear wheel of ten), its own otherwise.
+const wfElement = (a) => {
+  const p = wfPick(a.id);
+  return (p && p.element) || a.element;
+};
+// `DT` is the one place a damage type is named, and it reads the locale — this
+// used to reach into META and print `corrosive` on a Chinese page.
+const wfElementName = (id) => DT(id);
+
 function wfValueLabel(a) {
   const pct = Math.round(wfValue(a) * 1000) / 10;
   if (a.kind === "add_element" || a.kind === "extra_hit") {
-    const el = (META.damage_types || {})[a.element];
-    return `+${pct}% ${(el && (el.name || el.id)) || a.element}`;
+    return `+${pct}% ${wfElementName(wfElement(a))}`;
   }
   return `+${pct}%`;
 }
@@ -7122,6 +7131,16 @@ function renderWfBuffs(host, readonly) {
         <span class="wfb-n">${escHtml(wfName(a))}</span>
         <span class="wfb-f">${escHtml(tr(a.frame))}</span></label>
       <div class="wfb-v">${escHtml(wfValueLabel(a))}</div>
+      ${/* A CHOSEN ELEMENT, where the ability offers one. Drawn from the data's
+            own list in the game's own order, so the day a member gains or loses
+            a choice this follows without being told. */ ""}
+      ${(a.elements || []).length
+        ? `<label class="wfb-el" title="${escHtml(tr("this ability lets you pick the element — the gear wheel in game"))}">${
+            escHtml(tr("element"))} <select data-wfel="${escHtml(a.id)}"${(!on || readonly) ? " disabled" : ""}>${
+            a.elements.map((e) => `<option value="${escHtml(e)}"${
+              e === wfElement(a) ? " selected" : ""}>${escHtml(wfElementName(e))}</option>`).join("")
+          }</select></label>`
+        : ""}
       <div class="wfb-e">${escHtml(wfEffectLine(a))}</div>
       ${/* WHAT IT DOES NOT DO, in the same chips a mod and an arcane card use —
             `notModeledLines` reads `unmodeled_effects` and `live_bugs` off any
@@ -7159,6 +7178,11 @@ function renderWfBuffs(host, readonly) {
     sim.ability_strength = Math.max(0, Number(str.value) || 0) / 100;
     touched();
   });
+  box.querySelectorAll("[data-wfel]").forEach((el) => el.addEventListener("change", () => {
+    const p = wfPick(el.dataset.wfel);
+    if (p) p.element = el.value;
+    touched();
+  }));
   box.querySelectorAll("[data-wf]").forEach((el) => el.addEventListener("change", () => {
     const id = el.dataset.wf;
     sim.abilities = (sim.abilities || []).filter((a) => a.id !== id);
@@ -7168,7 +7192,14 @@ function renderWfBuffs(host, readonly) {
     // `secs: null` = the whole engagement. The only thing the page offers
     // today, and the honest question to ask of a build: what is this weapon
     // worth UNDER the buff, rather than around it.
-    if (el.checked) sim.abilities.push({ id, secs: null });
+    if (el.checked) {
+      const def = wfAbilities().find((a) => a.id === id);
+      // AN EXPLICIT ELEMENT from the first tick, where there is a choice: a
+      // pick that omits it is answered by the definition's first entry, and a
+      // player reading the card should see the same thing the sim runs.
+      const first = def && (def.elements || [])[0];
+      sim.abilities.push(first ? { id, secs: null, element: first } : { id, secs: null });
+    }
     touched();
   }));
 }

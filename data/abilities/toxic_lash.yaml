@@ -1,0 +1,52 @@
+# A WARFRAME ABILITY BUFF — the fight's PLAYER, not the build.
+#
+# Not a mod, not an arcane, not a weapon perk: a thing another actor (or the
+# player's own frame) does to this weapon for a while. It belongs to the
+# SCENARIO, and the BOARD carries none of these.
+
+# AN EXTRA HIT (docs/EXTRA_HIT.md), and the wiki says so in as many words:
+# "Toxic Lash adds an extra Toxin attack that scales with weapon damage, before
+# health and armor resistances. This damage buff is applied as an Extra Hit."
+#
+# So everything about how it behaves is the category's, not this file's — the
+# faction bonus twice, the body part twice, crit inherited and never rolled, the
+# `f³` on the status it leaves. This file names two numbers and one flag.
+#
+# "before health and armor resistances" is worth reading twice: it is not a
+# separate rule, it is what being a damage INSTANCE means. It lands through
+# `TargetState::apply` like any other and meets armor there.
+
+# 30% FOR GUNS. The card's "this effect is doubled for Melee Strikes" is the
+# melee half and this simulator has no melee — the per-rank ladder for weapons
+# is 20 / 24 / 26 / 30, and only the last of those is a number a calculator is
+# asked for.
+
+# ITS STATUS IS A CERTAINTY, not a roll: the ability's own stat block reads
+# "100% (Toxin status chance)". That is the difference from Xata's Whisper,
+# whose extra hit rolls the weapon's own chance — and it is why `forced_status`
+# is a field of the category rather than a property of one member.
+
+id: toxic_lash
+name: Toxic Lash
+frame: Saryn
+# Which buffs REPLACE each other rather than adding. Same family =
+# only the strongest is running (wiki, Freeze Force).
+family: toxic_lash
+helminth: false
+
+# At MAX RANK and 100% Ability Strength.
+value: 0.30
+# Max rank at 100% Ability Duration, in seconds.
+duration_s: 45
+
+effect:
+  kind: extra_hit
+  element: toxin
+  forced_status: true
+
+unmodelled:
+  - "the melee half — the card doubles this on Melee Strikes and this simulator fires guns"
+  - "Contagion Cloud, the augment that leaves a damaging cloud where a killed enemy stood: it needs a place for a corpse to be and a second target to walk into it"
+
+source:
+  url: https://wiki.warframe.com/w/Toxic_Lash

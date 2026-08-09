@@ -113,6 +113,22 @@ for (const lang of ["en", "zh"]) {
     out.deadIsHelminth = cards().some((c, i) =>
       c.classList.contains('dead') && (META.abilities || [])[i].id === 'roar_helminth');
 
+    // 4a. A CHOSEN ELEMENT, where the ability offers one. Resupply's gear
+    //     wheel is ten choices, and the card has to let you make it — the value
+    //     line names the element, so a picker that did not reach the payload
+    //     would print one thing and run another.
+    const idxOf = (id) => (META.abilities || []).findIndex(a => a.id === id);
+    const sel = () => cards()[idxOf('resupply')].querySelector('[data-wfel]');
+    out.selectable = (META.abilities || []).filter(a => (a.elements || []).length).map(a => a.id);
+    out.noPickerWhenFixed = !cards()[idxOf('xatas_whisper')].querySelector('[data-wfel]');
+    await tick('resupply', true);
+    out.pickerOptions = sel() ? [...sel().options].length : 0;
+    out.pickedDefault = (sim.abilities.find(a => a.id === 'resupply') || {}).element;
+    sel().value = 'corrosive'; sel().dispatchEvent(new Event('change')); await sleep(400);
+    out.pickedAfter = (sim.abilities.find(a => a.id === 'resupply') || {}).element;
+    out.valueLine = (cards()[idxOf('resupply')].querySelector('.wfb-v') || {}).textContent || '';
+    await tick('resupply', false);
+
     // 4b. THE QUICK CALC MEASURES UNDER THEM. It reads the scenario, and a
     //     Warframe buff is part of the scenario (owner, 2026-08-08) — so this
     //     needs no plumbing of its own and that is exactly why it is asserted:
@@ -269,6 +285,21 @@ for (const lang of ["en", "zh"]) {
     r.deadCards === 1 && r.deadIsHelminth === true && r.deadWhy.length > 6
       && cjk.test(r.deadWhy) === (lang === "zh"),
     `${r.deadCards} superseded · ${r.deadWhy.slice(0, 50)}`);
+  // A CHOSEN ELEMENT. The data says which abilities offer one and the card has
+  // to obey it in both directions — a picker where there is a choice, none
+  // where the ability fixes its element.
+  check(`[${lang}] an ability with a choice of element offers one`,
+    (r.selectable || []).includes("resupply") && r.pickerOptions === 10,
+    `${JSON.stringify(r.selectable)} · ${r.pickerOptions} options`);
+  check(`[${lang}] …and one with a fixed element does not`, r.noPickerWhenFixed === true);
+  check(`[${lang}] …the choice reaches the fight`,
+    r.pickedDefault === "heat" && r.pickedAfter === "corrosive",
+    `${r.pickedDefault} -> ${r.pickedAfter}`);
+  // …AND THE CARD PRINTS WHAT IT WILL RUN. The value line names the element, so
+  // a picker that moved the payload and not the label would lie quietly.
+  check(`[${lang}] …and the card's value line names it`,
+    /25/.test(r.valueLine) && cjk.test(r.valueLine) === (lang === "zh"),
+    r.valueLine);
   // THE QUICK CALC READS THE SCENARIO, and this is part of the scenario.
   // BOTH PICKS TRAVEL, and that is right: settling a family is the ENGINE's job
   // (`abilities_data::resolve`), so the payload carries what you ticked and the

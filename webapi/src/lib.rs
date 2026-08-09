@@ -982,8 +982,8 @@ pub fn meta_json() -> Value {
                     ("final_damage", None),
                 wfsim_engine::abilities_data::AbilityEffect::AddElement(t, _) =>
                     ("add_element", Some(t.name())),
-                wfsim_engine::abilities_data::AbilityEffect::ExtraHit(t, _) =>
-                    ("extra_hit", Some(t.name())),
+                wfsim_engine::abilities_data::AbilityEffect::ExtraHit { element, .. } =>
+                    ("extra_hit", Some(element.name())),
             };
             json!({
                 "id": a.id,
@@ -993,6 +993,10 @@ pub fn meta_json() -> Value {
                 "helminth": a.helminth,
                 "value": a.value,
                 "duration_s": a.duration_s,
+                // The elements this one lets you CHOOSE (Resupply's ten), empty
+                // where it fixes one — the page draws its picker from this.
+                "elements": a.elements,
+                "class_bonus": a.class_bonus.map(|(c, x)| json!({ "class": c, "x": x })),
                 "kind": kind,
                 "element": element,
                 // THE SAME TWO ADMISSIONS A MOD AND AN ARCANE CARD CARRY, under
@@ -3351,12 +3355,21 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
                             .get("secs")
                             .and_then(Value::as_f64)
                             .filter(|s| *s > 0.0),
+                        // WHICH ELEMENT, where the ability offers a choice
+                        // (Resupply's gear wheel). Absent everywhere else, and
+                        // absent on a pick stored before the picker existed —
+                        // the definition's own first choice stands in.
+                        element: e.get("element").and_then(Value::as_str),
                     })
                 })
                 .collect()
         })
         .unwrap_or_default();
-    let abilities = wfsim_engine::abilities_data::resolve(&picks, strength);
+    // …and the WEAPON'S CLASS, because one member is worth double on a class:
+    // Resupply is 20/30/40/50% on Sniper Rifles. `resolve` is the one function
+    // handed both the ability and the weapon, so nothing downstream has to know
+    // what a sniper is.
+    let abilities = wfsim_engine::abilities_data::resolve(&picks, strength, wfsim_engine::weapons_data::spec(&info.id).map_or("", |s| s.class.as_str()));
 
     let specs = enemies();
     let Some(spec) = specs.iter().find(|e| e.id == enemy_id) else {

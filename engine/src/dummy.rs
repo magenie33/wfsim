@@ -2768,7 +2768,7 @@ fn fire_extra_hits(
         return false;
     }
     let f = params.faction_at_time(at);
-    for (ty, frac) in hits {
+    for crate::abilities_data::ExtraHitLive { element: ty, frac, forced_status } in hits {
         let raw = trigger_raw * frac * bracket * part_again * f;
         let (eff, killed, broke) = target.apply(
             raw,
@@ -2803,9 +2803,16 @@ fn fire_extra_hits(
         // DAMAGING element the payload rules are already right: the wiki's
         // "Damage over Time status effects created by an Extra Hit will use the
         // Extra Hit Damage as Modded Base Damage" is exactly `mb_live: raw`.
+        // ITS OWN STATUS, and whether that is a ROLL or a CERTAINTY is the
+        // member's business: Xata's rolls the weapon's chance, Toxic Lash is
+        // "100% (Toxin status chance)" and Resupply grants "the selected
+        // Elemental Damage and Status Effect". A forced one goes through the
+        // same `forced` channel a weapon's guaranteed proc uses, so the caps,
+        // the immunities and Condition Overload all see it the same way.
+        let forced: &[DamageType] = if forced_status { std::slice::from_ref(&ty) } else { &[] };
         let procs = status::procs_for_hit(
-            &[],
-            status_chance,
+            forced,
+            if forced_status { 0.0 } else { status_chance },
             &DamageVector::new().with(ty, raw),
             &params.target.status_immunities,
             rng,
@@ -12022,7 +12029,7 @@ mod warframe_ability_tests {
     fn params(abilities: &[(&'static str, Option<f64>)], strength: f64) -> DummyParams {
         let picks: Vec<AbilityPick<'static>> = abilities
             .iter()
-            .map(|(id, secs)| AbilityPick { id, duration_s: *secs })
+            .map(|(id, secs)| AbilityPick { id, duration_s: *secs, element: None })
             .collect();
         DummyParams {
             damage: DamageVector::new().with(DamageType::Impact, 100.0),
@@ -12039,7 +12046,7 @@ mod warframe_ability_tests {
                 is_head: false,
                 crit_bonus: false,
             }],
-            abilities: resolve(&picks, strength),
+            abilities: resolve(&picks, strength, ""),
             ..DummyParams::default()
         }
     }
@@ -12293,7 +12300,7 @@ mod warframe_ability_tests {
             ..params(&[], 1.0)
         };
         let mut with_empty = bare.clone();
-        with_empty.abilities = resolve(&[], 3.0);
+        with_empty.abilities = resolve(&[], 3.0, "");
         assert_eq!(direct(&bare), direct(&with_empty));
     }
 }
