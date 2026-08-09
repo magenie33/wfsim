@@ -39,7 +39,8 @@ blocked, which is the failure the same-origin art rule was written about.
 ### Why the page FETCHES the board
 
 Everything else in `data/` is embedded into the wasm at compile time. The board
-is the one piece that changes without a release — hourly, if people are playing
+is the one piece that changes without a release — three times an hour, if people
+are playing
 — and compiling it in made every update cost a full site rebuild: install
 wasm-bindgen, fetch 300 images, recompile, to change a few numbers. It is a
 small file on the same origin instead, written by the scoring job beside the
@@ -54,9 +55,16 @@ state anyway.
 
 | trigger | scope | cost |
 | --- | --- | --- |
-| hourly | score what is new | sub-second per build; no commit when nothing changed |
+| `:00`, `:20`, `:40` | score what is new | sub-second per build; no commit when nothing changed |
 | a push touching `engine/` or `data/` | **everything** | ~570 ms per build, minutes for a few thousand |
 | a change to a benchmark's terms | everything, under the new ruler | the builds carry over; only the numbers change |
+
+**The clock is a best effort, not a promise.** GitHub delays scheduled runs
+under load and says so, and this repo's own history is the evidence: while the
+job was set to `:17` its commits landed at `:33`–`:35`. Three slots 20 minutes
+apart is the answer to that — a submission waits ~20 minutes rather than an
+hour, and a slipped run is covered by the next one instead of costing you the
+whole hour. If you want a result NOW, Actions → board → Run workflow.
 
 The second row is the point: the maintainer's ordinary work — fixing a bug,
 correcting a number, changing the benchmark to 480 s — IS the trigger. There is

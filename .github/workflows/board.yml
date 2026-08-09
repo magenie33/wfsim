@@ -20,7 +20,18 @@ name: board
 
 on:
   schedule:
-    - cron: "17 * * * *"      # hourly, off the hour so it does not queue with everyone else
+    # THREE TIMES AN HOUR, on the twenty (owner, 2026-08-09). It was hourly at
+    # :17 — off the hour on the theory that :00 queues behind everyone else,
+    # which is true and turns out not to be worth optimising for: this repo's
+    # own history shows the :17 runs landing at :33–:35, so GitHub's scheduler
+    # slips ~15 minutes whatever minute you name. Naming :00 costs nothing that
+    # was not already being paid, and naming three of them is what actually
+    # makes the board fresh — a submission now waits ~20 minutes rather than an
+    # hour, and the worst case is bounded instead of being "you just missed it".
+    #
+    # It is free to do: this repo is public, so Actions minutes are not metered,
+    # and a run that finds nothing new commits nothing.
+    - cron: "0,20,40 * * * *"
   push:
     branches: [main]
     paths:
@@ -132,6 +143,10 @@ jobs:
             exit 0
           fi
           git add data/benchmarks/boards site/board.json
-          git commit -m "board: rescore $(date -u +%Y-%m-%d)"
+          # THE TIME, not just the date. Three runs an hour means a day of
+          # "board: rescore 2026-08-09" is a wall of identical subjects, and the
+          # one thing you want from this line is WHICH rescore you are looking
+          # at.
+          git commit -m "board: rescore $(date -u +'%Y-%m-%d %H:%M') UTC"
           git pull --rebase --autostash
           git push
