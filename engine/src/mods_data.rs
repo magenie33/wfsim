@@ -1097,7 +1097,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 77] = [
+        const EXPECTED: [(&str, &str, &[&str]); 78] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
@@ -1214,6 +1214,11 @@ mod tests {
             // CHARGED form is not a second firing mode (`is_gauge_switched`
             // draws that line), so the weapon's listed trigger is Held and no
             // Cannonade fits.
+            // A BEAM shotgun, in both flavours: held, so no Cannonade. Its ALT
+            // fire is a charge, and a Cannonade gates on every firing mode a
+            // weapon has — which is why the pair is listed by the base form's
+            // trigger and the charged form is not a roster entry of its own.
+            ("phantasma", "held", &[]),
             ("phantasma_prime", "held", &[]),
             // A NATURAL Incarnon whose two forms disagree about the trigger:
             // Semi in the hand, Auto once transmuted. The listed trigger is

@@ -135,6 +135,24 @@ pub struct AttackSpec {
     /// second cadence rule, not a tweak to this one.
     #[serde(default)]
     pub charge_seconds: Option<f64>,
+    /// A CHARGE THAT EATS THE MAGAZINE, in ammo per second (the Phantasma's
+    /// 11). Present only where charging spends the magazine to buy damage.
+    ///
+    /// Three facts collapse into this one number, all from the weapon's own
+    /// wiki Notes: *"Charging consumes ammo, up to a full magazine on full
+    /// charge"*, *"Damage dealt by the plasma bomb is directly proportional to
+    /// the amount of ammo consumed during the charge"*, and *"Charge rate
+    /// consumes a set 11 ammo per second. Modding to increase magazine capacity
+    /// will allow a longer total charge, and thus more damage."*
+    ///
+    /// So a full charge costs the WHOLE modded magazine, takes
+    /// `magazine / rate` seconds, and is worth `magazine / base magazine` times
+    /// the listed damage — which makes Magazine Capacity a DAMAGE stat on this
+    /// weapon, and the only one in the roster where it is. `loadout::resolve`
+    /// does all three; the listed numbers here are a FULL charge of the
+    /// unmodded magazine, which is what the arsenal shows.
+    #[serde(default)]
+    pub charge_ammo_per_second: Option<f64>,
     /// A BURST trigger's shape — the Burston's three-round pull. See
     /// [`BurstSpec`] for the cadence formula and why it is exact here.
     #[serde(default)]
@@ -1397,6 +1415,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // Straight through: what a shot COSTS is a weapon constant, and no mod
         // in the roster changes it (ammo EFFICIENCY is its own, separate term).
         ammo_cost: s.attack.ammo_cost,
+        charge_ammo_per_second: s.attack.charge_ammo_per_second,
         // A BOW paces on draw + nock, every form of it (wiki Fire Rate's
         // bow-specific formula — see `AttackSpec::charge_seconds`), so a bow
         // states the draw even when it is 0.0 and anything else must not.

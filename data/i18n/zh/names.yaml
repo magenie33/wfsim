@@ -29,6 +29,8 @@ weapons:
   # was unreachable the day these went in, and a remembered name is a
   # translated one wearing a disguise.
   # DE own strings (WFCD i18n.json, joined on internal name).
+  phantasma: 幻离子
+  phantasma_charged: 幻离子
   phantasma_prime: 幻离子 Prime
   phantasma_prime_charged: 幻离子 Prime
   # DE's own string (WFCD i18n.json, CrpSentExperimentPistol).

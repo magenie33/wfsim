@@ -1,0 +1,102 @@
+id: phantasma
+name: Phantasma
+slot: primary
+# A BEAM SHOTGUN — six continuous beams, which is a combination the roster has
+# not held before: `continuous` has meant one beam (Verglas Prime, the Torid's
+# Incarnon, the Ocucor) and `shotgun` has meant a pellet spread. Here the
+# multishot IS the beam count, and each of the six carries the full per-pellet
+# damage below.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, shotgun]
+grip_type: ""
+mastery_rank: 9
+max_rank: 30
+
+# Weapon-level metadata (wiki `Module:Weapons/data/primary`, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100                # "Pinpoint accuracy" — the page's own advantage
+disposition: 1.10             # riven disposition (●○○○○) — a strong weapon gets
+                             # the small one; the base Phantasma has 1.1
+polarities: [naramon, madurai]
+exilus_polarity: madurai
+riven_family: Phantasma
+traits: [sentient]
+introduced: "23.5"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/RevenantShotgun/RevenantShotgun
+noise: alarming              # IsSilent false
+ammo_type: primary
+ammo_max: 275
+ammo_pickup: 15              # "Low Ammo Pickup" is a stated disadvantage
+magazine: 11
+reload_seconds: 0.5          # "tied for the fastest reload of all primary shotguns"
+
+# Condition Overload: the wiki's CO catalog HAS a Phantasma Prime row, and it
+# is not about this attack — it reads "Alt-fire Child Bomb | Projectile | 3 |
+# 3 | 100% | Multiplying", i.e. the cluster bomblets of the CHARGED form. The
+# beam has no row, so it takes the ordinary Additive class at the full base.
+# (The charged entry carries that row's consequence; see
+# phantasma_prime_charged.yaml.)
+co_behavior: additive_with_base_damage
+
+# THE RAMP STARTS AT 15%, NOT 20%. Verbatim: "Damage ramps up from 15% to 100%
+# over 0.6 seconds when firing. After firing stops for 0.8 seconds, the damage
+# decays back to 15% over 2 seconds." The wiki's general rule is "for most
+# weapons, this lower percentage is 20%" and names exceptions (Convectrix,
+# Phage, Embolist); this weapon is the roster's first, which is why
+# `BEAM_RAMP_FLOOR` stopped being a constant the sim applied to everything.
+#
+# It is a real 5-point difference on every tick before the ramp tops out, and
+# on an 11-round magazine at 0.5 ammo a tick — 22 ticks, 1.8 seconds — a
+# weapon spends a third of every magazine climbing.
+beam_ramp_floor: 0.15
+
+attack:
+  trigger: held                # continuous: `fire_rate` is TICKS per second
+  shot_type: hit_scan
+  fire_rate: 12.0              # tied for the highest fire rate of all shotguns
+  # SIX BEAMS, and the damage below is PER BEAM. The module says Multishot 6
+  # and the page says "Innate multishot of 6 beams" — the same convention every
+  # other shotgun here uses (Boar Prime's 8 pellets), except that these are
+  # continuous rather than a spread, so all six land on the same target with no
+  # accuracy question at all.
+  multishot: 6.0
+  # Half an ammo per tick, stated by the page as well as the module: "Consumes
+  # 0.5 ammo per tick of damage". With an 11-round magazine that is 22 ticks,
+  # under two seconds of fire — which is why the 0.5 s reload matters so much.
+  ammo_cost: 0.5
+  crit_chance: 0.03
+  crit_multiplier: 1.5
+  status_chance: 0.222
+  # INNATE INFINITE BODY PUNCH-THROUGH, and the qualifier is the whole of it:
+  # "Innate punch through does not apply to surfaces, requiring punch through
+  # mods." So it passes through BODIES without limit and through nothing else.
+  # Recorded as a comment rather than as `punch_through_m: infinity` because
+  # the field means metres of material and this is not that — and because the
+  # single-target arena has no second body for it to reach either way.
+  punch_through_m: 0.0
+  # 15 per beam, mostly Radiation — "This weapon deals primarily Radiation
+  # damage", and the innate element is already COMBINED, so MECHANICS §3 rule 2
+  # applies: the innate takes what the elemental mods leave rather than
+  # combining with them.
+  damage: { impact: 5.0, radiation: 10.0 }
+  # NO `beam:` BLOCK — the same call the Ocucor and the Boar's Incarnon make.
+  # That block requires `damage_radius_m` and `chain`, and these beams neither
+  # splash nor chain; writing zeroes to satisfy a schema would be inventing two
+  # facts to record none.
+  #
+  # What is lost by omitting it is the RANGE, so it is stated here: 25 m, which
+  # the page lists as a disadvantage and as the Prime's one edge over the base
+  # Phantasma's 20 m. "No damage fall-off" — the beams deal full damage to the
+  # end of that range and nothing past it.
+
+# TWO FORMS: this is the beam. The ALT-FIRE is a charged plasma bomb and is a
+# second weapon entry (phantasma_prime_charged), reached for free by the other
+# button — no gauge, no transmute — which is why this carries `transforms_to`
+# for neither. See data/weapons/archgun/larkspur_prime_charged.yaml for the
+# same shape.
+transform_group: phantasma
+
+source:
+  url: https://wiki.warframe.com/w/Phantasma

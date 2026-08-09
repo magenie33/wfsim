@@ -1,5 +1,5 @@
-id: phantasma_prime_charged
-name: Phantasma Prime
+id: phantasma_charged
+name: Phantasma
 slot: primary
 class: shotgun
 # THE ALT-FIRE — a one-second charge that throws a plasma bomb instead of the
@@ -9,24 +9,24 @@ class: shotgun
 # entry carries no `transforms_from` — a form of the same weapon, not a
 # transformation of it. Same shape as larkspur_prime_charged.yaml.
 form: charged
-transform_group: phantasma_prime
+transform_group: phantasma
 
 # Same weapon, so everything below the attack profile matches
 # phantasma_prime.yaml.
 mod_pools: [primary, shotgun]
 grip_type: ""
-mastery_rank: 14
+mastery_rank: 9
 max_rank: 30
 accuracy: 100
-disposition: 0.8
-polarities: [madurai, madurai, naramon]
+disposition: 1.10
+polarities: [naramon, madurai]
 exilus_polarity: madurai
 riven_family: Phantasma
-traits: [prime, sentient]
-internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimePhantasma/PhantasmaPrimeShotgun
+traits: [sentient]
+internal_name: /Lotus/Weapons/Tenno/LongGuns/RevenantShotgun/RevenantShotgun
 noise: alarming
 ammo_type: primary
-ammo_max: 330
+ammo_max: 275
 ammo_pickup: 15
 magazine: 11
 reload_seconds: 0.5
@@ -148,7 +148,7 @@ attack:
   # part of 5 x (3 + 18) on top.
 
 source:
-  url: https://wiki.warframe.com/w/Phantasma_Prime
+  url: https://wiki.warframe.com/w/Phantasma
   # Attack stats from the wiki `Module:Weapons/data/primary` ("Phantasma
   # Prime", attacks 2 "Plasma Bomb Impact" and 3 "Plasma Bomb Explosion"),
   # cross-checked against WFCD warframe-items joined on internal name — 0

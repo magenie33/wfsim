@@ -1342,6 +1342,31 @@ magazine is the charge pool rather than a reloaded magazine, so there is no
 the engine gates on the form's own charge-backed marker (`incarnon.is_some()`)
 rather than on a weapon id — `engine::evolutions_data::apply` drops it there.
 
+**A charge that eats the MAGAZINE — the Phantasma's alt fire.** Three of the
+weapon's numbers are derived from one another rather than stated, and the field
+that says so is `charge_ammo_per_second`:
+
+    charge time = magazine / 11 s      the shot costs = magazine
+    damage      = listed x magazine / 11
+
+Wiki Notes, verbatim: *"Charging consumes ammo, up to a full magazine on full
+charge"*, *"Damage dealt by the plasma bomb is directly proportional to the
+amount of ammo consumed during the charge"*, and *"Charge rate consumes a set 11
+ammo per second. Modding to increase magazine capacity will allow a longer total
+charge, and thus more damage."* Confirmed in play (owner, 2026-08-09).
+
+**This makes Magazine Capacity a DAMAGE stat, on the only weapon in the roster
+where it is one.** A magazine mod lengthens the charge, raises its price and
+raises the bomb — direct hit and explosion alike — in one ratio.
+
+WHAT THE LISTED NUMBERS ARE is the one thing the wiki never says outright, and
+three of its own figures answer it between them: the listed charge time is
+1.00 s, the rate is 11 ammo/s, and the magazine is 11. One second at eleven a
+second IS the magazine, so the listed time is a FULL charge and the listed
+15 + 73 is a full charge of the unmodded magazine. At stock nothing moves; what
+changes is that the shot now costs what it spends. A full charge dealing 15 + 73
+*with a magazine mod on* would falsify it.
+
 **Plentiful Mayhem — `Multishot consumes ammo … and increases Damage by +60%`.**
 Four rules, all wiki, and the per-form split is the interesting one:
 
