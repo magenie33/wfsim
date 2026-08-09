@@ -34,6 +34,12 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, frostbite, pistol_pestilence, heated_charge]
     evolutions: [ballistica_evo1_incarnon_form, ballistica_headcracker, ballistica_rapid_reinforcement, ballistica_critical_parallel]
     arcanes: [secondary_enervate]
+  - weapon: ballistica_prime
+    mode: cycle
+    score: 27.630236104674005
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_enervate]
   - weapon: boar
     mode: cycle
     score: 6.613811403808729
@@ -290,6 +296,12 @@ entries:
     mode: cycle
     score: 19.67186017677767
     mods: [primary_acuity, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, thermite_rounds]
+    evolutions: [braton_vandal_evo1_incarnon_form, braton_vandal_daring_reverie, braton_vandal_voids_guidance, braton_vandal_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: braton_vandal
+    mode: cycle
+    score: 17.0708742592116
+    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [braton_vandal_evo1_incarnon_form, braton_vandal_daring_reverie, braton_vandal_voids_guidance, braton_vandal_critical_parallel]
     arcanes: [primary_deadhead]
   - weapon: braton_vandal
@@ -1387,6 +1399,11 @@ entries:
     mode: base
     score: 11.37440068284903
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 11.37345832498733
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base

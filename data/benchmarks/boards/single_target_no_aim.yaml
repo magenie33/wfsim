@@ -10,6 +10,12 @@
 benchmark: single_target_no_aim
 source: submissions
 entries:
+  - weapon: boltor_prime
+    mode: cycle
+    score: 0.4587741635833439
+    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [boltor_prime_evo1_incarnon_form, boltor_prime_hunters_mantra, boltor_prime_rapid_reinforcement, boltor_prime_survivors_edge]
+    arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
     score: 1.0043788773331703
