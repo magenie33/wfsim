@@ -268,6 +268,18 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, rifle_elementalist, vital_sense, primed_cryo_rounds, high_voltage]
     evolutions: [boltor_prime_evo1_incarnon_form, boltor_prime_hunters_mantra, boltor_prime_rapid_reinforcement, boltor_prime_survivors_edge]
     arcanes: [primary_debilitate]
+  - weapon: braton_vandal
+    mode: cycle
+    score: 5.671944917541555
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, stormbringer, infected_clip, primed_cryo_rounds]
+    evolutions: [braton_vandal_evo1_incarnon_form, braton_vandal_daring_reverie, braton_vandal_voids_guidance, braton_vandal_critical_parallel]
+    arcanes: [primary_frostbite]
+  - weapon: braton_vandal
+    mode: cycle
+    score: 1.6592438399371299
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, stormbringer]
+    evolutions: [braton_vandal_evo1_incarnon_form, braton_vandal_daring_reverie, braton_vandal_voids_guidance, braton_vandal_critical_parallel]
+    arcanes: [primary_merciless]
   - weapon: burston
     mode: cycle
     score: 42.52625051209297
