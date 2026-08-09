@@ -365,13 +365,26 @@ around (decision 2026-07-31).
   builder → simulator → optimizer, each reading upstream and writing nothing. Its three old collections
   (`optimizer-mods` / `-arcanes` / `-evolutions`) merged into one: they were
   split for cross-weapon reuse, which is the import's job.
-  **NOTHING CROSSES BETWEEN WEAPONS** (user, 2026-08-02: "绝对不能串"). Two
-  weapons' fights may LOOK alike; they are never born from each other. A weapon
-  opened for the first time gets `defaultScenario()` — the server's defaults and
-  nothing else — because the live `sim` at that moment still belongs to the
-  weapon you just left. The same applies to the search's `finalists`/`threads`,
-  and the previous weapon's optimizer RANKING is cleared rather than left on
-  screen under the new weapon's name.
+  **NOTHING CROSSES BETWEEN WEAPONS — EXCEPT THE FIGHT** (user, 2026-08-02:
+  "绝对不能串"; amended 2026-08-09). A BUILD, a SEARCH and a RIVEN are statements
+  about ONE weapon and are never born from each other: a weapon opened for the
+  first time gets a blank build, the search's `finalists`/`threads` reset, and
+  the previous weapon's optimizer RANKING is cleared rather than left on screen
+  under the new weapon's name.
+  A SCENARIO is not a statement about a weapon, so it is SHARED across the
+  roster — one list, key `wfsim-presets-simulator-scenarios` with no weapon in
+  it (`SHARED_DOMAINS`), and switching weapons keeps the fight you are measuring
+  under. The amendment narrows the rule rather than weakening it, and it became
+  true rather than being decided: the last weapon-shaped thing a scenario
+  carried was `mode`, and mode left the fight and joined the build on
+  2026-08-07. The OFFICIAL rulers were always shared — one `single_target`
+  applies to every weapon on the board, which is the point of a ruler — so a
+  player wanting to measure their own roster under their OWN fight was the only
+  one made to re-create it per weapon, which is the opposite of what a scenario
+  is for (owner, 2026-08-09: "要是玩家自己想批量测试白富美…现在这样子太不方便
+  了"). The one weapon-scoped knob it still holds is headshot %, handled the way
+  the rulers handle it: the SERVER forces 0 on a weapon that cannot headshot. A
+  shared bar offers no "⇤ import" — there is no other weapon to import from.
 
   **NOTHING OUTSIDE A COLLECTION WRITES ITS STATE** (user, 2026-08-02). A build
   used to carry a `sim` snapshot that loading it then APPLIED, so picking a

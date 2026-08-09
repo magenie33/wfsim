@@ -88,14 +88,24 @@ const r = await evaluate(`(async () => {
   const mirrored = buffId ? optBox.querySelector('input[data-b="'+buffId+'"][data-f="stacks"]') : null;
   const optOwnsBuffs = typeof opt.buffs !== 'undefined';
 
-  // ---- and NOTHING crosses between WEAPONS. A weapon that has never been
-  // opened starts from the server's defaults, not from the fight on screen.
+  // ---- WHAT CROSSES BETWEEN WEAPONS, and what must not.
+  //
+  // A BUILD, a SEARCH and a RIVEN are statements about one weapon and may never
+  // cross. A FIGHT is not — it is shared across the roster (owner, 2026-08-09),
+  // because comparing two guns under one fight is what a scenario is FOR, and
+  // the official rulers were always like this.
   $$('#opt-results').innerHTML = '<div id="stale-marker">last weapon ranking</div>';
   sim.duration = 77; markScenarioDirty(); await sleep(900);
-  const aFight = { level: sim.level, dur: sim.duration };
+  const aFight = { level: sim.level, dur: sim.duration, name: activeScenario };
+  const aBuildMods = () => slots.filter(s => s.mod).map(s => s.mod);
+  const aMods = aBuildMods();
   history.pushState({},'','/weapons/Dual_Toxocyst'); route(); await sleep(3000);
-  const bFight = { level: sim.level, dur: sim.duration };
-  const bStored = JSON.parse(localStorage.getItem('wfsim-presets-dual_toxocyst-simulator-scenarios'));
+  const bFight = { level: sim.level, dur: sim.duration, name: activeScenario };
+  const bMods = aBuildMods();
+  // …and there is ONE list, not one per weapon.
+  const perWeaponKeys = Object.keys(localStorage)
+    .filter(k => /^wfsim-preset(s|-active)-.+-simulator-scenarios$/.test(k));
+  const sharedList = JSON.parse(localStorage.getItem('wfsim-presets-simulator-scenarios') || '[]');
   const staleResults = !!document.getElementById('stale-marker');
   sim.level = 4242; markScenarioDirty(); await sleep(900);
   history.pushState({},'','/weapons/Torid'); route(); await sleep(3000);
@@ -105,8 +115,8 @@ const r = await evaluate(`(async () => {
            buildUntouched: buildJson === buildJson2, scope, fin,
            buffId, mirroredValue: mirrored ? mirrored.value : null,
            mirroredLocked: mirrored ? mirrored.disabled : null, optOwnsBuffs,
-           aFight, bFight, backFight, staleResults,
-           bStoredLevel: bStored && bStored[0].state.level,
+           aFight, bFight, backFight, staleResults, aMods, bMods,
+           perWeaponKeys, sharedNames: sharedList.map(p => p.name),
            defLevel: (META.defaults || {}).level };
 })()`);
 
@@ -122,14 +132,26 @@ check("...and its finalists", r.fin === 13, String(r.fin));
 check("the optimizer keeps no buff state of its own", !r.optOwnsBuffs);
 check("it shows the scenario's buff value", r.mirroredValue === "3", `${r.buffId} = ${r.mirroredValue}`);
 check("...and offers no way to change it", r.mirroredLocked === true, String(r.mirroredLocked));
-check("a NEW weapon does not inherit the last one's fight",
-  r.bFight.level === r.defLevel && r.bFight.dur !== r.aFight.dur,
+// THE FIGHT FOLLOWS YOU, and that is the point of it (owner, 2026-08-09:
+// "scenario应该可以跨武器复用了…要是玩家自己想批量测试白富美"). Measuring your
+// own roster under your own fight is the thing a per-weapon scenario made
+// impossible — you had to rebuild it on every gun.
+check("a new weapon keeps the fight you were measuring under",
+  r.bFight.dur === r.aFight.dur && r.bFight.level === r.aFight.level
+    && r.bFight.name === r.aFight.name,
   `${JSON.stringify(r.aFight)} -> ${JSON.stringify(r.bFight)}`);
-check("...and its stored scenario is the DEFAULT, not a copy",
-  r.bStoredLevel === r.defLevel, `${r.bStoredLevel} vs default ${r.defLevel}`);
+check("...from ONE list, not one per weapon",
+  r.perWeaponKeys.length === 0 && r.sharedNames.length >= 1,
+  `${r.perWeaponKeys.length} weapon-scoped keys, ${r.sharedNames.length} shared`);
+// …AND THE BUILD STILL DOES NOT. This is the half the amendment narrows rather
+// than removes: a build is a statement about one weapon, and inheriting the
+// last one's is how you measure a gun you are not looking at.
+check("...while the BUILD does not follow you",
+  JSON.stringify(r.bMods) !== JSON.stringify(r.aMods) || r.aMods.length === 0,
+  `${JSON.stringify(r.aMods)} vs ${JSON.stringify(r.bMods)}`);
 check("switching weapon clears the last one's optimizer ranking", !r.staleResults);
-check("coming back restores THIS weapon's fight",
-  r.backFight.level === r.aFight.level && r.backFight.dur === r.aFight.dur,
+check("coming back finds the fight where you left it",
+  r.backFight.level === 4242 && r.backFight.dur === r.aFight.dur,
   JSON.stringify(r.backFight));
 // A SCENARIO IS APPLIED ONTO THE DEFAULTS, NOT ONTO THE ONE YOU ARE LEAVING.
 //

@@ -3017,10 +3017,74 @@ const presetWeapon = () => ($("weapon") && $("weapon").value) || "";
 // on which kind it is.
 const CUSTOM_DOMAINS = new Set(["rivens"]);
 const isCustomDomain = (d) => CUSTOM_DOMAINS.has(d);
+
+// …AND ONE COLLECTION THAT IS NOT A WEAPON'S: the FIGHT (owner, 2026-08-09:
+// "scenario应该可以跨武器复用了…现在scenario不需要绑定武器了").
+//
+// It became true rather than being decided: the last weapon-shaped thing a
+// scenario carried was `mode`, and mode left the fight and joined the build on
+// 2026-08-07. What is left — the enemy, its level, Steel Path, the wielder's
+// state, the duration, how many runs — is a description of a FIGHT, and a fight
+// is not about any particular gun.
+//
+// The OFFICIAL rulers were already like this and always had been: one
+// `single_target` applies to every weapon on the board, which is the whole
+// point of a ruler. A player who wants to measure their own roster under their
+// own fight was the only one made to re-create it per weapon, and comparing
+// weapons is exactly what a scenario is FOR.
+//
+// This is a deliberate amendment to "NOTHING CROSSES BETWEEN WEAPONS" (user,
+// 2026-08-02: 绝对不能串) and it narrows that rule rather than weakening it. The
+// rule exists because a BUILD, a SEARCH and a RIVEN are statements about one
+// weapon, and inheriting the last weapon's is how you end up measuring a gun
+// you are not looking at. A fight is not a statement about a weapon, so there
+// is nothing to inherit wrongly — and the one weapon-scoped knob it still holds
+// (headshot %) is handled the way the rulers handle it: the SERVER forces 0 on
+// a weapon that cannot headshot.
+const SHARED_DOMAINS = new Set(["simulator-scenarios"]);
+const isSharedDomain = (d) => SHARED_DOMAINS.has(d);
+const domainScope = (d, w) => (isSharedDomain(d) ? "" : (w ?? presetWeapon()) + "-");
 const presetListKey = (d, w) =>
-  (isCustomDomain(d) ? "wfsim-customs-" : "wfsim-presets-") + (w ?? presetWeapon()) + "-" + d;
+  (isCustomDomain(d) ? "wfsim-customs-" : "wfsim-presets-") + domainScope(d, w) + d;
 const presetActiveKey = (d, w) =>
-  (isCustomDomain(d) ? "wfsim-custom-open-" : "wfsim-preset-active-") + (w ?? presetWeapon()) + "-" + d;
+  (isCustomDomain(d) ? "wfsim-custom-open-" : "wfsim-preset-active-") + domainScope(d, w) + d;
+
+// ONE-TIME MERGE of every weapon's scenario list into the shared one. A player
+// who made a fight on the Torid must not have to make it again — and the lists
+// are additive, so this reads them all and keeps every entry, renaming a
+// collision rather than dropping either side.
+(function mergeScenarioLists() {
+  const D = "simulator-scenarios";
+  const shared = presetListKey(D);
+  const per = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    const m = k && /^wfsim-presets-(.+)-simulator-scenarios$/.exec(k);
+    if (m) per.push([k, m[1]]);
+  }
+  if (!per.length) return;
+  let out = [];
+  try { out = JSON.parse(localStorage.getItem(shared) || "[]") || []; } catch (_) { out = []; }
+  const seen = new Set(out.map((p) => JSON.stringify(p.state)));
+  for (const [k, weapon] of per) {
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem(k) || "[]") || []; } catch (_) { list = []; }
+    for (const p of list) {
+      // IDENTICAL FIGHTS COLLAPSE. Most players' per-weapon copies are the same
+      // fight made twice, and carrying six of them across would turn a merge
+      // into a mess the player has to clean up.
+      const sig = JSON.stringify(p.state);
+      if (seen.has(sig)) continue;
+      seen.add(sig);
+      let name = p.name;
+      if (out.some((q) => q.name === name)) name = `${name} (${weapon})`;
+      out.push({ ...p, name });
+    }
+    localStorage.removeItem(k);
+    localStorage.removeItem(`wfsim-preset-active-${weapon}-${D}`);
+  }
+  if (out.length) localStorage.setItem(shared, JSON.stringify(out));
+})();
 
 // One-time rename of every custom collection out of the preset namespace.
 // The data is unchanged; only the noun was wrong.
@@ -3479,6 +3543,12 @@ function migratePresetsToWeaponScope() {
   const w = presetWeapon();
   if (!w) return;
   PRESET_DOMAINS.forEach((d) => {
+    // A SHARED DOMAIN IS ALREADY AT ITS FINAL KEY. This migration's whole job is
+    // to move a weapon-LESS key under a weapon, which is precisely what the
+    // scenario list must not have done to it — it would file the shared list
+    // under whichever weapon happened to be open and take it away from every
+    // other one, on every load.
+    if (isSharedDomain(d)) return;
     [["wfsim-presets-" + d, presetListKey(d, w)],
      ["wfsim-preset-active-" + d, presetActiveKey(d, w)]].forEach(([from, to]) => {
       const v = localStorage.getItem(from);
@@ -3880,7 +3950,10 @@ function renderPresetBarIn(bar, cfg) {
     )}">+ new</span>` +
     // Presets are per weapon, so bringing one over from another weapon is
     // an explicit action rather than a side effect of switching weapons.
-    (presetSources(cfg.domain, presetWeapon()).length
+    // …EXCEPT a SHARED one, which has no "another weapon" to import from: the
+    // scenario list is the same list everywhere, so the control would offer to
+    // copy a fight into the collection it is already in.
+    (!isSharedDomain(cfg.domain) && presetSources(cfg.domain, presetWeapon()).length
       ? `<span class="pchip imp" title="${escHtml(tr("copy one from another weapon"))}">⇤ ${escHtml(tr("import"))}</span>`
       : "") +
     (cfg.extra || "") +
@@ -4387,11 +4460,17 @@ function applyWeaponInner(id, presetMods) {
   // `defaultScenario()` rather than the last one's fight. `restoreState`
   // overwrites this immediately when a preset is being applied.
   mode = defaultMode(id, null);
-  // ...and the scenario's own weapon-scoped knob, for the same reason.
-  if (sim.__weapon !== id) {
-    sim.__weapon = id;
-    sim.headshot_pct = defaultHeadshotPct(w);
-  }
+  // THE FIGHT DOES NOT MOVE. A scenario is shared across the roster now
+  // (`SHARED_DOMAINS`), so switching weapons keeps the fight you are measuring
+  // under — which is the entire point of being able to compare two guns.
+  //
+  // Its one weapon-shaped knob is headshot %, and it is left alone for the same
+  // reason the official rulers leave it alone: the ruler pins 100 and applies
+  // to the whole roster, and the SERVER forces 0 on a weapon that cannot
+  // headshot (`parse_fight`, sentinel). Resetting it here would have rewritten
+  // the shared scenario every time you changed weapon, and auto-save would have
+  // stored that.
+  sim.__weapon = id;
   opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8 }; optSeeded = false; // reset scope
   optLast = null;                 // and the winner the quick calc could measure against
   // ...and how it RUNS, for the same reason the scenario resets: a weapon that
