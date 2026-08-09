@@ -495,45 +495,38 @@ mod tests {
         assert!((xh[0].frac - 0.26).abs() < 1e-9);
     }
 
-    /// THE SUBSUMED COPY IS THE WHOLE ABILITY, which is true of no other pair
-    /// here — Roar loses 40 points and Eclipse 170. Asserted because the
-    /// tempting thing to do while writing the file was to shave it "like the
-    /// others", and the Helminth table says otherwise: Xaku's row carries no
-    /// ALTERED note where Valkyr's, Wukong's and Uriel's all do.
+    /// THE SUBSUMED COPY IS THE WHOLE ABILITY, and that is why there is only
+    /// one card for it.
+    ///
+    /// Every other Helminth variant here exists because the subsumed version is
+    /// WEAKER — Roar loses 20 points, Eclipse 170. The wiki lists no reduced
+    /// ladder for this one, so the two would have been the same 26% under two
+    /// names, and a family whose members are identical is one buff listed twice
+    /// (owner, 2026-08-09: "一致就保留一个"). Asserted from the other side: the
+    /// pairs that DO differ still differ, so deleting the duplicate cannot be
+    /// mistaken for a licence to collapse the rest.
     #[test]
-    fn the_subsumed_whisper_is_not_cut_the_way_roar_and_eclipse_are() {
-        let own = get("xatas_whisper").expect("xatas_whisper");
-        let sub = get("xatas_whisper_helminth").expect("xatas_whisper_helminth");
-        assert_eq!(own.value, sub.value);
-        assert_eq!(own.duration_s, sub.duration_s);
-        assert_eq!(own.family, sub.family);
-        for (full, cut) in [("roar", "roar_helminth"), ("eclipse", "eclipse_helminth")] {
+    fn the_subsumed_whisper_needed_no_card_of_its_own() {
+        assert!(get("xatas_whisper").is_some());
+        assert!(
+            get("xatas_whisper_helminth").is_none(),
+            "the subsumed copy carries the same numbers — it is one buff"
+        );
+        for (full, cut) in [
+            ("roar", "roar_helminth"),
+            ("eclipse", "eclipse_helminth"),
+            ("nourish", "nourish_helminth"),
+        ] {
             assert!(get(cut).unwrap().value < get(full).unwrap().value, "{cut}");
         }
-        // Equal values mean the family tie-break decides on something, so it
-        // must still resolve to exactly one — `resolve` keeps the FIRST at an
-        // equal value, and either answer is the same 26%.
-        let live = resolve(
-            &[
-                AbilityPick { id: "xatas_whisper_helminth", duration_s: None, element: None },
-                AbilityPick { id: "xatas_whisper", duration_s: None, element: None },
-            ],
-            1.0,
-            "",
-        );
-        assert_eq!(live.len(), 1);
-        let xh = extra_hits_at(&live, 0.0);
-        assert_eq!(xh.len(), 1);
-        assert_eq!(xh[0].element, DamageType::Void);
-        assert!((xh[0].frac - 0.26).abs() < 1e-9);
     }
 
-    /// AN EXTRA HIT ADMITS WHAT IT DOES NOT DO. Both copies carry the Bullet
-    /// Attractor line and the Blast live-bug line, because a card renders its
-    /// own text and a player who ticks the Helminth one never sees the other.
+    /// AN EXTRA HIT ADMITS WHAT IT DOES NOT DO — the Bullet Attractor it
+    /// applies and the Blast interaction that is a bug, both on its own card,
+    /// because a card renders its own text and nothing else speaks for it.
     #[test]
-    fn the_whisper_states_its_gaps_and_its_bug_on_both_copies() {
-        for id in ["xatas_whisper", "xatas_whisper_helminth"] {
+    fn the_whisper_states_its_gaps_and_its_bug() {
+        for id in ["xatas_whisper"] {
             let d = get(id).unwrap_or_else(|| panic!("{id} missing"));
             assert!(
                 d.unmodelled.iter().any(|u| u.contains("Bullet Attractor")),
@@ -591,6 +584,31 @@ mod tests {
         }
     }
 }
+    /// A FAMILY WITH TWO IDENTICAL MEMBERS IS ONE BUFF LISTED TWICE.
+    ///
+    /// The Helminth variants exist because the subsumed version is WEAKER —
+    /// Roar 50% → 30%, Eclipse 200% → 30%, Nourish 75% → 45%. Where the wiki
+    /// lists no reduced ladder the ability is unchanged, and a second card
+    /// carrying the same number is a choice nobody can make wrongly and nobody
+    /// can make rightly: the family rule already runs whichever is stronger, so
+    /// ticking both is ticking one (owner, 2026-08-09: "一致就保留一个").
+    #[test]
+    fn no_two_abilities_of_a_family_are_the_same_buff() {
+        for a in all() {
+            for b in all() {
+                if a.id >= b.id || a.family != b.family {
+                    continue;
+                }
+                assert!(
+                    (a.value - b.value).abs() > 1e-9 || (a.duration_s - b.duration_s).abs() > 1e-9,
+                    "{} and {} are the same buff — keep one",
+                    a.id,
+                    b.id
+                );
+            }
+        }
+    }
+
     /// THE CATEGORY'S THREE PER-MEMBER FACTS, asserted on the members that
     /// have them — because each one is a field, and a field nobody reads is a
     /// field that quietly stops working.

@@ -300,6 +300,11 @@ for (const lang of ["en", "zh"]) {
   check(`[${lang}] …and the card's value line names it`,
     /25/.test(r.valueLine) && cjk.test(r.valueLine) === (lang === "zh"),
     r.valueLine);
+  // …IN THE DISPLAY LANGUAGE, and capitalised in English. The helper is handed
+  // a yaml token here and a server-cased name elsewhere; echoing the token put
+  // a lowercase "void" on the English card while the Chinese one read 虚空.
+  check(`[${lang}] …properly, not as the raw data token`,
+    r.values.every((v) => !/ [a-z]/.test(v)), JSON.stringify(r.values));
   // THE QUICK CALC READS THE SCENARIO, and this is part of the scenario.
   // BOTH PICKS TRAVEL, and that is right: settling a family is the ENGINE's job
   // (`abilities_data::resolve`), so the payload carries what you ticked and the

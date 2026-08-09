@@ -73,7 +73,15 @@ let I18N = null; // active locale's name overlay, fetched in init()
 // string is the fallback.
 const tr = (s) => (I18N && I18N.ui && I18N.ui[s]) || s;
 const LN = (table, id, en) => (I18N && I18N[table] && I18N[table][id]) || en;
-const DT = (ty) => LN("damage_types", String(ty).toLowerCase(), ty);
+// A damage type's NAME. The English fallback is CAPITALISED rather than echoed:
+// callers arrive with either spelling — the server sends "Void" in a damage
+// meter row and a yaml token is "void" — and echoing put a lowercase "void" on
+// the English buff card while the Chinese one read 虚空 (2026-08-09). One helper,
+// one answer, whichever spelling reaches it.
+const DT = (ty) => {
+  const k = String(ty).toLowerCase();
+  return LN("damage_types", k, k.charAt(0).toUpperCase() + k.slice(1));
+};
 // A damage type's OFFICIAL colour and icon — DE's own, transcribed from the
 // wiki's `Module:DamageTypes/data` (see style.css for the palette and
 // data/assets.yaml for the files).
