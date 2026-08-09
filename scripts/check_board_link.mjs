@@ -53,7 +53,13 @@ const r = await evaluate(`(async () => {
       rec.mods = slots.filter(x => x.mod).map(x => x.mod);
       rec.arcanes = arcanes.filter(a => a && a !== 'none');
       rec.mode = mode;
-      const want = (BOARD[rec.weapon] || []).filter(x => x.benchmark === id);
+      // BY MODE, not "the first row for this weapon". A weapon can hold a
+      // row per mode, so taking [0] compared the row you clicked against
+      // whichever one happened to be stored first.
+      const hrefMode = (rec.href.match(/mode=([^&]+)/) || [])[1] || 'base';
+      const want = (BOARD[rec.weapon] || [])
+        .filter(x => x.benchmark === id && (x.mode || 'base') === hrefMode)
+        .sort((a, b) => b.score - a.score);
       rec.wantMods = (want[0] || {}).mods || null;
       rec.wantArcanes = (want[0] || {}).arcanes || null;
       rec.wantMode = (want[0] || {}).mode || null;
@@ -61,6 +67,55 @@ const r = await evaluate(`(async () => {
       history.pushState({}, '', '/benchmark'); route(); await s(1800);
     }
     out.each.push(rec);
+  }
+
+  // ---- TWO MODES, ONE WEAPON -------------------------------------------
+  //
+  // The board LISTS every weapon in every mode it can be played in and always
+  // has; what it has never HELD is two measured rows for one weapon, because
+  // no submission has ever named a second mode. So the half of a board row's
+  // identity that says HOW the weapon was played has never been told apart
+  // from the other row of the same weapon — which is exactly the shape of the
+  // bug that made this check exist, one level down (owner, 2026-08-09: 排查一下
+  // 很多武器的其他形态是否可以正确上传显示).
+  //
+  // Synthetic, because waiting for a player to submit a base-form Torid is not
+  // a test plan. The row is a real row: same benchmark, a real mode this
+  // weapon really has, a build the engine really accepts.
+  history.pushState({}, '', '/benchmark'); route(); await s(2000);
+  // BACK TO THE FIRST RULER. The loop above left the picker on the LAST one,
+  // and a synthetic row built for one board clicked on another is a test that
+  // fails for the wrong reason.
+  const ruler = out.rulers[0];
+  [...document.querySelectorAll('#bench-picker [data-bench]')]
+    .find(c => c.dataset.bench === ruler).click();
+  await s(900);
+  const twoModes = (META.weapons || []).find(w =>
+    (w.modes || []).length > 1 &&
+    (BOARD[w.id] || []).some(r => r.benchmark === ruler));
+  out.twoModeWeapon = twoModes ? twoModes.id : null;
+  if (twoModes) {
+    const have = (BOARD[twoModes.id] || []).find(r => r.benchmark === ruler);
+    const other = (twoModes.modes || []).find(m => m !== (have.mode || 'base'));
+    out.otherMode = other;
+    BOARD[twoModes.id] = (BOARD[twoModes.id] || []).concat([
+      { ...have, mode: other, score: have.score / 3, shown: String(have.score / 3) },
+    ]);
+    renderBenchBoard(); await s(1200);
+    const rows = [...document.querySelectorAll('.bench-rows .brow')]
+      .filter(a => (a.getAttribute('href') || '').includes('/' + wikiSlug(twoModes) + '?'));
+    out.bothListed = rows.length;
+    out.bothMeasured = rows.filter(a => !a.classList.contains('none')).length;
+    const mine = rows.find(a => (a.getAttribute('href') || '').includes('mode=' + other));
+    out.otherHref = mine ? mine.getAttribute('href') : null;
+    if (mine) {
+      history.pushState({}, '', out.otherHref); route(); await s(3200);
+      out.otherOpenedWeapon = document.getElementById('weapon').value;
+      out.otherOpenedMode = mode;
+      out.otherOpenedRuler = activeScenario;
+      out.otherOpenedMods = slots.filter(x => x.mod).map(x => x.mod);
+      out.otherWantMods = have.mods || [];
+    }
   }
   return out;
 })()`);
@@ -88,5 +143,24 @@ for (const e of r.each) {
   check(`${tag} ...played the way the row was`, e.mode === (e.wantMode || "base"),
     `${e.mode} vs ${e.wantMode}`);
 }
+
+// ---- and the same weapon in TWO modes ----------------------------------
+check("a weapon with two modes is on the board twice", r.bothListed === 2,
+  `${r.twoModeWeapon}: ${r.bothListed} rows`);
+check("...both measured, so both are rows and not placeholders",
+  r.bothMeasured === 2, `${r.bothMeasured} measured`);
+check("...and the second one's link names ITS mode",
+  !!r.otherHref && r.otherHref.includes(`mode=${r.otherMode}`), String(r.otherHref));
+check("...it opens that weapon", r.otherOpenedWeapon === r.twoModeWeapon,
+  `${r.otherOpenedWeapon} vs ${r.twoModeWeapon}`);
+// THE POINT. Two rows of one weapon differ in exactly one thing, and clicking
+// the second must not land on the first.
+check("...played the way THAT row was, not the way the other one was",
+  r.otherOpenedMode === r.otherMode, `${r.otherOpenedMode} vs ${r.otherMode}`);
+check("...under the ruler it was measured on", r.otherOpenedRuler === r.rulers[0],
+  `${r.otherOpenedRuler} vs ${r.rulers[0]}`);
+check("...carrying that row's build",
+  JSON.stringify(r.otherOpenedMods) === JSON.stringify(r.otherWantMods),
+  `${JSON.stringify(r.otherOpenedMods)} vs ${JSON.stringify(r.otherWantMods)}`);
 
 await app.finish("a board row opens the build it is about, under the ruler it is on");

@@ -155,7 +155,15 @@ around (decision 2026-07-31).
   leader under the aimed board's fight and re-running it matched no line on
   either board (owner, 2026-08-08). It walks every ruler, because the bug was
   that one of them was reachable and the rest resolved to it, and asserts
-  against `BOARD` itself so it keeps holding as the board moves.
+  against `BOARD` itself so it keeps holding as the board moves. It also holds a
+  case the LIVE board has never had: ONE WEAPON, TWO MODES. The board has always
+  LISTED every weapon in every mode it can be played in (`benchEntries` walks
+  `w.modes`, and only the SUSTAINABLE ones reach the page), and the scorer has
+  always kept its quota per weapon AND mode — but no submission has ever named a
+  second mode, so the half of a row's identity that says HOW it was played had
+  never been told apart from the same weapon's other row. The check injects a
+  synthetic second-mode row and asserts both are listed, both measured, and that
+  the second one's link opens ITS mode, ITS ruler and ITS build (2026-08-09).
   `node scripts/check_disclosure.mjs` is the EIGHTEENTH: what the app does NOT
   model is ON THE PAGE, in every family that has one — a weapon banner, an
   evolution chip, a mod line, an arcane line, an enemy caveat. The owner debugs
