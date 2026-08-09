@@ -2038,7 +2038,32 @@ to shields or health, so multiplying the instance is right), lost the moment the
 pool breaks, and the steal half deliberately unmodelled and disclosed as such
 (`secondary_fortifier :: overguard on damage`).
 
-### DECIDED: a status tick takes it, ONCE ✅
+### MEASURED: a status tick takes it, and takes exactly what the hit takes ✅
+
+**In game** (owner, 2026-08-09): Ocucor, 220 base + 225 Heat, into a Techrot
+Babau Eximus's body. Left column is that tick's damage, right column is each
+Heat DoT's:
+
+| | without the arcane | with it (rank 3, "x6 Extra") |
+|---|---|---|
+| | 64 – 34 | 384 – 202 |
+| | 103 – 53 | 672 – 346 |
+| | 36 – 20 | 535 – 277 |
+| | 74 – 39 | 725 – 372 |
+
+**The DoT is 52% of its hit in BOTH columns** — 0.531 / 0.515 / 0.556 / 0.527
+without, 0.526 / 0.515 / 0.518 / 0.513 with. That ratio is the whole
+measurement, and it is the one number in this table that four uncontrolled
+samples CAN pin, because it is taken within each shot rather than across the two
+runs.
+
+Half of ModifiedBase is what a Heat tick is, so 0.52 is the tick unmultiplied
+relative to its own hit. **Under the old model it would have read 0.52 ÷ 7 =
+0.075 with the arcane on.** It reads 0.52. The tick takes the same multiplier
+the hit takes, once — which is what the reasoning below had already concluded
+and is now a measurement rather than a reading.
+
+### The reasoning it confirms
 
 The wiki's own two sentences:
 
@@ -2086,10 +2111,27 @@ game, and it is 12.5% on every Overguard hit — so if it is ever measured and t
 answer is ×8, this is the entry to come back to and `rank0`/`rankMax` in
 `data/arcanes/secondary/secondary_fortifier.yaml` is the one line to change.
 
-**What would settle it in one shot:** a known secondary damage figure into an
-Eximus's Overguard, with and without the arcane at max rank. The ratio is 8 or
-it is 9. The same run confirms the tick ruling above a second time, since a
-bleed tick under the arcane should show the same ratio the direct hit does.
+**The run above does NOT settle it.** Across the two columns the estimator lands
+at ×8.2–8.8 (sum-ratio 8.36 on hits, 8.20 on DoTs; median-ratio 8.75 and 8.53),
+where rank 3's two candidates are ×6 (printed = total) and ×7 (printed = extra).
+Higher than both, and not because either is close — the samples are simply not
+comparable across the two runs, for three reasons that all apply to this weapon:
+
+- **the Ocucor is a BEAM**, so every number carries wherever it was on the
+  damage ramp;
+- **crit tier varies** — the "without" column spans 2.86x within itself and the
+  "with" column only 1.89x, which is proof on its own that the two sets are not
+  four matched pairs;
+- **the pool may differ.** The arcane does nothing once the Overguard is gone,
+  so a "without" reading taken on HEALTH is being compared against a "with"
+  reading on Overguard — health carries armor and Overguard carries none, and
+  that difference alone is a multiple.
+
+**What would settle it,** and it is one pair of numbers rather than eight: hold
+the beam on a fresh Eximus until the ramp tops out and the number stops moving,
+read the ordinary (non-crit) tick, do it twice — arcane on, arcane off — with
+the Overguard bar still up BOTH times. `with ÷ without` is then the multiplier
+exactly.
 
 One consequence worth knowing about: DE's card prints the EXTRA here while
 `fill_x`'s "xX" convention exists because DE usually prints the TOTAL over a
