@@ -1716,6 +1716,11 @@ entries:
     arcanes: [primary_merciless, cascadia_flare]
   - weapon: larkspur_prime
     mode: base
+    score: 1.8
+    mods: [primed_rubedo_lined_barrel, ammo_chain, containment_breach, magnetized_cycle, polar_magazine, contamination_casing, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
     score: 1.4816974442306794
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_merciless, cascadia_flare]
