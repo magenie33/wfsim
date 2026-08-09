@@ -648,13 +648,13 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: dual_toxocyst
     mode: cycle
-    score: 28.955426234149247
+    score: 29.37375214879741
     mods: [merciless_gunfight, galvanized_diffusion, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, target_cracker, jolt]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_fortifier]
   - weapon: dual_toxocyst
     mode: cycle
-    score: 15.953406777725185
+    score: 15.965966733548951
     mods: [merciless_gunfight, galvanized_diffusion, hornet_strike, primed_pistol_gambit, lethal_torrent, target_cracker, magnetic_might, jolt]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_fortifier]
@@ -1007,6 +1007,12 @@ entries:
     score: 58.148200987091656
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence]
     evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+  - weapon: laetum
+    mode: cycle
+    score: 57.822455210454464
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
@@ -1732,7 +1738,7 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
-    score: 10.56120490326341
+    score: 11.19623171458065
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_fortifier]
   - weapon: ocucor
@@ -1785,6 +1791,11 @@ entries:
     score: 2.1360755479278444
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
+  - weapon: ocucor
+    mode: base
+    score: 1.9556330910949713
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, pistol_elementalist, sentient_surge, primed_heated_charge]
+    arcanes: [cascadia_flare]
   - weapon: ocucor
     mode: base
     score: 1.8695975396562248
