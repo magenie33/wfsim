@@ -2067,7 +2067,7 @@ instance's payload landing later.
 `the_arcane_multiplies_a_status_tick_exactly_once` reads x8.0 and would read
 x64 if it were treated like faction.
 
-### OPEN: is "x8" eight or nine?
+### DECIDED: "x8" is the EXTRA, so the total is ×9 ✅ (owner, 2026-08-09)
 
 DE's card says "Deals **x8 Extra** Damage to Overguard"; the wiki's stats table
 column is headed "Overguard Damage Buff" with the value "x8". Those two
@@ -2075,12 +2075,24 @@ phrasings disagree: "extra" reads as +8x on top of the hit (**x9 total**), the
 table reads as the total (**x8**). There is no worked example on the page and no
 datamined figure to hand.
 
-This engine reads it as the TOTAL, x8 (`rank0: 2.0` … `rankMax: 7.0`, applied as
-`1 + bonus`). The owner reads it as x9. **It is a number, so it waits for a
-measurement** — and it is worth one, because it is 12.5% on every Overguard hit,
-not just on the ticks this entry is about.
+This engine read it as the TOTAL until now (`rank0: 2.0` … `rankMax: 7.0`).
+**The owner's call is ×9** ("应该是9倍，你先执行"), on the plain reading of the
+word DE chose: `x8 Extra` is eight times extra, on top of the hit. The ladder
+moves with it — `x3 Extra` … `x8 Extra` is ×4 … ×9 — so the stored bonus is now
+the number DE prints rather than one less than it.
 
-**What settles it in one shot:** a known secondary damage figure into an
+**RECORDED AS A READING, NOT A MEASUREMENT.** Nobody has put a number to it in
+game, and it is 12.5% on every Overguard hit — so if it is ever measured and the
+answer is ×8, this is the entry to come back to and `rank0`/`rankMax` in
+`data/arcanes/secondary/secondary_fortifier.yaml` is the one line to change.
+
+**What would settle it in one shot:** a known secondary damage figure into an
 Eximus's Overguard, with and without the arcane at max rank. The ratio is 8 or
-it is 9. The same run answers the tick question a second time, since a bleed
-tick under the arcane should show the same ratio the direct hit does.
+it is 9. The same run confirms the tick ruling above a second time, since a
+bleed tick under the arcane should show the same ratio the direct hit does.
+
+One consequence worth knowing about: DE's card prints the EXTRA here while
+`fill_x`'s "xX" convention exists because DE usually prints the TOTAL over a
+stored bonus. The card text is therefore un-converted for this one effect rather
+than the data being bent to fit a formatting rule, and the panel's own line says
+both numbers ("×8 extra damage to Overguard (×9 in total)").

@@ -6,12 +6,20 @@ internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/OverguardSteal
 description: "Gain 1 Overguard for every 100 Damage dealt to an enemy's Overguard.\nDeals xX Extra Damage to Overguard."
 
 effects:
-  # Damage multiplier vs enemy OVERGUARD health only (x3 at rank 0 ... x8 at
-  # rank 5, stored as the bonus). Dynamically applied - lost the moment the
-  # target's Overguard breaks (not heat-inheritable, unlike the steal effect).
+  # Damage multiplier vs enemy OVERGUARD health only. Dynamically applied —
+  # lost the moment the target's Overguard breaks, which is also why it reaches
+  # a status TICK: the bonus is checked when damage lands, never baked in
+  # (MEASUREMENTS M38).
+  #
+  # THE PRINTED NUMBER IS THE EXTRA, so the bonus IS it and the total is one
+  # more. DE's card reads "Deals x8 Extra Damage to Overguard" and the wiki's
+  # stats table heads the same column "Overguard Damage Buff: x8" — the two
+  # phrasings disagree, there is no worked example on the page, and this file
+  # read it as the TOTAL until 2026-08-09. Owner's call, and his reading of
+  # "extra": x8 extra on top of the hit is ×9 (M38).
   - kind: overguard_damage_bonus
-    rank0: 2.0                 # x3 shown in-game
-    rankMax: 7.0               # x8
+    rank0: 3.0                 # "x3 Extra" → ×4
+    rankMax: 8.0               # "x8 Extra" → ×9
   # Defensive: +1 Overguard per 100 damage dealt to Overguard (constant at
   # every rank; self-Overguard cap 15,000). DoTs also steal. Not a DPS stat.
   # NOT LOADED: `arcanes_data` has no `overguard_on_damage` arm, so this entry is

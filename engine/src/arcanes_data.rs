@@ -860,8 +860,15 @@ impl ArcaneDef {
                 // Multiplier kinds ("xX"): stored as the bonus — fill_x's
                 // xX rule renders the +1.
                 | ArcEffect::Debilitate(scale)
-                | ArcEffect::FinalDamageCap(scale)
-                | ArcEffect::OverguardDamage(scale) => vals.push(at(scale)),
+                | ArcEffect::FinalDamageCap(scale) => vals.push(at(scale)),
+                // …AND THE ONE WHOSE CARD PRINTS THE EXTRA. `fill_x`'s "xX"
+                // rule exists because DE usually prints the TOTAL over a stored
+                // bonus; Secondary Fortifier's card says "Deals x8 Extra Damage
+                // to Overguard", where 8 IS the bonus and 9 is the total
+                // (MEASUREMENTS M38). So the stored value is already what the
+                // card shows, and the +1 has to be undone rather than the data
+                // bent to fit a formatting rule.
+                ArcEffect::OverguardDamage(scale) => vals.push(at(scale) - 1.0),
                 ArcEffect::ColdBurst { scale, radius0, radius1 }
                 | ArcEffect::AoeEcho { scale, radius0, radius1 } => {
                     vals.push(at(scale));
@@ -1018,8 +1025,13 @@ impl ArcaneDef {
                     "{} of the hit damage echoed to nearby enemies (AoE)",
                     pct(at(scale))
                 )),
+                // DE PRINTS THE EXTRA, and so does this: "x8 Extra Damage to
+                // Overguard" is the card, ×9 is what it does (M38). Printing
+                // the total here would put a number on the panel that appears
+                // nowhere in game.
                 ArcEffect::OverguardDamage(sc) => out.push(format!(
-                    "×{:.0} damage to Overguard",
+                    "×{:.0} extra damage to Overguard (×{:.0} in total)",
+                    at(sc),
                     1.0 + at(sc)
                 )),
                 ArcEffect::AmmoEfficiency(sc) => out.push(format!(
@@ -1474,7 +1486,8 @@ mod tests {
         let ft = secondary("secondary_fortifier")
             .unwrap()
             .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
-        assert!((ft.overguard_mult - 8.0).abs() < 1e-9);
+        // ×9, not ×8: the card's "x8" is the EXTRA (M38, owner 2026-08-09).
+        assert!((ft.overguard_mult - 9.0).abs() < 1e-9);
         let en = secondary("secondary_encumber")
             .unwrap()
             .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());

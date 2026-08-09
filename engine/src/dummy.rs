@@ -9607,8 +9607,9 @@ mod tests {
 
     #[test]
     fn fortifier_multiplies_damage_while_overguard_holds() {
-        // ×8 on every direct hit while the (infinite) overguard is up:
-        // 10 × 75 × 8 = 6000.
+        // ×9 on every direct hit while the (infinite) overguard is up:
+        // 10 × 75 × 9 = 6750. NINE, not eight — the card's "x8" is the EXTRA
+        // (MEASUREMENTS M38, owner 2026-08-09).
         let mut t = TargetParams::training_dummy();
         t.base_overguard = 1e9;
         let p = DummyParams {
@@ -9618,7 +9619,7 @@ mod tests {
         };
         let s = monte_carlo(&p, 20, 5);
         assert!(
-            (s.mean_damage - 6000.0).abs() < 1e-9,
+            (s.mean_damage - 6750.0).abs() < 1e-9,
             "dmg {}",
             s.mean_damage
         );
