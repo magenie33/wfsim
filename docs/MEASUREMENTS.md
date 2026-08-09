@@ -2028,3 +2028,59 @@ interaction is invisible in any scenario where the weapon simply wins.
   own element's bracket. Nothing to change.
 - **Whether an ordinary status DoT double-dips faction** remains M33's question.
   This entry changes the Attrition term only.
+
+## M38 — Secondary Fortifier: the RULE is settled, the NUMBER is not (2026-08-09)
+
+Audited against the whole wiki page at the owner's request. Everything
+transcribed is right — x3/x4/x5/x6/x7/x8 by rank, Overguard only (and this
+engine sends the WHOLE instance to Overguard while it holds, with no carry-over
+to shields or health, so multiplying the instance is right), lost the moment the
+pool breaks, and the steal half deliberately unmodelled and disclosed as such
+(`secondary_fortifier :: overguard on damage`).
+
+### DECIDED: a status tick takes it, ONCE ✅
+
+The wiki's own two sentences:
+
+> "The Overguard steal effect can be 'inherited' if the first source of Heat
+> status applied to an enemy was from a secondary with this Arcane active."
+>
+> "Extra damage to Overguard is **not inheritable and is dynamically applied**,
+> so the effect is lost entirely after depleting the Overguard from an enemy."
+
+**"Dynamically applied"** is the phrase that settles it: the bonus is not baked
+in anywhere, it is checked when damage LANDS — which is exactly what a DoT tick
+is. The card says "Deals x8 Extra Damage to Overguard" with no qualifier about
+hits, and the same page says DoTs trigger the steal half.
+
+**"Not inheritable" is not evidence against it.** It names `Heat_Inherit` — the
+mechanic that attributes later Heat damage to whoever applied the first Heat
+status — and says the damage bonus does not travel down THAT path. The owner
+read it first (2026-08-09: "这里的继承应该是说……在 warframe 引擎看来，还是这把枪
+造成的，所以战甲的 heat 伤害也可以吃到加成"), and it is the reading that makes
+both sentences say something rather than one of them contradicting the card.
+
+**ONCE, not squared** (owner: "那dot也是9倍，而不是9*9倍率吧"). Faction damage is
+re-applied per derivation step because DE re-applies it — `faction_at(f, depth)`
+— and nothing says that here. A tick is not a derivation; it is the same
+instance's payload landing later.
+`the_arcane_multiplies_a_status_tick_exactly_once` reads x8.0 and would read
+x64 if it were treated like faction.
+
+### OPEN: is "x8" eight or nine?
+
+DE's card says "Deals **x8 Extra** Damage to Overguard"; the wiki's stats table
+column is headed "Overguard Damage Buff" with the value "x8". Those two
+phrasings disagree: "extra" reads as +8x on top of the hit (**x9 total**), the
+table reads as the total (**x8**). There is no worked example on the page and no
+datamined figure to hand.
+
+This engine reads it as the TOTAL, x8 (`rank0: 2.0` … `rankMax: 7.0`, applied as
+`1 + bonus`). The owner reads it as x9. **It is a number, so it waits for a
+measurement** — and it is worth one, because it is 12.5% on every Overguard hit,
+not just on the ticks this entry is about.
+
+**What settles it in one shot:** a known secondary damage figure into an
+Eximus's Overguard, with and without the arcane at max rank. The ratio is 8 or
+it is 9. The same run answers the tick question a second time, since a bleed
+tick under the arcane should show the same ratio the direct hit does.

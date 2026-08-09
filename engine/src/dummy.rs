@@ -3528,6 +3528,35 @@ fn process_ticks(
             ),
         };
 
+        // SECONDARY FORTIFIER REACHES A TICK TOO, and only while the Overguard
+        // it is about is still there.
+        //
+        // The wiki's own words are what puts it here: the bonus is "DYNAMICALLY
+        // APPLIED, so the effect is lost entirely after depleting the Overguard
+        // from an enemy" — a live check at the moment damage lands, which is
+        // exactly what a tick is. The card says "Deals x8 Extra Damage to
+        // Overguard" with no qualifier about hits, and the same page says DoTs
+        // do trigger the STEAL half.
+        //
+        // "Not inheritable" is not evidence against this: it names `Heat_Inherit`
+        // — the mechanic that attributes later Heat damage to whoever applied the
+        // first Heat status — and says the damage bonus does not travel down THAT
+        // path (owner, 2026-08-09: "这里的继承应该是说……在warframe引擎看来，还是
+        // 这把枪造成的").
+        //
+        // ONCE, NOT SQUARED. Faction damage is re-applied per derivation step
+        // because DE re-applies it (`faction_at(f, depth)`); nothing says that
+        // about this, and nothing here is a derivation — the tick is the same
+        // instance's payload landing later (owner: "那dot也是9倍，而不是9*9倍率
+        // 吧"). The multiplier's own VALUE is a separate open question: our data
+        // reads DE's "x8" as the total and it may be a total of x9 (MEASUREMENTS
+        // M38).
+        let value = value
+            * if target.overguard > 0.0 {
+                params.arcane.overguard_mult
+            } else {
+                1.0
+            };
         let (effective, killed, broke) = target.apply(
             value,
             TypeShares::single(hit_type),
@@ -5889,7 +5918,7 @@ mod tests {
         assert_eq!(run_once(&stat_only, &mut Rng::new(1)).shots, 9, "mods are not re-applied");
     }
 
-    fn mono_body(multiplier: f64) -> Vec<BodyPart> {
+    pub(super) fn mono_body(multiplier: f64) -> Vec<BodyPart> {
         vec![BodyPart {
             name: "body".into(),
             aim_weight: 1.0,
@@ -11842,3 +11871,57 @@ mod incarnon_reload_route_tests {
         );
     }
 }
+#[cfg(test)]
+mod fortifier_tick_tests {
+    use super::tests::no_status;
+    use super::*;
+    use crate::damage::DamageVector;
+
+    /// SECONDARY FORTIFIER MULTIPLIES A TICK, ONCE, WHILE THE OVERGUARD HOLDS.
+    ///
+    /// Three claims in one fixture, because they only mean anything together:
+    /// the tick is multiplied at all, it is multiplied ONCE (a faction bonus
+    /// would be squared here and this is not one), and it stops the moment the
+    /// pool it is about is gone.
+    fn bleeder(og: f64, mult: f64) -> DummyParams {
+        let mut p = DummyParams {
+            damage: DamageVector::new().with(DamageType::Slash, 100.0),
+            dot_modified_base: Some(100.0),
+            status_chance: 1.0,
+            base_status_chance: 1.0,
+            fire_rate: 1.0,
+            magazine_size: 1e9,
+            duration_secs: 12.0,
+            base_crit_chance: 0.0,
+            unmodded_crit_chance: 0.0,
+            body_parts: super::tests::mono_body(1.0),
+            ..no_status()
+        };
+        p.status_chance = 1.0;
+        p.base_status_chance = 1.0;
+        p.arcane.overguard_mult = mult;
+        p.target.base_overguard = og;
+        p.target.base_health = 1e15;
+        p
+    }
+
+    #[test]
+    fn the_arcane_multiplies_a_status_tick_exactly_once() {
+        let dot = |og: f64, mult: f64| {
+            let mut rng = crate::rng::Rng::new(4);
+            run_once(&bleeder(og, mult), &mut rng).dot_damage
+        };
+        // A pool deep enough that it survives the run, so every tick lands on
+        // Overguard and the ratio is the multiplier itself.
+        let plain = dot(1e15, 1.0);
+        assert!(plain > 0.0);
+        let buffed = dot(1e15, 8.0);
+        let r = buffed / plain;
+        assert!((r - 8.0).abs() < 1e-6, "once, not squared: x{r:.4} (64 would be twice)");
+
+        // NO OVERGUARD, NO BONUS — "lost entirely after depleting the Overguard
+        // from an enemy". Same build, same seed, a target that never had one.
+        assert!((dot(0.0, 8.0) - dot(0.0, 1.0)).abs() < 1e-6);
+    }
+}
+
