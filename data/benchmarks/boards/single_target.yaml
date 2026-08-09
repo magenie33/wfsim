@@ -310,6 +310,12 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, galvanized_scope, critical_delay, vile_acceleration, vital_sense, magnetic_capacity]
     evolutions: [burston_evo1_incarnon_form, burston_forceful_finality, burston_kinetic_battle, burston_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: burston
+    mode: base
+    score: 3.794636929751229
+    mods: [amalgam_serration, primary_acuity, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_evo1_incarnon_form, burston_fortress_salvo, burston_kinetic_battle, burston_absolute_valor]
+    arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
     score: 58.18175952332537
@@ -489,6 +495,12 @@ entries:
     score: 16.5585458808498
     mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vital_sense, stormbringer, infected_clip, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_kinetic_battle, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    score: 12.017925401411802
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
@@ -2666,6 +2678,12 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, thermite_rounds, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: base
+    score: 1.1257108313811268
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_deadhead]
   - weapon: vectis_prime
     mode: cycle
     score: 10.668754590812318
