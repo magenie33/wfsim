@@ -132,6 +132,24 @@ for (const lang of ["en", "zh"]) {
     out.rulerGain = (gainScenario().scenario.abilities || []).length;
     gainPrefs.scenario = prev;
 
+    // 4c. IT IS THE SIMULATOR'S BLOCK, AND ONLY THE SIMULATOR'S. A Warframe
+    //     buff is not part of the weapon — the builder answers "what is this
+    //     gun" and a Roar belongs to no gun (owner, 2026-08-09). Checked by
+    //     GEOMETRY, not by the class list: hiding is a CSS id list, which is
+    //     exactly the kind of thing a new block silently falls out of.
+    const seen = (id) => {
+      const e = document.getElementById(id);
+      if (!e) return null;
+      return getComputedStyle(e).display !== 'none' && !e.hidden;
+    };
+    out.blockByTab = {};
+    for (const [name, suffix] of [['builder', ''], ['simulator', '/simulator'],
+                                  ['optimizer', '/optimizer']]) {
+      history.pushState({}, '', '/weapons/Torid' + suffix); route(); await sleep(2200);
+      out.blockByTab[name] = seen('wfbuff-block');
+    }
+    history.pushState({}, '', '/weapons/Torid/simulator'); route(); await sleep(2200);
+
     // 5. THE OPTIMIZER SHOWS THE SAME FIGHT, read-only.
     history.pushState({}, '', '/weapons/Torid/optimize'); route(); await sleep(3000);
     const oc = [...document.querySelectorAll('#opt-wfbuffs .wfb')];
@@ -215,6 +233,12 @@ for (const lang of ["en", "zh"]) {
   check(`[${lang}] …but an official ruler inherits none of them`,
     r.rulerGain === 0, `${r.rulerGain} on the ruler`);
   // ONE ticked: the quick-calc pass above unticked the pair and put Roar back.
+  // A ROAR BELONGS TO NO GUN. The builder is where you answer what the weapon
+  // IS; this is something done to it for a while, so it lives with the fight.
+  check(`[${lang}] the buff block is the SIMULATOR's alone`,
+    r.blockByTab.simulator === true && r.blockByTab.builder === false
+      && r.blockByTab.optimizer === false,
+    JSON.stringify(r.blockByTab));
   check(`[${lang}] the optimizer shows the same buffs`,
     r.optCards === r.catalogue && r.optChecked === 1,
     `${r.optCards} cards, ${r.optChecked} ticked`);
