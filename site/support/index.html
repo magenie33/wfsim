@@ -377,17 +377,6 @@
     <!-- Block: Sim — the SIMULATOR tab's view (2D arena + scenario/buff
          settings); Run simulates the current build against the enemy and
          shows a summary + scene replay. -->
-    <!-- WARFRAME ABILITY BUFFS — its own block, not a section of the fight
-         (owner, 2026-08-08: 战甲增益应该是一个单独的div). It sits between the
-         build it acts on and the fight it acts in, which is what it is: a thing
-         another actor does to this weapon.
-         EARLY ACCESS — the strength is typed in here today and comes from the
-         frame once frames land. Said on screen, not only in a comment. -->
-    <section class="block" id="wfbuff-block">
-      <div class="bh"><span class="n">✦</span><h2 data-i18n>Warframe buffs</h2><span class="sub" id="wfbuff-sub"></span></div>
-      <div class="bb"><div id="sim-wfbuffs"></div></div>
-    </section>
-
     <section class="block" id="sim-block">
       <div class="bh"><span class="n">▶</span><h2 data-i18n>Sim</h2><span class="sub" id="sim-sub"></span></div>
       <div class="bb">
@@ -437,7 +426,20 @@
         <h3 class="sim-h" data-i18n>4 · Buffs <span class="sim-hint" data-i18n>the stacks the run STARTS with — the fight still grants and decays them on their own triggers</span>
           <button id="sim-buffs-all" class="ghost-btn small"></button></h3>
         <div id="sim-buffs"></div>
-        <h3 class="sim-h" data-i18n>5 · Simulation <span class="sim-hint" data-i18n>how many times to replay it, and what to read off — the optimizer's final round uses the same count</span></h3>
+        <!-- WARFRAME ABILITY BUFFS — INSIDE the fight, and wrapped so it still
+             reads as its own thing (owner, 2026-08-09: "既是独立模块，也是属于
+             scenario的一部分"). It is a section of the scenario because that is
+             where it already lives — it saves with the fight, travels with the
+             fight across weapons, and the optimizer reads it off the fight —
+             and it sits last because it is the final input before you run.
+             EARLY ACCESS: the strength is typed in here today and comes from
+             the frame once frames land. Said on screen, not only here. -->
+        <div class="sim-panel" id="wfbuff-block">
+          <h3 class="sim-h" data-i18n>5 · Warframe buffs <span class="sim-hint" data-i18n>abilities cast on this weapon — set your Ability Strength and the values follow</span>
+            <span class="sim-h-sub" id="wfbuff-sub"></span></h3>
+          <div id="sim-wfbuffs"></div>
+        </div>
+        <h3 class="sim-h" data-i18n>6 · Simulation <span class="sim-hint" data-i18n>how many times to replay it, and what to read off — the optimizer's final round uses the same count</span></h3>
         <div id="sim-run" class="field-grid"></div>
         <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
       </div>

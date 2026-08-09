@@ -60,9 +60,17 @@ for (const lang of ["en", "zh"]) {
     out.names = cards().map(c => (c.querySelector('.wfb-n') || {}).textContent || '');
     out.values = cards().map(c => (c.querySelector('.wfb-v') || {}).textContent || '');
     out.effects = cards().map(c => (c.querySelector('.wfb-e') || {}).textContent || '');
-    // ITS OWN BLOCK, not a section of the fight (owner, 2026-08-08).
-    out.ownBlock = !!document.querySelector('#wfbuff-block #sim-wfbuffs');
-    out.insideFight = !!document.querySelector('#sim-block #sim-wfbuffs');
+    // A SECTION OF THE FIGHT, and WRAPPED so it still reads as its own thing
+    // (owner, 2026-08-09: "既是独立模块，也是属于scenario的一部分"). It saves
+    // with the scenario, travels with it across weapons and is what the
+    // optimizer reads off the fight, so inside is where it belongs.
+    out.insideFight = !!document.querySelector('#sim-block #wfbuff-block #sim-wfbuffs');
+    out.wrapped = !!document.querySelector('#wfbuff-block.sim-panel');
+    // …and LAST, right above the run: it is the final input before you press it.
+    const panel = document.getElementById('wfbuff-block');
+    const runh = [...document.querySelectorAll('#sim-block .sim-h')].pop();
+    out.beforeRun = !!(panel && runh &&
+      (panel.compareDocumentPosition(runh) & Node.DOCUMENT_POSITION_FOLLOWING));
     out.early = ((document.querySelector('#sim-wfbuffs .wfb-early') || {}).textContent || '').trim();
 
     // 2. THE VALUE FOLLOWS STRENGTH. Roar is +50% at 100% and +100% at 200%.
@@ -137,10 +145,15 @@ for (const lang of ["en", "zh"]) {
     //     gun" and a Roar belongs to no gun (owner, 2026-08-09). Checked by
     //     GEOMETRY, not by the class list: hiding is a CSS id list, which is
     //     exactly the kind of thing a new block silently falls out of.
+    // BY GEOMETRY, not by the element's own style. It is nested inside
+    // #sim-block now, and a child of a hidden parent still reports
+    // display: block — offsetParent is what actually answers "is this on
+    // the screen", and it was the difference between a real check and one that
+    // passed on every tab.
     const seen = (id) => {
       const e = document.getElementById(id);
       if (!e) return null;
-      return getComputedStyle(e).display !== 'none' && !e.hidden;
+      return !!e.offsetParent && !e.hidden;
     };
     out.blockByTab = {};
     for (const [name, suffix] of [['builder', ''], ['simulator', '/simulator'],
@@ -183,11 +196,14 @@ for (const lang of ["en", "zh"]) {
   check(`[${lang}] …and where it lands, in the display language`,
     r.effects.every((e) => e.length > 8 && cjk.test(e) === (lang === "zh")),
     JSON.stringify(r.effects[0] || "").slice(0, 100));
-  // ITS OWN BLOCK. It is not a step of the fight — nothing about it is the
-  // enemy, the measurement or the run.
-  check(`[${lang}] the buffs are their own block, not a section of the fight`,
-    r.ownBlock === true && r.insideFight === false,
-    `own=${r.ownBlock} insideFight=${r.insideFight}`);
+  // INSIDE THE FIGHT, AND WRAPPED. Both halves matter: it belongs to the
+  // scenario (it saves with it, travels with it, and the optimizer reads it off
+  // it), and it is a layer nothing else in that panel is, so it keeps an edge
+  // of its own.
+  check(`[${lang}] the buffs are a wrapped section OF the fight`,
+    r.insideFight === true && r.wrapped === true,
+    `inside=${r.insideFight} wrapped=${r.wrapped}`);
+  check(`[${lang}] …and sit last, right above the run`, r.beforeRun === true);
   // EARLY ACCESS IS ON THE PAGE, not only in a yaml comment: this block moves
   // onto the Warframe later and a player is entitled to know that now.
   check(`[${lang}] …and the block admits it is early access`,

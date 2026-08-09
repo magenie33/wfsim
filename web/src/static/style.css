@@ -81,7 +81,16 @@ body:not(.on-rivens) #riven-block{display:none}
    which is the fight's business — the builder answers "what is this gun", and a
    Roar belongs to no gun. The optimizer shows its own read-only copy inside
    `#opt-block`, so it needs no entry here. */
-body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body:not(.on-simulator) #sim-results-block,body:not(.on-simulator) #wfbuff-block{display:none}
+body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body:not(.on-simulator) #sim-results-block{display:none}
+/* A SECTION OF THE FIGHT THAT STILL READS AS ITS OWN THING (owner, 2026-08-09:
+   "既是独立模块，也是属于scenario的一部分"). Wrapped rather than merely headed:
+   it saves with the scenario, travels with it across weapons and is what the
+   optimizer reads off the fight, so it belongs INSIDE — and it is a layer
+   nobody else in this panel is, so it gets an edge. It needs no hiding rule of
+   its own: `#sim-block` already carries one. */
+.sim-panel{margin:14px 0 4px;padding:2px 12px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2)}
+.sim-panel .sim-h{margin-top:12px}
+.sim-h-sub{margin-left:8px;color:var(--text-2);font-size:11px;font-weight:400}
 /* The simulator's read-only build summary */
 .sb-h{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 4px}
 .sb-chips{display:flex;flex-wrap:wrap;gap:6px}
