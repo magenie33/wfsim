@@ -242,6 +242,7 @@ ui:
   "Condition Overload computes on this weapon's ORIGINAL base damage — this perk's added base is excluded, so every status type is worth less than the card implies": 异况超载按这把武器的原始基础伤害计算——这个进化增加的基础伤害不计入，所以每一种异常的价值都低于卡面看起来的样子
   "real damage the simulator does not compute yet": 这是真实的伤害，只是模拟器还没有实现
   "outside the sim": 不在模拟范围
+  "Runs of this build are not submitted — it is already a row. Copy it to enter one of your own, in any mode.": 这份配装的运行结果不会提交——它本身就是榜上的一行。复制一份就能提交你自己的，任何形态都可以。
   "3 · Limits": 3 · 限制
   "4 · Buffs": 4 · 增益
   "5 · Simulation": 5 · 模拟

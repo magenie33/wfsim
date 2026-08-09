@@ -72,7 +72,17 @@ const cold = await evaluate(`(async () => {
   // And the note is on screen, naming the benchmark.
   const note = document.getElementById('build-official');
   out.noteShown = note && !note.hidden;
-  out.noteText = note ? (note.textContent||'').replace(/\\s+/g,' ').trim().slice(0,120) : null;
+  out.noteText = note ? (note.textContent||'').replace(/\\s+/g,' ').trim().slice(0,400) : null;
+  // EVERY PART OF THE BUILD IS READ-ONLY, mode included. It is the one that was
+  // not: switching a #1 row to its base form ran the base form, saved nothing
+  // and submitted nothing, with no line anywhere saying why.
+  out.locked = ['mod-block','arcane-block','evo-block','mode-block']
+    .map(id => ((document.getElementById(id)||{}).className||'').includes('locked-hard'));
+  // …and the page SAYS the runs are not submitted, since the consent panel
+  // hides itself on a board row and used to be the only thing that mentioned it.
+  out.consentHidden = (document.getElementById('board-consent')||{}).hidden;
+  // The submit path's own verdict, asked the way it asks itself.
+  out.wouldSubmit = officialScenarioActive() && !officialBuildActive();
   return out;
 })()`);
 console.log("");
@@ -83,6 +93,20 @@ check("...so the build FITS", cold.used !== null && cold.total !== null && cold.
 check("...and the note names its benchmark", !!cold.noteShown && /Single Target|单体/.test(cold.noteText||""),
       cold.noteText);
 check("the cold and warm plans agree", cold.pols === warm.pols, `cold ${cold.pols} vs warm ${warm.pols}`);
+// ---- READ-ONLY MEANS THE WHOLE BUILD ------------------------------------
+// The mode is part of the build (it left the fight on 2026-08-07), so it locks
+// with the build. While it did not, it was the one control on a board row that
+// still moved — and both of its consequences were silent: `markPresetDirty`
+// refuses to write an official build and `offerBoardSubmit` refuses to send
+// one, so a base-form test ran, saved nothing and entered nothing (owner,
+// 2026-08-09: "我昨晚就用基础做了好几次测试，为啥没出现呢").
+check("every part of a benchmark build is read-only, mode included",
+      cold.locked.every(Boolean), JSON.stringify(cold.locked));
+// …AND THE PAGE SAYS SO. The consent panel hides itself on a board row, so
+// without this line nothing anywhere explains why a run entered nothing.
+check("...and the note says runs of it are not submitted",
+      cold.wouldSubmit === false && /not submitted|不会提交/.test(cold.noteText || ""),
+      cold.noteText);
 // ---- and it belongs to the BUILDER, not to every module ----
 const views = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));

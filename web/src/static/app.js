@@ -7323,7 +7323,14 @@ function renderBoardConsent() {
 // has written yet.
 function lockOfficialBuild() {
   const on = officialBuildActive();
-  ["mod-block", "arcane-block", "evo-block"].forEach((id) => {
+  // MODE IS PART OF THE BUILD, so it locks with the build. It was the one
+  // control on a read-only board row that stayed live, and the consequence was
+  // silent in both directions: switching a #1 Felarx to its base form ran the
+  // base form, wrote nothing (`markPresetDirty` refuses an official build), and
+  // sent nothing (`offerBoardSubmit` refuses one too) — so a player testing the
+  // base form several times saw no row appear and nothing on screen said why
+  // (owner, 2026-08-09: "我昨晚就用基础做了好几次测试，为啥没出现呢").
+  ["mod-block", "arcane-block", "evo-block", "mode-block"].forEach((id) => {
     const b = $(id);
     if (b) b.classList.toggle("locked-hard", on);
   });
@@ -7336,6 +7343,10 @@ function lockOfficialBuild() {
   const parts = [
     `<b>${escHtml(tr("Benchmark build"))}</b>`,
     escHtml(tr("read-only. ⧉ copies it into a build of your own.")),
+    // …AND WHAT THAT MEANS FOR THE BOARD, which is the half nobody could see:
+    // the consent panel hides itself on an official build, so "nothing was
+    // submitted" had no explanation anywhere on the page.
+    escHtml(tr("Runs of this build are not submitted — it is already a row. Copy it to enter one of your own, in any mode.")),
   ];
   // WHICH BENCHMARK, stated rather than implied (owner, 2026-08-04). A board
   // figure means nothing without the ruler that produced it, and "#1" says
