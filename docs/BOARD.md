@@ -100,6 +100,22 @@ happened to reorder mods whose pairing did not change. Two different fights
 collapsed into one row, and the score published was whichever pairing the sort
 produced — belonging to neither submitter.
 
+**And the MODE is the other half of it** (2026-08-09). A Torid through its
+Incarnon cycle and a Torid that never transmutes are two entrants, so the key is
+`identity(build)#mode` — which the SCORER has always done and the ENDPOINT did
+not. The worker hashed weapon+mods+evolutions+arcanes and never stored `mode` at
+all, so two modes of one build overwrote each other in storage and every record
+reached the scorer mode-less, where the migration fallback turned it into "the
+cycle where there is one".
+
+That is the whole reason the published boards read 306 `cycle` rows, 158 `base`
+ones and not a single weapon with both: every Incarnon weapon cycle, every other
+weapon base. It looked like a fact about how people play. It was one line.
+
+Old records stay readable — the fallback is what they are for — and
+`wfsim-board` now prints how many arrived without a mode, so the migration is
+visible and ends at zero instead of being permanent.
+
 Raw order is not the answer either: three elementals in slots 1-3, the same
 three in 4-6, the same three interleaved with the rest, and the non-elementals
 reshuffled all score an identical 146,707.582. Only the elementals' order

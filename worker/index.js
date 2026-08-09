@@ -38,7 +38,17 @@ const bad = (msg, status = 400) =>
   });
 
 /// The FIGHT this build is, as one stable key — the same shape
-/// `engine::builds::identity` produces.
+/// `engine::builds::identity` produces, plus the MODE, which is how the scoring
+/// job keys its own rows (`identity(build)#mode`).
+///
+/// THE MODE HAS TO BE IN HERE, and leaving it out is what made the board look
+/// the way it did: a base-form Torid and a cycled one are the same weapon, the
+/// same mods and the same evolutions, so they hashed to ONE key and the second
+/// write replaced the first. Worse, `mode` was not even stored — so the scorer
+/// saw a submission with no mode, took its migration fallback ("the cycle where
+/// there is one"), and every Incarnon weapon on the board said `cycle` whatever
+/// its submitter had chosen. 306 cycle rows, 158 base ones, and not one weapon
+/// with both: that shape was this line, not anybody's playstyle (2026-08-09).
 ///
 /// MODS ARE NOT SORTED. They combine ELEMENTS in the order they are listed, so
 /// the same four elementals in two orders are two different weapons: on the
@@ -50,7 +60,7 @@ const bad = (msg, status = 400) =>
 ///
 /// Evolutions ARE a set: one per tier, and the tier decides where each sits.
 const identity = (b) =>
-  [b.benchmark, b.weapon, b.mods.join(","),
+  [b.benchmark, b.weapon, b.mode || "", b.mods.join(","),
    [...b.evolutions].sort().join(","), b.arcanes.join(",")].join("|");
 
 async function submit(request, env) {
@@ -80,6 +90,12 @@ async function submit(request, env) {
   // obviously malformed out of storage. The cost is a little junk in KV that
   // the scorer then refuses; the alternative is two rules that drift, and a
   // worker confidently rejecting builds a benchmark would have accepted.
+  // HOW IT WAS PLAYED. Shape only, like everything else here — whether THIS
+  // weapon has a `base` or an `alternate` is a question for the engine, and the
+  // scorer refuses a mode a weapon does not have ("refused torid: it has no
+  // `alternate` mode"). Optional, because records written before this exist and
+  // the scorer's fallback is what reads them.
+  if (b.mode !== undefined && !ID.test(b.mode || "")) return bad("bad mode");
   if (!list(b.mods) || b.mods.length > MAX_MODS) return bad("bad mods");
   if (!list(b.evolutions) || b.evolutions.length > 8) return bad("bad evolutions");
   if (!list(b.arcanes) || b.arcanes.length > 4) return bad("bad arcanes");
@@ -91,6 +107,9 @@ async function submit(request, env) {
   const rec = {
     benchmark: b.benchmark,
     weapon: b.weapon,
+    // HALF THE ENTRANT'S IDENTITY, and it used to be dropped on this line — the
+    // page has sent it since 2026-08-07 and nothing here ever wrote it down.
+    ...(b.mode ? { mode: b.mode } : {}),
     // As submitted. The order IS the build (see `identity`).
     mods: b.mods,
     evolutions: b.evolutions,

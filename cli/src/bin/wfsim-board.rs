@@ -105,6 +105,12 @@ fn main() {
     );
 
     let mut rows: Vec<Row> = Vec::new();
+    // …and how many arrived with NO mode. Those are records written before the
+    // endpoint stored one, and they are read by the fallback below rather than
+    // by their submitter's choice — so the count is how much of this board is
+    // still a guess. It goes to zero on its own as players resubmit; printing
+    // it is what makes that visible instead of permanent.
+    let mut legacy = 0usize;
     let (mut seen, mut refused) = (0usize, 0usize);
     let mut seen_ids: std::collections::HashSet<String> = Default::default();
     for s in &subs {
@@ -173,11 +179,14 @@ fn main() {
             },
             // No mode named: however this weapon is normally played — the cycle
             // where there is one, its arsenal form where there is not.
-            None => *modes
-                .iter()
-                .find(|m| m.mode == wfsim_engine::weapons_data::PlayMode::Cycle)
-                .or_else(|| modes.first())
-                .expect("every weapon has a base mode"),
+            None => {
+                legacy += 1;
+                *modes
+                    .iter()
+                    .find(|m| m.mode == wfsim_engine::weapons_data::PlayMode::Cycle)
+                    .or_else(|| modes.first())
+                    .expect("every weapon has a base mode")
+            }
         };
         if !played.sustainable {
             // "Always Incarnon" is not a way to play for three hundred seconds,
@@ -284,7 +293,19 @@ fn main() {
             .then(b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal))
     });
 
-    eprintln!("{seen} submissions, {refused} refused, {} rows", kept.len());
+    eprintln!(
+        "{seen} submissions, {refused} refused, {} rows{}",
+        kept.len(),
+        // ONLY WHEN THERE ARE ANY. A board whose every row carries its
+        // submitter's own choice should say nothing here — the line exists to
+        // report a migration in progress, and a zero printed forever is noise
+        // that trains you to skip the line that matters.
+        if legacy > 0 {
+            format!(" ({legacy} with no mode — read by the fallback)")
+        } else {
+            String::new()
+        }
+    );
 
     // The runtime copy, keyed by weapon because that is how the page asks.
     //
