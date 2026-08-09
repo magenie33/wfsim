@@ -12155,6 +12155,135 @@ mod warframe_ability_tests {
         p
     }
 
+    /// THE WIKI'S OWN WORKED EXAMPLE, to the digit — four numbers, one chain,
+    /// and it is the strongest citation this interaction has (owner supplied it
+    /// verbatim, 2026-08-09).
+    ///
+    /// > A gun deals 100 damage per bullet, and we have Thermite Rounds, Rime
+    /// > Rounds, Stormbringer, Primed Bane of Grineer, and Xata's whisper at
+    /// > base strength: The initial hit will deal
+    /// > `100 × (1 + 0.6 + 0.6 + 0.9) × (1 + 0.55) = 480.5`, and Xata's whisper
+    /// > will deal `0.26 × 480.5 × (1 + 0.55) = 193.6415` (the Faction Damage
+    /// > Bonus is applied again). If the hit proc'd Blast, then the detonation
+    /// > damage will be `0.3 × 100 × (1 + 0.55)^2 = 72.075` (Elemental Damage
+    /// > doesn't apply to Blast detonations and the Faction Damage Bonus is
+    /// > applied again). Then, Xata's whisper will trigger off said detonation,
+    /// > dealing `0.26 × 72.075 × (1 + 0.55) × (1 + 0.6 + 0.6 + 0.9) = 90.0433`.
+    ///
+    /// Every oddity of the category is in those four lines and they check each
+    /// other: the elemental bracket is INSIDE the hit and OUTSIDE the
+    /// detonation's extra hit, and the faction bonus lands one more time at
+    /// every step — `f¹` on the hit, `f²` on its extra hit and on the
+    /// detonation, `f³` on the extra hit off the detonation.
+    ///
+    /// Thermite Rounds and Rime Rounds are Heat and Cold, so they COMBINE: the
+    /// vector is 100 Impact + 120 Blast + 90 Electricity, which is also why the
+    /// example has a Blast proc to detonate at all.
+    fn wiki_example() -> DummyParams {
+        let mut p = params(&[("xatas_whisper", None)], 1.0);
+        p.damage = DamageVector::new()
+            .with(DamageType::Impact, 100.0)
+            .with(DamageType::Blast, 120.0)
+            .with(DamageType::Electricity, 90.0);
+        // THE BASE A STATUS BURNS OFF is the 100, not the 310: an elemental
+        // mod's damage is not part of it. That is the whole reason the
+        // detonation is 30 and not 93.
+        p.dot_modified_base = Some(100.0);
+        p.faction_mult = 1.55;
+        p.status_chance = 0.0;
+        p.base_status_chance = 0.0;
+        p.forced_procs = Vec::new();
+        p.target.base_health = 1e15;
+        p
+    }
+
+    #[test]
+    fn the_wiki_worked_example_reproduces_to_the_digit() {
+        // ONE SHOT, so every figure below is one instance rather than a mean.
+        let one = |p: &DummyParams| {
+            let mut q = p.clone();
+            q.duration_secs = 0.001;
+            run_once(&q, &mut crate::rng::Rng::new(3))
+        };
+
+        // QUANTISATION IS THE ONE DIFFERENCE, and it is ours being right rather
+        // than the example being wrong: DE rounds each element of the vector
+        // down to a step of the base, which an illustration written to show a
+        // formula has no reason to carry. So the example's 310 is 300.3125 here
+        // and every absolute figure below moves with it — the four RELATIONS,
+        // which are what the example is demonstrating, are exact.
+        let q = wiki_example().damage.quantized().total();
+        assert!(q < 310.0 && q > 295.0, "quantised vector {q}");
+        let f = 1.55;
+        let mb = 100.0;
+        // The bracket the extra hit off a detonation picks up: the vector over
+        // the base a status burns off — the example's `1 + 0.6 + 0.6 + 0.9`.
+        let bracket = q / mb;
+
+        // 1 + 2. THE HIT AND ITS EXTRA HIT.
+        let r = one(&wiki_example());
+        assert!((r.sources.direct - q * f).abs() < 1e-6, "hit {}", r.sources.direct);
+        assert!(
+            (r.sources.extra_hit - 0.26 * (q * f) * f).abs() < 1e-4,
+            "extra hit {}",
+            r.sources.extra_hit
+        );
+
+        // 3 + 4. THE DETONATION AND THE EXTRA HIT OFF IT. Forced, because the
+        // example says "if the hit proc'd Blast" — and long enough for the fuse.
+        let mut p = wiki_example();
+        p.forced_procs = vec![DamageType::Blast];
+        p.duration_secs = 30.0;
+        let r = one_shot_with_fuse(&p);
+        // The detonation is a status payload: 30% of the 100 ModifiedBase,
+        // faction squared, and NO elemental bracket.
+        let want_det = 0.3 * mb * f * f;
+        assert!(
+            (r.blast - want_det).abs() < 1e-4,
+            "detonation {} wanted {want_det}",
+            r.blast
+        );
+        // …and the extra hit off it takes faction a THIRD time and the whole
+        // elemental bracket the detonation itself was denied.
+        let want_xh_det = 0.26 * want_det * f * bracket;
+        let off_det = r.extra_hit - 0.26 * (q * f) * f;
+        assert!(
+            (off_det - want_xh_det).abs() < 1e-3,
+            "extra hit off the detonation {off_det}, wanted {want_xh_det}"
+        );
+        // …AND IT IS NEITHER OF THE TWO NUMBERS IT WOULD BE IF EITHER ODDITY
+        // WERE MISSING. Both alternatives are what a careful reader would
+        // expect — a detonation takes no elemental bonus, so why would the hit
+        // off it; and two faction layers is what every other status gets — so
+        // ruling them out is the whole of the claim.
+        let without_bracket = 0.26 * want_det * f;
+        let without_third_faction = 0.26 * want_det * bracket;
+        assert!((off_det - without_bracket).abs() > 1.0, "the bracket is missing");
+        assert!(
+            (off_det - without_third_faction).abs() > 1.0,
+            "the third faction layer is missing"
+        );
+    }
+
+    /// One shot, then the clock run out so the Blast fuse expires — the
+    /// detonation and its extra hit are what this returns.
+    struct FusedRun {
+        blast: f64,
+        extra_hit: f64,
+    }
+    fn one_shot_with_fuse(p: &DummyParams) -> FusedRun {
+        let mut q = p.clone();
+        // One pull, then nothing but time: `magazine_size` of 1 with a reload
+        // longer than the run leaves the fuse alone to expire.
+        q.magazine_size = 1.0;
+        q.reload_seconds = 1e6;
+        let r = run_once(&q, &mut crate::rng::Rng::new(3));
+        FusedRun {
+            blast: r.sources.status[DamageType::Blast as usize],
+            extra_hit: r.sources.extra_hit,
+        }
+    }
+
     /// FACTION, TWICE — the whole of the ordinary case. The extra hit is 26% of
     /// a hit that already carried the bonus, and it carries it again:
     /// `0.26 x 1.55 = 0.403` of the hit, against the 0.26 a reading of the card

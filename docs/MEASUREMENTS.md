@@ -2233,6 +2233,47 @@ The behaviour predates 2026-08-09.
 
 ## M40 — Xata's Whisper decodes exactly, and two of its clauses are still open (2026-08-09)
 
+### CONFIRMED A SECOND TIME by the wiki's own worked example (2026-08-09)
+
+The owner supplied the `Xata's_Whisper` §"Interaction with Blast" section
+verbatim, and it carries a four-line worked chain rather than a formula — which
+is the strongest citation this interaction has, because each line checks the
+next:
+
+> A gun deals 100 damage per bullet, and we have Thermite Rounds, Rime Rounds,
+> Stormbringer, Primed Bane of Grineer, and Xata's whisper at base strength:
+>
+> - the initial hit: `100 × (1 + 0.6 + 0.6 + 0.9) × (1 + 0.55) = 480.5`
+> - its extra hit: `0.26 × 480.5 × (1 + 0.55) = 193.6415`
+>   — *"the Faction Damage Bonus is applied again"*
+> - the Blast detonation: `0.3 × 100 × (1 + 0.55)² = 72.075`
+>   — *"Elemental Damage doesn't apply to Blast detonations and the Faction
+>   Damage Bonus is applied again"*
+> - the extra hit off the detonation:
+>   `0.26 × 72.075 × (1 + 0.55) × (1 + 0.6 + 0.6 + 0.9) = 90.0433`
+>   — *"the Faction Damage Bonus is applied YET again, and the Elemental Damage
+>   Bonus is applied even though Blast detonations don't scale off Elemental
+>   Damage Bonuses"*
+
+Both oddities are visible in the last line alone, and the whole faction ladder
+is visible across the four: `f¹` on the hit, `f²` on its extra hit AND on the
+detonation, `f³` on the extra hit off the detonation.
+
+`the_wiki_worked_example_reproduces_to_the_digit` runs it. **The relations are
+exact; the absolute figures are not, and that is quantisation** — DE rounds each
+element of the vector down to a step of the base, so the example's 310 is
+300.3125 here. An illustration written to show a formula has no reason to carry
+it, and this engine has every reason to. The test therefore asserts the four
+RELATIONS, where the quantised total cancels, and states the one number that
+differs and why.
+
+It also rules out the two near-misses by name, because both are what a careful
+reader would expect instead: the extra hit off a detonation WITHOUT the
+elemental bracket (a detonation takes no elemental bonus, so why would the hit
+off it), and WITHOUT the third faction layer (two is what every other status
+gets). Neither is the number.
+
+
 **Question.** What is an EXTRA HIT worth, and specifically what happens when one
 fires off a Blast detonation — the interaction the owner named as the reason to
 implement the ability at all ("注意这个和blast的联动").
