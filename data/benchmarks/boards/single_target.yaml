@@ -1992,6 +1992,12 @@ entries:
     score: 0.48132143805140726
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, sentient_surge, deep_freeze, pathogen_rounds, primed_heated_charge]
     arcanes: [secondary_enervate]
+  - weapon: paris_prime
+    mode: cycle
+    score: 18.323244067287085
+    mods: [amalgam_serration, primary_acuity, galvanized_aptitude, point_strike, vital_sense, rime_rounds, malignant_force, thermite_rounds]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [primary_deadhead]
   - weapon: phantasma_prime
     mode: base
     score: 15.425187684223662
