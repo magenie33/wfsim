@@ -7411,7 +7411,18 @@ function lockOfficialBuild() {
   // (owner, 2026-08-09: "我昨晚就用基础做了好几次测试，为啥没出现呢").
   ["mod-block", "arcane-block", "evo-block", "mode-block"].forEach((id) => {
     const b = $(id);
-    if (b) b.classList.toggle("locked-hard", on);
+    if (!b) return;
+    b.classList.toggle("locked-hard", on);
+    // …AND IT SAYS WHY, on the block a player is trying to click. A slot that
+    // simply does not react teaches nothing; this names the reason and the way
+    // out, and clicking anywhere in the block takes it.
+    if (on) {
+      b.title = tr("this is a benchmark row — copy it to edit");
+      b.onclick = () => copyActivePreset(buildBarCfg());
+    } else {
+      b.removeAttribute("title");
+      b.onclick = null;
+    }
   });
   const note = $("build-official");
   if (!note) return;
@@ -7419,13 +7430,15 @@ function lockOfficialBuild() {
   if (!on) return;
   const row = (buildNamed(activePreset) || {}).board || {};
   const bench = (META.benchmarks || []).find((x) => x.id === row.benchmark);
+  // ACTION FIRST. This note used to open with what the build IS and mention
+  // copying as a clause, pointing at a ⧉ chip somewhere else on the page — a
+  // reader who wants to change something needs the VERB and a thing to click
+  // (owner, 2026-08-09: "我们应该有提示说可以复制，我们提示做好点"). So: what
+  // cannot be done here, the one action that fixes all of it, and a real button
+  // — which the scenario's own read-only note has had all along.
   const parts = [
-    `<b>${escHtml(tr("Benchmark build"))}</b>`,
-    escHtml(tr("read-only. ⧉ copies it into a build of your own.")),
-    // …AND WHAT THAT MEANS FOR THE BOARD, which is the half nobody could see:
-    // the consent panel hides itself on an official build, so "nothing was
-    // submitted" had no explanation anywhere on the page.
-    escHtml(tr("Runs of this build are not submitted — it is already a row. Copy it to enter one of your own, in any mode.")),
+    `<b>${escHtml(tr("Benchmark build — read-only"))}</b>`,
+    escHtml(tr("It is already a row on the board, so nothing here can be edited and its runs are not submitted. Copy it and everything opens up — mods, arcanes, evolutions and the mode — and what you run goes to the board as your own entry.")),
   ];
   // WHICH BENCHMARK, stated rather than implied (owner, 2026-08-04). A board
   // figure means nothing without the ruler that produced it, and "#1" says
@@ -7456,7 +7469,11 @@ function lockOfficialBuild() {
   if (row.source === "seed") {
     parts.push(`<span class="official-seed">${escHtml(tr("seeded by the optimizer — not yet a player submission"))}</span>`);
   }
-  note.innerHTML = parts.join(" · ");
+  note.innerHTML = parts.join(" · ") +
+    ` <button class="ghost-btn small" id="build-copy">⧉ ${
+      escHtml(tr("copy it to edit"))}</button>`;
+  const cp = $("build-copy");
+  if (cp) cp.onclick = () => copyActivePreset(buildBarCfg());
 }
 
 // The official scenario, ON SCREEN: every control in the fight goes inert and

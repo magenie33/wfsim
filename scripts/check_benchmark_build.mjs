@@ -83,6 +83,21 @@ const cold = await evaluate(`(async () => {
   out.consentHidden = (document.getElementById('board-consent')||{}).hidden;
   // The submit path's own verdict, asked the way it asks itself.
   out.wouldSubmit = officialScenarioActive() && !officialBuildActive();
+  // A WAY OUT YOU CAN CLICK. The note used to point at a ⧉ chip elsewhere on
+  // the page; a reader who wants to change something needs a button, and a
+  // locked block has to say why rather than simply not reacting (owner,
+  // 2026-08-09: "我们应该有提示说可以复制，我们提示做好点").
+  out.copyBtn = !!document.getElementById('build-copy');
+  out.lockedTitle = ((document.getElementById('mod-block')||{}).title || '').length;
+  const btn = document.getElementById('build-copy');
+  if (btn) {
+    btn.click();
+    await sleep(1600);
+    out.afterCopy = { official: officialBuildActive(),
+      locked: ['mod-block','arcane-block','evo-block','mode-block']
+        .some(id => ((document.getElementById(id)||{}).className||'').includes('locked-hard')),
+      noteShown: !!(document.getElementById('build-official') || {}).hidden === false };
+  }
   return out;
 })()`);
 console.log("");
@@ -104,6 +119,12 @@ check("every part of a benchmark build is read-only, mode included",
       cold.locked.every(Boolean), JSON.stringify(cold.locked));
 // …AND THE PAGE SAYS SO. The consent panel hides itself on a board row, so
 // without this line nothing anywhere explains why a run entered nothing.
+check("...and offers a BUTTON that copies it", cold.copyBtn === true);
+check("...while a locked block says why on hover", cold.lockedTitle > 10,
+      `${cold.lockedTitle} chars of title`);
+check("...and clicking the button actually frees the build",
+      !!cold.afterCopy && cold.afterCopy.official === false && cold.afterCopy.locked === false,
+      JSON.stringify(cold.afterCopy));
 check("...and the note says runs of it are not submitted",
       cold.wouldSubmit === false && /not submitted|不会提交/.test(cold.noteText || ""),
       cold.noteText);

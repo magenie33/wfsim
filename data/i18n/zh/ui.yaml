@@ -175,12 +175,10 @@ ui:
   "simulate every mod IN THIS SLOT and show what each would change": 把这个槽换成每一张 mod 各模拟一遍，标出击杀速度会变化多少
   "kill rate": 击杀速度
   "Official test scenario": 官方测试场景
-  "Benchmark build": 基准配装
   "Benchmark builds": 基准配装
   "Benchmark scenarios": 基准场景
   "submitted by players, scored here — read-only": 玩家提交，由我们自己跑分 —— 只读
   "the official rulers — the same fight on every weapon": 官方标尺 —— 每把武器都是同一场战斗
-  "read-only. ⧉ copies it into a build of your own.": 只读。点 ⧉ 复制成一份你自己的配装。
   "measured under": 测试标准
   "a benchmark build — measured under": 基准配装 —— 测试标准
   "seeded by the optimizer — not yet a player submission": 由优化器预填，尚非玩家提交
@@ -242,7 +240,10 @@ ui:
   "Condition Overload computes on this weapon's ORIGINAL base damage — this perk's added base is excluded, so every status type is worth less than the card implies": 异况超载按这把武器的原始基础伤害计算——这个进化增加的基础伤害不计入，所以每一种异常的价值都低于卡面看起来的样子
   "real damage the simulator does not compute yet": 这是真实的伤害，只是模拟器还没有实现
   "outside the sim": 不在模拟范围
-  "Runs of this build are not submitted — it is already a row. Copy it to enter one of your own, in any mode.": 这份配装的运行结果不会提交——它本身就是榜上的一行。复制一份就能提交你自己的，任何形态都可以。
+  "Benchmark build — read-only": 榜单配装——只读
+  "It is already a row on the board, so nothing here can be edited and its runs are not submitted. Copy it and everything opens up — mods, arcanes, evolutions and the mode — and what you run goes to the board as your own entry.": 它本身就是榜上的一行，所以这里什么都改不了，跑出来的结果也不会提交。复制一份，全部就都能改了——mod、赋能、进化，还有形态——而且你跑出来的成绩会作为你自己的一行进榜。
+  "copy it to edit": 复制一份来编辑
+  "this is a benchmark row — copy it to edit": 这是榜上的一行——复制一份才能编辑
   "3 · Limits": 3 · 限制
   "4 · Buffs": 4 · 增益
   "5 · Simulation": 5 · 模拟
