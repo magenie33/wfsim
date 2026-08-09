@@ -2092,7 +2092,7 @@ instance's payload landing later.
 `the_arcane_multiplies_a_status_tick_exactly_once` reads x8.0 and would read
 x64 if it were treated like faction.
 
-### DECIDED: "x8" is the EXTRA, so the total is ×9 ✅ (owner, 2026-08-09)
+### MEASURED: "x8" is the EXTRA, so the total is ×9 ✅ (owner, 2026-08-09)
 
 DE's card says "Deals **x8 Extra** Damage to Overguard"; the wiki's stats table
 column is headed "Overguard Damage Buff" with the value "x8". Those two
@@ -2106,32 +2106,34 @@ word DE chose: `x8 Extra` is eight times extra, on top of the hit. The ladder
 moves with it — `x3 Extra` … `x8 Extra` is ×4 … ×9 — so the stored bonus is now
 the number DE prints rather than one less than it.
 
-**RECORDED AS A READING, NOT A MEASUREMENT.** Nobody has put a number to it in
-game, and it is 12.5% on every Overguard hit — so if it is ever measured and the
-answer is ×8, this is the entry to come back to and `rank0`/`rankMax` in
-`data/arcanes/secondary/secondary_fortifier.yaml` is the one line to change.
+**The owner reads the run above as ×7 at rank 3, hence ×9 at max** ("那个不是一
+一对应的，应该证明了，就是*7"), and the rows are NOT four matched pairs — they are
+eight independent samples of a beam whose ramp and crit tier move under it, so
+nothing here is meant to be divided row by row.
 
-**The run above does NOT settle it.** Across the two columns the estimator lands
-at ×8.2–8.8 (sum-ratio 8.36 on hits, 8.20 on DoTs; median-ratio 8.75 and 8.53),
-where rank 3's two candidates are ×6 (printed = total) and ×7 (printed = extra).
-Higher than both, and not because either is close — the samples are simply not
-comparable across the two runs, for three reasons that all apply to this weapon:
+The arithmetic that survives unpaired samples is thin but points the same way.
+Dividing the buffed column by each candidate and looking for the unbuffed
+column's own values:
 
-- **the Ocucor is a BEAM**, so every number carries wherever it was on the
-  damage ramp;
-- **crit tier varies** — the "without" column spans 2.86x within itself and the
-  "with" column only 1.89x, which is proof on its own that the two sets are not
-  four matched pairs;
-- **the pool may differ.** The arcane does nothing once the Overguard is gone,
-  so a "without" reading taken on HEALTH is being compared against a "with"
-  reading on Overguard — health carries armor and Overguard carries none, and
-  that difference alone is a multiple.
+| ÷ | gives | against the unbuffed column (36, 64, 74, 103) |
+|---|---|---|
+| ÷6 | 64, 112, 89.2, 120.8 | 64 exactly, nothing else |
+| **÷7** | 54.9, 96, **76.4**, **103.6** | **74 and 103**, both within 3% |
+| ÷8 | 48, 84, 66.9, 90.6 | nothing |
+| ÷9 | 42.7, 74.7, 59.4, 80.6 | 74.7 against 74 |
 
-**What would settle it,** and it is one pair of numbers rather than eight: hold
-the beam on a fresh Eximus until the ramp tops out and the number stops moving,
-read the ordinary (non-crit) tick, do it twice — arcane on, arcane off — with
-the Overguard bar still up BOTH times. `with ÷ without` is then the multiplier
-exactly.
+Two near-hits for ×7 against one exact for ×6, on four values and four
+candidates, which is suggestive rather than conclusive on its own. It agrees
+with the plain reading of the word DE chose, and the owner ran it.
+
+**What would overturn it,** if anyone ever wants to close the last of the doubt:
+hold the beam on a fresh Eximus until the ramp tops out and the number stops
+moving, read the ordinary (non-crit) tick with the arcane on and off, Overguard
+bar still up both times. `with ÷ without` is the multiplier exactly, and the one
+line to change is `rank0`/`rankMax` in
+`data/arcanes/secondary/secondary_fortifier.yaml`.
+
+Shipped ladder: ×4 / ×5 / ×6 / ×7 / ×8 / ×9 by rank.
 
 One consequence worth knowing about: DE's card prints the EXTRA here while
 `fill_x`'s "xX" convention exists because DE usually prints the TOTAL over a
