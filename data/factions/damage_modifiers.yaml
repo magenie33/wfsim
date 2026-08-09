@@ -100,6 +100,18 @@ special:
     # amplifies damage against it (+100% first stack, +25% per further
     # stack, max +325% at 10). Damage Vulnerability effects apply normally
     # to Overguard.
+    #
+    # DAMAGING STATUS EFFECTS DO APPLY while it is up, and their ticks land
+    # ON IT (owner-confirmed in game, 2026-08-09: "可以在敌人身上啊"). What
+    # Overguard blocks is CROWD CONTROL, not damage — so a Slash or Heat DoT
+    # applied to an Eximus with a full Overguard bar shows its numbers, and
+    # they come off the Overguard.
+    #
+    # That is not a detail: Overguard carries NO ARMOR, so while it is up a
+    # DoT tick is worth its full value against a unit whose health would eat
+    # 90% of it. It is the reason Secondary Fortifier can be worth LESS than
+    # nothing at low level — breaking the pool faster throws away the window
+    # in which free ticks were landing unmitigated (MEASUREMENTS M39).
 
 # ---------------------------------------------------------------------------
 # SYSTEM A - faction damage MODS (Bane/Cleanse/Expel/Smite) - a SEPARATE
