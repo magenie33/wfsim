@@ -526,17 +526,15 @@ mod tests {
     /// because a card renders its own text and nothing else speaks for it.
     #[test]
     fn the_whisper_states_its_gaps_and_its_bug() {
-        for id in ["xatas_whisper"] {
-            let d = get(id).unwrap_or_else(|| panic!("{id} missing"));
-            assert!(
-                d.unmodelled.iter().any(|u| u.contains("Bullet Attractor")),
-                "{id} says nothing about the Void proc"
-            );
-            assert!(
-                d.live_bugs.iter().any(|b| b.contains("Blast")),
-                "{id} does not admit the Blast interaction is a bug"
-            );
-        }
+        let d = get("xatas_whisper").expect("xatas_whisper");
+        assert!(
+            d.unmodelled.iter().any(|u| u.contains("Bullet Attractor")),
+            "it says nothing about the Void proc"
+        );
+        assert!(
+            d.live_bugs.iter().any(|b| b.contains("Blast")),
+            "it does not admit the Blast interaction is a bug"
+        );
         // NEGATIVE CONTROL: an ability with nothing to admit admits nothing. A
         // check that only asserts presence passes just as well on a data set
         // that shouts "not modelled" at everything.
