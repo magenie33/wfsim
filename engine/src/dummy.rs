@@ -12061,6 +12061,72 @@ mod debilitate_attrition_tests {
             "the zero instance has no crit to disqualify it: x{on_crit:.2} on a              fight that crits every shot (x441 when nothing crits)"
         );
     }
+
+    /// A CRIT TAKES THE HIT'S COIN AWAY AND KEEPS ITS OWN MULTIPLIER — so on
+    /// the Debilitate DoT, and only there, critting can be worth LESS than not.
+    ///
+    /// The owner's reading (2026-08-10: "如果直击是暴击的，但是后面的衰弱 dot 还
+    /// 是可以 roll 出 21，那么此时会带着前面的各种 multiplier……因为衰弱永远不暴
+    /// 击"). Both halves are true and they pull opposite ways:
+    ///
+    /// - a critical hit is not eligible for Devouring Attrition, so the HIT's
+    ///   coin is gone — one coin instead of two;
+    /// - the split instance never crits, so ITS coin is always live, and the
+    ///   DoT still inherits the hit's crit multiplier and its body part.
+    ///
+    /// Which makes the comparison arithmetic rather than opinion:
+    ///
+    ///     not critting   E = 11 x 11         = 121
+    ///     critting       E = crit_mult x 11
+    ///
+    /// **They cross at a crit multiplier of 11.** Measured here: Attrition is
+    /// worth x121 with no crits and x11 with them at ANY multiplier — the same
+    /// x11 whether the crit is 3x or 21x, which is what shows it is the hit's
+    /// coin that went missing rather than a scaled version of it.
+    ///
+    /// This is the DoT bucket alone; the direct damage still wants crits and no
+    /// real build gives them up. It is worth pinning because it is the one
+    /// place in this model where two of the weapon's own perks pull apart.
+    #[test]
+    fn a_crit_costs_the_split_a_coin_and_pays_it_back_in_multiplier() {
+        let base = crate::loadout::WeaponBase::from_data("felarx", true, &[]);
+        let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::AssumedMax);
+        let arena = crate::arena::Arena::training(30.0);
+        let dots = |attrition: bool, cc: f64, cd: f64| {
+            (0..200u64)
+                .map(|seed| {
+                    let mut p = DummyParams::from_panel(&panel, &arena);
+                    p.target.base_health = 1e15;
+                    p.crit_tier_upgrade_chance = 0.0;
+                    p.super_crit_on_status = None;
+                    p.base_crit_chance = cc;
+                    p.unmodded_crit_chance = 0.0;
+                    p.crit_multiplier = cd;
+                    p.target.status_immunities = vec![DamageType::Puncture];
+                    p.status_chance = 4.0;
+                    p.arcane.debilitate_chance = 1.0;
+                    let tot = p.damage.total();
+                    p.damage = crate::damage::DamageVector::new()
+                        .with(DamageType::Corrosive, tot);
+                    p.noncrit_bonus = attrition.then_some((0.5, 20.0));
+                    let mut rng = crate::rng::Rng::new(seed);
+                    run_once(&p, &mut rng).dot_damage
+                })
+                .sum::<f64>()
+        };
+        let plain = dots(true, 0.0, 1.0) / dots(false, 0.0, 1.0);
+        assert!((plain - 121.0).abs() < 12.0, "no crit: x{plain:.0}");
+        for cd in [3.0, 11.0, 21.0] {
+            let crit = dots(true, 1.0, cd) / dots(false, 1.0, cd);
+            assert!((crit - 11.0).abs() < 1.5, "crit x{cd}: attrition worth x{crit:.1}");
+        }
+        // …AND THE CROSSOVER IS AT ELEVEN. Below it the DoT is bigger WITHOUT
+        // the crit, which is the counterintuitive half and the reason this test
+        // exists at all.
+        let none = dots(true, 0.0, 1.0);
+        assert!(dots(true, 1.0, 3.0) < none, "a 3x crit build should lose here");
+        assert!(dots(true, 1.0, 21.0) > none, "and a 21x one should win");
+    }
 }
 #[cfg(test)]
 mod warframe_ability_tests {

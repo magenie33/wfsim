@@ -2065,6 +2065,46 @@ different numbers of fights. The instrumented joint distribution is what settled
 it, and it is worth remembering that a suspicious factor of ~2 is usually a
 bookkeeping error rather than a mechanic.
 
+### A CRIT COSTS THE SPLIT A COIN ✅ (owner, 2026-08-10)
+
+> 如果直击是暴击的，但是后面的衰弱 dot 还是可以 roll 出 21，那么此时会带着前面的
+> 各种 multiplier（暴击伤害，弱点暴击）……因为衰弱永远不暴击
+
+Both halves are true and they pull opposite ways:
+
+- **a critical hit is not eligible for Devouring Attrition**, so the HIT's coin
+  is gone — one coin instead of two;
+- **the split instance never crits**, so ITS coin is always live, and the DoT
+  still inherits the hit's crit multiplier and its body part.
+
+So the answer to "could it be more than 21x" is yes — it is `crit_mult × 21`
+when it rolls. But the comparison that matters is between builds, and it is
+arithmetic:
+
+|  | expectation of the DoT's multiplier |
+| --- | --- |
+| not critting | `E[hit] × E[split]` = 11 × 11 = **121** |
+| critting | `crit_mult × 11` |
+
+**They cross at a crit multiplier of 11.** Measured, 200 runs a cell:
+
+| build | Attrition is worth | split DoT total |
+| --- | --- | --- |
+| no crit | **×120.6** | 1.97e10 |
+| always 3× | ×11.0 | 9.44e9 |
+| always 11× | ×11.0 | 3.46e10 |
+| always 21× | ×11.0 | 6.61e10 |
+
+The ×11 is the SAME at 3×, 11× and 21×, which is what shows it is the hit's coin
+that went missing rather than a scaled version of it. And a 3× crit build's
+split DoT comes out at **half** a non-critting one's, despite the crit.
+
+**This is the DoT bucket alone.** The direct damage still wants crits by a wide
+margin and no real Felarx build gives them up — but it is the one place in this
+model where two of the weapon's own perks pull against each other, and
+`a_crit_costs_the_split_a_coin_and_pays_it_back_in_multiplier` pins both ends of
+it.
+
 ### What is still open
 
 - **This is a bug, so it can be patched.** Nothing here is a designed
