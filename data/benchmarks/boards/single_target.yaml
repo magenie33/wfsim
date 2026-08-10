@@ -22,6 +22,12 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, creeping_bullseye, pistol_elementalist, magnetic_might, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
     arcanes: [cascadia_flare]
+  - weapon: atomos
+    mode: cycle
+    score: 3.850249834929162
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, deep_freeze, pathogen_rounds, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
+    arcanes: [cascadia_flare]
   - weapon: ballistica
     mode: cycle
     score: 9.961124174591358
@@ -682,6 +688,36 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [cestra_evo1_incarnon_form, cestra_fortress_salvo, cestra_rapid_reinforcement, cestra_deathtrap_trigger]
     arcanes: [secondary_deadhead]
+  - weapon: dera_vandal
+    mode: cycle
+    score: 13.794690643233753
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, speed_trigger, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [dera_vandal_evo1_incarnon_form, dera_vandal_paragon_essence, dera_vandal_swift_deliverance, dera_vandal_high_ground]
+    arcanes: [primary_deadhead]
+  - weapon: dera_vandal
+    mode: cycle
+    score: 13.031433100471824
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, speed_trigger, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
+    evolutions: [dera_vandal_evo1_incarnon_form, dera_vandal_paragon_essence, dera_vandal_swift_deliverance, dera_vandal_high_ground]
+    arcanes: [primary_deadhead]
+  - weapon: dera_vandal
+    mode: cycle
+    score: 11.543647278540167
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, point_strike, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
+    evolutions: [dera_vandal_evo1_incarnon_form, dera_vandal_paragon_essence, dera_vandal_swift_deliverance, dera_vandal_high_ground]
+    arcanes: [primary_deadhead]
+  - weapon: dera_vandal
+    mode: cycle
+    score: 8.96280426571414
+    mods: [galvanized_chamber, galvanized_aptitude, point_strike, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, malignant_force]
+    evolutions: [dera_vandal_evo1_incarnon_form, dera_vandal_paragon_essence, dera_vandal_swift_deliverance, dera_vandal_high_ground]
+    arcanes: [primary_deadhead]
+  - weapon: dera_vandal
+    mode: cycle
+    score: 2.0296533408780024
+    mods: [primary_acuity, primed_shred, galvanized_aptitude, galvanized_scope, speed_trigger, vigilante_fervor, vile_acceleration, vital_sense]
+    evolutions: [dera_vandal_evo1_incarnon_form, dera_vandal_paragon_essence, dera_vandal_swift_deliverance, dera_vandal_high_ground]
+    arcanes: [primary_deadhead]
   - weapon: dread
     mode: cycle
     score: 24.231243200393145
@@ -1281,6 +1317,12 @@ entries:
     mode: cycle
     score: 56.55908997325249
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+  - weapon: laetum
+    mode: cycle
+    score: 56.37157271436681
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
