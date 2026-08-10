@@ -179,6 +179,31 @@ enum EvoEffect {
     /// chance to instant Reload"), which is far rarer against a single target
     /// that has to be worn down.
     InstantReloadOnHeadshot { chance: f64, needs_kill: bool },
+    /// LINGERING JUDGEMENT — `hits` headshots inside `within` seconds open
+    /// `value` extra headshot damage for `duration`.
+    ///
+    /// The bonus joins the ADDITIVE headshot bracket: "Headshot damage bonus
+    /// stacks additively with Primary Deadhead's headshot damage bonus" (wiki,
+    /// supplied by the owner 2026-08-10). That is the same bucket the arcane
+    /// feeds, so the two sum before the bracket is spent rather than
+    /// multiplying — which is what makes the perk worth much less on a Deadhead
+    /// build than the card's +50% suggests.
+    HeadshotDamageOnStreak { hits: u32, within: f64, value: f64, duration: f64 },
+    /// SPITEFUL DEFILEMENT — `value` extra crit DAMAGE while the target carries
+    /// fewer than `threshold` distinct status types.
+    ///
+    /// Two clauses decide where it lands and both are the wiki's, verbatim:
+    /// "Bonus is added after mods as a flat value" puts it in the same
+    /// after-mods bucket Cold's received crit-damage bonus uses, NOT in the
+    /// weapon's base crit damage; and "Multiple instances of the same status
+    /// effect are not counted separately, e.g. having 5 corrosive and 5
+    /// radiation status effects on a target will not disable this buff" makes
+    /// the counter DISTINCT TYPES — which is exactly Condition Overload's
+    /// bucket, so the two read the same number and cannot disagree.
+    ///
+    /// It is therefore the anti-CO perk: the third status TYPE turns it off,
+    /// and the third status type is where CO starts paying.
+    CritDamageBelowStatusCount { threshold: u32, value: f64 },
     /// READY RETALIATION — reload speed, armed by STARTING a reload from empty
     /// and lasting a while after.
     ///
@@ -474,10 +499,21 @@ impl EvolutionDef {
                 // `buff_roster` lists it and the replay draws its window, the
                 // same way Pressurized Magazine's `on_reload_fr` is drawn
                 // without an evolution card.
+                // LINGERING JUDGEMENT earns its window from a headshot STREAK,
+                // so the card starts at zero like every other earned buff.
+                EvoEffect::HeadshotDamageOnStreak { .. } => Some(EvoBuffCard {
+                    id: "evo_headshot_streak",
+                    max_stacks: 1,
+                    permanent: false,
+                    opens_at: CardOpens::Zero,
+                }),
                 EvoEffect::ReloadSpeedOnEmptyReload { .. }
                 // Nor is Executioner's Fortune: it is a roll on an event the
                 // sim already has, and its whole effect is a magazine counter.
                 | EvoEffect::InstantReloadOnHeadshot { .. }
+                // Nor is Spiteful Defilement: its condition is the TARGET's,
+                // read live, with nothing for a player to set.
+                | EvoEffect::CritDamageBelowStatusCount { .. }
                 // Static stat changes — nothing to configure at runtime.
                 | EvoEffect::FlatBaseStatusChanceByForm { .. }
                 | EvoEffect::FlatBaseCritMultiplier(_)
@@ -630,6 +666,14 @@ impl EvolutionDef {
                 ),
                 EvoEffect::FireRateBonus(v) => format!("+{:.0}% fire rate", v * 100.0),
                 EvoEffect::ReloadSpeedBonus(v) => format!("+{:.0}% reload speed", v * 100.0),
+                EvoEffect::HeadshotDamageOnStreak { hits, within, value, duration } => format!(
+                    "+{:.0}% headshot damage for {duration:.0}s after {hits} headshots in {within:.0}s",
+                    value * 100.0
+                ),
+                EvoEffect::CritDamageBelowStatusCount { threshold, value } => format!(
+                    "+{:.0}% critical damage while the target has fewer than {threshold} status types",
+                    value * 100.0
+                ),
                 EvoEffect::InstantReloadOnHeadshot { chance, needs_kill } => format!(
                     "{:.0}% chance to fill the magazine on a headshot{}",
                     chance * 100.0,
@@ -828,6 +872,16 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // three copies, and it is read rather than assumed: absent means any
         // headshot pays (the Furis pair), `headshot_kill` means only a killing
         // one does (the Phenmor).
+        "headshot_damage_on_headshot_streak" => EvoEffect::HeadshotDamageOnStreak {
+            hits: v.get("hits").and_then(Value::as_u64).unwrap_or(0) as u32,
+            within: f(v, "within_seconds").unwrap_or(0.0),
+            value: f(v, "value").unwrap_or(0.0),
+            duration: f(v, "duration_seconds").unwrap_or(0.0),
+        },
+        "crit_multiplier_below_status_count" => EvoEffect::CritDamageBelowStatusCount {
+            threshold: v.get("threshold").and_then(Value::as_u64).unwrap_or(0) as u32,
+            value: f(v, "value").unwrap_or(0.0),
+        },
         "instant_reload_on_headshot" => EvoEffect::InstantReloadOnHeadshot {
             chance: f(v, "chance").unwrap_or(0.0),
             needs_kill: v.get("condition").and_then(Value::as_str) == Some("headshot_kill"),
@@ -1066,6 +1120,17 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 EvoEffect::InstantReloadOnHeadshot { chance, needs_kill } => {
                     base.instant_reload_on_headshot =
                         Some(crate::loadout::InstantReload { chance: *chance, needs_kill: *needs_kill });
+                }
+                EvoEffect::HeadshotDamageOnStreak { hits, within, value, duration } => {
+                    base.headshot_streak = Some(crate::loadout::HeadshotStreak {
+                        hits: *hits,
+                        within: *within,
+                        value: *value,
+                        duration: *duration,
+                    });
+                }
+                EvoEffect::CritDamageBelowStatusCount { threshold, value } => {
+                    base.cd_below_status_count = Some((*threshold, *value));
                 }
                 EvoEffect::ReloadSpeedOnEmptyReload { value, duration } => {
                     base.rs_on_empty_reload = Some(crate::loadout::TimedBuff {
@@ -1672,8 +1737,6 @@ use crate::loadout::WeaponBase;
             // official ruler, which puts every shot into a head, it would arm
             // on the second shot and never lapse: a flat +50% headshot damage
             // for the whole engagement, and the largest thing on this list.
-            "phenmor_lingering_judgement :: headshot_damage_on_headshot_streak",
-            "phenmor_spiteful_defilement :: crit_multiplier_below_status_count",
             // THE BRATON FAMILY (2026-08-08) — one adapter, four weapons, so
             // every gap below is four rows of the same fact. THREE kinds:
             //

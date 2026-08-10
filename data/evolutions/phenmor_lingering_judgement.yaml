@@ -14,15 +14,19 @@ description: "On 2 headshots within 2 seconds: +50% Headshot damage for 8 second
 selection: choose_one
 
 effects:
-  # NOT LOADED: no effect kind exists for a buff armed by a headshot STREAK.
-  # The engine has `headshot_damage` (a flat bonus) and per-headshot triggers
-  # for fire rate and reload, but nothing that counts N hits inside a window and
-  # then holds a bonus for a duration. Resolves to `EvoEffect::Inert`.
+  # THE BONUS IS ADDITIVE WITH PRIMARY DEADHEAD'S. VERBATIM (wiki): "Headshot
+  # damage bonus stacks additively with Primary Deadhead's headshot damage
+  # bonus" (owner, 2026-08-10) — so it joins the same bracket the arcane feeds
+  # rather than multiplying it, and a build already carrying Deadhead gets far
+  # less out of it than +50% reads: on a 2x head it is x1.385, not x1.5.
   #
-  # It would be worth a great deal in this arena, which is why the gap is worth
-  # naming rather than burying: the official ruler fires every shot into a head,
-  # so the streak arms on the second shot and never lapses - the perk would be
-  # a flat +50% headshot damage for the whole engagement.
+  # THE ARMING HIT DOES NOT BENEFIT — its damage is settled before the window
+  # opens — and the streak is spent when it fires, so the next window needs two
+  # fresh headshots rather than re-arming off the same pair.
+  #
+  # On the official ruler, which puts every shot into a head, it arms on the
+  # second shot and never lapses. That is not a modelling shortcut: at 2 hits in
+  # 2 s the clause only binds below one headshot every two seconds.
   - kind: headshot_damage_on_headshot_streak
     hits: 2
     within_seconds: 2.0

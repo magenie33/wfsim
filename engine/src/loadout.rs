@@ -788,6 +788,22 @@ pub struct StackSpec {
 /// MAGAZINE, and an Incarnon form has max CHARGES instead. A charge pool is
 /// converted from weakpoint hits and sits outside the ammo economy, so it has
 /// no reload to make instant.
+/// LINGERING JUDGEMENT: a headshot STREAK arms extra headshot damage.
+///
+/// The bonus joins the ADDITIVE headshot bracket, beside Primary Deadhead's
+/// ("stacks additively with Primary Deadhead's headshot damage bonus"), so a
+/// build already carrying the arcane gets far less out of it than +50% reads.
+#[derive(Debug, Clone, Copy)]
+pub struct HeadshotStreak {
+    /// Headshots needed (2), inside `within` seconds.
+    pub hits: u32,
+    pub within: f64,
+    /// The headshot-damage bonus while the window is open (0.50).
+    pub value: f64,
+    /// How long the window lasts once armed (8 s).
+    pub duration: f64,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct InstantReload {
     /// Per qualifying headshot (0.10 on the Furis pair, 0.20 on the Phenmor).
@@ -958,6 +974,12 @@ pub struct WeaponBase {
     pub rs_on_empty_reload: Option<TimedBuff>,
     /// EXECUTIONER'S FORTUNE — see [`InstantReload`].
     pub instant_reload_on_headshot: Option<InstantReload>,
+    /// LINGERING JUDGEMENT — see [`HeadshotStreak`].
+    pub headshot_streak: Option<HeadshotStreak>,
+    /// SPITEFUL DEFILEMENT: `(threshold, bonus)` — add `bonus` to the crit
+    /// DAMAGE, after mods and flat, while the target carries fewer than
+    /// `threshold` distinct status types.
+    pub cd_below_status_count: Option<(u32, f64)>,
     /// Prelude of Might: `(bonus, threshold)` — add `bonus` to the crit damage
     /// MULTIPLIER while the resolved crit chance stays under `threshold`.
     /// Resolved late for that reason: it is the only evolution whose condition
@@ -1536,6 +1558,13 @@ pub struct ResolvedPanel {
     /// assumed-max reading could spend it into (a magazine that refills itself
     /// is not a bigger magazine).
     pub instant_reload: Option<InstantReload>,
+    /// LINGERING JUDGEMENT — see [`HeadshotStreak`]. Carried to the sim under
+    /// every policy: whether the streak ever arms is a property of the FIGHT
+    /// (a body-shot engagement never does), not something a panel can assume.
+    pub headshot_streak: Option<HeadshotStreak>,
+    /// SPITEFUL DEFILEMENT — see [`WeaponBase::cd_below_status_count`]. Also
+    /// carried: its condition is the TARGET's live status count.
+    pub cd_below_status_count: Option<(u32, f64)>,
     /// Hemorrhage's status-conversion roll (an event mechanic — active under
     /// every policy; contributes no static panel stat).
     pub proc_conversion: Option<ProcConv>,
@@ -2387,6 +2416,8 @@ pub fn resolve_for(
         fr_on_reload,
         rs_on_reload,
         instant_reload: base.instant_reload_on_headshot,
+        headshot_streak: base.headshot_streak,
+        cd_below_status_count: base.cd_below_status_count,
         bd_on_reload,
         proc_conversion: proc_conv,
         // Reified Bane: the vector already carries the +14 (evolutions apply

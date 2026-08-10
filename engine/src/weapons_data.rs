@@ -1612,6 +1612,8 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         evo_reload_bonus: 0.0,
         rs_on_empty_reload: None,
         instant_reload_on_headshot: None,
+        headshot_streak: None,
+        cd_below_status_count: None,
         // Set by Prelude of Might at `evolutions_data::apply`, read in `resolve`.
         crit_mult_below_cc: None,
         // Set by Headcracker at `evolutions_data::apply`.

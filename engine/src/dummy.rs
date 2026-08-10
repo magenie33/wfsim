@@ -1358,6 +1358,12 @@ pub struct DummyParams {
     /// the PELLET that headshots, because only there is it known whether the
     /// hit landed in a head and whether it killed.
     pub instant_reload: Option<crate::loadout::InstantReload>,
+    /// LINGERING JUDGEMENT — see [`crate::loadout::HeadshotStreak`]. Counted
+    /// per PELLET that lands in a head, like every other on-hit trigger here.
+    pub headshot_streak: Option<crate::loadout::HeadshotStreak>,
+    /// SPITEFUL DEFILEMENT: `(threshold, bonus)` — see
+    /// [`crate::loadout::ResolvedPanel::cd_below_status_count`].
+    pub cd_below_status_count: Option<(u32, f64)>,
     /// A syndicate augment's radial (Gilded Truth grants Truth) — armed by
     /// AFFINITY this weapon earns, fired on its own cooldown.
     pub syndicate_radial: Option<crate::syndicates_data::SyndicateDef>,
@@ -1528,6 +1534,10 @@ impl DummyParams {
         // EARNED (a reload from empty opens it), so the card starts at zero.
         if self.rs_on_reload.is_some() {
             out.push(("evo_reload_speed".into(), 1));
+        }
+        // LINGERING JUDGEMENT, the same shape: a window that is open or not.
+        if self.headshot_streak.is_some() {
+            out.push(("evo_headshot_streak".into(), 1));
         }
         if let Some(s) = &self.cc_stack {
             out.push(("on_headshot_kill_cc".into(), s.max_stacks));
@@ -1927,6 +1937,8 @@ impl DummyParams {
             bd_on_reload: panel.bd_on_reload,
             rs_on_reload: panel.rs_on_reload,
             instant_reload: panel.instant_reload,
+            headshot_streak: panel.headshot_streak,
+            cd_below_status_count: panel.cd_below_status_count,
             super_crit_on_status: panel.super_crit_on_status,
             beam_ramp_floor: panel.beam_ramp_floor,
             syndicate_radial: panel.syndicate_radial,
@@ -2097,6 +2109,8 @@ impl Default for DummyParams {
             sustained_fire_rate: None,
             rs_on_reload: None,
             instant_reload: None,
+            headshot_streak: None,
+            cd_below_status_count: None,
             burst: None,
             frenzy: false,
             locked_buffs: Vec::new(),
@@ -4137,6 +4151,7 @@ fn sample_stacks(
     fr_reload_expiry: f64,
     bd_reload_expiry: f64,
     rs_reload_expiry: f64,
+    streak_expiry: f64,
     tendrils: u32,
     bar: &BuffBar,
 ) -> Vec<u8> {
@@ -4173,6 +4188,7 @@ fn sample_stacks(
             "on_reload_bd" => live(now < bd_reload_expiry),
             "on_reload_fr" => live(now < fr_reload_expiry),
             "evo_reload_speed" => live(now < rs_reload_expiry),
+            "evo_headshot_streak" => live(now < streak_expiry),
             // The perk keeps its stacks on the BAR, not in `arcane.buffs`.
             "arcane:secondary_enervate" => {
                 cap(bar.get("secondary_enervate").map_or(0, |b| b.stacks))
@@ -4444,6 +4460,11 @@ pub fn run_once_traced(
     let mut rs_reload_expiry: f64 = f64::NEG_INFINITY;
     // Set by a pellet that rolled Executioner's Fortune, spent once by the shot.
     let mut instant_reload_now = false;
+    // LINGERING JUDGEMENT: the recent headshots' timestamps, and the window
+    // they have opened. The ring is at most `hits` long — older ones can never
+    // matter, because a streak is the LAST `hits` inside `within`.
+    let mut head_times: Vec<f64> = Vec::new();
+    let mut streak_expiry: f64 = f64::NEG_INFINITY;
     let mut bd_reload_expiry: f64 = params
         .bd_on_reload
         .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
@@ -4507,7 +4528,7 @@ pub fn run_once_traced(
                 let stacks = sample_stacks(
                     params, rep, next_frame, &mut arc, &mut gal, &mut buff_stacks,
                     &ch_stacks, ch_buff_expiry, fr_reload_expiry, bd_reload_expiry,
-                    rs_reload_expiry,
+                    rs_reload_expiry, streak_expiry,
                     tendrils, &bar,
                 );
                 rep.frames.push(Frame {
@@ -5143,7 +5164,26 @@ pub fn run_once_traced(
             let cd_rel = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, t)
                 + arc.cd_bonus(ap, t)
                 + params.arcane.cd_rel;
-            let cd_abs = debuffs.cold_cd_bonus(t);
+            // SPITEFUL DEFILEMENT rides the same after-mods FLAT bucket Cold's
+            // received bonus does — "Bonus is added after mods as a flat value"
+            // (wiki, supplied by the owner 2026-08-10), so it is added to the
+            // finished multiplier rather than scaling the weapon's base.
+            //
+            // The counter is DISTINCT TYPES, which is what the card's own
+            // example insists on ("having 5 corrosive and 5 radiation status
+            // effects on a target will not disable this buff") — and it is
+            // Condition Overload's counter, read here rather than recomputed,
+            // so the anti-CO perk and CO can never disagree about the number
+            // they are both reading.
+            let spiteful = match params.cd_below_status_count {
+                Some((threshold, bonus))
+                    if (debuffs.distinct_statuses() as u32) < threshold =>
+                {
+                    bonus
+                }
+                _ => 0.0,
+            };
+            let cd_abs = debuffs.cold_cd_bonus(t) + spiteful;
             let cd_total = ap.crit_multiplier + ap.unmodded_crit_damage * cd_rel + cd_abs;
             // Live BASE-DAMAGE bucket additions, evaluated per instance:
             //  - arcane stacks (Merciless/Deadhead/Dexterity/Cascadia Flare)
@@ -5244,11 +5284,28 @@ pub fn run_once_traced(
             // per-weapon anomaly, carried on the weapon rather than inferred
             // from anything about it (2026-08-01). On a 3x head with Primary
             // Deadhead that is 3 x 1.3 x 1.5 = 5.85x, against 5.4x additive.
+            // LINGERING JUDGEMENT's open window, in the ADDITIVE bracket:
+            // "Headshot damage bonus stacks additively with Primary Deadhead's
+            // headshot damage bonus" (wiki, owner 2026-08-10). So it sums with
+            // the arcane's before the bracket is spent — never multiplies it —
+            // which is why a Deadhead build gets much less than +50% out of it.
+            //
+            // It sits with the ARCANE's term rather than the weapon's in both
+            // branches, because that is the group the card names. The
+            // multiplicative branch is Cernos Prime's anomaly and no weapon
+            // carries both.
+            let streak_bonus = match params.headshot_streak {
+                Some(s) if t < streak_expiry => s.value,
+                _ => 0.0,
+            };
             let (head_bonus, head_innate) = if part.is_head {
                 if ap.headshot_bonus_multiplicative {
-                    (params.arcane.headshot_mult_bonus, ap.headshot_damage_bonus)
+                    (params.arcane.headshot_mult_bonus + streak_bonus, ap.headshot_damage_bonus)
                 } else {
-                    (params.arcane.headshot_mult_bonus + ap.headshot_damage_bonus, 0.0)
+                    (
+                        params.arcane.headshot_mult_bonus + streak_bonus + ap.headshot_damage_bonus,
+                        0.0,
+                    )
                 }
             } else {
                 (0.0, 0.0)
@@ -5491,6 +5548,31 @@ pub fn run_once_traced(
                 // roll is not even taken — a roll that can never be spent still
                 // draws from `extra`, and a perk that changes a fight it cannot
                 // affect is worse than one that does nothing.
+                // LINGERING JUDGEMENT's streak, counted at the same site and
+                // for the same reason: `head_direct` is the only place a
+                // headshot is known to have LANDED. Per pellet, so a multishot
+                // pull can arm it on its own.
+                //
+                // THE ARMING HIT DOES NOT BENEFIT: its damage was settled
+                // above, and the window opens here. That is the ordinary
+                // reading of "on 2 headshots: +50% for 8 seconds" and it is
+                // also the only one this loop can express without pricing a
+                // hit twice.
+                if let Some(s) = params.headshot_streak {
+                    if head_direct && s.hits > 0 {
+                        head_times.retain(|&x| t - x < s.within);
+                        head_times.push(t);
+                        if head_times.len() >= s.hits as usize {
+                            streak_expiry = t + s.duration;
+                            // SPENT. A streak is the last `hits` inside the
+                            // window, so the ones that armed it cannot arm it
+                            // again — otherwise every later headshot would
+                            // re-arm on the same two and the "within 2 seconds"
+                            // clause would never bind.
+                            head_times.clear();
+                        }
+                    }
+                }
                 if let Some(ef) = params.instant_reload {
                     let has_magazine = match &params.cycle {
                         Some(_) => in_base_form,
@@ -6612,6 +6694,159 @@ mod tests {
         // so it must be worth precisely nothing — not "nearly nothing".
         let phenmor = run_once(&unkillable(head(0.20, true)), &mut Rng::new(7)).shots;
         assert_eq!(phenmor, plain, "a kill-gated perk paid without a kill");
+    }
+
+    /// LINGERING JUDGEMENT joins the ADDITIVE headshot bracket, beside Primary
+    /// Deadhead's — it does not multiply it.
+    ///
+    /// VERBATIM (wiki, supplied by the owner 2026-08-10): "Headshot damage
+    /// bonus stacks additively with Primary Deadhead's headshot damage bonus."
+    /// That is the whole finding, because the two readings are far apart on a
+    /// build that carries the arcane and identical on one that does not — so a
+    /// test using the perk alone would pass either way.
+    ///
+    /// On a 2x head with the arcane's +30% and the perk's +50%, against the
+    /// same build without the perk (2 x 1.3 = 2.60):
+    ///   additive        2 x (1 + 0.3 + 0.5) = 3.60   ->  x1.3846
+    ///   multiplicative  2 x 1.3 x 1.5       = 3.90   ->  x1.5000
+    #[test]
+    fn lingering_judgement_adds_to_deadheads_bracket_instead_of_multiplying_it() {
+        let streak = crate::loadout::HeadshotStreak {
+            hits: 2,
+            within: 2.0,
+            value: 0.50,
+            duration: 8.0,
+        };
+        // Every shot into a 2x head, no crit, no status: the only thing moving
+        // the number is the headshot bracket.
+        let build = |deadhead: f64, perk: bool| DummyParams {
+            fire_rate: 10.0,
+            magazine_size: 1e9,
+            duration_secs: 10.0,
+            base_crit_chance: 0.0,
+            unmodded_crit_chance: 0.0,
+            body_parts: vec![BodyPart {
+                name: "head".into(),
+                aim_weight: 1.0,
+                multiplier: 2.0,
+                is_head: true,
+                crit_bonus: false,
+            }],
+            headshot_streak: perk.then_some(streak),
+            arcane: crate::arcanes_data::ArcaneFx {
+                headshot_mult_bonus: deadhead,
+                ..crate::arcanes_data::ArcaneFx::none()
+            },
+            target: TargetParams { base_health: 1e15, ..DummyParams::default().target },
+            ..no_status()
+        };
+        let dmg = |p: &DummyParams| {
+            let r = run_once(p, &mut Rng::new(5));
+            r.total_damage / f64::from(r.shots)
+        };
+        // WITH DEADHEAD the two readings are 8% apart, and additive is the one
+        // the card describes. The measured ratio sits a hair UNDER 1.3846
+        // because the shot that arms the streak is not itself buffed — 1 of the
+        // 100 shots in the window — which is the behaviour, not slack.
+        let base = dmg(&build(0.30, false));
+        let with = dmg(&build(0.30, true));
+        let ratio = with / base;
+        assert!(
+            (ratio - 3.60 / 2.60).abs() < 0.02,
+            "additive gives {:.4}, multiplicative would give {:.4}, got {ratio:.4}",
+            3.60 / 2.60,
+            3.90 / 2.60
+        );
+
+        // …and WITHOUT the arcane both readings agree at 3.0/2.0, which is why
+        // the case above is the one that carries the claim.
+        let solo = dmg(&build(0.0, true)) / dmg(&build(0.0, false));
+        assert!((solo - 1.5).abs() < 0.02, "{solo}");
+    }
+
+    /// …and the streak has to be EARNED: two headshots inside two seconds.
+    #[test]
+    fn lingering_judgement_needs_two_headshots_inside_the_window() {
+        let streak = crate::loadout::HeadshotStreak {
+            hits: 2,
+            within: 2.0,
+            value: 0.50,
+            duration: 8.0,
+        };
+        let at_rate = |fire_rate: f64| DummyParams {
+            fire_rate,
+            magazine_size: 1e9,
+            duration_secs: 60.0,
+            base_crit_chance: 0.0,
+            unmodded_crit_chance: 0.0,
+            body_parts: all_head(),
+            headshot_streak: Some(streak),
+            target: TargetParams { base_health: 1e15, ..DummyParams::default().target },
+            ..no_status()
+        };
+        let per_shot = |p: &DummyParams| {
+            let r = run_once(p, &mut Rng::new(5));
+            r.total_damage / f64::from(r.shots)
+        };
+        // TEN SHOTS A SECOND: the second one arms it and it never lapses.
+        let fast = per_shot(&at_rate(10.0));
+        // ONE SHOT EVERY THREE SECONDS: no two headshots ever fall inside two,
+        // so the perk is worth nothing at all — the "within" clause binding.
+        let slow = per_shot(&at_rate(1.0 / 3.0));
+        assert!(fast > slow * 1.4, "fast {fast}, slow {slow}");
+        // The slow build must match a weapon without the perk EXACTLY.
+        let bare = DummyParams { headshot_streak: None, ..at_rate(1.0 / 3.0) };
+        assert!((slow - per_shot(&bare)).abs() < 1e-9, "a streak armed without a streak");
+    }
+
+    /// SPITEFUL DEFILEMENT counts status TYPES, and dies on the third.
+    ///
+    /// VERBATIM (wiki, owner 2026-08-10): "Multiple instances of the same
+    /// status effect are not counted separately, e.g. having 5 corrosive and 5
+    /// radiation status effects on a target will not disable this buff." That
+    /// example is the test: ten procs of two types must leave it running, and
+    /// one proc of a third type must kill it.
+    ///
+    /// It also lands AFTER MODS as a FLAT value — "+100% Critical Damage" is
+    /// `+1.0` on the finished multiplier, not a doubling of it.
+    #[test]
+    fn spiteful_defilement_counts_types_not_stacks() {
+        let build = |procs: Vec<DamageType>, perk: bool| DummyParams {
+            fire_rate: 10.0,
+            magazine_size: 1e9,
+            duration_secs: 10.0,
+            // ALWAYS crit, so crit damage is the only variable.
+            base_crit_chance: 1.0,
+            unmodded_crit_chance: 1.0,
+            crit_multiplier: 2.0,
+            unmodded_crit_damage: 2.0,
+            forced_procs: procs,
+            status_chance: 0.0,
+            base_status_chance: 0.0,
+            body_parts: mono_body(1.0),
+            cd_below_status_count: perk.then_some((3, 1.0)),
+            // `no_status()` inherits the default fixture's ARCANE, which has
+            // crit terms of its own — they would land inside the ratio and make
+            // "+1.0 flat" unmeasurable. Neutralised so the only crit-damage
+            // sources are the weapon's 2.0 and the perk's flat add.
+            arcane: crate::arcanes_data::ArcaneFx::none(),
+            target: TargetParams { base_health: 1e15, ..DummyParams::default().target },
+            ..no_status()
+        };
+        let dmg = |p: &DummyParams| {
+            let r = run_once(p, &mut Rng::new(5));
+            r.total_damage / f64::from(r.pellets.max(1))
+        };
+        // TWO TYPES, ten stacks each — the card's own example. The perk runs,
+        // and a flat +1.0 on a 2.0 multiplier is exactly 1.5x the damage.
+        let two = vec![DamageType::Corrosive, DamageType::Radiation];
+        let on = dmg(&build(two.clone(), true)) / dmg(&build(two.clone(), false));
+        assert!((on - 1.5).abs() < 0.02, "two types must keep it: {on}");
+
+        // A THIRD TYPE turns it off, and nothing else changed.
+        let three = vec![DamageType::Corrosive, DamageType::Radiation, DamageType::Viral];
+        let off = dmg(&build(three.clone(), true)) / dmg(&build(three, false));
+        assert!((off - 1.0).abs() < 0.02, "a third type must kill it: {off}");
     }
 
     /// AN INCARNON FORM GETS NOTHING FROM IT — the pool is the wrong one.

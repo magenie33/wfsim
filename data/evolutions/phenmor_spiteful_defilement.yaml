@@ -14,19 +14,20 @@ description: "Enemies suffering from fewer than 3 Status Effects will receive: +
 selection: choose_one
 
 effects:
-  # NOT LOADED: no effect kind exists for a crit multiplier gated on the
-  # TARGET's status count. WHEN ONE IS WRITTEN, the layer is already known —
-  # "Bonus is added after mods as a flat value" — so it belongs beside
-  # `flat_crit_chance_after_mods`, not in the base-stat layer. Recorded here so
-  # that is not re-derived from the card's wording later. The engine counts status TYPES already - Condition
-  # Overload's bucket is exactly that number - so the counter is there and the
-  # conditional bracket is not; this resolves to `EvoEffect::Inert` and the UI
-  # says so.
+  # TYPES, NOT STACKS, and the card says so with its own example: "Multiple
+  # instances of the same status effect are not counted separately, e.g. having
+  # 5 corrosive and 5 radiation status effects on a target will not disable this
+  # buff" (owner, 2026-08-10). That counter already existed — Condition
+  # Overload's bucket IS the distinct-type count — so the two read the same
+  # number and cannot drift apart.
   #
-  # It is the ANTI-Condition-Overload perk, which is why it matters here: it
-  # pays on a target with 0-2 statuses and stops the moment CO starts paying,
-  # so a build cannot want both. Modelling it needs the count read at the
-  # instant of the hit, which is where CO already reads it.
+  # AFTER MODS, AS A FLAT VALUE ("Bonus is added after mods as a flat value"):
+  # +100% is +1.0 on the finished crit multiplier, in the same bucket Cold's
+  # received crit-damage bonus uses. It is NOT a doubling and NOT a base-stat
+  # change, so a 2.0x weapon crits for 3.0x rather than 4.0x.
+  #
+  # It is the ANTI-CO perk: the third status TYPE turns it off, and the third
+  # type is where Condition Overload starts paying. No build wants both.
   - kind: crit_multiplier_below_status_count
     threshold: 3
     value: 1.00

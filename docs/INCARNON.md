@@ -140,16 +140,26 @@ The lesson is the one WEAPON_INTAKE now states about wiki prose, pointed at our
 own comments: a note saying "the engine cannot do X" is a claim with a shelf
 life, and both of these were describing a mechanism the perk does not use.
 
-The two that remain are genuinely new shapes:
+The last two were genuinely new shapes, and both landed the same day once their
+exact wording arrived (owner, 2026-08-10). **All 13 Phenmor perks are modelled.**
 
-- **Spiteful Defilement** — a crit multiplier while the TARGET carries fewer
-  than three statuses. The counter exists (Condition Overload's bucket IS the
-  status-type count); the conditional bracket does not. It is the
-  anti-CO perk, so no build wants both.
+- **Spiteful Defilement** — +100% crit damage while the target carries fewer
+  than three status TYPES. Two clauses decided it and both were the card's:
+  "added after mods as a flat value" put it in the same bucket Cold's received
+  crit-damage bonus uses (+1.0 on the finished multiplier, not a doubling), and
+  "5 corrosive and 5 radiation … will not disable this buff" made the counter
+  distinct TYPES — which is Condition Overload's own bucket, read rather than
+  recomputed. It is the anti-CO perk: the third type turns it off, and the third
+  type is where CO starts paying. Worth **+37% / +27%** (base / cycle).
 - **Lingering Judgement** — a buff armed by a headshot STREAK (2 in 2 s, held
-  8 s). On the official ruler, which puts every shot into a head, it would arm
-  on the second shot and never lapse: a flat +50% headshot damage for the whole
-  engagement, and the largest unmodelled thing in the set so far.
+  8 s), granting headshot damage into the ADDITIVE bracket beside Primary
+  Deadhead's. On the official ruler, which puts every shot into a head, it arms
+  on the second shot and never lapses: worth **+50%** in both modes with no
+  arcane, and much less with Deadhead equipped — on a 2x head the pair is
+  x1.385 together, not x1.5.
+
+Neither beats **Devouring Attrition** (+252% / +355%), which is the tier's
+answer and the reason the board's Phenmor rows all carry it.
 
 Everything else mapped onto kinds already in the engine. Two guard tests caught
 the weapon on the way in and are the reason nothing shipped silently: the
