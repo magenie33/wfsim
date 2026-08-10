@@ -1,0 +1,109 @@
+id: shedu
+name: Shedu
+slot: primary
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+# WFCD `type: Rifle`, and DE's own path is a rifle path — an ARM-CANNON is a
+# chassis, not a mod class. Same three pools a rifle gets.
+class: rifle
+mod_pools: [primary, rifle]
+grip_type: RIFLE
+mastery_rank: 13
+max_rank: 30
+
+# Weapon-level metadata (wiki infobox, cross-checked against WFCD
+# warframe-items — the two agree on every attack figure below).
+accuracy: 100.0              # wiki "Very High"
+disposition: 0.75            # ●●○○○, WFCD omegaAttenuation 0.75
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Shedu
+traits: [sentient]
+introduced: "26.0"           # Erra
+internal_name: /Lotus/Weapons/Sentients/SentientArmCannon/SentientArmCannonWeapon
+noise: alarming
+
+# NO AMMO POOL AT ALL — "Ammo Max: 0", "This weapon does not use ammo pickups;
+# ammo regenerates over time." The magazine IS the weapon's whole supply, so
+# `ammo_max: 0` is the fact rather than a placeholder: `reserve_is_infinite`
+# reads `has_reserve` off it and answers "there is no reserve to run dry",
+# which is the same shape a sentinel weapon has.
+ammo_type: primary
+ammo_max: 0
+ammo_pickup: 0
+magazine: 7
+
+# THE RELOAD IS A BATTERY REGENERATING, and the listed 1.25 s is not a reload
+# time — it is a DELAY plus a REFILL, and both halves are published:
+#
+#   "Has a 1 second delay before ammo begins to regenerate; if there are still
+#    rounds left, the delay is 0.4 seconds instead."
+#   "Ammo regenerates at 28 rounds per second; it takes 0.25 seconds to
+#    regenerate a fully depleted battery excluding the delay."
+#
+# 7 / 28 = 0.25 s, so a fully depleted battery costs 1.0 + 0.25 = 1.25 s — the
+# wiki's Reload Time to the digit — and a partially spent one costs
+# 0.4 + 0.25 = 0.65 s, which is WFCD's `reloadTime`. The two sources disagreed
+# only because each published a different case of the same model.
+reload_seconds: 1.25         # the EMPTY case: 1.0 s delay + 7/28 s refill
+#
+# AND ONLY PART OF A GAP PAYS — the part beyond the delay — so the weapon breaks
+# even at 0.4 + 1/28 = 0.4357 s a shot, i.e. 2.295 rounds/s, 8.2% BELOW its
+# listed 2.50. Above that it drains and reloads; below it every gap returns more
+# than a whole round and the battery never empties.
+#
+# ✅ MEASURED on the official ruler (2026-08-10, 180 s): stock fires 297 rounds
+# and reloads 49 times; the same build with Vile Precision (-15% fire rate)
+# fires 288 and reloads ZERO — 3% fewer shots, no downtime at all, and slightly
+# more damage for it. A fire-rate PENALTY making this weapon better is the
+# mechanic's whole signature, and it is why `reload_seconds` alone cannot stand
+# in for it.
+battery:
+  regen_per_second: 28.0
+  delay_empty_s: 1.0
+  delay_partial_s: 0.4
+
+# CO: no Shedu row in the wiki's catalog, and absence there means ORDINARY.
+co_behavior: additive_with_base_damage
+
+unmodeled:
+  - "the BATTERY DISCHARGE that fires when the magazine empties: a 20 m pulse for 100 Impact at 100% status. Its numbers are published and its trigger is automatic, but whether the build SCALES it is not stated anywhere — a flat 100 is noise next to a modded shot and a scaled 100 is not, and the engine's only precedent (a syndicate blast) is explicitly unscaled. One measurement decides it; until then the sim leaves it out rather than inventing a scaling rule"
+  - "the discharge also removes Sentient and Shadow Stalker damage resistances, which is worth nothing against any target in this roster — no Sentient here has one to strip"
+  - "damage falloff on the explosion, linear to 40% at 6.6 m — this arena has no distance, so every shot lands at point blank"
+  - "+30% Movement Speed while aiming, and the explosion's self-stagger: neither is a number this arena reads"
+
+attack:
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 200
+  fire_rate: 2.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.25
+  crit_multiplier: 2.1
+  status_chance: 0.23
+  punch_through_m: 0.0
+  damage: { heat: 71.0 }
+
+  # THE EXPLOSION, on every shot: "Shots explode in a 6.6 meter radius upon
+  # impacting a surface or enemy", and "Initial hit and explosion apply status
+  # separately" — which is exactly what a `radial` is here (MECHANICS §7).
+  #
+  # It carries its own crit and status (29%, against the direct hit's 23%) and
+  # its own element, and it never takes a body-part multiplier: "Explosion has
+  # a headshot multiplier of 1x and cannot trigger headshot conditions", which
+  # is the engine's rule for every radial rather than a Shedu special case.
+  radial:
+    damage: { electricity: 87.0 }
+    radius_m: 6.6
+    falloff_start_m: 0.0
+    falloff_reduction: 0.4      # 87 at the centre -> 34.8 (40%) at 6.6 m
+    crit_chance: 0.25
+    crit_multiplier: 2.1
+    status_chance: 0.29
+
+source:
+  url: https://wiki.warframe.com/w/Shedu
+  # note: every attack figure agrees between the wiki infobox and WFCD's
+  # `attacks` array ("Normal Attack" / "Radial Attack", falloff
+  # {start 0, end 6.6, reduction 0.6} — the fraction LOST there, 40% kept).

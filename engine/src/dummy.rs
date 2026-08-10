@@ -1169,6 +1169,11 @@ pub struct DummyParams {
     /// Hemorrhage's below-2.5 gate reads and what the panel prints, exactly as
     /// on a charge weapon.
     pub sustained_fire_rate: Option<crate::weapons_data::SustainedFireRate>,
+    /// A MAGAZINE THAT REFILLS ITSELF — see [`crate::weapons_data::Battery`].
+    /// The EMPTY case is already `reload_seconds` (delay + a full refill); what
+    /// this adds is the BETWEEN-SHOTS one, which is where the mechanic stops
+    /// being a differently-spelled reload.
+    pub battery: Option<crate::weapons_data::Battery>,
     /// A BURST trigger's modded shape — see [`crate::weapons_data::BurstSpec`].
     pub burst: Option<crate::weapons_data::BurstSpec>,
     /// Whether the weapon's Frenzy passive is equipped (Dual Toxocyst base
@@ -1896,6 +1901,7 @@ impl DummyParams {
             charge_seconds: panel.charge_seconds,
             charge_cadence: panel.charge_cadence,
             sustained_fire_rate: panel.sustained_fire_rate,
+            battery: panel.battery,
             burst: panel.burst,
             frenzy: false,
             magazine_size: panel.magazine_size,
@@ -2107,6 +2113,7 @@ impl Default for DummyParams {
             charge_seconds: None,
             charge_cadence: crate::weapons_data::ChargeCadence::DrawThenRate,
             sustained_fire_rate: None,
+            battery: None,
             rs_on_reload: None,
             instant_reload: None,
             headshot_streak: None,
@@ -4514,6 +4521,12 @@ pub fn run_once_traced(
     // moment the next one was due. See `weapons_data::SustainedFireRate`.
     let mut spool_shots = 0.0f64;
     let mut spool_due = f64::NEG_INFINITY;
+    // WHEN THE LAST SHOT ACTUALLY WENT OFF, which is NOT `spool_due`. That one
+    // is when the next shot was DUE, so the interval is already inside it and
+    // the difference is zero on every ordinary pull — right for a spool, which
+    // asks "did anything intervene", and useless for a battery, which asks how
+    // long the weapon spent not firing.
+    let mut last_shot_t = f64::NEG_INFINITY;
     loop {
         // SAMPLE first, so a frame shows the fight as it stood BEFORE the
         // shot at `t` — the same convention the timeline buckets use.
@@ -4563,6 +4576,31 @@ pub fn run_once_traced(
         // `bar.expire` below (at the post-reload t) is still correct.
         // Whether the NEXT shot costs zero ammo — it decides whether an empty
         // magazine reloads, so it has to be known before that branch.
+        // A BATTERY REFILLS WHILE NOBODY IS SHOOTING, and it has to be counted
+        // BEFORE anything asks whether this shot can be fired — otherwise an
+        // empty magazine goes straight to the reload branch and the mechanic
+        // never gets a turn.
+        //
+        // The gap is the same one a spool reads: `spool_due` is when this shot
+        // was due, so `t - spool_due` is what the weapon spent not firing.
+        // Rounds a second, after a delay that depends on whether anything is
+        // left — see `weapons_data::Battery`.
+        //
+        // THE EMPTY CASE IS NOT HERE. It is the ordinary reload, whose
+        // `reload_seconds` already IS `delay_empty + magazine/rate` (1.25 s on
+        // the Shedu, which is why the wiki lists that as its reload time). What
+        // this adds is the case a reload cannot express — the battery filling
+        // BETWEEN shots, which on a weapon slowed below one shot per
+        // `delay_partial` means it never empties at all.
+        if let Some(b) = params.battery {
+            let idle = t - last_shot_t;
+            let delay = if magazine < 1e-9 { b.delay_empty_s } else { b.delay_partial_s };
+            if last_shot_t.is_finite() && b.regen_per_second > 0.0 && idle > delay {
+                let gained = (idle - delay) * b.regen_per_second;
+                magazine = (magazine + gained).min(params.magazine_size);
+            }
+        }
+
         let next_cost = {
             let ap: &DummyParams = match &params.cycle {
                 Some(cy) if in_base_form => &cy.base_form,
@@ -6075,6 +6113,7 @@ pub fn run_once_traced(
         if t > spool_due + 1e-9 {
             spool_shots = 0.0;
         }
+        last_shot_t = t;
         // …and then the SPOOL, which is a fraction of whatever that rate came
         // to: a fire-rate mod raises the ceiling and the floor together, so the
         // Phenmor's Incarnon form still spends most of its 408-round magazine
@@ -7023,6 +7062,69 @@ mod tests {
         // unmodded four.
         let stacked = reload_span(2.0, 1.0, 0.0, Some((1.0, 100.0)), 0.0);
         assert!((stacked - 4.0 / 3.0).abs() < 1e-9, "{stacked}");
+    }
+
+    /// A BATTERY REFILLS BETWEEN SHOTS, and slowing the weapon enough removes
+    /// its reload entirely.
+    ///
+    /// The Shedu's numbers (wiki, verbatim in `weapons_data::Battery`): a
+    /// 7-round battery, 28 rounds a second, a 0.4 s delay with rounds left.
+    /// Only the part of the gap BEYOND the delay pays, so the weapon breaks
+    /// even at `0.4 + 1/28 = 0.4357 s` a shot — **2.295 rounds a second**,
+    /// 8.2% under its listed 2.50.
+    ///
+    /// That margin is the whole point and it is why this is not a
+    /// differently-spelled reload: the listed rate is 0.036 s above break-even,
+    /// so a single fire-rate penalty crosses it and the reload disappears.
+    /// A weapon getting strictly better from a NEGATIVE mod is a claim that has
+    /// to be asserted rather than described.
+    #[test]
+    fn a_battery_refills_between_shots_and_a_slow_enough_one_never_reloads() {
+        let shedu = |fire_rate: f64| DummyParams {
+            fire_rate,
+            magazine_size: 7.0,
+            reload_seconds: 1.25, // = 1.0 s delay + 7/28 s refill
+            duration_secs: 60.0,
+            body_parts: mono_body(1.0),
+            battery: Some(crate::weapons_data::Battery {
+                regen_per_second: 28.0,
+                delay_empty_s: 1.0,
+                delay_partial_s: 0.4,
+            }),
+            ..no_status()
+        };
+        // AT the listed rate the gap IS the delay: nothing regenerates, and the
+        // battery runs dry every seven rounds exactly as a magazine would.
+        let listed = run_once(&shedu(2.5), &mut Rng::new(4));
+        assert!(listed.reloads > 0, "at the listed rate it must still reload");
+
+        // ABOVE break-even it still drains, just slowly — at 2.35/s the gap
+        // returns 0.715 rounds against the 1.0 it spends, so the battery lasts
+        // 24.6 shots instead of 7. The mechanic is a SLOPE, not a switch, and a
+        // test that only tried the two extremes would not have said so.
+        //
+        // (2.30/s drains too, at 0.026 rounds a shot — 268 of them, which is
+        // 116 s and does not fit this fixture's minute. Worth recording: the
+        // approach to break-even is asymptotic, so "does it reload" stops being
+        // a question about the weapon and becomes one about the clock.)
+        assert!(run_once(&shedu(2.35), &mut Rng::new(4)).reloads > 0);
+
+        // JUST BELOW IT (2.25/s) the reload is gone for good.
+        let slow = run_once(&shedu(2.25), &mut Rng::new(4));
+        assert_eq!(slow.reloads, 0, "a battery under break-even must never empty");
+
+        // …and it is worth REAL rounds: 10% slower and no downtime at all beats
+        // the listed rate over a minute.
+        assert!(
+            slow.shots > listed.shots,
+            "slowed {} shots against {} at the listed rate",
+            slow.shots, listed.shots
+        );
+
+        // THE MECHANIC IS THE DIFFERENCE, not the numbers: the same weapon with
+        // no battery reloads at either rate.
+        let plain = DummyParams { battery: None, ..shedu(2.25) };
+        assert!(run_once(&plain, &mut Rng::new(4)).reloads > 0);
     }
 
     /// A SPOOL THAT CLIMBS is the same arithmetic pointed the other way, and it

@@ -676,6 +676,10 @@ pub struct WeaponSpec {
     pub beam_ramp_floor: Option<f64>,
     #[serde(default)]
     pub reload_seconds: Option<f64>,
+    /// A MAGAZINE THAT REFILLS ITSELF — see [`Battery`]. `None` on every weapon
+    /// that reloads.
+    #[serde(default)]
+    pub battery: Option<Battery>,
     #[serde(default)]
     pub co_behavior: Option<String>,
     /// How much of the base the CO term computes on (the catalog's "CO Damage
@@ -1160,6 +1164,45 @@ fn pretty_id(id: &str) -> String {
 /// bursts, so the weapon loses less rate than the number on the card says.
 /// That asymmetry is modelled; see the `.max(1.0)` in `loadout::resolve`.
 ///
+/// A MAGAZINE THAT REFILLS ITSELF, on a clock rather than on a reload.
+///
+/// The Shedu's battery, and the roster's first: *"This weapon does not use ammo
+/// pickups; ammo regenerates over time. Has a 1 second delay before ammo begins
+/// to regenerate; if there are still rounds left, the delay is 0.4 seconds
+/// instead. Ammo regenerates at 28 rounds per second"* (wiki Shedu, verbatim).
+///
+/// The listed "Reload Time" is therefore not a reload at all — it is
+/// `delay + magazine/rate`, and BOTH published numbers fall out of it: 1.0 +
+/// 7/28 = 1.25 s is the wiki's figure for an empty battery, 0.4 + 7/28 = 0.65 s
+/// is WFCD's for a partial one. The two sources never disagreed; each published
+/// a different case.
+///
+/// WHAT IT CHANGES that a plain reload does not: the battery refills BETWEEN
+/// SHOTS, and only for the part of the gap that exceeds the delay. So the
+/// weapon breaks even when
+///
+///   `1 / fire_rate  >=  delay_partial + ammo_cost / regen_per_second`
+///
+/// which on the Shedu is `0.4 + 1/28 = 0.4357 s`, i.e. **2.295 rounds a
+/// second** — 8.2% below its listed 2.50. Above that it drains and reloads;
+/// below it, every gap returns more than a whole round and the battery NEVER
+/// EMPTIES. A fire-rate penalty of nine percent therefore removes the weapon's
+/// reload entirely, which is the one thing a `reload_seconds` cannot say.
+///
+/// The listed rate sits just 0.036 s above break-even, so the effect is not a
+/// curiosity: Vile Precision alone crosses it.
+#[derive(Debug, Clone, Copy, serde::Deserialize)]
+pub struct Battery {
+    /// Rounds a second, once the delay has passed (28).
+    pub regen_per_second: f64,
+    /// The wait before regeneration starts with the battery EMPTY (1.0 s).
+    /// `reload_seconds` already carries `this + magazine/rate`, so this field
+    /// is what the between-shots case needs rather than a second copy of it.
+    pub delay_empty_s: f64,
+    /// …and with rounds still in it (0.4 s).
+    pub delay_partial_s: f64,
+}
+
 /// A SPOOL: the rate MOVES the longer the trigger is held, and rebuilds from
 /// the start once firing pauses.
 ///
@@ -1574,6 +1617,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // is stated once rather than copied into a second file that is free
         // to drift from it.
         beam_ramp_floor: s.beam_ramp_floor.unwrap_or(crate::dummy::BEAM_RAMP_FLOOR),
+        battery: s.battery,
         forced_procs: s.attack.forced_procs.iter().map(|t| damage_type(t)).collect(),
         no_resupply: s.no_resupply,
         base_reload,

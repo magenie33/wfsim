@@ -1097,7 +1097,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 78] = [
+        const EXPECTED: [(&str, &str, &[&str]); 79] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
@@ -1247,6 +1247,11 @@ mod tests {
             ("furis", "auto", &[]),
             ("mk1_furis", "auto", &[]),
             ("verglas_prime", "held", &[]),                    // continuous sentinel weapon
+            // AN AUTO RIFLE, so no Cannonade — the Semi-* mods gate on the
+            // listed trigger and the Shedu's is Auto. Its explosion changes
+            // nothing about that: a Cannonade reads the TRIGGER, not what the
+            // shot does when it lands.
+            ("shedu", "auto", &[]),
         ];
         let roster: Vec<&str> =
             crate::weapons_data::roster().map(|s| s.id.as_str()).collect();

@@ -869,6 +869,10 @@ pub struct WeaponBase {
     /// layer UNTOUCHED — it is a fraction of whatever rate the build ends up
     /// with, so a fire-rate mod raises the ceiling and the floor together.
     pub sustained_fire_rate: Option<crate::weapons_data::SustainedFireRate>,
+    /// See [`crate::weapons_data::Battery`]. Untouched by the mod layer too:
+    /// the regen rate is the weapon's and a magazine mod changes only how many
+    /// rounds it has to refill.
+    pub battery: Option<crate::weapons_data::Battery>,
     /// Ammo spent per shot / per beam tick (weapon data `attack.ammo_cost`).
     pub ammo_cost: f64,
     /// See `weapons_data::WeaponSpec::headshot_bonus_multiplicative`.
@@ -1448,6 +1452,10 @@ pub struct ResolvedPanel {
     /// layer UNTOUCHED — it is a fraction of whatever rate the build ends up
     /// with, so a fire-rate mod raises the ceiling and the floor together.
     pub sustained_fire_rate: Option<crate::weapons_data::SustainedFireRate>,
+    /// See [`crate::weapons_data::Battery`]. Untouched by the mod layer too:
+    /// the regen rate is the weapon's and a magazine mod changes only how many
+    /// rounds it has to refill.
+    pub battery: Option<crate::weapons_data::Battery>,
     /// Ammo per shot — a WEAPON constant, so no mod bucket touches it.
     pub ammo_cost: f64,
     /// See `weapons_data::WeaponSpec::headshot_bonus_multiplicative`.
@@ -2277,6 +2285,7 @@ pub fn resolve_for(
         // ones count only where the weapon lets them (an Arch-Gun does not).
         charge_ammo_per_second: base.charge_ammo_per_second,
         sustained_fire_rate: base.sustained_fire_rate,
+        battery: base.battery,
         // A MAGAZINE-EATING CHARGE STATES ITS OWN TIME. `magazine / rate`
         // seconds, because that is how long the magazine takes to be spent —
         // so a magazine mod lengthens the charge as well as paying for the
