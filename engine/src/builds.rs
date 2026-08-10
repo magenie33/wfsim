@@ -1056,6 +1056,52 @@ mod element_order_tests {
         v.iter().map(|s| (*s).to_string()).collect()
     }
 
+    /// EACH ATTACK PART COMBINES ITS OWN ELEMENT, so one mod can make two
+    /// different combinations at once.
+    ///
+    /// The Shedu is where this stops being an implementation detail: its direct
+    /// hit is Heat and its explosion is Electricity, and the wiki gives the
+    /// consequence as a worked example (Tips, verbatim):
+    ///
+    /// > The Heat and Electricity damage portions are separate from one
+    /// > another, the Shedu can get a combination of Gas and Corrosive with
+    /// > only a Toxin damage mod, or a combination of Blast and Magnetic with
+    /// > only a Cold mod.
+    ///
+    /// Both pairs are asserted, because either could be right by accident: a
+    /// build that combined ONE element set and handed it to both parts would
+    /// produce Gas twice, and one that ignored the radial's innate would
+    /// produce Gas and plain Toxin.
+    #[test]
+    fn one_elemental_mod_makes_two_combinations_on_a_two_element_weapon() {
+        let types = |mods: &[&str]| {
+            let base = crate::loadout::WeaponBase::from_data("shedu", true, &[]);
+            let pool = crate::mods_data::pool_for_weapon("shedu");
+            let picked: Vec<&crate::loadout::ModDef> = mods
+                .iter()
+                .map(|id| pool.iter().find(|m| m.id == *id).expect("mod"))
+                .collect();
+            let p = crate::loadout::resolve(&base, &picked, crate::loadout::StackPolicy::Emergent);
+            let live = |v: &crate::damage::DamageVector| {
+                let mut out: Vec<DamageType> = DamageType::ALL
+                    .iter()
+                    .copied()
+                    .filter(|d| v.get(*d) > 1e-9)
+                    .collect();
+                out.sort_by_key(|d| *d as usize);
+                out
+            };
+            (live(&p.damage), live(&p.radial.as_ref().expect("the Shedu explodes").damage))
+        };
+
+        // STOCK: the two innates, untouched.
+        assert_eq!(types(&[]), (vec![Heat], vec![Electricity]));
+        // ONE TOXIN MOD -> Gas on the hit, CORROSIVE on the explosion.
+        assert_eq!(types(&["infected_clip"]), (vec![Gas], vec![Corrosive]));
+        // ONE COLD MOD -> Blast on the hit, MAGNETIC on the explosion.
+        assert_eq!(types(&["primed_cryo_rounds"]), (vec![Blast], vec![Magnetic]));
+    }
+
     /// THREE elemental mods are not one build — they are three, and on this
     /// weapon the best is 3.3x the worst (2.074 against 0.627). That spread is
     /// the whole reason the chip has to name its pairing.
