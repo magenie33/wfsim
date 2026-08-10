@@ -537,7 +537,10 @@ let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: nul
   // a fight that carried it could decide how the weapon was fired, which is
   // what let a ruler pin an Incarnon weapon at its cycle (owner, 2026-08-07:
   // 官方的 scenario 是不带 mode 了，我们自定义的场景也不应该有).
-  infinite_ammo: true, metric: "kpm", duration: 300, runs: 100, buffs: {},
+  // 180 s: the same length the official rulers run, so a player's first
+  // comparison against the board is not a puzzle (owner, 2026-08-10). Only the
+  // DEFAULT — a saved scenario carries its own duration and keeps it.
+  infinite_ammo: true, metric: "kpm", duration: 180, runs: 100, buffs: {},
   ability_strength: 1, abilities: [] };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
