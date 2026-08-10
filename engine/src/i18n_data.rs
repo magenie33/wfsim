@@ -165,6 +165,34 @@ pub fn locales() -> &'static [(String, LocaleSpec)] {
 mod tests {
     use super::*;
 
+    /// 赋能 IS ARCANE AND 灵化 IS INCARNON — two of DE's own terms that collide
+    /// in one compound, and the collision has shipped once.
+    ///
+    /// "赋能形态" reads as "Arcane form" and means nothing; the Incarnon form is
+    /// 灵化形态, which is what all 75 evolution names and every other line in
+    /// the overlay already say. One line said otherwise for a day
+    /// (owner, 2026-08-10) — written by translating the English rather than
+    /// reaching for the term already in the file, which is the exact failure
+    /// the transcribe-never-translate rule exists to stop.
+    ///
+    /// The assertion is deliberately on the COMPOUND, not on 赋能: the bare
+    /// word is correct everywhere it appears, fifteen times, for Arcane.
+    #[test]
+    fn incarnon_is_never_translated_as_if_it_were_arcane() {
+        for (path, text) in crate::data::files_under("i18n/") {
+            assert!(
+                !text.contains("赋能形态"),
+                "{path}: 赋能 is Arcane; the Incarnon form is 灵化形态"
+            );
+        }
+        // …and the right term is in fact there, so this cannot pass by the
+        // overlay being empty.
+        let zh: String = crate::data::files_under("i18n/zh/")
+            .map(|(_, text)| text.to_string())
+            .collect();
+        assert!(zh.contains("灵化形态"), "the zh overlay lost 灵化形态 entirely");
+    }
+
     /// A mod by id across EVERY class pool (a weapon's pool is a union, and
     /// so is the set of mods an overlay may name).
     fn known_mod(id: &str) -> Option<crate::loadout::ModDef> {
