@@ -1892,6 +1892,11 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: ocucor
     mode: base
+    score: 6.486521899741353
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, pressurized_magazine, magnetic_might, primed_heated_charge]
+    arcanes: [secondary_encumber]
+  - weapon: ocucor
+    mode: base
     score: 6.0005296845836416
     mods: [galvanized_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
