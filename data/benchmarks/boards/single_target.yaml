@@ -2093,6 +2093,24 @@ entries:
     arcanes: [primary_crux]
   - weapon: phenmor
     mode: cycle
+    score: 50.944550165673256
+    mods: [galvanized_chamber, galvanized_aptitude, vigilante_armaments, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, hellfire]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: phenmor
+    mode: cycle
+    score: 50.678476517511356
+    mods: [galvanized_chamber, galvanized_aptitude, speed_trigger, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, hellfire]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: phenmor
+    mode: cycle
+    score: 49.543201570552746
+    mods: [galvanized_chamber, galvanized_aptitude, vigilante_armaments, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: phenmor
+    mode: cycle
     score: 47.936382958845286
     mods: [galvanized_chamber, serration, galvanized_aptitude, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, thermite_rounds]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
