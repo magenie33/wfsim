@@ -98,6 +98,12 @@ entries:
     mode: cycle
     score: 15.065295414213097
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    score: 15.065295414213097
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
     arcanes: [primary_deadhead]
   - weapon: boar_prime
@@ -230,6 +236,12 @@ entries:
     mode: cycle
     score: 6.861973177593077
     mods: [primed_ravage, critical_deceleration, frail_momentum, hells_chamber, magnetic_strafe, primed_chilling_grasp, contagious_spread, scattering_inferno]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    score: 6.644509009350026
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, primed_chilling_grasp, primed_charged_shell]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
     arcanes: [primary_deadhead]
   - weapon: boar_prime
@@ -573,6 +585,12 @@ entries:
     score: 32.342326768906304
     mods: [primary_acuity, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, stormbringer, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 31.10466452810878
+    mods: [primary_acuity, serration, galvanized_scope, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
@@ -928,6 +946,12 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, anemic_agility, creeping_bullseye, primed_convulsion, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_deadhead]
+  - weapon: felarx
+    mode: cycle
+    score: 49.9213085710118
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_charged_shell, toxic_barrage]
+    evolutions: [felarx_evo1_incarnon_form, felarx_frictionless_flight, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
   - weapon: felarx
     mode: cycle
     score: 46.915505818884675
