@@ -1163,7 +1163,13 @@ pub fn meta_json() -> Value {
             // whatever ranks — the headline number, the picker's gain scan —
             // ranks by the same thing (user, 2026-08-01).
             "metric": "kpm",
-            "duration": 300.0,
+            // 180 s, the same length as the official rulers (owner,
+            // 2026-08-10). A default that disagreed with the board made every
+            // first comparison a puzzle, and on a build that compounds the gap
+            // is not small — the Felarx's board score moved 30% on this number
+            // alone. Only the DEFAULT moves: a saved scenario carries its own
+            // duration and keeps it.
+            "duration": 180.0,
             "runs": 100,
             // The final-round contract, for an API caller. The WEB does not
             // read these: `final_runs` is the scenario's `runs` and
@@ -3355,7 +3361,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // The MAGAZINE is unaffected either way: this is the reserve behind it, so
     // reload cadence — and `ammo_cost` — still bite.
     let infinite_ammo = get_bool(v, "infinite_ammo", true);
-    let duration = get_f64(v, "duration", 300.0).clamp(1.0, 3600.0);
+    let duration = get_f64(v, "duration", 180.0).clamp(1.0, 3600.0);
     let runs = get_u32(v, "runs", 100).clamp(1, 20_000);
     let seed = v.get("seed").and_then(|x| x.as_u64()).unwrap_or(0xC0FFEE);
 
