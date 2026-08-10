@@ -170,6 +170,18 @@ enum EvoEffect {
     /// read here, and granting a conditional bonus unconditionally is the one
     /// mistake worse than not granting it.
     ReloadSpeedBonus(f64),
+    /// READY RETALIATION — reload speed, but only after a reload from EMPTY and
+    /// only for a while. The window opens when that reload FINISHES, so the
+    /// reload that armed it never gets it and the NEXT one does (owner-stated,
+    /// 2026-08-10; the weapon files already carried the same sentence).
+    ///
+    /// It is an ordinary reload-speed bonus in every other respect — which is
+    /// the correction that made it worth implementing. The Phenmor's page adds
+    /// *"Affects untransformed Phenmor. Can affect transition into Incarnon form
+    /// with a well-timed manual reload. Does not affect transition from Incarnon
+    /// back to base form."* and the last clause is WRONG: nothing about the buff
+    /// knows which direction an animation is going, so the revert takes it too.
+    ReloadSpeedOnEmptyReload { value: f64, duration: f64 },
     /// Prelude of Might: "With Critical Chance below 40%: Increase Critical
     /// Damage Multiplier by +3x". The condition is on the build's OWN RESOLVED
     /// crit chance, so unlike every other `condition:` in this engine it asks
@@ -433,8 +445,21 @@ impl EvolutionDef {
                     permanent: false,
                     opens_at: CardOpens::Zero,
                 }),
+                // READY RETALIATION IS NOT A CARD, and the distinction is the
+                // one this list exists for. A card is a CONTROL: it configures
+                // a buff the sim cannot earn on its own (Fevered Frenzy's
+                // permanent stacks) or locks one it can. This buff is earned by
+                // an event the sim already simulates — a reload from empty —
+                // and there is nothing for a player to set, so a card here
+                // would be a control that does nothing.
+                //
+                // It is still VISIBLE, which is what BUFFS.md actually requires:
+                // `buff_roster` lists it and the replay draws its window, the
+                // same way Pressurized Magazine's `on_reload_fr` is drawn
+                // without an evolution card.
+                EvoEffect::ReloadSpeedOnEmptyReload { .. }
                 // Static stat changes — nothing to configure at runtime.
-                EvoEffect::FlatBaseStatusChanceByForm { .. }
+                | EvoEffect::FlatBaseStatusChanceByForm { .. }
                 | EvoEffect::FlatBaseCritMultiplier(_)
 
                 | EvoEffect::Indirect(..)
@@ -585,6 +610,10 @@ impl EvolutionDef {
                 ),
                 EvoEffect::FireRateBonus(v) => format!("+{:.0}% fire rate", v * 100.0),
                 EvoEffect::ReloadSpeedBonus(v) => format!("+{:.0}% reload speed", v * 100.0),
+                EvoEffect::ReloadSpeedOnEmptyReload { value, duration } => format!(
+                    "+{:.0}% reload speed for {duration:.0}s after a reload from empty",
+                    value * 100.0
+                ),
                 EvoEffect::StackingMultishotOnStatus { status, per_stack, max_stacks, duration } => format!(
                     "+{per_stack} multishot per stack x{max_stacks} for {duration:.0}s while the                      target carries {status:?} (flat, like Final Fusillade's)"
                 ),
@@ -775,6 +804,22 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // `Inert` and keeps saying so on its tile.
         "reload_speed_bonus" if v.get("condition").is_none() => {
             EvoEffect::ReloadSpeedBonus(f(v, "value").unwrap_or(0.0))
+        }
+        // …AND THE CONDITIONAL ONE, which needs a WINDOW to be a buff at all.
+        // Only the Phenmor's page publishes one ("for 6 seconds"); the other
+        // eleven Ready Retaliations state the bonus and no duration, and a
+        // window nobody published is not one to invent — those files say so and
+        // stay inert. So the duration is REQUIRED here rather than defaulted:
+        // a missing one falls through to `Inert`, which is the honest answer
+        // and the one whose tile says why.
+        "reload_speed_bonus"
+            if v.get("condition").and_then(Value::as_str) == Some("reload_from_empty")
+                && f(v, "duration_seconds").is_some() =>
+        {
+            EvoEffect::ReloadSpeedOnEmptyReload {
+                value: f(v, "value").unwrap_or(0.0),
+                duration: f(v, "duration_seconds").unwrap_or(0.0),
+            }
         }
         "stacking_multishot_on_electricity_status" => EvoEffect::StackingMultishotOnStatus {
             status: crate::damage::DamageType::Electricity,
@@ -985,6 +1030,15 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::FireRateBonus(v) => base.evo_fire_rate_bonus += v,
                 EvoEffect::ReloadSpeedBonus(v) => base.evo_reload_bonus += v,
+                EvoEffect::ReloadSpeedOnEmptyReload { value, duration } => {
+                    base.rs_on_empty_reload = Some(crate::loadout::TimedBuff {
+                        value: *value,
+                        duration: *duration,
+                        // No reload has happened yet, so no window is open —
+                        // the same seed the other two on-reload buffs use.
+                        initial_active: false,
+                    });
+                }
                 // Carried, not applied: `apply` works on the RAW base panel and
                 // the condition needs the crit chance the mods produce, which
                 // does not exist until `resolve` runs.
@@ -1408,10 +1462,19 @@ use crate::loadout::WeaponBase;
             // silently falling back to base (2026-08-04). Inert meant the
             // target was dropped at parse time and "which evolution unlocks
             // the form" had to be guessed from ladder position.)
-            // ---- RELOAD CADENCE ----------------------------------------
-            // `reload_speed_bonus` is a MODS-loader word this loader has no arm
-            // for, and both instances are conditional on an empty reload the
-            // sim does not distinguish.
+            // ---- RELOAD CADENCE, and the reason changed 2026-08-10 -------
+            // Ready Retaliation IS implemented now
+            // (`EvoEffect::ReloadSpeedOnEmptyReload`, on the Phenmor). What
+            // keeps these five inert is no longer the engine — it is that
+            // NOBODY PUBLISHED THEIR WINDOW. Only the Phenmor's page states one
+            // ("for 6 seconds"); these five say "+100% Reload Speed" and stop,
+            // and a duration is the difference between a perk worth a second
+            // per magazine and one worth nothing, so it is not a number to
+            // borrow from a different weapon.
+            //
+            // The loader enforces exactly that: `duration_seconds` is REQUIRED
+            // on the conditional arm, and its absence is what lands these here.
+            // Add the number to any of these files and it works that minute.
             "boar_ready_retaliation :: reload_speed_bonus",
             // The Burston's copy has been fixed by DE twice on this weapon
             // (37.0.9, 38.5.3), so it wants a measurement and not a reading.
@@ -1520,7 +1583,6 @@ use crate::loadout::WeaponBase;
             // for the whole engagement, and the largest thing on this list.
             "phenmor_executioners_fortune :: instant_reload_on_headshot",
             "phenmor_lingering_judgement :: headshot_damage_on_headshot_streak",
-            "phenmor_ready_retaliation :: reload_speed_bonus",
             "phenmor_spiteful_defilement :: crit_multiplier_below_status_count",
             // THE BRATON FAMILY (2026-08-08) — one adapter, four weapons, so
             // every gap below is four rows of the same fact. THREE kinds:

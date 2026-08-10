@@ -931,6 +931,10 @@ pub struct WeaponBase {
     pub evo_fire_rate_bonus: f64,
     /// Reload-speed bonus from evolutions, into the same bucket the mods feed.
     pub evo_reload_bonus: f64,
+    /// READY RETALIATION's window — see
+    /// [`crate::evolutions_data::EvoEffect::ReloadSpeedOnEmptyReload`]. Same
+    /// bucket as `evo_reload_bonus`, but only while the window is open.
+    pub rs_on_empty_reload: Option<TimedBuff>,
     /// Prelude of Might: `(bonus, threshold)` — add `bonus` to the crit damage
     /// MULTIPLIER while the resolved crit chance stays under `threshold`.
     /// Resolved late for that reason: it is the only evolution whose condition
@@ -1499,6 +1503,11 @@ pub struct ResolvedPanel {
     /// `value` is the RELATIVE bonus, because it joins the base-damage bucket
     /// rather than replacing a rate.
     pub bd_on_reload: Option<TimedBuff>,
+    /// READY RETALIATION's window — see
+    /// [`crate::evolutions_data::EvoEffect::ReloadSpeedOnEmptyReload`]. It joins
+    /// the reload bucket the mods and `evo_reload_bonus` feed, but only while
+    /// open, and only a reload FROM EMPTY opens it.
+    pub rs_on_reload: Option<TimedBuff>,
     /// Hemorrhage's status-conversion roll (an event mechanic — active under
     /// every policy; contributes no static panel stat).
     pub proc_conversion: Option<ProcConv>,
@@ -1636,6 +1645,19 @@ pub fn resolve_for(
     let mut cd_on_kill: Option<TimedBuff> = None;
     let mut fr_on_reload: Option<TimedBuff> = None;
     let mut bd_on_reload: Option<TimedBuff> = None;
+    // READY RETALIATION arrives on the BASE (an evolution wrote it there),
+    // unlike the two above which arrive from mods — so the policy split is
+    // here rather than in the mod loop. AssumedMax spends it into the bucket,
+    // which is what the panel and the optimizer's ranking read; Emergent hands
+    // the window to the sim; a sentinel's conditional never fires.
+    let mut rs_on_reload: Option<TimedBuff> = match (base.rs_on_empty_reload, policy) {
+        (Some(b), StackPolicy::Emergent) => Some(b),
+        (Some(b), StackPolicy::AssumedMax) => {
+            rl += b.value;
+            None
+        }
+        _ => None,
+    };
     let mut proc_conv: Option<ProcConv> = None;
     let mut elem_bonus: Vec<(DamageType, f64)> = Vec::new();
     // SEEDED from the weapon, not empty: an evolution's indirect stat is a
@@ -1955,6 +1977,14 @@ pub fn resolve_for(
             "base_damage" => {
                 bd = 0.0;
                 bd_on_reload = None;
+            }
+            // A LOCK TAKES THE WINDOW TOO. "Set to its default ignoring other
+            // bonuses" cannot mean the static half only — that was the bug the
+            // Cannonades taught (MEASUREMENTS M30), and this is the third
+            // on-reload buff to need the same line.
+            "reload_speed" => {
+                rl = 0.0;
+                rs_on_reload = None;
             }
             _ => {}
         }
@@ -2327,6 +2357,7 @@ pub fn resolve_for(
         weakpoint_cc_rel: wp_cc,
         cd_on_kill,
         fr_on_reload,
+        rs_on_reload,
         bd_on_reload,
         proc_conversion: proc_conv,
         // Reified Bane: the vector already carries the +14 (evolutions apply

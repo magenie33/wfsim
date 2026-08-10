@@ -11,14 +11,33 @@ description: "On Reload from Empty: +100% Reload Speed for 6 seconds."
 selection: choose_one
 
 effects:
-  # NOT LOADED: `evolutions_data::effect()` has no `reload_speed_bonus` arm
-  # (the MODS loader has one - different loader, different vocabulary), so this
-  # resolves to `EvoEffect::Inert` and `condition` is unread there too. The
-  # ordinary caveat applies in game as well: the bonus lands at the END of the
-  # first empty reload, so the first reload does not get it.
+  # THE WINDOW OPENS WHERE THE RELOAD ENDS, so the reload that armed it never
+  # gets its own bonus and the NEXT one does — which is the whole perk (owner,
+  # 2026-08-10: "这个buff是在空弹reload的时候触发的，这样后面的reload就可以直接
+  # 吃到+100%").
+  #
+  # `duration_seconds` is what makes this loadable at all, and only THIS page
+  # publishes one: the other eleven Ready Retaliations in the roster state the
+  # bonus and no window, so they stay inert rather than borrow this number.
+  #
+  # It is an ORDINARY reload-speed bonus in every other respect, which is why
+  # the page's "Affects untransformed Phenmor. Can affect transition into
+  # Incarnon form with a well-timed manual reload. Does not affect transition
+  # from Incarnon back to base form" is not modelled as written: the last
+  # clause is wrong (owner, same message) — nothing about a reload buff knows
+  # which way an animation is going, so the revert takes it too.
+  #
+  # WHAT IT IS WORTH HERE, measured 2026-08-10 so the zero is not read as a bug:
+  # +19.1% on a fire-rate base-form build (58 reloads become 67), and EXACTLY
+  # ZERO both on a stock build — a stock magazine takes longer to empty than the
+  # window lasts — and in the Incarnon cycle, where the base form transmutes on
+  # a full gauge and so never empties at all. The wiki's "well-timed manual
+  # reload" is the play that fixes the second case, and this arena has no manual
+  # reload: docs/UNMODELLED.md.
   - kind: reload_speed_bonus
     value: 1.00
     condition: reload_from_empty
+    duration_seconds: 6.0
 
 source:
   url: https://wiki.warframe.com/w/Phenmor

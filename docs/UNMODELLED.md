@@ -166,6 +166,31 @@ Each weapon's own card says so, which is what makes the decision reachable: the
 `unmodeled:` line carries the caveat and the panel's passive strip states where
 the rate starts and ends, beside the single number the stat panel prints.
 
+### The MANUAL reload — and what it costs Ready Retaliation
+
+This sim reloads when it cannot fire, and never a round earlier. A player
+reloads whenever it suits them, and on one perk that is the whole difference:
+
+**Ready Retaliation** ("On Reload from Empty: +100% Reload Speed for 6 seconds")
+is implemented and correct — the window opens when the empty reload FINISHES, so
+the reload that armed it never gets it, and the next one does if it comes inside
+six seconds. Measured on the Phenmor's base form: **+19.1%** on a fire-rate build
+(58 reloads become 67), and **exactly zero** on a stock one, where a magazine
+takes longer to empty than the window lasts. That is the perk behaving correctly,
+not a gap.
+
+The gap is the **Incarnon cycle**, where it is worth zero for a different reason:
+the base form transmutes on a full gauge and therefore never empties, so no
+window ever opens. The wiki's own note describes the play that fixes this —
+*"Can affect transition into Incarnon form with a well-timed manual reload"* — and
+a well-timed manual reload is precisely what this arena has no notion of. Same
+ruling as everything else in this section: naming the moment to reload would be
+inventing the play pattern.
+
+Worth knowing because it changes what the numbers MEAN: a zero here is "under
+this play pattern", and on this perk a player who reloads deliberately is buying
+something real.
+
 ### The 99-stack Mounting Momentum edge
 
 Reaching the cap needs a magazine that never empties, which is a firing pattern
