@@ -136,6 +136,12 @@ entries:
     score: 0.2033139894183304
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, primed_combustion_rounds, magma_chamber, primed_venomous_clip, hypothermic_shell]
     arcanes: [primary_crux, cascadia_flare]
+  - weapon: mk1_furis
+    mode: cycle
+    score: 0.6576156429428281
+    mods: [galvanized_diffusion, hornet_strike, primed_pistol_gambit, lethal_torrent, pistol_elementalist, scorch, pistol_pestilence, jolt]
+    evolutions: [mk1_furis_evo1_incarnon_form, mk1_furis_stormburst, mk1_furis_extended_volley, mk1_furis_elemental_balance]
+    arcanes: [secondary_encumber]
   - weapon: ocucor
     mode: base
     score: 2.1475370908742484
