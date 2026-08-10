@@ -146,7 +146,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: phenmor
     mode: cycle
-    score: 1.7193910818149225
+    score: 4.556734841716985
     mods: [galvanized_chamber, galvanized_aptitude, vile_acceleration, magnetic_capacity, primed_cryo_rounds, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_ready_retaliation, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_debilitate]
