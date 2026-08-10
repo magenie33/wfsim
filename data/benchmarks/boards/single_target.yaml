@@ -738,6 +738,18 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: felarx
     mode: cycle
+    score: 68.20651657787043
+    mods: [galvanized_hell, magnetic_welt, galvanized_savvy, primed_tactical_pump, shotgun_barrage, primed_charged_shell, toxic_barrage, scattering_inferno]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: felarx
+    mode: cycle
+    score: 66.37980303634222
+    mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_charged_shell, toxic_barrage, scattering_inferno]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: felarx
+    mode: cycle
     score: 50.482025766533944
     mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, toxic_barrage, scattering_inferno]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
@@ -746,6 +758,12 @@ entries:
     mode: cycle
     score: 48.15747668791313
     mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, contagious_spread, scattering_inferno]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: felarx
+    mode: cycle
+    score: 47.33322638518817
+    mods: [galvanized_hell, magnetic_welt, galvanized_savvy, primed_ammo_stock, shotgun_barrage, primed_charged_shell, toxic_barrage, scattering_inferno]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
   - weapon: felarx
@@ -766,6 +784,12 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_brutal_edge, felarx_ruptured_plentitude]
     arcanes: [primary_deadhead]
+  - weapon: felarx
+    mode: base
+    score: 28.96469013688136
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_tactical_pump, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_crux]
   - weapon: felarx
     mode: cycle
     score: 28.12422714021647
@@ -789,6 +813,12 @@ entries:
     score: 18.248279141216496
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_ammo_stock, magnetic_strafe, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
     evolutions: [felarx_evo1_incarnon_form, felarx_kinetic_baffle, felarx_evolved_autoloader, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: felarx
+    mode: base
+    score: 17.82224079221682
+    mods: [galvanized_hell, magnetic_welt, galvanized_savvy, primed_tactical_pump, shotgun_barrage, primed_charged_shell, toxic_barrage, scattering_inferno]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
   - weapon: felarx
     mode: base
