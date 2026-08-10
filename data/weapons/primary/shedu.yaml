@@ -11,16 +11,23 @@ grip_type: RIFLE
 mastery_rank: 13
 max_rank: 30
 
-# Weapon-level metadata (wiki infobox, cross-checked against WFCD
-# warframe-items — the two agree on every attack figure below).
-accuracy: 100.0              # wiki "Very High"
+# Weapon-level metadata. EVERY FIELD HERE IS TAKEN, NOT REMEMBERED — the first
+# draft of this file invented three of them and all three were wrong: the
+# internal name (which is the i18n JOIN KEY, so the Chinese name silently went
+# missing), the accuracy (100 for the page's "Very High", where the scale this
+# repo uses is WFCD's 28.57) and the update it shipped in. Cross-checked against
+# WFCD warframe-items, which agrees with the wiki on every attack figure below.
+accuracy: 28.571428          # WFCD; the page prints it as "Very High"
 disposition: 0.75            # ●●○○○, WFCD omegaAttenuation 0.75
 polarities: [madurai, madurai]
-exilus_polarity: naramon
+# NO `exilus_polarity:` — WFCD does not carry one for this weapon and the page
+# does not print one, so the field is LEFT OUT rather than guessed. It is
+# optional, and an absent one costs a player nothing but a Forma; an invented
+# one would silently make every capacity plan wrong.
 riven_family: Shedu
 traits: [sentient]
-introduced: "26.0"           # Erra
-internal_name: /Lotus/Weapons/Sentients/SentientArmCannon/SentientArmCannonWeapon
+introduced: "27.0"           # Empyrean (2019-12-13); the blueprint comes from Erra
+internal_name: /Lotus/Weapons/Sentients/Shedu/SheduHeavyWeapon
 noise: alarming
 
 # NO AMMO POOL AT ALL — "Ammo Max: 0", "This weapon does not use ammo pickups;
