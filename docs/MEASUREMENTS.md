@@ -2030,6 +2030,41 @@ shows NO split at all with Attrition equipped and a healthy one without it: the
 is never met. That is the model working, not failing, but it means the
 interaction is invisible in any scenario where the weapon simply wins.
 
+### THE SPLIT'S ROLL IS ITS OWN COIN ✅ (owner, 2026-08-10)
+
+> 衰弱自己再判定一次是否触发21倍伤害（自己的）……只有直击先触发21，衰弱自己的那个
+> 0 伤害 extra hit 要自己再判断一次
+
+Which is what the engine does, and now what a test says. The forced-chance runs
+above cannot see it — with the perk pinned at 1.0 every roll succeeds, so "rolls
+its own" and "copies the hit's" produce the same 441 — so the claim is made at
+the perk's REAL 50%, where the two readings are far apart:
+
+| | expectation of the DoT's multiplier |
+| --- | --- |
+| two independent coins | `E[hit] × E[split]` = 11 × 11 = **121** |
+| the split copying the hit | `E[hit²]` = ½·441 + ½·1 = **221** |
+
+`the_debilitate_dot_carries_two_attrition_layers` reads **x121**. The joint
+distribution of the two rolls, instrumented while writing it, comes out
+25/25/25/25 across (1,1) (1,21) (21,1) (21,21) — four equal cells, which is the
+whole of what "independent" means.
+
+**So a 21× hit does NOT guarantee a 441× DoT.** The four outcomes are ×1 a
+quarter of the time, ×21 half, ×441 a quarter — and the ×441 the owner measured
+is the top of that spread rather than the rule.
+
+The same independence is why a COLD split is worth nothing however it rolls: it
+takes its own coin like any other, and then has no damage payload to spend it on
+(owner, 2026-08-08: "万一 roll 到是冰，那就是一个带 441 倍率的冰（没有效果）").
+
+**A note on how this was nearly mis-read.** The first version of the test
+compared 400 runs against a 200-run baseline and reported x243 — close enough to
+221 to look like the engine was copying the roll. It was a ratio between two
+different numbers of fights. The instrumented joint distribution is what settled
+it, and it is worth remembering that a suspicious factor of ~2 is usually a
+bookkeeping error rather than a mechanic.
+
 ### What is still open
 
 - **This is a bug, so it can be patched.** Nothing here is a designed

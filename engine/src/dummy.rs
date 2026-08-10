@@ -12008,6 +12008,49 @@ mod debilitate_attrition_tests {
             (two_layers - 441.0).abs() < 25.0,
             "the split's DoT takes the hit's roll AND its own: x{two_layers:.1},              measured 441 (one layer is x{one_layer:.2})"
         );
+        // 2b. AND THE SPLIT'S ROLL IS ITS OWN — the half the forced-chance
+        //     runs above cannot see (owner, 2026-08-10: "衰弱自己再判定一次是
+        //     否触发21倍伤害（自己的）… 衰弱自己的那个0伤害extra hit要自己再判断
+        //     一次").
+        //
+        //     At the perk's real 50% the two readings are far apart, and a mean
+        //     tells them apart on its own:
+        //
+        //       two INDEPENDENT rolls   E[hit] x E[split] = 11 x 11 = 121
+        //       the split COPYING it    E[hit^2] = .5x441 + .5x1    = 221
+        //
+        //     Nothing else in the fight moves, so the ratio against a run with
+        //     the perk off is that expectation.
+        // THE SAME 200 RUNS the baseline used. A ratio against a different
+        // number of runs is a ratio against a different fight, and it reads as
+        // a mechanic — this said x243 for a while, which is 121 x 2.
+        let half = |seed: u64| {
+            (0..200u64)
+                .map(|k| {
+                    let mut p = DummyParams::from_panel(&panel, &arena);
+                    p.target.base_health = 1e15;
+                    p.crit_tier_upgrade_chance = 0.0;
+                    p.super_crit_on_status = None;
+                    p.base_crit_chance = 0.0;
+                    p.unmodded_crit_chance = 0.0;
+                    p.target.status_immunities = vec![DamageType::Puncture];
+                    p.status_chance = 4.0;
+                    p.arcane.debilitate_chance = 1.0;
+                    let total = p.damage.total();
+                    p.damage = crate::damage::DamageVector::new()
+                        .with(DamageType::Corrosive, total);
+                    p.noncrit_bonus = Some((0.5, 20.0));
+                    let mut rng = crate::rng::Rng::new(seed + k);
+                    run_once(&p, &mut rng).dot_damage
+                })
+                .sum::<f64>()
+        };
+        let coin = half(1000) / plain_split;
+        assert!(
+            (coin - 121.0).abs() < 25.0,
+            "at a real 50% the split's own roll is independent: x{coin:.0}              (121 = two coins, 221 = the split copying the hit)"
+        );
+
         // 3. every hit crits, so the HIT's roll is worth nothing — and the
         //    split's is worth its full 21x anyway.
         let crit_split = dots(false, 1.0, true);
