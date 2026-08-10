@@ -10977,6 +10977,76 @@ mod tests {
         );
     }
 
+    /// PROC CONVERSION'S THREE UNWRITTEN RULES — the ones the card states in
+    /// its Notes and the test above never touched.
+    ///
+    /// All three are Magnetic Welt's wording (owner, 2026-08-10) and all three
+    /// are Hemorrhage's too, since they are one effect:
+    ///
+    /// 1. **Exactly 2.5 does NOT get the 2x.** "If the weapon's fire rate is
+    ///    exactly 2.5, it will not receive the 2x bonus" — a STRICT `<`. This
+    ///    is not a corner: `strun`, `strun_wraith` and `strun_prime_incarnon`
+    ///    are all listed at exactly 2.50, so the boundary decides the mod's
+    ///    value on three roster weapons.
+    /// 2. **One roll per damage instance, however many Impact procs land.**
+    ///    "Proccing Impact more than once in a single instance of damage will
+    ///    not allow this mod to proc more than once, nor will it increase the
+    ///    chance of the mod proccing."
+    /// 3. **Nothing if the instance already carries the target status.**
+    ///    "Cannot produce multiple procs in a single instance of damage
+    ///    alongside any other Magnetic sources such as a weapon's innate
+    ///    Magnetic."
+    #[test]
+    fn proc_conversion_obeys_its_three_notes() {
+        let welt = |rate: f64, forced: Vec<DamageType>| DummyParams {
+            fire_rate: rate,
+            proc_conversion: Some(crate::loadout::ProcConv {
+                from: DamageType::Impact,
+                to: DamageType::Slash,
+                chance: 0.35,
+                low_rate_threshold: 2.5,
+                low_rate_mult: 2.0,
+            }),
+            forced_procs: forced,
+            ..flat_base()
+        };
+        // Per-shot bleed, so the fire rate does not smuggle itself into the
+        // comparison by changing how many shots land.
+        let per_shot = |p: &DummyParams| {
+            let s = monte_carlo(p, 400, 5);
+            s.mean_dot_damage / f64::from(monte_carlo(p, 400, 5).mean_shots.max(1.0) as u32)
+        };
+        let imp = vec![DamageType::Impact];
+
+        // 1. THE BOUNDARY. 2.49 doubles, 2.50 does not — and the gap is the
+        //    factor 2 itself, so nothing subtler could be mistaken for it.
+        let under = per_shot(&welt(2.49, imp.clone()));
+        let exactly = per_shot(&welt(2.50, imp.clone()));
+        assert!(
+            (under / exactly - 2.0).abs() < 0.15,
+            "2.49 must double and 2.50 must not: {under} vs {exactly}"
+        );
+
+        // 2. A SECOND IMPACT PROC IN THE SAME INSTANCE CHANGES NOTHING. Two
+        //    forced Impacts are still one membership test and one roll.
+        let twice = per_shot(&welt(2.49, vec![DamageType::Impact, DamageType::Impact]));
+        assert!(
+            (twice / under - 1.0).abs() < 0.12,
+            "a second Impact proc must not add a roll: {twice} vs {under}"
+        );
+
+        // 3. AN INSTANCE THAT ALREADY CARRIES THE TARGET STATUS gets nothing —
+        //    the innate-Slash case, worth exactly the same as no mod at all.
+        let already = welt(2.49, vec![DamageType::Impact, DamageType::Slash]);
+        let bare = DummyParams { proc_conversion: None, ..already.clone() };
+        let a = monte_carlo(&already, 400, 5).mean_dot_damage;
+        let b = monte_carlo(&bare, 400, 5).mean_dot_damage;
+        assert!(
+            (a / b - 1.0).abs() < 1e-9,
+            "an innate source must shut the mod out entirely: {a} vs {b}"
+        );
+    }
+
     #[test]
     fn weakpoint_damage_adds_into_the_part_multiplier_at_1_5x() {
         // Acuity r10 on a 3x head, 100% weak-point aim: 3 + 3.5 × 1.5 =

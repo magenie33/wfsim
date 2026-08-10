@@ -11,6 +11,27 @@ internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponMagneticOnImpactShotgunMod
 # max rank: "...have 35% chance... (x2 when Fire Rate is below 2.5)".
 description: "Impact Status Effects have X% chance to apply a Magnetic Status Effect (x2 when Fire Rate is below 2.5)"
 
+# WHAT THE CARD'S NOTES ADD, all four checked against the engine 2026-08-10
+# (owner) and pinned by `proc_conversion_obeys_its_three_notes`:
+#
+#   · "If the weapon's fire rate is exactly 2.5, it will not receive the 2x
+#     bonus" — a STRICT `<`, and not a corner case: Strun, Strun Wraith and the
+#     Strun Prime Incarnon form all sit at exactly 2.50, so the boundary decides
+#     this mod's value on three roster weapons.
+#   · "Proccing Impact more than once in a single instance of damage will not
+#     allow this mod to proc more than once, nor will it increase the chance" —
+#     one membership test and one roll per damage INSTANCE.
+#   · "Cannot produce multiple procs in a single instance of damage alongside
+#     any other Magnetic sources such as a weapon's innate Magnetic" — an
+#     instance that already carries Magnetic gets nothing at all.
+#   · "Fire Rate buffs … can negatively impact this mod's performance since it
+#     may increase the weapon's fire rate past 2.5" — the gate reads the LIVE
+#     rate, buffs included, not the panel's.
+#
+# The fire-rate PENALTY synergy the notes mention (Critical Deceleration,
+# Tainted Shell dropping a weapon under 2.5) needs nothing special: they are
+# ordinary fire-rate mods and the live rate is what the gate reads.
+
 effects:
   - kind: proc_conversion
     trigger: impact
