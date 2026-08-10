@@ -315,6 +315,30 @@ says 45 — measure it before trusting either).
 **Almost every adapter charges on WEAKPOINT hits. Three charge on DIRECT hits:
 Torid, Angstrum, Stug** (wiki, Incarnon — verbatim in `torid_incarnon.yaml`).
 
+### A CHARGE POOL IS NOT A MAGAZINE, and nothing in the game treats it as one
+
+Roster-wide invariant, stated by the owner (2026-08-10): **no mechanism anywhere
+restores charges in an Incarnon form, and none spends extra ones.** The pool is
+filled by the gauge — weakpoint or direct hits, converted at
+`rounds_per_charge` — and emptied by firing at the form's own `ammo_cost`. That
+is the complete list of things that touch it.
+
+It is the reason behind a whole family of "does not affect Incarnon Form"
+sentences that would otherwise each look like their own special case:
+
+| the effect | why the gauge is exempt |
+| --- | --- |
+| Extended Volley, Retribution's Vessel (`flat_base_magazine`) | it resizes a MAGAZINE |
+| Final Fusillade (`multishot_on_last_round`) | a charge pool has no "last round" |
+| Ammo Efficiency, ammo mods | the gauge is outside the ammo economy |
+| Executioner's Fortune | it refills a MAGAZINE, not max charges |
+
+Each of those is a separate gate in the code, which is four chances to forget the
+fifth — so the invariant is asserted as a PROPERTY instead:
+`no_evolution_resizes_an_incarnon_charge_pool` installs every evolution a
+charge-backed form can carry, all at once, and requires the pool to come out the
+size the data declares. It was verified to fail with any one gate removed.
+
 ## Primary adapters
 
 `*` = in the repo. "new perks" counts names this repo does not carry yet, out of 9.

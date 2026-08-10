@@ -1326,6 +1326,55 @@ pub fn tier_count(weapon: &str) -> u32 {
 mod tests {
     use super::*;
 
+    /// NOTHING IN THE ROSTER RESIZES AN INCARNON CHARGE POOL — no evolution,
+    /// under any combination.
+    ///
+    /// A roster-wide invariant, stated by the owner (2026-08-10): there is no
+    /// mechanism anywhere that restores charges in an Incarnon form or spends
+    /// extra ones. The pool is filled by the GAUGE and emptied by firing, and
+    /// that is the whole of it — which is why the magazine family of effects is
+    /// gated on `incarnon.is_none()` in three separate places
+    /// (`FlatBaseMagazine`, `MultishotOnLastRound`, and the ammo rules), and why
+    /// Executioner's Fortune does not roll there at all.
+    ///
+    /// Three gates is three chances to forget the fourth, so this asserts the
+    /// PROPERTY instead of the gates: every evolution a charge-backed form can
+    /// carry, all at once, must leave its pool exactly the size the data
+    /// declares. A future effect that reaches the gauge fails here rather than
+    /// shipping as a quietly bigger magazine on seven weapons.
+    #[test]
+    fn no_evolution_resizes_an_incarnon_charge_pool() {
+        let mut checked = 0;
+        for spec in crate::weapons_data::all() {
+            if spec.incarnon.is_none() {
+                continue;
+            }
+            // The whole ladder at once, one option per tier — the widest set a
+            // build can hold, so anything that could reach the pool is in it.
+            // The GROUP owns the evolutions, not the form — an Incarnon
+            // entry's perks are filed under its base weapon's id.
+            let group = spec.transform_group.as_deref().unwrap_or(&spec.id);
+            let mut ids: Vec<&str> = Vec::new();
+            for tier in 1..=tier_count(group) {
+                for opt in options(group, tier) {
+                    ids.push(opt.id.as_str());
+                }
+            }
+            if ids.is_empty() {
+                continue;
+            }
+            checked += 1;
+            let bare = crate::loadout::WeaponBase::from_data(&spec.id, true, &[]);
+            let loaded = crate::loadout::WeaponBase::from_data(&spec.id, true, &ids);
+            assert_eq!(
+                loaded.magazine_size, bare.magazine_size,
+                "{}: an evolution resized the charge pool ({} -> {})",
+                spec.id, bare.magazine_size, loaded.magazine_size
+            );
+        }
+        assert!(checked >= 5, "only {checked} charge-backed forms checked");
+    }
+
     #[test]
     fn loads_the_dt_evolution_pool() {
         let dt: Vec<_> = pool().iter().filter(|e| e.weapon == "dual_toxocyst").collect();
