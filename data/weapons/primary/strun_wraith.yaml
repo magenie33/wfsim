@@ -22,7 +22,7 @@ transforms_to: strun_wraith_incarnon
 # as "not modelled yet". Nothing is dropped in silence — some perks do nothing
 # yet and say so on their own tile.
 unmodeled:
-  - "the by-round reload is now modelled — what is NOT is the INTERRUPTION: in game you can fire mid-reload and keep the shells you have loaded, and here a reload runs to the end"
+  - "this run never INTERRUPTS a reload — in game you can fire mid-reload and keep the shells already loaded, and a player who does is trading stacks and a full magazine for uptime. Decided rather than missing (2026-08-10): a listed reload is a whole reload, and the alternative is not a more accurate model, it is a different player"
   - "damage falloff from 15 m to 30 m (down to 50% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
 accuracy: 6.67
 disposition: 1.35

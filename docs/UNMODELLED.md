@@ -121,22 +121,27 @@ doing them means inventing a play pattern. The repo's rule is that a policy is
 the owner's call, not the model's (the 99-stack decision, 2026-08-08: "不要特殊化
 处理99层那个了，不现实").
 
-### Reload interruption
+### Reload interruption — DECIDED: never interrupt (owner, 2026-08-10)
 
 **The Felarx, and every by-round reloader.** In game you can fire mid-reload and
-keep the shells already loaded; here a reload runs to the end. The machinery is
-all present — the sim owns the shot schedule and the by-round reload is per
-shell — but *when* to interrupt is a POLICY, and the two obvious ones disagree:
+keep the shells already loaded; here a reload runs to the end. The machinery was
+never the problem — the sim owns the shot schedule and a by-round reload is
+already per shell — but *when* to interrupt is a POLICY, and the two extremes
+disagree:
 
-- never interrupt (today) — every reload is a full magazine, and on the Felarx
-  every reload is also a full magazine of Mounting Momentum stacks;
+- **never interrupt** — every reload is a full magazine, and on the Felarx a full
+  magazine of Mounting Momentum stacks with it;
 - interrupt as soon as one shell is in — fastest back to firing, and worst for
   any per-shell buff.
 
-A real player picks per situation, and neither extreme is "the truth". **Waiting
-on a decision**: which policy, or whether it becomes a scenario setting beside
-`infinite_ammo` — which is where the other "what is this run allowed to assume"
-knobs live.
+**Never interrupt is the ruling** ("换弹用不打断"). It is the reading the weapon's
+own numbers describe — a listed reload is a whole reload — and it is the one that
+needs no play pattern invented for it. The alternative is not "more accurate", it
+is a different player.
+
+It stays in this file because it is still a thing the model does not do, and the
+weapons that reload by round say so on their own cards: a player who interrupts
+is trading stacks for uptime and will not reproduce these numbers exactly.
 
 ### The 99-stack Mounting Momentum edge
 

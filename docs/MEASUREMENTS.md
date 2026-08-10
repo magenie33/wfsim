@@ -2204,8 +2204,8 @@ word DE chose: `x8 Extra` is eight times extra, on top of the hit. The ladder
 moves with it — `x3 Extra` … `x8 Extra` is ×4 … ×9 — so the stored bonus is now
 the number DE prints rather than one less than it.
 
-**The owner reads the run above as ×7 at rank 3, hence ×9 at max** ("那个不是一
-一对应的，应该证明了，就是*7"), and the rows are NOT four matched pairs — they are
+**DECIDED: ×9 at max, ×7 at rank 3** (owner, 2026-08-09 "应该证明了，就是*7",
+reaffirmed 2026-08-10 "是*9"). The rows are NOT four matched pairs — they are
 eight independent samples of a beam whose ramp and crit tier move under it, so
 nothing here is meant to be divided row by row.
 
@@ -2224,12 +2224,13 @@ Two near-hits for ×7 against one exact for ×6, on four values and four
 candidates, which is suggestive rather than conclusive on its own. It agrees
 with the plain reading of the word DE chose, and the owner ran it.
 
-**What would overturn it,** if anyone ever wants to close the last of the doubt:
-hold the beam on a fresh Eximus until the ramp tops out and the number stops
-moving, read the ordinary (non-crit) tick with the arcane on and off, Overguard
-bar still up both times. `with ÷ without` is the multiplier exactly, and the one
-line to change is `rank0`/`rankMax` in
-`data/arcanes/secondary/secondary_fortifier.yaml`.
+**What would overturn it,** kept because a decision is not a measurement and
+this one is worth 12.5% on every Overguard hit: hold the beam on a fresh Eximus
+until the ramp tops out and the number stops moving, read the ordinary
+(non-crit) tick with the arcane on and off, Overguard bar still up both times.
+`with ÷ without` is the multiplier exactly, and the one line to change is
+`rank0`/`rankMax` in `data/arcanes/secondary/secondary_fortifier.yaml`. Nothing
+else moves with it.
 
 Shipped ladder: ×4 / ×5 / ×6 / ×7 / ×8 / ×9 by rank.
 
