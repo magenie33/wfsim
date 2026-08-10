@@ -118,6 +118,12 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
     evolutions: [boar_evo1_incarnon_form, boar_reified_bane, boar_ready_retaliation, boar_survivors_edge]
     arcanes: [primary_merciless]
+  - weapon: boar
+    mode: cycle
+    score: 3.7746147361597453
+    mods: [primed_point_blank, primed_ravage, critical_deceleration, hells_chamber, shotgun_elementalist, magnetic_strafe, blaze, scattering_inferno]
+    evolutions: [boar_evo1_incarnon_form, boar_reified_bane, boar_ready_retaliation, boar_critical_parallel]
+    arcanes: [shotgun_vendetta]
   - weapon: boar_prime
     mode: base
     score: 26.573582591725053
@@ -1412,6 +1418,11 @@ entries:
     score: 1.3995614212480298
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     arcanes: [primary_deadhead]
+  - weapon: gotva_prime
+    mode: base
+    score: 1.1937136754444426
+    mods: [galvanized_chamber, galvanized_aptitude, hammer_shot, rifle_elementalist, vital_sense, rime_rounds, malignant_force, thermite_rounds]
+    arcanes: [primary_crux]
   - weapon: gotva_prime
     mode: base
     score: 0.8220876130761429
@@ -2810,6 +2821,18 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, chilling_reload, toxic_barrage, incendiary_coat]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
     arcanes: [primary_crux]
+  - weapon: strun_prime
+    mode: cycle
+    score: 7.297142685763467
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_elementalist, vigilante_armaments, blaze, scattering_inferno]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+  - weapon: strun_prime
+    mode: cycle
+    score: 7.102550348667239
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_elementalist, frigid_blast, toxic_barrage, primed_charged_shell]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
   - weapon: stug
     mode: cycle
     score: 48.91304256872969
@@ -3097,6 +3120,12 @@ entries:
     score: 16.87207344547847
     mods: [amalgam_serration, primary_acuity, primed_firestorm, vile_acceleration, vital_sense, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_deadhead]
+  - weapon: torid
+    mode: cycle
+    score: 16.368938533318726
+    mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_deadhead]
   - weapon: torid
     mode: cycle
@@ -3427,12 +3456,6 @@ entries:
     score: 6.136760336733354
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, rifle_elementalist, primed_cryo_rounds, infected_clip, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
-    arcanes: [primary_debilitate]
-  - weapon: torid
-    mode: cycle
-    score: 6.113021872662467
-    mods: [galvanized_chamber, heavy_caliber, critical_delay, vigilante_armaments, vital_sense, thermite_rounds, infected_clip, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_renewed_horror, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: base
