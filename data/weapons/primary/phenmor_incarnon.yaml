@@ -51,6 +51,9 @@ pseudo_reload:
   # note: excludes charge-rebuilding time (assumed locked); both components
   # scale with reload-speed bonuses
 
+unmodeled:
+  - "BURST-FIRING the Incarnon form out of its own spool-down: the rate falls to 60% over 51 held shots and resets the moment you stop firing, so a player who taps rather than holds keeps more of the 13.33/s than this sim does — it holds the trigger until the magazine is dry. The spool itself IS modelled; what is not is the play pattern that dodges it"
+
 # Same class as the base entry: no Phenmor row exists in the wiki's CO catalog,
 # and absence there means ordinary. CO boosts the DIRECT hit, which is all this
 # form has — there is no radial part to exclude.
@@ -67,6 +70,20 @@ attack:
   shot_type: projectile
   projectile_speed_mps: 80
   fire_rate: 13.33
+  # …WHICH IT ONLY HAS FOR THE FIRST FEW SECONDS. VERBATIM (wiki Phenmor):
+  # "Fire rate decreases from 100% to 60% over 51 shots as the trigger is
+  # held, reducing its effectiveness from prolonged periods of firing", and
+  # "Spool resets once the player stops firing, encouraging brief bursts of
+  # fire rather than sustained fire."
+  #
+  # This is the weapon's whole case and its whole cost in one stat, so leaving
+  # it out was not a rounding error: 51 shots is 3.8 s of a magazine that holds
+  # 408, so a held dump spends 87% of its rounds at 8.0/s rather than the
+  # 13.33/s printed above. The sim holds the trigger — see `unmodeled` in
+  # phenmor.yaml for the player who does not.
+  sustained_fire_rate:
+    floor: 0.60
+    over_shots: 51
   multishot: 1.0
   ammo_cost: 1                  # of the separate incarnon magazine (408)
   crit_chance: 0.20

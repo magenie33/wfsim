@@ -2068,6 +2068,49 @@ A tapped bow shot pays no draw, so the nock alone paces it (`charge_seconds:
 word rather than a measurement — **MEASUREMENTS M16**. The engine does NOT yet
 implement the second formula: the roster has no non-bow charge weapon.
 
+### Fire rate that FALLS while the trigger is held — the spool-down
+
+One weapon in the roster does not fire at one rate. VERBATIM (wiki `Phenmor`,
+of the Incarnon form):
+
+> Fire rate decreases from **100%** to **60%** over **51** shots as the trigger
+> is held, reducing its effectiveness from prolonged periods of firing.
+>
+> Spool resets once the player stops firing, encouraging brief bursts of fire
+> rather than sustained fire.
+
+It is the **opposite of the beam ramp** and the two never meet: a continuous
+weapon climbs to full damage and stays there, this one only ever falls, and it
+falls in SHOTS rather than in seconds. The fall is linear — the page gives the
+two ends and the count and nothing in between — so after `n` held shots the
+cadence runs at `1 − 0.4 · min(n, 51)/51` of the live rate.
+
+Three consequences, and the first is why this is not a footnote:
+
+1. **51 shots is 3.8 s of a 408-round magazine.** A held Incarnon dump spends
+   87% of its rounds at the floor, so reading the printed 13.33 rounds/s flat
+   overstates the form's sustained output by **51%** — measured here at 9 275
+   DPS against 6 140 on the same build once the spool was implemented.
+2. **It scales with the live rate, not the listed one.** Rapid Wrath's +20% is
+   worth +20% at the floor as well as at the ceiling; a fire-rate mod raises
+   both ends and never buys its way out of the spool.
+3. **The reset is derived, not declared.** The sim resets the count whenever a
+   shot lands later than the moment the previous one made it due — which is
+   what releasing the trigger IS, and what every reload, transform, dry
+   magazine and dry-reserve stall already looks like. Clearing it branch by
+   branch would have missed the plain reload path, which does not `continue`:
+   it falls through and fires in the same iteration.
+
+The stat itself is untouched, exactly as on a charge weapon: `fire_rate` stays
+what the panel prints and what fire-rate gates read, and the spool multiplies
+the CADENCE. Data: `attack.sustained_fire_rate: { floor, over_shots }`.
+
+**What is not modelled is the play pattern that dodges it** — a player who taps
+rather than holds keeps more of the listed rate than this sim does, because the
+sim holds the trigger until the magazine is dry. That is on the weapon's card
+(`unmodeled:`) and in docs/UNMODELLED.md, beside the reload-interruption ruling
+it is the same shape as.
+
 ### Ammo Efficiency — a FRACTIONAL ammo cost
 
 Not a chance to save a round. VERBATIM (wiki `Ammo`): *"Ammo Efficiency

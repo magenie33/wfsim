@@ -234,6 +234,11 @@ ui:
   "everything else on this card is modelled; this is not:": 这张卡上的其余部分都已建模，唯独以下没有：
   "A Status Effect has a 15% chance to SET the next hit's crit chance to 300% — ignoring every other crit bonus. Rolled per pellet.": 异常状态有 15% 几率把下一次命中的暴击率设定为 300%——无视其他一切暴击加成。逐弹丸判定。
   "Its innate headshot bonus MULTIPLIES the headshot bracket instead of joining it, so it compounds with Deadhead and Target Acquired rather than adding to them.": 它自带的爆头加成是乘在爆头加算区上，而不是并入其中——所以它与首领终结、锁定目标是相乘而非相加。
+  # THE PHENMOR'S SPOOL-DOWN. Both halves are the point: the panel above prints
+  # 13.33 发/秒 and the sim fires most of the magazine at 8.0, so the line has
+  # to say which one the DPS below it came from.
+  "Its fire rate FALLS while the trigger is held — to 60% of the listed rate over 51 shots — and resets the moment you stop firing. This is simulated; the sim holds the trigger, so bursting beats these numbers.": 持续按住扳机时射速会下降——51 发之内降到标称射速的 60%，一停火就立刻回满。这条已经建模；模拟里是一直按住不放的，所以点射能打出比这里更高的数字。
+  "BURST-FIRING the Incarnon form out of its own spool-down: the rate falls to 60% over 51 held shots and resets the moment you stop firing, so a player who taps rather than holds keeps more of the 13.33/s than this sim does — it holds the trigger until the magazine is dry. The spool itself IS modelled; what is not is the play pattern that dodges it": 用点射绕开赋能形态自己的射速衰减：按住不放时射速会在 51 发内降到 60%，一停火就回满，所以点射的玩家能比这里的模拟更多地保住 13.33/秒——模拟是一直按到弹匣打空为止。衰减本身已经建模，没有建模的是躲开它的打法
   "Weapon passive: Frenzy — see its buff card (grants +1 toxin while active).": 武器被动：狂乱 —— 详见它的增益卡（生效期间提供 +1 毒素）。
   "this weapon's passive is not modelled yet — the numbers below are a floor, not its full output": 这把武器的被动尚未建模——下面的数字是下限，不是它的完整输出
   "its added base does not feed Condition Overload": 它增加的基础伤害不计入异况超载

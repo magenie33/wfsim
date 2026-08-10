@@ -143,6 +143,23 @@ It stays in this file because it is still a thing the model does not do, and the
 weapons that reload by round say so on their own cards: a player who interrupts
 is trading stacks for uptime and will not reproduce these numbers exactly.
 
+### Bursting out of the Phenmor's spool-down — the SAME shape, DECIDED the same way
+
+The Incarnon form's fire rate falls to 60% over 51 held shots and **resets the
+moment you stop firing** (MECHANICS §9). The fall is modelled; what is not is
+the player who taps.
+
+The sim holds the trigger until the magazine is dry, which is the reading that
+needs no play pattern invented for it — the same ruling as the reload above, and
+for the same reason. A player bursting well enough to stay at 100% would fire
+51% more rounds than these numbers do, and would also be spending time not
+firing that this arena has no way to charge them for. Naming a burst length
+would be inventing the very thing the ruling refuses to invent.
+
+The weapon's own card says so, which is what makes the decision reachable: the
+Phenmor's Incarnon entry carries the line, and the panel's passive strip states
+both ends of the spool beside the 13.33 rounds/s it prints.
+
 ### The 99-stack Mounting Momentum edge
 
 Reaching the cap needs a magazine that never empties, which is a firing pattern

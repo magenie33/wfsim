@@ -153,6 +153,10 @@ pub struct AttackSpec {
     /// unmodded magazine, which is what the arsenal shows.
     #[serde(default)]
     pub charge_ammo_per_second: Option<f64>,
+    /// A FIRE RATE THAT FALLS WHILE THE TRIGGER IS HELD — see
+    /// [`SustainedFireRate`]. `None` on every weapon that fires at one rate.
+    #[serde(default)]
+    pub sustained_fire_rate: Option<SustainedFireRate>,
     /// A BURST trigger's shape — the Burston's three-round pull. See
     /// [`BurstSpec`] for the cadence formula and why it is exact here.
     #[serde(default)]
@@ -1065,6 +1069,19 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
         ));
     }
 
+    // THE SPOOL-DOWN, which is the one passive that makes the stat above it
+    // WRONG rather than incomplete. The panel prints 13.33 rounds/s and the
+    // sim fires most of the magazine at 8.0 — so the line states both ends and
+    // the count, because a reader who only sees the printed rate has no way to
+    // tell whether the DPS below it is the one they measured.
+    if let Some(sp) = s.attack.sustained_fire_rate {
+        out.push(format!(
+            "Its fire rate FALLS while the trigger is held — to {:.0}% of the listed rate over {:.0} shots — and resets the moment you stop firing. This is simulated; the sim holds the trigger, so bursting beats these numbers.",
+            sp.floor * 100.0,
+            sp.over_shots
+        ));
+    }
+
     // NOT `no_resupply`. It was listed here and taken out (owner, 2026-08-05:
     // "这个不是被动...是archgun一类的特性"): every ground Arch-Gun is removed
     // when its reserve runs out, so it says nothing about THIS weapon. A line
@@ -1130,6 +1147,29 @@ fn pretty_id(id: &str) -> String {
 /// bursts, so the weapon loses less rate than the number on the card says.
 /// That asymmetry is modelled; see the `.max(1.0)` in `loadout::resolve`.
 ///
+/// A SPOOL-DOWN: the rate falls the longer the trigger is held, and resets the
+/// moment it is released.
+///
+/// The Phenmor's Incarnon form is the roster's first — *"Fire rate decreases
+/// from 100% to 60% over 51 shots as the trigger is held, reducing its
+/// effectiveness from prolonged periods of firing"*, and *"Spool resets once
+/// the player stops firing, encouraging brief bursts of fire rather than
+/// sustained fire"* (wiki Phenmor, verbatim).
+///
+/// It is the OPPOSITE of `beam_ramp_floor`, which climbs to full and stays
+/// there. This one only ever costs, and on a 408-round Incarnon magazine it
+/// costs almost the whole dump: 51 shots is under four seconds of a
+/// thirty-second pool, so the weapon spends most of its Incarnon window at the
+/// floor rather than at the rate its arsenal card prints.
+#[derive(Debug, Clone, Copy, serde::Deserialize)]
+pub struct SustainedFireRate {
+    /// What the rate falls TO, as a fraction of the listed one (0.60).
+    pub floor: f64,
+    /// How many held shots it takes to get there (51). The fall is linear —
+    /// the page gives the two ends and the count, and nothing between them.
+    pub over_shots: f64,
+}
+
 /// WHAT IS NOT MODELLED, stated because it is a real difference: the sim
 /// spaces rounds EVENLY at the effective rate instead of clumping them into
 /// bursts. Nothing the single-target arena reads can tell the difference —
@@ -1416,6 +1456,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // in the roster changes it (ammo EFFICIENCY is its own, separate term).
         ammo_cost: s.attack.ammo_cost,
         charge_ammo_per_second: s.attack.charge_ammo_per_second,
+        sustained_fire_rate: s.attack.sustained_fire_rate,
         // A BOW paces on draw + nock, every form of it (wiki Fire Rate's
         // bow-specific formula — see `AttackSpec::charge_seconds`), so a bow
         // states the draw even when it is 0.0 and anything else must not.
@@ -3140,5 +3181,34 @@ mod play_mode_tests {
         let boar = spec("boar").unwrap().attack.falloff.as_ref().unwrap();
         assert_eq!((boar.start_m, boar.end_m, boar.reduction), (15.0, 25.0, 0.5));
         assert!(with >= 10, "only {with} weapons carry a falloff");
+    }
+
+    /// A SPOOL-DOWN is a fraction of the listed rate, and the weapon that has
+    /// one owes the reader the play pattern that dodges it.
+    ///
+    /// The field is small and easy to typo into silence — serde ignores what it
+    /// does not know — so this asserts the Phenmor's two numbers by value: they
+    /// are the difference between 13.33 rounds/s and 8.0, which is most of the
+    /// weapon's Incarnon damage.
+    #[test]
+    fn a_spooling_weapon_declares_its_floor_and_says_bursting_beats_it() {
+        let mut with = 0;
+        for w in all() {
+            let Some(s) = w.attack.sustained_fire_rate else { continue };
+            with += 1;
+            assert!(s.floor > 0.0 && s.floor < 1.0, "{}: floor {}", w.id, s.floor);
+            assert!(s.over_shots > 0.0, "{}: over {} shots", w.id, s.over_shots);
+            assert!(
+                w.unmodeled.iter().any(|u| u.contains("spool")),
+                "{} spools down and its `unmodeled:` never mentions bursting out of it",
+                w.id
+            );
+        }
+        let phenmor = spec("phenmor_incarnon").unwrap().attack.sustained_fire_rate.unwrap();
+        assert_eq!((phenmor.floor, phenmor.over_shots), (0.60, 51.0));
+        // …and the BASE form does not spool: the sentence is about the Incarnon
+        // form, and a semi-auto has no held trigger to spool.
+        assert!(spec("phenmor").unwrap().attack.sustained_fire_rate.is_none());
+        assert_eq!(with, 1, "one weapon spools; a second one needs its own source");
     }
 }

@@ -346,15 +346,26 @@ is intrinsic — but they still model as a transform group here, and they carry
 | weapon | slot | attacks | new perks | note |
 | --- | --- | --- | --- | --- |
 | Laetum\* | secondary | semi projectile → auto projectile + radial | 0 | **done** |
-| Phenmor\* | primary | semi projectile → auto projectile | 4 | **done 2026-08-08** — the prediction held: no engine work, and the four "new" perks load inert rather than needing kinds |
+| Phenmor\* | primary | semi projectile → auto projectile | 4 | **done 2026-08-08**, and REOPENED 2026-08-10 — the perks cost nothing, the WEAPON did: its Incarnon fire rate spools down and nothing had read that sentence (see below) |
 | Onos | secondary | auto projectile → held projectile **and** charged hit-scan + radial | 6 | TWO Incarnon attacks in one form — the only gun here that does that |
 | Felarx | primary | auto projectile → semi projectile | 11 | almost nothing shared; also `ReloadStyle = ByRound` |
 
 ## Order, and why
 
-1. ~~**Phenmor**~~ — **done 2026-08-08**. 4 new perks, no new mechanic, and 9 of
-   its 13 perk names already carried; the highest ratio in the set, and it cost
-   no engine work at all.
+1. ~~**Phenmor**~~ — **done 2026-08-08**; the spool-down landed 2026-08-10. 4
+   new perks, no new mechanic *in the perks*, and 9 of its 13 perk names already
+   carried — the highest ratio in the set.
+
+   **And it still cost engine work, from the part nobody was reading.** Every
+   perk mapped onto an existing kind and the audit called the weapon complete,
+   because "what does this weapon cost" was answered entirely out of its
+   EVOLUTIONS. The Incarnon form's own Notes carry a mechanic no evolution
+   mentions — *"Fire rate decreases from 100% to 60% over 51 shots as the
+   trigger is held"* — and 51 shots is 3.8 s of a 408-round magazine, so the
+   form was simulated 51% too fast for two days (MECHANICS §9). An intake that
+   reads a weapon's perks and its infobox has read neither the sentence that
+   makes the infobox wrong nor the one that says the weapon's whole case is its
+   fire rate. **Read the Notes, on every weapon, before calling it done.**
 2. **The 19 shared perk kinds**, driven by whichever adapter needs them first.
    ~~Rapid Reinforcement alone appears on 14 guns~~ — **done 2026-08-08**
    (`EvoEffect::ReloadSpeedBonus`, into the same additive bucket the mods

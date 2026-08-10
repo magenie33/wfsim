@@ -49,6 +49,20 @@ So the intake check is: `?action=raw` on the WEAPON PAGE, and read
 line; Prisma Grinlok's only one is "Innate Madurai polarity", which is data we
 already carry.
 
+**And `==Notes==` is the same trap one section further down.** The Phenmor was
+audited perk by perk, matched the infobox on every field, and shipped as done
+(2026-08-08). Its Notes carry *"Fire rate decreases from 100% to 60% over 51
+shots as the trigger is held"* — a mechanic no evolution mentions, that the
+infobox contradicts, and that is worth more than any perk on the weapon: 51
+shots is 3.8 s of a 408-round magazine, so the Incarnon form ran **51% too
+fast** until 2026-08-10.
+
+The pattern in both cases is the same and it is worth stating as a rule: **the
+structured fields describe the weapon, the prose says which of them are lies.**
+A stat that the page later qualifies is more dangerous than a stat that is
+missing, because the missing one leaves a hole and the qualified one leaves a
+number that looks right.
+
 ## What one weapon costs
 
 | item | where | notes |

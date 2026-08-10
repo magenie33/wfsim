@@ -1163,6 +1163,12 @@ pub struct DummyParams {
     pub charge_seconds: Option<f64>,
     /// Which charge formula paces the shot — see `ChargeCadence`.
     pub charge_cadence: crate::weapons_data::ChargeCadence,
+    /// A RATE THAT FALLS WHILE THE TRIGGER IS HELD — see
+    /// [`crate::weapons_data::SustainedFireRate`]. It scales the CADENCE and
+    /// nothing else: `fire_rate` stays the listed stat, which is what
+    /// Hemorrhage's below-2.5 gate reads and what the panel prints, exactly as
+    /// on a charge weapon.
+    pub sustained_fire_rate: Option<crate::weapons_data::SustainedFireRate>,
     /// A BURST trigger's modded shape — see [`crate::weapons_data::BurstSpec`].
     pub burst: Option<crate::weapons_data::BurstSpec>,
     /// Whether the weapon's Frenzy passive is equipped (Dual Toxocyst base
@@ -1859,6 +1865,7 @@ impl DummyParams {
             fire_rate: panel.fire_rate,
             charge_seconds: panel.charge_seconds,
             charge_cadence: panel.charge_cadence,
+            sustained_fire_rate: panel.sustained_fire_rate,
             burst: panel.burst,
             frenzy: false,
             magazine_size: panel.magazine_size,
@@ -2065,6 +2072,7 @@ impl Default for DummyParams {
             fire_rate: 1.0,
             charge_seconds: None,
             charge_cadence: crate::weapons_data::ChargeCadence::DrawThenRate,
+            sustained_fire_rate: None,
             burst: None,
             frenzy: false,
             locked_buffs: Vec::new(),
@@ -3503,6 +3511,21 @@ fn fire_syndicate_radial(
 /// its own file (`beam_ramp_floor`).
 pub(crate) const BEAM_RAMP_FLOOR: f64 = 0.20;
 
+/// The HELD-TRIGGER SPOOL after `shots` consecutive pulls — a fraction of the
+/// live fire rate, 1.0 where the weapon has none.
+///
+/// The ramp above and this are opposites and they do not meet: a beam climbs to
+/// full and stays, this one only ever falls, and it falls in SHOTS rather than
+/// in seconds — which is why a fire-rate mod does not buy its way out of it.
+/// The fall is linear because the source gives the two ends and the count and
+/// nothing in between (wiki Phenmor: "from 100% to 60% over 51 shots").
+fn spool_factor(spec: Option<crate::weapons_data::SustainedFireRate>, shots: f64) -> f64 {
+    match spec {
+        Some(s) if s.over_shots > 0.0 => 1.0 - (1.0 - s.floor) * (shots / s.over_shots).min(1.0),
+        _ => 1.0,
+    }
+}
+
 /// What a KILL gives the weapon that made it, as a fraction of the enemy's
 /// affinity. VERBATIM (wiki Affinity): "Kill with weapons: Half Affinity goes
 /// to the Warframe and half to the killing weapon."
@@ -4361,6 +4384,10 @@ pub fn run_once_traced(
     // earned one: it is spent by the magazine event that clears the rest.
     let mut tendril_seed = params.tendrils_initial.min(params.tendril_max);
     let mut tendrils = tendril_seed;
+    // HELD-TRIGGER SPOOL — shots since the trigger was last released, and the
+    // moment the next one was due. See `weapons_data::SustainedFireRate`.
+    let mut spool_shots = 0.0f64;
+    let mut spool_due = f64::NEG_INFINITY;
     loop {
         // SAMPLE first, so a frame shows the fight as it stood BEFORE the
         // shot at `t` — the same convention the timeline buckets use.
@@ -5727,6 +5754,26 @@ pub fn run_once_traced(
         } else {
             (ap.fire_rate + fr_add) * bar.total_contributions().fire_rate_multiplier
         };
+        // THE TRIGGER CAME OFF, DERIVED rather than listed. Every pause in
+        // this loop — a reload, a transform, a dry magazine, a stall on a dry
+        // reserve — leaves this shot LATER than the moment the last one made it
+        // due, and that is precisely what releasing the trigger is. Asking the
+        // clock here, rather than clearing the count in each branch that
+        // pauses, is what stops the next pause anyone adds from silently
+        // keeping the spool alive — and the reload branch already proves the
+        // point: it does not `continue`, it falls through and fires in the same
+        // iteration, so a check at the top of the loop would never have seen
+        // it (the test caught this: 66 shots against the 80 a released trigger
+        // owes).
+        if t > spool_due + 1e-9 {
+            spool_shots = 0.0;
+        }
+        // …and then the SPOOL, which is a fraction of whatever that rate came
+        // to: a fire-rate mod raises the ceiling and the floor together, so the
+        // Phenmor's Incarnon form still spends most of its 408-round magazine
+        // at 60% of whatever it was built to.
+        let rate = rate * spool_factor(ap.sustained_fire_rate, spool_shots);
+        spool_shots += 1.0;
         // On a CHARGE weapon the pull costs a draw, not a rate: divide the
         // modded charge time by whatever the live buffs did to the rate
         // (`rate / ap.fire_rate` is exactly that factor, and it is 1.0 when no
@@ -5766,6 +5813,7 @@ pub fn run_once_traced(
                 _ => 1.0 / rate,
             },
         };
+        spool_due = t;
     }
 
     // The clouds still burning after the last shot, with the buff snapshot from
@@ -6272,6 +6320,78 @@ mod tests {
             ..burston.clone()
         };
         assert_eq!(run_once(&single, &mut Rng::new(1)).shots, 51);
+    }
+
+    /// A HELD TRIGGER SPOOLS DOWN, and the loss is most of the magazine rather
+    /// than a rounding error.
+    ///
+    /// The Phenmor's Incarnon numbers — 13.33 rounds/s falling to 60% over 51
+    /// held shots (wiki, verbatim in `SustainedFireRate`). In ten seconds that
+    /// is 93 rounds instead of 134: **31% fewer shots**, which is the whole of
+    /// the difference between the rate the arsenal prints and the rate the
+    /// weapon fires at once its 408-round pool is more than four seconds old.
+    ///
+    /// The spool is why the two forms compare the way they do at all. Reading
+    /// 13.33 flat overstates the Incarnon form's sustained damage by half.
+    #[test]
+    fn a_held_trigger_spools_down_and_costs_most_of_the_magazine() {
+        let phenmor = DummyParams {
+            fire_rate: 13.33,
+            magazine_size: 100_000.0, // no reload inside the window
+            duration_secs: 10.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        assert_eq!(run_once(&phenmor, &mut Rng::new(1)).shots, 134, "the listed rate, flat");
+
+        let spooled = DummyParams {
+            sustained_fire_rate: Some(crate::weapons_data::SustainedFireRate {
+                floor: 0.60,
+                over_shots: 51.0,
+            }),
+            ..phenmor.clone()
+        };
+        assert_eq!(run_once(&spooled, &mut Rng::new(1)).shots, 93);
+
+        // …AND IT RESETS WHEN FIRING STOPS. A magazine of one puts a pause
+        // before every shot, so the spool never advances past its first step
+        // and the count matches the unspooled weapon EXACTLY — the reset is
+        // derived from the gap, not from anyone remembering to clear it in the
+        // reload branch.
+        let tapped = DummyParams {
+            magazine_size: 1.0,
+            reload_seconds: 0.05,
+            ..spooled.clone()
+        };
+        let flat_tapped = DummyParams { sustained_fire_rate: None, ..tapped.clone() };
+        assert_eq!(
+            run_once(&tapped, &mut Rng::new(1)).shots,
+            run_once(&flat_tapped, &mut Rng::new(1)).shots,
+            "a pause between every shot is a trigger released between every shot"
+        );
+    }
+
+    /// The floor is a fraction of the LIVE rate, so a fire-rate mod raises both
+    /// ends and never buys its way out of the spool. Rapid Wrath's +20% is
+    /// worth +20% at the floor as well as at the ceiling — which is also why
+    /// the spool cannot be folded into the listed stat.
+    #[test]
+    fn a_fire_rate_bonus_scales_the_spooled_rate_too() {
+        let spooled = DummyParams {
+            fire_rate: 13.33,
+            sustained_fire_rate: Some(crate::weapons_data::SustainedFireRate {
+                floor: 0.60,
+                over_shots: 51.0,
+            }),
+            magazine_size: 100_000.0,
+            duration_secs: 60.0, // long past the 51 shots, so the floor dominates
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let faster = DummyParams { fire_rate: 13.33 * 1.2, ..spooled.clone() };
+        let slow = f64::from(run_once(&spooled, &mut Rng::new(1)).shots);
+        let fast = f64::from(run_once(&faster, &mut Rng::new(1)).shots);
+        assert!((fast / slow - 1.2).abs() < 0.01, "{fast} / {slow}");
     }
 
     fn single_part(part: BodyPart) -> DummyParams {
