@@ -2450,8 +2450,18 @@ entries:
     arcanes: [primary_crux]
   - weapon: phantasma_prime
     mode: alternate
+    score: 0.18209881401113456
+    mods: [magnetic_welt, primed_point_blank, hunter_track, shotgun_elementalist, shotgun_savvy, incendiary_coat, blaze, scattering_inferno]
+    arcanes: [primary_merciless]
+  - weapon: phantasma_prime
+    mode: alternate
     score: 0.0782553311634399
     mods: [magnetic_welt, primed_point_blank, lingering_torment, hells_chamber, hunter_track, shotgun_elementalist, primed_charged_shell, shell_shock]
+    arcanes: [primary_merciless]
+  - weapon: phantasma_prime
+    mode: alternate
+    score: 0.05543961047748503
+    mods: [magnetic_welt, primed_point_blank, hells_chamber, hunter_track, blaze, toxic_barrage, primed_charged_shell, shell_shock]
     arcanes: [primary_merciless]
   - weapon: phantasma_prime
     mode: alternate
