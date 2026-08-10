@@ -45,8 +45,15 @@ effects:
   #    So on Torid this arcane is worth +240% multiplicative in the BASE form
   #    of the Incarnon cycle and exactly nothing in the transformed form.
   #
-  # Stays inert rather than guessed until the radius model and those two
-  # weapon fields exist.
+  # THE RADIUS HALF OF THAT BLOCKER IS STALE (2026-08-10): the blast-radius
+  # bucket landed and `ResolvedRadial.radius_m` is now `r.radius_m * (1 + br)`.
+  # What is still missing is the per-weapon TABLE, which is transcribed in
+  # docs/CATALOGS.md §2 — Shedu 100% / 6.6 m / +528% / Multiplies, Torid cloud
+  # 100% / 3.0 m / +240% / Multiplies, Torid Incarnon 0% "Doesn't Work" — plus
+  # one weapon field the Shedu's row demands first: its AoE ignores Firestorm,
+  # and the engine currently applies the bucket to every radial.
+  #
+  # Stays inert rather than guessed until those two weapon fields exist.
   # TWO ramps, because the description carries two Xs (wiki rank table ==
   # WFCD levelStats: +50% damage / +3.0% ammo efficiency at rank 0 -> +100% /
   # +5.5% at rank 5; both linear, so rank 3 is 0.8 and 0.045).

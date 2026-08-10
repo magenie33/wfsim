@@ -55,6 +55,17 @@ around (decision 2026-07-31).
   It is where the `f³` triple dip comes from, and where the 0% rule lives —
   an Extra Hit REPLACES the base its status burns off, so one that deals
   nothing leaves the level above standing (owner, 2026-08-09).
+- `docs/CATALOGS.md` — THE PER-WEAPON TABLES, in one place. Some mechanics are a
+  formula plus a published table with one ROW PER WEAPON, and the row says what
+  the weapon's own stats never would — this one multiplies where everyone else
+  adds, this attack part is exempt, this one does not work at all. Condition
+  Overload and Primary Compression are both that shape. The rule is the CO
+  rule generalised (owner, 2026-07-30): **the catalog is authoritative and
+  absence means ORDINARY, not unknown**, and a row is transcribed for the entry
+  it names rather than generalised to a class. Each section carries the columns
+  verbatim, the rows the roster holds, and where it has already gone wrong —
+  the Shedu was filed as `Adding` on the reasoning that it had no row, and it
+  has one saying Multiplying (2026-08-10).
 - `docs/UNMODELLED.md` — the EDGES, by reason rather than by perk: one target,
   no distance, no movement, no holster, infinite ammo, nobody shoots back, and
   the Warframe layer. Written so "why is this perk worth nothing" is a lookup

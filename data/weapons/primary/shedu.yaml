@@ -70,12 +70,29 @@ battery:
   delay_empty_s: 1.0
   delay_partial_s: 0.4
 
-# CO: no Shedu row in the wiki's catalog, and absence there means ORDINARY.
-co_behavior: additive_with_base_damage
+# CO IS MULTIPLYING, and the catalog says so in its own row — which I had
+# claimed it did not (2026-08-10, corrected the same day by actually opening the
+# page instead of assuming absence):
+#
+#   Shedu | Normal Attack | Projectile | 71 | 71 | 100% | Multiplying
+#
+# 71 unmodded and 100% of the base, both of which match the attack below. It is
+# the Torid's class, not the ordinary one: a free-standing x(1 + co x types)
+# rather than a share of the base-damage bucket Serration dilutes.
+#
+# AND IT SETTLES THE "BUG". The page's Bugs section says "Galvanized Aptitude is
+# multiplicative to base damage sources on direct hits" — Galvanized Aptitude IS
+# the CO bonus, so that sentence and this row describe one behaviour. The
+# catalog classifies it; the Bugs entry is a stale reading of the same fact.
+#
+# THE EXPLOSION HAS NO ROW, and that absence IS meaningful: CO is a direct-hit
+# bonus everywhere, and an AoE part needs its own row to take it (which is
+# exactly what the Torid's cloud has). So the explosion takes none, which is the
+# engine's default for a radial.
+co_behavior: independent
 
 unmodeled:
   - "the BATTERY DISCHARGE that fires when the magazine empties: a 20 m pulse for 100 Impact. Its numbers and its trigger are published; whether the build SCALES it is not, and the engine's only precedent (a syndicate blast) is explicitly unscaled — a flat 100 is noise beside a modded shot and a scaled 100 is not. Its status is not a forced proc either: the page reads it as a 100% status CHANCE, so status mods push it above one proc and a negative-status riven makes it miss. Two measurements decide the whole thing; until then the sim leaves it out rather than inventing a scaling rule"
-  - "GALVANIZED APTITUDE IS MULTIPLICATIVE on this weapon's direct hits, which the wiki files under Bugs. The sim models the CORRECT behaviour — additive, like everywhere else — so a Shedu build carrying that mod hits harder in game today than the number here, and this entry is a floor rather than a ceiling. It is left as the game's bug rather than copied, because a hotfix takes it away and the arcane precedent (Primary Debilitate) only earns its `live_bugs:` treatment by being measured. Worth knowing before anyone 'fixes' this to match the Torid: that weapon's page carries the SAME sentence (\"multiplicative to base damage sources on direct hits and resulting clouds\") and there it is INTENDED — the CO catalog gives the Torid a Multiplying row. The Shedu has no catalog row at all, which is exactly why the same observed behaviour is ordinary on one weapon and a bug on the other"
   - "the discharge also removes Sentient and Shadow Stalker damage resistances, which is worth nothing against any target in this roster — no Sentient here has one to strip"
   - "damage falloff on the explosion, linear to 40% at 6.6 m — this arena has no distance, so every shot lands at point blank"
   - "+30% Movement Speed while aiming, and the explosion's self-stagger: neither is a number this arena reads"
@@ -117,6 +134,13 @@ attack:
   # a headshot multiplier of 1x and cannot trigger headshot conditions", which
   # is the engine's rule for every radial rather than a Shedu special case.
   radial:
+    # ITS RADIUS DOES NOT TAKE BLAST-RADIUS MODS — "Primary Fire AoE not
+    # affected by Firestorm" (wiki, Primary Compression's per-weapon table).
+    # The engine multiplies every radial's radius by that bucket today, so a
+    # Shedu carrying Firestorm has a bigger explosion here than in game. It
+    # changes no damage while the arena has one target; it changes Primary
+    # Compression's bonus by 44% the day that arcane is modelled, which is why
+    # it is written down now. docs/CATALOGS.md §2.
     damage: { electricity: 87.0 }
     radius_m: 6.6
     falloff_start_m: 0.0
