@@ -21,8 +21,22 @@ effects:
   # it — see docs/EXTRA_HIT.md for the law and the other members.
   #
   # Splits a COMBINED element's proc into ONE of its two components (Corrosive
-  # -> Toxin or Electricity) once the target already holds 10 stacks of it.
-  # Rolled per DAMAGE INSTANCE, 50/50 between the two components.
+  # -> Toxin or Electricity) once the target is AT 10 stacks of it, COUNTING the
+  # stack this instance is applying. Rolled per DAMAGE INSTANCE, 50/50 between
+  # the two components.
+  #
+  # THE CARD ABOVE IS DE'S OWN TEXT AND IT READS ONE STEP LATE — "if an enemy
+  # HAS 10 stacks, inflicting the same Status Effect AGAIN". Measured otherwise
+  # (owner, 2026-08-10: "如果当前是9层，下一发是10层的话，就可以立刻触发其中一个
+  # ……全部都是这种情况的，我实际测试了"): at nine, the shot that makes it ten
+  # fires it. The description field stays verbatim, because it is DE's string
+  # and not ours to correct — the behaviour is in the engine and in
+  # MEASUREMENTS M34.
+  #
+  # It is also why the arcane works on BLAST at all, and why it is not the rare
+  # case the wiki implies ("并不像wiki说的那么rarely"): Blast detonates at ten
+  # and drains every stack, so it never HAS ten and an eleventh application does
+  # not exist. Under the measured rule Blast is an ordinary member.
   #
   # IT DEALS NO DAMAGE — it applies a status, and that is all the target ever
   # feels from it (owner, 2026-08-08: "殴打的那一下，是没有伤害的…就是直接上dot
@@ -37,6 +51,16 @@ effects:
   # the chain (owner, 2026-08-05: "吃3次派系只有一个情况，那必然有个元素实例造成
   # 才有可能出现这个情况"). That instance is a SCALE, not a damage number. The
   # two sentences used to be one, and it read as if the arcane hit you twice.
+  #
+  # AND THAT INSTANCE IS PERMANENTLY NON-CRITICAL — not a zero-damage hit that
+  # rolls crit against a zero. The two readings deal the same nothing and differ
+  # in eligibility: a chance-on-non-crit perk (Devouring / Devastating Attrition)
+  # stays live on the split under the first and dies under the second. ✅
+  # Measured (owner, 2026-08-10): Phenmor with crit chance pushed to guaranteed,
+  # every hit orange, and the split's DoT still comes out ×21 some of the time.
+  # This is why a critting build's Debilitate DoT is 1×21 rather than 1, and why
+  # `noncrit_mult` is called with a literal tier 0 at the split's own
+  # `InstanceScale`. MEASUREMENTS M37.
   #
   # WHAT BASE THE SPLIT'S DoT BURNS OFF IS THE ONE OPEN QUESTION — M33, where
   # three candidates are laid out. It reads `ModifiedBase` here (elements

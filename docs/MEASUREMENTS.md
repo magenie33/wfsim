@@ -1730,7 +1730,7 @@ The exponent is closed with it: the same page derives `f³` rather than assertin
 it, so the "理论应该是只有2的" doubt is answered — the missing rung is the Extra
 Hit itself, which carries the bonus twice before its status carries it again.
 
-## M34 — Primary Debilitate was dead on Blast, and only a run could tell (2026-08-08)
+## M34 — Primary Debilitate was dead on Blast, and only a run could tell ✅ (2026-08-08; threshold generalised 2026-08-10)
 
 From "还有blast是可触发冰和火的" (owner, 2026-08-08). It is a one-line statement
 of fact about a combination the arcane is supposed to cover, and the engine did
@@ -1751,19 +1751,55 @@ and the condition can never be true.
 
 **The tenth APPLICATION is therefore the moment the condition is met** — the
 only instant a Blast target has ten, and so the only reading of that sentence
-under which Blast is eligible at all. Implemented for Blast and for nothing
-else: the other five are unchanged, because for them the pre-application count
-is exactly right and counting the new stack would fire the arcane one
-application early.
+under which Blast is eligible at all.
 
-### What would falsify it
+That was implemented for Blast and for nothing else, on the reasoning that for
+the other five the pre-application count is right and counting the new stack
+would fire the arcane one application early. **That reasoning was wrong, and the
+exemption was the rule.** See below.
+
+### ✅ RESOLVED, and it was never a Blast rule (2026-08-10)
+
+> 如果当前是9层，下一发是10层的话，就可以立刻触发其中一个（根据等级），而不是要
+> 等到10级后，再打才触发。这样爆炸实际上是可以触发火或者冰的，而且并不像wiki说
+> 的那么rarely
+>
+> 全部都是这种情况的，我实际测试了
+
+— owner, 2026-08-10, on all six combinations.
+
+So the threshold is the count the target is AT **including the stack this
+instance is applying**, for every combined element. DE's card text ("if an enemy
+HAS 10 stacks, inflicting the same Status Effect AGAIN") is one step late, and
+the `if proc == Blast` branch that stood here for two days is gone:
+`debilitate_split` takes `stacks_with_this` and the caller passes
+`stacks_before + 1` unconditionally.
+
+**What it costs the other five: one application.** They cap at ten and stay
+there, so under either reading every subsequent application splits — the only
+difference is the shot that reaches ten, which now splits too. On Blast the same
+one-line rule is the entire mechanic, which is why the bug was visible there and
+nowhere else.
+
+**And the wiki's "rarely" is wrong about Blast for the same reason.** Under the
+card's own reading Blast could never split at all; under the measured one it is
+an ordinary member with no special case anywhere in the engine.
+
+This is the shape the repo keeps running into (see
+[derive triggers, don't list them]): a fix written as "…and also Blast" was the
+general rule with five exceptions no one had tested. The way it got caught was
+the owner testing the other five.
+
+### What would have falsified it
 
 A Blast build with a saturating status chance, a Bane, and the arcane at rank 5,
 against a target that survives detonation. If Cold and Heat statuses never
-appear, DE evaluates the arcane strictly before the stack lands and Blast is
-genuinely exempt — in which case this reverts and the exemption gets written
-down instead. The owner's report is the only reason to believe otherwise, and it
-is a report from play rather than a page: no wiki text covers the interaction.
+appeared, DE would be evaluating the arcane strictly before the stack lands and
+Blast would be genuinely exempt. Kept here because the same experiment now runs
+the other way: it is `a_blast_build_actually_reaches_the_debilitate_threshold`,
+and `the_tenth_application_is_the_one_that_splits` is its non-Blast twin —
+nine applications must pay nothing, ten must pay. Both were re-run against the
+old reading and both fail on it.
 
 ### Why it needed an end-to-end test
 
@@ -2113,6 +2149,28 @@ margin and no real Felarx build gives them up — but it is the one place in thi
 model where two of the weapon's own perks pull against each other, and
 `a_crit_costs_the_split_a_coin_and_pays_it_back_in_multiplier` pins both ends of
 it.
+
+### ✅ CONFIRMED IN GAME on a second weapon (owner, 2026-08-10)
+
+> 就是 Debilitate 的那个 0 的 extra hit，是永远视为不暴击的，而不是一个可能暴击
+> 的 0 伤害。我刚刚用凤殁的暴击提升到了必爆，debilitate 触发的 dot 伤害还是有几
+> 率 ×21 的
+
+Everything above rests on the split instance being **permanently non-critical**
+rather than **a zero-damage hit that happens to roll crit against a zero**. The
+two readings deal identical damage — zero either way — and are opposite about
+eligibility: under the second, a build that crits every shot disqualifies the
+split too and the whole extra layer disappears.
+
+The Phenmor at guaranteed crit separates them, and it comes out the first way.
+It is also a second weapon and a second perk: the original deduction came off
+the Felarx's **Devastating** Attrition, this is the Phenmor's **Devouring**
+Attrition, so the behaviour belongs to the SPLIT and not to one card. Nothing
+changed — the engine passes a literal tier `0` at
+`dummy.rs` `attrition: attrition * noncrit_mult(ap.noncrit_bonus, 0, rng)`, and
+claim 3 of `the_debilitate_dot_carries_two_attrition_layers` already asserted a
+fight that crits every shot still takes ×21. This upgrades that claim from a
+reading of "on a hit that is not critical" to a run.
 
 ### What is still open
 

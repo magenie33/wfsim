@@ -2653,8 +2653,9 @@ fn has_status(debuffs: &DebuffState, t: DamageType) -> bool {
     debuffs.dots.iter().any(|d| d.dtype == t && d.ticks_left > 0)
 }
 
-/// Stacks of a combined status a target must already hold before Primary
-/// Debilitate can split it. The wiki states 10 and states no scaling.
+/// Stacks of a combined status the target must be AT, counting the one this
+/// instance is applying, before Primary Debilitate can split it. The wiki states
+/// 10 and states no scaling.
 pub const DEBILITATE_STACKS: usize = 10;
 
 /// PRIMARY DEBILITATE, decided: does this damage instance also inflict one of
@@ -2663,15 +2664,27 @@ pub const DEBILITATE_STACKS: usize = 10;
 /// A pure function on purpose — the whole mechanic's DECISION is here, where it
 /// can be tested without a fight. Only its damage PAYLOAD needs a measurement.
 ///
-/// The rules, from the wiki and settled with the owner (2026-08-05):
+/// The rules, from the wiki and settled with the owner (2026-08-05, threshold
+/// corrected 2026-08-10):
 ///
 /// - the status just applied must be a COMBINED element — a primary or a
 ///   physical proc has no components to split into
-/// - the target must already hold [`DEBILITATE_STACKS`] of it. "Already" is
-///   the point: the stack this instance just applied does not count toward its
-///   own threshold, or the tenth shot would split as well as the eleventh
+/// - the target must be AT [`DEBILITATE_STACKS`] **counting the stack this
+///   instance is applying**. At nine, the shot that makes it ten splits; you do
+///   not reach ten and then have to shoot again (owner, 2026-08-10: "如果当前
+///   是9层，下一发是10层的话，就可以立刻触发其中一个")
 /// - roll `chance` (0.5 at rank 0 → 1.0 at rank 5)
 /// - pick between the two components 50/50
+///
+/// **The threshold is where BLAST stopped being a special case.** Reading it as
+/// "already holds ten" made the arcane dead on Blast and only on Blast —
+/// reaching ten DETONATES and drains every stack (detonate.yaml), so a
+/// pre-application count is 0..=9 forever and no eleventh application exists to
+/// wait for. That was patched here as an `if proc == Blast` for two days. It is
+/// not a Blast rule: the tenth APPLICATION is the trigger for every
+/// combination, Blast is simply the one where the difference is the whole
+/// mechanic rather than one shot, and the owner reports it firing about as often
+/// as anything else ("并不像wiki说的那么rarely"). MEASUREMENTS M34.
 ///
 /// Once per DAMAGE INSTANCE, which is what the wiki's own note about beams
 /// describes: "only activate once per damage instance, making it less
@@ -2679,11 +2692,13 @@ pub const DEBILITATE_STACKS: usize = 10;
 /// Multishot affects such weapons."
 fn debilitate_split(
     landed: DamageType,
-    stacks_before: usize,
+    // INCLUDING the one being applied — named so the caller cannot get the
+    // off-by-one back by passing the wrong count.
+    stacks_with_this: usize,
     chance: f64,
     rng: &mut Rng,
 ) -> Option<DamageType> {
-    if chance <= 0.0 || stacks_before < DEBILITATE_STACKS {
+    if chance <= 0.0 || stacks_with_this < DEBILITATE_STACKS {
         return None;
     }
     let (a, b) = crate::elements::components_of(landed)?;
@@ -3174,8 +3189,8 @@ fn settle_procs(
         }
         // PRIMARY DEBILITATE: a saturated combined status splits into one of
         // its components. `stacks_before` is read BEFORE the match applied this
-        // proc, so the stack that just landed does not count toward its own
-        // threshold.
+        // proc, so `+ 1` is the count the target is AT — which is the count the
+        // threshold is about.
         //
         // RECURSION is how the faction ladder stays compositional: the split
         // proc is settled by this same function one DEPTH deeper, so its DoT
@@ -3183,22 +3198,17 @@ fn settle_procs(
         // recurse further — a component is a primary, and `components_of`
         // answers None for those — so the ladder ends where the game's does.
         if params.arcane.debilitate_chance > 0.0 {
-            // BLAST COUNTS THE STACK IT IS APPLYING, because ten is the only
-            // count it ever has. Every other combination sits at ten and waits
-            // for an eleventh application, which is what "if an enemy HAS 10
-            // stacks, inflicting the same Status Effect AGAIN" describes. Blast
-            // does not sit anywhere: reaching ten DETONATES and drains every
-            // stack (detonate.yaml), so `stacks_before` is 0..=9 forever and
-            // the arcane could never fire on it at all.
-            //
-            // The owner plays it and it does (2026-08-08: "blast是可触发冰和火
-            // 的"), so the tenth APPLICATION is the moment the condition is met
-            // — the only instant a Blast target has ten, and therefore the only
-            // reading of that sentence under which Blast is eligible at all.
-            // MEASUREMENTS M34 records what would falsify it.
-            let counted = if proc == DamageType::Blast { stacks_before + 1 } else { stacks_before };
+            // THE TENTH APPLICATION IS THE TRIGGER, for every combination —
+            // "at nine, the next shot that makes it ten fires it, rather than
+            // having to reach ten and shoot again" (owner, 2026-08-10). So the
+            // count that goes in is the one the target is AT, and there is no
+            // per-element branch: this line carried an `if proc == Blast` for
+            // two days because Blast is where the off-by-one was VISIBLE
+            // (detonating at ten, it never sits there, so the arcane was
+            // silently dead on it) — and the fix for the visible case was the
+            // rule all along. MEASUREMENTS M34.
             if let Some(part) =
-                debilitate_split(proc, counted, params.arcane.debilitate_chance, rng)
+                debilitate_split(proc, stacks_before + 1, params.arcane.debilitate_chance, rng)
             {
                 // THE SPLIT PROC IS AN ORDINARY PROC (owner, 2026-08-05: "我
                 // 倾向于类似正常触发dot的算法，而不是实例算法"). Nothing about
@@ -3288,6 +3298,22 @@ fn settle_procs(
                         // satisfied whatever the parent did (owner: "50%概率触
                         // 发，因为这个也没暴击"). A critting build therefore
                         // takes 1 x 21 here rather than 441, and never 1.
+                        //
+                        // THE LITERAL `0` IS THE CLAIM, and it is the tier
+                        // rather than a rounded-down roll: the split is
+                        // permanently non-critical, not a zero-damage hit that
+                        // happens to be rolling crit against a zero. Those two
+                        // readings are identical in damage and opposite in
+                        // eligibility, and only the first leaves the perk live
+                        // on a build that crits every shot.
+                        //
+                        // ✅ MEASURED IN GAME (owner, 2026-08-10): Phenmor,
+                        // crit chance pushed to guaranteed, Devouring
+                        // Attrition — every hit orange, and the Debilitate DoT
+                        // still comes out x21 some of the time. Under the other
+                        // reading it could never fire again. Two weapons now,
+                        // since the deduction came off the Felarx's
+                        // Devastating Attrition. MEASUREMENTS M37.
                         //
                         // `crit_mult` is still carried, in `InstanceScale` above:
                         // the parent's value is what the zero is replaced BY, and
@@ -11461,6 +11487,10 @@ mod tests {
     }
 
     /// PRIMARY DEBILITATE'S DECISION, pinned without a fight.
+    ///
+    /// The argument is the count the target is AT, this application included —
+    /// so `DEBILITATE_STACKS` here is the ninth stack plus the tenth being
+    /// applied, and that is the shot that splits (owner, 2026-08-10).
     #[test]
     fn debilitate_splits_only_a_saturated_combination() {
         let mut rng = Rng::new(0xD0D0);
@@ -11502,15 +11532,70 @@ mod tests {
         assert_eq!(debilitate_split(DamageType::Viral, 99, 0.0, &mut rng), None);
     }
 
+    /// THE TENTH APPLICATION SPLITS, and the ninth does not — end to end, on an
+    /// ordinary combination where the count is observable.
+    ///
+    /// This is the rule the Blast case turned out to be an instance of (owner,
+    /// 2026-08-10). Asserted by CAPPING the fight at nine applications and at
+    /// ten: nine must pay nothing at all, ten must pay. A test that only
+    /// asserted "ten splits" would pass just as well under the old
+    /// already-holds-ten reading, which fires on the eleventh.
+    #[test]
+    fn the_tenth_application_is_the_one_that_splits() {
+        // Pure Viral, forced, one proc per shot, and exactly `shots` of them:
+        // the stack count after shot n is n, capped at ten.
+        //
+        // THE AMMO is what bounds the shot count, not the clock. Bounding it by
+        // duration was the first attempt and it silently asserted nothing: the
+        // tenth shot lands at the last instant of the fight and its DoT ticks
+        // start a second AFTER the end, so both arms read zero and "nine splits
+        // nothing" passed for the wrong reason.
+        let run = |shots: f64, chance: f64| {
+            let p = DummyParams {
+                damage: DamageVector::new().with(DamageType::Viral, 100.0),
+                dot_modified_base: Some(100.0),
+                status_chance: 0.0,
+                base_status_chance: 0.0,
+                forced_procs: vec![DamageType::Viral],
+                fire_rate: 10.0,
+                // Long enough for the last shot's DoT to tick out in full.
+                duration_secs: 20.0,
+                magazine_size: shots,
+                infinite_reserve: false,
+                reserve_ammo: 0.0,
+                base_crit_chance: 0.0,
+                unmodded_crit_chance: 0.0,
+                target: TargetParams { base_health: 1e15, ..DummyParams::default().target },
+                // Viral splits into Cold and Toxin; only Toxin ticks, so a
+                // split that lands shows up as DoT damage and nothing else can
+                // put damage in that bucket.
+                elem_dot_bonus: vec![(DamageType::Toxin, 1.0)],
+                arcane: crate::arcanes_data::ArcaneFx {
+                    debilitate_chance: chance,
+                    ..crate::arcanes_data::ArcaneFx::none()
+                },
+                ..DummyParams::default()
+            };
+            monte_carlo(&p, 200, 0x51CE).mean_dot_damage
+        };
+        // NINE applications: the target never reaches ten, so nothing splits —
+        // and Viral's own proc is a multiplier, not a DoT, so the bucket is
+        // empty for a reason that cannot be anything else.
+        assert_eq!(run(9.0, 1.0), 0.0, "nine applications must split nothing");
+        // TEN: the tenth is the one, and at rank 5 it is certain.
+        assert!(run(10.0, 1.0) > 0.0, "the tenth application must split");
+        // …and it is the ARCANE doing it: same fight, no arcane, no DoT.
+        assert_eq!(run(10.0, 0.0), 0.0);
+    }
+
     /// BLAST REACHES THE THRESHOLD, END TO END — the table above says it may
     /// split, and this says the sim ever gets it there.
     ///
-    /// It nearly cannot. Every other combination sits at ten stacks and waits
-    /// for an eleventh application; Blast DETONATES at ten and drains every
-    /// stack, so the count a later application reads is 0..=9 forever. Reading
-    /// the pre-application count — right for the other five — made the arcane
-    /// dead on Blast, silently, with a passing unit test on the split function
-    /// itself. Only a run finds that.
+    /// It is the case where the threshold rule is the whole mechanic rather
+    /// than one shot: Blast DETONATES at ten and drains every stack, so the
+    /// count a later application reads is 0..=9 forever. Reading the
+    /// pre-application count made the arcane dead on Blast, silently, with a
+    /// passing unit test on the split function itself. Only a run finds that.
     #[test]
     fn a_blast_build_actually_reaches_the_debilitate_threshold() {
         let build = |chance: f64| DummyParams {
@@ -12280,7 +12365,11 @@ mod debilitate_attrition_tests {
     ///   3. and the second one lands EVEN ON A CRITTING HIT, where the parent's
     ///      own roll is worth nothing. This is the counter-intuitive half: the
     ///      zero instance has no crit of its own, so the perk's condition holds
-    ///      whatever the parent did.
+    ///      whatever the parent did. ✅ Confirmed in game on a SECOND weapon
+    ///      (owner, 2026-08-10): Phenmor at guaranteed crit, Devouring
+    ///      Attrition, and the split's DoT still comes out x21 some of the time
+    ///      — so the split is permanently non-critical rather than a zero that
+    ///      rolls crit, which is the distinction claim 3 exists to make.
     ///
     /// The roll is forced to 1.0 throughout: the perk's own 50% would need
     /// thousands of runs to separate 21 from 22, and the question is which

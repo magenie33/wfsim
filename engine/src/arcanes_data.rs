@@ -443,10 +443,12 @@ enum ArcEffect {
     /// maintainer reads it, not in a field the app renders (owner: "不要有note
     /// 字段，所有的说明全是备注").
     /// Primary Debilitate: on a damage instance that lands a COMBINED status
-    /// on a target already holding [`DEBILITATE_STACKS`] of it, a chance to
-    /// also inflict one of its two component statuses — chosen 50/50, one
-    /// stack, and dealt as its own damage INSTANCE (which is why the status it
-    /// leaves carries the faction bonus a third time; see `dummy::faction_at`).
+    /// bringing the target TO [`DEBILITATE_STACKS`] of it — this stack counted,
+    /// so at nine the shot that makes it ten fires (owner-measured, M34) — a
+    /// chance to also inflict one of its two component statuses, chosen 50/50,
+    /// one stack, and dealt as its own damage INSTANCE (which is why the status
+    /// it leaves carries the faction bonus a third time; see
+    /// `dummy::faction_at`).
     Debilitate(Scale),
     Unmodeled { scale: Scale },
     OutOfScope { scale: Scale },
