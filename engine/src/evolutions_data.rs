@@ -170,6 +170,15 @@ enum EvoEffect {
     /// read here, and granting a conditional bonus unconditionally is the one
     /// mistake worse than not granting it.
     ReloadSpeedBonus(f64),
+    /// EXECUTIONER'S FORTUNE — a headshot has a chance to fill the magazine
+    /// outright, no reload played.
+    ///
+    /// Two weapons word it two ways and `needs_kill` is the whole difference:
+    /// the Furis pair pay on any headshot ("On Headshot: 10% chance for Instant
+    /// Reload"), the Phenmor only on one that KILLS ("On Headshot kill: 20%
+    /// chance to instant Reload"), which is far rarer against a single target
+    /// that has to be worn down.
+    InstantReloadOnHeadshot { chance: f64, needs_kill: bool },
     /// READY RETALIATION — reload speed, armed by STARTING a reload from empty
     /// and lasting a while after.
     ///
@@ -466,6 +475,9 @@ impl EvolutionDef {
                 // same way Pressurized Magazine's `on_reload_fr` is drawn
                 // without an evolution card.
                 EvoEffect::ReloadSpeedOnEmptyReload { .. }
+                // Nor is Executioner's Fortune: it is a roll on an event the
+                // sim already has, and its whole effect is a magazine counter.
+                | EvoEffect::InstantReloadOnHeadshot { .. }
                 // Static stat changes — nothing to configure at runtime.
                 | EvoEffect::FlatBaseStatusChanceByForm { .. }
                 | EvoEffect::FlatBaseCritMultiplier(_)
@@ -618,6 +630,11 @@ impl EvolutionDef {
                 ),
                 EvoEffect::FireRateBonus(v) => format!("+{:.0}% fire rate", v * 100.0),
                 EvoEffect::ReloadSpeedBonus(v) => format!("+{:.0}% reload speed", v * 100.0),
+                EvoEffect::InstantReloadOnHeadshot { chance, needs_kill } => format!(
+                    "{:.0}% chance to fill the magazine on a headshot{}",
+                    chance * 100.0,
+                    if *needs_kill { " kill" } else { "" }
+                ),
                 EvoEffect::ReloadSpeedOnEmptyReload { value, duration } => format!(
                     "+{:.0}% reload speed for {duration:.0}s after a reload from empty",
                     value * 100.0
@@ -807,6 +824,14 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             per_type: f(v, "value").unwrap_or(0.0),
         },
         "fire_rate_bonus" => EvoEffect::FireRateBonus(f(v, "value").unwrap_or(0.0)),
+        // The CONDITION is the only thing that varies between the roster's
+        // three copies, and it is read rather than assumed: absent means any
+        // headshot pays (the Furis pair), `headshot_kill` means only a killing
+        // one does (the Phenmor).
+        "instant_reload_on_headshot" => EvoEffect::InstantReloadOnHeadshot {
+            chance: f(v, "chance").unwrap_or(0.0),
+            needs_kill: v.get("condition").and_then(Value::as_str) == Some("headshot_kill"),
+        },
         // CONDITIONAL ONES STAY INERT. Ready Retaliation spells the same kind
         // with a `condition:`, which nothing here reads — so it falls through to
         // `Inert` and keeps saying so on its tile.
@@ -1038,6 +1063,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::FireRateBonus(v) => base.evo_fire_rate_bonus += v,
                 EvoEffect::ReloadSpeedBonus(v) => base.evo_reload_bonus += v,
+                EvoEffect::InstantReloadOnHeadshot { chance, needs_kill } => {
+                    base.instant_reload_on_headshot =
+                        Some(crate::loadout::InstantReload { chance: *chance, needs_kill: *needs_kill });
+                }
                 EvoEffect::ReloadSpeedOnEmptyReload { value, duration } => {
                     base.rs_on_empty_reload = Some(crate::loadout::TimedBuff {
                         value: *value,
@@ -1556,16 +1585,21 @@ use crate::loadout::WeaponBase;
             // refactor, and it cost exactly what the design promised: one
             // trigger arm, one grant arm, no bookkeeping.
             //
-            // What the remaining two need: EXECUTIONER'S FORTUNE needs a reload
-            // the sim can END rather than scale; HAVEN FORAY needs a Tenno with
+            // What the remaining one needs: HAVEN FORAY needs a Tenno with
             // overshields, which `TennoCondition` has no room for.
+            //
+            // EXECUTIONER'S FORTUNE was here until 2026-08-10, on the reading
+            // that it "needs a reload the sim can END rather than scale". That
+            // was the wrong shape: its trigger is a HEADSHOT, and you cannot
+            // shoot while reloading, so there is never a reload in flight for
+            // it to end. It is a magazine that fills — the machinery Sentient
+            // Surge already had — and the only thing missing was reading the
+            // headshot and the kill at the one site that knows both.
             //
             // Every one of them now says so on its own tile — `unmodeled_effects`
             // is derived from these same variants, so this list and the UI
             // cannot disagree.
-            "furis_executioners_fortune :: instant_reload_on_headshot",
             "furis_haven_foray :: flat_base_damage_with_overshields",
-            "mk1_furis_executioners_fortune :: instant_reload_on_headshot",
             "mk1_furis_haven_foray :: flat_base_damage_with_overshields",
             // THE PHENMOR (2026-08-08), the first natural Incarnon after the
             // Laetum and the first weapon to bring FOUR inert perks at once.
@@ -1589,7 +1623,6 @@ use crate::loadout::WeaponBase;
             // official ruler, which puts every shot into a head, it would arm
             // on the second shot and never lapse: a flat +50% headshot damage
             // for the whole engagement, and the largest thing on this list.
-            "phenmor_executioners_fortune :: instant_reload_on_headshot",
             "phenmor_lingering_judgement :: headshot_damage_on_headshot_streak",
             "phenmor_spiteful_defilement :: crit_multiplier_below_status_count",
             // THE BRATON FAMILY (2026-08-08) — one adapter, four weapons, so

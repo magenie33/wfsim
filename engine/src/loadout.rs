@@ -775,6 +775,21 @@ pub struct StackSpec {
 /// Galvanized Crosshairs' on-headshot crit, Sharpened Bullets' on-kill crit
 /// damage, Pressurized Magazine's on-reload fire rate. Unifies what used to be
 /// three parallel `Option<(f64, f64)>` fields.
+/// EXECUTIONER'S FORTUNE: a headshot's chance to FILL THE MAGAZINE, no reload
+/// played and no time spent.
+///
+/// It is not a reload-speed bonus and it is not a percentage refill — it is the
+/// reload happening for free, which is why it lives beside the magazine rather
+/// than in the reload bucket. Like every other magazine refill in this engine
+/// it draws from the RESERVE, so a dry one gives nothing.
+#[derive(Debug, Clone, Copy)]
+pub struct InstantReload {
+    /// Per qualifying headshot (0.10 on the Furis pair, 0.20 on the Phenmor).
+    pub chance: f64,
+    /// Must the headshot also KILL? The Phenmor says so; the Furis pair do not.
+    pub needs_kill: bool,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TimedBuff {
     /// The ABSOLUTE bonus this buff contributes while active.
@@ -935,6 +950,8 @@ pub struct WeaponBase {
     /// [`crate::evolutions_data::EvoEffect::ReloadSpeedOnEmptyReload`]. Same
     /// bucket as `evo_reload_bonus`, but only while the window is open.
     pub rs_on_empty_reload: Option<TimedBuff>,
+    /// EXECUTIONER'S FORTUNE — see [`InstantReload`].
+    pub instant_reload_on_headshot: Option<InstantReload>,
     /// Prelude of Might: `(bonus, threshold)` — add `bonus` to the crit damage
     /// MULTIPLIER while the resolved crit chance stays under `threshold`.
     /// Resolved late for that reason: it is the only evolution whose condition
@@ -1508,6 +1525,11 @@ pub struct ResolvedPanel {
     /// the reload bucket the mods and `evo_reload_bonus` feed, but only while
     /// open, and only a reload FROM EMPTY opens it.
     pub rs_on_reload: Option<TimedBuff>,
+    /// EXECUTIONER'S FORTUNE — see [`InstantReload`]. Carried straight to the
+    /// sim under every policy: it is an EVENT, and there is no panel stat an
+    /// assumed-max reading could spend it into (a magazine that refills itself
+    /// is not a bigger magazine).
+    pub instant_reload: Option<InstantReload>,
     /// Hemorrhage's status-conversion roll (an event mechanic — active under
     /// every policy; contributes no static panel stat).
     pub proc_conversion: Option<ProcConv>,
@@ -2358,6 +2380,7 @@ pub fn resolve_for(
         cd_on_kill,
         fr_on_reload,
         rs_on_reload,
+        instant_reload: base.instant_reload_on_headshot,
         bd_on_reload,
         proc_conversion: proc_conv,
         // Reified Bane: the vector already carries the +14 (evolutions apply

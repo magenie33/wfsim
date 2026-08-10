@@ -117,9 +117,30 @@ two wikis carefully enough to catch the three places they disagree.
 
 Predicted "4 new perks, no new mechanic". Actual: **no engine work at all**, and
 four perks that load as INERT rather than as new kinds — two of them already
-inert on the Furis (an instant reload the sim cannot end; Ready Retaliation's
-reload-speed kind, which this loader has no arm for) and two genuinely new
-shapes, both of which would be worth real damage here:
+inert on the Furis, two genuinely new shapes.
+
+**Three of the four are implemented now (2026-08-10), and the two shared with the
+Furis were never the hard ones.** Both had been filed under "the engine cannot",
+and in both cases the sentence describing why was about the wrong mechanism:
+
+- **Ready Retaliation** was called a reload-speed kind the loader had no arm
+  for. It needed the arm and a WINDOW — and a reload that is paid for while it
+  runs, since the window can lapse mid-reload.
+- **Executioner's Fortune** was called "an instant reload the sim cannot END
+  rather than scale". There is never a reload in flight for it to end: its
+  trigger is a headshot, and you cannot shoot while reloading. It is a magazine
+  that FILLS, which is machinery Sentient Surge already had. On the Furis, where
+  any headshot pays, it takes a 300-second engagement from 61 reloads to **9**
+  and is worth **+39%** over the tier's alternatives — the largest single perk
+  correction in the set. On the Phenmor, where the card demands a KILL, it is
+  worth what the fight's kills are worth: +2% against a level-1 target that dies
+  constantly, and zero on the official ruler, whose one Thrax never dies.
+
+The lesson is the one WEAPON_INTAKE now states about wiki prose, pointed at our
+own comments: a note saying "the engine cannot do X" is a claim with a shelf
+life, and both of these were describing a mechanism the perk does not use.
+
+The two that remain are genuinely new shapes:
 
 - **Spiteful Defilement** — a crit multiplier while the TARGET carries fewer
   than three statuses. The counter exists (Condition Overload's bucket IS the

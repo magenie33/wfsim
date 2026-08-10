@@ -1354,6 +1354,10 @@ pub struct DummyParams {
     /// implement it anyway — this is an ordinary reload-speed bonus and the
     /// revert is an ordinary reload-speed-scaled animation.
     pub rs_on_reload: Option<crate::loadout::TimedBuff>,
+    /// EXECUTIONER'S FORTUNE — see [`crate::loadout::InstantReload`]. Rolled by
+    /// the PELLET that headshots, because only there is it known whether the
+    /// hit landed in a head and whether it killed.
+    pub instant_reload: Option<crate::loadout::InstantReload>,
     /// A syndicate augment's radial (Gilded Truth grants Truth) — armed by
     /// AFFINITY this weapon earns, fired on its own cooldown.
     pub syndicate_radial: Option<crate::syndicates_data::SyndicateDef>,
@@ -1922,6 +1926,7 @@ impl DummyParams {
             fr_on_reload: panel.fr_on_reload,
             bd_on_reload: panel.bd_on_reload,
             rs_on_reload: panel.rs_on_reload,
+            instant_reload: panel.instant_reload,
             super_crit_on_status: panel.super_crit_on_status,
             beam_ramp_floor: panel.beam_ramp_floor,
             syndicate_radial: panel.syndicate_radial,
@@ -2091,6 +2096,7 @@ impl Default for DummyParams {
             charge_cadence: crate::weapons_data::ChargeCadence::DrawThenRate,
             sustained_fire_rate: None,
             rs_on_reload: None,
+            instant_reload: None,
             burst: None,
             frenzy: false,
             locked_buffs: Vec::new(),
@@ -4436,6 +4442,8 @@ pub fn run_once_traced(
     // beside it this is not only read at a shot: it changes how long the NEXT
     // reload takes, so it is passed into every reload and every transmute.
     let mut rs_reload_expiry: f64 = f64::NEG_INFINITY;
+    // Set by a pellet that rolled Executioner's Fortune, spent once by the shot.
+    let mut instant_reload_now = false;
     let mut bd_reload_expiry: f64 = params
         .bd_on_reload
         .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
@@ -5460,6 +5468,25 @@ pub fn run_once_traced(
                 }
                 r.timeline.add(t, effective);
                 r.kills += killed as u32;
+                // EXECUTIONER'S FORTUNE. Rolled HERE and nowhere else, because
+                // this is the only place that knows both halves of its
+                // condition: `head_direct` says the pellet landed in a head,
+                // `killed` says it finished the target. An explosion never
+                // headshots, so a radial pellet cannot pay.
+                //
+                // PER PELLET, like every other on-hit roll in this loop — a
+                // multishot pull that puts two pellets in a head gets two
+                // chances, which is the same rule the wiki states from the
+                // other side for charge gauges ("additional shots from
+                // Multishot count as separate weakpoint hits").
+                if let Some(ef) = params.instant_reload {
+                    if head_direct
+                        && (!ef.needs_kill || killed)
+                        && d.extra.chance(ef.chance)
+                    {
+                        instant_reload_now = true;
+                    }
+                }
                 // A LANDED grenade leaves its field, whatever it rolled:
                 // "Grenades stick to allies, enemies and surfaces", and a stuck
                 // grenade means the target "cannot move out of the cloud".
@@ -5782,6 +5809,39 @@ pub fn run_once_traced(
                 &mut d.status,
                 DEPTH_PROC,
             );
+            }
+        }
+
+        // EXECUTIONER'S FORTUNE, SPENT. The roll is per pellet, the effect is
+        // not: a magazine fills once however many pellets rolled it, so this is
+        // a flag the pellet loop sets and the shot consumes.
+        //
+        // It is an INSTANT reload, so no time passes — which is the whole perk,
+        // and why it is not in the reload bucket. It draws from the reserve
+        // like every other refill here (a dry reserve gives nothing), and it
+        // fills whole rounds to capacity the way `reload_draw` defines a
+        // reload, so an overdrawn counter comes back where a real reload would
+        // leave it.
+        //
+        // A REFILL IS NOT A RELOAD, the rule Sentient Surge established above:
+        // `r.reloads` is untouched, so nothing keyed on reloads — Mounting
+        // Momentum's shells, Deadly Efficiency's window, Ready Retaliation's —
+        // is triggered by it. That is a reading, not a measurement: DE's own
+        // text calls it a reload, and if it turns out to arm those buffs this
+        // is the one line to change.
+        //
+        // The CHARGE-BACKED form is skipped: an Incarnon pool is "outside the
+        // ammo economy entirely" and has no reload to make instant.
+        if instant_reload_now {
+            instant_reload_now = false;
+            if let Some(cy) = &params.cycle {
+                if in_base_form {
+                    base_mag += draw_from(&mut reserve, params.infinite_reserve,
+                        reload_draw(cy.base_form.magazine_size, base_mag));
+                }
+            } else if ap.ammo_efficiency_applies {
+                magazine += draw_from(&mut reserve, params.infinite_reserve,
+                    reload_draw(params.magazine_size, magazine));
             }
         }
 
@@ -6496,6 +6556,74 @@ mod tests {
         );
     }
 
+    /// EXECUTIONER'S FORTUNE fills the magazine, and its CONDITION gates it.
+    ///
+    /// Two weapons, two readings of the same kind: the Furis pair pay on any
+    /// headshot, the Phenmor only on one that kills. Against a target this sim
+    /// cannot kill, the second must be worth exactly nothing while the first is
+    /// worth a great deal — which is the assertion, because a version that
+    /// ignored `needs_kill` would look perfectly healthy on the Furis.
+    #[test]
+    fn executioners_fortune_needs_the_kill_when_the_card_says_so() {
+        let head = |chance: f64, needs_kill: bool| DummyParams {
+            fire_rate: 10.0,
+            magazine_size: 10.0,
+            reload_seconds: 5.0,
+            duration_secs: 30.0,
+            // EVERY shot into a HEAD, which is what the official ruler does
+            // and what makes the perk's own rate the only variable here.
+            body_parts: all_head(),
+            instant_reload: (chance > 0.0)
+                .then_some(crate::loadout::InstantReload { chance, needs_kill }),
+            ..no_status()
+        };
+        // A target that cannot die — `InfiniteHealth` says so outright, which
+        // is stronger than a large number and is what the default fixture is.
+        let unkillable = |p: DummyParams| DummyParams {
+            target: frail_target(TargetMode::InfiniteHealth, 0.0, 0.0),
+            ..p
+        };
+
+        let plain = run_once(&unkillable(head(0.0, false)), &mut Rng::new(7)).shots;
+        // ANY headshot pays (the Furis): a 10% chance on every shot saves most
+        // of the reloads, so far more rounds fit in the same 30 s.
+        let furis = run_once(&unkillable(head(0.10, false)), &mut Rng::new(7)).shots;
+        assert!(furis > plain, "{furis} shots with the perk, {plain} without");
+
+        // ONLY A KILLING headshot pays (the Phenmor): nothing here ever dies,
+        // so it must be worth precisely nothing — not "nearly nothing".
+        let phenmor = run_once(&unkillable(head(0.20, true)), &mut Rng::new(7)).shots;
+        assert_eq!(phenmor, plain, "a kill-gated perk paid without a kill");
+    }
+
+    /// …and it DOES pay once the target dies.
+    ///
+    /// The pair above proves the gate closes; this proves it opens, so the two
+    /// together cannot be satisfied by a perk that simply never fires.
+    #[test]
+    fn a_killing_headshot_fills_the_magazine() {
+        let p = DummyParams {
+            fire_rate: 10.0,
+            magazine_size: 10.0,
+            reload_seconds: 5.0,
+            duration_secs: 30.0,
+            body_parts: all_head(),
+            // `InstantRespawn` is the whole point and it is not a detail of
+            // frailty: the DEFAULT fixture target is `InfiniteHealth`, so a
+            // 1 HP version of it still never dies and a kill-gated perk reads
+            // as broken. That is what the first draft of this test did.
+            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            ..no_status()
+        };
+        let without = run_once(&p, &mut Rng::new(11)).shots;
+        let with = DummyParams {
+            instant_reload: Some(crate::loadout::InstantReload { chance: 1.0, needs_kill: true }),
+            ..p.clone()
+        };
+        let armed = run_once(&with, &mut Rng::new(11)).shots;
+        assert!(armed > without, "{armed} shots with the perk, {without} without");
+    }
+
     /// READY RETALIATION, all three of its rules at once.
     ///
     /// Stated by the owner, 2026-08-10, and each clause is asserted on its own
@@ -6688,6 +6816,17 @@ mod tests {
         // Only a live in-sim buff does, and it divides by its own factor.
         let stat_only = DummyParams { fire_rate: 2.0, ..bow.clone() };
         assert_eq!(run_once(&stat_only, &mut Rng::new(1)).shots, 9, "mods are not re-applied");
+    }
+
+    /// A target that is nothing but head, so every pellet headshots.
+    pub(super) fn all_head() -> Vec<BodyPart> {
+        vec![BodyPart {
+            name: "head".into(),
+            aim_weight: 1.0,
+            multiplier: 1.0,
+            is_head: true,
+            crit_bonus: false,
+        }]
     }
 
     pub(super) fn mono_body(multiplier: f64) -> Vec<BodyPart> {

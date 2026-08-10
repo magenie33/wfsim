@@ -11,11 +11,14 @@ description: "On Headshot: 10% chance for Instant Reload."
 selection: choose_one
 
 effects:
-  # NOT LOADED: there is no instant-reload effect kind. The nearest thing the
-  # engine has is `on_headshot_reload_speed` (Ready Retaliation's), which SCALES
-  # a reload rather than skipping one, and a 10% chance to skip is not a
-  # reload-speed bonus. It would be real here — this arena reloads, and at a
-  # 100% headshot rate a tenth of those reloads would simply end.
+  # ANY headshot pays here — no kill needed, unlike the Phenmor's copy of this
+  # kind, which carries `condition: headshot_kill`. At the official ruler's 100%
+  # headshot rate that is a tenth of every shot filling the magazine outright,
+  # which on a 35-round pistol is most of its reloads gone.
+  #
+  # It fills the magazine — no reload played, no time spent — so it is a
+  # magazine effect rather than a reload-speed one, it draws from the reserve,
+  # and it does not count as a reload.
   - kind: instant_reload_on_headshot
     chance: 0.10
 

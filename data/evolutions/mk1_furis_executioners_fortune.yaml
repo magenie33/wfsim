@@ -11,11 +11,10 @@ description: "On Headshot: 10% chance for Instant Reload."
 selection: choose_one
 
 effects:
-  # NOT LOADED: there is no instant-reload effect kind. The nearest thing the
-  # engine has is `on_headshot_reload_speed` (Ready Retaliation's), which SCALES
-  # a reload rather than skipping one, and a 10% chance to skip is not a
-  # reload-speed bonus. It would be real here — this arena reloads, and at a
-  # 100% headshot rate a tenth of those reloads would simply end.
+  # ANY headshot pays here — no kill needed, unlike the Phenmor's copy of this
+  # kind. Same numbers and same reading as furis_executioners_fortune.yaml: it
+  # fills the magazine outright, draws from the reserve, and does not count as
+  # a reload.
   - kind: instant_reload_on_headshot
     chance: 0.10
 
