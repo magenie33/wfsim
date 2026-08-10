@@ -42,6 +42,13 @@ incarnon:
   # its own 1.0 s base, and both directions scale with reload speed). Applying
   # it to every weapon is the assumption, and it is deliberately uniform — no
   # weapon is special-cased until one is measured.
+  #
+  # AND THE SENTENCE ABOVE DOES NOT CONTRADICT IT (owner, 2026-08-10). The
+  # page's "animation equal to the weapon's reload speed" is about ENTERING the
+  # Incarnon form and nothing else — which is why `transmute_in_seconds` IS the
+  # 2.8 s reload. There is NO official figure for the way back, on this weapon
+  # or any other, so the revert stays the measured 1.0 s everywhere. Settled;
+  # do not re-derive a 2.8 s revert from that sentence.
 
 # SIM CONVENIENCE: with the gauge LOCKED full the Incarnon cycle reduces to a
 # magazine/reload model the plain sim consumes directly.
@@ -82,7 +89,8 @@ attack:
   # 13.33/s printed above. The sim holds the trigger — see `unmodeled` in
   # phenmor.yaml for the player who does not.
   sustained_fire_rate:
-    floor: 0.60
+    start: 1.00
+    end: 0.60
     over_shots: 51
   multishot: 1.0
   ammo_cost: 1                  # of the separate incarnon magazine (408)

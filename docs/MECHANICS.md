@@ -2068,10 +2068,10 @@ A tapped bow shot pays no draw, so the nock alone paces it (`charge_seconds:
 word rather than a measurement — **MEASUREMENTS M16**. The engine does NOT yet
 implement the second formula: the roster has no non-bow charge weapon.
 
-### Fire rate that FALLS while the trigger is held — the spool-down
+### Fire rate that MOVES while the trigger is held — the spool
 
-One weapon in the roster does not fire at one rate. VERBATIM (wiki `Phenmor`,
-of the Incarnon form):
+Six weapons in the roster do not fire at one rate, and five of them go UP.
+VERBATIM (wiki `Phenmor`, of the Incarnon form):
 
 > Fire rate decreases from **100%** to **60%** over **51** shots as the trigger
 > is held, reducing its effectiveness from prolonged periods of firing.
@@ -2105,11 +2105,43 @@ The stat itself is untouched, exactly as on a charge weapon: `fire_rate` stays
 what the panel prints and what fire-rate gates read, and the spool multiplies
 the CADENCE. Data: `attack.sustained_fire_rate: { floor, over_shots }`.
 
-**What is not modelled is the play pattern that dodges it** — a player who taps
-rather than holds keeps more of the listed rate than this sim does, because the
-sim holds the trigger until the magazine is dry. That is on the weapon's card
+#### The five that climb
+
+The same field pointed the other way. Each page states its spool TWICE — a
+percentage per shot and a count of shots to optimal — and on all five the two
+reconcile exactly, which is the strongest check available without a measurement:
+
+| weapon | starts at | span | full from | the page's % per shot |
+| --- | --- | --- | --- | --- |
+| Gorgon | 20% | 7.5 | shot 9 | 10.667% |
+| Gorgon Wraith | 20% | 5 | shot 6 | 16% |
+| Prisma Gorgon | 20% | 6 | shot 7 | 13.33% |
+| Soma | 25% | 5 | shot 6 | 15% |
+| Soma Prime | 25% | 2.5 | shot 4 | 30% |
+
+`over_shots` carries the span because it is the exact half — the Gorgon's
+"10.667% per shot" IS 0.8/7.5 — and the test re-derives BOTH published figures
+from it, so a mistyped span would have to be wrong in a way that keeps two
+independent sentences true.
+
+A climb costs TIME rather than rounds, and it is paid once per magazine: the
+Gorgon's 90 rounds take 7.99 s instead of 7.20 s, +11%. None of their Incarnon
+forms spool — those are Auto Charge, and their pages say so.
+
+**One rule for both directions, including the reset.** The Gorgon family's pages
+say *"Burst firing maintains spool-up"* while the Phenmor's says the spool
+*"resets once the player stops firing"*, and it would be easy to read that as two
+mechanics needing two flags. It is not worth one: this sim holds the trigger, so
+the only pauses in it are the reloads the weapon forces, and no play pattern is
+invented by treating those the same way everywhere (owner, 2026-08-10: "我们这个
+测试就是一按到底，没有理由给这个特殊对待的。因为极限的话岂不是一发一发发射
+了？" — taken to the limit, exempting a spool means firing one round at a time).
+
+**What is not modelled is the play pattern that dodges it** — on the faller, a
+player who taps rather than holds; on the risers, one whose pauses are short
+enough to keep the spool through a reload. Both are on the weapon's card
 (`unmodeled:`) and in docs/UNMODELLED.md, beside the reload-interruption ruling
-it is the same shape as.
+they are the same shape as.
 
 ### Ammo Efficiency — a FRACTIONAL ammo cost
 

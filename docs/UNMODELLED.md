@@ -143,22 +143,28 @@ It stays in this file because it is still a thing the model does not do, and the
 weapons that reload by round say so on their own cards: a player who interrupts
 is trading stacks for uptime and will not reproduce these numbers exactly.
 
-### Bursting out of the Phenmor's spool-down — the SAME shape, DECIDED the same way
+### Playing around a SPOOL — the SAME shape, DECIDED the same way
 
-The Incarnon form's fire rate falls to 60% over 51 held shots and **resets the
-moment you stop firing** (MECHANICS §9). The fall is modelled; what is not is
-the player who taps.
+Six weapons spool (MECHANICS §9). Every spool is modelled; what is not, on any
+of them, is the play pattern that dodges it:
 
-The sim holds the trigger until the magazine is dry, which is the reading that
-needs no play pattern invented for it — the same ruling as the reload above, and
-for the same reason. A player bursting well enough to stay at 100% would fire
-51% more rounds than these numbers do, and would also be spending time not
-firing that this arena has no way to charge them for. Naming a burst length
-would be inventing the very thing the ruling refuses to invent.
+- the Phenmor's Incarnon form FALLS to 60% over 51 held shots and resets when
+  you stop firing, so a player who taps keeps more of it;
+- the Gorgons and Somas CLIMB from 20-25%, and their pages say *"Burst firing
+  maintains spool-up"* — so a player whose pauses are short enough may keep the
+  climb through a reload, where this sim rebuilds it.
 
-The weapon's own card says so, which is what makes the decision reachable: the
-Phenmor's Incarnon entry carries the line, and the panel's passive strip states
-both ends of the spool beside the 13.33 rounds/s it prints.
+**The sim holds the trigger until the magazine is dry**, and the same ruling
+covers both — the same one as the reload above, for the same reason. It is the
+reading that needs no play pattern invented for it. Naming a burst length, or a
+pause short enough to keep a spool, would be inventing the very thing the ruling
+refuses to invent (owner, 2026-08-10: "我们这个测试就是一按到底，没有理由给这个
+特殊对待的。因为极限的话岂不是一发一发发射了？" — taken to the limit, a weapon
+exempted from its own spool is a weapon fired one round at a time).
+
+Each weapon's own card says so, which is what makes the decision reachable: the
+`unmodeled:` line carries the caveat and the panel's passive strip states where
+the rate starts and ends, beside the single number the stat panel prints.
 
 ### The 99-stack Mounting Momentum edge
 

@@ -258,6 +258,15 @@ unmodded; the pseudo-reload model updated accordingly. Minor residue:
 the exact scaling formula direction (time × (1+penalty) vs
 base/(1+bonus)) — one more mod value would pin it.
 
+**Confirmed as the roster-wide rule (owner, 2026-08-10).** The Phenmor's page
+says mode switching *"has an animation equal to weapon's reload speed"*, which
+reads like a 2.8 s revert on that weapon and a contradiction of the 1.0 s above.
+It is not: **that sentence is about ENTERING the Incarnon form only**, and there
+is no official figure for the way back on any weapon. So M9's measured 1.0 s
+stays the revert everywhere, and the two facts are about two different halves of
+the cycle rather than in conflict. Settled — do not re-derive a reload-length
+revert from that sentence.
+
 ---
 
 ## M10 — What does a reload-speed buff reach on an Incarnon weapon? ✅ (informal, 2026-07-30)

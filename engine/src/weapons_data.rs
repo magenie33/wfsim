@@ -1069,17 +1069,30 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
         ));
     }
 
-    // THE SPOOL-DOWN, which is the one passive that makes the stat above it
-    // WRONG rather than incomplete. The panel prints 13.33 rounds/s and the
-    // sim fires most of the magazine at 8.0 — so the line states both ends and
-    // the count, because a reader who only sees the printed rate has no way to
-    // tell whether the DPS below it is the one they measured.
+    // THE SPOOL, which is the one passive that makes the stat above it WRONG
+    // rather than incomplete: the panel prints one fire rate and the weapon
+    // never fires at it for long. A reader who sees only the printed rate has
+    // no way to tell whether the DPS below it is the one they measured, so the
+    // line states where the rate starts, where it ends, and when.
+    //
+    // Each direction is phrased with the number ITS OWN page prints — a faller
+    // is given as a span ("over 51 shots", the Phenmor's words), a riser as the
+    // shot it is finally full on ("from the 9th", the Gorgon's) — rather than
+    // one shape forced onto both. Same field, same arithmetic, two sentences.
     if let Some(sp) = s.attack.sustained_fire_rate {
-        out.push(format!(
-            "Its fire rate FALLS while the trigger is held — to {:.0}% of the listed rate over {:.0} shots — and resets the moment you stop firing. This is simulated; the sim holds the trigger, so bursting beats these numbers.",
-            sp.floor * 100.0,
-            sp.over_shots
-        ));
+        out.push(if sp.end < sp.start {
+            format!(
+                "Its fire rate FALLS while the trigger is held — to {:.0}% of the listed rate over {:.0} shots — and rebuilds the moment you stop firing. This is simulated; the sim holds the trigger until the magazine is dry.",
+                sp.end * 100.0,
+                sp.over_shots
+            )
+        } else {
+            format!(
+                "Its fire rate SPOOLS UP while the trigger is held — from {:.0}% of the listed rate, full from the {}th shot. This is simulated, and it rebuilds after every reload.",
+                sp.start * 100.0,
+                sp.over_shots.ceil() as i64 + 1
+            )
+        });
     }
 
     // NOT `no_resupply`. It was listed here and taken out (owner, 2026-08-05:
@@ -1147,26 +1160,51 @@ fn pretty_id(id: &str) -> String {
 /// bursts, so the weapon loses less rate than the number on the card says.
 /// That asymmetry is modelled; see the `.max(1.0)` in `loadout::resolve`.
 ///
-/// A SPOOL-DOWN: the rate falls the longer the trigger is held, and resets the
-/// moment it is released.
+/// A SPOOL: the rate MOVES the longer the trigger is held, and rebuilds from
+/// the start once firing pauses.
 ///
-/// The Phenmor's Incarnon form is the roster's first — *"Fire rate decreases
-/// from 100% to 60% over 51 shots as the trigger is held, reducing its
-/// effectiveness from prolonged periods of firing"*, and *"Spool resets once
-/// the player stops firing, encouraging brief bursts of fire rather than
-/// sustained fire"* (wiki Phenmor, verbatim).
+/// Both directions, one field, because they are one mechanic — six weapons in
+/// the roster and five of them go UP:
 ///
-/// It is the OPPOSITE of `beam_ramp_floor`, which climbs to full and stays
-/// there. This one only ever costs, and on a 408-round Incarnon magazine it
-/// costs almost the whole dump: 51 shots is under four seconds of a
-/// thirty-second pool, so the weapon spends most of its Incarnon window at the
-/// floor rather than at the rate its arsenal card prints.
+/// | weapon | start | span | full/floor at |
+/// | --- | --- | --- | --- |
+/// | Phenmor (Incarnon) | 100% | 51 | 60% |
+/// | Gorgon | 20% | 7.5 | shot 9 |
+/// | Gorgon Wraith | 20% | 5 | shot 6 |
+/// | Prisma Gorgon | 20% | 6 | shot 7 |
+/// | Soma | 25% | 5 | shot 6 |
+/// | Soma Prime | 25% | 2.5 | shot 4 |
+///
+/// Each page states its spool TWICE — a percentage per shot and a count of
+/// shots to optimal — and the two reconcile exactly on all five risers, which
+/// is what `over_shots` is derived from and why it is not always an integer
+/// (the Gorgon's 10.667% per shot IS 0.8/7.5). VERBATIM, one of each shape:
+///
+/// > Fire rate starts at 20% of its listed value, and increases by 10.667% per
+/// > shot. Requires a spool-up of 9 shots before optimal fire rate is achieved.
+/// > Burst firing maintains spool-up.        (wiki Gorgon)
+///
+/// > Fire rate decreases from 100% to 60% over 51 shots as the trigger is held
+/// > … Spool resets once the player stops firing.          (wiki Phenmor)
+///
+/// The fall/climb is LINEAR — every page gives two ends and a count and nothing
+/// between them.
+///
+/// Not to be confused with `beam_ramp_floor`, which is a continuous weapon's
+/// DAMAGE ramp: that one climbs in seconds and holds, this one moves in SHOTS
+/// and is a cadence. The Phantasma has both and they are unrelated.
 #[derive(Debug, Clone, Copy, serde::Deserialize)]
 pub struct SustainedFireRate {
-    /// What the rate falls TO, as a fraction of the listed one (0.60).
-    pub floor: f64,
-    /// How many held shots it takes to get there (51). The fall is linear —
-    /// the page gives the two ends and the count, and nothing between them.
+    /// Where the rate STARTS, as a fraction of the listed one, on the first
+    /// shot after a pause (1.00 on the Phenmor, 0.20 on a Gorgon).
+    pub start: f64,
+    /// Where it SETTLES (0.60 on the Phenmor, 1.00 on everything that spools
+    /// up). `end < start` is a spool-down; `end > start` a spool-up.
+    pub end: f64,
+    /// The span, in held shots. Shot `n` (0-based, counting from the pause)
+    /// sits at `start + (end − start)·min(n, over_shots)/over_shots`, so a
+    /// riser is at full from shot `ceil(over_shots) + 1` — which is the number
+    /// each page prints.
     pub over_shots: f64,
 }
 
@@ -3183,32 +3221,66 @@ mod play_mode_tests {
         assert!(with >= 10, "only {with} weapons carry a falloff");
     }
 
-    /// A SPOOL-DOWN is a fraction of the listed rate, and the weapon that has
-    /// one owes the reader the play pattern that dodges it.
+    /// EVERY SPOOL RECONCILES WITH ITS OWN PAGE, and says what it costs.
     ///
     /// The field is small and easy to typo into silence — serde ignores what it
-    /// does not know — so this asserts the Phenmor's two numbers by value: they
-    /// are the difference between 13.33 rounds/s and 8.0, which is most of the
-    /// weapon's Incarnon damage.
+    /// does not know — so every weapon's numbers are asserted by value. The
+    /// risers get a second, stronger check: each page states its spool TWICE,
+    /// as a percentage per shot and as a count of shots to optimal, and the two
+    /// must agree. `over_shots` carries the span (the exact half) and this
+    /// re-derives BOTH published figures from it, so a mistyped span cannot
+    /// survive — it would have to be wrong in a way that keeps two independent
+    /// sentences true.
     #[test]
-    fn a_spooling_weapon_declares_its_floor_and_says_bursting_beats_it() {
+    fn every_spool_reconciles_with_its_own_page() {
+        // (weapon, start, end, over_shots, the page's "% per shot", its
+        //  "N shots before optimal" — the last two are what the wiki prints.)
+        let published: &[(&str, f64, f64, f64, f64, i64)] = &[
+            ("phenmor_incarnon", 1.00, 0.60, 51.0, 0.0, 0),
+            ("gorgon", 0.20, 1.00, 7.5, 0.10667, 9),
+            ("gorgon_wraith", 0.20, 1.00, 5.0, 0.16, 6),
+            ("prisma_gorgon", 0.20, 1.00, 6.0, 0.13333, 7),
+            ("soma", 0.25, 1.00, 5.0, 0.15, 6),
+            ("soma_prime", 0.25, 1.00, 2.5, 0.30, 4),
+        ];
+        for (id, start, end, over, per_shot, full_at) in published {
+            let s = spec(id)
+                .unwrap_or_else(|| panic!("{id}"))
+                .attack
+                .sustained_fire_rate
+                .unwrap_or_else(|| panic!("{id} lost its spool"));
+            assert_eq!((s.start, s.end, s.over_shots), (*start, *end, *over), "{id}");
+            assert!(s.start > 0.0 && s.end > 0.0, "{id}");
+            if *full_at == 0 {
+                continue; // the faller: its page gives a span, not a count
+            }
+            // THE TWO PUBLISHED FIGURES, both from `over_shots`.
+            assert!(
+                ((s.end - s.start) / s.over_shots - per_shot).abs() < 5e-5,
+                "{id}: {} a shot, page says {per_shot}",
+                (s.end - s.start) / s.over_shots
+            );
+            assert_eq!(s.over_shots.ceil() as i64 + 1, *full_at, "{id}: full-at shot");
+        }
+        // …and every one of them owes the reader the play pattern it assumes.
         let mut with = 0;
         for w in all() {
-            let Some(s) = w.attack.sustained_fire_rate else { continue };
+            if w.attack.sustained_fire_rate.is_none() {
+                continue;
+            }
             with += 1;
-            assert!(s.floor > 0.0 && s.floor < 1.0, "{}: floor {}", w.id, s.floor);
-            assert!(s.over_shots > 0.0, "{}: over {} shots", w.id, s.over_shots);
             assert!(
                 w.unmodeled.iter().any(|u| u.contains("spool")),
-                "{} spools down and its `unmodeled:` never mentions bursting out of it",
+                "{} spools and its `unmodeled:` never says what the sim assumes",
                 w.id
             );
         }
-        let phenmor = spec("phenmor_incarnon").unwrap().attack.sustained_fire_rate.unwrap();
-        assert_eq!((phenmor.floor, phenmor.over_shots), (0.60, 51.0));
-        // …and the BASE form does not spool: the sentence is about the Incarnon
-        // form, and a semi-auto has no held trigger to spool.
-        assert!(spec("phenmor").unwrap().attack.sustained_fire_rate.is_none());
-        assert_eq!(with, 1, "one weapon spools; a second one needs its own source");
+        assert_eq!(with, published.len(), "a spool with no published numbers above");
+        // A FORM SPOOLS ON ITS OWN. The Phenmor's base form is semi-auto and has
+        // no held trigger; the Gorgons' Incarnon forms are Auto Charge and their
+        // pages say plainly that they do not spool.
+        for id in ["phenmor", "gorgon_incarnon", "soma_incarnon", "prisma_gorgon_incarnon"] {
+            assert!(spec(id).unwrap().attack.sustained_fire_rate.is_none(), "{id}");
+        }
     }
 }

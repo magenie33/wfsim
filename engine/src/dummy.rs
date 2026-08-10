@@ -3514,14 +3514,19 @@ pub(crate) const BEAM_RAMP_FLOOR: f64 = 0.20;
 /// The HELD-TRIGGER SPOOL after `shots` consecutive pulls — a fraction of the
 /// live fire rate, 1.0 where the weapon has none.
 ///
-/// The ramp above and this are opposites and they do not meet: a beam climbs to
-/// full and stays, this one only ever falls, and it falls in SHOTS rather than
-/// in seconds — which is why a fire-rate mod does not buy its way out of it.
-/// The fall is linear because the source gives the two ends and the count and
-/// nothing in between (wiki Phenmor: "from 100% to 60% over 51 shots").
+/// BOTH DIRECTIONS, one line: the Phenmor falls from 1.0 to 0.6 and a Gorgon
+/// climbs from 0.2 to 1.0, and nothing here needs to know which. It is linear
+/// because every source gives two ends and a count and nothing in between.
+///
+/// The ramp above is a different animal despite the family resemblance: a beam
+/// climbs in SECONDS and holds, this moves in SHOTS and is a cadence — which is
+/// why a fire-rate mod does not buy its way out of it (the mod raises both ends
+/// together).
 fn spool_factor(spec: Option<crate::weapons_data::SustainedFireRate>, shots: f64) -> f64 {
     match spec {
-        Some(s) if s.over_shots > 0.0 => 1.0 - (1.0 - s.floor) * (shots / s.over_shots).min(1.0),
+        Some(s) if s.over_shots > 0.0 => {
+            s.start + (s.end - s.start) * (shots / s.over_shots).min(1.0)
+        }
         _ => 1.0,
     }
 }
@@ -6346,7 +6351,8 @@ mod tests {
 
         let spooled = DummyParams {
             sustained_fire_rate: Some(crate::weapons_data::SustainedFireRate {
-                floor: 0.60,
+                start: 1.00,
+                end: 0.60,
                 over_shots: 51.0,
             }),
             ..phenmor.clone()
@@ -6371,6 +6377,47 @@ mod tests {
         );
     }
 
+    /// A SPOOL THAT CLIMBS is the same arithmetic pointed the other way, and it
+    /// costs a magazine's worth of time rather than a magazine's worth of rounds.
+    ///
+    /// The Gorgon's numbers — 12.5 rounds/s from 20%, full on the 9th shot
+    /// (wiki). Its 90-round magazine takes 7.99 s instead of 7.20 s, i.e. the
+    /// spool costs **11% of the time** to fire one magazine, and it is paid once
+    /// per magazine rather than once per fight because a reload is a pause.
+    ///
+    /// This runs beside the faller deliberately: one `spool_factor` serves both,
+    /// and the day it stops serving both, one of these two fails.
+    #[test]
+    fn a_spool_that_climbs_costs_the_first_shots_of_every_magazine() {
+        let gorgon = DummyParams {
+            fire_rate: 12.5,
+            magazine_size: 100_000.0, // one long burst: the climb, uninterrupted
+            duration_secs: 10.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        assert_eq!(run_once(&gorgon, &mut Rng::new(1)).shots, 125, "the listed rate, flat");
+
+        let spooled = DummyParams {
+            sustained_fire_rate: Some(crate::weapons_data::SustainedFireRate {
+                start: 0.20,
+                end: 1.00,
+                over_shots: 7.5,
+            }),
+            ..gorgon.clone()
+        };
+        assert_eq!(run_once(&spooled, &mut Rng::new(1)).shots, 116);
+
+        // ONCE PER MAGAZINE, NOT ONCE PER FIGHT. Nine shots of climb out of 90
+        // is 11% of the time; out of a magazine of 9 it would be most of it. The
+        // same derived reset the faller uses does both, with no rule of its own.
+        let small = DummyParams { magazine_size: 9.0, reload_seconds: 0.0001, ..spooled.clone() };
+        let small_flat = DummyParams { sustained_fire_rate: None, ..small.clone() };
+        let a = f64::from(run_once(&small, &mut Rng::new(1)).shots);
+        let b = f64::from(run_once(&small_flat, &mut Rng::new(1)).shots);
+        assert!(a < b * 0.75, "a 9-round magazine is all climb: {a} vs {b}");
+    }
+
     /// The floor is a fraction of the LIVE rate, so a fire-rate mod raises both
     /// ends and never buys its way out of the spool. Rapid Wrath's +20% is
     /// worth +20% at the floor as well as at the ceiling — which is also why
@@ -6380,7 +6427,8 @@ mod tests {
         let spooled = DummyParams {
             fire_rate: 13.33,
             sustained_fire_rate: Some(crate::weapons_data::SustainedFireRate {
-                floor: 0.60,
+                start: 1.00,
+                end: 0.60,
                 over_shots: 51.0,
             }),
             magazine_size: 100_000.0,
