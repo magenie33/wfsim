@@ -65,6 +65,12 @@ for (const [label, w, h, mobile] of SCREENS) {
       barsRight: Math.round(widest('.preset-bar, .pbar, #build-bar, #scenario-bar')),
       cols: getComputedStyle(document.getElementById('mod-slots')).gridTemplateColumns,
       narrowestName: names.length ? Math.min(...names) : 0,
+      // WHICH SLOT IS WHICH, read in DOM order. The grid is two tracks wide,
+      // so nothing on screen said whether "slot 5" was the third row's left
+      // cell or the first column's fifth — and slot order is not cosmetic,
+      // elements combine in it (player report, 2026-08-10).
+      slotNos: [...document.querySelectorAll('#mod-slots .slot .slotno')]
+        .map((e) => e.textContent.trim()).join(','),
       // THE TOPBAR'S BUDGET, and it is geometry rather than a style opinion:
       // at 360px the bar used to wrap to two rows and squeeze the weapon
       // SEARCH — the site's own navigation — to 29px, which is what the phone
@@ -130,6 +136,12 @@ for (const [label, w, h, mobile] of SCREENS) {
   // characters — enough to tell two mods apart, which is the job.
   check(`${tag} a mod name still has room to be a name`, r.narrowestName >= 90,
     `narrowest name column ${r.narrowestName}px (grid: ${r.cols})`);
+  // …and the grid says which cell is which. It belongs in the geometry check
+  // because it IS a geometry question: the number exists only because two
+  // columns leave the reading order ambiguous, and it is asserted at every
+  // width because the wrapping is what changes between them.
+  check(`${tag} every slot is numbered, 1..8 in reading order`,
+    r.slotNos === "1,2,3,4,5,6,7,8", r.slotNos);
 }
 
 await app.finish("the page fits every screen it was measured on");

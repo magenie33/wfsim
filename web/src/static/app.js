@@ -5025,6 +5025,18 @@ function buildSlot(i) {
   const s = slots[i];
   const el = document.createElement("div");
   const m = s.mod ? modById(s.mod) : null;
+  // THE SLOT'S NUMBER, because the picker already speaks it and the grid did
+  // not answer. A placed mod's chip in the picker reads "slot 5", and the eight
+  // slots are drawn two to a row — so nothing on screen said whether 5 was the
+  // third row's left cell or the first column's fifth (player report via the
+  // owner, 2026-08-10).
+  //
+  // It is not decoration: the same mod is worth something different in another
+  // slot, because ELEMENTS COMBINE IN SLOT ORDER. A player rearranging for
+  // Corrosive instead of Radiation is reading exactly this number.
+  //
+  // The exilus slot is left unnumbered: there is one of it, its block is
+  // labelled, and the picker calls it "exilus" rather than a number.
   if (m) {
     el.className = "slot filled" + (m.rarity ? " rar-" + m.rarity : "");
     const r = s.rank == null ? m.max_rank : s.rank;
@@ -5051,6 +5063,15 @@ function buildSlot(i) {
     el.innerHTML = polBtn(s.pol, i) + `<span class="plus">${i === EXILUS ? "+ add exilus mod" : "+ add mod"}</span>`;
     // the WHOLE empty slot opens the picker (the pol-btn stops propagation)
     el.addEventListener("click", (e) => { e.stopPropagation(); openPicker(i, el); });
+  }
+  if (i !== EXILUS) {
+    const no = document.createElement("span");
+    no.className = "slotno";
+    no.textContent = String(i + 1);
+    // The same words the picker's chip uses, so the two are findable as one
+    // thing rather than as a number and a coincidence.
+    no.title = tr("slot") + " " + (i + 1);
+    el.appendChild(no);
   }
   // polarity is decoupled: clickable on every slot (mod or empty, incl. innate)
   el.querySelector(".pol-btn").addEventListener("click", (e) => { e.stopPropagation(); openPolMenu(i); });
@@ -6156,7 +6177,11 @@ function renderMenu(slotIdx, query) {
     // Every placed mod shows a "slot N" chip (the current one shows ITS OWN
     // slot). No "current" word — same color family; background does the
     // distinguishing, the current slot rendered a touch stronger.
-    const slotName = (idx) => idx === EXILUS ? "exilus" : "slot " + (idx + 1);
+    // LOCALIZED, and it was not until 2026-08-10: this chip is the ONLY place
+    // the app names a slot, so a Chinese page read "slot 5" while everything
+    // around it was translated — and the number badge on the slot itself now
+    // has to agree with it word for word.
+    const slotName = (idx) => idx === EXILUS ? tr("exilus") : tr("slot") + " " + (idx + 1);
     const badge = isCur ? `<span class="slotchip cur">${slotName(slotIdx)}</span>`
       : at >= 0 ? `<span class="slotchip">${slotName(at)}</span>` : "";
     // The gain is THIS SLOT's — the same mod is worth something different in

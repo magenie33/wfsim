@@ -252,7 +252,11 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
    and costs only vertical scrolling, which is the one thing a phone is good
    at. Measured, not guessed; see scripts/check_mobile.mjs. */
 @media(max-width:520px){.slots{grid-template-columns:1fr}}
-.slot{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 8px;min-height:48px}
+.slot{position:relative;display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 8px;min-height:48px}
+/* The slot's own number, matching the picker's "slot N" chip. Absolutely
+   placed so it costs the row NO width — the grid is two tracks wide on a
+   phone and the mod NAME is what has to keep the room (check_mobile). */
+.slot .slotno{position:absolute;right:6px;bottom:3px;font-size:9px;line-height:1;color:var(--muted);opacity:.75;pointer-events:none;font-variant-numeric:tabular-nums}
 .slot .pol{width:16px;height:16px}
 .pol-btn{flex:none;width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--plane);border:1px solid var(--line);border-radius:6px;cursor:pointer;padding:0}
 .pol-btn:hover{border-color:var(--accent)}
