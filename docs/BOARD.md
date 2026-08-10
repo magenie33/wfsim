@@ -164,8 +164,9 @@ answer could be published.
    PROGRESS — kills plus the depleted fraction of the current target — over the
    whole engagement, and the benchmark says `metric: kpm`. Publishing the raw
    figure under a "kill rate" label overstated every row by the length of the
-   fight: 55.26 on screen for a build that kills 11.05 a minute over 300 s
-   (found 2026-08-04). Ranking never noticed — it is a linear rescale — but a
+   fight: 55.26 on screen for a build that kills 11.05 a minute over the 300 s
+   the ruler ran at the time (found 2026-08-04; the ruler is 180 s now, which
+   changes the multiplier and not the bug). Ranking never noticed — it is a linear rescale — but a
    ranking is not what people read.
 7. **Shown at four significant figures AND four decimals** (owner, 2026-08-04),
    by `boards_data::format_score`. Four decimals is where two builds a player is
@@ -179,7 +180,7 @@ answer could be published.
 
 The benchmark sets `infinite_ammo: true`, and that setting means **ammo pickups
 are modelled** — the sim has no pickup entities, so ignoring the reserve is how
-it stands in for them. Over 300 s with kills happening, a real player is being
+it stands in for them. Over 180 s with kills happening, a real player is being
 resupplied; starving every weapon would measure who brought the biggest magazine
 rather than who kills fastest.
 
@@ -195,9 +196,9 @@ reads three facts, and two of them were one field until 2026-08-04:
 `!has_reserve \|\| (infinite_ammo && !no_resupply)`. So a ground Arch-Gun runs
 on its real 400 rounds whatever the scenario says — it is "removed and can only
 be called down again after a 5-minute cooldown" once they are gone. Ignoring
-that scored it as though it fired for the full 300 s when it has about a minute
-of ammo: 0.0436 against 0.0139 unmodded, a 3.1x overstatement (owner,
-2026-08-04). Boar Prime scores identically either way, because it resupplies.
+that scored it as though it fired for the whole engagement when it has about a
+minute of ammo: 0.0436 against 0.0139 unmodded, a 3.1x overstatement measured on
+the 300 s ruler of the day (owner, 2026-08-04). Boar Prime scores identically either way, because it resupplies.
 
 One term, no weapon named, right for the whole roster.
 

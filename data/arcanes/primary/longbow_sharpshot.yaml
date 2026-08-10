@@ -33,7 +33,7 @@ effects:
   # AssumedMax it is on for every shot but the first, which is what
   # `final_damage_cap` resolves to. "If the buff is not active, the first
   # headshot does not benefit from it, even if the bow has multishot": one shot
-  # in a 300 s engagement, and not modelled.
+  # in a 180 s engagement, and not modelled.
   - kind: buff
     trigger: on_weakpoint_hit
     grants: final_damage

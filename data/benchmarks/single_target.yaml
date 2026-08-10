@@ -37,7 +37,7 @@ id: single_target
 # distinguishes it from a future second ruler comes FIRST (single target, as
 # against a group-clear benchmark), then the target, then the two measurement
 # terms. Truncation therefore eats the least identifying part.
-name: "Single Target · Thrax Centurion Lv 9999 SP · 300 s · KPM"
+name: "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM"
 
 # NO VERSION NUMBER (owner, 2026-08-04). There is one board, it is regenerated
 # whole whenever this file or the engine changes, and what is deployed is always
@@ -65,11 +65,11 @@ name: "Single Target · Thrax Centurion Lv 9999 SP · 300 s · KPM"
 # THE RULES IN PROSE, for the page that publishes them. The name above states
 # the same standard in one line so a rank stays quotable; this is it at length.
 rules:
-  - "One Thrax Centurion at level 9999 on Steel Path, for 300 seconds. A single target, so nothing here rewards clearing a room."
+  - "One Thrax Centurion at level 9999 on Steel Path, for 180 seconds. A single target, so nothing here rewards clearing a room."
   - "Aimed, with every shot on the weak point. This is the ceiling a weapon reaches in skilled hands — the companion board removes the aim and measures the floor."
-  - "Scored in kills per minute, counting the fraction of the current target already gone. A weapon that removes 3% of one Thrax in 300 seconds scores 0.03 and still has a rank."
+  - "Scored in kills per minute, counting the fraction of the current target already gone. A weapon that removes 3% of one Thrax in 180 seconds scores 0.03 and still has a rank."
   - "Every main slot filled, every evolution tier the weapon has, every arcane seat it has. Exilus is never counted."
-  - "Ammo pickups are modelled, because a real player is being resupplied over five minutes. A weapon that cannot be resupplied runs on its real reserve."
+  - "Ammo pickups are modelled, because a real player is being resupplied over three minutes. A weapon that cannot be resupplied runs on its real reserve."
   - "How the weapon is PLAYED belongs to the entry, not to this ruler: a weapon with an Incarnon form is ranked twice, once through its cycle and once never transmuting."
   - "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above — so any row can be reproduced exactly by anyone with the repo."
 
@@ -89,14 +89,29 @@ scenario:
   level: 9999
   steel_path: true
 
-  # 300 SECONDS, and this is load-bearing rather than a round number. The
-  # mechanics that decide a build are the ones that need TIME: Heat's armour
-  # strip ramps in 0.5 s steps, the Galvanized family earns its stacks from
-  # kills, every timed buff starts at zero and is earned back in-fight. A
-  # shorter engagement does not measure the same build more cheaply, it
-  # measures a different build — and it systematically under-rates exactly the
-  # effects the benchmark exists to price.
-  duration: 300
+  # 180 SECONDS (owner, 2026-08-10, down from 300). Load-bearing rather than a
+  # round number, and the argument cuts BOTH ways — which is why it moved rather
+  # than being picked once and left.
+  #
+  # THE CASE FOR TIME is unchanged, and it is why this is not 30 seconds: the
+  # mechanics that decide a build are the ones that need it. Heat's armour strip
+  # ramps in 0.5 s steps, the Galvanized family earns its stacks from kills,
+  # every timed buff starts at zero and is earned back in-fight. A run too short
+  # to let those arrive does not measure the same build more cheaply — it
+  # measures a different build.
+  #
+  # THE CASE AGAINST FIVE MINUTES is that it stops pricing the ramp and starts
+  # paying for it twice ("5分钟会让这个build过于强大而且很反直觉"). Everything
+  # that compounds — stacking buffs, an Incarnon cycle that has to be charged,
+  # armour that is already stripped — amortises its whole setup over a window
+  # long enough that the setup stops counting, and the ranking drifts away from
+  # what a player recognises. Three minutes is still long enough for every ramp
+  # above to arrive and short enough that arriving is still worth something.
+  #
+  # CHANGING IT RETIRES NOTHING. There is no version number here on purpose:
+  # every stored build is re-scored under the new terms and keeps competing,
+  # which is what storing BUILDS rather than scores was for.
+  duration: 180
 
   # Monte-Carlo runs per build. This is the PRECISION knob and the whole cost
   # of recomputing the board (builds x runs), so it belongs to the benchmark
@@ -113,7 +128,7 @@ scenario:
 
   # Kill progress, not DPS. `score` is kills PLUS the depleted fraction of the
   # current target's pool, so it stays continuous all the way down: a weapon
-  # that takes 300 s to remove 3% of one Thrax scores 0.03 and still has a
+  # that takes 180 s to remove 3% of one Thrax scores 0.03 and still has a
   # rank. That is what lets one ruler cover a roster whose weakest members
   # cannot finish a single kill — a discrete kill count would collapse the
   # bottom of the board into an untellable pile of zeros.
@@ -121,7 +136,7 @@ scenario:
 
   # AMMO PICKUPS ARE MODELLED, which is what this setting means. The sim has no
   # pickup entities, so ignoring the reserve is how it stands in for them — and
-  # on a 300-second engagement with kills happening, a real player IS being
+  # on a three-minute engagement with kills happening, a real player IS being
   # resupplied. Starving every weapon would measure who brought the biggest
   # magazine rather than who kills fastest.
   #

@@ -45,9 +45,13 @@ effects:
   #
   # WHAT IT IS WORTH on the benchmark, now that it can be measured rather than
   # guessed: a Thrax at 9999 is worth 762 affinity floored, so 381 to the
-  # weapon, so 2.6 kills a detonation — and the 30-second cooldown caps a
-  # 300-second run at TEN blasts for 10,000 Gas. Measured on a killing build:
-  # exactly 10,000, and nothing at all without the mod.
+  # weapon, so 2.6 kills a detonation — and the 30-second cooldown caps the run
+  # at one blast per 30 s: SIX on the 180-second ruler, for 6,000 Gas.
+  #
+  # ✅ MEASURED at exactly 10,000 on a killing build — TEN blasts — on the
+  # 300-second ruler this one replaced (shortened 2026-08-10). The measurement
+  # stands and its provenance is kept: what changed is the length of the run it
+  # was taken over, not the mod.
   #
   # The rank scaling is the one part the sim does not read, and does not need
   # to: "higher ranking mods require fewer points to fill the gauge (1,000 at

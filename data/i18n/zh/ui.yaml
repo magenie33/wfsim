@@ -182,10 +182,10 @@ ui:
   "measured under": 测试标准
   "a benchmark build — measured under": 基准配装 —— 测试标准
   "seeded by the optimizer — not yet a player submission": 由优化器预填，尚非玩家提交
-  "Single Target · Thrax Centurion Lv 9999 SP · 300 s · KPM": 单体 · 凶魂百夫长 9999 钢铁 · 300 秒 · KPM
+  "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM": 单体 · 凶魂百夫长 9999 钢铁 · 180 秒 · KPM
   # The second ruler. 无瞄准 is the STANCE and 不爆头 is where the shots land —
   # two terms, because the board pins both.
-  "Single Target · No Aim · Thrax Centurion Lv 9999 SP · 300 s · KPM": 单体 · 无瞄准不爆头 · 凶魂百夫长 9999 钢铁 · 300 秒 · KPM
+  "Single Target · No Aim · Thrax Centurion Lv 9999 SP · 180 s · KPM": 单体 · 无瞄准不爆头 · 凶魂百夫长 9999 钢铁 · 180 秒 · KPM
   "the same fight on every weapon, so results can be compared. It cannot be edited: use ⧉ on its chip to copy it into a scenario of your own.": 每把武器都是同一场战斗，所以结果之间可以比较。它不可编辑：点它标签上的 ⧉ 复制成一份你自己的场景。
   "the same fight on every weapon, so results can be compared. It cannot be edited.": 每把武器都是同一场战斗，所以结果之间可以比较。它不可编辑。
   "edit a copy of this fight": 复制一份来编辑
@@ -212,14 +212,14 @@ ui:
   "What this benchmark measures": 这个基准到底在量什么
   # THE RULES, one claim per line. Ours, not DE's — so these are translated
   # rather than transcribed.
-  "One Thrax Centurion at level 9999 on Steel Path, for 300 seconds. A single target, so nothing here rewards clearing a room.": 一只凶魂百夫长，9999 级，钢铁之路，打 300 秒。单体目标，所以清场能力在这里换不到任何分数。
+  "One Thrax Centurion at level 9999 on Steel Path, for 180 seconds. A single target, so nothing here rewards clearing a room.": 一只凶魂百夫长，9999 级，钢铁之路，打 180 秒。单体目标，所以清场能力在这里换不到任何分数。
   "Aimed, with every shot on the weak point. This is the ceiling a weapon reaches in skilled hands — the companion board removes the aim and measures the floor.": 全程瞄准，每一枪都打在弱点上。这是一把武器在熟练玩家手里的上限——另一个榜把瞄准拿掉，量的是下限。
-  "Scored in kills per minute, counting the fraction of the current target already gone. A weapon that removes 3% of one Thrax in 300 seconds scores 0.03 and still has a rank.": 以每分钟击杀计分，并计入当前目标已被打掉的那一部分。一把 300 秒只能削掉一只凶魂 3% 的武器得 0.03 分，它仍然有名次。
+  "Scored in kills per minute, counting the fraction of the current target already gone. A weapon that removes 3% of one Thrax in 180 seconds scores 0.03 and still has a rank.": 以每分钟击杀计分，并计入当前目标已被打掉的那一部分。一把 180 秒只能削掉一只凶魂 3% 的武器得 0.03 分，它仍然有名次。
   "Every main slot filled, every evolution tier the weapon has, every arcane seat it has. Exilus is never counted.": 主槽位全部装满，武器有几层进化就点几层，有几个赋能位就装几个。Exilus 一律不计。
-  "Ammo pickups are modelled, because a real player is being resupplied over five minutes. A weapon that cannot be resupplied runs on its real reserve.": 弹药拾取是计入的，因为五分钟里真实玩家一直在补给。而无法补给的武器，用的就是它真实的备弹。
+  "Ammo pickups are modelled, because a real player is being resupplied over three minutes. A weapon that cannot be resupplied runs on its real reserve.": 弹药拾取是计入的，因为三分钟里真实玩家一直在补给。而无法补给的武器，用的就是它真实的备弹。
   "How the weapon is PLAYED belongs to the entry, not to this ruler: a weapon with an Incarnon form is ranked twice, once through its cycle and once never transmuting.": 武器怎么打属于参赛条目，而不属于这把尺子：有灵化形态的武器会上榜两次，一次走灵化循环，一次全程不转变。
   "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above — so any row can be reproduced exactly by anyone with the repo.": 没有人提交数字。提交的是一套配装，分数由本引擎在上面钉死的随机种子下算出——所以任何一行，任何拿到仓库的人都能一模一样地复现。
-  "The same fight as the aimed board: one Thrax Centurion at level 9999 on Steel Path, for 300 seconds, scored in kills per minute.": 和瞄准榜是同一场仗：一只凶魂百夫长，9999 级，钢铁之路，300 秒，按每分钟击杀计分。
+  "The same fight as the aimed board: one Thrax Centurion at level 9999 on Steel Path, for 180 seconds, scored in kills per minute.": 和瞄准榜是同一场仗：一只凶魂百夫长，9999 级，钢铁之路，180 秒，按每分钟击杀计分。
   "Not aiming, and no shot finds a head. Two terms, because the stance and where the shots land are different facts — the stance is what gates mods like Argon Scope.": 不瞄准，且没有一枪打中头部。这是两个条件，因为“姿势”和“子弹落点”是两件不同的事——像氩晶瞄具这类 mod 卡的是姿势。
   "Which means no Incarnon, for all but one weapon: eight of the nine Incarnon forms charge their gauge on weak-point hits, so at this rate they never fill it. The Torid charges on direct hits and still cycles.": 这也意味着除一把之外都进不了灵化：九个灵化形态里有八个靠弱点命中充能，在这个爆头率下永远填不满。托里德靠直接命中充能，照常循环。
   "Read it against the aimed board rather than alone. A weapon high on both is strong; one high there and low here is being carried by precision, and the gap between its two positions is how much of it is your aim.": 请和瞄准榜对照着看，不要单独看。两个榜都靠前的是真强；那边高、这边低的，是被你的准头抬着的——两个名次之间的差距，就是这把武器有多少是你的瞄准。

@@ -228,12 +228,15 @@ mod tests {
     #[test]
     fn the_official_single_target_benchmark_is_what_we_published() {
         let b = get("single_target").expect("data/benchmarks/single_target.yaml");
-        assert_eq!(b.name, "Single Target · Thrax Centurion Lv 9999 SP · 300 s · KPM");
+        assert_eq!(b.name, "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM");
         let s = |k: &str| b.scenario.get(k).cloned();
         assert_eq!(s("enemy").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("thrax_centurion"));
         assert_eq!(s("level").and_then(|v| v.as_u64()), Some(9999));
         assert_eq!(s("steel_path").and_then(|v| v.as_bool()), Some(true));
-        assert_eq!(s("duration").and_then(|v| v.as_u64()), Some(300));
+        // 180 s since 2026-08-10, down from 300 (owner: five minutes stops
+        // pricing a build's ramp and starts paying for it twice). The pin moved
+        // WITH the change, which is what it is for.
+        assert_eq!(s("duration").and_then(|v| v.as_u64()), Some(180));
         assert_eq!(s("runs").and_then(|v| v.as_u64()), Some(100));
         // PICKUPS MODELLED. A weapon that cannot be resupplied ignores this
         // and runs on its real reserve — worth 3x on that weapon — so it is a
