@@ -2776,6 +2776,12 @@ entries:
     mods: [primary_acuity, serration, hunter_munitions, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, infected_clip, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: vectis_prime
+    mode: cycle
+    score: 7.8003686687421725
+    mods: [heavy_caliber, primary_acuity, galvanized_aptitude, cautious_shot, vile_acceleration, vital_sense, radiated_reload, infected_clip]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: verglas_prime
     mode: base
     score: 1.0508239284930228
