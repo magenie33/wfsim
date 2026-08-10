@@ -10,6 +10,12 @@
 benchmark: single_target
 source: submissions
 entries:
+  - weapon: angstrum
+    mode: cycle
+    score: 6.740911270564398
+    mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [angstrum_evo1_incarnon_form, angstrum_paladin_virtue, angstrum_rapid_reinforcement, angstrum_critical_parallel]
+    arcanes: [secondary_deadhead]
   - weapon: atomos
     mode: base
     score: 9.212147253959014
@@ -340,6 +346,12 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, frigid_blast, scattering_inferno, shell_shock]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_crux]
+  - weapon: boltor_prime
+    mode: cycle
+    score: 33.34238106269651
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, thermite_rounds]
+    evolutions: [boltor_prime_evo1_incarnon_form, boltor_prime_hunters_mantra, boltor_prime_rapid_reinforcement, boltor_prime_commodores_fortune]
+    arcanes: [primary_deadhead]
   - weapon: boltor_prime
     mode: cycle
     score: 23.186990573646717
@@ -729,6 +741,12 @@ entries:
     score: 15.319753615821838
     mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vital_sense, stormbringer, infected_clip, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_kinetic_battle, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 15.02435221060895
+    mods: [amalgam_serration, galvanized_chamber, galvanized_scope, critical_delay, vital_sense, stormbringer, infected_clip, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: base
@@ -1348,6 +1366,16 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence]
     evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_practiced_grip, furis_elemental_balance]
     arcanes: [secondary_encumber]
+  - weapon: gotva_prime
+    mode: base
+    score: 10.811563388192148
+    mods: [primary_acuity, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
+    arcanes: [primary_deadhead]
+  - weapon: gotva_prime
+    mode: base
+    score: 8.532043704414598
+    mods: [primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
+    arcanes: [primary_deadhead]
   - weapon: gotva_prime
     mode: base
     score: 4.977990139513784
@@ -2295,6 +2323,18 @@ entries:
     arcanes: [primary_crux, cascadia_flare]
   - weapon: lex_prime
     mode: cycle
+    score: 16.913653487176916
+    mods: [pistol_acuity, primed_target_cracker, galvanized_shot, anemic_agility, gunslinger, ice_storm, pistol_pestilence, primed_heated_charge]
+    evolutions: [lex_prime_evo1_incarnon_form, lex_prime_hoplite_virtue, lex_prime_lex_talionis, lex_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: lex_prime
+    mode: cycle
+    score: 15.969626550777493
+    mods: [pistol_acuity, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, ice_storm, pistol_pestilence, primed_heated_charge]
+    evolutions: [lex_prime_evo1_incarnon_form, lex_prime_hoplite_virtue, lex_prime_lex_talionis, lex_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: lex_prime
+    mode: cycle
     score: 7.436876534491612
     mods: [hemorrhage, galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence]
     evolutions: [lex_prime_evo1_incarnon_form, lex_prime_hoplite_virtue, lex_prime_extended_volley, lex_prime_critical_parallel]
@@ -2319,6 +2359,11 @@ entries:
     mode: base
     score: 8.42713298812954
     mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_fortifier]
+  - weapon: ocucor
+    mode: base
+    score: 7.5952220159540325
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_fortifier]
   - weapon: ocucor
     mode: base
@@ -2365,6 +2410,11 @@ entries:
     score: 4.368991434274318
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
+  - weapon: ocucor
+    mode: base
+    score: 4.1778587807487835
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, primed_convulsion, primed_heated_charge]
+    arcanes: [secondary_encumber]
   - weapon: ocucor
     mode: base
     score: 4.017363392413447
@@ -2476,6 +2526,11 @@ entries:
     mods: [amalgam_serration, primary_acuity, galvanized_aptitude, point_strike, vital_sense, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [primary_deadhead]
+  - weapon: phantasma
+    mode: base
+    score: 10.960146613117445
+    mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat]
+    arcanes: [shotgun_vendetta]
   - weapon: phantasma
     mode: base
     score: 10.427781662301264
@@ -2641,6 +2696,24 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, rifle_elementalist, stormbringer, high_voltage, infected_clip, malignant_force]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_ready_retaliation, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_debilitate]
+  - weapon: prisma_angstrum
+    mode: cycle
+    score: 21.115679387127656
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: prisma_angstrum
+    mode: cycle
+    score: 15.756144101860107
+    mods: [pistol_acuity, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_survivors_edge]
+    arcanes: [cascadia_flare]
+  - weapon: prisma_angstrum
+    mode: cycle
+    score: 11.248484990423705
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_survivors_edge]
+    arcanes: [secondary_encumber]
   - weapon: sicarus_prime
     mode: cycle
     score: 15.102777897437095
@@ -3398,6 +3471,18 @@ entries:
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_extended_volley, vasto_prime_reapers_plenty]
     arcanes: [cascadia_flare]
   - weapon: vectis_prime
+    mode: base
+    score: 12.814346910788636
+    mods: [primary_acuity, galvanized_aptitude, critical_delay, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
+  - weapon: vectis_prime
+    mode: base
+    score: 12.371121641500174
+    mods: [primary_acuity, serration, critical_delay, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
+  - weapon: vectis_prime
     mode: cycle
     score: 10.218102449367535
     mods: [primary_acuity, serration, hunter_munitions, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, infected_clip, thermite_rounds]
@@ -3425,6 +3510,10 @@ entries:
     mods: [split_chamber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds]
   - weapon: verglas_prime
     mode: base
+    score: 1.0181861030560726
+    mods: [galvanized_chamber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds]
+  - weapon: verglas_prime
+    mode: base
     score: 0.9906792704050289
     mods: [heavy_caliber, split_chamber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire]
   - weapon: verglas_prime
@@ -3443,6 +3532,10 @@ entries:
     mode: base
     score: 0.8020303407265529
     mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire]
+  - weapon: verglas_prime
+    mode: base
+    score: 0.7966843084903761
+    mods: [galvanized_chamber, serration, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire, thermite_rounds]
   - weapon: verglas_prime
     mode: base
     score: 0.7477856993800973
