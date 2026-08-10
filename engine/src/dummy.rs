@@ -1343,9 +1343,10 @@ pub struct DummyParams {
     /// Deadly Efficiency: a RELATIVE base-damage bonus whose window opens when
     /// the reload COMPLETES (owner, 2026-08-01), not when the magazine empties.
     pub bd_on_reload: Option<crate::loadout::TimedBuff>,
-    /// READY RETALIATION's window: a reload FROM EMPTY opens `duration` seconds
-    /// of `value` extra reload speed, and the reload that opened it never gets
-    /// its own bonus — the window starts when that reload FINISHES.
+    /// READY RETALIATION's window: STARTING a reload from empty opens
+    /// `duration` seconds of `value` extra reload speed, and the reload that
+    /// opened it is the first thing that spends it — the trigger is the reload
+    /// ACTION, not its completion (owner, 2026-08-10).
     ///
     /// It reaches the transmute animations too, in BOTH directions. The
     /// Phenmor's page says it "does not affect transition from Incarnon back to
@@ -4684,14 +4685,14 @@ pub fn run_once_traced(
                     }
                 }
                 let rs = live_reload_speed(params, &mut buff_stacks, t);
-                t += live_reload_time(&cy.base_form, params, &mut arc, rs, t,
-                    rs_window(params, rs_reload_expiry));
-                r.reloads += 1;
-                // THE WINDOW OPENS WHERE THE RELOAD ENDS — `t` is already past
-                // it — so the reload that armed it never carried its own bonus.
+                // ARMED BEFORE IT RUNS, like the plain path below: the reload
+                // ACTION is the trigger, so this reload takes its own bonus.
                 if let Some(b) = params.rs_on_reload {
                     rs_reload_expiry = t + b.duration;
                 }
+                t += live_reload_time(&cy.base_form, params, &mut arc, rs, t,
+                    rs_window(params, rs_reload_expiry));
+                r.reloads += 1;
                 if let Some(b) = cy.base_form.fr_on_reload {
                     fr_reload_expiry = t + b.duration;
                 }
@@ -4724,18 +4725,21 @@ pub fn run_once_traced(
             if !params.infinite_reserve && reserve < 1e-9 {
                 break;
             }
+            // THE WINDOW OPENS WHEN THE RELOAD BEGINS — the player's reload
+            // ACTION is the trigger, not its completion (owner, 2026-08-10:
+            // "是在换弹开始的时候触发…等于给自己上了一张100% reload speed的
+            // mod"). So it is armed BEFORE the line below, and the reload that
+            // armed it is the first thing it speeds up.
+            //
+            // Every reload this loop performs is a reload from empty — it only
+            // reloads when it cannot fire — which is exactly the condition.
+            if let Some(b) = params.rs_on_reload {
+                rs_reload_expiry = t + b.duration;
+            }
             let rs = live_reload_speed(params, &mut buff_stacks, t);
             t += live_reload_time(params, params, &mut arc, rs, t,
                 rs_window(params, rs_reload_expiry));
             r.reloads += 1;
-            // THE WINDOW OPENS WHERE THE RELOAD ENDS — `t` is already past it —
-            // so the reload that armed it never carried its own bonus, and the
-            // NEXT one does if it comes soon enough. Every reload this loop
-            // performs is a reload from empty: it only reloads when it cannot
-            // fire, which is exactly the perk's condition.
-            if let Some(b) = params.rs_on_reload {
-                rs_reload_expiry = t + b.duration;
-            }
             if let Some(b) = params.fr_on_reload {
                 fr_reload_expiry = t + b.duration;
             }
@@ -6468,51 +6472,54 @@ mod tests {
 
     /// READY RETALIATION, all three of its rules at once.
     ///
-    /// Stated by the owner, 2026-08-10, and each clause is a separate assertion
-    /// because each could be got wrong on its own:
+    /// Stated by the owner, 2026-08-10, and each clause is asserted on its own
+    /// because each could be got wrong by itself:
     ///
-    /// 1. the window opens when the EMPTY RELOAD FINISHES, so that reload never
-    ///    carries its own bonus and the next one does;
+    /// 1. THE TRIGGER IS THE RELOAD ACTION. Pressing reload on an empty
+    ///    magazine opens the window, so THAT reload is already faster — the
+    ///    first one of the fight included ("等于给自己上了一张100% reload
+    ///    speed的mod");
     /// 2. it is an ORDINARY reload-speed bonus — the wiki's "does not affect
     ///    transition from Incarnon back to base form" is wrong;
-    /// 3. it is LIVE: a reload that starts inside the window and outlives it
-    ///    loses the speed for the remainder, the instant the window shuts.
+    /// 3. it is LIVE: a reload that outlives the window loses the speed for the
+    ///    remainder, the instant the window shuts.
     ///
-    /// The third is the one that needs the work integral in `reload_span`, and
-    /// it is checked against a hand-computed number rather than against another
-    /// run of the same code.
+    /// The FIRST reload is the sharp case and it gets its own window here: the
+    /// run is cut short so that exactly one reload is in it, and the perk is
+    /// the difference between the second magazine having started and not. An
+    /// end-to-end count over many reloads cannot tell rule 1 from "only later
+    /// reloads count" — the first version of this test asserted the opposite
+    /// rule and passed, because at those numbers both readings happened to fit
+    /// the same whole number of magazines.
     #[test]
-    fn ready_retaliation_opens_on_the_reload_that_does_not_get_it() {
+    fn ready_retaliation_speeds_up_the_reload_that_arms_it() {
         let buff = crate::loadout::TimedBuff { value: 1.0, duration: 6.0, initial_active: false };
-        // A weapon that empties fast, so several reloads land inside 60 s.
+        // 10 rounds at 10/s = 1 s of firing, then a 2 s reload — 1 s with the
+        // perk. Stopping the clock at 2.5 s puts the second magazine's first
+        // shots on one side of the line and nothing on the other.
         let p = DummyParams {
             fire_rate: 10.0,
             magazine_size: 10.0,
             reload_seconds: 2.0,
-            duration_secs: 60.0,
+            duration_secs: 2.5,
             body_parts: mono_body(1.0),
             ..no_status()
         };
         let with = DummyParams { rs_on_reload: Some(buff), ..p.clone() };
-
-        // 1 + 2. MORE RELOADS FIT, because every reload after the first is
-        // faster. One magazine is 1 s of firing and 2 s of reload without the
-        // perk; with it, the second reload onward costs 1 s.
-        let a = run_once(&p, &mut Rng::new(1)).reloads;
-        let b = run_once(&with, &mut Rng::new(1)).reloads;
-        assert!(b > a, "{b} reloads with the perk, {a} without");
-
-        // …AND THE FIRST RELOAD IS NOT ONE OF THEM. With a magazine that lasts
-        // longer than the window, no reload is ever inside another's 6 s, so
-        // the perk is worth EXACTLY nothing — which is the "opens at the end"
-        // rule stated as an experiment rather than as a comment.
-        let slow = DummyParams { fire_rate: 1.0, magazine_size: 10.0, ..p.clone() };
-        let slow_with = DummyParams { rs_on_reload: Some(buff), ..slow.clone() };
-        assert_eq!(
-            run_once(&slow, &mut Rng::new(1)).reloads,
-            run_once(&slow_with, &mut Rng::new(1)).reloads,
-            "a magazine longer than the window leaves the perk nothing to speed up"
+        let without = run_once(&p, &mut Rng::new(1)).shots;
+        let armed = run_once(&with, &mut Rng::new(1)).shots;
+        assert_eq!(without, 10, "the magazine, and the reload still running at 2.5 s");
+        assert!(
+            armed > 10,
+            "the FIRST reload takes the buff it armed: {armed} shots, wanted more than 10"
         );
+
+        // …and over a long run it compounds into whole extra magazines.
+        let long = DummyParams { duration_secs: 60.0, ..p.clone() };
+        let long_armed = DummyParams { rs_on_reload: Some(buff), ..long.clone() };
+        let a = run_once(&long, &mut Rng::new(1)).reloads;
+        let b = run_once(&long_armed, &mut Rng::new(1)).reloads;
+        assert!(b > a, "{b} reloads with the perk, {a} without");
     }
 
     /// A reload that OUTLIVES the window pays the rest at the plain rate.

@@ -172,12 +172,10 @@ This sim reloads when it cannot fire, and never a round earlier. A player
 reloads whenever it suits them, and on one perk that is the whole difference:
 
 **Ready Retaliation** ("On Reload from Empty: +100% Reload Speed for 6 seconds")
-is implemented and correct — the window opens when the empty reload FINISHES, so
-the reload that armed it never gets it, and the next one does if it comes inside
-six seconds. Measured on the Phenmor's base form: **+19.1%** on a fire-rate build
-(58 reloads become 67), and **exactly zero** on a stock one, where a magazine
-takes longer to empty than the window lasts. That is the perk behaving correctly,
-not a gap.
+is implemented and correct — pressing reload on an empty magazine arms it, so
+that reload is already faster and every later one is too. Measured on the
+Phenmor's base form: **+17.4% stock** (27 reloads become 30) and **+19.5% on a
+fire-rate build** (58 become 67), the best tier-3 option in both cases.
 
 The gap is the **Incarnon cycle**, where it is worth zero for a different reason:
 the base form transmutes on a full gauge and therefore never empties, so no

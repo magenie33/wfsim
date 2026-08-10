@@ -11,10 +11,13 @@ description: "On Reload from Empty: +100% Reload Speed for 6 seconds."
 selection: choose_one
 
 effects:
-  # THE WINDOW OPENS WHERE THE RELOAD ENDS, so the reload that armed it never
-  # gets its own bonus and the NEXT one does — which is the whole perk (owner,
-  # 2026-08-10: "这个buff是在空弹reload的时候触发的，这样后面的reload就可以直接
-  # 吃到+100%").
+  # THE TRIGGER IS THE RELOAD ACTION. Pressing reload on an empty magazine
+  # opens the window, so THIS reload is already faster — not the next one
+  # (owner, 2026-08-10: "是在换弹开始的时候触发，就是玩家换弹动作开始的时候触
+  # 发，而不是结束！等于给自己上了一张100% reload speed的mod"). On a weapon that
+  # only ever reloads from empty, which is every weapon in this sim, that makes
+  # it behave like a permanent reload mod; the window is what is left over for a
+  # transmute or a second reload afterwards.
   #
   # `duration_seconds` is what makes this loadable at all, and only THIS page
   # publishes one: the other eleven Ready Retaliations in the roster state the
@@ -27,13 +30,13 @@ effects:
   # clause is wrong (owner, same message) — nothing about a reload buff knows
   # which way an animation is going, so the revert takes it too.
   #
-  # WHAT IT IS WORTH HERE, measured 2026-08-10 so the zero is not read as a bug:
-  # +19.1% on a fire-rate base-form build (58 reloads become 67), and EXACTLY
-  # ZERO both on a stock build — a stock magazine takes longer to empty than the
-  # window lasts — and in the Incarnon cycle, where the base form transmutes on
-  # a full gauge and so never empties at all. The wiki's "well-timed manual
-  # reload" is the play that fixes the second case, and this arena has no manual
-  # reload: docs/UNMODELLED.md.
+  # WHAT IT IS WORTH HERE, measured 2026-08-10 so the zero below is not read as
+  # a bug: +17.4% on a stock base-form build (27 reloads become 30) and +19.5%
+  # on a fire-rate one (58 become 67) — the best tier 3 has to offer in both
+  # cases. And EXACTLY ZERO in the Incarnon cycle, where the base form
+  # transmutes on a full gauge and so never empties at all, which means nothing
+  # ever arms it. The wiki names the play that fixes that ("a well-timed manual
+  # reload") and this arena has no manual reload: docs/UNMODELLED.md.
   - kind: reload_speed_bonus
     value: 1.00
     condition: reload_from_empty

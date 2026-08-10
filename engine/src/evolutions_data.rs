@@ -170,10 +170,18 @@ enum EvoEffect {
     /// read here, and granting a conditional bonus unconditionally is the one
     /// mistake worse than not granting it.
     ReloadSpeedBonus(f64),
-    /// READY RETALIATION — reload speed, but only after a reload from EMPTY and
-    /// only for a while. The window opens when that reload FINISHES, so the
-    /// reload that armed it never gets it and the NEXT one does (owner-stated,
-    /// 2026-08-10; the weapon files already carried the same sentence).
+    /// READY RETALIATION — reload speed, armed by STARTING a reload from empty
+    /// and lasting a while after.
+    ///
+    /// THE TRIGGER IS THE RELOAD ACTION, NOT ITS COMPLETION (owner, 2026-08-10:
+    /// "是在换弹开始的时候触发…等于给自己上了一张100% reload speed的mod"), so
+    /// the reload that armed it is the first thing it speeds up. That one word
+    /// is most of the perk's value: on a weapon that always reloads from empty
+    /// — which is every weapon in this sim — it behaves like a permanent reload
+    /// mod rather than like a bonus that has to be caught in time.
+    ///
+    /// The window still matters for what comes AFTER the reload: a transmute,
+    /// or a second reload, inside the remaining seconds.
     ///
     /// It is an ordinary reload-speed bonus in every other respect — which is
     /// the correction that made it worth implementing. The Phenmor's page adds
