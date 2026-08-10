@@ -3274,6 +3274,63 @@ mod play_mode_tests {
         assert!(with >= 10, "only {with} weapons carry a falloff");
     }
 
+    /// THE TORID'S CO CATALOG ROWS, pinned — both of them, and both forms.
+    ///
+    /// The wiki's Condition Overload catalog gives this weapon TWO rows, and
+    /// the owner supplied them verbatim (2026-08-10):
+    ///
+    /// > Torid | Main-fire | Projectile | 100 | 100 | 100% | Multiplying
+    /// > Torid | Toxin AoE Cloud | AoE | 40 | 40 | 100% | Multiplying
+    ///
+    /// Three facts are load-bearing and none of them is the default:
+    ///
+    /// 1. MULTIPLYING, which is `Independent` here — a free-standing
+    ///    `x (1 + co x types)` rather than a share of the base-damage bucket.
+    /// 2. THE CLOUD TAKES IT TOO. CO is a direct-hit bonus everywhere else, so
+    ///    an AoE part getting it is the anomaly the catalog exists to record.
+    /// 3. THE INCARNON FORM DOES NOT. It is ordinary additive, which means one
+    ///    weapon's two forms disagree — exactly the shape a refactor flattens
+    ///    without anyone noticing, since both would still "have CO".
+    ///
+    /// The base fractions are 100% on both rows, which is the default, so they
+    /// are asserted rather than declared in the files.
+    #[test]
+    fn the_torid_carries_both_of_its_co_catalog_rows() {
+        use crate::loadout::CoBehavior;
+        let base = spec("torid").expect("torid");
+        let inc = spec("torid_incarnon").expect("torid_incarnon");
+
+        // 1. MAIN FIRE: 100 Toxin, multiplying, on the whole base.
+        assert_eq!(base.attack.damage.get("toxin").copied(), Some(100.0));
+        assert_eq!(base.co_behavior.as_deref(), Some("independent"));
+        assert_eq!(base.co_base_fraction.unwrap_or(1.0), 1.0);
+
+        // 2. THE CLOUD: 40 Toxin, and it takes CO — the anomaly.
+        let cloud = base.attack.lingering.as_ref().expect("the Torid's cloud");
+        assert_eq!(cloud.damage.get("toxin").copied(), Some(40.0));
+        assert!(
+            cloud.takes_condition_overload,
+            "the catalog gives the cloud its own Multiplying row"
+        );
+
+        // 3. THE INCARNON FORM IS ORDINARY, and has no cloud to argue about.
+        assert_eq!(inc.co_behavior.as_deref(), Some("additive_with_base_damage"));
+        assert!(inc.attack.lingering.is_none(), "the Incarnon form is a beam");
+
+        // …and the two really do resolve to different brackets, which is the
+        // claim rather than the spelling.
+        let resolved = |id: &str| {
+            crate::loadout::resolve(
+                &crate::loadout::WeaponBase::from_data(id, true, &[]),
+                &[],
+                crate::loadout::StackPolicy::Emergent,
+            )
+            .co_behavior
+        };
+        assert_eq!(resolved("torid"), CoBehavior::Independent);
+        assert_eq!(resolved("torid_incarnon"), CoBehavior::AdditiveWithBaseDamage);
+    }
+
     /// EVERY SPOOL RECONCILES WITH ITS OWN PAGE, and says what it costs.
     ///
     /// The field is small and easy to typo into silence — serde ignores what it
