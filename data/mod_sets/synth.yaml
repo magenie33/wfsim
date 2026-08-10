@@ -1,0 +1,22 @@
+id: synth
+name: Synth
+# 4 mods. VERBATIM (wiki Synth Set):
+#
+#   Holstering Primary and Secondary weapons reloads X% of their Magazine per
+# second.
+#
+# NOT MODELLED, and declared rather than left undefined — which is the whole
+# convention here (see hunter.yaml): a set whose bonus does nothing for the
+# WEAPON is still written down, so the app can say so instead of being silent.
+#
+# THE HOLSTER, which is the one on this list that would pay real damage if the
+# arena ever grew it: a magazine refilling while stowed is exactly the Felarx
+# evolution Evolved Autoloader's mechanic. This sim fires one weapon and never
+# stows it (docs/UNMODELLED.md class 4), so there is no holstered time to
+# refill in.
+members: 4
+bonus:
+  kind: unmodeled
+  per_mod: 0.0
+source:
+  url: https://wiki.warframe.com/w/Synth_Set

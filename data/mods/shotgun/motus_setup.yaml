@@ -5,6 +5,7 @@ polarity: madurai
 base_drain: 6                 # max drain 9 at rank 3
 max_rank: 3
 internal_name: /Lotus/Upgrades/Mods/Sets/Raptor/RaptorModB
+set: motus
 description: "X% Critical and Status Chance for Xs after landing from a Double or Bullet Jump."
 
 effects:

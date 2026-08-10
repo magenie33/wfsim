@@ -5,6 +5,7 @@ polarity: naramon
 base_drain: 4                 # max drain 7 at rank 3
 max_rank: 3
 internal_name: /Lotus/Upgrades/Mods/Sets/Spider/SpiderModB
+set: proton
 description: "During a Wall Latch gain +X% Status Chance and Critical Chance."
 
 effects:

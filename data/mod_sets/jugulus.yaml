@@ -1,0 +1,21 @@
+id: jugulus
+name: Jugulus
+# 3 mods. VERBATIM (wiki Jugulus Set):
+#
+#   Slam Attacks manifest tendrils that skewer nearby enemies, dealing Puncture
+# damage and stunning them for 3s, with a cooldown between uses. The number of
+# tendrils is based on the Melee Combo multiplier and the enemies in range.
+#
+# NOT MODELLED, and declared rather than left undefined — which is the whole
+# convention here (see hunter.yaml): a set whose bonus does nothing for the
+# WEAPON is still written down, so the app can say so instead of being silent.
+#
+# A MELEE slam, an AoE (3-9 m), and a count of NEARBY ENEMIES — blocked three
+# times over by one target, no distance and no melee. Its own damage is real
+# and would be modellable the day this arena grows a second body.
+members: 3
+bonus:
+  kind: unmodeled
+  per_mod: 0.0
+source:
+  url: https://wiki.warframe.com/w/Jugulus_Set

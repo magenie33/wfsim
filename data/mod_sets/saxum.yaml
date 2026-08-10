@@ -1,0 +1,20 @@
+id: saxum
+name: Saxum
+# 3 mods. VERBATIM (wiki Saxum Set):
+#
+#   Lifted enemies explode on death, dealing X% of their max health as Impact
+# Damage in an X-meter radius.
+#
+# NOT MODELLED, and declared rather than left undefined — which is the whole
+# convention here (see hunter.yaml): a set whose bonus does nothing for the
+# WEAPON is still written down, so the app can say so instead of being silent.
+#
+# LIFTED is a Warframe crowd-control state this arena has no concept of, and
+# the explosion damages what is NEARBY rather than the corpse — so on one
+# target it pays nothing even if the lift were modelled.
+members: 3
+bonus:
+  kind: unmodeled
+  per_mod: 0.0
+source:
+  url: https://wiki.warframe.com/w/Saxum_Set

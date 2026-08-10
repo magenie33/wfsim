@@ -5,6 +5,7 @@ polarity: madurai
 base_drain: 6                 # max drain 9 at rank 3
 max_rank: 3
 internal_name: /Lotus/Upgrades/Mods/Sets/Synth/PistolSynthChargeMod
+set: synth
 description: "+X% Bonus Damage on final shot. Requires Magazine 6 or higher."
 # DE's own incompatibility tags, from the wiki's `Module:Mods/data`
 # (`IncompatibilityTags`) — the same list the mod infobox prints. The

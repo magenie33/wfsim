@@ -1,0 +1,18 @@
+id: proton
+name: Proton
+# 3 mods. VERBATIM (wiki Proton Set):
+#
+#   During a Wall Latch, gain X% Damage Reduction.
+#
+# NOT MODELLED, and declared rather than left undefined — which is the whole
+# convention here (see hunter.yaml): a set whose bonus does nothing for the
+# WEAPON is still written down, so the app can say so instead of being silent.
+#
+# A movement STATE this arena does not have, paying in damage reduction that
+# nothing here would reduce. Blocked on both halves.
+members: 3
+bonus:
+  kind: unmodeled
+  per_mod: 0.0
+source:
+  url: https://wiki.warframe.com/w/Proton_Set

@@ -1,0 +1,19 @@
+id: motus
+name: Motus
+# 3 mods. VERBATIM (wiki Motus Set):
+#
+#   X% chance to become immune to Knockdown effects while Airborne.
+#
+# NOT MODELLED, and declared rather than left undefined — which is the whole
+# convention here (see hunter.yaml): a set whose bonus does nothing for the
+# WEAPON is still written down, so the app can say so instead of being silent.
+#
+# Defensive, and nobody knocks this player down: nothing shoots back here. The
+# arena does track `airborne`, so the CONDITION is expressible — the payload
+# is what is not.
+members: 3
+bonus:
+  kind: unmodeled
+  per_mod: 0.0
+source:
+  url: https://wiki.warframe.com/w/Motus_Set

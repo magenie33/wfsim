@@ -89,6 +89,49 @@ pub fn set_def(id: &str) -> Option<&'static ModSetDef> {
 mod tests {
     use super::*;
 
+    /// A MOD THAT BELONGS TO A SET SAYS SO, AND THE SET EXISTS.
+    ///
+    /// Both halves are derived from the mod's own `internal_name`, which is
+    /// DE's path and carries `/Sets/<Family>/` for every set member — so this
+    /// cannot be satisfied by remembering to add a mod to a list. It is the
+    /// list.
+    ///
+    /// It exists because the pool had SEVEN set members with no `set:` line and
+    /// SIX set families with no file at all (2026-08-10). Carnis Stinger,
+    /// Jugulus Spines and Saxum Spittle each grant a real set bonus in game and
+    /// the app said nothing about any of it — while three other sets were
+    /// declared `unmodeled` precisely so it could. `augur_seeker` was the sharp
+    /// case: its set IS modelled and its sibling `augur_pact` declares it, so
+    /// the two members of one set disagreed about whether they were in it.
+    ///
+    /// A set whose bonus does nothing for a weapon is still declared, with
+    /// `kind: unmodeled` — that is the whole convention, and the reason this
+    /// check can be an equality rather than a courtesy.
+    #[test]
+    fn every_set_member_names_its_set_and_every_named_set_exists() {
+        let mut members = 0;
+        for (path, text) in crate::data::files_under("mods/") {
+            let field = |k: &str| {
+                text.lines()
+                    .find_map(|l| l.strip_prefix(k))
+                    .map(|v| v.split('#').next().unwrap_or("").trim().to_string())
+            };
+            let Some(internal) = field("internal_name:") else { continue };
+            if !internal.contains("/Sets/") {
+                continue;
+            }
+            members += 1;
+            let set = field("set:").unwrap_or_else(|| {
+                panic!("{path} is a set member ({internal}) and declares no `set:`")
+            });
+            assert!(
+                set_def(&set).is_some(),
+                "{path} names the set `{set}`, and data/mod_sets/{set}.yaml does not exist"
+            );
+        }
+        assert!(members >= 15, "only {members} set members found — data empty?");
+    }
+
     #[test]
     fn the_vigilante_set_loads_its_bonus() {
         let v = set_def("vigilante").expect("data/mod_sets/vigilante.yaml");
