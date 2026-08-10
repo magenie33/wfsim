@@ -782,6 +782,12 @@ pub struct StackSpec {
 /// reload happening for free, which is why it lives beside the magazine rather
 /// than in the reload bucket. Like every other magazine refill in this engine
 /// it draws from the RESERVE, so a dry one gives nothing.
+///
+/// **It does nothing in an Incarnon form**, and the wiki's "Does not affect
+/// Incarnon Form" is not a special case bolted on: what this refills is a
+/// MAGAZINE, and an Incarnon form has max CHARGES instead. A charge pool is
+/// converted from weakpoint hits and sits outside the ammo economy, so it has
+/// no reload to make instant.
 #[derive(Debug, Clone, Copy)]
 pub struct InstantReload {
     /// Per qualifying headshot (0.10 on the Furis pair, 0.20 on the Phenmor).

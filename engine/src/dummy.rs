@@ -5479,8 +5479,25 @@ pub fn run_once_traced(
                 // chances, which is the same rule the wiki states from the
                 // other side for charge gauges ("additional shots from
                 // Multishot count as separate weakpoint hits").
+                //
+                // AND IT DOES NOT ROLL AT ALL IN AN INCARNON FORM. VERBATIM
+                // (wiki, this perk): "Does not affect Incarnon Form" — because
+                // what it refills is a MAGAZINE, and an Incarnon form has max
+                // CHARGES instead (owner, 2026-08-10). The two are different
+                // pools: the gauge is converted from weakpoint hits, sits
+                // outside the ammo economy, and has no reload to make instant.
+                //
+                // The test is at the TRIGGER rather than at the refill so the
+                // roll is not even taken — a roll that can never be spent still
+                // draws from `extra`, and a perk that changes a fight it cannot
+                // affect is worse than one that does nothing.
                 if let Some(ef) = params.instant_reload {
-                    if head_direct
+                    let has_magazine = match &params.cycle {
+                        Some(_) => in_base_form,
+                        None => ap.ammo_efficiency_applies,
+                    };
+                    if has_magazine
+                        && head_direct
                         && (!ef.needs_kill || killed)
                         && d.extra.chance(ef.chance)
                     {
@@ -5830,18 +5847,19 @@ pub fn run_once_traced(
         // text calls it a reload, and if it turns out to arm those buffs this
         // is the one line to change.
         //
-        // The CHARGE-BACKED form is skipped: an Incarnon pool is "outside the
-        // ammo economy entirely" and has no reload to make instant.
+        // The form was already checked at the roll — an Incarnon form never
+        // sets this flag — so this only has to fill the right counter.
         if instant_reload_now {
             instant_reload_now = false;
-            if let Some(cy) = &params.cycle {
-                if in_base_form {
+            match &params.cycle {
+                Some(cy) => {
                     base_mag += draw_from(&mut reserve, params.infinite_reserve,
                         reload_draw(cy.base_form.magazine_size, base_mag));
                 }
-            } else if ap.ammo_efficiency_applies {
-                magazine += draw_from(&mut reserve, params.infinite_reserve,
-                    reload_draw(params.magazine_size, magazine));
+                None => {
+                    magazine += draw_from(&mut reserve, params.infinite_reserve,
+                        reload_draw(params.magazine_size, magazine));
+                }
             }
         }
 
@@ -6594,6 +6612,53 @@ mod tests {
         // so it must be worth precisely nothing — not "nearly nothing".
         let phenmor = run_once(&unkillable(head(0.20, true)), &mut Rng::new(7)).shots;
         assert_eq!(phenmor, plain, "a kill-gated perk paid without a kill");
+    }
+
+    /// AN INCARNON FORM GETS NOTHING FROM IT — the pool is the wrong one.
+    ///
+    /// VERBATIM (wiki, Executioner's Fortune): "Does not affect Incarnon Form".
+    /// The reason is what makes it testable rather than a special case: the
+    /// perk refills a MAGAZINE, and an Incarnon form has max CHARGES instead
+    /// (owner, 2026-08-10). A charge pool is converted from weakpoint hits and
+    /// sits outside the ammo economy — there is no reload there to make
+    /// instant.
+    ///
+    /// A charge-backed form is marked by `ammo_efficiency_applies == false`,
+    /// the same marker the ammo rules read, so this cannot disagree with them
+    /// about which pool is which.
+    #[test]
+    fn executioners_fortune_does_not_touch_an_incarnon_charge_pool() {
+        // A charge-backed form: its "magazine" is the gauge's round pool, and
+        // `ammo_efficiency_applies` is the flag that says so.
+        let charge_form = |chance: f64| DummyParams {
+            fire_rate: 10.0,
+            magazine_size: 10.0,
+            reload_seconds: 5.0,
+            duration_secs: 30.0,
+            body_parts: all_head(),
+            ammo_efficiency_applies: false, // charge-backed
+            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            instant_reload: (chance > 0.0)
+                .then_some(crate::loadout::InstantReload { chance, needs_kill: false }),
+            ..no_status()
+        };
+        assert_eq!(
+            run_once(&charge_form(1.0), &mut Rng::new(3)).shots,
+            run_once(&charge_form(0.0), &mut Rng::new(3)).shots,
+            "a charge pool has no magazine to fill"
+        );
+
+        // …AND THE SAME WEAPON WITH A REAL MAGAZINE DOES take it, so the
+        // assertion above is about the pool and not about a perk that never
+        // fires. Identical in every other respect, including the seed.
+        let with_mag = |chance: f64| DummyParams {
+            ammo_efficiency_applies: true,
+            ..charge_form(chance)
+        };
+        assert!(
+            run_once(&with_mag(1.0), &mut Rng::new(3)).shots
+                > run_once(&with_mag(0.0), &mut Rng::new(3)).shots
+        );
     }
 
     /// …and it DOES pay once the target dies.
