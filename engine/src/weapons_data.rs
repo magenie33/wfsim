@@ -1931,7 +1931,12 @@ mod tests {
     fn an_incarnon_cycle_runs_dry_like_anything_else() {
         use crate::dummy::{monte_carlo, DummyParams, LockMode};
         use crate::loadout::{resolve, StackPolicy, WeaponBase};
-        let arena = crate::arena::Arena::training(300.0);
+        // 600 s, not 300: the fixture has to actually EXHAUST the reserve to
+        // say anything, and after the transform stopped skipping the completing
+        // shot's interval (2026-08-10) a 300 s cycle no longer burned the Boar
+        // Prime's supply — both runs fired 1951 shots and the assertion below
+        // compared a number to itself.
+        let arena = crate::arena::Arena::training(600.0);
         let panel = |id| resolve(&WeaponBase::from_data(id, true, &[]), &[], StackPolicy::Emergent);
         let inc = panel("boar_prime_incarnon");
         let base = panel("boar_prime");

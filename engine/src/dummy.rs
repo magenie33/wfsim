@@ -4506,7 +4506,6 @@ pub fn run_once_traced(
     // accumulation, not just the firing.
     let mut syndicate_ready_at = 0.0f64;
     let mut tendril_reload_mark = 0u32;
-    let mut reload_buff_mark = 0u32;
     // The card's opening count, which the fight then treats exactly like an
     // earned one: it is spent by the magazine event that clears the rest.
     let mut tendril_seed = params.tendrils_initial.min(params.tendril_max);
@@ -4609,14 +4608,6 @@ pub fn run_once_traced(
             // which is what "no timeout" means for a buff whose end is an
             // event rather than a clock. The seed dies with the earned ones:
             // it is the same buff.
-            // A COMPLETED RELOAD is a trigger like a hit is. Mounting
-            // Momentum grants one stack per shell loaded, so a full magazine
-            // is a magazine's worth — and a bigger magazine is more of them,
-            // paid for in the by-round reload it lengthens.
-            if r.reloads != reload_buff_mark {
-                reload_buff_mark = r.reloads;
-                bump_buffs!(crate::loadout::BuffTrigger::ReloadComplete, t, rng);
-            }
             if r.reloads != tendril_reload_mark && !params.tendrils_held {
                 tendril_reload_mark = r.reloads;
                 tendril_kill_mark = r.kills;
@@ -4756,8 +4747,22 @@ pub fn run_once_traced(
                 }
                 // Same whole-rounds rule as the plain reload below (M14), and
                 // the same shared reserve: a short draw is a short magazine.
-                base_mag += draw_from(&mut reserve, params.infinite_reserve,
+                let loaded = draw_from(&mut reserve, params.infinite_reserve,
                     reload_draw(cy.base_form.magazine_size, base_mag));
+                base_mag += loaded;
+                // ONE STACK PER SHELL THIS RELOAD LOADED, counted here and not
+                // from a number resolved once at the panel.
+                //
+                // The static `stacks_per_trigger` is the OUTER form's magazine,
+                // and in a cycle the outer form is the INCARNON one — so a
+                // base-form reload of 6 shells was granting 60 stacks, straight
+                // to +600% fire rate (measured 61 on the Felarx, 2026-08-10).
+                // Counting the draw is the same rule the Incarnon route already
+                // used and it needs no second number to stay true: a dry
+                // reserve loads fewer shells and pays fewer stacks, with
+                // nothing written down to say so.
+                bump_shells!(loaded.round().max(0.0) as u32, t, rng);
+                bump_reload_only!(t, rng);
                 // Renewed Horror: "On Reload from Empty". This branch IS the
                 // reload-from-empty path.
                 field_duration_boost = true;
@@ -4806,7 +4811,14 @@ pub fn run_once_traced(
             // here, so `floor(capacity − current)` is a full magazine, and a
             // −0.75 counter comes back at 4.25 rather than 5.00.
             let want = reload_draw(params.magazine_size, magazine);
-            magazine += draw_from(&mut reserve, params.infinite_reserve, want);
+            let loaded = draw_from(&mut reserve, params.infinite_reserve, want);
+            magazine += loaded;
+            // …AND THE SHELLS IT LOADED PAY THEIR STACKS. One per shell, from
+            // the count the draw actually produced — see the note at the cycle's
+            // base-form reload for why this is per-site rather than a single
+            // trigger at the top of the loop.
+            bump_shells!(loaded.round().max(0.0) as u32, t, rng);
+            bump_reload_only!(t, rng);
             field_duration_boost = true; // reloaded from empty (Renewed Horror)
             if t >= params.duration_secs {
                 break;
@@ -5974,6 +5986,18 @@ pub fn run_once_traced(
                     crate::loadout::ChargeOn::WeakpointHits => r.headshots - headshots_before,
                     crate::loadout::ChargeOn::DirectHits => r.pellets - pellets_before,
                 };
+                // A FULL GAUGE ARMS THE TRANSFORM; the cadence below still
+                // runs. This block used to `continue`, which skipped the
+                // completing shot's OWN interval and let the next shot fire at
+                // the same instant — the transform was a free extra shot
+                // (2026-08-10). The moment is the end of the shot that filled
+                // the gauge, which is the start of the next one (owner: "变身的
+                // 时机应该是在完成之后射击的末尾（也就是下次射击的开头）").
+                //
+                // The gauge also OVERSHOOTS and that is not a rounding: a
+                // 7-pellet shot into a 30-charge gauge arrives at 35 on the
+                // fifth shot, never at 30, so the comparison is `>=` and the
+                // shot that crosses it is fired in the BASE form.
                 if charges >= cy.charges_to_fill {
                     // BOTH DIRECTIONS TAKE IT. The wiki says Ready Retaliation
                     // "can affect transition INTO Incarnon form with a
@@ -6014,7 +6038,6 @@ pub fn run_once_traced(
                     }
                                                            // Frenzy persists across the transform (user-confirmed
                                                            // 2026-07-24: it exists in both forms).
-                    continue;
                 }
             }
         }
@@ -10382,15 +10405,29 @@ mod tests {
         // (each pellet charges), 2 charges to fill, revert 0.5 s,
         // transmute 1.0 s.
         //
-        // EARNED, over 10 s:
-        //   base @0,1 -> transmute -> inc @2,3 | revert 4->4.5
-        //   base @4.5,5.5 -> transmute -> inc @6.5,7.5 | revert 8.5->9
-        //   base @9. Totals: 4x100 + 5x50 = 650; 9 shots; 2 transforms
+        // EARNED, over 12 s:
+        //   base @0,1 -> transmute -> inc @3,4 | revert 5->5.5
+        //   base @5.5,6.5 -> transmute -> inc @8.5,9.5 | revert 10.5->11
+        //   base @11. Totals: 4x100 + 5x50 = 650; 9 shots; 2 transforms
         //   (transmutes INTO the form only — the reverts do not count).
         //
-        // PRIMED is the old opening and the old total: 5x100 + 4x50 = 700, one
-        // more Incarnon shot and one fewer base shot, for a magazine nobody
-        // charged.
+        // PRIMED, same window: inc @0,1 | revert 2->2.5 | base @2.5,3.5 ->
+        //   transmute -> inc @5.5,6.5 | revert 7.5->8 | base @8,9 -> transmute
+        //   -> inc @11. 5x100 + 4x50 = 700, one Incarnon shot traded for one
+        //   base shot.
+        //
+        // THE SHOT THAT FILLS THE GAUGE PAYS ITS OWN INTERVAL, which is why the
+        // Incarnon rounds land at 3 and not at 2. The transform used to
+        // `continue` past the cadence, so the completing shot was followed
+        // IMMEDIATELY by an Incarnon one and every transform was worth a free
+        // shot (owner, 2026-08-10: "变身的时机应该是在完成之后射击的末尾（也就
+        // 是下次射击的开头）").
+        //
+        // The window is 12 s rather than 10 for a reason worth keeping: at 10 s
+        // the two readings TIE at 600, because the primed run's free magazine is
+        // exactly given back by where the clock falls. A fixture that ties
+        // cannot show what priming is worth, and the tie is an artefact of the
+        // window rather than a fact about the gift.
         let head = vec![BodyPart {
             name: "head".into(),
             aim_weight: 1.0,
@@ -10423,6 +10460,7 @@ mod tests {
             }),
             ..no_status()
         };
+        let p = DummyParams { duration_secs: 12.0, ..p };
         let s = monte_carlo(&p, 5, 9);
         assert!((s.mean_damage - 650.0).abs() < 1e-9, "earned dmg {}", s.mean_damage);
         assert!((s.mean_shots - 9.0).abs() < 1e-9, "shots {}", s.mean_shots);
@@ -13545,6 +13583,93 @@ mod incarnon_reload_route_tests {
             }];
         }
         p
+    }
+
+    /// THE GAUGE FILLS ON A SHOT, NOT ON A PELLET — so it OVERSHOOTS, and the
+    /// transform lands at the end of the shot that completed it.
+    ///
+    /// A shotgun puts 7 pellets into a head at once and the gauge wants 30: you
+    /// cannot stop at 30, you arrive at 35 on the fifth shot (owner,
+    /// 2026-08-10: "如果此时要求命中30个弹头才可以变身，但是我每次是7个弹头，那
+    /// 么我肯定要第5次射击的时候才可以变身啊。变身的时机应该是在完成之后射击的
+    /// 末尾（也就是下次射击的开头）").
+    ///
+    /// Both halves are asserted because both could be wrong on their own: the
+    /// COUNT (four shots must not be enough at 28 of 30) and the MOMENT (the
+    /// fifth shot itself is fired in the BASE form — the transform is paid
+    /// after it, not instead of it).
+    #[test]
+    fn the_gauge_overshoots_and_transforms_at_the_end_of_the_shot() {
+        let head = vec![BodyPart {
+            name: "head".into(),
+            aim_weight: 1.0,
+            multiplier: 1.0,
+            is_head: true,
+            crit_bonus: false,
+        }];
+        // 7 pellets a shot, 1 shot/s, gauge 30. Base and Incarnon forms are
+        // told apart by their damage so the SHOT COUNT of each is readable
+        // from the totals.
+        let base_form = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 100.0),
+            crit_multiplier: 1.0,
+            multishot: 7.0,
+            base_multishot: 7.0,
+            magazine_size: 1e9,
+            fire_rate: 1.0,
+            body_parts: head.clone(),
+            ..no_status()
+        };
+        let p = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 100.0),
+            crit_multiplier: 1.0,
+            multishot: 1.0,
+            base_multishot: 1.0,
+            magazine_size: 1.0, // one Incarnon round, so it reverts at once
+            ammo_efficiency_applies: false,
+            arcane: ArcaneFx::none(),
+            body_parts: head,
+            fire_rate: 1.0,
+            // Long enough for exactly one fill-and-transform, and no more.
+            duration_secs: 5.5,
+            target: TargetParams { base_health: 1e15, ..DummyParams::default().target },
+            cycle: Some(IncarnonCycle {
+                starts_primed: false,
+                base_form: Box::new(base_form),
+                charge_on: crate::loadout::ChargeOn::WeakpointHits,
+                charges_to_fill: 30,
+                transmute_out_seconds: 0.0,
+                transmute_seconds: 0.0,
+                reload_bucket: 0.0,
+            }),
+            ..no_status()
+        };
+        // Shots land at t = 0,1,2,…, so the clock is cut just after the
+        // Incarnon round to make the count readable: `base` 7-pellet shots and
+        // then exactly one Incarnon round.
+        // The clock is given explicitly per case: shots land at t = 0,1,2,…
+        // and the completing shot pays its own interval AND the transform, so
+        // the Incarnon round is one interval after the last base shot.
+        let run = |gauge: u32, secs: f64| {
+            let q = DummyParams {
+                duration_secs: secs,
+                cycle: Some(IncarnonCycle { charges_to_fill: gauge, ..p.cycle.clone().unwrap() }),
+                ..p.clone()
+            };
+            let r = run_once(&q, &mut Rng::new(9));
+            (r.transforms, r.pellets)
+        };
+        // 30 AT 7 A SHOT: 7,14,21,28,35 — the fourth is SHORT at 28, so the
+        // fifth is the one, and the fifth is itself fired in the BASE form.
+        assert_eq!(run(30, 5.5), (1, 5 * 7 + 1), "a gauge of 30 needs five 7-pellet shots");
+        // …AND FOUR SHOTS ARE NOT ENOUGH. Cut the clock at t = 4.0, before the
+        // fifth: 28 of 30, and nothing has transformed. This is the half that
+        // fails if the gauge is ever allowed to fill mid-shot.
+        assert_eq!(run(30, 4.0).0, 0, "28 of 30 must not transform");
+        // A GAUGE THAT DIVIDES EVENLY transforms on the shot that REACHES it,
+        // never the one before.
+        assert_eq!(run(28, 4.5), (1, 4 * 7 + 1), "28 of 28 is the fourth shot");
+        assert_eq!(run(21, 3.5), (1, 3 * 7 + 1), "21 of 21 is the third");
     }
 
     /// ENTERING THE INCARNON FORM IS A RELOAD, and it pays a reload's stacks.

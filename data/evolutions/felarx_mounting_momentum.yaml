@@ -26,6 +26,25 @@ effects:
   # The count is one per SHELL, so it follows the magazine — and a magazine mod
   # therefore buys stacks and pays for them in the by-round reload it lengthens
   # (`reload_style: by_round` on the weapon). That trade is the perk.
+  # IT IS THE BASE FORM'S TOO, and it was worth nothing there until 2026-08-10
+  # (owner: "这个buff在基础里面也是有的，每装上一个shell，叠加一层。并且在基础模
+  # 式弹夹为0的时候消失"). Two bugs sat on top of each other:
+  #
+  #   · the ReloadComplete trigger was nested INSIDE the tendril/refill block,
+  #     so it only fired on a weapon carrying one of those — which the Felarx
+  #     does not. Base mode earned zero stacks, ever;
+  #   · and the grant was a number resolved once at the panel, from the OUTER
+  #     form's magazine. In a cycle the outer form is the Incarnon one, so a
+  #     6-shell base reload granted 60 stacks — +600% fire rate, measured at 61.
+  #
+  # Both are gone: every reload pays for the shells its draw ACTUALLY loaded, at
+  # the site that loaded them. That is one rule for the plain reload, the
+  # cycle's base-form reload and the Incarnon route alike, and a dry reserve
+  # loads fewer shells and pays fewer stacks with nothing written down to say so.
+  #
+  # WHAT IT IS WORTH on the Felarx, measured 2026-08-10: +17.7% base (6 stacks,
+  # one magazine's worth, cleared every time the magazine empties) and +52.4%
+  # in the cycle, where the transmute's own shells push it to 8.
   - kind: stacking_fire_rate_per_shell_reloaded
     per_stack: 0.10
     max_stacks: 99
