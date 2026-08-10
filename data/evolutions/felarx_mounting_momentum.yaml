@@ -45,6 +45,27 @@ effects:
   # WHAT IT IS WORTH on the Felarx, measured 2026-08-10: +17.7% base (6 stacks,
   # one magazine's worth, cleared every time the magazine empties) and +52.4%
   # in the cycle, where the transmute's own shells push it to 8.
+  #
+  # ⚠ ONE UNVERIFIED ASSUMPTION CARRIES THE CYCLE NUMBER, and it is worth
+  # naming because it is not the perk's own wording — it is an inference:
+  #
+  #   DOES THE FIRE-RATE BONUS APPLY IN THE INCARNON FORM?
+  #
+  # Here it does. The stacks are earned by reloading the BASE form, and nothing
+  # takes them but an empty base magazine — which cannot happen while
+  # transformed, since swapping "will fully reload the normal form's magazine"
+  # (wiki). So they are still up during the Incarnon dump and they speed it up.
+  #
+  # THAT IS 80% OF THE CYCLE. A full gauge is 60 rounds at 1.5/s = 40 s of
+  # Incarnon fire against ~8 s of base-form fire and animations, so the whole
+  # +52% is those 40 seconds becoming 23.5. If the bonus does NOT reach the
+  # Incarnon form, the perk is worth roughly what it is in base mode and the
+  # weapon does not move on the board.
+  #
+  # IT IS A ONE-STOPWATCH TEST: transform with stacks up and time the dump to
+  # empty. 23.5 s means it applies, 40 s means it does not. Recorded here rather
+  # than assumed silently, because a 70% error on a board-topping weapon is not
+  # something to leave in an inference.
   - kind: stacking_fire_rate_per_shell_reloaded
     per_stack: 0.10
     max_stacks: 99
