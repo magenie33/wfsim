@@ -23,10 +23,10 @@
 //   const v = await app.evaluate(`(async () => { ... })()`);
 //   app.check("it says so", v.ok === true, JSON.stringify(v));
 //   await app.finish("the thing holds");   // exits non-zero if anything failed
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
-import { readFileSync, rmSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, rmSync, existsSync, statSync } from "node:fs";
 import { extname, join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -99,6 +99,39 @@ async function debugPort(profile) {
   throw new Error("Chrome never reported a debugging port");
 }
 
+/// EVERY OLD PROFILE, ON THE WAY IN — the one cleanup that cannot be skipped.
+///
+/// `finish()` removes its own directory, and that was the whole plan until a
+/// machine turned up with 644 of them and 17 GB of C: gone (owner, 2026-08-10:
+/// "我有一堆临时文件，在C盘都快满了"). Two ways they survive and neither is
+/// exotic:
+///
+/// - on Windows Chrome still holds handles for a moment after `kill()`, so the
+///   `rmSync` in `finish` throws and the comment there says "it can stay" —
+///   which on this platform is the NORMAL path, not the edge case;
+/// - a script that throws, is interrupted, or is an ad-hoc probe that never
+///   calls `finish()` never reaches the cleanup at all.
+///
+/// Sweeping on the way IN fixes both, because by then the run that made the
+/// directory is long gone and nothing holds it. An hour is the grace period: a
+/// check takes under a minute, so anything older than that belongs to a run
+/// that is over, and a concurrent check's own directory is never old enough to
+/// be caught.
+function sweepStaleProfiles() {
+  const tmp = process.env.TEMP || "/tmp";
+  const cutoff = Date.now() - 60 * 60 * 1000;
+  let names = [];
+  try { names = readdirSync(tmp); } catch { return; }
+  for (const n of names) {
+    if (!n.startsWith("wfsim-")) continue;
+    const p = join(tmp, n);
+    try {
+      if (statSync(p).mtimeMs > cutoff) continue;
+      rmSync(p, { recursive: true, force: true });
+    } catch { /* someone else's, or still held — the next run tries again */ }
+  }
+}
+
 /**
  * Boot the shipping build in headless Chrome and hand back the handles a check
  * needs.
@@ -125,6 +158,7 @@ export async function openApp(o = {}) {
   // the directory's lock when the next check claimed it. Neither can happen to
   // a directory nobody else has ever used.
   const profile = join(process.env.TEMP || "/tmp", `${name}-${process.pid}`);
+  sweepStaleProfiles();
   // An EXTERNAL base skips the server entirely, so a check can be pointed at
   // wfsim.app (or a preview deploy) and assert the same things about it.
   const srv = o.base ? null : await serveSite(root);
@@ -229,11 +263,38 @@ export async function openApp(o = {}) {
       const failed = app.failures;
       console.log(failed ? `\n${failed} failed` : `\n${message}`);
       try { ws.close(); } catch { /* already gone */ }
-      try { proc.kill(); } catch { /* already gone */ }
+      // THE WHOLE TREE, not the launcher. Chrome forks a renderer, a gpu
+      // process and more, and on Windows `kill()` reaches only the one node
+      // spawned here — the children go on holding the profile, which is why
+      // eight headless Chromes were still alive with a directory open after a
+      // check had exited cleanly (2026-08-10). `taskkill /T` is the platform's
+      // own answer; everywhere else the signal already reaches the group.
+      try {
+        if (process.platform === "win32") {
+          spawnSync("taskkill", ["/pid", String(proc.pid), "/T", "/F"], { stdio: "ignore" });
+        } else {
+          proc.kill();
+        }
+      } catch { /* already gone */ }
       try { srv?.close(); } catch { /* already gone */ }
-      // Best effort: Chrome may still hold a handle for a moment on Windows,
-      // and a leftover profile directory is harmless next to a wrong verdict.
-      try { rmSync(profile, { recursive: true, force: true }); } catch { /* it can stay */ }
+      // WAIT FOR CHROME TO LET GO, then retry. `kill()` returns immediately and
+      // Windows releases the profile's handles a moment later, so removing it
+      // on the next line failed EVERY time — which is how 644 directories and
+      // 17 GB accumulated while a comment said the leftovers were harmless.
+      // A second is longer than Chrome needs and shorter than anyone notices;
+      // `sweepStaleProfiles` is the backstop when even that is not enough.
+      await Promise.race([
+        new Promise((r) => proc.once("exit", r)),
+        sleep(1000),
+      ]);
+      for (let i = 0; i < 5; i++) {
+        try {
+          rmSync(profile, { recursive: true, force: true });
+          break;
+        } catch {
+          await sleep(200);
+        }
+      }
       process.exit(failed ? 1 : 0);
     },
   };

@@ -129,6 +129,16 @@ around (decision 2026-07-31).
   cannot exhaust. Run it after ANY change to enumeration, scheduling or
   scoring. The cheap CI form is `optimizer/tests/search_accuracy.rs`. See
   docs/OPTIMIZER.md §Accuracy.
+- **A CHECK CLEANS UP AFTER ITSELF** (2026-08-10). Each `openApp` runs Chrome in
+  its own throwaway profile under `%TEMP%`, and for a long time none of them
+  were ever removed: `finish()` called `proc.kill()` and `rmSync` on the next
+  line, which on Windows always failed because Chrome's CHILD processes still
+  held the directory — `kill()` reaches only the node that was spawned. 644
+  directories and 17 GB of C: later (owner: "我有一堆临时文件，在C盘都快满了"),
+  `finish` kills the whole tree (`taskkill /T` on win32), waits for it, and
+  retries the removal — and `sweepStaleProfiles` deletes any `wfsim-*` older
+  than an hour ON THE WAY IN, which is the only cleanup a run that throws, is
+  interrupted, or never calls `finish()` can still get.
 - UI verification: drive headless Chrome over CDP (Node ≥22 has a global
   WebSocket; Chrome is at the default install path). Assert real DOM
   state; screenshots for layout review. `node scripts/check_parity.mjs`
