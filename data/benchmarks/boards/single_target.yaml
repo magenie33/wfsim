@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: bd84b4e125f8d6a62f3a5dd31c157c6ca5367d98
+engine: d8bafaf3b5b7f2e235da7a485972a562740288db
 entries:
   - weapon: angstrum
     mode: cycle
@@ -2686,6 +2686,11 @@ entries:
     mode: base
     score: 10.73422542918478
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_fortifier]
+  - weapon: ocucor
+    mode: base
+    score: 10.357682575319828
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
     arcanes: [secondary_fortifier]
   - weapon: ocucor
     mode: base
