@@ -2171,7 +2171,7 @@ mod furis_co_split_tests {
     /// this line should ever see.
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 226;
+        const CEILING: usize = 216;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,
