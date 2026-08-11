@@ -2721,6 +2721,11 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
+    score: 2.030324875284026
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: ocucor
+    mode: base
     score: 1.945993383061118
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, pistol_elementalist, sentient_surge, primed_heated_charge]
     arcanes: [cascadia_flare]
