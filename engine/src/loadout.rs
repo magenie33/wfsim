@@ -1142,6 +1142,12 @@ pub enum BuffTrigger {
     /// rolled before the round was spent. Same moment Reaver's Rapture uses,
     /// for the same reason.
     Firing,
+    /// Paragon Essence: a STATUS EFFECT landing on the target, of any type.
+    ///
+    /// Distinct from [`BuffTrigger::HitEnemyWithStatus`], which asks what the
+    /// target is ALREADY carrying: this one fires on the proc itself, so a
+    /// build that lands nothing never earns it however long the fight runs.
+    StatusApplied,
 }
 
 /// WHAT A STACKING BUFF FEEDS. One arm per grant, and each keeps its own

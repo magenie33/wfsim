@@ -6396,6 +6396,16 @@ pub fn run_once_traced(
                     super_crit_armed = true;
                 }
             }
+            // PARAGON ESSENCE: "On Status Effect", one stack per status that
+            // LANDS. Read literally — the card names the effect, not the hit —
+            // so a pellet that procs twice earns two. Bumped before
+            // `settle_procs` consumes the list, and only here: this is where a
+            // PELLET's own statuses land, and a field tick's or an extra hit's
+            // are a different sentence that no card in the roster has written
+            // yet.
+            for _ in 0..procs.len() {
+                bump_buffs!(crate::loadout::BuffTrigger::StatusApplied, t, d.extra);
+            }
             settle_procs(
                 procs,
                 t,

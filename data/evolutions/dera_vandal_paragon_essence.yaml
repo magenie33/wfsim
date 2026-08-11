@@ -12,14 +12,21 @@ effects:
   # from: "Increase Base Damage by +4"
   - kind: flat_base_damage
     value: 4.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Status Effect: +5% Fire Rate for 5 seconds"
-  - kind: unmodelled_on_status_effect_fire_rate_for_seconds
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Stacks up to 6x"
-  - kind: unmodelled_stacks_up_to_x
+  # MODELLED as a plain stacking buff. "On Status Effect" is a proc LANDING —
+  # not the target already carrying one — so a build that lands nothing never
+  # earns it however long the fight runs.
+  #
+  # ADDITIVE WITH FIRE-RATE MODS: "Fire Rate bonus stacks additively with other
+  # fire rate bonuses such as Speed Trigger" (notes cell).
+  #
+  # The stack cap was a separate inert effect until now; it is this grant's
+  # ceiling, not a mechanic of its own.
+  - kind: stacking_buff
+    trigger: status_applied
+    per_stack:
+      fire_rate_bonus: 0.05
+    max_stacks: 6
+    duration_seconds: 5.0
 
 source:
   url: https://wiki.warframe.com/w/Dera_Incarnon_Genesis

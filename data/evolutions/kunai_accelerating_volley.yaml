@@ -9,14 +9,26 @@ description: "On Fire: +20% Fire Rate for 0.5 seconds. Stacks up to 5x."
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Fire: +20% Fire Rate for 0.5 seconds"
-  - kind: unmodelled_on_fire_fire_rate_for_seconds
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Stacks up to 5x"
-  - kind: unmodelled_stacks_up_to_x
+  # MODELLED as a plain stacking buff — trigger, grant, size, cap and clock,
+  # all of it said in this file. "On Fire" is FIRING: the round leaving the
+  # weapon, which is the same trigger the Strun's Blazing Barrel counts.
+  #
+  # ADDITIVE WITH FIRE-RATE MODS, and the notes cell says so: "Bonus stacks
+  # additively with fire rate mods such as Gunslinger" — the bracket this grant
+  # already lands in.
+  #
+  # HALF A SECOND is the whole character of the perk. It is a spool: the stacks
+  # only stand while you keep firing, and the first pause drops the pile one
+  # stack at a time on the Galvanized clock.
+  #
+  # The stack cap was a separate inert effect until now; it is this grant's
+  # ceiling, not a mechanic of its own.
+  - kind: stacking_buff
+    trigger: firing
+    per_stack:
+      fire_rate_bonus: 0.20
+    max_stacks: 5
+    duration_seconds: 0.5
 
 source:
   url: https://wiki.warframe.com/w/Kunai_Incarnon_Genesis

@@ -288,6 +288,30 @@ enum EvoEffect {
     ///
     /// NO DURATION — neither wiki page states one, and both state the reset
     /// instead: the stacks stand until a reload (`ClearedBy::Reload`).
+    /// A STACKING BUFF, stated entirely in data: what triggers it, what it
+    /// grants, how much, how many, how long, and what takes it.
+    ///
+    /// Written after the fourth perk in a row that needed a new enum variant to
+    /// say something the three before it had already said. The vocabulary the
+    /// sim runs on — [`crate::loadout::BuffTrigger`], [`crate::loadout::BuffGrant`],
+    /// [`crate::loadout::ClearedBy`], [`crate::loadout::BuffDecay`] — is
+    /// expressive enough on its own; what was missing was a way for a yaml to
+    /// NAME a combination of it. A perk whose trigger and grant both exist is
+    /// now a yaml block and no Rust at all.
+    ///
+    /// The older single-purpose variants are kept where they carry reasoning a
+    /// generic one cannot (Ready Retaliation's arming, Reaver's Rapture's burst
+    /// arithmetic); this is for the plain ones.
+    StackingGrant {
+        trigger: crate::loadout::BuffTrigger,
+        grant: crate::loadout::BuffGrant,
+        per_stack: f64,
+        max_stacks: u32,
+        duration: f64,
+        chance: f64,
+        decay: crate::loadout::BuffDecay,
+        cleared_by: crate::loadout::ClearedBy,
+    },
     StackingMultishotOnFiring {
         per_stack: f64,
         max_stacks: u32,
@@ -523,6 +547,12 @@ impl EvolutionDef {
                 }),
                 EvoEffect::StackingReloadSpeedOnHeadshot { max_stacks, .. } => Some(EvoBuffCard {
                     id: "on_headshot_reload_speed",
+                    max_stacks: *max_stacks,
+                    permanent: false,
+                    opens_at: CardOpens::Zero,
+                }),
+                EvoEffect::StackingGrant { trigger, grant, max_stacks, .. } => Some(EvoBuffCard {
+                    id: stacking_card_id(*trigger, *grant),
                     max_stacks: *max_stacks,
                     permanent: false,
                     opens_at: CardOpens::Zero,
@@ -767,6 +797,11 @@ impl EvolutionDef {
                     "+{:.0}% reload speed on a reload from empty, for that reload",
                     value * 100.0
                 ),
+                EvoEffect::StackingGrant { trigger, grant, per_stack, max_stacks, duration, chance, .. } => format!(
+                    "{per_stack} {grant:?} per stack x{max_stacks} on {trigger:?}{}{}",
+                    if duration.is_finite() { format!(" for {duration:.1}s") } else { String::new() },
+                    if *chance < 1.0 { format!(", {:.0}% of the time", chance * 100.0) } else { String::new() }
+                ),
                 EvoEffect::StackingMultishotOnFiring { per_stack, max_stacks, base } => format!(
                     "+{per_stack} {} multishot per stack x{max_stacks} on firing, until a reload",
                     if *base { "base" } else { "bucket" }
@@ -958,6 +993,50 @@ fn effect(v: &Value) -> Option<EvoEffect> {
                     .and_then(Value::as_f64)
                     .unwrap_or(0.0),
                 max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
+            }
+        }
+        // THE GENERAL ARM. Everything the sim's own vocabulary can already
+        // express, named by a yaml: trigger, grant, size, cap, clock, decay and
+        // what takes the pile. It sits BELOW the two arms above, which carry
+        // reasoning a generic one cannot.
+        "stacking_buff"
+            if v.get("trigger").and_then(Value::as_str).and_then(buff_trigger).is_some()
+                && v.get("per_stack")
+                    .and_then(Value::as_mapping)
+                    .and_then(|m| m.keys().next().and_then(Value::as_str))
+                    .and_then(buff_grant)
+                    .is_some() =>
+        {
+            let trigger = buff_trigger(v.get("trigger").and_then(Value::as_str).unwrap()).unwrap();
+            let per = v.get("per_stack").and_then(Value::as_mapping).unwrap();
+            let (key, val) = per.iter().next().unwrap();
+            let grant = buff_grant(key.as_str().unwrap()).unwrap();
+            let duration = f(v, "duration_seconds")
+                .or_else(|| f(v, "duration"))
+                .unwrap_or(crate::loadout::NO_TIMEOUT);
+            EvoEffect::StackingGrant {
+                trigger,
+                grant,
+                per_stack: val.as_f64().unwrap_or(0.0),
+                max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
+                duration,
+                // Default 1.0 so a perk that does NOT roll reads as certain
+                // rather than as never firing — and a hidden roll is the one
+                // thing the rendered wiki card omits (Headcracker's 50%), so
+                // this default is only ever right when someone checked.
+                chance: f(v, "chance").unwrap_or(1.0),
+                // The Galvanized family unless the card says otherwise: one
+                // stack drops on timeout and the timer restarts.
+                decay: match v.get("decay").and_then(Value::as_str) {
+                    Some("per_stack_expiry") => crate::loadout::BuffDecay::PerStackExpiry,
+                    _ => crate::loadout::BuffDecay::LoseOneAndReset,
+                },
+                cleared_by: match v.get("cleared_by").and_then(Value::as_str) {
+                    Some("reload") => crate::loadout::ClearedBy::Reload,
+                    Some("magazine_refilled") => crate::loadout::ClearedBy::MagazineRefilled,
+                    Some("empty_magazine") => crate::loadout::ClearedBy::EmptyMagazine,
+                    _ => crate::loadout::ClearedBy::Nothing,
+                },
             }
         }
         "stacking_buff" => {
@@ -1356,6 +1435,24 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 EvoEffect::CritMultiplierBelowCritChance { value, below } => {
                     base.crit_mult_below_cc = Some((*value, *below));
                 }
+                EvoEffect::StackingGrant {
+                    trigger, grant, per_stack, max_stacks, duration, chance, decay, cleared_by,
+                } => {
+                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                        id: stacking_card_id(*trigger, *grant),
+                        trigger: *trigger,
+                        grant: *grant,
+                        decay: *decay,
+                        per_stack: *per_stack,
+                        max_stacks: *max_stacks,
+                        duration: *duration,
+                        chance: *chance,
+                        initial_stacks: 0,
+                        stacks_per_trigger: 1,
+                        per_shell: false,
+                        cleared_by: *cleared_by,
+                    });
+                }
                 EvoEffect::StackingMultishotOnFiring { per_stack, max_stacks, base: is_base } => {
                     base.stacking_buffs.push(crate::loadout::StackingBuff {
                         id: "on_firing_multishot",
@@ -1531,6 +1628,63 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
         {
             base.co_base_fraction = original_total / evolved;
         }
+    }
+}
+
+/// The yaml's word for a trigger. `None` = not one this engine runs, which is
+/// what makes the general `stacking_buff` arm fall through to the inert one
+/// instead of inventing a mechanic.
+fn buff_trigger(s: &str) -> Option<crate::loadout::BuffTrigger> {
+    use crate::loadout::BuffTrigger as T;
+    Some(match s {
+        "firing" => T::Firing,
+        "headshot" => T::Headshot,
+        "plain_hit" => T::PlainHit,
+        "reload_complete" => T::ReloadComplete,
+        "status_applied" => T::StatusApplied,
+        _ => return None,
+    })
+}
+
+/// The yaml's word for a grant — the KEY of the `per_stack:` map, so the payload
+/// names its own bracket and a perk cannot land in the wrong one by omission.
+fn buff_grant(s: &str) -> Option<crate::loadout::BuffGrant> {
+    use crate::loadout::BuffGrant as G;
+    Some(match s {
+        "base_damage_bonus" => G::BaseDamage,
+        "fire_rate_bonus" => G::FireRate,
+        "reload_speed_bonus" => G::ReloadSpeed,
+        "multishot" => G::Multishot,
+        "base_multishot" => G::BaseMultishot,
+        "multishot_percent" => G::MultishotPercent,
+        _ => return None,
+    })
+}
+
+/// THE BUFF CARD'S ID, derived from what the buff IS rather than carried in the
+/// yaml. It is a durable name — the roster, the saved config and the sampler all
+/// key on it — so it is a finite reviewable table and not a formatted string.
+fn stacking_card_id(
+    trigger: crate::loadout::BuffTrigger,
+    grant: crate::loadout::BuffGrant,
+) -> &'static str {
+    use crate::loadout::BuffGrant as G;
+    use crate::loadout::BuffTrigger as T;
+    match (trigger, grant) {
+        (T::Firing, G::FireRate) => "on_firing_fire_rate",
+        (T::Firing, G::BaseDamage) => "on_firing_damage",
+        (T::StatusApplied, G::FireRate) => "on_status_fire_rate",
+        (T::StatusApplied, G::BaseDamage) => "on_status_damage",
+        (T::Headshot, G::FireRate) => "on_headshot_fire_rate",
+        (T::Headshot, G::BaseDamage) => "on_headshot_damage",
+        (T::PlainHit, G::BaseDamage) => "on_plain_hit_damage",
+        (T::ReloadComplete, G::BaseDamage) => "on_reload_damage",
+        (T::ReloadComplete, G::FireRate) => "on_reload_fire_rate",
+        // A pair nobody has written a card for yet. It is still a real buff and
+        // still runs; it just shares one generic id, which is visible the first
+        // time two of them appear on one weapon and is the point at which the
+        // pair earns a name above.
+        _ => "stacking_grant",
     }
 }
 
@@ -2293,7 +2447,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 197;
+        const CEILING: usize = 193;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,
