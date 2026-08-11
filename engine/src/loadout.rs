@@ -1654,8 +1654,15 @@ pub struct ResolvedPanel {
     /// [`crate::evolutions_data::EvoEffect::ReloadSpeedOnEmptyReload`]. It joins
     /// the reload bucket the mods and `evo_reload_bonus` feed, but only while
     /// open, and only a reload FROM EMPTY opens it.
-    /// Ready Retaliation's bonus, for the sim to apply to each reload from
-    /// empty (0.0 = none). See [`WeaponBase::rs_on_empty_reload`].
+    /// READY RETALIATION as the sim holds it: a buff with NO DURATION that is
+    /// simply up or down (0.0 = the weapon does not have the perk).
+    ///
+    /// The magazine running out puts it up; a reload completing, or either
+    /// Incarnon transform completing, takes it down — because all three refill
+    /// the magazine. Nothing ASKS whether the moment is a reload: the value is
+    /// summed into the live reload-speed total wherever that total is needed,
+    /// and only the removal events are reasoned about (owner, 2026-08-11: "最正
+    /// 确的建模就是建立一个无限时长的buff… 不应该在意此时是否换弹").
     pub rs_on_reload: f64,
     /// EXECUTIONER'S FORTUNE — see [`InstantReload`]. Carried straight to the
     /// sim under every policy: it is an EVENT, and there is no panel stat an

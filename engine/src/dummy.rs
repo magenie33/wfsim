@@ -4249,20 +4249,38 @@ fn reload_span(secs: f64, bucket: f64, add: f64) -> f64 {
     secs * (1.0 + bucket) / (1.0 + bucket + add)
 }
 
-/// Lethal Rearmament's CURRENT reload-speed bonus. Locked or not, the count is
-/// the live one — locking only stops the clock (`LiveStacks::clock`).
+/// EVERY LIVE ADDITION TO THE RELOAD-SPEED BUCKET, in one place.
+///
+/// `owner` is the form the perks belong to — the base half of a cycle, whose
+/// evolutions are on it — while `params` carries the buff bar. They differ, and
+/// reading the wrong one is not a small mistake: Ready Retaliation is dropped
+/// on a charge-backed form, so taking it off the outer params gave every
+/// transform animation a bonus of exactly nothing on the only weapon that has
+/// the perk.
+///
+/// READY RETALIATION IS A BUFF THAT IS UP OR DOWN, with no duration and no
+/// condition of its own (owner, 2026-08-11: "最正确的建模就是建立一个无限时长的
+/// buff，只是这个buff换弹完成/进入灵化的时候消失，不应该在意此时是否换弹"). So
+/// it is summed here, where the total is asked for, and NOT tested at each of
+/// the four places that ask — the events that REMOVE it are the only place it
+/// is reasoned about. Four copies of one `if` is how three of them come to
+/// disagree with the fourth.
 fn live_reload_speed(
     params: &DummyParams,
+    owner: &DummyParams,
+    rs_armed: bool,
     stacks: &mut [LiveStacks],
     t: f64,
 ) -> f64 {
-    params
-        .stacking_buffs
-        .iter()
-        .enumerate()
-        .filter(|(_, b)| b.grant == crate::loadout::BuffGrant::ReloadSpeed)
-        .map(|(i, b)| b.per_stack * stacks[i].current(t, b.duration) as f64)
-        .sum()
+    let ready = if rs_armed { owner.rs_on_reload } else { 0.0 };
+    ready +
+        params
+            .stacking_buffs
+            .iter()
+            .enumerate()
+            .filter(|(_, b)| b.grant == crate::loadout::BuffGrant::ReloadSpeed)
+            .map(|(i, b)| b.per_stack * stacks[i].current(t, b.duration) as f64)
+            .sum::<f64>()
 }
 
 /// The live stack count of every buff in [`Replay::buffs`], in that order.
@@ -4870,9 +4888,7 @@ pub fn run_once_traced(
                 // takes the speed if the buff is up and spends it — which is
                 // also why this animation is scaled by reload speed at all.
                 t += rescale_reload(cy.transmute_out_seconds, cy.reload_bucket,
-                    live_reload_speed(params, &mut buff_stacks, t)
-                        // The base form's, for the reason at the other animation.
-                        + if rs_armed { cy.base_form.rs_on_reload } else { 0.0 });
+                    live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t));
                 rs_armed = false;
                 in_base_form = true;
                 charges = 0;
@@ -4915,10 +4931,7 @@ pub fn run_once_traced(
                         buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
                     }
                 }
-                // READY RETALIATION: armed by the magazine that just ran
-                // out, and this reload is what spends it.
-                let rs = live_reload_speed(params, &mut buff_stacks, t)
-                    + if rs_armed { params.rs_on_reload } else { 0.0 };
+                let rs = live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t);
                 t += live_reload_time(&cy.base_form, params, &mut arc, rs, t);
                 rs_armed = false;
                 r.reloads += 1;
@@ -4976,8 +4989,7 @@ pub fn run_once_traced(
             //
             // Every reload this loop performs is a reload from empty — it only
             // reloads when it cannot fire — which is exactly the condition.
-            let rs = live_reload_speed(params, &mut buff_stacks, t)
-                + if rs_armed { params.rs_on_reload } else { 0.0 };
+            let rs = live_reload_speed(params, params, rs_armed, &mut buff_stacks, t);
             t += live_reload_time(params, params, &mut arc, rs, t);
             rs_armed = false;
             r.reloads += 1;
@@ -6266,14 +6278,7 @@ pub fn run_once_traced(
                     // transforms are reloads, and the buff is spent by whatever
                     // refills the magazine. Nothing else has to be enumerated.
                     t += rescale_reload(cy.transmute_seconds, cy.reload_bucket,
-                        live_reload_speed(params, &mut buff_stacks, t)
-                            // THE PERK IS THE BASE FORM'S. The evolution loader
-                            // drops it on a charge-backed form, so the OUTER
-                            // params — which are the Incarnon half's — carry
-                            // zero, and reading them here would have handed
-                            // every animation a bonus of nothing on the one
-                            // weapon that actually has this perk.
-                            + if rs_armed { cy.base_form.rs_on_reload } else { 0.0 });
+                        live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t));
                     rs_armed = false;
                     r.transforms += 1;
                     in_base_form = false;
