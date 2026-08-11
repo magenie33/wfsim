@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: d8bafaf3b5b7f2e235da7a485972a562740288db
+engine: 719fcc3e9aa6fbf3dff9847d5a062d505fcf62aa
 entries:
   - weapon: boltor_prime
     mode: cycle

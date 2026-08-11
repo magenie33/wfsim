@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: d8bafaf3b5b7f2e235da7a485972a562740288db
+engine: 719fcc3e9aa6fbf3dff9847d5a062d505fcf62aa
 entries:
   - weapon: angstrum
     mode: cycle
@@ -3180,50 +3180,50 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: strun_prime
     mode: cycle
-    score: 18.391384168430548
+    score: 20.664246456678445
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, contagious_spread, blaze]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
     arcanes: [primary_deadhead]
   - weapon: strun_prime
+    mode: cycle
+    score: 13.854246343572298
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, chilling_reload, toxic_barrage, incendiary_coat]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+  - weapon: strun_prime
     mode: base
-    score: 13.60646996167594
+    score: 13.7979616071915
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, contagious_spread, primed_chilling_grasp]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_commodores_fortune]
     arcanes: [primary_deadhead]
   - weapon: strun_prime
     mode: cycle
-    score: 12.93082102105354
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, chilling_reload, toxic_barrage, incendiary_coat]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_crux]
-  - weapon: strun_prime
-    mode: cycle
-    score: 10.576884331975826
+    score: 12.669133719531596
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, contagious_spread, primed_chilling_grasp]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
     arcanes: [primary_deadhead]
   - weapon: strun_prime
     mode: cycle
-    score: 10.32840583764805
+    score: 11.512254261753313
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, semi_shotgun_cannonade, frigid_blast, toxic_barrage, primed_charged_shell]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
     arcanes: [primary_crux]
   - weapon: strun_prime
     mode: cycle
-    score: 8.463840980862717
+    score: 9.433178364011278
     mods: [galvanized_hell, primed_ravage, critical_deceleration, semi_shotgun_cannonade, primed_chilling_grasp, toxic_barrage, blaze, scattering_inferno]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
     arcanes: [primary_crux]
   - weapon: strun_prime
     mode: cycle
-    score: 7.3069246425829215
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_elementalist, vigilante_armaments, blaze, scattering_inferno]
+    score: 8.05992224047042
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_elementalist, frigid_blast, toxic_barrage, primed_charged_shell]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
     arcanes: [primary_crux]
   - weapon: strun_prime
     mode: cycle
-    score: 7.116465956286576
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_elementalist, frigid_blast, toxic_barrage, primed_charged_shell]
+    score: 7.313180855982963
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_elementalist, vigilante_armaments, blaze, scattering_inferno]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
     arcanes: [primary_crux]
   - weapon: stug
