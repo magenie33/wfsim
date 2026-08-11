@@ -1070,6 +1070,26 @@ pub enum BuffGrant {
     Multishot,
 }
 
+impl BuffGrant {
+    /// The `disables:` key this grant feeds — the SAME vocabulary a locking
+    /// mod writes ("multishot", "fire_rate"). Derived rather than listed: a
+    /// lock says "set to its default ignoring other bonuses, even negative
+    /// effects" (MEASUREMENTS M30), and a live buff is a bonus like any other,
+    /// so the stat is the only thing the two have to agree on. Adding a grant
+    /// without answering this is a compile error, which is the point — the
+    /// FireRate arm was once the only one that knew about locks, and Stormburst
+    /// went on paying +1.2 multishot under Secondary Acuity because Multishot
+    /// had simply never been added beside it (owner, 2026-08-11).
+    pub fn locked_stat(self) -> &'static str {
+        match self {
+            BuffGrant::BaseDamage => "base_damage",
+            BuffGrant::ReloadSpeed => "reload_speed",
+            BuffGrant::FireRate => "fire_rate",
+            BuffGrant::Multishot => "multishot",
+        }
+    }
+}
+
 /// HOW A STACK LEAVES. `docs/BUFFS.md` has named these three since the buff
 /// vocabulary was written; two were implemented.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -2342,18 +2362,23 @@ pub fn resolve_for(
         }),
         headshot_damage_bonus: base.headshot_damage_bonus,
         noncrit_bonus: base.noncrit_bonus,
-        // ONE conversion, in one place: a FireRate buff arrives as a fraction of
-        // the base rate and leaves as the absolute rate it is worth, because
-        // the sim adds it inside the bracket fire-rate mods live in. A lock on
-        // the stat removes it with everything else in that bucket.
         stacking_buffs: base
             .stacking_buffs
             .iter()
+            .filter(|b| !locked_stat(b.grant.locked_stat()))
+            // A LOCKED STAT TAKES ITS BUFFS WITH IT, and they go rather than
+            // going quiet: a card that opens, stacks and grants nothing is a
+            // measurement a player cannot make (the rule `check_equip_rules`
+            // asserts — "a buff whose only grant is that stat is not offered").
+            // Every one of these grants exactly one stat, so the filter is the
+            // whole rule.
             .map(|b| StackingBuff {
                 per_stack: match b.grant {
-                    BuffGrant::FireRate => {
-                        if locked_stat("fire_rate") { 0.0 } else { base.base_fire_rate * b.per_stack }
-                    }
+                    // ONE conversion: a FireRate buff arrives as a fraction of
+                    // the base rate and leaves as the absolute rate it is worth,
+                    // because the sim adds it inside the bracket fire-rate mods
+                    // live in.
+                    BuffGrant::FireRate => base.base_fire_rate * b.per_stack,
                     _ => b.per_stack,
                 },
                 // …and the same conversion for HOW MANY a trigger grants: 0
@@ -2632,6 +2657,51 @@ mod tests {
         let emerg = resolve(&base, &[&cb], StackPolicy::Emergent);
         assert!((amax.status_chance - base.base_status_chance * 1.90).abs() < 1e-9);
         assert!((emerg.status_chance - base.base_status_chance).abs() < 1e-9);
+    }
+
+    /// A LOCK REACHES A LIVE BUFF, not just the static buckets.
+    ///
+    /// Acuity "set[s] weapon's Multishot to its default ignoring other bonuses,
+    /// even negative effects" — and a buff earned DURING the fight is a bonus
+    /// like any other, so Stormburst's "+0.4 Multishot for 2s, stacks 3x" is
+    /// worth nothing under one (owner, 2026-08-11). It was worth +1.2: the
+    /// resolver knew about locks in exactly one arm, `BuffGrant::FireRate`, and
+    /// a buff that fed any other stat walked straight past it.
+    ///
+    /// The pair below is the whole point — the same build, once locked and once
+    /// not — because a filter that removed the buff unconditionally would pass
+    /// the first half on its own.
+    #[test]
+    fn a_multishot_lock_removes_a_live_multishot_buff_too() {
+        let base = WeaponBase::from_data("furis", true, &["furis_stormburst"]);
+        let ms_of = |b: &ResolvedPanel| {
+            b.stacking_buffs
+                .iter()
+                .filter(|s| s.grant == BuffGrant::Multishot)
+                .map(|s| s.per_stack * s.max_stacks as f64)
+                .sum::<f64>()
+        };
+        let free = resolve(&base, &[], StackPolicy::Emergent);
+        assert!(
+            (ms_of(&free) - 1.2).abs() < 1e-9,
+            "unlocked, Stormburst is worth +1.2 multishot at three stacks: {}",
+            ms_of(&free)
+        );
+
+        let lock = m_req("acuity", None, vec!["multishot"], vec![]);
+        let locked = resolve(&base, &[&lock], StackPolicy::Emergent);
+        assert_eq!(ms_of(&locked), 0.0, "and nothing at all under the lock");
+        assert!(
+            !locked.stacking_buffs.iter().any(|s| s.grant == BuffGrant::Multishot),
+            "the buff is not offered — a card that stacks and grants nothing is              a measurement nobody can make"
+        );
+        // The lock is about ONE stat: this evolution's OTHER half, a flat +28
+        // base damage, is untouched.
+        let bare = WeaponBase::from_data("furis", true, &[]);
+        assert!(
+            locked.modified_base > resolve(&bare, &[&lock], StackPolicy::Emergent).modified_base,
+            "the +28 survives — a lock is not a way to switch an evolution off"
+        );
     }
 
     /// A FIRE-RATE PENALTY DOES NOT STRETCH THE BURST ITSELF — the wiki's one
