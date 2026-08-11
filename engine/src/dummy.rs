@@ -1596,6 +1596,49 @@ pub struct Replay {
     /// [`DummyParams::buff_roster`].
     pub buffs: Vec<(String, u32)>,
     pub frames: Vec<Frame>,
+    /// One worked example per attack part — see [`HitAccount`]. First come,
+    /// first recorded: the first direct hit of the engagement and the first
+    /// explosion, which is enough to check both paths and cheap enough to do
+    /// inside the shot loop.
+    pub accounts: Vec<HitAccount>,
+}
+
+/// ONE DAMAGE INSTANCE, FULLY DECOMPOSED — the account of a single hit.
+///
+/// Every other number this sim reports is an aggregate, and an aggregate hides
+/// an error inside an average: a factor applied twice, or in the wrong bracket,
+/// moves a mean by a few per cent and cannot be told from a build being good.
+/// This is the one output that can be FALSIFIED — every line is a factor with
+/// its value, the product is the number that went into the damage meter, and
+/// anyone with the wiki and a calculator can check it by hand (owner,
+/// 2026-08-11: "方便我可以根据数据里找出计算瑕疵").
+///
+/// It is recorded from the MEDIAN ENGAGEMENT, the same run the replay plays
+/// back, so the account and the curves are the same fight.
+#[derive(Debug, Clone, Default)]
+pub struct HitAccount {
+    /// Which attack part: `direct`, `radial`.
+    pub source: &'static str,
+    /// The body part it landed on, and whether that part is a head.
+    pub part: String,
+    pub head: bool,
+    /// The crit TIER this instance rolled — 0 = no crit, 1 = crit, 2+ = red.
+    pub tier: u32,
+    /// When it happened, so it can be found in the replay.
+    pub t: f64,
+    /// The instance's own damage before anything below it: this attack part's
+    /// modded vector, divided by nothing. On a multishot weapon it is ONE
+    /// pellet's share.
+    pub base: f64,
+    /// `(what it is, the factor)`, in the order the engine applies them. A
+    /// factor of exactly 1.0 is kept rather than dropped — "faction ×1.00" is
+    /// the answer to "why is my Bane doing nothing", and a missing line is not.
+    pub steps: Vec<(&'static str, f64)>,
+    /// The product of `base` and every step — what the meter counts as dealt.
+    pub raw: f64,
+    /// …and what the target actually took, after armour, its damage-type
+    /// column and any attenuation. `raw / effective` is the mitigation.
+    pub effective: f64,
 }
 
 /// Frames in a replay, whatever the engagement length. 600 over 300 s is one
@@ -5823,6 +5866,38 @@ pub fn run_once_traced(
                 );
                 r.total_damage += raw;
                 r.effective_damage += effective;
+                // THE ACCOUNT OF THIS HIT, taken once per attack part and only
+                // while a replay is being traced. Written HERE because this is
+                // the one place every factor exists at the same time — anywhere
+                // else and the list would be reconstructed, which is how a
+                // breakdown comes to disagree with the number it explains.
+                if let Some(rep) = trace.as_deref_mut() {
+                    let kind = if direct { "direct" } else { "radial" };
+                    if !rep.accounts.iter().any(|a| a.source == kind) {
+                        rep.accounts.push(HitAccount {
+                            source: kind,
+                            part: part.name.clone(),
+                            head: part.is_head,
+                            tier,
+                            t,
+                            base: qtotal,
+                            steps: vec![
+                                ("body part", part_factor),
+                                ("critical", crit_mult),
+
+                                ("Condition Overload bracket", bucket),
+                                ("faction", params.faction_at_time(t)),
+                                ("arcane (final)", arc_final),
+                                ("attrition", attrition),
+                                ("Warframe ability", params.ability_final_at(t)),
+                                ("beam ramp", beam_ramp),
+                                ("multishot-generated", pm_mult),
+                            ],
+                            raw,
+                            effective,
+                        });
+                    }
+                }
                 if direct {
                     r.sources.direct += effective;
                     add_by_type(&mut r.sources.direct_by_type, &qvec, effective, &col);
@@ -6517,6 +6592,7 @@ pub fn replay(params: &DummyParams, rng_state: u64, frames: usize) -> Replay {
         dt: (params.duration_secs / frames as f64).max(1e-6),
         buffs: params.buff_roster(),
         frames: Vec::with_capacity(frames),
+        accounts: Vec::new(),
     };
     run_once_traced(params, &mut Rng::new(rng_state), Some(&mut rep));
     rep

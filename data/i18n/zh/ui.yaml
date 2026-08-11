@@ -173,6 +173,28 @@ ui:
   "Debuff coverage": 异常覆盖
   "what was on the target — a respawn is the same target, so its stacks drop to zero and climb again": 目标身上挂着什么 —— 重生仍算同一个目标，所以层数会归零再爬起来
   frozen: 冻结
+  "The account of one hit": 一发的账
+  "every factor, in the order the engine applies them — the product is what the meter counted": 每一个因子，按引擎施加的顺序 —— 它们的乘积就是伤害表记下的那个数
+  "this instance's modded damage": 这个实例改装后的伤害
+  "the target's armour, column and attenuation": 目标的护甲、易伤列与衰减
+  dealt: 打出
+  taken: 实际承受
+  "direct hit": 直接命中
+  explosion: 爆炸
+  "no crit": 未暴击
+  crit: 暴击
+  "red crit": 红色暴击
+  "orange crit": 橙色暴击
+  "purple crit": 紫色暴击
+  "body part": 身体部位
+  critical: 暴击
+  "Condition Overload bracket": 异常超载档
+  faction: 派系
+  "arcane (final)": 赋能（终乘）
+  attrition: 损耗
+  "Warframe ability": 战甲技能
+  "beam ramp": 光束爬升
+  "multishot-generated": 多重射击生成
   Finalists: 优胜名额
   "how it is played — pool = searched, req = pin one": 怎么打 —— pool = 纳入搜索，req = 钉死一个
   "Final-round runs": 最终轮次数

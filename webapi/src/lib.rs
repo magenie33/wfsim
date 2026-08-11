@@ -3921,6 +3921,23 @@ pub fn simulate_json(v: &Value) -> Value {
                 "headshot_rate": rep.frames.iter()
                     .map(|f| r3(f.headshots as f64 / pel(f))).collect::<Vec<_>>(),
             },
+            // THE ACCOUNT OF ONE HIT PER ATTACK PART — every factor with its
+            // value, in the order the engine applies them, so the product can
+            // be checked by hand against the wiki. The one output here that can
+            // be falsified rather than merely read.
+            "accounts": rep.accounts.iter().map(|a| json!({
+                "source": a.source,
+                "part": a.part,
+                "head": a.head,
+                "tier": a.tier,
+                "t": (a.t * 100.0).round() / 100.0,
+                "base": a.base,
+                "steps": a.steps.iter()
+                    .map(|(k, v)| json!({ "label": k, "mult": v }))
+                    .collect::<Vec<_>>(),
+                "raw": a.raw,
+                "effective": a.effective,
+            })).collect::<Vec<_>>(),
             "sources": rp_sources,
             // Per BUFF, not per frame: a flat array per series is what a chart
             // wants, and it compresses far better than 600 tiny objects.

@@ -240,6 +240,20 @@ around (decision 2026-07-31).
   roar 和 roar（helminth），那就选择生效当前最强的" — the difference between
   +50% and +80% is a number you have to be told), that the optimizer shows the
   same buffs read-only, and — the negative control — that no RULER carries one.
+  `node scripts/check_hit_account.mjs` is the TWENTY-FOURTH: THE ACCOUNT OF ONE
+  HIT HAS TO MULTIPLY OUT. Every other number the sim reports is an aggregate,
+  and an aggregate hides an error inside an average — a factor applied twice, or
+  in the wrong bracket, moves a mean by a few per cent and reads as "this build
+  is good". The account is the one output that can be FALSIFIED (owner,
+  2026-08-11: "方便我可以根据数据里找出计算瑕疵"): one damage instance per attack
+  part from the median engagement, every factor listed with its value in the
+  order the engine applies them, and the product is the number that went into
+  the damage meter. The check does the arithmetic a reader would do, so a factor
+  applied and not listed — or listed and not applied — fails it. That is why the
+  account is written at the ONE site where every factor exists at the same time
+  rather than reconstructed afterwards. Verified to bite: dropping the crit line
+  gives 1,510 against a claimed 13,292. It also asserts the panel draws it, since
+  a ledger nobody can see is a ledger nobody checks.
   `node scripts/check_debuff_coverage.mjs` is the TWENTY-THIRD: the DEBUFF table
   is the BUFF table, read from the other side. The replay had always shown what
   the BUILD had up — live stacks, uptime, dead bands, the ramp — and said nothing

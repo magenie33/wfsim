@@ -8367,6 +8367,54 @@ const REPLAY_SPEEDS = [1, 2, 5, 20];
 const rpCap = (b) => (b.uncapped ? "∞" : b.max);
 let replayState = null; // { data, i, playing, speed, raf }
 
+// ---- THE ACCOUNT OF ONE HIT --------------------------------------------
+//
+// Every other number on this page is an aggregate, and an aggregate hides an
+// error inside an average: a factor applied twice, or in the wrong bracket,
+// moves a mean by a few per cent and reads as "this build is good". This is the
+// one output that can be FALSIFIED — each line is a factor with its value, the
+// product is the number that went into the damage meter, and anyone with the
+// wiki and a calculator can check it (owner, 2026-08-11: "方便我可以根据数据里
+// 找出计算瑕疵").
+//
+// It is the MEDIAN engagement's, the same run the replay plays back, so the
+// account and the curves are the same fight. A factor of exactly 1.00 is drawn
+// rather than dropped: "faction ×1.00" is the answer to "why is my Bane doing
+// nothing", and a missing line is not an answer.
+const TIER_NAME = ["no crit", "crit", "red crit", "orange crit", "purple crit"];
+function hitAccountsMarkup(r) {
+  const acc = (r && r.replay && r.replay.accounts) || [];
+  if (!acc.length) return "";
+  const n = (x) => Math.round(x || 0).toLocaleString();
+  const f = (x) => (Math.abs(x - 1) < 1e-9 ? "×1.00" : "×" + sig2(x));
+  const rows = acc.map((a) => {
+    const steps = a.steps
+      // A step that is exactly 1 and was NEVER going to be anything else is
+      // noise; one that could have moved is evidence. The line is kept when the
+      // build could produce it at all, which is what `mult !== 1` cannot say —
+      // so the rule is simpler: keep them all, and let the eye skip the ones.
+      .map((s) => `<tr><td>${escHtml(tr(s.label))}</td><td class="mul">${f(s.mult)}</td></tr>`)
+      .join("");
+    const mitigation = a.raw > 0 ? a.effective / a.raw : 1;
+    return `<div class="acct">
+      <div class="acct-h">${escHtml(tr(a.source === "direct" ? "direct hit" : "explosion"))}
+        · ${escHtml(a.part)}${a.head ? " ⌖" : ""}
+        · ${escHtml(tr(TIER_NAME[a.tier] || `crit ×${a.tier}`))}
+        · ${a.t.toFixed(2)}s</div>
+      <table class="acct-t">
+        <tr class="base"><td>${escHtml(tr("this instance's modded damage"))}</td><td class="mul">${n(a.base)}</td></tr>
+        ${steps}
+        <tr class="sum"><td>${escHtml(tr("dealt"))}</td><td class="mul">${n(a.raw)}</td></tr>
+        <tr><td>${escHtml(tr("the target's armour, column and attenuation"))}</td><td class="mul">${f(mitigation)}</td></tr>
+        <tr class="sum"><td>${escHtml(tr("taken"))}</td><td class="mul">${n(a.effective)}</td></tr>
+      </table>
+    </div>`;
+  }).join("");
+  return `<h3>${escHtml(tr("The account of one hit"))} <span class="sim-hint">${
+    escHtml(tr("every factor, in the order the engine applies them — the product is what the meter counted"))}</span></h3>
+    <div class="accts">${rows}</div>`;
+}
+
 function replayMarkup(r) {
   const rp = r && r.replay;
   if (!rp || !rp.t || rp.t.length < 2) return { bar: "", curves: "" };
@@ -8850,7 +8898,7 @@ function renderResults(r, testedAt) {
       ${replayBar}
       <div class="kpi-row">${kpis}</div>
       <h3>${tr("Damage by source")}</h3>
-      <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}${chart}${replayCurves}
+      <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}${hitAccountsMarkup(r)}${chart}${replayCurves}
       <h3>Detail</h3>
       <div class="stat-table">${detail}</div>
     </div>`;
