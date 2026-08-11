@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 708056d7ffb1a18c2b2932a8ce447c38d5cd01a6
+engine: 0c84edc4d2433afb2e32ce245e9bef7a3f1b49ff
 entries:
   - weapon: angstrum
     mode: cycle
@@ -2718,11 +2718,6 @@ entries:
     mode: base
     score: 2.4241150175022534
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    arcanes: [secondary_enervate]
-  - weapon: ocucor
-    mode: base
-    score: 2.030324875284026
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
