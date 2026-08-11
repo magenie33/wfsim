@@ -2061,6 +2061,10 @@ const blankEnemy = () => ({
   faction: "grineer",
   scaling_faction: "grineer",
   can_be_eximus: false,
+  // A DIFFERENT MECHANIC from taking no damage of a type — see the engine's
+  // `status_immunities`. This one moves the PROC DISTRIBUTION: an immune type
+  // leaves the denominator and the rest renormalize onto the roll.
+  status_immunities: [],
   stats: { base_level: 1, health: 1000, shield: 0, armor: 0, overguard: 0, affinity: 0 },
   // null = take the faction's own column. The moment a player writes one
   // value, the whole column becomes theirs — see `renderEnemyForm`.
@@ -2106,6 +2110,7 @@ function customEnemyCards() {
     armor: e.stats.armor,
     overguard: e.stats.overguard,
     unmodeled: [],
+    status_immunities: e.status_immunities || [],
     type_modifiers: e.damage_modifiers
       ? Object.entries(e.damage_modifiers).filter(([, v]) => v !== 1)
           .map(([type, mult]) => ({ type, mult }))
@@ -2313,7 +2318,7 @@ function renderEnemyForm() {
     // third state between a multiplier and nothing getting through.
     `<div class="en-sect"><b>${escHtml(tr("Damage taken"))}</b>
       <label><input type="checkbox" id="en-own-col"${own ? " checked" : ""}> ${
-        escHtml(tr("write my own column (0 = immune)"))}</label>
+        escHtml(tr("write my own column (0 = takes none of that type)"))}</label>
       ${own ? "" : `<span>${escHtml(tr("from the faction"))}: ${
         (cols[d.faction] || []).map((m) => `${escHtml(DT(m.type))} ×${m.mult}`).join(", ")
         || escHtml(tr("takes every type as written"))}</span>`}
@@ -2323,6 +2328,19 @@ function renderEnemyForm() {
           `<label>${escHtml(DT(k))}<input type="number" data-en-dm="${k}" step="0.1" min="0"
              value="${own[k] === undefined ? (factionCol[k] === undefined ? 1 : factionCol[k]) : own[k]}"></label>`).join("")}</div>`
       : "") +
+    // STATUS IMMUNITY, and it is a SECTION OF ITS OWN rather than a 0 in the
+    // column above, because it is a different mechanic and the difference is
+    // not a detail (owner, 2026-08-11). Taking no DAMAGE of a type does not
+    // stop that type from being drawn for procs; a status immunity removes it
+    // from the draw and the remaining types RENORMALIZE — the wiki's own worked
+    // example moves the other four from 18/5/9/23% to 33/8/17/42% when
+    // Corrosive leaves. So an enemy can be immune to one and not the other, and
+    // the page has to let a player say which.
+    `<div class="en-sect"><b>${escHtml(tr("Status immunity"))}</b>
+      <span>${escHtml(tr("these procs cannot land — the other types take over their share of the roll"))}</span></div>
+     <div class="en-mods">${DAMAGE_TYPES.map((k) =>
+       `<label><input type="checkbox" data-en-si="${k}"${
+         (d.status_immunities || []).includes(k) ? " checked" : ""}> ${escHtml(DT(k))}</label>`).join("")}</div>` +
     // BODY PARTS — the weak points, and what each one is worth. A head is not a
     // NAME: `is_head` is what a headshot-conditional mod asks about, and
     // `crit_bonus` is the separate question of whether the part also multiplies
@@ -2360,6 +2378,15 @@ function renderEnemyForm() {
       : null;
     commit();
   };
+  box.querySelectorAll("[data-en-si]").forEach((el) => {
+    el.onchange = () => {
+      const k = el.dataset.enSi;
+      const cur = new Set(d.status_immunities || []);
+      if (el.checked) cur.add(k); else cur.delete(k);
+      d.status_immunities = DAMAGE_TYPES.filter((x) => cur.has(x));
+      commit();
+    };
+  });
   box.querySelectorAll("[data-en-dm]").forEach((el) => {
     el.onchange = () => {
       d.damage_modifiers = { ...(d.damage_modifiers || {}), [el.dataset.enDm]: Math.max(0, Number(el.value) || 0) };
@@ -7181,7 +7208,7 @@ function renderScenarioFields(ids, opts = {}) {
            <span class="en-txt">
              <span class="en-name">${escHtml(en ? en.name : tr("Enemy"))}</span>
              <span class="en-meta">${escHtml(enemyMeta(en))}</span>
-             ${enemyVuln(en)}
+             ${enemyVuln(en)}${enemyStatusImmune(en)}
              ${enemyCaveat(en)}
            </span>
          </button>
@@ -7327,6 +7354,21 @@ const enemyVuln = (en) => {
     : "";
 };
 
+// WHAT CANNOT BE PROC'D ON IT, which is a different line because it is a
+// different mechanic. A vulnerability says what a hit DEALS; a status immunity
+// says what it PROCS, and it moves the whole distribution rather than the one
+// entry — the immune type leaves the denominator and the others take over its
+// share of the roll (wiki `Status_Effect` §Status Immunity Interactions). A
+// reader who saw only "Heat ×0" would conclude the Heat procs stopped too, and
+// they did not.
+const enemyStatusImmune = (en) => {
+  const im = (en && en.status_immunities) || [];
+  return im.length
+    ? `<span class="en-vuln" title="${escHtml(tr("these procs cannot land on this unit — the other damage types take over their share of the status roll"))}">${
+        im.map((k) => `<span class="dn">${escHtml(DT(k))} ⃠</span>`).join("")}</span>`
+    : "";
+};
+
 // THE POOLS AT THE FIGHT'S LEVEL, from the engine.
 //
 // The card and the picker used to print each unit's stats at its OWN base
@@ -7446,7 +7488,7 @@ function renderEnemyMenu(query) {
     ? hits.map((e) => `<div class="opt ${e.id === sim.enemy ? "sel" : ""}" data-e="${escHtml(e.id)}">
          ${enemyImg(e, "en-thumb")}
          <div class="info"><div class="mn">${escHtml(e.name)}</div>
-         <div class="me">${escHtml(enemyMeta(e))}</div>${enemyVuln(e)}${enemyCaveat(e)}</div>
+         <div class="me">${escHtml(enemyMeta(e))}</div>${enemyVuln(e)}${enemyStatusImmune(e)}${enemyCaveat(e)}</div>
        </div>`).join("")
     : `<div class="sim-empty">${escHtml(tr("no enemy matches"))}</div>`;
   menu.querySelectorAll("[data-e]").forEach((el) => el.onclick = () => {

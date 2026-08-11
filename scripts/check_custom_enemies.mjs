@@ -94,6 +94,41 @@ const r = await evaluate(`(async () => {
   out.immune = await dmgVs(0);
   out.normal = await dmgVs(1);
 
+  // ---- STATUS IMMUNITY IS A DIFFERENT MECHANIC --------------------------
+  //
+  // The wiki puts both halves in one paragraph (Status_Effect, Status
+  // Immunity Interactions): proc type chances are NOT altered by resistances or
+  // weaknesses, but they ARE altered by status immunities, which drop the type
+  // out of the draw so the rest renormalize. So on the Torid — Toxin and
+  // nothing else — the two look completely different from each other:
+  //
+  //   toxin damage x0   procs continue at the same rate, dealing nothing
+  //   toxin STATUS immune   there is no eligible type left, so procs stop
+  //
+  // Conflating them is the mistake this pins, and it is measured on the PROC
+  // COUNT because that is the only place the difference shows. (The
+  // RENORMALISATION itself is an engine test —
+  // status_immunities_renormalize_toward_other_procs — where a mixed vector can
+  // be held fixed.)
+  const procsWhen = async (mut) => {
+    const ps = loadPresetList('enemies');
+    // UNKILLABLE IN EVERY CASE, so the three runs are the same fight. A target
+    // that takes no damage never dies and a target that does dies often, and
+    // "how many procs per pellet" is not comparable across two fights that
+    // differ in how many times the target was replaced.
+    ps[0].state.stats.health = 1e9;
+    mut(ps[0].state);
+    storePresetList('enemies', ps);
+    const res = await api('/api/simulate', { ...buildPayload(), ...fightPayload(), buffs: {} });
+    // PER PELLET, not per engagement: a target that takes no damage never
+    // dies, so the raw counts are two different fights. The RATE is the thing
+    // the wiki is talking about.
+    return res ? (res.procs || 0) / Math.max(1, res.pellets || 0) : 0;
+  };
+  out.plainProcs = await procsWhen((s) => { s.damage_modifiers = null; s.status_immunities = []; });
+  out.noDamageProcs = await procsWhen((s) => { s.damage_modifiers = { toxin: 0 }; s.status_immunities = []; });
+  out.immuneProcs = await procsWhen((s) => { s.damage_modifiers = null; s.status_immunities = ['toxin']; });
+
   // ---- and DELETING one does not leave the fight pointing at nothing -----
   await go('/enemies');
   document.querySelector('.en-row').click(); await sleep(300);
@@ -125,6 +160,14 @@ check("...and fights the target that was typed", r.targetName === "target 1", St
 
 check("an immune column lets NOTHING through", r.immune === 0, String(r.immune));
 check("...and the same target at x1 takes damage", r.normal > 0, String(r.normal));
+
+// The two mechanics, told apart by measurement rather than by reading the
+// card back.
+check("procs happen at all", r.plainProcs > 0, String(r.plainProcs));
+check("a damage x0 does NOT change the proc RATE",
+  Math.abs(r.noDamageProcs - r.plainProcs) / r.plainProcs < 0.15,
+  `${r.plainProcs.toFixed(3)}/pellet -> ${r.noDamageProcs.toFixed(3)}`);
+check("...a STATUS immunity does", r.immuneProcs === 0, String(r.immuneProcs));
 
 check("deleting it repoints the fight at a real target",
   r.afterDelete && !String(r.afterDelete).startsWith("custom:"), String(r.afterDelete));

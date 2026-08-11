@@ -962,6 +962,9 @@ pub fn meta_json() -> Value {
                 "overguard": e.stats.overguard,
                 // Known gaps, stated on the card rather than left implicit.
                 "unmodeled": e.unmodeled,
+                // What cannot be PROC'd on it — a different question from the
+                // column below, and it moves the whole status distribution.
+                "status_immunities": e.status_immunities,
                 // The post-U36 vulnerability COLUMN (System B), only the
                 // entries that are not 1.0 — what this unit takes more or
                 // less of, which is half of what picks a build's elements.

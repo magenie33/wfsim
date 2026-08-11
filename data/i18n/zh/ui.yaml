@@ -159,7 +159,10 @@ ui:
   Overguard: 超载护盾
   "Eximus possible": 可以是精英
   "Damage taken": 承受伤害
-  "write my own column (0 = immune)": 自己写一列（0 = 免疫）
+  "write my own column (0 = takes none of that type)": 自己写一列（0 = 该属性一点伤害都吃不到）
+  "Status immunity": 异常免疫
+  "these procs cannot land — the other types take over their share of the roll": 这些异常打不上去 —— 它们那份触发概率由其余属性接管
+  "these procs cannot land on this unit — the other damage types take over their share of the status roll": 这些异常打不到这个单位身上 —— 它们那份触发概率由其余伤害类型接管
   "from the faction": 来自派系
   "takes every type as written": 所有伤害类型都按原样结算
   "Body parts": 身体部位

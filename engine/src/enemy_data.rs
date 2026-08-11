@@ -166,6 +166,32 @@ pub struct EnemySpec {
     /// nothing getting through.
     #[serde(default)]
     pub damage_modifiers: Option<std::collections::BTreeMap<String, f64>>,
+    /// STATUS IMMUNITY, which is a DIFFERENT MECHANIC from taking no damage of
+    /// a type, and the difference is not a detail (owner, 2026-08-11).
+    ///
+    /// The wiki states both halves in one paragraph (`Status_Effect` §Status
+    /// Immunity Interactions): *"Proc type chances are not altered by enemy
+    /// resistances or weaknesses to the damage components used in their
+    /// computation; however, they are modified by enemy status immunities. When
+    /// an attack procs a status effect on an enemy which is immune to a
+    /// particular proc type, the respective damage type is EXCLUDED from proc
+    /// type chance calculations for that enemy."*
+    ///
+    /// So the two are independent — the wiki says so outright, "regardless of
+    /// whether that enemy is also immune to Corrosive damage":
+    ///
+    /// - `damage_modifiers` x0 changes what a hit DEALS. The proc distribution
+    ///   does not move: a type that lands nothing is still drawn.
+    /// - a status immunity changes what a hit PROCS, by removing that type from
+    ///   the denominator so the rest RENORMALIZE onto the roll. It is not a
+    ///   wasted proc — the wiki's own worked example takes Corrosive out of
+    ///   20/5/10/25/50 and the other four go from 18.18/4.55/9.09/22.73% to
+    ///   33.33/8.33/16.67/41.67%.
+    ///
+    /// The engine has done the renormalisation since `status::draw_proc_type`
+    /// was written; what it had no way to hear was an enemy DECLARING one.
+    #[serde(default)]
+    pub status_immunities: Vec<String>,
     /// Whether an Eximus variant of this unit exists in-game (wiki
     /// `Eximus/Compatibilities`). Defaults to false: unknown units must not
     /// silently allow impossible combinations.
@@ -278,7 +304,14 @@ impl EnemySpec {
             eximus,
             can_be_eximus: self.can_be_eximus,
             type_mods,
-            status_immunities: Vec::new(),
+            status_immunities: self
+                .status_immunities
+                .iter()
+                .map(|k| {
+                    crate::damage::DamageType::from_name(k)
+                        .ok_or_else(|| format!("{}: no damage type named '{k}'", self.name))
+                })
+                .collect::<Result<Vec<_>, _>>()?,
             faction: self
                 .combat_faction
                 .as_deref()
@@ -349,6 +382,52 @@ pub fn all() -> Vec<EnemySpec> {
 mod tests {
     use super::*;
     use std::path::PathBuf;
+
+    /// STATUS IMMUNITY IS NOT DAMAGE IMMUNITY, and the wiki says so in as many
+    /// words — "regardless of whether that enemy is also immune to Corrosive
+    /// damage". One changes what a hit DEALS, the other what it PROCS, so a
+    /// spec may carry either, both, or the same type in both.
+    #[test]
+    fn a_status_immunity_is_not_a_damage_immunity() {
+        let yaml = r#"
+id: t
+name: T
+scaling_faction: grineer
+status_immunities: [slash]
+damage_modifiers: { heat: 0.0 }
+stats: { base_level: 1, health: 100 }
+body_parts: [{ name: body, multiplier: 1.0 }]
+"#;
+        let s = EnemySpec::from_yaml_str(yaml).expect("parses");
+        let t = s
+            .target_params(1, false, false, TargetMode::InstantRespawn)
+            .expect("builds");
+        assert_eq!(t.status_immunities, vec![crate::damage::DamageType::Slash]);
+        // …the Slash it cannot BLEED from still lands its damage in full, and
+        // the Heat it takes none of is still drawn for procs.
+        assert_eq!(t.type_mods.faction.get(crate::damage::DamageType::Slash), 1.0);
+        assert_eq!(t.type_mods.faction.get(crate::damage::DamageType::Heat), 0.0);
+    }
+
+    /// A NAME THE ENGINE DOES NOT KNOW IS AN ERROR, not a silently ignored
+    /// entry: an immunity that quietly does nothing is a target the reader
+    /// believes is immune and is not.
+    #[test]
+    fn an_unknown_status_immunity_is_an_error() {
+        let yaml = r#"
+id: t
+name: T
+scaling_faction: grineer
+status_immunities: [slashh]
+stats: { base_level: 1, health: 100 }
+body_parts: [{ name: body, multiplier: 1.0 }]
+"#;
+        let s = EnemySpec::from_yaml_str(yaml).expect("parses");
+        assert!(s
+            .target_params(1, false, false, TargetMode::InstantRespawn)
+            .is_err());
+    }
+
 
     fn data_enemies() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../data/enemies")

@@ -444,12 +444,27 @@ around (decision 2026-07-31).
   as a promise before it existed). A custom enemy is the SAME TYPE as a
   published unit (`EnemySpec`), which is what keeps the rest of the app
   ignorant of it: level scaling, the vulnerability column, body parts, Eximus
-  legality and the target card all read the one shape they already read. Two
+  legality and the target card all read the one shape they already read. Three
   things are its own: an inline `damage_modifiers` column, because a target
-  nobody published may want a vulnerability no faction has — and an IMMUNITY is
-  that column reading 0, since the game has no third state between a multiplier
-  and nothing getting through — and the fact that it is NOT weapon-scoped, for
-  the same reason a fight is not. Owning none is ordinary,
+  nobody published may want a vulnerability no faction has; a
+  `status_immunities` list, which is a DIFFERENT MECHANIC and not that column
+  reading 0 (owner, 2026-08-11 — I had conflated them); and the fact that it is
+  NOT weapon-scoped, for the same reason a fight is not.
+  **DAMAGE IMMUNITY AND STATUS IMMUNITY ARE TWO MECHANICS**, and the wiki puts
+  both halves in one paragraph (`Status_Effect` §Status Immunity Interactions):
+  *"Proc type chances are not altered by enemy resistances or weaknesses to the
+  damage components used in their computation; however, they are modified by
+  enemy status immunities. When an attack procs a status effect on an enemy
+  which is immune to a particular proc type, the respective damage type is
+  excluded from proc type chance calculations for that enemy"* — and they are
+  independent, "regardless of whether that enemy is also immune to Corrosive
+  damage". So a x0 column changes what a hit DEALS and leaves the proc draw
+  alone; a status immunity changes what it PROCS, by leaving the denominator so
+  the other types RENORMALIZE onto the roll (the wiki's own example moves the
+  other four from 18/5/9/23% to 33/8/17/42% when Corrosive drops out). The
+  engine has done the renormalisation since `status::draw_proc_type` was
+  written and cites the same section; what it had no way to hear was an enemy
+  DECLARING one. Owning none is ordinary,
   each carries its own identity rather than a label you invented, and deleting
   one breaks references elsewhere (a riven delete clears the slot that equipped
   it — a preset delete can never do that). The mental model is a FILE: a list
