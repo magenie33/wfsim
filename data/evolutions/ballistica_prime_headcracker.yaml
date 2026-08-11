@@ -12,14 +12,24 @@ effects:
   # from: "Increase Base Damage by +3"
   - kind: flat_base_damage
     value: 3.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Headshot: +7.5% Fire Rate for 4 seconds"
-  - kind: unmodelled_on_headshot_fire_rate_for_seconds
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Stacks up to 10x"
-  - kind: unmodelled_stacks_up_to_x
+  # MODELLED — the SAME perk the Furis carries, off the same trigger, and it
+  # comes with the same trap: THE 50% ROLL IS IN THE RAW WIKITEXT AND NOT IN
+  # THE RENDERED EFFECT COLUMN. That column says only "On Headshot: +7.5% Fire
+  # Rate for 4s. Stacks up to 10x"; the notes cell beside it says "On headshot
+  # effect has a 50% chance of activating." Reading the effect column alone
+  # gives a perk twice as strong as the game's.
+  #
+  # ADDITIVE WITH FIRE-RATE MODS, and the same notes cell says so outright:
+  # "Fire Rate bonus is additive to other sources of Fire Rate such as
+  # Gunslinger" — which is the bracket this kind already lands in.
+  #
+  # The stack cap was a separate inert effect until now; it is this grant's
+  # ceiling, not a mechanic of its own.
+  - kind: on_headshot_fire_rate
+    per_stack: 0.075
+    max_stacks: 10
+    duration: 4.0
+    chance: 0.5
 
 source:
   url: https://wiki.warframe.com/w/Ballistica_Incarnon_Genesis
