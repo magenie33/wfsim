@@ -1698,6 +1698,8 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         innate_co_per_type: 0.0,
         innate_co_gated: 0.0,
         co_min_sprint: 0.0,
+        evo_fire_rate_gated: 0.0,
+        fire_rate_min_sprint: 0.0,
         co_behavior,
         // 1.0 = the CO term uses the FULL base, evolution damage included,
         // which is the normal case. An evolution that declares itself excluded

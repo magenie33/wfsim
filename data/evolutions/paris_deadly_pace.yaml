@@ -12,10 +12,18 @@ effects:
   # from: "Increase Base Damage by +40"
   - kind: flat_base_damage
     value: 40.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "With Sprint Speed 1.2 or Higher: +80% Fire Rate"
-  - kind: unmodelled_with_sprint_speed_or_higher_fire_rate
+  # THE CONDITION IS A QUESTION ABOUT THE PLAYER, and it is read rather than
+  # ignored: "With Sprint Speed 1.2 or Higher". The neutral Tenno sprints at 0.9
+  # — the slowest a frame has — so this pays NOTHING until someone says which
+  # frame is carrying the bow, which is the same rule the Latron family's Swift
+  # Punishment follows and the same `condition:` spelling.
+  #
+  # ADDITIVE WITH FIRE-RATE MODS: an evolution's fire rate joins
+  # `base_fire_rate * (1 + fr + evo)`, so it is diluted by Speed Trigger exactly
+  # as the wiki's wording for this family says.
+  - kind: fire_rate_bonus
+    value: 0.80
+    condition: "sprint_speed >= 1.2"
 
 source:
   url: https://wiki.warframe.com/w/Paris_Incarnon_Genesis

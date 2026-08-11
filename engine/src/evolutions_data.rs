@@ -189,7 +189,7 @@ enum EvoEffect {
     ConditionOverload { per_type: f64, min_sprint: f64 },
     /// Fire-rate bonus in the ORDINARY additive bucket — the same one the
     /// fire-rate mods feed, so it SUMS with them (Rapid Wrath).
-    FireRateBonus(f64),
+    FireRateBonus { value: f64, min_sprint: f64 },
     /// A RELOAD-SPEED bonus, into the same bucket the mods feed.
     ///
     /// The most common perk in the whole Incarnon set — Rapid Reinforcement is
@@ -644,7 +644,7 @@ impl EvolutionDef {
                 | EvoEffect::ArmorStripPerPunctureStatus(_)
                 | EvoEffect::MultishotConsumesAmmo(_)
                 | EvoEffect::ConditionOverload { .. }
-                | EvoEffect::FireRateBonus(_)
+                | EvoEffect::FireRateBonus { .. }
                 | EvoEffect::ReloadSpeedBonus(_)
                 | EvoEffect::CritMultiplierBelowCritChance { .. }
                 | EvoEffect::PostModCritChance(_)
@@ -820,7 +820,15 @@ impl EvolutionDef {
                         String::new()
                     }
                 ),
-                EvoEffect::FireRateBonus(v) => format!("+{:.0}% fire rate", v * 100.0),
+                EvoEffect::FireRateBonus { value, min_sprint } => format!(
+                    "+{:.0}% fire rate{}",
+                    value * 100.0,
+                    if *min_sprint > 0.0 {
+                        format!(" at sprint speed {min_sprint} or higher")
+                    } else {
+                        String::new()
+                    }
+                ),
                 EvoEffect::ReloadSpeedBonus(v) => format!("+{:.0}% reload speed", v * 100.0),
                 EvoEffect::HeadshotDamageOnStreak { hits, within, value, duration } => format!(
                     "+{:.0}% headshot damage for {duration:.0}s after {hits} headshots in {within:.0}s",
@@ -1115,14 +1123,15 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // cannot reach the threshold (2026-08-12).
         "condition_overload" => EvoEffect::ConditionOverload {
             per_type: f(v, "value").unwrap_or(0.0),
-            min_sprint: v
-                .get("condition")
-                .and_then(Value::as_str)
-                .and_then(|c| c.strip_prefix("sprint_speed >= "))
-                .and_then(|n| n.parse::<f64>().ok())
-                .unwrap_or(0.0),
+            min_sprint: sprint_condition(v),
         },
-        "fire_rate_bonus" => EvoEffect::FireRateBonus(f(v, "value").unwrap_or(0.0)),
+        "fire_rate_bonus" => EvoEffect::FireRateBonus {
+            value: f(v, "value").unwrap_or(0.0),
+            // THE SAME `condition:` VOCABULARY the CO kind reads. One syntax
+            // for "this perk asks about the player", so the second grant to
+            // need it did not invent a second spelling.
+            min_sprint: sprint_condition(v),
+        },
         // The CONDITION is the only thing that varies between the roster's
         // three copies, and it is read rather than assumed: absent means any
         // headshot pays (the Furis pair), `headshot_kill` means only a killing
@@ -1471,7 +1480,17 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         base.innate_co_per_type += per_type;
                     }
                 }
-                EvoEffect::FireRateBonus(v) => base.evo_fire_rate_bonus += v,
+                // CARRIED, NOT SPENT, when the perk states a speed — the
+                // player is not here. Answered in `resolve_for`, exactly like
+                // the Condition Overload gate beside it.
+                EvoEffect::FireRateBonus { value, min_sprint } => {
+                    if *min_sprint > 0.0 {
+                        base.fire_rate_min_sprint = base.fire_rate_min_sprint.max(*min_sprint);
+                        base.evo_fire_rate_gated += value;
+                    } else {
+                        base.evo_fire_rate_bonus += value;
+                    }
+                }
                 EvoEffect::ReloadSpeedBonus(v) => base.evo_reload_bonus += v,
                 EvoEffect::InstantReloadOnHeadshot { chance, needs_kill } => {
                     base.instant_reload_on_headshot =
@@ -1754,6 +1773,16 @@ fn stacking_card_id(
         // pair earns a name above.
         _ => "stacking_grant",
     }
+}
+
+/// `condition: "sprint_speed >= 1.2"`, as a number — 0 when the card states no
+/// speed. ONE spelling, read by every kind that can be gated on it.
+fn sprint_condition(v: &Value) -> f64 {
+    v.get("condition")
+        .and_then(Value::as_str)
+        .and_then(|c| c.strip_prefix("sprint_speed >= "))
+        .and_then(|n| n.parse::<f64>().ok())
+        .unwrap_or(0.0)
 }
 
 /// WHY a clause can never pay out here — `docs/UNMODELLED.md`'s classes, as a
@@ -2564,7 +2593,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 102;
+        const CEILING: usize = 94;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

@@ -7744,6 +7744,45 @@ mod tests {
         );
     }
 
+    /// DEADLY PACE ASKS WHO IS CARRYING THE BOW. "With Sprint Speed 1.2 or
+    /// Higher: +80% Fire Rate" — the second perk in the roster to read a PLAYER
+    /// stat, and it reads it through the same `condition:` spelling the first
+    /// one uses.
+    ///
+    /// The neutral Tenno sprints at 0.9, the slowest a frame has, so the
+    /// default build pays nothing. Asserted on BOTH sides, because a gate that
+    /// is simply never open passes the first half on its own.
+    #[test]
+    fn a_sprint_gated_fire_rate_pays_only_the_frames_that_reach_it() {
+        let slow = crate::tenno_data::default_tenno().clone();
+        assert!(slow.sprint < 1.2, "the neutral player is the slowest one: {}", slow.sprint);
+        let mut fast = slow.clone();
+        fast.sprint = 1.25; // Loki Prime
+
+        let rate = |evo: &[&str], tenno: &crate::tenno_data::Tenno| {
+            let base = crate::loadout::WeaponBase::from_data("paris_prime", true, evo);
+            crate::loadout::resolve_for(&base, &[], crate::loadout::StackPolicy::Emergent, tenno)
+                .fire_rate
+        };
+        let perk = ["paris_prime_deadly_pace"];
+
+        let bare = rate(&[], &slow);
+        assert!(
+            (rate(&perk, &slow) - bare).abs() < 1e-9,
+            "at 0.9 sprint the perk is worth nothing: {} against {bare}",
+            rate(&perk, &slow)
+        );
+        assert!(
+            (rate(&perk, &fast) - bare * 1.8).abs() < 1e-6,
+            "at 1.25 sprint it is the whole +80%: {} against {}",
+            rate(&perk, &fast),
+            bare * 1.8
+        );
+        // …and the same frame gets nothing extra without the perk, so what
+        // moved is the perk and not the Tenno.
+        assert!((rate(&[], &fast) - bare).abs() < 1e-9, "sprint speed alone changes no fire rate");
+    }
+
     /// WELL REHEARSED: a body shot takes the pile, which is the one thing that
     /// makes this trigger different from "on headshot".
     ///

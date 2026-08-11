@@ -12,10 +12,19 @@ effects:
   # from: "Increase Base Damage by +30"
   - kind: flat_base_damage
     value: 30.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Reload from Empty Magazine: Increase Base Damage by +30"
-  - kind: unmodelled_on_reload_from_empty_magazine_increase_base_damage_by
+  # HELD FOR THE WHOLE RUN, and the wiki is explicit about why: "Once the damage
+  # bonus has been earned, the ONLY way to lose it is to manually reload with a
+  # non-empty magazine. The bonus will be retained through Incarnon
+  # transformations, regardless of magazine status when transformed."
+  #
+  # This engine never manually reloads — it reloads when it cannot fire, which
+  # is always from empty (UNMODELLED.md §"The MANUAL reload") — so the one event
+  # that could take this away cannot happen here. Modelled as earned and held,
+  # which is what `flat_base_damage_on_empty_reload` already does: baked into
+  # the base and recorded, so the buff card can take it back off for a player
+  # who wants to see the weapon without it.
+  - kind: flat_base_damage_on_empty_reload
+    value: 30.0
 
 source:
   url: https://wiki.warframe.com/w/Lato_Incarnon_Genesis

@@ -967,6 +967,17 @@ pub struct WeaponBase {
     pub innate_co_gated: f64,
     /// The speed that gate needs (0 = no gate).
     pub co_min_sprint: f64,
+    /// THE SECOND perk to ask about the player's sprint speed, and the second
+    /// grant to be carried rather than spent in `apply`: Deadly Pace's "With
+    /// Sprint Speed 1.2 or Higher: +80% Fire Rate".
+    ///
+    /// Same shape as `innate_co_gated` above and for the same reason — `apply`
+    /// works on the raw weapon and the Tenno is not there. If a THIRD grant
+    /// needs this, the pair of fields should become one general mechanism
+    /// rather than a third pair.
+    pub evo_fire_rate_gated: f64,
+    /// The speed THAT gate needs (0 = no gate).
+    pub fire_rate_min_sprint: f64,
     /// This weapon's Condition Overload behavior class.
     pub co_behavior: CoBehavior,
     /// CO base effectiveness = `original_base / evolved_base`, i.e. how much of
@@ -2247,7 +2258,20 @@ pub fn resolve_for(
     let evo_ms_bonus = if locked_stat("multishot") { 0.0 } else { base.buff_multishot_bonus };
     let evo_ms_stacks = if locked_stat("multishot") { 0 } else { base.buff_ms_max_stacks };
     let ms_last_round = if locked_stat("multishot") { 0.0 } else { base.multishot_on_last_round };
-    let evo_fr_bonus = if locked_stat("fire_rate") { 0.0 } else { base.evo_fire_rate_bonus };
+    let evo_fr_bonus = if locked_stat("fire_rate") {
+        0.0
+    } else {
+        // …plus the half that asks about the PLAYER. Answered here, where the
+        // Tenno is; the neutral player sprints at 0.9 — the slowest frame — so
+        // a perk gated on speed pays nothing until someone says which frame is
+        // holding the gun.
+        base.evo_fire_rate_bonus
+            + if base.fire_rate_min_sprint <= 0.0 || tenno.sprint >= base.fire_rate_min_sprint {
+                base.evo_fire_rate_gated
+            } else {
+                0.0
+            }
+    };
     // PRELUDE OF MIGHT, resolved here because it is the one evolution whose
     // condition is the BUILD's own output: "with Critical Chance below 40%".
     // Computed against the same expression the panel publishes, so the tile and

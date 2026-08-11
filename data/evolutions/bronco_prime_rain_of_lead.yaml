@@ -9,10 +9,12 @@ description: "+2 Base Multishot."
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "+2 Base Multishot"
-  - kind: unmodelled_base_multishot
+  # A WEAPON STAT, not a buff: "+2 Base Multishot" with no condition and no
+  # clock. It joins the base the multishot BUCKET multiplies, so a Barrel
+  # Diffusion in the build is worth more on this build than without the perk —
+  # the same bracket the wiki states for every "Base Multishot" grant.
+  - kind: flat_base_multishot
+    value: 2.0
 
 source:
   url: https://wiki.warframe.com/w/Bronco_Incarnon_Genesis
