@@ -121,6 +121,12 @@ entries:
     arcanes: [secondary_encumber]
   - weapon: furis
     mode: cycle
+    score: 2.0192012576398453
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
     score: 0.8626073501032951
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
@@ -222,6 +228,12 @@ entries:
     arcanes: [primary_crux, cascadia_flare]
   - weapon: mk1_furis
     mode: cycle
+    score: 1.303215954898256
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [mk1_furis_evo1_incarnon_form, mk1_furis_stormburst, mk1_furis_executioners_fortune, mk1_furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: mk1_furis
+    mode: cycle
     score: 0.6661106975406816
     mods: [galvanized_diffusion, hornet_strike, primed_pistol_gambit, lethal_torrent, pistol_elementalist, scorch, pistol_pestilence, jolt]
     evolutions: [mk1_furis_evo1_incarnon_form, mk1_furis_stormburst, mk1_furis_extended_volley, mk1_furis_elemental_balance]
@@ -291,6 +303,11 @@ entries:
     score: 0.27832649174979207
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, sentient_surge, primed_convulsion, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_empowered]
+  - weapon: ocucor
+    mode: base
+    score: 0.24488273613939324
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_gambit, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_encumber]
   - weapon: ocucor
     mode: base
     score: 0.0017048573490463883
@@ -501,6 +518,12 @@ entries:
   - weapon: torid
     mode: cycle
     score: 5.433238891506624
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_merciless]
+  - weapon: torid
+    mode: cycle
+    score: 5.433238891506624
     mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_merciless]
@@ -702,12 +725,6 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, rifle_elementalist, primed_cryo_rounds, infected_clip, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
-  - weapon: torid
-    mode: cycle
-    score: 1.1668040367536163
-    mods: [galvanized_chamber, heavy_caliber, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
     score: 1.1348648479685777
