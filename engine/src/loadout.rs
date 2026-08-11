@@ -1155,6 +1155,17 @@ pub enum BuffTrigger {
     /// a hit that did NEITHER. Two cards, two sentences, and reading one as the
     /// other is worth several stacks a second on a high-crit build.
     Hit,
+    /// Well Rehearsed: CONSECUTIVE weak-point hits — the only trigger here that
+    /// can be UNDONE by the next shot.
+    ///
+    /// VERBATIM (wiki, Sybaris Incarnon Genesis): *"The stack resets after
+    /// reloading … It also resets after bodyshots"*. So a body hit takes the
+    /// whole pile, which is why this cannot be `Headshot` with a clock: the
+    /// pile's life is decided by what you hit next, not by time.
+    ///
+    /// With a headshot rate below 100% the cap is a real target rather than a
+    /// given — three in a row at 50% is one run in eight.
+    ConsecutiveHeadshot,
 }
 
 /// WHAT A STACKING BUFF FEEDS. One arm per grant, and each keeps its own

@@ -12,14 +12,32 @@ effects:
   # from: "Increase Base Damage by +20"
   - kind: flat_base_damage
     value: 20.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Consecutive Weakpoint Hits: Increase Base Damage by +5"
-  - kind: unmodelled_on_consecutive_weakpoint_hits_increase_base_damage_by
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Stacks up to 3x"
-  - kind: unmodelled_stacks_up_to_x
+  # MODELLED as a stacking buff whose pile the NEXT SHOT can take. VERBATIM
+  # (wiki notes): "The stack resets after reloading (bypassable via Blood Forge,
+  # but not by effects like Lock and Load). It also resets after bodyshots and
+  # after Blast status proc detonation, even if the triggering shot was a
+  # weakpoint hit."
+  #
+  # Two of those three are modelled: a body hit takes it, and a reload takes it.
+  # The Blast clause is not — this arena's Blast procs are the weapon's own and
+  # nothing here detonates one — and it can only make the perk WEAKER than
+  # modelled, which is stated rather than hidden.
+  #
+  # "+5 BASE DAMAGE" is the absolute bracket, not a share of the base-damage
+  # bucket: it raises the number Serration multiplies rather than being diluted
+  # by it.
+  #
+  # NO CLOCK. What ends the pile is what you hit next, so a duration would be a
+  # second ending nobody wrote.
+  #
+  # The stack cap was a separate inert effect until now; it is this grant's
+  # ceiling, not a mechanic of its own.
+  - kind: stacking_buff
+    trigger: consecutive_headshot
+    per_stack:
+      base_damage: 5.0
+    max_stacks: 3
+    cleared_by: reload
 
 source:
   url: https://wiki.warframe.com/w/Sybaris_Incarnon_Genesis

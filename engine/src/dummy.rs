@@ -6186,6 +6186,17 @@ pub fn run_once_traced(
                         // base-damage stacks follow. A killing headshot still
                         // counts: this runs before the kill path's `continue`.
                         arc.bump_trigger(&params.arcane.buffs, ArcTrigger::WeakpointHit, t);
+                        bump_buffs!(crate::loadout::BuffTrigger::ConsecutiveHeadshot, t, d.extra);
+                    } else {
+                        // …AND A BODY HIT TAKES THE PILE. The only trigger in
+                        // this sim that the next shot can undo, and the reason
+                        // it is not `Headshot` with a clock: what ends it is
+                        // what you hit, not how long you waited.
+                        for (i, b) in params.stacking_buffs.iter().enumerate() {
+                            if b.trigger == crate::loadout::BuffTrigger::ConsecutiveHeadshot {
+                                buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
+                            }
+                        }
                     }
                 }
 
@@ -7730,6 +7741,69 @@ mod tests {
         assert!(
             at > 0.45 && at < 0.56,
             "five bursts at ten bursts a second is 0.5 s: capped at {at:.3} s (frame {first_cap})"
+        );
+    }
+
+    /// WELL REHEARSED: a body shot takes the pile, which is the one thing that
+    /// makes this trigger different from "on headshot".
+    ///
+    /// Modelled as a stack that only CONSECUTIVE weak-point hits build, so the
+    /// perk is worth its cap to a player who never misses the head, something
+    /// less to one who mostly does, and exactly nothing to one who never hits
+    /// it. All three are asserted, because a trigger that simply never fires
+    /// would pass the third on its own.
+    #[test]
+    fn a_consecutive_weakpoint_buff_is_undone_by_a_body_shot() {
+        let arena = crate::arena::Arena::training(120.0);
+        let dmg = |evo: &[&str], head_share: f64| {
+            let base = crate::loadout::WeaponBase::from_data("sybaris_prime", true, evo);
+            let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+            let mut p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
+            // ONE head and one body, both at 1x, so the only thing the aim
+            // changes is which trigger fires — not how hard the hit lands.
+            p.body_parts = vec![
+                BodyPart { name: "head".into(), aim_weight: head_share, multiplier: 1.0,
+                           is_head: true, crit_bonus: false },
+                BodyPart { name: "body".into(), aim_weight: 1.0 - head_share, multiplier: 1.0,
+                           is_head: false, crit_bonus: false },
+            ];
+            let s = monte_carlo(&p, 16, 0x5B15);
+            s.mean_damage / s.mean_pellets.max(1e-9)
+        };
+        let perk = ["sybaris_prime_well_rehearsed"];
+
+        let always = dmg(&perk, 1.0) / dmg(&[], 1.0);
+        let half = dmg(&perk, 0.5) / dmg(&[], 0.5);
+        let never = dmg(&perk, 0.0) / dmg(&[], 0.0);
+
+        // NEVER A HEADSHOT, NEVER A STACK — and "nothing" here is not 1.0,
+        // because the same card also grants a static +15 base damage. So the
+        // floor is exactly that clause and not one point more, which is the
+        // assertion that a trigger firing on the wrong event fails.
+        let unmodded = crate::loadout::WeaponBase::from_data("sybaris_prime", true, &[])
+            .base_vector
+            .total();
+        let static_only = (unmodded + 15.0) / unmodded;
+        assert!(
+            (never - static_only).abs() / static_only < 0.001,
+            "body shots only: worth its static clause and nothing else — x{never:.4} against x{static_only:.4}"
+        );
+        assert!(
+            always > never * 1.02,
+            "every shot a headshot: the pile stands on top of the static clause, x{always:.4} against x{never:.4}"
+        );
+        // …AND HALF THE SHOTS TO THE BODY IS WORTH FAR LESS THAN HALF THE PERK,
+        // which is the assertion that separates THREE IN A ROW from three in
+        // total. At a 50% head rate a streak buff averages 0.5 + 0.25 + 0.125 =
+        // 0.875 of its 3 stacks — under a third of the cap — while one that
+        // merely accumulates sits near it. So the midpoint is the line.
+        //
+        // Measured: 1.2173 with the body reset, 1.3094 without it, against a
+        // midpoint of 1.2474. Deleting the reset moves it across.
+        let midpoint = never + 0.5 * (always - never);
+        assert!(
+            half < midpoint && half > never * 1.001,
+            "three IN A ROW at a 50% head rate: x{half:.4}, which must sit below the              midpoint x{midpoint:.4} of (x{never:.4}, x{always:.4}) — above it means the              stacks are accumulating rather than streaking"
         );
     }
 

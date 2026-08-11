@@ -1639,6 +1639,7 @@ fn buff_trigger(s: &str) -> Option<crate::loadout::BuffTrigger> {
     Some(match s {
         "firing" => T::Firing,
         "headshot" => T::Headshot,
+        "consecutive_headshot" => T::ConsecutiveHeadshot,
         "hit" => T::Hit,
         "plain_hit" => T::PlainHit,
         "reload_complete" => T::ReloadComplete,
@@ -1679,6 +1680,7 @@ fn stacking_card_id(
         (T::StatusApplied, G::BaseDamage) => "on_status_damage",
         (T::Headshot, G::FireRate) => "on_headshot_fire_rate",
         (T::Headshot, G::BaseDamage) => "on_headshot_damage",
+        (T::ConsecutiveHeadshot, G::FlatBaseDamage) => "on_weakpoint_streak_damage",
         (T::Hit, G::FlatBaseDamage) => "on_hit_damage",
         (T::PlainHit, G::BaseDamage) => "on_plain_hit_damage",
         (T::ReloadComplete, G::BaseDamage) => "on_reload_damage",
@@ -2450,7 +2452,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 190;
+        const CEILING: usize = 187;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,
