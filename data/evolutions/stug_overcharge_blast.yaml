@@ -12,10 +12,18 @@ effects:
   # from: "Increase Base Damage by +300"
   - kind: flat_base_damage
     value: 300.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "With Energy Max above 700: +50% Blast Radius"
-  - kind: unmodelled_with_energy_max_above_blast_radius
+  # AN EDGE, NOT A GAP. A bigger blast RADIUS buys a second body inside it, and
+  # the arena has one target that every blob already reaches — so this pays
+  # exactly zero here and will until the sim is spatial (UNMODELLED.md §1, the
+  # same class Firestorm and every punch-through perk sit in).
+  #
+  # The energy condition is not the reason and is not modelled either way: even
+  # at the required Energy Max the clause grants nothing measurable in a
+  # one-target fight, so declaring the radius is the honest statement and the
+  # condition would be a second sentence about a payout of zero.
+  - kind: out_of_scope
+    clause: "With Energy Max above 700: +50% Blast Radius"
+    reason: one_target
 
 source:
   url: https://wiki.warframe.com/w/Stug_Incarnon_Genesis

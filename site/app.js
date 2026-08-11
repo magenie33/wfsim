@@ -5390,6 +5390,31 @@ const evoLines = (o) => {
 // TWO DIFFERENT ADMISSIONS, and saying "not modelled" for both is what made the
 // whole app look unfinished (2026-08-05). One is a todo; the other is the edge
 // of what a single-target damage simulator IS.
+/// AN EVOLUTION'S TWO ADMISSIONS, as chips. The mods have said these
+/// separately since 2026-08-05 and the evolutions said "not modelled yet" for
+/// both — over perks that are not waiting on anyone. A player deciding what to
+/// equip needs to know which: a todo may be gone next week, an EDGE is what a
+/// single-target damage simulator is.
+const evoGapChips = (o, tag) => {
+  const todo = o.unmodeled || [];
+  const edge = o.out_of_scope || [];
+  const out = [];
+  if (todo.length) {
+    out.push(`<${tag} class="exchip unmod" title="${escHtml(
+      (o.fully_unmodeled && !edge.length
+        ? tr("this perk does nothing in the simulation — the model has no rule for it yet")
+        : tr("part of this perk is not modelled — what it does here is less than the card says")
+      ) + ": " + todo.join(", "))}">${
+      escHtml(o.fully_unmodeled && !edge.length ? tr("not modelled yet") : tr("partly modelled"))}</${tag}>`);
+  }
+  if (edge.length) {
+    out.push(`<${tag} class="exchip scope" title="${escHtml(
+      tr("this cannot pay out in a one-target fight — it is an edge of the model, not a gap in it")
+      + ": " + edge.map((x) => tr(x)).join(" · "))}">${escHtml(tr("nothing to earn here"))}</${tag}>`);
+  }
+  return out.length ? " " + out.join(" ") : "";
+};
+
 const notModeledLines = (o) => {
   const out = [];
   if (o.not_modeled) {
@@ -7095,14 +7120,7 @@ function renderEvo() {
       // TWO STATES, because they are different facts: a perk whose EVERY effect
       // is inert is not a weaker choice, it is not a choice; one with a live
       // half is a real pick that is being under-counted.
-      const unmod = (o.unmodeled || []).length
-        ? ` <i class="exchip unmod" title="${escHtml(
-            (o.fully_unmodeled
-              ? tr("this perk does nothing in the simulation — the model has no rule for it yet")
-              : tr("part of this perk is not modelled — what it does here is less than the card says")
-            ) + ": " + (o.unmodeled || []).join(", "))}">${
-            escHtml(o.fully_unmodeled ? tr("not modelled yet") : tr("partly modelled"))}</i>`
-        : "";
+      const unmod = evoGapChips(o, "i");
       return `<span class="${cls}" data-tier="${t.tier}" data-id="${o.id}" title="${title}">
         ${icon}<span class="einfo"><b class="en">${wl(o.name, genesis)}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}${unmod}${
           gainChipFor(o.id, `EVO ${ROMAN(t.tier)}`)}</b><span class="ed">${lines}</span>${coNote}${warn}</span></span>`;
@@ -9511,8 +9529,7 @@ function renderOptEvos() {
       const desc = evoLines(o).map((x) => `<div>${escHtml(x)}</div>`).join("");
       return `<div class="opt ${st === "off" ? "" : st} ${o.broken ? "dis-soft" : ""}">
         <div class="info"><div class="mn">${o.name}${o.broken ? ' <span class="exchip brk">BROKEN</span>' : ""}${
-          (o.unmodeled || []).length ? ` <span class="exchip unmod" title="${escHtml((o.unmodeled || []).join(", "))}">${
-            escHtml(o.fully_unmodeled ? tr("not modelled yet") : tr("partly modelled"))}</span>` : ""
+          evoGapChips(o, "span")
         }${optGainChipFor(o.id)}</div><div class="me">${desc}</div>${optPairingNoteFor(o.id)}</div>
         <div class="oseg">
           <span class="seg ${st === "search" ? "on" : ""} ${locked ? "tlocked" : ""}" data-t="${t.tier}" data-e="${o.id}" data-s="search" ${pinned && pinned !== o.id ? `title="${escHtml(tr("pooling opens the tier — the pin gives way"))}"` : ""}>${tr("pool")}</span>

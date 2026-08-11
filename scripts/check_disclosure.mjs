@@ -57,6 +57,12 @@ for (const lang of ["en", "zh"]) {
     // 2. EVOLUTION TILES.
     out.evoChips = [...document.querySelectorAll('.evopick .exchip.unmod')]
         .map(e => e.textContent.trim());
+    // …AND THE OTHER ADMISSION. An evolution has two: a clause nobody has
+    // modelled YET, and a clause that cannot pay out in a one-target fight at
+    // all. They were one chip until 2026-08-12, which said "not modelled yet"
+    // over perks nobody is working on and nobody should.
+    out.evoScope = [...document.querySelectorAll('.evopick .exchip.scope')]
+        .map(e => ({ text: e.textContent.trim(), why: e.getAttribute('title') || '' }));
     out.evoInert = ((META.weapons || []).find(w => w.id === $('weapon').value) || {}).id;
 
 
@@ -143,8 +149,20 @@ for (const lang of ["en", "zh"]) {
   check(`[${lang}] and the lines are in the display language`,
     r.bannerLines.every((l) => cjk.test(l) === (lang === "zh")),
     JSON.stringify(r.bannerLines[0] || "").slice(0, 90));
-  check(`[${lang}] evolution tiles carry a chip`, r.evoChips.length >= 3,
+  // ONE OF EACH IS THE CLAIM NOW, not three of one. The Stug's inert clauses
+  // have been going down all night — the count was a proxy for "the chip is
+  // drawn", and the pair below says that better: a todo AND an edge, both on
+  // screen, told apart.
+  check(`[${lang}] evolution tiles carry a chip`, r.evoChips.length >= 1,
     `${r.evoChips.length} chips`);
+  // BOTH KINDS ON SCREEN, and told apart. The Stug carries each: clauses the
+  // model has no rule for yet, and Hoplite Virtue, whose trigger is the
+  // PLAYER's shields breaking — which nothing in this arena can do.
+  check(`[${lang}] ...and an edge says it is an edge, not a todo`,
+    r.evoScope.length >= 1, `${r.evoScope.length} scope chips`);
+  check(`[${lang}] ...naming the reason it can never pay out`,
+    r.evoScope.every((c) => c.why.length > 20 && cjk.test(c.why) === (lang === "zh")),
+    JSON.stringify(r.evoScope[0] || null).slice(0, 140));
   // EVERY FLAGGED MOD IN THE POOL, and no more than that. One weapon's pool
   // carries few — today the Torid's has a single `out_of_scope` (Aerial Ace),
   // because no mod is FULLY unmodelled any more and none is partly. So the

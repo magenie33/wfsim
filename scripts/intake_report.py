@@ -81,8 +81,14 @@ def evolutions():
         # and the engine's the same number.
         inert = [k for k in re.findall(r"^\s*- kind: (unmodeled_\w+|unmodelled_\w+)", t, re.M)
                  if not k.startswith("unmodelled_stacks_up_to")]
+        # …AND THE OTHER ADMISSION, counted apart. `out_of_scope` also adds
+        # nothing, so leaving it out of both columns would have made this report
+        # quietly under-state what a weapon does not do — the exact failure the
+        # report exists to prevent. It is not in `inert` either, because that
+        # column is the WORK LIST and nothing on this one is work.
+        scope = re.findall(r"^\s*reason: (\w+)$", t, re.M)
         out.setdefault(w.group(1), []).append(
-            (p.stem, tier.group(1) if tier else "?", inert))
+            (p.stem, tier.group(1) if tier else "?", inert, scope))
     return out
 
 
@@ -126,6 +132,7 @@ def main():
         base = next((i for i in ids if "default_form: true" in ws[i]["text"]), ids[0])
         ev = evos.get(g, []) or evos.get(base, [])
         inert = sum(len(x[2]) for x in ev)
+        scope = sum(len(x[3]) for x in ev)
         gaps = [line for i in ids for line in ws[i]["unmodeled"]]
         named = sum(1 for x in ev if x[0] in ze)
         rows.append({
@@ -135,6 +142,7 @@ def main():
             "bulk": "bulk" if ws[base]["bulk"] else "hand",
             "evo": len(ev),
             "inert": inert,
+            "scope": scope,
             "gaps": len(gaps),
             "zh_weapon": "y" if base in zw else "NO",
             "zh_perks": "%d/%d" % (named, len(ev)),
@@ -181,6 +189,8 @@ def main():
     # cannot use — 39 of those today, and they are the cheap ones to fix.
     print("  %d evolution effects load INERT by declaration (the perk shows, and adds nothing)"
           % sum(r["inert"] for r in rows))
+    print("  %d more are declared EDGES — understood, and unable to pay out in a"
+          " one-target fight (docs/UNMODELLED.md)" % sum(r.get("scope", 0) for r in rows))
     print("     …plus the ones the loader drops for a shape it cannot use — see"
           " `cargo test -p wfsim-engine the_number_of_unmodelled`, ceiling 254")
     print("  %d weapons carry at least one `unmodeled:` line"

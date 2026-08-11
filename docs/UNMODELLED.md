@@ -16,6 +16,38 @@ the page is for a player deciding whether to trust a number.
 
 ---
 
+## Saying WHICH kind of gap it is, in the data
+
+A perk clause declares its class rather than being sorted into one by a reader:
+
+```yaml
+  - kind: out_of_scope
+    clause: "On Shield Break: Increase Base Damage by +80 for 8 seconds"
+    reason: nobody_shoots_back
+```
+
+`reason:` is one of the seven slugs below (`one_target`, `no_distance`,
+`no_movement`, `no_holster`, `infinite_ammo`, `nobody_shoots_back`,
+`warframe_abilities`) and the engine refuses one it does not know, so a clause
+cannot claim a class this file has not written down.
+
+**It is a different admission from `unmodelled_*`, and the page says so.** An
+`unmodelled_*` kind is a TODO — work someone can do, counted by the ratchet
+(`the_number_of_unmodelled_evolution_effects_only_goes_down`), gold on the tile.
+An `out_of_scope` is an EDGE: nothing about this engine will close it, it is off
+the ratchet, and its chip is muted and reads "nothing to earn here" with the
+reason in the tooltip. The mods have had this split since 2026-08-05 for the
+reason it was added here on 2026-08-12: printing "not modelled yet" over both is
+what makes the whole app look unfinished, and it tells a player nothing about
+whether to wait.
+
+The first one caught a real mis-reading on the way in. Hoplite Virtue's "On
+Shield Break" is on **six** guns, and only the Gorgon's page says which shield:
+*"This is on personal shield break, not breaking enemy shields."* The Lex's page
+says nothing at all — so reading the weapon you are working on would have left
+it a coin flip between a trigger this sim fires constantly (an enemy's shields
+go down every fight) and one it can never fire.
+
 ## The classes
 
 ### 1. ONE TARGET

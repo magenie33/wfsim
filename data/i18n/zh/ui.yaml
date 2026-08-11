@@ -590,6 +590,15 @@ ui:
   "this option re-rolls the fight, so its answer is only good to ±{x} — raise the run count to narrow it": 这个选项会让这场战斗重新掷骰，所以它的答案只精确到 ±{x} —— 提高运行次数可以收窄它
   "measured, and it moved nothing in this fight — see what this option's own line says it does not cover": 测过了，它在这场战斗里没有产生任何变化 —— 看这一项自己那行写的、它不涵盖什么
   "no effect here": 此战斗中无效果
+  "this cannot pay out in a one-target fight — it is an edge of the model, not a gap in it": 这在单体战斗里不可能产生收益 —— 它是模型的边界，不是模型的缺口
+  "nothing to earn here": 此战斗中无从触发
+  "the fight has one target, so this pays nothing": 战斗只有一个目标，所以这一条毫无收益
+  "every shot lands at point blank, so distance changes nothing": 每一发都是贴脸命中，距离不起作用
+  "the player does not move or aim by hand here": 这里的玩家不移动，也不手动瞄准
+  "this weapon is never holstered during the fight": 战斗中这把武器从不收起
+  "ammo reserves are unlimited, so nothing runs dry": 备弹无限，不会打空
+  "nothing damages the player in this fight": 这场战斗里没有任何东西会伤到玩家
+  "no Warframe ability is cast during the fight": 战斗中不释放任何战甲技能
   "the fight did not re-roll for this option — same statuses landed, so this comparison is exact": 这个选项没有让战斗重新掷骰 —— 触发的异常完全相同，所以这次比较是精确的
   "no timeout": 无限持续
   # The replay: the transport, the buff curves, and the pools table.

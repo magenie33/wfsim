@@ -376,6 +376,20 @@ enum EvoEffect {
     /// 2026-08-04).
     UnlocksForm(String),
     Inert(String),
+    /// NOT A TODO — AN EDGE. The clause is understood and cannot pay out in
+    /// this simulator, and one of `docs/UNMODELLED.md`'s classes says why.
+    ///
+    /// The mods have had this distinction since 2026-08-05 (`not_modeled` vs
+    /// `out_of_scope`) for a reason the evolutions inherited without the fix:
+    /// printing "not modelled yet" over both is what made the whole app look
+    /// unfinished. A perk waiting on work someone can do and a perk waiting on
+    /// a second body in the arena are different sentences to a player deciding
+    /// what to equip.
+    ///
+    /// It stays OFF the ratchet in `unmodeled_effects` — nothing about this
+    /// engine will ever close it — and ON the page, which is where the
+    /// difference is for.
+    OutOfScope { clause: String, reason: Scope },
     /// A clause that QUALIFIES a neighbouring effect rather than being one —
     /// "Stacks up to 4x" on a card whose stacking bonus is the effect above it.
     ///
@@ -523,6 +537,9 @@ impl EvolutionDef {
     pub fn buff_cards(&self) -> Vec<EvoBuffCard> {
         self.active_effects()
             .filter_map(|e| match e {
+                // No card: nothing to configure about a payout that cannot
+                // happen. The disclosure line is what this perk gets.
+                EvoEffect::OutOfScope { .. } => None,
                 EvoEffect::AssumedMaxMultishot { max_stacks, .. } => Some(EvoBuffCard {
                     id: "evo_multishot",
                     max_stacks: *max_stacks,
@@ -687,11 +704,36 @@ impl EvolutionDef {
             .collect()
     }
 
+    /// The other admission: clauses that CANNOT pay out here, each with the
+    /// class that says why.
+    ///
+    /// Separate from `unmodeled_effects` because the two are different promises
+    /// — one is work someone can do, the other is the edge of what a
+    /// single-target damage simulator is — and because the ratchet must only
+    /// count the first. See [`EvoEffect::OutOfScope`].
+    pub fn out_of_scope_effects(&self) -> Vec<String> {
+        self.effects
+            .iter()
+            .filter_map(|e| match e {
+                EvoEffect::OutOfScope { clause, reason } => {
+                    Some(format!("{clause} — {}", reason.why()))
+                }
+                _ => None,
+            })
+            .collect()
+    }
+
     /// Does this perk do NOTHING the sim can see? A perk whose every effect is
     /// inert is not a weaker choice, it is not a choice — and the tile you pick
     /// from should say so rather than look like its working tier-mates.
     pub fn fully_unmodeled(&self) -> bool {
-        !self.effects.is_empty() && self.unmodeled_effects().len() == self.effects.len()
+        // BOTH admissions count here. The tile asks "is this a choice at all",
+        // and a perk whose every clause is an EDGE is no more of one than a
+        // perk whose every clause is a todo — the difference is why, not
+        // whether.
+        !self.effects.is_empty()
+            && self.unmodeled_effects().len() + self.out_of_scope_effects().len()
+                == self.effects.len()
     }
 
     /// One display line per effect — what the model computes (broken
@@ -865,6 +907,9 @@ impl EvolutionDef {
                 }
                 EvoEffect::Inert(what) => {
                     format!("{} (no single-target DPS effect)", what.replace('_', " "))
+                }
+                EvoEffect::OutOfScope { clause, reason } => {
+                    format!("{clause} — {}", reason.why())
                 }
                 // Said as what it is — a cap on the line above, not a line of
                 // its own claiming the perk does less than it does.
@@ -1125,6 +1170,22 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // only on builds that carry a multishot mod, so a wrong default is a
         // number that looks right on a bare weapon and is wrong on every real
         // build.
+        // AN EDGE, DECLARED. The clause is transcribed as written and the
+        // reason is one of UNMODELLED.md's classes — so the page can say "this
+        // cannot pay out here, and here is why" instead of "not modelled yet".
+        "out_of_scope" => {
+            let Some(reason) = v.get("reason").and_then(Value::as_str).and_then(Scope::parse) else {
+                return Some(EvoEffect::Inert("out_of_scope without a known `reason:`".into()));
+            };
+            EvoEffect::OutOfScope {
+                clause: v
+                    .get("clause")
+                    .and_then(Value::as_str)
+                    .unwrap_or("(no clause)")
+                    .to_string(),
+                reason,
+            }
+        }
         "stacking_multishot_on_firing" => {
             let Some(base) = v.get("base").and_then(Value::as_bool) else {
                 return Some(EvoEffect::Inert("stacking_multishot_on_firing without `base:`".into()));
@@ -1230,6 +1291,8 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // entry with its own stats, so applying anything here would
                 // count them twice.
                 EvoEffect::UnlocksForm(_) => {}
+                // …and nothing to apply for an EDGE either, by definition.
+                EvoEffect::OutOfScope { .. } => {}
                 EvoEffect::FlatBaseDamage(v) => flat += v,
                 // Same bucket as the line above: it is base damage, and the
                 // run is modelled holding it (see the variant's note).
@@ -1690,6 +1753,50 @@ fn stacking_card_id(
         // time two of them appear on one weapon and is the point at which the
         // pair earns a name above.
         _ => "stacking_grant",
+    }
+}
+
+/// WHY a clause can never pay out here — `docs/UNMODELLED.md`'s classes, as a
+/// closed set, so a new gap either fits a reason already written down or is a
+/// reason nobody has thought about yet (which that file says is itself worth
+/// knowing).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Scope {
+    OneTarget,
+    NoDistance,
+    NoMovement,
+    NoHolster,
+    InfiniteAmmo,
+    NobodyShootsBack,
+    WarframeAbilities,
+}
+
+impl Scope {
+    fn parse(s: &str) -> Option<Scope> {
+        Some(match s {
+            "one_target" => Scope::OneTarget,
+            "no_distance" => Scope::NoDistance,
+            "no_movement" => Scope::NoMovement,
+            "no_holster" => Scope::NoHolster,
+            "infinite_ammo" => Scope::InfiniteAmmo,
+            "nobody_shoots_back" => Scope::NobodyShootsBack,
+            "warframe_abilities" => Scope::WarframeAbilities,
+            _ => return None,
+        })
+    }
+
+    /// The sentence a player reads. English is the source; the i18n overlay
+    /// translates it like any other UI string.
+    pub fn why(self) -> &'static str {
+        match self {
+            Scope::OneTarget => "the fight has one target, so this pays nothing",
+            Scope::NoDistance => "every shot lands at point blank, so distance changes nothing",
+            Scope::NoMovement => "the player does not move or aim by hand here",
+            Scope::NoHolster => "this weapon is never holstered during the fight",
+            Scope::InfiniteAmmo => "ammo reserves are unlimited, so nothing runs dry",
+            Scope::NobodyShootsBack => "nothing damages the player in this fight",
+            Scope::WarframeAbilities => "no Warframe ability is cast during the fight",
+        }
     }
 }
 
@@ -2452,7 +2559,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 187;
+        const CEILING: usize = 180;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

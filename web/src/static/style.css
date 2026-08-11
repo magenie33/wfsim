@@ -1061,6 +1061,10 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .unmod-l::before{content:"· "}
 .exchip.unmod{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold);
   border:1px solid color-mix(in srgb,var(--gold) 40%,transparent)}
+/* THE OTHER ADMISSION, and it is deliberately NOT gold: gold is a todo, and a
+   todo asks to be watched. An EDGE is settled — muted, stated once, no alarm. */
+.exchip.scope{background:color-mix(in srgb,var(--fg) 8%,transparent);color:var(--dim);
+  border:1px solid color-mix(in srgb,var(--fg) 16%,transparent)}
 
 /* ---- topbar navigation: the site's OWN pages ---------------------------
    Against the wordmark, before the search — these are destinations, not the

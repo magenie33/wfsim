@@ -923,6 +923,13 @@ pub fn meta_json() -> Value {
                                 // DERIVED from the loaded effects, so it can
                                 // never drift from what is actually modelled.
                                 "unmodeled": e.unmodeled_effects(),
+                                // …and the OTHER admission, which is not a todo:
+                                // a clause that cannot pay out in a
+                                // single-target fight, carrying the class that
+                                // says why (docs/UNMODELLED.md). The mods have
+                                // had this split since 2026-08-05; the
+                                // evolutions said "not modelled yet" for both.
+                                "out_of_scope": e.out_of_scope_effects(),
                                 "fully_unmodeled": e.fully_unmodeled(),
                                 "desc": e.description.split('\n').collect::<Vec<_>>(),
                                 "effects": e.describe(),
