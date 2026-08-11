@@ -6715,6 +6715,12 @@ pub struct Summary {
     pub min_damage: f64,
     pub max_damage: f64,
     pub mean_effective_damage: f64,
+    /// Per-run σ of THAT number, the same way `std_kill_progress` is the σ of
+    /// the statistic beside it. Effective damage is what the DPS metric is
+    /// built from, and DPS is what a caller falls back to when the build
+    /// cannot kill the target at all — precisely the fight where nobody can
+    /// eyeball the spread, so it has to be reported.
+    pub std_effective_damage: f64,
     pub effective_dps: f64,
     pub mean_dot_damage: f64,
     pub mean_procs: f64,
@@ -6805,6 +6811,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     let mut transforms = 0u64;
     let (mut min_kills, mut max_kills) = (u32::MAX, 0u32);
     let (mut kill_progress, mut kill_progress_sq) = (0.0f64, 0.0f64);
+    let mut effective_sq = 0.0f64;
     let mut sources = SourceDamage::default();
     // Keep every engagement: the MEDIAN one (by effective damage) is
     // what the sim result displays — one real, internally consistent
@@ -6825,6 +6832,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         min = min.min(r.total_damage);
         max = max.max(r.total_damage);
         effective += r.effective_damage;
+        effective_sq += r.effective_damage * r.effective_damage;
         dot += r.dot_damage;
         procs += r.procs as u64;
         field_ticks += r.field_ticks as u64;
@@ -6900,6 +6908,10 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         min_damage: if min.is_finite() { min } else { 0.0 },
         max_damage: if max.is_finite() { max } else { 0.0 },
         mean_effective_damage: effective / n,
+        std_effective_damage: {
+            let mean_e = effective / n;
+            (effective_sq / n - mean_e * mean_e).max(0.0).sqrt()
+        },
         effective_dps: effective / n / params.duration_secs,
         mean_dot_damage: dot / n,
         mean_procs: procs as f64 / n,

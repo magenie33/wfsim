@@ -358,7 +358,37 @@ around (decision 2026-07-31).
   asserts the claims the search makes — a scope it finished reports
   `exhaustive` and says so on screen, a budgeted one reports its COVERAGE and
   does not pretend, and the WORKER FLEET covers more ground than one worker
-  would (the browser shards the shuffled index range across Web Workers). `node scripts/check_gain_freshness.mjs` is the ninth: a
+  would (the browser shards the shuffled index range across Web Workers). `node scripts/check_gain_band.mjs` is the TWENTY-SIXTH: a
+  quick-calc chip says HOW WELL IT KNOWS its own number, and never prints a
+  zero. "≈0%" was one string for two different findings — a mod that does
+  nothing, and a mod nobody measured hard enough — and only the difference
+  between them is actionable: the first says pick something else, the second
+  says raise the runs (owner, 2026-08-12: "就不要出现约等于0的情况"). Both
+  halves of the machinery behind it were wrong, and either one alone brings the
+  symptom back. The scan read `score`/`dps`, which are the MEDIAN RUN — one
+  engagement however many were paid for, moving 9.8% between seeds at 10 runs
+  where the mean of the same runs moves 5.9%, and not even the statistic the
+  optimizer ranks (`mean_kill_progress`). And it estimated its own resolution by
+  running the reference a SECOND time at another seed: one sample of a spread,
+  which on identical inputs answered anywhere from 0.7% to 11.2% — so the same
+  scan censored every chip or none of them, at random. The server has all N
+  runs and now reports what it already computed (`score_mean`/`score_se`,
+  `dps_mean`/`dps_se`), which is one fewer simulation per scan and an answer
+  that does not depend on a coin flip. A chip therefore has three shapes and the
+  check asserts all three OCCUR, so no branch is dead: an exact one (`+165%` —
+  the fight did not re-roll, same procs), a banded one (`≈+3.1% ±7.2%`), and a
+  measured zero, which says "no effect here" in words and points at the row's
+  own disclosure line — a third of a rifle pool lands there against one standing
+  target (ammo and magazine mods, Firestorm, punch-through, recoil and zoom,
+  Cautious Shot, a Bane of the wrong faction), and printing "+0.00%" 38 times
+  reads as a broken scan rather than as UNMODELLED.md. Its NEGATIVE CONTROL is
+  the pair the bug came in on: Serration and Amalgam Serration differ only in
+  base damage, so neither re-rolls the fight, both compare exactly, and the
+  order is the one the cards state — measured 0.9623 = 2.55/2.65 at every build
+  strength and run count. The 3.8% gap between them is far inside the ±13% raw
+  spread at 10 runs, so that ordering survives ONLY because the two are paired
+  against the same luck, which is the thing that must not silently regress.
+  `node scripts/check_gain_freshness.mjs` is the ninth: a
   scenario edit reaches the quick calc immediately, including a field nobody
   has invented yet — the scan's cache key is DERIVED from the fight it will
   run, never a hand-listed copy of it. `node scripts/check_build_size.mjs` is the eighth: how full

@@ -3965,6 +3965,25 @@ pub fn simulate_json(v: &Value) -> Value {
         "score": m.kill_progress,
         "kills": m.kills,
         "kills_std": s.std_kills,
+        // THE MEAN, AND HOW FAR IT CAN BE FROM THE TRUTH. `score` and `dps`
+        // above are the MEDIAN RUN — one engagement, however many were paid
+        // for — which is the right headline for "what a fight looks like" and
+        // the wrong number to RANK two builds by: at 10 runs it moves 9.6%
+        // between seeds where the mean moves 6.2%, and the optimizer ranks the
+        // mean anyway (`mean_kill_progress`).
+        //
+        // The σ is reported because the caller cannot estimate it. The quick
+        // calc used to run the reference a SECOND time at another seed and call
+        // the gap its resolution — one sample of a spread, whose answer ranged
+        // 0.7%–11.2% on identical inputs, so the same scan suppressed every
+        // chip or none of them at random (2026-08-12). The server has all N
+        // runs; it says the spread it already computed.
+        "score_mean": s.mean_kill_progress,
+        "score_se": s.std_kill_progress / f64::from(runs.max(1)).sqrt(),
+        "dps_mean": s.mean_effective_damage / s.duration_secs.max(1e-9),
+        "dps_se": s.std_effective_damage
+            / f64::from(runs.max(1)).sqrt()
+            / s.duration_secs.max(1e-9),
         "kills_min": s.min_kills,
         "kills_max": s.max_kills,
         "dps": m.effective_damage / s.duration_secs.max(1e-9),

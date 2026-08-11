@@ -105,8 +105,13 @@ check("their names are Chinese", r.cards.every(c => /[\u4e00-\u9fff]/.test(c.nam
 check("they open at 0 stacks", r.cards.every(c => c.stacks === "0"), r.cards.map(c=>c.stacks).join(","));
 check("a capped buff shows its own ceiling", r.cards.every(c => /\/ ?\d+/.test(c.cap)), r.cards.map(c=>c.cap).join(","));
 check("the coverage rows are Chinese too", r.rows.every(x => /[\u4e00-\u9fff]/.test(x.name)), r.rows.map(x=>x.name).join(","));
+// ...and the "full at" figure only where there IS one: a buff that never
+// reached its cap says so in words, and demanding a time off it was demanding
+// the row lie. The Ocucor's tendrils against a target that dies slowly is
+// exactly that row, which is the case the card was added for.
 check("every figure carries two decimals",
-  r.rows.every(x => /[\d]+\.\d\d\/\d/.test(x.stat) && /\d+\.\d\d%/.test(x.stat) && /\d+\.\d\ds/.test(x.stat)),
+  r.rows.every(x => /[\d]+\.\d\d\/\d/.test(x.stat) && /\d+\.\d\d%/.test(x.stat)
+    && (/\d+\.\d\ds/.test(x.stat) || /never|未满层/.test(x.stat))),
   r.rows.map(x=>x.stat).join(" | "));
 check("uptime is never a flat 100%", r.rows.every(x => !/(^|[^.\d])100%/.test(x.stat)), r.rows.map(x=>x.stat).join(" | "));
 check("the average is drawn on the curve", r.rows.every(x => x.mean));

@@ -587,7 +587,10 @@ ui:
   "averaged over {n} runs — this number moves between scans, most of all for status mods": "{n} 次模拟的平均——这个数字每次扫描都会变，触发类 mod 尤其明显"
   # The scan measured its OWN resolution (the reference build run again on a
   # second seed); anything smaller than that gap gets no sign and no colour.
-  "the same build run again with different luck moved by {x} — this is smaller than that, so the scan cannot tell it from no change at all": 同一套配装换个运气再跑一遍，差了 {x} —— 这个收益比它还小，所以这次扫描分不出它和「毫无变化」的区别
+  "this option re-rolls the fight, so its answer is only good to ±{x} — raise the run count to narrow it": 这个选项会让这场战斗重新掷骰，所以它的答案只精确到 ±{x} —— 提高运行次数可以收窄它
+  "measured, and it moved nothing in this fight — see what this option's own line says it does not cover": 测过了，它在这场战斗里没有产生任何变化 —— 看这一项自己那行写的、它不涵盖什么
+  "no effect here": 此战斗中无效果
+  "the fight did not re-roll for this option — same statuses landed, so this comparison is exact": 这个选项没有让战斗重新掷骰 —— 触发的异常完全相同，所以这次比较是精确的
   "no timeout": 无限持续
   # The replay: the transport, the buff curves, and the pools table.
   Replay: 回放
