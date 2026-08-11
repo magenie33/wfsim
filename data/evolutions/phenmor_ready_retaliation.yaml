@@ -40,16 +40,22 @@ effects:
   - kind: reload_speed_bonus
     value: 1.00
     condition: reload_from_empty
-    # NO `duration_seconds` ANY MORE (owner, 2026-08-11: "这个buff伴随整个换单
-    # 动作，然后立刻消失… 换弹开始的时候有个buff，然后换弹完成后这个buff才消
-    # 失"). The 6 s this page publishes is the buff ICON's life, not the window
-    # the bonus is worth anything in: the reload it triggers on is over long
-    # before then, and nothing afterwards is a reload.
+    # NO `duration_seconds`, AND THE 6 s ON THIS PAGE IS A DIFFERENT BUFF
+    # (owner, 2026-08-11: "之前6s的那个是另外的buff，你不要打架啊。我这个buff是
+    # 用于reload的时候只是声明了换弹+100% 没说时长的那种"). This card states a
+    # bonus and no duration, and that is not an omission — there is nothing to
+    # time, because the buff is ARMED BY THE EMPTY MAGAZINE and SPENT BY THE
+    # NEXT RELOAD.
+    #
+    # The evidence is the transmute: empty the magazine and transform straight
+    # away, and the TRANSFORM is faster too — which it could only be if the
+    # buff was already on the weapon before any reload started. Coming back out
+    # of Incarnon form counts as a reload and spends it.
     #
     # It is also what unblocks the other eleven. Every other Ready Retaliation
     # in the roster states the bonus and no window, which read as missing data
     # while the model was a timer — and reads as "there is nothing to state"
-    # once the window IS the action.
+    # once the trigger is the empty magazine.
 
 source:
   url: https://wiki.warframe.com/w/Phenmor

@@ -4608,6 +4608,18 @@ pub fn run_once_traced(
     // its way in — see `IncarnonCycle::starts_primed` for why, and for the
     // reading that opens transformed.
     let mut in_base_form = params.cycle.as_ref().is_some_and(|c| !c.starts_primed);
+    // READY RETALIATION IS ARMED BY THE EMPTY MAGAZINE, not by the reload.
+    //
+    // The owner's evidence is the transmute (2026-08-11): empty the magazine
+    // and transform immediately, and the TRANSFORM is faster too — which it
+    // could only be if the buff was already on the weapon before any reload
+    // started. It is then spent by the next reload, and coming out of Incarnon
+    // form counts as one ("退出灵化以后，这时候相当于reload了一次，这个buff消
+    // 失了").
+    //
+    // So it is a flag rather than a clock. This card states a bonus and no
+    // duration, and that is not an omission — there is nothing to time.
+    let mut rs_armed = false;
     let mut charges = 0u32;
     let mut base_mag = params
         .cycle
@@ -4853,17 +4865,14 @@ pub fn run_once_traced(
                 // revert does NOT count as a transform — `transforms` counts
                 // TRANSMUTES INTO the Incarnon form only (user, 2026-07-29:
                 // both-directions counting read as doubled).
-                // A TRANSMUTE IS NOT A RELOAD, so Ready Retaliation is not on
-                // it. That used to be the other way round — its 6 s window
-                // outlived the reload and covered whatever animation followed —
-                // and the wiki's two clauses only make sense under this
-                // reading: "can affect transition INTO Incarnon form with a
-                // well-timed manual reload" (a reload running AT THE SAME TIME)
-                // and "does not affect transition from Incarnon back to base"
-                // (no reload is running then). Calling that second clause wrong
-                // was an artefact of the timer, not a fact about the game.
+                // COMING OUT OF INCARNON FORM IS A RELOAD as far as this perk
+                // is concerned — it takes the speed if the buff is up, and it
+                // spends it (owner, 2026-08-11). Which is also why the animation
+                // is scaled by reload speed at all.
                 t += rescale_reload(cy.transmute_out_seconds, cy.reload_bucket,
-                    live_reload_speed(params, &mut buff_stacks, t));
+                    live_reload_speed(params, &mut buff_stacks, t)
+                        + if rs_armed { params.rs_on_reload } else { 0.0 });
+                rs_armed = false;
                 in_base_form = true;
                 charges = 0;
                 // The swap's auto-reload is the SAME mechanism as a normal one
@@ -4905,10 +4914,12 @@ pub fn run_once_traced(
                         buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
                     }
                 }
-                // READY RETALIATION rides the live sum: the reload ACTION is
-                // the trigger and the same action is what it speeds up.
-                let rs = live_reload_speed(params, &mut buff_stacks, t) + params.rs_on_reload;
+                // READY RETALIATION: armed by the magazine that just ran
+                // out, and this reload is what spends it.
+                let rs = live_reload_speed(params, &mut buff_stacks, t)
+                    + if rs_armed { params.rs_on_reload } else { 0.0 };
                 t += live_reload_time(&cy.base_form, params, &mut arc, rs, t);
+                rs_armed = false;
                 r.reloads += 1;
                 if let Some(b) = cy.base_form.fr_on_reload {
                     fr_reload_expiry = t + b.duration;
@@ -4964,8 +4975,10 @@ pub fn run_once_traced(
             //
             // Every reload this loop performs is a reload from empty — it only
             // reloads when it cannot fire — which is exactly the condition.
-            let rs = live_reload_speed(params, &mut buff_stacks, t) + params.rs_on_reload;
+            let rs = live_reload_speed(params, &mut buff_stacks, t)
+                + if rs_armed { params.rs_on_reload } else { 0.0 };
             t += live_reload_time(params, params, &mut arc, rs, t);
+            rs_armed = false;
             r.reloads += 1;
             if let Some(b) = params.fr_on_reload {
                 fr_reload_expiry = t + b.duration;
@@ -5256,6 +5269,17 @@ pub fn run_once_traced(
             base_mag -= spend;
         } else {
             magazine -= spend;
+        }
+        // READY RETALIATION IS ARMED THE MOMENT THE MAGAZINE RUNS OUT, which is
+        // HERE — the shot that spends the last round — and not at the reload
+        // that follows. The two are the same instant for a reload and are not
+        // the same instant for a TRANSFORM: the shot that fills the gauge can
+        // also be the shot that empties the magazine, and the transform is
+        // decided before any reload is. Arming at the reload would have left
+        // that transform at the plain speed, which is the case the owner used
+        // to state the rule (2026-08-11).
+        if !can_fire(if in_base_form { base_mag } else { magazine }, ap.ammo_cost) {
+            rs_armed = true;
         }
         let mut n_pellets = n_pellets;
         if ap.multishot_ammo_bonus > 0.0 && rolled > 1 {
@@ -6229,8 +6253,13 @@ pub fn run_once_traced(
                     // well-timed manual reload" and not the way back; the
                     // second half is wrong (owner, 2026-08-10) and there is
                     // nothing here that could tell the two animations apart.
+                    // TRANSFORMING WITH AN EMPTY MAGAZINE IS THE PROOF: the
+                    // animation is faster, so the buff was already there before
+                    // any reload began. It is NOT spent here — only a reload
+                    // spends it, and this is not one.
                     t += rescale_reload(cy.transmute_seconds, cy.reload_bucket,
-                        live_reload_speed(params, &mut buff_stacks, t));
+                        live_reload_speed(params, &mut buff_stacks, t)
+                            + if rs_armed { params.rs_on_reload } else { 0.0 });
                     r.transforms += 1;
                     in_base_form = false;
                     // The CHARGE magazine is filled by the gauge, not reloaded
@@ -7172,14 +7201,14 @@ mod tests {
         assert!(armed > without, "{armed} shots with the perk, {without} without");
     }
 
-    /// READY RETALIATION: the reload it starts is the reload it speeds up.
+    /// READY RETALIATION: the magazine that ran out is what pays for the reload.
     ///
-    /// THE TRIGGER IS THE RELOAD ACTION — pressing reload on an empty magazine
-    /// is what applies it, so THAT reload is already faster, the first one of
-    /// the fight included (owner, 2026-08-10: "等于给自己上了一张100% reload
-    /// speed的mod"). And the buff lasts exactly that long: it is gone when the
-    /// reload completes (owner, 2026-08-11), which is why there is no window
-    /// here to outlive and nothing left over for the animation that may follow.
+    /// THE EMPTY MAGAZINE ARMS IT and the next reload spends it, so that reload
+    /// is already faster — the first one of the fight included (owner,
+    /// 2026-08-10: "等于给自己上了一张100% reload speed的mod"). The arming
+    /// moment is the shot that empties the magazine rather than the reload that
+    /// follows, which only matters when something else happens in between; see
+    /// the transform test beside this one.
     ///
     /// The FIRST reload is the sharp case and it gets its own window here: the
     /// run is cut short so that exactly one reload is in it, and the perk is
@@ -7217,6 +7246,73 @@ mod tests {
         let a = run_once(&long, &mut Rng::new(1)).reloads;
         let b = run_once(&long_armed, &mut Rng::new(1)).reloads;
         assert!(b > a, "{b} reloads with the perk, {a} without");
+    }
+
+    /// THE EMPTY MAGAZINE ARMS IT, and the TRANSFORM is what proves that.
+    ///
+    /// Owner, 2026-08-11: "这个buff应该是在空弹夹的时候就有了，因为这时候如果我
+    /// 立刻变身灵化，灵化速度也会吃到，说明这时候就是有buff的。接着退出灵化以
+    /// 后，这时候相当于reload了一次，这个buff消失了."
+    ///
+    /// A reload alone cannot tell the two readings apart: armed at the empty
+    /// magazine and armed when the reload starts both make that reload faster.
+    /// THE TRANSMUTE CAN — it happens between the two, so it is faster under
+    /// the first reading and untouched under the second.
+    ///
+    /// A synthetic cycle, because the real one that has this perk cannot show
+    /// it: the Phenmor's base form transmutes on a full gauge and never empties,
+    /// so nothing ever arms it there (which is its own measured fact — the perk
+    /// is worth exactly zero in that cycle). Here the base form has a 2-round
+    /// magazine and charges on direct hits, so it empties, transforms, and
+    /// comes back, over and over.
+    #[test]
+    fn an_empty_magazine_arms_ready_retaliation_before_any_reload() {
+        let mk = |rs: f64| {
+            let base_form = DummyParams {
+                damage: DamageVector::new().with(DamageType::Impact, 50.0),
+                crit_multiplier: 1.0,
+                magazine_size: 2.0,
+                reload_seconds: 2.0,
+                rs_on_reload: rs,
+                body_parts: mono_body(1.0),
+                ..no_status()
+            };
+            DummyParams {
+                damage: DamageVector::new().with(DamageType::Impact, 100.0),
+                crit_multiplier: 1.0,
+                magazine_size: 2.0,
+                reload_seconds: 2.0,
+                rs_on_reload: rs,
+                ammo_efficiency_applies: false,
+                body_parts: mono_body(1.0),
+                duration_secs: 60.0,
+                cycle: Some(IncarnonCycle {
+                    starts_primed: false,
+                    base_form: Box::new(base_form),
+                    charge_on: crate::loadout::ChargeOn::DirectHits,
+                    charges_to_fill: 2,
+                    // LONG animations, so the difference between running them at
+                    // one speed and at double shows up in whole transforms
+                    // rather than in rounding.
+                    transmute_out_seconds: 2.0,
+                    transmute_seconds: 2.0,
+                    reload_bucket: 0.0,
+                }),
+                ..no_status()
+            }
+        };
+        let off = monte_carlo(&mk(0.0), 20, 0x5EED);
+        let on = monte_carlo(&mk(1.0), 20, 0x5EED);
+        assert!(
+            on.mean_transforms > off.mean_transforms,
+            "the transform is faster with the buff already up: {} -> {} transforms",
+            off.mean_transforms, on.mean_transforms
+        );
+        // AND THIS FIXTURE NEVER RELOADS AT ALL, which is the scenario stated
+        // rather than a flaw in it: the gauge fills on the shot that empties the
+        // magazine, so the weapon transforms instead of reloading, every time.
+        // The reload half of the perk has its own test above.
+        assert_eq!(off.mean_reloads, 0.0, "the fixture transforms rather than reloading");
     }
 
     /// A RELOAD IS PAID FOR WHILE IT RUNS, and the bonus composes with the
