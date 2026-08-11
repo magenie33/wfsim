@@ -1728,7 +1728,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // Raised by evolutions, never by the raw weapon data.
         evo_fire_rate_bonus: 0.0,
         evo_reload_bonus: 0.0,
-        rs_on_empty_reload: None,
+        rs_on_empty_reload: 0.0,
         instant_reload_on_headshot: None,
         headshot_streak: None,
         cd_below_status_count: None,

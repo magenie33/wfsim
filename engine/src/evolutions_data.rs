@@ -238,7 +238,11 @@ enum EvoEffect {
     /// with a well-timed manual reload. Does not affect transition from Incarnon
     /// back to base form."* and the last clause is WRONG: nothing about the buff
     /// knows which direction an animation is going, so the revert takes it too.
-    ReloadSpeedOnEmptyReload { value: f64, duration: f64 },
+    /// Ready Retaliation. NO DURATION: the buff is scoped to the reload
+    /// action — it arrives when the reload starts and is gone when it ends
+    /// (owner, 2026-08-11) — so there is no window to state and nothing that
+    /// can lapse halfway through.
+    ReloadSpeedOnEmptyReload { value: f64 },
     /// Prelude of Might: "With Critical Chance below 40%: Increase Base
     /// Critical Damage Multiplier by +3x", carrying the wiki's note on the same
     /// row — "Condition is affected by the critical chance increase effect of
@@ -701,8 +705,8 @@ impl EvolutionDef {
                     chance * 100.0,
                     if *needs_kill { " kill" } else { "" }
                 ),
-                EvoEffect::ReloadSpeedOnEmptyReload { value, duration } => format!(
-                    "+{:.0}% reload speed for {duration:.0}s after a reload from empty",
+                EvoEffect::ReloadSpeedOnEmptyReload { value } => format!(
+                    "+{:.0}% reload speed on a reload from empty, for that reload",
                     value * 100.0
                 ),
                 EvoEffect::StackingMultishotOnStatus { status, per_stack, max_stacks, duration } => format!(
@@ -932,14 +936,16 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // stay inert. So the duration is REQUIRED here rather than defaulted:
         // a missing one falls through to `Inert`, which is the honest answer
         // and the one whose tile says why.
+        // NO `duration_seconds` REQUIRED any more, and that is the whole reason
+        // eleven of the twelve weapons carrying this perk were inert. Only the
+        // Phenmor's page publishes a window; the rest state the bonus and
+        // nothing else — which read as missing data while the model was a
+        // timer, and reads as "there is nothing to state" now that the window
+        // IS the reload action.
         "reload_speed_bonus"
-            if v.get("condition").and_then(Value::as_str) == Some("reload_from_empty")
-                && f(v, "duration_seconds").is_some() =>
+            if v.get("condition").and_then(Value::as_str) == Some("reload_from_empty") =>
         {
-            EvoEffect::ReloadSpeedOnEmptyReload {
-                value: f(v, "value").unwrap_or(0.0),
-                duration: f(v, "duration_seconds").unwrap_or(0.0),
-            }
+            EvoEffect::ReloadSpeedOnEmptyReload { value: f(v, "value").unwrap_or(0.0) }
         }
         "stacking_multishot_on_electricity_status" => EvoEffect::StackingMultishotOnStatus {
             status: crate::damage::DamageType::Electricity,
@@ -1169,14 +1175,8 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 EvoEffect::CritDamageBelowStatusCount { threshold, value } => {
                     base.cd_below_status_count = Some((*threshold, *value));
                 }
-                EvoEffect::ReloadSpeedOnEmptyReload { value, duration } => {
-                    base.rs_on_empty_reload = Some(crate::loadout::TimedBuff {
-                        value: *value,
-                        duration: *duration,
-                        // No reload has happened yet, so no window is open —
-                        // the same seed the other two on-reload buffs use.
-                        initial_active: false,
-                    });
+                EvoEffect::ReloadSpeedOnEmptyReload { value } => {
+                    base.rs_on_empty_reload = *value;
                 }
                 // Carried, not applied: `apply` works on the RAW base panel and
                 // the condition needs the crit chance the mods produce, which
@@ -1651,26 +1651,19 @@ use crate::loadout::WeaponBase;
             // silently falling back to base (2026-08-04). Inert meant the
             // target was dropped at parse time and "which evolution unlocks
             // the form" had to be guessed from ladder position.)
-            // ---- RELOAD CADENCE, and the reason changed 2026-08-10 -------
-            // Ready Retaliation IS implemented now
-            // (`EvoEffect::ReloadSpeedOnEmptyReload`, on the Phenmor). What
-            // keeps these five inert is no longer the engine — it is that
-            // NOBODY PUBLISHED THEIR WINDOW. Only the Phenmor's page states one
-            // ("for 6 seconds"); these five say "+100% Reload Speed" and stop,
-            // and a duration is the difference between a perk worth a second
-            // per magazine and one worth nothing, so it is not a number to
-            // borrow from a different weapon.
+            // (RELOAD CADENCE used to keep five Ready Retaliations here, on
+            // the reasoning that nobody had published their WINDOW: only the
+            // Phenmor's page states one ("for 6 seconds") and the rest say
+            // "+100% Reload Speed" and stop, so a duration looked like a number
+            // that would have to be borrowed from another weapon.
             //
-            // The loader enforces exactly that: `duration_seconds` is REQUIRED
-            // on the conditional arm, and its absence is what lands these here.
-            // Add the number to any of these files and it works that minute.
-            "boar_ready_retaliation :: reload_speed_bonus",
-            // The Burston's copy has been fixed by DE twice on this weapon
-            // (37.0.9, 38.5.3), so it wants a measurement and not a reading.
-            "burston_ready_retaliation :: reload_speed_bonus",
-            "burston_prime_ready_retaliation :: reload_speed_bonus",
-            "boar_prime_ready_retaliation :: reload_speed_bonus",
-            "dual_toxocyst_ready_retaliation :: reload_speed_bonus",
+            // There was nothing to borrow. The buff is scoped to the RELOAD
+            // ACTION — it arrives when the reload starts and is gone when it
+            // ends (owner, 2026-08-11: "这个buff伴随整个换单动作，然后立刻消
+            // 失") — so the silence was not missing data, it was the absence of
+            // a thing to say. All twelve work now, the Phenmor's 6 s is the
+            // buff icon's life rather than the bonus's, and the loader no
+            // longer demands a window it should never have wanted.)
             // ---- AMMO EFFICIENCY, and it is CONDITIONAL -----------------
             // Not an indirect stat: efficiency is real DPS the moment a
             // reserve runs dry. But one is gated on a movement state and one

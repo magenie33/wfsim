@@ -1447,7 +1447,13 @@ pub struct DummyParams {
     /// base form"; that is wrong (owner, 2026-08-10) and nothing here could
     /// implement it anyway — this is an ordinary reload-speed bonus and the
     /// revert is an ordinary reload-speed-scaled animation.
-    pub rs_on_reload: Option<crate::loadout::TimedBuff>,
+    /// READY RETALIATION, as a bonus rather than a window (0.0 = none).
+    ///
+    /// It is scoped to the RELOAD ACTION — it arrives when the reload starts
+    /// and is gone when it ends (owner, 2026-08-11) — so there is no expiry to
+    /// carry, nothing to lapse mid-reload, and nothing left over afterwards for
+    /// a transmute animation to pick up. A reload from empty is simply faster.
+    pub rs_on_reload: f64,
     /// EXECUTIONER'S FORTUNE — see [`crate::loadout::InstantReload`]. Rolled by
     /// the PELLET that headshots, because only there is it known whether the
     /// hit landed in a head and whether it killed.
@@ -1640,11 +1646,11 @@ impl DummyParams {
         if self.evo_bd.is_some() {
             out.push(("evo_reload_damage".into(), 1));
         }
-        // READY RETALIATION — up or not, like `on_reload_fr` beside it. It is
-        // EARNED (a reload from empty opens it), so the card starts at zero.
-        if self.rs_on_reload.is_some() {
-            out.push(("evo_reload_speed".into(), 1));
-        }
+        // READY RETALIATION HAS NO CARD any more. It was one while it was a
+        // 6 s window that could be up or down; now it lasts exactly as long as
+        // the reload that triggers it, which is not a state a player can be
+        // caught without and not a stack count anyone can configure. A card
+        // reading 0/1 for a perk that works every time would be a lie.
         // LINGERING JUDGEMENT, the same shape: a window that is open or not.
         if self.headshot_streak.is_some() {
             out.push(("evo_headshot_streak".into(), 1));
@@ -2265,7 +2271,7 @@ impl Default for DummyParams {
             charge_cadence: crate::weapons_data::ChargeCadence::DrawThenRate,
             sustained_fire_rate: None,
             battery: None,
-            rs_on_reload: None,
+            rs_on_reload: 0.0,
             instant_reload: None,
             headshot_streak: None,
             cd_below_status_count: None,
@@ -4206,66 +4212,41 @@ fn live_reload_time(
     arc: &mut ArcRuntime,
     live_rs: f64,
     t: f64,
-    window: Option<(f64, f64)>,
 ) -> f64 {
     let add =
         outer.arcane.reload_bonus + arc.total(&outer.arcane.buffs, ArcGrant::ReloadSpeed, t) + live_rs;
-    reload_span(form.reload_seconds, form.reload_bonus, add, window, t)
+    reload_span(form.reload_seconds, form.reload_bonus, add)
 }
 
 /// Rescale a time already divided by `(1 + bucket)` so it also carries a
 /// LIVE addition to the same bucket — the transmute animations, which the
 /// wiki ties to reload speed.
-fn rescale_reload(secs: f64, bucket: f64, live: f64, window: Option<(f64, f64)>, t: f64) -> f64 {
-    reload_span(secs, bucket, live, window, t)
-}
-
-/// Ready Retaliation's `(bonus, expiry)` if its window is open, else `None`.
-///
-/// One reader for the pair, so no reload site can take the bonus while
-/// forgetting the clock or the other way round.
-fn rs_window(params: &DummyParams, expiry: f64) -> Option<(f64, f64)> {
-    params.rs_on_reload.map(|b| (b.value, expiry))
+fn rescale_reload(secs: f64, bucket: f64, live: f64) -> f64 {
+    reload_span(secs, bucket, live)
 }
 
 /// A RELOAD IS PAID FOR WHILE IT RUNS, not priced when it starts.
 ///
-/// A timed reload-speed buff can lapse halfway through, and when it does the
-/// rest of the reload IMMEDIATELY loses the speed (owner, 2026-08-10: "reload
-/// 的这种buff是实时的，也就是说如果换弹一半，这个buff消失了，后半截的就会立刻
-/// 失去加速"). Sampling the speed once at the start would hand the whole reload
-/// a bonus that only covered part of it — and on Ready Retaliation's 6 s window
-/// against a 2.8 s reload, "part of it" is the normal case rather than an edge.
+/// The arithmetic is a work integral, which is what makes a reload-speed total
+/// mean anything: a reload is `secs x (1 + bucket)` seconds of WORK and a total
+/// of `add` retires it at `1 + bucket + add` per second.
 ///
-/// The arithmetic is a work integral, which is the only shape that makes a
-/// partial bonus meaningful: a reload is `secs × (1 + bucket)` seconds of WORK
-/// and a reload-speed total of `add` retires it at `1 + bucket + add` per
-/// second. `window` is `(bonus, expiry)` of the buff that can lapse; everything
-/// that cannot lapse is already inside `add`.
+/// IT USED TO TAKE A LAPSING WINDOW, because Ready Retaliation was modelled as
+/// a 6 s buff that could run out halfway through and leave the rest of the
+/// reload at the slower rate. It cannot any more: that buff is scoped to the
+/// reload ACTION — it arrives when the reload starts and is gone when it ends
+/// (owner, 2026-08-11) — so there is nothing left that lapses mid-reload, and
+/// the partial-rate branch went with it. If a lapsing reload buff ever exists
+/// again, this is where it goes back.
 ///
 /// `secs` arrives ALREADY divided by `(1 + bucket)` — it is the modded reload —
 /// so multiplying it back out is what recovers the work, and a weapon with no
 /// live bonus at all falls straight through to `secs`.
-fn reload_span(secs: f64, bucket: f64, add: f64, window: Option<(f64, f64)>, t: f64) -> f64 {
-    let (bonus, until) = match window {
-        Some((b, u)) if u > t && b > 0.0 => (b, u),
-        // No window, or it has already closed: one rate for the whole reload.
-        _ => {
-            if add <= 0.0 {
-                return secs;
-            }
-            return secs * (1.0 + bucket) / (1.0 + bucket + add);
-        }
-    };
-    let work = secs * (1.0 + bucket);
-    let fast = 1.0 + bucket + add + bonus;
-    let slow = (1.0 + bucket + add).max(1e-9);
-    let open = until - t;
-    if open * fast >= work {
-        work / fast
-    } else {
-        open + (work - open * fast) / slow
+fn reload_span(secs: f64, bucket: f64, add: f64) -> f64 {
+    if add <= 0.0 {
+        return secs;
     }
+    secs * (1.0 + bucket) / (1.0 + bucket + add)
 }
 
 /// Lethal Rearmament's CURRENT reload-speed bonus. Locked or not, the count is
@@ -4308,7 +4289,6 @@ fn sample_stacks(
     ch_buff_expiry: f64,
     fr_reload_expiry: f64,
     bd_reload_expiry: f64,
-    rs_reload_expiry: f64,
     streak_expiry: f64,
     tendrils: u32,
     bar: &BuffBar,
@@ -4345,7 +4325,6 @@ fn sample_stacks(
             "on_kill_cd" => live(now < arc.cd_kill_expiry()),
             "on_reload_bd" => live(now < bd_reload_expiry),
             "on_reload_fr" => live(now < fr_reload_expiry),
-            "evo_reload_speed" => live(now < rs_reload_expiry),
             "evo_headshot_streak" => live(now < streak_expiry),
             // The perk keeps its stacks on the BAR, not in `arcane.buffs`.
             "arcane:secondary_enervate" => {
@@ -4615,7 +4594,6 @@ pub fn run_once_traced(
     // READY RETALIATION's open window, or -inf while it is shut. Unlike the two
     // beside it this is not only read at a shot: it changes how long the NEXT
     // reload takes, so it is passed into every reload and every transmute.
-    let mut rs_reload_expiry: f64 = f64::NEG_INFINITY;
     // Set by a pellet that rolled Executioner's Fortune, spent once by the shot.
     let mut instant_reload_now = false;
     // LINGERING JUDGEMENT: the recent headshots' timestamps, and the window
@@ -4691,8 +4669,7 @@ pub fn run_once_traced(
                 let stacks = sample_stacks(
                     params, rep, next_frame, &mut arc, &mut gal, &mut buff_stacks,
                     &ch_stacks, ch_buff_expiry, fr_reload_expiry, bd_reload_expiry,
-                    rs_reload_expiry, streak_expiry,
-                    tendrils, &bar,
+                    streak_expiry, tendrils, &bar,
                 );
                 rep.frames.push(Frame {
                     t: next_frame,
@@ -4876,9 +4853,17 @@ pub fn run_once_traced(
                 // revert does NOT count as a transform — `transforms` counts
                 // TRANSMUTES INTO the Incarnon form only (user, 2026-07-29:
                 // both-directions counting read as doubled).
+                // A TRANSMUTE IS NOT A RELOAD, so Ready Retaliation is not on
+                // it. That used to be the other way round — its 6 s window
+                // outlived the reload and covered whatever animation followed —
+                // and the wiki's two clauses only make sense under this
+                // reading: "can affect transition INTO Incarnon form with a
+                // well-timed manual reload" (a reload running AT THE SAME TIME)
+                // and "does not affect transition from Incarnon back to base"
+                // (no reload is running then). Calling that second clause wrong
+                // was an artefact of the timer, not a fact about the game.
                 t += rescale_reload(cy.transmute_out_seconds, cy.reload_bucket,
-                    live_reload_speed(params, &mut buff_stacks, t),
-                    rs_window(params, rs_reload_expiry), t);
+                    live_reload_speed(params, &mut buff_stacks, t));
                 in_base_form = true;
                 charges = 0;
                 // The swap's auto-reload is the SAME mechanism as a normal one
@@ -4920,14 +4905,10 @@ pub fn run_once_traced(
                         buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
                     }
                 }
-                let rs = live_reload_speed(params, &mut buff_stacks, t);
-                // ARMED BEFORE IT RUNS, like the plain path below: the reload
-                // ACTION is the trigger, so this reload takes its own bonus.
-                if let Some(b) = params.rs_on_reload {
-                    rs_reload_expiry = t + b.duration;
-                }
-                t += live_reload_time(&cy.base_form, params, &mut arc, rs, t,
-                    rs_window(params, rs_reload_expiry));
+                // READY RETALIATION rides the live sum: the reload ACTION is
+                // the trigger and the same action is what it speeds up.
+                let rs = live_reload_speed(params, &mut buff_stacks, t) + params.rs_on_reload;
+                t += live_reload_time(&cy.base_form, params, &mut arc, rs, t);
                 r.reloads += 1;
                 if let Some(b) = cy.base_form.fr_on_reload {
                     fr_reload_expiry = t + b.duration;
@@ -4983,12 +4964,8 @@ pub fn run_once_traced(
             //
             // Every reload this loop performs is a reload from empty — it only
             // reloads when it cannot fire — which is exactly the condition.
-            if let Some(b) = params.rs_on_reload {
-                rs_reload_expiry = t + b.duration;
-            }
-            let rs = live_reload_speed(params, &mut buff_stacks, t);
-            t += live_reload_time(params, params, &mut arc, rs, t,
-                rs_window(params, rs_reload_expiry));
+            let rs = live_reload_speed(params, &mut buff_stacks, t) + params.rs_on_reload;
+            t += live_reload_time(params, params, &mut arc, rs, t);
             r.reloads += 1;
             if let Some(b) = params.fr_on_reload {
                 fr_reload_expiry = t + b.duration;
@@ -6253,8 +6230,7 @@ pub fn run_once_traced(
                     // second half is wrong (owner, 2026-08-10) and there is
                     // nothing here that could tell the two animations apart.
                     t += rescale_reload(cy.transmute_seconds, cy.reload_bucket,
-                        live_reload_speed(params, &mut buff_stacks, t),
-                        rs_window(params, rs_reload_expiry), t);
+                        live_reload_speed(params, &mut buff_stacks, t));
                     r.transforms += 1;
                     in_base_form = false;
                     // The CHARGE magazine is filled by the gauge, not reloaded
@@ -7196,19 +7172,14 @@ mod tests {
         assert!(armed > without, "{armed} shots with the perk, {without} without");
     }
 
-    /// READY RETALIATION, all three of its rules at once.
+    /// READY RETALIATION: the reload it starts is the reload it speeds up.
     ///
-    /// Stated by the owner, 2026-08-10, and each clause is asserted on its own
-    /// because each could be got wrong by itself:
-    ///
-    /// 1. THE TRIGGER IS THE RELOAD ACTION. Pressing reload on an empty
-    ///    magazine opens the window, so THAT reload is already faster — the
-    ///    first one of the fight included ("等于给自己上了一张100% reload
-    ///    speed的mod");
-    /// 2. it is an ORDINARY reload-speed bonus — the wiki's "does not affect
-    ///    transition from Incarnon back to base form" is wrong;
-    /// 3. it is LIVE: a reload that outlives the window loses the speed for the
-    ///    remainder, the instant the window shuts.
+    /// THE TRIGGER IS THE RELOAD ACTION — pressing reload on an empty magazine
+    /// is what applies it, so THAT reload is already faster, the first one of
+    /// the fight included (owner, 2026-08-10: "等于给自己上了一张100% reload
+    /// speed的mod"). And the buff lasts exactly that long: it is gone when the
+    /// reload completes (owner, 2026-08-11), which is why there is no window
+    /// here to outlive and nothing left over for the animation that may follow.
     ///
     /// The FIRST reload is the sharp case and it gets its own window here: the
     /// run is cut short so that exactly one reload is in it, and the perk is
@@ -7219,7 +7190,7 @@ mod tests {
     /// the same whole number of magazines.
     #[test]
     fn ready_retaliation_speeds_up_the_reload_that_arms_it() {
-        let buff = crate::loadout::TimedBuff { value: 1.0, duration: 6.0, initial_active: false };
+
         // 10 rounds at 10/s = 1 s of firing, then a 2 s reload — 1 s with the
         // perk. Stopping the clock at 2.5 s puts the second magazine's first
         // shots on one side of the line and nothing on the other.
@@ -7231,7 +7202,7 @@ mod tests {
             body_parts: mono_body(1.0),
             ..no_status()
         };
-        let with = DummyParams { rs_on_reload: Some(buff), ..p.clone() };
+        let with = DummyParams { rs_on_reload: 1.0, ..p.clone() };
         let without = run_once(&p, &mut Rng::new(1)).shots;
         let armed = run_once(&with, &mut Rng::new(1)).shots;
         assert_eq!(without, 10, "the magazine, and the reload still running at 2.5 s");
@@ -7242,36 +7213,31 @@ mod tests {
 
         // …and over a long run it compounds into whole extra magazines.
         let long = DummyParams { duration_secs: 60.0, ..p.clone() };
-        let long_armed = DummyParams { rs_on_reload: Some(buff), ..long.clone() };
+        let long_armed = DummyParams { rs_on_reload: 1.0, ..long.clone() };
         let a = run_once(&long, &mut Rng::new(1)).reloads;
         let b = run_once(&long_armed, &mut Rng::new(1)).reloads;
         assert!(b > a, "{b} reloads with the perk, {a} without");
     }
 
-    /// A reload that OUTLIVES the window pays the rest at the plain rate.
+    /// A RELOAD IS PAID FOR WHILE IT RUNS, and the bonus composes with the
+    /// static bucket rather than replacing it.
     ///
-    /// The arithmetic, by hand: an unmodded 4 s reload with +100% reload speed
-    /// takes 2 s. Start it with 1 s of window left and it retires 1 s of work
-    /// at double rate = 2 s of the 4 s work, then the remaining 2 s of work at
-    /// single rate = 2 s more. Total 3 s — not the 2 s a start-of-reload sample
-    /// would have given, and not the 4 s of no buff at all.
+    /// The lapsing-window case this test used to cover is gone with the window:
+    /// Ready Retaliation lasts exactly as long as the reload it starts, so
+    /// nothing can run out halfway through any more (owner, 2026-08-11). What
+    /// is left is the arithmetic that was always the point — mods worth +100%
+    /// already halve a 4 s reload to the 2 s that arrives here, and the perk's
+    /// +100% on top makes it 4/(1+1+1) of the unmodded four rather than 1 s.
     #[test]
-    fn a_reload_that_outlives_the_window_loses_the_speed_mid_reload() {
-        let all = reload_span(4.0, 0.0, 0.0, Some((1.0, 100.0)), 0.0);
-        assert!((all - 2.0).abs() < 1e-9, "whole reload inside the window: {all}");
+    fn a_reload_bonus_composes_with_the_bucket_it_joins() {
+        let plain = reload_span(4.0, 0.0, 0.0);
+        assert!((plain - 4.0).abs() < 1e-9, "no bonus at all: {plain}");
 
-        let part = reload_span(4.0, 0.0, 0.0, Some((1.0, 1.0)), 0.0);
-        assert!((part - 3.0).abs() < 1e-9, "1 s of window on a 4 s reload: {part}");
+        let doubled = reload_span(4.0, 0.0, 1.0);
+        assert!((doubled - 2.0).abs() < 1e-9, "+100% on an unmodded reload: {doubled}");
 
-        let none = reload_span(4.0, 0.0, 0.0, Some((1.0, 0.0)), 0.0);
-        assert!((none - 4.0).abs() < 1e-9, "a shut window is no window: {none}");
-
-        // AND IT COMPOSES WITH THE STATIC BUCKET rather than replacing it: mods
-        // worth +100% already halve the 4 s to the 2 s that arrives here, and
-        // the perk's +100% on top makes the full-window case 4/(1+1+1) of the
-        // unmodded four.
-        let stacked = reload_span(2.0, 1.0, 0.0, Some((1.0, 100.0)), 0.0);
-        assert!((stacked - 4.0 / 3.0).abs() < 1e-9, "{stacked}");
+        let stacked = reload_span(2.0, 1.0, 1.0);
+        assert!((stacked - 4.0 / 3.0).abs() < 1e-9, "on top of +100% of mods: {stacked}");
     }
 
     /// A BATTERY REFILLS BETWEEN SHOTS, and slowing the weapon enough removes

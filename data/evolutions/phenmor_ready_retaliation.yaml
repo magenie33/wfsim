@@ -40,7 +40,16 @@ effects:
   - kind: reload_speed_bonus
     value: 1.00
     condition: reload_from_empty
-    duration_seconds: 6.0
+    # NO `duration_seconds` ANY MORE (owner, 2026-08-11: "这个buff伴随整个换单
+    # 动作，然后立刻消失… 换弹开始的时候有个buff，然后换弹完成后这个buff才消
+    # 失"). The 6 s this page publishes is the buff ICON's life, not the window
+    # the bonus is worth anything in: the reload it triggers on is over long
+    # before then, and nothing afterwards is a reload.
+    #
+    # It is also what unblocks the other eleven. Every other Ready Retaliation
+    # in the roster states the bonus and no window, which read as missing data
+    # while the model was a timer — and reads as "there is nothing to state"
+    # once the window IS the action.
 
 source:
   url: https://wiki.warframe.com/w/Phenmor

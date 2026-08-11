@@ -991,7 +991,21 @@ pub struct WeaponBase {
     /// READY RETALIATION's window — see
     /// [`crate::evolutions_data::EvoEffect::ReloadSpeedOnEmptyReload`]. Same
     /// bucket as `evo_reload_bonus`, but only while the window is open.
-    pub rs_on_empty_reload: Option<TimedBuff>,
+    /// READY RETALIATION: *"On Reload From Empty: +100% Reload Speed"*, as a
+    /// plain bonus rather than a timed buff.
+    ///
+    /// IT IS SCOPED TO THE RELOAD ACTION — it arrives when the reload starts
+    /// and is gone when the reload ends (owner, 2026-08-11: "这个buff伴随整个
+    /// 换单动作，然后立刻消失… 换弹开始的时候有个buff，然后换弹完成后这个buff
+    /// 才消失"). So it cannot lapse halfway through, and it cannot spill onto
+    /// anything that is not that reload.
+    ///
+    /// That is also what makes the perk loadable at all on the other eleven
+    /// weapons that have it. Only the Phenmor's page publishes a window (6 s),
+    /// and the rest state the bonus and nothing else — which read as missing
+    /// data while the model was a timer, and reads as "there is nothing to
+    /// state" once the window is the action.
+    pub rs_on_empty_reload: f64,
     /// EXECUTIONER'S FORTUNE — see [`InstantReload`].
     pub instant_reload_on_headshot: Option<InstantReload>,
     /// LINGERING JUDGEMENT — see [`HeadshotStreak`].
@@ -1640,7 +1654,9 @@ pub struct ResolvedPanel {
     /// [`crate::evolutions_data::EvoEffect::ReloadSpeedOnEmptyReload`]. It joins
     /// the reload bucket the mods and `evo_reload_bonus` feed, but only while
     /// open, and only a reload FROM EMPTY opens it.
-    pub rs_on_reload: Option<TimedBuff>,
+    /// Ready Retaliation's bonus, for the sim to apply to each reload from
+    /// empty (0.0 = none). See [`WeaponBase::rs_on_empty_reload`].
+    pub rs_on_reload: f64,
     /// EXECUTIONER'S FORTUNE — see [`InstantReload`]. Carried straight to the
     /// sim under every policy: it is an EVENT, and there is no panel stat an
     /// assumed-max reading could spend it into (a magazine that refills itself
@@ -1792,16 +1808,22 @@ pub fn resolve_for(
     let mut bd_on_reload: Option<TimedBuff> = None;
     // READY RETALIATION arrives on the BASE (an evolution wrote it there),
     // unlike the two above which arrive from mods — so the policy split is
-    // here rather than in the mod loop. AssumedMax spends it into the bucket,
-    // which is what the panel and the optimizer's ranking read; Emergent hands
-    // the window to the sim; a sentinel's conditional never fires.
-    let mut rs_on_reload: Option<TimedBuff> = match (base.rs_on_empty_reload, policy) {
-        (Some(b), StackPolicy::Emergent) => Some(b),
-        (Some(b), StackPolicy::AssumedMax) => {
-            rl += b.value;
-            None
+    // here rather than in the mod loop.
+    //
+    // AssumedMax spends it into the RELOAD BUCKET, which is what the panel and
+    // the optimizer's ranking read — a panel is a statement about a reload, and
+    // in this arena every reload is from empty. Emergent hands it to the sim,
+    // which applies it to each reload and to nothing else: a transmute
+    // animation is scaled by the same bucket and is NOT a reload, so folding it
+    // into `rl` there would have sped up an animation this perk never touches.
+    // A sentinel's conditional never fires.
+    let mut rs_on_reload = match policy {
+        StackPolicy::Emergent => base.rs_on_empty_reload,
+        StackPolicy::AssumedMax => {
+            rl += base.rs_on_empty_reload;
+            0.0
         }
-        _ => None,
+        _ => 0.0,
     };
     let mut proc_conv: Option<ProcConv> = None;
     let mut elem_bonus: Vec<(DamageType, f64)> = Vec::new();
@@ -2129,7 +2151,7 @@ pub fn resolve_for(
             // on-reload buff to need the same line.
             "reload_speed" => {
                 rl = 0.0;
-                rs_on_reload = None;
+                rs_on_reload = 0.0;
             }
             _ => {}
         }
