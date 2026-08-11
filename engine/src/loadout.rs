@@ -1094,6 +1094,20 @@ pub enum BuffTrigger {
     /// the first that grants more than one stack at a time, because what it
     /// grants is one per SHELL loaded (see [`StackingBuff::stacks_per_trigger`]).
     ReloadComplete,
+    /// Reaver's Rapture: a COMPLETED BURST, every round of it landing.
+    ///
+    /// THE MOMENT IS THE LAST ROUND OF THE BURST, so the burst that earns the
+    /// stack does not carry it — the next one does. The wiki's own qualifiers
+    /// all point the same way and all of them are already true here: "not
+    /// affected by multishot or punch through" (it is one count per burst, not
+    /// per pellet), "counts object hits", and "activates even if the first hit
+    /// of a burst kills the target" — this arena has one target that respawns,
+    /// every round hits it, so every completed burst is a full burst hit.
+    ///
+    /// A magazine that does not divide by the burst count leaves a partial
+    /// burst at the end, and a partial burst is not one: the count restarts
+    /// with the magazine, so those rounds earn nothing.
+    FullBurst,
 }
 
 /// WHAT A STACKING BUFF FEEDS. One arm per grant, and each keeps its own
@@ -1225,6 +1239,18 @@ pub enum ClearedBy {
     Nothing,
     /// The magazine reaching zero.
     EmptyMagazine,
+    /// THE MAGAZINE BEING REFILLED — a reload completing, or either Incarnon
+    /// transform completing, because swapping either way fully reloads the base
+    /// form's magazine (wiki).
+    ///
+    /// One rule rather than a list of events, and the same one Ready
+    /// Retaliation is spent by. Reaver's Rapture states it as three separate
+    /// sentences — "resets on Reload", "resets when activating incarnon" — and
+    /// they are one fact.
+    ///
+    /// THE MOMENT IS THE COMPLETION, not the start: a reload that has begun has
+    /// not refilled anything yet.
+    MagazineRefilled,
 }
 
 /// What happens when a second field lands on a target that already has one.

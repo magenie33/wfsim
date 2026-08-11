@@ -4432,6 +4432,19 @@ pub fn run_once_traced(
     // BUMP BY TRIGGER, TOTAL BY GRANT — the two operations the whole family
     // needs, and the only two. `ArcRuntime` has had exactly this pair since the
     // arcanes were written; these are its weapon-side twins.
+    let mut rs_armed = false;
+    // ROUNDS FIRED SINCE THE MAGAZINE WAS FILLED, which is what says when a
+    // BURST completes: Reaver's Rapture wants a full burst, and a burst is
+    // `burst.count` consecutive rounds out of one magazine. It restarts with
+    // the magazine, so a magazine that does not divide by the count leaves a
+    // partial burst at the end and that burst earns nothing.
+    //
+    // The intra-burst SPACING is averaged here — the cadence code spreads a
+    // burst's rounds evenly, which is the wiki's own effective-rate formula —
+    // so this counts which round completes a burst rather than pinning the
+    // instant it happened. That is the precise part and the part that decides
+    // which shots carry which stack count.
+    let mut rounds_this_mag: u32 = 0;
     macro_rules! bump_buffs {
         ($trigger:expr, $t:expr, $rng:expr) => {
             for (i, b) in params.stacking_buffs.iter().enumerate() {
@@ -4462,6 +4475,26 @@ pub fn run_once_traced(
                     for _ in 0..$n {
                         buff_stacks[i].bump($t, b.duration, b.max_stacks);
                     }
+                }
+            }
+        };
+    }
+    // THE MAGAZINE IS FULL AGAIN — a reload that COMPLETED, or either Incarnon
+    // transform completing, since swapping either way fully reloads the base
+    // form's magazine (wiki).
+    //
+    // One macro rather than the same three lines at four sites: everything that
+    // a refill ends, ends here. Ready Retaliation is spent, Reaver's Rapture is
+    // reset, and the burst count restarts. THE MOMENT IS THE COMPLETION — a
+    // reload that has begun has refilled nothing (owner, 2026-08-11: "时间节点
+    // 一定要处理好…不可以含糊，要准确").
+    macro_rules! magazine_refilled {
+        () => {
+            rs_armed = false;
+            rounds_this_mag = 0;
+            for (i, b) in params.stacking_buffs.iter().enumerate() {
+                if b.cleared_by == crate::loadout::ClearedBy::MagazineRefilled {
+                    buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
                 }
             }
         };
@@ -4637,7 +4670,6 @@ pub fn run_once_traced(
     //
     // So it is a flag rather than a clock. This card states a bonus and no
     // duration, and that is not an omission — there is nothing to time.
-    let mut rs_armed = false;
     let mut charges = 0u32;
     let mut base_mag = params
         .cycle
@@ -4889,7 +4921,7 @@ pub fn run_once_traced(
                 // also why this animation is scaled by reload speed at all.
                 t += rescale_reload(cy.transmute_out_seconds, cy.reload_bucket,
                     live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t));
-                rs_armed = false;
+                magazine_refilled!();
                 in_base_form = true;
                 charges = 0;
                 // The swap's auto-reload is the SAME mechanism as a normal one
@@ -4933,7 +4965,7 @@ pub fn run_once_traced(
                 }
                 let rs = live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t);
                 t += live_reload_time(&cy.base_form, params, &mut arc, rs, t);
-                rs_armed = false;
+                magazine_refilled!();
                 r.reloads += 1;
                 if let Some(b) = cy.base_form.fr_on_reload {
                     fr_reload_expiry = t + b.duration;
@@ -4991,7 +5023,7 @@ pub fn run_once_traced(
             // reloads when it cannot fire — which is exactly the condition.
             let rs = live_reload_speed(params, params, rs_armed, &mut buff_stacks, t);
             t += live_reload_time(params, params, &mut arc, rs, t);
-            rs_armed = false;
+            magazine_refilled!();
             r.reloads += 1;
             if let Some(b) = params.fr_on_reload {
                 fr_reload_expiry = t + b.duration;
@@ -5283,6 +5315,7 @@ pub fn run_once_traced(
         } else {
             magazine -= spend;
         }
+        rounds_this_mag += 1;
         // READY RETALIATION IS ARMED THE MOMENT THE MAGAZINE RUNS OUT, which is
         // HERE — the shot that spends the last round — and not at the reload
         // that follows. The two are the same instant for a reload and are not
@@ -6185,6 +6218,24 @@ pub fn run_once_traced(
             }
         }
 
+        // REAVER'S RAPTURE: THE ROUND THAT COMPLETED A BURST, counted here —
+        // after every pellet of it has landed, so the burst that earns the
+        // stack does not carry it. The next burst does.
+        //
+        // "Not affected by multishot or punch through" is why this is outside
+        // the pellet loop; "counts object hits" and "activates even if the
+        // first hit of a burst kills the target" are both already true of this
+        // arena, where one target respawns and every round reaches it. So a
+        // completed burst IS a full burst hit, with nothing left to condition
+        // on.
+        //
+        // A weapon with no burst has a count of one, and then every round
+        // completes its own burst — which is what the trigger means there.
+        let burst_len = ap.burst.map_or(1, |b| b.count.max(1));
+        if rounds_this_mag.is_multiple_of(burst_len) {
+            bump_buffs!(crate::loadout::BuffTrigger::FullBurst, t, rng);
+        }
+
         // EXECUTIONER'S FORTUNE, SPENT. The roll is per pellet, the effect is
         // not: a magazine fills once however many pellets rolled it, so this is
         // a flag the pellet loop sets and the shot consumes.
@@ -6279,7 +6330,7 @@ pub fn run_once_traced(
                     // refills the magazine. Nothing else has to be enumerated.
                     t += rescale_reload(cy.transmute_seconds, cy.reload_bucket,
                         live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t));
-                    rs_armed = false;
+                    magazine_refilled!();
                     r.transforms += 1;
                     in_base_form = false;
                     // The CHARGE magazine is filled by the gauge, not reloaded
@@ -7266,6 +7317,86 @@ mod tests {
         let a = run_once(&long, &mut Rng::new(1)).reloads;
         let b = run_once(&long_armed, &mut Rng::new(1)).reloads;
         assert!(b > a, "{b} reloads with the perk, {a} without");
+    }
+
+    /// REAVER'S RAPTURE, and every one of its moments.
+    ///
+    /// "On Full Burst Hit: +20% Damage, resets on Reload", capped at 5x. Four
+    /// separate claims, and each is asserted on its own because each can be
+    /// wrong by itself (owner, 2026-08-11: "时间节点一定要处理好…不可以含糊，
+    /// 要准确"):
+    ///
+    /// 1. ONE STACK PER BURST, not per round and not per pellet — the card's
+    ///    "not affected by multishot" — so a 3-round burst weapon earns a stack
+    ///    every three rounds;
+    /// 2. THE MOMENT IS THE LAST ROUND of the burst, so the burst that earns
+    ///    the stack does not carry it;
+    /// 3. it CAPS at five;
+    /// 4. it is RESET BY THE REFILL, at the instant the reload completes.
+    ///
+    /// Measured on stacks rather than on damage, because a damage figure folds
+    /// all four together and could be right for the wrong reason.
+    #[test]
+    fn reavers_rapture_counts_bursts_and_resets_on_the_refill() {
+        let buff = crate::loadout::StackingBuff {
+            id: "full_burst_damage",
+            trigger: crate::loadout::BuffTrigger::FullBurst,
+            grant: crate::loadout::BuffGrant::BaseDamage,
+            decay: crate::loadout::BuffDecay::LoseOneAndReset,
+            per_stack: 0.20,
+            max_stacks: 5,
+            duration: crate::loadout::NO_TIMEOUT,
+            chance: 1.0,
+            initial_stacks: 0,
+            stacks_per_trigger: 1,
+            per_shell: false,
+            cleared_by: crate::loadout::ClearedBy::MagazineRefilled,
+        };
+        // 21 rounds = seven whole bursts; the cap is five, so a magazine that
+        // long reaches it and sits there. The reload is long enough that the
+        // reset is unambiguous in the trace.
+        let p = DummyParams {
+            fire_rate: 10.0,
+            magazine_size: 21.0,
+            reload_seconds: 2.0,
+            burst: Some(crate::weapons_data::BurstSpec { count: 3, delay_seconds: 0.0 }),
+            stacking_buffs: vec![buff],
+            duration_secs: 10.0,
+            ..no_status()
+        };
+        let mut rng = Rng::new(7);
+        let r = run_once(&p, &mut rng);
+        assert!(r.reloads >= 1, "the fixture has to reload at least once");
+
+        // THE TRACE IS WHAT SAYS WHEN. `replay` seeds the roster from the
+        // params — a hand-built `Replay` would have an empty one and the frames
+        // would carry no stacks to read.
+        let trace = replay(&p, Rng::new(7).state(), 600);
+        let i = trace
+            .buffs
+            .iter()
+            .position(|(id, _)| id == "full_burst_damage")
+            .expect("the buff is on the roster");
+        let series: Vec<u8> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+        assert!(series.contains(&5), "it reaches the cap: {series:?}");
+        assert!(series.iter().all(|&v| v <= 5), "and never passes it: {series:?}");
+        // RESET: the pile comes back DOWN to zero, which only the refill can do
+        // — there is no clock on this buff.
+        assert!(
+            series.windows(2).any(|w| w[0] > 0 && w[1] == 0),
+            "the refill takes the whole pile: {series:?}"
+        );
+        // ONE STACK PER BURST, and the arithmetic is the assertion. A burst
+        // weapon's `fire_rate` is BURSTS per second (wiki), so 10 is ten bursts
+        // — thirty rounds — a second, and five bursts of climbing is 0.5 s. At
+        // one frame per 1/60 s the cap lands around frame 30. Per ROUND instead
+        // of per burst would have reached it in a third of that.
+        let first_cap = series.iter().position(|&v| v == 5).expect("reaches 5");
+        let at = first_cap as f64 * trace.dt;
+        assert!(
+            at > 0.45 && at < 0.56,
+            "five bursts at ten bursts a second is 0.5 s: capped at {at:.3} s (frame {first_cap})"
+        );
     }
 
     /// THE EMPTY MAGAZINE ARMS IT, and the TRANSFORM is what proves that.

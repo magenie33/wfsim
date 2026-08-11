@@ -155,6 +155,9 @@ enum EvoEffect {
     /// on a Burston Prime carrying Split Chamber and Vigilante Armaments the
     /// same +5 is 11 pellets rather than 5.
     MultishotOnLastRound { value: f64, base: bool },
+    /// Reaver's Rapture: +X base damage per COMPLETED BURST, reset when the
+    /// magazine is refilled. No duration — it is held until something takes it.
+    BaseDamagePerFullBurst { per_stack: f64, max_stacks: u32 },
     /// Plentiful Mayhem: multishot draws its extra rounds from ammo, and the
     /// projectiles it GENERATES deal +v damage as an independent multiplier.
     /// Affects both forms; the sim reads the per-form rule off `continuous`.
@@ -552,6 +555,7 @@ impl EvolutionDef {
                 | EvoEffect::FlatBaseMagazine(_)
                 | EvoEffect::FieldDurationOnEmptyReload(_)
                 | EvoEffect::MultishotOnLastRound { .. }
+                | EvoEffect::BaseDamagePerFullBurst { .. }
                 | EvoEffect::MultishotConsumesAmmo(_)
                 | EvoEffect::ConditionOverload { .. }
                 | EvoEffect::FireRateBonus(_)
@@ -673,6 +677,12 @@ impl EvolutionDef {
                 }
                 EvoEffect::FieldDurationOnEmptyReload(v) => format!(
                     "On reload from empty: x{v:.0} lingering-field duration on the next shot"
+                ),
+                EvoEffect::BaseDamagePerFullBurst { per_stack, max_stacks } => format!(
+                    "+{:.0}% base damage per full burst, x{max_stacks} (+{:.0}% at the cap), \
+                     reset when the magazine is refilled",
+                    per_stack * 100.0,
+                    per_stack * f64::from(*max_stacks) * 100.0
                 ),
                 EvoEffect::MultishotOnLastRound { value, base } => format!(
                     "+{value:.0} {}multishot on the last round of the magazine (base form only)",
@@ -875,6 +885,25 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         },
         "multishot_consumes_ammo" => {
             EvoEffect::MultishotConsumesAmmo(f(v, "value").unwrap_or(0.0))
+        }
+        // REAVER'S RAPTURE, and the trigger is what picks this arm: a
+        // `base_damage_bonus` payload on a `full_burst_hit` trigger. Both are
+        // read rather than assumed — the same payload on another trigger is a
+        // different perk and stays inert until someone models it.
+        "stacking_buff"
+            if v.get("trigger").and_then(Value::as_str) == Some("full_burst_hit")
+                && v.get("per_stack")
+                    .and_then(|p| p.get("base_damage_bonus"))
+                    .is_some() =>
+        {
+            EvoEffect::BaseDamagePerFullBurst {
+                per_stack: v
+                    .get("per_stack")
+                    .and_then(|p| p.get("base_damage_bonus"))
+                    .and_then(Value::as_f64)
+                    .unwrap_or(0.0),
+                max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
+            }
         }
         "stacking_buff" => {
             // Only the multishot payload is modeled (Fevered Frenzy);
@@ -1138,6 +1167,34 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // BASE FORM ONLY: `incarnon.is_some()` marks the charge-backed
                 // form, whose magazine is the gauge's round pool rather than a
                 // reloaded magazine — nothing there is "the last round".
+                // IT LIVES ON BOTH FORMS, and "cannot be stacked in Incarnon
+                // form" falls out rather than being enforced: the Burston's
+                // Incarnon is an AUTO weapon, so no burst ever completes there
+                // and the trigger cannot fire. Enforcing it by form id would be
+                // a rule that has to be right; deriving it from the trigger is
+                // a rule that cannot be wrong.
+                //
+                // "Resets when activating incarnon" is the ordinary
+                // `MagazineRefilled` clear — swapping either way reloads the
+                // base magazine — so it needs nothing of its own either.
+                EvoEffect::BaseDamagePerFullBurst { per_stack, max_stacks } => {
+                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                        id: "full_burst_damage",
+                        trigger: crate::loadout::BuffTrigger::FullBurst,
+                        grant: crate::loadout::BuffGrant::BaseDamage,
+                        decay: crate::loadout::BuffDecay::LoseOneAndReset,
+                        per_stack: *per_stack,
+                        max_stacks: *max_stacks,
+                        // NO CLOCK. "Resets on Reload" is not a duration, and a
+                        // timeout would quietly drop stacks a player still has.
+                        duration: crate::loadout::NO_TIMEOUT,
+                        chance: 1.0,
+                        initial_stacks: 0,
+                        stacks_per_trigger: 1,
+                        per_shell: false,
+                        cleared_by: crate::loadout::ClearedBy::MagazineRefilled,
+                    });
+                }
                 EvoEffect::MultishotOnLastRound { value, base: is_base } => {
                     if base.incarnon.is_none() {
                         if *is_base {
@@ -1686,17 +1743,6 @@ use crate::loadout::WeaponBase;
             // wholesale, so the two cancel out today. Whoever models a
             // per-type buff payload should check DE fixed the perk first —
             // a mechanic that cannot be measured cannot be verified.
-            // REAVER'S RAPTURE — the largest gap in this list, and the only
-            // one whose trigger the sim can already see. +20% base damage per
-            // COMPLETED BURST to a cap of 5, reset by a reload rather than by
-            // a timeout, so a stacking buff with a duration is the wrong
-            // shape for it. Holding it at max would overstate a full magazine
-            // by 13 points of the base-damage bucket (15 bursts, the first
-            // four spent climbing), which is why it is inert instead of
-            // approximated. `BurstSpec::count` is carried for whoever fixes
-            // this; the weapon yaml has the rest of the rules.
-            "burston_reavers_rapture :: stacking_buff base_damage_bonus",
-            "burston_prime_reavers_rapture :: stacking_buff base_damage_bonus",
             "dual_toxocyst_neurotoxin :: stacking_buff toxin_damage_bonus",
             "dual_toxocyst_ripper_rounds :: stacking_buff punch_through_m",
             // ---- THE FURIS GENESIS ---------------------------------------
