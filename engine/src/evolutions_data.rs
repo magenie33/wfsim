@@ -2497,7 +2497,12 @@ mod furis_co_split_tests {
                 continue;
             }
             seen += quals;
-            let gaps = def.unmodeled_effects().len();
+            // EITHER ADMISSION counts as something to qualify. The cap on
+            // "On Punch Through Hit: +10% Critical Chance for 3s. Stacks up to
+            // 8x" is not orphaned because the clause it caps became an EDGE
+            // rather than a todo — the perk still does nothing and still says
+            // so, which is all this test is protecting (2026-08-12).
+            let gaps = def.unmodeled_effects().len() + def.out_of_scope_effects().len();
             if gaps == 0 {
                 alone.push(def.id.clone());
             }
@@ -2559,7 +2564,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 180;
+        const CEILING: usize = 102;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

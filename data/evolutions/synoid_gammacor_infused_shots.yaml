@@ -12,10 +12,12 @@ effects:
   # from: "Increase Base Damage by +6"
   - kind: flat_base_damage
     value: 6.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On 50 Energy Spent: Increase Base Damage by +5 for 10 seconds"
-  - kind: unmodelled_on_energy_spent_increase_base_damage_by_for_seconds
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
+  # this simulator cannot pay it out, and the reason will not change with
+  # any amount of work on evolutions.
+  - kind: out_of_scope
+    clause: "On 50 Energy Spent: Increase Base Damage by +5 for 10 seconds"
+    reason: warframe_abilities
   # NOT MODELLED — no rule for this clause, so it loads as
   # `EvoEffect::Inert` and both the builder and the optimizer print it
   # as such. VERBATIM: "Stacks up to 4x"

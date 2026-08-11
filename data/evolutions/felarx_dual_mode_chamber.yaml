@@ -13,10 +13,19 @@ effects:
   - kind: indirect
     stat: projectile_speed
     value: 1.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Reload toggles the weapon between  and +4m Punch Through"
-  - kind: unmodelled_reload_toggles_the_weapon_between_and_m_punch_through
+  # NOT MODELLED — a TODO, not an edge, and the clause is why. It is a TOGGLE
+  # between two grants and only ONE of them is out of scope: +4 m punch through
+  # buys a second body this arena does not have, but +100% Projectile Speed is a
+  # stat this engine does model where it changes a pool (UNMODELLED.md §2). A
+  # perk that is half an edge is not an edge.
+  #
+  # What it actually needs is a DECISION rather than machinery: the toggle is a
+  # play pattern, and picking a side for the player is the owner's call, not the
+  # model's (UNMODELLED.md §"Open decisions").
+  #
+  # The intake's own transcription dropped the projectile-speed half here — the
+  # clause below is the card's, restored.
+  - kind: unmodelled_reload_toggles_projectile_speed_or_punch_through
 
 source:
   url: https://wiki.warframe.com/w/Felarx

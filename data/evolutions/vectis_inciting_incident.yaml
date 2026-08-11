@@ -12,10 +12,12 @@ effects:
   # from: "Increase Base Damage by +100"
   - kind: flat_base_damage
     value: 100.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "With Channeled Ability Active: +2 Punch Through"
-  - kind: unmodelled_with_channeled_ability_active_punch_through
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
+  # this simulator cannot pay it out, and the reason will not change with
+  # any amount of work on evolutions.
+  - kind: out_of_scope
+    clause: "With Channeled Ability Active: +2 Punch Through"
+    reason: one_target
 
 source:
   url: https://wiki.warframe.com/w/Vectis_Incarnon_Genesis

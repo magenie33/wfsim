@@ -14,10 +14,12 @@ base_form_only: true
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Hold charged shot for 1 second to increase area of effect"
-  - kind: unmodelled_hold_charged_shot_for_second_to_increase_area_of_effe
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
+  # this simulator cannot pay it out, and the reason will not change with
+  # any amount of work on evolutions.
+  - kind: out_of_scope
+    clause: "Hold charged shot for 1 second to increase area of effect"
+    reason: one_target
 
 source:
   url: https://wiki.warframe.com/w/Miter_Incarnon_Genesis

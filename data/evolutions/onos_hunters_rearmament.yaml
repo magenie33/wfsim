@@ -9,10 +9,12 @@ description: "On Kill: 10% chance to replenish 10 Ammo."
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Kill: 10% chance to replenish 10 Ammo"
-  - kind: unmodelled_on_kill_chance_to_replenish_ammo
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
+  # this simulator cannot pay it out, and the reason will not change with
+  # any amount of work on evolutions.
+  - kind: out_of_scope
+    clause: "On Kill: 10% chance to replenish 10 Ammo"
+    reason: infinite_ammo
 
 source:
   url: https://wiki.warframe.com/w/Onos

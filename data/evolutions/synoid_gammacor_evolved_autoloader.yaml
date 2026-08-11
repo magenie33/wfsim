@@ -9,10 +9,12 @@ description: "+50% Magazine reloaded per second while Holstered."
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "+50% Magazine reloaded per second while Holstered"
-  - kind: unmodelled_magazine_reloaded_per_second_while_holstered
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
+  # this simulator cannot pay it out, and the reason will not change with
+  # any amount of work on evolutions.
+  - kind: out_of_scope
+    clause: "+50% Magazine reloaded per second while Holstered"
+    reason: no_holster
 
 source:
   url: https://wiki.warframe.com/w/Gammacor_Incarnon_Genesis

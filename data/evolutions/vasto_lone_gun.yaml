@@ -12,10 +12,12 @@ effects:
   # from: "Increase Base Damage by +66"
   - kind: flat_base_damage
     value: 66.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "With No Primary Equipped: Increase Base Damage by +40, Increase Base Magazine Capacity by +14"
-  - kind: unmodelled_with_no_primary_equipped_increase_base_damage_by_incr
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
+  # this simulator cannot pay it out, and the reason will not change with
+  # any amount of work on evolutions.
+  - kind: out_of_scope
+    clause: "With No Primary Equipped: Increase Base Damage by +40, Increase Base Magazine Capacity by +14"
+    reason: no_holster
 
 source:
   url: https://wiki.warframe.com/w/Vasto_Incarnon_Genesis

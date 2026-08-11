@@ -9,10 +9,12 @@ description: "Reduce the chance an enemy will hear gunfire by 100%."
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Reduce the chance an enemy will hear gunfire by 100%"
-  - kind: unmodelled_reduce_the_chance_an_enemy_will_hear_gunfire_by
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
+  # this simulator cannot pay it out, and the reason will not change with
+  # any amount of work on evolutions.
+  - kind: out_of_scope
+    clause: "Reduce the chance an enemy will hear gunfire by 100%"
+    reason: nobody_shoots_back
 
 source:
   url: https://wiki.warframe.com/w/Vectis_Incarnon_Genesis

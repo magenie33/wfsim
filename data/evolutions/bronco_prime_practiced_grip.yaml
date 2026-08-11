@@ -9,10 +9,12 @@ description: "Increase Accuracy by +30%."
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Increase Accuracy by +30%"
-  - kind: unmodelled_increase_accuracy_by
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
+  # this simulator cannot pay it out, and the reason will not change with
+  # any amount of work on evolutions.
+  - kind: out_of_scope
+    clause: "Increase Accuracy by +30%"
+    reason: no_movement
 
 source:
   url: https://wiki.warframe.com/w/Bronco_Incarnon_Genesis

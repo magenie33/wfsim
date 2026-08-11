@@ -12,10 +12,12 @@ effects:
   # from: "Increase Base Damage by +50"
   - kind: flat_base_damage
     value: 50.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "With Hate and Despair Equipped: Hits increase Base Damage by +10 and Fire Rate by +10%"
-  - kind: unmodelled_with_hate_and_despair_equipped_hits_increase_base_dam
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
+  # this simulator cannot pay it out, and the reason will not change with
+  # any amount of work on evolutions.
+  - kind: out_of_scope
+    clause: "With Hate and Despair Equipped: Hits increase Base Damage by +10 and Fire Rate by +10%"
+    reason: no_holster
   # NOT MODELLED — no rule for this clause, so it loads as
   # `EvoEffect::Inert` and both the builder and the optimizer print it
   # as such. VERBATIM: "Stacks up to 5x"

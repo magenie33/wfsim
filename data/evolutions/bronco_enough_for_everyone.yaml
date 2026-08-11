@@ -9,10 +9,12 @@ description: "+80% Ammo Efficiency when 6 enemies are within 6 m."
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "+80% Ammo Efficiency when 6 enemies are within 6 m"
-  - kind: unmodelled_ammo_efficiency_when_enemies_are_within_m
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
+  # this simulator cannot pay it out, and the reason will not change with
+  # any amount of work on evolutions.
+  - kind: out_of_scope
+    clause: "+80% Ammo Efficiency when 6 enemies are within 6 m"
+    reason: infinite_ammo
 
 source:
   url: https://wiki.warframe.com/w/Bronco_Incarnon_Genesis

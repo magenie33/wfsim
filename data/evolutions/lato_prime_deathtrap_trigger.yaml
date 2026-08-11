@@ -9,10 +9,12 @@ description: "On Equip from Primary: +30% Critical Chance for 4 seconds; +2.3x C
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Equip from Primary: +30% Critical Chance for 4 seconds; +2.3x Critical Damage for 4 seconds"
-  - kind: unmodelled_on_equip_from_primary_critical_chance_for_seconds_x_c
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
+  # this simulator cannot pay it out, and the reason will not change with
+  # any amount of work on evolutions.
+  - kind: out_of_scope
+    clause: "On Equip from Primary: +30% Critical Chance for 4 seconds; +2.3x Critical Damage for 4 seconds"
+    reason: no_holster
 
 source:
   url: https://wiki.warframe.com/w/Lato_Incarnon_Genesis

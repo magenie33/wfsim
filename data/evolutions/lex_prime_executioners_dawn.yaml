@@ -9,10 +9,12 @@ description: "On Equip: +100% Headshot Damage for 4 seconds."
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Equip: +100% Headshot Damage for 4 seconds"
-  - kind: unmodelled_on_equip_headshot_damage_for_seconds
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
+  # this simulator cannot pay it out, and the reason will not change with
+  # any amount of work on evolutions.
+  - kind: out_of_scope
+    clause: "On Equip: +100% Headshot Damage for 4 seconds"
+    reason: no_holster
 
 source:
   url: https://wiki.warframe.com/w/Lex_Incarnon_Genesis
