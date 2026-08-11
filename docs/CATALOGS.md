@@ -84,9 +84,48 @@ Rank ramp (wiki rank table == WFCD `levelStats`, both linear):
 between whole number radius values … a loss of 6.5 meters of radius gives +650%
 Damage and +35.75% Ammo Efficiency."*
 
-### Columns, verbatim
+### Columns and LEGEND, verbatim
 
-> Weapon | Effectiveness | Base Radius | Max Damage Bonus @ Base Radius | Stacking Behavior | Notes
+> Weapon | Attack Name | Compression Effectiveness | Stacking Behavior with
+> Damage Bonuses | Radius Calculation | Base Radius | Max Damage Bonus @ Base
+> Radius | Max Damage Bonus w/ Primed Firestorm | Notes | Class
+
+The page's own legend, and it settles two columns that are easy to read wrong:
+
+> **Compression Effectiveness:** Shows how much bigger/smaller the radius
+> Compression considers compared to how much it should be considering. 100%
+> means "intended" radius/damage calculation. >100% means better than expected.
+> <100% means worse than expected.
+>
+> **Radius Calculation:** On weapons with multiple firing modes that have AoEs
+> attached to them, Compression has to determine which radius to use on aiming:
+> **Snapshot** = Uses the ads state when fired, not when AoE occurs.
+> **Stolen** = Uses another firing mode's radius for the Compression bonus.
+> **Doesn't Work** = Compression doesn't apply to this AoE.
+
+Two things that changes about the earlier reading here:
+
+- **Effectiveness is about WHICH RADIUS is considered**, not how much of the
+  bonus is paid. The arithmetic lands in the same place — the bonus scales with
+  the radius given up — but the Vectis pair's 4% is not a discount on their
+  damage, it is the arcane reading a 0.1 m embed radial instead of the headshot
+  explosion, and the Trumna alt-fire's 127% is not a bonus multiplier, it is a
+  radius counted twice over ("Merged").
+- **`Radius Calculation` is a COLUMN, not a note.** `Snapshot` is its ordinary
+  value, and the table also uses `Constant Check` (the Battacor), which the
+  legend does not list.
+
+And one column is a place to put an EXPLANATION rather than a number: `Max
+Damage Bonus w/ Primed Firestorm` holds *"Primary Fire AoE not affected by
+Firestorm"* on the Shedu and *"Shotguns cannot equip mod"* on every shotgun —
+i.e. it says why that cell has no figure. The last column is the wiki's own
+class taxonomy, which is why the Shedu reads `Arm-Cannon` rather than `Rifle`.
+
+The Shedu's row in full, since it is the one the roster leans on:
+
+| Weapon | Attack | Eff | Stacking | Radius calc | Base radius | Max @ base | w/ Primed Firestorm | Notes | Class |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Shedu | Primary Fire + AoE | 100% | Multiplies | Snapshot | 6.6 m | +528% | *Primary Fire AoE not affected by Firestorm* | *Cannot use reload pulse radial.* | Arm-Cannon |
 
 ### SIX AXES, not one
 
@@ -97,17 +136,15 @@ anything the weapon's own data says:
 1. **Stacking** — `Multiplies` is the common case, but a real minority `Adds`
    (Ambassador, Battacor, Ferrox, Opticor, Trumna, and every Braton/Burston
    Incarnon), and the Trumna's alt-fire is `Both`.
-2. **Effectiveness is not a flag.** Mostly 100% or 0%, but the Vectis pair are
-   **4%** ("uses embed radial instead of headshot explosion") and the Trumna's
-   alt-fire is **127%** ("Merged; Alt-Fire gains damage from primary fire's
-   radius plus a unique multiplier from alt-fire's radius").
-3. **When it is evaluated** — most rows say `Snapshot`; the Battacor says
-   `Constant Check`.
+2. **Effectiveness**, i.e. which radius gets considered — mostly 100% or 0%,
+   but the Vectis pair are **4%** and the Trumna's alt-fire is **127%**.
+3. **Radius Calculation** — `Snapshot` / `Stolen` / `Doesn't Work`, plus the
+   Battacor's `Constant Check`. It only bites on weapons with more than one
+   AoE-bearing firing mode, which is most of the ones that matter.
 4. **Which radius is even reduced.** Several weapons collect the bonus while
    paying nothing: the Torid's *"cloud radius is not reduced"*, the Alternox's
    pulse, Penta's napalm, the Simulor's singularity, Ferrox's pull.
-5. **Radius mods may not apply at all** — the Shedu and both Trumnas:
-   *"Primary Fire AoE not affected by Firestorm."*
+5. **Radius mods may not apply at all** — the Shedu and both Trumnas.
 6. **Multishot can change it.** The Simulor's effectiveness *decreases* with
    multishot (83%, 71%, 63%, 56%) and recovers with Primed Firestorm.
 

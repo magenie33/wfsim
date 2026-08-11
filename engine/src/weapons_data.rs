@@ -1192,14 +1192,34 @@ fn pretty_id(id: &str) -> String {
 /// > Stacking Behavior | Notes
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct CompressionSpec {
-    /// The row's Effectiveness. 1.0 almost everywhere, 0.04 on the Vectis pair
-    /// ("uses embed radial instead of headshot explosion"), 1.27 on the
-    /// Trumna's alt-fire ("Merged"), and 0.0 for "Doesn't Work".
+    /// The row's **Compression Effectiveness**, and the page's legend says what
+    /// that means: *"how much bigger/smaller the radius Compression considers
+    /// compared to how much it should be considering. 100% means 'intended'."*
+    ///
+    /// So it is a factor on the RADIUS READ, not a discount on the damage —
+    /// the arithmetic lands in the same place, but the Vectis pair's 0.04 is
+    /// the arcane reading a 0.1 m embed radial instead of the headshot
+    /// explosion, and the Trumna alt-fire's 1.27 is a radius counted twice.
     pub effectiveness: f64,
-    /// The row's Stacking Behavior: `multiplies` (the common case) or `adds`
-    /// (Ambassador, Battacor, Ferrox, Opticor, Trumna, and every Braton and
-    /// Burston Incarnon). The difference is a bracket, not a number.
+    /// The row's **Stacking Behavior with Damage Bonuses**: `multiplies` (the
+    /// common case) or `adds` (Ambassador, Battacor, Ferrox, Opticor, Trumna,
+    /// and every Braton and Burston Incarnon). A bracket, not a number.
     pub stacking: String,
+    /// The row's **Radius Calculation**, which is a COLUMN and not a note —
+    /// it decides WHICH radius the arcane reads on a weapon with more than one
+    /// AoE-bearing firing mode. The legend's three, plus one the table uses:
+    ///
+    /// - `snapshot` — *"uses the ads state when fired, not when AoE occurs"*;
+    ///   the ordinary value.
+    /// - `stolen` — *"uses another firing mode's radius"* (Mausolon).
+    /// - `doesnt_work` — the arcane does not apply to this AoE.
+    /// - `constant_check` — the Battacor, and the legend does not list it.
+    #[serde(default = "snapshot")]
+    pub radius_calculation: String,
+}
+
+fn snapshot() -> String {
+    "snapshot".to_string()
 }
 
 /// A MAGAZINE THAT REFILLS ITSELF, on a clock rather than on a reload.
@@ -3383,6 +3403,26 @@ mod play_mode_tests {
                 (0.0..=1.5).contains(&c.effectiveness),
                 "{}: effectiveness {} — a percent written as a whole number?",
                 w.id, c.effectiveness
+            );
+            // THE THIRD COLUMN, and the legend's own vocabulary. `Snapshot` is
+            // the ordinary value; the other three each mean the arcane reads a
+            // radius that is not this attack's own, which is the part a
+            // transcription flattens into "it works".
+            assert!(
+                matches!(
+                    c.radius_calculation.as_str(),
+                    "snapshot" | "stolen" | "doesnt_work" | "constant_check"
+                ),
+                "{}: `{}` is not a Radius Calculation",
+                w.id, c.radius_calculation
+            );
+            // …and the two that must agree: an effectiveness of zero IS
+            // "Doesn't Work", spelled in the other column.
+            assert_eq!(
+                c.effectiveness == 0.0,
+                c.radius_calculation == "doesnt_work",
+                "{}: effectiveness {} against radius calculation `{}`",
+                w.id, c.effectiveness, c.radius_calculation
             );
             if c.stacking == "adds" {
                 adds += 1;

@@ -120,6 +120,7 @@ attack:
   compression:
     effectiveness: 0.00
     stacking: multiplies
+    radius_calculation: doesnt_work
 
   beam:
     range_m: 37.0

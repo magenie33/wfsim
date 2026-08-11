@@ -111,6 +111,7 @@ attack:
   compression:
     effectiveness: 1.00
     stacking: multiplies
+    radius_calculation: snapshot
 
   lingering:
     damage: { toxin: 40.0 }

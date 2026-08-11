@@ -81,6 +81,7 @@ attack:
   compression:
     effectiveness: 1.00
     stacking: multiplies
+    radius_calculation: snapshot
 
   radial:
     damage: { puncture: 70.0, heat: 70.0 }   # total 140

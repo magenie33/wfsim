@@ -64,6 +64,7 @@ attack:
   compression:
     effectiveness: 0.04
     stacking: multiplies
+    radius_calculation: snapshot
 
   radial:
     damage: { cold: 150 }   # total 150

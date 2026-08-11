@@ -133,10 +133,22 @@ attack:
   # its own element, and it never takes a body-part multiplier: "Explosion has
   # a headshot multiplier of 1x and cannot trigger headshot conditions", which
   # is the engine's rule for every radial rather than a Shedu special case.
-  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 6.6 m -> +528%. "Primary Fire AoE not affected by Firestorm; cannot use reload pulse radial".
+  # PRIMARY COMPRESSION's row, by column (docs/CATALOGS.md §2):
+  #   Attack Name  Primary Fire + AoE      Base Radius  6.6 m
+  #   Effectiveness 100%                   Max @ base   +528%
+  #   Stacking      Multiplies             Class        Arm-Cannon
+  #   Radius calc   Snapshot
+  #   w/ Primed Firestorm  "Primary Fire AoE not affected by Firestorm"
+  #   Notes                "Cannot use reload pulse radial."
+  #
+  # That Firestorm sentence is the FIRESTORM COLUMN's cell, not a note — the
+  # column holds an explanation where a number would go, saying why this weapon
+  # has no boosted figure. It is the same slot that reads "Shotguns cannot equip
+  # mod" on every shotgun row.
   compression:
     effectiveness: 1.00
     stacking: multiplies
+    radius_calculation: snapshot
 
   radial:
     # ITS RADIUS DOES NOT TAKE BLAST-RADIUS MODS, and the page says it of this
