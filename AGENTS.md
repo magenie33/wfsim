@@ -131,6 +131,17 @@ around (decision 2026-07-31).
   bare name either way.
 - Deploy = push to `main`: Cloudflare picks up `site/` automatically
   (takes ~1–2 min). There is no deploy step in CI.
+- **NEVER RESCORE THE BOARD LOCALLY.** `.github/workflows/board.yml` already
+  rescores every stored row on any push touching `engine/`, `data/`, `webapi/`
+  or the scorer — which is precisely every change that moves a score — and the
+  bot commits the result. Running `scripts/rescore_board.py --write` by hand
+  buys nothing the push already bought, and it costs: it holds the board yaml
+  TRUNCATED while it runs, so the board tests go red and `site/` cannot be
+  regenerated until it finishes. At the rulers' 1000 runs that is an hour of
+  blocking on work a runner was doing anyway (owner, 2026-08-11: "榜单那个你是
+  不是完完全全服务器自己跑就可以了啊…因为还有很多功能需要做"). Use it WITHOUT
+  `--write` when you want to know whether a change moved anything; let the
+  workflow write.
 - **Optimizer verification: `cargo run --release --bin wfsim-truth -- pool=<ids>
   …`**. A search cannot vouch for itself, so it is GRADED: the tool exhausts the
   scope, evaluates every job flat, and reports where the production search
