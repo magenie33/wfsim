@@ -85,6 +85,22 @@ const r = await evaluate(`(async () => {
   out.atZero = now ? now.textContent : '';
   replayApply(rp, rp.t.length - 1);
   out.atEnd = now ? now.textContent : '';
+
+  // ---- A STORED RESULT FROM BEFORE THIS TABLE ---------------------------
+  //
+  // lastResult lives in the scenario preset and is replayed on BOOT, so a
+  // payload written by an older build is the first thing this code meets on a
+  // returning visitor's machine. It took the whole app down on the day the
+  // table shipped — an unguarded .filter on undefined, thrown inside
+  // restoreState, which is upstream of everything: not a missing table, a
+  // page that would not start (reported 2026-08-11). Every field this feature
+  // added has to be optional forever.
+  const old = JSON.parse(JSON.stringify(shot));
+  delete old.replay.debuffs;
+  delete old.replay.dstacks;
+  try { renderResults(old); replayApply(old.replay, 0); out.oldOk = true; }
+  catch (e) { out.oldOk = false; out.oldErr = String(e); }
+  out.oldRows = document.querySelectorAll('.rp-row[data-debuff]').length;
   return out;
 })()`);
 
@@ -108,5 +124,8 @@ check("...named in words the page already uses", /\S/.test(r.firstName), r.first
 check("...with the buff table's own header line", /avg|uptime|平均|覆盖/.test(r.firstStat), r.firstStat);
 check("the cursor reads the debuff series", r.nowSeries === "debuff", r.nowSeries);
 check("...and moving it changes the reading", r.atZero !== r.atEnd, `${r.atZero} -> ${r.atEnd}`);
+
+check("a result stored before this table still renders", r.oldOk === true, String(r.oldErr));
+check("...with no debuff table rather than a crash", r.oldRows === 0, `${r.oldRows} rows`);
 
 await app.finish("the debuff table is the buff table, read from the other side");

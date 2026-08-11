@@ -8390,6 +8390,8 @@ function replayMarkup(r) {
     bleed: "slash", poison: "toxin", ignite: "heat",
   };
   const dbName = (id) => DT(DEBUFF_TYPE[id] || id) + (id === "frozen" ? ` (${tr("frozen")})` : "");
+  const dRoster = rp.debuffs || [];
+  const dSeries = rp.dstacks || [];
   const W = 600, H = 28;
   const curveRows = (roster, series, name, kind) => roster.map((b, i) => {
     const s = series[i] || [];
@@ -8456,8 +8458,15 @@ function replayMarkup(r) {
   // three that moved. A buff row is kept even at zero because the BUILD claimed
   // it; nothing claims a debuff except the fight.
   const dRows = curveRows(
-    rp.debuffs.filter((_, i) => (rp.dstacks[i] || []).some((v) => v > 0)),
-    rp.dstacks.filter((s) => (s || []).some((v) => v > 0)),
+    // A STORED RESULT PREDATES THIS TABLE and carries no debuff series at all —
+    // `lastResult` is saved in the scenario preset and replayed on boot, so a
+    // payload written by yesterday's build is the FIRST thing this code sees on
+    // a returning visitor's machine. It cost the whole app: an unguarded
+    // `.filter` on `undefined` threw inside `restoreState`, which is upstream
+    // of everything, so the page did not fail to draw a table — it failed to
+    // start (reported 2026-08-11).
+    dRoster.filter((_, i) => (dSeries[i] || []).some((v) => v > 0)),
+    dSeries.filter((s) => (s || []).some((v) => v > 0)),
     dbName, "debuff");
   // TWO pieces, deliberately far apart (user, 2026-08-03). The transport
   // belongs at the top, next to the numbers it drives; the CURVES are charts
@@ -8596,8 +8605,8 @@ function replayApply(rp, i) {
   // belongs to. The DEBUFF rows index a FILTERED roster — the statuses this run
   // never applied are not drawn — so the row rebuilds the same filter rather
   // than indexing the full one and reading somebody else's series.
-  const dLive = rp.debuffs
-    .map((b, k) => [b, rp.dstacks[k] || []])
+  const dLive = (rp.debuffs || [])
+    .map((b, k) => [b, (rp.dstacks || [])[k] || []])
     .filter(([, s]) => s.some((v) => v > 0));
   document.querySelectorAll("[data-now]").forEach((el) => {
     const j = Number(el.dataset.now);
