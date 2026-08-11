@@ -554,7 +554,7 @@ const simMeterOpen = new Set();
 // empty", "fixed" = pin it (max one). Plus the arcane set and per-tier
 // evolution option sets. Enemy + buffs are shared with the Sim panel
 // (`sim`). Seeded from the current build on weapon change.
-let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8, min: 1 };
+let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, modes: {}, size: 8, min: 1 };
 let optSeeded = false;
 // (The optimizer used to keep its own scope-wide buff list and config here.
 // It reads the SCENARIO's now — see `renderOptBuffs`.)
@@ -8546,6 +8546,11 @@ function renderOpt() {
   // `renderOptEnemy`, because arriving on this tab is its own moment: the
   // scenario may have gained a buff while you were in the simulator.
   renderWfBuffs("opt-wfbuffs", true);
+  // A WEAPON WITH ONE WAY TO BE FIRED HAS NO AXIS HERE. The builder still
+  // STATES its one mode (a fact about the weapon); a search over one option is
+  // not a scope, so this section is simply absent — the same rule the exilus,
+  // arcane and evolution sections follow.
+  show("opt-modes-sect", modeOpts(w).length > 0);
   show("opt-exilus-sect", AX.hasExilus);
   show("opt-arcanes-sect", AX.arcanes.length > 0);
   show("opt-evos-sect", AX.evolutions.length > 0);
@@ -8561,11 +8566,16 @@ function renderOpt() {
     arcanes.filter((a) => a && a !== "none").forEach((a) => { opt.arcanes[a] = "fixed"; });
     opt.evos = {};
     Object.entries(evoSel).forEach(([t, id]) => { if (id) opt.evos[t] = { [id]: "fixed" }; });
+    // The build's own mode seeds as REQ, like everything else equipped — so a
+    // scope opened for the first time searches the weapon the way you are
+    // holding it, not every way it can be held.
+    opt.modes = modeOpts(w).length ? { [mode]: "fixed" } : {};
     optSeeded = true;
     bootstrapOptPresets();
   }
   renderOptMods();
   renderOptPresetBars();
+  renderOptModes();
   renderOptExilus();
   renderOptArcanes();
   renderOptEvos();
@@ -8679,6 +8689,77 @@ function renderOptExilus() {
 // Arcane scope — the SAME rich rows as the arcane picker (image, name, effect
 // lines), searchable, with an include toggle on the right. Marking nothing is
 // what searches the empty slot, so there is no "None" row to mark.
+/// THE MODE AXIS — how the weapon is played, as a search dimension.
+///
+/// Mode belongs to the BUILD (2026-08-07), which is why the builder has a
+/// control for it and the simulator does not. The optimizer is the third case
+/// and it is neither: it binds a SET where the builder binds a value, exactly
+/// as it does for mods, arcanes and evolutions. Before this the builder's own
+/// Mode block was simply drawn on this tab, where it looked like a setting and
+/// was not one — the request carried no mode at all, so picking the Phantasma's
+/// charged mode here searched its base form and said nothing (owner,
+/// 2026-08-11).
+///
+/// An UNSUSTAINABLE mode is still offered. `play_modes` marks the ones a board
+/// may rank, which is a rule about the leaderboard rather than about what a
+/// player may search — and the builder offers them all.
+function renderOptModes() {
+  const box = $("opt-modes");
+  if (!box) return;
+  const w = weaponInfo($("weapon").value) || {};
+  const opts = modeOpts(w);
+  // NEVER EMPTY, and asserted HERE rather than only where the scope is seeded:
+  // a preset written before this axis existed carries no modes, a scope
+  // imported from another weapon carries modes this one does not have, and
+  // both arrive as "no mode at all" — which is not "search them all", it is a
+  // question with no answer. The build's own mode is the answer, the same one
+  // an empty scope seeds with.
+  if (opts.length && !Object.keys(opt.modes).length) opt.modes = { [mode]: "fixed" };
+  const marks = Object.keys(opt.modes).filter((id) => opts.some(([o]) => o === id));
+  const pinned = marks.find((id) => opt.modes[id] === "fixed") || null;
+  const hasPool = marks.some((id) => opt.modes[id] === "search");
+  box.innerHTML = opts
+    .map(([id, label, offReason]) => {
+      const st = opt.modes[id] || "off";
+      return `<div class="opt ${st === "off" ? "" : st} ${offReason ? "dis" : ""}">
+        <div class="info"><div class="mn">${escHtml(label)}</div>${
+          offReason ? `<div class="ef warn">⊘ ${escHtml(offReason)}</div>` : ""}</div>
+        <div class="oseg">
+          <span class="seg ${st === "search" ? "on" : ""}${offReason ? " dis" : ""}" data-m="${escHtml(id)}" data-s="search"${
+            pinned && pinned !== id ? ` title="${escHtml(tr("pooling opens the slot — the pin gives way"))}"` : ""}>${tr("pool")}</span>
+          <span class="seg ${st === "fixed" ? "on" : ""}${offReason ? " dis" : ""}" data-m="${escHtml(id)}" data-s="fixed"${
+            hasPool ? ` title="${escHtml(tr("req pins the slot — the pool marks give way"))}"` : ""}>${tr("req")}</span>
+        </div>
+      </div>`;
+    })
+    .join("");
+  box.querySelectorAll(".seg:not(.dis)").forEach((el) =>
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const id = el.dataset.m, want = el.dataset.s;
+      // ONE GROUP, because a build is played ONE way: the marks here behave
+      // like a single slot's — `req` pins it and clears the pool, `pool` opens
+      // it and gives way on the pin.
+      const was = opt.modes[id];
+      if (want === "fixed") {
+        opt.modes = { [id]: "fixed" };
+      } else if (was === "search") {
+        delete opt.modes[id];
+      } else {
+        Object.keys(opt.modes).forEach((k) => { if (opt.modes[k] === "fixed") delete opt.modes[k]; });
+        opt.modes[id] = "search";
+      }
+      if (was === "fixed" && want === "fixed") delete opt.modes[id];
+      // NEVER EMPTY. A scope with no mode is not "search them all", it is a
+      // question with no answer — the server would fall back to the request's
+      // single mode and the screen would not say so.
+      if (!Object.keys(opt.modes).length) opt.modes = { [id]: "fixed" };
+      renderOptModes();
+      updateOptEstimate(); // the scope's auto-save
+    })
+  );
+}
+
 function renderOptArcanes() {
   const q = ($("opt-arc-filter") && $("opt-arc-filter").value || "").trim().toLowerCase();
   const axes = weaponAxes().arcanes;
@@ -8895,7 +8976,7 @@ function bootstrapOptPresets() {
 function snapshotOpt() {
   return {
     mods: { ...opt.mods }, exilus: { ...opt.exilus }, size: opt.size, min: opt.min,
-    arcanes: { ...opt.arcanes },
+    arcanes: { ...opt.arcanes }, modes: { ...opt.modes },
     evos: JSON.parse(JSON.stringify(opt.evos)),
     finalists: optRun.finalists,
     threads: optRun.threads,
@@ -8906,6 +8987,9 @@ function snapshotOpt() {
 // An empty search: nothing marked, a fresh size, the contract left alone (it
 // is how hard to search, not what to search).
 const blankOpt = () => ({ mods: {}, exilus: {}, size: 8, arcanes: {}, evos: {},
+  // The build's own mode, the way an empty scope seeds every other axis from
+  // what you are holding.
+  modes: { [mode]: "fixed" },
   finalists: optRun.finalists, threads: optRun.threads, runs: optRun.runs });
 
 // State-only apply (validation + cross-weapon id dropping); no re-render.
@@ -8932,6 +9016,15 @@ function applyOptState(st) {
     // (A stored "none" fails this too, which is what we want.)
     if (arcaneFitsWeapon(w, id)) opt.arcanes[ARCANE_RENAMED[id] || id] = norm(s);
   });
+  // Modes: a scope carried over from another weapon names modes this one does
+  // not have, and a search over none of them is not a scope — so what does not
+  // apply drops and the build's own mode stands in.
+  opt.modes = {};
+  const mopts = modeOpts(weaponInfo(w) || {});
+  Object.entries(st.modes || {}).forEach(([id, s]) => {
+    if (mopts.some(([o]) => o === id)) opt.modes[id] = norm(s);
+  });
+  if (mopts.length && !Object.keys(opt.modes).length) opt.modes = { [mode]: "fixed" };
   // Evolutions: keep only ids the CURRENT weapon's tiers actually offer (ids
   // are globally unique, so a family sharing evolutions imports cleanly and a
   // different weapon's ids just drop).
@@ -9294,6 +9387,11 @@ async function runOptimize() {
       build_min: opt.min,
       arcanes: arcs,
       evolutions,
+      // HOW IT IS PLAYED, as a search dimension — the marks, like the arcanes'.
+      // `mode` travels too and is what a scope with no axis falls back to, so
+      // every caller written before this keeps meaning what it meant.
+      modes: opt.modes,
+      mode,
       exilus: opt.exilus,
       // THE FIGHT, WHOLE AND DERIVED — never a hand-written list of its
       // fields. This was twelve of them copied out one by one, under a comment
@@ -9500,6 +9598,14 @@ function renderOptResults(r) {
       .filter(Boolean);
     const arc = arcNames.join(" + ") || tr("no arcane");
     const evos = (res.evolutions || []).map(evoName).join(" · ") || "—";
+    // HOW THIS ROW WAS PLAYED, drawn only when the search RANGED over modes —
+    // otherwise every row would repeat the one answer the scope already
+    // states. A ranking that mixes them has to say which is which: two rows
+    // with the same mods and different modes are two different builds.
+    const modes = new Set((r.results || []).map((x) => x.mode).filter(Boolean));
+    const md = modes.size > 1 && res.mode
+      ? `<span class="opt-mode">${escHtml(modeLabel(weaponInfo($("weapon").value) || {}, res.mode))}</span>`
+      : "";
     return `<div class="opt-row">
       <div class="opt-head">
         <span class="opt-rank">#${res.rank}</span>
@@ -9509,7 +9615,7 @@ function renderOptResults(r) {
         <span class="forma-badge legal">${res.forma.used} Forma</span>
         <button class="ghost-btn small opt-add" title="${escHtml(tr("save as a new build"))}" data-r='${JSON.stringify(res).replace(/'/g, "&#39;")}'>+ add</button>
       </div>
-      <div class="opt-detail"><b>${arc}</b> · ${evos}</div>
+      <div class="opt-detail">${md}<b>${arc}</b> · ${evos}</div>
       <div class="opt-mods">${mods}</div>
     </div>`;
   }).join("");
@@ -9568,6 +9674,12 @@ function resultToState(res) {
     arcaneRank: asArcaneList(res.arcane_rank, arcanePools($("weapon").value).length)
       .map((x) => x ?? null),
     slots: sl,
+    // HOW THE WINNER IS PLAYED, and it comes from the ROW rather than from the
+    // page: mode is a search dimension, so two rows of one ranking can differ
+    // in it, and "add" has to carry the one that was actually scored. A row
+    // from a run predating the dimension names none, and then the build takes
+    // the mode the page is in — which is the mode that run used.
+    mode: res.mode || mode,
     // NO `sim`. Adding a winner used to copy the optimizer's own buff config
     // into the scenario so that "add then Run Sim" matched its score. It does
     // not any more: a result is a BUILD, and a build does not get to rewrite

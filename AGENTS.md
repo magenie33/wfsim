@@ -229,6 +229,22 @@ around (decision 2026-07-31).
   roar 和 roar（helminth），那就选择生效当前最强的" — the difference between
   +50% and +80% is a number you have to be told), that the optimizer shows the
   same buffs read-only, and — the negative control — that no RULER carries one.
+  `node scripts/check_opt_modes.mjs` is the TWENTY-FIRST: HOW A WEAPON IS PLAYED
+  is the BUILDER's control and the OPTIMIZER's dimension. The report was one
+  screen doing neither (owner, 2026-08-11): the Phantasma's charged mode picked
+  on the optimizer tab searched its base form, because the control there was the
+  BUILDER's Mode block — drawn on that tab only because nothing hid it — and the
+  optimize request carried no mode at all. So the page offered a choice it never
+  sent. Both halves moved: the block is the builder's alone (mode is part of a
+  build and saves in a build preset — 2026-08-07), and the optimizer got a real
+  AXIS with pool/req marks, because it binds a SET where the builder binds a
+  value. Server-side a VARIANT is now a (mode, evolution set) pair, which is why
+  nothing downstream had to learn about modes — every consumer already read a
+  variant as "the forms this candidate fires". The check pins the sharp case:
+  PINNING a mode makes every ranked row come back in it, pooling both DOUBLES
+  the candidate count, and each row carries the mode it was scored in into the
+  build it becomes. Verified to bite — dropping `modes`/`mode` from the request
+  reproduces the report exactly, every row `base`.
   `node scripts/check_run_counts.mjs` is the TWENTIETH: HOW HARD YOU MEASURE is
   a number someone can set, in all three modules, and it walks all three because
   the answer differs in each. The simulator defaults to the rulers' 1000 (owner,

@@ -143,6 +143,7 @@ ui:
   "per tier: pool = searched options, req = pin": 逐层：候选池 = 参与搜索的选项，必带 = 钉死
   "how many winners to keep, how hard to measure them, and how much of the machine to spend": 保留多少个优胜者、把它们测得多准，以及占用多少机器
   Finalists: 优胜名额
+  "how it is played — pool = searched, req = pin one": 怎么打 —— pool = 纳入搜索，req = 钉死一个
   "Final-round runs": 最终轮次数
   "CPU threads": CPU 线程
   "the fight's": 跟随这场仗

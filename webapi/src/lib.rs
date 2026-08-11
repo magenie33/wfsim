@@ -3112,11 +3112,18 @@ pub(crate) struct Fight {
     pub(crate) run_cycle: bool,
     /// The single form to fire (the cycle's Incarnon half when cycling).
     pub(crate) single_form: &'static str,
-    /// The weapon's own default form — what a cycle returns to.
-    pub(crate) untransformed_id: String,
-    /// The form ASKED FOR, after `default` is resolved. Owned: it comes from
-    /// the request, not from the weapon table.
-    pub(crate) form: String,
+    /// The MODE asked for, resolved to one this weapon has. The optimizer reads
+    /// it as the fallback for a request that names no mode axis. It replaced
+    /// `form` and `untransformed_id`, which the optimizer was the only reader
+    /// of: a mode resolves to BOTH of those (`mode_forms`) and it does so per
+    /// variant now, so a fight carrying one copy of them was a fight claiming
+    /// the search fires one form.
+    ///
+    /// FOR THE SIMULATE PATH the pair below is still what fires — one mode,
+    /// one form, which is what a simulate is.
+    /// it as the fallback for a request that names no mode axis, so "the mode
+    /// a simulate would run" and "the mode a search runs" are one answer.
+    pub(crate) mode: String,
     pub(crate) enemy_id: String,
     pub(crate) level: u32,
     pub(crate) steel_path: bool,
@@ -3278,7 +3285,8 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // scenario presets written before this carry it. A stale `form` is not
     // migrated, it is simply obeyed one last time.
     let modes = wfsim_engine::weapons_data::play_modes(&info.id);
-    let form = match v.get("mode").and_then(Value::as_str) {
+    let asked = v.get("mode").and_then(Value::as_str);
+    let form = match asked {
         Some(want) => modes
             .iter()
             .find(|m| m.id == want)
@@ -3286,6 +3294,22 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
             .unwrap_or("default"),
         None => get_str(v, "form", "default"),
     };
+    // The mode NAME, kept beside the form it resolved to. A request naming a
+    // mode this weapon does not have gets the weapon's own first one, which is
+    // the same fallback the form takes.
+    let mode_id = asked
+        .filter(|want| modes.iter().any(|m| m.id == *want))
+        .map(String::from)
+        .or_else(|| {
+            // No mode named: say which one the FORM means, so a share link
+            // written before the vocabulary existed still reports honestly.
+            modes
+                .iter()
+                .find(|m| m.form() == form)
+                .or(modes.first())
+                .map(|m| m.id.to_string())
+        })
+        .unwrap_or_else(|| "base".to_string());
     let evos = match chosen_evolutions(v, info) {
         Ok(e) => e,
         Err(e) => return Err(err_json(e)),
@@ -3456,14 +3480,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         evos,
         run_cycle,
         single_form,
-        untransformed_id: registered
-            .iter()
-            .find(|f| f.is_default && !f.kind.is_gauge_switched())
-            .or_else(|| registered.iter().find(|f| !f.kind.is_gauge_switched()))
-            .map(|f| f.weapon_id)
-            .unwrap_or(&info.id)
-            .to_string(),
-        form: form.to_string(),
+        mode: mode_id,
         enemy_id: enemy_id.to_string(),
         level,
         steel_path,
@@ -3995,6 +4012,75 @@ pub fn opt_buffs_json(v: &Value) -> Value {
 // registry; the wasm build runs it inside a Web Worker.
 
 /// Everything the heavy phase needs, validated up front.
+/// ONE MODE, resolved into the weapon entries it fires.
+///
+/// Everything here is derived from `weapons_data::play_modes` — a mode names
+/// the entry it fires and, for a cycle, the one it returns to — plus the
+/// evolution that unlocks a second form and what to fire without it. It is the
+/// same resolution `parse_fight` does for the single mode a simulate names,
+/// which is why the two agree on what "cycle" means.
+#[derive(Debug, Clone)]
+pub(crate) struct ModeForms {
+    /// The mode's own id (`base`, `cycle`, `alternate`, `transformed`) — what a
+    /// build names and what a result row reports back.
+    id: String,
+    /// The entry that FIRES. For a cycle this is the transformed half.
+    fire_id: String,
+    /// The entry a cycle returns to between transmutes; `None` for a single
+    /// form, which is also what tells `evaluate` this candidate is not cycling.
+    cycle_from: Option<String>,
+    /// The evolution that unlocks the second form, and what to fire without it.
+    /// Evolutions are their own dimension, so one scope holds sets that
+    /// transform and sets that cannot — and which of the two a candidate is
+    /// depends on ITS set, not on the mode.
+    unlock_evo: Option<String>,
+    untransformed_id: String,
+}
+
+/// Resolve one mode into the entries it fires — the optimizer's counterpart of
+/// what `parse_fight` does for a simulate.
+pub(crate) fn mode_forms(info: &WeaponInfo, mode_id: &str) -> ModeForms {
+    let modes = wfsim_engine::weapons_data::play_modes(&info.id);
+    let m = modes.iter().find(|m| m.id == mode_id).or(modes.first());
+    let registered = wfsim_engine::weapons_data::forms_of(&info.id);
+    let untransformed = registered
+        .iter()
+        .find(|f| f.is_default)
+        .or(registered.first())
+        .map(|f| f.weapon_id)
+        .unwrap_or(info.id.as_str())
+        .to_string();
+    match m {
+        // A CYCLE fires the transformed half and returns to the other one.
+        Some(m) if m.other_id.is_some() => ModeForms {
+            id: m.id.to_string(),
+            fire_id: m.other_id.unwrap().to_string(),
+            cycle_from: Some(m.weapon_id.to_string()),
+            unlock_evo: form_unlock_evo(info).map(String::from),
+            untransformed_id: untransformed,
+        },
+        Some(m) => ModeForms {
+            id: m.id.to_string(),
+            fire_id: m.weapon_id.to_string(),
+            cycle_from: None,
+            // A mode that fires the weapon's OWN default entry needs no
+            // unlocking; any other one is a second form, and the tier-1
+            // evolution is what installs it.
+            unlock_evo: (m.weapon_id != untransformed)
+                .then(|| form_unlock_evo(info).map(String::from))
+                .flatten(),
+            untransformed_id: untransformed,
+        },
+        None => ModeForms {
+            id: "base".into(),
+            fire_id: info.id.clone(),
+            cycle_from: None,
+            unlock_evo: None,
+            untransformed_id: untransformed,
+        },
+    }
+}
+
 pub struct OptimizePlan {
     weapon_id: String,
     pool: Vec<ModDef>,
@@ -4025,18 +4111,22 @@ pub struct OptimizePlan {
     target_name: String,
     level: u32,
     steel_path: bool,
-    /// The form this run FIRES — a weapon id, because a form is a weapon
-    /// entry. Every weapon has one; only a gauge-switched pair has two.
-    fire_id: String,
-    /// The form the cycle transforms OUT of. `Some` only when the run is the
-    /// two-form cycle, which is a MODE over forms rather than a form.
-    cycle_from: Option<String>,
-    /// The evolution that UNLOCKS the second form, and the form to fall back
-    /// to without it. Evolutions are a search dimension, so one scope can
-    /// hold sets that transform and sets that cannot — which of the two a
-    /// candidate is depends on its own set, not on the run.
-    unlock_evo: Option<String>,
-    untransformed_id: String,
+    /// EVERY WAY THE SEARCH MAY PLAY IT, one entry per mode in the scope.
+    ///
+    /// Mode is a search dimension like the mods, the arcane and the evolution
+    /// set (owner, 2026-08-11) — "which of these is the better Phantasma, the
+    /// charged one or the plain one" is the same question as "which of these is
+    /// the better mod", and it is the one axis the builder had and the search
+    /// did not. Before this the whole plan fired ONE mode, taken from the
+    /// request's `mode`, and the optimizer tab did not send it — so picking
+    /// charged there searched the base form and said nothing.
+    modes: Vec<ModeForms>,
+    /// The VARIANT TABLE: one entry per (mode, evolution set) pair, which is
+    /// what `Candidate::variant` indexes. Evolutions were the only thing in it
+    /// when a variant was an evolution set, and every consumer already treats a
+    /// variant as "the pair of weapon entries this candidate fires" — so the
+    /// mode joins it rather than becoming a second index to thread through.
+    variants: Vec<(usize, usize)>,
     /// Worker-thread budget; 0 = auto (all cores minus two).
     threads: usize,
     /// Screen evaluations the SEARCH may spend before it hands its elites to
@@ -4435,24 +4525,48 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // What stays here is what is genuinely the optimizer's: the scope to
     // search and the budget to spend.
     let fight = parse_fight(v)?;
-    let untransformed_id = fight.untransformed_id.clone();
-    let unlock_evo = if fight.form == "base" {
-        form_unlock_evo(fight.info).map(String::from)
-    } else {
-        // Asking for a form implies the evolution that IS that form, so there
-        // is nothing left to gate on.
-        None
+    // ---- MODE IS A SEARCH DIMENSION ---------------------------------------
+    //
+    // Marked like the arcanes and the evolutions: `search` puts a mode in the
+    // scope, `fixed` pins it and drops the rest, absent means the axis was not
+    // sent at all — and then the run plays the ONE mode the request named,
+    // which is what every caller written before this does and what a share
+    // link or a board submission means.
+    let playable = wfsim_engine::weapons_data::play_modes(&info.id);
+    let mode_ids: Vec<String> = match v.get("modes").and_then(Value::as_object) {
+        Some(m) => {
+            let pinned: Vec<String> = m
+                .iter()
+                .filter(|(_, s)| s.as_str() == Some("fixed"))
+                .map(|(k, _)| k.clone())
+                .collect();
+            let searched: Vec<String> = if pinned.is_empty() {
+                m.iter()
+                    .filter(|(_, s)| s.as_str() == Some("search"))
+                    .map(|(k, _)| k.clone())
+                    .collect()
+            } else {
+                pinned
+            };
+            // Only modes this weapon actually has. A scope carried over from
+            // another weapon names modes that do not exist here, and a search
+            // over none of them is not a scope.
+            let mut keep: Vec<String> = searched
+                .into_iter()
+                .filter(|id| playable.iter().any(|p| p.id == id))
+                .collect();
+            keep.sort();
+            keep.dedup();
+            if keep.is_empty() { vec![fight.mode.clone()] } else { keep }
+        }
+        None => vec![fight.mode.clone()],
     };
-    // WHICH WEAPON ENTRY FIRES. Not `single_form`: for a CYCLE the optimizer
-    // fires the Incarnon half and returns to `untransformed_id` between
-    // transmutes, while `single_form` answers "the one form to fire when there
-    // is no cycle" and resolves `incarnon_cycle` — a mode, not a form — to the
-    // weapon's default. Mapping one onto the other made the search run the
-    // BASE form of every cycling weapon: the Torid lost 9x and the Boar GAINED,
-    // which is exactly the shape of "both ran their base form" (caught by the
-    // optimizer baseline, 2026-08-04).
-    let fire_id = firing_entry(&fight);
-    let cycle_from = fight.run_cycle.then(|| fight.info.id.clone());
+    let modes: Vec<ModeForms> = mode_ids.iter().map(|id| mode_forms(info, id)).collect();
+    // THE VARIANT TABLE: every (mode, evolution set) the scope holds. One mode
+    // is the ordinary case and reproduces exactly what a single `fire_id` did.
+    let variants: Vec<(usize, usize)> = (0..modes.len())
+        .flat_map(|mi| (0..evo_sets.len()).map(move |ei| (mi, ei)))
+        .collect();
     // Read off the fight before the arena is moved into the scenario. These
     // are what the PLAN reports about itself, not decisions it makes.
     let (headshot_pct, duration, level, steel_path) =
@@ -4467,7 +4581,13 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     let scenario = Scenario {
         arena: fight.arena,
         frenzy: fight.has_frenzy,
-        incarnon_cycle: fight.run_cycle,
+        // ANY mode in the scope that cycles turns this on; a candidate that is
+        // not cycling has no second form, and `evaluate` reads the PAIR
+        // (`incarnon_cycle`, `base_panel`) — so a scope holding both plays each
+        // variant its own way rather than forcing one on the other.
+        incarnon_cycle: variants
+            .iter()
+            .any(|&(mi, _)| modes[mi].cycle_from.is_some()),
         frenzy_lock: fight.cycle_frenzy_lock,
         frenzy_locks: fight.frenzy_locks,
         buff_cfg: fight.buff_cfg.unwrap_or_default(),
@@ -4483,6 +4603,8 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         build_size,
         evo_sets,
         variant_forbids,
+        modes,
+        variants,
         exilus_defs,
         arcanes,
         arcane_sets,
@@ -4495,10 +4617,6 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         target_name: s_name(&specs, &enemy_id),
         level,
         steel_path,
-        fire_id,
-        cycle_from,
-        unlock_evo,
-        untransformed_id,
         threads: v
             .get("threads")
             .and_then(|x| x.as_u64())
@@ -4592,10 +4710,8 @@ pub fn grade_optimize(
         final_runs,
         finalists,
         deployment,
-        fire_id,
-        cycle_from,
-        unlock_evo,
-        untransformed_id,
+        modes,
+        variants,
         weapon_id,
         threads,
         ..
@@ -4615,16 +4731,17 @@ pub fn grade_optimize(
     // ---- exhaust the scope (the same walk the search starts from) ----
     let state = FunnelState::default();
     let mut cands: Vec<Candidate> = Vec::new();
-    for (vi, set) in evo_sets.iter().enumerate() {
+    for (vi, &(mi, ei)) in variants.iter().enumerate() {
+        let (m, set) = (&modes[mi], &evo_sets[ei]);
         let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-        let unlocked = match unlock_evo.as_deref() {
+        let unlocked = match m.unlock_evo.as_deref() {
             Some(u) => set.iter().any(|e| e == u),
             None => true,
         };
         let (base, base_form) = if unlocked {
-            (deployed(&fire_id, &refs), cycle_from.as_ref().map(|id| deployed(id, &refs)))
+            (deployed(&m.fire_id, &refs), m.cycle_from.as_ref().map(|id| deployed(id, &refs)))
         } else {
-            (deployed(&untransformed_id, &refs), None)
+            (deployed(&m.untransformed_id, &refs), None)
         };
         // What THIS variant cannot equip is a forbid like any other: a mod that
         // needs the same trigger on every firing mode is out of the sets that
@@ -4637,7 +4754,7 @@ pub fn grade_optimize(
                 .iter()
                 .cloned()
                 .chain(
-                    variant_forbids[vi]
+                    variant_forbids[ei]
                         .iter()
                         .enumerate()
                         .filter(|(_, &f)| f)
@@ -4716,18 +4833,19 @@ pub fn grade_optimize(
         .collect();
     let space =
         wfsim_optimizer::space::SubsetSpace::new(&families, &usable, &required, min_slots, build_size);
-    let forms: Vec<(WeaponBase, Option<WeaponBase>)> = evo_sets
+    let forms: Vec<(WeaponBase, Option<WeaponBase>)> = variants
         .iter()
-        .map(|set| {
+        .map(|&(mi, ei)| {
+            let (m, set) = (&modes[mi], &evo_sets[ei]);
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-            let unlocked = match unlock_evo.as_deref() {
+            let unlocked = match m.unlock_evo.as_deref() {
                 Some(u) => set.iter().any(|e| e == u),
                 None => true,
             };
             if unlocked {
-                (deployed(&fire_id, &refs), cycle_from.as_ref().map(|id| deployed(id, &refs)))
+                (deployed(&m.fire_id, &refs), m.cycle_from.as_ref().map(|id| deployed(id, &refs)))
             } else {
-                (deployed(&untransformed_id, &refs), None)
+                (deployed(&m.untransformed_id, &refs), None)
             }
         })
         .collect();
@@ -4736,8 +4854,11 @@ pub fn grade_optimize(
         for (vi, (base, base_form)) in forms.iter().enumerate() {
             // A mod this variant cannot equip vetoes the (subset, variant)
             // PAIR, not the subset: the same eight mods are a legal build under
-            // an evolution set that leaves the Incarnon form out.
-            if subset.iter().any(|&i| variant_forbids[vi][i]) {
+            // an evolution set that leaves the Incarnon form out. Indexed by
+            // the EVOLUTION SET rather than by the variant: an equip rule is
+            // asked of every firing mode the weapon has, so which mode is being
+            // played cannot change the answer — only which forms are installed.
+            if subset.iter().any(|&i| variant_forbids[variants[vi].1][i]) {
                 continue;
             }
             wfsim_optimizer::expand_one(
@@ -4897,10 +5018,8 @@ pub fn run_optimize_resumable(
         level,
         steel_path,
         weapon_id,
-        fire_id,
-        cycle_from,
-        unlock_evo,
-        untransformed_id,
+        modes,
+        variants,
         threads,
         max_evals,
         shard,
@@ -4929,23 +5048,25 @@ pub fn run_optimize_resumable(
         }
         b
     };
-    let forms_for = |set: &[String], refs: &[&str]| {
+    // A VARIANT IS A (MODE, EVOLUTION SET) PAIR, so the forms come from both:
+    // the mode says which entries this candidate fires, the set says whether it
+    // can reach the second one.
+    let forms_for = |vi: usize, set: &[String], refs: &[&str]| {
+        let m = &modes[variants[vi].0];
         // Can THIS evolution set reach the second form? Without the unlock
         // there is nothing to transform into, so the candidate is fired in
         // the form it has and carries no second panel — which is what tells
         // `evaluate` not to run a cycle for it.
-        let unlocked = match unlock_evo.as_deref() {
+        let unlocked = match m.unlock_evo.as_deref() {
             Some(u) => set.iter().any(|e| e == u),
             None => true,
         };
         if !unlocked {
-            return (deployed(&untransformed_id, refs), None);
+            return (deployed(&m.untransformed_id, refs), None);
         }
         (
-            deployed(&fire_id, refs),
-            cycle_from
-                .as_ref()
-                .map(|id| deployed(id, refs)),
+            deployed(&m.fire_id, refs),
+            m.cycle_from.as_ref().map(|id| deployed(id, refs)),
         )
     };
     let cancelled_json = |n_cands: usize| {
@@ -4990,7 +5111,11 @@ pub fn run_optimize_resumable(
             "mods": mods,
             "arcane": ids,
             "arcane_rank": ranks,
-            "evolutions": evo_sets[c.variant as usize],
+            "evolutions": evo_sets[variants[c.variant as usize].1],
+            // HOW THE WINNER IS PLAYED. A row without it cannot be added to a
+            // build: mode is part of a build, and a search that ranged over
+            // modes has no other way to say which one won.
+            "mode": modes[variants[c.variant as usize].0].id,
             "exilus": exilus_defs[c.exilus as usize].as_ref().map(|m| m.id).unwrap_or("none"),
             "forma": { "used": c.plan.forma_used, "total_drain": c.plan.total_drain },
         })
@@ -5035,14 +5160,16 @@ pub fn run_optimize_resumable(
     let space =
         wfsim_optimizer::space::SubsetSpace::new(&families, &usable, &required, min_slots, build_size);
 
-    // The bases each evolution set resolves to, built ONCE. `forms_for` reads
-    // data and applies the deployment, which is far too expensive to repeat per
+    // The bases each VARIANT resolves to, built ONCE. `forms_for` reads data
+    // and applies the deployment, which is far too expensive to repeat per
     // proposal.
-    let forms: Vec<(WeaponBase, Option<WeaponBase>)> = evo_sets
+    let forms: Vec<(WeaponBase, Option<WeaponBase>)> = variants
         .iter()
-        .map(|set| {
+        .enumerate()
+        .map(|(vi, &(_, ei))| {
+            let set = &evo_sets[ei];
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-            forms_for(set, &refs)
+            forms_for(vi, set, &refs)
         })
         .collect();
     // One subset -> every candidate it can produce. The axes INSIDE a subset
@@ -5054,8 +5181,11 @@ pub fn run_optimize_resumable(
         for (vi, (base, base_form)) in forms.iter().enumerate() {
             // A mod this variant cannot equip vetoes the (subset, variant)
             // PAIR, not the subset: the same eight mods are a legal build under
-            // an evolution set that leaves the Incarnon form out.
-            if subset.iter().any(|&i| variant_forbids[vi][i]) {
+            // an evolution set that leaves the Incarnon form out. Indexed by
+            // the EVOLUTION SET rather than by the variant: an equip rule is
+            // asked of every firing mode the weapon has, so which mode is being
+            // played cannot change the answer — only which forms are installed.
+            if subset.iter().any(|&i| variant_forbids[variants[vi].1][i]) {
                 continue;
             }
             wfsim_optimizer::expand_one(
@@ -5100,16 +5230,20 @@ pub fn run_optimize_resumable(
         let mut cands: Vec<Candidate> = Vec::new();
         let mut jobs: Vec<Job> = Vec::new();
         for (ordered, variant, exilus, ai) in &r_alive {
-            let Some(set) = evo_sets.get(*variant as usize) else { continue };
+            // A checkpoint written when the variant table had a different shape
+            // — before mode joined it, say — names variants that no longer
+            // exist. Dropping those is the same answer the walk would give now;
+            // if that empties the list, the error below says so.
+            let Some(&(_, ei)) = variants.get(*variant as usize) else { continue };
+            let set = &evo_sets[ei];
             // A checkpoint predating an equip rule can name a build this variant
-            // can no longer wear. Dropping it is the same answer the walk would
-            // give now; if that empties the list, the error below says so.
-            let Some(forbid) = variant_forbids.get(*variant as usize) else { continue };
+            // can no longer wear.
+            let Some(forbid) = variant_forbids.get(ei) else { continue };
             if ordered.iter().any(|&i| forbid.get(i).copied().unwrap_or(false)) {
                 continue;
             }
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-            let (base, base_form) = forms_for(set, &refs);
+            let (base, base_form) = forms_for(*variant as usize, set, &refs);
             let Some(c) = wfsim_optimizer::rebuild_candidate(
                 &pool, &base, base_form.as_ref(), &innate, 60, &scenario.arena.tenno, scenario.policy,
                 ordered, *variant, *exilus, &exilus_refs,
