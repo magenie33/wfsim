@@ -4865,13 +4865,14 @@ pub fn run_once_traced(
                 // revert does NOT count as a transform — `transforms` counts
                 // TRANSMUTES INTO the Incarnon form only (user, 2026-07-29:
                 // both-directions counting read as doubled).
-                // COMING OUT OF INCARNON FORM IS A RELOAD as far as this perk
-                // is concerned — it takes the speed if the buff is up, and it
-                // spends it (owner, 2026-08-11). Which is also why the animation
-                // is scaled by reload speed at all.
+                // COMING OUT OF INCARNON FORM IS A RELOAD too, and for the
+                // same stated reason: the swap refills the base magazine. It
+                // takes the speed if the buff is up and spends it — which is
+                // also why this animation is scaled by reload speed at all.
                 t += rescale_reload(cy.transmute_out_seconds, cy.reload_bucket,
                     live_reload_speed(params, &mut buff_stacks, t)
-                        + if rs_armed { params.rs_on_reload } else { 0.0 });
+                        // The base form's, for the reason at the other animation.
+                        + if rs_armed { cy.base_form.rs_on_reload } else { 0.0 });
                 rs_armed = false;
                 in_base_form = true;
                 charges = 0;
@@ -6255,11 +6256,25 @@ pub fn run_once_traced(
                     // nothing here that could tell the two animations apart.
                     // TRANSFORMING WITH AN EMPTY MAGAZINE IS THE PROOF: the
                     // animation is faster, so the buff was already there before
-                    // any reload began. It is NOT spent here — only a reload
-                    // spends it, and this is not one.
+                    // any reload began (owner, 2026-08-11).
+                    //
+                    // AND IT IS SPENT WHEN THE TRANSFORM COMPLETES (owner, same
+                    // day: "那个buff应该在进入灵化完成的时候就消失，如果是在打
+                    // 空的时候进入灵化的话"). Which collapses the rule to one
+                    // line rather than a list of events: SWAPPING EITHER WAY
+                    // FULLY RELOADS THE BASE FORM'S MAGAZINE (wiki), so both
+                    // transforms are reloads, and the buff is spent by whatever
+                    // refills the magazine. Nothing else has to be enumerated.
                     t += rescale_reload(cy.transmute_seconds, cy.reload_bucket,
                         live_reload_speed(params, &mut buff_stacks, t)
-                            + if rs_armed { params.rs_on_reload } else { 0.0 });
+                            // THE PERK IS THE BASE FORM'S. The evolution loader
+                            // drops it on a charge-backed form, so the OUTER
+                            // params — which are the Incarnon half's — carry
+                            // zero, and reading them here would have handed
+                            // every animation a bonus of nothing on the one
+                            // weapon that actually has this perk.
+                            + if rs_armed { cy.base_form.rs_on_reload } else { 0.0 });
+                    rs_armed = false;
                     r.transforms += 1;
                     in_base_form = false;
                     // The CHARGE magazine is filled by the gauge, not reloaded
@@ -7268,6 +7283,11 @@ mod tests {
     #[test]
     fn an_empty_magazine_arms_ready_retaliation_before_any_reload() {
         let mk = |rs: f64| {
+            // THE PERK IS THE BASE FORM'S, and only the base form's: the
+            // evolution loader drops it on a charge-backed form. The outer
+            // params below therefore carry ZERO on purpose — setting it in both
+            // places hid a real bug for one run, where the animations were
+            // reading the Incarnon half's copy and finding nothing there.
             let base_form = DummyParams {
                 damage: DamageVector::new().with(DamageType::Impact, 50.0),
                 crit_multiplier: 1.0,
@@ -7282,7 +7302,6 @@ mod tests {
                 crit_multiplier: 1.0,
                 magazine_size: 2.0,
                 reload_seconds: 2.0,
-                rs_on_reload: rs,
                 ammo_efficiency_applies: false,
                 body_parts: mono_body(1.0),
                 duration_secs: 60.0,
