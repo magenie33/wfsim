@@ -49,6 +49,11 @@ on:
       - "webapi/**"
       - "cli/src/bin/wfsim-board.rs"
   workflow_dispatch:
+    inputs:
+      full:
+        description: "rescore every row, even if the engine has not moved"
+        type: boolean
+        default: false
 
 # One at a time. Two runs committing the same generated file is a conflict with
 # no meaning — the later run's numbers are simply the current ones.
@@ -72,8 +77,28 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       wired: ${{ steps.wired.outputs.yes }}
+      engine: ${{ steps.fp.outputs.engine }}
     steps:
       - uses: actions/checkout@v4
+
+      # WHAT A SCORE DEPENDS ON THAT IS NOT THE BUILD, as one hash: the code
+      # that simulates, the data it simulates with, and the rulers. `data/`
+      # MINUS the boards themselves — those are this job's own output, so
+      # including them would move the fingerprint on every run and nothing would
+      # ever be reused.
+      #
+      # A COOLDOWN WOULD HAVE BEEN THE WRONG AXIS (owner asked, 2026-08-11):
+      # time is not an input to a score. Untouched, a row is valid forever;
+      # moved, it is wrong immediately. This asks the only question that matters
+      # — "is anything different" — and answers it exactly.
+      - name: what engine is this
+        id: fp
+        run: |
+          set -euo pipefail
+          fp=$(git ls-files -s -- engine webapi cli data ':!data/benchmarks/boards' \
+               | git hash-object --stdin)
+          echo "engine=$fp" >> "$GITHUB_OUTPUT"
+          echo "engine fingerprint: $fp"
 
       # NOT CONFIGURED YET IS NOT A FAILURE. Without the KV binding there is
       # nothing to read, and a job that fails hourly for a reason nobody is
@@ -157,13 +182,21 @@ jobs:
       - name: build the scorer
         run: cargo build --release --bin wfsim-board
 
+      # REUSE IS EXACT, NOT AN APPROXIMATION. With the fingerprint unchanged the
+      # stored score is the number this run would compute, so re-running the
+      # fight would be spending an hour to reproduce it — and only submissions
+      # with no row yet cost anything. The manual button skips the reuse and
+      # rescores everything.
       - name: score this shard of every benchmark
         run: |
           set -euo pipefail
           mkdir -p scores
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
+            prior=""
+            [ "${{ inputs.full }}" = "true" ] || prior="--reuse data/benchmarks/boards/$id.yaml"
             ./target/release/wfsim-board "$id" \
+              --engine "${{ needs.submissions.outputs.engine }}" $prior \
               --shard "${{ matrix.shard }}/${SHARDS}" \
               --emit-scores "scores/$id-${{ matrix.shard }}.json" \
               < submissions.json > /dev/null
@@ -221,7 +254,16 @@ jobs:
           mkdir -p site
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
-            ./target/release/wfsim-board "$id" site/board.json --scores scores \
+            prior=""
+            if [ "${{ inputs.full }}" != "true" ]; then
+              # Read the board BEFORE it is overwritten: the loop writes in
+              # place, so a copy is what the reuse actually reads.
+              cp "data/benchmarks/boards/$id.yaml" "/tmp/$id-prior.yaml"
+              prior="--reuse /tmp/$id-prior.yaml"
+            fi
+            ./target/release/wfsim-board "$id" site/board.json \
+              --engine "${{ needs.submissions.outputs.engine }}" $prior \
+              --scores scores \
               < submissions.json > "data/benchmarks/boards/$id.yaml"
           done
 

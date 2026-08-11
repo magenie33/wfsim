@@ -113,6 +113,46 @@ fn load_scores(spec: Option<String>) -> std::collections::HashMap<String, f64> {
     out
 }
 
+/// The prior board's scores, keyed the way this run keys them — but only if it
+/// was computed by the same engine.
+///
+/// The rows are re-validated on the way in rather than trusted: the identity a
+/// score is filed under is `builds::identity`, which is a function of the
+/// canonical build, so it has to be recomputed from the row rather than stored
+/// beside it. That also means a row this engine would now REFUSE simply fails
+/// to produce a key and is rescored (and then refused) rather than carried.
+fn reuse_prior(
+    path: &str,
+    engine_fp: &str,
+    bench_id: &str,
+) -> Result<std::collections::HashMap<String, f64>, String> {
+    if engine_fp.is_empty() {
+        return Err("no engine fingerprint given".into());
+    }
+    let text = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
+    let prior = wfsim_engine::boards_data::parse(&text).map_err(|e| format!("{path}: {e}"))?;
+    if prior.engine != engine_fp {
+        return Err(format!(
+            "engine moved ({} -> {engine_fp})",
+            if prior.engine.is_empty() { "unrecorded" } else { &prior.engine }
+        ));
+    }
+    if family(&prior.benchmark) != family(bench_id) {
+        return Err(format!("{path} is {}'s board", prior.benchmark));
+    }
+    let mut out = std::collections::HashMap::new();
+    for e in &prior.entries {
+        let Ok(v) = wfsim_engine::builds::validate_for_board(
+            bench_id, &e.weapon, &e.mods, &e.evolutions, &e.arcanes,
+        ) else {
+            continue;
+        };
+        let mode = if e.mode.is_empty() { "base" } else { e.mode.as_str() };
+        out.insert(format!("{}#{}", wfsim_engine::builds::identity(&v), mode), e.score);
+    }
+    Ok(out)
+}
+
 fn main() {
     let bench_id = std::env::args().nth(1).unwrap_or_else(|| {
         eprintln!("usage: wfsim-board <benchmark-id> [board.json] [--shard i/n] \
@@ -132,7 +172,34 @@ fn main() {
         }
         None => (0, 1),
     };
-    let known = load_scores(flag("--scores"));
+    // THE ENGINE FINGERPRINT — a hash of everything a score depends on that is
+    // not the build: `engine/`, `webapi/`, `cli/`, and `data/` minus the boards
+    // themselves. The workflow computes it from the index and hands it in.
+    //
+    // It is what makes reuse EXACT rather than a guess. A score is a pure
+    // function of (build, the ruler's terms, this code and this data), so if
+    // the fingerprint is unchanged the stored number is not merely probably
+    // still right — it is the same number this run would compute, and running
+    // the fight again would be spending an hour to reproduce it.
+    //
+    // A COOLDOWN WOULD BE THE WRONG AXIS (owner asked about one, 2026-08-11).
+    // Time is not an input: an untouched score is valid forever, and a score
+    // whose engine moved is wrong immediately, not in an hour.
+    let engine_fp = flag("--engine").unwrap_or_default();
+    let mut known = load_scores(flag("--scores"));
+    let mut reused = 0usize;
+    if let Some(path) = flag("--reuse") {
+        match reuse_prior(&path, &engine_fp, &bench_id) {
+            Ok(map) => {
+                reused = map.len();
+                // The shards' own scores win: they were computed by THIS run.
+                for (k, v) in map {
+                    known.entry(k).or_insert(v);
+                }
+            }
+            Err(why) => eprintln!("full rescore: {why}"),
+        }
+    }
     let emit_to = flag("--emit-scores");
     let mut computed: std::collections::HashMap<String, f64> = Default::default();
     let bench = wfsim_engine::benchmarks_data::get(&bench_id).unwrap_or_else(|| {
@@ -349,9 +416,13 @@ fn main() {
             .then(b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal))
     });
 
+    // HOW MUCH OF THIS BOARD WAS KEPT rather than recomputed, said out loud. A
+    // run that reuses everything and a run that scored everything look
+    // identical from the outside, and the difference is an hour.
     eprintln!(
-        "{seen} submissions, {refused} refused, {} rows{}",
+        "{seen} submissions, {refused} refused, {} rows ({reused} reused, {} scored here){}",
         kept.len(),
+        computed.len(),
         // ONLY WHEN THERE ARE ANY. A board whose every row carries its
         // submitter's own choice should say nothing here — the line exists to
         // report a migration in progress, and a zero printed forever is noise
@@ -438,6 +509,12 @@ fn main() {
     println!("# migrating anything, because the builds are still builds.");
     println!("benchmark: {bench_id}");
     println!("source: submissions");
+    // THE FINGERPRINT THIS BOARD WAS SCORED UNDER, so the next run can tell
+    // whether these numbers are still its own answer. Absent = "scored by an
+    // engine that did not record one", which reads as a full rescore.
+    if !engine_fp.is_empty() {
+        println!("engine: {engine_fp}");
+    }
     println!("entries:");
     for r in kept {
         println!("  - weapon: {}", r.weapon);

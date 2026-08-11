@@ -55,9 +55,10 @@ state anyway.
 
 | trigger | scope | cost |
 | --- | --- | --- |
-| `:00`, `:20`, `:40` | score what is new | sub-second per build; no commit when nothing changed |
-| a push touching `engine/` or `data/` | **everything** | ~570 ms per build, minutes for a few thousand |
+| `:00`, `:20`, `:40` | score what is new | seconds; no commit when nothing changed |
+| a push touching `engine/`, `webapi/`, `data/` or the scorer | **everything** | ~9 min, eight ways at once |
 | a change to a benchmark's terms | everything, under the new ruler | the builds carry over; only the numbers change |
+| Actions → board → Run workflow, **full = true** | everything, whatever the fingerprint says | the same ~9 min |
 
 **The clock is a best effort, not a promise.** GitHub delays scheduled runs
 under load and says so, and this repo's own history is the evidence: while the
@@ -69,7 +70,49 @@ whole hour. If you want a result NOW, Actions → board → Run workflow.
 The second row is the point: the maintainer's ordinary work — fixing a bug,
 correcting a number, changing the benchmark to 480 s — IS the trigger. There is
 no dependency analysis deciding which rows were affected, because that question
-can be answered wrong silently and re-scoring everything is cheap.
+can be answered wrong silently.
+
+### What decides "new" — the ENGINE FINGERPRINT (2026-08-11)
+
+The first row used to be a lie. Both triggers ran the same full rescore, which
+was affordable at 100 runs a build and stopped being so at 1000: scoring went
+from ~7 minutes to **1h07m**, the schedule kept firing every 20, and
+`concurrency` keeps only ONE pending run — so every queued run was cancelled by
+the next and the board simply stopped updating. Five `cancelled` in a row.
+
+A score is a pure function of `(build, the ruler's terms, this code, this
+data)`. So the board records the hash of everything on that list which is not
+the build — `engine/`, `webapi/`, `cli/`, and `data/` minus the boards
+themselves — as `engine:` at the top of the file. Next run:
+
+- **fingerprint unchanged** → every stored score is not merely probably still
+  right, it is the number this run would compute. It is reused, and only
+  submissions with no row cost anything. Measured: 0.05 s to reproduce a board
+  byte-for-byte, 1.5 s when one new build arrived.
+- **fingerprint moved** → everything is rescored, and the log says what moved.
+
+TIME IS NOT AN INPUT, which is why there is no cooldown and never will be
+(asked and answered, owner 2026-08-11). An untouched row is valid forever; a row
+whose engine moved is wrong immediately, not in an hour. A cooldown would be
+both too slow and too fast at once.
+
+**The manual button is the escape hatch.** Actions → board → Run workflow with
+`full` ticked ignores the fingerprint and rescores every row — for when
+something outside the hash changed, or when you simply want to see it done.
+
+### Why it is sharded
+
+Every row is an independent fight, so the scoring splits by submission index
+across eight jobs, each writing only the scores it computed; a merge job
+validates, deduplicates, ranks and writes, simulating nothing. Verified before
+it shipped: 24 submissions through 8 shards reproduced every published score to
+1e-9, and the merge ran in 0.064 s.
+
+The generated files are NEVER rebased. There is no sense in which two versions
+of a computed board each hold something worth keeping, so a three-way merge can
+only produce a conflict — which is exactly what threw away 83 minutes of
+completed scoring on 2026-08-11. The run that just scored takes whatever base is
+current and writes its numbers on top.
 
 ## Consent
 

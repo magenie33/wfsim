@@ -28,6 +28,14 @@ use serde::Deserialize;
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct BoardEntry {
     pub weapon: String,
+    /// HOW the weapon was played — `base`, `cycle`, `alternate`. The file has
+    /// carried it since mode became part of a row's identity, and this struct
+    /// did not, so serde dropped it: a Torid through its Incarnon cycle and a
+    /// Torid that never transmutes read as the same row to anything parsing a
+    /// board back. Empty = a row written before the dimension existed, which is
+    /// `base` by the same fallback the scorer uses.
+    #[serde(default)]
+    pub mode: String,
     /// The benchmark's metric, as this engine computed it. Deterministic —
     /// re-running the same build under the same benchmark reproduces it to the
     /// last digit, in the browser as well as natively (measured 2026-08-04:
@@ -57,6 +65,17 @@ pub struct Board {
     /// that has.
     #[serde(default)]
     pub source: String,
+    /// THE ENGINE THAT SCORED THESE ROWS — a hash of everything a score depends
+    /// on that is not the build: `engine/`, `webapi/`, `cli/` and `data/` minus
+    /// the boards themselves.
+    ///
+    /// It is what lets the next run tell reuse from staleness EXACTLY. A score
+    /// is a pure function of (build, the ruler's terms, this code and this
+    /// data), so an unchanged fingerprint means the stored number is not merely
+    /// probably still right — it is the number this run would compute. Empty =
+    /// scored before this was recorded, which reads as "rescore everything".
+    #[serde(default)]
+    pub engine: String,
     #[serde(default)]
     pub entries: Vec<BoardEntry>,
 }
@@ -83,6 +102,14 @@ pub fn format_score(v: f64) -> String {
 }
 
 /// Every board, parsed once.
+/// Parse ONE board file. The scorer reads the board it is about to replace —
+/// to tell reuse from staleness — and that is a path on disk rather than one of
+/// the embedded set, so the parse lives here beside the type rather than as a
+/// second copy of it in the binary.
+pub fn parse(text: &str) -> Result<Board, String> {
+    serde_norway::from_str::<Board>(text).map_err(|e| e.to_string())
+}
+
 pub fn all() -> &'static [Board] {
     static B: OnceLock<Vec<Board>> = OnceLock::new();
     B.get_or_init(|| {
