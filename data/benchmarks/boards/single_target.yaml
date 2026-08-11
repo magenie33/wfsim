@@ -9,6 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
+engine: 1f0bb08257c65a79af94f5bef88331afaac0eb23
 entries:
   - weapon: angstrum
     mode: cycle
@@ -1338,6 +1339,12 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: furis
     mode: cycle
+    score: 41.699563740384704
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_prelude_of_might]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
     score: 41.5431986156824
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_executioners_fortune, furis_elemental_balance]
@@ -1362,10 +1369,34 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
+    score: 36.114066087154434
+    mods: [pistol_acuity, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_extended_volley, furis_prelude_of_might]
+    arcanes: [secondary_deadhead]
+  - weapon: furis
+    mode: cycle
+    score: 35.93649033120794
+    mods: [pistol_acuity, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_extended_volley, furis_prelude_of_might]
+    arcanes: [secondary_deadhead]
+  - weapon: furis
+    mode: cycle
+    score: 34.87856349573932
+    mods: [pistol_acuity, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_executioners_fortune, furis_prelude_of_might]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
     score: 34.87856349573932
     mods: [pistol_acuity, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_practiced_grip, furis_prelude_of_might]
     arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
+    score: 34.73817819682401
+    mods: [pistol_acuity, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_extended_volley, furis_prelude_of_might]
+    arcanes: [secondary_deadhead]
   - weapon: furis
     mode: cycle
     score: 31.879504284707235
@@ -2091,11 +2122,6 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
-    score: 11.324676170407832
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, polar_magazine, primed_venomous_clip, primed_combustion_rounds]
-    arcanes: [primary_crux, secondary_enervate]
-  - weapon: larkspur_prime
-    mode: base
     score: 11.09978336726692
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
@@ -2481,6 +2507,11 @@ entries:
     arcanes: [primary_merciless, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
+    score: 2.0751446912065963
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
     score: 1.9070092543306885
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, containment_breach, hollowed_bullets, magnetized_cycle, primed_combustion_rounds, primed_venomous_clip]
     arcanes: [primary_crux, secondary_enervate]
@@ -2549,6 +2580,12 @@ entries:
     score: 0.26925865827467016
     mods: [primed_dual_rounds, ammo_chain, containment_breach, magnetized_cycle, primed_combustion_rounds, magma_chamber, primed_venomous_clip, hypothermic_shell]
     arcanes: [primary_crux, cascadia_flare]
+  - weapon: latron_prime
+    mode: cycle
+    score: 18.91690932040885
+    mods: [primary_acuity, galvanized_aptitude, hammer_shot, semi_rifle_cannonade, vital_sense, magnetic_capacity, hellfire, thermite_rounds]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_swift_punishment, latron_prime_extended_volley, latron_prime_deadhead]
+    arcanes: [primary_compression]
   - weapon: lex_prime
     mode: cycle
     score: 17.333333333333332

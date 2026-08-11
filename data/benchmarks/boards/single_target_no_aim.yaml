@@ -9,6 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
+engine: 1f0bb08257c65a79af94f5bef88331afaac0eb23
 entries:
   - weapon: boltor_prime
     mode: cycle
@@ -145,6 +146,11 @@ entries:
     mode: base
     score: 2.6666666666666665
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 2.0751446912065963
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
