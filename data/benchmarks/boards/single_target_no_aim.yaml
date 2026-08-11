@@ -262,6 +262,16 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: shedu
     mode: base
+    score: 0.49180553846395964
+    mods: [split_chamber, serration, critical_delay, hammer_shot, vital_sense, rime_rounds, high_voltage, hellfire]
+    arcanes: [primary_merciless]
+  - weapon: shedu
+    mode: base
+    score: 0.23030844303181047
+    mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, hellfire]
+    arcanes: [primary_crux]
+  - weapon: shedu
+    mode: base
     score: 0.05589758518031137
     mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     arcanes: [primary_crux]
