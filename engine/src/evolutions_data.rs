@@ -38,6 +38,14 @@ struct EvoFile {
     /// belongs to the perk, not to the weapon and not to the CO class.
     #[serde(default)]
     co_base_excludes_this_evolution: bool,
+    /// *"Does not affect Incarnon Form"* — the whole perk is the BASE form's.
+    ///
+    /// It is the EVOLUTION's flag and not an effect's because that is how the
+    /// card reads it: on all eleven entries carrying the sentence it is the
+    /// last clause and it qualifies everything before it, magazine and ammo
+    /// and range together.
+    #[serde(default)]
+    base_form_only: bool,
     effects: Vec<Value>,
 }
 
@@ -362,6 +370,9 @@ pub struct EvolutionDef {
     /// this flag — including Dual Toxocyst's OTHER Evolution II option — feeds
     /// the CO term in full.
     pub co_base_excludes_this_evolution: bool,
+    /// Everything this evolution grants applies to the BASE form only — see
+    /// the loader field of the same name.
+    pub base_form_only: bool,
     effects: Vec<EvoEffect>,
 }
 
@@ -1086,7 +1097,15 @@ fn effect(v: &Value) -> Option<EvoEffect> {
 pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
     let original_total = base.base_vector.total();
     let mut flat = 0.0;
-    for e in evos.iter().filter(|e| !e.currently_broken) {
+    for e in evos
+        .iter()
+        .filter(|e| !e.currently_broken)
+        // "Does not affect Incarnon Form" — the perk is EQUIPPED either way
+        // (it is the same Genesis ladder), so it is skipped HERE, on the form
+        // it does not reach, rather than refused at selection. On the base
+        // form's panel it applies in full.
+        .filter(|e| !(e.base_form_only && base.form == crate::weapons_data::FormKind::Incarnon))
+    {
         for eff in &e.effects {
             match eff {
                 // NOTHING TO APPLY. The form it unlocks is a separate weapon
@@ -1492,6 +1511,7 @@ pub fn pool() -> &'static Vec<EvolutionDef> {
                 description: ef.description.unwrap_or_default(),
                 currently_broken: ef.currently_broken,
                 co_base_excludes_this_evolution: ef.co_base_excludes_this_evolution,
+                base_form_only: ef.base_form_only,
                 effects,
             });
         }
@@ -1648,6 +1668,7 @@ mod tests {
             description: String::new(),
             currently_broken: broken,
             co_base_excludes_this_evolution: false,
+            base_form_only: false,
             effects: vec![
                 EvoEffect::FlatBaseDamage(100.0),
                 EvoEffect::FlatBaseDamageOnEmptyReload(50.0),
@@ -2169,9 +2190,47 @@ mod furis_co_split_tests {
     ///
     /// Lower this number when a kind gets implemented; that is the only edit
     /// this line should ever see.
+    /// *"Does not affect Incarnon Form"* — obeyed, on the two perks where it
+    /// is worth a number.
+    ///
+    /// Eleven evolutions carry the sentence and nine of them qualify something
+    /// this sim does not model anyway (ammo capacity, range, an AoE hold), so
+    /// the qualifier was transcribed as a NAMED INERT effect and the perk it
+    /// qualified went on applying to both forms. On the two that raise a
+    /// MAGAZINE that was a real over-valuation: a Zylok Incarnon was fired with
+    /// 20 rounds where the card gives it 12.
+    ///
+    /// Asserted on BOTH forms of BOTH weapons, because a gate that skips
+    /// everything passes the half of this that only checks the Incarnon.
+    #[test]
+    fn a_base_form_only_evolution_reaches_the_base_form_and_stops_there() {
+        for (base_id, form_id, perk, added) in [
+            ("zylok", "zylok_incarnon", "zylok_extended_volley", 12.0),
+            ("onos", "onos_incarnon", "onos_extended_volley", 10.0),
+        ] {
+            let b_off = crate::loadout::WeaponBase::from_data(base_id, true, &[]);
+            let b_on = crate::loadout::WeaponBase::from_data(base_id, true, &[perk]);
+            assert_eq!(b_off.form, crate::weapons_data::FormKind::Base);
+            assert!(
+                (b_on.magazine_size - b_off.magazine_size - added).abs() < 1e-9,
+                "{base_id}: the base form takes the whole perk, {} -> {} (+{added} expected)",
+                b_off.magazine_size, b_on.magazine_size
+            );
+
+            let f_off = crate::loadout::WeaponBase::from_data(form_id, true, &[]);
+            let f_on = crate::loadout::WeaponBase::from_data(form_id, true, &[perk]);
+            assert_eq!(f_off.form, crate::weapons_data::FormKind::Incarnon);
+            assert!(
+                (f_on.magazine_size - f_off.magazine_size).abs() < 1e-9,
+                "{form_id}: the Incarnon form takes NONE of it, {} -> {}",
+                f_off.magazine_size, f_on.magazine_size
+            );
+        }
+    }
+
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 216;
+        const CEILING: usize = 205;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

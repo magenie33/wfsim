@@ -861,6 +861,13 @@ pub enum CoBehavior {
 /// weapon's BASE stats before mods).
 #[derive(Debug, Clone)]
 pub struct WeaponBase {
+    /// WHICH FORM this panel is, from the yaml entry's own `form:`.
+    ///
+    /// A two-weapons pair is two entries and two panels, and until now neither
+    /// knew which of the two it was — every evolution applied to both. Eleven
+    /// evolutions say *"Does not affect Incarnon Form"* and this is what lets
+    /// them be obeyed rather than transcribed and ignored.
+    pub form: crate::weapons_data::FormKind,
     /// Indirect stats the WEAPON itself brings, before any mod — today only
     /// EVOLUTIONS write here (Practiced Grip's +50% accuracy, Marksman's
     /// Hand's recoil, Swift Deliverance's projectile speed). `resolve` seeds

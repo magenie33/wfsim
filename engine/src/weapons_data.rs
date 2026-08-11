@@ -1596,6 +1596,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
     });
 
     WeaponBase {
+        form: FormKind::parse(&s.form),
         // Empty until an evolution writes into it (evolutions_data::apply).
         indirect: Vec::new(),
         reload_damage_buff: 0.0,

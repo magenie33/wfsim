@@ -6,6 +6,11 @@ description: "Increase Base Ammo Capacity by +9. Does not affect Incarnon Form."
 # THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
 # of them carry the same ladder; a value that differs between them is
 # printed per variant by the wiki and transcribed per variant here.
+# BASE FORM ONLY — the card's last clause, "Does not affect Incarnon Form",
+# qualifies the whole perk. The evolution is still EQUIPPED in both forms (one
+# Genesis ladder), so the engine skips it when building the Incarnon entry
+# rather than refusing to select it.
+base_form_only: true
 selection: choose_one
 
 effects:
@@ -13,10 +18,6 @@ effects:
   # `EvoEffect::Inert` and both the builder and the optimizer print it
   # as such. VERBATIM: "Increase Base Ammo Capacity by +9"
   - kind: unmodelled_increase_base_ammo_capacity_by
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Does not affect Incarnon Form"
-  - kind: unmodelled_does_not_affect_incarnon_form
 
 source:
   url: https://wiki.warframe.com/w/Angstrum_Incarnon_Genesis
