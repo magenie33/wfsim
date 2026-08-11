@@ -279,6 +279,20 @@ enum EvoEffect {
     StackingFireRateOnHeadshot { per_stack: f64, max_stacks: u32, duration: f64, chance: f64 },
     /// Stormburst: "On hitting an enemy affected by Electricity: +0.4
     /// Multishot for 2s. Stacks up to 3x."
+    /// Blazing Barrel: *"On Firing: +X Multishot. Stacks up to Nx."*
+    ///
+    /// `base` is which bracket the card names, and it is the whole reason one
+    /// perk name needs one variant rather than two: the Strun family reads
+    /// "+0.05 BASE Multishot" and the Sybaris family "+5% Multishot", which are
+    /// different numbers the moment a multishot mod is equipped.
+    ///
+    /// NO DURATION — neither wiki page states one, and both state the reset
+    /// instead: the stacks stand until a reload (`ClearedBy::Reload`).
+    StackingMultishotOnFiring {
+        per_stack: f64,
+        max_stacks: u32,
+        base: bool,
+    },
     StackingMultishotOnStatus {
         status: crate::damage::DamageType,
         per_stack: f64,
@@ -509,6 +523,12 @@ impl EvolutionDef {
                 }),
                 EvoEffect::StackingReloadSpeedOnHeadshot { max_stacks, .. } => Some(EvoBuffCard {
                     id: "on_headshot_reload_speed",
+                    max_stacks: *max_stacks,
+                    permanent: false,
+                    opens_at: CardOpens::Zero,
+                }),
+                EvoEffect::StackingMultishotOnFiring { max_stacks, .. } => Some(EvoBuffCard {
+                    id: "on_firing_multishot",
                     max_stacks: *max_stacks,
                     permanent: false,
                     opens_at: CardOpens::Zero,
@@ -746,6 +766,10 @@ impl EvolutionDef {
                 EvoEffect::ReloadSpeedOnEmptyReload { value } => format!(
                     "+{:.0}% reload speed on a reload from empty, for that reload",
                     value * 100.0
+                ),
+                EvoEffect::StackingMultishotOnFiring { per_stack, max_stacks, base } => format!(
+                    "+{per_stack} {} multishot per stack x{max_stacks} on firing, until a reload",
+                    if *base { "base" } else { "bucket" }
                 ),
                 EvoEffect::StackingMultishotOnStatus { status, per_stack, max_stacks, duration } => format!(
                     "+{per_stack} multishot per stack x{max_stacks} for {duration:.0}s while the                      target carries {status:?} (flat, like Final Fusillade's)"
@@ -1016,6 +1040,21 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             if v.get("condition").and_then(Value::as_str) == Some("reload_from_empty") =>
         {
             EvoEffect::ReloadSpeedOnEmptyReload { value: f(v, "value").unwrap_or(0.0) }
+        }
+        // ON FIRING. `base:` is REQUIRED rather than defaulted, for the same
+        // reason `multishot_on_last_round` requires it: the two brackets differ
+        // only on builds that carry a multishot mod, so a wrong default is a
+        // number that looks right on a bare weapon and is wrong on every real
+        // build.
+        "stacking_multishot_on_firing" => {
+            let Some(base) = v.get("base").and_then(Value::as_bool) else {
+                return Some(EvoEffect::Inert("stacking_multishot_on_firing without `base:`".into()));
+            };
+            EvoEffect::StackingMultishotOnFiring {
+                per_stack: f(v, "per_stack").unwrap_or(0.0),
+                max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
+                base,
+            }
         }
         // THE STATUS IS IN THE KIND, and it is READ rather than matched one
         // spelling at a time. This arm was hardcoded to Electricity for the
@@ -1316,6 +1355,30 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // full, since the live half only exists once a shot lands.
                 EvoEffect::CritMultiplierBelowCritChance { value, below } => {
                     base.crit_mult_below_cc = Some((*value, *below));
+                }
+                EvoEffect::StackingMultishotOnFiring { per_stack, max_stacks, base: is_base } => {
+                    base.stacking_buffs.push(crate::loadout::StackingBuff {
+                        id: "on_firing_multishot",
+                        trigger: crate::loadout::BuffTrigger::Firing,
+                        grant: if *is_base {
+                            crate::loadout::BuffGrant::BaseMultishot
+                        } else {
+                            crate::loadout::BuffGrant::MultishotPercent
+                        },
+                        // NO CLOCK, so the decay never runs; the reload is what
+                        // ends it. Both wiki pages say so in the same words —
+                        // "There is no timer" (Sybaris), "resets entirely upon
+                        // reloading" (Strun).
+                        decay: crate::loadout::BuffDecay::PerStackExpiry,
+                        per_stack: *per_stack,
+                        max_stacks: *max_stacks,
+                        duration: crate::loadout::NO_TIMEOUT,
+                        chance: 1.0,
+                        initial_stacks: 0,
+                        stacks_per_trigger: 1,
+                        per_shell: false,
+                        cleared_by: crate::loadout::ClearedBy::Reload,
+                    });
                 }
                 EvoEffect::StackingMultishotOnStatus { status, per_stack, max_stacks, duration } => {
                     base.stacking_buffs.push(crate::loadout::StackingBuff {
@@ -2230,7 +2293,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 205;
+        const CEILING: usize = 196;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

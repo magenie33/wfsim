@@ -1130,6 +1130,18 @@ pub enum BuffTrigger {
     /// burst at the end, and a partial burst is not one: the count restarts
     /// with the magazine, so those rounds earn nothing.
     FullBurst,
+    /// Blazing Barrel: FIRING — the round leaving the barrel, whether or not
+    /// it hits and whatever it hits.
+    ///
+    /// The first trigger here that asks nothing of the target at all, which is
+    /// why it is counted where the round is SPENT rather than in the pellet
+    /// loop: one shot is one stack however many pellets it threw, and a
+    /// shotgun is the family this perk is on.
+    ///
+    /// THE SHOT THAT EARNS THE STACK DOES NOT CARRY IT — its multishot was
+    /// rolled before the round was spent. Same moment Reaver's Rapture uses,
+    /// for the same reason.
+    Firing,
 }
 
 /// WHAT A STACKING BUFF FEEDS. One arm per grant, and each keeps its own
@@ -1145,6 +1157,23 @@ pub enum BuffGrant {
     /// the weapon's base — so it joins `ms_eff` beside Final Fusillade's, not
     /// the multishot BUCKET.
     Multishot,
+    /// Blazing Barrel on the Strun family: "+0.05 **Base** Multishot".
+    ///
+    /// "Base" is the whole difference and the wiki spells out what it buys on
+    /// the neighbouring perk (Forceful Finality, "+5 BASE Multishot"): it is
+    /// "added before mods, and is thus multiplied by multishot bonuses". So a
+    /// build carrying Hell's Chamber gets 0.05 x that bucket a stack, where
+    /// [`BuffGrant::Multishot`] would have given it a flat 0.05.
+    BaseMultishot,
+    /// Blazing Barrel on the Sybaris and the Stug: "+5% Multishot" — a
+    /// PERCENTAGE of the weapon's base, which is what every multishot MOD
+    /// grants, so it joins their bucket rather than either flat bracket.
+    ///
+    /// Three brackets for one stat reads like over-modelling until the cards
+    /// are laid side by side: the same perk NAME grants a flat base add on one
+    /// family and a percentage on another, and they are different numbers on
+    /// any build that carries a multishot mod.
+    MultishotPercent,
 }
 
 impl BuffGrant {
@@ -1160,6 +1189,7 @@ impl BuffGrant {
     pub fn locked_stat(self) -> &'static str {
         match self {
             BuffGrant::BaseDamage => "base_damage",
+            BuffGrant::BaseMultishot | BuffGrant::MultishotPercent => "multishot",
             BuffGrant::ReloadSpeed => "reload_speed",
             BuffGrant::FireRate => "fire_rate",
             BuffGrant::Multishot => "multishot",
@@ -1273,6 +1303,18 @@ pub enum ClearedBy {
     /// THE MOMENT IS THE COMPLETION, not the start: a reload that has begun has
     /// not refilled anything yet.
     MagazineRefilled,
+    /// A RELOAD — the action, not the refill, and the difference is one event.
+    ///
+    /// VERBATIM (wiki, Strun Incarnon Genesis, Blazing Barrel): *"resets
+    /// entirely upon reloading. Entering Incarnon Form counts as reloading but
+    /// exiting does not."* Swapping OUT refills the base form's magazine, so a
+    /// buff keyed on the refill dies there — and this one is stated not to.
+    ///
+    /// Kept as a second variant rather than folded into the one above because
+    /// the two disagree on exactly one of the four events that end a magazine,
+    /// and picking either as "close enough" is a stack count nobody can
+    /// reproduce.
+    Reload,
 }
 
 /// What happens when a second field lands on a target that already has one.

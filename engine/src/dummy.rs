@@ -4612,7 +4612,14 @@ pub fn run_once_traced(
     // reload that has begun has refilled nothing (owner, 2026-08-11: "时间节点
     // 一定要处理好…不可以含糊，要准确").
     macro_rules! magazine_refilled {
+        // The default: this event is a reload as well as a refill, which three
+        // of the four sites are. Swapping OUT of the Incarnon form passes
+        // `false` — it refills the base magazine and is not a reload, and
+        // Blazing Barrel is stated to survive it.
         () => {
+            magazine_refilled!(also_a_reload: true)
+        };
+        (also_a_reload: $reload:expr) => {
             rs_armed = false;
             rounds_this_mag = 0;
             if !opening_closed {
@@ -4620,7 +4627,12 @@ pub fn run_once_traced(
                 r.first_magazine_damage = r.effective_damage;
             }
             for (i, b) in params.stacking_buffs.iter().enumerate() {
-                if b.cleared_by == crate::loadout::ClearedBy::MagazineRefilled {
+                let cleared = match b.cleared_by {
+                    crate::loadout::ClearedBy::MagazineRefilled => true,
+                    crate::loadout::ClearedBy::Reload => $reload,
+                    _ => false,
+                };
+                if cleared {
                     buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
                 }
             }
@@ -5049,7 +5061,9 @@ pub fn run_once_traced(
                     live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t));
                 r.downtime_secs += spent;
                 t += spent;
-                magazine_refilled!();
+                // …but it is NOT a reload, and one perk can tell the difference:
+                // see `ClearedBy::Reload`.
+                magazine_refilled!(also_a_reload: false);
                 in_base_form = true;
                 charges = 0;
                 // The swap's auto-reload is the SAME mechanism as a normal one
@@ -5382,7 +5396,25 @@ pub fn run_once_traced(
             }
             // Stormburst: "+0.4 Multishot", flat — same reason Final Fusillade
             // sits here rather than in the bucket above.
-            + buff_total!(ap, crate::loadout::BuffGrant::Multishot, t);
+            + buff_total!(ap, crate::loadout::BuffGrant::Multishot, t)
+            // BLAZING BARREL, both of its shapes, and they are two brackets.
+            //
+            // "+0.05 BASE Multishot" is added before mods and is therefore
+            // MULTIPLIED by them — the bucket recovered as `multishot /
+            // base_multishot`, exactly as Forceful Finality does two arms up
+            // and for the same quoted reason. "+5% Multishot" is what a
+            // multishot MOD grants, so it is a share of the weapon's base.
+            //
+            // Both are silenced by an Acuity lock, like every other live
+            // multishot grant here.
+            + if ms_locked {
+                0.0
+            } else {
+                buff_total!(ap, crate::loadout::BuffGrant::BaseMultishot, t)
+                    * (ap.multishot / ap.base_multishot.max(1e-9))
+                    + buff_total!(ap, crate::loadout::BuffGrant::MultishotPercent, t)
+                        * ap.base_multishot
+            };
         let rolled = ms_eff.floor() as u32 + d.spine.chance(ms_eff.fract()) as u32;
         // CONTINUOUS weapons MERGE. VERBATIM (wiki Multishot §Continuous
         // Weapons): "additional beams that hit the same target instead merge
@@ -5451,6 +5483,11 @@ pub fn run_once_traced(
             magazine -= spend;
         }
         rounds_this_mag += 1;
+        // BLAZING BARREL: the round is SPENT, so it was fired. Here and not in
+        // the pellet loop — one shot is one stack however many pellets it threw
+        // — and after `ms_eff` was rolled, so the shot that earns the stack does
+        // not carry it.
+        bump_buffs!(crate::loadout::BuffTrigger::Firing, t, d.spine);
         // READY RETALIATION IS ARMED THE MOMENT THE MAGAZINE RUNS OUT, which is
         // HERE — the shot that spends the last round — and not at the reload
         // that follows. The two are the same instant for a reload and are not
@@ -7672,6 +7709,97 @@ mod tests {
             at > 0.45 && at < 0.56,
             "five bursts at ten bursts a second is 0.5 s: capped at {at:.3} s (frame {first_cap})"
         );
+    }
+
+    /// BLAZING BARREL, and the two brackets one perk name lands in.
+    ///
+    /// The Strun family's card reads "+0.05 BASE Multishot" and the Sybaris
+    /// family's "+5% Multishot". On a bare weapon those are the same 0.05 a
+    /// stack and the difference is invisible — which is exactly why `base:` is
+    /// required in the yaml rather than defaulted. With a multishot MOD in, the
+    /// base add is multiplied by the mod bucket and the percentage is not, and
+    /// this test is the one place that separation is pinned.
+    ///
+    /// Hell's Chamber is +120%, so at five stacks the Strun's 0.25 becomes 0.55
+    /// while a percentage grant of the same size would stay flat. Asserted as a
+    /// RATIO between the two brackets rather than against a golden number, so
+    /// it survives any change to the weapon's own pellet count.
+    #[test]
+    fn blazing_barrel_lands_in_the_bracket_its_card_names() {
+        let arena = crate::arena::Arena::training(60.0);
+        // A magazine large enough to reach the cap and stay there: the stacks
+        // are cleared by the reload, so a 2-round shotgun would spend the run
+        // climbing.
+        let pellets = |evo: &[&str], mods: &[&str]| {
+            let base = crate::loadout::WeaponBase::from_data("strun_prime", true, evo);
+            let pool = crate::mods_data::pool_for_weapon("strun_prime");
+            let ms: Vec<&crate::loadout::ModDef> = mods
+                .iter()
+                .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("no mod {m}")))
+                .collect();
+            let panel = crate::loadout::resolve(&base, &ms, crate::loadout::StackPolicy::Emergent);
+            let p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
+            let s = monte_carlo(&p, 12, 0xB1A2);
+            s.mean_pellets / s.mean_shots
+        };
+        let perk = ["strun_prime_blazing_barrel"];
+
+        // BARE: the grant is worth its face value, so the perk raises the
+        // pellet count at all. Without this the ratio below is 1.0 for the
+        // uninteresting reason that nothing happened.
+        let (bare_off, bare_on) = (pellets(&[], &[]), pellets(&perk, &[]));
+        assert!(
+            bare_on > bare_off,
+            "on firing, +0.05 base multishot a stack: {bare_off:.3} -> {bare_on:.3} pellets a shot"
+        );
+
+        // MODDED: the same perk is worth MORE, because a base add is multiplied
+        // by the multishot bucket. A percentage grant would have gained exactly
+        // the bare amount here, so the two brackets are told apart by whether
+        // this ratio exceeds 1.
+        let (mod_off, mod_on) = (pellets(&[], &["hells_chamber"]), pellets(&perk, &["hells_chamber"]));
+        let bare_gain = bare_on - bare_off;
+        let mod_gain = mod_on - mod_off;
+        assert!(
+            mod_gain > bare_gain * 1.5,
+            "a BASE add is multiplied by the bucket: +{bare_gain:.3} pellets bare,              +{mod_gain:.3} with Hell's Chamber — a percentage grant would have given +{bare_gain:.3} in both"
+        );
+    }
+
+    /// …AND THE RELOAD TAKES THEM, but swapping OUT of the Incarnon form does
+    /// not. VERBATIM (wiki, Strun Incarnon Genesis): "resets entirely upon
+    /// reloading. Entering Incarnon Form counts as reloading but exiting does
+    /// not."
+    ///
+    /// That one exception is the whole reason `ClearedBy::Reload` exists beside
+    /// `MagazineRefilled`, which fires on both transforms. Asserted through the
+    /// SHAPE of the buff rather than by replaying a swap, because what the two
+    /// clearers disagree about is a single event and the disagreement is
+    /// declared, not emergent.
+    #[test]
+    fn blazing_barrel_is_cleared_by_a_reload_and_not_by_a_refill() {
+        let base = crate::loadout::WeaponBase::from_data("strun_prime", true, &["strun_prime_blazing_barrel"]);
+        let b = base
+            .stacking_buffs
+            .iter()
+            .find(|b| b.id == "on_firing_multishot")
+            .expect("the perk pushes its buff");
+        assert_eq!(b.cleared_by, crate::loadout::ClearedBy::Reload);
+        assert_eq!(b.trigger, crate::loadout::BuffTrigger::Firing);
+        assert_eq!(b.grant, crate::loadout::BuffGrant::BaseMultishot);
+        // No clock: the card states none and the reset is what ends it.
+        assert!(b.duration.is_infinite(), "no timer — the reload is the end");
+        assert_eq!(b.max_stacks, 5);
+
+        // …and the Sybaris's same-named perk is the OTHER bracket.
+        let syb = crate::loadout::WeaponBase::from_data("sybaris_prime", true, &["sybaris_prime_blazing_barrel"]);
+        let s = syb
+            .stacking_buffs
+            .iter()
+            .find(|b| b.id == "on_firing_multishot")
+            .expect("the Sybaris carries it too");
+        assert_eq!(s.grant, crate::loadout::BuffGrant::MultishotPercent);
+        assert_eq!(s.max_stacks, 10);
     }
 
     /// THE LATRON'S TWO PUNCTURE PERKS, both measured against the status they

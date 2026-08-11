@@ -12,14 +12,21 @@ effects:
   # from: "Increase Base Damage by +175"
   - kind: flat_base_damage
     value: 175.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Firing: +5% Multishot"
-  - kind: unmodelled_on_firing_multishot
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Stacks up to 10x"
-  - kind: unmodelled_stacks_up_to_x
+  # BLAZING BARREL. Two clauses on the card and ONE mechanic: the stack cap
+  # belongs to the grant above it, and the bulk intake filed it as an effect of
+  # its own.
+  #
+  # "+5% Multishot" — a PERCENTAGE of the weapon's base, which is what a
+  # multishot MOD grants, so it joins their bucket. The Strun family's Blazing
+  # Barrel reads "+0.05 BASE Multishot" and lands in a different bracket; the
+  # name is shared and the number is not, which is why `base:` is required.
+  #
+  # NO DURATION — VERBATIM (wiki): "There is no timer—the stacks persist until
+  # a reload occurs."
+  - kind: stacking_multishot_on_firing
+    base: false
+    per_stack: 0.05
+    max_stacks: 10
 
 source:
   url: https://wiki.warframe.com/w/Stug_Incarnon_Genesis
