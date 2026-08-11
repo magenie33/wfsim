@@ -2388,6 +2388,13 @@ pub fn resolve_for(
         // multiply (wiki) — a different layer from the base-stat one.
         crit_chance: resolved_cc,
         crit_damage: (base.base_crit_damage + prelude_cd) * (1.0 + cd),
+        // What the line above added, in the same post-mod units, so the sim
+        // subtracts exactly what was granted — including through a crit-damage
+        // LOCK, which zeroes `cd` for both expressions at once.
+        crit_mult_below_cc: base
+            .crit_mult_below_cc
+            .filter(|_| prelude_cd > 0.0)
+            .map(|(_, below)| (prelude_cd * (1.0 + cd), below)),
         // No upper clamp: status chance ABOVE 100% is meaningful (a
         // guaranteed proc plus an extra roll) — DT resolves to 129%.
         status_chance: (base.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)

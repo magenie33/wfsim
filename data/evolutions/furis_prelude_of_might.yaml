@@ -11,14 +11,24 @@ description: "With Critical Chance below 40%: Increase Critical Damage Multiplie
 selection: choose_one
 
 effects:
-  # MODELLED (2026-08-06). The condition is on the build's OWN RESOLVED crit
-  # chance, which no `condition:` here can express — every one of those asks
-  # about the Tenno or the target, never about the panel the mods just
-  # produced — so it is its own effect kind, resolved late in `resolve` against
-  # the same expression the panel publishes. The
+  # MODELLED (2026-08-06). The condition is on the crit chance THE HIT HAS,
+  # which no `condition:` here can express — every one of those asks about the
+  # Tenno or the target, never about the panel the mods just produced — so it is
+  # its own effect kind, granted late in `resolve` against the same expression
+  # the panel publishes and re-checked per shot by the sim. The
   # payload is large (+3x on a 3.4x base) and so is its cost, since taking it
   # means holding crit chance under 40%; the form's own 26% base already sits
   # close to that line, so the two interact rather than stack.
+  #
+  # AND THE LINE IS CROSSED BY THE WEAPON'S OWN OTHER HALF (2026-08-11). The
+  # wiki's note on this row — "Condition is affected by the critical chance
+  # increase effect of Puncture status" — is not a footnote on this weapon, it
+  # is the build. Puncture's Weakened is +5% flat crit chance received per
+  # stack to 25%, the BASE form is 70% Puncture (14 of 20), and 26% + 3 stacks
+  # = 41%: the form that generates the stacks turns the perk off in the form
+  # that was carrying it. It comes back as the stacks expire, which is why the
+  # check has to be live rather than a second static branch — and the base form
+  # itself, at 5%, never crosses the line at all.
   #
   # NOT `flat_base_crit_multiplier`: that arm ignores `condition:`, so spelling
   # it that way would grant +3x to every build — which is exactly what it did

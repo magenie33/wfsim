@@ -10,10 +10,11 @@ description: "With Critical Chance Below 50%: Increase Base Critical Damage Mult
 selection: choose_one
 
 effects:
-  # The condition is on the build's OWN RESOLVED crit chance, which no
-  # `condition:` here can express — every one of those asks about the Tenno or
-  # the target. Its own kind, resolved late in `resolve` against the same
-  # expression the panel publishes (see furis_prelude_of_might for the argument).
+  # The condition is on the crit chance THE HIT HAS — the panel plus every live
+  # bonus, Puncture's Weakened included (the wiki's own note on this row) —
+  # which no `condition:` here can express, since every one of those asks about
+  # the Tenno or the target. Its own kind, granted late in `resolve` and
+  # re-checked per shot by the sim (see furis_prelude_of_might for the argument).
   #
   # The threshold is 50% on this family against the Furis's 40%, and it bites
   # harder here: taking it means holding crit chance under half, which Critical

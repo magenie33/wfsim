@@ -1136,6 +1136,14 @@ pub struct DummyParams {
     /// rolled per pellet and independent of status chance.
     pub slash_on_crit: f64,
     pub crit_multiplier: f64,
+    /// PRELUDE OF MIGHT's live gate — `(the part of `crit_multiplier` this
+    /// perk is, the crit-chance threshold)`. Carried rather than settled
+    /// because the condition is read at the moment of the hit; see
+    /// [`crate::loadout::ResolvedPanel::crit_mult_below_cc`]. Per FORM, which
+    /// is what a cycle needs: the Furis's base form sits at 5% and its
+    /// Incarnon form at 26%, so the same Weakened stacks push one over the
+    /// 40% line and leave the other under it.
+    pub crit_mult_below_cc: Option<(f64, f64)>,
     /// UNMODDED crit stats of the DIRECT part — the bases a RELATIVE live crit
     /// buff multiplies (the radial carries its own pair on `ResolvedRadial`).
     pub unmodded_crit_chance: f64,
@@ -1942,6 +1950,7 @@ impl DummyParams {
             stacking_buffs: panel.stacking_buffs.clone(),
             base_crit_chance: panel.crit_chance,
             crit_multiplier: panel.crit_damage,
+            crit_mult_below_cc: panel.crit_mult_below_cc,
             unmodded_crit_chance: panel.base_crit_chance,
             unmodded_crit_damage: panel.base_crit_damage,
             status_chance: panel.status_chance,
@@ -2157,6 +2166,7 @@ impl Default for DummyParams {
             stacking_buffs: Vec::new(),
             base_crit_chance: 0.05,
             crit_multiplier: 2.0,
+            crit_mult_below_cc: None,
             unmodded_crit_chance: 0.05,
             unmodded_crit_damage: 2.0,
             status_chance: 0.37,
@@ -5289,7 +5299,32 @@ pub fn run_once_traced(
                 _ => 0.0,
             };
             let cd_abs = debuffs.cold_cd_bonus(t) + spiteful;
-            let cd_total = ap.crit_multiplier + ap.unmodded_crit_damage * cd_rel + cd_abs;
+            // PRELUDE OF MIGHT is the one perk whose condition is read at the
+            // MOMENT OF THE HIT rather than off the arsenal: "With Critical
+            // Chance below 40%", plus the wiki's note on the same row —
+            // "Condition is affected by the critical chance increase effect of
+            // Puncture status". So the value tested is `effective_cc`, the very
+            // number the crit roll is about to use, and every live source is in
+            // it: Weakened, a flat grant (Arcane Avenger), a relative one
+            // (Crosshairs, an arcane's stacks). Puncture is only the one the
+            // wiki names, being the sole source that sits on the TARGET and so
+            // can raise your crit chance without your panel ever moving.
+            //
+            // Read PER SHOT, not per pellet: `effective_cc` is the weapon's
+            // crit chance, while a pellet's may go higher on a weak point
+            // (Pistol Acuity) or be REPLACED outright (Gotva Prime's set
+            // chance). Those are properties of where a projectile landed, not
+            // of the weapon the condition asks about.
+            //
+            // Nothing to take back when the perk is absent, and nothing to take
+            // back when the panel already failed the condition — `resolve` then
+            // never granted it and leaves this `None`.
+            let prelude_lost = match ap.crit_mult_below_cc {
+                Some((granted, below)) if effective_cc >= below => granted,
+                _ => 0.0,
+            };
+            let cd_total =
+                ap.crit_multiplier - prelude_lost + ap.unmodded_crit_damage * cd_rel + cd_abs;
             // Live BASE-DAMAGE bucket additions, evaluated per instance:
             //  - arcane stacks (Merciless/Deadhead/Dexterity/Cascadia Flare)
             //  - Overwhelming Attrition's earned stacks — VERBATIM (wiki
@@ -9270,6 +9305,81 @@ mod tests {
             "mean {} expect {expect}",
             s.mean_damage
         );
+    }
+
+    /// PRELUDE OF MIGHT IS CHECKED AT THE HIT, NOT ON THE ARSENAL SCREEN.
+    ///
+    /// Wiki (Furis / Braton Incarnon Genesis), the perk's own row: "With
+    /// Critical Chance below 40%: Increase Base Critical Damage Multiplier by
+    /// +3x" — and, on the same row, "Condition is affected by the critical
+    /// chance increase effect of Puncture status". Weakened is +5% flat crit
+    /// chance received per stack, so a build that starts under the line walks
+    /// over it on its own Puncture procs and loses the perk while they hold.
+    ///
+    /// Arithmetic rather than statistics: one forced Puncture per shot, one
+    /// shot a second, no other crit source, cd 5.0 granted (2.0 + 3.0).
+    ///   shot 0   0 stacks   cc .32   on    1 + .32 x (5 - 1) = 2.28
+    ///   shot 1   1 stack    cc .37   on                        2.48
+    ///   shot 2   2 stacks   cc .42   off   1 + .42 x (2 - 1) = 1.42
+    ///   shot 3   3 stacks   cc .47   off                       1.47
+    ///   shot 4   4 stacks   cc .52   off                       1.52
+    /// Sum 9.17, against 5 x 2.28 = 11.40 with the forced proc taken away —
+    /// the control, whose only difference is whether Weakened lands at all.
+    /// (Status IMMUNITY would not have been that control: a forced proc goes
+    /// on regardless of it.)
+    #[test]
+    fn weakened_takes_prelude_of_might_away() {
+        let build = || DummyParams {
+            damage: DamageVector::new().with(DamageType::Puncture, 100.0),
+            base_crit_chance: 0.32,
+            unmodded_crit_chance: 0.32,
+            crit_multiplier: 5.0,
+            crit_mult_below_cc: Some((3.0, 0.40)),
+            unmodded_crit_damage: 2.0,
+            forced_procs: vec![DamageType::Puncture],
+            body_parts: mono_body(1.0),
+            fire_rate: 1.0,
+            duration_secs: 5.0,
+            arcane: crate::arcanes_data::ArcaneFx::none(),
+            target: TargetParams { base_health: 1e15, ..DummyParams::default().target },
+            ..no_status()
+        };
+        let lost = monte_carlo(&build(), 4000, 91).mean_damage;
+        assert!(
+            (lost - 917.0).abs() / 917.0 < 0.02,
+            "with Weakened {lost}, expected 917"
+        );
+
+        let mut unproced = build();
+        unproced.forced_procs.clear();
+        let kept = monte_carlo(&unproced, 4000, 91).mean_damage;
+        assert!(
+            (kept - 1140.0).abs() / 1140.0 < 0.02,
+            "without Weakened {kept}, expected 1140"
+        );
+    }
+
+    /// "BELOW" IS STRICT. Same fixture with no procs at all, and a threshold
+    /// set exactly ON the build's crit chance: the perk is gone, so the run is
+    /// worth 5 x (1 + .32 x (2 - 1)) = 6.60 -> 660.
+    #[test]
+    fn prelude_of_might_is_off_exactly_at_its_threshold() {
+        let p = DummyParams {
+            damage: DamageVector::new().with(DamageType::Puncture, 100.0),
+            base_crit_chance: 0.32,
+            unmodded_crit_chance: 0.32,
+            crit_multiplier: 5.0,
+            crit_mult_below_cc: Some((3.0, 0.32)),
+            unmodded_crit_damage: 2.0,
+            body_parts: mono_body(1.0),
+            fire_rate: 1.0,
+            duration_secs: 5.0,
+            arcane: crate::arcanes_data::ArcaneFx::none(),
+            target: TargetParams { base_health: 1e15, ..DummyParams::default().target },
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 4000, 91).mean_damage;
+        assert!((s - 660.0).abs() / 660.0 < 0.02, "at the threshold {s}, expected 660");
     }
 
     #[test]

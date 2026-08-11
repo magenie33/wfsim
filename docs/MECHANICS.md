@@ -400,6 +400,40 @@ Crit chance is **location-independent** — headshots do not raise the roll
 multiplies the outcome (location ×3, and cd doubled in the tier formula
 on a crit), so crits on the head carry a larger premium at unchanged rate.
 
+**A perk can READ `effective_cc`, not just feed it** — Prelude of Might, the
+Furis and Braton Incarnon Genesis tier-4 option: "With Critical Chance below
+40%: Increase Base Critical Damage Multiplier by +3x" (50% and +3.0–3.4x on the
+Braton family). The wiki attaches a note to that same row in both families:
+
+> Condition is affected by the critical chance increase effect of Puncture
+> status.
+
+So the threshold is tested against the crit chance **the hit has**, not the one
+the arsenal prints — the whole of `effective_cc`, a target-side source included.
+Puncture's Weakened is +5% flat crit chance received per stack to +25% at five
+(§6), which means a build under the line walks over it on its own procs and gets
+the perk back as they expire. Puncture is simply the source the wiki bothered to
+name: it is the only one that raises your crit chance without your own panel
+moving.
+
+Consequences worth stating, because they are what the model has to reproduce:
+- The check is **per shot**, and the value is the weapon's — not a pellet's. A
+  weak-point-only crit chance (Pistol Acuity) or a SET one (Gotva Prime) is a
+  property of where a projectile landed, not of the weapon being asked about.
+- "Below" is **strict**: exactly at the threshold the perk is off.
+- On a two-form weapon it is resolved **per form**, which is the Furis's whole
+  interaction — its base form is 70% Puncture and its Incarnon form is pure Heat
+  at 26% crit, so the form that generates the stacks turns the perk off in the
+  form that was carrying it (26% + 3 stacks = 41%), while the base form's own 5%
+  never crosses the line.
+
+Implemented in two halves, deliberately: `loadout::resolve` GRANTS it against
+the panel (`ResolvedPanel::crit_mult_below_cc` records what it granted) and the
+sim takes it back on any hit whose `effective_cc` has reached the threshold.
+The panel test remains sound as a short-circuit because every live source is a
+bonus — a build already over the line on the panel alone can never come back
+under it.
+
 **The CD bucket has three layers** (insertion points differ — official
 wording never distinguishes them):
 ```

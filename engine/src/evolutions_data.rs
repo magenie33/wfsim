@@ -224,11 +224,17 @@ enum EvoEffect {
     /// back to base form."* and the last clause is WRONG: nothing about the buff
     /// knows which direction an animation is going, so the revert takes it too.
     ReloadSpeedOnEmptyReload { value: f64, duration: f64 },
-    /// Prelude of Might: "With Critical Chance below 40%: Increase Critical
-    /// Damage Multiplier by +3x". The condition is on the build's OWN RESOLVED
-    /// crit chance, so unlike every other `condition:` in this engine it asks
-    /// about the panel the mods just produced rather than about the Tenno or
-    /// the target — which is why it is a variant and not a gate.
+    /// Prelude of Might: "With Critical Chance below 40%: Increase Base
+    /// Critical Damage Multiplier by +3x", carrying the wiki's note on the same
+    /// row — "Condition is affected by the critical chance increase effect of
+    /// Puncture status".
+    ///
+    /// So the condition asks about the crit chance THE HIT HAS, which is
+    /// neither of the two things a `condition:` can express: not the Tenno, not
+    /// the target, but the panel the mods produced PLUS every live bonus on top
+    /// of it — a target-side one included. That is why it is a variant and not
+    /// a gate, and why it is settled in two places: `resolve` grants it against
+    /// the panel (the optimistic half) and the sim takes it back per shot.
     CritMultiplierBelowCritChance { value: f64, below: f64 },
     /// Headcracker: "On Headshot: +5% Fire Rate for 2s. Stacks up to 10x",
     /// and — from the raw wikitext, which the rendered page's summary drops —
@@ -693,7 +699,10 @@ impl EvolutionDef {
                     chance * 100.0
                 ),
                 EvoEffect::CritMultiplierBelowCritChance { value, below } => format!(
-                    "+{value:.1}x BASE crit multiplier while crit chance stays under {:.0}%                      (crit damage mods multiply it; the check reads the BUILD's crit chance,                      not a live Puncture buff)",
+                    "+{value:.1}x BASE crit multiplier while crit chance stays under {:.0}% \
+                     (crit damage mods multiply it; the condition is checked per shot \
+                     against the LIVE crit chance, so Puncture's Weakened can push a \
+                     build over the line and take it away)",
                     below * 100.0
                 ),
                 EvoEffect::PostModCritChance(v) => format!(
@@ -1143,7 +1152,8 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 // Carried, not applied: `apply` works on the RAW base panel and
                 // the condition needs the crit chance the mods produce, which
-                // does not exist until `resolve` runs.
+                // does not exist until `resolve` runs — and not even there in
+                // full, since the live half only exists once a shot lands.
                 EvoEffect::CritMultiplierBelowCritChance { value, below } => {
                     base.crit_mult_below_cc = Some((*value, *below));
                 }
