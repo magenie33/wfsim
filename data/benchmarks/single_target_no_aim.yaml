@@ -48,7 +48,7 @@ scenario:
   level: 9999
   steel_path: true
   duration: 180
-  runs: 100
+  runs: 1000
   seed: 12648430
   metric: kpm
   infinite_ammo: true

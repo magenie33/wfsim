@@ -1153,10 +1153,17 @@ pub fn meta_json() -> Value {
             "wf_energy": 0.0,
             // INFINITE AMMO by default — see `simulate_json` for why.
             "infinite_ammo": true,
-            // Test precision (user, 2026-08-01): 300 s x 100 runs everywhere,
-            // and the optimizer's last round is 100 runs on the top 10. Kept
-            // in step with `simulate_json` / `parse_optimize`, whose own
-            // fallbacks are what an API caller naming none of these gets.
+            // Test precision (user, 2026-08-01), and the optimizer's last
+            // round is the scenario's runs on the top 10. Kept in step with
+            // `simulate_json` / `parse_optimize`, whose own fallbacks are what
+            // an API caller naming none of these gets.
+            //
+            // 1000 RUNS, the same as the official rulers (owner, 2026-08-11).
+            // The default is the ruler's fight field for field, and the run
+            // count was the last field where it was not — a first number that
+            // cannot be compared with the board is the thing the 180 s change
+            // was already about. The QUICK CALC is where a cheap answer lives
+            // now, and it says its own count on every chip.
             // WHAT THE RUN IS JUDGED BY. KPM is the default because it is
             // what a build is for; DPS is the other honest answer and some
             // targets cannot be killed at all. The scenario carries it, so
@@ -1170,12 +1177,12 @@ pub fn meta_json() -> Value {
             // alone. Only the DEFAULT moves: a saved scenario carries its own
             // duration and keeps it.
             "duration": 180.0,
-            "runs": 100,
+            "runs": 1000,
             // The final-round contract, for an API caller. The WEB does not
             // read these: `final_runs` is the scenario's `runs` and
             // `finalists` is a fixed 10, because neither is a setting the
             // optimizer tab offers any more (user, 2026-08-02).
-            "final_runs": 100,
+            "final_runs": 1000,
             "finalists": 10,
             "mods": [],
         },

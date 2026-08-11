@@ -540,7 +540,7 @@ let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: nul
   // 180 s: the same length the official rulers run, so a player's first
   // comparison against the board is not a puzzle (owner, 2026-08-10). Only the
   // DEFAULT — a saved scenario carries its own duration and keeps it.
-  infinite_ammo: true, metric: "kpm", duration: 180, runs: 100, buffs: {},
+  infinite_ammo: true, metric: "kpm", duration: 180, runs: 1000, buffs: {},
   ability_strength: 1, abilities: [] };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
@@ -576,12 +576,23 @@ let optPrefs = { sort: "name", dir: "asc", pol: null };
 // so the only thing that reading bought was a second place to look. A heavy
 // scope wanting more cores than a light one is a real setting to save.
 //
-// The FINAL-ROUND CONTRACT is `finalists` × the SCENARIO's run count. Runs are
-// deliberately not here: HOW HARD YOU MEASURE is the fight's question and is
-// already answered there, and two boxes for one number is how a winner gets
-// crowned at a precision the replay never used.
-const finalRuns = () => sim.runs;
-const OPT_RUN_DEFAULTS = { finalists: 10, threads: 0 }; // threads 0 = auto (cores − 2)
+// The FINAL-ROUND CONTRACT is `finalists` × a run count, and the count has TWO
+// legitimate answers (owner, 2026-08-11), so it is a setting with a default
+// rather than a rule:
+//
+//   0 / blank = THE FIGHT'S OWN, which is the old rule and still the default.
+//               A winner crowned at the precision the replay will use is a
+//               winner you can reproduce by pressing Run Sim.
+//   a number  = this search's own. The fight now measures at 1000 runs, and a
+//               wide scope's last round is `finalists × runs` on top of
+//               everything before it — so "search cheaply, then measure the
+//               winner properly in the simulator" became a real way to work,
+//               and it was the one thing the scope could not say.
+//
+// It is a SEARCH setting, not the fight's: it says how hard to search, like
+// finalists and threads, and it travels in the search preset with them.
+const finalRuns = () => optRun.runs || sim.runs;
+const OPT_RUN_DEFAULTS = { finalists: 10, threads: 0, runs: 0 }; // 0 = the fight's own
 let optRun = { ...OPT_RUN_DEFAULTS };
 // One-time migration off the old machine-local key; the preset auto-save
 // takes it from here.
@@ -785,10 +796,21 @@ async function init() {
   // updateOptEstimate is also the scope's auto-save, so finalists lands in the
   // active preset the same way every other search setting does.
   $("opt-finalists").value = optRun.finalists;
-  $("opt-finalists").title = tr("how many builds survive to the last round — each is then run at the fight's own run count");
+  $("opt-finalists").title = tr("how many builds survive to the last round — each is then run at the final-round run count beside this");
   $("opt-finalists").addEventListener("input", () => {
     optRun.finalists = Math.max(1, Math.min(100, Number($("opt-finalists").value) || 10));
     updateOptEstimate();
+  });
+  // BLANK MEANS THE FIGHT'S, which is why the box is empty rather than
+  // pre-filled with the scenario's number: a copy of a number that lives
+  // elsewhere is a second opinion waiting to go stale (the fight's count can
+  // change under it), and an empty box says "not my question" out loud.
+  if (optRun.runs) $("opt-runs").value = optRun.runs;
+  $("opt-runs").placeholder = tr("the fight's");
+  $("opt-runs").title = tr("how many simulations each finalist gets in the last round — blank uses the fight's own count, which is what the replay will use. A smaller number searches faster and is worth re-measuring in the simulator");
+  $("opt-runs").addEventListener("input", () => {
+    optRun.runs = Math.max(0, Math.min(20000, Number($("opt-runs").value) || 0));
+    updateOptEstimate(); // the scope's auto-save; runs lands in the preset
   });
   if (optRun.threads) $("opt-threads").value = optRun.threads;
   $("opt-threads").title = tr("blank = every core minus two, at low priority — the machine stays responsive either way. Saved with the search, so a heavy scope can ask for more than a light one");
@@ -3672,7 +3694,7 @@ function initPresets() {
   // THE OFFICIAL ONE IS THE DEFAULT (owner, 2026-08-05). This costs nothing and
   // corrects something that was quietly misleading: `defaultScenario()` is
   // ALREADY the benchmark's fight, field for field — same enemy, level 9999,
-  // Steel Path, 300 s, 100 runs, kpm, aiming, infinite ammo. "scenario 1" was
+  // Steel Path, 180 s, 1000 runs, kpm, aiming, infinite ammo. "scenario 1" was
   // the ruler wearing a private name, so its number could not be compared with
   // anyone's and could not reach the board, for no reason a player could see.
   //
@@ -5335,22 +5357,35 @@ const GAIN_SEED = 0x5EED;
 // barely does, so the resolution is a property of THIS scope in THIS fight and
 // there is no constant that could stand in for it.
 const GAIN_SEED_B = 0x5EED ^ 0x9E37;
+// TEN, and it is both the floor and the default. Below it a status mod's chip
+// is a coin flip — M24: one run swings a status mod +-39 points — so a number
+// under ten is not a cheaper answer, it is a wrong one.
+const GAIN_RUNS_MIN = 10;
+const GAIN_RUNS_MAX = 2000;
+const gainRuns = () =>
+  Math.max(GAIN_RUNS_MIN, Math.min(GAIN_RUNS_MAX, Math.round(Number(gainPrefs.runs)) || GAIN_RUNS_MIN));
 // A gain READS with its sign — "12.3%" and "+12.3%" are different claims.
 const gainPct = (x) => (x >= 0 ? "+" : "−") + sig2(Math.abs(x) * 100) + "%";
 
-// Quick calc's ONE setting: which saved scenario. Everything else that was
-// ever offered here turned out not to be a choice (user, 2026-08-01) — what a
-// run is measured by belongs to the scenario, and how many runs it takes is a
-// question the algorithm answers better than a person can, since the right
-// number depends on how close the leaders turn out to be. A mode selector is
-// one more thing to get wrong for no answer it can give you.
+// Quick calc's TWO settings: which saved scenario, and how many runs.
+//
+// Runs came back (owner, 2026-08-11). The old reasoning — "the algorithm
+// answers it better than a person can" — was written when the alternative was
+// a MODE selector choosing between two passes at two precisions. A plain count
+// is not that: it is the one knob whose right value nobody but the reader
+// knows, because it depends on how close the answers turn out to be and on how
+// long you are willing to wait for them. Ten is the floor and the default,
+// which is where a status mod's answer stops being a coin flip (M24); above it
+// you are buying resolution the scan cannot invent.
+//
+// What a run is MEASURED BY still belongs to the scenario. That has not moved.
 //
 // There is no "current" scenario either: a scan is only worth reading against
 // something that has a name and can be returned to.
 // ON by default (user, 2026-08-01): the ranking is the reason the picker is
 // worth opening. Off, nothing simulates, no chip is drawn, and "提升" is not
 // offered as an order — a sort key with no values behind it is a trap.
-let gainPrefs = { on: true, scenario: null };
+let gainPrefs = { on: true, scenario: null, runs: GAIN_RUNS_MIN };
 try { const s = JSON.parse(localStorage.getItem("wfsim-gain")); if (s) gainPrefs = { ...gainPrefs, ...s }; } catch (_) {}
 const saveGainPrefs = () => localStorage.setItem("wfsim-gain", JSON.stringify(gainPrefs));
 
@@ -5385,13 +5420,14 @@ function gainScenario() {
   const st = p && presetId(p) === activeScenario
     ? { ...sim, ...p.state }
     : { ...defaultScenario(), ...(p ? p.state : {}) };
-  // TEN RUNS FOR EVERYTHING, one pass (user, 2026-08-02). It was one run over
-  // the field and then the leaders again — two numbers with two precisions,
-  // and the cheap one printed a minus sign in front of mods worth +40%
-  // (M24: a status mod swings ±39 points on a single run). Ten is where a
-  // status mod's answer stops being a coin flip; it is not where it stops
-  // moving, which is why every tooltip says so.
-  const runs = 10;
+  // ONE PASS, at the reader's own count (user, 2026-08-02 for the single pass;
+  // owner, 2026-08-11 for the count). It was one run over the field and then
+  // the leaders again — two numbers with two precisions, and the cheap one
+  // printed a minus sign in front of mods worth +40% (M24: a status mod swings
+  // ±39 points on a single run). Ten is where that stops being a coin flip; it
+  // is not where it stops moving, which is why every tooltip still says how
+  // many runs its number came from.
+  const runs = gainRuns();
   const refine = 0;
   // The WHOLE buff map travels, not just the current build's cards: a
   // candidate's buff is by definition not in `buffList`, and the scenario may
@@ -6016,10 +6052,19 @@ function renderQuickCalc() {
       onPick: (v) => { gainPrefs = { ...gainPrefs, scenario: v }; saveGainPrefs(); renderQuickCalc(); refreshGains(); },
     }) +
 
+    // HOW MANY RUNS a chip's number is averaged over. Ten is the floor, not a
+    // suggestion: under it a status mod's chip is a coin flip. It is clamped on
+    // the way out (`gainRuns`) as well as here, because a number input accepts
+    // an empty string and a paste.
+    `<label class="pc-runs" title="${escHtml(tr("how many simulations each option is averaged over — 10 is the floor, and more costs proportionally more time"))}">` +
+    `<input type="number" id="gp-runs" min="${GAIN_RUNS_MIN}" max="${GAIN_RUNS_MAX}" step="10" value="${gainRuns()}">` +
+    `<span>${escHtml(tr("runs"))}</span></label>` +
+
     // PROGRESS while it runs, and an invitation before it has. The run counts
-    // ("1x -> 10x") are gone from here (user, 2026-08-02): they are a property
-    // of the algorithm, not a setting, and the one place they change a reading
-    // is on the chip itself, where each number already carries its own count.
+    // ("1x -> 10x") are gone from here (user, 2026-08-02): they were a property
+    // of the algorithm back when there were two passes at two precisions. The
+    // count above is the reader's own, and every chip still carries the one its
+    // number came from.
     `<span class="pc-note">${gainScan.running
       ? `${gainScan.done}/${gainScan.total}`
       : (gainScan.note ? "" : escHtml(tr("open a slot to rank its mods by effect")))}</span>`);
@@ -6039,6 +6084,18 @@ function renderQuickCalc() {
     renderQuickCalc();
     if (!$("mod-popover").hidden) { renderTools(); renderMenu(pickerSlot, $("mod-search").value); }
     renderEvo(); renderMode();
+  };
+  // A COUNT CHANGE IS A NEW QUESTION, so it re-runs rather than waiting for
+  // the next picker to open — the same contract the scenario dropdown has.
+  // `change` and not `input`, because a half-typed "1" on the way to "100" is
+  // not a request to re-scan at one run.
+  const gr = $("gp-runs");
+  if (gr) gr.onchange = (e) => {
+    e.stopPropagation();
+    gainPrefs = { ...gainPrefs, runs: Number(gr.value) };
+    saveGainPrefs();
+    gr.value = gainRuns(); // show what was actually taken
+    refreshGains();
   };
   // (Picking a scenario is handled by the dropdown's own `onPick`, which does
   // the same thing it always did: save, then answer the new question NOW
@@ -8842,13 +8899,14 @@ function snapshotOpt() {
     evos: JSON.parse(JSON.stringify(opt.evos)),
     finalists: optRun.finalists,
     threads: optRun.threads,
+    runs: optRun.runs,
   };
 }
 
 // An empty search: nothing marked, a fresh size, the contract left alone (it
 // is how hard to search, not what to search).
 const blankOpt = () => ({ mods: {}, exilus: {}, size: 8, arcanes: {}, evos: {},
-  finalists: optRun.finalists, threads: optRun.threads });
+  finalists: optRun.finalists, threads: optRun.threads, runs: optRun.runs });
 
 // State-only apply (validation + cross-weapon id dropping); no re-render.
 //
@@ -8888,15 +8946,17 @@ function applyOptState(st) {
     });
     if (Object.keys(valid).length) opt.evos[t] = valid;
   });
-  // How the search RUNS travels with the search it was tuned for. Not
-  // `final_runs`: an old preset may still carry it from when it was a setting,
-  // and it is the fight's `runs` now — honouring a stored copy would resurrect
-  // exactly the second opinion that removed.
+  // How the search RUNS travels with the search it was tuned for. `runs` is
+  // read as its own field and NOT from the `final_runs` an old preset may
+  // still carry: that one was written when the setting meant something else,
+  // and 0/absent is the reading we want from it anyway — the fight's.
   if (st.finalists) optRun.finalists = st.finalists;
   if (st.threads != null) optRun.threads = st.threads;
-  const f = $("opt-finalists"), th = $("opt-threads");
+  optRun.runs = Math.max(0, Math.min(20000, Number(st.runs) || 0));
+  const f = $("opt-finalists"), th = $("opt-threads"), rn = $("opt-runs");
   if (f) f.value = optRun.finalists;
   if (th) th.value = optRun.threads || "";
+  if (rn) rn.value = optRun.runs || "";
 }
 
 function applyOptPreset(st) {

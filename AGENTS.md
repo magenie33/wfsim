@@ -229,6 +229,20 @@ around (decision 2026-07-31).
   roar 和 roar（helminth），那就选择生效当前最强的" — the difference between
   +50% and +80% is a number you have to be told), that the optimizer shows the
   same buffs read-only, and — the negative control — that no RULER carries one.
+  `node scripts/check_run_counts.mjs` is the TWENTIETH: HOW HARD YOU MEASURE is
+  a number someone can set, in all three modules, and it walks all three because
+  the answer differs in each. The simulator defaults to the rulers' 1000 (owner,
+  2026-08-11) so a first number is comparable with the board without touching a
+  box — measured at 1.3 s a run in the shipping wasm build, against 0.14 s at
+  100. The quick calc takes its own count with a FLOOR of 10, which is where a
+  status mod stops being a coin flip (M24: one run swings it ±39 points), and a
+  number under it is raised rather than obeyed. The optimizer's final round
+  takes its own too, where it used to take the fight's by rule — and BLANK still
+  means the fight's, which is the case the check exists for: a blank box that
+  silently means something either reads as broken and works, or reads as fine
+  and sends 0. It asserts blank FOLLOWS the fight rather than having copied it
+  once, that a count of its own does not edit the fight, and that clearing it
+  goes back.
   `node scripts/check_riven_pool.mjs` is the SEVENTEENTH: the riven editor
   offers the stats that weapon's rivens actually roll, in BOTH slots. What a
   riven can roll is DE's per-weapon table, published nowhere, and the wiki's
@@ -367,13 +381,21 @@ around (decision 2026-07-31).
   new items ("build 2") and every tooltip that refers to one. A **preset** is a saved state of something that
   always exists, read only by its own module: `builder-builds` (a build),
   `simulator-scenarios` (a fight, buff settings included), `optimizer` (a
-  search: the SCOPE and HOW to run it — finalists and CPU threads (never
-  buffs: those are the fight's). The
+  search: the SCOPE and HOW to run it — finalists, final-round runs and CPU
+  threads (never buffs: those are the fight's). The
   optimizer tab is two halves split at its two preset bars, with nothing on it
   belonging to neither: everything above the fight's bar is the search preset,
   everything below is the simulator's, read-only. The final round is
-  `finalists × the SCENARIO's runs` — how hard you measure belongs to the
-  fight, so the optimizer offers no control for it (user, 2026-08-02)).
+  `finalists × runs`, and the RUNS ARE THE SEARCH'S with the fight's as their
+  default — blank means "the count the replay will use", a number means "search
+  at this instead" (owner, 2026-08-11, amending 2026-08-02's "the optimizer
+  offers no control for it"). What changed under the old rule is the fight's own
+  number: the simulator now defaults to the rulers' 1000 runs, so a wide scope's
+  last round is `finalists × 1000` on top of everything before it, and "search
+  cheaply, then measure the winner properly in the simulator" became a real way
+  to work that the scope had no way to say. What the old rule was protecting is
+  intact and is why the default is still the fight's: a winner crowned at a
+  precision the replay never used is a winner nobody can reproduce.).
   There is always ≥1,
   "active" means the state you are in, and the key is
   `wfsim-presets-<weapon>-<domain>`. A **custom** is a thing you MADE that the

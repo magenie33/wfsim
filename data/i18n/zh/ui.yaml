@@ -141,14 +141,22 @@ ui:
   "the +1 slot — pool = slot options, req = pin one; nothing marked = the slot stays empty": 专用槽 —— 候选池 = 该槽的可选项，必带 = 钉死一张；一张都不标 = 该槽留空
   "pool = searched options, req = pin the slot": 候选池 = 参与搜索的选项，必带 = 钉死这个槽
   "per tier: pool = searched options, req = pin": 逐层：候选池 = 参与搜索的选项，必带 = 钉死
-  "how many winners to keep, and how much of the machine to spend — the final round runs each of them at the fight's own run count": 保留多少个优胜者，以及占用多少机器 —— 最终轮按这场仗自己的次数逐个跑
+  "how many winners to keep, how hard to measure them, and how much of the machine to spend": 保留多少个优胜者、把它们测得多准，以及占用多少机器
+  Finalists: 优胜名额
+  "Final-round runs": 最终轮次数
+  "CPU threads": CPU 线程
+  "the fight's": 跟随这场仗
+  runs: 次
+  "how many builds survive to the last round — each is then run at the final-round run count beside this": 有多少套配装能进最终轮 —— 每套都按旁边的最终轮次数跑
+  "how many simulations each finalist gets in the last round — blank uses the fight's own count, which is what the replay will use. A smaller number searches faster and is worth re-measuring in the simulator": 最终轮里每个优胜者跑多少次模拟 —— 留空就用这场仗自己的次数，也就是重放会用的那个。填小一点搜得更快，代价是优胜者值得再到模拟器里重测一遍
+  "how many simulations each option is averaged over — 10 is the floor, and more costs proportionally more time": 每个选项的数字是多少次模拟的平均 —— 最低 10 次，次数越多越慢，成正比
   "read-only — it belongs to the simulator, which is where it is edited": 只读 —— 它属于模拟器，只在那里编辑
   "must match how you intend to play it — the winner is scored under this player": 必须和你打算怎么玩一致 —— 优胜者是在这个使用者之下评分的
   "what the search is allowed to assume": 这次搜索被允许做哪些假设
   "read-only — the fight's own, applied to every candidate; a buff nobody set starts where it would in a fight": 只读 —— 用这场仗自己的设置，套到每个候选上；没人设过的 buff 就从它在战斗中该有的位置开始
   "who you are shooting at, where, and for how long": 你在打谁、在什么条件下、打多久
   "what this run is allowed to assume": 这次模拟被允许做哪些假设
-  "how many times to replay it, and what to read off — the optimizer's final round uses the same count": 重放多少次、读哪个数 —— 优化器的最终轮用的是同一个次数
+  "how many times to replay it, and what to read off — the optimizer's final round uses this count unless its own says otherwise": 重放多少次、读哪个数 —— 优化器的最终轮默认也用这个次数，除非它自己另外指定
   "your Warframe's armor, buffs included — Primary Bulwark pays +1% damage per point past 1,000. 0 = no frame": 你战甲的护甲值，含增益 —— 主要壁垒每超出 1,000 点给 +1% 伤害。填 0 表示没有战甲
   "your Warframe's MAX energy — Primary Overcharge turns 35% of it into multishot. 0 = no frame": 你战甲的能量上限 —— 主要过载把其中 35% 转成多重射击。填 0 表示没有战甲
   "whoever is holding the weapon and what they are doing — this gates the buffs below": 握着这把武器的那一方，以及他在做什么 —— 下面的 buff 由此决定是否生效

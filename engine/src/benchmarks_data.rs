@@ -237,7 +237,12 @@ mod tests {
         // pricing a build's ramp and starts paying for it twice). The pin moved
         // WITH the change, which is what it is for.
         assert_eq!(s("duration").and_then(|v| v.as_u64()), Some(180));
-        assert_eq!(s("runs").and_then(|v| v.as_u64()), Some(100));
+        // 1000 since 2026-08-11, up from 100 (owner). The board's noise floor
+        // is the one term of a public claim nobody can improve by trying
+        // harder, and it is the cheapest thing here to spend on: paid once per
+        // rescore rather than per player. The SIMULATOR's default stays 100 —
+        // that one is paid per keystroke, in a browser.
+        assert_eq!(s("runs").and_then(|v| v.as_u64()), Some(1000));
         // PICKUPS MODELLED. A weapon that cannot be resupplied ignores this
         // and runs on its real reserve — worth 3x on that weapon — so it is a
         // term of the claim, not a detail.

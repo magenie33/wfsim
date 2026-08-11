@@ -439,7 +439,7 @@
             <span class="sim-h-sub" id="wfbuff-sub"></span></h3>
           <div id="sim-wfbuffs"></div>
         </div>
-        <h3 class="sim-h" data-i18n>6 · Simulation <span class="sim-hint" data-i18n>how many times to replay it, and what to read off — the optimizer's final round uses the same count</span></h3>
+        <h3 class="sim-h" data-i18n>6 · Simulation <span class="sim-hint" data-i18n>how many times to replay it, and what to read off — the optimizer's final round uses this count unless its own says otherwise</span></h3>
         <div id="sim-run" class="field-grid"></div>
         <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
       </div>
@@ -514,11 +514,14 @@
              bar down to here belongs to the SEARCH and is saved in the search
              preset; everything below the fight's own bar belongs to the
              SIMULATOR and is shown read-only (user, 2026-08-02).
-             Runs are deliberately not here — the last round uses the fight's
-             own count, so there is one answer to "how hard do we measure". -->
-        <h3 class="sim-h" data-i18n>Search <span class="sim-hint" data-i18n>how many winners to keep, and how much of the machine to spend — the final round runs each of them at the fight's own run count</span></h3>
+             RUNS ARE HERE (owner, 2026-08-11), and they are the search's:
+             blank = the fight's own count, which is what the replay uses; a
+             number = measure the last round this hard instead, and re-measure
+             the winner in the simulator. -->
+        <h3 class="sim-h" data-i18n>Search <span class="sim-hint" data-i18n>how many winners to keep, how hard to measure them, and how much of the machine to spend</span></h3>
         <div id="opt-search" class="field-grid">
           <label data-i18n>Finalists <input id="opt-finalists" type="number" min="1" max="100" value="10"></label>
+          <label data-i18n>Final-round runs <input id="opt-runs" type="number" min="0" max="20000"></label>
           <label data-i18n>CPU threads <input id="opt-threads" type="number" min="0" max="128" placeholder="auto"></label>
         </div>
         <!-- The SCENARIO is the simulator's; the optimizer points at it

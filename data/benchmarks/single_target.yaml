@@ -116,14 +116,20 @@ scenario:
   # Monte-Carlo runs per build. This is the PRECISION knob and the whole cost
   # of recomputing the board (builds x runs), so it belongs to the benchmark
   # and not to whoever submits.
-  runs: 100
+  #
+  # 1000 (owner, 2026-08-11), up from 100. A board row is a PUBLIC CLAIM that
+  # gets re-scored rather than re-measured, so its noise floor is the one number
+  # here that nobody can improve by trying harder — and the cheapest way to
+  # spend more is the one the board can afford: the cost is paid once per
+  # rescore, not per player and not per search.
+  runs: 1000
 
   # PINNED, so the claim is reproducible rather than merely stable. The engine
   # already defaults to a fixed seed, which is why two runs of one build agree
   # to the last digit — but a default is not a term of a public claim, and this
   # number is one. Anyone can re-run a board row on their own machine and get
   # the same figure, which is the whole difference between a leaderboard and a
-  # rumour. (100 runs averaged makes tuning to the seed pointless.)
+  # rumour. (1000 runs averaged makes tuning to the seed pointless.)
   seed: 12648430
 
   # Kill progress, not DPS. `score` is kills PLUS the depleted fraction of the

@@ -183,9 +183,10 @@ rivens, not searches), so the only thing that reading bought was a second place
 to look; a heavy scope wanting more cores than a light one is a real setting to
 save. The old key is read once, as a migration.
 
-An older preset may still carry `final_runs`; it is deliberately ignored on
-load rather than migrated — reading it back would resurrect the second opinion
-this removed.
+`runs` is the FINAL ROUND's, and 0 (a blank box) means the fight's own — see
+AGENTS.md. An older preset may still carry `final_runs` from the era when the
+setting meant something else; that key is ignored on load rather than migrated,
+and 0 is what we would read out of it anyway.
 
 ## The search and the replay must be the SAME fight (2026-08-03)
 
