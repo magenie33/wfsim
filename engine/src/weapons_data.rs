@@ -313,6 +313,17 @@ pub struct ChainSpec {
 pub struct RadialSpec {
     pub damage: BTreeMap<String, f64>,
     pub radius_m: f64,
+    /// Does the BLAST-RADIUS bucket (Firestorm, Fulmination) reach this
+    /// explosion? True everywhere but the Shedu and both Trumnas, whose pages
+    /// say otherwise — "Explosion cannot benefit from Firestorm (Primed)
+    /// despite being area of effect" (wiki Shedu, verbatim).
+    ///
+    /// It changes no damage while the arena has one target. It changes PRIMARY
+    /// COMPRESSION, which pays per metre of radius given up and therefore reads
+    /// this number directly — 44% of the Shedu's bonus with Primed Firestorm
+    /// equipped. docs/CATALOGS.md §2.
+    #[serde(default = "yes")]
+    pub takes_blast_radius_mods: bool,
     #[serde(default)]
     pub crit_chance: Option<f64>,
     #[serde(default)]
@@ -1514,6 +1525,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
             base_crit_damage: r.crit_multiplier.unwrap_or(s.attack.crit_multiplier),
             base_status_chance: r.status_chance.unwrap_or(s.attack.status_chance),
             radius_m: r.radius_m,
+            takes_blast_radius_mods: r.takes_blast_radius_mods,
             falloff_start_m: r.falloff_start_m.unwrap_or(0.0),
             falloff_reduction: r.falloff_reduction.unwrap_or(0.0),
             takes_condition_overload: r.takes_condition_overload,
@@ -3299,6 +3311,49 @@ mod play_mode_tests {
         let boar = spec("boar").unwrap().attack.falloff.as_ref().unwrap();
         assert_eq!((boar.start_m, boar.end_m, boar.reduction), (15.0, 25.0, 0.5));
         assert!(with >= 10, "only {with} weapons carry a falloff");
+    }
+
+    /// FIRESTORM REACHES EVERY EXPLOSION BUT THE SHEDU'S.
+    ///
+    /// *"Explosion cannot benefit from Firestorm (Primed) despite being area of
+    /// effect"* (wiki Shedu, verbatim) — the roster's only exception, and the
+    /// owner asked for it to be confirmed rather than assumed (2026-08-11).
+    ///
+    /// The same weapon's OTHER AoE goes the other way: its battery discharge
+    /// *"is affected by base damage, Faction Damage Bonus, and Firestorm /
+    /// Primed Firestorm"*. So the blast-radius bucket reaches exactly the one
+    /// radius Primary Compression is forbidden to spend ("cannot use reload
+    /// pulse radial"), and the arcane is stuck at the shot's unmoddable 6.6 m.
+    ///
+    /// It changes no damage while the arena has one target, which is precisely
+    /// why it needs a test: nothing else would notice it going wrong.
+    #[test]
+    fn only_the_shedus_explosion_refuses_the_blast_radius_bucket() {
+        let firestorm = crate::mods_data::class_pool("rifle")
+            .into_iter()
+            .find(|m| m.id == "primed_firestorm")
+            .expect("primed firestorm");
+        let radius = |id: &str, mods: &[&crate::loadout::ModDef]| {
+            let base = crate::loadout::WeaponBase::from_data(id, true, &[]);
+            crate::loadout::resolve(&base, mods, crate::loadout::StackPolicy::Emergent)
+                .radial
+                .map(|r| r.radius_m)
+        };
+        // THE SHEDU: 6.6 m with the mod and without it.
+        assert_eq!(radius("shedu", &[]), Some(6.6));
+        assert_eq!(radius("shedu", &[&firestorm]), Some(6.6), "Firestorm must not reach it");
+        // THE TORID, the same pool and the same mod, moves: its cloud is a
+        // `lingering` rather than a radial, so the DIRECT comparison is another
+        // radial weapon that does take the bucket.
+        let laetum = radius("laetum_incarnon", &[]);
+        assert!(laetum.is_some(), "the Laetum's Incarnon form explodes");
+        // …and the flag is declared exactly once in the whole roster.
+        let refusing: Vec<&str> = all()
+            .iter()
+            .filter(|w| w.attack.radial.as_ref().is_some_and(|r| !r.takes_blast_radius_mods))
+            .map(|w| w.id.as_str())
+            .collect();
+        assert_eq!(refusing, ["shedu"], "a second weapon started refusing the bucket");
     }
 
     /// EVERY COMPRESSION ROW IS TRANSCRIBED, AND EVERY ONE IS SAYABLE.

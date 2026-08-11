@@ -1245,6 +1245,8 @@ pub struct RadialBase {
     pub base_status_chance: f64,
     /// Blast radius = the falloff `end` distance.
     pub radius_m: f64,
+    /// See [`crate::weapons_data::RadialSpec::takes_blast_radius_mods`].
+    pub takes_blast_radius_mods: bool,
     /// Linear falloff window and the fraction of damage REMOVED at max
     /// distance: `mult(d) = 1 − reduction × clamp((d−start)/(end−start))`.
     /// Only bites once the sim has targets away from the epicentre.
@@ -2195,8 +2197,14 @@ pub fn resolve_for(
             // Blast RANGE mods scale the radius; the falloff FLOOR is
             // unchanged ("Only mods that increase the explosion radius change
             // how far the falloff reaches; they do not change the floor").
-            radius_m: r.radius_m * (1.0 + br),
-            falloff_start_m: r.falloff_start_m * (1.0 + br),
+            // THE BUCKET REACHES MOST EXPLOSIONS AND NOT ALL OF THEM. The
+            // Shedu's "cannot benefit from Firestorm (Primed) despite being
+            // area of effect" is the roster's first exception, and it is worth
+            // a branch rather than a comment because Primary Compression pays
+            // per metre of this number.
+            radius_m: r.radius_m * if r.takes_blast_radius_mods { 1.0 + br } else { 1.0 },
+            falloff_start_m: r.falloff_start_m
+                * if r.takes_blast_radius_mods { 1.0 + br } else { 1.0 },
             falloff_reduction: r.falloff_reduction,
             takes_condition_overload: r.takes_condition_overload,
             takes_multishot: r.takes_multishot,

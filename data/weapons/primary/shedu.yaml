@@ -92,7 +92,7 @@ battery:
 co_behavior: independent
 
 unmodeled:
-  - "the BATTERY DISCHARGE that fires when the magazine empties: a 20 m pulse for 100 Impact. Its numbers and its trigger are published; whether the build SCALES it is not, and the engine's only precedent (a syndicate blast) is explicitly unscaled — a flat 100 is noise beside a modded shot and a scaled 100 is not. Its status is not a forced proc either: the page reads it as a 100% status CHANCE, so status mods push it above one proc and a negative-status riven makes it miss. Two measurements decide the whole thing; until then the sim leaves it out rather than inventing a scaling rule"
+  - "the BATTERY DISCHARGE that fires when the magazine empties: a 20 m pulse for 100 Impact. It is now fully SPECIFIED and merely unbuilt — the page states its whole scaling rule and I had declared it unknowable: \"This is affected by base damage, Faction Damage Bonus, and Firestorm / Primed Firestorm; but not by elemental or multishot bonuses.\" So: the base-damage bucket and the faction column reach it, elements and multishot do not, and its RADIUS takes the blast-radius mods the shot's own explosion refuses. Its status is a 100% CHANCE rather than a forced proc, so status mods push it past one proc and a negative-status riven makes it miss"
   - "the discharge also removes Sentient and Shadow Stalker damage resistances, which is worth nothing against any target in this roster — no Sentient here has one to strip"
   - "damage falloff on the explosion, linear to 40% at 6.6 m — this arena has no distance, so every shot lands at point blank"
   - "+30% Movement Speed while aiming, and the explosion's self-stagger: neither is a number this arena reads"
@@ -139,13 +139,23 @@ attack:
     stacking: multiplies
 
   radial:
-    # ITS RADIUS DOES NOT TAKE BLAST-RADIUS MODS — "Primary Fire AoE not
-    # affected by Firestorm" (wiki, Primary Compression's per-weapon table).
-    # The engine multiplies every radial's radius by that bucket today, so a
+    # ITS RADIUS DOES NOT TAKE BLAST-RADIUS MODS, and the page says it of this
+    # explosion in as many words: "Explosion cannot benefit from Firestorm
+    # (Primed) despite being area of effect."
+    #
+    # THE PULSE IS THE OPPOSITE, which is the pair worth holding in one hand
+    # (owner asked it be confirmed, 2026-08-11, and it is): the battery
+    # discharge "is affected by base damage, Faction Damage Bonus, and Firestorm
+    # / Primed Firestorm". So one weapon has two AoEs and the blast-radius
+    # bucket reaches exactly the one Primary Compression cannot use ("cannot use
+    # reload pulse radial") — the arcane is stuck at this 6.6 m and Firestorm
+    # can only enlarge the radius it is forbidden to spend.
+    #
+    # The engine multiplies EVERY radial's radius by that bucket today, so a
     # Shedu carrying Firestorm has a bigger explosion here than in game. It
     # changes no damage while the arena has one target; it changes Primary
-    # Compression's bonus by 44% the day that arcane is modelled, which is why
-    # it is written down now. docs/CATALOGS.md §2.
+    # Compression's bonus by 44% the day that arcane lands. docs/CATALOGS.md §2.
+    takes_blast_radius_mods: false
     damage: { electricity: 87.0 }
     radius_m: 6.6
     falloff_start_m: 0.0
