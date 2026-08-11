@@ -16,12 +16,16 @@ effects:
   # rate the Galvanized mods feed, diluted and combined by the weapon's own
   # `co_behavior` (Additive here) rather than forming a bucket of its own.
   #
-  # THE SPRINT-SPEED CONDITION IS NOT READ, and it is a Tenno fact rather than a
-  # weapon one: `evolutions_data` reads only `kind` and `value` from a
-  # `condition_overload` entry (see dual_toxocyst_carnage_reign, whose own
-  # `condition:` is unread for the same reason). 1.2 sprint speed is the
-  # ordinary value for most Warframes, so the engine's reading — always on — is
-  # right for most builds and generous for the slow ones.
+  # THE SPRINT-SPEED CONDITION IS READ (2026-08-12), and it is a question about
+  # the PLAYER rather than about this weapon — so it is answered in `resolve_for`,
+  # which has the Tenno, rather than in `apply`, which never sees one.
+  #
+  # THE NEUTRAL PLAYER SPRINTS AT 0.9, the slowest a frame has (owner: "我们应该
+  # 假设tenno的sprint speed是0.9（最慢的）"), so this half pays NOTHING until
+  # someone says which frame is carrying the gun. That is the same rule every
+  # other Tenno field follows: with no frame chosen the wielder claims nothing.
+  # Read as always-on it was generous to exactly the builds that cannot reach
+  # the threshold.
   - kind: condition_overload
     value: 0.30
     condition: sprint_speed >= 1.2

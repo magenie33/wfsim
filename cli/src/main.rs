@@ -29,6 +29,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         sustained_fire_rate: None,
         battery: None,
         rs_on_reload: 0.0,
+        armor_strip_per_puncture: 0.0,
         instant_reload: None,
         headshot_streak: None,
         cd_below_status_count: None,

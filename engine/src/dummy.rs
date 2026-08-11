@@ -1138,13 +1138,31 @@ impl DebuffState {
         }
     }
 
+    /// FLENSING SPIKES: a WEAPON removing armour off a status that strips
+    /// none by itself. `per` is the perk's rate per live Puncture stack, and
+    /// Puncture caps at five — so 20% a stack is the whole of the armour at the
+    /// cap, which is what the card adds up to and not a rounding of it.
+    fn puncture_strip(&self, per: f64) -> f64 {
+        if per <= 0.0 {
+            return 0.0;
+        }
+        (per * self.weakened.len() as f64).min(1.0)
+    }
+
     /// Prune and compute the live mitigation snapshot for `now`.
-    fn mitigation(&mut self, now: f64, sd: f64) -> Mitigation {
+    fn mitigation(&mut self, now: f64, sd: f64, puncture_strip_per: f64) -> Mitigation {
         self.prune(now, sd);
         Mitigation {
             disrupt_amp: ten_stack_amp(self.disrupt.len()),
             virus_amp: ten_stack_amp(self.virus.len()),
-            armor_multiplier: (1.0 - self.heat_strip(now, sd)) * (1.0 - self.corrosive_strip()),
+            // THREE SOURCES, MULTIPLIED — the two the game strips with and the
+            // one a perk grants. They compose the way the first two already
+            // did, rather than sharing a bucket: each removes a share of what
+            // is LEFT, which is what "remove 20% of enemy Armor" means when
+            // something else already removed some.
+            armor_multiplier: (1.0 - self.heat_strip(now, sd))
+                * (1.0 - self.corrosive_strip())
+                * (1.0 - self.puncture_strip(puncture_strip_per)),
         }
     }
 
@@ -1454,6 +1472,9 @@ pub struct DummyParams {
     /// carry, nothing to lapse mid-reload, and nothing left over afterwards for
     /// a transmute animation to pick up. A reload from empty is simply faster.
     pub rs_on_reload: f64,
+    /// FLENSING SPIKES: armour removed per live Puncture status (0.0 = none).
+    /// A third strip source beside Corrosive and Heat, multiplying with them.
+    pub armor_strip_per_puncture: f64,
     /// EXECUTIONER'S FORTUNE — see [`crate::loadout::InstantReload`]. Rolled by
     /// the PELLET that headshots, because only there is it known whether the
     /// hit landed in a head and whether it killed.
@@ -2135,6 +2156,7 @@ impl DummyParams {
             fr_on_reload: panel.fr_on_reload,
             bd_on_reload: panel.bd_on_reload,
             rs_on_reload: panel.rs_on_reload,
+            armor_strip_per_puncture: panel.armor_strip_per_puncture,
             instant_reload: panel.instant_reload,
             headshot_streak: panel.headshot_streak,
             cd_below_status_count: panel.cd_below_status_count,
@@ -2328,6 +2350,7 @@ impl Default for DummyParams {
             sustained_fire_rate: None,
             battery: None,
             rs_on_reload: 0.0,
+            armor_strip_per_puncture: 0.0,
             instant_reload: None,
             headshot_streak: None,
             cd_below_status_count: None,
@@ -2910,7 +2933,23 @@ fn has_status(debuffs: &DebuffState, t: DamageType) -> bool {
     if combined_stacks(debuffs, t) > 0 {
         return true;
     }
-    debuffs.dots.iter().any(|d| d.dtype == t && d.ticks_left > 0)
+    // …AND THE PILES THAT ARE NOT COMBINED ELEMENTS. `combined_stacks` answers
+    // for the six combined ones, which is all Primary Debilitate ever needed to
+    // ask; every physical and primary status lives in a list of its own and
+    // fell through its `_ => 0` arm. So `has_status(Puncture)` was FALSE on a
+    // target covered in Puncture, and a perk keyed on one — the Latron family's
+    // Riddled Target — could never fire (2026-08-12). Nothing was keyed on one
+    // before, which is why it went unnoticed and not why it was right.
+    let own = match t {
+        DamageType::Impact => !debuffs.stagger.is_empty(),
+        DamageType::Puncture => !debuffs.weakened.is_empty(),
+        DamageType::Cold => !debuffs.freeze.is_empty() || debuffs.frozen_until.is_some(),
+        DamageType::Heat => debuffs.heat.is_some(),
+        DamageType::Void => !debuffs.attractor.is_empty(),
+        // Slash, Toxin, Electricity and Gas are DoTs and are answered below.
+        _ => false,
+    };
+    own || debuffs.dots.iter().any(|d| d.dtype == t && d.ticks_left > 0)
 }
 
 /// Stacks of a combined status the target must be AT, counting the one this
@@ -3397,7 +3436,7 @@ fn settle_procs(
                     // an expiring Nourish between the first and the tenth would
                     // make their brackets differ.
                     let xh_total: f64 = fired.iter().map(|b| b.value * b.xh_bracket).sum();
-                    let mit = debuffs.mitigation(at, sd);
+                    let mit = debuffs.mitigation(at, sd, params.armor_strip_per_puncture);
                     let (eff, killed, broke) =
                         target.apply(
                             total,
@@ -3747,7 +3786,7 @@ fn fire_syndicate_radial(
     at: f64,
 ) {
     let sd = params.status_duration_mult;
-    let mit = debuffs.mitigation(at, sd);
+    let mit = debuffs.mitigation(at, sd, params.armor_strip_per_puncture);
     let amt = sy.damage * params.faction_at_time(at);
     let (eff, killed, _broke) = target.apply(
         amt,
@@ -3996,7 +4035,7 @@ fn field_tick(
     d: &mut crate::rng::Draws,
 ) -> bool {
     let sd = params.status_duration_mult;
-    let mit = debuffs.mitigation(at, sd);
+    let mit = debuffs.mitigation(at, sd, params.armor_strip_per_puncture);
     // The field is its own attack part, so the ability elements are sized off
     // ITS ModifiedBase — same rule as the explosion's.
     let qvec = params.with_ability_elements(f.damage.quantized(), f.modified_base, at);
@@ -4163,7 +4202,7 @@ fn process_ticks(
         }
         let Some((now, ev)) = best else { break };
 
-        let mit = debuffs.mitigation(now, sd);
+        let mit = debuffs.mitigation(now, sd, params.armor_strip_per_puncture);
         // A tick is one damage type — which is also the type the
         // vulnerability column reads. Bleed is the exception: it is stored
         // under Slash (that is the proc that made it) but the damage is
@@ -5519,7 +5558,7 @@ pub fn run_once_traced(
             // Live target-side state for THIS pellet (earlier pellets'
             // procs already count): mitigation amps, Cold's flat crit
             // damage received, and Condition Overload's type count.
-            let mit = debuffs.mitigation(t, sd);
+            let mit = debuffs.mitigation(t, sd, ap.armor_strip_per_puncture);
             // Crit damage: resolved multiplier + Cold's flat bonus received
             // + Sharpened Bullets' live on-kill buff + the arcane's
             // assumed-max conditional (Outburst).
@@ -7621,6 +7660,103 @@ mod tests {
             at > 0.45 && at < 0.56,
             "five bursts at ten bursts a second is 0.5 s: capped at {at:.3} s (frame {first_cap})"
         );
+    }
+
+    /// THE LATRON'S TWO PUNCTURE PERKS, both measured against the status they
+    /// read rather than against a build that happens to be good.
+    ///
+    /// Riddled Target is "+25% Multishot for 8s per Puncture Status, 4x" and
+    /// Flensing Spikes is "Remove 20% of enemy Armor per Puncture Status". Both
+    /// were inert for the same reason and neither for a good one: the stacking
+    /// buff existed but its loader arm named Electricity, and armour stripping
+    /// existed but only for the two statuses that strip on their own.
+    ///
+    /// A TARGET WITH ARMOUR is the fixture, because that is the only place the
+    /// second perk can be seen at all — and the two are asserted separately, so
+    /// one carrying the other cannot pass for both.
+    #[test]
+    fn the_latrons_puncture_perks_read_the_status_they_name() {
+        let arena = crate::arena::Arena::training(30.0);
+        let run = |evo: &[&str]| {
+            let base = crate::loadout::WeaponBase::from_data("latron_prime", true, evo);
+            let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+            let mut p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
+            // ARMOUR, and a target that survives long enough to carry five
+            // Puncture stacks. The training dummy has none of either.
+            p.target.base_armor = 500.0;
+            p.target.base_health = 2_000_000.0;
+            monte_carlo(&p, 20, 0x1A7)
+        };
+        let off = run(&[]);
+        let riddled = run(&["latron_prime_riddled_target"]);
+        let flensing = run(&["latron_prime_flensing_spikes"]);
+
+        // RIDDLED TARGET pays in PELLETS: +25% multishot a stack, four stacks,
+        // on a weapon whose own damage is mostly Puncture — so the pellet count
+        // per shot has to rise, and that is a thing no damage bonus can fake.
+        let per_shot = |s: &Summary| s.mean_pellets / s.mean_shots;
+        assert!(
+            per_shot(&riddled) > per_shot(&off) * 1.2,
+            "four stacks of +25% multishot: {:.3} -> {:.3} pellets a shot",
+            per_shot(&off), per_shot(&riddled)
+        );
+
+        // FLENSING SPIKES pays in MITIGATION: the same pellets, landing harder,
+        // because the armour in front of the health is gone. Asserted on damage
+        // per pellet so the multishot perk above cannot be mistaken for it.
+        let per_pellet = |s: &Summary| s.mean_effective_damage / s.mean_pellets;
+        assert!(
+            per_pellet(&flensing) > per_pellet(&off) * 1.1,
+            "20% of the armour a Puncture stack: {:.1} -> {:.1} a pellet",
+            per_pellet(&off), per_pellet(&flensing)
+        );
+        // …and it is the ARMOUR it removed, not damage it added: against a
+        // target with none, the perk is worth nothing at all.
+        let bare = |evo: &[&str]| {
+            let base = crate::loadout::WeaponBase::from_data("latron_prime", true, evo);
+            let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+            let mut p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
+            p.target.base_armor = 0.0;
+            p.target.base_health = 2_000_000.0;
+            monte_carlo(&p, 20, 0x1A7).mean_effective_damage
+        };
+        let (a, b) = (bare(&[]), bare(&["latron_prime_flensing_spikes"]));
+        assert!(
+            (a - b).abs() / a < 0.01,
+            "unarmoured, an armour strip is worth nothing: {a:.0} vs {b:.0}"
+        );
+    }
+
+    /// SWIFT PUNISHMENT ASKS ABOUT THE PLAYER, and the neutral one cannot
+    /// answer yes.
+    ///
+    /// "With Sprint Speed 1.2 or Higher: +30% Direct Damage per Status Type" —
+    /// a question about who is carrying the gun rather than about the gun, so
+    /// it is answered where the Tenno exists. The default wielder sprints at
+    /// 0.9, the slowest a frame has (owner, 2026-08-12), so the perk's second
+    /// half pays NOTHING until a frame is named; a Volt at 1.2 turns it on.
+    ///
+    /// The flat +6 it also grants is untouched either way, which is what says
+    /// the gate is on the right half.
+    #[test]
+    fn swift_punishment_pays_only_a_frame_that_can_run() {
+        let base = crate::loadout::WeaponBase::from_data(
+            "latron_prime", true, &["latron_prime_swift_punishment"],
+        );
+        let bare = crate::loadout::WeaponBase::from_data("latron_prime", true, &[]);
+        let with = |sprint: f64| {
+            let mut t = crate::tenno_data::default_tenno().clone();
+            t.sprint = sprint;
+            crate::loadout::resolve_for(&base, &[], crate::loadout::StackPolicy::Emergent, &t)
+        };
+        let slow = with(0.9);
+        let fast = with(1.2);
+        assert_eq!(slow.co_per_type, 0.0, "0.9 cannot reach 1.2");
+        assert!((fast.co_per_type - 0.30).abs() < 1e-9, "{}", fast.co_per_type);
+        // …and the flat half is the perk's either way.
+        let plain = crate::loadout::resolve(&bare, &[], crate::loadout::StackPolicy::Emergent);
+        assert!(slow.modified_base > plain.modified_base, "the +6 pays regardless");
+        assert!((slow.modified_base - fast.modified_base).abs() < 1e-9);
     }
 
     /// THE EMPTY MAGAZINE ARMS IT, and the TRANSFORM is what proves that.

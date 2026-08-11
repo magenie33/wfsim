@@ -8,9 +8,13 @@ description: "Increase Accuracy by +50%."
 # Boar or the Boar Prime, and the wiki's evolution table proves the two get the
 # SAME evolutions: every row spans both weapon columns with a dash
 # (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
-# difference". So this file's values are its Prime twin's, transcribed rather
-# than re-derived — and if DE ever splits them, the table grows a real cell and
-# the two files diverge there.
+# difference". So the value below is THIS weapon's, which happens to be the same
+# number the other one carries — and if DE ever splits them, the table grows a
+# real cell and the two files diverge there.
+#
+# NO OTHER VARIANT'S NUMBERS LIVE IN THIS FILE (owner, 2026-08-12: "我要求只填写
+# 自己的"). A file that states two weapons' values is a file where the reader has
+# to work out which one they are looking at, every time.
 selection: choose_one
 
 effects:

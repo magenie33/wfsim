@@ -1695,6 +1695,8 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         base_reload,
         by_round_reload,
         innate_co_per_type: 0.0,
+        innate_co_gated: 0.0,
+        co_min_sprint: 0.0,
         co_behavior,
         // 1.0 = the CO term uses the FULL base, evolution damage included,
         // which is the normal case. An evolution that declares itself excluded
@@ -1729,6 +1731,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         evo_fire_rate_bonus: 0.0,
         evo_reload_bonus: 0.0,
         rs_on_empty_reload: 0.0,
+        armor_strip_per_puncture: 0.0,
         instant_reload_on_headshot: None,
         headshot_streak: None,
         cd_below_status_count: None,

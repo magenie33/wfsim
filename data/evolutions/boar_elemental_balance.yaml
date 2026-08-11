@@ -9,17 +9,25 @@ Increase Base Status Chance by +96% for Incarnon Form."
 # Boar or the Boar Prime, and the wiki's evolution table proves the two get the
 # SAME evolutions: every row spans both weapon columns with a dash
 # (`colspan="2" ... | -`), which is that table's way of saying "no per-variant
-# difference". So this file's values are its Prime twin's, transcribed rather
-# than re-derived — and if DE ever splits them, the table grows a real cell and
-# the two files diverge there.
+# difference". So the value below is THIS weapon's, which happens to be the same
+# number the other one carries — and if DE ever splits them, the table grows a
+# real cell and the two files diverge there.
+#
+# NO OTHER VARIANT'S NUMBERS LIVE IN THIS FILE (owner, 2026-08-12: "我要求只填写
+# 自己的"). A file that states two weapons' values is a file where the reader has
+# to work out which one they are looking at, every time.
 selection: choose_one
 
 effects:
   # TWO NUMBERS, ONE EVOLUTION — the wiki states them as separate lines, not as
-  # a sum: a pellet carries a twelfth of what a beam tick does. The base form
-  # fires 8 pellets at 7.5% each; the Incarnon form is one beam at 20%. (Those
-  # are the BOAR's numbers — the Prime's are 11.25% and 24%, and the ratio
-  # between the two lines is what stays constant, not the totals.)
+  # a sum: what a PELLET gains and what a BEAM TICK gains are different grants,
+  # and the base form fires eight of the first while the Incarnon form is one of
+  # the second.
+  #
+  # BOTH ARE THIS WEAPON'S. The pair used to carry the other variant's weapon
+  # status chances in a parenthetical, which was two mistakes at once: they are
+  # not this evolution's numbers at all, and they are not this file's weapon
+  # (owner, 2026-08-12).
   # `flat_base_status_chance_by_form` picks by whether the entry carries an
   # `incarnon:` block, the same gate the magazine evolutions use.
   - kind: flat_base_status_chance_by_form

@@ -155,6 +155,10 @@ enum EvoEffect {
     /// on a Burston Prime carrying Split Chamber and Vigilante Armaments the
     /// same +5 is 11 pellets rather than 5.
     MultishotOnLastRound { value: f64, base: bool },
+    /// Flensing Spikes: armour removed per live Puncture status, as a
+    /// fraction. A third strip source beside Corrosive and Heat, and the first
+    /// that a WEAPON grants rather than a status carrying it.
+    ArmorStripPerPunctureStatus(f64),
     /// Reaver's Rapture: +X base damage per COMPLETED BURST, reset when the
     /// magazine is refilled. No duration — it is held until something takes it.
     BaseDamagePerFullBurst { per_stack: f64, max_stacks: u32 },
@@ -171,7 +175,10 @@ enum EvoEffect {
     /// Unconditional CO rate (Carnage Reign): +v per status TYPE, additive
     /// with mod CO sources. `excludes_evolution_damage`: the GunCO base
     /// excludes evolution flat damage (wiki CO catalog, DT row).
-    ConditionOverload { per_type: f64 },
+    /// Condition Overload granted by an evolution, and the SPRINT SPEED the
+    /// player needs for it. `min_sprint` is 0 when the card states no
+    /// condition; the Latron family's Swift Punishment states 1.2.
+    ConditionOverload { per_type: f64, min_sprint: f64 },
     /// Fire-rate bonus in the ORDINARY additive bucket — the same one the
     /// fire-rate mods feed, so it SUMS with them (Rapid Wrath).
     FireRateBonus(f64),
@@ -556,6 +563,7 @@ impl EvolutionDef {
                 | EvoEffect::FieldDurationOnEmptyReload(_)
                 | EvoEffect::MultishotOnLastRound { .. }
                 | EvoEffect::BaseDamagePerFullBurst { .. }
+                | EvoEffect::ArmorStripPerPunctureStatus(_)
                 | EvoEffect::MultishotConsumesAmmo(_)
                 | EvoEffect::ConditionOverload { .. }
                 | EvoEffect::FireRateBonus(_)
@@ -583,7 +591,7 @@ impl EvolutionDef {
     pub fn co_per_type(&self) -> f64 {
         self.active_effects()
             .filter_map(|e| match e {
-                EvoEffect::ConditionOverload { per_type } => Some(*per_type),
+                EvoEffect::ConditionOverload { per_type, .. } => Some(*per_type),
                 _ => None,
             })
             .sum()
@@ -678,6 +686,10 @@ impl EvolutionDef {
                 EvoEffect::FieldDurationOnEmptyReload(v) => format!(
                     "On reload from empty: x{v:.0} lingering-field duration on the next shot"
                 ),
+                EvoEffect::ArmorStripPerPunctureStatus(v) => format!(
+                    "removes {:.0}% of the target's armour per Puncture status",
+                    v * 100.0
+                ),
                 EvoEffect::BaseDamagePerFullBurst { per_stack, max_stacks } => format!(
                     "+{:.0}% base damage per full burst, x{max_stacks} (+{:.0}% at the cap), \
                      reset when the magazine is refilled",
@@ -696,9 +708,14 @@ impl EvolutionDef {
                     "+{:.0}% multishot ({max_stacks} on-ability-cast stacks, full by default)",
                     total * 100.0
                 ),
-                EvoEffect::ConditionOverload { per_type } => format!(
-                    "+{:.0}% direct damage per status type on the target",
-                    per_type * 100.0
+                EvoEffect::ConditionOverload { per_type, min_sprint } => format!(
+                    "+{:.0}% direct damage per status type on the target{}",
+                    per_type * 100.0,
+                    if *min_sprint > 0.0 {
+                        format!(", at sprint speed {min_sprint} or higher")
+                    } else {
+                        String::new()
+                    }
                 ),
                 EvoEffect::FireRateBonus(v) => format!("+{:.0}% fire rate", v * 100.0),
                 EvoEffect::ReloadSpeedBonus(v) => format!("+{:.0}% reload speed", v * 100.0),
@@ -876,6 +893,9 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // this perk are two different mechanics and a default would silently
         // pick one. A yaml that does not say loads as Inert and is reported as
         // unmodelled, which is the honest outcome for a card nobody has read.
+        "armor_strip_per_puncture_status" => {
+            EvoEffect::ArmorStripPerPunctureStatus(f(v, "value").unwrap_or(0.0))
+        }
         "multishot_on_last_round" => match v.get("base").and_then(serde_norway::Value::as_bool) {
             Some(base) => EvoEffect::MultishotOnLastRound {
                 value: f(v, "value").unwrap_or(0.0),
@@ -930,8 +950,18 @@ fn effect(v: &Value) -> Option<EvoEffect> {
                 )),
             }
         }
+        // THE CONDITION IS READ NOW, and it is a question about the PLAYER
+        // rather than about this weapon: "With Sprint Speed 1.2 or Higher".
+        // Unread, the perk paid out on every build including the ones that
+        // cannot reach the threshold (2026-08-12).
         "condition_overload" => EvoEffect::ConditionOverload {
             per_type: f(v, "value").unwrap_or(0.0),
+            min_sprint: v
+                .get("condition")
+                .and_then(Value::as_str)
+                .and_then(|c| c.strip_prefix("sprint_speed >= "))
+                .and_then(|n| n.parse::<f64>().ok())
+                .unwrap_or(0.0),
         },
         "fire_rate_bonus" => EvoEffect::FireRateBonus(f(v, "value").unwrap_or(0.0)),
         // The CONDITION is the only thing that varies between the roster's
@@ -976,12 +1006,27 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         {
             EvoEffect::ReloadSpeedOnEmptyReload { value: f(v, "value").unwrap_or(0.0) }
         }
-        "stacking_multishot_on_electricity_status" => EvoEffect::StackingMultishotOnStatus {
-            status: crate::damage::DamageType::Electricity,
-            per_stack: f(v, "per_stack").unwrap_or(0.0),
-            max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
-            duration: f(v, "duration").unwrap_or(0.0),
-        },
+        // THE STATUS IS IN THE KIND, and it is READ rather than matched one
+        // spelling at a time. This arm was hardcoded to Electricity for the
+        // Furis's Stormburst, so the Latron family's Riddled Target — the same
+        // mechanic, triggered by PUNCTURE — sat inert beside machinery that
+        // already did everything it needed (2026-08-12).
+        k if k.starts_with("stacking_multishot_on_") && k.ends_with("_status") => {
+            let name = &k["stacking_multishot_on_".len()..k.len() - "_status".len()];
+            let Some(status) = crate::damage::DamageType::from_name(name) else {
+                // A type this engine does not know is reported, not silently
+                // dropped: the kind NAMES it, so a typo would otherwise read as
+                // a perk DE never wrote.
+                return Some(EvoEffect::Inert(format!("stacking multishot on {name} status")));
+            };
+            EvoEffect::StackingMultishotOnStatus {
+                status,
+                per_stack: f(v, "per_stack").unwrap_or(0.0),
+                max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
+                // Two spellings in the roster, both meaning seconds.
+                duration: f(v, "duration").or_else(|| f(v, "duration_seconds")).unwrap_or(0.0),
+            }
+        }
         "on_headshot_fire_rate" => EvoEffect::StackingFireRateOnHeadshot {
             per_stack: f(v, "per_stack").unwrap_or(0.0),
             max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
@@ -1177,6 +1222,9 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // "Resets when activating incarnon" is the ordinary
                 // `MagazineRefilled` clear — swapping either way reloads the
                 // base magazine — so it needs nothing of its own either.
+                EvoEffect::ArmorStripPerPunctureStatus(v) => {
+                    base.armor_strip_per_puncture = *v;
+                }
                 EvoEffect::BaseDamagePerFullBurst { per_stack, max_stacks } => {
                     base.stacking_buffs.push(crate::loadout::StackingBuff {
                         id: "full_burst_damage",
@@ -1212,8 +1260,16 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     base.buff_multishot_bonus += total;
                     base.buff_ms_max_stacks = base.buff_ms_max_stacks.max(*max_stacks);
                 }
-                EvoEffect::ConditionOverload { per_type } => {
-                    base.innate_co_per_type += per_type;
+                // CARRIED, NOT SPENT, when the perk states a speed: `apply`
+                // works on the raw weapon and the player is not here — the
+                // condition is answered in `resolve_for`, which has the Tenno.
+                EvoEffect::ConditionOverload { per_type, min_sprint } => {
+                    if *min_sprint > 0.0 {
+                        base.co_min_sprint = base.co_min_sprint.max(*min_sprint);
+                        base.innate_co_gated += per_type;
+                    } else {
+                        base.innate_co_per_type += per_type;
+                    }
                 }
                 EvoEffect::FireRateBonus(v) => base.evo_fire_rate_bonus += v,
                 EvoEffect::ReloadSpeedBonus(v) => base.evo_reload_bonus += v,
@@ -1554,7 +1610,7 @@ mod tests {
             .contains(&EvoEffect::AssumedMaxMultishot { total: 1.0, max_stacks: 20 }));
         let ca = get("dual_toxocyst_carnage_reign").unwrap();
         assert!(ca.effects.contains(&EvoEffect::FlatBaseDamage(60.0)));
-        assert!(ca.effects.contains(&EvoEffect::ConditionOverload { per_type: 0.33 }));
+        assert!(ca.effects.contains(&EvoEffect::ConditionOverload { per_type: 0.33, min_sprint: 0.0 }));
         let cf = get("dual_toxocyst_commodores_fortune").unwrap();
         assert!(cf.effects.contains(&EvoEffect::FlatBaseCritChance(0.20)));
     }
@@ -1860,12 +1916,6 @@ use crate::loadout::WeaponBase;
             // many weapons — but carries none on this one. Marksman's Hand is
             // recoil and IS loaded, into the indirect bucket, like every other
             // handling stat here.
-            "latron_flensing_spikes :: armor_strip_per_puncture_status",
-            "latron_prime_flensing_spikes :: armor_strip_per_puncture_status",
-            "latron_prime_riddled_target :: stacking_multishot_on_puncture_status",
-            "latron_riddled_target :: stacking_multishot_on_puncture_status",
-            "latron_wraith_flensing_spikes :: armor_strip_per_puncture_status",
-            "latron_wraith_riddled_target :: stacking_multishot_on_puncture_status",
             // THE BOLTOR FAMILY (2026-08-08) — three weapons, three kinds.
             //
             // CRIMSON OVERTURE is an on-kill stacking buff on the BASE damage,
@@ -2121,7 +2171,7 @@ mod furis_co_split_tests {
     /// this line should ever see.
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 254;
+        const CEILING: usize = 226;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

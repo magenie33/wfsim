@@ -954,6 +954,12 @@ pub struct WeaponBase {
     /// Unconditional CO rate baked into the weapon config (Carnage
     /// Reign's +33% per status type) — additive with mod CO sources.
     pub innate_co_per_type: f64,
+    /// The same thing, waiting on the PLAYER: an evolution's Condition Overload
+    /// that states a sprint speed. It joins `innate_co_per_type` in
+    /// `resolve_for`, where the Tenno exists, or contributes nothing.
+    pub innate_co_gated: f64,
+    /// The speed that gate needs (0 = no gate).
+    pub co_min_sprint: f64,
     /// This weapon's Condition Overload behavior class.
     pub co_behavior: CoBehavior,
     /// CO base effectiveness = `original_base / evolved_base`, i.e. how much of
@@ -1006,6 +1012,15 @@ pub struct WeaponBase {
     /// data while the model was a timer, and reads as "there is nothing to
     /// state" once the window is the action.
     pub rs_on_empty_reload: f64,
+    /// FLENSING SPIKES: *"Remove 20% of enemy Armor per Puncture Status"*, as a
+    /// fraction per live Weakened stack (0.0 = the weapon does not have it).
+    ///
+    /// A THIRD ARMOUR-STRIP SOURCE. The engine had two — Corrosive and Heat,
+    /// the two the game itself strips with — and this is a weapon PERK doing it
+    /// off a status that strips nothing on its own. It multiplies with the
+    /// other two the same way they multiply with each other, and at Puncture's
+    /// five-stack cap 20% a stack is the whole of the armour.
+    pub armor_strip_per_puncture: f64,
     /// EXECUTIONER'S FORTUNE — see [`InstantReload`].
     pub instant_reload_on_headshot: Option<InstantReload>,
     /// LINGERING JUDGEMENT — see [`HeadshotStreak`].
@@ -1690,6 +1705,8 @@ pub struct ResolvedPanel {
     /// and only the removal events are reasoned about (owner, 2026-08-11: "最正
     /// 确的建模就是建立一个无限时长的buff… 不应该在意此时是否换弹").
     pub rs_on_reload: f64,
+    /// Flensing Spikes' rate — see [`WeaponBase::armor_strip_per_puncture`].
+    pub armor_strip_per_puncture: f64,
     /// EXECUTIONER'S FORTUNE — see [`InstantReload`]. Carried straight to the
     /// sim under every policy: it is an EVENT, and there is no panel stat an
     /// assumed-max reading could spend it into (a magazine that refills itself
@@ -1831,7 +1848,17 @@ pub fn resolve_for(
     // Hunter Munitions: its own bucket, because its roll is its own.
     let mut slash_on_crit = 0.0;
     // Unconditional weapon-level CO (Carnage Reign) seeds the static rate.
-    let mut co = base.innate_co_per_type;
+    // …AND THE HALF THAT ASKS ABOUT THE PLAYER. "With Sprint Speed 1.2 or
+    // Higher" is a question about who is carrying the gun, so it is answered
+    // here rather than in `apply`, which never sees a Tenno. The neutral player
+    // sprints at 0.9 — the slowest frame — so a perk gated on speed pays
+    // nothing until someone says which frame is holding it.
+    let mut co = base.innate_co_per_type
+        + if base.co_min_sprint <= 0.0 || tenno.sprint >= base.co_min_sprint {
+            base.innate_co_gated
+        } else {
+            0.0
+        };
     let (mut co_stack, mut ms_stack): (Option<StackSpec>, Option<StackSpec>) = (None, None);
     let mut cc_on_headshot: Option<TimedBuff> = None;
     let mut cc_stack: Option<StackSpec> = None;
@@ -2630,6 +2657,7 @@ pub fn resolve_for(
         cd_on_kill,
         fr_on_reload,
         rs_on_reload,
+        armor_strip_per_puncture: base.armor_strip_per_puncture,
         instant_reload: base.instant_reload_on_headshot,
         headshot_streak: base.headshot_streak,
         cd_below_status_count: base.cd_below_status_count,

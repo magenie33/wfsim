@@ -14,13 +14,14 @@ effects:
   # second line — the same shape the Burston's and the Furis's tier 2 have.
   - kind: flat_base_damage
     value: 48.0
-  # NOT LOADED: the engine has a live stacking-multishot buff, but its trigger
-  # is an ELECTRICITY status (Stormburst's), and this one is PUNCTURE. The
-  # machinery is there and the trigger arm is not, which is the whole gap.
+  # MODELLED (2026-08-12). It is the same machine Stormburst uses — a live
+  # stacking buff bumped inside the fight, where the target's debuffs are in
+  # hand — and the only thing missing was that the loader's arm named
+  # Electricity instead of reading the status out of the kind.
   #
-  # It would be large on this family: the base form is 60-80% Puncture, so the
-  # trigger is the weapon's own main damage type and four stacks is +100%
-  # multishot held up indefinitely.
+  # It is LARGE on this family: the base form is 60-80% Puncture, so the trigger
+  # is the weapon's own main damage type and four stacks is +100% multishot
+  # held up for as long as the target keeps being shot.
   - kind: stacking_multishot_on_puncture_status
     per_stack: 0.25
     max_stacks: 4

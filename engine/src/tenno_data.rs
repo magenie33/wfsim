@@ -45,18 +45,28 @@ pub struct Tenno {
     /// MAX energy — the pool, not what is left in it (that is
     /// [`TennoState::energy_pct`]). **Primary Overcharge** reads both.
     pub energy: f64,
-    /// Sprint multiplier (wiki `Sprint`; Loki Prime 1.25). No damage reader
-    /// yet — recorded because the frame has it.
-    #[serde(default = "one")]
+    /// Sprint multiplier (wiki `Sprint`; Loki Prime 1.25), and the first
+    /// PLAYER stat a weapon perk reads: the Latron family's Swift Punishment is
+    /// "With Sprint Speed 1.2 or Higher: +30% Direct Damage per Status Type".
+    ///
+    /// The neutral player's is 0.9, the SLOWEST a frame has (owner, 2026-08-12:
+    /// "我们应该假设tenno的sprint speed是0.9（最慢的）"). Same rule as every
+    /// other field here: with no frame chosen the wielder claims nothing, so a
+    /// perk gated on speed is OFF until someone says who is carrying the gun.
+    /// A default of 1.0 would have been a frame nobody named, and it would have
+    /// paid out on a build that cannot reach the threshold.
+    #[serde(default = "slowest_frame")]
     pub sprint: f64,
     /// What the player is DOING.
     #[serde(default)]
     pub state: TennoState,
 }
 
-fn one() -> f64 {
-    1.0
+/// 0.9 — the slowest sprint any Warframe has. See [`Tenno::sprint`].
+fn slowest_frame() -> f64 {
+    0.9
 }
+
 
 fn yes() -> bool {
     true

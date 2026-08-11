@@ -27,9 +27,11 @@ selection: choose_one
 # halves so nobody tidies them into agreement.
 
 effects:
-  # The unconditional half, and the one a SECOND source cross-checks on the
-  # Furis: the CO catalog's row reads "100 or 128 (with Evolution II)", which
-  # is this +28 on a 100-Heat form. The MK1's +34 rests on the wiki alone.
+  # The unconditional half. THIS number rests on the wiki's evolution table
+  # alone — the CO catalog has no row for this weapon, so there is no second
+  # source to cross-check it against, and none is borrowed from the sibling
+  # that does have one (owner, 2026-08-12: a file states its own weapon's
+  # numbers and nobody else's).
   - kind: flat_base_damage
     value: 34.0
   # NOT LOADED, and the reason is a missing STATE rather than a missing effect

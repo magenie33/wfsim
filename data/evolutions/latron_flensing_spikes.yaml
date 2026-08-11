@@ -10,14 +10,18 @@ description: "Remove 20% of enemy Armor per Puncture Status."
 selection: choose_one
 
 effects:
-  # NOT LOADED: armour stripping exists in this engine for Corrosive and Heat
-  # statuses, which are the two the game strips with; a per-PUNCTURE-status
-  # strip is a third rule and has no arm.
+  # MODELLED (2026-08-12). A THIRD ARMOUR-STRIP SOURCE: the engine had Corrosive
+  # and Heat, the two the game strips with, and this is a weapon PERK stripping
+  # off a status that removes no armour by itself. It multiplies with the other
+  # two the way those two already multiply with each other — each removes a
+  # share of what is LEFT, which is what "remove 20% of enemy Armor" means once
+  # something else has removed some.
   #
-  # It would be worth a great deal against the official ruler's Thrax Centurion
-  # at level 9999, where armour is most of the effective health — and it pairs
-  # with Riddled Target in the tier above, since both read the same Puncture
-  # status this family produces more of than anything else.
+  # PUNCTURE CAPS AT FIVE STACKS, so 20% a stack is the WHOLE of the armour at
+  # the cap. That is what the card adds up to rather than a rounding of it, and
+  # it is why this pairs with Riddled Target in the tier above: both read the
+  # Puncture this family produces more of than anything else, and against the
+  # official ruler's Thrax at level 9999 armour is most of the effective health.
   - kind: armor_strip_per_puncture_status
     value: 0.20
 

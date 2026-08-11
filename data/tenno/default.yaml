@@ -53,9 +53,16 @@ armor: 0
 energy: 0
 
 # Sprint multiplier (wiki `Module:Warframes/data` field `Sprint`; Loki Prime is
-# 1.25). Nothing reads it for damage — it is here because a frame has it, and
-# the point of this entry is that a frame fills it in rather than adding it.
-sprint: 1.0
+# 1.25), and the first player stat a weapon perk reads: the Latron family's
+# Swift Punishment is "With Sprint Speed 1.2 or Higher: +30% Direct Damage per
+# Status Type".
+#
+# 0.9 IS THE SLOWEST A FRAME HAS (owner, 2026-08-12), and the neutral player is
+# the slowest one for the same reason every other field here is zero: with no
+# frame chosen the wielder claims nothing. 1.0 would have been a frame nobody
+# named, and it sat one tenth under a real threshold — close enough to look
+# deliberate and wrong in the same direction as guessing.
+sprint: 0.9
 
 # WHAT THE PLAYER IS DOING. A mod card gates on these in words ("while aiming",
 # "while Invisible", "while Airborne") and each such mod used to be modelled as
