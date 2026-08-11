@@ -1537,6 +1537,10 @@ pub struct DummyParams {
     /// The same arcane's `adds` row: a flat addition to the base-damage
     /// bracket, beside a live buff's. Per form, for the same reason.
     pub compression_bd: f64,
+    /// See [`crate::loadout::ResolvedPanel::bd_below_half_health`]. Per ATTACK
+    /// PART, like every other bracket here, so a radial that the catalog
+    /// exempts can carry a different number than the direct hit.
+    pub bd_below_half_health: f64,
     /// Secondary Enervate's stack count at t = 0. Its own field because the
     /// ramp lives in a PERK rather than in `arcane.buffs`, so the ordinary
     /// per-buff seeding never reached it — the arcane simply always started
@@ -2099,6 +2103,7 @@ impl DummyParams {
             multishot_ammo_bonus: panel.multishot_ammo_bonus,
             compression_mult,
             compression_bd,
+            bd_below_half_health: panel.bd_below_half_health,
             arcane,
             headshot_damage_bonus: panel.headshot_damage_bonus,
             headshot_bonus_multiplicative: panel.headshot_bonus_multiplicative,
@@ -2331,6 +2336,7 @@ impl Default for DummyParams {
             multishot_ammo_bonus: 0.0,
             compression_mult: 1.0,
             compression_bd: 0.0,
+            bd_below_half_health: 0.0,
             headshot_damage_bonus: 0.0,
             headshot_bonus_multiplicative: false,
             noncrit_bonus: None,
@@ -5678,7 +5684,24 @@ pub fn run_once_traced(
                 // share of this bucket its flat number is worth — so it lands
                 // here and NOT diluted, which is the whole point of the
                 // conversion.
-                + buff_total!(ap, crate::loadout::BuffGrant::FlatBaseDamage, t);
+                + buff_total!(ap, crate::loadout::BuffGrant::FlatBaseDamage, t)
+                // FEIGNED RETREAT / SWIFT CONCLUSION: a condition on the
+                // TARGET, evaluated per instance because the target's health is
+                // falling while the shot is being resolved. "Additive with mods
+                // such as Hornet Strike", so it is this bucket and not a
+                // multiplier of its own.
+                //
+                // HEALTH, not the pools in front of it: a target still on its
+                // shields or overguard is not below half HEALTH, and reading
+                // the total would have turned this on at the start of every
+                // fight against an Eximus.
+                + if params.target.max_health() > 0.0
+                    && target.health < 0.5 * params.target.max_health()
+                {
+                    ap.bd_below_half_health
+                } else {
+                    0.0
+                };
             let bd = ap.base_damage_bonus;
             let arc_ratio = (1.0 + bd + arc_bd) / (1.0 + bd);
             let mb_live = modded_base * arc_ratio;
@@ -7742,6 +7765,49 @@ mod tests {
             at > 0.45 && at < 0.56,
             "five bursts at ten bursts a second is 0.5 s: capped at {at:.3} s (frame {first_cap})"
         );
+    }
+
+    /// FEIGNED RETREAT: half the fight at a time, and the perk's own flat base
+    /// damage is excluded from what its bonus multiplies.
+    ///
+    /// The exclusion is the part nobody can see. VERBATIM (wiki, Sicarus
+    /// Incarnon Genesis): *"Bonus damage is additive with mods such as Hornet
+    /// Strike but does not take into account the Base Damage increase from this
+    /// perk."* The card grants BOTH — "+50 Base Damage" and "+40% Damage below
+    /// half health" — so the naive reading multiplies the 40% by a base this
+    /// perk itself raised, and is wrong by `0.40 x 50` on every low-health hit.
+    ///
+    /// Asserted through the loaded rate rather than through a sim, because the
+    /// correction is arithmetic and a Monte Carlo would bury it in the
+    /// half-the-fight condition.
+    #[test]
+    fn a_below_half_health_bonus_excludes_the_flat_damage_its_own_card_grants() {
+        let bare = crate::loadout::WeaponBase::from_data("sicarus", true, &[]);
+        let base_total = bare.base_vector.total();
+        let with = crate::loadout::WeaponBase::from_data("sicarus", true, &["sicarus_feigned_retreat"]);
+
+        // The card's own flat half, read from the same file the rate came from.
+        let own_flat = crate::evolutions_data::get("sicarus_feigned_retreat")
+            .expect("the perk")
+            .flat_base_damage();
+        assert!(own_flat > 0.0, "this card grants flat base damage too, or the test proves nothing");
+
+        // What the rate must be: 0.40, minus the share of it that would have
+        // landed on the perk's own contribution to the base.
+        let evolved = base_total + own_flat;
+        let expected = 0.40 - 0.40 * own_flat / evolved;
+        assert!(
+            (with.bd_below_half_health - expected).abs() < 1e-9,
+            "corrected rate {:.6}, expected {expected:.6} (card 0.40, own flat {own_flat}, evolved base {evolved})",
+            with.bd_below_half_health
+        );
+        assert!(
+            with.bd_below_half_health < 0.40,
+            "…and it is strictly less than the card's number, which is the whole correction"
+        );
+
+        // A LOCK TAKES IT, like every other base-damage bonus.
+        assert_eq!(bare.bd_below_half_health, 0.0, "no perk, no bonus");
     }
 
     /// DEADLY PACE ASKS WHO IS CARRYING THE BOW. "With Sprint Speed 1.2 or

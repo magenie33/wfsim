@@ -12,10 +12,21 @@ effects:
   # from: "Increase Base Damage by +50"
   - kind: flat_base_damage
     value: 50.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "+40% Damage to enemies below half Health"
-  - kind: unmodelled_damage_to_enemies_below_half_health
+  # A CONDITION ON THE TARGET, evaluated per damage instance because the
+  # target's health is falling while the shot resolves.
+  #
+  # THE BRACKET IS STATED and both halves of the sentence are obeyed. VERBATIM
+  # (wiki notes): "Bonus damage is additive with mods such as Hornet Strike but
+  # does not take into account the Base Damage increase from this perk." So it
+  # joins the bucket Serration feeds — diluted by it, not multiplied on top —
+  # and the rate is scaled at load time so that this card's OWN flat base damage
+  # is excluded from what it multiplies.
+  #
+  # HEALTH, not the pools in front of it: a target still on its shields or its
+  # overguard is not below half HEALTH, and reading the total would switch this
+  # on at the start of every fight against an Eximus.
+  - kind: base_damage_below_half_health
+    value: 0.4
 
 source:
   url: https://wiki.warframe.com/w/Sicarus_Incarnon_Genesis

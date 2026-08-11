@@ -190,6 +190,9 @@ enum EvoEffect {
     /// Fire-rate bonus in the ORDINARY additive bucket — the same one the
     /// fire-rate mods feed, so it SUMS with them (Rapid Wrath).
     FireRateBonus { value: f64, min_sprint: f64 },
+    /// "+X% Damage to enemies below half Health" — a bucket bonus with a
+    /// condition on the TARGET rather than on the weapon or the player.
+    BaseDamageBelowHalfHealth(f64),
     /// A RELOAD-SPEED bonus, into the same bucket the mods feed.
     ///
     /// The most common perk in the whole Incarnon set — Rapid Reinforcement is
@@ -645,6 +648,7 @@ impl EvolutionDef {
                 | EvoEffect::MultishotConsumesAmmo(_)
                 | EvoEffect::ConditionOverload { .. }
                 | EvoEffect::FireRateBonus { .. }
+                | EvoEffect::BaseDamageBelowHalfHealth(_)
                 | EvoEffect::ReloadSpeedBonus(_)
                 | EvoEffect::CritMultiplierBelowCritChance { .. }
                 | EvoEffect::PostModCritChance(_)
@@ -819,6 +823,10 @@ impl EvolutionDef {
                     } else {
                         String::new()
                     }
+                ),
+                EvoEffect::BaseDamageBelowHalfHealth(v) => format!(
+                    "+{:.0}% damage while the target is under half health",
+                    v * 100.0
                 ),
                 EvoEffect::FireRateBonus { value, min_sprint } => format!(
                     "+{:.0}% fire rate{}",
@@ -1125,6 +1133,9 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             per_type: f(v, "value").unwrap_or(0.0),
             min_sprint: sprint_condition(v),
         },
+        "base_damage_below_half_health" => {
+            EvoEffect::BaseDamageBelowHalfHealth(f(v, "value").unwrap_or(0.0))
+        }
         "fire_rate_bonus" => EvoEffect::FireRateBonus {
             value: f(v, "value").unwrap_or(0.0),
             // THE SAME `condition:` VOCABULARY the CO kind reads. One syntax
@@ -1285,6 +1296,12 @@ fn effect(v: &Value) -> Option<EvoEffect> {
 pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
     let original_total = base.base_vector.total();
     let mut flat = 0.0;
+    // "…but does not take into account the Base Damage increase from THIS
+    // perk". Held as a pair of sums and resolved once `evolved` exists: the
+    // rate as written, and the same rate weighted by the perk's own flat add,
+    // so the correction is `Σr - Σ(r·own) / evolved` and no perk needs to know
+    // what the others granted.
+    let (mut half_hp_rate, mut half_hp_rate_own) = (0.0f64, 0.0f64);
     for e in evos
         .iter()
         .filter(|e| !e.currently_broken)
@@ -1483,6 +1500,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // CARRIED, NOT SPENT, when the perk states a speed — the
                 // player is not here. Answered in `resolve_for`, exactly like
                 // the Condition Overload gate beside it.
+                EvoEffect::BaseDamageBelowHalfHealth(v) => {
+                    half_hp_rate += v;
+                    half_hp_rate_own += v * e.flat_base_damage();
+                }
                 EvoEffect::FireRateBonus { value, min_sprint } => {
                     if *min_sprint > 0.0 {
                         base.fire_rate_min_sprint = base.fire_rate_min_sprint.max(*min_sprint);
@@ -1659,6 +1680,17 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 EvoEffect::Inert(_) | EvoEffect::Qualifier(_) => {}
             }
         }
+    }
+    // …and the below-half-health rate, corrected against the base it will
+    // actually multiply. With no flat damage anywhere the correction is nil and
+    // the rate is the card's.
+    if half_hp_rate != 0.0 {
+        let evolved = original_total + flat;
+        base.bd_below_half_health += if evolved > 0.0 {
+            half_hp_rate - half_hp_rate_own / evolved
+        } else {
+            half_hp_rate
+        };
     }
     if flat > 0.0 && original_total > 0.0 {
         let evolved = original_total + flat;
@@ -2593,7 +2625,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 94;
+        const CEILING: usize = 89;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

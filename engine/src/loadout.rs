@@ -978,6 +978,17 @@ pub struct WeaponBase {
     pub evo_fire_rate_gated: f64,
     /// The speed THAT gate needs (0 = no gate).
     pub fire_rate_min_sprint: f64,
+    /// Feigned Retreat / Swift Conclusion: a share of the BASE-DAMAGE BUCKET
+    /// that applies only while the target is under half health.
+    ///
+    /// VERBATIM (wiki, Sicarus Incarnon Genesis): *"Bonus damage is additive
+    /// with mods such as Hornet Strike but does not take into account the Base
+    /// Damage increase from this perk."* Both halves of that sentence are
+    /// obeyed: it joins the bucket Serration feeds, and the rate stored here is
+    /// already scaled so that the perk's OWN flat base damage is excluded from
+    /// what it multiplies — resolved at the end of `apply`, which is the first
+    /// moment the evolved base exists.
+    pub bd_below_half_health: f64,
     /// This weapon's Condition Overload behavior class.
     pub co_behavior: CoBehavior,
     /// CO base effectiveness = `original_base / evolved_base`, i.e. how much of
@@ -1718,6 +1729,9 @@ pub struct ResolvedPanel {
     pub reload_bonus: f64,
     /// Σ base-damage bonuses (needed live when CO joins this bucket).
     pub base_damage_bonus: f64,
+    /// See [`WeaponBase::bd_below_half_health`] — carried through unchanged,
+    /// already corrected for the granting perk's own flat base damage.
+    pub bd_below_half_health: f64,
     /// Σ (CO per_stack × stacks) under `AssumedMax` (0 under
     /// `Emergent` — see `co_stack`) — applied per this weapon's
     /// [`CoBehavior`] × `co_base_fraction`, DIRECT HITS ONLY.
@@ -2764,6 +2778,9 @@ pub fn resolve_for(
         },
         reload_bonus: rl,
         base_damage_bonus: bd,
+        // A LOCKED base damage takes this with it, the same rule the live
+        // buffs follow: a lock is "set to its default ignoring other bonuses".
+        bd_below_half_health: if locked_stat("base_damage") { 0.0 } else { base.bd_below_half_health },
         co_behavior: base.co_behavior,
         compression,
         co_base_fraction: base.co_base_fraction,
