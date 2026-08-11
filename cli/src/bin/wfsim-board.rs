@@ -73,11 +73,68 @@ struct Row {
 /// not with this number.
 const KEEP: usize = 100;
 
+/// A flag's value, `--name value` anywhere after the positionals.
+fn flag(name: &str) -> Option<String> {
+    let a: Vec<String> = std::env::args().collect();
+    a.iter().position(|x| x == name).and_then(|i| a.get(i + 1).cloned())
+}
+
+/// SCORING IS THE WHOLE COST — 67 minutes of a 71-minute run at the rulers'
+/// 1000 runs (measured 2026-08-11) — and it is embarrassingly parallel: every
+/// row is an independent fight. So the job splits N ways and the scores are
+/// carried between processes as a plain map.
+///
+/// This is not a cache and must never become one. It is keyed by the row's
+/// identity ALONE, with no engine version in it, because it only ever travels
+/// between shards of ONE run — every shard built from one commit. Persisting it
+/// across runs would publish yesterday's numbers under today's engine, which is
+/// exactly the failure the board exists to prevent.
+fn load_scores(spec: Option<String>) -> std::collections::HashMap<String, f64> {
+    let mut out = std::collections::HashMap::new();
+    let Some(spec) = spec else { return out };
+    let mut files: Vec<std::path::PathBuf> = Vec::new();
+    let p = std::path::Path::new(&spec);
+    if p.is_dir() {
+        if let Ok(rd) = std::fs::read_dir(p) {
+            files.extend(rd.flatten().map(|e| e.path()).filter(|f| {
+                f.extension().is_some_and(|e| e == "json")
+            }));
+        }
+    } else {
+        files.push(p.to_path_buf());
+    }
+    files.sort();
+    for f in files {
+        let Ok(text) = std::fs::read_to_string(&f) else { continue };
+        if let Ok(map) = serde_json::from_str::<std::collections::HashMap<String, f64>>(&text) {
+            out.extend(map);
+        }
+    }
+    out
+}
+
 fn main() {
     let bench_id = std::env::args().nth(1).unwrap_or_else(|| {
-        eprintln!("usage: wfsim-board <benchmark-id>  (submissions as JSON on stdin)");
+        eprintln!("usage: wfsim-board <benchmark-id> [board.json] [--shard i/n] \
+                   [--scores <file|dir>] [--emit-scores <file>]  (submissions on stdin)");
         std::process::exit(2);
     });
+    // WHICH SLICE OF THE SUBMISSIONS THIS PROCESS SIMULATES. By INDEX in the
+    // stdin array rather than by any property of the row: every shard is handed
+    // the same file, so the split is identical without the shards agreeing on
+    // anything else. A build submitted twice can land in two shards and be
+    // simulated twice — the merge dedups by identity, and paying for one extra
+    // fight is cheaper than a coordination scheme that would not.
+    let (shard, shards) = match flag("--shard") {
+        Some(s) => {
+            let (i, n) = s.split_once('/').unwrap_or(("0", "1"));
+            (i.parse::<usize>().unwrap_or(0), n.parse::<usize>().unwrap_or(1).max(1))
+        }
+        None => (0, 1),
+    };
+    let known = load_scores(flag("--scores"));
+    let emit_to = flag("--emit-scores");
+    let mut computed: std::collections::HashMap<String, f64> = Default::default();
     let bench = wfsim_engine::benchmarks_data::get(&bench_id).unwrap_or_else(|| {
         eprintln!("unknown benchmark: {bench_id}");
         std::process::exit(2);
@@ -113,7 +170,7 @@ fn main() {
     let mut legacy = 0usize;
     let (mut seen, mut refused) = (0usize, 0usize);
     let mut seen_ids: std::collections::HashSet<String> = Default::default();
-    for s in &subs {
+    for (idx, s) in subs.iter().enumerate() {
         // MATCHED BY FAMILY, which today is a MIGRATION SHIM and nothing more.
         // Benchmarks carry no version (owner, 2026-08-04) — but records already
         // in the store were submitted against `single_target_v1`, and those are
@@ -206,60 +263,59 @@ fn main() {
             // The one place a MODE becomes a FORM.
             o.insert("form".into(), json!(played.form()));
         }
-        let out = wfsim_engine_webapi_simulate(&req);
-        let ok = out.get("ok").and_then(Value::as_bool).unwrap_or(false);
-        let raw = out.get("score").and_then(Value::as_f64).unwrap_or(0.0);
-        if !ok || raw <= 0.0 {
-            eprintln!(
-                "refused {weapon}: did not simulate ({})",
-                out.get("error").and_then(Value::as_str).unwrap_or("scored zero")
-            );
-            refused += 1;
-            continue;
-        }
-        // A `cycle` ROW ON THE NO-AIM BOARD IS NOT A BASE ROW, and it was
-        // nearly recorded as one here. Eight of the nine Incarnon forms charge
-        // on WEAKPOINT hits, so at a 0% headshot rate they never transform —
-        // that benchmark says so in its own rules — which reads like an
-        // argument for filing those rows under `base` instead, since a form
-        // nobody reached cannot be what the weapon was played in.
+        // ONE ROW PER BUILD, and the identity is computed BEFORE the fight
+        // because it now decides whether there is one to run. It used to be
+        // computed after, since dedup was all it was for.
         //
-        // MEASURED FIRST, and the measurement refused it: Burston Prime,
-        // Serration only, 4 s, 400 runs, zero headshots, ZERO transforms on
-        // both sides — `incarnon_cycle` 2470 DPS against a pinned base form's
-        // 1738, +42%. Same shot count, near-identical direct damage, and three
-        // times the status procs, one of them HEAT when the base form has no
-        // Heat in its vector at all. So the two are not the same fight even
-        // with the gauge never full, and relabelling would have silently
-        // RE-SCORED every such row — it moved the published Burston Prime from
-        // 0.9572 to 0.5858 before this was caught.
-        //
-        // That gap is a bug in the SIMULATOR, not in the board's bookkeeping
-        // (MEASUREMENTS M32). The board records the mode that was DECLARED,
-        // and will keep doing so until the engine and the fight agree.
-        // IN THE BENCHMARK'S OWN METRIC. `score` off the wire is kill PROGRESS
-        // — kills plus the fraction of the current target depleted — over the
-        // whole engagement. The benchmark says `metric: kpm`, so publishing the
-        // raw figure labelled "kill rate" overstated every row by the length of
-        // the fight: 55.26 on screen for a build that kills 11.05 a minute over
-        // 300 s (user, 2026-08-04). Ranking is unaffected either way — this is
-        // a linear rescale — but the number people read is not a ranking.
-        let score = match metric.as_str() {
-            "dps" => out.get("dps").and_then(Value::as_f64).unwrap_or(0.0),
-            _ => raw * 60.0 / duration,
-        };
-        // ONE ROW PER BUILD. The endpoint stores what was submitted, verbatim,
-        // because it has no mod pool and cannot tell an elemental mod from any
-        // other — so two spellings of one fight arrive as two records and are
-        // collapsed HERE, where `validate` has already put both into the same
-        // canonical form.
-        // ...and the MODE is part of that identity: one build played two ways
-        // is two entrants, and collapsing them would keep whichever arrived
-        // first and silently drop the other's row.
+        // The endpoint stores what was submitted, verbatim — it has no mod pool
+        // and cannot tell an elemental mod from any other — so two spellings of
+        // one fight arrive as two records and are collapsed HERE, where
+        // `validate` has already put both into the same canonical form. The
+        // MODE is part of that identity: one build played two ways is two
+        // entrants, and collapsing them would keep whichever arrived first.
         let key = format!("{}#{}", wfsim_engine::builds::identity(&v), played.id);
-        if !seen_ids.insert(key) {
+        if !seen_ids.insert(key.clone()) {
             continue;
         }
+        let score = match known.get(&key) {
+            // A SIBLING SHARD OF THIS RUN ALREADY PAID FOR IT. Not a cache: the
+            // map only ever travels between processes built from one commit.
+            Some(&s) => s,
+            None => {
+                // Not this shard's slice: another one is simulating it right
+                // now, and publishing a row for it here would mean scoring it
+                // twice and ranking it once.
+                if shards > 1 && idx % shards != shard {
+                    continue;
+                }
+                let out = wfsim_engine_webapi_simulate(&req);
+                let ok = out.get("ok").and_then(Value::as_bool).unwrap_or(false);
+                let raw = out.get("score").and_then(Value::as_f64).unwrap_or(0.0);
+                if !ok || raw <= 0.0 {
+                    eprintln!(
+                        "refused {weapon}: did not simulate ({})",
+                        out.get("error").and_then(Value::as_str).unwrap_or("scored zero")
+                    );
+                    refused += 1;
+                    continue;
+                }
+                // IN THE BENCHMARK'S OWN METRIC. `score` off the wire is kill
+                // PROGRESS — kills plus the fraction of the current target
+                // depleted — over the whole engagement. The benchmark says
+                // `metric: kpm`, so publishing the raw figure labelled "kill
+                // rate" overstated every row by the length of the fight: 55.26
+                // on screen for a build that kills 11.05 a minute over 300 s
+                // (user, 2026-08-04). Ranking is unaffected either way — this
+                // is a linear rescale — but the number people read is not a
+                // ranking.
+                let s = match metric.as_str() {
+                    "dps" => out.get("dps").and_then(Value::as_f64).unwrap_or(0.0),
+                    _ => raw * 60.0 / duration,
+                };
+                computed.insert(key.clone(), s);
+                s
+            }
+        };
         rows.push(Row {
             weapon: v.weapon,
             mode: played.id.to_string(),
@@ -318,7 +374,17 @@ fn main() {
     // This benchmark's own rows are dropped first, so a re-run replaces rather
     // than duplicates; every other benchmark's are carried through untouched,
     // which is what lets one benchmark be re-scored on its own.
-    if let Some(path) = std::env::args().nth(2) {
+    // WHAT THIS PROCESS PAID FOR, for its siblings and the merge. Written even
+    // when empty: an absent file and an empty one say different things to the
+    // step that collects them, and "this shard found nothing to do" is a real
+    // answer.
+    if let Some(path) = &emit_to {
+        let text = serde_json::to_string(&computed).expect("scores");
+        std::fs::write(path, text).unwrap_or_else(|e| panic!("write {path}: {e}"));
+        eprintln!("shard {shard}/{shards}: scored {} rows -> {path}", computed.len());
+    }
+
+    if let Some(path) = std::env::args().nth(2).filter(|p| !p.starts_with("--")) {
         let mut by_weapon: std::collections::BTreeMap<String, Vec<Value>> = Default::default();
         if let Ok(prior) = std::fs::read_to_string(&path) {
             if let Ok(Value::Object(map)) = serde_json::from_str::<Value>(&prior) {

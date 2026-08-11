@@ -65,8 +65,16 @@ attack:
     crit_chance: 0.2
     crit_multiplier: 2
     status_chance: 0.4
-    # NOT DECLARED: no CO catalog row for this weapon, so the radial
-    # takes the engine's default — no Condition Overload on an explosion.
+    # THERE IS A ROW, and it was filed as an absence (2026-08-11). The CO
+    # catalog keys this one under BOTH variants at once —
+    # `{{Weapon|Zylok}}/{{Weapon|Zylok Prime}} | Incarnon Form Radial Attack` —
+    # exactly like the Burston's and the Braton's, so it covers this entry too
+    # even though its printed numbers are the Prime's. Notes verbatim: "Radial
+    # hit only receives CO bonus on target directly hit by bullet. AoE does not
+    # scale off multishot." See zylok_prime_incarnon.yaml for the full row and
+    # for the one number in it that does not add up.
+    takes_condition_overload: true
+    takes_multishot: false
 
 # incarnon_evolutions: see data/weapons/secondary/zylok.yaml (shared group)
 

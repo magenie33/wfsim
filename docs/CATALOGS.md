@@ -50,8 +50,70 @@ its base form is `Multiplying`, which is exactly the shape a refactor flattens �
 both forms still "have CO". Pinned by
 `the_torid_carries_both_of_its_co_catalog_rows`.
 
+### The Notes column carries a MULTISHOT rule — `takes_multishot`
+
+The CO table's last column is where the wiki records "AoE does not scale off
+multishot", and it is the only place that rule is published at all. It is a
+CO table, so nothing guarantees it lists every weapon the rule applies to — but
+the same catalog discipline holds: **a row is transcribed for the entry it
+names, and absence means ordinary** (a radial rides its projectile, so two
+projectiles detonate twice, which is the engine's default).
+
+Every row that carries it, and the reason they are the ones that do:
+
+| row (weapon / attack) | in the roster | our entry |
+| --- | --- | --- |
+| Braton / Mk1 / Prime / Vandal — Incarnon Form Radial Attack | yes (×4) | `takes_multishot: false` — **MEASURED**, M41 |
+| Burston / Prime — Incarnon Form Radial Attack | yes (×2) | `takes_multishot: false` |
+| Zylok / Zylok Prime — Incarnon Form Radial Attack | yes (×2) | `takes_multishot: false` |
+| Ambassador — Alt-fire **Hitscan** Radial Attack | no | — |
+| Ferrox / Tenet Ferrox — **Hitscan** AoE Direct | no | — |
+| Glaxion Vandal — Normal Attack **Hitscan** AoE | no | — |
+| Opticor / Opticor Vandal — Charged **Hitscan** Radial Attack | no | — |
+| Trumna — Main-fire **Hitscan** Radial Attack | no | — |
+| Mausolon — Main-fire / Alt-fire Radial Attack ("Based on hitscan damage") | no | — |
+
+The sentence means what it says, and it is about the GAME rather than about this
+table's arithmetic: the Braton Prime's Incarnon form fires one explosion per
+TRIGGER PULL at multishot 2.5, measured (M41). The arsenal is the half that
+lies — it multiplies the AoE and the game does not deliver it.
+
+**The discriminator is HITSCAN, not "beam".** Six of those rows say so in the
+attack NAME, one says it in the note, and the three Incarnon families are all
+forms the weapon page lists as Hit-Scan (Braton 5.67/s auto, Burston 20/s auto,
+Zylok 0.6 s charge). Every AoE row WITHOUT the note belongs to an attack the
+table's Projectile Type column calls Projectile — Laetum, Torid, Kompressa,
+Latron, Miter, Phantasma, Larkspur, Shedu. The mechanism the split implies: a
+hitscan shot has no projectile to carry an explosion, so the weapon spawns one
+radial per trigger pull at the traced impact point and extra multishot traces
+add nothing; a projectile weapon's extra rounds are separate objects that each
+fly and detonate.
+
+Note it is NOT the same rule as the beam one, which lives on the Multishot page
+and is about a different thing: "Multishot has no effect on the spherical blast
+radius of continuous weapons such as Ignis (Wraith), Glaxion Vandal, Gaze
+Primary, Embolist, Catabolyst, and Cortege" — that is `BeamSpec::
+radius_takes_multishot`, the sphere around a beam's contact point, and the extra
+beams themselves still deal damage.
+
+Two roster entries are hitscan with a radial and NO row, so they stay ordinary
+until measured: the Stug's Incarnon blob (which the table calls a *Projectile*
+under `Blob Impact`, and whose yaml carries a `projectile_speed_mps` — the
+`shot_type: hit_scan` on that entry looks like the odd field, not the rule), and
+nothing else.
+
 ### Where this has already gone wrong
 
+- **Zylok / Zylok Prime, 2026-08-11.** Both radials were filed as "no CO catalog
+  row for this weapon" and so took the engine's defaults — CO off, multishot on
+  — and BOTH were wrong. There is a row, and the reason it was missed is worth
+  the line: the catalog keys it under `{{Weapon|Zylok}}/{{Weapon|Zylok Prime}}`,
+  one row for two variants, so a search for either name alone finds a row that
+  looks like it belongs to the other. The Burston and Braton rows are keyed the
+  same way and were read correctly, which is what makes this a lookup habit
+  rather than a one-off. Found while answering "why doesn't the Burston Prime's
+  radial take multishot" — the question that made the column worth reading as a
+  column.
 - **Shedu, 2026-08-10.** Filed as `additive_with_base_damage` on the reasoning
   that it had no row. It has one, and it says Multiplying. The mistake was
   asserting an absence without opening the page — and the page's own Bugs

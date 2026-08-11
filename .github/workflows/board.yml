@@ -12,10 +12,19 @@
 #
 # The second is not an optimisation of the first, it is the correctness rule:
 # a board whose rows were measured by different engine versions is not a board.
-# Re-scoring everything is cheap enough that no dependency analysis is worth its
-# risk — a full 8-mod build is ~570 ms, so a few thousand rows is minutes on one
-# runner, and "which rows were affected" is a question that can be answered
-# wrong silently.
+#
+# IT IS SHARDED, and it had to be (2026-08-11). Measured on the run that raised
+# the rulers to 1000 runs: 24 s to build, 3m43s to read submissions out of KV,
+# **1h07m to score**, 2 s to commit. Meanwhile the schedule fires every twenty
+# minutes and `concurrency` keeps only ONE pending run — so every queued run was
+# cancelled by the next trigger and the board stopped updating entirely. Five
+# consecutive `cancelled` runs, and one that scored for 83 minutes and then
+# threw the result away on a merge conflict.
+#
+# Scoring is embarrassingly parallel — every row is an independent fight — so it
+# splits N ways by submission index and a merge job assembles the board from the
+# scores. 67 minutes becomes ~9, which is shorter than the interval that was
+# starving it.
 name: board
 
 on:
@@ -47,21 +56,24 @@ concurrency:
   group: board
   cancel-in-progress: false
 
+env:
+  # HOW MANY WAYS THE SCORING SPLITS. Actions minutes are not metered on a
+  # public repo, so the only cost of a wider fan-out is the fixed ~30 s each job
+  # spends checking out and restoring the cache.
+  SHARDS: 8
+
 jobs:
-  score:
+  # ---- 1. what is there to score ----------------------------------------
+  #
+  # The KV read is its own job so the eight scorers do not each pay 3m43s for
+  # the same list — and so they are all handed the SAME file, which is what
+  # makes "shard by index" a split they agree on without talking.
+  submissions:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    outputs:
+      wired: ${{ steps.wired.outputs.yes }}
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
 
       # NOT CONFIGURED YET IS NOT A FAILURE. Without the KV binding there is
       # nothing to read, and a job that fails hourly for a reason nobody is
@@ -73,10 +85,6 @@ jobs:
         run: |
           if [ -n "$CF_ACCOUNT" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
           else echo "yes=false" >> "$GITHUB_OUTPUT"; echo "::notice::board storage not configured — see docs/BOARD.md"; fi
-
-      - name: build the scorer
-        if: steps.wired.outputs.yes == 'true'
-        run: cargo build --release --bin wfsim-board
 
       # EVERY stored submission, every time. The endpoint keys by build identity
       # so the list is already deduplicated — a hundred players who arrived at
@@ -112,6 +120,93 @@ jobs:
           jq -s 'map(select(. != null))' values.ndjson > submissions.json || echo "[]" > submissions.json
           echo "submissions: $(jq 'length' submissions.json)"
 
+      - name: keep the list for the scorers
+        if: steps.wired.outputs.yes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: submissions
+          path: submissions.json
+          retention-days: 1
+
+  # ---- 2. score, N ways at once -----------------------------------------
+  #
+  # Each shard simulates the submissions whose INDEX is its own and writes only
+  # the scores it computed. It produces no board: a shard's view is a slice, and
+  # a slice ranked on its own would be a leaderboard of a third of the field.
+  score:
+    needs: submissions
+    if: needs.submissions.outputs.wired == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: submissions
+
+      - name: build the scorer
+        run: cargo build --release --bin wfsim-board
+
+      - name: score this shard of every benchmark
+        run: |
+          set -euo pipefail
+          mkdir -p scores
+          for f in data/benchmarks/*.yaml; do
+            id=$(basename "$f" .yaml)
+            ./target/release/wfsim-board "$id" \
+              --shard "${{ matrix.shard }}/${SHARDS}" \
+              --emit-scores "scores/$id-${{ matrix.shard }}.json" \
+              < submissions.json > /dev/null
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: scores-${{ matrix.shard }}
+          path: scores/
+          retention-days: 1
+
+  # ---- 3. assemble the board and commit ---------------------------------
+  #
+  # With every score already computed this job simulates nothing: it validates,
+  # deduplicates, ranks and writes. Measured locally at 0.064 s for the rows it
+  # was given, against the 1.5 s the shards spent computing them.
+  publish:
+    needs: [submissions, score]
+    if: needs.submissions.outputs.wired == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: submissions
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: scores-*
+          path: scores
+          merge-multiple: true
+
+      - name: build the scorer
+        run: cargo build --release --bin wfsim-board
+
       # TWO OUTPUTS: the canonical yaml, and the json the PAGE fetches.
       #
       # This step used to regenerate the whole site, and it failed on a clean
@@ -120,20 +215,26 @@ jobs:
       # 2.5 MB wasm rebuilt to reach anyone: install wasm-bindgen, fetch 300
       # images, recompile, to change a few numbers. The board is fetched at
       # runtime now, so this writes two small files and is done.
-      - name: score every benchmark
-        if: steps.wired.outputs.yes == 'true'
+      - name: assemble every benchmark
         run: |
           set -euo pipefail
           mkdir -p site
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
-            ./target/release/wfsim-board "$id" site/board.json < submissions.json               > "data/benchmarks/boards/$id.yaml"
+            ./target/release/wfsim-board "$id" site/board.json --scores scores \
+              < submissions.json > "data/benchmarks/boards/$id.yaml"
           done
 
       # ONLY ON CHANGE. Most hours nobody submits anything new, and a commit per
       # hour that says nothing is history nobody can read.
+      #
+      # AND IT NEVER REBASES THE RESULT. These files are GENERATED: there is no
+      # sense in which two versions both hold something worth keeping, so a
+      # three-way merge can only ever produce a conflict — which is exactly what
+      # happened on 2026-08-11, throwing away 83 minutes of completed scoring at
+      # the last step. The run that just scored holds the newest numbers; it
+      # takes whatever base is current and writes them on top.
       - name: commit if the board moved
-        if: steps.wired.outputs.yes == 'true'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -142,11 +243,27 @@ jobs:
             echo "board unchanged — nothing to commit"
             exit 0
           fi
-          git add data/benchmarks/boards site/board.json
-          # THE TIME, not just the date. Three runs an hour means a day of
-          # "board: rescore 2026-08-09" is a wall of identical subjects, and the
-          # one thing you want from this line is WHICH rescore you are looking
-          # at.
-          git commit -m "board: rescore $(date -u +'%Y-%m-%d %H:%M') UTC"
-          git pull --rebase --autostash
-          git push
+          for attempt in 1 2 3; do
+            # Hold the generated files, take whatever main is now, put them back.
+            mkdir -p /tmp/out
+            cp -r data/benchmarks/boards /tmp/out/
+            cp site/board.json /tmp/out/
+            git fetch origin main
+            git reset --hard origin/main
+            cp -r /tmp/out/boards data/benchmarks/
+            cp /tmp/out/board.json site/
+            if git diff --quiet -- data/benchmarks/boards site/board.json; then
+              echo "board already current on main — nothing to commit"
+              exit 0
+            fi
+            git add data/benchmarks/boards site/board.json
+            # THE TIME, not just the date. Three runs an hour means a day of
+            # "board: rescore 2026-08-09" is a wall of identical subjects, and the
+            # one thing you want from this line is WHICH rescore you are looking
+            # at.
+            git commit -m "board: rescore $(date -u +'%Y-%m-%d %H:%M') UTC"
+            if git push; then exit 0; fi
+            echo "push raced (attempt $attempt) — taking the new base and rewriting"
+          done
+          echo "::error::could not land the board after three attempts"
+          exit 1

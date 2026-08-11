@@ -65,8 +65,29 @@ attack:
     crit_chance: 0.26
     crit_multiplier: 2.4
     status_chance: 0.4
-    # NOT DECLARED: no CO catalog row for this weapon, so the radial
-    # takes the engine's default — no Condition Overload on an explosion.
+    # THERE IS A ROW, and it was filed as an absence (2026-08-11). The CO
+    # catalog keys this one under BOTH variants at once, which is why looking
+    # for "Zylok Prime" alone missed it — verbatim wikitext:
+    #
+    #   {{Weapon|Zylok}}/{{Weapon|Zylok Prime}} | Incarnon Form Radial Attack |
+    #     AoE | 776 | 700 | 90% | Adding | "Listed Values for Zylok Prime with
+    #     inactive Precision's Payoff. Radial hit only receives CO bonus on
+    #     target directly hit by bullet. AoE does not scale off multishot."
+    #
+    # Two behaviours transcribed, one number deliberately left out:
+    takes_condition_overload: true   # "on target directly hit by bullet",
+                                     # which the single-target arena always is
+    takes_multishot: false           # "AoE does not scale off multishot"
+    # NOT TRANSCRIBED — the 776/700 = 90%. 776 - 700 = 76, and 76 is the
+    # ZYLOK's Evolution II flat damage; this variant's is +30 (wiki Zylok
+    # Incarnon Genesis prints the pair "+76 / +30", and both our evolution
+    # files agree). So a row that says "Listed Values for Zylok Prime" reached
+    # its unmodded total with the other variant's evolution, and neither
+    # 700+30 nor 600+76 is 776. The BEHAVIOUR the row states — the CO base
+    # excludes Evolution II's flat damage, the same thing the Burston and
+    # Braton rows say — is not in doubt; the arithmetic identifying it here is.
+    # Left as `co_base_fraction` 1.0 until the number is re-derived, because
+    # encoding 90% would be encoding the slip.
 
 # incarnon_evolutions: see data/weapons/secondary/zylok_prime.yaml (shared group)
 

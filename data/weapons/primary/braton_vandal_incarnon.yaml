@@ -76,6 +76,12 @@ attack:
     # bullet", which the single-target arena always is.
     takes_condition_overload: true
     # ...and it fires ONCE PER PULL: "AoE does not scale off multishot".
+    # MEASURED on this family (M41, owner 2026-08-11): the Braton Prime's
+    # Incarnon form at multishot 2.5 puts out one explosion per TRIGGER PULL,
+    # not one per pellet — two rounds, two explosions against the ~5 pellets
+    # they fired. Before that this line rested on the catalog row alone, and
+    # the row admitted a reading where the sentence was about the TABLE's
+    # arithmetic rather than about the game.
     takes_multishot: false
 
 # incarnon_evolutions: see data/weapons/primary/braton_vandal.yaml (shared group)
