@@ -111,11 +111,43 @@ anything the weapon's own data says:
 6. **Multishot can change it.** The Simulor's effectiveness *decreases* with
    multishot (83%, 71%, 63%, 56%) and recovers with Primed Firestorm.
 
-Plus a class of rows that are not about the arcane at all: *"Shotguns cannot
-equip"*, *"Archguns cannot equip"*, *"Exalted weapon cannot equip Arcanes"*.
-Those are EQUIP rules, and if the first is real it belongs in the arcane's pool
-rather than in this table — our engine has never restricted a primary arcane by
-weapon class, so it is an open question rather than a transcription.
+#### "Shotguns cannot equip" is about a MOD, not this arcane — CHECKED
+
+The rendered table drops a word. The wikitext says **"Shotguns cannot equip
+mod"**, and the row's last column is the weapon CLASS:
+
+```
+| {{Weapon|Corinth}} … || Alt-Fire + AoE || 100% || Multiplies || Snapshot
+| 9.4 m (9.8 m)
+| +752% (+784%)
+| Shotguns cannot equip mod|| || Shotgun
+```
+
+The mod is the blast-radius one. Firestorm and Primed Firestorm are RIFLE mods
+and Fulmination and Primed Fulmination are PISTOL mods; **there is no shotgun
+blast-radius mod at all**. So a shotgun is stuck at its base radius and can
+never reach the table's Primed Firestorm column — which is also quiet evidence
+that the arcane reads the MODDED radius, since otherwise the note would say
+nothing.
+
+It is not an equip rule and there is nothing to implement: the engine already
+answers it by construction, because a shotgun's pools are `[primary, shotgun]`
+and the mod is in neither. Verified against `/api/meta` (2026-08-11):
+
+| weapon | class | blast-radius mods offered |
+| --- | --- | --- |
+| Phantasma Prime | Shotgun | — |
+| Strun | Shotgun | — |
+| Torid | Launcher | firestorm, primed_firestorm |
+| Shedu | Rifle | firestorm, primed_firestorm |
+
+*"Archguns cannot equip"* and *"Exalted weapon cannot equip Arcanes"* are the
+same shape and are already true here for the same structural reason.
+
+**The real per-weapon exception is the other one.** The Shedu IS offered
+Firestorm — it is a rifle — and the mod does nothing to its explosion anyway
+("Primary Fire AoE not affected by Firestorm", shared with both Trumnas). That
+one the engine gets WRONG today, and it is recorded on the weapon's radial.
 
 ### Rows the ROSTER carries
 
