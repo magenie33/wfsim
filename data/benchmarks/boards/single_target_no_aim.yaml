@@ -96,6 +96,12 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: laetum
     mode: cycle
+    score: 1.3182894012288724
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+  - weapon: laetum
+    mode: cycle
     score: 1.0082988287565067
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, accelerated_isotope, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_overwhelming_attrition]
@@ -183,6 +189,26 @@ entries:
     score: 0.8564168546850263
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, pistol_elementalist, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
+  - weapon: ocucor
+    mode: base
+    score: 0.42385810610860164
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, sentient_surge, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: ocucor
+    mode: base
+    score: 0.3975980942639095
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, sentient_surge, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+  - weapon: ocucor
+    mode: base
+    score: 0.33800752444918397
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, sentient_surge, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_encumber]
+  - weapon: ocucor
+    mode: base
+    score: 0.2788282444240749
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, sentient_surge, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_empowered]
   - weapon: ocucor
     mode: base
     score: 0.0017075599025697292
