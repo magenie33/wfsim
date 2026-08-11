@@ -224,6 +224,12 @@ pub struct ArcaneFx {
     /// Akimbo Slip Shot under assumed-max (sliding/aim-gliding not simmed):
     /// added to BuffBar ammo efficiency. Gated on the `dual_pistols` trait.
     pub ammo_efficiency: f64,
+    /// Primary Compression's two ramps, PER METRE of blast radius given up.
+    /// They are not bonuses yet: what they are worth is the weapon's modded
+    /// radius times its own row in the arcane's per-weapon table, so
+    /// `loadout::resolve_for` spends them and the panel carries the answer.
+    pub compression_dmg_per_m: f64,
+    pub compression_eff_per_m: f64,
 }
 
 impl Default for ArcaneFx {
@@ -246,11 +252,48 @@ impl Default for ArcaneFx {
             cold_burst_on_puncture: 0,
             overguard_mult: 1.0,
             ammo_efficiency: 0.0,
+            compression_dmg_per_m: 0.0,
+            compression_eff_per_m: 0.0,
+        }
+    }
+}
+
+impl ArcGrant {
+    /// The `disables:` key this grant feeds — the same vocabulary a locking mod
+    /// writes. A lock is *"set to its default ignoring other bonuses, even
+    /// negative effects"* (MEASUREMENTS M30), and an arcane's buff is a bonus
+    /// like a mod's, so the two only have to agree on the stat's NAME.
+    pub fn locked_stat(self) -> &'static str {
+        match self {
+            ArcGrant::BaseDamage => "base_damage",
+            ArcGrant::Multishot => "multishot",
+            ArcGrant::ReloadSpeed => "reload_speed",
+            ArcGrant::CritDamage => "crit_damage",
+            ArcGrant::StatusChance => "status_chance",
+            ArcGrant::AmmoEfficiency => "ammo_efficiency",
         }
     }
 }
 
 impl ArcaneFx {
+    /// Drop every buff whose grant a LOCKED stat silences.
+    ///
+    /// Five arcanes grant Multishot (Primary Blight, Frostbite, Overcharge,
+    /// Shotgun Vendetta, Conjunction Voltage) and Primary Acuity sets multishot
+    /// to the weapon's default "ignoring other bonuses" — so under one they are
+    /// worth nothing, exactly as an evolution's live buff is. It is a filter
+    /// rather than a zero for the same reason: a card that opens and grants
+    /// nothing is a measurement nobody can make.
+    pub fn without_locked(mut self, locked: &[&str]) -> Self {
+        if !locked.is_empty() {
+            self.buffs.retain(|b| !locked.contains(&b.grant.locked_stat()));
+            if locked.contains(&"ammo_efficiency") {
+                self.ammo_efficiency = 0.0;
+            }
+        }
+        self
+    }
+
     pub fn none() -> Self {
         Self::default()
     }
@@ -297,6 +340,8 @@ impl ArcaneFx {
                     out.encumber_chance += a.encumber_chance;
                     out.cold_burst_on_puncture += a.cold_burst_on_puncture;
                     out.ammo_efficiency += a.ammo_efficiency;
+                    out.compression_dmg_per_m += a.compression_dmg_per_m;
+                    out.compression_eff_per_m += a.compression_eff_per_m;
                     out.final_mult *= a.final_mult;
                     // One arcane grants it and a weapon seats at most one of
                     // any arcane, so this is a max rather than a sum — summing
@@ -417,6 +462,13 @@ enum ArcEffect {
     ColdBurst { scale: Scale, radius0: f64, radius1: f64 },
     OverguardDamage(Scale),
     AmmoEfficiency(Scale),
+    /// PRIMARY COMPRESSION, whose worth is a property of the WEAPON: it shrinks
+    /// the explosion to a fifth while aiming and pays per metre given up. Both
+    /// ramps are per METRE, so neither is a number until a radius is known —
+    /// which is why the fold happens in `loadout::resolve_for` (it has the
+    /// modded radius and the weapon's own row) rather than here.
+    CompressionDamage(Scale),
+    CompressionAmmoEfficiency(Scale),
     /// Kinship: per ally-affecting buff — team context, uncapped: inert in
     /// the sim, but its per-rank value still renders in the description.
     PerAllyCritChance(Scale),
@@ -589,6 +641,8 @@ fn effect(v: &Value) -> Option<ArcEffect> {
         },
         "overguard_damage_bonus" => ArcEffect::OverguardDamage(scale(v)),
         "ammo_efficiency" => ArcEffect::AmmoEfficiency(scale(v)),
+        "compression_damage" => ArcEffect::CompressionDamage(scale(v)),
+        "compression_ammo_efficiency" => ArcEffect::CompressionAmmoEfficiency(scale(v)),
         "tenno_scaled" => ArcEffect::TennoScaled {
             stat: match s(v, "stat")? {
                 "armor" => TennoStat::Armor,
@@ -821,6 +875,17 @@ impl ArcaneDef {
                         fx.ammo_efficiency += sc.at(rank, self.max_rank);
                     }
                 }
+                // PER METRE, under BOTH policies. The arcane's own condition is
+                // "on aim", which is a Tenno state the resolver already asks
+                // (`TennoCondition::Aiming`) rather than a fight event the sim
+                // would have to watch — so there is nothing here for Emergent
+                // to hold back, unlike a stacking buff that has to be earned.
+                ArcEffect::CompressionDamage(sc) => {
+                    fx.compression_dmg_per_m += sc.at(rank, self.max_rank);
+                }
+                ArcEffect::CompressionAmmoEfficiency(sc) => {
+                    fx.compression_eff_per_m += sc.at(rank, self.max_rank);
+                }
                 ArcEffect::Inert(_) | ArcEffect::Elsewhere(_) => {}
             }
         }
@@ -854,6 +919,8 @@ impl ArcaneDef {
                 | ArcEffect::FlatDamageOnStatus(scale)
                 | ArcEffect::EncumberChance(scale)
                 | ArcEffect::AmmoEfficiency(scale)
+                | ArcEffect::CompressionDamage(scale)
+                | ArcEffect::CompressionAmmoEfficiency(scale)
                 | ArcEffect::PerAllyCritChance(scale)
                 | ArcEffect::CondReloadSpeed(scale)
                 // Out of the sim's world, but it still owns its `X`.
@@ -1038,6 +1105,17 @@ impl ArcaneDef {
                 )),
                 ArcEffect::AmmoEfficiency(sc) => out.push(format!(
                     "{} ammo efficiency while sliding/aim gliding (Dual Pistols)",
+                    pct(at(sc))
+                )),
+                // Per METRE OF RADIUS LOST, and the card says so — the number a
+                // player can check against the panel is the weapon's, and the
+                // panel is where it appears.
+                ArcEffect::CompressionDamage(sc) => out.push(format!(
+                    "while aiming: ×0.2 explosion radius, {} damage per metre of radius lost",
+                    pct(at(sc))
+                )),
+                ArcEffect::CompressionAmmoEfficiency(sc) => out.push(format!(
+                    "while aiming: {} ammo efficiency per metre of radius lost",
                     pct(at(sc))
                 )),
                 // Say so, rather than silently listing nothing: the panel's

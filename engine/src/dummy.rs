@@ -1409,6 +1409,18 @@ pub struct DummyParams {
     /// data/arcanes/secondary (fixed equipment per scenario; the optimizer
     /// compares scenarios per arcane). `ArcaneFx::none()` = empty slot.
     pub arcane: ArcaneFx,
+    /// Primary Compression's damage bonus when this weapon's row `multiplies`
+    /// (1.0 = none) — a FINAL multiplier on the instance, the same slot
+    /// Secondary Surge occupies: *"the damage bonus is multiplicative to other
+    /// damage bonus sources"*. An `adds` row never reaches here; it is already
+    /// inside the base-damage bucket the panel resolved.
+    ///
+    /// PER FORM. The Torid's cloud pays +240% and its Incarnon beam pays
+    /// nothing, so the cycle's two `DummyParams` disagree on purpose.
+    pub compression_mult: f64,
+    /// The same arcane's `adds` row: a flat addition to the base-damage
+    /// bracket, beside a live buff's. Per form, for the same reason.
+    pub compression_bd: f64,
     /// Secondary Enervate's stack count at t = 0. Its own field because the
     /// ramp lives in a PERK rather than in `arcane.buffs`, so the ordinary
     /// per-buff seeding never reached it — the arcane simply always started
@@ -1864,7 +1876,41 @@ impl DummyParams {
     /// Build engagement params from a resolved mod loadout (pipeline
     /// [1]+[2] output). Bare-frame scenario: no arcanes, no Frenzy passive
     /// (Incarnon Form), infinite reserve.
-    pub fn from_panel(panel: &crate::loadout::ResolvedPanel, arena: &crate::arena::Arena) -> Self {
+    /// A BUILD MEETS AN ARCANE HERE, and only here.
+    ///
+    /// The arcane is an argument rather than something the caller assigns
+    /// afterwards, because two of its answers are not the arcane's alone and
+    /// every site that assigned it had to remember both: Primary Compression is
+    /// worth what THIS build's blast radius is worth, and a stat LOCK (Acuity)
+    /// silences an arcane's buff exactly as it silences a mod's. Three sites
+    /// built params — `simulate_json`, the optimizer's scorer, the tests — and
+    /// the Incarnon cycle's inner base form was assigned by none of them
+    /// (owner, 2026-08-11: "resolve_for 收赋能列表"; it landed one layer down,
+    /// where the optimizer's one-panel-many-arcanes pairing actually happens).
+    pub fn from_panel(
+        panel: &crate::loadout::ResolvedPanel,
+        arena: &crate::arena::Arena,
+        arcane: &ArcaneFx,
+    ) -> Self {
+        // PRIMARY COMPRESSION: the panel brings the metres, the arcane brings
+        // what a metre is worth. `adds` joins the live base-damage bracket
+        // (diluted by Serration, and it reaches status payloads through
+        // ModifiedBase); `multiplies` is a final multiplier on the instance,
+        // the slot Secondary Surge occupies.
+        let (compression_mult, compression_bd) = match panel.compression {
+            Some(c) => {
+                let bonus = arcane.compression_dmg_per_m * c.radius_lost;
+                if c.adds { (1.0, bonus) } else { (1.0 + bonus, 0.0) }
+            }
+            None => (1.0, 0.0),
+        };
+        let arcane = {
+            let mut fx = arcane.clone().without_locked(&panel.locked);
+            fx.ammo_efficiency += panel
+                .compression
+                .map_or(0.0, |c| arcane.compression_eff_per_m * c.radius_lost);
+            fx
+        };
         let crate::arena::Arena { tenno, target, body_parts, duration_secs, abilities } =
             arena.clone();
         // Resolve the faction bucket against THIS target's faction (additive
@@ -1887,6 +1933,9 @@ impl DummyParams {
             field_duration_on_empty_reload: panel.field_duration_on_empty_reload,
             multishot_on_last_round: panel.multishot_on_last_round,
             multishot_ammo_bonus: panel.multishot_ammo_bonus,
+            compression_mult,
+            compression_bd,
+            arcane,
             headshot_damage_bonus: panel.headshot_damage_bonus,
             headshot_bonus_multiplicative: panel.headshot_bonus_multiplicative,
             noncrit_bonus: panel.noncrit_bonus,
@@ -1958,7 +2007,6 @@ impl DummyParams {
             tendrils_held: false,
             mag_refill_on_kill: panel.mag_refill_on_kill,
             proc_conversion: panel.proc_conversion,
-            arcane: ArcaneFx::none(),
             enervate_stacks: 0,
             body_parts,
             target,
@@ -1992,12 +2040,16 @@ impl DummyParams {
     /// not). Hardcoding it here handed DT's ×2.5-on-headshot fire rate to
     /// every transform weapon and made the caller's on/off knob dead in
     /// cycle mode.
+    /// THE CYCLE ARMS BOTH FORMS. One arcane, two answers: the Torid's cloud
+    /// pays Primary Compression +240% and its Incarnon beam pays nothing, so
+    /// each form spends the arcane against its OWN radius.
     pub fn incarnon_cycle_from_panels(
         incarnon: &crate::loadout::ResolvedPanel,
         base: &crate::loadout::ResolvedPanel,
         frenzy: bool,
         frenzy_lock: LockMode,
         arena: &crate::arena::Arena,
+        arcane: &ArcaneFx,
     ) -> Self {
         let rl = 1.0 + incarnon.reload_bonus;
         let inc_form = incarnon.incarnon;
@@ -2007,7 +2059,7 @@ impl DummyParams {
             // it from the panel, and a hardcoded `true` would outrank the data
             // the day a base form became charge-backed. That override existed
             // only to compensate for the broken default it sat next to.
-            ..Self::from_panel(base, arena)
+            ..Self::from_panel(base, arena, arcane)
         };
         Self {
             // Frenzy exists in BOTH forms (user-confirmed 2026-07-24) — when
@@ -2038,7 +2090,7 @@ impl DummyParams {
                 transmute_seconds: inc_form.map_or(2.35, |f| f.transmute_in) / rl,
                 reload_bucket: rl - 1.0,
             }),
-            ..Self::from_panel(incarnon, arena)
+            ..Self::from_panel(incarnon, arena, arcane)
         }
     }
 
@@ -2097,6 +2149,8 @@ impl Default for DummyParams {
             field_duration_on_empty_reload: 1.0,
             multishot_on_last_round: 0.0,
             multishot_ammo_bonus: 0.0,
+            compression_mult: 1.0,
+            compression_bd: 0.0,
             headshot_damage_bonus: 0.0,
             headshot_bonus_multiplicative: false,
             noncrit_bonus: None,
@@ -5161,6 +5215,7 @@ pub fn run_once_traced(
             flat_crit,
             cc_rel_mods: cc_rel - params.arcane.cc_rel,
             bd_add_mods: bd_reload_add
+                + ap.compression_bd
                 + buff_total!(ap, crate::loadout::BuffGrant::BaseDamage, t),
         };
         process_field_ticks(
@@ -5248,6 +5303,10 @@ pub fn run_once_traced(
             // after the status roll below).
             let arc_bd = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t)
                 + bd_reload_add
+                // Primary Compression's `adds` row: the same bracket a live
+                // base-damage buff joins, so Serration dilutes it exactly as
+                // the wiki's "additive with damage bonuses" says it should.
+                + ap.compression_bd
                 + buff_total!(ap, crate::loadout::BuffGrant::BaseDamage, t);
             let bd = ap.base_damage_bonus;
             let arc_ratio = (1.0 + bd + arc_bd) / (1.0 + bd);
@@ -5382,7 +5441,12 @@ pub fn run_once_traced(
             // Secondary Surge (assumed-max): a FINAL multiplier on the shot,
             // multiplicative with Hornet Strike (wiki notes). Secondary
             // Fortifier: ×overguard_mult while the target's Overguard holds.
+            // Primary Compression's `multiplies` row rides the same slot, and
+            // it is `ap`'s rather than `params`' — the form being fired owns
+            // it, because one arcane is worth +240% in the Torid's base form
+            // and nothing in its Incarnon.
             let arc_final = params.arcane.final_mult
+                * ap.compression_mult
                 * if target.overguard > 0.0 {
                     params.arcane.overguard_mult
                 } else {
@@ -6497,7 +6561,7 @@ mod tests {
         assert!((bd.full - 14.0).abs() < 1e-9, "the empty-reload half is +14, got {}", bd.full);
 
         // It is ANNOUNCED, or no card is drawn for it.
-        let params = DummyParams::from_panel(&panel, &crate::arena::Arena::training(10.0));
+        let params = DummyParams::from_panel(&panel, &crate::arena::Arena::training(10.0), &ArcaneFx::none());
         assert!(
             params.buff_roster().iter().any(|(id, max)| id == "evo_reload_damage" && *max == 1),
             "the buff bar never hears about it: {:?}",
@@ -6507,7 +6571,7 @@ mod tests {
         // And turning it off takes the damage back off — down to what the
         // build would be with only the unconditional +10 half.
         let off = {
-            let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(10.0));
+            let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(10.0), &ArcaneFx::none());
             let mut cfg = BuffConfig::new();
             cfg.insert("evo_reload_damage".into(), (0, false));
             p.apply_buff_config(&cfg);
@@ -6537,7 +6601,7 @@ mod tests {
         assert!((ms.full - 1.0).abs() < 1e-12, "1 pellet × +100% = 1.0");
 
         let mk = |stacks: u32, locked: bool| {
-            let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(10.0));
+            let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(10.0), &ArcaneFx::none());
             let mut cfg = BuffConfig::new();
             cfg.insert("evo_multishot".into(), (stacks, locked));
             p.apply_buff_config(&cfg);
@@ -7335,8 +7399,8 @@ mod tests {
             body_parts,
             ..crate::arena::Arena::training(10.0)
         };
-        let vs_grineer = DummyParams::from_panel(&panel, &arena(grineer_target, parts.clone()));
-        let vs_other = DummyParams::from_panel(&panel, &arena(TargetParams::training_dummy(), parts));
+        let vs_grineer = DummyParams::from_panel(&panel, &arena(grineer_target, parts.clone()), &ArcaneFx::none());
+        let vs_other = DummyParams::from_panel(&panel, &arena(TargetParams::training_dummy(), parts), &ArcaneFx::none());
         assert!(
             (vs_grineer.faction_mult - 1.30).abs() < 1e-9,
             "grineer {}",
@@ -12446,6 +12510,69 @@ mod tests {
     /// ONLY when statuses are landing. A weapon that procs nothing can never
     /// arm it, which is the cleanest proof that the trigger is the status and
     /// not the shot.
+    /// PRIMARY COMPRESSION, and the column that makes it two mechanics.
+    ///
+    /// The arcane pays per metre of blast radius given up, and the weapon's own
+    /// row says WHERE the payment lands: the Shedu `multiplies` (a free-standing
+    /// ×6.28 at 6.6 m), the Braton Incarnon `adds` (+240% into the base-damage
+    /// bucket). The two are the same number and NOT the same build, and the
+    /// test is the difference rather than either one: a bonus that adds is
+    /// DILUTED by Serration and one that multiplies is not, so equipping
+    /// Serration must shrink the first one's worth and leave the second's
+    /// exactly where it was.
+    #[test]
+    fn compression_pays_into_the_bracket_its_row_names() {
+        let fx = crate::arcanes_data::for_slot("primary", "primary_compression")
+            .unwrap()
+            .fx(5, crate::loadout::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno());
+        let arena = crate::arena::Arena::training(30.0);
+        let gain = |weapon: &str, mods: &[&crate::loadout::ModDef]| {
+            let base = crate::loadout::WeaponBase::from_data(weapon, true, &[]);
+            let panel = crate::loadout::resolve(&base, mods, crate::loadout::StackPolicy::Emergent);
+            let with = monte_carlo(
+                &DummyParams::from_panel(&panel, &arena, &fx), 8, 0xC0FFEE,
+            ).mean_damage;
+            let without = monte_carlo(
+                &DummyParams::from_panel(&panel, &arena, &ArcaneFx::none()), 8, 0xC0FFEE,
+            ).mean_damage;
+            with / without
+        };
+        let pool = crate::mods_data::class_pool("rifle");
+        let serration = pool.iter().find(|m| m.id == "serration").expect("serration");
+        let mods: Vec<&crate::loadout::ModDef> = vec![serration];
+
+        // The bracket each row names, before any fight runs.
+        let shedu = crate::loadout::WeaponBase::from_data("shedu", true, &[]);
+        let p = DummyParams::from_panel(
+            &crate::loadout::resolve(&shedu, &[], crate::loadout::StackPolicy::Emergent), &arena, &fx,
+        );
+        // 1 + 6.6 x 0.8 — spelled out, because clippy reads the literal 6.28
+        // as an approximation of TAU and it is nothing of the sort.
+        assert!((p.compression_mult - (1.0 + 6.6 * 0.8)).abs() < 1e-9, "6.6 m -> +528%");
+        assert_eq!(p.compression_bd, 0.0);
+        let braton = crate::loadout::WeaponBase::from_data("braton_incarnon", true, &[]);
+        let p = DummyParams::from_panel(
+            &crate::loadout::resolve(&braton, &[], crate::loadout::StackPolicy::Emergent), &arena, &fx,
+        );
+        assert!((p.compression_bd - 2.4).abs() < 1e-9, "3.0 m x 0.8 = +240%");
+        assert_eq!(p.compression_mult, 1.0);
+
+        // …and the fight tells them apart. Serration is +165%, so an ADDING
+        // bonus keeps 1/2.65 of its relative worth and a MULTIPLYING one keeps
+        // all of it.
+        let (adds_bare, adds_serrated) = (gain("braton_incarnon", &[]), gain("braton_incarnon", &mods));
+        assert!(
+            adds_serrated < adds_bare - 0.5,
+            "an `adds` row is diluted by Serration: x{adds_bare:.2} bare, x{adds_serrated:.2} serrated"
+        );
+        let (mul_bare, mul_serrated) = (gain("shedu", &[]), gain("shedu", &mods));
+        assert!(
+            (mul_serrated - mul_bare).abs() < 0.05,
+            "a `multiplies` row is not: x{mul_bare:.2} bare, x{mul_serrated:.2} serrated"
+        );
+        assert!(mul_bare > 2.0, "and it is worth something at all: x{mul_bare:.2}");
+    }
+
     #[test]
     fn gotva_super_crit_arms_on_status_and_only_on_status() {
         let sc = crate::weapons_data::SuperCritSpec { chance: 0.15, crit_chance: 3.0 };
@@ -12552,7 +12679,7 @@ mod headshot_buff_wiring_tests {
             &["furis_evo1_incarnon_form", evo],
         );
         let p = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
-        let params = DummyParams::from_panel(&p, &crate::arena::Arena::training(30.0));
+        let params = DummyParams::from_panel(&p, &crate::arena::Arena::training(30.0), &ArcaneFx::none());
         params.buff_roster().into_iter().map(|(id, _)| id).collect()
     }
 
@@ -12587,7 +12714,7 @@ mod headshot_buff_wiring_tests {
                     &[e.id.as_str()],
                 );
                 let p = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
-                let params = DummyParams::from_panel(&p, &crate::arena::Arena::training(30.0));
+                let params = DummyParams::from_panel(&p, &crate::arena::Arena::training(30.0), &ArcaneFx::none());
                 let listed = params.buff_roster().into_iter().any(|(id, _)| id == card.id);
                 assert!(
                     listed,
@@ -12688,6 +12815,7 @@ mod stormburst_tests {
             false,
             LockMode::Initial(0),
             &crate::arena::Arena::training(60.0),
+            &ArcaneFx::none(),
         );
         let s = monte_carlo(&params, 6, 777);
         s.mean_pellets - s.mean_shots
@@ -12963,7 +13091,7 @@ mod attrition_times_co_tests {
         // Four fights that differ ONLY in the two terms under test, on one
         // seed, so the crit rolls and the shot timing are identical.
         let run = |attrition: bool, co: bool| {
-            let mut p = DummyParams::from_panel(&panel, &arena);
+            let mut p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
             // Chance 1.0, not the perk's own 0.5: a coin flip inside the
             // measurement would need thousands of runs to say anything, and
             // the question is about the BRACKET, not about the odds.
@@ -13037,7 +13165,7 @@ mod debilitate_attrition_tests {
         let dots = |attrition: bool, debilitate: f64, crit: bool| {
             (0..200u64)
                 .map(|seed| {
-                    let mut p = DummyParams::from_panel(&panel, &arena);
+                    let mut p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
                     p.target.base_health = 1e15;
                     p.crit_tier_upgrade_chance = 0.0;
                     p.super_crit_on_status = None;
@@ -13104,7 +13232,7 @@ mod debilitate_attrition_tests {
         let half = |seed: u64| {
             (0..200u64)
                 .map(|k| {
-                    let mut p = DummyParams::from_panel(&panel, &arena);
+                    let mut p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
                     p.target.base_health = 1e15;
                     p.crit_tier_upgrade_chance = 0.0;
                     p.super_crit_on_status = None;
@@ -13172,7 +13300,7 @@ mod debilitate_attrition_tests {
         let dots = |attrition: bool, cc: f64, cd: f64| {
             (0..200u64)
                 .map(|seed| {
-                    let mut p = DummyParams::from_panel(&panel, &arena);
+                    let mut p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
                     p.target.base_health = 1e15;
                     p.crit_tier_upgrade_chance = 0.0;
                     p.super_crit_on_status = None;

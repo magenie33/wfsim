@@ -3580,6 +3580,16 @@ pub fn simulate_json(v: &Value) -> Value {
     // ---- resolve panel(s) and build sim params, per weapon ----
     // Either ONE registered form, or the real two-form cycle (which needs the
     // gauge form and the form it transforms out of, so it resolves both).
+    // THE ARCANE IS RESOLVED FIRST, because params are built with it rather
+    // than assigned it afterwards: `from_panel` is where a build meets an
+    // arcane (Primary Compression reads THIS build's blast radius, a stat lock
+    // silences an arcane's buff), and an argument cannot be forgotten the way
+    // a follow-up assignment can — the Incarnon cycle's inner base form never
+    // got one.
+    let arcane_fx = {
+        let ab = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &evo_refs);
+        arcane_fx_for(v, info, &ab, policy)
+    };
     let (report_panel, mut params): (ResolvedPanel, DummyParams) = {
         let panel_of = |id: &str| resolve_for(&base_for(v, id, &evo_refs), &refs, policy, &tenno);
         if run_cycle {
@@ -3591,6 +3601,7 @@ pub fn simulate_json(v: &Value) -> Value {
                 frenzy_single,
                 cycle_frenzy_lock,
                 &arena,
+                &arcane_fx,
             );
             // The cycle reports the form it transforms INTO, as it always has.
             let mut params = params;
@@ -3598,7 +3609,7 @@ pub fn simulate_json(v: &Value) -> Value {
             (incarnon_panel, params)
         } else {
             let panel = panel_of(single_form);
-            let mut d = DummyParams::from_panel(&panel, &arena);
+            let mut d = DummyParams::from_panel(&panel, &arena, &arcane_fx);
             d.infinite_reserve = panel.reserve_is_infinite(infinite_ammo);
             // Frenzy is the WEAPON's passive: it persists across its forms
             // (user-confirmed 2026-07-24), so it rides whichever one is fired.
@@ -3621,12 +3632,6 @@ pub fn simulate_json(v: &Value) -> Value {
             });
         }
     }
-    // Relative crit conditionals resolve against the weapon's BASE crit
-    // stats; `requires` gates on the weapon traits (Akimbo Slip Shot). Under
-    // the sim's Emergent policy the non-simmable conditionals are honest
-    // no-ops (same rule as mods' CondBuff).
-    let ab = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &evo_refs);
-    params.arcane = arcane_fx_for(v, info, &ab, policy);
     // ---- apply the per-buff configured policy onto the live specs ----
     // (weapon-scoped: recurses into the incarnon cycle's base form). Frenzy is
     // already applied above (cycle lock at construction / single-form vector).
@@ -6119,7 +6124,11 @@ mod card_and_sim_agree {
         // rostered only at AssumedMax would be a card for a number the sim
         // never earns.
         let p = resolve(&base, refs, StackPolicy::Emergent);
-        let params = DummyParams::from_panel(&p, &wfsim_engine::arena::Arena::training(30.0));
+        let params = DummyParams::from_panel(
+            &p,
+            &wfsim_engine::arena::Arena::training(30.0),
+            &wfsim_engine::arcanes_data::ArcaneFx::none(),
+        );
         params.buff_roster().into_iter().map(|(i, _)| i).collect()
     }
 
@@ -6184,12 +6193,11 @@ mod card_and_sim_agree {
                     .map(|b| b.id)
                     .filter(|id| id.starts_with("arcane:"))
                     .collect();
-                let mut params =
-                    DummyParams::from_panel(
-                        &resolve(&base, &[], StackPolicy::Emergent),
-                        &wfsim_engine::arena::Arena::training(30.0),
-                    );
-                params.arcane = fx.clone();
+                let params = DummyParams::from_panel(
+                    &resolve(&base, &[], StackPolicy::Emergent),
+                    &wfsim_engine::arena::Arena::training(30.0),
+                    &fx,
+                );
                 let roster: Vec<String> = params
                     .buff_roster()
                     .into_iter()

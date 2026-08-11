@@ -65,6 +65,13 @@ attack:
     effectiveness: 0.04
     stacking: multiplies
     radius_calculation: snapshot
+    # THE ROW READS A RADIUS THIS WEAPON DOES NOT HAVE. Its Base Radius column
+    # is 0.1 m against the 6.7 m explosion below, and the wiki's note says which
+    # one that is: the arcane takes the EMBED radial, not the headshot
+    # explosion. 4% is the row's account of how far off that is, and it does not
+    # reconstruct 0.1 from 6.7 — so the metres are declared and the percentage
+    # stays the transcribed column it is. 0.8 x 0.1 = the table's +8%.
+    reads_radius_m: 0.1
 
   radial:
     damage: { cold: 150 }   # total 150

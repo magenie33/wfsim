@@ -1216,6 +1216,19 @@ pub struct CompressionSpec {
     /// - `constant_check` — the Battacor, and the legend does not list it.
     #[serde(default = "snapshot")]
     pub radius_calculation: String,
+    /// The row's **Base Radius**, when it is a radius this weapon's data does
+    /// NOT carry. Left out, the arcane reads the attack's own MODDED radius —
+    /// which is what makes the table's Primed Firestorm column exactly 1.44x
+    /// its base column on every row that takes the mod.
+    ///
+    /// The Vectis pair are the roster's only override, and they are why this
+    /// field exists rather than a second multiplication: their row reads
+    /// **0.1 m** where the Incarnon's own explosion is 6.7 m, and 4% of 6.7 is
+    /// not 0.1. `effectiveness` is the row's own account of how far off that
+    /// is ("worse than expected"); it does not reconstruct the number, so when
+    /// this is set it is the whole answer and effectiveness is not applied
+    /// again.
+    pub reads_radius_m: Option<f64>,
 }
 
 fn snapshot() -> String {
@@ -1693,6 +1706,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         traits: traits_for(s),
         incarnon,
         radial,
+        compression: s.attack.compression.clone(),
         lingering,
         // The data module's Trigger for a beam. Not cosmetic: it decides
         // whether `fire_rate` means shots or TICKS and whether multishot merges.
@@ -1760,7 +1774,7 @@ mod tests {
         let run = |with: bool, secs: f64| {
             let refs: Vec<&crate::loadout::ModDef> = if with { vec![de] } else { Vec::new() };
             let panel = resolve(&base, &refs, StackPolicy::Emergent);
-            let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(secs));
+            let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(secs), &crate::arcanes_data::ArcaneFx::none());
             p.arcane = crate::arcanes_data::ArcaneFx::none();
             p.infinite_reserve = true;
             let s = monte_carlo(&p, 1, 7);
@@ -1807,7 +1821,7 @@ mod tests {
         let of = |id: &str| {
             let base = WeaponBase::from_data(id, true, &[]);
             let panel = resolve(&base, &[], StackPolicy::Emergent);
-            DummyParams::from_panel(&panel, &crate::arena::Arena::training(60.0))
+            DummyParams::from_panel(&panel, &crate::arena::Arena::training(60.0), &crate::arcanes_data::ArcaneFx::none())
             .ammo_efficiency_applies
         };
         assert!(of("larkspur_prime"), "an ordinary weapon spends real ammo");
@@ -1845,7 +1859,7 @@ mod tests {
         let rounds = |ids: &[&str]| {
             let refs: Vec<&crate::loadout::ModDef> = ids.iter().map(|i| by(i)).collect();
             let panel = resolve(&base, &refs, StackPolicy::Emergent);
-            let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(3600.0));
+            let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(3600.0), &crate::arcanes_data::ArcaneFx::none());
             p.arcane = crate::arcanes_data::ArcaneFx::none();
             (panel.magazine_size, panel.ammo_reserve, monte_carlo(&p, 1, 11).mean_shots * 0.5)
         };
@@ -1950,7 +1964,7 @@ mod tests {
         assert!(base.no_resupply, "a ground Arch-Gun cannot be resupplied");
 
         let panel = resolve(&base, &[], StackPolicy::Emergent);
-        let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(120.0));
+        let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(120.0), &crate::arcanes_data::ArcaneFx::none());
         p.arcane = crate::arcanes_data::ArcaneFx::none();
         let s = monte_carlo(&p, 1, 3);
         assert!(
@@ -1972,7 +1986,7 @@ mod tests {
         // exist and the sim does not model them.
         let torid = WeaponBase::from_data("torid", true, &[]);
         let tp = resolve(&torid, &[], StackPolicy::Emergent);
-        let mut q = DummyParams::from_panel(&tp, &crate::arena::Arena::training(120.0));
+        let mut q = DummyParams::from_panel(&tp, &crate::arena::Arena::training(120.0), &crate::arcanes_data::ArcaneFx::none());
         q.arcane = crate::arcanes_data::ArcaneFx::none();
         assert!(monte_carlo(&q, 1, 3).mean_shots > 60.0, "a Primary is resupplied");
     }
@@ -2045,7 +2059,7 @@ mod tests {
         let base = panel("boar_prime");
         let mk = |infinite| {
             let mut p = DummyParams::incarnon_cycle_from_panels(
-                &inc, &base, false, LockMode::Initial(0), &arena);
+                &inc, &base, false, LockMode::Initial(0), &arena, &crate::arcanes_data::ArcaneFx::none());
             p.arcane = crate::arcanes_data::ArcaneFx::none();
             p.infinite_reserve = infinite;
             p
@@ -2662,7 +2676,7 @@ mod laetum_tests {
             crit_bonus: false,
         }];
         let params =
-            DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts, ..crate::arena::Arena::training(10.0) });
+            DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts, ..crate::arena::Arena::training(10.0) }, &crate::arcanes_data::ArcaneFx::none());
         assert!(params.radial.is_some(), "params carry the radial");
         let s = monte_carlo(&params, 30, 7);
         assert!(
@@ -2697,7 +2711,7 @@ mod laetum_tests {
             name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
             is_head: false, crit_bonus: false,
         }];
-        let params = DummyParams::from_panel(&p, &crate::arena::Arena { target, body_parts: parts, ..crate::arena::Arena::training(30.0) });
+        let params = DummyParams::from_panel(&p, &crate::arena::Arena { target, body_parts: parts, ..crate::arena::Arena::training(30.0) }, &crate::arcanes_data::ArcaneFx::none());
         let s = monte_carlo(&params, 40, 3);
         let d = s.source_damage.direct;
         let r = s.source_damage.radial;
@@ -2752,7 +2766,7 @@ mod laetum_tests {
             let b = WeaponBase::from_data("laetum_incarnon", true, evos);
             let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::AssumedMax);
             let params =
-                DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) });
+                DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) }, &crate::arcanes_data::ArcaneFx::none());
             (!params.stacking_buffs.is_empty(), monte_carlo(&params, 40, 11).mean_effective_damage)
         };
         let (has_none, without) = run(&[]);
@@ -2783,7 +2797,7 @@ mod laetum_tests {
             let b = WeaponBase::from_data("laetum_incarnon", true, evos);
             let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::Emergent);
             let params =
-                DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(60.0) });
+                DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(60.0) }, &crate::arcanes_data::ArcaneFx::none());
             let m = monte_carlo(&params, 24, 7);
             (!params.stacking_buffs.is_empty(), m.mean_effective_damage)
         };
@@ -2824,6 +2838,7 @@ mod laetum_tests {
                 false,
                 crate::dummy::LockMode::Initial(0),
                 &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(300.0) },
+                &crate::arcanes_data::ArcaneFx::none(),
             );
             for b in d.stacking_buffs.iter_mut() {
                 if b.grant != crate::loadout::BuffGrant::ReloadSpeed {
@@ -2888,7 +2903,7 @@ mod laetum_tests {
                 let b = WeaponBase::from_data("laetum_incarnon", true, e);
                 let p = crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::AssumedMax);
                 let params =
-                    DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) });
+                    DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) }, &crate::arcanes_data::ArcaneFx::none());
                 monte_carlo(&params, 60, 5).mean_effective_damage
             };
             run(evos) / run(&[])
@@ -2961,7 +2976,7 @@ mod laetum_tests {
             let b = WeaponBase::from_data("laetum_incarnon", true, evos);
             let p = crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::AssumedMax);
             let params =
-                DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) });
+                DummyParams::from_panel(&p, &crate::arena::Arena { body_parts: parts.clone(), ..crate::arena::Arena::training(20.0) }, &crate::arcanes_data::ArcaneFx::none());
             let s = monte_carlo(&params, 60, 17).source_damage;
             (s.direct, s.radial)
         };
@@ -3075,6 +3090,7 @@ mod burston_incarnon_radial_tests {
                     body_parts: body(),
                     ..crate::arena::Arena::training(30.0)
                 },
+                &crate::arcanes_data::ArcaneFx::none(),
             );
             monte_carlo(&params, 30, 11).source_damage
         };
@@ -3138,6 +3154,7 @@ mod incarnon_gauge_tests {
         // and pinning it keeps this a test of the GAUGE.
         let params = DummyParams::incarnon_cycle_from_panels(
             &p1, &p0, false, crate::dummy::LockMode::Initial(0), &arena,
+            &crate::arcanes_data::ArcaneFx::none(),
         );
         monte_carlo(&params, 5, 3).mean_transforms.round() as u32
     }
@@ -3388,6 +3405,82 @@ mod play_mode_tests {
     /// Trumna's alt-fire is 1.27 ("Merged"), so the bound is generous on
     /// purpose — what it catches is a percent written as 100 instead of 1.0.
     #[test]
+    fn the_roster_reproduces_primary_compressions_published_column() {
+        // The table's "Max Damage Bonus @ Base Radius" — the wiki's own
+        // arithmetic on its own numbers, and a column we never transcribed:
+        // it falls out of the radius, the row and the rank ramp. So it is a
+        // CROSS-CHECK rather than a restatement — a radius typed wrong, an
+        // effectiveness misread, an override invented, and this stops matching.
+        let table: &[(&str, f64)] = &[
+            ("shedu", 5.28),
+            ("torid", 2.40),              // the Toxin cloud
+            ("torid_incarnon", 0.0),      // "Doesn't Work" — the beam exclusion
+            ("braton_incarnon", 2.40),
+            ("braton_prime_incarnon", 2.40),
+            ("braton_vandal_incarnon", 2.40),
+            ("mk1_braton_incarnon", 2.40),
+            ("burston_incarnon", 1.60),
+            ("burston_prime_incarnon", 1.60),
+            ("gorgon_incarnon", 4.00),
+            ("gorgon_wraith_incarnon", 4.00),
+            ("prisma_gorgon_incarnon", 4.00),
+            ("latron_incarnon", 3.20),
+            ("latron_prime_incarnon", 3.20),
+            ("miter_incarnon", 2.40),
+            ("strun_incarnon", 3.20),
+            ("strun_prime_incarnon", 3.20),
+            ("strun_wraith_incarnon", 3.20),
+            ("phantasma_charged", 3.84),
+            ("phantasma_prime_charged", 3.84),
+            // THE ONE OVERRIDE: 0.8 x 0.1 m, not 0.8 x 6.7 m x 4%.
+            ("vectis_incarnon", 0.08),
+            ("vectis_prime_incarnon", 0.08),
+        ];
+        // At rank 5 a metre is worth +100%, so the bonus IS the metres lost.
+        let fx = crate::arcanes_data::for_slot("primary", "primary_compression")
+            .expect("the arcane is in the primary pool")
+            .fx(5, crate::loadout::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno());
+        assert_eq!(fx.compression_dmg_per_m, 1.0, "+100% per metre at max rank");
+        for (id, expected) in table {
+            let base = crate::loadout::WeaponBase::from_data(id, true, &[]);
+            let p = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+            let bonus = p.compression.map_or(0.0, |c| c.radius_lost) * fx.compression_dmg_per_m;
+            assert!(
+                (bonus - expected).abs() < 5e-3,
+                "{id}: the table says +{}%, this build pays +{:.1}%",
+                expected * 100.0, bonus * 100.0
+            );
+        }
+        // …and every row the roster carries is in the list above, so a new
+        // weapon cannot join the catalog without its column being checked.
+        // `all()`, not `roster()`: a compression row belongs to an ATTACK, and
+        // most of these are Incarnon FORMS, which are entries of their own.
+        let carried: Vec<&str> = all()
+            .iter()
+            .filter(|w| w.attack.compression.is_some())
+            .map(|w| w.id.as_str())
+            .collect();
+        for id in &carried {
+            assert!(table.iter().any(|(t, _)| t == id), "{id} has a row and no expected bonus");
+        }
+        assert_eq!(carried.len(), table.len());
+    }
+
+    /// AIMING IS THE WHOLE CONDITION — *"On aim: x0.2 explosion radius"*.
+    #[test]
+    fn compression_is_worth_nothing_to_a_player_who_is_not_aiming() {
+        let base = crate::loadout::WeaponBase::from_data("shedu", true, &[]);
+        let mut hipfire = crate::tenno_data::default_tenno().clone();
+        hipfire.state.aiming = false;
+        let aimed = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+        let hip = crate::loadout::resolve_for(
+            &base, &[], crate::loadout::StackPolicy::Emergent, &hipfire,
+        );
+        assert!(aimed.compression.is_some_and(|c| c.radius_lost > 5.27));
+        assert!(hip.compression.is_none(), "no aim, no trade, no bonus");
+    }
+
+    #[test]
     fn every_compression_row_is_one_the_engine_could_apply() {
         let mut rows = 0;
         let mut adds = 0;
@@ -3415,6 +3508,14 @@ mod play_mode_tests {
                 ),
                 "{}: `{}` is not a Radius Calculation",
                 w.id, c.radius_calculation
+            );
+            // An OVERRIDE is only ever the reason a row's radius is not the
+            // attack's, so it must not also be at full effectiveness — that
+            // pair would be two answers to one question.
+            assert!(
+                c.reads_radius_m.is_none() || c.effectiveness != 1.0,
+                "{}: reads_radius_m with 100% effectiveness — which one is the radius?",
+                w.id
             );
             // …and the two that must agree: an effectiveness of zero IS
             // "Doesn't Work", spelled in the other column.

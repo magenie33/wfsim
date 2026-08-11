@@ -9,6 +9,22 @@
 //! Conditional/stacking effects resolve under a [`StackPolicy`] — today only
 //! `AssumedMax` (docs/OPTIMIZER.md §3: every stacking buff at full stacks).
 
+/// What a build gives up to Primary Compression, before the arcane's own two
+/// per-metre ramps are applied to it.
+#[derive(Debug, Clone, Copy)]
+pub struct Compression {
+    /// Metres of blast radius surrendered while aiming — the MODDED radius
+    /// times this weapon's row, times the four fifths the arcane takes.
+    pub radius_lost: f64,
+    /// The row's Stacking Behavior: true = the bonus joins the base-damage
+    /// bucket, false = it multiplies beside it.
+    pub adds: bool,
+}
+
+/// What Primary Compression LEAVES of a blast radius while aiming: *"x0.2
+/// explosion radius"*. Everything else about the arcane is per-weapon; this
+/// fifth is not.
+pub const COMPRESSION_RADIUS_KEPT: f64 = 0.2;
 use crate::damage::{DamageType, DamageVector};
 use crate::elements::{self, ElementalInput};
 use crate::mods::Polarity;
@@ -1010,6 +1026,11 @@ pub struct WeaponBase {
     /// crit and status stats; the directly-hit enemy takes both parts.
     /// See MECHANICS §7 "Radial (AoE) attack parts" for the rule set.
     pub radial: Option<RadialBase>,
+    /// This attack's row in Primary Compression's per-weapon table — see
+    /// [`crate::weapons_data::CompressionSpec`] and docs/CATALOGS.md §2. `None`
+    /// means the weapon has no AoE for the arcane to compress, so it is worth
+    /// nothing rather than unknown (the catalog rule).
+    pub compression: Option<crate::weapons_data::CompressionSpec>,
     /// A LINGERING FIELD left by every landed projectile of this attack — the
     /// Torid's Toxin cloud. Grenades STICK, so a directly-hit enemy takes the
     /// impact AND every tick. MECHANICS §7 "Lingering damage FIELDS".
@@ -1528,6 +1549,22 @@ pub struct ResolvedPanel {
     /// [`CoBehavior`] × `co_base_fraction`, DIRECT HITS ONLY.
     pub co_per_type: f64,
     pub co_behavior: CoBehavior,
+    /// WHAT PRIMARY COMPRESSION HAS TO WORK WITH on this build — the metres of
+    /// blast radius it gives up while aiming, and which bracket it pays into.
+    /// `None` = the weapon has no row (nothing to compress) or the fight's
+    /// Tenno is not aiming, which is the same answer: the arcane is worth
+    /// nothing.
+    ///
+    /// The arcane's own two ramps are NOT spent here. They are per METRE and
+    /// this is the metres, so the multiplication happens where a build meets an
+    /// arcane — `DummyParams::from_panel` — and that is one place rather than
+    /// three. It cannot be this one: the optimizer resolves a panel ONCE and
+    /// pairs it with every arcane in the search, so a panel that had already
+    /// spent an arcane would have to be re-resolved per job.
+    ///
+    /// PER FORM. The Torid's cloud pays +240% and its Incarnon beam pays
+    /// nothing, so one arcane has two answers inside one cycle.
+    pub compression: Option<Compression>,
     pub co_base_fraction: f64,
     /// Live on-kill CO stacks (Emergent policy).
     pub co_stack: Option<StackSpec>,
@@ -2112,6 +2149,51 @@ pub fn resolve_for(
         Some(_) if base.magazine_size > 0.0 => mag_size / base.magazine_size,
         _ => 1.0,
     };
+    // ---- PRIMARY COMPRESSION ------------------------------------------
+    // The arcane shrinks the explosion to a fifth while aiming and pays for
+    // every metre given up. What it is worth is a property of the WEAPON, so
+    // the two halves meet HERE and nowhere else: the arcane brings two ramps
+    // per METRE, the weapon brings the radius those metres come off and its own
+    // row in the published table (docs/CATALOGS.md §2).
+    //
+    //   radius_lost  = radius_considered × (1 − 0.2)     # continuous
+    //   damage_bonus = damage_per_metre(rank) × radius_lost
+    //
+    // MODDED, not base: the table's Primed Firestorm column is exactly 1.44×
+    // its base column on every row that can take the mod, which is the same
+    // 1 + br this build already spent on the radius below.
+    //
+    // AND IT IS AIM-GATED, which is not a footnote on a weapon like this: the
+    // whole card reads "on aim", so a scenario whose Tenno is not aiming gets
+    // nothing at all rather than a reduced share. Same treatment every
+    // `while_aiming` mod gets — the condition is a question about the player.
+    let mut compression = None;
+    if let Some(c) = base.compression.as_ref().filter(|_| tenno.state.aiming) {
+        // WHICH radius. The attack's own, modded — unless the row names one
+        // this weapon's data does not carry (the Vectis pair read a 0.1 m embed
+        // radial instead of their 6.7 m headshot explosion), in which case the
+        // row's metres ARE the answer and `effectiveness` is the transcribed
+        // account of how far off that is rather than a second multiplication.
+        let attack_radius = base
+            .radial
+            .as_ref()
+            .map(|r| r.radius_m * if r.takes_blast_radius_mods { 1.0 + br } else { 1.0 })
+            .or_else(|| base.lingering.as_ref().map(|f| f.radius_m * (1.0 + br)))
+            .unwrap_or(0.0);
+        let considered = c
+            .reads_radius_m
+            .unwrap_or(attack_radius * c.effectiveness);
+        compression = Some(Compression {
+            radius_lost: considered * (1.0 - COMPRESSION_RADIUS_KEPT),
+            // THE ROW'S OTHER COLUMN, and the same split Condition Overload
+            // has: `adds` joins the base-damage bucket and is diluted by
+            // Serration, `multiplies` stands beside it. Most weapons multiply;
+            // Ambassador, Battacor, Ferrox, Opticor, Trumna and every
+            // Braton/Burston Incarnon add.
+            adds: c.stacking == "adds",
+        });
+    }
+
     let build = |base_vector: &DamageVector,
                      elem_bonus: Option<&mut Vec<(DamageType, f64)>>|
      -> (DamageVector, f64) {
@@ -2440,6 +2522,7 @@ pub fn resolve_for(
         reload_bonus: rl,
         base_damage_bonus: bd,
         co_behavior: base.co_behavior,
+        compression,
         co_base_fraction: base.co_base_fraction,
         co_per_type: co,
         co_stack,
@@ -3117,7 +3200,7 @@ mod tests {
         let panel = resolve(&base, &[], StackPolicy::AssumedMax);
         let dps = |secs: f64| {
             let arena = crate::arena::Arena::training(secs);
-            let p = crate::dummy::DummyParams::from_panel(&panel, &arena);
+            let p = crate::dummy::DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
             let mut rng = crate::rng::Rng::new(7);
             crate::dummy::run_once(&p, &mut rng).total_damage / secs
         };

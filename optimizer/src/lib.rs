@@ -699,6 +699,7 @@ pub fn evaluate(
                 s.frenzy,
                 s.frenzy_lock,
                 &s.arena,
+                arcane,
             );
             // The cycle reports the form it transforms INTO, so its reserve is
             // that form's — the same line `simulate_json` runs.
@@ -706,7 +707,7 @@ pub fn evaluate(
             p
         }
         _ => {
-            let mut d = DummyParams::from_panel(&c.panel, &s.arena);
+            let mut d = DummyParams::from_panel(&c.panel, &s.arena, arcane);
             // The scenario's ammo rule, exactly as `simulate_json` applies it.
             d.infinite_reserve = c.panel.reserve_is_infinite(s.infinite_ammo);
             // Frenzy is the WEAPON's passive: it rides whichever form is
@@ -717,7 +718,10 @@ pub fn evaluate(
             d
         }
     };
-    params.arcane = arcane.clone();
+    // NOT `params.arcane = arcane` any more: `from_panel` took the arcane
+    // above, because a build and an arcane meet in exactly one place — this is
+    // where Primary Compression learns which radius it is compressing and where
+    // a stat lock silences an arcane's buff.
     // Per-buff configured policy (weapon-scoped; recurses into the cycle base
     // form). Empty cfg = no-op → the emergent default.
     if !s.buff_cfg.is_empty() {

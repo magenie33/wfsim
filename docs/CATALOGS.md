@@ -209,13 +209,39 @@ Only ours, so this stays diffable. The full table lives on the wiki.
 **General exclusion, verbatim:** *"Does not work on Continuous Weapons or beam
 attacks with an AoE component. For example, Ignis or Torid Incarnon Genesis."*
 
-### Status
+### Status — MODELLED (2026-08-11)
 
-`primary_compression` is `kind: unmodeled` and stays that way until those two
-fields exist. The BLOCKER RECORDED IN ITS YAML IS STALE, though: it says the
-engine carries `ResolvedRadial.radius_m` unmodded, and that stopped being true
-when the blast-radius bucket landed. What is missing now is the table above, not
-the radius.
+The arcane brings two ramps PER METRE; the weapon brings the metres and the
+bracket. They meet in one place and it is not the one you would guess:
+
+- `loadout::resolve_for` computes `panel.compression` — how many metres THIS
+  build gives up (modded radius × the row × 0.8), and whether the row `adds`.
+  Aim-gated: the card says "on aim", so a Tenno who is not aiming gets `None`.
+- `DummyParams::from_panel(panel, arena, arcane)` spends the arcane against
+  those metres. It takes the arcane as an ARGUMENT rather than having it
+  assigned afterwards, which is what makes the three sites agree — and it is one
+  layer below `resolve_for` on purpose: **the optimizer resolves a panel once
+  and pairs it with every arcane in the search**, so a panel that had already
+  spent an arcane would have to be re-resolved per job.
+- `adds` joins `arc_bd`, the live base-damage bracket — so Serration dilutes it.
+  `multiplies` joins `arc_final` beside Secondary Surge — so Serration does not.
+  `compression_pays_into_the_bracket_its_row_names` measures exactly that
+  difference rather than either number on its own.
+
+`the_roster_reproduces_primary_compressions_published_column` re-derives the
+table's **Max Damage Bonus @ Base Radius** for all 22 rows from our own weapon
+data. That column is not transcribed anywhere — it falls out of the radius, the
+row and the rank ramp — so it is a cross-check: a radius typed wrong, an
+effectiveness misread or an override invented breaks it.
+
+What is still NOT modelled, and neither changes a number here:
+
+- the radius REDUCTION itself. The panel keeps showing the full radius while
+  the arcane is equipped, because this arena has no distance (docs/UNMODELLED.md)
+  — every shot lands at point blank, so a fifth of a radius kills exactly as
+  much as all of it.
+- axis 6, MULTISHOT moving effectiveness (the Simulor). No roster weapon has
+  that row.
 
 ---
 

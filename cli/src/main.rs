@@ -77,6 +77,8 @@ fn dual_toxocyst_baseline() -> DummyParams {
         headshot_bonus_multiplicative: false,
         bd_on_reload: None,
         reserve_ammo: 72.0,
+        compression_mult: 1.0,
+        compression_bd: 0.0,
         ammo_efficiency_applies: true,
         multishot: 1.0,
         base_multishot: 1.0,
