@@ -115,6 +115,12 @@ entries:
     arcanes: [primary_crux]
   - weapon: boar
     mode: cycle
+    score: 5.909679996708088
+    mods: [primed_point_blank, primed_ravage, critical_deceleration, hells_chamber, vigilante_armaments, magnetic_strafe, blaze, scattering_inferno]
+    evolutions: [boar_evo1_incarnon_form, boar_reified_bane, boar_ready_retaliation, boar_elemental_balance]
+    arcanes: [primary_crux]
+  - weapon: boar
+    mode: cycle
     score: 5.113092392002142
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
     evolutions: [boar_evo1_incarnon_form, boar_reified_bane, boar_ready_retaliation, boar_survivors_edge]
@@ -124,6 +130,12 @@ entries:
     score: 3.963104522241608
     mods: [primed_point_blank, primed_ravage, critical_deceleration, hells_chamber, shotgun_elementalist, magnetic_strafe, blaze, scattering_inferno]
     evolutions: [boar_evo1_incarnon_form, boar_reified_bane, boar_ready_retaliation, boar_critical_parallel]
+    arcanes: [shotgun_vendetta]
+  - weapon: boar_prime
+    mode: base
+    score: 27.512396343003395
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_fortress_salvo, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [shotgun_vendetta]
   - weapon: boar_prime
     mode: base
