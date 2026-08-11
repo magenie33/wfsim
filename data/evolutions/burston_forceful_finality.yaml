@@ -30,6 +30,14 @@ effects:
   # fifth.
   - kind: multishot_on_last_round
     value: 5.0
+    # THE CARD'S OWN WORD, and the bracket it decides. "+5 BASE Multishot",
+    # with the wiki's note on this very row: "Multishot bonus is added before
+    # mods, and is thus multiplied by multishot bonuses". The note exists
+    # because it is unusual — the Torid's Final Fusillade grants "+3 Multishot"
+    # with no such line and is flat. It was modelled as flat here too until
+    # 2026-08-11, which cost a Split Chamber + Vigilante Armaments build more
+    # than half of what this perk is worth on its last burst.
+    base: true
     # "Multishot bonus does not affect the Incarnon form" (wiki) — and it does
     # not reach it here either, because the loader drops this effect on a
     # charge-backed form.

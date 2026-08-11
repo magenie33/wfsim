@@ -1722,7 +1722,8 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
             chain_nodes_have_radius: b.chain.nodes_have_radius,
         }),
         field_duration_on_empty_reload: 1.0, // raised by Renewed Horror
-        multishot_on_last_round: 0.0,        // raised by Final Fusillade
+        multishot_on_last_round: 0.0,
+        base_multishot_on_last_round: 0.0,        // raised by Final Fusillade
         multishot_ammo_bonus: 0.0,           // raised by Plentiful Mayhem
         // Raised by evolutions, never by the raw weapon data.
         evo_fire_rate_bonus: 0.0,

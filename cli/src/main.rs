@@ -46,6 +46,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         continuous: false,
         field_duration_on_empty_reload: 1.0,
         multishot_on_last_round: 0.0,
+        base_multishot_on_last_round: 0.0,
         multishot_ammo_bonus: 0.0,
         headshot_damage_bonus: 0.0,
         noncrit_bonus: None,

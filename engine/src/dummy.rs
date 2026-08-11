@@ -1308,6 +1308,12 @@ pub struct DummyParams {
     /// (0.0 = none). Base form only — the evolution loader already dropped it
     /// on a charge-backed form, so this field just carries what survived.
     pub multishot_on_last_round: f64,
+    /// The same window in the BASE bracket — see
+    /// [`crate::loadout::ResolvedPanel::base_multishot_on_last_round`]. It is
+    /// carried separately rather than folded into the panel's `multishot`
+    /// because it is conditional on the magazine position, which only the sim
+    /// can evaluate.
+    pub base_multishot_on_last_round: f64,
     /// Plentiful Mayhem: +v damage on multishot-GENERATED projectiles, and
     /// multishot spends ammo to make them (0.0 = none). See `run_once` for the
     /// two per-form rules this drives.
@@ -2019,6 +2025,7 @@ impl DummyParams {
             continuous: panel.continuous,
             field_duration_on_empty_reload: panel.field_duration_on_empty_reload,
             multishot_on_last_round: panel.multishot_on_last_round,
+            base_multishot_on_last_round: panel.base_multishot_on_last_round,
             multishot_ammo_bonus: panel.multishot_ammo_bonus,
             compression_mult,
             compression_bd,
@@ -2236,6 +2243,7 @@ impl Default for DummyParams {
             continuous: false,
             field_duration_on_empty_reload: 1.0,
             multishot_on_last_round: 0.0,
+            base_multishot_on_last_round: 0.0,
             multishot_ammo_bonus: 0.0,
             compression_mult: 1.0,
             compression_bd: 0.0,
@@ -5093,11 +5101,16 @@ pub fn run_once_traced(
         // pellets by a fifth (42 + 3x6 = 60 real, against 44 + 6 = 50), which
         // is far too big to wave through as a rounding difference.
         let last_n = ap.burst.map_or(1.0, |b| f64::from(b.count));
-        let last_round = if in_base_form {
-            base_mag <= last_n + 1e-9
-        } else {
-            magazine <= 1.0 + 1e-9
-        };
+        // …AND THE WINDOW IS THE ACTIVE MAGAZINE'S, whichever that is.
+        // `in_base_form` is only ever true inside an Incarnon CYCLE, so this
+        // branch used to read "the cycle's base phase" against "everything
+        // else" — and everything else includes a plain base-form run, which is
+        // how a `base`-mode board row is played and how anyone measures the
+        // weapon on its own. The burst window was written for the cycle and
+        // silently became one round outside it: 5 pellets a magazine instead of
+        // 15 on a Burston (2026-08-11).
+        let mag_left = if in_base_form { base_mag } else { magazine };
+        let last_round = mag_left <= last_n + 1e-9;
         // The round itself is spent BELOW, once the multishot roll is known:
         // Plentiful Mayhem makes the extra projectiles cost ammo too, so the
         // draw cannot be settled before the roll.
@@ -5179,6 +5192,24 @@ pub fn run_once_traced(
             // evolution grants multishot outright ("+3 Multishot"), not a
             // percentage of the weapon's base.
             + if last_round { ap.multishot_on_last_round } else { 0.0 }
+            // FORCEFUL FINALITY IS THE OTHER BRACKET, and the card says which:
+            // "+5 BASE Multishot on final magazine burst", with the wiki noting
+            // on that same row that it is "added before mods, and is thus
+            // multiplied by multishot bonuses". So for that burst the weapon's
+            // base pellet count IS higher, and everything relative reads the
+            // raised number — the mod bucket AND the live grants below it.
+            //
+            // The bucket is recovered as `multishot / base_multishot`, the
+            // ratio the panel already resolved, rather than carried a second
+            // time: two copies of one factor is how they come to disagree.
+            // `base_multishot` is a weapon stat and never zero.
+            + if last_round && ap.base_multishot_on_last_round > 0.0 && !ms_locked {
+                ap.base_multishot_on_last_round
+                    * (ap.multishot / ap.base_multishot.max(1e-9)
+                        + arc.total(&params.arcane.buffs, ArcGrant::Multishot, t))
+            } else {
+                0.0
+            }
             // Stormburst: "+0.4 Multishot", flat — same reason Final Fusillade
             // sits here rather than in the bucket above.
             + buff_total!(ap, crate::loadout::BuffGrant::Multishot, t);
@@ -9460,6 +9491,85 @@ mod tests {
         };
         let s = monte_carlo(&p, 4000, 91).mean_damage;
         assert!((s - 660.0).abs() / 660.0 < 0.02, "at the threshold {s}, expected 660");
+    }
+
+    /// "+5 **BASE** MULTISHOT" IS NOT "+5 MULTISHOT", and the difference is the
+    /// whole perk.
+    ///
+    /// Forceful Finality's card carries the word Base, and the wiki attaches a
+    /// note to that row: *"Multishot bonus is added before mods, and is thus
+    /// multiplied by multishot bonuses."* The Torid's Final Fusillade — the
+    /// other perk that grants a flat multishot on the magazine's last round —
+    /// says only "+3 Multishot", with no such note, and is flat.
+    ///
+    /// Both were modelled as flat until 2026-08-11. This measures the pellets a
+    /// full magazine actually fires, because that is the only place the two
+    /// readings differ: the panel is identical under either.
+    #[test]
+    fn a_base_multishot_grant_is_multiplied_by_multishot_mods() {
+        let arena = crate::arena::Arena::training(20.0);
+        let pellets = |evo: &[&str], mods: &[&crate::loadout::ModDef]| {
+            let base = crate::loadout::WeaponBase::from_data("burston_prime", true, evo);
+            let panel = crate::loadout::resolve(&base, mods, crate::loadout::StackPolicy::Emergent);
+            let p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
+            let s = monte_carlo(&p, 200, 0xB0A2);
+            (s.mean_pellets / s.mean_shots, panel.multishot, panel.magazine_size)
+        };
+        let pool = crate::mods_data::class_pool("rifle");
+        let split = pool.iter().find(|m| m.id == "split_chamber").expect("split chamber");
+        let mods: Vec<&crate::loadout::ModDef> = vec![split];
+
+        let (bare_off, _, mag) = pellets(&[], &[]);
+        let (bare_on, _, _) = pellets(&["burston_prime_forceful_finality"], &[]);
+        let (mod_off, ms, _) = pellets(&[], &mods);
+        let (mod_on, _, _) = pellets(&["burston_prime_forceful_finality"], &mods);
+        let (bare_gain, mod_gain) = (bare_on - bare_off, mod_on - mod_off);
+
+        // THE CLAIM IS A RATIO, and it is asserted as one. "Worth 0.333 pellets
+        // a shot" would be hostage to how many whole magazines fit in the
+        // engagement — 150 rounds over a 45-round magazine is three and a
+        // third, and the third never reaches its last burst. What the card
+        // says is that the same +5 is multiplied by the multishot bonuses, so
+        // the two gains stand in exactly that ratio however many bursts landed.
+        assert!(
+            (mod_gain / bare_gain - ms).abs() < 0.05,
+            "a BASE grant scales with the bucket: x{:.2} of the bare gain, bucket is x{ms:.2}              ({bare_gain:.3} -> {mod_gain:.3} pellets a shot)",
+            mod_gain / bare_gain
+        );
+        // …and it is worth roughly the whole burst, which is what says the
+        // window is three rounds rather than one.
+        let per_magazine = bare_gain * mag;
+        assert!(
+            (11.0..=15.5).contains(&per_magazine),
+            "5 pellets on each of a 3-round burst, less the magazine the fight              ends mid-way through: {per_magazine:.1} a magazine"
+        );
+    }
+
+    /// The OTHER spelling, unchanged: the Torid's is flat, so a multishot mod
+    /// does not touch it. Same shape, opposite answer — which is the point.
+    #[test]
+    fn a_plain_multishot_grant_is_not_multiplied() {
+        let arena = crate::arena::Arena::training(20.0);
+        let pellets = |evo: &[&str], mods: &[&crate::loadout::ModDef]| {
+            let base = crate::loadout::WeaponBase::from_data("torid", true, evo);
+            let panel = crate::loadout::resolve(&base, mods, crate::loadout::StackPolicy::Emergent);
+            let p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
+            let s = monte_carlo(&p, 200, 0xB0A2);
+            (s.mean_pellets / s.mean_shots, panel.magazine_size)
+        };
+        let pool = crate::mods_data::class_pool("rifle");
+        let split = pool.iter().find(|m| m.id == "split_chamber").expect("split chamber");
+        let mods: Vec<&crate::loadout::ModDef> = vec![split];
+
+        let (bare_off, mag) = pellets(&[], &[]);
+        let (bare_on, _) = pellets(&["torid_final_fusillade"], &[]);
+        let (mod_off, _) = pellets(&[], &mods);
+        let (mod_on, _) = pellets(&["torid_final_fusillade"], &mods);
+        let want = 3.0 / mag;
+        assert!(
+            (bare_on - bare_off - want).abs() < 0.02 && (mod_on - mod_off - want).abs() < 0.03,
+            "flat either way ({want:.3}): {bare_off:.3}->{bare_on:.3}, {mod_off:.3}->{mod_on:.3}"
+        );
     }
 
     #[test]

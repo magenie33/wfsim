@@ -139,7 +139,22 @@ enum EvoEffect {
     /// Final Fusillade: a FLAT multishot add on the last round of the magazine,
     /// BASE FORM ONLY (user, 2026-07-30) — a charge-backed Incarnon magazine
     /// has no "last shot in magazine" to gate on, so `apply` drops it there.
-    MultishotOnLastRound(f64),
+    /// A flat multishot add on the magazine's last round, and WHICH BRACKET it
+    /// lands in — the `bool` is the card's own word "Base".
+    ///
+    /// The two perks that grant this do not grant the same thing, and the wiki
+    /// says so on the row rather than in a general rule:
+    ///
+    /// - Torid, Final Fusillade: *"+3 Multishot on last shot in magazine"* —
+    ///   flat, on top of everything, `false`.
+    /// - Burston, Forceful Finality: *"+5 **Base** Multishot on final magazine
+    ///   burst"*, with a note attached to that row: *"Multishot bonus is added
+    ///   before mods, and is thus multiplied by multishot bonuses"* — `true`.
+    ///
+    /// The note exists BECAUSE it is unusual, and the difference is not small:
+    /// on a Burston Prime carrying Split Chamber and Vigilante Armaments the
+    /// same +5 is 11 pellets rather than 5.
+    MultishotOnLastRound { value: f64, base: bool },
     /// Plentiful Mayhem: multishot draws its extra rounds from ammo, and the
     /// projectiles it GENERATES deal +v damage as an independent multiplier.
     /// Affects both forms; the sim reads the per-form rule off `continuous`.
@@ -532,7 +547,7 @@ impl EvolutionDef {
                 | EvoEffect::FlatBaseStatusChance(_)
                 | EvoEffect::FlatBaseMagazine(_)
                 | EvoEffect::FieldDurationOnEmptyReload(_)
-                | EvoEffect::MultishotOnLastRound(_)
+                | EvoEffect::MultishotOnLastRound { .. }
                 | EvoEffect::MultishotConsumesAmmo(_)
                 | EvoEffect::ConditionOverload { .. }
                 | EvoEffect::FireRateBonus(_)
@@ -655,9 +670,10 @@ impl EvolutionDef {
                 EvoEffect::FieldDurationOnEmptyReload(v) => format!(
                     "On reload from empty: x{v:.0} lingering-field duration on the next shot"
                 ),
-                EvoEffect::MultishotOnLastRound(v) => {
-                    format!("+{v:.0} multishot on the last round of the magazine (base form only)")
-                }
+                EvoEffect::MultishotOnLastRound { value, base } => format!(
+                    "+{value:.0} {}multishot on the last round of the magazine (base form only)",
+                    if *base { "base " } else { "" }
+                ),
                 EvoEffect::MultishotConsumesAmmo(v) => format!(
                     "+{:.0}% damage on multishot-generated projectiles; multishot consumes ammo",
                     v * 100.0
@@ -842,9 +858,17 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         "field_duration_on_empty_reload" => {
             EvoEffect::FieldDurationOnEmptyReload(f(v, "value").unwrap_or(1.0))
         }
-        "multishot_on_last_round" => {
-            EvoEffect::MultishotOnLastRound(f(v, "value").unwrap_or(0.0))
-        }
+        // `base:` IS REQUIRED, with no default, because the two spellings of
+        // this perk are two different mechanics and a default would silently
+        // pick one. A yaml that does not say loads as Inert and is reported as
+        // unmodelled, which is the honest outcome for a card nobody has read.
+        "multishot_on_last_round" => match v.get("base").and_then(serde_norway::Value::as_bool) {
+            Some(base) => EvoEffect::MultishotOnLastRound {
+                value: f(v, "value").unwrap_or(0.0),
+                base,
+            },
+            None => EvoEffect::Inert("multishot_on_last_round without `base:`".into()),
+        },
         "multishot_consumes_ammo" => {
             EvoEffect::MultishotConsumesAmmo(f(v, "value").unwrap_or(0.0))
         }
@@ -1108,9 +1132,13 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // BASE FORM ONLY: `incarnon.is_some()` marks the charge-backed
                 // form, whose magazine is the gauge's round pool rather than a
                 // reloaded magazine — nothing there is "the last round".
-                EvoEffect::MultishotOnLastRound(v) => {
+                EvoEffect::MultishotOnLastRound { value, base: is_base } => {
                     if base.incarnon.is_none() {
-                        base.multishot_on_last_round = *v;
+                        if *is_base {
+                            base.base_multishot_on_last_round = *value;
+                        } else {
+                            base.multishot_on_last_round = *value;
+                        }
                     }
                 }
                 // "Affects both modes" — unlike Final Fusillade this one lands

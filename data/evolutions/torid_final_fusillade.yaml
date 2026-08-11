@@ -23,6 +23,11 @@ effects:
   # `incarnon` marker, not off the weapon id.
   - kind: multishot_on_last_round
     value: 3.0
+    # FLAT, on top of everything. The card is "+3 Multishot", without the
+    # "Base" the Burston's carries and without the note that follows it — so
+    # mods do not multiply this one. Stated rather than defaulted: the two
+    # spellings are two mechanics, and a yaml that leaves it out loads Inert.
+    base: false
 
 source:
   url: https://wiki.warframe.com/w/Torid_Incarnon_Genesis

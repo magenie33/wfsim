@@ -1048,6 +1048,12 @@ pub struct WeaponBase {
     /// (0.0 = not installed). Base form only — the evolution loader drops it on
     /// a charge-backed form, so this is always 0.0 there.
     pub multishot_on_last_round: f64,
+    /// The same window, in the OTHER BRACKET: "+5 **Base** Multishot on final
+    /// magazine burst", which the wiki notes is "added before mods, and is
+    /// thus multiplied by multishot bonuses". So it raises what the weapon's
+    /// base pellet count IS for that burst, and every relative bonus — the mod
+    /// bucket, a Galvanized stack, an arcane's grant — reads the raised number.
+    pub base_multishot_on_last_round: f64,
     /// Plentiful Mayhem: multishot spends ammo, and what it GENERATES deals
     /// +v damage (0.0 = not installed). Both forms carry it; the rule differs
     /// by form and the sim reads that off `continuous`.
@@ -1450,6 +1456,12 @@ pub struct ResolvedPanel {
     /// (0.0 = none). NOT folded into `multishot`: it is conditional on the
     /// magazine position, which only the sim can evaluate.
     pub multishot_on_last_round: f64,
+    /// The same window, in the OTHER BRACKET: "+5 **Base** Multishot on final
+    /// magazine burst", which the wiki notes is "added before mods, and is
+    /// thus multiplied by multishot bonuses". So it raises what the weapon's
+    /// base pellet count IS for that burst, and every relative bonus — the mod
+    /// bucket, a Galvanized stack, an arcane's grant — reads the raised number.
+    pub base_multishot_on_last_round: f64,
     /// Plentiful Mayhem's damage bonus on multishot-GENERATED projectiles
     /// (0.0 = none), which also makes multishot spend ammo. Not folded into any
     /// damage bucket: it is an independent multiplier on part of the pellets.
@@ -2374,6 +2386,13 @@ pub fn resolve_for(
         continuous: base.continuous,
         field_duration_on_empty_reload: base.field_duration_on_empty_reload,
         multishot_on_last_round: ms_last_round,
+        // Locked the same way: an Acuity says "set to its default ignoring
+        // other bonuses", and a bigger base for one burst is a bonus.
+        base_multishot_on_last_round: if locked_stat("multishot") {
+            0.0
+        } else {
+            base.base_multishot_on_last_round
+        },
         multishot_ammo_bonus: base.multishot_ammo_bonus,
         incarnon: base.incarnon,
         // Blast Range reaches the beam's sphere too — wiki: "The 2.3 meter
