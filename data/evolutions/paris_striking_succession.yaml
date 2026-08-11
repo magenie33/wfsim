@@ -9,14 +9,31 @@ description: "On Hit: Increase Base Damage by +15 for 3 seconds. Stacks up to 4x
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Hit: Increase Base Damage by +15 for 3 seconds"
-  - kind: unmodelled_on_hit_increase_base_damage_by_for_seconds
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Stacks up to 4x"
-  - kind: unmodelled_stacks_up_to_x
+  # MODELLED as a plain stacking buff. "On Hit" carries no qualifier at all —
+  # crit or not, status or not — which is what separates it from the roster's
+  # other hit trigger (Overwhelming Attrition's "neither Critical nor applies a
+  # Status Effect"). Per damage INSTANCE, so a bow's arrow and its explosion are
+  # two, the same rule M11 measured.
+  #
+  # "+15 BASE DAMAGE" IS THE ABSOLUTE BRACKET, not a share of the base-damage
+  # bucket: it raises the number Serration multiplies rather than being diluted
+  # by it. `resolve` converts the flat number into the bucket share worth the
+  # same thing once the mods are known.
+  #
+  # DECAY IS STATED for once, and it is the Galvanized family: "When the buff
+  # times out, one stack is lost and the buff duration resets."
+  #
+  # ALL THREE VARIANTS — the row's variant cells are one `colspan="3" | -`,
+  # this table's way of writing "no per-variant difference".
+  #
+  # The stack cap was a separate inert effect until now; it is this grant's
+  # ceiling, not a mechanic of its own.
+  - kind: stacking_buff
+    trigger: hit
+    per_stack:
+      base_damage: 15.0
+    max_stacks: 4
+    duration_seconds: 3.0
 
 source:
   url: https://wiki.warframe.com/w/Paris_Incarnon_Genesis

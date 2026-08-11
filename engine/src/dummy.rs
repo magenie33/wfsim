@@ -5556,7 +5556,8 @@ pub fn run_once_traced(
             cc_rel_mods: cc_rel - params.arcane.cc_rel,
             bd_add_mods: bd_reload_add
                 + ap.compression_bd
-                + buff_total!(ap, crate::loadout::BuffGrant::BaseDamage, t),
+                + buff_total!(ap, crate::loadout::BuffGrant::BaseDamage, t)
+                + buff_total!(ap, crate::loadout::BuffGrant::FlatBaseDamage, t),
         };
         process_field_ticks(
             &mut fields,
@@ -5672,7 +5673,12 @@ pub fn run_once_traced(
                 // base-damage buff joins, so Serration dilutes it exactly as
                 // the wiki's "additive with damage bonuses" says it should.
                 + ap.compression_bd
-                + buff_total!(ap, crate::loadout::BuffGrant::BaseDamage, t);
+                + buff_total!(ap, crate::loadout::BuffGrant::BaseDamage, t)
+                // Striking Succession, already converted by `resolve` into the
+                // share of this bucket its flat number is worth — so it lands
+                // here and NOT diluted, which is the whole point of the
+                // conversion.
+                + buff_total!(ap, crate::loadout::BuffGrant::FlatBaseDamage, t);
             let bd = ap.base_damage_bonus;
             let arc_ratio = (1.0 + bd + arc_bd) / (1.0 + bd);
             let mb_live = modded_base * arc_ratio;
@@ -6374,6 +6380,12 @@ pub fn run_once_traced(
             // hit and the explosion each arm it). So a shot whose direct hit
             // and whose explosion are both plain arms the buff twice,
             // bounded by the stack cap.
+            // STRIKING SUCCESSION: "On Hit", with no qualifier at all — so it
+            // is armed by the same damage instance the line below inspects, and
+            // simply does not read what the instance did. Per instance for the
+            // same measured reason (M11): a direct hit and its explosion are
+            // two.
+            bump_buffs!(crate::loadout::BuffTrigger::Hit, t, d.extra);
             if tier == 0 && procs.is_empty() {
                 bump_buffs!(crate::loadout::BuffTrigger::PlainHit, t, d.extra);
             }
@@ -7718,6 +7730,45 @@ mod tests {
         assert!(
             at > 0.45 && at < 0.56,
             "five bursts at ten bursts a second is 0.5 s: capped at {at:.3} s (frame {first_cap})"
+        );
+    }
+
+    /// A FLAT BASE-DAMAGE BUFF IS NOT DILUTED BY SERRATION, and that is the
+    /// only reason it is a bracket of its own.
+    ///
+    /// Striking Succession grants "+15 Base Damage" a stack. A base add raises
+    /// the number the base-damage bucket multiplies, so its RELATIVE worth is
+    /// `(base + flat) / base` — the same figure whether or not a damage mod is
+    /// equipped. A bucket grant of the same nominal size would be worth less
+    /// with every mod added to that bucket.
+    ///
+    /// So the test is not a golden number: it is that the perk's gain is the
+    /// SAME bare and modded. `resolve` converts the flat number into a bucket
+    /// share once the mods are known, and getting that conversion wrong shows
+    /// up here as a gain that shrinks.
+    #[test]
+    fn a_flat_base_damage_buff_keeps_its_worth_when_a_damage_mod_goes_in() {
+        let arena = crate::arena::Arena::training(120.0);
+        let dmg = |evo: &[&str], mods: &[&str]| {
+            let base = crate::loadout::WeaponBase::from_data("paris_prime", true, evo);
+            let pool = crate::mods_data::pool_for_weapon("paris_prime");
+            let ms: Vec<&crate::loadout::ModDef> = mods
+                .iter()
+                .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("no mod {m}")))
+                .collect();
+            let panel = crate::loadout::resolve(&base, &ms, crate::loadout::StackPolicy::Emergent);
+            let p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
+            let s = monte_carlo(&p, 8, 0x5017);
+            s.mean_damage / s.mean_pellets.max(1e-9)
+        };
+        let perk = ["paris_prime_striking_succession"];
+
+        let bare = dmg(&perk, &[]) / dmg(&[], &[]);
+        let modded = dmg(&perk, &["serration"]) / dmg(&[], &["serration"]);
+        assert!(bare > 1.02, "the perk is worth something at all: x{bare:.4}");
+        assert!(
+            (bare - modded).abs() / bare < 0.02,
+            "a FLAT base add is worth the same with a damage mod in: x{bare:.4} bare,              x{modded:.4} with Serration — a bucket grant would have shrunk"
         );
     }
 

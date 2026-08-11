@@ -1148,6 +1148,13 @@ pub enum BuffTrigger {
     /// target is ALREADY carrying: this one fires on the proc itself, so a
     /// build that lands nothing never earns it however long the fight runs.
     StatusApplied,
+    /// Striking Succession: ANY hit — a pellet reaching the target, crit or
+    /// not, status or not.
+    ///
+    /// The permissive sibling of [`BuffTrigger::PlainHit`], which fires only on
+    /// a hit that did NEITHER. Two cards, two sentences, and reading one as the
+    /// other is worth several stacks a second on a high-crit build.
+    Hit,
 }
 
 /// WHAT A STACKING BUFF FEEDS. One arm per grant, and each keeps its own
@@ -1180,6 +1187,20 @@ pub enum BuffGrant {
     /// family and a percentage on another, and they are different numbers on
     /// any build that carries a multishot mod.
     MultishotPercent,
+    /// Striking Succession: *"Increase Base Damage by +15"* — an ABSOLUTE add
+    /// to the weapon's base, not a share of the base-damage bucket.
+    ///
+    /// The difference is Serration: a bucket bonus is diluted by every other
+    /// bonus in that bucket and a base add is not, because it raises the number
+    /// the bucket multiplies. They are the same only on an unmodded weapon.
+    ///
+    /// `per_stack` therefore CHANGES UNITS at `resolve`, the way
+    /// [`BuffGrant::FireRate`]'s does: the flat number on [`WeaponBase`], and
+    /// on [`ResolvedPanel`] the share of the bucket that is worth exactly the
+    /// same — `flat * (1 + bd) / base`, which the mods make a constant. That
+    /// keeps ONE live-base-damage path in the sim instead of a second bracket
+    /// that would have to be kept in step with it.
+    FlatBaseDamage,
 }
 
 impl BuffGrant {
@@ -1194,7 +1215,7 @@ impl BuffGrant {
     /// had simply never been added beside it (owner, 2026-08-11).
     pub fn locked_stat(self) -> &'static str {
         match self {
-            BuffGrant::BaseDamage => "base_damage",
+            BuffGrant::BaseDamage | BuffGrant::FlatBaseDamage => "base_damage",
             BuffGrant::BaseMultishot | BuffGrant::MultishotPercent => "multishot",
             BuffGrant::ReloadSpeed => "reload_speed",
             BuffGrant::FireRate => "fire_rate",
@@ -2633,6 +2654,21 @@ pub fn resolve_for(
                     // because the sim adds it inside the bracket fire-rate mods
                     // live in.
                     BuffGrant::FireRate => base.base_fire_rate * b.per_stack,
+                    // …and the same trick for a FLAT base-damage add, which
+                    // arrives as the number on the card and leaves as the share
+                    // of the base-damage bucket worth the same thing. The mods
+                    // are in by now, so `(1 + bd) / base` is a constant — and it
+                    // is what preserves the one difference that matters: this
+                    // is not diluted by Serration, because the equivalent share
+                    // grows with `bd` exactly as fast as the bucket does.
+                    BuffGrant::FlatBaseDamage => {
+                        let unmodded = base.base_vector.total();
+                        if unmodded > 0.0 {
+                            b.per_stack * (1.0 + bd) / unmodded
+                        } else {
+                            0.0
+                        }
+                    }
                     _ => b.per_stack,
                 },
                 // …and the same conversion for HOW MANY a trigger grants: 0
