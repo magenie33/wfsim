@@ -901,6 +901,12 @@ entries:
     arcanes: [primary_overcharge]
   - weapon: burston_prime
     mode: cycle
+    score: 0.7470104312962794
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
+    arcanes: [primary_debilitate]
+  - weapon: burston_prime
+    mode: cycle
     score: 0.4994729069988771
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, stormbringer, infected_clip, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
