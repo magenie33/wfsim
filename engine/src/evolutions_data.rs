@@ -193,6 +193,10 @@ enum EvoEffect {
     /// "+X% Damage to enemies below half Health" — a bucket bonus with a
     /// condition on the TARGET rather than on the weapon or the player.
     BaseDamageBelowHalfHealth(f64),
+    /// Vicious Promise: crit chance and crit multiplier while the target has
+    /// taken no damage. One variant for both halves, because the card grants
+    /// them together and the condition is one sentence.
+    CritOnUndamaged { crit_chance: f64, crit_multiplier: f64 },
     /// A RELOAD-SPEED bonus, into the same bucket the mods feed.
     ///
     /// The most common perk in the whole Incarnon set — Rapid Reinforcement is
@@ -649,6 +653,7 @@ impl EvolutionDef {
                 | EvoEffect::ConditionOverload { .. }
                 | EvoEffect::FireRateBonus { .. }
                 | EvoEffect::BaseDamageBelowHalfHealth(_)
+                | EvoEffect::CritOnUndamaged { .. }
                 | EvoEffect::ReloadSpeedBonus(_)
                 | EvoEffect::CritMultiplierBelowCritChance { .. }
                 | EvoEffect::PostModCritChance(_)
@@ -823,6 +828,10 @@ impl EvolutionDef {
                     } else {
                         String::new()
                     }
+                ),
+                EvoEffect::CritOnUndamaged { crit_chance, crit_multiplier } => format!(
+                    "+{:.0}% BASE crit chance and +{crit_multiplier}x BASE crit damage while the                      target is undamaged (mods multiply both)",
+                    crit_chance * 100.0
                 ),
                 EvoEffect::BaseDamageBelowHalfHealth(v) => format!(
                     "+{:.0}% damage while the target is under half health",
@@ -1132,6 +1141,10 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         "condition_overload" => EvoEffect::ConditionOverload {
             per_type: f(v, "value").unwrap_or(0.0),
             min_sprint: sprint_condition(v),
+        },
+        "crit_on_undamaged" => EvoEffect::CritOnUndamaged {
+            crit_chance: f(v, "crit_chance").unwrap_or(0.0),
+            crit_multiplier: f(v, "crit_multiplier").unwrap_or(0.0),
         },
         "base_damage_below_half_health" => {
             EvoEffect::BaseDamageBelowHalfHealth(f(v, "value").unwrap_or(0.0))
@@ -1500,6 +1513,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // CARRIED, NOT SPENT, when the perk states a speed — the
                 // player is not here. Answered in `resolve_for`, exactly like
                 // the Condition Overload gate beside it.
+                EvoEffect::CritOnUndamaged { crit_chance, crit_multiplier } => {
+                    base.cc_on_undamaged += crit_chance;
+                    base.cd_on_undamaged += crit_multiplier;
+                }
                 EvoEffect::BaseDamageBelowHalfHealth(v) => {
                     half_hp_rate += v;
                     half_hp_rate_own += v * e.flat_base_damage();
@@ -2625,7 +2642,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 89;
+        const CEILING: usize = 83;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

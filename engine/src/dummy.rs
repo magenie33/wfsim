@@ -544,6 +544,7 @@ impl TargetParams {
 }
 
 /// Live pools of the target during a run.
+#[derive(Clone)]
 struct TargetState {
     overguard: f64,
     shield: f64,
@@ -554,6 +555,20 @@ struct TargetState {
     /// Attenuation bookkeeping: 1 s buckets anchored at spawn.
     atten_window_start: f64,
     atten_window_damage: f64,
+}
+
+/// VICIOUS PROMISE'S CONDITION. VERBATIM (wiki, Paris Incarnon Genesis):
+/// *"Enemies are undamaged as long as their health and shield have not been
+/// damaged. Damaging Overguard is not taken into account."*
+///
+/// A free function rather than an inline expression because the OVERGUARD
+/// EXCLUSION is the whole subtlety and it has to be assertable. It cannot be
+/// asserted through a sim: every fixture that leaves health intact long enough
+/// to see the difference does so by freezing every pool at once
+/// (`TargetMode::InfiniteHealth`), and then a wrong implementation reads the
+/// same "undamaged" a right one does.
+fn target_undamaged(t: &TargetState, p: &TargetParams) -> bool {
+    t.health >= p.max_health() - 1e-9 && t.shield >= p.max_shield() - 1e-9
 }
 
 impl TargetState {
@@ -1541,6 +1556,10 @@ pub struct DummyParams {
     /// PART, like every other bracket here, so a radial that the catalog
     /// exempts can carry a different number than the direct hit.
     pub bd_below_half_health: f64,
+    /// See [`crate::loadout::ResolvedPanel::cc_on_undamaged`].
+    pub cc_on_undamaged: f64,
+    /// See [`crate::loadout::ResolvedPanel::cd_on_undamaged`].
+    pub cd_on_undamaged: f64,
     /// Secondary Enervate's stack count at t = 0. Its own field because the
     /// ramp lives in a PERK rather than in `arcane.buffs`, so the ordinary
     /// per-buff seeding never reached it — the arcane simply always started
@@ -2104,6 +2123,8 @@ impl DummyParams {
             compression_mult,
             compression_bd,
             bd_below_half_health: panel.bd_below_half_health,
+            cc_on_undamaged: panel.cc_on_undamaged,
+            cd_on_undamaged: panel.cd_on_undamaged,
             arcane,
             headshot_damage_bonus: panel.headshot_damage_bonus,
             headshot_bonus_multiplicative: panel.headshot_bonus_multiplicative,
@@ -2337,6 +2358,8 @@ impl Default for DummyParams {
             compression_mult: 1.0,
             compression_bd: 0.0,
             bd_below_half_health: 0.0,
+            cc_on_undamaged: 0.0,
+            cd_on_undamaged: 0.0,
             headshot_damage_bonus: 0.0,
             headshot_bonus_multiplicative: false,
             noncrit_bonus: None,
@@ -5333,8 +5356,23 @@ pub fn run_once_traced(
             // mods", so it belongs in the RELATIVE bucket beside Pistol
             // Gambit's — multiplying the unmodded base, not the modded one.
             + params.cc_per_tendril * f64::from(tendrils);
-        let effective_cc =
-            ap.base_crit_chance + flat_crit + weakened_cc + ap.unmodded_crit_chance * cc_rel;
+        // VICIOUS PROMISE, both halves of it. VERBATIM (wiki, Paris Incarnon
+        // Genesis): "Enemies are undamaged as long as their health and shield
+        // have not been damaged. Damaging Overguard is not taken into account."
+        // So OVERGUARD IS EXCLUDED from the test — a target being chewed
+        // through its overguard is still undamaged, and reading all three pools
+        // would have switched this off on the first shot of every Eximus fight.
+        //
+        // Read per SHOT beside `effective_cc`, which is where the weapon's crit
+        // chance is decided; the grants are already converted by `resolve` into
+        // the post-mod numbers the card's "Base" wording earns.
+        let undamaged = (ap.cc_on_undamaged > 0.0 || ap.cd_on_undamaged > 0.0)
+            && target_undamaged(&target, &params.target);
+        let effective_cc = ap.base_crit_chance
+            + flat_crit
+            + weakened_cc
+            + ap.unmodded_crit_chance * cc_rel
+            + if undamaged { ap.cc_on_undamaged } else { 0.0 };
 
         // Live fire rate (base + Pressurized Magazine's on-reload buff, ×
         // the BuffBar multiplier) — schedules shots below and gates
@@ -5660,8 +5698,13 @@ pub fn run_once_traced(
                 Some((granted, below)) if effective_cc >= below => granted,
                 _ => 0.0,
             };
-            let cd_total =
-                ap.crit_multiplier - prelude_lost + ap.unmodded_crit_damage * cd_rel + cd_abs;
+            let cd_total = ap.crit_multiplier - prelude_lost
+                + ap.unmodded_crit_damage * cd_rel
+                + cd_abs
+                // …and the other half of the same condition, decided by the
+                // same shot: an absolute add, already multiplied by the
+                // crit-damage mods at `resolve`.
+                + if undamaged { ap.cd_on_undamaged } else { 0.0 };
             // Live BASE-DAMAGE bucket additions, evaluated per instance:
             //  - arcane stacks (Merciless/Deadhead/Dexterity/Cascadia Flare)
             //  - Overwhelming Attrition's earned stacks — VERBATIM (wiki
@@ -7765,6 +7808,59 @@ mod tests {
             at > 0.45 && at < 0.56,
             "five bursts at ten bursts a second is 0.5 s: capped at {at:.3} s (frame {first_cap})"
         );
+    }
+
+    /// VICIOUS PROMISE: the first arrow only, and OVERGUARD does not count.
+    ///
+    /// VERBATIM (wiki, Paris Incarnon Genesis): "Enemies are undamaged as long
+    /// as their health and shield have not been damaged. Damaging Overguard is
+    /// not taken into account." That exclusion is the assertion worth writing:
+    /// reading all three pools would switch the perk off on the first shot of
+    /// every Eximus fight, and the difference is invisible against a target
+    /// with no overguard at all.
+    #[test]
+    fn vicious_promise_reads_health_and_shield_and_ignores_overguard() {
+        let arena = crate::arena::Arena::training(60.0);
+        let panel = |evo: &[&str]| {
+            let base = crate::loadout::WeaponBase::from_data("paris_prime", true, evo);
+            crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent)
+        };
+        let perk = ["paris_prime_vicious_promise"];
+
+        // THE CONVERSION: "+40% BASE crit chance" with no mods is 0.40, and the
+        // grant is the post-mod number so an unmodded panel carries it whole.
+        let p = panel(&perk);
+        assert!((p.cc_on_undamaged - 0.40).abs() < 1e-9, "{}", p.cc_on_undamaged);
+        assert!((p.cd_on_undamaged - 2.0).abs() < 1e-9, "{}", p.cd_on_undamaged);
+        assert_eq!(panel(&[]).cc_on_undamaged, 0.0, "no perk, no grant");
+
+        // …AND IT REACHES THE FIGHT.
+        let crit = |evo: &[&str]| {
+            let p = DummyParams::from_panel(&panel(evo), &arena, &ArcaneFx::none());
+            monte_carlo(&p, 24, 0x71C).mean_crit_rate
+        };
+        assert!(crit(&perk) > crit(&[]) + 0.05, "an untouched target crits more");
+
+        // THE OVERGUARD EXCLUSION, asserted on the predicate itself. Three
+        // states of one target: whole, chewed through the overguard, and hit
+        // for real. Only the last one ends the perk.
+        let tp = TargetParams { base_overguard: 5_000.0, ..TargetParams::training_dummy() };
+        let whole = TargetState::spawn(&tp);
+        assert!(target_undamaged(&whole, &tp), "a fresh target is undamaged");
+
+        let mut chewed = whole.clone();
+        chewed.overguard = 1.0;
+        assert!(
+            target_undamaged(&chewed, &tp),
+            "overguard is not taken into account — a target down to its last point of it is still undamaged"
+        );
+
+        let mut hurt = whole.clone();
+        hurt.health -= 1.0;
+        assert!(!target_undamaged(&hurt, &tp), "one point of health ends it");
+        let mut stripped = whole.clone();
+        stripped.shield -= 1.0;
+        assert!(!target_undamaged(&stripped, &tp), "…and so does one point of shield");
     }
 
     /// FEIGNED RETREAT: half the fight at a time, and the perk's own flat base

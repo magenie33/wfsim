@@ -15,14 +15,23 @@ effects:
   # from: "Increase Base Critical Damage Multiplier by +2x"
   - kind: flat_base_crit_multiplier
     value: 2.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "on undamaged enemies"
-  - kind: unmodelled_on_undamaged_enemies
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "on undamaged enemies"
-  - kind: unmodelled_on_undamaged_enemies
+  # BOTH HALVES ARE ONE PERK and one condition, so they are one effect. VERBATIM
+  # (wiki notes): "Enemies are undamaged as long as their health and shield have
+  # not been damaged. Damaging Overguard is not taken into account." — so the
+  # test excludes OVERGUARD, and a target being chewed through its overguard
+  # still counts as undamaged. Reading all three pools would have switched the
+  # perk off on the first shot of every Eximus fight.
+  #
+  # "BASE" Critical Chance and "BASE" Critical Damage Multiplier, so the crit
+  # mods multiply both — `resolve` converts each into the post-mod number worth
+  # the same, the same way the flat base-damage buff is converted.
+  #
+  # ALL THREE PARIS VARIANTS: the row's variant cells are one
+  # `colspan="3" | -`, this table's way of writing "no per-variant difference".
+  # The rendered page reads as "Paris only"; the markup does not.
+  - kind: crit_on_undamaged
+    crit_chance: 0.40
+    crit_multiplier: 2.0
 
 source:
   url: https://wiki.warframe.com/w/Paris_Incarnon_Genesis

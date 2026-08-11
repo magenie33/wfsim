@@ -83,6 +83,8 @@ fn dual_toxocyst_baseline() -> DummyParams {
         compression_mult: 1.0,
         compression_bd: 0.0,
         bd_below_half_health: 0.0,
+        cc_on_undamaged: 0.0,
+        cd_on_undamaged: 0.0,
         ammo_efficiency_applies: true,
         multishot: 1.0,
         base_multishot: 1.0,

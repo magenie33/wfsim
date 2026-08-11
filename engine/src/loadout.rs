@@ -989,6 +989,18 @@ pub struct WeaponBase {
     /// what it multiplies — resolved at the end of `apply`, which is the first
     /// moment the evolved base exists.
     pub bd_below_half_health: f64,
+    /// Vicious Promise: "+40% Base Critical Chance / +2x Base Critical Damage
+    /// Multiplier ON UNDAMAGED ENEMIES".
+    ///
+    /// A condition on the TARGET like the one above, and the first that asks
+    /// whether the fight has started rather than how far it has got. Both are
+    /// BASE grants, so `resolve` converts each into the post-mod number worth
+    /// the same — `flat x (1 + mods)` — for the same reason the flat
+    /// base-damage buff does: the panel resolves crit once, and a live grant
+    /// has to land in the bracket the card names.
+    pub cc_on_undamaged: f64,
+    /// The other half of the same card. See above.
+    pub cd_on_undamaged: f64,
     /// This weapon's Condition Overload behavior class.
     pub co_behavior: CoBehavior,
     /// CO base effectiveness = `original_base / evolved_base`, i.e. how much of
@@ -1732,6 +1744,10 @@ pub struct ResolvedPanel {
     /// See [`WeaponBase::bd_below_half_health`] — carried through unchanged,
     /// already corrected for the granting perk's own flat base damage.
     pub bd_below_half_health: f64,
+    /// See [`WeaponBase::cc_on_undamaged`] — converted to the post-mod number.
+    pub cc_on_undamaged: f64,
+    /// See [`WeaponBase::cd_on_undamaged`] — converted to the post-mod number.
+    pub cd_on_undamaged: f64,
     /// Σ (CO per_stack × stacks) under `AssumedMax` (0 under
     /// `Emergent` — see `co_stack`) — applied per this weapon's
     /// [`CoBehavior`] × `co_base_fraction`, DIRECT HITS ONLY.
@@ -2781,6 +2797,12 @@ pub fn resolve_for(
         // A LOCKED base damage takes this with it, the same rule the live
         // buffs follow: a lock is "set to its default ignoring other bonuses".
         bd_below_half_health: if locked_stat("base_damage") { 0.0 } else { base.bd_below_half_health },
+        // CONVERTED, and each by its OWN bucket: "+40% Base Critical Chance" is
+        // multiplied by the crit-chance mods and "+2x Base Critical Damage
+        // Multiplier" by the crit-damage ones, exactly as the unconditional
+        // `flat_base_crit_*` grants beside them are.
+        cc_on_undamaged: if locked_stat("critical_chance") { 0.0 } else { base.cc_on_undamaged * (1.0 + cc) },
+        cd_on_undamaged: if locked_stat("critical_damage") { 0.0 } else { base.cd_on_undamaged * (1.0 + cd) },
         co_behavior: base.co_behavior,
         compression,
         co_base_fraction: base.co_base_fraction,
