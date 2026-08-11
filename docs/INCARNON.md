@@ -458,6 +458,58 @@ is intrinsic — but they still model as a transform group here, and they carry
 in this document has entries, evolutions, art and names. What is left is
 per-gun VERIFICATION and the mechanics below.
 
+## The verification pass, 2026-08-12 — 182 undifferentiated gaps to 74
+
+The roster has had entries since 2026-08-08; what it did not have was PERKS that
+did anything. This night was that pass, and the shape of it is worth keeping
+because the next one will look the same.
+
+**Half the list was never work.** The intake wrote every clause it had no rule
+for as `unmodelled_<its own words>`, and the tile printed "not modelled yet"
+over all of them — including perks nobody should ever implement, because nothing
+in a one-target fight can pay them. Those are now `out_of_scope` with one of
+UNMODELLED.md's seven classes as the reason, off the ratchet and on the page
+with a muted chip that says "nothing to earn here". 86 clauses, the largest
+single change to what this program's remaining work IS.
+
+**A fifth of the list was a punctuation artifact.** `unmodelled_stacks_up_to_x`
+was the commonest inert kind in the whole roster (50 files) and is not a
+mechanic: it is the CAP of the grant on the line above, split off because the
+intake read a card as clauses. Every one of them disappeared with its parent.
+
+**What the perks actually cost.** Nine mechanics, and only three needed a new
+idea:
+
+| built | for | note |
+| --- | --- | --- |
+| `BuffTrigger::Firing` / `StatusApplied` / `Hit` / `ConsecutiveHeadshot` | Blazing Barrel, Paragon Essence, Striking Succession, Well Rehearsed | four triggers, one line each in the sim |
+| `BuffGrant::BaseMultishot` / `MultishotPercent` / `FlatBaseDamage` | the same perk NAME landing in three different brackets | see below |
+| `ClearedBy::Reload` | Blazing Barrel | differs from `MagazineRefilled` on exactly one of four events |
+| `EvoEffect::StackingGrant` | anything | a stacking buff is a yaml block now — trigger, grant, size, cap, clock, decay, clearer |
+| `base_form_only` | 11 perks | "Does not affect Incarnon Form", obeyed |
+| sprint-gated fire rate | Deadly Pace | second user of the CO gate's `condition:` spelling |
+| below-half-health / undamaged | five guns / three | conditions on the TARGET |
+
+**THE BRACKET IS THE WORK, not the number.** Three of the nine exist only
+because one perk name means different arithmetic on different families:
+Blazing Barrel is "+0.05 BASE Multishot" on the Strun and "+5% Multishot" on the
+Sybaris, both written `0.05`, and they differ by 2.2x the moment a multishot mod
+is equipped. Striking Succession's "+15 Base Damage" is worth x1.58 bare and
+x1.58 with Serration, where the same number in the bucket is x1.22. Feigned
+Retreat's own flat damage is excluded from its own percentage. None of this is
+visible on a bare weapon, which is why every one of them is pinned by a test
+that fails when the bracket moves.
+
+**Read the RAW wikitext, not the page.** Three separate readings of a rendered
+table said a perk was variant-exclusive; the markup said `colspan="3" | -`,
+which is that table's way of writing "no per-variant difference", and the perk
+was on all three every time. Two perks carry an activation chance that appears
+only in a notes cell — Headcracker's 50% is the difference between the card and
+a perk twice as strong. Hoplite Virtue's "On Shield Break" is on six guns and
+only ONE of the six pages says whose shield ("This is on personal shield break,
+not breaking enemy shields") — the difference between a trigger that fires every
+fight and one that can never fire here.
+
 ## What has to be measured
 
 Only the mechanics, not the weapons. A weapon whose every part is already
