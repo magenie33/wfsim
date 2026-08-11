@@ -3927,6 +3927,17 @@ pub fn simulate_json(v: &Value) -> Value {
             "stacks": (0..rep.buffs.len())
                 .map(|i| rep.frames.iter().map(|f| f.stacks[i]).collect::<Vec<_>>())
                 .collect::<Vec<_>>(),
+            // THE SAME TWO FIELDS FOR THE TARGET. The roster is a constant of
+            // the engine rather than a property of the build — a debuff is the
+            // target's, and a status the run never applied draws a flat zero,
+            // which is the answer to "was Corrosive ever up".
+            "debuffs": wfsim_engine::dummy::DEBUFF_ROSTER
+                .iter()
+                .map(|(id, cap)| json!({ "id": id, "max": cap }))
+                .collect::<Vec<_>>(),
+            "dstacks": (0..wfsim_engine::dummy::DEBUFF_ROSTER.len())
+                .map(|i| rep.frames.iter().map(|f| f.debuffs[i]).collect::<Vec<_>>())
+                .collect::<Vec<_>>(),
         })
     } else {
         Value::Null

@@ -848,6 +848,81 @@ fn ten_stack_amp(stacks: usize) -> f64 {
     }
 }
 
+/// THE DEBUFF ROSTER — what the target can be carrying, and how much of each.
+///
+/// The mirror of [`DummyParams::buff_roster`], and deliberately the same shape:
+/// `(id, cap)` pairs whose order the frames index into. The two tables on the
+/// page are the same component fed from opposite sides of the fight (owner,
+/// 2026-08-11: "你就和我们现在的buff列表对称").
+///
+/// It is a CONSTANT rather than a function of the build, because a debuff is
+/// the TARGET's: the roster is every status this engine models, and a run that
+/// never applies one draws a flat line at zero — which is the honest answer to
+/// "was Corrosive ever up" and the same answer the buff table gives for a buff
+/// nothing triggered.
+///
+/// A DEATH IS NOT A NEW ROW. The arena replaces the body it kills, and every
+/// stack goes with it — so a respawn shows as the series dropping to zero and
+/// climbing again, and `uptime` counts that gap against you. That is the point
+/// (owner: "一个敌人死了又死的，算在一个id里").
+pub const DEBUFF_ROSTER: [(&str, u32); 13] = [
+    // The 10-stack families, and the three that are not.
+    ("virus", TEN_STACK_CAP as u32),
+    ("corrosion", TEN_STACK_CAP as u32),
+    ("disrupt", TEN_STACK_CAP as u32),
+    ("confusion", TEN_STACK_CAP as u32),
+    ("blast", TEN_STACK_CAP as u32),
+    // Cold's two states are two rows because they are mutually exclusive: the
+    // tenth proc consumes the nine stacks and enters Frozen, so one series
+    // falling to zero as the other rises is the mechanic, not a glitch.
+    ("freeze", TEN_STACK_CAP as u32),
+    ("frozen", 1),
+    ("stagger", STAGGER_CAP as u32),
+    ("weakened", WEAKENED_CAP as u32),
+    // The Bullet Attractor is a FIELD, not a pile: a re-proc moves it rather
+    // than adding a second one.
+    ("attractor", 1),
+    // The DoT families, counted as live instances of that type. Heat is a
+    // singleton entity rather than a stack list, so its row is 0 or 1 — what a
+    // reader wants from it is when it was burning, and the strip ramp is the
+    // part `heat_decay` owns.
+    ("bleed", TEN_STACK_CAP as u32),
+    ("poison", TEN_STACK_CAP as u32),
+    ("ignite", 1),
+];
+
+impl DebuffState {
+    /// The roster's live counts at `now`, positionally matching
+    /// [`DEBUFF_ROSTER`]. Expired entries are excluded rather than pruned —
+    /// sampling must not change the fight it is sampling.
+    fn sample(&self, now: f64) -> Vec<u8> {
+        let live = |v: &Vec<f64>| v.iter().filter(|&&e| e > now).count() as u8;
+        let dots_of = |t: DamageType| {
+            self.dots
+                .iter()
+                .filter(|d| d.dtype == t && d.ticks_left > 0)
+                .count() as u8
+        };
+        vec![
+            live(&self.virus),
+            live(&self.corrosion),
+            live(&self.disrupt),
+            live(&self.confusion),
+            // A Blast stack is a FUSE rather than an expiry: it is waiting to go
+            // off, not waiting to wear off.
+            self.blast.iter().filter(|b| b.fuse > now).count() as u8,
+            live(&self.freeze),
+            u8::from(self.frozen_until.is_some_and(|e| e > now)),
+            live(&self.stagger),
+            live(&self.weakened),
+            live(&self.attractor),
+            dots_of(DamageType::Slash),
+            dots_of(DamageType::Toxin),
+            u8::from(self.heat.is_some()),
+        ]
+    }
+}
+
 impl DebuffState {
     /// FIFO push with the universal replace-oldest rule (application-time
     /// order; uniform durations make the front the oldest).
@@ -1486,6 +1561,10 @@ pub struct Frame {
     pub sources: SourceDamage,
     /// Live stacks per buff, positionally matching [`Replay::buffs`].
     pub stacks: Vec<u8>,
+    /// …and the same for the TARGET, positionally matching [`DEBUFF_ROSTER`].
+    /// The mirror of the line above, because the page draws one table from each
+    /// and the two are the same component (owner, 2026-08-11).
+    pub debuffs: Vec<u8>,
 }
 
 /// A replay of one engagement: the buff roster it was fought with, and a frame
@@ -4626,6 +4705,7 @@ pub fn run_once_traced(
                     transforms: r.transforms,
                     sources: r.sources,
                     stacks,
+                    debuffs: debuffs.sample(next_frame),
                 });
                 next_frame += frame_dt;
             }

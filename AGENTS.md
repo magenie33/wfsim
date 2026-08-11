@@ -240,6 +240,21 @@ around (decision 2026-07-31).
   roar 和 roar（helminth），那就选择生效当前最强的" — the difference between
   +50% and +80% is a number you have to be told), that the optimizer shows the
   same buffs read-only, and — the negative control — that no RULER carries one.
+  `node scripts/check_debuff_coverage.mjs` is the TWENTY-THIRD: the DEBUFF table
+  is the BUFF table, read from the other side. The replay had always shown what
+  the BUILD had up — live stacks, uptime, dead bands, the ramp — and said nothing
+  about what was on the TARGET, which is the other half of the same fight and
+  the half that explains the number (owner, 2026-08-11: "你就和我们现在的buff列
+  表对称"). It is one component fed from both sides: `DEBUFF_ROSTER` is the
+  mirror of `buff_roster`, `Frame.debuffs` of `Frame.stacks`, and the page draws
+  the second table with the same renderer. The check asserts the SYMMETRY rather
+  than the numbers — same roster shape, one series per entry, each as long as
+  the clock, the cursor reading its own side — plus the one thing that is not
+  symmetric and has to be: A RESPAWN IS THE SAME TARGET, so its stacks drop to
+  zero and climb again INSIDE one series rather than starting a new row, and
+  that gap counts against uptime. Rows the run never touched are dropped, since
+  thirteen flat charts would bury the three that moved. Verified to bite —
+  short-circuiting the second table away fails five of them.
   `node scripts/check_custom_enemies.mjs` is the TWENTY-SECOND: a target you
   MADE is a target like any other. It is the second custom, and the test of the
   claim above — if a custom enemy really is an `EnemySpec` in the scenario's

@@ -170,6 +170,9 @@ ui:
   head: 头部
   "crit bonus": 暴击加成
   saved: 个已保存
+  "Debuff coverage": 异常覆盖
+  "what was on the target — a respawn is the same target, so its stacks drop to zero and climb again": 目标身上挂着什么 —— 重生仍算同一个目标，所以层数会归零再爬起来
+  frozen: 冻结
   Finalists: 优胜名额
   "how it is played — pool = searched, req = pin one": 怎么打 —— pool = 纳入搜索，req = 钉死一个
   "Final-round runs": 最终轮次数

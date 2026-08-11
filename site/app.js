@@ -8376,9 +8376,23 @@ function replayMarkup(r) {
     const b = (buffList || []).find((x) => x.id === id);
     return b ? buffCardName(b.name) : id;
   };
+  // A DEBUFF ROW IS NAMED BY ITS DAMAGE TYPE, which is already translated
+  // everywhere else on the page (`DT`). The alternative was a new i18n family
+  // for the proc names — Virus, Corrosion, Disrupt — and DE's Chinese for those
+  // is not something to invent: a string is transcribed, never translated
+  // (AGENTS.md). The damage type says the same thing in words the reader has
+  // already seen on the damage meter, and it is 1:1 with the proc everywhere
+  // except Cold, whose two states are told apart by a suffix of our own.
+  const DEBUFF_TYPE = {
+    virus: "viral", corrosion: "corrosive", disrupt: "magnetic",
+    confusion: "radiation", blast: "blast", freeze: "cold", frozen: "cold",
+    stagger: "impact", weakened: "puncture", attractor: "void",
+    bleed: "slash", poison: "toxin", ignite: "heat",
+  };
+  const dbName = (id) => DT(DEBUFF_TYPE[id] || id) + (id === "frozen" ? ` (${tr("frozen")})` : "");
   const W = 600, H = 28;
-  const rows = rp.buffs.map((b, i) => {
-    const s = rp.stacks[i] || [];
+  const curveRows = (roster, series, name, kind) => roster.map((b, i) => {
+    const s = series[i] || [];
     const max = Math.max(1, b.uncapped ? Math.max(...s) : b.max);
     const px = (j) => (j / (s.length - 1)) * W;
     const py = (v) => H - 1 - (v / max) * (H - 2);
@@ -8409,12 +8423,12 @@ function replayMarkup(r) {
       while (j + 1 < s.length && s[j + 1] === 0) j++;
       dead.push(`<rect class="rp-dead" x="${px(from).toFixed(1)}" y="0" width="${Math.max(1, px(j) - px(from)).toFixed(1)}" height="${H}"/>`);
     }
-    return `<div class="rp-row" data-buff="${i}">
+    return `<div class="rp-row" data-${kind}="${i}">
       <div class="rp-head">
         <span class="rp-caret">▾</span>
-        <span class="rp-name">${escHtml(named(b.id))}</span>
+        <span class="rp-name">${escHtml(name(b.id))}</span>
         <span class="rp-stat">${escHtml(tr("avg"))} ${mean.toFixed(2)}/${rpCap(b)} · ${escHtml(tr("uptime"))} ${upPct}%${up < 1 ? ` · <span class="rp-off">${escHtml(tr("inactive"))} ${offPct}%</span>` : ""} · ${escHtml(ramp)}</span>
-        <span class="rp-now" data-now="${i}">${s[s.length - 1]}/${rpCap(b)}</span>
+        <span class="rp-now" data-now="${i}" data-series="${kind}">${s[s.length - 1]}/${rpCap(b)}</span>
       </div>
       <div class="rp-chart">
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
@@ -8422,12 +8436,29 @@ function replayMarkup(r) {
           <polygon class="rp-area" points="0,${H} ${pts} ${W},${H}"/>
           <line class="rp-mean" x1="0" x2="${W}" y1="${py(mean).toFixed(1)}" y2="${py(mean).toFixed(1)}"><title>${escHtml(tr("avg"))} ${mean.toFixed(2)}</title></line>
           <polyline class="rp-line" points="${pts}"/>
-          <rect class="rp-ahead" data-ahead="${i}" x="${W}" y="0" width="0" height="${H}"/>
-          <line class="rp-cur" data-cur="${i}" y1="0" y2="${H}" x1="${W}" x2="${W}"/>
+          <rect class="rp-ahead" data-ahead="${i}" data-series="${kind}" x="${W}" y="0" width="0" height="${H}"/>
+          <line class="rp-cur" data-cur="${i}" data-series="${kind}" y1="0" y2="${H}" x1="${W}" x2="${W}"/>
         </svg>
       </div>
     </div>`;
   }).join("");
+  const rows = curveRows(rp.buffs, rp.stacks, named, "buff");
+  // THE TARGET'S SIDE OF THE SAME FIGHT. Symmetric with the buff table on
+  // purpose (owner, 2026-08-11: "你就和我们现在的buff列表对称") — same rows,
+  // same uptime, same dead bands. A DEATH IS NOT A NEW SERIES: the arena
+  // replaces the body it kills and every stack goes with it, so a respawn reads
+  // as the curve dropping to zero and climbing again, and the gap counts
+  // against uptime. That is what makes the table worth reading — the ramp you
+  // pay for on every body is the thing a single averaged number hides.
+  //
+  // Rows the run never touched are dropped rather than drawn flat: the roster
+  // is every status the engine models, and thirteen empty charts would bury the
+  // three that moved. A buff row is kept even at zero because the BUILD claimed
+  // it; nothing claims a debuff except the fight.
+  const dRows = curveRows(
+    rp.debuffs.filter((_, i) => (rp.dstacks[i] || []).some((v) => v > 0)),
+    rp.dstacks.filter((s) => (s || []).some((v) => v > 0)),
+    dbName, "debuff");
   // TWO pieces, deliberately far apart (user, 2026-08-03). The transport
   // belongs at the top, next to the numbers it drives; the CURVES are charts
   // and belong with the other chart, under the DPS curve. Moving both up put
@@ -8446,7 +8477,11 @@ function replayMarkup(r) {
       <div class="rp-pools" id="rp-pools"></div>`;
   const curves = `
       <h3>${escHtml(tr("Buff coverage"))} <span class="sim-hint">${escHtml(tr("live stacks through the engagement"))}</span></h3>
-      ${rows}`;
+      ${rows}` + (dRows
+    ? `
+      <h3>${escHtml(tr("Debuff coverage"))} <span class="sim-hint">${escHtml(tr("what was on the target — a respawn is the same target, so its stacks drop to zero and climb again"))}</span></h3>
+      ${dRows}`
+    : "");
   return { bar, curves };
 }
 
@@ -8557,10 +8592,21 @@ function replayApply(rp, i) {
   document.querySelectorAll("[data-ahead]").forEach((el) => {
     el.setAttribute("x", 600 * frac); el.setAttribute("width", 600 * (1 - frac));
   });
+  // THE LIVE COUNT in each header, from whichever side of the fight the row
+  // belongs to. The DEBUFF rows index a FILTERED roster — the statuses this run
+  // never applied are not drawn — so the row rebuilds the same filter rather
+  // than indexing the full one and reading somebody else's series.
+  const dLive = rp.debuffs
+    .map((b, k) => [b, rp.dstacks[k] || []])
+    .filter(([, s]) => s.some((v) => v > 0));
   document.querySelectorAll("[data-now]").forEach((el) => {
     const j = Number(el.dataset.now);
-    const v = rp.stacks[j][i];
-    el.textContent = `${v}/${rpCap(rp.buffs[j])}`;
+    if (el.dataset.series === "debuff") {
+      const [b, s] = dLive[j] || [];
+      if (b) el.textContent = `${s[i]}/${rpCap(b)}`;
+      return;
+    }
+    el.textContent = `${rp.stacks[j][i]}/${rpCap(rp.buffs[j])}`;
   });
 }
 
