@@ -77,6 +77,11 @@ attack:
   # weapon's own status chance is what rolls.
   damage: { impact: 50.0 }   # total 50
   # The EXPLOSION — rules in MECHANICS §7.
+  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 4.0 m -> +320%.
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+
   radial:
     damage: { puncture: 70.0, heat: 70.0 }   # total 140
     radius_m: 4.0

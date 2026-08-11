@@ -57,6 +57,11 @@ attack:
   damage: { impact: 28.0, puncture: 2.8, slash: 39.2 }   # total 70
   # The radial (AoE) part — rules in MECHANICS §7, plus the two this entry
   # declares for itself, both from the CO catalog's Braton row.
+  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 3.0 m -> +240%, ADDS.
+  compression:
+    effectiveness: 1.00
+    stacking: adds
+
   radial:
     damage: { heat: 70.0 }
     radius_m: 3.0

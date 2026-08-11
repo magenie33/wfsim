@@ -113,6 +113,11 @@ attack:
   # headshot multiplier of 1x and cannot trigger headshot conditions"), and
   # "Initial hit and explosion apply status separately", which is exactly why
   # it is a second instance rather than added damage.
+  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 4.8 m -> +384%. Shotgun; bomblets do not benefit.
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+
   radial:
     damage: { radiation: 73.0 }
     radius_m: 4.8

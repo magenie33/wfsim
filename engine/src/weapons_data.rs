@@ -200,6 +200,12 @@ pub struct AttackSpec {
     /// A radial (AoE) part fired with every projectile of this attack.
     #[serde(default)]
     pub radial: Option<RadialSpec>,
+    /// PRIMARY COMPRESSION's row for this attack — see [`CompressionSpec`].
+    /// `None` means the weapon is absent from the table, which is not the same
+    /// as 0%: absent is untested or inapplicable (every secondary, since the
+    /// arcane is a PRIMARY one), while 0% is a tested "Doesn't Work".
+    #[serde(default)]
+    pub compression: Option<CompressionSpec>,
     /// A LINGERING FIELD left by every landed projectile (Torid's cloud).
     #[serde(default)]
     pub lingering: Option<LingeringSpec>,
@@ -1164,6 +1170,27 @@ fn pretty_id(id: &str) -> String {
 /// bursts, so the weapon loses less rate than the number on the card says.
 /// That asymmetry is modelled; see the `.max(1.0)` in `loadout::resolve`.
 ///
+/// PRIMARY COMPRESSION's per-weapon row — see docs/CATALOGS.md §2.
+///
+/// The arcane trades explosion RADIUS for damage, so what it is worth is a
+/// property of the weapon rather than of the arcane, and the wiki publishes a
+/// table with one row per weapon ATTACK. Two of its columns cannot be derived
+/// from anything else the weapon knows:
+///
+/// > Weapon | Effectiveness | Base Radius | Max Damage Bonus @ Base Radius |
+/// > Stacking Behavior | Notes
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct CompressionSpec {
+    /// The row's Effectiveness. 1.0 almost everywhere, 0.04 on the Vectis pair
+    /// ("uses embed radial instead of headshot explosion"), 1.27 on the
+    /// Trumna's alt-fire ("Merged"), and 0.0 for "Doesn't Work".
+    pub effectiveness: f64,
+    /// The row's Stacking Behavior: `multiplies` (the common case) or `adds`
+    /// (Ambassador, Battacor, Ferrox, Opticor, Trumna, and every Braton and
+    /// Burston Incarnon). The difference is a bracket, not a number.
+    pub stacking: String,
+}
+
 /// A MAGAZINE THAT REFILLS ITSELF, on a clock rather than on a reload.
 ///
 /// The Shedu's battery, and the roster's first: *"This weapon does not use ammo
@@ -3272,6 +3299,51 @@ mod play_mode_tests {
         let boar = spec("boar").unwrap().attack.falloff.as_ref().unwrap();
         assert_eq!((boar.start_m, boar.end_m, boar.reduction), (15.0, 25.0, 0.5));
         assert!(with >= 10, "only {with} weapons carry a falloff");
+    }
+
+    /// EVERY COMPRESSION ROW IS TRANSCRIBED, AND EVERY ONE IS SAYABLE.
+    ///
+    /// The table is the arcane's whole per-weapon behaviour (docs/CATALOGS.md
+    /// §2) and it is copied by hand, so this asserts the shape rather than
+    /// trusting the copy: a stacking class the engine has no bracket for, or an
+    /// effectiveness outside the published range, is a transcription error and
+    /// not a weapon that behaves strangely.
+    ///
+    /// The published range is not [0, 1]: the Vectis pair are 0.04 and the
+    /// Trumna's alt-fire is 1.27 ("Merged"), so the bound is generous on
+    /// purpose — what it catches is a percent written as 100 instead of 1.0.
+    #[test]
+    fn every_compression_row_is_one_the_engine_could_apply() {
+        let mut rows = 0;
+        let mut adds = 0;
+        for w in all() {
+            let Some(c) = &w.attack.compression else { continue };
+            rows += 1;
+            assert!(
+                matches!(c.stacking.as_str(), "multiplies" | "adds"),
+                "{}: `{}` is not a stacking class",
+                w.id, c.stacking
+            );
+            assert!(
+                (0.0..=1.5).contains(&c.effectiveness),
+                "{}: effectiveness {} — a percent written as a whole number?",
+                w.id, c.effectiveness
+            );
+            if c.stacking == "adds" {
+                adds += 1;
+            }
+        }
+        assert!(rows >= 20, "only {rows} rows transcribed");
+        // THE MINORITY IS REAL, and it is the half of the table most likely to
+        // be flattened by a copy: every Braton and Burston Incarnon ADDS.
+        assert_eq!(adds, 6, "the Braton four and the Burston two add, and nothing else here does");
+        // …and a tested ZERO is not the same as an absent row. The Torid's
+        // Incarnon form has one, and its base form is 100% — one arcane, two
+        // answers, inside one weapon's cycle.
+        assert_eq!(spec("torid_incarnon").unwrap().attack.compression.as_ref().unwrap().effectiveness, 0.0);
+        assert_eq!(spec("torid").unwrap().attack.compression.as_ref().unwrap().effectiveness, 1.0);
+        // The Vectis pair are the reason the range is not a boolean.
+        assert_eq!(spec("vectis_incarnon").unwrap().attack.compression.as_ref().unwrap().effectiveness, 0.04);
     }
 
     /// THE TORID'S CO CATALOG ROWS, pinned — both of them, and both forms.

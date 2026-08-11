@@ -111,6 +111,16 @@ attack:
   # that today) and the whole block is what the multi-target model will read.
   # It is NOT a `radial:` — that word means "a second damage instance" in this
   # engine, which the wiki forbids for this weapon (see the note above).
+  # PRIMARY COMPRESSION: 0%, "Doesn't Work" — and this zero is TESTED rather
+  # than absent, which is why it is written down. It is the general exclusion:
+  # "Does not work on Continuous Weapons or beam attacks with an AoE component.
+  # For example, Ignis or Torid Incarnon Genesis" (wiki, verbatim). So the
+  # arcane is worth +240% in this weapon's BASE form and exactly nothing here —
+  # one arcane, two answers, inside one Incarnon cycle. docs/CATALOGS.md §2.
+  compression:
+    effectiveness: 0.00
+    stacking: multiplies
+
   beam:
     range_m: 37.0
     # Firestorm (Primed) enlarges THIS — verbatim: "The 2.3 meter damage radius

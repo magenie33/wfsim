@@ -121,6 +121,11 @@ attack:
   damage: { heat: 3.0 }
   # THE RADIAL (AoE) part — "shots exploding in a 2 meter area of effect".
   # Rules in MECHANICS §7, plus the two this entry declares for itself.
+  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 2.0 m -> +160%, ADDS.
+  compression:
+    effectiveness: 1.00
+    stacking: adds
+
   radial:
     damage: { heat: 3.0 }
     radius_m: 2.0

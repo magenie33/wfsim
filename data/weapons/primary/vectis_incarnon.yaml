@@ -60,6 +60,11 @@ attack:
   punch_through_m: 0.0
   damage: { cold: 5 }   # total 5
   # The radial part — rules in MECHANICS §7.
+  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): FOUR PER CENT: 0.1 m -> +8%, because it "uses embed radial instead of headshot explosion".
+  compression:
+    effectiveness: 0.04
+    stacking: multiplies
+
   radial:
     damage: { cold: 5 }   # total 5
     radius_m: 6.7

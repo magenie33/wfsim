@@ -53,6 +53,11 @@ attack:
   punch_through_m: 0.0
   damage: { impact: 25, slash: 25, puncture: 75 }   # total 125
   # The radial part — rules in MECHANICS §7.
+  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 5.0 m -> +400%.
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+
   radial:
     damage: { heat: 750 }   # total 750
     radius_m: 5

@@ -58,6 +58,11 @@ attack:
   punch_through_m: 0.0
   damage: { impact: 100 }   # total 100
   # The radial part — rules in MECHANICS §7.
+  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 4.0 m -> +320%. A shotgun, so it can never enlarge the radius: there is no shotgun blast-radius mod.
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+
   radial:
     damage: { slash: 80, puncture: 30, blast: 60 }   # total 170
     radius_m: 4

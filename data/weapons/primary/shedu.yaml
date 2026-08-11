@@ -133,6 +133,11 @@ attack:
   # its own element, and it never takes a body-part multiplier: "Explosion has
   # a headshot multiplier of 1x and cannot trigger headshot conditions", which
   # is the engine's rule for every radial rather than a Shedu special case.
+  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 6.6 m -> +528%. "Primary Fire AoE not affected by Firestorm; cannot use reload pulse radial".
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+
   radial:
     # ITS RADIUS DOES NOT TAKE BLAST-RADIUS MODS — "Primary Fire AoE not
     # affected by Firestorm" (wiki, Primary Compression's per-weapon table).

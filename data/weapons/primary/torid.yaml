@@ -107,6 +107,11 @@ attack:
   #
   # The clock is measured too (M13): the first tick lands WITH the impact, so
   # duration_s 10 at tick_rate 1 is TEN ticks, not nine.
+  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 3.0 m -> +240%, on the Toxin Cloud. "Cloud radius is not reduced" - it pays nothing and collects everything.
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+
   lingering:
     damage: { toxin: 40.0 }
     tick_rate: 1.0
