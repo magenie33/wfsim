@@ -2791,6 +2791,11 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
+    score: 0.7239068206299447
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, pathogen_rounds, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: ocucor
+    mode: base
     score: 0.7153245019976032
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, sentient_surge, deep_freeze, pathogen_rounds, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -2803,6 +2808,11 @@ entries:
     mode: base
     score: 0.6002162644427264
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, magnetic_might, sentient_surge, primed_convulsion, pistol_pestilence, scorch]
+    arcanes: [secondary_enervate]
+  - weapon: ocucor
+    mode: base
+    score: 0.5451041594140615
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, anemic_agility, primed_convulsion, pathogen_rounds, primed_heated_charge]
     arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
