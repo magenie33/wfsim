@@ -75,6 +75,7 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .mtab.sel{color:var(--text);font-weight:600;border-color:var(--line);background:var(--panel2);position:relative;top:1px}
 body:not(.on-optimizer) #opt-block{display:none}
 body:not(.on-rivens) #riven-block{display:none}
+body:not(.on-enemies) #enemy-block{display:none}
 /* THE SIMULATOR'S BLOCKS, and `#wfbuff-block` is one of them: a Warframe buff
    is not part of the weapon (owner, 2026-08-09: "builder页面不应该出现战甲增益，
    因为不属于武器自己的一部分"). It is something done TO this weapon for a while,
@@ -135,6 +136,27 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 /* The RIVENS tab is its own bench: the builder's blocks step aside, the same
    way they do for the other two modules. */
 .on-rivens #bench-bar-builder-builds,.on-rivens #build-official,.on-rivens #preset-bar-builder-builds,.on-rivens #quick-calc,.on-rivens #mode-block,.on-rivens #mod-block,.on-rivens #arcane-block,.on-rivens #evo-block,.on-rivens #element-block,.on-rivens #stats-block{display:none}
+/* The ENEMIES editor is the same shape as the rivens one: its own bench, the
+   builder's blocks step aside. */
+.on-enemies #bench-bar-builder-builds,.on-enemies #build-official,.on-enemies #preset-bar-builder-builds,.on-enemies #quick-calc,.on-enemies #mode-block,.on-enemies #mod-block,.on-enemies #arcane-block,.on-enemies #evo-block,.on-enemies #element-block,.on-enemies #stats-block{display:none}
+/* THE TARGET EDITOR. A grid of plain fields, a vulnerability column and a
+   body-part list — nothing here is a picker, because every value is a number
+   the player is stating rather than choosing from what exists. */
+.en-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:10px 0}
+.en-grid label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.en-grid input[type=number],.en-grid input[type=text]{font:inherit;font-size:13px;padding:4px 6px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;color:var(--fg)}
+.en-sect{margin:14px 0 6px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.en-parts{display:flex;flex-direction:column;gap:6px}
+.en-part{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.en-part input[type=text]{width:120px}
+.en-part input[type=number]{width:70px}
+.en-part label{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+.en-mods{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px}
+.en-mods label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.en-mods input[type=number]{width:62px;font:inherit;font-size:12px}
+.en-row{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer}
+.en-row .nm{font-weight:600}
+.en-row .sm{color:var(--muted);font-size:11px}
 /* The simulator tab keeps the build preset bar (sim settings are preset
    content — the auto-saving preset bar must stay reachable) but hides
    builder's editing blocks. */

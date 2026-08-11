@@ -240,6 +240,19 @@ around (decision 2026-07-31).
   roar 和 roar（helminth），那就选择生效当前最强的" — the difference between
   +50% and +80% is a number you have to be told), that the optimizer shows the
   same buffs read-only, and — the negative control — that no RULER carries one.
+  `node scripts/check_custom_enemies.mjs` is the TWENTY-SECOND: a target you
+  MADE is a target like any other. It is the second custom, and the test of the
+  claim above — if a custom enemy really is an `EnemySpec` in the scenario's
+  list, then the simulator, the optimizer and the target card need no code of
+  their own for it. Two of its assertions are the sharp ones. The IMMUNITY is
+  MEASURED rather than read back off the card: a Toxin-immune target must take
+  literally nothing from a Torid and the same target at x1 must take something,
+  because a column that is shown and not applied looks exactly like one that
+  works. And DELETING a custom must repoint the fight — a custom is the kind of
+  collection whose deletion breaks references elsewhere, which is the whole
+  difference between it and a preset. Verified to bite: dropping the inline
+  travel gives `unknown enemy: custom:target 1`, because the server has never
+  heard of it and never will.
   `node scripts/check_opt_modes.mjs` is the TWENTY-FIRST: HOW A WEAPON IS PLAYED
   is the BUILDER's control and the OPTIMIZER's dimension. The report was one
   screen doing neither (owner, 2026-08-11): the Phantasma's charged mode picked
@@ -426,8 +439,17 @@ around (decision 2026-07-31).
   There is always ≥1,
   "active" means the state you are in, and the key is
   `wfsim-presets-<weapon>-<domain>`. A **custom** is a thing you MADE that the
-  OTHER modules consume — `rivens` becomes a mod in the pool, custom enemies
-  will become entries in the scenario's enemy list. Owning none is ordinary,
+  OTHER modules consume — `rivens` becomes a mod in the pool, `enemies` becomes
+  an entry in the scenario's target list (owner, 2026-08-11; it was written here
+  as a promise before it existed). A custom enemy is the SAME TYPE as a
+  published unit (`EnemySpec`), which is what keeps the rest of the app
+  ignorant of it: level scaling, the vulnerability column, body parts, Eximus
+  legality and the target card all read the one shape they already read. Two
+  things are its own: an inline `damage_modifiers` column, because a target
+  nobody published may want a vulnerability no faction has — and an IMMUNITY is
+  that column reading 0, since the game has no third state between a multiplier
+  and nothing getting through — and the fact that it is NOT weapon-scoped, for
+  the same reason a fight is not. Owning none is ordinary,
   each carries its own identity rather than a label you invented, and deleting
   one breaks references elsewhere (a riven delete clears the slot that equipped
   it — a preset delete can never do that). The mental model is a FILE: a list

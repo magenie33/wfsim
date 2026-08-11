@@ -142,6 +142,31 @@ ui:
   "pool = searched options, req = pin the slot": 候选池 = 参与搜索的选项，必带 = 钉死这个槽
   "per tier: pool = searched options, req = pin": 逐层：候选池 = 参与搜索的选项，必带 = 钉死
   "how many winners to keep, how hard to measure them, and how much of the machine to spend": 保留多少个优胜者、把它们测得多准，以及占用多少机器
+  Enemies: 敌人
+  "All targets": 所有目标
+  "every enemy you have made — pick one in the simulator's target list like any other": 你做过的每一个敌人 —— 在模拟器的目标列表里像别的一样选它
+  "new target": 新建目标
+  "all targets": 所有目标
+  "no targets yet": 还没有目标
+  "none yet — a target you build here appears in every scenario's target list": 还没有 —— 在这里建的目标会出现在每个场景的目标列表里
+  "in the current fight": 当前这场仗用的就是它
+  Faction: 派系
+  "Level scaling": 等级缩放
+  "Base level": 基准等级
+  Health: 生命
+  Shield: 护盾
+  Armor: 护甲
+  Overguard: 超载护盾
+  "Eximus possible": 可以是精英
+  "Damage taken": 承受伤害
+  "write my own column (0 = immune)": 自己写一列（0 = 免疫）
+  "from the faction": 来自派系
+  "takes every type as written": 所有伤害类型都按原样结算
+  "Body parts": 身体部位
+  part: 部位
+  head: 头部
+  "crit bonus": 暴击加成
+  saved: 个已保存
   Finalists: 优胜名额
   "how it is played — pool = searched, req = pin one": 怎么打 —— pool = 纳入搜索，req = 钉死一个
   "Final-round runs": 最终轮次数

@@ -471,6 +471,21 @@
       </div>
     </section>
 
+    <!-- Block: Enemies (ENEMIES tab) — an EDITOR whose output the SCENARIO
+         consumes, the way the riven editor's output is consumed as a mod. A
+         target you made is a CUSTOM: it is not weapon-scoped (a fight is not a
+         statement about a weapon), so this collection is shared across the
+         roster like the scenarios themselves. -->
+    <section class="block" id="enemy-block">
+      <div class="bh"><span class="n">5</span><h2 data-i18n>Enemies</h2><span class="sub" id="enemy-sub"></span></div>
+      <div class="bb">
+        <div class="cu-tools" id="enemy-tools"></div>
+        <div id="enemy-form"></div>
+        <h3 class="sim-h" id="enemy-all-h" data-i18n>All targets <span class="sim-hint" data-i18n>every enemy you have made — pick one in the simulator's target list like any other</span></h3>
+        <div id="enemy-all"></div>
+      </div>
+    </section>
+
     <!-- Block: Optimizer — scope (mods/arcanes/evolutions) + the Sim panel's
          enemy & buff settings → top-10 ranked builds, each loadable. -->
     <section class="block" id="opt-block">

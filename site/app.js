@@ -913,7 +913,7 @@ function route() {
   // under /weapons/<name>.
   const support = /^\/support\/?$/.test(location.pathname);
   const bench = /^\/benchmark\/?$/.test(location.pathname);
-  const m = (support || bench) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens)?\/?$/);
+  const m = (support || bench) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/enemies)?\/?$/);
   // A hand-typed URL is not the canonical slug. Fold case and treat spaces
   // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
   // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
@@ -930,6 +930,7 @@ function route() {
   document.body.classList.toggle("on-simulator", mod === "simulator");
   document.body.classList.toggle("on-optimizer", mod === "optimizer");
   document.body.classList.toggle("on-rivens", mod === "rivens");
+  document.body.classList.toggle("on-enemies", mod === "enemies");
   $("home-page").hidden = !!w || support || bench;
   $("support-page").hidden = !support;
   $("bench-page").hidden = !bench;
@@ -940,7 +941,7 @@ function route() {
     a.classList.toggle("sel", a.dataset.nav === here);
   });
   document.querySelector(".config-page").hidden = !w;
-  const modTitle = { simulator: " · Simulator", optimizer: " · Optimizer", rivens: " · Rivens" }[mod] || "";
+  const modTitle = { simulator: " · Simulator", optimizer: " · Optimizer", rivens: " · Rivens", enemies: " · Enemies" }[mod] || "";
   // The home title carries the SEARCH TERMS, not the headline: nobody looks
   // for "Simulacrum Prime", and the tab/result/share-card is the one place
   // that has to be found rather than enjoyed (user, 2026-07-31). The joke
@@ -997,7 +998,8 @@ function route() {
       `<a class="mtab ${mod === "" ? "sel" : ""}" href="${weaponPath(w.id)}">${tr("Builder")}</a>` +
       `<a class="mtab ${mod === "simulator" ? "sel" : ""}" href="${weaponPath(w.id)}/simulator">${tr("Simulator")}</a>` +
       `<a class="mtab ${mod === "optimizer" ? "sel" : ""}" href="${weaponPath(w.id)}/optimizer">${tr("Optimizer")}</a>` +
-      `<a class="mtab ${mod === "rivens" ? "sel" : ""}" href="${weaponPath(w.id)}/rivens">${tr("Rivens")}</a>`;
+      `<a class="mtab ${mod === "rivens" ? "sel" : ""}" href="${weaponPath(w.id)}/rivens">${tr("Rivens")}</a>` +
+      `<a class="mtab ${mod === "enemies" ? "sel" : ""}" href="${weaponPath(w.id)}/enemies">${tr("Enemies")}</a>`;
     // Arriving on the simulator: refresh its build summary (builder edits
     // don't re-render sim views while they are hidden). The SCENARIO is one
     // state shared with the optimizer, so each tab redraws its own copy of
@@ -1006,6 +1008,7 @@ function route() {
     if (mod === "simulator") renderSim();
     if (mod === "optimizer") { renderOptEnemy(); updateOptEstimate(); }
     if (mod === "rivens") renderRivens();
+    if (mod === "enemies") renderEnemies();
   } else {
     renderHome();
   }
@@ -2025,6 +2028,365 @@ const activeRivenName = () => activeRiven || localStorage.getItem(presetActiveKe
 // riven is a thing with its own name, capacity and polarity, which other
 // modules then consume. Same storage, same undo, same import underneath —
 // different noun on top.
+// ---- CUSTOM ENEMIES: a target you MADE ---------------------------------
+//
+// A CUSTOM in the sense AGENTS.md gives the word: a thing you made that the
+// OTHER modules consume — here, an entry in the scenario's target list, which
+// is what makes it reach the simulator and the optimizer with no code of its
+// own in either. Same shape as the riven editor: a list you pick from, one open
+// at a time, none open being a real state.
+//
+// NOT WEAPON-SCOPED, unlike a riven. A riven is a statement about one weapon; a
+// target is not, any more than a fight is — so this collection is SHARED across
+// the roster (`SHARED_DOMAINS`) and there is no "⇤ import", because there is no
+// other weapon to import from.
+//
+// THE ID IS THE NAME, and renaming repoints whatever names it. A custom exists
+// only on the machine that made it, so its id has to come from something the
+// player typed rather than from a table nobody can see.
+const ENEMIES = "enemies";
+const enemyId = (name) => "custom:" + name;
+let activeEnemy = null;
+let enemyDoc = null;
+
+const DAMAGE_TYPES = ["impact", "puncture", "slash", "heat", "cold", "electricity",
+  "toxin", "blast", "corrosive", "gas", "magnetic", "radiation", "viral", "void", "true"];
+const SCALING_FACTIONS = ["grineer", "corpus", "infested", "corrupted", "unaffiliated"];
+
+// The blank target: a plain humanoid with nothing unusual about it. Every
+// number here is one the player is expected to replace — it is a starting
+// point, not a claim about anything in game, which is what `synthetic` says.
+const blankEnemy = () => ({
+  synthetic: true,
+  faction: "grineer",
+  scaling_faction: "grineer",
+  can_be_eximus: false,
+  stats: { base_level: 1, health: 1000, shield: 0, armor: 0, overguard: 0, affinity: 0 },
+  // null = take the faction's own column. The moment a player writes one
+  // value, the whole column becomes theirs — see `renderEnemyForm`.
+  damage_modifiers: null,
+  body_parts: [
+    { name: "body", multiplier: 1, is_head: false, crit_bonus: false },
+    { name: "head", multiplier: 3, is_head: true, crit_bonus: true },
+  ],
+});
+
+const activeEnemyName = () => {
+  if (activeEnemy === null) activeEnemy = localStorage.getItem(presetActiveKey(ENEMIES));
+  return activeEnemy;
+};
+const snapshotEnemy = () => JSON.parse(JSON.stringify(enemyDoc));
+
+/// Every custom target as an ENGINE enemy spec — the same type a published unit
+/// has, which is why nothing downstream learns that an enemy can be homemade.
+function customEnemySpecs() {
+  return loadPresetList(ENEMIES).map((p) => ({
+    ...blankEnemy(), ...(p.state || {}),
+    id: enemyId(p.name),
+    name: p.name,
+  }));
+}
+
+/// …and as TARGET CARDS, in the shape `/api/meta` publishes, so the picker, the
+/// card and the optimizer's read-only view need no branch for them.
+function customEnemyCards() {
+  const cols = Object.fromEntries((META.factions || []).map((f) => [f.id, f.modifiers]));
+  return customEnemySpecs().map((e) => ({
+    id: e.id,
+    name: e.name,
+    custom: true,
+    synthetic: true,
+    image: null,
+    base_level: e.stats.base_level,
+    can_be_eximus: !!e.can_be_eximus,
+    faction: e.faction || "unknown",
+    scaling: e.scaling_faction,
+    health: e.stats.health,
+    shield: e.stats.shield,
+    armor: e.stats.armor,
+    overguard: e.stats.overguard,
+    unmodeled: [],
+    type_modifiers: e.damage_modifiers
+      ? Object.entries(e.damage_modifiers).filter(([, v]) => v !== 1)
+          .map(([type, mult]) => ({ type, mult }))
+      : (cols[e.faction] || []),
+    parts: e.body_parts.map((b) => ({ name: b.name, multiplier: b.multiplier, is_head: b.is_head })),
+  }));
+}
+
+/// THE TARGET LIST, published plus made. One function, because every reader of
+/// `META.enemies` is asking "what can this fight be against", and the answer
+/// stopped being the roster the moment a player could add to it.
+const allEnemies = () => (META.enemies || []).concat(customEnemyCards());
+const enemyCard = (id) => allEnemies().find((e) => e.id === id);
+
+/// The custom targets a request has to carry, given the fight it describes.
+/// Empty for a published unit — the server has heard of those.
+const customEnemiesFor = (id) => customEnemySpecs().filter((e) => e.id === id);
+
+/// THE FIGHT AS A REQUEST BODY. Every path that sends a scenario goes through
+/// here, so "a custom target travels with the fight that names it" is one rule
+/// rather than one per endpoint — the same reason a riven rides in `rivens`.
+const fightPayload = (st) => {
+  const s = st || sim;
+  return { ...s, custom_enemies: customEnemiesFor(s.enemy) };
+};
+
+function renderEnemies() {
+  if (!META || !$("enemy-block")) return;
+  const ps = loadPresetList(ENEMIES);
+  const open = ps.find((p) => p.name === activeEnemyName());
+  $("enemy-sub").textContent = ps.length
+    ? `${ps.length} ${tr("saved")}`
+    : tr("none yet — a target you build here appears in every scenario's target list");
+  renderEnemyTools();
+  if (!open) {
+    // LIST MODE — nothing is being edited, so nothing pretends to be.
+    enemyDoc = null;
+    if ($("enemy-form")) $("enemy-form").innerHTML = "";
+    renderEnemyAll();
+    return;
+  }
+  if (!enemyDoc) enemyDoc = JSON.parse(JSON.stringify({ ...blankEnemy(), ...(open.state || {}) }));
+  renderEnemyForm();
+  renderEnemyAll();
+}
+
+function saveEnemyDoc() {
+  const ps = loadPresetList(ENEMIES);
+  const i = ps.findIndex((p) => p.name === activeEnemyName());
+  if (i < 0) return;
+  ps[i] = { ...ps[i], savedAt: Date.now(), state: snapshotEnemy() };
+  storePresetList(ENEMIES, ps);
+  // The SCENARIO may be pointing at this target right now, and its card shows
+  // the numbers being edited. Redraw it rather than leaving a stale target on
+  // a tab the editor cannot see.
+  renderSimTargetIfAny();
+}
+
+function renderSimTargetIfAny() {
+  if (typeof renderEnemy === "function") renderEnemy();
+  if (typeof renderOptEnemy === "function") renderOptEnemy();
+}
+
+function renderEnemyAll() {
+  const box = $("enemy-all");
+  if (!box) return;
+  const ps = loadPresetList(ENEMIES);
+  box.innerHTML = ps.length
+    ? ps.map((p) => {
+        const s = { ...blankEnemy(), ...(p.state || {}) };
+        const parts = s.body_parts.map((b) => `${escHtml(b.name)} ×${b.multiplier}`).join(", ");
+        return `<div class="en-row" data-en="${escHtml(p.name)}">
+          <span class="nm">${escHtml(p.name)}</span>
+          <span class="sm">${escHtml(s.faction || "unknown")} · ${s.stats.health} HP · ${s.stats.armor} ${escHtml(tr("Armor"))} · ${s.stats.shield} ${escHtml(tr("Shield"))}</span>
+          <span class="sm">${parts}</span>
+          ${enemyId(p.name) === sim.enemy ? `<span class="sm">✓ ${escHtml(tr("in the current fight"))}</span>` : ""}
+        </div>`;
+      }).join("")
+    : `<div class="placeholder">${escHtml(tr("no targets yet"))}</div>`;
+  box.querySelectorAll(".en-row").forEach((el) =>
+    el.addEventListener("click", () => {
+      activeEnemy = el.dataset.en;
+      localStorage.setItem(presetActiveKey(ENEMIES), activeEnemy);
+      enemyDoc = null;
+      renderEnemies();
+    })
+  );
+}
+
+function renderEnemyTools() {
+  const box = $("enemy-tools");
+  if (!box) return;
+  const ps = loadPresetList(ENEMIES);
+  const cur = ps.find((x) => x.name === activeEnemyName());
+  if (!cur) {
+    box.innerHTML =
+      `<button class="cu-btn cu-new">+ ${escHtml(tr("new target"))}</button>` +
+      `<span class="cu-ops">${undoButtons(ENEMIES)}</span>`;
+  } else {
+    box.innerHTML =
+      `<button class="cu-btn cu-back">← ${escHtml(tr("all targets"))}</button>` +
+      `<span class="cu-open"><b>${escHtml(cur.name)}</b></span>` +
+      `<span class="cu-ops">` +
+      `<button class="cu-btn cu-dup" title="${escHtml(tr("duplicate"))}">⧉</button>` +
+      `<button class="cu-btn cu-ren" title="${escHtml(tr("rename"))}">✎</button>` +
+      `<button class="cu-btn cu-del" title="${escHtml(tr("delete"))}">✕</button>` +
+      undoButtons(ENEMIES) +
+      `</span>`;
+  }
+  wireUndoButtons(box, ENEMIES);
+  const q = (s) => box.querySelector(s);
+  const openIt = (name) => {
+    activeEnemy = name;
+    if (name) localStorage.setItem(presetActiveKey(ENEMIES), name);
+    else localStorage.removeItem(presetActiveKey(ENEMIES));
+    enemyDoc = null;
+    renderEnemies();
+  };
+  const click = (sel, fn) => { const b = q(sel); if (b) b.onclick = (e) => { e.stopPropagation(); fn(); }; };
+
+  click(".cu-new", () => {
+    const ps2 = loadPresetList(ENEMIES);
+    const name = freeName(ps2, (n) => "target " + n);
+    ps2.push({ name, savedAt: Date.now(), state: blankEnemy() });
+    storePresetList(ENEMIES, ps2);
+    openIt(name);
+  });
+  click(".cu-back", () => openIt(null));
+  click(".cu-dup", () => {
+    const ps2 = loadPresetList(ENEMIES);
+    const name = freeName(ps2, (n) => `${cur.name} (${n})`);
+    ps2.push({ name, savedAt: Date.now(), state: JSON.parse(JSON.stringify(cur.state)) });
+    storePresetList(ENEMIES, ps2);
+    openIt(name);
+  });
+  click(".cu-del", () => {
+    const ps2 = loadPresetList(ENEMIES).filter((x) => x.name !== cur.name);
+    storePresetList(ENEMIES, ps2);
+    // DELETING A CUSTOM BREAKS REFERENCES, and this is the one it can break:
+    // the fight may be pointing at it. It falls back to the roster's first unit
+    // rather than to an id nothing answers to.
+    if (sim.enemy === enemyId(cur.name)) {
+      sim.enemy = ((META.enemies || [])[0] || {}).id || "thrax_centurion";
+      markPresetDirty();
+      renderSimTargetIfAny();
+    }
+    openIt(null);
+  });
+  click(".cu-ren", () => {
+    // NO NATIVE DIALOGS (AGENTS.md): an inline input, as everywhere else.
+    const span = q(".cu-open");
+    span.innerHTML = `<input class="cu-rename" type="text" value="${escHtml(cur.name)}">`;
+    const inp = span.querySelector("input");
+    inp.focus(); inp.select();
+    let done = false;
+    const commit = () => {
+      if (done) return;
+      done = true;
+      const name = inp.value.trim();
+      const ps2 = loadPresetList(ENEMIES);
+      if (!name || name === cur.name || ps2.some((x) => x.name === name)) return renderEnemyTools();
+      const i = ps2.findIndex((x) => x.name === cur.name);
+      ps2[i] = { ...ps2[i], name };
+      storePresetList(ENEMIES, ps2);
+      // The id IS the name, so a rename moves whatever names it — otherwise the
+      // fight would point at a target that no longer exists.
+      if (sim.enemy === enemyId(cur.name)) { sim.enemy = enemyId(name); markPresetDirty(); }
+      openIt(name);
+      renderSimTargetIfAny();
+    };
+    inp.onkeydown = (e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") { done = true; renderEnemyTools(); } };
+    inp.onblur = commit;
+  });
+}
+
+function renderEnemyForm() {
+  const box = $("enemy-form");
+  if (!box) return;
+  const d = enemyDoc;
+  const cols = Object.fromEntries((META.factions || []).map((f) => [f.id, f.modifiers]));
+  const factionCol = Object.fromEntries((cols[d.faction] || []).map((m) => [m.type, m.mult]));
+  const own = d.damage_modifiers;
+  const num = (k, label, val, step) =>
+    `<label>${escHtml(label)}<input type="number" data-en-k="${k}" value="${val}" step="${step || 1}" min="0"></label>`;
+  const opts = (list, cur) => list.map((x) =>
+    `<option value="${escHtml(x)}"${x === cur ? " selected" : ""}>${escHtml(x)}</option>`).join("");
+  box.innerHTML =
+    `<div class="en-grid">
+      <label>${escHtml(tr("Faction"))}
+        <select data-en-k="faction">${opts(["unknown"].concat((META.factions || []).map((f) => f.id)), d.faction || "unknown")}</select></label>
+      <label>${escHtml(tr("Level scaling"))}
+        <select data-en-k="scaling_faction">${opts(SCALING_FACTIONS, d.scaling_faction)}</select></label>
+      ${num("stats.base_level", tr("Base level"), d.stats.base_level)}
+      ${num("stats.health", tr("Health"), d.stats.health)}
+      ${num("stats.shield", tr("Shield"), d.stats.shield)}
+      ${num("stats.armor", tr("Armor"), d.stats.armor)}
+      ${num("stats.overguard", tr("Overguard"), d.stats.overguard)}
+      <label>${escHtml(tr("Eximus possible"))}
+        <input type="checkbox" data-en-k="can_be_eximus"${d.can_be_eximus ? " checked" : ""}></label>
+    </div>` +
+    // THE VULNERABILITY COLUMN, and the two states it has. A FACTION ALREADY
+    // ANSWERS THIS — that is what a faction is to incoming damage — so writing
+    // your own is a deliberate second state rather than a set of blanks to
+    // fill. IMMUNITY IS 0 HERE, not a checkbox of its own: the game has no
+    // third state between a multiplier and nothing getting through.
+    `<div class="en-sect"><b>${escHtml(tr("Damage taken"))}</b>
+      <label><input type="checkbox" id="en-own-col"${own ? " checked" : ""}> ${
+        escHtml(tr("write my own column (0 = immune)"))}</label>
+      ${own ? "" : `<span>${escHtml(tr("from the faction"))}: ${
+        (cols[d.faction] || []).map((m) => `${escHtml(DT(m.type))} ×${m.mult}`).join(", ")
+        || escHtml(tr("takes every type as written"))}</span>`}
+    </div>` +
+    (own
+      ? `<div class="en-mods">${DAMAGE_TYPES.map((k) =>
+          `<label>${escHtml(DT(k))}<input type="number" data-en-dm="${k}" step="0.1" min="0"
+             value="${own[k] === undefined ? (factionCol[k] === undefined ? 1 : factionCol[k]) : own[k]}"></label>`).join("")}</div>`
+      : "") +
+    // BODY PARTS — the weak points, and what each one is worth. A head is not a
+    // NAME: `is_head` is what a headshot-conditional mod asks about, and
+    // `crit_bonus` is the separate question of whether the part also multiplies
+    // critical damage.
+    `<div class="en-sect"><b>${escHtml(tr("Body parts"))}</b>
+      <button class="cu-btn" id="en-add-part">+ ${escHtml(tr("part"))}</button></div>
+     <div class="en-parts">${d.body_parts.map((b, i) => `
+      <div class="en-part" data-i="${i}">
+        <input type="text" data-en-p="name" value="${escHtml(b.name)}">
+        <input type="number" data-en-p="multiplier" value="${b.multiplier}" step="0.1" min="0">
+        <label><input type="checkbox" data-en-p="is_head"${b.is_head ? " checked" : ""}> ${escHtml(tr("head"))}</label>
+        <label><input type="checkbox" data-en-p="crit_bonus"${b.crit_bonus ? " checked" : ""}> ${escHtml(tr("crit bonus"))}</label>
+        ${d.body_parts.length > 1 ? `<button class="cu-btn en-del-part">✕</button>` : ""}
+      </div>`).join("")}</div>`;
+
+  const commit = () => { saveEnemyDoc(); renderEnemyForm(); renderEnemyAll(); };
+  const setPath = (path, val) => {
+    const [a, b] = path.split(".");
+    if (b) d[a][b] = val; else d[a] = val;
+  };
+  box.querySelectorAll("[data-en-k]").forEach((el) => {
+    el.onchange = () => {
+      setPath(el.dataset.enK, el.type === "checkbox" ? el.checked
+        : el.type === "number" ? Math.max(0, Number(el.value) || 0)
+        : el.value);
+      commit();
+    };
+  });
+  const oc = $("en-own-col");
+  if (oc) oc.onchange = () => {
+    // Switching ON copies the faction's column in, so the starting point is
+    // what this target already was rather than fifteen ones.
+    d.damage_modifiers = oc.checked
+      ? Object.fromEntries(DAMAGE_TYPES.map((k) => [k, factionCol[k] === undefined ? 1 : factionCol[k]]))
+      : null;
+    commit();
+  };
+  box.querySelectorAll("[data-en-dm]").forEach((el) => {
+    el.onchange = () => {
+      d.damage_modifiers = { ...(d.damage_modifiers || {}), [el.dataset.enDm]: Math.max(0, Number(el.value) || 0) };
+      commit();
+    };
+  });
+  box.querySelectorAll(".en-part").forEach((row) => {
+    const i = Number(row.dataset.i);
+    row.querySelectorAll("[data-en-p]").forEach((el) => {
+      el.onchange = () => {
+        const k = el.dataset.enP;
+        d.body_parts[i][k] = el.type === "checkbox" ? el.checked
+          : k === "name" ? (el.value.trim() || "part")
+          : Math.max(0, Number(el.value) || 0);
+        commit();
+      };
+    });
+    const del = row.querySelector(".en-del-part");
+    if (del) del.onclick = () => { d.body_parts.splice(i, 1); commit(); };
+  });
+  const add = $("en-add-part");
+  if (add) add.onclick = () => {
+    d.body_parts.push({ name: "part", multiplier: 1, is_head: false, crit_bonus: false });
+    commit();
+  };
+}
+
 function renderRivenTools() {
   const box = $("riven-tools");
   if (!box) return;
@@ -2959,7 +3321,7 @@ async function drawShareCard(canvas, url) {
       ? Math.round(r.dps || 0).toLocaleString() + " DPS"
       : sig2(kpm(r.score, r.duration)) + " KPM", 36, y);
     g.fillStyle = dim; g.font = F(15);
-    const en = (META.enemies || []).find((e) => e.id === sim.enemy) || {};
+    const en = allEnemies().find((e) => e.id === sim.enemy) || {};
     // The fight AND the technique (user, 2026-08-02). Which form, how often
     // the head is hit and whether aim is held change the number as much as the
     // enemy does. Buffs are deliberately absent: they follow from the build,
@@ -3048,7 +3410,7 @@ const presetWeapon = () => ($("weapon") && $("weapon").value) || "";
 // Different noun, different key. Everything BELOW the key is shared —
 // storage, undo, per-weapon scoping, ⇤ import — because none of that depends
 // on which kind it is.
-const CUSTOM_DOMAINS = new Set(["rivens"]);
+const CUSTOM_DOMAINS = new Set(["rivens", "enemies"]);
 const isCustomDomain = (d) => CUSTOM_DOMAINS.has(d);
 
 // …AND ONE COLLECTION THAT IS NOT A WEAPON'S: the FIGHT (owner, 2026-08-09:
@@ -3074,7 +3436,11 @@ const isCustomDomain = (d) => CUSTOM_DOMAINS.has(d);
 // is nothing to inherit wrongly — and the one weapon-scoped knob it still holds
 // (headshot %) is handled the way the rulers handle it: the SERVER forces 0 on
 // a weapon that cannot headshot.
-const SHARED_DOMAINS = new Set(["simulator-scenarios"]);
+// …and a TARGET is not a weapon's either, for exactly the reason a fight is
+// not: an enemy you built has no opinion about what is shooting it. Same
+// consequence — one list for the whole roster, and no "⇤ import", because
+// there is no other weapon to import from.
+const SHARED_DOMAINS = new Set(["simulator-scenarios", "enemies"]);
 const isSharedDomain = (d) => SHARED_DOMAINS.has(d);
 const domainScope = (d, w) => (isSharedDomain(d) ? "" : (w ?? presetWeapon()) + "-");
 const presetListKey = (d, w) =>
@@ -5594,7 +5960,7 @@ async function scanGains(axis, onTick) {
   // or only the numbers — see `belowFloor`.
   let baseProcs = null;
   const run = async (override) => {
-    const r = await api("/api/simulate", { ...buildPayload(), ...scenario, ...override });
+    const r = await api("/api/simulate", { ...buildPayload(), ...fightPayload(scenario), ...override });
     if (!r || !r.ok) return null;
     if (!override.seed && baseProcs === null) baseProcs = r.procs ?? null;
     return useKills ? (r.score ?? r.kills ?? 0) : (r.dps || 0);
@@ -5621,7 +5987,7 @@ async function scanGains(axis, onTick) {
       if (!live()) return;
       const c = cands[cursor++];
       if (!c) return;
-      const r = await lane.call("/api/simulate", { ...buildPayload(), ...scenario, ...c.payload });
+      const r = await lane.call("/api/simulate", { ...buildPayload(), ...fightPayload(scenario), ...c.payload });
       if (!live()) return;               // the fight moved — this answer is stale
       const v = !r || !r.ok ? null : (useKills ? (r.score ?? r.kills ?? 0) : (r.dps || 0));
       gainScan.done++;
@@ -5640,7 +6006,7 @@ async function scanGains(axis, onTick) {
   if (refine) {
     const deep = { ...scenario, runs: refine };
     const runDeep = async (override) => {
-      const r = await api("/api/simulate", { ...buildPayload(), ...deep, ...override });
+      const r = await api("/api/simulate", { ...buildPayload(), ...fightPayload(deep), ...override });
       if (!r || !r.ok) return null;
       return useKills ? (r.score ?? r.kills ?? 0) : (r.dps || 0);
     };
@@ -6787,7 +7153,7 @@ const defaultHeadshotPct = (w) => ((w || {}).sentinel ? 0 : META.defaults.headsh
 // needing neither Runs (the funnel sets those round by round) nor Measure.
 function renderScenarioFields(ids, opts = {}) {
   const w = weaponInfo($("weapon").value);
-  const enemies = META.enemies || [];
+  const enemies = allEnemies();
   const en = enemies.find((e) => e.id === sim.enemy) || enemies[0];
   if (en) sim.enemy = en.id;
 
@@ -6995,7 +7361,7 @@ async function loadTargetStats() {
 // and both tabs draw the same card from the same state, so both are patched
 // by one selector.
 function paintTargetMeta() {
-  const en = (META.enemies || []).find((e) => e.id === sim.enemy);
+  const en = allEnemies().find((e) => e.id === sim.enemy);
   if (!en) return;
   document
     .querySelectorAll("#sim-target .en-meta, #opt-target .en-meta")
@@ -7075,7 +7441,7 @@ function renderEnemyMenu(query) {
   const q = (query || "").trim().toLowerCase();
   const blob = (e) => [e.name, e.name_en, e.id, e.faction, e.scaling]
     .filter(Boolean).join(" ").toLowerCase();
-  const hits = (META.enemies || []).filter((e) => !q || blob(e).includes(q));
+  const hits = allEnemies().filter((e) => !q || blob(e).includes(q));
   menu.innerHTML = hits.length
     ? hits.map((e) => `<div class="opt ${e.id === sim.enemy ? "sel" : ""}" data-e="${escHtml(e.id)}">
          ${enemyImg(e, "en-thumb")}
@@ -7089,7 +7455,7 @@ function renderEnemyMenu(query) {
     // Eximus variant — the fight would be refused. Dropping it back to null
     // hands the new target its OWN default, which is the elite one wherever
     // there is one. An explicit "no" is legal everywhere and is kept.
-    const picked = (META.enemies || []).find((e) => e.id === sim.enemy);
+    const picked = allEnemies().find((e) => e.id === sim.enemy);
     if (sim.eximus === true && !(picked && picked.can_be_eximus)) sim.eximus = null;
     closePopovers();
     markPresetDirty(); markScenarioDirty();
@@ -7300,7 +7666,7 @@ function renderWfBuffs(host, readonly) {
 function renderSim() {
   if (!META) return;
   renderSimBuild();
-  const enemies = META.enemies || [];
+  const enemies = allEnemies();
   const en = enemies.find((e) => e.id === sim.enemy) || enemies[0];
   renderScenarioFields({ target: "sim-target", technique: "sim-technique",
     limits: "sim-limits", run: "sim-run" });
@@ -7870,7 +8236,7 @@ async function runSim() {
     buffList.forEach((b) => { const c = sim.buffs[b.id]; if (c) buffs[b.id] = { stacks: c.stacks, locked: c.locked }; });
     // `replay: true` only HERE. The gain scan hits the same endpoint once per
     // candidate and shows no replay, so it must not pay for one.
-    const body = { ...buildPayload(), ...sim, buffs, replay: true };
+    const body = { ...buildPayload(), ...fightPayload(), buffs, replay: true };
     const r = await api("/api/simulate", body);
     if (!r || r.ok === false) {
       $("sim-results").innerHTML = `<div class="error">sim failed: ${r ? r.error : "no data"}</div>`;
@@ -9286,7 +9652,7 @@ function updateOptEstimate() {
   // schedule (survivors × runs per round; a JS mirror of schedule()).
   let scenario = "";
   if (valid) {
-    const en = (META.enemies || []).find((e) => e.id === sim.enemy) || {};
+    const en = allEnemies().find((e) => e.id === sim.enemy) || {};
     // Mirror of schedule_to()'s auto-planned cadence: k = ceil(log8(N/F))
     // rounds, even log-space culls landing exactly on the finalists, runs
     // from a halving cost budget ((ρ/2)^i, capped at final/4), then the
@@ -9404,7 +9770,7 @@ async function runOptimize() {
       // Safe to send everything: `parse_fight` reads the fight's fields and
       // `parse_optimize` reads only its own five, so a scenario field the
       // optimizer has no opinion about simply arrives and is used.
-      ...snapshotScenario(),
+      ...fightPayload(snapshotScenario()),
       final_runs: finalRuns(), finalists: optRun.finalists,
       threads: optRun.threads || 0, // 0 = auto (cores − 2)
       buffs,

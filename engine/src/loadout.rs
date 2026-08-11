@@ -1476,6 +1476,15 @@ pub struct ResolvedPanel {
     pub modified_base: f64,
     pub crit_chance: f64,
     pub crit_damage: f64,
+    /// PRELUDE OF MIGHT, unresolved on purpose: `(how much of `crit_damage`
+    /// this perk is, the crit-chance threshold it has to stay under)`. A panel
+    /// is the OPTIMISTIC half of the condition — the wiki's note says the
+    /// threshold is read against a crit chance the panel cannot see — so the
+    /// perk is granted here and the SIM takes it back on any hit that has
+    /// climbed over the line. `None` when the perk is not installed, or when
+    /// the panel alone already fails the condition and there is nothing to
+    /// take back. See [`WeaponBase::crit_mult_below_cc`].
+    pub crit_mult_below_cc: Option<(f64, f64)>,
     pub status_chance: f64,
     /// UNMODDED crit and status stats of the DIRECT part — the bases a
     /// RELATIVE live buff multiplies, the counterpart of `base_multishot`.

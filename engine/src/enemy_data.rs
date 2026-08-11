@@ -150,6 +150,22 @@ pub struct EnemySpec {
     /// did, which is what this is.
     #[serde(default)]
     pub faction_damage_override: Option<String>,
+    /// AN INLINE DAMAGE-TYPE COLUMN, for an enemy nobody published — the one
+    /// thing a player-made target needs that the roster's own units never do.
+    ///
+    /// A published unit names a faction and the table answers with a column
+    /// (`damage_column_key`). A custom one may want a column that is in no
+    /// table: "immune to Heat", "double from Void". So it may carry the column
+    /// itself, and it OUTRANKS the faction key — which stays meaningful, since
+    /// `combat_faction` is also what a Bane mod matches, and those are two
+    /// different questions about one enemy (MECHANICS §8).
+    ///
+    /// Keys are damage-type names as `data/factions/damage_modifiers.yaml`
+    /// spells them; a type left out takes damage as written. An IMMUNITY is
+    /// simply 0.0 — the game has no third state between a multiplier and
+    /// nothing getting through.
+    #[serde(default)]
+    pub damage_modifiers: Option<std::collections::BTreeMap<String, f64>>,
     /// Whether an Eximus variant of this unit exists in-game (wiki
     /// `Eximus/Compatibilities`). Defaults to false: unknown units must not
     /// silently allow impossible combinations.
@@ -226,7 +242,19 @@ impl EnemySpec {
         }
         // The damage table's fifteen columns are the whole system; a faction it
         // does not name takes every type as written, so this cannot fail.
-        let type_mods = crate::factions_data::columns_for(self.damage_column_key());
+        // A CUSTOM ENEMY MAY BRING ITS OWN COLUMN, and then it is the answer —
+        // see `damage_modifiers`. The Overguard pool keeps the table's own
+        // column either way: Overguard is a layer over the enemy rather than
+        // part of it, and a player inventing a target does not get to invent
+        // that.
+        let type_mods = if self.damage_modifiers.is_some() {
+            crate::factions_data::Columns {
+                faction: crate::factions_data::Column::from_multipliers(&self.inline_column()?),
+                overguard: crate::factions_data::overguard_column(),
+            }
+        } else {
+            crate::factions_data::columns_for(self.damage_column_key())
+        };
         Ok(TargetParams {
             name: self.name.clone(),
             base_level: self.stats.base_level,
@@ -258,6 +286,29 @@ impl EnemySpec {
                 .unwrap_or(crate::loadout::Faction::Unknown),
             mode,
         })
+    }
+
+    /// This enemy's inline column, resolved against the damage-type names.
+    ///
+    /// A NAME IT DOES NOT KNOW IS AN ERROR rather than a silently ignored
+    /// entry: the whole point of the field is to state something unusual, and
+    /// "heatt: 0" that quietly does nothing is a target the reader believes is
+    /// immune and is not.
+    fn inline_column(&self) -> Result<Vec<(crate::damage::DamageType, f64)>, String> {
+        let m = match &self.damage_modifiers {
+            Some(m) => m,
+            None => return Ok(Vec::new()),
+        };
+        m.iter()
+            .map(|(k, v)| {
+                let t = crate::damage::DamageType::from_name(k)
+                    .ok_or_else(|| format!("{}: no damage type named '{k}'", self.name))?;
+                if !(0.0..=100.0).contains(v) {
+                    return Err(format!("{}: {k} x{v} is not a damage multiplier", self.name));
+                }
+                Ok((t, *v))
+            })
+            .collect()
     }
 
     /// Body parts with explicit aim weights, matched by part name. Every

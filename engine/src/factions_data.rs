@@ -42,6 +42,25 @@ impl Column {
     /// Takes normal damage from everything.
     pub const NEUTRAL: Column = Column([1.0; DamageType::ALL.len()]);
 
+    /// A column nobody published — one a PLAYER wrote for an enemy of their
+    /// own. Same shape and the same rule: a type left out takes damage as
+    /// written, so the map says only what is unusual about this target.
+    ///
+    /// It is also where an IMMUNITY lives, because an immunity is not a
+    /// separate mechanic: it is this column reading 0. The game has no third
+    /// state between "×1.5" and "nothing gets through", and giving one to the
+    /// data would mean two ways to say the same thing.
+    pub fn from_multipliers(entries: &[(DamageType, f64)]) -> Column {
+        let mut c = Column::NEUTRAL;
+        for &(t, v) in entries {
+            c.0[t as usize] = v;
+        }
+        c
+    }
+}
+
+impl Column {
+
     pub fn get(&self, t: DamageType) -> f64 {
         self.0[t as usize]
     }
@@ -136,6 +155,16 @@ fn table() -> &'static Table {
 /// damage type as written — see the module note; the fifteen are all there is.
 pub fn column(key: &str) -> Column {
     table().factions.get(key).copied().unwrap_or(Column::NEUTRAL)
+}
+
+/// Every faction key the table names, sorted. What a player building an enemy
+/// of their own is choosing between — the column is the whole of what a faction
+/// means to incoming damage, so the list has to come from the table rather than
+/// from a copy of it in the UI.
+pub fn keys() -> Vec<&'static str> {
+    let mut k: Vec<&'static str> = table().factions.keys().map(|s| s.as_str()).collect();
+    k.sort_unstable();
+    k
 }
 
 /// Whether the table names this key at all. Only for saying so — a faction

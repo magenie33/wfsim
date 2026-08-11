@@ -525,6 +525,49 @@ fn rivens_from(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
         .unwrap_or_default()
 }
 
+/// THE ENEMIES A REQUEST BRINGS WITH IT, beside the published roster.
+///
+/// A custom enemy is a CUSTOM in the sense `AGENTS.md` gives the word: a thing
+/// the player MADE, which the other modules consume — here, an entry in the
+/// scenario's enemy list. It exists only on the machine that made it, so it
+/// travels inline exactly as a riven does, and for the same reason: the server
+/// has never heard of it and a share link has to carry it or lie.
+///
+/// It is the SAME TYPE as a published unit (`EnemySpec`) rather than a reduced
+/// one, so nothing downstream learns that an enemy can be homemade — level
+/// scaling, the vulnerability column, body parts, Eximus legality and the
+/// target card all read the one shape they already read.
+///
+/// A BROKEN ONE IS AN ERROR, not a silent fallback to the default target: the
+/// number a fight produces is meaningless if the target was quietly not the
+/// one asked for.
+fn custom_enemies(v: &Value) -> Result<Vec<wfsim_engine::enemy_data::EnemySpec>, String> {
+    let Some(arr) = v.get("custom_enemies").and_then(|a| a.as_array()) else {
+        return Ok(Vec::new());
+    };
+    let published = enemies();
+    let mut out: Vec<wfsim_engine::enemy_data::EnemySpec> = Vec::new();
+    for e in arr {
+        let spec: wfsim_engine::enemy_data::EnemySpec =
+            serde_json::from_value(e.clone()).map_err(|err| format!("custom enemy: {err}"))?;
+        if spec.body_parts.is_empty() {
+            return Err(format!("{}: an enemy needs at least one body part", spec.name));
+        }
+        // A CUSTOM MAY NOT WEAR A PUBLISHED ID. The id is what a scenario, a
+        // board row and a share link name, so one that shadows `thrax_centurion`
+        // would silently redefine the fight every ruler is measured under.
+        if published.iter().any(|p| p.id == spec.id) || out.iter().any(|p| p.id == spec.id) {
+            return Err(format!("{} is already an enemy id", spec.id));
+        }
+        // Built here and thrown away: it is the one place that reports a bad
+        // damage-type name or an impossible multiplier, and a request is the
+        // only moment anyone can be told.
+        spec.target_params(1, false, false, TargetMode::InstantRespawn)?;
+        out.push(spec);
+    }
+    Ok(out)
+}
+
 /// Which riven stat pool a weapon draws from: the NARROWEST of its mod pools
 /// that actually has one.
 ///
@@ -937,6 +980,24 @@ pub fn meta_json() -> Value {
         })
         .collect();
 
+    // THE VULNERABILITY COLUMNS, so an enemy a player BUILDS can name a
+    // faction and be shown what that faction means. The table is the whole of
+    // what a faction does to incoming damage, and a copy of it in the UI would
+    // be a second source for a number the engine already owns.
+    let factions: Vec<Value> = wfsim_engine::factions_data::keys()
+        .into_iter()
+        .map(|k| {
+            json!({
+                "id": k,
+                "modifiers": wfsim_engine::factions_data::column(k)
+                    .listed()
+                    .into_iter()
+                    .map(|(t, m)| json!({ "type": t.name(), "mult": m }))
+                    .collect::<Vec<_>>(),
+            })
+        })
+        .collect();
+
     // Arcanes: every slot found under data/arcanes/ (secondary today,
     // primary next), each entry TAGGED with its slot so the picker can show
     // only the ones a weapon can equip. Per-rank effect lines come from the
@@ -991,6 +1052,7 @@ pub fn meta_json() -> Value {
             .map(|c| (c.to_string(), json!(mods_json(&wfsim_engine::mods_data::class_pool(c)))))
             .collect::<serde_json::Map<String, Value>>(),
         "enemies": enemies,
+        "factions": factions,
         // WARFRAME ABILITY BUFFS, the catalogue the scenario's own section
         // draws from (`data/abilities/`). `value` and `duration_s` are the
         // wiki's max-rank figures at 100% strength; the page multiplies by the
@@ -3112,6 +3174,10 @@ pub(crate) struct Fight {
     pub(crate) run_cycle: bool,
     /// The single form to fire (the cycle's Incarnon half when cycling).
     pub(crate) single_form: &'static str,
+    /// The target's display NAME, resolved once. A second lookup would go to
+    /// the published roster, which has never heard of an enemy the player
+    /// built — so a custom target reported its own id as its name.
+    pub(crate) enemy_name: String,
     /// The MODE asked for, resolved to one this weapon has. The optimizer reads
     /// it as the fallback for a request that names no mode axis. It replaced
     /// `form` and `untransformed_id`, which the optimizer was the only reader
@@ -3124,7 +3190,6 @@ pub(crate) struct Fight {
     /// it as the fallback for a request that names no mode axis, so "the mode
     /// a simulate would run" and "the mode a search runs" are one answer.
     pub(crate) mode: String,
-    pub(crate) enemy_id: String,
     pub(crate) level: u32,
     pub(crate) steel_path: bool,
     /// Is the target its ELITE variant? A property of the fight, like the
@@ -3435,7 +3500,14 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // what a sniper is.
     let abilities = wfsim_engine::abilities_data::resolve(&picks, strength, wfsim_engine::weapons_data::spec(&info.id).map_or("", |s| s.class.as_str()));
 
-    let specs = enemies();
+    // The published roster PLUS whatever this request brought with it. A
+    // custom shadows nothing (`custom_enemies` refuses a published id), so the
+    // order here decides nothing — it is one list.
+    let mut specs = enemies();
+    match custom_enemies(v) {
+        Ok(extra) => specs.extend(extra),
+        Err(e) => return Err(err_json(e)),
+    }
     let Some(spec) = specs.iter().find(|e| e.id == enemy_id) else {
         return Err(err_json(format!("unknown enemy: {enemy_id}")));
     };
@@ -3481,7 +3553,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         run_cycle,
         single_form,
         mode: mode_id,
-        enemy_id: enemy_id.to_string(),
+        enemy_name: spec.name.clone(),
         level,
         steel_path,
         eximus,
@@ -3508,7 +3580,7 @@ pub fn simulate_json(v: &Value) -> Value {
     };
     let Fight {
         info, policy, buff_cfg, arena, evos, run_cycle, single_form,
-        enemy_id, level, steel_path, eximus, tenno, infinite_ammo, runs, seed,
+        enemy_name, level, steel_path, eximus, tenno, infinite_ammo, runs, seed,
         frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
     } = fight;
     let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
@@ -3561,7 +3633,6 @@ pub fn simulate_json(v: &Value) -> Value {
     // ---- enemy / target ----
     // The target's pools, for the report. Read off the arena rather than kept
     // beside it: one target, one place it lives.
-    let specs = enemies();
     let (og, sh, hp, ar) = (
         arena.target.overguard(),
         arena.target.max_shield(),
@@ -3897,7 +3968,7 @@ pub fn simulate_json(v: &Value) -> Value {
         },
         "forma": forma,
         "target": {
-            "name": s_name(&specs, &enemy_id),
+            "name": enemy_name,
             "level": level,
             "steel_path": steel_path,
             // What was actually fought, not what was asked for — the default
@@ -3912,13 +3983,6 @@ pub fn simulate_json(v: &Value) -> Value {
     })
 }
 
-fn s_name(specs: &[EnemySpec], id: &str) -> String {
-    specs
-        .iter()
-        .find(|e| e.id == id)
-        .map(|e| e.name.clone())
-        .unwrap_or_else(|| id.to_string())
-}
 // All buffs the scope could produce (union over every fixed/search mod + every
 // searched arcane + the weapon passive) — the optimizer's buff panel enumerates
 // over the WHOLE scope, not one build. `apply_buff_config` applies each per
@@ -4571,8 +4635,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // are what the PLAN reports about itself, not decisions it makes.
     let (headshot_pct, duration, level, steel_path) =
         (fight.headshot_pct, fight.duration, fight.level, fight.steel_path);
-    let enemy_id = fight.enemy_id.clone();
-    let specs = enemies();
+    let fight_enemy_name = fight.enemy_name.clone();
 
 
     // Assembled ENTIRELY from the fight — no field is re-read from the request
@@ -4614,7 +4677,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         finalists,
         headshot_pct,
         duration,
-        target_name: s_name(&specs, &enemy_id),
+        target_name: fight_enemy_name,
         level,
         steel_path,
         threads: v
