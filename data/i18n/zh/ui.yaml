@@ -124,6 +124,12 @@ ui:
   "Submit": 提交
   "Not now": 暂不
   "builds you run here are submitted": 你在这里跑的配装会被提交
+  # WHEN a run reaches the board, not just whether it was sent — the two are
+  # twenty minutes apart and a player who does not know that concludes it failed.
+  "A run appears on the board within about 20 minutes, at most 40 — it is re-scored on a schedule, not the instant you send it.": 一次跑分大约 20 分钟内会出现在榜上，最多 40 分钟——榜单是按固定节奏重算的，不是你一提交就立刻更新。
+  "the board only measures its own fight — runs under a scenario of your own are yours alone, and nothing is sent": 榜单只测它自己那场仗——你用自己的场景跑出来的结果只属于你，不会上传
+  "sent — the board re-scores every 20 minutes, so it appears there within about 20, at most 40": 已上传——榜单每 20 分钟重算一次，所以大约 20 分钟内会出现，最多 40 分钟
+  "builds you run here are submitted — the board re-scores every 20 minutes, so a run appears there within about 20, at most 40": 你在这里跑的配装会上传——榜单每 20 分钟重算一次，所以一次跑分大约 20 分钟内会出现在榜上，最多 40 分钟
   "nothing is sent from here": 这里不会发送任何内容
   "could not reach the board — nothing was sent": 联系不上榜单 —— 什么都没有发出
   "stop submitting": 停止提交

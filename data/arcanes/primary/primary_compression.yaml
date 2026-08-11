@@ -28,8 +28,13 @@ effects:
   # 0.8 x radius x 100% - Acceltra 4.0 -> +320%, Kuva Bramma 8.3 -> +664%,
   # Miter 0.2 -> +16%, Vectis 0.1 -> +8%.
   #
-  # TWO more things are PER WEAPON ATTACK, from the wiki table, not derivable
-  # from the arcane (same shape as CoBehavior):
+  # SIX things are PER WEAPON ATTACK, not two — the full table is transcribed in
+  # docs/CATALOGS.md §2 and the variation is wider than "multiplies or adds":
+  # effectiveness is 4% on the Vectis pair and 127% on the Trumna's alt-fire,
+  # the Battacor is a Constant Check where everything else snapshots, several
+  # weapons never lose the radius they are paid for, two ignore Firestorm
+  # entirely, and the Simulor's effectiveness moves with MULTISHOT. The two
+  # below are only the first two (same shape as CoBehavior):
   #  - the stacking class: Multiplies / Adds / Both. "On projectile weapons the
   #    damage bonus is multiplicative to other damage bonus sources" is the
   #    common case, but Ambassador, Battacor, Ferrox, Opticor, Trumna and the

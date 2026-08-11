@@ -7439,9 +7439,19 @@ async function offerBoardSubmit() {
 function renderBoardConsent() {
   const box = $("board-consent");
   if (!box) return;
-  const on = officialScenarioActive() && !officialBuildActive();
-  box.hidden = !on;
-  if (!on) return;
+  // TWO REASONS NOTHING IS SENT, and they used to collapse into one silence.
+  // A board ROW explains itself elsewhere ("it is already a row on the board"),
+  // but a player on their OWN fight got no box at all — so someone who built a
+  // scenario, ran it, and watched the board never learn why nothing appeared
+  // (player report via the owner, 2026-08-10).
+  if (officialBuildActive()) { box.hidden = true; return; }
+  if (!officialScenarioActive()) {
+    box.hidden = false;
+    box.innerHTML = `<span class="board-state">${escHtml(
+      tr("the board only measures its own fight — runs under a scenario of your own are yours alone, and nothing is sent"))}</span>`;
+    return;
+  }
+  box.hidden = false;
   const c = boardConsent();
   // THE FLOOR IS A SUFFIX, NOT A REPLACEMENT. While the build is half-built the
   // standing policy is still the thing a reader most needs to know — replacing
@@ -7466,13 +7476,28 @@ function renderBoardConsent() {
     box.innerHTML =
       `<b>${escHtml(tr("Runs here are added to the official board."))}</b> ` +
       escHtml(tr("What is sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself). The board takes a weapon built as far as it goes: every main slot filled, exilus not counted.")) +
+      // WHEN, on the FIRST visit too — this is the branch a new player reads,
+      // and it is the one that was silent about the twenty minutes. Saying it
+      // only after the consent had been chosen told the fact to everyone except
+      // the person meeting the board for the first time.
+      ` ${escHtml(tr("A run appears on the board within about 20 minutes, at most 40 — it is re-scored on a schedule, not the instant you send it."))}` +
       floorNote +
       ` <button class="ghost-btn small" id="board-no">${escHtml(tr("don't submit"))}</button>`;
     $("board-no").onclick = () => setBoardConsent("no");
     return;
   }
+  // WHEN, not just whether. A submission is stored the moment it is sent and
+  // the board is re-scored on a schedule, so "sent" and "on the board" are
+  // twenty minutes apart — long enough that a player concludes it failed. The
+  // number is the workflow's own: three runs an hour, and GitHub's scheduler
+  // slips about fifteen minutes whatever minute is named, so the honest bound
+  // is "usually 20, sometimes 40".
   const state = c === "yes"
-    ? (boardState === "failed" ? tr("could not reach the board — nothing was sent") : tr("builds you run here are submitted"))
+    ? (boardState === "failed"
+        ? tr("could not reach the board — nothing was sent")
+        : boardState === "sent"
+          ? tr("sent — the board re-scores every 20 minutes, so it appears there within about 20, at most 40")
+          : tr("builds you run here are submitted — the board re-scores every 20 minutes, so a run appears there within about 20, at most 40"))
     : tr("nothing is sent from here");
   box.innerHTML =
     `<span class="board-state">${escHtml(state)}</span>` + floorNote + ` ` +

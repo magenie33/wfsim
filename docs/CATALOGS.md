@@ -88,36 +88,57 @@ Damage and +35.75% Ammo Efficiency."*
 
 > Weapon | Effectiveness | Base Radius | Max Damage Bonus @ Base Radius | Stacking Behavior | Notes
 
-### Rows carried
+### SIX AXES, not one
 
-| weapon / attack | effectiveness | base radius | max bonus | stacking | notes |
+This table is why the arcane is not a formula with a weapon stat in it. Every
+one of these varies independently, and the first four cannot be derived from
+anything the weapon's own data says:
+
+1. **Stacking** — `Multiplies` is the common case, but a real minority `Adds`
+   (Ambassador, Battacor, Ferrox, Opticor, Trumna, and every Braton/Burston
+   Incarnon), and the Trumna's alt-fire is `Both`.
+2. **Effectiveness is not a flag.** Mostly 100% or 0%, but the Vectis pair are
+   **4%** ("uses embed radial instead of headshot explosion") and the Trumna's
+   alt-fire is **127%** ("Merged; Alt-Fire gains damage from primary fire's
+   radius plus a unique multiplier from alt-fire's radius").
+3. **When it is evaluated** — most rows say `Snapshot`; the Battacor says
+   `Constant Check`.
+4. **Which radius is even reduced.** Several weapons collect the bonus while
+   paying nothing: the Torid's *"cloud radius is not reduced"*, the Alternox's
+   pulse, Penta's napalm, the Simulor's singularity, Ferrox's pull.
+5. **Radius mods may not apply at all** — the Shedu and both Trumnas:
+   *"Primary Fire AoE not affected by Firestorm."*
+6. **Multishot can change it.** The Simulor's effectiveness *decreases* with
+   multishot (83%, 71%, 63%, 56%) and recovers with Primed Firestorm.
+
+Plus a class of rows that are not about the arcane at all: *"Shotguns cannot
+equip"*, *"Archguns cannot equip"*, *"Exalted weapon cannot equip Arcanes"*.
+Those are EQUIP rules, and if the first is real it belongs in the arcane's pool
+rather than in this table — our engine has never restricted a primary arcane by
+weapon class, so it is an open question rather than a transcription.
+
+### Rows the ROSTER carries
+
+Only ours, so this stays diffable. The full table lives on the wiki.
+
+| our entry | eff | base radius | max bonus | stacking | note |
 | --- | --- | --- | --- | --- | --- |
-| Shedu | 100% | 6.6 m | **+528%** | Multiplies | "Primary Fire AoE not affected by Firestorm; Cannot use reload pulse radial." |
-| Torid — Toxin Cloud | 100% | 3.0 m | +240% | Multiplies | "Cloud radius is not reduced." |
-| Torid — Incarnon Form + AoE | 0% | 2.3 m | — | — | "Doesn't Work" |
+| Shedu | 100% | 6.6 m | +528% | Multiplies | AoE **not affected by Firestorm**; cannot use the reload pulse radial |
+| Torid — Toxin Cloud | 100% | 3.0 m | +240% | Multiplies | cloud radius **not reduced** — pays nothing, collects everything |
+| Torid — Incarnon | 0% | 2.3 m | — | Doesn't Work | the continuous-beam exclusion |
+| Braton / Prime / Vandal / Mk1 — Incarnon | 100% | 3.0 m | +240% | **Adds** | |
+| Burston / Prime — Incarnon | 100% | 2.0 m | +160% | **Adds** | |
+| Gorgon / Prisma / Wraith — Incarnon | 100% | 5.0 m | +400% | Multiplies | |
+| Latron / Prime — Incarnon | 100% | 4.0 m | +320% | Multiplies | |
+| Miter — charged shot | 100% | 0.2 m | +16% | Multiplies | "wide projectile, not traditional AoE" |
+| Miter — Incarnon | 100% | 3.0 m | +240% | Multiplies | |
+| Strun / Prime / Wraith — Incarnon | 100% | 4.0 m | +320% | Multiplies | "Shotguns cannot equip" |
+| Phantasma / Prime — Alt-Fire | 100% | 4.8 m | +384% | Multiplies | "Shotguns cannot equip"; bomblets do not benefit |
+| Vectis / Prime — Incarnon | **4%** | 0.1 m | +8% | N/A | uses the embed radial, not the headshot explosion |
+| Larkspur Prime | Untested / 0% | 9.6 m | — | — | "Archguns cannot equip" |
 
 **General exclusion, verbatim:** *"Does not work on Continuous Weapons or beam
 attacks with an AoE component. For example, Ignis or Torid Incarnon Genesis."*
-
-### Two fields this needs, and they are per WEAPON ATTACK
-
-Neither is derivable from the arcane, which is the same shape `co_behavior` has:
-
-1. **Effectiveness / does it work at all** — a long tail of 0% rows, plus the
-   continuous-beam exclusion.
-2. **Stacking class** — Multiplies is the common case on projectile weapons;
-   *Ambassador, Battacor, Ferrox, Opticor, Trumna and the Braton/Burston
-   Incarnons ADD.*
-
-### And one thing the Shedu's row makes the engine wrong about today
-
-*"Primary Fire AoE not affected by Firestorm."* The engine multiplies EVERY
-radial's radius by the blast-radius bucket
-(`radius_m: r.radius_m * (1.0 + br)`), so a Shedu carrying Firestorm gets a
-bigger explosion here than in game. It changes no damage in a single-target
-arena — until this arcane is modelled, at which point it changes the bonus by
-44%. A `radius_takes_blast_mods: false` on the radial is the fix, and it has to
-land BEFORE the arcane does.
 
 ### Status
 
