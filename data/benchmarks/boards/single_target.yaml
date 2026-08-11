@@ -2950,6 +2950,12 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: prisma_angstrum
     mode: cycle
+    score: 13.333431144825507
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
+    arcanes: [secondary_encumber]
+  - weapon: prisma_angstrum
+    mode: cycle
     score: 12.228425065731273
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, accelerated_isotope, magnetic_might, primed_heated_charge]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
