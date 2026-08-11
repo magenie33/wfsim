@@ -195,6 +195,30 @@ ui:
   "Warframe ability": 战甲技能
   "beam ramp": 光束爬升
   "multishot-generated": 多重射击生成
+  Pace: 节奏
+  "what a room-clear is paced by, as opposed to a long fight": 清房间的节奏，而不是一场长仗的节奏
+  "Burst DPS": 爆发 DPS
+  "Sustained DPS": 持续 DPS
+  "while firing": 扣着扳机时
+  "reloads included": 含换弹
+  "Time to first kill": 首杀耗时
+  median: 中位
+  "runs killed": 场有击杀
+  "nothing died": 没有击杀
+  "First magazine": 第一个弹匣
+  "before the first reload": 第一次装填前
+  "Biggest hit": 单发最高
+  "best run": 最好的一场
+  typical: 通常
+  "Per shot": 每次射击
+  "per pellet": 每弹丸
+  "Not firing": 未开火
+  "reloads and transforms": 换弹与变身
+  "Every hit, sorted": 每一次命中，分类
+  "mean damage per hit and how often it happened — an impossible number hides in an average": 每类命中的平均伤害与出现频率 —— 不可能的数字会藏在平均值里
+  body: 身体
+  head: 头部
+  Detail: 明细
   Finalists: 优胜名额
   "how it is played — pool = searched, req = pin one": 怎么打 —— pool = 纳入搜索，req = 钉死一个
   "Final-round runs": 最终轮次数

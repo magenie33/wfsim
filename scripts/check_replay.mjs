@@ -29,7 +29,10 @@ const r = await evaluate(`(async () => {
   if (!document.getElementById('rp-scrub')) {
     return { fail: true, resultsHtml: (document.getElementById('sim-results')||{}).innerHTML?.slice(0,300) };
   }
-  const rows=[...document.querySelectorAll('.rp-row')].map(e=>({
+  // THE BUFF SIDE ONLY. The target debuffs draw with the same component and the
+  // same class since 2026-08-11 — they are told apart by which side of the
+  // fight they came from, which is what data-buff says.
+  const rows=[...document.querySelectorAll('.rp-row[data-buff]')].map(e=>({
     name:e.querySelector('.rp-name').textContent,
     stat:e.querySelector('.rp-stat').textContent,
     now:e.querySelector('.rp-now').textContent,
@@ -46,10 +49,19 @@ const r = await evaluate(`(async () => {
   // ...and the replay BELOW everything it drives.
   const res = document.querySelector('#sim-results .results');
   const kids = [...res.children].map(e=>e.tagName+'.'+(e.className||''));
-  const iBar = [...res.children].findIndex(e=>e.classList.contains('rp-bar'));
-  const iMeter = [...res.children].findIndex(e=>e.classList.contains('meter'));
-  const iTable = [...res.children].findIndex(e=>e.classList.contains('stat-table'));
-  const iRow = [...res.children].findIndex(e=>e.classList.contains('rp-row'));
+  // ORDER IN THE DOCUMENT, not among the direct children: every block folds
+  // now, so most of them sit one level down inside a fold wrapper. What is
+  // being asserted is where things READ, and that is document order.
+  const pos = (sel) => {
+    const el = res.querySelector(sel);
+    if (!el) return -1;
+    const all = [...res.querySelectorAll('*')];
+    return all.indexOf(el);
+  };
+  const iBar = pos('.rp-bar');
+  const iMeter = pos('.meter');
+  const iTable = pos('.stat-table');
+  const iRow = pos('.rp-row');
 
   // Rewind to the very start: the panel must read as a fight that has not
   // happened yet.

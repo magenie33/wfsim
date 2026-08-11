@@ -240,6 +240,24 @@ around (decision 2026-07-31).
   roar 和 roar（helminth），那就选择生效当前最强的" — the difference between
   +50% and +80% is a number you have to be told), that the optimizer shows the
   same buffs read-only, and — the negative control — that no RULER carries one.
+  `node scripts/check_pace_and_hits.mjs` is the TWENTY-FIFTH: what a ROOM-CLEAR
+  is paced by, where an IMPOSSIBLE NUMBER hides, and the fact that every block
+  FOLDS. `dps` is the whole engagement with its reloads in it — the honest
+  number for a long fight and the wrong one for a room — so burst DPS is the
+  same damage over the time the trigger was actually down, and the check
+  RECOMPUTES it rather than trusting it. Beside it: time to the first kill with
+  its spread (a mean alone reads as a promise), the opening magazine, the
+  biggest single instance, damage per shot and per pellet. The HISTOGRAM is the
+  other half — every hit sorted by crit tier and body part, because the same
+  damage spread over "one in twelve hits did 40x" and "every hit did 3.3x" reads
+  identically as an average and is two different weapons, only one of them a
+  bug; its counts have to add up to the pellets that were fired. And every block
+  folds and REMEMBERS across a re-render and a reload (owner, 2026-08-11: "每个
+  小块都应该支持可伸缩") — a panel that re-opens everything on every Run Sim is
+  a panel you re-close on every Run Sim, so the state lives outside the markup.
+  It caught a real one on the way in: the opening window never closed on a
+  weapon that TRANSMUTES instead of reloading, because it was recorded at the
+  reload rather than at the refill.
   `node scripts/check_hit_account.mjs` is the TWENTY-FOURTH: THE ACCOUNT OF ONE
   HIT HAS TO MULTIPLY OUT. Every other number the sim reports is an aggregate,
   and an aggregate hides an error inside an average — a factor applied twice, or

@@ -1217,3 +1217,20 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .acct-t td.mul{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;padding-left:12px}
 .acct-t tr.base td,.acct-t tr.sum td{font-weight:600}
 .acct-t tr.sum td{border-top:1px solid var(--line)}
+
+/* A BLOCK FOLDS. The caret turns, the body goes; the heading stays so the page
+   keeps its shape and you can find the thing you closed. */
+.fold>.fold-h{cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px}
+.fold>.fold-h .fold-c{display:inline-block;transition:transform .12s;color:var(--muted);font-size:11px}
+.fold.shut>.fold-h .fold-c{transform:rotate(-90deg)}
+.fold.shut>.fold-b{display:none}
+/* EVERY HIT, SORTED. Tabular figures, because the whole point is comparing a
+   column down its length. */
+.hits{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+.hits th{text-align:right;color:var(--muted);font-weight:500;font-size:11px;padding:2px 0 4px}
+.hits th:first-child{text-align:left}
+.hits td{text-align:right;padding:3px 0;border-top:1px solid var(--line)}
+.hits td:first-child{text-align:left;color:var(--muted)}
+.hits td.z{color:var(--muted)}
+.hits .ct{display:block;font-size:10px;color:var(--muted)}
+.kpi .ksub{font-size:10px;color:var(--muted)}

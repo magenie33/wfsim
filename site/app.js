@@ -8367,6 +8367,104 @@ const REPLAY_SPEEDS = [1, 2, 5, 20];
 const rpCap = (b) => (b.uncapped ? "∞" : b.max);
 let replayState = null; // { data, i, playing, speed, raf }
 
+// ---- EVERY BLOCK FOLDS -------------------------------------------------
+//
+// The result panel grew from one number to nine blocks, and not every reader
+// wants all nine every time (owner, 2026-08-11: "每个小块都应该支持可伸缩").
+// So a block is a heading you can click, and it REMEMBERS — per block, across
+// runs and reloads, because a panel that re-opens everything on every Run Sim
+// is a panel you have to re-close on every Run Sim.
+//
+// The state lives outside the markup, which is what lets `renderResults`
+// rebuild the whole panel without losing what you folded.
+let foldState = {};
+try { foldState = JSON.parse(localStorage.getItem("wfsim-folds")) || {}; } catch (_) {}
+const saveFolds = () => localStorage.setItem("wfsim-folds", JSON.stringify(foldState));
+const folded = (id) => foldState[id] === true;
+
+/// One collapsible block: a heading, an optional hint, and a body.
+function foldBlock(id, title, hint, body) {
+  const shut = folded(id);
+  return `<div class="fold${shut ? " shut" : ""}" data-fold="${escHtml(id)}">
+    <h3 class="fold-h"><span class="fold-c">▾</span>${escHtml(title)}${
+      hint ? ` <span class="sim-hint">${escHtml(hint)}</span>` : ""}</h3>
+    <div class="fold-b">${body}</div>
+  </div>`;
+}
+
+/// Wire every block on the page. Called once per render, and delegated from the
+/// heading rather than the whole block, so a click inside the body — a scrub
+/// bar, a mod row — never folds the thing it is inside.
+function wireFolds(root) {
+  (root || document).querySelectorAll(".fold > .fold-h").forEach((h) => {
+    h.onclick = () => {
+      const box = h.parentElement;
+      const id = box.dataset.fold;
+      const shut = !box.classList.contains("shut");
+      box.classList.toggle("shut", shut);
+      foldState[id] = shut;
+      saveFolds();
+    };
+  });
+}
+
+// ---- WHAT A SPEEDRUNNER READS ------------------------------------------
+//
+// `dps` is the whole engagement, reloads included, which is the honest number
+// for a long fight and the wrong one for a room. These are the others: the rate
+// while the trigger is actually down, how long the first body takes to fall,
+// what the magazine you walked in with was worth, and the biggest single number
+// the build can produce.
+function speedMarkup(r) {
+  if (!r || r.burst_dps == null) return "";
+  const n = (x) => Math.round(x || 0).toLocaleString();
+  const secs = (x) => `${(x || 0).toFixed(2)}s`;
+  const ttk = r.ttk || {};
+  const cell = (k, v, sub) =>
+    `<div class="kpi"><div class="kv">${v}</div><div class="kl">${escHtml(tr(k))}</div>${
+      sub ? `<div class="ksub">${escHtml(sub)}</div>` : ""}</div>`;
+  const body = `<div class="kpi-row">
+    ${cell("Burst DPS", n(r.burst_dps), tr("while firing"))}
+    ${cell("Sustained DPS", n(r.dps), tr("reloads included"))}
+    ${ttk.runs ? cell("Time to first kill", secs(ttk.median),
+        `${tr("median")} · P90 ${secs(ttk.p90)} · ${ttk.runs}/${r.runs} ${tr("runs killed")}`)
+      : cell("Time to first kill", "—", tr("nothing died"))}
+    ${cell("First magazine", n(r.first_magazine), tr("before the first reload"))}
+    ${cell("Biggest hit", n(r.max_hit), `${tr("best run")} · ${n(r.mean_max_hit)} ${tr("typical")}`)}
+    ${cell("Per shot", n(r.damage_per_shot), `${n(r.damage_per_pellet)} ${tr("per pellet")}`)}
+    ${cell("Not firing", secs(r.downtime), tr("reloads and transforms"))}
+  </div>`;
+  return foldBlock("speed", tr("Pace"), tr("what a room-clear is paced by, as opposed to a long fight"), body);
+}
+
+// ---- EVERY HIT, SORTED BY WHAT IT WAS ----------------------------------
+//
+// A mean is where an impossible number goes to hide. The same damage spread
+// over "one in twelve hits did 40x" and "every hit did 3.3x" reads identically
+// as an average and is two completely different weapons — and only one of them
+// is a bug.
+function hitTableMarkup(r) {
+  const hits = r && r.hits;
+  if (!hits || !hits.length) return "";
+  const n = (x) => Math.round(x || 0).toLocaleString();
+  const TIERS = ["no crit", "crit", "red crit"];
+  const total = hits.flat().reduce((a, b) => a + b.count, 0);
+  if (!total) return "";
+  const row = (label, cells) =>
+    `<tr><td>${escHtml(label)}</td>${cells.map((c) => {
+      if (!c.count) return `<td class="z">—</td>`;
+      return `<td><b>${n(c.damage / c.count)}</b><span class="ct">${
+        n(c.count)} · ${((c.count / total) * 100).toFixed(1)}%</span></td>`;
+    }).join("")}</tr>`;
+  const body = `<table class="hits">
+    <tr><th></th>${TIERS.map((t) => `<th>${escHtml(tr(t))}</th>`).join("")}</tr>
+    ${row(tr("body"), hits[0])}
+    ${row(tr("head"), hits[1])}
+  </table>`;
+  return foldBlock("hits", tr("Every hit, sorted"),
+    tr("mean damage per hit and how often it happened — an impossible number hides in an average"), body);
+}
+
 // ---- THE ACCOUNT OF ONE HIT --------------------------------------------
 //
 // Every other number on this page is an aggregate, and an aggregate hides an
@@ -8410,9 +8508,9 @@ function hitAccountsMarkup(r) {
       </table>
     </div>`;
   }).join("");
-  return `<h3>${escHtml(tr("The account of one hit"))} <span class="sim-hint">${
-    escHtml(tr("every factor, in the order the engine applies them — the product is what the meter counted"))}</span></h3>
-    <div class="accts">${rows}</div>`;
+  return foldBlock("accounts", tr("The account of one hit"),
+    tr("every factor, in the order the engine applies them — the product is what the meter counted"),
+    `<div class="accts">${rows}</div>`);
 }
 
 function replayMarkup(r) {
@@ -8532,13 +8630,13 @@ function replayMarkup(r) {
         <span id="rp-clock" class="rp-clock">${rp.t[rp.t.length - 1].toFixed(0)}s / ${rp.t[rp.t.length - 1].toFixed(0)}s</span>
       </div>
       <div class="rp-pools" id="rp-pools"></div>`;
-  const curves = `
-      <h3>${escHtml(tr("Buff coverage"))} <span class="sim-hint">${escHtml(tr("live stacks through the engagement"))}</span></h3>
-      ${rows}` + (dRows
-    ? `
-      <h3>${escHtml(tr("Debuff coverage"))} <span class="sim-hint">${escHtml(tr("what was on the target — a respawn is the same target, so its stacks drop to zero and climb again"))}</span></h3>
-      ${dRows}`
-    : "");
+  const curves =
+    foldBlock("buffs", tr("Buff coverage"), tr("live stacks through the engagement"), rows)
+    + (dRows
+      ? foldBlock("debuffs", tr("Debuff coverage"),
+          tr("what was on the target — a respawn is the same target, so its stacks drop to zero and climb again"),
+          dRows)
+      : "");
   return { bar, curves };
 }
 
@@ -8897,10 +8995,10 @@ function renderResults(r, testedAt) {
       <div class="hero"><div><div class="hero-num" data-hero="${byDps ? "dps" : "kpm"}">${heroNum}<span class="hero-unit">${heroUnit}</span></div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
       ${replayBar}
       <div class="kpi-row">${kpis}</div>
-      <h3>${tr("Damage by source")}</h3>
-      <div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}${hitAccountsMarkup(r)}${chart}${replayCurves}
-      <h3>Detail</h3>
-      <div class="stat-table">${detail}</div>
+      ${foldBlock("meter", tr("Damage by source"), "",
+        `<div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}`)}
+      ${speedMarkup(r)}${hitTableMarkup(r)}${hitAccountsMarkup(r)}${chart}${replayCurves}
+      ${foldBlock("detail", tr("Detail"), "", `<div class="stat-table">${detail}</div>`)}
     </div>`;
   // Meter rows that carry a per-type split toggle theirs. The choice is kept
   // across runs — a player who opened Direct hits wants it open on the next
@@ -8917,6 +9015,7 @@ function renderResults(r, testedAt) {
         .forEach((c) => { c.hidden = !open; });
     });
   });
+  wireFolds();
   wireReplay(r);
   // Chart hover: crosshair + tooltip on the nearest time bucket.
   const wrap = $("sim-results").querySelector(".tl-wrap");

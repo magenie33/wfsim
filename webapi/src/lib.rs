@@ -3978,6 +3978,26 @@ pub fn simulate_json(v: &Value) -> Value {
         "crit_tier": m.crit_tier_sum as f64 / pel,
         "headshot_rate": m.headshots as f64 / pel,
         "procs": m.procs,
+        // THE SPEEDRUN SET. `dps` is the whole engagement; `burst_dps` is the
+        // same damage over the time the weapon was actually firing, which is
+        // what a room-clear is paced by. TTK carries its spread because a mean
+        // alone reads as a promise.
+        "burst_dps": s.burst_dps,
+        "downtime": s.mean_downtime,
+        "ttk": { "mean": s.ttk_mean, "median": s.ttk_median, "p90": s.ttk_p90, "runs": s.ttk_runs },
+        "first_magazine": s.mean_first_magazine,
+        "max_hit": s.max_hit,
+        "mean_max_hit": s.mean_max_hit,
+        "damage_per_shot": s.damage_per_shot,
+        "damage_per_pellet": s.damage_per_pellet,
+        // EVERY HIT SORTED BY WHAT IT WAS — [head][tier], tier capped at 2.
+        // PER RUN, like `shots` and `pellets` beside it — the counts are summed
+        // over every run in the engine, and a payload that mixes per-run and
+        // total numbers is one a reader has to remember the units of.
+        "hits": (0..2).map(|row| (0..3).map(|col| json!({
+            "count": s.hit_count[row][col] as f64 / s.runs.max(1) as f64,
+            "damage": s.hit_damage[row][col] / s.runs.max(1) as f64,
+        })).collect::<Vec<_>>()).collect::<Vec<_>>(),
         "field_ticks": m.field_ticks,
         "damage_sources": damage_sources,
         "timeline": m.timeline.0[..nb].to_vec(),

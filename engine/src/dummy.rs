@@ -2277,6 +2277,19 @@ impl DummyParams {
     }
 }
 
+/// THE FIRST KILL IS A TIME, and it is recorded wherever a kill is counted —
+/// seven places, because damage lands from seven kinds of source. One method so
+/// the two can never disagree: a site that counts a kill and forgets the clock
+/// would leave `first_kill_at` reading like a weapon that never killed.
+impl RunResult {
+    fn note_kills(&mut self, killed: u32, at: f64) {
+        if killed > 0 && self.first_kill_at.is_none() {
+            self.first_kill_at = Some(at);
+        }
+        self.kills += killed;
+    }
+}
+
 #[cfg(test)]
 impl Default for DummyParams {
     /// TEST FIXTURE baseline: Dual Toxocyst base form + Secondary Enervate,
@@ -2530,6 +2543,26 @@ pub struct RunResult {
     pub kill_progress: f64,
     /// Effective damage by source (direct / per-proc-type / arcane).
     pub sources: SourceDamage,
+    /// SECONDS THE WEAPON WAS NOT FIRING because it was reloading or mid
+    /// transform. Burst DPS is the damage over the time that is left, which is
+    /// what a room-clear is actually paced by — a weapon that reloads for a
+    /// third of the fight has two very different numbers and only one of them
+    /// is on the card.
+    pub downtime_secs: f64,
+    /// When the FIRST target died. `None` if none did — an honest absence
+    /// rather than a zero, which would read as "instantly".
+    pub first_kill_at: Option<f64>,
+    /// Effective damage dealt before the first reload started: the opening
+    /// window, which is what decides whether a room dies before it reacts.
+    pub first_magazine_damage: f64,
+    /// The single biggest damage INSTANCE of the run — the number people chase.
+    pub max_hit: f64,
+    /// Every hit sorted by what it was: `[head][tier]`, tier capped at 2 (red
+    /// and above share a bucket, since that is where the multiplier stops
+    /// naming itself). An impossible number stands out in a histogram and
+    /// disappears in a mean.
+    pub hit_count: [[u32; 3]; 2],
+    pub hit_damage: [[f64; 3]; 2],
     /// Effective damage by time bucket (the damage-over-time curve).
     pub timeline: Timeline,
     /// The `Rng` state this run STARTED from. SplitMix64 keeps all of its
@@ -3052,7 +3085,7 @@ fn fire_extra_hits(
         r.sources.extra_hit += eff;
         r.sources.extra_hit_by_type[ty as usize] += eff;
         r.timeline.add(at, eff);
-        r.kills += u32::from(killed);
+        r.note_kills(u32::from(killed), at);
         if let Some(pool) = broke {
             push_break_proc(debuffs, params, at, pool);
         }
@@ -3380,7 +3413,7 @@ fn settle_procs(
                     r.dot_damage += eff;
                     r.sources.add_status(DamageType::Blast, eff);
                     r.timeline.add(at, eff);
-                    r.kills += killed as u32;
+                    r.note_kills(killed as u32, at);
                     if let Some(pool) = broke {
                         push_break_proc(debuffs, params, at, pool);
                     }
@@ -3588,7 +3621,7 @@ fn settle_procs(
             r.sources.arcane_on_status += eff;
             r.sources.arcane_by_type[proc as usize] += eff;
             r.timeline.add(at, eff);
-            r.kills += killed as u32;
+            r.note_kills(killed as u32, at);
             if let Some(pool) = broke {
                 push_break_proc(debuffs, params, at, pool);
             }
@@ -3730,7 +3763,7 @@ fn fire_syndicate_radial(
     r.sources.syndicate += eff;
     r.sources.syndicate_by_type[sy.element as usize] += eff;
     r.timeline.add(at, eff);
-    r.kills += u32::from(killed);
+    r.note_kills(u32::from(killed), at);
     // GUARANTEED, for five of the six — Justice stuns instead of applying
     // Blast, the one place these effects differ in kind rather than in element.
     //
@@ -4027,7 +4060,7 @@ fn field_tick(
     add_by_type(&mut r.sources.field_by_type, &qvec, effective, &col);
     r.timeline.add(at, effective);
     r.field_ticks += 1;
-    r.kills += killed as u32;
+    r.note_kills(killed as u32, at);
     if let Some(pool) = broke {
         push_break_proc(debuffs, params, at, pool);
     }
@@ -4216,7 +4249,7 @@ fn process_ticks(
         r.sources.add_status(src, effective);
         r.timeline.add(now, effective);
         r.dot_ticks += is_dot_tick as u32;
-        r.kills += killed as u32;
+        r.note_kills(killed as u32, now);
         if let Some(pool) = broke {
             push_break_proc(debuffs, params, now, pool);
         }
@@ -4476,6 +4509,14 @@ pub fn run_once_traced(
     // needs, and the only two. `ArcRuntime` has had exactly this pair since the
     // arcanes were written; these are its weapon-side twins.
     let mut rs_armed = false;
+    // THE OPENING WINDOW closes the first time the magazine is refilled, and
+    // that is not always a reload: a weapon that TRANSMUTES instead of
+    // reloading — the Torid, played as its cycle — never performs one in the
+    // base form, and the window would never close at all. Measured 2026-08-11:
+    // 0 reloads in the median run, 4.4 s of downtime, and an opening magazine
+    // reading zero. The refill is the moment, whichever event caused it.
+    let mut opening_closed = false;
+    let mut r = RunResult { rng_state: started_at, ..Default::default() };
     // ROUNDS FIRED SINCE THE MAGAZINE WAS FILLED, which is what says when a
     // BURST completes: Reaver's Rapture wants a full burst, and a burst is
     // `burst.count` consecutive rounds out of one magazine. It restarts with
@@ -4535,6 +4576,10 @@ pub fn run_once_traced(
         () => {
             rs_armed = false;
             rounds_this_mag = 0;
+            if !opening_closed {
+                opening_closed = true;
+                r.first_magazine_damage = r.effective_damage;
+            }
             for (i, b) in params.stacking_buffs.iter().enumerate() {
                 if b.cleared_by == crate::loadout::ClearedBy::MagazineRefilled {
                     buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
@@ -4618,7 +4663,6 @@ pub fn run_once_traced(
         .as_ref()
         .map_or(Vec::new(), |s| vec![s.duration; s.initial_stacks as usize]);
 
-    let mut r = RunResult { rng_state: started_at, ..Default::default() };
 
     // Per-phase precomputation: the quantized vector is static per phase
     // (no dynamic mods); ModdedBase for proc payload formulas stays
@@ -4962,8 +5006,10 @@ pub fn run_once_traced(
                 // same stated reason: the swap refills the base magazine. It
                 // takes the speed if the buff is up and spends it — which is
                 // also why this animation is scaled by reload speed at all.
-                t += rescale_reload(cy.transmute_out_seconds, cy.reload_bucket,
+                let spent = rescale_reload(cy.transmute_out_seconds, cy.reload_bucket,
                     live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t));
+                r.downtime_secs += spent;
+                t += spent;
                 magazine_refilled!();
                 in_base_form = true;
                 charges = 0;
@@ -5007,7 +5053,12 @@ pub fn run_once_traced(
                     }
                 }
                 let rs = live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t);
-                t += live_reload_time(&cy.base_form, params, &mut arc, rs, t);
+                let spent = live_reload_time(&cy.base_form, params, &mut arc, rs, t);
+                // THE OPENING WINDOW closes when the first reload STARTS, which
+                // is here — everything dealt up to this instant is what the
+                // magazine you walked in with was worth.
+                r.downtime_secs += spent;
+                t += spent;
                 magazine_refilled!();
                 r.reloads += 1;
                 if let Some(b) = cy.base_form.fr_on_reload {
@@ -5065,7 +5116,9 @@ pub fn run_once_traced(
             // Every reload this loop performs is a reload from empty — it only
             // reloads when it cannot fire — which is exactly the condition.
             let rs = live_reload_speed(params, params, rs_armed, &mut buff_stacks, t);
-            t += live_reload_time(params, params, &mut arc, rs, t);
+            let spent = live_reload_time(params, params, &mut arc, rs, t);
+            r.downtime_secs += spent;
+            t += spent;
             magazine_refilled!();
             r.reloads += 1;
             if let Some(b) = params.fr_on_reload {
@@ -5866,6 +5919,18 @@ pub fn run_once_traced(
                 );
                 r.total_damage += raw;
                 r.effective_damage += effective;
+                // WHAT KIND OF HIT THAT WAS. Sorted rather than averaged: a
+                // number that cannot happen stands out in a histogram and
+                // disappears in a mean. Tier is capped at 2 because that is
+                // where the multiplier stops naming itself — red and above
+                // share a bucket.
+                let bucket_row = usize::from(part.is_head);
+                let bucket_col = (tier as usize).min(2);
+                r.hit_count[bucket_row][bucket_col] += 1;
+                r.hit_damage[bucket_row][bucket_col] += effective;
+                if effective > r.max_hit {
+                    r.max_hit = effective;
+                }
                 // THE ACCOUNT OF THIS HIT, taken once per attack part and only
                 // while a replay is being traced. Written HERE because this is
                 // the one place every factor exists at the same time — anywhere
@@ -5906,7 +5971,7 @@ pub fn run_once_traced(
                     add_by_type(&mut r.sources.radial_by_type, &qvec, effective, &col);
                 }
                 r.timeline.add(t, effective);
-                r.kills += killed as u32;
+                r.note_kills(killed as u32, t);
                 // EXECUTIONER'S FORTUNE. Rolled HERE and nowhere else, because
                 // this is the only place that knows both halves of its
                 // condition: `head_direct` says the pellet landed in a head,
@@ -6403,8 +6468,10 @@ pub fn run_once_traced(
                     // FULLY RELOADS THE BASE FORM'S MAGAZINE (wiki), so both
                     // transforms are reloads, and the buff is spent by whatever
                     // refills the magazine. Nothing else has to be enumerated.
-                    t += rescale_reload(cy.transmute_seconds, cy.reload_bucket,
+                    let spent = rescale_reload(cy.transmute_seconds, cy.reload_bucket,
                         live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t));
+                    r.downtime_secs += spent;
+                    t += spent;
                     magazine_refilled!();
                     r.transforms += 1;
                     in_base_form = false;
@@ -6641,6 +6708,38 @@ pub struct Summary {
     /// only one of the two that still moves above it.
     pub mean_crit_tier: f64,
     pub mean_headshot_rate: f64,
+    /// WHAT A ROOM-CLEAR IS PACED BY, as opposed to what the card says.
+    ///
+    /// `dps` is the whole engagement including the seconds the weapon was
+    /// reloading or mid transform; this is the same damage over the time it was
+    /// actually firing. A weapon that reloads for a third of the fight has two
+    /// very different numbers and only one of them is on any card.
+    pub burst_dps: f64,
+    /// Seconds a run spent not firing, averaged.
+    pub mean_downtime: f64,
+    /// TIME TO THE FIRST KILL — mean, median and the 90th percentile over the
+    /// runs that killed anything, and how many did. A mean alone would read as
+    /// a promise; the spread is what says whether it is one.
+    pub ttk_mean: f64,
+    pub ttk_median: f64,
+    pub ttk_p90: f64,
+    pub ttk_runs: u32,
+    /// Effective damage dealt before the first reload started: the opening
+    /// window, which is what decides whether a room dies before it reacts.
+    pub mean_first_magazine: f64,
+    /// The biggest single damage instance any run produced — the number people
+    /// chase — and the average of each run's own biggest.
+    pub max_hit: f64,
+    pub mean_max_hit: f64,
+    /// Damage per trigger pull, per multishot instance, and per round of ammo
+    /// spent. The last one is the ammo-economy number: on a weapon with a
+    /// finite reserve it is the whole magazine's worth of a mod.
+    pub damage_per_shot: f64,
+    pub damage_per_pellet: f64,
+    /// EVERY HIT SORTED BY WHAT IT WAS: `[head][tier]`, summed over every run.
+    /// A number that cannot happen stands out here and vanishes in a mean.
+    pub hit_count: [[u32; 3]; 2],
+    pub hit_damage: [[f64; 3]; 2],
     /// Mean effective damage by source (the damage-meter view).
     pub source_damage: SourceDamage,
     /// The complete MEDIAN engagement (by total effective damage). The
@@ -6672,6 +6771,12 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     // what the sim result displays — one real, internally consistent
     // engagement, not a smoothed cross-run average (user, 2026-07-29).
     let mut all_runs: Vec<RunResult> = Vec::with_capacity(runs as usize);
+    // The speedrun set: time not firing, first kills, the opening magazine, the
+    // biggest instance, and the hit histogram.
+    let (mut downtime, mut first_mag, mut max_hit_sum, mut biggest) = (0.0, 0.0, 0.0, 0.0f64);
+    let mut ttks: Vec<f64> = Vec::new();
+    let mut hit_count = [[0u32; 3]; 2];
+    let mut hit_damage = [[0.0f64; 3]; 2];
 
     for _ in 0..runs {
         let r = run_once(params, &mut rng);
@@ -6692,6 +6797,19 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         kill_progress_sq += r.kill_progress * r.kill_progress;
         min_kills = min_kills.min(r.kills);
         max_kills = max_kills.max(r.kills);
+        downtime += r.downtime_secs;
+        first_mag += r.first_magazine_damage;
+        max_hit_sum += r.max_hit;
+        biggest = biggest.max(r.max_hit);
+        if let Some(at) = r.first_kill_at {
+            ttks.push(at);
+        }
+        for row in 0..2 {
+            for col in 0..3 {
+                hit_count[row][col] += r.hit_count[row][col];
+                hit_damage[row][col] += r.hit_damage[row][col];
+            }
+        }
         shots += r.shots as u64;
         pellets += r.pellets as u64;
         crits += r.crits as u64;
@@ -6722,6 +6840,17 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
     let mean = sum / n;
     let variance = (sum_sq / n - mean * mean).max(0.0);
     let total_pellets = pellets.max(1) as f64;
+    let total_shots = shots;
+    // A PERCENTILE OVER WHAT ACTUALLY HAPPENED. Sorted here rather than by the
+    // caller: an unsorted percentile is a number that looks right.
+    ttks.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let pct = |v: &[f64], q: f64| -> f64 {
+        if v.is_empty() {
+            return 0.0;
+        }
+        let i = ((v.len() as f64 - 1.0) * q).round() as usize;
+        v[i.min(v.len() - 1)]
+    };
 
     Summary {
         runs,
@@ -6756,6 +6885,25 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         mean_big_crit_rate: big_crits as f64 / total_pellets,
         mean_crit_tier: crit_tier_sum as f64 / total_pellets,
         mean_headshot_rate: headshots as f64 / total_pellets,
+        burst_dps: {
+            // The time the weapon was NOT reloading, across every run. Guarded
+            // at a hundredth of a second: a run that was reloading the whole
+            // time has no burst to report and must not report infinity.
+            let firing = (params.duration_secs * runs as f64 - downtime).max(1e-2);
+            effective / firing
+        },
+        mean_downtime: downtime / runs as f64,
+        ttk_mean: if ttks.is_empty() { 0.0 } else { ttks.iter().sum::<f64>() / ttks.len() as f64 },
+        ttk_median: pct(&ttks, 0.5),
+        ttk_p90: pct(&ttks, 0.9),
+        ttk_runs: ttks.len() as u32,
+        mean_first_magazine: first_mag / runs as f64,
+        max_hit: biggest,
+        mean_max_hit: max_hit_sum / runs as f64,
+        damage_per_shot: effective / (total_shots as f64).max(1.0),
+        damage_per_pellet: effective / total_pellets,
+        hit_count,
+        hit_damage,
         source_damage: {
             let mut s = sources;
             s.direct /= n;
