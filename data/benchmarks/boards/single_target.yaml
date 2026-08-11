@@ -1176,6 +1176,12 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: furis
     mode: cycle
+    score: 84.91058569713951
+    mods: [pistol_acuity, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_practiced_grip, furis_prelude_of_might]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
     score: 57.25321132057973
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_prelude_of_might]
@@ -2737,6 +2743,16 @@ entries:
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_survivors_edge]
     arcanes: [secondary_encumber]
+  - weapon: shedu
+    mode: base
+    score: 5.676569331446979
+    mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    arcanes: [primary_crux]
+  - weapon: shedu
+    mode: base
+    score: 2.9724768188150605
+    mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, hellfire]
+    arcanes: [primary_crux]
   - weapon: sicarus_prime
     mode: cycle
     score: 20.57495293965973
