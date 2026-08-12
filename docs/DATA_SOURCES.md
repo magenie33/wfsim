@@ -265,6 +265,26 @@ each is cited at its formula in MECHANICS.
 clause that the EN page has none of — see §"The CN wiki is reachable through its
 API, not its pages" for how to read it, and M40 for what it settled.
 
+## The module pages TRUNCATE, and a summariser will fill the gap
+
+`Module:Weapons/data/primary` and `/secondary` are single Lua tables of a few
+hundred KB. Fetched through a summarising reader they arrive CUT OFF — measured
+2026-08-12, the primary reached "Felarx" and the secondary "Hystrix Prime", both
+alphabetical. Asked for a weapon past the cut, the reader answered with
+confident numbers that were not in the content: a Sicarus fire rate of 5 (it is
+3.5) and a Vasto of 3.33 (2.5). Both would have gone into the data.
+
+Two habits come out of it, and they cost nothing:
+
+- **Make absence answerable.** Ask for the alphabetical RANGE actually received,
+  and say "if it falls outside that range, answer 'not present in source'".
+  A reader that can report absence stops inventing.
+- **The RENDERED weapon page is the reliable route for one weapon's stats.**
+  Its infobox carries the same module fields — including `Burst Count` and
+  `Burst Delay`, which nothing else publishes — and it is small enough to
+  arrive whole. Cross-validated: the Dex Sybaris's page and its module entry
+  agree digit for digit (2 and 4 rounds, 0.0900 s).
+
 ## Which source wins (revised 2026-07-30)
 
 NO ONE SOURCE IS AUTHORITATIVE FOR EVERY MECHANICAL FIELD, and nothing can

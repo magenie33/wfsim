@@ -3157,6 +3157,38 @@ mod burston_incarnon_radial_tests {
     /// Both tier-2 options land it, at their own values — the row's note reads
     /// "Listed values for Braton Prime with inactive Daring Reverie", i.e. that
     /// perk's unconditional +4 is in the 74 and its conditional half is not.
+    /// A BURST TRIGGER DECLARES ITS BURST. Without the block the sim reads
+    /// `fire_rate` as rounds per second when it counts PULLS, and the weapon is
+    /// understated by its whole burst count — the Sybaris by 2x, the Sicarus by
+    /// 3x, the Vasto's Incarnon form by 6x.
+    ///
+    /// It also decides a TRIGGER: `BuffTrigger::FullBurst` asks "every count-th
+    /// round", and with no block the count is 1, so every round completes a
+    /// burst and Reaver's Rapture stacks at the wrong rate.
+    ///
+    /// Twelve entries shipped without one until 2026-08-12, which is why this
+    /// is a test rather than a habit.
+    #[test]
+    fn every_burst_weapon_declares_how_many_rounds_a_pull_fires() {
+        let missing: Vec<&str> = all()
+            .iter()
+            .filter(|s| s.attack.trigger == "burst" && s.attack.burst.is_none())
+            .map(|s| s.id.as_str())
+            .collect();
+        assert!(
+            missing.is_empty(),
+            "burst trigger with no `burst:` block — `fire_rate` counts PULLS, so these are              understated by their burst count: {missing:?}"
+        );
+        // …and a block never claims a burst of one, which would be a weapon
+        // that is not a burst weapon wearing the trigger.
+        for s in all() {
+            if let Some(b) = s.attack.burst {
+                assert!(b.count >= 2, "{}: a burst of {} is not a burst", s.id, b.count);
+                assert!(b.delay_seconds > 0.0, "{}: a burst needs a delay between rounds", s.id);
+            }
+        }
+    }
+
     /// THE AKARIUS PAIR: two damage instances a rocket, two rockets a pull, and
     /// the CO row that names one of them.
     ///

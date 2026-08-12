@@ -42,6 +42,12 @@ co_behavior: additive_with_base_damage
 
 attack:
   trigger: burst
+  # THE BURST. The listed `fire_rate` counts PULLS, not rounds — so reading it
+  # as rounds per second understates this weapon by its burst count. Both
+  # numbers are the wiki's (Sybaris: Burst Count 4, Burst Delay 0.1010 s).
+  burst:
+    count: 4
+    delay_seconds: 0.101
   shot_type: hit_scan
   fire_rate: 3.33
   multishot: 1.0

@@ -42,6 +42,12 @@ co_behavior: additive_with_base_damage
 
 attack:
   trigger: burst
+  # THE BURST. The listed `fire_rate` counts PULLS, not rounds — so reading it
+  # as rounds per second understates this weapon by its burst count. Both
+  # numbers are the wiki's (Sicarus: Burst Count 3, Burst Delay 0.0400 s).
+  burst:
+    count: 3
+    delay_seconds: 0.04
   shot_type: hit_scan
   fire_rate: 3.5
   multishot: 1.0

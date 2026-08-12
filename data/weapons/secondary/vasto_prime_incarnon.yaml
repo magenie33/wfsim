@@ -45,6 +45,12 @@ unmodeled:
 
 attack:
   trigger: burst
+  # THE BURST. The listed `fire_rate` counts PULLS, not rounds — so reading it
+  # as rounds per second understates this weapon by its burst count. Both
+  # numbers are the wiki's (Vasto Prime: Burst Count 6, Burst Delay 0.1000 s).
+  burst:
+    count: 6
+    delay_seconds: 0.1
   shot_type: hit_scan
   fire_rate: 2.5
   multishot: 6.0
