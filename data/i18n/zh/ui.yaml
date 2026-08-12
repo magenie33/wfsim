@@ -240,6 +240,11 @@ ui:
   "whoever is holding the weapon and what they are doing — this gates the buffs below": 握着这把武器的那一方，以及他在做什么 —— 下面的 buff 由此决定是否生效
   "the wielder's state: mods that only pay while Invisible (Spectral Serration) grant nothing when this is off": 使用者状态：只在隐身时生效的 MOD（幽魂锯齿）关掉这个就什么都不给
   "the wielder's state: what a card means by \"while Airborne\"": 使用者状态：卡面上说的「滞空时」指的就是这个
+  # The LABEL "Overshields" is deliberately absent, as "Airborne" and "Invisible"
+  # are: a string is transcribed, never translated, and DE's own Chinese for it
+  # could not be reached from here (the Chinese wiki has no such page). It falls
+  # back to English until someone reads it off the game client.
+  "the wielder's state: what a card means by \"With Overshields\". Nothing here takes them away, so it is a declaration": 使用者状态：卡面上说的「拥有超量护盾时」指的就是这个。这里没有任何东西会打掉它，所以它是一个声明而不是战斗里的变量
   "3 · Buffs": 3 · 增益
   "4 · Simulation": 4 · 模拟
   "Technique": 手法

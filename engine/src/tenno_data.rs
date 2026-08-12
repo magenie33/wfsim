@@ -90,6 +90,17 @@ pub struct TennoState {
     /// Aerial Ace and the Aero set: "while Airborne".
     #[serde(default)]
     pub airborne: bool,
+    /// Haven Foray / Guardian's Might: *"With Overshields: Increase Base Damage
+    /// by +Y"*. A STATE and not a stat — every frame can hold overshields and
+    /// none has them by default, so it is not derivable from `frames.yaml` the
+    /// way armor and energy are.
+    ///
+    /// Defaults FALSE, the same rule as `invisible` and `airborne`: with nobody
+    /// having said so, the wielder claims nothing and a perk gated on it is off.
+    /// Nothing here takes them away either — see UNMODELLED.md, nobody shoots
+    /// back — so this is a declaration rather than something the fight tracks.
+    #[serde(default)]
+    pub overshields: bool,
     /// CURRENT energy as a fraction of [`Tenno::energy`]. 1.0 = full, which is
     /// the honest default for a build calculator: you are asking what the gun
     /// does, not what it does eleven casts in. Primary Overcharge's card gates
@@ -104,7 +115,13 @@ fn full() -> f64 {
 
 impl Default for TennoState {
     fn default() -> Self {
-        Self { aiming: true, invisible: false, airborne: false, energy_pct: 1.0 }
+        Self {
+            aiming: true,
+            invisible: false,
+            airborne: false,
+            overshields: false,
+            energy_pct: 1.0,
+        }
     }
 }
 

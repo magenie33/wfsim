@@ -1208,6 +1208,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
                 Some("multishot") => crate::loadout::GatedGrant::Multishot,
                 Some("base_crit_damage") => crate::loadout::GatedGrant::BaseCritDamage,
                 Some("projectile_speed") => crate::loadout::GatedGrant::ProjectileSpeed,
+                Some("flat_base_damage") => crate::loadout::GatedGrant::FlatBaseDamage,
                 other => {
                     return Some(EvoEffect::Inert(format!(
                         "gated_by_tenno grants {}, which is not a bracket this engine has",
@@ -1806,48 +1807,13 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
     }
     if flat > 0.0 && original_total > 0.0 {
         let evolved = original_total + flat;
-        base.base_vector = base.base_vector.scale(evolved / original_total);
-        // ...AND THE EXPLOSION, which is not what this did until 2026-08-05.
-        //
-        // It was the inconsistency two lines of this function already
-        // contradicted: `FlatBaseCritChance` and `FlatBaseStatusChance` reach
-        // every attack part because "a base-stat evolution is a WEAPON stat
-        // change", and flat base DAMAGE is the same kind of statement. It was
-        // marked "INFERENCE, not a citation" because nothing said so outright.
-        //
-        // The CO catalog now does, for the Burston: its Incarnon radial reads
-        // "Attack Damage 55 | CO Damage Bonus at +100% 13 | 24%". The radial's
-        // own base is 13 Heat and the ONLY +42 in that Genesis is Evolution
-        // II's, so 55 is 13 + 42 — the explosion takes the evolution's flat
-        // damage — while 13 is what CO still multiplies, and 13/55 is the 24%
-        // the third column prints. One row, and it settles both halves.
-        //
-        // Isolated when written: the only entries with a radial are the Laetum
-        // Incarnon and the Larkspur Prime's charged shot, and neither weapon
-        // has a flat-damage evolution at all. So nothing already measured
-        // moves.
-        if let Some(r) = base.radial.as_mut() {
-            let rad_original = r.base_vector.total();
-            if rad_original > 0.0 {
-                let rad_evolved = rad_original + flat;
-                r.base_vector = r.base_vector.scale(rad_evolved / rad_original);
-                // The explosion's CO keeps multiplying its UNEVOLVED base. The
-                // direct hit's exclusion below is opt-in per perk; this one is
-                // not, because the catalog's single radial row is a statement
-                // about the radial, and no radial row anywhere says otherwise.
-                r.co_base_fraction = rad_original / rad_evolved;
-            }
-        }
-        // The CO term keeps using the FULL evolved base — including a perk's
-        // flat damage is the normal behaviour (user, 2026-07-30), and the Torid
-        // counts its Incarnon perks in full.
-        //
-        // The exclusion belongs to the PERK, because that is the granularity
-        // the CO catalog names: its Dual Toxocyst row reads "75 or 135 (with
-        // Evolution II **Perk 1**)". The catalog lists only DISCREPANT cases,
-        // so Perk 2 — Fevered Frenzy, which also raises base damage — is not
-        // discrepant and feeds the CO term in full. Keying this off the weapon,
-        // or off the Adding behaviour class, would silently dock Perk 2 too.
+        // THE FOLD ITSELF LIVES ON `WeaponBase`, because a flat base-damage add
+        // reaches this weapon by two routes — a plain perk here, and a perk the
+        // player's state gates, which cannot be resolved until `resolve_for` has
+        // the Tenno. Two implementations of "what +40 base damage does" is two
+        // chances to be right about the vector and wrong about the explosion.
+        // See `WeaponBase::add_flat_base_damage` for what it does and why.
+        base.add_flat_base_damage(flat);
         if evos
             .iter()
             .any(|e| !e.currently_broken && e.co_base_excludes_this_evolution)
@@ -1948,6 +1914,11 @@ fn tenno_condition(v: &Value) -> Option<crate::loadout::TennoGate> {
     }
     if let Some(x) = c.strip_prefix("energy_max > ").and_then(num) {
         return Some(G::EnergyMaxOver(x));
+    }
+    // The one gate with no number: the card asks whether you HAVE overshields,
+    // not how many.
+    if c == "overshields" {
+        return Some(G::HasOvershields);
     }
     None
 }
@@ -2760,7 +2731,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 52;
+        const CEILING: usize = 43;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

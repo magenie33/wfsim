@@ -51,7 +51,7 @@ const r = await evaluate(`(async () => {
 })()`);
 
 check("the Tenno block carries every player field",
-  ["aiming", "headshot_pct", "invisible", "airborne", "frame", "wf_armor", "wf_energy", "wf_sprint"]
+  ["aiming", "headshot_pct", "invisible", "airborne", "overshields", "frame", "wf_armor", "wf_energy", "wf_sprint"]
     .every((k) => r.keys.includes(k)),
   r.keys.join(","));
 check("the whole Warframe roster is offered", r.nFrames >= 120, `${r.nFrames} options`);
@@ -67,6 +67,63 @@ check("...and they stay editable — no frame reaches the 700-energy gate",
 check("typing armor reaches the scenario state", r.simArmor === 1500, String(r.simArmor));
 check("no frame: Bulwark says nothing", !/Bulwark/i.test(r.before), r.before || "(no conditionals)");
 check("1,500 armor: the panel states Bulwark's +500%", /Bulwark/i.test(r.after) && /500/.test(r.after), r.after || "(no conditionals)");
+
+// OVERSHIELDS, the one player state that is not a number and not derivable from
+// a frame: every Warframe can hold them and none has them by default, so it is
+// a declaration the player makes. VERBATIM (Paris_Incarnon_Genesis, Guardian's
+// Might): "*Increase Base Damage by +X. *With Overshields: Increase Base Damage
+// by +Y." — the Paris Prime's Y is 74 against an X of 20, so the gate is worth
+// more than the unconditional half and cannot hide inside rounding.
+//
+// It is checked on the DAMAGE rather than on the checkbox, because a control
+// that stores a flag nobody reads looks exactly like one that works.
+const os = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  localStorage.clear();
+  history.pushState({}, '', '/weapons/Paris_Prime'); route(); await sleep(3500);
+  document.querySelectorAll('.tab').forEach(t => { if (/Sim/i.test(t.textContent)) t.click(); });
+  await sleep(1200);
+  // THE BASE FORM, so the number under test is the one the card's X and Y are
+  // printed against. The default mode is the Incarnon cycle, whose panel is a
+  // different weapon entry with its own stats.
+  mode = 'base';
+  // The PANEL's own number, not a fight's: this grant lands on base damage,
+  // which the panel reports exactly where a hundred rolls report it through
+  // noise. buildPayload() already carries tennoPayload(), so the state travels.
+  const mb = async () => {
+    const s = await api('/api/simulate', { ...buildPayload(), ...fightPayload(sim), runs: 2 });
+    return (s.panel || {}).modified_base;
+  };
+  const bare = await mb();
+  // BOTH TIERS. A tier-2 perk needs its tier-1 rung — the server enforces the
+  // ladder and drops a perk whose rung is missing, which is why this reads as
+  // "the perk does nothing" if only tier 2 is set.
+  evoSel[1] = 'paris_prime_evo1_incarnon_form';
+  evoSel[2] = 'paris_prime_guardians_might';
+  markPresetDirty(); renderMods(); refreshPanel(); await sleep(2200);
+  const withEvo = await mb();
+
+  const box = document.getElementById('sim-technique');
+  const cb = box.querySelector('[data-k="overshields"]');
+  cb.checked = true; cb.dispatchEvent(new Event('change'));
+  await sleep(2200);
+  const withOS = await mb();
+  return { present: !!cb, sent: !!sim.overshields, bare, withEvo, withOS,
+           url: await shareUrl() };
+})()`);
+
+check("the overshield state has a control", os.present, String(os.present));
+check("...ticking it reaches the scenario", os.sent === true, String(os.sent));
+// THREE EXACT NUMBERS, all readable off the sources. 360 is the Paris Prime's
+// own base (9 Impact + 63 Slash + 288 Puncture, data/weapons/); +20 is the
+// card's X and +74 its Y, from the Paris Prime column of Guardian's Might.
+// A direction check would pass on any bracket pointing the right way — these
+// say the grant landed on the BASE, undiluted, and that the gate is worth its
+// printed number and not some share of it.
+check("the perk's unconditional half is +20 base damage",
+  os.bare === 360 && os.withEvo === 380, `${os.bare} -> ${os.withEvo}`);
+check("...and overshields pay its +74, exactly",
+  os.withOS === 454, `${os.withEvo} -> ${os.withOS}`);
 
 // ...AND IT TRAVELS, when there is a way to send it. Sharing can be switched
 // off (SHARE_ENABLED) and is while its reliability is being investigated; the

@@ -27,13 +27,31 @@ co_base_excludes_this_evolution: true
 selection: choose_one
 
 effects:
+  # VERBATIM (Lato_Incarnon_Genesis, EVO2, the row's effect cell):
+  #   *Increase Base Damage by '''+X'''.
+  #   *With Overshields: Increase Base Damage by '''+Y'''.
+  #   | X = 22<br>Y = 40      (column 2 of Lato | Vandal | Prime)
+  #
   # from: "Increase Base Damage by +22"
   - kind: flat_base_damage
     value: 22.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "With Overshields: Increase Base Damage by +40"
-  - kind: unmodelled_with_overshields_increase_base_damage_by
+  # …and the SAME statement, gated on the player. "With Overshields" is a
+  # question about who is carrying the gun, exactly as "With Armor Over 450" and
+  # "With Energy Max Over 700" are, so it is one more `TennoGate` — a yes/no,
+  # since the card asks whether you HAVE them and not how many.
+  #
+  # It folds through `WeaponBase::add_flat_base_damage`, the same call the flat
+  # perk above makes: the base vector scales pro-rata and the explosion takes it
+  # too, so a gated +40 and a plain +40 are the same weapon.
+  #
+  # NOTHING HERE TAKES OVERSHIELDS AWAY (UNMODELLED.md — nobody shoots back), so
+  # this is a state the player declares rather than one the fight tracks. Off by
+  # default, like every other Tenno field: with nobody having said so, the
+  # wielder claims nothing.
+  - kind: gated_by_tenno
+    condition: overshields
+    grant: flat_base_damage
+    value: 40.0
 
 source:
   url: https://wiki.warframe.com/w/Lato_Incarnon_Genesis

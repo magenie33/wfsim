@@ -877,6 +877,9 @@ pub enum TennoGate {
     ArmorOver(f64),
     /// `energy_max > x`
     EnergyMaxOver(f64),
+    /// `overshields` — Haven Foray, Guardian's Might: "With Overshields".
+    /// A yes/no rather than a threshold, which is what the card asks.
+    HasOvershields,
 }
 
 impl TennoGate {
@@ -886,6 +889,7 @@ impl TennoGate {
             TennoGate::SprintAtLeast(x) => tenno.sprint >= x,
             TennoGate::ArmorOver(x) => tenno.armor > x,
             TennoGate::EnergyMaxOver(x) => tenno.energy > x,
+            TennoGate::HasOvershields => tenno.state.overshields,
         }
     }
 
@@ -895,6 +899,7 @@ impl TennoGate {
             TennoGate::SprintAtLeast(x) => format!("at sprint speed {x} or higher"),
             TennoGate::ArmorOver(x) => format!("with armor over {x}"),
             TennoGate::EnergyMaxOver(x) => format!("with max energy over {x}"),
+            TennoGate::HasOvershields => "with overshields".to_string(),
         }
     }
 }
@@ -915,6 +920,11 @@ pub enum GatedGrant {
     BaseCritDamage,
     /// A fraction, into the projectile-speed indirect bucket.
     ProjectileSpeed,
+    /// An ABSOLUTE add to the weapon's base damage, folded exactly as an
+    /// ungated one is — [`WeaponBase::add_flat_base_damage`] is the one
+    /// implementation, so "+40 with overshields" and a plain "+40" cannot come
+    /// out as different panels.
+    FlatBaseDamage,
 }
 
 /// A weapon's unmodded panel (fixed evolutions folded in — they alter the
@@ -1697,6 +1707,39 @@ impl WeaponBase {
     /// (`weapons_data::base_panel`) with an arbitrary equipped-evolution
     /// selection applied (data ids; empty = bare weapon). The engine knows
     /// no specific weapon — `id` is purely a data key.
+    /// A FLAT BASE-DAMAGE ADD, folded the way an evolution's is.
+    ///
+    /// The base damage TOTAL rises by `flat` and the vector scales pro-rata, so
+    /// the composition is untouched and every downstream reading of the base —
+    /// status payloads included — follows. The EXPLOSION takes it too, and keeps
+    /// multiplying its UNEVOLVED base for Condition Overload: the CO catalog's
+    /// Burston radial row is what settles both halves ("Attack Damage 55 | CO
+    /// Damage Bonus at +100% 13 | 24%", where 55 = 13 + the Genesis's only +42
+    /// and 13/55 is the printed 24%).
+    ///
+    /// ONE IMPLEMENTATION, two callers: `evolutions_data::apply` for a plain
+    /// flat perk and `resolve_for` for one the player's state gates. A gated
+    /// "+40 with overshields" and an ungated "+40" are the same statement about
+    /// the weapon, so they must not be able to come out as different panels —
+    /// `a_gated_flat_base_damage_folds_exactly_as_an_ungated_one` is that
+    /// assertion.
+    pub fn add_flat_base_damage(&mut self, flat: f64) {
+        let original_total = self.base_vector.total();
+        if flat <= 0.0 || original_total <= 0.0 {
+            return;
+        }
+        let evolved = original_total + flat;
+        self.base_vector = self.base_vector.scale(evolved / original_total);
+        if let Some(r) = self.radial.as_mut() {
+            let rad_original = r.base_vector.total();
+            if rad_original > 0.0 {
+                let rad_evolved = rad_original + flat;
+                r.base_vector = r.base_vector.scale(rad_evolved / rad_original);
+                r.co_base_fraction = rad_original / rad_evolved;
+            }
+        }
+    }
+
     pub fn from_data(id: &str, frenzy_active: bool, evo_ids: &[&str]) -> Self {
         crate::weapons_data::base_panel(id, frenzy_active).apply_evolution_ids(evo_ids)
     }
@@ -2045,6 +2088,30 @@ pub fn resolve_for(
     policy: StackPolicy,
     tenno: &crate::tenno_data::Tenno,
 ) -> ResolvedPanel {
+    // A GATED FLAT BASE-DAMAGE ADD IS A CHANGE TO THE WEAPON, so it is folded
+    // BEFORE anything reads the panel — Haven Foray's "With Overshields:
+    // Increase Base Damage by +40" makes the same weapon a plain "+40" would,
+    // and `add_flat_base_damage` is the one place that decides what that means.
+    //
+    // It is the only gated grant that cannot be a term added later: the other
+    // four join a bucket, and this one moves the number every bucket multiplies.
+    // Hence the clone, and hence only when a gate is actually open — the neutral
+    // Tenno opens none, so the ordinary path allocates nothing.
+    let gated_flat: f64 = base
+        .gated
+        .iter()
+        .filter(|(c, k, _)| *k == GatedGrant::FlatBaseDamage && c.open(tenno))
+        .map(|(_, _, v)| v)
+        .sum();
+    let owned;
+    let base = if gated_flat > 0.0 {
+        let mut b = base.clone();
+        b.add_flat_base_damage(gated_flat);
+        owned = b;
+        &owned
+    } else {
+        base
+    };
     let (mut bd, mut ms, mut cc, mut cd, mut sc, mut fr, mut sd) =
         (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     // RELOAD STARTS AT THE EVOLUTION'S BONUS, not at zero. Rapid Reinforcement
@@ -3133,6 +3200,59 @@ mod tests {
                 < 1e-9,
             "at zero status chance the perk grants nothing — there is no flat half"
         );
+    }
+
+    /// WITH OVERSHIELDS — the eighth card to ask about the player, and the first
+    /// whose grant is not a term added later.
+    ///
+    /// VERBATIM (Paris_Incarnon_Genesis, Guardian's Might):
+    ///   *Increase Base Damage by '''+X'''.
+    ///   *With Overshields: Increase Base Damage by '''+Y'''.
+    ///   | X = 40<br>Y = 52  | X = 50<br>Y = 40  | X = 20<br>Y = 74
+    /// (columns: Paris | Mk1-Paris | Paris Prime, from the table header.)
+    ///
+    /// The assertion that matters is that the gate changes NOTHING about what
+    /// the number means: a Paris Prime holding overshields must be exactly the
+    /// weapon a plain "+74" perk would make, down to the base vector's
+    /// composition and the explosion's Condition Overload fraction. Both routes
+    /// call `WeaponBase::add_flat_base_damage`, and this is what says so.
+    #[test]
+    fn a_gated_flat_base_damage_folds_exactly_as_an_ungated_one() {
+        let neutral = crate::tenno_data::default_tenno();
+        assert!(!neutral.state.overshields, "the default player has none");
+        let shielded = tenno_who(|s| s.overshields = true);
+
+        let base = WeaponBase::from_data("paris_prime", true, &["paris_prime_guardians_might"]);
+        let off = resolve_for(&base, &[], StackPolicy::AssumedMax, neutral);
+        let on = resolve_for(&base, &[], StackPolicy::AssumedMax, &shielded);
+        assert!(on.modified_base > off.modified_base,
+            "overshields are worth +74 base: {} vs {}", on.modified_base, off.modified_base);
+
+        // THE REFERENCE: the same weapon with the whole +94 as one plain perk.
+        // 20 + 74 is what the card pays a player who has them, so a base panel
+        // carrying that flat outright must resolve to the same numbers.
+        let mut plain = WeaponBase::from_data("paris_prime", true, &[]);
+        plain.add_flat_base_damage(20.0 + 74.0);
+        let want = resolve_for(&plain, &[], StackPolicy::AssumedMax, neutral);
+        assert!((on.modified_base - want.modified_base).abs() < 1e-9,
+            "gated {} vs plain {}", on.modified_base, want.modified_base);
+        // …and the COMPOSITION, not just the total: a pro-rata scale leaves the
+        // shares untouched, and getting that wrong moves every status payload
+        // while the damage total still reads right.
+        assert!((on.damage.total() - want.damage.total()).abs() < 1e-9);
+        for ty in crate::damage::DamageType::ALL {
+            assert!((on.damage.get(ty) - want.damage.get(ty)).abs() < 1e-9,
+                "{ty:?}: gated {} vs plain {}", on.damage.get(ty), want.damage.get(ty));
+        }
+
+        // A GATE THAT IS SHUT COSTS NOTHING. The unshielded panel is the weapon
+        // with only the perk's unconditional +20 — which is what the card says,
+        // and what a build that never picks up an overshield actually gets.
+        let mut just_x = WeaponBase::from_data("paris_prime", true, &[]);
+        just_x.add_flat_base_damage(20.0);
+        let x_only = resolve_for(&just_x, &[], StackPolicy::AssumedMax, neutral);
+        assert!((off.modified_base - x_only.modified_base).abs() < 1e-9,
+            "shut: {} vs {}", off.modified_base, x_only.modified_base);
     }
 
     /// The sim used to satisfy `while_aiming` silently, so every aim-gated

@@ -325,6 +325,9 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
     t.state.aiming = info.sentinel || get_bool(v, "aiming", true);
     t.state.invisible = get_bool(v, "invisible", t.state.invisible);
     t.state.airborne = get_bool(v, "airborne", t.state.airborne);
+    // Haven Foray / Guardian's Might: "With Overshields". Nothing here takes
+    // them away, so it is a declaration and not something the fight tracks.
+    t.state.overshields = get_bool(v, "overshields", t.state.overshields);
     // The WARFRAME behind the gun. Armor and energy are the two stats a weapon
     // arcane reads (Primary Bulwark, Primary Overcharge); 0 means "no frame
     // chosen", which is what the neutral Tenno says and what makes those
@@ -1258,6 +1261,7 @@ pub fn meta_json() -> Value {
             "aiming": true,
             "invisible": false,
             "airborne": false,
+            "overshields": false,
             "wf_armor": 0.0,
             "wf_energy": 0.0,
             // INFINITE AMMO by default — see `simulate_json` for why.
