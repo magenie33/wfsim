@@ -1816,12 +1816,10 @@ mod tests {
             let ordinary = beh == "additive_with_base_damage" && (frac - 1.0).abs() < 1e-9;
             match NAMED.iter().find(|(id, ..)| *id == s.id) {
                 None if !ordinary => unexpected.push(format!("{} = {beh} x{frac}", s.id)),
-                Some((_, b, f)) => {
-                    if beh != *b || (frac - f).abs() > 1e-9 {
-                        wrong.push(format!("{}: {beh} x{frac}, catalog says {b} x{f}", s.id));
-                    }
+                Some((_, b, f)) if beh != *b || (frac - f).abs() > 1e-9 => {
+                    wrong.push(format!("{}: {beh} x{frac}, catalog says {b} x{f}", s.id));
                 }
-                None => {}
+                _ => {}
             }
         }
         assert!(
