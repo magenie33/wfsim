@@ -972,6 +972,17 @@ pub fn meta_json() -> Value {
                 // What cannot be PROC'd on it — a different question from the
                 // column below, and it moves the whole status distribution.
                 "status_immunities": e.status_immunities,
+                // …and whether it takes the PLAYER's buffs away. A Demolisher
+                // pulses every 5 s and dispels every Warframe ability in range,
+                // so the ability section has to say so rather than let a player
+                // tick Roar and be scored without it.
+                "nullifies_abilities": e.nullifies_warframe_abilities,
+                // …and the THIRD kind, which is neither: the proc lands and its
+                // effect does nothing. It stays in the status roll and still
+                // counts for Condition Overload, so a reader who saw it beside
+                // the immunities would draw the wrong conclusion about both.
+                "nullified_status_effects": e.nullified_status_effects,
+                "cannot_be_frozen": e.cannot_be_frozen,
                 // The post-U36 vulnerability COLUMN (System B), only the
                 // entries that are not 1.0 — what this unit takes more or
                 // less of, which is half of what picks a build's elements.
@@ -3552,7 +3563,18 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         // makes the optimizer score under them without a line of optimizer code
         // (the house rule: anything that is a property of the fight goes in the
         // one module both read).
-        abilities,
+        //
+        // …AND THE TARGET GETS A SAY. A Demolisher pulses every 5 s and
+        // dispels every Warframe ability within range and on itself, so against
+        // one they are simply not up. Applied here rather than inside the sim
+        // because it is a property of the FIGHT — the same reason the abilities
+        // are parsed here at all — and so the optimizer scores under it too,
+        // without knowing what a Demolisher is.
+        abilities: if spec.nullifies_warframe_abilities {
+            Vec::new()
+        } else {
+            abilities
+        },
     };
     Ok(Fight {
         info,

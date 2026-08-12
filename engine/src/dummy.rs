@@ -356,6 +356,11 @@ pub struct TargetParams {
     pub attenuation: Option<Attenuation>,
     /// Per-unit status stack caps; `None` = the normal per-status caps.
     pub stack_caps: Option<StackCaps>,
+    /// Cold never converts on this target — see
+    /// [`crate::enemy_data::EnemySpec::cannot_be_frozen`]. The stacks climb to
+    /// the ordinary ten-stack cap and STAY there, so the Cold crit-damage bonus
+    /// is up for the whole fight instead of being spent every tenth proc.
+    pub cannot_be_frozen: bool,
     /// Steel Path: health ×2.5 (armor and overguard untouched). The +100 level
     /// shift is a mission-spawn effect — pick `level` accordingly.
     pub steel_path: bool,
@@ -470,6 +475,7 @@ impl TargetParams {
             shield_curve: scaling::shield::GRINEER, // unused at 0 shields
             attenuation: None,
             stack_caps: None,
+            cannot_be_frozen: false,
             steel_path: false,
             eximus: false,
             can_be_eximus: false,
@@ -1088,6 +1094,7 @@ impl DebuffState {
         sd: f64,
         under_overguard: bool,
         caps: Option<StackCaps>,
+        no_frozen: bool,
     ) -> bool {
         if self.frozen_until.is_some_and(|f| f > t) {
             return false; // inert
@@ -1105,7 +1112,12 @@ impl DebuffState {
             DebuffState::push_capped(&mut self.freeze, t + STATUS_DURATION * sd, c.general, t);
             return true;
         }
-        if self.freeze.len() >= FREEZE_STACKS_BEFORE_FROZEN {
+        if no_frozen {
+            // NEVER CONVERTS. The tenth proc is an ordinary stack here, so the
+            // ladder sits at its cap and the Cold bonus is up all fight rather
+            // than being spent on a 3-second Frozen window every ten procs.
+            DebuffState::push_capped(&mut self.freeze, t + STATUS_DURATION * sd, TEN_STACK_CAP, t);
+        } else if self.freeze.len() >= FREEZE_STACKS_BEFORE_FROZEN {
             self.freeze.clear();
             self.frozen_until = Some(t + FROZEN_DURATION * sd);
         } else {
@@ -3318,7 +3330,7 @@ fn settle_procs(
                 // target (the wiki confirms it is included). The
                 // Cold procs scale with Status Duration.
                 for _ in 0..params.arcane.cold_burst_on_puncture {
-                    debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps);
+                    debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps, params.target.cannot_be_frozen);
                 }
             }
             DamageType::Slash => push_dot(
@@ -3399,7 +3411,7 @@ fn settle_procs(
                 // exists (user, 2026-08-02). Frozen lasts 3 s against a 12 s
                 // buff, so it never showed as the arcane going dark — it
                 // showed as it never quite decaying.
-                if debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps) {
+                if debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps, params.target.cannot_be_frozen) {
                     arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ColdStatus, at);
                 }
             }
@@ -8008,6 +8020,56 @@ mod tests {
         );
     }
 
+    /// COLD ON A TARGET THAT CANNOT BE FROZEN: the ladder climbs to the cap and
+    /// STAYS, which makes Cold worth MORE here rather than less.
+    ///
+    /// The ordinary ladder spends itself. Nine stacks stand; the tenth proc
+    /// consumes all of them for a 3-second Frozen window worth +1.00 crit
+    /// damage, and drops back to three. So the bonus sawtooths. On a Demolisher
+    /// nothing converts, so ten stacks stand permanently at +0.55 and the 3
+    /// seconds of +1.00 never come.
+    ///
+    /// Asserted on the LADDER rather than through a sim, because what changed
+    /// is a rule about stacks and a Monte Carlo would show it as a few per cent
+    /// on a damage number.
+    #[test]
+    fn cold_never_converts_on_a_target_that_cannot_be_frozen() {
+        let mut ordinary = DebuffState::default();
+        let mut never = DebuffState::default();
+        // Twelve procs, a tenth of a second apart — past the tenth either way.
+        for k in 0..12 {
+            let t = k as f64 * 0.1;
+            ordinary.apply_cold_proc(t, 1.0, false, None, false);
+            never.apply_cold_proc(t, 1.0, false, None, true);
+        }
+        let at = 1.2;
+
+        // THE ORDINARY ONE CONVERTED: it is Frozen, and its stacks were spent.
+        assert!(ordinary.frozen_until.is_some_and(|f| f > at), "the tenth proc converts");
+        assert!(
+            (ordinary.cold_cd_bonus(at) - 1.00).abs() < 1e-9,
+            "…and Frozen is +1.00 while it lasts, {}",
+            ordinary.cold_cd_bonus(at)
+        );
+
+        // THE DEMOLISHER DID NOT. Ten stacks, no Frozen, and the bonus is the
+        // table's top row rather than the window's.
+        assert!(never.frozen_until.is_none(), "nothing converts");
+        assert_eq!(never.freeze.len(), 10, "it climbs to the ten-stack cap and stops");
+        assert!(
+            (never.cold_cd_bonus(at) - 0.55).abs() < 1e-9,
+            "0.10 + 0.05 x 9 = 0.55, held all fight: {}",
+            never.cold_cd_bonus(at)
+        );
+
+        // …and it KEEPS climbing back to the cap rather than being spent: two
+        // more procs later it is still ten, where the ordinary one is rebuilding
+        // from the three Frozen left it.
+        never.apply_cold_proc(1.3, 1.0, false, None, true);
+        never.apply_cold_proc(1.4, 1.0, false, None, true);
+        assert_eq!(never.freeze.len(), 10, "the cap holds, and nothing consumes it");
+    }
+
     /// A FLAT BASE-DAMAGE BUFF IS NOT DILUTED BY SERRATION, and that is the
     /// only reason it is a bracket of its own.
     ///
@@ -10957,6 +11019,7 @@ mod tests {
             shield_curve: crate::scaling::shield::GRINEER,
             attenuation: None,
             stack_caps: None,
+            cannot_be_frozen: false,
             steel_path: false,
             eximus: false,
             can_be_eximus: false,
@@ -12967,17 +13030,17 @@ mod tests {
         let mut d = DebuffState::default();
         // Nine Freeze stacks build normally (no overguard).
         for k in 0..9 {
-            d.apply_cold_proc(k as f64 * 0.1, 1.0, false, None);
+            d.apply_cold_proc(k as f64 * 0.1, 1.0, false, None, false);
         }
         assert_eq!(d.freeze.len(), 9);
         assert!((d.cold_cd_bonus(0.9) - 0.50).abs() < 1e-9); // 0.10+0.05×8
                                                              // The 10th proc CONSUMES the stacks and enters Frozen (3 s).
-        d.apply_cold_proc(1.0, 1.0, false, None);
+        d.apply_cold_proc(1.0, 1.0, false, None, false);
         assert!(d.freeze.is_empty());
         assert_eq!(d.frozen_until, Some(4.0));
         assert!((d.cold_cd_bonus(1.5) - 1.00).abs() < 1e-9); // supersedes
                                                              // Cold procs are inert while Frozen.
-        d.apply_cold_proc(2.0, 1.0, false, None);
+        d.apply_cold_proc(2.0, 1.0, false, None, false);
         assert!(d.freeze.is_empty());
         // Thaw: hard reset to exactly 3 stacks with FRESH 6 s timers
         // anchored at the thaw instant (expire at 4 + 6 = 10 s).
@@ -12994,7 +13057,7 @@ mod tests {
     fn overguard_caps_freeze_at_four_and_never_freezes() {
         let mut d = DebuffState::default();
         for k in 0..20 {
-            d.apply_cold_proc(k as f64 * 0.1, 1.0, true, None);
+            d.apply_cold_proc(k as f64 * 0.1, 1.0, true, None, false);
         }
         assert_eq!(d.freeze.len(), 4);
         assert_eq!(d.frozen_until, None);
@@ -13441,7 +13504,7 @@ mod tests {
         let mut d = DebuffState::default();
         let mut applied = 0;
         for i in 0..10 {
-            if d.apply_cold_proc(i as f64 * 0.1, 1.0, false, None) {
+            if d.apply_cold_proc(i as f64 * 0.1, 1.0, false, None, false) {
                 applied += 1;
             }
         }
@@ -13452,19 +13515,19 @@ mod tests {
         // attempt.
         for i in 0..5 {
             assert!(
-                !d.apply_cold_proc(1.0 + i as f64 * 0.1, 1.0, false, None),
+                !d.apply_cold_proc(1.0 + i as f64 * 0.1, 1.0, false, None, false),
                 "a proc during Frozen applied a status"
             );
         }
         // ...and once it thaws, procs land again.
-        assert!(d.apply_cold_proc(1.0 + FROZEN_DURATION + 0.01, 1.0, false, None));
+        assert!(d.apply_cold_proc(1.0 + FROZEN_DURATION + 0.01, 1.0, false, None, false));
 
         // A CAPPED list is not the same case: pushing past a cap replaces the
         // oldest, which IS an application, so the arcane keeps stacking there.
         let mut og = DebuffState::default();
         for i in 0..8 {
             assert!(
-                og.apply_cold_proc(i as f64 * 0.1, 1.0, true, None),
+                og.apply_cold_proc(i as f64 * 0.1, 1.0, true, None, false),
                 "under overguard the list caps at 4 but every proc still lands"
             );
         }

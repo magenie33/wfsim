@@ -194,6 +194,11 @@ weapons:
   shedu: 舍杜
 
 enemies:
+  # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's
+  # i18n.json carries items and not enemies, and the CN wiki answered 403. The
+  # rule is that a name is TRANSCRIBED and never translated (a name derived
+  # from the English is wrong more often than not), so this one is left out
+  # and falls back to English rather than being invented.
   thrax_centurion: 凶魂百夫长
   corrupted_heavy_gunner: 堕落重型机枪手
   # The Stalker's six 追随者 (Acolytes), CN names per the Chinese wiki's

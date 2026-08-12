@@ -1,0 +1,94 @@
+id: demolisher_devourer
+name: Demolisher Devourer
+# Portrait, hosted on the WIKI — enemy art is declared here rather than in
+# data/assets.yaml (WFCD has no usable enemy images); scripts/fetch_images.py
+# pulls it through Special:FilePath.
+image: DemolisherDevourer.png
+faction: grineer
+scaling_faction: grineer
+# Not in the Eximus/Compatibilities table — a Demolisher is already a special
+# variant and does not take a second one.
+can_be_eximus: false
+mercy_eligible: false
+type: melee
+planets: [earth]
+tilesets: [grineer_forest]
+introduced: "29.0"
+
+# THE PULSE IS THE POINT. VERBATIM (wiki, Disruption): "Demolysts and
+# Demolishers will pulse out a red aura every 5 seconds with a radius of 6.5
+# meters, immediately dispelling and disabling all Warframe abilities within
+# range and on itself, similar to a Nullifier Crewman's bubble."
+#
+# It is the first enemy property in this roster that reaches the PLAYER's half
+# of the fight: Roar, Eclipse, Nourish and the four elemental augments ride on
+# the Arena, and against this unit they are not up. See `unmodeled` below for
+# the two simplifications that make "every 5 seconds" into "off".
+nullifies_warframe_abilities: true
+
+# TWO KINDS OF RESTRICTION, AND THEY ARE DIFFERENT ARITHMETIC. The wiki words
+# them differently and that is the tell.
+#
+# THE CODEX'S "Proc Immunity: Radiation" — the proc cannot land. The type is
+# dropped from the DRAW, so the remaining types renormalise onto the roll and
+# each becomes MORE likely (Status_Effect §Status Immunity Interactions). The
+# damage is untouched: this is not a x0 column.
+status_immunities: [radiation]
+
+# THE DEMOLISHER PAGE'S CROWD-CONTROL LIST — "Confusion, Knockdown, Lifted,
+# Stagger, Stun" — is about EFFECTS, and only two of the five have a weapon
+# status behind them at all. Confusion is Radiation's, already covered above as
+# a proc immunity. Stagger is Impact's, and it is the other kind: the proc still
+# lands, still takes its share of the rolls, and still counts as a status type
+# for Condition Overload — it simply does not move this unit.
+#
+# Putting Impact in the list above instead would have been wrong twice: every
+# other status would have got rarer, and a CO build would have lost a type it
+# actually has.
+nullified_status_effects: [impact]
+
+# IT IS NEVER FROZEN, and that makes Cold BETTER here rather than worse. The
+# ladder normally spends itself: the tenth proc consumes all stacks for a
+# 3-second Frozen window and drops back to three. Nothing converts on a
+# Demolisher, so the stacks climb to the ten-stack cap and STAY, and the Cold
+# crit-damage bonus is up for the whole fight instead of in bursts.
+#
+# The slow is real in game and is not modelled — this sim has no movement for it
+# to matter to — and it is the one effect the nullifying pulse cannot cleanse.
+cannot_be_frozen: true
+
+# Base stats at base_level. Health is the DEMOLISHER variant's 2500, not the
+# Ghoul Devourer's 600 — a Demolisher is its own stat block, not a tag.
+stats:
+  base_level: 1
+  spawn_level: 15
+  health: 2500
+  shield: 0
+  armor: 250
+  overguard: 0
+  affinity: 0
+
+# Module Multis: "Head: 3.0x, Mines: 0.5x". The mines are declared below rather
+# than given an aim weight — see `unmodeled`.
+body_parts:
+  - name: body
+    multiplier: 1.0
+    is_head: false
+    crit_bonus: false
+  - name: head
+    multiplier: 3.0
+    is_head: true
+    crit_bonus: true
+
+unmodeled:
+  - "the nullifying pulse is modelled as Warframe ability buffs being OFF for the whole fight, not as a 5-second cycle — this sim has no distance, so its 6.5 m radius always reaches you, and no ability casting, so nothing re-applies between pulses"
+  - "the mines on its back are a 0.5x hitbox the sim never aims at — shots land on the body or the head, and a player would not choose the mines"
+  - "squad size is not modelled: a Demolisher gains +50%/+100%/+200% health with 2/3/4 players, and this is the solo figure"
+  - "it is not stopped or slowed here — a Cold status greatly slows a Demolisher in game (and is the one effect its pulse cannot cleanse), and this sim has no movement for that to matter to"
+  - "the conduit it is walking towards is not modelled: a Disruption run is a race against its arrival, and this fight has no clock but its own"
+
+source:
+  url: https://wiki.warframe.com/w/Ghoul_Devourer
+  # note: >-
+  # Stats and Multis from the page's Demolisher tab; the pulse, the squad-size
+  # health scaling and the Cold interaction from the Disruption page.

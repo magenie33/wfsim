@@ -7281,7 +7281,7 @@ function renderScenarioFields(ids, opts = {}) {
            <span class="en-txt">
              <span class="en-name">${escHtml(en ? en.name : tr("Enemy"))}</span>
              <span class="en-meta">${escHtml(enemyMeta(en))}</span>
-             ${enemyVuln(en)}${enemyStatusImmune(en)}
+             ${enemyVuln(en)}${enemyStatusImmune(en)}${enemyEffectsNulled(en)}
              ${enemyCaveat(en)}
            </span>
          </button>
@@ -7442,6 +7442,32 @@ const enemyStatusImmune = (en) => {
     : "";
 };
 
+/// …AND THE THIRD LINE, which is neither of the two above. The proc LANDS, and
+/// what it does is nothing.
+///
+/// It has to be its own line because the arithmetic differs: an immune type
+/// leaves the status roll and makes every other type MORE likely, while this
+/// one keeps its share of the roll and still counts as a type for Condition
+/// Overload. Showing them together would tell a reader the opposite of both.
+///
+/// `cannot_be_frozen` rides here for the same reason and reads the other way —
+/// Cold is worth MORE on such a unit, because the ladder never spends itself.
+const enemyEffectsNulled = (en) => {
+  const out = [];
+  const nn = (en && en.nullified_status_effects) || [];
+  if (nn.length) {
+    out.push(`<span class="en-vuln" title="${escHtml(
+      tr("these procs still land and still count for Condition Overload — this unit simply ignores what they do"))}">${
+      nn.map((k) => `<span class="dim">${escHtml(DT(k))} ${escHtml(tr("no effect"))}</span>`).join("")}</span>`);
+  }
+  if (en && en.cannot_be_frozen) {
+    out.push(`<span class="en-vuln" title="${escHtml(
+      tr("Cold never converts on this unit, so the stacks climb to their cap and STAY — the bonus is up all fight instead of being spent on a 3-second Frozen window"))}">${
+      `<span class="up">${escHtml(tr("never Frozen — Cold stacks hold"))}</span>`}</span>`);
+  }
+  return out.join("");
+};
+
 // THE POOLS AT THE FIGHT'S LEVEL, from the engine.
 //
 // The card and the picker used to print each unit's stats at its OWN base
@@ -7561,7 +7587,7 @@ function renderEnemyMenu(query) {
     ? hits.map((e) => `<div class="opt ${e.id === sim.enemy ? "sel" : ""}" data-e="${escHtml(e.id)}">
          ${enemyImg(e, "en-thumb")}
          <div class="info"><div class="mn">${escHtml(e.name)}</div>
-         <div class="me">${escHtml(enemyMeta(e))}</div>${enemyVuln(e)}${enemyStatusImmune(e)}${enemyCaveat(e)}</div>
+         <div class="me">${escHtml(enemyMeta(e))}</div>${enemyVuln(e)}${enemyStatusImmune(e)}${enemyEffectsNulled(e)}${enemyCaveat(e)}</div>
        </div>`).join("")
     : `<div class="sim-empty">${escHtml(tr("no enemy matches"))}</div>`;
   menu.querySelectorAll("[data-e]").forEach((el) => el.onclick = () => {
@@ -7694,13 +7720,18 @@ function renderWfBuffs(host, readonly) {
   if (!list.length) { box.innerHTML = ""; return; }
   const running = wfRunning();
   const strength = Math.round((Number(sim.ability_strength) || 0) * 100);
+  // THE TARGET GETS A SAY. A Demolisher pulses every 5 s and dispels every
+  // Warframe ability in range — so against one, nothing ticked here is up, and
+  // the sim scores it that way. A section that let you tick Roar and quietly
+  // ignored it would be the worst kind of wrong: a number you cannot explain.
+  const nulled = (allEnemies().find((e) => e.id === sim.enemy) || {}).nullifies_abilities;
   const rows = list.map((a) => {
     const pick = wfPick(a.id);
     const on = !!pick;
     // SUPERSEDED, not off: you ticked it and something stronger is running.
     // Saying nothing here is how a player ends up believing they have +80%.
     const dead = on && !running.has(a.id);
-    return `<div class="wfb${on ? " on" : ""}${dead ? " dead" : ""}">
+    return `<div class="wfb${on ? " on" : ""}${(dead || (on && nulled)) ? " dead" : ""}">
       <label class="check wfb-pick"><input type="checkbox" data-wf="${escHtml(a.id)}"${on ? " checked" : ""}${readonly ? " disabled" : ""}>
         <span class="wfb-n">${escHtml(wfName(a))}</span>
         <span class="wfb-f">${escHtml(tr(a.frame))}</span></label>
@@ -7723,14 +7754,17 @@ function renderWfBuffs(host, readonly) {
             nothing to point at has to say so HERE (2026-08-08). */ ""}
       <div class="wfb-u">${notModeledLines(a).join("")}</div>
       ${dead ? `<div class="wfb-dead">${escHtml(tr("a stronger buff of the same kind is running — this one adds nothing"))}</div>` : ""}
+      ${on && nulled ? `<div class="wfb-dead">${escHtml(tr("this target dispels it — nothing ticked here is running against it"))}</div>` : ""}
       ${a.url ? `<a class="wfb-w" href="${escHtml(a.url)}" target="_blank" rel="noopener">${escHtml(tr("wiki"))} ↗</a>` : ""}
     </div>`;
   }).join("");
   const sub = $(host === "sim-wfbuffs" ? "wfbuff-sub" : "");
   if (sub) {
-    sub.textContent = running.size
-      ? `${running.size} ${tr("running")}`
-      : tr("none — the weapon on its own");
+    sub.textContent = nulled
+      ? tr("none — this target dispels them")
+      : running.size
+        ? `${running.size} ${tr("running")}`
+        : tr("none — the weapon on its own");
   }
   box.innerHTML =
     `<div class="wfb-head">
@@ -7738,6 +7772,8 @@ function renderWfBuffs(host, readonly) {
          <input type="number" id="${host}-str" min="0" max="1000" step="1" value="${strength}"${readonly ? " disabled" : ""}></label>
        <span class="wfb-early">${escHtml(tr("early access — every buff runs the whole engagement for now, and this block moves onto the Warframe itself once frames land"))}</span>
      </div>
+     ${nulled ? `<div class="wfb-null">${escHtml(
+        tr("this target nullifies Warframe abilities — it pulses every 5 seconds and dispels everything in range, so none of these are running and the sim scores it that way"))}</div>` : ""}
      <div class="wfb-grid">${rows}</div>`;
   if (readonly) {
     box.querySelectorAll("input").forEach((el) => {

@@ -60,6 +60,17 @@ pub fn draw_proc_type(
 
 /// The full proc set of one hit: forced procs first (declared by the weapon's
 /// attack part), then `roll_proc_count` weighted draws.
+///
+/// AN IMMUNITY BEATS A GUARANTEE. A forced proc of a type the target cannot
+/// take does not land — the game shows the proc icon on the damage number and
+/// the status never appears on the enemy (owner, 2026-08-12, with Valence
+/// Formation's forced Radiation on a Radiation-immune unit). Only the DISPLAY
+/// is fooled; nothing is applied, and the random draws below renormalise
+/// exactly as they already did.
+///
+/// Filtered here rather than at each caller because "forced" arrives from three
+/// places — the attack part, an extra hit, a syndicate radial — and an immunity
+/// that held for two of them would be the worst kind of half-rule.
 pub fn procs_for_hit(
     forced: &[DamageType],
     status_chance: f64,
@@ -67,7 +78,8 @@ pub fn procs_for_hit(
     immune: &[DamageType],
     rng: &mut Rng,
 ) -> Vec<DamageType> {
-    let mut procs = forced.to_vec();
+    let mut procs: Vec<DamageType> =
+        forced.iter().copied().filter(|t| !immune.contains(t)).collect();
     for _ in 0..roll_proc_count(status_chance, rng) {
         if let Some(t) = draw_proc_type(vector, immune, rng) {
             procs.push(t);
@@ -90,6 +102,49 @@ mod tests {
             .with(DamageType::Heat, 25.0)
             .with(DamageType::Toxin, 15.0)
             .with(DamageType::Corrosive, 10.0)
+    }
+
+    /// AN IMMUNITY BEATS A GUARANTEE, and the random draws are untouched by it.
+    ///
+    /// Valence Formation forces a Radiation proc on every hit. Against a
+    /// Radiation-immune unit the game still draws the proc icon beside the
+    /// damage number and the status never lands (owner, 2026-08-12) — so the
+    /// forced list is filtered by the same immunity the draw already obeys.
+    ///
+    /// The second half is the one worth pinning: the ordinary rolls behave
+    /// exactly as they do without a forced proc at all. An implementation that
+    /// "used up" the forced proc, or that let it through and then removed the
+    /// status later, would move the other types' frequencies.
+    #[test]
+    fn a_forced_proc_of_an_immune_type_never_lands() {
+        let v = DamageVector::new()
+            .with(DamageType::Radiation, 50.0)
+            .with(DamageType::Slash, 50.0);
+        let forced = [DamageType::Radiation];
+        let immune = [DamageType::Radiation];
+
+        let mut rng = Rng::new(0x7A1E);
+        let (mut rads, mut slashes, mut total) = (0u32, 0u32, 0u32);
+        for _ in 0..20_000 {
+            let procs = procs_for_hit(&forced, 0.40, &v, &immune, &mut rng);
+            total += procs.len() as u32;
+            rads += procs.iter().filter(|&&t| t == DamageType::Radiation).count() as u32;
+            slashes += procs.iter().filter(|&&t| t == DamageType::Slash).count() as u32;
+        }
+        assert_eq!(rads, 0, "the guarantee does not beat the immunity");
+        assert_eq!(slashes, total, "…and Slash takes every roll, renormalised");
+
+        // THE CONTROL: the same hit on a unit that CAN take it gets the forced
+        // proc on every single hit, so the count is at least one per hit.
+        let mut rng = Rng::new(0x7A1E);
+        let mut rads = 0u32;
+        for _ in 0..20_000 {
+            rads += procs_for_hit(&forced, 0.40, &v, &[], &mut rng)
+                .iter()
+                .filter(|&&t| t == DamageType::Radiation)
+                .count() as u32;
+        }
+        assert!(rads >= 20_000, "forced means every hit: {rads}");
     }
 
     #[test]

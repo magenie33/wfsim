@@ -192,6 +192,52 @@ pub struct EnemySpec {
     /// was written; what it had no way to hear was an enemy DECLARING one.
     #[serde(default)]
     pub status_immunities: Vec<String>,
+    /// THE OTHER KIND, and it is a different arithmetic: the proc LANDS and its
+    /// EFFECT does nothing.
+    ///
+    /// A status immunity above removes the type from the proc DRAW, so the
+    /// others renormalise onto the roll and each becomes MORE likely. A
+    /// nullified effect does not: the type still takes its share of the rolls,
+    /// the status is still applied and still counts as a type for Condition
+    /// Overload — only what it DOES is gone (owner, 2026-08-12: "有一种是可以正
+    /// 常触发这个状态，但是状态没有效果。还有一种是压根不可能上去…这两种算法会
+    /// 影响触发概率").
+    ///
+    /// The wiki says which is which by how it words them. A Demolisher's codex
+    /// lists "Proc Immunity: Radiation" — that one cannot land. The Demolisher
+    /// page lists the CROWD CONTROL it ignores — "Confusion, Knockdown, Lifted,
+    /// Stagger, Stun" — and those are effects: Impact still procs on it and
+    /// still does not move it.
+    #[serde(default)]
+    pub nullified_status_effects: Vec<String>,
+    /// It cannot be FROZEN. Cold's ladder keeps climbing and never converts, so
+    /// the stacks sit at their cap instead of being consumed every tenth proc —
+    /// which means the Cold bonus is up for the WHOLE fight rather than in
+    /// bursts around a 3-second Frozen window (owner, 2026-08-12: "因为
+    /// demolisher没有冰冻状态，所以会一直叠冰冻…一直有10层").
+    ///
+    /// It is the same kind of fact as `nullified_status_effects` — the proc
+    /// lands, one part of what it does is missing — but Frozen is a STATE
+    /// rather than a type, so it says so on its own.
+    #[serde(default)]
+    pub cannot_be_frozen: bool,
+    /// A DEMOLISHER'S NULLIFYING PULSE. VERBATIM (wiki, Disruption):
+    /// *"Demolysts and Demolishers will pulse out a red aura every 5 seconds
+    /// with a radius of 6.5 meters, immediately dispelling and disabling all
+    /// Warframe abilities within range and on itself, similar to a Nullifier
+    /// Crewman's bubble."*
+    ///
+    /// It reaches THIS engine because the Warframe ability BUFFS are the one
+    /// thing here a Warframe does — Roar, Eclipse, Nourish and the elemental
+    /// augments ride on the Arena (`data/abilities/`). Against a unit that
+    /// carries this, they are not up.
+    ///
+    /// No distance in this sim, so "within range" is always true; and no
+    /// ability CASTING, so nothing re-applies between pulses. Both simplify the
+    /// same way — the buffs are off for the whole fight — and both are stated
+    /// on the target card rather than left to be discovered in a number.
+    #[serde(default)]
+    pub nullifies_warframe_abilities: bool,
     /// Whether an Eximus variant of this unit exists in-game (wiki
     /// `Eximus/Compatibilities`). Defaults to false: unknown units must not
     /// silently allow impossible combinations.
@@ -300,6 +346,7 @@ impl EnemySpec {
                 general: c.general,
                 impact: c.impact,
             }),
+            cannot_be_frozen: self.cannot_be_frozen,
             steel_path,
             eximus,
             can_be_eximus: self.can_be_eximus,
@@ -380,6 +427,84 @@ pub fn all() -> Vec<EnemySpec> {
 
 #[cfg(test)]
 mod tests {
+    /// A DEMOLISHER'S RESTRICTIONS, and the point is that they are THREE
+    /// different mechanics wearing one word.
+    ///
+    /// 1. RADIATION CANNOT LAND. Dropped from the proc draw, so every other
+    ///    type renormalises onto the roll and becomes MORE likely.
+    /// 2. IMPACT LANDS AND DOES NOTHING. Its Stagger is crowd control this unit
+    ///    ignores — but the proc still takes its share of the rolls and still
+    ///    counts as a status type for Condition Overload. Reading it as (1)
+    ///    would be wrong twice: every other status rarer, and a CO build short
+    ///    a type it actually has.
+    /// 3. IT IS NEVER FROZEN, which makes Cold BETTER here. The ladder normally
+    ///    spends itself every tenth proc; here it climbs to the cap and stays.
+    ///
+    /// The wiki words (1) and (2) differently and that is the tell: the codex
+    /// says "Proc Immunity: Radiation", the Demolisher page lists the crowd
+    /// control it ignores.
+    #[test]
+    fn a_demolishers_three_restrictions_are_three_different_mechanics() {
+        let roster = all();
+        let d = roster
+            .iter()
+            .find(|e| e.id == "demolisher_devourer")
+            .expect("the roster carries it");
+
+        assert!(d.nullifies_warframe_abilities, "the pulse");
+        assert_eq!(d.status_immunities, ["radiation"], "cannot land");
+        assert_eq!(d.nullified_status_effects, ["impact"], "lands, does nothing");
+        assert!(d.cannot_be_frozen);
+        assert!(
+            d.damage_modifiers.is_none(),
+            "none of this is a x0 column: the damage is untouched"
+        );
+
+        // (1) AND (2) TOLD APART BY THE DRAW. Impact is 3/4 of this vector, so
+        // if it were dropped like Radiation, Slash would take every roll.
+        let v = crate::damage::DamageVector::new()
+            .with(crate::damage::DamageType::Impact, 75.0)
+            .with(crate::damage::DamageType::Slash, 25.0);
+        let immune: Vec<crate::damage::DamageType> = d
+            .status_immunities
+            .iter()
+            .filter_map(|s| crate::damage::DamageType::from_name(s))
+            .collect();
+        let mut rng = crate::rng::Rng::new(0xD3E0);
+        let mut impacts = 0;
+        for _ in 0..4000 {
+            if crate::status::draw_proc_type(&v, &immune, &mut rng)
+                == Some(crate::damage::DamageType::Impact)
+            {
+                impacts += 1;
+            }
+        }
+        assert!(
+            (2800..3200).contains(&impacts),
+            "Impact still takes its 3/4 of the rolls on this unit: {impacts} of 4000"
+        );
+
+        // …and the control: a type that IS immune takes none of them.
+        let vr = crate::damage::DamageVector::new()
+            .with(crate::damage::DamageType::Radiation, 75.0)
+            .with(crate::damage::DamageType::Slash, 25.0);
+        let mut rng = crate::rng::Rng::new(0xD3E0);
+        let mut rads = 0;
+        let mut slashes = 0;
+        for _ in 0..4000 {
+            match crate::status::draw_proc_type(&vr, &immune, &mut rng) {
+                Some(crate::damage::DamageType::Radiation) => rads += 1,
+                Some(crate::damage::DamageType::Slash) => slashes += 1,
+                _ => {}
+            }
+        }
+        assert_eq!(rads, 0, "Radiation is dropped from the draw, not merely rarer");
+        assert_eq!(
+            slashes, 4000,
+            "…and the rest RENORMALISE onto the roll — Slash takes all of it,              not its old quarter"
+        );
+    }
+
     use super::*;
     use std::path::PathBuf;
 

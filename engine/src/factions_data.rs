@@ -261,6 +261,13 @@ mod tests {
             match e.id.as_str() {
                 "thrax_centurion" => assert_eq!(listed, vec![(DamageType::Void, 1.5)], "{key}"),
                 "corrupted_heavy_gunner" => assert_eq!(listed.len(), 3, "{key}"),
+                // THE ROSTER'S FIRST GRINEER UNIT, so the first to carry that
+                // faction's column at all: Impact and Corrosive x1.5.
+                "demolisher_devourer" => assert_eq!(
+                    listed,
+                    vec![(DamageType::Impact, 1.5), (DamageType::Corrosive, 1.5)],
+                    "{key}"
+                ),
                 // The six Acolytes: faction "Stalker", which the table skips.
                 _ => assert!(listed.is_empty(), "{}: unexpected column {key}", e.id),
             }

@@ -1063,6 +1063,13 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
   border:1px solid color-mix(in srgb,var(--gold) 40%,transparent)}
 /* THE OTHER ADMISSION, and it is deliberately NOT gold: gold is a todo, and a
    todo asks to be watched. An EDGE is settled — muted, stated once, no alarm. */
+/* A TARGET THAT TAKES YOUR BUFFS AWAY. Loud on purpose: everything below it is
+   ticked and not running, and a player reading only the checkboxes would be
+   scoring a fight they are not in. */
+.wfb-null{margin:6px 0 2px;padding:6px 8px;border-radius:6px;font-size:12px;
+  background:rgba(200,90,90,.14);color:#d98c8c;
+  border:1px solid color-mix(in srgb,#d98c8c 34%,transparent)}
+
 .exchip.scope{background:color-mix(in srgb,var(--fg) 8%,transparent);color:var(--dim);
   border:1px solid color-mix(in srgb,var(--fg) 16%,transparent)}
 

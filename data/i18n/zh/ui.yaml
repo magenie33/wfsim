@@ -599,6 +599,13 @@ ui:
   "ammo reserves are unlimited, so nothing runs dry": 备弹无限，不会打空
   "nothing damages the player in this fight": 这场战斗里没有任何东西会伤到玩家
   "no Warframe ability is cast during the fight": 战斗中不释放任何战甲技能
+  "this target nullifies Warframe abilities — it pulses every 5 seconds and dispels everything in range, so none of these are running and the sim scores it that way": 这个目标会驱散战甲技能 —— 它每 5 秒脉冲一次、清除范围内的一切,所以下面勾选的都没有生效,模拟也是按没有生效来算的
+  "this target dispels it — nothing ticked here is running against it": 这个目标会把它驱散 —— 对它而言这里勾选的都没有生效
+  "none — this target dispels them": 无 —— 这个目标会驱散它们
+  "these procs still land and still count for Condition Overload — this unit simply ignores what they do": 这些触发照常上、也照常计入触发超载 —— 这个单位只是无视它们的效果
+  "no effect": 无效果
+  "Cold never converts on this unit, so the stacks climb to their cap and STAY — the bonus is up all fight instead of being spent on a 3-second Frozen window": 冷冻在这个单位上永远不会转化,所以层数会一路叠到上限并保持 —— 加成全程有效,而不是被 3 秒的冰冻窗口消耗掉
+  "never Frozen — Cold stacks hold": 永不冰冻 —— 冷冻层数常驻
   "the fight did not re-roll for this option — same statuses landed, so this comparison is exact": 这个选项没有让战斗重新掷骰 —— 触发的异常完全相同，所以这次比较是精确的
   "no timeout": 无限持续
   # The replay: the transport, the buff curves, and the pools table.
