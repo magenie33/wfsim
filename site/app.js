@@ -506,7 +506,8 @@ function defaultScenario() {
     eximus: d.eximus ?? null,
     headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
     invisible: !!d.invisible, airborne: !!d.airborne,
-    wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
+    frame: d.frame || "", wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
+    wf_sprint: d.wf_sprint || 0.9,
     infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
     // NO `form`: how the weapon is played belongs to the build.
     duration: d.duration, runs: d.runs, buffs: {},
@@ -532,7 +533,7 @@ function defaultScenario() {
 // `aiming` defaults TRUE because that is what the sim silently assumed before
 // the knob existed, so no stored preset changes meaning.
 let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: null, headshot_pct: 100, aiming: true,
-  invisible: false, airborne: false, wf_armor: 0, wf_energy: 0,
+  invisible: false, airborne: false, frame: "", wf_armor: 0, wf_energy: 0, wf_sprint: 0.9,
   // NO `form`, AND NO `mode`. How the weapon is played is part of the BUILD;
   // a fight that carried it could decide how the weapon was fired, which is
   // what let a ruler pin an Incarnon weapon at its cycle (owner, 2026-08-07:
@@ -5111,7 +5112,20 @@ function renderMods() {
 // sim never ran, and hid a contribution the sim was paying. One player, both
 // answers (user, 2026-08-02: "这个目标也要在场上").
 // The scenario fields that describe the PLAYER rather than the fight.
-const TENNO_KEYS = ["aiming", "invisible", "airborne", "wf_armor", "wf_energy"];
+const TENNO_KEYS = ["aiming", "invisible", "airborne", "frame", "wf_armor", "wf_energy", "wf_sprint"];
+
+/// THE WARFRAME ROSTER, and what picking one means: it fills armor, max energy
+/// and sprint speed at once. Sprint is the one that could not be set at all
+/// before — there was no field for it — so every "With Sprint Speed 1.2 or
+/// Higher" perk in the roster was unreachable from this page.
+///
+/// The numbers stay EDITABLE after a pick, because the roster is unmodded: a
+/// built frame carries Steel Fiber and Primed Flow and this one does not, and
+/// "With Energy Max Over 700" is a gate no frame can open at all (the highest
+/// maxed pool in the game is 300). Replacing the fields with a dropdown would
+/// have made that unaskable.
+const frames = () => (META && META.frames) || [];
+const frameOf = (id) => frames().find((f) => f.id === id);
 
 // The fight's player, as request fields. Its own function because three
 // callers need exactly this subset and a fourth will: it is the actor, not the
@@ -7324,8 +7338,13 @@ function renderScenarioFields(ids, opts = {}) {
       <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>
       <label class="check" title="${escHtml(tr("the wielder's state: mods that only pay while Invisible (Spectral Serration) grant nothing when this is off"))}"><input type="checkbox" data-k="invisible"${sim.invisible ? " checked" : ""}> ${escHtml(tr("Invisible"))}</label>
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"while Airborne\""))}"><input type="checkbox" data-k="airborne"${sim.airborne ? " checked" : ""}> ${escHtml(tr("Airborne"))}</label>
+      <label title="${escHtml(tr("picking a frame fills armor, max energy and sprint speed below — the roster is UNMODDED, so a built frame carries more and the numbers stay editable"))}">${escHtml(tr("Warframe"))} <select data-k="frame">
+        <option value=""${sim.frame ? "" : " selected"}>${escHtml(tr("none — no frame"))}</option>
+        ${frames().map((f) => `<option value="${escHtml(f.id)}"${f.id === sim.frame ? " selected" : ""}>${escHtml(f.name)}</option>`).join("")}
+      </select></label>
       <label title="${escHtml(tr("your Warframe's armor, buffs included — Primary Bulwark pays +1% damage per point past 1,000. 0 = no frame"))}">${escHtml(tr("WF Armor"))} <input type="number" data-k="wf_armor" min="0" max="100000" step="1" value="${sim.wf_armor || 0}"></label>
-      <label title="${escHtml(tr("your Warframe's MAX energy — Primary Overcharge turns 35% of it into multishot. 0 = no frame"))}">${escHtml(tr("WF Energy"))} <input type="number" data-k="wf_energy" min="0" max="100000" step="1" value="${sim.wf_energy || 0}"></label>`;
+      <label title="${escHtml(tr("your Warframe's MAX energy — Primary Overcharge turns 35% of it into multishot. 0 = no frame"))}">${escHtml(tr("WF Energy"))} <input type="number" data-k="wf_energy" min="0" max="100000" step="1" value="${sim.wf_energy || 0}"></label>
+      <label title="${escHtml(tr("your Warframe's sprint speed — several Incarnon perks pay only at 1.2 or higher, and the slowest frame is 0.9"))}">${escHtml(tr("WF Sprint"))} <input type="number" data-k="wf_sprint" min="0" max="3" step="0.05" value="${sim.wf_sprint ?? 0.9}"></label>`;
   }
 
   // ---- 3. LIMITS: what the simulation is allowed to assume -------------
@@ -7373,6 +7392,19 @@ function renderScenarioFields(ids, opts = {}) {
         if (el.type === "checkbox") sim[k] = el.checked;
         else if (el.type === "number") sim[k] = Number(el.value);
         else sim[k] = el.value;
+        // PICKING A FRAME FILLS ITS THREE NUMBERS. They stay editable after —
+        // the roster is unmodded, so a built frame carries more armor and more
+        // energy than any entry here, and one gate ("With Energy Max Over 700")
+        // no frame can open at all. Writing the fields rather than replacing
+        // them with a read-only display is what keeps that askable.
+        if (k === "frame") {
+          const f = frameOf(sim.frame);
+          if (f) {
+            sim.wf_armor = f.armor;
+            sim.wf_energy = f.energy;
+            sim.wf_sprint = f.sprint;
+          }
+        }
         // No `enemy` case here: the target is the picker's, not a field's, and
         // it repaints the arena through renderSim() like everything else.
         // A TENNO field changes what the BUILD is worth, not just what the

@@ -28,14 +28,42 @@ const r = await evaluate(`(async () => {
   armor.value = '1500'; armor.dispatchEvent(new Event('change'));
   await sleep(2500);
   const after = conds();
-  return { keys, before: before.replace(/\\s+/g,' ').trim().slice(0,120),
-           after: after.replace(/\\s+/g,' ').trim().slice(0,120),
-           simArmor: sim.wf_armor, url: await shareUrl() };
+
+  // …AND A FRAME FILLS ALL THREE AT ONCE. Sprint is the one that matters most
+  // here: it could not be set at all before this control existed, so every
+  // "With Sprint Speed 1.2 or Higher" perk in the roster was unreachable from
+  // the page no matter what a player did.
+  const pick = box.querySelector('[data-k="frame"]');
+  const nFrames = pick ? pick.options.length : 0;
+  pick.value = 'valkyr_prime'; pick.dispatchEvent(new Event('change'));
+  await sleep(1800);
+  const picked = { armor: sim.wf_armor, energy: sim.wf_energy, sprint: sim.wf_sprint };
+  // The numbers stay EDITABLE after a pick — the roster is unmodded, and one
+  // gate no frame can open is only askable by typing.
+  const e2 = box.querySelector('[data-k="wf_energy"]');
+  e2.value = '900'; e2.dispatchEvent(new Event('change'));
+  await sleep(1200);
+
+  return { keys, nFrames, picked, overridden: sim.wf_energy, simArmor: 1500,
+           before: before.replace(/\s+/g,' ').trim().slice(0,120),
+           after: after.replace(/\s+/g,' ').trim().slice(0,120),
+           url: await shareUrl() };
 })()`);
 
 check("the Tenno block carries every player field",
-  ["aiming", "headshot_pct", "invisible", "airborne", "wf_armor", "wf_energy"].every((k) => r.keys.includes(k)),
+  ["aiming", "headshot_pct", "invisible", "airborne", "frame", "wf_armor", "wf_energy", "wf_sprint"]
+    .every((k) => r.keys.includes(k)),
   r.keys.join(","));
+check("the whole Warframe roster is offered", r.nFrames >= 120, `${r.nFrames} options`);
+// Valkyr Prime, from data/frames.yaml: 1000 armor, 1.1 sprint, 225 max energy
+// (175 at rank 0, +50). Three DIFFERENT numbers from one pick is the claim —
+// filling only the two that already had fields would leave every sprint gate
+// shut.
+check("picking one fills armor, max energy AND sprint",
+  r.picked.armor === 1000 && r.picked.sprint === 1.1 && r.picked.energy === 225,
+  JSON.stringify(r.picked));
+check("...and they stay editable — no frame reaches the 700-energy gate",
+  r.overridden === 900, String(r.overridden));
 check("typing armor reaches the scenario state", r.simArmor === 1500, String(r.simArmor));
 check("no frame: Bulwark says nothing", !/Bulwark/i.test(r.before), r.before || "(no conditionals)");
 check("1,500 armor: the panel states Bulwark's +500%", /Bulwark/i.test(r.after) && /500/.test(r.after), r.after || "(no conditionals)");

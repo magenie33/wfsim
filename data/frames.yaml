@@ -1,0 +1,644 @@
+# WARFRAMES — the wielder, as the three numbers a weapon perk can ask about.
+#
+# The Tenno has always been in the model (data/tenno/default.yaml) and it was a
+# PLACEHOLDER: no armor, no energy, sprint at 0.9, the slowest a frame has. So
+# every "With Sprint Speed 1.2 or Higher" / "With Armor Over 450" / "With Energy
+# Max Over 700" perk paid nothing, and the panel had no way to say otherwise —
+# there was not even a sprint field on it.
+#
+# SOURCE: DE's own export (`vendor/warframe-items` Warframes.json), which
+# carries the RANK 0 stat block. Checked against the wiki infobox on two frames
+# — Ash (455/270/105/100/1.15) and Inaros Prime (2215/0/240/140/1.05) — and it
+# is rank 0 on both, digit for digit.
+#
+# WHICH IS WHY ONLY THREE FIELDS ARE HERE. Rank 30 moves them differently:
+#
+#   armor   +0     rank-invariant, so the export's number IS the maxed one
+#   sprint  +0     likewise
+#   energy  +50    the same on both frames checked, so it is applied below
+#   health  +100 on Ash, +200 on Inaros Prime — per-frame, not derivable
+#   shield  +100 on Ash, +0 on Inaros Prime (which has none)
+#
+# Health and shield are therefore NOT carried. Nothing reads them today, and a
+# number that cannot be derived is worse than a missing one: it would look like
+# a frame's real health and be wrong by a hundred. They get sourced properly the
+# day something needs them.
+#
+# NOT MODDED, and it decides whether a gate is reachable at all. Vitality, Steel
+# Fiber, Primed Flow and the Umbral set are not here:
+#   - `armor > 450` — 9 frames reach it unmodded (Valkyr Prime tops out at 1000)
+#   - `sprint >= 1.2` — 19 frames
+#   - `energy > 700` — NONE. The highest maxed pool in the game is 300, so that
+#     gate cannot open on any frame, modded or not, and the two Paladin Virtue
+#     perks pay nothing until the number is typed over by hand. The panel still
+#     allows that, which is why the override was kept rather than replaced.
+#
+# NAMES ARE NOT TRANSLATED, and that is DE's doing: the Chinese client keeps
+# every Warframe name in English (WFCD i18n agrees on all 121), the same reason
+# the ability cards print the frame in English.
+frames:
+  - id: ash
+    name: Ash
+    armor: 105
+    energy: 150
+    sprint: 1.15
+  - id: ash_prime
+    name: Ash Prime
+    armor: 185
+    energy: 150
+    sprint: 1.2
+  - id: atlas
+    name: Atlas
+    armor: 475
+    energy: 225
+    sprint: 0.89999998
+  - id: atlas_prime
+    name: Atlas Prime
+    armor: 500
+    energy: 265
+    sprint: 1
+  - id: banshee
+    name: Banshee
+    armor: 105
+    energy: 225
+    sprint: 1.1
+  - id: banshee_prime
+    name: Banshee Prime
+    armor: 135
+    energy: 265
+    sprint: 1.15
+  - id: baruuk
+    name: Baruuk
+    armor: 185
+    energy: 250
+    sprint: 1.2
+  - id: baruuk_prime
+    name: Baruuk Prime
+    armor: 240
+    energy: 250
+    sprint: 1.2
+  - id: bonewidow
+    name: Bonewidow
+    armor: 480
+    energy: 225
+    sprint: 1.1
+  - id: caliban
+    name: Caliban
+    armor: 290
+    energy: 190
+    sprint: 1.1
+  - id: caliban_prime
+    name: Caliban Prime
+    armor: 290
+    energy: 225
+    sprint: 1.1
+  - id: chroma
+    name: Chroma
+    armor: 370
+    energy: 225
+    sprint: 1
+  - id: chroma_prime
+    name: Chroma Prime
+    armor: 450
+    energy: 250
+    sprint: 1
+  - id: citrine
+    name: Citrine
+    armor: 265
+    energy: 180
+    sprint: 1
+  - id: cyte_09
+    name: Cyte-09
+    armor: 150
+    energy: 230
+    sprint: 1.1
+  - id: dagath
+    name: Dagath
+    armor: 125
+    energy: 225
+    sprint: 1.1
+  - id: dante
+    name: Dante
+    armor: 145
+    energy: 250
+    sprint: 1.15
+  - id: ember
+    name: Ember
+    armor: 135
+    energy: 225
+    sprint: 1.1
+  - id: ember_prime
+    name: Ember Prime
+    armor: 160
+    energy: 225
+    sprint: 1.1
+  - id: equinox
+    name: Equinox
+    armor: 135
+    energy: 225
+    sprint: 1.15
+  - id: equinox_prime
+    name: Equinox Prime
+    armor: 160
+    energy: 250
+    sprint: 1.15
+  - id: excalibur
+    name: Excalibur
+    armor: 240
+    energy: 150
+    sprint: 1
+  - id: excalibur_prime
+    name: Excalibur Prime
+    armor: 315
+    energy: 225
+    sprint: 1
+  - id: excalibur_umbra
+    name: Excalibur Umbra
+    armor: 315
+    energy: 225
+    sprint: 1
+  - id: follie
+    name: Follie
+    armor: 325
+    energy: 225
+    sprint: 0.94999999
+  - id: frost
+    name: Frost
+    armor: 315
+    energy: 150
+    sprint: 0.94999999
+  - id: frost_prime
+    name: Frost Prime
+    armor: 315
+    energy: 150
+    sprint: 0.94999999
+  - id: gara
+    name: Gara
+    armor: 160
+    energy: 225
+    sprint: 1.15
+  - id: gara_prime
+    name: Gara Prime
+    armor: 200
+    energy: 225
+    sprint: 1.15
+  - id: garuda
+    name: Garuda
+    armor: 315
+    energy: 190
+    sprint: 1
+  - id: garuda_prime
+    name: Garuda Prime
+    armor: 420
+    energy: 270
+    sprint: 1
+  - id: gauss
+    name: Gauss
+    armor: 185
+    energy: 225
+    sprint: 1.4
+  - id: gauss_prime
+    name: Gauss Prime
+    armor: 185
+    energy: 225
+    sprint: 1.5
+  - id: grendel
+    name: Grendel
+    armor: 370
+    energy: 225
+    sprint: 0.94999999
+  - id: grendel_prime
+    name: Grendel Prime
+    armor: 400
+    energy: 250
+    sprint: 0.94999999
+  - id: gyre
+    name: Gyre
+    armor: 105
+    energy: 240
+    sprint: 1
+  - id: gyre_prime
+    name: Gyre Prime
+    armor: 105
+    energy: 240
+    sprint: 1.05
+  - id: harrow
+    name: Harrow
+    armor: 185
+    energy: 150
+    sprint: 1
+  - id: harrow_prime
+    name: Harrow Prime
+    armor: 185
+    energy: 190
+    sprint: 1
+  - id: helminth
+    name: Helminth
+    armor: 0
+    energy: 50
+    sprint: 1.0
+  - id: hildryn
+    name: Hildryn
+    armor: 315
+    energy: 50
+    sprint: 1
+  - id: hildryn_prime
+    name: Hildryn Prime
+    armor: 315
+    energy: 50
+    sprint: 1.05
+  - id: hydroid
+    name: Hydroid
+    armor: 240
+    energy: 190
+    sprint: 1.05
+  - id: hydroid_prime
+    name: Hydroid Prime
+    armor: 290
+    energy: 225
+    sprint: 1.05
+  - id: inaros
+    name: Inaros
+    armor: 240
+    energy: 150
+    sprint: 1
+  - id: inaros_prime
+    name: Inaros Prime
+    armor: 240
+    energy: 190
+    sprint: 1.05
+  - id: ivara
+    name: Ivara
+    armor: 105
+    energy: 265
+    sprint: 1.15
+  - id: ivara_prime
+    name: Ivara Prime
+    armor: 135
+    energy: 300
+    sprint: 1.2
+  - id: jade
+    name: Jade
+    armor: 135
+    energy: 200
+    sprint: 1
+  - id: khora
+    name: Khora
+    armor: 290
+    energy: 190
+    sprint: 1.05
+  - id: khora_prime
+    name: Khora Prime
+    armor: 345
+    energy: 225
+    sprint: 1.05
+  - id: koumei
+    name: Koumei
+    armor: 444
+    energy: 172
+    sprint: 1
+  - id: kullervo
+    name: Kullervo
+    armor: 550
+    energy: 225
+    sprint: 1.1
+  - id: lavos
+    name: Lavos
+    armor: 575
+    energy: 50
+    sprint: 1.15
+  - id: lavos_prime
+    name: Lavos Prime
+    armor: 575
+    energy: 50
+    sprint: 1.15
+  - id: limbo
+    name: Limbo
+    armor: 105
+    energy: 225
+    sprint: 1.15
+  - id: limbo_prime
+    name: Limbo Prime
+    armor: 135
+    energy: 265
+    sprint: 1.15
+  - id: loki
+    name: Loki
+    armor: 105
+    energy: 225
+    sprint: 1.25
+  - id: loki_prime
+    name: Loki Prime
+    armor: 135
+    energy: 265
+    sprint: 1.25
+  - id: mag
+    name: Mag
+    armor: 105
+    energy: 190
+    sprint: 1
+  - id: mag_prime
+    name: Mag Prime
+    armor: 135
+    energy: 265
+    sprint: 1
+  - id: mesa
+    name: Mesa
+    armor: 105
+    energy: 150
+    sprint: 1.1
+  - id: mesa_prime
+    name: Mesa Prime
+    armor: 135
+    energy: 190
+    sprint: 1.1
+  - id: mirage
+    name: Mirage
+    armor: 105
+    energy: 225
+    sprint: 1.2
+  - id: mirage_prime
+    name: Mirage Prime
+    armor: 185
+    energy: 225
+    sprint: 1.2
+  - id: nekros
+    name: Nekros
+    armor: 105
+    energy: 150
+    sprint: 1.1
+  - id: nekros_prime
+    name: Nekros Prime
+    armor: 135
+    energy: 190
+    sprint: 1.1
+  - id: nezha
+    name: Nezha
+    armor: 200
+    energy: 225
+    sprint: 1.15
+  - id: nezha_prime
+    name: Nezha Prime
+    armor: 265
+    energy: 225
+    sprint: 1.2
+  - id: nidus
+    name: Nidus
+    armor: 350
+    energy: 150
+    sprint: 1
+  - id: nidus_prime
+    name: Nidus Prime
+    armor: 425
+    energy: 190
+    sprint: 1
+  - id: nokko
+    name: Nokko
+    armor: 135
+    energy: 180
+    sprint: 1.25
+  - id: nova
+    name: Nova
+    armor: 105
+    energy: 225
+    sprint: 1.2
+  - id: nova_prime
+    name: Nova Prime
+    armor: 135
+    energy: 265
+    sprint: 1.2
+  - id: nyx
+    name: Nyx
+    armor: 105
+    energy: 225
+    sprint: 1.1
+  - id: nyx_prime
+    name: Nyx Prime
+    armor: 135
+    energy: 225
+    sprint: 1.125
+  - id: oberon
+    name: Oberon
+    armor: 385
+    energy: 225
+    sprint: 1
+  - id: oberon_prime
+    name: Oberon Prime
+    armor: 450
+    energy: 265
+    sprint: 1
+  - id: octavia
+    name: Octavia
+    armor: 160
+    energy: 225
+    sprint: 1.05
+  - id: octavia_prime
+    name: Octavia Prime
+    armor: 160
+    energy: 265
+    sprint: 1.05
+  - id: oraxia
+    name: Oraxia
+    armor: 125
+    energy: 200
+    sprint: 1
+  - id: orion_sirius
+    name: Orion & Sirius
+    armor: 300
+    energy: 250
+    sprint: 1.15
+  - id: protea
+    name: Protea
+    armor: 135
+    energy: 225
+    sprint: 1.2
+  - id: protea_prime
+    name: Protea Prime
+    armor: 185
+    energy: 250
+    sprint: 1.2
+  - id: qorvex
+    name: Qorvex
+    armor: 875
+    energy: 200
+    sprint: 0.89999998
+  - id: revenant
+    name: Revenant
+    armor: 135
+    energy: 190
+    sprint: 1
+  - id: revenant_prime
+    name: Revenant Prime
+    armor: 135
+    energy: 225
+    sprint: 1.1
+  - id: rhino
+    name: Rhino
+    armor: 240
+    energy: 150
+    sprint: 0.94999999
+  - id: rhino_prime
+    name: Rhino Prime
+    armor: 290
+    energy: 150
+    sprint: 1
+  - id: saryn
+    name: Saryn
+    armor: 240
+    energy: 225
+    sprint: 0.94999999
+  - id: saryn_prime
+    name: Saryn Prime
+    armor: 315
+    energy: 250
+    sprint: 1
+  - id: sevagoth
+    name: Sevagoth
+    armor: 160
+    energy: 190
+    sprint: 0.94999999
+  - id: sevagoth_prime
+    name: Sevagoth Prime
+    armor: 185
+    energy: 225
+    sprint: 0.94999999
+  - id: sirius_orion
+    name: Sirius & Orion
+    armor: 160
+    energy: 250
+    sprint: 1.15
+  - id: styanax
+    name: Styanax
+    armor: 265
+    energy: 225
+    sprint: 1
+  - id: styanax_prime
+    name: Styanax Prime
+    armor: 265
+    energy: 265
+    sprint: 1
+  - id: temple
+    name: Temple
+    armor: 325
+    energy: 215
+    sprint: 1
+  - id: titania
+    name: Titania
+    armor: 105
+    energy: 225
+    sprint: 1
+  - id: titania_prime
+    name: Titania Prime
+    armor: 135
+    energy: 265
+    sprint: 1
+  - id: trinity
+    name: Trinity
+    armor: 105
+    energy: 225
+    sprint: 1
+  - id: trinity_prime
+    name: Trinity Prime
+    armor: 135
+    energy: 225
+    sprint: 1.1
+  - id: uriel
+    name: Uriel
+    armor: 105
+    energy: 150
+    sprint: 1.1
+  - id: valkyr
+    name: Valkyr
+    armor: 855
+    energy: 150
+    sprint: 1.1
+  - id: valkyr_prime
+    name: Valkyr Prime
+    armor: 1000
+    energy: 225
+    sprint: 1.1
+  - id: vauban
+    name: Vauban
+    armor: 160
+    energy: 225
+    sprint: 1
+  - id: vauban_prime
+    name: Vauban Prime
+    armor: 210
+    energy: 225
+    sprint: 1
+  - id: voidrig
+    name: Voidrig
+    armor: 385
+    energy: 225
+    sprint: 1
+  - id: volt
+    name: Volt
+    armor: 105
+    energy: 150
+    sprint: 1
+  - id: volt_prime
+    name: Volt Prime
+    armor: 135
+    energy: 250
+    sprint: 1
+  - id: voruna
+    name: Voruna
+    armor: 200
+    energy: 150
+    sprint: 0.94999999
+  - id: voruna_prime
+    name: Voruna Prime
+    armor: 265
+    energy: 180
+    sprint: 1.2
+  - id: wisp
+    name: Wisp
+    armor: 185
+    energy: 250
+    sprint: 1.2
+  - id: wisp_prime
+    name: Wisp Prime
+    armor: 210
+    energy: 250
+    sprint: 1.25
+  - id: wukong
+    name: Wukong
+    armor: 265
+    energy: 180
+    sprint: 1
+  - id: wukong_prime
+    name: Wukong Prime
+    armor: 290
+    energy: 195
+    sprint: 1.05
+  - id: xaku
+    name: Xaku
+    armor: 146
+    energy: 210
+    sprint: 1.02
+  - id: xaku_prime
+    name: Xaku Prime
+    armor: 167
+    energy: 231
+    sprint: 1.0700001
+  - id: yareli
+    name: Yareli
+    armor: 105
+    energy: 250
+    sprint: 1
+  - id: yareli_prime
+    name: Yareli Prime
+    armor: 105
+    energy: 265
+    sprint: 1.1
+  - id: zephyr
+    name: Zephyr
+    armor: 105
+    energy: 150
+    sprint: 1.1
+  - id: zephyr_prime
+    name: Zephyr Prime
+    armor: 135
+    energy: 225
+    sprint: 1.15

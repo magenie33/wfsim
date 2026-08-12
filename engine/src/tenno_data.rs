@@ -125,9 +125,103 @@ pub fn default_tenno() -> &'static Tenno {
     })
 }
 
+/// ONE WARFRAME, as the three numbers a weapon perk can ask about.
+///
+/// Health and shield are deliberately absent — see `data/frames.yaml`: the
+/// export carries rank 0, and their rank-30 gain is per-frame (+100 on Ash,
+/// +200 on Inaros Prime) where armor and sprint do not move at all and energy
+/// moves by a flat +50. A number that cannot be derived is worse than a missing
+/// one, and nothing reads them yet.
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct Frame {
+    pub id: String,
+    pub name: String,
+    pub armor: f64,
+    /// MAX energy at rank 30 (the export's rank-0 pool + 50).
+    pub energy: f64,
+    pub sprint: f64,
+}
+
+#[derive(Debug, Deserialize)]
+struct FrameFile {
+    frames: Vec<Frame>,
+}
+
+/// Every Warframe (`data/frames.yaml`), parsed once and in the file's order,
+/// which is alphabetical.
+pub fn frames() -> &'static Vec<Frame> {
+    static F: OnceLock<Vec<Frame>> = OnceLock::new();
+    F.get_or_init(|| {
+        let text = crate::data::file("frames.yaml").expect("embedded data/frames.yaml");
+        let f: FrameFile = serde_norway::from_str(text).expect("parse data/frames.yaml");
+        f.frames
+    })
+}
+
+/// The frame with this id, if the roster has one.
+pub fn frame(id: &str) -> Option<&'static Frame> {
+    frames().iter().find(|f| f.id == id)
+}
+
+impl Tenno {
+    /// This player WITH a frame chosen: its armor, its max energy, its sprint.
+    ///
+    /// Everything else — what the player is DOING — is untouched, because that
+    /// is the scenario's and not the frame's. A frame does not decide whether
+    /// you are aiming.
+    pub fn with_frame(&self, f: &Frame) -> Tenno {
+        Tenno {
+            armor: f.armor,
+            energy: f.energy,
+            sprint: f.sprint,
+            ..self.clone()
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// THE ROSTER LOADS, and the three numbers are the three a perk can ask
+    /// about — with the one that decides a gate checked against the wiki.
+    ///
+    /// The export carries RANK 0 and this file carries rank 30, which for these
+    /// three means: armor and sprint unchanged (they do not scale with rank)
+    /// and energy +50. Ash and Inaros Prime were both read off the wiki
+    /// infobox to establish that, so both are pinned here.
+    #[test]
+    fn the_warframe_roster_carries_the_maxed_numbers_a_perk_asks_about() {
+        let all = frames();
+        assert!(all.len() >= 120, "the whole roster: {}", all.len());
+
+        let ash = frame("ash").expect("Ash");
+        assert!((ash.armor - 105.0).abs() < 1e-9, "rank-invariant: {}", ash.armor);
+        assert!((ash.sprint - 1.15).abs() < 1e-9);
+        assert!((ash.energy - 150.0).abs() < 1e-9, "100 at rank 0, 150 maxed: {}", ash.energy);
+
+        let inaros = frame("inaros_prime").expect("Inaros Prime");
+        assert!((inaros.armor - 240.0).abs() < 1e-9);
+        assert!((inaros.sprint - 1.05).abs() < 1e-9);
+        assert!((inaros.energy - 190.0).abs() < 1e-9, "140 -> 190: {}", inaros.energy);
+
+        // …AND WHICH GATES THEY CAN OPEN, which is the point of carrying them.
+        let over = |f: fn(&Frame) -> bool| all.iter().filter(|x| f(x)).count();
+        assert!(over(|f| f.sprint >= 1.2) >= 15, "several frames reach the sprint gates");
+        assert!(over(|f| f.armor > 450.0) >= 5, "and a few the armor one");
+        assert_eq!(
+            over(|f| f.energy > 700.0),
+            0,
+            "NO frame reaches 700 max energy — the Paladin Virtue gate is unreachable              unmodded, which is why the panel keeps a typed override"
+        );
+
+        // A frame FILLS the player and touches nothing else: what the player is
+        // DOING belongs to the scenario.
+        let neutral = default_tenno();
+        let with = neutral.with_frame(frame("valkyr_prime").expect("Valkyr Prime"));
+        assert!(with.armor > neutral.armor && with.sprint != neutral.sprint);
+        assert_eq!(with.state, neutral.state, "a frame does not decide whether you are aiming");
+    }
 
     /// code == data. This is the whole consumer for now: the entry is loaded
     /// and its values are pinned, which is what `data/README.md` requires of a

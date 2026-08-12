@@ -607,6 +607,11 @@ ui:
   "Cold never converts on this unit, so the stacks climb to their cap and STAY — the bonus is up all fight instead of being spent on a 3-second Frozen window": 冷冻在这个单位上永远不会转化,所以层数会一路叠到上限并保持 —— 加成全程有效,而不是被 3 秒的冰冻窗口消耗掉
   "never Frozen — Cold stacks hold": 永不冰冻 —— 冷冻层数常驻
   "its nullifying pulse is not applied here: in game it dispels every Warframe ability within 6.5 m every 5 seconds, and this fight leaves Roar, Eclipse, Nourish and the elemental augments running": 这里没有启用它的驱散脉冲:游戏中它每 5 秒会清除 6.5 米内的所有战甲技能,而这场战斗保留了战吼、黯然失色、滋养以及元素增幅
+  "Warframe": 战甲
+  "none — no frame": 无 —— 未选择战甲
+  "WF Sprint": 战甲冲刺速度
+  "picking a frame fills armor, max energy and sprint speed below — the roster is UNMODDED, so a built frame carries more and the numbers stay editable": 选择战甲会填入下面的护甲、最大能量和冲刺速度 —— 名册是**未装 mod** 的,实际配好的战甲数值更高,所以这三个数字仍然可以手动改
+  "your Warframe's sprint speed — several Incarnon perks pay only at 1.2 or higher, and the slowest frame is 0.9": 你的战甲冲刺速度 —— 有几个灵化天赋要求 1.2 或更高才生效,而最慢的战甲是 0.9
   "the fight did not re-roll for this option — same statuses landed, so this comparison is exact": 这个选项没有让战斗重新掷骰 —— 触发的异常完全相同，所以这次比较是精确的
   "no timeout": 无限持续
   # The replay: the transport, the buff curves, and the pools table.

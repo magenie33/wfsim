@@ -329,8 +329,25 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
     // arcane reads (Primary Bulwark, Primary Overcharge); 0 means "no frame
     // chosen", which is what the neutral Tenno says and what makes those
     // arcanes contribute nothing until you say otherwise.
+    // A FRAME FILLS THEM FIRST, and a typed number still wins. Picking one
+    // sets armor, max energy and sprint speed together — which is what makes
+    // every "With Sprint Speed 1.2 or Higher" / "With Armor Over 450" perk
+    // reachable at all, sprint especially: the panel had no field for it.
+    //
+    // The override is kept rather than replaced because the roster is UNMODDED
+    // (data/frames.yaml): Steel Fiber and Primed Flow are not modelled, and the
+    // one gate no frame can open — "With Energy Max Over 700", against a
+    // highest maxed pool of 300 — is only askable by typing.
+    if let Some(f) = v
+        .get("frame")
+        .and_then(Value::as_str)
+        .and_then(wfsim_engine::tenno_data::frame)
+    {
+        t = t.with_frame(f);
+    }
     t.armor = get_f64(v, "wf_armor", t.armor).clamp(0.0, 100_000.0);
     t.energy = get_f64(v, "wf_energy", t.energy).clamp(0.0, 100_000.0);
+    t.sprint = get_f64(v, "wf_sprint", t.sprint).clamp(0.0, 10.0);
     t.state.energy_pct = get_f64(v, "wf_energy_pct", t.state.energy_pct).clamp(0.0, 1.0);
     t
 }
@@ -1073,6 +1090,15 @@ pub fn meta_json() -> Value {
             .map(|c| (c.to_string(), json!(mods_json(&wfsim_engine::mods_data::class_pool(c)))))
             .collect::<serde_json::Map<String, Value>>(),
         "enemies": enemies,
+        // THE WIELDER'S ROSTER. Three numbers a weapon perk can ask about; the
+        // panel fills its fields from whichever is picked.
+        "frames": wfsim_engine::tenno_data::frames()
+            .iter()
+            .map(|f| json!({
+                "id": f.id, "name": f.name,
+                "armor": f.armor, "energy": f.energy, "sprint": f.sprint,
+            }))
+            .collect::<Vec<_>>(),
         "factions": factions,
         // WARFRAME ABILITY BUFFS, the catalogue the scenario's own section
         // draws from (`data/abilities/`). `value` and `duration_s` are the
