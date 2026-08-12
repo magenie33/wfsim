@@ -144,6 +144,33 @@ When it lands, `abilities_data::resolve`'s two inputs (strength, duration) come
 from the frame and nothing about the buff definitions changes — that is why they
 are arguments.
 
+## What the ratchet has left (2026-08-12)
+
+**Five inert evolution clauses**, down from 226 in early August and 51 at the
+start of this pass, and none of them is waiting on the evolution layer:
+
+| clause | what it is actually blocked on |
+|---|---|
+| Neurotoxin (Dual Toxocyst) | DE's own wiki says *"Currently does not work"*. Measure it after they fix it. |
+| Dual Mode Chamber (Felarx) | an OPEN DECISION — see below. |
+| Devastation Cascade (Onos) | every stack pays out on the fully charged blast, an ATTACK PART the weapon entry does not carry. |
+| Precision's Payoff (Zylok, Zylok Prime) | needs the DUPLEX trigger, which `data/weapons/secondary/zylok.yaml` declares as its own gap: *"one pull fires TWO rounds in game and this entry paces one per pull"*. |
+
+That shape is the useful part. A gap in this list is a pointer at a named thing
+somewhere else — a DE bug, an unwritten ruling, a missing attack part, a missing
+firing mode — rather than "nobody got to it", which is what the count meant when
+it was in the hundreds.
+
+**Two PLAYER STATES were added to close the biggest groups**, both declared
+rather than observed, because this arena fires one weapon and casts nothing:
+
+- `overshields` — ten cards (Haven Foray, Guardian's Might) read it. Nothing
+  here takes them away, so it is a declaration; earning them mid-fight is a
+  separate clause and stays out of scope under `nobody_shoots_back`.
+- `channeling` — seven cards (Daring Reverie, Hunter's Mantra). The card's own
+  note defines it and the control carries the definition: the ability must be
+  DRAINING ENERGY over time, so Desecrate, Haven and an empty Gloom do not count.
+
 ---
 
 ## Open decisions, not missing machinery
@@ -152,6 +179,20 @@ These are things the engine COULD do today and deliberately does not, because
 doing them means inventing a play pattern. The repo's rule is that a policy is
 the owner's call, not the model's (the 99-stack decision, 2026-08-08: "不要特殊化
 处理99层那个了，不现实").
+
+### Dual Mode Chamber — OPEN (Felarx)
+
+*"Reload toggles the weapon between +100% Projectile Speed and +4m Punch
+Through."*
+
+A TOGGLE is a play pattern, and picking a side for the player is the same class
+of decision as reload interruption. Half of it is an edge and half is not, which
+is what keeps it here rather than in the list above: punch through buys a second
+body this arena does not have, but projectile speed is a stat the engine models
+where it changes a pool. A perk that is half an edge is not an edge.
+
+What is needed is a ruling, not machinery: "which side is the build in", or "it
+alternates and the sim should model both halves of the cycle".
 
 ### Reload interruption — DECIDED: never interrupt (owner, 2026-08-10)
 
