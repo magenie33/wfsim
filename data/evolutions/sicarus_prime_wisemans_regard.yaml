@@ -69,6 +69,26 @@ effects:
   # ALSO REPORTED, UNVERIFIED: a forum thread claims the conversion pays 25%
   # rather than 30% in Incarnon Form. The thread is not readable from here
   # (403), so it is recorded and NOT modelled.
+  # HOW THIS DIFFERS FROM THE FURIS'S PRELUDE OF MIGHT — two perks that both
+  # say "Critical Chance" and read two different numbers (owner, 2026-08-13).
+  #
+  #                          Wiseman's Regard        Prelude of Might
+  #   when                   resolved ONCE, off      re-checked AT EVERY SHOT
+  #                          the panel
+  #   Puncture's crit        NO — a debuff on the    YES — the row names it:
+  #   (target-dependent)     TARGET, and the panel   "Condition is affected by
+  #                          never sees one          the critical chance increase
+  #                                                  effect of Puncture status"
+  #   weak-point crit        NO — the row names      per SHOT here, so no. OPEN:
+  #   (Acuity, King's        King's Gambit and       the owner reads it as YES,
+  #   Gambit, Cascadia       Cascadia Accuracy as    measuring 2026-08-13
+  #   Accuracy)              excluded outright
+  #   which way it cuts      more crit = MORE        more crit = LOSE +3x
+  #                          status (a reward)       (a penalty)
+  #
+  # The last row is why the two must not be reasoned about together: the same
+  # mistake is worth the opposite amount on each.
+  #
   - kind: status_chance_from_crit_chance
     rate: 0.30
     cap: 0.40

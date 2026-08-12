@@ -19,6 +19,29 @@ effects:
   # The threshold is 50% on this family against the Furis's 40%, and it bites
   # harder here: taking it means holding crit chance under half, which Critical
   # Parallel and Survivor's Edge in the same tier both push against.
+  # HOW THIS DIFFERS FROM THE SICARUS'S WISEMAN'S REGARD — two perks that both
+  # say "Critical Chance" and read two different numbers (owner, 2026-08-13).
+  #
+  # THIS one is read AT THE MOMENT OF THE HIT, so a crit source that lives on
+  # the TARGET counts: the row's note names Puncture outright ("Condition is
+  # affected by the critical chance increase effect of Puncture status"), and
+  # Puncture is the only source that can raise your crit chance without your
+  # panel ever moving. Wiseman's Regard is the opposite — resolved once off the
+  # panel, and its own row names King's Gambit and Cascadia Accuracy as things
+  # it does NOT see.
+  #
+  # WEAK-POINT CRIT IS THE OPEN HALF. This engine reads the condition per SHOT,
+  # not per pellet, so Pistol Acuity / Cascadia Accuracy / King's Gambit do not
+  # move it — the argument being that those are properties of where a projectile
+  # landed rather than of the weapon the condition asks about. The wiki's note
+  # names only Puncture and settles nothing either way; the owner reads it as
+  # counting (2026-08-13) and is measuring in game. If it counts, the check
+  # moves into the pellet loop beside the weak-point bucket.
+  #
+  # AND IT CUTS THE OTHER WAY. Wiseman's Regard pays MORE the more crit you
+  # have; this one is LOST the moment you cross the line. Same reading, opposite
+  # sign, so the two must not be reasoned about together.
+  #
   - kind: crit_multiplier_below_crit_chance
     value: 3.4
     below_crit_chance: 0.50
