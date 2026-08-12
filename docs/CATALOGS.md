@@ -50,12 +50,9 @@ Three things, and the third is the one that keeps being got wrong:
    others. If the base variant is on the table and the Prime is not, the base
    gets the anomaly and the Prime gets ordinary.
 
-This supersedes a note recorded on 2026-08-08 which read the same absence the
-other way — that an Incarnon anomaly reaches the table and the form belongs to
-the ADAPTER, so one row covers every weapon that installs it. Three entries were
-generalised under it (`latron_wraith_incarnon`, `mk1_paris_incarnon`, and the
-Stug's Incarnon inheriting a row printed for its base form); all three are
-ordinary now.
+Enforced by `the_only_condition_overload_anomalies_are_the_ones_the_catalog_names`,
+which carries the anomalies as a LIST: a weapon whose FAMILY has a row fails
+until the row is checked for that weapon's own name.
 
 ### Rows carried
 
@@ -118,11 +115,10 @@ Every row, with the perk the printed number identifies:
 | Bronco Prime | 238 or 448 (Evolution II **Perk 1**) | Speeding Bullet, +30 a pellet x7 = the 210 printed | 0.5312 (catalog 53%) |
 | Zylok Prime | 500 or 530 (Evolution II) | both, each +30 | 0.9434 (catalog 94%) |
 
-Eight of the eleven were unflagged until 2026-08-12 on the claim (INCARNON.md)
-that "the engine already excludes an evolution's flat damage". It does the
-OPPOSITE by default — including it is the normal behaviour (owner, 2026-07-30)
-and the exclusion is opt-in per perk — so the Despair and the Bronco Prime were
-computing their CO term on twice the base the game uses.
+**INCLUDING an evolution's flat damage is the DEFAULT** (owner, 2026-07-30);
+the exclusion is opt-in per perk. So every row above has to be flagged on the
+perk it names, or that weapon computes its CO term on a base the game does not
+use — for the Despair and the Bronco Prime, on twice it.
 
 ### The Kunai's two notes, neither of which the engine can say yet
 

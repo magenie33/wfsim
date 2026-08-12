@@ -46,13 +46,6 @@ pseudo_reload:
 # base entry deals 4. So the row names the base form's blob and this form has
 # none — and a weapon's two FORMS can differ, which is the Torid's rule already
 # (`independent` on its base, ordinary on its Incarnon).
-#
-# It was `inert` on both until 2026-08-12, generalised from one row on the
-# reasoning that "a blob has no direct hit for a per-status bonus to attach to".
-# That reasoning may well be right about this form too — but it is reasoning,
-# not a row, and the catalog's rule is that absence means ORDINARY rather than
-# unknown (owner, 2026-08-12). If it is wrong it is wrong in the direction of
-# giving this form a bonus the game does not, so it is worth a measurement.
 co_behavior: additive_with_base_damage
 
 attack:

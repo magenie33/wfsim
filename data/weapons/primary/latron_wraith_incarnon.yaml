@@ -45,13 +45,6 @@ pseudo_reload:
 # entries it names and no others (owner, 2026-08-12: "同家族的灵化仍旧视为不同
 # 的武器。只要不在co表上，一律视为正常的只对direct的100%的加算…如果一个武器的
 # 普通的在表上，而prime没有，那普通特殊处理，prime正常处理，不要擅自家族推广").
-#
-# This entry was `independent` until then, generalised from the family. That
-# supersedes the note recorded here on 2026-08-08, which read the same absence
-# the other way — as "an anomaly on an Incarnon FORM reaches the table, and the
-# form belongs to the ADAPTER". The rule is now the narrow one, in both
-# directions: absence means ordinary, and ordinary means direct hits only, 100%
-# of the base, added to the base-damage bucket.
 co_behavior: additive_with_base_damage
 
 # TWO ATTACK PARTS, and a THIRD thing this arena cannot hold. VERBATIM (wiki):

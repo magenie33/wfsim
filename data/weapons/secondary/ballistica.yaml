@@ -51,10 +51,6 @@ reload_seconds: 2
 # "CO Damage Bonus Relative To Base Damage" IS `co_base_fraction`: the CO term
 # multiplies 25% of this attack's damage, because the bonus is computed on the
 # UNCHARGED value while the shot deals the charged one.
-#
-# It was left unset until 2026-08-12 on a note that read the family's rows as
-# "a RANGE across five weapons, not a number for this one". Every one of them
-# is its own row with its own number.
 co_behavior: additive_with_base_damage
 co_base_fraction: 0.25
 
