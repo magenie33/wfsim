@@ -104,6 +104,80 @@ mod tests {
             .with(DamageType::Corrosive, 10.0)
     }
 
+    /// THE WIKI'S OWN WORKED EXAMPLE for a status immunity, reproduced to the
+    /// digit. VERBATIM (`Status_Effect` §Status Immunity Interactions):
+    ///
+    /// > Proc type chances are not altered by enemy resistances or weaknesses
+    /// > to the damage components used in their computation; however, they are
+    /// > modified by enemy status immunities. When an attack procs a status
+    /// > effect on an enemy which is immune to a particular proc type, the
+    /// > respective damage type is excluded from proc type chance calculations
+    /// > for status effects on that enemy.
+    ///
+    /// Its table, for Impact 20 / Puncture 5 / Slash 10 / Heat 25 / Corrosive
+    /// 50 against a unit immune to the Corrosion STATUS:
+    ///
+    /// | Impact | Puncture | Slash | Heat | Corrosive |
+    /// | 33.33% | 8.33% | 16.67% | 41.67% | N/A |
+    ///
+    /// i.e. the denominator loses the 50 and becomes 60. And the clause that
+    /// keeps the two mechanics apart is in the same paragraph: this holds
+    /// "regardless of whether that enemy is also immune to Corrosive damage".
+    #[test]
+    fn the_wikis_worked_example_for_a_status_immunity_reproduces() {
+        let v = DamageVector::new()
+            .with(DamageType::Impact, 20.0)
+            .with(DamageType::Puncture, 5.0)
+            .with(DamageType::Slash, 10.0)
+            .with(DamageType::Heat, 25.0)
+            .with(DamageType::Corrosive, 50.0);
+        let immune = [DamageType::Corrosive];
+
+        let n = 400_000;
+        let mut rng = Rng::new(0xC0FFEE);
+        let (mut imp, mut pun, mut sla, mut hea, mut cor) = (0u32, 0u32, 0u32, 0u32, 0u32);
+        for _ in 0..n {
+            match draw_proc_type(&v, &immune, &mut rng) {
+                Some(DamageType::Impact) => imp += 1,
+                Some(DamageType::Puncture) => pun += 1,
+                Some(DamageType::Slash) => sla += 1,
+                Some(DamageType::Heat) => hea += 1,
+                Some(DamageType::Corrosive) => cor += 1,
+                _ => {}
+            }
+        }
+        assert_eq!(cor, 0, "N/A means it never draws, not that it draws rarely");
+        let pct = |k: u32| k as f64 / n as f64 * 100.0;
+        for (got, want, name) in [
+            (pct(imp), 33.33, "Impact"),
+            (pct(pun), 8.33, "Puncture"),
+            (pct(sla), 16.67, "Slash"),
+            (pct(hea), 41.67, "Heat"),
+        ] {
+            assert!(
+                (got - want).abs() < 0.3,
+                "{name}: {got:.2}% against the wiki's {want}%"
+            );
+        }
+
+        // …AND THE DAMAGE COLUMN DOES NOT TOUCH ANY OF IT. The same vector
+        // against no immunity is the unrenormalised table, which is what makes
+        // the two mechanics separable: a x0 Corrosive column would change what
+        // the hit DEALS and leave these five numbers exactly as they are.
+        let mut rng = Rng::new(0xC0FFEE);
+        let mut cor_free = 0u32;
+        for _ in 0..n {
+            if draw_proc_type(&v, &[], &mut rng) == Some(DamageType::Corrosive) {
+                cor_free += 1;
+            }
+        }
+        assert!(
+            (pct(cor_free) - 45.45).abs() < 0.3,
+            "without the immunity Corrosive is 50/110 = 45.45%, got {:.2}%",
+            pct(cor_free)
+        );
+    }
+
     /// AN IMMUNITY BEATS A GUARANTEE, and the random draws are untouched by it.
     ///
     /// Valence Formation forces a Radiation proc on every hit. Against a

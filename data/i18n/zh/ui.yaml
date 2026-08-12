@@ -606,6 +606,7 @@ ui:
   "no effect": 无效果
   "Cold never converts on this unit, so the stacks climb to their cap and STAY — the bonus is up all fight instead of being spent on a 3-second Frozen window": 冷冻在这个单位上永远不会转化,所以层数会一路叠到上限并保持 —— 加成全程有效,而不是被 3 秒的冰冻窗口消耗掉
   "never Frozen — Cold stacks hold": 永不冰冻 —— 冷冻层数常驻
+  "its nullifying pulse is not applied here: in game it dispels every Warframe ability within 6.5 m every 5 seconds, and this fight leaves Roar, Eclipse, Nourish and the elemental augments running": 这里没有启用它的驱散脉冲:游戏中它每 5 秒会清除 6.5 米内的所有战甲技能,而这场战斗保留了战吼、黯然失色、滋养以及元素增幅
   "the fight did not re-roll for this option — same statuses landed, so this comparison is exact": 这个选项没有让战斗重新掷骰 —— 触发的异常完全相同，所以这次比较是精确的
   "no timeout": 无限持续
   # The replay: the transport, the buff curves, and the pools table.

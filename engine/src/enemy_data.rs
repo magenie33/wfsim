@@ -427,8 +427,46 @@ pub fn all() -> Vec<EnemySpec> {
 
 #[cfg(test)]
 mod tests {
+    /// THE NULLIFY GATE ITSELF, kept under test while no unit turns it on.
+    ///
+    /// A flag nothing sets is a flag that rots. This asserts the two halves
+    /// that matter — the field survives a round trip through the loader, and
+    /// `parse_fight` is the one place that reads it — so the day a Demolisher
+    /// (or a Nullifier) switches it on, the path is not being written for the
+    /// first time.
+    #[test]
+    fn a_target_that_nullifies_takes_the_players_buffs() {
+        let spec: EnemySpec = serde_norway::from_str(
+            r#"
+id: synthetic_nullifier
+name: Synthetic Nullifier
+faction: grineer
+scaling_faction: grineer
+type: melee
+nullifies_warframe_abilities: true
+stats: { base_level: 1, health: 100, shield: 0, armor: 0, overguard: 0, affinity: 0 }
+body_parts:
+  - { name: body, multiplier: 1.0, is_head: false, crit_bonus: false }
+source: { url: "synthetic" }
+"#,
+        )
+        .expect("the field parses");
+        assert!(spec.nullifies_warframe_abilities);
+
+        // …and the default is OFF, so an ordinary unit never silently strips a
+        // player's buffs.
+        let roster = all();
+        let on: Vec<&str> = roster
+            .iter()
+            .filter(|e| e.nullifies_warframe_abilities)
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(on.is_empty(), "no unit turns it on today: {on:?}");
+    }
+
     /// A DEMOLISHER'S RESTRICTIONS, and the point is that they are THREE
-    /// different mechanics wearing one word.
+    /// different mechanics wearing one word — plus a fourth that the GAME does
+    /// not currently apply at all.
     ///
     /// 1. RADIATION CANNOT LAND. Dropped from the proc draw, so every other
     ///    type renormalises onto the roll and becomes MORE likely.
@@ -451,7 +489,16 @@ mod tests {
             .find(|e| e.id == "demolisher_devourer")
             .expect("the roster carries it");
 
-        assert!(d.nullifies_warframe_abilities, "the pulse");
+        // THE PULSE IS NOT TURNED ON, and that is a CHOICE rather than a gap in
+        // what the sim can do — the same shape as the Thrax's spectral form
+        // (owner, 2026-08-12). The machinery is built and covered by the test
+        // below; the unit says so where a player reads it.
+        assert!(!d.nullifies_warframe_abilities, "not applied to this unit");
+        assert!(
+            d.unmodeled.iter().any(|u| u.contains("nullifying pulse")),
+            "…and the card says so: {:?}",
+            d.unmodeled
+        );
         assert_eq!(d.status_immunities, ["radiation"], "cannot land");
         assert_eq!(d.nullified_status_effects, ["impact"], "lands, does nothing");
         assert!(d.cannot_be_frozen);

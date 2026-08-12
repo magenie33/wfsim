@@ -15,16 +15,23 @@ planets: [earth]
 tilesets: [grineer_forest]
 introduced: "29.0"
 
-# THE PULSE IS THE POINT. VERBATIM (wiki, Disruption): "Demolysts and
+# THE PULSE IS NOT TURNED ON HERE, and that is this simulator's choice rather
+# than a gap in what it can do. The wiki describes it, verbatim: "Demolysts and
 # Demolishers will pulse out a red aura every 5 seconds with a radius of 6.5
 # meters, immediately dispelling and disabling all Warframe abilities within
-# range and on itself, similar to a Nullifier Crewman's bubble."
+# range and on itself."
 #
-# It is the first enemy property in this roster that reaches the PLAYER's half
-# of the fight: Roar, Eclipse, Nourish and the four elemental augments ride on
-# the Arena, and against this unit they are not up. See `unmodeled` below for
-# the two simplifications that make "every 5 seconds" into "off".
-nullifies_warframe_abilities: true
+# Same shape as the Thrax's spectral form: written down, machinery ready,
+# deliberately not applied to this unit yet (owner, 2026-08-12: "我们这个模拟器
+# 的爆破者，不会驱散玩家的buff，是一个特殊的处理，正如thrax不会进入灵体形态一
+# 样，但是我们代码保留，说不定会用上").
+#
+# THE MACHINERY IS BUILT AND TESTED, so turning it on is this one line:
+#   nullifies_warframe_abilities: true
+# The gate lives in `parse_fight`, which is what would make the optimizer follow
+# it too; `a_target_that_nullifies_takes_the_players_buffs` covers the path.
+# Until then a fight here keeps Roar, Eclipse, Nourish and the augments running,
+# and `unmodeled` says so where a player reads it.
 
 # TWO KINDS OF RESTRICTION, AND THEY ARE DIFFERENT ARITHMETIC. The wiki words
 # them differently and that is the tell.
@@ -80,8 +87,11 @@ body_parts:
     is_head: true
     crit_bonus: true
 
+live_bugs:
+  - "its nullifying pulse does not currently dispel Warframe abilities in game, though the wiki describes it doing so — this fight keeps your buffs, and a hotfix restoring the pulse would take them away"
+
 unmodeled:
-  - "the nullifying pulse is modelled as Warframe ability buffs being OFF for the whole fight, not as a 5-second cycle — this sim has no distance, so its 6.5 m radius always reaches you, and no ability casting, so nothing re-applies between pulses"
+  - "its nullifying pulse is not applied here: in game it dispels every Warframe ability within 6.5 m every 5 seconds, and this fight leaves Roar, Eclipse, Nourish and the elemental augments running"
   - "the mines on its back are a 0.5x hitbox the sim never aims at — shots land on the body or the head, and a player would not choose the mines"
   - "squad size is not modelled: a Demolisher gains +50%/+100%/+200% health with 2/3/4 players, and this is the solo figure"
   - "it is not stopped or slowed here — a Cold status greatly slows a Demolisher in game (and is the one effect its pulse cannot cleanse), and this sim has no movement for that to matter to"
