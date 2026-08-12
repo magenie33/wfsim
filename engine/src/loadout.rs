@@ -3524,6 +3524,71 @@ mod tests {
         assert_eq!(flagged, vec!["vasto_incarnon", "vasto_prime_incarnon"], "{flagged:?}");
     }
 
+    /// A DERIVED STAT READS THE FORM IT IS ON — which is the in-mission
+    /// behaviour, and NOT the one the Arsenal shows.
+    ///
+    /// VERBATIM (Sicarus_Incarnon_Genesis, Wiseman's Regard):
+    ///   * Incarnon Form Status Chance is displayed in the [[Arsenal]] screen as
+    ///     if using the normal form's Critical Chance, but will properly use
+    ///     its' own Critical chance while in-mission.
+    ///
+    /// So the panel must NOT reproduce the Arsenal's bug: each form's status
+    /// chance comes from THAT form's crit chance. Free here, because a form is
+    /// its own weapon entry and resolves its own panel — which is exactly why
+    /// it is worth pinning, since nothing else would notice if it stopped.
+    ///
+    /// FOUR NUMBERS OUT OF ONE SENTENCE. The same row states what it takes to
+    /// max the conversion: "achievable with '''+734%''' (Sicarus) / '''+434%''' (Prime)
+    /// modded Critical Chance, or '''+567%''' (Sicarus) / '''+345%''' (Prime) in
+    /// Incarnon Form". The cap needs 0.40/0.30 = 1.3333 current crit, so each
+    /// threshold implies that form's BASE crit chance — 1.3333/8.34 = 0.160,
+    /// /6.67 = 0.200, /5.34 = 0.250, /4.45 = 0.300 — and `data/weapons/` was
+    /// written from the weapon pages, so the two sources meet here.
+    #[test]
+    fn wisemans_regard_reads_each_forms_own_crit_chance() {
+        let rows: &[(&str, &str, f64, f64)] = &[
+            // (entry, perk, that form's base crit, the wiki's "+X%" threshold)
+            ("sicarus", "sicarus_wisemans_regard", 0.16, 7.34),
+            ("sicarus_incarnon", "sicarus_wisemans_regard", 0.20, 5.67),
+            ("sicarus_prime", "sicarus_prime_wisemans_regard", 0.25, 4.34),
+            ("sicarus_prime_incarnon", "sicarus_prime_wisemans_regard", 0.30, 3.45),
+        ];
+        for (id, perk, base_cc, threshold) in rows {
+            let bare = WeaponBase::from_data(id, false, &[]);
+            let with = WeaponBase::from_data(id, false, &[perk]);
+            let b = resolve(&bare, &[], StackPolicy::AssumedMax);
+            let w = resolve(&with, &[], StackPolicy::AssumedMax);
+
+            assert!((w.crit_chance - base_cc).abs() < 1e-9,
+                "{id}: the wiki's +{:.0}% threshold implies a base crit of {base_cc}, ours is {}",
+                threshold * 100.0, w.crit_chance);
+            // THE CONVERSION IS OFF THIS FORM'S OWN NUMBER, not the base form's.
+            let got = w.status_chance - b.status_chance;
+            assert!((got - 0.30 * base_cc).abs() < 1e-9,
+                "{id}: 30% of {base_cc} is {}, the panel moved by {got}", 0.30 * base_cc);
+            // …and the threshold reproduces the cap, which is the other half of
+            // the sentence: at +X% modded crit the conversion is exactly 40%.
+            let capped = (0.30 * base_cc * (1.0 + threshold)).min(0.40);
+            assert!((capped - 0.40).abs() < 0.002,
+                "{id}: at +{:.0}% the conversion should sit on the 40% cap, got {capped}",
+                threshold * 100.0);
+        }
+
+        // THE ARSENAL'S BUG, as a negative control: the Incarnon form's answer
+        // must NOT equal what the base form's crit would give it. On the Prime
+        // that is 0.090 against 0.075, so a regression to the base form's
+        // number is a visible 1.5-point difference and not a rounding one.
+        let inc = resolve(
+            &WeaponBase::from_data("sicarus_prime_incarnon", false,
+                &["sicarus_prime_wisemans_regard"]), &[], StackPolicy::AssumedMax);
+        let inc_bare = resolve(
+            &WeaponBase::from_data("sicarus_prime_incarnon", false, &[]),
+            &[], StackPolicy::AssumedMax);
+        let base_form_would_give = 0.30 * 0.25;
+        assert!(((inc.status_chance - inc_bare.status_chance) - base_form_would_give).abs() > 1e-6,
+            "the Incarnon form is using the BASE form's crit chance — the Arsenal's bug");
+    }
+
     /// The sim used to satisfy `while_aiming` silently, so every aim-gated
     /// buff fired whether or not the scenario implied aiming (user,
     /// 2026-07-30: "aim 会影响一些 buff 的触发，我们目前都让这些 buff 触发了").
@@ -4150,5 +4215,6 @@ mod tests {
         assert_eq!(a.charge_seconds, b.charge_seconds);
         assert!((a.damage.total() - b.damage.total()).abs() < 1e-9);
     }
+
 
 

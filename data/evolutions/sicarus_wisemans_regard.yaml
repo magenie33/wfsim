@@ -43,6 +43,21 @@ effects:
   #   + Galvanized Crosshairs     cc 1.0500  ->  sc 0.5150   (a LIVE buff, and it counts)
   #   + both                      cc 1.5175  ->  sc 0.6000   (the 40% cap)
   #
+  # AND IT READS THE FORM IT IS ON, which is the in-mission behaviour and NOT
+  # the one the Arsenal shows. VERBATIM, same row:
+  #   * Incarnon Form Status Chance is displayed in the [[Arsenal]] screen as if
+  #     using the normal form's Critical Chance, but will properly use its' own
+  #     Critical chance while in-mission.
+  # Free here — a form is its own weapon entry and resolves its own panel — and
+  # pinned anyway, because nothing else would notice if it stopped.
+  #
+  # THE SAME SENTENCE VERIFIES FOUR WEAPON ENTRIES. "achievable with '''+734%'''
+  # (Sicarus) / '''+434%''' (Prime) modded Critical Chance, or '''+567%''' (Sicarus) /
+  # '''+345%''' (Prime) in Incarnon Form": the cap needs 0.40/0.30 = 1.3333 current
+  # crit, so each threshold implies that form's BASE crit — 1.3333/8.34 = 0.160,
+  # /6.67 = 0.200, /5.34 = 0.250, /4.45 = 0.300. `data/weapons/` was written
+  # from the weapon pages and carries exactly those four.
+  #
   # ONE GAP, NOT CLOSED ON PURPOSE (2026-08-13). ARCANE crit does not reach it:
   # `resolve_for` takes no arcanes — they are applied one layer down, per hit —
   # so Secondary Outburst, Cascadia Overcharge and Secondary Enervate are named
