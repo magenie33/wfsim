@@ -18,6 +18,42 @@ effects:
   # "BASE Status Chance" is where the grant LANDS, so the status mods multiply
   # it afterwards — which is what makes this worth more on a build that already
   # has them.
+  # WHAT "CURRENT CRITICAL CHANCE" READS, and what it does not. The row's own
+  # notes are an explicit two-sided list (Sicarus_Incarnon_Genesis):
+  #
+  #   * In addition to regular Critical Chance mods, it is also affected by both
+  #     parts of {{M|Galvanized Crosshairs}} while aiming, {{Arcane|Secondary
+  #     Outburst}}, {{Arcane|Cascadia Overcharge}}, {{Arcane|Arcane Avenger}},
+  #     {{Arcane|Secondary Enervate}}, {{WF|Yareli}}'s Passive, {{WF|Zephyr}}'s
+  #     Passive, {{A|Covenant}}'s baseline Critical Chance bonus but ''not'' the
+  #     4x multiplier on headshots, and {{M|Cat's Eye}}.
+  #   * '''Not''' affected by the '''King's Gambit''' Evolution II perk,
+  #     {{Arcane|Cascadia Accuracy}}, {{A|Crystallize}}, or {{M|Shadow Haze}}.
+  #
+  # ONE RULE RECONCILES THE TWO LISTS: a source that changes the weapon's crit
+  # chance STAT feeds it; a source decided by WHERE THE SHOT LANDED does not.
+  # Every name on the second list is per-hit — King's Gambit's weakpoint bonus
+  # and bodyshot multiplier, Cascadia Accuracy's weak-point crit, Covenant's
+  # headshot 4x — and that split is already the engine's shape, because the
+  # weak-point bucket is resolved per pellet and never reaches the panel.
+  #
+  # MEASURED HERE (Sicarus Prime, base crit 0.25, base status 0.20):
+  #   bare                        cc 0.2500  ->  sc 0.2750   = 0.20 + 0.30 x 0.25
+  #   + Primed Pistol Gambit      cc 0.7175  ->  sc 0.4153
+  #   + Galvanized Crosshairs     cc 1.0500  ->  sc 0.5150   (a LIVE buff, and it counts)
+  #   + both                      cc 1.5175  ->  sc 0.6000   (the 40% cap)
+  #
+  # ONE GAP, NOT CLOSED ON PURPOSE (2026-08-13). ARCANE crit does not reach it:
+  # `resolve_for` takes no arcanes — they are applied one layer down, per hit —
+  # so Secondary Outburst, Cascadia Overcharge and Secondary Enervate are named
+  # by the wiki and contribute nothing here. It is not a one-line fix either:
+  # those three RAMP (Outburst decays over 30s, Enervate climbs per hit and
+  # resets on a big crit), so "current" would have to become live rather than a
+  # number resolved once. Left for a measurement (owner testing 2026-08-13).
+  #
+  # ALSO REPORTED, UNVERIFIED: a forum thread claims the conversion pays 25%
+  # rather than 30% in Incarnon Form. The thread is not readable from here
+  # (403), so it is recorded and NOT modelled.
   - kind: status_chance_from_crit_chance
     rate: 0.30
     cap: 0.40
