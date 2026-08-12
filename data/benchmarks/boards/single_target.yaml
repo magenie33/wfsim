@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: e111a7d07d9f4e81751a8cb1a56d6cae43275b6b
+engine: 13a0176c4d8f273688d325a203b84b94ac076862
 entries:
   - weapon: angstrum
     mode: cycle
@@ -3131,6 +3131,12 @@ entries:
     arcanes: [secondary_fortifier]
   - weapon: sicarus_prime
     mode: cycle
+    score: 32.944795764877526
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, creeping_bullseye, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_voids_guidance, sicarus_prime_commodores_fortune]
+    arcanes: [secondary_deadhead]
+  - weapon: sicarus_prime
+    mode: cycle
     score: 32.919605271929946
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, deep_freeze, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_rapid_reinforcement, sicarus_prime_survivors_edge]
@@ -3140,12 +3146,6 @@ entries:
     score: 28.020501995601055
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_rapid_reinforcement, sicarus_prime_commodores_fortune]
-    arcanes: [secondary_deadhead]
-  - weapon: sicarus_prime
-    mode: cycle
-    score: 24.609788893503644
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, creeping_bullseye, magnetic_might, primed_convulsion, pathogen_rounds]
-    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_voids_guidance, sicarus_prime_commodores_fortune]
     arcanes: [secondary_deadhead]
   - weapon: sicarus_prime
     mode: cycle
