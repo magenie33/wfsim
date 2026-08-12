@@ -12,10 +12,18 @@ effects:
   # from: "Increase Base Damage by +57"
   - kind: flat_base_damage
     value: 57.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Multishot consumes ammo directly from Capacity and increases Damage by +20"
-  - kind: unmodelled_multishot_consumes_ammo_directly_from_capacity_and_in
+  # TWO HALVES OF ONE CLAUSE, and only one of them is an edge.
+  #
+  # "Multishot consumes ammo directly from Capacity" is the ammo economy, which
+  # this sim does not run — reserves are unlimited, so where a pellet's ammo
+  # comes from changes nothing (UNMODELLED.md §5). The wiki adds "Affects both
+  # modes. In the case of Incarnon Form, it pools directly from its magazine."
+  #
+  # "…and increases Damage by +20" is real, and it is a BASE increase for the
+  # same reason the Kunai's is: the card drops the word, and nothing else on
+  # this ladder would make the sentence mean anything else.
+  - kind: flat_base_damage
+    value: 20.0
 
 source:
   url: https://wiki.warframe.com/w/Miter_Incarnon_Genesis

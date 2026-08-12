@@ -25,7 +25,17 @@ effects:
   # HEALTH, not the pools in front of it: a target still on its shields or its
   # overguard is not below half HEALTH, and reading the total would switch this
   # on at the start of every fight against an Eximus.
+  # THE CARD'S OWN NOTE, verbatim: "The conditional damage bonus ignores the
+  # base damage increase from the same perk, the 2x damage from the charged shot
+  # (Primary Fire only) and Galvanized Aptitude's damage bonus."
+  #
+  # Three exclusions and the engine obeys all three: this flag is the first, the
+  # charged 2x is `co_base_fraction: 0.5` on the charged entry (which this bonus
+  # now shares, being in the same bracket), and the third is automatic — CO's
+  # bonus and this one are SIBLINGS in that bracket rather than one nested
+  # inside the other.
   - kind: base_damage_below_half_health
+    excludes_own_flat: true
     value: 1.0
 
 source:

@@ -3771,6 +3771,9 @@ fn gunco_bucket(
     bd: f64,
     arc_bd: f64,
     arc_ratio: f64,
+    // The below-half-health bonus, routed HERE rather than into `arc_bd`
+    // because its bracket is the weapon's CO bracket — see the call site.
+    half_hp: f64,
     // Which fraction of the EVOLVED base CO multiplies. The direct hit's lives
     // on `ap`; an explosion carries its own, because an evolution can raise
     // what the explosion deals without raising what CO reads.
@@ -3792,14 +3795,23 @@ fn gunco_bucket(
     .map(|(rate, count)| rate * *count as f64)
     .sum::<f64>()
         * co_base_fraction;
+    // THE HALF-HEALTH BONUS SHARES THIS BRACKET, so it shares its base fraction
+    // too. The Dread's page spells out all three halves of that: its conditional
+    // bonus "ignores the base damage increase from the same perk, the 2x damage
+    // from the charged shot (Primary Fire only) and Galvanized Aptitude's damage
+    // bonus" — the second is `co_base_fraction` (0.5 on a bow's charged entry),
+    // and the third falls out of being CO's SIBLING here rather than nested
+    // inside it.
+    let half_hp = half_hp * co_base_fraction;
     match ap.co_behavior {
         // Joins the base-damage bucket: diluted by Hornet Strike, sharing the
         // bracket with the arcane's bonus.
         crate::loadout::CoBehavior::AdditiveWithBaseDamage => {
-            (1.0 + bd + arc_bd + gunco_total) / (1.0 + bd)
+            (1.0 + bd + arc_bd + gunco_total + half_hp) / (1.0 + bd)
         }
-        crate::loadout::CoBehavior::Independent => arc_ratio * (1.0 + gunco_total),
-        crate::loadout::CoBehavior::Inert => arc_ratio,
+        crate::loadout::CoBehavior::Independent => arc_ratio * (1.0 + gunco_total + half_hp),
+        // No CO bracket to join, so the ordinary one: the base-damage bucket.
+        crate::loadout::CoBehavior::Inert => arc_ratio * (1.0 + bd + half_hp) / (1.0 + bd),
     }
 }
 
@@ -4109,7 +4121,9 @@ fn field_tick(
     let bucket = if f.takes_condition_overload {
         // A FIELD keeps the direct hit's base fraction: the CO catalog puts
         // the Torid's cloud on the same base as its main fire.
-        gunco_bucket(params, ap, debuffs, gal, at, bd, arc_bd, arc_ratio, ap.co_base_fraction)
+        // A FIELD TICK carries no half-health term: the bonus is a DIRECT-hit
+        // bonus like CO itself, and nothing in the catalog says otherwise.
+        gunco_bucket(params, ap, debuffs, gal, at, bd, arc_bd, arc_ratio, 0.0, ap.co_base_fraction)
     } else {
         arc_ratio
     };
@@ -5739,24 +5753,29 @@ pub fn run_once_traced(
                 // share of this bucket its flat number is worth — so it lands
                 // here and NOT diluted, which is the whole point of the
                 // conversion.
-                + buff_total!(ap, crate::loadout::BuffGrant::FlatBaseDamage, t)
-                // FEIGNED RETREAT / SWIFT CONCLUSION: a condition on the
-                // TARGET, evaluated per instance because the target's health is
-                // falling while the shot is being resolved. "Additive with mods
-                // such as Hornet Strike", so it is this bucket and not a
-                // multiplier of its own.
-                //
-                // HEALTH, not the pools in front of it: a target still on its
-                // shields or overguard is not below half HEALTH, and reading
-                // the total would have turned this on at the start of every
-                // fight against an Eximus.
-                + if params.target.max_health() > 0.0
-                    && target.health < 0.5 * params.target.max_health()
-                {
-                    ap.bd_below_half_health
-                } else {
-                    0.0
-                };
+                + buff_total!(ap, crate::loadout::BuffGrant::FlatBaseDamage, t);
+            // FEIGNED RETREAT / SWIFT CONCLUSION: a condition on the TARGET,
+            // evaluated per instance because the target's health is falling
+            // while the shot is being resolved.
+            //
+            // HEALTH, not the pools in front of it: a target still on its
+            // shields or overguard is not below half HEALTH, and reading the
+            // total would have turned this on at the start of every fight
+            // against an Eximus.
+            //
+            // WHERE IT LANDS IS THE WEAPON'S CO BRACKET, and the Kunai's page
+            // is what says so: "additive with Hornet Strike in basic Kunai
+            // form, and multiplicative in Incarnon form. It is also additive
+            // with Galvanized Shot in BOTH forms." Galvanized Shot IS the CO
+            // bonus — so the rule is not two rules, it is one: this bonus goes
+            // wherever CO goes. `gunco_bucket` routes it.
+            let half_hp = if params.target.max_health() > 0.0
+                && target.health < 0.5 * params.target.max_health()
+            {
+                ap.bd_below_half_health
+            } else {
+                0.0
+            };
             let bd = ap.base_damage_bonus;
             let arc_ratio = (1.0 + bd + arc_bd) / (1.0 + bd);
             let mb_live = modded_base * arc_ratio;
@@ -5771,6 +5790,7 @@ pub fn run_once_traced(
             //   Secondary Shiver → live Cold STACKS (Frozen counts as 10).
             let co_mult = gunco_bucket(
                 params, ap, &mut debuffs, &mut gal, t, bd, arc_bd, arc_ratio,
+                half_hp,
                 ap.co_base_fraction,
             );
             // The explosion's own, and only when it differs — an evolution
@@ -5782,8 +5802,10 @@ pub fn run_once_traced(
             // differ for the whole base phase, and this line reading the outer
             // params gave a base-form shot the Incarnon's explosion (M32).
             let co_mult_radial = match &ap.radial {
+                // AN EXPLOSION carries no half-health term either — a
+                // DIRECT-hit bonus, like the CO it rides beside.
                 Some(r) if r.takes_condition_overload => gunco_bucket(
-                    params, ap, &mut debuffs, &mut gal, t, bd, arc_bd, arc_ratio,
+                    params, ap, &mut debuffs, &mut gal, t, bd, arc_bd, arc_ratio, 0.0,
                     r.co_base_fraction,
                 ),
                 _ => arc_ratio,
@@ -7873,6 +7895,83 @@ mod tests {
         let mut stripped = whole.clone();
         stripped.shield -= 1.0;
         assert!(!target_undamaged(&stripped, &tp), "…and so does one point of shield");
+    }
+
+    /// THE BELOW-HALF-HEALTH BONUS GOES WHEREVER CO GOES, which is one rule
+    /// rather than the two the cards read like.
+    ///
+    /// VERBATIM (wiki, Kunai Incarnon Genesis, Swift Conclusion): *"Damage
+    /// bonus if enemy has less than half health is additive with Hornet Strike
+    /// in basic Kunai form, and multiplicative in Incarnon form. It is also
+    /// additive with Galvanized Shot in both forms."*
+    ///
+    /// Galvanized Shot IS the CO bonus, and the Kunai's two forms are exactly
+    /// the two CO classes — Adding on the base, Multiplying on the Incarnon.
+    /// So "additive with Hornet Strike here, multiplicative there, additive
+    /// with CO always" is the same sentence as "it lands in the CO bracket".
+    ///
+    /// Asserted as ARITHMETIC on one weapon whose two forms differ, because
+    /// that is the only place the two readings give different numbers.
+    #[test]
+    fn the_half_health_bonus_lands_in_the_weapons_own_co_bracket() {
+        // 200% below half health on both Kunai forms; base form Adding,
+        // Incarnon form Multiplying (CATALOGS.md).
+        let base = crate::loadout::WeaponBase::from_data("kunai", true, &["kunai_swift_conclusion"]);
+        let inc = crate::loadout::WeaponBase::from_data(
+            "kunai_incarnon", true, &["kunai_swift_conclusion"]);
+        assert_eq!(base.co_behavior, crate::loadout::CoBehavior::AdditiveWithBaseDamage);
+        assert_eq!(inc.co_behavior, crate::loadout::CoBehavior::Independent);
+        assert!(base.bd_below_half_health > 1.0 && inc.bd_below_half_health > 1.0);
+
+        // A target that is ALWAYS below half health, so the term is always on,
+        // and a mod bucket big enough to tell the two brackets apart.
+        let arena = crate::arena::Arena::training(60.0);
+        let dmg = |weapon: &str, evo: &[&str], mods: &[&str]| {
+            let b = crate::loadout::WeaponBase::from_data(weapon, true, evo);
+            // THE POOL IS THE BASE WEAPON'S. An Incarnon FORM entry has none
+            // of its own — a mod is equipped on the weapon, not on the form.
+            let pool = crate::mods_data::pool_for_weapon("kunai");
+            let ms: Vec<&crate::loadout::ModDef> = mods
+                .iter()
+                .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("no mod {m}")))
+                .collect();
+            let panel = crate::loadout::resolve(&b, &ms, crate::loadout::StackPolicy::Emergent);
+            let mut p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
+            // A POOL THE RUN CHEWS THROUGH SLOWLY. The condition is a live one
+            // — health below half — so the fixture has to actually get there:
+            // spawning at full and dying instantly would leave it never true,
+            // and an unkillable target would leave it never true either.
+            p.target.mode = crate::dummy::TargetMode::InstantRespawn;
+            p.target.base_health = 40_000.0;
+            p.target.base_armor = 0.0;
+            p.target.base_shield = 0.0;
+            monte_carlo(&p, 8, 0x4A1F).mean_damage
+        };
+        let perk = ["kunai_swift_conclusion"];
+
+        // THE MEASUREMENT IS A DIFFERENCE OF DIFFERENCES, and it has to be.
+        // Adding Hornet Strike changes how fast the target dies, so it changes
+        // what FRACTION of the run is spent below half health — a contamination
+        // both forms carry equally. What only the ADDING form carries is the
+        // dilution itself, so the claim is that it loses measurably more.
+        let drop = |w: &str| {
+            let bare = dmg(w, &perk, &[]) / dmg(w, &[], &[]);
+            let modded = dmg(w, &perk, &["hornet_strike"]) / dmg(w, &[], &["hornet_strike"]);
+            modded / bare - 1.0
+        };
+        let base_drop = drop("kunai");
+        let inc_drop = drop("kunai_incarnon");
+        assert!(
+            base_drop < inc_drop - 0.04,
+            "the ADDING form is diluted by Hornet Strike and the MULTIPLYING one is not:              base {:.1}% against Incarnon {:.1}% — they should not be the same number",
+            base_drop * 100.0,
+            inc_drop * 100.0
+        );
+        assert!(
+            inc_drop > -0.10,
+            "…and the Incarnon form's small loss is the shared uptime effect, not dilution: {:.1}%",
+            inc_drop * 100.0
+        );
     }
 
     /// FEIGNED RETREAT: half the fight at a time, and the perk's own flat base

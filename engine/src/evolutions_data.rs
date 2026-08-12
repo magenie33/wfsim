@@ -192,7 +192,13 @@ enum EvoEffect {
     FireRateBonus { value: f64, min_sprint: f64 },
     /// "+X% Damage to enemies below half Health" — a bucket bonus with a
     /// condition on the TARGET rather than on the weapon or the player.
-    BaseDamageBelowHalfHealth(f64),
+    /// "+X% Damage to enemies below half Health". `excludes_own_flat` is the
+    /// Sicarus's note — *"does not take into account the Base Damage increase
+    /// from this perk"* — and it is per CARD rather than a rule: the Kunai's
+    /// page says the opposite about the same weapon's base increase ("CO-bonus
+    /// DOES use base damage increase Evolution"), so applying the correction
+    /// everywhere would dock a perk the wiki never docked.
+    BaseDamageBelowHalfHealth { rate: f64, excludes_own_flat: bool },
     /// A grant the PLAYER's state switches on — "With Armor Over 450: +80%
     /// Multishot", "With Energy Max Over 700: +1x Base Critical Damage
     /// Multiplier", "With Sprint Speed 1.2 or Higher: +60% Projectile Speed".
@@ -663,7 +669,7 @@ impl EvolutionDef {
                 | EvoEffect::MultishotConsumesAmmo(_)
                 | EvoEffect::ConditionOverload { .. }
                 | EvoEffect::FireRateBonus { .. }
-                | EvoEffect::BaseDamageBelowHalfHealth(_)
+                | EvoEffect::BaseDamageBelowHalfHealth { .. }
                 | EvoEffect::GatedByTenno { .. }
                 | EvoEffect::CritOnUndamaged { .. }
                 | EvoEffect::ReloadSpeedBonus(_)
@@ -854,7 +860,7 @@ impl EvolutionDef {
                     },
                     gate.describe()
                 ),
-                EvoEffect::BaseDamageBelowHalfHealth(v) => format!(
+                EvoEffect::BaseDamageBelowHalfHealth { rate: v, .. } => format!(
                     "+{:.0}% damage while the target is under half health",
                     v * 100.0
                 ),
@@ -1191,7 +1197,13 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             EvoEffect::GatedByTenno { gate, grant, value: f(v, "value").unwrap_or(0.0) }
         }
         "base_damage_below_half_health" => {
-            EvoEffect::BaseDamageBelowHalfHealth(f(v, "value").unwrap_or(0.0))
+            EvoEffect::BaseDamageBelowHalfHealth {
+                rate: f(v, "value").unwrap_or(0.0),
+                excludes_own_flat: v
+                    .get("excludes_own_flat")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false),
+            }
         }
         "fire_rate_bonus" => EvoEffect::FireRateBonus {
             value: f(v, "value").unwrap_or(0.0),
@@ -1567,9 +1579,11 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 EvoEffect::GatedByTenno { gate, grant, value } => {
                     base.gated.push((*gate, *grant, *value));
                 }
-                EvoEffect::BaseDamageBelowHalfHealth(v) => {
-                    half_hp_rate += v;
-                    half_hp_rate_own += v * e.flat_base_damage();
+                EvoEffect::BaseDamageBelowHalfHealth { rate, excludes_own_flat } => {
+                    half_hp_rate += rate;
+                    if *excludes_own_flat {
+                        half_hp_rate_own += rate * e.flat_base_damage();
+                    }
                 }
                 EvoEffect::FireRateBonus { value, min_sprint } => {
                     if *min_sprint > 0.0 {
@@ -2714,7 +2728,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 75;
+        const CEILING: usize = 72;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

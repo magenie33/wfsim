@@ -9,10 +9,16 @@ description: "Increase Damage by +80. Increase Damage by +200% if enemy has less
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Increase Damage by +80"
-  - kind: unmodelled_increase_damage_by
+  # "Increase Damage by +80" — a BASE damage increase despite the card
+  # dropping the word. The CO catalog's note for this weapon settles it:
+  # "CO-bonus DOES use base damage increase Evolution", which is a sentence
+  # about THIS perk (it is the only one on the ladder that adds damage) and
+  # only means anything if the +80 is a base increase.
+  #
+  # It therefore feeds the CO base in full, which is this engine's default —
+  # so no `co_base_excludes_this_evolution` here, deliberately.
+  - kind: flat_base_damage
+    value: 80.0
   # A CONDITION ON THE TARGET, evaluated per damage instance because the
   # target's health is falling while the shot resolves.
   #

@@ -26,6 +26,7 @@ effects:
   # overguard is not below half HEALTH, and reading the total would switch this
   # on at the start of every fight against an Eximus.
   - kind: base_damage_below_half_health
+    excludes_own_flat: true    # this card's own note; see above
     value: 0.4
 
 source:

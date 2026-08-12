@@ -9,14 +9,19 @@ description: "Hitting enemies in Incarnon Form increases the Critical Chance and
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Hitting enemies in Incarnon Form increases the Critical Chance and Critical Damage of the fully charged blast by +5%"
-  - kind: unmodelled_hitting_enemies_in_incarnon_form_increases_the_critic
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Stacks up to 50x"
-  - kind: unmodelled_stacks_up_to_x
+  # THE ATTACK IT BUFFS IS NOT IN THIS ENTRY. Verbatim: "Hitting enemies in
+  # Incarnon Form increases the Critical Chance and Critical Damage of the fully
+  # charged blast by +5%. Stacks up to 50 times." Notes: "Bonuses are additive
+  # to mods" and it "also triggers on DoT Status Effects applied by the
+  # charge-up beam, including damage caused to enemies caught in Gas clouds".
+  #
+  # The Onos's Incarnon form has TWO attacks and an entry carries one: this one
+  # carries the held beam, and the fully charged blast — which is what every
+  # stack here pays out on — is named as unmodelled on the weapon itself
+  # (INCARNON.md). So the gap is an ATTACK PART, not a rule: the trigger, the
+  # stacking and the additive-with-mods bracket are all machinery this engine
+  # already has, and they have nothing to apply to until the blast exists.
+  - kind: unmodelled_crit_stacks_that_pay_out_on_the_unmodelled_charged_blast
 
 source:
   url: https://wiki.warframe.com/w/Onos

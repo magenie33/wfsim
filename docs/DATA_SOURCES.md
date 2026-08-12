@@ -265,6 +265,18 @@ each is cited at its formula in MECHANICS.
 clause that the EN page has none of — see §"The CN wiki is reachable through its
 API, not its pages" for how to read it, and M40 for what it settled.
 
+## FETCH THE MODULE WITH `curl`, not through a summarising reader
+
+    curl -sS -A "wfsim-dev/1.0 (data cross-check)"       "https://wiki.warframe.com/w/Module:Weapons/data/primary?action=raw" -o primary.lua
+
+332 KB, all 843 entries, greppable. `["Sybaris Prime"]` is at line 11836 — past
+where any summarising fetch reaches, and that entry is how the burst counts were
+finally checked (Normal 2 @ 0.062, Incarnon Form 4 @ 0.062, digit for digit
+against what the rendered page had already given).
+
+This is the route to use. The two below are what happens without it, kept
+because the failure is not obvious.
+
 ## The module pages TRUNCATE, and a summariser will fill the gap
 
 `Module:Weapons/data/primary` and `/secondary` are single Lua tables of a few
