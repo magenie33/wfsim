@@ -1956,6 +1956,7 @@ fn buff_grant(s: &str) -> Option<crate::loadout::BuffGrant> {
         "base_multishot" => G::BaseMultishot,
         "multishot_percent" => G::MultishotPercent,
         "base_crit_damage" => G::BaseCritDamage,
+        "headshot_damage_bonus" => G::HeadshotDamage,
         _ => return None,
     })
 }
@@ -1977,6 +1978,7 @@ fn stacking_card_id(
         (T::Headshot, G::FireRate) => "on_headshot_fire_rate",
         (T::Headshot, G::BaseDamage) => "on_headshot_damage",
         (T::ConsecutiveHeadshot, G::FlatBaseDamage) => "on_weakpoint_streak_damage",
+        (T::ConsecutiveHeadshot, G::HeadshotDamage) => "on_weakpoint_streak_headshot_damage",
         (T::Hit, G::FlatBaseDamage) => "on_hit_damage",
         (T::PlainHit, G::BaseDamage) => "on_plain_hit_damage",
         (T::ReloadComplete, G::BaseDamage) => "on_reload_damage",
@@ -2421,7 +2423,6 @@ use crate::loadout::WeaponBase;
             // per-type buff payload should check DE fixed the perk first —
             // a mechanic that cannot be measured cannot be verified.
             "dual_toxocyst_neurotoxin :: stacking_buff toxin_damage_bonus",
-            "dual_toxocyst_ripper_rounds :: stacking_buff punch_through_m",
             // ---- THE FURIS GENESIS ---------------------------------------
             // Five of its eight perks, and every one is written under a kind
             // this loader does NOT know — deliberately, because the kinds that
@@ -2826,7 +2827,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 8;
+        const CEILING: usize = 5;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

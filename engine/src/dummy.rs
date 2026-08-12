@@ -5980,10 +5980,14 @@ pub fn run_once_traced(
             // branches, because that is the group the card names. The
             // multiplicative branch is Cernos Prime's anomaly and no weapon
             // carries both.
+            // SEQUENTIAL SKULLBUSTER joins Lingering Judgement here, in the
+            // same additive bracket and for the same reason: every innate
+            // headshot source the wiki lists is additive with Primary
+            // Deadhead's, and only Cernos Prime's is called out as unique.
             let streak_bonus = match params.headshot_streak {
                 Some(s) if t < streak_expiry => s.value,
                 _ => 0.0,
-            };
+            } + buff_total!(ap, crate::loadout::BuffGrant::HeadshotDamage, t);
             let (head_bonus, head_innate) = if part.is_head {
                 if ap.headshot_bonus_multiplicative {
                     (params.arcane.headshot_mult_bonus + streak_bonus, ap.headshot_damage_bonus)
@@ -8508,6 +8512,99 @@ mod tests {
         };
         assert_eq!(finite(None), finite(Some((15.0, 3))),
             "a bigger magazine is not more ammo — 60 rounds is 60 shots either way");
+    }
+
+    /// SEQUENTIAL SKULLBUSTER: a streak the next shot can undo, in the ADDITIVE
+    /// headshot bracket.
+    ///
+    /// VERBATIM (Onos, EVO5): "On Consecutive Weakpoint Hits: '''+30%''' Headshot
+    /// Damage. Stacks up to '''4x'''", with the page's Notes adding "Evolution V,
+    /// Sequential Skullbuster, does not affect Incarnon mode."
+    ///
+    /// Two things are asserted because each can be wrong alone: the pile must
+    /// CLIMB while every shot lands on the head and must be taken WHOLE by one
+    /// body shot — not decay, not lose one — and the grant must land in the
+    /// additive bracket rather than multiplying it, which only shows on a build
+    /// that already has a headshot bonus.
+    #[test]
+    fn sequential_skullbuster_is_a_streak_and_lands_in_the_additive_bracket() {
+        let buff = crate::loadout::StackingBuff {
+            id: "on_weakpoint_streak_headshot_damage",
+            trigger: crate::loadout::BuffTrigger::ConsecutiveHeadshot,
+            grant: crate::loadout::BuffGrant::HeadshotDamage,
+            decay: crate::loadout::BuffDecay::LoseOneAndReset,
+            per_stack: 0.30,
+            max_stacks: 4,
+            duration: crate::loadout::NO_TIMEOUT,
+            chance: 1.0,
+            initial_stacks: 0,
+            stacks_per_trigger: 1,
+            per_shell: false,
+            cleared_by: crate::loadout::ClearedBy::Nothing,
+        };
+        // Every shot on the head: the streak is never broken, so it climbs and
+        // sits at the cap.
+        let all_head = DummyParams {
+            fire_rate: 10.0,
+            magazine_size: 100.0,
+            stacking_buffs: vec![buff],
+            duration_secs: 5.0,
+            body_parts: vec![BodyPart {
+                name: "head".into(), aim_weight: 1.0, multiplier: 2.0,
+                is_head: true, crit_bonus: false,
+            }],
+            ..flat_base()
+        };
+        let trace = replay(&all_head, Rng::new(5).state(), 300);
+        let i = trace.buffs.iter()
+            .position(|(id, _)| id == "on_weakpoint_streak_headshot_damage")
+            .expect("on the roster");
+        let series: Vec<u8> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+        assert_eq!(series[0], 0, "it opens empty");
+        assert!(series.contains(&4), "four weak-point hits reach the cap: {series:?}");
+        assert!(series.iter().all(|&v| v <= 4), "and never pass it");
+
+        // A BODY SHOT TAKES THE WHOLE PILE, which is what makes this a streak
+        // rather than a timed buff: half the shots land on the body, so the
+        // count can never get far and never sits at the cap.
+        let mixed = DummyParams {
+            body_parts: vec![
+                BodyPart { name: "head".into(), aim_weight: 1.0, multiplier: 2.0,
+                           is_head: true, crit_bonus: false },
+                BodyPart { name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
+                           is_head: false, crit_bonus: false },
+            ],
+            ..all_head.clone()
+        };
+        let mtrace = replay(&mixed, Rng::new(5).state(), 300);
+        let j = mtrace.buffs.iter()
+            .position(|(id, _)| id == "on_weakpoint_streak_headshot_damage").expect("roster");
+        let mseries: Vec<u8> = mtrace.frames.iter().map(|f| f.stacks[j]).collect();
+        assert!(mseries.iter().any(|&v| v > 0), "it still climbs sometimes: {mseries:?}");
+        assert!(mseries.windows(2).any(|w| w[0] > 1 && w[1] == 0),
+            "a body shot takes the WHOLE pile, not one stack: {mseries:?}");
+
+        // …AND THE BRACKET. The grant is additive with an innate headshot
+        // bonus, so a weapon carrying +100% of its own sees 2x(1 + 1.0 + 1.2)
+        // and not 2x2.0x2.2. The difference is the whole reading.
+        let dmg = |innate: f64, perk: bool| {
+            let mut p = DummyParams {
+                headshot_damage_bonus: innate,
+                stacking_buffs: if perk { all_head.stacking_buffs.clone() } else { vec![] },
+                ..all_head.clone()
+            };
+            p.duration_secs = 5.0;
+            monte_carlo(&p, 1, 5).mean_damage
+        };
+        let (plain, with) = (dmg(1.0, false), dmg(1.0, true));
+        assert!(with > plain, "the perk is worth something: {with} vs {plain}");
+        // Additive: the ceiling is 1 + 1.0 + 1.2 = 3.2 against 1 + 1.0 = 2.0,
+        // a factor of 1.6. Multiplicative would be 2.0 x 2.2 / 2.0 = 2.2. The
+        // run averages over the climb, so it must land UNDER the additive
+        // ceiling and nowhere near the multiplicative one.
+        let ratio = with / plain;
+        assert!(ratio < 1.61,
+            "additive puts the ceiling at 1.6x; multiplicative would be 2.2x — got {ratio}");
     }
 
     /// VICIOUS PROMISE: the first arrow only, and OVERGUARD does not count.

@@ -6,17 +6,30 @@ description: "On Consecutive Weakpoint Hits: +30% Headshot Damage. Stacks up to 
 # THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
 # of them carry the same ladder; a value that differs between them is
 # printed per variant by the wiki and transcribed per variant here.
+# "Evolution V, Sequential Skullbuster, does not affect Incarnon mode" — the
+# page's own Notes section, not the row.
+base_form_only: true
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Consecutive Weakpoint Hits: +30% Headshot Damage"
-  - kind: unmodelled_on_consecutive_weakpoint_hits_headshot_damage
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Stacks up to 4x"
-  - kind: unmodelled_stacks_up_to_x
+  # VERBATIM (Onos, EVO5):
+  #   * On Consecutive Weakpoint Hits: '''+30%''' Headshot Damage. Stacks up to '''4x'''
+  #
+  # THE TRIGGER IS ALREADY A RULE HERE. `BuffTrigger::ConsecutiveHeadshot` is
+  # the one trigger in this sim the NEXT shot can undo: a body hit takes the
+  # whole pile, because what ends it is what you hit and not how long you
+  # waited. So the card needs no clock and is given none.
+  #
+  # THE GRANT joins the ADDITIVE headshot bracket, beside Primary Deadhead's and
+  # Lingering Judgement's. The wiki lists every innate headshot source as
+  # additive with Deadhead's and calls out exactly one exception (Cernos
+  # Prime's, "unique"), so additive is the default and this is not the
+  # exception.
+  - kind: stacking_buff
+    trigger: consecutive_headshot
+    per_stack:
+      headshot_damage_bonus: 0.30
+    max_stacks: 4
 
 source:
   url: https://wiki.warframe.com/w/Onos

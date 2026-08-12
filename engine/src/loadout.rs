@@ -1396,6 +1396,11 @@ pub enum BuffGrant {
     /// the sim rather than a live bracket that would have to be kept in step
     /// with the static one.
     BaseCritDamage,
+    /// Sequential Skullbuster: *"On Consecutive Weakpoint Hits: +30% Headshot
+    /// Damage"*. Joins the ADDITIVE headshot bracket — the same `(1 + Σ)` that
+    /// Primary Deadhead and Lingering Judgement land in, since the wiki lists
+    /// every innate headshot source there but Cernos Prime's.
+    HeadshotDamage,
 }
 
 impl BuffGrant {
@@ -1416,6 +1421,7 @@ impl BuffGrant {
             BuffGrant::FireRate => "fire_rate",
             BuffGrant::Multishot => "multishot",
             BuffGrant::BaseCritDamage => "crit_damage",
+            BuffGrant::HeadshotDamage => "headshot_damage",
         }
     }
 }
