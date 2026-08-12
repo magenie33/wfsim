@@ -108,6 +108,24 @@ validates, deduplicates, ranks and writes, simulating nothing. Verified before
 it shipped: 24 submissions through 8 shards reproduced every published score to
 1e-9, and the merge ran in 0.064 s.
 
+**A score file says which board it is.** A shard's key is `identity#mode` and
+carries no ruler, so two boards scoring one build produce the SAME key with
+different numbers — and the merge job is handed ONE directory holding every
+ruler's shards. Merging them published one ruler's score under the other's name:
+the Torid's aimed **28.44229348067104** kpm sat at the top of the NO-AIM board,
+digit for digit, where that build actually scores **0.170** (2026-08-12). Ten
+Torid rows and much of the no-aim top were the aimed board's numbers.
+
+It read as a scenario leak and was not one — every score was computed under its
+own ruler's terms, then overwritten on the way out. What made it selective is
+that the merged number also WINS over the board's own history: `--reuse` fills
+only where `--scores` left a hole, so exactly the rows the OTHER ruler happened
+to rescore that run were the ones that went wrong. `--emit-scores` now writes
+`{"benchmark": …, "scores": {…}}` and `load_scores` refuses a file that names a
+different board;
+`a_score_file_belongs_to_one_board_and_another_boards_is_refused` asserts it in
+both directions, since which ruler wins is decided by a sort over file names.
+
 The generated files are NEVER rebased. There is no sense in which two versions
 of a computed board each hold something worth keeping, so a three-way merge can
 only produce a conflict — which is exactly what threw away 83 minutes of

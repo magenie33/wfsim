@@ -89,7 +89,7 @@ fn flag(name: &str) -> Option<String> {
 /// between shards of ONE run — every shard built from one commit. Persisting it
 /// across runs would publish yesterday's numbers under today's engine, which is
 /// exactly the failure the board exists to prevent.
-fn load_scores(spec: Option<String>) -> std::collections::HashMap<String, f64> {
+fn load_scores(spec: Option<String>, bench_id: &str) -> std::collections::HashMap<String, f64> {
     let mut out = std::collections::HashMap::new();
     let Some(spec) = spec else { return out };
     let mut files: Vec<std::path::PathBuf> = Vec::new();
@@ -106,8 +106,22 @@ fn load_scores(spec: Option<String>) -> std::collections::HashMap<String, f64> {
     files.sort();
     for f in files {
         let Ok(text) = std::fs::read_to_string(&f) else { continue };
-        if let Ok(map) = serde_json::from_str::<std::collections::HashMap<String, f64>>(&text) {
-            out.extend(map);
+        let Ok(file) = serde_json::from_str::<Value>(&text) else { continue };
+        // A FILE SAYS WHICH BOARD IT IS, and another board's is refused rather
+        // than merged. The key is `identity#mode` and carries no benchmark, so
+        // two boards scoring the same build produce the SAME key with different
+        // numbers — and the publish step is handed one directory holding every
+        // benchmark's shards. Merging them silently published one ruler's score
+        // under the other's name: the Torid's aimed 28.44 kpm sat at the top of
+        // the NO-AIM board, where that build actually scores 0.5 (2026-08-12).
+        if file.get("benchmark").and_then(Value::as_str) != Some(bench_id) {
+            continue;
+        }
+        let Some(scores) = file.get("scores").and_then(Value::as_object) else { continue };
+        for (k, v) in scores {
+            if let Some(n) = v.as_f64() {
+                out.insert(k.clone(), n);
+            }
         }
     }
     out
@@ -186,7 +200,7 @@ fn main() {
     // Time is not an input: an untouched score is valid forever, and a score
     // whose engine moved is wrong immediately, not in an hour.
     let engine_fp = flag("--engine").unwrap_or_default();
-    let mut known = load_scores(flag("--scores"));
+    let mut known = load_scores(flag("--scores"), &bench_id);
     let mut reused = 0usize;
     if let Some(path) = flag("--reuse") {
         match reuse_prior(&path, &engine_fp, &bench_id) {
@@ -450,7 +464,14 @@ fn main() {
     // step that collects them, and "this shard found nothing to do" is a real
     // answer.
     if let Some(path) = &emit_to {
-        let text = serde_json::to_string(&computed).expect("scores");
+        // THE FILE SAYS WHICH BOARD IT IS. The reader is handed a directory
+        // holding every benchmark's shards, and the key inside carries no
+        // benchmark — so without this the two boards' scores merge.
+        let text = serde_json::to_string(&serde_json::json!({
+            "benchmark": bench_id,
+            "scores": computed,
+        }))
+        .expect("scores");
         std::fs::write(path, text).unwrap_or_else(|e| panic!("write {path}: {e}"));
         eprintln!("shard {shard}/{shards}: scored {} rows -> {path}", computed.len());
     }
@@ -539,4 +560,80 @@ fn main() {
 /// board cannot drift from what the page computes.
 fn wfsim_engine_webapi_simulate(v: &Value) -> Value {
     wfsim_webapi::simulate_json(v)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tmpdir(tag: &str) -> std::path::PathBuf {
+        let d = std::env::temp_dir().join(format!("wfsim-board-{}-{}", tag, std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("tmpdir");
+        d
+    }
+
+    /// TWO BOARDS SCORING ONE BUILD PRODUCE THE SAME KEY AND DIFFERENT NUMBERS,
+    /// and the publish step is handed ONE directory holding every benchmark's
+    /// shards (`.github/workflows/board.yml`: eight shards x every ruler ->
+    /// `scores/`, then `--scores scores` once per ruler). Merging them published
+    /// one ruler's score under the other's name: the Torid's aimed 28.442 kpm
+    /// sat at the top of the NO-AIM board, where that build scores 0.170
+    /// (measured 2026-08-12, digit for digit on both boards).
+    ///
+    /// The merged number also WINS over the board's own correct history, since
+    /// `--reuse` only fills where `--scores` left a hole — which is why only the
+    /// rows the other ruler happened to rescore that run were wrong, and why it
+    /// read as a scenario leak rather than as a file being read twice.
+    #[test]
+    fn a_score_file_belongs_to_one_board_and_another_boards_is_refused() {
+        let d = tmpdir("cross");
+        let key = "torid#cycle";
+        std::fs::write(
+            d.join("single_target-0.json"),
+            r#"{"benchmark":"single_target","scores":{"torid#cycle":28.44229348067104}}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            d.join("single_target_no_aim-0.json"),
+            r#"{"benchmark":"single_target_no_aim","scores":{"torid#cycle":0.17033484369504454}}"#,
+        )
+        .unwrap();
+
+        let spec = Some(d.to_string_lossy().into_owned());
+        let aimed = load_scores(spec.clone(), "single_target");
+        let no_aim = load_scores(spec.clone(), "single_target_no_aim");
+        assert_eq!(aimed.get(key).copied(), Some(28.44229348067104));
+        assert_eq!(no_aim.get(key).copied(), Some(0.17033484369504454));
+        // The sharp one: neither board may see the other's, in EITHER direction
+        // — the file order decides which one wins, and it is a sort over names.
+        assert_eq!(aimed.len(), 1, "the aimed board read another ruler's file");
+        assert_eq!(no_aim.len(), 1, "the no-aim board read another ruler's file");
+
+        // A ruler with no file of its own reuses nothing rather than reusing
+        // whatever else is in the directory.
+        assert!(load_scores(spec, "group_clear").is_empty());
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    /// Shards of ONE board still merge, which is the whole point of the file.
+    #[test]
+    fn shards_of_the_same_board_merge() {
+        let d = tmpdir("shards");
+        std::fs::write(
+            d.join("single_target-0.json"),
+            r#"{"benchmark":"single_target","scores":{"a#base":1.0}}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            d.join("single_target-1.json"),
+            r#"{"benchmark":"single_target","scores":{"b#base":2.0}}"#,
+        )
+        .unwrap();
+        let got = load_scores(Some(d.to_string_lossy().into_owned()), "single_target");
+        assert_eq!(got.len(), 2);
+        assert_eq!(got.get("a#base").copied(), Some(1.0));
+        assert_eq!(got.get("b#base").copied(), Some(2.0));
+        let _ = std::fs::remove_dir_all(&d);
+    }
 }
