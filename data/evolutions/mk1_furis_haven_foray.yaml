@@ -34,15 +34,23 @@ effects:
   # numbers and nobody else's).
   - kind: flat_base_damage
     value: 34.0
-  # NOT LOADED, and the reason is a missing STATE rather than a missing effect
-  # kind. `TennoCondition` knows Aiming, Invisible and Airborne; it has no
-  # overshields, so there is nothing for this clause to be true OF. Granting it
-  # unconditionally would hand +30 to a Tenno at base shields, which is most of
-  # them. Written under a kind the loader does NOT know, on purpose: the
-  # `flat_base_damage` arm ignores `condition:`, so spelling it that way would
-  # have loaded a silent, unconditional +30 rather than nothing. It is worth 30
-  # on top of 34, so a sim that ever models overshields starts here.
-  - kind: flat_base_damage_with_overshields
+  # …and the SAME statement, gated on the player. This effect was written under
+  # a kind the loader did NOT know, deliberately — the `flat_base_damage` arm
+  # ignores `condition:`, so spelling it that way would have loaded a silent,
+  # unconditional +30 — and the comment it carried said "a sim that ever models
+  # overshields starts here". It does now (2026-08-12): `TennoGate` has the
+  # state, the player declares it in the Tenno panel, and the grant folds
+  # through `WeaponBase::add_flat_base_damage` exactly as the flat half above.
+  #
+  # VERBATIM (Furis_Incarnon_Genesis, the row's effect cell):
+  #   * Increase Base Damage by '''+X'''.
+  #   * With Overshields: Increase Base Damage by '''+30'''.
+  #   | X = 28   | X = 34        (Furis | Mk1-Furis, from the page's own first
+  #                               line: "the Furis or Mk1-Furis")
+  # The Y is written into the bullet rather than into a column, so both take +30.
+  - kind: gated_by_tenno
+    condition: overshields
+    grant: flat_base_damage
     value: 30.0
 
 source:

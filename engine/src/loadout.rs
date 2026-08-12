@@ -3289,6 +3289,64 @@ mod tests {
             "shut: {} vs {}", off.modified_base, x_only.modified_base);
     }
 
+    /// EVERY CARD THAT ASKS ABOUT OVERSHIELDS, and what each one pays.
+    ///
+    /// Ten cards across four Genesis families, and the numbers are transcribed
+    /// per VARIANT because the wiki prints them per variant — the column order
+    /// comes from each page's own table header, which is the part that is easy
+    /// to get backwards and impossible to notice afterwards.
+    ///
+    ///   Angstrum | Prisma Angstrum          one colspan="2" cell, both +50
+    ///   Lato | Lato Vandal | Lato Prime      +40 / +40 / +34
+    ///   Paris | Mk1-Paris | Paris Prime      +52 / +40 / +74
+    ///   Furis | Mk1-Furis                    +30 written into the bullet, both
+    ///
+    /// Asserted as the DIFFERENCE the state makes, so it reads as the card
+    /// does: tick overshields, gain exactly this much base damage.
+    #[test]
+    fn every_overshield_card_pays_the_number_on_its_own_variant() {
+        let roster: &[(&str, &str, f64)] = &[
+            ("angstrum", "angstrum_haven_foray", 50.0),
+            ("prisma_angstrum", "prisma_angstrum_haven_foray", 50.0),
+            ("lato", "lato_haven_foray", 40.0),
+            ("lato_vandal", "lato_vandal_haven_foray", 40.0),
+            ("lato_prime", "lato_prime_haven_foray", 34.0),
+            ("paris", "paris_guardians_might", 52.0),
+            ("mk1_paris", "mk1_paris_guardians_might", 40.0),
+            ("paris_prime", "paris_prime_guardians_might", 74.0),
+            ("furis", "furis_haven_foray", 30.0),
+            ("mk1_furis", "mk1_furis_haven_foray", 30.0),
+        ];
+        let neutral = crate::tenno_data::default_tenno();
+        let shielded = tenno_who(|s| s.overshields = true);
+        for (weapon, evo, want) in roster {
+            let base = WeaponBase::from_data(weapon, true, &[evo]);
+            let off = resolve_for(&base, &[], StackPolicy::AssumedMax, neutral);
+            let on = resolve_for(&base, &[], StackPolicy::AssumedMax, &shielded);
+            // The panel's modified base is the weapon's total through the
+            // damage bucket, and with no mods that bucket is 1 — so the
+            // difference IS the card's number.
+            let got = on.modified_base - off.modified_base;
+            assert!((got - want).abs() < 1e-6,
+                "{evo}: overshields are worth {want} on the card, the panel moved by {got}");
+        }
+        // …and the roster is CLOSED: exactly these ten ask, so a new card that
+        // spells the condition some other way fails here rather than paying
+        // nothing in silence.
+        let asking: Vec<&str> = crate::evolutions_data::pool()
+            .iter()
+            .filter(|e| {
+                WeaponBase::from_data(&e.weapon, true, &[e.id.as_str()])
+                    .gated
+                    .iter()
+                    .any(|(g, _, _)| *g == TennoGate::HasOvershields)
+            })
+            .map(|e| e.id.as_str())
+            .collect();
+        assert_eq!(asking.len(), roster.len(),
+            "cards asking about overshields: {asking:?}");
+    }
+
     /// The sim used to satisfy `while_aiming` silently, so every aim-gated
     /// buff fired whether or not the scenario implied aiming (user,
     /// 2026-07-30: "aim 会影响一些 buff 的触发，我们目前都让这些 buff 触发了").

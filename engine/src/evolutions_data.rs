@@ -2428,8 +2428,6 @@ use crate::loadout::WeaponBase;
             // Every one of them now says so on its own tile — `unmodeled_effects`
             // is derived from these same variants, so this list and the UI
             // cannot disagree.
-            "furis_haven_foray :: flat_base_damage_with_overshields",
-            "mk1_furis_haven_foray :: flat_base_damage_with_overshields",
             // THE PHENMOR (2026-08-08), the first natural Incarnon after the
             // Laetum and the first weapon to bring FOUR inert perks at once.
             // Two are the family's and already argued above — an instant reload
@@ -2796,7 +2794,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 34;
+        const CEILING: usize = 32;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,
