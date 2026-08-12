@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: 587842b58e7bc1fef14d01d49e262c7242110c6e
+engine: 995ecd03baa6aa8f872dea4ba05cf0347548ca34
 entries:
   - weapon: boltor_prime
     mode: cycle
@@ -216,6 +216,11 @@ entries:
     score: 1.6666666666666667
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: alternate
+    score: 1.3567147651206064
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, primed_ammo_chain, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, secondary_fortifier]
   - weapon: larkspur_prime
     mode: base
     score: 1.2106442294285849
