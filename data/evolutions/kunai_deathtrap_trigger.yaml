@@ -2,27 +2,26 @@ id: kunai_deathtrap_trigger
 name: Deathtrap Trigger
 weapon: kunai
 tier: 4
-description: "On Equip: Increase Base Critical Chance by +40% for 4 seconds. Increase Base Critical Damage Multiplier by +1.4x for 4 seconds."
+description: "On equip from Primary: Increase Base Critical Chance by +40% for 4s. Increase Base Critical Damage Multiplier by +1.4x for 4s."
 # THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
 # of them carry the same ladder; a value that differs between them is
 # printed per variant by the wiki and transcribed per variant here.
 selection: choose_one
 
 effects:
-  # from: "Increase Base Critical Damage Multiplier by +1.4x"
-  - kind: flat_base_crit_multiplier
-    value: 1.4
-  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
-  # this simulator cannot pay it out, and the reason will not change with
-  # any amount of work on evolutions.
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. BOTH bullets sit under the one
+  # "On equip from Primary:" heading and both last 4s, so the whole card is that
+  # window; there is no permanent half to pay. It read as one because the
+  # ARSENAL says so, and the wiki records that as a bug on this very row:
+  # "These are displayed as permanent bonuses in the Arsenal but only actually
+  # apply while the 4 second Deathtrap Trigger buff is active."
+  #
+  # The name is shared with six other Genesis families and the CARDS ARE NOT —
+  # the Cestra's, the Dera's and the Stug's really are permanent, and the
+  # Vasto's is a permanent base-damage clause beside an on-equip one. A row is
+  # transcribed for the entry it names (docs/CATALOGS.md).
   - kind: out_of_scope
-    clause: "On Equip: Increase Base Critical Chance by +40% for 4 seconds"
-    reason: no_holster
-  # A FRAGMENT OF THE CLAUSE ABOVE, not a mechanic of its own: it is
-  # the duration of the On Equip window above, which is the clause that cannot fire. It shares that clause's
-  # reason, so it is filed the same way rather than counted as a second gap.
-  - kind: out_of_scope
-    clause: "for 4 seconds"
+    clause: "On equip from Primary: Increase Base Critical Chance by +40% for 4s. Increase Base Critical Damage Multiplier by +1.4x for 4s"
     reason: no_holster
 
 source:
