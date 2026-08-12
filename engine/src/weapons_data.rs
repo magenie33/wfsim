@@ -1757,6 +1757,117 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
 
 #[cfg(test)]
 mod tests {
+
+    /// EVERY CO ANOMALY IN THE ROSTER IS ON THIS LIST, and the list is the
+    /// catalog. Nothing else may be anything but ordinary.
+    ///
+    /// The rule (owner, 2026-08-12): *"同家族的灵化仍旧视为不同的武器。只要不在
+    /// co表上，一律视为正常的只对direct的100%的加算…如果一个武器的普通的在表上，
+    /// 而prime没有，那普通特殊处理，prime正常处理，不要擅自家族推广."* Ordinary
+    /// has a definition — direct hits only, 100% of the base, added to the
+    /// base-damage bucket — and a shared Genesis does not make one weapon.
+    ///
+    /// A LIST rather than a count, because the failure this exists to stop is
+    /// not "someone added an anomaly", it is "someone gave one to the variant
+    /// next door". Three entries had been generalised that way, and each of
+    /// them looked like a reasonable reading of a row that did not name it.
+    /// Adding a weapon whose family has a row now fails here until the row is
+    /// checked for that weapon's own name.
+    #[test]
+    fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
+        // (entry, behaviour, co_base_fraction) — see docs/CATALOGS.md for the
+        // verbatim row behind each.
+        const NAMED: &[(&str, &str, f64)] = &[
+            ("angstrum_incarnon", "independent", 1.0),
+            ("prisma_angstrum_incarnon", "independent", 1.0),
+            ("ballistica", "additive_with_base_damage", 0.25),
+            ("ballistica_prime", "additive_with_base_damage", 0.50),
+            ("ballistica_prime_incarnon", "independent", 1.0),
+            ("rakta_ballistica", "additive_with_base_damage", 0.25),
+            ("cernos_prime", "additive_with_base_damage", 0.5),
+            ("dread", "additive_with_base_damage", 0.5),
+            ("dread_incarnon", "independent", 1.0),
+            ("felarx", "independent", 1.0),
+            ("felarx_incarnon", "independent", 1.0),
+            ("kunai_incarnon", "independent", 1.0),
+            ("mk1_kunai_incarnon", "independent", 1.0),
+            ("larkspur_prime_charged", "independent", 1.0),
+            ("latron_incarnon", "independent", 1.0),
+            ("latron_prime_incarnon", "independent", 1.0),
+            ("miter", "additive_with_base_damage", 0.40),
+            ("miter_incarnon", "independent", 1.0),
+            ("mk1_paris", "additive_with_base_damage", 0.5),
+            ("paris", "additive_with_base_damage", 0.5),
+            ("paris_incarnon", "independent", 1.0),
+            ("paris_prime", "additive_with_base_damage", 0.5),
+            ("paris_prime_incarnon", "independent", 1.0),
+            ("shedu", "independent", 1.0),
+            // The row is `Blob Impact | 0% | Does not apply`, and its unmodded 4
+            // names the BASE form (the Incarnon deals 50).
+            ("stug", "inert", 1.0),
+            ("torid", "independent", 1.0),
+        ];
+
+        let mut unexpected = Vec::new();
+        let mut wrong = Vec::new();
+        for s in all() {
+            let beh = s.co_behavior.as_deref().unwrap_or("additive_with_base_damage");
+            let frac = s.co_base_fraction.unwrap_or(1.0);
+            let ordinary = beh == "additive_with_base_damage" && (frac - 1.0).abs() < 1e-9;
+            match NAMED.iter().find(|(id, ..)| *id == s.id) {
+                None if !ordinary => unexpected.push(format!("{} = {beh} x{frac}", s.id)),
+                Some((_, b, f)) => {
+                    if beh != *b || (frac - f).abs() > 1e-9 {
+                        wrong.push(format!("{}: {beh} x{frac}, catalog says {b} x{f}", s.id));
+                    }
+                }
+                None => {}
+            }
+        }
+        assert!(
+            unexpected.is_empty(),
+            "CO anomaly on an entry the catalog does not name — check the row for THIS              weapon's own name, or make it ordinary: {unexpected:?}"
+        );
+        assert!(wrong.is_empty(), "CO anomaly disagrees with the catalog: {wrong:?}");
+
+        // …and every listed entry still EXISTS, so a rename cannot quietly
+        // empty this list.
+        for (id, ..) in NAMED {
+            assert!(all().iter().any(|s| s.id == *id), "no weapon entry {id}");
+        }
+
+        // AN AoE PART TAKES NO CO unless its own row says so — "只对direct".
+        // Named, not counted, for the same reason the list above is.
+        const RADIAL_CO: &[&str] = &[
+            // Braton / Mk1 / Prime / Vandal — Incarnon Form Radial Attack
+            "braton_incarnon", "mk1_braton_incarnon", "braton_prime_incarnon",
+            "braton_vandal_incarnon",
+            // Burston / Burston Prime — Incarnon Form Radial Attack
+            "burston_incarnon", "burston_prime_incarnon",
+            // Zylok / Zylok Prime — Incarnon Form Radial Attack
+            "zylok_incarnon", "zylok_prime_incarnon",
+        ];
+        let mut radial_co: Vec<&str> = all()
+            .iter()
+            .filter(|s| s.attack.radial.as_ref().is_some_and(|r| r.takes_condition_overload))
+            .map(|s| s.id.as_str())
+            .collect();
+        radial_co.sort_unstable();
+        let mut want = RADIAL_CO.to_vec();
+        want.sort_unstable();
+        assert_eq!(radial_co, want, "a radial takes CO only where the catalog names it");
+
+        // …and the Torid's cloud, which is a FIELD rather than an explosion —
+        // its own row ("Toxin AoE Cloud", Multiplying) and its own flag. The
+        // distinction matters here because it is why this roster has EIGHT
+        // radials taking CO and NINE AoE parts that do.
+        let field_co: Vec<&str> = all()
+            .iter()
+            .filter(|s| s.attack.lingering.as_ref().is_some_and(|f| f.takes_condition_overload))
+            .map(|s| s.id.as_str())
+            .collect();
+        assert_eq!(field_co, ["torid"], "a lingering field likewise");
+    }
     /// The Larkspur Prime is the first weapon that can RUN OUT, and this is
     /// the whole data path end to end: YAML -> spec -> base -> panel -> sim.
     ///

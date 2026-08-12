@@ -32,6 +32,31 @@ Columns, verbatim:
 | Adding | `additive_with_base_damage` | joins the base-damage bucket, diluted by Serration |
 | (no row) | the ordinary case, i.e. `additive_with_base_damage` | |
 
+### THE RULE, stated once (owner, 2026-08-12)
+
+> 同家族的灵化仍旧视为不同的武器。只要不在co表上，一律视为正常的只对direct的100%
+> 的加算。就是这个核心原则，如果一个武器的普通的在表上，而prime没有，那普通特殊
+> 处理，prime正常处理，不要擅自家族推广。
+
+Three things, and the third is the one that keeps being got wrong:
+
+1. **ORDINARY has a definition**, not just a name: direct hits only, 100% of the
+   attack's base, added into the base-damage bucket. `co_behavior:
+   additive_with_base_damage`, no `co_base_fraction`, and a radial that takes
+   none at all.
+2. **Absence means ordinary**, never unknown. The catalog lists the anomalies.
+3. **A SHARED GENESIS DOES NOT MAKE ONE WEAPON.** An Incarnon form is still that
+   weapon's form, so a row is transcribed for the entries it NAMES and no
+   others. If the base variant is on the table and the Prime is not, the base
+   gets the anomaly and the Prime gets ordinary.
+
+This supersedes a note recorded on 2026-08-08 which read the same absence the
+other way — that an Incarnon anomaly reaches the table and the form belongs to
+the ADAPTER, so one row covers every weapon that installs it. Three entries were
+generalised under it (`latron_wraith_incarnon`, `mk1_paris_incarnon`, and the
+Stug's Incarnon inheriting a row printed for its base form); all three are
+ordinary now.
+
 ### Rows carried
 
 | weapon | attack | unmodded | relative | type | our entry |

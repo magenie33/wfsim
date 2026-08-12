@@ -38,11 +38,22 @@ pseudo_reload:
   magazine: 120
   reload_seconds: 3.0
 
-# CONDITION OVERLOAD DOES NOT APPLY TO THIS WEAPON. The wiki's CO catalog,
-# verbatim: "Stug | Blob Impact | 0% | Does not apply". It is the only
-# entry in the roster that takes `inert` — a blob has no direct hit for a
-# per-status bonus to attach to.
-co_behavior: inert
+# ORDINARY HERE — THE ROW IS THE BASE FORM'S. Verbatim:
+#
+#   |{{Weapon|Stug}}||Blob Impact||Projectile||4||0||0%||N/A||Does not apply
+#
+# "Attack Unmodded Damage 4" is what identifies it: this entry deals 50, the
+# base entry deals 4. So the row names the base form's blob and this form has
+# none — and a weapon's two FORMS can differ, which is the Torid's rule already
+# (`independent` on its base, ordinary on its Incarnon).
+#
+# It was `inert` on both until 2026-08-12, generalised from one row on the
+# reasoning that "a blob has no direct hit for a per-status bonus to attach to".
+# That reasoning may well be right about this form too — but it is reasoning,
+# not a row, and the catalog's rule is that absence means ORDINARY rather than
+# unknown (owner, 2026-08-12). If it is wrong it is wrong in the direction of
+# giving this form a bonus the game does not, so it is worth a measurement.
+co_behavior: additive_with_base_damage
 
 attack:
   trigger: auto
