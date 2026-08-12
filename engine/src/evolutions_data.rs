@@ -199,6 +199,17 @@ enum EvoEffect {
     /// DOES use base damage increase Evolution"), so applying the correction
     /// everywhere would dock a perk the wiki never docked.
     BaseDamageBelowHalfHealth { rate: f64, excludes_own_flat: bool },
+    /// GALVANIC RELOAD — a magazine restore the TARGET's state gates.
+    ///
+    /// VERBATIM (Strun_Incarnon_Genesis): "On hitting a target affected by an
+    /// Electricity status, 40% chance to restore 1 round in the magazine from
+    /// ammo pool", with three notes, each of which decides something:
+    ///   *The status effect may originate from any source.
+    ///   *The bonus can only apply once per enemy hit.
+    ///   *The bonus does not affect the Incarnon form.
+    /// The second is why it is per SHOT and not per pellet — this is a shotgun
+    /// family — and the third is the card's `base_form_only`.
+    RoundRestoreOnStatusHit { status: crate::damage::DamageType, chance: f64, rounds: f64 },
     /// KING'S GAMBIT — one bullet, two brackets, and the wiki names both.
     ///
     /// VERBATIM (Sicarus_Incarnon_Genesis): "x0 Critical Chance on Bodyshots,
@@ -691,6 +702,7 @@ impl EvolutionDef {
                 | EvoEffect::GatedByTenno { .. }
                 | EvoEffect::DerivedStat { .. }
                 | EvoEffect::CritChanceByBodyPart { .. }
+                | EvoEffect::RoundRestoreOnStatusHit { .. }
                 | EvoEffect::CritOnUndamaged { .. }
                 | EvoEffect::ReloadSpeedBonus(_)
                 | EvoEffect::CritMultiplierBelowCritChance { .. }
@@ -870,6 +882,10 @@ impl EvolutionDef {
                 EvoEffect::CritOnUndamaged { crit_chance, crit_multiplier } => format!(
                     "+{:.0}% BASE crit chance and +{crit_multiplier}x BASE crit damage while the                      target is undamaged (mods multiply both)",
                     crit_chance * 100.0
+                ),
+                EvoEffect::RoundRestoreOnStatusHit { status, chance, rounds } => format!(
+                    "{:.0}% chance per shot to restore {rounds:.0} round from the ammo pool when the target carries a {status:?} status",
+                    chance * 100.0
                 ),
                 EvoEffect::CritChanceByBodyPart { bodyshot_mult, weakpoint_bonus } => format!(
                     "x{bodyshot_mult:.0} crit chance on body shots, +{:.0}% BASE crit chance on weak points (additive with the crit mods)",
@@ -1208,6 +1224,19 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // bracket, so a multishot gate and a crit-damage gate cannot be
         // confused for one another, and an unreadable `condition:` falls to
         // Inert rather than paying out unconditionally.
+        "round_restore_on_status_hit" => {
+            let Some(status) = v.get("status").and_then(Value::as_str).and_then(crate::damage::DamageType::from_name)
+            else {
+                return Some(EvoEffect::Inert(
+                    "round_restore_on_status_hit with an unreadable `status:`".into(),
+                ));
+            };
+            EvoEffect::RoundRestoreOnStatusHit {
+                status,
+                chance: f(v, "chance").unwrap_or(0.0),
+                rounds: f(v, "rounds").unwrap_or(1.0),
+            }
+        }
         "crit_chance_by_body_part" => EvoEffect::CritChanceByBodyPart {
             // No defaults that pay out: a missing multiplier is 1 (ordinary),
             // a missing bonus is 0.
@@ -1626,6 +1655,9 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::GatedByTenno { gate, grant, value } => {
                     base.gated.push((*gate, *grant, *value));
+                }
+                EvoEffect::RoundRestoreOnStatusHit { status, chance, rounds } => {
+                    base.round_restore_on_status = Some((*status, *chance, *rounds));
                 }
                 EvoEffect::CritChanceByBodyPart { bodyshot_mult, weakpoint_bonus } => {
                     // MULTIPLICATIVE, so it composes rather than replaces —
@@ -2764,7 +2796,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 41;
+        const CEILING: usize = 34;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

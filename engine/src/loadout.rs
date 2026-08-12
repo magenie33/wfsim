@@ -1050,6 +1050,16 @@ pub struct WeaponBase {
     /// "Weakpoint modifier is ADDITIVE with mods such as Pistol Gambit", which
     /// is `weakpoint_cc_rel`.
     pub bodyshot_cc_mult: f64,
+    /// GALVANIC RELOAD: `(status, chance, rounds)` — "On hitting a target
+    /// affected by an Electricity status, 40% chance to restore 1 round in the
+    /// magazine from ammo pool".
+    ///
+    /// ONCE PER SHOT, not per pellet: the card says "The bonus can only apply
+    /// once per enemy hit", and this is a shotgun family where the difference is
+    /// tenfold. The rounds come FROM THE AMMO POOL, so a dry reserve restores
+    /// nothing — and a refill is not a reload, the same rule
+    /// `mag_refill_on_kill` follows.
+    pub round_restore_on_status: Option<(crate::damage::DamageType, f64, f64)>,
     /// King's Gambit's weak-point half, held on the WEAPON so it can seed the
     /// same bucket the mods write to — "Weakpoint modifier is additive with
     /// mods such as Pistol Gambit". Same shape as `evo_reload_bonus`.
@@ -1959,6 +1969,8 @@ pub struct ResolvedPanel {
     /// King's Gambit's other half: a MULTIPLIER on a non-weak-point pellet's
     /// crit chance, applied after everything else. 1.0 = ordinary.
     pub bodyshot_cc_mult: f64,
+    /// Galvanic Reload: `(status, chance, rounds)`, rolled ONCE PER SHOT.
+    pub round_restore_on_status: Option<(crate::damage::DamageType, f64, f64)>,
     /// Sharpened Bullets under Emergent: ABSOLUTE crit-damage add as a timed
     /// buff (starts inactive), granted/refreshed on every kill.
     pub cd_on_kill: Option<TimedBuff>,
@@ -3034,6 +3046,7 @@ pub fn resolve_for(
         // RELATIVE; direct-head only, so the sim uses the direct base.
         weakpoint_cc_rel: wp_cc,
         bodyshot_cc_mult: base.bodyshot_cc_mult,
+        round_restore_on_status: base.round_restore_on_status,
         cd_on_kill,
         fr_on_reload,
         rs_on_reload,

@@ -18,10 +18,15 @@ effects:
   # from: "Increase Base Damage by +10"
   - kind: flat_base_damage
     value: 10.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Shield or Overguard break: x3 Critical Damage for 6 seconds"
-  - kind: unmodelled_on_shield_or_overguard_break_x_critical_damage_for_se
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The card's own note is what
+  # decides which: VERBATIM (Cestra_Incarnon_Genesis) —
+  #   *On [[Shield]]/[[Overguard]] break: '''x3''' [[Critical Damage]] for '''6s.'''
+  #   * This is on '''personal''' shield break, not breaking enemy shields.
+  # It is the PLAYER's shields breaking, which takes something shooting at them.
+  # Nothing does here, and no amount of work on evolutions changes that.
+  - kind: out_of_scope
+    clause: "On Shield/Overguard break: x3 Critical Damage for 6s"
+    reason: nobody_shoots_back
 
 source:
   url: https://wiki.warframe.com/w/Cestra_Incarnon_Genesis

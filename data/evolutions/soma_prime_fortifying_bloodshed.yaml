@@ -12,10 +12,20 @@ effects:
   # from: "Increase Base Damage by +10"
   - kind: flat_base_damage
     value: 10.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Slash Status Kill: +100 Overshield"
-  - kind: unmodelled_on_slash_status_kill_overshield
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. VERBATIM
+  # (Soma_Incarnon_Genesis, the row's effect cell and its note):
+  #   *On {{D|Slash}} Status Kill: '''+100''' Overshield.
+  #   *{{D|Slash}} status kill grants shields, which can be overshields.
+  #
+  # The pool it fills only matters when something is emptying it, and nothing
+  # here is. Note that OVERSHIELDS THEMSELVES ARE MODELLED — Haven Foray and
+  # Guardian's Might read the state, and the player declares it in the Tenno
+  # panel. What cannot pay out is EARNING them mid-fight, which is a different
+  # claim and a permanent one: with nobody shooting back, a pool that only ever
+  # fills is a pool the player may as well have walked in with.
+  - kind: out_of_scope
+    clause: "On Slash Status Kill: +100 Overshield"
+    reason: nobody_shoots_back
 
 source:
   url: https://wiki.warframe.com/w/Soma_Incarnon_Genesis

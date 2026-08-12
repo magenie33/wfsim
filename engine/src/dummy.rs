@@ -1476,6 +1476,9 @@ pub struct DummyParams {
     /// King's Gambit: MULTIPLIES a non-weak-point pellet's crit chance.
     /// 1.0 = ordinary; the card's x0 makes a body crit impossible.
     pub bodyshot_cc_mult: f64,
+    /// Galvanic Reload: `(status, chance, rounds)` — a magazine restore rolled
+    /// ONCE PER SHOT when the target carries that status.
+    pub round_restore_on_status: Option<(DamageType, f64, f64)>,
     /// Sharpened Bullets (Emergent): ABSOLUTE crit-damage add as a timed buff
     /// (starts inactive), granted/refreshed on every kill.
     pub cd_on_kill: Option<crate::loadout::TimedBuff>,
@@ -2194,6 +2197,7 @@ impl DummyParams {
             slash_on_crit: panel.slash_on_crit,
             weakpoint_cc_rel: panel.weakpoint_cc_rel,
             bodyshot_cc_mult: panel.bodyshot_cc_mult,
+            round_restore_on_status: panel.round_restore_on_status,
             cd_on_kill: panel.cd_on_kill,
             fr_on_reload: panel.fr_on_reload,
             bd_on_reload: panel.bd_on_reload,
@@ -2433,6 +2437,7 @@ impl Default for DummyParams {
             slash_on_crit: 0.0,
             weakpoint_cc_rel: 0.0,
             bodyshot_cc_mult: 1.0,
+            round_restore_on_status: None,
             cd_on_kill: None,
             fr_on_reload: None,
             bd_on_reload: None,
@@ -6663,6 +6668,27 @@ pub fn run_once_traced(
         // many grenades that shot put out.
         field_duration_boost = false;
 
+        // GALVANIC RELOAD: "On hitting a target affected by an Electricity
+        // status, 40% chance to restore 1 round in the magazine from ammo pool."
+        //
+        // ONCE PER SHOT, which is the card's own qualifier — "The bonus can only
+        // apply once per enemy hit" — and on a shotgun family the difference
+        // between that and once per pellet is tenfold. So it is rolled HERE,
+        // outside the pellet loop, beside the other per-pull events.
+        //
+        // "FROM AMMO POOL", so a dry reserve restores nothing: the round is
+        // drawn like any other. And a restore is NOT a reload — nothing that
+        // watches reloads sees it, the same rule `mag_refill_on_kill` follows.
+        if let Some((st, chance, rounds)) = ap.round_restore_on_status {
+            if has_status(&debuffs, st) && d.extra.chance(chance) {
+                let room = (params.magazine_size - magazine).max(0.0);
+                let want = rounds.min(room);
+                if want > 0.0 {
+                    magazine += draw_from(&mut reserve, params.infinite_reserve, want);
+                }
+            }
+        }
+
         // ONE Hit event per trigger pull (hitscan pellets are not separate
         // Hits - GLOSSARY): headshot/big-crit flags aggregate any pellet.
         let hit = Event::Hit(Hit {
@@ -8139,6 +8165,81 @@ mod tests {
         let head_on = run(&perk, true);
         assert!(head_on > run(&[], true),
             "and a weak point crits MORE with the perk: {head_on} vs {}", run(&[], true));
+    }
+
+    /// GALVANIC RELOAD: the magazine lasts longer, ONCE PER SHOT, and only
+    /// while the target is carrying the status.
+    ///
+    /// VERBATIM (Strun_Incarnon_Genesis) and its three notes:
+    ///   *On hitting a target affected by an {{D|Electricity}} status, '''40%'''
+    ///    chance to restore 1 round in the magazine from ammo pool.
+    ///   *The status effect may originate from any source.
+    ///   *The bonus can only apply once per enemy hit.
+    ///   *The bonus does not affect the Incarnon form.
+    ///
+    /// The second note is the one worth a test of its own: this is a SHOTGUN
+    /// family, so per-pellet instead of per-shot would be roughly ten rolls a
+    /// trigger pull and a magazine that never empties. It is checked by
+    /// counting RELOADS — the observable a player would notice — with the
+    /// pellet count as the only thing that changes between two runs.
+    #[test]
+    fn galvanic_reload_restores_once_per_shot_not_once_per_pellet() {
+        // A fixture that applies Electricity on every pellet, so the target is
+        // always carrying one and the roll is the only variable.
+        let fixture = |pellets: f64, restore: bool| {
+            let mut p = DummyParams {
+                damage: DamageVector::new().with(DamageType::Electricity, 100.0),
+                status_chance: 1.0,
+                multishot: pellets,
+                magazine_size: 10.0,
+                fire_rate: 5.0,
+                reload_seconds: 2.0,
+                duration_secs: 60.0,
+                ..no_status()
+            };
+            if restore {
+                p.round_restore_on_status = Some((DamageType::Electricity, 0.40, 1.0));
+            }
+            let s = monte_carlo(&p, 12, 3);
+            // SHOTS PER MAGAZINE, which is the thing the perk actually changes.
+            // Reload COUNT is the wrong observable here and measuring it says
+            // why: a gun that reloads less also spends less time reloading, so
+            // it fires more shots in the same 60 s and the count comes back up.
+            s.mean_shots / s.mean_reloads.max(1.0)
+        };
+
+        // WITHOUT the perk, a 10-round magazine is 10 shots.
+        let plain1 = fixture(1.0, false);
+        assert!((plain1 - 10.0).abs() < 0.6, "ten rounds, ten shots: {plain1}");
+
+        // WITH it, 40% of shots put a round back, so the magazine is worth
+        // 10/(1-0.4) = 16.67 shots. The arithmetic is the assertion.
+        let with1 = fixture(1.0, true);
+        assert!((with1 - 16.67).abs() < 1.5,
+            "a 40% refund makes a 10-round magazine 16.67 shots: {with1}");
+
+        // AND TEN PELLETS CHANGE NOTHING, which is the note. Per pellet, ten
+        // rolls a shot would refund on 99.4% of them and the magazine would
+        // never empty; per shot, the pellet count is irrelevant.
+        let with10 = fixture(10.0, true);
+        assert!((with10 - with1).abs() < 1.5,
+            "once per ENEMY HIT, so multishot does not multiply it: {with10} shots a              magazine at ten pellets against {with1} at one");
+
+        // …AND NOTHING WITHOUT THE STATUS. Same perk, a target that never
+        // catches one, so the condition is the only difference.
+        let mut cold = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 100.0),
+            status_chance: 0.0,
+            magazine_size: 10.0,
+            fire_rate: 5.0,
+            reload_seconds: 2.0,
+            duration_secs: 60.0,
+            ..no_status()
+        };
+        let dry = monte_carlo(&cold, 12, 3).mean_reloads;
+        cold.round_restore_on_status = Some((DamageType::Electricity, 0.40, 1.0));
+        assert!((monte_carlo(&cold, 12, 3).mean_reloads - dry).abs() < 1e-9,
+            "no Electricity on the target, no refund");
     }
 
     /// VICIOUS PROMISE: the first arrow only, and OVERGUARD does not count.
