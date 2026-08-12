@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: 995ecd03baa6aa8f872dea4ba05cf0347548ca34
+engine: e111a7d07d9f4e81751a8cb1a56d6cae43275b6b
 entries:
   - weapon: boltor_prime
     mode: cycle
@@ -582,6 +582,12 @@ entries:
     score: 2.343442680524309
     mods: [amalgam_serration, galvanized_chamber, primed_firestorm, vigilante_armaments, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    score: 2.332772541661604
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, high_voltage]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
