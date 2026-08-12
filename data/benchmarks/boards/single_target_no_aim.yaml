@@ -137,6 +137,11 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
     arcanes: [secondary_enervate]
+  - weapon: gotva_prime
+    mode: base
+    score: 0.3402276243918234
+    mods: [heavy_caliber, galvanized_aptitude, speed_trigger, vigilante_armaments, vigilante_supplies, vital_sense, wildfire, thermite_rounds]
+    arcanes: [primary_merciless]
   - weapon: laetum
     mode: cycle
     score: 4.239757591781465
@@ -806,6 +811,14 @@ entries:
     mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
+  - weapon: verglas_prime
+    mode: base
+    score: 0.6679210795037888
+    mods: [heavy_caliber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, wildfire, thermite_rounds]
+  - weapon: verglas_prime
+    mode: base
+    score: 0.6492865381271052
+    mods: [heavy_caliber, split_chamber, serration, vile_acceleration, rime_rounds, high_voltage, hellfire, thermite_rounds]
   - weapon: verglas_prime
     mode: base
     score: 0.21300496984746992
