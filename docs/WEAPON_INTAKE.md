@@ -1,13 +1,12 @@
 # Weapon intake — what it costs, and what order to do it in
 
-Plan of record, 2026-08-04. The roster is 7 weapons; the wiki knows 353 ranged
-ones. This is how the next ones get in.
+The wiki knows 353 ranged weapons. This is what one costs and how the next
+ones get in.
 
-**Superseded on the ORDER, 2026-08-07 (owner): every Incarnon primary and
-secondary comes first — see docs/INCARNON.md for that roster and its order.**
-What one weapon costs, and the READ THE PAGE rule, still apply to all of it;
-batches A and B below are the backlog behind the Incarnon program, and batch C
-(sniper) is now part of it (Vectis).
+**THE ORDER IS docs/INCARNON.md's** (owner, 2026-08-07): every Incarnon primary
+and secondary comes first. What one weapon costs, and the READ THE PAGE rule,
+apply to all of it; batches A and B below are the backlog behind that program,
+and batch C (sniper) is part of it (Vectis).
 
 ## The bottleneck is MEASUREMENT, not typing
 

@@ -505,14 +505,12 @@ around (decision 2026-07-31).
   everything below is the simulator's, read-only. The final round is
   `finalists × runs`, and the RUNS ARE THE SEARCH'S with the fight's as their
   default — blank means "the count the replay will use", a number means "search
-  at this instead" (owner, 2026-08-11, amending 2026-08-02's "the optimizer
-  offers no control for it"). What changed under the old rule is the fight's own
-  number: the simulator now defaults to the rulers' 1000 runs, so a wide scope's
-  last round is `finalists × 1000` on top of everything before it, and "search
-  cheaply, then measure the winner properly in the simulator" became a real way
-  to work that the scope had no way to say. What the old rule was protecting is
-  intact and is why the default is still the fight's: a winner crowned at a
-  precision the replay never used is a winner nobody can reproduce.).
+  at this instead" (owner, 2026-08-11). The default is the fight's because a
+  winner crowned at a precision the replay never used is a winner nobody can
+  reproduce; the override exists because the simulator defaults to the rulers'
+  1000 runs, so a wide scope's last round is `finalists × 1000` on top of
+  everything before it, and "search cheaply, then measure the winner properly in
+  the simulator" is a real way to work.).
   There is always ≥1,
   "active" means the state you are in, and the key is
   `wfsim-presets-<weapon>-<domain>`. A **custom** is a thing you MADE that the

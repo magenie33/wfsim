@@ -65,11 +65,10 @@ energy: 0
 sprint: 0.9
 
 # WHAT THE PLAYER IS DOING. A mod card gates on these in words ("while aiming",
-# "while Invisible", "while Airborne") and each such mod used to be modelled as
-# either unconditional (Spectral Serration paid +330% to everyone), as an
-# unevaluable conditional, or — for aim — as a bool threaded through the
-# resolver beside this file. They are one set of conditions now, and the engine
-# asks all of them here.
+# "while Invisible", "while Airborne"), and they are ONE SET OF CONDITIONS the
+# engine asks here — not a bool for aim beside a state for the rest, and never
+# an unconditional grant (a gate nobody asks is Spectral Serration paying +330%
+# to everyone).
 #
 # The neutral Tenno is doing none of them, which is the honest default for
 # "some max-rank frame with no abilities running": those mods contribute

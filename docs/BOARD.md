@@ -74,11 +74,11 @@ can be answered wrong silently.
 
 ### What decides "new" — the ENGINE FINGERPRINT (2026-08-11)
 
-The first row used to be a lie. Both triggers ran the same full rescore, which
-was affordable at 100 runs a build and stopped being so at 1000: scoring went
-from ~7 minutes to **1h07m**, the schedule kept firing every 20, and
-`concurrency` keeps only ONE pending run — so every queued run was cancelled by
-the next and the board simply stopped updating. Five `cancelled` in a row.
+A FULL rescore on both triggers is what the fingerprint exists to prevent. It
+is affordable at 100 runs a build and is not at 1000: scoring goes from ~7
+minutes to **1h07m**, the schedule fires every 20, and `concurrency` keeps only
+ONE pending run — so every queued run is cancelled by the next and the board
+stops updating altogether. Five `cancelled` in a row is what that looks like.
 
 A score is a pure function of `(build, the ruler's terms, this code, this
 data)`. So the board records the hash of everything on that list which is not

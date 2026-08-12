@@ -267,9 +267,9 @@ API, not its pages" for how to read it, and M40 for what it settled.
 
 ## Which source wins (revised 2026-07-30)
 
-The rule used to be "the wiki module is authoritative for every mechanical
-field". That was wrong for two of them, and nothing could show it while only
-one source was consulted.
+NO ONE SOURCE IS AUTHORITATIVE FOR EVERY MECHANICAL FIELD, and nothing can
+show which of them is wrong about a field while only one is consulted. That is
+what the cross-check buys, and the table below is which source wins where.
 
 | field | authority | why |
 | --- | --- | --- |

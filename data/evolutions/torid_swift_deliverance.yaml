@@ -26,10 +26,9 @@ effects:
   # the Torid's projectile lifetime (the wiki page and WFCD both stop at
   # shot_speed 40), so the new max range cannot be computed from data.
   #
-  # THE NUMBER NOW COUNTS. It used to be `kind: unmodeled`, which loads as
-  # `Inert` — the evolution was selectable and its +50% vanished. Projectile
-  # speed has had an indirect bucket since the mods got theirs (2026-08-01), so
-  # the value reaches the panel like any handling stat (user, 2026-08-03).
+  # THE NUMBER COUNTS. Projectile speed has an indirect bucket, the same one
+  # the mods feed (2026-08-01), so the value reaches the panel like any other
+  # handling stat (user, 2026-08-03).
   #
   # What is still NOT derived is the RANGE it buys: max range = speed x
   # lifetime, and neither source gives the Torid's projectile lifetime (both

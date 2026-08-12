@@ -1864,16 +1864,15 @@ that fits both, which is the point — DE's table is not a formula.
 Three sources, in order: **a real card** → **a count over live listings** →
 **the derivation**.
 
-**SUPERSEDED 2026-08-08 in one respect — WHICH FILE DECIDES.** The first two
-used to be data the engine read at calculation time, the survey outranking the
-rules. It does not any more: the rules decide, `data/rivens/exceptions.yaml`
-overrides them per family with each entry naming its evidence, and
-`data/rivens/pools.yaml` is read by a test. Everything below about WHAT was
-found still stands — every finding became an exception entry carrying its count
-— and the reason for the move is in DATA_SOURCES §"Riven pools" (owner: "抓取只
-是来当验证才对"). A re-run of the scrape came back "nothing rolls anything" for
-all 26 families, which under the old order would have emptied every pool in the
-app without failing anything.
+**WHICH FILE DECIDES:** the RULES do. `data/rivens/exceptions.yaml` overrides
+them per family with each entry naming its evidence, and `data/rivens/pools.yaml`
+— the survey — is read by a TEST and by nothing else (owner: "抓取只是来当验证
+才对"; DATA_SOURCES §"Riven pools"). Everything below is what the survey FOUND,
+and every finding became an exception entry carrying its count.
+
+Why the survey does not decide: a re-run of the scrape came back "nothing rolls
+anything" for all 26 families. Data the engine reads at calculation time would
+have emptied every pool in the app without failing anything.
 
 ### On the Incarnon question specifically
 

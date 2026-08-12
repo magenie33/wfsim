@@ -1614,11 +1614,11 @@ target**."* And the catalog row gives the class outright:
 | Pox | DoT Cloud | AoE | 20 | 50 | 250% | Adding |
 
 **The class is per FORM, and the Torid proves it.** Those two rows are the BASE
-form. The Incarnon form has **no row**, and the engine used to read that as "not
-covered" and infer `Multiplying` from its siblings. Backwards: the table
-enumerates exceptions, so absence is the positive statement that the attack is
-ordinary — **Adding at +100%**, joining the base-damage bucket like Hornet
-Strike (confirmed, user 2026-07-30). Both halves of the Incarnon form's CO
+form. The Incarnon form has **no row**, and that absence is a POSITIVE statement
+rather than a gap: the table enumerates exceptions, so an attack it does not
+name is ordinary — **Adding at +100%**, joining the base-damage bucket like
+Hornet Strike (confirmed, user 2026-07-30). Inferring the class from a sibling
+form would get it exactly backwards. Both halves of the Incarnon form's CO
 behaviour follow from that one absence: the class *and* the 100% base.
 
 So one weapon runs both classes depending on which form is out — Multiplying
@@ -1634,7 +1634,7 @@ tick"* — the CO bonus is read LIVE per tick from the target's current status
 count, not snapshotted when the cloud is created.
 
 **Ticks are full damage instances, and mods reach them.** Three patch notes
-settle what used to be guesswork:
+settle it:
 - *"Fixed Torid gas clouds not receiving damage buffs from mods."* — the tick
   takes the weapon's damage buckets.
 - *"Changed Critical Chance logic by allowing it to occur on Radial Explosions
@@ -1737,9 +1737,9 @@ from wiki; falloff/ballistics/AoE math need measurement). **High-risk**
 > **Player STATE gates mods.** One wrapper covers all of it:
 > `condition: while_aiming | while_invisible | while_airborne` in a mod file
 > resolves to `ModEffect::WhileTenno(TennoCondition, …)`, which
-> `loadout::resolve_for` asks of the fight's Tenno. Aiming used to be a bool
-> threaded through the resolver while the other states lived on the Tenno —
-> two homes for one kind of fact (user, 2026-08-02). A gated effect whose
+> `loadout::resolve_for` asks of the fight's Tenno. All of them live there,
+> aiming included — one home for one kind of fact (user, 2026-08-02). A gated
+> effect whose
 > condition is false is absent from the static buckets AND from the emergent
 > specs, so the buff never arms; the panel still lists the row, tagged with the
 > condition, rather than folding a number in or hiding the mod.
@@ -1931,10 +1931,10 @@ component** of the hit vector:
   break, Electricity burst = 3%/stack of **the broken pool's** max (max
   30%), "**When Shield or Overguard breaks**, deal Electricity Damage for
   3% of enemy's Max Shield or Overguard per stack with a forced Electricity
-  Status Effect" — this line used to say "max shields", which understated
-  it on the only enemy in the roster: a Thrax Centurion carries 15.5 M
-  Overguard and no shield at all, so reading it as shields-only would have
-  deleted the burst entirely. The engine takes the pool that broke.
+  Status Effect" — **or Overguard** is load-bearing, and the engine takes the
+  pool that BROKE: the roster's only enemy is a Thrax Centurion, which carries
+  15.5 M Overguard and no shield at all, so reading the line as shields-only
+  deletes the burst entirely.
 - Shields recharge after a delay when not hit; status DoTs do not reset the
   delay timer.
 - Faction vulnerability/resistance (×1.5/×0.5) applies **per component at
