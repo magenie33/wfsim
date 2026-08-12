@@ -506,6 +506,7 @@ function defaultScenario() {
     eximus: d.eximus ?? null,
     headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
     invisible: !!d.invisible, airborne: !!d.airborne, overshields: !!d.overshields,
+    channeling: !!d.channeling,
     frame: d.frame || "", wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
     wf_sprint: d.wf_sprint || 0.9,
     infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
@@ -533,7 +534,7 @@ function defaultScenario() {
 // `aiming` defaults TRUE because that is what the sim silently assumed before
 // the knob existed, so no stored preset changes meaning.
 let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: null, headshot_pct: 100, aiming: true,
-  invisible: false, airborne: false, overshields: false,
+  invisible: false, airborne: false, overshields: false, channeling: false,
   frame: "", wf_armor: 0, wf_energy: 0, wf_sprint: 0.9,
   // NO `form`, AND NO `mode`. How the weapon is played is part of the BUILD;
   // a fight that carried it could decide how the weapon was fired, which is
@@ -3369,6 +3370,7 @@ async function drawShareCard(canvas, url) {
       ...(sim.invisible ? [tr("Invisible")] : []),
       ...(sim.airborne ? [tr("Airborne")] : []),
       ...(sim.overshields ? [tr("Overshields")] : []),
+      ...(sim.channeling ? [tr("Channeled ability")] : []),
       sim.infinite_ammo === false ? tr("finite ammo") : null,
     ].filter(Boolean).join(" · "), 36, y + 25);
   }
@@ -5114,7 +5116,7 @@ function renderMods() {
 // sim never ran, and hid a contribution the sim was paying. One player, both
 // answers (user, 2026-08-02: "这个目标也要在场上").
 // The scenario fields that describe the PLAYER rather than the fight.
-const TENNO_KEYS = ["aiming", "invisible", "airborne", "overshields", "frame", "wf_armor", "wf_energy", "wf_sprint"];
+const TENNO_KEYS = ["aiming", "invisible", "airborne", "overshields", "channeling", "frame", "wf_armor", "wf_energy", "wf_sprint"];
 
 /// THE WARFRAME ROSTER, and what picking one means: it fills armor, max energy
 /// and sprint speed at once. Sprint is the one that could not be set at all
@@ -7341,6 +7343,7 @@ function renderScenarioFields(ids, opts = {}) {
       <label class="check" title="${escHtml(tr("the wielder's state: mods that only pay while Invisible (Spectral Serration) grant nothing when this is off"))}"><input type="checkbox" data-k="invisible"${sim.invisible ? " checked" : ""}> ${escHtml(tr("Invisible"))}</label>
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"while Airborne\""))}"><input type="checkbox" data-k="airborne"${sim.airborne ? " checked" : ""}> ${escHtml(tr("Airborne"))}</label>
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"With Overshields\". Nothing here takes them away, so it is a declaration"))}"><input type="checkbox" data-k="overshields"${sim.overshields ? " checked" : ""}> ${escHtml(tr("Overshields"))}</label>
+      <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"With Channeled Ability active\". The ability must DRAIN ENERGY over time — Desecrate, Haven and an empty Gloom do not count"))}"><input type="checkbox" data-k="channeling"${sim.channeling ? " checked" : ""}> ${escHtml(tr("Channeled ability"))}</label>
       <label title="${escHtml(tr("picking a frame fills armor, max energy and sprint speed below — the roster is UNMODDED, so a built frame carries more and the numbers stay editable"))}">${escHtml(tr("Warframe"))} <select data-k="frame">
         <option value=""${sim.frame ? "" : " selected"}>${escHtml(tr("none — no frame"))}</option>
         ${frames().map((f) => `<option value="${escHtml(f.id)}"${f.id === sim.frame ? " selected" : ""}>${escHtml(f.name)}</option>`).join("")}

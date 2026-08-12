@@ -10,18 +10,40 @@ description: "Increase Base Damage by +24. With Channeled Ability active: Increa
 selection: choose_one
 
 effects:
-  # THE UNCONDITIONAL HALF, which is the only half this sim can see.
+  # VERBATIM (Braton_Incarnon_Genesis, EVO2, the row's effect cell and its note):
+  #   * Increase Base Damage by '''+X'''.
+  #   * With [[Channeled Abilities|Channeled Ability]] active: Increase Base
+  #     Damage by '''+Y'''. '''+50%''' Ammo Efficiency
+  #   | X = 24<br>Y = 30 | X = 28<br>Y = 22 | X = 12<br>Y = 34 | X = 4<br>Y = 38
+  #   * Channeled Abilities must be draining energy to be considered active.
+  #     Abilities that do not drain energy over time such as Nekros's Desecrate,
+  #     Hildryn's Haven, or Sevagoth's Gloom (with no enemies nearby) do not
+  #     count.
+  #
+  # THE COLUMNS ARE Braton | Mk1-Braton | Braton Vandal | Braton Prime, from the
+  # table's `! class=unsortable` header rows — NOT from the page's opening
+  # sentence, which lists them in a different order (Braton, Vandal, Prime,
+  # Mk1). Reading the sentence makes three of the four look wrong.
+  #
+  # from: "Increase Base Damage by +24"
   - kind: flat_base_damage
     value: 24.0
-  # NOT LOADED, and it is a gap in the SIM rather than in the data: a CHANNELED
-  # ABILITY is a Warframe state the arena has no concept of — it fires one
-  # weapon and casts nothing — so neither the +30 nor the ammo efficiency can
-  # ever arm. On this family the conditional half is the LARGER one for three
-  # of the four variants, which is worth knowing before reading a Braton's
-  # number here as its ceiling.
-  - kind: flat_base_damage_while_channeling
+  # …and the SAME statement, gated on the player. A channeled ability is a
+  # STATE this arena cannot observe — it fires one weapon and casts nothing —
+  # so the player declares it, the same way overshields are declared. What the
+  # note requires is an ENERGY DRAIN over time, which is not modelled either;
+  # the control's own wording carries that, since ticking it for a Desecrate
+  # would be wrong by the card's own definition.
+  #
+  # ON THIS FAMILY THE CONDITIONAL HALF IS THE LARGER ONE for three of the four,
+  # which is worth knowing before reading an unticked Braton as its ceiling.
+  - kind: gated_by_tenno
+    condition: channeling
+    grant: flat_base_damage
     value: 30.0
-    ammo_efficiency: 0.50
+  - kind: out_of_scope
+    clause: "With Channeled Ability active: +50% Ammo Efficiency"
+    reason: infinite_ammo
 
 source:
   url: https://wiki.warframe.com/w/Braton_Incarnon_Genesis

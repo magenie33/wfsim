@@ -101,6 +101,21 @@ pub struct TennoState {
     /// back — so this is a declaration rather than something the fight tracks.
     #[serde(default)]
     pub overshields: bool,
+    /// Daring Reverie, Hunter's Mantra: *"With Channeled Ability active"*.
+    ///
+    /// VERBATIM, and the note is the whole definition (Braton_Incarnon_Genesis):
+    /// "Channeled Abilities must be draining energy to be considered active.
+    /// Abilities that do not drain energy over time such as Nekros's Desecrate,
+    /// Hildryn's Haven, or Sevagoth's Gloom (with no enemies nearby) do not
+    /// count."
+    ///
+    /// A STATE the player declares, the same shape as `overshields`: this arena
+    /// fires one weapon and casts nothing, so there is no cast for it to
+    /// observe. The energy DRAIN the note requires is not modelled either —
+    /// which is why the wording on the control has to carry the note, or a
+    /// player ticks it for an ability that would not qualify.
+    #[serde(default)]
+    pub channeling: bool,
     /// CURRENT energy as a fraction of [`Tenno::energy`]. 1.0 = full, which is
     /// the honest default for a build calculator: you are asking what the gun
     /// does, not what it does eleven casts in. Primary Overcharge's card gates
@@ -120,6 +135,7 @@ impl Default for TennoState {
             invisible: false,
             airborne: false,
             overshields: false,
+            channeling: false,
             energy_pct: 1.0,
         }
     }

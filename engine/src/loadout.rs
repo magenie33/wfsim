@@ -880,6 +880,10 @@ pub enum TennoGate {
     /// `overshields` — Haven Foray, Guardian's Might: "With Overshields".
     /// A yes/no rather than a threshold, which is what the card asks.
     HasOvershields,
+    /// `channeling` — Daring Reverie, Hunter's Mantra: "With Channeled Ability
+    /// active". A yes/no, and its definition is the card's own note: the
+    /// ability must be DRAINING ENERGY over time.
+    ChannelingAbility,
 }
 
 impl TennoGate {
@@ -890,6 +894,7 @@ impl TennoGate {
             TennoGate::ArmorOver(x) => tenno.armor > x,
             TennoGate::EnergyMaxOver(x) => tenno.energy > x,
             TennoGate::HasOvershields => tenno.state.overshields,
+            TennoGate::ChannelingAbility => tenno.state.channeling,
         }
     }
 
@@ -900,6 +905,7 @@ impl TennoGate {
             TennoGate::ArmorOver(x) => format!("with armor over {x}"),
             TennoGate::EnergyMaxOver(x) => format!("with max energy over {x}"),
             TennoGate::HasOvershields => "with overshields".to_string(),
+            TennoGate::ChannelingAbility => "with a channeled ability active".to_string(),
         }
     }
 }
@@ -3357,6 +3363,51 @@ mod tests {
             .collect();
         assert_eq!(asking.len(), roster.len(),
             "cards asking about overshields: {asking:?}");
+    }
+
+    /// WITH A CHANNELED ABILITY ACTIVE — the second player-declared state, and
+    /// the family where the conditional half is the BIGGER one.
+    ///
+    /// VERBATIM (Braton_Incarnon_Genesis, Daring Reverie):
+    ///   * Increase Base Damage by '''+X'''.
+    ///   * With [[Channeled Abilities|Channeled Ability]] active: Increase Base
+    ///     Damage by '''+Y'''. '''+50%''' Ammo Efficiency
+    ///     | X = 24<br>Y = 30 | X = 28<br>Y = 22 | X = 12<br>Y = 34 | X = 4<br>Y = 38
+    ///
+    /// THE COLUMNS COME FROM THE TABLE HEADER — Braton | Mk1-Braton | Braton
+    /// Vandal | Braton Prime — and NOT from the page's opening sentence, which
+    /// lists the same four in a different order. Reading the sentence makes
+    /// three of the four look wrong, so the mapping is pinned here.
+    #[test]
+    fn every_channeled_ability_card_pays_the_number_on_its_own_variant() {
+        let roster: &[(&str, &str, f64, f64)] = &[
+            ("braton", "braton_daring_reverie", 24.0, 30.0),
+            ("mk1_braton", "mk1_braton_daring_reverie", 28.0, 22.0),
+            ("braton_vandal", "braton_vandal_daring_reverie", 12.0, 34.0),
+            ("braton_prime", "braton_prime_daring_reverie", 4.0, 38.0),
+        ];
+        let neutral = crate::tenno_data::default_tenno();
+        assert!(!neutral.state.channeling, "the default player is casting nothing");
+        let channeling = tenno_who(|s| s.channeling = true);
+        for (weapon, evo, x, y) in roster {
+            let bare = WeaponBase::from_data(weapon, true, &[]);
+            let with = WeaponBase::from_data(weapon, true, &[evo]);
+            let off = resolve_for(&with, &[], StackPolicy::AssumedMax, neutral);
+            let on = resolve_for(&with, &[], StackPolicy::AssumedMax, &channeling);
+            let plain = resolve_for(&bare, &[], StackPolicy::AssumedMax, neutral);
+            // The unconditional half is X…
+            assert!((off.modified_base - plain.modified_base - x).abs() < 1e-6,
+                "{evo}: the unconditional half is +{x}, panel moved by {}",
+                off.modified_base - plain.modified_base);
+            // …and ticking the state adds Y on top of it.
+            assert!((on.modified_base - off.modified_base - y).abs() < 1e-6,
+                "{evo}: a channeled ability is worth +{y}, panel moved by {}",
+                on.modified_base - off.modified_base);
+        }
+        // THE CONDITIONAL HALF IS THE BIGGER ONE for three of the four, which is
+        // the fact a player needs before reading an unticked Braton as its
+        // ceiling — and a sign-flipped transcription would break it.
+        assert_eq!(roster.iter().filter(|(_, _, x, y)| y > x).count(), 3);
     }
 
     /// The sim used to satisfy `while_aiming` silently, so every aim-gated

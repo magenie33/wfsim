@@ -1987,6 +1987,9 @@ fn tenno_condition(v: &Value) -> Option<crate::loadout::TennoGate> {
     if c == "overshields" {
         return Some(G::HasOvershields);
     }
+    if c == "channeling" {
+        return Some(G::ChannelingAbility);
+    }
     None
 }
 
@@ -2469,13 +2472,9 @@ use crate::loadout::WeaponBase;
             //
             // GUNSMOKE PICK UP is out of reach twice — no ammo-restore kind, and
             // a PUNCH THROUGH trigger needs a second body behind the first.
-            "braton_daring_reverie :: flat_base_damage_while_channeling",
             "braton_gunsmoke_pick_up :: ammo_restore_on_punch_through",
-            "braton_prime_daring_reverie :: flat_base_damage_while_channeling",
             "braton_prime_gunsmoke_pick_up :: ammo_restore_on_punch_through",
-            "braton_vandal_daring_reverie :: flat_base_damage_while_channeling",
             "braton_vandal_gunsmoke_pick_up :: ammo_restore_on_punch_through",
-            "mk1_braton_daring_reverie :: flat_base_damage_while_channeling",
             "mk1_braton_gunsmoke_pick_up :: ammo_restore_on_punch_through",
             // THE LATRON FAMILY (2026-08-08) — three weapons, four kinds, and
             // two of them are near-misses rather than absences.
@@ -2516,9 +2515,6 @@ use crate::loadout::WeaponBase;
             // of the family, Ready Retaliation, is still inert below: its
             // `condition:` is unread, and granting a conditional bonus
             // unconditionally is worse than not granting it.)
-            "boltor_hunters_mantra :: punch_through_while_channeling",
-            "boltor_prime_hunters_mantra :: punch_through_while_channeling",
-            "telos_boltor_hunters_mantra :: punch_through_while_channeling",
         ];
         // TWO POPULATIONS, AND THE PREFIX IS WHICH. The list above is the ARGUED
         // one: a hand-written perk whose effect the engine cannot express, where
@@ -2793,7 +2789,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 29;
+        const CEILING: usize = 22;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

@@ -245,6 +245,9 @@ ui:
   # could not be reached from here (the Chinese wiki has no such page). It falls
   # back to English until someone reads it off the game client.
   "the wielder's state: what a card means by \"With Overshields\". Nothing here takes them away, so it is a declaration": 使用者状态：卡面上说的「拥有超量护盾时」指的就是这个。这里没有任何东西会打掉它，所以它是一个声明而不是战斗里的变量
+  # Same rule as the labels above: "Channeled ability" is DE's own wording and
+  # is left in English until someone reads its Chinese off the game client.
+  "the wielder's state: what a card means by \"With Channeled Ability active\". The ability must DRAIN ENERGY over time — Desecrate, Haven and an empty Gloom do not count": 使用者状态：卡面上说的「引导类技能生效中」指的就是这个。技能必须是持续耗能的——亵渎、庇护所、以及周围没有敌人时的阴郁都不算
   "3 · Buffs": 3 · 增益
   "4 · Simulation": 4 · 模拟
   "Technique": 手法

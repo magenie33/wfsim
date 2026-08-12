@@ -10,16 +10,29 @@ description: "Increase Base Damage by +4. With Channeled Ability active: Punch T
 selection: choose_one
 
 effects:
-  # THE UNCONDITIONAL HALF, which is the only half this sim can see.
+  # VERBATIM (Boltor_Incarnon_Genesis, EVO2, the row's effect cell):
+  #   *Increase Base Damage by '''+X'''.
+  #   *With [[Channeled Abilities|Channeled Ability]] active: [[Punch Through]]
+  #    '''+4''' and '''+40%''' [[Accuracy]].
+  #   | X = 18 | X = 4 | X = 4
+  # Columns are Boltor | Telos Boltor | Boltor Prime, from the table header.
+  #
+  # from: "Increase Base Damage by +4"
   - kind: flat_base_damage
     value: 4.0
-  # NOT LOADED, and it is a gap in the SIM rather than in the data: a CHANNELED
-  # ABILITY is a Warframe state the arena has no concept of. Both halves would
-  # be spatial anyway — punch-through needs a second body and accuracy needs a
-  # miss to prevent, and this arena has neither.
-  - kind: punch_through_while_channeling
-    value: 4.0
-    accuracy: 0.40
+  # AN EDGE, NOT A GAP — and note that the STATE is modelled now
+  # (`condition: channeling`, as the Braton's Daring Reverie uses). What cannot
+  # pay out is the PAYLOAD, and it would still not pay if the Warframe layer
+  # were closed tomorrow, which is the test for which reason to file: punch
+  # through needs a second body to reach, and this arena has one target.
+  - kind: out_of_scope
+    clause: "With Channeled Ability active: Punch Through +4"
+    reason: one_target
+  # …and the other half of the same bullet, which has its own reason: accuracy
+  # only pays where a shot can miss, and nothing here spreads or travels.
+  - kind: out_of_scope
+    clause: "With Channeled Ability active: +40% Accuracy"
+    reason: no_distance
 
 source:
   url: https://wiki.warframe.com/w/Boltor_Incarnon_Genesis
