@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 4f302b94f266ead85899dc137b5ff9842bce42c4
+engine: a58de4081880aca6fa05525d5155f9a3a8bfbfac
 entries:
   - weapon: angstrum
     mode: cycle
@@ -633,6 +633,12 @@ entries:
     mode: cycle
     score: 58.21198446014608
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 58.21198446014608
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
@@ -664,6 +670,12 @@ entries:
     score: 49.920803272208936
     mods: [primary_acuity, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 47.53959944574037
+    mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
@@ -3224,11 +3236,6 @@ entries:
     score: 5.656661941466439
     mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     arcanes: [primary_crux]
-  - weapon: shedu
-    mode: base
-    score: 3.079128237777369
-    mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, hellfire]
-    arcanes: [primary_crux]
   - weapon: sicarus_prime
     mode: cycle
     score: 46.251765111071734
@@ -4219,10 +4226,6 @@ entries:
     mode: base
     score: 0.2726538030750728
     mods: [heavy_caliber, split_chamber, serration, rifle_elementalist, vile_acceleration, primed_cryo_rounds, infected_clip, hellfire]
-  - weapon: verglas_prime
-    mode: base
-    score: 0.21300496984746992
-    mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, thermite_rounds, malignant_force]
   - weapon: verglas_prime
     mode: base
     score: 0.21143797886053525
