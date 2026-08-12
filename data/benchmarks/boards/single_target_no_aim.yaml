@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: 07e169f900e4bb46006c68cd6f942cdecbf7d890
+engine: 851c73fae713fba5fa580f56ce4cbe2df797932a
 entries:
   - weapon: boltor_prime
     mode: cycle
@@ -278,6 +278,11 @@ entries:
     score: 1.8110330479097216
     mods: [galvanized_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
+  - weapon: ocucor
+    mode: base
+    score: 1.7797747850123746
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
     score: 1.355426022183286
