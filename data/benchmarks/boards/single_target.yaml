@@ -3143,6 +3143,12 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: sicarus_prime
     mode: cycle
+    score: 24.609788893503644
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, creeping_bullseye, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_voids_guidance, sicarus_prime_commodores_fortune]
+    arcanes: [secondary_deadhead]
+  - weapon: sicarus_prime
+    mode: cycle
     score: 23.068215520849854
     mods: [pistol_acuity, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, jolt, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_rapid_reinforcement, sicarus_prime_commodores_fortune]
