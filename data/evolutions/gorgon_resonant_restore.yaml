@@ -9,14 +9,24 @@ description: "On Reload From Empty: Increase Base Magazine Capacity by +15. Stac
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Reload From Empty: Increase Base Magazine Capacity by +15"
-  - kind: unmodelled_on_reload_from_empty_increase_base_magazine_capacity
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Stacks up to 3x"
-  - kind: unmodelled_stacks_up_to_x
+  # VERBATIM (Gorgon_Incarnon_Genesis, the row's effect cell):
+  #   * On Reload From Empty: Increase Base Magazine Capacity by '''+15'''.
+  #     Stacks up to '''3x'''.
+  #   | colspan="3" | -   (Gorgon | Gorgon Wraith | Prisma Gorgon, all three)
+  #
+  # "BASE Magazine Capacity", so a magazine mod multiplies every stack —
+  # `resolve` scales the per-stack value before the sim ever sees it, the same
+  # units conversion a flat base-damage grant takes.
+  #
+  # NO CLOCK ON THIS CARD, in any of the three families that carry it: nothing
+  # says the stacks expire and nothing says an event takes them, so the cap is
+  # the only thing that stops it.
+  #
+  # THE MAGAZINE GROWS, IT DOES NOT FILL. A reload still draws from the reserve
+  # as it always did; what the stack buys is room for the next draw to use.
+  - kind: mag_growth_on_empty_reload
+    per_stack: 15.0
+    max_stacks: 3
 
 source:
   url: https://wiki.warframe.com/w/Gorgon_Incarnon_Genesis

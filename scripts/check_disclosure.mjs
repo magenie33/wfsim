@@ -134,7 +134,28 @@ for (const lang of ["en", "zh"]) {
         return marked === gapNames.some(n => name.startsWith(n));
       });
 
+    // 7b. THE TODO CHIP, on a weapon that still has one.
+    //
+    // It used to be read off the Stug above, and that stopped working the day
+    // the Stug's last inert perk was modelled (2026-08-12) — which is the
+    // check succeeding at its job and then failing for it. The assertion is
+    // that the gold "not modelled YET" chip still RENDERS, so it has to be
+    // asked of a weapon that has one; the Felarx does, and it also carries
+    // three weapon-level gaps of its own.
+    //
+    // The day nothing in the roster is inert, this stops finding a weapon and
+    // says so, which is the right way to learn that the ratchet reached zero.
+    history.pushState({}, '', '/weapons/Felarx'); route(); await sleep(3200);
+    out.todoChips = [...document.querySelectorAll('.evopick .exchip.unmod')]
+        .map(e => e.textContent.trim());
+    out.todoScope = [...document.querySelectorAll('.evopick .exchip.scope')]
+        .map(e => e.textContent.trim());
+
     // 8. NEGATIVE CONTROL. The Torid is hand-written: no gaps, no inert perks.
+    //    Opened EXPLICITLY, because this used to read whatever page the block
+    //    above happened to leave behind — which was the Torid only by accident
+    //    of ordering, and stopped being so the moment a step was inserted.
+    history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3200);
     out.cleanBanner = document.querySelector('.unmod-h') ? 'shown' : 'absent';
     out.cleanEvoChips = document.querySelectorAll('.evopick .exchip.unmod').length;
     return out;
@@ -153,8 +174,8 @@ for (const lang of ["en", "zh"]) {
   // have been going down all night — the count was a proxy for "the chip is
   // drawn", and the pair below says that better: a todo AND an edge, both on
   // screen, told apart.
-  check(`[${lang}] evolution tiles carry a chip`, r.evoChips.length >= 1,
-    `${r.evoChips.length} chips`);
+  check(`[${lang}] evolution tiles carry a chip`, r.todoChips.length >= 1,
+    `${r.todoChips.length} chips on the Felarx`);
   // BOTH KINDS ON SCREEN, and told apart. The Stug carries each: clauses the
   // model has no rule for yet, and Hoplite Virtue, whose trigger is the
   // PLAYER's shields breaking — which nothing in this arena can do.
@@ -175,7 +196,7 @@ for (const lang of ["en", "zh"]) {
   // "outside the sim" on a mod, "partly modelled" on an arcane, both of the
   // others on the evolution tiles. A page that drew only one kind would mean
   // two renderers had gone quiet without a single assertion noticing.
-  const kinds = new Set([...r.modChips, ...(r.arcChips || []), ...r.evoChips]
+  const kinds = new Set([...r.modChips, ...(r.arcChips || []), ...r.todoChips]
     .map((s) => s.replace(/\s+/g, " ").trim()));
   check(`[${lang}] and more than one KIND of admission is on screen`,
     kinds.size >= 3, [...kinds].join(" | "));

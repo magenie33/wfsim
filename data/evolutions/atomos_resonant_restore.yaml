@@ -14,14 +14,24 @@ base_form_only: true
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Reload From Empty: Increase Base Magazine Capacity by +5"
-  - kind: unmodelled_on_reload_from_empty_increase_base_magazine_capacity
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Stacks up to 7x"
-  - kind: unmodelled_stacks_up_to_x
+  # VERBATIM (Atomos_Incarnon_Genesis, the row's effect cell and its note):
+  #   * On Reload From Empty: Increase Base Magazine Capacity by '''+5'''.
+  #     Stacks up to '''7x'''.
+  #   * This bonus does not affect Incarnon form
+  #
+  # "BASE Magazine Capacity", so a magazine mod multiplies every stack —
+  # `resolve` scales the per-stack value before the sim ever sees it, the same
+  # units conversion a flat base-damage grant takes.
+  #
+  # NO CLOCK ON THIS CARD, in any of the three families that carry it: nothing
+  # says the stacks expire and nothing says an event takes them, so the cap is
+  # the only thing that stops it.
+  #
+  # THE MAGAZINE GROWS, IT DOES NOT FILL. A reload still draws from the reserve
+  # as it always did; what the stack buys is room for the next draw to use.
+  - kind: mag_growth_on_empty_reload
+    per_stack: 5.0
+    max_stacks: 7
 
 source:
   url: https://wiki.warframe.com/w/Atomos_Incarnon_Genesis

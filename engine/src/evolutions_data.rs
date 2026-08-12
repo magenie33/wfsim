@@ -199,6 +199,13 @@ enum EvoEffect {
     /// DOES use base damage increase Evolution"), so applying the correction
     /// everywhere would dock a perk the wiki never docked.
     BaseDamageBelowHalfHealth { rate: f64, excludes_own_flat: bool },
+    /// RESONANT RESTORE — "On Reload From Empty: Increase Base Magazine
+    /// Capacity by +N. Stacks up to Nx".
+    ///
+    /// Not a `StackingGrant`, because what it grants is not a term in any
+    /// bracket: it is the magazine CAPACITY, which every other line of the sim
+    /// loop reads. "BASE" capacity, so the magazine mods multiply each stack.
+    MagGrowthOnEmptyReload { per_stack: f64, max_stacks: u32 },
     /// EXACT PENANCE — "On Kill: 50% chance for Instant Reload".
     ///
     /// Distinct from `InstantReloadOnHeadshot` because of the card's own note:
@@ -711,6 +718,7 @@ impl EvolutionDef {
                 | EvoEffect::CritChanceByBodyPart { .. }
                 | EvoEffect::RoundRestoreOnStatusHit { .. }
                 | EvoEffect::InstantReloadOnKill { .. }
+                | EvoEffect::MagGrowthOnEmptyReload { .. }
                 | EvoEffect::CritOnUndamaged { .. }
                 | EvoEffect::ReloadSpeedBonus(_)
                 | EvoEffect::CritMultiplierBelowCritChance { .. }
@@ -890,6 +898,9 @@ impl EvolutionDef {
                 EvoEffect::CritOnUndamaged { crit_chance, crit_multiplier } => format!(
                     "+{:.0}% BASE crit chance and +{crit_multiplier}x BASE crit damage while the                      target is undamaged (mods multiply both)",
                     crit_chance * 100.0
+                ),
+                EvoEffect::MagGrowthOnEmptyReload { per_stack, max_stacks } => format!(
+                    "+{per_stack:.0} BASE magazine capacity on each reload from empty, up to {max_stacks} times (magazine mods multiply each stack)"
                 ),
                 EvoEffect::InstantReloadOnKill { chance } => format!(
                     "{:.0}% chance of an instant reload on any kill, including a status kill",
@@ -1236,6 +1247,10 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // bracket, so a multishot gate and a crit-damage gate cannot be
         // confused for one another, and an unreadable `condition:` falls to
         // Inert rather than paying out unconditionally.
+        "mag_growth_on_empty_reload" => EvoEffect::MagGrowthOnEmptyReload {
+            per_stack: f(v, "per_stack").unwrap_or(0.0),
+            max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
+        },
         "instant_reload_on_kill" => {
             EvoEffect::InstantReloadOnKill { chance: f(v, "chance").unwrap_or(0.0) }
         }
@@ -1670,6 +1685,9 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::GatedByTenno { gate, grant, value } => {
                     base.gated.push((*gate, *grant, *value));
+                }
+                EvoEffect::MagGrowthOnEmptyReload { per_stack, max_stacks } => {
+                    base.mag_growth_on_empty_reload = Some((*per_stack, *max_stacks));
                 }
                 EvoEffect::InstantReloadOnKill { chance } => {
                     base.instant_reload_on_kill = Some(*chance);
@@ -2744,7 +2762,14 @@ mod furis_co_split_tests {
                 alone.push(def.id.clone());
             }
         }
-        assert!(seen > 20, "only {seen} qualifiers — did the loader stop reading them?");
+        // A FLOOR, not a count. This number FALLS as cards get modelled — a
+        // modelled stacking card carries its own `max_stacks:` and needs no
+        // orphaned "Stacks up to Nx" beside it, which is what took it from 21
+        // to 16 when the five Resonant Restores landed (2026-08-12). The
+        // assertion only ever protected against the loader dropping the shape
+        // entirely, so the floor is set well below the live count and lowered
+        // when it is genuinely passed rather than raised to meet it.
+        assert!(seen > 10, "only {seen} qualifiers — did the loader stop reading them?");
         assert!(
             alone.is_empty(),
             "a qualifier with nothing to qualify — the cap is real and uncounted: {alone:?}"
@@ -2801,7 +2826,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 13;
+        const CEILING: usize = 8;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

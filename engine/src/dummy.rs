@@ -1482,6 +1482,10 @@ pub struct DummyParams {
     /// Exact Penance: the chance a KILL reloads instantly. Rolled off the kill
     /// COUNTER, so a status kill counts — which the card requires.
     pub instant_reload_on_kill: Option<f64>,
+    /// Resonant Restore: `(per stack, max stacks)` — the magazine GROWS on each
+    /// reload from empty, up to the cap. `per_stack` arrives already scaled by
+    /// the magazine mods.
+    pub mag_growth_on_empty_reload: Option<(f64, u32)>,
     /// Sharpened Bullets (Emergent): ABSOLUTE crit-damage add as a timed buff
     /// (starts inactive), granted/refreshed on every kill.
     pub cd_on_kill: Option<crate::loadout::TimedBuff>,
@@ -2202,6 +2206,7 @@ impl DummyParams {
             bodyshot_cc_mult: panel.bodyshot_cc_mult,
             round_restore_on_status: panel.round_restore_on_status,
             instant_reload_on_kill: panel.instant_reload_on_kill,
+            mag_growth_on_empty_reload: panel.mag_growth_on_empty_reload,
             cd_on_kill: panel.cd_on_kill,
             fr_on_reload: panel.fr_on_reload,
             bd_on_reload: panel.bd_on_reload,
@@ -2443,6 +2448,7 @@ impl Default for DummyParams {
             bodyshot_cc_mult: 1.0,
             round_restore_on_status: None,
             instant_reload_on_kill: None,
+            mag_growth_on_empty_reload: None,
             cd_on_kill: None,
             fr_on_reload: None,
             bd_on_reload: None,
@@ -4718,6 +4724,15 @@ pub fn run_once_traced(
     // difference between them lives at exactly one other place: the Incarnon
     // transform, which refills the base magazine whether or not it was empty
     // and therefore bumps `ReloadFromEmpty` alone, and only when it was.
+    // THE MAGAZINE'S CAPACITY, LIVE. Resonant Restore grows it — "On Reload
+    // From Empty: Increase Base Magazine Capacity by +15. Stacks up to 3x" —
+    // so the capacity is a variable rather than `params.magazine_size`, and
+    // EVERY read of it below goes through this name. It only ever rises, and
+    // only at the one site that pays the stack, which is what lets it be a
+    // plain number instead of a buff lookup at eight call sites.
+    let mut mag_cap = params.magazine_size;
+    let mut mag_growth_stacks: u32 = 0;
+
     macro_rules! bump_on_trigger {
         ($want:expr, $t:expr, $rng:expr) => {
             for (i, b) in params.stacking_buffs.iter().enumerate() {
@@ -4744,6 +4759,22 @@ pub fn run_once_traced(
     macro_rules! bump_reload_from_empty {
         ($t:expr, $rng:expr) => {
             bump_on_trigger!(crate::loadout::BuffTrigger::ReloadFromEmpty, $t, $rng);
+            // RESONANT RESTORE rides the same event, because it is the same
+            // event: "On Reload From Empty: Increase Base Magazine Capacity by
+            // +15. Stacks up to 3x". It is not a `StackingGrant` because what
+            // it grants is not a term in a bracket — it is the capacity every
+            // other line of this loop reads, so it moves `mag_cap` itself.
+            //
+            // MONOTONIC AND CAPPED: no card in this family carries a clock, and
+            // the stack count is the only thing that stops it. The magazine
+            // GROWS but does not fill — a reload draws from the reserve as it
+            // always did, and the extra room is what the next draw can use.
+            if let Some((per, max)) = params.mag_growth_on_empty_reload {
+                if mag_growth_stacks < max {
+                    mag_growth_stacks += 1;
+                    mag_cap += per;
+                }
+            }
         };
     }
     // SHELLS OWED TO THE PLAYER FOR THE RELOAD THEY ARE HALFWAY THROUGH.
@@ -4862,7 +4893,7 @@ pub fn run_once_traced(
     // live BuffBar fire-rate multiplier), evaluated after each shot (a buff
     // expiring mid-interval is approximated to the shot boundary).
     let mut t = 0.0f64;
-    let mut magazine = params.magazine_size;
+    let mut magazine = mag_cap;
     let mut reserve = params.reserve_ammo;
     // GOTVA PRIME'S PASSIVE, armed. Set by a pellet that landed a status, spent
     // by the next pellet that lands. It survives across shots and reloads: the
@@ -5018,7 +5049,7 @@ pub fn run_once_traced(
             let delay = if magazine < 1e-9 { b.delay_empty_s } else { b.delay_partial_s };
             if last_shot_t.is_finite() && b.regen_per_second > 0.0 && idle > delay {
                 let gained = (idle - delay) * b.regen_per_second;
-                magazine = (magazine + gained).min(params.magazine_size);
+                magazine = (magazine + gained).min(mag_cap);
             }
         }
 
@@ -5118,12 +5149,12 @@ pub fn run_once_traced(
             if params.mag_refill_on_kill > 0.0 && r.kills > refill_kill_mark {
                 let earned = f64::from(r.kills - refill_kill_mark)
                     * params.mag_refill_on_kill
-                    * params.magazine_size;
+                    * mag_cap;
                 refill_kill_mark = r.kills;
                 // Capped at the magazine: a refill tops up, it does not bank.
                 // Overflow is simply lost, which is what "Refill X% of the
                 // Magazine" means on a magazine already near full.
-                let room = (params.magazine_size - magazine).max(0.0);
+                let room = (mag_cap - magazine).max(0.0);
                 let want = earned.min(room);
                 if want > 0.0 {
                     magazine += draw_from(&mut reserve, params.infinite_reserve, want);
@@ -5300,7 +5331,7 @@ pub fn run_once_traced(
             // draw covers the overdraw debt for free: the counter is in (−1, 0]
             // here, so `floor(capacity − current)` is a full magazine, and a
             // −0.75 counter comes back at 4.25 rather than 5.00.
-            let want = reload_draw(params.magazine_size, magazine);
+            let want = reload_draw(mag_cap, magazine);
             let loaded = draw_from(&mut reserve, params.infinite_reserve, want);
             magazine += loaded;
             // …AND THE SHELLS IT LOADED PAY THEIR STACKS. One per shell, from
@@ -6689,7 +6720,7 @@ pub fn run_once_traced(
                 }
                 None => {
                     magazine += draw_from(&mut reserve, params.infinite_reserve,
-                        reload_draw(params.magazine_size, magazine));
+                        reload_draw(mag_cap, magazine));
                 }
             }
         }
@@ -6711,7 +6742,7 @@ pub fn run_once_traced(
         // watches reloads sees it, the same rule `mag_refill_on_kill` follows.
         if let Some((st, chance, rounds)) = ap.round_restore_on_status {
             if has_status(&debuffs, st) && d.extra.chance(chance) {
-                let room = (params.magazine_size - magazine).max(0.0);
+                let room = (mag_cap - magazine).max(0.0);
                 let want = rounds.min(room);
                 if want > 0.0 {
                     magazine += draw_from(&mut reserve, params.infinite_reserve, want);
@@ -6795,7 +6826,7 @@ pub fn run_once_traced(
                     // The CHARGE magazine is filled by the gauge, not reloaded
                     // from reserve — it is outside the ammo economy, takes no
                     // efficiency, and so is always whole anyway.
-                    magazine = params.magazine_size;
+                    magazine = mag_cap;
                     // The base magazine's refill IS a reload (user,
                     // 2026-07-30): whole rounds off whatever is already in it,
                     // and out of the same reserve as every other reload. This
@@ -8411,6 +8442,72 @@ mod tests {
         assert!(dot_with.mean_shots > dot_bare.mean_shots,
             "a DoT kill triggers it too — {} shots against {}, on {} kills",
             dot_with.mean_shots, dot_bare.mean_shots, dot_bare.mean_kills);
+    }
+
+    /// RESONANT RESTORE: the magazine GROWS, up to the cap, and it does not
+    /// FILL.
+    ///
+    /// VERBATIM (Gorgon_Incarnon_Genesis): "On Reload From Empty: Increase Base
+    /// Magazine Capacity by '''+15'''. Stacks up to '''3'''x." Three families carry the
+    /// card — the Atomos at +5/7x, the three Gorgons at +15/3x, the Stug at
+    /// +10/3x — and none of them puts a clock on it.
+    ///
+    /// Measured as SHOTS PER MAGAZINE across the run, which is the observable
+    /// and the one that catches the cap: a 10-round magazine growing by 15
+    /// three times is 55 rounds and never 70.
+    #[test]
+    fn resonant_restore_grows_the_magazine_to_its_cap_and_stops() {
+        let build = |growth: Option<(f64, u32)>| DummyParams {
+            magazine_size: 10.0,
+            ammo_cost: 1.0,
+            fire_rate: 20.0,
+            reload_seconds: 1.0,
+            duration_secs: 60.0,
+            mag_growth_on_empty_reload: growth,
+            body_parts: mono_body(1.0),
+            ..flat_base()
+        };
+        let bare = run_once(&build(None), &mut Rng::new(3));
+        assert!(bare.reloads > 5, "the fixture has to reload: {}", bare.reloads);
+
+        // FOUR RELOADS IN AND THE MAGAZINE IS 55, not 70: the first reload pays
+        // the first stack, and the fourth pays nothing.
+        let grown = run_once(&build(Some((15.0, 3))), &mut Rng::new(3));
+        assert!(grown.reloads < bare.reloads,
+            "a bigger magazine reloads less: {} against {}", grown.reloads, bare.reloads);
+        // Shots per magazine averages over the climb, so it lands between the
+        // starting 10 and the capped 55 — and ABOVE the uncapped average would
+        // be if nothing stopped it. The cap is asserted separately below.
+        let per_mag = grown.shots as f64 / grown.reloads.max(1) as f64;
+        assert!(per_mag > 10.0, "it grows: {per_mag} shots a magazine");
+
+        // THE CAP IS REAL. Run long enough that an uncapped version would be
+        // far past 55, and compare against one whose cap is 3 either way: the
+        // only difference is the number of stacks allowed.
+        let long = |max: u32| {
+            let r = run_once(&DummyParams { duration_secs: 300.0, ..build(Some((15.0, max))) },
+                &mut Rng::new(3));
+            r.shots as f64 / r.reloads.max(1) as f64
+        };
+        let capped = long(3);
+        let higher = long(9);
+        assert!(higher > capped * 1.5,
+            "a higher cap must be worth more, or the cap is not being read: {higher} vs {capped}");
+        assert!(capped < 55.0,
+            "10 + 3 x 15 = 55 is the ceiling, and the average is under it: {capped}");
+
+        // …AND IT DOES NOT FILL. Growing the capacity mid-fight must not hand
+        // the weapon free rounds: the reload still draws from the reserve, so a
+        // FINITE one runs out at the same total either way.
+        let finite = |growth| {
+            let mut p = build(growth);
+            p.infinite_reserve = false;
+            p.reserve_ammo = 60.0;
+            p.duration_secs = 600.0;
+            run_once(&p, &mut Rng::new(3)).shots
+        };
+        assert_eq!(finite(None), finite(Some((15.0, 3))),
+            "a bigger magazine is not more ammo — 60 rounds is 60 shots either way");
     }
 
     /// VICIOUS PROMISE: the first arrow only, and OVERGUARD does not count.

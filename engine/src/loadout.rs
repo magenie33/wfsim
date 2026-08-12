@@ -1068,8 +1068,13 @@ pub struct WeaponBase {
     pub round_restore_on_status: Option<(crate::damage::DamageType, f64, f64)>,
     /// Exact Penance: the chance a KILL — from anywhere, including a status
     /// kill — reloads instantly. See the ResolvedPanel field for why it is not
-    /// .
+    /// `instant_reload_on_headshot`.
     pub instant_reload_on_kill: Option<f64>,
+    /// RESONANT RESTORE: `(per stack, max stacks)` — "On Reload From Empty:
+    /// Increase Base Magazine Capacity by +N. Stacks up to Nx", in the card's
+    /// own units so `resolve` can scale it: the card says BASE capacity, which
+    /// is the number a magazine mod multiplies.
+    pub mag_growth_on_empty_reload: Option<(f64, u32)>,
     /// King's Gambit's weak-point half, held on the WEAPON so it can seed the
     /// same bucket the mods write to — "Weakpoint modifier is additive with
     /// mods such as Pistol Gambit". Same shape as `evo_reload_bonus`.
@@ -1995,6 +2000,12 @@ pub struct ResolvedPanel {
     pub round_restore_on_status: Option<(crate::damage::DamageType, f64, f64)>,
     /// Exact Penance: the chance a KILL — from anywhere — reloads instantly.
     pub instant_reload_on_kill: Option<f64>,
+    /// Resonant Restore: `(per stack, max stacks)`, the per-stack value ALREADY
+    /// scaled by the magazine mods — the card says "Base Magazine Capacity", so
+    /// a Magazine Warp build gets more out of every stack. Same units
+    /// conversion `BuffGrant::FlatBaseDamage` and `FireRate` take, and for the
+    /// same reason: the sim adds it to a number the mods are already inside.
+    pub mag_growth_on_empty_reload: Option<(f64, u32)>,
     /// Sharpened Bullets under Emergent: ABSOLUTE crit-damage add as a timed
     /// buff (starts inactive), granted/refreshed on every kill.
     pub cd_on_kill: Option<TimedBuff>,
@@ -3072,6 +3083,13 @@ pub fn resolve_for(
         bodyshot_cc_mult: base.bodyshot_cc_mult,
         round_restore_on_status: base.round_restore_on_status,
         instant_reload_on_kill: base.instant_reload_on_kill,
+        mag_growth_on_empty_reload: base.mag_growth_on_empty_reload.map(|(per, max)| {
+            // A charge-backed Incarnon magazine is outside the ammo system and
+            // the mods never scale it — the same exception `mag_size` makes two
+            // hundred lines up, so the grant follows the magazine it grows.
+            let scaled = if base.incarnon.is_some() { per } else { per * (1.0 + mag) };
+            (scaled, max)
+        }),
         cd_on_kill,
         fr_on_reload,
         rs_on_reload,

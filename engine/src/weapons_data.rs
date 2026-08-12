@@ -1700,6 +1700,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         bodyshot_cc_mult: 1.0,
         round_restore_on_status: None,
         instant_reload_on_kill: None,
+        mag_growth_on_empty_reload: None,
         evo_weakpoint_cc_rel: 0.0,
         base_status_from_crit: None,
         base_crit_from_status: None,
