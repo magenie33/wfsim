@@ -18,10 +18,12 @@ effects:
   - kind: out_of_scope
     clause: "On Equip: Increase Base Critical Chance by +40% for 4 seconds"
     reason: no_holster
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "for 4 seconds"
-  - kind: unmodelled_for_seconds
+  # A FRAGMENT OF THE CLAUSE ABOVE, not a mechanic of its own: it is
+  # the duration of the On Equip window above, which is the clause that cannot fire. It shares that clause's
+  # reason, so it is filed the same way rather than counted as a second gap.
+  - kind: out_of_scope
+    clause: "for 4 seconds"
+    reason: no_holster
 
 source:
   url: https://wiki.warframe.com/w/Kunai_Incarnon_Genesis

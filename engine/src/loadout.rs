@@ -857,6 +857,66 @@ pub enum CoBehavior {
     Inert,
 }
 
+/// A QUESTION ABOUT THE PLAYER that a weapon perk asks — "With Sprint Speed 1.2
+/// or Higher", "With Armor Over 450", "With Energy Max Over 700".
+///
+/// One vocabulary rather than a field pair per grant. The first two of these
+/// (Condition Overload, fire rate) each carried their own `_gated` value and
+/// `_min_*` threshold on [`WeaponBase`], and the note left there said the third
+/// should turn them into one mechanism. This is that.
+///
+/// Answered in [`resolve_for`], where the Tenno is — `apply` works on the raw
+/// weapon and the player is not there. The neutral player claims nothing
+/// (sprint 0.9, no armor, no energy), so a gated perk pays zero until someone
+/// says which frame is holding the gun.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum TennoGate {
+    /// `sprint_speed >= x`
+    SprintAtLeast(f64),
+    /// `armor > x`
+    ArmorOver(f64),
+    /// `energy_max > x`
+    EnergyMaxOver(f64),
+}
+
+impl TennoGate {
+    /// Does this player satisfy it?
+    pub fn open(self, tenno: &crate::tenno_data::Tenno) -> bool {
+        match self {
+            TennoGate::SprintAtLeast(x) => tenno.sprint >= x,
+            TennoGate::ArmorOver(x) => tenno.armor > x,
+            TennoGate::EnergyMaxOver(x) => tenno.energy > x,
+        }
+    }
+
+    /// The sentence a card shows. English is the source; the overlay translates.
+    pub fn describe(self) -> String {
+        match self {
+            TennoGate::SprintAtLeast(x) => format!("at sprint speed {x} or higher"),
+            TennoGate::ArmorOver(x) => format!("with armor over {x}"),
+            TennoGate::EnergyMaxOver(x) => format!("with max energy over {x}"),
+        }
+    }
+}
+
+/// WHAT A GATED PERK GRANTS. One arm per bracket, and each keeps its own —
+/// the same rule [`BuffGrant`] follows, and for the same reason: a multishot
+/// bonus and a crit-damage one are not interchangeable numbers.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum GatedGrant {
+    /// Per status type, into the Condition Overload rate.
+    ConditionOverload,
+    /// A fraction of the BASE fire rate, additive with fire-rate mods.
+    FireRate,
+    /// A fraction of the base multishot, into the multishot bucket.
+    Multishot,
+    /// Added to the weapon's base crit multiplier, so crit-damage mods
+    /// multiply it (the card says "Base Critical Damage Multiplier").
+    BaseCritDamage,
+    /// A fraction, into the projectile-speed indirect bucket.
+    ProjectileSpeed,
+}
+
 /// A weapon's unmodded panel (fixed evolutions folded in — they alter the
 /// weapon's BASE stats before mods).
 #[derive(Debug, Clone)]
@@ -964,20 +1024,16 @@ pub struct WeaponBase {
     /// The same thing, waiting on the PLAYER: an evolution's Condition Overload
     /// that states a sprint speed. It joins `innate_co_per_type` in
     /// `resolve_for`, where the Tenno exists, or contributes nothing.
-    pub innate_co_gated: f64,
-    /// The speed that gate needs (0 = no gate).
-    pub co_min_sprint: f64,
+    /// EVERY GRANT THIS WEAPON MAKES CONDITIONAL ON THE PLAYER, as
+    /// `(gate, grant, value)`. Carried rather than spent because `apply` works
+    /// on the raw weapon and the Tenno is not there; folded in `resolve_for`,
+    /// which has both.
+    pub gated: Vec<(TennoGate, GatedGrant, f64)>,
     /// THE SECOND perk to ask about the player's sprint speed, and the second
     /// grant to be carried rather than spent in `apply`: Deadly Pace's "With
     /// Sprint Speed 1.2 or Higher: +80% Fire Rate".
     ///
-    /// Same shape as `innate_co_gated` above and for the same reason — `apply`
-    /// works on the raw weapon and the Tenno is not there. If a THIRD grant
-    /// needs this, the pair of fields should become one general mechanism
-    /// rather than a third pair.
-    pub evo_fire_rate_gated: f64,
-    /// The speed THAT gate needs (0 = no gate).
-    pub fire_rate_min_sprint: f64,
+
     /// Feigned Retreat / Swift Conclusion: a share of the BASE-DAMAGE BUCKET
     /// that applies only while the target is under half health.
     ///
@@ -1981,12 +2037,18 @@ pub fn resolve_for(
     // here rather than in `apply`, which never sees a Tenno. The neutral player
     // sprints at 0.9 — the slowest frame — so a perk gated on speed pays
     // nothing until someone says which frame is holding it.
-    let mut co = base.innate_co_per_type
-        + if base.co_min_sprint <= 0.0 || tenno.sprint >= base.co_min_sprint {
-            base.innate_co_gated
-        } else {
-            0.0
-        };
+    // …AND THE HALF THAT ASKS ABOUT THE PLAYER, summed once for every bracket.
+    // The neutral Tenno opens none of these gates, so a build that does not say
+    // which frame is holding the gun pays nothing for them — which is the
+    // honest default and the same rule every other Tenno field here follows.
+    let gate = |g: GatedGrant| -> f64 {
+        base.gated
+            .iter()
+            .filter(|(c, k, _)| *k == g && c.open(tenno))
+            .map(|(_, _, v)| v)
+            .sum()
+    };
+    let mut co = base.innate_co_per_type + gate(GatedGrant::ConditionOverload);
     let (mut co_stack, mut ms_stack): (Option<StackSpec>, Option<StackSpec>) = (None, None);
     let mut cc_on_headshot: Option<TimedBuff> = None;
     let mut cc_stack: Option<StackSpec> = None;
@@ -2019,6 +2081,17 @@ pub fn resolve_for(
     // property of the weapon by the time `resolve` runs (evolutions are folded
     // into `WeaponBase` first), and it shares its bucket with the mods'.
     let mut indirect: Vec<(IndirectStat, f64)> = base.indirect.clone();
+    // …plus any the PLAYER's state opens. Same bucket the mods and the
+    // unconditional evolutions feed, so it sums rather than multiplying.
+    {
+        let ps = gate(GatedGrant::ProjectileSpeed);
+        if ps != 0.0 {
+            match indirect.iter_mut().find(|(s, _)| *s == IndirectStat::ProjectileSpeed) {
+                Some((_, v)) => *v += ps,
+                None => indirect.push((IndirectStat::ProjectileSpeed, ps)),
+            }
+        }
+    }
     // Charge-rate bonuses, summed apart from fire rate: both shorten the draw,
     // only fire rate also raises an uncharged form's cadence.
     let mut cr = 0.0f64;
@@ -2285,7 +2358,11 @@ pub fn resolve_for(
     // shadowed here, and `locked` carries the fact to the SIM, which owns the
     // live ones.
     let locked_stat = |s: &str| disabled.contains(&s);
-    let evo_ms_bonus = if locked_stat("multishot") { 0.0 } else { base.buff_multishot_bonus };
+    let evo_ms_bonus = if locked_stat("multishot") {
+        0.0
+    } else {
+        base.buff_multishot_bonus + gate(GatedGrant::Multishot)
+    };
     let evo_ms_stacks = if locked_stat("multishot") { 0 } else { base.buff_ms_max_stacks };
     let ms_last_round = if locked_stat("multishot") { 0.0 } else { base.multishot_on_last_round };
     let evo_fr_bonus = if locked_stat("fire_rate") {
@@ -2295,12 +2372,7 @@ pub fn resolve_for(
         // Tenno is; the neutral player sprints at 0.9 — the slowest frame — so
         // a perk gated on speed pays nothing until someone says which frame is
         // holding the gun.
-        base.evo_fire_rate_bonus
-            + if base.fire_rate_min_sprint <= 0.0 || tenno.sprint >= base.fire_rate_min_sprint {
-                base.evo_fire_rate_gated
-            } else {
-                0.0
-            }
+        base.evo_fire_rate_bonus + gate(GatedGrant::FireRate)
     };
     // PRELUDE OF MIGHT, resolved here because it is the one evolution whose
     // condition is the BUILD's own output: "with Critical Chance below 40%".
@@ -2629,7 +2701,10 @@ pub fn resolve_for(
         // Elemental Excess adds its crit/status FLAT, after the mod
         // multiply (wiki) — a different layer from the base-stat one.
         crit_chance: resolved_cc,
-        crit_damage: (base.base_crit_damage + prelude_cd) * (1.0 + cd),
+        // A GATED "+Nx Base Critical Damage Multiplier" joins the BASE, so the
+        // crit-damage mods multiply it — which is what "Base" earns on the card.
+        crit_damage: (base.base_crit_damage + prelude_cd + gate(GatedGrant::BaseCritDamage))
+            * (1.0 + cd),
         // What the line above added, in the same post-mod units, so the sim
         // subtracts exactly what was granted — including through a crit-damage
         // LOCK, which zeroes `cd` for both expressions at once.

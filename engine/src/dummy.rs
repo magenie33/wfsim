@@ -7918,6 +7918,69 @@ mod tests {
         assert_eq!(bare.bd_below_half_health, 0.0, "no perk, no bonus");
     }
 
+    /// EVERY "WITH <player stat>" PERK GOES THROUGH ONE GATE, and each still
+    /// lands in its own bracket.
+    ///
+    /// Three conditions and three grants, none of which the neutral Tenno
+    /// opens: it sprints at 0.9 (the slowest a frame has), carries no armor and
+    /// has no energy pool. That default is the honest one — a build that has
+    /// not said which frame is holding the gun should not be paid for a
+    /// threshold it may not reach.
+    ///
+    /// Asserted per BRACKET, because one list feeding five brackets is exactly
+    /// the shape where a refactor quietly routes two of them to the same place.
+    #[test]
+    fn a_gated_perk_pays_only_the_frames_that_open_it() {
+        let slow = crate::tenno_data::default_tenno().clone();
+        assert!(slow.sprint < 1.2 && slow.armor <= 450.0 && slow.energy <= 700.0);
+
+        let panel = |weapon: &str, evo: &[&str], tenno: &crate::tenno_data::Tenno| {
+            let base = crate::loadout::WeaponBase::from_data(weapon, true, evo);
+            crate::loadout::resolve_for(&base, &[], crate::loadout::StackPolicy::Emergent, tenno)
+        };
+
+        // MULTISHOT, on armor.
+        let mut armoured = slow.clone();
+        armoured.armor = 500.0;
+        let off = panel("cestra", &["cestra_fortress_salvo"], &slow);
+        let on = panel("cestra", &["cestra_fortress_salvo"], &armoured);
+        let bare = panel("cestra", &[], &armoured);
+        assert!((off.multishot - bare.multishot).abs() < 1e-9, "no armor, no multishot");
+        assert!(
+            (on.multishot - bare.multishot * 1.8).abs() < 1e-6,
+            "+80% of base multishot with armor over 450: {} against {}",
+            on.multishot,
+            bare.multishot * 1.8
+        );
+
+        // BASE CRIT DAMAGE, on max energy — and it is the BASE, so it would be
+        // multiplied by a crit-damage mod.
+        let mut energetic = slow.clone();
+        energetic.energy = 1000.0;
+        let off = panel("atomos", &["atomos_paladin_virtue"], &slow);
+        let on = panel("atomos", &["atomos_paladin_virtue"], &energetic);
+        assert!((on.crit_damage - off.crit_damage - 1.0).abs() < 1e-9,
+            "+1x with max energy over 700: {} against {}", on.crit_damage, off.crit_damage);
+
+        // PROJECTILE SPEED, on sprint — a different bucket again.
+        let mut fast = slow.clone();
+        fast.sprint = 1.25;
+        let ps = |t: &crate::tenno_data::Tenno| {
+            panel("bronco", &["bronco_speeding_bullet"], t)
+                .indirect
+                .iter()
+                .find(|(s, _)| *s == crate::loadout::IndirectStat::ProjectileSpeed)
+                .map_or(0.0, |(_, v)| *v)
+        };
+        assert!((ps(&slow) - 0.0).abs() < 1e-9, "at 0.9 sprint it is worth nothing");
+        assert!((ps(&fast) - 0.60).abs() < 1e-9, "at 1.25 it is the whole +60%: {}", ps(&fast));
+
+        // …and the gates do not leak into each other: an armoured player gets
+        // the Cestra's multishot and NOT the Atomos's crit damage.
+        let a = panel("atomos", &["atomos_paladin_virtue"], &armoured);
+        assert!((a.crit_damage - off.crit_damage).abs() < 1e-9, "armor is not energy");
+    }
+
     /// DEADLY PACE ASKS WHO IS CARRYING THE BOW. "With Sprint Speed 1.2 or
     /// Higher: +80% Fire Rate" — the second perk in the roster to read a PLAYER
     /// stat, and it reads it through the same `condition:` spelling the first

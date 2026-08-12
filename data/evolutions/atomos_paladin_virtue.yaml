@@ -18,10 +18,15 @@ effects:
   # from: "Increase Base Damage by +24"
   - kind: flat_base_damage
     value: 24.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "With Energy Max over 700: Increase Base Critical Damage Multiplier by +1x"
-  - kind: unmodelled_with_energy_max_over_increase_base_critical_damage_mu
+  # A QUESTION ABOUT THE PLAYER, read rather than ignored. The neutral Tenno has
+  # no energy pool, so this pays NOTHING until someone says which frame is
+  # carrying the gun — the same `condition:` spelling the sprint gates use.
+  #
+  # "BASE Critical Damage Multiplier", so the crit-damage mods multiply it.
+  - kind: gated_by_tenno
+    condition: "energy_max > 700"
+    grant: base_crit_damage
+    value: 1.0
 
 source:
   url: https://wiki.warframe.com/w/Atomos_Incarnon_Genesis

@@ -18,10 +18,16 @@ effects:
   # from: "Increase Base Damage by +30"
   - kind: flat_base_damage
     value: 30.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "With Sprint Speed 1.2 or Higher: +60% Projectile Speed"
-  - kind: unmodelled_with_sprint_speed_or_higher_projectile_speed
+  # A QUESTION ABOUT THE PLAYER, read rather than ignored. The neutral Tenno
+  # sprints at 0.9 — the slowest a frame has, so this pays NOTHING until someone
+  # says which frame is carrying the gun — the same rule the Latron family's
+  # Swift Punishment follows, and the same `condition:` spelling.
+  # Projectile speed joins the indirect bucket the mods feed, so it sums with
+  # them rather than multiplying.
+  - kind: gated_by_tenno
+    condition: "sprint_speed >= 1.2"
+    grant: projectile_speed
+    value: 0.6
 
 source:
   url: https://wiki.warframe.com/w/Bronco_Incarnon_Genesis

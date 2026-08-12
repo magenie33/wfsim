@@ -193,6 +193,17 @@ enum EvoEffect {
     /// "+X% Damage to enemies below half Health" — a bucket bonus with a
     /// condition on the TARGET rather than on the weapon or the player.
     BaseDamageBelowHalfHealth(f64),
+    /// A grant the PLAYER's state switches on — "With Armor Over 450: +80%
+    /// Multishot", "With Energy Max Over 700: +1x Base Critical Damage
+    /// Multiplier", "With Sprint Speed 1.2 or Higher: +60% Projectile Speed".
+    ///
+    /// One variant for all of them: the gate and the bracket are both data, so
+    /// the next perk that asks about the player is a yaml block.
+    GatedByTenno {
+        gate: crate::loadout::TennoGate,
+        grant: crate::loadout::GatedGrant,
+        value: f64,
+    },
     /// Vicious Promise: crit chance and crit multiplier while the target has
     /// taken no damage. One variant for both halves, because the card grants
     /// them together and the condition is one sentence.
@@ -653,6 +664,7 @@ impl EvolutionDef {
                 | EvoEffect::ConditionOverload { .. }
                 | EvoEffect::FireRateBonus { .. }
                 | EvoEffect::BaseDamageBelowHalfHealth(_)
+                | EvoEffect::GatedByTenno { .. }
                 | EvoEffect::CritOnUndamaged { .. }
                 | EvoEffect::ReloadSpeedBonus(_)
                 | EvoEffect::CritMultiplierBelowCritChance { .. }
@@ -832,6 +844,15 @@ impl EvolutionDef {
                 EvoEffect::CritOnUndamaged { crit_chance, crit_multiplier } => format!(
                     "+{:.0}% BASE crit chance and +{crit_multiplier}x BASE crit damage while the                      target is undamaged (mods multiply both)",
                     crit_chance * 100.0
+                ),
+                EvoEffect::GatedByTenno { gate, grant, value } => format!(
+                    "{} {grant:?} {}",
+                    if *value >= 1.0 && matches!(grant, crate::loadout::GatedGrant::BaseCritDamage) {
+                        format!("+{value}x")
+                    } else {
+                        format!("+{:.0}%", value * 100.0)
+                    },
+                    gate.describe()
                 ),
                 EvoEffect::BaseDamageBelowHalfHealth(v) => format!(
                     "+{:.0}% damage while the target is under half health",
@@ -1146,6 +1167,29 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             crit_chance: f(v, "crit_chance").unwrap_or(0.0),
             crit_multiplier: f(v, "crit_multiplier").unwrap_or(0.0),
         },
+        // ONE KIND FOR EVERY "WITH <player stat>" PERK. The `grant:` names the
+        // bracket, so a multishot gate and a crit-damage gate cannot be
+        // confused for one another, and an unreadable `condition:` falls to
+        // Inert rather than paying out unconditionally.
+        "gated_by_tenno" => {
+            let Some(gate) = tenno_condition(v) else {
+                return Some(EvoEffect::Inert("gated_by_tenno with an unreadable `condition:`".into()));
+            };
+            let grant = match v.get("grant").and_then(Value::as_str) {
+                Some("condition_overload") => crate::loadout::GatedGrant::ConditionOverload,
+                Some("fire_rate") => crate::loadout::GatedGrant::FireRate,
+                Some("multishot") => crate::loadout::GatedGrant::Multishot,
+                Some("base_crit_damage") => crate::loadout::GatedGrant::BaseCritDamage,
+                Some("projectile_speed") => crate::loadout::GatedGrant::ProjectileSpeed,
+                other => {
+                    return Some(EvoEffect::Inert(format!(
+                        "gated_by_tenno grants {}, which is not a bracket this engine has",
+                        other.unwrap_or("nothing")
+                    )))
+                }
+            };
+            EvoEffect::GatedByTenno { gate, grant, value: f(v, "value").unwrap_or(0.0) }
+        }
         "base_damage_below_half_health" => {
             EvoEffect::BaseDamageBelowHalfHealth(f(v, "value").unwrap_or(0.0))
         }
@@ -1504,8 +1548,11 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // condition is answered in `resolve_for`, which has the Tenno.
                 EvoEffect::ConditionOverload { per_type, min_sprint } => {
                     if *min_sprint > 0.0 {
-                        base.co_min_sprint = base.co_min_sprint.max(*min_sprint);
-                        base.innate_co_gated += per_type;
+                        base.gated.push((
+                            crate::loadout::TennoGate::SprintAtLeast(*min_sprint),
+                            crate::loadout::GatedGrant::ConditionOverload,
+                            *per_type,
+                        ));
                     } else {
                         base.innate_co_per_type += per_type;
                     }
@@ -1517,14 +1564,20 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     base.cc_on_undamaged += crit_chance;
                     base.cd_on_undamaged += crit_multiplier;
                 }
+                EvoEffect::GatedByTenno { gate, grant, value } => {
+                    base.gated.push((*gate, *grant, *value));
+                }
                 EvoEffect::BaseDamageBelowHalfHealth(v) => {
                     half_hp_rate += v;
                     half_hp_rate_own += v * e.flat_base_damage();
                 }
                 EvoEffect::FireRateBonus { value, min_sprint } => {
                     if *min_sprint > 0.0 {
-                        base.fire_rate_min_sprint = base.fire_rate_min_sprint.max(*min_sprint);
-                        base.evo_fire_rate_gated += value;
+                        base.gated.push((
+                            crate::loadout::TennoGate::SprintAtLeast(*min_sprint),
+                            crate::loadout::GatedGrant::FireRate,
+                            *value,
+                        ));
                     } else {
                         base.evo_fire_rate_bonus += value;
                     }
@@ -1825,13 +1878,32 @@ fn stacking_card_id(
 }
 
 /// `condition: "sprint_speed >= 1.2"`, as a number — 0 when the card states no
-/// speed. ONE spelling, read by every kind that can be gated on it.
+/// speed. Kept for the two kinds that spell their gate this way.
 fn sprint_condition(v: &Value) -> f64 {
-    v.get("condition")
-        .and_then(Value::as_str)
-        .and_then(|c| c.strip_prefix("sprint_speed >= "))
-        .and_then(|n| n.parse::<f64>().ok())
-        .unwrap_or(0.0)
+    match tenno_condition(v) {
+        Some(crate::loadout::TennoGate::SprintAtLeast(x)) => x,
+        _ => 0.0,
+    }
+}
+
+/// `condition:` as a GATE — one spelling for every question a perk asks about
+/// the player. Unknown wording returns `None`, which the caller turns into an
+/// inert effect rather than a silently ungated grant: a condition nobody reads
+/// is a perk that pays on every build including the ones that cannot have it.
+fn tenno_condition(v: &Value) -> Option<crate::loadout::TennoGate> {
+    use crate::loadout::TennoGate as G;
+    let c = v.get("condition").and_then(Value::as_str)?;
+    let num = |s: &str| s.trim().parse::<f64>().ok();
+    if let Some(x) = c.strip_prefix("sprint_speed >= ").and_then(num) {
+        return Some(G::SprintAtLeast(x));
+    }
+    if let Some(x) = c.strip_prefix("armor > ").and_then(num) {
+        return Some(G::ArmorOver(x));
+    }
+    if let Some(x) = c.strip_prefix("energy_max > ").and_then(num) {
+        return Some(G::EnergyMaxOver(x));
+    }
+    None
 }
 
 /// WHY a clause can never pay out here — `docs/UNMODELLED.md`'s classes, as a
@@ -2642,7 +2714,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 83;
+        const CEILING: usize = 75;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

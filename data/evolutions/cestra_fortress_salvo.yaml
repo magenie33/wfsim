@@ -18,10 +18,16 @@ effects:
   # from: "Increase Base Damage by +10"
   - kind: flat_base_damage
     value: 10.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "With Armor Over 450: +80% Multishot"
-  - kind: unmodelled_with_armor_over_multishot
+  # A QUESTION ABOUT THE PLAYER, read rather than ignored. The neutral Tenno
+  # carries no armor at all, so this pays NOTHING until someone
+  # says which frame is carrying the gun — the same rule the Latron family's
+  # Swift Punishment follows, and the same `condition:` spelling.
+  # It joins the multishot BUCKET, so it is diluted by Barrel Diffusion the
+  # same way a mod's percentage is.
+  - kind: gated_by_tenno
+    condition: "armor > 450"
+    grant: multishot
+    value: 0.8
 
 source:
   url: https://wiki.warframe.com/w/Cestra_Incarnon_Genesis

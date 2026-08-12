@@ -22,10 +22,12 @@ effects:
   # `EvoEffect::Inert` and both the builder and the optimizer print it
   # as such. VERBATIM: "Stacks up to 5x"
   - kind: unmodelled_stacks_up_to_x
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Resets on missed shot"
-  - kind: unmodelled_resets_on_missed_shot
+  # A FRAGMENT OF THE CLAUSE ABOVE, not a mechanic of its own: it is
+  # the reset condition of the Hate-and-Despair stack above, which needs a second weapon. It shares that clause's
+  # reason, so it is filed the same way rather than counted as a second gap.
+  - kind: out_of_scope
+    clause: "Resets on missed shot"
+    reason: no_holster
 
 source:
   url: https://wiki.warframe.com/w/Dread_Incarnon_Genesis
