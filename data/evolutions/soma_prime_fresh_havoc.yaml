@@ -9,14 +9,37 @@ description: "On Reload From Empty: Increase Base Damage by +6. Stacks up to 2x.
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Reload From Empty: Increase Base Damage by +6"
-  - kind: unmodelled_on_reload_from_empty_increase_base_damage_by
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Stacks up to 2x"
-  - kind: unmodelled_stacks_up_to_x
+  # VERBATIM (Soma_Incarnon_Genesis, EVO4, the row's effect cell and its notes):
+  #   *On Reload From Empty: Increase Base Damage by '''+6'''. Stacks up to '''2x'''.
+  #   *Buff lasts permanently throughout the mission but is lost on death.
+  #   *Switching to Incarnon Form from empty will also trigger the buff.
+  #   *Damage increase is applied per pellet, giving Incarnon Form a total
+  #    maximum base damage increase of '''+96.'''
+  # The variant cell is one `colspan="2" ... | -`, so both Somas take these
+  # numbers. The 2024 changelog on the same page confirms them: "Increased the
+  # damage from +4 to +6 on reload from empty. Changed stacks from 3x to 2x."
+  # A STACKING BUFF WITH NO CLOCK, and the card says how long it really lasts:
+  # "Buff lasts permanently throughout the mission but is lost on death." So
+  # nothing takes the pile — not a reload, not an empty magazine — and `duration`
+  # is left at NO_TIMEOUT. Dying is not something this arena does.
+  #
+  # "+6" IS A FLAT BASE ADD, not a share of the base-damage bucket, so it is not
+  # diluted by Serration — `base_damage:` rather than `base_damage_bonus:`.
+  # The card's own arithmetic confirms the reading and the pellet rule at once:
+  # "Damage increase is applied per pellet, giving Incarnon Form a total maximum
+  # base damage increase of +96", which is 6 x 2 stacks x the 8 pellets Incarnon
+  # Form throws. A base add is per pellet by construction.
+  #
+  # THE TRIGGER IS `reload_from_empty` RATHER THAN `reload_complete`, and on this
+  # weapon the difference is real: "Switching to Incarnon Form from empty will
+  # also trigger the buff" — so the transform pays it when the base magazine had
+  # run out and not otherwise, where a plain reload trigger would pay every
+  # cycle. See BuffTrigger::ReloadFromEmpty.
+  - kind: stacking_buff
+    per_stack:
+      base_damage: 6.0
+    max_stacks: 2
+    trigger: reload_from_empty
 
 source:
   url: https://wiki.warframe.com/w/Soma_Incarnon_Genesis

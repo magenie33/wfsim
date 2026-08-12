@@ -1217,6 +1217,17 @@ pub enum BuffTrigger {
     /// the first that grants more than one stack at a time, because what it
     /// grants is one per SHELL loaded (see [`StackingBuff::stacks_per_trigger`]).
     ReloadComplete,
+    /// Fresh Havoc, Mauler's Magazine: "On Reload From Empty".
+    ///
+    /// IN THIS ARENA THAT IS ALMOST — not quite — every reload. The loop only
+    /// reloads when it cannot fire, so both reload sites are from-empty by
+    /// construction and this trigger would be [`BuffTrigger::ReloadComplete`]
+    /// under another name. The exception is what earns it a variant: entering
+    /// the Incarnon form FULLY RELOADS the base magazine whether or not it was
+    /// empty, and the Soma's card says "Switching to Incarnon Form from empty
+    /// will ALSO trigger the buff" — so the transform pays this only when the
+    /// base magazine had run out, where `ReloadComplete` would pay every cycle.
+    ReloadFromEmpty,
     /// Reaver's Rapture: a COMPLETED BURST, every round of it landing.
     ///
     /// THE MOMENT IS THE LAST ROUND OF THE BURST, so the burst that earns the
@@ -1313,6 +1324,16 @@ pub enum BuffGrant {
     /// keeps ONE live-base-damage path in the sim instead of a second bracket
     /// that would have to be kept in step with it.
     FlatBaseDamage,
+    /// Mauler's Magazine: *"Increase Base Critical Damage Multiplier by +1x"* —
+    /// the BASE multiplier, so the crit-damage MODS multiply the grant, exactly
+    /// as they multiply Prelude of Might's.
+    ///
+    /// `per_stack` therefore changes units at `resolve` the way
+    /// [`BuffGrant::FlatBaseDamage`]'s does — `+1x` leaves as `1 * (1 + cd)`,
+    /// the post-mod multiplier it is worth — which keeps ONE crit-damage sum in
+    /// the sim rather than a live bracket that would have to be kept in step
+    /// with the static one.
+    BaseCritDamage,
 }
 
 impl BuffGrant {
@@ -1332,6 +1353,7 @@ impl BuffGrant {
             BuffGrant::ReloadSpeed => "reload_speed",
             BuffGrant::FireRate => "fire_rate",
             BuffGrant::Multishot => "multishot",
+            BuffGrant::BaseCritDamage => "crit_damage",
         }
     }
 }
@@ -2834,6 +2856,11 @@ pub fn resolve_for(
                             0.0
                         }
                     }
+                    // …and once more for a BASE crit-damage add, which arrives
+                    // as the "+1x" on the card and leaves as the post-mod
+                    // multiplier it is worth. Same reason as the two above: the
+                    // sim adds it to a total the mods are already inside.
+                    BuffGrant::BaseCritDamage => b.per_stack * (1.0 + cd),
                     _ => b.per_stack,
                 },
                 // …and the same conversion for HOW MANY a trigger grants: 0

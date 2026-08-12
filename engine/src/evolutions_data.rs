@@ -1869,6 +1869,7 @@ fn buff_trigger(s: &str) -> Option<crate::loadout::BuffTrigger> {
         "hit" => T::Hit,
         "plain_hit" => T::PlainHit,
         "reload_complete" => T::ReloadComplete,
+        "reload_from_empty" => T::ReloadFromEmpty,
         "status_applied" => T::StatusApplied,
         _ => return None,
     })
@@ -1886,6 +1887,7 @@ fn buff_grant(s: &str) -> Option<crate::loadout::BuffGrant> {
         "multishot" => G::Multishot,
         "base_multishot" => G::BaseMultishot,
         "multishot_percent" => G::MultishotPercent,
+        "base_crit_damage" => G::BaseCritDamage,
         _ => return None,
     })
 }
@@ -1911,6 +1913,8 @@ fn stacking_card_id(
         (T::PlainHit, G::BaseDamage) => "on_plain_hit_damage",
         (T::ReloadComplete, G::BaseDamage) => "on_reload_damage",
         (T::ReloadComplete, G::FireRate) => "on_reload_fire_rate",
+        (T::ReloadFromEmpty, G::FlatBaseDamage) => "on_empty_reload_damage",
+        (T::ReloadFromEmpty, G::BaseCritDamage) => "on_empty_reload_crit_damage",
         // A pair nobody has written a card for yet. It is still a real buff and
         // still runs; it just shares one generic id, which is visible the first
         // time two of them appear on one weapon and is the point at which the
@@ -2756,7 +2760,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 60;
+        const CEILING: usize = 52;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,
@@ -2848,6 +2852,42 @@ mod after_mods_layer_tests {
             "flat after mods: {} -> {}", plain.crit_chance, post.crit_chance
         );
     }
+    /// A LIVE BASE-CRIT-DAMAGE BUFF REACHES THE DIRECT HIT AND NOTHING ELSE.
+    ///
+    /// `cd_total` is the direct hit's crit multiplier; a radial explosion and a
+    /// lingering field each compute their OWN from their own base stats, and
+    /// neither reads this grant. That is not a decision — nobody has measured
+    /// whether Mauler's Magazine reaches an explosion, and no weapon carrying
+    /// the grant has one, so there is nothing to be right or wrong about yet.
+    ///
+    /// This is the tripwire for the day that changes. A silently-absent factor
+    /// on an AoE part is worth a large fraction of the weapon's damage and would
+    /// read as "this build is weaker than it should be" rather than as a bug.
+    #[test]
+    fn no_weapon_with_a_base_crit_damage_buff_has_an_aoe_part() {
+        let mut offenders: Vec<String> = Vec::new();
+        for e in pool() {
+            let grants_cd = e.effects.iter().any(|f| {
+                matches!(f, EvoEffect::StackingGrant { grant, .. }
+                    if *grant == crate::loadout::BuffGrant::BaseCritDamage)
+            });
+            if !grants_cd {
+                continue;
+            }
+            let base = crate::loadout::WeaponBase::from_data(&e.weapon, true, &[e.id.as_str()]);
+            if base.radial.is_some() {
+                offenders.push(format!("{} ({}): radial", e.id, e.weapon));
+            }
+        }
+        assert!(
+            offenders.is_empty(),
+            "a base-crit-damage buff now rides a weapon with an AoE part, whose crit \
+             multiplier is computed separately and does not read it — decide and \
+             measure before shipping it:\n  {}",
+            offenders.join("\n  ")
+        );
+    }
+
     /// A `# from:` COMMENT IS A CUT, AND A CUT AT THE WRONG PLACE PAYS TWICE.
     ///
     /// The intake transcribes a card by splitting its sentence and filing each

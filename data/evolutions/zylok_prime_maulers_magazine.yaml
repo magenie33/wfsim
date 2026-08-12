@@ -15,17 +15,31 @@ co_base_excludes_this_evolution: true
 selection: choose_one
 
 effects:
+  # VERBATIM (Zylok_Incarnon_Genesis, the row's effect cell and its note):
+  #   *Increase Base Damage by '''+X'''.
+  #   *On Reload From Empty: Increase Base Critical Damage Multiplier by
+  #    '''+1x'''. Stacks up to '''2x'''.
+  #   | X = 76   | X = 30
+  #   *Stacks are shown as a buff, which are lost when reloading from a partial
+  #    magazine or on death.
+  # First variant column is the Zylok, second the Zylok Prime.
   # from: "Increase Base Damage by +30"
   - kind: flat_base_damage
     value: 30.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Reload From Empty: Increase Base Critical Damage Multiplier by +1x"
-  - kind: unmodelled_on_reload_from_empty_increase_base_critical_damage_mu
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Stacks up to 2x"
-  - kind: unmodelled_stacks_up_to_x
+  # A STACKING BUFF WITH NO CLOCK. "Stacks are shown as a buff, which are lost
+  # when reloading from a partial magazine or on death" — and neither can happen
+  # here: this loop reloads only when it cannot fire, so every reload it performs
+  # is a reload from empty. Nothing takes the pile, so `cleared_by` is left at
+  # its default of nothing rather than being given a rule that would never fire.
+  #
+  # "+1x BASE Critical Damage Multiplier", so the crit-damage MODS multiply the
+  # grant — `resolve` converts the card's number into the post-mod multiplier it
+  # is worth, the same conversion a flat base-damage grant takes.
+  - kind: stacking_buff
+    per_stack:
+      base_crit_damage: 1.0
+    max_stacks: 2
+    trigger: reload_from_empty
 
 source:
   url: https://wiki.warframe.com/w/Zylok_Incarnon_Genesis

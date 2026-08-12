@@ -4695,18 +4695,38 @@ pub fn run_once_traced(
     }
     // …and the other half of that split: the reload FINISHED, for the buffs
     // that were counting reloads rather than shells.
-    macro_rules! bump_reload_only {
-        ($t:expr, $rng:expr) => {
+    //
+    // TWO TRIGGERS, ONE SITE. Every reload this loop performs is a reload from
+    // empty — it only reloads when it cannot fire — so both fire here and the
+    // difference between them lives at exactly one other place: the Incarnon
+    // transform, which refills the base magazine whether or not it was empty
+    // and therefore bumps `ReloadFromEmpty` alone, and only when it was.
+    macro_rules! bump_on_trigger {
+        ($want:expr, $t:expr, $rng:expr) => {
             for (i, b) in params.stacking_buffs.iter().enumerate() {
-                if !b.per_shell
-                    && b.trigger == crate::loadout::BuffTrigger::ReloadComplete
-                    && (b.chance >= 1.0 || $rng.chance(b.chance))
+                if !b.per_shell && b.trigger == $want && (b.chance >= 1.0 || $rng.chance(b.chance))
                 {
                     for _ in 0..b.stacks_per_trigger.max(1) {
                         buff_stacks[i].bump($t, b.duration, b.max_stacks);
                     }
                 }
             }
+        };
+    }
+    macro_rules! bump_reload_only {
+        ($t:expr, $rng:expr) => {
+            bump_on_trigger!(crate::loadout::BuffTrigger::ReloadComplete, $t, $rng);
+        };
+    }
+    // …and the FROM-EMPTY half, which is deliberately NOT folded into the macro
+    // above. Of that macro's three sites only two are reloads from empty: the
+    // third is the Incarnon EXIT completing the reload that the transform IN
+    // began, and whether THAT was from empty is a question about the magazine
+    // one transform ago. So this fires at the two real reload sites and at the
+    // transform, where it reads the magazine it actually refilled.
+    macro_rules! bump_reload_from_empty {
+        ($t:expr, $rng:expr) => {
+            bump_on_trigger!(crate::loadout::BuffTrigger::ReloadFromEmpty, $t, $rng);
         };
     }
     // SHELLS OWED TO THE PLAYER FOR THE RELOAD THEY ARE HALFWAY THROUGH.
@@ -5193,6 +5213,7 @@ pub fn run_once_traced(
                 // nothing written down to say so.
                 bump_shells!(loaded.round().max(0.0) as u32, t, rng);
                 bump_reload_only!(t, rng);
+                bump_reload_from_empty!(t, rng);
                 // Renewed Horror: "On Reload from Empty". This branch IS the
                 // reload-from-empty path.
                 field_duration_boost = true;
@@ -5248,6 +5269,7 @@ pub fn run_once_traced(
             // trigger at the top of the loop.
             bump_shells!(loaded.round().max(0.0) as u32, t, rng);
             bump_reload_only!(t, rng);
+            bump_reload_from_empty!(t, rng);
             field_duration_boost = true; // reloaded from empty (Renewed Horror)
             if t >= params.duration_secs {
                 break;
@@ -5727,6 +5749,10 @@ pub fn run_once_traced(
             let cd_total = ap.crit_multiplier - prelude_lost
                 + ap.unmodded_crit_damage * cd_rel
                 + cd_abs
+                // Mauler's Magazine, earned inside the fight — a BASE grant,
+                // already multiplied by the crit-damage mods at `resolve`, the
+                // same conversion `FlatBaseDamage` takes one bracket over.
+                + buff_total!(ap, crate::loadout::BuffGrant::BaseCritDamage, t)
                 // …and the other half of the same condition, decided by the
                 // same shot: an absolute add, already multiplied by the
                 // crit-damage mods at `resolve`.
@@ -6677,11 +6703,23 @@ pub fn run_once_traced(
                     // FULLY RELOADS THE BASE FORM'S MAGAZINE (wiki), so both
                     // transforms are reloads, and the buff is spent by whatever
                     // refills the magazine. Nothing else has to be enumerated.
+                    // WAS THE BASE MAGAZINE ACTUALLY EMPTY? Read BEFORE the
+                    // refill below, because that is the question the card asks:
+                    // "Switching to Incarnon Form from empty will also trigger
+                    // the buff" (wiki, Soma's Fresh Havoc). Transforming with
+                    // rounds still in the magazine reloads it and earns nothing,
+                    // which is the one place `ReloadFromEmpty` and
+                    // `ReloadComplete` are different events.
+                    let transformed_from_empty = !can_fire(base_mag, 1.0);
                     let spent = rescale_reload(cy.transmute_seconds, cy.reload_bucket,
                         live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t));
                     r.downtime_secs += spent;
                     t += spent;
                     magazine_refilled!();
+                    if transformed_from_empty {
+                        bump_on_trigger!(
+                            crate::loadout::BuffTrigger::ReloadFromEmpty, t, d.spine);
+                    }
                     r.transforms += 1;
                     in_base_form = false;
                     // The CHARGE magazine is filled by the gauge, not reloaded
@@ -7842,6 +7880,180 @@ mod tests {
             at > 0.45 && at < 0.56,
             "five bursts at ten bursts a second is 0.5 s: capped at {at:.3} s (frame {first_cap})"
         );
+    }
+
+    /// ON RELOAD FROM EMPTY, on the two cards that grant different stats — and
+    /// the one moment that tells this trigger apart from a plain reload.
+    ///
+    /// The Soma's Fresh Havoc is "+6 Base Damage, stacks up to 2x", and the
+    /// Zylok's Mauler's Magazine "+1x Base Critical Damage Multiplier, stacks
+    /// up to 2x". Both are held for the mission — "Buff lasts permanently
+    /// throughout the mission but is lost on death" — so nothing here takes the
+    /// pile, which is asserted rather than assumed: a `cleared_by` that fired
+    /// would cap the run at one stack and still look like it worked.
+    ///
+    /// THE CONVERSIONS ARE THE OTHER HALF. "+6" is a flat base add and "+1x" a
+    /// BASE crit multiplier, so both change units at `resolve` — the flat one
+    /// into the share of the base-damage bucket worth the same, the crit one
+    /// into the post-mod multiplier. Asserted against the card's own arithmetic:
+    /// the Soma's "+96 in Incarnon Form" is 6 x 2 stacks x 8 pellets.
+    #[test]
+    fn on_reload_from_empty_pays_both_cards_and_only_from_empty() {
+        let buffs = |weapon: &str, evo: &str| {
+            let base = crate::loadout::WeaponBase::from_data(weapon, false, &[evo]);
+            crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent)
+                .stacking_buffs
+        };
+
+        // ---- the Soma: a FLAT base add, on the reload-from-empty trigger ----
+        let sb = buffs("soma", "soma_fresh_havoc");
+        assert_eq!(sb.len(), 1, "one buff on the card: {sb:?}");
+        assert_eq!(sb[0].trigger, crate::loadout::BuffTrigger::ReloadFromEmpty);
+        assert_eq!(sb[0].grant, crate::loadout::BuffGrant::FlatBaseDamage);
+        assert_eq!(sb[0].max_stacks, 2);
+        assert_eq!(sb[0].cleared_by, crate::loadout::ClearedBy::Nothing,
+            "the card says it lasts the mission");
+        assert_eq!(sb[0].duration, crate::loadout::NO_TIMEOUT, "and has no clock");
+        // +6 on a weapon whose unmodded base is `total`, expressed as the share
+        // of the base-damage bucket worth the same — unmodded, that is 6/total.
+        let soma_base = crate::loadout::WeaponBase::from_data("soma", false, &[]);
+        let want = 6.0 / soma_base.base_vector.total();
+        assert!((sb[0].per_stack - want).abs() < 1e-9,
+            "a flat +6 is {want} of an unmodded {} base, got {}",
+            soma_base.base_vector.total(), sb[0].per_stack);
+
+        // ---- the Zylok: a BASE crit-damage add, and the mods multiply it ----
+        let zb = buffs("zylok", "zylok_maulers_magazine");
+        let z = zb.iter().find(|b| b.grant == crate::loadout::BuffGrant::BaseCritDamage)
+            .expect("the crit-damage half of the card");
+        assert_eq!(z.trigger, crate::loadout::BuffTrigger::ReloadFromEmpty);
+        assert_eq!(z.max_stacks, 2);
+        assert!((z.per_stack - 1.0).abs() < 1e-9, "unmodded, +1x stays +1x: {}", z.per_stack);
+        // …and WITH a crit-damage mod it is worth more, which is what "Base"
+        // buys. Unmodded and modded are the same number for any other reading.
+        let vs = crate::mods_data::class_pool("pistol").into_iter()
+            .find(|m| m.id == "primed_target_cracker").expect("primed_target_cracker");
+        let base = crate::loadout::WeaponBase::from_data("zylok", false, &["zylok_maulers_magazine"]);
+        let modded = crate::loadout::resolve(&base, &[&vs], crate::loadout::StackPolicy::Emergent);
+        let zm = modded.stacking_buffs.iter()
+            .find(|b| b.grant == crate::loadout::BuffGrant::BaseCritDamage).expect("still there");
+        let cd_mod = modded.crit_damage / base.base_crit_damage;
+        assert!((zm.per_stack - cd_mod).abs() < 1e-6,
+            "+1x BASE through a x{cd_mod} crit-damage bucket is worth that much: {}", zm.per_stack);
+
+        // ---- it climbs to its cap over reloads, and NOTHING takes it back ----
+        let p = DummyParams {
+            fire_rate: 10.0,
+            magazine_size: 5.0,
+            reload_seconds: 0.5,
+            stacking_buffs: vec![crate::loadout::StackingBuff {
+                id: "on_empty_reload_damage", ..sb[0]
+            }],
+            duration_secs: 10.0,
+            ..no_status()
+        };
+        let trace = replay(&p, Rng::new(7).state(), 600);
+        let i = trace.buffs.iter().position(|(id, _)| id == "on_empty_reload_damage")
+            .expect("on the roster");
+        let series: Vec<u8> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+        assert_eq!(series[0], 0, "it opens empty — the fight earns it");
+        assert!(series.contains(&2), "two reloads reach the cap: {series:?}");
+        assert!(series.iter().all(|&v| v <= 2), "and never pass it");
+        assert!(!series.windows(2).any(|w| w[0] > w[1]),
+            "nothing takes the pile back — it lasts the mission: {series:?}");
+
+        // ---- and the crit half REACHES THE DAMAGE, not just the panel ----
+        // A crit-damage grant is invisible unless the weapon crits, so the
+        // fixture crits every shot and the buff is the only difference.
+        let crit_p = |b: Vec<crate::loadout::StackingBuff>| DummyParams {
+            base_crit_chance: 1.0,
+            unmodded_crit_chance: 1.0,
+            crit_multiplier: 2.0,
+            unmodded_crit_damage: 2.0,
+            fire_rate: 10.0,
+            magazine_size: 5.0,
+            reload_seconds: 0.5,
+            stacking_buffs: b,
+            duration_secs: 10.0,
+            ..no_status()
+        };
+        let z_buff = crate::loadout::StackingBuff { id: "on_empty_reload_crit_damage", ..*z };
+        let with = monte_carlo(&crit_p(vec![z_buff]), 1, 3).mean_damage;
+        let without = monte_carlo(&crit_p(vec![]), 1, 3).mean_damage;
+        assert!(with > without * 1.10,
+            "+1x/+2x base crit damage on a 2x weapon is worth a lot: {with} vs {without}");
+    }
+
+    /// THE ONE MOMENT `ReloadFromEmpty` IS NOT `ReloadComplete`.
+    ///
+    /// Entering the Incarnon form fully reloads the base magazine whether or not
+    /// it had run out, and the Soma's card is explicit that only the empty case
+    /// pays: "Switching to Incarnon Form from empty will ALSO trigger the buff".
+    /// So a transform on a magazine with rounds left must earn nothing, where a
+    /// plain reload trigger would earn a stack every cycle.
+    ///
+    /// The fixture is built so the two ANSWER DIFFERENTLY: the gauge fills in
+    /// two hits and the base magazine holds ten, so every transform happens with
+    /// eight rounds still in it. Both buffs are run in the same fight, so the
+    /// difference cannot be a fixture accident.
+    #[test]
+    fn a_transform_on_a_full_magazine_is_not_a_reload_from_empty() {
+        let head = vec![BodyPart {
+            name: "head".into(), aim_weight: 1.0, multiplier: 1.0,
+            is_head: true, crit_bonus: false,
+        }];
+        let buff = |id: &'static str, trigger| crate::loadout::StackingBuff {
+            id,
+            trigger,
+            grant: crate::loadout::BuffGrant::BaseDamage,
+            decay: crate::loadout::BuffDecay::LoseOneAndReset,
+            per_stack: 0.10,
+            max_stacks: 9,
+            duration: crate::loadout::NO_TIMEOUT,
+            chance: 1.0,
+            initial_stacks: 0,
+            stacks_per_trigger: 1,
+            per_shell: false,
+            cleared_by: crate::loadout::ClearedBy::Nothing,
+        };
+        let base_form = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 50.0),
+            magazine_size: 10.0,
+            body_parts: head.clone(),
+            ..no_status()
+        };
+        let p = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 100.0),
+            magazine_size: 2.0,
+            body_parts: head,
+            fire_rate: 10.0,
+            reload_seconds: 0.5,
+            stacking_buffs: vec![
+                buff("on_empty_reload_damage", crate::loadout::BuffTrigger::ReloadFromEmpty),
+                buff("on_reload_damage", crate::loadout::BuffTrigger::ReloadComplete),
+            ],
+            cycle: Some(IncarnonCycle {
+                starts_primed: false,
+                base_form: Box::new(base_form),
+                charge_on: crate::loadout::ChargeOn::WeakpointHits,
+                charges_to_fill: 2,
+                transmute_out_seconds: 0.5,
+                transmute_seconds: 1.0,
+                reload_bucket: 0.0,
+            }),
+            duration_secs: 12.0,
+            ..no_status()
+        };
+        let trace = replay(&p, Rng::new(9).state(), 900);
+        let peak = |id: &str| {
+            let i = trace.buffs.iter().position(|(b, _)| b == id).expect(id);
+            trace.frames.iter().map(|f| f.stacks[i]).max().unwrap_or(0)
+        };
+        let (from_empty, on_reload) = (peak("on_empty_reload_damage"), peak("on_reload_damage"));
+        assert!(on_reload > 0, "the fixture has to transform at all: {on_reload}");
+        assert_eq!(from_empty, 0,
+            "every transform here happens on eight rounds — none is a reload from \
+             empty, yet it earned {from_empty} (the plain reload trigger earned {on_reload})");
     }
 
     /// VICIOUS PROMISE: the first arrow only, and OVERGUARD does not count.
