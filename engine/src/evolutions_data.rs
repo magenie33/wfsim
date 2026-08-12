@@ -2848,5 +2848,62 @@ mod after_mods_layer_tests {
             "flat after mods: {} -> {}", plain.crit_chance, post.crit_chance
         );
     }
+    /// A `# from:` COMMENT IS A CUT, AND A CUT AT THE WRONG PLACE PAYS TWICE.
+    ///
+    /// The intake transcribes a card by splitting its sentence and filing each
+    /// piece as an effect, leaving `# from: "<fragment>"` above each one. When
+    /// the split lands INSIDE a clause, the head becomes an unconditional grant
+    /// the card never had and the tail becomes an inert remainder — and the
+    /// perk pays for both, because nothing downstream can tell that the two
+    /// were one sentence. Three faults of exactly this shape, all found on
+    /// 2026-08-12 and all invisible to every other test:
+    ///
+    ///   - the Dera's High Ground: "Increase Base Critical Chance by +25% of
+    ///     current Status Chance" cut at the plus sign into a flat +25% base
+    ///     crit chance plus an inert "of current Status Chance";
+    ///   - the Kunai's Deathtrap Trigger: "…by +1.4x for 4s" cut into a
+    ///     PERMANENT +1.4x beside the on-equip window it belongs to;
+    ///   - Vicious Promise, on all three Paris: both bullets cut before "on
+    ///     undamaged enemies", so the perk paid unconditionally AND on an
+    ///     undamaged target.
+    ///
+    /// So a fragment must END where its clause ends: at a sentence stop, a
+    /// comma, a semicolon, or the end of the description. Anything else is a
+    /// sentence taken apart in the middle, whatever the pieces then load as.
+    #[test]
+    fn a_transcribed_fragment_ends_where_its_clause_ends() {
+        let mut bad: Vec<String> = Vec::new();
+        for (path, text) in crate::data::files_under("evolutions/") {
+            let Some(desc) = text.lines().find_map(|l| {
+                l.strip_prefix("description:")
+                    .map(str::trim)
+                    .and_then(|d| d.strip_prefix('"'))
+                    .and_then(|d| d.strip_suffix('"'))
+            }) else {
+                continue;
+            };
+            for line in text.lines() {
+                let Some(frag) = line
+                    .trim()
+                    .strip_prefix("# from:")
+                    .map(str::trim)
+                    .and_then(|f| f.strip_prefix('"'))
+                    .and_then(|f| f.strip_suffix('"'))
+                else {
+                    continue;
+                };
+                let Some(at) = desc.find(frag) else {
+                    bad.push(format!("{path}: `{frag}` is not in the description"));
+                    continue;
+                };
+                let tail = desc[at + frag.len()..].trim_start_matches(' ');
+                if !tail.is_empty() && !tail.starts_with(['.', ',', ';']) {
+                    bad.push(format!("{path}: `{frag}` is cut mid-clause, before `{}`", &tail[..tail.len().min(48)]));
+                }
+            }
+        }
+        assert!(bad.is_empty(), "{} fragment(s) cut mid-clause:\n  {}", bad.len(), bad.join("\n  "));
+    }
+
 }
 

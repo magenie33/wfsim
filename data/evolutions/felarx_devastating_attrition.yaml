@@ -9,7 +9,7 @@ description: "50% chance to deal +2000% damage on non-critical hits."
 selection: choose_one
 
 effects:
-  # from: "50% chance to deal +2000% damage on non-critical"
+  # from: "50% chance to deal +2000% damage on non-critical hits"
   - kind: chance_damage_on_noncrit
     chance: 0.5
     value: 20.0

@@ -9,7 +9,9 @@ description: "Reload toggles the weapon between +100% Projectile Speed and +4m P
 selection: choose_one
 
 effects:
-  # from: "+100% Projectile Speed"
+  # from: "Reload toggles the weapon between +100% Projectile Speed and +4m Punch Through"
+  # …of which only the projectile-speed side is modelled; the toggle and the
+  # punch-through side are declared below.
   - kind: indirect
     stat: projectile_speed
     value: 1.0
