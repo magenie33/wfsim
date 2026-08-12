@@ -38,14 +38,20 @@ Columns, verbatim:
 > 的加算。就是这个核心原则，如果一个武器的普通的在表上，而prime没有，那普通特殊
 > 处理，prime正常处理，不要擅自家族推广。
 
-Three things, and the third is the one that keeps being got wrong:
+Four things, and the last two are the ones that keep being got wrong:
 
 1. **ORDINARY has a definition**, not just a name: direct hits only, 100% of the
    attack's base, added into the base-damage bucket. `co_behavior:
    additive_with_base_damage`, no `co_base_fraction`, and a radial that takes
    none at all.
 2. **Absence means ordinary**, never unknown. The catalog lists the anomalies.
-3. **A SHARED GENESIS DOES NOT MAKE ONE WEAPON.** An Incarnon form is still that
+3. **THE PAGE'S PROSE DOES NOT OVERRIDE THE TABLE.** Its Math section lists
+   "Base Damage increases from Incarnon Genesis Evolutions" among the things
+   Adding CO ignores, which read as a law would move 107 (entry, perk) pairs
+   here. It is not a law (owner, 2026-08-12: "这个不是通则") — see the section
+   below for why the page argues that side itself. Rule 2 already covered this;
+   it is spelled out because the prose is what tempts you to break it.
+4. **A SHARED GENESIS DOES NOT MAKE ONE WEAPON.** An Incarnon form is still that
    weapon's form, so a row is transcribed for the entries it NAMES and no
    others. If the base variant is on the table and the Prime is not, the base
    gets the anomaly and the Prime gets ordinary.
@@ -252,31 +258,44 @@ earlier sweep of eight had left behind.
 
 ---
 
-## OPEN QUESTIONS on this catalog (2026-08-12) — not decided, and worth a measurement
+### The MATH section's bullets are summaries of catalog rows, NOT laws — SETTLED
 
-### 1. Does Adding CO omit EVERY Incarnon base-damage evolution, or only eleven?
-
-The page's own **Math** section says, of Additive-stacking CO:
+The page's **Math** section lists, of Additive-stacking CO:
 
 > Damage multipliers or effects that are ignored with Additive Stacking CO-like
-> bonuses: … **Base Damage increases from Incarnon Genesis Evolutions.**
+> bonuses: … Final Damage Multipliers … **Base Damage increases from Incarnon
+> Genesis Evolutions.** … *Some* Melee Stance Multipliers … *Some* natural
+> weapon stats modifiers, such as **Bow charging**.
 
-Stated generally. But the **catalog** lists only eleven rows carrying
-"CO-bonus does not use base damage increase Evolution", and its own preamble
-says anything not listed is the intended 100%. The owner's ruling follows the
-catalog: *"只要不在co表上，一律视为正常的…100%的加算"*.
+Read as a law, the Incarnon bullet would mean every Adding weapon with a
+flat-damage evolution excludes it — **107** (entry, perk) pairs in this roster,
+against the eleven the catalog actually names.
 
-**The two cannot both be right, and the gap is the whole roster.** Measured:
-**107** (entry, perk) pairs are Adding, carry a flat-damage evolution, and are
-NOT on the eleven — every Incarnon weapon with a damage perk, essentially. If
-the Math section is right, all of them are overstating CO today; if the catalog
-is right, they are all correct.
+**It is not a law** (owner, 2026-08-12: "Base Damage increases from Incarnon
+Genesis Evolutions 这个不是通则"). Same ruling as the one this file already
+states: the catalog is authoritative and absence means ORDINARY.
 
-Nothing has been changed on this. It is one in-game measurement — equip a
-flat-damage evolution and a Galvanized mod on any Adding weapon that is not one
-of the eleven, and read whether the CO term moved.
+**And the page argues the owner's side.** Two of the four bullets are hedged
+with "Some" outright, and the unhedged "Bow charging" one is enumerated by ~15
+catalog rows that DISAGREE WITH EACH OTHER — Paris/Dread/Cernos at 50%, Miter at
+40%, Lanka at 38%, Drakgoon at 57%, Evensong at 65%, the Ballisticas at 25% and
+50% — and, decisively, **the class contains counter-examples**: the Cinta and
+the Nataruk are charged bows at 100% Multiplying, and the Balefire Charger is
+0%, "Does not apply". A bullet whose own named class holds exceptions in both
+directions is describing what was observed, not stating a rule.
 
-### 2. The Lato Vandal exclusion row contradicts the catalog's own convention
+So the Incarnon bullet is the summary of the eleven rows, exactly as the bow
+bullet is the summary of the charged-attack rows. Nothing in the engine changes,
+and the negative controls in
+`the_eleven_evolution_exclusion_rows_reproduce_their_own_percentages` are what
+hold the line: a tier-mate the catalog does not name feeds CO in FULL even when
+it raises base damage by the same number as its named sibling.
+
+---
+
+### OPEN QUESTIONS on this catalog — not decided, and worth a measurement
+
+#### 1. The Lato Vandal exclusion row contradicts the catalog's own convention
 
 Every other multi-pellet exclusion row is PER PELLET: the Bronco Prime's
 238 -> 448 is exactly 7 x 30 and the Vasto Prime's 420 -> 564 is exactly 6 x 24.
@@ -290,7 +309,7 @@ is applied per pellet in Incarnon Form" — the Vasto's Lone Gun, the Soma's Fre
 Havoc). The row is treated as the outlier and the test carries our number with
 the reasoning beside it.
 
-### 3. The wiki's SOURCES list is missing the Burston
+#### 2. The wiki's SOURCES list is missing the Burston
 
 The page's "Sources of Condition Overload-Style Bonuses" names nine Genesis
 perks; the roster carries **sixteen** evolution CO grants and every one was

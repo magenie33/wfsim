@@ -4067,6 +4067,16 @@ mod condition_overload_catalog_tests {
         // …AND THE TIER-MATES THE CATALOG DOES NOT NAME feed the term in full.
         // Absence from the table is a positive statement, so a perk that raises
         // base damage by the same number as its named sibling is still ordinary.
+        //
+        // THIS HALF IS THE ONE UNDER PRESSURE. The wiki's Math section lists
+        // "Base Damage increases from Incarnon Genesis Evolutions" among the
+        // things Adding CO ignores, with no "some" on it — and read as a law it
+        // would flip all 107 of these. It is not a law (owner, 2026-08-12), and
+        // the page argues that side itself: the same list's "Bow charging"
+        // bullet is enumerated by ~15 catalog rows that disagree with each
+        // other (50%, 40%, 38%, 57%, 65%, 25%) and contains outright
+        // counter-examples — the Cinta and Nataruk are charged bows at 100%
+        // Multiplying and the Balefire Charger is 0%. See docs/CATALOGS.md.
         for (entry, perk) in [
             ("vasto_prime_incarnon", "vasto_prime_lone_gun"),
             ("dual_toxocyst_incarnon", "dual_toxocyst_fevered_frenzy"),
