@@ -9,10 +9,18 @@ description: "Increase Base Status Chance by 30% of current Critical Chance, up 
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "Increase Base Status Chance by 30% of current Critical Chance, up to 40%"
-  - kind: unmodelled_increase_base_status_chance_by_of_current_critical_ch
+  # ONE STAT FROM THE OTHER, capped. "CURRENT Critical Chance" is the MODDED
+  # value, and the mirror perk's own note is the proof: the Dera's High Ground
+  # reads "+366.7% Status Chance is needed to max out the Critical Chance bonus",
+  # and 0.30 x (1 + 3.667) = 1.40 is exactly what a 35% cap at 25% a point
+  # demands. Same arithmetic, read the other way round.
+  #
+  # "BASE Status Chance" is where the grant LANDS, so the status mods multiply
+  # it afterwards — which is what makes this worth more on a build that already
+  # has them.
+  - kind: status_chance_from_crit_chance
+    rate: 0.30
+    cap: 0.40
 
 source:
   url: https://wiki.warframe.com/w/Vectis_Incarnon_Genesis

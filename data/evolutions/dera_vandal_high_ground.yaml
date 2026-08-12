@@ -9,13 +9,20 @@ description: "Increase Base Critical Chance by +25% of current Status Chance, up
 selection: choose_one
 
 effects:
-  # from: "Increase Base Critical Chance by +25%"
-  - kind: flat_base_crit_chance
-    value: 0.25
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "of current Status Chance, up to +35%"
-  - kind: unmodelled_of_current_status_chance_up_to
+  # ONE STAT FROM THE OTHER, capped, and this card's own notes are what pinned
+  # the arithmetic for both directions: "For Non-Incarnon Dera Vandal, +366.7%
+  # Status Chance is needed to max out the Critical Chance bonus" and "For
+  # Incarnon Dera Vandal and Non-Incarnon Dera, +536.4%".
+  #
+  # Those are 0.30 x 4.667 and 0.22 x 6.364 — both exactly 1.40, which is the
+  # current status chance a 35% cap at 25% a point needs. So "CURRENT" means
+  # after mods, and the three status chances the note groups are this roster's
+  # 0.30 / 0.22 / 0.22, digit for digit.
+  #
+  # "BASE Critical Chance" is where it lands, so the crit mods multiply it.
+  - kind: crit_chance_from_status_chance
+    rate: 0.25
+    cap: 0.35
 
 source:
   url: https://wiki.warframe.com/w/Dera_Incarnon_Genesis

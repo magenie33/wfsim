@@ -1029,6 +1029,17 @@ pub struct WeaponBase {
     /// on the raw weapon and the Tenno is not there; folded in `resolve_for`,
     /// which has both.
     pub gated: Vec<(TennoGate, GatedGrant, f64)>,
+    /// Wiseman's Regard: `(rate, cap)` — "Increase Base Status Chance by 30% of
+    /// current Critical Chance, up to 40%".
+    ///
+    /// "CURRENT" is the MODDED value, and the wiki's own arithmetic proves it:
+    /// the Dera's mirror perk notes that "+366.7% Status Chance is needed to max
+    /// out the Critical Chance bonus", and 0.30 x (1 + 3.667) is exactly the
+    /// 1.40 that a 35% cap at 25% a point demands. "BASE" is where the grant
+    /// LANDS, so the stat's own mods multiply it afterwards.
+    pub base_status_from_crit: Option<(f64, f64)>,
+    /// High Ground: the mirror — base crit chance from current status chance.
+    pub base_crit_from_status: Option<(f64, f64)>,
     /// THE SECOND perk to ask about the player's sprint speed, and the second
     /// grant to be carried rather than spent in `apply`: Deadly Pace's "With
     /// Sprint Speed 1.2 or Higher: +80% Fire Rate".
@@ -2387,8 +2398,21 @@ pub fn resolve_for(
     // difference only appears once a crit-damage mod is on, which is why
     // reading the rendered page rather than the wikitext missed it: the word
     // that decides it is "Base".
+    // ONE STAT DERIVED FROM THE OTHER, both grants computed from the PRE-GRANT
+    // modded values. No weapon carries both — the Dera has one and the
+    // Cestra/Sicarus/Vectis the other — so the order cannot matter, and
+    // computing them this way means it never will.
+    let modded_cc_pre = (base.base_crit_chance * (1.0 + cc) + base.post_mod_crit_chance).max(0.0);
+    let modded_sc_pre =
+        (base.base_status_chance * (1.0 + sc) + base.post_mod_status_chance).max(0.0);
+    let derived = |spec: Option<(f64, f64)>, from: f64| -> f64 {
+        spec.map_or(0.0, |(rate, cap)| (rate * from).min(cap))
+    };
+    let cc_from_sc = derived(base.base_crit_from_status, modded_sc_pre);
+    let sc_from_cc = derived(base.base_status_from_crit, modded_cc_pre);
+
     let resolved_cc =
-        (base.base_crit_chance * (1.0 + cc) + base.post_mod_crit_chance).max(0.0);
+        ((base.base_crit_chance + cc_from_sc) * (1.0 + cc) + base.post_mod_crit_chance).max(0.0);
     let prelude_cd = match base.crit_mult_below_cc {
         Some((bonus, below)) if resolved_cc < below => bonus,
         _ => 0.0,
@@ -2714,7 +2738,8 @@ pub fn resolve_for(
             .map(|(_, below)| (prelude_cd * (1.0 + cd), below)),
         // No upper clamp: status chance ABOVE 100% is meaningful (a
         // guaranteed proc plus an extra roll) — DT resolves to 129%.
-        status_chance: (base.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)
+        status_chance: ((base.base_status_chance + sc_from_cc) * (1.0 + sc)
+            + base.post_mod_status_chance)
             .max(0.0),
         base_crit_chance: base.base_crit_chance,
         base_crit_damage: base.base_crit_damage,
@@ -3019,6 +3044,67 @@ mod tests {
             (paid - plain * 4.3).abs() < 1e-6,
             "an invisible Tenno collects +330%: {paid} vs {}",
             plain * 4.3
+        );
+    }
+
+    /// ONE STAT DERIVED FROM THE OTHER, and the wiki hands over the arithmetic
+    /// to check it with. High Ground reads "Increase Base Critical Chance by 25%
+    /// of current Status Chance, up to 35%", and the card's own notes say how
+    /// much status chance maxing it takes — "+366.7%" for the non-Incarnon Dera
+    /// Vandal, "+536.4%" for the Incarnon Vandal and the non-Incarnon Dera.
+    ///
+    /// Those two numbers test THREE things at once. 0.35/0.25 = 1.40 is the
+    /// current status chance the cap needs, so 0.30 x 4.667 and 0.22 x 6.364
+    /// both landing on 1.40 says (a) "CURRENT" is the MODDED value, (b) the rate
+    /// and cap are 0.25/0.35, and (c) this roster's base status chances are
+    /// 0.30 / 0.22 — which `data/weapons/` carries independently of the note.
+    #[test]
+    fn a_derived_stat_reads_the_modded_value_and_lands_on_the_base_one() {
+        let hg = "dera_vandal_high_ground";
+        let base = WeaponBase::from_data("dera_vandal", false, &[hg]);
+        assert!(
+            (base.base_status_chance - 0.30).abs() < 1e-9,
+            "the wiki groups the non-Incarnon Vandal at 30% status chance, got {}",
+            base.base_status_chance
+        );
+        let cc = |sc_bonus: f64| {
+            let sm = m("t_sc", vec![ModEffect::StatusChance(sc_bonus)]);
+            resolve(&base, &[&sm], StackPolicy::AssumedMax).crit_chance
+        };
+        // Just under the wiki's threshold the bonus is still climbing; AT it the
+        // cap is exactly reached, and past it nothing more is bought.
+        let (under, at, over) = (cc(3.60), cc(3.667), cc(6.0));
+        assert!(under < at - 1e-9, "below +366.7% the bonus still climbs: {under} vs {at}");
+        assert!((at - over).abs() < 1e-9, "+366.7% maxes it out: {at} vs {over}");
+
+        // …and it lands on BASE crit chance, so the crit mods multiply it. The
+        // two readings of "Base" only differ once a crit mod is on, which is
+        // what this half pins: a 35% base grant through +150% is worth 87.5%.
+        let bare = WeaponBase::from_data("dera_vandal", false, &[]);
+        let sm = m("t_sc", vec![ModEffect::StatusChance(6.0)]);
+        let cm = m("t_cc", vec![ModEffect::CritChance(1.5)]);
+        let a = resolve(&bare, &[&sm, &cm], StackPolicy::AssumedMax).crit_chance;
+        let b = resolve(&base, &[&sm, &cm], StackPolicy::AssumedMax).crit_chance;
+        assert!(
+            ((b - a) - 0.35 * 2.5).abs() < 1e-9,
+            "a 35% BASE grant is worth 87.5% through a +150% crit mod, got {}",
+            b - a
+        );
+
+        // THE CARD IS ONE SENTENCE. It was split into a flat "+25% base crit
+        // chance" and an inert "of current Status Chance", so modelling the real
+        // clause would have paid the perk twice (2026-08-12).
+        assert!(
+            (a - resolve(&base, &[&cm], StackPolicy::AssumedMax).crit_chance).abs() > 1e-9,
+            "sanity: the perk must do something"
+        );
+        let no_status = m("t_zero", vec![ModEffect::StatusChance(-1.0)]);
+        assert!(
+            (resolve(&base, &[&no_status, &cm], StackPolicy::AssumedMax).crit_chance
+                - resolve(&bare, &[&no_status, &cm], StackPolicy::AssumedMax).crit_chance)
+                .abs()
+                < 1e-9,
+            "at zero status chance the perk grants nothing — there is no flat half"
         );
     }
 

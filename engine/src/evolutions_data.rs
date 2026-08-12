@@ -199,6 +199,9 @@ enum EvoEffect {
     /// DOES use base damage increase Evolution"), so applying the correction
     /// everywhere would dock a perk the wiki never docked.
     BaseDamageBelowHalfHealth { rate: f64, excludes_own_flat: bool },
+    /// ONE STAT FROM THE OTHER, capped. `from_crit` says which way round:
+    /// Wiseman's Regard reads crit and pays status, High Ground the mirror.
+    DerivedStat { from_crit: bool, rate: f64, cap: f64 },
     /// A grant the PLAYER's state switches on — "With Armor Over 450: +80%
     /// Multishot", "With Energy Max Over 700: +1x Base Critical Damage
     /// Multiplier", "With Sprint Speed 1.2 or Higher: +60% Projectile Speed".
@@ -671,6 +674,7 @@ impl EvolutionDef {
                 | EvoEffect::FireRateBonus { .. }
                 | EvoEffect::BaseDamageBelowHalfHealth { .. }
                 | EvoEffect::GatedByTenno { .. }
+                | EvoEffect::DerivedStat { .. }
                 | EvoEffect::CritOnUndamaged { .. }
                 | EvoEffect::ReloadSpeedBonus(_)
                 | EvoEffect::CritMultiplierBelowCritChance { .. }
@@ -850,6 +854,13 @@ impl EvolutionDef {
                 EvoEffect::CritOnUndamaged { crit_chance, crit_multiplier } => format!(
                     "+{:.0}% BASE crit chance and +{crit_multiplier}x BASE crit damage while the                      target is undamaged (mods multiply both)",
                     crit_chance * 100.0
+                ),
+                EvoEffect::DerivedStat { from_crit, rate, cap } => format!(
+                    "+{:.0}% of current {} as base {}, up to +{:.0}%",
+                    rate * 100.0,
+                    if *from_crit { "crit chance" } else { "status chance" },
+                    if *from_crit { "status chance" } else { "crit chance" },
+                    cap * 100.0
                 ),
                 EvoEffect::GatedByTenno { gate, grant, value } => format!(
                     "{} {grant:?} {}",
@@ -1177,6 +1188,16 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // bracket, so a multishot gate and a crit-damage gate cannot be
         // confused for one another, and an unreadable `condition:` falls to
         // Inert rather than paying out unconditionally.
+        "status_chance_from_crit_chance" => EvoEffect::DerivedStat {
+            from_crit: true,
+            rate: f(v, "rate").unwrap_or(0.0),
+            cap: f(v, "cap").unwrap_or(0.0),
+        },
+        "crit_chance_from_status_chance" => EvoEffect::DerivedStat {
+            from_crit: false,
+            rate: f(v, "rate").unwrap_or(0.0),
+            cap: f(v, "cap").unwrap_or(0.0),
+        },
         "gated_by_tenno" => {
             let Some(gate) = tenno_condition(v) else {
                 return Some(EvoEffect::Inert("gated_by_tenno with an unreadable `condition:`".into()));
@@ -1578,6 +1599,13 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::GatedByTenno { gate, grant, value } => {
                     base.gated.push((*gate, *grant, *value));
+                }
+                EvoEffect::DerivedStat { from_crit, rate, cap } => {
+                    if *from_crit {
+                        base.base_status_from_crit = Some((*rate, *cap));
+                    } else {
+                        base.base_crit_from_status = Some((*rate, *cap));
+                    }
                 }
                 EvoEffect::BaseDamageBelowHalfHealth { rate, excludes_own_flat } => {
                     half_hp_rate += rate;
@@ -2728,7 +2756,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 72;
+        const CEILING: usize = 61;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,
