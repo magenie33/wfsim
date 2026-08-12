@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 30127013c7ff70c507c3255622490c9e70cd0532
+engine: eebe509fc5ca89220180bcba98ebe0a311d57209
 entries:
   - weapon: angstrum
     mode: cycle
