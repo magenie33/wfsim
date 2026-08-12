@@ -2,7 +2,7 @@ id: boltor_prime_crimson_overture
 name: Crimson Overture
 weapon: boltor_prime
 tier: 2
-description: "On Kill: Increase Base Damage by +2 and +20% Ammo Efficiency for 5 seconds. Stacks up to 3x."
+description: "Increase Base Damage by +0. On Kill: Increase Base Damage by +2 and +20% Ammo Efficiency for 5 seconds. Stacks up to 3x."
 # THE GENESIS IS THE FAMILY'S. One Boltor Incarnon Genesis upgrades any of the
 # three Boltors, so all three carry the same ladder of nine perks. Where a value
 # DIFFERS between them the wiki's table prints a per-variant column, and the
@@ -10,23 +10,36 @@ description: "On Kill: Increase Base Damage by +2 and +20% Ammo Efficiency for 5
 selection: choose_one
 
 effects:
-  # NOT LOADED: no on-kill BASE-DAMAGE stacking buff exists. The engine has
-  # on-kill stacking buffs (Galvanized Chamber's multishot, Bladed Rounds' crit
-  # damage) and this would be the first to move the BASE, which is a different
-  # layer — everything else multiplies it.
+  # VERBATIM (Boltor_Incarnon_Genesis, EVO2, the row's effect cell):
+  #   *Increase Base Damage by '''+X'''.
+  #   *On Kill: Increase Base Damage by '''+2''' and '''+20%''' [[Ammo Efficiency]] for
+  #    '''5''' seconds. Stacks up to '''Y'''x
+  #   | X = 12<br>Y = 4 | X = 0<br>Y = 3 | X = 0<br>Y = 3
+  # Columns are Boltor | Telos Boltor | Boltor Prime, from the page's first
+  # line. NOTE THAT +2 IS IN THE BULLET, not in a column: every variant's
+  # on-kill stack is +2, and only X and the CAP differ.
   #
+  # THIS FILE HAD X AS THE PER-STACK VALUE. The Boltor's card read "On Kill:
+  # Increase Base Damage by +12 … Stacks up to 4x", which is its X of 12 in the
+  # place of the bullet's +2, and its unconditional +12 was missing entirely
+  # (2026-08-12). The other two were right by luck — their X is 0.
   # THE STACK CAP IS THE ONE THING THE TWO WIKIS DISAGREE ON in this family: the
   # EN table reads 4x for the Boltor and 3x for the other two, the CN page reads
   # 3x for all three. Kept at the EN number, being the page the effect text came
   # from. It is also the only value in the family where they differ at all.
   #
-  # The ammo-efficiency half is doubly inert: the arena's `infinite_ammo` is on
-  # by default.
-  - kind: stacking_base_damage_on_kill
-    per_stack: 2.0
+  # The ammo-efficiency half of the same bullet cannot pay out here: the arena
+  # runs on infinite ammo (UNMODELLED.md). It is declared below rather than
+  # folded in silently.
+  - kind: stacking_buff
+    per_stack:
+      base_damage: 2.0
     max_stacks: 3
     duration_seconds: 5.0
-    ammo_efficiency: 0.20
+    trigger: kill
+  - kind: out_of_scope
+    clause: "On Kill: +20% Ammo Efficiency for 5 seconds"
+    reason: infinite_ammo
 
 source:
   url: https://wiki.warframe.com/w/Boltor_Incarnon_Genesis

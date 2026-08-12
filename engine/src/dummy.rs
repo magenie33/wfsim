@@ -4633,6 +4633,8 @@ pub fn run_once_traced(
     // instant it happened. That is the precise part and the part that decides
     // which shots carry which stack count.
     let mut rounds_this_mag: u32 = 0;
+    // Kills already paid to on-kill stacking buffs. See `BuffTrigger::Kill`.
+    let mut kill_buff_mark: u32 = 0;
     macro_rules! bump_buffs {
         ($trigger:expr, $t:expr, $rng:expr) => {
             for (i, b) in params.stacking_buffs.iter().enumerate() {
@@ -5048,6 +5050,20 @@ pub fn run_once_traced(
                 ap.ammo_cost * (1.0 - eff)
             }
         };
+
+        // A KILL IS A KILL WHEREVER IT CAME FROM, so on-kill stacks are read
+        // off the counter rather than bumped at each of the six places one can
+        // happen — a direct hit, a DoT tick, a field tick and three more. The
+        // same mark-and-diff Sentient Surge's refill and the tendrils use, two
+        // blocks down, and for the same reason: a list of call sites is a list
+        // to forget one from.
+        if r.kills != kill_buff_mark {
+            let fresh = r.kills - kill_buff_mark;
+            kill_buff_mark = r.kills;
+            for _ in 0..fresh {
+                bump_on_trigger!(crate::loadout::BuffTrigger::Kill, t, d.extra);
+            }
+        }
 
         // TENDRILS and the magazine they keep alive, both re-derived from the
         // counters above before anything decides to reload.
@@ -8240,6 +8256,90 @@ mod tests {
         cold.round_restore_on_status = Some((DamageType::Electricity, 0.40, 1.0));
         assert!((monte_carlo(&cold, 12, 3).mean_reloads - dry).abs() < 1e-9,
             "no Electricity on the target, no refund");
+    }
+
+    /// CRIMSON OVERTURE, and the claim that makes `BuffTrigger::Kill` worth a
+    /// variant: A KILL COUNTS WHEREVER IT CAME FROM.
+    ///
+    /// VERBATIM (Boltor_Incarnon_Genesis, EVO2):
+    ///   *Increase Base Damage by '''+X'''.
+    ///   *On Kill: Increase Base Damage by '''+2''' and '''+20%''' [[Ammo Efficiency]]
+    ///    for '''5''' seconds. Stacks up to '''Y'''x
+    ///   | X = 12<br>Y = 4 | X = 0<br>Y = 3 | X = 0<br>Y = 3
+    ///
+    /// The +2 is in the BULLET and only X and the cap are per-variant — which
+    /// is where the transcription went wrong before this: the Boltor's card had
+    /// X in the per-stack slot and no unconditional half at all.
+    ///
+    /// The trigger is read off the kill COUNTER rather than bumped at each of
+    /// the six sites a kill can happen, so the second half of this test kills
+    /// the target with a DoT and nothing else: no direct hit lands the killing
+    /// blow, and the stacks must still climb.
+    #[test]
+    fn on_kill_stacks_climb_from_a_kill_the_gun_did_not_land() {
+        let buff = crate::loadout::StackingBuff {
+            id: "on_kill_damage",
+            trigger: crate::loadout::BuffTrigger::Kill,
+            grant: crate::loadout::BuffGrant::BaseDamage,
+            decay: crate::loadout::BuffDecay::LoseOneAndReset,
+            per_stack: 0.10,
+            max_stacks: 4,
+            duration: 5.0,
+            chance: 1.0,
+            initial_stacks: 0,
+            stacks_per_trigger: 1,
+            per_shell: false,
+            cleared_by: crate::loadout::ClearedBy::Nothing,
+        };
+        // A target that dies to every shot and comes straight back, so kills
+        // are frequent and nothing else in the fixture is doing anything.
+        let p = DummyParams {
+            magazine_size: 100.0,
+            fire_rate: 10.0,
+            stacking_buffs: vec![buff],
+            duration_secs: 10.0,
+            body_parts: mono_body(1.0),
+            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            ..flat_base()
+        };
+        let trace = replay(&p, Rng::new(4).state(), 600);
+        let i = trace.buffs.iter().position(|(id, _)| id == "on_kill_damage")
+            .expect("on the roster");
+        let series: Vec<u8> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+        assert_eq!(series[0], 0, "it opens empty — the fight earns it");
+        assert!(series.contains(&4), "four kills reach the cap: {series:?}");
+        assert!(series.iter().all(|&v| v <= 4), "and never pass it");
+
+        // …AND A KILL THE GUN DID NOT LAND still counts. The shot does almost
+        // nothing and a Slash DoT finishes the target, so every kill happens in
+        // the DoT path — a trigger wired to the direct-hit site would score zero
+        // here and look fine everywhere else.
+        let dot = DummyParams {
+            damage: DamageVector::new().with(DamageType::Slash, 1.0),
+            status_chance: 1.0,
+            base_status_chance: 1.0,
+            magazine_size: 100.0,
+            fire_rate: 1.0,
+            stacking_buffs: p.stacking_buffs.clone(),
+            duration_secs: 30.0,
+            body_parts: mono_body(1.0),
+            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            ..flat_base()
+        };
+        // The claim rests on the SHOT being harmless, so it is asserted rather
+        // than reasoned about: 1 damage against 50 health, so no direct hit can
+        // ever be the killing blow and every kill in this run is a DoT's.
+        assert!(dot.damage.total() < dot.target.base_health,
+            "the shot must not be able to kill: {} damage against {} health",
+            dot.damage.total(), dot.target.base_health);
+        let s = monte_carlo(&dot, 4, 11);
+        assert!(s.mean_kills > 0.0, "the fixture has to kill something: {}", s.mean_kills);
+        let trace = replay(&dot, Rng::new(11).state(), 1200);
+        let i = trace.buffs.iter().position(|(id, _)| id == "on_kill_damage").expect("roster");
+        let peak = trace.frames.iter().map(|f| f.stacks[i]).max().unwrap_or(0);
+        assert!(peak > 0,
+            "a kill counts wherever it came from — {} kills and the pile never moved",
+            s.mean_kills);
     }
 
     /// VICIOUS PROMISE: the first arrow only, and OVERGUARD does not count.

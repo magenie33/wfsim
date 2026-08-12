@@ -1277,6 +1277,18 @@ pub enum BuffTrigger {
     /// burst at the end, and a partial burst is not one: the count restarts
     /// with the magazine, so those rounds earn nothing.
     FullBurst,
+    /// Crimson Overture: A KILL, wherever it came from.
+    ///
+    /// Counted off `RunResult::kills` rather than bumped at the six places a
+    /// kill can happen (a direct hit, a DoT tick, a field tick, …), because
+    /// "remember to also bump it here" is how five of six get done. The loop
+    /// already reads kills this way for Sentient Surge's refill and the Ocucur's
+    /// tendrils; this is the same mark-and-diff.
+    ///
+    /// A consequence that matches every other trigger here: the kill is seen at
+    /// the START of the next shot, so the shot that earned the stack does not
+    /// carry it.
+    Kill,
     /// Blazing Barrel: FIRING — the round leaving the barrel, whether or not
     /// it hits and whatever it hits.
     ///

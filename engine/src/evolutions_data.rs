@@ -1902,6 +1902,7 @@ fn buff_trigger(s: &str) -> Option<crate::loadout::BuffTrigger> {
         "reload_complete" => T::ReloadComplete,
         "reload_from_empty" => T::ReloadFromEmpty,
         "status_applied" => T::StatusApplied,
+        "kill" => T::Kill,
         _ => return None,
     })
 }
@@ -1944,6 +1945,7 @@ fn stacking_card_id(
         (T::PlainHit, G::BaseDamage) => "on_plain_hit_damage",
         (T::ReloadComplete, G::BaseDamage) => "on_reload_damage",
         (T::ReloadComplete, G::FireRate) => "on_reload_fire_rate",
+        (T::Kill, G::FlatBaseDamage) => "on_kill_damage",
         (T::ReloadFromEmpty, G::FlatBaseDamage) => "on_empty_reload_damage",
         (T::ReloadFromEmpty, G::BaseCritDamage) => "on_empty_reload_crit_damage",
         // A pair nobody has written a card for yet. It is still a real buff and
@@ -2514,11 +2516,8 @@ use crate::loadout::WeaponBase;
             // of the family, Ready Retaliation, is still inert below: its
             // `condition:` is unread, and granting a conditional bonus
             // unconditionally is worse than not granting it.)
-            "boltor_crimson_overture :: stacking_base_damage_on_kill",
             "boltor_hunters_mantra :: punch_through_while_channeling",
-            "boltor_prime_crimson_overture :: stacking_base_damage_on_kill",
             "boltor_prime_hunters_mantra :: punch_through_while_channeling",
-            "telos_boltor_crimson_overture :: stacking_base_damage_on_kill",
             "telos_boltor_hunters_mantra :: punch_through_while_channeling",
         ];
         // TWO POPULATIONS, AND THE PREFIX IS WHICH. The list above is the ARGUED
@@ -2794,7 +2793,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 32;
+        const CEILING: usize = 29;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,
