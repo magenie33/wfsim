@@ -3147,6 +3147,51 @@ mod passive_tests {
 mod burston_incarnon_radial_tests {
     use super::*;
 
+    /// THE BRATON'S RADIAL CO BASE, the same shape the Burston's row has and
+    /// the same arithmetic: 70 + 4 = 74, and 70/74 is the 95% the catalog's
+    /// third column prints. The explosion TAKES the tier-2 evolution's flat
+    /// damage and does not take it into the base its CO term multiplies.
+    ///
+    /// Both tier-2 options land it, at their own values — the row's note reads
+    /// "Listed values for Braton Prime with inactive Daring Reverie", i.e. that
+    /// perk's unconditional +4 is in the 74 and its conditional half is not.
+    #[test]
+    fn the_bratons_radial_co_base_is_the_catalogs_ninety_five_percent() {
+        let b = WeaponBase::from_data("braton_prime_incarnon", true, &["braton_prime_daring_reverie"]);
+        let r = b.radial.as_ref().expect("the radial survives an evolution");
+        assert!((r.base_vector.total() - 74.0).abs() < 1e-9, "{}", r.base_vector.total());
+        assert!(
+            (r.co_base_fraction - 70.0 / 74.0).abs() < 1e-9,
+            "the explosion's CO base stays 70/74 = {:.1}%, got {}",
+            70.0 / 74.0 * 100.0,
+            r.co_base_fraction
+        );
+    }
+
+    /// THE ZYLOK'S ROW MIXES ITS TWO VARIANTS, so its printed 90% is the one
+    /// figure in the catalog this engine does not reproduce — and should not.
+    ///
+    /// The row reads `776 || 700 || 90%` with the note "Listed Values for Zylok
+    /// Prime". 700 IS the Prime's radial; the +76 that makes 776 is the base
+    /// Zylok's Precision's Payoff, which the evolution table prints per variant
+    /// as X = 76 (Zylok) and X = 30 (Zylok Prime). 700/776 is therefore one
+    /// weapon's explosion under the other's perk.
+    ///
+    /// Each variant is self-consistent here, and the per-variant evolution
+    /// table is the more specific source.
+    #[test]
+    fn the_zyloks_two_variants_each_carry_their_own_radial_co_base() {
+        let prime = WeaponBase::from_data("zylok_prime_incarnon", true, &["zylok_prime_precisions_payoff"]);
+        let pr = prime.radial.as_ref().expect("radial");
+        assert!((pr.base_vector.total() - 730.0).abs() < 1e-9, "700 + 30");
+        assert!((pr.co_base_fraction - 700.0 / 730.0).abs() < 1e-9);
+
+        let plain = WeaponBase::from_data("zylok_incarnon", true, &["zylok_precisions_payoff"]);
+        let cr = plain.radial.as_ref().expect("radial");
+        assert!((cr.base_vector.total() - 676.0).abs() < 1e-9, "600 + 76");
+        assert!((cr.co_base_fraction - 600.0 / 676.0).abs() < 1e-9);
+    }
+
     #[test]
     fn the_incarnon_form_is_two_damage_instances() {
         let b = WeaponBase::from_data("burston_prime_incarnon", true, &[]);

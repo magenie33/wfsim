@@ -210,12 +210,12 @@ ignores unknown `kind`s, so the mod still loads). Wiki-sourced calc:
 **order mods appear in the configuration**, not a fixed priority.
 
 **The hierarchy algorithm** (wiki `Damage` §Modding / §Load Order — the
-authoritative rules; supersedes the earlier draft):
+authoritative rules):
 1. **Hierarchy = mod layout order**, top-left slot first → bottom-right
    last. Adjacent-in-hierarchy uncombined primaries merge pairwise into
    secondaries.
-2. **Innate weapon elements come LAST** in the hierarchy — NOT first (the
-   old draft had this backwards). Exception: Kuva/Tenet weapons with two
+2. **Innate weapon elements come LAST** in the hierarchy — not first.
+   Exception: Kuva/Tenet weapons with two
    innate elements (weapon + progenitor): whichever comes first in
    **HCET order (Heat > Cold > Electricity > Toxin)** sits second-to-last,
    the other last.

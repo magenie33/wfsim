@@ -88,9 +88,9 @@ in yaml comments instead. That is how five of them came to be wrong.
 | Kunai / Mk1-Kunai | Incarnon Mode | 100% | Multiplying | `independent` — see the two notes below |
 | Cernos Prime | Charged Attack | 50% | Adding | `co_base_fraction: 0.5` |
 | Stug | **Blob Impact** | 0% | Does not apply | `co_behavior: inert` |
-| Zylok / Zylok Prime | Incarnon Form Radial | **90%** | Adding | radial fraction NOT declared |
-| Braton family | Incarnon Form Radial | **95%** | Adding | radial fraction NOT declared |
-| Burston / Burston Prime | Incarnon Form Radial | **24%** | Adding | radial fraction NOT declared |
+| Zylok / Zylok Prime | Incarnon Form Radial | 90% | Adding | derived per variant; the row MIXES them — see below |
+| Braton family | Incarnon Form Radial | 95% | Adding | derived: 70 + 4 = 74, 70/74 |
+| Burston / Burston Prime | Incarnon Form Radial | 24% | Adding | derived: 13 + 42 = 55, 13/55 |
 
 ### "CO-bonus does not use base damage increase Evolution" — eleven rows
 
@@ -130,6 +130,29 @@ fit any bracket the engine has: Swift Conclusion's +200% below half health joins
 the base-damage bucket, and under `Multiplying` the engine hands CO a base that
 includes it — where the row says the two should ADD. Live since the perk was
 implemented (2026-08-12).
+
+### A radial's fraction is DERIVED, not declared
+
+The three radial rows print a "relative" figure that is not a discount at all:
+it is an evolution raising the explosion's DAMAGE without raising the base its
+CO term multiplies, which the engine already does (`RadialBase::co_base_fraction`,
+set in `evolutions_data::apply`). Nothing is transcribed for these, and the
+numbers come out:
+
+| row | prints | engine |
+| --- | --- | --- |
+| Burston Prime | 55 / 13 / 24% | 13 + 42 = 55, fraction 13/55 = 23.6% |
+| Braton Prime | 74 / 70 / 95% | 70 + 4 = 74, fraction 70/74 = 94.6% |
+
+**The Zylok's row mixes its two variants**, which is why it is the one figure
+here the engine does not reproduce and should not. It reads `776 || 700 || 90%`
+with the note "Listed Values for Zylok Prime": 700 IS the Prime's radial, but
+the +76 that makes 776 is the BASE Zylok's Precision's Payoff — the evolution
+table prints that value per variant as X = 76 (Zylok) and X = 30 (Zylok Prime).
+So 700/776 is one weapon's explosion under the other's perk. Each variant is
+self-consistent here (Prime 700/730 = 95.9%, Zylok 600/676 = 88.8%) and the
+per-variant evolution table is the more specific source. Pinned by
+`the_zyloks_two_variants_each_carry_their_own_radial_co_base`.
 
 **An AoE part needs its own row to take CO at all.** CO is a direct-hit bonus
 everywhere else, which is why the engine's radial path refuses it by default and
@@ -256,7 +279,7 @@ The page's own legend, and it settles two columns that are easy to read wrong:
 > **Stolen** = Uses another firing mode's radius for the Compression bonus.
 > **Doesn't Work** = Compression doesn't apply to this AoE.
 
-Two things that changes about the earlier reading here:
+Two things it settles, both easy to read wrong:
 
 - **Effectiveness is about WHICH RADIUS is considered**, not how much of the
   bonus is paid. The arithmetic lands in the same place — the bonus scales with

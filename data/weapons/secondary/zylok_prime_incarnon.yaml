@@ -36,11 +36,18 @@ pseudo_reload:
   magazine: 12
   reload_seconds: 2.2
 
-# THE CO CATALOG'S ROW IS ABOUT THIS FORM'S RADIAL: "Zylok family |
-# Incarnon Form Radial | Adding | 90%". The class is what the loader
-# already does; the 90% is NOT expressible — `co_base_fraction` is a
-# WEAPON-level field and this is a RADIAL-level discount. Recorded rather
-# than faked, the same way the Burston's 24% is.
+# THE CO CATALOG'S ROW IS ABOUT THIS FORM'S RADIAL, and both halves of it are
+# already modelled: the class by `takes_condition_overload` on the radial, and
+# the "relative" figure by the radial's OWN `co_base_fraction`, which
+# `evolutions_data::apply` derives — an evolution raises the explosion's damage
+# without raising the base its CO term multiplies.
+#
+# The row's printed 90% is the one figure in that catalog this engine does not
+# reproduce, because the row mixes the two variants: 700 is the PRIME's radial
+# and the +76 that makes 776 is the BASE Zylok's Precision's Payoff (the
+# evolution table prints X = 76 for the Zylok and X = 30 for the Prime). Each
+# variant is self-consistent here — see CATALOGS.md §"A radial's fraction is
+# DERIVED, not declared".
 co_behavior: additive_with_base_damage
 
 attack:
