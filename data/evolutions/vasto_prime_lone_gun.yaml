@@ -12,9 +12,32 @@ effects:
   # from: "Increase Base Damage by +24"
   - kind: flat_base_damage
     value: 24.0
-  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
-  # this simulator cannot pay it out, and the reason will not change with
-  # any amount of work on evolutions.
+  # AN EDGE, AND THE ONE WHOSE CONDITION IS ANSWERED RATHER THAN UNKNOWN.
+  #
+  # VERBATIM (Vasto_Incarnon_Genesis, EVO2 Perk 1, and its notes):
+  #   * Increase Base Damage by '''+X'''.
+  #   * With No Primary Equipped:
+  #   ** Increase Base Damage by '''+40'''
+  #   ** Increase Base Magazine Capacity by '''+14'''.
+  #   | X = 66   | X = 24        (Vasto | Vasto Prime)
+  #   * Increased Base Magazine Capacity does not affect Incarnon Form.
+  #   * Base Damage increase is applied per pellet in Incarnon Form.
+  #
+  # THE TENNO CARRIES A FULL LOADOUT (owner, 2026-08-12: "我们的场景是带满武器的
+  # 情况，所以单独的那个是不生效的"). So this is not a condition the sim cannot
+  # read — it reads FALSE. One weapon FIRES for the whole engagement, and that
+  # is a different fact from what the player is carrying; the ruling separates
+  # the two and answers every clause about the other slots at once:
+  #   - "With No Primary Equipped" — there IS one, so no.
+  #   - "With Dread and Hate equipped" (the Despair's) — the other slots are
+  #     full but unspecified, so no.
+  # `no_holster` is still the class it belongs to ("anything that assumes a
+  # loadout rather than a gun"), and it stays an EDGE: a ruling does not become
+  # work someone can do.
+  #
+  # THE ICON NAME IS NOT THE CARD. DE's art file is
+  # `DamageWithNoPrimaryOrMeleeEquipped`, but the card's text says Primary only
+  # — shared art, transcribed from the words.
   - kind: out_of_scope
     clause: "With No Primary Equipped: Increase Base Damage by +40, Increase Base Magazine Capacity by +14"
     reason: no_holster

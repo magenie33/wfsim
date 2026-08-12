@@ -93,9 +93,9 @@ machine. `data/tenno/` is the seam; `TennoState` already carries `aiming`,
 `invisible`, `airborne` and every `condition:` reads them, so a fourth state is
 cheap — the mechanics behind them are not.
 
-### 4. NO HOLSTER, NO SECOND WEAPON
+### 4. NO HOLSTER, NO SECOND WEAPON — BUT THE LOADOUT IS FULL
 
-One weapon fires for the whole engagement.
+One weapon FIRES for the whole engagement.
 
 - Evolved Autoloader (+50% magazine per second while holstered);
 - swap-speed perks, "on swap" buffs;
@@ -103,6 +103,23 @@ One weapon fires for the whole engagement.
 
 **What would have to exist first:** a loadout and a swap policy. The policy is
 the hard half — see §"Open decisions" below, it is the same problem.
+
+**THE OTHER SLOTS ARE OCCUPIED** (owner, 2026-08-12: "我们的场景是带满武器的情
+况，所以单独的那个是不生效的"). What the Tenno FIRES and what the Tenno CARRIES
+are two different facts, and only the first is "one weapon". The ruling answers
+every clause about the other slots at once, in both directions:
+
+| clause | answer | why |
+| --- | --- | --- |
+| Lone Gun (Vasto, Vasto Prime) — *"With No Primary Equipped"* | **no** | there IS a primary |
+| Stalker's Vendetta (Despair) — *"With Dread and Hate equipped"* | **no** | the slots are full but unspecified |
+| Stalker's Resentment (Dread) — *"With Hate and Despair Equipped"* | **no** | same |
+
+That makes Lone Gun's condition ANSWERED rather than unreadable, which is worth
+the distinction: the sim is not declining to evaluate it, it evaluates to false.
+It stays an EDGE all the same — a ruling is not work someone can do — and it
+stays in this class, because "anything that assumes a loadout rather than a gun"
+is exactly what it is.
 
 ### 5. AMMO IS INFINITE BY DEFAULT
 
