@@ -3071,6 +3071,35 @@ pub fn panel_json(v: &Value) -> Value {
         }
     }
 
+    // A FORM THAT CANNOT ZOOM CANNOT BE AIMING, and a mod that pays nothing has
+    // to say so on the page rather than just resolving to zero. The engine
+    // already answers the aim question FALSE for such a form; this is the half
+    // the player can see.
+    //
+    // Named per FORM, because that is the granularity of the fact: the Vasto
+    // aims and its Incarnon form does not, so "your Galvanized Crosshairs does
+    // nothing" would be wrong and "it does nothing in Incarnon Form" is right.
+    for (form_name, _label, fb) in &forms_list {
+        if !fb.cannot_zoom {
+            continue;
+        }
+        for m in &refs {
+            let aim_gated = m.effects.iter().any(|e| {
+                matches!(e, wfsim_engine::loadout::ModEffect::WhileTenno(
+                    wfsim_engine::loadout::TennoCondition::Aiming, _))
+            });
+            if aim_gated {
+                conditionals.push(json!({
+                    "mod": m.name,
+                    "desc": "pays only while aiming",
+                    "active": false,
+                    "why": format!(
+                        "{form_name} cannot aim down sights (the card's own words are \"cannot Zoom\"), so an on-aim bonus never applies in it"),
+                }));
+            }
+        }
+    }
+
     json!({
         "ok": true,
         "weapon": info.name,

@@ -151,6 +151,27 @@ for (const lang of ["en", "zh"]) {
     out.todoScope = [...document.querySelectorAll('.evopick .exchip.scope')]
         .map(e => e.textContent.trim());
 
+    // 7c. A BONUS THAT PAYS NOTHING SAYS WHY — the fourth surface, and the only
+    //     one where the mechanic is fully MODELLED and still worth a line.
+    //
+    // The Vasto's Incarnon Form "cannot Zoom", which is the wiki's word for the
+    // aim state, so every while-aiming bonus resolves to nothing in it. A mod
+    // that silently contributes zero is indistinguishable from a broken one, so
+    // the panel names the form and the reason.
+    history.pushState({}, '', '/weapons/Vasto_Prime'); route(); await sleep(3200);
+    slots[0] = { mod: 'galvanized_crosshairs' };
+    evoSel[1] = 'vasto_prime_evo1_incarnon_form';
+    markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
+    out.zoomLines = [...document.querySelectorAll('#stats-conditionals .scond')]
+        .filter(e => /aim down sights/.test(e.textContent))
+        .map(e => e.textContent.replace(/[ ]+/g, ' ').trim());
+    // …and the SAME mod on a weapon whose forms all zoom gets no such line.
+    history.pushState({}, '', '/weapons/Lex_Prime'); route(); await sleep(3000);
+    slots[0] = { mod: 'galvanized_crosshairs' };
+    markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
+    out.zoomFalsePositives = [...document.querySelectorAll('#stats-conditionals .scond')]
+        .filter(e => /aim down sights/.test(e.textContent)).length;
+
     // 8. NEGATIVE CONTROL. The Torid is hand-written: no gaps, no inert perks.
     //    Opened EXPLICITLY, because this used to read whatever page the block
     //    above happened to leave behind — which was the Torid only by accident
@@ -235,6 +256,15 @@ for (const lang of ["en", "zh"]) {
     r.cleanBanner === "absent", r.cleanBanner);
   check(`[${lang}] …and no chips on its perks`, r.cleanEvoChips === 0,
     `${r.cleanEvoChips} chips`);
+
+  // A BONUS THAT PAYS NOTHING SAYS WHY. Not an admission of a gap — the
+  // mechanic is fully modelled — but a mod resolving to zero in silence reads
+  // as broken, so it is the same duty.
+  check(`[${lang}] an aim mod on a form that cannot zoom says so`,
+    r.zoomLines.length === 1 && /cannot Zoom/.test(r.zoomLines[0]),
+    r.zoomLines[0] || "(no line)");
+  check(`[${lang}] …and a form that CAN zoom gets no such line`,
+    r.zoomFalsePositives === 0, String(r.zoomFalsePositives));
 }
 
 await app.finish("what the app does not model is on the page");

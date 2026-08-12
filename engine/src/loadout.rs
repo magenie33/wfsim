@@ -1070,6 +1070,11 @@ pub struct WeaponBase {
     /// kill — reloads instantly. See the ResolvedPanel field for why it is not
     /// `instant_reload_on_headshot`.
     pub instant_reload_on_kill: Option<f64>,
+    /// THIS FORM CANNOT AIM DOWN SIGHTS — see
+    /// [`crate::weapons_data::WeaponSpec::cannot_zoom`]. `resolve_for` answers
+    /// the aim question FALSE for it whatever the scenario says, so every
+    /// `while_aiming` mod, arcane and evolution pays nothing here.
+    pub cannot_zoom: bool,
     /// RESONANT RESTORE: `(per stack, max stacks)` — "On Reload From Empty:
     /// Increase Base Magazine Capacity by +N. Stacks up to Nx", in the card's
     /// own units so `resolve` can scale it: the card says BASE capacity, which
@@ -2168,6 +2173,25 @@ pub fn resolve_for(
     // four join a bucket, and this one moves the number every bucket multiplies.
     // Hence the clone, and hence only when a gate is actually open — the neutral
     // Tenno opens none, so the ordinary path allocates nothing.
+    // A FORM THAT CANNOT ZOOM CANNOT BE AIMING. The wiki's word for aiming IS
+    // "Zoom" (its page opens "Zoom (or aiming, aiming down sights (ADS))", and
+    // the Galvanized mods link it as `[[Zoom|aiming]]`), and DE settled the
+    // consequence in a patch note about Mesa's Regulators: the buffs "never
+    // actually applied due to the 'on aim' criteria not being fulfilled".
+    //
+    // Answered HERE rather than in `webapi`, for two reasons. The optimizer and
+    // every other caller get it for free — and it is per FORM, which a single
+    // request-level Tenno cannot express: the Vasto aims and its Incarnon form
+    // does not, and a cycle resolves both.
+    let aimless;
+    let tenno = if base.cannot_zoom && tenno.state.aiming {
+        let mut t = tenno.clone();
+        t.state.aiming = false;
+        aimless = t;
+        &aimless
+    } else {
+        tenno
+    };
     let gated_flat: f64 = base
         .gated
         .iter()
@@ -3439,6 +3463,65 @@ mod tests {
         // the fact a player needs before reading an unticked Braton as its
         // ceiling — and a sign-flipped transcription would break it.
         assert_eq!(roster.iter().filter(|(_, _, x, y)| y > x).count(), 3);
+    }
+
+    /// A FORM THAT CANNOT ZOOM CANNOT BE AIMING, so every aim-gated bonus pays
+    /// nothing in it — and the SAME WEAPON's base form is unaffected.
+    ///
+    /// VERBATIM (Vasto_Incarnon_Genesis): "Incarnon Form transforms into a
+    /// 6-round burst with '''6''' base [[multishot]] … has significantly higher
+    /// [[Recoil]], and cannot [[Zoom]]."
+    ///
+    /// "Zoom" is the wiki's word for the aim STATE — its page opens "Zoom (or
+    /// aiming, aiming down sights (ADS))" and the Galvanized mods write the
+    /// condition as `[[Zoom|aiming]]` — and DE settled the consequence in a
+    /// patch note about Mesa's Regulators: the buffs "never actually applied
+    /// due to the 'on aim' criteria not being fulfilled".
+    ///
+    /// The scenario is left ALONE. A player who ticks "aiming" is not corrected
+    /// and their other weapons still aim; the form answers the question for
+    /// itself, which is why this is on the weapon and not on the Tenno.
+    #[test]
+    fn a_form_that_cannot_zoom_pays_no_aim_gated_bonus() {
+        use crate::mods_data::class_pool;
+        let pool = class_pool("pistol");
+        let gc = pool.iter().find(|m| m.id == "galvanized_crosshairs")
+            .expect("galvanized_crosshairs is in the pistol pool");
+        let aiming = crate::tenno_data::default_tenno();
+        assert!(aiming.state.aiming, "the default player aims");
+        let hipfire = tenno_who(|s| s.aiming = false);
+
+        let cc = |id: &str, t: &crate::tenno_data::Tenno| {
+            let base = WeaponBase::from_data(id, false, &[]);
+            resolve_for(&base, &[gc], StackPolicy::AssumedMax, t).crit_chance
+        };
+
+        // THE BASE FORM is an ordinary weapon: aiming is worth something and
+        // hipfiring is not.
+        let (base_aim, base_hip) = (cc("vasto_prime", aiming), cc("vasto_prime", &hipfire));
+        assert!(base_aim > base_hip,
+            "the base form pays the aim mod: {base_aim} vs {base_hip}");
+
+        // THE INCARNON FORM cannot zoom, so the two are the same number — the
+        // mod is equipped, resolves, and grants nothing.
+        let (inc_aim, inc_hip) = (cc("vasto_prime_incarnon", aiming),
+                                  cc("vasto_prime_incarnon", &hipfire));
+        assert!((inc_aim - inc_hip).abs() < 1e-9,
+            "cannot Zoom means the aim mod pays nothing: aiming {inc_aim}, hipfire {inc_hip}");
+
+        // …and it is the FLAG doing it, not the weapon happening to ignore crit
+        // mods: a weapon whose form CAN zoom still pays.
+        let (lex_aim, lex_hip) = (cc("lex_prime_incarnon", aiming),
+                                  cc("lex_prime_incarnon", &hipfire));
+        assert!(lex_aim > lex_hip,
+            "an Incarnon form that CAN zoom still pays it: {lex_aim} vs {lex_hip}");
+
+        // THE ROSTER IS CLOSED at the two Vastos — the only "cannot Zoom" in the
+        // whole Incarnon Evolutions page. The four "-30% Zoom" perks there cut
+        // magnification and leave the aim state alone, so they must not appear.
+        let flagged: Vec<&str> = crate::weapons_data::all().iter()
+            .filter(|w| w.cannot_zoom).map(|w| w.id.as_str()).collect();
+        assert_eq!(flagged, vec!["vasto_incarnon", "vasto_prime_incarnon"], "{flagged:?}");
     }
 
     /// The sim used to satisfy `while_aiming` silently, so every aim-gated

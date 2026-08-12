@@ -43,6 +43,33 @@ co_behavior: additive_with_base_damage
 unmodeled:
   - "damage falloff from 16 m to 32 m (down to 97% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
 
+# CANNOT AIM DOWN SIGHTS, so nothing gated on aiming pays in this form.
+#
+# VERBATIM (Vasto_Incarnon_Genesis, the form's own description):
+#   *Incarnon Form transforms into a 6-round burst with '''6''' base [[multishot]]
+#    along with increased [[Critical Chance]] and [[Critical Multiplier]].
+#    However, it has reduced base damage and [[Status Chance]] per bullet, has
+#    significantly higher [[Recoil]], and cannot [[Zoom]].
+#
+# "ZOOM" IS THE WIKI'S WORD FOR AIMING, not for magnification: the [[Zoom]] page
+# it links to opens "Zoom (or aiming, aiming down sights (ADS))", and the
+# Galvanized mods write the state as `[[Zoom|aiming]]`.
+#
+# AND DE SETTLED WHAT IT COSTS, in a patch note about the one other thing in the
+# game that cannot zoom — Mesa's Regulators: "Removed ability to unintentionally
+# equip Hydraulic Crosshairs and Sharpened Bullets on Mesa's Regulators.
+# Although the buff appeared to trigger, it never actually applied due to the
+# 'on aim' criteria not being fulfilled." The Regulators page draws the same
+# conclusion for four mods at once: "Since Regulators cannot zoom, they also
+# cannot benefit from Embedded Catalyzer, Hydraulic Crosshairs, Pressurized
+# Magazine, or Sharpened Bullets."
+#
+# THE BASE FORM AIMS NORMALLY — this is per FORM, and only this entry carries
+# the flag. It is also the ONLY "cannot Zoom" in the whole Incarnon Evolutions
+# page; the four "-30% Zoom" perks there reduce magnification and leave the
+# aim state alone.
+cannot_zoom: true
+
 attack:
   trigger: burst
   # THE BURST. The listed `fire_rate` counts PULLS, not rounds — so reading it

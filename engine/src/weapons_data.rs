@@ -555,6 +555,23 @@ pub struct FormRef {
 pub struct WeaponSpec {
     pub id: String,
     pub name: String,
+    /// THIS ENTRY CANNOT AIM DOWN SIGHTS, so nothing gated on aiming pays.
+    ///
+    /// On the wiki "Zoom" IS the word for aiming — its page opens "Zoom (or
+    /// aiming, aiming down sights (ADS))", and the Galvanized mods link the
+    /// word as `[[Zoom|aiming]]`. So the Vasto's "cannot Zoom" is a statement
+    /// about the aim STATE, not about magnification.
+    ///
+    /// DE settled what that costs, in a patch note about Mesa's Regulators:
+    /// "Removed ability to unintentionally equip Hydraulic Crosshairs and
+    /// Sharpened Bullets on Mesa's Regulators. Although the buff appeared to
+    /// trigger, it never actually applied due to the 'on aim' criteria not
+    /// being fulfilled."
+    ///
+    /// PER FORM, not per weapon: the Vasto aims fine and its Incarnon form does
+    /// not, and each form is its own entry.
+    #[serde(default)]
+    pub cannot_zoom: bool,
     /// WHAT THIS ENTRY DOES NOT MODEL, in the reader's own language, one
     /// sentence per gap.
     ///
@@ -1697,6 +1714,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         by_round_reload,
         innate_co_per_type: 0.0,
         gated: Vec::new(),
+        cannot_zoom: s.cannot_zoom,
         bodyshot_cc_mult: 1.0,
         round_restore_on_status: None,
         instant_reload_on_kill: None,
