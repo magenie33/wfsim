@@ -199,6 +199,21 @@ enum EvoEffect {
     /// DOES use base damage increase Evolution"), so applying the correction
     /// everywhere would dock a perk the wiki never docked.
     BaseDamageBelowHalfHealth { rate: f64, excludes_own_flat: bool },
+    /// KING'S GAMBIT — one bullet, two brackets, and the wiki names both.
+    ///
+    /// VERBATIM (Sicarus_Incarnon_Genesis): "x0 Critical Chance on Bodyshots,
+    /// +150% Critical Chance on Weakpoint Hits", under which:
+    ///   *Bodyshot modifier is multiplicative with all sources of Critical
+    ///    Chance, effectively making non-headshot critical hits impossible.
+    ///   *Weakpoint modifier is additive with mods such as Pistol Gambit
+    ///
+    /// So `bodyshot_mult` MULTIPLIES a body pellet's chance and
+    /// `weakpoint_bonus` joins `weakpoint_cc_rel`, the same relative bracket
+    /// Pistol Acuity uses. Both are per-PELLET, which is what keeps them out of
+    /// the panel's crit chance — and that is what makes the same page's other
+    /// note true for free: Wiseman's Regard, which reads "current Critical
+    /// Chance", is "**Not** affected by the King's Gambit Evolution II perk".
+    CritChanceByBodyPart { bodyshot_mult: f64, weakpoint_bonus: f64 },
     /// ONE STAT FROM THE OTHER, capped. `from_crit` says which way round:
     /// Wiseman's Regard reads crit and pays status, High Ground the mirror.
     DerivedStat { from_crit: bool, rate: f64, cap: f64 },
@@ -675,6 +690,7 @@ impl EvolutionDef {
                 | EvoEffect::BaseDamageBelowHalfHealth { .. }
                 | EvoEffect::GatedByTenno { .. }
                 | EvoEffect::DerivedStat { .. }
+                | EvoEffect::CritChanceByBodyPart { .. }
                 | EvoEffect::CritOnUndamaged { .. }
                 | EvoEffect::ReloadSpeedBonus(_)
                 | EvoEffect::CritMultiplierBelowCritChance { .. }
@@ -854,6 +870,10 @@ impl EvolutionDef {
                 EvoEffect::CritOnUndamaged { crit_chance, crit_multiplier } => format!(
                     "+{:.0}% BASE crit chance and +{crit_multiplier}x BASE crit damage while the                      target is undamaged (mods multiply both)",
                     crit_chance * 100.0
+                ),
+                EvoEffect::CritChanceByBodyPart { bodyshot_mult, weakpoint_bonus } => format!(
+                    "x{bodyshot_mult:.0} crit chance on body shots, +{:.0}% BASE crit chance on weak points (additive with the crit mods)",
+                    weakpoint_bonus * 100.0
                 ),
                 EvoEffect::DerivedStat { from_crit, rate, cap } => format!(
                     "+{:.0}% of current {} as base {}, up to +{:.0}%",
@@ -1188,6 +1208,12 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // bracket, so a multishot gate and a crit-damage gate cannot be
         // confused for one another, and an unreadable `condition:` falls to
         // Inert rather than paying out unconditionally.
+        "crit_chance_by_body_part" => EvoEffect::CritChanceByBodyPart {
+            // No defaults that pay out: a missing multiplier is 1 (ordinary),
+            // a missing bonus is 0.
+            bodyshot_mult: f(v, "bodyshot_mult").unwrap_or(1.0),
+            weakpoint_bonus: f(v, "weakpoint_bonus").unwrap_or(0.0),
+        },
         "status_chance_from_crit_chance" => EvoEffect::DerivedStat {
             from_crit: true,
             rate: f(v, "rate").unwrap_or(0.0),
@@ -1600,6 +1626,13 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::GatedByTenno { gate, grant, value } => {
                     base.gated.push((*gate, *grant, *value));
+                }
+                EvoEffect::CritChanceByBodyPart { bodyshot_mult, weakpoint_bonus } => {
+                    // MULTIPLICATIVE, so it composes rather than replaces —
+                    // two such perks on one weapon would multiply, which is
+                    // what "multiplicative with all sources" means.
+                    base.bodyshot_cc_mult *= *bodyshot_mult;
+                    base.evo_weakpoint_cc_rel += *weakpoint_bonus;
                 }
                 EvoEffect::DerivedStat { from_crit, rate, cap } => {
                     if *from_crit {
@@ -2731,7 +2764,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 43;
+        const CEILING: usize = 41;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,

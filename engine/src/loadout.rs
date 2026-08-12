@@ -1039,6 +1039,21 @@ pub struct WeaponBase {
     /// on the raw weapon and the Tenno is not there; folded in `resolve_for`,
     /// which has both.
     pub gated: Vec<(TennoGate, GatedGrant, f64)>,
+    /// King's Gambit: a MULTIPLIER on crit chance for a hit that did NOT land on
+    /// a weak point. 1.0 = ordinary.
+    ///
+    /// VERBATIM (Sicarus_Incarnon_Genesis): "x0 Critical Chance on Bodyshots,
+    /// +150% Critical Chance on Weakpoint Hits", with the note that settles the
+    /// bracket — "Bodyshot modifier is MULTIPLICATIVE with all sources of
+    /// Critical Chance, effectively making non-headshot critical hits
+    /// impossible". Its other half is additive and already has a home:
+    /// "Weakpoint modifier is ADDITIVE with mods such as Pistol Gambit", which
+    /// is `weakpoint_cc_rel`.
+    pub bodyshot_cc_mult: f64,
+    /// King's Gambit's weak-point half, held on the WEAPON so it can seed the
+    /// same bucket the mods write to — "Weakpoint modifier is additive with
+    /// mods such as Pistol Gambit". Same shape as `evo_reload_bonus`.
+    pub evo_weakpoint_cc_rel: f64,
     /// Wiseman's Regard: `(rate, cap)` — "Increase Base Status Chance by 30% of
     /// current Critical Chance, up to 40%".
     ///
@@ -1941,6 +1956,9 @@ pub struct ResolvedPanel {
     /// ABSOLUTE crit chance added on weak-point hits only (base_cc × Σ
     /// relative weak-point CC bonuses); part-conditional, all policies.
     pub weakpoint_cc_rel: f64,
+    /// King's Gambit's other half: a MULTIPLIER on a non-weak-point pellet's
+    /// crit chance, applied after everything else. 1.0 = ordinary.
+    pub bodyshot_cc_mult: f64,
     /// Sharpened Bullets under Emergent: ABSOLUTE crit-damage add as a timed
     /// buff (starts inactive), granted/refreshed on every kill.
     pub cd_on_kill: Option<TimedBuff>,
@@ -2152,7 +2170,9 @@ pub fn resolve_for(
     let (mut co_stack, mut ms_stack): (Option<StackSpec>, Option<StackSpec>) = (None, None);
     let mut cc_on_headshot: Option<TimedBuff> = None;
     let mut cc_stack: Option<StackSpec> = None;
-    let (mut wp_dmg, mut wp_cc) = (0.0, 0.0);
+    // …and the weak-point crit bucket starts at the EVOLUTION's, not at zero,
+    // because the card says it is additive with the mods that write here.
+    let (mut wp_dmg, mut wp_cc) = (0.0, base.evo_weakpoint_cc_rel);
     let mut cd_on_kill: Option<TimedBuff> = None;
     let mut fr_on_reload: Option<TimedBuff> = None;
     let mut bd_on_reload: Option<TimedBuff> = None;
@@ -3013,6 +3033,7 @@ pub fn resolve_for(
         weakpoint_damage: wp_dmg,
         // RELATIVE; direct-head only, so the sim uses the direct base.
         weakpoint_cc_rel: wp_cc,
+        bodyshot_cc_mult: base.bodyshot_cc_mult,
         cd_on_kill,
         fr_on_reload,
         rs_on_reload,

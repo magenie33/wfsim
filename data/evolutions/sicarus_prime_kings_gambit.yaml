@@ -9,13 +9,36 @@ description: "Increase Base Damage by +40. x0 Critical Chance on Bodyshots, +150
 selection: choose_one
 
 effects:
+  # VERBATIM (Sicarus_Incarnon_Genesis, EVO2, the row's effect cell and its notes):
+  #   * Increase Base Damage by '''+X''' (Sicarus) / '''+X''' (Prime)
+  #   *'''x0''' [[Critical Chance]] on Bodyshots, '''+150%''' Critical Chance on
+  #    Weakpoint Hits.
+  #   | X = 50   | X = 40
+  #   * Bodyshot modifier is multiplicative with all sources of Critical
+  #     Chance, effectively making non-headshot critical hits impossible.
+  #   ** Citrine's Crystallize is an exception to this.
+  #   * Weakpoint modifier is additive with mods such as Pistol Gambit
+  #
   # from: "Increase Base Damage by +40"
   - kind: flat_base_damage
     value: 40.0
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "x0 Critical Chance on Bodyshots, +150% Critical Chance on Weakpoint Hits"
-  - kind: unmodelled_x_critical_chance_on_bodyshots_critical_chance_on_wea
+  # ONE BULLET, TWO BRACKETS, and the notes name both — which is the whole
+  # reason this could be modelled at all. The bodyshot half MULTIPLIES, so no
+  # amount of crit chance can buy a body crit back; the weakpoint half is
+  # ADDITIVE with the crit mods, so it multiplies the weapon's BASE crit chance
+  # exactly as Pistol Gambit's own +120% does.
+  #
+  # Citrine's Crystallize is not an exception this engine has to make: no
+  # Warframe ability sets crit chance here (UNMODELLED.md, the Warframe layer).
+  #
+  # A CONSE'''UENCE WORTH NAMING: neither half reaches the panel's crit chance,
+  # because both are decided per PELLET by where it landed. That is what makes
+  # the same page's note about the tier-3 perk true without any code —
+  # Wiseman's Regard reads "current Critical Chance" and is "**Not** affected by
+  # the King's Gambit Evolution II perk".
+  - kind: crit_chance_by_body_part
+    bodyshot_mult: 0.0
+    weakpoint_bonus: 1.50
 
 source:
   url: https://wiki.warframe.com/w/Sicarus_Incarnon_Genesis

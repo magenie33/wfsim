@@ -1697,6 +1697,8 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         by_round_reload,
         innate_co_per_type: 0.0,
         gated: Vec::new(),
+        bodyshot_cc_mult: 1.0,
+        evo_weakpoint_cc_rel: 0.0,
         base_status_from_crit: None,
         base_crit_from_status: None,
         bd_below_half_health: 0.0,

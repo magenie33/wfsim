@@ -1473,6 +1473,9 @@ pub struct DummyParams {
     pub weakpoint_damage: f64,
     /// ABSOLUTE crit chance added on weak-point pellets only (Acuity).
     pub weakpoint_cc_rel: f64,
+    /// King's Gambit: MULTIPLIES a non-weak-point pellet's crit chance.
+    /// 1.0 = ordinary; the card's x0 makes a body crit impossible.
+    pub bodyshot_cc_mult: f64,
     /// Sharpened Bullets (Emergent): ABSOLUTE crit-damage add as a timed buff
     /// (starts inactive), granted/refreshed on every kill.
     pub cd_on_kill: Option<crate::loadout::TimedBuff>,
@@ -2190,6 +2193,7 @@ impl DummyParams {
             crit_tier_upgrade_chance: panel.crit_tier_upgrade_chance,
             slash_on_crit: panel.slash_on_crit,
             weakpoint_cc_rel: panel.weakpoint_cc_rel,
+            bodyshot_cc_mult: panel.bodyshot_cc_mult,
             cd_on_kill: panel.cd_on_kill,
             fr_on_reload: panel.fr_on_reload,
             bd_on_reload: panel.bd_on_reload,
@@ -2428,6 +2432,7 @@ impl Default for DummyParams {
             crit_tier_upgrade_chance: 0.0,
             slash_on_crit: 0.0,
             weakpoint_cc_rel: 0.0,
+            bodyshot_cc_mult: 1.0,
             cd_on_kill: None,
             fr_on_reload: None,
             bd_on_reload: None,
@@ -5859,6 +5864,15 @@ pub fn run_once_traced(
                 } else {
                     0.0
                 };
+            // KING'S GAMBIT, the other half of the same bullet: "x0 Critical
+            // Chance on Bodyshots". MULTIPLICATIVE, and the card's own note is
+            // why it is applied here rather than folded into a bucket —
+            // "Bodyshot modifier is multiplicative with all sources of Critical
+            // Chance, effectively making non-headshot critical hits impossible".
+            // A bucket term could be cancelled by enough crit chance; a x0 here
+            // cannot, which is the whole perk.
+            let cc_pellet =
+                if part.is_head { cc_pellet } else { cc_pellet * ap.bodyshot_cc_mult };
             // GOTVA PRIME: an armed pellet's crit chance is SET, replacing the
             // modded value and the weak-point bonus alike — "Set Critical
             // Chance ignores all other modifiers, whether from mods or Warframe
@@ -8054,6 +8068,77 @@ mod tests {
         assert_eq!(from_empty, 0,
             "every transform here happens on eight rounds — none is a reload from \
              empty, yet it earned {from_empty} (the plain reload trigger earned {on_reload})");
+    }
+
+    /// KING'S GAMBIT: a body shot cannot crit, and a weak point crits more.
+    ///
+    /// VERBATIM (Sicarus_Incarnon_Genesis), the bullet and the two notes that
+    /// name its brackets:
+    ///   *'''x0''' [[Critical Chance]] on Bodyshots, '''+150%''' Critical Chance on
+    ///    Weakpoint Hits.
+    ///   * Bodyshot modifier is multiplicative with all sources of Critical
+    ///     Chance, effectively making non-headshot critical hits impossible.
+    ///   * Weakpoint modifier is additive with mods such as Pistol Gambit
+    ///
+    /// "Effectively making non-headshot critical hits impossible" is the sharp
+    /// claim and it is asserted against a build carrying a crit-chance MOD: a
+    /// bucket term would be cancelled by enough crit chance, a multiplier
+    /// cannot, and only the second reading survives a Primed Pistol Gambit.
+    #[test]
+    fn kings_gambit_kills_body_crits_and_pays_the_weak_point_additively() {
+        let perk = ["sicarus_prime_evo1_incarnon_form", "sicarus_prime_kings_gambit"];
+        let panel = |evo: &[&str], mods: &[&crate::loadout::ModDef]| {
+            let base = crate::loadout::WeaponBase::from_data("sicarus_prime", false, evo);
+            crate::loadout::resolve(&base, mods, crate::loadout::StackPolicy::AssumedMax)
+        };
+        let pool = crate::mods_data::class_pool("pistol");
+        let pg = pool.iter().find(|m| m.id == "primed_pistol_gambit").expect("primed_pistol_gambit");
+
+        // THE PANEL IS UNTOUCHED. Both halves are decided by where a pellet
+        // landed, so neither is a panel number — which is also what makes
+        // Wiseman's Regard ignore this perk, as the same page says.
+        let bare = panel(&[], &[]);
+        let with = panel(&perk, &[]);
+        assert!((bare.crit_chance - with.crit_chance).abs() < 1e-9,
+            "the panel's crit chance does not move: {} vs {}", bare.crit_chance, with.crit_chance);
+        assert!((with.weakpoint_cc_rel - 1.50).abs() < 1e-9,
+            "the weak-point half seeds the bucket the crit mods write to: {}",
+            with.weakpoint_cc_rel);
+        assert!((with.bodyshot_cc_mult - 0.0).abs() < 1e-9, "x0: {}", with.bodyshot_cc_mult);
+        assert!((panel(&[], &[]).bodyshot_cc_mult - 1.0).abs() < 1e-9, "without the perk, ordinary");
+
+        // ADDITIVE WITH THE MODS: Primed Pistol Gambit is +187%, so the weak
+        // point sees base x (1 + 1.87 + 1.50) and the body sees base x (1+1.87)
+        // — before the x0 takes it. The two brackets are read off the panel
+        // because the sim reads them from exactly there.
+        let modded = panel(&perk, &[pg]);
+        let b = modded.base_crit_chance;
+        let want_wp = modded.crit_chance + b * 1.50;
+        assert!(want_wp > modded.crit_chance, "the weak point is worth more");
+
+        // …AND IN THE FIGHT. Two targets, one all head and one all body, so the
+        // crit rate is a direct reading of the two branches rather than a blend.
+        let run = |evo: &[&str], head: bool| {
+            let base = crate::loadout::WeaponBase::from_data("sicarus_prime", false, evo);
+            let panel = crate::loadout::resolve(&base, &[pg], crate::loadout::StackPolicy::AssumedMax);
+            let mut p = DummyParams::from_panel(
+                &panel, &crate::arena::Arena::training(20.0), &ArcaneFx::none());
+            p.body_parts = vec![BodyPart {
+                name: (if head { "head" } else { "body" }).into(),
+                aim_weight: 1.0, multiplier: 1.0, is_head: head, crit_bonus: false,
+            }];
+            p.duration_secs = 20.0;
+            let s = monte_carlo(&p, 8, 5);
+            s.mean_crit_rate
+        };
+        let body_off = run(&[], false);
+        assert!(body_off > 0.10, "sanity: without the perk a body shot crits ({body_off})");
+        let body_on = run(&perk, false);
+        assert_eq!(body_on, 0.0,
+            "x0 is multiplicative, so a body crit is impossible even under Primed              Pistol Gambit — got a crit rate of {body_on}");
+        let head_on = run(&perk, true);
+        assert!(head_on > run(&[], true),
+            "and a weak point crits MORE with the perk: {head_on} vs {}", run(&[], true));
     }
 
     /// VICIOUS PROMISE: the first arrow only, and OVERGUARD does not count.

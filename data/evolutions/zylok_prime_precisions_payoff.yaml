@@ -18,6 +18,21 @@ effects:
   # from: "Increase Base Damage by +30"
   - kind: flat_base_damage
     value: 30.0
+  # WHY THIS ONE STAYS INERT, and it is not the perk's fault: the trigger needs
+  # a firing mode this entry does not model. The card's own note defines it —
+  # "Stacks are generated if both shots from holding and releasing Zylok's
+  # trigger are headshots" — and `data/weapons/secondary/zylok.yaml` declares
+  # the gap it depends on: "the duplex trigger is not modelled — one pull fires
+  # TWO rounds in game and this entry paces one per pull". With no burst there
+  # is no pair of shots to ask about, so a trigger for it would be a rule that
+  # can never be true rather than a model of the card.
+  #
+  # (The weapon's own banner is where a player is told; this is the pointer for
+  # the next reader of the yaml. The other two notes are already settled and
+  # will apply the day the duplex is: "lost on reload or switching to Incarnon
+  # Form" is `cleared_by: magazine_refilled`, and "Incarnon Form cannot trigger
+  # burst headshots, as it has a Charge trigger instead of Duplex" needs no rule
+  # — that form has no burst either.)
   # NOT MODELLED — no rule for this clause, so it loads as
   # `EvoEffect::Inert` and both the builder and the optimizer print it
   # as such. VERBATIM: "On Burst Headshots: Increase Base Damage by +20"
