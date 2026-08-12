@@ -216,6 +216,92 @@ under `Blob Impact`, and whose yaml carries a `projectile_speed_mps` — the
 `shot_type: hit_scan` on that entry looks like the odd field, not the rule), and
 nothing else.
 
+### The damage column is a FREE CROSS-CHECK of the whole roster
+
+"Attack Unmodded Damage" is the whole SHOT — every pellet of it — while a weapon
+yaml carries the per-projectile damage and the pellet count separately. So
+`base_vector.total() x base_multishot` has to reproduce it, and
+`every_catalog_row_reproduces_our_shot_damage` asserts that for all 38 rows the
+roster carries, with `every_catalog_radial_row_reproduces_our_explosion` for the
+four radial ones.
+
+That is not a CO check and it found a CO-unrelated bug on the first run
+(2026-08-12): **both Bronco Incarnon entries had `multishot: 1.0` where the base
+forms had 7**, so the Incarnon Bronco dealt ONE SEVENTH of its shot — 22 against
+154, and 34 against 238 on the Prime. A lost pellet count is invisible
+everywhere else: the damage per projectile stays right and the panel stays
+plausible.
+
+Every other multi-pellet entry was checked the same way and is correct — the
+Boar pair, all four Struns, the Ballistica Prime and the Felarx have genuinely
+single-projectile Incarnon forms, confirmed against each weapon's infobox.
+
+### The exclusion rows check their OWN arithmetic
+
+Each of the eleven prints two damage figures and a percentage — "100 or 124
+(with Evolution II)" against "100% or 81%" — and the second percentage is
+`unmodded/evolved`, which is exactly what `co_base_fraction` becomes when the
+named perk is applied. So the row checks itself, and
+`the_eleven_evolution_exclusion_rows_reproduce_their_own_percentages` fails if
+the flag is missing, on the wrong perk, or on a perk whose flat damage does not
+match. Six negative controls assert the unnamed tier-mates still feed CO in
+full.
+
+It found the **Vasto Prime** still missing its flag (2026-08-12), which the
+earlier sweep of eight had left behind.
+
+---
+
+## OPEN QUESTIONS on this catalog (2026-08-12) — not decided, and worth a measurement
+
+### 1. Does Adding CO omit EVERY Incarnon base-damage evolution, or only eleven?
+
+The page's own **Math** section says, of Additive-stacking CO:
+
+> Damage multipliers or effects that are ignored with Additive Stacking CO-like
+> bonuses: … **Base Damage increases from Incarnon Genesis Evolutions.**
+
+Stated generally. But the **catalog** lists only eleven rows carrying
+"CO-bonus does not use base damage increase Evolution", and its own preamble
+says anything not listed is the intended 100%. The owner's ruling follows the
+catalog: *"只要不在co表上，一律视为正常的…100%的加算"*.
+
+**The two cannot both be right, and the gap is the whole roster.** Measured:
+**107** (entry, perk) pairs are Adding, carry a flat-damage evolution, and are
+NOT on the eleven — every Incarnon weapon with a damage perk, essentially. If
+the Math section is right, all of them are overstating CO today; if the catalog
+is right, they are all correct.
+
+Nothing has been changed on this. It is one in-game measurement — equip a
+flat-damage evolution and a Galvanized mod on any Adding weapon that is not one
+of the eleven, and read whether the CO term moved.
+
+### 2. The Lato Vandal exclusion row contradicts the catalog's own convention
+
+Every other multi-pellet exclusion row is PER PELLET: the Bronco Prime's
+238 -> 448 is exactly 7 x 30 and the Vasto Prime's 420 -> 564 is exactly 6 x 24.
+The Lato Vandal's is 152 -> 174, i.e. its +22 landing ONCE on a 2-pellet shot;
+per pellet it would be 196.
+
+The engine treats a flat base-damage evolution as a BASE DAMAGE stat, which a
+multishot weapon lists per projectile — so per pellet, which agrees with the
+catalog on both other rows, and two cards say it outright ("Base Damage increase
+is applied per pellet in Incarnon Form" — the Vasto's Lone Gun, the Soma's Fresh
+Havoc). The row is treated as the outlier and the test carries our number with
+the reasoning beside it.
+
+### 3. The wiki's SOURCES list is missing the Burston
+
+The page's "Sources of Condition Overload-Style Bonuses" names nine Genesis
+perks; the roster carries **sixteen** evolution CO grants and every one was
+checked against a Genesis page. The two the list omits are
+`burston_fatal_affliction` and `burston_prime_fatal_affliction`, and the Burston
+Genesis page carries the row: *"+40% Direct Damage per Status Type affecting the
+target."* Ours is right and the list is incomplete — recorded so the next audit
+does not "fix" them away.
+
+---
+
 ### Where this has already gone wrong
 
 - **Zylok / Zylok Prime, 2026-08-11.** Both radials were filed as "no CO catalog

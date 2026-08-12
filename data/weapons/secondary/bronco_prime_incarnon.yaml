@@ -47,7 +47,15 @@ attack:
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 3
-  multishot: 1.0
+  # SEVEN PELLETS, like the base form. This entry read 1 until 2026-08-12, so
+  # the Incarnon Bronco was dealing ONE SEVENTH of its shot.
+  #
+  # The wiki's infobox states it twice over — "Total Damage 238" beside
+  # "Multishot 7 (34.00 damage per projectile)" — and the Condition Overload
+  # catalog's "Attack Unmodded Damage" column carries the same 238, which is
+  # what caught it: that column is the SHOT total, so `damage x multishot` has
+  # to reproduce it (docs/CATALOGS.md).
+  multishot: 7.0
   ammo_cost: 1                  # of the 20-round charge pool
   crit_chance: 0.24
   crit_multiplier: 3.2

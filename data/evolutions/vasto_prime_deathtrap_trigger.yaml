@@ -6,6 +6,24 @@ description: "Increase Base Damage by +24. On Equip From Primary: Increase Base 
 # THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
 # of them carry the same ladder; a value that differs between them is
 # printed per variant by the wiki and transcribed per variant here.
+# CONDITION OVERLOAD — this perk's added base is EXCLUDED from the CO term.
+# The catalog's Vasto Prime row, verbatim:
+#
+#   Vasto Prime | Incarnon Mode | Projectile | 420 or 564 (with Evolution II
+#     Perk 2) | 420 | 100% or 74% | Adding | "CO-bonus does not use base damage
+#     increase Evolution"
+#
+# The arithmetic ties it to THIS perk and to this variant. EVO2's perks are
+# Lone Gun (Perk 1) and Deathtrap Trigger (Perk 2), both '''+24''' on the Prime; the
+# row names Perk 2, so only this one is discrepant and Lone Gun feeds the CO
+# term in full. 564 - 420 = 144 = 6 pellets x 24, which is the row's own note on
+# Lone Gun read back — "Base Damage increase is applied per pellet in Incarnon
+# Form" — and 420/564 = 74.5% is the third column.
+#
+# THE NON-PRIME VASTO HAS NO ROW, so `vasto_deathtrap_trigger` stays ordinary
+# and its +66 feeds CO in full. Same Genesis, different weapons
+# (docs/CATALOGS.md).
+co_base_excludes_this_evolution: true
 selection: choose_one
 
 effects:
