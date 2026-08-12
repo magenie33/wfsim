@@ -11,6 +11,21 @@ benchmark: single_target
 source: submissions
 engine: a58de4081880aca6fa05525d5155f9a3a8bfbfac
 entries:
+  - weapon: akarius_prime
+    mode: base
+    score: 4.073533732454714
+    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, lethal_torrent, magnetic_might, ice_storm, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: akarius_prime
+    mode: base
+    score: 2.1730085985574292
+    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, ice_storm, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: akarius_prime
+    mode: base
+    score: 1.227381848305511
+    mods: [primed_fulmination, galvanized_diffusion, primed_target_cracker, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
   - weapon: angstrum
     mode: cycle
     score: 10.688120914046117
@@ -3236,6 +3251,11 @@ entries:
     score: 5.656661941466439
     mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     arcanes: [primary_crux]
+  - weapon: shedu
+    mode: base
+    score: 3.079128237777369
+    mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, hellfire]
+    arcanes: [primary_crux]
   - weapon: sicarus_prime
     mode: cycle
     score: 46.251765111071734
@@ -4226,6 +4246,10 @@ entries:
     mode: base
     score: 0.2726538030750728
     mods: [heavy_caliber, split_chamber, serration, rifle_elementalist, vile_acceleration, primed_cryo_rounds, infected_clip, hellfire]
+  - weapon: verglas_prime
+    mode: base
+    score: 0.21300496984746992
+    mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, thermite_rounds, malignant_force]
   - weapon: verglas_prime
     mode: base
     score: 0.21143797886053525
