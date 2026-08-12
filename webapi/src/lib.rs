@@ -3071,6 +3071,45 @@ pub fn panel_json(v: &Value) -> Value {
         }
     }
 
+    // A SET WHOSE MEMBERS ARE NOT ALL WEAPON MODS HAS A LOWER CEILING HERE than
+    // it does in game, and the player has to be told the number rather than
+    // reading 20% and assuming it is the cap.
+    //
+    // "Set Mods … offer increasing bonuses when one or more mods in a set are
+    // equipped on the player's Warframe AND weapons … Only the number of
+    // equipped mods within the set dictates the Set Bonus strength" (wiki,
+    // Set_Mods). The Vigilante set is six, and two of them — Vigor and Pursuit
+    // — go on the FRAME, which this engine has no loadout for. So a weapon
+    // build tops out at 4 x 5% = 20% against the game's 30%.
+    //
+    // DERIVED, not written down: `members` is the set's real size and the
+    // weapon-side count is however many of our mods name it, so a set we later
+    // complete stops printing this on its own.
+    {
+        use std::collections::BTreeSet;
+        let mut said: BTreeSet<&str> = BTreeSet::new();
+        for m in &refs {
+            let Some(set_id) = m.set else { continue };
+            if !said.insert(set_id) {
+                continue;
+            }
+            let Some(def) = wfsim_engine::mod_sets_data::set_def(set_id) else { continue };
+            let ours = wfsim_engine::mod_sets_data::members_carried(set_id);
+            if ours >= def.members {
+                continue;
+            }
+            conditionals.push(json!({
+                "mod": def.name,
+                "desc": format!("set bonus: {:.0}% per equipped member", def.per_mod * 100.0),
+                "active": true,
+                "why": format!(
+                    "{} of the set's {} members are weapon mods — the rest go on the WARFRAME,                      which this sim has no loadout for. So a build here tops out at {:.0}%,                      against {:.0}% in game.",
+                    ours, def.members, f64::from(ours) * def.per_mod * 100.0,
+                    f64::from(def.members) * def.per_mod * 100.0),
+            }));
+        }
+    }
+
     // A FORM THAT CANNOT ZOOM CANNOT BE AIMING, and a mod that pays nothing has
     // to say so on the page rather than just resolving to zero. The engine
     // already answers the aim question FALSE for such a form; this is the half

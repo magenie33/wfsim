@@ -68,6 +68,16 @@ function detectLang() {
 }
 let LANG = localStorage.getItem("wfsim-lang") || detectLang();
 let I18N = null; // active locale's name overlay, fetched in init()
+// EVERY OTHER LOCALE'S NAMES, for SEARCH ONLY — never for display.
+//
+// The English page had no Chinese in it at all, so a player typing 私法 got "no
+// matches" while the mod sat in the list one row down (group report,
+// 2026-08-12). The reverse already worked, because a localized overlay keeps
+// `name_en` beside the translated name; only English lacked the other side.
+//
+// `/api/i18n` already returns every locale in one response, so this costs one
+// request on the English page and nothing anywhere else.
+let ALT_NAMES = null;
 // UI strings and effect phrases live in data/i18n/<locale>.yaml (served at
 // /api/i18n) — nothing hardcoded here. English needs no catalog: the source
 // string is the fallback.
@@ -132,9 +142,36 @@ const searchBlob = (x) => {
   // 加倍 hits the mod whose card says it (the phrase table never produced
   // those words — see officialDesc).
   const official = (I18N && ((I18N.mod_descriptions || {})[x.id] || (I18N.arcane_descriptions || {})[x.id])) || [];
-  x._search = [x.name, x.name_en, x.subtype, eff.join(" "), tf(eff.join(" ")), official.join(" ")]
+  // …plus the name every OTHER locale gives it, so a search works whichever
+  // language the page happens to be in. Display never reads these.
+  // …every OTHER locale's name, plus the ACTIVE one looked up by id. The second
+  // half matters for objects the display overlay never touched — `META.mod_pools`
+  // holds segment pools the picker does not build from, and searching those for
+  // a localized name found nothing because the name was never written onto them.
+  const byId = (tbl) => Object.values(tbl || {})
+    .map((m) => m && m[x.id]).filter((s) => typeof s === "string");
+  const alt = (ALT_NAMES || []).flatMap(byId).concat(I18N ? byId(I18N) : []);
+  x._search = [x.name, x.name_en, x.subtype, eff.join(" "), tf(eff.join(" ")),
+    official.join(" "), alt.join(" ")]
     .filter(Boolean).join(" ").toLowerCase();
+  x._searchTight = squash(x._search);
   return x._search;
+};
+// SPACES ARE NOT PART OF THE WORD. DE's Chinese names carry one — "私法 军备",
+// "野猪 Prime", "布尔斯顿 (虚坏形态)" — and 181 of the 516 names in
+// `data/i18n/zh/names.yaml` do, so a player typing the name the way it reads
+// (私法军备) found NOTHING while the mod sat in the list (group report,
+// 2026-08-12). The name is transcribed correctly and stays as DE writes it;
+// what was wrong is asking the query to reproduce a space nobody says.
+//
+// Squashing BOTH sides is a superset of the old match, never a subset: two
+// strings that matched with their spaces still match without them.
+const squash = (s) => String(s || "").replace(/\s+/g, "");
+// One predicate for every list that filters by a searchable blob.
+const searchHit = (x, q) => {
+  if (!q) return true;
+  const blob = searchBlob(x);
+  return blob.includes(q) || (x._searchTight || squash(blob)).includes(squash(q));
 };
 // Static labels: translate the first text node of every [data-i18n] element
 // (children like the .sim-hint spans stay untouched), and the placeholder of
@@ -626,7 +663,7 @@ function initWeaponSearch() {
     const q = input.value.trim().toLowerCase();
     const list = (META.weapons || [])
       .filter((w) => flt === "all" || (w.subtype || w.mod_class) === flt)
-      .filter((w) => !q || searchBlob(w).includes(q))
+      .filter((w) => searchHit(w, q))
       .sort((a, b) => (srt === "za" ? -1 : 1) * a.name.localeCompare(b.name));
     listEl.innerHTML = list.map((w) => `
       <div class="opt" data-id="${w.id}">
@@ -761,8 +798,15 @@ const QQ_GROUP = "995078378";
 
 async function init() {
   META = await api("/api/meta");
-  if (LANG !== "en") {
-    try { I18N = (await api("/api/i18n"))[LANG] || null; } catch (_) { I18N = null; }
+  {
+    let all = null;
+    try { all = await api("/api/i18n"); } catch (_) { all = null; }
+    I18N = (LANG !== "en" && all && all[LANG]) || null;
+    // Keep the OTHER locales' name tables for the search blob. English is not
+    // among them — it is already on every entity as `name` or `name_en`.
+    ALT_NAMES = all
+      ? Object.entries(all).filter(([l]) => l !== LANG).map(([, v]) => v)
+      : null;
     applyNameOverlay();
   }
   applyI18n();
@@ -5624,10 +5668,13 @@ function ddRender(id, query) {
   // carries the enemy, the level and the metric, so "no aim", "thrax" and
   // "cycle" all have to find rows or the search only works for people who
   // already know where things are.
-  const hits = cfg.items.filter((i) => !q
-    || String(i.label).toLowerCase().includes(q)
-    || String(i.hint || "").toLowerCase().includes(q)
-    || String(i.group || "").toLowerCase().includes(q));
+  const hits = cfg.items.filter((i) => {
+    if (!q) return true;
+    const blob = [i.label, i.hint, i.group].filter(Boolean).join(" ").toLowerCase();
+    // …and space-insensitively, for the same reason the mod list is: a
+    // localized label carries spaces the player does not type.
+    return blob.includes(q) || squash(blob).includes(squash(q));
+  });
   // A DISABLED item stays LISTED and greyed: "the weapon has no Incarnon form
   // while that mod is on it" is information, and a vanished option is not. It
   // is `.dis`, and `.dis` is what the click binding below skips — the one
@@ -6686,7 +6733,7 @@ function renderMenu(slotIdx, query) {
     // question the optimizer's exilus scope asks.
     .filter((m) => slotIdx !== EXILUS || m.exilus)
     .filter((m) => !pickerPrefs.pol || m.polarity === pickerPrefs.pol)
-    .filter((m) => !q || searchBlob(m).includes(q))
+    .filter((m) => searchHit(m, q))
     .sort((a, b) => {
       const g = group(a) - group(b); // current first, then equipped, then the rest
       if (g) return g;

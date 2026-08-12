@@ -81,6 +81,37 @@ pub fn sets() -> &'static [ModSetDef] {
 
 /// One set by id. `None` = a mod names a set with no definition file, which
 /// the pool test refuses.
+/// HOW MANY OF A SET'S MEMBERS THIS ENGINE CAN EQUIP.
+///
+/// A set is up to six mods spread across the Warframe AND the weapons — "Only
+/// the number of equipped mods within the set dictates the Set Bonus strength"
+/// (wiki, Set_Mods) — and this engine has no Warframe loadout. So a set whose
+/// members are not all weapon mods has a LOWER CEILING here than in game: the
+/// Vigilante set is six at 5% each, two of them (Vigor, Pursuit) go on the
+/// frame, and a weapon build tops out at 20% against 30%.
+///
+/// Counted from the data rather than written down, so a set that later becomes
+/// complete stops being reported as short on its own.
+pub fn members_carried(set_id: &str) -> u32 {
+    static COUNTS: OnceLock<Vec<(String, u32)>> = OnceLock::new();
+    let counts = COUNTS.get_or_init(|| {
+        let mut out: Vec<(String, u32)> = Vec::new();
+        for (_path, text) in crate::data::files_under("mods/") {
+            let Some(set) = text.lines().find_map(|l| l.strip_prefix("set:")) else { continue };
+            let set = set.split('#').next().unwrap_or("").trim().to_string();
+            if set.is_empty() {
+                continue;
+            }
+            match out.iter_mut().find(|(s, _)| *s == set) {
+                Some(e) => e.1 += 1,
+                None => out.push((set, 1)),
+            }
+        }
+        out
+    });
+    counts.iter().find(|(s, _)| s == set_id).map_or(0, |(_, n)| *n)
+}
+
 pub fn set_def(id: &str) -> Option<&'static ModSetDef> {
     all().iter().find(|s| s.id == id)
 }
