@@ -40,6 +40,76 @@ Columns, verbatim:
 | Torid | Toxin AoE Cloud (AoE) | 40 | 100% | Multiplying | the cloud's `takes_condition_overload: true` |
 | Shedu | Normal Attack (Projectile) | 71 | 100% | Multiplying | `shedu.yaml` → `independent` |
 
+**Rows for roster weapons that are NOT the ordinary case.** Transcribed
+2026-08-12 from `?action=raw`, which is also when this table stopped being three
+rows — the file exists so the catalog can be diffed against the wiki in one
+pass, and most of the roster's rows had been living in INCARNON.md's prose and
+in yaml comments instead. That is how five of them came to be wrong.
+
+| weapon | attack | relative | type | our entry |
+| --- | --- | --- | --- | --- |
+| Angstrum / Prisma Angstrum | **Incarnon Mode** | 100% | Multiplying | the `_incarnon` entries → `independent` |
+| Ballistica | Charged Shot | **25%** | Adding | `co_base_fraction: 0.25` |
+| Ballistica Prime | Charged Shot | **50%** | Adding | `co_base_fraction: 0.50` |
+| Ballistica Prime | Incarnon Mode | 100% | Multiplying | `independent` |
+| Rakta Ballistica | Charged Shot | **25%** | Adding | `co_base_fraction: 0.25` |
+| Miter | Charged Attack | **40%** | Adding | `co_base_fraction: 0.40` |
+| Miter | Incarnon Mode | 100% | Multiplying | `independent` |
+| Dread | Charged Attack | 50% | Adding | `co_base_fraction: 0.5` |
+| Dread | Incarnon Mode | 100% | Multiplying | `independent` |
+| Paris / Paris Prime | Charged Attack | 50% | Adding | `co_base_fraction: 0.5` |
+| Mk1-Paris | Charged Attack | 50% | Adding | `co_base_fraction: 0.5` |
+| Paris / Paris Prime | **Incarnon Mode** | 100% | Multiplying | `independent` — Mk1-Paris is NOT on this row |
+| Latron / Latron Prime | Incarnon Mode | 100% | Multiplying | `independent` — Latron Wraith is NOT on this row |
+| Felarx | Normal + Incarnon Mode | 100% | Multiplying | both `independent` |
+| Kunai | Normal Attack | 100% | Adding | ordinary |
+| Kunai / Mk1-Kunai | Incarnon Mode | 100% | Multiplying | `independent` — see the two notes below |
+| Cernos Prime | Charged Attack | 50% | Adding | `co_base_fraction: 0.5` |
+| Stug | **Blob Impact** | 0% | Does not apply | `co_behavior: inert` |
+| Zylok / Zylok Prime | Incarnon Form Radial | **90%** | Adding | radial fraction NOT declared |
+| Braton family | Incarnon Form Radial | **95%** | Adding | radial fraction NOT declared |
+| Burston / Burston Prime | Incarnon Form Radial | **24%** | Adding | radial fraction NOT declared |
+
+### "CO-bonus does not use base damage increase Evolution" — eleven rows
+
+This is the `co_base_excludes_this_evolution` flag, and it is a PERK's, not a
+weapon's: the catalog names the tier and often the perk number, and lists only
+DISCREPANT cases, so a tier-mate that also raises base damage feeds the CO term
+in full unless it is named too.
+
+Every row, with the perk the printed number identifies:
+
+| weapon | row prints | perk | our fraction |
+| --- | --- | --- | --- |
+| Atomos | 100 or 124 (Evolution II) | both tier-2 options, each +24 | 0.8065 (catalog 81%) |
+| Cestra (Normal) | 26 or 36 (Evolution II) | both, each +10 | — |
+| Cestra (Incarnon) | 50 or 60 (Evolution II) | both, each +10 | 0.8333 (catalog 83.3%) |
+| Despair | 60 or 120 (Evolution II **Perk 2**) | Stalker's Vendetta (+60); Fatal Affliction's +50 is NOT excluded | 0.5000 (catalog 50%) |
+| Dual Toxocyst | 75 or 135 (Evolution II Perk 1) | Carnage Reign | 0.5556 (catalog 56%) |
+| Furis | 100 or 128 (Evolution II) | Haven Foray + Stormburst | 0.7812 (catalog 78%) |
+| Lato Vandal | 152 or 174 (Evolution II **Perk 1**) | Haven Foray (+22) | 0.7755 — the ONE that does not reproduce, see that file |
+| Lex Prime | 1200 or 1220 (Evolution II) | both, each +20 | 0.9836 (catalog 98%) |
+| Vasto Prime | 420 or 564 (Evolution II **Perk 2**) | **UNRESOLVED** — the printed +144 matches neither tier-2 option (+24 each) | not flagged |
+| Bronco Prime | 238 or 448 (Evolution II **Perk 1**) | Speeding Bullet, +30 a pellet x7 = the 210 printed | 0.5312 (catalog 53%) |
+| Zylok Prime | 500 or 530 (Evolution II) | both, each +30 | 0.9434 (catalog 94%) |
+
+Eight of the eleven were unflagged until 2026-08-12 on the claim (INCARNON.md)
+that "the engine already excludes an evolution's flat damage". It does the
+OPPOSITE by default — including it is the normal behaviour (owner, 2026-07-30)
+and the exclusion is opt-in per perk — so the Despair and the Bronco Prime were
+computing their CO term on twice the base the game uses.
+
+### The Kunai's two notes, neither of which the engine can say yet
+
+> CO-bonus **DOES** use base damage increase Evolution; **does not factor +200%
+> (3x) bonus vs <50% hp targets, effectively additive with it**
+
+The first is the ordinary default here, so it needs nothing. The second does not
+fit any bracket the engine has: Swift Conclusion's +200% below half health joins
+the base-damage bucket, and under `Multiplying` the engine hands CO a base that
+includes it — where the row says the two should ADD. Live since the perk was
+implemented (2026-08-12).
+
 **An AoE part needs its own row to take CO at all.** CO is a direct-hit bonus
 everywhere else, which is why the engine's radial path refuses it by default and
 the Torid's cloud is the declared exception. The Shedu's explosion has NO row,

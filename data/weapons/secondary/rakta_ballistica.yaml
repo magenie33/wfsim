@@ -43,9 +43,20 @@ ammo_pickup: 40
 magazine: 20
 reload_seconds: 2
 
-# No CO catalog row for this attack, so the ordinary class — absence in that
-# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+# THE CATALOG GIVES THIS ATTACK ITS OWN FRACTION, and it is per WEAPON rather
+# than a range across the family — the row, verbatim:
+#
+#   |{{Weapon|Rakta Ballistica}}||Charged Shot||Projectile||300||75||25%||Adding||Uses uncharged damage value
+#
+# "CO Damage Bonus Relative To Base Damage" IS `co_base_fraction`: the CO term
+# multiplies 25% of this attack's damage, because the bonus is computed on the
+# UNCHARGED value while the shot deals the charged one.
+#
+# It was left unset until 2026-08-12 on a note that read the family's rows as
+# "a RANGE across five weapons, not a number for this one". Every one of them
+# is its own row with its own number.
 co_behavior: additive_with_base_damage
+co_base_fraction: 0.25
 
 attack:
   trigger: charge

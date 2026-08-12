@@ -6,6 +6,24 @@ description: "Increase Base Damage by +22. With Overshields: Increase Base Damag
 # THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
 # of them carry the same ladder; a value that differs between them is
 # printed per variant by the wiki and transcribed per variant here.
+# THIS PERK'S FLAT DAMAGE STAYS OUT OF THE CO TERM. VERBATIM (CO catalog):
+#
+#   Lato Vandal||Incarnon Mode||…||152 or 174 (with Evolution II Perk 1)||152||100% or 87%||Adding||CO-bonus does not use base damage increase Evolution
+#
+# Which perk: +22 is the difference the row prints (174 - 152); Reified Bane adds +12 and is not the perk named.
+# THE ONE ROW WHOSE FRACTION WE DO NOT REPRODUCE, and the disagreement is about
+# what "the base" IS rather than about the exclusion. The catalog prints
+# 152 -> 174 (87%); this entry is 76 per pellet at `multishot: 2.0`, so 152 is
+# its per-TRIGGER total and 174 implies the perk adding +22 to the TRIGGER
+# rather than +22 to the damage the card names. Excluding this perk from our own
+# base gives 76/98 = 77.6%.
+#
+# Ours is self-consistent — it takes out exactly the flat this perk put in, from
+# exactly the base this engine multiplies — and the catalog's arithmetic here is
+# the odd one in the set: every other row in it reproduces to the digit
+# (Despair 0.5000/50%, Bronco Prime 0.5312/53%, Lex Prime 0.9836/98%). Left as
+# ours and written down rather than tuned to match.
+co_base_excludes_this_evolution: true
 selection: choose_one
 
 effects:

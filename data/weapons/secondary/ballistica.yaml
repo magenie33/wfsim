@@ -43,12 +43,20 @@ ammo_pickup: 40
 magazine: 16
 reload_seconds: 2
 
-# CO BASE FRACTION NOT SET. The catalog's row for this family reads
-# "Charged Attack | Adding | 25-50%" — a RANGE across five weapons, not a
-# number for this one. `co_base_fraction` would express it (the Cernos
-# Prime's charged entry carries 0.5), so this is a value waiting for a
-# per-weapon reading rather than a shape the engine cannot hold.
+# THE CATALOG GIVES THIS ATTACK ITS OWN FRACTION, and it is per WEAPON rather
+# than a range across the family — the row, verbatim:
+#
+#   |{{Weapon|Ballistica}}||Charged Shot||Projectile||100||25||25%||Adding||Uses uncharged damage value
+#
+# "CO Damage Bonus Relative To Base Damage" IS `co_base_fraction`: the CO term
+# multiplies 25% of this attack's damage, because the bonus is computed on the
+# UNCHARGED value while the shot deals the charged one.
+#
+# It was left unset until 2026-08-12 on a note that read the family's rows as
+# "a RANGE across five weapons, not a number for this one". Every one of them
+# is its own row with its own number.
 co_behavior: additive_with_base_damage
+co_base_fraction: 0.25
 
 attack:
   trigger: charge

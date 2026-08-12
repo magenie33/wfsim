@@ -6,6 +6,12 @@ description: "Increase Base Damage by +60. With Dread and Hate equipped: bonus M
 # THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
 # of them carry the same ladder; a value that differs between them is
 # printed per variant by the wiki and transcribed per variant here.
+# THIS PERK'S FLAT DAMAGE STAYS OUT OF THE CO TERM. VERBATIM (CO catalog):
+#
+#   Despair||Incarnon Mode||…||60 or 120 (with Evolution II Perk 2)||60||100% or 50%||Adding||CO-bonus does not use base damage increase Evolution
+#
+# Which perk: +60 is the difference the row prints (120 - 60); its tier-mate Fatal Affliction adds +50 and is NOT in the row, so it feeds the CO term in full — the catalog lists only discrepant cases.
+co_base_excludes_this_evolution: true
 selection: choose_one
 
 effects:

@@ -6,6 +6,12 @@ description: "Increase Base Damage by +30. With Sprint Speed 1.2 or Higher: +60%
 # THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
 # of them carry the same ladder; a value that differs between them is
 # printed per variant by the wiki and transcribed per variant here.
+# THIS PERK'S FLAT DAMAGE STAYS OUT OF THE CO TERM. VERBATIM (CO catalog):
+#
+#   Bronco Prime||Incarnon Mode||…||238 or 448 (with Evolution II Perk 1)||238||100% or 53%||Adding||CO-bonus does not use base damage increase Evolution
+#
+# Which perk: +30 a PELLET across seven pellets is the 210 the row prints (448 - 238); Infused Shots adds +16 and is not it.
+co_base_excludes_this_evolution: true
 selection: choose_one
 
 effects:

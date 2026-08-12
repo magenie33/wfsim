@@ -6,6 +6,12 @@ description: "Increase Base Damage by +30. On Burst Headshots: Increase Base Dam
 # THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
 # of them carry the same ladder; a value that differs between them is
 # printed per variant by the wiki and transcribed per variant here.
+# THIS PERK'S FLAT DAMAGE STAYS OUT OF THE CO TERM. VERBATIM (CO catalog):
+#
+#   Zylok Prime||Incarnon Mode||…||500 or 530 (with Evolution II)||500||100% or 94%||Adding||CO-bonus does not use base damage increase Evolution
+#
+# Which perk: the row names the TIER, and both tier-2 options add the same +30.
+co_base_excludes_this_evolution: true
 selection: choose_one
 
 effects:

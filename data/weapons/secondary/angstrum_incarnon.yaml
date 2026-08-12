@@ -36,18 +36,18 @@ pseudo_reload:
   magazine: 120
   reload_seconds: 3.5
 
-# ORDINARY HERE, AND IT IS A QUESTION rather than an absence. The CO catalog
-# lists this weapon's FAMILY among the Multiplying entries and names one attack
-# — the rocket, which the base entry carries and sets `independent` for. This
-# form is the other one, so the row does not reach it and the recorded rule
-# applies: a CO anomaly is per-ENTRY and absence means ordinary.
+# CONDITION OVERLOAD IS INDEPENDENT ON THIS FORM, and the catalog names it:
 #
-# What makes it a question is the Felarx: asked directly, its answer was the
-# same on BOTH modes (owner, 2026-08-08), so a family on that row may well be
-# Multiplying throughout. One weapon is not a rule, and the difference is a
-# free-standing multiplier against a bucket member — worth asking when this gun
-# comes up in the per-gun pass rather than generalising from a neighbour.
-co_behavior: additive_with_base_damage
+#   {{Weapon|Angstrum}}/{{Weapon|Prisma Angstrum}}||Incarnon Mode||Projectile||30||30||100%||Multiplying
+#
+# Multiplying, at 100% of the base — so the bonus is a free-standing final
+# multiplier rather than a member of the base-damage bucket, and no fraction is
+# lost to it.
+#
+# One row for two variants, keyed `{{Weapon|A}}/{{Weapon|B}}`, which is the
+# lookup habit the Zylok cost us once already: searching either name alone finds
+# a row that looks like it belongs to the other.
+co_behavior: independent
 
 attack:
   trigger: auto

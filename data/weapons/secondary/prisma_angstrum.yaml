@@ -43,11 +43,19 @@ ammo_pickup: 3
 magazine: 1
 reload_seconds: 1.8
 
-# CONDITION OVERLOAD IS INDEPENDENT ON THIS FORM. The wiki's CO catalog
-# lists this weapon's named attack as "Multiplying", so the bonus is a
-# free-standing final multiplier rather than a member of the base-damage
-# bucket.
-co_behavior: independent
+# ORDINARY HERE, AND THE CATALOG SAYS SO BY NAMING THE OTHER FORM. The row is
+#
+#   {{Weapon|Angstrum}}/{{Weapon|Prisma Angstrum}}||Incarnon Mode||Projectile||30||30||100%||Multiplying
+#
+# and its Attack Name cell reads "Incarnon Mode" — so Multiplying belongs to the
+# transformed entry, not to this one. This form has no row, and absence means
+# ORDINARY (CATALOGS.md).
+#
+# It was the other way round until 2026-08-12, on a comment that said the
+# catalog "lists this weapon's named attack as Multiplying" without reading
+# WHICH attack the row named. That is the one mistake this catalog's own rule
+# exists to prevent: a row is transcribed for the entry it NAMES.
+co_behavior: additive_with_base_damage
 
 attack:
   trigger: charge

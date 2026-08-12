@@ -6,6 +6,12 @@ description: "Increase Base Damage by +24. With Energy Max over 700: Increase Ba
 # THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
 # of them carry the same ladder; a value that differs between them is
 # printed per variant by the wiki and transcribed per variant here.
+# THIS PERK'S FLAT DAMAGE STAYS OUT OF THE CO TERM. VERBATIM (CO catalog):
+#
+#   Atomos||Incarnon Mode||…||100 or 124 (with Evolution II)||100||100% or 81%||Adding||CO-bonus does not use base damage increase Evolution
+#
+# Which perk: the row names the TIER and not a perk number, and both tier-2 options add the same +24, so both carry it.
+co_base_excludes_this_evolution: true
 selection: choose_one
 
 effects:
