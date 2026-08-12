@@ -7,16 +7,28 @@ description: "On Punch Through Hit: 20% chance for 10% Ammo restored."
 # four Bratons, so all four carry the same ladder of nine perks. Where a value
 # DIFFERS between them the wiki's table prints a per-variant column, and the
 # number below is this weapon's.
+# "The bonus does not apply to the Incarnon form" (the row's first note).
+base_form_only: true
 selection: choose_one
 
 effects:
-  # NOT LOADED, twice over. There is no ammo-restore effect kind, and the
-  # trigger is a PUNCH THROUGH hit — which needs a second body behind the first,
-  # and the arena has one target. Both halves are out of reach of this model
-  # rather than unimplemented.
-  - kind: ammo_restore_on_punch_through
-    chance: 0.20
-    fraction: 0.10
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. VERBATIM
+  # (Braton_Incarnon_Genesis, the row's effect cell and its notes):
+  #   * On Punch Through Hit: '''20%''' chance for '''10%''' Ammo restored.
+  #   * The bonus does not apply to the Incarnon form.
+  #   * A second target does not need to be hit, the bullet just has to have
+  #     some amount of punch-through.
+  # The variant cell is one colspan="4" dash, so all four Bratons take it.
+  #
+  # THE SECOND NOTE CORRECTS WHAT THIS FILE USED TO SAY. It read that the
+  # trigger "needs a second body behind the first, and the arena has one
+  # target" — the wiki says the opposite in as many words, so the TRIGGER is
+  # perfectly reachable here and `one_target` was the wrong reason (2026-08-12).
+  # What it cannot pay out is the payload: this arena runs on infinite ammo, so
+  # a restored round buys nothing.
+  - kind: out_of_scope
+    clause: "On Punch Through Hit: 20% chance for 10% Ammo restored"
+    reason: infinite_ammo
 
 source:
   url: https://wiki.warframe.com/w/Braton_Incarnon_Genesis

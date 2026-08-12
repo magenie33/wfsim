@@ -1479,6 +1479,9 @@ pub struct DummyParams {
     /// Galvanic Reload: `(status, chance, rounds)` — a magazine restore rolled
     /// ONCE PER SHOT when the target carries that status.
     pub round_restore_on_status: Option<(DamageType, f64, f64)>,
+    /// Exact Penance: the chance a KILL reloads instantly. Rolled off the kill
+    /// COUNTER, so a status kill counts — which the card requires.
+    pub instant_reload_on_kill: Option<f64>,
     /// Sharpened Bullets (Emergent): ABSOLUTE crit-damage add as a timed buff
     /// (starts inactive), granted/refreshed on every kill.
     pub cd_on_kill: Option<crate::loadout::TimedBuff>,
@@ -2198,6 +2201,7 @@ impl DummyParams {
             weakpoint_cc_rel: panel.weakpoint_cc_rel,
             bodyshot_cc_mult: panel.bodyshot_cc_mult,
             round_restore_on_status: panel.round_restore_on_status,
+            instant_reload_on_kill: panel.instant_reload_on_kill,
             cd_on_kill: panel.cd_on_kill,
             fr_on_reload: panel.fr_on_reload,
             bd_on_reload: panel.bd_on_reload,
@@ -2438,6 +2442,7 @@ impl Default for DummyParams {
             weakpoint_cc_rel: 0.0,
             bodyshot_cc_mult: 1.0,
             round_restore_on_status: None,
+            instant_reload_on_kill: None,
             cd_on_kill: None,
             fr_on_reload: None,
             bd_on_reload: None,
@@ -5062,6 +5067,15 @@ pub fn run_once_traced(
             kill_buff_mark = r.kills;
             for _ in 0..fresh {
                 bump_on_trigger!(crate::loadout::BuffTrigger::Kill, t, d.extra);
+                // EXACT PENANCE, on the same counter and for the same reason:
+                // "Kills from status effects can also trigger the effect", and
+                // a DoT kill happens nowhere near the direct-hit site that
+                // `instant_reload_on_headshot` is wired to.
+                if let Some(chance) = params.instant_reload_on_kill {
+                    if d.extra.chance(chance) {
+                        instant_reload_now = true;
+                    }
+                }
             }
         }
 
@@ -8340,6 +8354,63 @@ mod tests {
         assert!(peak > 0,
             "a kill counts wherever it came from — {} kills and the pile never moved",
             s.mean_kills);
+    }
+
+    /// EXACT PENANCE, and the note that separates it from the effect it looks
+    /// like: A STATUS KILL COUNTS.
+    ///
+    /// VERBATIM (Lato_Incarnon_Genesis):
+    ///   *On Kill: '''50%''' chance for Instant Reload.
+    ///   *Kills from status effects can also trigger the effect.
+    ///   *The bonus does not affect the Incarnon form.
+    ///
+    /// `instant_reload_on_headshot` asks for a weak-point DIRECT hit and is
+    /// wired to the direct-hit site, so a Slash DoT kill would score nothing
+    /// there. This one is read off the kill counter, and the second fixture is
+    /// the proof: the shot deals 1 damage against 50 health, so no direct hit
+    /// can ever be the killing blow.
+    #[test]
+    fn exact_penance_reloads_on_a_kill_the_gun_did_not_land() {
+        let build = |chance: Option<f64>, slash: bool| DummyParams {
+            damage: if slash {
+                DamageVector::new().with(DamageType::Slash, 1.0)
+            } else {
+                DamageVector::new().with(DamageType::Impact, 200.0)
+            },
+            status_chance: if slash { 1.0 } else { 0.0 },
+            base_status_chance: if slash { 1.0 } else { 0.0 },
+            magazine_size: 5.0,
+            ammo_cost: 1.0,
+            fire_rate: 2.0,
+            reload_seconds: 3.0,
+            duration_secs: 60.0,
+            instant_reload_on_kill: chance,
+            body_parts: mono_body(1.0),
+            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            ..flat_base()
+        };
+
+        // GUNFIRE KILLS: an instant reload should buy shots, because the three
+        // seconds a reload costs are three seconds not spent shooting.
+        let bare = monte_carlo(&build(None, false), 6, 5);
+        let with = monte_carlo(&build(Some(0.5), false), 6, 5);
+        assert!(bare.mean_reloads > 3.0, "the fixture has to reload: {}", bare.mean_reloads);
+        assert!(with.mean_shots > bare.mean_shots * 1.3,
+            "an instant reload on half the kills buys shots: {} against {}",
+            with.mean_shots, bare.mean_shots);
+
+        // …AND A KILL THE GUN DID NOT LAND COUNTS. 1 damage against 50 health,
+        // asserted rather than assumed, so every kill here is a Slash DoT's.
+        let dot = build(None, true);
+        assert!(dot.damage.total() < dot.target.base_health,
+            "the shot must not be able to kill: {} against {}",
+            dot.damage.total(), dot.target.base_health);
+        let dot_bare = monte_carlo(&dot, 6, 7);
+        assert!(dot_bare.mean_kills > 0.0, "the DoT has to kill: {}", dot_bare.mean_kills);
+        let dot_with = monte_carlo(&build(Some(1.0), true), 6, 7);
+        assert!(dot_with.mean_shots > dot_bare.mean_shots,
+            "a DoT kill triggers it too — {} shots against {}, on {} kills",
+            dot_with.mean_shots, dot_bare.mean_shots, dot_bare.mean_kills);
     }
 
     /// VICIOUS PROMISE: the first arrow only, and OVERGUARD does not count.

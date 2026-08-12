@@ -6,13 +6,24 @@ description: "On Kill: 50% chance for Instant Reload."
 # THE GENESIS IS THE FAMILY'S — one adapter upgrades every variant, so all
 # of them carry the same ladder; a value that differs between them is
 # printed per variant by the wiki and transcribed per variant here.
+# "The bonus does not affect the Incarnon form" (the row's second note).
+base_form_only: true
 selection: choose_one
 
 effects:
-  # NOT MODELLED — no rule for this clause, so it loads as
-  # `EvoEffect::Inert` and both the builder and the optimizer print it
-  # as such. VERBATIM: "On Kill: 50% chance for Instant Reload"
-  - kind: unmodelled_on_kill_chance_for_instant_reload
+  # VERBATIM (Lato_Incarnon_Genesis, the row's effect cell and its notes):
+  #   *On Kill: '''50%''' chance for Instant Reload.
+  #   *Kills from status effects can also trigger the effect.
+  #   *The bonus does not affect the Incarnon form.
+  # The variant cell is one colspan="3" dash, so all three Latos take it.
+  #
+  # THE FIRST NOTE IS WHY THIS IS NOT `instant_reload_on_headshot`. That effect
+  # asks for a weak-point DIRECT hit and is wired to the direct-hit site; a kill
+  # by a Slash DoT happens nowhere near it. So the roll is read off the kill
+  # COUNTER, the same mark-and-diff `BuffTrigger::Kill` uses — a kill is a kill
+  # wherever it came from.
+  - kind: instant_reload_on_kill
+    chance: 0.50
 
 source:
   url: https://wiki.warframe.com/w/Lato_Incarnon_Genesis

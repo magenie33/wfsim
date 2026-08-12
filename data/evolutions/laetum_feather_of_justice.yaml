@@ -3,17 +3,23 @@ name: Feather of Justice
 weapon: laetum
 tier: 3
 description: "60% Ammo Efficiency while Aim Gliding or Sliding."
+# "Does not affect Incarnon Form" (the row's note).
+base_form_only: true
 selection: choose_one
 
 effects:
-  # Ammo efficiency is INERT on the charge-backed Incarnon magazine
-  # (laetum_incarnon.yaml), and conditional on a movement state the sim
-  # does not model.
-  # NOT LOADED either way: `indirect` resolves to `EvoEffect::Inert`, so even a
-  # weapon this WOULD apply to takes nothing (data/README.md). `stat` is unread.
-  - kind: indirect
-    stat: ammo_efficiency_conditional
-    value: 0.60
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. VERBATIM (Laetum):
+  #   * Gain '''60%''' [[Ammo Efficiency]] while [[Aim Glide|Aim Gliding]] or
+  #     [[Slide|Sliding]].
+  #   * Does not affect Incarnon Form
+  #
+  # TWO THINGS BLOCK IT and only one of them is permanent, which is how the
+  # reason is chosen: the movement states are not modelled either, but ammo
+  # efficiency would buy nothing even standing still, because the reserve is
+  # infinite. That is the reason that survives closing every other edge.
+  - kind: out_of_scope
+    clause: "Gain 60% Ammo Efficiency while Aim Gliding or Sliding"
+    reason: infinite_ammo
 
 source:
   url: https://wiki.warframe.com/w/Laetum

@@ -1066,6 +1066,10 @@ pub struct WeaponBase {
     /// nothing — and a refill is not a reload, the same rule
     /// `mag_refill_on_kill` follows.
     pub round_restore_on_status: Option<(crate::damage::DamageType, f64, f64)>,
+    /// Exact Penance: the chance a KILL — from anywhere, including a status
+    /// kill — reloads instantly. See the ResolvedPanel field for why it is not
+    /// .
+    pub instant_reload_on_kill: Option<f64>,
     /// King's Gambit's weak-point half, held on the WEAPON so it can seed the
     /// same bucket the mods write to — "Weakpoint modifier is additive with
     /// mods such as Pistol Gambit". Same shape as `evo_reload_bonus`.
@@ -1989,6 +1993,8 @@ pub struct ResolvedPanel {
     pub bodyshot_cc_mult: f64,
     /// Galvanic Reload: `(status, chance, rounds)`, rolled ONCE PER SHOT.
     pub round_restore_on_status: Option<(crate::damage::DamageType, f64, f64)>,
+    /// Exact Penance: the chance a KILL — from anywhere — reloads instantly.
+    pub instant_reload_on_kill: Option<f64>,
     /// Sharpened Bullets under Emergent: ABSOLUTE crit-damage add as a timed
     /// buff (starts inactive), granted/refreshed on every kill.
     pub cd_on_kill: Option<TimedBuff>,
@@ -3065,6 +3071,7 @@ pub fn resolve_for(
         weakpoint_cc_rel: wp_cc,
         bodyshot_cc_mult: base.bodyshot_cc_mult,
         round_restore_on_status: base.round_restore_on_status,
+        instant_reload_on_kill: base.instant_reload_on_kill,
         cd_on_kill,
         fr_on_reload,
         rs_on_reload,

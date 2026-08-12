@@ -3,19 +3,21 @@ name: Reaper's Plenty
 weapon: laetum
 tier: 5
 description: "On Headshot: +40% Ammo Efficiency for 6s."
+# "Does not affect Incarnon Form" (the row's note).
+base_form_only: true
 selection: choose_one
 
-# VERBATIM (wiki): "Does not affect Incarnon Form" — so it is a base-state
-# perk even before our charge-backed magazine makes ammo efficiency inert.
-
 effects:
-  # Inert on the charge-backed Incarnon magazine; the base form's ammo
-  # economy is not a sim constraint (infinite reserve).
-  # NOT LOADED either way: `indirect` resolves to `EvoEffect::Inert`, so even a
-  # weapon this WOULD apply to takes nothing (data/README.md). `stat` is unread.
-  - kind: indirect
-    stat: ammo_efficiency_on_headshot
-    value: 0.40
+  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. VERBATIM (Laetum):
+  #   * On Headshot: '''+40%''' Ammo Efficiency for '''6''' seconds.
+  #   * Does not affect Incarnon Form
+  #
+  # The TRIGGER is fully modelled — headshots are the one thing this arena
+  # measures most carefully — so the only thing out of reach is the payload:
+  # the reserve is infinite, and ammo efficiency buys nothing against it.
+  - kind: out_of_scope
+    clause: "On Headshot: +40% Ammo Efficiency for 6 seconds"
+    reason: infinite_ammo
 
 source:
   url: https://wiki.warframe.com/w/Laetum

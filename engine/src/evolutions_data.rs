@@ -199,6 +199,13 @@ enum EvoEffect {
     /// DOES use base damage increase Evolution"), so applying the correction
     /// everywhere would dock a perk the wiki never docked.
     BaseDamageBelowHalfHealth { rate: f64, excludes_own_flat: bool },
+    /// EXACT PENANCE — "On Kill: 50% chance for Instant Reload".
+    ///
+    /// Distinct from `InstantReloadOnHeadshot` because of the card's own note:
+    /// "Kills from status effects can also trigger the effect." That one asks
+    /// for a weak-point direct hit; this one asks only that something died, so
+    /// it is read off the kill counter.
+    InstantReloadOnKill { chance: f64 },
     /// GALVANIC RELOAD — a magazine restore the TARGET's state gates.
     ///
     /// VERBATIM (Strun_Incarnon_Genesis): "On hitting a target affected by an
@@ -703,6 +710,7 @@ impl EvolutionDef {
                 | EvoEffect::DerivedStat { .. }
                 | EvoEffect::CritChanceByBodyPart { .. }
                 | EvoEffect::RoundRestoreOnStatusHit { .. }
+                | EvoEffect::InstantReloadOnKill { .. }
                 | EvoEffect::CritOnUndamaged { .. }
                 | EvoEffect::ReloadSpeedBonus(_)
                 | EvoEffect::CritMultiplierBelowCritChance { .. }
@@ -882,6 +890,10 @@ impl EvolutionDef {
                 EvoEffect::CritOnUndamaged { crit_chance, crit_multiplier } => format!(
                     "+{:.0}% BASE crit chance and +{crit_multiplier}x BASE crit damage while the                      target is undamaged (mods multiply both)",
                     crit_chance * 100.0
+                ),
+                EvoEffect::InstantReloadOnKill { chance } => format!(
+                    "{:.0}% chance of an instant reload on any kill, including a status kill",
+                    chance * 100.0
                 ),
                 EvoEffect::RoundRestoreOnStatusHit { status, chance, rounds } => format!(
                     "{:.0}% chance per shot to restore {rounds:.0} round from the ammo pool when the target carries a {status:?} status",
@@ -1224,6 +1236,9 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // bracket, so a multishot gate and a crit-damage gate cannot be
         // confused for one another, and an unreadable `condition:` falls to
         // Inert rather than paying out unconditionally.
+        "instant_reload_on_kill" => {
+            EvoEffect::InstantReloadOnKill { chance: f(v, "chance").unwrap_or(0.0) }
+        }
         "round_restore_on_status_hit" => {
             let Some(status) = v.get("status").and_then(Value::as_str).and_then(crate::damage::DamageType::from_name)
             else {
@@ -1655,6 +1670,9 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::GatedByTenno { gate, grant, value } => {
                     base.gated.push((*gate, *grant, *value));
+                }
+                EvoEffect::InstantReloadOnKill { chance } => {
+                    base.instant_reload_on_kill = Some(*chance);
                 }
                 EvoEffect::RoundRestoreOnStatusHit { status, chance, rounds } => {
                     base.round_restore_on_status = Some((*status, *chance, *rounds));
@@ -2370,8 +2388,6 @@ use crate::loadout::WeaponBase;
             // on a headshot window, and applying either unconditionally would
             // overstate the build. They also land on the Laetum's Incarnon
             // magazine, which is charge-backed and takes no efficiency at all.
-            "laetum_feather_of_justice :: indirect (ammo_efficiency_conditional)",
-            "laetum_reapers_plenty :: indirect (ammo_efficiency_on_headshot)",
             // ---- ONE-STACK STACKING BUFFS -------------------------------
             // A "timed buff" is a stacking buff with ONE stack — same trigger,
             // same window — so it uses that vocabulary and lands here when its
@@ -2472,10 +2488,6 @@ use crate::loadout::WeaponBase;
             //
             // GUNSMOKE PICK UP is out of reach twice — no ammo-restore kind, and
             // a PUNCH THROUGH trigger needs a second body behind the first.
-            "braton_gunsmoke_pick_up :: ammo_restore_on_punch_through",
-            "braton_prime_gunsmoke_pick_up :: ammo_restore_on_punch_through",
-            "braton_vandal_gunsmoke_pick_up :: ammo_restore_on_punch_through",
-            "mk1_braton_gunsmoke_pick_up :: ammo_restore_on_punch_through",
             // THE LATRON FAMILY (2026-08-08) — three weapons, four kinds, and
             // two of them are near-misses rather than absences.
             //
@@ -2789,7 +2801,7 @@ mod furis_co_split_tests {
 
     #[test]
     fn the_number_of_unmodelled_evolution_effects_only_goes_down() {
-        const CEILING: usize = 22;
+        const CEILING: usize = 13;
         let n: usize = pool().iter().map(|d| d.unmodeled_effects().len()).sum();
         assert!(
             n <= CEILING,
