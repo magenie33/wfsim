@@ -125,6 +125,10 @@ weapons:
   despair_incarnon: 绝望 (灵化形态)
   sicarus: 暗杀者
   sicarus_incarnon: 暗杀者 (灵化形态)
+  # DE's own strings (WFCD i18n.json, joined on internal name:
+  # SapientPistol -> 阿利乌双枪, PrimeAkarius -> 阿利乌双枪 Prime).
+  akarius: 阿利乌双枪
+  akarius_prime: 阿利乌双枪 Prime
   sicarus_prime: 暗杀者 Prime
   sicarus_prime_incarnon: 暗杀者 Prime (灵化形态)
   angstrum: 安格斯壮

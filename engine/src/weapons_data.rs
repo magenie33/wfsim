@@ -1780,6 +1780,8 @@ mod tests {
         const NAMED: &[(&str, &str, f64)] = &[
             ("angstrum_incarnon", "independent", 1.0),
             ("prisma_angstrum_incarnon", "independent", 1.0),
+            // Rocket Impact; the base Akarius has no row and stays ordinary.
+            ("akarius_prime", "independent", 1.0),
             ("ballistica", "additive_with_base_damage", 0.25),
             ("ballistica_prime", "additive_with_base_damage", 0.50),
             ("ballistica_prime_incarnon", "independent", 1.0),
@@ -3155,6 +3157,48 @@ mod burston_incarnon_radial_tests {
     /// Both tier-2 options land it, at their own values — the row's note reads
     /// "Listed values for Braton Prime with inactive Daring Reverie", i.e. that
     /// perk's unconditional +4 is in the 74 and its conditional half is not.
+    /// THE AKARIUS PAIR: two damage instances a rocket, two rockets a pull, and
+    /// the CO row that names one of them.
+    ///
+    /// The burst is the half a reader gets wrong: the listed fire rate counts
+    /// PULLS, so reading 3.667 as rounds per second halves the weapon. The
+    /// module carries `BurstCount = 2` and the wiki's Notes name it in words —
+    /// "the guaranteed 2-round burst".
+    #[test]
+    fn the_akarius_fires_two_rockets_a_pull_and_each_one_explodes() {
+        for (id, blast, radius, cc) in [
+            ("akarius", 419.0, 7.2, 0.06),
+            ("akarius_prime", 509.0, 7.8, 0.18),
+        ] {
+            let b = WeaponBase::from_data(id, true, &[]);
+            assert_eq!(b.base_vector.total(), 68.0, "{id}: Rocket Impact is 68 Impact");
+            let burst = b.burst.expect("{id} declares its burst");
+            assert_eq!(burst.count, 2, "{id}: two rockets a pull");
+
+            let r = b.radial.as_ref().unwrap_or_else(|| panic!("{id} declares Rocket Detonation"));
+            assert!((r.base_vector.total() - blast).abs() < 1e-9, "{id} blast");
+            assert!((r.radius_m - radius).abs() < 1e-9, "{id} radius");
+            assert!((r.base_crit_chance - cc).abs() < 1e-9, "{id}: the explosion crits like the impact");
+            // "Rocket Detonation | 0% | Does not apply" on the Prime's row, and
+            // no row at all on the base — ordinary either way for an AoE.
+            assert!(!r.takes_condition_overload, "{id}: the explosion takes no CO");
+        }
+
+        // The CO row names the PRIME's Rocket Impact and nothing else.
+        assert_eq!(
+            spec("akarius_prime").unwrap().co_behavior.as_deref(),
+            Some("independent")
+        );
+        // The base has no row. Written out rather than left blank, so the
+        // assertion is on the VALUE — absence and the ordinary value are the
+        // same statement and a file may make either.
+        assert_eq!(
+            spec("akarius").unwrap().co_behavior.as_deref().unwrap_or("additive_with_base_damage"),
+            "additive_with_base_damage",
+            "no row, so ordinary"
+        );
+    }
+
     #[test]
     fn the_bratons_radial_co_base_is_the_catalogs_ninety_five_percent() {
         let b = WeaponBase::from_data("braton_prime_incarnon", true, &["braton_prime_daring_reverie"]);

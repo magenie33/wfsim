@@ -1097,7 +1097,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 79] = [
+        const EXPECTED: [(&str, &str, &[&str]); 81] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
@@ -1172,6 +1172,11 @@ mod tests {
             // Batch 3. The Sicarus family is BURST — its own trigger family, so
             // no Cannonade, the same answer the Burston gets. The Atomos is a
             // chaining BEAM and reads Held.
+            // A DUAL ROCKET LAUNCHER on a BURST trigger, so it takes the burst
+            // Cannonade like any other — the mod reads the trigger, not what
+            // the shot does when it lands.
+            ("akarius", "burst", &[]),
+            ("akarius_prime", "burst", &[]),
             ("sicarus", "burst", &[]),
             ("sicarus_prime", "burst", &[]),
             ("cestra", "auto", &[]),

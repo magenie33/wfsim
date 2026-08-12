@@ -1,0 +1,80 @@
+id: akarius
+name: Akarius
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 8
+max_rank: 30
+
+# A DUAL ROCKET LAUNCHER, and every number here is DE's own export
+# (`vendor/warframe-items` `attacks`) cross-checked field for field against the
+# wiki's `Module:Weapons/data/secondary`. The two agree except on one field,
+# and the module is followed: WFCD's TOP-LEVEL `fireRate` reads 4.248
+# where both the module and WFCD's own `attacks[].speed` read 4.33 — the same
+# split the roster's other burst weapons have.
+
+# WHAT THIS SIM DOES NOT MODEL ABOUT IT. Read off the weapon PAGE rather than
+# the module, which carries none of it (WEAPON_INTAKE §"READ THE PAGE").
+unmodeled:
+  - "the rockets home to targets within 15 degrees — the sim always hits, so the aid is worth nothing here"
+  - "the +50% Reload Speed while SPRINTING is not modelled: the sim's player stands still, and reloading on the move is a play pattern rather than a stat (Gauss and Gauss Prime double it to +100%, which is a Warframe-layer bonus this engine has no place for either)"
+  - "self-stagger is not modelled — the wiki notes an explosion at your feet can interrupt the 2-round burst so only one rocket leaves, and nothing damages the player in this fight"
+  - "rockets aim for the torso, so a high headshot percentage is not reachable in play even though this entry will honour whatever is set"
+accuracy: 26.7
+disposition: 1.05
+polarities: [naramon, naramon]
+exilus_polarity: madurai
+riven_family: Akarius
+traits: []
+introduced: "Update 25.7"
+internal_name: /Lotus/Weapons/Tenno/Pistols/SapientPistol/SapientPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 20
+ammo_pickup: 5
+magazine: 10
+reload_seconds: 3.4
+
+# No CO catalog row for this weapon, so the ordinary class — absence in that
+# catalog means ORDINARY rather than unknown, since it lists the anomalies. The
+# PRIME has rows; a row is transcribed for the entry it names and no other.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: burst
+  # TWO ROCKETS A PULL, and the listed `fire_rate` counts PULLS. The wiki's
+  # Notes name the count outright — "the guaranteed 2-round burst" — and the
+  # module carries `BurstCount = 2`, `BurstDelay = 0.12`. Reading 4.33 as
+  # rounds per second would halve this weapon.
+  burst:
+    count: 2
+    delay_seconds: 0.12
+  shot_type: projectile
+  projectile_speed_mps: 80
+  fire_rate: 4.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.06
+  crit_multiplier: 1.8
+  status_chance: 0.28
+  punch_through_m: 0.0
+  # ROCKET IMPACT — the direct hit. The explosion is the second instance below.
+  damage: { impact: 68 }   # total 68
+
+  # ROCKET DETONATION. Its own crit and status, the same as the impact's, and
+  # the falloff the module lists.
+  radial:
+    damage: { blast: 419 }   # total 419
+    radius_m: 7.2
+    falloff_start_m: 0
+    falloff_reduction: 0.7
+    crit_chance: 0.06
+    crit_multiplier: 1.8
+    status_chance: 0.28
+    # No row for this explosion, and CO is a direct-hit bonus everywhere the
+    # catalog does not say otherwise — so it takes none (the engine's default).
+
+source:
+  url: https://wiki.warframe.com/w/Akarius
