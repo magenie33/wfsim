@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: eebe509fc5ca89220180bcba98ebe0a311d57209
+engine: 07e169f900e4bb46006c68cd6f942cdecbf7d890
 entries:
   - weapon: angstrum
     mode: cycle
@@ -547,7 +547,7 @@ entries:
     arcanes: [primary_merciless]
   - weapon: bronco
     mode: cycle
-    score: 2.9791808217091966
+    score: 13.847104786326902
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, semi_pistol_cannonade, frostbite, primed_convulsion, primed_heated_charge]
     evolutions: [bronco_evo1_incarnon_form, bronco_speeding_bullet, bronco_extended_volley, bronco_commodores_fortune]
     arcanes: [secondary_enervate]
@@ -3893,55 +3893,55 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: vasto_prime
     mode: cycle
-    score: 92.99006349088545
+    score: 83.9209253526668
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_extended_volley, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
   - weapon: vasto_prime
     mode: cycle
-    score: 77.28448120001778
+    score: 69.75608506134459
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_extended_volley, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
   - weapon: vasto_prime
     mode: cycle
-    score: 76.73570852021311
+    score: 69.1585887036073
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_extended_volley, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
   - weapon: vasto_prime
     mode: cycle
-    score: 64.04176745607876
+    score: 58.285434737525215
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_extended_volley, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
   - weapon: vasto_prime
     mode: cycle
-    score: 58.66236627327702
+    score: 53.71385721537004
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_extended_volley, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
   - weapon: vasto_prime
     mode: cycle
-    score: 42.7721070048645
+    score: 40.39267150503857
     mods: [pistol_acuity, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_extended_volley, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
   - weapon: vasto_prime
     mode: cycle
-    score: 37.01484292952545
+    score: 34.68787983729174
     mods: [pistol_acuity, primed_target_cracker, galvanized_shot, pressurized_magazine, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_awakened_readiness, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
   - weapon: vasto_prime
     mode: cycle
-    score: 36.65060944289729
+    score: 34.337852218377
     mods: [pistol_acuity, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_awakened_readiness, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
   - weapon: vasto_prime
     mode: cycle
-    score: 34.92143228029233
+    score: 32.87065356826296
     mods: [pistol_acuity, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_awakened_readiness, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
@@ -3953,13 +3953,13 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: vasto_prime
     mode: base
-    score: 8.476410609150914
+    score: 8.013559354692454
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_extended_volley, vasto_prime_survivors_edge]
     arcanes: [cascadia_flare]
   - weapon: vasto_prime
     mode: base
-    score: 5.670050282226497
+    score: 5.363099879727894
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_extended_volley, vasto_prime_reapers_plenty]
     arcanes: [cascadia_flare]
