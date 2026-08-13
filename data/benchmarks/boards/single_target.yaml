@@ -3281,6 +3281,12 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: sicarus_prime
     mode: cycle
+    score: 44.90641617751984
+    mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
+    arcanes: [secondary_deadhead]
+  - weapon: sicarus_prime
+    mode: cycle
     score: 33.24772454805435
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_rapid_reinforcement, sicarus_prime_survivors_edge]
@@ -4131,6 +4137,12 @@ entries:
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_deathtrap_trigger, vasto_prime_extended_volley, vasto_prime_reapers_plenty]
     arcanes: [cascadia_flare]
+  - weapon: vasto_prime
+    mode: base
+    score: 1.3352501940512624
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_lone_gun, vasto_prime_extended_volley, vasto_prime_survivors_edge]
+    arcanes: [secondary_deadhead]
   - weapon: vectis_prime
     mode: base
     score: 13.1417286508915
