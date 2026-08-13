@@ -82,6 +82,15 @@ pub enum AbilityEffect {
         frac: f64,
         forced_status: bool,
     },
+    /// AMMO EFFICIENCY (Energized Munitions). Not a damage bracket at all — it
+    /// divides what a shot costs the magazine, so what it buys is RELOADS not
+    /// taken, which this sim already prices.
+    ///
+    /// It MULTIPLIES with the other sources rather than adding: "Stacks
+    /// multiplicatively with other sources of Ammo Efficiency" (wiki). What
+    /// multiplies is the COST, so two sources compose as `1 - (1-a)(1-b)` —
+    /// see `dummy::ammo_efficiency`, the one place that combines them.
+    AmmoEfficiency(f64),
 }
 
 /// One selectable buff, as the data declares it.
@@ -100,7 +109,11 @@ pub struct AbilityDef {
     pub value: f64,
     /// At max rank and 100% Ability Duration, in seconds.
     pub duration_s: f64,
-    pub effect: AbilityEffect,
+    /// EVERY bracket this one cast grants. A list because a single ability can
+    /// touch more than one — Redline sets fire rate AND reload speed off one
+    /// gauge — and splitting those into two entries would let a player tick
+    /// half of an ability.
+    pub effects: Vec<AbilityEffect>,
     /// The elements this ability lets you CHOOSE between, empty when it fixes
     /// one. The page draws a picker from this; `resolve` reads the choice off
     /// the pick.
@@ -108,6 +121,9 @@ pub struct AbilityDef {
     /// (class, multiplier) — a weapon class this is worth more on. See
     /// [`AbilityEffect::ExtraHit`].
     pub class_bonus: Option<(&'static str, f64)>,
+    /// Does the page's Ability Strength knob move this one's numbers? False for
+    /// the buffs whose wiki row carries no Strength icon — see the yaml field.
+    pub scales_with_strength: bool,
     /// What this ability does that the sim does NOT compute, in the player's
     /// own words on the card. Same field name and same meaning as a mod's and
     /// an arcane's, so `/api/meta` publishes it under the same key and the page
@@ -122,13 +138,13 @@ pub struct AbilityDef {
 }
 
 /// One buff as it RUNS in a fight: strength applied, duration decided.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ActiveAbility {
     pub id: &'static str,
     /// When it stops, in seconds from the start of the engagement.
     /// `f64::INFINITY` = the whole fight (the page's "whole fight" button).
     pub ends_at: f64,
-    pub effect: AbilityEffect,
+    pub effects: Vec<AbilityEffect>,
 }
 
 impl ActiveAbility {
@@ -141,6 +157,10 @@ impl ActiveAbility {
 #[derive(Deserialize)]
 struct EffectFile {
     kind: String,
+    /// This effect's own number, when the ability's headline `value` is not it.
+    /// Redline grants +75% fire rate and +50% reload speed off one cast.
+    #[serde(default)]
+    value: Option<f64>,
     #[serde(default)]
     element: Option<String>,
     /// `element: selectable` — the choices, in the order the game offers them.
@@ -173,7 +193,23 @@ struct AbilityFile {
     helminth: bool,
     value: f64,
     duration_s: f64,
-    effect: EffectFile,
+    /// ONE effect, the shape every ability had before Redline. Kept because it
+    /// is what most of them are and a list of one reads worse than a value.
+    #[serde(default)]
+    effect: Option<EffectFile>,
+    /// …or SEVERAL, for a cast that touches more than one bracket. Exactly one
+    /// of the two is written; both or neither is a data error and says so.
+    #[serde(default)]
+    effects: Vec<EffectFile>,
+    /// DOES ABILITY STRENGTH MOVE THIS NUMBER? `strength` (the default) for
+    /// every buff whose card carries the Strength icon; `none` for the ones
+    /// whose wiki row does not — Energized Munitions' ammo efficiency is a flat
+    /// 75%, and Redline's weapon buffs ramp with the BATTERY, which is not a
+    /// stat this page has. The knob still moves the abilities it governs, and a
+    /// buff that ignores it says so on its own card rather than silently
+    /// pocketing a multiplier it never gets in game.
+    #[serde(default)]
+    scales_with: Option<String>,
     #[serde(default)]
     unmodelled: Vec<String>,
     #[serde(default)]
@@ -194,38 +230,76 @@ pub fn all() -> &'static [AbilityDef] {
         for (path, text) in crate::data::files_under("abilities/") {
             let f: AbilityFile = serde_norway::from_str(text)
                 .unwrap_or_else(|e| panic!("{path}: {e}"));
-            // The two element-carrying kinds read the same field the same way,
-            // so it is parsed once — a second copy of these four lines is how
-            // one of them ends up accepting a typo the other rejects.
-            let element = |kind: &str| {
-                let e = f
-                    .effect
-                    .element
-                    .as_deref()
-                    .unwrap_or_else(|| panic!("{path}: {kind} needs an element"));
-                DamageType::from_name(e)
-                    .unwrap_or_else(|| panic!("{path}: unknown element {e}"))
+            // ONE `effect:` OR A LIST OF `effects:`, never both and never
+            // neither — a file that says both would have a silent winner, and
+            // one that says neither is an ability that does nothing.
+            let list: Vec<EffectFile> = match (f.effect, f.effects.is_empty()) {
+                (Some(e), true) => vec![e],
+                (None, false) => f.effects,
+                (Some(_), false) => panic!("{path}: write `effect:` or `effects:`, not both"),
+                (None, true) => panic!("{path}: needs an `effect:` or `effects:`"),
             };
-            let effect = match f.effect.kind.as_str() {
-                "faction_damage" => AbilityEffect::FactionDamage(f.value),
-                "final_damage" => AbilityEffect::FinalDamage(f.value),
-                "add_element" => AbilityEffect::AddElement(element("add_element"), f.value),
-                "extra_hit" => AbilityEffect::ExtraHit {
-                    // A SELECTABLE element defaults to the first choice and is
-                    // replaced by the pick; a fixed one is itself.
-                    element: if f.effect.element.as_deref() == Some("selectable") {
-                        let first = f.effect.elements.first().unwrap_or_else(|| {
-                            panic!("{path}: `element: selectable` needs `elements:`")
-                        });
-                        DamageType::from_name(first)
-                            .unwrap_or_else(|| panic!("{path}: unknown element {first}"))
-                    } else {
-                        element("extra_hit")
-                    },
-                    frac: f.value,
-                    forced_status: f.effect.forced_status,
-                },
-                other => panic!("{path}: unknown ability effect kind {other}"),
+            // THE PICKER'S CHOICES AND THE CLASS BONUS belong to the ABILITY,
+            // not to one of its effects — only an extra hit carries either
+            // today, and an ability has at most one. Taken off whichever effect
+            // states them, before the list is consumed.
+            let elements: Vec<String> =
+                list.iter().find(|e| !e.elements.is_empty()).map_or(Vec::new(), |e| e.elements.clone());
+            let class_bonus: Option<(String, f64)> = list.iter().find_map(|e| {
+                match (e.class_bonus_for.clone(), e.class_bonus) {
+                    (Some(c), Some(x)) => Some((c, x)),
+                    _ => None,
+                }
+            });
+            let effects: Vec<AbilityEffect> = list
+                .into_iter()
+                .map(|ef| {
+                    // The two element-carrying kinds read the same field the
+                    // same way, so it is parsed once — a second copy of these
+                    // four lines is how one of them ends up accepting a typo
+                    // the other rejects.
+                    let element = |kind: &str| {
+                        let e = ef
+                            .element
+                            .as_deref()
+                            .unwrap_or_else(|| panic!("{path}: {kind} needs an element"));
+                        DamageType::from_name(e)
+                            .unwrap_or_else(|| panic!("{path}: unknown element {e}"))
+                    };
+                    // EACH EFFECT MAY CARRY ITS OWN NUMBER, and falls back to
+                    // the ability's headline `value`. Redline's fire rate and
+                    // reload speed are 75% and 50% off one cast, so one value
+                    // could not have served both.
+                    let v = ef.value.unwrap_or(f.value);
+                    match ef.kind.as_str() {
+                        "faction_damage" => AbilityEffect::FactionDamage(v),
+                        "final_damage" => AbilityEffect::FinalDamage(v),
+                        "add_element" => AbilityEffect::AddElement(element("add_element"), v),
+                        "ammo_efficiency" => AbilityEffect::AmmoEfficiency(v),
+                        "extra_hit" => AbilityEffect::ExtraHit {
+                            // A SELECTABLE element defaults to the first choice
+                            // and is replaced by the pick; a fixed one is
+                            // itself.
+                            element: if ef.element.as_deref() == Some("selectable") {
+                                let first = ef.elements.first().unwrap_or_else(|| {
+                                    panic!("{path}: `element: selectable` needs `elements:`")
+                                });
+                                DamageType::from_name(first)
+                                    .unwrap_or_else(|| panic!("{path}: unknown element {first}"))
+                            } else {
+                                element("extra_hit")
+                            },
+                            frac: v,
+                            forced_status: ef.forced_status,
+                        },
+                        other => panic!("{path}: unknown ability effect kind {other}"),
+                    }
+                })
+                .collect();
+            let scales_with_strength = match f.scales_with.as_deref() {
+                None | Some("strength") => true,
+                Some("none") => false,
+                Some(other) => panic!("{path}: unknown `scales_with: {other}`"),
             };
             out.push(AbilityDef {
                 id: leak(f.id),
@@ -235,12 +309,10 @@ pub fn all() -> &'static [AbilityDef] {
                 helminth: f.helminth,
                 value: f.value,
                 duration_s: f.duration_s,
-                effect,
-                elements: f.effect.elements.iter().cloned().map(leak).collect(),
-                class_bonus: match (f.effect.class_bonus_for, f.effect.class_bonus) {
-                    (Some(c), Some(x)) => Some((leak(c), x)),
-                    _ => None,
-                },
+                effects,
+                scales_with_strength,
+                elements: elements.iter().cloned().map(leak).collect(),
+                class_bonus: class_bonus.map(|(c, x)| (leak(c), x)),
                 unmodelled: f.unmodelled.into_iter().map(leak).collect(),
                 live_bugs: f.live_bugs.into_iter().map(leak).collect(),
                 url: f.source.and_then(|s| s.url).map(leak),
@@ -299,29 +371,48 @@ pub fn resolve(
     let mut best: Vec<(&'static str, f64, ActiveAbility)> = Vec::new();
     for p in picks {
         let Some(def) = get(p.id) else { continue };
-        let value = at_strength(def.value, strength);
-        let effect = match def.effect {
-            AbilityEffect::FactionDamage(_) => AbilityEffect::FactionDamage(value),
-            AbilityEffect::FinalDamage(_) => AbilityEffect::FinalDamage(value),
-            AbilityEffect::AddElement(t, _) => AbilityEffect::AddElement(t, value),
-            AbilityEffect::ExtraHit { element, forced_status, .. } => AbilityEffect::ExtraHit {
-                // THE PICK'S element wins where the ability offers a choice.
-                element: p
-                    .element
-                    .and_then(DamageType::from_name)
-                    .filter(|_| !def.elements.is_empty())
-                    .unwrap_or(element),
-                frac: value
-                    * def
-                        .class_bonus
-                        .map_or(1.0, |(c, x)| if c == weapon_class { x } else { 1.0 }),
-                forced_status,
-            },
+        // THE STRENGTH KNOB, applied once per effect and skipped entirely by an
+        // ability whose card carries no Strength icon. `value` (the headline)
+        // still decides the family contest below, so a buff that ignores
+        // strength cannot be beaten by a weaker sibling that scales.
+        let scale = |v: f64| {
+            if def.scales_with_strength {
+                at_strength(v, strength)
+            } else {
+                v
+            }
         };
+        let value = scale(def.value);
+        let effects: Vec<AbilityEffect> = def
+            .effects
+            .iter()
+            .map(|e| match *e {
+                AbilityEffect::FactionDamage(v) => AbilityEffect::FactionDamage(scale(v)),
+                AbilityEffect::FinalDamage(v) => AbilityEffect::FinalDamage(scale(v)),
+                AbilityEffect::AddElement(t, v) => AbilityEffect::AddElement(t, scale(v)),
+                AbilityEffect::AmmoEfficiency(v) => AbilityEffect::AmmoEfficiency(scale(v)),
+                AbilityEffect::ExtraHit { element, frac, forced_status } => {
+                    AbilityEffect::ExtraHit {
+                        // THE PICK'S element wins where the ability offers a
+                        // choice.
+                        element: p
+                            .element
+                            .and_then(DamageType::from_name)
+                            .filter(|_| !def.elements.is_empty())
+                            .unwrap_or(element),
+                        frac: scale(frac)
+                            * def
+                                .class_bonus
+                                .map_or(1.0, |(c, x)| if c == weapon_class { x } else { 1.0 }),
+                        forced_status,
+                    }
+                }
+            })
+            .collect();
         let live = ActiveAbility {
             id: def.id,
             ends_at: p.duration_s.unwrap_or(f64::INFINITY),
-            effect,
+            effects,
         };
         match best.iter_mut().find(|(f, _, _)| *f == def.family) {
             Some(slot) if slot.1 >= value => {}
@@ -337,7 +428,8 @@ pub fn resolve(
 pub fn faction_bonus_at(list: &[ActiveAbility], t: f64) -> f64 {
     list.iter()
         .filter(|a| a.live_at(t))
-        .filter_map(|a| match a.effect {
+        .flat_map(|a| a.effects.iter())
+        .filter_map(|e| match *e {
             AbilityEffect::FactionDamage(v) => Some(v),
             _ => None,
         })
@@ -350,7 +442,8 @@ pub fn faction_bonus_at(list: &[ActiveAbility], t: f64) -> f64 {
 pub fn final_mult_at(list: &[ActiveAbility], t: f64) -> f64 {
     list.iter()
         .filter(|a| a.live_at(t))
-        .filter_map(|a| match a.effect {
+        .flat_map(|a| a.effects.iter())
+        .filter_map(|e| match *e {
             AbilityEffect::FinalDamage(v) => Some(1.0 + v),
             _ => None,
         })
@@ -363,10 +456,12 @@ pub fn final_mult_at(list: &[ActiveAbility], t: f64) -> f64 {
 pub fn added_elements_at(list: &[ActiveAbility], t: f64) -> Vec<(DamageType, f64)> {
     let mut out: Vec<(DamageType, f64)> = Vec::new();
     for a in list.iter().filter(|a| a.live_at(t)) {
-        if let AbilityEffect::AddElement(ty, v) = a.effect {
-            match out.iter_mut().find(|(t2, _)| *t2 == ty) {
-                Some(e) => e.1 += v,
-                None => out.push((ty, v)),
+        for e in &a.effects {
+            if let AbilityEffect::AddElement(ty, v) = *e {
+                match out.iter_mut().find(|(t2, _)| *t2 == ty) {
+                    Some(slot) => slot.1 += v,
+                    None => out.push((ty, v)),
+                }
             }
         }
     }
@@ -385,13 +480,35 @@ pub fn added_elements_at(list: &[ActiveAbility], t: f64) -> Vec<(DamageType, f64
 pub fn extra_hits_at(list: &[ActiveAbility], t: f64) -> Vec<ExtraHitLive> {
     list.iter()
         .filter(|a| a.live_at(t))
-        .filter_map(|a| match a.effect {
+        .flat_map(|a| a.effects.iter())
+        .filter_map(|e| match *e {
             AbilityEffect::ExtraHit { element, frac, forced_status } => {
                 Some(ExtraHitLive { element, frac, forced_status })
             }
             _ => None,
         })
         .collect()
+}
+
+/// AMMO EFFICIENCY running at `t`, composed MULTIPLICATIVELY between abilities
+/// — "Stacks multiplicatively with other sources of Ammo Efficiency" (wiki,
+/// Energized Munitions). What multiplies is the ammo COST, so two 75% sources
+/// are `1 - 0.25 x 0.25` = 93.75% and never 150%.
+///
+/// The other sources (the buff bar, the arcanes) add among themselves and this
+/// composes with their total — `dummy::ammo_efficiency` is where that happens,
+/// because it is the one function that has all of them.
+pub fn ammo_efficiency_at(list: &[ActiveAbility], t: f64) -> f64 {
+    let cost: f64 = list
+        .iter()
+        .filter(|a| a.live_at(t))
+        .flat_map(|a| a.effects.iter())
+        .filter_map(|e| match *e {
+            AbilityEffect::AmmoEfficiency(v) => Some(1.0 - v),
+            _ => None,
+        })
+        .product();
+    1.0 - cost
 }
 
 /// One extra hit as the sim needs it: what element, what share of the instance
@@ -575,9 +692,9 @@ mod tests {
         ] {
             let d = get(id).unwrap_or_else(|| panic!("{id} missing"));
             assert!(
-                matches!(d.effect, AbilityEffect::AddElement(t, _) if t == want),
+                d.effects.iter().any(|e| matches!(*e, AbilityEffect::AddElement(t, _) if t == want)),
                 "{id}: {:?}",
-                d.effect
+                d.effects
             );
         }
     }
@@ -655,6 +772,7 @@ mod tests {
         let tl = get("toxic_lash").expect("toxic_lash");
         assert!((tl.value - 0.30).abs() < 1e-9);
         assert!((tl.duration_s - 45.0).abs() < 1e-9);
-        assert!(matches!(tl.effect, AbilityEffect::ExtraHit { element: DamageType::Toxin, .. }));
+        assert!(tl.effects.iter().any(|e| matches!(*e,
+            AbilityEffect::ExtraHit { element: DamageType::Toxin, .. })));
     }
 

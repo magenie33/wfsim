@@ -79,9 +79,19 @@ for (const lang of ["en", "zh"]) {
       return (cards()[i].querySelector('.wfb-v') || {}).textContent || '';
     };
     out.roarAt100 = roarText();
+    // …AND THE ONE THE KNOB DOES NOT MOVE. Energized Munitions' 75% ammo
+    // efficiency carries no Ability Strength icon on its wiki row, so a card
+    // that scaled it would promise 225% at a 300% frame — free shooting, off a
+    // buff the game gives flat.
+    const emText = () => {
+      const i = (META.abilities || []).findIndex(a => a.id === 'energized_munitions');
+      return i < 0 ? '' : (cards()[i].querySelector('.wfb-v') || {}).textContent || '';
+    };
+    out.emAt100 = emText();
     const str = document.getElementById('sim-wfbuffs-str');
     str.value = '200'; str.dispatchEvent(new Event('change')); await sleep(300);
     out.roarAt200 = roarText();
+    out.emAt200 = emText();
     str.value = '100'; str.dispatchEvent(new Event('change')); await sleep(300);
 
     // 3. TICKING ONE MOVES THE SIM. Same build, same seed, one buff.
@@ -265,6 +275,13 @@ for (const lang of ["en", "zh"]) {
   check(`[${lang}] the value follows Ability Strength`,
     r.roarAt100.includes("50%") && r.roarAt200.includes("100%"),
     `${r.roarAt100.slice(0, 40)} -> ${r.roarAt200.slice(0, 40)}`);
+  // …AND THE ONE IT DOES NOT. The negative control for the same knob, and it
+  // has to be a DIFFERENT ability rather than a second reading of Roar: the
+  // claim is that the page knows which buffs the stat governs, not that it can
+  // multiply.
+  check(`[${lang}] …and a flat one does not — Energized Munitions stays 75%`,
+    r.emAt100.includes("75%") && r.emAt200.includes("75%"),
+    `${r.emAt100.slice(0, 40)} -> ${r.emAt200.slice(0, 40)}`);
   // THE ONLY CLAIM THAT MATTERS: it reaches the number, in the shipping build.
   check(`[${lang}] ticking a buff moves the SIM`,
     r.dpsPlain > 0 && r.dpsRoar > r.dpsPlain * 1.2,

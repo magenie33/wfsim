@@ -1126,15 +1126,27 @@ pub fn meta_json() -> Value {
         // engine settles it either way (`abilities_data::resolve`), and a page
         // that showed both as active would be lying about a number it printed.
         "abilities": wfsim_engine::abilities_data::all().iter().map(|a| {
-            let (kind, element) = match a.effect {
-                wfsim_engine::abilities_data::AbilityEffect::FactionDamage(_) =>
-                    ("faction_damage", None),
-                wfsim_engine::abilities_data::AbilityEffect::FinalDamage(_) =>
-                    ("final_damage", None),
-                wfsim_engine::abilities_data::AbilityEffect::AddElement(t, _) =>
-                    ("add_element", Some(t.name())),
-                wfsim_engine::abilities_data::AbilityEffect::ExtraHit { element, .. } =>
-                    ("extra_hit", Some(element.name())),
+            // EVERY BRACKET THE CAST TOUCHES, as (kind, value, element). A LIST
+            // because one ability can grant more than one — Redline sets fire
+            // rate and reload speed off a single gauge — and the card has to
+            // print both or it states half of what the sim runs.
+            use wfsim_engine::abilities_data::AbilityEffect as AE;
+            let grants: Vec<Value> = a.effects.iter().map(|e| {
+                let (kind, v, element) = match *e {
+                    AE::FactionDamage(v) => ("faction_damage", v, None),
+                    AE::FinalDamage(v) => ("final_damage", v, None),
+                    AE::AddElement(t, v) => ("add_element", v, Some(t.name())),
+                    AE::AmmoEfficiency(v) => ("ammo_efficiency", v, None),
+                    AE::ExtraHit { element, frac, .. } => ("extra_hit", frac, Some(element.name())),
+                };
+                json!({ "kind": kind, "value": v, "element": element })
+            }).collect();
+            // …and the FIRST one under the old keys, because the page's card
+            // has read `kind`/`element` since abilities landed and every stored
+            // scenario's element pick is keyed off them.
+            let (kind, element) = match grants.first() {
+                Some(g) => (g["kind"].clone(), g["element"].clone()),
+                None => (Value::Null, Value::Null),
             };
             json!({
                 "id": a.id,
@@ -1150,6 +1162,12 @@ pub fn meta_json() -> Value {
                 "class_bonus": a.class_bonus.map(|(c, x)| json!({ "class": c, "x": x })),
                 "kind": kind,
                 "element": element,
+                "grants": grants,
+                // Does the page's strength knob move this one? Energized
+                // Munitions' 75% is flat and Redline's ramp is a battery, so
+                // the card says so instead of quietly showing a number the
+                // game never gives.
+                "scales_with_strength": a.scales_with_strength,
                 // THE SAME TWO ADMISSIONS A MOD AND AN ARCANE CARD CARRY, under
                 // the same keys, so the page renders all three with one
                 // function. Xata's Whisper is the first ability with either:

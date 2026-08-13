@@ -379,6 +379,10 @@ ui:
   "a stronger buff of the same kind is running — this one adds nothing": 同类里有更强的一个正在生效——这一个不产生任何加成
   "faction damage — the bracket a Bane mod is in, so a status tick takes it twice": 派系伤害——和克制 mod 同一个乘区，所以异常跳伤会吃到两次
   "damage on its own multiplier — applied once, to the hit and to the status alike": 独立乘区的伤害加成——只吃一次，直伤和异常都是一次
+  # THE ONE ABILITY LINE THAT IS NOT ABOUT DAMAGE. It has to say where to look
+  # instead, or a card reading "+75%" beside four damage buffs is read as a
+  # damage buff.
+  "ammo efficiency — it does not touch damage: it divides what a shot costs the magazine, so what it buys is reloads not taken. Multiplicative with other ammo-efficiency sources": 弹药效率——它不碰伤害：它把一发子弹消耗的弹匣量除下去，所以买到的是少换的弹。与其他弹药效率来源相乘叠加
   "added on top and NOT combined with the weapon's own elements": 直接加在最终属性之上，不与武器自身的元素合成
   "a second damage instance, not a multiplier — it takes faction damage and the headshot multiplier one more time than the hit it copies": 附加的一次独立伤害实例，不是乘区——派系伤害和弱点倍率都会比它复制的那一下多吃一次
   "Extra hit (ability)": 技能附加伤害

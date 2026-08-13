@@ -1,0 +1,57 @@
+# A WARFRAME ABILITY BUFF — the fight's PLAYER, not the build.
+#
+# Not a mod, not an arcane, not a weapon perk: a thing another actor (or the
+# player's own frame) does to this weapon for a while. It belongs to the
+# SCENARIO, and the BOARD carries none of these.
+
+# THE FIRST ONE THAT MOVES NO DAMAGE NUMBER AT ALL, and it is worth saying why
+# it belongs here anyway. Ammo efficiency divides what a shot costs the
+# magazine — so what it buys is RELOADS NOT TAKEN, and a reload is dead time
+# this sim already prices. On a weapon whose magazine runs dry every few seconds
+# that is a large share of the engagement; on one that never reloads it is worth
+# nothing, and the app will say so.
+#
+# It reaches the fight through machinery that already existed: the engine has
+# carried ammo efficiency since the Vasto's Reaper's Plenty, and it spends it as
+# a FRACTIONAL ammo cost — which is literally the mechanism the page describes,
+# "dividing the ammo cost so each shot consumes a quarter of the original, and
+# keeps track of the fractions as well".
+
+# ASKED FOR BY A PLAYER (2026-08-13, forwarded by the owner): a Gauss running
+# this from Helminth, whose measured numbers were far off ours because the buff
+# could not be picked at all.
+
+id: energized_munitions
+name: Energized Munitions
+# HELMINTH'S OWN, not a frame's. It is one of the abilities the Helminth
+# invents rather than subsumes ("Metamorphosis: Tier 5"), so no Warframe on the
+# roster casts it — `frame: Helminth` and `helminth: true` are the same
+# statement the subsumed Roar makes, for a different reason.
+frame: Helminth
+family: energized_munitions
+helminth: true
+
+# VERBATIM (Energized_Munitions): "Expend 50 Energy to improve all equipped
+# weapons' Ammo Efficiency by 75%, lasting for 3 / 3.5 / 4 / 5 seconds."
+value: 0.75
+duration_s: 5
+
+# ABILITY STRENGTH DOES NOT MOVE IT. The page's `misc` row states the 75% with
+# no Strength icon, where its duration row carries the Duration one — and the
+# Chinese wiki says it outright ("弹药效率不受技能强度影响"). So the page's
+# strength knob is inert here and the card says so, rather than quietly showing
+# a number the game never gives.
+scales_with: none
+
+effect:
+  kind: ammo_efficiency
+
+unmodelled:
+  - "the ENERGY it costs, and how often you can afford to recast it — 50 Energy for 5 seconds at 100% Ability Duration is a real budget, and this arena has no energy economy. Set the duration to what your build actually keeps up, or to the whole fight to ask what the weapon is worth under it rather than around it"
+  - "reserves. `infinite_ammo` is on by default, so the half of this ability that keeps you shooting between resupplies is worth nothing here — what it does move is the RELOAD count, which is modelled"
+
+source:
+  url: https://wiki.warframe.com/w/Energized_Munitions
+  # The 75% and the 3/3.5/4/5 s ladder are the page's own infobox rows; the
+  # multiplicative stacking rule is its Notes ("Stacks multiplicatively with
+  # other sources of Ammo Efficiency"), implemented in `dummy::ammo_efficiency`.

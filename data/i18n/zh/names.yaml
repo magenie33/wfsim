@@ -607,3 +607,6 @@ abilities:
   venom_dose: 猛毒附加
   toxic_lash: 剧毒鞭笞
   resupply: 补给
+  # HELMINTH'S OWN, off `/Lotus/Powersuits/PowersuitAbilities/Helminth`'s ability
+  # list in WFCD's i18n.json — DE's Chinese client, not a translation of ours.
+  energized_munitions: 充沛军需

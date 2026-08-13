@@ -7799,7 +7799,13 @@ const wfPick = (id) => (sim.abilities || []).find((a) => a.id === id);
 // The strength-scaled value, which is the number the card shows. Linear, and
 // the engine agrees by construction: `abilities_data::at_strength` is the same
 // multiply, and `check_wf_buffs.mjs` asserts the screen and the sim match.
-const wfValue = (a) => a.value * (Number(sim.ability_strength) || 0);
+// …AND THE ONES THE KNOB DOES NOT MOVE. Energized Munitions' ammo efficiency is
+// a flat 75% — its wiki row carries no Ability Strength icon — so multiplying it
+// here would print a number the game never gives, at every strength but 100%.
+// The server states which per ability (`scales_with_strength`), so the page
+// cannot disagree with the sim about it.
+const wfValue = (a) =>
+  a.value * (a.scales_with_strength === false ? 1 : (Number(sim.ability_strength) || 0));
 
 // WHICH PICKS ARE ACTUALLY RUNNING. Same family, only the strongest — the
 // wiki's own rule ("Multiple Freeze Forces do not stack; the buff with the
@@ -7855,6 +7861,12 @@ function wfEffectLine(a) {
   // a SECOND time, and 26% on the card is more like 40% on the number.
   if (a.kind === "extra_hit") {
     return tr("a second damage instance, not a multiplier — it takes faction damage and the headshot multiplier one more time than the hit it copies");
+  }
+  // NOT A DAMAGE BRACKET AT ALL. What it buys is reloads not taken, so on a
+  // weapon that never reloads it is worth nothing and the line has to say
+  // where to look instead of implying a damage number.
+  if (a.kind === "ammo_efficiency") {
+    return tr("ammo efficiency — it does not touch damage: it divides what a shot costs the magazine, so what it buys is reloads not taken. Multiplicative with other ammo-efficiency sources");
   }
   return tr("added on top and NOT combined with the weapon's own elements");
 }

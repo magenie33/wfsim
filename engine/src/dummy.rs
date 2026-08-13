@@ -2852,11 +2852,24 @@ fn reload_draw(capacity: f64, current: f64) -> f64 {
 ///
 /// Charge-backed magazines are outside the ammo economy entirely and take no
 /// efficiency at all, which is why `applies` short-circuits to zero.
-fn ammo_efficiency(applies: bool, bar: f64, arcane_static: f64, arcane_live: f64) -> f64 {
+fn ammo_efficiency(
+    applies: bool,
+    bar: f64,
+    arcane_static: f64,
+    arcane_live: f64,
+    ability: f64,
+) -> f64 {
     if !applies {
         return 0.0;
     }
-    (bar + arcane_static + arcane_live).clamp(0.0, 1.0)
+    let others = (bar + arcane_static + arcane_live).clamp(0.0, 1.0);
+    // A WARFRAME ABILITY'S SHARE MULTIPLIES, it does not add: "Stacks
+    // multiplicatively with other sources of Ammo Efficiency" (wiki, Energized
+    // Munitions). The thing that multiplies is the COST, so 75% on top of 50%
+    // is 1 - 0.25 x 0.5 = 87.5% and not the 125% adding would have produced.
+    // Everything else here adds, which is what those sources do among
+    // themselves and what this function was written for.
+    (1.0 - (1.0 - others) * (1.0 - ability)).clamp(0.0, 1.0)
 }
 
 /// Live on-kill stack state (Galvanized graceful decay: on timeout lose
@@ -4466,8 +4479,9 @@ fn live_reload_time(
     live_rs: f64,
     t: f64,
 ) -> f64 {
-    let add =
-        outer.arcane.reload_bonus + arc.total(&outer.arcane.buffs, ArcGrant::ReloadSpeed, t) + live_rs;
+    let add = outer.arcane.reload_bonus
+        + arc.total(&outer.arcane.buffs, ArcGrant::ReloadSpeed, t)
+        + live_rs;
     reload_span(form.reload_seconds, form.reload_bonus, add)
 }
 
@@ -5164,6 +5178,7 @@ pub fn run_once_traced(
                 bar.total_contributions().ammo_efficiency,
                 params.arcane.ammo_efficiency,
                 arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
+                crate::abilities_data::ammo_efficiency_at(&params.abilities, t),
             );
             // `ap` already picks the form whose magazine is about to be
             // checked, so this is THAT form's cost.
@@ -5534,6 +5549,7 @@ pub fn run_once_traced(
             contribs.ammo_efficiency,
             params.arcane.ammo_efficiency,
             arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
+            crate::abilities_data::ammo_efficiency_at(&params.abilities, t),
         );
         // Final Fusillade's gate, read BEFORE the round is spent: this pull is
         // the magazine's last round if there is at most one left to fire. On a
@@ -10323,9 +10339,17 @@ mod tests {
     #[test]
     fn ammo_efficiency_caps_at_free_and_never_refunds() {
         // The pure function first, since that is where the ceiling lives.
-        assert_eq!(ammo_efficiency(true, 1.0, 1.0, 1.0), 1.0, "3x over the cap");
-        assert_eq!(ammo_efficiency(true, 0.0, 0.0, 0.0), 0.0);
-        assert_eq!(ammo_efficiency(false, 1.0, 1.0, 1.0), 0.0, "charge-backed is exempt");
+        assert_eq!(ammo_efficiency(true, 1.0, 1.0, 1.0, 0.0), 1.0, "3x over the cap");
+        assert_eq!(ammo_efficiency(true, 0.0, 0.0, 0.0, 0.0), 0.0);
+        assert_eq!(ammo_efficiency(false, 1.0, 1.0, 1.0, 1.0), 0.0, "charge-backed is exempt");
+        // AN ABILITY'S SHARE MULTIPLIES rather than adding — the wiki's own
+        // rule, and the arithmetic that separates the two: 75% on top of 50%
+        // is 87.5% (cost 0.5 x 0.25), where adding would have read 125% and
+        // clamped to free.
+        assert!((ammo_efficiency(true, 0.5, 0.0, 0.0, 0.75) - 0.875).abs() < 1e-12);
+        // …and either one alone is itself.
+        assert!((ammo_efficiency(true, 0.0, 0.0, 0.0, 0.75) - 0.75).abs() < 1e-12);
+        assert_eq!(ammo_efficiency(true, 0.0, 0.0, 0.0, 1.0), 1.0);
 
         // End to end: an absurd stack behaves exactly like a plain 100%. Note
         // this half cannot catch a silent refund on its own — a magazine that
@@ -16177,6 +16201,65 @@ mod warframe_ability_tests {
 
     fn direct(p: &DummyParams) -> f64 {
         run_once(p, &mut crate::rng::Rng::new(3)).sources.direct
+    }
+
+    /// ENERGIZED MUNITIONS BUYS RELOADS, not damage — the first ability buff in
+    /// this file that moves no damage bracket at all.
+    ///
+    /// VERBATIM (Energized_Munitions): "improve all equipped weapons' Ammo
+    /// Efficiency by 75%", and "This ability reduces ammo usage to 1 after
+    /// every 4 shots. The way this works is by dividing the ammo cost so each
+    /// shot consumes a quarter of the original, and keeps track of the
+    /// fractions as well."
+    ///
+    /// So a 4-round magazine fires SIXTEEN shots per reload, and the number
+    /// this test reads is the reload count. Asserted as an exact ratio rather
+    /// than a direction: 75% is the one figure the whole ability is, and a
+    /// wrong bracket (adding where it multiplies, or landing on the reserve
+    /// instead of the magazine) moves it off 4x immediately.
+    #[test]
+    fn energized_munitions_quarters_what_a_shot_costs_the_magazine() {
+        let fixture = |abilities: &[(&'static str, Option<f64>)]| {
+            let mut p = params(abilities, 1.0);
+            // A SMALL magazine and a long fight, so reloads are the thing being
+            // counted; `params` gives 1e9 rounds, which never reloads at all.
+            p.magazine_size = 4.0;
+            p.reload_seconds = 1.0;
+            p.duration_secs = 120.0;
+            p.infinite_reserve = true;
+            run_once(&p, &mut crate::rng::Rng::new(5))
+        };
+        let plain = fixture(&[]);
+        let buffed = fixture(&[("energized_munitions", None)]);
+        assert!(plain.reloads > 10, "the fixture must actually reload: {}", plain.reloads);
+        // SHOTS PER RELOAD is the invariant, not the reload COUNT: a buffed run
+        // spends less of the 120 s reloading, so it fires more shots and the
+        // counts move by less than four. A 4-round magazine at quarter cost is
+        // 16 shots before it runs dry, and that is exactly the ability.
+        let per = |r: &RunResult| f64::from(r.shots) / f64::from(r.reloads.max(1));
+        let ratio = per(&buffed) / per(&plain);
+        assert!((ratio - 4.0).abs() < 0.25,
+            "75% efficiency should quarter what a shot costs: {:.1} -> {:.1} shots a magazine (x{ratio:.2})",
+            per(&plain), per(&buffed));
+        // …AND THAT IS WHERE THE DPS COMES FROM: the same 120 seconds, fewer of
+        // them spent reloading, so more shots leave the barrel. This is the
+        // whole reason an ammo buff belongs in a damage calculator.
+        assert!(buffed.shots > plain.shots,
+            "fewer reloads must buy shots: {} -> {}", plain.shots, buffed.shots);
+
+        // …AND ABILITY STRENGTH DOES NOT MOVE IT. The page's row carries no
+        // Strength icon, so a 300%-strength frame gets the same 75% — a card
+        // that scaled it would promise 225% efficiency, i.e. free shooting.
+        let strong = {
+            let mut p = params(&[("energized_munitions", None)], 3.0);
+            p.magazine_size = 4.0;
+            p.reload_seconds = 1.0;
+            p.duration_secs = 120.0;
+            p.infinite_reserve = true;
+            run_once(&p, &mut crate::rng::Rng::new(5))
+        };
+        assert_eq!(strong.reloads, buffed.reloads,
+            "ammo efficiency is not affected by ability strength");
     }
 
     /// ROAR IS A BANE MOD, and this asserts exactly that and nothing more: it
