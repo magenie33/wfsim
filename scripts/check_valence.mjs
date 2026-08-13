@@ -242,4 +242,97 @@ check("...and pooling two doubles the candidate count",
   opt.pooled.n === opt.pinned.n * 2,
   `${opt.pinned.n} -> ${opt.pooled.n}`);
 
+// …AND THE THREE THINGS THAT FOLLOW FROM "IT IS PART OF THE BUILD".
+//
+// A build axis is not one because a variable holds it. It is one because every
+// surface that claims to state the build states it, and because a link that
+// claims to reproduce the build reproduces it. Both were missing while the
+// number above was already right: the simulator's read-only card listed mode,
+// mods, arcane and evolutions and not this, and the share tuple read neither
+// this nor the mode — so a shared Kuva Nukor reopened on the default element.
+//
+// The CAPACITY is here rather than in a check of its own because it is the
+// same weapon family and the same fact about it: an adversary weapon ranks to
+// 40, two rank per Forma, five polarizations, so 80 capacity — and the client
+// carried a literal 60, which showed a legal build in red.
+const build = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  localStorage.clear();
+  history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
+
+  const w = weaponInfo('kuva_nukor');
+  const cap = document.getElementById('capacity').textContent;
+
+  // A FULL EIGHT, which is the case that used to read red: it fits 80 and
+  // never fitted 60.
+  const eight = ['hornet_strike', 'barrel_diffusion', 'lethal_torrent',
+                 'primed_pistol_gambit', 'primed_target_cracker',
+                 'pathogen_rounds', 'primed_heated_charge', 'galvanized_shot'];
+  eight.forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });
+  autoForma(); renderMods(); await sleep(400);
+  const full = { text: document.getElementById('capacity').textContent,
+                 over: document.getElementById('capacity').classList.contains('over'),
+                 forma: document.getElementById('forma').textContent,
+                 count: formaCount() };
+
+  // The SIMULATOR's card, which is the page's claim about what is being run.
+  valence.element = 'heat'; valence.bonus = 0.45;
+  history.pushState({}, '', '/weapons/Kuva_Nukor/simulator'); route(); await sleep(1500);
+  const card = document.getElementById('sim-build-info').textContent;
+
+  // A SHARE LINK, opened by reading it back the way a recipient's browser
+  // does. Also carries the MODE, which was dropped by the same tuple.
+  const url = await shareUrl();
+  const code = new URL(url).searchParams.get(SHARE_PARAM);
+  const back = await decodeShare(code);
+
+  // …and an ORDINARY weapon is still 60, so the number is the weapon's and not
+  // a new constant.
+  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(2500);
+  const plain = { cap: document.getElementById('capacity').textContent,
+                  formaMin: formaMin('torid'), capacity: capOf('torid') };
+
+  return { metaCap: w.capacity, metaForma: w.forma_min, metaRank: w.max_rank,
+           cap, full, card, back, plain };
+})()`);
+
+// THE LADDER, as the server states it: rank 40, five Forma, 80.
+check("an adversary weapon reports its own rank ceiling and capacity",
+  build.metaRank === 40 && build.metaForma === 5 && build.metaCap === 80,
+  JSON.stringify({ max_rank: build.metaRank, forma_min: build.metaForma, capacity: build.metaCap }));
+check("...and the builder counts against 80, not 60",
+  / \/ 80$/.test(build.cap.trim()), build.cap);
+// The bug this replaces: eight maxed mods on this weapon rendered red.
+check("...so a full eight-mod build is not shown as impossible",
+  build.full.over === false && / \/ 80$/.test(build.full.text.trim()),
+  `${build.full.text} (over: ${build.full.over})`);
+// FIVE, and the auto plan is what spends them: the 80 above assumes rank 40,
+// and rank 40 is those five polarizations. A plan that fits in two and stops
+// has spent the capacity of a weapon it did not build.
+check("...and Auto spends the five polarizations the rank 40 costs",
+  build.full.count.regular >= 5 && /5 Forma/.test(build.full.forma),
+  `${build.full.forma} (${JSON.stringify(build.full.count)})`);
+check("an ordinary weapon is untouched: 60, no mastery Forma",
+  build.plain.capacity === 60 && build.plain.formaMin === 0 && / \/ 60$/.test(build.plain.cap.trim()),
+  JSON.stringify(build.plain));
+
+// THE CARD. Element AND percentage — 45% Heat and 60% Heat are not the same
+// weapon, so naming the element alone would still be half the fact.
+check("the simulator's build card names the valence it is testing",
+  /Heat|火焰/.test(build.card) && /45%/.test(build.card),
+  build.card.replace(/\s+/g, " ").slice(0, 160));
+
+// THE LINK. Read back through the app's own decoder, because that is what a
+// recipient runs.
+check("a share link carries the valence",
+  build.back && build.back.valence && build.back.valence.element === "heat"
+    && Math.abs(build.back.valence.bonus - 0.45) < 1e-9,
+  JSON.stringify(build.back && build.back.valence));
+// …and the other axis the same tuple was dropping. The Kuva Nukor has one
+// mode, so `mode` is derivable here and correctly absent — which is the
+// assertion: omitted means "the weapon's default", never "lost".
+check("...and a mode the recipient cannot derive would travel with it",
+  build.back && build.back.mode === undefined,
+  String(build.back && build.back.mode));
+
 await app.finish("an adversary weapon's Valence bonus reaches its damage");

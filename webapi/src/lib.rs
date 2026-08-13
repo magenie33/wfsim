@@ -806,6 +806,12 @@ pub fn meta_json() -> Value {
     let weapons: Vec<Value> = weapons()
         .iter()
         .map(|w| {
+            let max_rank = wspec(&w.id).max_rank;
+            let forma_min = wfsim_engine::mods::forma_to_max_rank(max_rank);
+            let cap = wfsim_engine::mods::capacity(
+                wfsim_engine::mods::rank_after(max_rank, forma_min),
+                wfsim_engine::mods::Investment::default().catalyst,
+            );
             json!({
                 "id": w.id,
                 "name": w.name,
@@ -841,6 +847,25 @@ pub fn meta_json() -> Value {
                     "min": s.min,
                     "max": s.max,
                 })),
+                // WHAT THIS WEAPON HAS TO SPEND, and it is not 60 for
+                // everybody. Capacity is twice the rank, and an ADVERSARY
+                // weapon ranks to 40 where everything else stops at 30 — two
+                // rank per Forma, so five polarizations buy it 80.
+                //
+                // `forma_min` is those five, and it is a MASTERY figure rather
+                // than a capacity one: a build that would fit in three still
+                // pays it, which is what `Investment::polarize_to_max` means
+                // and it is the default. Since it is the default, the rank is
+                // FIXED before any planning — which is why this can be sent as
+                // a number at all rather than as a solver.
+                //
+                // Sent as the ANSWER, never as the formula. The client carried
+                // a literal 60, so a legal Kuva Nukor build read as over
+                // capacity in red while the server accepted it, and the auto
+                // plan never spent the five Forma the engine already spends.
+                "max_rank": max_rank,
+                "capacity": cap,
+                "forma_min": forma_min,
                 // HOW THIS WEAPON CAN BE PLAYED, and which of those a ruler may
                 // rank. Derived from its forms and one question about the second
                 // one — does entering it cost a gauge you have to earn — so a

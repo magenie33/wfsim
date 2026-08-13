@@ -1,13 +1,14 @@
 # Investment: what has been installed on this weapon
 
-**Status (2026-08-04): PLANNED, not implemented.** Recorded while another
-session held the files this touches. Nothing here is built yet; the mechanics
-below are verified and the design is decided.
+**Status (2026-08-14): CAPACITY IS REAL; THE ADAPTERS ARE STILL ASSUMED.**
+Phases 1 and 2 are done — capacity depends on rank, rank depends on Forma, and
+the client asks the server for both instead of carrying a literal 60. Phases 3
+and 4 (the three choices on screen, and carrying them in a share link) are not.
 
-Today the app assumes an Orokin Catalyst, an Exilus adapter and an arcane
-adapter, silently, and hardcodes the result as `60` in four places. This
-replaces that with the real thing: capacity that depends on rank, rank that
-depends on Forma, and adapters that are stated rather than assumed.
+So the app still assumes an Orokin Catalyst, an Exilus adapter and an arcane
+adapter, silently. What it no longer assumes is the number those produce: an
+adversary weapon ranks to 40 and finishes at 80, and every surface that prints
+a capacity says so.
 
 ## The mechanics, verified (wiki, 2026-08-04)
 
@@ -115,11 +116,26 @@ Each one is independently shippable and independently verifiable.
    you actually set costs, as against what the cheapest would be — which until
    now existed only as `formaCount()` in the client.
 
-   **Still to do:** the four JS functions. They cannot go until the panel
-   carries the slot polarities (it sends mod ids only), because "what does MY
-   layout cost" needs the layout. That is the next commit, and it is the one
-   that needs the frozen baseline: capacity and Forma counts must not move for
-   any existing build.
+   **The literal 60 is gone (2026-08-14).** `/api/meta` states `max_rank`,
+   `capacity` and `forma_min` per weapon — the ANSWER, not the ladder — so the
+   client holds no capacity arithmetic of its own: `capOf(id)` and
+   `formaMin(id)` read what the server computed with `mods::capacity` /
+   `rank_after` / `forma_to_max_rank`. That is what makes an adversary weapon
+   count against 80 in the builder, on the share card, and in the auto plan.
+   Nothing moved for an existing build: every rank-30 weapon answers 60 and 0.
+
+   **Auto now spends the mastery Forma.** `autoForma` planned for
+   minimum-Forma-to-fit and stopped, so a Kuva Nukor fitting in two
+   polarizations was measured against the 80 capacity that only five buy. It
+   now takes the same floor `plan_forma_spending` does (`at_least`), and
+   `formaCount` bills the remainder the same way `fit` does — five Forma on a
+   rank-40 weapon whatever the slots need, because reaching rank 40 is what
+   they pay for.
+
+   **Still to do:** the three remaining JS functions (`slotDrain`, `modDrain`,
+   `capacityUsed`/`formaCount`). They cannot go until the panel carries the
+   slot polarities (it sends mod ids only), because "what does MY layout cost"
+   needs the layout.
 3. **The UI.** The icon strip, the three choices, capacity read from the server,
    and the "this build cannot be made" message.
 4. **Travel.** Share codes and presets carry the three choices. **An old link
@@ -128,10 +144,13 @@ Each one is independently shippable and independently verifiable.
 
 ## Still open
 
-- **Which weapons are rank 40.** Per-weapon data (`max_rank`), and the roster
-  has none today — every entry is 30. Phase 1 therefore cannot be verified
-  end-to-end against a real weapon until a Kuva/Tenet/Coda weapon is added;
-  until then it is pinned by tests.
+- ~~**Which weapons are rank 40.**~~ **CLOSED 2026-08-14.** The Kuva Nukor is
+  the roster's first `max_rank: 40`, so the ladder is verified end-to-end
+  against a real weapon rather than by tests alone: `scripts/check_valence.mjs`
+  asserts 40 / 5 / 80 off `/api/meta`, that the builder counts against 80, that
+  a full eight-mod build is not shown as impossible, that Auto spends the five,
+  and — the control — that an ordinary weapon is still 60 with no mastery
+  Forma.
 - Whether anything else grants capacity on a gun. The stance bonus is melee, so
   nothing known does — but this is an absence, and absences are worth re-reading
   the wiki for when a new weapon class lands.

@@ -228,7 +228,18 @@ function applyNameOverlay() {
 // / melee-stance / companion-ability polarities — not gun slots. "Omni" is the
 // Omni Forma universal polarity (matches any mod EXCEPT Umbra mods).
 const GUN_POLS = ["Madurai", "Naramon", "Vazarin", "Umbra", "Omni"];
-const CAP = 60;
+// WHAT THIS WEAPON HAS TO SPEND. Not a constant: an ADVERSARY weapon
+// (Kuva/Tenet/Coda) ranks to 40 rather than 30 and finishes at 80, and the
+// server sends the finished number per weapon (`/api/meta`) rather than the
+// ladder, so this file holds no capacity arithmetic of its own.
+//
+// 60 is the fallback and nothing more — every weapon in the roster answers.
+const capOf = (id) => (weaponInfo(id) || {}).capacity || 60;
+// The polarizations the weapon owes its own rank ceiling: FIVE on an adversary
+// weapon, none on anyone else. It is a mastery figure, not a capacity one — a
+// build that fits in three still pays it, because those three do not put the
+// weapon at rank 40 and rank 40 is what the 80 above assumes.
+const formaMin = (id) => (weaponInfo(id) || {}).forma_min || 0;
 const imgTag = (src, cls) => src ? `<img class="${cls||''}" src="${src}" onerror="this.style.visibility='hidden'"/>` : `<span class="${cls||''}"></span>`;
 
 // ---- transport: api(path, body) --------------------------------------
@@ -2788,7 +2799,23 @@ function sharePayload() {
   const r = p && p.lastResult && p.lastResult.r;
   const m = r ? [r3(r.score), r.duration, Math.round(r.dps || 0)] : 0;
 
-  return [2, st.weapon, activePreset, slots9, arcs, evos, rivens, sc, m];
+  // THE TWO AXES THAT ARE THE BUILD AND ARE NOT A SLOT: how the weapon is
+  // PLAYED, and what a Lich handed it. `snapshotState` has carried both for
+  // some time and this tuple read neither, so a shared Kuva Nukor reopened on
+  // the default progenitor element and a shared charged Phantasma reopened in
+  // base form — a link that changes the build it is claiming a number for.
+  //
+  // Omitted when the recipient would derive the same value anyway, like every
+  // other field here: `defaultMode`/`defaultValence` are what both ends ask,
+  // so sending the answer they already have is pure length.
+  const dv = defaultValence(st.weapon, null);
+  const md = st.mode === defaultMode(st.weapon, null) ? 0 : st.mode;
+  const val = (st.valence && st.valence.element !== dv.element) || (st.valence && st.valence.bonus !== dv.bonus)
+    ? [st.valence.element, r3(st.valence.bonus)] : 0;
+
+  const out = [2, st.weapon, activePreset, slots9, arcs, evos, rivens, sc, m, md, val];
+  while (out.length > 9 && !out[out.length - 1]) out.pop();
+  return out;
 }
 
 const r3 = (x) => Math.round((Number(x) || 0) * 1000) / 1000;
@@ -2810,10 +2837,15 @@ async function decodeShare(code) {
   const json = code[0] === SHARE_V_DEFLATE ? await inflate(bytes) : bytes;
   const data = JSON.parse(new TextDecoder().decode(json));
   if (!Array.isArray(data)) return v1Share(data);      // links posted before v2
-  const [, weapon, name, slots9, arcs, evos, rivens, sc, m] = data;
+  const [, weapon, name, slots9, arcs, evos, rivens, sc, m, md, val] = data;
   return {
     w: weapon,
     n: name,
+    // Absent means "whatever this weapon's default is", which is exactly what
+    // `defaultMode`/`defaultValence` answer when handed nothing — so a link
+    // posted before these two travelled still lands where it always did.
+    mode: md || undefined,
+    valence: val ? { element: val[0], bonus: val[1] } : undefined,
     slots: (slots9 || []).map((s) => {
       if (!s) return { mod: null, pol: null, rank: null };
       const [id, pol, rank] = typeof s === "string" ? [s] : s;
@@ -2930,6 +2962,11 @@ async function importShare(code) {
     arcane: data.arcane,
     arcaneRank: data.arcaneRank,
     evoSel: evoSel2,
+    // Handed to `restoreState` raw, because it already cleans both against the
+    // weapon being opened: an element this spec does not offer is dropped, a
+    // mode it cannot be played in falls back to the arsenal's.
+    mode: data.mode,
+    valence: data.valence,
   };
   const builds = loadPresetList(BUILDS);
   // Named for where it came from. Without it a link lands as "build 1 2",
@@ -3344,11 +3381,12 @@ async function drawShareCard(canvas, url) {
   // Capacity and Forma, right-aligned — the price of the build, which is half
   // of what a reader is judging.
   const fc = formaCount();
-  const cost = [`${capacityUsed()} / ${CAP}`,
+  const cap = capOf(w.id);
+  const cost = [`${capacityUsed()} / ${cap}`,
     [`${fc.regular} Forma`, fc.umbra ? `${fc.umbra} Umbra` : null, fc.omni ? `${fc.omni} Omni` : null]
       .filter(Boolean).join(" · ")].join("   ");
   g.textAlign = "right";
-  g.fillStyle = capacityUsed() > CAP ? v("--critical", "#e05656") : fg2;
+  g.fillStyle = capacityUsed() > cap ? v("--critical", "#e05656") : fg2;
   g.font = F(15);
   g.fillText(cost, W - 36, 56);
   g.textAlign = "left";
@@ -5162,23 +5200,43 @@ function formaCount() {
     const d = (need[p] || 0) - (pool[p] || 0);
     if (d > 0) added += d; else removed += -d;
   }
-  return { regular: Math.max(added, removed), umbra, omni };
+  // ...and an ADVERSARY weapon is billed its five whatever the slots say. The
+  // rank-40 ceiling costs five polarizations and the 80 capacity this build
+  // was planned against assumes them, so a build using three has still spent
+  // five (engine: `cost.regular += spend - cost.total()`).
+  const regular = Math.max(added, removed);
+  const floor = Math.max(0, formaMin($("weapon").value) - regular - umbra - omni);
+  return { regular: regular + floor, umbra, omni };
 }
 
 // Auto-assign polarities for MINIMUM Forma-to-fit (mirrors engine plan_forma):
 // spend the innate pool on the biggest matching mods, then Forma the biggest
 // unmatched until it fits; unmatched slots left blank. Overwrites polarities.
+//
+// ...with a FLOOR under it on an adversary weapon (`plan_forma_spending`'s
+// `at_least`). Those five polarizations are what put the weapon at rank 40,
+// and rank 40 is where the 80 capacity this plan is measured against comes
+// from — so a plan that fits in two and stops has spent the capacity of a
+// weapon it did not build. They are bought either way; this puts them on the
+// biggest mods still unmatched instead of leaving them unspent.
 function autoForma() {
+  const w = $("weapon").value;
+  const cap = capOf(w);
   const filled = [];
   slots.forEach((s, i) => { const m = modById(s.mod); if (m) filled.push({ i, m }); });
   slots.forEach((s) => { s.pol = null; });
   const pool = innate.filter(Boolean).slice();
   const bd = ({ i, m }) => modDrain(m, slots[i].rank);
   const order = filled.slice().sort((a, b) => bd(b) - bd(a));
-  const matched = new Set();
-  for (const { i, m } of order) { const k = pool.indexOf(m.polarity); if (k >= 0) { pool.splice(k, 1); matched.add(i); } }
+  const matched = new Set(), free = new Set();
+  for (const { i, m } of order) { const k = pool.indexOf(m.polarity); if (k >= 0) { pool.splice(k, 1); matched.add(i); free.add(i); } }
   const drainOf = () => filled.reduce((s, x) => s + (matched.has(x.i) ? Math.ceil(bd(x) / 2) : bd(x)), 0);
-  while (drainOf() > CAP) { const next = order.find(({ i }) => !matched.has(i)); if (!next) break; matched.add(next.i); }
+  const polarize = () => { const next = order.find(({ i }) => !matched.has(i)); if (!next) return false; matched.add(next.i); return true; };
+  while (drainOf() > cap) { if (!polarize()) break; }
+  // The innate pool is FREE, so only the slots this plan had to BUY count
+  // against the floor — the same order the engine works in, where the pool is
+  // spent before `at_least` is looked at.
+  while (matched.size - free.size < formaMin(w)) { if (!polarize()) break; }
   for (const { i, m } of filled) slots[i].pol = matched.has(i) ? m.polarity : null;
   // Innate polarities are never destroyed by the auto plan (blanking one
   // costs a Forma): leftovers go back onto mod-less slots — preferring
@@ -5206,9 +5264,10 @@ function renderMods() {
   // cycle away, so the reason it is greyed changes with the slots.
   if (typeof renderMode === "function") renderMode();
   const used = capacityUsed();
+  const cap = capOf($("weapon").value);
   const capEl = $("capacity");
-  capEl.textContent = `${used} / ${CAP}`;
-  capEl.classList.toggle("over", used > CAP);
+  capEl.textContent = `${used} / ${cap}`;
+  capEl.classList.toggle("over", used > cap);
   const f = formaCount();
   $("forma").textContent = [`${f.regular} Forma`, f.umbra ? `${f.umbra} Umbra` : null, f.omni ? `${f.omni} Omni` : null]
     .filter(Boolean).join(" · ");
@@ -7292,10 +7351,11 @@ function defaultValence(id, st) {
 /// THE VALENCE BLOCK. Two controls, because a Lich hands you two facts: which
 /// element, and how big the roll was.
 ///
-/// NO DEFAULT ELEMENT. A Kuva weapon with no element picked is the weapon's own
-/// printed panel, which is what the wiki's infobox states and what a reader
-/// comparing against it expects — picking one FOR them would put a 25-60% base
-/// damage bonus into a number they never asked for.
+/// "None" IS STILL AN OPTION and it is the weapon's own printed panel — what
+/// the wiki's infobox states and what a reader comparing against it expects.
+/// It is no longer the DEFAULT: see `defaultValence`, which opens on the first
+/// element at the roll's ceiling, because a copy nobody could own is not a
+/// useful starting build.
 function renderValence() {
   const box = $("element-cfg");
   if (!box || !META) return;
@@ -7530,6 +7590,21 @@ function renderSimBuild() {
   parts.push(`<div class="sb-h">${tr("Mode")}</div>`);
   parts.push(`<div class="sb-chips"><span class="sb-chip">${
     escHtml(modeLabel(weaponInfo($("weapon").value), mode))}</span></div>`);
+  // THE VALENCE, beside the mode and for exactly the same reason: it is part
+  // of what this build IS. Two Kuva Nukors differing only in progenitor
+  // element are two different builds and two different numbers, so a card that
+  // says "this is what is being tested" and omits it is telling half of it.
+  //
+  // Only where the weapon HAS one — the same "no choice, no axis" rule the
+  // block in the builder follows. The percentage is shown with the element
+  // because the roll is the other half of the fact: 60% Heat and 25% Heat are
+  // not the same weapon.
+  if (valenceSpec(w.id)) {
+    parts.push(`<div class="sb-h">${tr("Valence")}</div>`);
+    parts.push(`<div class="sb-chips"><span class="sb-chip">${valence.element
+      ? `${escHtml(DT(valence.element))} +${Math.round(valence.bonus * 1000) / 10}%`
+      : escHtml(tr("None"))}</span></div>`);
+  }
   parts.push(`<div class="sb-h">${tr("Mods")} · ${modChips.length}</div>`);
   parts.push(`<div class="sb-chips">${modChips.join("") || `<span class="sb-empty">${tr("no mods equipped")}</span>`}</div>`);
   if ((w.arcane_slots || 0) >= 1) {

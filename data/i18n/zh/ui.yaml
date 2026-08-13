@@ -371,6 +371,10 @@ ui:
   "what to read off the run — the scenario's own term, so an official ruler pins it": 从这次运行里读什么——这是场景自己的条款，所以官方标尺会把它锁住
   "the progenitor element — pool = searched, req = pin one": 始祖元素——pool 表示纳入搜索，req 表示钉死一个
   "the bonus this copy came out of its Lich with": 这把枪从它的 Lich 那里带出来的加成
+  # OURS, not a DE string: the "no valence" option and the way the simulator's
+  # build card states it. Translated rather than transcribed for that reason —
+  # there is no official text to transcribe.
+  "None": 无
   "added as the weapon's own BASE damage — elemental mods and status scale with it": 作为武器自身的基础伤害加上去——元素 mod 和异常都会跟着放大
   "the weapon's printed panel": 就是武器面板上印的那样
   # "Element" is already in the roster below and "Bonus" is already there
