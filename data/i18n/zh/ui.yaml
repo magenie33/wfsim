@@ -370,8 +370,7 @@ ui:
   "7 · Measure": 7 · 指标
   "what to read off the run — the scenario's own term, so an official ruler pins it": 从这次运行里读什么——这是场景自己的条款，所以官方标尺会把它锁住
   "the progenitor element — pool = searched, req = pin one": 始祖元素——pool 表示纳入搜索，req 表示钉死一个
-  "the bonus this copy came out of its Lich with": 这把枪从它的 Lich 那里带出来的加成
-  "added as the weapon's own BASE damage — elemental mods and status scale with it": 作为武器自身的基础伤害加上去——元素 mod 和异常都会跟着放大
+  "the bonus this copy came out of its Lich with — added as the weapon's own BASE damage, so elemental mods and status scale with it": 这把枪从它的 Lich 那里带出来的加成——作为武器自身的基础伤害加上去，所以元素 mod 和异常都会跟着放大
   "the weapon's printed panel": 就是武器面板上印的那样
   # "Element" is already in the roster below and "Bonus" is already there
   # meaning 增益 (a buff), which this is not — so the control says VALENCE BONUS
@@ -658,7 +657,11 @@ ui:
   "WF Sprint": 战甲冲刺速度
   "picking a frame fills armor, max energy and sprint speed below — the roster is UNMODDED, so a built frame carries more and the numbers stay editable": 选择战甲会填入下面的护甲、最大能量和冲刺速度 —— 名册是**未装 mod** 的,实际配好的战甲数值更高,所以这三个数字仍然可以手动改
   "your Warframe's sprint speed — several Incarnon perks pay only at 1.2 or higher, and the slowest frame is 0.9": 你的战甲冲刺速度 —— 有几个灵化天赋要求 1.2 或更高才生效,而最慢的战甲是 0.9
-  "the fight did not re-roll for this option — same statuses landed, so this comparison is exact": 这个选项没有让战斗重新掷骰 —— 触发的异常完全相同，所以这次比较是精确的
+  "this option did not re-roll the fight — run for run it scaled the same engagement, so this comparison is exact": 这个选项没有让战斗重新掷骰——每一次运行它都是把同一场战斗按同一个倍数放大，所以这次比较是精确的
+  # TIED WITH THE LEADER: the list sorts whatever it is given, and this is where
+  # it admits the order between two answers is the dice.
+  "tied": 并列
+  "this is as good as the top option — the gap between them is smaller than either answer's own width, so the order between them is the dice": 这个和第一名一样好——它们之间的差距比任一答案自身的误差还小，所以谁排前面是掷骰决定的
   "no timeout": 无限持续
   # The replay: the transport, the buff curves, and the pools table.
   Replay: 回放

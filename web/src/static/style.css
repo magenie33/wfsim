@@ -726,6 +726,10 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    the claim people react to and there is no claim to make here. */
 .gainchip.flat{background:var(--line);color:var(--text-2);opacity:.85}
 .gainchip small{opacity:.7;font-size:10px}
+/* TIED WITH THE LEADER. Inside the chip rather than beside it — it qualifies
+   the number, and a marker that floats off on its own reads as a second fact.
+   Deliberately quiet: it is a caveat on an answer, not an answer. */
+.gainchip .gtie{margin-left:5px;padding:0 4px;border-radius:6px;background:var(--line);color:var(--text-2);font-size:10px;text-transform:lowercase}
 .picker-tools .pk-note{color:var(--muted);font-size:11px;margin-left:auto}
 .picker-tools #pk-gain-scen,.picker-tools #pk-gain-prec{font:inherit;font-size:11px;max-width:120px}
 /* The wider buff view: a setting held for a mod the build does not carry. */

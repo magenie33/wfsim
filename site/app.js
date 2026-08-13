@@ -6013,22 +6013,60 @@ function renderTools() {
 /// which is both of the things the quick calc was reported for (2026-08-12).
 const readGain = (r, useKills) => {
   if (!r || !r.ok) return null;
+  const runs = (useKills ? r.score_runs : r.dps_runs) || [];
   return useKills
-    ? { v: r.score_mean ?? r.score ?? r.kills ?? 0, se: r.score_se ?? 0 }
-    : { v: r.dps_mean ?? r.dps ?? 0, se: r.dps_se ?? 0 };
+    ? { v: r.score_mean ?? r.score ?? r.kills ?? 0, se: r.score_se ?? 0, runs }
+    : { v: r.dps_mean ?? r.dps ?? 0, se: r.dps_se ?? 0, runs };
 };
 
 /// What `cand` is worth against `ref`, with the uncertainty of the COMPARISON.
 ///
-/// Two independent means, so their relative errors add in quadrature — and the
-/// result is scaled by the ratio itself, because a +200% gain carries its error
-/// on a number three times the size of the reference.
+/// PAIRED, because the runs are. `monte_carlo` advances its master rng exactly
+/// once per run whatever the run does, so run `i` of the candidate and run `i`
+/// of the reference are drawn from the same luck — and the comparison's spread
+/// is the spread of the DIFFERENCES, not of the two builds separately.
+///
+/// This is the standard ratio-estimator error: with `d_i = c_i − ratio·b_i`,
+/// `SE(ratio) = sd(d) / (√n · mean(b))`. It says the two things the old formula
+/// could not:
+///
+///  · A candidate that scales this fight PROPORTIONALLY gives `d_i = 0` on
+///    every run, so the band is exactly zero and the gain is a fact — the
+///    Serration / Amalgam Serration pair, whose 0.9623 = 2.55/2.65 holds at
+///    every run count.
+///  · A candidate that changes WHICH fight happens gives a real band, however
+///    close its mean lands to the reference's.
+///
+/// The old formula added the two builds' relative errors IN QUADRATURE, which
+/// is the formula for INDEPENDENT samples: it both overstates a paired band and
+/// leaves "exact" undecidable, which is why the exactness test had to be a
+/// proxy (the median run's proc count) and why that proxy was wrong — all seven
+/// of the Kuva Nukor's progenitor elements report the same count while the
+/// fights plainly differ (owner, 2026-08-14).
+///
+/// With no series to pair (an older server, or a response that did not ask for
+/// them) it falls back to quadrature, which is the honest answer when the
+/// pairing cannot be seen.
 const gainOver = (cand, ref) => {
   const ratio = cand.v / ref.v;
-  return {
-    pct: ratio - 1,
-    se: ratio * Math.hypot(cand.se / cand.v || 0, ref.se / ref.v || 0),
-  };
+  const a = cand.runs || [], b = ref.runs || [];
+  const n = Math.min(a.length, b.length);
+  if (n < 2 || !ref.v) {
+    return { pct: ratio - 1, se: ratio * Math.hypot(cand.se / cand.v || 0, ref.se / ref.v || 0) };
+  }
+  let ss = 0;
+  for (let i = 0; i < n; i++) {
+    const d = a[i] - ratio * b[i];
+    ss += d * d;
+  }
+  // Σd is zero by construction when both means are taken over the same n, so
+  // the sum of squares IS the variance's numerator.
+  const se = Math.sqrt(ss / (n - 1) / n) / ref.v;
+  // FLOATING-POINT RESIDUE IS NOT A BAND. A candidate that scales this fight
+  // proportionally leaves `d_i` at the last bits of a double rather than at
+  // zero — measured 4e-15 on the Serration pair — and a band of 4e-15 prints
+  // as "±0.0%", which is the "≈0%" this whole display was written to stop.
+  return { pct: ratio - 1, se: se < 1e-9 * Math.abs(ratio) ? 0 : se };
 };
 
 // ONE seed for the whole scan: the reference and every candidate are measured
@@ -6117,7 +6155,9 @@ function gainScenario() {
   // well have an opinion about it. Unmentioned buffs take their own default
   // (full stacks, unlocked), which is the honest reading of "no opinion".
   return { name: p ? p.name : "—", refine,
-    scenario: { ...st, runs, seed: GAIN_SEED, buffs: st.buffs || {} } };
+    scenario: { ...st, runs, seed: GAIN_SEED, buffs: st.buffs || {},
+      // THE RUNS THEMSELVES, because this scan PAIRS with them. See `gainOver`.
+      run_series: true } };
 }
 
 // A scan belongs to ONE AXIS POSITION of one build under one scenario.
@@ -6290,13 +6330,9 @@ async function scanGains(axis, onTick) {
   // buying; DPS is the fallback for a target this build cannot kill at all,
   // where the ratio has no denominator. The SCENARIO decides which.
   let useKills = (scenario.metric || "kpm") !== "dps";
-  // `procs` rides along so a candidate can be asked whether it moved the fight
-  // or only the numbers — see `belowFloor`.
-  let baseProcs = null;
   const run = async (override) => {
     const r = await api("/api/simulate", { ...buildPayload(), ...fightPayload(scenario), ...override });
     if (!r || !r.ok) return null;
-    if (!override.seed && baseProcs === null) baseProcs = r.procs ?? null;
     return readGain(r, useKills);
   };
   let base = await run({});
@@ -6326,8 +6362,7 @@ async function scanGains(axis, onTick) {
       const g = readGain(r, useKills);
       gainScan.done++;
       if (g) {
-        gainScan.by[c.id] = { ...gainOver(g, base), runs: scenario.runs,
-          diverged: baseProcs === null || (r.procs ?? null) !== baseProcs };
+        gainScan.by[c.id] = { ...gainOver(g, base), runs: scenario.runs };
       }
       if (onTick) onTick(gainScan);
     }
@@ -6358,10 +6393,7 @@ async function scanGains(axis, onTick) {
         if (!live()) return;
         gainScan.done++;
         if (v) {
-          // The DEEPER pass keeps the shallow one's `diverged`: it is a fact
-          // about the two builds, not about how hard they were measured.
-          gainScan.by[c.id] = { ...gainOver(v, deepBase), runs: refine,
-            diverged: gainScan.by[c.id]?.diverged !== false };
+          gainScan.by[c.id] = { ...gainOver(v, deepBase), runs: refine };
         }
         if (onTick) onTick(gainScan);
       }
@@ -6377,17 +6409,19 @@ async function scanGains(axis, onTick) {
 /// HOW WIDE this gain's answer is, as a fraction — 0 when the comparison is
 /// exact.
 ///
-/// The streams are split (`rng::Draws`), so a candidate that changes only
-/// damage numbers does not re-roll the fight at all: its comparison against the
-/// reference is EXACT, and a +3% from it is a fact however small. A candidate
-/// that changes how many STATUSES land does re-roll — the status and buff
-/// streams diverge — and its comparison carries the spread of a different
-/// fight. Proc count tells the two apart for free, because it is already in the
-/// response.
+/// It is the comparison's OWN error and nothing else. `gainOver` pairs the two
+/// builds run by run, so a candidate that scales this fight proportionally
+/// leaves every paired difference at zero and lands here as a plain 0: exact,
+/// derived, not asserted.
 ///
-/// So a band is printed only where the fight actually moved, and a small exact
-/// gain is still printed as the fact it is.
-const gainBand = (g) => (g.diverged ? g.se || 0 : 0);
+/// It used to ask a PROXY — had the median run's proc count changed? — because
+/// two independent summaries cannot answer the question. The proxy was wrong in
+/// the direction that matters: it says "same fight" whenever the count happens
+/// to coincide, and on the Kuva Nukor all seven progenitor elements report 6079
+/// while their fights differ by up to 30%. Seven chips claimed an exactness
+/// none of them had, and the ranking between two of them was a coin flip
+/// printed as a fact (owner, 2026-08-14).
+const gainBand = (g) => g.se || 0;
 
 /// The chip. A gain the scan cannot resolve STATES ITS WIDTH rather than
 /// collapsing to "about nothing" (owner, 2026-08-12). "≈0%" was one string for
@@ -6396,7 +6430,12 @@ const gainBand = (g) => (g.diverged ? g.se || 0 : 0);
 /// can act on: the first says pick something else, the second says raise the
 /// runs. A band says which: `+0.1%` is
 /// worthless, `≈+3.1% ±7.2%` is unmeasured.
-const gainChip = (g, why) => {
+const gainChip = (g, why, tied) => {
+  // TIED WITH THE LEADER, said on the chip. The list always produces an order;
+  // this is where it admits the order is not one. See `gainTied`.
+  const tie = tied
+    ? ` <span class="gtie" title="${escHtml(tr("this is as good as the top option — the gap between them is smaller than either answer's own width, so the order between them is the dice"))}">${tr("tied")}</span>`
+    : "";
   const band = gainBand(g);
   if (!band) {
     // MEASURED AND MOVED NOTHING, which is a FINDING and not a number. A third
@@ -6413,14 +6452,36 @@ const gainChip = (g, why) => {
     }
     // Paired exactly — the fight did not re-roll, so this is not an estimate.
     return `<span class="gainchip ${g.pct >= 0 ? "up" : "down"}" title="${escHtml(
-      `${tr("the fight did not re-roll for this option — same statuses landed, so this comparison is exact")} · ${why}`
-    )}">${gainPct(g.pct)}</span>`;
+      `${tr("this option did not re-roll the fight — run for run it scaled the same engagement, so this comparison is exact")} · ${why}`
+    )}">${gainPct(g.pct)}${tie}</span>`;
   }
   const cls = Math.abs(g.pct) < band ? "flat" : (g.pct >= 0 ? "up" : "down");
   return `<span class="gainchip ${cls}" title="${escHtml(
     `${tr("this option re-rolls the fight, so its answer is only good to ±{x} — raise the run count to narrow it")
       .replace("{x}", sig2(band * 100) + "%")} · ${why}`
-  )}">≈${gainPct(g.pct)} ±${sig2(band * 100)}%</span>`;
+  )}">≈${gainPct(g.pct)} ±${sig2(band * 100)}%${tie}</span>`;
+};
+
+/// IS THIS OPTION TELLING THE READER APART FROM THE BEST ONE?
+///
+/// A chip answers "what is this worth against the build you have". The LIST
+/// answers a second question nobody wrote down — which of these to pick — and
+/// it answers it by sorting, which always produces an order even when there is
+/// none. Two options whose gains differ by less than the two bands together are
+/// the same answer; printing one above the other says otherwise, and the reader
+/// acts on the order (owner, 2026-08-14: picked the top one and it measured
+/// worse than the one under it).
+///
+/// So an option that is not SEPARATED from the leader is marked as tied with
+/// it. Not the leader's neighbour — the leader, because "which do I pick" is
+/// asked of the top of the list and every option tied with it is an equally
+/// good answer.
+const gainTied = (g) => {
+  const all = Object.values(gainScan.by || {});
+  if (all.length < 2) return false;
+  const best = all.reduce((a, b) => (b.pct > a.pct ? b : a));
+  if (best === g || best.pct === g.pct) return true;
+  return best.pct - g.pct < Math.hypot(best.se || 0, g.se || 0);
 };
 
 const gainChipFor = (id, where) => {
@@ -6459,7 +6520,8 @@ const gainChipFor = (id, where) => {
   // which procs land, and ten runs narrows that without settling it.
   const why = tr("averaged over {n} runs — this number moves between scans, most of all for status mods")
     .replace("{n}", g.runs);
-  return gainChip(g, `${where} · ${gainScan.metric} · ${gainScan.note} · ${why}`);
+  return gainChip(g, `${where} · ${gainScan.metric} · ${gainScan.note} · ${why}`,
+    gainTied(g));
 };
 
 // ---- the OPTIMIZER's quick calc ----------------------------------------
@@ -6618,7 +6680,10 @@ async function scanOptGains(onTick) {
   const useKills = (scenario.metric || "kpm") !== "dps";
   const read = (r) => readGain(r, useKills)?.v ?? null;
   const seOf = (r) => readGain(r, useKills)?.se ?? 0;
-  const procsOf = (r) => (!r || !r.ok ? null : (r.procs ?? null));
+  // The runs behind each number, so the winner of a candidate set pairs against
+  // the winner of the reference set rather than being compared to it as an
+  // independent sample — same seed, same run order, so run `i` is run `i`.
+  const runsOf = (r) => readGain(r, useKills)?.runs ?? [];
   // Every (set, pairing) is ONE job, flattened into one queue so a set with
   // three pairings does not hold a lane while another waits — the same shared
   // cursor the builder's scan uses, for the same reason.
@@ -6632,7 +6697,7 @@ async function scanOptGains(onTick) {
   optGain.total = jobs.length;
   const got = orders.map((os) => os.map(() => null));
   const ses = orders.map((os) => os.map(() => 0));
-  const procs = orders.map((os) => os.map(() => null));
+  const runsAt = orders.map((os) => os.map(() => []));
   let cursor = 0;
   await Promise.all(gainLanes().map(async (lane) => {
     for (;;) {
@@ -6643,7 +6708,7 @@ async function scanOptGains(onTick) {
       if (!live()) return;
       got[j.si][j.oi] = read(r);
       ses[j.si][j.oi] = seOf(r);
-      procs[j.si][j.oi] = procsOf(r);
+      runsAt[j.si][j.oi] = runsOf(r);
       optGain.done++;
       if (onTick) onTick(optGain);
     }
@@ -6676,16 +6741,18 @@ async function scanOptGains(onTick) {
       const [withX, without] = c.drops ? [b, v] : [v, b];
       if (!without) return;
       const vi = got[i + 1].indexOf(v);
+      const bi = got[0].indexOf(b);
       const o = orders[i + 1][vi] || {};
-      const refProcs = procs[0][got[0].indexOf(b)];
-      const candProcs = procs[i + 1][vi];
       // `drops` already decided which side is which; the uncertainty is the
       // same either way, so it is built from the two measurements as they sit.
       const [seWith, seWithout] = c.drops ? [bSe, ses[i + 1][vi]] : [ses[i + 1][vi], bSe];
+      const [rWith, rWithout] = c.drops
+        ? [runsAt[0][bi], runsAt[i + 1][vi]]
+        : [runsAt[i + 1][vi], runsAt[0][bi]];
       optGain.by[c.id] = {
-        ...gainOver({ v: withX, se: seWith }, { v: without, se: seWithout }),
+        ...gainOver({ v: withX, se: seWith, runs: rWith },
+                    { v: without, se: seWithout, runs: rWithout }),
         runs: scenario.runs,
-        diverged: refProcs === null || candProcs !== refProcs,
         combined: o.combined || [], leftover: o.leftover || [], drops: c.drops };
     });
   }
@@ -7364,7 +7431,7 @@ function renderValence() {
   const s = valenceSpec(w.id);
   const sub = $("valence-sub");
   if (!s) { box.innerHTML = ""; if (sub) sub.textContent = ""; return; }
-  if (sub) sub.textContent = tr("the bonus this copy came out of its Lich with");
+  if (sub) sub.textContent = tr("the bonus this copy came out of its Lich with — added as the weapon's own BASE damage, so elemental mods and status scale with it");
   const pct = (x) => Math.round(x * 1000) / 10;
   // A PICK ROW, not a dropdown — the same shape an evolution tier has, and for
   // the same reason: every option carries its own quick-calc gain, and a chip
@@ -7374,20 +7441,24 @@ function renderValence() {
   // Which element wins is the question a scan is worth the most on here: a
   // progenitor element is a whole element entering the hierarchy, so the answer
   // depends on the mods around it and on the target, and no card states it.
-  const pick = (id, label, note) => {
+  // THE NAME AND THE NUMBER, and nothing else (owner, 2026-08-14). An
+  // evolution's description line earns its space because the perks differ from
+  // each other; seven elements do not — every one of them says the same
+  // sentence, so seven copies of it is a wall of text between the reader and
+  // the seven numbers that are the actual answer. What the bonus DOES is said
+  // once, by the block's own subtitle.
+  const pick = (id, label) => {
     const on = valence.element === id;
     return `<span class="evopick${on ? " sel" : ""}" data-vel="${escHtml(id)}">
       <span class="einfo"><b class="en">${escHtml(label)}${
-        gainChipFor(id, tr("Valence"))}</b><span class="ed"><div>${escHtml(note)}</div></span></span></span>`;
+        gainChipFor(id, tr("Valence"))}</b></span></span>`;
   };
   // NO "NONE" OPTION (owner, 2026-08-14). Every copy of an adversary weapon
   // comes out of a Lich carrying an element, so an empty valence is not a
   // weaker build of this weapon — it is a weapon nobody has, and a number
   // nobody can reproduce. It was offered here as "the weapon's printed panel",
   // which is the wiki infobox's figure and not a build.
-  const picks = s.elements
-    .map((e) => pick(e, DT(e), tr("added as the weapon's own BASE damage — elemental mods and status scale with it")))
-    .join("");
+  const picks = s.elements.map((e) => pick(e, DT(e))).join("");
   box.innerHTML =
     `<div class="evo"><span class="rank">${escHtml(tr("Element"))}</span><div class="picks">${picks}</div></div>` +
     `<div class="runs-row"><label title="${escHtml(tr("how big the roll was, as a share of base damage — a Lich rolls it randomly and Valence Fusion raises it, capping at the number on the right"))}">${escHtml(tr("Valence bonus"))} <span class="unit">%</span> <input type="number" id="valence-bonus" min="${pct(s.min)}" max="${pct(s.max)}" step="0.5" value="${pct(valence.bonus)}"></label>` +

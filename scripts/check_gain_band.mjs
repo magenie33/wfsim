@@ -70,8 +70,7 @@ const r = await app.evaluate(`(async () => {
     own: { mean: own && own.score_mean, se: own && own.score_se, dps: own && own.dps_mean },
     n: Object.keys(gainScan.by).length,
     // Every gain the scan produced, with the width it claims for it.
-    gains: Object.entries(gainScan.by).map(([id, g]) =>
-      ({ id, pct: g.pct, se: g.se, diverged: g.diverged })),
+    gains: Object.entries(gainScan.by).map(([id, g]) => ({ id, pct: g.pct, se: g.se })),
     chips,
   };
 })()`);
@@ -114,16 +113,46 @@ check("NO chip reads ≈0% or +0.00%", !r.chips.some(zeroish),
 const noEffect = r.chips.filter((c) => /no effect here|无效果/.test(c.text));
 check("...a measured zero says so in words instead", noEffect.length > 0,
   `${noEffect.length} of ${r.chips.length}`);
-// An unresolved chip states its width; a resolved one does not pretend to have
-// been re-rolled. Both shapes must actually occur, or one of the two branches
-// is dead and this check is asserting nothing.
+// EVERY GAIN CARRIES ITS OWN WIDTH, and the width is the PAIRED one — the
+// spread of `c_i − ratio·b_i` over the runs, which is the error of the number
+// actually printed.
+//
+// It used to be a PROXY: had the median run's proc count changed? A count that
+// happened to coincide printed a bare number and claimed the comparison was
+// exact — and on the Kuva Nukor all seven progenitor elements report the same
+// count while their fights differ by up to 30%, so seven chips claimed an
+// exactness none of them had and the order between two of them was a coin flip
+// printed as a fact (owner, 2026-08-14).
+//
+// So a bare number now means ONE thing: the runs were identical, which under
+// the kill-rate metric is the same finding as "no effect here". The two sets
+// are asserted to be the same set, because that is what makes this a statement
+// about the code rather than a count that happens to be positive.
 const banded = r.chips.filter((c) => /±/.test(c.text));
 const bare = r.chips.filter((c) => !/±/.test(c.text));
-check("an unresolved chip states its width", banded.length > 0 || r.gains.every((g) => !g.diverged),
+const worded = r.chips.filter((c) => /no effect here|无效果/.test(c.text));
+check("an unresolved chip states its width", banded.length > 0,
   `${banded.length} banded of ${r.chips.length}`);
-check("...and an exactly-paired one does not", bare.length > 0, `${bare.length} bare of ${r.chips.length}`);
+check("...and a bare one does not", bare.length > 0 && worded.length > 0,
+  `${bare.length} bare, ${worded.length} of them a worded zero`);
 check("a banded chip explains the width in its tooltip",
   banded.every((c) => /±/.test(c.title)), banded[0] && banded[0].title);
+
+// PAIRING IS THE WHOLE REASON A BAND CAN BE ZERO, and the two mods this file
+// already uses as its control are the case: Serration and Amalgam Serration
+// differ only in base damage, so run for run they scale this fight by a
+// constant and `c_i − ratio·b_i` is zero on every one. Derived, not asserted —
+// no proxy is consulted.
+const damageOnly = ["serration", "amalgam_serration"]
+  .map((id) => r.gains.find((g) => g.id === id)).filter(Boolean);
+check("a damage-only mod pairs to a band of exactly zero",
+  damageOnly.length === 2 && damageOnly.every((g) => g.se === 0),
+  damageOnly.map((g) => `${g.id} ${(g.pct * 100).toFixed(1)}% ±${g.se}`).join(", "));
+// …and a STATUS mod does not, because it decides which fight happens. Without
+// this the check above would pass on a band that is always zero.
+const statusMod = r.gains.find((g) => g.id === "thermite_rounds" || g.id === "hellfire");
+check("...and a status mod does not", statusMod && statusMod.se > 0.01,
+  statusMod && `${statusMod.id} ±${(statusMod.se * 100).toFixed(2)}%`);
 
 // ---- 4. the negative control: the pair the bug was reported on ----------
 // Same fight, same statuses — so the comparison is paired and exact, and the
@@ -192,7 +221,7 @@ const states = await app.evaluate(`(async () => {
   out.otherAxis = gainChipFor(id, 'EVO IV');
   gainAxis = { kind: 'evo', idx: 0 };
   gainScan = { key: gainKey(), axis: gainAxis, running: false, done: 12, total: 12,
-               by: { [id]: { pct: 0.4123, se: 0.0169, runs: 10, diverged: true } } };
+               by: { [id]: { pct: 0.4123, se: 0.0169, runs: 10 } } };
   out.done = gainChipFor(id, 'EVO IV');
   gainScan = saveScan; gainAxis = saveAxis;
   return out;
@@ -205,6 +234,39 @@ check("...but never on an axis nobody is measuring", states.otherAxis === "", st
 check("...nor when nothing is running at all", states.idle === "", states.idle);
 check("a finished option shows its NUMBER, never the marker",
   /\+41\.23%/.test(states.done) && !/pend/.test(states.done), states.done.slice(0, 60));
+
+// ---- 7. a coin flip has to LOOK like one --------------------------------
+// The chip answers "what is this worth"; the LIST answers "which do I pick",
+// and it answers by sorting, which produces an order even where there is none.
+// Two gains that differ by less than the two bands together are one answer, and
+// the reader acts on the order — picked the top one, measured worse than the
+// one under it (owner, 2026-08-14).
+//
+// Driven as state for the same reason the four above are: it is a rule about
+// two numbers, so it is asserted on two numbers.
+const ties = await app.evaluate(`(async () => {
+  const saveScan = gainScan, saveAxis = gainAxis;
+  gainAxis = { kind: 'valence', idx: 0 };
+  const mk = (by) => { gainScan = { key: gainKey(), axis: gainAxis, running: false,
+    done: 3, total: 3, metric: 'kill rate', note: 'x', by }; };
+  // Separated: the leader is 30 points clear of a 0.04-wide answer.
+  mk({ a: { pct: 0.32, se: 0.026, runs: 10 },
+       b: { pct: 0.033, se: 0.0004, runs: 10 } });
+  const clear = { lead: gainChipFor('a', 'V'), other: gainChipFor('b', 'V') };
+  // Not separated: 0.003 apart, each answer ±0.04.
+  mk({ a: { pct: 0.03333, se: 0.00043, runs: 10 },
+       b: { pct: 0.03330, se: 0.00041, runs: 10 } });
+  const tied = { lead: gainChipFor('a', 'V'), other: gainChipFor('b', 'V') };
+  gainScan = saveScan; gainAxis = saveAxis;
+  return { clear, tied };
+})()`);
+check("an option clear of the leader is not marked tied",
+  !/gtie/.test(ties.clear.other), ties.clear.other.slice(0, 90));
+check("...and one inside its width is",
+  /gtie/.test(ties.tied.other), ties.tied.other.slice(0, 120));
+// The LEADER carries it too, or the marker reads as "this one is worse".
+check("...on both of them, since neither is above the other",
+  /gtie/.test(ties.tied.lead), ties.tied.lead.slice(0, 120));
 
 
 console.log(failed ? `\n${failed} failed` : "\na quick-calc chip states how well it knows its number");

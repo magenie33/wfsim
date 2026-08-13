@@ -372,17 +372,31 @@ around (decision 2026-07-31).
   scan censored every chip or none of them, at random. The server has all N
   runs and now reports what it already computed (`score_mean`/`score_se`,
   `dps_mean`/`dps_se`), which is one fewer simulation per scan and an answer
-  that does not depend on a coin flip. A chip therefore has three shapes and the
-  check asserts all three OCCUR, so no branch is dead: an exact one (`+165%` —
-  the fight did not re-roll, same procs), a banded one (`≈+3.1% ±7.2%`), and a
-  measured zero, which says "no effect here" in words and points at the row's
-  own disclosure line — a third of a rifle pool lands there against one standing
-  target (ammo and magazine mods, Firestorm, punch-through, recoil and zoom,
-  Cautious Shot, a Bane of the wrong faction), and printing "+0.00%" 38 times
-  reads as a broken scan rather than as UNMODELLED.md. Its NEGATIVE CONTROL is
-  the pair the bug came in on: Serration and Amalgam Serration differ only in
-  base damage, so neither re-rolls the fight, both compare exactly, and the
-  order is the one the cards state — measured 0.9623 = 2.55/2.65 at every build
+  that does not depend on a coin flip. THE WIDTH IS THE COMPARISON'S OWN, and
+  it is DERIVED: `/api/simulate` returns the per-run series when the caller says
+  it will pair with it (`run_series`), and the chip's band is the spread of
+  `c_i - ratio*b_i` over those runs. It used to be a PROXY — had the MEDIAN
+  run's proc count changed? — because two `mean ± sigma/sqrt(n)` summaries
+  describe each build alone and cannot answer it; the proxy fails in the
+  direction that matters, saying "same fight" whenever the count coincides. All
+  seven of the Kuva Nukor's progenitor elements report 6079 while their fights
+  differ by up to 30%, so seven chips claimed an exactness none had (owner,
+  2026-08-14). A chip therefore has three shapes and the check asserts all three
+  OCCUR, so no branch is dead: an exact one (`+165%` — every paired difference
+  zero, so the candidate scaled the same engagement run for run), a banded one
+  (`≈+3.1% ±7.2%`), and a measured zero, which says "no effect here" in words
+  and points at the row's own disclosure line — a third of a rifle pool lands
+  there against one standing target (ammo and magazine mods, Firestorm,
+  punch-through, recoil and zoom, Cautious Shot, a Bane of the wrong faction),
+  and printing "+0.00%" 38 times reads as a broken scan rather than as
+  UNMODELLED.md. AND A COIN FLIP LOOKS LIKE ONE: the chip answers "what is this
+  worth", the LIST answers "which do I pick" by sorting, and a sort produces an
+  order where there is none — so an option not SEPARATED from the leader (the
+  gap under the two bands combined) is marked `tied`, on the leader too, since
+  neither is above the other. Its NEGATIVE CONTROL is the pair the bug came in
+  on: Serration and Amalgam Serration differ only in base damage, so run for run
+  they scale this fight by a constant, both band to exactly zero, and the order
+  is the one the cards state — measured 0.9623 = 2.55/2.65 at every build
   strength and run count. The 3.8% gap between them is far inside the ±13% raw
   spread at 10 runs, so that ordering survives ONLY because the two are paired
   against the same luck, which is the thing that must not silently regress.

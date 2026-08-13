@@ -7367,8 +7367,45 @@ pub struct Summary {
     pub median_run: RunResult,
 }
 
+/// THE PER-RUN SERIES of the two statistics builds are compared by, in RUN
+/// ORDER — which is what makes them PAIRED.
+///
+/// [`monte_carlo`] advances its master rng exactly once per run whatever the
+/// run does, and `Draws::new` derives the three streams from that one number,
+/// so run `i` of one build and run `i` of another are drawn from the same
+/// luck. Two summaries cannot say that: `mean ± σ/√n` describes each build
+/// alone, and combining them treats as independent two samples that are
+/// anything but — which overstates the spread of the comparison and, worse,
+/// cannot tell "these two are the same fight" from "these two differ by less
+/// than I can measure".
+///
+/// So a caller that wants the second question answered gets the runs
+/// themselves. The quick calc used to ask instead whether the MEDIAN run's
+/// proc COUNT had changed and call the comparison exact when it had not; on
+/// the Kuva Nukor all seven progenitor elements answer 6079 while the fights
+/// plainly differ, so every one of its chips claimed an exactness it did not
+/// have (owner, 2026-08-14).
+///
+/// BESIDE [`Summary`] rather than in it: `Summary` is `Copy` and the optimizer
+/// copies one per candidate, so two `Vec`s in it would be a cost paid by
+/// millions of evaluations that never read them.
+#[derive(Debug, Clone, Default)]
+pub struct RunSeries {
+    pub kill_progress: Vec<f64>,
+    pub effective: Vec<f64>,
+}
+
 /// Run `runs` engagements from a single seed and summarize.
 pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
+    monte_carlo_inner(params, runs, seed, false).0
+}
+
+/// ...keeping the per-run series. See [`RunSeries`].
+pub fn monte_carlo_series(params: &DummyParams, runs: u32, seed: u64) -> (Summary, RunSeries) {
+    monte_carlo_inner(params, runs, seed, true)
+}
+
+fn monte_carlo_inner(params: &DummyParams, runs: u32, seed: u64, keep: bool) -> (Summary, RunSeries) {
     let mut rng = Rng::new(seed);
     let mut sum = 0.0f64;
     let mut sum_sq = 0.0f64;
@@ -7471,7 +7508,19 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
         v[i.min(v.len() - 1)]
     };
 
-    Summary {
+    // BEFORE the median sort below, which reorders `all_runs` in place: the
+    // whole point of the series is that index `i` is run `i`, in the order the
+    // rng produced them, so it pairs with another build's run `i`.
+    let series = if keep {
+        RunSeries {
+            kill_progress: all_runs.iter().map(|r| r.kill_progress).collect(),
+            effective: all_runs.iter().map(|r| r.effective_damage).collect(),
+        }
+    } else {
+        RunSeries::default()
+    };
+
+    let summary = Summary {
         runs,
         duration_secs: params.duration_secs,
         mean_damage: mean,
@@ -7542,7 +7591,8 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
             all_runs.sort_by(|a, b| a.effective_damage.total_cmp(&b.effective_damage));
             all_runs.get(all_runs.len() / 2).copied().unwrap_or_default()
         },
-    }
+    };
+    (summary, series)
 }
 
 #[cfg(test)]

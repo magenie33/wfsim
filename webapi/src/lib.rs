@@ -4172,7 +4172,18 @@ pub fn simulate_json(v: &Value) -> Value {
     let report_panel = &report_panel;
 
     // ---- run ----
-    let s = monte_carlo(&params, runs, seed);
+    // THE PER-RUN SERIES, only when the caller says it will pair with it. Every
+    // run of one build is drawn from the same luck as the same-numbered run of
+    // another, so a comparison between two builds is PAIRED — and a paired
+    // comparison cannot be assembled from two `mean ± σ/√n` summaries, which
+    // describe each build alone. The quick calc is the caller; nobody else pays
+    // the length.
+    let want_series = get_bool(v, "run_series", false);
+    let (s, series) = if want_series {
+        wfsim_engine::dummy::monte_carlo_series(&params, runs, seed)
+    } else {
+        (monte_carlo(&params, runs, seed), Default::default())
+    };
 
     let damage: Vec<Value> = report_panel
         .damage
@@ -4413,6 +4424,14 @@ pub fn simulate_json(v: &Value) -> Value {
         // runs; it says the spread it already computed.
         "score_mean": s.mean_kill_progress,
         "score_se": s.std_kill_progress / f64::from(runs.max(1)).sqrt(),
+        // …and the runs behind them, for a caller that will PAIR against
+        // another build. Absent unless asked for: see `run_series` above.
+        "score_runs": series.kill_progress,
+        "dps_runs": series
+            .effective
+            .iter()
+            .map(|e| e / s.duration_secs.max(1e-9))
+            .collect::<Vec<f64>>(),
         "dps_mean": s.mean_effective_damage / s.duration_secs.max(1e-9),
         "dps_se": s.std_effective_damage
             / f64::from(runs.max(1)).sqrt()
