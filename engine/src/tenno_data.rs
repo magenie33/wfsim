@@ -60,6 +60,12 @@ pub struct Tenno {
     /// What the player is DOING.
     #[serde(default)]
     pub state: TennoState,
+    /// …and what the player BRINGS, as mod-bucket adds. See [`StatBonuses`].
+    /// Empty on the neutral player, which is the fight the board is scored
+    /// under and the honest default: with nobody having said otherwise, this
+    /// weapon is getting nothing it did not earn.
+    #[serde(default)]
+    pub bonuses: StatBonuses,
 }
 
 /// 0.9 — the slowest sprint any Warframe has. See [`Tenno::sprint`].
@@ -150,6 +156,64 @@ pub struct TennoState {
 
 fn full() -> f64 {
     1.0
+}
+
+/// THE FIGHT'S OWN STAT BONUSES — "the effect equals stuffing in another mod"
+/// (owner, 2026-08-13: "效果等于又塞mod，不需要单独一个增益。这些是永久的").
+///
+/// Everything a weapon is handed by something that is not its build: a squad
+/// buff, a Warframe ability, an arcane on another weapon, a Helminth this app
+/// has no entry for. Rather than one definition per source — each of which
+/// would need a bracket nobody published — the player says what it is WORTH and
+/// declares the arithmetic by declaring the shape: these join the same additive
+/// buckets the MODS feed, so a scenario's +60% multishot and Split Chamber's
+/// +90% sum, exactly as two multishot mods would.
+///
+/// PERMANENT, by the owner's own framing. No trigger, no clock, no stack count:
+/// a `data/abilities/` buff is the thing with a duration, and this is the thing
+/// without one. That is what makes it cheap to be right about — there is no
+/// uptime to model, and the number the player types is the number every shot
+/// gets.
+///
+/// It lives on the TENNO because it is the fight's side of the fight, which is
+/// also what carries it everywhere for free: every `resolve_for` in the
+/// workspace is already handed the fight's player, so the panel, the simulator
+/// and the optimizer cannot disagree about it and no call site had to be
+/// remembered.
+///
+/// NO ELEMENTS. An elemental mod is position-sensitive and enters a hierarchy
+/// (MECHANICS §2), so "+90% Heat here" is not a number, it is a place in an
+/// ordering — the one bucket on this page that a scalar cannot express.
+#[derive(Debug, Clone, Copy, PartialEq, Default, Deserialize)]
+#[serde(default)]
+pub struct StatBonuses {
+    /// Serration's bucket.
+    pub base_damage: f64,
+    /// Split Chamber's.
+    pub multishot: f64,
+    /// Point Strike's — RELATIVE to the unmodded base, like every crit mod.
+    pub crit_chance: f64,
+    /// Vital Sense's.
+    pub crit_damage: f64,
+    /// Rifle Aptitude's.
+    pub status_chance: f64,
+    /// The status DAMAGE bucket (Nightwatch Napalm's family).
+    pub status_damage: f64,
+    /// Speed Trigger's. A weapon whose fire rate is LOCKED ignores it, the same
+    /// way it ignores a fire-rate mod.
+    pub fire_rate: f64,
+    /// Fast Hands' — `time = base / (1 + bucket)`.
+    pub reload_speed: f64,
+    /// Magazine Warp's, as a fraction of the base magazine.
+    pub magazine: f64,
+}
+
+impl StatBonuses {
+    /// Is every bucket zero? The default, and what a fight that says nothing
+    /// means — used to keep the panel from listing a source worth nothing.
+    pub fn is_empty(&self) -> bool {
+        *self == Self::default()
+    }
 }
 
 impl Default for TennoState {

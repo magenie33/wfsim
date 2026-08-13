@@ -217,6 +217,80 @@ check("...and Deathtrap Trigger is unmoved by it — no primary to equip from",
   solo.trapSolo.base === solo.trapFull.base && solo.trapSolo.mag === solo.trapFull.mag,
   `${solo.trapFull.base}/${solo.trapFull.mag} -> ${solo.trapSolo.base}/${solo.trapSolo.mag}`);
 
+// THE FIGHT'S OWN STAT BONUSES — a panel, not a buff (owner, 2026-08-13:
+// "效果等于又塞mod，不需要单独一个增益。这些是永久的"). Three claims, and the
+// third is the one a screenshot cannot show: it is the SCENARIO's, so it saves
+// with the fight, travels to the optimizer read-only, and no ruler carries one.
+const extra = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  localStorage.clear();
+  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3000);
+  document.querySelectorAll('.tab').forEach(t => { if (/Sim/i.test(t.textContent)) t.click(); });
+  await sleep(1200);
+  const box = document.getElementById('sim-extra');
+  const keys = [...box.querySelectorAll('[data-xk]')].map(e => e.dataset.xk);
+  const dps = async () => {
+    const s = await api('/api/simulate', { ...buildPayload(), ...fightPayload(sim), runs: 6, seed: 4 });
+    return { base: (s.panel || {}).modified_base, ms: (s.panel || {}).multishot };
+  };
+  const before = await dps();
+
+  // TYPED IN PERCENT, stored as the fraction the engine holds.
+  const set = async (k, pct) => {
+    const el = box.querySelector('[data-xk="' + k + '"]');
+    el.value = String(pct); el.dispatchEvent(new Event('change'));
+    await sleep(900);
+  };
+  await set('base_damage', 165);
+  await set('multishot', 90);
+  const after = await dps();
+  const stored = JSON.parse(JSON.stringify(sim.extra_stats || {}));
+
+  // …AND IT IS PART OF THE FIGHT'S DOCUMENT. snapshotScenario() is what a
+  // scenario preset stores and snapshotState() is what a build preset does,
+  // so asking both is the claim itself: this saves with the fight and is not
+  // the build's (owner: 可以被一起保存到 scenario 里的).
+  //
+  // Asserted on the DOCUMENTS rather than on a stored preset, because the
+  // scenario a fresh page opens on is the OFFICIAL ruler — which is read-only
+  // by design and therefore saves nothing, which would make a storage read
+  // green for the wrong reason.
+  await sleep(600);
+  const saved = snapshotScenario();
+  const buildDoc = snapshotState();
+
+  // BLANK IS ABSENT, not a zero nobody typed.
+  await set('base_damage', '');
+  const cleared = JSON.parse(JSON.stringify(sim.extra_stats || {}));
+  return { keys, before, after, stored, savedExtra: saved.extra_stats || null, cleared,
+           inBuild: JSON.stringify(buildDoc).includes('extra_stats') };
+})()`);
+
+check("the extra-stats panel carries every mod-like bucket",
+  ["base_damage", "multishot", "crit_chance", "crit_damage", "status_chance",
+   "status_damage", "fire_rate", "reload_speed", "magazine"]
+    .every((k) => extra.keys.includes(k)),
+  extra.keys.join(","));
+// STORED AS A FRACTION, typed as a percent — the units every bucket in the
+// engine holds, and the units a mod's own `rankMax` is in.
+check("...typed in percent, stored as the fraction the engine holds",
+  extra.stored.base_damage === 1.65 && extra.stored.multishot === 0.9,
+  JSON.stringify(extra.stored));
+// THE ONLY CLAIM THAT MATTERS: it lands in the bucket, in the shipping build.
+// The Torid's base is 45; +165% is x2.65, and 1 multishot + 90% is 1.9.
+check("...and it reaches the number as a mod would",
+  Math.abs(extra.after.base / extra.before.base - 2.65) < 1e-6
+    && Math.abs(extra.after.ms - (extra.before.ms + 0.9)) < 1e-6,
+  `base x${(extra.after.base / extra.before.base).toFixed(3)}, multishot ${extra.before.ms} -> ${extra.after.ms}`);
+check("...it saves with the SCENARIO, not the build",
+  extra.savedExtra && extra.savedExtra.base_damage === 1.65 && extra.inBuild === false,
+  JSON.stringify({ scenario: extra.savedExtra, inBuild: extra.inBuild }));
+// A BLANK BOX IS NOT A ZERO. Keeping the key would send a bonus nobody set and
+// put an empty object into every share link.
+check("...and clearing a box drops the key entirely",
+  !("base_damage" in extra.cleared) && extra.cleared.multishot === 0.9,
+  JSON.stringify(extra.cleared));
+
 // ...AND IT TRAVELS, when there is a way to send it. Sharing can be switched
 // off (SHARE_ENABLED) and is while its reliability is being investigated; the
 // claim is about the PAYLOAD, so it is asserted whenever a payload can be made

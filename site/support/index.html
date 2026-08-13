@@ -426,6 +426,15 @@
         <h3 class="sim-h" data-i18n>4 · Buffs <span class="sim-hint" data-i18n>the stacks the run STARTS with — the fight still grants and decays them on their own triggers</span>
           <button id="sim-buffs-all" class="ghost-btn small"></button></h3>
         <div id="sim-buffs"></div>
+        <!-- THE FIGHT'S OWN STAT BONUSES. Everything this weapon is handed by
+             something that is not its build, expressed as what it is WORTH:
+             "效果等于又塞mod，不需要单独一个增益。这些是永久的" (owner,
+             2026-08-13). No trigger, no clock, no stack count — the thing with
+             a duration is the block below, and this is the thing without one.
+             It sits BEFORE the Warframe buffs because it is the simpler claim
+             and because that block is still the last input before you run. -->
+        <h3 class="sim-h" data-i18n>5 · Extra stats <span class="sim-hint" data-i18n>anything this weapon is handed from outside its build — it lands in the same bucket a mod would</span></h3>
+        <div id="sim-extra" class="field-grid"></div>
         <!-- WARFRAME ABILITY BUFFS — INSIDE the fight, and wrapped so it still
              reads as its own thing (owner, 2026-08-09: "既是独立模块，也是属于
              scenario的一部分"). It is a section of the scenario because that is
@@ -435,11 +444,11 @@
              EARLY ACCESS: the strength is typed in here today and comes from
              the frame once frames land. Said on screen, not only here. -->
         <div class="sim-panel" id="wfbuff-block">
-          <h3 class="sim-h" data-i18n>5 · Warframe buffs <span class="sim-hint" data-i18n>abilities cast on this weapon — set your Ability Strength and the values follow</span>
+          <h3 class="sim-h" data-i18n>6 · Warframe buffs <span class="sim-hint" data-i18n>abilities cast on this weapon — set your Ability Strength and the values follow</span>
             <span class="sim-h-sub" id="wfbuff-sub"></span></h3>
           <div id="sim-wfbuffs"></div>
         </div>
-        <h3 class="sim-h" data-i18n>6 · Simulation <span class="sim-hint" data-i18n>how many times to replay it, and what to read off — the optimizer's final round uses this count unless its own says otherwise</span></h3>
+        <h3 class="sim-h" data-i18n>7 · Simulation <span class="sim-hint" data-i18n>how many times to replay it, and what to read off — the optimizer's final round uses this count unless its own says otherwise</span></h3>
         <div id="sim-run" class="field-grid"></div>
         <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
       </div>
@@ -553,6 +562,8 @@
         <div id="opt-technique" class="field-grid"></div>
         <h3 class="sim-h" data-i18n>Warframe buffs <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored under them</span></h3>
         <div id="opt-wfbuffs"></div>
+        <h3 class="sim-h" data-i18n>Extra stats <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored with them</span></h3>
+        <div id="opt-extra" class="field-grid"></div>
         <h3 class="sim-h" data-i18n>Limits <span class="sim-hint" data-i18n>what the search is allowed to assume</span></h3>
         <div id="opt-limits" class="field-grid"></div>
         <h3 class="sim-h" data-i18n>Buffs <span class="sim-hint" data-i18n>read-only — the fight's own, applied to every candidate; a buff nobody set starts where it would in a fight</span></h3>

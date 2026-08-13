@@ -360,9 +360,17 @@ ui:
   "outside the sim": 不在模拟范围
   "element": 元素
   "this ability lets you pick the element — the gear wheel in game": 这个技能可以自选元素——游戏里那个装备轮盘
-  "5 · Warframe buffs": 5 · 战甲增益
+  "5 · Extra stats": 5 · 额外属性
+  "Extra stats": 额外属性
+  "anything this weapon is handed from outside its build — it lands in the same bucket a mod would": 这把武器从配装之外拿到的任何加成——它落在和对应 mod 同一个乘区里
+  "read-only — the fight's own, and every candidate is scored with them": 只读——属于这场战斗，每个候选配装都带着它们计分
+  "a percentage, into the same bucket a mod of this stat feeds — permanent, no trigger and no clock": 一个百分比，进入这条属性的 mod 所在的同一个乘区——永久生效，没有触发条件也没有时间
+  # The nine stat LABELS this block draws are already in the roster below —
+  # they are the same words the stats panel uses, which is the point: a bonus
+  # lands in the bucket that row is about.
+  "6 · Warframe buffs": 6 · 战甲增益
   "abilities cast on this weapon — set your Ability Strength and the values follow": 施加在这把武器上的战甲技能——填入技能强度，下面的数值随之变化
-  "6 · Simulation": 6 · 模拟
+  "7 · Simulation": 7 · 模拟
   "Warframe buffs": 战甲增益
   "Benchmark build — read-only": 榜单配装——只读
   "It is already a row on the board, so nothing here can be edited and its runs are not submitted. Copy it and everything opens up — mods, arcanes, evolutions and the mode — and what you run goes to the board as your own entry.": 它本身就是榜上的一行，所以这里什么都改不了，跑出来的结果也不会提交。复制一份，全部就都能改了——mod、赋能、进化，还有形态——而且你跑出来的成绩会作为你自己的一行进榜。

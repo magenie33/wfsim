@@ -340,6 +340,28 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
     // is not the Tenno's loadout at all, and nothing in the roster asks a
     // companion about its other slots, so it takes the same field.
     t.state.solo_weapon = get_bool(v, "solo_weapon", t.state.solo_weapon);
+    // THE FIGHT'S OWN STAT BONUSES — "the effect equals stuffing in another
+    // mod" (owner, 2026-08-13). One flat object, every key a bucket the mods
+    // already feed, and every key optional: a fight that says nothing gets the
+    // neutral player's zeroes, which is what the board is scored under.
+    //
+    // Read HERE rather than in `parse_fight` for the reason every other player
+    // field is: the panel endpoint has no Fight and needs the same answer, and
+    // two readers of one JSON is how a field drifts.
+    if let Some(o) = v.get("extra_stats").and_then(|x| x.as_object()) {
+        let g = |k: &str| o.get(k).and_then(Value::as_f64).unwrap_or(0.0);
+        t.bonuses = wfsim_engine::tenno_data::StatBonuses {
+            base_damage: g("base_damage"),
+            multishot: g("multishot"),
+            crit_chance: g("crit_chance"),
+            crit_damage: g("crit_damage"),
+            status_chance: g("status_chance"),
+            status_damage: g("status_damage"),
+            fire_rate: g("fire_rate"),
+            reload_speed: g("reload_speed"),
+            magazine: g("magazine"),
+        };
+    }
     // The WARFRAME behind the gun. Armor and energy are the two stats a weapon
     // arcane reads (Primary Bulwark, Primary Overcharge); 0 means "no frame
     // chosen", which is what the neutral Tenno says and what makes those
@@ -1296,6 +1318,10 @@ pub fn meta_json() -> Value {
             // The LOADOUT: false = a full one, which is the standing ruling and
             // the fight the board is scored under.
             "solo_weapon": false,
+            // THE FIGHT'S OWN STAT BONUSES, all zero: whatever this weapon is
+            // handed by something that is not its build. Empty is a fight that
+            // hands it nothing, which is every ruler and every stored scenario.
+            "extra_stats": {},
             "wf_armor": 0.0,
             "wf_energy": 0.0,
             // INFINITE AMMO by default — see `simulate_json` for why.
@@ -2530,6 +2556,41 @@ pub fn panel_json(v: &Value) -> Value {
                     name.clone(),
                     fpct(v),
                     Some("innate, per status type on target".into()),
+                ));
+            }
+        }
+    }
+
+    // THE FIGHT'S OWN BONUSES, attributed. They seed the buckets inside
+    // `resolve_for`, so the numbers are already right everywhere — this is the
+    // half a number cannot say: WHERE it came from. A magazine that grew with
+    // no source listed is the panel telling half a story, and a bucket that
+    // grew because the scenario said so is exactly the case a reader will
+    // otherwise blame on a mod.
+    //
+    // Listed under the same `evo_src` channel the evolutions use rather than
+    // `src`, because `src` is per-MOD and this is not one — it only looks like
+    // one from the arithmetic's side.
+    {
+        let b = &panel_tenno.bonuses;
+        let scen = "Scenario bonus".to_string();
+        for (key, v) in [
+            ("base_damage", b.base_damage),
+            ("multishot", b.multishot),
+            ("crit_chance", b.crit_chance),
+            ("crit_damage", b.crit_damage),
+            ("status_chance", b.status_chance),
+            ("status_damage", b.status_damage),
+            ("fire_rate", b.fire_rate),
+            ("reload", b.reload_speed),
+            ("magazine", b.magazine),
+        ] {
+            if v != 0.0 {
+                evo_src.push((
+                    key,
+                    scen.clone(),
+                    fpct(v),
+                    Some("from the fight, not the build — the same bucket a mod feeds".into()),
                 ));
             }
         }

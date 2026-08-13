@@ -228,5 +228,10 @@ scenario:
   # differ in two terms. Unifying them is a change to a ruler and therefore the
   # owner's call, not a cleanup; until then both are written down.
   wf_energy_pct: 1.0
+  # THE FIGHT'S OWN STAT BONUSES — empty, and stated for the same reason every
+  # field above is: a ruler names what it has an opinion about, and it has one
+  # here. A board row is a statement about the WEAPON, so the fight hands it
+  # nothing its build did not earn.
+  extra_stats: {}
   # NO `frame`: picking one fills armor, energy and sprint together, which is
   # exactly the influence this board exists to keep out.

@@ -109,4 +109,9 @@ scenario:
   # quietly unified: which of 0 and 1.0 the two boards should share is a change
   # to a ruler's terms, and that is the owner's call.
   wf_energy_pct: 0
+  # THE FIGHT'S OWN STAT BONUSES — empty, and stated for the same reason every
+  # field above is: a ruler names what it has an opinion about, and it has one
+  # here. A board row is a statement about the WEAPON, so the fight hands it
+  # nothing its build did not earn.
+  extra_stats: {}
   # NO `frame`, for the same reason as above.

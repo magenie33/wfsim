@@ -2331,15 +2331,36 @@ pub fn resolve_for(
     } else {
         base
     };
-    let (mut bd, mut ms, mut cc, mut cd, mut sc, mut fr, mut sd) =
-        (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    // THE FIGHT'S OWN BONUSES SEED THE BUCKETS, before a single mod is read —
+    // which is the whole of what "the effect equals stuffing in another mod"
+    // means (owner, 2026-08-13). They are ADDITIVE with the mods by
+    // construction, because they are in the same variable, so nothing
+    // downstream had to learn the concept: every bucket's arithmetic, every
+    // lock, every panel row and the optimizer's own scoring treat them as one
+    // more card in the build.
+    //
+    // A LOCK STILL WINS. `locks("multishot")` zeroes the bucket further down,
+    // and a fight bonus is in it — which is right: "set to its default ignoring
+    // other bonuses" does not make an exception for where the bonus came from.
+    let fb = &tenno.bonuses;
+    let (mut bd, mut ms, mut cc, mut cd, mut sc, mut fr, mut sd) = (
+        fb.base_damage,
+        fb.multishot,
+        fb.crit_chance,
+        fb.crit_damage,
+        fb.status_chance,
+        // NOT doubled by `fire_rate_mod_multiplier`: the bow x2 is printed on
+        // the CARD of a fire-rate mod, and a fight bonus has no card.
+        fb.fire_rate,
+        fb.status_damage,
+    );
     // RELOAD STARTS AT THE EVOLUTION'S BONUS, not at zero. Rapid Reinforcement
     // and its family feed the SAME additive bucket the mods do — one bucket, so
     // an evolution's +60% and Primed Fast Hands' +55% sum rather than
     // multiplying, which is the shape every other shared stat here has.
-    let mut rl = base.evo_reload_bonus;
+    let mut rl = base.evo_reload_bonus + fb.reload_speed;
     // Magazine-capacity and status-duration additive buckets.
-    let (mut mag, mut sdur) = (0.0, 0.0);
+    let (mut mag, mut sdur) = (fb.magazine, 0.0);
     // Sentient Surge's three, carried to the sim rather than spent here: all
     // three depend on fight state (how many tendrils are up, whether anything
     // died) that the panel cannot know.
@@ -3673,6 +3694,74 @@ mod tests {
             .collect();
         assert_eq!(asking, ["vasto_lone_gun", "vasto_prime_lone_gun"],
             "cards asking about the loadout: {asking:?}");
+    }
+
+    /// A FIGHT BONUS IS ONE MORE MOD, and that is the whole claim (owner,
+    /// 2026-08-13: "效果等于又塞mod，不需要单独一个增益。这些是永久的").
+    ///
+    /// Asserted as an EQUALITY against the real card rather than as a
+    /// direction: a scenario's +165% base damage has to resolve to the same
+    /// panel Serration does, or "like a mod" is a description of the UI and not
+    /// of the arithmetic. Nine buckets, each checked against the mod that owns
+    /// it, so a bonus wired to the wrong local fails on the stat it landed in.
+    #[test]
+    fn a_fight_bonus_resolves_exactly_like_the_mod_of_that_stat() {
+        let base = WeaponBase::from_data("torid", true, &[]);
+        let pool = crate::mods_data::class_pool("rifle");
+        let by = |id: &str| {
+            pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{id} missing"))
+        };
+        let neutral = crate::tenno_data::default_tenno();
+        let with_bonus = |f: fn(&mut crate::tenno_data::StatBonuses)| {
+            let mut t = neutral.clone();
+            f(&mut t.bonuses);
+            resolve_for(&base, &[], StackPolicy::Emergent, &t)
+        };
+        let with_mod = |id: &str| {
+            resolve_for(&base, &[by(id)], StackPolicy::Emergent, neutral)
+        };
+        // (the mod, its rankMax, the bucket setter, and what to read off)
+        let cases: &[(&str, fn(&mut crate::tenno_data::StatBonuses), fn(&ResolvedPanel) -> f64)] = &[
+            ("serration", |b| b.base_damage = 1.65, |p| p.modified_base),
+            ("split_chamber", |b| b.multishot = 0.90, |p| p.multishot),
+            ("point_strike", |b| b.crit_chance = 1.50, |p| p.crit_chance),
+            ("vital_sense", |b| b.crit_damage = 1.20, |p| p.crit_damage),
+            ("rifle_aptitude", |b| b.status_chance = 0.90, |p| p.status_chance),
+            ("speed_trigger", |b| b.fire_rate = 0.60, |p| p.fire_rate),
+            ("magazine_warp", |b| b.magazine = 0.30, |p| p.magazine_size),
+        ];
+        for (id, set, read) in cases {
+            let a = read(&with_mod(id));
+            let b = read(&with_bonus(*set));
+            assert!((a - b).abs() < 1e-9,
+                "{id}: the mod resolves to {a}, the same number as a fight bonus resolves to {b}");
+        }
+        // RELOAD IS THE OTHER DIRECTION — a bigger bucket is a SHORTER time —
+        // so it is read separately rather than being one more row above.
+        let m = with_mod("fast_hands").reload_seconds;
+        let f = with_bonus(|b| b.reload_speed = 0.30).reload_seconds;
+        assert!((m - f).abs() < 1e-9, "fast hands {m}s vs a fight bonus {f}s");
+
+        // …AND THEY ADD, which is what "one more mod" means when there is
+        // already one: Serration + a +165% fight bonus is one bucket at +330%,
+        // never two multipliers.
+        let mut both = neutral.clone();
+        both.bonuses.base_damage = 1.65;
+        let stacked = resolve_for(&base, &[by("serration")], StackPolicy::Emergent, &both);
+        let plain = resolve_for(&base, &[], StackPolicy::Emergent, neutral);
+        assert!((stacked.modified_base / plain.modified_base - 4.30).abs() < 1e-9,
+            "1 + 1.65 + 1.65 = 4.30, got x{}", stacked.modified_base / plain.modified_base);
+
+        // …AND A LOCK STILL WINS. "Set to its default ignoring other bonuses"
+        // makes no exception for where a bonus came from, and the fight is not
+        // a loophole in a rule the mods obey.
+        let mut ms = neutral.clone();
+        ms.bonuses.multishot = 5.0;
+        let locked = resolve_for(&base, &[by("primary_acuity")], StackPolicy::Emergent, &ms);
+        let unlocked = resolve_for(&base, &[], StackPolicy::Emergent, neutral);
+        assert!((locked.multishot - unlocked.multishot).abs() < 1e-9,
+            "a locked multishot ignores a fight bonus too: {} vs {}",
+            locked.multishot, unlocked.multishot);
     }
 
     /// WITH A CHANNELED ABILITY ACTIVE — the second player-declared state, and

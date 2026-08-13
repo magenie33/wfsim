@@ -556,6 +556,9 @@ function defaultScenario() {
     // whole fight. Empty by default, which is what makes the untouched
     // scenario the same fight it has always been.
     ability_strength: 1, abilities: [],
+    // THE FIGHT'S OWN STAT BONUSES — see `EXTRA_STAT_KEYS`. Empty is a fight
+    // that hands this weapon nothing it did not earn, which is every ruler.
+    extra_stats: { ...(d.extra_stats || {}) },
   };
 }
 
@@ -585,7 +588,7 @@ let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: nul
   // comparison against the board is not a puzzle (owner, 2026-08-10). Only the
   // DEFAULT — a saved scenario carries its own duration and keeps it.
   infinite_ammo: true, metric: "kpm", duration: 180, runs: 1000, buffs: {},
-  ability_strength: 1, abilities: [] };
+  ability_strength: 1, abilities: [], extra_stats: {} };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
 // Damage-meter rows the player has expanded into their per-type split, kept
@@ -2754,7 +2757,13 @@ function sharePayload() {
       if (Object.keys(out).length) sc.buffs = out;
       return;
     }
-    if (val !== d[k]) sc[k] = val;
+    // AN OBJECT NEVER COMPARES EQUAL to another object, so a plain `!==` would
+    // send `extra_stats: {}` on every link. Compared by VALUE, which is what
+    // "only what differs from the defaults both sides already have" meant all
+    // along — it just had no object field to be wrong about until now.
+    const same = (a, b) =>
+      a && typeof a === "object" ? JSON.stringify(a) === JSON.stringify(b || {}) : a === b;
+    if (!same(val, d[k])) sc[k] = val;
   });
 
   // The sharer's MEASUREMENT, kept as a claim rather than as a fact: the
@@ -5165,7 +5174,30 @@ function renderMods() {
 // sim never ran, and hid a contribution the sim was paying. One player, both
 // answers (user, 2026-08-02: "这个目标也要在场上").
 // The scenario fields that describe the PLAYER rather than the fight.
-const TENNO_KEYS = ["aiming", "invisible", "airborne", "overshields", "channeling", "solo_weapon", "frame", "wf_armor", "wf_energy", "wf_sprint"];
+const TENNO_KEYS = ["aiming", "invisible", "airborne", "overshields", "channeling", "solo_weapon", "frame", "wf_armor", "wf_energy", "wf_sprint", "extra_stats"];
+
+// THE FIGHT'S OWN STAT BONUSES: what this weapon is handed by something that is
+// not its build — a squad buff, a Warframe ability, an arcane on another weapon.
+//
+// "效果等于又塞mod，不需要单独一个增益。这些是永久的" (owner, 2026-08-13). So they
+// are not buffs: no trigger, no clock, no stack count. They join the same
+// ADDITIVE buckets the mods feed, which is what makes them cheap to be right
+// about — a scenario's +60% multishot and Split Chamber's +90% sum, exactly as
+// two multishot mods would, and every lock still wins over them.
+//
+// NO ELEMENTS. An elemental mod is position-sensitive and enters a hierarchy,
+// so "+90% Heat" is not a number, it is a place in an ordering.
+const EXTRA_STAT_KEYS = [
+  ["base_damage", "Base Damage"],
+  ["multishot", "Multishot"],
+  ["crit_chance", "Critical Chance"],
+  ["crit_damage", "Critical Damage"],
+  ["status_chance", "Status Chance"],
+  ["status_damage", "Status Damage"],
+  ["fire_rate", "Fire Rate"],
+  ["reload_speed", "Reload Speed"],
+  ["magazine", "Magazine Capacity"],
+];
 
 /// THE WARFRAME ROSTER, and what picking one means: it fills armor, max energy
 /// and sprint speed at once. Sprint is the one that could not be set at all
@@ -7469,6 +7501,23 @@ function renderScenarioFields(ids, opts = {}) {
     $(ids.limits).innerHTML = ammoField(w, sim);
   }
 
+  // ---- 3b. THE FIGHT'S OWN STAT BONUSES --------------------------------
+  //
+  // Everything this weapon is handed by something that is not its build. They
+  // land in the same ADDITIVE buckets the mods feed — "效果等于又塞mod" — so a
+  // player who knows what their squad, their frame or an ability is worth types
+  // the number and the whole app treats it as one more card: the panel's own
+  // arithmetic, the sim, the optimizer's scoring, and every lock.
+  //
+  // BLANK IS ZERO, not empty: a fight hands this weapon nothing unless someone
+  // says otherwise, which is what every ruler and every stored scenario means.
+  if (ids.extra) {
+    const ex = sim.extra_stats || {};
+    $(ids.extra).innerHTML = EXTRA_STAT_KEYS.map(([k, label]) =>
+      `<label title="${escHtml(tr("a percentage, into the same bucket a mod of this stat feeds — permanent, no trigger and no clock"))}">${escHtml(tr(label))} <span class="unit">%</span> <input type="number" data-xk="${k}" step="1" value="${ex[k] ? r3(ex[k] * 100) : ""}" placeholder="0"></label>`
+    ).join("");
+  }
+
   // ---- 4. MEASUREMENT: nothing the player does in-game -----------------
   if (ids.run) {
     $(ids.run).innerHTML = `
@@ -7482,14 +7531,16 @@ function renderScenarioFields(ids, opts = {}) {
         })}</label>`;
   }
 
-  const boxes = [ids.target, ids.technique, ids.limits, ids.run].filter(Boolean).map($);
+  const boxes = [ids.target, ids.technique, ids.limits, ids.extra, ids.run]
+    .filter(Boolean)
+    .map($);
   // READ-ONLY hosts get the same fields, in the same order, showing the same
   // values — and no way to change them. A preset is edited in exactly ONE
   // place (user, 2026-08-02): two editors over one document is how a document
   // gets edited twice and saved once. The optimizer therefore SHOWS the fight
   // and links to the module that owns it.
   if (opts.readonly) {
-    boxes.forEach((box) => box.querySelectorAll("[data-k]").forEach((el) => {
+    boxes.forEach((box) => box.querySelectorAll("[data-k],[data-xk]").forEach((el) => {
       el.disabled = true;
       el.title = tr("edit this in the Simulator");
     }));
@@ -7530,6 +7581,27 @@ function renderScenarioFields(ids, opts = {}) {
         // is the scenario's edit and nobody else's (user, 2026-08-02).
         markScenarioDirty();
         // Whichever tab drew the field, both are looking at this one state.
+        if (opts.after) opts.after();
+      });
+    }));
+  // …AND THE FIGHT'S OWN STAT BONUSES, whose own map they write into. A
+  // separate attribute rather than a `data-k` per stat because they are ONE
+  // scenario field: nine numbers in one object, so a blank one is absent rather
+  // than a zero nobody typed, and the share link carries only what was set.
+  boxes.forEach((box) =>
+    box.querySelectorAll("[data-xk]").forEach((el) => {
+      el.addEventListener("change", () => {
+        const next = { ...(sim.extra_stats || {}) };
+        // TYPED IN PERCENT, stored as the fraction every bucket in the engine
+        // holds — the same units a mod's `rankMax` is in.
+        const v = Number(el.value) / 100;
+        if (!Number.isFinite(v) || v === 0) delete next[el.dataset.xk];
+        else next[el.dataset.xk] = v;
+        sim.extra_stats = next;
+        // It changes what the BUILD is worth, so the panel has to be asked
+        // again — the same reason a Tenno field does.
+        refreshPanel();
+        markScenarioDirty();
         if (opts.after) opts.after();
       });
     }));
@@ -7978,7 +8050,7 @@ function renderSim() {
   const enemies = allEnemies();
   const en = enemies.find((e) => e.id === sim.enemy) || enemies[0];
   renderScenarioFields({ target: "sim-target", technique: "sim-technique",
-    limits: "sim-limits", run: "sim-run" });
+    limits: "sim-limits", extra: "sim-extra", run: "sim-run" });
   renderWfBuffs("sim-wfbuffs", false);
   // …AND THE OPTIMIZER'S COPY, from the same call. It shows the SIMULATOR's
   // fight, so it is repainted whenever that fight is redrawn rather than when
@@ -9509,7 +9581,8 @@ function renderOptEnemy() {
   if (!$("opt-target")) return;
   renderWfBuffs("opt-wfbuffs", true);
   renderScenarioFields(
-    { target: "opt-target", technique: "opt-technique", limits: "opt-limits" },
+    { target: "opt-target", technique: "opt-technique", limits: "opt-limits",
+      extra: "opt-extra" },
     { readonly: true },
   );
   // Which fight, and where it is edited. Not a preset bar: that bar can
